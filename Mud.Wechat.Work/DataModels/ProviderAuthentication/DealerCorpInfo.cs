@@ -1,5 +1,4 @@
-﻿namespace Mud.Wechat.Work.DataModels;
-
+﻿namespace Mud.Wechat.Work.DataModels.ProviderAuthentication;
 
 /// <summary>
 /// 代理服务商企业信息

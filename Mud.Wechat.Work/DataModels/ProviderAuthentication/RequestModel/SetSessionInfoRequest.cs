@@ -1,4 +1,4 @@
-﻿namespace Mud.Wechat.Work.DataModels.Authentication;
+﻿namespace Mud.Wechat.Work.DataModels.ProviderAuthentication;
 
 /// <summary>
 /// 设置授权配置请求体

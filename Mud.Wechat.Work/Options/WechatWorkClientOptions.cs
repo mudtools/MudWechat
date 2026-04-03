@@ -3,7 +3,7 @@
 namespace Mud.Wechat.Work.Options;
 
 /// <summary>
-/// 一个用于构造 <see cref="IWechatWorkAuthentication"/> 时使用的配置项。
+/// 一个用于构造 <see cref="IWechatWorkProviderAuthentication"/> 时使用的配置项。
 /// </summary>
 public class WechatWorkClientOptions
 {

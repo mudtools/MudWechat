@@ -1,5 +1,5 @@
 ﻿using Mud.Wechat.Work.DataModels;
-using Mud.Wechat.Work.DataModels.Authentication;
+using Mud.Wechat.Work.DataModels.ProviderAuthentication;
 
 namespace Mud.Wechat.Work;
 
@@ -9,7 +9,7 @@ namespace Mud.Wechat.Work;
 /// </summary>
 [HttpClientApi("https://api.weixin.qq.com", Timeout = 30, TokenManage = nameof(IWechatAppManager), RegistryGroupName = "Weixin")]
 [Token(TokenType = TokenType.TenantAccessToken, InjectionMode = TokenInjectionMode.Query, Name = "suite_access_token")]
-public interface IWechatWorkAuthenticationService
+public interface IWechatWorkProviderAuthenticationService
 {
     /// <summary>
     /// 获取预授权码

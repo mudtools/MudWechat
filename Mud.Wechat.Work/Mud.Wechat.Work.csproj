@@ -8,4 +8,8 @@
 		<PackageReference Include="Mud.HttpUtils" Version="1.6.4" />
 	</ItemGroup>
 
+	<ItemGroup>
+	  <Folder Include="Interfaces\" />
+	</ItemGroup>
+
 </Project>

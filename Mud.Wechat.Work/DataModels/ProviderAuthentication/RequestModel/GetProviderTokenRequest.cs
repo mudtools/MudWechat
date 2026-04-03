@@ -1,6 +1,6 @@
 ﻿using Mud.Wechat.Work.Options;
 
-namespace Mud.Wechat.Work.DataModels.Authentication;
+namespace Mud.Wechat.Work.DataModels.ProviderAuthentication;
 
 /// <summary>
 /// 获取服务商凭证的请求体。

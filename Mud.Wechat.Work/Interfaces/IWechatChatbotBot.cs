@@ -83,4 +83,6 @@ public interface IWechatChatbotBot
     Task<LabelBatchSetResponse> LabelBatchSetAsync(
         [Body(EnableEncrypt = true, EncryptSerializeType = SerializeType.Xml)] LabelBatchSetRequest request,
         CancellationToken cancellationToken = default);
+
+
 }

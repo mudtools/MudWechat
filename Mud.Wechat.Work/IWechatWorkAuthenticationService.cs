@@ -34,6 +34,7 @@ public interface IWechatWorkAuthenticationService
 
     /// <summary>
     /// 获取企业永久授权码
+    /// <para>用于通过永久授权码换取企业微信的授权信息。 永久code的获取，是通过临时授权码使用get_permanent_code 接口获取到的permanent_code。</para>
     /// </summary>
     /// <param name="request">请求参数</param>
     /// <param name="cancellationToken">取消令牌</param>
@@ -41,4 +42,16 @@ public interface IWechatWorkAuthenticationService
     /// <remarks>请参照原SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/90603"/></remarks>
     [Post("/cgi-bin/service/get_permanent_code")]
     Task<GetPermanentCodeResponse> GetPermanentCodeAsync([Body] GetPermanentCodeRequest request, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 获取企业授权信息
+    /// </summary>
+    /// <param name="request">请求参数</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>获取企业授权信息响应</returns>
+    /// <remarks>请参照原SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/91912"/></remarks>
+    [Post("/cgi-bin/service/get_auth_info")]
+    Task<GetAuthInfoResponse> GetAuthInfoAsync([Body] GetAuthInfoRequest request, CancellationToken cancellationToken = default);
+
+
 }

@@ -3,13 +3,13 @@
 /// <summary>
 /// <para>表示 [POST] /setautoreply/{TOKEN} 接口的响应。</para>
 /// </summary>
-public class SetAutoReplyResponse : WechatChatbotResponse
+public class SetAutoReplyResponse : WechatWorkResponse
 {
     /// <summary>
     /// <inheritdoc/>
     /// </summary>
     [JsonPropertyName("code")]
-    public override int? ReturnCode { get; set; }
+    public int? ReturnCode { get; set; }
 
     /// <summary>
     /// 获取微信智能对话 API 返回的错误描述。

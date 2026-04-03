@@ -1,11 +1,9 @@
-﻿using System.Text.Json.Serialization;
-
-namespace Mud.Wechat.Work.DataModels;
+﻿namespace Mud.Wechat.Work.DataModels;
 
 /// <summary>
 /// 表示微信智能对话 API 响应的基类。
 /// </summary>
-public abstract class WechatChatbotResponse
+public abstract class WechatWorkResponse
 {
     /// <summary>
     /// 获取微信智能对话 API 返回的错误码。
@@ -18,24 +16,12 @@ public abstract class WechatChatbotResponse
     /// </summary>
     [JsonPropertyName("errmsg")]
     public virtual string? ErrorMessage { get; set; }
-
-    /// <summary>
-    /// 获取微信智能对话 API 返回的错误码。
-    /// </summary>
-    [JsonPropertyName("ret")]
-    public virtual int? ReturnCode { get; set; }
-
-    /// <summary>
-    /// 获取微信智能对话 API 返回的错误信息。
-    /// </summary>
-    [JsonPropertyName("error")]
-    public virtual string? ReturnError { get; set; }
 }
 
 /// <summary>
 /// 表示微信智能对话 API 响应的泛型基类。
 /// </summary>
-public abstract class WechatChatbotResponse<TData> : WechatChatbotResponse
+public abstract class WechatChatbotResponse<TData> : WechatWorkResponse
     where TData : class
 {
     /// <summary>

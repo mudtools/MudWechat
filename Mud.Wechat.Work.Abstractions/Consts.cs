@@ -30,10 +30,4 @@ internal static class Consts
 
     /// <summary>应用上下文退役队列默认宽限期（秒），对齐 Feishu TMA-07/TMA-24。</summary>
     public const int DefaultContextRetireDelaySeconds = 300;
-
-    /// <summary>持久化令牌键前缀（对齐 Feishu DefaultTokenKeyPrefix = "feishu"）。</summary>
-    public const string DefaultTokenKeyPrefix = "wechat";
-
-    /// <summary>企业微信官方文档根地址（用于 XML 注释引用）。</summary>
-    public const string DocsBaseUrl = "https://developer.work.weixin.qq.com/document/";
 }

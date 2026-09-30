@@ -52,12 +52,22 @@ public sealed class WechatAppContextSwitcher : AsyncLocalAppContextSwitcher, IWe
     public IDisposable BeginScope(string appKey) => BeginScope((IMudAppContext)SwitchToApp(appKey));
 
     /// <inheritdoc />
-    public Task<string> GetTokenAsync()
+    public Task<string> GetTokenAsync() => GetTokenAsync(WechatTokenTypes.AccessToken, CancellationToken.None);
+
+    /// <inheritdoc />
+    public Task<string> GetTokenAsync(string tokenType, CancellationToken cancellationToken = default)
     {
+        if (string.IsNullOrEmpty(tokenType))
+        {
+            throw new ArgumentNullException(nameof(tokenType));
+        }
+
         var context = Current
             ?? throw new InvalidOperationException(
                 "当前无应用上下文：请先经 IWechatAppContextSwitcher.UseApp(appKey) 切换，或显式传入 appKey。");
-        return context.GetTokenManager(WechatTokenTypes.AccessToken).GetTokenAsync(CancellationToken.None);
+
+        // P2-3：按 tokenType 路由（原无参成员硬编码 AccessToken 且丢弃调用方取消令牌）。
+        return context.GetTokenManager(tokenType).GetTokenAsync(cancellationToken);
     }
 
     /// <inheritdoc />
@@ -67,6 +77,10 @@ public sealed class WechatAppContextSwitcher : AsyncLocalAppContextSwitcher, IWe
     /// </remarks>
     public void SetCorp(string authCorpId, string? permanentCode = null)
         => WechatCorpContext.SetCorp(Current?.AppKey, authCorpId, permanentCode);
+
+    /// <inheritdoc />
+    /// <remarks>P2-1：<see cref="SetCorp"/> 的对称重置入口（暴露既有 <see cref="WechatCorpContext.Clear"/>）。</remarks>
+    public void ClearCorp() => WechatCorpContext.Clear();
 
     private IMudAppContext SwitchToApp(string appKey)
     {

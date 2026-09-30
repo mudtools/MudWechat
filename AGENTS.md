@@ -43,6 +43,16 @@ dotnet format Mud.Wechat.slnx                               # 格式化（未纳
 **已知假绿陷阱（勿"优化"掉）**：只断言诊断计数、不断言编译错误 —— 构建本身失败时诊断计数仍为 0。
 本脚本对步骤 2 **同时**断言「编译错误」与「IL 诊断」。
 
+**门禁前置：`pwsh` ≥ 7**。`verify-build.ps1` / `audit-config-keys.ps1` 为「UTF-8 无 BOM + 中文注释」，
+Windows PowerShell 5.1 会按 ANSI 解码并报 `Missing ')' in method call` / `The string is missing the terminator`
+而**解析失败**（非脚本逻辑问题）。仅有 `powershell.exe` 时，以 `dotnet build Mud.Wechat.slnx -c Release` +
+逐工程 `dotnet test -f net8.0` 作等价验证，且**不得**据此断言门禁通过。
+
+**已知基线红灯（勿误判为本机环境问题）**：`Abstractions` 的 16 个 `[HttpJsonSerializable]` 领域模型缺少覆盖它们的
+`JsonSerializerContext` ⇒ `AotStrictMode=true` 下报 **16 条 `AOT006`（severity=error）**，步骤 2 的「编译错误 = 0」断言不成立
+（已核实为 `HEAD` 既有状态，定位 commit `56aba64`）。修复需在 `Abstractions` 生成/手写覆盖这些类型的上下文
+（组件提供 `dotnet mud-jsonctx` 脚手架），属独立批次。
+
 ## Target Frameworks & Language Constraints
 
 `Directory.Build.props`：`TargetFrameworks = netstandard2.0;net6.0;net8.0;net10.0`、
@@ -114,17 +124,41 @@ Mud.Wechat/
   **仅 `IWechatWorkProviderAuthenticationService`**，新增 Query 注入接口须评估后显式扩展守卫。
 - v2 端点：`/cgi-bin/service/v2/get_permanent_code`、`/cgi-bin/service/v2/get_auth_info`；
   `get_customized_auth_url` 以**显式 Query 参数** `provider_access_token` 传令牌（**不带 `[Token]`**，不放宽白名单）。
-- `TokenKey` 布局：`{type}:{appKey}`（如 `Wechat.AccessToken:default`）；`WechatTokenTypes` 一律 `"Wechat."` 前缀，与组件通用 `TokenTypes` 隔离。
+- `TokenKey` 布局：**三段式 `{tokenType}:{appKey}:{scopeKey}`**（如 `Wechat.AccessToken:default:default`；
+  由 `WechatAppTokenManagerBase.BuildCache` 的 `storeKeyMapper` 构造）；`WechatTokenTypes` 一律 `"Wechat."` 前缀，与组件通用 `TokenTypes` 隔离。
+- **`AppKey` 形状受约束**：`[A-Za-z0-9]` 开头 + 仅 `[A-Za-z0-9._-]` + ≤128（`WechatAppKeyValidator`，经
+  `WechatAppConfig.Validate()` 单点收敛）。理由：AppKey 参与持久化键与命名 HttpClient 名，含 `:` 会造成**键别名**（跨应用令牌串号）。
 - 企业级令牌**一企一份**由 `TokenManagerBase` 的 scope 机制承担（`scopeKey = authCorpId`），不依赖 `IWechatTokenStore`。
+  企业级令牌**不经声明式 `[Token]`**（由宿主/编排服务显式 `GetTokenAsync(new[]{ authCorpId })` 获取）⇒
+  errcode 恢复**必须显式传 scope**：`InvalidateTokenAsync(appKey, AccessToken, new[]{ authCorpId })`；
+  以默认作用域失效对已缓存的企业令牌是**空转**（能力边界，由 `CorpTokenManagerScopeIsolationTests` 锁定）。
+  `CorpTokenManager` 读取环境 `SetCorp` 上下文须通过**两级校验**：① 上下文 `AppKey` 归属一致；② 上下文 `authCorpId` 与 scope 一致。
 - `IWechatCorpAuthStore` 为**复合键 `(AppKey, AuthCorpId)`**；`IWechatSuiteTicketStore` **按 `suiteId` 分槽**（多套件/多代开发模板互不覆盖）。
   默认实现仅进程内，多实例须宿主提供分布式实现（`TryAdd` 前置注册覆盖）。
-- 授权编排：`IWechatWorkAuthorizationService`（换码/刷新/撤销/枚举）；`authCode` **单飞门 + 结果记忆**
-  （按 `authCode` 而非 `authCorpId`，换码前拿不到 `authCorpId`）；`RevokeAuthorizationAsync` **仅失效本 `appKey`** 令牌。
+  `IWechatCallbackReplayGuard` 同款约定（多实例须分布式实现，否则重放窗口失效）。
+- **DI 桥接不变量**：`IAppContextHolder`、`IAppContextSwitcher`、`IWechatAppContextSwitcher` **必须是同一实例**
+  （组件 `AddMudHttpClient` 内部会 `TryAdd IAppContextHolder`，故 SDK 的注册必须在 `AddMudHttpClient` **之前**）。
+  破坏该不变量 ⇒ 声明式 `[Token]` 客户端读到的环境上下文恒为 `null`，多套件静默回退默认应用令牌。
+- **`WechatAppManager` 直接实现 `IAppManager<IWechatAppContext>`（不继承组件 `DefaultAppManager<T>`）**：
+  基类另有影子注册表（`_apps`）与非 virtual 写入口，会让 `RegisterApp`/`UpdateApp`/`TrySetDefaultApp` 静默写影子表
+  而 `GetApp`/`DefaultAppKey` 读不到。故：注册表**单一来源**（本类 `_configs` + `_lazyContexts`）；
+  `RegisterApp`/`UpdateApp`/`RegisterSwitcherFactory` 显式 `NotSupportedException`。
+  配置读取一律走 `ConfiguredConfigs` / `TryGetConfig`（**非物化**）；`TryGetApp` 会构造命名 HttpClient/DI scope/Timer，
+  仅用于「确实需要上下文」的场景（回调的 `SuiteId → appKey` 匹配不得使用它）。
+- 授权编排：`IWechatWorkAuthorizationService`（换码/刷新/撤销/枚举）；换码**单飞门 + 结果记忆**以
+  **`(appKey, authCode)` 复合键**为粒度（含长度前缀拼接）；共享任务用 `CancellationToken.None` 承载，
+  各调用者经 `AwaitSharedAsync` 独立取消；飞行条目**仅创建者移除**。`RevokeAuthorizationAsync` 顺序为
+  **先失效令牌、后删库**，且**仅失效本 `appKey`** 令牌。
   策略统一落 `WechatAuthorizationOptions`（`WechatAuthorization` 节），**不得**把编排字段塞进 `WechatAppConfig`。
 - 回调自动化：Abstractions 定义 `IWechatAuthorizationCoordinator`，**主包实现**，`Callback` 经
   `IServiceProvider.GetService<IWechatAuthorizationCoordinator>()` **惰性可选解析**；未安装主包授权模块时
   首次 `Warning` 后**降级不抛**。`change_auth` 本地无记录时仅告警、**不发 `get_auth_info`**；
-  `cancel_auth` 仅在协调器可解析**且** suiteId 精确命中时才委派，否则回退全部应用清理。
+  `cancel_auth` **清理范围恒为 `SuiteId` 命中集**：未命中（含 `SuiteId` 缺失）**只告警不删库**
+  ——`(AppKey, authCorpId)` 是**每套件独立**的授权记录，回退「全部应用清理」会删除其它套件的有效授权。
+- **回调抗重放不变量**：验签通过后必须过两道 fail-closed 闸——① 时间戳时效窗口 ±300s（缺失/非数字即拒）；
+  ② 一次性指纹去重（SHA1 指纹，不得落盘密文本身）。修改回调入口时不得绕过。
+- **`WechatCallbackOptions.CorpId` 语义是「接收方 ID」**：企业自建回调为企业 `CorpId`，**套件回调为 `SuiteId`**。
+  非空时校验解密明文的 `receiveid`，不一致即拒（该属性是唯一消费点，不得改为死配置）。
 
 ## Code Style
 
@@ -152,7 +186,7 @@ Mud.Wechat/
 
 ## Contract Guards（`Tests/**/ContractGuards/`）
 
-新增/修改契约面时**必须同批**更新守卫。现有 6 条（`WechatContractGuards.cs`）：
+新增/修改契约面时**必须同批**更新守卫。现有 8 条（`WechatContractGuards.cs`）：
 
 | 编号 | 守卫 | 约束 |
 |---|---|---|
@@ -162,6 +196,9 @@ Mud.Wechat/
 | G4 | `WechatErrorCodes_ShouldAlignWithDetectorCollection` | 失效码 `{40014,42001,42007,42009,42011}` 与判定器同源 |
 | G5 | `QueryTokenInjection_ShouldBeLimitedToWechatOfficialContractInterfaces` | Query 注入白名单未放宽 |
 | G6 | `AuthorizationEndpoints_ShouldMatchOfficialRoutes` | 授权端点路由 + `get_customized_auth_url` 不带 `[Token]` |
+| G7 | `QueryCredentialParams_ShouldBeRedactionRegisteredOrExplicitlyExempted` | Query 承载凭据的参数名 ⊆ 组件脱敏词表 **∪ 显式豁免清单**（豁免项须附追踪号，当前 3 项标注 `C-01`）。新增 Query 凭据参数必须做「补齐词表 / 登记豁免」二选一决策 |
+| G8 | `AppContextHolder_ShouldBeSameInstanceAsSwitcher`（源码顺序断言）+ `..._InRegistrationSource`；运行期同实例断言在 `WechatServiceCollectionExtensionsTests` | DI 桥接不变量（见「企业微信领域契约」）。**原计划中的 G8-B（`IAppManager<T>` 反射对齐守卫）已撤回**——`WechatAppManager` 直连实现后不存在影子注册表可能，改由行为用例锁定 |
+| G9 | `CancelAuthCleanup_ShouldBeScopedToMatchedAppKeys`（源码文本） | `cancel_auth` 不得再引入「未命中回退全部应用」的越权删除（行为用例在 `WechatCallbackAuthorizationDispatchTests`） |
 
 ## Test Guidelines
 
@@ -178,16 +215,26 @@ Mud.Wechat/
 
 - 配置面唯一公共 API：`WechatAppConfig`（数组节 `WechatApps`）+ `Validate()`；编排策略 `WechatAuthorizationOptions`（节 `WechatAuthorization`）。
 - **禁止新增「日志开关」类配置属性**（历史死配置反模式）；日志级别统一由 `Logging:LogLevel:{Category}` 控制。
-- 每个公开配置属性必须有真实消费点（`Validate`/`ToString` 不算）。删除旧键须同批把模式加入 `scripts/audit-config-keys.ps1` 的 `$strictPatterns`。
+- 每个公开配置属性必须有真实消费点（`Validate`/`ToString` 不算）。**`scripts/audit-config-keys.ps1` 的口径是「消费点扫描」，并无 `$strictPatterns` 白名单** —— 删除配置键后若脚本报「无消费点」，正确处置是补消费点或删除该属性，而不是加模式。
+  （`WechatCallbackOptions.CorpId` 即典型案例：其消费点是 `receiveid` 校验，而非配置开关。）
 - 安全默认不得削弱：`BaseUrl` 必须 HTTPS + 白名单（`AllowCustomBaseUrl=false` 为默认 SSRF 防线）。
+  `AllowCustomBaseUrl=true` 的应用主机在注册期登记到 `WechatCustomBaseUrlRegistry`，供 errcode 判定器的同步预过滤放行（否则私有化部署静默失去令牌恢复能力）。
 
 ## Security
 
 - 绝不记录或暴露 `AgentSecret` / `SuiteSecret` / `ProviderSecret` / `permanent_code` / `auth_code` / `suite_ticket`；日志脱敏。
+- **Query 承载凭据的脱敏登记**：`corpsecret` / `suite_access_token` / `provider_access_token` 由企业微信契约强制放在 **Query**，
+  而组件 `SensitiveUrlRedactor` 为**精确匹配**词表，不覆盖这三者 ⇒ 会随 `ApiException.RequestUri` / 遥测 URL 明文外泄。
+  新增任何 Query 凭据参数时**必须**同步 G7 的「补齐组件词表 / 登记豁免（附追踪号）」决策。
+  SDK 侧不得抢占组件 `IExceptionRedactor`（会丢掉 `Content`/`RequestContent` 的词表擦除 = 削弱安全默认）。
+- `WechatWorkException.RequestUri` 在构造期剥离 query 与 userinfo；不得把原始 URI 直接传出。
 - 授权回调与安装链接参数（`state`）须校验（长度 ≤ 32 字节、字符集 `[a-zA-Z0-9]`）。
+- 回调入口必须保留抗重放两道闸（时效窗口 + 一次性标记），不得为兼容而降级为 fail-open。
 - 不要绕过契约守卫与门禁（禁 `--no-verify`、禁删除断言）。
 
 ## Docs
 
 方案与设计文档在 `.docs/`（中文）：`MudWechatWork-授权功能方案-v1.md`（规格 + 评审记录 R1~R15）、
-`MudWechatWork-详细设计文档-v1.md`、`MudWechatWork-产品规划方案-v1.md`。**代码变更若触及契约面，须同批同步对应章节。**
+`MudWechatWork-详细设计文档-v1.md`、`MudWechatWork-产品规划方案-v1.md`；
+`MudWechatWork-审查缺陷修复与完善方案-v1.md`（P0/P1/P2 修复方案 + **评审记录 R1~R26** + 附录 D 实施记录）。
+**代码变更若触及契约面，须同批同步对应章节。**

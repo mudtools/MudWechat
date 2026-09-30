@@ -6,6 +6,7 @@
 // -----------------------------------------------------------------------
 
 using Mud.Wechat.Work.Abstractions.Authentication.TokenManager;
+using Mud.Wechat.Work.Abstractions.Configuration;
 
 namespace Mud.Wechat.Work.Callback;
 
@@ -19,8 +20,14 @@ namespace Mud.Wechat.Work.Callback;
 /// 自动换码落库（未注册协调器则一次性告警并降级，R10）；</item>
 /// <item><c>change_auth</c> → 先刷新授权信息落库，再级联失效该企业的授权企业令牌；</item>
 /// <item><c>cancel_auth</c> / <c>del_auth</c> → 经 <c>suiteId → appKey</c> 定位归属应用后清理其永久授权码
-/// 并级联失效其企业令牌；未注册协调器或 <c>SuiteId</c> 未命中时保留「回退全部应用」的兜底清理。</item>
+/// 并级联失效其企业令牌。<b>P0-3</b>：清理范围<b>恒为</b> SuiteId 命中集，未命中时<b>只告警不删库</b>
+/// （与 <c>change_auth</c> 的「本地无记录仅告警」语义对齐）。</item>
 /// </list>
+/// <para>
+/// <b>P1-6 非物化</b>：本处理器的 <c>SuiteId → appKey</c> 匹配只读取配置
+/// （<see cref="IWechatAppManager.ConfiguredConfigs"/>），<b>不</b>经
+/// <c>TryGetApp</c>（后者会构造命名 HttpClient / DI scope / 令牌管理器 Timer）。
+/// </para>
 /// </remarks>
 public sealed class WechatCallbackHandler
 {
@@ -97,7 +104,9 @@ public sealed class WechatCallbackHandler
                     .ConfigureAwait(false);
             }
 
-            await InvalidateCorpTokenAsync(evt.SuiteId, authCorpId, cancellationToken).ConfigureAwait(false);
+            // P0-3：失效范围同样收敛到 SuiteId 命中集；未命中不越权失效其它套件的企业令牌。
+            await InvalidateCorpTokensAsync(MatchAppKeysBySuiteId(evt.SuiteId), authCorpId, cancellationToken)
+                .ConfigureAwait(false);
             return;
         }
 
@@ -113,7 +122,9 @@ public sealed class WechatCallbackHandler
             _logger.LogInformation("收到取消授权事件（AuthCorpId: {AuthCorpId}），清理永久授权码并失效企业令牌。", authCorpId);
 
             var coordinator = ResolveCoordinator();
-            if (coordinator != null && MatchAppKeysBySuiteId(evt.SuiteId).Count > 0)
+            var matched = MatchAppKeysBySuiteId(evt.SuiteId);
+
+            if (coordinator != null && matched.Count > 0)
             {
                 // 协调器可用且 SuiteId 精确命中：复合键清理仅限归属应用（R4），企业令牌失效由编排服务级联完成。
                 await coordinator
@@ -122,13 +133,22 @@ public sealed class WechatCallbackHandler
                 return;
             }
 
-            // 降级：未注册协调器或 SuiteId 未命中 → 保留既有兜底清理（回退全部应用）+ 级联失效。
-            foreach (var appKey in ResolveAppKeys(evt.SuiteId))
+            if (matched.Count == 0)
+            {
+                // P0-3（G9）：authCorpId 是全局企业标识，而 (AppKey, authCorpId) 是**每套件独立**的授权记录。
+                // 未命中归属应用时一律不删库——旧实现的「回退全部应用清理」会删除其它套件的有效授权。
+                _logger.LogWarning(
+                    "取消授权事件未匹配任何已配置应用的 SuiteId（{SuiteId}），已跳过授权清理以避免误删其它套件授权；AuthCorpId: {AuthCorpId}。",
+                    evt.SuiteId, authCorpId);
+                return;
+            }
+
+            foreach (var appKey in matched)
             {
                 await _corpAuthStore.RemoveAsync(appKey, authCorpId, cancellationToken).ConfigureAwait(false);
             }
 
-            await InvalidateCorpTokenAsync(evt.SuiteId, authCorpId, cancellationToken).ConfigureAwait(false);
+            await InvalidateCorpTokensAsync(matched, authCorpId, cancellationToken).ConfigureAwait(false);
             return;
         }
 
@@ -179,8 +199,9 @@ public sealed class WechatCallbackHandler
         => _serviceProvider?.GetService<IWechatAuthorizationCoordinator>();
 
     /// <summary>
-    /// 按 <paramref name="suiteId"/> 精确命中归属应用键（代开发模板 id 即 suite_id）；无兜底。
+    /// 按 <paramref name="suiteId"/> 精确命中归属应用键（代开发模板 id 即 suite_id）；<b>无兜底</b>（P0-3）。
     /// </summary>
+    /// <remarks>只读取配置快照（非物化），不构造应用上下文（P1-6）。</remarks>
     private IReadOnlyList<string> MatchAppKeysBySuiteId(string? suiteId)
     {
         var matched = new List<string>();
@@ -189,12 +210,11 @@ public sealed class WechatCallbackHandler
             return matched;
         }
 
-        foreach (var appKey in _appManager.ConfiguredAppKeys)
+        foreach (WechatAppConfig config in _appManager.ConfiguredConfigs ?? Array.Empty<WechatAppConfig>())
         {
-            if (_appManager.TryGetApp(appKey, out var context)
-                && string.Equals(context!.Config.SuiteId, suiteId, StringComparison.Ordinal))
+            if (config != null && string.Equals(config.SuiteId, suiteId, StringComparison.Ordinal))
             {
-                matched.Add(appKey);
+                matched.Add(config.AppKey);
             }
         }
 
@@ -202,58 +222,37 @@ public sealed class WechatCallbackHandler
     }
 
     /// <summary>
-    /// 解析回调事件归属的应用键：优先按 <paramref name="suiteId"/> 精确命中（代开发模板 id 即 suite_id）；
-    /// 未命中或缺少 <paramref name="suiteId"/> 时回退全部已配置应用（保持既有兜底清理行为）。
+    /// 级联失效指定应用集合的该企业授权令牌（<c>AccessToken</c>，scope = <paramref name="authCorpId"/>）。
     /// </summary>
-    private IReadOnlyCollection<string> ResolveAppKeys(string? suiteId)
+    private async Task InvalidateCorpTokensAsync(
+        IReadOnlyList<string> appKeys, string? authCorpId, CancellationToken cancellationToken)
     {
-        if (_appManager == null)
-        {
-            return Array.Empty<string>();
-        }
-
-        if (string.IsNullOrEmpty(suiteId))
-        {
-            return _appManager.ConfiguredAppKeys;
-        }
-
-        var matched = MatchAppKeysBySuiteId(suiteId);
-        if (matched.Count == 0)
-        {
-            _logger.LogWarning("回调事件的 SuiteId {SuiteId} 未匹配任何已配置应用，回退全部应用清理。", suiteId);
-            return _appManager.ConfiguredAppKeys;
-        }
-
-        return matched;
-    }
-
-    private async Task InvalidateCorpTokenAsync(string? suiteId, string? authCorpId, CancellationToken cancellationToken)
-    {
-        if (string.IsNullOrEmpty(authCorpId) || _appManager == null)
+        if (string.IsNullOrEmpty(authCorpId) || _appManager == null || appKeys.Count == 0)
         {
             return;
         }
 
-        try
+        // `!`：netstandard2.0 的 string.IsNullOrEmpty 无 NotNullWhen 标注，流分析无法收窄（已在上方判空）。
+        var corpId = authCorpId!;
+
+        foreach (var appKey in appKeys)
         {
-            // 企业级令牌以 authCorpId 为 scope；按 suiteId 定位归属应用，避免连带失效其它套件的独立授权。
-            foreach (var appKey in ResolveAppKeys(suiteId))
+            try
             {
-                try
-                {
-                    await _appManager.InvalidateTokenAsync(
-                        appKey, WechatTokenTypes.AccessToken, new[] { authCorpId }, cancellationToken)
-                        .ConfigureAwait(false);
-                }
-                catch (InvalidOperationException)
-                {
-                    // 非第三方/服务商应用没有企业级令牌管理器，跳过。
-                }
+                // 企业级令牌以 authCorpId 为 scope；按 suiteId 定位归属应用，避免连带失效其它套件的独立授权。
+                await _appManager.InvalidateTokenAsync(
+                    appKey, WechatTokenTypes.AccessToken, new[] { corpId }, cancellationToken)
+                    .ConfigureAwait(false);
             }
-        }
-        catch (Exception ex) when (ex is not OperationCanceledException)
-        {
-            _logger.LogWarning(ex, "级联失效企业令牌失败（AuthCorpId: {AuthCorpId}）。", authCorpId);
+            catch (InvalidOperationException ex)
+            {
+                // 非第三方/服务商应用没有企业级令牌管理器（或应用已被移除），跳过。
+                _logger.LogDebug(ex, "跳过应用 {AppKey} 的企业令牌失效（无企业级令牌管理器）。", appKey);
+            }
+            catch (KeyNotFoundException)
+            {
+                _logger.LogDebug("跳过应用 {AppKey} 的企业令牌失效（应用不存在）。", appKey);
+            }
         }
     }
 }

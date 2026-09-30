@@ -98,4 +98,91 @@ public class WechatAppContextSwitcherTests
             WechatCorpContext.Clear();
         }
     }
+
+    // ---------------------------------------------------------------- P2-1 / P2-3
+
+    [Fact]
+    public void ClearCorp_ShouldClearAmbientState()
+    {
+        var manager = new Mock<IWechatAppManager>();
+        var switcher = new WechatAppContextSwitcher(manager.Object);
+        try
+        {
+            switcher.SetCorp("corp-1", "pc-1");
+            WechatCorpContext.AuthCorpId.Should().Be("corp-1");
+
+            switcher.ClearCorp();
+
+            WechatCorpContext.AuthCorpId.Should().BeNull("ClearCorp 为 SetCorp 的对称重置入口（P2-1）");
+            WechatCorpContext.PermanentCode.Should().BeNull();
+            WechatCorpContext.AppKey.Should().BeNull();
+        }
+        finally
+        {
+            WechatCorpContext.Clear();
+            switcher.SwitchTo(null);
+        }
+    }
+
+    [Fact]
+    public void BeginCorpScope_ShouldRestoreThreeValues_OnDispose()
+    {
+        try
+        {
+            WechatCorpContext.SetCorp("outer-app", "outer-corp", "outer-pc");
+
+            using (WechatCorpContext.BeginCorpScope("inner-app", "inner-corp", "inner-pc"))
+            {
+                WechatCorpContext.AppKey.Should().Be("inner-app");
+                WechatCorpContext.AuthCorpId.Should().Be("inner-corp");
+                WechatCorpContext.PermanentCode.Should().Be("inner-pc");
+            }
+
+            WechatCorpContext.AppKey.Should().Be("outer-app", "作用域释放后必须还原进入前的快照（而非清空）");
+            WechatCorpContext.AuthCorpId.Should().Be("outer-corp");
+            WechatCorpContext.PermanentCode.Should().Be("outer-pc");
+        }
+        finally
+        {
+            WechatCorpContext.Clear();
+        }
+    }
+
+    [Fact]
+    public void GetTokenAsync_ShouldHonorTokenType()
+    {
+        var suiteManager = new Mock<ITokenManager>();
+        suiteManager.Setup(m => m.GetTokenAsync(It.IsAny<CancellationToken>())).ReturnsAsync("suite-token");
+
+        var context = CreateContext("app-a");
+        context.Setup(c => c.GetTokenManager(WechatTokenTypes.SuiteAccessToken)).Returns(suiteManager.Object);
+
+        var manager = new Mock<IWechatAppManager>();
+        manager.Setup(m => m.GetApp("app-a")).Returns(context.Object);
+
+        var switcher = new WechatAppContextSwitcher(manager.Object);
+        try
+        {
+            switcher.UseApp("app-a");
+
+            var token = switcher.GetTokenAsync(WechatTokenTypes.SuiteAccessToken).GetAwaiter().GetResult();
+
+            token.Should().Be("suite-token", "P2-3：重载必须按 tokenType 路由（原无参成员硬编码 AccessToken）");
+            suiteManager.Verify(m => m.GetTokenAsync(It.IsAny<CancellationToken>()), Times.Once);
+        }
+        finally
+        {
+            switcher.SwitchTo(null);
+        }
+    }
+
+    [Fact]
+    public async Task GetTokenAsync_ShouldThrow_WhenTokenTypeEmpty()
+    {
+        var switcher = new WechatAppContextSwitcher(new Mock<IWechatAppManager>().Object);
+
+        var act = async () => await switcher.GetTokenAsync(string.Empty);
+        await act.Should().ThrowAsync<ArgumentNullException>();
+        await Task.CompletedTask;
+    }
 }

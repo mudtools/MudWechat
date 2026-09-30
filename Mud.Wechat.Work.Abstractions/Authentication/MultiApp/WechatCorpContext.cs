@@ -54,4 +54,62 @@ public static class WechatCorpContext
         AuthCorpIdCurrent.Value = null;
         PermanentCodeCurrent.Value = null;
     }
+
+    /// <summary>
+    /// 创建代开发企业上下文作用域（P2-1）：进入时写入三值，<c>Dispose</c> 时<b>还原</b>进入前的快照。
+    /// </summary>
+    /// <param name="appKey">归属应用键（可为 null，表示不声明归属）。</param>
+    /// <param name="authCorpId">授权方（企业）CorpId。</param>
+    /// <param name="permanentCode">该企业的永久授权码（可为 null，缺省时由仓储提供）。</param>
+    /// <returns>释放时还原上下文的作用域对象（幂等）。</returns>
+    /// <remarks>
+    /// <para>
+    /// 与 <see cref="SetCorp"/> / <see cref="Clear"/> 的差异：本方法<b>保存并还原</b>前值，
+    /// 而非无条件清空——适用于嵌套或长生命周期执行上下文（避免内层代操作"清掉"外层的企业上下文）。
+    /// </para>
+    /// <para>推荐用法：<c>using (WechatCorpContext.BeginCorpScope(appKey, authCorpId, permanentCode)) { ... }</c>。</para>
+    /// </remarks>
+    public static IDisposable BeginCorpScope(string? appKey, string authCorpId, string? permanentCode = null)
+    {
+        var snapshot = new Snapshot(AppKeyCurrent.Value, AuthCorpIdCurrent.Value, PermanentCodeCurrent.Value);
+        SetCorp(appKey, authCorpId, permanentCode);
+        return new CorpScope(snapshot);
+    }
+
+    /// <summary>进入作用域前的三值快照。</summary>
+    private readonly struct Snapshot
+    {
+        public Snapshot(string? appKey, string? authCorpId, string? permanentCode)
+        {
+            AppKey = appKey;
+            AuthCorpId = authCorpId;
+            PermanentCode = permanentCode;
+        }
+
+        public string? AppKey { get; }
+
+        public string? AuthCorpId { get; }
+
+        public string? PermanentCode { get; }
+    }
+
+    private sealed class CorpScope : IDisposable
+    {
+        private readonly Snapshot _snapshot;
+        private int _disposed;
+
+        public CorpScope(Snapshot snapshot) => _snapshot = snapshot;
+
+        public void Dispose()
+        {
+            if (Interlocked.Exchange(ref _disposed, 1) != 0)
+            {
+                return;
+            }
+
+            AppKeyCurrent.Value = _snapshot.AppKey;
+            AuthCorpIdCurrent.Value = _snapshot.AuthCorpId;
+            PermanentCodeCurrent.Value = _snapshot.PermanentCode;
+        }
+    }
 }

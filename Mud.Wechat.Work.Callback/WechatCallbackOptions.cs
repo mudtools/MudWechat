@@ -27,8 +27,18 @@ public class WechatCallbackOptions
     public string PushEncodingAESKey { get; set; } = string.Empty;
 
     /// <summary>
-    /// 回调事件接收的 CorpId（验签时 receiveid 参与签名；服务商模式为企业 CorpId）。
+    /// 回调报文的<b>接收方 ID</b>（解密明文尾部 <c>receiveid</c>，参与明文完整性校验）。
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// 语义按回调形态区分：<b>企业自建应用回调</b>为企业 <c>CorpId</c>；
+    /// <b>第三方应用 / 服务商代开发的套件回调</b>为 <c>SuiteId</c>。
+    /// </para>
+    /// <para>
+    /// <b>P2-5 消费点</b>：非空时接收器会校验解密明文的 <c>receiveid</c> 与本值一致，不一致即拒绝；
+    /// 留空则跳过校验并输出一次性告警（兼容不提供该值的场景）。
+    /// </para>
+    /// </remarks>
     public string CorpId { get; set; } = string.Empty;
 
     /// <summary>

@@ -23,9 +23,15 @@ namespace Mud.Wechat.Work.Services.Authorization;
 /// 「当前环境应用」解析令牌，不切上下文会取到错误应用的套件/服务商令牌（多套件场景静默串号）。
 /// </para>
 /// <para>
-/// <b>R3 幂等</b>：<c>ExchangeAuthCodeAsync</c> 以 <c>authCode</c> 为粒度的进程内单飞门 + 结果记忆
-/// （TTL 由 <see cref="WechatAuthorizationOptions.AuthCodeMemoTtlSeconds"/> 控制）实现幂等；
+/// <b>R3 幂等</b>：<c>ExchangeAuthCodeAsync</c> 以 <c>(appKey, authCode)</c> 复合键为粒度的进程内单飞门 +
+/// 结果记忆（TTL 由 <see cref="WechatAuthorizationOptions.AuthCodeMemoTtlSeconds"/> 控制）实现幂等；
 /// 换码前拿不到 <c>authCorpId</c>，故不做「按 authCorpId 串行化」。
+/// </para>
+/// <para>
+/// <b>P1-3/P1-4 为何键必须含 appKey</b>：<c>authCode</c> 是<b>套件维度</b>的一次性码，同一
+/// <c>authCode</c> 在不同 <c>appKey</c>（多套件/多代开发模板）下语义不同。原实现仅以 <c>authCode</c> 为键，
+/// 会让"先到者"的换码结果（含其 <c>authCorpId</c>/<c>permanent_code</c>）被后到者<b>静默复用</b>，
+/// 即向 A 应用写入 B 应用的授权对象。
 /// </para>
 /// </remarks>
 internal sealed class WechatWorkAuthorizationService : IWechatWorkAuthorizationService
@@ -33,6 +39,9 @@ internal sealed class WechatWorkAuthorizationService : IWechatWorkAuthorizationS
     private const string InstallUrlPrefix = "https://open.work.weixin.qq.com/3rdapp/install";
     private const int DefaultPreAuthCodeExpiresIn = 1200;
     private const int DefaultCustomizedUrlExpiresIn = 864000;
+
+    /// <summary>结果记忆清理间隔（每 N 次写入触发一次过期回收，消除批量导入下的 O(n²)）。</summary>
+    private const int MemoCleanupInterval = 64;
 
     private readonly IWechatAppManager _appManager;
     private readonly IWechatAppContextSwitcher _switcher;
@@ -42,11 +51,14 @@ internal sealed class WechatWorkAuthorizationService : IWechatWorkAuthorizationS
     private readonly IOptions<WechatAuthorizationOptions> _options;
     private readonly ILogger<WechatWorkAuthorizationService> _logger;
 
-    /// <summary>换码单飞门（同一 authCode 的并发/重复调用收敛为一次 API 调用）。</summary>
+    /// <summary>换码单飞门（同一 <c>(appKey, authCode)</c> 的并发/重复调用收敛为一次 API 调用）。</summary>
     private readonly ConcurrentDictionary<string, Lazy<Task<WechatCorpAuthorization>>> _inFlight = new(StringComparer.Ordinal);
 
-    /// <summary>换码结果记忆（authCode → authCorpId，短 TTL）。</summary>
+    /// <summary>换码结果记忆（复合键 → authCorpId，短 TTL）。</summary>
     private readonly ConcurrentDictionary<string, AuthCodeMemo> _memo = new(StringComparer.Ordinal);
+
+    /// <summary>结果记忆写入计数（驱动阈值式过期回收）。</summary>
+    private int _memoWrites;
 
     /// <summary>创建授权编排服务。</summary>
     public WechatWorkAuthorizationService(
@@ -192,9 +204,10 @@ internal sealed class WechatWorkAuthorizationService : IWechatWorkAuthorizationS
         }
 
         var targetAppKey = ResolveAppKey(appKey);
+        var flightKey = BuildFlightKey(targetAppKey, authCode);
 
         // 结果记忆命中：避免对已消费的一次性 auth_code 重复换码。
-        if (_memo.TryGetValue(authCode, out var memo) && memo.ExpiresAt > DateTimeOffset.UtcNow)
+        if (_memo.TryGetValue(flightKey, out var memo) && memo.ExpiresAt > DateTimeOffset.UtcNow)
         {
             var remembered = await _authStore.GetAsync(targetAppKey, memo.AuthCorpId, cancellationToken).ConfigureAwait(false);
             if (remembered != null)
@@ -203,20 +216,31 @@ internal sealed class WechatWorkAuthorizationService : IWechatWorkAuthorizationS
             }
         }
 
+        var created = false;
         var lazy = _inFlight.GetOrAdd(
-            authCode,
-            code => new Lazy<Task<WechatCorpAuthorization>>(
-                () => ExchangeCoreAsync(code, targetAppKey, cancellationToken),
-                LazyThreadSafetyMode.ExecutionAndPublication));
+            flightKey,
+            _ =>
+            {
+                created = true;
+                // 共享任务不绑定任何单个调用者的 CT：避免"首个调用者取消"连带取消其它等待者。
+                return new Lazy<Task<WechatCorpAuthorization>>(
+                    () => ExchangeCoreAsync(authCode, targetAppKey, CancellationToken.None),
+                    LazyThreadSafetyMode.ExecutionAndPublication);
+            });
 
         try
         {
-            return await lazy.Value.ConfigureAwait(false);
+            return await AwaitSharedAsync(lazy.Value, cancellationToken).ConfigureAwait(false);
         }
         finally
         {
-            // 失败 / 完成即释放单飞门（成功结果由结果记忆 + 仓储承载）。
-            _inFlight.TryRemove(authCode, out _);
+            // P1-3：仅创建者移除——非创建者提前完成时移除会误删"他人正在等待的飞行"，
+            // 使后续调用者重复发起换码（一次性 authCode 将直接失败）。
+            if (created)
+            {
+                ((ICollection<KeyValuePair<string, Lazy<Task<WechatCorpAuthorization>>>>)_inFlight)
+                    .Remove(new KeyValuePair<string, Lazy<Task<WechatCorpAuthorization>>>(flightKey, lazy));
+            }
         }
     }
 
@@ -284,11 +308,13 @@ internal sealed class WechatWorkAuthorizationService : IWechatWorkAuthorizationS
 
         var targetAppKey = ResolveAppKey(appKey);
 
-        await _authStore.RemoveAsync(targetAppKey, authCorpId, cancellationToken).ConfigureAwait(false);
-
-        // R4：仅失效本 AppKey 的该企业令牌（同一 authCorpId 在其它套件下是独立授权，不得连带失效）。
+        // R4/P1-5：先失效令牌（失败即中止，授权记录保持完整 ⇒ 调用方可直接重试）；
+        // 旧实现"先删库后失效"在失效失败时留下「记录已删、令牌仍可用」的不一致窗口。
         await _appManager.InvalidateTokenAsync(
             targetAppKey, WechatTokenTypes.AccessToken, new[] { authCorpId }, cancellationToken).ConfigureAwait(false);
+
+        // 仅失效本 AppKey 的该企业令牌（同一 authCorpId 在其它套件下是独立授权，不得连带失效）。
+        await _authStore.RemoveAsync(targetAppKey, authCorpId, cancellationToken).ConfigureAwait(false);
 
         _logger.LogInformation("已撤销企业授权（应用 {AppKey}，AuthCorpId {AuthCorpId}）。", targetAppKey, authCorpId);
     }
@@ -317,7 +343,7 @@ internal sealed class WechatWorkAuthorizationService : IWechatWorkAuthorizationS
         }
 
         await _authStore.SetAsync(auth, cancellationToken).ConfigureAwait(false);
-        RememberAuthCode(authCode, auth.AuthCorpId);
+        RememberAuthCode(appKey, authCode, auth.AuthCorpId);
 
         _logger.LogInformation(
             "授权换码成功并已落库（应用 {AppKey}，AuthCorpId {AuthCorpId}，代开发 {IsCustomizedApp}）。",
@@ -325,7 +351,41 @@ internal sealed class WechatWorkAuthorizationService : IWechatWorkAuthorizationS
         return auth;
     }
 
-    private void RememberAuthCode(string authCode, string authCorpId)
+    /// <summary>
+    /// 复合键（长度前缀拼接，天然单射）：<c>appKey</c> 与 <c>authCode</c> 无需转义即可唯一还原，
+    /// 且不引入分隔符转义规则（与组件 <c>ScopeKeyBuilder</c> 的 memoKey 手法同源）。
+    /// </summary>
+    private static string BuildFlightKey(string appKey, string authCode)
+        => appKey.Length.ToString(CultureInfo.InvariantCulture) + ":" + appKey + authCode;
+
+    /// <summary>
+    /// 等待共享任务，但只让<b>本调用者</b>的取消影响"本调用者的等待"，不影响共享任务本身。
+    /// </summary>
+    /// <remarks>
+    /// <c>netstandard2.0</c> 无 <c>Task.WaitAsync</c>，故手工实现（<c>CancellationToken.Register</c> 在 ns2.0 可用）。
+    /// </remarks>
+    private static async Task<T> AwaitSharedAsync<T>(Task<T> shared, CancellationToken cancellationToken)
+    {
+        if (!cancellationToken.CanBeCanceled)
+        {
+            return await shared.ConfigureAwait(false);
+        }
+
+        var cancelSignal = new TaskCompletionSource<object?>();
+        using (cancellationToken.Register(
+                   static state => ((TaskCompletionSource<object?>)state!).TrySetResult(null), cancelSignal))
+        {
+            var finished = await Task.WhenAny(shared, cancelSignal.Task).ConfigureAwait(false);
+            if (!ReferenceEquals(finished, shared))
+            {
+                throw new OperationCanceledException(cancellationToken);
+            }
+        }
+
+        return await shared.ConfigureAwait(false);
+    }
+
+    private void RememberAuthCode(string appKey, string authCode, string authCorpId)
     {
         var ttl = _options.Value.AuthCodeMemoTtlSeconds;
         if (ttl <= 0)
@@ -333,9 +393,14 @@ internal sealed class WechatWorkAuthorizationService : IWechatWorkAuthorizationS
             return;
         }
 
-        _memo[authCode] = new AuthCodeMemo(authCorpId, DateTimeOffset.UtcNow.AddSeconds(ttl));
+        _memo[BuildFlightKey(appKey, authCode)] = new AuthCodeMemo(authCorpId, DateTimeOffset.UtcNow.AddSeconds(ttl));
 
-        // 顺带清理过期项，避免长时间运行下无界增长。
+        // P2-6：阈值式过期回收（每 N 次写入一次），消除"每次写入全量遍历"在批量导入下的 O(n²)。
+        if (Interlocked.Increment(ref _memoWrites) % MemoCleanupInterval != 0)
+        {
+            return;
+        }
+
         var now = DateTimeOffset.UtcNow;
         foreach (var pair in _memo)
         {

@@ -35,10 +35,35 @@ public sealed class WechatTokenInvalidationDetector : ITokenInvalidationDetector
     };
 
     /// <summary>
-    /// 同步预过滤：仅企业微信域名请求参与判定，无关请求零捕获开销。
+    /// 同步预过滤：仅企业微信域名（或显式登记的自定义 BaseUrl 主机）请求参与判定，无关请求零捕获开销。
     /// </summary>
+    /// <remarks>
+    /// <b>P2-9</b>：本方法为<b>同步</b>预过滤，只有请求对象、无法按应用读取
+    /// <c>AllowCustomBaseUrl</c>，故原实现硬编码 <c>weixin.qq.com</c> 会让私有化/网关部署
+    /// （<c>AllowCustomBaseUrl = true</c>）静默失去 errcode 令牌恢复能力。
+    /// 现在改为「官方域白名单 ∪ 注册期显式登记的自定义主机」（见
+    /// <c>WechatCustomBaseUrlRegistry</c>）。放行与否只影响"是否参与判定"，
+    /// 判定本身仍要求响应体为合法 JSON 且 errcode 命中集合，不会造成误判。
+    /// </remarks>
     public bool ShouldInspect(HttpRequestMessage request)
-        => request.RequestUri?.Host.EndsWith("weixin.qq.com", StringComparison.OrdinalIgnoreCase) == true;
+    {
+        var host = request.RequestUri?.Host;
+        if (string.IsNullOrEmpty(host))
+        {
+            return false;
+        }
+
+        foreach (var domain in Consts.AllowedBaseUrlDomains)
+        {
+            if (string.Equals(host, domain, StringComparison.OrdinalIgnoreCase)
+                || host!.EndsWith("." + domain, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+
+        return WechatCustomBaseUrlRegistry.IsRegistered(host);
+    }
 
     /// <summary>
     /// 判断响应是否表示令牌失效：解析 JSON 响应体的 errcode 并比对失效码集合

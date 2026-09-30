@@ -132,6 +132,8 @@ public class WechatWorkAuthorizationServiceTests
             }));
         appManager.SetupGet(m => m.DefaultConfig).Returns(SuiteConfig());
         appManager.SetupGet(m => m.ConfiguredAppKeys).Returns(new[] { SuiteAppKey, ProviderAppKey });
+        // P1-6：协调器改读配置快照（非物化），不再依赖 TryGetApp。
+        appManager.SetupGet(m => m.ConfiguredConfigs).Returns(new[] { SuiteConfig(), ProviderConfig() });
         appManager
             .Setup(m => m.InvalidateTokenAsync(
                 It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string[]?>(), It.IsAny<CancellationToken>()))
@@ -668,6 +670,93 @@ public class WechatWorkAuthorizationServiceTests
         host.AppManager.Verify(
             m => m.InvalidateTokenAsync(ProviderAppKey, It.IsAny<string>(), It.IsAny<string[]?>(), It.IsAny<CancellationToken>()),
             Times.Never);
+    }
+
+    // ── P1-3 / P1-4：换码单飞门与结果记忆的复合键 ───────────────
+
+    [Fact]
+    public async Task ExchangeAuthCodeAsync_ShouldNotShareFlight_WhenAppKeyDiffers()
+    {
+        var host = CreateHost();
+        using var provider = host.Provider;
+
+        var gate = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var calls = 0;
+        host.ProviderAuth
+            .Setup(m => m.GetPermanentCodeV2Async(It.IsAny<GetPermanentCodeRequest>(), It.IsAny<CancellationToken>()))
+            .Returns(async () =>
+            {
+                var n = Interlocked.Increment(ref calls);
+                await gate.Task;
+                return PermanentCodeResponse("perm-" + n);
+            });
+
+        // 同一 authCode 在两个 appKey 下并发换码（多套件/多代开发模板）。
+        var suiteTask = host.Service.ExchangeAuthCodeAsync("auth-code-shared", SuiteAppKey);
+        var providerTask = host.Service.ExchangeAuthCodeAsync("auth-code-shared", ProviderAppKey);
+
+        gate.SetResult(true);
+        var suiteAuth = await suiteTask;
+        var providerAuth = await providerTask;
+
+        calls.Should().Be(2, "P1-3：单飞门键必须含 appKey，否则第二个应用会静默复用第一个应用的换码结果");
+        suiteAuth.AppKey.Should().Be(SuiteAppKey);
+        providerAuth.AppKey.Should().Be(ProviderAppKey);
+    }
+
+    [Fact]
+    public async Task ExchangeAuthCodeAsync_ShouldNotCancelSharedFlight_WhenFirstCallerCancels()
+    {
+        var host = CreateHost();
+        using var provider = host.Provider;
+
+        var gate = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        host.ProviderAuth
+            .Setup(m => m.GetPermanentCodeV2Async(It.IsAny<GetPermanentCodeRequest>(), It.IsAny<CancellationToken>()))
+            .Returns(async () =>
+            {
+                await gate.Task;
+                return PermanentCodeResponse("perm-shared");
+            });
+
+        using var cts = new CancellationTokenSource();
+        var first = host.Service.ExchangeAuthCodeAsync("auth-code-cancel", SuiteAppKey, cts.Token);
+        var second = host.Service.ExchangeAuthCodeAsync("auth-code-cancel", SuiteAppKey);
+
+        cts.Cancel();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => first);
+
+        gate.SetResult(true);
+
+        // P1-3：共享任务以 CancellationToken.None 承载，首个调用者取消不得连带取消其它等待者。
+        var auth = await second;
+        auth.AuthCorpId.Should().Be(AuthCorpId);
+    }
+
+    // ── P1-5：撤销的「先失效、后删库」顺序 ──────────────────────
+
+    [Fact]
+    public async Task Revoke_ShouldKeepAuthorization_WhenInvalidateFails()
+    {
+        var host = CreateHost();
+        using var provider = host.Provider;
+
+        await host.Store.SetAsync(new WechatCorpAuthorization
+        {
+            AppKey = SuiteAppKey, AuthCorpId = AuthCorpId, PermanentCode = "pc-keep",
+        });
+
+        host.AppManager
+            .Setup(m => m.InvalidateTokenAsync(
+                It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string[]?>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new InvalidOperationException("invalidate boom"));
+
+        var act = () => host.Service.RevokeAuthorizationAsync(AuthCorpId, SuiteAppKey);
+        await act.Should().ThrowAsync<InvalidOperationException>();
+
+        (await host.Store.GetAsync(SuiteAppKey, AuthCorpId)).Should().NotBeNull(
+            "P1-5：先失效后删库 —— 失效失败时授权记录保持完整，调用方可直接重试（旧实现会留下记录已删、令牌可用的不一致）");
     }
 
     // ── DI 装配与生存期 ─────────────────────────────────────────

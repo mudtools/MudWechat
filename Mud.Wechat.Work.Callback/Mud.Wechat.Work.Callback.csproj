@@ -10,4 +10,9 @@
 		<ProjectReference Include="..\Mud.Wechat.Work.DataModels\Mud.Wechat.Work.DataModels.csproj" />
 	</ItemGroup>
 
+	<ItemGroup>
+		<!-- 抗重放时间窗常量（ReplayWindowSeconds）为 internal，供测试断言边界。 -->
+		<InternalsVisibleTo Include="Mud.Wechat.Work.Callback.Tests" />
+	</ItemGroup>
+
 </Project>

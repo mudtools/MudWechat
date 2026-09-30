@@ -21,11 +21,21 @@ public sealed class InMemoryWechatTokenStore : IWechatTokenStore
     private readonly ConcurrentDictionary<string, StoreEntry> _entries = new(StringComparer.Ordinal);
 
     /// <inheritdoc />
+    /// <remarks>
+    /// <b>P1-9</b>：过期条目在<b>读路径</b>即回收（O(1)）——原实现只在"读取时判过期返回 null"，
+    /// 条目（含令牌明文）会永久驻留 `_entries`，长时间运行 + 多 scope（多企业 authCorpId）下无界增长。
+    /// </remarks>
     public Task<string?> GetAccessTokenAsync(string tokenType, CancellationToken cancellationToken = default)
     {
-        if (_entries.TryGetValue(tokenType ?? string.Empty, out var entry) && entry.ExpiresAtMs > NowMs())
+        var key = tokenType ?? string.Empty;
+        if (_entries.TryGetValue(key, out var entry))
         {
-            return Task.FromResult<string?>(entry.AccessToken);
+            if (entry.ExpiresAtMs > NowMs())
+            {
+                return Task.FromResult<string?>(entry.AccessToken);
+            }
+
+            _entries.TryRemove(key, out _);
         }
 
         return Task.FromResult<string?>(null);

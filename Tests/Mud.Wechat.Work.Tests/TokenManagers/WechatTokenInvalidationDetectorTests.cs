@@ -6,6 +6,9 @@
 // -----------------------------------------------------------------------
 
 using System.Net;
+using Microsoft.Extensions.DependencyInjection;
+using Mud.Wechat.Work.Abstractions.Configuration;
+using Mud.Wechat.Work.Abstractions.Enums;
 using Mud.Wechat.Work.TokenManagers;
 
 namespace Mud.Wechat.Work.Tests.TokenManagers;
@@ -65,5 +68,38 @@ public class WechatTokenInvalidationDetectorTests
         _detector.ShouldInspect(new HttpRequestMessage(HttpMethod.Get, "https://open.feishu.cn/open-apis")).Should().BeFalse();
         _detector.ShouldInspect(new HttpRequestMessage(HttpMethod.Get, "https://qyapi.weixin.qq.com")).Should().BeTrue();
         _detector.ShouldInspect(new HttpRequestMessage(HttpMethod.Get, "https://evil.example.com/u/weixin.qq.com")).Should().BeFalse("仅按 host 判定");
+    }
+
+    /// <summary>
+    /// P2-9：显式登记的自定义 BaseUrl 主机（<c>AllowCustomBaseUrl = true</c> 的私有化/网关部署）
+    /// 也必须参与判定，否则这些部署会静默失去 errcode 令牌恢复能力。
+    /// </summary>
+    [Fact]
+    public void ShouldInspect_ShouldPass_WhenCustomBaseUrlRegistered()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddWechatApp(new List<WechatAppConfig>
+        {
+            new()
+            {
+                AppKey = "private",
+                AppType = WechatAppType.Internal,
+                CorpId = "ww-corp",
+                AgentSecret = "agent-secret",
+                BaseUrl = "https://gateway.example.com",
+                AllowCustomBaseUrl = true,
+            },
+        });
+
+        // 自定义主机在 **DI 注册期**（AddWechatApp）登记，无需物化应用上下文
+        // （物化会触发组件连接期 SSRF 校验，测试环境无法解析公网域名）。
+        using var provider = services.BuildServiceProvider();
+
+        _detector.ShouldInspect(new HttpRequestMessage(HttpMethod.Get, "https://gateway.example.com/cgi-bin/gettoken"))
+            .Should().BeTrue("注册期登记的自定义主机应放行同步预过滤");
+
+        _detector.ShouldInspect(new HttpRequestMessage(HttpMethod.Get, "https://other.example.com/cgi-bin/gettoken"))
+            .Should().BeFalse("未登记的第三方主机仍被过滤");
     }
 }

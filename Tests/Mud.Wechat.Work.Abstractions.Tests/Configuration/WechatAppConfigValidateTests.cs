@@ -159,6 +159,41 @@ public class WechatAppConfigValidateTests
         act.Should().Throw<InvalidOperationException>().WithMessage("*TokenRefreshThreshold*");
     }
 
+    /// <summary>
+    /// P1-7：AppKey 形状校验——含 <c>:</c> 会造成令牌持久化键别名（跨应用串号），
+    /// 含空格/<c>/</c> 会污染命名 HttpClient 名，故启动期快速失败。
+    /// </summary>
+    [Theory]
+    [InlineData("a:b")]
+    [InlineData("a b")]
+    [InlineData("a/b")]
+    [InlineData(":a")]
+    [InlineData("-a")]
+    [InlineData("中文应用")]
+    public void Validate_ShouldFail_WhenAppKeyHasIllegalChars(string appKey)
+    {
+        var act = () => InternalConfig(c => c.AppKey = appKey).Validate();
+        act.Should().Throw<InvalidOperationException>().WithMessage("*AppKey*");
+    }
+
+    [Fact]
+    public void Validate_ShouldFail_WhenAppKeyTooLong()
+    {
+        var act = () => InternalConfig(c => c.AppKey = new string('a', 129)).Validate();
+        act.Should().Throw<InvalidOperationException>().WithMessage("*长度*");
+    }
+
+    [Theory]
+    [InlineData("default")]
+    [InlineData("suite-app")]
+    [InlineData("dk.template_01")]
+    [InlineData("0")]
+    public void Validate_ShouldPass_WhenAppKeyShapeLegal(string appKey)
+    {
+        var act = () => InternalConfig(c => c.AppKey = appKey).Validate();
+        act.Should().NotThrow();
+    }
+
     [Fact]
     public void Validator_ShouldFailOptionsPipeline_WhenConfigInvalid()
     {

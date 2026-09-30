@@ -177,4 +177,160 @@ public class WechatContractGuards
         providerTokenParam.GetCustomAttribute<Mud.HttpUtils.Attributes.QueryAttribute>()!
             .Name.Should().Be("provider_access_token", "服务商令牌必须以显式 Query 参数传入");
     }
+
+    /// <summary>
+    /// 契约守卫 G7（P0-4）：Query 承载凭据的参数名必须已被组件脱敏词表覆盖，或在豁免清单中显式登记。
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>为何不是「未覆盖即失败」</b>：组件（<c>Mud.HttpUtils</c>，独立仓库、NuGet 单一版本锁定）的词表补齐
+    /// 属跨仓交付（C-01），本仓库无法在同一提交内使其转绿；若写成硬失败，则与「门禁必须全绿」的硬约束冲突。
+    /// 故本守卫的职责是<b>可审计</b>：任何新增的 Query 凭据参数都必须做出「已覆盖 / 豁免（附追踪号）」决策。
+    /// </para>
+    /// <para>
+    /// <c>SensitiveUrlRedactor</c> 为组件 internal 类型，SDK 无法编译期引用 → 反射读取；
+    /// 测试工程单 TFM net8.0 且不参与 AOT strict 冒烟（verify-build 步骤 2 排除 Tests），反射可接受。
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void QueryCredentialParams_ShouldBeRedactionRegisteredOrExplicitlyExempted()
+    {
+        // 豁免清单：每条 MUST 带追踪号与理由。目标：C-01（组件词表补齐）合入后清空本清单。
+        var exemptions = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["corpsecret"] = "C-01：组件 SensitiveUrlRedactor.SensitiveFieldNames 未含 corpsecret（gettoken 显式 Query）。",
+            ["suite_access_token"] = "C-01：显式 Query 形态（get_corp_token）；[Token] 形态已被 TokenRecoveryContext 强制掩码。",
+            ["provider_access_token"] = "C-01：显式 Query 形态（get_customized_auth_url），不带 [Token]（G5 白名单不放宽）。",
+        };
+
+        var vocabulary = ReadComponentSensitiveVocabulary();
+        vocabulary.Should().NotBeEmpty("未能读取组件脱敏词表（组件版本或字段名变更，请同步本守卫）");
+
+        var uncovered = EnumerateCredentialQueryParamNames()
+            .Where(p => !vocabulary.Contains(p) && !exemptions.ContainsKey(p))
+            .OrderBy(p => p, StringComparer.Ordinal)
+            .ToList();
+
+        uncovered.Should().BeEmpty(
+            "以下 Query 参数承载凭据、既未被组件脱敏词表覆盖、也未登记豁免：会随 ApiException.RequestUri / " +
+            "遥测 URL 明文外泄。请二选一：补齐组件词表（C-01）或在本守卫豁免清单登记（须附追踪号）：" +
+            string.Join(", ", uncovered));
+    }
+
+    /// <summary>反射读取组件脱敏词表（单一事实源：<c>SensitiveUrlRedactor.SensitiveFieldNames</c>）。</summary>
+    private static List<string> ReadComponentSensitiveVocabulary()
+    {
+        var abstractions = typeof(Mud.HttpUtils.ApiException).Assembly;
+        var redactor = abstractions.GetType("Mud.HttpUtils.Helpers.SensitiveUrlRedactor");
+        redactor.Should().NotBeNull("组件 Helpers.SensitiveUrlRedactor 必须存在（G7 依赖其词表）");
+
+        var field = redactor!.GetField("SensitiveFieldNames",
+            BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static);
+        field.Should().NotBeNull();
+
+        var value = field!.GetValue(null) as System.Collections.IEnumerable;
+        value.Should().NotBeNull();
+
+        return value!.Cast<string>().ToList();
+    }
+
+    /// <summary>
+    /// 枚举「Query 承载凭据」的参数名：扫描 SDK 全部接口，收集
+    /// ① <c>[Query("x")]</c> 参数名；② <c>[Token(..., InjectionMode = Query, Name = "x")]</c> 的 Name；
+    /// 再以「名称含 token / secret」过滤为凭据面。
+    /// </summary>
+    private static List<string> EnumerateCredentialQueryParamNames()
+    {
+        var assemblies = new[]
+        {
+            typeof(WechatWorkServiceCollectionExtensions).Assembly,
+            typeof(Mud.Wechat.Work.Abstractions.WechatTokenTypes).Assembly,
+        };
+
+        var names = new List<string>();
+
+        foreach (var assembly in assemblies)
+        {
+            foreach (var type in assembly.GetTypes())
+            {
+                if (!type.IsInterface)
+                {
+                    continue;
+                }
+
+                foreach (var method in type.GetMethods())
+                {
+                    foreach (var parameter in method.GetParameters())
+                    {
+                        if (parameter.GetCustomAttribute<Mud.HttpUtils.Attributes.QueryAttribute>() is { } query
+                            && !string.IsNullOrEmpty(query.Name))
+                        {
+                            names.Add(query.Name!);
+                        }
+                    }
+                }
+
+                if (type.GetCustomAttribute<Mud.HttpUtils.Attributes.TokenAttribute>() is { } token
+                    && token.InjectionMode == Mud.HttpUtils.TokenInjectionMode.Query
+                    && !string.IsNullOrEmpty(token.Name))
+                {
+                    names.Add(token.Name!);
+                }
+            }
+        }
+
+        return names
+            .Where(n => n.IndexOf("token", StringComparison.OrdinalIgnoreCase) >= 0
+                        || n.IndexOf("secret", StringComparison.OrdinalIgnoreCase) >= 0)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(n => n, StringComparer.Ordinal)
+            .ToList();
+    }
+
+    /// <summary>
+    /// 契约守卫 G9（P0-3）：<c>cancel_auth</c> 的清理范围必须收敛到 SuiteId 命中集，
+    /// 不得再次引入「未命中即回退全部应用」的越权删除（行为用例见
+    /// <c>WechatCallbackAuthorizationDispatchTests</c>）。
+    /// </summary>
+    [Fact]
+    public void CancelAuthCleanup_ShouldBeScopedToMatchedAppKeys()
+    {
+        var handlerPath = Path.Combine(GetSolutionRoot(),
+            "Mud.Wechat.Work.Callback", "WechatCallbackHandler.cs");
+        File.Exists(handlerPath).Should().BeTrue($"未找到回调处理器源码：{handlerPath}");
+
+        var source = File.ReadAllText(handlerPath);
+
+        source.Should().NotContain("ResolveAppKeys(",
+            "G9：cancel_auth/change_auth 不得再经「未命中即回退全部应用」的 ResolveAppKeys 兜底");
+        source.Should().Contain("已跳过授权清理以避免误删其它套件授权",
+            "G9：未命中归属应用时必须走「只告警不删库」分支");
+        source.Should().Contain("MatchAppKeysBySuiteId",
+            "G9：清理范围必须恒为 SuiteId 命中集");
+    }
+
+    /// <summary>
+    /// 契约守卫 G8-A（P0-1）：<c>IAppContextHolder</c> 必须与 <c>IWechatAppContextSwitcher</c> 同实例，
+    /// 否则声明式（<c>[Token]</c>）客户端读到的环境上下文恒为 null（多套件静默回退默认应用令牌）。
+    /// </summary>
+    [Fact]
+    public void AppContextHolder_ShouldBeSameInstanceAsSwitcher_InRegistrationSource()
+    {
+        var extensionsPath = Path.Combine(GetSolutionRoot(),
+            "Mud.Wechat.Work.Abstractions", "Extensions", "WechatWorkMultiAppExtensions.cs");
+        File.Exists(extensionsPath).Should().BeTrue();
+
+        var source = File.ReadAllText(extensionsPath);
+
+        var switcherIndex = source.IndexOf("TryAddSingleton<IWechatAppContextSwitcher", StringComparison.Ordinal);
+        var loopIndex = source.IndexOf("services.AddMudHttpClient(", StringComparison.Ordinal);
+
+        switcherIndex.Should().BeGreaterThan(0, "必须注册 IWechatAppContextSwitcher");
+        loopIndex.Should().BeGreaterThan(0);
+        switcherIndex.Should().BeLessThan(loopIndex,
+            "G8-A：切换器必须在 AddMudHttpClient（其内部 TryAdd IAppContextHolder）之前注册，否则 TryAdd 失效");
+
+        source.Should().Contain("TryAddSingleton<IAppContextHolder>(sp => sp.GetRequiredService<IWechatAppContextSwitcher>())",
+            "G8-A：IAppContextHolder 必须委托到同一个切换器实例");
+    }
 }

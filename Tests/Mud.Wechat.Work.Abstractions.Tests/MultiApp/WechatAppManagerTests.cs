@@ -6,6 +6,7 @@
 // -----------------------------------------------------------------------
 
 using Microsoft.Extensions.DependencyInjection;
+using Mud.HttpUtils;
 using Mud.Wechat.Work.Abstractions.Authentication;
 using Mud.Wechat.Work.Abstractions.Authentication.MultiApp;
 using Mud.Wechat.Work.Abstractions.Authentication.TokenManager;
@@ -194,6 +195,189 @@ public class WechatAppManagerTests : IDisposable
         internalContext.GetTokenManager(WechatTokenTypes.AccessToken)
             .Should().NotBeSameAs(suiteContext.GetTokenManager(WechatTokenTypes.AccessToken),
                 "多应用（自建 vs 第三方）令牌管理器互不串扰");
+    }
+
+    // ---------------------------------------------------------------- S-13：GetTokenManager<T> 类型映射
+
+    [Fact]
+    public void GetTokenManagerOfT_ShouldReturnRoutedManager()
+    {
+        using var manager = CreateManager(SuiteConfig("suite-app"));
+        var context = manager.GetApp("suite-app");
+
+        context.GetTokenManager<IWechatCorpTokenManager>().Should().BeSameAs(context.CorpTokenManager);
+        context.GetTokenManager<IWechatSuiteTokenManager>().Should().BeSameAs(context.SuiteTokenManager);
+        context.GetTokenManager<IWechatProviderTokenManager>().Should().BeSameAs(context.ProviderTokenManager);
+
+        // 未装配套件的类型：明确抛异常且消息含类型名（P1-10：原实现按 typeof(T).Name 查键，恒抛）。
+        var act = () => context.GetTokenManager<IWechatInternalAppTokenManager>();
+        act.Should().Throw<InvalidOperationException>()
+            .WithMessage($"*{nameof(IWechatInternalAppTokenManager)}*");
+    }
+
+    // ---------------------------------------------------------------- S-09：非物化查询
+
+    [Fact]
+    public void ConfiguredConfigs_ShouldNotMaterializeContexts()
+    {
+        using var manager = CreateManager(InternalConfig("a"), InternalConfig("b"));
+
+        manager.ConfiguredConfigs.Select(c => c.AppKey).Should().Equal(new[] { "a", "b" });
+        manager.TryGetConfig("b", out var config).Should().BeTrue();
+        config!.AppKey.Should().Be("b");
+        manager.TryGetConfig("missing", out var missing).Should().BeFalse();
+        missing.Should().BeNull();
+
+        manager.GetAllApps().Should().BeEmpty("读取配置不得物化任何应用上下文（P1-6）");
+    }
+
+    // ---------------------------------------------------------------- S-11：唯一 IsDefault
+
+    [Fact]
+    public void AddApp_ShouldKeepSingleIsDefault()
+    {
+        using var manager = CreateManager(InternalConfig("first"));
+
+        manager.AddApp(InternalConfig("second", isDefault: true));
+        manager.AddApp(InternalConfig("third", isDefault: true));
+
+        manager.DefaultAppKey.Should().Be("third");
+        manager.ConfiguredConfigs.Count(c => c.IsDefault).Should().Be(1,
+            "P1-8：维持「唯一 IsDefault」不变量（否则 Options 校验必然失败）");
+        manager.ConfiguredConfigs.Single(c => c.IsDefault).AppKey.Should().Be("third");
+    }
+
+    // ---------------------------------------------------------------- S-06：SetDefaultApp 原子化
+
+    [Fact]
+    public void SetDefaultApp_ShouldNotPointToRemovedApp_UnderConcurrency()
+    {
+        using var manager = CreateManager(InternalConfig("a", isDefault: true), InternalConfig("b"));
+
+        for (var i = 0; i < 200; i++)
+        {
+            var barrier = new Barrier(2);
+
+            var setter = Task.Run(() =>
+            {
+                barrier.SignalAndWait();
+                try
+                {
+                    manager.SetDefaultApp("b");
+                }
+                catch (InvalidOperationException)
+                {
+                    // 应用已被并发移除：允许抛（默认键不会指向已移除应用）。
+                }
+            });
+
+            var remover = Task.Run(() =>
+            {
+                barrier.SignalAndWait();
+                if (i % 2 == 0)
+                {
+                    manager.RemoveApp("b");
+                }
+            });
+
+            Task.WaitAll(setter, remover);
+
+            if (manager.DefaultAppKey is { Length: > 0 } key)
+            {
+                manager.HasApp(key).Should().BeTrue(
+                    "默认应用键必须始终指向仍存在的应用（P1-2：check-then-act 已收敛到注册表锁内）");
+            }
+
+            if (!manager.HasApp("b"))
+            {
+                manager.AddApp(InternalConfig("b"));
+            }
+        }
+    }
+
+    // ---------------------------------------------------------------- S-10：契约语义（不继承 DefaultAppManager）
+
+    [Fact]
+    public void AppManager_ShouldRaiseConfigurationChanged_OnAddAndRemove()
+    {
+        using var manager = CreateManager(InternalConfig("a"));
+
+        var events = new List<(string AppKey, AppConfigurationChangeType Type)>();
+        manager.ConfigurationChanged += (_, e) => events.Add((e.AppKey, e.ChangeType));
+
+        manager.AddApp(InternalConfig("b"));
+        manager.RemoveApp("b");
+
+        events.Should().Equal(
+            new[] { ("b", AppConfigurationChangeType.Added), ("b", AppConfigurationChangeType.Removed) });
+
+        // 订阅者异常被隔离：不得影响注册表状态机。
+        manager.ConfigurationChanged += (_, _) => throw new InvalidOperationException("subscriber boom");
+        var act = () => manager.AddApp(InternalConfig("c"));
+        act.Should().NotThrow();
+        manager.HasApp("c").Should().BeTrue();
+    }
+
+    [Fact]
+    public void RegisterApp_ShouldThrowNotSupported()
+    {
+        using var manager = CreateManager(InternalConfig("a"));
+
+        var context = manager.GetApp("a");
+
+        var register = () => manager.RegisterApp("x", context);
+        register.Should().Throw<NotSupportedException>().WithMessage("*AddApp*");
+
+        var registerAsync = () => { _ = manager.RegisterAppAsync("x", context); };
+        registerAsync.Should().Throw<NotSupportedException>();
+
+        var update = () => manager.UpdateApp("a", context);
+        update.Should().Throw<NotSupportedException>();
+
+        var switcherFactory = () => manager.RegisterSwitcherFactory<IAppContextSwitcher>(_ => null!);
+        switcherFactory.Should().Throw<NotSupportedException>();
+    }
+
+    [Fact]
+    public void Dispose_ShouldRejectFurtherMutations()
+    {
+        var manager = CreateManager(InternalConfig("a"));
+        manager.Dispose();
+
+        var act = () => manager.AddApp(InternalConfig("b"));
+        act.Should().Throw<ObjectDisposedException>();
+    }
+
+    // ---------------------------------------------------------------- S-12：按应用清库
+
+    [Fact]
+    public async Task PurgeAppTokensAsync_ShouldRemoveOnlyTargetAppKeys()
+    {
+        using var manager = CreateManager(InternalConfig("a"), InternalConfig("b"));
+        var store = _provider!.GetRequiredService<IWechatTokenStore>();
+
+        await store.SetAccessTokenAsync("Wechat.AccessToken:a:default", "token-a", 7200);
+        await store.SetAccessTokenAsync("Wechat.AccessToken:b:default", "token-b", 7200);
+        await store.SetAccessTokenAsync("Wechat.SuiteAccessToken:b:default", "suite-b", 7200);
+
+        var removed = await manager.PurgeAppTokensAsync("b");
+
+        removed.Should().Be(2, "只清理目标应用的两段式键");
+        (await store.GetTokenTypesAsync()).Should().Equal(new[] { "Wechat.AccessToken:a:default" },
+            "其它应用的键不得被误删（P1-9 风险：段解析错误）");
+    }
+
+    [Fact]
+    public async Task InvalidateTokenAsync_ShouldNotMaterialize_WhenContextNotCreated()
+    {
+        using var manager = CreateManager(InternalConfig("a"));
+        var store = _provider!.GetRequiredService<IWechatTokenStore>();
+        await store.SetAccessTokenAsync("Wechat.AccessToken:a:default", "token-a", 7200);
+
+        await manager.InvalidateTokenAsync("a", WechatTokenTypes.AccessToken);
+
+        manager.GetAllApps().Should().BeEmpty("未实例化的应用上下文不得被失效动作物化（P1-6）");
+        (await store.GetTokenTypesAsync()).Should().BeEmpty("持久层槽位应被清理");
     }
 
     public void Dispose()

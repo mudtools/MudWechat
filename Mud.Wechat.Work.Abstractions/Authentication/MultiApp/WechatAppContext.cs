@@ -134,14 +134,47 @@ public class WechatAppContext : IWechatAppContext
     }
 
     /// <inheritdoc />
+    /// <remarks>
+    /// <b>P1-10</b>：按<b>类型</b>映射（而非 <c>typeof(T).Name</c>——后者形如 <c>IWechatCorpTokenManager</c>，
+    /// 与 <see cref="WechatTokenTypes"/> 的键（<c>Wechat.*</c>）永不相等，原实现必然抛异常）。
+    /// </remarks>
     public T GetTokenManager<T>() where T : class, ITokenManager
-        => (this as IMudAppContext).GetTokenManager(typeof(T).Name) as T
-           ?? throw new InvalidOperationException(
-               $"令牌管理器 {typeof(T).Name} 未注册或类型不匹配（AppKey: {AppKey}）。");
+    {
+        ITokenManager? manager = null;
+        var requested = typeof(T);
+
+        if (requested == typeof(IWechatInternalAppTokenManager))
+        {
+            manager = InternalAppTokenManager;
+        }
+        else if (requested == typeof(IWechatCorpTokenManager))
+        {
+            manager = CorpTokenManager;
+        }
+        else if (requested == typeof(IWechatProviderTokenManager))
+        {
+            manager = ProviderTokenManager;
+        }
+        else if (requested == typeof(IWechatSuiteTokenManager))
+        {
+            manager = SuiteTokenManager;
+        }
+
+        return manager as T
+               ?? throw new InvalidOperationException(
+                   $"令牌管理器 {typeof(T).Name} 未注册或类型不匹配（AppKey: {AppKey}，AppType: {AppType}）。");
+    }
 
     /// <inheritdoc />
     public T? GetService<T>() where T : class
     {
+        // P2-8：已释放的上下文不得再向宿主 scope 索取服务（scope 已被 Dispose，取到的可能是已处置实例）。
+        if (Volatile.Read(ref _disposed) != 0)
+        {
+            throw new ObjectDisposedException(nameof(WechatAppContext),
+                $"应用 {AppKey} 的上下文已释放，不能再解析服务。");
+        }
+
         switch (typeof(T))
         {
             case var t when t == typeof(IWechatAppContext):

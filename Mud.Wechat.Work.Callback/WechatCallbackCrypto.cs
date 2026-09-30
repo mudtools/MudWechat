@@ -68,6 +68,20 @@ public static class WechatCallbackCrypto
     /// <param name="encryptedBase64">Base64 编码的密文（XML 报文 Encrypt 节点内容）。</param>
     /// <exception cref="InvalidOperationException">密钥非法或密文解密失败时抛出。</exception>
     public static string Decrypt(string encodingAESKey, string encryptedBase64)
+        => Decrypt(encodingAESKey, encryptedBase64, out _);
+
+    /// <summary>
+    /// 解密回调密文（AES-256-CBC，PKCS7），并输出明文尾部的接收方 ID（<c>receiveid</c>）。
+    /// </summary>
+    /// <param name="encodingAESKey">43 位 EncodingAESKey。</param>
+    /// <param name="encryptedBase64">Base64 编码的密文（XML 报文 Encrypt 节点内容）。</param>
+    /// <param name="receiveId">
+    /// 明文尾部的接收方 ID：企业自建应用回调为企业 <c>CorpId</c>，第三方/服务商套件回调为 <c>SuiteId</c>。
+    /// 报文未附带时为 <see cref="string.Empty"/>。
+    /// </param>
+    /// <returns>去掉随机前缀、长度头与接收方 ID 后的消息明文。</returns>
+    /// <exception cref="InvalidOperationException">密钥非法或密文解密失败时抛出。</exception>
+    public static string Decrypt(string encodingAESKey, string encryptedBase64, out string receiveId)
     {
         if (string.IsNullOrWhiteSpace(encodingAESKey) || encodingAESKey.Length != 43)
         {
@@ -105,6 +119,12 @@ public static class WechatCallbackCrypto
         {
             throw new InvalidOperationException("回调密文解密失败：消息长度头非法。");
         }
+
+        // P2-5：明文尾部为接收方 ID（receiveid），供接收器校验（原实现直接丢弃）。
+        var receiveIdLength = plain.Length - 20 - msgLen;
+        receiveId = receiveIdLength > 0
+            ? Encoding.UTF8.GetString(plain, 20 + msgLen, receiveIdLength)
+            : string.Empty;
 
         return Encoding.UTF8.GetString(plain, 20, msgLen);
     }

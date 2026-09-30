@@ -104,12 +104,29 @@ public static class WechatWorkMultiAppExtensions
                 $"检测到重复的 AppKey '{duplicate.Key}'。每个应用的 AppKey 必须唯一。");
         }
 
+        // P0-1（G8-A）：切换器必须与框架上下文持有器共用同一 AsyncLocal 状态。
+        // 顺序敏感：下方 AddMudHttpClient 内部会以 TryAddSingleton 注册
+        // IAppContextHolder → 组件 AsyncLocalAppContextSwitcher（A1 修复：任何客户端注册路径都补齐持有器）。
+        // 若在此之后注册，TryAdd 失效 ⇒ 框架/生成代码读到的 IAppContextHolder.Current 恒为 null，
+        // 多套件下声明式（[Token]）客户端将静默回退默认应用令牌。故必须先注册（先注册者胜）。
+        services.TryAddSingleton<IWechatAppContextSwitcher, WechatAppContextSwitcher>();
+        services.TryAddSingleton<IAppContextSwitcher>(sp => sp.GetRequiredService<IWechatAppContextSwitcher>());
+        services.TryAddSingleton<IAppContextHolder>(sp => sp.GetRequiredService<IWechatAppContextSwitcher>());
+
         // per-app 命名 HttpClient：BaseAddress / Timeout / SSRF 白名单校验；
         // 默认应用与 IsDefault 严格对应（setAsDefault 决定 IEnhancedHttpClient 默认注册）。
         foreach (var config in configs)
         {
             var clientName = WechatHttpClientFactory.BuildClientName(config.AppKey);
             var baseUrl = string.IsNullOrWhiteSpace(config.BaseUrl) ? Consts.DefaultBaseUrl : config.BaseUrl;
+
+            // P2-9：显式允许的自定义主机登记到进程级表，供 errcode 判定器的同步预过滤放行
+            // （否则 AllowCustomBaseUrl=true 的私有化/网关部署会静默失去令牌恢复能力）。
+            if (config.AllowCustomBaseUrl && Uri.TryCreate(baseUrl, UriKind.Absolute, out var customUri))
+            {
+                WechatCustomBaseUrlRegistry.Register(customUri.Host);
+            }
+
             services.AddMudHttpClient(
                 clientName,
                 client =>
@@ -169,14 +186,10 @@ public static class WechatWorkMultiAppExtensions
         services.AddSingleton<IValidateOptions<WechatAppConfig>, WechatAppConfigValidator>();
         services.AddSingleton<IValidateOptions<List<WechatAppConfig>>, WechatAppConfigValidator>();
 
-        // 令牌提供器（框架 DefaultTokenProvider：BindTenantGuard + GetTokenManager 路由）+ 应用上下文持有器。
+        // 令牌提供器（框架 DefaultTokenProvider：BindTenantGuard + GetTokenManager 路由）。
+        // 注意：上下文切换器/持有器已在方法开头（AddMudHttpClient 之前）注册，此处不得重复注册——
+        // 重复注册会因 TryAdd 语义失效而再次出现「两个独立 AsyncLocal」的 P0-1 缺陷。
         services.AddTokenProvider();
-        services.TryAddSingleton<IAppContextHolder, AsyncLocalAppContextSwitcher>();
-
-        // R9：补齐上下文切换器（现有仅注册了 IAppContextHolder，IWechatAppContextSwitcher 悬空）。
-        services.TryAddSingleton<IWechatAppContextSwitcher, WechatAppContextSwitcher>();
-        // 同一实例同时满足框架 IAppContextSwitcher 契约（框架/生成代码按该接口解析）。
-        services.TryAddSingleton<IAppContextSwitcher>(sp => sp.GetRequiredService<IWechatAppContextSwitcher>());
 
 #if NET6_0_OR_GREATER
         // 令牌管理器登记（HostedService）：先注册管理器，再启动后台刷新服务（IHostedService 按注册顺序启动）。

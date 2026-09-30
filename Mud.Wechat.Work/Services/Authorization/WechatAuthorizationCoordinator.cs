@@ -108,6 +108,11 @@ internal sealed class WechatAuthorizationCoordinator : IWechatAuthorizationCoord
     /// <summary>
     /// 解析回调事件归属的应用键（精确匹配 <see cref="WechatAppConfig.SuiteId"/>，无兜底）。
     /// </summary>
+    /// <remarks>
+    /// <b>P1-6 非物化</b>：只读取配置快照（<see cref="IWechatAppManager.ConfiguredConfigs"/>），
+    /// 不经 <c>TryGetApp</c>——后者会为每个已配置应用构造命名 HttpClient / DI scope / 令牌管理器 Timer，
+    /// 使一次回调把全部应用实例化。
+    /// </remarks>
     private IReadOnlyList<string> ResolveAppKeys(string? suiteId, string eventName)
     {
         var matched = new List<string>();
@@ -117,12 +122,11 @@ internal sealed class WechatAuthorizationCoordinator : IWechatAuthorizationCoord
             return matched;
         }
 
-        foreach (var appKey in _appManager.ConfiguredAppKeys)
+        foreach (var config in _appManager.ConfiguredConfigs)
         {
-            if (_appManager.TryGetApp(appKey, out var context)
-                && string.Equals(context!.Config.SuiteId, suiteId, StringComparison.Ordinal))
+            if (config != null && string.Equals(config.SuiteId, suiteId, StringComparison.Ordinal))
             {
-                matched.Add(appKey);
+                matched.Add(config.AppKey);
             }
         }
 

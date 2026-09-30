@@ -26,6 +26,33 @@ public interface IWechatAppContextSwitcher : IAppContextSwitcher
     /// <c>IWechatCorpAuthStore</c> 持久化仓储提供）。</param>
     /// <remarks>
     /// 作用域为当前异步执行流（AsyncLocal），跨异步边界自然隔离，多企业令牌互不串扰。
+    /// <para>
+    /// <b>P2-1 配对要求</b>：长生命周期执行上下文（如后台任务、常驻队列消费者）在完成代操作后必须配对
+    /// <see cref="ClearCorp"/> 或改用 <c>WechatCorpContext.BeginCorpScope(...)</c>（<c>using</c> 语义），
+    /// 否则环境企业上下文会残留到后续不相关的调用（造成 scope 误用）。
+    /// </para>
     /// </remarks>
     void SetCorp(string authCorpId, string? permanentCode = null);
+
+    /// <summary>
+    /// 清除当前异步流的代开发企业上下文（<see cref="SetCorp"/> 的对称重置入口，P2-1）。
+    /// </summary>
+    /// <remarks>
+    /// 清空属性（authCorpId / permanentCode / 归属 AppKey），后续企业级令牌必须重新经
+    /// <see cref="SetCorp"/> 或显式 <c>GetTokenAsync(new[]{ authCorpId })</c> 指定 scope。
+    /// </remarks>
+    void ClearCorp();
+
+    /// <summary>
+    /// 异步获取当前应用上下文指定类型的访问令牌。
+    /// </summary>
+    /// <param name="tokenType">令牌类型（<see cref="WechatTokenTypes"/> 常量；默认 <see cref="WechatTokenTypes.AccessToken"/>）。</param>
+    /// <param name="cancellationToken">取消令牌。</param>
+    /// <returns>令牌字符串。</returns>
+    /// <exception cref="InvalidOperationException">当前无应用上下文，或该应用未装配对应令牌管理器。</exception>
+    /// <remarks>
+    /// <b>P2-3</b>：多套件场景下取套件/服务商令牌必须能指定类型（原无参成员硬编码 <c>WechatTokenTypes.AccessToken</c>
+    /// 且丢弃取消令牌）。
+    /// </remarks>
+    Task<string> GetTokenAsync(string tokenType, CancellationToken cancellationToken = default);
 }

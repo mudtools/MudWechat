@@ -60,6 +60,41 @@ public class WechatServiceCollectionExtensionsTests
             .Should().NotBeNull("切换器同时满足框架 IAppContextSwitcher 契约");
     }
 
+    /// <summary>
+    /// P0-1（G8-A）：<c>IAppContextHolder</c> 与 <c>IWechatAppContextSwitcher</c> 必须是**同一实例**，
+    /// 否则生成的声明式客户端读到的 <c>IAppContextHolder.Current</c> 恒为 null（多套件静默回退默认应用令牌）。
+    /// </summary>
+    [Fact]
+    public void AppContextHolder_ShouldBeSameInstanceAsSwitcher()
+    {
+        using var provider = BuildProvider();
+
+        var holder = provider.GetRequiredService<Mud.HttpUtils.IAppContextHolder>();
+        var switcher = provider.GetRequiredService<Abstractions.Authentication.IWechatAppContextSwitcher>();
+        var frameworkSwitcher = provider.GetRequiredService<Mud.HttpUtils.IAppContextSwitcher>();
+
+        ReferenceEquals(holder, switcher).Should().BeTrue(
+            "IAppContextHolder 与 IWechatAppContextSwitcher 必须共用同一 AsyncLocal 状态");
+        ReferenceEquals(frameworkSwitcher, switcher).Should().BeTrue(
+            "框架 IAppContextSwitcher 契约也必须落到同一实例");
+    }
+
+    /// <summary>P0-1：ValidateScopes 变体下同样成立（Singleton 不得因 scope 变化而分裂）。</summary>
+    [Fact]
+    public void AppContextHolder_ShouldBeSameInstanceAsSwitcher_WhenValidateScopes()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddWechatApp(new List<WechatAppConfig> { InternalConfig() });
+        services.AddWechatWorkServices(builder => builder.AddAuthenticationApi());
+
+        using var provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true });
+
+        var holder = provider.GetRequiredService<Mud.HttpUtils.IAppContextHolder>();
+        var switcher = provider.GetRequiredService<Abstractions.Authentication.IWechatAppContextSwitcher>();
+        ReferenceEquals(holder, switcher).Should().BeTrue();
+    }
+
     [Fact]
     public void AddWechatWorkServices_ShouldAttachErrcodeDetector_ViaPostConfigure()
     {

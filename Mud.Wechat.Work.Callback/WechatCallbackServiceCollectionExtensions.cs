@@ -53,6 +53,8 @@ public static class WechatCallbackServiceCollectionExtensions
 
     private static IServiceCollection AddWechatCallbackCore(this IServiceCollection services)
     {
+        // P0-2：抗重放去重守卫（进程内默认；多实例部署由宿主 TryAdd 前置注册分布式实现）。
+        services.TryAddSingleton<IWechatCallbackReplayGuard, InMemoryWechatCallbackReplayGuard>();
         services.TryAddSingleton<IWechatCallbackReceiver, WechatCallbackReceiver>();
         services.TryAddSingleton<WechatCallbackHandler>();
         return services;

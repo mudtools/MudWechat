@@ -31,6 +31,18 @@ public class WechatCallbackCryptoTests
     }
 
     [Fact]
+    public void Decrypt_ShouldExposeReceiveId()
+    {
+        var encrypted = EncryptBody("<xml/>");
+
+        var decrypted = WechatCallbackCrypto.Decrypt(AesKey, encrypted, out var receiveId);
+
+        decrypted.Should().Be("<xml/>");
+        receiveId.Should().Be(ReceiveId,
+            "P2-5：明文尾部 receiveid 必须可读（供接收器做明文完整性校验；原实现直接丢弃）");
+    }
+
+    [Fact]
     public void Decrypt_ShouldThrow_WhenKeyInvalid()
     {
         var act = () => WechatCallbackCrypto.Decrypt("short-key", "c2FtcGxl");

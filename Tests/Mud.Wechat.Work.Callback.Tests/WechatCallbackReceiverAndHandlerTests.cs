@@ -5,16 +5,26 @@
 //  不得利用本项目从事危害国家安全、扰乱社会秩序、侵犯他人合法权益等法律法规禁止的活动！任何基于本项目开发而产生的一切法律纠纷和责任，我们不承担任何责任！
 // -----------------------------------------------------------------------
 
+using Mud.Wechat.Work.Abstractions.Configuration;
+using Mud.Wechat.Work.Abstractions.Enums;
+
 namespace Mud.Wechat.Work.Callback.Tests;
 
 /// <summary>
-/// 回调接收与事件分发测试：suite_ticket 入库、change_auth/cancel_auth 清理与级联失效（详细设计 §18.4）。
+/// 回调接收与事件分发测试：抗重放（时效窗口 + 一次性标记）、suite_ticket 入库、
+/// cancel_auth/change_auth 的 SuiteId 命中集清理与级联失效（详细设计 §18.4；P0-2 / P0-3）。
 /// </summary>
 public class WechatCallbackReceiverAndHandlerTests
 {
     private const string AesKey = "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopq";
     private const string Token = "push-token";
     private const string CorpId = "ww-corp";
+
+    /// <summary>当前时间戳（秒）；回调时间窗为 ±300s，报文必须使用当前时间。</summary>
+    private static string Now() => DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString();
+
+    /// <summary>生成唯一 nonce（P0-2 后同一 nonce 的第二次调用会被判为重放）。</summary>
+    private static string NewNonce() => "nonce-" + Guid.NewGuid().ToString("N");
 
     private static (WechatCallbackReceiver Receiver, Func<string, string, string> EncryptedBody) CreateReceiver()
     {
@@ -29,30 +39,32 @@ public class WechatCallbackReceiverAndHandlerTests
         {
             var plainXml = $"<xml><SuiteId>ww-suite</SuiteId><InfoType>{infoType}</InfoType>{extraXml}</xml>";
             var encrypt = WechatCallbackCrypto.Encrypt(AesKey, plainXml, CorpId);
-            var signature = WechatCallbackCrypto.ComputeSignature(Token, "1409659813", "nonce1", encrypt);
-            var body = $"<xml><ToUserName><![CDATA[{CorpId}]]></ToUserName><Encrypt><![CDATA[{encrypt}]]></Encrypt><AgentID><![CDATA[]]></AgentID></xml>";
-            return body;
+            return $"<xml><ToUserName><![CDATA[{CorpId}]]></ToUserName><Encrypt><![CDATA[{encrypt}]]></Encrypt><AgentID><![CDATA[]]></AgentID></xml>";
         }
 
         return (receiver, EncryptAndWrap);
     }
 
-    private static string QueryFor(string encrypt, string timestamp = "1409659813", string nonce = "nonce1")
+    private static string QueryFor(string encrypt, string timestamp, string nonce)
     {
         var signature = WechatCallbackCrypto.ComputeSignature(Token, timestamp, nonce, encrypt);
         return $"msg_signature={signature}&timestamp={timestamp}&nonce={nonce}";
     }
 
+    private static (string Encrypt, string Body) EncryptTicket(string plainXml)
+    {
+        var encrypt = WechatCallbackCrypto.Encrypt(AesKey, plainXml, CorpId);
+        return (encrypt, $"<xml><Encrypt><![CDATA[{encrypt}]]></Encrypt></xml>");
+    }
+
     [Fact]
     public async Task ReceiveAsync_ShouldParseSuiteTicketEvent()
     {
-        var (receiver, wrap) = CreateReceiver();
-        var encrypt = WechatCallbackCrypto.Encrypt(AesKey,
-            "<xml><SuiteId>ww-suite</SuiteId><InfoType>suite_ticket</InfoType><SuiteTicket>ticket-abc</SuiteTicket></xml>",
-            CorpId);
-        var body = $"<xml><Encrypt><![CDATA[{encrypt}]]></Encrypt></xml>";
+        var (receiver, _) = CreateReceiver();
+        var (encrypt, body) = EncryptTicket(
+            "<xml><SuiteId>ww-suite</SuiteId><InfoType>suite_ticket</InfoType><SuiteTicket>ticket-abc</SuiteTicket></xml>");
 
-        var evt = await receiver.ReceiveAsync(QueryFor(encrypt), body);
+        var evt = await receiver.ReceiveAsync(QueryFor(encrypt, Now(), NewNonce()), body);
 
         evt.IsSuiteTicket.Should().BeTrue();
         evt.SuiteId.Should().Be("ww-suite");
@@ -63,9 +75,8 @@ public class WechatCallbackReceiverAndHandlerTests
     public async Task ReceiveAsync_ShouldThrow_WhenSignatureMismatch()
     {
         var (receiver, _) = CreateReceiver();
-        var encrypt = WechatCallbackCrypto.Encrypt(AesKey, "<xml><InfoType>suite_ticket</InfoType></xml>", CorpId);
-        var body = $"<xml><Encrypt><![CDATA[{encrypt}]]></Encrypt></xml>";
-        var badQuery = "msg_signature=0000000000000000000000000000000000000000&timestamp=1409659813&nonce=nonce1";
+        var (_, body) = EncryptTicket("<xml><InfoType>suite_ticket</InfoType></xml>");
+        var badQuery = $"msg_signature=0000000000000000000000000000000000000000&timestamp={Now()}&nonce={NewNonce()}";
 
         var act = async () => await receiver.ReceiveAsync(badQuery, body);
         await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("*验签失败*");
@@ -75,9 +86,105 @@ public class WechatCallbackReceiverAndHandlerTests
     public async Task ReceiveAsync_ShouldThrow_WhenEncryptMissing()
     {
         var (receiver, _) = CreateReceiver();
-        var act = async () => await receiver.ReceiveAsync("msg_signature=abc&timestamp=1&nonce=n", "<xml><Nothing/></xml>");
+        var act = async () => await receiver.ReceiveAsync(
+            $"msg_signature=abc&timestamp={Now()}&nonce={NewNonce()}", "<xml><Nothing/></xml>");
         await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("*Encrypt*");
     }
+
+    // ---------------------------------------------------------------- P0-2 抗重放
+
+    [Fact]
+    public async Task ReceiveAsync_ShouldReject_WhenTimestampExpired()
+    {
+        var (receiver, _) = CreateReceiver();
+        var (encrypt, body) = EncryptTicket("<xml><InfoType>suite_ticket</InfoType></xml>");
+        var stale = (DateTimeOffset.UtcNow.ToUnixTimeSeconds() - (WechatCallbackReceiver.ReplayWindowSeconds + 1)).ToString();
+
+        var act = async () => await receiver.ReceiveAsync(QueryFor(encrypt, stale, NewNonce()), body);
+        await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("*超出时效窗口*");
+    }
+
+    [Fact]
+    public async Task ReceiveAsync_ShouldPass_WhenTimestampWithinWindow()
+    {
+        var (receiver, _) = CreateReceiver();
+        var (encrypt, body) = EncryptTicket("<xml><InfoType>suite_ticket</InfoType></xml>");
+        var nearBoundary = (DateTimeOffset.UtcNow.ToUnixTimeSeconds() - (WechatCallbackReceiver.ReplayWindowSeconds - 1)).ToString();
+
+        var act = async () => await receiver.ReceiveAsync(QueryFor(encrypt, nearBoundary, NewNonce()), body);
+        await act.Should().NotThrowAsync("±299s 在容差内（边界 -1s 留出执行抖动余量）");
+    }
+
+    [Fact]
+    public async Task ReceiveAsync_ShouldReject_WhenTimestampMissing()
+    {
+        var (receiver, _) = CreateReceiver();
+        var (encrypt, body) = EncryptTicket("<xml><InfoType>suite_ticket</InfoType></xml>");
+        var nonce = NewNonce();
+        var signature = WechatCallbackCrypto.ComputeSignature(Token, string.Empty, nonce, encrypt);
+
+        var act = async () => await receiver.ReceiveAsync($"msg_signature={signature}&nonce={nonce}", body);
+        await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("*timestamp 缺失或非数字*");
+    }
+
+    [Fact]
+    public async Task ReceiveAsync_ShouldReject_WhenNonceMissing()
+    {
+        var (receiver, _) = CreateReceiver();
+        var (encrypt, body) = EncryptTicket("<xml><InfoType>suite_ticket</InfoType></xml>");
+        var timestamp = Now();
+        var signature = WechatCallbackCrypto.ComputeSignature(Token, timestamp, string.Empty, encrypt);
+
+        var act = async () => await receiver.ReceiveAsync($"msg_signature={signature}&timestamp={timestamp}", body);
+        await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("*nonce 缺失*");
+    }
+
+    [Fact]
+    public async Task ReceiveAsync_ShouldReject_WhenNonceReplayed()
+    {
+        var (receiver, _) = CreateReceiver();
+        var (encrypt, body) = EncryptTicket("<xml><InfoType>suite_ticket</InfoType></xml>");
+        var query = QueryFor(encrypt, Now(), NewNonce());
+
+        await receiver.ReceiveAsync(query, body);
+
+        var act = async () => await receiver.ReceiveAsync(query, body);
+        await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("*疑似重放*");
+    }
+
+    [Fact]
+    public async Task ReceiveAsync_ShouldReject_WhenReceiveIdMismatch()
+    {
+        var receiver = new WechatCallbackReceiver(Microsoft.Extensions.Options.Options.Create(new WechatCallbackOptions
+        {
+            PushToken = Token,
+            PushEncodingAESKey = AesKey,
+            // 套件回调场景：接收方 ID 应为 SuiteId；此处填企业 CorpId 模拟配置错误。
+            CorpId = "ww-wrong-receiveid",
+        }));
+
+        var (encrypt, body) = EncryptTicket("<xml><InfoType>suite_ticket</InfoType></xml>");
+
+        var act = async () => await receiver.ReceiveAsync(QueryFor(encrypt, Now(), NewNonce()), body);
+        await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("*receiveid*");
+    }
+
+    [Fact]
+    public async Task ReceiveAsync_ShouldSkipReceiveIdCheck_WhenCorpIdNotConfigured()
+    {
+        var receiver = new WechatCallbackReceiver(Microsoft.Extensions.Options.Options.Create(new WechatCallbackOptions
+        {
+            PushToken = Token,
+            PushEncodingAESKey = AesKey,
+        }));
+
+        var (encrypt, body) = EncryptTicket("<xml><InfoType>suite_ticket</InfoType></xml>");
+
+        var act = async () => await receiver.ReceiveAsync(QueryFor(encrypt, Now(), NewNonce()), body);
+        await act.Should().NotThrowAsync("未配置接收方 ID 时跳过 receiveid 校验（仅一次性告警）");
+    }
+
+    // ---------------------------------------------------------------- 事件分发
 
     [Fact]
     public async Task Handler_ShouldWriteSuiteTicketToStore()
@@ -97,6 +204,36 @@ public class WechatCallbackReceiverAndHandlerTests
     }
 
     [Fact]
+    public async Task Handler_ShouldNotDeleteAnyAuth_OnCancelAuth_WhenSuiteIdMissing()
+    {
+        var corpAuthStore = new InMemoryWechatCorpAuthStore();
+        await corpAuthStore.SetAsync(new Abstractions.Authentication.Models.WechatCorpAuthorization
+        {
+            AppKey = "suite-app",
+            AuthCorpId = "corp-X",
+            PermanentCode = "pc-X",
+        });
+
+        var appManager = CreateAppManager("suite-app", "ww-suite");
+        var handler = new WechatCallbackHandler(
+            new InMemoryWechatSuiteTicketStore(), corpAuthStore,
+            NullLogger<WechatCallbackHandler>.Instance, appManager.Object);
+
+        await handler.HandleAsync(new WechatCallbackEvent
+        {
+            InfoType = "cancel_auth",
+            AuthCorpId = "corp-X",
+        });
+
+        (await corpAuthStore.GetAsync("suite-app", "corp-X")).Should().NotBeNull(
+            "P0-3：SuiteId 缺失时无法定位归属应用，宁可不清理也不越权删除");
+        appManager.Verify(
+            m => m.InvalidateTokenAsync(It.IsAny<string>(), It.IsAny<string>(),
+                It.IsAny<string[]?>(), It.IsAny<CancellationToken>()),
+            Times.Never, "未命中时不得级联失效任何应用的企业令牌");
+    }
+
+    [Fact]
     public async Task Handler_ShouldRemoveCorpAuth_AndInvalidateCorpToken_OnCancelAuth()
     {
         var corpAuthStore = new InMemoryWechatCorpAuthStore();
@@ -107,24 +244,25 @@ public class WechatCallbackReceiverAndHandlerTests
             PermanentCode = "pc-X",
         });
 
-        var appManagerMock = new Mock<IWechatAppManager>();
-        appManagerMock.Setup(m => m.ConfiguredAppKeys).Returns(new[] { "suite-app" });
-        appManagerMock
+        var appManager = CreateAppManager("suite-app", "ww-suite");
+        appManager
             .Setup(m => m.InvalidateTokenAsync("suite-app", Abstractions.WechatTokenTypes.AccessToken,
                 It.Is<string[]>(s => s[0] == "corp-X"), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
         var handler = new WechatCallbackHandler(
-            new InMemoryWechatSuiteTicketStore(), corpAuthStore, NullLogger<WechatCallbackHandler>.Instance, appManagerMock.Object);
+            new InMemoryWechatSuiteTicketStore(), corpAuthStore,
+            NullLogger<WechatCallbackHandler>.Instance, appManager.Object);
 
         await handler.HandleAsync(new WechatCallbackEvent
         {
             InfoType = "cancel_auth",
+            SuiteId = "ww-suite",
             AuthCorpId = "corp-X",
         });
 
         (await corpAuthStore.GetAsync("suite-app", "corp-X")).Should().BeNull("取消授权后应清理永久授权码");
-        appManagerMock.Verify(
+        appManager.Verify(
             m => m.InvalidateTokenAsync("suite-app", Abstractions.WechatTokenTypes.AccessToken,
                 It.Is<string[]>(s => s[0] == "corp-X"), It.IsAny<CancellationToken>()),
             Times.Once, "取消授权应级联失效该企业的授权企业令牌");
@@ -133,20 +271,20 @@ public class WechatCallbackReceiverAndHandlerTests
     [Fact]
     public async Task Handler_ShouldInvalidateCorpToken_OnChangeAuth()
     {
-        var appManagerMock = new Mock<IWechatAppManager>();
-        appManagerMock.Setup(m => m.ConfiguredAppKeys).Returns(new[] { "suite-app" });
+        var appManager = CreateAppManager("suite-app", "ww-suite");
 
         var handler = new WechatCallbackHandler(
             new InMemoryWechatSuiteTicketStore(), new InMemoryWechatCorpAuthStore(),
-            NullLogger<WechatCallbackHandler>.Instance, appManagerMock.Object);
+            NullLogger<WechatCallbackHandler>.Instance, appManager.Object);
 
         await handler.HandleAsync(new WechatCallbackEvent
         {
             InfoType = "change_auth",
+            SuiteId = "ww-suite",
             AuthCorpId = "corp-Y",
         });
 
-        appManagerMock.Verify(
+        appManager.Verify(
             m => m.InvalidateTokenAsync("suite-app", Abstractions.WechatTokenTypes.AccessToken,
                 It.Is<string[]>(s => s[0] == "corp-Y"), It.IsAny<CancellationToken>()),
             Times.Once);
@@ -177,5 +315,30 @@ public class WechatCallbackReceiverAndHandlerTests
         });
 
         (await store.GetAsync("ww-suite")).Should().BeNull("SuiteTicket 为空的事件不应覆盖仓储");
+    }
+
+    /// <summary>
+    /// 构造仅暴露配置快照的 <see cref="IWechatAppManager"/>（P1-6 后处理器只读
+    /// <c>ConfiguredConfigs</c>，不得依赖 <c>TryGetApp</c> 物化上下文）。
+    /// </summary>
+    private static Mock<IWechatAppManager> CreateAppManager(string appKey, string suiteId)
+    {
+        var config = new WechatAppConfig
+        {
+            AppKey = appKey,
+            AppType = WechatAppType.ThirdParty,
+            CorpId = "ww-provider",
+            ProviderSecret = "provider-secret",
+            SuiteId = suiteId,
+            SuiteSecret = "suite-secret",
+        };
+
+        var appManager = new Mock<IWechatAppManager>();
+        appManager.Setup(m => m.ConfiguredAppKeys).Returns(new[] { appKey });
+        appManager.Setup(m => m.ConfiguredConfigs).Returns(new[] { config });
+
+        WechatAppConfig? outConfig = config;
+        appManager.Setup(m => m.TryGetConfig(appKey, out outConfig)).Returns(true);
+        return appManager;
     }
 }

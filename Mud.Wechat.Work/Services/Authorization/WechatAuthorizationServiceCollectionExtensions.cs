@@ -26,14 +26,16 @@ public static class WechatAuthorizationServiceCollectionExtensions
     {
         if (services == null) throw new ArgumentNullException(nameof(services));
 
+        // P2-10：校验器必须在失败时给出**真实原因**（原实现吞掉 Validate 的异常消息，只留一句泛化文案，
+        // 排障时无法定位到具体字段）；并接入 ValidateOnStart（net6.0+）使配置错误在启动期即失败，
+        // 而不是等到第一次解析 WechatAuthorizationOptions 时才暴露。
+        // 单一校验来源：IValidateOptions 实现（不再叠加 lambda 版 Validate，避免重复校验与文案分叉）。
+        services.TryAddSingleton<IValidateOptions<WechatAuthorizationOptions>, WechatAuthorizationOptionsValidator>();
         services.AddOptions<WechatAuthorizationOptions>()
-            .Validate(
-                options =>
-                {
-                    options.Validate();
-                    return true;
-                },
-                "WechatAuthorizationOptions 配置无效。");
+#if NET6_0_OR_GREATER
+            .ValidateOnStart()
+#endif
+            ;
 
         if (configuration != null)
         {

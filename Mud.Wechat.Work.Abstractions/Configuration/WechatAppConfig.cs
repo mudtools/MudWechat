@@ -112,6 +112,9 @@ public class WechatAppConfig
             throw new InvalidOperationException("AppKey 不能为空。");
         }
 
+        // P1-7：键形状校验（单点收敛，三入口 + AddApp 全部经此）。
+        WechatAppKeyValidator.Validate(AppKey);
+
         if (TimeoutSeconds < 1 || TimeoutSeconds > 300)
         {
             throw new InvalidOperationException($"应用 {AppKey} 的 TimeoutSeconds 必须在 1-300 秒之间。");

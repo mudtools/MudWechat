@@ -37,6 +37,24 @@ public interface IWechatAppManager : IAppManager<IWechatAppContext>
     /// </summary>
     IReadOnlyCollection<string> ConfiguredAppKeys { get; }
 
+    /// <summary>
+    /// 已配置应用的配置快照（不触发懒加载实例化）。
+    /// </summary>
+    /// <remarks>
+    /// <b>P1-6 语义</b>：<see cref="IAppManager{TAppContext}.TryGetApp"/> 会<b>物化</b>应用上下文
+    /// （构造命名 HttpClient / DI scope / 令牌管理器 Timer）；仅需读取配置（如回调事件的
+    /// <c>SuiteId → appKey</c> 匹配）时必须使用本属性，避免一次回调实例化全部已配置应用。
+    /// </remarks>
+    IReadOnlyList<WechatAppConfig> ConfiguredConfigs { get; }
+
+    /// <summary>
+    /// 读取指定应用的配置（不触发懒加载实例化）。
+    /// </summary>
+    /// <param name="appKey">应用键。</param>
+    /// <param name="config">命中的配置；未命中时为 <c>null</c>。</param>
+    /// <returns>命中返回 <c>true</c>。</returns>
+    bool TryGetConfig(string appKey, out WechatAppConfig? config);
+
     /// <summary>默认应用的 access_token 令牌管理器（自建应用为企业令牌；第三方/服务商为企业级令牌）。</summary>
     ITokenManager DefaultAccessTokenManager { get; }
 
@@ -56,5 +74,22 @@ public interface IWechatAppManager : IAppManager<IWechatAppContext>
     /// <param name="tokenType">令牌类型（<see cref="WechatTokenTypes"/> 常量）。</param>
     /// <param name="scopes">企业级令牌的 scope（authCorpId；可为 null 表示全部由环境上下文决定）。</param>
     /// <param name="cancellationToken">取消令牌。</param>
+    /// <remarks>
+    /// <b>P1-6</b>：应用上下文尚未实例化时只清理持久层（不物化 APP 上下文——避免为只读失效动作构造
+    /// HttpClient / DI scope / 令牌管理器 Timer）。
+    /// </remarks>
     Task InvalidateTokenAsync(string appKey, string tokenType, string[]? scopes = null, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 清理指定应用在持久层中的<b>全部</b>令牌槽位（应用下线 / 凭据轮换后清库）。
+    /// </summary>
+    /// <param name="appKey">应用键。</param>
+    /// <param name="cancellationToken">取消令牌。</param>
+    /// <returns>实际删除的键数量。</returns>
+    /// <remarks>
+    /// <b>P1-9</b>：凭据轮换（改了 AgentSecret / SuiteSecret）后旧令牌会被持久层读穿透恢复 ⇒ 持续 401，
+    /// 故需要"按应用清库"能力。<see cref="IAppManager{TAppContext}.RemoveApp"/> 已自动入队本操作（异步执行）。
+    /// <para>多实例下仅清理持久层；各实例的进程内镜像为「最终一致」（由 TTL/阈值自然过期）。</para>
+    /// </remarks>
+    Task<int> PurgeAppTokensAsync(string appKey, CancellationToken cancellationToken = default);
 }

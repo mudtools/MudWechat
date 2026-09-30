@@ -38,8 +38,10 @@ namespace Mud.Wechat.Work.Abstractions.Authentication;
 /// <b>不触发套件令牌往返</b>。</item>
 /// </list>
 /// <para>
-/// 刷新所需的 permanent_code 优先取 <see cref="WechatCorpContext.PermanentCode"/>（经归属校验），
-/// 缺省时经 <see cref="IWechatCorpAuthStore"/> 持久化仓储提供。
+/// 刷新所需的 permanent_code 优先取 <see cref="WechatCorpContext.PermanentCode"/>，
+/// 但须同时通过<b>两级校验</b>：① 上下文 <see cref="WechatCorpContext.AppKey"/> 归属一致（R9）；
+/// ② 上下文 <see cref="WechatCorpContext.AuthCorpId"/> 与本次 scope 一致（P2-2，防配对错位）。
+/// 任一级不满足即回退 <see cref="IWechatCorpAuthStore"/> 持久化仓储（复合键 AppKey + authCorpId）。
 /// </para>
 /// </remarks>
 internal sealed class CorpTokenManager : WechatAppTokenManagerBase, IWechatCorpTokenManager
@@ -80,22 +82,31 @@ internal sealed class CorpTokenManager : WechatAppTokenManagerBase, IWechatCorpT
         var authCorpId = scopes is { Length: > 0 } ? scopes[0] : null;
         string? permanentCode = null;
 
-        // R9 归属校验：环境上下文的 AppKey 与本应用不一致时整体忽略上下文（防跨应用串用 permanentCode），
-        // 未声明归属（null/空）时视为可用，保持直接静态调用 SetCorp 的既有语义。
         var contextAppKey = WechatCorpContext.AppKey;
+        var contextAuthCorpId = WechatCorpContext.AuthCorpId;
+
+        // R9 归属校验（两级，防跨套件串号）：
+        // ① 应用归属：环境上下文的 AppKey 与本应用不一致时整体忽略上下文；
+        //    未声明归属（null/空）时视为可用，保持直接静态调用 SetCorp 的既有语义。
         var contextUsable = string.IsNullOrEmpty(contextAppKey)
             || string.Equals(contextAppKey, Options.AppKey, StringComparison.Ordinal);
-        if (contextUsable)
-        {
-            authCorpId ??= WechatCorpContext.AuthCorpId;
-            permanentCode = WechatCorpContext.PermanentCode;
-        }
+
+        authCorpId ??= contextUsable ? contextAuthCorpId : null;
 
         if (string.IsNullOrEmpty(authCorpId))
         {
             throw new InvalidOperationException(
                 "企业级令牌必须以 authCorpId 作为 scope 获取：请先经 IWechatAppContextSwitcher.SetCorp(...) " +
                 "切换代开发企业上下文，或以 GetTokenAsync(new[] { authCorpId }) 显式传入。");
+        }
+
+        // ② 企业同源校验（P2-2）：仅当环境上下文的 corpId 与本次 scope 一致时才采用其 permanentCode。
+        //    否则出现「显式 scope = A + 上下文 corpB 的 permanent_code」的配对错位 → 用 B 的授权码换 A 的令牌。
+        if (contextUsable
+            && !string.IsNullOrEmpty(contextAuthCorpId)
+            && string.Equals(contextAuthCorpId, authCorpId, StringComparison.Ordinal))
+        {
+            permanentCode = WechatCorpContext.PermanentCode;
         }
 
         // permanent_code：环境上下文优先（SetCorp 显式传入），缺省走持久化仓储（复合键：AppKey + authCorpId）。

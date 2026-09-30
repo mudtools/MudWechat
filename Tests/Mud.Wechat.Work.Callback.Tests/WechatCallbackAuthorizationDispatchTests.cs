@@ -25,8 +25,7 @@ public class WechatCallbackAuthorizationDispatchTests
 
     private static (Mock<IWechatAppManager> AppManager, IWechatAppContext Context) CreateAppManager(string? suiteId = SuiteId)
     {
-        var context = new Mock<IWechatAppContext>();
-        context.SetupGet(c => c.Config).Returns(new WechatAppConfig
+        var config = new WechatAppConfig
         {
             AppKey = AppKey,
             AppType = WechatAppType.ThirdParty,
@@ -34,13 +33,15 @@ public class WechatCallbackAuthorizationDispatchTests
             ProviderSecret = "provider-secret",
             SuiteId = suiteId ?? string.Empty,
             SuiteSecret = "suite-secret",
-        });
+        };
+
+        var context = new Mock<IWechatAppContext>();
+        context.SetupGet(c => c.Config).Returns(config);
 
         var appManager = new Mock<IWechatAppManager>();
         appManager.Setup(m => m.ConfiguredAppKeys).Returns(new[] { AppKey });
-
-        IWechatAppContext? outContext = context.Object;
-        appManager.Setup(m => m.TryGetApp(AppKey, out outContext)).Returns(true);
+        // P1-6：处理器/协调器只读配置快照（ConfiguredConfigs），不再经 TryGetApp 物化上下文。
+        appManager.Setup(m => m.ConfiguredConfigs).Returns(new[] { config });
 
         return (appManager, context.Object);
     }
@@ -180,10 +181,11 @@ public class WechatCallbackAuthorizationDispatchTests
     }
 
     [Fact]
-    public async Task Handler_ShouldFallbackToAllApps_WhenCancelAuthSuiteIdUnmatched()
+    public async Task Handler_ShouldNotDeleteOtherSuiteAuth_WhenCancelAuthSuiteIdUnmatched()
     {
-        var appManager = new Mock<IWechatAppManager>();
-        appManager.Setup(m => m.ConfiguredAppKeys).Returns(new[] { AppKey });
+        // P0-3：该 SuiteId 归属**另一个**已配置应用；被处理的 appKey 只是"碰巧存在企业授权记录"，
+        // 旧实现会回退「全部应用清理」从而删除本应用的有效授权（跨套件数据损坏）。
+        var (appManager, _) = CreateAppManager(suiteId: "other-suite");
 
         var corpAuthStore = new InMemoryWechatCorpAuthStore();
         await corpAuthStore.SetAsync(new WechatCorpAuthorization
@@ -206,12 +208,79 @@ public class WechatCallbackAuthorizationDispatchTests
         coordinator.Verify(
             c => c.OnAuthorizationCanceledAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
             Times.Never, "suiteId 未命中不应委派协调器");
-        (await corpAuthStore.GetAsync(AppKey, "corp-X")).Should().BeNull(
-            "suiteId 未命中时保留既有兜底清理行为（回退全部应用）");
+        (await corpAuthStore.GetAsync(AppKey, "corp-X")).Should().NotBeNull(
+            "suiteId 未命中时不得删除任何应用的授权记录（专治跨套件误删）");
         appManager.Verify(
-            m => m.InvalidateTokenAsync(AppKey, Abstractions.WechatTokenTypes.AccessToken,
+            m => m.InvalidateTokenAsync(It.IsAny<string>(), It.IsAny<string>(),
+                It.IsAny<string[]?>(), It.IsAny<CancellationToken>()),
+            Times.Never, "未命中的降级路径不得级联失效任何应用的企业令牌");
+    }
+
+    [Fact]
+    public async Task Handler_ShouldDeleteOnlyMatchedApp_WhenCancelAuthSuiteIdMatched()
+    {
+        // 两个应用归属不同 SuiteId：仅命中集内的应用被清理，另一个应用的授权记录逐条仍可读。
+        var matchedConfig = new WechatAppConfig
+        {
+            AppKey = "matched-app",
+            AppType = WechatAppType.ThirdParty,
+            CorpId = "ww-provider",
+            ProviderSecret = "provider-secret",
+            SuiteId = "ww-suite-matched",
+            SuiteSecret = "suite-secret",
+        };
+        var otherConfig = new WechatAppConfig
+        {
+            AppKey = "other-app",
+            AppType = WechatAppType.ThirdParty,
+            CorpId = "ww-provider",
+            ProviderSecret = "provider-secret",
+            SuiteId = "ww-suite-other",
+            SuiteSecret = "suite-secret",
+        };
+
+        var appManager = new Mock<IWechatAppManager>();
+        appManager.Setup(m => m.ConfiguredAppKeys).Returns(new[] { "matched-app", "other-app" });
+        appManager.Setup(m => m.ConfiguredConfigs).Returns(new[] { matchedConfig, otherConfig });
+        appManager
+            .Setup(m => m.InvalidateTokenAsync(It.IsAny<string>(), It.IsAny<string>(),
+                It.IsAny<string[]?>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        var corpAuthStore = new InMemoryWechatCorpAuthStore();
+        // 企业 corp-X 在两个套件下各有一份独立授权。
+        await corpAuthStore.SetAsync(new WechatCorpAuthorization
+        {
+            AppKey = "matched-app", AuthCorpId = "corp-X", PermanentCode = "pc-matched",
+        });
+        await corpAuthStore.SetAsync(new WechatCorpAuthorization
+        {
+            AppKey = "other-app", AuthCorpId = "corp-X", PermanentCode = "pc-other",
+        });
+
+        // 不注入协调器：走处理器自身的降级清理路径（清理范围仍为命中集）。
+        var handler = new WechatCallbackHandler(
+            new InMemoryWechatSuiteTicketStore(), corpAuthStore,
+            NullLogger<WechatCallbackHandler>.Instance, appManager.Object);
+
+        await handler.HandleAsync(new WechatCallbackEvent
+        {
+            InfoType = "cancel_auth",
+            SuiteId = "ww-suite-matched",
+            AuthCorpId = "corp-X",
+        });
+
+        (await corpAuthStore.GetAsync("matched-app", "corp-X")).Should().BeNull("命中应用应清理永久授权码");
+        (await corpAuthStore.GetAsync("other-app", "corp-X")).Should().NotBeNull(
+            "未命中应用（不同 SuiteId）的独立授权记录不得被连带删除");
+        appManager.Verify(
+            m => m.InvalidateTokenAsync("matched-app", Abstractions.WechatTokenTypes.AccessToken,
                 It.Is<string[]?>(s => s != null && s[0] == "corp-X"), It.IsAny<CancellationToken>()),
-            Times.Once, "兜底路径仍须级联失效企业令牌");
+            Times.Once);
+        appManager.Verify(
+            m => m.InvalidateTokenAsync("other-app", It.IsAny<string>(),
+                It.IsAny<string[]?>(), It.IsAny<CancellationToken>()),
+            Times.Never);
     }
 
     [Fact]

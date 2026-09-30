@@ -8,52 +8,6 @@
 namespace Mud.Wechat.Work.Abstractions.Authentication.TokenManager;
 
 /// <summary>
-/// suite_ticket 仓储接口。suite_ticket 由企业微信每 10 分钟推送到回调地址，
-/// 不能主动获取——由回调处理器解析后按 suiteId 写入，<c>SuiteTokenManager</c> 经
-/// <see cref="IWechatSuiteTicketProvider"/> 读取。
-/// </summary>
-/// <remarks>
-/// 按 <c>suiteId</c> 分槽：一个进程可托管多个套件 / 代开发模板（代开发模板 id 即 suite_id），
-/// 各套件的票据互不覆盖。
-/// </remarks>
-public interface IWechatSuiteTicketStore
-{
-    /// <summary>读取指定套件最新推送的 suite_ticket（未入库时返回 null）。</summary>
-    Task<string?> GetAsync(string suiteId, CancellationToken cancellationToken = default);
-
-    /// <summary>写入指定套件最新推送的 suite_ticket（覆盖该套件旧值）。</summary>
-    Task SetAsync(string suiteId, string ticket, CancellationToken cancellationToken = default);
-}
-
-/// <summary>
-/// suite_ticket 供应接口（<c>SuiteTokenManager</c> 刷新时读取）。
-/// </summary>
-public interface IWechatSuiteTicketProvider
-{
-    /// <summary>获取指定套件当前可用的 suite_ticket；未入库时抛出并提示宿主配置回调接收。</summary>
-    Task<string> GetSuiteTicketAsync(string suiteId, CancellationToken cancellationToken = default);
-}
-
-/// <summary>
-/// <see cref="IWechatSuiteTicketStore"/> 的进程内默认实现（按 suiteId 分槽）。
-/// </summary>
-public sealed class InMemoryWechatSuiteTicketStore : IWechatSuiteTicketStore
-{
-    private readonly ConcurrentDictionary<string, string> _tickets = new(StringComparer.Ordinal);
-
-    /// <inheritdoc />
-    public Task<string?> GetAsync(string suiteId, CancellationToken cancellationToken = default)
-        => Task.FromResult(_tickets.TryGetValue(suiteId ?? string.Empty, out var ticket) ? ticket : null);
-
-    /// <inheritdoc />
-    public Task SetAsync(string suiteId, string ticket, CancellationToken cancellationToken = default)
-    {
-        _tickets[suiteId ?? string.Empty] = ticket;
-        return Task.CompletedTask;
-    }
-}
-
-/// <summary>
 /// <see cref="IWechatSuiteTicketProvider"/> 的默认实现：从 <see cref="IWechatSuiteTicketStore"/> 读取。
 /// </summary>
 public sealed class WechatSuiteTicketProvider : IWechatSuiteTicketProvider

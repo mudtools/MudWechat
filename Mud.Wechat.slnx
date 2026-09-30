@@ -1,4 +1,14 @@
 <Solution>
-  <Project Path="Mud.Wechat.Work/Mud.Wechat.Work.csproj" />
-  <Project Path="Tests/Mud.Wechat.Work.Tests/Mud.Wechat.Work.Tests.csproj" />
+  <Folder Name="/src/">
+    <Project Path="Mud.Wechat.Work.Abstractions/Mud.Wechat.Work.Abstractions.csproj" />
+    <Project Path="Mud.Wechat.Work.Callback/Mud.Wechat.Work.Callback.csproj" />
+    <Project Path="Mud.Wechat.Work.DataModels/Mud.Wechat.Work.DataModels.csproj" />
+    <Project Path="Mud.Wechat.Work/Mud.Wechat.Work.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="Tests/Mud.Wechat.Work.Abstractions.Tests/Mud.Wechat.Work.Abstractions.Tests.csproj" />
+    <Project Path="Tests/Mud.Wechat.Work.Callback.Tests/Mud.Wechat.Work.Callback.Tests.csproj" />
+    <Project Path="Tests/Mud.Wechat.Work.DataModels.Tests/Mud.Wechat.Work.DataModels.Tests.csproj" />
+    <Project Path="Tests/Mud.Wechat.Work.Tests/Mud.Wechat.Work.Tests.csproj" />
+  </Folder>
 </Solution>

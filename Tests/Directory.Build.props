@@ -1,0 +1,7 @@
+<Project>
+	<!-- 遮蔽根 Directory.Build.props 的 TargetFrameworks（测试项目单 TFM，避免 TargetFramework/TargetFrameworks
+	双属性冲突导致 restore 进入跨目标模式、xunit.runner.visualstudio 资产错配到 netstandard2.0）。 -->
+	<PropertyGroup>
+		<TargetFrameworks>net8.0</TargetFrameworks>
+	</PropertyGroup>
+</Project>

@@ -1,15 +1,21 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
-	<ItemGroup>
-		<PackageReference Include="Mud.HttpUtils.Generator" Version="2.0.9" PrivateAssets="all" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
-	</ItemGroup>
+	<PropertyGroup>
+		<Description>企业微信 SDK 主包：业务声明式客户端、模块注册器、AOT JsonContext 合并、errcode 令牌失效判定器。对应 Mud.Feishu。</Description>
+		<PackageTags>Wechat;WeChatWork;企业微信;SDK;MudWechat</PackageTags>
+	</PropertyGroup>
 
 	<ItemGroup>
 		<PackageReference Include="Mud.HttpUtils" Version="2.0.9" />
 	</ItemGroup>
 
 	<ItemGroup>
-	  <Folder Include="Interfaces\" />
+		<PackageReference Include="Mud.HttpUtils.Generator" Version="2.0.9" PrivateAssets="all" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\Mud.Wechat.Work.Abstractions\Mud.Wechat.Work.Abstractions.csproj" />
+		<ProjectReference Include="..\Mud.Wechat.Work.DataModels\Mud.Wechat.Work.DataModels.csproj" />
 	</ItemGroup>
 
 </Project>

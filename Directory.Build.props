@@ -14,6 +14,22 @@
 		<LangVersion>13.0</LangVersion>
 	</PropertyGroup>
 
+	<!-- AOT / 裁剪治理（对齐 FeishuV3 verify-build 门禁）：net8.0+ 默认启用裁剪与 AOT 分析，
+	AotStrictMode=true（verify-build.ps1 步骤 3 传入）时把 IL*/IL3050 提升为错误。 -->
+	<PropertyGroup Condition="'$(TargetFramework)' == 'net8.0' or '$(TargetFramework)' == 'net10.0'">
+		<IsAotCompatible Condition="'$(IsAotCompatible)' == ''">true</IsAotCompatible>
+		<EnableTrimAnalyzer Condition="'$(EnableTrimAnalyzer)' == ''">true</EnableTrimAnalyzer>
+		<EnableAotAnalyzer Condition="'$(EnableAotAnalyzer)' == ''">true</EnableAotAnalyzer>
+		<EnableSingleFileAnalyzer Condition="'$(EnableSingleFileAnalyzer)' == ''">true</EnableSingleFileAnalyzer>
+		<WarningsAsErrors>$(WarningsAsErrors);AOT001;AOT002;AOT003;AOT004;AOT007</WarningsAsErrors>
+		<!-- AOT：ConfigurationBinder.Bind / Configure<T>(IConfiguration) 的反射实现会触发 IL2026/IL3050。
+		启用配置绑定源生成器后绑定代码在编译期生成，消除这两类诊断（对齐 FeishuV3 Directory.Build.props）。 -->
+		<EnableConfigurationBindingGenerator>true</EnableConfigurationBindingGenerator>
+	</PropertyGroup>
+	<PropertyGroup Condition="'$(AotStrictMode)' == 'true' and ('$(TargetFramework)' == 'net8.0' or '$(TargetFramework)' == 'net10.0')">
+		<WarningsAsErrors>$(WarningsAsErrors);IL2026;IL2046;IL2050;IL2057;IL2067;IL2070;IL2072;IL2075;IL2080;IL3050</WarningsAsErrors>
+	</PropertyGroup>
+
 	<ItemGroup Condition="'$(TargetFramework)' == 'net10.0' or '$(TargetFramework)' == 'net9.0' or '$(TargetFramework)' == 'net8.0'">
 		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.9" />
 		<PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="10.0.9" />
@@ -28,5 +44,5 @@
 	</ItemGroup>
 	<ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
 		<PackageReference Include="System.Text.Json" Version="10.0.2" />
-	</ItemGroup>	
+	</ItemGroup>
 </Project>

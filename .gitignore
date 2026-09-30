@@ -1,4 +1,4 @@
-﻿################################################################################
+################################################################################
 # 此 .gitignore 文件已由 Microsoft(R) Visual Studio 自动创建。
 ################################################################################
 
@@ -7,5 +7,22 @@
 /.doc
 /Mud.Wechat.Work/bin
 /Mud.Wechat.Work/obj
+/Mud.Wechat.Work.Abstractions/bin
+/Mud.Wechat.Work.Abstractions/obj
+/Mud.Wechat.Work.Callback/bin
+/Mud.Wechat.Work.Callback/obj
+/Mud.Wechat.Work.DataModels/bin
+/Mud.Wechat.Work.DataModels/obj
 /Tests/Mud.Wechat.Work.Tests/bin
 /Tests/Mud.Wechat.Work.Tests/obj
+/Tests/Mud.Wechat.Work.Abstractions.Tests/bin
+/Tests/Mud.Wechat.Work.Abstractions.Tests/obj
+/Tests/Mud.Wechat.Work.Callback.Tests/bin
+/Tests/Mud.Wechat.Work.Callback.Tests/obj
+/Tests/Mud.Wechat.Work.DataModels.Tests/bin
+/Tests/Mud.Wechat.Work.DataModels.Tests/obj
+
+# verify-build / dotnet test 产物
+/test-reports
+Tests/diag.host*.log
+/.pkgtest

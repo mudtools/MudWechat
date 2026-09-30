@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<Description>企业微信 SDK 数据模型包（纯 DTO，无外部依赖）。对应 Mud.Feishu.DataModels 的独立 DTO 交付模式。</Description>
+		<PackageTags>Wechat;WeChatWork;企业微信;DTO;DataModels;MudWechat</PackageTags>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Mud.HttpUtils.Generator" Version="2.0.9" PrivateAssets="all" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<InternalsVisibleTo Include="Mud.Wechat.Work" />
+		<InternalsVisibleTo Include="Mud.Wechat.Work.Abstractions" />
+		<InternalsVisibleTo Include="Mud.Wechat.Work.Callback" />
+	</ItemGroup>
+
+</Project>

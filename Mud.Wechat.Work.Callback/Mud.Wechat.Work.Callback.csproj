@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<Description>企业微信 SDK 回调接收包：suite_ticket / 授权事件推送的验签、AES 解密、事件分发与 suite_ticket 仓储。对应 Mud.Feishu.Webhook + EventCallback 职能。</Description>
+		<PackageTags>Wechat;WeChatWork;企业微信;Callback;Webhook;suite_ticket;MudWechat</PackageTags>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\Mud.Wechat.Work.Abstractions\Mud.Wechat.Work.Abstractions.csproj" />
+		<ProjectReference Include="..\Mud.Wechat.Work.DataModels\Mud.Wechat.Work.DataModels.csproj" />
+	</ItemGroup>
+
+</Project>

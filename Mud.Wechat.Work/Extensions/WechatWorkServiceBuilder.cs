@@ -6,6 +6,7 @@
 // -----------------------------------------------------------------------
 
 using Mud.Wechat.Work.Abstractions.Authentication;
+using Mud.Wechat.Work.Services.Authorization;
 
 namespace Mud.Wechat.Work.Extensions;
 
@@ -19,13 +20,17 @@ namespace Mud.Wechat.Work.Extensions;
 public class WechatWorkServiceBuilder
 {
     private readonly IServiceCollection _services;
+    private readonly IConfiguration? _hostConfiguration;
     private readonly WechatServiceConfiguration _configuration = new();
     private readonly Dictionary<WechatModule, IWechatModuleRegistrar> _registrars;
 
     /// <summary>创建模块注册器（由 <see cref="WechatWorkServiceCollectionExtensions"/> 入口构造）。</summary>
-    internal WechatWorkServiceBuilder(IServiceCollection services)
+    /// <param name="services">服务集合。</param>
+    /// <param name="hostConfiguration">宿主配置（可选）；用于绑定 WechatAuthorization 配置节。</param>
+    internal WechatWorkServiceBuilder(IServiceCollection services, IConfiguration? hostConfiguration = null)
     {
         _services = services ?? throw new ArgumentNullException(nameof(services));
+        _hostConfiguration = hostConfiguration;
         _registrars = InitializeRegistrars();
     }
 
@@ -34,10 +39,11 @@ public class WechatWorkServiceBuilder
         {
             // AddAuthenticationWebApiHttpClient() 由 Mud.HttpUtils.Generator 按主包 [HttpClientApi] 自动产出。
             [WechatModule.Authentication] = new WechatModuleRegistrar(
-                WechatModule.Authentication, s => s.AddAuthenticationWebApiHttpClient()),
+                WechatModule.Authentication,
+                s => s.AddAuthenticationWebApiHttpClient().AddWechatAuthorizationServices(_hostConfiguration)),
         };
 
-    /// <summary>注册授权流业务接口（get_pre_auth_code / set_session_info / get_permanent_code / get_auth_info）。</summary>
+    /// <summary>注册授权流业务接口与授权编排服务（get_pre_auth_code / set_session_info / get_permanent_code / get_auth_info / get_customized_auth_url + 编排）。</summary>
     public WechatWorkServiceBuilder AddAuthenticationApi() => AddModule(WechatModule.Authentication);
 
     /// <summary>注册全部模块。</summary>

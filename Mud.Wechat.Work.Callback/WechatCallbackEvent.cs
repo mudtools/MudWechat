@@ -32,6 +32,9 @@ public class WechatCallbackEvent
     public string? SuiteTicket { get; set; }
 
     /// <summary>授权方（企业）CorpId（AuthCorpId 节点；部分事件模板中为 FromUserName）。</summary>
+    /// <remarks>
+    /// R11：<c>create_auth</c> / <c>reset_permanent_code</c> 报文本体不含该节点，
+    /// 故此时恒为 <c>null</c>（解析侧禁止用 <c>FromUserName</c> 兜底伪造）。</remarks>
     public string? AuthCorpId { get; set; }
 
     /// <summary>临时授权码（InfoType = create_auth 时非空，用于 get_permanent_code 换取永久授权码）。</summary>
@@ -39,6 +42,21 @@ public class WechatCallbackEvent
 
     /// <summary>解密后的原始 XML 明文（供业务侧解析扩展字段）。</summary>
     public string? DecryptedXml { get; set; }
+
+    /// <summary>是否为授权成功事件（create_auth；携带一次性 auth_code）。</summary>
+    public bool IsCreateAuth => string.Equals(InfoType, "create_auth", StringComparison.Ordinal);
+
+    /// <summary>是否为重置永久授权码事件（reset_permanent_code；代开发 secret 重置，携带 auth_code）。</summary>
+    public bool IsResetPermanentCode =>
+        string.Equals(InfoType, "reset_permanent_code", StringComparison.Ordinal);
+
+    /// <summary>是否为单纯携带 auth_code 的事件（create_auth / reset_permanent_code）。</summary>
+    /// <remarks>
+    /// R11：这两类报文体<b>不含 AuthCorpId</b>（<c>reset_permanent_code</c> 仅含
+    /// <c>SuiteId</c> / <c>AuthCode</c> / <c>InfoType</c> / <c>TimeStamp</c>），
+    /// 授权企业须由 <c>auth_code</c> 换码后经 <c>auth_corp_info.corpid</c> 反查。
+    /// </remarks>
+    public bool IsAuthCodeEvent => IsCreateAuth || IsResetPermanentCode;
 
     /// <summary>是否为 suite_ticket 推送事件。</summary>
     public bool IsSuiteTicket => string.Equals(InfoType, "suite_ticket", StringComparison.Ordinal);

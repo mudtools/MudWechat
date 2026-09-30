@@ -125,6 +125,53 @@ public class WechatDataModelDeserializationTests
     }
 
     [Fact]
+    public void GetCustomizedAuthUrlResponse_ShouldDeserialize()
+    {
+        var json = """{"errcode":0,"errmsg":"ok","qrcode_url":"https://open.work.weixin.qq.com/3rdapp/qr/xxx","expires_in":864000}""";
+        var resp = JsonSerializer.Deserialize<GetCustomizedAuthUrlResponse>(json);
+
+        resp!.IsSuccess.Should().BeTrue();
+        resp.QrcodeUrl.Should().Be("https://open.work.weixin.qq.com/3rdapp/qr/xxx");
+        resp.ExpiresIn.Should().Be(864000);
+    }
+
+    [Fact]
+    public void GetCustomizedAuthUrlResponse_ShouldDeserialize_WithErrorCode()
+    {
+        var json = """{"errcode":40001,"errmsg":"invalid credential"}""";
+        var resp = JsonSerializer.Deserialize<GetCustomizedAuthUrlResponse>(json);
+
+        resp!.IsSuccess.Should().BeFalse();
+        resp.ErrorCode.Should().Be(40001);
+        resp.QrcodeUrl.Should().BeNull("可选字段缺省");
+        resp.ExpiresIn.Should().Be(0);
+    }
+
+    [Fact]
+    public void GetCustomizedAuthUrlRequest_ShouldSerialize_WithSnakeCaseJsonKeys()
+    {
+        var json = JsonSerializer.Serialize(new GetCustomizedAuthUrlRequest
+        {
+            State = "abc123",
+            TemplateIdList = new() { "dk1", "dk2" },
+        });
+
+        json.Should().Contain("\"state\":\"abc123\"");
+        json.Should().Contain("\"templateid_list\":[\"dk1\",\"dk2\"]");
+    }
+
+    [Fact]
+    public void GetCustomizedAuthUrlRequest_ShouldOmit_WhenStateIsNull_ViaJsonContext()
+    {
+        var json = JsonSerializer.Serialize(
+            new GetCustomizedAuthUrlRequest { TemplateIdList = new() { "dk1" } },
+            WechatWorkJsonContext.Default.GetCustomizedAuthUrlRequest);
+
+        json.Should().NotContain("\"state\"", "state 为可选字段，null 时不落 JSON（JsonContext 的 WhenWritingNull）");
+        json.Should().Contain("\"templateid_list\":[\"dk1\"]");
+    }
+
+    [Fact]
     public void RequestModels_ShouldSerialize_WithSnakeCaseJsonKeys()
     {
         var providerReq = JsonSerializer.Serialize(new GetProviderTokenRequest { CorpId = "ww-1", ProviderSecret = "s1" });

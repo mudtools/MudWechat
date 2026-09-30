@@ -88,8 +88,7 @@ public class WechatAppConfigValidateTests
         act.Should().NotThrow();
     }
 
-    [Fact]
-    public void Validate_ShouldPass_WhenProviderTypeSameAsThirdParty()
+    private static WechatAppConfig ProviderConfig(Action<WechatAppConfig>? patch = null)
     {
         var config = new WechatAppConfig
         {
@@ -99,11 +98,33 @@ public class WechatAppConfigValidateTests
             ProviderSecret = "provider-secret",
             SuiteId = "ww-suite",
             SuiteSecret = "suite-secret",
-            TemplateId = "tpl-1",
         };
+        patch?.Invoke(config);
+        return config;
+    }
 
-        var act = () => config.Validate();
+    [Fact]
+    public void Validate_ShouldPass_WhenProviderTemplateIdEqualsSuiteId()
+    {
+        // K2：代开发模板 id 即 suite_id，二者一致时通过。
+        var act = () => ProviderConfig(c => c.TemplateId = "ww-suite").Validate();
         act.Should().NotThrow();
+    }
+
+    [Fact]
+    public void Validate_ShouldPass_WhenProviderTemplateIdEmpty()
+    {
+        // 缺省 TemplateId 时取 SuiteId（K2），视为通过。
+        var act = () => ProviderConfig(c => c.TemplateId = string.Empty).Validate();
+        act.Should().NotThrow();
+    }
+
+    [Fact]
+    public void Validate_ShouldFail_WhenProviderTemplateIdDiffersFromSuiteId()
+    {
+        // R2 一致性校验：TemplateId 非空且不等于 SuiteId 必为配置错误，启动期快速失败。
+        var act = () => ProviderConfig(c => c.TemplateId = "tpl-1").Validate();
+        act.Should().Throw<InvalidOperationException>().WithMessage("*TemplateId*");
     }
 
     [Fact]

@@ -278,6 +278,8 @@ public class WechatAppManager : DefaultAppManager<IWechatAppContext>, IWechatApp
                 corpTokenManager = new CorpTokenManager(
                     authFactory.CreateCorpTokenAuthentication(config.AppKey),
                     suiteTokenManager,
+                    // §4.8：代开发路径走 gettoken，必须注入 per-app 自建应用认证客户端（不可取 DI 默认实例）。
+                    authFactory.CreateInternalAppAuthentication(config.AppKey),
                     scopedSp.GetRequiredService<IWechatCorpAuthStore>(), options,
                     scopedSp.GetRequiredService<ILogger<CorpTokenManager>>(), tokenStore);
                 primaryTokenManager = corpTokenManager;

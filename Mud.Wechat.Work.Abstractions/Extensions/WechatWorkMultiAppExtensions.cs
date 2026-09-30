@@ -173,6 +173,11 @@ public static class WechatWorkMultiAppExtensions
         services.AddTokenProvider();
         services.TryAddSingleton<IAppContextHolder, AsyncLocalAppContextSwitcher>();
 
+        // R9：补齐上下文切换器（现有仅注册了 IAppContextHolder，IWechatAppContextSwitcher 悬空）。
+        services.TryAddSingleton<IWechatAppContextSwitcher, WechatAppContextSwitcher>();
+        // 同一实例同时满足框架 IAppContextSwitcher 契约（框架/生成代码按该接口解析）。
+        services.TryAddSingleton<IAppContextSwitcher>(sp => sp.GetRequiredService<IWechatAppContextSwitcher>());
+
 #if NET6_0_OR_GREATER
         // 令牌管理器登记（HostedService）：先注册管理器，再启动后台刷新服务（IHostedService 按注册顺序启动）。
         services.AddHostedService<WechatTokenRegistrationService>();

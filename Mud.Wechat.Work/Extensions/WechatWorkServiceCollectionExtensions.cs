@@ -29,6 +29,19 @@ public static class WechatWorkServiceCollectionExtensions
         => new(services);
 
     /// <summary>
+    /// 创建模块注册器（携带宿主配置，用于绑定 <c>WechatAuthorization</c> 配置节）。
+    /// </summary>
+    /// <param name="services">服务集合。</param>
+    /// <param name="configuration">宿主配置。</param>
+    public static WechatWorkServiceBuilder CreateWechatWorkServicesBuilder(
+        this IServiceCollection services, IConfiguration configuration)
+    {
+        if (configuration == null) throw new ArgumentNullException(nameof(configuration));
+
+        return new WechatWorkServiceBuilder(services, configuration);
+    }
+
+    /// <summary>
     /// 按模块注册业务客户端（入口，对齐 <c>AddFeishuServices(params)</c>）。
     /// </summary>
     public static IServiceCollection AddWechatWorkServices(this IServiceCollection services, params WechatModule[] modules)
@@ -54,6 +67,25 @@ public static class WechatWorkServiceCollectionExtensions
         }
 
         var builder = services.CreateWechatWorkServicesBuilder();
+        configure(builder);
+        return builder.Build();
+    }
+
+    /// <summary>
+    /// 按配置委托注册业务客户端（携带宿主配置，绑定 <c>WechatAuthorization</c> 配置节）。
+    /// </summary>
+    /// <param name="services">服务集合。</param>
+    /// <param name="configuration">宿主配置。</param>
+    /// <param name="configure">模块注册委托。</param>
+    public static IServiceCollection AddWechatWorkServices(
+        this IServiceCollection services,
+        IConfiguration configuration,
+        Action<WechatWorkServiceBuilder> configure)
+    {
+        if (configuration == null) throw new ArgumentNullException(nameof(configuration));
+        if (configure == null) throw new ArgumentNullException(nameof(configure));
+
+        var builder = services.CreateWechatWorkServicesBuilder(configuration);
         configure(builder);
         return builder.Build();
     }

@@ -134,4 +134,47 @@ public class WechatContractGuards
             new[] { nameof(IWechatWorkProviderAuthenticationService) },
             "企业微信官方契约强制 Query 注入（MUD005 已知接受风险），新增 Query 注入接口须评估后扩展本守卫");
     }
+
+    /// <summary>
+    /// 契约守卫 G6（R14）：授权流端点路由表（新增 3 条，与 §4.5 接口声明一致），
+    /// 并显式断言新增接口以 <c>[Query]</c> 显式传令牌、不携带 <c>[Token]</c>，
+    /// 即 G5（Query 令牌注入白名单）<b>未放宽</b>。
+    /// </summary>
+    [Fact]
+    public void AuthorizationEndpoints_ShouldMatchOfficialRoutes()
+    {
+        var expected = new (Type Interface, string Method, string Route)[]
+        {
+            (typeof(IWechatWorkProviderAuthenticationService),
+                nameof(IWechatWorkProviderAuthenticationService.GetPermanentCodeV2Async),
+                "/cgi-bin/service/v2/get_permanent_code"),
+            (typeof(IWechatWorkProviderAuthenticationService),
+                nameof(IWechatWorkProviderAuthenticationService.GetAuthInfoV2Async),
+                "/cgi-bin/service/v2/get_auth_info"),
+            (typeof(IWechatWorkProviderAuthenticationUrl),
+                nameof(IWechatWorkProviderAuthenticationUrl.GetCustomizedAuthUrlAsync),
+                "/cgi-bin/service/get_customized_auth_url"),
+        };
+
+        foreach (var (iface, method, route) in expected)
+        {
+            var target = iface.GetMethod(method);
+            target.Should().NotBeNull($"{iface.Name}.{method} 必须存在");
+
+            var post = target!.GetCustomAttribute<Mud.HttpUtils.Attributes.PostAttribute>();
+            post.Should().NotBeNull($"{iface.Name}.{method} 必须声明 [Post] 路由");
+            post!.RequestUri.Should().Be(route, $"{iface.Name}.{method} 路由必须与官方契约一致");
+        }
+
+        // R14：get_customized_auth_url 显式传 provider_access_token，不得进入 [Token] Query 注入白名单。
+        typeof(IWechatWorkProviderAuthenticationUrl)
+            .GetCustomAttribute<Mud.HttpUtils.Attributes.TokenAttribute>()
+            .Should().BeNull("G5 白名单仅 IWechatWorkProviderAuthenticationService，新增接口不得放宽");
+
+        var providerTokenParam = typeof(IWechatWorkProviderAuthenticationUrl)
+            .GetMethod(nameof(IWechatWorkProviderAuthenticationUrl.GetCustomizedAuthUrlAsync))!
+            .GetParameters()[0];
+        providerTokenParam.GetCustomAttribute<Mud.HttpUtils.Attributes.QueryAttribute>()!
+            .Name.Should().Be("provider_access_token", "服务商令牌必须以显式 Query 参数传入");
+    }
 }

@@ -41,7 +41,7 @@ internal sealed class SuiteTokenManager : WechatAppTokenManagerBase, IWechatSuit
     /// <summary>唯一模板点：读取共享 suite_ticket 后换取套件令牌。</summary>
     protected override async Task<(string? AccessToken, int ExpireSeconds)> RefreshTokenFromApiAsync(CancellationToken cancellationToken)
     {
-        var ticket = await _ticketProvider.GetSuiteTicketAsync(cancellationToken).ConfigureAwait(false);
+        var ticket = await _ticketProvider.GetSuiteTicketAsync(Options.SuiteId, cancellationToken).ConfigureAwait(false);
         var resp = await _auth
             .GetSuiteTokenAsync(new GetSuiteTokenRequest
             {

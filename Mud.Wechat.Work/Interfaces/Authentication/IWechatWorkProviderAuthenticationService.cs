@@ -72,4 +72,26 @@ public interface IWechatWorkProviderAuthenticationService
     /// <remarks>请参照原SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/91912"/></remarks>
     [Post("/cgi-bin/service/get_auth_info")]
     Task<GetAuthInfoResponse> GetAuthInfoAsync([Body] GetAuthInfoRequest request, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 获取企业永久授权码（v2）
+    /// <para>官方推荐版本：耗时更短，适合在授权回调中同步换取永久授权码（旧版易超时）。</para>
+    /// </summary>
+    /// <param name="request">请求参数</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>获取企业永久授权码响应</returns>
+    /// <remarks>请参照原SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/100776"/></remarks>
+    [Post("/cgi-bin/service/v2/get_permanent_code")]
+    Task<GetPermanentCodeResponse> GetPermanentCodeV2Async([Body] GetPermanentCodeRequest request, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 获取企业授权信息（v2）
+    /// <para>官方推荐版本：不返回插件关注二维码、性能更好。</para>
+    /// </summary>
+    /// <param name="request">请求参数</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>获取企业授权信息响应</returns>
+    /// <remarks>请参照原SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/100795"/></remarks>
+    [Post("/cgi-bin/service/v2/get_auth_info")]
+    Task<GetAuthInfoResponse> GetAuthInfoV2Async([Body] GetAuthInfoRequest request, CancellationToken cancellationToken = default);
 }

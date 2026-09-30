@@ -143,6 +143,17 @@ public class WechatAppConfig
                     throw new InvalidOperationException($"第三方/服务商应用 {AppKey} 缺少 SuiteId。");
                 if (string.IsNullOrWhiteSpace(SuiteSecret))
                     throw new InvalidOperationException($"第三方/服务商应用 {AppKey} 缺少 SuiteSecret。");
+
+                // 代开发模板 id 即 suite_id（K2）：二者不一致必为配置错误，启动期快速失败。
+                if (AppType == WechatAppType.Provider
+                    && !string.IsNullOrWhiteSpace(TemplateId)
+                    && !string.Equals(TemplateId, SuiteId, StringComparison.Ordinal))
+                {
+                    throw new InvalidOperationException(
+                        $"代开发应用 {AppKey} 的 TemplateId（{TemplateId}）必须等于 SuiteId（{SuiteId}）：" +
+                        "协议上代开发模板 id 即 suite_id（K2），缺省时取 SuiteId。");
+                }
+
                 break;
 
             default:

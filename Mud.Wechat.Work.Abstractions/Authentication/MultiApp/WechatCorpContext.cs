@@ -14,11 +14,21 @@ namespace Mud.Wechat.Work.Abstractions.Authentication.MultiApp;
 /// 企业级 access_token「一企一份」的 scope（authCorpId）动态来源（详细设计 §7.6 实施注记方案①）：
 /// 业务侧经 <see cref="Authentication.IWechatAppContextSwitcher.SetCorp"/> 写入后，
 /// <c>CorpTokenManager</c> 刷新时读取；跨异步边界自然隔离，多企业令牌互不串扰。
+/// <para>
+/// <b>归属维度（R9）</b>：<see cref="AppKey"/> 记录写入上下文的归属应用，防止多套件下
+/// A 应用的 <c>permanentCode</c> 被 B 应用的令牌刷新链路误用（串号）。
+/// <c>CorpTokenManager</c> 读取时校验归属：不一致即整体忽略上下文并回退仓储。
+/// 为 <c>null</c> 表示未声明归属（如直接静态调用），此时不参与归属校验。
+/// </para>
 /// </remarks>
 public static class WechatCorpContext
 {
+    private static readonly AsyncLocal<string?> AppKeyCurrent = new();
     private static readonly AsyncLocal<string?> AuthCorpIdCurrent = new();
     private static readonly AsyncLocal<string?> PermanentCodeCurrent = new();
+
+    /// <summary>获取当前异步流的代操作企业归属应用键（未设置时为 null，表示未声明归属）。</summary>
+    public static string? AppKey => AppKeyCurrent.Value;
 
     /// <summary>获取当前异步流的代操作企业 CorpId（未设置时为 null）。</summary>
     public static string? AuthCorpId => AuthCorpIdCurrent.Value;
@@ -27,15 +37,20 @@ public static class WechatCorpContext
     public static string? PermanentCode => PermanentCodeCurrent.Value;
 
     /// <summary>设置当前异步流的代操作企业与永久授权码。</summary>
-    public static void SetCorp(string authCorpId, string? permanentCode)
+    /// <param name="appKey">归属应用键；传 null 表示不声明归属（不参与归属校验）。</param>
+    /// <param name="authCorpId">授权方（企业）CorpId。</param>
+    /// <param name="permanentCode">该企业的永久授权码（可为 null，缺省时由仓储提供）。</param>
+    public static void SetCorp(string? appKey, string authCorpId, string? permanentCode)
     {
+        AppKeyCurrent.Value = appKey;
         AuthCorpIdCurrent.Value = authCorpId;
         PermanentCodeCurrent.Value = permanentCode;
     }
 
-    /// <summary>清除当前异步流的代操作企业与永久授权码。</summary>
+    /// <summary>清除当前异步流的代操作企业、永久授权码与归属应用。</summary>
     public static void Clear()
     {
+        AppKeyCurrent.Value = null;
         AuthCorpIdCurrent.Value = null;
         PermanentCodeCurrent.Value = null;
     }

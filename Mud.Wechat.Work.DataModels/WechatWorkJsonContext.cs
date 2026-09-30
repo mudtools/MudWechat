@@ -28,6 +28,8 @@ namespace Mud.Wechat.Work.DataModels;
 [JsonSerializable(typeof(ProviderAuthentication.GetAuthInfoRequest))]
 [JsonSerializable(typeof(ProviderAuthentication.GetAuthInfoResponse))]
 [JsonSerializable(typeof(ProviderAuthentication.SetSessionInfoRequest))]
+[JsonSerializable(typeof(ProviderAuthentication.GetCustomizedAuthUrlRequest))]
+[JsonSerializable(typeof(ProviderAuthentication.GetCustomizedAuthUrlResponse))]
 [JsonSerializable(typeof(ProviderAuthentication.SessionInfo))]
 [JsonSerializable(typeof(ProviderAuthentication.Agent))]
 [JsonSerializable(typeof(ProviderAuthentication.EditionAgent))]

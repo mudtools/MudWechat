@@ -93,14 +93,19 @@ public class WechatCallbackReceiverAndHandlerTests
             SuiteTicket = "ticket-1",
         });
 
-        (await store.GetAsync()).Should().Be("ticket-1", "suite_ticket 事件应写入仓储并驱动 get_suite_token");
+        (await store.GetAsync("ww-suite")).Should().Be("ticket-1", "suite_ticket 事件应写入仓储并驱动 get_suite_token");
     }
 
     [Fact]
     public async Task Handler_ShouldRemoveCorpAuth_AndInvalidateCorpToken_OnCancelAuth()
     {
         var corpAuthStore = new InMemoryWechatCorpAuthStore();
-        await corpAuthStore.SetAsync(new Abstractions.Authentication.TokenManager.CorpAuth("corp-X", "pc-X"));
+        await corpAuthStore.SetAsync(new Abstractions.Authentication.Models.WechatCorpAuthorization
+        {
+            AppKey = "suite-app",
+            AuthCorpId = "corp-X",
+            PermanentCode = "pc-X",
+        });
 
         var appManagerMock = new Mock<IWechatAppManager>();
         appManagerMock.Setup(m => m.ConfiguredAppKeys).Returns(new[] { "suite-app" });
@@ -118,7 +123,7 @@ public class WechatCallbackReceiverAndHandlerTests
             AuthCorpId = "corp-X",
         });
 
-        (await corpAuthStore.GetAsync("corp-X")).Should().BeNull("取消授权后应清理永久授权码");
+        (await corpAuthStore.GetAsync("suite-app", "corp-X")).Should().BeNull("取消授权后应清理永久授权码");
         appManagerMock.Verify(
             m => m.InvalidateTokenAsync("suite-app", Abstractions.WechatTokenTypes.AccessToken,
                 It.Is<string[]>(s => s[0] == "corp-X"), It.IsAny<CancellationToken>()),
@@ -171,6 +176,6 @@ public class WechatCallbackReceiverAndHandlerTests
             SuiteId = "ww-suite",
         });
 
-        (await store.GetAsync()).Should().BeNull("SuiteTicket 为空的事件不应覆盖仓储");
+        (await store.GetAsync("ww-suite")).Should().BeNull("SuiteTicket 为空的事件不应覆盖仓储");
     }
 }

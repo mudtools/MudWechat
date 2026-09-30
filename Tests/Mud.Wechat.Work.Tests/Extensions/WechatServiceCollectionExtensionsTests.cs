@@ -46,12 +46,18 @@ public class WechatServiceCollectionExtensionsTests
         provider.GetRequiredService<Abstractions.Authentication.IWechatAppContext>().Should().NotBeNull();
         provider.GetRequiredService<Abstractions.Authentication.IWechatWorkInternalAppAuthentication>().Should().NotBeNull();
         provider.GetRequiredService<IWechatWorkProviderAuthenticationService>().Should().NotBeNull();
+        provider.GetRequiredService<IWechatWorkProviderAuthenticationUrl>()
+            .Should().NotBeNull("get_customized_auth_url 复用 AddAuthenticationWebApiHttpClient() 注册，不新增独立注册项");
         provider.GetRequiredService<Mud.HttpUtils.ITokenProvider>().Should().NotBeNull();
         provider.GetRequiredService<Mud.HttpUtils.IAppContextHolder>().Should().NotBeNull();
         provider.GetRequiredService<Abstractions.Authentication.TokenManager.IWechatTokenStore>().Should().NotBeNull();
         provider.GetRequiredService<Abstractions.Authentication.TokenManager.IWechatCorpAuthStore>().Should().NotBeNull();
         provider.GetRequiredService<Abstractions.Authentication.TokenManager.IWechatSuiteTicketStore>().Should().NotBeNull();
         provider.GetRequiredService<Abstractions.Authentication.TokenManager.IWechatSuiteTicketProvider>().Should().NotBeNull();
+        provider.GetRequiredService<Abstractions.Authentication.IWechatAppContextSwitcher>()
+            .Should().NotBeNull("R9：IWechatAppContextSwitcher 必须可从 DI 解析（此前仅有声明无实现/无注册）");
+        provider.GetRequiredService<Mud.HttpUtils.IAppContextSwitcher>()
+            .Should().NotBeNull("切换器同时满足框架 IAppContextSwitcher 契约");
     }
 
     [Fact]

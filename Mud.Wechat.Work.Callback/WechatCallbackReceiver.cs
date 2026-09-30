@@ -93,8 +93,15 @@ public sealed class WechatCallbackReceiver : IWechatCallbackReceiver
                 evt.InfoType = root.Element("InfoType")?.Value;
                 evt.SuiteId = root.Element("SuiteId")?.Value;
                 evt.SuiteTicket = root.Element("SuiteTicket")?.Value;
-                evt.AuthCorpId = root.Element("AuthCorpId")?.Value ?? root.Element("FromUserName")?.Value;
                 evt.AuthCode = root.Element("AuthCode")?.Value;
+
+                // R11：create_auth / reset_permanent_code 报文体不含 AuthCorpId，
+                // 禁止用 FromUserName 兜底伪造授权企业（该文的授权企业须由 auth_code 换码后反查）。
+                evt.AuthCorpId = root.Element("AuthCorpId")?.Value;
+                if (string.IsNullOrEmpty(evt.AuthCorpId) && !evt.IsAuthCodeEvent)
+                {
+                    evt.AuthCorpId = root.Element("FromUserName")?.Value;
+                }
             }
         }
         catch (System.Xml.XmlException)

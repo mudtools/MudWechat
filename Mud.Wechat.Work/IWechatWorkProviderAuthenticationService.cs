@@ -7,8 +7,8 @@ namespace Mud.Wechat.Work;
 /// 企业微信的系统管理员可以授权安装第三方应用，安装后企业微信后台会将授权凭证、授权信息等推送给服务商后台。
 /// 请参照原SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/90597"/>
 /// </summary>
-[HttpClientApi("https://api.weixin.qq.com", Timeout = 30, TokenManage = nameof(IWechatAppManager), RegistryGroupName = "Weixin")]
-[Token(TokenType = TokenType.TenantAccessToken, InjectionMode = TokenInjectionMode.Query, Name = "suite_access_token")]
+[HttpClientApi(Timeout = 30, TokenManage = nameof(IWechatAppManager), RegistryGroupName = "Weixin")]
+[Token(TokenType = WechatTokenTypes.SuiteAccessToken, InjectionMode = TokenInjectionMode.Query, Name = "suite_access_token")]
 public interface IWechatWorkProviderAuthenticationService
 {
     /// <summary>

@@ -7,3 +7,5 @@
 /.doc
 /Mud.Wechat.Work/bin
 /Mud.Wechat.Work/obj
+/Tests/Mud.Wechat.Work.Tests/bin
+/Tests/Mud.Wechat.Work.Tests/obj

@@ -1,3 +1,4 @@
 <Solution>
   <Project Path="Mud.Wechat.Work/Mud.Wechat.Work.csproj" />
+  <Project Path="Tests/Mud.Wechat.Work.Tests/Mud.Wechat.Work.Tests.csproj" />
 </Solution>

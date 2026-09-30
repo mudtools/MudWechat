@@ -1,0 +1,455 @@
+# -----------------------------------------------------------------------
+#  作者：Mud Studio  版权所有 (c) Mud Studio 2026
+#  构建 / 测试 / 发布流水线（对齐 MudFeishu/FeishuV3 .github/workflows/dotnet-publish.yml）。
+#
+#  作业：
+#    1) build-and-test  双 OS 矩阵：Release 构建 + 诊断白名单断言 + AOT strict 门禁 + 配置面审计 + 单元测试
+#    2) version-and-release  仅 workflow_dispatch：semantic-release 生成版本/tag（失败或 dry_run 不推 tag）
+#    3) publish-nuget  推送 v* tag 或 dispatch 判定有新版本时：打包并由 OIDC 换取临时 Key 推送 nuget.org
+#
+#  与 FeishuV3 的差异（本仓事实，勿照搬）：
+#    - 解决方案为 Mud.Wechat.slnx；TFM 为 netstandard2.0;net6.0;net8.0;net10.0（无 net9.0）。
+#    - 本仓无 Demos 工程，故 Feishu 的「AOT 发布验证（Demos）」替换为「调用本仓门禁 verify-build.ps1 的
+#      AOT strict 段」——AOT 判定口径只存在于 scripts/verify-build.ps1，CI 内联复制会造成口径漂移。
+#    - nuget.config 只声明 nuget.org（无本地开发源），故 CACHE-1（本地源缓存新鲜度自检）在本仓无对象。
+#    - scripts/audit-config-keys.ps1 无 -Strict 开关，失败即以非零码退出，直接调用即可。
+# -----------------------------------------------------------------------
+name: .NET Build, Test and Publish
+
+on:
+  push:
+    branches: ["main", "master"]
+    tags:
+      - "v*" # 推送版本标签时触发（如 v1.0.4）
+  pull_request:
+    branches: ["main", "master"]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "版本号（如 1.0.4，留空则自动根据提交信息生成）"
+        required: false
+        default: ""
+      dry_run:
+        description: "试运行模式（不实际发布）"
+        required: true
+        default: "false"
+        type: boolean
+
+permissions:
+  contents: write # 创建 tag / release
+  id-token: write # OIDC：NuGet Trusted Publishing 换取临时 API Key
+
+env:
+  # .NET SDK 版本（需覆盖 netstandard2.0 / net6.0 / net8.0 / net10.0 的构建与测试宿主）。
+  # 多版本必须用「多行」写法（每行一个版本）：写成空格分隔的 "6.0.x 8.0.x 10.0.x" 时
+  # semver 会把空格当 AND 连接符使其通过格式校验，随后 setup-dotnet 的版本解析只取首段
+  # 并静默归一为单个 channel，其余版本实际来自 runner 预装镜像 —— 一旦镜像调整就会以
+  # 「testhost 无法启动」（VSTestTask 返回 false 却不记录错误）的形式炸开。
+  DOTNET_VERSIONS: |
+    6.0.x
+    8.0.x
+    10.0.x
+  CONFIGURATION: "Release"
+  SOLUTION_FILE: "Mud.Wechat.slnx"
+
+jobs:
+  # 第一个作业：构建 + 门禁 + 测试（双 OS）
+  build-and-test:
+    name: Build and Test (${{ matrix.os }})
+    strategy:
+      # 两个 OS 都要跑完：一个失败不应取消另一个（否则矩阵结论不完整）。
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSIONS }}
+
+      - name: Restore dependencies
+        run: dotnet restore ${{ env.SOLUTION_FILE }}
+
+      # 编译整个解决方案（输出同时写入日志，供下一步做诊断断言）。
+      # 显式构建而非仅依赖门禁脚本：日志路径经 GITHUB_ENV 固定传递，避免断言步骤读不到文件而假绿。
+      - name: Build
+        shell: pwsh
+        run: |
+          $log = Join-Path $env:RUNNER_TEMP 'mudwechat-build.log'
+          dotnet build $env:SOLUTION_FILE --no-restore --configuration $env:CONFIGURATION --nologo 2>&1 |
+            Tee-Object -FilePath $log
+          if ($LASTEXITCODE -ne 0) { Write-Host '构建失败。' -ForegroundColor Red; exit 1 }
+          "MUD_BUILD_LOG=$log" | Out-File -FilePath $env:GITHUB_ENV -Append
+
+      # 诊断白名单断言：把「不希望的诊断」压成 0（口径与 scripts/verify-build.ps1 步骤 1/2 一致）。
+      # 除下列桶外，本仓 Release 构建还会输出两类已知且被接受的诊断，**不得**断言为 0，否则必假红：
+      #   - AOT006（Warning，32 处）：[HttpJsonSerializable] 标注的 DTO 尚未被 JsonSerializerContext 覆盖。
+      #     仅在 AotStrictMode 下由组件包升级为 Error（见下一步骤的门禁脚本），Release 构建下不阻断。
+      #   - MUD005（Warning，48 处）：令牌走 Query/Path 注入的企业微信官方契约要求，AGENTS.md 已记录为接受风险。
+      - name: Assert diagnostics whitelist
+        shell: pwsh
+        run: |
+          $log = $env:MUD_BUILD_LOG
+          if (-not (Test-Path $log)) { Write-Host "[FAIL] 未找到构建日志：$log" -ForegroundColor Red; exit 1 }
+          $text = Get-Content -LiteralPath $log -Raw
+          $failed = $false
+          function Assert-Zero([string]$name, [int]$count, [string]$hint = '') {
+            if ($count -ne 0) {
+              Write-Host "  [FAIL] $name = $count $hint" -ForegroundColor Red
+              $script:failed = $true
+            }
+            else {
+              Write-Host "  [ OK ] $name = 0" -ForegroundColor Green
+            }
+          }
+          function Count-Of([string]$pattern) { ([regex]::Matches($text, $pattern)).Count }
+
+          Assert-Zero 'NU1603 版本漂移' (Count-Of 'NU1603') '声明版本与解析版本不一致'
+          Assert-Zero 'CS1750 断路'     (Count-Of 'CS1750') '生成器默认值回归或依赖缓存陈旧'
+          Assert-Zero 'HTTPCLIENT0xx'   (Count-Of 'HTTPCLIENT0\d\d')
+          Assert-Zero 'FORM0xx'         (Count-Of 'FORM0\d\d')
+          Assert-Zero 'EHSG0xx'         (Count-Of 'EHSG0\d\d')
+          Assert-Zero 'MUD00[1-4]'      (Count-Of 'MUD00[1-4]') 'MUD005 属已接受风险，不在此桶'
+          Assert-Zero 'IL 诊断'         (Count-Of ': (error|warning) IL\d{4}') 'net8.0/net10.0 必须净零'
+          Assert-Zero 'AOT001-005/007'  (Count-Of 'AOT00[1-5]|AOT007') 'AOT006 为 Warning，见上方说明'
+          Write-Host ("  [INFO] AOT006 = {0}（Warning，未覆盖的 [HttpJsonSerializable] DTO，AotStrictMode 下由下一步骤判定）" -f (Count-Of 'AOT006')) -ForegroundColor Cyan
+          Write-Host ("  [INFO] MUD005 = {0}（Warning，Query/Path 令牌注入，官方契约要求）" -f (Count-Of 'MUD005')) -ForegroundColor Cyan
+          if ($failed) { exit 1 }
+
+      # AOT strict 冒烟：直接复用仓库门禁脚本的步骤 1 + 步骤 2（-SkipTests 跳过脚本内测试，
+      # 测试统一由下面的「Run tests」产出 TRX 制品）。
+      # 为何复用脚本而非在 YAML 内联：AOT 判定口径（逐源项目、-f net8.0、-p:AotStrictMode=true、
+      # --no-incremental、断言编译错误与 IL 诊断）只应存在一处，内联复制会随 AGENTS.md 所述
+      # 「假绿陷阱」一起漂移。脚本步骤 1 的 Release 构建在上一构建之后为增量，代价可忽略。
+      # 脚本把日志写入 $env:TEMP，Linux runner 上该变量可能未定义，故显式指向 RUNNER_TEMP。
+      - name: AOT strict smoke (repo gate)
+        shell: pwsh
+        run: |
+          $env:TEMP = $env:RUNNER_TEMP
+          $env:TMP = $env:RUNNER_TEMP
+          & ./scripts/verify-build.ps1 -SkipTests
+          if ($LASTEXITCODE -ne 0) { Write-Host 'AOT strict 门禁失败。' -ForegroundColor Red; exit 1 }
+
+      # 配置面审计：断言已删除的配置键/无消费点的公开属性不得复活（AGENTS.md「配置面」条款）。
+      - name: Config key audit
+        shell: pwsh
+        run: |
+          & ./scripts/audit-config-keys.ps1
+          if ($LASTEXITCODE -ne 0) { Write-Host '配置面审计失败。' -ForegroundColor Red; exit 1 }
+
+      # 单元测试：TRX 统一落 TestResults/，作为「上传测试结果」步骤的稳定路径
+      # （不依赖各测试工程自己的 TestResults/，避免「日志里跑了、制品里没有」的排查死路）。
+      # 失败可读性：用例断言失败时 VSTestTask 返回 false 却不记录 MSBuild 错误（MSB4181），
+      # MSBuild 末尾只会打印「生成失败 / 0 个错误」—— 故保留完整日志并在失败时高亮失败用例。
+      - name: Run tests
+        id: test
+        shell: pwsh
+        run: |
+          $resultsDir = Join-Path $env:GITHUB_WORKSPACE 'TestResults'
+          if (Test-Path $resultsDir) { Remove-Item $resultsDir -Recurse -Force }
+          New-Item -ItemType Directory -Path $resultsDir -Force | Out-Null
+          # 提前写入 GITHUB_ENV：即使本步骤失败，摘要/上传步骤（if: always()）也能拿到该路径。
+          "MUD_TEST_RESULTS_DIR=$resultsDir" | Out-File -FilePath $env:GITHUB_ENV -Append
+          $log = Join-Path $resultsDir 'mudwechat-test.log'
+
+          dotnet test $env:SOLUTION_FILE --no-build --configuration $env:CONFIGURATION --results-directory $resultsDir --logger trx --verbosity normal 2>&1 |
+            Tee-Object -FilePath $log
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host ''
+            Write-Host '==== 测试阶段失败：以下为失败用例 / 中止信息（MSBuild 摘要中的“0 个错误”不代表成功）====' -ForegroundColor Red
+            Select-String -Path $log -Pattern '^\s*(失败|Failed)\s+Mud\.|\[FAIL\]|测试运行失败|测试运行已中止|Test Run Failed|Test Run Aborted|(失败|Failed)! - (失败|Failed):\s*[1-9]' |
+              ForEach-Object { Write-Host $_.Line.Trim() -ForegroundColor Red }
+            Write-Host ''
+            Write-Host '完整日志与 TRX 见制品 test-results-${{ matrix.os }}（TestResults/），用例明细见下一步摘要。' -ForegroundColor Yellow
+            exit 1
+          }
+
+      # 测试结果摘要：直接解析 TRX（locale 无关），不必下载制品即可在 Actions 日志看到失败用例。
+      # 该步骤恒不改变 job 结论（if: always() 且从不以非零码退出）；失败判定仍由上一步退出码负责。
+      - name: Test results summary
+        if: always()
+        shell: pwsh
+        run: |
+          $resultsDir = $env:MUD_TEST_RESULTS_DIR
+          if (-not $resultsDir -or -not (Test-Path $resultsDir)) {
+            Write-Host '[WARN] 未找到测试结果目录，跳过摘要。' -ForegroundColor Yellow
+            exit 0
+          }
+          $trxFiles = @(Get-ChildItem -Path $resultsDir -Filter '*.trx' -File -Recurse -ErrorAction SilentlyContinue)
+          if ($trxFiles.Count -eq 0) {
+            Write-Host '[WARN] 未发现任何 TRX 文件（测试可能未执行），详见制品中的 mudwechat-test.log。' -ForegroundColor Yellow
+            exit 0
+          }
+
+          # TRX 结构为 <TestRun><ResultSummary><Counters .../>；Counters 不在 Results 之下
+          # （写成 $doc.TestRun.Results.ResultSummary.Counters 会恒为 $null，摘要变成全 0）。
+          $failed = 0
+          $passed = 0
+          $total = 0
+          $failedNames = New-Object System.Collections.Generic.List[string]
+          Write-Host '---- 测试结果摘要（按 TRX 文件）----' -ForegroundColor Cyan
+          foreach ($trx in ($trxFiles | Sort-Object Name)) {
+            try {
+              [xml]$doc = Get-Content -LiteralPath $trx.FullName -Raw -Encoding utf8
+              $counters = $doc.TestRun.ResultSummary.Counters
+              $f = if ($counters) { [int]$counters.failed } else { 0 }
+              $p = if ($counters) { [int]$counters.passed } else { 0 }
+              $t = if ($counters) { [int]$counters.total } else { 0 }
+              $failed += $f
+              $passed += $p
+              $total += $t
+              $color = if ($f -gt 0) { 'Red' } else { 'Green' }
+              $state = if ($f -gt 0) { '[FAIL]' } else { '[ OK ]' }
+              Write-Host ("  {0} {1,-44} 总计 {2,5}  通过 {3,5}  失败 {4,5}" -f $state, $trx.BaseName, $t, $p, $f) -ForegroundColor $color
+              foreach ($r in @($doc.TestRun.Results.UnitTestResult)) {
+                if ($r.outcome -eq 'failed') {
+                  $name = if ($r.testName) { $r.testName } else { "$($r.TestMethod.className).$($r.TestMethod.name)" }
+                  $failedNames.Add("[$($trx.BaseName)] $name")
+                }
+              }
+            }
+            catch {
+              Write-Host "  [WARN] 解析 TRX 失败: $($trx.Name) - $_" -ForegroundColor Yellow
+            }
+          }
+          Write-Host ''
+          $summaryColor = if ($failed -gt 0) { 'Red' } else { 'Green' }
+          Write-Host ("合计：总计 {0} / 通过 {1} / 失败 {2}（TRX {3} 个）" -f $total, $passed, $failed, $trxFiles.Count) -ForegroundColor $summaryColor
+          if ($failedNames.Count -gt 0) {
+            Write-Host '失败用例：' -ForegroundColor Red
+            $shown = @($failedNames | Select-Object -First 50)
+            $shown | ForEach-Object { Write-Host "    - $_" -ForegroundColor Red }
+            if ($failedNames.Count -gt $shown.Count) {
+              Write-Host "    ...（其余 $($failedNames.Count - $shown.Count) 条见制品中的 TRX）" -ForegroundColor Red
+            }
+          }
+          Write-Host ''
+          # 矩阵表达式由 GitHub 在交给 pwsh 之前展开，故必须用单引号包裹，避免 PowerShell 报 ParserError。
+          Write-Host '制品：test-results-${{ matrix.os }}（含 TestResults/*.trx 与 TestResults/mudwechat-test.log）' -ForegroundColor Cyan
+
+      # 上传测试报告（TRX + 完整测试日志），测试失败时同样上传，便于下载排查
+      - name: Publish test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results-${{ matrix.os }}
+          path: |
+            TestResults/**/*.trx
+            TestResults/*.log
+          if-no-files-found: warn
+          retention-days: 7
+
+  # 第二个作业：版本管理与 Release（仅手动触发）
+  version-and-release:
+    name: Version and Release
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'
+    outputs:
+      version: ${{ steps.version_info.outputs.version }}
+      new_release: ${{ steps.version_info.outputs.new_release }}
+      tag: ${{ steps.version_info.outputs.tag }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install semantic-release
+        run: |
+          npm install -g semantic-release@23
+          npm install -g @semantic-release/git@10
+          npm install -g @semantic-release/changelog@6
+          npm install -g @semantic-release/exec@6
+          npm install -g conventional-changelog-conventionalcommits@7
+
+      - name: Create semantic-release config
+        run: |
+          cat > .releaserc.json << 'EOF'
+          {
+            "branches": ["main", "master"],
+            "plugins": [
+              [
+                "conventional-changelog-conventionalcommits",
+                {
+                  "types": [
+                    { "type": "feat", "section": "✨ Features", "hidden": false },
+                    { "type": "fix", "section": "🐛 Bug Fixes", "hidden": false },
+                    { "type": "perf", "section": "⚡ Performance", "hidden": false },
+                    { "type": "refactor", "section": "♻️ Code Refactoring", "hidden": false },
+                    { "type": "docs", "section": "📝 Documentation", "hidden": false },
+                    { "type": "test", "section": "✅ Tests", "hidden": false },
+                    { "type": "build", "section": "📦 Build System", "hidden": false },
+                    { "type": "ci", "section": "👷 CI/CD", "hidden": false },
+                    { "type": "chore", "section": "🔧 Maintenance", "hidden": true }
+                  ]
+                }
+              ],
+              [
+                "@semantic-release/changelog",
+                {
+                  "changelogFile": "CHANGELOG.md",
+                  "changelogTitle": "# Changelog\n\nAll notable changes to this project will be documented in this file."
+                }
+              ],
+              [
+                "@semantic-release/exec",
+                {
+                  "prepareCmd": "sed -i 's/<Version>.*<\\/Version>/<Version>${nextRelease.version}<\\/Version>/' Directory.Build.props"
+                }
+              ],
+              [
+                "@semantic-release/git",
+                {
+                  "assets": ["Directory.Build.props", "CHANGELOG.md"],
+                  "message": "chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
+                }
+              ]
+            ]
+          }
+          EOF
+
+      - name: Run semantic-release
+        id: semantic
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [ -n "${{ inputs.version }}" ]; then
+            VERSION="${{ inputs.version }}"
+            echo "version=$VERSION" >> $GITHUB_OUTPUT
+            # dry_run 只做版本号/changelog 演练，不推 tag：new_release 必须为 false，
+            # 否则 publish-nuget 会按条件尝试检出未推送的 v$VERSION tag 而 checkout 失败。
+            if [ "${{ inputs.dry_run }}" = "true" ]; then
+              echo "new_release=false" >> $GITHUB_OUTPUT
+            else
+              echo "new_release=true" >> $GITHUB_OUTPUT
+            fi
+            echo "tag=v$VERSION" >> $GITHUB_OUTPUT
+
+            # 更新 Directory.Build.props（版本号的唯一来源）
+            sed -i "s/<Version>.*<\/Version>/<Version>$VERSION<\/Version>/" Directory.Build.props
+
+            # 生成 release notes
+            echo "## v$VERSION ($(date '+%Y-%m-%d'))" > RELEASE_NOTES.md
+            echo "" >> RELEASE_NOTES.md
+            git log --pretty=format:"- %s" $(git describe --tags --abbrev=0 2>/dev/null || echo "")..HEAD >> RELEASE_NOTES.md || echo "- Manual release v$VERSION" >> RELEASE_NOTES.md
+
+            # 提交并创建 tag（本仓默认分支为 master，与上面 Directory.Build.props 版本号同批推送）
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add Directory.Build.props
+            git commit -m "chore(release): v$VERSION [skip ci]" || true
+            git tag -a "v$VERSION" -F RELEASE_NOTES.md
+
+            if [ "${{ inputs.dry_run }}" != "true" ]; then
+              git push origin HEAD:master
+              git push origin "v$VERSION"
+            fi
+          else
+            if [ "${{ inputs.dry_run }}" = "true" ]; then
+              DRY_RUN=true npx semantic-release --dry-run
+              VERSION=$(npx semantic-release --dry-run 2>&1 | grep -oP 'The next release version is \K[0-9.]+')
+              echo "version=${VERSION:-skip}" >> $GITHUB_OUTPUT
+              echo "new_release=false" >> $GITHUB_OUTPUT
+              echo "tag=" >> $GITHUB_OUTPUT
+            else
+              npx semantic-release
+              VERSION=$(git describe --tags --abbrev=0 | sed 's/v//')
+              echo "version=$VERSION" >> $GITHUB_OUTPUT
+              echo "new_release=true" >> $GITHUB_OUTPUT
+              echo "tag=v$VERSION" >> $GITHUB_OUTPUT
+            fi
+          fi
+
+      - name: Extract version info
+        id: version_info
+        run: |
+          VERSION="${{ steps.semantic.outputs.version }}"
+          if [ "$VERSION" = "skip" ] || [ -z "$VERSION" ]; then
+            echo "version=skip" >> $GITHUB_OUTPUT
+            echo "new_release=false" >> $GITHUB_OUTPUT
+            echo "tag=" >> $GITHUB_OUTPUT
+          else
+            echo "version=$VERSION" >> $GITHUB_OUTPUT
+            echo "new_release=${{ steps.semantic.outputs.new_release }}" >> $GITHUB_OUTPUT
+            echo "tag=${{ steps.semantic.outputs.tag }}" >> $GITHUB_OUTPUT
+          fi
+
+  # 第三个作业：打包并发布 NuGet 包
+  # - 推送 v* tag 时发布（tag 可能手动打，也可能由 version-and-release 推送）
+  # - 或手动 workflow_dispatch 且 version-and-release 判定有新版本时发布
+  # 用 always() 规避 needs 中被 skip 的 job（version-and-release 仅在 workflow_dispatch 执行）
+  publish-nuget:
+    name: Publish to NuGet
+    needs: [build-and-test, version-and-release]
+    runs-on: ubuntu-latest
+    if: |
+      always() &&
+      needs.build-and-test.result == 'success' &&
+      (startsWith(github.ref, 'refs/tags/v') ||
+       (github.event_name == 'workflow_dispatch' && needs.version-and-release.outputs.new_release == 'true'))
+    environment: release # 需与 NuGet.org Trusted Publishing 策略里填的 Environment 一致
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          # tag 触发：检出该 tag；手动触发：检出 master（version-and-release 已把新版本 push 到 master）。
+          # 优先用 needs.version-and-release.outputs.tag，可精确锁定打包的 commit，避免竞态。
+          ref: ${{ needs.version-and-release.outputs.tag != '' && needs.version-and-release.outputs.tag || github.ref }}
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSIONS }}
+
+      - name: Restore dependencies
+        run: dotnet restore ${{ env.SOLUTION_FILE }}
+
+      - name: Build
+        run: dotnet build ${{ env.SOLUTION_FILE }} --configuration ${{ env.CONFIGURATION }} --no-restore
+
+      # 打包：生成 .nupkg（Tests 工程均 <IsPackable>false</IsPackable>，不会混入产物）
+      - name: Pack NuGet package
+        run: dotnet pack ${{ env.SOLUTION_FILE }} --configuration ${{ env.CONFIGURATION }} --output ./nupkg --no-build
+
+      # 制品数量守卫：源项目为 4 个（Work / Work.Abstractions / Work.Callback / Work.DataModels）。
+      # 少包通常意味着某个 csproj 被误设为不可打包（或 slnx 漏项），此处 fail-closed 而非静默发漏包。
+      - name: Verify package count
+        run: |
+          COUNT=$(ls -1 ./nupkg/*.nupkg 2>/dev/null | wc -l)
+          echo "生成 nupkg 数量：$COUNT"
+          if [ "$COUNT" -ne 4 ]; then
+            echo "::error::期望 4 个 nupkg（Work / Work.Abstractions / Work.Callback / Work.DataModels），实际 $COUNT 个。"
+            ls -1 ./nupkg || true
+            exit 1
+          fi
+
+      # 用 OIDC 换取临时 API Key（NuGet Trusted Publishing）
+      - name: NuGet login (OIDC -> temp API key)
+        uses: NuGet/login@v1
+        id: login
+        with:
+          # NuGet.org 个人资料名（Profile name），不是邮箱、也不是组织名
+          user: ${{ secrets.NUGET_USER }}
+
+      # 发布：临时 Key 有效期约 1 小时，绑定仓库/工作流
+      - name: Push to NuGet.org
+        run: |
+          dotnet nuget push "./nupkg/*.nupkg" \
+            --api-key ${{ steps.login.outputs.NUGET_API_KEY }} \
+            --source https://api.nuget.org/v3/index.json \
+            --skip-duplicate

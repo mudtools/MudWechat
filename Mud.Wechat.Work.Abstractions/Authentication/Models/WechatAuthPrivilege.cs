@@ -8,6 +8,7 @@
 namespace Mud.Wechat.Work.Abstractions.Authentication.Models;
 
 /// <summary>应用权限信息（领域模型；对应官方 <c>privilege</c>）。</summary>
+[HttpJsonSerializable(SerializerClassName = "Authentication")]
 public sealed class WechatAuthPrivilege
 {
     /// <summary>权限等级：1 通讯录基本信息只读；2 通讯录全部信息只读；3 通讯录全部信息读写；4 单个基本信息只读；5 通讯录全部信息只写。</summary>

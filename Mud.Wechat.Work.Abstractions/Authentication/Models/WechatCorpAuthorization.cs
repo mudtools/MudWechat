@@ -21,6 +21,7 @@ namespace Mud.Wechat.Work.Abstractions.Authentication.Models;
 /// 宿主如需持久化，自行决定序列化格式（字段演进不影响 SNS 契约）。
 /// </para>
 /// </remarks>
+[HttpJsonSerializable(SerializerClassName = "Authentication")]
 public sealed class WechatCorpAuthorization
 {
     /// <summary>归属的已注册应用键（多套件隔离维度，来自 <c>WechatAppConfig.AppKey</c>）。</summary>

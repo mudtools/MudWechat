@@ -8,6 +8,7 @@
 namespace Mud.Wechat.Work.Abstractions.Authentication.Models;
 
 /// <summary>授权的应用信息（领域模型；对应官方 <c>auth_info.agent</c>）。</summary>
+[HttpJsonSerializable(SerializerClassName = "Authentication")]
 public sealed class WechatAuthAgent
 {
     /// <summary>授权方应用 id。</summary>

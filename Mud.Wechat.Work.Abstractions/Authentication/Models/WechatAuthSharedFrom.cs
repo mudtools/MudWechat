@@ -8,6 +8,7 @@
 namespace Mud.Wechat.Work.Abstractions.Authentication.Models;
 
 /// <summary>共享应用的企业信息（领域模型；对应官方 <c>shared_from</c>）。</summary>
+[HttpJsonSerializable(SerializerClassName = "Authentication")]
 public sealed class WechatAuthSharedFrom
 {
     /// <summary>共享了应用的企业 CorpId。</summary>

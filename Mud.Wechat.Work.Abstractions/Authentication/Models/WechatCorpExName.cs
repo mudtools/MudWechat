@@ -8,6 +8,7 @@
 namespace Mud.Wechat.Work.Abstractions.Authentication.Models;
 
 /// <summary>企业其他认证名称信息（领域模型；对应官方 <c>corp_ex_name</c>）。</summary>
+[HttpJsonSerializable(SerializerClassName = "Authentication")]
 public sealed class WechatCorpExName
 {
     /// <summary>企业其他认证的企业简称列表（不含 <c>corp_name</c>）。</summary>

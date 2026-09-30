@@ -8,6 +8,7 @@
 namespace Mud.Wechat.Work.Abstractions.Authentication.Models;
 
 /// <summary>代理服务商企业信息（领域模型；对应官方 <c>dealer_corp_info</c>）。</summary>
+[HttpJsonSerializable(SerializerClassName = "Authentication")]
 public sealed class WechatDealerCorpInfo
 {
     /// <summary>代理服务商企业微信 id。</summary>

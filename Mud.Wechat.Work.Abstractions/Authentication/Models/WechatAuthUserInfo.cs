@@ -8,6 +8,7 @@
 namespace Mud.Wechat.Work.Abstractions.Authentication.Models;
 
 /// <summary>授权管理员信息（领域模型；对应官方 <c>auth_user_info</c>）。</summary>
+[HttpJsonSerializable(SerializerClassName = "Authentication")]
 public sealed class WechatAuthUserInfo
 {
     /// <summary>授权管理员的 userid（仅管理员授权返回）。</summary>

@@ -14,6 +14,7 @@ using Mud.Wechat.Work.DataModels.Contacts.Tags;
 using Mud.Wechat.Work.DataModels.Contracts.Users;
 using Mud.Wechat.Work.DataModels.CorpGroup;
 using Mud.Wechat.Work.DataModels.CorpGroup.ChainContacts;
+using Mud.Wechat.Work.DataModels.CorpGroup.Rules;
 using System.Text.Json.Serialization;
 
 namespace Mud.Wechat.Work.DataModels;
@@ -168,6 +169,17 @@ namespace Mud.Wechat.Work.DataModels;
 [JsonSerializable(typeof(GetChainImportResultResponse))]
 [JsonSerializable(typeof(GetChainUserCustomIdResponse))]
 [JsonSerializable(typeof(GetCorpSharedChainListResponse))]
+[JsonSerializable(typeof(ChainRuleOwnerRange))]
+[JsonSerializable(typeof(ChainRuleMemberRange))]
+[JsonSerializable(typeof(ChainRuleInfo))]
+[JsonSerializable(typeof(ListChainRuleIdsRequest))]
+[JsonSerializable(typeof(DeleteChainRuleRequest))]
+[JsonSerializable(typeof(GetChainRuleInfoRequest))]
+[JsonSerializable(typeof(AddChainRuleRequest))]
+[JsonSerializable(typeof(ModifyChainRuleRequest))]
+[JsonSerializable(typeof(ListChainRuleIdsResponse))]
+[JsonSerializable(typeof(GetChainRuleInfoResponse))]
+[JsonSerializable(typeof(AddChainRuleResponse))]
 public sealed partial class WechatWorkJsonContext : JsonSerializerContext
 {
 }

@@ -13,10 +13,11 @@ namespace Mud.Wechat.Work;
 /// 企业微信「上下游」域公共 SDK（基础接口 + 关联客户信息：应用共享信息、下级/下游企业凭证、
 /// 小程序 session、unionid 与外部联系人转换）。
 /// <para>
-/// 官方对企业自建应用与服务商代开发开放了完全一致的 6 个端点（第三方应用无对应文档，不设子接口），
-/// 因此全部端点声明于本公共父接口；自建与代开发应用类型子接口
-/// （<see cref="IWechatWorkInternalCorpGroupService"/> / <see cref="IWechatWorkProviderCorpGroupService"/>）
-/// 均为空标记，仅作为类型化契约入口。
+/// 官方对企业自建应用与服务商代开发开放了完全一致的 6 个端点；第三方应用仅开放<b>获取应用共享信息</b>
+/// （95324，与自建/代开发同路由同契约，随父接口继承），其余 5 个端点无第三方文档。
+/// 全部端点因此声明于本公共父接口；自建/第三方/代开发应用类型子接口
+/// （<see cref="IWechatWorkInternalCorpGroupService"/> / <see cref="IWechatWorkThirdPartyCorpGroupService"/> /
+/// <see cref="IWechatWorkProviderCorpGroupService"/>）均为空标记，仅作为类型化契约入口。
 /// </para>
 /// </summary>
 /// <remarks>
@@ -44,12 +45,15 @@ public interface IWechatWorkCorpGroupService
     /// 获取应用共享信息
     /// <para>拉取上级/上游企业与下级/下游企业之间的应用共享信息（corp_list）。</para>
     /// <para>limit 最大值 100，默认或 0 表示拉取全量；建议分页拉取（cursor 游标）或指定 corpid 拉取。</para>
+    /// <para>官方权限说明「自建应用和第三方应用」：第三方应用亦可调用本端点（见 95324），
+    /// 其余上下游端点无第三方文档。</para>
     /// </summary>
     /// <param name="request">应用共享信息请求体（<see cref="ListAppShareInfoRequest"/>）。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
     /// <returns>应用共享信息列表（ending 分页终止标志 + next_cursor 游标）。</returns>
     /// <remarks>
     /// <para><b>企业自建应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/95813"/></para>
+    /// <para><b>第三方应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/95324"/></para>
     /// <para><b>服务商代开发</b>SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/96872"/></para>
     /// </remarks>
     [Post("/cgi-bin/corpgroup/corp/list_app_share_info")]

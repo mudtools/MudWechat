@@ -14,6 +14,7 @@ using Mud.Wechat.Work.DataModels.Contacts.Tags;
 using Mud.Wechat.Work.DataModels.Contracts.Users;
 using Mud.Wechat.Work.DataModels.CorpGroup;
 using Mud.Wechat.Work.DataModels.CorpGroup.ChainContacts;
+using Mud.Wechat.Work.DataModels.CorpGroup.Rules;
 using Mud.Wechat.Work.DataModels.CorpTokenAuthentication;
 using Mud.Wechat.Work.DataModels.InternalAppAuthentication;
 using Mud.Wechat.Work.DataModels.ProviderAuthentication;
@@ -1067,5 +1068,67 @@ public class WechatDataModelDeserializationTests
         resp!.Chains.Should().HaveCount(1);
         resp.Chains![0].ChainId.Should().Be("chainid1");
         resp.Chains[0].ChainName.Should().Be("chain-1");
+    }
+
+    [Fact]
+    public void GetChainRuleInfoResponse_ShouldDeserialize_WithOfficialJsonContract()
+    {
+        var json = """
+        {
+          "errcode": 0,
+          "errmsg": "ok",
+          "rule_info": {
+            "owner_corp_range": { "departmentids": ["departmentid1"], "userids": ["userid1", "userid2"] },
+            "member_corp_range": { "groupids": ["groupid1"], "corpids": ["corpid1", "corpid2"] }
+          }
+        }
+        """;
+        var resp = JsonSerializer.Deserialize<GetChainRuleInfoResponse>(json);
+
+        resp!.IsSuccess.Should().BeTrue();
+        resp.RuleInfo!.OwnerCorpRange!.DepartmentIds.Should().Equal(new[] { "departmentid1" });
+        resp.RuleInfo.OwnerCorpRange.UserIds.Should().Equal(new[] { "userid1", "userid2" });
+        resp.RuleInfo.MemberCorpRange!.GroupIds.Should().Equal(new[] { "groupid1" });
+        resp.RuleInfo.MemberCorpRange.CorpIds.Should().Equal(new[] { "corpid1", "corpid2" });
+    }
+
+    [Fact]
+    public void ListChainRuleIdsResponse_ShouldDeserialize()
+    {
+        var json = """{"errcode":0,"errmsg":"ok","rule_ids":[1,2]}""";
+        var resp = JsonSerializer.Deserialize<ListChainRuleIdsResponse>(json);
+
+        resp!.RuleIds.Should().Equal(new[] { 1, 2 });
+    }
+
+    [Fact]
+    public void AddChainRuleResponse_ShouldDeserialize()
+    {
+        var json = """{"errcode":0,"errmsg":"ok","rule_id":1}""";
+        var resp = JsonSerializer.Deserialize<AddChainRuleResponse>(json);
+
+        resp!.RuleId.Should().Be(1);
+    }
+
+    [Fact]
+    public void AddChainRuleRequest_ShouldSerialize_WithSnakeCaseJsonKeys()
+    {
+        var json = JsonSerializer.Serialize(
+            new AddChainRuleRequest
+            {
+                ChainId = "Chxxxxxx",
+                RuleInfo = new ChainRuleInfo
+                {
+                    OwnerCorpRange = new ChainRuleOwnerRange { UserIds = new() { "userid1" } },
+                    MemberCorpRange = new ChainRuleMemberRange { CorpIds = new() { "corpid1" } },
+                },
+            },
+            Mud.Wechat.Work.DataModels.WechatWorkJsonContext.Default.AddChainRuleRequest);
+
+        json.Should().Contain("\"chain_id\":\"Chxxxxxx\"");
+        json.Should().Contain("\"rule_info\":{\"owner_corp_range\":{\"userids\":[\"userid1\"]}");
+        json.Should().Contain("\"member_corp_range\":{\"corpids\":[\"corpid1\"]}");
+        json.Should().NotContain("\"departmentids\"", "未赋值的可空列表不应序列化（WhenWritingNull）");
+        json.Should().NotContain("\"groupids\"", "未赋值的可空列表不应序列化（WhenWritingNull）");
     }
 }

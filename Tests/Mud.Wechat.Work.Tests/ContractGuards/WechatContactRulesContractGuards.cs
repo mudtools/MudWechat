@@ -9,7 +9,7 @@ using System.Reflection;
 using Mud.HttpUtils.Attributes;
 using Mud.Wechat.Work;
 using Mud.Wechat.Work.Abstractions;
-using Mud.Wechat.Work.DataModels.ContactRules;
+using Mud.Wechat.Work.DataModels.Contacts.ContactRules;
 
 namespace Mud.Wechat.Work.Tests.ContractGuards;
 
@@ -19,9 +19,9 @@ namespace Mud.Wechat.Work.Tests.ContractGuards;
 /// <remarks>
 /// <para>
 /// 与成员/部门/标签域的差异点：官方<b>仅向企业自建应用</b>开放本域 4 个端点
-/// （第三方应用与服务商代开发均无对应文档），因此父接口与第三方/代开发子接口均为空标记，
-/// 全部端点收敛于自建子接口 <see cref="IWechatWorkInternalContactRulesService"/>
-/// （落位形态同部门域写入端点；空标记数量为 2 + 1 父接口，为各域之最）。
+/// （第三方应用与服务商代开发均无对应文档），因此父接口为零端点抽象、全部端点收敛于自建子接口
+/// <see cref="IWechatWorkInternalContactRulesService"/>，且不设第三方/代开发子接口
+/// （应用类型子接口仅覆盖官方实际开放的应用类型）。
 /// </para>
 /// </remarks>
 public class WechatContactRulesContractGuards
@@ -29,7 +29,7 @@ public class WechatContactRulesContractGuards
     /// <summary>
     /// 父接口生成实现类名（生成器规则：接口名去 <c>I</c> 前缀，落位于
     /// <c>Mud.Wechat.Work.Internal</c>，internal 不可跨程序集引用，故以字面量锁定）。
-    /// 三个子接口（含自建）均继承父实现类——父接口无端点，端点由各子接口自身声明。
+    /// 自建子接口继承父实现类——父接口无端点，端点由自建子接口自身声明。
     /// </summary>
     private const string ParentImplementationClassName = "WechatWorkContactRulesService";
 
@@ -69,23 +69,16 @@ public class WechatContactRulesContractGuards
 
     /// <summary>
     /// 契约守卫 CR2：接口层级与生成器注册形态——官方仅自建应用开放本域，父接口零端点（IsAbstract），
-    /// 全部端点收敛自建子接口，第三方/代开发子接口为空标记（能力漂移守卫）。
+    /// 全部端点收敛自建子接口；官方未向第三方/代开发开放本域，不设对应子接口
+    /// （应用类型子接口仅覆盖官方实际开放的应用类型，能力漂移守卫）。
     /// </summary>
     [Fact]
     public void ContactRulesInterfaceHierarchy_ShouldConvergeOnInternalChildWithContactRegistry()
     {
         var parent = typeof(IWechatWorkContactRulesService);
         var internalChild = typeof(IWechatWorkInternalContactRulesService);
-        var emptyChildren = new[]
-        {
-            typeof(IWechatWorkThirdPartyContactRulesService),
-            typeof(IWechatWorkProviderContactRulesService),
-        };
 
-        foreach (var child in emptyChildren.Append(internalChild))
-        {
-            child.Should().BeAssignableTo(parent, $"{child.Name} 必须继承公共父接口 {parent.Name}");
-        }
+        internalChild.Should().BeAssignableTo(parent, $"{internalChild.Name} 必须继承公共父接口 {parent.Name}");
 
         var parentApi = parent.GetCustomAttribute<HttpClientApiAttribute>();
         parentApi.Should().NotBeNull("父接口必须声明 [HttpClientApi]");
@@ -102,26 +95,10 @@ public class WechatContactRulesContractGuards
             $"{internalChild.Name} 必须继承父接口生成实现类（父接口无端点，此处仅约束生成器继承链）");
         internalChild.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
             .Should().HaveCount(4, "全部 4 个端点必须声明在自建子接口");
-
-        foreach (var child in emptyChildren)
-        {
-            var childApi = child.GetCustomAttribute<HttpClientApiAttribute>();
-            childApi.Should().NotBeNull($"{child.Name} 必须声明 [HttpClientApi]");
-            childApi!.RegistryGroupName.Should().Be(ContactRegistryGroupName,
-                $"{child.Name} 必须挂 Contact 注册组");
-            childApi.InheritedFrom.Should().Be(ParentImplementationClassName,
-                $"{child.Name} 必须继承父接口生成实现类（与其他域空标记先例一致；本域父接口无端点，空标记客户端端点数恒为 0）");
-
-            // 官方未向第三方/代开发开放本域端点：子接口不得新增端点（能力集合漂移守卫）。
-            child.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
-                .Should().BeEmpty(
-                    $"{child.Name} 为应用类型空标记：官方未向该应用类型开放通讯录查看权限管理端点，" +
-                    "新增端点须先核对官方文档并同批调整 CR1/CR2");
-        }
     }
 
     /// <summary>
-    /// 契约守卫 CR3：令牌绑定——四接口统一消费 AccessToken 路由键并以 Query 注入（官方契约 access_token）。
+    /// 契约守卫 CR3：令牌绑定——父/自建两接口统一消费 AccessToken 路由键并以 Query 注入（官方契约 access_token）。
     /// </summary>
     [Fact]
     public void ContactRulesTokenBinding_ShouldBeAccessTokenInjectedViaQuery()
@@ -130,8 +107,6 @@ public class WechatContactRulesContractGuards
         {
             typeof(IWechatWorkContactRulesService),
             typeof(IWechatWorkInternalContactRulesService),
-            typeof(IWechatWorkThirdPartyContactRulesService),
-            typeof(IWechatWorkProviderContactRulesService),
         };
 
         foreach (var iface in interfaces)

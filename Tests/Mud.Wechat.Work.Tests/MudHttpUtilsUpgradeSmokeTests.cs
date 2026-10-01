@@ -14,10 +14,13 @@ using Mud.Wechat.Work.DataModels.ProviderAuthentication;
 namespace Mud.Wechat.Work.Tests;
 
 /// <summary>
-/// Mud.HttpUtils 2.0.10 组件升级冒烟测试：
+/// Mud.HttpUtils 组件升级冒烟测试：
 /// 验证 errcode 令牌失效恢复（Phase A）、共享令牌管理器标记（Phase B）
 /// 与既有 SDK 契约在升级后的运行时行为。
 /// </summary>
+/// <remarks>
+/// 历史沿革：2.0.10（开发中间态）→ 2.0.9（首个正式上架版）→ <b>3.0.0</b>（BC-27 多应用切换 API 收敛）。
+/// </remarks>
 public class MudHttpUtilsUpgradeSmokeTests
 {
     private const string SuiteAccessQueryParam = "suite_access_token";
@@ -107,17 +110,23 @@ public class MudHttpUtilsUpgradeSmokeTests
     #endregion
 
     /// <summary>
-    /// V1：升级确实生效——运行时加载的是含 errcode 恢复能力的 Mud.HttpUtils 2.0.9+ 程序集。
-    /// 正式版号定为 2.0.9（上架 nuget.org 后由本地调试包 2.0.10 切换），断言取 ≥ 9 以同时覆盖两个版本。
+    /// V1：升级确实生效——运行时加载的是 <b>Mud.HttpUtils 3.0.0</b> 程序集
+    /// （BC-27 已从 <c>IAppContextSwitcher</c> 移除 UseApp/UseDefaultApp/BeginScope(string)）。
     /// </summary>
+    /// <remarks>
+    /// 断言取「≥ 2.0.9」的语义下限 + 「Major ≥ 3」的升级事实：2.0.9 起含 errcode 恢复能力，
+    /// 3.0.0 起含 BC-27 收敛。版本过渡期（例如回退到 2.0.x 排查问题）时本用例应显式失败，
+    /// 以提醒同步回退 <c>IWechatAppContextSwitcher</c> 的接续声明。
+    /// </remarks>
     [Fact]
-    public void UpgradedComponent_ShouldBeAtLeast2_0_9()
+    public void UpgradedComponent_ShouldBeAtLeast3_0_0()
     {
         var version = typeof(TokenRecoveryExecutor).Assembly.GetName().Version;
         version!.Should().NotBeNull();
-        version.Major.Should().Be(2);
-        version.Minor.Should().Be(0);
-        version.Build.Should().BeGreaterThanOrEqualTo(9);
+        version.Should().BeGreaterThanOrEqualTo(new Version(2, 0, 9),
+            "2.0.9 起含 errcode 令牌失效恢复能力（Phase A/B 的运行时前提）");
+        version.Major.Should().BeGreaterThanOrEqualTo(3,
+            "BC-27 适配后运行时必须是 3.0.0+（旧切换入口已从 IAppContextSwitcher 移除）");
     }
 
     /// <summary>

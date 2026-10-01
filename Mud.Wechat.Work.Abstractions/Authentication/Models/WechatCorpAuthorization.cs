@@ -17,8 +17,10 @@ namespace Mud.Wechat.Work.Abstractions.Authentication.Models;
 /// <c>(AppKey, AuthCorpId)</c>（多套件 / 多代开发模板隔离）。
 /// </para>
 /// <para>
-/// 本类型为<b>领域模型</b>，仅在进程内（仓储）流转，不进 <c>WechatWorkJsonContext</c>；
-/// 宿主如需持久化，自行决定序列化格式（字段演进不影响 SNS 契约）。
+/// 本类型为<b>领域模型</b>（不进 <c>WechatWorkJsonContext</c>——该上下文只覆盖官方传输 DTO），
+/// 但已由 <see cref="AuthenticationJsonContext"/> 覆盖 <c>[HttpJsonSerializable]</c>，
+/// 供宿主在 AOT/Trim 环境下<b>安全地</b>持久化本聚合；宿主也可自行决定序列化格式
+/// （字段演进不影响 SNS 契约，<c>IWechatCorpAuthStore</c> 为宿主实现的持久化端口）。
 /// </para>
 /// </remarks>
 [HttpJsonSerializable(SerializerClassName = "Authentication")]

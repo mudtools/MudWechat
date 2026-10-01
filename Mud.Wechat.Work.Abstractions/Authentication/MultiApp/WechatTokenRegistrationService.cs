@@ -45,14 +45,14 @@ internal sealed class WechatTokenRegistrationService : IHostedService
     public Task StartAsync(CancellationToken cancellationToken)
     {
         // P0-1（G8-A）：启动期一致性自检——IAppContextHolder 与 IWechatAppContextSwitcher 必须是同一实例，
-        // 否则 UseApp/BeginScope 对环境上下文（AsyncLocal）的写入对声明式（[Token]）客户端无效，
+        // 否则 UseAppScope/UseDefaultAppScope 对环境上下文（AsyncLocal）的写入对声明式（[Token]）客户端无效，
         // 多套件下会静默使用默认应用令牌。仅告警，不阻断启动。
         var holder = _serviceProvider.GetService<IAppContextHolder>();
         var switcher = _serviceProvider.GetService<IWechatAppContextSwitcher>();
         if (holder != null && switcher != null && !ReferenceEquals(holder, switcher))
         {
             _logger.LogWarning(
-                "IAppContextHolder 与 IWechatAppContextSwitcher 不是同一实例：UseApp/BeginScope 对声明式（[Token]）客户端可能无效。" +
+                "IAppContextHolder 与 IWechatAppContextSwitcher 不是同一实例：UseAppScope/UseDefaultAppScope 对声明式（[Token]）客户端可能无效。" +
                 "请确保只注册一个 AsyncLocal 上下文实现（宿主自定义 holder 时须与切换器同实例）。");
         }
 

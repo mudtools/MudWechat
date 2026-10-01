@@ -1,4 +1,4 @@
-# -----------------------------------------------------------------------
+﻿# -----------------------------------------------------------------------
 #  作者：Mud Studio  版权所有 (c) Mud Studio 2026
 #  Mud.Wechat 项目构建门禁脚本（对齐 MudFeishu/FeishuV3 scripts/verify-build.ps1）。
 #
@@ -40,7 +40,7 @@ function Assert-Zero {
 Write-Host '== Mud.Wechat verify-build ==' -ForegroundColor Cyan
 
 # ------------------------------------------------------------------ 步骤 1
-Write-Host '`n[步骤 1] Release 全量构建' -ForegroundColor Cyan
+Write-Host "`n[步骤 1] Release 全量构建" -ForegroundColor Cyan
 $buildLog = dotnet build $solution -c Release --nologo 2>&1 | Out-String
 $buildLog | Out-File -FilePath (Join-Path $env:TEMP 'mudwechat-verify-build.log') -Encoding utf8
 
@@ -51,7 +51,7 @@ Assert-Zero -Step '步骤1' -Name '编译错误' -Value $errorCount
 Assert-Zero -Step '步骤1' -Name 'NU1603 依赖降级' -Value $nu1603Count
 
 # ------------------------------------------------------------------ 步骤 2
-Write-Host '`n[步骤 2] AOT strict 冒烟（net8.0，逐源项目）' -ForegroundColor Cyan
+Write-Host "`n[步骤 2] AOT strict 冒烟（net8.0，逐源项目）" -ForegroundColor Cyan
 $sourceProjects = Get-ChildItem -Path $repoRoot -Filter '*.csproj' -File -Recurse |
     Where-Object { $_.FullName -notmatch '\\(Tests|Demos)\\' -and $_.FullName -notmatch '\\(obj|bin)\\' }
 
@@ -71,7 +71,7 @@ foreach ($project in $sourceProjects) {
 
 # ------------------------------------------------------------------ 步骤 3
 if (-not $SkipTests) {
-    Write-Host '`n[步骤 3] 单元测试（逐测试工程）' -ForegroundColor Cyan
+    Write-Host "`n[步骤 3] 单元测试（逐测试工程）" -ForegroundColor Cyan
     $testProjects = Get-ChildItem -Path (Join-Path $repoRoot 'Tests') -Filter '*.csproj' -File -Recurse
     $trxDir = Join-Path $repoRoot 'test-reports'
     New-Item -ItemType Directory -Path $trxDir -Force | Out-Null
@@ -108,7 +108,7 @@ if (-not $SkipTests) {
 }
 
 # ------------------------------------------------------------------ 汇总
-Write-Host '`n== 汇总 ==' -ForegroundColor Cyan
+Write-Host "`n== 汇总 ==" -ForegroundColor Cyan
 if ($failures.Count -gt 0) {
     $failures | ForEach-Object { Write-Host "  - $_" -ForegroundColor Red }
     Write-Host "`nverify-build 失败（$($failures.Count) 项）。" -ForegroundColor Red

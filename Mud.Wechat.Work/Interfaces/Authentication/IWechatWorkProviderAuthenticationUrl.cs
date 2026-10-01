@@ -16,7 +16,7 @@ namespace Mud.Wechat.Work;
 /// <para>
 /// 形态对齐 <see cref="Abstractions.Authentication.IWechatWorkCorpTokenAuthentication"/>：
 /// <b>显式传令牌参数</b>（<c>[Query("provider_access_token")]</c>），不带 <c>[Token]</c>——
-/// 服务商令牌是 per-app 的，须先经 <c>IWechatAppContextSwitcher.UseApp(appKey)</c> 切到目标应用后，
+/// 服务商令牌是 per-app 的，须先经 <c>IWechatAppContextSwitcher.UseAppScope(appKey)</c> 切到目标应用后，
 /// 由编排服务从该应用的 <c>IWechatProviderTokenManager</c> 取值再显式传入。
 /// </para>
 /// <para>

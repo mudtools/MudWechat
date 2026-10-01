@@ -91,7 +91,7 @@ public static class WechatWorkMultiAppExtensions
         // SSRF 防线：BaseUrl 域白名单（AllowCustomBaseUrl=false 时校验）。
         UrlValidator.ConfigureAllowedDomains(Consts.AllowedBaseUrlDomains);
 
-        // MT-02：组件生成代码的 UseApp/BeginScope 默认拒绝（未注册授权器即抛出）。
+        // MT-02：带 appKey 的切换入口（UseAppScope/UseApp，二者守卫一致）默认拒绝（未注册授权器即抛出）。
         // 本 SDK 的 appKey 始终来源于 WechatAppConfig 注册表（未知 appKey 由 GetApp 校验），
         // 注册放行型授权器恢复多应用切换能力；宿主可先注册更严格实现（TryAdd 先注册者胜出）。
         services.TryAddSingleton<IAppAccessAuthorizer, AllowAllAppAccessAuthorizer>();

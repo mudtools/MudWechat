@@ -104,27 +104,22 @@ public class WechatAppConfigValidateTests
     }
 
     [Fact]
-    public void Validate_ShouldPass_WhenProviderTemplateIdEqualsSuiteId()
+    public void Validate_ShouldPass_WhenProviderConfigComplete()
     {
-        // K2：代开发模板 id 即 suite_id，二者一致时通过。
-        var act = () => ProviderConfig(c => c.TemplateId = "ww-suite").Validate();
-        act.Should().NotThrow();
+        var act = () => ProviderConfig().Validate();
+        act.Should().NotThrow("代开发应用只依赖 suite_id（即模板 id）与套件/服务商凭据");
     }
 
+    /// <summary>
+    /// K2：协议上「代开发模板 id 即 suite_id」，故 <see cref="WechatAppConfig"/> 不提供独立
+    /// <c>TemplateId</c> 配置项（原属性无真实消费点，仅被 <c>Validate()</c> 用于与非空 <c>SuiteId</c> 比对
+    /// ⇒ 死配置）。本用例以反射锁定该契约，防止属性被"顺手加回来"。
+    /// </summary>
     [Fact]
-    public void Validate_ShouldPass_WhenProviderTemplateIdEmpty()
+    public void Config_ShouldNotExposeTemplateId()
     {
-        // 缺省 TemplateId 时取 SuiteId（K2），视为通过。
-        var act = () => ProviderConfig(c => c.TemplateId = string.Empty).Validate();
-        act.Should().NotThrow();
-    }
-
-    [Fact]
-    public void Validate_ShouldFail_WhenProviderTemplateIdDiffersFromSuiteId()
-    {
-        // R2 一致性校验：TemplateId 非空且不等于 SuiteId 必为配置错误，启动期快速失败。
-        var act = () => ProviderConfig(c => c.TemplateId = "tpl-1").Validate();
-        act.Should().Throw<InvalidOperationException>().WithMessage("*TemplateId*");
+        typeof(WechatAppConfig).GetProperty("TemplateId").Should().BeNull(
+            "代开发模板 id 即 SuiteId（K2）：独立配置项属死配置，且会重新引入「二者不一致」的非法状态");
     }
 
     [Fact]

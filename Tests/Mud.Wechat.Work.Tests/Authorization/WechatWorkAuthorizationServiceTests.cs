@@ -45,10 +45,9 @@ public class WechatWorkAuthorizationServiceTests
         AppType = WechatAppType.Provider,
         CorpId = "ww-provider",
         ProviderSecret = "provider-secret",
-        // K2：代开发模板 id 即 suite_id。
+        // K2：代开发模板 id 即 suite_id（不设独立 TemplateId 配置项）。
         SuiteId = "dk-template-id",
         SuiteSecret = "suite-secret",
-        TemplateId = "dk-template-id",
     };
 
     private static GetPermanentCodeResponse PermanentCodeResponse(

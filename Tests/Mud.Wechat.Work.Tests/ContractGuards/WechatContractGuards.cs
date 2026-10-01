@@ -179,13 +179,19 @@ public class WechatContractGuards
     }
 
     /// <summary>
-    /// 契约守卫 G7（P0-4）：Query 承载凭据的参数名必须已被组件脱敏词表覆盖，或在豁免清单中显式登记。
+    /// 契约守卫 G7（P0-4）：Query 承载凭据的参数名必须已被组件脱敏词表覆盖，或在豁免清单中显式登记；
+    /// 且豁免清单**自动过期**（组件词表一旦覆盖该键，豁免必须移除）。
     /// </summary>
     /// <remarks>
     /// <para>
     /// <b>为何不是「未覆盖即失败」</b>：组件（<c>Mud.HttpUtils</c>，独立仓库、NuGet 单一版本锁定）的词表补齐
-    /// 属跨仓交付（C-01），本仓库无法在同一提交内使其转绿；若写成硬失败，则与「门禁必须全绿」的硬约束冲突。
-    /// 故本守卫的职责是<b>可审计</b>：任何新增的 Query 凭据参数都必须做出「已覆盖 / 豁免（附追踪号）」决策。
+    /// 属跨仓交付（C-01，已在组件 2.0.10 源码落地，并随 <b>3.0.0</b> 被本仓库消费），
+    /// 跨仓期间无法在同一提交内使其转绿；若写成硬失败，则与「门禁必须全绿」的硬约束冲突。
+    /// 故本守卫的职责是<b>可审计 + 自过期</b>：任何新增的 Query 凭据参数都必须做出「已覆盖 / 豁免（附追踪号）」决策。
+    /// </para>
+    /// <para>
+    /// <b>自过期机制</b>：豁免项若已被组件词表覆盖，本守卫立即失败并要求清理 —— 升级
+    /// <c>Mud.HttpUtils</c> 到含 C-01 的版本后，豁免清单**不能**被静默遗留（否则未来真实缺口会被掩盖）。
     /// </para>
     /// <para>
     /// <c>SensitiveUrlRedactor</c> 为组件 internal 类型，SDK 无法编译期引用 → 反射读取；
@@ -195,16 +201,18 @@ public class WechatContractGuards
     [Fact]
     public void QueryCredentialParams_ShouldBeRedactionRegisteredOrExplicitlyExempted()
     {
-        // 豁免清单：每条 MUST 带追踪号与理由。目标：C-01（组件词表补齐）合入后清空本清单。
-        var exemptions = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-        {
-            ["corpsecret"] = "C-01：组件 SensitiveUrlRedactor.SensitiveFieldNames 未含 corpsecret（gettoken 显式 Query）。",
-            ["suite_access_token"] = "C-01：显式 Query 形态（get_corp_token）；[Token] 形态已被 TokenRecoveryContext 强制掩码。",
-            ["provider_access_token"] = "C-01：显式 Query 形态（get_customized_auth_url），不带 [Token]（G5 白名单不放宽）。",
-        };
+        // 豁免清单：每条 MUST 带追踪号与理由。
+        // 【已清空】Mud.HttpUtils 3.0.0（含 C-01 词表补齐）已消费 ⇒ corpsecret / suite_access_token /
+        // provider_access_token 均被组件词表覆盖，按本守卫的「自过期」机制清空（并由下方 stale 断言防止回归）。
+        var exemptions = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
         var vocabulary = ReadComponentSensitiveVocabulary();
         vocabulary.Should().NotBeEmpty("未能读取组件脱敏词表（组件版本或字段名变更，请同步本守卫）");
+
+        var stale = exemptions.Keys.Where(vocabulary.Contains).OrderBy(p => p, StringComparer.Ordinal).ToList();
+        stale.Should().BeEmpty(
+            "以下豁免项已被组件脱敏词表覆盖（组件 ≥ 2.0.10 含 C-01）⇒ 豁免已过期，请从本守卫的豁免清单中删除：" +
+            string.Join(", ", stale));
 
         var uncovered = EnumerateCredentialQueryParamNames()
             .Where(p => !vocabulary.Contains(p) && !exemptions.ContainsKey(p))

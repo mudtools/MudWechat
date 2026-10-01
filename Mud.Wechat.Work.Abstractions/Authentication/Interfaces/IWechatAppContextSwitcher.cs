@@ -16,8 +16,47 @@ namespace Mud.Wechat.Work.Abstractions.Authentication;
 /// 第三方/服务商代开发场景可进一步经 <see cref="SetCorp"/> 切换代操作企业
 /// （企业级 access_token 的 scope 来源）。</para>
 /// </remarks>
-public interface IWechatAppContextSwitcher : IAppContextSwitcher
+/// <remarks>
+/// <para>
+/// <b>Mud.HttpUtils 3.0.0 适配（BC-27）</b>：上游已从 <c>IAppContextSwitcher</c> 移除
+/// <c>UseApp(string)</c> / <c>UseDefaultApp()</c> / <c>BeginScope(string)</c>，
+/// 并新增平行的 <see cref="IAppScopeSwitcher"/>（作用域式安全入口）。本接口
+/// <b>继承 <see cref="IAppScopeSwitcher"/></b> 并<b>显式重声明</b>三个旧成员（标 <c>[Obsolete]</c>）：
+/// 既让下游可直接以 <see cref="IAppScopeSwitcher"/> 变量类型使用推荐面，又保持本 SDK 的对外契约不变
+/// （实现类 <c>WechatAppContextSwitcher</c> 已实现这三个成员，无需额外实现代码）。
+/// </para>
+/// <para>
+/// 新代码请使用 <see cref="IAppScopeSwitcher.UseAppScope(string)"/> / <see cref="IAppScopeSwitcher.UseDefaultAppScope"/>：
+/// 守卫完全相同，且返回 <see cref="IDisposable"/>、释放时<b>自动归还</b>上下文。
+/// 三个旧成员将在下一个大版本移除。
+/// </para>
+/// </remarks>
+public interface IWechatAppContextSwitcher : IAppContextSwitcher, IAppScopeSwitcher
 {
+    // ───────────── 以下三个成员为「Mud.HttpUtils 3.0.0 适配」新增的接续声明 ─────────────
+    // 上游 BC-27 已从 IAppContextSwitcher 移除这三个成员，生成器也不再默认发射它们。
+    // 本接口显式重声明以保持 Mud.Wechat 的对外契约不变（实现类 WechatAppContextSwitcher 已实现它们，
+    // 无需额外实现代码）；签名必须与上游原签名逐字一致，否则重声明与实现类的隐式实现不再匹配（CS0535）。
+    // 新代码请改用 IAppScopeSwitcher.UseAppScope / UseDefaultAppScope（返回 IDisposable，释放时自动归还上下文）。
+    // 本组成员将在本 SDK 的下一个大版本随上游一并移除。
+
+    /// <summary>切换到指定应用上下文（<b>无作用域</b>：不会自动归还上下文）。</summary>
+    /// <param name="appKey">应用标识。</param>
+    /// <returns>切换后的应用上下文实例。</returns>
+    [Obsolete("请改用 IAppScopeSwitcher.UseAppScope(appKey)：守卫完全相同，且释放时自动归还上下文。Mud.Wechat 将在下一个大版本移除本成员。")]
+    IMudAppContext UseApp(string appKey);
+
+    /// <summary>切换到默认应用上下文（<b>无作用域</b>：不会自动归还上下文）。</summary>
+    /// <returns>默认应用上下文实例。</returns>
+    [Obsolete("请改用 IAppScopeSwitcher.UseDefaultAppScope()：守卫完全相同，且释放时自动归还上下文。Mud.Wechat 将在下一个大版本移除本成员。")]
+    IMudAppContext UseDefaultApp();
+
+    /// <summary>切换到指定应用并以作用域自动归还上下文。</summary>
+    /// <param name="appKey">应用标识。</param>
+    /// <returns>释放时恢复之前上下文的作用域对象。</returns>
+    [Obsolete("请改用 IAppScopeSwitcher.UseAppScope(appKey)：二者为同一实现（逐行等价的别名），且返回类型同为 IDisposable。Mud.Wechat 将在下一个大版本移除本成员。")]
+    IDisposable BeginScope(string appKey);
+
     /// <summary>
     /// 切换代开发企业上下文（设置当前异步流的 authCorpId / permanentCode）。
     /// </summary>

@@ -185,4 +185,125 @@ public class WechatAppContextSwitcherTests
         await act.Should().ThrowAsync<ArgumentNullException>();
         await Task.CompletedTask;
     }
+
+    // ---------------------------------------------------------------- Mud.HttpUtils 3.0.0 适配（BC-27）
+
+    [Fact]
+    public void UseAppScope_ShouldRestorePreviousContext_OnDispose()
+    {
+        var outer = CreateContext("app-outer");
+        var target = CreateContext("app-target");
+        var manager = new Mock<IWechatAppManager>();
+        manager.Setup(m => m.GetApp("app-target")).Returns(target.Object);
+
+        var switcher = new WechatAppContextSwitcher(manager.Object);
+        try
+        {
+            switcher.SwitchTo(outer.Object);
+
+            using (var scope = switcher.UseAppScope("app-target"))
+            {
+                scope.Should().NotBeNull();
+                switcher.Current.Should().BeSameAs(target.Object, "作用域内应切到目标应用");
+            }
+
+            switcher.Current.Should().BeSameAs(outer.Object,
+                "作用域释放后必须还原进入前的上下文 —— 若实现「先 SwitchTo 再 BeginScope」，" +
+                "快照值会等于目标应用本身，此处将残留为 app-target（跨应用串号风险）");
+        }
+        finally
+        {
+            switcher.SwitchTo(null);
+        }
+    }
+
+    [Fact]
+    public void UseDefaultAppScope_ShouldRestorePreviousContext_OnDispose()
+    {
+        var outer = CreateContext("app-outer");
+        var defaultContext = CreateContext("app-default");
+        var manager = new Mock<IWechatAppManager>();
+        manager.Setup(m => m.GetDefaultApp()).Returns(defaultContext.Object);
+
+        var switcher = new WechatAppContextSwitcher(manager.Object);
+        try
+        {
+            switcher.SwitchTo(outer.Object);
+
+            using (switcher.UseDefaultAppScope())
+            {
+                switcher.Current.Should().BeSameAs(defaultContext.Object);
+            }
+
+            switcher.Current.Should().BeSameAs(outer.Object, "默认应用作用域同样必须自动归还上下文");
+        }
+        finally
+        {
+            switcher.SwitchTo(null);
+        }
+    }
+
+    [Theory]
+    [InlineData("app-a")]              // 合法：字母/数字/.'_- 组成
+    [InlineData("app.a_b-c")]          // 合法：含全部允许的分隔符
+    [InlineData("!!!非法")]             // 非法：含不允许字符
+    [InlineData(".leading-dot")]       // 非法：首字符必须是字母或数字
+    public void UseAppScope_ShouldValidateAppKeyFormat(string appKey)
+    {
+        var context = CreateContext("used");
+        var manager = new Mock<IWechatAppManager>();
+        manager.Setup(m => m.GetApp(It.IsAny<string>())).Returns(context.Object);
+
+        var switcher = new WechatAppContextSwitcher(manager.Object);
+
+        if (AppKey.IsValid(appKey))
+        {
+            using (switcher.UseAppScope(appKey))
+            {
+                switcher.Current.Should().BeSameAs(context.Object);
+            }
+
+            manager.Verify(m => m.GetApp(appKey), Times.Once);
+        }
+        else
+        {
+            var act = () => switcher.UseAppScope(appKey);
+
+            act.Should().Throw<ArgumentException>(
+                "Mud.HttpUtils 3.0.0 适配补齐：appKey 格式校验必须先于应用解析（原实现缺失该校验）");
+            manager.Verify(m => m.GetApp(It.IsAny<string>()), Times.Never,
+                "格式非法时不得触碰 IWechatAppManager");
+        }
+
+        switcher.SwitchTo(null);
+    }
+
+    [Fact]
+    public void InterfaceContract_ShouldExposeScopeFaceAndKeepLegacyMembersMigratable()
+    {
+        // Phase 1 + Phase 2 的编译期契约守卫：
+        //   ① IWechatAppContextSwitcher 继承 IAppScopeSwitcher ⇒ 推荐面可经接口类型使用；
+        //   ② 三个旧成员由本接口「接续声明」⇒ 下游以接口类型编写的既有代码在 3.0.0 上仍可编译，
+        //      且被标记 [Obsolete] 以引导迁移（本 SDK 下个大版本随上游移除）。
+        var manager = new Mock<IWechatAppManager>();
+        manager.Setup(m => m.GetApp("app-a")).Returns(CreateContext("app-a").Object);
+
+        IWechatAppContextSwitcher switcher = new WechatAppContextSwitcher(manager.Object);
+
+        using (switcher.UseAppScope("app-a"))
+        {
+            switcher.Current.Should().NotBeNull();
+        }
+
+#pragma warning disable CS0618 // 类型或成员已过时：本用例正是在钉死「旧成员仍可经接口类型调用」
+        var legacy = switcher.UseApp("app-a");
+        legacy.Should().NotBeNull();
+        using (switcher.BeginScope("app-a"))
+        {
+            switcher.Current.Should().NotBeNull();
+        }
+#pragma warning restore CS0618
+
+        switcher.SwitchTo(null);
+    }
 }

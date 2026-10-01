@@ -43,15 +43,18 @@ dotnet format Mud.Wechat.slnx                               # 格式化（未纳
 **已知假绿陷阱（勿"优化"掉）**：只断言诊断计数、不断言编译错误 —— 构建本身失败时诊断计数仍为 0。
 本脚本对步骤 2 **同时**断言「编译错误」与「IL 诊断」。
 
-**门禁前置：`pwsh` ≥ 7**。`verify-build.ps1` / `audit-config-keys.ps1` 为「UTF-8 无 BOM + 中文注释」，
-Windows PowerShell 5.1 会按 ANSI 解码并报 `Missing ')' in method call` / `The string is missing the terminator`
-而**解析失败**（非脚本逻辑问题）。仅有 `powershell.exe` 时，以 `dotnet build Mud.Wechat.slnx -c Release` +
-逐工程 `dotnet test -f net8.0` 作等价验证，且**不得**据此断言门禁通过。
+**门禁脚本可直接运行（Windows PowerShell 5.1 与 pwsh 7 均可）**：`scripts/*.ps1` 为 UTF-8 **含 BOM** + 中文注释
+（BOM 于 2026-09-30 补齐）。历史坑：**无 BOM** 的 UTF-8 中文脚本在 5.1 下被按 ANSI 解码，报
+`Missing ')' in method call` / `The string is missing the terminator`（解析失败，非脚本逻辑问题）——
+改写脚本后请确认编辑器没有把 BOM 剥掉。
+`audit-config-keys.ps1` **无 `-Strict` 开关**：任何「无消费点」的配置属性都会使其 `exit 1`（与 CI 判据一致）。
 
-**已知基线红灯（勿误判为本机环境问题）**：`Abstractions` 的 16 个 `[HttpJsonSerializable]` 领域模型缺少覆盖它们的
-`JsonSerializerContext` ⇒ `AotStrictMode=true` 下报 **16 条 `AOT006`（severity=error）**，步骤 2 的「编译错误 = 0」断言不成立
-（已核实为 `HEAD` 既有状态，定位 commit `56aba64`）。修复需在 `Abstractions` 生成/手写覆盖这些类型的上下文
-（组件提供 `dotnet mud-jsonctx` 脚手架），属独立批次。
+**AOT006（P0-5）已修复**：`Abstractions` 的 **8 个** `[HttpJsonSerializable]` 领域模型由
+`Authentication/Models/AuthenticationJsonContext.cs` 覆盖（主包 `WechatJsonResolverExtensions` 已将其与
+`WechatWorkJsonContext` 一并合并进组件序列化管线）。**新增 `[HttpJsonSerializable]` 类型必须同步登记到该上下文**，
+否则 `AotStrictMode=true` 下 `AOT006`（severity = error）会让门禁步骤 2 直接失败 —— 该诊断本身就是漂移守卫。
+脚手架核对（组件官方工具）：`dotnet tool install -g Mud.HttpUtils.JsonContextScaffolder` →
+`mud-jsonctx --project Mud.Wechat.Work.Abstractions\Mud.Wechat.Work.Abstractions.csproj --dry-run`。
 
 ## Target Frameworks & Language Constraints
 
@@ -117,7 +120,10 @@ Mud.Wechat/
 
 - **K1**：代开发 `permanent_code` 语义是「应用 secret」→ 走 `gettoken`（`corpsecret = permanent_code`）；
   第三方应用 `permanent_code` 是「授权码」→ 走 `get_corp_token`。二者都在 `CorpTokenManager` 内按 `AppType` 分流，**不新建管理器**。
-- **K2**：代开发 `template_id` 即 `suite_id`（`dk` 开头）。`WechatAppConfig.Validate()` 强制：`Provider` 下 `TemplateId` 非空时必须等于 `SuiteId`。
+- **K2**：代开发 `template_id` 即 `suite_id`（`dk` 开头）⇒ **`WechatAppConfig` 不提供独立 `TemplateId` 配置项**
+  （2026-09-30 删除：原属性仅被 `Validate()` 用于与非空 `SuiteId` 比对 = 死配置，且使 `audit-config-keys.ps1` 判红）。
+  删除后「模板 id ≠ suite_id」这一非法状态**在类型层面不可表达**（强于"启动期校验一致性"）；
+  需要模板 id 的**接口参数**（如 `get_customized_auth_url` 的 `templateid_list`）由宿主显式传入，与配置面无关。
 - 授权安装链接前缀：`https://open.work.weixin.qq.com/3rdapp/install`。
 - 令牌注入统一走 **Query**（企业微信契约，非 Header），触发组件 `MUD005` 已知接受风险；注入白名单由
   `WechatContractGuards.QueryTokenInjection_ShouldBeLimitedToWechatOfficialContractInterfaces` 锁定为
@@ -196,7 +202,7 @@ Mud.Wechat/
 | G4 | `WechatErrorCodes_ShouldAlignWithDetectorCollection` | 失效码 `{40014,42001,42007,42009,42011}` 与判定器同源 |
 | G5 | `QueryTokenInjection_ShouldBeLimitedToWechatOfficialContractInterfaces` | Query 注入白名单未放宽 |
 | G6 | `AuthorizationEndpoints_ShouldMatchOfficialRoutes` | 授权端点路由 + `get_customized_auth_url` 不带 `[Token]` |
-| G7 | `QueryCredentialParams_ShouldBeRedactionRegisteredOrExplicitlyExempted` | Query 承载凭据的参数名 ⊆ 组件脱敏词表 **∪ 显式豁免清单**（豁免项须附追踪号，当前 3 项标注 `C-01`）。新增 Query 凭据参数必须做「补齐词表 / 登记豁免」二选一决策 |
+| G7 | `QueryCredentialParams_ShouldBeRedactionRegisteredOrExplicitlyExempted` | Query 承载凭据的参数名 ⊆ 组件脱敏词表 **∪ 显式豁免清单**（豁免项须附追踪号，当前 3 项标注 `C-01`）。新增 Query 凭据参数必须做「补齐词表 / 登记豁免」二选一决策。**豁免自过期**：豁免项一旦被组件词表覆盖即失败 ⇒ 升级 `Mud.HttpUtils`（≥ 2.0.10，含 C-01）时**必须**清理豁免，不得静默遗留 |
 | G8 | `AppContextHolder_ShouldBeSameInstanceAsSwitcher`（源码顺序断言）+ `..._InRegistrationSource`；运行期同实例断言在 `WechatServiceCollectionExtensionsTests` | DI 桥接不变量（见「企业微信领域契约」）。**原计划中的 G8-B（`IAppManager<T>` 反射对齐守卫）已撤回**——`WechatAppManager` 直连实现后不存在影子注册表可能，改由行为用例锁定 |
 | G9 | `CancelAuthCleanup_ShouldBeScopedToMatchedAppKeys`（源码文本） | `cancel_auth` 不得再引入「未命中回退全部应用」的越权删除（行为用例在 `WechatCallbackAuthorizationDispatchTests`） |
 
@@ -215,8 +221,9 @@ Mud.Wechat/
 
 - 配置面唯一公共 API：`WechatAppConfig`（数组节 `WechatApps`）+ `Validate()`；编排策略 `WechatAuthorizationOptions`（节 `WechatAuthorization`）。
 - **禁止新增「日志开关」类配置属性**（历史死配置反模式）；日志级别统一由 `Logging:LogLevel:{Category}` 控制。
-- 每个公开配置属性必须有真实消费点（`Validate`/`ToString` 不算）。**`scripts/audit-config-keys.ps1` 的口径是「消费点扫描」，并无 `$strictPatterns` 白名单** —— 删除配置键后若脚本报「无消费点」，正确处置是补消费点或删除该属性，而不是加模式。
-  （`WechatCallbackOptions.CorpId` 即典型案例：其消费点是 `receiveid` 校验，而非配置开关。）
+- 每个公开配置属性必须有真实消费点（`Validate`/`ToString` 不算）。**`scripts/audit-config-keys.ps1` 的口径是「消费点扫描」，并无 `$strictPatterns` 白名单** —— 删除配置键后若脚本报「无消费点」，正确处置是补消费点或删除该属性，而不是加模式。**现状：全绿（13 + 3 个属性全部有消费点）**。
+  - `WechatCallbackOptions.CorpId` 的消费点是 `receiveid` 校验（不是日志开关）；接收方 ID 语义：企业自建填 `CorpId`，**套件回调填 `SuiteId`**。
+  - `WechatAppConfig.TemplateId` 曾因「只被 `Validate()` 使用」被判红 → 已删除（见 K2），不是加白名单绕开。
 - 安全默认不得削弱：`BaseUrl` 必须 HTTPS + 白名单（`AllowCustomBaseUrl=false` 为默认 SSRF 防线）。
   `AllowCustomBaseUrl=true` 的应用主机在注册期登记到 `WechatCustomBaseUrlRegistry`，供 errcode 判定器的同步预过滤放行（否则私有化部署静默失去令牌恢复能力）。
 

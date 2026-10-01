@@ -17,7 +17,7 @@ namespace Mud.Wechat.Work.Services.Authorization;
 /// <remarks>
 /// <para>
 /// 全部方法支持显式 <c>appKey</c>（R7）：传入时内部包在
-/// <c>IWechatAppContextSwitcher.UseApp(appKey)</c> 内执行，未传则使用默认应用
+/// <c>IWechatAppContextSwitcher.UseAppScope(appKey)</c>（作用域式，释放时自动归还上下文）内执行，未传则使用默认应用
 /// （<see cref="WechatAuthorizationOptions.DefaultAppKey"/> 优先，缺省为注册的默认应用）。
 /// </para>
 /// <para>

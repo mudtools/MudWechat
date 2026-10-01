@@ -19,7 +19,8 @@ namespace Mud.Wechat.Work.Services.Authorization;
 /// <para>
 /// <b>R7 关键约束</b>：所有需要 per-app 令牌的调用（<c>get_pre_auth_code</c> / <c>set_session_info</c> /
 /// <c>get_permanent_code</c> / <c>get_auth_info</c> / <c>get_customized_auth_url</c>）必须包在
-/// <c>IWechatAppContextSwitcher.BeginScope(appKey)</c> 内——声明式客户端的 <c>[Token]</c> 按
+/// <c>IWechatAppContextSwitcher.UseAppScope(appKey)</c> 内（原 <c>BeginScope(appKey)</c>，Mud.HttpUtils 3.0.0 更名为推荐入口）
+/// ——声明式客户端的 <c>[Token]</c> 按
 /// 「当前环境应用」解析令牌，不切上下文会取到错误应用的套件/服务商令牌（多套件场景静默串号）。
 /// </para>
 /// <para>
@@ -101,7 +102,9 @@ internal sealed class WechatWorkAuthorizationService : IWechatWorkAuthorizationS
         }
 
         var targetAppKey = ResolveAppKey(appKey);
-        using var scope = _switcher.BeginScope(targetAppKey);
+        // Mud.HttpUtils 3.0.0 迁移（BC-27）：BeginScope(appKey) → UseAppScope(appKey)。
+        // 二者在切换器内为同一实现（含守卫与「释放时自动归还上下文」），本处为逐字等价替换。
+        using var scope = _switcher.UseAppScope(targetAppKey);
 
         var suiteId = _appManager.GetApp(targetAppKey).Config.SuiteId;
 
@@ -162,7 +165,9 @@ internal sealed class WechatWorkAuthorizationService : IWechatWorkAuthorizationS
         }
 
         var targetAppKey = ResolveAppKey(appKey);
-        using var scope = _switcher.BeginScope(targetAppKey);
+        // Mud.HttpUtils 3.0.0 迁移（BC-27）：BeginScope(appKey) → UseAppScope(appKey)。
+        // 二者在切换器内为同一实现（含守卫与「释放时自动归还上下文」），本处为逐字等价替换。
+        using var scope = _switcher.UseAppScope(targetAppKey);
 
         var context = _appManager.GetApp(targetAppKey);
         var providerTokenManager = context.ProviderTokenManager
@@ -259,7 +264,9 @@ internal sealed class WechatWorkAuthorizationService : IWechatWorkAuthorizationS
             ?? throw new InvalidOperationException(
                 $"未找到应用 {targetAppKey} 下企业 {authCorpId} 的授权记录，无法刷新授权信息。");
 
-        using var scope = _switcher.BeginScope(targetAppKey);
+        // Mud.HttpUtils 3.0.0 迁移（BC-27）：BeginScope(appKey) → UseAppScope(appKey)。
+        // 二者在切换器内为同一实现（含守卫与「释放时自动归还上下文」），本处为逐字等价替换。
+        using var scope = _switcher.UseAppScope(targetAppKey);
 
         var request = new GetAuthInfoRequest
         {
@@ -322,7 +329,8 @@ internal sealed class WechatWorkAuthorizationService : IWechatWorkAuthorizationS
     private async Task<WechatCorpAuthorization> ExchangeCoreAsync(
         string authCode, string appKey, CancellationToken cancellationToken)
     {
-        using var scope = _switcher.BeginScope(appKey);
+        // 同 ExchangeAuthCode 等入口：迁移到作用域式推荐入口（守卫与归还语义完全一致）。
+        using var scope = _switcher.UseAppScope(appKey);
 
         var request = new GetPermanentCodeRequest { TempAuthCode = authCode };
         var response = _options.Value.UseV2AuthApi

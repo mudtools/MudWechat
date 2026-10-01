@@ -7,6 +7,7 @@
 
 #if NET8_0_OR_GREATER
 using System.Text.Json.Serialization.Metadata;
+using Mud.Wechat.Work.Abstractions.Authentication.Models;
 using Mud.Wechat.Work.DataModels;
 
 namespace Mud.Wechat.Work.Extensions;
@@ -18,13 +19,24 @@ namespace Mud.Wechat.Work.Extensions;
 public static class WechatJsonResolverExtensions
 {
     /// <summary>
-    /// 将企业微信 DataModels 的 <see cref="WechatWorkJsonContext"/> 合并进组件
+    /// 将企业微信的两套源生成序列化上下文合并进组件
     /// <c>IOptions&lt;JsonSerializerOptions&gt;</c> 的 TypeInfoResolver 管线（NET8+）。
     /// </summary>
+    /// <param name="services">服务集合。</param>
+    /// <remarks>
+    /// <list type="bullet">
+    /// <item><see cref="WechatWorkJsonContext"/>（<c>DataModels</c> 包）：官方传输 DTO；</item>
+    /// <item><see cref="AuthenticationJsonContext"/>（<c>Abstractions</c> 包）：授权领域模型
+    /// （<c>[HttpJsonSerializable]</c> 覆盖要求，见 P0-5）。</item>
+    /// </list>
+    /// 二者顺序无关（<c>JsonTypeInfoResolver.Combine</c> 按序命中，键空间不重叠）。
+    /// </remarks>
     public static void ConfigureDataModelsResolver(IServiceCollection services)
     {
-        var dataModelsResolver = JsonTypeInfoResolver.Combine(WechatWorkJsonContext.Default);
-        services.AddMudHttpClientJsonContext(dataModelsResolver);
+        var resolver = JsonTypeInfoResolver.Combine(
+            WechatWorkJsonContext.Default,
+            AuthenticationJsonContext.Default);
+        services.AddMudHttpClientJsonContext(resolver);
     }
 }
 #endif

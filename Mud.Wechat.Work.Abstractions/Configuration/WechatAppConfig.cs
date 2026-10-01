@@ -70,11 +70,6 @@ public class WechatAppConfig
     public string SuiteSecret { get; set; } = string.Empty;
 
     /// <summary>
-    /// 服务商代开发应用的模板 ID（template_id；服务商代开发维度）。
-    /// </summary>
-    public string TemplateId { get; set; } = string.Empty;
-
-    /// <summary>
     /// 企业微信 API 入口点（默认 <c>https://qyapi.weixin.qq.com</c>）。
     /// </summary>
     public string BaseUrl { get; set; } = Consts.DefaultBaseUrl;
@@ -147,16 +142,10 @@ public class WechatAppConfig
                 if (string.IsNullOrWhiteSpace(SuiteSecret))
                     throw new InvalidOperationException($"第三方/服务商应用 {AppKey} 缺少 SuiteSecret。");
 
-                // 代开发模板 id 即 suite_id（K2）：二者不一致必为配置错误，启动期快速失败。
-                if (AppType == WechatAppType.Provider
-                    && !string.IsNullOrWhiteSpace(TemplateId)
-                    && !string.Equals(TemplateId, SuiteId, StringComparison.Ordinal))
-                {
-                    throw new InvalidOperationException(
-                        $"代开发应用 {AppKey} 的 TemplateId（{TemplateId}）必须等于 SuiteId（{SuiteId}）：" +
-                        "协议上代开发模板 id 即 suite_id（K2），缺省时取 SuiteId。");
-                }
-
+                // K2：协议上「代开发模板 id 即 suite_id」，故不再提供独立的 TemplateId 配置项
+                // ——原 TemplateId 仅被本方法用于「与非空 SuiteId 比对」，属死配置（无真实消费点，
+                // audit-config-keys.ps1 判红）。删除后「不一致」这一非法状态在类型层面不可表达，
+                // 比"启动期校验一致性"更强（make illegal states unrepresentable）。
                 break;
 
             default:

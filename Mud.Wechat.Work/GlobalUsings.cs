@@ -20,3 +20,6 @@ global using Mud.Wechat.Work.Abstractions.Authentication.MultiApp;
 global using Mud.Wechat.Work.Abstractions.Authentication.TokenManager;
 global using Mud.Wechat.Work.DataModels;
 global using Mud.Wechat.Work.DataModels.ProviderAuthentication;
+// Mud.HttpUtils.Generator 将 [HttpClientApi] 接口的实现类生成到「接口命名空间 + .Internal」，
+// 子接口源码的 InheritedFrom = nameof(父实现类) 需要该命名空间可解析。
+global using Mud.Wechat.Work.Internal;

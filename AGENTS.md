@@ -127,7 +127,7 @@ Mud.Wechat/
 - 授权安装链接前缀：`https://open.work.weixin.qq.com/3rdapp/install`。
 - 令牌注入统一走 **Query**（企业微信契约，非 Header），触发组件 `MUD005` 已知接受风险；注入白名单由
   `WechatContractGuards.QueryTokenInjection_ShouldBeLimitedToWechatOfficialContractInterfaces` 锁定为
-  **仅 `IWechatWorkProviderAuthenticationService`**，新增 Query 注入接口须评估后显式扩展守卫。
+  **授权流接口 + 通讯录两域（成员/部门）父/三子接口共 9 个**（见 Contract Guards 表 G5），新增 Query 注入接口须评估后显式扩展守卫。
 - v2 端点：`/cgi-bin/service/v2/get_permanent_code`、`/cgi-bin/service/v2/get_auth_info`；
   `get_customized_auth_url` 以**显式 Query 参数** `provider_access_token` 传令牌（**不带 `[Token]`**，不放宽白名单）。
 - `TokenKey` 布局：**三段式 `{tokenType}:{appKey}:{scopeKey}`**（如 `Wechat.AccessToken:default:default`；
@@ -192,7 +192,8 @@ Mud.Wechat/
 
 ## Contract Guards（`Tests/**/ContractGuards/`）
 
-新增/修改契约面时**必须同批**更新守卫。现有 8 条（`WechatContractGuards.cs`）：
+新增/修改契约面时**必须同批**更新守卫。现有 8 条通用守卫（`WechatContractGuards.cs`）+
+域守卫组（`WechatUsersContractGuards.cs`，U1~U4）：
 
 | 编号 | 守卫 | 约束 |
 |---|---|---|
@@ -200,11 +201,13 @@ Mud.Wechat/
 | G2 | `ConfigDtos_ShouldNotUseRequired` | 配置 DTO 禁用 `required` |
 | G3 | `WechatTokenTypes_ShouldUseWechatPrefixedNamespace` | `"Wechat."` 前缀隔离 |
 | G4 | `WechatErrorCodes_ShouldAlignWithDetectorCollection` | 失效码 `{40014,42001,42007,42009,42011}` 与判定器同源 |
-| G5 | `QueryTokenInjection_ShouldBeLimitedToWechatOfficialContractInterfaces` | Query 注入白名单未放宽 |
+| G5 | `QueryTokenInjection_ShouldBeLimitedToWechatOfficialContractInterfaces` | Query 注入白名单未放宽（现为授权接口 + 成员管理域父/三子 + 部门管理域父/三子共 9 接口） |
 | G6 | `AuthorizationEndpoints_ShouldMatchOfficialRoutes` | 授权端点路由 + `get_customized_auth_url` 不带 `[Token]` |
-| G7 | `QueryCredentialParams_ShouldBeRedactionRegisteredOrExplicitlyExempted` | Query 承载凭据的参数名 ⊆ 组件脱敏词表 **∪ 显式豁免清单**（豁免项须附追踪号，当前 3 项标注 `C-01`）。新增 Query 凭据参数必须做「补齐词表 / 登记豁免」二选一决策。**豁免自过期**：豁免项一旦被组件词表覆盖即失败 ⇒ 升级 `Mud.HttpUtils`（≥ 2.0.10，含 C-01）时**必须**清理豁免，不得静默遗留 |
+| G7 | `QueryCredentialParams_ShouldBeRedactionRegisteredOrExplicitlyExempted` | Query 承载凭据的参数名 ⊆ 组件脱敏词表 **∪ 显式豁免清单**（豁免项须附追踪号；清单已清空——组件 3.0.0 含 C-01，`access_token` 亦在词表内）。新增 Query 凭据参数必须做「补齐词表 / 登记豁免」二选一决策。**豁免自过期**：豁免项一旦被组件词表覆盖即失败，不得静默遗留 |
 | G8 | `AppContextHolder_ShouldBeSameInstanceAsSwitcher`（源码顺序断言）+ `..._InRegistrationSource`；运行期同实例断言在 `WechatServiceCollectionExtensionsTests` | DI 桥接不变量（见「企业微信领域契约」）。**原计划中的 G8-B（`IAppManager<T>` 反射对齐守卫）已撤回**——`WechatAppManager` 直连实现后不存在影子注册表可能，改由行为用例锁定 |
 | G9 | `CancelAuthCleanup_ShouldBeScopedToMatchedAppKeys`（源码文本） | `cancel_auth` 不得再引入「未命中回退全部应用」的越权删除（行为用例在 `WechatCallbackAuthorizationDispatchTests`） |
+| U1~U4 | `WechatUsersContractGuards`（成员管理域） | U1 全域路由表 23 条逐一断言（子接口重复声明以 `DeclaredOnly` 限定）；U2 父接口 `IsAbstract` + 三子挂 `Contact` 组并 `InheritedFrom` 父实现类 + **代开发子接口零端点**；U3 四接口统一 `Wechat.AccessToken` + Query 注入 `access_token`；U4 经 `JsonSerializerContext.GetTypeInfo` 断言 DTO 已登记 JSON 上下文。新增成员管理端点/DTO 必须同批更新；**新增 Query 注入接口同样须评估后扩展 G5** |
+| D1~D4 | `WechatDepartmentsContractGuards`（部门管理域） | 与 U1~U4 同构：D1 路由表 9 条；D2 层级 + `Contact` 组 + 代开发零端点；D3 令牌绑定；D4 JSON 上下文登记（8 型）。部门域与成员域共挂 `Contact` 注册组，共用 `AddContactApi()` 注册入口 |
 
 ## Test Guidelines
 

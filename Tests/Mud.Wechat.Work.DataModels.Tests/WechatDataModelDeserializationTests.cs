@@ -7,8 +7,10 @@
 
 using Mud.Wechat.Work.DataModels;
 using Mud.Wechat.Work.DataModels.CorpTokenAuthentication;
+using Mud.Wechat.Work.DataModels.Department;
 using Mud.Wechat.Work.DataModels.InternalAppAuthentication;
 using Mud.Wechat.Work.DataModels.ProviderAuthentication;
+using Mud.Wechat.Work.DataModels.Users;
 
 namespace Mud.Wechat.Work.DataModels.Tests;
 
@@ -194,5 +196,279 @@ public class WechatDataModelDeserializationTests
         var json = JsonSerializer.Serialize(new GetAuthInfoRequest { AuthorizerCorpId = "ww-3", PermanentAuthCode = "pc-3" });
         json.Should().Contain("\"auth_corpid\":\"ww-3\"");
         json.Should().Contain("\"permanent_code\":\"pc-3\"");
+    }
+
+    [Fact]
+    public void UserInfo_ShouldDeserialize_WithOfficialJsonContract()
+    {
+        var json = """
+        {
+          "errcode": 0,
+          "errmsg": "ok",
+          "userid": "zhangsan",
+          "name": "张三",
+          "department": [1, 2],
+          "order": [1, 2],
+          "position": "后台工程师",
+          "gender": "1",
+          "email": "zhangsan@qq.com",
+          "is_leader_in_dept": [1, 0],
+          "direct_leader": ["lisi"],
+          "main_department": 1,
+          "extattr": {
+            "attrs": [
+              { "type": 0, "name": "文本名称", "text": { "value": "文本" } },
+              { "type": 1, "name": "网页名称", "web": { "url": "http://www.test.com", "title": "标题" } }
+            ]
+          },
+          "status": 1,
+          "external_position": "产品经理",
+          "external_profile": {
+            "external_corp_name": "企业简称",
+            "wechat_channels": { "nickname": "视频号名称", "status": 1 },
+            "external_attr": [
+              { "type": 2, "name": "测试app", "miniprogram": { "appid": "wx8bd80126147dfa38", "pagepath": "/index", "title": "my miniprogram" } }
+            ]
+          },
+          "open_userid": "woAAAA"
+        }
+        """;
+        var resp = JsonSerializer.Deserialize<UserInfo>(json);
+
+        resp!.ErrorCode.Should().Be(0);
+        resp.UserId.Should().Be("zhangsan");
+        resp.Department.Should().Equal(new[] { 1, 2 });
+        resp.Gender.Should().Be("1", "官方示例 gender 按字符串传输");
+        resp.ExtAttr!.Attrs.Should().HaveCount(2);
+        resp.ExtAttr.Attrs[0].Text!.Value.Should().Be("文本");
+        resp.ExtAttr.Attrs[1].Web!.Url.Should().Be("http://www.test.com");
+        resp.ExternalProfile!.WechatChannels!.Nickname.Should().Be("视频号名称");
+        resp.ExternalProfile.ExternalAttr![0].MiniProgram!.AppId.Should().Be("wx8bd80126147dfa38");
+        resp.OpenUserId.Should().Be("woAAAA");
+        resp.Status.Should().Be(1);
+        resp.IsSuccess.Should().BeTrue();
+    }
+
+    [Fact]
+    public void GetUserSimpleListResponse_ShouldDeserialize()
+    {
+        var json = """
+        {
+          "errcode": 0,
+          "errmsg": "ok",
+          "userlist": [
+            { "userid": "zhangsan", "name": "张三", "department": [1, 2], "open_userid": "woAAAA" }
+          ]
+        }
+        """;
+        var resp = JsonSerializer.Deserialize<GetUserSimpleListResponse>(json);
+
+        resp!.UserList.Should().HaveCount(1);
+        resp.UserList![0].UserId.Should().Be("zhangsan");
+        resp.UserList[0].OpenUserId.Should().Be("woAAAA");
+    }
+
+    [Fact]
+    public void ListUserIdsResponse_ShouldDeserialize_WithSelfAndThirdPartyShapes()
+    {
+        var json = """
+        {
+          "errcode": 0,
+          "errmsg": "ok",
+          "next_cursor": "aaaaaaaaa",
+          "dept_user": [
+            { "userid": "zhangsan", "department": 1 },
+            { "open_userid": "woAAAAAAAA", "department": 2 }
+          ]
+        }
+        """;
+        var resp = JsonSerializer.Deserialize<ListUserIdsResponse>(json);
+
+        resp!.NextCursor.Should().Be("aaaaaaaaa");
+        resp.DeptUser.Should().HaveCount(2);
+        resp.DeptUser![0].UserId.Should().Be("zhangsan", "自建应用返回 userid");
+        resp.DeptUser[1].OpenUserId.Should().Be("woAAAAAAAA", "第三方/代开发返回 open_userid");
+        resp.DeptUser[1].Department.Should().Be(2);
+    }
+
+    [Fact]
+    public void CreateUserResponse_ShouldDeserialize_WithCreatedDepartmentList()
+    {
+        var json = """
+        {
+          "errcode": 0,
+          "errmsg": "created",
+          "created_department_list": { "department_info": [ { "name": "新部门", "id": 12 } ] }
+        }
+        """;
+        var resp = JsonSerializer.Deserialize<CreateUserResponse>(json);
+
+        resp!.CreatedDepartmentList!.DepartmentInfo.Should().HaveCount(1);
+        resp.CreatedDepartmentList.DepartmentInfo![0].Name.Should().Be("新部门");
+        resp.CreatedDepartmentList.DepartmentInfo[0].Id.Should().Be(12);
+    }
+
+    [Fact]
+    public void InviteMembersResponse_ShouldDeserialize_WithInvalidLists()
+    {
+        var json = """
+        { "errcode": 0, "errmsg": "ok", "invaliduser": ["UserID1"], "invalidparty": [1], "invalidtag": [101] }
+        """;
+        var resp = JsonSerializer.Deserialize<InviteMembersResponse>(json);
+
+        resp!.InvalidUser.Should().Equal(new[] { "UserID1" });
+        resp.InvalidParty.Should().Equal(new[] { 1 });
+        resp.InvalidTag.Should().Equal(new[] { 101 });
+    }
+
+    [Fact]
+    public void CheckMemberAuthResponse_ShouldDeserialize()
+    {
+        var json = """{ "errcode": 0, "errmsg": "ok", "is_member_auth": true }""";
+        var resp = JsonSerializer.Deserialize<CheckMemberAuthResponse>(json);
+
+        resp!.IsMemberAuth.Should().BeTrue();
+    }
+
+    [Fact]
+    public void ListSelectedTicketUserResponse_ShouldDeserialize()
+    {
+        var json = """
+        {
+          "errcode": 0,
+          "errmsg": "ok",
+          "operator_open_userid": "woOperator",
+          "open_userid_list": ["woA", "woB"],
+          "unauth_open_userid_list": ["woC"],
+          "total": 3
+        }
+        """;
+        var resp = JsonSerializer.Deserialize<ListSelectedTicketUserResponse>(json);
+
+        resp!.OperatorOpenUserId.Should().Be("woOperator");
+        resp.OpenUserIdList.Should().Equal(new[] { "woA", "woB" });
+        resp.UnauthOpenUserIdList.Should().Equal(new[] { "woC" });
+        resp.Total.Should().Be(3);
+    }
+
+    [Fact]
+    public void CreateUserRequest_ShouldSerialize_WithSnakeCaseJsonKeys()
+    {
+        var request = new CreateUserRequest
+        {
+            UserId = "zhangsan",
+            Name = "张三",
+            Department = [1, 2],
+            ExtAttr = new UserExtAttr
+            {
+                Attrs = [new UserExtAttrItem { Type = 0, Name = "文本名称", Text = new UserExtAttrText { Value = "文本" } }],
+            },
+            ExternalProfile = new UserExternalProfile
+            {
+                ExternalCorpName = "企业简称",
+                WechatChannels = new UserWechatChannels { Nickname = "视频号名称" },
+            },
+        };
+
+        // 生产管线 = WechatWorkJsonContext（WhenWritingNull）：未赋值的可空属性不应出现在载荷中。
+        // 断言只锚定键名与 ASCII 值（源生成默认编码器将非 ASCII 转义为 \uXXXX）。
+        var json = JsonSerializer.Serialize(request, Mud.Wechat.Work.DataModels.WechatWorkJsonContext.Default.CreateUserRequest);
+        json.Should().Contain("\"userid\":\"zhangsan\"");
+        json.Should().Contain("\"department\":[1,2]");
+        json.Should().Contain("\"extattr\":{\"attrs\":[{\"type\":0,");
+        json.Should().Contain("\"external_corp_name\":");
+        json.Should().Contain("\"wechat_channels\":{\"nickname\":");
+        json.Should().Contain("\"external_profile\":{");
+        json.Should().NotContain("to_invite", "未赋值的可空属性不应序列化（WhenWritingNull）");
+        json.Should().NotContain("\"order\":", "未赋值的可空集合不应序列化为空数组（避免『不填』被改写为『空列表』语义）");
+        json.Should().NotContain("\"is_leader_in_dept\":");
+    }
+
+    [Fact]
+    public void GetDepartmentListResponse_ShouldDeserialize_WithOfficialJsonContract()
+    {
+        var json = """
+        {
+          "errcode": 0,
+          "errmsg": "ok",
+          "department": [
+            { "id": 2, "name": "广州研发中心", "name_en": "RDGZ", "department_leader": ["zhangsan", "lisi"], "parentid": 1, "order": 10 },
+            { "id": 3, "name": "邮箱产品部", "name_en": "mail", "department_leader": ["lisi"], "parentid": 2, "order": 40 }
+          ]
+        }
+        """;
+        var resp = JsonSerializer.Deserialize<GetDepartmentListResponse>(json);
+
+        resp!.ErrorCode.Should().Be(0);
+        resp.Department.Should().HaveCount(2);
+        resp.Department![0].Id.Should().Be(2);
+        resp.Department[0].Name.Should().Be("广州研发中心");
+        resp.Department[0].DepartmentLeader.Should().Equal(new[] { "zhangsan", "lisi" });
+        resp.Department[0].ParentId.Should().Be(1);
+        resp.Department[0].Order.Should().Be(10);
+        resp.Department[1].ParentId.Should().Be(2);
+        resp.IsSuccess.Should().BeTrue();
+    }
+
+    [Fact]
+    public void GetDepartmentResponse_ShouldDeserialize_WithOfficialJsonContract()
+    {
+        var json = """
+        {
+          "errcode": 0,
+          "errmsg": "ok",
+          "department": { "id": 2, "name": "广州研发中心", "name_en": "RDGZ", "department_leader": ["zhangsan"], "parentid": 1, "order": 10 }
+        }
+        """;
+        var resp = JsonSerializer.Deserialize<GetDepartmentResponse>(json);
+
+        resp!.Department!.Id.Should().Be(2);
+        resp.Department.Name.Should().Be("广州研发中心");
+        resp.Department.NameEn.Should().Be("RDGZ");
+        resp.Department.Order.Should().Be(10);
+    }
+
+    [Fact]
+    public void GetChildDepartmentIdListResponse_ShouldDeserialize()
+    {
+        var json = """
+        {
+          "errcode": 0,
+          "errmsg": "ok",
+          "department_id": [
+            { "id": 2, "parentid": 1, "order": 10 },
+            { "id": 3, "parentid": 2, "order": 40 }
+          ]
+        }
+        """;
+        var resp = JsonSerializer.Deserialize<GetChildDepartmentIdListResponse>(json);
+
+        resp!.DepartmentIds.Should().HaveCount(2);
+        resp.DepartmentIds![0].Id.Should().Be(2);
+        resp.DepartmentIds[1].ParentId.Should().Be(2);
+    }
+
+    [Fact]
+    public void CreateDepartmentResponse_ShouldDeserialize()
+    {
+        var json = """{ "errcode": 0, "errmsg": "created", "id": 2 }""";
+        var resp = JsonSerializer.Deserialize<CreateDepartmentResponse>(json);
+
+        resp!.Id.Should().Be(2);
+        resp.IsSuccess.Should().BeTrue();
+    }
+
+    [Fact]
+    public void CreateDepartmentRequest_ShouldSerialize_WithSnakeCaseJsonKeys()
+    {
+        var request = new CreateDepartmentRequest { Name = "RDGZ", ParentId = 1 };
+
+        // 生产管线 = WechatWorkJsonContext（WhenWritingNull）：断言只锚定键名与 ASCII 值。
+        var json = JsonSerializer.Serialize(request, Mud.Wechat.Work.DataModels.WechatWorkJsonContext.Default.CreateDepartmentRequest);
+        json.Should().Contain("\"name\":\"RDGZ\"");
+        json.Should().Contain("\"parentid\":1");
+        json.Should().NotContain("name_en", "未赋值的可空属性不应序列化（WhenWritingNull）");
+        json.Should().NotContain("\"id\":", "未显式指定部门 id 时不传，由官方自动生成");
+        json.Should().NotContain("\"order\":", "未赋值的可空属性不应序列化（WhenWritingNull）");
     }
 }

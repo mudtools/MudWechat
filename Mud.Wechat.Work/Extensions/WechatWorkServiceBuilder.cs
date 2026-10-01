@@ -37,14 +37,20 @@ public class WechatWorkServiceBuilder
     private Dictionary<WechatModule, IWechatModuleRegistrar> InitializeRegistrars()
         => new()
         {
-            // AddAuthenticationWebApiHttpClient() 由 Mud.HttpUtils.Generator 按主包 [HttpClientApi] 自动产出。
+            // AddAuthenticationWebApiHttpClient() / AddContactWebApiHttpClient() 由 Mud.HttpUtils.Generator 按主包 [HttpClientApi] 自动产出。
             [WechatModule.Authentication] = new WechatModuleRegistrar(
                 WechatModule.Authentication,
                 s => s.AddAuthenticationWebApiHttpClient().AddWechatAuthorizationServices(_hostConfiguration)),
+            [WechatModule.Contact] = new WechatModuleRegistrar(
+                WechatModule.Contact,
+                s => s.AddContactWebApiHttpClient()),
         };
 
     /// <summary>注册授权流业务接口与授权编排服务（get_pre_auth_code / set_session_info / get_permanent_code / get_auth_info / get_customized_auth_url + 编排）。</summary>
     public WechatWorkServiceBuilder AddAuthenticationApi() => AddModule(WechatModule.Authentication);
+
+    /// <summary>注册通讯录业务接口（成员管理：公共读取面 + 自建/第三方/代开发能力差异端点）。</summary>
+    public WechatWorkServiceBuilder AddContactApi() => AddModule(WechatModule.Contact);
 
     /// <summary>注册全部模块。</summary>
     public WechatWorkServiceBuilder AddAllApis()

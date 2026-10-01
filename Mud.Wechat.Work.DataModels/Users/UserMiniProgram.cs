@@ -5,23 +5,28 @@
 //  不得利用本项目从事危害国家安全、扰乱社会秩序、侵犯他人合法权益等法律法规禁止的活动！任何基于本项目开发而产生的一切法律纠纷和责任，我们不承担任何责任！
 // -----------------------------------------------------------------------
 
-namespace Mud.Wechat.Work.Extensions;
+namespace Mud.Wechat.Work.DataModels.Users;
 
 /// <summary>
-/// 企业微信 API 模块枚举（对齐 FeishuModule）。
+/// 对外属性的小程序值（<c>miniprogram</c>：appid / pagepath / title 三元组）。
 /// </summary>
-/// <remarks>
-/// 令牌签发客户端（gettoken / get_provider_token / get_suite_token / get_corp_token）
-/// 位于 Abstractions 的 Authentication 注册组，随令牌底座自动注册，不经本枚举。
-/// </remarks>
-public enum WechatModule
+public class UserMiniProgram
 {
-    /// <summary>授权流接口（get_pre_auth_code / set_session_info / get_permanent_code / get_auth_info）。</summary>
-    Authentication,
+    /// <summary>
+    /// 获取或设置小程序 appid。
+    /// </summary>
+    [JsonPropertyName("appid")]
+    public string? AppId { get; set; }
 
-    /// <summary>通讯录（成员管理域：公共读取面 + 自建/第三方/代开发能力差异端点）。</summary>
-    Contact,
+    /// <summary>
+    /// 获取或设置小程序页面路径。
+    /// </summary>
+    [JsonPropertyName("pagepath")]
+    public string? PagePath { get; set; }
 
-    /// <summary>消息推送等（预留）。</summary>
-    Message,
+    /// <summary>
+    /// 获取或设置小程序标题。
+    /// </summary>
+    [JsonPropertyName("title")]
+    public string? Title { get; set; }
 }

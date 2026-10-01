@@ -131,7 +131,21 @@ public class WechatContractGuards
             .ToList();
 
         queryInjectionInterfaces.Should().BeEquivalentTo(
-            new[] { nameof(IWechatWorkProviderAuthenticationService) },
+            new[]
+            {
+                nameof(IWechatWorkProviderAuthenticationService),
+                // 成员管理域（Contact 模块）：官方契约 access_token 一律走 Query（MUD005 同源已知接受风险），
+                // 公共父接口 + 三个应用类型子接口（自建/第三方/代开发）均声明同一 [Token]。
+                nameof(IWechatWorkUsersService),
+                nameof(IWechatWorkInternalUsersService),
+                nameof(IWechatWorkThirdPartyUsersService),
+                nameof(IWechatWorkProviderUsersService),
+                // 部门管理域（Contact 模块）：同上，令牌路由键与注入方式与成员管理域完全一致。
+                nameof(IWechatWorkDepartmentsService),
+                nameof(IWechatWorkInternalDepartmentsService),
+                nameof(IWechatWorkThirdPartyDepartmentsService),
+                nameof(IWechatWorkProviderDepartmentsService),
+            },
             "企业微信官方契约强制 Query 注入（MUD005 已知接受风险），新增 Query 注入接口须评估后扩展本守卫");
     }
 

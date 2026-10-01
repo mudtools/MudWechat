@@ -19,11 +19,14 @@ public enum WechatModule
     /// <summary>授权流接口（get_pre_auth_code / set_session_info / get_permanent_code / get_auth_info）。</summary>
     Authentication,
 
-    /// <summary>通讯录（成员管理域：公共读取面 + 自建/第三方/代开发能力差异端点）。</summary>
+    /// <summary>通讯录（成员/部门/标签/通讯录查看权限/异步导入/异步导出六域）。</summary>
     Contact,
 
     /// <summary>客户联系（企业服务人员管理域 + 客户管理域：公共面 + 第三方/代开发能力差异端点）。</summary>
     ExternalContact,
+
+    /// <summary>上下游（基础接口 + 关联客户信息 + 上下游通讯录管理：应用共享信息、下级企业凭证、小程序 session、unionid 转换、通讯录导入/查询）。</summary>
+    CorpGroup,
 
     /// <summary>消息推送等（预留）。</summary>
     Message,

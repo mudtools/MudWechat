@@ -12,6 +12,8 @@ using Mud.Wechat.Work.DataModels.Contacts.Department;
 using Mud.Wechat.Work.DataModels.Contacts.Export;
 using Mud.Wechat.Work.DataModels.Contacts.Tags;
 using Mud.Wechat.Work.DataModels.Contracts.Users;
+using Mud.Wechat.Work.DataModels.CorpGroup;
+using Mud.Wechat.Work.DataModels.CorpGroup.ChainContacts;
 using Mud.Wechat.Work.DataModels.ExternalContact.Customer;
 using Mud.Wechat.Work.DataModels.ExternalContact.FollowUser;
 using System.Text.Json.Serialization;
@@ -162,9 +164,11 @@ namespace Mud.Wechat.Work.DataModels;
 [JsonSerializable(typeof(GetCustomerStrategyDetailResponse))]
 [JsonSerializable(typeof(GetCustomerStrategyRangeResponse))]
 // 客户联系「客户管理」域：unionid / external_userid 转换。
+// 注：ExternalUserIdToPendingIdRequest/Response 与上下游域同名，
+// 登记于 WechatCorpGroupJsonContext（同上下文会被源生成器按简单类型名静默去重）。
 [JsonSerializable(typeof(ConvertUnionIdToExternalUserIdResponse))]
 [JsonSerializable(typeof(PendingIdMapItem))]
-[JsonSerializable(typeof(ExternalUserIdToPendingIdResponse))]
+[JsonSerializable(typeof(ExternalContact.Customer.ExternalUserIdToPendingIdResponse))]
 [JsonSerializable(typeof(ConvertToServiceExternalUserIdResponse))]
 // 客户联系「客户管理」域：请求体。
 [JsonSerializable(typeof(BatchGetCustomerDetailsRequest))]
@@ -176,8 +180,45 @@ namespace Mud.Wechat.Work.DataModels;
 [JsonSerializable(typeof(UpdateCustomerStrategyRequest))]
 [JsonSerializable(typeof(DeleteCustomerStrategyRequest))]
 [JsonSerializable(typeof(ConvertUnionIdToExternalUserIdRequest))]
-[JsonSerializable(typeof(ExternalUserIdToPendingIdRequest))]
+[JsonSerializable(typeof(ExternalContact.Customer.ExternalUserIdToPendingIdRequest))]
 [JsonSerializable(typeof(ConvertToServiceExternalUserIdRequest))]
+// 上下游域（CorpGroup）。
+[JsonSerializable(typeof(ListAppShareInfoRequest))]
+[JsonSerializable(typeof(GetCorpGroupTokenRequest))]
+[JsonSerializable(typeof(TransferMiniProgramSessionRequest))]
+[JsonSerializable(typeof(UnionidToExternalUserIdRequest))]
+[JsonSerializable(typeof(UnionidToPendingIdRequest))]
+[JsonSerializable(typeof(AppShareCorpInfo))]
+[JsonSerializable(typeof(ExternalUserIdInfo))]
+[JsonSerializable(typeof(PendingIdResultItem))]
+[JsonSerializable(typeof(ListAppShareInfoResponse))]
+[JsonSerializable(typeof(GetCorpGroupTokenResponse))]
+[JsonSerializable(typeof(TransferMiniProgramSessionResponse))]
+[JsonSerializable(typeof(UnionidToExternalUserIdResponse))]
+[JsonSerializable(typeof(UnionidToPendingIdResponse))]
+[JsonSerializable(typeof(ChainInfo))]
+[JsonSerializable(typeof(ChainGroupInfo))]
+[JsonSerializable(typeof(ChainGroupCorpInfo))]
+[JsonSerializable(typeof(ChainImportFailedContact))]
+[JsonSerializable(typeof(ChainImportFailedCorp))]
+[JsonSerializable(typeof(ChainImportCorpItem))]
+[JsonSerializable(typeof(ChainImportContactItem))]
+[JsonSerializable(typeof(ImportChainContactsRequest))]
+[JsonSerializable(typeof(GetChainGroupRequest))]
+[JsonSerializable(typeof(GetChainCorpInfoListRequest))]
+[JsonSerializable(typeof(GetChainCorpInfoRequest))]
+[JsonSerializable(typeof(RemoveChainCorpRequest))]
+[JsonSerializable(typeof(GetChainUserCustomIdRequest))]
+[JsonSerializable(typeof(GetCorpSharedChainListRequest))]
+[JsonSerializable(typeof(GetChainListResponse))]
+[JsonSerializable(typeof(GetChainGroupResponse))]
+[JsonSerializable(typeof(GetChainCorpInfoListResponse))]
+[JsonSerializable(typeof(GetChainCorpInfoResponse))]
+[JsonSerializable(typeof(ImportChainContactsResponse))]
+[JsonSerializable(typeof(ChainImportResult))]
+[JsonSerializable(typeof(GetChainImportResultResponse))]
+[JsonSerializable(typeof(GetChainUserCustomIdResponse))]
+[JsonSerializable(typeof(GetCorpSharedChainListResponse))]
 public sealed partial class WechatWorkJsonContext : JsonSerializerContext
 {
 }

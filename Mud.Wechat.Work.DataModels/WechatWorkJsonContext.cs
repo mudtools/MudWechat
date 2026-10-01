@@ -16,6 +16,8 @@ using Mud.Wechat.Work.DataModels.CorpGroup;
 using Mud.Wechat.Work.DataModels.CorpGroup.ChainContacts;
 using Mud.Wechat.Work.DataModels.ExternalContact.Customer;
 using Mud.Wechat.Work.DataModels.ExternalContact.FollowUser;
+using Mud.Wechat.Work.DataModels.ExternalContact.JobInheritance;
+using Mud.Wechat.Work.DataModels.ExternalContact.Tag;
 using System.Text.Json.Serialization;
 
 namespace Mud.Wechat.Work.DataModels;
@@ -182,6 +184,34 @@ namespace Mud.Wechat.Work.DataModels;
 [JsonSerializable(typeof(ConvertUnionIdToExternalUserIdRequest))]
 [JsonSerializable(typeof(ExternalContact.Customer.ExternalUserIdToPendingIdRequest))]
 [JsonSerializable(typeof(ConvertToServiceExternalUserIdRequest))]
+// 客户联系「客户标签管理」域：企业标签库 / 企业客户标签管理 / 客户打标签 / 规则组标签。
+[JsonSerializable(typeof(GetCorpTagListRequest))]
+[JsonSerializable(typeof(AddCorpTagRequest))]
+[JsonSerializable(typeof(CorpTagCreateItem))]
+[JsonSerializable(typeof(EditCorpTagRequest))]
+[JsonSerializable(typeof(DelCorpTagRequest))]
+[JsonSerializable(typeof(MarkTagRequest))]
+[JsonSerializable(typeof(GetStrategyTagListRequest))]
+[JsonSerializable(typeof(AddStrategyTagRequest))]
+[JsonSerializable(typeof(EditStrategyTagRequest))]
+[JsonSerializable(typeof(DelStrategyTagRequest))]
+[JsonSerializable(typeof(CorpTagItem))]
+[JsonSerializable(typeof(CorpTagGroupItem))]
+[JsonSerializable(typeof(GetCorpTagListResponse))]
+[JsonSerializable(typeof(AddCorpTagResponse))]
+[JsonSerializable(typeof(StrategyTagGroupItem))]
+[JsonSerializable(typeof(GetStrategyTagListResponse))]
+[JsonSerializable(typeof(AddStrategyTagResponse))]
+// 客户联系「在职继承」域：客户接替 / 客户群接替。
+[JsonSerializable(typeof(TransferCustomerRequest))]
+[JsonSerializable(typeof(TransferCustomerResultItem))]
+[JsonSerializable(typeof(TransferCustomerResponse))]
+[JsonSerializable(typeof(GetTransferResultRequest))]
+[JsonSerializable(typeof(CustomerTakeoverStatusItem))]
+[JsonSerializable(typeof(GetTransferResultResponse))]
+[JsonSerializable(typeof(TransferGroupChatRequest))]
+[JsonSerializable(typeof(TransferGroupChatFailItem))]
+[JsonSerializable(typeof(TransferGroupChatResponse))]
 // 上下游域（CorpGroup）。
 [JsonSerializable(typeof(ListAppShareInfoRequest))]
 [JsonSerializable(typeof(GetCorpGroupTokenRequest))]

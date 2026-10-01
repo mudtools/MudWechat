@@ -11,6 +11,7 @@ using Mud.Wechat.Work;
 using Mud.Wechat.Work.Abstractions;
 using Mud.Wechat.Work.DataModels.CorpGroup;
 using Mud.Wechat.Work.DataModels.CorpGroup.ChainContacts;
+using Mud.Wechat.Work.DataModels.CorpGroup.Rules;
 
 namespace Mud.Wechat.Work.Tests.ContractGuards;
 
@@ -19,10 +20,10 @@ namespace Mud.Wechat.Work.Tests.ContractGuards;
 /// </summary>
 /// <remarks>
 /// <para>
-/// 形态与通讯录查看权限域同构（自建单子接口承载型），但开放面为<b>自建 + 代开发</b>两类应用
-/// （第三方应用无对应文档，不设子接口）：6 个端点全部收敛于父接口
-/// <see cref="IWechatWorkCorpGroupService"/>，自建与代开发子接口均为空标记；
-/// 守卫另以反射断言继承链上<b>不存在其它应用类型子接口</b>（新增应用类型须先核对官方文档）。
+/// 开放面为<b>自建 + 代开发 + 第三方（仅获取应用共享信息）</b>：6 个端点全部收敛于父接口
+/// <see cref="IWechatWorkCorpGroupService"/>，自建/代开发/第三方子接口均为空标记
+/// （第三方仅开放获取应用共享信息，与自建/代开发同路由同契约，见 95324；
+/// 守卫另以反射断言继承链上<b>不存在其它应用类型子接口</b>，新增应用类型须先核对官方文档）。
 /// </para>
 /// </remarks>
 public class WechatCorpGroupContractGuards
@@ -71,7 +72,7 @@ public class WechatCorpGroupContractGuards
 
     /// <summary>
     /// 契约守卫 CG2：接口层级与生成器注册形态——全部端点收敛父接口（IsAbstract），
-    /// 自建/代开发子接口为空标记；且继承链上不得出现其它应用类型子接口（应用类型集合漂移守卫）。
+    /// 自建/代开发/第三方子接口均为空标记；且继承链上不得出现其它应用类型子接口（应用类型集合漂移守卫）。
     /// </summary>
     [Fact]
     public void CorpGroupInterfaceHierarchy_ShouldConvergeOnAbstractParentWithCorpGroupRegistry()
@@ -80,6 +81,7 @@ public class WechatCorpGroupContractGuards
         var children = new[]
         {
             typeof(IWechatWorkInternalCorpGroupService),
+            typeof(IWechatWorkThirdPartyCorpGroupService),
             typeof(IWechatWorkProviderCorpGroupService),
         };
 
@@ -88,15 +90,20 @@ public class WechatCorpGroupContractGuards
             child.Should().BeAssignableTo(parent, $"{child.Name} 必须继承公共父接口 {parent.Name}");
         }
 
-        // 应用类型集合漂移守卫：官方仅向自建/代开发开放本域（第三方无文档），
-        // 继承父接口的接口必须恰好为父接口的实现类 + 上述两个空标记子接口。
+        // 应用类型集合漂移守卫：本域 6 端点中仅获取应用共享信息向第三方开放（95324，与自建/代开发同路由同契约），
+        // 其余 5 端点仅自建/代开发；继承父接口的接口必须恰好为上述三个空标记子接口。
         var derived = parent.Assembly.GetTypes()
             .Where(t => t.IsInterface && parent.IsAssignableFrom(t) && t != parent)
             .Select(t => t.Name)
             .OrderBy(n => n, StringComparer.Ordinal)
             .ToList();
-        derived.Should().BeEquivalentTo(new[] { nameof(IWechatWorkInternalCorpGroupService), nameof(IWechatWorkProviderCorpGroupService) },
-            "官方未向其它应用类型开放上下游端点，新增应用类型子接口须先核对官方文档并同批调整 CG2 与 G5");
+        derived.Should().BeEquivalentTo(new[]
+            {
+                nameof(IWechatWorkInternalCorpGroupService),
+                nameof(IWechatWorkThirdPartyCorpGroupService),
+                nameof(IWechatWorkProviderCorpGroupService),
+            },
+            "新增应用类型子接口须先核对官方文档并同批调整 CG2 与 G5");
 
         var parentApi = parent.GetCustomAttribute<HttpClientApiAttribute>();
         parentApi.Should().NotBeNull("父接口必须声明 [HttpClientApi]");
@@ -112,7 +119,7 @@ public class WechatCorpGroupContractGuards
             childApi.InheritedFrom.Should().Be(ParentImplementationClassName,
                 $"{child.Name} 必须继承父接口生成实现类，避免生成器重复实现公共端点");
 
-            // 官方对自建/代开发开放一致端点集：任何子接口不得新增端点（能力集合漂移守卫）。
+            // 官方对自建/代开发开放一致端点集（第三方仅获取应用共享信息，随父接口继承）：任何子接口不得新增端点（能力集合漂移守卫）。
             child.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
                 .Should().BeEmpty(
                     $"{child.Name} 为应用类型空标记：6 个上下游端点全部声明于父接口，" +
@@ -121,7 +128,7 @@ public class WechatCorpGroupContractGuards
     }
 
     /// <summary>
-    /// 契约守卫 CG3：令牌绑定——父/自建/代开发三接口统一消费 AccessToken 路由键并以 Query 注入（官方契约 access_token）。
+    /// 契约守卫 CG3：令牌绑定——父/自建/第三方/代开发四接口统一消费 AccessToken 路由键并以 Query 注入（官方契约 access_token）。
     /// 注意 transfer_session 官方要求以下级/下游企业凭证调用（由宿主管理，见父接口注释）。
     /// </summary>
     [Fact]
@@ -131,6 +138,7 @@ public class WechatCorpGroupContractGuards
         {
             typeof(IWechatWorkCorpGroupService),
             typeof(IWechatWorkInternalCorpGroupService),
+            typeof(IWechatWorkThirdPartyCorpGroupService),
             typeof(IWechatWorkProviderCorpGroupService),
         };
 
@@ -320,6 +328,107 @@ public class WechatCorpGroupContractGuards
         {
             context.GetTypeInfo(type).Should().NotBeNull(
                 $"{type.Name} 是上下游通讯录管理域契约面类型，必须登记进 WechatWorkJsonContext（AOT 源生成）");
+        }
+    }
+
+    /// <summary>上下游规则域官方路由表（5 个端点全部声明于自建子接口；官方无第三方/代开发文档）。</summary>
+    private static readonly (Type Interface, string Method, Type HttpAttribute, string Route)[] RuleRoutes =
+    {
+        (typeof(IWechatWorkInternalCorpGroupRulesService), nameof(IWechatWorkInternalCorpGroupRulesService.ListChainRuleIdsAsync), typeof(PostAttribute), "/cgi-bin/corpgroup/rule/list_ids"),
+        (typeof(IWechatWorkInternalCorpGroupRulesService), nameof(IWechatWorkInternalCorpGroupRulesService.DeleteChainRuleAsync), typeof(PostAttribute), "/cgi-bin/corpgroup/rule/delete_rule"),
+        (typeof(IWechatWorkInternalCorpGroupRulesService), nameof(IWechatWorkInternalCorpGroupRulesService.GetChainRuleInfoAsync), typeof(PostAttribute), "/cgi-bin/corpgroup/rule/get_rule_info"),
+        (typeof(IWechatWorkInternalCorpGroupRulesService), nameof(IWechatWorkInternalCorpGroupRulesService.AddChainRuleAsync), typeof(PostAttribute), "/cgi-bin/corpgroup/rule/add_rule"),
+        (typeof(IWechatWorkInternalCorpGroupRulesService), nameof(IWechatWorkInternalCorpGroupRulesService.ModifyChainRuleAsync), typeof(PostAttribute), "/cgi-bin/corpgroup/rule/modify_rule"),
+    };
+
+    /// <summary>
+    /// 契约守卫 CG9：上下游规则域全部端点路由必须与官方契约一致（新增/改名端点须同批更新本表）。
+    /// </summary>
+    [Fact]
+    public void CorpGroupRuleEndpoints_ShouldMatchOfficialRoutes()
+    {
+        RuleRoutes.Should().HaveCount(5, "官方仅向自建应用开放 5 个对接规则端点（增删改查）");
+
+        var distinctRoutes = RuleRoutes.Select(r => r.Route).Distinct().ToList();
+        distinctRoutes.Should().HaveCount(5, "本域各端点路由互不重复");
+
+        foreach (var (iface, method, httpAttribute, route) in RuleRoutes)
+        {
+            // DeclaredOnly：端点必须落在自建子接口自身声明，而非从父接口继承。
+            var target = iface.GetMethod(method, BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+            target.Should().NotBeNull($"{iface.Name}.{method} 必须存在");
+
+            var attr = target!.GetCustomAttribute(httpAttribute) as HttpMethodAttribute;
+            attr.Should().NotBeNull($"{iface.Name}.{method} 必须声明 [{httpAttribute.Name.Replace("Attribute", string.Empty)}] 路由");
+            attr!.RequestUri.Should().Be(route, $"{iface.Name}.{method} 路由必须与官方契约一致");
+        }
+    }
+
+    /// <summary>
+    /// 契约守卫 CG10：上下游规则域接口层级——父接口零端点（IsAbstract），全部端点收敛自建子接口，
+    /// 不设第三方/代开发子接口（官方无文档；落位形态同通讯录查看权限管理域）。
+    /// </summary>
+    [Fact]
+    public void CorpGroupRuleInterfaceHierarchy_ShouldConvergeOnInternalChild()
+    {
+        var parent = typeof(IWechatWorkCorpGroupRulesService);
+        var internalChild = typeof(IWechatWorkInternalCorpGroupRulesService);
+
+        internalChild.Should().BeAssignableTo(parent, $"{internalChild.Name} 必须继承公共父接口 {parent.Name}");
+
+        var parentApi = parent.GetCustomAttribute<HttpClientApiAttribute>();
+        parentApi.Should().NotBeNull("父接口必须声明 [HttpClientApi]");
+        parentApi!.IsAbstract.Should().BeTrue("公共父接口不参与 DI 注册，必须 IsAbstract = true");
+        parentApi.RegistryGroupName.Should().BeNullOrEmpty("父接口不进入注册组（注册面由子接口承载）");
+        parent.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
+            .Should().BeEmpty("官方仅向自建应用开放本域端点，父接口不存在公共面，不得声明端点");
+
+        var internalApi = internalChild.GetCustomAttribute<HttpClientApiAttribute>();
+        internalApi.Should().NotBeNull($"{internalChild.Name} 必须声明 [HttpClientApi]");
+        internalApi!.RegistryGroupName.Should().Be(CorpGroupRegistryGroupName,
+            $"{internalChild.Name} 必须挂 {CorpGroupRegistryGroupName} 注册组（与上下游既有接口族共用 Add{CorpGroupRegistryGroupName}WebApiHttpClient()）");
+        internalApi.InheritedFrom.Should().Be("WechatWorkCorpGroupRulesService",
+            $"{internalChild.Name} 必须继承父接口生成实现类");
+        internalChild.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
+            .Should().HaveCount(5, "全部 5 个端点必须声明在自建子接口");
+    }
+
+    /// <summary>
+    /// 契约守卫 CG11：上下游规则域令牌绑定 + JSON 上下文登记。
+    /// </summary>
+    [Fact]
+    public void CorpGroupRuleTokenBinding_ShouldBeAccessTokenInjectedViaQuery()
+    {
+        var interfaces = new[]
+        {
+            typeof(IWechatWorkCorpGroupRulesService),
+            typeof(IWechatWorkInternalCorpGroupRulesService),
+        };
+
+        foreach (var iface in interfaces)
+        {
+            var token = iface.GetCustomAttribute<TokenAttribute>();
+            token.Should().NotBeNull($"{iface.Name} 必须声明 [Token]");
+            token!.TokenType.Should().Be(WechatTokenTypes.AccessToken,
+                $"{iface.Name} 令牌路由键必须为 AccessToken（按应用上下文/scope 路由）");
+            token.InjectionMode.Should().Be(TokenInjectionMode.Query,
+                $"{iface.Name} 官方契约强制 Query 注入（MUD005 已知接受风险）");
+            token.Name.Should().Be("access_token", $"{iface.Name} Query 注入参数名必须为官方契约的 access_token");
+        }
+
+        var context = Mud.Wechat.Work.DataModels.WechatWorkJsonContext.Default;
+        var requiredTypes = new[]
+        {
+            typeof(ChainRuleOwnerRange), typeof(ChainRuleMemberRange), typeof(ChainRuleInfo),
+            typeof(ListChainRuleIdsRequest), typeof(DeleteChainRuleRequest),
+            typeof(GetChainRuleInfoRequest), typeof(AddChainRuleRequest), typeof(ModifyChainRuleRequest),
+            typeof(ListChainRuleIdsResponse), typeof(GetChainRuleInfoResponse), typeof(AddChainRuleResponse),
+        };
+
+        foreach (var type in requiredTypes)
+        {
+            context.GetTypeInfo(type).Should().NotBeNull(
+                $"{type.Name} 是上下游规则域契约面类型，必须登记进 WechatWorkJsonContext（AOT 源生成）");
         }
     }
 }

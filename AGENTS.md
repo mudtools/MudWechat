@@ -216,7 +216,7 @@ Mud.Wechat/
 新增/修改契约面时**必须同批**更新守卫。现有 9 条通用守卫（`WechatContractGuards.cs`，G1~G9；
 G8 的运行期同实例断言在 `WechatServiceCollectionExtensionsTests`）+ 域守卫组
 （`WechatUsersContractGuards.cs` U1~U4、`WechatDepartmentsContractGuards.cs` D1~D4、
-`WechatTagsContractGuards.cs` T1~T4）：
+`WechatTagsContractGuards.cs` T1~T4、`WechatContactRulesContractGuards.cs` CR1~CR4）：
 
 | 编号 | 守卫 | 约束 |
 |---|---|---|
@@ -224,7 +224,7 @@ G8 的运行期同实例断言在 `WechatServiceCollectionExtensionsTests`）+ �
 | G2 | `ConfigDtos_ShouldNotUseRequired` | 配置 DTO 禁用 `required` |
 | G3 | `WechatTokenTypes_ShouldUseWechatPrefixedNamespace` | `"Wechat."` 前缀隔离 |
 | G4 | `WechatErrorCodes_ShouldAlignWithDetectorCollection` | 失效码 `{40014,42001,42007,42009,42011}` 与判定器同源 |
-| G5 | `QueryTokenInjection_ShouldBeLimitedToWechatOfficialContractInterfaces` | Query 注入白名单未放宽（现为授权接口 + 成员/部门/标签三域父/三子共 13 接口） |
+| G5 | `QueryTokenInjection_ShouldBeLimitedToWechatOfficialContractInterfaces` | Query 注入白名单未放宽（现为授权接口 + 成员/部门/标签/通讯录查看权限四域父/三子共 17 接口） |
 | G6 | `AuthorizationEndpoints_ShouldMatchOfficialRoutes` | 授权端点路由 + `get_customized_auth_url` 不带 `[Token]` |
 | G7 | `QueryCredentialParams_ShouldBeRedactionRegisteredOrExplicitlyExempted` | Query 承载凭据的参数名 ⊆ 组件脱敏词表 **∪ 显式豁免清单**（豁免项须附追踪号；清单已清空——组件 3.0.0 含 C-01，`access_token` 亦在词表内）。新增 Query 凭据参数必须做「补齐词表 / 登记豁免」二选一决策。**豁免自过期**：豁免项一旦被组件词表覆盖即失败，不得静默遗留 |
 | G8 | `AppContextHolder_ShouldBeSameInstanceAsSwitcher_InRegistrationSource`（源码顺序断言，`WechatContractGuards.cs`）；运行期同实例断言（2 例）在 `WechatServiceCollectionExtensionsTests` | DI 桥接不变量（见「企业微信领域契约」）。**原计划中的 G8-B（`IAppManager<T>` 反射对齐守卫）已撤回**——`WechatAppManager` 直连实现后不存在影子注册表可能，改由行为用例锁定 |
@@ -232,6 +232,7 @@ G8 的运行期同实例断言在 `WechatServiceCollectionExtensionsTests`）+ �
 | U1~U4 | `WechatUsersContractGuards`（成员管理域） | U1 全域路由表 23 条逐一断言（子接口重复声明以 `DeclaredOnly` 限定）；U2 父接口 `IsAbstract` + 三子挂 `Contact` 组并 `InheritedFrom` 父实现类 + **代开发子接口零端点**；U3 四接口统一 `Wechat.AccessToken` + Query 注入 `access_token`；U4 经 `JsonSerializerContext.GetTypeInfo` 断言 DTO 已登记 JSON 上下文。新增成员管理端点/DTO 必须同批更新；**新增 Query 注入接口同样须评估后扩展 G5** |
 | D1~D4 | `WechatDepartmentsContractGuards`（部门管理域） | 与 U1~U4 同构：D1 路由表 9 条；D2 层级 + `Contact` 组 + 代开发零端点；D3 令牌绑定；D4 JSON 上下文登记（8 型）。部门域与成员域共挂 `Contact` 注册组，共用 `AddContactApi()` 注册入口 |
 | T1~T4 | `WechatTagsContractGuards`（标签管理域） | 与 U1~U4 同构，但**形态特殊**：官方对三类应用开放完全一致的 7 个端点 ⇒ 全部端点收敛父接口，T1 路由表 7 条（全在父接口、互不重复）；T2 层级 + `Contact` 组 + **三个子接口全部零端点**（空标记；任何子接口新增端点 = 能力漂移，先核对官方文档再落位）；T3 令牌绑定；T4 JSON 上下文登记（10 型）。同挂 `Contact` 注册组共用 `AddContactApi()` |
+| CR1~CR4 | `WechatContactRulesContractGuards`（通讯录查看权限管理域） | **形态为父接口零端点 + 端点全落自建子接口**（官方仅向自建/通讯录同步应用开放，第三方/代开发无文档）：CR1 路由表 4 条（全在 Internal，POST `/cgi-bin/contactrule/*`，其中 list 亦为 POST 无请求体）；CR2 父接口 IsAbstract + **父接口零端点** + Internal 恰好 4 端点 + 第三方/代开发空标记零端点；CR3 令牌绑定；CR4 JSON 上下文登记（7 型）。同挂 `Contact` 注册组共用 `AddContactApi()` |
 
 ## Test Guidelines
 

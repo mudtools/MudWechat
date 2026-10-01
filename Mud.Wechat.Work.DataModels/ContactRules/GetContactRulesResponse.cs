@@ -5,23 +5,16 @@
 //  不得利用本项目从事危害国家安全、扰乱社会秩序、侵犯他人合法权益等法律法规禁止的活动！任何基于本项目开发而产生的一切法律纠纷和责任，我们不承担任何责任！
 // -----------------------------------------------------------------------
 
-namespace Mud.Wechat.Work.DataModels.Tags;
+namespace Mud.Wechat.Work.DataModels.ContactRules;
 
 /// <summary>
-/// 标签成员信息（获取标签成员 <code>/cgi-bin/tag/get</code> 响应中 <c>userlist[]</c> 的元素）。
+/// 读取通讯录隐藏规则列表响应体（<c>/cgi-bin/contactrule/list</c>）。
 /// </summary>
-public class TagMemberInfo
+public class GetContactRulesResponse : WechatWorkResponse
 {
     /// <summary>
-    /// 获取或设置成员账号（userid）。
+    /// 获取或设置规则列表。
     /// </summary>
-    [JsonPropertyName("userid")]
-    public string UserId { get; set; } = string.Empty;
-
-    /// <summary>
-    /// 获取或设置成员名称（代开发自建应用需管理员授权才返回；第三方自 2019-12-30/2020-06-30 起停返，
-    /// 后续仅第三方通讯录应用可获取，未返回名称时需通过通讯录展示组件展示）。
-    /// </summary>
-    [JsonPropertyName("name")]
-    public string? Name { get; set; }
+    [JsonPropertyName("rules")]
+    public List<ContactRule>? Rules { get; set; } = [];
 }

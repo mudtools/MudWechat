@@ -6,6 +6,7 @@
 // -----------------------------------------------------------------------
 
 using Mud.Wechat.Work.DataModels;
+using Mud.Wechat.Work.DataModels.ContactRules;
 using Mud.Wechat.Work.DataModels.CorpTokenAuthentication;
 using Mud.Wechat.Work.DataModels.Department;
 using Mud.Wechat.Work.DataModels.InternalAppAuthentication;
@@ -577,5 +578,86 @@ public class WechatDataModelDeserializationTests
         json.Should().Contain("\"tagid\":1");
         json.Should().Contain("\"userlist\":[\"zhangsan\"]");
         json.Should().NotContain("\"partylist\"", "partylist 为可选字段，null 时不落 JSON（WhenWritingNull）");
+    }
+
+    [Fact]
+    public void GetContactRulesResponse_ShouldDeserialize_WithOfficialJsonContract()
+    {
+        var json = """
+        {
+          "errcode": 0,
+          "errmsg": "ok",
+          "rules": [
+            {
+              "rule_id": 10001,
+              "rule_type": 1,
+              "range": { "userid": ["zhangsan"], "partyid": [2], "tagid": [101] },
+              "whitelist": { "userid": ["lisi"] },
+              "is_allowed_search": true,
+              "is_allowed_conversation": false
+            },
+            {
+              "rule_id": 10002,
+              "rule_type": 3,
+              "range": { "partyid": [1] },
+              "exclude": { "partyid": [2, 4] }
+            }
+          ]
+        }
+        """;
+        var resp = JsonSerializer.Deserialize<GetContactRulesResponse>(json);
+
+        resp!.IsSuccess.Should().BeTrue();
+        resp.Rules.Should().HaveCount(2);
+
+        resp.Rules![0].RuleId.Should().Be(10001);
+        resp.Rules[0].RuleType.Should().Be(1);
+        resp.Rules[0].Range!.UserIds.Should().Equal(new[] { "zhangsan" });
+        resp.Rules[0].Range!.PartyIds.Should().Equal(new[] { 2 });
+        resp.Rules[0].Range!.TagIds.Should().Equal(new[] { 101 });
+        resp.Rules[0].Whitelist!.UserIds.Should().Equal(new[] { "lisi" });
+        resp.Rules[0].Exclude.Should().BeNull();
+        resp.Rules[0].IsAllowedSearch.Should().BeTrue();
+        resp.Rules[0].IsAllowedConversation.Should().BeFalse();
+
+        resp.Rules[1].RuleType.Should().Be(3);
+        resp.Rules[1].Exclude!.PartyIds.Should().Equal(new[] { 2, 4 });
+        resp.Rules[1].Whitelist.Should().BeNull();
+    }
+
+    [Fact]
+    public void CreateContactRulesResponse_ShouldDeserialize()
+    {
+        var json = """{"errcode":0,"errmsg":"ok","rule_ids":[10001,10002]}""";
+        var resp = JsonSerializer.Deserialize<CreateContactRulesResponse>(json);
+
+        resp!.RuleIds.Should().Equal(new[] { 10001, 10002 });
+    }
+
+    [Fact]
+    public void CreateContactRulesRequest_ShouldSerialize_WithSnakeCaseJsonKeys()
+    {
+        // 生产管线 = WechatWorkJsonContext（WhenWritingNull）：断言只锚定键名与 ASCII 值。
+        var json = JsonSerializer.Serialize(
+            new CreateContactRulesRequest
+            {
+                Rules =
+                [
+                    new ContactRule
+                    {
+                        RuleType = 1,
+                        Range = new ContactRuleRange { UserIds = ["zhangsan"], PartyIds = [2] },
+                        IsAllowedSearch = true,
+                    },
+                ],
+            },
+            Mud.Wechat.Work.DataModels.WechatWorkJsonContext.Default.CreateContactRulesRequest);
+
+        json.Should().Contain("\"rules\":[{");
+        json.Should().Contain("\"rule_type\":1");
+        json.Should().Contain("\"range\":{\"userid\":[\"zhangsan\"],\"partyid\":[2]");
+        json.Should().Contain("\"is_allowed_search\":true");
+        json.Should().NotContain("\"rule_id\"", "创建时规则 ID 由官方生成，null 时不落 JSON（WhenWritingNull）");
+        json.Should().NotContain("\"exclude\"", "未赋值的可空范围不应序列化（WhenWritingNull）");
     }
 }

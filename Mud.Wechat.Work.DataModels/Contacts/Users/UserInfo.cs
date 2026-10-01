@@ -5,7 +5,7 @@
 //  不得利用本项目从事危害国家安全、扰乱社会秩序、侵犯他人合法权益等法律法规禁止的活动！任何基于本项目开发而产生的一切法律纠纷和责任，我们不承担任何责任！
 // -----------------------------------------------------------------------
 
-namespace Mud.Wechat.Work.DataModels.Users;
+namespace Mud.Wechat.Work.DataModels.Contracts.Users;
 
 /// <summary>
 /// 企业微信成员对象：读取成员（<c>/cgi-bin/user/get</c>）的响应体，同时作为获取部门成员详情（<c>/cgi-bin/user/list</c>）中 <c>userlist</c> 的元素。

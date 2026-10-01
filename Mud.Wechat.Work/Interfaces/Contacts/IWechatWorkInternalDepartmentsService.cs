@@ -6,7 +6,6 @@
 // -----------------------------------------------------------------------
 
 using Mud.Wechat.Work.DataModels.Contacts.Department;
-using Mud.Wechat.Work.DataModels.Contacts.Department.RequestModel;
 
 namespace Mud.Wechat.Work;
 

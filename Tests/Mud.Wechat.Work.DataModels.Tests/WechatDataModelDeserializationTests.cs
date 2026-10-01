@@ -6,18 +6,18 @@
 // -----------------------------------------------------------------------
 
 using Mud.Wechat.Work.DataModels;
-using Mud.Wechat.Work.DataModels.Batch;
-using Mud.Wechat.Work.DataModels.ContactRules;
+using Mud.Wechat.Work.DataModels.Contacts.Batch;
+using Mud.Wechat.Work.DataModels.Contacts.ContactRules;
 using Mud.Wechat.Work.DataModels.Contacts.Batch;
 using Mud.Wechat.Work.DataModels.Contacts.ContactRules;
 using Mud.Wechat.Work.DataModels.Contacts.Department;
 using Mud.Wechat.Work.DataModels.Contacts.Tags;
 using Mud.Wechat.Work.DataModels.CorpTokenAuthentication;
-using Mud.Wechat.Work.DataModels.Department;
+using Mud.Wechat.Work.DataModels.Contacts.Department;
 using Mud.Wechat.Work.DataModels.InternalAppAuthentication;
 using Mud.Wechat.Work.DataModels.ProviderAuthentication;
-using Mud.Wechat.Work.DataModels.Tags;
-using Mud.Wechat.Work.DataModels.Users;
+using Mud.Wechat.Work.DataModels.Contacts.Tags;
+using Mud.Wechat.Work.DataModels.Contracts.Users;
 
 namespace Mud.Wechat.Work.DataModels.Tests;
 

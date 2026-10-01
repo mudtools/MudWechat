@@ -5,7 +5,7 @@
 //  不得利用本项目从事危害国家安全、扰乱社会秩序、侵犯他人合法权益等法律法规禁止的活动！任何基于本项目开发而产生的一切法律纠纷和责任，我们不承担任何责任！
 // -----------------------------------------------------------------------
 
-namespace Mud.Wechat.Work.DataModels.Users;
+namespace Mud.Wechat.Work.DataModels.Contracts.Users;
 
 /// <summary>
 /// 用户-部门关系（获取成员 ID 列表 <c>/cgi-bin/user/list_id</c> 响应中的 <c>dept_user[]</c> 元素；用户在多个部门下时会有多条记录）。

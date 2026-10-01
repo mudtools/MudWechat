@@ -6,17 +6,16 @@
 // -----------------------------------------------------------------------
 
 using Mud.Wechat.Work.DataModels.Contacts.Batch;
-using Mud.Wechat.Work.DataModels.Contacts.Batch.RequestModel;
 
 namespace Mud.Wechat.Work;
 
 /// <summary>
 /// 企业微信通讯录「异步导入接口」域公共 SDK（增量更新成员、全量覆盖成员、全量覆盖部门、获取异步任务结果）。
 /// <para>
-/// 官方对企业自建应用与第三方应用开放了完全一致的 4 个端点（服务商代开发无此功能），
-/// 因此全部端点声明于本公共父接口；三个应用类型子接口
-/// （<see cref="IWechatWorkInternalBatchService"/> / <see cref="IWechatWorkThirdPartyBatchService"/> /
-/// <see cref="IWechatWorkProviderBatchService"/>）均为空标记，仅作为类型化契约入口。
+/// 官方对企业自建应用与第三方应用开放了完全一致的 4 个端点（服务商代开发无此功能，不设对应子接口），
+/// 因此全部端点声明于本公共父接口；自建与第三方应用类型子接口
+/// （<see cref="IWechatWorkInternalBatchService"/> / <see cref="IWechatWorkThirdPartyBatchService"/>）
+/// 均为空标记，仅作为类型化契约入口。
 /// </para>
 /// </summary>
 /// <remarks>

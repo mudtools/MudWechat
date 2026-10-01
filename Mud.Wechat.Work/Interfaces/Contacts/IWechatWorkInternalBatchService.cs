@@ -13,7 +13,7 @@ namespace Mud.Wechat.Work;
 /// 官方对自建应用开放了与第三方应用完全一致的 4 个异步导入端点，全部继承自 <see cref="IWechatWorkBatchService"/>；
 /// 本接口不新增端点，仅作为自建应用的类型化契约入口存在（形态对齐飞书用户态空接口 <c>IFeishuUserV1LingoEntity</c>）。
 /// </para>
-/// <para>第三方应用见 <see cref="IWechatWorkThirdPartyBatchService"/>；服务商代开发见 <see cref="IWechatWorkProviderBatchService"/>（官方无此功能）。</para>
+/// <para>第三方应用见 <see cref="IWechatWorkThirdPartyBatchService"/>；服务商代开发官方无此功能，不设对应子接口。</para>
 /// </summary>
 /// <remarks>
 /// <para>

@@ -10,7 +10,6 @@ using Mud.HttpUtils.Attributes;
 using Mud.Wechat.Work;
 using Mud.Wechat.Work.Abstractions;
 using Mud.Wechat.Work.DataModels.Contacts.Batch;
-using Mud.Wechat.Work.DataModels.Contacts.Batch.RequestModel;
 
 namespace Mud.Wechat.Work.Tests.ContractGuards;
 
@@ -20,8 +19,8 @@ namespace Mud.Wechat.Work.Tests.ContractGuards;
 /// <remarks>
 /// <para>
 /// 形态与标签域同构：官方对自建应用与第三方应用开放完全一致的 4 个端点（增量更新成员、全量覆盖成员、
-/// 全量覆盖部门、获取异步任务结果；服务商代开发无此功能），全部端点收敛于父接口
-/// <see cref="IWechatWorkBatchService"/>，三个应用类型子接口均为空标记。
+/// 全量覆盖部门、获取异步任务结果），全部端点收敛于父接口 <see cref="IWechatWorkBatchService"/>，
+/// 自建与第三方子接口均为空标记；服务商代开发无此功能，不设对应子接口。
 /// </para>
 /// </remarks>
 public class WechatBatchContractGuards
@@ -68,7 +67,8 @@ public class WechatBatchContractGuards
 
     /// <summary>
     /// 契约守卫 B2：接口层级与生成器注册形态——全部端点收敛父接口（IsAbstract），
-    /// 三个应用类型子接口均为空标记（能力漂移守卫：任何子接口不得新增端点）。
+    /// 自建与第三方应用类型子接口均为空标记（能力漂移守卫：任何子接口不得新增端点）；
+    /// 官方未向服务商代开发开放本域，故不存在代开发子接口（应用类型子接口仅覆盖官方实际开放的应用类型）。
     /// </summary>
     [Fact]
     public void BatchInterfaceHierarchy_ShouldConvergeOnAbstractParentWithContactRegistry()
@@ -78,7 +78,6 @@ public class WechatBatchContractGuards
         {
             typeof(IWechatWorkInternalBatchService),
             typeof(IWechatWorkThirdPartyBatchService),
-            typeof(IWechatWorkProviderBatchService),
         };
 
         foreach (var child in children)
@@ -109,7 +108,7 @@ public class WechatBatchContractGuards
     }
 
     /// <summary>
-    /// 契约守卫 B3：令牌绑定——四接口统一消费 AccessToken 路由键并以 Query 注入（官方契约 access_token）。
+    /// 契约守卫 B3：令牌绑定——父/自建/第三方三接口统一消费 AccessToken 路由键并以 Query 注入（官方契约 access_token）。
     /// </summary>
     [Fact]
     public void BatchTokenBinding_ShouldBeAccessTokenInjectedViaQuery()
@@ -119,7 +118,6 @@ public class WechatBatchContractGuards
             typeof(IWechatWorkBatchService),
             typeof(IWechatWorkInternalBatchService),
             typeof(IWechatWorkThirdPartyBatchService),
-            typeof(IWechatWorkProviderBatchService),
         };
 
         foreach (var iface in interfaces)

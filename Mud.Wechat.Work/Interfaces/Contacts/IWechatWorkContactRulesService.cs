@@ -11,10 +11,8 @@ namespace Mud.Wechat.Work;
 /// 企业微信通讯录「通讯录查看权限管理」（通讯录隐藏规则）域公共 SDK。
 /// <para>
 /// 官方仅向<b>企业自建应用</b>开放本域端点（创建规则、读取规则列表、修改规则、删除规则，且要求调用的应用为
-/// 通讯录同步应用），第三方应用与服务商代开发均无此功能，因此本父接口没有公共端点；全部 4 个端点声明于
-/// <see cref="IWechatWorkInternalContactRulesService"/>，两个空标记子接口
-/// （<see cref="IWechatWorkThirdPartyContactRulesService"/> / <see cref="IWechatWorkProviderContactRulesService"/>）
-/// 仅作为应用类型化契约入口（形态对齐飞书用户态空接口 <c>IFeishuUserV1LingoEntity</c>）。
+/// 通讯录同步应用），第三方应用与服务商代开发均无此功能，因此本父接口没有公共端点，亦不设第三方/代开发子接口；
+/// 全部 4 个端点声明于 <see cref="IWechatWorkInternalContactRulesService"/>（唯一的应用类型子接口）。
 /// </para>
 /// </summary>
 /// <remarks>

@@ -10,7 +10,6 @@ using Mud.HttpUtils.Attributes;
 using Mud.Wechat.Work;
 using Mud.Wechat.Work.Abstractions;
 using Mud.Wechat.Work.DataModels.Contacts.Tags;
-using Mud.Wechat.Work.DataModels.Contacts.Tags.RequestModel;
 
 namespace Mud.Wechat.Work.Tests.ContractGuards;
 

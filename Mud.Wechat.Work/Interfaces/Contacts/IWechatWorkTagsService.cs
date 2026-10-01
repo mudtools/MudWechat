@@ -6,7 +6,6 @@
 // -----------------------------------------------------------------------
 
 using Mud.Wechat.Work.DataModels.Contacts.Tags;
-using Mud.Wechat.Work.DataModels.Contacts.Tags.RequestModel;
 
 namespace Mud.Wechat.Work;
 

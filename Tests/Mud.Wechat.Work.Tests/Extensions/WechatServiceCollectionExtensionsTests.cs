@@ -173,12 +173,11 @@ public class WechatServiceCollectionExtensionsTests
         provider.GetRequiredService<IWechatWorkInternalTagsService>().Should().NotBeNull();
         provider.GetRequiredService<IWechatWorkThirdPartyTagsService>().Should().NotBeNull();
         provider.GetRequiredService<IWechatWorkProviderTagsService>().Should().NotBeNull();
-        provider.GetRequiredService<IWechatWorkInternalContactRulesService>().Should().NotBeNull();
-        provider.GetRequiredService<IWechatWorkThirdPartyContactRulesService>().Should().NotBeNull();
-        provider.GetRequiredService<IWechatWorkProviderContactRulesService>().Should().NotBeNull();
+        provider.GetRequiredService<IWechatWorkInternalContactRulesService>().Should().NotBeNull(
+            "官方仅向自建应用开放通讯录查看权限管理，本域仅注册自建子接口");
         provider.GetRequiredService<IWechatWorkInternalBatchService>().Should().NotBeNull();
-        provider.GetRequiredService<IWechatWorkThirdPartyBatchService>().Should().NotBeNull();
-        provider.GetRequiredService<IWechatWorkProviderBatchService>().Should().NotBeNull();
+        provider.GetRequiredService<IWechatWorkThirdPartyBatchService>().Should().NotBeNull(
+            "官方未向代开发开放异步导入，本域仅注册自建与第三方子接口");
 
         provider.GetService<IWechatWorkUsersService>().Should().BeNull(
             "公共父接口 IsAbstract = true，不得注册进 DI（调用方须按应用类型选择子接口）");

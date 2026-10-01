@@ -19,6 +19,7 @@ namespace Mud.Wechat.Work.DataModels.ExternalContact.Customer;
 /// 21-通过第三方售前客服添加、22-通过可能的商务伙伴添加、24-通过接受微信账号收到的好友申请添加、
 /// 201-内部成员共享、202-管理员/负责人分配）；<see cref="State"/> 为企业自定义渠道参数，二者语义不同。
 /// </remarks>
+[HttpJsonSerializable(SerializerClassName = "Customer")]
 public class CustomerFollowUser
 {
     /// <summary>

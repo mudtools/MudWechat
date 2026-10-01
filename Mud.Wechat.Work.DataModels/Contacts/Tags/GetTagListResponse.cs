@@ -11,6 +11,7 @@ namespace Mud.Wechat.Work.DataModels.Contacts.Tags;
 /// 获取标签列表响应体（<c>/cgi-bin/tag/list</c>；自建应用 / 通讯录同步助手可获取所有标签，
 /// 第三方应用与代开发自建应用仅可获取自己创建的标签）。
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "Tags")]
 public class GetTagListResponse : WechatWorkResponse
 {
     /// <summary>

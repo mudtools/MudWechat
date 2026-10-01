@@ -15,6 +15,7 @@ namespace Mud.Wechat.Work.DataModels.ExternalContact.Customer;
 /// unionid 与 openid 必须是在同一个小程序（或公众号）获取到的，且账号主体名称需与当前授权企业主体一致
 /// （或与服务商主体一致）；授权企业必须已认证或已验证。
 /// </remarks>
+[HttpJsonSerializable(SerializerClassName = "Customer")]
 public class ConvertUnionIdToExternalUserIdRequest
 {
     /// <summary>

@@ -14,6 +14,7 @@ namespace Mud.Wechat.Work.DataModels.ExternalContact.Customer;
 /// 基础权限（<see cref="ViewCustomerList"/> / <see cref="ViewCustomerData"/> / <see cref="ViewRoomList"/> /
 /// <see cref="ContactMe"/> / <see cref="JoinRoom"/>）不可取消。
 /// </remarks>
+[HttpJsonSerializable(SerializerClassName = "Customer")]
 public class CustomerStrategyPrivilege
 {
     /// <summary>

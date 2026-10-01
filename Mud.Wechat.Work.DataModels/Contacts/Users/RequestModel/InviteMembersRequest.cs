@@ -10,6 +10,7 @@ namespace Mud.Wechat.Work.DataModels.Contracts.Users;
 /// <summary>
 /// 邀请成员请求体（<c>/cgi-bin/batch/invite</c>；user/party/tag 三者不能同时为空）。
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "Users")]
 public class InviteMembersRequest
 {
     /// <summary>

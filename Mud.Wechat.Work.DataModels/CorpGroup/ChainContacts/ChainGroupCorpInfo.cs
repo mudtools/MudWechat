@@ -11,6 +11,7 @@ namespace Mud.Wechat.Work.DataModels.CorpGroup.ChainContacts;
 /// 上下游通讯录分组下的企业信息（获取企业上下游通讯录分组下的企业详情列表响应中 <c>group_corps[]</c> 的元素）。
 /// </summary>
 /// <remarks>官方列表示例中 <c>is_joined</c> 以 1/0 整型传输（详情接口则为布尔），本模型按各端点示例分别承载。</remarks>
+[HttpJsonSerializable(SerializerClassName = "ChainContacts")]
 public class ChainGroupCorpInfo
 {
     /// <summary>

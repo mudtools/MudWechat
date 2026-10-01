@@ -10,6 +10,7 @@ namespace Mud.Wechat.Work.DataModels.CorpGroup.ChainContacts;
 /// <summary>
 /// 获取导入任务结果响应体（<c>/cgi-bin/corpgroup/getresult</c>；只能查询已提交过的历史任务，并发限制 5）。
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "ChainContacts")]
 public class GetChainImportResultResponse : WechatWorkResponse
 {
     /// <summary>

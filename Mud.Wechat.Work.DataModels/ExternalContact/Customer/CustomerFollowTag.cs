@@ -10,6 +10,7 @@ namespace Mud.Wechat.Work.DataModels.ExternalContact.Customer;
 /// <summary>
 /// 跟进人所打客户标签（获取客户详情 <c>follow_user[].tags[]</c> 元素）。
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "Customer")]
 public class CustomerFollowTag
 {
     /// <summary>

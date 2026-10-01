@@ -11,6 +11,7 @@ namespace Mud.Wechat.Work.DataModels.Contracts.Users;
 /// 成员扩展属性（<c>extattr</c>，详见官方「成员扩展属性」文档）。
 /// </summary>
 /// <remarks>新增/更新仅通讯录同步助手或第三方通讯录应用可进行；属性须先在企业 WEB 管理端添加，否则赋值被忽略。</remarks>
+[HttpJsonSerializable(SerializerClassName = "Users")]
 public class UserExtAttr
 {
     /// <summary>

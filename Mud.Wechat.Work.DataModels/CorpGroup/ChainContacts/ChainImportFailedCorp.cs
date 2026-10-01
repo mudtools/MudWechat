@@ -11,6 +11,7 @@ namespace Mud.Wechat.Work.DataModels.CorpGroup.ChainContacts;
 /// 批量导入上下游联系人的导入失败企业结果（获取导入任务结果响应中 <c>result.fail_list[]</c> 的元素）。
 /// </summary>
 /// <remarks>当企业中有联系人导入失败时，本次导入该企业所有联系人的导入都会被阻断。</remarks>
+[HttpJsonSerializable(SerializerClassName = "ChainContacts")]
 public class ChainImportFailedCorp
 {
     /// <summary>

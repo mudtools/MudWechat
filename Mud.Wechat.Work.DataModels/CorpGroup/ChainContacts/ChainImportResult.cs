@@ -10,6 +10,7 @@ namespace Mud.Wechat.Work.DataModels.CorpGroup.ChainContacts;
 /// <summary>
 /// 批量导入上下游联系人的任务处理结果（获取导入任务结果响应中 <c>result</c> 字段；任务完成后有效）。
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "ChainContacts")]
 public class ChainImportResult
 {
     /// <summary>

@@ -10,6 +10,7 @@ namespace Mud.Wechat.Work.DataModels.Contacts.ContactRules;
 /// <summary>
 /// 删除通讯录隐藏规则请求体（<c>/cgi-bin/contactrule/delete</c>；仅通讯录同步应用可调用）。
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "ContactRules")]
 public class DeleteContactRulesRequest
 {
     /// <summary>

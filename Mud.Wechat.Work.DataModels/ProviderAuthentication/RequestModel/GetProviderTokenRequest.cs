@@ -4,6 +4,7 @@ namespace Mud.Wechat.Work.DataModels.ProviderAuthentication;
 /// <summary>
 /// 获取服务商凭证的请求体。
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "ProviderAuthentication")]
 public class GetProviderTokenRequest
 {
     /// <summary>

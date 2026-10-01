@@ -10,6 +10,7 @@ namespace Mud.Wechat.Work.DataModels.ExternalContact.Customer;
 /// <summary>
 /// 客户对外属性的小程序型负载（<c>external_attr[].miniprogram</c>，type = 2）。
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "Customer")]
 public class ExternalAttrMiniProgram
 {
     /// <summary>

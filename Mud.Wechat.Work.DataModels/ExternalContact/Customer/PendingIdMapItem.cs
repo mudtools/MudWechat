@@ -10,6 +10,7 @@ namespace Mud.Wechat.Work.DataModels.ExternalContact.Customer;
 /// <summary>
 /// external_userid 与 pending_id 的映射结果（<c>result[]</c> 元素）。
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "Customer")]
 public class PendingIdMapItem
 {
     /// <summary>

@@ -11,6 +11,7 @@ namespace Mud.Wechat.Work.DataModels.CorpGroup.Rules;
 /// 更新对接规则请求体（<c>/cgi-bin/corpgroup/rule/modify_rule</c>）。
 /// </summary>
 /// <remarks>官方注意：新增和更新上下游对接规则的接口每天最多调用 1000 次。</remarks>
+[HttpJsonSerializable(SerializerClassName = "Rules")]
 public class ModifyChainRuleRequest
 {
     /// <summary>

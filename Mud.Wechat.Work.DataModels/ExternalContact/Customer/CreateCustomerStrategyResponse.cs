@@ -10,6 +10,7 @@ namespace Mud.Wechat.Work.DataModels.ExternalContact.Customer;
 /// <summary>
 /// 创建新的规则组响应体（<c>/cgi-bin/externalcontact/customer_strategy/create</c>）。
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "Customer")]
 public class CreateCustomerStrategyResponse : WechatWorkResponse
 {
     /// <summary>

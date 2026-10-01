@@ -11,6 +11,7 @@ namespace Mud.Wechat.Work.DataModels.Contacts.Tags;
 /// 创建标签请求体（<c>/cgi-bin/tag/create</c>）。
 /// </summary>
 /// <remarks>创建的标签属于该应用，只有该应用的 secret 才可以增删成员；标签总数不能超过 3000 个。</remarks>
+[HttpJsonSerializable(SerializerClassName = "Tags")]
 public class CreateTagRequest
 {
     /// <summary>

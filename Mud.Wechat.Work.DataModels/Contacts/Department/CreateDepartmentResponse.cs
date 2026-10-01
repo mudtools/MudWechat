@@ -10,6 +10,7 @@ namespace Mud.Wechat.Work.DataModels.Contacts.Department;
 /// <summary>
 /// 创建部门响应体（<c>/cgi-bin/department/create</c>）。
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "Department")]
 public class CreateDepartmentResponse : WechatWorkResponse
 {
     /// <summary>

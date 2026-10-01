@@ -192,7 +192,7 @@ public class WechatExternalContactCustomerContractGuards
     public void CustomerDataModels_ShouldBeRegisteredInJsonContext()
     {
         // 经公共 API GetTypeInfo 判定注册态（源生成上下文对未登记类型返回 null）。
-        var context = Mud.Wechat.Work.DataModels.WechatWorkJsonContext.Default;
+        var context = CustomerJsonContext.Default;
 
         var requiredTypes = new[]
         {
@@ -219,7 +219,7 @@ public class WechatExternalContactCustomerContractGuards
         foreach (var type in requiredTypes)
         {
             context.GetTypeInfo(type).Should().NotBeNull(
-                $"{type.Name} 是客户管理域契约面类型，必须登记进 WechatWorkJsonContext（AOT 源生成）");
+                $"{type.Name} 是客户管理域契约面类型，必须登记进 CustomerJsonContext（AOT 源生成）");
         }
     }
 }

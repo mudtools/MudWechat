@@ -11,6 +11,7 @@ namespace Mud.Wechat.Work.DataModels.CorpGroup.Rules;
 /// 对接规则的下游企业范围（<see cref="ChainRuleInfo.MemberCorpRange"/>）。
 /// </summary>
 /// <remarks>官方契约：分组 id 和企业 id 两个必选填一个。</remarks>
+[HttpJsonSerializable(SerializerClassName = "Rules")]
 public class ChainRuleMemberRange
 {
     /// <summary>

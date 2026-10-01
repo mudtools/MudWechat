@@ -14,6 +14,7 @@ namespace Mud.Wechat.Work.DataModels.Contacts.Department;
 /// 各应用类型可获取的字段不同：代开发自建应用需管理员授权才返回 name；第三方应用不可获取 name/name_en
 /// （以 id 代替，展示需用通讯录展示组件），department_leader 仅第三方通讯录应用或获相应授权的应用可获取。
 /// </remarks>
+[HttpJsonSerializable(SerializerClassName = "Department")]
 public class DepartmentInfo
 {
     /// <summary>

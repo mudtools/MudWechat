@@ -16,6 +16,7 @@ namespace Mud.Wechat.Work.DataModels.Contacts.Export;
 /// 导出的数据文件以 AES-256-CBC 加密（AESKey = Base64_Decode(encoding_aeskey + "=")），
 /// 解密由调用方自行完成。</para>
 /// </remarks>
+[HttpJsonSerializable(SerializerClassName = "Export")]
 public class ExportTagUsersRequest
 {
     /// <summary>

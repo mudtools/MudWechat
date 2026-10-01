@@ -10,6 +10,7 @@ namespace Mud.Wechat.Work.DataModels.CorpGroup.ChainContacts;
 /// <summary>
 /// 查询成员自定义 id 请求体（<c>/cgi-bin/corpgroup/corp/get_chain_user_custom_id</c>）。
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "ChainContacts")]
 public class GetChainUserCustomIdRequest
 {
     /// <summary>

@@ -10,6 +10,7 @@ namespace Mud.Wechat.Work.DataModels.ExternalContact.FollowUser;
 /// <summary>
 /// 检查用户是否配置了客户联系功能使用权限响应体（<c>/cgi-bin/externalcontact/check_follow_user</c>）。
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "FollowUser")]
 public class CheckFollowUserResponse : WechatWorkResponse
 {
     /// <summary>

@@ -11,6 +11,7 @@ namespace Mud.Wechat.Work.DataModels.Contracts.Users;
 /// 用户-部门关系（获取成员 ID 列表 <c>/cgi-bin/user/list_id</c> 响应中的 <c>dept_user[]</c> 元素；用户在多个部门下时会有多条记录）。
 /// </summary>
 /// <remarks>自建应用返回 <see cref="UserId"/>；第三方/代开发应用返回 <see cref="OpenUserId"/>（密文 userid）。</remarks>
+[HttpJsonSerializable(SerializerClassName = "Users")]
 public class UserDepartmentInfo
 {
     /// <summary>

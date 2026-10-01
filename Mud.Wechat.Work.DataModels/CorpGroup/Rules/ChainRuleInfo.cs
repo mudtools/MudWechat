@@ -11,6 +11,7 @@ namespace Mud.Wechat.Work.DataModels.CorpGroup.Rules;
 /// 上下游关系（对接）规则详情（获取规则详情响应中的 <c>rule_info</c>；
 /// 新增 / 更新对接规则请求中的 <c>rule_info</c>，三处结构官方一致）。
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "Rules")]
 public class ChainRuleInfo
 {
     /// <summary>

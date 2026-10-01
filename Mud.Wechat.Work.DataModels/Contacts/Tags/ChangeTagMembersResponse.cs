@@ -16,6 +16,7 @@ namespace Mud.Wechat.Work.DataModels.Contacts.Tags;
 /// 全部非法时返回错误码（增加成员自建版文档标注 40070，第三方 / 代开发删除成员文档标注 40031，
 /// 两文档树对「全部非法」错误码标注不一致，以实际返回为准）。
 /// </remarks>
+[HttpJsonSerializable(SerializerClassName = "Tags")]
 public class ChangeTagMembersResponse : WechatWorkResponse
 {
     /// <summary>

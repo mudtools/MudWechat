@@ -12,6 +12,7 @@ namespace Mud.Wechat.Work.DataModels.Contacts.ContactRules;
 /// </summary>
 /// <remarks><see cref="Rules"/> 一次最多修改 100 条规则；每条规则必须携带
 /// <see cref="ContactRule.RuleId"/>，且不能更新规则类型（<see cref="ContactRule.RuleType"/>）。</remarks>
+[HttpJsonSerializable(SerializerClassName = "ContactRules")]
 public class UpdateContactRulesRequest
 {
     /// <summary>

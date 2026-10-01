@@ -11,6 +11,7 @@ namespace Mud.Wechat.Work.DataModels.CorpGroup.ChainContacts;
 /// 获取企业上下游通讯录下的企业信息请求体（<c>/cgi-bin/corpgroup/corp/get_chain_corpinfo</c>）。
 /// </summary>
 /// <remarks><see cref="CorpId"/> 与 <see cref="PendingCorpId"/> 至少填一个；同时填时 corpid 生效。</remarks>
+[HttpJsonSerializable(SerializerClassName = "ChainContacts")]
 public class GetChainCorpInfoRequest
 {
     /// <summary>

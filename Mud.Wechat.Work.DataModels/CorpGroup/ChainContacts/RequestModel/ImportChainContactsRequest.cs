@@ -15,6 +15,7 @@ namespace Mud.Wechat.Work.DataModels.CorpGroup.ChainContacts;
 /// 每天最多导入 20000 人；<b>只允许串行调用</b>，且同时只能存在一个导入任务（含管理后台提交的任务）。
 /// 仅已验证的企业可调用；自建应用须配置到「上下游-可调用接口的应用」中。
 /// </remarks>
+[HttpJsonSerializable(SerializerClassName = "ChainContacts")]
 public class ImportChainContactsRequest
 {
     /// <summary>

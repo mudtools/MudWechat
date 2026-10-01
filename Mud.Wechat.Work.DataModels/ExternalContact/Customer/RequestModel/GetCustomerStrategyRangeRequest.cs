@@ -10,6 +10,7 @@ namespace Mud.Wechat.Work.DataModels.ExternalContact.Customer;
 /// <summary>
 /// 获取规则组管理范围请求体（<c>/cgi-bin/externalcontact/customer_strategy/get_range</c>）。
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "Customer")]
 public class GetCustomerStrategyRangeRequest
 {
     /// <summary>

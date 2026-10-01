@@ -10,6 +10,7 @@ namespace Mud.Wechat.Work.DataModels.CorpGroup.ChainContacts;
 /// <summary>
 /// 获取下级企业加入的上下游请求体（<c>/cgi-bin/corpgroup/get_corp_shared_chain_list</c>）。
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "ChainContacts")]
 public class GetCorpSharedChainListRequest
 {
     /// <summary>

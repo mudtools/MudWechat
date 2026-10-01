@@ -9,6 +9,20 @@
 using System.Text.Json.Serialization.Metadata;
 using Mud.Wechat.Work.Abstractions.Authentication.Models;
 using Mud.Wechat.Work.DataModels;
+using Mud.Wechat.Work.DataModels.Contacts.Batch;
+using Mud.Wechat.Work.DataModels.Contacts.ContactRules;
+using Mud.Wechat.Work.DataModels.Contacts.Department;
+using Mud.Wechat.Work.DataModels.Contacts.Export;
+using Mud.Wechat.Work.DataModels.Contacts.Tags;
+using Mud.Wechat.Work.DataModels.Contracts.Users;
+using Mud.Wechat.Work.DataModels.CorpGroup;
+using Mud.Wechat.Work.DataModels.CorpGroup.ChainContacts;
+using Mud.Wechat.Work.DataModels.CorpGroup.Rules;
+using Mud.Wechat.Work.DataModels.CorpTokenAuthentication;
+using Mud.Wechat.Work.DataModels.ExternalContact.Customer;
+using Mud.Wechat.Work.DataModels.ExternalContact.FollowUser;
+using Mud.Wechat.Work.DataModels.InternalAppAuthentication;
+using Mud.Wechat.Work.DataModels.ProviderAuthentication;
 
 namespace Mud.Wechat.Work.Extensions;
 
@@ -19,25 +33,39 @@ namespace Mud.Wechat.Work.Extensions;
 public static class WechatJsonResolverExtensions
 {
     /// <summary>
-    /// 将企业微信的三套源生成序列化上下文合并进组件
+    /// 将企业微信的源生成序列化上下文合并进组件
     /// <c>IOptions&lt;JsonSerializerOptions&gt;</c> 的 TypeInfoResolver 管线（NET8+）。
     /// </summary>
     /// <param name="services">服务集合。</param>
     /// <remarks>
     /// <list type="bullet">
-    /// <item><see cref="WechatWorkJsonContext"/>（<c>DataModels</c> 包）：官方传输 DTO；</item>
-    /// <item><see cref="WechatCorpGroupJsonContext"/>（<c>DataModels</c> 包）：上下游域同名 DTO
-    /// （与客户管理域 DTO 简单类型名相同，源生成器按简单类型名去重，必须独立上下文承载）；</item>
+    /// <item>十五个 <c>*JsonContext</c>（<c>DataModels</c> 包 <c>Generated/</c> 目录，由
+    /// <c>scripts/GenerateJsonContext.ps1</c>（mud-jsonctx）按 <c>[HttpJsonSerializable]</c>
+    /// 标注生成，SerializerClassName = DTO 命名空间的域段，每个上下文与其域 DTO
+    /// 同命名空间——与 Mud.Feishu.DataModels「每模块一上下文」同构）；</item>
     /// <item><see cref="AuthenticationJsonContext"/>（<c>Abstractions</c> 包）：授权领域模型
     /// （<c>[HttpJsonSerializable]</c> 覆盖要求，见 P0-5）。</item>
     /// </list>
-    /// 三者顺序无关（<c>JsonTypeInfoResolver.Combine</c> 按序命中，键空间不重叠）。
+    /// 各上下文键空间不重叠，合并顺序无关（<c>JsonTypeInfoResolver.Combine</c> 按序命中）。
     /// </remarks>
     public static void ConfigureDataModelsResolver(IServiceCollection services)
     {
         var resolver = JsonTypeInfoResolver.Combine(
-            WechatWorkJsonContext.Default,
-            WechatCorpGroupJsonContext.Default,
+            CommonJsonContext.Default,
+            UsersJsonContext.Default,
+            DepartmentJsonContext.Default,
+            TagsJsonContext.Default,
+            ContactRulesJsonContext.Default,
+            BatchJsonContext.Default,
+            ExportJsonContext.Default,
+            FollowUserJsonContext.Default,
+            CustomerJsonContext.Default,
+            CorpGroupJsonContext.Default,
+            ChainContactsJsonContext.Default,
+            RulesJsonContext.Default,
+            CorpTokenAuthenticationJsonContext.Default,
+            InternalAppAuthenticationJsonContext.Default,
+            ProviderAuthenticationJsonContext.Default,
             AuthenticationJsonContext.Default);
         services.AddMudHttpClientJsonContext(resolver);
     }

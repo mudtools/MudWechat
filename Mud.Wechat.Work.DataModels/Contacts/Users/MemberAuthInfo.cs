@@ -10,6 +10,7 @@ namespace Mud.Wechat.Work.DataModels.Contracts.Users;
 /// <summary>
 /// 成员授权列表项（<c>member_auth_list[]</c>）。
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "Users")]
 public class MemberAuthInfo
 {
     /// <summary>

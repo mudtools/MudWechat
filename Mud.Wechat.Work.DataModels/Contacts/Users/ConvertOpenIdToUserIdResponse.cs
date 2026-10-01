@@ -10,6 +10,7 @@ namespace Mud.Wechat.Work.DataModels.Contracts.Users;
 /// <summary>
 /// openid 转 userid 响应体（<c>/cgi-bin/user/convert_to_userid</c>）。
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "Users")]
 public class ConvertOpenIdToUserIdResponse : WechatWorkResponse
 {
     /// <summary>

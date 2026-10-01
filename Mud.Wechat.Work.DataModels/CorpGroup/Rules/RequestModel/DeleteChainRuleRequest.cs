@@ -10,6 +10,7 @@ namespace Mud.Wechat.Work.DataModels.CorpGroup.Rules;
 /// <summary>
 /// 删除对接规则请求体（<c>/cgi-bin/corpgroup/rule/delete_rule</c>）。
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "Rules")]
 public class DeleteChainRuleRequest
 {
     /// <summary>

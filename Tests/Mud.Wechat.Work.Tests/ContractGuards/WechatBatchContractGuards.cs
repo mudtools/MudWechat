@@ -139,7 +139,7 @@ public class WechatBatchContractGuards
     public void BatchDataModels_ShouldBeRegisteredInJsonContext()
     {
         // 经公共 API GetTypeInfo 判定注册态（源生成上下文对未登记类型返回 null）。
-        var context = Mud.Wechat.Work.DataModels.WechatWorkJsonContext.Default;
+        var context = BatchJsonContext.Default;
 
         var requiredTypes = new[]
         {
@@ -151,7 +151,7 @@ public class WechatBatchContractGuards
         foreach (var type in requiredTypes)
         {
             context.GetTypeInfo(type).Should().NotBeNull(
-                $"{type.Name} 是异步导入接口域契约面类型，必须登记进 WechatWorkJsonContext（AOT 源生成）");
+                $"{type.Name} 是异步导入接口域契约面类型，必须登记进 BatchJsonContext（AOT 源生成）");
         }
     }
 }

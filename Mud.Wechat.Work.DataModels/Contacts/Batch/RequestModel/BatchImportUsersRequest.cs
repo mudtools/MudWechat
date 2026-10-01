@@ -15,6 +15,7 @@ namespace Mud.Wechat.Work.DataModels.Contacts.Batch;
 /// <para>全量覆盖成员为危险操作：文件中不存在、通讯录中存在的成员将被删除；当需删除成员多于 50 人且多于现有人数 20% 以上，
 /// 或少于 50 人且多于现有人数 80% 以上时，官方将中止导入并返回相应错误码。</para>
 /// </remarks>
+[HttpJsonSerializable(SerializerClassName = "Batch")]
 public class BatchImportUsersRequest
 {
     /// <summary>

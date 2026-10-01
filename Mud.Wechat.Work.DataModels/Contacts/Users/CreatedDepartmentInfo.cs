@@ -10,6 +10,7 @@ namespace Mud.Wechat.Work.DataModels.Contracts.Users;
 /// <summary>
 /// 创建成员时自动新建的部门信息（<c>created_department_list.department_info[]</c>）。
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "Users")]
 public class CreatedDepartmentInfo
 {
     /// <summary>

@@ -10,6 +10,7 @@ namespace Mud.Wechat.Work.DataModels.Contacts.Tags;
 /// <summary>
 /// 创建标签响应体（<c>/cgi-bin/tag/create</c>）。
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "Tags")]
 public class CreateTagResponse : WechatWorkResponse
 {
     /// <summary>

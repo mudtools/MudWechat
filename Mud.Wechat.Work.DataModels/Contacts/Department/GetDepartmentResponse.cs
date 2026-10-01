@@ -10,6 +10,7 @@ namespace Mud.Wechat.Work.DataModels.Contacts.Department;
 /// <summary>
 /// 获取单个部门详情响应体（<c>/cgi-bin/department/get</c>；各应用类型可获取的字段详见 <see cref="DepartmentInfo"/> 说明）。
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "Department")]
 public class GetDepartmentResponse : WechatWorkResponse
 {
     /// <summary>

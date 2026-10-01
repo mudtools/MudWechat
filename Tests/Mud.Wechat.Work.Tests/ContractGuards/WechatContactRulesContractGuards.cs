@@ -128,7 +128,7 @@ public class WechatContactRulesContractGuards
     public void ContactRulesDataModels_ShouldBeRegisteredInJsonContext()
     {
         // 经公共 API GetTypeInfo 判定注册态（源生成上下文对未登记类型返回 null）。
-        var context = Mud.Wechat.Work.DataModels.WechatWorkJsonContext.Default;
+        var context = ContactRulesJsonContext.Default;
 
         var requiredTypes = new[]
         {
@@ -141,7 +141,7 @@ public class WechatContactRulesContractGuards
         foreach (var type in requiredTypes)
         {
             context.GetTypeInfo(type).Should().NotBeNull(
-                $"{type.Name} 是通讯录查看权限管理域契约面类型，必须登记进 WechatWorkJsonContext（AOT 源生成）");
+                $"{type.Name} 是通讯录查看权限管理域契约面类型，必须登记进 ContactRulesJsonContext（AOT 源生成）");
         }
     }
 }

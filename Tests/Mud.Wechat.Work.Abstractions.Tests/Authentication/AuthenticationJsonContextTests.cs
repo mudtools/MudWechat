@@ -107,7 +107,7 @@ public class AuthenticationJsonContextTests
     {
         // 与主包 WechatJsonResolverExtensions 的合并方式一致。
         var resolver = JsonTypeInfoResolver.Combine(
-            Mud.Wechat.Work.DataModels.WechatWorkJsonContext.Default,
+            Mud.Wechat.Work.DataModels.CommonJsonContext.Default,
             AuthenticationJsonContext.Default);
 
         resolver.GetTypeInfo(typeof(WechatCorpAuthorization), AuthenticationJsonContext.Default.Options)
@@ -115,7 +115,7 @@ public class AuthenticationJsonContextTests
 
         resolver.GetTypeInfo(
                 typeof(Mud.Wechat.Work.DataModels.WechatWorkResponse),
-                Mud.Wechat.Work.DataModels.WechatWorkJsonContext.Default.Options)
+                Mud.Wechat.Work.DataModels.CommonJsonContext.Default.Options)
             .Should().NotBeNull("合并不得影响既有 DTO 解析");
     }
 }

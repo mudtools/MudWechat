@@ -10,6 +10,7 @@ namespace Mud.Wechat.Work.DataModels.Contracts.Users;
 /// <summary>
 /// 获取部门成员（<c>/cgi-bin/user/simplelist</c>）返回的成员摘要信息。
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "Users")]
 public class UserSimpleInfo
 {
     /// <summary>

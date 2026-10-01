@@ -1,8 +1,9 @@
-﻿namespace Mud.Wechat.Work.DataModels.ProviderAuthentication;
+namespace Mud.Wechat.Work.DataModels.ProviderAuthentication;
 
 /// <summary>
 /// 授权方企业详细信息
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "ProviderAuthentication")]
 public class AuthCorpDetailInfo
 {
     /// <summary>
@@ -82,6 +83,7 @@ public class AuthCorpDetailInfo
 /// <summary>
 /// 授权方企业详细信息
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "ProviderAuthentication")]
 public class AuthCorpDetailInfoExt : AuthCorpDetailInfo
 {
     /// <summary>
@@ -96,6 +98,7 @@ public class AuthCorpDetailInfoExt : AuthCorpDetailInfo
 /// <summary>
 /// 企业其他认证名称信息
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "ProviderAuthentication")]
 public class CorpExName
 {
     /// <summary>

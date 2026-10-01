@@ -11,6 +11,7 @@ namespace Mud.Wechat.Work.DataModels.ExternalContact.Customer;
 /// 批量获取客户详情响应体（<c>/cgi-bin/externalcontact/batch/get_by_user</c>；
 /// cursor + limit 分页，limit 最大 100、默认 50）。
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "Customer")]
 public class BatchGetCustomerDetailsResponse : WechatWorkResponse
 {
     /// <summary>

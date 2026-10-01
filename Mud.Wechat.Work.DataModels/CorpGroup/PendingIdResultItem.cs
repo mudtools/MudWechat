@@ -10,6 +10,7 @@ namespace Mud.Wechat.Work.DataModels.CorpGroup;
 /// <summary>
 /// pending_id 转换结果（上下游关联客户信息-未添加客户批量转换响应中 <c>result[]</c> 的元素）。
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "CorpGroup")]
 public class PendingIdResultItem
 {
     /// <summary>

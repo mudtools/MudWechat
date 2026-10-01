@@ -3,6 +3,7 @@ namespace Mud.Wechat.Work.DataModels.ProviderAuthentication;
 /// <summary>
 /// 获取代开发自建应用带参授权链接请求体（get_customized_auth_url）。
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "ProviderAuthentication")]
 public class GetCustomizedAuthUrlRequest
 {
     /// <summary>

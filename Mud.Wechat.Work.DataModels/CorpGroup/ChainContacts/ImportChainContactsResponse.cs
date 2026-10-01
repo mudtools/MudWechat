@@ -10,6 +10,7 @@ namespace Mud.Wechat.Work.DataModels.CorpGroup.ChainContacts;
 /// <summary>
 /// 批量导入上下游联系人任务受理响应体（<c>/cgi-bin/corpgroup/import_chain_contact</c>）。
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "ChainContacts")]
 public class ImportChainContactsResponse : WechatWorkResponse
 {
     /// <summary>

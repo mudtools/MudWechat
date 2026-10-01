@@ -1,8 +1,9 @@
-﻿namespace Mud.Wechat.Work.DataModels.ProviderAuthentication;
+namespace Mud.Wechat.Work.DataModels.ProviderAuthentication;
 
 /// <summary>
 /// 设置授权配置请求体
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "ProviderAuthentication")]
 public class SetSessionInfoRequest
 {
     /// <summary>
@@ -21,6 +22,7 @@ public class SetSessionInfoRequest
 /// <summary>
 /// 授权过程中需要用到的会话信息
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "ProviderAuthentication")]
 public class SessionInfo
 {
     /// <summary>

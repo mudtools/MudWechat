@@ -11,6 +11,7 @@ namespace Mud.Wechat.Work.DataModels.Contacts.ContactRules;
 /// 创建通讯录隐藏规则请求体（<c>/cgi-bin/contactrule/create</c>；仅通讯录同步应用可调用）。
 /// </summary>
 /// <remarks><see cref="Rules"/> 一次最多创建 100 条规则；返回的 <c>rule_ids</c> 与传入规则顺序对应。</remarks>
+[HttpJsonSerializable(SerializerClassName = "ContactRules")]
 public class CreateContactRulesRequest
 {
     /// <summary>

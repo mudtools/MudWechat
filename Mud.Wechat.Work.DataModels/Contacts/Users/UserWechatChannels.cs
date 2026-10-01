@@ -10,6 +10,7 @@ namespace Mud.Wechat.Work.DataModels.Contracts.Users;
 /// <summary>
 /// 成员对外属性中的视频号信息（<c>external_profile.wechat_channels</c>）。
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "Users")]
 public class UserWechatChannels
 {
     /// <summary>

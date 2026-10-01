@@ -11,6 +11,7 @@ namespace Mud.Wechat.Work.DataModels.Contacts.Department;
 /// 获取部门列表响应体（<c>/cgi-bin/department/list</c>；只能拉取 token 对应应用的权限范围内的部门；
 /// 官方提示该接口性能较低，建议改用获取子部门 ID 列表与获取单个部门详情）。
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "Department")]
 public class GetDepartmentListResponse : WechatWorkResponse
 {
     /// <summary>

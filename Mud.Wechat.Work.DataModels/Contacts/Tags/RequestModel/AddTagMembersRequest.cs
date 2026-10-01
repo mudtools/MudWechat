@@ -11,6 +11,7 @@ namespace Mud.Wechat.Work.DataModels.Contacts.Tags;
 /// 增加标签成员请求体（<c>/cgi-bin/tag/addtagusers</c>；调用的应用必须是指定标签的创建者，成员属于应用的可见范围）。
 /// </summary>
 /// <remarks><see cref="UserList"/> 与 <see cref="PartyList"/> 不能同时为空；每个标签下部门数和人员数总和不能超过 3 万个。</remarks>
+[HttpJsonSerializable(SerializerClassName = "Tags")]
 public class AddTagMembersRequest
 {
     /// <summary>

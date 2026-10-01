@@ -24,7 +24,7 @@ SDK 完整封装了企业微信接入中最繁琐的部分——**多应用、�
 ## 特性
 
 - **多应用令牌基座**：按 `AppKey` 管理多个应用配置，令牌缓存键为三段式 `{tokenType}:{appKey}:{scopeKey}`，企业级令牌一企一份（scope 机制），自动提前刷新（默认 300s）。
-- **AOT / Trim 完全兼容**：JSON 序列化与配置绑定均为源生成（`WechatWorkJsonContext`），`net8.0`/`net10.0` 下以 `AotStrictMode=true` 门禁锁定零 IL 诊断。
+- **AOT / Trim 完全兼容**：JSON 序列化与配置绑定均为源生成（DataModels 域 `JsonContext` + Abstractions `AuthenticationJsonContext`），`net8.0`/`net10.0` 下以 `AotStrictMode=true` 门禁锁定零 IL 诊断。
 - **声明式客户端**：基于 `Mud.HttpUtils` 的声明式 `[Token]` 注入客户端，令牌注入走 Query（企业微信官方契约）。
 - **回调接收**：`suite_ticket` / 授权事件推送的验签、AES 解密、事件分发，内置时间窗 + 指纹去重两道 fail-closed 抗重放闸。
 - **授权编排**：第三方应用/代开发的换码、授权信息刷新、撤销与安装链接生成，换码单飞门防止并发重复请求。

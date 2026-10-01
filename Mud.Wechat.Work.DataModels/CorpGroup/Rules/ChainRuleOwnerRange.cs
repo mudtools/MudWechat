@@ -12,6 +12,7 @@ namespace Mud.Wechat.Work.DataModels.CorpGroup.Rules;
 /// 下游企业可以看到并联系的成员或部门）。
 /// </summary>
 /// <remarks>官方契约：部门 id 和用户 id 两个必选填一个。</remarks>
+[HttpJsonSerializable(SerializerClassName = "Rules")]
 public class ChainRuleOwnerRange
 {
     /// <summary>

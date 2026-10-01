@@ -10,6 +10,7 @@ namespace Mud.Wechat.Work.DataModels.Contacts.Tags;
 /// <summary>
 /// 更新标签名字请求体（<c>/cgi-bin/tag/update</c>；调用的应用必须是指定标签的创建者）。
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "Tags")]
 public class UpdateTagNameRequest
 {
     /// <summary>

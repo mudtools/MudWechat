@@ -10,6 +10,7 @@ namespace Mud.Wechat.Work.DataModels.ExternalContact.Customer;
 /// <summary>
 /// 删除规则组请求体（<c>/cgi-bin/externalcontact/customer_strategy/del</c>）。
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "Customer")]
 public class DeleteCustomerStrategyRequest
 {
     /// <summary>

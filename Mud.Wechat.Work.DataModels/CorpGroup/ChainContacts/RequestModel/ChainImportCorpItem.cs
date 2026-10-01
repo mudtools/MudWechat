@@ -10,6 +10,7 @@ namespace Mud.Wechat.Work.DataModels.CorpGroup.ChainContacts;
 /// <summary>
 /// 批量导入上下游联系人的企业条目（<see cref="ImportChainContactsRequest"/> 中 <c>contact_list[]</c> 的元素）。
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "ChainContacts")]
 public class ChainImportCorpItem
 {
     /// <summary>

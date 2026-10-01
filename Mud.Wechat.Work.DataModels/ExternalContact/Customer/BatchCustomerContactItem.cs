@@ -10,6 +10,7 @@ namespace Mud.Wechat.Work.DataModels.ExternalContact.Customer;
 /// <summary>
 /// 批量获取客户详情的条目（<c>external_contact_list[]</c> 元素：客户基本信息 + 单个跟进人信息）。
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "Customer")]
 public class BatchCustomerContactItem
 {
     /// <summary>

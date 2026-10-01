@@ -11,6 +11,7 @@ namespace Mud.Wechat.Work.DataModels.Contacts.Export;
 /// 异步导出任务受理响应体（<c>/cgi-bin/export/simple_user</c>、<c>/cgi-bin/export/user</c>、
 /// <c>/cgi-bin/export/department</c>、<c>/cgi-bin/export/taguser</c> 共用）。
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "Export")]
 public class ExportJobResponse : WechatWorkResponse
 {
     /// <summary>

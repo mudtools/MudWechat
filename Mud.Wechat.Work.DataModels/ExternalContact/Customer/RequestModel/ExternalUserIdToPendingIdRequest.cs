@@ -11,6 +11,7 @@ namespace Mud.Wechat.Work.DataModels.ExternalContact.Customer;
 /// external_userid 查询 pending_id 请求体
 /// （<c>/cgi-bin/idconvert/batch/external_userid_to_pending_id</c>）。
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "Customer")]
 public class ExternalUserIdToPendingIdRequest
 {
     /// <summary>

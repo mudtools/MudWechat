@@ -11,6 +11,7 @@ namespace Mud.Wechat.Work.DataModels.CorpGroup;
 /// 获取下级/下游企业小程序 session 请求体（<c>/cgi-bin/miniprogram/transfer_session</c>）。
 /// </summary>
 /// <remarks><see cref="SessionKey"/> 为会话密钥，属敏感凭据，调用方不得记录到日志。</remarks>
+[HttpJsonSerializable(SerializerClassName = "CorpGroup")]
 public class TransferMiniProgramSessionRequest
 {
     /// <summary>

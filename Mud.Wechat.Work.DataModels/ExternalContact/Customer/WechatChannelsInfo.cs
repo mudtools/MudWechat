@@ -10,6 +10,7 @@ namespace Mud.Wechat.Work.DataModels.ExternalContact.Customer;
 /// <summary>
 /// 视频号来源信息（<c>wechat_channels</c>，添加来源 add_way = 10 时返回）。
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "Customer")]
 public class WechatChannelsInfo
 {
     /// <summary>

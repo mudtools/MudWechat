@@ -10,6 +10,7 @@ namespace Mud.Wechat.Work.DataModels.Contracts.Users;
 /// <summary>
 /// 获取选人 ticket 对应的用户响应体（<c>/cgi-bin/user/list_selected_ticket_user</c>）。
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "Users")]
 public class ListSelectedTicketUserResponse : WechatWorkResponse
 {
     /// <summary>

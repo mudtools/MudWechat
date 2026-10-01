@@ -11,6 +11,7 @@ namespace Mud.Wechat.Work.DataModels.Contracts.Users;
 /// 邮箱获取 userid 请求体（<c>/cgi-bin/user/get_userid_by_email</c>）。
 /// </summary>
 /// <remarks>请确保邮箱的正确性：若出错的次数超过企业人数上限的 20%，会导致 1 天不可调用。</remarks>
+[HttpJsonSerializable(SerializerClassName = "Users")]
 public class GetUserIdByEmailRequest
 {
     /// <summary>

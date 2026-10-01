@@ -10,6 +10,7 @@ namespace Mud.Wechat.Work.DataModels;
 /// <summary>
 /// 企业微信统一响应基底。
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "Common")]
 public class WechatWorkResponse
 {
     /// <summary>

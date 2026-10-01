@@ -17,6 +17,7 @@ namespace Mud.Wechat.Work.DataModels.ExternalContact.Customer;
 /// <see cref="Privilege"/> 为空则不编辑权限，传值则整体覆盖旧权限配置；
 /// 若规则组具有父管理组，其管理范围必须是父规则组的子集且权限配置被完全继承（privilege 将被忽略）。</para>
 /// </remarks>
+[HttpJsonSerializable(SerializerClassName = "Customer")]
 public class UpdateCustomerStrategyRequest
 {
     /// <summary>

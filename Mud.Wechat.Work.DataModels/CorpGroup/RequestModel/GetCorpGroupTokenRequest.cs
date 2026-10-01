@@ -10,6 +10,7 @@ namespace Mud.Wechat.Work.DataModels.CorpGroup;
 /// <summary>
 /// 获取下级/下游企业的 access_token 请求体（<c>/cgi-bin/corpgroup/corp/gettoken</c>）。
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "CorpGroup")]
 public class GetCorpGroupTokenRequest
 {
     /// <summary>

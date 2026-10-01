@@ -11,6 +11,7 @@ namespace Mud.Wechat.Work.DataModels.Contacts.Department;
 /// 更新部门请求体（<c>/cgi-bin/department/update</c>；应用须拥有指定部门的管理权限，移动部门还需新父部门的管理权限；第三方仅通讯录应用可调用）。
 /// </summary>
 /// <remarks>非必须字段未指定则不更新该字段；部门最大层级为 15 层，部门总数不能超过 3 万个。</remarks>
+[HttpJsonSerializable(SerializerClassName = "Department")]
 public class UpdateDepartmentRequest
 {
     /// <summary>

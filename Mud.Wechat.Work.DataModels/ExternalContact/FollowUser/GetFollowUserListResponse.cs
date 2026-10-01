@@ -10,6 +10,7 @@ namespace Mud.Wechat.Work.DataModels.ExternalContact.FollowUser;
 /// <summary>
 /// 获取配置了客户联系功能的成员列表响应体（<c>/cgi-bin/externalcontact/get_follow_user_list</c>）。
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "FollowUser")]
 public class GetFollowUserListResponse : WechatWorkResponse
 {
     /// <summary>

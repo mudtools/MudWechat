@@ -10,6 +10,7 @@ namespace Mud.Wechat.Work.DataModels.Contacts.Batch;
 /// <summary>
 /// 获取异步任务结果响应体（<c>/cgi-bin/batch/getresult</c>；只能查询已经提交过的历史任务）。
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "Batch")]
 public class GetBatchJobResultResponse : WechatWorkResponse
 {
     /// <summary>

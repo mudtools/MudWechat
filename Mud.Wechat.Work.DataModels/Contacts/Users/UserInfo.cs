@@ -22,6 +22,7 @@ namespace Mud.Wechat.Work.DataModels.Contracts.Users;
 /// 故本模型以字符串承载以兼容两种形态。
 /// </para>
 /// </remarks>
+[HttpJsonSerializable(SerializerClassName = "Users")]
 public class UserInfo : WechatWorkResponse
 {
     /// <summary>

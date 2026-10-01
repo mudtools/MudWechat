@@ -10,6 +10,7 @@ namespace Mud.Wechat.Work.DataModels.Contracts.Users;
 /// <summary>
 /// 批量删除成员请求体（<c>/cgi-bin/user/batchdelete</c>，仅通讯录同步助手或第三方通讯录应用可调用）。
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "Users")]
 public class BatchDeleteUsersRequest
 {
     /// <summary>

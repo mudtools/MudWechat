@@ -16,6 +16,7 @@ namespace Mud.Wechat.Work.DataModels.Contacts.Batch;
 /// 待下次导入成员把人移出后自动删除。csv 中部门名称、部门 ID、父部门 ID 必填，根部门 ID 默认为 1；
 /// 排序可选（置空或 0 不修改，order 值大的排序靠前）。</para>
 /// </remarks>
+[HttpJsonSerializable(SerializerClassName = "Batch")]
 public class BatchImportPartiesRequest
 {
     /// <summary>

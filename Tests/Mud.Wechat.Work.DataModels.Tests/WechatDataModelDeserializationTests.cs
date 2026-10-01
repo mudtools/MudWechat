@@ -174,7 +174,7 @@ public class WechatDataModelDeserializationTests
     {
         var json = JsonSerializer.Serialize(
             new GetCustomizedAuthUrlRequest { TemplateIdList = new() { "dk1" } },
-            WechatWorkJsonContext.Default.GetCustomizedAuthUrlRequest);
+            ProviderAuthenticationJsonContext.Default.GetCustomizedAuthUrlRequest);
 
         json.Should().NotContain("\"state\"", "state 为可选字段，null 时不落 JSON（JsonContext 的 WhenWritingNull）");
         json.Should().Contain("\"templateid_list\":[\"dk1\"]");
@@ -377,9 +377,9 @@ public class WechatDataModelDeserializationTests
             },
         };
 
-        // 生产管线 = WechatWorkJsonContext（WhenWritingNull）：未赋值的可空属性不应出现在载荷中。
+        // 生产管线 = 域 JsonContext（WhenWritingNull，Generated/ 源生成）：未赋值的可空属性不应出现在载荷中。
         // 断言只锚定键名与 ASCII 值（源生成默认编码器将非 ASCII 转义为 \uXXXX）。
-        var json = JsonSerializer.Serialize(request, Mud.Wechat.Work.DataModels.WechatWorkJsonContext.Default.CreateUserRequest);
+        var json = JsonSerializer.Serialize(request, UsersJsonContext.Default.CreateUserRequest);
         json.Should().Contain("\"userid\":\"zhangsan\"");
         json.Should().Contain("\"department\":[1,2]");
         json.Should().Contain("\"extattr\":{\"attrs\":[{\"type\":0,");
@@ -470,8 +470,8 @@ public class WechatDataModelDeserializationTests
     {
         var request = new CreateDepartmentRequest { Name = "RDGZ", ParentId = 1 };
 
-        // 生产管线 = WechatWorkJsonContext（WhenWritingNull）：断言只锚定键名与 ASCII 值。
-        var json = JsonSerializer.Serialize(request, Mud.Wechat.Work.DataModels.WechatWorkJsonContext.Default.CreateDepartmentRequest);
+        // 生产管线 = 域 JsonContext（WhenWritingNull，Generated/ 源生成）：断言只锚定键名与 ASCII 值。
+        var json = JsonSerializer.Serialize(request, DepartmentJsonContext.Default.CreateDepartmentRequest);
         json.Should().Contain("\"name\":\"RDGZ\"");
         json.Should().Contain("\"parentid\":1");
         json.Should().NotContain("name_en", "未赋值的可空属性不应序列化（WhenWritingNull）");
@@ -562,10 +562,10 @@ public class WechatDataModelDeserializationTests
     [Fact]
     public void CreateTagRequest_ShouldSerialize_WithSnakeCaseJsonKeys()
     {
-        // 生产管线 = WechatWorkJsonContext（WhenWritingNull）：断言只锚定键名与 ASCII 值。
+        // 生产管线 = 域 JsonContext（WhenWritingNull，Generated/ 源生成）：断言只锚定键名与 ASCII 值。
         var json = JsonSerializer.Serialize(
             new CreateTagRequest { TagName = "a", TagId = 12 },
-            Mud.Wechat.Work.DataModels.WechatWorkJsonContext.Default.CreateTagRequest);
+            TagsJsonContext.Default.CreateTagRequest);
 
         json.Should().Contain("\"tagname\":\"a\"");
         json.Should().Contain("\"tagid\":12");
@@ -578,7 +578,7 @@ public class WechatDataModelDeserializationTests
         // 序列化不得将「不填」改写为空数组（请求侧集合不设默认值）。
         var json = JsonSerializer.Serialize(
             new AddTagMembersRequest { TagId = 1, UserList = new() { "zhangsan" } },
-            Mud.Wechat.Work.DataModels.WechatWorkJsonContext.Default.AddTagMembersRequest);
+            TagsJsonContext.Default.AddTagMembersRequest);
 
         json.Should().Contain("\"tagid\":1");
         json.Should().Contain("\"userlist\":[\"zhangsan\"]");
@@ -642,7 +642,7 @@ public class WechatDataModelDeserializationTests
     [Fact]
     public void CreateContactRulesRequest_ShouldSerialize_WithSnakeCaseJsonKeys()
     {
-        // 生产管线 = WechatWorkJsonContext（WhenWritingNull）：断言只锚定键名与 ASCII 值。
+        // 生产管线 = 域 JsonContext（WhenWritingNull，Generated/ 源生成）：断言只锚定键名与 ASCII 值。
         var json = JsonSerializer.Serialize(
             new CreateContactRulesRequest
             {
@@ -656,7 +656,7 @@ public class WechatDataModelDeserializationTests
                     },
                 ],
             },
-            Mud.Wechat.Work.DataModels.WechatWorkJsonContext.Default.CreateContactRulesRequest);
+            ContactRulesJsonContext.Default.CreateContactRulesRequest);
 
         json.Should().Contain("\"rules\":[{");
         json.Should().Contain("\"rule_type\":1");
@@ -739,10 +739,10 @@ public class WechatDataModelDeserializationTests
     [Fact]
     public void BatchImportUsersRequest_ShouldSerialize_WithSnakeCaseJsonKeys()
     {
-        // 生产管线 = WechatWorkJsonContext（WhenWritingNull）：断言只锚定键名与 ASCII 值。
+        // 生产管线 = 域 JsonContext（WhenWritingNull，Generated/ 源生成）：断言只锚定键名与 ASCII 值。
         var json = JsonSerializer.Serialize(
             new BatchImportUsersRequest { MediaId = "MEDIA-1", ToInvite = false },
-            Mud.Wechat.Work.DataModels.WechatWorkJsonContext.Default.BatchImportUsersRequest);
+            BatchJsonContext.Default.BatchImportUsersRequest);
 
         json.Should().Contain("\"media_id\":\"MEDIA-1\"");
         json.Should().Contain("\"to_invite\":false");
@@ -786,10 +786,10 @@ public class WechatDataModelDeserializationTests
     [Fact]
     public void ExportRequest_ShouldSerialize_WithSnakeCaseJsonKeys()
     {
-        // 生产管线 = WechatWorkJsonContext（WhenWritingNull）：断言只锚定键名与 ASCII 值。
+        // 生产管线 = 域 JsonContext（WhenWritingNull，Generated/ 源生成）：断言只锚定键名与 ASCII 值。
         var json = JsonSerializer.Serialize(
             new ExportRequest { EncodingAesKey = "IJUiXNpvGbODwKEBSEsAeOAPAhkqHqNCF6g19t9wfg2", BlockSize = 1000000 },
-            Mud.Wechat.Work.DataModels.WechatWorkJsonContext.Default.ExportRequest);
+            ExportJsonContext.Default.ExportRequest);
 
         json.Should().Contain("\"encoding_aeskey\":\"IJUiXNpvGbODwKEBSEsAeOAPAhkqHqNCF6g19t9wfg2\"");
         json.Should().Contain("\"block_size\":1000000");
@@ -800,7 +800,7 @@ public class WechatDataModelDeserializationTests
     {
         var json = JsonSerializer.Serialize(
             new ExportTagUsersRequest { TagId = 1, EncodingAesKey = "KEY-43-CHARS-xxxxxxxxxxxxxxxxxxxxxx" },
-            Mud.Wechat.Work.DataModels.WechatWorkJsonContext.Default.ExportTagUsersRequest);
+            ExportJsonContext.Default.ExportTagUsersRequest);
 
         json.Should().Contain("\"tagid\":1");
         json.Should().Contain("\"encoding_aeskey\":\"KEY-43-CHARS-xxxxxxxxxxxxxxxxxxxxxx\"");
@@ -909,7 +909,7 @@ public class WechatDataModelDeserializationTests
     {
         var json = JsonSerializer.Serialize(
             new ExternalUserIdToPendingIdRequest { ExternalUserIds = new() { "oAAAAAAA" } },
-            Mud.Wechat.Work.DataModels.WechatCorpGroupJsonContext.Default.ExternalUserIdToPendingIdRequest);
+            CorpGroupJsonContext.Default.ExternalUserIdToPendingIdRequest);
 
         json.Should().Contain("\"external_userid\":[\"oAAAAAAA\"]");
         json.Should().NotContain("\"chat_id\"", "chat_id 为可选字段，null 时不落 JSON（WhenWritingNull）");
@@ -920,7 +920,7 @@ public class WechatDataModelDeserializationTests
     {
         var json = JsonSerializer.Serialize(
             new ListAppShareInfoRequest { AgentId = 1111, BusinessType = 1 },
-            Mud.Wechat.Work.DataModels.WechatWorkJsonContext.Default.ListAppShareInfoRequest);
+            CorpGroupJsonContext.Default.ListAppShareInfoRequest);
 
         json.Should().Contain("\"agentid\":1111");
         json.Should().Contain("\"business_type\":1");
@@ -1046,7 +1046,7 @@ public class WechatDataModelDeserializationTests
                     },
                 ],
             },
-            Mud.Wechat.Work.DataModels.WechatWorkJsonContext.Default.ImportChainContactsRequest);
+            ChainContactsJsonContext.Default.ImportChainContactsRequest);
 
         json.Should().Contain("\"chain_id\":\"chain-1\"");
         json.Should().Contain("\"corp_name\":\"corp-name\"");
@@ -1123,7 +1123,7 @@ public class WechatDataModelDeserializationTests
                     MemberCorpRange = new ChainRuleMemberRange { CorpIds = new() { "corpid1" } },
                 },
             },
-            Mud.Wechat.Work.DataModels.WechatWorkJsonContext.Default.AddChainRuleRequest);
+            RulesJsonContext.Default.AddChainRuleRequest);
 
         json.Should().Contain("\"chain_id\":\"Chxxxxxx\"");
         json.Should().Contain("\"rule_info\":{\"owner_corp_range\":{\"userids\":[\"userid1\"]}");

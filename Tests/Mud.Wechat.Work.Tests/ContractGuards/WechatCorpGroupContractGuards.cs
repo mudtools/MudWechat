@@ -157,21 +157,27 @@ public class WechatCorpGroupContractGuards
     /// <summary>
     /// 契约守卫 CG4：上下游域的请求/响应 DTO 必须登记进 AOT JSON 上下文。
     /// </summary>
+    /// <remarks>
+    /// 例外：ExternalUserIdToPendingIdRequest/Response 与客户联系「客户管理」域同名，
+    /// 登记在 <see cref="Mud.Wechat.Work.DataModels.WechatCorpGroupJsonContext"/>
+    /// （源生成器按简单类型名去重，同名 DTO 不能同上下文）。
+    /// </remarks>
     [Fact]
     public void CorpGroupDataModels_ShouldBeRegisteredInJsonContext()
     {
         // 经公共 API GetTypeInfo 判定注册态（源生成上下文对未登记类型返回 null）。
         var context = Mud.Wechat.Work.DataModels.WechatWorkJsonContext.Default;
+        var corpGroupContext = Mud.Wechat.Work.DataModels.WechatCorpGroupJsonContext.Default;
 
         var requiredTypes = new[]
         {
             typeof(ListAppShareInfoRequest), typeof(GetCorpGroupTokenRequest),
             typeof(TransferMiniProgramSessionRequest), typeof(UnionidToExternalUserIdRequest),
-            typeof(UnionidToPendingIdRequest), typeof(ExternalUserIdToPendingIdRequest),
+            typeof(UnionidToPendingIdRequest),
             typeof(AppShareCorpInfo), typeof(ExternalUserIdInfo), typeof(PendingIdResultItem),
             typeof(ListAppShareInfoResponse), typeof(GetCorpGroupTokenResponse),
             typeof(TransferMiniProgramSessionResponse), typeof(UnionidToExternalUserIdResponse),
-            typeof(UnionidToPendingIdResponse), typeof(ExternalUserIdToPendingIdResponse),
+            typeof(UnionidToPendingIdResponse),
         };
 
         foreach (var type in requiredTypes)
@@ -179,6 +185,12 @@ public class WechatCorpGroupContractGuards
             context.GetTypeInfo(type).Should().NotBeNull(
                 $"{type.Name} 是上下游域契约面类型，必须登记进 WechatWorkJsonContext（AOT 源生成）");
         }
+
+        // 与客户管理域同名的一对 DTO：必须登记进独立的 WechatCorpGroupJsonContext。
+        corpGroupContext.GetTypeInfo(typeof(ExternalUserIdToPendingIdRequest)).Should().NotBeNull(
+            "ExternalUserIdToPendingIdRequest 是上下游域契约面类型，必须登记进 WechatCorpGroupJsonContext（AOT 源生成）");
+        corpGroupContext.GetTypeInfo(typeof(ExternalUserIdToPendingIdResponse)).Should().NotBeNull(
+            "ExternalUserIdToPendingIdResponse 是上下游域契约面类型，必须登记进 WechatCorpGroupJsonContext（AOT 源生成）");
     }
 
     /// <summary>上下游通讯录管理域官方路由表（公共读取面 4 条在父接口，写入/任务/查询 5 条在自建子接口）。</summary>

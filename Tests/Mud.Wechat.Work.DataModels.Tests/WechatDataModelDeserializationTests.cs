@@ -909,7 +909,7 @@ public class WechatDataModelDeserializationTests
     {
         var json = JsonSerializer.Serialize(
             new ExternalUserIdToPendingIdRequest { ExternalUserIds = new() { "oAAAAAAA" } },
-            Mud.Wechat.Work.DataModels.WechatWorkJsonContext.Default.ExternalUserIdToPendingIdRequest);
+            Mud.Wechat.Work.DataModels.WechatCorpGroupJsonContext.Default.ExternalUserIdToPendingIdRequest);
 
         json.Should().Contain("\"external_userid\":[\"oAAAAAAA\"]");
         json.Should().NotContain("\"chat_id\"", "chat_id 为可选字段，null 时不落 JSON（WhenWritingNull）");

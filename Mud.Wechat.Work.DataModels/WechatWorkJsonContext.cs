@@ -15,6 +15,8 @@ using Mud.Wechat.Work.DataModels.Contracts.Users;
 using Mud.Wechat.Work.DataModels.CorpGroup;
 using Mud.Wechat.Work.DataModels.CorpGroup.ChainContacts;
 using Mud.Wechat.Work.DataModels.CorpGroup.Rules;
+using Mud.Wechat.Work.DataModels.ExternalContact.Customer;
+using Mud.Wechat.Work.DataModels.ExternalContact.FollowUser;
 using System.Text.Json.Serialization;
 
 namespace Mud.Wechat.Work.DataModels;
@@ -131,12 +133,62 @@ namespace Mud.Wechat.Work.DataModels;
 [JsonSerializable(typeof(ExportJobResponse))]
 [JsonSerializable(typeof(GetExportResultResponse))]
 [JsonSerializable(typeof(ExportDataFile))]
+// 客户联系「企业服务人员管理」域。
+[JsonSerializable(typeof(GetFollowUserListResponse))]
+[JsonSerializable(typeof(CheckFollowUserRequest))]
+[JsonSerializable(typeof(CheckFollowUserResult))]
+[JsonSerializable(typeof(CheckFollowUserResponse))]
+[JsonSerializable(typeof(GetCustomerAcquisitionPermitResponse))]
+// 客户联系「客户管理」域：详情与列表。
+[JsonSerializable(typeof(ExternalContactInfo))]
+[JsonSerializable(typeof(ExternalProfile))]
+[JsonSerializable(typeof(ExternalAttr))]
+[JsonSerializable(typeof(ExternalAttrText))]
+[JsonSerializable(typeof(ExternalAttrWeb))]
+[JsonSerializable(typeof(ExternalAttrMiniProgram))]
+[JsonSerializable(typeof(CustomerFollowTag))]
+[JsonSerializable(typeof(WechatChannelsInfo))]
+[JsonSerializable(typeof(CustomerFollowUser))]
+[JsonSerializable(typeof(CustomerFollowInfo))]
+[JsonSerializable(typeof(GetCustomerListResponse))]
+[JsonSerializable(typeof(GetCustomerDetailResponse))]
+[JsonSerializable(typeof(BatchCustomerContactItem))]
+[JsonSerializable(typeof(BatchCustomerFailInfo))]
+[JsonSerializable(typeof(BatchGetCustomerDetailsResponse))]
+// 客户联系「客户管理」域：规则组（customer_strategy）。
+[JsonSerializable(typeof(CustomerStrategy))]
+[JsonSerializable(typeof(CustomerStrategyPrivilege))]
+[JsonSerializable(typeof(CustomerStrategyRangeNode))]
+[JsonSerializable(typeof(GetCustomerStrategyListResponse))]
+[JsonSerializable(typeof(CustomerStrategyIdItem))]
+[JsonSerializable(typeof(CreateCustomerStrategyResponse))]
+[JsonSerializable(typeof(GetCustomerStrategyDetailResponse))]
+[JsonSerializable(typeof(GetCustomerStrategyRangeResponse))]
+// 客户联系「客户管理」域：unionid / external_userid 转换。
+// 注：ExternalUserIdToPendingIdRequest/Response 与上下游域同名，
+// 登记于 WechatCorpGroupJsonContext（同上下文会被源生成器按简单类型名静默去重）。
+[JsonSerializable(typeof(ConvertUnionIdToExternalUserIdResponse))]
+[JsonSerializable(typeof(PendingIdMapItem))]
+[JsonSerializable(typeof(ExternalContact.Customer.ExternalUserIdToPendingIdResponse))]
+[JsonSerializable(typeof(ConvertToServiceExternalUserIdResponse))]
+// 客户联系「客户管理」域：请求体。
+[JsonSerializable(typeof(BatchGetCustomerDetailsRequest))]
+[JsonSerializable(typeof(UpdateCustomerRemarkRequest))]
+[JsonSerializable(typeof(GetCustomerStrategyListRequest))]
+[JsonSerializable(typeof(GetCustomerStrategyDetailRequest))]
+[JsonSerializable(typeof(GetCustomerStrategyRangeRequest))]
+[JsonSerializable(typeof(CreateCustomerStrategyRequest))]
+[JsonSerializable(typeof(UpdateCustomerStrategyRequest))]
+[JsonSerializable(typeof(DeleteCustomerStrategyRequest))]
+[JsonSerializable(typeof(ConvertUnionIdToExternalUserIdRequest))]
+[JsonSerializable(typeof(ExternalContact.Customer.ExternalUserIdToPendingIdRequest))]
+[JsonSerializable(typeof(ConvertToServiceExternalUserIdRequest))]
+// 上下游域（CorpGroup）。
 [JsonSerializable(typeof(ListAppShareInfoRequest))]
 [JsonSerializable(typeof(GetCorpGroupTokenRequest))]
 [JsonSerializable(typeof(TransferMiniProgramSessionRequest))]
 [JsonSerializable(typeof(UnionidToExternalUserIdRequest))]
 [JsonSerializable(typeof(UnionidToPendingIdRequest))]
-[JsonSerializable(typeof(ExternalUserIdToPendingIdRequest))]
 [JsonSerializable(typeof(AppShareCorpInfo))]
 [JsonSerializable(typeof(ExternalUserIdInfo))]
 [JsonSerializable(typeof(PendingIdResultItem))]
@@ -145,7 +197,6 @@ namespace Mud.Wechat.Work.DataModels;
 [JsonSerializable(typeof(TransferMiniProgramSessionResponse))]
 [JsonSerializable(typeof(UnionidToExternalUserIdResponse))]
 [JsonSerializable(typeof(UnionidToPendingIdResponse))]
-[JsonSerializable(typeof(ExternalUserIdToPendingIdResponse))]
 [JsonSerializable(typeof(ChainInfo))]
 [JsonSerializable(typeof(ChainGroupInfo))]
 [JsonSerializable(typeof(ChainGroupCorpInfo))]

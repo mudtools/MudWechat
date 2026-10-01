@@ -162,6 +162,18 @@ public class WechatContractGuards
                 nameof(IWechatWorkInternalExportService),
                 nameof(IWechatWorkThirdPartyExportService),
                 nameof(IWechatWorkProviderExportService),
+                // 客户联系·企业服务人员管理域（ExternalContact 模块）：get_follow_user_list 为三类应用公共面
+                // （父接口 + 三个应用类型子接口），第三方/代开发子接口各持 1 条差异端点。
+                nameof(IWechatWorkExternalContactFollowUserService),
+                nameof(IWechatWorkInternalExternalContactFollowUserService),
+                nameof(IWechatWorkThirdPartyExternalContactFollowUserService),
+                nameof(IWechatWorkProviderExternalContactFollowUserService),
+                // 客户联系·客户管理域（ExternalContact 模块）：10 个端点为三类应用公共面
+                // （父接口 + 三个应用类型子接口），第三方子接口另持 3 条身份转换差异端点。
+                nameof(IWechatWorkExternalContactCustomerService),
+                nameof(IWechatWorkInternalExternalContactCustomerService),
+                nameof(IWechatWorkThirdPartyExternalContactCustomerService),
+                nameof(IWechatWorkProviderExternalContactCustomerService),
                 // 上下游域（CorpGroup 模块）：6 端点在父接口（第三方仅获取应用共享信息 95324，随父接口继承），父接口 + 三个空标记子接口。
                 nameof(IWechatWorkCorpGroupService),
                 nameof(IWechatWorkInternalCorpGroupService),

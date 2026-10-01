@@ -37,7 +37,8 @@ public class WechatWorkServiceBuilder
     private Dictionary<WechatModule, IWechatModuleRegistrar> InitializeRegistrars()
         => new()
         {
-            // AddAuthenticationWebApiHttpClient() / AddContactWebApiHttpClient() / AddCorpGroupWebApiHttpClient()
+            // AddAuthenticationWebApiHttpClient() / AddContactWebApiHttpClient() /
+            // AddExternalContactWebApiHttpClient() / AddCorpGroupWebApiHttpClient()
             // 由 Mud.HttpUtils.Generator 按主包 [HttpClientApi] 自动产出。
             [WechatModule.Authentication] = new WechatModuleRegistrar(
                 WechatModule.Authentication,
@@ -45,6 +46,9 @@ public class WechatWorkServiceBuilder
             [WechatModule.Contact] = new WechatModuleRegistrar(
                 WechatModule.Contact,
                 s => s.AddContactWebApiHttpClient()),
+            [WechatModule.ExternalContact] = new WechatModuleRegistrar(
+                WechatModule.ExternalContact,
+                s => s.AddExternalContactWebApiHttpClient()),
             [WechatModule.CorpGroup] = new WechatModuleRegistrar(
                 WechatModule.CorpGroup,
                 s => s.AddCorpGroupWebApiHttpClient()),
@@ -55,6 +59,9 @@ public class WechatWorkServiceBuilder
 
     /// <summary>注册通讯录业务接口（成员/部门/标签/通讯录查看权限/异步导入/异步导出六域）。</summary>
     public WechatWorkServiceBuilder AddContactApi() => AddModule(WechatModule.Contact);
+
+    /// <summary>注册客户联系业务接口（企业服务人员管理域 + 客户管理域：公共面 + 第三方/代开发能力差异端点）。</summary>
+    public WechatWorkServiceBuilder AddExternalContactApi() => AddModule(WechatModule.ExternalContact);
 
     /// <summary>注册上下游业务接口（基础接口 + 关联客户信息 + 上下游通讯录管理；自建/代开发两类应用）。</summary>
     public WechatWorkServiceBuilder AddCorpGroupApi() => AddModule(WechatModule.CorpGroup);

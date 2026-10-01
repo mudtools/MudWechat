@@ -60,7 +60,7 @@ public class WechatWorkServiceBuilder
     /// <summary>注册通讯录业务接口（成员/部门/标签/通讯录查看权限/异步导入/异步导出六域）。</summary>
     public WechatWorkServiceBuilder AddContactApi() => AddModule(WechatModule.Contact);
 
-    /// <summary>注册客户联系业务接口（企业服务人员管理域 + 客户管理域：公共面 + 第三方/代开发能力差异端点）。</summary>
+    /// <summary>注册客户联系业务接口（企业服务人员管理域 + 客户管理域 + 客户标签管理域 + 在职继承域：公共面 + 第三方/代开发能力差异端点）。</summary>
     public WechatWorkServiceBuilder AddExternalContactApi() => AddModule(WechatModule.ExternalContact);
 
     /// <summary>注册上下游业务接口（基础接口 + 关联客户信息 + 上下游通讯录管理；自建/代开发两类应用）。</summary>

@@ -56,7 +56,7 @@ public class WechatWorkServiceBuilder
     /// <summary>注册通讯录业务接口（成员/部门/标签/通讯录查看权限/异步导入/异步导出六域）。</summary>
     public WechatWorkServiceBuilder AddContactApi() => AddModule(WechatModule.Contact);
 
-    /// <summary>注册上下游业务接口（基础接口 + 关联客户信息；自建/代开发两类应用）。</summary>
+    /// <summary>注册上下游业务接口（基础接口 + 关联客户信息 + 上下游通讯录管理；自建/代开发两类应用）。</summary>
     public WechatWorkServiceBuilder AddCorpGroupApi() => AddModule(WechatModule.CorpGroup);
 
     /// <summary>注册全部模块。</summary>

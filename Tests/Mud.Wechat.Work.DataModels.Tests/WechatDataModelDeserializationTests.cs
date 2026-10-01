@@ -13,6 +13,7 @@ using Mud.Wechat.Work.DataModels.Contacts.Export;
 using Mud.Wechat.Work.DataModels.Contacts.Tags;
 using Mud.Wechat.Work.DataModels.Contracts.Users;
 using Mud.Wechat.Work.DataModels.CorpGroup;
+using Mud.Wechat.Work.DataModels.CorpGroup.ChainContacts;
 using Mud.Wechat.Work.DataModels.CorpTokenAuthentication;
 using Mud.Wechat.Work.DataModels.InternalAppAuthentication;
 using Mud.Wechat.Work.DataModels.ProviderAuthentication;
@@ -925,5 +926,146 @@ public class WechatDataModelDeserializationTests
         json.Should().NotContain("\"corpid\"", "未赋值的可空字段不应序列化（WhenWritingNull）");
         json.Should().NotContain("\"limit\"", "limit 不填表示拉取全量，null 时不得改写为 0");
         json.Should().NotContain("\"cursor\"", "首次调用不填游标，null 时不落 JSON");
+    }
+
+    [Fact]
+    public void GetChainCorpInfoListResponse_ShouldDeserialize_WithOfficialJsonContract()
+    {
+        var json = """
+        {
+          "errcode": 0,
+          "errmsg": "ok",
+          "has_more": true,
+          "next_cursor": "cursor-2",
+          "group_corps": [
+            { "groupid": 2, "corpid": "wwxxxx", "corp_name": "corp-name", "custom_id": "c-1", "invite_userid": "zhangsan", "is_joined": 1 },
+            { "groupid": 2, "corp_name": "pending-corp", "pending_corpid": "wwyyyy", "is_joined": 0 }
+          ]
+        }
+        """;
+        var resp = JsonSerializer.Deserialize<GetChainCorpInfoListResponse>(json);
+
+        resp!.IsSuccess.Should().BeTrue();
+        resp.HasMore.Should().BeTrue();
+        resp.NextCursor.Should().Be("cursor-2");
+        resp.GroupCorps.Should().HaveCount(2);
+        resp.GroupCorps![0].CorpId.Should().Be("wwxxxx");
+        resp.GroupCorps[0].CustomId.Should().Be("c-1");
+        resp.GroupCorps[0].IsJoined.Should().Be(1, "官方列表示例以 1/0 整型传输 is_joined");
+        resp.GroupCorps[1].PendingCorpId.Should().Be("wwyyyy");
+        resp.GroupCorps[1].CorpId.Should().BeNull("未加入企业不含 corpid");
+    }
+
+    [Fact]
+    public void GetChainCorpInfoResponse_ShouldDeserialize_WithOfficialJsonContract()
+    {
+        var json = """
+        { "errcode": 0, "errmsg": "ok", "corp_name": "corp-name", "qualification_status": 2, "custom_id": "c-1", "groupid": 1, "is_joined": true }
+        """;
+        var resp = JsonSerializer.Deserialize<GetChainCorpInfoResponse>(json);
+
+        resp!.CorpName.Should().Be("corp-name");
+        resp.QualificationStatus.Should().Be(2, "1 未验证 / 2 已验证 / 3 已认证");
+        resp.GroupId.Should().Be(1);
+        resp.IsJoined.Should().BeTrue("官方详情示例以布尔传输 is_joined");
+    }
+
+    [Fact]
+    public void GetChainGroupResponse_ShouldDeserialize_WithOfficialJsonContract()
+    {
+        var json = """
+        {
+          "errcode": 0,
+          "errmsg": "ok",
+          "groups": [
+            { "groupid": 2, "group_name": "group-2", "parentid": 1, "order": 1 },
+            { "groupid": 3, "group_name": "group-3", "parentid": 2, "order": 4294967295 }
+          ]
+        }
+        """;
+        var resp = JsonSerializer.Deserialize<GetChainGroupResponse>(json);
+
+        resp!.Groups.Should().HaveCount(2);
+        resp.Groups![0].ParentId.Should().Be(1);
+        resp.Groups[1].Order.Should().Be(4294967295, "order 官方范围 [0, 2^32)，以 long 承载");
+    }
+
+    [Fact]
+    public void GetChainImportResultResponse_ShouldDeserialize_WithOfficialJsonContract()
+    {
+        var json = """
+        {
+          "errcode": 0,
+          "errmsg": "ok",
+          "status": 3,
+          "result": {
+            "chain_id": "chain-1",
+            "import_status": 2,
+            "fail_list": [
+              {
+                "corp_name": "fail-corp",
+                "custom_id": "c-9",
+                "errcode": 670016,
+                "errmsg": "invalid contact identity",
+                "contact_info_list": [
+                  { "mobile": "13000000001", "errcode": 670016, "errmsg": "invalid contact identity" }
+                ]
+              }
+            ]
+          }
+        }
+        """;
+        var resp = JsonSerializer.Deserialize<GetChainImportResultResponse>(json);
+
+        resp!.Status.Should().Be(3, "1 任务开始 / 2 进行中 / 3 已完成");
+        resp.Result!.ChainId.Should().Be("chain-1");
+        resp.Result.ImportStatus.Should().Be(2, "1 全部成功 / 2 部分成功 / 3 全部失败");
+        resp.Result.FailList.Should().HaveCount(1);
+        resp.Result.FailList![0].ErrCode.Should().Be(670016);
+        resp.Result.FailList[0].ContactInfoList![0].Mobile.Should().Be("13000000001");
+    }
+
+    [Fact]
+    public void ImportChainContactsRequest_ShouldSerialize_WithSnakeCaseJsonKeys()
+    {
+        var json = JsonSerializer.Serialize(
+            new ImportChainContactsRequest
+            {
+                ChainId = "chain-1",
+                ContactList =
+                [
+                    new ChainImportCorpItem
+                    {
+                        CorpName = "corp-name",
+                        CustomId = "c-1",
+                        ContactInfoList =
+                        [
+                            new ChainImportContactItem { Name = "name-1", IdentityType = 2, Mobile = "13000000001" },
+                        ],
+                    },
+                ],
+            },
+            Mud.Wechat.Work.DataModels.WechatWorkJsonContext.Default.ImportChainContactsRequest);
+
+        json.Should().Contain("\"chain_id\":\"chain-1\"");
+        json.Should().Contain("\"corp_name\":\"corp-name\"");
+        json.Should().Contain("\"custom_id\":\"c-1\"");
+        json.Should().Contain("\"identity_type\":2");
+        json.Should().Contain("\"mobile\":\"13000000001\"");
+        json.Should().NotContain("\"user_custom_id\"", "未赋值的可空字段不应序列化（WhenWritingNull）");
+        json.Should().NotContain("\"group_path\"", "未赋值的可空字段不应序列化（WhenWritingNull）");
+    }
+
+    [Fact]
+    public void GetChainListResponse_ShouldDeserialize_WithOfficialJsonContract()
+    {
+        var json = """
+        { "errcode": 0, "errmsg": "ok", "chains": [ { "chain_id": "chainid1", "chain_name": "chain-1" } ] }
+        """;
+        var resp = JsonSerializer.Deserialize<GetChainListResponse>(json);
+
+        resp!.Chains.Should().HaveCount(1);
+        resp.Chains![0].ChainId.Should().Be("chainid1");
+        resp.Chains[0].ChainName.Should().Be("chain-1");
     }
 }

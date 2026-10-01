@@ -13,6 +13,7 @@ using Mud.Wechat.Work.DataModels.Contacts.Export;
 using Mud.Wechat.Work.DataModels.Contacts.Tags;
 using Mud.Wechat.Work.DataModels.Contracts.Users;
 using Mud.Wechat.Work.DataModels.CorpGroup;
+using Mud.Wechat.Work.DataModels.CorpGroup.ChainContacts;
 using System.Text.Json.Serialization;
 
 namespace Mud.Wechat.Work.DataModels;
@@ -144,6 +145,29 @@ namespace Mud.Wechat.Work.DataModels;
 [JsonSerializable(typeof(UnionidToExternalUserIdResponse))]
 [JsonSerializable(typeof(UnionidToPendingIdResponse))]
 [JsonSerializable(typeof(ExternalUserIdToPendingIdResponse))]
+[JsonSerializable(typeof(ChainInfo))]
+[JsonSerializable(typeof(ChainGroupInfo))]
+[JsonSerializable(typeof(ChainGroupCorpInfo))]
+[JsonSerializable(typeof(ChainImportFailedContact))]
+[JsonSerializable(typeof(ChainImportFailedCorp))]
+[JsonSerializable(typeof(ChainImportCorpItem))]
+[JsonSerializable(typeof(ChainImportContactItem))]
+[JsonSerializable(typeof(ImportChainContactsRequest))]
+[JsonSerializable(typeof(GetChainGroupRequest))]
+[JsonSerializable(typeof(GetChainCorpInfoListRequest))]
+[JsonSerializable(typeof(GetChainCorpInfoRequest))]
+[JsonSerializable(typeof(RemoveChainCorpRequest))]
+[JsonSerializable(typeof(GetChainUserCustomIdRequest))]
+[JsonSerializable(typeof(GetCorpSharedChainListRequest))]
+[JsonSerializable(typeof(GetChainListResponse))]
+[JsonSerializable(typeof(GetChainGroupResponse))]
+[JsonSerializable(typeof(GetChainCorpInfoListResponse))]
+[JsonSerializable(typeof(GetChainCorpInfoResponse))]
+[JsonSerializable(typeof(ImportChainContactsResponse))]
+[JsonSerializable(typeof(ChainImportResult))]
+[JsonSerializable(typeof(GetChainImportResultResponse))]
+[JsonSerializable(typeof(GetChainUserCustomIdResponse))]
+[JsonSerializable(typeof(GetCorpSharedChainListResponse))]
 public sealed partial class WechatWorkJsonContext : JsonSerializerContext
 {
 }

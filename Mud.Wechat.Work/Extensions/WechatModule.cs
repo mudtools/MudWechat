@@ -22,7 +22,7 @@ public enum WechatModule
     /// <summary>通讯录（成员/部门/标签/通讯录查看权限/异步导入/异步导出六域）。</summary>
     Contact,
 
-    /// <summary>上下游（基础接口 + 关联客户信息：应用共享信息、下级企业凭证、小程序 session、unionid 转换）。</summary>
+    /// <summary>上下游（基础接口 + 关联客户信息 + 上下游通讯录管理：应用共享信息、下级企业凭证、小程序 session、unionid 转换、通讯录导入/查询）。</summary>
     CorpGroup,
 
     /// <summary>消息推送等（预留）。</summary>

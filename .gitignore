@@ -5,6 +5,7 @@
 /.vs
 /.docs
 /.doc
+/.tmp-docs
 /Mud.Wechat.Work/bin
 /Mud.Wechat.Work/obj
 /Mud.Wechat.Work.Abstractions/bin

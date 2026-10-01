@@ -226,14 +226,22 @@ public class WechatServiceCollectionExtensionsTests
 
         provider.GetRequiredService<IWechatWorkInternalCorpGroupService>().Should().NotBeNull();
         provider.GetRequiredService<IWechatWorkProviderCorpGroupService>().Should().NotBeNull();
+        provider.GetRequiredService<IWechatWorkInternalCorpGroupContactsService>().Should().NotBeNull();
+        provider.GetRequiredService<IWechatWorkProviderCorpGroupContactsService>().Should().NotBeNull();
 
         provider.GetService<IWechatWorkCorpGroupService>().Should().BeNull(
+            "公共父接口 IsAbstract = true，不得注册进 DI（调用方须按应用类型选择子接口）");
+        provider.GetService<IWechatWorkCorpGroupContactsService>().Should().BeNull(
             "公共父接口 IsAbstract = true，不得注册进 DI（调用方须按应用类型选择子接口）");
 
         using var scope = provider.CreateScope();
         scope.ServiceProvider.GetRequiredService<IWechatWorkInternalCorpGroupService>().Should().NotBeNull(
             "ValidateScopes = true 变体下子 scope 内同样可解析");
         scope.ServiceProvider.GetRequiredService<IWechatWorkProviderCorpGroupService>().Should().NotBeNull(
+            "ValidateScopes = true 变体下子 scope 内同样可解析");
+        scope.ServiceProvider.GetRequiredService<IWechatWorkInternalCorpGroupContactsService>().Should().NotBeNull(
+            "ValidateScopes = true 变体下子 scope 内同样可解析");
+        scope.ServiceProvider.GetRequiredService<IWechatWorkProviderCorpGroupContactsService>().Should().NotBeNull(
             "ValidateScopes = true 变体下子 scope 内同样可解析");
     }
 }

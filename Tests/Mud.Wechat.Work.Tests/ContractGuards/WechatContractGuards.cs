@@ -157,6 +157,11 @@ public class WechatContractGuards
                 nameof(IWechatWorkBatchService),
                 nameof(IWechatWorkInternalBatchService),
                 nameof(IWechatWorkThirdPartyBatchService),
+                // 异步导出接口域（Contact 模块）：同上，5 个端点为三类应用公共面，父接口 + 三个空标记子接口。
+                nameof(IWechatWorkExportService),
+                nameof(IWechatWorkExportService_Internal),
+                nameof(IWechatWorkThirdPartyExportService),
+                nameof(IWechatWorkProviderExportService),
             },
             "企业微信官方契约强制 Query 注入（MUD005 已知接受风险），新增 Query 注入接口须评估后扩展本守卫");
     }

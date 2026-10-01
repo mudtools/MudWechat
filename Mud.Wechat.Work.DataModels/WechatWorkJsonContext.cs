@@ -9,6 +9,7 @@
 using Mud.Wechat.Work.DataModels.Contacts.Batch;
 using Mud.Wechat.Work.DataModels.Contacts.ContactRules;
 using Mud.Wechat.Work.DataModels.Contacts.Department;
+using Mud.Wechat.Work.DataModels.Contacts.Export;
 using Mud.Wechat.Work.DataModels.Contacts.Tags;
 using Mud.Wechat.Work.DataModels.Contracts.Users;
 using System.Text.Json.Serialization;
@@ -121,6 +122,11 @@ namespace Mud.Wechat.Work.DataModels;
 [JsonSerializable(typeof(BatchJobResponse))]
 [JsonSerializable(typeof(BatchTaskResultItem))]
 [JsonSerializable(typeof(GetBatchJobResultResponse))]
+[JsonSerializable(typeof(ExportRequest))]
+[JsonSerializable(typeof(ExportTagUsersRequest))]
+[JsonSerializable(typeof(ExportJobResponse))]
+[JsonSerializable(typeof(GetExportResultResponse))]
+[JsonSerializable(typeof(ExportDataFile))]
 public sealed partial class WechatWorkJsonContext : JsonSerializerContext
 {
 }

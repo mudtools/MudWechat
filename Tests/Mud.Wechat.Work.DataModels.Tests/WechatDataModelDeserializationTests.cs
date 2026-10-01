@@ -8,16 +8,13 @@
 using Mud.Wechat.Work.DataModels;
 using Mud.Wechat.Work.DataModels.Contacts.Batch;
 using Mud.Wechat.Work.DataModels.Contacts.ContactRules;
-using Mud.Wechat.Work.DataModels.Contacts.Batch;
-using Mud.Wechat.Work.DataModels.Contacts.ContactRules;
 using Mud.Wechat.Work.DataModels.Contacts.Department;
-using Mud.Wechat.Work.DataModels.Contacts.Tags;
-using Mud.Wechat.Work.DataModels.CorpTokenAuthentication;
-using Mud.Wechat.Work.DataModels.Contacts.Department;
-using Mud.Wechat.Work.DataModels.InternalAppAuthentication;
-using Mud.Wechat.Work.DataModels.ProviderAuthentication;
+using Mud.Wechat.Work.DataModels.Contacts.Export;
 using Mud.Wechat.Work.DataModels.Contacts.Tags;
 using Mud.Wechat.Work.DataModels.Contracts.Users;
+using Mud.Wechat.Work.DataModels.CorpTokenAuthentication;
+using Mud.Wechat.Work.DataModels.InternalAppAuthentication;
+using Mud.Wechat.Work.DataModels.ProviderAuthentication;
 
 namespace Mud.Wechat.Work.DataModels.Tests;
 
@@ -747,5 +744,63 @@ public class WechatDataModelDeserializationTests
         json.Should().Contain("\"media_id\":\"MEDIA-1\"");
         json.Should().Contain("\"to_invite\":false");
         json.Should().NotContain("\"callback\"", "未赋值的回调不应序列化（WhenWritingNull）");
+    }
+
+    [Fact]
+    public void GetExportResultResponse_ShouldDeserialize_WithOfficialJsonContract()
+    {
+        var json = """
+        {
+          "errcode": 0,
+          "errmsg": "ok",
+          "status": 2,
+          "data_list": [
+            { "url": "https://download.example/f1", "size": 1024, "md5": "aaa" },
+            { "url": "https://download.example/f2", "size": 2048, "md5": "bbb" }
+          ]
+        }
+        """;
+        var resp = JsonSerializer.Deserialize<GetExportResultResponse>(json);
+
+        resp!.IsSuccess.Should().BeTrue();
+        resp.Status.Should().Be(2, "官方任务状态：0 未处理 / 1 处理中 / 2 完成 / 3 异常失败");
+        resp.DataList.Should().HaveCount(2);
+        resp.DataList![0].Url.Should().Be("https://download.example/f1");
+        resp.DataList[0].Size.Should().Be(1024);
+        resp.DataList[0].Md5.Should().Be("aaa");
+        resp.DataList[1].Md5.Should().Be("bbb");
+    }
+
+    [Fact]
+    public void ExportJobResponse_ShouldDeserialize()
+    {
+        var json = """{"errcode":0,"errmsg":"ok","jobid":"jobid_export_1"}""";
+        var resp = JsonSerializer.Deserialize<ExportJobResponse>(json);
+
+        resp!.JobId.Should().Be("jobid_export_1");
+    }
+
+    [Fact]
+    public void ExportRequest_ShouldSerialize_WithSnakeCaseJsonKeys()
+    {
+        // 生产管线 = WechatWorkJsonContext（WhenWritingNull）：断言只锚定键名与 ASCII 值。
+        var json = JsonSerializer.Serialize(
+            new ExportRequest { EncodingAesKey = "IJUiXNpvGbODwKEBSEsAeOAPAhkqHqNCF6g19t9wfg2", BlockSize = 1000000 },
+            Mud.Wechat.Work.DataModels.WechatWorkJsonContext.Default.ExportRequest);
+
+        json.Should().Contain("\"encoding_aeskey\":\"IJUiXNpvGbODwKEBSEsAeOAPAhkqHqNCF6g19t9wfg2\"");
+        json.Should().Contain("\"block_size\":1000000");
+    }
+
+    [Fact]
+    public void ExportTagUsersRequest_ShouldSerialize_WithSnakeCaseJsonKeys()
+    {
+        var json = JsonSerializer.Serialize(
+            new ExportTagUsersRequest { TagId = 1, EncodingAesKey = "KEY-43-CHARS-xxxxxxxxxxxxxxxxxxxxxx" },
+            Mud.Wechat.Work.DataModels.WechatWorkJsonContext.Default.ExportTagUsersRequest);
+
+        json.Should().Contain("\"tagid\":1");
+        json.Should().Contain("\"encoding_aeskey\":\"KEY-43-CHARS-xxxxxxxxxxxxxxxxxxxxxx\"");
+        json.Should().NotContain("\"block_size\"", "未赋值的 block_size 不应序列化（WhenWritingNull，官方默认 10^6）");
     }
 }

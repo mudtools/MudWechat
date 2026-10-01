@@ -26,6 +26,12 @@ public class CreateUserRequest
     public string Name { get; set; } = string.Empty;
 
     /// <summary>
+    /// 获取或设置成员英文名（1~64 字节，由字母、数字、点(.)、减号(-)、空格或下划线(_)组成。官方现行参数表未单列，为对齐 Senparc 契约保留）。
+    /// </summary>
+    [JsonPropertyName("english_name")]
+    public string? EnglishName { get; set; }
+
+    /// <summary>
     /// 获取或设置成员别名（1~64 个 UTF-8 字符）。
     /// </summary>
     [JsonPropertyName("alias")]

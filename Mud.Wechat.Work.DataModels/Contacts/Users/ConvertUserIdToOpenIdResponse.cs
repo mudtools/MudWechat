@@ -17,4 +17,10 @@ public class ConvertUserIdToOpenIdResponse : WechatWorkResponse
     /// </summary>
     [JsonPropertyName("openid")]
     public string OpenId { get; set; } = string.Empty;
+
+    /// <summary>
+    /// 获取或设置应用的 appid（请求包中不包含 agentid 时不返回；该 appid 在使用微信红包时会用到）。
+    /// </summary>
+    [JsonPropertyName("appid")]
+    public string? AppId { get; set; }
 }

@@ -56,9 +56,10 @@ public interface IWechatWorkUsersService
     /// <summary>
     /// 获取部门成员
     /// <para>获取部门成员摘要（userid/name/department/open_userid）。应用须拥有指定部门的查看权限。</para>
-    /// <para>接口不递归子部门：如需部门及其子部门全部成员，须先获取子部门再逐层递归调用。第三方应用自 2019-12-30 起不再返回真实 name（以 userid 代替）。</para>
+    /// <para>默认仅返回直属成员；<paramref name="fetchChild"/> 传 1 时递归获取子部门成员。第三方应用自 2019-12-30 起不再返回真实 name（以 userid 代替）。</para>
     /// </summary>
     /// <param name="departmentId">获取的部门 ID。</param>
+    /// <param name="fetchChild">是否递归获取子部门下面的成员（1 递归；0 或不填仅返回直属成员）。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
     /// <returns>部门成员摘要列表（userlist）。</returns>
     /// <remarks>
@@ -69,14 +70,16 @@ public interface IWechatWorkUsersService
     [Get("/cgi-bin/user/simplelist")]
     Task<GetUserSimpleListResponse> GetUserSimpleListAsync(
         [Query("department_id")] int departmentId,
+        [Query("fetch_child")] int? fetchChild = null,
         CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 获取部门成员详情
     /// <para>获取部门成员完整信息（同读取成员的字段集）。应用须拥有指定部门的查看权限。</para>
-    /// <para>接口不递归子部门：如需部门及其子部门全部成员，须先获取子部门再逐层递归调用。敏感字段的返回范围同读取成员。</para>
+    /// <para>默认仅返回直属成员；<paramref name="fetchChild"/> 传 1 时递归获取子部门成员。敏感字段的返回范围同读取成员。</para>
     /// </summary>
     /// <param name="departmentId">获取的部门 ID。</param>
+    /// <param name="fetchChild">是否递归获取子部门下面的成员（1 递归；0 或不填仅返回直属成员）。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
     /// <returns>部门成员详情列表（userlist）。</returns>
     /// <remarks>
@@ -87,6 +90,7 @@ public interface IWechatWorkUsersService
     [Get("/cgi-bin/user/list")]
     Task<GetUserDetailListResponse> GetUserDetailListAsync(
         [Query("department_id")] int departmentId,
+        [Query("fetch_child")] int? fetchChild = null,
         CancellationToken cancellationToken = default);
 
     /// <summary>

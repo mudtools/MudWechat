@@ -39,7 +39,9 @@ public interface IWechatWorkThirdPartyUsersService : IWechatWorkUsersService
     /// <param name="request">成员请求体（<see cref="CreateUserRequest"/>）。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
     /// <returns>创建结果（含因填写不存在部门而自动新建的部门列表）。</returns>
-    /// <remarks>请参照原SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/90331"/></remarks>
+    /// <remarks>
+    /// <para><b>第三方应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/90331"/></para>
+    /// </remarks>
     [Post("/cgi-bin/user/create")]
     Task<CreateUserResponse> CreateUserAsync(
         [Body] CreateUserRequest request,
@@ -53,7 +55,9 @@ public interface IWechatWorkThirdPartyUsersService : IWechatWorkUsersService
     /// <param name="request">成员请求体（<see cref="UpdateUserRequest"/>）。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
     /// <returns>更新结果（errcode/errmsg）。</returns>
-    /// <remarks>请参照原SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/90333"/></remarks>
+    /// <remarks>
+    /// <para><b>第三方应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/90333"/></para>
+    /// </remarks>
     [Post("/cgi-bin/user/update")]
     Task<WechatWorkResponse> UpdateUserAsync(
         [Body] UpdateUserRequest request,
@@ -66,7 +70,9 @@ public interface IWechatWorkThirdPartyUsersService : IWechatWorkUsersService
     /// <param name="userid">成员 UserID，对应管理端的账号。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
     /// <returns>删除结果（errcode/errmsg）。</returns>
-    /// <remarks>请参照原SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/90334"/></remarks>
+    /// <remarks>
+    /// <para><b>第三方应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/90334"/></para>
+    /// </remarks>
     [Get("/cgi-bin/user/delete")]
     Task<WechatWorkResponse> DeleteUserAsync(
         [Query("userid")] string userid,
@@ -79,7 +85,9 @@ public interface IWechatWorkThirdPartyUsersService : IWechatWorkUsersService
     /// <param name="request">请求体（useridlist：最多 200 个成员 UserID）。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
     /// <returns>删除结果（errcode/errmsg）。</returns>
-    /// <remarks>请参照原SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/90335"/></remarks>
+    /// <remarks>
+    /// <para><b>第三方应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/90335"/></para>
+    /// </remarks>
     [Post("/cgi-bin/user/batchdelete")]
     Task<WechatWorkResponse> BatchDeleteUsersAsync(
         [Body] BatchDeleteUsersRequest request,
@@ -94,7 +102,9 @@ public interface IWechatWorkThirdPartyUsersService : IWechatWorkUsersService
     /// <param name="request">请求体（user 成员 ID 列表 ≤ 1000；party 部门 ID 列表 ≤ 100；tag 标签 ID 列表 ≤ 100）。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
     /// <returns>邀请结果（invaliduser/invalidparty/invalidtag 非法列表）。</returns>
-    /// <remarks>请参照原SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/91127"/></remarks>
+    /// <remarks>
+    /// <para><b>第三方应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/91127"/></para>
+    /// </remarks>
     [Post("/cgi-bin/batch/invite")]
     Task<InviteMembersResponse> InviteMembersAsync(
         [Body] InviteMembersRequest request,
@@ -107,7 +117,9 @@ public interface IWechatWorkThirdPartyUsersService : IWechatWorkUsersService
     /// <param name="request">分页请求体（cursor 首次不填；limit 默认与最大值均为 1000）。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
     /// <returns>成员授权列表（member_auth_list）与下一页游标（next_cursor）。</returns>
-    /// <remarks>请参照原SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/94513"/></remarks>
+    /// <remarks>
+    /// <para><b>第三方应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/94513"/></para>
+    /// </remarks>
     [Post("/cgi-bin/user/list_member_auth")]
     Task<ListMemberAuthResponse> ListMemberAuthAsync(
         [Body] ListMemberAuthRequest request,
@@ -120,7 +132,9 @@ public interface IWechatWorkThirdPartyUsersService : IWechatWorkUsersService
     /// <param name="request">请求体（open_userid：企业成员的全局唯一标识）。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
     /// <returns>授权状态（is_member_auth）。</returns>
-    /// <remarks>请参照原SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/94514"/></remarks>
+    /// <remarks>
+    /// <para><b>第三方应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/94514"/></para>
+    /// </remarks>
     [Post("/cgi-bin/user/check_member_auth")]
     Task<CheckMemberAuthResponse> CheckMemberAuthAsync(
         [Body] CheckMemberAuthRequest request,
@@ -133,7 +147,9 @@ public interface IWechatWorkThirdPartyUsersService : IWechatWorkUsersService
     /// <param name="request">请求体（selected_ticket：选人 JS-SDK 返回的票据）。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
     /// <returns>选人结果（操作者与可见范围内外 open_userid 列表、总人数）。</returns>
-    /// <remarks>请参照原SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/94894"/></remarks>
+    /// <remarks>
+    /// <para><b>第三方应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/94894"/></para>
+    /// </remarks>
     [Post("/cgi-bin/user/list_selected_ticket_user")]
     Task<ListSelectedTicketUserResponse> ListSelectedTicketUsersAsync(
         [Body] ListSelectedTicketUserRequest request,

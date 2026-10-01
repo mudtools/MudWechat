@@ -39,7 +39,9 @@ public interface IWechatWorkThirdPartyDepartmentsService : IWechatWorkDepartment
     /// <param name="request">部门请求体（<see cref="CreateDepartmentRequest"/>）。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
     /// <returns>创建结果（含新建部门的 ID）。</returns>
-    /// <remarks>请参照原SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/90341"/></remarks>
+    /// <remarks>
+    /// <para><b>第三方应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/90341"/></para>
+    /// </remarks>
     [Post("/cgi-bin/department/create")]
     Task<CreateDepartmentResponse> CreateDepartmentAsync(
         [Body] CreateDepartmentRequest request,
@@ -53,7 +55,9 @@ public interface IWechatWorkThirdPartyDepartmentsService : IWechatWorkDepartment
     /// <param name="request">部门请求体（<see cref="UpdateDepartmentRequest"/>）。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
     /// <returns>更新结果（errcode/errmsg）。</returns>
-    /// <remarks>请参照原SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/90342"/></remarks>
+    /// <remarks>
+    /// <para><b>第三方应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/90342"/></para>
+    /// </remarks>
     [Post("/cgi-bin/department/update")]
     Task<WechatWorkResponse> UpdateDepartmentAsync(
         [Body] UpdateDepartmentRequest request,
@@ -67,7 +71,9 @@ public interface IWechatWorkThirdPartyDepartmentsService : IWechatWorkDepartment
     /// <param name="id">部门 ID。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
     /// <returns>删除结果（errcode/errmsg）。</returns>
-    /// <remarks>请参照原SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/90343"/></remarks>
+    /// <remarks>
+    /// <para><b>第三方应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/90343"/></para>
+    /// </remarks>
     [Get("/cgi-bin/department/delete")]
     Task<WechatWorkResponse> DeleteDepartmentAsync(
         [Query("id")] int id,

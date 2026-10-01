@@ -39,7 +39,11 @@ public interface IWechatWorkDepartmentsService
     /// <param name="id">部门 ID，获取该部门及其下所有子孙部门（递归）；不填则默认获取全量组织架构。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
     /// <returns>部门列表（department；第三方不可获取 name/name_en）。</returns>
-    /// <remarks>请参照原SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/90208"/></remarks>
+    /// <remarks>
+    /// <para><b>企业自建应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/90208"/></para>
+    /// <para><b>第三方应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/90344"/></para>
+    /// <para><b>服务商代开发</b>SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/96274"/></para>
+    /// </remarks>
     [Get("/cgi-bin/department/list")]
     Task<GetDepartmentListResponse> GetDepartmentListAsync(
         [Query("id")] int? id = null,
@@ -53,7 +57,11 @@ public interface IWechatWorkDepartmentsService
     /// <param name="id">部门 ID，获取该部门及其下的子部门（递归）；不填则默认获取全量组织架构。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
     /// <returns>部门 ID 列表（department_id）。</returns>
-    /// <remarks>请参照原SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/95350"/></remarks>
+    /// <remarks>
+    /// <para><b>企业自建应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/95350"/></para>
+    /// <para><b>第三方应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/95406"/></para>
+    /// <para><b>服务商代开发</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/96275"/></para>
+    /// </remarks>
     [Get("/cgi-bin/department/simplelist")]
     Task<GetChildDepartmentIdListResponse> GetChildDepartmentIdListAsync(
         [Query("id")] int? id = null,
@@ -67,7 +75,11 @@ public interface IWechatWorkDepartmentsService
     /// <param name="id">部门 ID。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
     /// <returns>部门详情（department）。</returns>
-    /// <remarks>请参照原SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/95351"/></remarks>
+    /// <remarks>
+    /// <para><b>企业自建应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/95351"/></para>
+    /// <para><b>第三方应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/95407"/></para>
+    /// <para><b>服务商代开发</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/96276"/></para>
+    /// </remarks>
     [Get("/cgi-bin/department/get")]
     Task<GetDepartmentResponse> GetDepartmentAsync(
         [Query("id")] int id,

@@ -1,14 +1,25 @@
 # Mud.Wechat
 
-**企业微信（WeCom）的 .NET SDK**，架构对齐 Mud.Feishu（FeishuV3）——一致的包家族、令牌基座、契约守卫与质量门禁模式。
+**Mud.Wechat** 是一套面向**企业微信（WeCom）开放平台**的现代化 .NET SDK，帮助 .NET 开发者在自建应用、第三方应用与服务商代开发三种形态下，以统一的编程模型接入企业微信服务端 API。
+
+SDK 完整封装了企业微信接入中最繁琐的部分——**多应用、多租户的令牌生命周期**：从 `corpid + corpsecret` 换取 `access_token`，到服务商侧的 `provider_access_token` / `suite_access_token`，再到每一家授权企业的令牌隔离与提前刷新，全部由令牌基座自动管理，业务代码只面向声明式客户端编程。
+
+架构上对齐 Mud.Feishu（FeishuV3）——一致的包家族、令牌基座、契约守卫与质量门禁模式，两套 SDK 使用体验高度一致，便于团队在飞书与企业微信双平台间低成本迁移。
+
+设计取向：
+
+- **AOT / 裁剪友好**：面向 Native AOT 发布场景设计，序列化与配置绑定全源生成，可用 `AotStrictMode` 门禁锁定零反射诊断。
+- **契约驱动**：接口路由、令牌绑定方式、错误码语义等官方契约以测试守卫固化，防止随迭代悄然漂移。
+- **启动即失败**：应用配置在 DI 注册阶段即按应用类型完成互斥必填校验，错误配置不会潜伏到运行期。
+- **安全内建**：回调验签 + AES 解密 + 抗重放、BaseUrl 白名单（SSRF 防线）、AppKey 形状约束（防令牌键别名）等防线开箱即得。
 
 覆盖三类应用形态：
 
-| 应用类型 | `WechatAppType` | 令牌链 |
-|---|---|---|
-| 企业内部自建应用 | `Internal` | `access_token`（`corpid` + `corpsecret`） |
-| 第三方应用（Suite） | `ThirdParty` | `provider_access_token` + `suite_access_token` + 每授权企业 `access_token`（scope） |
-| 服务商代开发 | `Provider` | 同 `ThirdParty`，但企业令牌走 `gettoken(corpsecret = permanent_code)` |
+| 应用类型            | `WechatAppType` | 令牌链                                                                              |
+| ------------------- | --------------- | ----------------------------------------------------------------------------------- |
+| 企业内部自建应用    | `Internal`      | `access_token`（`corpid` + `corpsecret`）                                           |
+| 第三方应用（Suite） | `ThirdParty`    | `provider_access_token` + `suite_access_token` + 每授权企业 `access_token`（scope） |
+| 服务商代开发        | `Provider`      | 同 `ThirdParty`，但企业令牌走 `gettoken(corpsecret = permanent_code)`               |
 
 ## 特性
 
@@ -21,12 +32,12 @@
 
 ## 包家族
 
-| 包 | 说明 |
-|---|---|
-| `Mud.Wechat.Work` | 主包：业务声明式客户端、模块注册器、AOT JsonContext 合并、errcode 令牌失效判定器 |
-| `Mud.Wechat.Work.Abstractions` | 认证与多应用基座：令牌签发客户端、令牌管理器、多应用管理、配置面 |
-| `Mud.Wechat.Work.DataModels` | 官方 DTO（纯数据模型，无外部依赖）+ AOT 源生成 JSON 上下文 |
-| `Mud.Wechat.Work.Callback` | 回调接收：验签、AES 解密、事件分发、`suite_ticket` 仓储、抗重放守卫 |
+| 包                             | 说明                                                                             |
+| ------------------------------ | -------------------------------------------------------------------------------- |
+| `Mud.Wechat.Work`              | 主包：业务声明式客户端、模块注册器、AOT JsonContext 合并、errcode 令牌失效判定器 |
+| `Mud.Wechat.Work.Abstractions` | 认证与多应用基座：令牌签发客户端、令牌管理器、多应用管理、配置面                 |
+| `Mud.Wechat.Work.DataModels`   | 官方 DTO（纯数据模型，无外部依赖）+ AOT 源生成 JSON 上下文                       |
+| `Mud.Wechat.Work.Callback`     | 回调接收：验签、AES 解密、事件分发、`suite_ticket` 仓储、抗重放守卫              |
 
 依赖方向单向：`Work → {Abstractions, DataModels}`、`Callback → {Abstractions, DataModels}`、`Abstractions → DataModels`。`Callback` 不引用主包 `Work`（授权自动化解耦）。
 

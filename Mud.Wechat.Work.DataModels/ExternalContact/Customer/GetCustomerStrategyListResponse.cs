@@ -1,0 +1,38 @@
+// -----------------------------------------------------------------------
+//  作者：Mud Studio  版权所有 (c) Mud Studio 2026
+//  Mud.Wechat 项目的版权、商标、专利和其他相关权利均受相应法律法规的保护。
+//  本项目主要遵循 MIT 许可证进行分发和使用。许可证位于源代码树根目录中的 LICENSE-MIT 文件。
+//  不得利用本项目从事危害国家安全、扰乱社会秩序、侵犯他人合法权益等法律法规禁止的活动！任何基于本项目开发而产生的一切法律纠纷和责任，我们不承担任何责任！
+// -----------------------------------------------------------------------
+
+namespace Mud.Wechat.Work.DataModels.ExternalContact.Customer;
+
+/// <summary>
+/// 获取规则组列表响应体（<c>/cgi-bin/externalcontact/customer_strategy/list</c>）。
+/// </summary>
+public class GetCustomerStrategyListResponse : WechatWorkResponse
+{
+    /// <summary>
+    /// 获取或设置规则组 id 列表（strategy，元素仅含 strategy_id）。
+    /// </summary>
+    [JsonPropertyName("strategy")]
+    public List<CustomerStrategyIdItem>? Strategy { get; set; }
+
+    /// <summary>
+    /// 获取或设置分页游标（用于查询下一个分页，无更多数据时不返回）。
+    /// </summary>
+    [JsonPropertyName("next_cursor")]
+    public string? NextCursor { get; set; }
+}
+
+/// <summary>
+/// 规则组 id 项（获取规则组列表响应中 <c>strategy[]</c> 的元素）。
+/// </summary>
+public class CustomerStrategyIdItem
+{
+    /// <summary>
+    /// 获取或设置规则组 id。
+    /// </summary>
+    [JsonPropertyName("strategy_id")]
+    public long? StrategyId { get; set; }
+}

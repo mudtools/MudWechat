@@ -209,4 +209,37 @@ public class WechatServiceCollectionExtensionsTests
         scope.ServiceProvider.GetRequiredService<IWechatWorkInternalExportService>().Should().NotBeNull(
             "ValidateScopes = true 变体下子 scope 内同样可解析");
     }
+
+    /// <summary>
+    /// ExternalContact 模块（客户联系：企业服务人员管理域 + 客户管理域）：
+    /// AddExternalContactApi 注册的应用类型子接口客户端必须可解析（公共父接口 IsAbstract，不参与 DI 注册）。
+    /// </summary>
+    [Fact]
+    public void AddExternalContactApi_ShouldRegisterExternalContactDomainClients_ResolvableInRootAndScope()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddWechatApp(new List<WechatAppConfig> { InternalConfig() });
+        services.AddWechatWorkServices(builder => builder.AddExternalContactApi());
+
+        using var provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true });
+
+        provider.GetRequiredService<IWechatWorkInternalExternalContactFollowUserService>().Should().NotBeNull();
+        provider.GetRequiredService<IWechatWorkThirdPartyExternalContactFollowUserService>().Should().NotBeNull();
+        provider.GetRequiredService<IWechatWorkProviderExternalContactFollowUserService>().Should().NotBeNull();
+        provider.GetRequiredService<IWechatWorkInternalExternalContactCustomerService>().Should().NotBeNull();
+        provider.GetRequiredService<IWechatWorkThirdPartyExternalContactCustomerService>().Should().NotBeNull();
+        provider.GetRequiredService<IWechatWorkProviderExternalContactCustomerService>().Should().NotBeNull();
+
+        provider.GetService<IWechatWorkExternalContactFollowUserService>().Should().BeNull(
+            "公共父接口 IsAbstract = true，不得注册进 DI（调用方须按应用类型选择子接口）");
+        provider.GetService<IWechatWorkExternalContactCustomerService>().Should().BeNull(
+            "公共父接口 IsAbstract = true，不得注册进 DI（调用方须按应用类型选择子接口）");
+
+        using var scope = provider.CreateScope();
+        scope.ServiceProvider.GetRequiredService<IWechatWorkInternalExternalContactFollowUserService>().Should().NotBeNull(
+            "ValidateScopes = true 变体下子 scope 内同样可解析");
+        scope.ServiceProvider.GetRequiredService<IWechatWorkInternalExternalContactCustomerService>().Should().NotBeNull(
+            "ValidateScopes = true 变体下子 scope 内同样可解析");
+    }
 }

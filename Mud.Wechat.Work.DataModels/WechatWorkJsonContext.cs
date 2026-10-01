@@ -12,6 +12,8 @@ using Mud.Wechat.Work.DataModels.Contacts.Department;
 using Mud.Wechat.Work.DataModels.Contacts.Export;
 using Mud.Wechat.Work.DataModels.Contacts.Tags;
 using Mud.Wechat.Work.DataModels.Contracts.Users;
+using Mud.Wechat.Work.DataModels.ExternalContact.Customer;
+using Mud.Wechat.Work.DataModels.ExternalContact.FollowUser;
 using System.Text.Json.Serialization;
 
 namespace Mud.Wechat.Work.DataModels;
@@ -128,6 +130,54 @@ namespace Mud.Wechat.Work.DataModels;
 [JsonSerializable(typeof(ExportJobResponse))]
 [JsonSerializable(typeof(GetExportResultResponse))]
 [JsonSerializable(typeof(ExportDataFile))]
+// 客户联系「企业服务人员管理」域。
+[JsonSerializable(typeof(GetFollowUserListResponse))]
+[JsonSerializable(typeof(CheckFollowUserRequest))]
+[JsonSerializable(typeof(CheckFollowUserResult))]
+[JsonSerializable(typeof(CheckFollowUserResponse))]
+[JsonSerializable(typeof(GetCustomerAcquisitionPermitResponse))]
+// 客户联系「客户管理」域：详情与列表。
+[JsonSerializable(typeof(ExternalContactInfo))]
+[JsonSerializable(typeof(ExternalProfile))]
+[JsonSerializable(typeof(ExternalAttr))]
+[JsonSerializable(typeof(ExternalAttrText))]
+[JsonSerializable(typeof(ExternalAttrWeb))]
+[JsonSerializable(typeof(ExternalAttrMiniProgram))]
+[JsonSerializable(typeof(CustomerFollowTag))]
+[JsonSerializable(typeof(WechatChannelsInfo))]
+[JsonSerializable(typeof(CustomerFollowUser))]
+[JsonSerializable(typeof(CustomerFollowInfo))]
+[JsonSerializable(typeof(GetCustomerListResponse))]
+[JsonSerializable(typeof(GetCustomerDetailResponse))]
+[JsonSerializable(typeof(BatchCustomerContactItem))]
+[JsonSerializable(typeof(BatchCustomerFailInfo))]
+[JsonSerializable(typeof(BatchGetCustomerDetailsResponse))]
+// 客户联系「客户管理」域：规则组（customer_strategy）。
+[JsonSerializable(typeof(CustomerStrategy))]
+[JsonSerializable(typeof(CustomerStrategyPrivilege))]
+[JsonSerializable(typeof(CustomerStrategyRangeNode))]
+[JsonSerializable(typeof(GetCustomerStrategyListResponse))]
+[JsonSerializable(typeof(CustomerStrategyIdItem))]
+[JsonSerializable(typeof(CreateCustomerStrategyResponse))]
+[JsonSerializable(typeof(GetCustomerStrategyDetailResponse))]
+[JsonSerializable(typeof(GetCustomerStrategyRangeResponse))]
+// 客户联系「客户管理」域：unionid / external_userid 转换。
+[JsonSerializable(typeof(ConvertUnionIdToExternalUserIdResponse))]
+[JsonSerializable(typeof(PendingIdMapItem))]
+[JsonSerializable(typeof(ExternalUserIdToPendingIdResponse))]
+[JsonSerializable(typeof(ConvertToServiceExternalUserIdResponse))]
+// 客户联系「客户管理」域：请求体。
+[JsonSerializable(typeof(BatchGetCustomerDetailsRequest))]
+[JsonSerializable(typeof(UpdateCustomerRemarkRequest))]
+[JsonSerializable(typeof(GetCustomerStrategyListRequest))]
+[JsonSerializable(typeof(GetCustomerStrategyDetailRequest))]
+[JsonSerializable(typeof(GetCustomerStrategyRangeRequest))]
+[JsonSerializable(typeof(CreateCustomerStrategyRequest))]
+[JsonSerializable(typeof(UpdateCustomerStrategyRequest))]
+[JsonSerializable(typeof(DeleteCustomerStrategyRequest))]
+[JsonSerializable(typeof(ConvertUnionIdToExternalUserIdRequest))]
+[JsonSerializable(typeof(ExternalUserIdToPendingIdRequest))]
+[JsonSerializable(typeof(ConvertToServiceExternalUserIdRequest))]
 public sealed partial class WechatWorkJsonContext : JsonSerializerContext
 {
 }

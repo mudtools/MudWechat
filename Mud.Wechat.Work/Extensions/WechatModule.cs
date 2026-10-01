@@ -22,6 +22,9 @@ public enum WechatModule
     /// <summary>通讯录（成员管理域：公共读取面 + 自建/第三方/代开发能力差异端点）。</summary>
     Contact,
 
+    /// <summary>客户联系（企业服务人员管理域 + 客户管理域：公共面 + 第三方/代开发能力差异端点）。</summary>
+    ExternalContact,
+
     /// <summary>消息推送等（预留）。</summary>
     Message,
 }

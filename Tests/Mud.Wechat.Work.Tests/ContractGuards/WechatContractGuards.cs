@@ -162,6 +162,18 @@ public class WechatContractGuards
                 nameof(IWechatWorkInternalExportService),
                 nameof(IWechatWorkThirdPartyExportService),
                 nameof(IWechatWorkProviderExportService),
+                // 客户联系·企业服务人员管理域（ExternalContact 模块）：get_follow_user_list 为三类应用公共面
+                // （父接口 + 三个应用类型子接口），第三方/代开发子接口各持 1 条差异端点。
+                nameof(IWechatWorkExternalContactFollowUserService),
+                nameof(IWechatWorkInternalExternalContactFollowUserService),
+                nameof(IWechatWorkThirdPartyExternalContactFollowUserService),
+                nameof(IWechatWorkProviderExternalContactFollowUserService),
+                // 客户联系·客户管理域（ExternalContact 模块）：10 个端点为三类应用公共面
+                // （父接口 + 三个应用类型子接口），第三方子接口另持 3 条身份转换差异端点。
+                nameof(IWechatWorkExternalContactCustomerService),
+                nameof(IWechatWorkInternalExternalContactCustomerService),
+                nameof(IWechatWorkThirdPartyExternalContactCustomerService),
+                nameof(IWechatWorkProviderExternalContactCustomerService),
             },
             "企业微信官方契约强制 Query 注入（MUD005 已知接受风险），新增 Query 注入接口须评估后扩展本守卫");
     }

@@ -159,7 +159,7 @@ public class WechatContractGuards
                 nameof(IWechatWorkThirdPartyBatchService),
                 // 异步导出接口域（Contact 模块）：同上，5 个端点为三类应用公共面，父接口 + 三个空标记子接口。
                 nameof(IWechatWorkExportService),
-                nameof(IWechatWorkExportService_Internal),
+                nameof(IWechatWorkInternalExportService),
                 nameof(IWechatWorkThirdPartyExportService),
                 nameof(IWechatWorkProviderExportService),
             },

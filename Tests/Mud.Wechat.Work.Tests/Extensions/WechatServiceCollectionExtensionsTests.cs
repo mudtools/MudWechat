@@ -178,7 +178,7 @@ public class WechatServiceCollectionExtensionsTests
         provider.GetRequiredService<IWechatWorkInternalBatchService>().Should().NotBeNull();
         provider.GetRequiredService<IWechatWorkThirdPartyBatchService>().Should().NotBeNull(
             "官方未向代开发开放异步导入，本域仅注册自建与第三方子接口");
-        provider.GetRequiredService<IWechatWorkExportService_Internal>().Should().NotBeNull();
+        provider.GetRequiredService<IWechatWorkInternalExportService>().Should().NotBeNull();
         provider.GetRequiredService<IWechatWorkThirdPartyExportService>().Should().NotBeNull();
         provider.GetRequiredService<IWechatWorkProviderExportService>().Should().NotBeNull();
 
@@ -206,7 +206,7 @@ public class WechatServiceCollectionExtensionsTests
             "ValidateScopes = true 变体下子 scope 内同样可解析");
         scope.ServiceProvider.GetRequiredService<IWechatWorkInternalBatchService>().Should().NotBeNull(
             "ValidateScopes = true 变体下子 scope 内同样可解析");
-        scope.ServiceProvider.GetRequiredService<IWechatWorkExportService_Internal>().Should().NotBeNull(
+        scope.ServiceProvider.GetRequiredService<IWechatWorkInternalExportService>().Should().NotBeNull(
             "ValidateScopes = true 变体下子 scope 内同样可解析");
     }
 }

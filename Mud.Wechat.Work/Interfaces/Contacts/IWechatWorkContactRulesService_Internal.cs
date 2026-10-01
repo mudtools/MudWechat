@@ -66,12 +66,12 @@ public interface IWechatWorkInternalContactRulesService : IWechatWorkContactRule
     /// </summary>
     /// <param name="request">修改规则请求体（<see cref="UpdateContactRulesRequest"/>；每条规则的 RuleId 必填）。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
-    /// <returns>修改结果（errcode/errmsg）。</returns>
+    /// <returns>修改结果（errcode/errmsg；官方返回示例含修改后规则的 rules 回显，见 <see cref="UpdateContactRulesResponse"/>）。</returns>
     /// <remarks>
     /// <para><b>企业自建应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/101539"/></para>
     /// </remarks>
     [Post("/cgi-bin/contactrule/update")]
-    Task<WechatWorkResponse> UpdateContactRulesAsync(
+    Task<UpdateContactRulesResponse> UpdateContactRulesAsync(
         [Body] UpdateContactRulesRequest request,
         CancellationToken cancellationToken = default);
 

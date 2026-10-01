@@ -115,6 +115,7 @@ namespace Mud.Wechat.Work.DataModels;
 [JsonSerializable(typeof(UpdateContactRulesRequest))]
 [JsonSerializable(typeof(DeleteContactRulesRequest))]
 [JsonSerializable(typeof(CreateContactRulesResponse))]
+[JsonSerializable(typeof(UpdateContactRulesResponse))]
 [JsonSerializable(typeof(GetContactRulesResponse))]
 [JsonSerializable(typeof(BatchCallbackRequest))]
 [JsonSerializable(typeof(BatchImportUsersRequest))]

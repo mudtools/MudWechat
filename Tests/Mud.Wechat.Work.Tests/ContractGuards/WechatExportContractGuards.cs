@@ -78,7 +78,7 @@ public class WechatExportContractGuards
         var parent = typeof(IWechatWorkExportService);
         var children = new[]
         {
-            typeof(IWechatWorkExportService_Internal),
+            typeof(IWechatWorkInternalExportService),
             typeof(IWechatWorkThirdPartyExportService),
             typeof(IWechatWorkProviderExportService),
         };
@@ -119,7 +119,7 @@ public class WechatExportContractGuards
         var interfaces = new[]
         {
             typeof(IWechatWorkExportService),
-            typeof(IWechatWorkExportService_Internal),
+            typeof(IWechatWorkInternalExportService),
             typeof(IWechatWorkThirdPartyExportService),
             typeof(IWechatWorkProviderExportService),
         };

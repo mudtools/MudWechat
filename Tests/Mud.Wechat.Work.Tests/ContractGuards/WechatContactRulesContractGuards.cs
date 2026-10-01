@@ -135,7 +135,7 @@ public class WechatContactRulesContractGuards
             typeof(ContactRuleRange), typeof(ContactRule),
             typeof(CreateContactRulesRequest), typeof(UpdateContactRulesRequest),
             typeof(DeleteContactRulesRequest), typeof(CreateContactRulesResponse),
-            typeof(GetContactRulesResponse),
+            typeof(UpdateContactRulesResponse), typeof(GetContactRulesResponse),
         };
 
         foreach (var type in requiredTypes)

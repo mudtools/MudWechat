@@ -14,7 +14,7 @@ namespace Mud.Wechat.Work;
 /// <para>
 /// 官方对企业自建应用、第三方应用、服务商代开发三类应用开放了完全一致的 5 个端点，
 /// 因此全部端点声明于本公共父接口；三个应用类型子接口
-/// （<see cref="IWechatWorkExportService_Internal"/> / <see cref="IWechatWorkThirdPartyExportService"/> /
+/// （<see cref="IWechatWorkInternalExportService"/> / <see cref="IWechatWorkThirdPartyExportService"/> /
 /// <see cref="IWechatWorkProviderExportService"/>）均为空标记，仅作为类型化契约入口。
 /// </para>
 /// <para>

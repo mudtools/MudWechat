@@ -10,6 +10,7 @@ using Mud.Wechat.Work.DataModels.CorpTokenAuthentication;
 using Mud.Wechat.Work.DataModels.Department;
 using Mud.Wechat.Work.DataModels.InternalAppAuthentication;
 using Mud.Wechat.Work.DataModels.ProviderAuthentication;
+using Mud.Wechat.Work.DataModels.Tags;
 using Mud.Wechat.Work.DataModels.Users;
 
 namespace Mud.Wechat.Work.DataModels.Tests;
@@ -470,5 +471,111 @@ public class WechatDataModelDeserializationTests
         json.Should().NotContain("name_en", "未赋值的可空属性不应序列化（WhenWritingNull）");
         json.Should().NotContain("\"id\":", "未显式指定部门 id 时不传，由官方自动生成");
         json.Should().NotContain("\"order\":", "未赋值的可空属性不应序列化（WhenWritingNull）");
+    }
+
+    [Fact]
+    public void GetTagMembersResponse_ShouldDeserialize_WithOfficialJsonContract()
+    {
+        var json = """
+        {
+          "errcode": 0,
+          "errmsg": "ok",
+          "tagname": "测试标签",
+          "userlist": [
+            { "userid": "zhangsan", "name": "张三" },
+            { "userid": "lisi", "name": "李四" }
+          ],
+          "partylist": [2, 4]
+        }
+        """;
+        var resp = JsonSerializer.Deserialize<GetTagMembersResponse>(json);
+
+        resp!.IsSuccess.Should().BeTrue();
+        resp.TagName.Should().Be("测试标签");
+        resp.UserList.Should().HaveCount(2);
+        resp.UserList![0].UserId.Should().Be("zhangsan");
+        resp.UserList![0].Name.Should().Be("张三");
+        resp.UserList![1].UserId.Should().Be("lisi");
+        resp.PartyList.Should().Equal(new[] { 2, 4 });
+    }
+
+    [Fact]
+    public void GetTagMembersResponse_ShouldTolerate_MissingNameField()
+    {
+        // 官方停返口径：name 字段分阶段停返（第三方自 2020-06-30 起未授权不返回）。
+        var json = """{"errcode":0,"errmsg":"ok","userlist":[{"userid":"zhangsan"}]}""";
+        var resp = JsonSerializer.Deserialize<GetTagMembersResponse>(json);
+
+        resp!.TagName.Should().BeNull("字段缺省时不得抛异常");
+        resp.UserList![0].Name.Should().BeNull();
+        resp.PartyList.Should().BeEmpty("partylist 缺省时退化为空集合");
+    }
+
+    [Fact]
+    public void ChangeTagMembersResponse_ShouldDeserialize_PartialInvalidWithPipeSeparatedList()
+    {
+        // 官方契约：invalidlist 是竖线分隔的字符串（不再是数组），invalidparty 仍为数组。
+        var json = """{"errcode":0,"errmsg":"ok","invalidlist":"usr1|usr2|usr","invalidparty":[2,4]}""";
+        var resp = JsonSerializer.Deserialize<ChangeTagMembersResponse>(json);
+
+        resp!.IsSuccess.Should().BeTrue("部分合法时 errcode 仍为 0");
+        resp.InvalidList.Should().Be("usr1|usr2|usr");
+        resp.InvalidParty.Should().Equal(new[] { 2, 4 });
+    }
+
+    [Fact]
+    public void GetTagListResponse_ShouldDeserialize_WithOfficialJsonContract()
+    {
+        var json = """
+        {
+          "errcode": 0,
+          "errmsg": "ok",
+          "taglist": [
+            { "tagid": 1, "tagname": "a" },
+            { "tagid": 2, "tagname": "b" }
+          ]
+        }
+        """;
+        var resp = JsonSerializer.Deserialize<GetTagListResponse>(json);
+
+        resp!.TagList.Should().HaveCount(2);
+        resp.TagList![0].TagId.Should().Be(1);
+        resp.TagList![0].TagName.Should().Be("a");
+        resp.TagList![1].TagId.Should().Be(2);
+    }
+
+    [Fact]
+    public void CreateTagResponse_ShouldDeserialize()
+    {
+        var json = """{"errcode":0,"errmsg":"created","tagid":12}""";
+        var resp = JsonSerializer.Deserialize<CreateTagResponse>(json);
+
+        resp!.TagId.Should().Be(12);
+    }
+
+    [Fact]
+    public void CreateTagRequest_ShouldSerialize_WithSnakeCaseJsonKeys()
+    {
+        // 生产管线 = WechatWorkJsonContext（WhenWritingNull）：断言只锚定键名与 ASCII 值。
+        var json = JsonSerializer.Serialize(
+            new CreateTagRequest { TagName = "a", TagId = 12 },
+            Mud.Wechat.Work.DataModels.WechatWorkJsonContext.Default.CreateTagRequest);
+
+        json.Should().Contain("\"tagname\":\"a\"");
+        json.Should().Contain("\"tagid\":12");
+    }
+
+    [Fact]
+    public void AddTagMembersRequest_ShouldOmitNullCollections_ViaJsonContext()
+    {
+        // 官方语义：userlist 与 partylist 不能同时为空；二者均为可选，
+        // 序列化不得将「不填」改写为空数组（请求侧集合不设默认值）。
+        var json = JsonSerializer.Serialize(
+            new AddTagMembersRequest { TagId = 1, UserList = new() { "zhangsan" } },
+            Mud.Wechat.Work.DataModels.WechatWorkJsonContext.Default.AddTagMembersRequest);
+
+        json.Should().Contain("\"tagid\":1");
+        json.Should().Contain("\"userlist\":[\"zhangsan\"]");
+        json.Should().NotContain("\"partylist\"", "partylist 为可选字段，null 时不落 JSON（WhenWritingNull）");
     }
 }

@@ -43,7 +43,11 @@ public interface IWechatWorkUsersService
     /// <param name="userid">成员 UserID，对应管理端账号，企业内唯一，不区分大小写，1~64 字节。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
     /// <returns>成员对象（<see cref="UserInfo"/>；第三方应用调用时 userid 字段返回 open_userid）。</returns>
-    /// <remarks>官方 API 文档：<see href="https://developer.work.weixin.qq.com/document/path/90196"/></remarks>
+    /// <remarks>
+    /// <para><b>企业自建应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/90196"/></para>
+    /// <para><b>第三方应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/90332"/></para>
+    /// <para><b>服务商代开发</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/96255"/></para>
+    /// </remarks>
     [Get("/cgi-bin/user/get")]
     Task<UserInfo> GetUserAsync(
         [Query("userid")] string userid,
@@ -58,7 +62,11 @@ public interface IWechatWorkUsersService
     /// <param name="fetchChild">是否递归获取子部门下面的成员（1 递归；0 或不填仅返回直属成员）。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
     /// <returns>部门成员摘要列表（userlist）。</returns>
-    /// <remarks>官方 API 文档：<see href="https://developer.work.weixin.qq.com/document/path/90200"/></remarks>
+    /// <remarks>
+    /// <para><b>企业自建应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/90200"/></para>
+    /// <para><b>第三方应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/90336"/></para>
+    /// <para><b>服务商代开发</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/96259"/></para>
+    /// </remarks>
     [Get("/cgi-bin/user/simplelist")]
     Task<GetUserSimpleListResponse> GetUserSimpleListAsync(
         [Query("department_id")] int departmentId,
@@ -74,7 +82,11 @@ public interface IWechatWorkUsersService
     /// <param name="fetchChild">是否递归获取子部门下面的成员（1 递归；0 或不填仅返回直属成员）。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
     /// <returns>部门成员详情列表（userlist）。</returns>
-    /// <remarks>官方 API 文档：<see href="https://developer.work.weixin.qq.com/document/path/90201"/></remarks>
+    /// <remarks>
+    /// <para><b>企业自建应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/90201"/></para>
+    /// <para><b>第三方应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/90337"/></para>
+    /// <para><b>服务商代开发</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/96260"/></para>
+    /// </remarks>
     [Get("/cgi-bin/user/list")]
     Task<GetUserDetailListResponse> GetUserDetailListAsync(
         [Query("department_id")] int departmentId,
@@ -89,7 +101,11 @@ public interface IWechatWorkUsersService
     /// <param name="request">分页请求体（cursor 首次不填；limit 取值 1~10000）。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
     /// <returns>用户-部门关系列表（dept_user）与下一页游标（next_cursor）。</returns>
-    /// <remarks>官方 API 文档：<see href="https://developer.work.weixin.qq.com/document/path/96067"/>（自建）、<see href="https://developer.work.weixin.qq.com/document/path/96021"/>（第三方）、<see href="https://developer.work.weixin.qq.com/document/path/96269"/>（代开发）。</remarks>
+    /// <remarks>
+    /// <para><b>企业自建应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/96067"/></para>
+    /// <para><b>第三方应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/96021"/></para>
+    /// <para><b>服务商代开发</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/96269"/></para>
+    /// </remarks>
     [Post("/cgi-bin/user/list_id")]
     Task<ListUserIdsResponse> ListUserIdsAsync(
         [Body] ListUserIdsRequest request,
@@ -103,7 +119,11 @@ public interface IWechatWorkUsersService
     /// <param name="request">请求体（mobile：5~32 字节的手机号）。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
     /// <returns>成员 userid。</returns>
-    /// <remarks>官方 API 文档：<see href="https://developer.work.weixin.qq.com/document/path/95402"/></remarks>
+    /// <remarks>
+    /// <para><b>企业自建应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/95402"/></para>
+    /// <para><b>第三方应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/91693"/></para>
+    /// <para><b>服务商代开发</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/96267"/></para>
+    /// </remarks>
     [Post("/cgi-bin/user/getuserid")]
     Task<GetUserIdByMobileResponse> GetUserIdByMobileAsync(
         [Body] GetUserIdByMobileRequest request,
@@ -117,7 +137,11 @@ public interface IWechatWorkUsersService
     /// <param name="request">请求体（email 必填；email_type：1 企业邮箱（默认），2 个人邮箱）。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
     /// <returns>成员 userid。</returns>
-    /// <remarks>官方 API 文档：<see href="https://developer.work.weixin.qq.com/document/path/95895"/></remarks>
+    /// <remarks>
+    /// <para><b>企业自建应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/95895"/></para>
+    /// <para><b>第三方应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/95892"/></para>
+    /// <para><b>服务商代开发</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/96268"/></para>
+    /// </remarks>
     [Post("/cgi-bin/user/get_userid_by_email")]
     Task<GetUserIdByEmailResponse> GetUserIdByEmailAsync(
         [Body] GetUserIdByEmailRequest request,
@@ -131,7 +155,11 @@ public interface IWechatWorkUsersService
     /// <param name="request">请求体（userid：企业内的成员 ID）。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
     /// <returns>成员 userid 对应的 openid。</returns>
-    /// <remarks>官方 API 文档：<see href="https://developer.work.weixin.qq.com/document/path/90202"/></remarks>
+    /// <remarks>
+    /// <para><b>企业自建应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/90202"/></para>
+    /// <para><b>第三方应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/90338"/></para>
+    /// <para><b>服务商代开发</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/96261"/></para>
+    /// </remarks>
     [Post("/cgi-bin/user/convert_to_openid")]
     Task<ConvertUserIdToOpenIdResponse> ConvertUserIdToOpenIdAsync(
         [Body] ConvertUserIdToOpenIdRequest request,
@@ -144,7 +172,11 @@ public interface IWechatWorkUsersService
     /// <param name="request">请求体（openid：企业支付之后返回结果的 openid）。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
     /// <returns>openid 对应的成员 userid。</returns>
-    /// <remarks>官方 API 文档：<see href="https://developer.work.weixin.qq.com/document/path/90202"/></remarks>
+    /// <remarks>
+    /// <para><b>企业自建应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/90202"/></para>
+    /// <para><b>第三方应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/90338"/></para>
+    /// <para><b>服务商代开发</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/96261"/></para>
+    /// </remarks>
     [Post("/cgi-bin/user/convert_to_userid")]
     Task<ConvertOpenIdToUserIdResponse> ConvertOpenIdToUserIdAsync(
         [Body] ConvertOpenIdToUserIdRequest request,

@@ -93,6 +93,23 @@ namespace Mud.Wechat.Work.DataModels;
 [JsonSerializable(typeof(Department.GetDepartmentListResponse))]
 [JsonSerializable(typeof(Department.GetChildDepartmentIdListResponse))]
 [JsonSerializable(typeof(Department.GetDepartmentResponse))]
+[JsonSerializable(typeof(Tags.TagInfo))]
+[JsonSerializable(typeof(Tags.TagMemberInfo))]
+[JsonSerializable(typeof(Tags.CreateTagRequest))]
+[JsonSerializable(typeof(Tags.UpdateTagNameRequest))]
+[JsonSerializable(typeof(Tags.AddTagMembersRequest))]
+[JsonSerializable(typeof(Tags.RemoveTagMembersRequest))]
+[JsonSerializable(typeof(Tags.CreateTagResponse))]
+[JsonSerializable(typeof(Tags.GetTagMembersResponse))]
+[JsonSerializable(typeof(Tags.ChangeTagMembersResponse))]
+[JsonSerializable(typeof(Tags.GetTagListResponse))]
+[JsonSerializable(typeof(ContactRules.ContactRuleRange))]
+[JsonSerializable(typeof(ContactRules.ContactRule))]
+[JsonSerializable(typeof(ContactRules.CreateContactRulesRequest))]
+[JsonSerializable(typeof(ContactRules.UpdateContactRulesRequest))]
+[JsonSerializable(typeof(ContactRules.DeleteContactRulesRequest))]
+[JsonSerializable(typeof(ContactRules.CreateContactRulesResponse))]
+[JsonSerializable(typeof(ContactRules.GetContactRulesResponse))]
 public sealed partial class WechatWorkJsonContext : JsonSerializerContext
 {
 }

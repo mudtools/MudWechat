@@ -110,7 +110,7 @@ dotnet format Mud.Wechat.slnx                               # 格式化（未纳
 ```
 Mud.Wechat/
 ├── Mud.Wechat.Work/             # 主包：接口声明、服务、DI、模块注册
-│   └── Interfaces/              # 按功能族分目录：Authentication/、Contacts/（通讯录六域接口，Export 有独立子目录）
+│   └── Interfaces/              # 按功能族分目录：Authentication/、Contacts/（通讯录六域，Export 独立子目录）、CorpGroup/（上下游）
 ├── Mud.Wechat.Work.Abstractions/# 抽象：令牌基座、多应用、配置、仓储、枚举、异常
 ├── Mud.Wechat.Work.DataModels/  # 官方 DTO + WechatWorkJsonContext（AOT 源生成）
 │   └── Contacts/                # 通讯录域 DTO 分组：Users / Department / Tags / ContactRules / Batch（RequestModel/ 仅作目录组织）
@@ -226,7 +226,8 @@ Mud.Wechat/
 G8 的运行期同实例断言在 `WechatServiceCollectionExtensionsTests`）+ 域守卫组
 （`WechatUsersContractGuards.cs` U1~U4、`WechatDepartmentsContractGuards.cs` D1~D4、
 `WechatTagsContractGuards.cs` T1~T4、`WechatContactRulesContractGuards.cs` CR1~CR4、
-`WechatBatchContractGuards.cs` B1~B4、`WechatExportContractGuards.cs` E1~E4）：
+`WechatBatchContractGuards.cs` B1~B4、`WechatExportContractGuards.cs` E1~E4、
+`WechatCorpGroupContractGuards.cs` CG1~CG4）：
 
 | 编号 | 守卫 | 约束 |
 |---|---|---|
@@ -234,7 +235,7 @@ G8 的运行期同实例断言在 `WechatServiceCollectionExtensionsTests`）+ �
 | G2 | `ConfigDtos_ShouldNotUseRequired` | 配置 DTO 禁用 `required` |
 | G3 | `WechatTokenTypes_ShouldUseWechatPrefixedNamespace` | `"Wechat."` 前缀隔离 |
 | G4 | `WechatErrorCodes_ShouldAlignWithDetectorCollection` | 失效码 `{40014,42001,42007,42009,42011}` 与判定器同源 |
-| G5 | `QueryTokenInjection_ShouldBeLimitedToWechatOfficialContractInterfaces` | Query 注入白名单未放宽（现为授权接口 + 成员/部门/标签/通讯录查看权限/异步导入/异步导出六域共 22 接口；**应用类型子接口仅覆盖官方实际开放的应用类型**，官方无对应 API 的应用类型不设子接口） |
+| G5 | `QueryTokenInjection_ShouldBeLimitedToWechatOfficialContractInterfaces` | Query 注入白名单未放宽（现为授权接口 + 通讯录六域 + 上下游域共 25 接口；**应用类型子接口仅覆盖官方实际开放的应用类型**，官方无对应 API 的应用类型不设子接口） |
 | G6 | `AuthorizationEndpoints_ShouldMatchOfficialRoutes` | 授权端点路由 + `get_customized_auth_url` 不带 `[Token]` |
 | G7 | `QueryCredentialParams_ShouldBeRedactionRegisteredOrExplicitlyExempted` | Query 承载凭据的参数名 ⊆ 组件脱敏词表 **∪ 显式豁免清单**（豁免项须附追踪号；清单已清空——组件 3.0.0 含 C-01，`access_token` 亦在词表内）。新增 Query 凭据参数必须做「补齐词表 / 登记豁免」二选一决策。**豁免自过期**：豁免项一旦被组件词表覆盖即失败，不得静默遗留 |
 | G8 | `AppContextHolder_ShouldBeSameInstanceAsSwitcher_InRegistrationSource`（源码顺序断言，`WechatContractGuards.cs`）；运行期同实例断言（2 例）在 `WechatServiceCollectionExtensionsTests` | DI 桥接不变量（见「企业微信领域契约」）。**原计划中的 G8-B（`IAppManager<T>` 反射对齐守卫）已撤回**——`WechatAppManager` 直连实现后不存在影子注册表可能，改由行为用例锁定 |
@@ -245,6 +246,7 @@ G8 的运行期同实例断言在 `WechatServiceCollectionExtensionsTests`）+ �
 | CR1~CR4 | `WechatContactRulesContractGuards`（通讯录查看权限管理域） | **形态为父接口零端点 + 端点全落自建子接口**（官方仅向自建/通讯录同步应用开放，第三方/代开发无文档 ⇒ **不设第三方/代开发子接口**）：CR1 路由表 4 条（全在 Internal，POST `/cgi-bin/contactrule/*`，其中 list 亦为 POST 无请求体）；CR2 父接口 IsAbstract + **父接口零端点** + Internal 恰好 4 端点；CR3 令牌绑定（父/自建两接口）；CR4 JSON 上下文登记（8 型）。同挂 `Contact` 注册组共用 `AddContactApi()` |
 | B1~B4 | `WechatBatchContractGuards`（异步导入接口域） | 形态与标签域同构：官方对自建与第三方开放一致的 4 个端点（`/cgi-bin/batch/syncuser`、`replaceuser`、`replaceparty`、`getresult`；代开发无文档 ⇒ **不设代开发子接口**）⇒ 全部端点收敛父接口，B1 路由表 4 条（3 POST + 1 GET）；B2 层级 + `Contact` 组 + **自建/第三方子接口零端点**；B3 令牌绑定（父/自建/第三方三接口）；B4 JSON 上下文登记（6 型）。同挂 `Contact` 注册组共用 `AddContactApi()`。**危险操作警示**：全量覆盖成员会删除文件外成员（官方对删除比例有熔断），接口注释必须保留该警示 |
 | E1~E4 | `WechatExportContractGuards`（异步导出接口域） | 形态与标签域同构：官方对三类应用开放一致的 5 个端点（`/cgi-bin/export/simple_user`、`user`、`department`、`taguser`、`get_result`）⇒ 全部端点收敛父接口，E1 路由表 5 条（4 POST + 1 GET，注释警示 `export/get_result` 与 `batch/getresult` 拼写差异）；E2 层级 + `Contact` 组 + **三个子接口零端点**；E3 令牌绑定；E4 JSON 上下文登记（5 型）。同挂 `Contact` 注册组共用 `AddContactApi()`。「导出任务完成通知」为回调事件（`batch_job_result`）非 HTTP 端点，不落接口契约；`encoding_aeskey` 为 POST 体敏感凭据不得记日志，解密由调用方完成 |
+| CG1~CG4 | `WechatCorpGroupContractGuards`（上下游域） | 形态与异步导入域同构但开放面为**自建 + 代开发**（第三方无文档 ⇒ 不设第三方子接口）：6 个端点全落父接口（`/cgi-bin/corpgroup/corp/list_app_share_info`、`corp/gettoken`、`miniprogram/transfer_session`、`unionid_to_external_userid`、`unionid_to_pending_id`、`batch/external_userid_to_pending_id`；97357/98040 一篇覆盖 2 端点）。CG1 路由表 6 条（全 POST）；CG2 层级 + `CorpGroup` 注册组（`WechatModule.CorpGroup`，经 `AddCorpGroupApi()` 独立注册）+ **两个子接口零端点** + **反射断言继承链上恰好只有自建/代开发两个子接口**；CG3 令牌绑定（三接口）；CG4 JSON 上下文登记（15 型）。**令牌语义警示**：transfer_session 必须用下级/下游企业凭证（经 corpgroup/corp/gettoken 获取，SDK 不自动缓存，由宿主写入令牌存储后切换上下文调用）；`session_key`/下游 access_token 为敏感凭据不得记日志 |
 
 ## Test Guidelines
 

@@ -12,6 +12,7 @@ using Mud.Wechat.Work.DataModels.Contacts.Department;
 using Mud.Wechat.Work.DataModels.Contacts.Export;
 using Mud.Wechat.Work.DataModels.Contacts.Tags;
 using Mud.Wechat.Work.DataModels.Contracts.Users;
+using Mud.Wechat.Work.DataModels.CorpGroup;
 using Mud.Wechat.Work.DataModels.CorpTokenAuthentication;
 using Mud.Wechat.Work.DataModels.InternalAppAuthentication;
 using Mud.Wechat.Work.DataModels.ProviderAuthentication;
@@ -802,5 +803,127 @@ public class WechatDataModelDeserializationTests
         json.Should().Contain("\"tagid\":1");
         json.Should().Contain("\"encoding_aeskey\":\"KEY-43-CHARS-xxxxxxxxxxxxxxxxxxxxxx\"");
         json.Should().NotContain("\"block_size\"", "未赋值的 block_size 不应序列化（WhenWritingNull，官方默认 10^6）");
+    }
+
+    [Fact]
+    public void ListAppShareInfoResponse_ShouldDeserialize_WithOfficialJsonContract()
+    {
+        var json = """
+        {
+          "errcode": 0,
+          "errmsg": "ok",
+          "ending": 1,
+          "corp_list": [
+            { "corpid": "wwcorpid1", "corp_name": "corp-1", "agentid": 1111 },
+            { "corpid": "wwcorpid2", "corp_name": "corp-2", "agentid": 1112 }
+          ],
+          "next_cursor": "next_cursor_1"
+        }
+        """;
+        var resp = JsonSerializer.Deserialize<ListAppShareInfoResponse>(json);
+
+        resp!.IsSuccess.Should().BeTrue();
+        resp.Ending.Should().Be(1, "1 表示拉取完毕，0 表示数据没有拉取完");
+        resp.CorpList.Should().HaveCount(2);
+        resp.CorpList![0].CorpId.Should().Be("wwcorpid1");
+        resp.CorpList[0].CorpName.Should().Be("corp-1");
+        resp.CorpList[0].AgentId.Should().Be(1111);
+        resp.NextCursor.Should().Be("next_cursor_1");
+    }
+
+    [Fact]
+    public void GetCorpGroupTokenResponse_ShouldDeserialize()
+    {
+        var json = """{"errcode":0,"errmsg":"ok","access_token":"downstream-token","expires_in":7200}""";
+        var resp = JsonSerializer.Deserialize<GetCorpGroupTokenResponse>(json);
+
+        resp!.AccessToken.Should().Be("downstream-token");
+        resp.ExpiresIn.Should().Be(7200);
+    }
+
+    [Fact]
+    public void TransferMiniProgramSessionResponse_ShouldDeserialize()
+    {
+        var json = """{"errcode":0,"errmsg":"ok","userid":"abcdef","session_key":"DGAuy2KVaGcnsUrXk8ERgw=="}""";
+        var resp = JsonSerializer.Deserialize<TransferMiniProgramSessionResponse>(json);
+
+        resp!.UserId.Should().Be("abcdef");
+        resp.SessionKey.Should().Be("DGAuy2KVaGcnsUrXk8ERgw==");
+    }
+
+    [Fact]
+    public void UnionidToExternalUserIdResponse_ShouldDeserialize_WithOfficialJsonContract()
+    {
+        var json = """
+        {
+          "errcode": 0,
+          "errmsg": "ok",
+          "external_userid_info": [
+            { "corpid": "AAAAA", "external_userid": "BBBB" },
+            { "corpid": "CCCCC", "external_userid": "DDDDD" }
+          ]
+        }
+        """;
+        var resp = JsonSerializer.Deserialize<UnionidToExternalUserIdResponse>(json);
+
+        resp!.ExternalUserIdInfo.Should().HaveCount(2);
+        resp.ExternalUserIdInfo![0].CorpId.Should().Be("AAAAA");
+        resp.ExternalUserIdInfo[0].ExternalUserId.Should().Be("BBBB");
+        resp.ExternalUserIdInfo[1].ExternalUserId.Should().Be("DDDDD");
+    }
+
+    [Fact]
+    public void UnionidToPendingIdResponse_ShouldDeserialize()
+    {
+        var json = """{"errcode":0,"errmsg":"ok","pending_id":"PENDINGID"}""";
+        var resp = JsonSerializer.Deserialize<UnionidToPendingIdResponse>(json);
+
+        resp!.PendingId.Should().Be("PENDINGID");
+    }
+
+    [Fact]
+    public void ExternalUserIdToPendingIdResponse_ShouldDeserialize_WithOfficialJsonContract()
+    {
+        var json = """
+        {
+          "errcode": 0,
+          "errmsg": "ok",
+          "result": [
+            { "external_userid": "oAAAAAAA", "pending_id": "pAAAAA" },
+            { "external_userid": "oBBBBB", "pending_id": "pBBBBB" }
+          ]
+        }
+        """;
+        var resp = JsonSerializer.Deserialize<ExternalUserIdToPendingIdResponse>(json);
+
+        resp!.Result.Should().HaveCount(2);
+        resp.Result![0].ExternalUserId.Should().Be("oAAAAAAA");
+        resp.Result[0].PendingId.Should().Be("pAAAAA");
+        resp.Result[1].PendingId.Should().Be("pBBBBB");
+    }
+
+    [Fact]
+    public void ExternalUserIdToPendingIdRequest_ShouldOmitNullChatId_ViaJsonContext()
+    {
+        var json = JsonSerializer.Serialize(
+            new ExternalUserIdToPendingIdRequest { ExternalUserIds = new() { "oAAAAAAA" } },
+            Mud.Wechat.Work.DataModels.WechatWorkJsonContext.Default.ExternalUserIdToPendingIdRequest);
+
+        json.Should().Contain("\"external_userid\":[\"oAAAAAAA\"]");
+        json.Should().NotContain("\"chat_id\"", "chat_id 为可选字段，null 时不落 JSON（WhenWritingNull）");
+    }
+
+    [Fact]
+    public void ListAppShareInfoRequest_ShouldOmitOptionalFields_ViaJsonContext()
+    {
+        var json = JsonSerializer.Serialize(
+            new ListAppShareInfoRequest { AgentId = 1111, BusinessType = 1 },
+            Mud.Wechat.Work.DataModels.WechatWorkJsonContext.Default.ListAppShareInfoRequest);
+
+        json.Should().Contain("\"agentid\":1111");
+        json.Should().Contain("\"business_type\":1");
+        json.Should().NotContain("\"corpid\"", "未赋值的可空字段不应序列化（WhenWritingNull）");
+        json.Should().NotContain("\"limit\"", "limit 不填表示拉取全量，null 时不得改写为 0");
+        json.Should().NotContain("\"cursor\"", "首次调用不填游标，null 时不落 JSON");
     }
 }

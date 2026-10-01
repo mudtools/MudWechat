@@ -12,6 +12,7 @@ using Mud.Wechat.Work.DataModels.Contacts.Department;
 using Mud.Wechat.Work.DataModels.Contacts.Export;
 using Mud.Wechat.Work.DataModels.Contacts.Tags;
 using Mud.Wechat.Work.DataModels.Contracts.Users;
+using Mud.Wechat.Work.DataModels.CorpGroup;
 using System.Text.Json.Serialization;
 
 namespace Mud.Wechat.Work.DataModels;
@@ -128,6 +129,21 @@ namespace Mud.Wechat.Work.DataModels;
 [JsonSerializable(typeof(ExportJobResponse))]
 [JsonSerializable(typeof(GetExportResultResponse))]
 [JsonSerializable(typeof(ExportDataFile))]
+[JsonSerializable(typeof(ListAppShareInfoRequest))]
+[JsonSerializable(typeof(GetCorpGroupTokenRequest))]
+[JsonSerializable(typeof(TransferMiniProgramSessionRequest))]
+[JsonSerializable(typeof(UnionidToExternalUserIdRequest))]
+[JsonSerializable(typeof(UnionidToPendingIdRequest))]
+[JsonSerializable(typeof(ExternalUserIdToPendingIdRequest))]
+[JsonSerializable(typeof(AppShareCorpInfo))]
+[JsonSerializable(typeof(ExternalUserIdInfo))]
+[JsonSerializable(typeof(PendingIdResultItem))]
+[JsonSerializable(typeof(ListAppShareInfoResponse))]
+[JsonSerializable(typeof(GetCorpGroupTokenResponse))]
+[JsonSerializable(typeof(TransferMiniProgramSessionResponse))]
+[JsonSerializable(typeof(UnionidToExternalUserIdResponse))]
+[JsonSerializable(typeof(UnionidToPendingIdResponse))]
+[JsonSerializable(typeof(ExternalUserIdToPendingIdResponse))]
 public sealed partial class WechatWorkJsonContext : JsonSerializerContext
 {
 }

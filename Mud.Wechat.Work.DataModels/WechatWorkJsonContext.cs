@@ -6,6 +6,14 @@
 // -----------------------------------------------------------------------
 
 #if NET8_0_OR_GREATER
+using Mud.Wechat.Work.DataModels.Contacts.Batch;
+using Mud.Wechat.Work.DataModels.Contacts.Batch.RequestModel;
+using Mud.Wechat.Work.DataModels.Contacts.ContactRules;
+using Mud.Wechat.Work.DataModels.Contacts.ContactRules.RequestModel;
+using Mud.Wechat.Work.DataModels.Contacts.Department;
+using Mud.Wechat.Work.DataModels.Contacts.Department.RequestModel;
+using Mud.Wechat.Work.DataModels.Contacts.Tags;
+using Mud.Wechat.Work.DataModels.Contacts.Tags.RequestModel;
 using System.Text.Json.Serialization;
 
 namespace Mud.Wechat.Work.DataModels;
@@ -85,31 +93,8 @@ namespace Mud.Wechat.Work.DataModels;
 [JsonSerializable(typeof(Users.MemberAuthInfo))]
 [JsonSerializable(typeof(Users.CheckMemberAuthResponse))]
 [JsonSerializable(typeof(Users.ListSelectedTicketUserResponse))]
-[JsonSerializable(typeof(Department.DepartmentInfo))]
-[JsonSerializable(typeof(Department.DepartmentIdInfo))]
-[JsonSerializable(typeof(Department.CreateDepartmentRequest))]
-[JsonSerializable(typeof(Department.UpdateDepartmentRequest))]
-[JsonSerializable(typeof(Department.CreateDepartmentResponse))]
-[JsonSerializable(typeof(Department.GetDepartmentListResponse))]
-[JsonSerializable(typeof(Department.GetChildDepartmentIdListResponse))]
-[JsonSerializable(typeof(Department.GetDepartmentResponse))]
-[JsonSerializable(typeof(Tags.TagInfo))]
-[JsonSerializable(typeof(Tags.TagMemberInfo))]
-[JsonSerializable(typeof(Tags.CreateTagRequest))]
-[JsonSerializable(typeof(Tags.UpdateTagNameRequest))]
-[JsonSerializable(typeof(Tags.AddTagMembersRequest))]
-[JsonSerializable(typeof(Tags.RemoveTagMembersRequest))]
-[JsonSerializable(typeof(Tags.CreateTagResponse))]
-[JsonSerializable(typeof(Tags.GetTagMembersResponse))]
-[JsonSerializable(typeof(Tags.ChangeTagMembersResponse))]
-[JsonSerializable(typeof(Tags.GetTagListResponse))]
-[JsonSerializable(typeof(ContactRules.ContactRuleRange))]
-[JsonSerializable(typeof(ContactRules.ContactRule))]
-[JsonSerializable(typeof(ContactRules.CreateContactRulesRequest))]
-[JsonSerializable(typeof(ContactRules.UpdateContactRulesRequest))]
-[JsonSerializable(typeof(ContactRules.DeleteContactRulesRequest))]
-[JsonSerializable(typeof(ContactRules.CreateContactRulesResponse))]
-[JsonSerializable(typeof(ContactRules.GetContactRulesResponse))]
+[JsonSerializable(typeof(DepartmentInfo))]
+[JsonSerializable(typeof(GetBatchJobResultResponse))]
 public sealed partial class WechatWorkJsonContext : JsonSerializerContext
 {
 }

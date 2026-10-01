@@ -6,7 +6,12 @@
 // -----------------------------------------------------------------------
 
 using Mud.Wechat.Work.DataModels;
+using Mud.Wechat.Work.DataModels.Batch;
 using Mud.Wechat.Work.DataModels.ContactRules;
+using Mud.Wechat.Work.DataModels.Contacts.Batch;
+using Mud.Wechat.Work.DataModels.Contacts.ContactRules;
+using Mud.Wechat.Work.DataModels.Contacts.Department;
+using Mud.Wechat.Work.DataModels.Contacts.Tags;
 using Mud.Wechat.Work.DataModels.CorpTokenAuthentication;
 using Mud.Wechat.Work.DataModels.Department;
 using Mud.Wechat.Work.DataModels.InternalAppAuthentication;
@@ -659,5 +664,88 @@ public class WechatDataModelDeserializationTests
         json.Should().Contain("\"is_allowed_search\":true");
         json.Should().NotContain("\"rule_id\"", "创建时规则 ID 由官方生成，null 时不落 JSON（WhenWritingNull）");
         json.Should().NotContain("\"exclude\"", "未赋值的可空范围不应序列化（WhenWritingNull）");
+    }
+
+    [Fact]
+    public void GetBatchJobResultResponse_ShouldDeserialize_UserTaskResult()
+    {
+        var json = """
+        {
+          "errcode": 0,
+          "errmsg": "ok",
+          "status": 3,
+          "type": "replace_user",
+          "total": 2,
+          "percentage": 100,
+          "result": [
+            { "userid": "lisi", "errcode": 0, "errmsg": "ok" },
+            { "userid": "zhangsan", "errcode": 40007, "errmsg": "not exist" }
+          ]
+        }
+        """;
+        var resp = JsonSerializer.Deserialize<GetBatchJobResultResponse>(json);
+
+        resp!.IsSuccess.Should().BeTrue();
+        resp.Status.Should().Be(3);
+        resp.Type.Should().Be("replace_user");
+        resp.Total.Should().Be(2);
+        resp.Percentage.Should().Be(100);
+        resp.Result.Should().HaveCount(2);
+        resp.Result![0].UserId.Should().Be("lisi");
+        resp.Result[0].ErrCode.Should().Be(0);
+        resp.Result[1].UserId.Should().Be("zhangsan");
+        resp.Result[1].ErrCode.Should().Be(40007);
+        resp.Result[1].ErrMsg.Should().Be("not exist");
+        resp.Result[1].PartyId.Should().BeNull("成员任务不含部门字段");
+    }
+
+    [Fact]
+    public void GetBatchJobResultResponse_ShouldDeserialize_PartyTaskResult()
+    {
+        var json = """
+        {
+          "errcode": 0,
+          "errmsg": "ok",
+          "status": 3,
+          "type": "replace_party",
+          "total": 2,
+          "percentage": 100,
+          "result": [
+            { "action": 1, "partyid": 1, "errcode": 0, "errmsg": "ok" },
+            { "action": 4, "partyid": 2, "errcode": 0, "errmsg": "ok" }
+          ]
+        }
+        """;
+        var resp = JsonSerializer.Deserialize<GetBatchJobResultResponse>(json);
+
+        resp!.Type.Should().Be("replace_party");
+        resp.Result.Should().HaveCount(2);
+        resp.Result![0].Action.Should().Be(1);
+        resp.Result[0].PartyId.Should().Be(1);
+        resp.Result[1].Action.Should().Be(4);
+        resp.Result[1].PartyId.Should().Be(2);
+        resp.Result[1].UserId.Should().BeNull("部门任务不含成员字段");
+    }
+
+    [Fact]
+    public void BatchJobResponse_ShouldDeserialize()
+    {
+        var json = """{"errcode":0,"errmsg":"ok","jobid":"job-123456"}""";
+        var resp = JsonSerializer.Deserialize<BatchJobResponse>(json);
+
+        resp!.JobId.Should().Be("job-123456");
+    }
+
+    [Fact]
+    public void BatchImportUsersRequest_ShouldSerialize_WithSnakeCaseJsonKeys()
+    {
+        // 生产管线 = WechatWorkJsonContext（WhenWritingNull）：断言只锚定键名与 ASCII 值。
+        var json = JsonSerializer.Serialize(
+            new BatchImportUsersRequest { MediaId = "MEDIA-1", ToInvite = false },
+            Mud.Wechat.Work.DataModels.WechatWorkJsonContext.Default.BatchImportUsersRequest);
+
+        json.Should().Contain("\"media_id\":\"MEDIA-1\"");
+        json.Should().Contain("\"to_invite\":false");
+        json.Should().NotContain("\"callback\"", "未赋值的回调不应序列化（WhenWritingNull）");
     }
 }

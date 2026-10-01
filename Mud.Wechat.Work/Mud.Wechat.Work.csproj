@@ -3,6 +3,11 @@
 	<PropertyGroup>
 		<Description>企业微信 SDK 主包：业务声明式客户端、模块注册器、AOT JsonContext 合并、errcode 令牌失效判定器。对应 Mud.Feishu。</Description>
 		<PackageTags>Wechat;WeChatWork;企业微信;SDK;MudWechat</PackageTags>
+		<!-- MUD005（Query/Path 令牌注入存在 URL 泄露面）：企业微信官方契约强制令牌走 Query 参数
+		（access_token / suite_access_token 均为 URL 查询参数，官方不支持 Header 注入），无法改用 Header。
+		本 SDK 全部接口均为该官方契约，属已知接受风险（详见各接口 remarks 与 AGENTS.md、契约守卫测试），
+		故在项目级抑制；库内遥测已由 SensitiveUrlRedactor 脱敏。 -->
+		<NoWarn>$(NoWarn);MUD005</NoWarn>
 	</PropertyGroup>
 
 	<ItemGroup>

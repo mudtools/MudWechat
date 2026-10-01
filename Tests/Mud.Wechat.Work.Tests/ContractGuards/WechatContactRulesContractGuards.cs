@@ -9,7 +9,8 @@ using System.Reflection;
 using Mud.HttpUtils.Attributes;
 using Mud.Wechat.Work;
 using Mud.Wechat.Work.Abstractions;
-using Mud.Wechat.Work.DataModels.ContactRules;
+using Mud.Wechat.Work.DataModels.Contacts.ContactRules;
+using Mud.Wechat.Work.DataModels.Contacts.ContactRules.RequestModel;
 
 namespace Mud.Wechat.Work.Tests.ContractGuards;
 

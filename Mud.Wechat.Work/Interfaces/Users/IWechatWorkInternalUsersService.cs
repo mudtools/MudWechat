@@ -38,7 +38,7 @@ public interface IWechatWorkInternalUsersService : IWechatWorkUsersService
     /// <param name="request">成员请求体（<see cref="CreateUserRequest"/>）。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
     /// <returns>创建结果（含因填写不存在部门而自动新建的部门列表）。</returns>
-    /// <remarks>请参照原SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/90195"/></remarks>
+    /// <remarks>官方 API 文档：<see href="https://developer.work.weixin.qq.com/document/path/90195"/></remarks>
     [Post("/cgi-bin/user/create")]
     Task<CreateUserResponse> CreateUserAsync(
         [Body] CreateUserRequest request,
@@ -52,7 +52,7 @@ public interface IWechatWorkInternalUsersService : IWechatWorkUsersService
     /// <param name="request">成员请求体（<see cref="UpdateUserRequest"/>）。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
     /// <returns>更新结果（errcode/errmsg）。</returns>
-    /// <remarks>请参照原SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/90197"/></remarks>
+    /// <remarks>官方 API 文档：<see href="https://developer.work.weixin.qq.com/document/path/90197"/></remarks>
     [Post("/cgi-bin/user/update")]
     Task<WechatWorkResponse> UpdateUserAsync(
         [Body] UpdateUserRequest request,
@@ -65,7 +65,7 @@ public interface IWechatWorkInternalUsersService : IWechatWorkUsersService
     /// <param name="userid">成员 UserID，对应管理端的账号。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
     /// <returns>删除结果（errcode/errmsg）。</returns>
-    /// <remarks>请参照原SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/90198"/></remarks>
+    /// <remarks>官方 API 文档：<see href="https://developer.work.weixin.qq.com/document/path/90198"/></remarks>
     [Get("/cgi-bin/user/delete")]
     Task<WechatWorkResponse> DeleteUserAsync(
         [Query("userid")] string userid,
@@ -78,7 +78,7 @@ public interface IWechatWorkInternalUsersService : IWechatWorkUsersService
     /// <param name="request">请求体（useridlist：最多 200 个成员 UserID）。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
     /// <returns>删除结果（errcode/errmsg）。</returns>
-    /// <remarks>请参照原SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/90199"/></remarks>
+    /// <remarks>官方 API 文档：<see href="https://developer.work.weixin.qq.com/document/path/90199"/></remarks>
     [Post("/cgi-bin/user/batchdelete")]
     Task<WechatWorkResponse> BatchDeleteUsersAsync(
         [Body] BatchDeleteUsersRequest request,
@@ -91,7 +91,7 @@ public interface IWechatWorkInternalUsersService : IWechatWorkUsersService
     /// <param name="userid">成员 UserID，对应管理端的账号。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
     /// <returns>验证结果（errcode/errmsg）。</returns>
-    /// <remarks>请参照原SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/90203"/></remarks>
+    /// <remarks>官方 API 文档：<see href="https://developer.work.weixin.qq.com/document/path/90203"/></remarks>
     [Get("/cgi-bin/user/authsucc")]
     Task<WechatWorkResponse> CompleteSecondaryAuthAsync(
         [Query("userid")] string userid,
@@ -104,7 +104,7 @@ public interface IWechatWorkInternalUsersService : IWechatWorkUsersService
     /// <param name="sizeType">二维码尺寸类型（1: 171x171；2: 399x399；3: 741x741；4: 2052x2052），不传时由官方默认。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
     /// <returns>二维码链接（join_qrcode，有效期 7 天）。</returns>
-    /// <remarks>请参照原SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/91714"/></remarks>
+    /// <remarks>官方 API 文档：<see href="https://developer.work.weixin.qq.com/document/path/91714"/></remarks>
     [Get("/cgi-bin/corp/get_join_qrcode")]
     Task<GetJoinQrcodeResponse> GetJoinQrcodeAsync(
         [Query("size_type")] int? sizeType = null,
@@ -118,7 +118,7 @@ public interface IWechatWorkInternalUsersService : IWechatWorkUsersService
     /// <param name="request">请求体（user 成员 ID 列表 ≤ 1000；party 部门 ID 列表 ≤ 100；tag 标签 ID 列表 ≤ 100）。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
     /// <returns>邀请结果（invaliduser/invalidparty/invalidtag 非法列表）。</returns>
-    /// <remarks>请参照原SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/90975"/></remarks>
+    /// <remarks>官方 API 文档：<see href="https://developer.work.weixin.qq.com/document/path/90975"/></remarks>
     [Post("/cgi-bin/batch/invite")]
     Task<InviteMembersResponse> InviteMembersAsync(
         [Body] InviteMembersRequest request,

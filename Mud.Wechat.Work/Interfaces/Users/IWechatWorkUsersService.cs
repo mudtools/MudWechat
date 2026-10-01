@@ -43,7 +43,7 @@ public interface IWechatWorkUsersService
     /// <param name="userid">成员 UserID，对应管理端账号，企业内唯一，不区分大小写，1~64 字节。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
     /// <returns>成员对象（<see cref="UserInfo"/>；第三方应用调用时 userid 字段返回 open_userid）。</returns>
-    /// <remarks>请参照原SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/90196"/></remarks>
+    /// <remarks>官方 API 文档：<see href="https://developer.work.weixin.qq.com/document/path/90196"/></remarks>
     [Get("/cgi-bin/user/get")]
     Task<UserInfo> GetUserAsync(
         [Query("userid")] string userid,
@@ -52,29 +52,33 @@ public interface IWechatWorkUsersService
     /// <summary>
     /// 获取部门成员
     /// <para>获取部门成员摘要（userid/name/department/open_userid）。应用须拥有指定部门的查看权限。</para>
-    /// <para>接口不递归子部门：如需部门及其子部门全部成员，须先获取子部门再逐层递归调用。第三方应用自 2019-12-30 起不再返回真实 name（以 userid 代替）。</para>
+    /// <para>默认仅返回直属成员；<paramref name="fetchChild"/> 传 1 时递归获取子部门成员。第三方应用自 2019-12-30 起不再返回真实 name（以 userid 代替）。</para>
     /// </summary>
     /// <param name="departmentId">获取的部门 ID。</param>
+    /// <param name="fetchChild">是否递归获取子部门下面的成员（1 递归；0 或不填仅返回直属成员）。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
     /// <returns>部门成员摘要列表（userlist）。</returns>
-    /// <remarks>请参照原SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/90200"/></remarks>
+    /// <remarks>官方 API 文档：<see href="https://developer.work.weixin.qq.com/document/path/90200"/></remarks>
     [Get("/cgi-bin/user/simplelist")]
     Task<GetUserSimpleListResponse> GetUserSimpleListAsync(
         [Query("department_id")] int departmentId,
+        [Query("fetch_child")] int? fetchChild = null,
         CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 获取部门成员详情
     /// <para>获取部门成员完整信息（同读取成员的字段集）。应用须拥有指定部门的查看权限。</para>
-    /// <para>接口不递归子部门：如需部门及其子部门全部成员，须先获取子部门再逐层递归调用。敏感字段的返回范围同读取成员。</para>
+    /// <para>默认仅返回直属成员；<paramref name="fetchChild"/> 传 1 时递归获取子部门成员。敏感字段的返回范围同读取成员。</para>
     /// </summary>
     /// <param name="departmentId">获取的部门 ID。</param>
+    /// <param name="fetchChild">是否递归获取子部门下面的成员（1 递归；0 或不填仅返回直属成员）。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
     /// <returns>部门成员详情列表（userlist）。</returns>
-    /// <remarks>请参照原SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/90201"/></remarks>
+    /// <remarks>官方 API 文档：<see href="https://developer.work.weixin.qq.com/document/path/90201"/></remarks>
     [Get("/cgi-bin/user/list")]
     Task<GetUserDetailListResponse> GetUserDetailListAsync(
         [Query("department_id")] int departmentId,
+        [Query("fetch_child")] int? fetchChild = null,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -85,7 +89,7 @@ public interface IWechatWorkUsersService
     /// <param name="request">分页请求体（cursor 首次不填；limit 取值 1~10000）。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
     /// <returns>用户-部门关系列表（dept_user）与下一页游标（next_cursor）。</returns>
-    /// <remarks>请参照原SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/96067"/>（自建）、<see href="https://developer.work.weixin.qq.com/document/path/96021"/>（第三方）、<see href="https://developer.work.weixin.qq.com/document/path/96269"/>（代开发）。</remarks>
+    /// <remarks>官方 API 文档：<see href="https://developer.work.weixin.qq.com/document/path/96067"/>（自建）、<see href="https://developer.work.weixin.qq.com/document/path/96021"/>（第三方）、<see href="https://developer.work.weixin.qq.com/document/path/96269"/>（代开发）。</remarks>
     [Post("/cgi-bin/user/list_id")]
     Task<ListUserIdsResponse> ListUserIdsAsync(
         [Body] ListUserIdsRequest request,
@@ -99,7 +103,7 @@ public interface IWechatWorkUsersService
     /// <param name="request">请求体（mobile：5~32 字节的手机号）。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
     /// <returns>成员 userid。</returns>
-    /// <remarks>请参照原SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/95402"/></remarks>
+    /// <remarks>官方 API 文档：<see href="https://developer.work.weixin.qq.com/document/path/95402"/></remarks>
     [Post("/cgi-bin/user/getuserid")]
     Task<GetUserIdByMobileResponse> GetUserIdByMobileAsync(
         [Body] GetUserIdByMobileRequest request,
@@ -113,7 +117,7 @@ public interface IWechatWorkUsersService
     /// <param name="request">请求体（email 必填；email_type：1 企业邮箱（默认），2 个人邮箱）。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
     /// <returns>成员 userid。</returns>
-    /// <remarks>请参照原SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/95895"/></remarks>
+    /// <remarks>官方 API 文档：<see href="https://developer.work.weixin.qq.com/document/path/95895"/></remarks>
     [Post("/cgi-bin/user/get_userid_by_email")]
     Task<GetUserIdByEmailResponse> GetUserIdByEmailAsync(
         [Body] GetUserIdByEmailRequest request,
@@ -127,7 +131,7 @@ public interface IWechatWorkUsersService
     /// <param name="request">请求体（userid：企业内的成员 ID）。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
     /// <returns>成员 userid 对应的 openid。</returns>
-    /// <remarks>请参照原SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/90202"/></remarks>
+    /// <remarks>官方 API 文档：<see href="https://developer.work.weixin.qq.com/document/path/90202"/></remarks>
     [Post("/cgi-bin/user/convert_to_openid")]
     Task<ConvertUserIdToOpenIdResponse> ConvertUserIdToOpenIdAsync(
         [Body] ConvertUserIdToOpenIdRequest request,
@@ -140,7 +144,7 @@ public interface IWechatWorkUsersService
     /// <param name="request">请求体（openid：企业支付之后返回结果的 openid）。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
     /// <returns>openid 对应的成员 userid。</returns>
-    /// <remarks>请参照原SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/90202"/></remarks>
+    /// <remarks>官方 API 文档：<see href="https://developer.work.weixin.qq.com/document/path/90202"/></remarks>
     [Post("/cgi-bin/user/convert_to_userid")]
     Task<ConvertOpenIdToUserIdResponse> ConvertOpenIdToUserIdAsync(
         [Body] ConvertOpenIdToUserIdRequest request,

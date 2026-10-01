@@ -18,4 +18,10 @@ public class ConvertUserIdToOpenIdRequest
     /// </summary>
     [JsonPropertyName("userid")]
     public string UserId { get; set; } = string.Empty;
+
+    /// <summary>
+    /// 获取或设置需要发送红包的应用 ID（若只是使用微信支付和企业转账，则无需该参数；不传时响应不返回 <see cref="ConvertUserIdToOpenIdResponse.AppId"/>）。
+    /// </summary>
+    [JsonPropertyName("agentid")]
+    public int? AgentId { get; set; }
 }

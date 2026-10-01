@@ -39,7 +39,7 @@ public interface IWechatWorkDepartmentsService
     /// <param name="id">部门 ID，获取该部门及其下所有子孙部门（递归）；不填则默认获取全量组织架构。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
     /// <returns>部门列表（department；第三方不可获取 name/name_en）。</returns>
-    /// <remarks>请参照原SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/90208"/></remarks>
+    /// <remarks>官方 API 文档：<see href="https://developer.work.weixin.qq.com/document/path/90208"/></remarks>
     [Get("/cgi-bin/department/list")]
     Task<GetDepartmentListResponse> GetDepartmentListAsync(
         [Query("id")] int? id = null,
@@ -53,7 +53,7 @@ public interface IWechatWorkDepartmentsService
     /// <param name="id">部门 ID，获取该部门及其下的子部门（递归）；不填则默认获取全量组织架构。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
     /// <returns>部门 ID 列表（department_id）。</returns>
-    /// <remarks>请参照原SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/95350"/></remarks>
+    /// <remarks>官方 API 文档：<see href="https://developer.work.weixin.qq.com/document/path/95350"/></remarks>
     [Get("/cgi-bin/department/simplelist")]
     Task<GetChildDepartmentIdListResponse> GetChildDepartmentIdListAsync(
         [Query("id")] int? id = null,
@@ -67,7 +67,7 @@ public interface IWechatWorkDepartmentsService
     /// <param name="id">部门 ID。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
     /// <returns>部门详情（department）。</returns>
-    /// <remarks>请参照原SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/95351"/></remarks>
+    /// <remarks>官方 API 文档：<see href="https://developer.work.weixin.qq.com/document/path/95351"/></remarks>
     [Get("/cgi-bin/department/get")]
     Task<GetDepartmentResponse> GetDepartmentAsync(
         [Query("id")] int id,

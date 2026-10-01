@@ -37,7 +37,7 @@ public interface IWechatWorkInternalDepartmentsService : IWechatWorkDepartmentsS
     /// <param name="request">部门请求体（<see cref="CreateDepartmentRequest"/>）。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
     /// <returns>创建结果（含新建部门的 ID）。</returns>
-    /// <remarks>请参照原SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/90205"/></remarks>
+    /// <remarks>官方 API 文档：<see href="https://developer.work.weixin.qq.com/document/path/90205"/></remarks>
     [Post("/cgi-bin/department/create")]
     Task<CreateDepartmentResponse> CreateDepartmentAsync(
         [Body] CreateDepartmentRequest request,
@@ -51,7 +51,7 @@ public interface IWechatWorkInternalDepartmentsService : IWechatWorkDepartmentsS
     /// <param name="request">部门请求体（<see cref="UpdateDepartmentRequest"/>）。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
     /// <returns>更新结果（errcode/errmsg）。</returns>
-    /// <remarks>请参照原SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/90206"/></remarks>
+    /// <remarks>官方 API 文档：<see href="https://developer.work.weixin.qq.com/document/path/90206"/></remarks>
     [Post("/cgi-bin/department/update")]
     Task<WechatWorkResponse> UpdateDepartmentAsync(
         [Body] UpdateDepartmentRequest request,
@@ -65,7 +65,7 @@ public interface IWechatWorkInternalDepartmentsService : IWechatWorkDepartmentsS
     /// <param name="id">部门 ID。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
     /// <returns>删除结果（errcode/errmsg）。</returns>
-    /// <remarks>请参照原SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/90207"/></remarks>
+    /// <remarks>官方 API 文档：<see href="https://developer.work.weixin.qq.com/document/path/90207"/></remarks>
     [Get("/cgi-bin/department/delete")]
     Task<WechatWorkResponse> DeleteDepartmentAsync(
         [Query("id")] int id,

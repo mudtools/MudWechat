@@ -151,6 +151,18 @@ public class UserInfo : WechatWorkResponse
     public int? Status { get; set; }
 
     /// <summary>
+    /// 获取或设置启用状态（1 启用；0 禁用；第三方不可获取。官方现行响应参数表未单列，为兼容既有部署与 Senparc 契约保留）。
+    /// </summary>
+    [JsonPropertyName("enable")]
+    public int? Enable { get; set; }
+
+    /// <summary>
+    /// 获取或设置关注微信插件（原企业号）状态（1 已关注；0 未关注。官方现行响应参数表未单列，为兼容既有部署与 Senparc 契约保留）。
+    /// </summary>
+    [JsonPropertyName("wxplugin_status")]
+    public int? WxPluginStatus { get; set; }
+
+    /// <summary>
     /// 获取或设置员工个人二维码 URL（扫码可添加为外部联系人）。
     /// </summary>
     [JsonPropertyName("qr_code")]

@@ -14,6 +14,7 @@ global using Microsoft.Extensions.Logging;
 global using Microsoft.Extensions.Options;
 global using Mud.Wechat.Work.Abstractions;
 global using Mud.Wechat.Work.Abstractions.Authentication;
+global using Mud.Wechat.Work.Abstractions.Enums;
 global using Mud.Wechat.Work.Abstractions.Authentication.TokenManager;
 global using Mud.Wechat.Work.Abstractions.Callback;
 global using Mud.Wechat.Work.Callback.Events;

@@ -12,9 +12,10 @@ using Mud.Wechat.Work.Callback.Events;
 namespace Mud.Wechat.Work.Tests.ContractGuards;
 
 /// <summary>
-/// 回调域契约守卫（CB1~CB9，对齐《回调解决方案 v1》§7）：包依赖边界、官方事件键覆盖、
+/// 回调域契约守卫（CB1~CB13，对齐《回调解决方案 v1》§7）：包依赖边界、官方事件键覆盖、
 /// 内置授权族兜底处理器、事件 DTO 官方字段、回调凭据唯一来源、echo/被动应答协议、信封无 XML 依赖、
-/// 加解密 32 块填充互操作（CB8）与指纹闸次序（CB9）。
+/// 加解密 32 块填充互操作（CB8）、指纹闸次序（CB9），以及「应用类型 × 回调通道」区分
+/// （CB10~CB13：通道枚举 + 配置面、receiveid 三元分流、开放面合法性矩阵、分发器闸次序）。
 /// </summary>
 public class WechatCallbackContractGuards
 {
@@ -327,6 +328,114 @@ public class WechatCallbackContractGuards
         decryptIndex.Should().BePositive("CB9：接收器必须经 WechatCallbackCrypto.Decrypt 解密");
         markIndex.Should().BeGreaterThan(decryptIndex,
             "CB9：指纹标记必须位于解密之后（P1-1/D2：解密失败不消耗指纹，官方重试可重新进入管线）");
+    }
+
+    // ---------------------------------------------------------------- CB10
+
+    /// <summary>
+    /// 契约守卫 CB10（区分企业自建 / 服务商代开发 / 第三方应用）：回调通道枚举
+    /// <c>WechatCallbackChannel</c>（App=1 应用数据通道 / Suite=2 套件指令通道）必须存在，
+    /// 且 <c>WechatAppCallbackOptions</c> 必须暴露 <c>AppType</c> / <c>Channel</c> / <c>ReceiveId</c>
+    /// 三个配置面属性——这是「应用类型 × 回调通道」语义（receiveid 校验 + 开放面闸）的类型契约。
+    /// </summary>
+    [Fact]
+    public void CallbackAppOptions_ShouldExposeAppTypeAndChannelSurface()
+    {
+        var channelPath = Path.Combine(GetSolutionRoot(),
+            "Mud.Wechat.Work.Abstractions", "Enums", "WechatCallbackChannel.cs");
+        File.Exists(channelPath).Should().BeTrue($"未找到回调通道枚举（勿移动文件，CB10 按路径断言）：{channelPath}");
+        var channelSource = File.ReadAllText(channelPath);
+        channelSource.Should().Contain("App = 1", "CB10：应用数据通道取值（应用级 change_contact/batch_job_result/change_chain）");
+        channelSource.Should().Contain("Suite = 2", "CB10：套件指令/票据通道取值（suite_ticket / 授权族）");
+
+        var optionsPath = Path.Combine(GetSolutionRoot(),
+            "Mud.Wechat.Work.Callback", "WechatCallbackOptions.cs");
+        var optionsSource = File.ReadAllText(optionsPath);
+        optionsSource.Should().Contain("public WechatAppType AppType", "CB10：应用类型配置面（区分企业自建/第三方/代开发）");
+        optionsSource.Should().Contain("public WechatCallbackChannel Channel", "CB10：回调通道配置面（App/Suite）");
+        optionsSource.Should().Contain("public string ReceiveId", "CB10：接收方 ID 配置面（receiveid 校验依据）");
+    }
+
+    // ---------------------------------------------------------------- CB11
+
+    /// <summary>
+    /// 契约守卫 CB11：<c>ValidateReceiveId</c> 必须按「应用类型 × 回调通道」三元分流 receiveid 语义——
+    /// 自建 App 通道 / 第三方·代开发 Suite 通道为<b>静态</b>接收方 ID（比对 <see cref="Mud.Wechat.Work.Callback.WechatAppCallbackOptions.ReceiveId"/>），
+    /// 第三方·代开发 App 通道为<b>动态授权企业 CorpId</b>（比对外层 <c>ToUserName</c>，静态 ReceiveId 命中其一亦通过）。
+    /// </summary>
+    [Fact]
+    public void ReceiveIdValidation_ShouldDistinguishAppTypeByChannel()
+    {
+        var receiverPath = Path.Combine(GetSolutionRoot(),
+            "Mud.Wechat.Work.Callback", "WechatCallbackReceiver.cs");
+        var source = File.ReadAllText(receiverPath);
+
+        source.Should().Contain("ValidateReceiveId(", "CB11：receiveid 校验必须为独立方法（单点收敛）");
+        source.Should().Contain(
+            "app.AppType != WechatAppType.Internal && app.Channel == WechatCallbackChannel.App",
+            "CB11：第三方/代开发「应用数据通道」必须是动态授权企业 CorpId 分支");
+        source.Should().Contain("toUserName",
+            "CB11：动态授权企业 CorpId 必须与外层 ToUserName 比对");
+        source.Should().Contain("string.Equals(expected, receiveId",
+            "CB11：静态通道（自建 App / 第三方·代开发 Suite）必须比对配置的 ReceiveId");
+        source.Should().Contain("WechatCallbackFailureKind.ReceiveIdMismatch",
+            "CB11：receiveid 不一致必须显式拒绝（fail-closed）");
+    }
+
+    // ---------------------------------------------------------------- CB12
+
+    /// <summary>
+    /// 契约守卫 CB12：<c>IsEventFamilyAllowed</c> 必须实现「应用类型 × 回调通道」的开放面合法性矩阵——
+    /// 授权族仅套件通道（第三方/代开发）、上下游变更族仅自建应用 + 应用通道、通讯录/异步族经应用通道（三类应用）、
+    /// 无法判别族不拦截。
+    /// </summary>
+    [Fact]
+    public void EventFamilyGate_ShouldEnforceOpenSurfaceMatrix()
+    {
+        var optionsPath = Path.Combine(GetSolutionRoot(),
+            "Mud.Wechat.Work.Callback", "WechatCallbackOptions.cs");
+        var source = File.ReadAllText(optionsPath);
+
+        source.Should().Contain("case WechatCallbackEventFamily.Authorization:", "CB12：授权族分支配齐");
+        source.Should().Contain("Channel == WechatCallbackChannel.Suite", "CB12：授权族仅套件通道");
+        source.Should().Contain(
+            "AppType == WechatAppType.ThirdParty || AppType == WechatAppType.Provider",
+            "CB12：套件通道仅第三方应用/服务商代开发");
+
+        source.Should().Contain("case WechatCallbackEventFamily.ChainChange:", "CB12：上下游变更族分支配齐");
+        source.Should().Contain(
+            "Channel == WechatCallbackChannel.App && AppType == WechatAppType.Internal",
+            "CB12：上下游变更族仅自建应用 + 应用通道（95796）");
+
+        source.Should().Contain("case WechatCallbackEventFamily.ContactChange:", "CB12：通讯录变更族分支配齐");
+        source.Should().Contain("case WechatCallbackEventFamily.BatchJob:", "CB12：异步任务族分支配齐");
+        source.Should().Contain("case WechatCallbackEventFamily.Unknown:", "CB12：无法判别族不拦截（兜底处理器处置）");
+    }
+
+    // ---------------------------------------------------------------- CB13
+
+    /// <summary>
+    /// 契约守卫 CB13：分发器合法性闸（<c>IsEventFamilyAllowed</c>）必须位于拦截器 <c>BeforeHandleAsync</c>
+    /// <b>之前</b>，且不适用事件族以 <c>WechatCallbackDispatchOutcome.Rejected</c> 返回（中间件映射 200，不触发重推）。
+    /// </summary>
+    [Fact]
+    public void DispatcherFamilyGate_ShouldPrecedeInterceptors_AndReturnRejected()
+    {
+        var dispatcherPath = Path.Combine(GetSolutionRoot(),
+            "Mud.Wechat.Work.Callback", "WechatCallbackDispatcher.cs");
+        var source = File.ReadAllText(dispatcherPath);
+
+        var gateIndex = source.IndexOf("IsEventFamilyAllowed", StringComparison.Ordinal);
+        // 注意：枚举注释（「拦截器中断（BeforeHandleAsync 返回 false）」）也含字面量，须以「.BeforeHandleAsync(」
+        // 锚定实际拦截器调用点，避免与文档注释误匹配（CB13 锚点漂移防误报）。
+        var beforeIndex = source.IndexOf(".BeforeHandleAsync(", StringComparison.Ordinal);
+
+        gateIndex.Should().BePositive("CB13：分发器必须调用 IsEventFamilyAllowed 合法性闸");
+        beforeIndex.Should().BePositive("CB13：分发器必须保留拦截器 Before 阶段");
+        gateIndex.Should().BeLessThan(beforeIndex,
+            "CB13：合法性闸必须先于拦截器（不适用事件族不得触达业务拦截器/处理器）");
+        source.Should().Contain("return WechatCallbackDispatchOutcome.Rejected;",
+            "CB13：不适用事件族以 Rejected 返回（中间件映射 200，不触发企业微信重推）");
     }
 
     /// <summary>解决方案根目录定位（与 <c>WechatContractGuards.GetSolutionRoot</c> 同款判据）。</summary>

@@ -20,13 +20,17 @@ public enum WechatCallbackDispatchOutcome
 
     /// <summary>拦截器中断（BeforeHandleAsync 返回 false）→ 503（触发企业微信重推）。</summary>
     Interrupted,
+
+    /// <summary>事件族不适用于当前「应用类型 × 回调通道」（开放面闸）→ 200（事件已接收、不重推）。</summary>
+    Rejected,
 }
 
 /// <summary>
 /// 回调事件分发器（v1 方案 §5.4.3，对齐 <c>FeishuWebhookService.HandleEventWithInterceptorsAsync</c>
 /// 并按企业微信契约裁剪）：
-/// 拦截器 Before（appKey 专属先于全局；任一返回 false 即中断）→ 并发信号量 → 软超时 CTS →
-/// 匹配处理器（精确优先，兜底次之）→ 执行 → 拦截器 After → 无匹配输出 unhandled 告警。
+/// 事件族合法性闸（区分企业自建 / 第三方 / 代开发 × 回调通道的开放面）→ 拦截器 Before（appKey 专属先于全局；
+/// 任一返回 false 即中断）→ 并发信号量 → 软超时 CTS → 匹配处理器（精确优先，兜底次之）→ 执行 →
+/// 拦截器 After → 无匹配输出 unhandled 告警。
 /// </summary>
 /// <remarks>
 /// <para>
@@ -98,6 +102,18 @@ public sealed class WechatCallbackDispatcher
         }
 
         var eventType = evt.EventTypeKey;
+
+        // — 0. 事件族合法性闸（区分企业自建 / 第三方 / 代开发 × 回调通道的开放面）——
+        // 授权族仅套件通道、上下游变更族仅自建 + 应用通道；不适用的事件族在此拒绝（返回 200，不触发重推）。
+        var app = _optionsMonitor.CurrentValue.ResolveApp(appKey);
+        if (app != null && !app.IsEventFamilyAllowed(evt.EventFamily))
+        {
+            _logger.LogWarning(
+                "事件 {EventType} 的事件族 {EventFamily} 不适用于当前应用类型 {AppType} × 回调通道 {Channel}，" +
+                "已拒绝接收（返回 200 不触发重推）。AppKey: {AppKey}",
+                eventType, evt.EventFamily, app.AppType, app.Channel, appKey);
+            return WechatCallbackDispatchOutcome.Rejected;
+        }
 
         // — 1. 拦截器 Before（appKey 专属先于全局；异常传播 → 中间件 500） —
         using (var interceptorScope = _scopeFactory.CreateScope())

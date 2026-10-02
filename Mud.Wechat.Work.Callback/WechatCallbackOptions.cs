@@ -148,24 +148,48 @@ public class WechatAppCallbackOptions
     public string PushEncodingAESKey { get; set; } = string.Empty;
 
     /// <summary>
+    /// 回调条目对应的<b>应用类型</b>（企业自建应用 / 第三方应用 / 服务商代开发）。
+    /// </summary>
+    /// <remarks>
+    /// 消费点：接收器 <c>ValidateReceiveId</c> 按「AppType + Channel」组合选择 receiveid 校验语义
+    /// （自建静态 CorpId / 第三方·代开发套件静态 SuiteId / 第三方·代开发数据动态授权企业 CorpId）；
+    /// <see cref="Validate"/> 校验类型/通道组合是否合法。默认 <see cref="WechatAppType.Internal"/>
+    /// 与既有「企业自建回调」配置保持向后兼容。
+    /// </remarks>
+    public WechatAppType AppType { get; set; } = WechatAppType.Internal;
+
+    /// <summary>
+    /// 回调条目承载的<b>回调通道</b>（应用数据事件 / 套件指令票据）。
+    /// </summary>
+    /// <remarks>
+    /// 消费点：接收器 <c>ValidateReceiveId</c> 判别动态/静态 receiveid 校验；<see cref="Validate"/>
+    /// 校验「自建应用不得占用套件通道」的非法状态。默认 <see cref="WechatCallbackChannel.App"/>
+    /// 与既有「企业自建应用数据回调」配置保持向后兼容。
+    /// </remarks>
+    public WechatCallbackChannel Channel { get; set; } = WechatCallbackChannel.App;
+
+    /// <summary>
     /// 回调报文的<b>接收方 ID</b>（解密明文尾部 <c>receiveid</c>，参与明文完整性校验）。
     /// </summary>
     /// <remarks>
     /// <para>
-    /// 语义按回调形态区分（v1 方案 §5.2「接收方形态」）：<b>企业自建应用回调</b>为企业 <c>CorpId</c>；
-    /// <b>第三方应用 / 服务商代开发的套件回调</b>为 <c>SuiteId</c>；<b>通讯录同步助手</b>（通配键）
-    /// 可留空（密文 receiveid 可能为空）。
+    /// 语义按「应用类型 × 回调通道」区分（v1 方案 §5.2「接收方形态」）：
+    /// <b>企业自建应用</b>（App 通道）为企业 <c>CorpId</c>；
+    /// <b>第三方应用 / 服务商代开发的套件通道</b>（Suite）为 <c>SuiteId</c>；
+    /// <b>第三方应用 / 服务商代开发的数据通道</b>（App）为<b>动态授权企业 CorpId</b>——随授权企业变化，
+    /// 不能静态预置，留空且由接收器改为比对解密明文外层 <c>ToUserName</c>（授权企业 CorpId）；
+    /// <b>通讯录同步助手</b>（通配键）可留空（密文 receiveid 可能为空）。
     /// </para>
     /// <para>
-    /// 消费点：非空时接收器会校验解密明文的 <c>receiveid</c> 与本值一致，不一致即拒绝；
-    /// 留空则跳过校验并输出一次性告警；<b>明文未携带 receiveid</b> 时同样跳过校验并一次性告警
-    /// （兼容官方「个人主体第三方为空串」形态，90968）。
+    /// 消费点：非空时接收器校验解密明文的 <c>receiveid</c> 与本值一致，不一致即拒绝；
+    /// 留空则跳过静态校验（自建/套件通道输出一次性告警，第三方·代开发数据通道静默走动态校验）；
+    /// <b>明文未携带 receiveid</b> 时同样跳过校验（兼容官方「个人主体第三方为空串」形态，90968）。
     /// </para>
     /// </remarks>
-    public string CorpId { get; set; } = string.Empty;
+    public string ReceiveId { get; set; } = string.Empty;
 
     /// <summary>
-    /// 校验单应用回调凭据完整性（缺失必填项抛出 <see cref="InvalidOperationException"/>）。
+    /// 校验单应用回调凭据完整性（缺失必填项或类型/通道组合非法时抛出 <see cref="InvalidOperationException"/>）。
     /// </summary>
     /// <param name="appKey">归属应用键（仅用于异常消息定位）。</param>
     public void Validate(string appKey)
@@ -178,6 +202,66 @@ public class WechatAppCallbackOptions
         if (string.IsNullOrWhiteSpace(PushEncodingAESKey) || PushEncodingAESKey.Length != 43)
         {
             throw new InvalidOperationException($"回调配置 Apps[\"{appKey}\"] 的 PushEncodingAESKey 必须为 43 位字符。");
+        }
+
+        // 通配键（通讯录同步助手 / 全局桶）：无类型·通道语义，ReceiveId 恒可选，跳过类型/通道校验。
+        if (appKey == WechatCallbackOptions.WildcardAppKey)
+        {
+            return;
+        }
+
+        // 企业自建应用只存在「应用数据回调」，不拥有套件指令/票据回调（suite_ticket 等仅服务商形态）。
+        if (AppType == WechatAppType.Internal && Channel != WechatCallbackChannel.App)
+        {
+            throw new InvalidOperationException(
+                $"回调配置 Apps[\"{appKey}\"] 的企业自建应用（AppType=Internal）不能配置套件通道（Channel=Suite）。");
+        }
+
+        // 套件通道是第三方应用 / 服务商代开发的专属形态（指令回调 URL 承载 suite_ticket 与授权族事件）。
+        if (Channel == WechatCallbackChannel.Suite &&
+            AppType != WechatAppType.ThirdParty && AppType != WechatAppType.Provider)
+        {
+            throw new InvalidOperationException(
+                $"回调配置 Apps[\"{appKey}\"] 的套件通道（Channel=Suite）仅第三方应用 / 服务商代开发可用。");
+        }
+    }
+
+    /// <summary>
+    /// 判定事件族是否对当前「应用类型 × 回调通道」合法（开放面闸，v1 方案 §5.4.3 决策表）。
+    /// </summary>
+    /// <param name="family">事件族（<see cref="WechatCallbackEventFamily"/>，由 <c>WechatCallbackEvent.EventFamily</c> 判别）。</param>
+    /// <returns><c>true</c> = 许可分发；<c>false</c> = 不适用于当前回调条目，分发器拒绝（返回 200，不触发企业微信重推）。</returns>
+    /// <remarks>
+    /// <para>官方开放面：</para>
+    /// <list type="bullet">
+    /// <item><description>授权族（suite_ticket / 授权通知）仅<b>套件通道</b>——企业自建无套件指令回调；</description></item>
+    /// <item><description>上下游变更族仅<b>自建应用 + 应用数据通道</b>（官方 95796：第三方/代开发暂不支持）；</description></item>
+    /// <item><description>通讯录变更族 / 异步任务族经<b>应用数据通道</b>承载（三类应用均开放）；</description></item>
+    /// <item><description>无法判别的族不拦截（协议外报文交由兜底处理器自行处置）。</description></item>
+    /// </list>
+    /// </remarks>
+    public bool IsEventFamilyAllowed(WechatCallbackEventFamily family)
+    {
+        switch (family)
+        {
+            case WechatCallbackEventFamily.Authorization:
+                // 授权族仅第三方/代开发的套件通道（suite_ticket / create_auth / change_auth / cancel_auth / del_auth）。
+                return Channel == WechatCallbackChannel.Suite &&
+                       (AppType == WechatAppType.ThirdParty || AppType == WechatAppType.Provider);
+
+            case WechatCallbackEventFamily.ChainChange:
+                // 上下游变更族（change_chain）官方仅向自建应用开放（配置到「上下游-可调用接口的应用」）。
+                return Channel == WechatCallbackChannel.App && AppType == WechatAppType.Internal;
+
+            case WechatCallbackEventFamily.ContactChange:
+            case WechatCallbackEventFamily.BatchJob:
+                // 通讯录变更族与异步任务族经应用数据回调 URL 承载，三类应用均开放。
+                return Channel == WechatCallbackChannel.App;
+
+            case WechatCallbackEventFamily.Unknown:
+            default:
+                // 无法判别的事件族（协议外报文）不拦截，交由处理器（兜底）自行处置。
+                return true;
         }
     }
 }

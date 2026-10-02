@@ -32,7 +32,7 @@ public class WechatCallbackMiddlewareTests
         {
             PushToken = Token,
             PushEncodingAESKey = AesKey,
-            CorpId = CorpId,
+            ReceiveId = CorpId,
         };
         configure?.Invoke(options);
         return options;

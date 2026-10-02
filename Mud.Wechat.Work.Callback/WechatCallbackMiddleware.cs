@@ -187,7 +187,8 @@ public sealed class WechatCallbackMiddleware
             return;
         }
 
-        // Handled / Unhandled 均 200：事件已被企业微信送达并接收（unhandled 已由分发器告警）。
+        // Handled / Unhandled / Rejected 均 200：事件已被企业微信送达并接收——
+        // unhandled 已由分发器告警，rejected（事件族不适用开放面）为「已接收、不重推」的确定性丢弃。
         await WriteTextAsync(context, StatusCodes.Status200OK, SuccessResponseBody, context.RequestAborted)
             .ConfigureAwait(false);
     }

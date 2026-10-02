@@ -29,7 +29,7 @@ public class WechatCallbackEchoTests
                 {
                     PushToken = Token,
                     PushEncodingAESKey = AesKey,
-                    CorpId = receiveId,
+                    ReceiveId = receiveId,
                 },
             },
         }));
@@ -142,7 +142,7 @@ public class WechatCallbackEchoTests
         {
             Apps =
             {
-                ["app1"] = new WechatAppCallbackOptions { PushToken = tokenApp1, PushEncodingAESKey = AesKey, CorpId = "ww-corp1" },
+                ["app1"] = new WechatAppCallbackOptions { PushToken = tokenApp1, PushEncodingAESKey = AesKey, ReceiveId = "ww-corp1" },
             },
         };
         var receiver = new WechatCallbackReceiver(new TestOptionsMonitor<WechatCallbackOptions>(options));

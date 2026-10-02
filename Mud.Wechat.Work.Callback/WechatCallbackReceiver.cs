@@ -132,7 +132,12 @@ public sealed class WechatCallbackReceiver : IWechatCallbackReceiver
         }
 
         var decrypted = WechatCallbackCrypto.Decrypt(app.PushEncodingAESKey, encrypt, out var receiveId);
-        ValidateReceiveId(app, receiveId);
+
+        // 先解析信封以获取外层 ToUserName：第三方/代开发「应用数据通道」的 receiveid 为动态授权企业 CorpId，
+        // 只能与 ToUserName 比对（静态 ReceiveId 无法预置，见 ValidateReceiveId）。
+        var parsed = ParseEvent(decrypted, timestamp, nonce);
+
+        ValidateReceiveId(app, receiveId, parsed.ToUserName);
 
         // P0-2 第二道闸（P1-1/D2 后移）：位于「解密 + receiveid 校验成功」之后、事件返回之前——
         // 解密成功即证明报文经仅企微与我方共知的 AESKey 验证可信；解密失败不消耗指纹，
@@ -145,7 +150,7 @@ public sealed class WechatCallbackReceiver : IWechatCallbackReceiver
                 WechatCallbackFailureKind.ReplaySuspected, "回调验签失败：报文已处理过（疑似重放）。");
         }
 
-        return ParseEvent(decrypted, timestamp, nonce);
+        return parsed;
     }
 
     /// <inheritdoc />
@@ -177,7 +182,8 @@ public sealed class WechatCallbackReceiver : IWechatCallbackReceiver
         ValidateTimestampWindow(timestamp);
 
         var plain = WechatCallbackCrypto.Decrypt(app.PushEncodingAESKey, echoStr, out var receiveId);
-        ValidateReceiveId(app, receiveId);
+        // echo 明文非 XML（无 ToUserName），动态通道比对无从进行，静态通道仍按 ReceiveId 配置校验。
+        ValidateReceiveId(app, receiveId, toUserName: null);
 
         return Task.FromResult(plain);
     }
@@ -248,31 +254,61 @@ public sealed class WechatCallbackReceiver : IWechatCallbackReceiver
     }
 
     /// <summary>
-    /// 校验解密明文的接收方 ID（<c>receiveid</c>）：应用凭据的 <see cref="WechatAppCallbackOptions.CorpId"/> 为空时跳过（仅告警一次）。
+    /// 校验解密明文的接收方 ID（<c>receiveid</c>），按「应用类型 × 回调通道」选择语义。
     /// </summary>
+    /// <param name="app">命中的应用回调凭据（含 <see cref="WechatAppCallbackOptions.AppType"/> /
+    /// <see cref="WechatAppCallbackOptions.Channel"/> / <see cref="WechatAppCallbackOptions.ReceiveId"/>）。</param>
+    /// <param name="receiveId">解密明文尾部的 receiveid（可能为空串，见官方「个人主体第三方」90968）。</param>
+    /// <param name="toUserName">解密明文外层 ToUserName（POST 事件为授权企业 CorpId / 套件 SuiteId；echo 为 <c>null</c>）。</param>
     /// <remarks>
     /// <para>
-    /// 语义为「接收方 ID」：企业自建应用回调为企业 <c>CorpId</c>，第三方/服务商<b>套件回调为 <c>SuiteId</c></b>，
-    /// 通讯录同步助手（通配键）可留空；故按「命中其一即通过」判定，避免套件场景误拒合法回调。
+    /// 语义为「接收方 ID」（官方加解密方案 90968 附注）：<b>企业应用回调 = CorpId</b>、
+    /// <b>第三方事件回调 = SuiteId</b>、<b>个人主体第三方 = 空串</b>。由此推得三类组合：
     /// </para>
-    /// <para>
-    /// P3-2：明文未携带 receiveid 时跳过校验（官方「个人主体第三方为空串」兼容，90968）。
-    /// </para>
+    /// <list type="bullet">
+    /// <item><description>企业自建 App 通道：静态 <c>CorpId</c>（比对 <see cref="WechatAppCallbackOptions.ReceiveId"/>）。</description></item>
+    /// <item><description>第三方/代开发 Suite 通道：静态 <c>SuiteId</c>（比对 <see cref="WechatAppCallbackOptions.ReceiveId"/>）。</description></item>
+    /// <item><description>第三方/代开发 App 通道：<b>动态授权企业 CorpId</b>（随授权企业变化，比对外层 <c>ToUserName</c>，
+    /// <see cref="WechatAppCallbackOptions.ReceiveId"/> 命中其一亦通过）。</description></item>
+    /// </list>
+    /// <para>P3-2：明文未携带 receiveid 时一律跳过（官方「个人主体第三方为空串」兼容）。</para>
     /// </remarks>
-    private void ValidateReceiveId(WechatAppCallbackOptions app, string? receiveId)
+    private void ValidateReceiveId(WechatAppCallbackOptions app, string? receiveId, string? toUserName)
     {
         if (string.IsNullOrEmpty(receiveId))
         {
             return;
         }
 
-        var expected = app.CorpId;
+        // 第三方/代开发「应用数据通道」：receiveid = 授权企业 CorpId（动态）——随授权企业变化，
+        // 只能与解密明文外层 ToUserName（= 授权企业 CorpId）比对；静态 ReceiveId 命中其一亦通过（宿主可选预置）。
+        if (app.AppType != WechatAppType.Internal && app.Channel == WechatCallbackChannel.App)
+        {
+            if (string.IsNullOrEmpty(toUserName))
+            {
+                // 明文未携带 ToUserName：无法校验动态授权企业（echo 侧常态），跳过不误拒。
+                return;
+            }
+
+            if (!string.Equals(toUserName, receiveId, StringComparison.Ordinal) &&
+                !string.Equals(app.ReceiveId, receiveId, StringComparison.Ordinal))
+            {
+                throw new WechatCallbackException(
+                    WechatCallbackFailureKind.ReceiveIdMismatch,
+                    "回调验签失败：receiveid 与授权企业（ToUserName）不一致（第三方/代开发数据通道的动态授权企业校验）。");
+            }
+
+            return;
+        }
+
+        // 静态通道（企业自建 App / 第三方·代开发 Suite）：比对配置的 ReceiveId（留空跳过 + 一次性告警）。
+        var expected = app.ReceiveId;
         if (string.IsNullOrEmpty(expected))
         {
             if (Interlocked.Exchange(ref _receiveIdSkipLogged, 1) == 0)
             {
                 _logger?.LogWarning(
-                    "回调配置未设置 CorpId（接收方 ID），已跳过 receiveid 校验；" +
+                    "回调配置未设置 ReceiveId（接收方 ID），已跳过 receiveid 校验；" +
                     "套件回调请填写 SuiteId，企业自建回调请填写企业 CorpId，通讯录同步助手可留空。");
             }
 
@@ -283,7 +319,7 @@ public sealed class WechatCallbackReceiver : IWechatCallbackReceiver
         {
             throw new WechatCallbackException(
                 WechatCallbackFailureKind.ReceiveIdMismatch,
-                "回调验签失败：receiveid 与配置的 CorpId（接收方 ID）不一致（套件回调应填 SuiteId）。");
+                "回调验签失败：receiveid 与配置的 ReceiveId（接收方 ID）不一致（套件回调应填 SuiteId，自建回调应填 CorpId）。");
         }
     }
 

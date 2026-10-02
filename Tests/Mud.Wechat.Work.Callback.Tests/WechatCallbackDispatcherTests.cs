@@ -77,6 +77,40 @@ public class WechatCallbackDispatcherTests
             DecryptedXml = $"<xml><UserID>{userId}</UserID></xml>",
         };
 
+    private static WechatCallbackEvent AuthorizationEvent(string infoType = WechatCallbackEventTypes.CreateAuth)
+        => new()
+        {
+            InfoType = infoType,
+            DecryptedXml = "<xml><InfoType>create_auth</InfoType></xml>",
+        };
+
+    private static WechatCallbackEvent ChainChangeEvent(string changeType = WechatCallbackEventTypes.CorpJoin)
+        => new()
+        {
+            Event = WechatCallbackEventTypes.ChangeChain,
+            ChangeType = changeType,
+            DecryptedXml = "<xml><Event>change_chain</Event></xml>",
+        };
+
+    /// <summary>构造指定「应用类型 × 回调通道」的回调配置（appKey = app1，走精确键命中）。</summary>
+    private static WechatCallbackOptions CreateTypeChannelOptions(
+        WechatAppType appType, WechatCallbackChannel channel, int timeoutMs = 4_500, int maxConcurrent = 10)
+        => new()
+        {
+            EventHandlingTimeoutMs = timeoutMs,
+            MaxConcurrentEvents = maxConcurrent,
+            Apps =
+            {
+                ["app1"] = new WechatAppCallbackOptions
+                {
+                    PushToken = "token",
+                    PushEncodingAESKey = "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopq",
+                    AppType = appType,
+                    Channel = channel,
+                },
+            },
+        };
+
     // ---------------------------------------------------------------- 匹配语义
 
     [Fact]
@@ -189,6 +223,62 @@ public class WechatCallbackDispatcherTests
         lock (ExecutionOrder)
         {
             ExecutionOrder.Should().Equal(new[] { "create-user" }, "通配应用事件只执行一次全局处理器");
+        }
+    }
+
+    // ---------------------------------------------------------------- 事件族合法性闸（v1.2 D9）
+
+    [Fact]
+    public async Task DispatchAsync_ShouldReject_WhenAuthorizationFamilyDeliveredToInternalApp()
+    {
+        Reset();
+        var dispatcher = CreateDispatcher(
+            options: CreateTypeChannelOptions(WechatAppType.Internal, WechatCallbackChannel.App),
+            configure: b => b.AddHandler<FallbackHandler>());
+
+        var outcome = await dispatcher.DispatchAsync("app1", AuthorizationEvent());
+
+        outcome.Should().Be(WechatCallbackDispatchOutcome.Rejected,
+            "授权族仅套件通道，自建应用数据回调收到授权族即拒绝（200 不重推）");
+        lock (ExecutionOrder)
+        {
+            ExecutionOrder.Should().BeEmpty("合法性闸先于处理器，兜底处理器不得执行");
+        }
+    }
+
+    [Fact]
+    public async Task DispatchAsync_ShouldReject_WhenChainChangeDeliveredToThirdPartyApp()
+    {
+        Reset();
+        var dispatcher = CreateDispatcher(
+            options: CreateTypeChannelOptions(WechatAppType.ThirdParty, WechatCallbackChannel.App),
+            configure: b => b.AddHandler<FallbackHandler>());
+
+        var outcome = await dispatcher.DispatchAsync("app1", ChainChangeEvent());
+
+        outcome.Should().Be(WechatCallbackDispatchOutcome.Rejected,
+            "上下游变更族官方仅向自建应用开放，第三方应用数据回调收到即拒绝");
+        lock (ExecutionOrder)
+        {
+            ExecutionOrder.Should().BeEmpty("合法性闸先于处理器，兜底处理器不得执行");
+        }
+    }
+
+    [Fact]
+    public async Task DispatchAsync_ShouldAllow_WhenAuthorizationFamilyDeliveredToSuiteChannel()
+    {
+        Reset();
+        var dispatcher = CreateDispatcher(
+            options: CreateTypeChannelOptions(WechatAppType.ThirdParty, WechatCallbackChannel.Suite),
+            configure: b => b.AddHandler<FallbackHandler>());
+
+        var outcome = await dispatcher.DispatchAsync("app1", AuthorizationEvent());
+
+        outcome.Should().Be(WechatCallbackDispatchOutcome.Handled,
+            "授权族在第三方套件通道合法，正常分发");
+        lock (ExecutionOrder)
+        {
+            ExecutionOrder.Should().Contain("fallback", "合法事件族落兜底处理器");
         }
     }
 

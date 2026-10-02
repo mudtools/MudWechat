@@ -27,8 +27,9 @@ foreach ($file in $configFiles) {
     $fullPath = Join-Path $repoRoot $file
     $content = Get-Content $fullPath -Raw
 
-    # 提取 public string/int/bool 属性名（配置 DTO 全部为可写基元属性）。
-    $propNames = [regex]::Matches($content, 'public\s+(?:string|int|bool)\s+(\w+)\s*\{\s*get;\s*set;') |
+    # 提取 public string/int/bool 属性名（配置 DTO 全部为可写基元属性）；
+    # 回调域新增 AppType/Channel 两个枚举配置属性（区分企业自建/第三方/代开发 × 回调通道），一并纳入扫描。
+    $propNames = [regex]::Matches($content, 'public\s+(?:string|int|bool|WechatAppType|WechatCallbackChannel)\s+(\w+)\s*\{\s*get;\s*set;') |
         ForEach-Object { $_.Groups[1].Value } | Sort-Object -Unique
 
     if ($propNames.Count -eq 0) {

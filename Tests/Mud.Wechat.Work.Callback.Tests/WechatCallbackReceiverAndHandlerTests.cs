@@ -37,7 +37,7 @@ public class WechatCallbackReceiverAndHandlerTests
                 {
                     PushToken = Token,
                     PushEncodingAESKey = AesKey,
-                    CorpId = receiveId,
+                    ReceiveId = receiveId,
                 },
             },
         };
@@ -198,8 +198,8 @@ public class WechatCallbackReceiverAndHandlerTests
         {
             Apps =
             {
-                ["app1"] = new WechatAppCallbackOptions { PushToken = "token-app1", PushEncodingAESKey = AesKey, CorpId = "ww-corp1" },
-                [AppKey] = new WechatAppCallbackOptions { PushToken = "token-wild", PushEncodingAESKey = AesKey, CorpId = "ww-corp1" },
+                ["app1"] = new WechatAppCallbackOptions { PushToken = "token-app1", PushEncodingAESKey = AesKey, ReceiveId = "ww-corp1" },
+                [AppKey] = new WechatAppCallbackOptions { PushToken = "token-wild", PushEncodingAESKey = AesKey, ReceiveId = "ww-corp1" },
             },
         };
         var receiver = CreateReceiver(options);

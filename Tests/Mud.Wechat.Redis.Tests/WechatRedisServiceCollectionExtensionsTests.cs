@@ -50,7 +50,7 @@ public class WechatRedisServiceCollectionExtensionsTests
             {
                 PushToken = "token",
                 PushEncodingAESKey = AesKey,
-                CorpId = "ww-corp",
+                ReceiveId = "ww-corp",
             };
         });
 
@@ -82,7 +82,7 @@ public class WechatRedisServiceCollectionExtensionsTests
             {
                 PushToken = "token",
                 PushEncodingAESKey = AesKey,
-                CorpId = "ww-corp",
+                ReceiveId = "ww-corp",
             };
         });
 

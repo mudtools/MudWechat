@@ -112,6 +112,42 @@ public class WechatCallbackEvent
         }
     }
 
+    /// <summary>
+    /// 事件族（<see cref="WechatCallbackEventFamily"/>；按 <c>InfoType</c> → <c>Event</c> 归类，
+    /// 驱动「应用类型 × 回调通道」的开放面合法性闸，见 <c>WechatAppCallbackOptions.IsEventFamilyAllowed</c>）。
+    /// </summary>
+    /// <remarks>
+    /// <para>判别优先级与 <see cref="EventTypeKey"/> 对齐：授权族（<c>InfoType</c> 非空）最优先，
+    /// 其次按 <c>Event</c> 值归入上下游/通讯录/异步三族，均未命中返回 <see cref="WechatCallbackEventFamily.Unknown"/>（不拦截）。</para>
+    /// </remarks>
+    public WechatCallbackEventFamily EventFamily
+    {
+        get
+        {
+            if (InfoType != null && InfoType.Length > 0)
+            {
+                return WechatCallbackEventFamily.Authorization;
+            }
+
+            if (IsChangeChain)
+            {
+                return WechatCallbackEventFamily.ChainChange;
+            }
+
+            if (IsChangeContact)
+            {
+                return WechatCallbackEventFamily.ContactChange;
+            }
+
+            if (IsBatchJobResult)
+            {
+                return WechatCallbackEventFamily.BatchJob;
+            }
+
+            return WechatCallbackEventFamily.Unknown;
+        }
+    }
+
     /// <summary>是否为授权成功事件（create_auth；携带一次性 auth_code）。</summary>
     /// <remarks>
     /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/99487">path 99487 授权通知事件</see>。

@@ -195,9 +195,14 @@ public class WechatCallbackDispatcherTests
             new TestOptionsMonitor<WechatCallbackOptions>(CreateOptions()));
         using var provider = services.BuildServiceProvider();
 
+        // 载荷体系依赖：空契约注册表（本用例无载荷处理器） + 真实读取器。
+        // 注册官方契约表并非本用例关注点，故留空 ⇒ 键未登记时读取器走 GenericFallback。
+        var payloadRegistry = new WechatPayloadContractRegistry();
         var dispatcher = new WechatCallbackDispatcher(
             provider.GetRequiredService<WechatCallbackHandlerRegistry>(),
             provider.GetRequiredService<WechatCallbackInterceptorRegistry>(),
+            payloadRegistry,
+            new WechatCallbackPayloadReader(payloadRegistry),
             provider.GetRequiredService<IOptionsMonitor<WechatCallbackOptions>>(),
             provider.GetRequiredService<IServiceScopeFactory>(),
             NullLogger<WechatCallbackDispatcher>.Instance);

@@ -71,9 +71,22 @@ public static class WechatCallbackServiceCollectionExtensions
         services.AddSingleton(handlerRegistry);
         services.AddSingleton(interceptorRegistry);
 
+        // 载荷体系（v2.2）：契约注册表 + 读取器 + 与接收器共享的源缓存。
+        // 读取器构造函数为 internal（源缓存是实现细节），故以工厂委托注册。
+        var payloadRegistry = new WechatPayloadContractRegistry();
+        services.AddSingleton<IWechatPayloadContractRegistry>(payloadRegistry);
+        services.AddSingleton(WechatPayloadSourceCache.Shared);
+        services.TryAddSingleton<IWechatPayloadReader>(provider =>
+            new WechatCallbackPayloadReader(
+                provider.GetRequiredService<IWechatPayloadContractRegistry>(),
+                WechatPayloadSourceCache.Shared));
+
+        // 官方 17 键契约（组合根期一次性登记；重复登记即 fail-fast）。
+        OfficialPayloadContracts.RegisterAll(payloadRegistry);
+
         // D6/D11：内置授权族兜底处理器默认注册到通配键（全局生效；宿主可用精确键处理器前置接管授权族键）。
         handlerRegistry.Register(WechatCallbackOptions.WildcardAppKey, typeof(WechatCallbackHandler));
 
-        return new WechatCallbackServiceBuilder(services, handlerRegistry, interceptorRegistry);
+        return new WechatCallbackServiceBuilder(services, handlerRegistry, interceptorRegistry, payloadRegistry);
     }
 }

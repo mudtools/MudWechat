@@ -26,15 +26,90 @@ public sealed class WechatCallbackServiceBuilder
     private readonly IServiceCollection _services;
     private readonly WechatCallbackHandlerRegistry _handlers;
     private readonly WechatCallbackInterceptorRegistry _interceptors;
+    private readonly IWechatPayloadContractRegistry _payloadContracts;
 
     internal WechatCallbackServiceBuilder(
         IServiceCollection services,
         WechatCallbackHandlerRegistry handlers,
-        WechatCallbackInterceptorRegistry interceptors)
+        WechatCallbackInterceptorRegistry interceptors,
+        IWechatPayloadContractRegistry payloadContracts)
     {
         _services = services ?? throw new ArgumentNullException(nameof(services));
         _handlers = handlers ?? throw new ArgumentNullException(nameof(handlers));
         _interceptors = interceptors ?? throw new ArgumentNullException(nameof(interceptors));
+        _payloadContracts = payloadContracts ?? throw new ArgumentNullException(nameof(payloadContracts));
+    }
+
+    /// <summary>
+    /// 登记事件键契约（<b>宿主扩展点</b>：供官方未覆盖的事件族或宿主私有事件键使用）。
+    /// </summary>
+    /// <typeparam name="TPayload">载荷类型（须为 <c>partial</c> 并标注 <c>[PayloadContract]</c>，
+    /// 或在手写链形态下自行提供 <c>PayloadFieldMap</c> 静态成员）。</typeparam>
+    /// <param name="eventTypeKey">事件类型键（宿主自有常量亦可）。</param>
+    /// <param name="map">载荷的字段映射表（在具体类型处做静态成员访问；<b>无反射</b>）。</param>
+    /// <returns>建造者实例（链式）。</returns>
+    /// <remarks>
+    /// <para>
+    /// <b>为何不提供 <c>AddPayload&lt;TPayload&gt;(key)</c> 单参重载</b>：C# 禁止在泛型上下文访问
+    /// 类型参数的静态成员（<c>TPayload.PayloadFieldMap</c> 是 CS0712），
+    /// 而 <c>static abstract</c> 需 net7+ 运行时支持（本包含 <c>netstandard2.0</c>）。
+    /// ⇒ 改为由调用点在<b>具体类型</b>处书写，既合法又保持编译期完全类型化。
+    /// </para>
+    /// <para>
+    /// 契约默认<b>继承族级开放面</b>（<c>WechatAppCallbackOptions.IsEventFamilyAllowed</c>）。
+    /// 官方已文档化的事件族若需显式声明，请用 <see cref="AddPayloadWithOpenSurface{TPayload}"/>。
+    /// </para>
+    /// </remarks>
+    public WechatCallbackServiceBuilder AddPayload<TPayload>(
+        string eventTypeKey, IPayloadFieldMap<TPayload> map)
+        where TPayload : class
+    {
+        if (string.IsNullOrEmpty(eventTypeKey))
+            throw new ArgumentException("事件键不得为空。", nameof(eventTypeKey));
+
+        if (map == null)
+            throw new ArgumentNullException(nameof(map));
+
+        if (map is not IPayloadContractAccessor accessor)
+        {
+            throw new ArgumentException(
+                "映射表 " + map.GetType().FullName + " 未实现 " + nameof(IPayloadContractAccessor) +
+                "；请使用上游 PayloadFieldMap<T> 构建映射表。", nameof(map));
+        }
+
+        _payloadContracts.Register(
+            WechatPayloadContract.Create(eventTypeKey, accessor));
+        return this;
+    }
+
+    /// <summary>
+    /// 登记事件键契约并<b>显式声明事件键级开放面</b>（ADR-15）。
+    /// </summary>
+    /// <param name="eventTypeKey">事件类型键。</param>
+    /// <param name="map">载荷的字段映射表。</param>
+    /// <param name="supportedAppTypes">允许的应用模式集合。</param>
+    /// <param name="requiredChannel">要求的回调通道。</param>
+    /// <param name="requiredEvent">要求信封的 <c>Event</c> 值（防同名 <c>ChangeType</c> 跨族串门）；可空。</param>
+    /// <param name="requiredFamily">要求的事件族；可空。</param>
+    /// <returns>建造者实例（链式）。</returns>
+    public WechatCallbackServiceBuilder AddPayloadWithOpenSurface<TPayload>(
+        string eventTypeKey,
+        IPayloadFieldMap<TPayload> map,
+        WechatAppTypeSet supportedAppTypes,
+        WechatCallbackChannel requiredChannel,
+        string? requiredEvent = null,
+        WechatCallbackEventFamily? requiredFamily = null)
+        where TPayload : class
+    {
+        if (map is not IPayloadContractAccessor accessor)
+        {
+            throw new ArgumentException(
+                "映射表 " + map.GetType().FullName + " 未实现 " + nameof(IPayloadContractAccessor) + "。", nameof(map));
+        }
+
+        _payloadContracts.Register(WechatPayloadContract.CreateWithOpenSurface(
+            eventTypeKey, accessor, supportedAppTypes, requiredChannel, requiredEvent, requiredFamily));
+        return this;
     }
 
     /// <summary>

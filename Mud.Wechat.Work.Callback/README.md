@@ -8,11 +8,59 @@
 - `WechatCallbackReceiver`：验签 → 时效窗口 → AES 解密 → `receiveid` 校验 → 一次性指纹去重 → 事件信封提取。
 - `WechatCallbackDispatcher` / `WechatCallbackHandlerRegistry` / `WechatCallbackInterceptorRegistry`：同步分发、软超时、处理器/拦截器匹配与隔离。
 - `WechatCallbackCrypto`：企业微信回调 AES 加解密（官方 32 字节块 PKCS7 填充，P0-1）。
-- `WechatCallbackEvent`（`Mud.Wechat.Work.Abstractions.Callback`）：事件信封与 `EventTypeKey`；强类型事件 DTO 见 `Events/`。
+- `WechatCallbackEvent`（`Mud.Wechat.Work.Abstractions.Callback`）：事件信封与 `EventTypeKey`；并携带事件归属 `AppKey` / `AppType` / `Channel`（处理器可据此按应用模式分支，无需复制多份 handler）。
+- **事件载荷体系**（`Events/Payloads/` + `IWechatPayloadReader`）：把事件信封解析为**强类型载荷**（见下方「事件载荷」章节）。旧的手写解析器与 11 个逐事件 DTO 已移除。
 - `WechatCallbackException` / `WechatCallbackFailureKind`：失败类别与统一异常面（继承 `InvalidOperationException`）。
 - `IWechatCallbackReplayGuard` / `InMemoryWechatCallbackReplayGuard`：抗重放一次性指纹去重。
 - `WechatCallbackOptions` / `WechatAppCallbackOptions`：回调配置（`Apps` 字典为凭据唯一来源）。
 - `WechatCallbackServiceCollectionExtensions` / `WechatCallbackServiceBuilder`：DI 注册入口与处理器/拦截器链式注册。
+
+## 事件载荷（强类型读取）
+
+事件到达处理器时是**已绑定好的强类型载荷**：字段映射由上游 `Mud.HttpUtils.PayloadFieldMapGenerator`
+在编译期生成（元素名 ↔ 属性名配对受编译器校验），转换语义由本包的 `WechatPayloadConverter` 承载。
+
+```csharp
+// 处理器：继承抽象基类，只覆写一个方法（桥接成员已由基类实现）
+public sealed class UserSyncHandler : WechatCallbackPayloadHandler<ContactUserChangedPayload>
+{
+    public override string SupportedEventType => WechatCallbackEventTypes.CreateUser;
+
+    public override Task HandleAsync(
+        WechatCallbackEvent evt, ContactUserChangedPayload payload, CancellationToken ct)
+    {
+        var deptIds = payload.DepartmentIds;         // 官方 "1,2,3" 已转 List<long>
+        var leaderFlags = payload.LeaderInDeptFlags; // "1,0,0" 已转 List<int>
+        var name = payload.Name ?? "(未授权)";        // 权限分层：未授权即 null
+        var appType = evt.AppType;                    // 需按应用模式分支时读信封（勿复制 handler）
+        return Task.CompletedTask;
+    }
+}
+```
+
+**结构族载荷**（官方报文结构同一的事件键共用一个类型，具体类别由信封 `ChangeType` 判别）：
+
+| 载荷 | 覆盖事件键 |
+|---|---|
+| `ContactUserChangedPayload` | `create_user` / `update_user` / `delete_user` |
+| `ContactPartyChangedPayload` | `create_party` / `update_party` / `delete_party` |
+| `ContactTagChangedPayload` | `update_tag` |
+| `ChainChangedPayload` | `change_chain` 全部 9 个 `ChangeType` |
+| `BatchJobCompletedPayload` | `batch_job_result`（顶层 / `BatchJob` 两种布局，自动识别） |
+| `GenericCallbackPayload` | **任何未登记契约的事件键**（降级，`Values` 携带全部直系子节点） |
+
+**三模式共用一份契约**：企业自建 / 第三方 / 服务商代开发的报文结构相同，
+差异只是「值是否出现」——由可空字段与 `payload.Values` 兜底读面承载，
+**载荷与转换器层不得按应用类型分叉**（契约守卫锁定）。
+
+**扩展：为官方未覆盖的事件登记契约**（宿主私有事件键亦可，零 SDK 改动）：
+
+```csharp
+builder.AddPayload("change_external_contact", MyPayload.PayloadFieldMap);
+// 之后实现 WechatCallbackPayloadHandler<MyPayload> 即可
+```
+
+> 映射表请在**具体类型**处取 `PayloadFieldMap`（C# 禁止泛型上下文访问类型参数静态成员）。
 
 ## 快速开始
 

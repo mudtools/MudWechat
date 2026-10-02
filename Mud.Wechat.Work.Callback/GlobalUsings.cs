@@ -17,4 +17,8 @@ global using Mud.Wechat.Work.Abstractions.Authentication;
 global using Mud.Wechat.Work.Abstractions.Enums;
 global using Mud.Wechat.Work.Abstractions.Authentication.TokenManager;
 global using Mud.Wechat.Work.Abstractions.Callback;
+global using Mud.Wechat.Work.Abstractions.Callback.Payloads;
 global using Mud.Wechat.Work.Callback.Events;
+global using Mud.Wechat.Work.Callback.Events.Payloads;
+global using Mud.HttpUtils.Payloads;
+global using Mud.HttpUtils.Attributes;

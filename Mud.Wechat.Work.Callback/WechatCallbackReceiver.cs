@@ -70,6 +70,7 @@ public sealed class WechatCallbackReceiver : IWechatCallbackReceiver
 
     private readonly IOptionsMonitor<WechatCallbackOptions> _optionsMonitor;
     private readonly IWechatCallbackReplayGuard _replayGuard;
+    private readonly WechatPayloadSourceCache _payloadSourceCache;
     private readonly Func<DateTimeOffset> _utcNow;
     private readonly ILogger<WechatCallbackReceiver>? _logger;
 
@@ -85,20 +86,45 @@ public sealed class WechatCallbackReceiver : IWechatCallbackReceiver
     /// <param name="utcNow">时钟源（可选，默认 <see cref="DateTimeOffset.UtcNow"/>；便于测试）。</param>
     /// <param name="logger">日志器（可选）。</param>
     /// <remarks>
+    /// <para>
     /// 使用可选参数而非 <c>TimeProvider</c>：<c>TimeProvider</c> 在 <c>netstandard2.0</c> 不可用。
     /// 构造期不做全量 <see cref="WechatCallbackOptions.Validate"/>——凭据按请求期 appKey 解析后单应用校验，
     /// 避免一个应用的配置错误拖垮全部回调路由（全量校验为宿主启动期入口）。
+    /// </para>
+    /// <para>
+    /// 源缓存固定为 <see cref="WechatPayloadSourceCache.Shared"/>（与载荷读取器共享，见 ADR-6）；
+    /// 测试如需注入独立缓存，请用另一个 <c>internal</c> 重载。
+    /// </para>
     /// </remarks>
     public WechatCallbackReceiver(
         IOptionsMonitor<WechatCallbackOptions> optionsMonitor,
         IWechatCallbackReplayGuard? replayGuard = null,
         Func<DateTimeOffset>? utcNow = null,
         ILogger<WechatCallbackReceiver>? logger = null)
+        : this(optionsMonitor, replayGuard, utcNow, logger, WechatPayloadSourceCache.Shared)
+    {
+    }
+
+    /// <summary>
+    /// 创建回调接收器（可注入载荷源缓存）。
+    /// </summary>
+    /// <remarks>
+    /// 构造函数为 <c>internal</c>：<see cref="WechatPayloadSourceCache"/> 是实现细节，
+    /// 而本类是公开类型 —— 若参数也公开会把缓存细节泄漏进公共 API 面（<c>CS0051</c>）。
+    /// 测试经 <c>InternalsVisibleTo</c> 使用本重载。
+    /// </remarks>
+    internal WechatCallbackReceiver(
+        IOptionsMonitor<WechatCallbackOptions> optionsMonitor,
+        IWechatCallbackReplayGuard? replayGuard,
+        Func<DateTimeOffset>? utcNow,
+        ILogger<WechatCallbackReceiver>? logger,
+        WechatPayloadSourceCache? payloadSourceCache)
     {
         _optionsMonitor = optionsMonitor ?? throw new ArgumentNullException(nameof(optionsMonitor));
         _replayGuard = replayGuard ?? new InMemoryWechatCallbackReplayGuard();
         _utcNow = utcNow ?? (() => DateTimeOffset.UtcNow);
         _logger = logger;
+        _payloadSourceCache = payloadSourceCache ?? WechatPayloadSourceCache.Shared;
     }
 
     /// <inheritdoc />
@@ -138,7 +164,7 @@ public sealed class WechatCallbackReceiver : IWechatCallbackReceiver
 
         // 先解析信封以获取外层 ToUserName：第三方/代开发「应用数据通道」的 receiveid 为动态授权企业 CorpId，
         // 只能与 ToUserName 比对（静态 ReceiveId 无法预置，见 ValidateReceiveId）。
-        var parsed = ParseEvent(decrypted, timestamp, nonce);
+        var parsed = ParseEvent(decrypted, timestamp, nonce, appKey, app);
 
         ValidateReceiveId(app, receiveId, parsed.ToUserName);
 
@@ -356,53 +382,69 @@ public sealed class WechatCallbackReceiver : IWechatCallbackReceiver
     /// 解析事件信封（v1 方案 §5.4.1）：先抽取通用字段，再补授权族字段。
     /// </summary>
     /// <remarks>
+    /// <para>
+    /// <b>ADR-6 单次解析</b>：明文经 <see cref="WechatPayloadSourceCache"/> 解析一次，
+    /// 本方法与载荷读取器<b>共用同一棵 XML 树</b> —— 既消除重复解析，
+    /// 也保证「信封视图」与「载荷视图」不会看到不同内容（无 TOCTOU）。
+    /// 明文非 XML 时缓存的 <c>Root</c> 为 <c>null</c>，信封字段保持为空（不抛）。
+    /// </para>
+    /// <para>
     /// <b>D10（v1.2）</b>：<c>AuthCorpId ← FromUserName</c> 兜底仅限授权族（InfoType 非空且非 authcode 族）——
     /// 通讯录变更事件的 FromUserName 固定为 sys，无差别兜底会伪造授权企业字段。
+    /// </para>
     /// </remarks>
-    private static WechatCallbackEvent ParseEvent(string decryptedXml, string? timestamp, string? nonce)
+    private WechatCallbackEvent ParseEvent(
+        string decryptedXml,
+        string? timestamp,
+        string? nonce,
+        string appKey,
+        WechatAppCallbackOptions app)
     {
         var evt = new WechatCallbackEvent
         {
             TimeStamp = timestamp,
             Nonce = nonce,
             DecryptedXml = decryptedXml,
+
+            // ADR-16：事件归属（处理器据此按应用模式分支，无需复制多个 handler 类）
+            AppKey = appKey,
+            AppType = app.AppType,
+            Channel = app.Channel,
         };
 
-        try
+        // 登记进源缓存（此处完成本次请求唯一的一次 XML 解析）
+        var root = string.IsNullOrEmpty(decryptedXml)
+            ? null
+            : _payloadSourceCache.GetOrCreate(evt).Root;
+
+        // 明文缺失或非法 XML（协议外报文）时缓存的 Root 为 null ⇒ 字段保持为空、原文保留（不抛）。
+        // 注：XmlException 已由 WechatPayloadSourceCache 在解析点吞掉，此处无需再捕获。
+        if (root != null)
         {
-            var doc = XDocument.Parse(decryptedXml);
-            var root = doc.Root;
-            if (root != null)
+            // 通用信封字段。
+            evt.ToUserName = root.Element("ToUserName")?.Value;
+            evt.FromUserName = root.Element("FromUserName")?.Value;
+            evt.CreateTime = root.Element("CreateTime")?.Value;
+            evt.MsgType = root.Element("MsgType")?.Value;
+            evt.Event = root.Element("Event")?.Value;
+            evt.ChangeType = root.Element("ChangeType")?.Value;
+            evt.AgentID = root.Element("AgentID")?.Value;
+            evt.ChainId = root.Element("ChainId")?.Value;
+
+            // 授权族字段。
+            evt.InfoType = root.Element("InfoType")?.Value;
+            evt.SuiteId = root.Element("SuiteId")?.Value;
+            evt.SuiteTicket = root.Element("SuiteTicket")?.Value;
+            evt.AuthCode = root.Element("AuthCode")?.Value;
+
+            // R11：create_auth / reset_permanent_code 报文体不含 AuthCorpId，
+            // 禁止用 FromUserName 兜底伪造授权企业（该文的授权企业须由 auth_code 换码后反查）。
+            // D10：FromUserName 兜底亦仅限授权族——change_contact 的 FromUserName 固定为 sys。
+            evt.AuthCorpId = root.Element("AuthCorpId")?.Value;
+            if (string.IsNullOrEmpty(evt.AuthCorpId) && !evt.IsAuthCodeEvent && !string.IsNullOrEmpty(evt.InfoType))
             {
-                // 通用信封字段。
-                evt.ToUserName = root.Element("ToUserName")?.Value;
-                evt.FromUserName = root.Element("FromUserName")?.Value;
-                evt.CreateTime = root.Element("CreateTime")?.Value;
-                evt.MsgType = root.Element("MsgType")?.Value;
-                evt.Event = root.Element("Event")?.Value;
-                evt.ChangeType = root.Element("ChangeType")?.Value;
-                evt.AgentID = root.Element("AgentID")?.Value;
-                evt.ChainId = root.Element("ChainId")?.Value;
-
-                // 授权族字段。
-                evt.InfoType = root.Element("InfoType")?.Value;
-                evt.SuiteId = root.Element("SuiteId")?.Value;
-                evt.SuiteTicket = root.Element("SuiteTicket")?.Value;
-                evt.AuthCode = root.Element("AuthCode")?.Value;
-
-                // R11：create_auth / reset_permanent_code 报文体不含 AuthCorpId，
-                // 禁止用 FromUserName 兜底伪造授权企业（该文的授权企业须由 auth_code 换码后反查）。
-                // D10：FromUserName 兜底亦仅限授权族——change_contact 的 FromUserName 固定为 sys。
-                evt.AuthCorpId = root.Element("AuthCorpId")?.Value;
-                if (string.IsNullOrEmpty(evt.AuthCorpId) && !evt.IsAuthCodeEvent && !string.IsNullOrEmpty(evt.InfoType))
-                {
-                    evt.AuthCorpId = evt.FromUserName;
-                }
+                evt.AuthCorpId = evt.FromUserName;
             }
-        }
-        catch (System.Xml.XmlException)
-        {
-            // 明文非 XML（协议外报文）时保留原文，事件字段为空。
         }
 
         return evt;

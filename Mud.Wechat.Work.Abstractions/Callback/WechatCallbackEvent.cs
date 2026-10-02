@@ -89,6 +89,30 @@ public class WechatCallbackEvent
     /// <summary>随机数（URL 查询参数，验签用）。</summary>
     public string? Nonce { get; set; }
 
+    // ——— 事件归属（v2.2 ADR-16）———
+
+    /// <summary>
+    /// 事件归属应用键（路由路径段 <c>/{前缀}/{AppKey}</c>）。
+    /// </summary>
+    /// <remarks>
+    /// <b>权威来源</b>：宿主可据此经 <c>IWechatAppManager.ConfiguredConfigs</c> 做<b>非物化</b>反查。
+    /// 未命中回调凭据时为 <c>null</c>（不抛）。
+    /// </remarks>
+    public string? AppKey { get; internal set; }
+
+    /// <summary>
+    /// 当前回调条目的应用类型（<b>便捷字段</b>，由接收器按 <see cref="AppKey"/> 解析）。
+    /// </summary>
+    /// <remarks>
+    /// 消除「处理器按模式分支时只能复制 3 个 handler 类」的重复工作量：
+    /// 一个处理器即可读 <c>evt.AppType</c> 分支。<b>配置权威仍是</b>
+    /// <c>IWechatAppManager</c> / <c>WechatCallbackOptions</c>，本属性只是事件路由事实的<b>只读快照</b>。
+    /// </remarks>
+    public WechatAppType? AppType { get; internal set; }
+
+    /// <summary>当前回调条目的回调通道（便捷字段，同 <see cref="AppType"/>）。</summary>
+    public WechatCallbackChannel? Channel { get; internal set; }
+
     /// <summary>
     /// 事件类型键（处理器匹配键，v1 方案 D4）：<c>InfoType</c>（非空）优先，其次 <c>ChangeType</c>，再次 <c>Event</c>；
     /// 三者皆空返回空串（仅兜底处理器可见）。

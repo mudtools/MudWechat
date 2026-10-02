@@ -11,11 +11,13 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Mud.HttpUtils" Version="3.0.0" />
+		<!-- 3.0.1：载荷字段映射运行时契约（Mud.HttpUtils.Payloads）随 Abstractions 传递而来，
+		     本包须显式对齐同一版本，否则 NuGet 判定「包降级」（NU1605，本仓库门禁将其视为错误）。 -->
+		<PackageReference Include="Mud.HttpUtils" Version="3.0.1" />
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Mud.HttpUtils.Generator" Version="3.0.0" PrivateAssets="all" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+		<PackageReference Include="Mud.HttpUtils.Generator" Version="3.0.1" PrivateAssets="all" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
 	</ItemGroup>
 
 	<ItemGroup>

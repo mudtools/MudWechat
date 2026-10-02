@@ -53,6 +53,8 @@ public sealed class WechatCallbackDispatcher
 {
     private readonly WechatCallbackHandlerRegistry _handlerRegistry;
     private readonly WechatCallbackInterceptorRegistry _interceptorRegistry;
+    private readonly IWechatPayloadContractRegistry _payloadContracts;
+    private readonly IWechatPayloadReader _payloadReader;
     private readonly IOptionsMonitor<WechatCallbackOptions> _optionsMonitor;
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly ILogger<WechatCallbackDispatcher> _logger;
@@ -61,18 +63,24 @@ public sealed class WechatCallbackDispatcher
     /// <summary>创建回调事件分发器。</summary>
     /// <param name="handlerRegistry">处理器注册表（组合根期急切填充）。</param>
     /// <param name="interceptorRegistry">拦截器注册表（组合根期急切填充）。</param>
+    /// <param name="payloadContracts">事件键契约注册表（开放面闸 + 载荷分派）。</param>
+    /// <param name="payloadReader">载荷读取器（按处理器声明的载荷类型读取）。</param>
     /// <param name="optionsMonitor">回调配置监视器（软超时/并发数热读取；并发容量为构造期快照，v1 方案 §10.8）。</param>
     /// <param name="scopeFactory">scope 工厂（处理器/拦截器实例解析；Singleton 防 captive dependency）。</param>
     /// <param name="logger">日志器。</param>
     public WechatCallbackDispatcher(
         WechatCallbackHandlerRegistry handlerRegistry,
         WechatCallbackInterceptorRegistry interceptorRegistry,
+        IWechatPayloadContractRegistry payloadContracts,
+        IWechatPayloadReader payloadReader,
         IOptionsMonitor<WechatCallbackOptions> optionsMonitor,
         IServiceScopeFactory scopeFactory,
         ILogger<WechatCallbackDispatcher> logger)
     {
         _handlerRegistry = handlerRegistry ?? throw new ArgumentNullException(nameof(handlerRegistry));
         _interceptorRegistry = interceptorRegistry ?? throw new ArgumentNullException(nameof(interceptorRegistry));
+        _payloadContracts = payloadContracts ?? throw new ArgumentNullException(nameof(payloadContracts));
+        _payloadReader = payloadReader ?? throw new ArgumentNullException(nameof(payloadReader));
         _optionsMonitor = optionsMonitor ?? throw new ArgumentNullException(nameof(optionsMonitor));
         _scopeFactory = scopeFactory ?? throw new ArgumentNullException(nameof(scopeFactory));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -113,6 +121,22 @@ public sealed class WechatCallbackDispatcher
                 "已拒绝接收（返回 200 不触发重推）。AppKey: {AppKey}",
                 eventType, evt.EventFamily, app.AppType, app.Channel, appKey);
             return WechatCallbackDispatchOutcome.Rejected;
+        }
+
+        // — 0b. 事件键级闸（ADR-15，守卫 CB22 断言其先于拦截器）——
+        // 族级闸只按「事件族」判定；宿主注册新 Event 值会落 Unknown 族而被族闸放行，
+        // 故此处按事件键的契约声明（族前置条件 + 应用模式/通道）再判一次。
+        // 键未登记 ⇒ 落回族级闸结论（协议外报文不拦截，与 v1 行为一致）。
+        if (app != null && _payloadContracts.TryResolve(eventType, out var contract) && contract != null)
+        {
+            if (!contract.IsOpenFor(evt, app.AppType, app.Channel))
+            {
+                _logger.LogWarning(
+                    "事件 {EventType} 不适用于当前应用类型 {AppType} × 回调通道 {Channel}（事件键级开放面声明），" +
+                    "已拒绝接收（返回 200 不触发重推）。AppKey: {AppKey}",
+                    eventType, app.AppType, app.Channel, appKey);
+                return WechatCallbackDispatchOutcome.Rejected;
+            }
         }
 
         // — 1. 拦截器 Before（appKey 专属先于全局；异常传播 → 中间件 500） —
@@ -157,6 +181,28 @@ public sealed class WechatCallbackDispatcher
                 {
                     try
                     {
+                        // 载荷感知处理器：先按声明的载荷类型读取（同一事件的多处理器共享一次节点投影，ADR-6）。
+                        if (handler is IWechatCallbackPayloadHandler payloadHandler)
+                        {
+                            var read = _payloadReader.Read(evt, payloadHandler.PayloadType);
+                            if (read.Status != WechatPayloadReadStatus.Matched || read.Payload == null)
+                            {
+                                _logger.LogError(
+                                    "事件 {EventType} 的处理器 {Handler} 所需载荷 {PayloadType} 读取失败" +
+                                    "（状态 {Status}{Diagnostic}），已跳过该处理器（宿主接线错误：请确认该事件键已登记" +
+                                    "对应载荷类型的契约，或改用 GenericCallbackPayload）。AppKey: {AppKey}",
+                                    eventType, handler.GetType().FullName, payloadHandler.PayloadType.Name,
+                                    read.Status, read.Diagnostic == null ? string.Empty : "：" + read.Diagnostic,
+                                    appKey);
+                                continue;
+                            }
+
+                            await payloadHandler
+                                .HandlePayloadAsync(evt, read.Payload, dispatchToken)
+                                .ConfigureAwait(false);
+                            continue;
+                        }
+
                         await handler.HandleAsync(evt, dispatchToken).ConfigureAwait(false);
                     }
                     catch (OperationCanceledException) when (dispatchToken.IsCancellationRequested)

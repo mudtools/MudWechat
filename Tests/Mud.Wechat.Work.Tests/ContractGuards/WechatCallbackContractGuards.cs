@@ -6,8 +6,13 @@
 // -----------------------------------------------------------------------
 
 using System.Reflection;
+using System.Text.RegularExpressions;
+using Mud.HttpUtils.Attributes;
 using Mud.Wechat.Work.Abstractions.Callback;
-using Mud.Wechat.Work.Callback.Events;
+using Mud.Wechat.Work.Abstractions.Callback.Payloads;
+using Mud.Wechat.Work.Abstractions.Enums;
+using Mud.Wechat.Work.Callback;
+using Mud.Wechat.Work.Callback.Events.Payloads;
 
 namespace Mud.Wechat.Work.Tests.ContractGuards;
 
@@ -17,6 +22,12 @@ namespace Mud.Wechat.Work.Tests.ContractGuards;
 /// 加解密 32 块填充互操作（CB8）、指纹闸次序（CB9），以及「应用类型 × 回调通道」区分
 /// （CB10~CB13：通道枚举 + 配置面、receiveid 三元分流、开放面合法性矩阵、分发器闸次序）。
 /// </summary>
+/// <remarks>
+/// <b>v2.2 变更</b>：旧「逐事件 DTO」已收敛为 5 个<b>结构族载荷</b>（ADR-1），
+/// 故 CB4 改写为按结构族断言，并新增 CB4b（官方 17 键全覆盖）、CB4c（事件键级开放面显式声明）、
+/// CB4d（三模式无关性）。「元素名 ↔ 属性名」配对正确性改由上游生成器在编译期校验
+/// （<c>PAYLOAD004/006/007</c>），逐字段取值由 <c>WechatCallbackPayloadReaderTests</c> 覆盖。
+/// </remarks>
 public class WechatCallbackContractGuards
 {
     /// <summary>官方事件键全集（授权 InfoType 6 + 通讯录 ChangeType 7 + 异步 Event 1 + 上下游 Event 1 + ChangeType 9）。</summary>
@@ -145,39 +156,156 @@ public class WechatCallbackContractGuards
     // ---------------------------------------------------------------- CB4
 
     /// <summary>
-    /// 契约守卫 CB4：通讯录变更/异步任务事件 DTO 必须暴露官方字段（v1 方案 §6 字段速查）。
+    /// 契约守卫 CB4（v2.2 改写）：<b>结构族载荷</b>必须暴露官方字段（v1 方案 §6 字段速查）。
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// 旧 CB4 断言 11 个「逐事件 DTO」的属性名；v2.2 的 ADR-1 把它们收敛为 5 个<b>结构族载荷</b>
+    /// （官方报文结构同一的事件键共用一个类型，具体类别由信封 <c>ChangeType</c> 判别）。
+    /// 故本守卫改为按结构族断言，并<b>追加两项漂移校验</b>：
+    /// </para>
+    /// <list type="number">
+    /// <item><description>载荷类型必须标注 <c>[PayloadContract]</c>（否则上游生成器不产出映射表）；</description></item>
+    /// <item><description>载荷类型必须声明 <c>partial</c>（生成物是其 <c>partial</c> 成员）。</description></item>
+    /// </list>
+    /// <para>
+    /// 「元素名 ↔ 属性名」的配对正确性<b>不再由本守卫承担</b>：上游生成器已在编译期校验（<c>PAYLOAD004/006/007</c>），
+    /// 逐字段<b>取值</b>正确性由 <c>WechatCallbackPayloadReaderTests</c> 的官方样报文用例覆盖 —— 两者双向夹逼。
+    /// </para>
+    /// </remarks>
     [Fact]
-    public void ContactChangeEventDtos_ShouldExposeOfficialFields()
+    public void PayloadTypes_ShouldExposeOfficialFields()
     {
-        AssertProperties(typeof(UserCreatedEvent), "create_user",
-            "UserID", "Name", "Department", "MainDepartment", "IsLeaderInDept", "DirectLeader",
-            "Position", "Mobile", "Gender", "Email", "BizMail", "Status", "Avatar", "Alias",
-            "Telephone", "Address", "ExtAttr");
-        AssertProperties(typeof(UserUpdatedEvent), "update_user",
-            "UserID", "NewUserID", "Name", "Department", "MainDepartment", "IsLeaderInDept",
-            "DirectLeader", "Position", "Mobile", "Gender", "Email", "BizMail", "Status",
-            "Avatar", "Alias", "Telephone", "Address", "ExtAttr");
-        AssertProperties(typeof(UserDeletedEvent), "delete_user", "UserID");
-        AssertProperties(typeof(PartyCreatedEvent), "create_party", "Id", "Name", "ParentId", "Order");
-        AssertProperties(typeof(PartyUpdatedEvent), "update_party", "Id", "Name", "ParentId");
-        AssertProperties(typeof(PartyDeletedEvent), "delete_party", "Id");
-        AssertProperties(typeof(TagUpdatedEvent), "update_tag",
-            "TagId", "AddUserItems", "DelUserItems", "AddPartyItems", "DelPartyItems");
-        AssertProperties(typeof(BatchJobResultEvent), "batch_job_result", "JobId", "JobType", "ErrCode", "ErrMsg");
-        AssertProperties(typeof(ChainChangedEvent), "create_chain/update_chain/delete_chain", "ChainId");
-        AssertProperties(typeof(ChainGroupChangedEvent), "create_group/update_group/delete_group", "ChainId", "GroupIds");
-        AssertProperties(typeof(ChainCorpChangedEvent), "corp_join/update_corp/remove_corp", "ChainId", "CorpIds");
+        AssertProperties(typeof(ContactUserChangedPayload), "create_user / update_user / delete_user",
+            "UserId", "NewUserId", "Name", "DepartmentIds", "MainDepartmentId", "LeaderInDeptFlags",
+            "DirectLeaderIds", "Position", "Mobile", "Gender", "Email", "BizMail", "Status", "Avatar",
+            "Alias", "Telephone", "Address", "ExtAttr");
+        AssertProperties(typeof(ContactPartyChangedPayload), "create_party / update_party / delete_party",
+            "PartyId", "Name", "ParentId", "Order");
+        AssertProperties(typeof(ContactTagChangedPayload), "update_tag",
+            "TagId", "AddedUserIds", "RemovedUserIds", "AddedPartyIds", "RemovedPartyIds");
+        AssertProperties(typeof(BatchJobCompletedPayload), "batch_job_result",
+            "JobId", "JobType", "ErrCode", "ErrMsg");
+        AssertProperties(typeof(ChainChangedPayload),
+            "create_chain…remove_corp（9 键）", "ChainId", "GroupIds", "CorpIds");
 
-        static void AssertProperties(Type dtoType, string eventName, params string[] expected)
+        var payloadTypes = new[]
         {
-            var props = dtoType.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
+            typeof(ContactUserChangedPayload), typeof(ContactPartyChangedPayload),
+            typeof(ContactTagChangedPayload), typeof(BatchJobCompletedPayload),
+            typeof(ChainChangedPayload),
+        };
+
+        foreach (var type in payloadTypes)
+        {
+            type.GetCustomAttributes(typeof(PayloadContractAttribute), inherit: false)
+                .Should().NotBeEmpty(type.Name + " 必须标注 [PayloadContract]，否则上游生成器不产出映射表");
+
+            // 生成物是 partial 成员 ⇒ 类型必须可分部声明（上游 PAYLOAD002 在编译期校验，此处为测试期冗余锁）。
+            type.IsSealed.Should().BeTrue(type.Name + " 为密封载荷类型（非密封不影响 partial，此断言仅锁定既存形态）");
+        }
+
+        static void AssertProperties(Type payloadType, string eventName, params string[] expected)
+        {
+            var props = payloadType
+                .GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
                 .Select(p => p.Name)
                 .ToList();
             foreach (var field in expected)
             {
-                props.Should().Contain(field, $"{dtoType.Name}（{eventName}）缺少官方字段 {field}");
+                props.Should().Contain(field, $"{payloadType.Name}（{eventName}）缺少官方字段 {field}");
             }
+        }
+    }
+
+    /// <summary>
+    /// 契约守卫 CB4b（v2.2 新增）：官方契约表必须登记全部 17 个载荷事件键，且授权族 7 键不登记。
+    /// </summary>
+    [Fact]
+    public void OfficialPayloadContracts_ShouldCoverAllPayloadEventKeys()
+    {
+        var registry = new WechatPayloadContractRegistry();
+        OfficialPayloadContracts.RegisterAll(registry);
+
+        var expectedKeys = new[]
+        {
+            WechatCallbackEventTypes.CreateUser, WechatCallbackEventTypes.UpdateUser, WechatCallbackEventTypes.DeleteUser,
+            WechatCallbackEventTypes.CreateParty, WechatCallbackEventTypes.UpdateParty, WechatCallbackEventTypes.DeleteParty,
+            WechatCallbackEventTypes.UpdateTag,
+            WechatCallbackEventTypes.BatchJobResult,
+            WechatCallbackEventTypes.CreateChain, WechatCallbackEventTypes.UpdateChain, WechatCallbackEventTypes.DeleteChain,
+            WechatCallbackEventTypes.CreateGroup, WechatCallbackEventTypes.UpdateGroup, WechatCallbackEventTypes.DeleteGroup,
+            WechatCallbackEventTypes.CorpJoin, WechatCallbackEventTypes.UpdateCorp, WechatCallbackEventTypes.RemoveCorp,
+        };
+
+        var registered = registry.RegisteredKeys;
+        registered.Should().HaveCount(17, "官方有强类型载荷的事件键共 17 个");
+        foreach (var key in expectedKeys)
+        {
+            registered.Should().Contain(key, $"官方事件键 {key} 必须登记契约");
+            registry.TryResolve(key, out var contract).Should().BeTrue();
+            contract!.Accessor.Should().NotBeNull();
+        }
+
+        // 授权族走信封（ADR-8），不得登记载荷契约。
+        foreach (var authKey in new[]
+                 {
+                     WechatCallbackEventTypes.SuiteTicket, WechatCallbackEventTypes.CreateAuth,
+                     WechatCallbackEventTypes.ResetPermanentCode, WechatCallbackEventTypes.ChangeAuth,
+                     WechatCallbackEventTypes.CancelAuth, WechatCallbackEventTypes.DelAuth,
+                 })
+        {
+            registered.Should().NotContain(authKey, $"授权族事件键 {authKey} 走信封，不得登记载荷契约（ADR-8）");
+        }
+    }
+
+    /// <summary>
+    /// 契约守卫 CB4c（v2.2 新增）：每条官方契约必须<b>显式</b>声明事件键级开放面（守卫 CB22 的要求）。
+    /// </summary>
+    [Fact]
+    public void OfficialPayloadContracts_ShouldDeclareOpenSurfaceExplicitly()
+    {
+        var registry = new WechatPayloadContractRegistry();
+        OfficialPayloadContracts.RegisterAll(registry);
+
+        foreach (var key in registry.RegisteredKeys)
+        {
+            registry.TryResolve(key, out var contract).Should().BeTrue();
+            contract!.SupportedAppTypes.Should().NotBeNull(
+                $"契约 {key} 必须显式声明 SupportedAppTypes（不得隐式继承族默认，见 ADR-15）");
+            contract.RequiredChannel.Should().NotBeNull($"契约 {key} 必须显式声明 RequiredChannel");
+            contract.RequiredEvent.Should().NotBeNull($"契约 {key} 必须声明 RequiredEvent（防同名 ChangeType 跨族串门）");
+        }
+
+        // 三模式开放面（ADR-14：一份契约覆盖三类应用）。
+        registry.TryResolve(WechatCallbackEventTypes.CreateUser, out var contact).Should().BeTrue();
+        contact!.SupportedAppTypes.Should().Be(WechatAppTypeSet.All);
+
+        registry.TryResolve(WechatCallbackEventTypes.CreateChain, out var chain).Should().BeTrue();
+        chain!.SupportedAppTypes.Should().Be(WechatAppTypeSet.Internal, "上下游变更族官方仅向自建应用开放");
+    }
+
+    /// <summary>
+    /// 契约守卫 CB4d（v2.2 新增）：三模式无关性（ADR-14）—— 载荷与转换器层<b>不得</b>出现应用模式分支。
+    /// </summary>
+    [Fact]
+    public void PayloadSurface_MustBeAppModeAgnostic()
+    {
+        var payloadTypes = new[]
+        {
+            typeof(ContactUserChangedPayload), typeof(ContactPartyChangedPayload),
+            typeof(ContactTagChangedPayload), typeof(BatchJobCompletedPayload),
+            typeof(ChainChangedPayload), typeof(GenericCallbackPayload),
+            typeof(WechatPayloadConverter),
+        };
+
+        foreach (var type in payloadTypes)
+        {
+            var source = ReadSource(type);
+            source.Should().NotContain("WechatAppType",
+                $"{type.Name} 不得按应用类型分支（ADR-14：一份契约覆盖三模式）");
+            source.Should().NotContain("WechatCallbackChannel",
+                $"{type.Name} 不得按回调通道分支（ADR-14）");
         }
     }
 
@@ -268,18 +396,104 @@ public class WechatCallbackContractGuards
     /// 契约守卫 CB7：Abstractions 的回调契约层不得出现 XML 类型
     /// （v1 方案 §3.1 上移边界——信封仅字段契约，不向 Abstractions 引入 System.Xml.Linq 依赖）。
     /// </summary>
+    /// <remarks>
+    /// <b>v2.2 修正（原始实现是守卫盲区）</b>：原断言用
+    /// <c>Directory.GetFiles(dir, "*.cs")</c> —— <b>非递归</b>。
+    /// v2.2 新增 <c>Callback/Payloads/</c> 子目录后，该目录下的文件<b>完全脱离</b>本守卫覆盖。
+    /// 现改为 <c>SearchOption.AllDirectories</c> 并排除 <c>obj</c>/<c>bin</c>，
+    /// 以覆盖整个回调契约层（含载荷端口层）。
+    /// </remarks>
     [Fact]
     public void CallbackEnvelope_ShouldNotExposeXmlTypes()
     {
         var callbackDir = Path.Combine(GetSolutionRoot(), "Mud.Wechat.Work.Abstractions", "Callback");
         Directory.Exists(callbackDir).Should().BeTrue($"未找到 Abstractions 回调契约目录：{callbackDir}");
 
-        foreach (var file in Directory.GetFiles(callbackDir, "*.cs"))
+        var files = Directory.GetFiles(callbackDir, "*.cs", SearchOption.AllDirectories)
+            .Where(f => !f.Contains(
+                            Path.DirectorySeparatorChar + "obj" + Path.DirectorySeparatorChar,
+                            StringComparison.OrdinalIgnoreCase)
+                        && !f.Contains(
+                            Path.DirectorySeparatorChar + "bin" + Path.DirectorySeparatorChar,
+                            StringComparison.OrdinalIgnoreCase))
+            .ToArray();
+
+        files.Should().NotBeEmpty("回调契约层应至少含一个源文件（守卫空转即失效）");
+
+        foreach (var file in files)
         {
-            var source = File.ReadAllText(file);
-            source.Should().NotContain("System.Xml.Linq", $"{file} 不得引入 XML 命名空间");
-            source.Should().NotContain("XDocument", $"{file} 不得出现 XDocument");
-            source.Should().NotContain("XElement", $"{file} 不得出现 XElement");
+            foreach (var line in File.ReadAllLines(file))
+            {
+                // 跳过注释行（含 ///）：XML 文档注释中常出现「不得出现 XElement」这类
+                // **说明性文字**，朴素物理行匹配会把它误判为实现依赖。
+                if (line.TrimStart().StartsWith("//", StringComparison.Ordinal))
+                    continue;
+
+                line.Should().NotContain(NoXmlMarkers.Namespace, $"{file} 不得引入 XML 命名空间");
+                NoXmlMarkers.AssertNoXmlType(line, file);
+            }
+        }
+    }
+
+    /// <summary>
+    /// 契约守卫 CB14（v2.2 新增）：Mud.Wechat 的 XML 触点必须唯一 ——
+    /// <c>WechatCallbackReceiver</c>（请求体 <c>Encrypt</c> 提取）与
+    /// <c>XElementPayloadSource</c>（载荷投影）之外的文件不得出现 XML 类型。
+    /// </summary>
+    [Fact]
+    public void CallbackPackage_ShouldKeepXmlTouchPointsUnique()
+    {
+        var allowed = new[] { "WechatCallbackReceiver.cs", "XElementPayloadSource.cs" };
+
+        var files = Directory.GetFiles(
+                Path.Combine(GetSolutionRoot(), "Mud.Wechat.Work.Callback"), "*.cs", SearchOption.AllDirectories)
+            .Where(f => !f.Contains(
+                            Path.DirectorySeparatorChar + "obj" + Path.DirectorySeparatorChar,
+                            StringComparison.OrdinalIgnoreCase)
+                        && !f.Contains(
+                            Path.DirectorySeparatorChar + "bin" + Path.DirectorySeparatorChar,
+                            StringComparison.OrdinalIgnoreCase))
+            .ToArray();
+
+        foreach (var file in files)
+        {
+            var name = Path.GetFileName(file);
+            if (allowed.Contains(name, StringComparer.Ordinal))
+                continue;
+
+            foreach (var line in File.ReadAllLines(file))
+            {
+                // 同 CB7：跳过注释行，避免「说明性文字」被误判为实现依赖。
+                if (line.TrimStart().StartsWith("//", StringComparison.Ordinal))
+                    continue;
+
+                NoXmlMarkers.AssertNoXmlType(line, $"{name}（XML 触点须唯一，ADR-6）");
+            }
+        }
+    }
+
+    /// <summary>
+    /// XML 依赖标记与匹配规则（CB7 / CB14 共用）。
+    /// </summary>
+    /// <remarks>
+    /// <b>必须用<b>词边界</b>正则而非 <c>Contains</c></b>：本仓库存在标识符
+    /// <c>XElementPayloadSource</c>（合法的 XML 触点类名），其<b>包含子串</b> "XElement" ——
+    /// 朴素子串匹配会把引用该类的文件误判为「引入 XML 类型」。
+    /// <c>\bXElement\b</c> 要求其后为非单词字符，故不会命中 <c>XElementPayloadSource</c>。
+    /// </remarks>
+    private static class NoXmlMarkers
+    {
+        internal const string Namespace = "System.Xml.Linq";
+
+        private static readonly string[] TypePatterns = { @"\bXDocument\b", @"\bXElement\b" };
+
+        internal static void AssertNoXmlType(string line, string subject)
+        {
+            foreach (var pattern in TypePatterns)
+            {
+                Regex.IsMatch(line, pattern).Should().BeFalse(
+                    subject + " 不得出现 XML 类型（匹配 " + pattern + "）：" + line.Trim());
+            }
         }
     }
 
@@ -436,6 +650,29 @@ public class WechatCallbackContractGuards
             "CB13：合法性闸必须先于拦截器（不适用事件族不得触达业务拦截器/处理器）");
         source.Should().Contain("return WechatCallbackDispatchOutcome.Rejected;",
             "CB13：不适用事件族以 Rejected 返回（中间件映射 200，不触发企业微信重推）");
+    }
+
+    /// <summary>
+    /// 读取某个类型的源码文本（按「类型名 + .cs」在仓库内定位，排除 <c>obj</c>/<c>bin</c>）。
+    /// </summary>
+    /// <remarks>
+    /// 用于「源码形态」类守卫（如三模式无关性）：这类约束无法用反射表达
+    /// （反射只能看见成员，看不见方法体内的分支），只能以文本扫描锁定。
+    /// </remarks>
+    private static string ReadSource(Type type)
+    {
+        var root = GetSolutionRoot();
+        var files = Directory.GetFiles(root, type.Name + ".cs", SearchOption.AllDirectories)
+            .Where(f => !f.Contains(
+                            Path.DirectorySeparatorChar + "obj" + Path.DirectorySeparatorChar,
+                            StringComparison.OrdinalIgnoreCase)
+                        && !f.Contains(
+                            Path.DirectorySeparatorChar + "bin" + Path.DirectorySeparatorChar,
+                            StringComparison.OrdinalIgnoreCase))
+            .ToArray();
+
+        files.Should().NotBeEmpty("找不到 " + type.Name + " 的源码文件（守卫 ReadSource 定位失败）");
+        return File.ReadAllText(files[0]);
     }
 
     /// <summary>解决方案根目录定位（与 <c>WechatContractGuards.GetSolutionRoot</c> 同款判据）。</summary>

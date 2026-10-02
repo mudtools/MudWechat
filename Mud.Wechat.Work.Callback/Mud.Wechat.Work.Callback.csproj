@@ -11,6 +11,14 @@
 	</ItemGroup>
 
 	<!-- v1 方案 D1（对齐 Mud.Feishu.Webhook）：netstandard2.0 保留旧包；net6.0+ 使用 FrameworkReference -->
+	<!-- 载荷字段映射生成器：为 [PayloadContract] 载荷类生成 PayloadFieldMap 映射表。
+	     注意 Abstractions 中的本包引用带 PrivateAssets="all"，**不会**流向本工程，
+	     故此处必须显式引用（否则本工程的载荷类无生成物 ⇒ PayloadFieldMap 成员缺失）。 -->
+	<ItemGroup>
+		<PackageReference Include="Mud.HttpUtils.Generator" Version="3.0.1" PrivateAssets="all" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+	</ItemGroup>
+
+	<!-- v1 方案 D1（对齐 Mud.Feishu.Webhook）：netstandard2.0 保留旧包；net6.0+ 使用 FrameworkReference -->
 	<ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
 		<PackageReference Include="Microsoft.AspNetCore.Http" Version="2.3.9" />
 		<PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.3.9" />

@@ -125,13 +125,15 @@ Mud.Wechat/
 ├── Mud.Wechat.Work/             # 主包：接口声明、服务、DI、模块注册
 │   └── Interfaces/              # 按功能族分目录：Authentication/、Contacts/（通讯录六域，Export 独立子目录）、
 │                                # ExternalContact/（客户联系六域：FollowUser + Customer + Tag + JobInheritance + ResignedInheritance + GroupChat）、CorpGroup/（上下游三接口族：CorpGroup + ChainContacts + Rules）、
-│                                # Security/（安全管理三接口族：Security + SecurityVip + SecurityOperLog，官方仅自建开放）
+│                                # Security/（安全管理三接口族：Security + SecurityVip + SecurityOperLog，官方仅自建开放）、
+│                                # Message/（消息推送三接口族：Message + AppChat + SchoolMessage；template_msg 仅第三方差异端点，群聊会话/学校通知官方仅自建开放）
 ├── Mud.Wechat.Work.Abstractions/# 抽象：令牌基座、多应用、配置、仓储、枚举、异常
 ├── Mud.Wechat.Work.DataModels/  # 官方 DTO（[HttpJsonSerializable] 标注）+ Generated/ 域 JsonContext（生成）
 │   ├── Contacts/                # 通讯录域 DTO 分组：Users / Department / Tags / ContactRules / Batch（RequestModel/ 仅作目录组织）
 │   ├── ExternalContact/         # 客户联系域 DTO 分组：FollowUser / Customer / Tag / JobInheritance / ResignedInheritance / GroupChat（RequestModel/ 仅作目录组织）
 │   ├── CorpGroup/               # 上下游域 DTO 分组：基础 + ChainContacts + Rules（RequestModel/ 仅作目录组织）
-│   └── Security/                # 安全管理域 DTO 分组：38 型单一命名空间（RequestModel/ 仅作目录组织；含文件防泄漏/设备管理/截屏录屏/域名IP/高级功能账号/操作日志）
+│   ├── Security/                # 安全管理域 DTO 分组：38 型单一命名空间（RequestModel/ 仅作目录组织；含文件防泄漏/设备管理/截屏录屏/域名IP/高级功能账号/操作日志）
+│   └── Message/                 # 消息推送域 DTO 分组：80 型单一命名空间（RequestModel/ 仅作目录组织；发送应用消息/更新模版卡片/撤回/群聊会话/学校通知 + 模板卡片家族）
 ├── Mud.Wechat.Work.Callback/    # 回调接收（AES 解密、事件解析、分发）+ HTTP 中间件（多应用路由、URL 验证、
 │                                # 类型化处理器/拦截器分发，Events/ 强类型事件 DTO；ASP.NET 引用条件化，见回调域）
 ├── Mud.Wechat.Redis/            # Redis 分布式存储扩展（四存储端口 Redis 实现 + 连接基座 + DI 编排，RD11 单依赖 Abstractions）
@@ -169,6 +171,27 @@ DTO 落 `DataModels/ExternalContact/{FollowUser,Customer,Tag,JobInheritance,Resi
 `groupchat/transfer`（在职为 `transfer_customer` / `transfer_result` / `groupchat/onjob_transfer`，
 "onjob" 拼写属官方契约）；另有「获取待分配的离职成员列表」（`get_unassigned_list`）为离职继承独有。
 
+**消息推送域（2026-10-02 新增）**：接口落 `Interfaces/Message/`，命名空间 `Mud.Wechat.Work`；DTO 落
+`DataModels/Message/`，命名空间 `Mud.Wechat.Work.DataModels.Message`（`RequestModel/` 仅作目录组织）。
+模块枚举 `WechatModule.Message`（`AddMessageApi()` → 生成器 `AddMessageWebApiHttpClient()`，注册组 `Message`）。
+三接口族：**发送应用消息族**（Message：`/cgi-bin/message/send` 12 种 msgtype 每型一端点方法 +
+`update_template_card` + `recall`）官方对三类应用开放完全一致 ⇒ 公共端点收敛父接口，自建/代开发子接口
+空标记、第三方子接口另持 `template_msg` 差异端点（94515，同路由 `/cgi-bin/message/send`，官方页面未单独
+标注路由，以正文表述为准）；**群聊会话族**（AppChat：appchat/create + update + get + send）官方仅自建开放
+（可见范围须根部门、第三方明示不可调用）⇒ 父接口零端点 + 仅自建子接口承载端点；**家校学校通知族**
+（SchoolMessage：`/cgi-bin/externalcontact/message/send` 8 种 msgtype）同仅自建形态。
+**多态落位决策**：msgtype/card_type 不做运行时多态（AOT 源生成按声明类型序列化），每个 msgtype 一个
+端点方法 + 请求 DTO（同路由多方法），官方各 msgtype 参数表差异（safe 有无、id 转译支持面、
+mentioned_list 仅群聊）在 DTO 层面精确表达；模板卡片 `TemplateCardBody` 为发送/更新两端点共用的扁平结构
+（card_type 判别 + 全可选嵌套，replace_text/disable 仅更新接口支持）。
+**响应形态陷阱**：`message/send` 的 invaliduser 为竖线分隔字符串，`update_template_card` 的 invaliduser
+为字符串数组——两类响应 DTO 不共用；学校通知响应为 invalid_parent_userid / invalid_student_userid /
+invalid_party 三个数组。**限频契约**：发送应用消息每应用「账号上限数 × 200」人次/天、同一成员
+30 次/分 + 1000 次/时（超限丢弃）；appchat/send 每企业 2 万人次/分 + 规模分档小时额度、成员级
+200 条/分 + 1 万条/天（超限静默丢弃且不报错，推送成功 ≠ 全员送达）；创建群 1000 个/天、修改群 1000 次/小时。
+**「接收消息与事件」不在本域**：消息接收为企业微信回调推送（XML），由 `Mud.Wechat.Work.Callback`
+中间件承载，本域全部为发送侧 HTTP API。
+
 ## Dependency Version Policy (Mud.HttpUtils)
 
 - 全仓库锁定 `Mud.HttpUtils` / `Mud.HttpUtils.Generator` **同一版本**（当前 **3.0.0**），由
@@ -193,7 +216,7 @@ DTO 落 `DataModels/ExternalContact/{FollowUser,Customer,Tag,JobInheritance,Resi
 - 授权安装链接前缀：`https://open.work.weixin.qq.com/3rdapp/install`。
 - 令牌注入统一走 **Query**（企业微信契约，非 Header），触发组件 `MUD005` 已知接受风险；注入白名单由
   `WechatContractGuards.QueryTokenInjection_ShouldBeLimitedToWechatOfficialContractInterfaces` 锁定为
-  **授权流接口 + 通讯录六域 + 客户联系六域（企业服务人员管理/客户管理/客户标签管理/在职继承/离职继承/客户群管理）+ 上下游三接口族（CorpGroup/ChainContacts/Rules）+ 安全管理三接口族（Security/SecurityVip/SecurityOperLog）父/子接口共 61 个**（见 Contract Guards 表 G5），新增 Query 注入接口须评估后显式扩展守卫。
+  **授权流接口 + 通讯录六域 + 客户联系六域（企业服务人员管理/客户管理/客户标签管理/在职继承/离职继承/客户群管理）+ 上下游三接口族（CorpGroup/ChainContacts/Rules）+ 安全管理三接口族（Security/SecurityVip/SecurityOperLog）+ 消息推送三接口族（Message/AppChat/SchoolMessage）父/子接口共 69 个**（见 Contract Guards 表 G5），新增 Query 注入接口须评估后显式扩展守卫。
 - v2 端点：`/cgi-bin/service/v2/get_permanent_code`、`/cgi-bin/service/v2/get_auth_info`；
   `get_customized_auth_url` 以**显式 Query 参数** `provider_access_token` 传令牌（**不带 `[Token]`**，不放宽白名单）。
 - `TokenKey` 布局：**三段式 `{tokenType}:{appKey}:{scopeKey}`**（如 `Wechat.AccessToken:default:default`；
@@ -357,6 +380,7 @@ G8 的运行期同实例断言在 `WechatServiceCollectionExtensionsTests`）+ �
 | CG5~CG8 | `WechatCorpGroupContractGuards`（上下游通讯录管理域，与 CG1~CG4 同文件） | 公共读取面父接口（4 端点：`corpgroup/corp/get_chain_list`、`get_chain_group`、`get_chain_corpinfo_list`、`get_chain_corpinfo`）+ 自建子接口（5 端点：`import_chain_contact`、`corpgroup/getresult`、`corp/remove_corp`、`corp/get_chain_user_custom_id`、`get_corp_shared_chain_list`）+ 代开发空标记（官方代开发树仅镜像获取上下游信息）。CG5 路由表 9 条（`DeclaredOnly` 限定声明位置，注释警示 `corpgroup/getresult` 与 `batch/getresult`、`export/get_result` 拼写差异）；CG6 父接口恰 4 端点 + 自建恰 5 端点 + 代开发零端点；CG7 令牌绑定；CG8 JSON 上下文登记（23 型）。同挂 `CorpGroup` 注册组共用 `AddCorpGroupApi()`。**导入强串行**：同时仅一个导入任务、只允许串行调用，接口注释必须保留该警示 |
 | CG9~CG11 | `WechatCorpGroupContractGuards`（上下游规则域，与 CG1~CG8 同文件） | **形态为父接口零端点 + 端点全落自建子接口**（官方仅向自建开放，且仅上下游创建空间的主企业可调用）：5 个端点（`corpgroup/rule/list_ids`、`delete_rule`、`get_rule_info`、`add_rule`、`modify_rule`）。CG9 路由表 5 条（全 POST）；CG10 父接口零端点 + Internal 恰 5 端点、无其它子接口；CG11 令牌绑定（2 接口）+ JSON 上下文登记（11 型）。同挂 `CorpGroup` 注册组共用 `AddCorpGroupApi()`。**频率警示**：新增/更新规则共用每天 1000 次额度，接口注释必须保留 |
 | SEC1~SEC4 | `WechatSecurityContractGuards`（安全管理域，`WechatModule.Security` / `Security` 注册组，经 `AddSecurityApi()` 独立注册） | **形态为三接口族「父接口零端点 + 端点全落自建子接口」**（官方安全管理目录 16 端点对第三方/代开发均无文档 ⇒ 不设第三方/代开发子接口；官方文档 URL：文件防泄漏 98079、设备管理 98920、截屏/录屏管理 100128、域名 IP 100079、高级功能账号 99503/99505/99506、操作日志 100178/100179）。SEC1 路由表 16 条（Security 族 9：文件防泄漏 1 + trustdevice 设备 6 + 截屏录屏 1 + 域名 IP GET 1；Vip 族 5 全 POST；OperLog 族 2 全 POST）；SEC2 层级（三父接口 IsAbstract 零端点 + 自建子接口恰 9/5/2 端点 + 继承链上仅 Internal 一个子接口的漂移守卫）；SEC3 令牌绑定（6 接口 `Wechat.AccessToken` + Query 注入）；SEC4 JSON 上下文登记（46 型，SecurityJsonContext）。**官方拼写陷阱**：域名 IP 响应字段 `universal_domian`（原文如此）、admin_oper_log 参数表游标拼作 `cusor`（SDK 以官方 JSON 示例为准用 `cursor`）；**权限分层**：文件防泄漏/设备管理/截屏录屏/域名 IP/高级功能账号/操作日志各自独立配置「可调用接口的应用」，可见范围外用户数据被过滤；**限频**：操作日志 600 次/分钟、跨度 ≤7 天；高级功能分配/取消为异步任务（jobid 查询） |
+| MSG1~MSG4 | `WechatMessageContractGuards`（消息推送域，`WechatModule.Message` / `Message` 注册组，经 `AddMessageApi()` 独立注册） | 三接口族：发送应用消息族为**父接口公共端点 + 第三方 template_msg 差异端点**（自建/代开发空标记；官方文档 URL：发送应用消息 90236/90372/96458、更新模版卡片 94888/94945/96459、撤回 94867/94947/96460、模板消息 94515 仅第三方），群聊会话族（90245/98913/98914/90248）与家校学校通知族（91609）为**父接口零端点 + 端点全落自建子接口**（官方仅自建开放，群聊会话明示第三方不可调用，应用可见范围须根部门）。MSG1 路由表 34 条（message/send 12 方法同路由：11 公共 msgtype + 第三方 template_msg；update_template_card / recall 各 1；appchat create/update/get/send 共 12 方法，其中 get 为 GET + `[Query("chatid")]`；学校通知 externalcontact/message/send 8 方法同路由）；MSG2 层级（Message 父接口 IsAbstract 恰 13 端点 + 自建/代开发零端点 + 第三方恰 1 端点 + 三族「继承链上恰好只有既定子接口」漂移守卫；AppChat/SchoolMessage 父接口零端点 + 仅 Internal 子接口承载端点）；MSG3 令牌绑定（8 接口 `Wechat.AccessToken` + Query 注入）；MSG4 JSON 上下文登记（80 型，MessageJsonContext）。**多态落位决策**：每 msgtype 一端点方法 + 请求 DTO（同路由多方法；不做运行时多态——AOT 源生成按声明类型序列化），msgtype 参数表差异（safe 有无、id 转译支持面、mentioned_list 仅群聊）在 DTO 层面表达；`TemplateCardBody` 为发送/更新两端点共用扁平结构（card_type 判别，replace_text/disable 仅更新接口支持）。**响应形态陷阱**：message/send 的 invaliduser 为竖线分隔字符串，update_template_card 的 invaliduser 为字符串数组，两响应 DTO 不共用。**限频**：应用消息每应用「账号上限数 × 200」人次/天、同一成员 30 次/分 + 1000 次/时（超限丢弃）；appchat/send 每企业 2 万人次/分 + 规模分档小时额度、成员级 200 条/分 + 1 万条/天（超限静默丢弃不报错）；创建群 1000 个/天、修改群 1000 次/小时。**「接收消息与事件」为回调推送（XML），由 Callback 包承载，不落本域接口** |
 | CB1~CB9 | `WechatCallbackContractGuards`（回调域，对齐《回调解决方案 v1》§7 + §13 上下游增补） | CB1 `Callback` 包 csproj 不得引用主包 `Work`（K-callback）；CB2 `WechatCallbackEventTypes` 常量覆盖官方事件键 24 个（授权 6 + 通讯录 7 + 异步 1 + 上下游 Event 1 与 ChangeType 9，95796）+ `EventTypeKey` 优先级（InfoType→ChangeType→Event）；CB3 内置授权族处理器为**单类兜底**（`SupportedEventType => string.Empty`，文件留 `Callback` 包根目录——G9 按路径断言）+ 信封含授权族 6 判别；CB4 事件 DTO 官方字段反射断言（成员/部门/标签/异步/上下游 11 型）；CB5 回调凭据唯一来源 = `WechatCallbackOptions.Apps`（`WechatAppConfig` 无 Push 属性、应用级配置无 `AppKey` 属性）；CB6 echo 复用 `VerifySignature`+`Decrypt`、验签先于解密且**不消费指纹**（协议文本）+ 被动应答 `Encrypt`/`ComputeSignature` 基座；CB7 `Abstractions/Callback/` 不得出现 XML 类型（信封上移边界）；CB8 `WechatCallbackCrypto` **不得出现 `PaddingMode.PKCS7`**（.NET 内置 16 块校验会误拒官方 pad∈[17..32] 报文），必须 `PaddingMode.None` + 手工 32 块填充剥离（P0-1）；CB9 接收器源码中 `TryMarkAsync` 必须位于 `WechatCallbackCrypto.Decrypt` **之后**（P1-1/D2 指纹闸后移防回归）。守卫文件位于 `Tests/Mud.Wechat.Work.Tests/ContractGuards/`（该工程对 `Callback` 有测试专用 ProjectReference） |
 | MA1~MA4 | `WechatMultiAppContractGuards`（多应用管理域，`Tests/Mud.Wechat.Work.Abstractions.Tests/ContractGuards/`） | MA1 `RemoveApp` 方法体内 `_lazyContexts.TryRemove` 必须先于 `_configs.Remove`（M8「返回 false ⇒ 零突变」防回归）；MA2 `IsTransientInitFailure` 方法体**不得包含 IOE 白名单判定**且须保留 IO 型异常组 + OCE 显式排除（M4）；MA3 `WechatAppContextRetirement.Enqueue` 方法体必须含 `_disposed` 闸且落闸即 `Dispose` 上下文、先于宽限期判定（M3 停机竞态闸）；MA4 `WechatCorpContext.SetCorp` 必须含 null（`ArgumentNullException`）与空白（`IsNullOrWhiteSpace`）校验（M7）。守卫为**方法体提取**（花括号配平）的源码文本断言，签名漂移须同步更新守卫 |
 | RD-G1~RD-G6 | `WechatRedisContractGuards`（Redis 分布式存储域，`Tests/Mud.Wechat.Redis.Tests/ContractGuards/`） | RD-G1 SCAN 模式仅经 `WechatRedisKeyBuilder.Pattern` 产出（含 glob 字面量转义 + `:*` 段级精确结尾，KeysAsync 调用点文件必须引用 Pattern 单一出口——飞书 D10 静默失效防回归）；RD-G2 `WechatRedisOptions`/`WechatRedisConnectionOptions` 无 `required`（G2 同源）；RD-G3 重放守卫 `TryMarkAsync` 方法体必须含 `WechatRedisErrors.Map` 上抛且无「catch 吞异常返回 true/false」形态（RD3 fail-closed）；RD-G4 `Password`/`PermanentCode`/票据值不进日志调用点（连接失败消息只携带脱敏后的 `options.ToString()`）；RD-G5 顺序守卫常量 `InMemoryReplayGuardTypeName` 与 Callback 包 `InMemoryWechatCallbackReplayGuard` 的 FullName 反射一致（R-1 后 Redis 不引用 Callback，全名探测防漂移）；RD-G6 Redis 包 csproj 单依赖 Abstractions（不得引用 Callback/主包，RD11） |

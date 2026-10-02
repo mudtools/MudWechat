@@ -31,6 +31,6 @@ public enum WechatModule
     /// <summary>安全管理（文件防泄漏 / 设备管理 / 截屏录屏管理 / 域名 IP 信息 / 高级功能账号管理 / 操作日志，官方仅向自建应用开放）。</summary>
     Security,
 
-    /// <summary>消息推送等（预留）。</summary>
+    /// <summary>消息推送（发送应用消息 + 群聊会话 + 家校学校通知：公共面收敛父接口；template_msg 仅第三方差异端点，群聊会话/学校通知官方仅自建）。</summary>
     Message,
 }

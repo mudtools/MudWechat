@@ -10,7 +10,8 @@ using Microsoft.Extensions.DependencyInjection;
 namespace Mud.Wechat.Work.Callback.Tests;
 
 /// <summary>
-/// 回调 DI 装配测试（P0-2）：抗重放守卫可解析、跨 scope 同一实例、宿主可前置覆盖为分布式实现。
+/// 回调 DI 装配测试（P0-2 + v1 方案 §5.8）：抗重放守卫可解析、跨 scope 同一实例、宿主可前置覆盖为分布式实现；
+/// v1.2 追加注册表/分发器/中间件装配与建造者注册行为。
 /// </summary>
 public class WechatCallbackServiceCollectionExtensionsTests
 {
@@ -22,8 +23,11 @@ public class WechatCallbackServiceCollectionExtensionsTests
         services.AddLogging();
         services.AddWechatCallback(options =>
         {
-            options.PushToken = "push-token";
-            options.PushEncodingAESKey = AesKey;
+            options.Apps[WechatCallbackOptions.WildcardAppKey] = new WechatAppCallbackOptions
+            {
+                PushToken = "push-token",
+                PushEncodingAESKey = AesKey,
+            };
         });
 
         return services;
@@ -44,21 +48,53 @@ public class WechatCallbackServiceCollectionExtensionsTests
     }
 
     [Fact]
-    public void Receiver_ShouldReceiveReplayGuardFromContainer()
+    public void CallbackPipeline_ShouldBeResolvableAsSingletons()
     {
         var services = CreateServices();
         using var provider = services.BuildServiceProvider();
 
         var receiver = provider.GetRequiredService<IWechatCallbackReceiver>();
-        var guard = provider.GetRequiredService<IWechatCallbackReplayGuard>();
+        var dispatcher = provider.GetRequiredService<WechatCallbackDispatcher>();
+        var handlers = provider.GetRequiredService<WechatCallbackHandlerRegistry>();
+        var interceptors = provider.GetRequiredService<WechatCallbackInterceptorRegistry>();
 
-        // 经容器注入的守卫必须真实生效（同一指纹第二次拒绝）。
-        var mark1 = guard.TryMarkAsync("fingerprint-1", TimeSpan.FromMinutes(5)).GetAwaiter().GetResult();
-        var mark2 = guard.TryMarkAsync("fingerprint-1", TimeSpan.FromMinutes(5)).GetAwaiter().GetResult();
+        using var scope = provider.CreateScope();
+        ReferenceEquals(receiver, scope.ServiceProvider.GetRequiredService<IWechatCallbackReceiver>()).Should().BeTrue();
+        ReferenceEquals(dispatcher, scope.ServiceProvider.GetRequiredService<WechatCallbackDispatcher>())
+            .Should().BeTrue("分发器 Singleton（并发信号量跨请求共享）");
+        ReferenceEquals(handlers, scope.ServiceProvider.GetRequiredService<WechatCallbackHandlerRegistry>())
+            .Should().BeTrue("注册表为组合根期创建的单例实例（D11）");
+        interceptors.Should().NotBeNull();
+    }
 
-        mark1.Should().BeTrue();
-        mark2.Should().BeFalse("同键在窗口内只能被首次消费");
-        receiver.Should().NotBeNull();
+    [Fact]
+    public void AddWechatCallback_ShouldRegisterBuiltinFallbackHandler_ToWildcardBucket()
+    {
+        var services = CreateServices();
+        using var provider = services.BuildServiceProvider();
+
+        var registry = provider.GetRequiredService<WechatCallbackHandlerRegistry>();
+        registry.GetAll(WechatCallbackOptions.WildcardAppKey)
+            .Should().Contain(typeof(WechatCallbackHandler), "D6/D11：内置授权族兜底处理器默认注册到通配键");
+    }
+
+    [Fact]
+    public void Builder_ShouldRegisterHandlerAndInterceptor()
+    {
+        var services = CreateServices();
+        services.AddWechatCallback(_ => { })
+            .AddHandler<StubEventHandler>()
+            .AddHandler<AppScopedEventHandler>("app1")
+            .AddInterceptor<StubInterceptor>();
+
+        using var provider = services.BuildServiceProvider();
+        var handlers = provider.GetRequiredService<WechatCallbackHandlerRegistry>();
+        var interceptors = provider.GetRequiredService<WechatCallbackInterceptorRegistry>();
+
+        handlers.GetAll(WechatCallbackOptions.WildcardAppKey)
+            .Should().Contain(typeof(StubEventHandler), "无 appKey 重载注册到通配键（全局生效，D11）");
+        handlers.GetAll("app1").Should().Contain(typeof(AppScopedEventHandler), "显式 appKey 注册到应用专属桶");
+        interceptors.GetAll(WechatCallbackOptions.WildcardAppKey).Should().Contain(typeof(StubInterceptor));
     }
 
     [Fact]
@@ -72,13 +108,44 @@ public class WechatCallbackServiceCollectionExtensionsTests
 
         services.AddWechatCallback(options =>
         {
-            options.PushToken = "push-token";
-            options.PushEncodingAESKey = AesKey;
+            options.Apps[WechatCallbackOptions.WildcardAppKey] = new WechatAppCallbackOptions
+            {
+                PushToken = "push-token",
+                PushEncodingAESKey = AesKey,
+            };
         });
 
         using var provider = services.BuildServiceProvider();
 
         ReferenceEquals(provider.GetRequiredService<IWechatCallbackReplayGuard>(), distributed.Object)
             .Should().BeTrue("宿主注册的分布式实现优先（多实例部署必需）");
+    }
+
+    /// <summary>测试用精确键处理器（create_user）。</summary>
+    private sealed class StubEventHandler : IWechatCallbackEventHandler
+    {
+        public string SupportedEventType => WechatCallbackEventTypes.CreateUser;
+
+        public Task HandleAsync(WechatCallbackEvent eventData, CancellationToken cancellationToken = default)
+            => Task.CompletedTask;
+    }
+
+    /// <summary>测试用 appKey 专属处理器（batch_job_result）。</summary>
+    private sealed class AppScopedEventHandler : IWechatCallbackEventHandler
+    {
+        public string SupportedEventType => WechatCallbackEventTypes.BatchJobResult;
+
+        public Task HandleAsync(WechatCallbackEvent eventData, CancellationToken cancellationToken = default)
+            => Task.CompletedTask;
+    }
+
+    /// <summary>测试用拦截器（全放行）。</summary>
+    private sealed class StubInterceptor : IWechatCallbackEventInterceptor
+    {
+        public Task<bool> BeforeHandleAsync(string eventType, WechatCallbackEvent eventData, CancellationToken cancellationToken = default)
+            => Task.FromResult(true);
+
+        public Task AfterHandleAsync(string eventType, WechatCallbackEvent eventData, CancellationToken cancellationToken = default)
+            => Task.CompletedTask;
     }
 }

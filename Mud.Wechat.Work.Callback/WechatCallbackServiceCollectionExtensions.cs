@@ -10,20 +10,24 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 namespace Mud.Wechat.Work.Callback;
 
 /// <summary>
-/// 回调接收服务注册扩展。
+/// 回调接收服务注册扩展（v1 方案 §5.8）：接收器/分发器/注册表/中间件装配 + 建造者链式注册。
 /// </summary>
 /// <remarks>
 /// 回调仓储（<see cref="IWechatSuiteTicketStore"/> / <see cref="IWechatCorpAuthStore"/>）
-/// 复用令牌底座在 <c>AddWechatApp</c> 中注册的实例（TryAdd 语义：宿主可预注册分布式实现）。
+/// 复用令牌底座在 <c>AddWechatApp</c> 中注册的实例（TryAdd 语义：宿主可预注册分布式实现）；
+/// 未注册授权模块时兜底处理器按「解析失败即跳过 + 告警」降级（R10）。
+/// 回调注册不改动主包 DI 顺序（DI 桥接不变量，v1 方案 §1.3）。
 /// </remarks>
 public static class WechatCallbackServiceCollectionExtensions
 {
     /// <summary>
-    /// 注册企业微信回调接收（验签 + AES 解密 + 事件分发）。
+    /// 注册企业微信回调接收（验签 + AES 解密 + 事件分发 + HTTP 中间件依赖）。
     /// </summary>
     /// <param name="services">服务集合。</param>
-    /// <param name="configure">回调配置委托（PushToken / PushEncodingAESKey / CorpId）。</param>
-    public static IServiceCollection AddWechatCallback(
+    /// <param name="configure">回调配置委托（<see cref="WechatCallbackOptions.Apps"/> 多应用凭据等）。</param>
+    /// <returns>建造者（链式注册 <see cref="WechatCallbackServiceBuilder.AddHandler{THandler}"/> /
+    /// <see cref="WechatCallbackServiceBuilder.AddInterceptor{TInterceptor}"/>）。</returns>
+    public static WechatCallbackServiceBuilder AddWechatCallback(
         this IServiceCollection services,
         Action<WechatCallbackOptions> configure)
     {
@@ -40,7 +44,7 @@ public static class WechatCallbackServiceCollectionExtensions
     [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("反射式配置绑定（ConfigurationBinder.Bind）在裁剪下无法静态分析配置类型成员")]
     [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("反射式配置绑定（ConfigurationBinder.Bind）在 AOT/动态代码生成环境下不可用")]
 #endif
-    public static IServiceCollection AddWechatCallback(
+    public static WechatCallbackServiceBuilder AddWechatCallback(
         this IServiceCollection services,
         IConfiguration configuration,
         string sectionName = "WechatCallback")
@@ -51,12 +55,25 @@ public static class WechatCallbackServiceCollectionExtensions
         return services.AddWechatCallbackCore();
     }
 
-    private static IServiceCollection AddWechatCallbackCore(this IServiceCollection services)
+    private static WechatCallbackServiceBuilder AddWechatCallbackCore(this IServiceCollection services)
     {
+        // 注册表在组合根期创建为单例实例（急切注册模型，v1.2 §5.6；无 Freeze）。
+        var handlerRegistry = new WechatCallbackHandlerRegistry();
+        var interceptorRegistry = new WechatCallbackInterceptorRegistry();
+
         // P0-2：抗重放去重守卫（进程内默认；多实例部署由宿主 TryAdd 前置注册分布式实现）。
+        // 注：WechatCallbackMiddleware 为经典约定式中间件（RequestDelegate 经 UseMiddleware 注入），
+        // 不进 DI——注册反而会让「可解析性」检查在 RequestDelegate 上失败。
         services.TryAddSingleton<IWechatCallbackReplayGuard, InMemoryWechatCallbackReplayGuard>();
         services.TryAddSingleton<IWechatCallbackReceiver, WechatCallbackReceiver>();
+        services.TryAddSingleton<WechatCallbackDispatcher>();
         services.TryAddSingleton<WechatCallbackHandler>();
-        return services;
+        services.AddSingleton(handlerRegistry);
+        services.AddSingleton(interceptorRegistry);
+
+        // D6/D11：内置授权族兜底处理器默认注册到通配键（全局生效；宿主可用精确键处理器前置接管授权族键）。
+        handlerRegistry.Register(WechatCallbackOptions.WildcardAppKey, typeof(WechatCallbackHandler));
+
+        return new WechatCallbackServiceBuilder(services, handlerRegistry, interceptorRegistry);
     }
 }

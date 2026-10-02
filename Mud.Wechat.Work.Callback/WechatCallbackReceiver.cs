@@ -5,21 +5,41 @@
 //  不得利用本项目从事危害国家安全、扰乱社会秩序、侵犯他人合法权益等法律法规禁止的活动！任何基于本项目开发而产生的一切法律纠纷和责任，我们不承担任何责任！
 // -----------------------------------------------------------------------
 
+using Mud.Wechat.Work.Abstractions.Callback;
+
 namespace Mud.Wechat.Work.Callback;
 
 /// <summary>
 /// 企业微信回调接收接口（对齐 Mud.Feishu.Webhook 的接收端职能）。
 /// </summary>
+/// <remarks>
+/// v1 方案 §5.3：方法均带 <paramref name="appKey"/> 感知（多应用凭据选择——精确键优先，回退通配键），
+/// 由中间件从路由路径提取后显式传入。
+/// </remarks>
 public interface IWechatCallbackReceiver
 {
     /// <summary>
-    /// 解析并校验回调（URL 验签参数 + 加密 XML + AES 解密），返回结构化事件。
+    /// 接收并校验事件回调（URL 验签参数 + 加密 XML + AES 解密），返回结构化事件。
     /// </summary>
+    /// <param name="appKey">应用键（路由路径段；凭据按其解析，精确键优先回退通配）。</param>
     /// <param name="urlQuery">回调 URL 的查询串（含 msg_signature / timestamp / nonce）。</param>
     /// <param name="body">回调请求体（加密 XML，含 Encrypt 节点）。</param>
     /// <param name="cancellationToken">取消令牌。</param>
-    /// <exception cref="InvalidOperationException">验签失败或解密失败时抛出。</exception>
-    Task<WechatCallbackEvent> ReceiveAsync(string urlQuery, string body, CancellationToken cancellationToken = default);
+    /// <exception cref="InvalidOperationException">验签失败、解密失败或凭据缺失/非法时抛出。</exception>
+    Task<WechatCallbackEvent> ReceiveAsync(string appKey, string urlQuery, string body, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// GET URL 验证（v1 方案 §5.1）：验签 + 解密 echostr，返回回显明文。
+    /// </summary>
+    /// <param name="appKey">应用键（路由路径段；凭据按其解析，精确键优先回退通配）。</param>
+    /// <param name="urlQuery">回调 URL 的查询串（含 msg_signature / timestamp / nonce / echostr）。</param>
+    /// <param name="cancellationToken">取消令牌。</param>
+    /// <exception cref="InvalidOperationException">验签失败、解密失败或凭据缺失/非法时抛出。</exception>
+    /// <remarks>
+    /// echo 为幂等的 URL 配置验证：只过时间戳时效窗口闸，<b>不消费抗重放指纹</b>（v1.2 D8）——
+    /// 同参数二次验证（管理员再次保存回调配置）必须成功。
+    /// </remarks>
+    Task<string> EchoAsync(string appKey, string urlQuery, CancellationToken cancellationToken = default);
 }
 
 /// <summary>
@@ -29,13 +49,15 @@ public interface IWechatCallbackReceiver
 /// <b>P0-2 抗重放</b>：验签通过后追加两道 fail-closed 闸门——时间戳时效窗口
 /// （<see cref="ReplayWindowSeconds"/>，缺失/非数字即拒绝）与一次性指纹去重
 /// （<see cref="IWechatCallbackReplayGuard"/>，键为与攻击者无关的 SHA1 指纹）。
+/// <b>多应用</b>：凭据经 <see cref="IOptionsMonitor{TOptions}"/> 按 <c>appKey</c> 解析（支持热更新），
+/// 本类保持无状态 Singleton。
 /// </remarks>
 public sealed class WechatCallbackReceiver : IWechatCallbackReceiver
 {
     /// <summary>抗重放时间戳容差（秒）。与飞书同源 SDK 的 <c>TimestampValidator</c> 同量级。</summary>
     internal const int ReplayWindowSeconds = 300;
 
-    private readonly WechatCallbackOptions _options;
+    private readonly IOptionsMonitor<WechatCallbackOptions> _optionsMonitor;
     private readonly IWechatCallbackReplayGuard _replayGuard;
     private readonly Func<DateTimeOffset> _utcNow;
     private readonly ILogger<WechatCallbackReceiver>? _logger;
@@ -44,29 +66,31 @@ public sealed class WechatCallbackReceiver : IWechatCallbackReceiver
     private int _receiveIdSkipLogged;
 
     /// <summary>创建回调接收器。</summary>
-    /// <param name="options">回调配置（PushToken / PushEncodingAESKey / 接收方 ID）。</param>
+    /// <param name="optionsMonitor">回调配置监视器（多应用凭据热更新）。</param>
     /// <param name="replayGuard">一次性去重守卫（可选；缺省为进程内实现）。</param>
     /// <param name="utcNow">时钟源（可选，默认 <see cref="DateTimeOffset.UtcNow"/>；便于测试）。</param>
     /// <param name="logger">日志器（可选）。</param>
     /// <remarks>
     /// 使用可选参数而非 <c>TimeProvider</c>：<c>TimeProvider</c> 在 <c>netstandard2.0</c> 不可用。
+    /// 构造期不做全量 <see cref="WechatCallbackOptions.Validate"/>——凭据按请求期 appKey 解析后单应用校验，
+    /// 避免一个应用的配置错误拖垮全部回调路由（全量校验为宿主启动期入口）。
     /// </remarks>
     public WechatCallbackReceiver(
-        IOptions<WechatCallbackOptions> options,
+        IOptionsMonitor<WechatCallbackOptions> optionsMonitor,
         IWechatCallbackReplayGuard? replayGuard = null,
         Func<DateTimeOffset>? utcNow = null,
         ILogger<WechatCallbackReceiver>? logger = null)
     {
-        _options = (options ?? throw new ArgumentNullException(nameof(options))).Value;
-        _options.Validate();
+        _optionsMonitor = optionsMonitor ?? throw new ArgumentNullException(nameof(optionsMonitor));
         _replayGuard = replayGuard ?? new InMemoryWechatCallbackReplayGuard();
         _utcNow = utcNow ?? (() => DateTimeOffset.UtcNow);
         _logger = logger;
     }
 
     /// <inheritdoc />
-    public async Task<WechatCallbackEvent> ReceiveAsync(string urlQuery, string body, CancellationToken cancellationToken = default)
+    public async Task<WechatCallbackEvent> ReceiveAsync(string appKey, string urlQuery, string body, CancellationToken cancellationToken = default)
     {
+        var app = ResolveApp(appKey);
         var (signature, timestamp, nonce) = WechatCallbackCrypto.ParseSignatureQuery(urlQuery);
         if (string.IsNullOrEmpty(signature))
         {
@@ -76,7 +100,7 @@ public sealed class WechatCallbackReceiver : IWechatCallbackReceiver
         var encrypt = ExtractEncrypt(body)
             ?? throw new InvalidOperationException("回调报文非法：未找到 Encrypt 节点。");
 
-        if (!WechatCallbackCrypto.VerifySignature(_options.PushToken, timestamp ?? string.Empty, nonce ?? string.Empty, encrypt, signature))
+        if (!WechatCallbackCrypto.VerifySignature(app.PushToken, timestamp ?? string.Empty, nonce ?? string.Empty, encrypt, signature))
         {
             throw new InvalidOperationException("回调验签失败：msg_signature 不匹配（请检查 PushToken / CorpId 配置）。");
         }
@@ -88,7 +112,7 @@ public sealed class WechatCallbackReceiver : IWechatCallbackReceiver
             throw new InvalidOperationException("回调验签失败：nonce 缺失。");
         }
 
-        var fingerprint = WechatCallbackCrypto.ComputeSignature(_options.PushToken, timestamp!, nonce!, encrypt);
+        var fingerprint = WechatCallbackCrypto.ComputeSignature(app.PushToken, timestamp!, nonce!, encrypt);
         if (!await _replayGuard
                 .TryMarkAsync(fingerprint, TimeSpan.FromSeconds(ReplayWindowSeconds), cancellationToken)
                 .ConfigureAwait(false))
@@ -96,10 +120,82 @@ public sealed class WechatCallbackReceiver : IWechatCallbackReceiver
             throw new InvalidOperationException("回调验签失败：报文已处理过（疑似重放）。");
         }
 
-        var decrypted = WechatCallbackCrypto.Decrypt(_options.PushEncodingAESKey, encrypt, out var receiveId);
-        ValidateReceiveId(receiveId);
+        var decrypted = WechatCallbackCrypto.Decrypt(app.PushEncodingAESKey, encrypt, out var receiveId);
+        ValidateReceiveId(app, receiveId);
 
         return ParseEvent(decrypted, timestamp, nonce);
+    }
+
+    /// <inheritdoc />
+    public Task<string> EchoAsync(string appKey, string urlQuery, CancellationToken cancellationToken = default)
+    {
+        var app = ResolveApp(appKey);
+        var (signature, timestamp, nonce, echoStr) = ParseEchoQuery(urlQuery);
+        if (string.IsNullOrEmpty(signature))
+        {
+            throw new InvalidOperationException("URL 验证失败：缺少 msg_signature 参数。");
+        }
+
+        if (string.IsNullOrEmpty(echoStr))
+        {
+            throw new InvalidOperationException("URL 验证失败：缺少 echostr 参数。");
+        }
+
+        // 官方 90930：echostr 充当 encrypt 参与项计算签名（`!`：IsNullOrEmpty 在 netstandard2.0 无收窄标注）。
+        if (!WechatCallbackCrypto.VerifySignature(app.PushToken, timestamp ?? string.Empty, nonce ?? string.Empty, echoStr!, signature!))
+        {
+            throw new InvalidOperationException("URL 验证失败：msg_signature 不匹配（请检查 PushToken 配置）。");
+        }
+
+        // 时效窗口闸保持 fail-closed；不消费指纹（幂等验证，v1.2 D8）。
+        ValidateTimestampWindow(timestamp);
+
+        var plain = WechatCallbackCrypto.Decrypt(app.PushEncodingAESKey, echoStr, out var receiveId);
+        ValidateReceiveId(app, receiveId);
+
+        return Task.FromResult(plain);
+    }
+
+    /// <summary>
+    /// 解析指定应用键的回调凭据（精确键优先，回退通配键）；未命中或凭据非法即抛出。
+    /// </summary>
+    private WechatAppCallbackOptions ResolveApp(string appKey)
+    {
+        var options = _optionsMonitor.CurrentValue;
+        var app = options.ResolveApp(appKey)
+            ?? throw new InvalidOperationException(
+                $"回调配置未命中应用 \"{appKey}\"（既无精确键也无通配 \"{WechatCallbackOptions.WildcardAppKey}\" 键）。");
+
+        app.Validate(appKey);
+        return app;
+    }
+
+    /// <summary>
+    /// 解析 URL 验证查询串（msg_signature / timestamp / nonce / echostr）。
+    /// </summary>
+    private static (string? Signature, string? Timestamp, string? Nonce, string? EchoStr) ParseEchoQuery(string urlQuery)
+    {
+        string? signature = null, timestamp = null, nonce = null, echoStr = null;
+        foreach (var pair in (urlQuery ?? string.Empty)
+                     .Split(new[] { '&' }, StringSplitOptions.RemoveEmptyEntries))
+        {
+            var kv = pair.Split(new[] { '=' }, 2);
+            if (kv.Length != 2)
+            {
+                continue;
+            }
+
+            var value = Uri.UnescapeDataString(kv[1]);
+            switch (kv[0])
+            {
+                case "msg_signature": signature = value; break;
+                case "timestamp": timestamp = value; break;
+                case "nonce": nonce = value; break;
+                case "echostr": echoStr = value; break;
+            }
+        }
+
+        return (signature, timestamp, nonce, echoStr);
     }
 
     /// <summary>
@@ -123,27 +219,27 @@ public sealed class WechatCallbackReceiver : IWechatCallbackReceiver
     }
 
     /// <summary>
-    /// 校验解密明文的接收方 ID（<c>receiveid</c>）：<see cref="WechatCallbackOptions.CorpId"/> 为空时跳过（仅告警一次）。
+    /// 校验解密明文的接收方 ID（<c>receiveid</c>）：应用凭据的 <see cref="WechatAppCallbackOptions.CorpId"/> 为空时跳过（仅告警一次）。
     /// </summary>
     /// <remarks>
     /// 语义为「接收方 ID」：企业自建应用回调为企业 <c>CorpId</c>，第三方/服务商<b>套件回调为 <c>SuiteId</c></b>，
-    /// 故按「命中其一即通过」判定，避免套件场景误拒合法回调。
+    /// 通讯录同步助手（通配键）可留空；故按「命中其一即通过」判定，避免套件场景误拒合法回调。
     /// </remarks>
-    private void ValidateReceiveId(string? receiveId)
+    private void ValidateReceiveId(WechatAppCallbackOptions app, string? receiveId)
     {
         if (string.IsNullOrEmpty(receiveId))
         {
             return;
         }
 
-        var expected = _options.CorpId;
+        var expected = app.CorpId;
         if (string.IsNullOrEmpty(expected))
         {
             if (Interlocked.Exchange(ref _receiveIdSkipLogged, 1) == 0)
             {
                 _logger?.LogWarning(
                     "回调配置未设置 CorpId（接收方 ID），已跳过 receiveid 校验；" +
-                    "套件回调请填写 SuiteId，企业自建回调请填写企业 CorpId。");
+                    "套件回调请填写 SuiteId，企业自建回调请填写企业 CorpId，通讯录同步助手可留空。");
             }
 
             return;
@@ -175,6 +271,13 @@ public sealed class WechatCallbackReceiver : IWechatCallbackReceiver
         }
     }
 
+    /// <summary>
+    /// 解析事件信封（v1 方案 §5.4.1）：先抽取通用字段，再补授权族字段。
+    /// </summary>
+    /// <remarks>
+    /// <b>D10（v1.2）</b>：<c>AuthCorpId ← FromUserName</c> 兜底仅限授权族（InfoType 非空且非 authcode 族）——
+    /// 通讯录变更事件的 FromUserName 固定为 sys，无差别兜底会伪造授权企业字段。
+    /// </remarks>
     private static WechatCallbackEvent ParseEvent(string decryptedXml, string? timestamp, string? nonce)
     {
         var evt = new WechatCallbackEvent
@@ -190,6 +293,16 @@ public sealed class WechatCallbackReceiver : IWechatCallbackReceiver
             var root = doc.Root;
             if (root != null)
             {
+                // 通用信封字段。
+                evt.ToUserName = root.Element("ToUserName")?.Value;
+                evt.FromUserName = root.Element("FromUserName")?.Value;
+                evt.CreateTime = root.Element("CreateTime")?.Value;
+                evt.MsgType = root.Element("MsgType")?.Value;
+                evt.Event = root.Element("Event")?.Value;
+                evt.ChangeType = root.Element("ChangeType")?.Value;
+                evt.AgentID = root.Element("AgentID")?.Value;
+
+                // 授权族字段。
                 evt.InfoType = root.Element("InfoType")?.Value;
                 evt.SuiteId = root.Element("SuiteId")?.Value;
                 evt.SuiteTicket = root.Element("SuiteTicket")?.Value;
@@ -197,10 +310,11 @@ public sealed class WechatCallbackReceiver : IWechatCallbackReceiver
 
                 // R11：create_auth / reset_permanent_code 报文体不含 AuthCorpId，
                 // 禁止用 FromUserName 兜底伪造授权企业（该文的授权企业须由 auth_code 换码后反查）。
+                // D10：FromUserName 兜底亦仅限授权族——change_contact 的 FromUserName 固定为 sys。
                 evt.AuthCorpId = root.Element("AuthCorpId")?.Value;
-                if (string.IsNullOrEmpty(evt.AuthCorpId) && !evt.IsAuthCodeEvent)
+                if (string.IsNullOrEmpty(evt.AuthCorpId) && !evt.IsAuthCodeEvent && !string.IsNullOrEmpty(evt.InfoType))
                 {
-                    evt.AuthCorpId = root.Element("FromUserName")?.Value;
+                    evt.AuthCorpId = evt.FromUserName;
                 }
             }
         }

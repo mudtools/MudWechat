@@ -1,13 +1,22 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<Description>企业微信 SDK 回调接收包：suite_ticket / 授权事件推送的验签、AES 解密、事件分发与 suite_ticket 仓储。对应 Mud.Feishu.Webhook + EventCallback 职能。</Description>
-		<PackageTags>Wechat;WeChatWork;企业微信;Callback;Webhook;suite_ticket;MudWechat</PackageTags>
+		<Description>企业微信 SDK 回调接收包：URL 验证（GET echostr 回显）、suite_ticket / 授权事件推送与通讯录变更、异步任务完成通知的验签、AES 解密、事件分发（类型化处理器 + 拦截器）与多应用 HTTP 中间件。对应 Mud.Feishu.Webhook + EventCallback 职能。</Description>
+		<PackageTags>Wechat;WeChatWork;企业微信;Callback;Webhook;suite_ticket;Middleware;MudWechat</PackageTags>
 	</PropertyGroup>
 
 	<ItemGroup>
 		<ProjectReference Include="..\Mud.Wechat.Work.Abstractions\Mud.Wechat.Work.Abstractions.csproj" />
 		<ProjectReference Include="..\Mud.Wechat.Work.DataModels\Mud.Wechat.Work.DataModels.csproj" />
+	</ItemGroup>
+
+	<!-- v1 方案 D1（对齐 Mud.Feishu.Webhook）：netstandard2.0 保留旧包；net6.0+ 使用 FrameworkReference -->
+	<ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+		<PackageReference Include="Microsoft.AspNetCore.Http" Version="2.3.9" />
+		<PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.3.9" />
+	</ItemGroup>
+	<ItemGroup Condition="'$(TargetFramework)' != 'netstandard2.0'">
+		<FrameworkReference Include="Microsoft.AspNetCore.App" />
 	</ItemGroup>
 
 	<ItemGroup>

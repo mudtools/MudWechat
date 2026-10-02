@@ -6,6 +6,7 @@
 // -----------------------------------------------------------------------
 
 using Mud.Wechat.Work.Abstractions.Authentication.TokenManager;
+using Mud.Wechat.Work.Abstractions.Callback;
 using Mud.Wechat.Work.Abstractions.Configuration;
 
 namespace Mud.Wechat.Work.Callback;
@@ -14,6 +15,12 @@ namespace Mud.Wechat.Work.Callback;
 /// 企业微信回调事件处理器：按事件类型分发到对应仓储（对齐 Mud.Feishu.Webhook 的处理语义）。
 /// </summary>
 /// <remarks>
+/// <para>
+/// <b>v1 方案 D6（内置授权族兜底处理器）</b>：实现 <see cref="IWechatCallbackEventHandler"/>，
+/// <see cref="SupportedEventType"/> 恒为空串（兜底语义）——分发器在事件未被任何「精确键」处理器命中时
+/// 才调用本处理器；宿主可注册精确键处理器前置接管授权族键（如 <c>suite_ticket</c>）。
+/// 经 <c>AddWechatCallback</c> 默认注册到通配键（全局生效）。
+/// </para>
 /// <list type="bullet">
 /// <item><c>suite_ticket</c> → 按 <c>SuiteId</c> 写 <see cref="IWechatSuiteTicketStore"/>（驱动 get_suite_token）；</item>
 /// <item><c>create_auth</c> / <c>reset_permanent_code</c> → 经 <see cref="IWechatAuthorizationCoordinator"/>
@@ -29,8 +36,12 @@ namespace Mud.Wechat.Work.Callback;
 /// <c>TryGetApp</c>（后者会构造命名 HttpClient / DI scope / 令牌管理器 Timer）。
 /// </para>
 /// </remarks>
-public sealed class WechatCallbackHandler
+public sealed class WechatCallbackHandler : IWechatCallbackEventHandler
 {
+    /// <inheritdoc />
+    /// <remarks>空串 = 兜底处理器：仅处理未被任何精确键处理器命中的事件（v1 方案 §5.4.2）。</remarks>
+    public string SupportedEventType => string.Empty;
+
     private readonly IWechatSuiteTicketStore _suiteTicketStore;
     private readonly IWechatCorpAuthStore _corpAuthStore;
     private readonly IWechatAppManager? _appManager;

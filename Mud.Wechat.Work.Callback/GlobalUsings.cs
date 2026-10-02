@@ -1,4 +1,5 @@
 global using System;
+global using System.Collections.Concurrent;
 global using System.Collections.Generic;
 global using System.IO;
 global using System.Linq;
@@ -14,3 +15,5 @@ global using Microsoft.Extensions.Options;
 global using Mud.Wechat.Work.Abstractions;
 global using Mud.Wechat.Work.Abstractions.Authentication;
 global using Mud.Wechat.Work.Abstractions.Authentication.TokenManager;
+global using Mud.Wechat.Work.Abstractions.Callback;
+global using Mud.Wechat.Work.Callback.Events;

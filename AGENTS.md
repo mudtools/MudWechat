@@ -193,6 +193,12 @@ DTO 落 `DataModels/ExternalContact/{FollowUser,Customer,Tag,JobInheritance}/`�
   errcode 恢复**必须显式传 scope**：`InvalidateTokenAsync(appKey, AccessToken, new[]{ authCorpId })`；
   以默认作用域失效对已缓存的企业令牌是**空转**（能力边界，由 `CorpTokenManagerScopeIsolationTests` 锁定）。
   `CorpTokenManager` 读取环境 `SetCorp` 上下文须通过**两级校验**：① 上下文 `AppKey` 归属一致；② 上下文 `authCorpId` 与 scope 一致。
+  `WechatCorpContext.SetCorp` 的 `authCorpId` **必填**（null/空白即抛；M7）——它是企业令牌 scope 的唯一来源，
+  与 `appKey=null`「未声明归属」语义显式区分；`InvalidateTokenAsync` 的 `scopes` 非空但全为空/空白串判为编程错误 fail-fast
+  （`scopes=[]`/null 保持「全部」既有语义）。
+- **退役清库批量能力（W1/M10）**：`IWechatTokenStoreBatchRemove : IWechatTokenStore`（可选实现）——管理器清库
+  先 `is` 探测，命中走一次 `RemoveRangeAsync`，未实现回退逐键（宿主自定义 store 零破坏）；
+  形态为「调用方算键 + 实现方批删」（键按中间段 appKey 匹配，前缀扫描不适用）。
 - `IWechatCorpAuthStore` 为**复合键 `(AppKey, AuthCorpId)`**；`IWechatSuiteTicketStore` **按 `suiteId` 分槽**（多套件/多代开发模板互不覆盖）。
   默认实现仅进程内，多实例须宿主提供分布式实现（`TryAdd` 前置注册覆盖）。
   `IWechatCallbackReplayGuard` 同款约定（多实例须分布式实现，否则重放窗口失效）。
@@ -205,6 +211,15 @@ DTO 落 `DataModels/ExternalContact/{FollowUser,Customer,Tag,JobInheritance}/`�
   `RegisterApp`/`UpdateApp`/`RegisterSwitcherFactory` 显式 `NotSupportedException`。
   配置读取一律走 `ConfiguredConfigs` / `TryGetConfig`（**非物化**）；`TryGetApp` 会构造命名 HttpClient/DI scope/Timer，
   仅用于「确实需要上下文」的场景（回调的 `SuiteId → appKey` 匹配不得使用它）。
+  **默认应用链（M2）**：全部应用经 `RemoveApp` 移除后 `DefaultAppKey` 置 `null`（对齐组件契约），
+  `GetDefaultApp` 抛明确错误；重新 `AddApp` 时兜底提升为当前应用（`??=`）。
+  **重建白名单（M4）**：`InvalidOperationException` 不属瞬时装配故障（DI 解析失败为确定性错误，直抛不重建）；
+  瞬时白名单限于 IO 型异常组（HttpRequestException/TimeoutException/IOException/SocketException）。
+  **退役队列（M3/M5）**：清库任务脱泵 fire-and-forget（飞行登记）、停机限时（默认 5s）排空；
+  停机后到达的退役入队立即 Dispose、下线清库任务丢弃（令牌随 TTL 过期）；`RemoveApp` 删除顺序恒为
+  `TryRemove` 先于配置删除（「返回 false ⇒ 零突变」，MA1）。
+  **装配孤儿回收（M1）**：`CreateAppContext` 经 `WechatOwnedResourceTracker` 登记 scope 之外产物
+  （令牌管理器持组件基类维护 Timer），装配中途失败逆序确定性回收后原样重抛。
 - 授权编排：`IWechatWorkAuthorizationService`（换码/刷新/撤销/枚举）；换码**单飞门 + 结果记忆**以
   **`(appKey, authCode)` 复合键**为粒度（含长度前缀拼接）；共享任务用 `CancellationToken.None` 承载，
   各调用者经 `AwaitSharedAsync` 独立取消；飞行条目**仅创建者移除**。`RevokeAuthorizationAsync` 顺序为
@@ -294,6 +309,7 @@ G8 的运行期同实例断言在 `WechatServiceCollectionExtensionsTests`）+ �
 | CG5~CG8 | `WechatCorpGroupContractGuards`（上下游通讯录管理域，与 CG1~CG4 同文件） | 公共读取面父接口（4 端点：`corpgroup/corp/get_chain_list`、`get_chain_group`、`get_chain_corpinfo_list`、`get_chain_corpinfo`）+ 自建子接口（5 端点：`import_chain_contact`、`corpgroup/getresult`、`corp/remove_corp`、`corp/get_chain_user_custom_id`、`get_corp_shared_chain_list`）+ 代开发空标记（官方代开发树仅镜像获取上下游信息）。CG5 路由表 9 条（`DeclaredOnly` 限定声明位置，注释警示 `corpgroup/getresult` 与 `batch/getresult`、`export/get_result` 拼写差异）；CG6 父接口恰 4 端点 + 自建恰 5 端点 + 代开发零端点；CG7 令牌绑定；CG8 JSON 上下文登记（23 型）。同挂 `CorpGroup` 注册组共用 `AddCorpGroupApi()`。**导入强串行**：同时仅一个导入任务、只允许串行调用，接口注释必须保留该警示 |
 | CG9~CG11 | `WechatCorpGroupContractGuards`（上下游规则域，与 CG1~CG8 同文件） | **形态为父接口零端点 + 端点全落自建子接口**（官方仅向自建开放，且仅上下游创建空间的主企业可调用）：5 个端点（`corpgroup/rule/list_ids`、`delete_rule`、`get_rule_info`、`add_rule`、`modify_rule`）。CG9 路由表 5 条（全 POST）；CG10 父接口零端点 + Internal 恰 5 端点、无其它子接口；CG11 令牌绑定（2 接口）+ JSON 上下文登记（11 型）。同挂 `CorpGroup` 注册组共用 `AddCorpGroupApi()`。**频率警示**：新增/更新规则共用每天 1000 次额度，接口注释必须保留 |
 | CB1~CB4 | `WechatCallbackContractGuards`（回调域，`Tests/Mud.Wechat.Work.Callback.Tests/ContractGuards/`） | CB1 `WechatCallbackCrypto` **不得出现 `PaddingMode.PKCS7`**（.NET 内置 16 块校验会误拒官方 pad∈[17..32] 报文），必须 `PaddingMode.None` + 手工 32 块填充剥离（P0-1）；CB2 接收器源码中 `TryMarkAsync` 必须位于 `WechatCallbackCrypto.Decrypt` **之后**（P1-1/D2 指纹闸后移防回归）；CB3 注册表 `Add` 必须含 `Validate()` + 接收方 ID 唯一性校验（P1-3/D11 注册期 fail-fast；行为用例在 `WechatCallbackServiceCollectionExtensionsTests`）；CB4 URL 验证中验签必须位于解密**之前**且**不得调用** `TryMarkAsync`（P1-2/D5 幂等读不消耗指纹） |
+| MA1~MA4 | `WechatMultiAppContractGuards`（多应用管理域，`Tests/Mud.Wechat.Work.Abstractions.Tests/ContractGuards/`） | MA1 `RemoveApp` 方法体内 `_lazyContexts.TryRemove` 必须先于 `_configs.Remove`（M8「返回 false ⇒ 零突变」防回归）；MA2 `IsTransientInitFailure` 方法体**不得包含 IOE 白名单判定**且须保留 IO 型异常组 + OCE 显式排除（M4）；MA3 `WechatAppContextRetirement.Enqueue` 方法体必须含 `_disposed` 闸且落闸即 `Dispose` 上下文、先于宽限期判定（M3 停机竞态闸）；MA4 `WechatCorpContext.SetCorp` 必须含 null（`ArgumentNullException`）与空白（`IsNullOrWhiteSpace`）校验（M7）。守卫为**方法体提取**（花括号配平）的源码文本断言，签名漂移须同步更新守卫 |
 
 ## Test Guidelines
 

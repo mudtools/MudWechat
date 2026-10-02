@@ -5,6 +5,7 @@
 //  不得利用本项目从事危害国家安全、扰乱社会秩序、侵犯他人合法权益等法律法规禁止的活动！任何基于本项目开发而产生的一切法律纠纷和责任，我们不承担任何责任！
 // -----------------------------------------------------------------------
 
+using System.Diagnostics;
 using Mud.Wechat.Work.Abstractions.Configuration;
 using Mud.Wechat.Work.Abstractions.Authentication.TokenManager;
 using Mud.Wechat.Work.Abstractions.Authentication.MultiApp;
@@ -44,7 +45,8 @@ public class WechatAppManager : IWechatAppManager, IDisposable
     private readonly ConcurrentDictionary<string, long> _lastRebuildMs = new(StringComparer.Ordinal);
     private readonly object _registryLock = new();
     private readonly List<WechatAppConfig> _configs;
-    private WechatAppContextRetirement? _retirement;
+    // M3（F3）：Dispose 无锁写、RemoveApp 锁外捕获读，需要 volatile 可见性保障。
+    private volatile WechatAppContextRetirement? _retirement;
     private volatile string? _defaultAppKey;
     private int _disposed;
 
@@ -132,8 +134,23 @@ public class WechatAppManager : IWechatAppManager, IDisposable
     /// <summary>默认应用键（注册表单一来源：本类私有字段）。</summary>
     public string? DefaultAppKey => _defaultAppKey;
 
-    /// <inheritdoc />
-    public IWechatAppContext GetDefaultApp() => GetApp(_defaultAppKey!);
+    /// <summary>
+    /// 获取默认应用上下文。
+    /// </summary>
+    /// <returns>默认应用上下文。</returns>
+    /// <exception cref="InvalidOperationException">注册表为空或默认应用已被移除（<see cref="DefaultAppKey"/> 为 <c>null</c>）时抛出。</exception>
+    public IWechatAppContext GetDefaultApp()
+    {
+        // M2（F2）：显式守卫——悬空/缺失的默认键给出可行动的错误，而非 GetApp 的「未找到应用 ''」。
+        var key = _defaultAppKey;
+        if (key == null)
+        {
+            throw new InvalidOperationException(
+                "当前无默认应用：注册表为空或默认应用已被移除。请先经 AddApp 注册应用，或调用 SetDefaultApp 指定默认。");
+        }
+
+        return GetApp(key);
+    }
 
     /// <inheritdoc />
     public void SetDefaultApp(string appKey)
@@ -167,7 +184,7 @@ public class WechatAppManager : IWechatAppManager, IDisposable
     }
 
     /// <inheritdoc />
-    public WechatAppConfig DefaultConfig => GetApp(_defaultAppKey!).Config;
+    public WechatAppConfig DefaultConfig => GetDefaultApp().Config;
 
     /// <inheritdoc />
     public ITokenManager DefaultAccessTokenManager => GetDefaultApp().GetTokenManager(WechatTokenTypes.AccessToken);
@@ -239,6 +256,10 @@ public class WechatAppManager : IWechatAppManager, IDisposable
 
             _configs.Add(config);
             _lazyContexts[config.AppKey] = new Lazy<IWechatAppContext>(() => CreateAppContext(config), LazyThreadSafetyMode.ExecutionAndPublication);
+
+            // M2（F2）：默认键悬空（全移除后重加）时兜底提升为当前应用——等价于构造器「首个配置」回退。
+            // 默认键正常时此赋值不生效（??= 仅在 null 时写入；悬空态已由 RemoveApp 的置 null 收口为唯一形态）。
+            _defaultAppKey ??= config.AppKey;
         }
 
         OnConfigurationChanged(new AppConfigurationChangedEventArgs(config.AppKey, AppConfigurationChangeType.Added));
@@ -255,36 +276,55 @@ public class WechatAppManager : IWechatAppManager, IDisposable
 
         ThrowIfDisposed();
 
+        // M3（F3）：_retirement 在 Dispose 中无锁置 null，读取需可见性保障（volatile）；此处捕获一次，
+        // 消除锁内 Enqueue 与锁外 EnqueueCleanup 两次读取的 TOCTOU 分裂。
+        var retirement = _retirement;
+
         var removed = false;
         lock (_registryLock)
         {
+            // M8（F8）：先 TryRemove 后删配置——保证「返回 false ⇒ 零突变」。
+            // 原顺序（先删配置后 TryRemove）在失败早退路径上会留下「配置已删、Lazy 尚在」的自造 desync
+            //（当前因双表仅锁内成对突变而不可达，属防御代码自身制造非法状态的形态）。
+            if (!_lazyContexts.TryRemove(appKey, out var lazy))
+            {
+                return false;
+            }
+
             var removedConfig = _configs.FirstOrDefault(c => string.Equals(c.AppKey, appKey, StringComparison.Ordinal));
             if (removedConfig != null)
             {
                 _configs.Remove(removedConfig);
             }
 
-            if (!_lazyContexts.TryRemove(appKey, out var lazy))
-            {
-                return false;
-            }
-
             removed = true;
 
             if (lazy.IsValueCreated)
             {
-                _retirement?.Enqueue(appKey, lazy.Value);
+                if (retirement != null)
+                {
+                    retirement.Enqueue(appKey, lazy.Value);
+                }
+                else
+                {
+                    // M3（F3）：捕获时已停机——上下文已脱离 _lazyContexts 且队列已停摆（无人再 Pump），
+                    // 不立即释放即永久泄漏；与管理器停机「立即释放全部物化上下文」语义一致。
+                    // Context.Dispose 幂等（Interlocked 闸），停机枚举路径已释放过时为安全的二次调用。
+                    lazy.Value.Dispose();
+                }
             }
 
             // 默认应用被移除时确定性提升（对齐 Feishu）。
-            if (string.Equals(_defaultAppKey, appKey, StringComparison.Ordinal) && _configs.Count > 0)
+            if (string.Equals(_defaultAppKey, appKey, StringComparison.Ordinal))
             {
-                _defaultAppKey = _configs[0].AppKey;
+                // M2（F2）：全移除时置 null，对齐组件 IAppManager.DefaultAppKey「未设置时返回 null」契约；
+                // 悬空键会让 GetDefaultApp 报「未找到应用 '旧键'」的自相矛盾错误，AddApp 侧以 ??= 兜底提升。
+                _defaultAppKey = _configs.Count > 0 ? _configs[0].AppKey : null;
             }
         }
 
         // P1-9（R14）：下线即清库——同步 API 不做 sync-over-async，改为入队异步清理（退役队列 Timer 回调执行）。
-        _retirement?.EnqueueCleanup(appKey, ct => PurgeAppTokensAsync(appKey, ct));
+        retirement?.EnqueueCleanup(appKey, ct => PurgeAppTokensAsync(appKey, ct));
 
         OnConfigurationChanged(new AppConfigurationChangedEventArgs(appKey, AppConfigurationChangeType.Removed));
         return removed;
@@ -295,6 +335,15 @@ public class WechatAppManager : IWechatAppManager, IDisposable
     {
         if (string.IsNullOrEmpty(appKey)) throw new ArgumentNullException(nameof(appKey));
         if (string.IsNullOrEmpty(tokenType)) throw new ArgumentNullException(nameof(tokenType));
+
+        // M7（F7）：scopes 非空但全为空/空白串时会通过过滤闸门后在 MatchesScope 中逐条跳过或漏配
+        // ⇒ 静默 0 删除（errcode 恢复链路表现为「令牌反复失效不恢复」）。判定为编程错误，fail-fast。
+        // 本方法是两条清库路径（已实例化 → 管理器双清 / 未实例化 → PurgeStoreAsync）的唯一公共入口，入口校验即全覆盖。
+        if (scopes is { Length: > 0 } && Array.TrueForAll(scopes, static s => string.IsNullOrWhiteSpace(s)))
+        {
+            throw new ArgumentException(
+                "scopes 不能全为空字符串；失效全部 scope 请传 null。", nameof(scopes));
+        }
 
         if (!_lazyContexts.TryGetValue(appKey, out var lazy))
         {
@@ -340,19 +389,18 @@ public class WechatAppManager : IWechatAppManager, IDisposable
             return 0;
         }
 
+        // W1（M10）：先收集匹配键（键布局按中间段 appKey 匹配，前缀扫描不适用），再批量/逐键删除。
         var keys = await store.GetTokenTypesAsync(cancellationToken).ConfigureAwait(false);
-        var removed = 0;
+        var matched = new List<string>();
         foreach (var key in keys)
         {
-            cancellationToken.ThrowIfCancellationRequested();
-            if (key == null || !IsStoreKeyForApp(key, appKey))
+            if (key != null && IsStoreKeyForApp(key, appKey))
             {
-                continue;
+                matched.Add(key);
             }
-
-            await store.RemoveAsync(key, cancellationToken).ConfigureAwait(false);
-            removed++;
         }
+
+        var removed = await RemoveStoreKeysAsync(store, matched, cancellationToken).ConfigureAwait(false);
 
         if (removed > 0)
         {
@@ -374,6 +422,13 @@ public class WechatAppManager : IWechatAppManager, IDisposable
         var scope = _scopeFactory?.CreateScope();
         var scopedSp = scope?.ServiceProvider ?? _serviceProvider;
 
+        // M1（F1）：scope 之外的装配产物（令牌管理器持有组件基类的维护 Timer，TimerQueue 根持）
+        // 必须在装配中途失败时逆序确定性回收；成功路径所有权整体移交 WechatAppContext。
+        var owned = new WechatOwnedResourceTracker(_logger);
+
+        // W2：装配成本可观测性（每应用生命周期一次 + 重建时一次）。
+        var stopwatch = Stopwatch.StartNew();
+
         try
         {
             var httpClientFactory = scopedSp.GetService<IWechatHttpClientFactory>()
@@ -392,27 +447,27 @@ public class WechatAppManager : IWechatAppManager, IDisposable
 
             if (config.AppType == WechatAppType.Internal)
             {
-                internalAppTokenManager = new InternalAppTokenManager(
+                internalAppTokenManager = owned.Track(new InternalAppTokenManager(
                     authFactory.CreateInternalAppAuthentication(config.AppKey), options,
-                    scopedSp.GetRequiredService<ILogger<InternalAppTokenManager>>(), tokenStore);
+                    scopedSp.GetRequiredService<ILogger<InternalAppTokenManager>>(), tokenStore));
                 primaryTokenManager = internalAppTokenManager;
             }
             else
             {
-                providerTokenManager = new ProviderTokenManager(
+                providerTokenManager = owned.Track(new ProviderTokenManager(
                     authFactory.CreateProviderAuthentication(config.AppKey), options,
-                    scopedSp.GetRequiredService<ILogger<ProviderTokenManager>>(), tokenStore);
-                suiteTokenManager = new SuiteTokenManager(
+                    scopedSp.GetRequiredService<ILogger<ProviderTokenManager>>(), tokenStore));
+                suiteTokenManager = owned.Track(new SuiteTokenManager(
                     authFactory.CreateProviderAuthentication(config.AppKey),
                     scopedSp.GetRequiredService<IWechatSuiteTicketProvider>(), options,
-                    scopedSp.GetRequiredService<ILogger<SuiteTokenManager>>(), tokenStore);
-                corpTokenManager = new CorpTokenManager(
+                    scopedSp.GetRequiredService<ILogger<SuiteTokenManager>>(), tokenStore));
+                corpTokenManager = owned.Track(new CorpTokenManager(
                     authFactory.CreateCorpTokenAuthentication(config.AppKey),
                     suiteTokenManager,
                     // §4.8：代开发路径走 gettoken，必须注入 per-app 自建应用认证客户端（不可取 DI 默认实例）。
                     authFactory.CreateInternalAppAuthentication(config.AppKey),
                     scopedSp.GetRequiredService<IWechatCorpAuthStore>(), options,
-                    scopedSp.GetRequiredService<ILogger<CorpTokenManager>>(), tokenStore);
+                    scopedSp.GetRequiredService<ILogger<CorpTokenManager>>(), tokenStore));
                 primaryTokenManager = corpTokenManager;
             }
 
@@ -428,15 +483,30 @@ public class WechatAppManager : IWechatAppManager, IDisposable
                 recoveryLogger,
                 new WechatTokenManagerRegistry(primaryTokenManager, providerTokenManager, suiteTokenManager, corpTokenManager));
 
-            var httpClient = httpClientFactory.Create(config.AppKey, recoveryExecutor);
+            // MR5：增强客户端与生成认证客户端均未实现 IDisposable（handler 由 IHttpClientFactory 池管理），
+            // Track 以 is IDisposable 判定收集——当前装配链仅令牌管理器命中，未来新增可释放产物自动纳管。
+            var httpClient = owned.Track(httpClientFactory.Create(config.AppKey, recoveryExecutor));
 
-            return new WechatAppContext(
+            var context = new WechatAppContext(
                 config, httpClient,
                 internalAppTokenManager, corpTokenManager, providerTokenManager, suiteTokenManager,
                 scopedSp, scope);
+
+            // M1（F1）：上下文构造成功即接管全部装配产物所有权，catch 兜底不再回收。
+            owned.Clear();
+
+            stopwatch.Stop();
+            _logger.LogInformation("应用 {AppKey} 上下文装配完成（耗时 {ElapsedMs}ms，AppType={AppType}）。",
+                config.AppKey, stopwatch.ElapsedMilliseconds, config.AppType);
+
+            return context;
         }
         catch
         {
+            // 先回收孤儿装配产物（停止管理器维护 Timer），最后释放 scope——与 WechatAppContext.Dispose
+            // 的顺序一致（管理器持有 scope 解析出的 tokenStore 等引用，须先于 scope 关闭）。
+            // DisposeAll 逐个隔离释放异常，不吞掉/替换原始装配异常（throw; 原样重抛）。
+            owned.DisposeAll();
             scope?.Dispose();
             throw;
         }
@@ -591,6 +661,11 @@ public class WechatAppManager : IWechatAppManager, IDisposable
     /// <summary>
     /// 瞬时装配故障白名单（确定性失败不重建，避免掩盖配置错误）。
     /// </summary>
+    /// <remarks>
+    /// M4（F4）白名单收敛：装配路径的 IO 型异常组为纵深防御（当前装配链不发起网络 IO，
+    /// 纯 DI 解析 + 纯构造）；DI 解析失败抛出的常见确定性异常类型已在 <see cref="GetApp"/>
+    /// 的重建路径外直抛（含停机边缘的 ODE——其本就是 IOE 子类，随本次收敛一并直抛）。
+    /// </remarks>
     private static bool IsTransientInitFailure(Exception ex)
     {
         if (ex is OperationCanceledException)
@@ -598,7 +673,10 @@ public class WechatAppManager : IWechatAppManager, IDisposable
             return false;
         }
 
-        if (ex is InvalidOperationException || ex is HttpRequestException || ex is TimeoutException
+        // M4（F4）：GetRequiredService 的 DI 解析失败、命名客户端缺失等确定性失败抛出的 IOE
+        // 不再视为瞬时——留在白名单内会把配置错误伪装成可重试并驱动 5s 节流的反复重建
+        //（叠加 F1 即慢性泄漏）。IO 型异常组保留为纵深防御。
+        if (ex is HttpRequestException || ex is TimeoutException
             || ex is IOException || ex is SocketException)
         {
             return true;
@@ -655,12 +733,11 @@ public class WechatAppManager : IWechatAppManager, IDisposable
             return 0;
         }
 
+        // W1（M10）：先收集匹配键（含 scope 过滤），再批量/逐键删除。
         var keys = await store.GetTokenTypesAsync(cancellationToken).ConfigureAwait(false);
-        var removed = 0;
-
+        var matched = new List<string>();
         foreach (var key in keys)
         {
-            cancellationToken.ThrowIfCancellationRequested();
             if (key == null || !TryParseStoreKey(key, out var parsedTokenType, out var parsedAppKey, out var scopeKey))
             {
                 continue;
@@ -677,6 +754,33 @@ public class WechatAppManager : IWechatAppManager, IDisposable
                 continue;
             }
 
+            matched.Add(key);
+        }
+
+        return await RemoveStoreKeysAsync(store, matched, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// 从持久层删除一批键（W1/M10）：实现批量能力（<see cref="IWechatTokenStoreBatchRemove"/>）时一次提交，
+    /// 否则逐键回退（既有行为，行为等价）。
+    /// </summary>
+    private static async Task<int> RemoveStoreKeysAsync(
+        IWechatTokenStore store, List<string> keys, CancellationToken cancellationToken)
+    {
+        if (keys.Count == 0)
+        {
+            return 0;
+        }
+
+        if (store is IWechatTokenStoreBatchRemove batch)
+        {
+            return await batch.RemoveRangeAsync(keys, cancellationToken).ConfigureAwait(false);
+        }
+
+        var removed = 0;
+        foreach (var key in keys)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
             await store.RemoveAsync(key, cancellationToken).ConfigureAwait(false);
             removed++;
         }

@@ -76,6 +76,9 @@ public sealed class WechatCallbackReceiver : IWechatCallbackReceiver
     /// <summary>「未配置接收方 ID」告警是否已输出（首次命中输出一次）。</summary>
     private int _receiveIdSkipLogged;
 
+    /// <summary>「明文未携带 receiveid」告警是否已输出（首次命中输出一次）。</summary>
+    private int _receiveIdPlaintextEmptyLogged;
+
     /// <summary>创建回调接收器。</summary>
     /// <param name="optionsMonitor">回调配置监视器（多应用凭据热更新）。</param>
     /// <param name="replayGuard">一次性去重守卫（可选；缺省为进程内实现）。</param>
@@ -271,12 +274,20 @@ public sealed class WechatCallbackReceiver : IWechatCallbackReceiver
     /// <item><description>第三方/代开发 App 通道：<b>动态授权企业 CorpId</b>（随授权企业变化，比对外层 <c>ToUserName</c>，
     /// <see cref="WechatAppCallbackOptions.ReceiveId"/> 命中其一亦通过）。</description></item>
     /// </list>
-    /// <para>P3-2：明文未携带 receiveid 时一律跳过（官方「个人主体第三方为空串」兼容）。</para>
+    /// <para>P3-2：明文未携带 receiveid 时一律跳过（官方「个人主体第三方为空串」兼容，90968），并一次性告警。</para>
     /// </remarks>
     private void ValidateReceiveId(WechatAppCallbackOptions app, string? receiveId, string? toUserName)
     {
         if (string.IsNullOrEmpty(receiveId))
         {
+            // P3-2：明文未携带 receiveid（官方「个人主体第三方为空串」兼容，90968）时跳过校验，
+            // 但一次性告警——该兼容路径的唯一可观测面，避免宿主对 receiveid 校验生效范围产生误解。
+            if (Interlocked.Exchange(ref _receiveIdPlaintextEmptyLogged, 1) == 0)
+            {
+                _logger?.LogWarning(
+                    "回调明文未携带 receiveid，已跳过接收方 ID 校验（官方「个人主体第三方为空串」兼容，90968）。");
+            }
+
             return;
         }
 

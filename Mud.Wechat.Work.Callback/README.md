@@ -25,10 +25,11 @@ services.AddWechatCallback(options =>
     {
         PushToken = "<回调 Token>",
         PushEncodingAESKey = "<43 位 EncodingAESKey>",
-        CorpId = "ww<企业 CorpId>",                  // 接收方 ID：自建填 CorpId、套件填 SuiteId
+        ReceiveId = "ww<企业 CorpId>",              // 接收方 ID：自建填 CorpId、套件填 SuiteId；通讯录同步助手（通配键）可留空
     };
 
-    // 多套件 / 多应用：每套件（或自建应用）各登记一个条目，各自独立 Token / AESKey / 接收方 ID。
+    // 多套件 / 多应用：每套件（或自建应用）各登记一个条目，各自独立 Token / AESKey / 接收方 ID，
+    // 路由由中间件按 /{GlobalRoutePrefix}/{AppKey} 路径段选取（无单/多套件模式之分）。
     options.Apps["suite-a"] = new WechatAppCallbackOptions { /* ... */ };
     options.Apps[WechatCallbackOptions.WildcardAppKey] = new WechatAppCallbackOptions { /* 通讯录同步助手 */ };
 })
@@ -79,8 +80,10 @@ URL 验证是幂等读：**不做指纹去重**（管理端反复「保存」重
 | `ReplaySuspected` | 200 空体 | 幂等吞掉：报文已处理过，向官方确认成功以关闭重试窗口 |
 | `DecryptFailed` / `ReceiveIdMismatch` | 500 + 告警 | 配置类故障须人工介入 |
 
-> `WechatCallbackMiddleware` 的既定映射：验签/时效/解密/receiveid/未知应用统一 403；分发中断或软超时 503（触发重推）；
-> 其余 500。宿主自行接管时可按上表细化。
+> `WechatCallbackMiddleware` 的既定映射与上表**有意偏离**：验签/时效/解密/receiveid/未知应用
+> （含 `ReplaySuspected`）统一 **403**——「fail-closed 优先于 at-least-once，处理器须幂等」为定案，
+> 重推报文同指纹将被 403，天然不会二次处理；分发中断（拦截器）或软超时 **503**（触发重推）；其余 **500**；
+> 体超限 413、非 XML 415、方法 405。宿主自行接管 HTTP 层时可按上表细化（如需「200 空体吞重放」语义）。
 
 ## 授权自动化解耦
 

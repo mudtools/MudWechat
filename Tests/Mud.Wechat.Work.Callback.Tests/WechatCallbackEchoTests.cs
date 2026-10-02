@@ -92,7 +92,8 @@ public class WechatCallbackEchoTests
 
         var act = async () => await receiver.EchoAsync(AppKey, badQuery);
 
-        await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("*msg_signature 不匹配*");
+        var thrown = await act.Should().ThrowAsync<WechatCallbackException>().WithMessage("*msg_signature 不匹配*");
+        thrown.Which.Kind.Should().Be(WechatCallbackFailureKind.InvalidSignature);
     }
 
     [Fact]
@@ -101,7 +102,8 @@ public class WechatCallbackEchoTests
         var receiver = CreateReceiver();
         var act = async () => await receiver.EchoAsync(AppKey, $"msg_signature=abc&timestamp={Now()}&nonce=n");
 
-        await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("*echostr*");
+        var thrown = await act.Should().ThrowAsync<WechatCallbackException>().WithMessage("*echostr*");
+        thrown.Which.Kind.Should().Be(WechatCallbackFailureKind.MissingEncrypt);
     }
 
     [Fact]
@@ -115,7 +117,8 @@ public class WechatCallbackEchoTests
         var act = async () => await receiver.EchoAsync(
             AppKey, $"msg_signature={signature}&timestamp={stale}&nonce=n&echostr={Uri.EscapeDataString(echoStr)}");
 
-        await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("*超出时效窗口*");
+        var thrown = await act.Should().ThrowAsync<WechatCallbackException>().WithMessage("*超出时效窗口*");
+        thrown.Which.Kind.Should().Be(WechatCallbackFailureKind.TimestampOutOfRange);
     }
 
     [Fact]
@@ -130,7 +133,8 @@ public class WechatCallbackEchoTests
         var act = async () => await receiver.EchoAsync(
             AppKey, $"msg_signature={signature}&timestamp={timestamp}&nonce={nonce}&echostr={Uri.EscapeDataString(echoStr)}");
 
-        await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("*receiveid*");
+        var thrown = await act.Should().ThrowAsync<WechatCallbackException>().WithMessage("*receiveid*");
+        thrown.Which.Kind.Should().Be(WechatCallbackFailureKind.ReceiveIdMismatch);
     }
 
     [Fact]

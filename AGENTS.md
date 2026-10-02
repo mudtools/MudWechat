@@ -131,6 +131,7 @@ Mud.Wechat/
 │   ├── ExternalContact/         # 客户联系域 DTO 分组：FollowUser / Customer / Tag / JobInheritance（RequestModel/ 仅作目录组织）
 │   └── CorpGroup/               # 上下游域 DTO 分组：基础 + ChainContacts + Rules（RequestModel/ 仅作目录组织）
 ├── Mud.Wechat.Work.Callback/    # 回调接收（AES 解密、事件解析、分发）
+├── Mud.Wechat.Redis/            # Redis 分布式存储扩展（四存储端口 Redis 实现 + 连接基座 + DI 编排，RD11 单依赖 Abstractions）
 ├── Tests/                       # 测试工程（镜像源结构，单 TFM net8.0）
 ├── scripts/                     # verify-build.ps1 / audit-config-keys.ps1
 ├── .docs/                       # 方案与设计文档（中文）
@@ -138,9 +139,11 @@ Mud.Wechat/
 └── Mud.Wechat.slnx              # 解决方案
 ```
 
-命名空间与包名一致：`Mud.Wechat.Work` / `Mud.Wechat.Work.Abstractions` / `Mud.Wechat.Work.DataModels` / `Mud.Wechat.Work.Callback`。
-依赖方向单向：`Work → {Abstractions, DataModels}`、`Callback → {Abstractions, DataModels}`、`Abstractions → DataModels`。
-**`Callback` 不得引用主包 `Work`**（授权自动化解耦即为此，见下）。
+命名空间与包名一致：`Mud.Wechat.Work` / `Mud.Wechat.Work.Abstractions` / `Mud.Wechat.Work.DataModels` / `Mud.Wechat.Work.Callback` / `Mud.Wechat.Redis`。
+依赖方向单向：`Work → {Abstractions, DataModels}`、`Callback → {Abstractions, DataModels}`、`Abstractions → DataModels`、`Redis → Abstractions`。
+**`Callback` 不得引用主包 `Work`**（授权自动化解耦即为此，见下）；**`Redis` 不得引用主包 / Callback**
+（重放守卫接口上移 Abstractions 后单依赖，RD11；顺序守卫对回调注册的探测经 InMemory 实现全名字符串
+匹配，全名漂移由 RD-G5 锁定）。
 
 **目录与命名空间现状（2026-10-01 重构后）**：通讯录六域接口落 `Interfaces/Contacts/`（Export 有独立子目录
 `Contacts/Export/`；接口命名空间一律为 `Mud.Wechat.Work`）；DTO 迁入 `DataModels/Contacts/{域}/`，
@@ -200,8 +203,14 @@ DTO 落 `DataModels/ExternalContact/{FollowUser,Customer,Tag,JobInheritance}/`�
   先 `is` 探测，命中走一次 `RemoveRangeAsync`，未实现回退逐键（宿主自定义 store 零破坏）；
   形态为「调用方算键 + 实现方批删」（键按中间段 appKey 匹配，前缀扫描不适用）。
 - `IWechatCorpAuthStore` 为**复合键 `(AppKey, AuthCorpId)`**；`IWechatSuiteTicketStore` **按 `suiteId` 分槽**（多套件/多代开发模板互不覆盖）。
-  默认实现仅进程内，多实例须宿主提供分布式实现（`TryAdd` 前置注册覆盖）。
-  `IWechatCallbackReplayGuard` 同款约定（多实例须分布式实现，否则重放窗口失效）。
+  默认实现仅进程内，多实例部署**引用 `Mud.Wechat.Redis`**（`AddWechatRedis`，须先于 `AddWechatApp`/`AddWechatCallback`
+  调用，颠倒顺序注册期 fail-fast）或由宿主提供分布式实现（`TryAdd` 前置注册覆盖；宿主预注册的自定义实现按契约胜出）。
+  四个存储端口（含 `IWechatCallbackReplayGuard`，**接口本体落 Abstractions.TokenManager 域，RD11**；InMemory 实现留 Callback 包）
+  由 Redis 包单依赖 Abstractions 实现并共享连接基座。**SE.Redis 3.3.0 两个陷阱**（改 Redis 包代码必读）：
+  ① `RedisTimeoutException` 直接继承 `TimeoutException` 而非 `RedisException`——存储层捕获须用
+  `WechatRedisErrors.ShouldWrap`（`is RedisException or RedisTimeoutException`），裸 `catch (RedisException)` 会漏超时；
+  ② `StringSetAsync` 存在经典 4/5 参（无默认值、隐藏）、keepTtl 6 参、`Expiration`/`ValueCondition` 全默认四套重载，
+  裸 2/3 位置参调用的重载决胜不确定——生产调用一律以命名参数显式钉住 keepTtl 形态（`keepTtl: false` / `when: ...`）。
 - **DI 桥接不变量**：`IAppContextHolder`、`IAppContextSwitcher`、`IWechatAppContextSwitcher` **必须是同一实例**
   （组件 `AddMudHttpClient` 内部会 `TryAdd IAppContextHolder`，故 SDK 的注册必须在 `AddMudHttpClient` **之前**）。
   破坏该不变量 ⇒ 声明式 `[Token]` 客户端读到的环境上下文恒为 `null`，多套件静默回退默认应用令牌。
@@ -236,6 +245,8 @@ DTO 落 `DataModels/ExternalContact/{FollowUser,Customer,Tag,JobInheritance}/`�
   ② 一次性指纹去重（SHA1 指纹，不得落盘密文本身）。**指纹闸位于「解密 + receiveid 校验成功」之后、
   事件返回之前**（P1-1 后移：解密成功即证明报文经仅企微与我方共知的 AESKey 验证可信；解密失败不消耗指纹，
   官方重试可重新进入管线）——修改回调入口时**不得**把指纹闸移回解密之前，也不得绕过。
+  分布式实现（`Mud.Wechat.Redis`）故障时守卫异常**必须上抛**（RD3 fail-closed：上抛 → 回调 5xx → 官方 96238
+  重试；**禁止**吞异常返回 `true` 放行重放、或返回 `false` 静默丢事件），空键返回 `false` 且不触达存储（与 InMemory 对齐）。
 - **回调接收面（Callback 包）**：统一注册表形态（P1-3/D11）——`AddWechatCallback`（单条目便捷入口）与
   `AddWechatCallbackSuite`（逐套件追加）是**同一注册动作**的两个语义化入口，登记进
   `WechatCallbackOptionsRegistry`（接收方 ID **必填且全表唯一**，注册期 fail-fast；`IConfiguration`
@@ -310,6 +321,7 @@ G8 的运行期同实例断言在 `WechatServiceCollectionExtensionsTests`）+ �
 | CG9~CG11 | `WechatCorpGroupContractGuards`（上下游规则域，与 CG1~CG8 同文件） | **形态为父接口零端点 + 端点全落自建子接口**（官方仅向自建开放，且仅上下游创建空间的主企业可调用）：5 个端点（`corpgroup/rule/list_ids`、`delete_rule`、`get_rule_info`、`add_rule`、`modify_rule`）。CG9 路由表 5 条（全 POST）；CG10 父接口零端点 + Internal 恰 5 端点、无其它子接口；CG11 令牌绑定（2 接口）+ JSON 上下文登记（11 型）。同挂 `CorpGroup` 注册组共用 `AddCorpGroupApi()`。**频率警示**：新增/更新规则共用每天 1000 次额度，接口注释必须保留 |
 | CB1~CB4 | `WechatCallbackContractGuards`（回调域，`Tests/Mud.Wechat.Work.Callback.Tests/ContractGuards/`） | CB1 `WechatCallbackCrypto` **不得出现 `PaddingMode.PKCS7`**（.NET 内置 16 块校验会误拒官方 pad∈[17..32] 报文），必须 `PaddingMode.None` + 手工 32 块填充剥离（P0-1）；CB2 接收器源码中 `TryMarkAsync` 必须位于 `WechatCallbackCrypto.Decrypt` **之后**（P1-1/D2 指纹闸后移防回归）；CB3 注册表 `Add` 必须含 `Validate()` + 接收方 ID 唯一性校验（P1-3/D11 注册期 fail-fast；行为用例在 `WechatCallbackServiceCollectionExtensionsTests`）；CB4 URL 验证中验签必须位于解密**之前**且**不得调用** `TryMarkAsync`（P1-2/D5 幂等读不消耗指纹） |
 | MA1~MA4 | `WechatMultiAppContractGuards`（多应用管理域，`Tests/Mud.Wechat.Work.Abstractions.Tests/ContractGuards/`） | MA1 `RemoveApp` 方法体内 `_lazyContexts.TryRemove` 必须先于 `_configs.Remove`（M8「返回 false ⇒ 零突变」防回归）；MA2 `IsTransientInitFailure` 方法体**不得包含 IOE 白名单判定**且须保留 IO 型异常组 + OCE 显式排除（M4）；MA3 `WechatAppContextRetirement.Enqueue` 方法体必须含 `_disposed` 闸且落闸即 `Dispose` 上下文、先于宽限期判定（M3 停机竞态闸）；MA4 `WechatCorpContext.SetCorp` 必须含 null（`ArgumentNullException`）与空白（`IsNullOrWhiteSpace`）校验（M7）。守卫为**方法体提取**（花括号配平）的源码文本断言，签名漂移须同步更新守卫 |
+| RD-G1~RD-G6 | `WechatRedisContractGuards`（Redis 分布式存储域，`Tests/Mud.Wechat.Redis.Tests/ContractGuards/`） | RD-G1 SCAN 模式仅经 `WechatRedisKeyBuilder.Pattern` 产出（含 glob 字面量转义 + `:*` 段级精确结尾，KeysAsync 调用点文件必须引用 Pattern 单一出口——飞书 D10 静默失效防回归）；RD-G2 `WechatRedisOptions`/`WechatRedisConnectionOptions` 无 `required`（G2 同源）；RD-G3 重放守卫 `TryMarkAsync` 方法体必须含 `WechatRedisErrors.Map` 上抛且无「catch 吞异常返回 true/false」形态（RD3 fail-closed）；RD-G4 `Password`/`PermanentCode`/票据值不进日志调用点（连接失败消息只携带脱敏后的 `options.ToString()`）；RD-G5 顺序守卫常量 `InMemoryReplayGuardTypeName` 与 Callback 包 `InMemoryWechatCallbackReplayGuard` 的 FullName 反射一致（R-1 后 Redis 不引用 Callback，全名探测防漂移）；RD-G6 Redis 包 csproj 单依赖 Abstractions（不得引用 Callback/主包，RD11） |
 
 ## Test Guidelines
 
@@ -326,7 +338,7 @@ G8 的运行期同实例断言在 `WechatServiceCollectionExtensionsTests`）+ �
 
 - 配置面唯一公共 API：`WechatAppConfig`（数组节 `WechatApps`）+ `Validate()`；编排策略 `WechatAuthorizationOptions`（节 `WechatAuthorization`）。
 - **禁止新增「日志开关」类配置属性**（历史死配置反模式）；日志级别统一由 `Logging:LogLevel:{Category}` 控制。
-- 每个公开配置属性必须有真实消费点（`Validate`/`ToString` 不算）。**`scripts/audit-config-keys.ps1` 的口径是「消费点扫描」，并无 `$strictPatterns` 白名单** —— 删除配置键后若脚本报「无消费点」，正确处置是补消费点或删除该属性，而不是加模式。**现状：全绿**（`WechatAppConfig` 12 + `WechatCallbackOptions` 3，权威计数以脚本输出为准）。
+- 每个公开配置属性必须有真实消费点（`Validate`/`ToString` 不算）。**`scripts/audit-config-keys.ps1` 的口径是「消费点扫描」，并无 `$strictPatterns` 白名单** —— 删除配置键后若脚本报「无消费点」，正确处置是补消费点或删除该属性，而不是加模式。**现状：全绿**（`WechatAppConfig` 12 + `WechatCallbackOptions` 3 + `WechatRedisOptions`/`WechatRedisConnectionOptions` 8，权威计数以脚本输出为准）。
   - `WechatCallbackOptions.CorpId` 的消费点是 `receiveid` 校验（不是日志开关）；接收方 ID 语义：企业自建填 `CorpId`，**套件回调填 `SuiteId`**；P1-3 后为**必填**且为多套件注册表键（注册期 fail-fast）。
   - `WechatAppConfig.TemplateId` 曾因「只被 `Validate()` 使用」被判红 → 已删除（见 K2），不是加白名单绕开。
 - 安全默认不得削弱：`BaseUrl` 必须 HTTPS + 白名单（`AllowCustomBaseUrl=false` 为默认 SSRF 防线）。

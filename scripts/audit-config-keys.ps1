@@ -17,7 +17,9 @@ $failures = New-Object System.Collections.Generic.List[string]
 
 $configFiles = @(
     'Mud.Wechat.Work.Abstractions/Configuration/WechatAppConfig.cs',
-    'Mud.Wechat.Work.Callback/WechatCallbackOptions.cs'
+    'Mud.Wechat.Work.Callback/WechatCallbackOptions.cs',
+    'Mud.Wechat.Redis/Configuration/WechatRedisOptions.cs',
+    'Mud.Wechat.Redis/Configuration/WechatRedisConnectionOptions.cs'
 )
 
 foreach ($file in $configFiles) {
@@ -35,7 +37,7 @@ foreach ($file in $configFiles) {
     }
 
     # 消费点搜索范围：全部源码（排除配置 DTO 自身与生成目录）。
-    $searchRoots = @('Mud.Wechat.Work', 'Mud.Wechat.Work.Abstractions', 'Mud.Wechat.Work.Callback')
+    $searchRoots = @('Mud.Wechat.Work', 'Mud.Wechat.Work.Abstractions', 'Mud.Wechat.Work.Callback', 'Mud.Wechat.Redis')
 
     foreach ($prop in $propNames) {
         $consumed = $false

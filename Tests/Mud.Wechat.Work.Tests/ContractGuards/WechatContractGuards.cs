@@ -218,6 +218,20 @@ public class WechatContractGuards
                 nameof(IWechatWorkInternalSecurityVipService),
                 nameof(IWechatWorkSecurityOperLogService),
                 nameof(IWechatWorkInternalSecurityOperLogService),
+                // 消息推送域（Message 模块）：发送应用消息族为三类应用公共面（发送应用消息 90236/90372/96458、
+                // 更新模版卡片 94888/94945/96459、撤回 94867/94947/96460；template_msg 仅第三方子接口差异端点 94515）；
+                // 群聊会话族、家校学校通知族与智能表格自动化创建的群聊族官方仅自建开放（父接口零端点 + 仅自建子接口承载端点；
+                // 群聊会话 90245/98913/98914/90248，学校通知 91609，智能表格群聊 100989/101028/101029）。
+                nameof(IWechatWorkMessageService),
+                nameof(IWechatWorkInternalMessageService),
+                nameof(IWechatWorkThirdPartyMessageService),
+                nameof(IWechatWorkProviderMessageService),
+                nameof(IWechatWorkAppChatService),
+                nameof(IWechatWorkInternalAppChatService),
+                nameof(IWechatWorkSchoolMessageService),
+                nameof(IWechatWorkInternalSchoolMessageService),
+                nameof(IWechatWorkSmartSheetGroupChatService),
+                nameof(IWechatWorkInternalSmartSheetGroupChatService),
             },
             "企业微信官方契约强制 Query 注入（MUD005 已知接受风险），新增 Query 注入接口须评估后扩展本守卫");
     }

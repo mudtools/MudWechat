@@ -286,6 +286,27 @@ public class WechatCallbackReceiverAndHandlerTests
         evt.DecryptedXml.Should().Contain("job-100", "DecryptedXml 保留全量明文供业务解析");
     }
 
+    [Fact]
+    public async Task ReceiveAsync_ShouldParseChangeChainEnvelope()
+    {
+        // 官方 95796：上下游变更事件（Event = change_chain），EventTypeKey 取 ChangeType（corp_join）。
+        var receiver = CreateReceiver();
+        var plainXml = "<xml><ToUserName><![CDATA[ww-corp]]></ToUserName><FromUserName><![CDATA[sys]]></FromUserName>" +
+            "<CreateTime>1700000000</CreateTime><MsgType><![CDATA[event]]></MsgType>" +
+            "<Event><![CDATA[change_chain]]></Event><ChangeType><![CDATA[corp_join]]></ChangeType>" +
+            "<ChainId><![CDATA[chain-xyz]]></ChainId>" +
+            "<CorpIds><CorpId><![CDATA[ww-a1b2c3]]></CorpId></CorpIds></xml>";
+        var (encrypt, body) = EncryptBody(plainXml);
+
+        var evt = await receiver.ReceiveAsync(AppKey, QueryFor(encrypt, Now(), NewNonce()), body);
+
+        evt.IsChangeChain.Should().BeTrue();
+        evt.EventTypeKey.Should().Be(WechatCallbackEventTypes.CorpJoin, "上下游事件的匹配键 = ChangeType（D4）");
+        evt.ChainId.Should().Be("chain-xyz", "信封解析 ChainId（95796）");
+        evt.FromUserName.Should().Be("sys");
+        evt.AuthCorpId.Should().BeNull("D10：上下游事件 FromUserName=sys 不得兜底进授权企业字段");
+    }
+
     // ---------------------------------------------------------------- 事件分发（兜底处理器）
 
     [Fact]

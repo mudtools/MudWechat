@@ -257,4 +257,129 @@ public class WechatCallbackEventParserTests
         WechatCallbackEventParser.ParseTextList("", ',').Should().BeEmpty();
         WechatCallbackEventParser.ParseTextList(null, '|').Should().BeEmpty();
     }
+
+    // ---------------------------------------------------------------- 上下游族（官方 95796/95797）
+
+    private static WechatCallbackEvent ChainEvent(string changeType, string plainXml)
+        => new()
+        {
+            Event = WechatCallbackEventTypes.ChangeChain,
+            ChangeType = changeType,
+            DecryptedXml = plainXml,
+        };
+
+    [Fact]
+    public void ParseChainChanged_ShouldMapChainId_OnCreateChain()
+    {
+        var evt = ChainEvent(WechatCallbackEventTypes.CreateChain,
+            "<xml><ToUserName><![CDATA[ww-corp]]></ToUserName><FromUserName><![CDATA[sys]]></FromUserName>" +
+            "<CreateTime>1700000000</CreateTime><MsgType><![CDATA[event]]></MsgType>" +
+            "<Event><![CDATA[change_chain]]></Event><ChangeType><![CDATA[create_chain]]></ChangeType>" +
+            "<ChainId><![CDATA[chain-xyz]]></ChainId></xml>");
+
+        var dto = WechatCallbackEventParser.ParseChainChanged(evt);
+
+        dto!.ChainId.Should().Be("chain-xyz");
+    }
+
+    [Fact]
+    public void ParseChainChanged_ShouldMapChainId_OnDeleteChain()
+    {
+        var evt = ChainEvent(WechatCallbackEventTypes.DeleteChain,
+            "<xml><Event><![CDATA[change_chain]]></Event><ChangeType><![CDATA[delete_chain]]></ChangeType>" +
+            "<ChainId><![CDATA[chain-xyz]]></ChainId></xml>");
+
+        WechatCallbackEventParser.ParseChainChanged(evt)!.ChainId.Should().Be("chain-xyz");
+    }
+
+    [Fact]
+    public void ParseChainGroupChanged_ShouldMapNestedGroupIds()
+    {
+        // 官方 95796：GroupIds 为嵌套列表节点（<GroupIds><GroupId>5</GroupId>...</GroupIds>）。
+        var evt = ChainEvent(WechatCallbackEventTypes.CreateGroup,
+            "<xml><Event><![CDATA[change_chain]]></Event><ChangeType><![CDATA[create_group]]></ChangeType>" +
+            "<ChainId><![CDATA[chain-xyz]]></ChainId><GroupIds><GroupId>5</GroupId><GroupId>6</GroupId></GroupIds></xml>");
+
+        var dto = WechatCallbackEventParser.ParseChainGroupChanged(evt);
+
+        dto!.ChainId.Should().Be("chain-xyz");
+        dto.GroupIds.Should().Equal(new[] { "5", "6" }, "嵌套列表按 GroupId 子节点展开");
+    }
+
+    [Fact]
+    public void ParseChainCorpChanged_ShouldMapNestedCorpIds()
+    {
+        // 官方 95796：CorpIds 为嵌套列表节点（CorpId 含 CDATA）。
+        var evt = ChainEvent(WechatCallbackEventTypes.CorpJoin,
+            "<xml><Event><![CDATA[change_chain]]></Event><ChangeType><![CDATA[corp_join]]></ChangeType>" +
+            "<ChainId><![CDATA[chain-xyz]]></ChainId>" +
+            "<CorpIds><CorpId><![CDATA[ww-a1b2c3]]></CorpId><CorpId><![CDATA[ww-d4e5f6]]></CorpId></CorpIds></xml>");
+
+        var dto = WechatCallbackEventParser.ParseChainCorpChanged(evt);
+
+        dto!.ChainId.Should().Be("chain-xyz");
+        dto.CorpIds.Should().Equal(new[] { "ww-a1b2c3", "ww-d4e5f6" });
+    }
+
+    [Fact]
+    public void ParseChainCorpChanged_ShouldMapRemoveCorp()
+    {
+        var evt = ChainEvent(WechatCallbackEventTypes.RemoveCorp,
+            "<xml><Event><![CDATA[change_chain]]></Event><ChangeType><![CDATA[remove_corp]]></ChangeType>" +
+            "<ChainId><![CDATA[chain-xyz]]></ChainId><CorpIds><CorpId><![CDATA[ww-a1b2c3]]></CorpId></CorpIds></xml>");
+
+        WechatCallbackEventParser.ParseChainCorpChanged(evt)!.CorpIds.Should().Equal(new[] { "ww-a1b2c3" });
+    }
+
+    [Fact]
+    public void ChainParsers_ShouldReturnNull_WhenChangeTypeOutOfFamily()
+    {
+        // 结构族解析器互相排斥：空间/分组/企业三族 ChangeType 不可串门。
+        var spaceEvent = ChainEvent(WechatCallbackEventTypes.CreateChain,
+            "<xml><ChainId>c</ChainId><GroupIds><GroupId>5</GroupId></GroupIds></xml>");
+        WechatCallbackEventParser.ParseChainGroupChanged(spaceEvent).Should().BeNull("create_chain 不属于分组族");
+        WechatCallbackEventParser.ParseChainCorpChanged(spaceEvent).Should().BeNull("create_chain 不属于企业族");
+
+        var groupEvent = ChainEvent(WechatCallbackEventTypes.UpdateGroup, "<xml><ChainId>c</ChainId></xml>");
+        WechatCallbackEventParser.ParseChainChanged(groupEvent).Should().BeNull("update_group 不属于空间族");
+    }
+
+    [Fact]
+    public void ChainParsers_ShouldReturnNull_WhenNotChangeChainEvent()
+    {
+        var contactEvent = new WechatCallbackEvent
+        {
+            Event = WechatCallbackEventTypes.ChangeContact,
+            ChangeType = WechatCallbackEventTypes.CreateChain,
+            DecryptedXml = "<xml><ChainId>c</ChainId></xml>",
+        };
+
+        WechatCallbackEventParser.ParseChainChanged(contactEvent).Should().BeNull(
+            "change_contact 事件即使 ChangeType 同名也不得进入上下游解析器（Event 键隔离）");
+    }
+
+    [Fact]
+    public void ParseBatchJobResult_ShouldSupportBatchJobWrapperLayout()
+    {
+        // 官方 95797：上下游任务（import_chain_contact）字段包在 BatchJob 包装节点内（双布局兼容）。
+        var evt = BatchEvent(
+            "<xml><Event><![CDATA[batch_job_result]]></Event>" +
+            "<BatchJob><JobId><![CDATA[chain-job-1]]></JobId><JobType><![CDATA[import_chain_contact]]></JobType>" +
+            "<ErrCode>0</ErrCode><ErrMsg>ok</ErrMsg></BatchJob></xml>");
+
+        var dto = WechatCallbackEventParser.ParseBatchJobResult(evt);
+
+        dto!.JobId.Should().Be("chain-job-1", "BatchJob 包装布局应被解析（95797）");
+        dto.JobType.Should().Be("import_chain_contact");
+        dto.ErrCode.Should().Be("0");
+        dto.ErrMsg.Should().Be("ok");
+    }
+
+    [Fact]
+    public void ParseBatchJobResult_ShouldReturnNull_WhenNoJobFieldsInEitherLayout()
+    {
+        var evt = BatchEvent("<xml><Event><![CDATA[batch_job_result]]></Event><Other>x</Other></xml>");
+
+        WechatCallbackEventParser.ParseBatchJobResult(evt).Should().BeNull("两种布局均无 JobId 时返回 null");
+    }
 }

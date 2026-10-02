@@ -153,7 +153,49 @@ public static class WechatCallbackEventParser
             }
             : null;
 
+    // ---------------------------------------------------------------- 上下游族（官方 95796）
+
+    /// <summary>
+    /// 解析上下游空间变更事件（<c>create_chain</c>/<c>update_chain</c>/<c>delete_chain</c>；
+    /// 事件键不匹配返回 <c>null</c>）。
+    /// </summary>
+    public static ChainChangedEvent? ParseChainChanged(WechatCallbackEvent evt)
+        => IsChainChangeType(evt, ChainSpaceChangeTypes, out var root)
+            ? new ChainChangedEvent { ChainId = Text(root, "ChainId") }
+            : null;
+
+    /// <summary>
+    /// 解析上下游分组变更事件（<c>create_group</c>/<c>update_group</c>/<c>delete_group</c>；
+    /// 事件键不匹配返回 <c>null</c>）。
+    /// </summary>
+    public static ChainGroupChangedEvent? ParseChainGroupChanged(WechatCallbackEvent evt)
+        => IsChainChangeType(evt, ChainGroupChangeTypes, out var root)
+            ? new ChainGroupChangedEvent
+            {
+                ChainId = Text(root, "ChainId"),
+                GroupIds = ParseNestedList(root, "GroupIds", "GroupId"),
+            }
+            : null;
+
+    /// <summary>
+    /// 解析上下游企业变更事件（<c>corp_join</c>/<c>update_corp</c>/<c>remove_corp</c>；
+    /// 事件键不匹配返回 <c>null</c>）。
+    /// </summary>
+    public static ChainCorpChangedEvent? ParseChainCorpChanged(WechatCallbackEvent evt)
+        => IsChainChangeType(evt, ChainCorpChangeTypes, out var root)
+            ? new ChainCorpChangedEvent
+            {
+                ChainId = Text(root, "ChainId"),
+                CorpIds = ParseNestedList(root, "CorpIds", "CorpId"),
+            }
+            : null;
+
     /// <summary>解析异步任务完成事件（<c>batch_job_result</c>；事件键不匹配返回 <c>null</c>）。</summary>
+    /// <remarks>
+    /// 兼容官方<b>两种报文布局</b>（同 Event 键）：通讯录任务（90973）字段为顶层节点；
+    /// 上下游任务（95797，JobType = <c>import_chain_contact</c>）字段包在 <c>BatchJob</c> 包装节点内——
+    /// 顶层缺失时回退读包装节点。
+    /// </remarks>
     public static BatchJobResultEvent? ParseBatchJobResult(WechatCallbackEvent evt)
     {
         if (evt == null || !evt.IsBatchJobResult || string.IsNullOrEmpty(evt.DecryptedXml))
@@ -169,12 +211,19 @@ public static class WechatCallbackEventParser
                 return null;
             }
 
+            // 通讯录版：字段在顶层；上下游版：字段在 BatchJob 包装节点内。
+            var source = root.Element("JobId") != null ? root : root.Element("BatchJob");
+            if (source == null)
+            {
+                return null;
+            }
+
             return new BatchJobResultEvent
             {
-                JobId = Text(root, "JobId"),
-                JobType = Text(root, "JobType"),
-                ErrCode = Text(root, "ErrCode"),
-                ErrMsg = Text(root, "ErrMsg"),
+                JobId = Text(source, "JobId"),
+                JobType = Text(source, "JobType"),
+                ErrCode = Text(source, "ErrCode"),
+                ErrMsg = Text(source, "ErrMsg"),
             };
         }
         catch (System.Xml.XmlException)
@@ -258,4 +307,67 @@ public static class WechatCallbackEventParser
 
     /// <summary>读取根节点的直接子元素文本（CDTA/转义已由 XElement.Value 归一）。</summary>
     private static string? Text(XElement root, string name) => root.Element(name)?.Value;
+
+    /// <summary>解析嵌套 id 列表（官方 95796：<c>&lt;GroupIds&gt;&lt;GroupId&gt;5&lt;/GroupId&gt;&lt;/GroupIds&gt;</c> 同构形态）；无节点时为空列表。</summary>
+    private static List<string> ParseNestedList(XElement root, string containerName, string itemName)
+    {
+        var items = new List<string>();
+        foreach (var element in root.Element(containerName)?.Elements(itemName) ?? Enumerable.Empty<XElement>())
+        {
+            if (element.Value.Trim().Length > 0)
+            {
+                items.Add(element.Value.Trim());
+            }
+        }
+
+        return items;
+    }
+
+    /// <summary>
+    /// 上下游事件键判定：必须是 <c>change_chain</c> 事件且 <see cref="WechatCallbackEvent.ChangeType"/>
+    /// 命中目标集合；命中时输出明文根节点（判定经信封 ChangeType，不重读报文）。
+    /// </summary>
+    private static bool IsChainChangeType(WechatCallbackEvent? evt, string[] changeTypes, out XElement root)
+    {
+        root = null!;
+        if (evt == null || !evt.IsChangeChain || evt.ChangeType == null ||
+            !changeTypes.Contains(evt.ChangeType) || string.IsNullOrEmpty(evt.DecryptedXml))
+        {
+            return false;
+        }
+
+        try
+        {
+            var parsed = XDocument.Parse(evt.DecryptedXml).Root;
+            if (parsed == null)
+            {
+                return false;
+            }
+
+            root = parsed;
+            return true;
+        }
+        catch (System.Xml.XmlException)
+        {
+            return false;
+        }
+    }
+
+    /// <summary>上下游空间族 ChangeType（官方 95796）。</summary>
+    private static readonly string[] ChainSpaceChangeTypes =
+    {
+        WechatCallbackEventTypes.CreateChain, WechatCallbackEventTypes.UpdateChain, WechatCallbackEventTypes.DeleteChain,
+    };
+
+    /// <summary>上下游分组族 ChangeType（官方 95796）。</summary>
+    private static readonly string[] ChainGroupChangeTypes =
+    {
+        WechatCallbackEventTypes.CreateGroup, WechatCallbackEventTypes.UpdateGroup, WechatCallbackEventTypes.DeleteGroup,
+    };
+
+    /// <summary>上下游企业族 ChangeType（官方 95796）。</summary>
+    private static readonly string[] ChainCorpChangeTypes =
+    {
+        WechatCallbackEventTypes.CorpJoin, WechatCallbackEventTypes.UpdateCorp, WechatCallbackEventTypes.RemoveCorp,
+    };
 }

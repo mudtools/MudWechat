@@ -18,7 +18,7 @@ namespace Mud.Wechat.Work.Tests.ContractGuards;
 /// </summary>
 public class WechatCallbackContractGuards
 {
-    /// <summary>官方事件键全集（授权 InfoType 6 + 通讯录 ChangeType 7 + 异步 Event 1）。</summary>
+    /// <summary>官方事件键全集（授权 InfoType 6 + 通讯录 ChangeType 7 + 异步 Event 1 + 上下游 Event 1 + ChangeType 9）。</summary>
     private static readonly (string Key, string Reason)[] OfficialEventKeys =
     {
         (WechatCallbackEventTypes.SuiteTicket, "授权族 suite_ticket"),
@@ -35,6 +35,16 @@ public class WechatCallbackContractGuards
         (WechatCallbackEventTypes.DeleteParty, "通讯录族 delete_party"),
         (WechatCallbackEventTypes.UpdateTag, "通讯录族 update_tag"),
         (WechatCallbackEventTypes.BatchJobResult, "异步任务族 batch_job_result"),
+        (WechatCallbackEventTypes.ChangeChain, "上下游族 change_chain（95796）"),
+        (WechatCallbackEventTypes.CreateChain, "上下游族 create_chain"),
+        (WechatCallbackEventTypes.UpdateChain, "上下游族 update_chain"),
+        (WechatCallbackEventTypes.DeleteChain, "上下游族 delete_chain"),
+        (WechatCallbackEventTypes.CreateGroup, "上下游族 create_group"),
+        (WechatCallbackEventTypes.UpdateGroup, "上下游族 update_group"),
+        (WechatCallbackEventTypes.DeleteGroup, "上下游族 delete_group"),
+        (WechatCallbackEventTypes.CorpJoin, "上下游族 corp_join"),
+        (WechatCallbackEventTypes.UpdateCorp, "上下游族 update_corp"),
+        (WechatCallbackEventTypes.RemoveCorp, "上下游族 remove_corp"),
     };
 
     // ---------------------------------------------------------------- CB1
@@ -62,8 +72,8 @@ public class WechatCallbackContractGuards
 
     /// <summary>
     /// 契约守卫 CB2：<see cref="WechatCallbackEventTypes"/> 常量必须覆盖官方事件键全集
-    /// （授权 InfoType 6 + 通讯录 ChangeType 7 + 异步 Event 1），且 <see cref="WechatCallbackEvent.EventTypeKey"/>
-    /// 判别优先级为 InfoType → ChangeType → Event（v1 方案 D4）。
+    /// （授权 InfoType 6 + 通讯录 ChangeType 7 + 异步 Event 1 + 上下游 Event 1 与 ChangeType 9），且
+    /// <see cref="WechatCallbackEvent.EventTypeKey"/> 判别优先级为 InfoType → ChangeType → Event（v1 方案 D4）。
     /// </summary>
     [Fact]
     public void CallbackEventTypeKeys_ShouldCoverOfficialEventFamilies()
@@ -80,6 +90,7 @@ public class WechatCallbackContractGuards
         }
 
         constants.Should().Contain(WechatCallbackEventTypes.ChangeContact, "通讯录变更事件信封值");
+        constants.Should().Contain(WechatCallbackEventTypes.ChangeChain, "上下游变更事件信封值（95796）");
 
         // EventTypeKey 判别优先级（D4）。
         new WechatCallbackEvent { InfoType = "suite_ticket", Event = "change_contact", ChangeType = "create_user" }
@@ -153,6 +164,9 @@ public class WechatCallbackContractGuards
         AssertProperties(typeof(TagUpdatedEvent), "update_tag",
             "TagId", "AddUserItems", "DelUserItems", "AddPartyItems", "DelPartyItems");
         AssertProperties(typeof(BatchJobResultEvent), "batch_job_result", "JobId", "JobType", "ErrCode", "ErrMsg");
+        AssertProperties(typeof(ChainChangedEvent), "create_chain/update_chain/delete_chain", "ChainId");
+        AssertProperties(typeof(ChainGroupChangedEvent), "create_group/update_group/delete_group", "ChainId", "GroupIds");
+        AssertProperties(typeof(ChainCorpChangedEvent), "corp_join/update_corp/remove_corp", "ChainId", "CorpIds");
 
         static void AssertProperties(Type dtoType, string eventName, params string[] expected)
         {

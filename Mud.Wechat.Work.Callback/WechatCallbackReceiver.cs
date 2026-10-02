@@ -335,6 +335,7 @@ public sealed class WechatCallbackReceiver : IWechatCallbackReceiver
                 evt.Event = root.Element("Event")?.Value;
                 evt.ChangeType = root.Element("ChangeType")?.Value;
                 evt.AgentID = root.Element("AgentID")?.Value;
+                evt.ChainId = root.Element("ChainId")?.Value;
 
                 // 授权族字段。
                 evt.InfoType = root.Element("InfoType")?.Value;

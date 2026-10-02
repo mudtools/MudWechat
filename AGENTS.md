@@ -70,8 +70,8 @@ dotnet format Mud.Wechat.slnx                               # 格式化（未纳
 
 **AOT006（P0-5）已修复**：`Abstractions` 的 **8 个** `[HttpJsonSerializable]` 领域模型由
 `Authentication/Models/AuthenticationJsonContext.cs`（手写）覆盖；`DataModels` 的全部传输 DTO 由
-`Generated/` 目录的 **17 个域上下文**覆盖（`scripts/GenerateJsonContext.ps1` 按 `[HttpJsonSerializable]`
-标注生成，勿手改）。主包 `WechatJsonResolverExtensions` 将 16 个上下文一并合并进组件序列化管线。
+`Generated/` 目录的 **19 个域上下文**覆盖（`scripts/GenerateJsonContext.ps1` 按 `[HttpJsonSerializable]`
+标注生成，勿手改）。主包 `WechatJsonResolverExtensions` 将 19 个上下文（+1 手写 `AuthenticationJsonContext`）一并合并进组件序列化管线。
 **新增 `[HttpJsonSerializable]` 类型必须同批重跑 `scripts/AddHttpJsonSerializable.ps1`（标注）+
 `scripts/GenerateJsonContext.ps1`（登记；Abstractions 域则手写登记到 `AuthenticationJsonContext`）**，
 否则 `AotStrictMode=true` 下 `AOT006`（severity = error）会让门禁步骤 2 直接失败 —— 该诊断本身就是漂移守卫。
@@ -154,12 +154,18 @@ Mud.Wechat/
 `RequestModel/`、`ResponseModel/` 仅作目录组织，**命名空间不含该目录段**。
 
 **客户联系域（2026-10-01 新增）**：接口落 `Interfaces/ExternalContact/`，命名空间 `Mud.Wechat.Work`；
-DTO 落 `DataModels/ExternalContact/{FollowUser,Customer,Tag,JobInheritance}/`，命名空间
-`Mud.Wechat.Work.DataModels.ExternalContact.{FollowUser,Customer,Tag,JobInheritance}`。
+DTO 落 `DataModels/ExternalContact/{FollowUser,Customer,Tag,JobInheritance,ResignedInheritance,GroupChat}/`，命名空间
+`Mud.Wechat.Work.DataModels.ExternalContact.{FollowUser,Customer,Tag,JobInheritance,ResignedInheritance,GroupChat}`。
 模块枚举为独立的 `WechatModule.ExternalContact`（`AddExternalContactApi()` → 生成器
 `AddExternalContactWebApiHttpClient()`，注册组 `ExternalContact`），与通讯录 `Contact` 模块平行。
 2026-10-01 增补：客户标签管理域（Tag，9 端点）与在职继承域（JobInheritance，3 端点）——官方对三类应用
 开放面完全一致，端点全部收敛父接口，三个应用类型子接口均为空标记（同通讯录标签域形态）。
+2026-10-02 增补：离职继承域（ResignedInheritance，4 端点）与客户群管理域（GroupChat，3 端点）——同为
+三类应用开放面完全一致的形态，端点全部收敛父接口，三个应用类型子接口均为空标记。
+**离职继承 ≠ 在职继承**：两者都含「分配客户 + 查询接替状态 + 分配客户群」三段式，但路由不同——
+离职客户的接替为 `resigned/transfer_customer` / `resigned/transfer_result`、离职群接替为
+`groupchat/transfer`（在职为 `transfer_customer` / `transfer_result` / `groupchat/onjob_transfer`，
+"onjob" 拼写属官方契约）；另有「获取待分配的离职成员列表」（`get_unassigned_list`）为离职继承独有。
 
 ## Dependency Version Policy (Mud.HttpUtils)
 
@@ -185,7 +191,7 @@ DTO 落 `DataModels/ExternalContact/{FollowUser,Customer,Tag,JobInheritance}/`�
 - 授权安装链接前缀：`https://open.work.weixin.qq.com/3rdapp/install`。
 - 令牌注入统一走 **Query**（企业微信契约，非 Header），触发组件 `MUD005` 已知接受风险；注入白名单由
   `WechatContractGuards.QueryTokenInjection_ShouldBeLimitedToWechatOfficialContractInterfaces` 锁定为
-  **授权流接口 + 通讯录六域 + 客户联系四域（企业服务人员管理/客户管理/客户标签管理/在职继承）+ 上下游三接口族（CorpGroup/ChainContacts/Rules）父/子接口共 47 个**（见 Contract Guards 表 G5），新增 Query 注入接口须评估后显式扩展守卫。
+  **授权流接口 + 通讯录六域 + 客户联系六域（企业服务人员管理/客户管理/客户标签管理/在职继承/离职继承/客户群管理）+ 上下游三接口族（CorpGroup/ChainContacts/Rules）父/子接口共 55 个**（见 Contract Guards 表 G5），新增 Query 注入接口须评估后显式扩展守卫。
 - v2 端点：`/cgi-bin/service/v2/get_permanent_code`、`/cgi-bin/service/v2/get_auth_info`；
   `get_customized_auth_url` 以**显式 Query 参数** `provider_access_token` 传令牌（**不带 `[Token]`**，不放宽白名单）。
 - `TokenKey` 布局：**三段式 `{tokenType}:{appKey}:{scopeKey}`**（如 `Wechat.AccessToken:default:default`；
@@ -328,7 +334,7 @@ G8 的运行期同实例断言在 `WechatServiceCollectionExtensionsTests`）+ �
 | G2 | `ConfigDtos_ShouldNotUseRequired` | 配置 DTO 禁用 `required` |
 | G3 | `WechatTokenTypes_ShouldUseWechatPrefixedNamespace` | `"Wechat."` 前缀隔离 |
 | G4 | `WechatErrorCodes_ShouldAlignWithDetectorCollection` | 失效码 `{40014,42001,42007,42009,42011}` 与判定器同源 |
-| G5 | `QueryTokenInjection_ShouldBeLimitedToWechatOfficialContractInterfaces` | Query 注入白名单未放宽（现为授权接口 + 通讯录六域 + 客户联系四域 + 上下游三接口族共 47 接口；**应用类型子接口仅覆盖官方实际开放的应用类型**，官方无对应 API 的应用类型不设子接口） |
+| G5 | `QueryTokenInjection_ShouldBeLimitedToWechatOfficialContractInterfaces` | Query 注入白名单未放宽（现为授权接口 + 通讯录六域 + 客户联系六域 + 上下游三接口族共 55 接口；**应用类型子接口仅覆盖官方实际开放的应用类型**，官方无对应 API 的应用类型不设子接口） |
 | G6 | `AuthorizationEndpoints_ShouldMatchOfficialRoutes` | 授权端点路由 + `get_customized_auth_url` 不带 `[Token]` |
 | G7 | `QueryCredentialParams_ShouldBeRedactionRegisteredOrExplicitlyExempted` | Query 承载凭据的参数名 ⊆ 组件脱敏词表 **∪ 显式豁免清单**（豁免项须附追踪号；清单已清空——组件 3.0.0 含 C-01，`access_token` 亦在词表内）。新增 Query 凭据参数必须做「补齐词表 / 登记豁免」二选一决策。**豁免自过期**：豁免项一旦被组件词表覆盖即失败，不得静默遗留 |
 | G8 | `AppContextHolder_ShouldBeSameInstanceAsSwitcher_InRegistrationSource`（源码顺序断言，`WechatContractGuards.cs`）；运行期同实例断言（2 例）在 `WechatServiceCollectionExtensionsTests` | DI 桥接不变量（见「企业微信领域契约」）。**原计划中的 G8-B（`IAppManager<T>` 反射对齐守卫）已撤回**——`WechatAppManager` 直连实现后不存在影子注册表可能，改由行为用例锁定 |
@@ -343,6 +349,8 @@ G8 的运行期同实例断言在 `WechatServiceCollectionExtensionsTests`）+ �
 | CU1~CU4 | `WechatExternalContactCustomerContractGuards`（客户联系·客户管理域） | 形态为**父接口 10 条公共端点 + 第三方 3 条身份转换差异端点**：CU1 路由表 13 条（父接口 GET `externalcontact/list`、GET `externalcontact/get`（跟进人 >500 时 cursor 分页）、POST `externalcontact/batch/get_by_user`、POST `externalcontact/remark`、POST `customer_strategy/{list,get,get_range,create,edit,del}`；第三方 POST `idconvert/unionid_to_external_userid`、POST `idconvert/batch/external_userid_to_pending_id`、POST `externalcontact/to_service_external_userid`；CU1 注释警示 `batch/get_by_user` 与 `batch/getresult`、`export/get_result` 拼写差异）；CU2 层级 + `ExternalContact` 组 + **自建/代开发子接口零端点**、第三方恰 3；CU3 令牌绑定；CU4 JSON 上下文登记（38 型，CustomerJsonContext）。同挂 `ExternalContact` 注册组共用 `AddExternalContactApi()`。**危险操作警示**：规则组 create/edit 仅支持串行调用（勿并发），接口注释必须保留该警示；规则组端点要求「管理客户联系规则组」权限且仅能管理本应用创建的规则组 |
 | CT1~CT4 | `WechatExternalContactTagContractGuards`（客户联系·客户标签管理域） | 形态与通讯录标签域同构：官方对三类应用开放完全一致的 9 个端点 ⇒ 全部端点收敛父接口，CT1 路由表 9 条（全 POST：`externalcontact/get_corp_tag_list`、`add/edit/del_corp_tag`、`mark_tag`、`get/add/edit/del_strategy_tag`；代开发文档树 96320/96322/99544 与自建/第三方同路由）；CT2 层级 + `ExternalContact` 组 + **三个子接口零端点**；CT3 令牌绑定；CT4 JSON 上下文登记（17 型，TagJsonContext）。同挂 `ExternalContact` 注册组共用 `AddExternalContactApi()`。**权限分层**：标签库读取须「客户基础信息」权限，企业客户标签管理须「管理企业客户标签」权限，规则组标签管理须「管理客户联系规则组」权限；应用仅能编辑/删除本应用创建的标签，仅能获取和管理由本应用创建的规则组标签 |
 | JI1~JI4 | `WechatExternalContactJobInheritanceContractGuards`（客户联系·在职继承域） | 形态与通讯录标签域同构：官方对三类应用开放完全一致的 3 个端点 ⇒ 全部端点收敛父接口，JI1 路由表 3 条（全 POST：`externalcontact/transfer_customer`、`transfer_result`、`groupchat/onjob_transfer`——注释警示 "onjob" 拼写属官方契约，离职继承群接替为 `groupchat/transfer` 勿混淆）；JI2 层级 + `ExternalContact` 组 + **三个子接口零端点**；JI3 令牌绑定；JI4 JSON 上下文登记（9 型，JobInheritanceJsonContext）。同挂 `ExternalContact` 注册组共用 `AddExternalContactApi()`。**限频契约**：90 自然日内每位客户/每个客户群仅可被转接 2 次，客户每次最多 100 个、客户群每次 1~100 个、每人每天客户群最多分配 300 个，接口注释必须保留该警示 |
+| RI1~RI4 | `WechatExternalContactResignedInheritanceContractGuards`（客户联系·离职继承域） | 形态与在职继承域同构：官方对三类应用开放完全一致的 4 个端点 ⇒ 全部端点收敛父接口，RI1 路由表 4 条（全 POST：`externalcontact/get_unassigned_list`、`resigned/transfer_customer`、`resigned/transfer_result`、`groupchat/transfer`——**`groupchat/transfer` 为离职群接替，勿与在职 `groupchat/onjob_transfer` 混淆**）；RI2 层级 + `ExternalContact` 组 + **三个子接口零端点**；RI3 令牌绑定；RI4 JSON 上下文登记（12 型，ResignedInheritanceJsonContext）。同挂 `ExternalContact` 注册组共用 `AddExternalContactApi()`。**约束契约**：原跟进成员须已离职且离职时间不超过 1 年（离职前一年内至少登录过一次企业微信）；接替成员/新群主最近一年内至少登录过一次企业微信，新群主另须配置客户联系功能 + 实名 + 已激活；客户每次最多 100 个、客户群每次 1~100 个、每人每天客户群最多分配 300 个；`transfer_customer` 返回 errcode 0 仅表示开始分配流程（待 24 小时自动接替），最终状态须查询客户接替状态 |
+| GC1~GC4 | `WechatExternalContactGroupChatContractGuards`（客户联系·客户群管理域） | 形态与标签域同构：官方对三类应用开放完全一致的 3 个端点 ⇒ 全部端点收敛父接口，GC1 路由表 3 条（全 POST：`externalcontact/groupchat/list`、`groupchat/get`、`opengid_to_chatid`；注释警示 `groupchat/list`/`groupchat/get` 与在职/离职继承的群接替路由互不重叠）；GC2 层级 + `ExternalContact` 组 + **三个子接口零端点**；GC3 令牌绑定；GC4 JSON 上下文登记（12 型，GroupChatJsonContext）。同挂 `ExternalContact` 注册组共用 `AddExternalContactApi()`。**分页/范围契约**：`groupchat/list` 必须指定 `owner_filter`（不指定则拉取应用可见范围内全部群主，可见范围超 1000 人报错 81017；群主为离职成员时必须指定）；旧版 `offset + limit` 分页将废弃，须用 `cursor + limit` |
 | CG1~CG4 | `WechatCorpGroupContractGuards`（上下游域） | 开放面为**自建 + 代开发**（6 端点）+ **第三方（仅获取应用共享信息 95324，同路由同契约，随父接口继承）**：6 个端点全落父接口（`/cgi-bin/corpgroup/corp/list_app_share_info`、`corp/gettoken`、`miniprogram/transfer_session`、`unionid_to_external_userid`、`unionid_to_pending_id`、`batch/external_userid_to_pending_id`；97357/98040 一篇覆盖 2 端点）。CG1 路由表 6 条（全 POST）；CG2 层级 + `CorpGroup` 注册组（`WechatModule.CorpGroup`，经 `AddCorpGroupApi()` 独立注册）+ **三个子接口零端点** + **反射断言继承链上恰好只有自建/第三方/代开发三个子接口**；CG3 令牌绑定（四接口）；CG4 JSON 上下文登记（15 型）。**令牌语义警示**：transfer_session 必须用下级/下游企业凭证（经 corpgroup/corp/gettoken 获取，SDK 不自动缓存，由宿主写入令牌存储后切换上下文调用）；`session_key`/下游 access_token 为敏感凭据不得记日志 |
 | CG5~CG8 | `WechatCorpGroupContractGuards`（上下游通讯录管理域，与 CG1~CG4 同文件） | 公共读取面父接口（4 端点：`corpgroup/corp/get_chain_list`、`get_chain_group`、`get_chain_corpinfo_list`、`get_chain_corpinfo`）+ 自建子接口（5 端点：`import_chain_contact`、`corpgroup/getresult`、`corp/remove_corp`、`corp/get_chain_user_custom_id`、`get_corp_shared_chain_list`）+ 代开发空标记（官方代开发树仅镜像获取上下游信息）。CG5 路由表 9 条（`DeclaredOnly` 限定声明位置，注释警示 `corpgroup/getresult` 与 `batch/getresult`、`export/get_result` 拼写差异）；CG6 父接口恰 4 端点 + 自建恰 5 端点 + 代开发零端点；CG7 令牌绑定；CG8 JSON 上下文登记（23 型）。同挂 `CorpGroup` 注册组共用 `AddCorpGroupApi()`。**导入强串行**：同时仅一个导入任务、只允许串行调用，接口注释必须保留该警示 |
 | CG9~CG11 | `WechatCorpGroupContractGuards`（上下游规则域，与 CG1~CG8 同文件） | **形态为父接口零端点 + 端点全落自建子接口**（官方仅向自建开放，且仅上下游创建空间的主企业可调用）：5 个端点（`corpgroup/rule/list_ids`、`delete_rule`、`get_rule_info`、`add_rule`、`modify_rule`）。CG9 路由表 5 条（全 POST）；CG10 父接口零端点 + Internal 恰 5 端点、无其它子接口；CG11 令牌绑定（2 接口）+ JSON 上下文登记（11 型）。同挂 `CorpGroup` 注册组共用 `AddCorpGroupApi()`。**频率警示**：新增/更新规则共用每天 1000 次额度，接口注释必须保留 |

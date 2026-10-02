@@ -8,6 +8,7 @@
 using System.Reflection;
 using System.Text.RegularExpressions;
 using Mud.HttpUtils.Attributes;
+using Mud.HttpUtils.Payloads;
 using Mud.Wechat.Work.Abstractions.Callback;
 using Mud.Wechat.Work.Abstractions.Callback.Payloads;
 using Mud.Wechat.Work.Abstractions.Enums;
@@ -283,6 +284,53 @@ public class WechatCallbackContractGuards
 
         registry.TryResolve(WechatCallbackEventTypes.CreateChain, out var chain).Should().BeTrue();
         chain!.SupportedAppTypes.Should().Be(WechatAppTypeSet.Internal, "上下游变更族官方仅向自建应用开放");
+    }
+
+    /// <summary>
+    /// 契约守卫 CB4e（v2.2 落地）：注册期<b>不得宽于官方族默认</b>的 fail-fast 校验（ADR-15）。
+    /// </summary>
+    /// <remarks>
+    /// 断言的是**校验器真实生效**（而非仅「代码存在」）：
+    /// ① 官方契约表自身通过校验（正向）；② 故意把「仅自建」的上下游族键声明为三类应用全开放 ⇒ 必须抛；
+    /// ③ 通道与官方不一致 ⇒ 必须抛；④ 无官方基线的 <c>Unknown</c> 族 ⇒ 不校验（宿主私有事件不受误伤）。
+    /// 第 ④ 项同时是**防空转**对照：若校验器写成「一律抛」，本用例会失败。
+    /// </remarks>
+    [Fact]
+    public void ContractRegistration_ShouldRejectOpenSurfaceWiderThanFamilyDefault()
+    {
+        var accessor = ContactUserChangedPayload.PayloadFieldMap is IPayloadContractAccessor a
+            ? a
+            : throw new InvalidOperationException("测试前置：载荷映射表须实现 IPayloadContractAccessor。");
+
+        // ① 正向：官方声明（All + App，族为 ContactChange）通过。
+        var official = WechatPayloadContract.CreateWithOpenSurface(
+            WechatCallbackEventTypes.CreateUser, accessor,
+            WechatAppTypeSet.All, WechatCallbackChannel.App,
+            WechatCallbackEventTypes.ChangeContact, WechatCallbackEventFamily.ContactChange);
+        official.SupportedAppTypes.Should().Be(WechatAppTypeSet.All);
+
+        // ② 越权放宽：上下游族（官方仅自建）被声明为三类应用全开放 ⇒ 必须 fail-fast。
+        var widened = () => WechatPayloadContract.CreateWithOpenSurface(
+            WechatCallbackEventTypes.CreateChain, accessor,
+            WechatAppTypeSet.All, WechatCallbackChannel.App,
+            WechatCallbackEventTypes.ChangeChain, WechatCallbackEventFamily.ChainChange);
+        widened.Should().Throw<ArgumentException>()
+            .WithMessage("*宽于*", "CB4e：声明宽于官方族默认必须在组合根期失败（否则事件键闸形同虚设）");
+
+        // ③ 通道不一致（官方为 Suite 的授权族被声明为 App）⇒ 必须 fail-fast。
+        var wrongChannel = () => WechatPayloadContract.CreateWithOpenSurface(
+            "suite_ticket", accessor,
+            WechatAppTypeSet.ThirdParty | WechatAppTypeSet.Provider, WechatCallbackChannel.App,
+            requiredEvent: null, requiredFamily: WechatCallbackEventFamily.Authorization);
+        wrongChannel.Should().Throw<ArgumentException>().WithMessage("*通道*");
+
+        // ④ 无官方基线（Unknown 族）⇒ 不校验，宿主私有事件可自由声明。
+        var custom = WechatPayloadContract.CreateWithOpenSurface(
+            "change_external_contact", accessor,
+            WechatAppTypeSet.ThirdParty | WechatAppTypeSet.Provider, WechatCallbackChannel.App,
+            requiredEvent: "change_external_contact", requiredFamily: WechatCallbackEventFamily.Unknown);
+        custom.SupportedAppTypes.Should().Be(WechatAppTypeSet.ThirdParty | WechatAppTypeSet.Provider,
+            "CB4e：官方未文档化的事件键无基线可比对，声明由宿主负责（不得误伤）");
     }
 
     /// <summary>
@@ -650,6 +698,98 @@ public class WechatCallbackContractGuards
             "CB13：合法性闸必须先于拦截器（不适用事件族不得触达业务拦截器/处理器）");
         source.Should().Contain("return WechatCallbackDispatchOutcome.Rejected;",
             "CB13：不适用事件族以 Rejected 返回（中间件映射 200，不触发企业微信重推）");
+    }
+
+    /// <summary>
+    /// 契约守卫 CB13b（v2.2 落地）：<b>事件键级开放面闸</b>必须存在且先于拦截器，并且先于载荷读取。
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// CB13 只锁了<b>族级</b>闸的次序。v2.2 新增的<b>事件键级</b>闸（ADR-15）是并列的第二道：
+    /// 族级闸按「事件族」判定，而宿主注册新 <c>Event</c> 值会落 <c>Unknown</c> 族而被族闸放行
+    /// ⇒ 必须有第二道按事件键的契约声明判定，且与族闸同样<b>先于拦截器</b>。
+    /// </para>
+    /// <para>
+    /// 同时断言事件键闸先于<b>载荷读取</b>（<c>IWechatPayloadReader</c> 的调用点）：这是 §3.9.5
+    /// 「<c>JobType</c> 级差异不得做成安全闸」的机器化表达 —— 闸不得后移到解析之后。
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void DispatcherEventKeyGate_ShouldExistAndPrecedeInterceptors()
+    {
+        var dispatcherPath = Path.Combine(GetSolutionRoot(),
+            "Mud.Wechat.Work.Callback", "WechatCallbackDispatcher.cs");
+        var source = File.ReadAllText(dispatcherPath);
+
+        var familyGateIndex = source.IndexOf("IsEventFamilyAllowed", StringComparison.Ordinal);
+        var keyGateIndex = source.IndexOf("IsOpenFor(", StringComparison.Ordinal);
+        var beforeIndex = source.IndexOf(".BeforeHandleAsync(", StringComparison.Ordinal);
+        var readerIndex = source.IndexOf("_payloadReader.Read(", StringComparison.Ordinal);
+
+        familyGateIndex.Should().BePositive("CB13b：分发器必须保留族级闸");
+        keyGateIndex.Should().BePositive(
+            "CB13b：分发器必须调用事件键级闸 contract.IsOpenFor(...)（ADR-15；缺此闸则宿主注册新 Event 值会绕过开放面）");
+        beforeIndex.Should().BePositive("CB13b：分发器必须保留拦截器 Before 阶段");
+
+        familyGateIndex.Should().BeLessThan(beforeIndex, "CB13b：族级闸先于拦截器");
+        keyGateIndex.Should().BeLessThan(beforeIndex,
+            "CB13b：事件键级闸必须先于拦截器（两道闸都不得触达业务拦截器/处理器）");
+
+        // §3.9.5：闸在解析前执行 —— 「载荷级安全闸」是被明确否决的过度设计。
+        if (readerIndex > 0)
+        {
+            keyGateIndex.Should().BeLessThan(readerIndex,
+                "CB13b：事件键闸必须先于载荷读取（禁止「解析后重判开放面」的载荷级安全闸，见方案 §3.9.5）");
+        }
+
+        // 事件键未登记时应落回族级闸结论（协议外报文不拦截，与 v1 行为一致）。
+        source.Should().Contain("TryResolve(eventType",
+            "CB13b：事件键闸须以「键未登记 ⇒ 落回族级闸」为默认（协议外报文不拦截）");
+    }
+
+    /// <summary>
+    /// 契约守卫 CB23（v2.2 落地）：<b>禁止载荷级安全闸</b>（防 §3.9.5 的过度设计回流）。
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// 载荷体系内**不得**出现「按载荷字段（如 <c>JobType</c>）判定是否接收事件」的代码路径。
+    /// 官方开放面约束的对象是<b>事件面</b>（如「上下游变更回调仅自建」），而非某个字段值；
+    /// 把字段级差异做成闸需把闸后移到解析之后，会打破「非法事件不触达业务」的不变量。
+    /// </para>
+    /// <para>
+    /// 判定：<b>载荷层</b>（载荷类型 / 转换器）不得读取批次任务字段做接收判定；
+    /// 该差异属<b>语义过滤</b>，只能出现在处理器内。
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void PayloadLayer_ShouldNotImplementSafetyGate()
+    {
+        var payloadLayer = new[]
+        {
+            typeof(ContactUserChangedPayload), typeof(ContactPartyChangedPayload),
+            typeof(ContactTagChangedPayload), typeof(BatchJobCompletedPayload),
+            typeof(ChainChangedPayload), typeof(GenericCallbackPayload),
+            typeof(WechatPayloadConverter),
+        };
+
+        foreach (var type in payloadLayer)
+        {
+            var source = ReadSource(type);
+
+            // 载荷层不得为「接收与否」做判定：不应出现分发结果类型或闸语义的引用。
+            source.Should().NotContain("WechatCallbackDispatchOutcome",
+                $"{type.Name} 不得参与分发判定（载荷层只做字段映射，见方案 §3.9.5）");
+            source.Should().NotContain("IsEventFamilyAllowed",
+                $"{type.Name} 不得引用族级闸（开放面判定只在分发器）");
+            source.Should().NotContain("IsOpenFor(",
+                $"{type.Name} 不得引用事件键级闸（开放面判定只在分发器）");
+        }
+
+        // JobType 级差异必须留在处理器可达的载荷字段上（而非闸），即 BatchJobCompletedPayload 保留 JobType 字段。
+        typeof(BatchJobCompletedPayload)
+            .GetProperty("JobType")
+            .Should().NotBeNull("CB23：`import_chain_contact` 等 JobType 级差异是**语义过滤**（处理器内一行 if），" +
+                                "故 JobType 必须作为普通载荷字段保留，而不是被闸消费");
     }
 
     /// <summary>

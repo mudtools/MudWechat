@@ -62,6 +62,10 @@ builder.AddPayload("change_external_contact", MyPayload.PayloadFieldMap);
 
 > 映射表请在**具体类型**处取 `PayloadFieldMap`（C# 禁止泛型上下文访问类型参数静态成员）。
 
+**新增事件的完整步骤**（三场景：同构事件 / 新报文结构 / 未文档化事件）见
+`.docs/MudWechatWork-回调事件新增指南-v1.md` —— 含载荷类模板、字段形态速查、
+契约登记的开放面口径、守卫对照表与排障表。
+
 ## 快速开始
 
 ```csharp

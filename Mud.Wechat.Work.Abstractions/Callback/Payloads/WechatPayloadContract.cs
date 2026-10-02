@@ -125,7 +125,16 @@ public sealed class WechatPayloadContract
         WechatCallbackEventFamily? requiredFamily = null)
         => new(eventTypeKey, accessor, requiredEvent, requiredFamily, null, null);
 
-    /// <summary>创建契约并显式声明事件键级开放面（官方 17 键须显式声明，守卫 CB22 断言）。</summary>
+    /// <summary>
+    /// 创建契约并显式声明事件键级开放面（官方 17 键须显式声明，守卫 CB4c 断言）。
+    /// </summary>
+    /// <remarks>
+    /// <b>注册期 fail-fast（ADR-15）</b>：声明<b>不得宽于</b>事件族的官方默认（
+    /// <see cref="WechatEventFamilyOpenSurface.ValidateNotWiderThanFamilyDefault"/>）。
+    /// 这条校验防的是「宿主把仅自建的 <c>change_chain</c> 声明为三类应用全开放」——
+    /// 那会让事件键闸形同虚设（与族级闸 <c>Unknown → true</c> 缺口同构的风险，只是挪到了声明面）。
+    /// </remarks>
+    /// <exception cref="ArgumentException">声明宽于官方族默认，或通道与官方不一致。</exception>
     public static WechatPayloadContract CreateWithOpenSurface(
         string eventTypeKey,
         IPayloadContractAccessor accessor,
@@ -133,5 +142,11 @@ public sealed class WechatPayloadContract
         WechatCallbackChannel requiredChannel,
         string? requiredEvent = null,
         WechatCallbackEventFamily? requiredFamily = null)
-        => new(eventTypeKey, accessor, requiredEvent, requiredFamily, supportedAppTypes, requiredChannel);
+    {
+        WechatEventFamilyOpenSurface.ValidateNotWiderThanFamilyDefault(
+            eventTypeKey, requiredFamily, supportedAppTypes, requiredChannel);
+
+        return new WechatPayloadContract(
+            eventTypeKey, accessor, requiredEvent, requiredFamily, supportedAppTypes, requiredChannel);
+    }
 }

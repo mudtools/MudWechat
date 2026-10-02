@@ -301,4 +301,38 @@ public class WechatServiceCollectionExtensionsTests
         scope.ServiceProvider.GetRequiredService<IWechatWorkInternalCorpGroupRulesService>().Should().NotBeNull(
             "ValidateScopes = true 变体下子 scope 内同样可解析");
     }
+
+    /// <summary>
+    /// Security 模块（安全管理域）：AddSecurityApi 注册的自建子接口客户端必须可解析
+    ///（三接口族均为公共父接口 IsAbstract 不参与 DI 注册，官方仅向自建应用开放，无第三方/代开发子接口）。
+    /// </summary>
+    [Fact]
+    public void AddSecurityApi_ShouldRegisterSecurityDomainClients_ResolvableInRootAndScope()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddWechatApp(new List<WechatAppConfig> { InternalConfig() });
+        services.AddWechatWorkServices(builder => builder.AddSecurityApi());
+
+        using var provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true });
+
+        provider.GetRequiredService<IWechatWorkInternalSecurityService>().Should().NotBeNull();
+        provider.GetRequiredService<IWechatWorkInternalSecurityVipService>().Should().NotBeNull();
+        provider.GetRequiredService<IWechatWorkInternalSecurityOperLogService>().Should().NotBeNull();
+
+        provider.GetService<IWechatWorkSecurityService>().Should().BeNull(
+            "公共父接口 IsAbstract = true，不得注册进 DI（调用方须按应用类型选择子接口）");
+        provider.GetService<IWechatWorkSecurityVipService>().Should().BeNull(
+            "公共父接口 IsAbstract = true，不得注册进 DI（调用方须按应用类型选择子接口）");
+        provider.GetService<IWechatWorkSecurityOperLogService>().Should().BeNull(
+            "公共父接口 IsAbstract = true，不得注册进 DI（调用方须按应用类型选择子接口）");
+
+        using var scope = provider.CreateScope();
+        scope.ServiceProvider.GetRequiredService<IWechatWorkInternalSecurityService>().Should().NotBeNull(
+            "ValidateScopes = true 变体下子 scope 内同样可解析");
+        scope.ServiceProvider.GetRequiredService<IWechatWorkInternalSecurityVipService>().Should().NotBeNull(
+            "ValidateScopes = true 变体下子 scope 内同样可解析");
+        scope.ServiceProvider.GetRequiredService<IWechatWorkInternalSecurityOperLogService>().Should().NotBeNull(
+            "ValidateScopes = true 变体下子 scope 内同样可解析");
+    }
 }

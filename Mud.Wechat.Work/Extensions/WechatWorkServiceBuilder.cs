@@ -52,6 +52,9 @@ public class WechatWorkServiceBuilder
             [WechatModule.CorpGroup] = new WechatModuleRegistrar(
                 WechatModule.CorpGroup,
                 s => s.AddCorpGroupWebApiHttpClient()),
+            [WechatModule.Security] = new WechatModuleRegistrar(
+                WechatModule.Security,
+                s => s.AddSecurityWebApiHttpClient()),
         };
 
     /// <summary>注册授权流业务接口与授权编排服务（get_pre_auth_code / set_session_info / get_permanent_code / get_auth_info / get_customized_auth_url + 编排）。</summary>
@@ -65,6 +68,9 @@ public class WechatWorkServiceBuilder
 
     /// <summary>注册上下游业务接口（基础接口 + 关联客户信息 + 上下游通讯录管理；自建/代开发两类应用）。</summary>
     public WechatWorkServiceBuilder AddCorpGroupApi() => AddModule(WechatModule.CorpGroup);
+
+    /// <summary>注册安全管理业务接口（文件防泄漏 / 设备管理 / 截屏录屏管理 / 域名 IP 信息 / 高级功能账号管理 / 操作日志，官方仅向自建应用开放）。</summary>
+    public WechatWorkServiceBuilder AddSecurityApi() => AddModule(WechatModule.Security);
 
     /// <summary>注册全部模块。</summary>
     public WechatWorkServiceBuilder AddAllApis()

@@ -28,6 +28,9 @@ public enum WechatModule
     /// <summary>上下游（基础接口 + 关联客户信息 + 上下游通讯录管理：应用共享信息、下级企业凭证、小程序 session、unionid 转换、通讯录导入/查询）。</summary>
     CorpGroup,
 
+    /// <summary>安全管理（文件防泄漏 / 设备管理 / 截屏录屏管理 / 域名 IP 信息 / 高级功能账号管理 / 操作日志，官方仅向自建应用开放）。</summary>
+    Security,
+
     /// <summary>消息推送等（预留）。</summary>
     Message,
 }

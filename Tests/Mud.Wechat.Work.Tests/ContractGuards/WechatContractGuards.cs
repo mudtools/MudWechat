@@ -198,6 +198,14 @@ public class WechatContractGuards
                 // 上下游规则域（CorpGroup 模块）：官方仅向自建开放，父接口零端点 + 仅自建子接口承载端点。
                 nameof(IWechatWorkCorpGroupRulesService),
                 nameof(IWechatWorkInternalCorpGroupRulesService),
+                // 安全管理域（Security 模块）：官方仅向自建开放，三接口族均为父接口零端点 + 仅自建子接口承载端点
+                //（文件防泄漏 98079 / 设备管理 98920 / 截屏录屏 100128 / 域名 IP 100079 / 高级功能账号 99503、99505、99506 / 操作日志 100178、100179）。
+                nameof(IWechatWorkSecurityService),
+                nameof(IWechatWorkInternalSecurityService),
+                nameof(IWechatWorkSecurityVipService),
+                nameof(IWechatWorkInternalSecurityVipService),
+                nameof(IWechatWorkSecurityOperLogService),
+                nameof(IWechatWorkInternalSecurityOperLogService),
             },
             "企业微信官方契约强制 Query 注入（MUD005 已知接受风险），新增 Query 注入接口须评估后扩展本守卫");
     }

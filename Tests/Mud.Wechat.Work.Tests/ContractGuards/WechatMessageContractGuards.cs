@@ -17,13 +17,14 @@ namespace Mud.Wechat.Work.Tests.ContractGuards;
 /// </summary>
 /// <remarks>
 /// <para>
-/// 三接口族形态：
+/// 四接口族形态：
 /// <b>发送应用消息族</b>（<see cref="IWechatWorkMessageService"/>）：官方对自建（90236/94888/94867）、
 /// 第三方（90372/94945/94947）、代开发（96458/96459/96460）开放完全一致的 3 个端点收敛父接口，
 /// 自建/代开发子接口空标记，第三方子接口另持 <c>template_msg</c> 差异端点（94515，经
 /// <c>/cgi-bin/message/send</c> 发送——官方页面未单独标注路由，以正文表述为准）；
-/// <b>群聊会话族</b>（<see cref="IWechatWorkAppChatService"/>）与<b>家校学校通知族</b>
-/// （<see cref="IWechatWorkSchoolMessageService"/>）：官方仅向自建应用开放
+/// <b>群聊会话族</b>（<see cref="IWechatWorkAppChatService"/>）、<b>家校学校通知族</b>
+/// （<see cref="IWechatWorkSchoolMessageService"/>）与<b>智能表格自动化创建的群聊族</b>
+/// （<see cref="IWechatWorkSmartSheetGroupChatService"/>）：官方仅向自建应用开放
 /// （群聊会话明示第三方不可调用），均为父接口零端点 + 仅自建子接口承载端点。
 /// </para>
 /// <para>
@@ -42,6 +43,8 @@ public class WechatMessageContractGuards
     private const string AppChatImplementationClassName = "WechatWorkAppChatService";
 
     private const string SchoolMessageImplementationClassName = "WechatWorkSchoolMessageService";
+
+    private const string SmartSheetGroupChatImplementationClassName = "WechatWorkSmartSheetGroupChatService";
 
     private const string MessageRegistryGroupName = "Message";
 
@@ -160,6 +163,16 @@ public class WechatMessageContractGuards
         (typeof(IWechatWorkInternalSchoolMessageService),
             nameof(IWechatWorkInternalSchoolMessageService.SendSchoolMiniProgramMessageAsync),
             typeof(PostAttribute), "/cgi-bin/externalcontact/message/send"),
+        // 智能表格自动化创建的群聊族·自建子接口（3 端点，全 POST）。
+        (typeof(IWechatWorkInternalSmartSheetGroupChatService),
+            nameof(IWechatWorkInternalSmartSheetGroupChatService.GetSmartSheetGroupChatListAsync),
+            typeof(PostAttribute), "/cgi-bin/wedoc/smartsheet/groupchat/list"),
+        (typeof(IWechatWorkInternalSmartSheetGroupChatService),
+            nameof(IWechatWorkInternalSmartSheetGroupChatService.GetSmartSheetGroupChatAsync),
+            typeof(PostAttribute), "/cgi-bin/wedoc/smartsheet/groupchat/get"),
+        (typeof(IWechatWorkInternalSmartSheetGroupChatService),
+            nameof(IWechatWorkInternalSmartSheetGroupChatService.UpdateSmartSheetGroupChatAsync),
+            typeof(PostAttribute), "/cgi-bin/wedoc/smartsheet/groupchat/update"),
     };
 
     /// <summary>
@@ -171,8 +184,8 @@ public class WechatMessageContractGuards
     [Fact]
     public void MessageEndpoints_ShouldMatchOfficialRoutes()
     {
-        Routes.Should().HaveCount(34,
-            "发送应用消息族 13（父接口）+ 1（第三方 template_msg）+ 群聊会话族 12 + 学校通知族 8");
+        Routes.Should().HaveCount(37,
+            "发送应用消息族 13（父接口）+ 1（第三方 template_msg）+ 群聊会话族 12 + 学校通知族 8 + 智能表格群聊族 3");
 
         Routes.Select(r => $"{r.Interface.Name}.{r.Method}").Should().OnlyHaveUniqueItems(
             "各端点方法（接口 + 方法名）不得重复");
@@ -188,6 +201,9 @@ public class WechatMessageContractGuards
             "/cgi-bin/appchat/get",
             "/cgi-bin/appchat/send",
             "/cgi-bin/externalcontact/message/send",
+            "/cgi-bin/wedoc/smartsheet/groupchat/list",
+            "/cgi-bin/wedoc/smartsheet/groupchat/get",
+            "/cgi-bin/wedoc/smartsheet/groupchat/update",
         }, "消息推送域唯一路由集合必须与官方契约一致");
 
         foreach (var (iface, method, httpAttribute, route) in Routes)
@@ -251,10 +267,16 @@ public class WechatMessageContractGuards
             typeof(IWechatWorkInternalSchoolMessageService),
             SchoolMessageImplementationClassName,
             "家校学校通知族官方仅向自建应用开放，不得出现第三方/代开发子接口");
+
+        // 智能表格自动化创建的群聊族：父接口零端点 + 仅自建子接口承载端点。
+        AssertInternalOnlyFamily(typeof(IWechatWorkSmartSheetGroupChatService),
+            typeof(IWechatWorkInternalSmartSheetGroupChatService),
+            SmartSheetGroupChatImplementationClassName,
+            "智能表格群聊族官方仅向自建应用开放，不得出现第三方/代开发子接口");
     }
 
     /// <summary>
-    /// 契约守卫 MSG3：令牌绑定——八接口统一消费 AccessToken 路由键并以 Query 注入（官方契约 access_token）。
+    /// 契约守卫 MSG3：令牌绑定——十接口统一消费 AccessToken 路由键并以 Query 注入（官方契约 access_token）。
     /// </summary>
     [Fact]
     public void MessageTokenBinding_ShouldBeAccessTokenInjectedViaQuery()
@@ -269,6 +291,8 @@ public class WechatMessageContractGuards
             typeof(IWechatWorkInternalAppChatService),
             typeof(IWechatWorkSchoolMessageService),
             typeof(IWechatWorkInternalSchoolMessageService),
+            typeof(IWechatWorkSmartSheetGroupChatService),
+            typeof(IWechatWorkInternalSmartSheetGroupChatService),
         };
 
         foreach (var iface in interfaces)
@@ -333,9 +357,13 @@ public class WechatMessageContractGuards
             typeof(SchoolSendVideoRequest), typeof(SchoolSendFileRequest), typeof(SchoolSendNewsRequest),
             typeof(SchoolSendMpNewsRequest), typeof(SchoolSendMiniProgramRequest),
             typeof(SchoolMiniProgramBody), typeof(SchoolMessageSendResponse),
+            // 智能表格自动化创建的群聊族。
+            typeof(GetSmartSheetGroupChatListRequest), typeof(GetSmartSheetGroupChatListResponse),
+            typeof(GetSmartSheetGroupChatRequest), typeof(GetSmartSheetGroupChatResponse),
+            typeof(UpdateSmartSheetGroupChatRequest), typeof(UpdateSmartSheetGroupChatResponse),
         };
 
-        requiredTypes.Should().HaveCount(80, "消息推送域契约面共 80 型（发送应用消息族 51 + 群聊会话族 18 + 学校通知族 11）");
+        requiredTypes.Should().HaveCount(86, "消息推送域契约面共 86 型（发送应用消息族 51 + 群聊会话族 18 + 学校通知族 11 + 智能表格群聊族 6）");
         requiredTypes.Should().OnlyHaveUniqueItems("契约面类型不得重复断言");
 
         foreach (var type in requiredTypes)

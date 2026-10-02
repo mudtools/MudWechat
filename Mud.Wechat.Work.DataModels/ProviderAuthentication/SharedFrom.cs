@@ -1,8 +1,9 @@
-﻿namespace Mud.Wechat.Work.DataModels.ProviderAuthentication;
+namespace Mud.Wechat.Work.DataModels.ProviderAuthentication;
 
 /// <summary>
 /// 共享应用的企业信息
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "ProviderAuthentication")]
 public class SharedFrom
 {
     /// <summary>

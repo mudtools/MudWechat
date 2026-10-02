@@ -11,6 +11,7 @@ namespace Mud.Wechat.Work.DataModels.ExternalContact.Customer;
 /// 企业成员客户跟进信息（批量获取客户详情 <c>external_contact_list[].follow_info</c>；
 /// 与获取客户详情的 follow_user 结构对应，但标签只返回企业标签与规则组标签的 tag_id，个人标签不返回）。
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "Customer")]
 public class CustomerFollowInfo
 {
     /// <summary>

@@ -10,6 +10,7 @@ namespace Mud.Wechat.Work.DataModels.Contracts.Users;
 /// <summary>
 /// 扩展属性的网页值（<c>web</c>：url 与 title 须同时为空（清除）或同时不为空）。
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "Users")]
 public class UserExtAttrWeb
 {
     /// <summary>

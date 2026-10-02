@@ -1,8 +1,9 @@
-﻿namespace Mud.Wechat.Work.DataModels.ProviderAuthentication;
+namespace Mud.Wechat.Work.DataModels.ProviderAuthentication;
 
 /// <summary>
 /// 获取企业永久授权码请求体
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "ProviderAuthentication")]
 public class GetPermanentCodeRequest
 {
     /// <summary>

@@ -14,6 +14,7 @@ namespace Mud.Wechat.Work.DataModels.CorpGroup;
 /// pending_id 主要用于关联微信 unionid 与外部联系人 external_userid（可理解为临时外部联系人 ID），
 /// 有效期 90 天、共享应用内唯一。调用频率：10 万次/小时、48 万次/天、750 万次/月（按上游企业维度）。
 /// </remarks>
+[HttpJsonSerializable(SerializerClassName = "CorpGroup")]
 public class UnionidToPendingIdRequest
 {
     /// <summary>

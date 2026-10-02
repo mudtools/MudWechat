@@ -11,6 +11,7 @@ namespace Mud.Wechat.Work.DataModels.ExternalContact.Customer;
 /// 代开发应用 external_userid 转换为第三方应用 external_userid 响应体
 /// （<c>/cgi-bin/externalcontact/to_service_external_userid</c>）。
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "Customer")]
 public class ConvertToServiceExternalUserIdResponse : WechatWorkResponse
 {
     /// <summary>

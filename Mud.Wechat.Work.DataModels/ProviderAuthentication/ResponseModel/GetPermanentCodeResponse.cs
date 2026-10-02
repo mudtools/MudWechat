@@ -1,8 +1,9 @@
-﻿namespace Mud.Wechat.Work.DataModels.ProviderAuthentication;
+namespace Mud.Wechat.Work.DataModels.ProviderAuthentication;
 
 /// <summary>
 /// 获取企业永久授权码响应体
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "ProviderAuthentication")]
 public class GetPermanentCodeResponse : WechatWorkResponse
 {
     /// <summary>
@@ -64,6 +65,7 @@ public class GetPermanentCodeResponse : WechatWorkResponse
 /// <summary>
 /// 授权管理员信息
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "ProviderAuthentication")]
 public class AuthUserInfo
 {
     /// <summary>
@@ -94,6 +96,7 @@ public class AuthUserInfo
 /// <summary>
 /// 推广二维码安装信息
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "ProviderAuthentication")]
 public class RegisterCodeInfo
 {
     /// <summary>

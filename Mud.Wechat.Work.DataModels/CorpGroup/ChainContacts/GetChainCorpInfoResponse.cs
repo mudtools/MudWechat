@@ -10,6 +10,7 @@ namespace Mud.Wechat.Work.DataModels.CorpGroup.ChainContacts;
 /// <summary>
 /// 获取企业上下游通讯录下的企业信息响应体（<c>/cgi-bin/corpgroup/corp/get_chain_corpinfo</c>）。
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "ChainContacts")]
 public class GetChainCorpInfoResponse : WechatWorkResponse
 {
     /// <summary>

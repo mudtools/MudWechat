@@ -11,6 +11,7 @@ namespace Mud.Wechat.Work.DataModels.ExternalContact.JobInheritance;
 /// 查询客户接替状态请求体（<c>/cgi-bin/externalcontact/transfer_result</c>）。
 /// <para>分页每页最多 1000 条。</para>
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "JobInheritance")]
 public class GetTransferResultRequest
 {
     /// <summary>

@@ -14,6 +14,7 @@ namespace Mud.Wechat.Work.DataModels.Contacts.Batch;
 /// 任务类型为 <c>sync_user</c> / <c>replace_user</c> 时填充 <see cref="UserId"/>；
 /// 任务类型为 <c>replace_party</c> 时填充 <see cref="Action"/> 与 <see cref="PartyId"/>。
 /// </remarks>
+[HttpJsonSerializable(SerializerClassName = "Batch")]
 public class BatchTaskResultItem
 {
     /// <summary>

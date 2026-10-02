@@ -11,6 +11,7 @@ namespace Mud.Wechat.Work.DataModels.Contacts.Department;
 /// 部门 ID 信息（获取子部门 ID 列表 <c>/cgi-bin/department/simplelist</c> 响应中 <c>department_id[]</c> 的元素；
 /// 2022-08 通讯录安全加固后的官方推荐替代接口）。
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "Department")]
 public class DepartmentIdInfo
 {
     /// <summary>

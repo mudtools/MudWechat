@@ -15,6 +15,7 @@ namespace Mud.Wechat.Work.DataModels.Contacts.ContactRules;
 /// （更新后的完整规则内容，含 rule_id / rule_type / range / whitelist）；
 /// 本模型以可空字段承载该回显，官方未返回时为 <c>null</c>。
 /// </remarks>
+[HttpJsonSerializable(SerializerClassName = "ContactRules")]
 public class UpdateContactRulesResponse : WechatWorkResponse
 {
     /// <summary>

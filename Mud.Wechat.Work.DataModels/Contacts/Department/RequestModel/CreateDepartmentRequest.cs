@@ -11,6 +11,7 @@ namespace Mud.Wechat.Work.DataModels.Contacts.Department;
 /// 创建部门请求体（<c>/cgi-bin/department/create</c>，第三方仅通讯录应用可调用）。
 /// </summary>
 /// <remarks>部门最大层级为 15 层；部门总数不能超过 3 万个；每个部门下的节点不能超过 3 万个；建议创建部门与创建成员串行处理。</remarks>
+[HttpJsonSerializable(SerializerClassName = "Department")]
 public class CreateDepartmentRequest
 {
     /// <summary>

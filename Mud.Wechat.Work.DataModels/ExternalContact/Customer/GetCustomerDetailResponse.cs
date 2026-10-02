@@ -10,6 +10,7 @@ namespace Mud.Wechat.Work.DataModels.ExternalContact.Customer;
 /// <summary>
 /// 获取客户详情响应体（<c>/cgi-bin/externalcontact/get</c>；跟进人超过 500 人时以 cursor 分页）。
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "Customer")]
 public class GetCustomerDetailResponse : WechatWorkResponse
 {
     /// <summary>

@@ -10,6 +10,7 @@ namespace Mud.Wechat.Work.DataModels.Contacts.Tags;
 /// <summary>
 /// 标签成员信息（获取标签成员 <code>/cgi-bin/tag/get</code> 响应中 <c>userlist[]</c> 的元素）。
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "Tags")]
 public class TagMemberInfo
 {
     /// <summary>

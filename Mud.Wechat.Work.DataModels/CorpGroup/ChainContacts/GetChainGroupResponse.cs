@@ -11,6 +11,7 @@ namespace Mud.Wechat.Work.DataModels.CorpGroup.ChainContacts;
 /// 获取上下游通讯录分组响应体（<c>/cgi-bin/corpgroup/corp/get_chain_group</c>；
 /// 仅可指定或返回应用可见范围内的分组列表，「上下游-可调用接口的应用」调用时可返回全部）。
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "ChainContacts")]
 public class GetChainGroupResponse : WechatWorkResponse
 {
     /// <summary>

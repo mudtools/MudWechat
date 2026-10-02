@@ -8,7 +8,7 @@
 namespace Mud.Wechat.Work.Services.Authorization.Models;
 
 /// <summary>第三方应用授权链接生成请求（可选取授权配置下发）。</summary>
-/// <remarks>纯进程内流转模型，不进 <c>WechatWorkJsonContext</c>。</remarks>
+/// <remarks>纯进程内流转模型，不进 DataModels 的域 JsonContext（Generated/ 只覆盖官方传输 DTO）。</remarks>
 public sealed class WechatAuthorizationUrlRequest
 {
     /// <summary>授权回跳地址（redirect_uri）；为空时回退

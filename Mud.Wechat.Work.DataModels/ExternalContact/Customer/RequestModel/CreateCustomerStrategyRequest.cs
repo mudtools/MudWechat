@@ -16,6 +16,7 @@ namespace Mud.Wechat.Work.DataModels.ExternalContact.Customer;
 /// <para>若创建具有父规则组的规则组，其管理范围必须是父规则组的子集，且将完全继承父规则组的权限配置
 /// （<see cref="Privilege"/> 将被忽略）。<see cref="AdminList"/> 不可配置超级管理员。</para>
 /// </remarks>
+[HttpJsonSerializable(SerializerClassName = "Customer")]
 public class CreateCustomerStrategyRequest
 {
     /// <summary>

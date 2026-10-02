@@ -11,6 +11,7 @@ namespace Mud.Wechat.Work.DataModels.Contracts.Users;
 /// 邀请成员响应体（<c>/cgi-bin/batch/invite</c>）。
 /// </summary>
 /// <remarks>邀请频率是异步检查的，调用返回成功并不代表接收者一定能收到邀请消息。</remarks>
+[HttpJsonSerializable(SerializerClassName = "Users")]
 public class InviteMembersResponse : WechatWorkResponse
 {
     /// <summary>

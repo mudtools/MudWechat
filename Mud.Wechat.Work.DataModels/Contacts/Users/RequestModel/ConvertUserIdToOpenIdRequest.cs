@@ -11,6 +11,7 @@ namespace Mud.Wechat.Work.DataModels.Contracts.Users;
 /// userid 转 openid 请求体（<c>/cgi-bin/user/convert_to_openid</c>，主要用于企业支付场景）。
 /// </summary>
 /// <remarks>成员须使用微信登录企业微信或关注微信插件（原企业号）才能转成 openid；外部联系人请使用外部联系人 openid 转换接口。</remarks>
+[HttpJsonSerializable(SerializerClassName = "Users")]
 public class ConvertUserIdToOpenIdRequest
 {
     /// <summary>

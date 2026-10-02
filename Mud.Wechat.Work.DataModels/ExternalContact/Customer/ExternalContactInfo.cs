@@ -15,6 +15,7 @@ namespace Mud.Wechat.Work.DataModels.ExternalContact.Customer;
 /// 第三方应用与代开发应用均不可获取（gender 统一返回 0）；<see cref="CorpFullName"/> 仅企业自建应用可获取，
 /// 其余应用返回内容为企业名称（即 <see cref="CorpName"/>）。
 /// </remarks>
+[HttpJsonSerializable(SerializerClassName = "Customer")]
 public class ExternalContactInfo
 {
     /// <summary>

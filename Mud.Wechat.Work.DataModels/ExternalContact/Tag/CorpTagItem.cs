@@ -11,6 +11,7 @@ namespace Mud.Wechat.Work.DataModels.ExternalContact.Tag;
 /// 企业客户标签（标签组 <see cref="CorpTagGroupItem"/> / 规则组标签组 <see cref="StrategyTagGroupItem"/>
 /// 中 <c>tag[]</c> 的元素）。
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "Tag")]
 public class CorpTagItem
 {
     /// <summary>

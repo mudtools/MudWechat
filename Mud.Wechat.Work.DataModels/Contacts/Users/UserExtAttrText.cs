@@ -10,6 +10,7 @@ namespace Mud.Wechat.Work.DataModels.Contracts.Users;
 /// <summary>
 /// 扩展属性的文本值（<c>text.value</c>，最长 64 个 UTF-8 字符）。
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "Users")]
 public class UserExtAttrText
 {
     /// <summary>

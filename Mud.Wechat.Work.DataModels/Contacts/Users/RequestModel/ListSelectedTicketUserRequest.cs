@@ -10,6 +10,7 @@ namespace Mud.Wechat.Work.DataModels.Contracts.Users;
 /// <summary>
 /// 获取选人 ticket 对应的用户请求体（<c>/cgi-bin/user/list_selected_ticket_user</c>，仅支持成员授权模式的第三方应用可调用）。
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "Users")]
 public class ListSelectedTicketUserRequest
 {
     /// <summary>

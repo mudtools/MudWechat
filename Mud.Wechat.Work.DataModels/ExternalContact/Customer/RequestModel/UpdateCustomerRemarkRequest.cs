@@ -17,6 +17,7 @@ namespace Mud.Wechat.Work.DataModels.ExternalContact.Customer;
 /// 将整体覆盖旧备注手机号，传一个空字符串（""）即清除全部备注手机号；
 /// <see cref="RemarkPicMediaid"/> 经素材管理接口获得。</para>
 /// </remarks>
+[HttpJsonSerializable(SerializerClassName = "Customer")]
 public class UpdateCustomerRemarkRequest
 {
     /// <summary>

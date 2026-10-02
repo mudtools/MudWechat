@@ -11,6 +11,7 @@ namespace Mud.Wechat.Work.DataModels.Contracts.Users;
 /// 手机号获取 userid 请求体（<c>/cgi-bin/user/getuserid</c>）。
 /// </summary>
 /// <remarks>请确保手机号的正确性：若出错的次数超出企业人数上限的 20%，会导致 1 天不可调用。</remarks>
+[HttpJsonSerializable(SerializerClassName = "Users")]
 public class GetUserIdByMobileRequest
 {
     /// <summary>

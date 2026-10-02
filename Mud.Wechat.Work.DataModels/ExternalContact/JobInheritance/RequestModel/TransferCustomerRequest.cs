@@ -14,6 +14,7 @@ namespace Mud.Wechat.Work.DataModels.ExternalContact.JobInheritance;
 /// （即配置了客户联系功能的成员所添加的联系人）；
 /// 为保障客户服务体验，90 个自然日内在职成员的每位客户仅可被转接 2 次。</para>
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "JobInheritance")]
 public class TransferCustomerRequest
 {
     /// <summary>

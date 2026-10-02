@@ -10,6 +10,7 @@ namespace Mud.Wechat.Work.DataModels.CorpGroup;
 /// <summary>
 /// 上下游关联客户信息（已添加客户）响应体（<c>/cgi-bin/corpgroup/unionid_to_external_userid</c>）。
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "CorpGroup")]
 public class UnionidToExternalUserIdResponse : WechatWorkResponse
 {
     /// <summary>

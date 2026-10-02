@@ -15,6 +15,7 @@ namespace Mud.Wechat.Work.DataModels.Contacts.ContactRules;
 /// （允许查看的部门、成员、标签）；<c>exclude</c> 为排除名单（不受该规则限制，限制查看外部门/所有人时使用）。</para>
 /// <para>上限：成员 ≤ 1000、部门 ≤ 100、标签 ≤ 100。</para>
 /// </remarks>
+[HttpJsonSerializable(SerializerClassName = "ContactRules")]
 public class ContactRuleRange
 {
     /// <summary>

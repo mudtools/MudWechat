@@ -1,8 +1,9 @@
-﻿namespace Mud.Wechat.Work.DataModels.ProviderAuthentication;
+namespace Mud.Wechat.Work.DataModels.ProviderAuthentication;
 
 /// <summary>
 /// 获取预授权码响应体
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "ProviderAuthentication")]
 public class GetPreAuthCodeResponse : WechatWorkResponse
 {
     /// <summary>

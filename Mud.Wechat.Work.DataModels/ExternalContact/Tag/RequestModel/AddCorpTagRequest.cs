@@ -13,6 +13,7 @@ namespace Mud.Wechat.Work.DataModels.ExternalContact.Tag;
 /// 与标签组 <see cref="Order"/> 被忽略）；未填写则按 <see cref="GroupName"/> 新建标签组
 /// （同名标签组会复用已存在的组；不支持创建空标签组）。每个企业最多可配置 10000 个企业标签。</para>
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "Tag")]
 public class AddCorpTagRequest
 {
     /// <summary>

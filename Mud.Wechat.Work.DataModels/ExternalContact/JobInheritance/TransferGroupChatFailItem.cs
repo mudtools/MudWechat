@@ -10,6 +10,7 @@ namespace Mud.Wechat.Work.DataModels.ExternalContact.JobInheritance;
 /// <summary>
 /// 分配在职成员的客户群响应中单个未能继承的群（<c>failed_chat_list[]</c> 元素）。
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "JobInheritance")]
 public class TransferGroupChatFailItem
 {
     /// <summary>

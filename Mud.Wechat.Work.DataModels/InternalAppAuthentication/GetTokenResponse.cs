@@ -1,8 +1,9 @@
-﻿namespace Mud.Wechat.Work.DataModels.InternalAppAuthentication;
+namespace Mud.Wechat.Work.DataModels.InternalAppAuthentication;
 
 /// <summary>
 /// 获取access_token响应体。
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "InternalAppAuthentication")]
 public class GetTokenResponse : WechatWorkResponse
 {
     /// <summary>

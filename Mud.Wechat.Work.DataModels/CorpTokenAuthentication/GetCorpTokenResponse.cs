@@ -10,6 +10,7 @@ namespace Mud.Wechat.Work.DataModels.CorpTokenAuthentication;
 /// <summary>
 /// 获取授权企业的 access_token 响应体（get_corp_token）。
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "CorpTokenAuthentication")]
 public class GetCorpTokenResponse : WechatWorkResponse
 {
     /// <summary>

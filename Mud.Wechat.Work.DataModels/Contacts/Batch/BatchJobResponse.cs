@@ -10,6 +10,7 @@ namespace Mud.Wechat.Work.DataModels.Contacts.Batch;
 /// <summary>
 /// 异步导入任务受理响应体（<c>/cgi-bin/batch/syncuser</c>、<c>/cgi-bin/batch/replaceuser</c>、<c>/cgi-bin/batch/replaceparty</c> 共用）。
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "Batch")]
 public class BatchJobResponse : WechatWorkResponse
 {
     /// <summary>

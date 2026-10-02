@@ -11,6 +11,7 @@ namespace Mud.Wechat.Work.DataModels.ExternalContact.FollowUser;
 /// 检查用户客户联系权限的结果分组（<see cref="CheckFollowUserResponse.Authorized"/> /
 /// <see cref="CheckFollowUserResponse.Unauthorized"/> 共用结构）。
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "FollowUser")]
 public class CheckFollowUserResult
 {
     /// <summary>

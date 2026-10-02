@@ -14,6 +14,7 @@ namespace Mud.Wechat.Work.DataModels.CorpGroup;
 /// 调用频率：10 万次/小时、48 万次/天、750 万次/月；传入有效 <see cref="MassCallTicket"/>
 /// 可不受此限制（但仍受基础频率限制），适用于数据初始化场景。
 /// </remarks>
+[HttpJsonSerializable(SerializerClassName = "CorpGroup")]
 public class UnionidToExternalUserIdRequest
 {
     /// <summary>

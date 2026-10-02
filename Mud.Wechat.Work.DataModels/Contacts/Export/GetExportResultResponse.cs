@@ -16,6 +16,7 @@ namespace Mud.Wechat.Work.DataModels.Contacts.Export;
 /// 密文解密后的数据格式按导出类型与对应读取接口一致：导出成员 / 导出成员详情 / 导出标签成员为
 /// <c>userlist</c>（导出标签成员另含 <c>tagname</c> 与 <c>partylist</c>），导出部门为 <c>department</c>。
 /// </remarks>
+[HttpJsonSerializable(SerializerClassName = "Export")]
 public class GetExportResultResponse : WechatWorkResponse
 {
     /// <summary>

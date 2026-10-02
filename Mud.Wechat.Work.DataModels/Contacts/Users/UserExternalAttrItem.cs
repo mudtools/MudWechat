@@ -10,6 +10,7 @@ namespace Mud.Wechat.Work.DataModels.Contracts.Users;
 /// <summary>
 /// 成员对外属性项（<c>external_profile.external_attr[]</c>，支持文本 / 网页 / 小程序三型）。
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "Users")]
 public class UserExternalAttrItem
 {
     /// <summary>

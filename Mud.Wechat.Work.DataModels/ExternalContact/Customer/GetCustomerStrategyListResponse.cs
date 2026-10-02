@@ -10,6 +10,7 @@ namespace Mud.Wechat.Work.DataModels.ExternalContact.Customer;
 /// <summary>
 /// 获取规则组列表响应体（<c>/cgi-bin/externalcontact/customer_strategy/list</c>）。
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "Customer")]
 public class GetCustomerStrategyListResponse : WechatWorkResponse
 {
     /// <summary>
@@ -28,6 +29,7 @@ public class GetCustomerStrategyListResponse : WechatWorkResponse
 /// <summary>
 /// 规则组 id 项（获取规则组列表响应中 <c>strategy[]</c> 的元素）。
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "Customer")]
 public class CustomerStrategyIdItem
 {
     /// <summary>

@@ -10,6 +10,7 @@ namespace Mud.Wechat.Work.DataModels.ExternalContact.Tag;
 /// <summary>
 /// 企业标签组（获取企业标签库 / 添加企业客户标签响应中的 <c>tag_group</c> 结构）。
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "Tag")]
 public class CorpTagGroupItem
 {
     /// <summary>

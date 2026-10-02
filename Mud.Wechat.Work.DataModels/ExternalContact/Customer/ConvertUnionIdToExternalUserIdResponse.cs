@@ -15,6 +15,7 @@ namespace Mud.Wechat.Work.DataModels.ExternalContact.Customer;
 /// 微信用户尚未成为企业客户、或跟进人 / 群主不在应用可见范围时，不返回 external_userid 而返回 pending_id
 /// （90 天内有效，仅用于关联 unionid 与 external_userid，不能当成 external_userid 调用接口）。
 /// </remarks>
+[HttpJsonSerializable(SerializerClassName = "Customer")]
 public class ConvertUnionIdToExternalUserIdResponse : WechatWorkResponse
 {
     /// <summary>

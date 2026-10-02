@@ -10,6 +10,7 @@ namespace Mud.Wechat.Work.DataModels.Contracts.Users;
 /// <summary>
 /// 获取成员授权列表请求体（<c>/cgi-bin/user/list_member_auth</c>，仅企业为成员授权模式下可调用）。
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "Users")]
 public class ListMemberAuthRequest
 {
     /// <summary>

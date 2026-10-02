@@ -8,7 +8,7 @@
 namespace Mud.Wechat.Work.Services.Authorization.Models;
 
 /// <summary>代开发带参授权链接（官方二维码 URL）。</summary>
-/// <remarks>纯进程内流转模型，不进 <c>WechatWorkJsonContext</c>。</remarks>
+/// <remarks>纯进程内流转模型，不进 DataModels 的域 JsonContext（Generated/ 只覆盖官方传输 DTO）。</remarks>
 public sealed class WechatCustomizedAuthUrl
 {
     /// <summary>创建代开发带参授权链接。</summary>

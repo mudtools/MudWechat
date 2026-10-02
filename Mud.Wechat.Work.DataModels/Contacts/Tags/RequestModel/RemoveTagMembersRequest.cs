@@ -11,6 +11,7 @@ namespace Mud.Wechat.Work.DataModels.Contacts.Tags;
 /// 删除标签成员请求体（<c>/cgi-bin/tag/deltagusers</c>；调用的应用必须是指定标签的创建者，成员属于应用的可见范围）。
 /// </summary>
 /// <remarks><see cref="UserList"/> 与 <see cref="PartyList"/> 不能同时为空。</remarks>
+[HttpJsonSerializable(SerializerClassName = "Tags")]
 public class RemoveTagMembersRequest
 {
     /// <summary>

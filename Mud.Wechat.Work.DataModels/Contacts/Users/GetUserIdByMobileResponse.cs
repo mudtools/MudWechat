@@ -10,6 +10,7 @@ namespace Mud.Wechat.Work.DataModels.Contracts.Users;
 /// <summary>
 /// 手机号获取 userid 响应体（<c>/cgi-bin/user/getuserid</c>）。
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "Users")]
 public class GetUserIdByMobileResponse : WechatWorkResponse
 {
     /// <summary>

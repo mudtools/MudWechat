@@ -10,6 +10,7 @@ namespace Mud.Wechat.Work.DataModels.Contacts.Export;
 /// <summary>
 /// 导出数据文件信息（获取导出结果响应中 <c>data_list[]</c> 的元素）。
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "Export")]
 public class ExportDataFile
 {
     /// <summary>

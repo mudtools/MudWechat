@@ -14,6 +14,7 @@ namespace Mud.Wechat.Work.DataModels.Contracts.Users;
 /// <para>系统自动生成的 userid 仅允许修改一次（经 <see cref="NewUserId"/> 指定新值）；系统默认分配的企业邮箱仅允许修改一次。</para>
 /// <para>BizMail/BizMailAlias 与其他字段的更新不具备原子性，可能出现部分成功部分失败。</para>
 /// </remarks>
+[HttpJsonSerializable(SerializerClassName = "Users")]
 public class UpdateUserRequest
 {
     /// <summary>

@@ -10,6 +10,7 @@ namespace Mud.Wechat.Work.DataModels.Contracts.Users;
 /// <summary>
 /// 获取部门成员响应体（<c>/cgi-bin/user/simplelist</c>；接口不递归子部门，如需全部成员须逐层递归获取）。
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "Users")]
 public class GetUserSimpleListResponse : WechatWorkResponse
 {
     /// <summary>

@@ -14,6 +14,7 @@ namespace Mud.Wechat.Work.DataModels.CorpGroup;
 /// 返回的 <see cref="AccessToken"/> 为下级/下游企业调用凭证（最长 512 字节），
 /// 由调用方自行管理生命周期（SDK 令牌基座不自动缓存该凭证）。
 /// </remarks>
+[HttpJsonSerializable(SerializerClassName = "CorpGroup")]
 public class GetCorpGroupTokenResponse : WechatWorkResponse
 {
     /// <summary>

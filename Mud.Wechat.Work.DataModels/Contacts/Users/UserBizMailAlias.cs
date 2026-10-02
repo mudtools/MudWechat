@@ -11,6 +11,7 @@ namespace Mud.Wechat.Work.DataModels.Contracts.Users;
 /// 企业邮箱别名（<c>biz_mail_alias</c>，更新成员接口）。
 /// </summary>
 /// <remarks>覆盖式更新：传空结构或空数组即清空别名。</remarks>
+[HttpJsonSerializable(SerializerClassName = "Users")]
 public class UserBizMailAlias
 {
     /// <summary>

@@ -12,6 +12,7 @@ namespace Mud.Wechat.Work.DataModels.Contacts.Batch;
 /// </summary>
 /// <remarks>填写后任务完成时官方经回调推送事件给企业。三个字段均为可选；
 /// <c>token</c> / <c>encodingaeskey</c> 属敏感凭据，调用方不得记录到日志。</remarks>
+[HttpJsonSerializable(SerializerClassName = "Batch")]
 public class BatchCallbackRequest
 {
     /// <summary>

@@ -14,6 +14,7 @@ namespace Mud.Wechat.Work.DataModels.ExternalContact.Tag;
 /// 同一标签组下现已支持多个标签；每个成员对同一个客户最多可添加 3000 个由企业统一配置的标签。
 /// 应用只能编辑可见范围内的成员添加的企业客户标签。</para>
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "Tag")]
 public class MarkTagRequest
 {
     /// <summary>

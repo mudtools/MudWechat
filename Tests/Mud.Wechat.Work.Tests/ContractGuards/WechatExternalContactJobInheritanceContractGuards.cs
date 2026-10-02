@@ -152,7 +152,7 @@ public class WechatExternalContactJobInheritanceContractGuards
     public void JobInheritanceDataModels_ShouldBeRegisteredInJsonContext()
     {
         // 经公共 API GetTypeInfo 判定注册态（源生成上下文对未登记类型返回 null）。
-        var context = Mud.Wechat.Work.DataModels.WechatWorkJsonContext.Default;
+        var context = JobInheritanceJsonContext.Default;
 
         var requiredTypes = new[]
         {
@@ -164,7 +164,7 @@ public class WechatExternalContactJobInheritanceContractGuards
         foreach (var type in requiredTypes)
         {
             context.GetTypeInfo(type).Should().NotBeNull(
-                $"{type.Name} 是在职继承域契约面类型，必须登记进 WechatWorkJsonContext（AOT 源生成）");
+                $"{type.Name} 是在职继承域契约面类型，必须登记进 JobInheritanceJsonContext（AOT 源生成）");
         }
     }
 }

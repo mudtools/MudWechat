@@ -11,6 +11,7 @@ namespace Mud.Wechat.Work.DataModels.Contracts.Users;
 /// 成员扩展属性项（<c>extattr.attrs[]</c>）。
 /// </summary>
 /// <remarks><c>type = 0</c>（文本）时 Text.Value 必填；<c>type = 1</c>（网页）时 Web.Url 与 Web.Title 必填且须同时为空（清除）或同时不为空。</remarks>
+[HttpJsonSerializable(SerializerClassName = "Users")]
 public class UserExtAttrItem
 {
     /// <summary>

@@ -11,6 +11,7 @@ namespace Mud.Wechat.Work.DataModels.Contracts.Users;
 /// 创建成员请求体（<c>/cgi-bin/user/create</c>，仅通讯录同步助手或第三方通讯录应用可调用）。
 /// </summary>
 /// <remarks>每个部门下的部门、成员总数不能超过 3 万个；建议创建部门与创建成员串行处理。</remarks>
+[HttpJsonSerializable(SerializerClassName = "Users")]
 public class CreateUserRequest
 {
     /// <summary>

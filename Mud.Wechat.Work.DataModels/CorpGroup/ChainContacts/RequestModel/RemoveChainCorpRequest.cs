@@ -12,6 +12,7 @@ namespace Mud.Wechat.Work.DataModels.CorpGroup.ChainContacts;
 /// </summary>
 /// <remarks><see cref="CorpId"/> 与 <see cref="PendingCorpId"/> 至少填一个，都填时 corpid 生效；
 /// 仅已验证的企业可调用；并发限制 1。</remarks>
+[HttpJsonSerializable(SerializerClassName = "ChainContacts")]
 public class RemoveChainCorpRequest
 {
     /// <summary>

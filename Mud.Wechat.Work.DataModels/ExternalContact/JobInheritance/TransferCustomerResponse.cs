@@ -10,6 +10,7 @@ namespace Mud.Wechat.Work.DataModels.ExternalContact.JobInheritance;
 /// <summary>
 /// 分配在职成员的客户响应体（<c>/cgi-bin/externalcontact/transfer_customer</c>）。
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "JobInheritance")]
 public class TransferCustomerResponse : WechatWorkResponse
 {
     /// <summary>

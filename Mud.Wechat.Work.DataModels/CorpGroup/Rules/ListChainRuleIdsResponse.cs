@@ -10,6 +10,7 @@ namespace Mud.Wechat.Work.DataModels.CorpGroup.Rules;
 /// <summary>
 /// 获取对接规则 id 列表响应体（<c>/cgi-bin/corpgroup/rule/list_ids</c>）。
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "Rules")]
 public class ListChainRuleIdsResponse : WechatWorkResponse
 {
     /// <summary>

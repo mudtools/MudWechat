@@ -11,6 +11,7 @@ namespace Mud.Wechat.Work.DataModels.CorpGroup.ChainContacts;
 /// 获取企业上下游通讯录分组下的企业详情列表请求体（<c>/cgi-bin/corpgroup/corp/get_chain_corpinfo_list</c>）。
 /// </summary>
 /// <remarks>如需获取某分组及其子分组的所有企业详情，需先获取该分组下的所有子分组，再逐层递归获取子分组下的企业。</remarks>
+[HttpJsonSerializable(SerializerClassName = "ChainContacts")]
 public class GetChainCorpInfoListRequest
 {
     /// <summary>

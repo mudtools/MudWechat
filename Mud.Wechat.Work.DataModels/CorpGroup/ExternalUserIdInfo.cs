@@ -10,6 +10,7 @@ namespace Mud.Wechat.Work.DataModels.CorpGroup;
 /// <summary>
 /// 外部联系人信息（上下游关联客户信息-已添加客户响应中 <c>external_userid_info[]</c> 的元素）。
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "CorpGroup")]
 public class ExternalUserIdInfo
 {
     /// <summary>

@@ -10,6 +10,7 @@ namespace Mud.Wechat.Work.DataModels.Contracts.Users;
 /// <summary>
 /// 获取加入企业二维码响应体（<c>/cgi-bin/corp/get_join_qrcode</c>）。
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "Users")]
 public class GetJoinQrcodeResponse : WechatWorkResponse
 {
     /// <summary>

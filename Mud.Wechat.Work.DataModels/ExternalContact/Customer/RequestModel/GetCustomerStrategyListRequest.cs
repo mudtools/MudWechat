@@ -10,6 +10,7 @@ namespace Mud.Wechat.Work.DataModels.ExternalContact.Customer;
 /// <summary>
 /// 获取规则组列表请求体（<c>/cgi-bin/externalcontact/customer_strategy/list</c>）。
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "Customer")]
 public class GetCustomerStrategyListRequest
 {
     /// <summary>

@@ -12,6 +12,7 @@ namespace Mud.Wechat.Work.DataModels.ExternalContact.Tag;
 /// <para><see cref="TagId"/> 与 <see cref="GroupId"/> 不可同时为空；
 /// 标签组内的所有标签被删除后，标签组自动删除。应用仅能删除本应用创建的标签。</para>
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "Tag")]
 public class DelCorpTagRequest
 {
     /// <summary>

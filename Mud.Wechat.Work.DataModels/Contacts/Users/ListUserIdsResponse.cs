@@ -10,6 +10,7 @@ namespace Mud.Wechat.Work.DataModels.Contracts.Users;
 /// <summary>
 /// 获取成员 ID 列表响应体（<c>/cgi-bin/user/list_id</c>，官方推荐的通讯录安全替代接口）。
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "Users")]
 public class ListUserIdsResponse : WechatWorkResponse
 {
     /// <summary>

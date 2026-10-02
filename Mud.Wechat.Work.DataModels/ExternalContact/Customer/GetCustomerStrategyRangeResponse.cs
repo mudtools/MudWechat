@@ -11,6 +11,7 @@ namespace Mud.Wechat.Work.DataModels.ExternalContact.Customer;
 /// 获取规则组管理范围响应体（<c>/cgi-bin/externalcontact/customer_strategy/get_range</c>；
 /// cursor + limit 分页，limit 默认 / 上限均为 1000）。
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "Customer")]
 public class GetCustomerStrategyRangeResponse : WechatWorkResponse
 {
     /// <summary>

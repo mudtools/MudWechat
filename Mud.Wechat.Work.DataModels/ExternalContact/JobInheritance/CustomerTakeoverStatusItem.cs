@@ -10,6 +10,7 @@ namespace Mud.Wechat.Work.DataModels.ExternalContact.JobInheritance;
 /// <summary>
 /// 查询客户接替状态响应中单个客户的接替状态（<c>customer[]</c> 元素）。
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "JobInheritance")]
 public class CustomerTakeoverStatusItem
 {
     /// <summary>

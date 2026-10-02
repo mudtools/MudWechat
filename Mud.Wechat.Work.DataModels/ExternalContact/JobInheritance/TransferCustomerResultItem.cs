@@ -10,6 +10,7 @@ namespace Mud.Wechat.Work.DataModels.ExternalContact.JobInheritance;
 /// <summary>
 /// 分配在职成员的客户响应中单个客户的分配结果（<c>customer[]</c> 元素）。
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "JobInheritance")]
 public class TransferCustomerResultItem
 {
     /// <summary>

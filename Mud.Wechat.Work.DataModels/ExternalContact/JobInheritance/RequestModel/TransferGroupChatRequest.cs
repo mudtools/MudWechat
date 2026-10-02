@@ -15,6 +15,7 @@ namespace Mud.Wechat.Work.DataModels.ExternalContact.JobInheritance;
 /// 为保障客户服务体验，90 个自然日内在职成员的每个客户群仅可被转接 2 次；
 /// 群主必须在应用的可见范围内。</para>
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "JobInheritance")]
 public class TransferGroupChatRequest
 {
     /// <summary>

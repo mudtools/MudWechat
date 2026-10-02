@@ -160,7 +160,7 @@ public class WechatExternalContactFollowUserContractGuards
     public void FollowUserDataModels_ShouldBeRegisteredInJsonContext()
     {
         // 经公共 API GetTypeInfo 判定注册态（源生成上下文对未登记类型返回 null）。
-        var context = Mud.Wechat.Work.DataModels.WechatWorkJsonContext.Default;
+        var context = FollowUserJsonContext.Default;
 
         var requiredTypes = new[]
         {
@@ -172,7 +172,7 @@ public class WechatExternalContactFollowUserContractGuards
         foreach (var type in requiredTypes)
         {
             context.GetTypeInfo(type).Should().NotBeNull(
-                $"{type.Name} 是企业服务人员管理域契约面类型，必须登记进 WechatWorkJsonContext（AOT 源生成）");
+                $"{type.Name} 是企业服务人员管理域契约面类型，必须登记进 FollowUserJsonContext（AOT 源生成）");
         }
     }
 }

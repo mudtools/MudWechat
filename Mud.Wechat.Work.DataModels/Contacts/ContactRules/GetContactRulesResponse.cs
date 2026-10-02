@@ -10,6 +10,7 @@ namespace Mud.Wechat.Work.DataModels.Contacts.ContactRules;
 /// <summary>
 /// 读取通讯录隐藏规则列表响应体（<c>/cgi-bin/contactrule/list</c>）。
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "ContactRules")]
 public class GetContactRulesResponse : WechatWorkResponse
 {
     /// <summary>

@@ -10,6 +10,7 @@ namespace Mud.Wechat.Work.DataModels.Contracts.Users;
 /// <summary>
 /// 对外属性的小程序值（<c>miniprogram</c>：appid / pagepath / title 三元组）。
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "Users")]
 public class UserMiniProgram
 {
     /// <summary>

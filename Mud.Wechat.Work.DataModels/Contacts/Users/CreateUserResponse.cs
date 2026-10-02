@@ -10,6 +10,7 @@ namespace Mud.Wechat.Work.DataModels.Contracts.Users;
 /// <summary>
 /// 创建成员响应体（<c>/cgi-bin/user/create</c>）。
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "Users")]
 public class CreateUserResponse : WechatWorkResponse
 {
     /// <summary>

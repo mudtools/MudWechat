@@ -10,6 +10,7 @@ namespace Mud.Wechat.Work.DataModels.Contacts.Department;
 /// <summary>
 /// 获取子部门 ID 列表响应体（<c>/cgi-bin/department/simplelist</c>，2022-08 通讯录安全加固后的官方推荐替代接口）。
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "Department")]
 public class GetChildDepartmentIdListResponse : WechatWorkResponse
 {
     /// <summary>

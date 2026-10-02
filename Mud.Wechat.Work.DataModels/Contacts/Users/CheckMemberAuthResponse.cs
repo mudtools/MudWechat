@@ -10,6 +10,7 @@ namespace Mud.Wechat.Work.DataModels.Contracts.Users;
 /// <summary>
 /// 查询成员用户是否已授权响应体（<c>/cgi-bin/user/check_member_auth</c>，仅企业为成员授权模式下可调用）。
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "Users")]
 public class CheckMemberAuthResponse : WechatWorkResponse
 {
     /// <summary>

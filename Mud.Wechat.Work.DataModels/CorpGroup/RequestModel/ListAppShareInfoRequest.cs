@@ -10,6 +10,7 @@ namespace Mud.Wechat.Work.DataModels.CorpGroup;
 /// <summary>
 /// 获取应用共享信息请求体（<c>/cgi-bin/corpgroup/corp/list_app_share_info</c>）。
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "CorpGroup")]
 public class ListAppShareInfoRequest
 {
     /// <summary>

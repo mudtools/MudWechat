@@ -10,6 +10,7 @@ namespace Mud.Wechat.Work.DataModels.CorpGroup.ChainContacts;
 /// <summary>
 /// 上下游通讯录分组信息（获取上下游通讯录分组响应中 <c>groups[]</c> 的元素）。
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "ChainContacts")]
 public class ChainGroupInfo
 {
     /// <summary>

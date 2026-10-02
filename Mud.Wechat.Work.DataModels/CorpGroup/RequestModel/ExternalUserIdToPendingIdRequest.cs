@@ -13,6 +13,7 @@ namespace Mud.Wechat.Work.DataModels.CorpGroup;
 /// <remarks>
 /// 上游应用须已调用过 unionid 转 pending_id 接口；该客户的跟进人或其所在客户群群主必须在应用的可见范围之内。
 /// </remarks>
+[HttpJsonSerializable(SerializerClassName = "CorpGroup")]
 public class ExternalUserIdToPendingIdRequest
 {
     /// <summary>

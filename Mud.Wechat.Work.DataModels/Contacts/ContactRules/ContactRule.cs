@@ -15,6 +15,7 @@ namespace Mud.Wechat.Work.DataModels.Contacts.ContactRules;
 /// 修改规则时不能更新规则类型。</para>
 /// <para>创建时 <see cref="RuleId"/> 不填（由官方生成）；修改时必填。</para>
 /// </remarks>
+[HttpJsonSerializable(SerializerClassName = "ContactRules")]
 public class ContactRule
 {
     /// <summary>

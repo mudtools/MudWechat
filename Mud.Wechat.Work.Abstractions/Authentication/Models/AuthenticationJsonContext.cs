@@ -12,7 +12,7 @@ using System.Text.Json.Serialization;
 namespace Mud.Wechat.Work.Abstractions.Authentication.Models;
 
 /// <summary>
-/// 授权领域模型 AOT JsonContext（对齐 <c>WechatWorkJsonContext</c> 模式）：
+/// 授权领域模型 AOT JsonContext（手写，模式对齐 DataModels 包 <c>Generated/</c> 生成的域上下文）：
 /// 覆盖 <c>Authentication/Models/</c> 下全部标注 <c>[HttpJsonSerializable(SerializerClassName = "Authentication")]</c>
 /// 的类型，供宿主在 AOT / Trim 环境下<b>安全地</b>持久化授权聚合（<see cref="WechatCorpAuthorization"/>）。
 /// </summary>
@@ -24,7 +24,8 @@ namespace Mud.Wechat.Work.Abstractions.Authentication.Models;
 /// 缺失时 4 个源项目在 <c>AotStrictMode=true</c> 下各报 8 条错误，<c>verify-build.ps1</c> 步骤 2 直接失败。
 /// </para>
 /// <para>
-/// <b>与 <c>WechatWorkJsonContext</c> 的分工</b>：后者在 <c>DataModels</c> 包、覆盖<b>官方传输 DTO</b>；
+/// <b>与 DataModels 域 JsonContext 的分工</b>：后者在 <c>DataModels</c> 包 <c>Generated/</c> 目录
+/// （<c>scripts/GenerateJsonContext.ps1</c> 按域生成 15 个上下文）、覆盖<b>官方传输 DTO</b>；
 /// 本上下文在 <c>Abstractions</c> 包、覆盖<b>授权领域模型</b>（由 <c>get_permanent_code</c> /
 /// <c>get_auth_info</c> 响应映射得到）。二者经主包 <c>WechatJsonResolverExtensions</c>
 /// 一并合并进组件序列化管线。

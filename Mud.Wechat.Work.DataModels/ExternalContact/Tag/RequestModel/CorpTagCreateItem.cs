@@ -12,6 +12,7 @@ namespace Mud.Wechat.Work.DataModels.ExternalContact.Tag;
 /// <c>/cgi-bin/externalcontact/add_strategy_tag</c> 共用）。
 /// <para>组内标签不可同名，同名标签只会创建一个；不支持创建空标签组。</para>
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "Tag")]
 public class CorpTagCreateItem
 {
     /// <summary>

@@ -11,6 +11,7 @@ namespace Mud.Wechat.Work.DataModels.ExternalContact.FollowUser;
 /// 获取客户可建联成员响应体（<c>/cgi-bin/externalcontact/customer_acquisition_app/get_permit</c>；
 /// 仅营销获客类应用可调用）。
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "FollowUser")]
 public class GetCustomerAcquisitionPermitResponse : WechatWorkResponse
 {
     /// <summary>

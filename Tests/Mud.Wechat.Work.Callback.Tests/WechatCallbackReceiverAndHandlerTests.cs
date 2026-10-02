@@ -11,12 +11,13 @@ using Mud.Wechat.Work.Abstractions.Enums;
 namespace Mud.Wechat.Work.Callback.Tests;
 
 /// <summary>
-/// 回调接收与事件分发测试：抗重放（时效窗口 + 一次性标记）、suite_ticket 入库、
-/// cancel_auth/change_auth 的 SuiteId 命中集清理与级联失效（详细设计 §18.4；P0-2 / P0-3）。
+/// 回调接收与事件分发测试：抗重放（时效窗口 + 一次性指纹）、指纹闸后移（P1-1）、
+/// suite_ticket 入库、cancel_auth/change_auth 的 SuiteId 命中集清理与级联失效（详细设计 §18.4；P0-2 / P0-3）。
 /// </summary>
 public class WechatCallbackReceiverAndHandlerTests
 {
     private const string AesKey = "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopq";
+    private const string OtherAesKey = "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopR";
     private const string Token = "push-token";
     private const string CorpId = "ww-corp";
 
@@ -26,14 +27,19 @@ public class WechatCallbackReceiverAndHandlerTests
     /// <summary>生成唯一 nonce（P0-2 后同一 nonce 的第二次调用会被判为重放）。</summary>
     private static string NewNonce() => "nonce-" + Guid.NewGuid().ToString("N");
 
-    private static (WechatCallbackReceiver Receiver, Func<string, string, string> EncryptedBody) CreateReceiver()
-    {
-        var receiver = new WechatCallbackReceiver(Microsoft.Extensions.Options.Options.Create(new WechatCallbackOptions
+    private static WechatCallbackOptions CreateOptions(
+        string? aesKey = AesKey, string? token = Token, string? corpId = CorpId)
+        => new()
         {
-            PushToken = Token,
-            PushEncodingAESKey = AesKey,
-            CorpId = CorpId,
-        }));
+            PushToken = token ?? string.Empty,
+            PushEncodingAESKey = aesKey ?? string.Empty,
+            CorpId = corpId ?? string.Empty,
+        };
+
+    private static (WechatCallbackReceiver Receiver, Func<string, string, string> EncryptedBody) CreateReceiver(
+        IWechatCallbackReplayGuard? replayGuard = null, string? aesKey = AesKey)
+    {
+        var receiver = new WechatCallbackReceiver(CreateOptions(aesKey: aesKey), replayGuard);
 
         string EncryptAndWrap(string infoType, string extraXml)
         {
@@ -79,7 +85,8 @@ public class WechatCallbackReceiverAndHandlerTests
         var badQuery = $"msg_signature=0000000000000000000000000000000000000000&timestamp={Now()}&nonce={NewNonce()}";
 
         var act = async () => await receiver.ReceiveAsync(badQuery, body);
-        await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("*验签失败*");
+        var assertion = await act.Should().ThrowAsync<WechatCallbackException>().WithMessage("*验签失败*");
+        assertion.Which.Kind.Should().Be(WechatCallbackFailureKind.InvalidSignature);
     }
 
     [Fact]
@@ -88,7 +95,8 @@ public class WechatCallbackReceiverAndHandlerTests
         var (receiver, _) = CreateReceiver();
         var act = async () => await receiver.ReceiveAsync(
             $"msg_signature=abc&timestamp={Now()}&nonce={NewNonce()}", "<xml><Nothing/></xml>");
-        await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("*Encrypt*");
+        var assertion = await act.Should().ThrowAsync<WechatCallbackException>().WithMessage("*Encrypt*");
+        assertion.Which.Kind.Should().Be(WechatCallbackFailureKind.MissingEncrypt);
     }
 
     // ---------------------------------------------------------------- P0-2 抗重放
@@ -101,7 +109,8 @@ public class WechatCallbackReceiverAndHandlerTests
         var stale = (DateTimeOffset.UtcNow.ToUnixTimeSeconds() - (WechatCallbackReceiver.ReplayWindowSeconds + 1)).ToString();
 
         var act = async () => await receiver.ReceiveAsync(QueryFor(encrypt, stale, NewNonce()), body);
-        await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("*超出时效窗口*");
+        var assertion = await act.Should().ThrowAsync<WechatCallbackException>().WithMessage("*超出时效窗口*");
+        assertion.Which.Kind.Should().Be(WechatCallbackFailureKind.TimestampOutOfRange);
     }
 
     [Fact]
@@ -124,7 +133,8 @@ public class WechatCallbackReceiverAndHandlerTests
         var signature = WechatCallbackCrypto.ComputeSignature(Token, string.Empty, nonce, encrypt);
 
         var act = async () => await receiver.ReceiveAsync($"msg_signature={signature}&nonce={nonce}", body);
-        await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("*timestamp 缺失或非数字*");
+        var assertion = await act.Should().ThrowAsync<WechatCallbackException>().WithMessage("*timestamp 缺失或非数字*");
+        assertion.Which.Kind.Should().Be(WechatCallbackFailureKind.MissingTimestamp);
     }
 
     [Fact]
@@ -136,7 +146,8 @@ public class WechatCallbackReceiverAndHandlerTests
         var signature = WechatCallbackCrypto.ComputeSignature(Token, timestamp, string.Empty, encrypt);
 
         var act = async () => await receiver.ReceiveAsync($"msg_signature={signature}&timestamp={timestamp}", body);
-        await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("*nonce 缺失*");
+        var assertion = await act.Should().ThrowAsync<WechatCallbackException>().WithMessage("*nonce 缺失*");
+        assertion.Which.Kind.Should().Be(WechatCallbackFailureKind.MissingNonce);
     }
 
     [Fact]
@@ -149,39 +160,65 @@ public class WechatCallbackReceiverAndHandlerTests
         await receiver.ReceiveAsync(query, body);
 
         var act = async () => await receiver.ReceiveAsync(query, body);
-        await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("*疑似重放*");
+        var assertion = await act.Should().ThrowAsync<WechatCallbackException>().WithMessage("*疑似重放*");
+        assertion.Which.Kind.Should().Be(WechatCallbackFailureKind.ReplaySuspected);
     }
+
+    // ---------------------------------------------------------------- P1-1 指纹闸后移
+
+    [Fact]
+    public async Task ReceiveAsync_ShouldNotConsumeFingerprint_WhenDecryptFails()
+    {
+        // 错 AESKey 的接收器解密失败（指纹未标记）→ 共享同一守卫的正确接收器同报文应成功：
+        // 官方重试（96238）不再被指纹闸拒绝（F2 / P1-1 行为修复）。
+        var guard = new InMemoryWechatCallbackReplayGuard();
+        var (badReceiver, _) = CreateReceiver(replayGuard: guard, aesKey: OtherAesKey);
+        var (goodReceiver, _) = CreateReceiver(replayGuard: guard);
+
+        var (encrypt, body) = EncryptTicket("<xml><InfoType>suite_ticket</InfoType></xml>");
+        var query = QueryFor(encrypt, Now(), NewNonce());
+
+        var act = async () => await badReceiver.ReceiveAsync(query, body);
+        var assertion = await act.Should().ThrowAsync<WechatCallbackException>();
+        assertion.Which.Kind.Should().Be(WechatCallbackFailureKind.DecryptFailed, "错 AESKey 时解密失败（修复前该路径已消耗指纹）");
+
+        var evt = await goodReceiver.ReceiveAsync(query, body);
+        evt.IsSuiteTicket.Should().BeTrue("解密失败不消耗指纹，同报文经正确接收器可成功接收");
+    }
+
+    // ---------------------------------------------------------------- receiveid 校验
 
     [Fact]
     public async Task ReceiveAsync_ShouldReject_WhenReceiveIdMismatch()
     {
-        var receiver = new WechatCallbackReceiver(Microsoft.Extensions.Options.Options.Create(new WechatCallbackOptions
-        {
-            PushToken = Token,
-            PushEncodingAESKey = AesKey,
-            // 套件回调场景：接收方 ID 应为 SuiteId；此处填企业 CorpId 模拟配置错误。
-            CorpId = "ww-wrong-receiveid",
-        }));
+        // 套件回调场景：接收方 ID 应为 SuiteId；此处填企业 CorpId 模拟配置错误。
+        var receiver = new WechatCallbackReceiver(CreateOptions(corpId: "ww-wrong-receiveid"));
 
         var (encrypt, body) = EncryptTicket("<xml><InfoType>suite_ticket</InfoType></xml>");
 
         var act = async () => await receiver.ReceiveAsync(QueryFor(encrypt, Now(), NewNonce()), body);
-        await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("*receiveid*");
+        var assertion = await act.Should().ThrowAsync<WechatCallbackException>().WithMessage("*receiveid*");
+        assertion.Which.Kind.Should().Be(WechatCallbackFailureKind.ReceiveIdMismatch);
     }
 
     [Fact]
-    public async Task ReceiveAsync_ShouldSkipReceiveIdCheck_WhenCorpIdNotConfigured()
+    public async Task ReceiveAsync_ShouldSkipReceiveIdCheck_WhenPlaintextReceiveIdEmpty()
     {
-        var receiver = new WechatCallbackReceiver(Microsoft.Extensions.Options.Options.Create(new WechatCallbackOptions
-        {
-            PushToken = Token,
-            PushEncodingAESKey = AesKey,
-        }));
-
-        var (encrypt, body) = EncryptTicket("<xml><InfoType>suite_ticket</InfoType></xml>");
+        // P3-2：明文未携带 receiveid（官方「个人主体第三方为空串」形态）时跳过校验并一次性告警。
+        var encrypt = WechatCallbackCrypto.Encrypt(AesKey, "<xml><InfoType>suite_ticket</InfoType></xml>", string.Empty);
+        var body = $"<xml><Encrypt><![CDATA[{encrypt}]]></Encrypt></xml>";
+        var receiver = new WechatCallbackReceiver(CreateOptions());
 
         var act = async () => await receiver.ReceiveAsync(QueryFor(encrypt, Now(), NewNonce()), body);
-        await act.Should().NotThrowAsync("未配置接收方 ID 时跳过 receiveid 校验（仅一次性告警）");
+        await act.Should().NotThrowAsync("明文 receiveid 为空时跳过校验（个人主体第三方兼容，90968）");
+    }
+
+    [Fact]
+    public void Constructor_ShouldThrow_WhenReceiverIdMissing()
+    {
+        // P1-3 统一注册表：接收方 ID 必填（注册期 fail-fast；直构造路径由构造期 Validate 兜底）。
+        var act = () => new WechatCallbackReceiver(CreateOptions(corpId: string.Empty));
+        act.Should().Throw<InvalidOperationException>().WithMessage("*CorpId*");
     }
 
     // ---------------------------------------------------------------- 事件分发

@@ -29,6 +29,7 @@ public class WechatCallbackEvent
     public string? SuiteId { get; set; }
 
     /// <summary>最新推送的 suite_ticket（InfoType = suite_ticket 时非空）。</summary>
+    /// <remarks><b>敏感凭据</b>：不得写入日志、遥测或异常消息（驱动 <c>get_suite_token</c> 换取套件令牌）。</remarks>
     public string? SuiteTicket { get; set; }
 
     /// <summary>授权方（企业）CorpId（AuthCorpId 节点；部分事件模板中为 FromUserName）。</summary>
@@ -38,9 +39,14 @@ public class WechatCallbackEvent
     public string? AuthCorpId { get; set; }
 
     /// <summary>临时授权码（InfoType = create_auth 时非空，用于 get_permanent_code 换取永久授权码）。</summary>
+    /// <remarks><b>敏感凭据</b>：不得写入日志、遥测或异常消息（10 分钟有效且一次性，P0-2 补偿面依赖）。</remarks>
     public string? AuthCode { get; set; }
 
     /// <summary>解密后的原始 XML 明文（供业务侧解析扩展字段）。</summary>
+    /// <remarks>
+    /// <b>敏感凭据</b>：可能包含 <see cref="SuiteTicket"/> / <see cref="AuthCode"/> 等凭据节点，
+    /// 不得整体写入日志、遥测或异常消息（与 <c>encoding_aeskey</c> 同款警示）。
+    /// </remarks>
     public string? DecryptedXml { get; set; }
 
     /// <summary>是否为授权成功事件（create_auth；携带一次性 auth_code）。</summary>

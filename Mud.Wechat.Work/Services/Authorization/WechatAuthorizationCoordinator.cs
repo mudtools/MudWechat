@@ -5,6 +5,8 @@
 //  不得利用本项目从事危害国家安全、扰乱社会秩序、侵犯他人合法权益等法律法规禁止的活动！任何基于本项目开发而产生的一切法律纠纷和责任，我们不承担任何责任！
 // -----------------------------------------------------------------------
 
+using Mud.Wechat.Work.Abstractions.Exceptions;
+
 namespace Mud.Wechat.Work.Services.Authorization;
 
 /// <summary>
@@ -55,19 +57,30 @@ internal sealed class WechatAuthorizationCoordinator : IWechatAuthorizationCoord
     {
         foreach (var appKey in ResolveAppKeys(suiteId, "change_auth"))
         {
-            // 本地无该企业授权记录时不做 API 调用（避免无谓的服务商请求），仅告警。
-            var existing = await _authorizationService
-                .GetAuthorizationAsync(authCorpId, appKey, cancellationToken).ConfigureAwait(false);
-            if (existing == null)
+            try
             {
-                _logger.LogWarning(
-                    "收到 change_auth 但应用 {AppKey} 下无企业 {AuthCorpId} 的授权记录，跳过刷新。",
-                    appKey, authCorpId);
-                continue;
-            }
+                // 本地无该企业授权记录时不做 API 调用（避免无谓的服务商请求），仅告警。
+                var existing = await _authorizationService
+                    .GetAuthorizationAsync(authCorpId, appKey, cancellationToken).ConfigureAwait(false);
+                if (existing == null)
+                {
+                    _logger.LogWarning(
+                        "收到 change_auth 但应用 {AppKey} 下无企业 {AuthCorpId} 的授权记录，跳过刷新。",
+                        appKey, authCorpId);
+                    continue;
+                }
 
-            await _authorizationService
-                .RefreshAuthorizationAsync(authCorpId, appKey, cancellationToken).ConfigureAwait(false);
+                await _authorizationService
+                    .RefreshAuthorizationAsync(authCorpId, appKey, cancellationToken).ConfigureAwait(false);
+            }
+            catch (Exception ex) when (IsIsolatableFailure(ex))
+            {
+                // P3-1（F9）：单应用失败记 Error 后继续其余应用，不中断整批（与处理器直连分支的逐 appKey 隔离对齐）。
+                _logger.LogError(
+                    ex,
+                    "change_auth 处理失败（阶段：刷新授权信息），跳过该应用继续处理其余应用。AppKey: {AppKey}, AuthCorpId: {AuthCorpId}。",
+                    appKey, authCorpId);
+            }
         }
     }
 
@@ -76,8 +89,19 @@ internal sealed class WechatAuthorizationCoordinator : IWechatAuthorizationCoord
     {
         foreach (var appKey in ResolveAppKeys(suiteId, "cancel_auth"))
         {
-            await _authorizationService
-                .RevokeAuthorizationAsync(authCorpId, appKey, cancellationToken).ConfigureAwait(false);
+            try
+            {
+                await _authorizationService
+                    .RevokeAuthorizationAsync(authCorpId, appKey, cancellationToken).ConfigureAwait(false);
+            }
+            catch (Exception ex) when (IsIsolatableFailure(ex))
+            {
+                // P3-1（F9）：单应用失败不中断整批；清理范围恒为 SuiteId 命中集（G9 不变）。
+                _logger.LogError(
+                    ex,
+                    "cancel_auth 处理失败（阶段：撤销授权清理），跳过该应用继续处理其余应用。AppKey: {AppKey}, AuthCorpId: {AuthCorpId}。",
+                    appKey, authCorpId);
+            }
         }
     }
 
@@ -94,16 +118,34 @@ internal sealed class WechatAuthorizationCoordinator : IWechatAuthorizationCoord
         var eventName = isReset ? "reset_permanent_code" : "create_auth";
         foreach (var appKey in ResolveAppKeys(suiteId, eventName))
         {
-            // 一次性 auth_code：同一事件的并发/重复投递由编排服务的 authCode 单飞门 + 结果记忆收敛。
-            // reset_permanent_code 以新 permanent_code 覆盖既有条目（R11），不做「已存在即跳过」短路。
-            var auth = await _authorizationService
-                .ExchangeAuthCodeAsync(authCode, appKey, cancellationToken).ConfigureAwait(false);
+            try
+            {
+                // 一次性 auth_code：同一事件的并发/重复投递由编排服务的 authCode 单飞门 + 结果记忆收敛。
+                // reset_permanent_code 以新 permanent_code 覆盖既有条目（R11），不做「已存在即跳过」短路。
+                var auth = await _authorizationService
+                    .ExchangeAuthCodeAsync(authCode, appKey, cancellationToken).ConfigureAwait(false);
 
-            _logger.LogInformation(
-                "{Event} 事件已处理（应用 {AppKey}，AuthCorpId {AuthCorpId}）。",
-                eventName, appKey, auth.AuthCorpId);
+                _logger.LogInformation(
+                    "{Event} 事件已处理（应用 {AppKey}，AuthCorpId {AuthCorpId}）。",
+                    eventName, appKey, auth.AuthCorpId);
+            }
+            catch (Exception ex) when (IsIsolatableFailure(ex))
+            {
+                // P3-1（F9）：换码失败不中断其余应用（日志不得包含 authCode——一次性敏感凭据）。
+                _logger.LogError(
+                    ex,
+                    "{Event} 处理失败（阶段：换码落库），跳过该应用继续处理其余应用。AppKey: {AppKey}。",
+                    eventName, appKey);
+            }
         }
     }
+
+    /// <summary>
+    /// 可逐应用隔离的失败类型（与处理器直连分支的捕获面对齐）；
+    /// <see cref="OperationCanceledException"/> 不在其列——取消必须穿透，不得被隔离逻辑吞掉。
+    /// </summary>
+    private static bool IsIsolatableFailure(Exception ex)
+        => ex is WechatWorkException or InvalidOperationException or KeyNotFoundException;
 
     /// <summary>
     /// 解析回调事件归属的应用键（精确匹配 <see cref="WechatAppConfig.SuiteId"/>，无兜底）。

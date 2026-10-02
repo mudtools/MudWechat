@@ -18,17 +18,30 @@ public interface IWechatCallbackReceiver
     /// <param name="urlQuery">回调 URL 的查询串（含 msg_signature / timestamp / nonce）。</param>
     /// <param name="body">回调请求体（加密 XML，含 Encrypt 节点）。</param>
     /// <param name="cancellationToken">取消令牌。</param>
-    /// <exception cref="InvalidOperationException">验签失败或解密失败时抛出。</exception>
+    /// <exception cref="WechatCallbackException">验签失败、疑似重放或解密失败时抛出（<see cref="WechatCallbackException.Kind"/> 标明失败类别）。</exception>
     Task<WechatCallbackEvent> ReceiveAsync(string urlQuery, string body, CancellationToken cancellationToken = default);
 }
 
 /// <summary>
-/// 企业微信回调接收器默认实现：SHA1 验签 → 时效窗口 → 一次性去重 → XML 解析 → AES 解密 → 事件字段提取。
+/// 企业微信回调接收器（按回调配置条目）：SHA1 验签 → 时效窗口 → AES 解密 → receiveid 校验 → 一次性指纹去重 → 事件字段提取。
 /// </summary>
 /// <remarks>
-/// <b>P0-2 抗重放</b>：验签通过后追加两道 fail-closed 闸门——时间戳时效窗口
+/// <para>
+/// <b>P0-2 抗重放</b>：验签通过后两道 fail-closed 闸门——时间戳时效窗口
 /// （<see cref="ReplayWindowSeconds"/>，缺失/非数字即拒绝）与一次性指纹去重
 /// （<see cref="IWechatCallbackReplayGuard"/>，键为与攻击者无关的 SHA1 指纹）。
+/// <b>P1-1（决策 D2）</b>：指纹闸位于「解密 + receiveid 校验成功」之后、事件返回之前——
+/// 解密成功即证明报文经仅企微与我方共知的 AESKey 验证可信，重复解密无副作用；
+/// 解密失败不再消耗指纹，官方重试可重新进入管线（at-least-once 修复）。
+/// </para>
+/// <para>
+/// <b>P2-3</b>：验签比对与指纹去重共用同一次 SHA1 计算结果。
+/// </para>
+/// <para>
+/// 多套件宿主经 <c>AddWechatCallback</c>/<c>AddWechatCallbackSuite</c> 登记进统一注册表
+/// （<c>WechatCallbackReceiverGroup</c> 按外层 XML ToUserName 路由到本类）；
+/// 「同一接收方 ID、异构密钥」的自定义路由场景可直接构造本类实例（逃逸舱）。
+/// </para>
 /// </remarks>
 public sealed class WechatCallbackReceiver : IWechatCallbackReceiver
 {
@@ -40,11 +53,11 @@ public sealed class WechatCallbackReceiver : IWechatCallbackReceiver
     private readonly Func<DateTimeOffset> _utcNow;
     private readonly ILogger<WechatCallbackReceiver>? _logger;
 
-    /// <summary>「未配置接收方 ID」告警是否已输出（首次命中输出一次）。</summary>
-    private int _receiveIdSkipLogged;
+    /// <summary>「明文未携带 receiveid」告警是否已输出（首次命中输出一次，P3-2）。</summary>
+    private int _emptyReceiveIdLogged;
 
     /// <summary>创建回调接收器。</summary>
-    /// <param name="options">回调配置（PushToken / PushEncodingAESKey / 接收方 ID）。</param>
+    /// <param name="options">回调配置（PushToken / PushEncodingAESKey / 接收方 ID 必填，构造期校验）。</param>
     /// <param name="replayGuard">一次性去重守卫（可选；缺省为进程内实现）。</param>
     /// <param name="utcNow">时钟源（可选，默认 <see cref="DateTimeOffset.UtcNow"/>；便于测试）。</param>
     /// <param name="logger">日志器（可选）。</param>
@@ -52,12 +65,12 @@ public sealed class WechatCallbackReceiver : IWechatCallbackReceiver
     /// 使用可选参数而非 <c>TimeProvider</c>：<c>TimeProvider</c> 在 <c>netstandard2.0</c> 不可用。
     /// </remarks>
     public WechatCallbackReceiver(
-        IOptions<WechatCallbackOptions> options,
+        WechatCallbackOptions options,
         IWechatCallbackReplayGuard? replayGuard = null,
         Func<DateTimeOffset>? utcNow = null,
         ILogger<WechatCallbackReceiver>? logger = null)
     {
-        _options = (options ?? throw new ArgumentNullException(nameof(options))).Value;
+        _options = options ?? throw new ArgumentNullException(nameof(options));
         _options.Validate();
         _replayGuard = replayGuard ?? new InMemoryWechatCallbackReplayGuard();
         _utcNow = utcNow ?? (() => DateTimeOffset.UtcNow);
@@ -67,39 +80,96 @@ public sealed class WechatCallbackReceiver : IWechatCallbackReceiver
     /// <inheritdoc />
     public async Task<WechatCallbackEvent> ReceiveAsync(string urlQuery, string body, CancellationToken cancellationToken = default)
     {
+        var encrypt = ExtractEncrypt(body)
+            ?? throw new WechatCallbackException(
+                WechatCallbackFailureKind.MissingEncrypt, "回调报文非法：未找到 Encrypt 节点。");
+
+        return await ReceiveCoreAsync(urlQuery, encrypt, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// 接收管线核心（供组合接收器复用：报文外壳已按 ToUserName 路由，Encrypt 已单次解析提取）。
+    /// </summary>
+    internal async Task<WechatCallbackEvent> ReceiveCoreAsync(string urlQuery, string encrypt, CancellationToken cancellationToken)
+    {
         var (signature, timestamp, nonce) = WechatCallbackCrypto.ParseSignatureQuery(urlQuery);
         if (string.IsNullOrEmpty(signature))
         {
-            throw new InvalidOperationException("回调验签失败：缺少 msg_signature 参数。");
+            throw new WechatCallbackException(
+                WechatCallbackFailureKind.MissingSignature, "回调验签失败：缺少 msg_signature 参数。");
         }
 
-        var encrypt = ExtractEncrypt(body)
-            ?? throw new InvalidOperationException("回调报文非法：未找到 Encrypt 节点。");
-
-        if (!WechatCallbackCrypto.VerifySignature(_options.PushToken, timestamp ?? string.Empty, nonce ?? string.Empty, encrypt, signature))
+        // P2-3：同一次 SHA1 结果先做验签比对，解密成功后再作为一次性指纹（P1-1）。
+        var fingerprint = WechatCallbackCrypto
+            .ComputeSignature(_options.PushToken, timestamp ?? string.Empty, nonce ?? string.Empty, encrypt);
+        if (!string.Equals(fingerprint, signature, StringComparison.OrdinalIgnoreCase))
         {
-            throw new InvalidOperationException("回调验签失败：msg_signature 不匹配（请检查 PushToken / CorpId 配置）。");
+            throw new WechatCallbackException(
+                WechatCallbackFailureKind.InvalidSignature,
+                "回调验签失败：msg_signature 不匹配（请检查 PushToken / 接收方 ID 配置）。");
         }
 
-        // P0-2：验签之后、解密之前的抗重放两道闸（均 fail-closed）。
+        // P0-2 第一道闸：时效窗口（fail-closed：缺失或非数字一律拒绝）。
         ValidateTimestampWindow(timestamp);
         if (string.IsNullOrEmpty(nonce))
         {
-            throw new InvalidOperationException("回调验签失败：nonce 缺失。");
-        }
-
-        var fingerprint = WechatCallbackCrypto.ComputeSignature(_options.PushToken, timestamp!, nonce!, encrypt);
-        if (!await _replayGuard
-                .TryMarkAsync(fingerprint, TimeSpan.FromSeconds(ReplayWindowSeconds), cancellationToken)
-                .ConfigureAwait(false))
-        {
-            throw new InvalidOperationException("回调验签失败：报文已处理过（疑似重放）。");
+            throw new WechatCallbackException(
+                WechatCallbackFailureKind.MissingNonce, "回调验签失败：nonce 缺失。");
         }
 
         var decrypted = WechatCallbackCrypto.Decrypt(_options.PushEncodingAESKey, encrypt, out var receiveId);
         ValidateReceiveId(receiveId);
 
+        // P0-2 第二道闸（P1-1/D2 后移）：位于「解密 + receiveid 校验成功」之后、事件返回之前——
+        // 解密成功即证明报文经仅企微与我方共知的 AESKey 验证可信；解密失败不消耗指纹，
+        // 官方重试（96238）可重新进入管线。指纹含 token 天然跨套件隔离。
+        if (!await _replayGuard
+                .TryMarkAsync(fingerprint, TimeSpan.FromSeconds(ReplayWindowSeconds), cancellationToken)
+                .ConfigureAwait(false))
+        {
+            throw new WechatCallbackException(
+                WechatCallbackFailureKind.ReplaySuspected, "回调验签失败：报文已处理过（疑似重放）。");
+        }
+
         return ParseEvent(decrypted, timestamp, nonce);
+    }
+
+    /// <summary>
+    /// URL 验证核心（P1-2，供组合接收器按接收方 ID 分发后调用）：
+    /// 验签（echostr 参与签名，同 96238）→ 时间窗 → 解密 → receiveid 校验 → 返回明文。
+    /// </summary>
+    /// <remarks>
+    /// 决策 D5：URL 验证为幂等读（管理端可能反复保存重试），<b>不做指纹去重</b>——
+    /// 去重会造成「验证被自己上一次消耗」的假失败；时间窗已足够抗重放。
+    /// </remarks>
+    internal Task<string> VerifyUrlCoreAsync(string urlQuery, string echostr, CancellationToken cancellationToken)
+    {
+        var (signature, timestamp, nonce) = WechatCallbackCrypto.ParseSignatureQuery(urlQuery);
+        if (string.IsNullOrEmpty(signature))
+        {
+            throw new WechatCallbackException(
+                WechatCallbackFailureKind.MissingSignature, "URL 验证失败：缺少 msg_signature 参数。");
+        }
+
+        var expected = WechatCallbackCrypto
+            .ComputeSignature(_options.PushToken, timestamp ?? string.Empty, nonce ?? string.Empty, echostr ?? string.Empty);
+        if (!string.Equals(expected, signature, StringComparison.OrdinalIgnoreCase))
+        {
+            throw new WechatCallbackException(
+                WechatCallbackFailureKind.InvalidSignature,
+                "URL 验证失败：msg_signature 不匹配（请检查 PushToken / 接收方 ID 配置）。");
+        }
+
+        ValidateTimestampWindow(timestamp);
+        if (string.IsNullOrEmpty(nonce))
+        {
+            throw new WechatCallbackException(
+                WechatCallbackFailureKind.MissingNonce, "URL 验证失败：nonce 缺失。");
+        }
+
+        var plain = WechatCallbackCrypto.Decrypt(_options.PushEncodingAESKey, echostr ?? string.Empty, out var receiveId);
+        ValidateReceiveId(receiveId);
+        return Task.FromResult(plain);
     }
 
     /// <summary>
@@ -111,51 +181,51 @@ public sealed class WechatCallbackReceiver : IWechatCallbackReceiver
             !long.TryParse(timestamp, System.Globalization.NumberStyles.Integer,
                 System.Globalization.CultureInfo.InvariantCulture, out var ts))
         {
-            throw new InvalidOperationException("回调验签失败：timestamp 缺失或非数字。");
+            throw new WechatCallbackException(
+                WechatCallbackFailureKind.MissingTimestamp, "回调验签失败：timestamp 缺失或非数字。");
         }
 
         var now = _utcNow().ToUnixTimeSeconds();
         if (Math.Abs(now - ts) > ReplayWindowSeconds)
         {
-            throw new InvalidOperationException(
+            throw new WechatCallbackException(
+                WechatCallbackFailureKind.TimestampOutOfRange,
                 $"回调验签失败：timestamp 超出时效窗口（±{ReplayWindowSeconds}s），疑似重放或时钟偏差。");
         }
     }
 
     /// <summary>
-    /// 校验解密明文的接收方 ID（<c>receiveid</c>）：<see cref="WechatCallbackOptions.CorpId"/> 为空时跳过（仅告警一次）。
+    /// 校验解密明文的接收方 ID（<c>receiveid</c>）与配置一致性。
     /// </summary>
     /// <remarks>
-    /// 语义为「接收方 ID」：企业自建应用回调为企业 <c>CorpId</c>，第三方/服务商<b>套件回调为 <c>SuiteId</c></b>，
-    /// 故按「命中其一即通过」判定，避免套件场景误拒合法回调。
+    /// <para>
+    /// 语义为「接收方 ID」：企业自建应用回调为企业 <c>CorpId</c>，第三方/服务商<b>套件回调为 <c>SuiteId</c></b>。
+    /// </para>
+    /// <para>
+    /// P3-2：明文未携带 receiveid 时跳过校验并一次性告警（官方「个人主体第三方为空串」兼容，90968）；
+    /// 配置侧的接收方 ID 为必填（<see cref="WechatCallbackOptions.Validate"/> 注册期校验），不存在「配置为空」分支。
+    /// </para>
     /// </remarks>
     private void ValidateReceiveId(string? receiveId)
     {
         if (string.IsNullOrEmpty(receiveId))
         {
-            return;
-        }
-
-        var expected = _options.CorpId;
-        if (string.IsNullOrEmpty(expected))
-        {
-            if (Interlocked.Exchange(ref _receiveIdSkipLogged, 1) == 0)
+            if (Interlocked.Exchange(ref _emptyReceiveIdLogged, 1) == 0)
             {
                 _logger?.LogWarning(
-                    "回调配置未设置 CorpId（接收方 ID），已跳过 receiveid 校验；" +
-                    "套件回调请填写 SuiteId，企业自建回调请填写企业 CorpId。");
+                    "回调明文未携带 receiveid，已跳过接收方 ID 校验（官方「个人主体第三方」形态明文 receiveid 为空串）。");
             }
 
             return;
         }
 
-        if (!string.Equals(expected, receiveId, StringComparison.Ordinal))
+        if (!string.Equals(_options.CorpId, receiveId, StringComparison.Ordinal))
         {
-            throw new InvalidOperationException(
+            throw new WechatCallbackException(
+                WechatCallbackFailureKind.ReceiveIdMismatch,
                 "回调验签失败：receiveid 与配置的 CorpId（接收方 ID）不一致（套件回调应填 SuiteId）。");
         }
     }
-
 
     private static string? ExtractEncrypt(string body)
     {

@@ -13,6 +13,7 @@ namespace Mud.Wechat.Work.Callback;
 /// <remarks>
 /// 原主配置中的 <c>PushEncodingAESKey</c> / <c>PushToken</c> 迁入本配置
 /// （回调推送密钥属回调运维面，不进主配置，见产品规划 §7.1 / 详细设计 §8.4）。
+/// 多套件场景每个套件/自建应用各登记一份（见 <c>AddWechatCallbackSuite</c>，统一注册表 P1-3/D11）。
 /// </remarks>
 public class WechatCallbackOptions
 {
@@ -32,11 +33,12 @@ public class WechatCallbackOptions
     /// <remarks>
     /// <para>
     /// 语义按回调形态区分：<b>企业自建应用回调</b>为企业 <c>CorpId</c>；
-    /// <b>第三方应用 / 服务商代开发的套件回调</b>为 <c>SuiteId</c>。
+    /// <b>第三方应用 / 服务商代开发的套件回调</b>为 <c>SuiteId</c>（即外层 XML ToUserName）。
     /// </para>
     /// <para>
-    /// <b>P2-5 消费点</b>：非空时接收器会校验解密明文的 <c>receiveid</c> 与本值一致，不一致即拒绝；
-    /// 留空则跳过校验并输出一次性告警（兼容不提供该值的场景）。
+    /// <b>必填</b>（P1-3 统一注册表：本值即多套件注册表键，注册期 fail-fast 校验非空与全表唯一）；
+    /// 解密明文的 <c>receiveid</c> 与本值不一致即拒绝，明文未携带 receiveid 时跳过校验并一次性告警
+    /// （兼容官方「个人主体第三方为空串」形态）。
     /// </para>
     /// </remarks>
     public string CorpId { get; set; } = string.Empty;
@@ -44,6 +46,7 @@ public class WechatCallbackOptions
     /// <summary>
     /// 校验回调配置完整性（缺失必填项抛出 <see cref="InvalidOperationException"/>）。
     /// </summary>
+    /// <remarks>注册期由回调注册表调用（fail-fast），接收器构造期兜底。</remarks>
     public void Validate()
     {
         if (string.IsNullOrWhiteSpace(PushToken))
@@ -54,6 +57,12 @@ public class WechatCallbackOptions
         if (string.IsNullOrWhiteSpace(PushEncodingAESKey) || PushEncodingAESKey.Length != 43)
         {
             throw new InvalidOperationException("回调配置的 PushEncodingAESKey 必须为 43 位字符。");
+        }
+
+        if (string.IsNullOrWhiteSpace(CorpId))
+        {
+            throw new InvalidOperationException(
+                "回调配置缺少 CorpId（接收方 ID）：企业自建回调请填写企业 CorpId，套件回调请填写 SuiteId。");
         }
     }
 }

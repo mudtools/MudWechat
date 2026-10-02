@@ -202,10 +202,24 @@ DTO 落 `DataModels/ExternalContact/{FollowUser,Customer,Tag,JobInheritance}/`�
   首次 `Warning` 后**降级不抛**。`change_auth` 本地无记录时仅告警、**不发 `get_auth_info`**；
   `cancel_auth` **清理范围恒为 `SuiteId` 命中集**：未命中（含 `SuiteId` 缺失）**只告警不删库**
   ——`(AppKey, authCorpId)` 是**每套件独立**的授权记录，回退「全部应用清理」会删除其它套件的有效授权。
+  协调器三个逐 appKey 循环（换码/刷新/撤销）**单应用失败必须记 Error 后继续**（P3-1 逐应用隔离，
+  与处理器直连分支的捕获面对齐）；`OperationCanceledException` **不在捕获面**（取消必须穿透）。
 - **回调抗重放不变量**：验签通过后必须过两道 fail-closed 闸——① 时间戳时效窗口 ±300s（缺失/非数字即拒）；
-  ② 一次性指纹去重（SHA1 指纹，不得落盘密文本身）。修改回调入口时不得绕过。
-- **`WechatCallbackOptions.CorpId` 语义是「接收方 ID」**：企业自建回调为企业 `CorpId`，**套件回调为 `SuiteId`**。
-  非空时校验解密明文的 `receiveid`，不一致即拒（该属性是唯一消费点，不得改为死配置）。
+  ② 一次性指纹去重（SHA1 指纹，不得落盘密文本身）。**指纹闸位于「解密 + receiveid 校验成功」之后、
+  事件返回之前**（P1-1 后移：解密成功即证明报文经仅企微与我方共知的 AESKey 验证可信；解密失败不消耗指纹，
+  官方重试可重新进入管线）——修改回调入口时**不得**把指纹闸移回解密之前，也不得绕过。
+- **回调接收面（Callback 包）**：统一注册表形态（P1-3/D11）——`AddWechatCallback`（单条目便捷入口）与
+  `AddWechatCallbackSuite`（逐套件追加）是**同一注册动作**的两个语义化入口，登记进
+  `WechatCallbackOptionsRegistry`（接收方 ID **必填且全表唯一**，注册期 fail-fast；`IConfiguration`
+  重载为**注册期急切绑定**）；`IWechatCallbackReceiver` 恒为 `WechatCallbackReceiverGroup`
+  （internal，DI 工厂 lambda 注册避免反射激活，按外层 XML ToUserName 路由，未命中 fail-closed =
+  `UnknownReceiver`）；GET URL 验证走 `IWechatCallbackUrlVerifier.VerifyUrlAsync(receiverId, urlQuery, echostr)`
+  （**幂等读不做指纹去重**，D5）；接收失败统一抛 `WechatCallbackException : InvalidOperationException`
+  （`Kind` 映射失败类别，P2-2）；加解密按官方 **32 字节块 PKCS7** 手工补位/剥离（P0-1，
+  **禁用 .NET 内置 16 块 `PaddingMode.PKCS7`**，守卫 CB1）。
+- **`WechatCallbackOptions.CorpId` 语义是「接收方 ID」**：企业自建回调为企业 `CorpId`，**套件回调为 `SuiteId`**
+  （即外层 XML ToUserName，同为多套件注册表键）。**必填**（P1-3 注册期 fail-fast）；解密明文 `receiveid`
+  与之不一致即拒，明文未携带 receiveid 时跳过并一次性告警（个人主体第三方兼容，90968）。
 
 ## Code Style
 
@@ -266,6 +280,7 @@ G8 的运行期同实例断言在 `WechatServiceCollectionExtensionsTests`）+ �
 | CG1~CG4 | `WechatCorpGroupContractGuards`（上下游域） | 开放面为**自建 + 代开发**（6 端点）+ **第三方（仅获取应用共享信息 95324，同路由同契约，随父接口继承）**：6 个端点全落父接口（`/cgi-bin/corpgroup/corp/list_app_share_info`、`corp/gettoken`、`miniprogram/transfer_session`、`unionid_to_external_userid`、`unionid_to_pending_id`、`batch/external_userid_to_pending_id`；97357/98040 一篇覆盖 2 端点）。CG1 路由表 6 条（全 POST）；CG2 层级 + `CorpGroup` 注册组（`WechatModule.CorpGroup`，经 `AddCorpGroupApi()` 独立注册）+ **三个子接口零端点** + **反射断言继承链上恰好只有自建/第三方/代开发三个子接口**；CG3 令牌绑定（四接口）；CG4 JSON 上下文登记（15 型）。**令牌语义警示**：transfer_session 必须用下级/下游企业凭证（经 corpgroup/corp/gettoken 获取，SDK 不自动缓存，由宿主写入令牌存储后切换上下文调用）；`session_key`/下游 access_token 为敏感凭据不得记日志 |
 | CG5~CG8 | `WechatCorpGroupContractGuards`（上下游通讯录管理域，与 CG1~CG4 同文件） | 公共读取面父接口（4 端点：`corpgroup/corp/get_chain_list`、`get_chain_group`、`get_chain_corpinfo_list`、`get_chain_corpinfo`）+ 自建子接口（5 端点：`import_chain_contact`、`corpgroup/getresult`、`corp/remove_corp`、`corp/get_chain_user_custom_id`、`get_corp_shared_chain_list`）+ 代开发空标记（官方代开发树仅镜像获取上下游信息）。CG5 路由表 9 条（`DeclaredOnly` 限定声明位置，注释警示 `corpgroup/getresult` 与 `batch/getresult`、`export/get_result` 拼写差异）；CG6 父接口恰 4 端点 + 自建恰 5 端点 + 代开发零端点；CG7 令牌绑定；CG8 JSON 上下文登记（23 型）。同挂 `CorpGroup` 注册组共用 `AddCorpGroupApi()`。**导入强串行**：同时仅一个导入任务、只允许串行调用，接口注释必须保留该警示 |
 | CG9~CG11 | `WechatCorpGroupContractGuards`（上下游规则域，与 CG1~CG8 同文件） | **形态为父接口零端点 + 端点全落自建子接口**（官方仅向自建开放，且仅上下游创建空间的主企业可调用）：5 个端点（`corpgroup/rule/list_ids`、`delete_rule`、`get_rule_info`、`add_rule`、`modify_rule`）。CG9 路由表 5 条（全 POST）；CG10 父接口零端点 + Internal 恰 5 端点、无其它子接口；CG11 令牌绑定（2 接口）+ JSON 上下文登记（11 型）。同挂 `CorpGroup` 注册组共用 `AddCorpGroupApi()`。**频率警示**：新增/更新规则共用每天 1000 次额度，接口注释必须保留 |
+| CB1~CB4 | `WechatCallbackContractGuards`（回调域，`Tests/Mud.Wechat.Work.Callback.Tests/ContractGuards/`） | CB1 `WechatCallbackCrypto` **不得出现 `PaddingMode.PKCS7`**（.NET 内置 16 块校验会误拒官方 pad∈[17..32] 报文），必须 `PaddingMode.None` + 手工 32 块填充剥离（P0-1）；CB2 接收器源码中 `TryMarkAsync` 必须位于 `WechatCallbackCrypto.Decrypt` **之后**（P1-1/D2 指纹闸后移防回归）；CB3 注册表 `Add` 必须含 `Validate()` + 接收方 ID 唯一性校验（P1-3/D11 注册期 fail-fast；行为用例在 `WechatCallbackServiceCollectionExtensionsTests`）；CB4 URL 验证中验签必须位于解密**之前**且**不得调用** `TryMarkAsync`（P1-2/D5 幂等读不消耗指纹） |
 
 ## Test Guidelines
 
@@ -283,7 +298,7 @@ G8 的运行期同实例断言在 `WechatServiceCollectionExtensionsTests`）+ �
 - 配置面唯一公共 API：`WechatAppConfig`（数组节 `WechatApps`）+ `Validate()`；编排策略 `WechatAuthorizationOptions`（节 `WechatAuthorization`）。
 - **禁止新增「日志开关」类配置属性**（历史死配置反模式）；日志级别统一由 `Logging:LogLevel:{Category}` 控制。
 - 每个公开配置属性必须有真实消费点（`Validate`/`ToString` 不算）。**`scripts/audit-config-keys.ps1` 的口径是「消费点扫描」，并无 `$strictPatterns` 白名单** —— 删除配置键后若脚本报「无消费点」，正确处置是补消费点或删除该属性，而不是加模式。**现状：全绿**（`WechatAppConfig` 12 + `WechatCallbackOptions` 3，权威计数以脚本输出为准）。
-  - `WechatCallbackOptions.CorpId` 的消费点是 `receiveid` 校验（不是日志开关）；接收方 ID 语义：企业自建填 `CorpId`，**套件回调填 `SuiteId`**。
+  - `WechatCallbackOptions.CorpId` 的消费点是 `receiveid` 校验（不是日志开关）；接收方 ID 语义：企业自建填 `CorpId`，**套件回调填 `SuiteId`**；P1-3 后为**必填**且为多套件注册表键（注册期 fail-fast）。
   - `WechatAppConfig.TemplateId` 曾因「只被 `Validate()` 使用」被判红 → 已删除（见 K2），不是加白名单绕开。
 - 安全默认不得削弱：`BaseUrl` 必须 HTTPS + 白名单（`AllowCustomBaseUrl=false` 为默认 SSRF 防线）。
   `AllowCustomBaseUrl=true` 的应用主机在注册期登记到 `WechatCustomBaseUrlRegistry`，供 errcode 判定器的同步预过滤放行（否则私有化部署静默失去令牌恢复能力）。
@@ -291,6 +306,8 @@ G8 的运行期同实例断言在 `WechatServiceCollectionExtensionsTests`）+ �
 ## Security
 
 - 绝不记录或暴露 `AgentSecret` / `SuiteSecret` / `ProviderSecret` / `permanent_code` / `auth_code` / `suite_ticket`；日志脱敏。
+  回调域同款警示：`WechatCallbackEvent` 的 `DecryptedXml` / `SuiteTicket` / `AuthCode` 为敏感凭据，
+  不得写入日志、遥测或异常消息（P3-3 契约文档化）。
 - **Query 承载凭据的脱敏登记**：`corpsecret` / `suite_access_token` / `provider_access_token` 由企业微信契约强制放在 **Query**，
   而组件 `SensitiveUrlRedactor` 是**精确匹配**词表——在组件 3.0.0（C-01）之前不覆盖这三者 ⇒ 随 `ApiException.RequestUri` /
   遥测 URL 明文外泄，故 G7 要求逐参数「补齐词表 / 登记豁免（附追踪号）」。**新增任何 Query 凭据参数仍必须做该二选一决策**。

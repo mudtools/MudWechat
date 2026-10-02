@@ -26,3 +26,26 @@ namespace Mud.Wechat.Work.Abstractions.Authentication.TokenManager;
 public interface IWechatTokenStore : ITokenStore
 {
 }
+
+/// <summary>
+/// 令牌持久层批量删除能力（可选实现，W1/M10）：退役清库/凭据轮换的 N 次逐键删除收敛为一次批量提交。
+/// </summary>
+/// <remarks>
+/// <para>
+/// 能力探测形态（决策 M10）：未实现本接口的 <see cref="IWechatTokenStore"/> 宿主自定义实现<b>零破坏</b>
+/// ——管理器经 <c>is IWechatTokenStoreBatchRemove</c> 探测，未命中即回退逐键删除（既有行为，行为等价）。
+/// </para>
+/// <para>
+/// 形态取舍：接口取「调用方算键 + 实现方批删」而非「服务端按前缀过滤」——
+/// <c>PurgeAppTokensAsync</c> 按键的<b>中间段</b> appKey 匹配（tokenType 在首段且可变），前缀扫描不适用。
+/// 实现方按自身能力 pipeline 化（如 Redis 用 batch/scan）。
+/// </para>
+/// </remarks>
+public interface IWechatTokenStoreBatchRemove : IWechatTokenStore
+{
+    /// <summary>批量删除指定键，返回实际删除数量。</summary>
+    /// <param name="keys">待删除的完整持久层键集合（三段式 <c>{tokenType}:{appKey}:{scopeKey}</c>）。</param>
+    /// <param name="cancellationToken">取消令牌。</param>
+    /// <returns>实际删除的键数量。</returns>
+    Task<int> RemoveRangeAsync(IReadOnlyCollection<string> keys, CancellationToken cancellationToken = default);
+}

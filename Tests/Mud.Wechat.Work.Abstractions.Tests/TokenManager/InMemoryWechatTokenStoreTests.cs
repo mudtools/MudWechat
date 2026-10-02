@@ -47,4 +47,33 @@ public class InMemoryWechatTokenStoreTests
         await store.RemoveAsync("k1");
         (await store.GetTokenTypesAsync()).Should().Equal(new[] { "k2" });
     }
+
+    // ---------------------------------------------------------------- W1（M10）：批量删除能力
+
+    [Fact]
+    public async Task RemoveRangeAsync_ShouldRemoveOnlyRequestedKeys_AndReturnCount()
+    {
+        var store = new InMemoryWechatTokenStore();
+        await store.SetAccessTokenAsync("Wechat.AccessToken:a:c1", "t1", 7200);
+        await store.SetAccessTokenAsync("Wechat.AccessToken:a:c2", "t2", 7200);
+        await store.SetAccessTokenAsync("Wechat.AccessToken:b:default", "t3", 7200);
+
+        var removed = await store.RemoveRangeAsync(new[] { "Wechat.AccessToken:a:c1", "Wechat.AccessToken:a:c2", "missing-key" });
+
+        removed.Should().Be(2, "返回实际删除数量（不存在的键不计入）");
+        (await store.GetTokenTypesAsync()).Should().Equal(new[] { "Wechat.AccessToken:b:default" },
+            "其它应用的键不得被误删");
+    }
+
+    [Fact]
+    public async Task RemoveRangeAsync_ShouldReturnZero_WhenKeysEmpty()
+    {
+        var store = new InMemoryWechatTokenStore();
+        await store.SetAccessTokenAsync("k1", "t1", 7200);
+
+        var removed = await store.RemoveRangeAsync(Array.Empty<string>());
+
+        removed.Should().Be(0);
+        (await store.GetTokenTypesAsync()).Should().BeEquivalentTo("k1");
+    }
 }

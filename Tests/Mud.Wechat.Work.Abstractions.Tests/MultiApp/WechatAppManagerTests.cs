@@ -182,6 +182,54 @@ public class WechatAppManagerTests : IDisposable
         manager.RemoveApp("missing").Should().BeFalse();
     }
 
+    // ---------------------------------------------------------------- M2（F2）：默认应用悬空键治理
+
+    [Fact]
+    public void RemoveApp_ShouldSetDefaultAppKeyToNull_WhenLastAppRemoved()
+    {
+        using var manager = CreateManager(InternalConfig("a", isDefault: true));
+        manager.GetApp("a");
+
+        manager.RemoveApp("a").Should().BeTrue();
+
+        manager.DefaultAppKey.Should().BeNull(
+            "M2：全移除后必须置 null（对齐组件 IAppManager.DefaultAppKey「未设置时返回 null」契约）");
+    }
+
+    [Fact]
+    public void AddApp_ShouldRestoreDefaultFallback_AfterAllRemoved()
+    {
+        using var manager = CreateManager(InternalConfig("a", isDefault: true));
+        manager.RemoveApp("a");
+
+        manager.AddApp(InternalConfig("b", isDefault: false));
+
+        manager.DefaultAppKey.Should().Be("b", "M2：默认键悬空时 AddApp 兜底提升为当前应用（??= 分支）");
+        manager.GetDefaultApp().AppKey.Should().Be("b", "GetDefaultApp 必须正常返回而非报「未找到应用 'a'」");
+    }
+
+    [Fact]
+    public void GetDefaultApp_ShouldThrowClearError_WhenRegistryEmpty()
+    {
+        using var manager = CreateManager(InternalConfig("a"));
+        manager.RemoveApp("a");
+
+        var act = () => manager.GetDefaultApp();
+
+        act.Should().Throw<InvalidOperationException>().WithMessage("*当前无默认应用*",
+            "M2：空表的错误必须可行动（给出注册/指定默认两条恢复路径），而非悬空键的自相矛盾报错");
+    }
+
+    [Fact]
+    public void RemoveApp_ShouldFailWithoutMutation_WhenLazyMissing()
+    {
+        // M8（F8）：先 TryRemove 后删配置 ⇒「返回 false ⇒ 零突变」（配置与 Lazy 双表不出现 desync）。
+        using var manager = CreateManager(InternalConfig("a"));
+
+        manager.RemoveApp("missing").Should().BeFalse();
+        manager.ConfiguredAppKeys.Should().BeEquivalentTo(new[] { "a" }, "失败早退不得删除任何配置");
+    }
+
     [Fact]
     public void MultiAppContexts_ShouldNotCrossContaminateConfigs()
     {
@@ -378,6 +426,158 @@ public class WechatAppManagerTests : IDisposable
 
         manager.GetAllApps().Should().BeEmpty("未实例化的应用上下文不得被失效动作物化（P1-6）");
         (await store.GetTokenTypesAsync()).Should().BeEmpty("持久层槽位应被清理");
+    }
+
+    // ---------------------------------------------------------------- M7（F7）：空 scope fail-fast 与「全部」语义
+
+    [Fact]
+    public async Task InvalidateTokenAsync_ShouldThrow_WhenScopesAllEmpty()
+    {
+        using var manager = CreateManager(InternalConfig("default"));
+
+        var act = async () => await manager.InvalidateTokenAsync(
+            "default", WechatTokenTypes.AccessToken, new[] { "", "" });
+
+        await act.Should().ThrowAsync<ArgumentException>(
+            "M7：非空数组但全空串会静默 0 删除（令牌反复失效不恢复），必须 fail-fast");
+    }
+
+    [Theory]
+    [InlineData(" ")]
+    [InlineData("\t")]
+    public async Task InvalidateTokenAsync_ShouldThrow_WhenScopesWhitespaceOnly(string scope)
+    {
+        using var manager = CreateManager(InternalConfig("default"));
+
+        var act = async () => await manager.InvalidateTokenAsync(
+            "default", WechatTokenTypes.AccessToken, new[] { scope });
+
+        await act.Should().ThrowAsync<ArgumentException>("空白 scope 与空串同样无法命中任何键");
+    }
+
+    [Fact]
+    public async Task InvalidateTokenAsync_ShouldTreatEmptyArrayAsAllScopes()
+    {
+        using var manager = CreateManager(InternalConfig("a"));
+        var store = _provider!.GetRequiredService<IWechatTokenStore>();
+        await store.SetAccessTokenAsync("Wechat.AccessToken:a:c1", "t1", 7200);
+        await store.SetAccessTokenAsync("Wechat.AccessToken:a:c2", "t2", 7200);
+
+        await manager.InvalidateTokenAsync("a", WechatTokenTypes.AccessToken, Array.Empty<string>());
+
+        (await store.GetTokenTypesAsync()).Should().BeEmpty(
+            "M7：scopes=[] 与 null 同义（「全部」）是既有语义，保持不变");
+    }
+
+    // ---------------------------------------------------------------- M1（F1）：装配失败异常面
+
+    [Fact]
+    public void GetApp_ShouldPropagateOriginalException_WhenAssemblyFailsMidway()
+    {
+        // 裸 DI（无 IHttpClientFactory）：第三方应用装配在认证客户端创建点确定性失败；
+        // M1 的 catch 不得吞掉/替换原始异常（tracker 回收后 throw; 原样重抛）。
+        var services = new ServiceCollection().AddLogging();
+        using var provider = services.BuildServiceProvider();
+        using var manager = new WechatAppManager(
+            provider, new[] { SuiteConfig("suite-app") }, NullLogger<WechatAppManager>.Instance);
+
+        var act = () => manager.GetApp("suite-app");
+        act.Should().Throw<InvalidOperationException>("装配中途失败的原始异常必须原样传播");
+    }
+
+    // ---------------------------------------------------------------- M3（F3）：停机排空链路（fake 上下文）
+
+    [Fact]
+    public void RemoveApp_ShouldDisposeRetiredContext_OnManagerDispose()
+    {
+        var manager = new FakeContextAppManager(InternalConfig("a", isDefault: true), InternalConfig("b"));
+
+        manager.GetApp("a");
+        var retired = manager.CreatedContexts["a"];
+
+        manager.RemoveApp("a").Should().BeTrue();
+        manager.Dispose();
+
+        retired.Verify(c => c.Dispose(), Times.Once,
+            "RemoveApp 入队退役的上下文必须在管理器停机排空时确定性释放（P1-9 停机路径）");
+    }
+
+    /// <summary>返回 fake 上下文的测试管理器（隔离真实装配链，专测注册表/退役链路）。</summary>
+    private sealed class FakeContextAppManager : WechatAppManager
+    {
+        public FakeContextAppManager(params WechatAppConfig[] configs)
+            : base(new ServiceCollection().AddLogging().BuildServiceProvider(), configs, NullLogger<WechatAppManager>.Instance)
+        {
+        }
+
+        public Dictionary<string, Mock<IWechatAppContext>> CreatedContexts { get; } = new();
+
+        protected override IWechatAppContext CreateAppContext(WechatAppConfig config)
+        {
+            var mock = new Mock<IWechatAppContext>();
+            mock.SetupGet(c => c.AppKey).Returns(config.AppKey);
+            CreatedContexts[config.AppKey] = mock;
+            return mock.Object;
+        }
+    }
+
+    // ---------------------------------------------------------------- W1（M10）：批量删除能力探测与回退
+
+    [Fact]
+    public async Task PurgeAppTokensAsync_ShouldUseBatchRemove_WhenStoreSupportsCapability()
+    {
+        using var manager = CreateManager(InternalConfig("a"), InternalConfig("b"));
+        var store = _provider!.GetRequiredService<IWechatTokenStore>();
+        store.Should().BeAssignableTo<IWechatTokenStoreBatchRemove>(
+            "W1：默认内存仓储必须实现批量能力接口");
+        await store.SetAccessTokenAsync("Wechat.AccessToken:a:default", "token-a", 7200);
+
+        var removed = await manager.PurgeAppTokensAsync("a");
+
+        removed.Should().Be(1, "能力探测命中批量路径（InMemory 逐键即等价批量）");
+        (await store.GetTokenTypesAsync()).Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task PurgeAppTokensAsync_ShouldFallbackToPerKeyRemoval_WhenStoreLacksBatchCapability()
+    {
+        var legacyStore = new LegacyTokenStoreWithoutBatch();
+        _services.AddSingleton<IWechatTokenStore>(legacyStore);
+        using var manager = CreateManager(InternalConfig("a"), InternalConfig("b"));
+        await legacyStore.SetAccessTokenAsync("Wechat.AccessToken:a:default", "token-a", 7200);
+        await legacyStore.SetAccessTokenAsync("Wechat.AccessToken:b:default", "token-b", 7200);
+
+        var removed = await manager.PurgeAppTokensAsync("a");
+
+        removed.Should().Be(1, "W1：未实现批量能力的仓储必须回退逐键删除（行为等价）");
+        (await legacyStore.GetTokenTypesAsync()).Should().Equal(new[] { "Wechat.AccessToken:b:default" });
+    }
+
+    /// <summary>不实现批量能力接口的遗留仓储替身（验证能力探测回退路径）。</summary>
+    private sealed class LegacyTokenStoreWithoutBatch : IWechatTokenStore
+    {
+        private readonly InMemoryWechatTokenStore _inner = new();
+
+        public Task<string?> GetAccessTokenAsync(string tokenType, CancellationToken cancellationToken = default)
+            => _inner.GetAccessTokenAsync(tokenType, cancellationToken);
+
+        public Task SetAccessTokenAsync(string tokenType, string accessToken, long expiresInSeconds, CancellationToken cancellationToken = default)
+            => _inner.SetAccessTokenAsync(tokenType, accessToken, expiresInSeconds, cancellationToken);
+
+        public Task<string?> GetRefreshTokenAsync(string tokenType, CancellationToken cancellationToken = default)
+            => _inner.GetRefreshTokenAsync(tokenType, cancellationToken);
+
+        public Task SetRefreshTokenAsync(string tokenType, string refreshToken, CancellationToken cancellationToken = default)
+            => _inner.SetRefreshTokenAsync(tokenType, refreshToken, cancellationToken);
+
+        public Task RemoveAsync(string tokenType, CancellationToken cancellationToken = default)
+            => _inner.RemoveAsync(tokenType, cancellationToken);
+
+        public Task<IEnumerable<string>> GetTokenTypesAsync(CancellationToken cancellationToken = default)
+            => _inner.GetTokenTypesAsync(cancellationToken);
+
+        public Task ClearAsync(CancellationToken cancellationToken = default)
+            => _inner.ClearAsync(cancellationToken);
     }
 
     public void Dispose()

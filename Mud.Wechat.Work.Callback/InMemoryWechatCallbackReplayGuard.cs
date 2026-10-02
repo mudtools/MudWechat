@@ -18,13 +18,19 @@ namespace Mud.Wechat.Work.Callback;
 /// 「并发同键只有一个调用者获得 <c>true</c>」。
 /// </para>
 /// <para>
-/// 过期回收为<b>机会式</b>（每 <see cref="CleanupInterval"/> 次写入触发一次全量清理），
-/// 避免长时间运行下无界增长，同时不引入后台线程/定时器（多实例部署由宿主替换为分布式实现）。
+/// 过期回收为<b>机会式</b>（P2-1：触发间隔随存量自适应 <c>Max(64, Count/16)</c>，高存量下
+/// 降低全量扫描频率，避免清理风暴），不引入后台线程/定时器（多实例部署由宿主替换为分布式实现）。
+/// </para>
+/// <para>
+/// 语义安全：过期但未清理的条目<b>不可能</b>误拒合法新报文——指纹含 timestamp，指纹相同 ⇒
+/// timestamp 相同 ⇒ 该报文必已被时间窗闸（±300s）拒绝；时间窗内的合法重试在保留窗口过期前到达，
+/// 不受清理节奏影响。
 /// </para>
 /// </remarks>
 public sealed class InMemoryWechatCallbackReplayGuard : IWechatCallbackReplayGuard
 {
-    private const int CleanupInterval = 64;
+    /// <summary>触发全量清理的最小写入间隔（存量 <c>&lt; 1024</c> 条时恒为该值）。</summary>
+    private const int MinCleanupInterval = 64;
 
     private readonly ConcurrentDictionary<string, long> _seen = new(StringComparer.Ordinal);
     private int _writes;
@@ -46,7 +52,10 @@ public sealed class InMemoryWechatCallbackReplayGuard : IWechatCallbackReplayGua
             return Task.FromResult(false);
         }
 
-        if (Interlocked.Increment(ref _writes) % CleanupInterval == 0)
+        // P2-1：触发间隔随存量自适应——1000 QPS、30 万存量时约每 1.9 万次写入（≈19s）扫描一次，
+        // 均摊成本从「每 64 次写入扫 30 万条」降为可忽略。
+        var interval = Math.Max(MinCleanupInterval, _seen.Count / 16);
+        if (Interlocked.Increment(ref _writes) % interval == 0)
         {
             Cleanup(nowMs);
         }

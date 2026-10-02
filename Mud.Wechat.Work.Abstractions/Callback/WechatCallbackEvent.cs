@@ -46,6 +46,9 @@ public class WechatCallbackEvent
     /// <summary>应用 AgentId（AgentID 节点；通讯录同步助手回调不带）。</summary>
     public string? AgentID { get; set; }
 
+    /// <summary>上下游空间 id（ChainId 节点；仅上下游变更族 change_chain 携带，官方 95796）。</summary>
+    public string? ChainId { get; set; }
+
     // ——— 授权族（既有字段，语义不变） ———
 
     /// <summary>事件类型（解密后 XML 的 InfoType 节点：suite_ticket / change_auth / cancel_auth / create_auth 等）。</summary>
@@ -55,6 +58,7 @@ public class WechatCallbackEvent
     public string? SuiteId { get; set; }
 
     /// <summary>最新推送的 suite_ticket（InfoType = suite_ticket 时非空）。</summary>
+    /// <remarks><b>敏感凭据</b>：不得写入日志、遥测或异常消息（驱动 <c>get_suite_token</c> 换取套件令牌）。</remarks>
     public string? SuiteTicket { get; set; }
 
     /// <summary>授权方（企业）CorpId（AuthCorpId 节点；部分事件模板中为 FromUserName）。</summary>
@@ -67,11 +71,16 @@ public class WechatCallbackEvent
     public string? AuthCorpId { get; set; }
 
     /// <summary>临时授权码（InfoType = create_auth 时非空，用于 get_permanent_code 换取永久授权码）。</summary>
+    /// <remarks><b>敏感凭据</b>：不得写入日志、遥测或异常消息（10 分钟有效且一次性，P0-2 补偿面依赖）。</remarks>
     public string? AuthCode { get; set; }
 
     // ——— 原始载体 ———
 
     /// <summary>解密后的原始 XML 明文（供业务侧经 <c>WechatCallbackEventParser</c> 解析扩展字段）。</summary>
+    /// <remarks>
+    /// <b>敏感凭据</b>：可能包含 <see cref="SuiteTicket"/> / <see cref="AuthCode"/> 等凭据节点，
+    /// 不得整体写入日志、遥测或异常消息（与 <c>encoding_aeskey</c> 同款警示）。
+    /// </remarks>
     public string? DecryptedXml { get; set; }
 
     /// <summary>时间戳（URL 查询参数，验签用）。</summary>
@@ -132,6 +141,12 @@ public class WechatCallbackEvent
     /// <summary>是否为通讯录变更事件（Event = change_contact；具体变更类别看 <see cref="ChangeType"/>）。</summary>
     public bool IsChangeContact =>
         string.Equals(Event, WechatCallbackEventTypes.ChangeContact, StringComparison.Ordinal);
+
+    /// <summary>是否为上下游变更事件（Event = change_chain；具体变更类别看 <see cref="ChangeType"/>，官方 95796）。</summary>
+    /// <remarks>仅自建应用可配置接收（配置到「上下游-可调用接口的应用」并开启「上下游变更回调」）；
+    /// 由上下游系统应用触发的变更不回调。</remarks>
+    public bool IsChangeChain =>
+        string.Equals(Event, WechatCallbackEventTypes.ChangeChain, StringComparison.Ordinal);
 
     /// <summary>是否为异步任务完成事件（Event = batch_job_result）。</summary>
     public bool IsBatchJobResult =>

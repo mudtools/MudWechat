@@ -27,16 +27,24 @@ internal sealed class WechatAppContextRetirement : IDisposable
     private readonly ILogger _logger;
     private readonly ConcurrentQueue<WechatRetirementEntry> _queue = new();
     private readonly Timer? _pumpTimer;
+    // M5（F5）：脱泵执行的清库任务飞行登记（停机排空的等待对象）。
+    private readonly ConcurrentDictionary<Task, byte> _inFlightCleanups = new();
+    // MR11：停机限时为构造参数（默认 5s），测试注入短超时可测化。
+    private readonly TimeSpan _stopDrainTimeout;
     private int _pumping;
     private int _disposed;
 
     /// <summary>创建退役队列。</summary>
     /// <param name="retireDelaySeconds">宽限期（秒）；&lt;= 0 表示立即执行。</param>
     /// <param name="logger">日志器。</param>
-    public WechatAppContextRetirement(int retireDelaySeconds, ILogger logger)
+    /// <param name="stopDrainTimeout">停机排空的限时（默认 5s）；&lt;= 0 时回退默认值。</param>
+    public WechatAppContextRetirement(int retireDelaySeconds, ILogger logger, TimeSpan? stopDrainTimeout = null)
     {
         _retireDelay = TimeSpan.FromSeconds(Math.Max(0, retireDelaySeconds));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _stopDrainTimeout = stopDrainTimeout.HasValue && stopDrainTimeout.Value > TimeSpan.Zero
+            ? stopDrainTimeout.Value
+            : TimeSpan.FromSeconds(5);
 
         if (_retireDelay > TimeSpan.Zero)
         {
@@ -53,6 +61,15 @@ internal sealed class WechatAppContextRetirement : IDisposable
     {
         if (context is null)
         {
+            return;
+        }
+
+        // M3（F3）：停机后到达的入队请求——队列已停摆（Timer 已 Dispose、无人再 Pump）且上下文
+        // 已脱离 _lazyContexts（RemoveApp 先 TryRemove），不入队即永久泄漏；立即 Dispose 与
+        // 管理器停机「立即释放全部物化上下文」语义一致。
+        if (_disposed != 0)
+        {
+            context.Dispose();
             return;
         }
 
@@ -77,13 +94,16 @@ internal sealed class WechatAppContextRetirement : IDisposable
 
         if (_disposed != 0)
         {
+            // M3（F3）：停机后丢弃下线清库任务——令牌随 TTL 过期（与既有「清库失败」同一兜底口径）。
+            _logger.LogDebug("停机后丢弃应用 {AppKey} 的下线清库任务（令牌将随 TTL 过期）。", appKey);
             return;
         }
 
         if (_retireDelay <= TimeSpan.Zero || _pumpTimer == null)
         {
-            // 无巡检泵（宽限期为 0 或计时器不可用）：fire-and-forget + 异常观察，避免 sync-over-async。
-            _ = RunCleanupAsync(appKey, cleanup);
+            // 无巡检泵（宽限期为 0 或计时器不可用）：脱泵 fire-and-forget + 异常观察，避免 sync-over-async。
+            // M5（F5）：改走 StartCleanup 纳入飞行登记，停机排空可见。
+            StartCleanup(appKey, cleanup);
             return;
         }
 
@@ -92,8 +112,16 @@ internal sealed class WechatAppContextRetirement : IDisposable
 
     private DateTimeOffset DueAt() => DateTimeOffset.UtcNow + _retireDelay;
 
-    private async void Pump(object? state)
+    // M5 后循环体内不再有 await（清库脱泵、上下文同步处置）：泵回调退化为纯同步分派，
+    // try/catch 全包裹保留为兜底（P2-8：任何逃逸异常都会击穿进程）。
+    private void Pump(object? state)
     {
+        // M5（MR6）：停机后泵已停摆，早退避免空转（与 Dispose 的排空互不干扰）。
+        if (_disposed != 0)
+        {
+            return;
+        }
+
         // P2-8：Timer 回调可重入；未完成时直接跳过本轮，避免并发释放同一批条目。
         if (Interlocked.CompareExchange(ref _pumping, 1, 0) != 0)
         {
@@ -118,19 +146,36 @@ internal sealed class WechatAppContextRetirement : IDisposable
 
                 if (entry.Cleanup != null)
                 {
-                    await RunCleanupAsync(entry.AppKey, entry.Cleanup).ConfigureAwait(false);
+                    // M5（F5）：清库脱泵 fire-and-forget——慢/悬挂存储不得阻塞同队列后续上下文的
+                    // 确定性 Dispose（上下文持 Timer 根引用）；RunCleanupAsync 自身全捕获异常，
+                    // fire-and-forget 无未观察异常面。清库 CancellationToken 维持 None（无取消源可接，
+                    // 停机放弃等待即事实取消）。
+                    StartCleanup(entry.AppKey, entry.Cleanup);
+                    continue;
                 }
             }
         }
         catch (Exception ex)
         {
             // async void：任何逃逸异常都会击穿进程，必须全包裹兜底。
-            _logger.LogWarning(ex, "应用上下文退役巡检发生异常（本轮已中止，下轮重试）。");
+            // M9（F9）：文案如实化——条目已出队、清库任务失败不重试（RunCleanupAsync 吞失败仅告警），
+            // 令牌随 TTL 过期；「下轮重试」仅对本轮剩余在队条目成立。
+            _logger.LogWarning(ex, "应用上下文退役巡检发生异常（本轮已中止；清库任务失败不重试，令牌随 TTL 过期）。");
         }
         finally
         {
             Interlocked.Exchange(ref _pumping, 0);
         }
+    }
+
+    /// <summary>
+    /// 起飞一个脱明清库任务并登记飞行状态（完成时自动摘除），供停机排空限时等待。
+    /// </summary>
+    private void StartCleanup(string appKey, Func<CancellationToken, Task> cleanup)
+    {
+        var task = RunCleanupAsync(appKey, cleanup);
+        _inFlightCleanups[task] = byte.MinValue;
+        _ = task.ContinueWith(t => _inFlightCleanups.TryRemove(t, out _), TaskScheduler.Default);
     }
 
     private void DisposeContext(WechatRetirementEntry entry)
@@ -169,7 +214,9 @@ internal sealed class WechatAppContextRetirement : IDisposable
 
         _pumpTimer?.Dispose();
 
-        // 立即释放全部在队条目（管理器停机路径）：上下文确定性 Dispose，清理任务同步等待（停机期允许阻塞）。
+        // 立即处置全部在队条目（管理器停机路径）：上下文确定性 Dispose；
+        // M5（F5/MR6）：清库条目先起飞（在队条目尚无 task 可等待），随后与飞行任务一并限时排空——
+        // 存储悬挂不再无限阻塞进程退出；被放弃的清库与「清库失败」同一兜底：令牌随 TTL 过期。
         while (_queue.TryDequeue(out var entry))
         {
             if (entry.Context != null)
@@ -180,14 +227,25 @@ internal sealed class WechatAppContextRetirement : IDisposable
 
             if (entry.Cleanup != null)
             {
-                try
+                StartCleanup(entry.AppKey, entry.Cleanup);
+            }
+        }
+
+        foreach (var task in _inFlightCleanups.Keys.ToArray())
+        {
+            try
+            {
+                if (!task.Wait(_stopDrainTimeout))
                 {
-                    entry.Cleanup(CancellationToken.None).GetAwaiter().GetResult();
+                    _logger.LogWarning(
+                        "停机等待退役清库任务超时（{TimeoutMs}ms），放弃等待（令牌将随 TTL 过期）。",
+                        (int)_stopDrainTimeout.TotalMilliseconds);
                 }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning(ex, "停机执行退役清理任务失败（AppKey: {AppKey}）。", entry.AppKey);
-                }
+            }
+            catch (Exception ex)
+            {
+                // RunCleanupAsync 全捕获异常，Wait 原则上不抛；防御性兜底（任务取消等极端形态）。
+                _logger.LogWarning(ex, "停机等待退役清库任务失败。");
             }
         }
     }

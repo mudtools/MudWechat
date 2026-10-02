@@ -89,4 +89,95 @@ public class WechatAppContextRetirementTests
         ran.Should().BeTrue("停机路径必须确定性执行在队清理任务（不等待宽限期）");
         await Task.CompletedTask;
     }
+
+    // ---------------------------------------------------------------- M3（F3）：停机竞态闸
+
+    [Fact]
+    public void Enqueue_ShouldDisposeContextImmediately_AfterDispose()
+    {
+        var retirement = new WechatAppContextRetirement(300, NullLogger.Instance);
+        var context = new Mock<IWechatAppContext>();
+
+        retirement.Dispose();
+        retirement.Enqueue("a", context.Object);
+
+        // M3：停机后队列已停摆且上下文已脱离注册表，不入队即永久泄漏——立即 Dispose 兜底。
+        context.Verify(c => c.Dispose(), Times.Once, "停机后到达的入队必须立即确定性释放（F3 停机竞态闸）");
+    }
+
+    [Fact]
+    public void Enqueue_ShouldNotEnqueue_WhenDisposed_ContextNull()
+    {
+        var retirement = new WechatAppContextRetirement(300, NullLogger.Instance);
+        retirement.Dispose();
+
+        var act = () => retirement.Enqueue("a", null!);
+        act.Should().NotThrow("null 上下文入队为安全空操作");
+    }
+
+    // ---------------------------------------------------------------- M5（F5）：清库脱泵 + 停机限时排空
+
+    [Fact]
+    public async Task Pump_ShouldNotBlockSubsequentContextEntries_WhenCleanupSlow()
+    {
+        using var retirement = new WechatAppContextRetirement(1, NullLogger.Instance);
+        var cleanupGate = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var contextDisposed = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var context = new Mock<IWechatAppContext>();
+        context.Setup(c => c.Dispose()).Callback(() => contextDisposed.TrySetResult(true));
+
+        // 两条目同时到期：慢清库在前、上下文在后。旧实现泵内联 await 清库 ⇒ 上下文 Dispose 被阻塞；
+        // M5 后清库脱泵，同一轮巡检内上下文条目即被处置。
+        retirement.EnqueueCleanup("slow", _ => cleanupGate.Task);
+        retirement.Enqueue("a", context.Object);
+
+        (await WaitAsync(contextDisposed.Task, timeoutMs: 8000)).Should().BeTrue(
+            "慢/悬挂清库不得阻塞同队列后续上下文的确定性 Dispose（F5）");
+        context.Verify(c => c.Dispose(), Times.Once);
+
+        // 收尾放行挂起的清库任务，避免测试残留飞行任务。
+        cleanupGate.TrySetResult(true);
+    }
+
+    [Fact]
+    public async Task Dispose_ShouldReturnWithinInjectedTimeout_WhenCleanupHangs()
+    {
+        var retirement = new WechatAppContextRetirement(300, NullLogger.Instance, TimeSpan.FromMilliseconds(200));
+        var cleanupGate = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        // 宽限期 300s ⇒ 清库在队（未起飞）；停机排空先起飞再限时等待（MR6）。
+        retirement.EnqueueCleanup("hang", _ => cleanupGate.Task);
+
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        retirement.Dispose();
+        sw.Stop();
+
+        sw.Elapsed.Should().BeLessThan(TimeSpan.FromSeconds(5),
+            "MR11：停机限时（注入 200ms）内必须返回，存储悬挂不得阻塞进程退出");
+        sw.Elapsed.Should().BeGreaterOrEqualTo(TimeSpan.FromMilliseconds(180),
+            "停机排空应实际等待注入的限时（起飞 + Wait）");
+
+        // 收尾放行挂起的清库任务。
+        cleanupGate.TrySetResult(true);
+        await Task.CompletedTask;
+    }
+
+    [Fact]
+    public async Task Dispose_ShouldReleaseQueuedContext_AndWaitInFlightCleanup()
+    {
+        var retirement = new WechatAppContextRetirement(300, NullLogger.Instance, TimeSpan.FromSeconds(2));
+        var context = new Mock<IWechatAppContext>();
+        var cleanupDone = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        retirement.Enqueue("a", context.Object);
+        retirement.EnqueueCleanup("a", _ => cleanupDone.Task);
+
+        retirement.Dispose();
+
+        context.Verify(c => c.Dispose(), Times.Once, "停机排空必须确定性释放在队上下文");
+        cleanupDone.Task.IsCompleted.Should().BeFalse("本用例的清库任务为悬挂形态，仅验证限时等待不抛");
+
+        cleanupDone.TrySetResult(true);
+        await Task.CompletedTask;
+    }
 }

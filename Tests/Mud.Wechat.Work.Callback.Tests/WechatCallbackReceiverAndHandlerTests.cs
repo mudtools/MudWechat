@@ -10,7 +10,7 @@ using Mud.Wechat.Work.Abstractions.Authentication.Models;
 namespace Mud.Wechat.Work.Callback.Tests;
 
 /// <summary>
-/// 回调接收与事件分发测试：抗重放（时效窗口 + 一次性标记）、suite_ticket 入库、
+/// 回调接收与事件分发测试：抗重放（时效窗口 + 一次性指纹）、指纹闸后移（P1-1）、suite_ticket 入库、
 /// cancel_auth/change_auth 的 SuiteId 命中集清理与级联失效（详细设计 §18.4；P0-2 / P0-3）。
 /// v1.2：配置迁移到 <see cref="WechatCallbackOptions.Apps"/> 多应用形态（通配键承接），
 /// 信封扩展（通讯录变更/异步任务）与 D10 兜底修正同批覆盖。
@@ -174,6 +174,17 @@ public class WechatCallbackReceiverAndHandlerTests
 
         var act = async () => await receiver.ReceiveAsync(AppKey, QueryFor(encrypt, Now(), NewNonce()), body);
         await act.Should().NotThrowAsync("未配置接收方 ID 时跳过 receiveid 校验（仅一次性告警，通讯录同步助手形态）");
+    }
+
+    [Fact]
+    public async Task ReceiveAsync_ShouldSkipReceiveIdCheck_WhenPlaintextReceiveIdEmpty()
+    {
+        // P3-2：明文未携带 receiveid（官方「个人主体第三方为空串」形态，90968）时跳过校验。
+        var receiver = CreateReceiver();
+        var (encrypt, body) = EncryptBody("<xml><InfoType>suite_ticket</InfoType></xml>", receiveId: string.Empty);
+
+        var act = async () => await receiver.ReceiveAsync(AppKey, QueryFor(encrypt, Now(), NewNonce()), body);
+        await act.Should().NotThrowAsync("明文 receiveid 为空时跳过校验（个人主体第三方兼容）");
     }
 
     // ---------------------------------------------------------------- 多应用凭据（v1.2）

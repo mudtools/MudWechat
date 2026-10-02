@@ -68,6 +68,18 @@ public interface IWechatAppManager : IAppManager<IWechatAppContext>
     IWechatCorpTokenManager DefaultCorpTokenManager { get; }
 
     /// <summary>
+    /// 获取已<b>实例化</b>的应用上下文（懒加载语义：未访问过的应用不在此列）。
+    /// </summary>
+    /// <returns>已实例化应用上下文的集合。</returns>
+    /// <remarks>
+    /// M6（F6）：重声明组件 <c>IAppManager{TAppContext}.GetAllApps</c>「所有已注册上下文」的表述
+    /// ——本方法只返回已实例化的上下文，刻意不批量物化（D6 懒加载不变量）。
+    /// 需要全部已配置应用时配合 <see cref="ConfiguredAppKeys"/> / <see cref="ConfiguredConfigs"/>
+    /// （配置面读取不触发实例化）。
+    /// </remarks>
+    new IEnumerable<IWechatAppContext> GetAllApps();
+
+    /// <summary>
     /// 级联失效指定应用的指定类型令牌（内存 + 持久化 Store 双清，对齐 TMA-01）。
     /// </summary>
     /// <param name="appKey">应用键。</param>

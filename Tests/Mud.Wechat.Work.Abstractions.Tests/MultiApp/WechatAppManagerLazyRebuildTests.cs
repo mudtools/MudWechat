@@ -5,6 +5,7 @@
 //  不得利用本项目从事危害国家安全、扰乱社会秩序、侵犯他人合法权益等法律法规禁止的活动！任何基于本项目开发而产生的一切法律纠纷和责任，我们不承担任何责任！
 // -----------------------------------------------------------------------
 
+using System.Net.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Mud.Wechat.Work.Abstractions.Authentication;
 using Mud.Wechat.Work.Abstractions.Authentication.MultiApp;
@@ -59,7 +60,7 @@ public class WechatAppManagerLazyRebuildTests
     public void GetApp_ShouldRebuildLazy_WhenTransientInitFailure()
     {
         using var manager = new FlakyAppManager(
-            attempt => attempt == 1 ? new InvalidOperationException("transient-init") : null,
+            attempt => attempt == 1 ? new HttpRequestException("transient-io") : null,
             Config("a"));
 
         var context = manager.GetApp("a");
@@ -80,14 +81,27 @@ public class WechatAppManagerLazyRebuildTests
     }
 
     [Fact]
+    public void GetApp_ShouldNotRebuild_WhenDiResolutionFails()
+    {
+        // M4（F4）：IOE 不再属瞬时白名单——装配路径的 IOE 全是 DI 确定性失败（GetRequiredService /
+        // 命名客户端缺失），留白名单会把配置错误伪装成可重试并驱动 5s 节流的反复重建（叠加 F1 即慢性泄漏）。
+        using var manager = new FlakyAppManager(_ => new InvalidOperationException("di-resolution-failed"), Config("a"));
+
+        var act = () => manager.GetApp("a");
+
+        act.Should().Throw<InvalidOperationException>("DI 确定性失败直抛原异常（异常类型与消息不变）");
+        manager.CreateCount.Should().Be(1, "确定性失败不重建、不重置 Lazy");
+    }
+
+    [Fact]
     public void GetApp_ShouldThrottleRebuild_WhenTransientFailurePersists()
     {
-        using var manager = new FlakyAppManager(_ => new InvalidOperationException("still-down"), Config("a"));
+        using var manager = new FlakyAppManager(_ => new HttpRequestException("still-down"), Config("a"));
 
         for (var i = 0; i < 3; i++)
         {
             var act = () => manager.GetApp("a");
-            act.Should().Throw<InvalidOperationException>();
+            act.Should().Throw<HttpRequestException>();
         }
 
         manager.CreateCount.Should().Be(2,

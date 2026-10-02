@@ -20,6 +20,11 @@ namespace Mud.Wechat.Work.Callback;
 /// 项目未发布，旧的单体顶层字段（PushToken/PushEncodingAESKey/CorpId）已删除，不做兼容垫片。
 /// </para>
 /// <para>
+/// <b>多套件（第三方应用 / 服务商代开发）</b>：每个套件（或企业自建应用）各登记一个 <see cref="Apps"/> 条目——
+/// 多套件宿主在 <c>AddWechatCallback</c> 的配置委托里逐套件写入独立 Token / AESKey / 接收方 ID，
+/// 路由由中间件按 <c>/{GlobalRoutePrefix}/{AppKey}</c> 路径段选取；<b>无单/多套件模式之分</b>。
+/// </para>
+/// <para>
 /// 原主配置中的 <c>PushEncodingAESKey</c> / <c>PushToken</c> 迁入本配置
 /// （回调推送密钥属回调运维面，不进主配置，见产品规划 §7.1 / 详细设计 §8.4）。
 /// 应用级配置类 <see cref="WechatAppCallbackOptions"/> 与本类<b>同类文件</b>放置——
@@ -153,7 +158,8 @@ public class WechatAppCallbackOptions
     /// </para>
     /// <para>
     /// 消费点：非空时接收器会校验解密明文的 <c>receiveid</c> 与本值一致，不一致即拒绝；
-    /// 留空则跳过校验并输出一次性告警。
+    /// 留空则跳过校验并输出一次性告警；<b>明文未携带 receiveid</b> 时同样跳过校验并一次性告警
+    /// （兼容官方「个人主体第三方为空串」形态，90968）。
     /// </para>
     /// </remarks>
     public string CorpId { get; set; } = string.Empty;

@@ -10,7 +10,8 @@ namespace Mud.Wechat.Work.Abstractions.Authentication.TokenManager;
 /// <summary>
 /// <see cref="IWechatTokenStore"/> 的进程内默认实现（并发字典 + 绝对过期判定）。
 /// </summary>
-public sealed class InMemoryWechatTokenStore : IWechatTokenStore
+/// <remarks>W1（M10）：进程内逐键删除即等价批量，直接实现批量能力接口（管理器探测后走一次提交）。</remarks>
+public sealed class InMemoryWechatTokenStore : IWechatTokenStoreBatchRemove
 {
     private sealed class StoreEntry
     {
@@ -76,6 +77,21 @@ public sealed class InMemoryWechatTokenStore : IWechatTokenStore
     {
         _entries.Clear();
         return Task.CompletedTask;
+    }
+
+    /// <inheritdoc />
+    public Task<int> RemoveRangeAsync(IReadOnlyCollection<string> keys, CancellationToken cancellationToken = default)
+    {
+        var removed = 0;
+        foreach (var key in keys)
+        {
+            if (key != null && _entries.TryRemove(key, out _))
+            {
+                removed++;
+            }
+        }
+
+        return Task.FromResult(removed);
     }
 
     private static long NowMs() => DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();

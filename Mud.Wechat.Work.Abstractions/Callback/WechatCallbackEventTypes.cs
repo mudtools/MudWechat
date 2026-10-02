@@ -71,6 +71,39 @@ public static class WechatCallbackEventTypes
 
     // ——— 异步任务族（Event） ———
 
-    /// <summary>异步任务完成通知（JobType：sync_user / replace_user / invite_user / replace_party）。</summary>
+    /// <summary>异步任务完成通知（JobType：sync_user / replace_user / invite_user / replace_party /
+    /// import_chain_contact——上下游联系人导入，报文字段包在 BatchJob 节点内）。</summary>
     public const string BatchJobResult = "batch_job_result";
+
+    // ——— 上下游族（官方 95796；Event = ChangeChain，仅自建应用可配置接收） ———
+
+    /// <summary>上下游变更事件的 <c>Event</c> 信封值（具体变更类别看 ChangeType）。</summary>
+    public const string ChangeChain = "change_chain";
+
+    /// <summary>创建上下游空间。</summary>
+    public const string CreateChain = "create_chain";
+
+    /// <summary>更新上下游空间。</summary>
+    public const string UpdateChain = "update_chain";
+
+    /// <summary>删除上下游空间。</summary>
+    public const string DeleteChain = "delete_chain";
+
+    /// <summary>新增上下游分组（携带 GroupIds 分组 id 列表）。</summary>
+    public const string CreateGroup = "create_group";
+
+    /// <summary>更新上下游分组（携带 GroupIds）。</summary>
+    public const string UpdateGroup = "update_group";
+
+    /// <summary>删除上下游分组（携带 GroupIds）。</summary>
+    public const string DeleteGroup = "delete_group";
+
+    /// <summary>企业加入上下游（携带 CorpIds 企业 id 列表；仅已加入上下游的企业会产生对应事件）。</summary>
+    public const string CorpJoin = "corp_join";
+
+    /// <summary>更新企业（变更企业分组时触发；携带 CorpIds）。</summary>
+    public const string UpdateCorp = "update_corp";
+
+    /// <summary>移除企业（携带 CorpIds）。</summary>
+    public const string RemoveCorp = "remove_corp";
 }

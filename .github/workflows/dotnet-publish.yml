@@ -426,14 +426,14 @@ jobs:
       - name: Pack NuGet package
         run: dotnet pack ${{ env.SOLUTION_FILE }} --configuration ${{ env.CONFIGURATION }} --output ./nupkg --no-build
 
-      # 制品数量守卫：源项目为 4 个（Work / Work.Abstractions / Work.Callback / Work.DataModels）。
+      # 制品数量守卫：源项目为 5 个（Work / Work.Abstractions / Work.Callback / Work.DataModels / Redis）。
       # 少包通常意味着某个 csproj 被误设为不可打包（或 slnx 漏项），此处 fail-closed 而非静默发漏包。
       - name: Verify package count
         run: |
           COUNT=$(ls -1 ./nupkg/*.nupkg 2>/dev/null | wc -l)
           echo "生成 nupkg 数量：$COUNT"
-          if [ "$COUNT" -ne 4 ]; then
-            echo "::error::期望 4 个 nupkg（Work / Work.Abstractions / Work.Callback / Work.DataModels），实际 $COUNT 个。"
+          if [ "$COUNT" -ne 5 ]; then
+            echo "::error::期望 5 个 nupkg（Work / Work.Abstractions / Work.Callback / Work.DataModels / Redis），实际 $COUNT 个。"
             ls -1 ./nupkg || true
             exit 1
           fi

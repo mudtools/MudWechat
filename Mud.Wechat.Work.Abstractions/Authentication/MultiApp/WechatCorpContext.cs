@@ -38,10 +38,26 @@ public static class WechatCorpContext
 
     /// <summary>设置当前异步流的代操作企业与永久授权码。</summary>
     /// <param name="appKey">归属应用键；传 null 表示不声明归属（不参与归属校验）。</param>
-    /// <param name="authCorpId">授权方（企业）CorpId。</param>
+    /// <param name="authCorpId">授权方（企业）CorpId；null 或空白即抛（M7：企业令牌 scope 的唯一来源，不得缺省）。</param>
     /// <param name="permanentCode">该企业的永久授权码（可为 null，缺省时由仓储提供）。</param>
+    /// <exception cref="ArgumentNullException"><paramref name="authCorpId"/> 为 <c>null</c>。</exception>
+    /// <exception cref="ArgumentException"><paramref name="authCorpId"/> 为空白字符串。</exception>
     public static void SetCorp(string? appKey, string authCorpId, string? permanentCode)
     {
+        // M7（F7）：authCorpId 是企业令牌 scope 的唯一来源——空白值会延迟到首次令牌刷新才报错
+        //（CorpTokenManager 要求以 authCorpId 作为 scope），跨异步流后难以归因。
+        // 与 appKey=null（未声明归属，既有语义）显式区分：authCorpId 无「未声明」语义；
+        // 空白串（MR9）同样无法成为合法 scope，统一拒。
+        if (authCorpId == null)
+        {
+            throw new ArgumentNullException(nameof(authCorpId));
+        }
+
+        if (string.IsNullOrWhiteSpace(authCorpId))
+        {
+            throw new ArgumentException("authCorpId 不能为空或空白字符串。", nameof(authCorpId));
+        }
+
         AppKeyCurrent.Value = appKey;
         AuthCorpIdCurrent.Value = authCorpId;
         PermanentCodeCurrent.Value = permanentCode;

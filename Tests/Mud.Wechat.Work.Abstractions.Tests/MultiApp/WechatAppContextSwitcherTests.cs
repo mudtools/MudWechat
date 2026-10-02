@@ -148,6 +148,53 @@ public class WechatAppContextSwitcherTests
         }
     }
 
+    // ---------------------------------------------------------------- M7（F7）：SetCorp 参数前置校验
+
+    [Fact]
+    public void SetCorp_ShouldThrowArgumentNullException_WhenAuthCorpIdNull()
+    {
+        var act = () => WechatCorpContext.SetCorp(null, null!, null);
+        act.Should().Throw<ArgumentNullException>(
+            "M7：authCorpId 是企业令牌 scope 的唯一来源，null 不得延迟到首次令牌刷新才报错");
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("  ")]
+    [InlineData("\t")]
+    public void SetCorp_ShouldThrowArgumentException_WhenAuthCorpIdBlank(string authCorpId)
+    {
+        var act = () => WechatCorpContext.SetCorp("app-a", authCorpId, null);
+        act.Should().Throw<ArgumentException>("M7/MR9：空白 CorpId 无法成为合法 scope，写入点即拒");
+    }
+
+    [Fact]
+    public void SetCorp_ShouldKeepUnDeclaredOwnershipSemantics_WhenAppKeyNull()
+    {
+        try
+        {
+            WechatCorpContext.SetCorp(null, "corp-1", "pc-1");
+
+            WechatCorpContext.AppKey.Should().BeNull("appKey=null「未声明归属」语义保持（M7 校验不得波及）");
+            WechatCorpContext.AuthCorpId.Should().Be("corp-1");
+            WechatCorpContext.PermanentCode.Should().Be("pc-1");
+        }
+        finally
+        {
+            WechatCorpContext.Clear();
+        }
+    }
+
+    [Fact]
+    public void BeginCorpScope_ShouldValidateAuthCorpId_SameAsSetCorp()
+    {
+        var act = () => WechatCorpContext.BeginCorpScope("app-a", "  ");
+        act.Should().Throw<ArgumentException>("BeginCorpScope 经 SetCorp 收敛，自动获得同一校验（M7）");
+
+        var actNull = () => WechatCorpContext.BeginCorpScope("app-a", null!);
+        actNull.Should().Throw<ArgumentNullException>();
+    }
+
     [Fact]
     public void GetTokenAsync_ShouldHonorTokenType()
     {

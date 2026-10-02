@@ -12,8 +12,9 @@ using Mud.Wechat.Work.Callback.Events;
 namespace Mud.Wechat.Work.Tests.ContractGuards;
 
 /// <summary>
-/// 回调域契约守卫（CB1~CB7，对齐《回调解决方案 v1》§7）：包依赖边界、官方事件键覆盖、
-/// 内置授权族兜底处理器、事件 DTO 官方字段、回调凭据唯一来源、echo/被动应答协议、信封无 XML 依赖。
+/// 回调域契约守卫（CB1~CB9，对齐《回调解决方案 v1》§7）：包依赖边界、官方事件键覆盖、
+/// 内置授权族兜底处理器、事件 DTO 官方字段、回调凭据唯一来源、echo/被动应答协议、信封无 XML 依赖、
+/// 加解密 32 块填充互操作（CB8）与指纹闸次序（CB9）。
 /// </summary>
 public class WechatCallbackContractGuards
 {
@@ -232,6 +233,9 @@ public class WechatCallbackContractGuards
             : receiverSource.Substring(echoStart);
         echoBody.Should().Contain("VerifySignature", "echo 验签复用现有算法（echostr 充当 encrypt 参与项）");
         echoBody.Should().Contain("Decrypt", "echo 解密复用现有算法");
+        echoBody.IndexOf("VerifySignature", StringComparison.Ordinal)
+            .Should().BeLessThan(echoBody.IndexOf("Decrypt", StringComparison.Ordinal),
+                "P1-2：URL 验证中验签必须先于解密（攻击者无 token 不得触达解密）");
         echoBody.Should().NotContain("TryMarkAsync", "D8：echo 不消费抗重放指纹（幂等验证）");
         echoBody.Should().Contain("ValidateTimestampWindow", "时效窗口闸保持 fail-closed");
 
@@ -262,6 +266,53 @@ public class WechatCallbackContractGuards
             source.Should().NotContain("XDocument", $"{file} 不得出现 XDocument");
             source.Should().NotContain("XElement", $"{file} 不得出现 XElement");
         }
+    }
+
+    // ---------------------------------------------------------------- CB8
+
+    /// <summary>
+    /// 契约守卫 CB8（P0-1，对齐《回调解决方案 v1》§七）：加解密不得出现 .NET 内置 16 块 PKCS7
+    /// （官方报文 pad∈[17..32] 时内置校验会误判非法填充而解密失败）；必须
+    /// <c>PaddingMode.None</c> + 手工 32 块填充补位/剥离。
+    /// </summary>
+    [Fact]
+    public void CallbackCrypto_ShouldUseManualPkcs7PaddingOf32Bytes()
+    {
+        var cryptoPath = Path.Combine(GetSolutionRoot(),
+            "Mud.Wechat.Work.Callback", "WechatCallbackCrypto.cs");
+        File.Exists(cryptoPath).Should().BeTrue($"未找到回调加解密实现：{cryptoPath}");
+
+        var source = File.ReadAllText(cryptoPath);
+
+        source.Should().NotContain("PaddingMode.PKCS7",
+            "CB8：.NET 内置 PKCS7 为 16 字节块校验，官方报文 pad∈[17..32] 时解密必抛（P0-1 回归守卫）");
+        source.Should().Contain("PaddingMode.None",
+            "CB8：解密/加密必须走 PaddingMode.None + 手工 32 块填充补位/剥离");
+        source.Should().Contain("StripPkcs7Padding",
+            "CB8：Decrypt 必须手工剥离 32 块 PKCS7 填充（否则尾部填充并入 receiveid）");
+    }
+
+    // ---------------------------------------------------------------- CB9
+
+    /// <summary>
+    /// 契约守卫 CB9（P1-1/D2）：接收器的指纹闸（<c>TryMarkAsync</c>）必须位于
+    /// <c>WechatCallbackCrypto.Decrypt</c> 之后——防「标记先于解密」回归
+    /// （解密失败消耗指纹 ⇒ 官方重试被拒，at-least-once 破坏）。
+    /// </summary>
+    [Fact]
+    public void CallbackFingerprintMark_ShouldFollowDecrypt()
+    {
+        var receiverPath = Path.Combine(GetSolutionRoot(),
+            "Mud.Wechat.Work.Callback", "WechatCallbackReceiver.cs");
+        var source = File.ReadAllText(receiverPath);
+
+        var markIndex = source.IndexOf("TryMarkAsync", StringComparison.Ordinal);
+        var decryptIndex = source.IndexOf("WechatCallbackCrypto.Decrypt(", StringComparison.Ordinal);
+
+        markIndex.Should().BePositive("CB9：接收器必须调用 TryMarkAsync（P0-2 第二道闸不得被移除）");
+        decryptIndex.Should().BePositive("CB9：接收器必须经 WechatCallbackCrypto.Decrypt 解密");
+        markIndex.Should().BeGreaterThan(decryptIndex,
+            "CB9：指纹标记必须位于解密之后（P1-1/D2：解密失败不消耗指纹，官方重试可重新进入管线）");
     }
 
     /// <summary>解决方案根目录定位（与 <c>WechatContractGuards.GetSolutionRoot</c> 同款判据）。</summary>

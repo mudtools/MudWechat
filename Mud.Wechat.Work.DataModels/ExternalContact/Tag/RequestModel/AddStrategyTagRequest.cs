@@ -14,6 +14,7 @@ namespace Mud.Wechat.Work.DataModels.ExternalContact.Tag;
 /// （同名标签组会复用已存在的组；不支持创建空标签组）。
 /// 仅可在一级规则组下添加标签；每个企业标签 + 规则组标签合计上限 10000 个。</para>
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "Tag")]
 public class AddStrategyTagRequest
 {
     /// <summary>

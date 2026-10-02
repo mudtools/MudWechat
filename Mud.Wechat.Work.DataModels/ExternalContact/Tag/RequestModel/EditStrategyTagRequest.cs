@@ -12,6 +12,7 @@ namespace Mud.Wechat.Work.DataModels.ExternalContact.Tag;
 /// <para>仅可修改标签 / 标签组的名称与次序值，不可重新指定标签 / 标签组所属规则组；
 /// 修改后的标签组不能和已有的标签组重名，标签也不能和同一标签组下的其他标签重名。</para>
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "Tag")]
 public class EditStrategyTagRequest
 {
     /// <summary>

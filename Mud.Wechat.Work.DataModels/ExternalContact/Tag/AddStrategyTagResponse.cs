@@ -10,6 +10,7 @@ namespace Mud.Wechat.Work.DataModels.ExternalContact.Tag;
 /// <summary>
 /// 为指定规则组创建企业客户标签响应体（<c>/cgi-bin/externalcontact/add_strategy_tag</c>）。
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "Tag")]
 public class AddStrategyTagResponse : WechatWorkResponse
 {
     /// <summary>

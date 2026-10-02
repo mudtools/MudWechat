@@ -12,6 +12,7 @@ namespace Mud.Wechat.Work.DataModels.ExternalContact.Tag;
 /// <para><see cref="TagId"/> 与 <see cref="GroupId"/> 均为空时返回所有标签；
 /// 同时传递时官方忽略 <see cref="TagId"/>，仅以 <see cref="GroupId"/> 作为过滤条件。</para>
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "Tag")]
 public class GetCorpTagListRequest
 {
     /// <summary>

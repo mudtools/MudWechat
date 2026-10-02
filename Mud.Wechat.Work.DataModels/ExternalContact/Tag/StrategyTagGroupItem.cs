@@ -11,6 +11,7 @@ namespace Mud.Wechat.Work.DataModels.ExternalContact.Tag;
 /// 规则组下的企业标签组（获取 / 添加指定规则组下的企业客户标签响应中的 <c>tag_group</c> 结构；
 /// 与 <see cref="CorpTagGroupItem"/> 的差异是携带所属规则组 id，且不含删除标记）。
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "Tag")]
 public class StrategyTagGroupItem
 {
     /// <summary>

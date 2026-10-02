@@ -10,6 +10,7 @@ namespace Mud.Wechat.Work.DataModels.ExternalContact.Tag;
 /// <summary>
 /// 获取企业标签库响应体（<c>/cgi-bin/externalcontact/get_corp_tag_list</c>）。
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "Tag")]
 public class GetCorpTagListResponse : WechatWorkResponse
 {
     /// <summary>

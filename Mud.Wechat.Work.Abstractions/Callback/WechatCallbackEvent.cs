@@ -113,9 +113,15 @@ public class WechatCallbackEvent
     }
 
     /// <summary>是否为授权成功事件（create_auth；携带一次性 auth_code）。</summary>
+    /// <remarks>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/99487">path 99487 授权通知事件</see>。
+    /// </remarks>
     public bool IsCreateAuth => string.Equals(InfoType, WechatCallbackEventTypes.CreateAuth, StringComparison.Ordinal);
 
     /// <summary>是否为重置永久授权码事件（reset_permanent_code；代开发 secret 重置，携带 auth_code）。</summary>
+    /// <remarks>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/99487">path 99487 授权通知事件</see>。
+    /// </remarks>
     public bool IsResetPermanentCode =>
         string.Equals(InfoType, WechatCallbackEventTypes.ResetPermanentCode, StringComparison.Ordinal);
 
@@ -128,27 +134,46 @@ public class WechatCallbackEvent
     public bool IsAuthCodeEvent => IsCreateAuth || IsResetPermanentCode;
 
     /// <summary>是否为 suite_ticket 推送事件。</summary>
+    /// <remarks>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/90628">path 90628 推送 suite_ticket</see>。
+    /// </remarks>
     public bool IsSuiteTicket => string.Equals(InfoType, WechatCallbackEventTypes.SuiteTicket, StringComparison.Ordinal);
 
     /// <summary>是否为授权变更事件（change_auth）。</summary>
+    /// <remarks>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/100964">path 100964 修改授权通知事件</see>。
+    /// </remarks>
     public bool IsChangeAuth => string.Equals(InfoType, WechatCallbackEventTypes.ChangeAuth, StringComparison.Ordinal);
 
     /// <summary>是否为取消授权事件（cancel_auth / del_auth）。</summary>
+    /// <remarks>
+    /// 官方文档：服务商应用授权事件回调（<see href="https://developer.work.weixin.qq.com/document/path/99487">path 99487 授权通知事件</see>）。
+    /// </remarks>
     public bool IsCancelAuth =>
         string.Equals(InfoType, WechatCallbackEventTypes.CancelAuth, StringComparison.Ordinal) ||
         string.Equals(InfoType, WechatCallbackEventTypes.DelAuth, StringComparison.Ordinal);
 
     /// <summary>是否为通讯录变更事件（Event = change_contact；具体变更类别看 <see cref="ChangeType"/>）。</summary>
+    /// <remarks>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/90967">path 90967 通讯录回调概述</see>。
+    /// </remarks>
     public bool IsChangeContact =>
         string.Equals(Event, WechatCallbackEventTypes.ChangeContact, StringComparison.Ordinal);
 
-    /// <summary>是否为上下游变更事件（Event = change_chain；具体变更类别看 <see cref="ChangeType"/>，官方 95796）。</summary>
-    /// <remarks>仅自建应用可配置接收（配置到「上下游-可调用接口的应用」并开启「上下游变更回调」）；
-    /// 由上下游系统应用触发的变更不回调。</remarks>
+    /// <summary>是否为上下游变更事件（Event = change_chain；具体变更类别看 <see cref="ChangeType"/>）。</summary>
+    /// <remarks>
+    /// 仅自建应用可配置接收（配置到「上下游-可调用接口的应用」并开启「上下游变更回调」）；
+    /// 由上下游系统应用触发的变更不回调。
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/95796">path 95796 上下游变更回调</see>。
+    /// </remarks>
     public bool IsChangeChain =>
         string.Equals(Event, WechatCallbackEventTypes.ChangeChain, StringComparison.Ordinal);
 
     /// <summary>是否为异步任务完成事件（Event = batch_job_result）。</summary>
+    /// <remarks>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/90973">path 90973 异步任务完成通知</see>（通讯录）/
+    /// <see href="https://developer.work.weixin.qq.com/document/path/95797">path 95797 异步任务完成通知</see>（上下游，BatchJob 包装布局）。
+    /// </remarks>
     public bool IsBatchJobResult =>
         string.Equals(Event, WechatCallbackEventTypes.BatchJobResult, StringComparison.Ordinal);
 }

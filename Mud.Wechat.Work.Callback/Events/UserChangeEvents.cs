@@ -38,6 +38,9 @@ public class WechatCallbackExtAttrItem
 /// 逗号分隔 0/1 串，<see cref="DirectLeader"/> 为竖线分隔上级 UserId；转换助手见
 /// <see cref="WechatCallbackEventParser.ParseIdList"/>/<see cref="WechatCallbackEventParser.ParseTextList"/>。
 /// </para>
+/// <para>
+/// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/90970">path 90970 成员变更通知</see>。
+/// </para>
 /// </remarks>
 public class UserCreatedEvent
 {
@@ -99,6 +102,7 @@ public class UserCreatedEvent
 /// <remarks>
 /// 2022-08-15 后新配置 URL：仅部门相关变更或 UserId 变更触发；字段可空性与
 /// <see cref="UserCreatedEvent"/> 同源（权限分层，不得假设必有值）。
+/// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/90970">path 90970 成员变更通知</see>。
 /// </remarks>
 public class UserUpdatedEvent
 {
@@ -160,6 +164,9 @@ public class UserUpdatedEvent
 /// <summary>
 /// 删除成员事件（<c>change_contact</c> + <c>delete_user</c>；官方 90970）。
 /// </summary>
+/// <remarks>
+/// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/90970">path 90970 成员变更通知</see>。
+/// </remarks>
 public class UserDeletedEvent
 {
     /// <summary>被删除成员的 UserId。</summary>

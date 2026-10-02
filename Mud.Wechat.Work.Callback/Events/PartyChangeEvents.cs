@@ -10,6 +10,9 @@ namespace Mud.Wechat.Work.Callback.Events;
 /// <summary>
 /// 新增部门事件（<c>change_contact</c> + <c>create_party</c>；官方 90971）。
 /// </summary>
+/// <remarks>
+/// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/90971">path 90971 部门变更通知</see>。
+/// </remarks>
 public class PartyCreatedEvent
 {
     /// <summary>部门 id。</summary>
@@ -28,7 +31,10 @@ public class PartyCreatedEvent
 /// <summary>
 /// 更新部门事件（<c>change_contact</c> + <c>update_party</c>；官方 90971）。
 /// </summary>
-/// <remarks>仅部门 ParentId 变更触发（Name/Order 变更不推送）。</remarks>
+/// <remarks>
+/// 仅部门 ParentId 变更触发（Name/Order 变更不推送）。
+/// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/90971">path 90971 部门变更通知</see>。
+/// </remarks>
 public class PartyUpdatedEvent
 {
     /// <summary>部门 id。</summary>
@@ -44,6 +50,9 @@ public class PartyUpdatedEvent
 /// <summary>
 /// 删除部门事件（<c>change_contact</c> + <c>delete_party</c>；官方 90971）。
 /// </summary>
+/// <remarks>
+/// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/90971">path 90971 部门变更通知</see>。
+/// </remarks>
 public class PartyDeletedEvent
 {
     /// <summary>被删除部门的 id。</summary>

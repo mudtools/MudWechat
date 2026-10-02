@@ -16,6 +16,8 @@ namespace Mud.Wechat.Work.Callback.Events;
 /// 需以 <see cref="JobId"/> 调取结果接口下载（回调不携带）。
 /// <b>双报文布局</b>：通讯录任务字段为顶层节点，上下游任务字段包在 <c>BatchJob</c> 包装节点内——
 /// 解析器同批兼容（同 Event 键、按字段位置自适应）。
+/// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/90973">path 90973 异步任务完成通知</see>（通讯录）/
+/// <see href="https://developer.work.weixin.qq.com/document/path/95797">path 95797 异步任务完成通知</see>（上下游）。
 /// </remarks>
 public class BatchJobResultEvent
 {

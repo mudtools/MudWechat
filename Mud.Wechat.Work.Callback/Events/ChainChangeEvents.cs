@@ -22,6 +22,9 @@ namespace Mud.Wechat.Work.Callback.Events;
 /// 同族内字段完全一致，故按<b>结构族</b>建 DTO（具体变更类别经
 /// <see cref="Mud.Wechat.Work.Abstractions.Callback.WechatCallbackEvent.ChangeType"/> 判别），避免 9 份样板。
 /// </para>
+/// <para>
+/// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/95796">path 95796 上下游变更回调</see>。
+/// </para>
 /// </remarks>
 public class ChainChangedEvent
 {
@@ -33,6 +36,9 @@ public class ChainChangedEvent
 /// 上下游分组变更事件（<c>change_chain</c> + <c>create_group</c>/<c>update_group</c>/<c>delete_group</c>；
 /// 官方 95796）。
 /// </summary>
+/// <remarks>
+/// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/95796">path 95796 上下游变更回调</see>。
+/// </remarks>
 public class ChainGroupChangedEvent
 {
     /// <summary>上下游空间 id（ChainId 节点）。</summary>
@@ -46,7 +52,10 @@ public class ChainGroupChangedEvent
 /// 上下游企业变更事件（<c>change_chain</c> + <c>corp_join</c>/<c>update_corp</c>/<c>remove_corp</c>；
 /// 官方 95796）。
 /// </summary>
-/// <remarks><c>corp_join</c> 仅对已加入上下游的企业产生事件；<c>update_corp</c> 在变更企业分组时触发。</remarks>
+/// <remarks>
+/// <c>corp_join</c> 仅对已加入上下游的企业产生事件；<c>update_corp</c> 在变更企业分组时触发。
+/// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/95796">path 95796 上下游变更回调</see>。
+/// </remarks>
 public class ChainCorpChangedEvent
 {
     /// <summary>上下游空间 id（ChainId 节点）。</summary>

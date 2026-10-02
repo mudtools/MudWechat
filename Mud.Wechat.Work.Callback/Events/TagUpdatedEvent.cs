@@ -13,6 +13,7 @@ namespace Mud.Wechat.Work.Callback.Events;
 /// <remarks>
 /// 列表字段按官方报文<b>字符串承载</b>（逗号分隔 UserId/部门 id）。官方明示：标签的成员变更与成员/部门
 /// 自身变更事件<b>时序不保证</b>，须以「获取标签成员」等拉取接口对齐（v1 方案 §10.4）。
+/// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/90972">path 90972 标签变更通知</see>。
 /// </remarks>
 public class TagUpdatedEvent
 {

@@ -58,6 +58,9 @@ public class WechatWorkServiceBuilder
             [WechatModule.Message] = new WechatModuleRegistrar(
                 WechatModule.Message,
                 s => s.AddMessageWebApiHttpClient()),
+            [WechatModule.Kf] = new WechatModuleRegistrar(
+                WechatModule.Kf,
+                s => s.AddKfWebApiHttpClient()),
         };
 
     /// <summary>注册授权流业务接口与授权编排服务（get_pre_auth_code / set_session_info / get_permanent_code / get_auth_info / get_customized_auth_url + 编排）。</summary>
@@ -77,6 +80,9 @@ public class WechatWorkServiceBuilder
 
     /// <summary>注册消息推送业务接口（发送应用消息 / 群聊会话 / 家校学校通知；template_msg 仅第三方差异端点，群聊会话与学校通知官方仅自建开放）。</summary>
     public WechatWorkServiceBuilder AddMessageApi() => AddModule(WechatModule.Message);
+
+    /// <summary>注册微信客服业务接口（客服账号管理域 + 接待人员管理域：三类应用公共面收敛父接口 + 空标记子接口）。</summary>
+    public WechatWorkServiceBuilder AddKfApi() => AddModule(WechatModule.Kf);
 
     /// <summary>注册全部模块。</summary>
     public WechatWorkServiceBuilder AddAllApis()

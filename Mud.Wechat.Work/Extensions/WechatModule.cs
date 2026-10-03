@@ -33,4 +33,7 @@ public enum WechatModule
 
     /// <summary>消息推送（发送应用消息 + 群聊会话 + 家校学校通知：公共面收敛父接口；template_msg 仅第三方差异端点，群聊会话/学校通知官方仅自建）。</summary>
     Message,
+
+    /// <summary>微信客服（客服账号管理域 + 接待人员管理域：三类应用公共面收敛父接口 + 空标记子接口）。</summary>
+    Kf,
 }

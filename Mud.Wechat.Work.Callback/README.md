@@ -61,6 +61,26 @@ public sealed class UserSyncHandler : WechatCallbackPayloadHandler<ContactUserCh
 > 三份文档正文逐字一致 ⇒ 一份载荷覆盖三模式）；个别事件的开放面差异由契约声明承载
 > （`open_approval_change` 不含代开发、`share_agent_change`/`share_chain_change` 仅自建）。
 
+**目录归类**（源文件按官方事件族分目录，**命名空间统一为 `Mud.Wechat.Work.Callback.Events.Payloads`，不随目录分段**）：
+
+| 目录 | 归类口径 | 文件 |
+|---|---|---|
+| `Contacts/` | 通讯录变更族 | `ContactUserChangedPayload` / `ContactPartyChangedPayload` / `ContactTagChangedPayload` |
+| `CorpGroup/` | 上下游变更族 | `ChainChangedPayload` |
+| `AsyncJobs/` | 异步任务族 | `BatchJobCompletedPayload` |
+| `Messages/` | 消息与事件族（官方 90240） | `PlainEventPayload` / `AgentAlertPayload` / `MenuScanCodePayload` / `MenuPicPayload` / `MenuLocationSelectPayload` / `LocationReportedPayload` / `ApprovalStatusChangedPayload` / `TemplateCardEventPayload` |
+| `Contracts/` | 跨族契约基座（不属单一族） | `OfficialPayloadContracts`（partial 声明，方法体由生成器发射） |
+
+> 目录**仅作组织**（同 `RequestModel/`、`ResponseModel/` 口径）⇒ 宿主代码的 `using` 与载荷类型引用不受分目录影响。
+>
+> **转换器与嵌套 DTO 落位**：`WechatPayloadConverter`（转换语义）与 `WechatCallbackScanCodeInfo` 等
+> 嵌套 DTO、`WechatUserGender`/`WechatUserStatus` 值域枚举落 **Abstractions**（`Abstractions/Callback/Payloads/`
+> 与 `Abstractions/Enums/`）—— 嵌套 DTO 的 `[PayloadContract]` 与转换器必须同工程或依赖链内。
+>
+> **契约登记（P2）**：事件键 + 族前置条件 + 开放面声明在载荷类的 `[WechatCallbackContract]` 特性，
+> `OfficialPayloadContracts.RegisterAll` 方法体由 `Mud.Wechat.Work.Callback.Generator` 编译期发射
+> —— 新增事件键只需在载荷类声明特性，勿手改登记方法体（41 键全覆盖由守卫 CB4b 双面锁定）。
+
 **三模式共用一份契约**：企业自建 / 第三方 / 服务商代开发的报文结构相同，
 差异只是「值是否出现」——由可空字段与 `payload.Values` 兜底读面承载，
 **载荷与转换器层不得按应用类型分叉**（契约守卫锁定）。

@@ -123,7 +123,7 @@ public sealed class WechatCallbackDispatcher
             return WechatCallbackDispatchOutcome.Rejected;
         }
 
-        // — 0b. 事件键级闸（ADR-15，守卫 CB22 断言其先于拦截器）——
+        // — 0b. 事件键级闸（ADR-15，守卫 CB13b 断言其先于拦截器）——
         // 族级闸只按「事件族」判定；宿主注册新 Event 值会落 Unknown 族而被族闸放行，
         // 故此处按事件键的契约声明（族前置条件 + 应用模式/通道）再判一次。
         // 键未登记 ⇒ 落回族级闸结论（协议外报文不拦截，与 v1 行为一致）。

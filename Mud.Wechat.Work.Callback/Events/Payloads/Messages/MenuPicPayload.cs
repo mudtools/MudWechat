@@ -17,17 +17,25 @@ namespace Mud.Wechat.Work.Callback.Events.Payloads;
 /// <b>结构族</b>：三事件的官方报文字段集合一致（信封 + <c>EventKey</c> + <c>SendPicsInfo</c> + <c>AgentID</c>），
 /// 差异仅在触发入口（系统拍照 / 拍照或相册 / 微信相册），不体现在报文上。
 /// <see cref="SendPicsInfo"/> 为三层嵌套结构（<c>SendPicsInfo/PicList/item/PicMd5Sum</c>），
-/// 由 <c>WechatPayloadConverter.ParseSendPicsInfo</c> 组装；节点缺失 ⇒ <c>null</c>。
+/// 经 G-ADR-17 <c>Object</c> + <c>ItemsObject</c> 通道声明化；节点缺失 ⇒ <c>null</c>。
 /// </remarks>
 [PayloadContract(Converter = typeof(WechatPayloadConverter))]
+[WechatCallbackContract(
+    RequiredFamily = WechatCallbackEventFamily.Unknown,
+    SupportedAppTypes = WechatAppTypeSet.All,
+    RequiredChannel = WechatCallbackChannel.App,
+    EventTypes = new[] {
+        WechatCallbackEventTypes.PicSysPhoto,
+        WechatCallbackEventTypes.PicPhotoOrAlbum,
+        WechatCallbackEventTypes.PicWeixin })]
 public sealed partial class MenuPicPayload : WechatCallbackPayload
 {
     /// <summary>事件 KEY 值（官方 <c>EventKey</c>，与自定义菜单接口中 KEY 值对应）。</summary>
     [PayloadField("EventKey")]
     public string? EventKey { get; set; }
 
-    /// <summary>发送的图片信息（官方 <c>SendPicsInfo</c>：<c>Count</c> + 图片 MD5 列表）。</summary>
-    [PayloadField("SendPicsInfo", Method = nameof(WechatPayloadConverter.ParseSendPicsInfo))]
+    /// <summary>发送的图片信息（官方 <c>SendPicsInfo</c>：<c>Count</c> + 图片项列表）。</summary>
+    [PayloadField("SendPicsInfo")]
     public WechatCallbackSendPicsInfo? SendPicsInfo { get; set; }
 
     /// <summary>企业应用 id（官方 <c>AgentID</c>，整型；可在应用设置页面查看）。</summary>

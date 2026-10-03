@@ -17,9 +17,14 @@ namespace Mud.Wechat.Work.Callback.Events.Payloads;
 /// <b>结构族</b>：官方报文为「信封 + <c>EventKey</c> + <c>SendLocationInfo</c> + <c>AgentID</c> + <c>AppType</c>」。
 /// <c>AppType</c> 是官方的「来源应用类型」标记（企业微信内恒为 <c>wxwork</c>，微信端不返回该节点），
 /// 与回调开放面的三模式判别<b>无关</b> —— 后者由事件键级开放面声明承载（ADR-14：载荷层不分叉）。
-/// <see cref="SendLocationInfo"/> 含下划线元素名与小数坐标，由 <c>WechatPayloadConverter.ParseSendLocationInfo</c> 组装。
+/// <see cref="SendLocationInfo"/> 含下划线元素名与小数坐标，经 G-ADR-17 <c>Object</c> 通道声明化。
 /// </remarks>
 [PayloadContract(Converter = typeof(WechatPayloadConverter))]
+[WechatCallbackContract(
+    RequiredFamily = WechatCallbackEventFamily.Unknown,
+    SupportedAppTypes = WechatAppTypeSet.All,
+    RequiredChannel = WechatCallbackChannel.App,
+    EventTypes = new[] { WechatCallbackEventTypes.LocationSelect })]
 public sealed partial class MenuLocationSelectPayload : WechatCallbackPayload
 {
     /// <summary>事件 KEY 值（官方 <c>EventKey</c>，与自定义菜单接口中 KEY 值对应）。</summary>
@@ -27,7 +32,7 @@ public sealed partial class MenuLocationSelectPayload : WechatCallbackPayload
     public string? EventKey { get; set; }
 
     /// <summary>发送的位置信息（官方 <c>SendLocationInfo</c>：坐标、比例尺、地址与 POI 名）。</summary>
-    [PayloadField("SendLocationInfo", Method = nameof(WechatPayloadConverter.ParseSendLocationInfo))]
+    [PayloadField("SendLocationInfo")]
     public WechatCallbackSendLocationInfo? SendLocationInfo { get; set; }
 
     /// <summary>企业应用 id（官方 <c>AgentID</c>，整型；可在应用设置页面查看）。</summary>

@@ -32,6 +32,21 @@ namespace Mud.Wechat.Work.Callback.Events.Payloads;
 /// </para>
 /// </remarks>
 [PayloadContract(Converter = typeof(WechatPayloadConverter))]
+[WechatCallbackContract(
+    RequiredEvent = WechatCallbackEventTypes.ChangeChain,
+    RequiredFamily = WechatCallbackEventFamily.ChainChange,
+    SupportedAppTypes = WechatAppTypeSet.Internal,
+    RequiredChannel = WechatCallbackChannel.App,
+    EventTypes = new[] {
+        WechatCallbackEventTypes.CreateChain,
+        WechatCallbackEventTypes.UpdateChain,
+        WechatCallbackEventTypes.DeleteChain,
+        WechatCallbackEventTypes.CreateGroup,
+        WechatCallbackEventTypes.UpdateGroup,
+        WechatCallbackEventTypes.DeleteGroup,
+        WechatCallbackEventTypes.CorpJoin,
+        WechatCallbackEventTypes.UpdateCorp,
+        WechatCallbackEventTypes.RemoveCorp })]
 public sealed partial class ChainChangedPayload : WechatCallbackPayload
 {
     /// <summary>上下游空间 id（官方 <c>ChainId</c>）。</summary>

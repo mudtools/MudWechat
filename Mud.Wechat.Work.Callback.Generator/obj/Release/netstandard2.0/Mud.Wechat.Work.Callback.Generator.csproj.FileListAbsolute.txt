@@ -1,0 +1,12 @@
+D:\Repos\MudWechat\Mud.Wechat.Work.Callback.Generator\obj\Release\netstandard2.0\Mud.Wechat.Work.Callback.Generator.csproj.AssemblyReference.cache
+D:\Repos\MudWechat\Mud.Wechat.Work.Callback.Generator\obj\Release\netstandard2.0\Mud.Wechat.Work.Callback.Generator.GeneratedMSBuildEditorConfig.editorconfig
+D:\Repos\MudWechat\Mud.Wechat.Work.Callback.Generator\obj\Release\netstandard2.0\Mud.Wechat.Work.Callback.Generator.AssemblyInfoInputs.cache
+D:\Repos\MudWechat\Mud.Wechat.Work.Callback.Generator\obj\Release\netstandard2.0\Mud.Wechat.Work.Callback.Generator.AssemblyInfo.cs
+D:\Repos\MudWechat\Mud.Wechat.Work.Callback.Generator\obj\Release\netstandard2.0\Mud.Wechat.Work.Callback.Generator.csproj.CoreCompileInputs.cache
+D:\Repos\MudWechat\Mud.Wechat.Work.Callback.Generator\bin\Release\netstandard2.0\Mud.Wechat.Work.Callback.Generator.deps.json
+D:\Repos\MudWechat\Mud.Wechat.Work.Callback.Generator\bin\Release\netstandard2.0\Mud.Wechat.Work.Callback.Generator.dll
+D:\Repos\MudWechat\Mud.Wechat.Work.Callback.Generator\bin\Release\netstandard2.0\Mud.Wechat.Work.Callback.Generator.pdb
+D:\Repos\MudWechat\Mud.Wechat.Work.Callback.Generator\bin\Release\netstandard2.0\Mud.Wechat.Work.Callback.Generator.xml
+D:\Repos\MudWechat\Mud.Wechat.Work.Callback.Generator\obj\Release\netstandard2.0\Mud.Wechat.Work.Callback.Generator.dll
+D:\Repos\MudWechat\Mud.Wechat.Work.Callback.Generator\obj\Release\netstandard2.0\Mud.Wechat.Work.Callback.Generator.xml
+D:\Repos\MudWechat\Mud.Wechat.Work.Callback.Generator\obj\Release\netstandard2.0\Mud.Wechat.Work.Callback.Generator.pdb

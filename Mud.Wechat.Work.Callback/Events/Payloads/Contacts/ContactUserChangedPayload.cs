@@ -37,6 +37,15 @@ namespace Mud.Wechat.Work.Callback.Events.Payloads;
 /// </para>
 /// </remarks>
 [PayloadContract(Converter = typeof(WechatPayloadConverter))]
+[WechatCallbackContract(
+    RequiredEvent = WechatCallbackEventTypes.ChangeContact,
+    RequiredFamily = WechatCallbackEventFamily.ContactChange,
+    SupportedAppTypes = WechatAppTypeSet.All,
+    RequiredChannel = WechatCallbackChannel.App,
+    EventTypes = new[] {
+        WechatCallbackEventTypes.CreateUser,
+        WechatCallbackEventTypes.UpdateUser,
+        WechatCallbackEventTypes.DeleteUser })]
 public sealed partial class ContactUserChangedPayload : WechatCallbackPayload
 {
     /// <summary>成员 UserId（官方 <c>UserID</c>；成员账号唯一标识）。</summary>

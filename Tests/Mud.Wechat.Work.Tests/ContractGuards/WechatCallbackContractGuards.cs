@@ -275,7 +275,10 @@ public class WechatCallbackContractGuards
     }
 
     /// <summary>
-    /// 契约守卫 CB4b（v2.2 新增）：官方契约表必须登记全部 41 个载荷事件键，且授权族键不登记。
+    /// 契约守卫 CB4b（v2.2 新增；P2 扩展）：官方契约表必须登记全部 41 个载荷事件键，且授权族键不登记；
+    /// 并断言「生成物登记键集 == <c>[WechatCallbackContract]</c> 特性声明并集」（生成器漂移闸）。
+    /// 双面锁定：官方清单（expectedKeys）是外部契约的权威锚点，特性一致性断言锁内部链条 ——
+    /// 二者不得互替（同源即同向逃逸）。
     /// </summary>
     [Fact]
     public void OfficialPayloadContracts_ShouldCoverAllPayloadEventKeys()
@@ -327,10 +330,19 @@ public class WechatCallbackContractGuards
         {
             registered.Should().NotContain(authKey, $"授权族事件键 {authKey} 走信封，不得登记载荷契约（ADR-8）");
         }
+
+        // P2 生成器一致性闸：生成物登记键集必须与载荷类 [WechatCallbackContract] 特性声明的并集一致 ——
+        // 特性漏声明 / 生成器漂移在此红；官方契约面变更仍以 expectedKeys（硬编码官方清单）为权威锚点。
+        var declaredKeys = typeof(OfficialPayloadContracts).Assembly.GetTypes()
+            .SelectMany(t => t.GetCustomAttributes<WechatCallbackContractAttribute>(inherit: false))
+            .SelectMany(a => a.EventTypes)
+            .ToHashSet(StringComparer.Ordinal);
+        declaredKeys.Should().HaveCount(41, "[WechatCallbackContract] 特性声明的事件键并集应为 41 个");
+        registered.Should().BeEquivalentTo(declaredKeys, "生成器登记的键集必须与 [WechatCallbackContract] 特性声明并集一致（生成器漂移闸）");
     }
 
     /// <summary>
-    /// 契约守卫 CB4c（v2.2 新增）：每条官方契约必须<b>显式</b>声明事件键级开放面（守卫 CB22 的要求）。
+    /// 契约守卫 CB4c（v2.2 新增）：每条官方契约必须<b>显式</b>声明事件键级开放面（ADR-15；P2 后权威声明在载荷类 [WechatCallbackContract] 特性）。
     /// </summary>
     [Fact]
     public void OfficialPayloadContracts_ShouldDeclareOpenSurfaceExplicitly()
@@ -403,7 +415,12 @@ public class WechatCallbackContractGuards
     }
 
     /// <summary>
-    /// 契约守卫 CB4d（v2.2 新增）：三模式无关性（ADR-14）—— 载荷与转换器层<b>不得</b>出现应用模式分支。
+    /// 契约守卫 CB4d（v2.2 新增；P2 修订）：三模式无关性（ADR-14）—— 载荷与转换器层<b>不得</b>出现应用模式分支。
+    /// <para>
+    /// P2 修订：载荷类上的 <c>[WechatCallbackContract]</c> 特性声明（开放面<b>数据</b>，与原契约表同性质）
+    /// 不属「分支」，扫描前剔除该特性块 —— <c>WechatAppType</c>/<c>WechatCallbackChannel</c> 出现在
+    /// <c>if</c>/<c>switch</c>/<c>?:</c> 等行为分支处仍会被本断言打红。
+    /// </para>
     /// </summary>
     [Fact]
     public void PayloadSurface_MustBeAppModeAgnostic()
@@ -423,10 +440,14 @@ public class WechatCallbackContractGuards
         foreach (var type in payloadTypes)
         {
             var source = ReadSource(type);
-            source.Should().NotContain("WechatAppType",
-                $"{type.Name} 不得按应用类型分支（ADR-14：一份契约覆盖三模式）");
-            source.Should().NotContain("WechatCallbackChannel",
-                $"{type.Name} 不得按回调通道分支（ADR-14）");
+            // 剔除声明性开放面特性块（[WechatCallbackContract(...)] 跨多行）后再做文本扫描。
+            var codeWithoutContractAttributes = Regex.Replace(
+                source, @"\[WechatCallbackContract\(.*?\)\]", string.Empty,
+                RegexOptions.Singleline | RegexOptions.CultureInvariant);
+            codeWithoutContractAttributes.Should().NotContain("WechatAppType",
+                $"{type.Name} 不得按应用类型分支（ADR-14：一份契约覆盖三模式；特性声明中的开放面数据除外）");
+            codeWithoutContractAttributes.Should().NotContain("WechatCallbackChannel",
+                $"{type.Name} 不得按回调通道分支（ADR-14；特性声明中的开放面数据除外）");
         }
     }
 

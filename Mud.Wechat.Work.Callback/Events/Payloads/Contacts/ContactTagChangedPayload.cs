@@ -27,6 +27,12 @@ namespace Mud.Wechat.Work.Callback.Events.Payloads;
 /// </para>
 /// </remarks>
 [PayloadContract(Converter = typeof(WechatPayloadConverter))]
+[WechatCallbackContract(
+    RequiredEvent = WechatCallbackEventTypes.ChangeContact,
+    RequiredFamily = WechatCallbackEventFamily.ContactChange,
+    SupportedAppTypes = WechatAppTypeSet.All,
+    RequiredChannel = WechatCallbackChannel.App,
+    EventTypes = new[] { WechatCallbackEventTypes.UpdateTag })]
 public sealed partial class ContactTagChangedPayload : WechatCallbackPayload
 {
     /// <summary>标签 id（官方 <c>TagId</c>）。</summary>

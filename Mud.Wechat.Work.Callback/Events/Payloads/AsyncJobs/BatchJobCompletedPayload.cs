@@ -31,6 +31,12 @@ namespace Mud.Wechat.Work.Callback.Events.Payloads;
 /// </para>
 /// </remarks>
 [PayloadContract(Converter = typeof(WechatPayloadConverter), ScopeFallback = "BatchJob")]
+[WechatCallbackContract(
+    RequiredEvent = WechatCallbackEventTypes.BatchJobResult,
+    RequiredFamily = WechatCallbackEventFamily.BatchJob,
+    SupportedAppTypes = WechatAppTypeSet.All,
+    RequiredChannel = WechatCallbackChannel.App,
+    EventTypes = new[] { WechatCallbackEventTypes.BatchJobResult })]
 public sealed partial class BatchJobCompletedPayload : WechatCallbackPayload
 {
     /// <summary>异步任务 id（官方 <c>JobId</c>；提交任务时返回）。</summary>

@@ -25,6 +25,13 @@ namespace Mud.Wechat.Work.Callback.Events.Payloads;
 /// </para>
 /// </remarks>
 [PayloadContract(Converter = typeof(WechatPayloadConverter))]
+[WechatCallbackContract(
+    RequiredFamily = WechatCallbackEventFamily.Unknown,
+    SupportedAppTypes = WechatAppTypeSet.All,
+    RequiredChannel = WechatCallbackChannel.App,
+    EventTypes = new[] {
+        WechatCallbackEventTypes.InactiveAlert,
+        WechatCallbackEventTypes.LowActiveAlert })]
 public sealed partial class AgentAlertPayload : WechatCallbackPayload
 {
     /// <summary>生效时间戳（官方 <c>EffectTime</c>，秒级 Unix 时间戳）。</summary>

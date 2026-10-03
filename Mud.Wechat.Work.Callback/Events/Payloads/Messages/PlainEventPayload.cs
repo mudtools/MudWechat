@@ -34,6 +34,28 @@ namespace Mud.Wechat.Work.Callback.Events.Payloads;
 /// </para>
 /// </remarks>
 [PayloadContract(Converter = typeof(WechatPayloadConverter))]
+[WechatCallbackContract(
+    RequiredFamily = WechatCallbackEventFamily.Unknown,
+    SupportedAppTypes = WechatAppTypeSet.All,
+    RequiredChannel = WechatCallbackChannel.App,
+    EventTypes = new[] {
+        WechatCallbackEventTypes.Subscribe,
+        WechatCallbackEventTypes.Unsubscribe,
+        WechatCallbackEventTypes.EnterAgent,
+        WechatCallbackEventTypes.Click,
+        WechatCallbackEventTypes.View,
+        WechatCallbackEventTypes.ViewMiniProgram,
+        WechatCallbackEventTypes.CloseInactiveAgent,
+        WechatCallbackEventTypes.ReopenInactiveAgent,
+        WechatCallbackEventTypes.LowActive,
+        WechatCallbackEventTypes.ActiveRestored })]
+[WechatCallbackContract(
+    RequiredFamily = WechatCallbackEventFamily.Unknown,
+    SupportedAppTypes = WechatAppTypeSet.Internal,
+    RequiredChannel = WechatCallbackChannel.App,
+    EventTypes = new[] {
+        WechatCallbackEventTypes.ShareAgentChange,
+        WechatCallbackEventTypes.ShareChainChange })]
 public sealed partial class PlainEventPayload : WechatCallbackPayload
 {
     /// <summary>

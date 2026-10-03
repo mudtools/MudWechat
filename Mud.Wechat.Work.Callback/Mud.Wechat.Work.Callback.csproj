@@ -18,6 +18,13 @@
 		<PackageReference Include="Mud.HttpUtils.Generator" Version="3.0.1" PrivateAssets="all" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
 	</ItemGroup>
 
+	<!-- 契约登记生成器（本仓侧）：依据 [WechatCallbackContract] 特性发射 OfficialPayloadContracts.RegisterAll
+	     方法体。仅本工程消费（PrivateAssets 不流向主包）；工程 IsPackable=false，不进发布链的「恰 5 nupkg」。 -->
+	<ItemGroup>
+		<ProjectReference Include="..\Mud.Wechat.Work.Callback.Generator\Mud.Wechat.Work.Callback.Generator.csproj"
+		                  OutputItemType="Analyzer" ReferenceOutputAssembly="false" PrivateAssets="all" />
+	</ItemGroup>
+
 	<!-- v1 方案 D1（对齐 Mud.Feishu.Webhook）：netstandard2.0 保留旧包；net6.0+ 使用 FrameworkReference -->
 	<ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
 		<PackageReference Include="Microsoft.AspNetCore.Http" Version="2.3.9" />

@@ -1,6 +1,7 @@
 <Solution>
   <Folder Name="/src/">
     <Project Path="Mud.Wechat.Work.Abstractions/Mud.Wechat.Work.Abstractions.csproj" />
+    <Project Path="Mud.Wechat.Work.Callback.Generator/Mud.Wechat.Work.Callback.Generator.csproj" />
     <Project Path="Mud.Wechat.Work.Callback/Mud.Wechat.Work.Callback.csproj" />
     <Project Path="Mud.Wechat.Work.DataModels/Mud.Wechat.Work.DataModels.csproj" />
     <Project Path="Mud.Wechat.Redis/Mud.Wechat.Redis.csproj" />

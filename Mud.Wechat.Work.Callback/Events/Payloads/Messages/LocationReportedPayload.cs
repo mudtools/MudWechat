@@ -25,6 +25,11 @@ namespace Mud.Wechat.Work.Callback.Events.Payloads;
 /// </para>
 /// </remarks>
 [PayloadContract(Converter = typeof(WechatPayloadConverter))]
+[WechatCallbackContract(
+    RequiredFamily = WechatCallbackEventFamily.Unknown,
+    SupportedAppTypes = WechatAppTypeSet.All,
+    RequiredChannel = WechatCallbackChannel.App,
+    EventTypes = new[] { WechatCallbackEventTypes.Location })]
 public sealed partial class LocationReportedPayload : WechatCallbackPayload
 {
     /// <summary>地理位置纬度（官方 <c>Latitude</c>，小数）。</summary>

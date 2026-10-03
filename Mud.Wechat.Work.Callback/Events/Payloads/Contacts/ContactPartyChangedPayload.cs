@@ -22,6 +22,15 @@ namespace Mud.Wechat.Work.Callback.Events.Payloads;
 /// <para>三模式共用一份可空超集（ADR-14），不得按应用模式分叉。</para>
 /// </remarks>
 [PayloadContract(Converter = typeof(WechatPayloadConverter))]
+[WechatCallbackContract(
+    RequiredEvent = WechatCallbackEventTypes.ChangeContact,
+    RequiredFamily = WechatCallbackEventFamily.ContactChange,
+    SupportedAppTypes = WechatAppTypeSet.All,
+    RequiredChannel = WechatCallbackChannel.App,
+    EventTypes = new[] {
+        WechatCallbackEventTypes.CreateParty,
+        WechatCallbackEventTypes.UpdateParty,
+        WechatCallbackEventTypes.DeleteParty })]
 public sealed partial class ContactPartyChangedPayload : WechatCallbackPayload
 {
     /// <summary>部门 id（官方 <c>Id</c>）。</summary>

@@ -25,12 +25,19 @@ namespace Mud.Wechat.Work.Callback.Events.Payloads;
 /// <b>处置语义</b>：<c>ResponseCode</c> 调用更新卡片接口时 72 小时内有效且<b>只能使用一次</b>
 /// ⇒ 处理器须幂等（超时重推场景不得重复消费同一 ResponseCode）。
 /// </para>
-/// <para>
-/// <c>SelectedItems</c> 为二级嵌套（<c>SelectedItem/OptionIds/OptionId</c>），
-/// 由 <c>WechatPayloadConverter.ParseSelectedItems</c> 组装。
-/// </para>
-/// </remarks>
+    /// <para>
+    /// <c>SelectedItems</c> 为二级嵌套（<c>SelectedItem/OptionIds/OptionId</c>），
+    /// 经 G-ADR-17 <c>ItemsObject</c> 通道声明化。
+    /// </para>
+    /// </remarks>
 [PayloadContract(Converter = typeof(WechatPayloadConverter))]
+[WechatCallbackContract(
+    RequiredFamily = WechatCallbackEventFamily.Unknown,
+    SupportedAppTypes = WechatAppTypeSet.All,
+    RequiredChannel = WechatCallbackChannel.App,
+    EventTypes = new[] {
+        WechatCallbackEventTypes.TemplateCardEvent,
+        WechatCallbackEventTypes.TemplateCardMenuEvent })]
 public sealed partial class TemplateCardEventPayload : WechatCallbackPayload
 {
     /// <summary>按钮 key（官方 <c>EventKey</c>，与发送模板卡片时指定的 <c>btn:key</c> 相同）。</summary>
@@ -62,7 +69,7 @@ public sealed partial class TemplateCardEventPayload : WechatCallbackPayload
     /// 选中项列表（官方 <c>SelectedItems/SelectedItem</c>；投票/多选类卡片按钮点击时携带，
     /// 右上角菜单事件与单选卡片不携带 ⇒ 空列表）。
     /// </summary>
-    [PayloadField("SelectedItems", Method = nameof(WechatPayloadConverter.ParseSelectedItems))]
+    [PayloadField("SelectedItems", Format = PayloadFieldFormat.ItemsObject, ItemName = "SelectedItem")]
     public List<WechatCallbackTemplateCardSelectedItem> SelectedItems { get; set; }
         = new List<WechatCallbackTemplateCardSelectedItem>();
 }

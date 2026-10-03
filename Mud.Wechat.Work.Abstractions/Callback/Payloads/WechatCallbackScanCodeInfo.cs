@@ -11,14 +11,17 @@ namespace Mud.Wechat.Work.Abstractions.Callback.Payloads;
 /// 扫码信息（<c>scancode_push</c>/<c>scancode_waitmsg</c> 报文的 <c>ScanCodeInfo</c> 节点；官方 path 90240）。
 /// </summary>
 /// <remarks>
-/// 由 <c>WechatPayloadConverter.ParseScanCodeInfo</c> 在转换器内手工组装（生成器仅支持「容器 → 单层同构项」，
-/// 本节点是「容器 → 两个异构标量子节点」形态）。节点缺失 ⇒ 返回 <c>null</c>。
+/// 经上游 G-ADR-17 的 <c>Object</c> 嵌套通道声明化：元素名 ↔ 属性名配对由编译器校验，
+/// 内层字段绑定由本类型生成的映射表递归完成。节点缺失 ⇒ 返回 <c>null</c>。
 /// </remarks>
-public sealed class WechatCallbackScanCodeInfo
+[PayloadContract(Converter = typeof(WechatPayloadConverter))]
+public sealed partial class WechatCallbackScanCodeInfo
 {
     /// <summary>扫描类型（官方 <c>ScanType</c>，一般是 <c>qrcode</c>）。</summary>
+    [PayloadField("ScanType")]
     public string? ScanType { get; set; }
 
     /// <summary>扫描结果，即二维码对应的字符串信息（官方 <c>ScanResult</c>）。</summary>
+    [PayloadField("ScanResult")]
     public string? ScanResult { get; set; }
 }

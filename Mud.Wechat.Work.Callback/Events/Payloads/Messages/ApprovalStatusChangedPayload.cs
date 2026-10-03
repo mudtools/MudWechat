@@ -37,6 +37,11 @@ namespace Mud.Wechat.Work.Callback.Events.Payloads;
 /// </para>
 /// </remarks>
 [PayloadContract(Converter = typeof(WechatPayloadConverter), ScopeFallback = "ApprovalInfo")]
+[WechatCallbackContract(
+    RequiredFamily = WechatCallbackEventFamily.Unknown,
+    SupportedAppTypes = WechatAppTypeSet.Internal | WechatAppTypeSet.ThirdParty,
+    RequiredChannel = WechatCallbackChannel.App,
+    EventTypes = new[] { WechatCallbackEventTypes.OpenApprovalChange })]
 public sealed partial class ApprovalStatusChangedPayload : WechatCallbackPayload
 {
     /// <summary>审批单编号（官方 <c>ThirdNo</c>，由开发者在发起申请时自定义）。</summary>
@@ -80,11 +85,11 @@ public sealed partial class ApprovalStatusChangedPayload : WechatCallbackPayload
     /// <summary>
     /// 审批流程信息（官方 <c>ApprovalNodes/ApprovalNode</c>，可有多个审批节点；节点内含可变分支列表）。
     /// </summary>
-    [PayloadField("ApprovalNodes", Method = nameof(WechatPayloadConverter.ParseApprovalNodes))]
+    [PayloadField("ApprovalNodes", Format = PayloadFieldFormat.ItemsObject, ItemName = "ApprovalNode")]
     public List<WechatCallbackApprovalNode> ApprovalNodes { get; set; } = new List<WechatCallbackApprovalNode>();
 
     /// <summary>抄送信息（官方 <c>NotifyNodes/NotifyNode</c>，可能有多个抄送人）。</summary>
-    [PayloadField("NotifyNodes", Method = nameof(WechatPayloadConverter.ParseNotifyNodes))]
+    [PayloadField("NotifyNodes", Format = PayloadFieldFormat.ItemsObject, ItemName = "NotifyNode")]
     public List<WechatCallbackApprovalNotifyNode> NotifyNodes { get; set; } = new List<WechatCallbackApprovalNotifyNode>();
 
     /// <summary>

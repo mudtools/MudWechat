@@ -10,7 +10,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using Mud.HttpUtils.Payloads;
 
-namespace Mud.Wechat.Work.Callback.Events.Payloads;
+namespace Mud.Wechat.Work.Abstractions.Callback.Payloads;
 
 /// <summary>
 /// 企业微信回调载荷转换器。
@@ -20,7 +20,8 @@ namespace Mud.Wechat.Work.Callback.Events.Payloads;
 /// <b>签名契约为硬约束</b>：方法必须 <c>static</c>、非泛型（除自身类型参数外）、参数形态固定 ——
 /// 由上游 <c>PayloadFieldMapGenerator</c> 在编译期校验，不符即 <c>PAYLOAD004</c>。
 /// 本类的方法集与上游推断表（<c>Text</c>/<c>Number&lt;T&gt;</c>/<c>Flag&lt;T&gt;</c>/<c>Delimited&lt;T&gt;</c>/
-/// <c>Items&lt;T&gt;</c>/<c>ItemsWithAttributes&lt;T&gt;</c>）逐项对应。
+/// <c>Items&lt;T&gt;</c>/<c>ItemsWithAttributes&lt;T&gt;</c>/<c>Object&lt;TSingle&gt;</c>/<c>ItemsObject&lt;TItem&gt;</c>）
+/// 逐项对应。
 /// </para>
 /// <para>
 /// <b>不变量：节点缺失 ⇒ 返回默认值，绝不抛异常</b>。这是「字段可空」语义的机器化表达：
@@ -240,194 +241,53 @@ public static class WechatPayloadConverter
         return value;
     }
 
-    // ——— 二级/多级嵌套结构（超出上游「容器 → 单层同构项」表达力，按指南 §2.4 以 Method 逃生舱组装） ———
+    // ——— 嵌套结构（上游 G-ADR-17：Object / ItemsObject，由生成器发射调用）———
 
     /// <summary>
-    /// 扫码信息（官方 <c>ScanCodeInfo/ScanType</c> + <c>ScanCodeInfo/ScanResult</c>）；节点缺失 ⇒ <c>null</c>。
+    /// 单对象嵌套（官方 <c>ScanCodeInfo</c>/<c>SendPicsInfo</c>/<c>SendLocationInfo</c> 形态）；
+    /// 节点缺失 ⇒ <c>null</c>。内层字段由 <paramref name="accessor"/>（内层类型生成的映射表）递归 <c>Bind</c>。
     /// </summary>
-    public static WechatCallbackScanCodeInfo? ParseScanCodeInfo(PayloadNode? node)
-        => node == null
-            ? null
-            : new WechatCallbackScanCodeInfo
-            {
-                ScanType = Text(node.Child("ScanType")),
-                ScanResult = Text(node.Child("ScanResult")),
-            };
-
-    /// <summary>
-    /// 图片信息（官方 <c>SendPicsInfo/Count</c> + <c>SendPicsInfo/PicList/item/PicMd5Sum</c>）；
-    /// 节点缺失 ⇒ <c>null</c>，缺失子项跳过（语义不变量：绝不抛异常）。
-    /// </summary>
-    public static WechatCallbackSendPicsInfo? ParseSendPicsInfo(PayloadNode? node)
+    /// <typeparam name="TSingle">内层 DTO，须标注 <c>[PayloadContract]</c>（生成器只引用、不验证，G-ADR-17b）。</typeparam>
+    /// <param name="node">嵌套对象节点（由 <c>[PayloadField]</c> 定位）。</param>
+    /// <param name="accessor">内层映射表的非泛型桥（<see cref="IPayloadContractAccessor"/>）。</param>
+    public static TSingle? Object<TSingle>(PayloadNode? node, IPayloadContractAccessor accessor)
+        where TSingle : class
     {
-        if (node == null)
+        if (node == null || accessor == null)
             return null;
 
-        var info = new WechatCallbackSendPicsInfo
-        {
-            Count = Number<long>(node.Child("Count")),
-        };
+        if (accessor.CreateInstance() is not TSingle instance)
+            return null;
 
-        var picList = node.Child("PicList");
-        if (picList == null)
-            return info;
-
-        var children = picList.Children;
-        for (var i = 0; i < children.Count; i++)
-        {
-            var item = children[i];
-            if (item == null || !string.Equals(item.Name, "item", StringComparison.Ordinal))
-                continue;
-
-            var md5 = Text(item.Child("PicMd5Sum"));
-            if (md5 != null)
-                info.PicMd5Sums.Add(md5);
-        }
-
-        return info;
+        return (TSingle)accessor.Bind(node, instance);
     }
 
     /// <summary>
-    /// 位置信息（官方 <c>SendLocationInfo/Location_X</c> 等 5 个子节点，坐标为小数）；
-    /// 节点缺失 ⇒ <c>null</c>。
+    /// 契约化对象项 → 列表（官方 <c>ApprovalNodes/ApprovalNode</c>、<c>SelectedItems/SelectedItem</c> 形态）；
+    /// 节点缺失或不含 <paramref name="itemName"/> 项 ⇒ 空列表（语义不变量：绝不抛异常）。
     /// </summary>
-    public static WechatCallbackSendLocationInfo? ParseSendLocationInfo(PayloadNode? node)
-        => node == null
-            ? null
-            : new WechatCallbackSendLocationInfo
-            {
-                LocationX = ParseReal(node.Child("Location_X")),
-                LocationY = ParseReal(node.Child("Location_Y")),
-                Scale = Number<long>(node.Child("Scale")),
-                Label = Text(node.Child("Label")),
-                Poiname = Text(node.Child("Poiname")),
-            };
-
-    /// <summary>
-    /// 审批流程节点列表（官方 <c>ApprovalNodes/ApprovalNode</c>，节点内含 <c>Items/Item</c> 分支列表）；
-    /// 节点缺失 ⇒ 空列表。
-    /// </summary>
-    public static List<WechatCallbackApprovalNode> ParseApprovalNodes(PayloadNode? node)
+    /// <typeparam name="TItem">项 DTO，须标注 <c>[PayloadContract]</c>（生成器只引用、不验证，G-ADR-17b）。</typeparam>
+    /// <param name="node">容器节点（由 <c>[PayloadField]</c> 定位到容器本身）。</param>
+    /// <param name="itemName">项元素名（<c>ItemName</c> 声明）。</param>
+    /// <param name="itemAccessor">项映射表的非泛型桥（<see cref="IPayloadContractAccessor"/>）。</param>
+    public static List<TItem> ItemsObject<TItem>(PayloadNode? node, string itemName, IPayloadContractAccessor itemAccessor)
+        where TItem : class
     {
-        var nodes = new List<WechatCallbackApprovalNode>();
-        if (node == null)
-            return nodes;
-
-        var children = node.Children;
-        for (var i = 0; i < children.Count; i++)
-        {
-            var child = children[i];
-            if (child == null || !string.Equals(child.Name, "ApprovalNode", StringComparison.Ordinal))
-                continue;
-
-            nodes.Add(new WechatCallbackApprovalNode
-            {
-                NodeStatus = Number<long>(child.Child("NodeStatus")),
-                NodeAttr = Number<long>(child.Child("NodeAttr")),
-                NodeType = Number<long>(child.Child("NodeType")),
-                Items = ParseApprovalItems(child.Child("Items")),
-            });
-        }
-
-        return nodes;
-    }
-
-    /// <summary>
-    /// 审批分支列表（官方 <c>Items/Item</c>）；容器缺失或不含 <c>Item</c> ⇒ 空列表。
-    /// </summary>
-    private static List<WechatCallbackApprovalItem> ParseApprovalItems(PayloadNode? node)
-    {
-        var items = new List<WechatCallbackApprovalItem>();
-        if (node == null)
+        var items = new List<TItem>();
+        if (node == null || string.IsNullOrEmpty(itemName) || itemAccessor == null)
             return items;
 
         var children = node.Children;
         for (var i = 0; i < children.Count; i++)
         {
             var child = children[i];
-            if (child == null || !string.Equals(child.Name, "Item", StringComparison.Ordinal))
+            if (child == null || !string.Equals(child.Name, itemName, StringComparison.Ordinal))
                 continue;
 
-            items.Add(new WechatCallbackApprovalItem
-            {
-                ItemName = Text(child.Child("ItemName")),
-                ItemUserId = Text(child.Child("ItemUserId")),
-                ItemImage = Text(child.Child("ItemImage")),
-                ItemStatus = Number<long>(child.Child("ItemStatus")),
-                ItemSpeech = Text(child.Child("ItemSpeech")),
-                ItemOpTime = Number<long>(child.Child("ItemOpTime")),
-            });
-        }
-
-        return items;
-    }
-
-    /// <summary>
-    /// 抄送人列表（官方 <c>NotifyNodes/NotifyNode</c>）；节点缺失 ⇒ 空列表。
-    /// </summary>
-    public static List<WechatCallbackApprovalNotifyNode> ParseNotifyNodes(PayloadNode? node)
-    {
-        var nodes = new List<WechatCallbackApprovalNotifyNode>();
-        if (node == null)
-            return nodes;
-
-        var children = node.Children;
-        for (var i = 0; i < children.Count; i++)
-        {
-            var child = children[i];
-            if (child == null || !string.Equals(child.Name, "NotifyNode", StringComparison.Ordinal))
+            if (itemAccessor.CreateInstance() is not TItem instance)
                 continue;
 
-            nodes.Add(new WechatCallbackApprovalNotifyNode
-            {
-                ItemName = Text(child.Child("ItemName")),
-                ItemUserId = Text(child.Child("ItemUserId")),
-                ItemImage = Text(child.Child("ItemImage")),
-            });
-        }
-
-        return nodes;
-    }
-
-    /// <summary>
-    /// 模板卡片选中项列表（官方 <c>SelectedItems/SelectedItem</c>，项内含 <c>OptionIds/OptionId</c>）；
-    /// 节点缺失 ⇒ 空列表。
-    /// </summary>
-    public static List<WechatCallbackTemplateCardSelectedItem> ParseSelectedItems(PayloadNode? node)
-    {
-        var items = new List<WechatCallbackTemplateCardSelectedItem>();
-        if (node == null)
-            return items;
-
-        var children = node.Children;
-        for (var i = 0; i < children.Count; i++)
-        {
-            var child = children[i];
-            if (child == null || !string.Equals(child.Name, "SelectedItem", StringComparison.Ordinal))
-                continue;
-
-            var optionIds = new List<string>();
-            var optionContainer = child.Child("OptionIds");
-            if (optionContainer != null)
-            {
-                var optionChildren = optionContainer.Children;
-                for (var j = 0; j < optionChildren.Count; j++)
-                {
-                    var option = optionChildren[j];
-                    if (option == null || !string.Equals(option.Name, "OptionId", StringComparison.Ordinal))
-                        continue;
-
-                    var id = Text(option);
-                    if (id != null)
-                        optionIds.Add(id);
-                }
-            }
-
-            items.Add(new WechatCallbackTemplateCardSelectedItem
-            {
-                QuestionKey = Text(child.Child("QuestionKey")),
-                OptionIds = optionIds,
-            });
+            items.Add((TItem)itemAccessor.Bind(child, instance));
         }
 
         return items;

@@ -420,9 +420,9 @@ public class WechatCallbackPayloadReaderTests
         var payload = result.Payload!;
         payload.SendPicsInfo.Should().NotBeNull();
         payload.SendPicsInfo!.Count.Should().Be(1L);
-        payload.SendPicsInfo!.PicMd5Sums.Should().HaveCount(1);
-        payload.SendPicsInfo!.PicMd5Sums[0].Should().Be("1b5f7c23b5bf75682a53e7b6d163e185");
-        payload.SendPicsInfo!.PicMd5Sums.Should().NotContain(string.Empty);
+        payload.SendPicsInfo!.PicList.Should().HaveCount(1);
+        payload.SendPicsInfo!.PicList[0].PicMd5Sum.Should().Be("1b5f7c23b5bf75682a53e7b6d163e185");
+        payload.SendPicsInfo!.PicList.Should().OnlyContain(item => !string.IsNullOrEmpty(item.PicMd5Sum));
     }
 
     [Fact]

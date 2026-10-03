@@ -11,26 +11,33 @@ namespace Mud.Wechat.Work.Abstractions.Callback.Payloads;
 /// 审批节点分支（<c>open_approval_change</c> 报文的 <c>ApprovalNode/Items/Item</c> 节点；官方 path 90240）。
 /// </summary>
 /// <remarks>
-/// 由 <c>WechatPayloadConverter.ParseApprovalNodes</c> 在转换器内手工组装。
+/// 经上游 G-ADR-17 的 <c>ItemsObject</c> 嵌套通道声明化（纯标量项）。
 /// 注意与 <see cref="WechatCallbackApprovalNotifyNode"/>（抄送人）字段集不同：分支多了审批状态与意见。
 /// </remarks>
-public sealed class WechatCallbackApprovalItem
+[PayloadContract(Converter = typeof(WechatPayloadConverter))]
+public sealed partial class WechatCallbackApprovalItem
 {
     /// <summary>分支审批人姓名（官方 <c>ItemName</c>）。</summary>
+    [PayloadField("ItemName")]
     public string? ItemName { get; set; }
 
     /// <summary>分支审批人 UserId（官方 <c>ItemUserId</c>）。</summary>
+    [PayloadField("ItemUserId")]
     public string? ItemUserId { get; set; }
 
     /// <summary>分支审批人头像（官方 <c>ItemImage</c>）。</summary>
+    [PayloadField("ItemImage")]
     public string? ItemImage { get; set; }
 
     /// <summary>分支审批操作状态（官方 <c>ItemStatus</c>：1 审批中 / 2 已同意 / 3 已驳回 / 4 已转审）。</summary>
+    [PayloadField("ItemStatus")]
     public long? ItemStatus { get; set; }
 
     /// <summary>分支审批人审批意见（官方 <c>ItemSpeech</c>，可能为空串）。</summary>
+    [PayloadField("ItemSpeech")]
     public string? ItemSpeech { get; set; }
 
     /// <summary>分支审批人操作时间（官方 <c>ItemOpTime</c>，时间戳）。</summary>
+    [PayloadField("ItemOpTime")]
     public long? ItemOpTime { get; set; }
 }

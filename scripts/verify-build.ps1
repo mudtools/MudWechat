@@ -54,6 +54,10 @@ Assert-Zero -Step '步骤1' -Name 'NU1603 依赖降级' -Value $nu1603Count
 Write-Host "`n[步骤 2] AOT strict 冒烟（net8.0，逐源项目）" -ForegroundColor Cyan
 $sourceProjects = Get-ChildItem -Path $repoRoot -Filter '*.csproj' -File -Recurse |
     Where-Object { $_.FullName -notmatch '\\(Tests|Demos)\\' -and $_.FullName -notmatch '\\(obj|bin)\\' }
+# Roslyn 源生成器工程（.Generator.csproj）为 netstandard2.0 单 TFM（跨宿主加载硬约束），
+# 无运行时 AOT 语义；其正确性由步骤 1 全量构建（随 Callback 编译触发）+ 步骤 3 守卫闭环承担。
+# 此排除是范围修正 —— 防假绿三条设置（双断言 / 递归 / --no-incremental）全部保留。
+$sourceProjects = $sourceProjects | Where-Object { $_.Name -notmatch '\.Generator\.csproj$' }
 
 foreach ($project in $sourceProjects) {
     Write-Host "  AOT strict 构建：$($project.Name)"

@@ -12,16 +12,21 @@ namespace Mud.Wechat.Work.Abstractions.Callback.Payloads;
 /// 官方 path 90240）。
 /// </summary>
 /// <remarks>
-/// 由 <c>WechatPayloadConverter.ParseNotifyNodes</c> 在转换器内手工组装。节点缺失 ⇒ 空列表。
+/// 经上游 G-ADR-17 的 <c>ItemsObject</c> 嵌套通道声明化（纯标量项，
+/// 由外层 <c>NotifyNodes</c> 以 <c>ItemName = "NotifyNode"</c> 收集）。
 /// </remarks>
-public sealed class WechatCallbackApprovalNotifyNode
+[PayloadContract(Converter = typeof(WechatPayloadConverter))]
+public sealed partial class WechatCallbackApprovalNotifyNode
 {
     /// <summary>抄送人姓名（官方 <c>ItemName</c>）。</summary>
+    [PayloadField("ItemName")]
     public string? ItemName { get; set; }
 
     /// <summary>抄送人 UserId（官方 <c>ItemUserId</c>）。</summary>
+    [PayloadField("ItemUserId")]
     public string? ItemUserId { get; set; }
 
     /// <summary>抄送人头像（官方 <c>ItemImage</c>）。</summary>
+    [PayloadField("ItemImage")]
     public string? ItemImage { get; set; }
 }

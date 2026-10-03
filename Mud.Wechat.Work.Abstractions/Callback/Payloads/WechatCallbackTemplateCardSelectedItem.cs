@@ -5,23 +5,25 @@
 //  不得利用本项目从事危害国家安全、扰乱社会秩序、侵犯他人合法权益等法律法规禁止的活动！任何基于本项目开发而产生的一切法律纠纷和责任，我们不承担任何责任！
 // -----------------------------------------------------------------------
 
-using System.Collections.Generic;
-
 namespace Mud.Wechat.Work.Abstractions.Callback.Payloads;
 
 /// <summary>
 /// 模板卡片选中项（<c>template_card_event</c> 报文的 <c>SelectedItems/SelectedItem</c> 节点；官方 path 90240）。
 /// </summary>
 /// <remarks>
-/// 由 <c>WechatPayloadConverter.ParseSelectedItems</c> 在转换器内手工组装：
-/// 项内含 <c>OptionIds/OptionId</c> 二级嵌套列表，超出生成器「容器 → 单层同构项」的表达力。
+/// 经上游 G-ADR-17 的 <c>ItemsObject</c> 嵌套通道声明化：本类型作为对象项被外层
+/// <c>SelectedItems</c>（<c>ItemName = "SelectedItem"</c>）收集，内层 <see cref="OptionIds"/>
+/// 标量列表走既有 <c>Items</c>（<c>ItemName = "OptionId"</c>）。
 /// 投票/多选类卡片才携带该项，其余报文 ⇒ 空列表。
 /// </remarks>
-public sealed class WechatCallbackTemplateCardSelectedItem
+[PayloadContract(Converter = typeof(WechatPayloadConverter))]
+public sealed partial class WechatCallbackTemplateCardSelectedItem
 {
     /// <summary>问题的 key 值（官方 <c>QuestionKey</c>）。</summary>
+    [PayloadField("QuestionKey")]
     public string? QuestionKey { get; set; }
 
     /// <summary>对应问题的选项列表（官方 <c>OptionIds/OptionId</c>）。</summary>
+    [PayloadField("OptionIds", Format = PayloadFieldFormat.Items, ItemName = "OptionId")]
     public List<string> OptionIds { get; set; } = new List<string>();
 }

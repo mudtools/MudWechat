@@ -5,8 +5,6 @@
 //  不得利用本项目从事危害国家安全、扰乱社会秩序、侵犯他人合法权益等法律法规禁止的活动！任何基于本项目开发而产生的一切法律纠纷和责任，我们不承担任何责任！
 // -----------------------------------------------------------------------
 
-using System.Collections.Generic;
-
 namespace Mud.Wechat.Work.Abstractions.Callback.Payloads;
 
 /// <summary>
@@ -14,15 +12,19 @@ namespace Mud.Wechat.Work.Abstractions.Callback.Payloads;
 /// <c>SendPicsInfo</c> 节点；官方 path 90240）。
 /// </summary>
 /// <remarks>
-/// 由 <c>WechatPayloadConverter.ParseSendPicsInfo</c> 在转换器内手工组装：
-/// 官方嵌套为 <c>SendPicsInfo/Count</c> 与 <c>SendPicsInfo/PicList/item/PicMd5Sum</c>（三层），
-/// 超出生成器「容器 → 单层同构项」的表达力。节点缺失 ⇒ 返回 <c>null</c>。
+/// 官方嵌套为 <c>SendPicsInfo/Count</c> 与 <c>SendPicsInfo/PicList/item/PicMd5Sum</c>（三层）：
+/// <c>item</c> 节点无文本（文本在其子节点 <c>PicMd5Sum</c>），故经 G-ADR-17 的 <c>ItemsObject</c>
+/// 声明化为强类型项 <see cref="WechatCallbackSendPicItem"/>（元素名 ↔ 属性名配对由编译器校验）。
+/// 节点缺失 ⇒ 返回 <c>null</c>。
 /// </remarks>
-public sealed class WechatCallbackSendPicsInfo
+[PayloadContract(Converter = typeof(WechatPayloadConverter))]
+public sealed partial class WechatCallbackSendPicsInfo
 {
     /// <summary>发送的图片数量（官方 <c>Count</c>）。</summary>
+    [PayloadField("Count")]
     public long? Count { get; set; }
 
-    /// <summary>图片 MD5 值列表（官方 <c>PicList/item/PicMd5Sum</c>，可用于校验接收到的图片）。</summary>
-    public List<string> PicMd5Sums { get; set; } = new List<string>();
+    /// <summary>图片项列表（官方 <c>PicList/item</c>，项内 <c>PicMd5Sum</c> 可用于校验接收到的图片）。</summary>
+    [PayloadField("PicList", Format = PayloadFieldFormat.ItemsObject, ItemName = "item")]
+    public List<WechatCallbackSendPicItem> PicList { get; set; } = new List<WechatCallbackSendPicItem>();
 }

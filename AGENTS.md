@@ -36,7 +36,7 @@ dotnet format Mud.Wechat.slnx                                  # 格式化（未
 ### 2.1 门禁三步（`verify-build.ps1`）
 
 1. **Release 全量构建** — 断言 `: error ` 计数 = 0、`NU1603`（依赖降级）计数 = 0。
-2. **AOT strict 冒烟** — 逐源项目（排除 `Tests`/`Demos`/`obj`/`bin`）以 `-c Release -f net8.0 -p:AotStrictMode=true --no-incremental` 构建，断言**编译错误 = 0 且 `IL\d{4}` 诊断 = 0**。
+2. **AOT strict 冒烟** — 逐源项目（排除 `Tests`/`Demos`/`obj`/`bin`，另按 `*.Generator.csproj` 后缀排除 Roslyn 生成器工程）以 `-c Release -f net8.0 -p:AotStrictMode=true --no-incremental` 构建，断言**编译错误 = 0 且 `IL\d{4}` 诊断 = 0**。生成器工程是 netstandard2.0 单 TFM（Roslyn 组件跨宿主硬约束），无运行时 AOT 语义，其正确性由步骤 1 全量构建（随 Callback 编译触发）+ 步骤 3 守卫闭环承担 —— 该排除是范围修正，**防假绿三条设置全部保留**。
 3. **单元测试** — 逐测试工程单 TFM `net8.0`（`Tests/Directory.Build.props` 遮蔽根 props），断言 TRX 存在、`total > 0`、`failed = 0`。产物落 `test-reports/`（已 gitignore）。
 
 **防假绿设置（删掉即假绿，不许「优化」掉）**：
@@ -93,6 +93,7 @@ Mud.Wechat/
 ├── Mud.Wechat.Work.Abstractions/ # 令牌基座、多应用、配置、存储端口、枚举、异常、回调事件信封
 ├── Mud.Wechat.Work.DataModels/   # 官方 DTO（[HttpJsonSerializable]）+ Generated/ 域 JsonContext（生成物）
 ├── Mud.Wechat.Work.Callback/     # 回调接收（AES 解密、事件解析、分发）+ HTTP 中间件；Events/ 强类型事件 DTO
+├── Mud.Wechat.Work.Callback.Generator/  # 回调契约登记生成器（IsPackable=false；依据 [WechatCallbackContract] 发射 RegisterAll）
 ├── Mud.Wechat.Redis/             # 四个存储端口的 Redis 实现 + 连接基座 + DI 编排
 ├── Tests/                        # 5 个测试工程，镜像源结构，单 TFM net8.0
 ├── scripts/                      # verify-build / audit-config-keys / GenerateJsonContext / AddHttpJsonSerializable
@@ -159,19 +160,21 @@ Mud.Wechat/
 - **加解密**：按官方 **32 字节块 PKCS7** 手工补位/剥离；**禁用 .NET 内置 16 块 `PaddingMode.PKCS7`**（内置 16 块校验会误拒官方 pad∈[17..32] 报文）。
 - **抗重放（两道 fail-closed 闸）**：① 时间戳时效窗口 ±300s（缺失/非数字即拒）；② 一次性指纹去重（SHA1 指纹，不得落盘密文本身）。**指纹闸位于「解密 + receiveid 校验成功」之后、事件返回之前** —— 解密成功即证明报文经仅企微与我方共知的 AESKey 验证可信；解密失败不消耗指纹，官方重试可重新进入管线。**不得**把指纹闸移回解密之前，也不得绕过。**GET URL 验证（echo）只过时效闸、不消费指纹**（同 echostr 二次保存配置必须成功）。分布式实现（`Mud.Wechat.Redis`）故障时守卫异常**必须上抛**（→ 回调 5xx → 官方 96238 重试）；**禁止**吞异常返回 `true` 放行重放、或返回 `false` 静默丢事件；空键返回 `false` 且不触达存储。
 - **事件信封与事件键**：`WechatCallbackEvent` / `IWechatCallbackEventHandler` / `IWechatCallbackEventInterceptor` / `WechatCallbackEventTypes` 落 `Abstractions.Callback`（该目录**含子目录，不得出现 XML 类型**，守卫 CB7 已递归）；XML→信封解析留 `Callback.WechatCallbackReceiver`。`EventTypeKey` = `InfoType`（非空）→ `ChangeType` → `Event`；处理器 `SupportedEventType` 空串 = 兜底（内置处理器即此形态，文件**留 `Callback` 包根目录**）。`AuthCorpId ← FromUserName` 兜底**仅限授权族**（`change_contact` 的 `FromUserName` 固定 `sys`，无差别兜底会伪造授权企业）。信封另带 `AppKey` / `AppType` / `Channel`（只读快照，**配置权威仍是** `WechatAppManager` / `WechatCallbackOptions`）。
-- **事件载荷体系（v2.2）**：**不得**再新增「逐事件 DTO + 手写 `ParseXxx` 方法」。载荷按官方**报文结构族**建（`Events/Payloads/`，13 型 + `GenericCallbackPayload`），字段映射由**上游** `Mud.HttpUtils.PayloadFieldMapGenerator` 依 `[PayloadContract]`/`[PayloadField]` 在编译期生成 ⇒ 元素名 ↔ 属性名配对受编译器校验。要点：
-  1. 载荷类型须 `partial` 且标注 `[PayloadContract(Converter = typeof(WechatPayloadConverter))]`；
-  2. 转换器方法须 **`static`、非泛型、恰 1 参**（首参 `PayloadNode` 或 `string?`，生成器按首参类型决定传 `n` 还是 `n?.Value`）；
+- **事件载荷体系（v2.2；P2 后嵌套与登记全面声明化）**：**不得**再新增「逐事件 DTO + 手写 `ParseXxx` 方法」，也**不得**手写多级嵌套解析或手改 `OfficialPayloadContracts.RegisterAll` 方法体。载荷按官方**报文结构族**建（`Events/Payloads/`，13 型 + `GenericCallbackPayload`），字段映射由**上游** `Mud.HttpUtils.PayloadFieldMapGenerator` 依 `[PayloadContract]`/`[PayloadField]` 在编译期生成 ⇒ 元素名 ↔ 属性名配对受编译器校验。要点：
+  1. 载荷类型须 `partial` 且标注 `[PayloadContract(Converter = typeof(WechatPayloadConverter))]`（转换器落 `Abstractions/Callback/Payloads/`，纯转换语义、零 Callback 依赖）；
+  2. 转换器标量方法须 **`static`、非泛型、恰 1 参**（首参 `PayloadNode` 或 `string?`，生成器按首参类型决定传 `n` 还是 `n?.Value`）；**多级嵌套走 G-ADR-17 声明化通道**：单对象用 `Object<TSingle>`（内层 DTO 标 `[PayloadContract]`、属性须可空标注、禁 `ItemName`），对象列表用 `ItemsObject<TItem>`（须 `ItemName`、元素实参非可空）—— 二者由本仓 `WechatPayloadConverter` 提供（内层字段递归 `Bind`），嵌套 DTO 升级 `partial` + `[PayloadContract]` 后映射表自动生成，`WechatCallbackExtAttrItem`（`ItemsWithAttributes` 形态）除外；
   3. 映射表须在**具体类型**处取 `XxxPayload.PayloadFieldMap` —— C# 禁止泛型上下文访问类型参数静态成员（CS0712），且 `static abstract` 需 net7+（本仓含 ns2.0 不可用）；
   4. 类型化处理器继承**抽象基类** `WechatCallbackPayloadHandler<TPayload>` —— 「泛型接口＋显式默认实现」的桥接模式是 C# 8 默认接口实现，`netstandard2.0` 报 **CS8701**；
-  5. `Callback.csproj` 必须**显式**引用 `Mud.HttpUtils.Generator`（Abstractions 的引用带 `PrivateAssets="all"`，**不流向** Callback）；
+  5. `Callback.csproj` 必须**显式**引用 `Mud.HttpUtils.Generator`（Abstractions 的引用带 `PrivateAssets="all"`，**不流向** Callback）与**本仓生成器工程** `Mud.Wechat.Work.Callback.Generator`（`OutputItemType="Analyzer"`，`IsPackable=false` 不进「恰 5 nupkg」）；
   6. 上游生成器引用与 `Mud.HttpUtils` 包版本须**全仓单一**（守卫 `MudHttpUtils_PackageReference_ShouldBeSingleVersion`，NU1605 视为错误）。
+  7. **契约登记单一来源（P2）**：事件键 + 族前置条件 + 事件键级开放面声明在载荷类的 **`[WechatCallbackContract]` 特性**（`AllowMultiple`：同载荷不同键子集开放面不同时叠加声明，如 `PlainEventPayload` 两段）；本仓生成器发射 `OfficialPayloadContracts.RegisterAll` 方法体（每键一条 `CreateWithOpenSurface`，`requiredEvent` 缺省 = 逐键自指）。运行期「不宽于族默认」校验不变（CB4e）；**特性声明不完整由生成器诊断 MUDCB001 打红**（开放面/通道/事件键缺失）。
+  - **载荷目录归类（源文件分目录，命名空间不分段）**：`Events/Payloads/` 下按官方事件族分子目录 —— `Contacts/`（通讯录变更族）、`CorpGroup/`（上下游变更族）、`AsyncJobs/`（异步任务族）、`Messages/`（消息与事件族 90240 共 8 型）、`Contracts/`（跨族基座：`OfficialPayloadContracts` partial 声明）。**目录仅作组织**（同 `RequestModel/`/`ResponseModel/` 口径）：命名空间恒为 `Mud.Wechat.Work.Callback.Events.Payloads`，**不随目录分段** —— 宿主 `using` 与守卫（CB4d/CB23 按文件名递归定位）均不受分目录影响。新增载荷按事件族落位，勿再平铺回 `Payloads/` 根。
 - **注册表与分发**：组合根期急切注册、**无 Freeze**；通配键 `"*"`（`WechatCallbackOptions.WildcardAppKey`）双重语义 = 通讯录同步助手路由 + 全局处理器/拦截器桶；匹配顺序：appKey 专属精确 → 全局精确 → 专属兜底 → 全局兜底。同步分发 + 软超时（默认 4500ms，**必须 < 企业微信 5s 契约**）；超时/拦截器中断 → 503 触发重推；指纹在分发前消费，重推同指纹将被 403（fail-closed 优先于 at-least-once，**处理器须幂等**）；单处理器异常隔离（LogError 后继续，结果仍 Handled）；`MaxConcurrentEvents` 信号量容量为构造期快照（热更不改容量）。
 - **`WechatAppCallbackOptions` 配置面**：`PushToken`/`PushEncodingAESKey`/`ReceiveId`/`AppType`/`Channel`（**必须与主配置同类文件**才会纳入 audit 扫描）。`ReceiveId` 是「接收方 ID」：企业自建回调填企业 `CorpId`、**套件回调填 `SuiteId`**；非空时校验解密明文的 `receiveid`，不一致即拒；留空（通讯录同步助手）或明文未携带 `receiveid` 时跳过校验并一次性告警（官方「个人主体第三方为空串」兼容）。
 - **应用类型 × 回调通道**：`AppType`（`WechatAppType`，默认 `Internal`）+ `Channel`（`WechatCallbackChannel`，`App=1` 应用数据通道 / `Suite=2` 套件指令通道，默认 `App`）；`Validate()` 拒绝「自建应用占用套件通道」「套件通道非第三方/代开发」两类非法组合。`ValidateReceiveId` 按三元分流：自建 App / 第三方·代开发 Suite = 静态 `ReceiveId`；第三方·代开发 App = 动态授权企业 CorpId（比对外层 `ToUserName`）。`IsEventFamilyAllowed` 开放面矩阵：授权族→Suite+第三方/代开发；上下游→App+自建；通讯录/异步→App；Unknown→不拦截。合法性闸先于拦截器 `BeforeHandleAsync`，不适用族返回 `Rejected`（→200 不重推）。
 - **回调事件载荷**（`Callback/Events/Payloads/`）**不复用** DataModels 的 JSON DTO（XML vs JSON、逗号/竖线串 vs List、权限降权语义三重差异）。
 - **三模式无关性（v2.2 ADR-14）**：企业自建 / 第三方 / 服务商代开发的报文**结构同一**，差异只是「值是否出现」⇒ 一份可空超集载荷覆盖三模式；**载荷与转换器层禁止出现** `WechatAppType` / `WechatCallbackChannel` 分支（守卫 CB4d）。需按模式分支时在**处理器层**读 `evt.AppType`。
-- **事件键级开放面（v2.2 ADR-15）**：官方开放面的真实粒度是**事件键**而非事件族。`IsEventFamilyAllowed` 保留为**族级默认**，事件键级声明（`SupportedAppTypes` / `RequiredChannel` / `RequiredEvent` / `RequiredFamily`）在其之上叠加；两道闸均**先于**拦截器 `BeforeHandleAsync`（CB22）。宿主注册新 `Event` 值会落 `Unknown` 族而被族闸放行 ⇒ **必须**在契约登记时显式声明，不得依赖族默认。
+- **事件键级开放面（v2.2 ADR-15；P2 后声明在载荷特性）**：官方开放面的真实粒度是**事件键**而非事件族。`IsEventFamilyAllowed` 保留为**族级默认**，事件键级声明（`SupportedAppTypes` / `RequiredChannel` / `RequiredEvent` / `RequiredFamily`）在其之上叠加；两道闸均**先于**拦截器 `BeforeHandleAsync`（CB13b）。宿主注册新 `Event` 值会落 `Unknown` 族而被族闸放行 ⇒ **必须**在载荷类 `[WechatCallbackContract]` 特性显式声明，不得依赖族默认；CB4b 双面锁定（官方清单锚点 + 特性并集一致性）。
 - **上下游事件族**：`Event=change_chain` + 9 个 ChangeType（空间/分组/企业三族），信封带 `ChainId`、`IsChangeChain`；载荷按**官方报文结构族**建 **1 型**（`ChainChangedPayload`，含可空 `GroupIds`/`CorpIds`，ChangeType 经信封判别）；`batch_job_result` 官方存在**双报文布局**（通讯录 90973 顶层节点 vs 上下游 95797 `BatchJob` 包装节点）⇒ 契约声明 `ScopeFallback = "BatchJob"`，三级作用域判定由上游 `ResolveScope` 完成。**`JobType` 级差异属语义过滤、不得做成安全闸**（官方开放面约束的是事件面，非某个 `JobType` 值）⇒ 处理器按需自行判别。开放面仅自建应用（需配置到「上下游-可调用接口的应用」）；上下游系统应用自身触发的变更不回调。
 
 ### 6.6 消息推送落位决策

@@ -16,10 +16,17 @@ namespace Mud.Wechat.Work.Callback.Events.Payloads;
 /// <remarks>
 /// <b>结构族</b>：两事件的官方报文字段集合一致（信封 + <c>EventKey</c> + <c>ScanCodeInfo</c> + <c>AgentID</c>），
 /// 差异仅在触发时机（<c>scancode_waitmsg</c> 额外弹出「消息接收中」提示框，不体现在报文上）。
-/// <see cref="ScanCodeInfo"/> 为二级嵌套结构，由 <c>WechatPayloadConverter.ParseScanCodeInfo</c> 组装；
+/// <see cref="ScanCodeInfo"/> 为单对象嵌套（G-ADR-17 <c>Object</c> 通道，内层字段声明化）；
 /// 节点缺失 ⇒ <c>null</c>（处理器不得假设必有值）。
 /// </remarks>
 [PayloadContract(Converter = typeof(WechatPayloadConverter))]
+[WechatCallbackContract(
+    RequiredFamily = WechatCallbackEventFamily.Unknown,
+    SupportedAppTypes = WechatAppTypeSet.All,
+    RequiredChannel = WechatCallbackChannel.App,
+    EventTypes = new[] {
+        WechatCallbackEventTypes.ScanCodePush,
+        WechatCallbackEventTypes.ScanCodeWaitMsg })]
 public sealed partial class MenuScanCodePayload : WechatCallbackPayload
 {
     /// <summary>事件 KEY 值（官方 <c>EventKey</c>，与自定义菜单接口中 KEY 值对应）。</summary>
@@ -27,7 +34,7 @@ public sealed partial class MenuScanCodePayload : WechatCallbackPayload
     public string? EventKey { get; set; }
 
     /// <summary>扫描信息（官方 <c>ScanCodeInfo</c>：<c>ScanType</c> + <c>ScanResult</c>）。</summary>
-    [PayloadField("ScanCodeInfo", Method = nameof(WechatPayloadConverter.ParseScanCodeInfo))]
+    [PayloadField("ScanCodeInfo")]
     public WechatCallbackScanCodeInfo? ScanCodeInfo { get; set; }
 
     /// <summary>企业应用 id（官方 <c>AgentID</c>，整型；可在应用设置页面查看）。</summary>

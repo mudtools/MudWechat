@@ -11,24 +11,29 @@ namespace Mud.Wechat.Work.Abstractions.Callback.Payloads;
 /// 发送的位置信息（<c>location_select</c> 报文的 <c>SendLocationInfo</c> 节点；官方 path 90240）。
 /// </summary>
 /// <remarks>
-/// 由 <c>WechatPayloadConverter.ParseSendLocationInfo</c> 在转换器内手工组装
-/// （官方节点名含下划线 <c>Location_X</c>/<c>Location_Y</c>，且坐标为小数 —— 生成器的
-/// <c>Number&lt;T&gt;</c> 推断只解析整数）。节点缺失 ⇒ 返回 <c>null</c>。
+/// 经上游 G-ADR-17 的 <c>Object</c> 嵌套通道声明化。官方节点名含下划线（<c>Location_X</c>/<c>Location_Y</c>），
+/// 坐标为小数 —— <c>Number&lt;T&gt;</c> 只解析整数，故坐标显式 <c>ParseReal</c>。节点缺失 ⇒ 返回 <c>null</c>。
 /// </remarks>
-public sealed class WechatCallbackSendLocationInfo
+[PayloadContract(Converter = typeof(WechatPayloadConverter))]
+public sealed partial class WechatCallbackSendLocationInfo
 {
     /// <summary>X 坐标（官方 <c>Location_X</c>）。</summary>
+    [PayloadField("Location_X", Method = nameof(WechatPayloadConverter.ParseReal))]
     public double? LocationX { get; set; }
 
     /// <summary>Y 坐标（官方 <c>Location_Y</c>）。</summary>
+    [PayloadField("Location_Y", Method = nameof(WechatPayloadConverter.ParseReal))]
     public double? LocationY { get; set; }
 
     /// <summary>精度 / 比例尺（官方 <c>Scale</c>，越精细数值越高）。</summary>
+    [PayloadField("Scale")]
     public long? Scale { get; set; }
 
     /// <summary>地理位置的字符串信息（官方 <c>Label</c>）。</summary>
+    [PayloadField("Label")]
     public string? Label { get; set; }
 
     /// <summary>POI 的名字，可能为空（官方 <c>Poiname</c>）。</summary>
+    [PayloadField("Poiname")]
     public string? Poiname { get; set; }
 }

@@ -126,7 +126,7 @@ public sealed class WechatPayloadContract
         => new(eventTypeKey, accessor, requiredEvent, requiredFamily, null, null);
 
     /// <summary>
-    /// 创建契约并显式声明事件键级开放面（官方 17 键须显式声明，守卫 CB4c 断言）。
+    /// 创建契约并显式声明事件键级开放面（官方 41 键须显式声明，守卫 CB4c 断言）。
     /// </summary>
     /// <remarks>
     /// <b>注册期 fail-fast（ADR-15）</b>：声明<b>不得宽于</b>事件族的官方默认（

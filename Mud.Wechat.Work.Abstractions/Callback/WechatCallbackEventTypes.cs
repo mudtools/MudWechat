@@ -23,7 +23,10 @@ namespace Mud.Wechat.Work.Abstractions.Callback;
 /// 授权族 <see href="https://developer.work.weixin.qq.com/document/path/90628">path 90628</see>（suite_ticket）/ <see href="https://developer.work.weixin.qq.com/document/path/99487">path 99487</see>（授权通知事件）/ <see href="https://developer.work.weixin.qq.com/document/path/100964">path 100964</see>（修改授权通知）·
 /// 通讯录变更族 <see href="https://developer.work.weixin.qq.com/document/path/90967">path 90967</see>（概述）·
 /// 上下游变更族 <see href="https://developer.work.weixin.qq.com/document/path/95796">path 95796</see> ·
-/// 异步任务族 <see href="https://developer.work.weixin.qq.com/document/path/90973">path 90973</see>（通讯录）/ <see href="https://developer.work.weixin.qq.com/document/path/95797">path 95797</see>（上下游）。
+/// 异步任务族 <see href="https://developer.work.weixin.qq.com/document/path/90973">path 90973</see>（通讯录）/ <see href="https://developer.work.weixin.qq.com/document/path/95797">path 95797</see>（上下游）·
+/// 消息与事件（关注/菜单/地理位置/审批/共享/模板卡片/应用状态）<see href="https://developer.work.weixin.qq.com/document/path/90240">path 90240</see>（企业内部开发）/
+/// <see href="https://developer.work.weixin.qq.com/document/path/90376">path 90376</see>（第三方）/ <see href="https://developer.work.weixin.qq.com/document/path/96468">path 96468</see>（服务商代开发）——
+/// 三份文档正文逐字一致，故同一事件键在三种应用模式下共用一个常量。
 /// </para>
 /// <para>
 /// 契约守卫 CB2（<c>WechatCallbackContractGuards</c>）按本类断言官方事件键全覆盖，新增官方事件键须同批登记。
@@ -189,4 +192,133 @@ public static class WechatCallbackEventTypes
     /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/95796">path 95796 上下游变更回调</see>。
     /// </remarks>
     public const string RemoveCorp = "remove_corp";
+
+    // ——— 关注 / 进入应用（官方 90240；Event 信封值） ———
+
+    /// <summary>成员关注事件（进入应用可见范围、加入企业、或被禁用后重新激活等时机触发）。</summary>
+    /// <remarks>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/90240">path 90240 接收消息事件</see>
+    /// （第三方 <see href="https://developer.work.weixin.qq.com/document/path/90376">90376</see> / 代开发
+    /// <see href="https://developer.work.weixin.qq.com/document/path/96468">96468</see> 正文一致）。
+    /// </remarks>
+    public const string Subscribe = "subscribe";
+
+    /// <summary>成员取消关注事件（退出应用可见范围、退出企业或被禁用等时机触发）。</summary>
+    /// <remarks>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/90240">path 90240 接收消息事件</see>。
+    /// </remarks>
+    public const string Unsubscribe = "unsubscribe";
+
+    /// <summary>成员进入应用事件（EventKey 官方标注恒为空）。</summary>
+    /// <remarks>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/90240">path 90240 进入应用</see>。
+    /// </remarks>
+    public const string EnterAgent = "enter_agent";
+
+    // ——— 上报地理位置（官方 90240；官方键值为大写 LOCATION） ———
+
+    /// <summary>成员上报地理位置事件（官方键值为大写 <c>LOCATION</c>，进入应用会话时触发）。</summary>
+    /// <remarks>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/90240">path 90240 上报地理位置</see>。
+    /// </remarks>
+    public const string Location = "LOCATION";
+
+    // ——— 菜单事件（官方 90240；Event 信封值 = 自定义菜单 KEY / 行为类型） ———
+
+    /// <summary>点击菜单拉取消息事件（EventKey = 自定义菜单 KEY 值）。</summary>
+    /// <remarks>官方文档：<see href="https://developer.work.weixin.qq.com/document/path/90240">path 90240 菜单事件</see>。</remarks>
+    public const string Click = "click";
+
+    /// <summary>点击菜单跳转链接事件（EventKey = 设置的跳转 URL）。</summary>
+    /// <remarks>官方文档：<see href="https://developer.work.weixin.qq.com/document/path/90240">path 90240 菜单事件</see>。</remarks>
+    public const string View = "view";
+
+    /// <summary>点击菜单跳转小程序事件（EventKey = 设置的小程序路径）。</summary>
+    /// <remarks>官方文档：<see href="https://developer.work.weixin.qq.com/document/path/90240">path 90240 菜单事件</see>。</remarks>
+    public const string ViewMiniProgram = "view_miniprogram";
+
+    /// <summary>扫码推事件（携带 <c>ScanCodeInfo</c> 扫描信息）。</summary>
+    /// <remarks>官方文档：<see href="https://developer.work.weixin.qq.com/document/path/90240">path 90240 菜单事件</see>。</remarks>
+    public const string ScanCodePush = "scancode_push";
+
+    /// <summary>扫码推事件且弹出「消息接收中」提示框（与 <c>scancode_push</c> 报文结构同一）。</summary>
+    /// <remarks>官方文档：<see href="https://developer.work.weixin.qq.com/document/path/90240">path 90240 菜单事件</see>。</remarks>
+    public const string ScanCodeWaitMsg = "scancode_waitmsg";
+
+    /// <summary>弹出系统拍照发图事件（携带 <c>SendPicsInfo</c> 图片信息）。</summary>
+    /// <remarks>官方文档：<see href="https://developer.work.weixin.qq.com/document/path/90240">path 90240 菜单事件</see>。</remarks>
+    public const string PicSysPhoto = "pic_sysphoto";
+
+    /// <summary>弹出拍照或者相册发图事件（与 <c>pic_sysphoto</c> 报文结构同一）。</summary>
+    /// <remarks>官方文档：<see href="https://developer.work.weixin.qq.com/document/path/90240">path 90240 菜单事件</see>。</remarks>
+    public const string PicPhotoOrAlbum = "pic_photo_or_album";
+
+    /// <summary>弹出微信相册发图器事件（与 <c>pic_sysphoto</c> 报文结构同一）。</summary>
+    /// <remarks>官方文档：<see href="https://developer.work.weixin.qq.com/document/path/90240">path 90240 菜单事件</see>。</remarks>
+    public const string PicWeixin = "pic_weixin";
+
+    /// <summary>弹出地理位置选择器事件（携带 <c>SendLocationInfo</c> 位置信息）。</summary>
+    /// <remarks>官方文档：<see href="https://developer.work.weixin.qq.com/document/path/90240">path 90240 菜单事件</see>。</remarks>
+    public const string LocationSelect = "location_select";
+
+    // ——— 审批状态通知（官方 90240；Event = open_approval_change） ———
+
+    /// <summary>审批状态通知事件（审批状态变化或审批人操作时触发，载荷包在 <c>ApprovalInfo</c> 内）。</summary>
+    /// <remarks>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/90240">path 90240 审批状态通知事件</see>。
+    /// 官方触发时机描述为「自建/第三方应用调用审批流程引擎」⇒ 开放面不含代开发。
+    /// </remarks>
+    public const string OpenApprovalChange = "open_approval_change";
+
+    // ——— 共享应用（官方 90240；仅自建应用可被共享） ———
+
+    /// <summary>企业互联共享应用事件（上级企业共享/移除自建应用给下级企业）。</summary>
+    /// <remarks>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/90240">path 90240 企业互联共享应用事件回调</see>。
+    /// 官方触发时机为「把自建应用共享给下级企业」⇒ 开放面仅自建。
+    /// </remarks>
+    public const string ShareAgentChange = "share_agent_change";
+
+    /// <summary>上下游共享应用事件（上游企业共享/移除自建应用给下游企业）。</summary>
+    /// <remarks>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/90240">path 90240 上下游共享应用事件回调</see>。
+    /// 官方触发时机为「把自建应用共享给下游企业」⇒ 开放面仅自建。
+    /// </remarks>
+    public const string ShareChainChange = "share_chain_change";
+
+    // ——— 模板卡片（官方 90240；Event 信封值） ———
+
+    /// <summary>模板卡片按钮点击事件（携带 <c>SelectedItems</c> 投票/多选结果）。</summary>
+    /// <remarks>官方文档：<see href="https://developer.work.weixin.qq.com/document/path/90240">path 90240 模板卡片事件推送</see>。</remarks>
+    public const string TemplateCardEvent = "template_card_event";
+
+    /// <summary>通用模板卡片右上角菜单事件（与 <c>template_card_event</c> 报文同一结构，仅少 <c>SelectedItems</c> 节点）。</summary>
+    /// <remarks>官方文档：<see href="https://developer.work.weixin.qq.com/document/path/90240">path 90240 通用模板卡片右上角菜单事件推送</see>。</remarks>
+    public const string TemplateCardMenuEvent = "template_card_menu_event";
+
+    // ——— 应用状态与活跃度（官方 90240；Event 信封值） ———
+
+    /// <summary>长期未使用应用停用预警事件（携带 <c>EffectTime</c> 生效时间戳）。</summary>
+    /// <remarks>官方文档：<see href="https://developer.work.weixin.qq.com/document/path/90240">path 90240 长期未使用应用停用预警事件</see>。</remarks>
+    public const string InactiveAlert = "inactive_alert";
+
+    /// <summary>长期未使用应用被系统自动停用事件。</summary>
+    /// <remarks>官方文档：<see href="https://developer.work.weixin.qq.com/document/path/90240">path 90240 长期未使用应用临时停用事件</see>。</remarks>
+    public const string CloseInactiveAgent = "close_inactive_agent";
+
+    /// <summary>长期未使用应用被管理员重新启用事件。</summary>
+    /// <remarks>官方文档：<see href="https://developer.work.weixin.qq.com/document/path/90240">path 90240 长期未使用应用重新启用事件</see>。</remarks>
+    public const string ReopenInactiveAgent = "reopen_inactive_agent";
+
+    /// <summary>应用低活跃预警事件（即将限制客户数据访问；携带 <c>EffectTime</c> 生效时间戳）。</summary>
+    /// <remarks>官方文档：<see href="https://developer.work.weixin.qq.com/document/path/90240">path 90240 应用低活跃预警事件</see>。</remarks>
+    public const string LowActiveAlert = "low_active_alert";
+
+    /// <summary>应用变为低活跃应用事件。</summary>
+    /// <remarks>官方文档：<see href="https://developer.work.weixin.qq.com/document/path/90240">path 90240 低活跃应用事件</see>。</remarks>
+    public const string LowActive = "low_active";
+
+    /// <summary>低活跃应用重新恢复活跃状态事件。</summary>
+    /// <remarks>官方文档：<see href="https://developer.work.weixin.qq.com/document/path/90240">path 90240 低活跃应用活跃恢复事件</see>。</remarks>
+    public const string ActiveRestored = "active_restored";
 }

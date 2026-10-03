@@ -47,7 +47,19 @@ public sealed class UserSyncHandler : WechatCallbackPayloadHandler<ContactUserCh
 | `ContactTagChangedPayload` | `update_tag` |
 | `ChainChangedPayload` | `change_chain` 全部 9 个 `ChangeType` |
 | `BatchJobCompletedPayload` | `batch_job_result`（顶层 / `BatchJob` 两种布局，自动识别） |
+| `PlainEventPayload` | `subscribe` / `unsubscribe` / `enter_agent` / `click` / `view` / `view_miniprogram` / `share_agent_change` / `share_chain_change` / `close_inactive_agent` / `reopen_inactive_agent` / `low_active` / `active_restored` |
+| `AgentAlertPayload` | `inactive_alert` / `low_active_alert` |
+| `MenuScanCodePayload` | `scancode_push` / `scancode_waitmsg` |
+| `MenuPicPayload` | `pic_sysphoto` / `pic_photo_or_album` / `pic_weixin` |
+| `MenuLocationSelectPayload` | `location_select` |
+| `LocationReportedPayload` | `LOCATION` |
+| `ApprovalStatusChangedPayload` | `open_approval_change`（`ApprovalInfo` 包装，自动下移作用域） |
+| `TemplateCardEventPayload` | `template_card_event` / `template_card_menu_event` |
 | `GenericCallbackPayload` | **任何未登记契约的事件键**（降级，`Values` 携带全部直系子节点） |
+
+> 官方 path 90240 的 24 个事件键全部已登记（企业内部开发 90240 / 第三方 90376 / 服务商代开发 96468
+> 三份文档正文逐字一致 ⇒ 一份载荷覆盖三模式）；个别事件的开放面差异由契约声明承载
+> （`open_approval_change` 不含代开发、`share_agent_change`/`share_chain_change` 仅自建）。
 
 **三模式共用一份契约**：企业自建 / 第三方 / 服务商代开发的报文结构相同，
 差异只是「值是否出现」——由可空字段与 `payload.Values` 兜底读面承载，

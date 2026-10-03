@@ -25,13 +25,16 @@ namespace Mud.Wechat.Work.Tests.ContractGuards;
 /// </summary>
 /// <remarks>
 /// <b>v2.2 变更</b>：旧「逐事件 DTO」已收敛为 5 个<b>结构族载荷</b>（ADR-1），
-/// 故 CB4 改写为按结构族断言，并新增 CB4b（官方 17 键全覆盖）、CB4c（事件键级开放面显式声明）、
+/// 故 CB4 改写为按结构族断言，并新增 CB4b（官方 41 键全覆盖）、CB4c（事件键级开放面显式声明）、
 /// CB4d（三模式无关性）。「元素名 ↔ 属性名」配对正确性改由上游生成器在编译期校验
 /// （<c>PAYLOAD004/006/007</c>），逐字段取值由 <c>WechatCallbackPayloadReaderTests</c> 覆盖。
 /// </remarks>
 public class WechatCallbackContractGuards
 {
-    /// <summary>官方事件键全集（授权 InfoType 6 + 通讯录 ChangeType 7 + 异步 Event 1 + 上下游 Event 1 + ChangeType 9）。</summary>
+    /// <summary>
+    /// 官方事件键全集（授权 InfoType 6 + 通讯录 ChangeType 7 + 异步 Event 1 + 上下游 Event 1 + ChangeType 9
+    /// + 消息与事件 path 90240 的 24 个 Event 键，合计 48）。
+    /// </summary>
     private static readonly (string Key, string Reason)[] OfficialEventKeys =
     {
         (WechatCallbackEventTypes.SuiteTicket, "授权族 suite_ticket"),
@@ -58,6 +61,30 @@ public class WechatCallbackContractGuards
         (WechatCallbackEventTypes.CorpJoin, "上下游族 corp_join"),
         (WechatCallbackEventTypes.UpdateCorp, "上下游族 update_corp"),
         (WechatCallbackEventTypes.RemoveCorp, "上下游族 remove_corp"),
+        (WechatCallbackEventTypes.Subscribe, "消息与事件族 subscribe（90240）"),
+        (WechatCallbackEventTypes.Unsubscribe, "消息与事件族 unsubscribe（90240）"),
+        (WechatCallbackEventTypes.EnterAgent, "消息与事件族 enter_agent（90240）"),
+        (WechatCallbackEventTypes.Location, "消息与事件族 LOCATION（90240，官方键值大写）"),
+        (WechatCallbackEventTypes.Click, "消息与事件族 click（90240）"),
+        (WechatCallbackEventTypes.View, "消息与事件族 view（90240）"),
+        (WechatCallbackEventTypes.ViewMiniProgram, "消息与事件族 view_miniprogram（90240）"),
+        (WechatCallbackEventTypes.ScanCodePush, "消息与事件族 scancode_push（90240）"),
+        (WechatCallbackEventTypes.ScanCodeWaitMsg, "消息与事件族 scancode_waitmsg（90240）"),
+        (WechatCallbackEventTypes.PicSysPhoto, "消息与事件族 pic_sysphoto（90240）"),
+        (WechatCallbackEventTypes.PicPhotoOrAlbum, "消息与事件族 pic_photo_or_album（90240）"),
+        (WechatCallbackEventTypes.PicWeixin, "消息与事件族 pic_weixin（90240）"),
+        (WechatCallbackEventTypes.LocationSelect, "消息与事件族 location_select（90240）"),
+        (WechatCallbackEventTypes.OpenApprovalChange, "消息与事件族 open_approval_change（90240）"),
+        (WechatCallbackEventTypes.ShareAgentChange, "消息与事件族 share_agent_change（90240）"),
+        (WechatCallbackEventTypes.ShareChainChange, "消息与事件族 share_chain_change（90240）"),
+        (WechatCallbackEventTypes.TemplateCardEvent, "消息与事件族 template_card_event（90240）"),
+        (WechatCallbackEventTypes.TemplateCardMenuEvent, "消息与事件族 template_card_menu_event（90240）"),
+        (WechatCallbackEventTypes.InactiveAlert, "消息与事件族 inactive_alert（90240）"),
+        (WechatCallbackEventTypes.CloseInactiveAgent, "消息与事件族 close_inactive_agent（90240）"),
+        (WechatCallbackEventTypes.ReopenInactiveAgent, "消息与事件族 reopen_inactive_agent（90240）"),
+        (WechatCallbackEventTypes.LowActiveAlert, "消息与事件族 low_active_alert（90240）"),
+        (WechatCallbackEventTypes.LowActive, "消息与事件族 low_active（90240）"),
+        (WechatCallbackEventTypes.ActiveRestored, "消息与事件族 active_restored（90240）"),
     };
 
     // ---------------------------------------------------------------- CB1
@@ -85,7 +112,8 @@ public class WechatCallbackContractGuards
 
     /// <summary>
     /// 契约守卫 CB2：<see cref="WechatCallbackEventTypes"/> 常量必须覆盖官方事件键全集
-    /// （授权 InfoType 6 + 通讯录 ChangeType 7 + 异步 Event 1 + 上下游 Event 1 与 ChangeType 9），且
+    /// （授权 InfoType 6 + 通讯录 ChangeType 7 + 异步 Event 1 + 上下游 Event 1 与 ChangeType 9
+    /// + 消息与事件 path 90240 的 24 个 Event 键），且
     /// <see cref="WechatCallbackEvent.EventTypeKey"/> 判别优先级为 InfoType → ChangeType → Event（v1 方案 D4）。
     /// </summary>
     [Fact]
@@ -190,11 +218,38 @@ public class WechatCallbackContractGuards
         AssertProperties(typeof(ChainChangedPayload),
             "create_chain…remove_corp（9 键）", "ChainId", "GroupIds", "CorpIds");
 
+        // 官方 path 90240 消息与事件（三模式文档正文一致 ⇒ 8 个结构族载荷覆盖 24 键）。
+        AssertProperties(typeof(PlainEventPayload),
+            "subscribe / enter_agent / click / share_agent_change / low_active 等 12 键（90240）",
+            "EventKey", "AgentId");
+        AssertProperties(typeof(AgentAlertPayload),
+            "inactive_alert / low_active_alert", "EffectTime", "AgentId");
+        AssertProperties(typeof(MenuScanCodePayload),
+            "scancode_push / scancode_waitmsg", "EventKey", "ScanCodeInfo", "AgentId");
+        AssertProperties(typeof(MenuPicPayload),
+            "pic_sysphoto / pic_photo_or_album / pic_weixin", "EventKey", "SendPicsInfo", "AgentId");
+        AssertProperties(typeof(MenuLocationSelectPayload),
+            "location_select", "EventKey", "SendLocationInfo", "AgentId", "AppType");
+        AssertProperties(typeof(LocationReportedPayload),
+            "LOCATION", "Latitude", "Longitude", "Precision", "AgentId", "AppType");
+        AssertProperties(typeof(ApprovalStatusChangedPayload),
+            "open_approval_change（字段位于 ApprovalInfo 包装节点内，故不映射根级 AgentID）",
+            "ThirdNo", "OpenSpName", "OpenTemplateId", "OpenSpStatus", "ApplyTime",
+            "ApplyUserName", "ApplyUserId", "ApplyUserParty", "ApplyUserImage",
+            "ApprovalNodes", "NotifyNodes", "ApproverStep");
+        AssertProperties(typeof(TemplateCardEventPayload),
+            "template_card_event / template_card_menu_event",
+            "EventKey", "TaskId", "CardType", "ResponseCode", "AgentId", "SelectedItems");
+
         var payloadTypes = new[]
         {
             typeof(ContactUserChangedPayload), typeof(ContactPartyChangedPayload),
             typeof(ContactTagChangedPayload), typeof(BatchJobCompletedPayload),
             typeof(ChainChangedPayload),
+            typeof(PlainEventPayload), typeof(AgentAlertPayload),
+            typeof(MenuScanCodePayload), typeof(MenuPicPayload),
+            typeof(MenuLocationSelectPayload), typeof(LocationReportedPayload),
+            typeof(ApprovalStatusChangedPayload), typeof(TemplateCardEventPayload),
         };
 
         foreach (var type in payloadTypes)
@@ -220,7 +275,7 @@ public class WechatCallbackContractGuards
     }
 
     /// <summary>
-    /// 契约守卫 CB4b（v2.2 新增）：官方契约表必须登记全部 17 个载荷事件键，且授权族 7 键不登记。
+    /// 契约守卫 CB4b（v2.2 新增）：官方契约表必须登记全部 41 个载荷事件键，且授权族键不登记。
     /// </summary>
     [Fact]
     public void OfficialPayloadContracts_ShouldCoverAllPayloadEventKeys()
@@ -237,10 +292,24 @@ public class WechatCallbackContractGuards
             WechatCallbackEventTypes.CreateChain, WechatCallbackEventTypes.UpdateChain, WechatCallbackEventTypes.DeleteChain,
             WechatCallbackEventTypes.CreateGroup, WechatCallbackEventTypes.UpdateGroup, WechatCallbackEventTypes.DeleteGroup,
             WechatCallbackEventTypes.CorpJoin, WechatCallbackEventTypes.UpdateCorp, WechatCallbackEventTypes.RemoveCorp,
+
+            // 官方 path 90240 消息与事件 24 键（三模式文档 90240/90376/96468 正文一致）。
+            WechatCallbackEventTypes.Subscribe, WechatCallbackEventTypes.Unsubscribe,
+            WechatCallbackEventTypes.EnterAgent, WechatCallbackEventTypes.Location,
+            WechatCallbackEventTypes.Click, WechatCallbackEventTypes.View,
+            WechatCallbackEventTypes.ViewMiniProgram, WechatCallbackEventTypes.ScanCodePush,
+            WechatCallbackEventTypes.ScanCodeWaitMsg, WechatCallbackEventTypes.PicSysPhoto,
+            WechatCallbackEventTypes.PicPhotoOrAlbum, WechatCallbackEventTypes.PicWeixin,
+            WechatCallbackEventTypes.LocationSelect, WechatCallbackEventTypes.OpenApprovalChange,
+            WechatCallbackEventTypes.ShareAgentChange, WechatCallbackEventTypes.ShareChainChange,
+            WechatCallbackEventTypes.TemplateCardEvent, WechatCallbackEventTypes.TemplateCardMenuEvent,
+            WechatCallbackEventTypes.InactiveAlert, WechatCallbackEventTypes.CloseInactiveAgent,
+            WechatCallbackEventTypes.ReopenInactiveAgent, WechatCallbackEventTypes.LowActiveAlert,
+            WechatCallbackEventTypes.LowActive, WechatCallbackEventTypes.ActiveRestored,
         };
 
         var registered = registry.RegisteredKeys;
-        registered.Should().HaveCount(17, "官方有强类型载荷的事件键共 17 个");
+        registered.Should().HaveCount(41, "官方有强类型载荷的事件键共 41 个（17 + 90240 的 24）");
         foreach (var key in expectedKeys)
         {
             registered.Should().Contain(key, $"官方事件键 {key} 必须登记契约");
@@ -344,6 +413,10 @@ public class WechatCallbackContractGuards
             typeof(ContactUserChangedPayload), typeof(ContactPartyChangedPayload),
             typeof(ContactTagChangedPayload), typeof(BatchJobCompletedPayload),
             typeof(ChainChangedPayload), typeof(GenericCallbackPayload),
+            typeof(PlainEventPayload), typeof(AgentAlertPayload),
+            typeof(MenuScanCodePayload), typeof(MenuPicPayload),
+            typeof(MenuLocationSelectPayload), typeof(LocationReportedPayload),
+            typeof(ApprovalStatusChangedPayload), typeof(TemplateCardEventPayload),
             typeof(WechatPayloadConverter),
         };
 

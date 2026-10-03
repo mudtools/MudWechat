@@ -159,7 +159,7 @@ Mud.Wechat/
 - **加解密**：按官方 **32 字节块 PKCS7** 手工补位/剥离；**禁用 .NET 内置 16 块 `PaddingMode.PKCS7`**（内置 16 块校验会误拒官方 pad∈[17..32] 报文）。
 - **抗重放（两道 fail-closed 闸）**：① 时间戳时效窗口 ±300s（缺失/非数字即拒）；② 一次性指纹去重（SHA1 指纹，不得落盘密文本身）。**指纹闸位于「解密 + receiveid 校验成功」之后、事件返回之前** —— 解密成功即证明报文经仅企微与我方共知的 AESKey 验证可信；解密失败不消耗指纹，官方重试可重新进入管线。**不得**把指纹闸移回解密之前，也不得绕过。**GET URL 验证（echo）只过时效闸、不消费指纹**（同 echostr 二次保存配置必须成功）。分布式实现（`Mud.Wechat.Redis`）故障时守卫异常**必须上抛**（→ 回调 5xx → 官方 96238 重试）；**禁止**吞异常返回 `true` 放行重放、或返回 `false` 静默丢事件；空键返回 `false` 且不触达存储。
 - **事件信封与事件键**：`WechatCallbackEvent` / `IWechatCallbackEventHandler` / `IWechatCallbackEventInterceptor` / `WechatCallbackEventTypes` 落 `Abstractions.Callback`（该目录**含子目录，不得出现 XML 类型**，守卫 CB7 已递归）；XML→信封解析留 `Callback.WechatCallbackReceiver`。`EventTypeKey` = `InfoType`（非空）→ `ChangeType` → `Event`；处理器 `SupportedEventType` 空串 = 兜底（内置处理器即此形态，文件**留 `Callback` 包根目录**）。`AuthCorpId ← FromUserName` 兜底**仅限授权族**（`change_contact` 的 `FromUserName` 固定 `sys`，无差别兜底会伪造授权企业）。信封另带 `AppKey` / `AppType` / `Channel`（只读快照，**配置权威仍是** `WechatAppManager` / `WechatCallbackOptions`）。
-- **事件载荷体系（v2.2）**：**不得**再新增「逐事件 DTO + 手写 `ParseXxx` 方法」。载荷按官方**报文结构族**建（`Events/Payloads/`，5 型 + `GenericCallbackPayload`），字段映射由**上游** `Mud.HttpUtils.PayloadFieldMapGenerator` 依 `[PayloadContract]`/`[PayloadField]` 在编译期生成 ⇒ 元素名 ↔ 属性名配对受编译器校验。要点：
+- **事件载荷体系（v2.2）**：**不得**再新增「逐事件 DTO + 手写 `ParseXxx` 方法」。载荷按官方**报文结构族**建（`Events/Payloads/`，13 型 + `GenericCallbackPayload`），字段映射由**上游** `Mud.HttpUtils.PayloadFieldMapGenerator` 依 `[PayloadContract]`/`[PayloadField]` 在编译期生成 ⇒ 元素名 ↔ 属性名配对受编译器校验。要点：
   1. 载荷类型须 `partial` 且标注 `[PayloadContract(Converter = typeof(WechatPayloadConverter))]`；
   2. 转换器方法须 **`static`、非泛型、恰 1 参**（首参 `PayloadNode` 或 `string?`，生成器按首参类型决定传 `n` 还是 `n?.Value`）；
   3. 映射表须在**具体类型**处取 `XxxPayload.PayloadFieldMap` —— C# 禁止泛型上下文访问类型参数静态成员（CS0712），且 `static abstract` 需 net7+（本仓含 ns2.0 不可用）；
@@ -219,7 +219,7 @@ Mud.Wechat/
 | CG9~CG11 | 上下游规则 | 父接口零端点 + Internal 恰 5 条、无其它子接口 |
 | SEC1~SEC4 | 安全管理 | 三接口族父接口零端点 + 自建恰 9/5/2 条；**不设第三方/代开发子接口**（官方无文档） |
 | MSG1~MSG4 | 消息推送 | 发送应用消息族父接口 13 条 + 第三方恰 1 条（自建/代开发零端点）；AppChat / SchoolMessage / SmartSheetGroupChat 父接口零端点 + 仅 Internal 承载端点；四族「继承链上恰好只有既定子接口」漂移断言 |
-| CB1~CB13 | 回调 | 包依赖边界、事件键 24 个与 `EventTypeKey` 优先级、兜底处理器形态与文件路径、事件 DTO 字段、凭据唯一来源、echo 不消费指纹、信封上移边界、32 字节块填充（禁 `PaddingMode.PKCS7`）、指纹闸次序、通道枚举与配置面、`receiveid` 三元分流、开放面矩阵、合法性闸次序 |
+| CB1~CB13 | 回调 | 包依赖边界、事件键 48 个与 `EventTypeKey` 优先级、兜底处理器形态与文件路径、事件 DTO 字段、凭据唯一来源、echo 不消费指纹、信封上移边界、32 字节块填充（禁 `PaddingMode.PKCS7`）、指纹闸次序、通道枚举与配置面、`receiveid` 三元分流、开放面矩阵、合法性闸次序 |
 | MA1~MA4 | 多应用管理（`Abstractions.Tests`） | `RemoveApp` 删除顺序、重建异常白名单、退役队列 `_disposed` 闸、`SetCorp` 参数校验。守卫为**方法体文本断言**（花括号配平），签名漂移须同步更新 |
 | RD-G1~RD-G6 | Redis（`Redis.Tests`） | SCAN 模式仅经 `WechatRedisKeyBuilder.Pattern` 单一出口、配置无 `required`、重放守卫 fail-closed 上抛、凭据不进日志、全名探测防漂移、单依赖 Abstractions |
 

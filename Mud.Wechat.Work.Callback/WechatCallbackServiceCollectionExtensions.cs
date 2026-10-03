@@ -81,7 +81,7 @@ public static class WechatCallbackServiceCollectionExtensions
                 provider.GetRequiredService<IWechatPayloadContractRegistry>(),
                 WechatPayloadSourceCache.Shared));
 
-        // 官方 17 键契约（组合根期一次性登记；重复登记即 fail-fast）。
+        // 官方 41 键契约（组合根期一次性登记；重复登记即 fail-fast）。
         OfficialPayloadContracts.RegisterAll(payloadRegistry);
 
         // D6/D11：内置授权族兜底处理器默认注册到通配键（全局生效；宿主可用精确键处理器前置接管授权族键）。

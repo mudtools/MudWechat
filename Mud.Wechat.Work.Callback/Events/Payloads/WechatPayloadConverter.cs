@@ -224,6 +224,215 @@ public static class WechatPayloadConverter
             : text == "5" ? WechatUserStatus.Quit
             : null;
 
+    /// <summary>
+    /// 小数标量（官方 <c>Latitude</c>/<c>Longitude</c>/<c>Precision</c> 与 <c>Location_X</c>/<c>Location_Y</c>
+    /// 的 <c>23.104</c> 形态）；<see cref="Number{T}"/> 只解析整数，故单列本方法。非法 ⇒ <c>null</c>。
+    /// </summary>
+    public static double? ParseReal(PayloadNode? node)
+    {
+        var text = node?.Value;
+        if (string.IsNullOrEmpty(text))
+            return null;
+
+        if (!double.TryParse(text!.Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out var value))
+            return null;
+
+        return value;
+    }
+
+    // ——— 二级/多级嵌套结构（超出上游「容器 → 单层同构项」表达力，按指南 §2.4 以 Method 逃生舱组装） ———
+
+    /// <summary>
+    /// 扫码信息（官方 <c>ScanCodeInfo/ScanType</c> + <c>ScanCodeInfo/ScanResult</c>）；节点缺失 ⇒ <c>null</c>。
+    /// </summary>
+    public static WechatCallbackScanCodeInfo? ParseScanCodeInfo(PayloadNode? node)
+        => node == null
+            ? null
+            : new WechatCallbackScanCodeInfo
+            {
+                ScanType = Text(node.Child("ScanType")),
+                ScanResult = Text(node.Child("ScanResult")),
+            };
+
+    /// <summary>
+    /// 图片信息（官方 <c>SendPicsInfo/Count</c> + <c>SendPicsInfo/PicList/item/PicMd5Sum</c>）；
+    /// 节点缺失 ⇒ <c>null</c>，缺失子项跳过（语义不变量：绝不抛异常）。
+    /// </summary>
+    public static WechatCallbackSendPicsInfo? ParseSendPicsInfo(PayloadNode? node)
+    {
+        if (node == null)
+            return null;
+
+        var info = new WechatCallbackSendPicsInfo
+        {
+            Count = Number<long>(node.Child("Count")),
+        };
+
+        var picList = node.Child("PicList");
+        if (picList == null)
+            return info;
+
+        var children = picList.Children;
+        for (var i = 0; i < children.Count; i++)
+        {
+            var item = children[i];
+            if (item == null || !string.Equals(item.Name, "item", StringComparison.Ordinal))
+                continue;
+
+            var md5 = Text(item.Child("PicMd5Sum"));
+            if (md5 != null)
+                info.PicMd5Sums.Add(md5);
+        }
+
+        return info;
+    }
+
+    /// <summary>
+    /// 位置信息（官方 <c>SendLocationInfo/Location_X</c> 等 5 个子节点，坐标为小数）；
+    /// 节点缺失 ⇒ <c>null</c>。
+    /// </summary>
+    public static WechatCallbackSendLocationInfo? ParseSendLocationInfo(PayloadNode? node)
+        => node == null
+            ? null
+            : new WechatCallbackSendLocationInfo
+            {
+                LocationX = ParseReal(node.Child("Location_X")),
+                LocationY = ParseReal(node.Child("Location_Y")),
+                Scale = Number<long>(node.Child("Scale")),
+                Label = Text(node.Child("Label")),
+                Poiname = Text(node.Child("Poiname")),
+            };
+
+    /// <summary>
+    /// 审批流程节点列表（官方 <c>ApprovalNodes/ApprovalNode</c>，节点内含 <c>Items/Item</c> 分支列表）；
+    /// 节点缺失 ⇒ 空列表。
+    /// </summary>
+    public static List<WechatCallbackApprovalNode> ParseApprovalNodes(PayloadNode? node)
+    {
+        var nodes = new List<WechatCallbackApprovalNode>();
+        if (node == null)
+            return nodes;
+
+        var children = node.Children;
+        for (var i = 0; i < children.Count; i++)
+        {
+            var child = children[i];
+            if (child == null || !string.Equals(child.Name, "ApprovalNode", StringComparison.Ordinal))
+                continue;
+
+            nodes.Add(new WechatCallbackApprovalNode
+            {
+                NodeStatus = Number<long>(child.Child("NodeStatus")),
+                NodeAttr = Number<long>(child.Child("NodeAttr")),
+                NodeType = Number<long>(child.Child("NodeType")),
+                Items = ParseApprovalItems(child.Child("Items")),
+            });
+        }
+
+        return nodes;
+    }
+
+    /// <summary>
+    /// 审批分支列表（官方 <c>Items/Item</c>）；容器缺失或不含 <c>Item</c> ⇒ 空列表。
+    /// </summary>
+    private static List<WechatCallbackApprovalItem> ParseApprovalItems(PayloadNode? node)
+    {
+        var items = new List<WechatCallbackApprovalItem>();
+        if (node == null)
+            return items;
+
+        var children = node.Children;
+        for (var i = 0; i < children.Count; i++)
+        {
+            var child = children[i];
+            if (child == null || !string.Equals(child.Name, "Item", StringComparison.Ordinal))
+                continue;
+
+            items.Add(new WechatCallbackApprovalItem
+            {
+                ItemName = Text(child.Child("ItemName")),
+                ItemUserId = Text(child.Child("ItemUserId")),
+                ItemImage = Text(child.Child("ItemImage")),
+                ItemStatus = Number<long>(child.Child("ItemStatus")),
+                ItemSpeech = Text(child.Child("ItemSpeech")),
+                ItemOpTime = Number<long>(child.Child("ItemOpTime")),
+            });
+        }
+
+        return items;
+    }
+
+    /// <summary>
+    /// 抄送人列表（官方 <c>NotifyNodes/NotifyNode</c>）；节点缺失 ⇒ 空列表。
+    /// </summary>
+    public static List<WechatCallbackApprovalNotifyNode> ParseNotifyNodes(PayloadNode? node)
+    {
+        var nodes = new List<WechatCallbackApprovalNotifyNode>();
+        if (node == null)
+            return nodes;
+
+        var children = node.Children;
+        for (var i = 0; i < children.Count; i++)
+        {
+            var child = children[i];
+            if (child == null || !string.Equals(child.Name, "NotifyNode", StringComparison.Ordinal))
+                continue;
+
+            nodes.Add(new WechatCallbackApprovalNotifyNode
+            {
+                ItemName = Text(child.Child("ItemName")),
+                ItemUserId = Text(child.Child("ItemUserId")),
+                ItemImage = Text(child.Child("ItemImage")),
+            });
+        }
+
+        return nodes;
+    }
+
+    /// <summary>
+    /// 模板卡片选中项列表（官方 <c>SelectedItems/SelectedItem</c>，项内含 <c>OptionIds/OptionId</c>）；
+    /// 节点缺失 ⇒ 空列表。
+    /// </summary>
+    public static List<WechatCallbackTemplateCardSelectedItem> ParseSelectedItems(PayloadNode? node)
+    {
+        var items = new List<WechatCallbackTemplateCardSelectedItem>();
+        if (node == null)
+            return items;
+
+        var children = node.Children;
+        for (var i = 0; i < children.Count; i++)
+        {
+            var child = children[i];
+            if (child == null || !string.Equals(child.Name, "SelectedItem", StringComparison.Ordinal))
+                continue;
+
+            var optionIds = new List<string>();
+            var optionContainer = child.Child("OptionIds");
+            if (optionContainer != null)
+            {
+                var optionChildren = optionContainer.Children;
+                for (var j = 0; j < optionChildren.Count; j++)
+                {
+                    var option = optionChildren[j];
+                    if (option == null || !string.Equals(option.Name, "OptionId", StringComparison.Ordinal))
+                        continue;
+
+                    var id = Text(option);
+                    if (id != null)
+                        optionIds.Add(id);
+                }
+            }
+
+            items.Add(new WechatCallbackTemplateCardSelectedItem
+            {
+                QuestionKey = Text(child.Child("QuestionKey")),
+                OptionIds = optionIds,
+            });
+        }
+
+        return items;
+    }
+
     private static string? LookupAttribute(PayloadNode node, string? attributeName)
     {
         if (string.IsNullOrEmpty(attributeName))

@@ -253,6 +253,16 @@ public class WechatContractGuards
                 //（99434，第三方/代开发暂不支持；零端点父接口 + 仅自建子接口）。
                 nameof(IWechatWorkExternalContactServedContactService),
                 nameof(IWechatWorkInternalExternalContactServedContactService),
+                // 客户联系·获客助手组件域（ExternalContact 模块）：6 个端点官方仅第三方应用开放
+                //（组件授权信息 99610、链接管理 99484、使用详情 99483、代支付 key 99603、收消息数据 100135；
+                // 零端点父接口 + 仅第三方子接口）。
+                nameof(IWechatWorkExternalContactAcquisitionComponentService),
+                nameof(IWechatWorkThirdPartyExternalContactAcquisitionComponentService),
+                // 客户联系·获客助手组件域·代支付流水接口族（ExternalContact 模块）：1 个端点官方仅第三方应用开放
+                //（99602，suite_access_token 鉴权、路由在 /cgi-bin/service/ 下，独立令牌路由键成族；
+                // 零端点父接口 + 仅第三方子接口）。
+                nameof(IWechatWorkExternalContactAcquisitionComponentBillService),
+                nameof(IWechatWorkThirdPartyExternalContactAcquisitionComponentBillService),
                 // 上下游域（CorpGroup 模块）：6 端点在父接口（第三方仅获取应用共享信息 95324，随父接口继承），父接口 + 三个空标记子接口。
                 nameof(IWechatWorkCorpGroupService),
                 nameof(IWechatWorkInternalCorpGroupService),

@@ -26,13 +26,13 @@ namespace Mud.Wechat.Work.TokenManagers;
 public sealed class WechatTokenInvalidationDetector : ITokenInvalidationDetector
 {
     private static readonly long[] InvalidErrcodes =
-    {
+    [
         WechatErrorCodes.InvalidAccessToken,          // 40014
         WechatErrorCodes.ExpiredAccessToken,          // 42001
         WechatErrorCodes.RelatedAccessTokenInvalid,   // 42007
         WechatErrorCodes.InvalidSuiteAccessToken,     // 42009
         WechatErrorCodes.InvalidProviderAccessToken,  // 42011
-    };
+    ];
 
     /// <summary>
     /// 同步预过滤：仅企业微信域名（或显式登记的自定义 BaseUrl 主机）请求参与判定，无关请求零捕获开销。

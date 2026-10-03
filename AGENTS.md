@@ -168,7 +168,7 @@ scripts/                      # verify-build / audit-config-keys / GenerateJsonC
 
 多应用守卫（`Abstractions.Tests`，MA1~MA4）是**方法体文本断言**（花括号配平），签名漂移须同步更新。
 
-**官方反直觉点（守卫会拦，但别「顺手修正」）**：多数统计/查询接口官方即 POST（`get_contact_way`、`kf/account/list`）；`servicer/list` 为 GET；敏感词删除路由为 `del_intercept_rule`；群发记录列表带 v2 后缀；群聊统计用 offset+limit（区别于本仓多数域的 cursor+limit）；`get_openid_migration` 无请求体；字段名拼写照抄官方原文（`universal_domian`、`cusor`、`satisfaction_investgate_cnt`）。
+**官方反直觉点（守卫会拦，但别「顺手修正」）**：多数统计/查询接口官方即 POST（`get_contact_way`、`kf/account/list`）；`servicer/list` 为 GET；敏感词删除路由为 `del_intercept_rule`；群发记录列表带 v2 后缀；群聊统计用 offset+limit（区别于本仓多数域的 cursor+limit）；`get_openid_migration` 无请求体；字段名拼写照抄官方原文（`universal_domian`、`cusor`、`satisfaction_investgate_cnt`）；升级服务专员部门列表官方参数表作 `department_list`、官方 JSON 示例与自建文档作 `department_id_list`，以示例为准。
 
 ## 7 编码风格与测试
 

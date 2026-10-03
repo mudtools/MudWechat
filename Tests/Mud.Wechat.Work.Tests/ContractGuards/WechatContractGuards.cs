@@ -347,6 +347,13 @@ public class WechatContractGuards
                 nameof(IWechatWorkInternalKfCustomerService),
                 nameof(IWechatWorkThirdPartyKfCustomerService),
                 nameof(IWechatWorkProviderKfCustomerService),
+                // 微信客服·「升级服务」配置域（Kf 模块）：3 个端点为三类应用公共面
+                //（get_upgrade_service_config（GET）/ upgrade_service / cancel_upgrade_service 94674/94702/96422；
+                // 父接口 + 三个应用类型空标记子接口）。
+                nameof(IWechatWorkKfUpgradeService),
+                nameof(IWechatWorkInternalKfUpgradeService),
+                nameof(IWechatWorkThirdPartyKfUpgradeService),
+                nameof(IWechatWorkProviderKfUpgradeService),
                 // 微信客服·统计管理域（Kf 模块）：2 个端点为三类应用公共面
                 //（企业汇总 95489/95492/96432、接待人员明细 95490/95493/96433；父接口 + 三个应用类型空标记子接口）。
                 nameof(IWechatWorkKfStatisticsService),

@@ -6,6 +6,7 @@
 // -----------------------------------------------------------------------
 
 using System.Reflection;
+using System.Text.Json.Serialization;
 using Mud.HttpUtils.Attributes;
 using Mud.Wechat.Work;
 using Mud.Wechat.Work.Abstractions;
@@ -42,6 +43,8 @@ public class WechatKfContractGuards
     private const string CustomerParentImplementationClassName = "WechatWorkKfCustomerService";
 
     private const string StatisticsParentImplementationClassName = "WechatWorkKfStatisticsService";
+
+    private const string UpgradeParentImplementationClassName = "WechatWorkKfUpgradeService";
 
     private const string KfRegistryGroupName = "Kf";
 
@@ -224,6 +227,26 @@ public class WechatKfContractGuards
         (typeof(IWechatWorkThirdPartyKfComponentService),
             nameof(IWechatWorkThirdPartyKfComponentService.GetStatisticAsync),
             typeof(PostAttribute), "/cgi-bin/kf/get_statistic"),
+    };
+
+    /// <summary>
+    /// 「升级服务」配置域官方路由表（父接口 3 条公共端点；get_upgrade_service_config 为 GET，
+    /// 其余 2 条为 POST；路由在 kf/customer/ 下，与客户基础信息域 batchget 同前缀）。
+    /// </summary>
+    private static readonly (Type Interface, string Method, Type HttpAttribute, string Route)[] UpgradeRoutes =
+    {
+        // 获取配置的专员与客户群（自建 94674、第三方 94702、代开发 96422）。
+        (typeof(IWechatWorkKfUpgradeService),
+            nameof(IWechatWorkKfUpgradeService.GetUpgradeServiceConfigAsync),
+            typeof(GetAttribute), "/cgi-bin/kf/customer/get_upgrade_service_config"),
+        // 为客户升级为专员或客户群服务（自建 94674、第三方 94702、代开发 96422）。
+        (typeof(IWechatWorkKfUpgradeService),
+            nameof(IWechatWorkKfUpgradeService.UpgradeServiceAsync),
+            typeof(PostAttribute), "/cgi-bin/kf/customer/upgrade_service"),
+        // 为客户取消推荐（自建 94674、第三方 94702、代开发 96422）。
+        (typeof(IWechatWorkKfUpgradeService),
+            nameof(IWechatWorkKfUpgradeService.CancelUpgradeServiceAsync),
+            typeof(PostAttribute), "/cgi-bin/kf/customer/cancel_upgrade_service"),
     };
 
     /// <summary>
@@ -411,7 +434,39 @@ public class WechatKfContractGuards
     }
 
     /// <summary>
-    /// 契约守卫 KF2：五类应用公共面域的接口层级与生成器注册形态——公共端点收敛于 IsAbstract 父接口，
+    /// 契约守卫 KF1h：「升级服务」配置域全部端点路由必须与官方契约一致
+    /// （get_upgrade_service_config 为 GET 且无请求参数，勿改成 POST；
+    /// 专员范围部门列表字段官方参数表作 department_list、官方 JSON 示例与自建文档作
+    /// department_id_list，SDK 以官方 JSON 示例为准——对齐 cusor/cursor 处置先例）。
+    /// </summary>
+    [Fact]
+    public void KfUpgradeEndpoints_ShouldMatchOfficialRoutes()
+    {
+        UpgradeRoutes.Should().HaveCount(3,
+            "「升级服务」配置域 3 个端点为三类应用公共面，全部收敛父接口");
+
+        var distinctRoutes = UpgradeRoutes.Select(r => r.Route).Distinct().ToList();
+        distinctRoutes.Should().HaveCount(3, "「升级服务」配置域各端点路由互不重复");
+
+        foreach (var (iface, method, httpAttribute, route) in UpgradeRoutes)
+        {
+            var target = iface.GetMethod(method, BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+            target.Should().NotBeNull($"{iface.Name}.{method} 必须存在");
+
+            var attr = target!.GetCustomAttribute(httpAttribute) as HttpMethodAttribute;
+            attr.Should().NotBeNull($"{iface.Name}.{method} 必须声明 [{httpAttribute.Name.Replace("Attribute", string.Empty)}] 路由");
+            attr!.RequestUri.Should().Be(route, $"{iface.Name}.{method} 路由必须与官方契约一致");
+        }
+
+        // 升级服务部门列表字段名以官方 JSON 示例为准（department_id_list），防止按参数表漂移为 department_list。
+        var memberRange = typeof(KfUpgradeMemberRange).GetProperty(nameof(KfUpgradeMemberRange.DepartmentIdList));
+        memberRange.Should().NotBeNull("KfUpgradeMemberRange.DepartmentIdList 必须存在");
+        memberRange!.GetCustomAttribute<JsonPropertyNameAttribute>()!.Name.Should().Be("department_id_list",
+            "官方参数表 department_list 与官方 JSON 示例 department_id_list 冲突，以官方 JSON 示例为准（cusor/cursor 先例）");
+    }
+
+    /// <summary>
+    /// 契约守卫 KF2：六类应用公共面域的接口层级与生成器注册形态——公共端点收敛于 IsAbstract 父接口，
     /// 自建 / 第三方 / 代开发子接口均为零差异端点空标记（能力漂移守卫）。
     /// </summary>
     [Fact]
@@ -448,6 +503,12 @@ public class WechatKfContractGuards
                 typeof(IWechatWorkInternalKfStatisticsService),
                 typeof(IWechatWorkThirdPartyKfStatisticsService),
                 typeof(IWechatWorkProviderKfStatisticsService),
+            }),
+            (UpgradeParentImplementationClassName, typeof(IWechatWorkKfUpgradeService), new[]
+            {
+                typeof(IWechatWorkInternalKfUpgradeService),
+                typeof(IWechatWorkThirdPartyKfUpgradeService),
+                typeof(IWechatWorkProviderKfUpgradeService),
             }),
         };
 
@@ -527,7 +588,7 @@ public class WechatKfContractGuards
     }
 
     /// <summary>
-    /// 契约守卫 KF3：令牌绑定——Kf 模块全部 24 个接口统一消费 AccessToken 路由键并以 Query 注入（官方契约 access_token）。
+    /// 契约守卫 KF3：令牌绑定——Kf 模块全部 28 个接口统一消费 AccessToken 路由键并以 Query 注入（官方契约 access_token）。
     /// </summary>
     [Fact]
     public void KfTokenBinding_ShouldBeAccessTokenInjectedViaQuery()
@@ -554,6 +615,10 @@ public class WechatKfContractGuards
             typeof(IWechatWorkInternalKfStatisticsService),
             typeof(IWechatWorkThirdPartyKfStatisticsService),
             typeof(IWechatWorkProviderKfStatisticsService),
+            typeof(IWechatWorkKfUpgradeService),
+            typeof(IWechatWorkInternalKfUpgradeService),
+            typeof(IWechatWorkThirdPartyKfUpgradeService),
+            typeof(IWechatWorkProviderKfUpgradeService),
             typeof(IWechatWorkKfKnowledgeService),
             typeof(IWechatWorkInternalKfKnowledgeService),
             typeof(IWechatWorkKfComponentService),
@@ -573,7 +638,7 @@ public class WechatKfContractGuards
     }
 
     /// <summary>
-    /// 契约守卫 KF4：微信客服模块的请求/响应 DTO 必须登记进 AOT JSON 上下文（全量 87 个契约面类型）。
+    /// 契约守卫 KF4：微信客服模块的请求/响应 DTO 必须登记进 AOT JSON 上下文（全量 94 个契约面类型）。
     /// </summary>
     [Fact]
     public void KfDataModels_ShouldBeRegisteredInJsonContext()
@@ -627,6 +692,10 @@ public class WechatKfContractGuards
             // 微信客服组件域。
             typeof(GetKfComponentStatisticRequest), typeof(GetKfComponentStatisticResponse),
             typeof(KfComponentStatisticItem), typeof(KfComponentStatisticData),
+            // 「升级服务」配置域。
+            typeof(GetKfUpgradeServiceConfigResponse), typeof(KfUpgradeMemberRange), typeof(KfUpgradeGroupchatRange),
+            typeof(UpgradeKfServiceRequest), typeof(KfUpgradeMember), typeof(KfUpgradeGroupchat),
+            typeof(CancelKfUpgradeServiceRequest),
         };
 
         foreach (var type in requiredTypes)

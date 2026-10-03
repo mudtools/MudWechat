@@ -368,6 +368,25 @@ public class WechatContractGuards
                 //（99368/99400/99367，前两条与客服账号管理域共用路由；零端点父接口 + 仅第三方子接口）。
                 nameof(IWechatWorkKfComponentService),
                 nameof(IWechatWorkThirdPartyKfComponentService),
+                // 企业支付·对外收款记录域（Pay 模块）：2 个端点为三类应用公共面
+                //（获取对外收款记录 93667/93727/96701、获取收款项目的商户单号 95944/95936/96702；
+                // 父接口 + 三个应用类型空标记子接口）。
+                nameof(IWechatWorkPayBillService),
+                nameof(IWechatWorkInternalPayBillService),
+                nameof(IWechatWorkThirdPartyPayBillService),
+                nameof(IWechatWorkProviderPayBillService),
+                // 企业支付·收款商户号管理域（Pay 模块）：2 个端点官方仅自建应用开放
+                //（查询商户号详情 + 设置商户号使用范围 93666；零端点父接口 + 仅自建子接口）。
+                nameof(IWechatWorkPayMerchantService),
+                nameof(IWechatWorkInternalPayMerchantService),
+                // 企业支付·资金流水域（Pay 模块）：1 个端点官方仅自建应用开放
+                //（获取资金流水 98100；零端点父接口 + 仅自建子接口）。
+                nameof(IWechatWorkPayFundFlowService),
+                nameof(IWechatWorkInternalPayFundFlowService),
+                // 企业支付·创建对外收款账户域（Pay 模块）：3 个端点官方仅自建应用开放
+                //（提交申请单 98973、查询申请单状态 98974、提交图片 98972；零端点父接口 + 仅自建子接口）。
+                nameof(IWechatWorkPayMchApplyService),
+                nameof(IWechatWorkInternalPayMchApplyService),
             },
             "企业微信官方契约强制 Query 注入（MUD005 已知接受风险），新增 Query 注入接口须评估后扩展本守卫");
     }

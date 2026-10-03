@@ -25,7 +25,7 @@ services.AddWechatWorkServices(builder => builder
 ## 依赖
 
 - `Mud.Wechat.Work.Abstractions`、`Mud.Wechat.Work.DataModels`
-- `Mud.HttpUtils` 3.0.0
+- `Mud.HttpUtils` 3.0.1
 
 ## 说明
 

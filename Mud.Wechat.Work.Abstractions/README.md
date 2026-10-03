@@ -16,7 +16,7 @@
 ## 依赖
 
 - `Mud.Wechat.Work.DataModels`
-- `Mud.HttpUtils` 3.0.0、`Microsoft.Extensions.Http` / `Hosting.Abstractions`
+- `Mud.HttpUtils` 3.0.1、`Microsoft.Extensions.Http` / `Hosting.Abstractions`
 
 ## 说明
 

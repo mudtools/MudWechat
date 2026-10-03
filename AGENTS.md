@@ -280,8 +280,8 @@ Mud.Wechat/
 - 每个公开配置属性**必须有真实消费点**（`Validate`/`ToString` 不算）。`audit-config-keys.ps1` 的口径是「消费点扫描」，**无白名单** —— 报「无消费点」时的正确处置是**补消费点或删除该属性**，不是加模式绕开（历史同款教训：`WechatAppConfig.TemplateId` 只被 `Validate()` 使用 ⇒ 删除；回调域同款：`WechatAppCallbackOptions` 不得有 `AppKey` 属性，字典键是唯一权威）。
 - 消费点口径提示：`ReceiveId` 的消费点是 `receiveid` 校验（**不是**日志开关）；`AppType`/`Channel` 的消费点是 `Validate()` + `ValidateReceiveId` + `IsEventFamilyAllowed`。
 - 安全默认不得削弱：`BaseUrl` 必须 HTTPS + 白名单（`AllowCustomBaseUrl=false` 为默认 SSRF 防线）。`AllowCustomBaseUrl=true` 的应用主机在注册期登记到 `WechatCustomBaseUrlRegistry`，供 errcode 判定器的同步预过滤放行（否则私有化部署静默失去令牌恢复能力）。
-- **`Mud.HttpUtils` / `Mud.HttpUtils.Generator` 全仓库锁定同一版本**（当前 `3.0.0`），由 G1 守卫「版本集合大小 = 1」（不硬编码版本号，升级无需改守卫）；运行时版本由 `MudHttpUtilsUpgradeSmokeTests` 断言（≥2.0.9 且 Major ≥3）。
-- **`Mud.HttpUtils` 系列 3.0.0 已在 nuget.org 上架**（含 `Mud.HttpUtils` / `.Generator` / `.Attributes` / `.Abstractions` / `.Client`，五个包均需存在）。`nuget.config` **只声明 nuget.org、无本机开发源** —— 勿再加回本机源；本地组件迭代用临时源验证后必须清掉。
+- **`Mud.HttpUtils` / `Mud.HttpUtils.Generator` 全仓库锁定同一版本**（当前 `3.0.1`），由 G1 守卫「版本集合大小 = 1」（不硬编码版本号，升级无需改守卫）；运行时版本由 `MudHttpUtilsUpgradeSmokeTests` 断言（≥2.0.9 且 Major ≥3）。
+- **`Mud.HttpUtils` 系列 3.0.1 已在 nuget.org 正式发布**（含 `Mud.HttpUtils` / `.Generator` / `.Attributes` / `.Abstractions` / `.Client`，五个包均需存在；2026-10-03 官方推平，本机缓存已按下方流程刷新并经 SHA512 比对一致）。`nuget.config` **只声明 nuget.org、无本机开发源** —— 勿再加回本机源；本地组件迭代用临时源验证后必须清掉。
 - **同版本重打包不失效缓存（最易踩的坑）**：NuGet 全局包缓存按 `id + version` 计价，**版本号相同但包内容不同时，下游 restore 不会重新下载**，会用本地构建的旧位编译/测试 ⇒ 假绿。核验位一致性：比对 `<globalPackages>/{id}/{ver}/{id}.{ver}.nupkg.sha512` 与 `https://api.nuget.org/v3-flatcontainer/{id}/{ver}/{id}.{ver}.nupkg` 下载包的 SHA512（base64）。处置：移除该 `{id}/{ver}` 缓存目录 → `dotnet restore --no-cache` → `dotnet clean` → `dotnet build`（`clean` **不可省**，增量构建会把新旧程序集并置，运行时爆 `TypeLoadException`）。
 
 ## 11 安全

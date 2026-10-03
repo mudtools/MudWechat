@@ -26,8 +26,8 @@ param(
     # NuGet package id (used only for auto-install)
     [string]$ToolPackageId = "Mud.HttpUtils.JsonContextScaffolder",
     # Version to install; pinned to the repo-wide locked Mud.HttpUtils version.
-    # 3.0.0 is served by the repo nuget.config local source until it lands on nuget.org.
-    [string]$ToolVersion = "3.0.0",
+    # 3.0.1 is officially published on nuget.org (2026-10-03).
+    [string]$ToolVersion = "3.0.1",
     # Target project (relative to repo root or absolute)
     [string]$TargetProject = "Mud.Wechat.Work.DataModels/Mud.Wechat.Work.DataModels.csproj",
     # Output directory (relative to repo root or absolute)
@@ -54,7 +54,7 @@ param(
 $RepoRoot = Split-Path $PSScriptRoot -Parent
 
 # Fix working directory to the repo root so relative paths and the repo nuget.config
-# (local Mud.HttpUtils source) are resolved consistently.
+# (nuget.org only) are resolved consistently.
 Set-Location $RepoRoot
 
 # Resolve a path relative to the repo root into an absolute path.

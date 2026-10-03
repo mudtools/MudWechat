@@ -16,6 +16,8 @@
 /Mud.Wechat.Work.DataModels/obj
 /Mud.Wechat.Redis/bin
 /Mud.Wechat.Redis/obj
+/Mud.Wechat.Work.Callback.Generator/bin
+/Mud.Wechat.Work.Callback.Generator/obj
 /Tests/Mud.Wechat.Work.Tests/bin
 /Tests/Mud.Wechat.Work.Tests/obj
 /Tests/Mud.Wechat.Work.Abstractions.Tests/bin

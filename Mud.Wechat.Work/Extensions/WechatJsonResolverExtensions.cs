@@ -9,6 +9,7 @@
 using System.Text.Json.Serialization.Metadata;
 using Mud.Wechat.Work.Abstractions.Authentication.Models;
 using Mud.Wechat.Work.DataModels;
+using Mud.Wechat.Work.DataModels.AccountId;
 using Mud.Wechat.Work.DataModels.Contacts.Batch;
 using Mud.Wechat.Work.DataModels.Contacts.ContactRules;
 using Mud.Wechat.Work.DataModels.Contacts.Department;
@@ -100,6 +101,7 @@ public static class WechatJsonResolverExtensions
             CorpTokenAuthenticationJsonContext.Default,
             InternalAppAuthenticationJsonContext.Default,
             ProviderAuthenticationJsonContext.Default,
+            AccountIdJsonContext.Default,
             AuthenticationJsonContext.Default);
         services.AddMudHttpClientJsonContext(resolver);
     }

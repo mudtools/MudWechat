@@ -58,6 +58,9 @@ public class WechatWorkServiceBuilder
             [WechatModule.Message] = new WechatModuleRegistrar(
                 WechatModule.Message,
                 s => s.AddMessageWebApiHttpClient()),
+            [WechatModule.AccountId] = new WechatModuleRegistrar(
+                WechatModule.AccountId,
+                s => s.AddAccountIdWebApiHttpClient()),
             [WechatModule.Kf] = new WechatModuleRegistrar(
                 WechatModule.Kf,
                 s => s.AddKfWebApiHttpClient()),
@@ -80,6 +83,9 @@ public class WechatWorkServiceBuilder
 
     /// <summary>注册消息推送业务接口（发送应用消息 / 群聊会话 / 家校学校通知；template_msg 仅第三方差异端点，群聊会话与学校通知官方仅自建开放）。</summary>
     public WechatWorkServiceBuilder AddMessageApi() => AddModule(WechatModule.Message);
+
+    /// <summary>注册账号ID业务接口（ID 转换 / tmp_external_userid 转换 / 自建应用对接 / corpid 转换 / ID 迁移完成状态 / 智能机器人 userid 转换 / 群 ID 升级，跨 access/provider/suite 三种令牌路由键七接口族）。</summary>
+    public WechatWorkServiceBuilder AddAccountIdApi() => AddModule(WechatModule.AccountId);
 
     /// <summary>注册微信客服业务接口（客服账号管理域 + 接待人员管理域：三类应用公共面收敛父接口 + 空标记子接口）。</summary>
     public WechatWorkServiceBuilder AddKfApi() => AddModule(WechatModule.Kf);

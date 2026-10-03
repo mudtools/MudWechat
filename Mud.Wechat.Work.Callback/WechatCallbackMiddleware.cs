@@ -5,9 +5,9 @@
 //  不得利用本项目从事危害国家安全、扰乱社会秩序、侵犯他人合法权益等法律法规禁止的活动！任何基于本项目开发而产生的一切法律纠纷和责任，我们不承担任何责任！
 // -----------------------------------------------------------------------
 
+using Microsoft.AspNetCore.Http;
 using System.Net;
 using System.Net.Sockets;
-using Microsoft.AspNetCore.Http;
 
 namespace Mud.Wechat.Work.Callback;
 
@@ -35,31 +35,22 @@ namespace Mud.Wechat.Work.Callback;
 /// 宿主须自行启用 <c>UseForwardedHeaders</c>。
 /// </para>
 /// </remarks>
-public sealed class WechatCallbackMiddleware
+/// <remarks>创建回调中间件（经典约定式，应用生命周期单实例）。</remarks>
+public sealed class WechatCallbackMiddleware(
+    RequestDelegate next,
+    IWechatCallbackReceiver receiver,
+    WechatCallbackDispatcher dispatcher,
+    IOptionsMonitor<WechatCallbackOptions> optionsMonitor,
+    ILogger<WechatCallbackMiddleware> logger)
 {
     /// <summary>POST 事件接收成功应答体（企业微信官方推荐「success」，明确防重试）。</summary>
     private const string SuccessResponseBody = "success";
 
-    private readonly RequestDelegate _next;
-    private readonly IWechatCallbackReceiver _receiver;
-    private readonly WechatCallbackDispatcher _dispatcher;
-    private readonly IOptionsMonitor<WechatCallbackOptions> _optionsMonitor;
-    private readonly ILogger<WechatCallbackMiddleware> _logger;
-
-    /// <summary>创建回调中间件（经典约定式，应用生命周期单实例）。</summary>
-    public WechatCallbackMiddleware(
-        RequestDelegate next,
-        IWechatCallbackReceiver receiver,
-        WechatCallbackDispatcher dispatcher,
-        IOptionsMonitor<WechatCallbackOptions> optionsMonitor,
-        ILogger<WechatCallbackMiddleware> logger)
-    {
-        _next = next ?? throw new ArgumentNullException(nameof(next));
-        _receiver = receiver ?? throw new ArgumentNullException(nameof(receiver));
-        _dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
-        _optionsMonitor = optionsMonitor ?? throw new ArgumentNullException(nameof(optionsMonitor));
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-    }
+    private readonly RequestDelegate _next = next ?? throw new ArgumentNullException(nameof(next));
+    private readonly IWechatCallbackReceiver _receiver = receiver ?? throw new ArgumentNullException(nameof(receiver));
+    private readonly WechatCallbackDispatcher _dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
+    private readonly IOptionsMonitor<WechatCallbackOptions> _optionsMonitor = optionsMonitor ?? throw new ArgumentNullException(nameof(optionsMonitor));
+    private readonly ILogger<WechatCallbackMiddleware> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
     /// <summary>处理回调请求。</summary>
     /// <param name="context">HTTP 上下文。</param>

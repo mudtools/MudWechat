@@ -297,6 +297,29 @@ public class WechatContractGuards
                 nameof(IWechatWorkInternalSchoolMessageService),
                 nameof(IWechatWorkSmartSheetGroupChatService),
                 nameof(IWechatWorkInternalSmartSheetGroupChatService),
+                // 账号ID域（AccountId 模块）：七接口族跨三种令牌路由键——ID 转换族 / tmp_external_userid 转换族 /
+                // 自建应用对接族走企业级 access_token；corpid 转换族 / ID 迁移完成状态族 / 智能机器人 userid 转换族
+                // 走 provider_access_token；群 ID 升级（新授权企业）族走 suite_access_token。
+                nameof(IWechatWorkAccountIdService),
+                nameof(IWechatWorkThirdPartyAccountIdService),
+                nameof(IWechatWorkProviderAccountIdService),
+                nameof(IWechatWorkAccountIdTmpExternalUserIdService),
+                nameof(IWechatWorkInternalAccountIdTmpExternalUserIdService),
+                nameof(IWechatWorkThirdPartyAccountIdTmpExternalUserIdService),
+                nameof(IWechatWorkProviderAccountIdTmpExternalUserIdService),
+                nameof(IWechatWorkAccountIdInteropService),
+                nameof(IWechatWorkInternalAccountIdInteropService),
+                nameof(IWechatWorkAccountIdCorpidService),
+                nameof(IWechatWorkThirdPartyAccountIdCorpidService),
+                nameof(IWechatWorkProviderAccountIdCorpidService),
+                nameof(IWechatWorkAccountIdMigrationService),
+                nameof(IWechatWorkThirdPartyAccountIdMigrationService),
+                nameof(IWechatWorkProviderAccountIdMigrationService),
+                nameof(IWechatWorkAccountIdBotService),
+                nameof(IWechatWorkThirdPartyAccountIdBotService),
+                nameof(IWechatWorkProviderAccountIdBotService),
+                nameof(IWechatWorkAccountIdChatIdUpgradeService),
+                nameof(IWechatWorkProviderAccountIdChatIdUpgradeService),
                 // 微信客服·客服账号管理域（Kf 模块）：5 个端点为三类应用公共面
                 //（添加 94661/96404、列表 94662/96415（官方即 POST）、删除 94663/96405、
                 // 修改 94664/96406、获取客服账号链接 94665/96416；父接口 + 三个应用类型空标记子接口）。

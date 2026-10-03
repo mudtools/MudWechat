@@ -111,6 +111,7 @@ Mud.Wechat/
 | 上下游 | `Interfaces/CorpGroup/` | `CorpGroup/{基础,ChainContacts,Rules}/` | `CorpGroup` / `AddCorpGroupApi()` |
 | 安全管理 | `Interfaces/Security/` | `Security/`（单一命名空间） | `Security` / `AddSecurityApi()` |
 | 消息推送 | `Interfaces/Message/` | `Message/`（单一命名空间） | `Message` / `AddMessageApi()` |
+| 账号ID | `Interfaces/AccountId/` | `AccountId/`（单一命名空间） | `AccountId` / `AddAccountIdApi()` |
 | 微信客服 | `Interfaces/Kf/` | `Kf/`（单一命名空间） | `Kf` / `AddKfApi()` |
 
 - 接口命名空间一律 `Mud.Wechat.Work`（**不含** `Interfaces` 段）；DTO 命名空间为 `Mud.Wechat.Work.DataModels.{域}[.{子域}]`。
@@ -124,7 +125,7 @@ Mud.Wechat/
 
 - **K1 令牌分流**：`CorpTokenManager` 内按 `AppType` 分流 —— 代开发 `permanent_code` 是「应用 secret」→ `gettoken(corpsecret = permanent_code)`；第三方是「授权码」→ `get_corp_token`。**不新建管理器。**
 - **K2 模板 id**：代开发 `template_id` 即 `suite_id`（`dk` 开头）⇒ `WechatAppConfig` **不提供独立 `TemplateId`**（非法状态类型层面不可表达）。接口级模板 id 参数（如 `templateid_list`）由宿主显式传入。
-- **令牌注入统一走 Query**（企微契约，非 Header，触发 `MUD005`）。白名单 = 授权流 + 通讯录六域 + 客户联系六域 + 上下游三族 + 安全管理三族 + 消息推送四族 + 微信客服七族（客服账号管理 / 接待人员管理 / 会话分配与消息收发 / 客户基础信息 / 统计管理 / 机器人管理 / 微信客服组件），由 G5 锁定；**新增须先评估、再显式扩展 G5**。例外：`get_customized_auth_url` 以**显式 Query 参数** `provider_access_token` 传令牌（**不带 `[Token]`**、不放宽白名单）。v2 端点 `/cgi-bin/service/v2/get_permanent_code`、`/cgi-bin/service/v2/get_auth_info`；安装链接前缀 `https://open.work.weixin.qq.com/3rdapp/install`。
+- **令牌注入统一走 Query**（企微契约，非 Header，触发 `MUD005`）。白名单 = 授权流 + 通讯录六域 + 客户联系六域 + 上下游三族 + 安全管理三族 + 消息推送四族 + 微信客服七族（客服账号管理 / 接待人员管理 / 会话分配与消息收发 / 客户基础信息 / 统计管理 / 机器人管理 / 微信客服组件）+ 账号ID 七接口族（ID 转换 / tmp 转换 / 自建对接 / corpid 转换 / 迁移完成 / 智能机器人 / 群 ID 升级），由 G5 锁定；**新增须先评估、再显式扩展 G5**。例外：`get_customized_auth_url` 以**显式 Query 参数** `provider_access_token` 传令牌（**不带 `[Token]`**、不放宽白名单）。v2 端点 `/cgi-bin/service/v2/get_permanent_code`、`/cgi-bin/service/v2/get_auth_info`；安装链接前缀 `https://open.work.weixin.qq.com/3rdapp/install`。
 - **`TokenKey` 三段式 `{tokenType}:{appKey}:{scopeKey}`**（如 `Wechat.AccessToken:default:default`，由 `WechatAppTokenManagerBase.BuildCache` 的 `storeKeyMapper` 构造）；`WechatTokenTypes` 一律 `"Wechat."` 前缀，与组件通用 `TokenTypes` 隔离。
 - **`AppKey` 形状受约束**：`[A-Za-z0-9]` 开头 + 仅 `[A-Za-z0-9._-]` + ≤128（`WechatAppKeyValidator`，经 `Validate()` 单点收敛）。含 `:` 会造成**键别名** ⇒ 跨应用令牌串号。
 - **企业级令牌一企一份**（`scopeKey = authCorpId`，由 `TokenManagerBase` 的 scope 机制承担），**不经声明式 `[Token]`**：显式 `GetTokenAsync(new[]{ authCorpId })`。errcode 恢复**必须显式传 scope**（`InvalidateTokenAsync(appKey, AccessToken, new[]{ authCorpId })`）—— 默认作用域对已缓存企业令牌是**空转**（`CorpTokenManagerScopeIsolationTests` 锁定）。
@@ -219,6 +220,7 @@ Mud.Wechat/
 | CG1~CG11 | 上下游 | 基础：父 6 条全 POST + 继承链恰 3 子接口；通讯录：父 4 + 自建 5（代开发零）；规则：父零端点 + Internal 恰 5 |
 | SEC1~SEC4 | 安全管理 | 三族父接口零端点 + 自建恰 9 / 5 / 2 条；**不设**第三方/代开发子接口（官方无文档） |
 | MSG1~MSG4 | 消息推送 | 应用消息族父 13 + 第三方恰 1；AppChat / SchoolMessage / SmartSheetGroupChat 父零端点 + 仅 Internal 承载 |
+| ACCT1~ACCT4 | 账号ID | 七接口族跨三种令牌路由键：ID 转换族父 9 + ThirdParty 空标记 + Provider 恰 2（群 ID 升级 99601）；tmp 转换族父 1 + 三类空标记子接口；自建对接族父零端点 + Internal 恰 3（`openuserid_to_userid` 双场景同路由多方法）；corpid 转换族 / 迁移完成状态族 / 智能机器人族走 provider 令牌（父 1 + 空子接口、父 1 + ThirdParty 恰 1、父 1）；群 ID 升级族走 suite 令牌（父零端点 + 仅 Provider 1）；`apply_mass_call_ticket` / `upgrade_chatid_for_new_corp` 为 GET 且无请求体；`get_openid_migration` 为无请求体 POST；`external_userid_to_pending_id` 请求体数组字段名官方为 `external_userid`（无 `_list` 后缀）；智能机器人路由沿用 `userid_to_openuserid` 命名但实际方向为 open_userid → userid |
 | KF1~KF4 | 微信客服 | 七族接口：客服账号管理 / 接待人员管理 / 会话分配与消息收发 / 客户基础信息 / 统计管理五域为三类应用公共面收敛父接口 + 各恰 3 个空标记子接口（账号管理 5 条全 POST、接待人员 3 条、会话域 4 路由 14 方法（`send_msg` 10 种 msgtype 与 `send_msg_on_event` 2 种 msgtype 同路由多方法，对齐 message/send 先例）、客户基础信息 1 条、统计 2 条）；机器人管理域官方仅自建开放（零端点父接口 + 仅自建子接口 8 条，路由在 `kf/knowledge/` 下）；微信客服组件域仅微信客服组件应用消费（零端点父接口 + 仅第三方子接口 3 条，`account/list` 与 `add_contact_way` 与账号管理域共用路由）；`kf/account/list` 官方即 POST（勿改 GET）、`servicer/list` 为 GET（open_kfid 走 Query）；`kf/add_contact_way` 挂 `/cgi-bin/kf/` 根下、不在 `account/` 子路径；第三方「获取企业状态信息」95153 为概述页无独立 API，不入接口面；官方字段名陷阱 `satisfaction_investgate_cnt`（investgate 缺 s）照抄 |
 | CB1~CB13 | 回调 | 包依赖边界、53 个事件键与 `EventTypeKey` 优先级、兜底处理器形态与文件路径、事件 DTO 字段、凭据唯一来源、echo 不消费指纹、32 字节块填充（禁内置 PKCS7）、指纹闸次序、通道枚举与配置面、`receiveid` 三元分流、开放面矩阵、合法性闸次序 |
 | MA1~MA4 | 多应用（`Abstractions.Tests`） | `RemoveApp` 删除顺序、重建异常白名单、退役队列 `_disposed` 闸、`SetCorp` 参数校验。守卫为**方法体文本断言**（花括号配平），签名漂移须同步更新 |

@@ -67,6 +67,9 @@ public class WechatWorkServiceBuilder
             [WechatModule.Pay] = new WechatModuleRegistrar(
                 WechatModule.Pay,
                 s => s.AddPayWebApiHttpClient()),
+            [WechatModule.MsgAudit] = new WechatModuleRegistrar(
+                WechatModule.MsgAudit,
+                s => s.AddMsgAuditWebApiHttpClient()),
         };
 
     /// <summary>注册授权流业务接口与授权编排服务（get_pre_auth_code / set_session_info / get_permanent_code / get_auth_info / get_customized_auth_url + 编排）。</summary>
@@ -95,6 +98,9 @@ public class WechatWorkServiceBuilder
 
     /// <summary>注册企业支付业务接口（对外收款记录域为三类应用公共面；收款商户号管理域、资金流水域、创建对外收款账户域、普通支付域、退款域与交易账单域官方仅自建开放）。</summary>
     public WechatWorkServiceBuilder AddPayApi() => AddModule(WechatModule.Pay);
+
+    /// <summary>注册会话内容存档业务接口（开启成员列表域、机器人信息域、会话同意情况域与内部群信息域，官方仅自建开放；access_token 须由会话内容存档应用 secret 获取）。</summary>
+    public WechatWorkServiceBuilder AddMsgAuditApi() => AddModule(WechatModule.MsgAudit);
 
     /// <summary>注册全部模块。</summary>
     public WechatWorkServiceBuilder AddAllApis()

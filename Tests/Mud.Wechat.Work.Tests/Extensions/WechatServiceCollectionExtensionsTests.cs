@@ -638,4 +638,48 @@ public class WechatServiceCollectionExtensionsTests
         scope.ServiceProvider.GetRequiredService<IWechatWorkInternalPayTradeBillService>().Should().NotBeNull(
             "ValidateScopes = true 变体下子 scope 内同样可解析");
     }
+
+    /// <summary>
+    /// MsgAudit 模块（会话内容存档域：开启成员列表域 + 机器人信息域 + 会话同意情况域 +
+    /// 内部群信息域，官方仅自建开放）：AddMsgAuditApi 注册的仅自建子接口客户端必须可解析
+    /// （公共父接口 IsAbstract 不参与 DI 注册，仅自建子接口承载端点）。
+    /// </summary>
+    [Fact]
+    public void AddMsgAuditApi_ShouldRegisterMsgAuditDomainClients_ResolvableInRootAndScope()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddWechatApp(new List<WechatAppConfig> { InternalConfig() });
+        services.AddWechatWorkServices(builder => builder.AddMsgAuditApi());
+
+        using var provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true });
+
+        provider.GetRequiredService<IWechatWorkInternalMsgAuditPermitUserService>().Should().NotBeNull(
+            "官方仅向自建应用开放开启成员列表域（代开发/第三方暂不支持），本域仅注册自建子接口");
+        provider.GetRequiredService<IWechatWorkInternalMsgAuditRobotService>().Should().NotBeNull(
+            "官方仅向自建应用开放机器人信息域（代开发/第三方暂不支持），本域仅注册自建子接口");
+        provider.GetRequiredService<IWechatWorkInternalMsgAuditAgreeService>().Should().NotBeNull(
+            "官方仅向自建应用开放会话同意情况域（代开发/第三方暂不支持），本域仅注册自建子接口");
+        provider.GetRequiredService<IWechatWorkInternalMsgAuditGroupChatService>().Should().NotBeNull(
+            "官方仅向自建应用开放内部群信息域（代开发/第三方暂不支持），本域仅注册自建子接口");
+
+        provider.GetService<IWechatWorkMsgAuditPermitUserService>().Should().BeNull(
+            "公共父接口 IsAbstract = true，不得注册进 DI（调用方须按应用类型选择子接口）");
+        provider.GetService<IWechatWorkMsgAuditRobotService>().Should().BeNull(
+            "公共父接口 IsAbstract = true，不得注册进 DI（调用方须按应用类型选择子接口）");
+        provider.GetService<IWechatWorkMsgAuditAgreeService>().Should().BeNull(
+            "公共父接口 IsAbstract = true，不得注册进 DI（调用方须按应用类型选择子接口）");
+        provider.GetService<IWechatWorkMsgAuditGroupChatService>().Should().BeNull(
+            "公共父接口 IsAbstract = true，不得注册进 DI（调用方须按应用类型选择子接口）");
+
+        using var scope = provider.CreateScope();
+        scope.ServiceProvider.GetRequiredService<IWechatWorkInternalMsgAuditPermitUserService>().Should().NotBeNull(
+            "ValidateScopes = true 变体下子 scope 内同样可解析");
+        scope.ServiceProvider.GetRequiredService<IWechatWorkInternalMsgAuditRobotService>().Should().NotBeNull(
+            "ValidateScopes = true 变体下子 scope 内同样可解析");
+        scope.ServiceProvider.GetRequiredService<IWechatWorkInternalMsgAuditAgreeService>().Should().NotBeNull(
+            "ValidateScopes = true 变体下子 scope 内同样可解析");
+        scope.ServiceProvider.GetRequiredService<IWechatWorkInternalMsgAuditGroupChatService>().Should().NotBeNull(
+            "ValidateScopes = true 变体下子 scope 内同样可解析");
+    }
 }

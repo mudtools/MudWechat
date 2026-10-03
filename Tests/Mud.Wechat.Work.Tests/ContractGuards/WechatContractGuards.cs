@@ -400,6 +400,22 @@ public class WechatContractGuards
                 //（交易账单申请 98115；零端点父接口 + 仅自建子接口）。
                 nameof(IWechatWorkPayTradeBillService),
                 nameof(IWechatWorkInternalPayTradeBillService),
+                // 会话内容存档·开启成员列表域（MsgAudit 模块）：1 个端点官方仅自建应用开放
+                //（获取开启成员列表 91774；零端点父接口 + 仅自建子接口）。
+                nameof(IWechatWorkMsgAuditPermitUserService),
+                nameof(IWechatWorkInternalMsgAuditPermitUserService),
+                // 会话内容存档·机器人信息域（MsgAudit 模块）：1 个端点官方仅自建应用开放
+                //（获取机器人信息 91614「获取会话内容」页内唯一 HTTP API，官方即 GET；零端点父接口 + 仅自建子接口）。
+                nameof(IWechatWorkMsgAuditRobotService),
+                nameof(IWechatWorkInternalMsgAuditRobotService),
+                // 会话内容存档·会话同意情况域（MsgAudit 模块）：2 个端点官方仅自建应用开放
+                //（单聊同意 91782 ≤2500 次/分钟、群聊同意 91782 ≤1500 次/分钟；零端点父接口 + 仅自建子接口）。
+                nameof(IWechatWorkMsgAuditAgreeService),
+                nameof(IWechatWorkInternalMsgAuditAgreeService),
+                // 会话内容存档·内部群信息域（MsgAudit 模块）：1 个端点官方仅自建应用开放
+                //（获取内部群信息 92951 ≤2000 次/分钟；零端点父接口 + 仅自建子接口）。
+                nameof(IWechatWorkMsgAuditGroupChatService),
+                nameof(IWechatWorkInternalMsgAuditGroupChatService),
             },
             "企业微信官方契约强制 Query 注入（MUD005 已知接受风险），新增 Query 注入接口须评估后扩展本守卫");
     }

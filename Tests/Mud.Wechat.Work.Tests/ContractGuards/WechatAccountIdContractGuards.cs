@@ -31,7 +31,7 @@ namespace Mud.Wechat.Work.Tests.ContractGuards;
 /// provider_access_token 鉴权、第三方/代开发公共面收敛父接口；
 /// <b>ID 迁移完成状态族</b>（<see cref="IWechatWorkAccountIdMigrationService"/>）：
 /// provider_access_token 鉴权，第三方/代开发共用端点收敛父接口，第三方子接口另持
-/// external_userid 迁移完成差异端点（96516）；
+/// external_userid 迁移完成差异端点（99375，与父接口同属官方「ID迁移完成状态的设置」页）；
 /// <b>群 ID 升级（新授权企业）族</b>（<see cref="IWechatWorkAccountIdChatIdUpgradeService"/>）：
 /// suite_access_token 鉴权、仅代开发模板开放（父接口零端点 + 仅代开发子接口承载端点）。
 /// </para>
@@ -93,10 +93,10 @@ public class WechatAccountIdContractGuards
         // ── ID 迁移完成状态族·父接口（provider_access_token，99375/99378） ──
         (typeof(IWechatWorkAccountIdMigrationService), nameof(IWechatWorkAccountIdMigrationService.FinishOpenIdMigrationAsync),
             typeof(PostAttribute), "/cgi-bin/service/finish_openid_migration"),
-        // ── ID 迁移完成状态族·第三方子接口差异端点（96516） ──
+        // ── ID 迁移完成状态族·第三方子接口差异端点（99375，与父接口同页） ──
         (typeof(IWechatWorkThirdPartyAccountIdMigrationService), nameof(IWechatWorkThirdPartyAccountIdMigrationService.FinishExternalUserIdMigrationAsync),
             typeof(PostAttribute), "/cgi-bin/service/externalcontact/finish_external_userid_migration"),
-        // ── 智能机器人 userid 转换族·父接口（provider_access_token，97106 未明确企业身份场景） ──
+        // ── 智能机器人 userid 转换族·父接口（provider_access_token，96516/97106 未明确企业身份场景） ──
         (typeof(IWechatWorkAccountIdBotService), nameof(IWechatWorkAccountIdBotService.ServiceUserIdToOpenUserIdAsync),
             typeof(PostAttribute), "/cgi-bin/service/batch/userid_to_openuserid"),
         // ── 群 ID 升级（新授权企业）族·代开发子接口（suite_access_token，99601 接口三） ──
@@ -201,7 +201,7 @@ public class WechatAccountIdContractGuards
         };
         AssertAbstractParentWithEndpoints(migrationParent, 1, "设置迁移完成（finish_openid_migration）为第三方/代开发公共面");
         AssertRegistryChild(migrationChildren[0], 1, "WechatWorkAccountIdMigrationService",
-            "第三方子接口恰持 external_userid 迁移完成 1 差异端点（96516）");
+            "第三方子接口恰持 external_userid 迁移完成 1 差异端点（99375）");
         AssertRegistryChild(migrationChildren[1], 0, "WechatWorkAccountIdMigrationService", "代开发子接口为空标记");
         AssertDerivedInterfaces(migrationParent, migrationChildren, "迁移完成状态族继承链上不得出现其它应用类型子接口");
 

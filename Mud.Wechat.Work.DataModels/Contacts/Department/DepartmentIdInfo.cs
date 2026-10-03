@@ -27,7 +27,7 @@ public class DepartmentIdInfo
     public int ParentId { get; set; }
 
     /// <summary>
-    /// 获取或设置在父部门中的次序值（值大的排序靠前，官方范围 [0, 2^32)，故以 64 位整数承载）。
+    /// 获取或设置在父部门中的次序值（官方口径：<b>值小的排序靠前</b>，与成员 <c>order</c>「值大靠前」语义相反；官方范围 [0, 2^32)，故以 64 位整数承载）。
     /// </summary>
     [JsonPropertyName("order")]
     public long? Order { get; set; }

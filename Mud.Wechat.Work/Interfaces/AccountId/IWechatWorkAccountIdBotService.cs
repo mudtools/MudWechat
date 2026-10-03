@@ -46,6 +46,9 @@ public interface IWechatWorkAccountIdBotService
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
     /// <returns>智能机器人所在企业 ID（open_corpid）、ID 转换结果列表（items）及无法转换列表（invalid_open_userid_list）。</returns>
     /// <remarks>
+    /// <para>本端点与 <see cref="IWechatWorkAccountIdService.UserIdToOpenUserIdAsync"/> 同属官方
+    /// 「userid 的转换」文档页（第三方 96516 / 服务商代开发 97106），仅面向智能机器人「未明确企业身份」场景。</para>
+    /// <para><b>第三方应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/96516"/></para>
     /// <para><b>服务商代开发</b>SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/97106"/></para>
     /// </remarks>
     [Post("/cgi-bin/service/batch/userid_to_openuserid")]

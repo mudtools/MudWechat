@@ -13,7 +13,7 @@ namespace Mud.Wechat.Work;
 /// 企业微信「账号ID」域「ID 迁移完成状态」接口族第三方应用 SDK（含 external_userid 迁移完成差异端点）。
 /// <para>
 /// 继承公共父接口 <see cref="IWechatWorkAccountIdMigrationService"/> 的「设置迁移完成」端点；
-/// 另持官方仅向第三方应用开放的「设置迁移完成（external_userid）」差异端点（96516）。
+/// 另持官方仅向第三方应用开放的「设置迁移完成（external_userid）」差异端点（99375）。
 /// </para>
 /// </summary>
 /// <remarks>
@@ -36,7 +36,10 @@ public interface IWechatWorkThirdPartyAccountIdMigrationService : IWechatWorkAcc
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
     /// <returns>设置结果（errcode/errmsg）。</returns>
     /// <remarks>
-    /// <para><b>第三方应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/96516"/></para>
+    /// <para>与父接口「ID 迁移完成状态的设置」同属官方同一文档页（99375）：该页同时收录
+    /// <c>finish_openid_migration</c>（userid/corpid）与本端点（external_userid），
+    /// 并注明「userid 与 corpid 只能同时设置为迁移完成，external_userid 可以单独设置」。</para>
+    /// <para><b>第三方应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/99375"/></para>
     /// </remarks>
     [Post("/cgi-bin/service/externalcontact/finish_external_userid_migration")]
     Task<WechatWorkResponse> FinishExternalUserIdMigrationAsync(

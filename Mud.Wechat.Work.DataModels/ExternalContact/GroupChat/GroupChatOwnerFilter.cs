@@ -18,4 +18,11 @@ public class GroupChatOwnerFilter
     /// </summary>
     [JsonPropertyName("userid_list")]
     public List<string>? UserIdList { get; set; }
+
+    /// <summary>
+    /// 获取或设置部门 ID 列表（最多 100 个）。
+    /// <para>与 <see cref="UserIdList"/> 为「或」关系：两者均不填表示获取应用可见范围内全部群主的数据。</para>
+    /// </summary>
+    [JsonPropertyName("partyid_list")]
+    public List<int>? PartyIdList { get; set; }
 }

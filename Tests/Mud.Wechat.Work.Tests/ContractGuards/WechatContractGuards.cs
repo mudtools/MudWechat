@@ -311,6 +311,33 @@ public class WechatContractGuards
                 nameof(IWechatWorkInternalKfServicerService),
                 nameof(IWechatWorkThirdPartyKfServicerService),
                 nameof(IWechatWorkProviderKfServicerService),
+                // 微信客服·会话分配与消息收发域（Kf 模块）：4 条路由 / 14 个端点方法为三类应用公共面
+                //（会话状态 94669/94698/96425、发送消息 94677/94700/96427（10 种 msgtype 同路由多方法）、
+                // 事件响应消息 95122/94910/96428（2 种 msgtype 同路由多方法）；父接口 + 三个应用类型空标记子接口）。
+                nameof(IWechatWorkKfSessionService),
+                nameof(IWechatWorkInternalKfSessionService),
+                nameof(IWechatWorkThirdPartyKfSessionService),
+                nameof(IWechatWorkProviderKfSessionService),
+                // 微信客服·客户基础信息域（Kf 模块）：1 个端点为三类应用公共面
+                //（batchget 95159/95149/96429；父接口 + 三个应用类型空标记子接口）。
+                nameof(IWechatWorkKfCustomerService),
+                nameof(IWechatWorkInternalKfCustomerService),
+                nameof(IWechatWorkThirdPartyKfCustomerService),
+                nameof(IWechatWorkProviderKfCustomerService),
+                // 微信客服·统计管理域（Kf 模块）：2 个端点为三类应用公共面
+                //（企业汇总 95489/95492/96432、接待人员明细 95490/95493/96433；父接口 + 三个应用类型空标记子接口）。
+                nameof(IWechatWorkKfStatisticsService),
+                nameof(IWechatWorkInternalKfStatisticsService),
+                nameof(IWechatWorkThirdPartyKfStatisticsService),
+                nameof(IWechatWorkProviderKfStatisticsService),
+                // 微信客服·机器人管理域（Kf 模块）：8 个端点官方仅自建应用开放
+                //（知识库分组 95971、知识库问答 95972，路由在 kf/knowledge/ 下；零端点父接口 + 仅自建子接口）。
+                nameof(IWechatWorkKfKnowledgeService),
+                nameof(IWechatWorkInternalKfKnowledgeService),
+                // 微信客服·微信客服组件域（Kf 模块）：3 个端点官方仅由微信客服组件应用（套件形态）消费
+                //（99368/99400/99367，前两条与客服账号管理域共用路由；零端点父接口 + 仅第三方子接口）。
+                nameof(IWechatWorkKfComponentService),
+                nameof(IWechatWorkThirdPartyKfComponentService),
             },
             "企业微信官方契约强制 Query 注入（MUD005 已知接受风险），新增 Query 注入接口须评估后扩展本守卫");
     }

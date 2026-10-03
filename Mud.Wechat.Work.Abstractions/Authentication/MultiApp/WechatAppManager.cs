@@ -663,7 +663,7 @@ public class WechatAppManager : IWechatAppManager, IDisposable
     /// </summary>
     /// <remarks>
     /// M4（F4）白名单收敛：装配路径的 IO 型异常组为纵深防御（当前装配链不发起网络 IO，
-    /// 纯 DI 解析 + 纯构造）；DI 解析失败抛出的常见确定性异常类型已在 <see cref="GetApp"/>
+    /// 纯 DI 解析 + 纯构造）；DI 解析失败抛出的常见确定性异常类型已在 <see cref="GetApp(string)"/>
     /// 的重建路径外直抛（含停机边缘的 ODE——其本就是 IOE 子类，随本次收敛一并直抛）。
     /// </remarks>
     private static bool IsTransientInitFailure(Exception ex)

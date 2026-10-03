@@ -13,7 +13,7 @@ namespace Mud.Wechat.Work.Callback;
 /// 企业微信回调接收接口（对齐 Mud.Feishu.Webhook 的接收端职能）。
 /// </summary>
 /// <remarks>
-/// v1 方案 §5.3：方法均带 <paramref name="appKey"/> 感知（多应用凭据选择——精确键优先，回退通配键），
+/// v1 方案 §5.3：方法均带 <c>appKey</c> 感知（多应用凭据选择——精确键优先，回退通配键），
 /// 由中间件从路由路径提取后显式传入。
 /// </remarks>
 public interface IWechatCallbackReceiver

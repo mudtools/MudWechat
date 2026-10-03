@@ -31,7 +31,7 @@ namespace Mud.Wechat.Work.Callback;
 /// <para>
 /// <b>IP 白名单</b>：条目支持精确 IP 与 IPv4 CIDR 段（如 <c>101.226.103.0/24</c>，可经官方
 /// <c>getcallbackip</c> 获取段值）；白名单非空且无法解析客户端地址时按 fail-closed 拒绝。
-/// 反向代理部署下 <see cref="HttpContext.Connection.RemoteIpAddress"/> 为代理地址，
+/// 反向代理部署下 <c>HttpContext.Connection.RemoteIpAddress</c> 为代理地址，
 /// 宿主须自行启用 <c>UseForwardedHeaders</c>。
 /// </para>
 /// </remarks>

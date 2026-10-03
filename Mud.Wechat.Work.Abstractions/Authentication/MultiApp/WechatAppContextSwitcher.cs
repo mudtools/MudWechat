@@ -70,9 +70,9 @@ public sealed class WechatAppContextSwitcher : AsyncLocalAppContextSwitcher, IWe
     /// （授权器为 null 时本 SDK 的语义是「不判定」，见 <see cref="WechatAppContextSwitcher"/> 类注释）。
     /// </para>
     /// <para>
-    /// <b>与 <see cref="BeginScope(IMudAppContext)"/> 的组合方式（重要）</b>：本方法<b>不预先</b>调用
+    /// <b>与 <see cref="IAppContextHolder.BeginScope(IMudAppContext)"/> 的组合方式（重要）</b>：本方法<b>不预先</b>调用
     /// <see cref="IAppContextHolder.SwitchTo"/>，而是把解析出的上下文直接交给
-    /// <see cref="BeginScope(IMudAppContext)"/> 建立作用域 —— 后者会自行快照进入前的上下文并在释放时还原。
+    /// <see cref="IAppContextHolder.BeginScope(IMudAppContext)"/> 建立作用域 —— 后者会自行快照进入前的上下文并在释放时还原。
     /// 若先 <c>SwitchTo</c> 再 <c>BeginScope</c>，快照值会等于目标应用本身，释放时便<b>不会</b>回滚
     /// （上下文残留到后续调用）。框架生成类的 <c>UseAppScope</c> 同为「不预先 SwitchTo」写法。
     /// </para>

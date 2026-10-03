@@ -17,7 +17,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 /// <remarks>
 /// <para>
 /// 注册<b>即时生效</b>（组合根期直接写入注册表单例并 <c>TryAddTransient</c>），
-/// <b>无 <c>Build()</c> 步骤、无 Freeze</b>（v1.2 §5.6）：<paramref name="appKey"/> 传 <c>null</c>
+/// <b>无 <c>Build()</c> 步骤、无 Freeze</b>（v1.2 §5.6）：<c>appKey</c> 传 <c>null</c>
 /// 注册到通配键（全局生效，D11）；传显式应用键则仅该应用的回调事件路由到对应条目。
 /// </para>
 /// </remarks>

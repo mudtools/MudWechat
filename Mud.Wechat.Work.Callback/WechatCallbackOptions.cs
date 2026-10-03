@@ -15,7 +15,7 @@ namespace Mud.Wechat.Work.Callback;
 /// <remarks>
 /// <para>
 /// <b>多应用（v1.2 D3）</b>：回调凭据以 <see cref="Apps"/> 字典为<b>唯一来源</b>——键为
-/// <see cref="WechatAppConfig.AppKey"/> 形状的应用键（路由 <c>/wechat/{AppKey}</c>），通配
+/// 经 <see cref="WechatAppKeyValidator"/> 形状校验的应用键（路由 <c>/wechat/{AppKey}</c>），通配
 /// <see cref="WildcardAppKey"/> 承接「通讯录同步助手」（无 AppKey 形态）与「全局」处理器注册（D11）。
 /// 项目未发布，旧的单体顶层字段（PushToken/PushEncodingAESKey/CorpId）已删除，不做兼容垫片。
 /// </para>
@@ -75,11 +75,13 @@ public class WechatCallbackOptions
     public int MaxConcurrentEvents { get; set; } = 10;
 
     /// <summary>
-    /// 多应用回调凭据（键 = 应用键 <see cref="WechatAppConfig.AppKey"/> 或通配 <see cref="WildcardAppKey"/>）。
+    /// 多应用回调凭据（键 = 应用键 <c>AppKey</c>（形状经 <see cref="WechatAppKeyValidator"/> 校验）
+    /// 或通配 <see cref="WildcardAppKey"/>）。
     /// </summary>
     /// <remarks>
     /// 消费点：接收器按传入 appKey 解析凭据（精确键优先，回退通配键）、中间件路由匹配、
-    /// <see cref="Validate"/> 启动期/请求期校验。<b>回调凭据唯一来源</b>——不回流 <see cref="WechatAppConfig"/>（CB5 守卫）。
+    /// <see cref="Validate"/> 启动期/请求期校验。<b>回调凭据唯一来源</b>——不回流
+    /// <see cref="Mud.Wechat.Work.Abstractions.Configuration.WechatAppConfig"/>（CB5 守卫）。
     /// </remarks>
     public Dictionary<string, WechatAppCallbackOptions> Apps { get; set; } = new();
 
@@ -144,7 +146,8 @@ public class WechatAppCallbackOptions
     /// <summary>
     /// 回调消息加解密密钥 EncodingAESKey（43 位字符，AES-256-CBC）。
     /// </summary>
-    /// <remarks>消费点：<c>WechatCallbackReceiver</c> 解密/加密（<see cref="WechatCallbackCrypto.Decrypt"/>）。</remarks>
+    /// <remarks>消费点：<c>WechatCallbackReceiver</c> 解密/加密
+    /// （<see cref="WechatCallbackCrypto.Decrypt(string, string, out string)"/>）。</remarks>
     public string PushEncodingAESKey { get; set; } = string.Empty;
 
     /// <summary>

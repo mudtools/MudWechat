@@ -16,12 +16,14 @@ namespace Mud.Wechat.Work.Tests.ContractGuards;
 /// <summary>
 /// 企业支付模块（Pay 模块）契约守卫：路由表、接口层级与令牌绑定锁定
 /// （对外收款记录域 + 收款商户号管理域（仅自建） + 资金流水域（仅自建） +
-/// 创建对外收款账户域（仅自建））。
+/// 创建对外收款账户域（仅自建） + 普通支付域（仅自建） + 退款域（仅自建） +
+/// 交易账单域（仅自建））。
 /// </summary>
 /// <remarks>
 /// <para>
 /// 形态：对外收款记录域为三类应用公共面收敛父接口（自建 / 第三方 / 代开发子接口均为零差异端点空标记）；
-/// 收款商户号管理域、资金流水域、创建对外收款账户域官方仅自建应用开放（代开发 / 第三方暂不支持），
+/// 收款商户号管理域、资金流水域、创建对外收款账户域、普通支付域、退款域、交易账单域
+/// 官方仅自建应用开放（代开发 / 第三方暂不支持），
 /// 均为零端点父接口 + 仅自建子接口承载端点（形态对齐机器人管理域守卫）。
 /// </para>
 /// </remarks>
@@ -38,6 +40,12 @@ public class WechatPayContractGuards
     private const string FundFlowParentImplementationClassName = "WechatWorkPayFundFlowService";
 
     private const string MchApplyParentImplementationClassName = "WechatWorkPayMchApplyService";
+
+    private const string OrderParentImplementationClassName = "WechatWorkPayOrderService";
+
+    private const string RefundParentImplementationClassName = "WechatWorkPayRefundService";
+
+    private const string TradeBillParentImplementationClassName = "WechatWorkPayTradeBillService";
 
     private const string PayRegistryGroupName = "Pay";
 
@@ -100,6 +108,55 @@ public class WechatPayContractGuards
         (typeof(IWechatWorkInternalPayMchApplyService),
             nameof(IWechatWorkInternalPayMchApplyService.UploadImageAsync),
             typeof(PostAttribute), "/cgi-bin/miniapppay/upload_image"),
+    };
+
+    /// <summary>
+    /// 普通支付域官方路由表（仅自建开放，4 条端点全部声明于自建子接口，全部为 POST）。
+    /// </summary>
+    private static readonly (Type Interface, string Method, Type HttpAttribute, string Route)[] OrderRoutes =
+    {
+        // 小程序下单（97322）。
+        (typeof(IWechatWorkInternalPayOrderService),
+            nameof(IWechatWorkInternalPayOrderService.CreateOrderAsync),
+            typeof(PostAttribute), "/cgi-bin/miniapppay/create_order"),
+        // 查询订单（97323）。
+        (typeof(IWechatWorkInternalPayOrderService),
+            nameof(IWechatWorkInternalPayOrderService.GetOrderAsync),
+            typeof(PostAttribute), "/cgi-bin/miniapppay/get_order"),
+        // 关闭订单（97324）。
+        (typeof(IWechatWorkInternalPayOrderService),
+            nameof(IWechatWorkInternalPayOrderService.CloseOrderAsync),
+            typeof(PostAttribute), "/cgi-bin/miniapppay/close_order"),
+        // 获取支付签名（98130）。
+        (typeof(IWechatWorkInternalPayOrderService),
+            nameof(IWechatWorkInternalPayOrderService.GetSignAsync),
+            typeof(PostAttribute), "/cgi-bin/miniapppay/get_sign"),
+    };
+
+    /// <summary>
+    /// 退款域官方路由表（仅自建开放，2 条端点全部声明于自建子接口，全部为 POST）。
+    /// </summary>
+    private static readonly (Type Interface, string Method, Type HttpAttribute, string Route)[] RefundRoutes =
+    {
+        // 申请退款（97333；官方路由为 miniapppay/refund，不带 get_ 前缀）。
+        (typeof(IWechatWorkInternalPayRefundService),
+            nameof(IWechatWorkInternalPayRefundService.ApplyRefundAsync),
+            typeof(PostAttribute), "/cgi-bin/miniapppay/refund"),
+        // 查询退款（97352；官方路由为 get_refund_detail，勿改 get_refund）。
+        (typeof(IWechatWorkInternalPayRefundService),
+            nameof(IWechatWorkInternalPayRefundService.GetRefundDetailAsync),
+            typeof(PostAttribute), "/cgi-bin/miniapppay/get_refund_detail"),
+    };
+
+    /// <summary>
+    /// 交易账单域官方路由表（仅自建开放，1 条端点声明于自建子接口，POST）。
+    /// </summary>
+    private static readonly (Type Interface, string Method, Type HttpAttribute, string Route)[] TradeBillRoutes =
+    {
+        // 交易账单申请（98115；官方路由为 get_bill，区别于对外收款记录域的 externalpay/get_bill_list）。
+        (typeof(IWechatWorkInternalPayTradeBillService),
+            nameof(IWechatWorkInternalPayTradeBillService.GetTradeBillAsync),
+            typeof(PostAttribute), "/cgi-bin/miniapppay/get_bill"),
     };
 
     /// <summary>
@@ -208,6 +265,77 @@ public class WechatPayContractGuards
     }
 
     /// <summary>
+    /// 契约守卫 PAY1e：普通支付域全部端点路由必须与官方契约一致
+    /// （官方仅自建开放，路由在 <c>miniapppay/</c> 下；官方多数统计/查询接口即 POST，勿改成 GET）。
+    /// </summary>
+    [Fact]
+    public void PayOrderEndpoints_ShouldMatchOfficialRoutes()
+    {
+        OrderRoutes.Should().HaveCount(4,
+            "普通支付域 4 个端点（小程序下单 + 查询订单 + 关闭订单 + 获取支付签名）官方仅自建应用开放，全部声明于自建子接口");
+
+        var distinctRoutes = OrderRoutes.Select(r => r.Route).Distinct().ToList();
+        distinctRoutes.Should().HaveCount(4, "普通支付域各端点路由互不重复");
+
+        foreach (var (iface, method, httpAttribute, route) in OrderRoutes)
+        {
+            var target = iface.GetMethod(method, BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+            target.Should().NotBeNull($"{iface.Name}.{method} 必须存在");
+
+            var attr = target!.GetCustomAttribute(httpAttribute) as HttpMethodAttribute;
+            attr.Should().NotBeNull($"{iface.Name}.{method} 必须声明 [{httpAttribute.Name.Replace("Attribute", string.Empty)}] 路由");
+            attr!.RequestUri.Should().Be(route, $"{iface.Name}.{method} 路由必须与官方契约一致");
+        }
+    }
+
+    /// <summary>
+    /// 契约守卫 PAY1f：退款域全部端点路由必须与官方契约一致
+    /// （官方仅自建开放；申请退款路由为官方原文 <c>refund</c>，勿补 get_ 前缀；
+    /// 查询退款路由为官方原文 <c>get_refund_detail</c>，勿简化为 get_refund）。
+    /// </summary>
+    [Fact]
+    public void PayRefundEndpoints_ShouldMatchOfficialRoutes()
+    {
+        RefundRoutes.Should().HaveCount(2,
+            "退款域 2 个端点（申请退款 + 查询退款）官方仅自建应用开放，全部声明于自建子接口");
+
+        var distinctRoutes = RefundRoutes.Select(r => r.Route).Distinct().ToList();
+        distinctRoutes.Should().HaveCount(2, "退款域各端点路由互不重复");
+
+        foreach (var (iface, method, httpAttribute, route) in RefundRoutes)
+        {
+            var target = iface.GetMethod(method, BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+            target.Should().NotBeNull($"{iface.Name}.{method} 必须存在");
+
+            var attr = target!.GetCustomAttribute(httpAttribute) as HttpMethodAttribute;
+            attr.Should().NotBeNull($"{iface.Name}.{method} 必须声明 [{httpAttribute.Name.Replace("Attribute", string.Empty)}] 路由");
+            attr!.RequestUri.Should().Be(route, $"{iface.Name}.{method} 路由必须与官方契约一致");
+        }
+    }
+
+    /// <summary>
+    /// 契约守卫 PAY1g：交易账单域全部端点路由必须与官方契约一致
+    /// （官方仅自建开放；路由为官方原文 <c>get_bill</c>，区别于对外收款记录域的
+    /// <c>externalpay/get_bill_list</c>，勿混用）。
+    /// </summary>
+    [Fact]
+    public void PayTradeBillEndpoints_ShouldMatchOfficialRoutes()
+    {
+        TradeBillRoutes.Should().HaveCount(1,
+            "交易账单域 1 个端点（交易账单申请）官方仅自建应用开放，声明于自建子接口");
+
+        foreach (var (iface, method, httpAttribute, route) in TradeBillRoutes)
+        {
+            var target = iface.GetMethod(method, BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+            target.Should().NotBeNull($"{iface.Name}.{method} 必须存在");
+
+            var attr = target!.GetCustomAttribute(httpAttribute) as HttpMethodAttribute;
+            attr.Should().NotBeNull($"{iface.Name}.{method} 必须声明 [{httpAttribute.Name.Replace("Attribute", string.Empty)}] 路由");
+            attr!.RequestUri.Should().Be(route, $"{iface.Name}.{method} 路由必须与官方契约一致");
+        }
+    }
+
+    /// <summary>
     /// 契约守卫 PAY2：三类应用公共面域的接口层级与生成器注册形态——对外收款记录域公共端点收敛于
     /// IsAbstract 父接口，自建 / 第三方 / 代开发子接口均为零差异端点空标记（能力漂移守卫）。
     /// </summary>
@@ -249,8 +377,8 @@ public class WechatPayContractGuards
     }
 
     /// <summary>
-    /// 契约守卫 PAY2b：仅单类应用开放域的接口层级——收款商户号管理域、资金流水域与创建对外收款账户域
-    /// 官方仅自建应用开放，均为零端点父接口 + 仅自建子接口承载端点，
+    /// 契约守卫 PAY2b：仅单类应用开放域的接口层级——收款商户号管理域、资金流水域、创建对外收款账户域、
+    /// 普通支付域、退款域与交易账单域官方仅自建应用开放，均为零端点父接口 + 仅自建子接口承载端点，
     /// 且继承链上不得出现第三方 / 代开发子接口（形态对齐机器人管理域守卫）。
     /// </summary>
     [Fact]
@@ -267,6 +395,15 @@ public class WechatPayContractGuards
             (typeof(IWechatWorkPayMchApplyService),
                 new[] { typeof(IWechatWorkInternalPayMchApplyService) },
                 "创建对外收款账户域官方仅向自建应用开放（代开发/第三方暂不支持）"),
+            (typeof(IWechatWorkPayOrderService),
+                new[] { typeof(IWechatWorkInternalPayOrderService) },
+                "普通支付域官方仅向自建应用开放（代开发/第三方暂不支持）"),
+            (typeof(IWechatWorkPayRefundService),
+                new[] { typeof(IWechatWorkInternalPayRefundService) },
+                "退款域官方仅向自建应用开放（代开发/第三方暂不支持）"),
+            (typeof(IWechatWorkPayTradeBillService),
+                new[] { typeof(IWechatWorkInternalPayTradeBillService) },
+                "交易账单域官方仅向自建应用开放（代开发/第三方暂不支持）"),
         };
 
         foreach (var (parent, expectedChildren, because) in singleChildFamilies)
@@ -298,7 +435,7 @@ public class WechatPayContractGuards
     }
 
     /// <summary>
-    /// 契约守卫 PAY3：令牌绑定——Pay 模块全部 10 个接口统一消费 AccessToken 路由键并以 Query 注入（官方契约 access_token）。
+    /// 契约守卫 PAY3：令牌绑定——Pay 模块全部 16 个接口统一消费 AccessToken 路由键并以 Query 注入（官方契约 access_token）。
     /// </summary>
     [Fact]
     public void PayTokenBinding_ShouldBeAccessTokenInjectedViaQuery()
@@ -315,6 +452,12 @@ public class WechatPayContractGuards
             typeof(IWechatWorkInternalPayFundFlowService),
             typeof(IWechatWorkPayMchApplyService),
             typeof(IWechatWorkInternalPayMchApplyService),
+            typeof(IWechatWorkPayOrderService),
+            typeof(IWechatWorkInternalPayOrderService),
+            typeof(IWechatWorkPayRefundService),
+            typeof(IWechatWorkInternalPayRefundService),
+            typeof(IWechatWorkPayTradeBillService),
+            typeof(IWechatWorkInternalPayTradeBillService),
         };
 
         foreach (var iface in interfaces)
@@ -330,7 +473,7 @@ public class WechatPayContractGuards
     }
 
     /// <summary>
-    /// 契约守卫 PAY4：企业支付模块的请求/响应 DTO 必须登记进 AOT JSON 上下文（全量 34 个契约面类型）。
+    /// 契约守卫 PAY4：企业支付模块的请求/响应 DTO 必须登记进 AOT JSON 上下文（全量 60 个契约面类型）。
     /// </summary>
     [Fact]
     public void PayDataModels_ShouldBeRegisteredInJsonContext()
@@ -359,6 +502,22 @@ public class WechatPayContractGuards
             typeof(GetPayApplymentStatusRequest), typeof(GetPayApplymentStatusResponse),
             typeof(PayApplymentStatus), typeof(PayApplymentAuditDetail), typeof(PayAccountValidation),
             typeof(UploadPayImageResponse),
+            // 普通支付域（小程序下单 + 查询订单 + 关闭订单 + 获取支付签名）。
+            typeof(CreatePayOrderRequest),
+            typeof(PayOrderAmount), typeof(PayOrderPayer), typeof(PayOrderDetail),
+            typeof(PayOrderGoodsDetail), typeof(PayOrderSceneInfo), typeof(PayOrderStoreInfo),
+            typeof(CreatePayOrderResponse),
+            typeof(GetPayOrderRequest), typeof(GetPayOrderResponse),
+            typeof(PayOrderTradeAmount), typeof(PayOrderTradeSceneInfo),
+            typeof(PayOrderPromotionDetail), typeof(PayPromotionGoodsDetail),
+            typeof(ClosePayOrderRequest),
+            typeof(GetPaySignRequest), typeof(GetPaySignResponse),
+            // 退款域（申请退款 + 查询退款）。
+            typeof(ApplyPayRefundRequest), typeof(PayRefundApplyAmount),
+            typeof(ApplyPayRefundResponse), typeof(PayRefundAmount), typeof(PayRefundPromotionDetail),
+            typeof(GetPayRefundDetailRequest), typeof(GetPayRefundDetailResponse),
+            // 交易账单域（交易账单申请）。
+            typeof(GetPayTradeBillRequest), typeof(GetPayTradeBillResponse),
         };
 
         foreach (var type in requiredTypes)

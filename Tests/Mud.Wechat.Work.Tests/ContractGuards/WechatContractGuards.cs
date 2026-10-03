@@ -387,6 +387,19 @@ public class WechatContractGuards
                 //（提交申请单 98973、查询申请单状态 98974、提交图片 98972；零端点父接口 + 仅自建子接口）。
                 nameof(IWechatWorkPayMchApplyService),
                 nameof(IWechatWorkInternalPayMchApplyService),
+                // 企业支付·普通支付域（Pay 模块）：4 个端点官方仅自建应用开放
+                //（小程序下单 97322、查询订单 97323、关闭订单 97324、获取支付签名 98130；
+                // 零端点父接口 + 仅自建子接口）。
+                nameof(IWechatWorkPayOrderService),
+                nameof(IWechatWorkInternalPayOrderService),
+                // 企业支付·退款域（Pay 模块）：2 个端点官方仅自建应用开放
+                //（申请退款 97333、查询退款 97352；零端点父接口 + 仅自建子接口）。
+                nameof(IWechatWorkPayRefundService),
+                nameof(IWechatWorkInternalPayRefundService),
+                // 企业支付·交易账单域（Pay 模块）：1 个端点官方仅自建应用开放
+                //（交易账单申请 98115；零端点父接口 + 仅自建子接口）。
+                nameof(IWechatWorkPayTradeBillService),
+                nameof(IWechatWorkInternalPayTradeBillService),
             },
             "企业微信官方契约强制 Query 注入（MUD005 已知接受风险），新增 Query 注入接口须评估后扩展本守卫");
     }

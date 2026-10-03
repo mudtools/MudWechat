@@ -93,7 +93,7 @@ public class WechatWorkServiceBuilder
     /// <summary>注册微信客服业务接口（客服账号管理域 + 接待人员管理域：三类应用公共面收敛父接口 + 空标记子接口）。</summary>
     public WechatWorkServiceBuilder AddKfApi() => AddModule(WechatModule.Kf);
 
-    /// <summary>注册企业支付业务接口（对外收款记录域为三类应用公共面；收款商户号管理域、资金流水域与创建对外收款账户域官方仅自建开放）。</summary>
+    /// <summary>注册企业支付业务接口（对外收款记录域为三类应用公共面；收款商户号管理域、资金流水域、创建对外收款账户域、普通支付域、退款域与交易账单域官方仅自建开放）。</summary>
     public WechatWorkServiceBuilder AddPayApi() => AddModule(WechatModule.Pay);
 
     /// <summary>注册全部模块。</summary>

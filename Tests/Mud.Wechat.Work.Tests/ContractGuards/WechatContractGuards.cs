@@ -320,6 +320,20 @@ public class WechatContractGuards
                 nameof(IWechatWorkProviderAccountIdBotService),
                 nameof(IWechatWorkAccountIdChatIdUpgradeService),
                 nameof(IWechatWorkProviderAccountIdChatIdUpgradeService),
+                // 微信客服·客服账号管理域（Kf 模块）：5 个端点为三类应用公共面
+                //（添加 94661/96404、列表 94662/96415（官方即 POST）、删除 94663/96405、
+                // 修改 94664/96406、获取客服账号链接 94665/96416；父接口 + 三个应用类型空标记子接口）。
+                nameof(IWechatWorkKfAccountService),
+                nameof(IWechatWorkInternalKfAccountService),
+                nameof(IWechatWorkThirdPartyKfAccountService),
+                nameof(IWechatWorkProviderKfAccountService),
+                // 微信客服·接待人员管理域（Kf 模块）：3 个端点为三类应用公共面
+                //（添加 94646/96418、删除 94647/96419、列表 94645/96420（GET，open_kfid 走 Query）；
+                // 父接口 + 三个应用类型空标记子接口）。
+                nameof(IWechatWorkKfServicerService),
+                nameof(IWechatWorkInternalKfServicerService),
+                nameof(IWechatWorkThirdPartyKfServicerService),
+                nameof(IWechatWorkProviderKfServicerService),
             },
             "企业微信官方契约强制 Query 注入（MUD005 已知接受风险），新增 Query 注入接口须评估后扩展本守卫");
     }

@@ -470,4 +470,46 @@ public class WechatServiceCollectionExtensionsTests
         scope.ServiceProvider.GetRequiredService<IWechatWorkInternalSmartSheetGroupChatService>().Should().NotBeNull(
             "ValidateScopes = true 变体下子 scope 内同样可解析");
     }
+
+    /// <summary>
+    /// Kf 模块（微信客服域：客服账号管理域 + 接待人员管理域）：AddKfApi 注册的应用类型子接口客户端
+    /// 必须可解析（两域公共父接口 IsAbstract，不参与 DI 注册；三类应用开放面完全一致，
+    /// 自建/第三方/代开发子接口均为空标记）。
+    /// </summary>
+    [Fact]
+    public void AddKfApi_ShouldRegisterKfDomainClients_ResolvableInRootAndScope()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddWechatApp(new List<WechatAppConfig> { InternalConfig() });
+        services.AddWechatWorkServices(builder => builder.AddKfApi());
+
+        using var provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true });
+
+        provider.GetRequiredService<IWechatWorkInternalKfAccountService>().Should().NotBeNull();
+        provider.GetRequiredService<IWechatWorkThirdPartyKfAccountService>().Should().NotBeNull();
+        provider.GetRequiredService<IWechatWorkProviderKfAccountService>().Should().NotBeNull();
+        provider.GetRequiredService<IWechatWorkInternalKfServicerService>().Should().NotBeNull();
+        provider.GetRequiredService<IWechatWorkThirdPartyKfServicerService>().Should().NotBeNull();
+        provider.GetRequiredService<IWechatWorkProviderKfServicerService>().Should().NotBeNull();
+
+        provider.GetService<IWechatWorkKfAccountService>().Should().BeNull(
+            "公共父接口 IsAbstract = true，不得注册进 DI（调用方须按应用类型选择子接口）");
+        provider.GetService<IWechatWorkKfServicerService>().Should().BeNull(
+            "公共父接口 IsAbstract = true，不得注册进 DI（调用方须按应用类型选择子接口）");
+
+        using var scope = provider.CreateScope();
+        scope.ServiceProvider.GetRequiredService<IWechatWorkInternalKfAccountService>().Should().NotBeNull(
+            "ValidateScopes = true 变体下子 scope 内同样可解析");
+        scope.ServiceProvider.GetRequiredService<IWechatWorkThirdPartyKfAccountService>().Should().NotBeNull(
+            "ValidateScopes = true 变体下子 scope 内同样可解析");
+        scope.ServiceProvider.GetRequiredService<IWechatWorkProviderKfAccountService>().Should().NotBeNull(
+            "ValidateScopes = true 变体下子 scope 内同样可解析");
+        scope.ServiceProvider.GetRequiredService<IWechatWorkInternalKfServicerService>().Should().NotBeNull(
+            "ValidateScopes = true 变体下子 scope 内同样可解析");
+        scope.ServiceProvider.GetRequiredService<IWechatWorkThirdPartyKfServicerService>().Should().NotBeNull(
+            "ValidateScopes = true 变体下子 scope 内同样可解析");
+        scope.ServiceProvider.GetRequiredService<IWechatWorkProviderKfServicerService>().Should().NotBeNull(
+            "ValidateScopes = true 变体下子 scope 内同样可解析");
+    }
 }

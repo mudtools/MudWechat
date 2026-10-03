@@ -76,7 +76,7 @@ pwsh ./scripts/audit-config-keys.ps1                           # 配置消费点
 
 - `net8.0` / `net10.0` 默认启用 AOT/裁剪分析；`AotStrictMode=true` 把 `IL2026;IL2046;IL2050;IL2057;IL2067;IL2070;IL2072;IL2075;IL2080;IL3050` 升为错误；`WarningsAsErrors` 常驻含 `AOT001;AOT002;AOT003;AOT004;AOT007`。
 - **禁止**反射版 `JsonSerializer.Serialize<T>(T, JsonSerializerOptions)` / `Deserialize<T>` —— 一律走 `JsonTypeInfo`（域 `JsonContext`）或 `WechatJsonResolverExtensions` 合并解析器。
-- **JSON 上下文是生成物**：DTO 标 `[HttpJsonSerializable]`（`SerializerClassName` = 命名空间域段，根命名空间直属文件归 `Common`）；`Generated/*JsonContext.g.cs` 由脚本生成、**提交进版本控制、勿手改**；上下文 `internal`，经 `InternalsVisibleTo` 供主包与测试直读。主包合并 **31 个生成上下文 + 1 个手写上下文**（`Abstractions` 的 `Authentication/Models/AuthenticationJsonContext.cs`）。
+- **JSON 上下文是生成物**：DTO 标 `[HttpJsonSerializable]`（`SerializerClassName` = 命名空间域段，根命名空间直属文件归 `Common`）；`Generated/*JsonContext.g.cs` 由脚本生成、**提交进版本控制、勿手改**；上下文 `internal`，经 `InternalsVisibleTo` 供主包与测试直读。主包合并 **32 个生成上下文 + 1 个手写上下文**（`Abstractions` 的 `Authentication/Models/AuthenticationJsonContext.cs`）。
   - **新增 `[HttpJsonSerializable]` 必须同批重跑** `AddHttpJsonSerializable.ps1` + `GenerateJsonContext.ps1`（Abstractions 域手写登记进 `AuthenticationJsonContext`），否则 `AotStrictMode` 下 `AOT006`（error）打红门禁步骤 2。
   - 已知边界：开放泛型 `WechatChatbotResponse<>` 不登记（STJ 源生成器不生成其元数据，SYSLIB1030）；关闭 `--auto-derived-types`；工具运行期 `AOT003`（多态缺 `[JsonDerivedType]`）为**已知误报**。
   - 核对工具：`dotnet tool install -g Mud.HttpUtils.JsonContextScaffolder` → `mud-jsonctx --project Mud.Wechat.Work.DataModels\Mud.Wechat.Work.DataModels.csproj --dry-run`。
@@ -112,6 +112,7 @@ Mud.Wechat/
 | 安全管理 | `Interfaces/Security/` | `Security/`（单一命名空间） | `Security` / `AddSecurityApi()` |
 | 消息推送 | `Interfaces/Message/` | `Message/`（单一命名空间） | `Message` / `AddMessageApi()` |
 | 账号ID | `Interfaces/AccountId/` | `AccountId/`（单一命名空间） | `AccountId` / `AddAccountIdApi()` |
+| 微信客服 | `Interfaces/Kf/` | `Kf/`（单一命名空间） | `Kf` / `AddKfApi()` |
 
 - 接口命名空间一律 `Mud.Wechat.Work`（**不含** `Interfaces` 段）；DTO 命名空间为 `Mud.Wechat.Work.DataModels.{域}[.{子域}]`。
 - `RequestModel/`、`ResponseModel/` **仅作目录组织，命名空间不含该目录段**。
@@ -124,7 +125,7 @@ Mud.Wechat/
 
 - **K1 令牌分流**：`CorpTokenManager` 内按 `AppType` 分流 —— 代开发 `permanent_code` 是「应用 secret」→ `gettoken(corpsecret = permanent_code)`；第三方是「授权码」→ `get_corp_token`。**不新建管理器。**
 - **K2 模板 id**：代开发 `template_id` 即 `suite_id`（`dk` 开头）⇒ `WechatAppConfig` **不提供独立 `TemplateId`**（非法状态类型层面不可表达）。接口级模板 id 参数（如 `templateid_list`）由宿主显式传入。
-- **令牌注入统一走 Query**（企微契约，非 Header，触发 `MUD005`）。白名单 = 授权流 + 通讯录六域 + 客户联系六域 + 上下游三族 + 安全管理三族 + 消息推送四族，由 G5 锁定；**新增须先评估、再显式扩展 G5**。例外：`get_customized_auth_url` 以**显式 Query 参数** `provider_access_token` 传令牌（**不带 `[Token]`**、不放宽白名单）。v2 端点 `/cgi-bin/service/v2/get_permanent_code`、`/cgi-bin/service/v2/get_auth_info`；安装链接前缀 `https://open.work.weixin.qq.com/3rdapp/install`。
+- **令牌注入统一走 Query**（企微契约，非 Header，触发 `MUD005`）。白名单 = 授权流 + 通讯录六域 + 客户联系六域 + 上下游三族 + 安全管理三族 + 消息推送四族 + 微信客服两族（客服账号管理 / 接待人员管理），由 G5 锁定；**新增须先评估、再显式扩展 G5**。例外：`get_customized_auth_url` 以**显式 Query 参数** `provider_access_token` 传令牌（**不带 `[Token]`**、不放宽白名单）。v2 端点 `/cgi-bin/service/v2/get_permanent_code`、`/cgi-bin/service/v2/get_auth_info`；安装链接前缀 `https://open.work.weixin.qq.com/3rdapp/install`。
 - **`TokenKey` 三段式 `{tokenType}:{appKey}:{scopeKey}`**（如 `Wechat.AccessToken:default:default`，由 `WechatAppTokenManagerBase.BuildCache` 的 `storeKeyMapper` 构造）；`WechatTokenTypes` 一律 `"Wechat."` 前缀，与组件通用 `TokenTypes` 隔离。
 - **`AppKey` 形状受约束**：`[A-Za-z0-9]` 开头 + 仅 `[A-Za-z0-9._-]` + ≤128（`WechatAppKeyValidator`，经 `Validate()` 单点收敛）。含 `:` 会造成**键别名** ⇒ 跨应用令牌串号。
 - **企业级令牌一企一份**（`scopeKey = authCorpId`，由 `TokenManagerBase` 的 scope 机制承担），**不经声明式 `[Token]`**：显式 `GetTokenAsync(new[]{ authCorpId })`。errcode 恢复**必须显式传 scope**（`InvalidateTokenAsync(appKey, AccessToken, new[]{ authCorpId })`）—— 默认作用域对已缓存企业令牌是**空转**（`CorpTokenManagerScopeIsolationTests` 锁定）。
@@ -220,6 +221,7 @@ Mud.Wechat/
 | SEC1~SEC4 | 安全管理 | 三族父接口零端点 + 自建恰 9 / 5 / 2 条；**不设**第三方/代开发子接口（官方无文档） |
 | MSG1~MSG4 | 消息推送 | 应用消息族父 13 + 第三方恰 1；AppChat / SchoolMessage / SmartSheetGroupChat 父零端点 + 仅 Internal 承载 |
 | ACCT1~ACCT4 | 账号ID | 七接口族跨三种令牌路由键：ID 转换族父 9 + ThirdParty 空标记 + Provider 恰 2（群 ID 升级 99601）；tmp 转换族父 1 + 三类空标记子接口；自建对接族父零端点 + Internal 恰 3（`openuserid_to_userid` 双场景同路由多方法）；corpid 转换族 / 迁移完成状态族 / 智能机器人族走 provider 令牌（父 1 + 空子接口、父 1 + ThirdParty 恰 1、父 1）；群 ID 升级族走 suite 令牌（父零端点 + 仅 Provider 1）；`apply_mass_call_ticket` / `upgrade_chatid_for_new_corp` 为 GET 且无请求体；`get_openid_migration` 为无请求体 POST；`external_userid_to_pending_id` 请求体数组字段名官方为 `external_userid`（无 `_list` 后缀）；智能机器人路由沿用 `userid_to_openuserid` 命名但实际方向为 open_userid → userid |
+| KF1~KF4 | 微信客服 | 两域父接口（客服账号管理 / 接待人员管理）收敛三类应用公共面（账号管理 5 条全 POST + 接待人员 3 条，`servicer/list` 为 GET）+ 继承链各恰 3 个空标记子接口；`kf/account/list` 官方即 POST（勿改 GET）；`kf/add_contact_way`（获取客服账号链接）挂 `/cgi-bin/kf/` 根下、不在 `account/` 子路径；三类应用路由与参数完全一致（差异仅权限口径与密文 userid） |
 | CB1~CB13 | 回调 | 包依赖边界、53 个事件键与 `EventTypeKey` 优先级、兜底处理器形态与文件路径、事件 DTO 字段、凭据唯一来源、echo 不消费指纹、32 字节块填充（禁内置 PKCS7）、指纹闸次序、通道枚举与配置面、`receiveid` 三元分流、开放面矩阵、合法性闸次序 |
 | MA1~MA4 | 多应用（`Abstractions.Tests`） | `RemoveApp` 删除顺序、重建异常白名单、退役队列 `_disposed` 闸、`SetCorp` 参数校验。守卫为**方法体文本断言**（花括号配平），签名漂移须同步更新 |
 | RD-G1~RD-G6 | Redis（`Redis.Tests`） | SCAN 仅经 `WechatRedisKeyBuilder.Pattern` 单一出口、配置无 `required`、重放守卫 fail-closed 上抛、凭据不进日志、全名探测防漂移、单依赖 Abstractions |

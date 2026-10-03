@@ -61,6 +61,9 @@ public class WechatWorkServiceBuilder
             [WechatModule.AccountId] = new WechatModuleRegistrar(
                 WechatModule.AccountId,
                 s => s.AddAccountIdWebApiHttpClient()),
+            [WechatModule.Kf] = new WechatModuleRegistrar(
+                WechatModule.Kf,
+                s => s.AddKfWebApiHttpClient()),
         };
 
     /// <summary>注册授权流业务接口与授权编排服务（get_pre_auth_code / set_session_info / get_permanent_code / get_auth_info / get_customized_auth_url + 编排）。</summary>
@@ -83,6 +86,9 @@ public class WechatWorkServiceBuilder
 
     /// <summary>注册账号ID业务接口（ID 转换 / tmp_external_userid 转换 / 自建应用对接 / corpid 转换 / ID 迁移完成状态 / 智能机器人 userid 转换 / 群 ID 升级，跨 access/provider/suite 三种令牌路由键七接口族）。</summary>
     public WechatWorkServiceBuilder AddAccountIdApi() => AddModule(WechatModule.AccountId);
+
+    /// <summary>注册微信客服业务接口（客服账号管理域 + 接待人员管理域：三类应用公共面收敛父接口 + 空标记子接口）。</summary>
+    public WechatWorkServiceBuilder AddKfApi() => AddModule(WechatModule.Kf);
 
     /// <summary>注册全部模块。</summary>
     public WechatWorkServiceBuilder AddAllApis()

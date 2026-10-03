@@ -37,6 +37,7 @@ using Mud.Wechat.Work.DataModels.ExternalContact.ServedContact;
 using Mud.Wechat.Work.DataModels.ExternalContact.Statistics;
 using Mud.Wechat.Work.DataModels.ExternalContact.Tag;
 using Mud.Wechat.Work.DataModels.InternalAppAuthentication;
+using Mud.Wechat.Work.DataModels.Kf;
 using Mud.Wechat.Work.DataModels.Message;
 using Mud.Wechat.Work.DataModels.ProviderAuthentication;
 using Mud.Wechat.Work.DataModels.Security;
@@ -96,6 +97,7 @@ public static class WechatJsonResolverExtensions
             RulesJsonContext.Default,
             SecurityJsonContext.Default,
             MessageJsonContext.Default,
+            KfJsonContext.Default,
             CorpTokenAuthenticationJsonContext.Default,
             InternalAppAuthenticationJsonContext.Default,
             ProviderAuthenticationJsonContext.Default,

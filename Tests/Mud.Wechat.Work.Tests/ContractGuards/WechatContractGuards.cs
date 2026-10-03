@@ -198,6 +198,26 @@ public class WechatContractGuards
                 nameof(IWechatWorkInternalExternalContactGroupChatService),
                 nameof(IWechatWorkThirdPartyExternalContactGroupChatService),
                 nameof(IWechatWorkProviderExternalContactGroupChatService),
+                // 客户联系·「联系我」与客户入群方式域（ExternalContact 模块）：10 个端点为三类应用公共面
+                //（联系我管理 92228/95724/96348 + 客户群加入群聊管理 92229/99546/99547；父接口 + 三个应用类型空标记子接口）。
+                nameof(IWechatWorkExternalContactContactWayService),
+                nameof(IWechatWorkInternalExternalContactContactWayService),
+                nameof(IWechatWorkThirdPartyExternalContactContactWayService),
+                nameof(IWechatWorkProviderExternalContactContactWayService),
+                // 客户联系·客户朋友圈域（ExternalContact 模块）：14 个端点为三类应用公共面
+                //（发表 95094/95095/96351 与 97612/97616/97615、数据 93333/93443/96352、
+                // 规则组 94890/99541/99545；父接口 + 三个应用类型空标记子接口）。
+                nameof(IWechatWorkExternalContactMomentService),
+                nameof(IWechatWorkInternalExternalContactMomentService),
+                nameof(IWechatWorkThirdPartyExternalContactMomentService),
+                nameof(IWechatWorkProviderExternalContactMomentService),
+                // 客户联系·获客助手域（ExternalContact 模块）：9 个端点为三类应用公共面
+                //（链接管理 97297/97394/97398、客户列表 97298/97395/97399、额度统计 97375/97396/97400、
+                // 收消息详情 100130/100134/100133；父接口 + 三个应用类型空标记子接口）。
+                nameof(IWechatWorkExternalContactCustomerAcquisitionService),
+                nameof(IWechatWorkInternalExternalContactCustomerAcquisitionService),
+                nameof(IWechatWorkThirdPartyExternalContactCustomerAcquisitionService),
+                nameof(IWechatWorkProviderExternalContactCustomerAcquisitionService),
                 // 上下游域（CorpGroup 模块）：6 端点在父接口（第三方仅获取应用共享信息 95324，随父接口继承），父接口 + 三个空标记子接口。
                 nameof(IWechatWorkCorpGroupService),
                 nameof(IWechatWorkInternalCorpGroupService),

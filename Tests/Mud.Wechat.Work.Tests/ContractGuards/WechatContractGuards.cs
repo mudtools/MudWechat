@@ -231,6 +231,28 @@ public class WechatContractGuards
                 nameof(IWechatWorkInternalExternalContactStatisticsService),
                 nameof(IWechatWorkThirdPartyExternalContactStatisticsService),
                 nameof(IWechatWorkProviderExternalContactStatisticsService),
+                // 客户联系·商品图册域（ExternalContact 模块）：5 个端点为三类应用公共面
+                //（95096/95131/96345；父接口 + 三个应用类型空标记子接口）。
+                nameof(IWechatWorkExternalContactProductAlbumService),
+                nameof(IWechatWorkInternalExternalContactProductAlbumService),
+                nameof(IWechatWorkThirdPartyExternalContactProductAlbumService),
+                nameof(IWechatWorkProviderExternalContactProductAlbumService),
+                // 客户联系·聊天敏感词域（ExternalContact 模块）：5 个端点为三类应用公共面
+                //（95097/95130/96346，其中 get_intercept_rule_list 为 GET；父接口 + 三个应用类型空标记子接口）。
+                nameof(IWechatWorkExternalContactInterceptRuleService),
+                nameof(IWechatWorkInternalExternalContactInterceptRuleService),
+                nameof(IWechatWorkThirdPartyExternalContactInterceptRuleService),
+                nameof(IWechatWorkProviderExternalContactInterceptRuleService),
+                // 客户联系·上传附件资源域（ExternalContact 模块）：1 个 multipart 端点为三类应用公共面
+                //（95098/95178/96347，路由在 /cgi-bin/media/ 下；父接口 + 三个应用类型空标记子接口）。
+                nameof(IWechatWorkExternalContactAttachmentService),
+                nameof(IWechatWorkInternalExternalContactAttachmentService),
+                nameof(IWechatWorkThirdPartyExternalContactAttachmentService),
+                nameof(IWechatWorkProviderExternalContactAttachmentService),
+                // 客户联系·获取已服务的外部联系人域（ExternalContact 模块）：1 个端点官方仅自建开放
+                //（99434，第三方/代开发暂不支持；零端点父接口 + 仅自建子接口）。
+                nameof(IWechatWorkExternalContactServedContactService),
+                nameof(IWechatWorkInternalExternalContactServedContactService),
                 // 上下游域（CorpGroup 模块）：6 端点在父接口（第三方仅获取应用共享信息 95324，随父接口继承），父接口 + 三个空标记子接口。
                 nameof(IWechatWorkCorpGroupService),
                 nameof(IWechatWorkInternalCorpGroupService),

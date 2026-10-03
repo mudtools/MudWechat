@@ -5,13 +5,13 @@
 //  不得利用本项目从事危害国家安全、扰乱社会秩序、侵犯他人合法权益等法律法规禁止的活动！任何基于本项目开发而产生的一切法律纠纷和责任，我们不承担任何责任！
 // -----------------------------------------------------------------------
 
-using System.Text.Json;
 using Mud.Wechat.Work.Abstractions.Enums;
+using System.Text.Json;
 
 namespace Mud.Wechat.Work.TokenManagers;
 
 /// <summary>
-/// 企业微信 errcode 令牌失效判定器（Mud.HttpUtils v2.0.9 <see cref="ITokenInvalidationDetector"/> 两阶段实现）。
+/// 企业微信 errcode 令牌失效判定器（<see cref="ITokenInvalidationDetector"/> 两阶段实现）。
 /// </summary>
 /// <remarks>
 /// <para>

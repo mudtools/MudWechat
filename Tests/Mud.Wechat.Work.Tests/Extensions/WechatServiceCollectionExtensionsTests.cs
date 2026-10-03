@@ -213,7 +213,8 @@ public class WechatServiceCollectionExtensionsTests
     /// <summary>
     /// ExternalContact 模块（客户联系：企业服务人员管理域 + 客户管理域 + 客户标签管理域 + 在职继承域 +
     /// 离职继承域 + 客户群管理域 + 联系我与客户入群方式域 + 客户朋友圈域 + 获客助手域 +
-    /// 消息推送（群发）域 + 统计管理域）：
+    /// 消息推送（群发）域 + 统计管理域 + 商品图册域 + 聊天敏感词域 + 上传附件资源域 +
+    /// 获取已服务的外部联系人域（仅自建））：
     /// AddExternalContactApi 注册的应用类型子接口客户端必须可解析（公共父接口 IsAbstract，不参与 DI 注册）。
     /// </summary>
     [Fact]
@@ -259,6 +260,16 @@ public class WechatServiceCollectionExtensionsTests
         provider.GetRequiredService<IWechatWorkInternalExternalContactStatisticsService>().Should().NotBeNull();
         provider.GetRequiredService<IWechatWorkThirdPartyExternalContactStatisticsService>().Should().NotBeNull();
         provider.GetRequiredService<IWechatWorkProviderExternalContactStatisticsService>().Should().NotBeNull();
+        provider.GetRequiredService<IWechatWorkInternalExternalContactProductAlbumService>().Should().NotBeNull();
+        provider.GetRequiredService<IWechatWorkThirdPartyExternalContactProductAlbumService>().Should().NotBeNull();
+        provider.GetRequiredService<IWechatWorkProviderExternalContactProductAlbumService>().Should().NotBeNull();
+        provider.GetRequiredService<IWechatWorkInternalExternalContactInterceptRuleService>().Should().NotBeNull();
+        provider.GetRequiredService<IWechatWorkThirdPartyExternalContactInterceptRuleService>().Should().NotBeNull();
+        provider.GetRequiredService<IWechatWorkProviderExternalContactInterceptRuleService>().Should().NotBeNull();
+        provider.GetRequiredService<IWechatWorkInternalExternalContactAttachmentService>().Should().NotBeNull();
+        provider.GetRequiredService<IWechatWorkThirdPartyExternalContactAttachmentService>().Should().NotBeNull();
+        provider.GetRequiredService<IWechatWorkProviderExternalContactAttachmentService>().Should().NotBeNull();
+        provider.GetRequiredService<IWechatWorkInternalExternalContactServedContactService>().Should().NotBeNull();
 
         provider.GetService<IWechatWorkExternalContactFollowUserService>().Should().BeNull(
             "公共父接口 IsAbstract = true，不得注册进 DI（调用方须按应用类型选择子接口）");
@@ -281,6 +292,14 @@ public class WechatServiceCollectionExtensionsTests
         provider.GetService<IWechatWorkExternalContactGroupMsgService>().Should().BeNull(
             "公共父接口 IsAbstract = true，不得注册进 DI（调用方须按应用类型选择子接口）");
         provider.GetService<IWechatWorkExternalContactStatisticsService>().Should().BeNull(
+            "公共父接口 IsAbstract = true，不得注册进 DI（调用方须按应用类型选择子接口）");
+        provider.GetService<IWechatWorkExternalContactProductAlbumService>().Should().BeNull(
+            "公共父接口 IsAbstract = true，不得注册进 DI（调用方须按应用类型选择子接口）");
+        provider.GetService<IWechatWorkExternalContactInterceptRuleService>().Should().BeNull(
+            "公共父接口 IsAbstract = true，不得注册进 DI（调用方须按应用类型选择子接口）");
+        provider.GetService<IWechatWorkExternalContactAttachmentService>().Should().BeNull(
+            "公共父接口 IsAbstract = true，不得注册进 DI（调用方须按应用类型选择子接口）");
+        provider.GetService<IWechatWorkExternalContactServedContactService>().Should().BeNull(
             "公共父接口 IsAbstract = true，不得注册进 DI（调用方须按应用类型选择子接口）");
 
         using var scope = provider.CreateScope();
@@ -305,6 +324,14 @@ public class WechatServiceCollectionExtensionsTests
         scope.ServiceProvider.GetRequiredService<IWechatWorkInternalExternalContactGroupMsgService>().Should().NotBeNull(
             "ValidateScopes = true 变体下子 scope 内同样可解析");
         scope.ServiceProvider.GetRequiredService<IWechatWorkInternalExternalContactStatisticsService>().Should().NotBeNull(
+            "ValidateScopes = true 变体下子 scope 内同样可解析");
+        scope.ServiceProvider.GetRequiredService<IWechatWorkInternalExternalContactProductAlbumService>().Should().NotBeNull(
+            "ValidateScopes = true 变体下子 scope 内同样可解析");
+        scope.ServiceProvider.GetRequiredService<IWechatWorkInternalExternalContactInterceptRuleService>().Should().NotBeNull(
+            "ValidateScopes = true 变体下子 scope 内同样可解析");
+        scope.ServiceProvider.GetRequiredService<IWechatWorkInternalExternalContactAttachmentService>().Should().NotBeNull(
+            "ValidateScopes = true 变体下子 scope 内同样可解析");
+        scope.ServiceProvider.GetRequiredService<IWechatWorkInternalExternalContactServedContactService>().Should().NotBeNull(
             "ValidateScopes = true 变体下子 scope 内同样可解析");
     }
 

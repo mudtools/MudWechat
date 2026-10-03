@@ -445,6 +445,10 @@ public class WechatServiceCollectionExtensionsTests
         provider.GetRequiredService<IWechatWorkProviderMessageService>().Should().NotBeNull();
         provider.GetRequiredService<IWechatWorkInternalAppChatService>().Should().NotBeNull();
         provider.GetRequiredService<IWechatWorkInternalSchoolMessageService>().Should().NotBeNull();
+        provider.GetRequiredService<IWechatWorkThirdPartySchoolMessageService>().Should().NotBeNull(
+            "家校学校通知族官方向三类应用开放（第三方 92291），本族注册第三方子接口");
+        provider.GetRequiredService<IWechatWorkProviderSchoolMessageService>().Should().NotBeNull(
+            "家校学校通知族官方向三类应用开放（代开发 96720/96723），本族注册代开发子接口");
         provider.GetRequiredService<IWechatWorkInternalSmartSheetGroupChatService>().Should().NotBeNull();
 
         provider.GetService<IWechatWorkMessageService>().Should().BeNull(
@@ -466,6 +470,10 @@ public class WechatServiceCollectionExtensionsTests
         scope.ServiceProvider.GetRequiredService<IWechatWorkInternalAppChatService>().Should().NotBeNull(
             "ValidateScopes = true 变体下子 scope 内同样可解析");
         scope.ServiceProvider.GetRequiredService<IWechatWorkInternalSchoolMessageService>().Should().NotBeNull(
+            "ValidateScopes = true 变体下子 scope 内同样可解析");
+        scope.ServiceProvider.GetRequiredService<IWechatWorkThirdPartySchoolMessageService>().Should().NotBeNull(
+            "ValidateScopes = true 变体下子 scope 内同样可解析");
+        scope.ServiceProvider.GetRequiredService<IWechatWorkProviderSchoolMessageService>().Should().NotBeNull(
             "ValidateScopes = true 变体下子 scope 内同样可解析");
         scope.ServiceProvider.GetRequiredService<IWechatWorkInternalSmartSheetGroupChatService>().Should().NotBeNull(
             "ValidateScopes = true 变体下子 scope 内同样可解析");
@@ -680,6 +688,47 @@ public class WechatServiceCollectionExtensionsTests
         scope.ServiceProvider.GetRequiredService<IWechatWorkInternalMsgAuditAgreeService>().Should().NotBeNull(
             "ValidateScopes = true 变体下子 scope 内同样可解析");
         scope.ServiceProvider.GetRequiredService<IWechatWorkInternalMsgAuditGroupChatService>().Should().NotBeNull(
+            "ValidateScopes = true 变体下子 scope 内同样可解析");
+    }
+
+    /// <summary>
+    /// School 模块（家校沟通域：家校沟通基础域为三类应用公共面；家校管理配置域官方仅自建与第三方开放，
+    /// 无代开发子接口）：AddSchoolApi 注册的应用类型子接口客户端必须可解析
+    /// （公共父接口 IsAbstract 不参与 DI 注册；配置域继承链上恰好只有自建与第三方子接口）。
+    /// </summary>
+    [Fact]
+    public void AddSchoolApi_ShouldRegisterSchoolDomainClients_ResolvableInRootAndScope()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddWechatApp(new List<WechatAppConfig> { InternalConfig() });
+        services.AddWechatWorkServices(builder => builder.AddSchoolApi());
+
+        using var provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true });
+
+        provider.GetRequiredService<IWechatWorkInternalSchoolService>().Should().NotBeNull();
+        provider.GetRequiredService<IWechatWorkThirdPartySchoolService>().Should().NotBeNull();
+        provider.GetRequiredService<IWechatWorkProviderSchoolService>().Should().NotBeNull();
+        provider.GetRequiredService<IWechatWorkInternalSchoolSettingService>().Should().NotBeNull(
+            "家校管理配置域注册自建子接口");
+        provider.GetRequiredService<IWechatWorkThirdPartySchoolSettingService>().Should().NotBeNull(
+            "家校管理配置域官方亦向第三方应用开放，本域注册第三方子接口");
+
+        provider.GetService<IWechatWorkSchoolService>().Should().BeNull(
+            "公共父接口 IsAbstract = true，不得注册进 DI（调用方须按应用类型选择子接口）");
+        provider.GetService<IWechatWorkSchoolSettingService>().Should().BeNull(
+            "公共父接口 IsAbstract = true，不得注册进 DI（调用方须按应用类型选择子接口）");
+
+        using var scope = provider.CreateScope();
+        scope.ServiceProvider.GetRequiredService<IWechatWorkInternalSchoolService>().Should().NotBeNull(
+            "ValidateScopes = true 变体下子 scope 内同样可解析");
+        scope.ServiceProvider.GetRequiredService<IWechatWorkThirdPartySchoolService>().Should().NotBeNull(
+            "ValidateScopes = true 变体下子 scope 内同样可解析");
+        scope.ServiceProvider.GetRequiredService<IWechatWorkProviderSchoolService>().Should().NotBeNull(
+            "ValidateScopes = true 变体下子 scope 内同样可解析");
+        scope.ServiceProvider.GetRequiredService<IWechatWorkInternalSchoolSettingService>().Should().NotBeNull(
+            "ValidateScopes = true 变体下子 scope 内同样可解析");
+        scope.ServiceProvider.GetRequiredService<IWechatWorkThirdPartySchoolSettingService>().Should().NotBeNull(
             "ValidateScopes = true 变体下子 scope 内同样可解析");
     }
 }

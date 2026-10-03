@@ -70,6 +70,9 @@ public class WechatWorkServiceBuilder
             [WechatModule.MsgAudit] = new WechatModuleRegistrar(
                 WechatModule.MsgAudit,
                 s => s.AddMsgAuditWebApiHttpClient()),
+            [WechatModule.School] = new WechatModuleRegistrar(
+                WechatModule.School,
+                s => s.AddSchoolWebApiHttpClient()),
         };
 
     /// <summary>注册授权流业务接口与授权编排服务（get_pre_auth_code / set_session_info / get_permanent_code / get_auth_info / get_customized_auth_url + 编排）。</summary>
@@ -87,7 +90,7 @@ public class WechatWorkServiceBuilder
     /// <summary>注册安全管理业务接口（文件防泄漏 / 设备管理 / 截屏录屏管理 / 域名 IP 信息 / 高级功能账号管理 / 操作日志，官方仅向自建应用开放）。</summary>
     public WechatWorkServiceBuilder AddSecurityApi() => AddModule(WechatModule.Security);
 
-    /// <summary>注册消息推送业务接口（发送应用消息 / 群聊会话 / 家校学校通知；template_msg 仅第三方差异端点，群聊会话与学校通知官方仅自建开放）。</summary>
+    /// <summary>注册消息推送业务接口（发送应用消息 / 群聊会话 / 家校学校通知 / 智能表格自动化创建的群聊；template_msg 仅第三方差异端点，群聊会话与智能表格群聊官方仅自建开放，家校学校通知为三类应用公共面）。</summary>
     public WechatWorkServiceBuilder AddMessageApi() => AddModule(WechatModule.Message);
 
     /// <summary>注册账号ID业务接口（ID 转换 / tmp_external_userid 转换 / 自建应用对接 / corpid 转换 / ID 迁移完成状态 / 智能机器人 userid 转换 / 群 ID 升级，跨 access/provider/suite 三种令牌路由键七接口族）。</summary>
@@ -101,6 +104,9 @@ public class WechatWorkServiceBuilder
 
     /// <summary>注册会话内容存档业务接口（开启成员列表域、机器人信息域、会话同意情况域与内部群信息域，官方仅自建开放；access_token 须由会话内容存档应用 secret 获取）。</summary>
     public WechatWorkServiceBuilder AddMsgAuditApi() => AddModule(WechatModule.MsgAudit);
+
+    /// <summary>注册家校沟通业务接口（家校沟通基础域为三类应用公共面；家校管理配置域官方仅自建与第三方开放，不设代开发子接口）。</summary>
+    public WechatWorkServiceBuilder AddSchoolApi() => AddModule(WechatModule.School);
 
     /// <summary>注册全部模块。</summary>
     public WechatWorkServiceBuilder AddAllApis()

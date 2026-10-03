@@ -22,8 +22,10 @@ namespace Mud.Wechat.Work.Tests.ContractGuards;
 /// 第三方（90372/94945/94947）、代开发（96458/96459/96460）开放完全一致的 3 个端点收敛父接口，
 /// 自建/代开发子接口空标记，第三方子接口另持 <c>template_msg</c> 差异端点（94515，经
 /// <c>/cgi-bin/message/send</c> 发送——官方页面未单独标注路由，以正文表述为准）；
-/// <b>群聊会话族</b>（<see cref="IWechatWorkAppChatService"/>）、<b>家校学校通知族</b>
-/// （<see cref="IWechatWorkSchoolMessageService"/>）与<b>智能表格自动化创建的群聊族</b>
+/// <b>家校学校通知族</b>（<see cref="IWechatWorkSchoolMessageService"/>）：官方对自建（91609）、
+/// 第三方（92291）、代开发（96720/96723）开放完全一致的 8 个端点收敛父接口，
+/// 三个应用类型子接口均为零差异端点空标记；
+/// <b>群聊会话族</b>（<see cref="IWechatWorkAppChatService"/>）与<b>智能表格自动化创建的群聊族</b>
 /// （<see cref="IWechatWorkSmartSheetGroupChatService"/>）：官方仅向自建应用开放
 /// （群聊会话明示第三方不可调用），均为父接口零端点 + 仅自建子接口承载端点。
 /// </para>
@@ -138,30 +140,30 @@ public class WechatMessageContractGuards
         (typeof(IWechatWorkInternalAppChatService),
             nameof(IWechatWorkInternalAppChatService.SendAppChatMarkdownMessageAsync),
             typeof(PostAttribute), "/cgi-bin/appchat/send"),
-        // 家校学校通知族·自建子接口（8 种 msgtype 共用 externalcontact/message/send）。
-        (typeof(IWechatWorkInternalSchoolMessageService),
-            nameof(IWechatWorkInternalSchoolMessageService.SendSchoolTextMessageAsync),
+        // 家校学校通知族·父接口（8 种 msgtype 共用 externalcontact/message/send，三类应用公共面）。
+        (typeof(IWechatWorkSchoolMessageService),
+            nameof(IWechatWorkSchoolMessageService.SendSchoolTextMessageAsync),
             typeof(PostAttribute), "/cgi-bin/externalcontact/message/send"),
-        (typeof(IWechatWorkInternalSchoolMessageService),
-            nameof(IWechatWorkInternalSchoolMessageService.SendSchoolImageMessageAsync),
+        (typeof(IWechatWorkSchoolMessageService),
+            nameof(IWechatWorkSchoolMessageService.SendSchoolImageMessageAsync),
             typeof(PostAttribute), "/cgi-bin/externalcontact/message/send"),
-        (typeof(IWechatWorkInternalSchoolMessageService),
-            nameof(IWechatWorkInternalSchoolMessageService.SendSchoolVoiceMessageAsync),
+        (typeof(IWechatWorkSchoolMessageService),
+            nameof(IWechatWorkSchoolMessageService.SendSchoolVoiceMessageAsync),
             typeof(PostAttribute), "/cgi-bin/externalcontact/message/send"),
-        (typeof(IWechatWorkInternalSchoolMessageService),
-            nameof(IWechatWorkInternalSchoolMessageService.SendSchoolVideoMessageAsync),
+        (typeof(IWechatWorkSchoolMessageService),
+            nameof(IWechatWorkSchoolMessageService.SendSchoolVideoMessageAsync),
             typeof(PostAttribute), "/cgi-bin/externalcontact/message/send"),
-        (typeof(IWechatWorkInternalSchoolMessageService),
-            nameof(IWechatWorkInternalSchoolMessageService.SendSchoolFileMessageAsync),
+        (typeof(IWechatWorkSchoolMessageService),
+            nameof(IWechatWorkSchoolMessageService.SendSchoolFileMessageAsync),
             typeof(PostAttribute), "/cgi-bin/externalcontact/message/send"),
-        (typeof(IWechatWorkInternalSchoolMessageService),
-            nameof(IWechatWorkInternalSchoolMessageService.SendSchoolNewsMessageAsync),
+        (typeof(IWechatWorkSchoolMessageService),
+            nameof(IWechatWorkSchoolMessageService.SendSchoolNewsMessageAsync),
             typeof(PostAttribute), "/cgi-bin/externalcontact/message/send"),
-        (typeof(IWechatWorkInternalSchoolMessageService),
-            nameof(IWechatWorkInternalSchoolMessageService.SendSchoolMpNewsMessageAsync),
+        (typeof(IWechatWorkSchoolMessageService),
+            nameof(IWechatWorkSchoolMessageService.SendSchoolMpNewsMessageAsync),
             typeof(PostAttribute), "/cgi-bin/externalcontact/message/send"),
-        (typeof(IWechatWorkInternalSchoolMessageService),
-            nameof(IWechatWorkInternalSchoolMessageService.SendSchoolMiniProgramMessageAsync),
+        (typeof(IWechatWorkSchoolMessageService),
+            nameof(IWechatWorkSchoolMessageService.SendSchoolMiniProgramMessageAsync),
             typeof(PostAttribute), "/cgi-bin/externalcontact/message/send"),
         // 智能表格自动化创建的群聊族·自建子接口（3 端点，全 POST）。
         (typeof(IWechatWorkInternalSmartSheetGroupChatService),
@@ -219,10 +221,12 @@ public class WechatMessageContractGuards
     }
 
     /// <summary>
-    /// 契约守卫 MSG2：三接口族层级与生成器注册形态——
+    /// 契约守卫 MSG2：四接口族层级与生成器注册形态——
     /// 发送应用消息族：公共端点收敛父接口（IsAbstract），自建/代开发子接口零端点空标记，
     /// 第三方子接口恰持 1 条 template_msg 差异端点（94515）；
-    /// 群聊会话族 / 家校学校通知族：官方仅自建开放，父接口零端点 + 仅自建子接口承载端点，
+    /// 家校学校通知族：公共端点（91609/92291/96720/96723）收敛父接口（IsAbstract），
+    /// 自建/第三方/代开发子接口均为零端点空标记；
+    /// 群聊会话族：官方仅自建开放，父接口零端点 + 仅自建子接口承载端点，
     /// 继承链上不得出现第三方/代开发子接口（能力漂移守卫）。
     /// </summary>
     [Fact]
@@ -258,15 +262,22 @@ public class WechatMessageContractGuards
         GetAssignableInterfaces(messageParent).Should().BeEquivalentTo(messageChildren,
             "发送应用消息族继承链上不得出现其它应用类型子接口");
 
-        // 群聊会话族 / 家校学校通知族：父接口零端点 + 仅自建子接口承载端点。
+        // 家校学校通知族：公共端点收敛父接口 + 三个应用类型空标记子接口。
+        AssertConvergedFamily(typeof(IWechatWorkSchoolMessageService),
+            new[]
+            {
+                typeof(IWechatWorkInternalSchoolMessageService),
+                typeof(IWechatWorkThirdPartySchoolMessageService),
+                typeof(IWechatWorkProviderSchoolMessageService),
+            },
+            SchoolMessageImplementationClassName,
+            "家校学校通知族官方向三类应用开放完全一致的端点（91609/92291/96720/96723），继承链上不得出现其它子接口");
+
+        // 群聊会话族：父接口零端点 + 仅自建子接口承载端点。
         AssertInternalOnlyFamily(typeof(IWechatWorkAppChatService),
             typeof(IWechatWorkInternalAppChatService),
             AppChatImplementationClassName,
             "群聊会话族官方仅向自建应用开放（第三方明示不可调用），不得出现第三方/代开发子接口");
-        AssertInternalOnlyFamily(typeof(IWechatWorkSchoolMessageService),
-            typeof(IWechatWorkInternalSchoolMessageService),
-            SchoolMessageImplementationClassName,
-            "家校学校通知族官方仅向自建应用开放，不得出现第三方/代开发子接口");
 
         // 智能表格自动化创建的群聊族：父接口零端点 + 仅自建子接口承载端点。
         AssertInternalOnlyFamily(typeof(IWechatWorkSmartSheetGroupChatService),
@@ -276,7 +287,7 @@ public class WechatMessageContractGuards
     }
 
     /// <summary>
-    /// 契约守卫 MSG3：令牌绑定——十接口统一消费 AccessToken 路由键并以 Query 注入（官方契约 access_token）。
+    /// 契约守卫 MSG3：令牌绑定——十二接口统一消费 AccessToken 路由键并以 Query 注入（官方契约 access_token）。
     /// </summary>
     [Fact]
     public void MessageTokenBinding_ShouldBeAccessTokenInjectedViaQuery()
@@ -291,6 +302,8 @@ public class WechatMessageContractGuards
             typeof(IWechatWorkInternalAppChatService),
             typeof(IWechatWorkSchoolMessageService),
             typeof(IWechatWorkInternalSchoolMessageService),
+            typeof(IWechatWorkThirdPartySchoolMessageService),
+            typeof(IWechatWorkProviderSchoolMessageService),
             typeof(IWechatWorkSmartSheetGroupChatService),
             typeof(IWechatWorkInternalSmartSheetGroupChatService),
         };
@@ -411,6 +424,26 @@ public class WechatMessageContractGuards
 
         // 能力漂移守卫：继承链上恰好只有自建子接口，不得出现第三方/代开发子接口。
         GetAssignableInterfaces(parent).Should().BeEquivalentTo(new[] { internalChild }, because);
+    }
+
+    /// <summary>
+    /// 断言「三类应用公共面收敛」家族：父接口承载全部公共端点（IsAbstract、不进注册组），
+    /// 自建/第三方/代开发子接口均为零端点空标记且继承父接口生成实现类。
+    /// </summary>
+    private static void AssertConvergedFamily(Type parent, Type[] children, string implementationClassName, string because)
+    {
+        AssertAbstractParent(parent);
+
+        foreach (var child in children)
+        {
+            child.Should().BeAssignableTo(parent, $"{child.Name} 必须继承公共父接口 {parent.Name}");
+            AssertRegistryChild(child, MessageRegistryGroupName, implementationClassName);
+            child.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
+                .Should().BeEmpty($"{child.Name} 为空标记：公共端点全部声明于父接口");
+        }
+
+        // 能力漂移守卫：继承链上恰好只有自建/第三方/代开发三个子接口。
+        GetAssignableInterfaces(parent).Should().BeEquivalentTo(children, because);
     }
 
     private static List<Type> GetAssignableInterfaces(Type parent)

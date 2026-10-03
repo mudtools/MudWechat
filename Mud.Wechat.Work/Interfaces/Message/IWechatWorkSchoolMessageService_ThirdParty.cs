@@ -8,19 +8,20 @@
 namespace Mud.Wechat.Work;
 
 /// <summary>
-/// 企业微信「消息推送」模块家校消息推送域企业自建应用 SDK。
+/// 企业微信「消息推送」模块家校消息推送域第三方应用 SDK。
 /// <para>
-/// 官方对三类应用开放完全一致的 8 个端点（发送「学校通知」），全部收敛于
-/// <see cref="IWechatWorkSchoolMessageService"/>；本接口不新增端点，仅作为
-/// 自建应用的类型化契约入口存在（形态对齐 <see cref="IWechatWorkInternalPayBillService"/> 空标记）。
+/// 官方对三类应用开放完全一致的 8 个端点（发送「学校通知」，第三方文档 92291），
+/// 全部收敛于 <see cref="IWechatWorkSchoolMessageService"/>；本接口不新增端点，仅作为
+/// 第三方应用的类型化契约入口存在（形态对齐 <see cref="IWechatWorkThirdPartyPayBillService"/> 空标记）。
 /// </para>
-/// <para>第三方应用见 <see cref="IWechatWorkThirdPartySchoolMessageService"/>；
+/// <para>自建应用见 <see cref="IWechatWorkInternalSchoolMessageService"/>；
 /// 服务商代开发见 <see cref="IWechatWorkProviderSchoolMessageService"/>。</para>
 /// </summary>
 /// <remarks>
 /// <para>
-/// 消费应用自身 access_token（路由键 <see cref="WechatTokenTypes.AccessToken"/>）。官方权限口径：
-/// 学校管理员需要将应用配置在「家长可使用的应用」才可调用。
+/// 消费授权企业级 access_token（路由键 <see cref="WechatTokenTypes.AccessToken"/>，scope = authCorpId），
+/// 由多应用基座按当前应用上下文路由——企业级令牌须先经 <c>IWechatAppContextSwitcher</c> 切换作用域后再调用。
+/// 官方权限口径：第三方应用须具有「家校沟通」使用权限；学校管理员需要将应用配置在「家长可使用的应用」才可调用。
 /// </para>
 /// <para>
 /// MUD005 已知接受风险：企业微信官方契约强制令牌走 Query 参数（<c>access_token</c>），无法改用 Header。
@@ -30,6 +31,6 @@ namespace Mud.Wechat.Work;
     TokenManage = nameof(IWechatAppManager), InheritedFrom = nameof(WechatWorkSchoolMessageService))]
 [Token(TokenType = WechatTokenTypes.AccessToken,
       InjectionMode = TokenInjectionMode.Query, Name = "access_token")]
-public interface IWechatWorkInternalSchoolMessageService : IWechatWorkSchoolMessageService
+public interface IWechatWorkThirdPartySchoolMessageService : IWechatWorkSchoolMessageService
 {
 }

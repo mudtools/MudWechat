@@ -84,6 +84,7 @@ scripts/                      # verify-build / audit-config-keys / GenerateJsonC
 | 微信客服 | `Interfaces/Kf/` | `Kf/` | `Kf` / `AddKfApi()` |
 | 企业支付 | `Interfaces/Pay/` | `Pay/` | `Pay` / `AddPayApi()` |
 | 会话内容存档 | `Interfaces/MsgAudit/` | `MsgAudit/` | `MsgAudit` / `AddMsgAuditApi()` |
+| 家校沟通 | `Interfaces/School/` | `School/` | `School` / `AddSchoolApi()` |
 
 - 接口命名空间一律 `Mud.Wechat.Work`（**不含** `Interfaces` 段）；DTO 命名空间 `Mud.Wechat.Work.DataModels.{域}[.{子域}]`。
 - `RequestModel/`、`ResponseModel/` 仅作目录组织，命名空间不含该目录段。

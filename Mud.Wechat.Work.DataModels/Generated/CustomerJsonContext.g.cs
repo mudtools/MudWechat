@@ -28,6 +28,7 @@ namespace Mud.Wechat.Work.DataModels.ExternalContact.Customer;
 [JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.ExternalContact.Customer.ExternalAttrText))]
 [JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.ExternalContact.Customer.ExternalAttrWeb))]
 [JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.ExternalContact.Customer.ExternalContactInfo))]
+[JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.ExternalContact.Customer.CustomerSubscriberInfo))]
 [JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.ExternalContact.Customer.ExternalProfile))]
 [JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.ExternalContact.Customer.ExternalUserIdToPendingIdResponse))]
 [JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.ExternalContact.Customer.GetCustomerDetailResponse))]

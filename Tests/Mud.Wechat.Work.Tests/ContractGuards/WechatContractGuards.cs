@@ -293,8 +293,13 @@ public class WechatContractGuards
                 nameof(IWechatWorkProviderMessageService),
                 nameof(IWechatWorkAppChatService),
                 nameof(IWechatWorkInternalAppChatService),
+                // 消息推送·家校学校通知族（Message 模块）：8 个端点为三类应用公共面
+                //（发送「学校通知」8 种 msgtype，自建 91609、第三方 92291、代开发 96720/96723；
+                // 父接口 + 三个应用类型空标记子接口）。
                 nameof(IWechatWorkSchoolMessageService),
                 nameof(IWechatWorkInternalSchoolMessageService),
+                nameof(IWechatWorkThirdPartySchoolMessageService),
+                nameof(IWechatWorkProviderSchoolMessageService),
                 nameof(IWechatWorkSmartSheetGroupChatService),
                 nameof(IWechatWorkInternalSmartSheetGroupChatService),
                 // 账号ID域（AccountId 模块）：七接口族跨三种令牌路由键——ID 转换族 / tmp_external_userid 转换族 /
@@ -416,6 +421,20 @@ public class WechatContractGuards
                 //（获取内部群信息 92951 ≤2000 次/分钟；零端点父接口 + 仅自建子接口）。
                 nameof(IWechatWorkMsgAuditGroupChatService),
                 nameof(IWechatWorkInternalMsgAuditGroupChatService),
+                // 家校沟通·家校沟通基础域（School 模块）：7 个端点为三类应用公共面
+                //（「学校通知」二维码 92320/92197/96719、关注模式 92318/92290、班级群创建方式 92430、
+                // 外部联系人 openid 转换 92323/92292/96721、可使用的家长范围 94895/94960/96725；
+                // 父接口 + 三个应用类型空标记子接口）。
+                nameof(IWechatWorkSchoolService),
+                nameof(IWechatWorkInternalSchoolService),
+                nameof(IWechatWorkThirdPartySchoolService),
+                nameof(IWechatWorkProviderSchoolService),
+                // 家校沟通·家校管理配置域（School 模块）：3 个端点官方仅自建与第三方应用开放
+                //（老师可查看班级模式 92652、手机号转外部联系人 ID 92506；零端点父接口 +
+                // 自建/第三方子接口，官方未向代开发开放，不设代开发子接口）。
+                nameof(IWechatWorkSchoolSettingService),
+                nameof(IWechatWorkInternalSchoolSettingService),
+                nameof(IWechatWorkThirdPartySchoolSettingService),
             },
             "企业微信官方契约强制 Query 注入（MUD005 已知接受风险），新增 Query 注入接口须评估后扩展本守卫");
     }

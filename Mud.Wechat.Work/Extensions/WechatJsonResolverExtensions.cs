@@ -43,6 +43,7 @@ using Mud.Wechat.Work.DataModels.MsgAudit;
 using Mud.Wechat.Work.DataModels.Pay;
 using Mud.Wechat.Work.DataModels.ProviderAuthentication;
 using Mud.Wechat.Work.DataModels.Security;
+using Mud.Wechat.Work.DataModels.School;
 
 namespace Mud.Wechat.Work.Extensions;
 
@@ -102,6 +103,7 @@ public static class WechatJsonResolverExtensions
             KfJsonContext.Default,
             PayJsonContext.Default,
             MsgAuditJsonContext.Default,
+            SchoolJsonContext.Default,
             CorpTokenAuthenticationJsonContext.Default,
             InternalAppAuthenticationJsonContext.Default,
             ProviderAuthenticationJsonContext.Default,

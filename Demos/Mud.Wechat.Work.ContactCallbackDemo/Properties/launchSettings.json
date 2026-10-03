@@ -1,0 +1,12 @@
+{
+  "profiles": {
+    "Mud.Wechat.Work.ContactCallbackDemo": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "applicationUrl": "https://localhost:56533;http://localhost:56534"
+    }
+  }
+}

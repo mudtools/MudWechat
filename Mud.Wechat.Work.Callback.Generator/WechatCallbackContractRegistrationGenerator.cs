@@ -19,7 +19,7 @@ namespace Mud.Wechat.Work.Callback.Generator;
 /// 回调契约登记生成器：扫描载荷类上的 <c>[WechatCallbackContract]</c> 特性声明
 /// （事件键 + 族前置条件 + 事件键级开放面），编译期发射
 /// <c>OfficialPayloadContracts.RegisterAll</c> 的方法体（每事件键一条
-/// <c>registry.Register(CreateWithOpenSurface(...))</c>）。
+/// <c>registry.Register(CreateWithOpenSurfaces(...))</c>）。
 /// </summary>
 /// <remarks>
 /// <para>
@@ -29,8 +29,16 @@ namespace Mud.Wechat.Work.Callback.Generator;
 /// （同上游 G-ADR-17b「生成源加入最终编译」规则）。
 /// </para>
 /// <para>
+/// <b>同键多声明合并</b>：<c>[WechatCallbackContract]</c> 为 <c>AllowMultiple</c>，
+/// 同一事件键可在不同特性实例上叠加「（模式集合, 通道）」开放面组合对
+/// （如客户联系/获客族：自建·代开发×应用通道 + 第三方×套件通道）。
+/// 生成器按事件键合并各实例的开放面去重后发射<b>一条</b> <c>CreateWithOpenSurfaces</c> 登记行
+/// （注册表一鍵一契约，重复登记属接线错误）；同键的
+/// <c>RequiredEvent</c>/<c>RequiredFamily</c> 在各实例间必须一致，否则 <c>MUDCB001</c> 打红。
+/// </para>
+/// <para>
 /// <b>「不宽于官方族默认」不做编译期校验</b>：官方基线（<c>WechatEventFamilyOpenSurface</c>）
-/// 不搬进生成器，运行期 <c>CreateWithOpenSurface</c> 组合根 fail-fast 语义不变（ADR-15/CB4e）。
+/// 不搬进生成器，运行期 <c>CreateWithOpenSurfaces</c> 组合根 fail-fast 语义不变（ADR-15/CB4e）。
 /// 生成器仅拦截「声明不完整」（开放面/通道/事件键缺失 → <c>MUDCB001</c>），
 /// 与守卫 CB4c 的运行期断言互为双保险。
 /// </para>
@@ -46,6 +54,9 @@ public sealed class WechatCallbackContractRegistrationGenerator : IIncrementalGe
 
     private const string ContractTypeFqn =
         "global::Mud.Wechat.Work.Abstractions.Callback.Payloads.WechatPayloadContract";
+
+    private const string OpenSurfaceTypeFqn =
+        "global::Mud.Wechat.Work.Abstractions.Callback.Payloads.WechatOpenSurface";
 
     private const string AccessorTypeFqn =
         "global::Mud.HttpUtils.Payloads.IPayloadContractAccessor";
@@ -149,7 +160,82 @@ public sealed class WechatCallbackContractRegistrationGenerator : IIncrementalGe
                 ResolveMemberText(familyType, familyValue, FamilyTypeFqn)));
         }
 
-        return new PayloadContractModel(typeFqn, groups.ToImmutable(), diagnostics.ToImmutable());
+        // —— 同键多声明合并（AllowMultiple）：同一事件键在不同特性实例上的开放面组合对叠加 ——
+        // RequiredEvent 缺省 = 逐键自指；同键的族前置条件在各实例间必须一致（否则 MUDCB001）。
+        var contracts = ImmutableArray.CreateBuilder<MergedKeyContract>();
+        var byKey = new System.Collections.Generic.SortedDictionary<string, System.Collections.Generic.List<ContractGroup>>(
+            StringComparer.Ordinal);
+        foreach (var group in groups)
+        {
+            foreach (var key in group.EventKeys)
+            {
+                if (!byKey.TryGetValue(key, out var list))
+                {
+                    list = new System.Collections.Generic.List<ContractGroup>();
+                    byKey.Add(key, list);
+                }
+
+                list.Add(group);
+            }
+        }
+
+        foreach (var pair in byKey)
+        {
+            var key = pair.Key;
+            var keyGroups = pair.Value;
+
+            string? requiredEvent = null;
+            var familyValue = -1;
+            var consistent = true;
+            foreach (var group in keyGroups)
+            {
+                var groupEvent = group.RequiredEvent ?? key;
+                if (requiredEvent == null)
+                {
+                    requiredEvent = groupEvent;
+                }
+                else if (!string.Equals(requiredEvent, groupEvent, StringComparison.Ordinal))
+                {
+                    consistent = false;
+                }
+
+                if (familyValue < 0)
+                {
+                    familyValue = group.FamilyValue;
+                }
+                else if (familyValue != group.FamilyValue)
+                {
+                    consistent = false;
+                }
+            }
+
+            if (!consistent)
+            {
+                diagnostics.Add(new DiagnosticInfo(typeFqn,
+                    "事件键 " + key + " 在多条 [WechatCallbackContract] 声明中的 RequiredEvent/RequiredFamily 不一致" +
+                    " —— 同键多声明合并时族前置条件必须唯一"));
+                continue;
+            }
+
+            // 开放面组合对去重 + 确定性排序（通道、模式集合）。
+            var surfaces = keyGroups
+                .Select(g => (AppTypeValue: g.AppTypeValue, ChannelValue: g.ChannelValue))
+                .Distinct()
+                .OrderBy(s => s.ChannelValue)
+                .ThenBy(s => s.AppTypeValue)
+                .Select(s => "new " + OpenSurfaceTypeFqn + "(" +
+                             ResolveFlagsText(appTypeSetType, s.AppTypeValue, AppTypeSetTypeFqn) + ", " +
+                             ResolveMemberText(channelType, s.ChannelValue, ChannelTypeFqn) + ")")
+                .ToArray();
+
+            contracts.Add(new MergedKeyContract(
+                key,
+                surfaces,
+                requiredEvent ?? key,
+                ResolveMemberText(familyType, familyValue, FamilyTypeFqn)));
+        }
+
+        return new PayloadContractModel(typeFqn, contracts.ToImmutable(), diagnostics.ToImmutable());
     }
 
     private static void Emit(SourceProductionContext context, ImmutableArray<PayloadContractModel> models)
@@ -186,19 +272,15 @@ public sealed class WechatCallbackContractRegistrationGenerator : IIncrementalGe
 
         foreach (var model in models.OrderBy(m => m.PayloadTypeFqn, StringComparer.Ordinal))
         {
-            foreach (var group in model.Groups)
+            foreach (var contract in model.Contracts)
             {
-                foreach (var key in group.EventKeys)
-                {
-                    builder.AppendLine("            registry.Register(" + ContractTypeFqn + ".CreateWithOpenSurface(");
-                    builder.AppendLine("                \"" + EscapeString(key) + "\",");
-                    builder.AppendLine("                (" + AccessorTypeFqn + ")" + model.PayloadTypeFqn + ".PayloadFieldMap,");
-                    builder.AppendLine("                " + group.AppTypeText + ",");
-                    builder.AppendLine("                " + group.ChannelText + ",");
-                    builder.AppendLine("                requiredEvent: \"" + EscapeString(group.RequiredEvent ?? key) + "\",");
-                    builder.AppendLine("                requiredFamily: " + group.FamilyText + "));");
-                    builder.AppendLine();
-                }
+                builder.AppendLine("            registry.Register(" + ContractTypeFqn + ".CreateWithOpenSurfaces(");
+                builder.AppendLine("                \"" + EscapeString(contract.EventKey) + "\",");
+                builder.AppendLine("                (" + AccessorTypeFqn + ")" + model.PayloadTypeFqn + ".PayloadFieldMap,");
+                builder.AppendLine("                new[] { " + string.Join(", ", contract.SurfaceTexts) + " },");
+                builder.AppendLine("                requiredEvent: \"" + EscapeString(contract.RequiredEvent) + "\",");
+                builder.AppendLine("                requiredFamily: " + contract.FamilyText + "));");
+                builder.AppendLine();
             }
         }
 
@@ -366,47 +448,70 @@ public sealed class WechatCallbackContractRegistrationGenerator : IIncrementalGe
         }
     }
 
+    /// <summary>同键合并后的登记单元：事件键 → 去重后的开放面组合对 + 唯一族前置条件。</summary>
+    private sealed class MergedKeyContract
+    {
+        public MergedKeyContract(string eventKey, string[] surfaceTexts, string requiredEvent, string familyText)
+        {
+            EventKey = eventKey;
+            SurfaceTexts = surfaceTexts;
+            RequiredEvent = requiredEvent;
+            FamilyText = familyText;
+        }
+
+        public string EventKey { get; }
+
+        public string[] SurfaceTexts { get; }
+
+        public string RequiredEvent { get; }
+
+        public string FamilyText { get; }
+    }
+
     private sealed class PayloadContractModel : IEquatable<PayloadContractModel>
     {
         public PayloadContractModel(
             string payloadTypeFqn,
-            ImmutableArray<ContractGroup> groups,
+            ImmutableArray<MergedKeyContract> contracts,
             ImmutableArray<DiagnosticInfo> diagnostics)
         {
             PayloadTypeFqn = payloadTypeFqn;
-            Groups = groups;
+            Contracts = contracts;
             Diagnostics = diagnostics;
         }
 
         public string PayloadTypeFqn { get; }
 
-        public ImmutableArray<ContractGroup> Groups { get; }
+        public ImmutableArray<MergedKeyContract> Contracts { get; }
 
         public ImmutableArray<DiagnosticInfo> Diagnostics { get; }
 
         public bool Equals(PayloadContractModel? other)
         {
-            if (other == null || PayloadTypeFqn != other.PayloadTypeFqn || Groups.Length != other.Groups.Length)
+            if (other == null || PayloadTypeFqn != other.PayloadTypeFqn || Contracts.Length != other.Contracts.Length)
                 return false;
 
-            for (var i = 0; i < Groups.Length; i++)
+            for (var i = 0; i < Contracts.Length; i++)
             {
-                if (!Groups[i].Equals(other.Groups[i]))
+                if (!Contracts[i].EventKey.Equals(other.Contracts[i].EventKey, StringComparison.Ordinal)
+                    || Contracts[i].RequiredEvent != other.Contracts[i].RequiredEvent
+                    || Contracts[i].FamilyText != other.Contracts[i].FamilyText
+                    || !Contracts[i].SurfaceTexts.SequenceEqual(other.Contracts[i].SurfaceTexts))
+                {
                     return false;
+                }
             }
 
             return true;
         }
-
-        public override bool Equals(object? obj) => Equals(obj as PayloadContractModel);
 
         public override int GetHashCode()
         {
             unchecked
             {
                 var hash = PayloadTypeFqn.GetHashCode();
-                for (var i = 0; i < Groups.Length; i++)
-                    hash = (hash * 31) ^ Groups[i].GetHashCode();
+                for (var i = 0; i < Contracts.Length; i++)
+                    hash = (hash * 31) ^ Contracts[i].EventKey.GetHashCode();
                 return hash;
             }
         }

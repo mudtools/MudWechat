@@ -45,8 +45,9 @@ public sealed class WechatCallbackContractAttribute : Attribute
     /// 与原 <c>RegisterKeys</c> 显式传 <c>Unknown</c> 的语义一致）。
     /// <para>
     /// <b>特性命名参数不接受可空枚举</b>（CS0655），故不提供 <c>WechatCallbackEventFamily?</c> 形态；
-    /// 运行期 <c>CreateWithOpenSurface(requiredFamily: null)</c> 的「不校验」形态在特性面不存在 ——
-    /// 当前 41 键全部声明具体族（ContactChange/BatchJob/ChainChange/Unknown）。
+    /// 运行期 <c>CreateWithOpenSurfaces(requiredFamily: null)</c> 的「不校验」形态在特性面不存在 ——
+    /// 当前官方键全部声明具体族（ContactChange/BatchJob/ChainChange/ExternalContactChange/
+    /// CustomerAcquisition/Unknown）。
     /// </para>
     /// </summary>
     public WechatCallbackEventFamily RequiredFamily { get; set; }

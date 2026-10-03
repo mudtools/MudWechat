@@ -240,6 +240,8 @@ public class WechatAppCallbackOptions
     /// <item><description>授权族（suite_ticket / 授权通知）仅<b>套件通道</b>——企业自建无套件指令回调；</description></item>
     /// <item><description>上下游变更族仅<b>自建应用 + 应用数据通道</b>（官方 95796：第三方/代开发暂不支持）；</description></item>
     /// <item><description>通讯录变更族 / 异步任务族经<b>应用数据通道</b>承载（三类应用均开放）；</description></item>
+    /// <item><description>客户联系/获客助手族：<b>自建·代开发 × 应用数据通道</b>（Event 信封）+
+    /// <b>第三方 × 套件指令通道</b>（指令回调 URL，InfoType 信封，官方 92277/97402/99485）；</description></item>
     /// <item><description>无法判别的族不拦截（协议外报文交由兜底处理器自行处置）。</description></item>
     /// </list>
     /// </remarks>
@@ -260,6 +262,22 @@ public class WechatAppCallbackOptions
             case WechatCallbackEventFamily.BatchJob:
                 // 通讯录变更族与异步任务族经应用数据回调 URL 承载，三类应用均开放。
                 return Channel == WechatCallbackChannel.App;
+
+            case WechatCallbackEventFamily.ExternalContactChange:
+            case WechatCallbackEventFamily.CustomerAcquisition:
+                // 客户联系/获客助手族的官方接入方式按应用模式分通道（92130/92277/96361/97299/98958/99485）：
+                // 自建与代开发经应用数据回调 URL（Event 信封）；第三方经套件指令回调 URL（InfoType 信封，92277）。
+                if (Channel == WechatCallbackChannel.App)
+                {
+                    return AppType == WechatAppType.Internal || AppType == WechatAppType.Provider;
+                }
+
+                if (Channel == WechatCallbackChannel.Suite)
+                {
+                    return AppType == WechatAppType.ThirdParty;
+                }
+
+                return false;
 
             case WechatCallbackEventFamily.Unknown:
             default:

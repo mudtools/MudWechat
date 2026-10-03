@@ -1,4 +1,8 @@
 <Solution>
+  <Folder Name="/Demos/">
+    <Project Path="Demos/Mud.Wechat.Work.ContactCallbackDemo/Mud.Wechat.Work.ContactCallbackDemo.csproj" />
+    <Project Path="Demos/Mud.Wechat.Work.ContactDemo/Mud.Wechat.Work.ContactDemo.csproj" />
+  </Folder>
   <Folder Name="/src/">
     <Project Path="Mud.Wechat.Work.Abstractions/Mud.Wechat.Work.Abstractions.csproj" />
     <Project Path="Mud.Wechat.Work.Callback.Generator/Mud.Wechat.Work.Callback.Generator.csproj" />

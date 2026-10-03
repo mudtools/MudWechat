@@ -22,10 +22,13 @@ namespace Mud.Wechat.Work.Abstractions.Enums;
 /// <item><description><see cref="ContactChange"/>：<c>Event = change_contact</c>（通讯录成员/部门/标签变更）。</description></item>
 /// <item><description><see cref="ChainChange"/>：<c>Event = change_chain</c>（上下游空间/分组/企业变更，仅自建应用可配置接收）。</description></item>
 /// <item><description><see cref="BatchJob"/>：<c>Event = batch_job_result</c>（异步任务完成通知，通讯录 / 上下游双布局）。</description></item>
+/// <item><description><see cref="ExternalContactChange"/>：客户联系变更族（<c>change_external_contact</c> / <c>change_external_chat</c> / <c>change_external_tag</c>；官方 92130/92277/96361）。</description></item>
+/// <item><description><see cref="CustomerAcquisition"/>：获客助手族（<c>customer_acquisition</c> / <c>customer_acquisition_permit_change</c>；官方 97299/97402/98958/99485）。</description></item>
 /// <item><description><see cref="Unknown"/>：无法判别（协议外报文），不拦截。</description></item>
 /// </list>
 /// <para>
-/// 判别优先级与 <c>WechatCallbackEvent.EventTypeKey</c> 对齐：<c>InfoType</c> 优先，其次按 <c>Event</c> 值归类。
+/// 判别优先级与 <c>WechatCallbackEvent.EventTypeKey</c> 对齐：客户联系/获客族按「外层事件值」
+/// （<c>Event</c> 优先、套件信封回退 <c>InfoType</c>）归类，其余授权族按 <c>InfoType</c>、业务族按 <c>Event</c> 值归类。
 /// 合法性闸见 <c>WechatAppCallbackOptions.IsEventFamilyAllowed</c>。
 /// </para>
 /// </remarks>
@@ -45,4 +48,24 @@ public enum WechatCallbackEventFamily
 
     /// <summary>异步任务族（Event = batch_job_result；应用数据通道）。</summary>
     BatchJob = 4,
+
+    /// <summary>
+    /// 客户联系变更族（<c>change_external_contact</c> / <c>change_external_chat</c> / <c>change_external_tag</c>；
+    /// 官方 92130 企业自建 / 92277 第三方 / 96361 服务商代开发）。
+    /// </summary>
+    /// <remarks>
+    /// 官方开放面矩阵：企业自建与服务商代开发经<b>应用数据通道</b>（<c>Event</c> 信封），
+    /// 第三方应用经<b>套件指令通道</b>（指令回调 URL，<c>InfoType</c> 信封，官方 92277）。
+    /// </remarks>
+    ExternalContactChange = 5,
+
+    /// <summary>
+    /// 获客助手族（<c>customer_acquisition</c> 及 <c>customer_acquisition_permit_change</c>；
+    /// 官方 97299 企业自建 / 97402·99485 第三方 / 98958 服务商代开发）。
+    /// </summary>
+    /// <remarks>
+    /// 官方开放面矩阵与客户联系变更族一致：自建/代开发走应用数据通道、第三方走套件指令通道
+    /// （99485 的 <c>service_*</c> / <c>change_price</c> 组件事件仅第三方套件通道）。
+    /// </remarks>
+    CustomerAcquisition = 6,
 }

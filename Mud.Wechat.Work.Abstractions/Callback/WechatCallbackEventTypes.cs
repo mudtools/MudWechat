@@ -14,7 +14,9 @@ namespace Mud.Wechat.Work.Abstractions.Callback;
 /// <para>
 /// 企业微信回调的事件类型分布在三个信封段上（v1 方案 §5.4.2）：
 /// 授权族走 <c>InfoType</c>、通讯录变更族走 <c>ChangeType</c>（<c>Event = change_contact</c>）、
-/// 异步任务族与上下游任务走 <c>Event</c>、上下游变更族走 <c>ChangeType</c>（<c>Event = change_chain</c>）。
+/// 异步任务族与上下游任务走 <c>Event</c>、上下游变更族走 <c>ChangeType</c>（<c>Event = change_chain</c>）、
+/// 客户联系/获客助手族以<b>族事件值</b>为事件键（<c>Event</c> 信封取 <c>Event</c> 节点、
+/// 第三方套件信封取 <c>InfoType</c> 节点，具体类别由 <c>ChangeType</c> 判别）。
 /// 处理器 <see cref="IWechatCallbackEventHandler.SupportedEventType"/> 必须填本类常量之一（或空串 = 兜底）。
 /// </para>
 /// <para>
@@ -22,6 +24,11 @@ namespace Mud.Wechat.Work.Abstractions.Callback;
 /// 回调配置 <see href="https://developer.work.weixin.qq.com/document/path/90930">path 90930</see> ·
 /// 授权族 <see href="https://developer.work.weixin.qq.com/document/path/90628">path 90628</see>（suite_ticket）/ <see href="https://developer.work.weixin.qq.com/document/path/99487">path 99487</see>（授权通知事件）/ <see href="https://developer.work.weixin.qq.com/document/path/100964">path 100964</see>（修改授权通知）·
 /// 通讯录变更族 <see href="https://developer.work.weixin.qq.com/document/path/90967">path 90967</see>（概述）·
+/// 客户联系变更族 <see href="https://developer.work.weixin.qq.com/document/path/92130">path 92130</see>（企业自建）/ <see href="https://developer.work.weixin.qq.com/document/path/92277">path 92277</see>（第三方）/
+/// <see href="https://developer.work.weixin.qq.com/document/path/96361">path 96361</see>（代开发）·
+/// 获客助手族 <see href="https://developer.work.weixin.qq.com/document/path/97299">path 97299</see>（企业自建）/ <see href="https://developer.work.weixin.qq.com/document/path/97402">path 97402</see>（第三方）/
+/// <see href="https://developer.work.weixin.qq.com/document/path/99485">path 99485</see>（第三方·组件）/
+/// <see href="https://developer.work.weixin.qq.com/document/path/98958">path 98958</see>（代开发）·
 /// 上下游变更族 <see href="https://developer.work.weixin.qq.com/document/path/95796">path 95796</see> ·
 /// 异步任务族 <see href="https://developer.work.weixin.qq.com/document/path/90973">path 90973</see>（通讯录）/ <see href="https://developer.work.weixin.qq.com/document/path/95797">path 95797</see>（上下游）·
 /// 消息与事件（关注/菜单/地理位置/审批/共享/模板卡片/应用状态）<see href="https://developer.work.weixin.qq.com/document/path/90240">path 90240</see>（企业内部开发）/
@@ -192,6 +199,71 @@ public static class WechatCallbackEventTypes
     /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/95796">path 95796 上下游变更回调</see>。
     /// </remarks>
     public const string RemoveCorp = "remove_corp";
+
+    // ——— 客户联系变更族（官方 92130 自建 / 92277 第三方 / 96361 代开发；族事件值为键） ———
+
+    /// <summary>
+    /// 客户联系变更族的<b>族事件值</b>（企业客户变更：添加 / 编辑 / 免验证添加 / 删除 / 删除跟进成员 / 接替失败，
+    /// 具体类别看信封 <c>ChangeType</c>）。
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>族事件值即事件键</b>：官方 <c>change_external_chat</c> / <c>change_external_tag</c> 的
+    /// <c>ChangeType</c> 为裸 <c>create</c>/<c>update</c>/<c>delete</c>，且 <c>del_follow_user</c> 与获客助手族同名
+    /// —— 逐 <c>ChangeType</c> 键无法消歧，故本族（及获客助手族）以族事件值为事件键，
+    /// <c>ChangeType</c> 经信封判别。第三方应用经<b>指令回调 URL</b>（套件信封）接收同类事件，
+    /// 外层事件值在 <c>InfoType</c> 节点，与 <c>Event</c> 信封产出同一事件键。
+    /// </para>
+    /// <para>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/92130">path 92130 事件格式</see>（企业自建）/
+    /// <see href="https://developer.work.weixin.qq.com/document/path/92277">path 92277</see>（第三方）/
+    /// <see href="https://developer.work.weixin.qq.com/document/path/96361">path 96361</see>（服务商代开发）。
+    /// </para>
+    /// </remarks>
+    public const string ChangeExternalContact = "change_external_contact";
+
+    /// <summary>客户群变更族的<b>族事件值</b>（创建 / 变更 / 解散，具体类别看信封 <c>ChangeType</c>）。</summary>
+    /// <remarks>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/92130">path 92130 事件格式</see>
+    /// （第三方 <see href="https://developer.work.weixin.qq.com/document/path/92277">92277</see> / 代开发
+    /// <see href="https://developer.work.weixin.qq.com/document/path/96361">96361</see> 报文同构）。
+    /// </remarks>
+    public const string ChangeExternalChat = "change_external_chat";
+
+    /// <summary>企业客户标签变更族的<b>族事件值</b>（创建 / 变更 / 删除 / 重排，具体类别看信封 <c>ChangeType</c>）。</summary>
+    /// <remarks>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/92130">path 92130 事件格式</see>
+    /// （第三方 <see href="https://developer.work.weixin.qq.com/document/path/92277">92277</see> / 代开发
+    /// <see href="https://developer.work.weixin.qq.com/document/path/96361">96361</see> 报文同构）。
+    /// </remarks>
+    public const string ChangeExternalTag = "change_external_tag";
+
+    // ——— 获客助手族（官方 97299 自建 / 97402·99485 第三方 / 98958 代开发；族事件值为键） ———
+
+    /// <summary>
+    /// 获客助手事件通知的<b>族事件值</b>（额度/链接/好友请求/收消息/删除成员等，具体类别看信封 <c>ChangeType</c>；
+    /// 含第三方组件形态 <c>service_balance_low</c> / <c>service_balance_exhausted</c> / <c>service_balance_consumed</c> /
+    /// <c>change_price</c>，官方 99485）。
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// 与客户联系变更族同理，本族以族事件值为事件键（<c>del_follow_user</c> 与客户联系变更族同名，
+    /// 逐 <c>ChangeType</c> 键无法消歧）；<c>ChangeType</c> 经信封判别。
+    /// </para>
+    /// <para>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/97299">path 97299 获客助手事件通知</see>（企业自建）/
+    /// <see href="https://developer.work.weixin.qq.com/document/path/97402">path 97402</see>（第三方）/
+    /// <see href="https://developer.work.weixin.qq.com/document/path/99485">path 99485</see>（第三方·组件）/
+    /// <see href="https://developer.work.weixin.qq.com/document/path/98958">path 98958</see>（服务商代开发）。
+    /// </para>
+    /// </remarks>
+    public const string CustomerAcquisition = "customer_acquisition";
+
+    /// <summary>客户可建联成员范围变动事件（无 <c>ChangeType</c> 分组段；官方 92277）。</summary>
+    /// <remarks>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/92277">path 92277 事件格式</see>（第三方）。
+    /// </remarks>
+    public const string CustomerAcquisitionPermitChange = "customer_acquisition_permit_change";
 
     // ——— 关注 / 进入应用（官方 90240；Event 信封值） ———
 

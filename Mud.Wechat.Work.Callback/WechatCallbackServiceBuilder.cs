@@ -101,14 +101,41 @@ public sealed class WechatCallbackServiceBuilder
         WechatCallbackEventFamily? requiredFamily = null)
         where TPayload : class
     {
+        return AddPayloadWithOpenSurfaces(
+            eventTypeKey, map,
+            new[] { new WechatOpenSurface(supportedAppTypes, requiredChannel) },
+            requiredEvent, requiredFamily);
+    }
+
+    /// <summary>
+    /// 登记事件键契约并<b>显式声明多组事件键级开放面</b>（「（模式集合, 通道）」组合对，ADR-15）。
+    /// </summary>
+    /// <param name="eventTypeKey">事件类型键。</param>
+    /// <param name="map">载荷的字段映射表。</param>
+    /// <param name="openSurfaces">开放面组合对集合（任一组命中即许可分发；每组都不得宽于官方族默认）。</param>
+    /// <param name="requiredEvent">要求信封的外层事件值（<c>Event</c> 节点，套件信封为 <c>InfoType</c> 节点）；可空。</param>
+    /// <param name="requiredFamily">要求的事件族；可空。</param>
+    /// <returns>建造者实例（链式）。</returns>
+    /// <remarks>
+    /// 官方部分事件族的接入方式按应用模式分通道（如客户联系/获客助手族：自建·代开发经应用数据通道、
+    /// 第三方经套件指令通道）—— 单一「模式集合 × 通道」无法表达，需按组合对声明。
+    /// </remarks>
+    public WechatCallbackServiceBuilder AddPayloadWithOpenSurfaces<TPayload>(
+        string eventTypeKey,
+        IPayloadFieldMap<TPayload> map,
+        WechatOpenSurface[] openSurfaces,
+        string? requiredEvent = null,
+        WechatCallbackEventFamily? requiredFamily = null)
+        where TPayload : class
+    {
         if (map is not IPayloadContractAccessor accessor)
         {
             throw new ArgumentException(
                 "映射表 " + map.GetType().FullName + " 未实现 " + nameof(IPayloadContractAccessor) + "。", nameof(map));
         }
 
-        _payloadContracts.Register(WechatPayloadContract.CreateWithOpenSurface(
-            eventTypeKey, accessor, supportedAppTypes, requiredChannel, requiredEvent, requiredFamily));
+        _payloadContracts.Register(WechatPayloadContract.CreateWithOpenSurfaces(
+            eventTypeKey, accessor, openSurfaces, requiredEvent, requiredFamily));
         return this;
     }
 

@@ -23,27 +23,26 @@ namespace Mud.Wechat.Work.Abstractions.Callback.Payloads;
 /// <para>
 /// <b>两级闸</b>：① 族前置条件（<see cref="RequiredEvent"/> / <see cref="RequiredFamily"/>）——
 /// 防同名 <c>ChangeType</c> 跨族串门（行为保持矩阵 B4）；② 事件键级开放面
-/// （<see cref="SupportedAppTypes"/> / <see cref="RequiredChannel"/>）——补族级闸的精度缺口
+/// （<see cref="OpenSurfaces"/>）——补族级闸的精度缺口
 /// （宿主注册新 <c>Event</c> 值会落 <c>Unknown</c> 族而被族闸放行）。
-/// 两者为 <see langword="null"/> 时表示「继承族默认」。
 /// </para>
 /// </remarks>
 public sealed class WechatPayloadContract
 {
+    private readonly WechatOpenSurface[] _openSurfaces;
+
     private WechatPayloadContract(
         string eventTypeKey,
         IPayloadContractAccessor accessor,
         string? requiredEvent,
         WechatCallbackEventFamily? requiredFamily,
-        WechatAppTypeSet? supportedAppTypes,
-        WechatCallbackChannel? requiredChannel)
+        WechatOpenSurface[] openSurfaces)
     {
         EventTypeKey = eventTypeKey;
         Accessor = accessor;
         RequiredEvent = requiredEvent;
         RequiredFamily = requiredFamily;
-        SupportedAppTypes = supportedAppTypes;
-        RequiredChannel = requiredChannel;
+        _openSurfaces = openSurfaces;
     }
 
     /// <summary>事件类型键（= <c>WechatCallbackEvent.EventTypeKey</c>）。</summary>
@@ -52,17 +51,52 @@ public sealed class WechatPayloadContract
     /// <summary>上游字段映射契约（非泛型视图）。</summary>
     public IPayloadContractAccessor Accessor { get; }
 
-    /// <summary>要求信封的 <c>Event</c> 值（如 <c>change_contact</c> / <c>change_chain</c>）；<c>null</c> = 不校验。</summary>
+    /// <summary>要求信封的<b>外层事件值</b>（<c>Event</c> 节点，套件信封为 <c>InfoType</c> 节点，
+    /// 如 <c>change_contact</c> / <c>change_external_contact</c>）；<c>null</c> = 不校验。</summary>
     public string? RequiredEvent { get; }
 
     /// <summary>要求的事件族；<c>null</c> = 不校验。</summary>
     public WechatCallbackEventFamily? RequiredFamily { get; }
 
-    /// <summary>事件键级开放面：允许的应用模式集合；<c>null</c> = 继承族默认。</summary>
-    public WechatAppTypeSet? SupportedAppTypes { get; }
+    /// <summary>
+    /// 事件键级开放面声明：「（允许的应用模式集合, 要求的回调通道）」组合对集合，任一组命中即许可。
+    /// </summary>
+    /// <remarks>
+    /// 显式声明形态（<see cref="CreateWithOpenSurface"/> / <see cref="CreateWithOpenSurfaces"/>）非空；
+    /// 继承族默认形态（<see cref="Create"/>）为空列表 —— 事件键闸放行，由族级闸
+    /// （<c>WechatAppCallbackOptions.IsEventFamilyAllowed</c>）承担开放面判定。
+    /// </remarks>
+    public IReadOnlyList<WechatOpenSurface> OpenSurfaces => _openSurfaces;
 
-    /// <summary>事件键级开放面：要求的回调通道；<c>null</c> = 继承族默认。</summary>
-    public WechatCallbackChannel? RequiredChannel { get; }
+    /// <summary>
+    /// 报文是否满足本契约的<b>族前置条件</b>（B4：防同名 <c>ChangeType</c> 跨族串门）。
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <see cref="RequiredEvent"/> 比对的是<b>外层事件值</b>（<c>Event</c> 节点优先、套件信封回退
+    /// <c>InfoType</c> 节点，与 <c>WechatCallbackEvent.EventTypeKey</c> 的口径一致）——
+    /// 第三方应用的指令回调（套件信封）无 <c>Event</c> 节点，客户联系/获客族事件的外层事件值在
+    /// <c>InfoType</c> 上。只依赖信封与事件族，<b>不需要</b>应用类型/通道 ⇒
+    /// 读取器即可独立校验（纵深防御：分发器的事件键级闸之外，读取路径再判一次）。
+    /// </para>
+    /// </remarks>
+    public bool MatchesEnvelope(WechatCallbackEvent evt)
+    {
+        if (evt == null)
+            return false;
+
+        if (RequiredEvent != null)
+        {
+            var outerEvent = evt.Event is { Length: > 0 } ? evt.Event : evt.InfoType;
+            if (!string.Equals(outerEvent, RequiredEvent, StringComparison.Ordinal))
+                return false;
+        }
+
+        if (RequiredFamily != null && evt.EventFamily != RequiredFamily.Value)
+            return false;
+
+        return true;
+    }
 
     /// <summary>
     /// 事件键级闸：族前置条件 + 模式/通道声明的联合判定。
@@ -71,40 +105,23 @@ public sealed class WechatPayloadContract
     /// <param name="appType">当前回调条目的应用类型。</param>
     /// <param name="channel">当前回调条目的回调通道。</param>
     /// <returns><c>true</c> = 许可分发；<c>false</c> = 不适用于本回调条目（分发器返回 <c>Rejected</c> → 200 不重推）。</returns>
-    /// <summary>
-    /// 报文是否满足本契约的<b>族前置条件</b>（B4：防同名 <c>ChangeType</c> 跨族串门）。
-    /// </summary>
-    /// <remarks>
-    /// 只依赖信封（<c>Event</c> 值与事件族），<b>不需要</b>应用类型/通道 ⇒
-    /// 读取器即可独立校验（纵深防御：分发器的事件键级闸之外，读取路径再判一次）。
-    /// </remarks>
-    public bool MatchesEnvelope(WechatCallbackEvent evt)
-    {
-        if (evt == null)
-            return false;
-
-        if (RequiredEvent != null && !string.Equals(evt.Event, RequiredEvent, StringComparison.Ordinal))
-            return false;
-
-        if (RequiredFamily != null && evt.EventFamily != RequiredFamily.Value)
-            return false;
-
-        return true;
-    }
-
     public bool IsOpenFor(WechatCallbackEvent evt, WechatAppType appType, WechatCallbackChannel channel)
     {
         if (!MatchesEnvelope(evt))
             return false;
 
-        // 事件键级开放面声明（null ⇒ 继承族默认，由 WechatAppCallbackOptions.IsEventFamilyAllowed 兜底）
-        if (RequiredChannel != null && channel != RequiredChannel.Value)
-            return false;
+        // 开放面声明为空 ⇒ 继承族默认（由 WechatAppCallbackOptions.IsEventFamilyAllowed 兜底）。
+        if (_openSurfaces.Length == 0)
+            return true;
 
-        if (SupportedAppTypes != null && (SupportedAppTypes.Value & ToSet(appType)) == 0)
-            return false;
+        var appTypeSet = ToSet(appType);
+        foreach (var surface in _openSurfaces)
+        {
+            if (surface.RequiredChannel == channel && (surface.SupportedAppTypes & appTypeSet) != 0)
+                return true;
+        }
 
-        return true;
+        return false;
     }
 
     /// <summary>把单一应用类型映射为集合位。</summary>
@@ -123,10 +140,10 @@ public sealed class WechatPayloadContract
         IPayloadContractAccessor accessor,
         string? requiredEvent = null,
         WechatCallbackEventFamily? requiredFamily = null)
-        => new(eventTypeKey, accessor, requiredEvent, requiredFamily, null, null);
+        => new(eventTypeKey, accessor, requiredEvent, requiredFamily, Array.Empty<WechatOpenSurface>());
 
     /// <summary>
-    /// 创建契约并显式声明事件键级开放面（官方 41 键须显式声明，守卫 CB4c 断言）。
+    /// 创建契约并显式声明单一事件键级开放面（组合对便捷形态）。
     /// </summary>
     /// <remarks>
     /// <b>注册期 fail-fast（ADR-15）</b>：声明<b>不得宽于</b>事件族的官方默认（
@@ -142,11 +159,55 @@ public sealed class WechatPayloadContract
         WechatCallbackChannel requiredChannel,
         string? requiredEvent = null,
         WechatCallbackEventFamily? requiredFamily = null)
+        => CreateWithOpenSurfaces(
+            eventTypeKey,
+            accessor,
+            new[] { new WechatOpenSurface(supportedAppTypes, requiredChannel) },
+            requiredEvent,
+            requiredFamily);
+
+    /// <summary>
+    /// 创建契约并显式声明<b>多组</b>事件键级开放面（「（模式集合, 通道）」组合对）。
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>为何需要多组</b>：客户联系/获客族的官方接入方式按应用模式分通道 —— 自建/代开发经应用数据通道、
+    /// 第三方经套件指令通道（官方 92130/92277/96361/97299/98958），单一组合对无法表达。
+    /// 任一组命中即许可分发（<see cref="IsOpenFor"/>）。
+    /// </para>
+    /// <para>「不得宽于官方族默认」的注册期 fail-fast 语义与单组形态一致：声明的<b>每一组</b>
+    /// 都必须被官方基线的某组合对覆盖（模式集合为其子集且通道一致）。</para>
+    /// </remarks>
+    /// <exception cref="ArgumentException">开放面为空/含 <see cref="WechatAppTypeSet.None"/>，
+    /// 或声明宽于官方族默认，或通道与官方不一致。</exception>
+    public static WechatPayloadContract CreateWithOpenSurfaces(
+        string eventTypeKey,
+        IPayloadContractAccessor accessor,
+        WechatOpenSurface[] openSurfaces,
+        string? requiredEvent = null,
+        WechatCallbackEventFamily? requiredFamily = null)
     {
+        if (openSurfaces == null || openSurfaces.Length == 0)
+        {
+            throw new ArgumentException(
+                "事件键 " + eventTypeKey + " 的开放面声明不得为空（ADR-15：官方事件键必须显式声明开放面）。",
+                nameof(openSurfaces));
+        }
+
+        foreach (var surface in openSurfaces)
+        {
+            if (surface.SupportedAppTypes == WechatAppTypeSet.None)
+            {
+                throw new ArgumentException(
+                    "事件键 " + eventTypeKey + " 的开放面声明含 None（空模式集合）—— 该声明不可命中任何应用模式。",
+                    nameof(openSurfaces));
+            }
+        }
+
         WechatEventFamilyOpenSurface.ValidateNotWiderThanFamilyDefault(
-            eventTypeKey, requiredFamily, supportedAppTypes, requiredChannel);
+            eventTypeKey, requiredFamily, openSurfaces);
 
         return new WechatPayloadContract(
-            eventTypeKey, accessor, requiredEvent, requiredFamily, supportedAppTypes, requiredChannel);
+            eventTypeKey, accessor, requiredEvent, requiredFamily, openSurfaces);
     }
 }

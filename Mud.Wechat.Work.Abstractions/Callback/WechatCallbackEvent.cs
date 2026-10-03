@@ -12,8 +12,9 @@ namespace Mud.Wechat.Work.Abstractions.Callback;
 /// </summary>
 /// <remarks>
 /// <para>
-/// 统一承载三类回调事件：授权族（<c>InfoType</c>）、通讯录变更族（<c>Event = change_contact</c> + <c>ChangeType</c>）、
-/// 异步任务族（<c>Event = batch_job_result</c>）。信封仅定义<b>字段契约</b>（全部 <see cref="string"/>/<see cref="bool"/>），
+/// 统一承载各官方事件族的回调报文：授权族（<c>InfoType</c>）、通讯录/上下游/客户联系变更族
+/// （<c>Event</c> 或套件信封 <c>InfoType</c> + <c>ChangeType</c>）、异步任务族与消息与事件族（<c>Event</c>）。
+/// 信封仅定义<b>字段契约</b>（全部 <see cref="string"/>/<see cref="bool"/>），
 /// 不引入 XML 类型——「XML → 信封」的解析由 <c>Mud.Wechat.Work.Callback.WechatCallbackReceiver</c> 完成（CB7 守卫）。
 /// </para>
 /// <para>
@@ -114,14 +115,31 @@ public class WechatCallbackEvent
     public WechatCallbackChannel? Channel { get; internal set; }
 
     /// <summary>
-    /// 事件类型键（处理器匹配键，v1 方案 D4）：<c>InfoType</c>（非空）优先，其次 <c>ChangeType</c>，再次 <c>Event</c>；
-    /// 三者皆空返回空串（仅兜底处理器可见）。
+    /// 事件类型键（处理器匹配键，v1 方案 D4）：
+    /// 客户联系/获客族以<b>族事件值</b>为键（<c>Event</c> 优先、套件信封回退 <c>InfoType</c>）；
+    /// 其余按 <c>InfoType</c> → <c>ChangeType</c> → <c>Event</c> 优先级；三者皆空返回空串（仅兜底处理器可见）。
     /// </summary>
-    /// <remarks>netstandard2.0 的 <c>string.IsNullOrEmpty</c> 无 <c>[NotNullWhen]</c> 标注，改用显式判空收窄。</remarks>
+    /// <remarks>
+    /// <para>
+    /// <b>客户联系/获客族为何以族事件值为键</b>：官方 <c>change_external_chat</c> / <c>change_external_tag</c> 的
+    /// <c>ChangeType</c> 为裸 <c>create</c>/<c>update</c>/<c>delete</c>（跨族同名），且 <c>del_follow_user</c> 同时是
+    /// <c>change_external_contact</c> 与 <c>customer_acquisition</c> 的 <c>ChangeType</c> —— 逐 <c>ChangeType</c> 键
+    /// 无法消歧，故这两族以族事件值为事件键、<c>ChangeType</c> 经信封判别（ADR-1 结构族模型）。
+    /// 第三方应用的指令回调（套件信封）无 <c>Event</c> 节点，外层事件值在 <c>InfoType</c>，
+    /// 与 <c>Event</c> 信封产出<b>同一事件键</b>（三模式键统一，ADR-14）。
+    /// </para>
+    /// <para>netstandard2.0 的 <c>string.IsNullOrEmpty</c> 无 <c>[NotNullWhen]</c> 标注，改用显式判空收窄。</para>
+    /// </remarks>
     public string EventTypeKey
     {
         get
         {
+            var outerEvent = OuterEventValue;
+            if (outerEvent != null && IsExternalContactFamilyEventValue(outerEvent))
+            {
+                return outerEvent;
+            }
+
             if (InfoType != null && InfoType.Length > 0)
             {
                 return InfoType;
@@ -137,17 +155,28 @@ public class WechatCallbackEvent
     }
 
     /// <summary>
-    /// 事件族（<see cref="WechatCallbackEventFamily"/>；按 <c>InfoType</c> → <c>Event</c> 归类，
-    /// 驱动「应用类型 × 回调通道」的开放面合法性闸，见 <c>WechatAppCallbackOptions.IsEventFamilyAllowed</c>）。
+    /// 事件族（<see cref="WechatCallbackEventFamily"/>；客户联系/获客族按外层事件值归类，
+    /// 其余授权族按 <c>InfoType</c>、业务族按 <c>Event</c> 归类，驱动「应用类型 × 回调通道」的开放面合法性闸，
+    /// 见 <c>WechatAppCallbackOptions.IsEventFamilyAllowed</c>）。
     /// </summary>
     /// <remarks>
-    /// <para>判别优先级与 <see cref="EventTypeKey"/> 对齐：授权族（<c>InfoType</c> 非空）最优先，
-    /// 其次按 <c>Event</c> 值归入上下游/通讯录/异步三族，均未命中返回 <see cref="WechatCallbackEventFamily.Unknown"/>（不拦截）。</para>
+    /// <para>判别优先级与 <see cref="EventTypeKey"/> 对齐：客户联系/获客族（外层事件值命中）最优先，
+    /// 其次授权族（<c>InfoType</c> 非空），再次按 <c>Event</c> 值归入上下游/通讯录/异步三族，
+    /// 均未命中返回 <see cref="WechatCallbackEventFamily.Unknown"/>（不拦截）。</para>
     /// </remarks>
     public WechatCallbackEventFamily EventFamily
     {
         get
         {
+            var outerEvent = OuterEventValue;
+            if (outerEvent != null && IsExternalContactFamilyEventValue(outerEvent))
+            {
+                return string.Equals(outerEvent, WechatCallbackEventTypes.CustomerAcquisition, StringComparison.Ordinal) ||
+                       string.Equals(outerEvent, WechatCallbackEventTypes.CustomerAcquisitionPermitChange, StringComparison.Ordinal)
+                    ? WechatCallbackEventFamily.CustomerAcquisition
+                    : WechatCallbackEventFamily.ExternalContactChange;
+            }
+
             if (InfoType != null && InfoType.Length > 0)
             {
                 return WechatCallbackEventFamily.Authorization;
@@ -170,6 +199,32 @@ public class WechatCallbackEvent
 
             return WechatCallbackEventFamily.Unknown;
         }
+    }
+
+    /// <summary>
+    /// 外层事件值：<c>Event</c> 节点优先，套件信封（第三方指令回调，无 <c>Event</c> 节点）回退 <c>InfoType</c>。
+    /// </summary>
+    private string? OuterEventValue
+    {
+        get
+        {
+            if (Event != null && Event.Length > 0)
+            {
+                return Event;
+            }
+
+            return InfoType != null && InfoType.Length > 0 ? InfoType : null;
+        }
+    }
+
+    /// <summary>外层事件值是否属于客户联系/获客族（这两族以族事件值为事件键）。</summary>
+    private static bool IsExternalContactFamilyEventValue(string eventValue)
+    {
+        return string.Equals(eventValue, WechatCallbackEventTypes.ChangeExternalContact, StringComparison.Ordinal) ||
+               string.Equals(eventValue, WechatCallbackEventTypes.ChangeExternalChat, StringComparison.Ordinal) ||
+               string.Equals(eventValue, WechatCallbackEventTypes.ChangeExternalTag, StringComparison.Ordinal) ||
+               string.Equals(eventValue, WechatCallbackEventTypes.CustomerAcquisition, StringComparison.Ordinal) ||
+               string.Equals(eventValue, WechatCallbackEventTypes.CustomerAcquisitionPermitChange, StringComparison.Ordinal);
     }
 
     /// <summary>是否为授权成功事件（create_auth；携带一次性 auth_code）。</summary>
@@ -236,4 +291,50 @@ public class WechatCallbackEvent
     /// </remarks>
     public bool IsBatchJobResult =>
         string.Equals(Event, WechatCallbackEventTypes.BatchJobResult, StringComparison.Ordinal);
+
+    /// <summary>是否为客户联系·企业客户变更事件（外层事件值 = change_external_contact；具体类别看 <see cref="ChangeType"/>）。</summary>
+    /// <remarks>
+    /// 套件信封（第三方指令回调）的该值在 <c>InfoType</c> 节点，本属性同样命中。
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/92130">path 92130 事件格式</see>
+    /// （第三方 <see href="https://developer.work.weixin.qq.com/document/path/92277">92277</see> / 代开发
+    /// <see href="https://developer.work.weixin.qq.com/document/path/96361">96361</see>）。
+    /// </remarks>
+    public bool IsChangeExternalContact =>
+        OuterEventValue != null &&
+        string.Equals(OuterEventValue, WechatCallbackEventTypes.ChangeExternalContact, StringComparison.Ordinal);
+
+    /// <summary>是否为客户群变更事件（外层事件值 = change_external_chat；具体类别看 <see cref="ChangeType"/>）。</summary>
+    /// <remarks>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/92130">path 92130 事件格式</see>。
+    /// </remarks>
+    public bool IsChangeExternalChat =>
+        OuterEventValue != null &&
+        string.Equals(OuterEventValue, WechatCallbackEventTypes.ChangeExternalChat, StringComparison.Ordinal);
+
+    /// <summary>是否为企业客户标签变更事件（外层事件值 = change_external_tag；具体类别看 <see cref="ChangeType"/>）。</summary>
+    /// <remarks>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/92130">path 92130 事件格式</see>。
+    /// </remarks>
+    public bool IsChangeExternalTag =>
+        OuterEventValue != null &&
+        string.Equals(OuterEventValue, WechatCallbackEventTypes.ChangeExternalTag, StringComparison.Ordinal);
+
+    /// <summary>是否为获客助手事件通知（外层事件值 = customer_acquisition；具体类别看 <see cref="ChangeType"/>）。</summary>
+    /// <remarks>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/97299">path 97299 获客助手事件通知</see>
+    /// （第三方 <see href="https://developer.work.weixin.qq.com/document/path/97402">97402</see> / 组件
+    /// <see href="https://developer.work.weixin.qq.com/document/path/99485">99485</see> / 代开发
+    /// <see href="https://developer.work.weixin.qq.com/document/path/98958">98958</see>）。
+    /// </remarks>
+    public bool IsCustomerAcquisition =>
+        OuterEventValue != null &&
+        string.Equals(OuterEventValue, WechatCallbackEventTypes.CustomerAcquisition, StringComparison.Ordinal);
+
+    /// <summary>是否为客户可建联成员范围变动事件（无 ChangeType 分组段）。</summary>
+    /// <remarks>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/92277">path 92277 事件格式</see>（第三方）。
+    /// </remarks>
+    public bool IsCustomerAcquisitionPermitChange =>
+        OuterEventValue != null &&
+        string.Equals(OuterEventValue, WechatCallbackEventTypes.CustomerAcquisitionPermitChange, StringComparison.Ordinal);
 }

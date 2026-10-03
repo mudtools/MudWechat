@@ -10,7 +10,7 @@ using Mud.Wechat.Work.Abstractions.Callback.Payloads;
 namespace Mud.Wechat.Work.Callback.Events.Payloads;
 
 /// <summary>
-/// 官方事件键契约表（41 键）：事件键 → 上游映射表 + 本仓库两级开放面声明。
+/// 官方事件键契约表（46 键）：事件键 → 上游映射表 + 本仓库两级开放面声明。
 /// </summary>
 /// <remarks>
 /// <para>
@@ -31,13 +31,15 @@ namespace Mud.Wechat.Work.Callback.Events.Payloads;
 /// 的报文不得进入上下游载荷）。
 /// </para>
 /// <para>
-/// <b>事件键级开放面（ADR-15）</b>：每条契约<b>显式</b>声明 <c>SupportedAppTypes</c>/<c>RequiredChannel</c>
-/// （守卫 CB4c 断言不得隐式继承）。当前官方开放面恰好与族粒度重合，显式声明的作用是
-/// 把未来的「改闸 + 改守卫」降级为「改一行声明」。
+/// <b>事件键级开放面（ADR-15）</b>：每条契约<b>显式</b>声明 <c>OpenSurfaces</c>（守卫 CB4c 断言不得隐式继承）。
+/// 大多数族的官方开放面与族粒度重合；客户联系/获客族的接入方式按应用模式分通道
+/// （自建·代开发×应用数据通道 + 第三方×套件指令通道），由<b>同键多特性声明合并</b>的多组开放面承载。
 /// </para>
 /// <para>
 /// <b>逐条对照官方文档</b>（守卫 CB4b/CB4c，Tests/**/ContractGuards/WechatCallbackContractGuards.cs）：
 /// 通讯录 90967/90970/90971/90972、异步任务 90973/95797、上下游 95796、
+/// 客户联系 92130（自建）/92277（第三方）/96361（代开发）、
+/// 获客助手 97299（自建）/97402·99485（第三方）/98958（代开发）、
 /// 消息与事件 90240（企业内部开发）/ 90376（第三方）/ 96468（服务商代开发，正文逐字一致）。
 /// 授权族 7 键<b>不登记契约</b>（走信封，ADR-8）。
 /// </para>

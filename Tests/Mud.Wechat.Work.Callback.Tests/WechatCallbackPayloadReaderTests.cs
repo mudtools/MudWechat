@@ -282,8 +282,8 @@ public class WechatCallbackPayloadReaderTests
     {
         var result = CreateReader().Read<GenericCallbackPayload>(new WechatCallbackEvent
         {
-            Event = "change_external_contact",
-            DecryptedXml = "<xml><Event><![CDATA[change_external_contact]]></Event>" +
+            Event = "host_private_event",
+            DecryptedXml = "<xml><Event><![CDATA[host_private_event]]></Event>" +
                            "<ExternalUserID><![CDATA[wo-x]]></ExternalUserID><State><![CDATA[s]]></State></xml>",
         });
 
@@ -660,5 +660,324 @@ public class WechatCallbackPayloadReaderTests
 
         contract!.IsOpenFor(evt, appType, WechatCallbackChannel.App).Should().Be(expected,
             "官方触发时机为「自建/第三方应用调用审批流程引擎」⇒ 不含服务商代开发（90240 审批状态通知事件）");
+    }
+
+    // ---------------------------------------- 客户联系变更族 / 获客助手族（92130/92277/96361/97299/98958/99485）
+
+    /// <summary>第三方应用的指令回调（套件信封）：无 <c>Event</c> 节点，族事件值在 <c>InfoType</c> 节点（官方 92277）。</summary>
+    private static WechatCallbackEvent SuiteEvent(string infoType, string? changeType, string plainXml) => new()
+    {
+        InfoType = infoType,
+        ChangeType = changeType,
+        DecryptedXml = plainXml,
+    };
+
+    [Fact]
+    public void Read_ShouldMapExternalContactFields_WhenAddExternalContact()
+    {
+        // 官方 92130「添加企业客户事件」样报文（企业自建 Event 信封）。
+        var result = CreateReader().Read<ExternalContactChangedPayload>(new WechatCallbackEvent
+        {
+            Event = WechatCallbackEventTypes.ChangeExternalContact,
+            ChangeType = "add_external_contact",
+            DecryptedXml = "<xml><ToUserName><![CDATA[toUser]]></ToUserName><FromUserName><![CDATA[sys]]></FromUserName>" +
+                           "<CreateTime>1403610513</CreateTime><MsgType><![CDATA[event]]></MsgType>" +
+                           "<Event><![CDATA[change_external_contact]]></Event>" +
+                           "<ChangeType><![CDATA[add_external_contact]]></ChangeType>" +
+                           "<UserID><![CDATA[zhangsan]]></UserID>" +
+                           "<ExternalUserID><![CDATA[woAJ2GCAAAXtWyujaWJHDDGi0mAAAA]]></ExternalUserID>" +
+                           "<State><![CDATA[teststate]]></State>" +
+                           "<WelcomeCode><![CDATA[WELCOMECODE]]></WelcomeCode></xml>",
+        });
+
+        result.Status.Should().Be(WechatPayloadReadStatus.Matched);
+        result.Payload!.EventTypeKey.Should().Be("change_external_contact", "客户联系族以族事件值为键");
+        var payload = result.Payload!;
+        payload.UserId.Should().Be("zhangsan");
+        payload.ExternalUserId.Should().Be("woAJ2GCAAAXtWyujaWJHDDGi0mAAAA");
+        payload.State.Should().Be("teststate");
+        payload.WelcomeCode.Should().Be("WELCOMECODE");
+        payload.Source.Should().BeNull("仅删除企业客户事件携带 Source");
+        payload.FailReason.Should().BeNull("仅接替失败事件携带 FailReason");
+    }
+
+    [Fact]
+    public void Read_ShouldMapSameKey_WhenThirdPartySuiteEnvelope()
+    {
+        // 官方 92277 样报文（第三方指令回调，套件信封）：外层事件值在 InfoType ⇒ 与 Event 信封同键。
+        var evt = SuiteEvent(WechatCallbackEventTypes.ChangeExternalContact, "add_external_contact",
+            "<xml><SuiteId><![CDATA[ww4asffe99e54c0f4c]]></SuiteId>" +
+            "<AuthCorpId><![CDATA[wxf8b4f85f3a794e77]]></AuthCorpId>" +
+            "<InfoType><![CDATA[change_external_contact]]></InfoType><TimeStamp>1403610513</TimeStamp>" +
+            "<ChangeType><![CDATA[add_external_contact]]></ChangeType>" +
+            "<UserID><![CDATA[zhangsan]]></UserID>" +
+            "<ExternalUserID><![CDATA[woAJ2GCAAAXtWyujaWJHDDGi0mACH71w]]></ExternalUserID>" +
+            "<State><![CDATA[teststate]]></State></xml>");
+
+        evt.EventTypeKey.Should().Be("change_external_contact", "套件信封与 Event 信封产出同一事件键（三模式键统一）");
+        evt.EventFamily.Should().Be(WechatCallbackEventFamily.ExternalContactChange,
+            "套件信封的 InfoType 承载客户联系族事件值，不得误判为授权族");
+
+        var result = CreateReader().Read<ExternalContactChangedPayload>(evt);
+
+        result.Status.Should().Be(WechatPayloadReadStatus.Matched);
+        result.Payload!.UserId.Should().Be("zhangsan");
+        result.Payload!.ExternalUserId.Should().Be("woAJ2GCAAAXtWyujaWJHDDGi0mACH71w");
+        result.Payload!.WelcomeCode.Should().BeNull("第三方样报文无 WelcomeCode 节点 ⇒ null");
+    }
+
+    [Fact]
+    public void Read_ShouldMapSourceAndFailReason_WhenDeleteOrTransferFail()
+    {
+        var reader = CreateReader();
+
+        var deleted = reader.Read<ExternalContactChangedPayload>(new WechatCallbackEvent
+        {
+            Event = WechatCallbackEventTypes.ChangeExternalContact,
+            ChangeType = "del_external_contact",
+            DecryptedXml = "<xml><Event><![CDATA[change_external_contact]]></Event>" +
+                           "<ChangeType><![CDATA[del_external_contact]]></ChangeType>" +
+                           "<UserID><![CDATA[zhangsan]]></UserID>" +
+                           "<ExternalUserID><![CDATA[wo-x]]></ExternalUserID>" +
+                           "<Source><![CDATA[DELETE_BY_TRANSFER]]></Source></xml>",
+        });
+        deleted.Payload!.Source.Should().Be("DELETE_BY_TRANSFER", "客户因在职继承自动被转接成员删除");
+        deleted.Payload!.WelcomeCode.Should().BeNull();
+
+        var transferFail = reader.Read<ExternalContactChangedPayload>(new WechatCallbackEvent
+        {
+            Event = WechatCallbackEventTypes.ChangeExternalContact,
+            ChangeType = "transfer_fail",
+            DecryptedXml = "<xml><Event><![CDATA[change_external_contact]]></Event>" +
+                           "<ChangeType><![CDATA[transfer_fail]]></ChangeType>" +
+                           "<FailReason><![CDATA[customer_refused]]></FailReason>" +
+                           "<UserID><![CDATA[zhangsan]]></UserID>" +
+                           "<ExternalUserID><![CDATA[wo-x]]></ExternalUserID></xml>",
+        });
+        transferFail.Payload!.FailReason.Should().Be("customer_refused");
+        transferFail.Payload!.State.Should().BeNull("权限/形态分层 ⇒ 缺失即 null，处理器不得假设必有值");
+    }
+
+    [Fact]
+    public void Read_ShouldMapExternalChatMemberChange_WhenUpdate()
+    {
+        // 官方 92130「客户群变更事件」样报文（update 携带成员与版本字段）。
+        var result = CreateReader().Read<ExternalChatChangedPayload>(new WechatCallbackEvent
+        {
+            Event = WechatCallbackEventTypes.ChangeExternalChat,
+            ChangeType = "update",
+            DecryptedXml = "<xml><Event><![CDATA[change_external_chat]]></Event>" +
+                           "<ChatId><![CDATA[wrx7HUARsKwGRaQBVKPBTcEyzdHA4HrQ]]></ChatId>" +
+                           "<ChangeType><![CDATA[update]]></ChangeType>" +
+                           "<UpdateDetail><![CDATA[add_member]]></UpdateDetail>" +
+                           "<JoinScene>1</JoinScene><QuitScene>0</QuitScene><MemChangeCnt>10</MemChangeCnt>" +
+                           "<MemChangeList><Item>Jack</Item><Item>Rose</Item></MemChangeList>" +
+                           "<LastMemVer>9c3f97c2ada667dfb5f6d03308d963e1</LastMemVer>" +
+                           "<CurMemVer>71217227bbd112ecfe3a49c482195cb4</CurMemVer></xml>",
+        });
+
+        result.Status.Should().Be(WechatPayloadReadStatus.Matched);
+        var payload = result.Payload!;
+        payload.ChatId.Should().Be("wrx7HUARsKwGRaQBVKPBTcEyzdHA4HrQ");
+        payload.UpdateDetail.Should().Be("add_member");
+        payload.JoinScene.Should().Be(1, "0 = 成员邀请入群，3 = 扫码入群");
+        payload.QuitScene.Should().Be(0, "0 = 自己退群，1 = 群主/管理员移出");
+        payload.MemberChangeCount.Should().Be(10);
+        payload.MemberChangeList.Should().Equal("Jack", "Rose");
+        payload.LastMemberVersion.Should().Be("9c3f97c2ada667dfb5f6d03308d963e1");
+        payload.CurrentMemberVersion.Should().Be("71217227bbd112ecfe3a49c482195cb4");
+    }
+
+    [Fact]
+    public void Read_ShouldKeepChatAndTagKeysIsolated_WhenSameBareChangeType()
+    {
+        // B4：客户群族与企业客户标签族的 ChangeType 同为裸 create —— 族事件值键 + 载荷类型隔离。
+        var reader = CreateReader();
+
+        var chatCreate = reader.Read<ExternalChatChangedPayload>(new WechatCallbackEvent
+        {
+            Event = WechatCallbackEventTypes.ChangeExternalChat,
+            ChangeType = "create",
+            DecryptedXml = "<xml><Event><![CDATA[change_external_chat]]></Event>" +
+                           "<ChatId><![CDATA[CHAT_ID]]></ChatId><ChangeType><![CDATA[create]]></ChangeType></xml>",
+        });
+        chatCreate.Status.Should().Be(WechatPayloadReadStatus.Matched);
+        chatCreate.Payload!.ChatId.Should().Be("CHAT_ID");
+
+        // 同为裸 create 的标签报文（Event = change_external_tag）不得命中客户群载荷。
+        var tagCreate = reader.Read<ExternalTagChangedPayload>(new WechatCallbackEvent
+        {
+            Event = WechatCallbackEventTypes.ChangeExternalTag,
+            ChangeType = "create",
+            DecryptedXml = "<xml><Event><![CDATA[change_external_tag]]></Event>" +
+                           "<Id><![CDATA[TAG_ID]]></Id><TagType><![CDATA[tag]]></TagType>" +
+                           "<ChangeType><![CDATA[create]]></ChangeType><StrategyId>1</StrategyId></xml>",
+        });
+        tagCreate.Status.Should().Be(WechatPayloadReadStatus.Matched);
+        tagCreate.Payload!.TagId.Should().Be("TAG_ID");
+        tagCreate.Payload!.TagType.Should().Be("tag");
+        tagCreate.Payload!.StrategyId.Should().Be("1");
+
+        // 标签报文请求客户群载荷类型 ⇒ 契约载荷不一致（宿主接线错误），不是降级。
+        var crossType = reader.Read<ExternalChatChangedPayload>(new WechatCallbackEvent
+        {
+            Event = WechatCallbackEventTypes.ChangeExternalTag,
+            ChangeType = "create",
+            DecryptedXml = "<xml><Id>TAG_ID</Id></xml>",
+        });
+        crossType.Status.Should().Be(WechatPayloadReadStatus.ContractMismatch);
+    }
+
+    [Fact]
+    public void Read_ShouldMapExternalTagShuffle_WhenStrategyIdIsTextual()
+    {
+        // 官方 92130「企业客户标签重排事件」：StrategyId 为字符串形态 ⇒ 按文本承载。
+        var result = CreateReader().Read<ExternalTagChangedPayload>(new WechatCallbackEvent
+        {
+            Event = WechatCallbackEventTypes.ChangeExternalTag,
+            ChangeType = "shuffle",
+            DecryptedXml = "<xml><Event><![CDATA[change_external_tag]]></Event>" +
+                           "<Id><![CDATA[TAG_ID]]></Id><StrategyId><![CDATA[STRATEGY_ID]]></StrategyId>" +
+                           "<ChangeType><![CDATA[shuffle]]></ChangeType></xml>",
+        });
+
+        result.Status.Should().Be(WechatPayloadReadStatus.Matched);
+        result.Payload!.TagId.Should().Be("TAG_ID");
+        result.Payload!.StrategyId.Should().Be("STRATEGY_ID");
+        result.Payload!.TagType.Should().BeNull("重排事件无 TagType 节点 ⇒ null");
+    }
+
+    [Fact]
+    public void Read_ShouldMapAcquisitionFields_WhenMessageFromCustomer()
+    {
+        // 官方 97299「成员多次收消息事件」样报文（企业自建 Event 信封）。
+        var result = CreateReader().Read<CustomerAcquisitionPayload>(new WechatCallbackEvent
+        {
+            Event = WechatCallbackEventTypes.CustomerAcquisition,
+            ChangeType = "message_from_customer",
+            DecryptedXml = "<xml><ToUserName><![CDATA[toUser]]></ToUserName><FromUserName><![CDATA[sys]]></FromUserName>" +
+                           "<CreateTime>1403610513</CreateTime><MsgType><![CDATA[event]]></MsgType>" +
+                           "<Event><![CDATA[customer_acquisition]]></Event>" +
+                           "<ChangeType><![CDATA[message_from_customer]]></ChangeType>" +
+                           "<UserID><![CDATA[zhangsan]]></UserID>" +
+                           "<ExternalUserID><![CDATA[woAJ2GCAAAXtWyujaWJHDDGi0mAAAA]]></ExternalUserID>" +
+                           "<LinkId><![CDATA[cawcdea7783d7330c6]]></LinkId><ChatSeq>3</ChatSeq>" +
+                           "<ChatKey><![CDATA[CHATKEY]]></ChatKey></xml>",
+        });
+
+        result.Status.Should().Be(WechatPayloadReadStatus.Matched);
+        result.Payload!.EventTypeKey.Should().Be("customer_acquisition", "获客助手族以族事件值为键");
+        var payload = result.Payload!;
+        payload.UserId.Should().Be("zhangsan");
+        payload.ExternalUserId.Should().Be("woAJ2GCAAAXtWyujaWJHDDGi0mAAAA");
+        payload.LinkId.Should().Be("cawcdea7783d7330c6");
+        payload.ChatSeq.Should().Be(3);
+        payload.ChatKey.Should().Be("CHATKEY");
+        payload.Price.Should().BeNull("仅价格调整事件携带 Price");
+    }
+
+    [Fact]
+    public void Read_ShouldMapAcquisitionFields_WhenBalanceOnly()
+    {
+        // 官方 97299「企业使用量即将耗尽事件」：无业务字段节点 ⇒ 全字段 null 不抛。
+        var result = CreateReader().Read<CustomerAcquisitionPayload>(new WechatCallbackEvent
+        {
+            Event = WechatCallbackEventTypes.CustomerAcquisition,
+            ChangeType = "balance_low",
+            DecryptedXml = "<xml><Event><![CDATA[customer_acquisition]]></Event>" +
+                           "<ChangeType><![CDATA[balance_low]]></ChangeType></xml>",
+        });
+
+        result.Status.Should().Be(WechatPayloadReadStatus.Matched);
+        result.Payload!.LinkId.Should().BeNull();
+        result.Payload!.ExpireTime.Should().BeNull();
+        result.Payload!.ChatKey.Should().BeNull();
+    }
+
+    [Fact]
+    public void Read_ShouldMapAcquisitionComponentFields_WhenSuiteEnvelope()
+    {
+        // 官方 99485 组件形态（第三方套件信封）：service_balance_consumed / change_price。
+        var reader = CreateReader();
+
+        var consumed = reader.Read<CustomerAcquisitionPayload>(SuiteEvent(
+            WechatCallbackEventTypes.CustomerAcquisition, "service_balance_consumed",
+            "<xml><SuiteId><![CDATA[ww4asffe99e54c0f4c]]></SuiteId>" +
+            "<AuthCorpId><![CDATA[wxf8b4f85f3a794e77]]></AuthCorpId>" +
+            "<InfoType><![CDATA[customer_acquisition]]></InfoType><TimeStamp>1403610513</TimeStamp>" +
+            "<ChangeType><![CDATA[service_balance_consumed]]></ChangeType>" +
+            "<LinkId><![CDATA[cawcdea7783d7330c6]]></LinkId><State><![CDATA[STATE]]></State>" +
+            "<OnceKey><![CDATA[ONCEKEY]]></OnceKey></xml>"));
+        consumed.Status.Should().Be(WechatPayloadReadStatus.Matched);
+        consumed.Payload!.LinkId.Should().Be("cawcdea7783d7330c6");
+        consumed.Payload!.State.Should().Be("STATE");
+        consumed.Payload!.OnceKey.Should().Be("ONCEKEY");
+
+        var priceChanged = reader.Read<CustomerAcquisitionPayload>(SuiteEvent(
+            WechatCallbackEventTypes.CustomerAcquisition, "change_price",
+            "<xml><InfoType><![CDATA[customer_acquisition]]></InfoType><TimeStamp>1709222400</TimeStamp>" +
+            "<ChangeType><![CDATA[change_price]]></ChangeType>" +
+            "<Price>30000</Price><EffectiveTime>1709222400</EffectiveTime></xml>"));
+        priceChanged.Status.Should().Be(WechatPayloadReadStatus.Matched);
+        priceChanged.Payload!.Price.Should().Be(30000, "官方价格单位为分");
+        priceChanged.Payload!.EffectiveTime.Should().Be(1709222400L);
+    }
+
+    [Fact]
+    public void Read_ShouldMapPermitChange_WhenSuiteEnvelope()
+    {
+        // 官方 92277「客户可建联成员范围变动事件」：无 ChangeType 分组段、无业务字段节点 ⇒ 键为 InfoType 本身。
+        var evt = SuiteEvent(WechatCallbackEventTypes.CustomerAcquisitionPermitChange, changeType: null,
+            "<xml><SuiteId><![CDATA[ww4asffe99e54c0f4c]]></SuiteId>" +
+            "<AuthCorpId><![CDATA[wxf8b4f85f3a794e77]]></AuthCorpId>" +
+            "<InfoType><![CDATA[customer_acquisition_permit_change]]></InfoType>" +
+            "<TimeStamp>1403610513</TimeStamp></xml>");
+
+        evt.EventTypeKey.Should().Be("customer_acquisition_permit_change");
+        evt.EventFamily.Should().Be(WechatCallbackEventFamily.CustomerAcquisition);
+
+        var result = CreateReader().Read<CustomerAcquisitionPayload>(evt);
+
+        result.Status.Should().Be(WechatPayloadReadStatus.Matched);
+        result.Payload!.LinkId.Should().BeNull("该事件无业务字段节点 ⇒ 复用载荷全字段为 null");
+    }
+
+    [Theory]
+    [InlineData(WechatAppType.Internal, WechatCallbackChannel.App, true)]
+    [InlineData(WechatAppType.Provider, WechatCallbackChannel.App, true)]
+    [InlineData(WechatAppType.ThirdParty, WechatCallbackChannel.Suite, true)]
+    [InlineData(WechatAppType.ThirdParty, WechatCallbackChannel.App, false)]
+    [InlineData(WechatAppType.Internal, WechatCallbackChannel.Suite, false)]
+    [InlineData(WechatAppType.Provider, WechatCallbackChannel.Suite, false)]
+    public void ExternalContactContract_ShouldOpenForOfficialMatrix(
+        WechatAppType appType, WechatCallbackChannel channel, bool expected)
+    {
+        CreateRegistry().TryResolve(WechatCallbackEventTypes.ChangeExternalContact, out var contract)
+            .Should().BeTrue();
+        var evt = new WechatCallbackEvent
+        {
+            Event = WechatCallbackEventTypes.ChangeExternalContact,
+            ChangeType = "add_external_contact",
+        };
+
+        contract!.IsOpenFor(evt, appType, channel).Should().Be(expected,
+            "官方接入矩阵：自建·代开发×应用数据通道 + 第三方×套件指令通道（92130/92277/96361）");
+    }
+
+    [Fact]
+    public void AcquisitionContract_ShouldDeclareBothChannels_WhenSameKeyDeclaredTwice()
+    {
+        CreateRegistry().TryResolve(WechatCallbackEventTypes.CustomerAcquisition, out var contract)
+            .Should().BeTrue();
+
+        contract!.OpenSurfaces.Should().HaveCount(2,
+            "同键双特性声明（自建·代开发×App + 第三方×Suite）合并为一条多组开放面契约");
+        contract.OpenSurfaces.Should().Contain(s =>
+            s.SupportedAppTypes == (WechatAppTypeSet.Internal | WechatAppTypeSet.Provider) &&
+            s.RequiredChannel == WechatCallbackChannel.App);
+        contract.OpenSurfaces.Should().Contain(s =>
+            s.SupportedAppTypes == WechatAppTypeSet.ThirdParty &&
+            s.RequiredChannel == WechatCallbackChannel.Suite);
+        contract.RequiredEvent.Should().Be("customer_acquisition", "RequiredEvent 缺省 = 逐键自指");
     }
 }

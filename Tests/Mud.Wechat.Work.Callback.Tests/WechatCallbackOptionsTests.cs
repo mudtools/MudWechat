@@ -222,4 +222,30 @@ public class WechatCallbackOptionsTests
         AppOf(WechatAppType.Internal, WechatCallbackChannel.App)
             .IsEventFamilyAllowed(WechatCallbackEventFamily.Unknown).Should().BeTrue();
     }
+
+    [Fact]
+    public void IsEventFamilyAllowed_ShouldRouteExternalFamiliesByAppTypeAndChannel()
+    {
+        // 客户联系/获客助手族（92130/92277/96361/97299/98958/99485）：接入方式按应用模式分通道 ——
+        // 自建·代开发经应用数据通道（Event 信封）；第三方经套件指令通道（指令回调 URL，InfoType 信封）。
+        AppOf(WechatAppType.Internal, WechatCallbackChannel.App)
+            .IsEventFamilyAllowed(WechatCallbackEventFamily.ExternalContactChange).Should().BeTrue("自建应用数据通道承载客户联系变更族");
+        AppOf(WechatAppType.Provider, WechatCallbackChannel.App)
+            .IsEventFamilyAllowed(WechatCallbackEventFamily.ExternalContactChange).Should().BeTrue("代开发应用数据通道承载客户联系变更族");
+        AppOf(WechatAppType.ThirdParty, WechatCallbackChannel.Suite)
+            .IsEventFamilyAllowed(WechatCallbackEventFamily.ExternalContactChange).Should().BeTrue("第三方套件指令通道承载客户联系变更族（92277 指令回调 URL）");
+        AppOf(WechatAppType.ThirdParty, WechatCallbackChannel.App)
+            .IsEventFamilyAllowed(WechatCallbackEventFamily.ExternalContactChange).Should().BeFalse("第三方应用数据通道不承载客户联系变更族（官方推送至指令回调 URL）");
+        AppOf(WechatAppType.Internal, WechatCallbackChannel.Suite)
+            .IsEventFamilyAllowed(WechatCallbackEventFamily.ExternalContactChange).Should().BeFalse("套件通道不承载业务事件");
+
+        AppOf(WechatAppType.Internal, WechatCallbackChannel.App)
+            .IsEventFamilyAllowed(WechatCallbackEventFamily.CustomerAcquisition).Should().BeTrue("自建应用数据通道承载获客助手族（97299）");
+        AppOf(WechatAppType.Provider, WechatCallbackChannel.App)
+            .IsEventFamilyAllowed(WechatCallbackEventFamily.CustomerAcquisition).Should().BeTrue("代开发应用数据通道承载获客助手族（98958）");
+        AppOf(WechatAppType.ThirdParty, WechatCallbackChannel.Suite)
+            .IsEventFamilyAllowed(WechatCallbackEventFamily.CustomerAcquisition).Should().BeTrue("第三方套件指令通道承载获客助手族（97402/99485）");
+        AppOf(WechatAppType.ThirdParty, WechatCallbackChannel.App)
+            .IsEventFamilyAllowed(WechatCallbackEventFamily.CustomerAcquisition).Should().BeFalse("第三方应用数据通道不承载获客助手族");
+    }
 }

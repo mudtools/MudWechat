@@ -11,11 +11,9 @@ using Mud.Wechat.Work.Callback.Events.Payloads;
 namespace Mud.Wechat.Work.ContactCallbackDemo.Handlers;
 
 /// <summary>新增部门事件处理器（<c>create_party</c>）。</summary>
-public sealed class CreatePartyHandler : WechatCallbackPayloadHandler<ContactPartyChangedPayload>
+public sealed class CreatePartyHandler(ILogger<CreatePartyHandler> logger) : WechatCallbackPayloadHandler<ContactPartyChangedPayload>
 {
-    private readonly ILogger<CreatePartyHandler> _logger;
-
-    public CreatePartyHandler(ILogger<CreatePartyHandler> logger) => _logger = logger;
+    private readonly ILogger<CreatePartyHandler> _logger = logger;
 
     public override string SupportedEventType => WechatCallbackEventTypes.CreateParty;
 

@@ -76,7 +76,7 @@ pwsh ./scripts/audit-config-keys.ps1                           # 配置消费点
 
 - `net8.0` / `net10.0` 默认启用 AOT/裁剪分析；`AotStrictMode=true` 把 `IL2026;IL2046;IL2050;IL2057;IL2067;IL2070;IL2072;IL2075;IL2080;IL3050` 升为错误；`WarningsAsErrors` 常驻含 `AOT001;AOT002;AOT003;AOT004;AOT007`。
 - **禁止**反射版 `JsonSerializer.Serialize<T>(T, JsonSerializerOptions)` / `Deserialize<T>` —— 一律走 `JsonTypeInfo`（域 `JsonContext`）或 `WechatJsonResolverExtensions` 合并解析器。
-- **JSON 上下文是生成物**：DTO 标 `[HttpJsonSerializable]`（`SerializerClassName` = 命名空间域段，根命名空间直属文件归 `Common`）；`Generated/*JsonContext.g.cs` 由脚本生成、**提交进版本控制、勿手改**；上下文 `internal`，经 `InternalsVisibleTo` 供主包与测试直读。主包合并 **30 个生成上下文 + 1 个手写上下文**（`Abstractions` 的 `Authentication/Models/AuthenticationJsonContext.cs`）。
+- **JSON 上下文是生成物**：DTO 标 `[HttpJsonSerializable]`（`SerializerClassName` = 命名空间域段，根命名空间直属文件归 `Common`）；`Generated/*JsonContext.g.cs` 由脚本生成、**提交进版本控制、勿手改**；上下文 `internal`，经 `InternalsVisibleTo` 供主包与测试直读。主包合并 **31 个生成上下文 + 1 个手写上下文**（`Abstractions` 的 `Authentication/Models/AuthenticationJsonContext.cs`）。
   - **新增 `[HttpJsonSerializable]` 必须同批重跑** `AddHttpJsonSerializable.ps1` + `GenerateJsonContext.ps1`（Abstractions 域手写登记进 `AuthenticationJsonContext`），否则 `AotStrictMode` 下 `AOT006`（error）打红门禁步骤 2。
   - 已知边界：开放泛型 `WechatChatbotResponse<>` 不登记（STJ 源生成器不生成其元数据，SYSLIB1030）；关闭 `--auto-derived-types`；工具运行期 `AOT003`（多态缺 `[JsonDerivedType]`）为**已知误报**。
   - 核对工具：`dotnet tool install -g Mud.HttpUtils.JsonContextScaffolder` → `mud-jsonctx --project Mud.Wechat.Work.DataModels\Mud.Wechat.Work.DataModels.csproj --dry-run`。
@@ -107,7 +107,7 @@ Mud.Wechat/
 | 域 | 接口目录 | DTO 目录（命名空间后缀） | 模块 / 注册入口 |
 |---|---|---|---|
 | 通讯录 | `Interfaces/Contacts/`（Export 独立子目录） | `Contacts/{Users,Department,Tags,ContactRules,Batch,Export}/` | `Contact` / `AddContactApi()` |
-| 客户联系 | `Interfaces/ExternalContact/` | `ExternalContact/{FollowUser,Customer,Tag,JobInheritance,ResignedInheritance,GroupChat,ContactWay,Moment,CustomerAcquisition,GroupMsg,Statistics,ProductAlbum,InterceptRule,Attachment,ServedContact}/` | `ExternalContact` / `AddExternalContactApi()` |
+| 客户联系 | `Interfaces/ExternalContact/` | `ExternalContact/{FollowUser,Customer,Tag,JobInheritance,ResignedInheritance,GroupChat,ContactWay,Moment,CustomerAcquisition,AcquisitionComponent,GroupMsg,Statistics,ProductAlbum,InterceptRule,Attachment,ServedContact}/` | `ExternalContact` / `AddExternalContactApi()` |
 | 上下游 | `Interfaces/CorpGroup/` | `CorpGroup/{基础,ChainContacts,Rules}/` | `CorpGroup` / `AddCorpGroupApi()` |
 | 安全管理 | `Interfaces/Security/` | `Security/`（单一命名空间） | `Security` / `AddSecurityApi()` |
 | 消息推送 | `Interfaces/Message/` | `Message/`（单一命名空间） | `Message` / `AddMessageApi()` |
@@ -212,6 +212,7 @@ Mud.Wechat/
 | T / CT / JI / RI / GC | 标签 / 客户标签 / 在职继承 / 离职继承 / 客户群 | 官方三类应用开放完全一致 ⇒ 全收敛父接口（7 / 9 / 3 / 4 / 3 条） |
 | CW / MO / CA / GM / ST / PA / IR / UA / SC | 客户联系·联系我与客户入群方式 / 客户朋友圈 / 获客助手 / 消息推送（群发） / 统计管理 / 商品图册 / 聊天敏感词 / 上传附件资源 / 获取已服务的外部联系人 | 官方三类应用开放完全一致 ⇒ 全收敛父接口（10 / 14 / 9 / 11 / 3 / 5 / 5 / 1 / — 条；SC 官方仅自建开放，第三方/代开发暂不支持 ⇒ 零端点父接口 + 仅自建子接口）；`get_moment_task_result`（jobid 走 Query）、`customer_acquisition_quota`、`get_intercept_rule_list` 为 GET、其余全 POST；`get_contact_way` 官方即 POST（勿改 GET）；群发记录列表为 `get_groupmsg_list_v2`（带 v2 后缀）；敏感词删除路由为 `del_intercept_rule`（非 delete）；群聊统计用 offset + limit 分页（区别于本模块其它域的 cursor + limit）；上传附件资源在 `/cgi-bin/media/upload_attachment`（multipart，文件参数须标 `[MultipartForm]` —— 生成器 3.0.1 对 `[FormContent]` 发射的 `GetFormDataContentAsync` 调用在运行时接口不存在（CS1061），`[MultipartForm]` 才走 `IFormContent.ToHttpContentAsync` 通路） |
 | CR1~CR4 | 通讯录·查看权限 | 父接口零端点 + Internal 恰 4 条（全 POST）；**不设**第三方/代开发子接口 |
+| AC1~AC4 | 客户联系·获客助手组件（仅第三方应用开放：6 端点 + 代支付流水 1 端点） | 两族父接口零端点 + 仅第三方子接口承载（继承链恰 1 子）；代支付流水 `get_bill_list` 走 **`suite_access_token`**（获客助手组件的应用凭证，路由在 `/cgi-bin/service/` 下、授权企业以请求体 `auth_corpid` 指定）⇒ 独立接口族/令牌路由键，其余 6 端点走企业级 `access_token`；组件版 `list_link`/`get`/`statistic`/`create_once_key`/`get_chat_info` 与获客助手直连版**共用路由**（组件仅可见授权给组件的链接）；组件版 `get` 响应仅 `link_name`+`url`、`get_chat_info` 响应**无**顶层 `userid`/`external_userid`（与直连版差异点）；获客助手事件通知（99485）为回调推送，由 Callback 包承载、不设 HTTP 端点 |
 | B1~B4 / E1~E4 | 通讯录·异步导入 / 导出 | 父接口 4 条（3 POST + 1 GET）/ 5 条（4 POST + 1 GET）；导入不设代开发子接口 |
 | FU / CU | 客户联系·服务人员 / 客户管理 | 父 1 + 第三方 1 差异端点（自建零）；父 10 + 第三方 3 身份转换差异端点（自建、代开发零） |
 | CG1~CG11 | 上下游 | 基础：父 6 条全 POST + 继承链恰 3 子接口；通讯录：父 4 + 自建 5（代开发零）；规则：父零端点 + Internal 恰 5 |

@@ -111,6 +111,7 @@ Mud.Wechat/
 | 上下游 | `Interfaces/CorpGroup/` | `CorpGroup/{基础,ChainContacts,Rules}/` | `CorpGroup` / `AddCorpGroupApi()` |
 | 安全管理 | `Interfaces/Security/` | `Security/`（单一命名空间） | `Security` / `AddSecurityApi()` |
 | 消息推送 | `Interfaces/Message/` | `Message/`（单一命名空间） | `Message` / `AddMessageApi()` |
+| 账号ID | `Interfaces/AccountId/` | `AccountId/`（单一命名空间） | `AccountId` / `AddAccountIdApi()` |
 
 - 接口命名空间一律 `Mud.Wechat.Work`（**不含** `Interfaces` 段）；DTO 命名空间为 `Mud.Wechat.Work.DataModels.{域}[.{子域}]`。
 - `RequestModel/`、`ResponseModel/` **仅作目录组织，命名空间不含该目录段**。
@@ -218,6 +219,7 @@ Mud.Wechat/
 | CG1~CG11 | 上下游 | 基础：父 6 条全 POST + 继承链恰 3 子接口；通讯录：父 4 + 自建 5（代开发零）；规则：父零端点 + Internal 恰 5 |
 | SEC1~SEC4 | 安全管理 | 三族父接口零端点 + 自建恰 9 / 5 / 2 条；**不设**第三方/代开发子接口（官方无文档） |
 | MSG1~MSG4 | 消息推送 | 应用消息族父 13 + 第三方恰 1；AppChat / SchoolMessage / SmartSheetGroupChat 父零端点 + 仅 Internal 承载 |
+| ACCT1~ACCT4 | 账号ID | 七接口族跨三种令牌路由键：ID 转换族父 9 + ThirdParty 空标记 + Provider 恰 2（群 ID 升级 99601）；tmp 转换族父 1 + 三类空标记子接口；自建对接族父零端点 + Internal 恰 3（`openuserid_to_userid` 双场景同路由多方法）；corpid 转换族 / 迁移完成状态族 / 智能机器人族走 provider 令牌（父 1 + 空子接口、父 1 + ThirdParty 恰 1、父 1）；群 ID 升级族走 suite 令牌（父零端点 + 仅 Provider 1）；`apply_mass_call_ticket` / `upgrade_chatid_for_new_corp` 为 GET 且无请求体；`get_openid_migration` 为无请求体 POST；`external_userid_to_pending_id` 请求体数组字段名官方为 `external_userid`（无 `_list` 后缀）；智能机器人路由沿用 `userid_to_openuserid` 命名但实际方向为 open_userid → userid |
 | CB1~CB13 | 回调 | 包依赖边界、53 个事件键与 `EventTypeKey` 优先级、兜底处理器形态与文件路径、事件 DTO 字段、凭据唯一来源、echo 不消费指纹、32 字节块填充（禁内置 PKCS7）、指纹闸次序、通道枚举与配置面、`receiveid` 三元分流、开放面矩阵、合法性闸次序 |
 | MA1~MA4 | 多应用（`Abstractions.Tests`） | `RemoveApp` 删除顺序、重建异常白名单、退役队列 `_disposed` 闸、`SetCorp` 参数校验。守卫为**方法体文本断言**（花括号配平），签名漂移须同步更新 |
 | RD-G1~RD-G6 | Redis（`Redis.Tests`） | SCAN 仅经 `WechatRedisKeyBuilder.Pattern` 单一出口、配置无 `required`、重放守卫 fail-closed 上抛、凭据不进日志、全名探测防漂移、单依赖 Abstractions |

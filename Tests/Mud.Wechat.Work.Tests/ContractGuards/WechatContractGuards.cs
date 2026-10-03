@@ -297,6 +297,29 @@ public class WechatContractGuards
                 nameof(IWechatWorkInternalSchoolMessageService),
                 nameof(IWechatWorkSmartSheetGroupChatService),
                 nameof(IWechatWorkInternalSmartSheetGroupChatService),
+                // 账号ID域（AccountId 模块）：七接口族跨三种令牌路由键——ID 转换族 / tmp_external_userid 转换族 /
+                // 自建应用对接族走企业级 access_token；corpid 转换族 / ID 迁移完成状态族 / 智能机器人 userid 转换族
+                // 走 provider_access_token；群 ID 升级（新授权企业）族走 suite_access_token。
+                nameof(IWechatWorkAccountIdService),
+                nameof(IWechatWorkThirdPartyAccountIdService),
+                nameof(IWechatWorkProviderAccountIdService),
+                nameof(IWechatWorkAccountIdTmpExternalUserIdService),
+                nameof(IWechatWorkInternalAccountIdTmpExternalUserIdService),
+                nameof(IWechatWorkThirdPartyAccountIdTmpExternalUserIdService),
+                nameof(IWechatWorkProviderAccountIdTmpExternalUserIdService),
+                nameof(IWechatWorkAccountIdInteropService),
+                nameof(IWechatWorkInternalAccountIdInteropService),
+                nameof(IWechatWorkAccountIdCorpidService),
+                nameof(IWechatWorkThirdPartyAccountIdCorpidService),
+                nameof(IWechatWorkProviderAccountIdCorpidService),
+                nameof(IWechatWorkAccountIdMigrationService),
+                nameof(IWechatWorkThirdPartyAccountIdMigrationService),
+                nameof(IWechatWorkProviderAccountIdMigrationService),
+                nameof(IWechatWorkAccountIdBotService),
+                nameof(IWechatWorkThirdPartyAccountIdBotService),
+                nameof(IWechatWorkProviderAccountIdBotService),
+                nameof(IWechatWorkAccountIdChatIdUpgradeService),
+                nameof(IWechatWorkProviderAccountIdChatIdUpgradeService),
             },
             "企业微信官方契约强制 Query 注入（MUD005 已知接受风险），新增 Query 注入接口须评估后扩展本守卫");
     }

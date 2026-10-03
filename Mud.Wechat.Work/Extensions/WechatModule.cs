@@ -33,4 +33,7 @@ public enum WechatModule
 
     /// <summary>消息推送（发送应用消息 + 群聊会话 + 家校学校通知：公共面收敛父接口；template_msg 仅第三方差异端点，群聊会话/学校通知官方仅自建）。</summary>
     Message,
+
+    /// <summary>账号ID（ID 转换 + tmp_external_userid 转换 + 自建应用对接 + corpid 转换 + ID 迁移完成状态 + 智能机器人 userid 转换 + 群 ID 升级，跨 access/provider/suite 三种令牌路由键七接口族）。</summary>
+    AccountId,
 }

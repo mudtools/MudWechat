@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+	<PropertyGroup>
+		<RootNamespace>Mud.Wechat.Work.ContactCallbackDemo</RootNamespace>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<!-- Callback 包传递引用 Abstractions（含 AddWechatApp）+ DataModels，无需额外引用主包 Work。 -->
+		<ProjectReference Include="..\..\Mud.Wechat.Work.Callback\Mud.Wechat.Work.Callback.csproj" />
+	</ItemGroup>
+
+</Project>

@@ -1,0 +1,19 @@
+<Project>
+	<!-- 遮蔽根 Directory.Build.props：Demo 是单 TFM 可执行应用，非多目标库、非 AOT/裁剪目标。
+	     根 props 的复数 TargetFrameworks 与 Exe（OutputType）冲突（NETSDK1005），须在此清空并改为单数 TargetFramework；
+	     同时关闭 AOT/trim 分析器与 WarningsAsErrors，避免 Demo 的反射配置绑定产生 IL2026/IL3050 噪音。 -->
+	<PropertyGroup>
+		<TargetFrameworks></TargetFrameworks>
+		<TargetFramework>net8.0</TargetFramework>
+		<OutputType>Exe</OutputType>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<LangVersion>13.0</LangVersion>
+		<IsAotCompatible>false</IsAotCompatible>
+		<EnableTrimAnalyzer>false</EnableTrimAnalyzer>
+		<EnableAotAnalyzer>false</EnableAotAnalyzer>
+		<WarningsAsErrors></WarningsAsErrors>
+		<GenerateDocumentationFile>false</GenerateDocumentationFile>
+		<IsPackable>false</IsPackable>
+	</PropertyGroup>
+</Project>

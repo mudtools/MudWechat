@@ -76,7 +76,7 @@ pwsh ./scripts/audit-config-keys.ps1                           # 配置消费点
 
 - `net8.0` / `net10.0` 默认启用 AOT/裁剪分析；`AotStrictMode=true` 把 `IL2026;IL2046;IL2050;IL2057;IL2067;IL2070;IL2072;IL2075;IL2080;IL3050` 升为错误；`WarningsAsErrors` 常驻含 `AOT001;AOT002;AOT003;AOT004;AOT007`。
 - **禁止**反射版 `JsonSerializer.Serialize<T>(T, JsonSerializerOptions)` / `Deserialize<T>` —— 一律走 `JsonTypeInfo`（域 `JsonContext`）或 `WechatJsonResolverExtensions` 合并解析器。
-- **JSON 上下文是生成物**：DTO 标 `[HttpJsonSerializable]`（`SerializerClassName` = 命名空间域段，根命名空间直属文件归 `Common`）；`Generated/*JsonContext.g.cs` 由脚本生成、**提交进版本控制、勿手改**；上下文 `internal`，经 `InternalsVisibleTo` 供主包与测试直读。主包合并 **24 个生成上下文 + 1 个手写上下文**（`Abstractions` 的 `Authentication/Models/AuthenticationJsonContext.cs`）。
+- **JSON 上下文是生成物**：DTO 标 `[HttpJsonSerializable]`（`SerializerClassName` = 命名空间域段，根命名空间直属文件归 `Common`）；`Generated/*JsonContext.g.cs` 由脚本生成、**提交进版本控制、勿手改**；上下文 `internal`，经 `InternalsVisibleTo` 供主包与测试直读。主包合并 **26 个生成上下文 + 1 个手写上下文**（`Abstractions` 的 `Authentication/Models/AuthenticationJsonContext.cs`）。
   - **新增 `[HttpJsonSerializable]` 必须同批重跑** `AddHttpJsonSerializable.ps1` + `GenerateJsonContext.ps1`（Abstractions 域手写登记进 `AuthenticationJsonContext`），否则 `AotStrictMode` 下 `AOT006`（error）打红门禁步骤 2。
   - 已知边界：开放泛型 `WechatChatbotResponse<>` 不登记（STJ 源生成器不生成其元数据，SYSLIB1030）；关闭 `--auto-derived-types`；工具运行期 `AOT003`（多态缺 `[JsonDerivedType]`）为**已知误报**。
   - 核对工具：`dotnet tool install -g Mud.HttpUtils.JsonContextScaffolder` → `mud-jsonctx --project Mud.Wechat.Work.DataModels\Mud.Wechat.Work.DataModels.csproj --dry-run`。
@@ -107,7 +107,7 @@ Mud.Wechat/
 | 域 | 接口目录 | DTO 目录（命名空间后缀） | 模块 / 注册入口 |
 |---|---|---|---|
 | 通讯录 | `Interfaces/Contacts/`（Export 独立子目录） | `Contacts/{Users,Department,Tags,ContactRules,Batch,Export}/` | `Contact` / `AddContactApi()` |
-| 客户联系 | `Interfaces/ExternalContact/` | `ExternalContact/{FollowUser,Customer,Tag,JobInheritance,ResignedInheritance,GroupChat,ContactWay,Moment,CustomerAcquisition}/` | `ExternalContact` / `AddExternalContactApi()` |
+| 客户联系 | `Interfaces/ExternalContact/` | `ExternalContact/{FollowUser,Customer,Tag,JobInheritance,ResignedInheritance,GroupChat,ContactWay,Moment,CustomerAcquisition,GroupMsg,Statistics}/` | `ExternalContact` / `AddExternalContactApi()` |
 | 上下游 | `Interfaces/CorpGroup/` | `CorpGroup/{基础,ChainContacts,Rules}/` | `CorpGroup` / `AddCorpGroupApi()` |
 | 安全管理 | `Interfaces/Security/` | `Security/`（单一命名空间） | `Security` / `AddSecurityApi()` |
 | 消息推送 | `Interfaces/Message/` | `Message/`（单一命名空间） | `Message` / `AddMessageApi()` |
@@ -209,7 +209,7 @@ Mud.Wechat/
 |---|---|---|
 | U1~U4 / D1~D4 | 通讯录·成员 / 部门 | 父接口 `IsAbstract`，三子挂 `Contact` 组并 `InheritedFrom` 父实现类（子接口 `DeclaredOnly` 限定声明位置）；路由表 23 / 9 条；代开发零端点 |
 | T / CT / JI / RI / GC | 标签 / 客户标签 / 在职继承 / 离职继承 / 客户群 | 官方三类应用开放完全一致 ⇒ 全收敛父接口（7 / 9 / 3 / 4 / 3 条） |
-| CW / MO / CA | 客户联系·联系我与客户入群方式 / 客户朋友圈 / 获客助手 | 官方三类应用开放完全一致 ⇒ 全收敛父接口（10 / 14 / 9 条）；`get_moment_task_result`（jobid 走 Query）与 `customer_acquisition_quota` 为 GET、其余全 POST；`get_contact_way` 官方即 POST（勿改 GET） |
+| CW / MO / CA / GM / ST | 客户联系·联系我与客户入群方式 / 客户朋友圈 / 获客助手 / 消息推送（群发） / 统计管理 | 官方三类应用开放完全一致 ⇒ 全收敛父接口（10 / 14 / 9 / 11 / 3 条）；`get_moment_task_result`（jobid 走 Query）与 `customer_acquisition_quota` 为 GET、其余全 POST；`get_contact_way` 官方即 POST（勿改 GET）；群发记录列表为 `get_groupmsg_list_v2`（带 v2 后缀）；群聊统计用 offset + limit 分页（区别于本模块其它域的 cursor + limit） |
 | CR1~CR4 | 通讯录·查看权限 | 父接口零端点 + Internal 恰 4 条（全 POST）；**不设**第三方/代开发子接口 |
 | B1~B4 / E1~E4 | 通讯录·异步导入 / 导出 | 父接口 4 条（3 POST + 1 GET）/ 5 条（4 POST + 1 GET）；导入不设代开发子接口 |
 | FU / CU | 客户联系·服务人员 / 客户管理 | 父 1 + 第三方 1 差异端点（自建零）；父 10 + 第三方 3 身份转换差异端点（自建、代开发零） |

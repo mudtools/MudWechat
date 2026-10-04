@@ -889,4 +889,55 @@ public class WechatServiceCollectionExtensionsTests
         scope.ServiceProvider.GetRequiredService<IWechatWorkInternalIdentityTfaService>().Should().NotBeNull(
             "ValidateScopes = true 变体下子 scope 内同样可解析");
     }
+
+    /// <summary>
+    /// Wedoc 模块（文档域：管理文档族 + 管理文档内容族 + 管理表格内容族 + 管理智能表格内容族四族，
+    /// 均为三类应用公共面）：AddWedocApi 注册的 12 个应用类型子接口客户端必须可解析
+    /// （四族公共父接口 IsAbstract 不参与 DI 注册，调用方须按应用类型选择子接口）。
+    /// </summary>
+    [Fact]
+    public void AddWedocApi_ShouldRegisterWedocDomainClients_ResolvableInRootAndScope()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddWechatApp(new List<WechatAppConfig> { InternalConfig() });
+        services.AddWechatWorkServices(builder => builder.AddWedocApi());
+
+        using var provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true });
+
+        provider.GetRequiredService<IWechatWorkInternalWedocService>().Should().NotBeNull();
+        provider.GetRequiredService<IWechatWorkProviderWedocService>().Should().NotBeNull();
+        provider.GetRequiredService<IWechatWorkThirdPartyWedocService>().Should().NotBeNull();
+        provider.GetRequiredService<IWechatWorkInternalWedocDocumentService>().Should().NotBeNull();
+        provider.GetRequiredService<IWechatWorkProviderWedocDocumentService>().Should().NotBeNull();
+        provider.GetRequiredService<IWechatWorkThirdPartyWedocDocumentService>().Should().NotBeNull();
+        provider.GetRequiredService<IWechatWorkInternalWedocSpreadsheetService>().Should().NotBeNull();
+        provider.GetRequiredService<IWechatWorkProviderWedocSpreadsheetService>().Should().NotBeNull();
+        provider.GetRequiredService<IWechatWorkThirdPartyWedocSpreadsheetService>().Should().NotBeNull();
+        provider.GetRequiredService<IWechatWorkInternalWedocSmartSheetService>().Should().NotBeNull(
+            "管理智能表格内容族注册自建子接口（承载 20 个子表/视图/字段/记录/编组端点）");
+        provider.GetRequiredService<IWechatWorkProviderWedocSmartSheetService>().Should().NotBeNull(
+            "管理智能表格内容族注册代开发子接口");
+        provider.GetRequiredService<IWechatWorkThirdPartyWedocSmartSheetService>().Should().NotBeNull(
+            "管理智能表格内容族注册第三方子接口");
+
+        provider.GetService<IWechatWorkWedocService>().Should().BeNull(
+            "公共父接口 IsAbstract = true，不得注册进 DI（调用方须按应用类型选择子接口）");
+        provider.GetService<IWechatWorkWedocDocumentService>().Should().BeNull(
+            "公共父接口 IsAbstract = true，不得注册进 DI（调用方须按应用类型选择子接口）");
+        provider.GetService<IWechatWorkWedocSpreadsheetService>().Should().BeNull(
+            "公共父接口 IsAbstract = true，不得注册进 DI（调用方须按应用类型选择子接口）");
+        provider.GetService<IWechatWorkWedocSmartSheetService>().Should().BeNull(
+            "公共父接口 IsAbstract = true，不得注册进 DI（调用方须按应用类型选择子接口）");
+
+        using var scope = provider.CreateScope();
+        scope.ServiceProvider.GetRequiredService<IWechatWorkInternalWedocService>().Should().NotBeNull(
+            "ValidateScopes = true 变体下子 scope 内同样可解析");
+        scope.ServiceProvider.GetRequiredService<IWechatWorkProviderWedocSpreadsheetService>().Should().NotBeNull(
+            "ValidateScopes = true 变体下子 scope 内同样可解析");
+        scope.ServiceProvider.GetRequiredService<IWechatWorkInternalWedocSmartSheetService>().Should().NotBeNull(
+            "ValidateScopes = true 变体下子 scope 内同样可解析");
+        scope.ServiceProvider.GetRequiredService<IWechatWorkThirdPartyWedocSmartSheetService>().Should().NotBeNull(
+            "ValidateScopes = true 变体下子 scope 内同样可解析");
+    }
 }

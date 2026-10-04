@@ -152,7 +152,7 @@ public class WechatWorkServiceBuilder
     /// <summary>注册邮件业务接口（应用邮箱侧：发送邮件族与获取接收的邮件族为三类应用公共面收敛父接口 + 空标记子接口，普通/日程/会议三端点共用 compose_send 路由；管理端侧：管理邮件群组/管理公共邮箱/高级功能账号/成员邮箱操作/其他邮件客户端登录设置五族官方仅自建开放，不设第三方/代开发子接口）。</summary>
     public WechatWorkServiceBuilder AddMailApi() => AddModule(WechatModule.Mail);
 
-    /// <summary>注册文档业务接口（管理文档族 + 管理文档内容族 + 管理表格内容族：三类应用公共面收敛父接口 + 空标记子接口；编辑文档内容与编辑表格内容为批量更新形态，单次操作数量官方分别限制 30 与 5）。</summary>
+    /// <summary>注册文档业务接口（管理文档族 + 管理文档内容族 + 管理表格内容族 + 管理智能表格内容族：三类应用公共面收敛父接口 + 空标记子接口；编辑文档内容与编辑表格内容为批量更新形态，单次操作数量官方分别限制 30 与 5；管理智能表格内容族为 20 个端点，子表/视图/字段/记录/编组各 4 个）。</summary>
     public WechatWorkServiceBuilder AddWedocApi() => AddModule(WechatModule.Wedoc);
 
     /// <summary>注册全部模块。</summary>

@@ -77,15 +77,15 @@ scripts/                      # verify-build / audit-config-keys / GenerateJsonC
 | 域 | 接口目录 | DTO 目录（命名空间后缀） | 模块 / 注册入口 |
 |---|---|---|---|
 | 通讯录 | `Interfaces/Contacts/`（Export 独立子目录） | `Contacts/{Users,Department,Tags,ContactRules,Batch,Export}/` | `Contact` / `AddContactApi()` |
-| 客户联系 | `Interfaces/ExternalContact/` | `ExternalContact/{FollowUser,Customer,Tag,JobInheritance,ResignedInheritance,GroupChat,ContactWay,Moment,CustomerAcquisition,AcquisitionComponent,GroupMsg,Statistics,ProductAlbum,InterceptRule,Attachment,ServedContact}/` | `ExternalContact` / `AddExternalContactApi()` |
+| 客户联系 | `Interfaces/ExternalContact/{FollowUser,Customer,Tag,JobInheritance,ResignedInheritance,GroupChat,ContactWay,Moment,CustomerAcquisition,AcquisitionComponent,GroupMsg,Statistics,ProductAlbum,InterceptRule,Attachment,ServedContact}/` | `ExternalContact/{FollowUser,Customer,Tag,JobInheritance,ResignedInheritance,GroupChat,ContactWay,Moment,CustomerAcquisition,AcquisitionComponent,GroupMsg,Statistics,ProductAlbum,InterceptRule,Attachment,ServedContact}/` | `ExternalContact` / `AddExternalContactApi()` |
 | 上下游 | `Interfaces/CorpGroup/` | `CorpGroup/{基础,ChainContacts,Rules}/` | `CorpGroup` / `AddCorpGroupApi()` |
 | 安全管理 | `Interfaces/Security/` | `Security/` | `Security` / `AddSecurityApi()` |
 | 消息推送 | `Interfaces/Message/` | `Message/` | `Message` / `AddMessageApi()` |
-| 账号ID | `Interfaces/AccountId/` | `AccountId/` | `AccountId` / `AddAccountIdApi()` |
+| 账号ID | `Interfaces/AccountId/{IdConvert,TmpExternalUserId,Corpid,Bot,Interop,Migration,ChatIdUpgrade}/` | `AccountId/` | `AccountId` / `AddAccountIdApi()` |
 | 微信客服 | `Interfaces/KF/` | `Kf/` | `Kf` / `AddKfApi()` |
-| 企业支付 | `Interfaces/Pay/` | `Pay/` | `Pay` / `AddPayApi()` |
+| 企业支付 | `Interfaces/Pay/{Bill,FundFlow,MchApply,Merchant,Order,Refund,TradeBill}/` | `Pay/` | `Pay` / `AddPayApi()` |
 | 会话内容存档 | `Interfaces/MsgAudit/` | `MsgAudit/` | `MsgAudit` / `AddMsgAuditApi()` |
-| 家校沟通 | `Interfaces/School/`（健康上报/上课直播/班级收款独立子目录） | `School/{基础,HealthReport,Living,ClassPay}/` | `School` / `AddSchoolApi()` |
+| 家校沟通 | `Interfaces/School/{Basic,Auth,Department,Setting,User,HealthReport,Living,ClassPay}/`（按功能族分子目录，目录不参与命名空间） | `School/{基础,HealthReport,Living,ClassPay}/` | `School` / `AddSchoolApi()` |
 | 身份验证 | `Interfaces/Identity/` | `Identity/` | `Identity` / `AddIdentityApi()` |
 
 - 接口命名空间一律 `Mud.Wechat.Work`（**不含** `Interfaces` 段）；DTO 命名空间 `Mud.Wechat.Work.DataModels.{域}[.{子域}]`。

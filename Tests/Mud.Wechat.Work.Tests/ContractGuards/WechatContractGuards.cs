@@ -476,6 +476,25 @@ public class WechatContractGuards
                 nameof(IWechatWorkInternalSchoolAuthService),
                 nameof(IWechatWorkProviderSchoolAuthService),
                 nameof(IWechatWorkThirdPartySchoolAuthService),
+                // 家校沟通·健康上报域（School 模块）：4 个端点官方仅自建应用开放
+                //（使用统计 93676、任务 ID 列表 93677、任务详情 93678、用户填写答案 93679；
+                // 第三方/代开发官方「暂不支持」，父接口 + 仅自建空标记子接口）。
+                nameof(IWechatWorkSchoolHealthReportService),
+                nameof(IWechatWorkInternalSchoolHealthReportService),
+                // 家校沟通·上课直播域（School 模块）：7 个端点为三类应用公共面
+                //（老师直播 ID 列表 93739/93856/97127、直播详情 93740/93857/97128（GET，livingid 走 Query）、
+                // 观看/未观看统计 93741/93858/97129、93742/93859/97130、删除回放 93743/93860/97131、
+                // 观看/未观看统计 V2 95793/95799/97132、95795/95800/97133；父接口 + 三个应用类型空标记子接口）。
+                nameof(IWechatWorkSchoolLivingService),
+                nameof(IWechatWorkInternalSchoolLivingService),
+                nameof(IWechatWorkThirdPartySchoolLivingService),
+                nameof(IWechatWorkProviderSchoolLivingService),
+                // 家校沟通·班级收款域（School 模块）：2 个端点官方仅自建与第三方应用开放
+                //（学生付款结果 94470/94553、订单详情 94471/94554；代开发无服务端查询接口，
+                // 父接口 + 自建/第三方空标记子接口）。
+                nameof(IWechatWorkSchoolClassPayService),
+                nameof(IWechatWorkInternalSchoolClassPayService),
+                nameof(IWechatWorkThirdPartySchoolClassPayService),
                 // 素材管理域（Media 模块）：公共面 6 端点为三类应用公共面收敛父接口 + 空标记子接口
                 //（上传临时素材 90253/90389/96484、获取临时素材 90256/90390/96486、上传图片 90254/90392/96485、
                 // 获取高清语音素材 90255/90391/96487、异步上传临时素材 96219/97126/96488）；

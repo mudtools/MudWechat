@@ -1,0 +1,31 @@
+// -----------------------------------------------------------------------
+//  作者：Mud Studio  版权所有 (c) Mud Studio 2026
+//  Mud.Wechat 项目的版权、商标、专利和其他相关权利均受相应法律法规的保护。
+//  本项目主要遵循 MIT 许可证进行分发和使用。许可证位于源代码树根目录中的 LICENSE-MIT 文件。
+//  不得利用本项目从事危害国家安全、扰乱社会秩序、侵犯他人合法权益等法律法规禁止的活动！任何基于本项目开发而产生的一切法律纠纷和责任，我们不承担任何责任！
+// -----------------------------------------------------------------------
+
+namespace Mud.Wechat.Work.DataModels.Gov;
+
+/// <summary>
+/// 事件类别信息项（<c>/cgi-bin/report/grid/list_cata</c> 响应 <c>category_list</c> 元素，政民沟通配置事件类别域）。
+/// </summary>
+[HttpJsonSerializable(SerializerClassName = "Gov")]
+public class GovEventCategoryInfo
+{
+    /// <summary>获取或设置分类 id。</summary>
+    [JsonPropertyName("category_id")]
+    public string? CategoryId { get; set; }
+
+    /// <summary>获取或设置分类名称。</summary>
+    [JsonPropertyName("category_name")]
+    public string? CategoryName { get; set; }
+
+    /// <summary>获取或设置分类层级（1 一级分类 / 2 二级分类）。</summary>
+    [JsonPropertyName("level")]
+    public int? Level { get; set; }
+
+    /// <summary>获取或设置所属的一级分类的 id。分类层级为 1 时，该字段为空。</summary>
+    [JsonPropertyName("parent_category_id")]
+    public string? ParentCategoryId { get; set; }
+}

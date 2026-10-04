@@ -51,7 +51,7 @@ AOT / Trim（`net8.0`、`net10.0` 默认开启分析；`AotStrictMode=true` 把 
 
 - **禁反射版 `JsonSerializer.Serialize<T>(T, JsonSerializerOptions)` / `Deserialize<T>`** —— 一律走 `JsonTypeInfo`（域 `JsonContext`）或 `WechatJsonResolverExtensions` 合并解析器。
 - `Generated/*JsonContext.g.cs` 是**生成物**：提交进版本控制、**勿手改**，改 DTO 后重跑脚本。
-- 主包合并 **44 个生成上下文 + 1 个手写上下文**（`Abstractions` 的 `Authentication/Models/AuthenticationJsonContext.cs`）：DTO 标 `[HttpJsonSerializable]`（`SerializerClassName` = 命名空间域段，根命名空间直属文件归 `Common`），上下文 `internal` 经 `InternalsVisibleTo` 供主包与测试直读。
+- 主包合并 **45 个生成上下文 + 1 个手写上下文**（`Abstractions` 的 `Authentication/Models/AuthenticationJsonContext.cs`）：DTO 标 `[HttpJsonSerializable]`（`SerializerClassName` = 命名空间域段，根命名空间直属文件归 `Common`），上下文 `internal` 经 `InternalsVisibleTo` 供主包与测试直读。
 - 配置绑定为源生成（`EnableConfigurationBindingGenerator=true`）：配置 DTO **禁 `required`**（生成器以 `new T()` 构造 ⇒ `CS9035`），校验写进 `Validate()`；绑定必须走 `Configure<T>(o => section.Bind(o))`，**不要**用 `Configure<T>(IConfiguration)` 重载（反射绑定无法被源生成器拦截，破坏 `IL2026`/`IL3050` 净零）。
 - `UnconditionalSuppressMessageAttribute` 在 `net10.0` 为 `internal`，用户代码不可引用；必要时 `#pragma warning disable` 并附理由注释。
 - 已知边界：开放泛型 `WechatChatbotResponse<>` 不登记（`SYSLIB1030`）；工具运行期 `AOT003` 为已知误报。
@@ -91,6 +91,7 @@ scripts/                      # verify-build / audit-config-keys / GenerateJsonC
 | 身份验证 | `Interfaces/Identity/` | `Identity/` | `Identity` / `AddIdentityApi()` |
 | 政民沟通 | `Interfaces/Gov/{Grid,EventCategory,Patrol,Resident}/`（按功能族分子目录，目录不参与命名空间） | `Gov/{Grid,EventCategory,Patrol,Resident,Report}/`（子目录仅作组织，命名空间统一 `Gov` 段；`Report/` 为巡查/居民上报两族复用嵌套类型） | `Gov` / `AddGovApi()` |
 | 数据与智能专区 | `Interfaces/DataZone/`（基础接口域 + 应用调用专区程序域两族；差异端点在子接口：获取授权信息官方不支持自建、文档存档授权信息官方仅第三方） | `DataZone/` | `DataZone` / `AddDataZoneApi()` |
+| 审批 | `Interfaces/Approval/`（审批申请数据域 + 审批模板域 + 假期管理域 + 审批流程引擎域四族；差异端点在子接口：获取审批数据（旧）官方仅自建、创建/更新模板自建与代开发开放（第三方官方暂不支持）、复制/更新模板到企业官方仅第三方） | `Approval/` | `Approval` / `AddApprovalApi()` |
 
 - 接口命名空间一律 `Mud.Wechat.Work`（**不含** `Interfaces` 段）；DTO 命名空间 `Mud.Wechat.Work.DataModels.{域}[.{子域}]`。
 - `RequestModel/`、`ResponseModel/` 仅作目录组织，命名空间不含该目录段。

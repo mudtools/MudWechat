@@ -88,6 +88,9 @@ public class WechatWorkServiceBuilder
             [WechatModule.DataZone] = new WechatModuleRegistrar(
                 WechatModule.DataZone,
                 s => s.AddDataZoneWebApiHttpClient()),
+            [WechatModule.Approval] = new WechatModuleRegistrar(
+                WechatModule.Approval,
+                s => s.AddApprovalWebApiHttpClient()),
         };
 
     /// <summary>注册授权流业务接口与授权编排服务（get_pre_auth_code / set_session_info / get_permanent_code / get_auth_info / get_customized_auth_url + 编排）。</summary>
@@ -137,6 +140,9 @@ public class WechatWorkServiceBuilder
 
     /// <summary>注册数据与智能专区业务接口（基础接口域为三类应用公共面 + 差异端点子接口：获取授权信息官方不支持自建、文档存档授权信息官方仅第三方；应用调用专区程序域为三类应用公共面 + 空标记子接口）。</summary>
     public WechatWorkServiceBuilder AddDataZoneApi() => AddModule(WechatModule.DataZone);
+
+    /// <summary>注册审批业务接口（审批申请数据域为三类应用公共面 + 差异端点子接口：获取审批数据（旧）官方仅自建；审批模板域为三类应用公共面 + 差异端点子接口：创建/更新模板自建与代开发开放、复制/更新模板到企业官方仅第三方；假期管理域与审批流程引擎域为三类应用公共面 + 空标记子接口）。</summary>
+    public WechatWorkServiceBuilder AddApprovalApi() => AddModule(WechatModule.Approval);
 
     /// <summary>注册全部模块。</summary>
     public WechatWorkServiceBuilder AddAllApis()

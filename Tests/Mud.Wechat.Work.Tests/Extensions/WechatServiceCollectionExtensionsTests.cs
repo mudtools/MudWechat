@@ -792,6 +792,67 @@ public class WechatServiceCollectionExtensionsTests
     }
 
     /// <summary>
+    /// Approval 模块（审批域：审批申请数据域 + 审批模板域 + 假期管理域 + 审批流程引擎域四族；
+    /// 获取审批数据（旧）官方仅自建、创建/更新模板自建与代开发开放（官方对第三方标注暂不支持）、
+    /// 复制/更新模板到企业官方仅第三方）：AddApprovalApi 注册的 12 个应用类型子接口客户端必须可解析
+    /// （四族公共父接口 IsAbstract 不参与 DI 注册，调用方须按应用类型选择子接口）。
+    /// </summary>
+    [Fact]
+    public void AddApprovalApi_ShouldRegisterApprovalDomainClients_ResolvableInRootAndScope()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddWechatApp(new List<WechatAppConfig> { InternalConfig() });
+        services.AddWechatWorkServices(builder => builder.AddApprovalApi());
+
+        using var provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true });
+
+        provider.GetRequiredService<IWechatWorkInternalApprovalService>().Should().NotBeNull(
+            "审批申请数据域注册自建子接口（额外承载官方仅自建开放的获取审批数据（旧））");
+        provider.GetRequiredService<IWechatWorkProviderApprovalService>().Should().NotBeNull(
+            "审批申请数据域注册代开发子接口");
+        provider.GetRequiredService<IWechatWorkThirdPartyApprovalService>().Should().NotBeNull(
+            "审批申请数据域注册第三方子接口");
+        provider.GetRequiredService<IWechatWorkInternalApprovalTemplateService>().Should().NotBeNull(
+            "审批模板域注册自建子接口（额外承载创建/更新审批模板）");
+        provider.GetRequiredService<IWechatWorkProviderApprovalTemplateService>().Should().NotBeNull(
+            "审批模板域注册代开发子接口（额外承载创建/更新审批模板）");
+        provider.GetRequiredService<IWechatWorkThirdPartyApprovalTemplateService>().Should().NotBeNull(
+            "审批模板域注册第三方子接口（额外承载官方仅第三方开放的复制/更新模板到企业）");
+        provider.GetRequiredService<IWechatWorkInternalVacationService>().Should().NotBeNull(
+            "假期管理域注册自建子接口");
+        provider.GetRequiredService<IWechatWorkProviderVacationService>().Should().NotBeNull(
+            "假期管理域注册代开发子接口");
+        provider.GetRequiredService<IWechatWorkThirdPartyVacationService>().Should().NotBeNull(
+            "假期管理域注册第三方子接口");
+        provider.GetRequiredService<IWechatWorkInternalApprovalEngineService>().Should().NotBeNull(
+            "审批流程引擎域注册自建子接口");
+        provider.GetRequiredService<IWechatWorkProviderApprovalEngineService>().Should().NotBeNull(
+            "审批流程引擎域注册代开发子接口");
+        provider.GetRequiredService<IWechatWorkThirdPartyApprovalEngineService>().Should().NotBeNull(
+            "审批流程引擎域注册第三方子接口");
+
+        provider.GetService<IWechatWorkApprovalService>().Should().BeNull(
+            "公共父接口 IsAbstract = true，不得注册进 DI（调用方须按应用类型选择子接口）");
+        provider.GetService<IWechatWorkApprovalTemplateService>().Should().BeNull(
+            "公共父接口 IsAbstract = true，不得注册进 DI（调用方须按应用类型选择子接口）");
+        provider.GetService<IWechatWorkVacationService>().Should().BeNull(
+            "公共父接口 IsAbstract = true，不得注册进 DI（调用方须按应用类型选择子接口）");
+        provider.GetService<IWechatWorkApprovalEngineService>().Should().BeNull(
+            "公共父接口 IsAbstract = true，不得注册进 DI（调用方须按应用类型选择子接口）");
+
+        using var scope = provider.CreateScope();
+        scope.ServiceProvider.GetRequiredService<IWechatWorkInternalApprovalService>().Should().NotBeNull(
+            "ValidateScopes = true 变体下子 scope 内同样可解析");
+        scope.ServiceProvider.GetRequiredService<IWechatWorkThirdPartyApprovalTemplateService>().Should().NotBeNull(
+            "ValidateScopes = true 变体下子 scope 内同样可解析");
+        scope.ServiceProvider.GetRequiredService<IWechatWorkProviderVacationService>().Should().NotBeNull(
+            "ValidateScopes = true 变体下子 scope 内同样可解析");
+        scope.ServiceProvider.GetRequiredService<IWechatWorkInternalApprovalEngineService>().Should().NotBeNull(
+            "ValidateScopes = true 变体下子 scope 内同样可解析");
+    }
+
+    /// <summary>
     /// Identity 模块（身份验证域：网页授权登录/企业微信Web登录身份获取域 + 第三方套件级身份获取域 + 二次验证域）：
     /// AddIdentityApi 注册的应用类型子接口客户端必须可解析（身份获取族公共父接口 IsAbstract + 自建/代开发空标记子接口；
     /// 第三方身份获取族与二次验证族均为零端点父接口 IsAbstract + 唯一子接口承载端点）。

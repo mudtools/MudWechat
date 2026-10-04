@@ -592,6 +592,28 @@ public class WechatContractGuards
                 nameof(IWechatWorkInternalMailUserService),
                 nameof(IWechatWorkMailUserOptionService),
                 nameof(IWechatWorkInternalMailUserOptionService),
+                // 文档·管理文档族（Wedoc 模块）：5 个端点为三类应用公共面
+                //（新建文档 97460/97464/97470、重命名文档 97736/97745/97740、删除文档 97735/97746/97742、
+                // 获取文档基础信息 97734/97747/97743、分享文档 97733/97748/97744；
+                // 父接口 + 三个应用类型空标记子接口）。
+                nameof(IWechatWorkWedocService),
+                nameof(IWechatWorkInternalWedocService),
+                nameof(IWechatWorkThirdPartyWedocService),
+                nameof(IWechatWorkProviderWedocService),
+                // 文档·管理文档内容族（Wedoc 模块）：2 个端点为三类应用公共面
+                //（编辑文档内容 97626/98027/98034、获取文档数据 101161/101188/101170；
+                // 父接口 + 三个应用类型空标记子接口）。
+                nameof(IWechatWorkWedocDocumentService),
+                nameof(IWechatWorkInternalWedocDocumentService),
+                nameof(IWechatWorkThirdPartyWedocDocumentService),
+                nameof(IWechatWorkProviderWedocDocumentService),
+                // 文档·管理表格内容族（Wedoc 模块）：3 个端点为三类应用公共面
+                //（编辑表格内容 101168/101190/101169、获取表格数据 97711/98031/98038、
+                // 获取表格行列信息 97661/98030/98037；父接口 + 三个应用类型空标记子接口）。
+                nameof(IWechatWorkWedocSpreadsheetService),
+                nameof(IWechatWorkInternalWedocSpreadsheetService),
+                nameof(IWechatWorkThirdPartyWedocSpreadsheetService),
+                nameof(IWechatWorkProviderWedocSpreadsheetService),
             },
             "企业微信官方契约强制 Query 注入（MUD005 已知接受风险），新增 Query 注入接口须评估后扩展本守卫");
     }

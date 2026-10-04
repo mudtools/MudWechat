@@ -578,6 +578,20 @@ public class WechatContractGuards
                 //（更新应用邮箱账号 97373、查询应用邮箱账号 97991；零端点父接口 + 仅自建子接口）。
                 nameof(IWechatWorkMailAccountService),
                 nameof(IWechatWorkInternalMailAccountService),
+                // 邮件·管理端五族（Mail 模块）：官方均仅自建应用开放
+                //（管理邮件群组 95510/97995/97996/97997/97998、管理公共邮箱 95511/98000/98001/98002/98003/100183/100184、
+                // 高级功能账号 99316/99317/99318、成员邮箱操作 95512/95514、其他邮件客户端登录设置 95513/98008；
+                // 各族零端点父接口 + 仅自建子接口承载）。
+                nameof(IWechatWorkMailGroupService),
+                nameof(IWechatWorkInternalMailGroupService),
+                nameof(IWechatWorkMailPublicMailService),
+                nameof(IWechatWorkInternalMailPublicMailService),
+                nameof(IWechatWorkMailVipService),
+                nameof(IWechatWorkInternalMailVipService),
+                nameof(IWechatWorkMailUserService),
+                nameof(IWechatWorkInternalMailUserService),
+                nameof(IWechatWorkMailUserOptionService),
+                nameof(IWechatWorkInternalMailUserOptionService),
             },
             "企业微信官方契约强制 Query 注入（MUD005 已知接受风险），新增 Query 注入接口须评估后扩展本守卫");
     }

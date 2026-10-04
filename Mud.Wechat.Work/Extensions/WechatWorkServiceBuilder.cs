@@ -5,7 +5,6 @@
 //  不得利用本项目从事危害国家安全、扰乱社会秩序、侵犯他人合法权益等法律法规禁止的活动！任何基于本项目开发而产生的一切法律纠纷和责任，我们不承担任何责任！
 // -----------------------------------------------------------------------
 
-using Mud.Wechat.Work.Abstractions.Authentication;
 using Mud.Wechat.Work.Services.Authorization;
 
 namespace Mud.Wechat.Work.Extensions;
@@ -97,6 +96,9 @@ public class WechatWorkServiceBuilder
             [WechatModule.Emergency] = new WechatModuleRegistrar(
                 WechatModule.Emergency,
                 s => s.AddEmergencyWebApiHttpClient()),
+            [WechatModule.Wedoc] = new WechatModuleRegistrar(
+                WechatModule.Wedoc,
+                s => s.AddWedocWebApiHttpClient()),
         };
 
     /// <summary>注册授权流业务接口与授权编排服务（get_pre_auth_code / set_session_info / get_permanent_code / get_auth_info / get_customized_auth_url + 编排）。</summary>
@@ -155,6 +157,9 @@ public class WechatWorkServiceBuilder
 
     /// <summary>注册紧急通知业务接口（发起语音电话 + 获取接听状态官方仅自建应用开放，零端点父接口 + 仅自建子接口承载端点；不设第三方/代开发子接口）。</summary>
     public WechatWorkServiceBuilder AddEmergencyApi() => AddModule(WechatModule.Emergency);
+
+    /// <summary>注册文档业务接口（管理文档族 + 管理文档内容族 + 管理表格内容族：三类应用公共面收敛父接口 + 空标记子接口；编辑文档内容与编辑表格内容为批量更新形态，单次操作数量官方分别限制 30 与 5）。</summary>
+    public WechatWorkServiceBuilder AddWedocApi() => AddModule(WechatModule.Wedoc);
 
     /// <summary>注册全部模块。</summary>
     public WechatWorkServiceBuilder AddAllApis()
@@ -230,7 +235,7 @@ public class WechatWorkServiceBuilder
                 "示例：services.AddWechatApp(configuration, \"WechatApps\").AddWechatWorkServices(builder => builder.AddAuthenticationApi());");
         }
 
-        // errcode 令牌失效判定器（Mud.HttpUtils v2.0.9）：TokenRecoveryOptions 编程式注入。
+        // errcode 令牌失效判定器（Mud.HttpUtils v3.0.1）：TokenRecoveryOptions 编程式注入。
         _services.AddWechatTokenInvalidationDetector();
 
 #if NET8_0_OR_GREATER

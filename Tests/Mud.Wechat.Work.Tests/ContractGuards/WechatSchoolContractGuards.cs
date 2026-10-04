@@ -10,6 +10,9 @@ using Mud.HttpUtils.Attributes;
 using Mud.Wechat.Work;
 using Mud.Wechat.Work.Abstractions;
 using Mud.Wechat.Work.DataModels.School;
+using Mud.Wechat.Work.DataModels.School.ClassPay;
+using Mud.Wechat.Work.DataModels.School.HealthReport;
+using Mud.Wechat.Work.DataModels.School.Living;
 
 namespace Mud.Wechat.Work.Tests.ContractGuards;
 
@@ -20,7 +23,10 @@ namespace Mud.Wechat.Work.Tests.ContractGuards;
 /// 学生与家长管理域：16 个端点为三类应用公共面，收敛父接口 + 空标记子接口；
 /// 部门管理域：5 个端点为三类应用公共面，收敛父接口 + 空标记子接口；
 /// 网页授权登录域：自建/代开发公共面收敛父接口，第三方为独立路由且走 suite_access_token
-/// 令牌路由键，独立成接口、不继承公共父接口）。
+/// 令牌路由键，独立成接口、不继承公共父接口；
+/// 健康上报域：官方仅自建开放（第三方/代开发暂不支持），不设第三方与代开发子接口；
+/// 上课直播域：7 个端点为三类应用公共面，收敛父接口 + 空标记子接口；
+/// 班级收款域：官方仅自建与第三方开放（代开发无服务端查询接口），不设代开发子接口）。
 /// </summary>
 /// <remarks>
 /// <para>
@@ -51,6 +57,12 @@ public class WechatSchoolContractGuards
     private const string SchoolDepartmentParentImplementationClassName = "WechatWorkSchoolDepartmentService";
 
     private const string SchoolAuthParentImplementationClassName = "WechatWorkSchoolAuthService";
+
+    private const string SchoolHealthReportParentImplementationClassName = "WechatWorkSchoolHealthReportService";
+
+    private const string SchoolLivingParentImplementationClassName = "WechatWorkSchoolLivingService";
+
+    private const string SchoolClassPayParentImplementationClassName = "WechatWorkSchoolClassPayService";
 
     private const string SchoolRegistryGroupName = "School";
 
@@ -236,6 +248,83 @@ public class WechatSchoolContractGuards
     };
 
     /// <summary>
+    /// 健康上报域官方路由表（官方仅自建应用开放，第三方/代开发「暂不支持」，4 条端点全部收敛父接口）。
+    /// </summary>
+    private static readonly (Type Interface, string Method, Type HttpAttribute, string Route)[] SchoolHealthReportRoutes =
+    {
+        // 获取健康上报使用统计（93676；官方即 POST）。
+        (typeof(IWechatWorkSchoolHealthReportService),
+            nameof(IWechatWorkSchoolHealthReportService.GetHealthReportStatAsync),
+            typeof(PostAttribute), "/cgi-bin/health/get_health_report_stat"),
+        // 获取健康上报任务 ID 列表（93677；官方即 POST）。
+        (typeof(IWechatWorkSchoolHealthReportService),
+            nameof(IWechatWorkSchoolHealthReportService.GetReportJobIdsAsync),
+            typeof(PostAttribute), "/cgi-bin/health/get_report_jobids"),
+        // 获取健康上报任务详情（93678；官方即 POST）。
+        (typeof(IWechatWorkSchoolHealthReportService),
+            nameof(IWechatWorkSchoolHealthReportService.GetReportJobInfoAsync),
+            typeof(PostAttribute), "/cgi-bin/health/get_report_job_info"),
+        // 获取用户填写答案（93679；官方即 POST）。
+        (typeof(IWechatWorkSchoolHealthReportService),
+            nameof(IWechatWorkSchoolHealthReportService.GetReportAnswerAsync),
+            typeof(PostAttribute), "/cgi-bin/health/get_report_answer"),
+    };
+
+    /// <summary>
+    /// 上课直播域官方路由表（三类应用公共面，7 条端点全部收敛父接口；
+    /// 获取老师直播 ID 列表与删除直播回放官方路由位于 /cgi-bin/living/ 段、
+    /// 其余 5 条位于 /cgi-bin/school/living/ 段，照抄不纠正；
+    /// 获取直播详情官方即 GET（livingid 走 Query），其余官方即 POST）。
+    /// </summary>
+    private static readonly (Type Interface, string Method, Type HttpAttribute, string Route)[] SchoolLivingRoutes =
+    {
+        // 获取老师直播 ID 列表（自建 93739、第三方 93856、代开发 97127）。
+        (typeof(IWechatWorkSchoolLivingService),
+            nameof(IWechatWorkSchoolLivingService.GetUserAllLivingIdAsync),
+            typeof(PostAttribute), "/cgi-bin/living/get_user_all_livingid"),
+        // 获取直播详情（自建 93740、第三方 93857、代开发 97128；官方即 GET，livingid 走 Query）。
+        (typeof(IWechatWorkSchoolLivingService),
+            nameof(IWechatWorkSchoolLivingService.GetLivingInfoAsync),
+            typeof(GetAttribute), "/cgi-bin/school/living/get_living_info"),
+        // 获取观看直播统计（自建 93741、第三方 93858、代开发 97129）。
+        (typeof(IWechatWorkSchoolLivingService),
+            nameof(IWechatWorkSchoolLivingService.GetWatchStatAsync),
+            typeof(PostAttribute), "/cgi-bin/school/living/get_watch_stat"),
+        // 获取未观看直播统计（自建 93742、第三方 93859、代开发 97130）。
+        (typeof(IWechatWorkSchoolLivingService),
+            nameof(IWechatWorkSchoolLivingService.GetUnwatchStatAsync),
+            typeof(PostAttribute), "/cgi-bin/school/living/get_unwatch_stat"),
+        // 删除直播回放（自建 93743、第三方 93860、代开发 97131）。
+        (typeof(IWechatWorkSchoolLivingService),
+            nameof(IWechatWorkSchoolLivingService.DeleteReplayDataAsync),
+            typeof(PostAttribute), "/cgi-bin/living/delete_replay_data"),
+        // 获取观看直播统计 V2（自建 95793、第三方 95799、代开发 97132）。
+        (typeof(IWechatWorkSchoolLivingService),
+            nameof(IWechatWorkSchoolLivingService.GetWatchStatV2Async),
+            typeof(PostAttribute), "/cgi-bin/school/living/get_watch_stat_v2"),
+        // 获取未观看直播统计 V2（自建 95795、第三方 95800、代开发 97133）。
+        (typeof(IWechatWorkSchoolLivingService),
+            nameof(IWechatWorkSchoolLivingService.GetUnwatchStatV2Async),
+            typeof(PostAttribute), "/cgi-bin/school/living/get_unwatch_stat_v2"),
+    };
+
+    /// <summary>
+    /// 班级收款域官方路由表（官方仅自建与第三方开放，服务商代开发无服务端查询接口，
+    /// 2 条端点全部收敛父接口；发起班级收款为 JS-SDK / 小程序客户端能力，不属于本域）。
+    /// </summary>
+    private static readonly (Type Interface, string Method, Type HttpAttribute, string Route)[] SchoolClassPayRoutes =
+    {
+        // 获取学生付款结果（自建 94470、第三方 94553）。
+        (typeof(IWechatWorkSchoolClassPayService),
+            nameof(IWechatWorkSchoolClassPayService.GetPaymentResultAsync),
+            typeof(PostAttribute), "/cgi-bin/school/get_payment_result"),
+        // 获取订单详情（自建 94471、第三方 94554）。
+        (typeof(IWechatWorkSchoolClassPayService),
+            nameof(IWechatWorkSchoolClassPayService.GetTradeAsync),
+            typeof(PostAttribute), "/cgi-bin/school/get_trade"),
+    };
+
+    /// <summary>
     /// 契约守卫 SCH1a：家校沟通基础域全部端点路由必须与官方契约一致
     /// （7 个端点为三类应用公共面，全部收敛父接口；二维码/关注模式/班级群创建方式/家长范围
     /// 官方即 GET，勿改成 POST）。
@@ -392,6 +481,91 @@ public class WechatSchoolContractGuards
     }
 
     /// <summary>
+    /// 契约守卫 SCH1f：健康上报域全部端点路由必须与官方契约一致
+    /// （官方仅自建应用开放，第三方/代开发「暂不支持」；4 个端点官方即 POST，勿「顺手统一」为 GET）。
+    /// </summary>
+    [Fact]
+    public void SchoolHealthReportEndpoints_ShouldMatchOfficialRoutes()
+    {
+        SchoolHealthReportRoutes.Should().HaveCount(4,
+            "健康上报域 4 个端点官方仅自建应用开放，全部收敛父接口");
+
+        var distinctRoutes = SchoolHealthReportRoutes.Select(r => r.Route).Distinct().ToList();
+        distinctRoutes.Should().HaveCount(4, "健康上报域各端点路由互不重复");
+        distinctRoutes.Should().OnlyContain(r => r.StartsWith("/cgi-bin/health/", StringComparison.Ordinal),
+            "健康上报域全部路由位于 /cgi-bin/health/ 段");
+
+        foreach (var (iface, method, httpAttribute, route) in SchoolHealthReportRoutes)
+        {
+            var target = iface.GetMethod(method, BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+            target.Should().NotBeNull($"{iface.Name}.{method} 必须存在");
+
+            var attr = target!.GetCustomAttribute(httpAttribute) as HttpMethodAttribute;
+            attr.Should().NotBeNull($"{iface.Name}.{method} 必须声明 [{httpAttribute.Name.Replace("Attribute", string.Empty)}] 路由");
+            attr!.RequestUri.Should().Be(route, $"{iface.Name}.{method} 路由必须与官方契约一致");
+        }
+    }
+
+    /// <summary>
+    /// 契约守卫 SCH1g：上课直播域全部端点路由必须与官方契约一致
+    /// （7 个端点为三类应用公共面；获取直播详情官方即 GET（livingid 走 Query）、其余官方即 POST；
+    /// 获取老师直播 ID 列表与删除直播回放官方路由位于 /cgi-bin/living/ 段，勿「顺手归位」到 school 段）。
+    /// </summary>
+    [Fact]
+    public void SchoolLivingEndpoints_ShouldMatchOfficialRoutes()
+    {
+        SchoolLivingRoutes.Should().HaveCount(7,
+            "上课直播域 7 个端点为三类应用公共面，全部收敛父接口");
+
+        var distinctRoutes = SchoolLivingRoutes.Select(r => r.Route).Distinct().ToList();
+        distinctRoutes.Should().HaveCount(7, "上课直播域各端点路由互不重复");
+
+        foreach (var (iface, method, httpAttribute, route) in SchoolLivingRoutes)
+        {
+            var target = iface.GetMethod(method, BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+            target.Should().NotBeNull($"{iface.Name}.{method} 必须存在");
+
+            var attr = target!.GetCustomAttribute(httpAttribute) as HttpMethodAttribute;
+            attr.Should().NotBeNull($"{iface.Name}.{method} 必须声明 [{httpAttribute.Name.Replace("Attribute", string.Empty)}] 路由");
+            attr!.RequestUri.Should().Be(route, $"{iface.Name}.{method} 路由必须与官方契约一致");
+        }
+
+        // 路由段契约：2 条端点位于 /cgi-bin/living/ 段（官方原文），5 条位于 /cgi-bin/school/living/ 段。
+        SchoolLivingRoutes.Count(r => r.Route.StartsWith("/cgi-bin/living/", StringComparison.Ordinal))
+            .Should().Be(2, "获取老师直播 ID 列表与删除直播回放的官方路由位于 /cgi-bin/living/ 段");
+        SchoolLivingRoutes.Count(r => r.Route.StartsWith("/cgi-bin/school/living/", StringComparison.Ordinal))
+            .Should().Be(5, "其余 5 条上课直播端点的官方路由位于 /cgi-bin/school/living/ 段");
+
+        // Query 参数契约：获取直播详情的 livingid 为官方 Query 参数，必须以 [Query("livingid")] 标注。
+        AssertHasQueryParameter(typeof(IWechatWorkSchoolLivingService),
+            nameof(IWechatWorkSchoolLivingService.GetLivingInfoAsync), "livingid");
+    }
+
+    /// <summary>
+    /// 契约守卫 SCH1h：班级收款域全部端点路由必须与官方契约一致
+    /// （官方仅自建与第三方开放，服务商代开发无服务端查询接口；2 个端点官方即 POST）。
+    /// </summary>
+    [Fact]
+    public void SchoolClassPayEndpoints_ShouldMatchOfficialRoutes()
+    {
+        SchoolClassPayRoutes.Should().HaveCount(2,
+            "班级收款域 2 个端点官方仅自建与第三方应用开放，全部收敛父接口");
+
+        var distinctRoutes = SchoolClassPayRoutes.Select(r => r.Route).Distinct().ToList();
+        distinctRoutes.Should().HaveCount(2, "班级收款域各端点路由互不重复");
+
+        foreach (var (iface, method, httpAttribute, route) in SchoolClassPayRoutes)
+        {
+            var target = iface.GetMethod(method, BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+            target.Should().NotBeNull($"{iface.Name}.{method} 必须存在");
+
+            var attr = target!.GetCustomAttribute(httpAttribute) as HttpMethodAttribute;
+            attr.Should().NotBeNull($"{iface.Name}.{method} 必须声明 [{httpAttribute.Name.Replace("Attribute", string.Empty)}] 路由");
+            attr!.RequestUri.Should().Be(route, $"{iface.Name}.{method} 路由必须与官方契约一致");
+        }
+    }
+
+    /// <summary>
     /// 断言指定接口方法的参数中存在以 <c>[Query(name)]</c> 标注的官方 Query 参数。
     /// </summary>
     private static void AssertHasQueryParameter(Type iface, string methodName, string queryName)
@@ -410,6 +584,11 @@ public class WechatSchoolContractGuards
     /// 自建/第三方/代开发子接口均为零差异端点空标记；
     /// 家校管理配置域：父接口承载端点（IsAbstract），继承链上恰好只有自建与第三方子接口
     /// （官方未向代开发开放，能力漂移守卫）；
+    /// 健康上报域：父接口承载端点（IsAbstract），继承链上恰好只有自建子接口
+    /// （官方对第三方/代开发标注「暂不支持」，能力漂移守卫）；
+    /// 上课直播域：三类应用公共面收敛父接口（IsAbstract），子接口均为零差异端点空标记；
+    /// 班级收款域：父接口承载端点（IsAbstract），继承链上恰好只有自建与第三方子接口
+    /// （官方代开发文档「班级收款」仅目录页、无服务端查询 API，能力漂移守卫）；
     /// 网页授权登录域：父接口承载自建/代开发公共面（IsAbstract），继承链上恰好只有自建与代开发
     /// 空标记子接口；第三方接口为独立路由 + suite_access_token，<b>不继承</b>公共父接口、
     /// 独立声明 2 个端点（一接口族一令牌路由键）。
@@ -435,6 +614,18 @@ public class WechatSchoolContractGuards
                 new[] { typeof(IWechatWorkInternalSchoolDepartmentService), typeof(IWechatWorkThirdPartySchoolDepartmentService), typeof(IWechatWorkProviderSchoolDepartmentService) },
                 SchoolDepartmentParentImplementationClassName,
                 "部门管理域 5 个端点为三类应用公共面，继承链上不得出现其它子接口"),
+            (typeof(IWechatWorkSchoolHealthReportService),
+                new[] { typeof(IWechatWorkInternalSchoolHealthReportService) },
+                SchoolHealthReportParentImplementationClassName,
+                "健康上报域官方仅向自建应用开放（第三方/代开发暂不支持），继承链上不得出现其它子接口"),
+            (typeof(IWechatWorkSchoolLivingService),
+                new[] { typeof(IWechatWorkInternalSchoolLivingService), typeof(IWechatWorkThirdPartySchoolLivingService), typeof(IWechatWorkProviderSchoolLivingService) },
+                SchoolLivingParentImplementationClassName,
+                "上课直播域 7 个端点为三类应用公共面，继承链上不得出现其它子接口"),
+            (typeof(IWechatWorkSchoolClassPayService),
+                new[] { typeof(IWechatWorkInternalSchoolClassPayService), typeof(IWechatWorkThirdPartySchoolClassPayService) },
+                SchoolClassPayParentImplementationClassName,
+                "班级收款域官方仅向自建与第三方应用开放（代开发无服务端查询接口），继承链上不得出现其它子接口"),
         };
 
         foreach (var (parent, children, implementationClassName, because) in families)
@@ -531,8 +722,8 @@ public class WechatSchoolContractGuards
     }
 
     /// <summary>
-    /// 契约守卫 SCH3：令牌绑定——School 模块学生与家长管理域、网页授权登录域自建/代开发公共面
-    /// 统一消费 AccessToken 路由键并以 Query 注入（官方契约 access_token）；
+    /// 契约守卫 SCH3：令牌绑定——School 模块学生与家长管理域、上课直播域、班级收款域、
+    /// 网页授权登录域自建/代开发公共面统一消费 AccessToken 路由键并以 Query 注入（官方契约 access_token）；
     /// 网页授权登录域第三方接口消费 SuiteAccessToken 路由键并以 Query 注入（官方契约 suite_access_token）。
     /// </summary>
     [Fact]
@@ -558,6 +749,15 @@ public class WechatSchoolContractGuards
             typeof(IWechatWorkSchoolAuthService),
             typeof(IWechatWorkInternalSchoolAuthService),
             typeof(IWechatWorkProviderSchoolAuthService),
+            typeof(IWechatWorkSchoolHealthReportService),
+            typeof(IWechatWorkInternalSchoolHealthReportService),
+            typeof(IWechatWorkSchoolLivingService),
+            typeof(IWechatWorkInternalSchoolLivingService),
+            typeof(IWechatWorkThirdPartySchoolLivingService),
+            typeof(IWechatWorkProviderSchoolLivingService),
+            typeof(IWechatWorkSchoolClassPayService),
+            typeof(IWechatWorkInternalSchoolClassPayService),
+            typeof(IWechatWorkThirdPartySchoolClassPayService),
         };
 
         foreach (var iface in accessTokenInterfaces)
@@ -584,15 +784,18 @@ public class WechatSchoolContractGuards
     }
 
     /// <summary>
-    /// 契约守卫 SCH4：家校沟通模块的请求/响应 DTO 必须登记进 AOT JSON 上下文（全量 45 个契约面类型）。
+    /// 契约守卫 SCH4：家校沟通模块的请求/响应 DTO 必须登记进 AOT JSON 上下文
+    /// （家校沟通既有域 55 型落 SchoolJsonContext；健康上报域 15 型落 HealthReportJsonContext；
+    /// 上课直播域 25 型落 LivingJsonContext；班级收款域 5 型落 ClassPayJsonContext，
+    /// 共 100 个契约面类型）。
     /// </summary>
     [Fact]
     public void SchoolDataModels_ShouldBeRegisteredInJsonContext()
     {
         // 经公共 API GetTypeInfo 判定注册态（源生成上下文对未登记类型返回 null）。
-        var context = SchoolJsonContext.Default;
+        var schoolContext = SchoolJsonContext.Default;
 
-        var requiredTypes = new[]
+        var schoolTypes = new[]
         {
             // 「学校通知」二维码 + 关注模式。
             typeof(GetSchoolSubscribeQrCodeResponse),
@@ -640,13 +843,91 @@ public class WechatSchoolContractGuards
             typeof(SchoolSetUpgradeInfoResponse),
         };
 
-        requiredTypes.Should().HaveCount(55, "家校沟通域契约面共 55 型");
-        requiredTypes.Should().OnlyHaveUniqueItems("契约面类型不得重复断言");
+        schoolTypes.Should().HaveCount(55, "家校沟通既有域契约面共 55 型");
+        schoolTypes.Should().OnlyHaveUniqueItems("契约面类型不得重复断言");
 
-        foreach (var type in requiredTypes)
+        foreach (var type in schoolTypes)
         {
-            context.GetTypeInfo(type).Should().NotBeNull(
+            schoolContext.GetTypeInfo(type).Should().NotBeNull(
                 $"{type.Name} 是家校沟通模块契约面类型，必须登记进 SchoolJsonContext（AOT 源生成）");
+        }
+
+        // ── 健康上报域：官方仅自建开放，15 型落 HealthReportJsonContext ──
+        var healthReportContext = HealthReportJsonContext.Default;
+
+        var healthReportTypes = new[]
+        {
+            // 使用统计。
+            typeof(HealthReportGetStatRequest), typeof(HealthReportGetStatResponse),
+            // 任务 ID 列表。
+            typeof(HealthReportGetJobIdsRequest), typeof(HealthReportGetJobIdsResponse),
+            // 任务详情。
+            typeof(HealthReportGetJobInfoRequest), typeof(HealthReportGetJobInfoResponse),
+            typeof(HealthReportJobInfo), typeof(HealthReportApplyRange), typeof(HealthReportReportTo),
+            typeof(HealthReportQuestionTemplate), typeof(HealthReportQuestionOption),
+            // 用户填写答案。
+            typeof(HealthReportGetAnswerRequest), typeof(HealthReportGetAnswerResponse),
+            typeof(HealthReportAnswer), typeof(HealthReportAnswerValue),
+        };
+
+        healthReportTypes.Should().HaveCount(15, "健康上报域契约面共 15 型");
+        healthReportTypes.Should().OnlyHaveUniqueItems("契约面类型不得重复断言");
+
+        foreach (var type in healthReportTypes)
+        {
+            healthReportContext.GetTypeInfo(type).Should().NotBeNull(
+                $"{type.Name} 是健康上报域契约面类型，必须登记进 HealthReportJsonContext（AOT 源生成）");
+        }
+
+        // ── 上课直播域：三类应用公共面，25 型落 LivingJsonContext ──
+        var livingContext = LivingJsonContext.Default;
+
+        var livingTypes = new[]
+        {
+            // 获取老师直播 ID 列表。
+            typeof(LivingGetUserAllLivingIdRequest), typeof(LivingGetUserAllLivingIdResponse),
+            // 获取直播详情。
+            typeof(LivingGetLivingInfoResponse), typeof(LivingInfo), typeof(LivingRange),
+            // 观看/未观看直播统计（V1，next_key 分页）。
+            typeof(LivingGetWatchStatRequest), typeof(LivingGetWatchStatResponse),
+            typeof(LivingWatchStatInfoes), typeof(LivingWatchStudent), typeof(LivingVisitor),
+            typeof(LivingGetUnwatchStatRequest), typeof(LivingGetUnwatchStatResponse),
+            typeof(LivingUnwatchStatInfo), typeof(LivingUnwatchStudent),
+            // 删除直播回放。
+            typeof(LivingDeleteReplayDataRequest),
+            // 观看/未观看直播统计 V2（next_cursor 分页，较 V1 新增家长列表）。
+            typeof(LivingGetWatchStatV2Request), typeof(LivingGetWatchStatV2Response),
+            typeof(LivingWatchStatInfoV2), typeof(LivingWatchStudentV2), typeof(LivingWatchParent),
+            typeof(LivingGetUnwatchStatV2Request), typeof(LivingGetUnwatchStatV2Response),
+            typeof(LivingUnwatchStatInfoV2), typeof(LivingUnwatchStudentV2), typeof(LivingUnwatchParent),
+        };
+
+        livingTypes.Should().HaveCount(25, "上课直播域契约面共 25 型");
+        livingTypes.Should().OnlyHaveUniqueItems("契约面类型不得重复断言");
+
+        foreach (var type in livingTypes)
+        {
+            livingContext.GetTypeInfo(type).Should().NotBeNull(
+                $"{type.Name} 是上课直播域契约面类型，必须登记进 LivingJsonContext（AOT 源生成）");
+        }
+
+        // ── 班级收款域：官方仅自建与第三方开放，5 型落 ClassPayJsonContext ──
+        var classPayContext = ClassPayJsonContext.Default;
+
+        var classPayTypes = new[]
+        {
+            typeof(ClassPayGetPaymentResultRequest), typeof(ClassPayGetPaymentResultResponse),
+            typeof(ClassPayPaymentResultItem),
+            typeof(ClassPayGetTradeRequest), typeof(ClassPayGetTradeResponse),
+        };
+
+        classPayTypes.Should().HaveCount(5, "班级收款域契约面共 5 型");
+        classPayTypes.Should().OnlyHaveUniqueItems("契约面类型不得重复断言");
+
+        foreach (var type in classPayTypes)
+        {
+            classPayContext.GetTypeInfo(type).Should().NotBeNull(
+                $"{type.Name} 是班级收款域契约面类型，必须登记进 ClassPayJsonContext（AOT 源生成）");
         }
     }
 

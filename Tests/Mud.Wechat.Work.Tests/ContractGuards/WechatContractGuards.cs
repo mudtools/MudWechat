@@ -476,6 +476,25 @@ public class WechatContractGuards
                 nameof(IWechatWorkInternalSchoolAuthService),
                 nameof(IWechatWorkProviderSchoolAuthService),
                 nameof(IWechatWorkThirdPartySchoolAuthService),
+                // 家校沟通·健康上报域（School 模块）：4 个端点官方仅自建应用开放
+                //（使用统计 93676、任务 ID 列表 93677、任务详情 93678、用户填写答案 93679；
+                // 第三方/代开发官方「暂不支持」，父接口 + 仅自建空标记子接口）。
+                nameof(IWechatWorkSchoolHealthReportService),
+                nameof(IWechatWorkInternalSchoolHealthReportService),
+                // 家校沟通·上课直播域（School 模块）：7 个端点为三类应用公共面
+                //（老师直播 ID 列表 93739/93856/97127、直播详情 93740/93857/97128（GET，livingid 走 Query）、
+                // 观看/未观看统计 93741/93858/97129、93742/93859/97130、删除回放 93743/93860/97131、
+                // 观看/未观看统计 V2 95793/95799/97132、95795/95800/97133；父接口 + 三个应用类型空标记子接口）。
+                nameof(IWechatWorkSchoolLivingService),
+                nameof(IWechatWorkInternalSchoolLivingService),
+                nameof(IWechatWorkThirdPartySchoolLivingService),
+                nameof(IWechatWorkProviderSchoolLivingService),
+                // 家校沟通·班级收款域（School 模块）：2 个端点官方仅自建与第三方应用开放
+                //（学生付款结果 94470/94553、订单详情 94471/94554；代开发无服务端查询接口，
+                // 父接口 + 自建/第三方空标记子接口）。
+                nameof(IWechatWorkSchoolClassPayService),
+                nameof(IWechatWorkInternalSchoolClassPayService),
+                nameof(IWechatWorkThirdPartySchoolClassPayService),
             },
             "企业微信官方契约强制 Query 注入（MUD005 已知接受风险），新增 Query 注入接口须评估后扩展本守卫");
     }

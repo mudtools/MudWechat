@@ -45,6 +45,9 @@ using Mud.Wechat.Work.DataModels.Pay;
 using Mud.Wechat.Work.DataModels.ProviderAuthentication;
 using Mud.Wechat.Work.DataModels.Security;
 using Mud.Wechat.Work.DataModels.School;
+using Mud.Wechat.Work.DataModels.School.ClassPay;
+using Mud.Wechat.Work.DataModels.School.HealthReport;
+using Mud.Wechat.Work.DataModels.School.Living;
 
 namespace Mud.Wechat.Work.Extensions;
 
@@ -61,7 +64,7 @@ public static class WechatJsonResolverExtensions
     /// <param name="services">服务集合。</param>
     /// <remarks>
     /// <list type="bullet">
-    /// <item>全部 37 个 <c>*JsonContext</c>（<c>DataModels</c> 包 <c>Generated/</c> 目录，由
+    /// <item>全部 40 个 <c>*JsonContext</c>（<c>DataModels</c> 包 <c>Generated/</c> 目录，由
     /// <c>scripts/GenerateJsonContext.ps1</c>（mud-jsonctx）按 <c>[HttpJsonSerializable]</c>
     /// 标注生成，SerializerClassName = DTO 命名空间的域段，每个上下文与其域 DTO
     /// 同命名空间——与 Mud.Feishu.DataModels「每模块一上下文」同构）；</item>
@@ -106,6 +109,9 @@ public static class WechatJsonResolverExtensions
             PayJsonContext.Default,
             MsgAuditJsonContext.Default,
             SchoolJsonContext.Default,
+            HealthReportJsonContext.Default,
+            LivingJsonContext.Default,
+            ClassPayJsonContext.Default,
             CorpTokenAuthenticationJsonContext.Default,
             InternalAppAuthenticationJsonContext.Default,
             ProviderAuthenticationJsonContext.Default,

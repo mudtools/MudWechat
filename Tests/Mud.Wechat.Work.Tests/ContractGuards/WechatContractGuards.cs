@@ -506,6 +506,13 @@ public class WechatContractGuards
                 nameof(IWechatWorkProviderMediaService),
                 nameof(IWechatWorkServiceMediaService),
                 nameof(IWechatWorkThirdPartyServiceMediaService),
+                // 电子发票域（Invoice 模块）：4 个端点（查询电子发票 90284/90420/99451、更新发票状态 90285/90421/99452、
+                // 批量更新发票状态 90286/90422/99453、批量查询电子发票 90287/90423/99454）为三类应用公共面
+                // 收敛父接口 + 空标记子接口，均走 access_token。
+                nameof(IWechatWorkInvoiceService),
+                nameof(IWechatWorkInternalInvoiceService),
+                nameof(IWechatWorkThirdPartyInvoiceService),
+                nameof(IWechatWorkProviderInvoiceService),
             },
             "企业微信官方契约强制 Query 注入（MUD005 已知接受风险），新增 Query 注入接口须评估后扩展本守卫");
     }

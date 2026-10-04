@@ -54,4 +54,7 @@ public enum WechatModule
 
     /// <summary>素材管理（临时素材上传/获取 + 上传图片 + 高清语音素材 + 异步上传临时素材：三类应用公共面收敛父接口 + 空标记子接口；服务商上传临时素材：官方仅第三方开放，走 provider_access_token 独立成族）。</summary>
     Media,
+
+    /// <summary>电子发票（查询电子发票 + 更新发票状态 + 批量更新发票状态 + 批量查询电子发票：三类应用公共面收敛父接口 + 空标记子接口）。</summary>
+    Invoice,
 }

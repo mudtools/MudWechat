@@ -79,6 +79,9 @@ public class WechatWorkServiceBuilder
             [WechatModule.Media] = new WechatModuleRegistrar(
                 WechatModule.Media,
                 s => s.AddMediaWebApiHttpClient()),
+            [WechatModule.Invoice] = new WechatModuleRegistrar(
+                WechatModule.Invoice,
+                s => s.AddInvoiceWebApiHttpClient()),
         };
 
     /// <summary>注册授权流业务接口与授权编排服务（get_pre_auth_code / set_session_info / get_permanent_code / get_auth_info / get_customized_auth_url + 编排）。</summary>
@@ -119,6 +122,9 @@ public class WechatWorkServiceBuilder
 
     /// <summary>注册素材管理业务接口（上传临时素材 / 获取临时素材 / 上传图片 / 获取高清语音素材 / 异步上传临时素材为三类应用公共面；服务商上传临时素材官方仅第三方开放，走 provider_access_token 独立成族）。</summary>
     public WechatWorkServiceBuilder AddMediaApi() => AddModule(WechatModule.Media);
+
+    /// <summary>注册电子发票业务接口（查询电子发票 / 更新发票状态 / 批量更新发票状态 / 批量查询电子发票，四端点为三类应用公共面收敛父接口 + 空标记子接口）。</summary>
+    public WechatWorkServiceBuilder AddInvoiceApi() => AddModule(WechatModule.Invoice);
 
     /// <summary>注册全部模块。</summary>
     public WechatWorkServiceBuilder AddAllApis()

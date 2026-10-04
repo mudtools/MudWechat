@@ -652,6 +652,17 @@ public class WechatContractGuards
                 nameof(IWechatWorkInternalWedocSmartSheetService),
                 nameof(IWechatWorkThirdPartyWedocSmartSheetService),
                 nameof(IWechatWorkProviderWedocSmartSheetService),
+                // 文档·管理智能文档内容族（Wedoc 模块）：17 个端点为三类应用公共面
+                //（发布与可见范围：发布 101616/101633/101650、取消发布 101617/101634/101651、修改可查看范围 101618/101635/101652；
+                //  页面：添加 101620/101637/101654、更新 101621/101638/101655、删除 101622/101639/101656、获取页面结构 101619/101636/101653；
+                //  内容块：添加 101623/101640/101657、更新 101624/101641/101658、删除 101625/101642/101659、获取列表 101626/101643/101660；
+                //  导出：提交任务与查询结果 101627/101644/101661（同一文档页两路由）；
+                //  数据表：获取数据源 101628/101645/101662、添加 101629/101646/101663、更新 101631/101648/101665、删除 101630/101647/101664；
+                // 父接口 + 三个应用类型空标记子接口）。
+                nameof(IWechatWorkWedocSmartDocService),
+                nameof(IWechatWorkInternalWedocSmartDocService),
+                nameof(IWechatWorkThirdPartyWedocSmartDocService),
+                nameof(IWechatWorkProviderWedocSmartDocService),
             },
             "企业微信官方契约强制 Query 注入（MUD005 已知接受风险），新增 Query 注入接口须评估后扩展本守卫");
     }

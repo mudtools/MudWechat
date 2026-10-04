@@ -158,7 +158,7 @@ public class WechatWorkServiceBuilder
 /// <summary>注册紧急通知业务接口（发起语音电话 + 获取接听状态官方仅自建应用开放，零端点父接口 + 仅自建子接口承载端点；不设第三方/代开发子接口）。</summary>
     public WechatWorkServiceBuilder AddEmergencyApi() => AddModule(WechatModule.Emergency);
 
-    /// <summary>注册文档业务接口（管理文档族 + 管理文档内容族 + 管理表格内容族 + 管理智能表格内容族：三类应用公共面收敛父接口 + 空标记子接口；编辑文档内容与编辑表格内容为批量更新形态，单次操作数量官方分别限制 30 与 5；管理智能表格内容族为 20 个端点，子表/视图/字段/记录/编组各 4 个）。</summary>
+    /// <summary>注册文档业务接口（管理文档族 + 管理文档内容族 + 管理表格内容族 + 管理智能表格内容族 + 管理智能文档内容族：三类应用公共面收敛父接口 + 空标记子接口；编辑文档内容与编辑表格内容为批量更新形态，单次操作数量官方分别限制 30 与 5；管理智能表格内容族为 20 个端点，子表/视图/字段/记录/编组各 4 个；管理智能文档内容族为 17 个端点，发布与可见范围 3 / 页面 4 / 内容块 4 / 导出 2 / 数据表 4）。</summary>
     public WechatWorkServiceBuilder AddWedocApi() => AddModule(WechatModule.Wedoc);
 
     /// <summary>注册全部模块。</summary>

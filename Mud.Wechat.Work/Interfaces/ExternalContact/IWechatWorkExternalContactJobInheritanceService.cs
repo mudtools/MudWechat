@@ -52,7 +52,7 @@ public interface IWechatWorkExternalContactJobInheritanceService
     /// <returns>每个客户的分配结果列表（customer[]）。</returns>
     /// <remarks>
     /// <para>原接口「分配在职或离职成员的客户」官方不再更新维护，应使用本接口。</para>
-    /// <para><b>企业自建应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/94096"/></para>
+    /// <para><b>企业自建应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/92125"/></para>
     /// <para><b>第三方应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/94096"/></para>
     /// <para><b>服务商代开发</b>SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/96325"/></para>
     /// </remarks>
@@ -71,7 +71,7 @@ public interface IWechatWorkExternalContactJobInheritanceService
     /// <returns>每个客户的接替状态列表（customer[]）与下一页游标（next_cursor）。</returns>
     /// <remarks>
     /// <para>原接口「查询客户接替结果」官方不再更新维护，应使用本接口。</para>
-    /// <para><b>企业自建应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/94097"/></para>
+    /// <para><b>企业自建应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/94088"/></para>
     /// <para><b>第三方应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/94097"/></para>
     /// <para><b>服务商代开发</b>SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/96327"/></para>
     /// </remarks>
@@ -91,7 +91,7 @@ public interface IWechatWorkExternalContactJobInheritanceService
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
     /// <returns>没能成功继承的群列表（failed_chat_list）。</returns>
     /// <remarks>
-    /// <para><b>企业自建应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/95742"/></para>
+    /// <para><b>企业自建应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/95703"/></para>
     /// <para><b>第三方应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/95742"/></para>
     /// <para><b>服务商代开发</b>SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/96328"/></para>
     /// </remarks>

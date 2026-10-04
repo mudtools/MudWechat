@@ -31,7 +31,7 @@ public enum WechatModule
     /// <summary>安全管理（文件防泄漏 / 设备管理 / 截屏录屏管理 / 域名 IP 信息 / 高级功能账号管理 / 操作日志，官方仅向自建应用开放）。</summary>
     Security,
 
-    /// <summary>消息推送（发送应用消息 + 群聊会话 + 家校学校通知：公共面收敛父接口；template_msg 仅第三方差异端点，群聊会话/学校通知官方仅自建）。</summary>
+    /// <summary>消息推送（发送应用消息族：三类应用公共面收敛父接口 + 第三方 template_msg 差异端点；群聊会话族 / 智能表格群聊族官方仅自建；家校学校通知族：三类应用公共面收敛父接口 + 空标记子接口）。</summary>
     Message,
 
     /// <summary>账号ID（ID 转换 + tmp_external_userid 转换 + 自建应用对接 + corpid 转换 + ID 迁移完成状态 + 智能机器人 userid 转换 + 群 ID 升级，跨 access/provider/suite 三种令牌路由键七接口族）。</summary>
@@ -42,4 +42,13 @@ public enum WechatModule
 
     /// <summary>身份验证（网页授权登录/企业微信Web登录身份获取域 + 二次验证域：自建/代开发公共面收敛父接口；第三方身份获取走套件令牌独立成族）。</summary>
     Identity,
+
+    /// <summary>企业支付（对外收款记录域：三类应用公共面收敛父接口 + 空标记子接口；收款商户号管理域 + 资金流水域 + 创建对外收款账户域 + 普通支付域 + 退款域 + 交易账单域：官方仅自建，零端点父接口 + 仅自建子接口承载端点）。</summary>
+    Pay,
+
+    /// <summary>会话内容存档（开启成员列表域 + 机器人信息域 + 会话同意情况域 + 内部群信息域：官方仅自建，零端点父接口 + 仅自建子接口承载端点；access_token 须由会话内容存档应用 secret 获取。91614 的原生 C SDK 拉取/解密面不在 HTTP SDK 范畴）。</summary>
+    MsgAudit,
+
+    /// <summary>家校沟通（家校沟通基础域：三类应用公共面收敛父接口 + 空标记子接口；家校管理配置域：官方仅自建与第三方开放，不设代开发子接口）。</summary>
+    School,
 }

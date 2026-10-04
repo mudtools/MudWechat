@@ -20,10 +20,13 @@ namespace Mud.Wechat.Work.Tests.ContractGuards;
 /// </summary>
 /// <remarks>
 /// <para>
-/// 开放面为<b>自建 + 代开发 + 第三方（仅获取应用共享信息）</b>：6 个端点全部收敛于父接口
-/// <see cref="IWechatWorkCorpGroupService"/>，自建/代开发/第三方子接口均为空标记
-/// （第三方仅开放获取应用共享信息，与自建/代开发同路由同契约，见 95324；
-/// 守卫另以反射断言继承链上<b>不存在其它应用类型子接口</b>，新增应用类型须先核对官方文档）。
+/// 开放面为<b>自建 + 代开发 + 第三方（仅获取应用共享信息）</b>：6 个端点按官方开放面拆为两段——
+/// 公共父接口 <see cref="IWechatWorkCorpGroupService"/> 承载三类应用公共面「获取应用共享信息」1 条
+/// （第三方文档号 95324，与自建/代开发同路由同契约），官方无第三方文档的 5 条下沉至
+/// 「自建+代开发」公共父接口 <see cref="IWechatWorkCorpGroupInternalProviderService"/>；
+/// 自建/代开发子接口继承后者（类型化面 6 条），第三方子接口直接继承前者（类型化面恰 1 条）。
+/// 守卫以反射断言两级继承链的接口集合不漂移，并断言第三方子接口<b>不</b>继承自建+代开发公共父接口；
+/// 新增应用类型须先核对官方文档。
 /// </para>
 /// </remarks>
 public class WechatCorpGroupContractGuards
@@ -34,17 +37,22 @@ public class WechatCorpGroupContractGuards
     /// </summary>
     private const string ParentImplementationClassName = "WechatWorkCorpGroupService";
 
+    private const string InternalProviderImplementationClassName = "WechatWorkCorpGroupInternalProviderService";
+
     private const string CorpGroupRegistryGroupName = "CorpGroup";
 
-    /// <summary>官方路由表（6 个端点全部声明于父接口；自建与代开发官方文档路由完全一致，97357/98040 覆盖 2 个端点）。</summary>
+    /// <summary>官方路由表（6 个端点：公共面 1 条在父接口，自建/代开发专属 5 条在自建+代开发公共父接口；97357/98040 覆盖 2 个端点）。</summary>
     private static readonly (Type Interface, string Method, Type HttpAttribute, string Route)[] Routes =
     {
+        // ── 父接口：三类应用公共面（官方仅「获取应用共享信息」对第三方开放） ──
         (typeof(IWechatWorkCorpGroupService), nameof(IWechatWorkCorpGroupService.ListAppShareInfoAsync), typeof(PostAttribute), "/cgi-bin/corpgroup/corp/list_app_share_info"),
-        (typeof(IWechatWorkCorpGroupService), nameof(IWechatWorkCorpGroupService.GetCorpGroupTokenAsync), typeof(PostAttribute), "/cgi-bin/corpgroup/corp/gettoken"),
-        (typeof(IWechatWorkCorpGroupService), nameof(IWechatWorkCorpGroupService.TransferMiniProgramSessionAsync), typeof(PostAttribute), "/cgi-bin/miniprogram/transfer_session"),
-        (typeof(IWechatWorkCorpGroupService), nameof(IWechatWorkCorpGroupService.UnionidToExternalUserIdAsync), typeof(PostAttribute), "/cgi-bin/corpgroup/unionid_to_external_userid"),
-        (typeof(IWechatWorkCorpGroupService), nameof(IWechatWorkCorpGroupService.UnionidToPendingIdAsync), typeof(PostAttribute), "/cgi-bin/corpgroup/unionid_to_pending_id"),
-        (typeof(IWechatWorkCorpGroupService), nameof(IWechatWorkCorpGroupService.ExternalUserIdToPendingIdAsync), typeof(PostAttribute), "/cgi-bin/corpgroup/batch/external_userid_to_pending_id"),
+
+        // ── 自建+代开发公共父接口：官方无第三方文档，第三方子接口不继承 ──
+        (typeof(IWechatWorkCorpGroupInternalProviderService), nameof(IWechatWorkCorpGroupInternalProviderService.GetCorpGroupTokenAsync), typeof(PostAttribute), "/cgi-bin/corpgroup/corp/gettoken"),
+        (typeof(IWechatWorkCorpGroupInternalProviderService), nameof(IWechatWorkCorpGroupInternalProviderService.TransferMiniProgramSessionAsync), typeof(PostAttribute), "/cgi-bin/miniprogram/transfer_session"),
+        (typeof(IWechatWorkCorpGroupInternalProviderService), nameof(IWechatWorkCorpGroupInternalProviderService.UnionidToExternalUserIdAsync), typeof(PostAttribute), "/cgi-bin/corpgroup/unionid_to_external_userid"),
+        (typeof(IWechatWorkCorpGroupInternalProviderService), nameof(IWechatWorkCorpGroupInternalProviderService.UnionidToPendingIdAsync), typeof(PostAttribute), "/cgi-bin/corpgroup/unionid_to_pending_id"),
+        (typeof(IWechatWorkCorpGroupInternalProviderService), nameof(IWechatWorkCorpGroupInternalProviderService.ExternalUserIdToPendingIdAsync), typeof(PostAttribute), "/cgi-bin/corpgroup/batch/external_userid_to_pending_id"),
     };
 
     /// <summary>
@@ -53,14 +61,14 @@ public class WechatCorpGroupContractGuards
     [Fact]
     public void CorpGroupEndpoints_ShouldMatchOfficialRoutes()
     {
-        Routes.Should().HaveCount(6, "官方对自建/代开发应用开放一致的 6 个上下游端点，全部声明于父接口");
+        Routes.Should().HaveCount(6, "官方对自建/代开发开放 6 个上下游端点 = 父接口公共面 1 条 + 自建/代开发公共父接口 5 条");
 
         var distinctRoutes = Routes.Select(r => r.Route).Distinct().ToList();
         distinctRoutes.Should().HaveCount(6, "本域各端点路由互不重复");
 
         foreach (var (iface, method, httpAttribute, route) in Routes)
         {
-            // DeclaredOnly：端点必须落在父接口自身声明，而非从子接口继承。
+            // DeclaredOnly：端点必须落在自身声明的接口上，而非从子接口继承。
             var target = iface.GetMethod(method, BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
             target.Should().NotBeNull($"{iface.Name}.{method} 必须存在");
 
@@ -71,65 +79,134 @@ public class WechatCorpGroupContractGuards
     }
 
     /// <summary>
-    /// 契约守卫 CG2：接口层级与生成器注册形态——全部端点收敛父接口（IsAbstract），
-    /// 自建/代开发/第三方子接口均为空标记；且继承链上不得出现其它应用类型子接口（应用类型集合漂移守卫）。
+    /// 契约守卫 CG2：接口层级与生成器注册形态——公共父接口（IsAbstract）仅承载三类应用公共面
+    /// 「获取应用共享信息」1 条；官方无第三方文档的 5 条下沉至「自建+代开发」公共父接口
+    /// （IsAbstract，继承公共父接口），自建/代开发子接口继承该中间父接口且均为空标记，
+    /// 第三方子接口直接继承公共父接口且为空标记（类型化端点面恰为 1 条）。
+    /// 两级继承链均以反射断言集合不漂移，新增应用类型须先核对官方文档。
     /// </summary>
     [Fact]
     public void CorpGroupInterfaceHierarchy_ShouldConvergeOnAbstractParentWithCorpGroupRegistry()
     {
         var parent = typeof(IWechatWorkCorpGroupService);
-        var children = new[]
-        {
-            typeof(IWechatWorkInternalCorpGroupService),
-            typeof(IWechatWorkThirdPartyCorpGroupService),
-            typeof(IWechatWorkProviderCorpGroupService),
-        };
+        var internalProviderParent = typeof(IWechatWorkCorpGroupInternalProviderService);
+        var internalChild = typeof(IWechatWorkInternalCorpGroupService);
+        var thirdPartyChild = typeof(IWechatWorkThirdPartyCorpGroupService);
+        var providerChild = typeof(IWechatWorkProviderCorpGroupService);
 
-        foreach (var child in children)
-        {
-            child.Should().BeAssignableTo(parent, $"{child.Name} 必须继承公共父接口 {parent.Name}");
-        }
+        internalProviderParent.Should().BeAssignableTo(parent,
+            $"{internalProviderParent.Name} 必须继承公共父接口 {parent.Name}（继承 1 条公共面）");
+        internalChild.Should().BeAssignableTo(internalProviderParent,
+            $"{internalChild.Name} 必须继承自建+代开发公共父接口 {internalProviderParent.Name}");
+        providerChild.Should().BeAssignableTo(internalProviderParent,
+            $"{providerChild.Name} 必须继承自建+代开发公共父接口 {internalProviderParent.Name}");
+        thirdPartyChild.Should().BeAssignableTo(parent,
+            $"{thirdPartyChild.Name} 必须继承公共父接口 {parent.Name}");
 
-        // 应用类型集合漂移守卫：本域 6 端点中仅获取应用共享信息向第三方开放（95324，与自建/代开发同路由同契约），
-        // 其余 5 端点仅自建/代开发；继承父接口的接口必须恰好为上述三个空标记子接口。
-        var derived = parent.Assembly.GetTypes()
+        // 第三方子接口不得继承自建+代开发公共父接口：否则第三方类型化面会重新暴露官方未开放的 5 个端点。
+        internalProviderParent.IsAssignableFrom(thirdPartyChild).Should().BeFalse(
+            $"{thirdPartyChild.Name} 不得继承 {internalProviderParent.Name}：官方第三方文档树未开放该 5 个端点");
+
+        // 应用类型集合漂移守卫：两级继承链各自的有序接口集合被锁定。
+        parent.Assembly.GetTypes()
             .Where(t => t.IsInterface && parent.IsAssignableFrom(t) && t != parent)
             .Select(t => t.Name)
             .OrderBy(n => n, StringComparer.Ordinal)
-            .ToList();
-        derived.Should().BeEquivalentTo(new[]
-            {
-                nameof(IWechatWorkInternalCorpGroupService),
-                nameof(IWechatWorkThirdPartyCorpGroupService),
-                nameof(IWechatWorkProviderCorpGroupService),
-            },
-            "新增应用类型子接口须先核对官方文档并同批调整 CG2 与 G5");
+            .ToList()
+            .Should().BeEquivalentTo(
+                new[]
+                {
+                    nameof(IWechatWorkCorpGroupInternalProviderService),
+                    nameof(IWechatWorkInternalCorpGroupService),
+                    nameof(IWechatWorkProviderCorpGroupService),
+                    nameof(IWechatWorkThirdPartyCorpGroupService),
+                },
+                "公共父接口的直接子接口恰为自建+代开发公共父接口 + 三个应用类型子接口；" +
+                "新增应用类型须先核对官方文档并同批调整 CG2 与 G5");
+
+        internalProviderParent.Assembly.GetTypes()
+            .Where(t => t.IsInterface && internalProviderParent.IsAssignableFrom(t) && t != internalProviderParent)
+            .Select(t => t.Name)
+            .OrderBy(n => n, StringComparer.Ordinal)
+            .ToList()
+            .Should().BeEquivalentTo(
+                new[]
+                {
+                    nameof(IWechatWorkInternalCorpGroupService),
+                    nameof(IWechatWorkProviderCorpGroupService),
+                },
+                "自建+代开发公共父接口的直接子接口恰为自建与代开发两个应用类型子接口");
 
         var parentApi = parent.GetCustomAttribute<HttpClientApiAttribute>();
         parentApi.Should().NotBeNull("父接口必须声明 [HttpClientApi]");
         parentApi!.IsAbstract.Should().BeTrue("公共父接口不参与 DI 注册，必须 IsAbstract = true");
         parentApi.RegistryGroupName.Should().BeNullOrEmpty("父接口不进入注册组（注册面由子接口承载）");
+        parent.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
+            .Should().HaveCount(1, "官方仅「获取应用共享信息」向三类应用开放，父接口只承载该 1 条公共面");
 
-        foreach (var child in children)
+        var internalProviderApi = internalProviderParent.GetCustomAttribute<HttpClientApiAttribute>();
+        internalProviderApi.Should().NotBeNull($"{internalProviderParent.Name} 必须声明 [HttpClientApi]");
+        internalProviderApi!.IsAbstract.Should().BeTrue(
+            $"{internalProviderParent.Name} 为自建/代开发公共父接口，不参与 DI 注册，必须 IsAbstract = true");
+        internalProviderApi.RegistryGroupName.Should().BeNullOrEmpty(
+            $"{internalProviderParent.Name} 不进入注册组（注册面由应用类型子接口承载）");
+        internalProviderApi.InheritedFrom.Should().Be(ParentImplementationClassName,
+            $"{internalProviderParent.Name} 必须继承公共父接口生成实现类，避免生成器重复实现公共面端点");
+        internalProviderParent.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
+            .Should().HaveCount(5, "官方无第三方文档的 5 条端点必须声明在自建+代开发公共父接口");
+
+        foreach (var child in new[] { internalChild, providerChild, thirdPartyChild })
         {
             var childApi = child.GetCustomAttribute<HttpClientApiAttribute>();
             childApi.Should().NotBeNull($"{child.Name} 必须声明 [HttpClientApi]");
             childApi!.RegistryGroupName.Should().Be(CorpGroupRegistryGroupName,
                 $"{child.Name} 必须挂 {CorpGroupRegistryGroupName} 注册组（独立模块，经 Add{CorpGroupRegistryGroupName}Api() 注册）");
-            childApi.InheritedFrom.Should().Be(ParentImplementationClassName,
-                $"{child.Name} 必须继承父接口生成实现类，避免生成器重复实现公共端点");
-
-            // 官方对自建/代开发开放一致端点集（第三方仅获取应用共享信息，随父接口继承）：任何子接口不得新增端点（能力集合漂移守卫）。
             child.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
                 .Should().BeEmpty(
-                    $"{child.Name} 为应用类型空标记：6 个上下游端点全部声明于父接口，" +
+                    $"{child.Name} 为应用类型空标记：6 个上下游端点全部由父接口/自建代开发公共父接口声明，" +
                     "新增差异端点须先核对官方文档并同批调整 CG1/CG2");
         }
+
+        internalChild.GetCustomAttribute<HttpClientApiAttribute>()!.InheritedFrom
+            .Should().Be(InternalProviderImplementationClassName,
+                $"{internalChild.Name} 必须继承自建+代开发公共父接口生成实现类");
+        providerChild.GetCustomAttribute<HttpClientApiAttribute>()!.InheritedFrom
+            .Should().Be(InternalProviderImplementationClassName,
+                $"{providerChild.Name} 必须继承自建+代开发公共父接口生成实现类");
+        thirdPartyChild.GetCustomAttribute<HttpClientApiAttribute>()!.InheritedFrom
+            .Should().Be(ParentImplementationClassName,
+                $"{thirdPartyChild.Name} 必须继承公共父接口生成实现类");
+
+        // 端点面收窄断言：第三方类型化面恰为 1 条（父接口公共面），自建/代开发为官方开放的 6 条。
+        CollectInterfaceEndpoints(thirdPartyChild).Should().HaveCount(1,
+            "第三方类型化面只暴露「获取应用共享信息」");
+        CollectInterfaceEndpoints(thirdPartyChild).Single().Name
+            .Should().Be(nameof(IWechatWorkCorpGroupService.ListAppShareInfoAsync),
+                "第三方类型化面唯一端点为官方向第三方开放的「获取应用共享信息」");
+        CollectInterfaceEndpoints(internalChild).Should().HaveCount(6, "自建应用类型化面为官方开放的 6 条上下游端点");
+        CollectInterfaceEndpoints(providerChild).Should().HaveCount(6, "代开发应用类型化面为官方开放的 6 条上下游端点");
     }
 
     /// <summary>
-    /// 契约守卫 CG3：令牌绑定——父/自建/第三方/代开发四接口统一消费 AccessToken 路由键并以 Query 注入（官方契约 access_token）。
-    /// 注意 transfer_session 官方要求以下级/下游企业凭证调用（由宿主管理，见父接口注释）。
+    /// 沿接口继承链收集端点方法声明。
+    /// <para>接口反射<b>不</b>返回继承成员（<c>Type.GetMethods()</c> 对接口仅返回自身声明），
+    /// 故类型化端点面必须逐级上溯接口继承链后统计。</para>
+    /// </summary>
+    private static List<MethodInfo> CollectInterfaceEndpoints(Type iface)
+    {
+        var methods = new List<MethodInfo>();
+        for (var current = iface; current is not null && current != typeof(object); current = current.GetInterfaces().FirstOrDefault())
+        {
+            methods.AddRange(current.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly));
+        }
+
+        return methods;
+    }
+
+    /// <summary>
+    /// 契约守卫 CG3：令牌绑定——公共父接口 / 自建+代开发公共父接口 / 自建 / 第三方 / 代开发五接口
+    /// 统一消费 AccessToken 路由键并以 Query 注入（官方契约 access_token）。
+    /// 注意 transfer_session 官方要求以下级/下游企业凭证调用（由宿主管理，见自建+代开发公共父接口注释）。
     /// </summary>
     [Fact]
     public void CorpGroupTokenBinding_ShouldBeAccessTokenInjectedViaQuery()
@@ -137,6 +214,7 @@ public class WechatCorpGroupContractGuards
         var interfaces = new[]
         {
             typeof(IWechatWorkCorpGroupService),
+            typeof(IWechatWorkCorpGroupInternalProviderService),
             typeof(IWechatWorkInternalCorpGroupService),
             typeof(IWechatWorkThirdPartyCorpGroupService),
             typeof(IWechatWorkProviderCorpGroupService),

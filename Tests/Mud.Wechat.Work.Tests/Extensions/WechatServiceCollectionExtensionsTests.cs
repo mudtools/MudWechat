@@ -445,6 +445,10 @@ public class WechatServiceCollectionExtensionsTests
         provider.GetRequiredService<IWechatWorkProviderMessageService>().Should().NotBeNull();
         provider.GetRequiredService<IWechatWorkInternalAppChatService>().Should().NotBeNull();
         provider.GetRequiredService<IWechatWorkInternalSchoolMessageService>().Should().NotBeNull();
+        provider.GetRequiredService<IWechatWorkThirdPartySchoolMessageService>().Should().NotBeNull(
+            "家校学校通知族官方向三类应用开放（第三方 92291），本族注册第三方子接口");
+        provider.GetRequiredService<IWechatWorkProviderSchoolMessageService>().Should().NotBeNull(
+            "家校学校通知族官方向三类应用开放（代开发 96720/96723），本族注册代开发子接口");
         provider.GetRequiredService<IWechatWorkInternalSmartSheetGroupChatService>().Should().NotBeNull();
 
         provider.GetService<IWechatWorkMessageService>().Should().BeNull(
@@ -467,14 +471,20 @@ public class WechatServiceCollectionExtensionsTests
             "ValidateScopes = true 变体下子 scope 内同样可解析");
         scope.ServiceProvider.GetRequiredService<IWechatWorkInternalSchoolMessageService>().Should().NotBeNull(
             "ValidateScopes = true 变体下子 scope 内同样可解析");
+        scope.ServiceProvider.GetRequiredService<IWechatWorkThirdPartySchoolMessageService>().Should().NotBeNull(
+            "ValidateScopes = true 变体下子 scope 内同样可解析");
+        scope.ServiceProvider.GetRequiredService<IWechatWorkProviderSchoolMessageService>().Should().NotBeNull(
+            "ValidateScopes = true 变体下子 scope 内同样可解析");
         scope.ServiceProvider.GetRequiredService<IWechatWorkInternalSmartSheetGroupChatService>().Should().NotBeNull(
             "ValidateScopes = true 变体下子 scope 内同样可解析");
     }
 
     /// <summary>
-    /// Kf 模块（微信客服域：客服账号管理域 + 接待人员管理域）：AddKfApi 注册的应用类型子接口客户端
-    /// 必须可解析（两域公共父接口 IsAbstract，不参与 DI 注册；三类应用开放面完全一致，
-    /// 自建/第三方/代开发子接口均为空标记）。
+    /// Kf 模块（微信客服域：客服账号管理域 + 接待人员管理域 + 会话分配与消息收发域 +
+    /// 客户基础信息域 + 「升级服务」配置域 + 统计管理域 + 机器人管理域（仅自建） +
+    /// 微信客服组件域（仅第三方））：AddKfApi 注册的应用类型子接口客户端必须可解析
+    /// （六域公共父接口 IsAbstract 不参与 DI 注册；机器人管理域仅自建子接口、
+    /// 微信客服组件域仅第三方子接口承载端点）。
     /// </summary>
     [Fact]
     public void AddKfApi_ShouldRegisterKfDomainClients_ResolvableInRootAndScope()
@@ -492,10 +502,38 @@ public class WechatServiceCollectionExtensionsTests
         provider.GetRequiredService<IWechatWorkInternalKfServicerService>().Should().NotBeNull();
         provider.GetRequiredService<IWechatWorkThirdPartyKfServicerService>().Should().NotBeNull();
         provider.GetRequiredService<IWechatWorkProviderKfServicerService>().Should().NotBeNull();
+        provider.GetRequiredService<IWechatWorkInternalKfSessionService>().Should().NotBeNull();
+        provider.GetRequiredService<IWechatWorkThirdPartyKfSessionService>().Should().NotBeNull();
+        provider.GetRequiredService<IWechatWorkProviderKfSessionService>().Should().NotBeNull();
+        provider.GetRequiredService<IWechatWorkInternalKfCustomerService>().Should().NotBeNull();
+        provider.GetRequiredService<IWechatWorkThirdPartyKfCustomerService>().Should().NotBeNull();
+        provider.GetRequiredService<IWechatWorkProviderKfCustomerService>().Should().NotBeNull();
+        provider.GetRequiredService<IWechatWorkInternalKfStatisticsService>().Should().NotBeNull();
+        provider.GetRequiredService<IWechatWorkThirdPartyKfStatisticsService>().Should().NotBeNull();
+        provider.GetRequiredService<IWechatWorkProviderKfStatisticsService>().Should().NotBeNull();
+        provider.GetRequiredService<IWechatWorkInternalKfUpgradeService>().Should().NotBeNull();
+        provider.GetRequiredService<IWechatWorkThirdPartyKfUpgradeService>().Should().NotBeNull();
+        provider.GetRequiredService<IWechatWorkProviderKfUpgradeService>().Should().NotBeNull();
+        provider.GetRequiredService<IWechatWorkInternalKfKnowledgeService>().Should().NotBeNull(
+            "官方仅向自建应用开放机器人管理域（第三方/代开发暂不支持），本域仅注册自建子接口");
+        provider.GetRequiredService<IWechatWorkThirdPartyKfComponentService>().Should().NotBeNull(
+            "微信客服组件域官方仅由微信客服组件应用（套件形态）消费，本域仅注册第三方子接口");
 
         provider.GetService<IWechatWorkKfAccountService>().Should().BeNull(
             "公共父接口 IsAbstract = true，不得注册进 DI（调用方须按应用类型选择子接口）");
         provider.GetService<IWechatWorkKfServicerService>().Should().BeNull(
+            "公共父接口 IsAbstract = true，不得注册进 DI（调用方须按应用类型选择子接口）");
+        provider.GetService<IWechatWorkKfSessionService>().Should().BeNull(
+            "公共父接口 IsAbstract = true，不得注册进 DI（调用方须按应用类型选择子接口）");
+        provider.GetService<IWechatWorkKfCustomerService>().Should().BeNull(
+            "公共父接口 IsAbstract = true，不得注册进 DI（调用方须按应用类型选择子接口）");
+        provider.GetService<IWechatWorkKfStatisticsService>().Should().BeNull(
+            "公共父接口 IsAbstract = true，不得注册进 DI（调用方须按应用类型选择子接口）");
+        provider.GetService<IWechatWorkKfUpgradeService>().Should().BeNull(
+            "公共父接口 IsAbstract = true，不得注册进 DI（调用方须按应用类型选择子接口）");
+        provider.GetService<IWechatWorkKfKnowledgeService>().Should().BeNull(
+            "公共父接口 IsAbstract = true，不得注册进 DI（调用方须按应用类型选择子接口）");
+        provider.GetService<IWechatWorkKfComponentService>().Should().BeNull(
             "公共父接口 IsAbstract = true，不得注册进 DI（调用方须按应用类型选择子接口）");
 
         using var scope = provider.CreateScope();
@@ -510,6 +548,187 @@ public class WechatServiceCollectionExtensionsTests
         scope.ServiceProvider.GetRequiredService<IWechatWorkThirdPartyKfServicerService>().Should().NotBeNull(
             "ValidateScopes = true 变体下子 scope 内同样可解析");
         scope.ServiceProvider.GetRequiredService<IWechatWorkProviderKfServicerService>().Should().NotBeNull(
+            "ValidateScopes = true 变体下子 scope 内同样可解析");
+        scope.ServiceProvider.GetRequiredService<IWechatWorkInternalKfSessionService>().Should().NotBeNull(
+            "ValidateScopes = true 变体下子 scope 内同样可解析");
+        scope.ServiceProvider.GetRequiredService<IWechatWorkThirdPartyKfSessionService>().Should().NotBeNull(
+            "ValidateScopes = true 变体下子 scope 内同样可解析");
+        scope.ServiceProvider.GetRequiredService<IWechatWorkProviderKfSessionService>().Should().NotBeNull(
+            "ValidateScopes = true 变体下子 scope 内同样可解析");
+        scope.ServiceProvider.GetRequiredService<IWechatWorkInternalKfCustomerService>().Should().NotBeNull(
+            "ValidateScopes = true 变体下子 scope 内同样可解析");
+        scope.ServiceProvider.GetRequiredService<IWechatWorkThirdPartyKfCustomerService>().Should().NotBeNull(
+            "ValidateScopes = true 变体下子 scope 内同样可解析");
+        scope.ServiceProvider.GetRequiredService<IWechatWorkProviderKfCustomerService>().Should().NotBeNull(
+            "ValidateScopes = true 变体下子 scope 内同样可解析");
+        scope.ServiceProvider.GetRequiredService<IWechatWorkInternalKfStatisticsService>().Should().NotBeNull(
+            "ValidateScopes = true 变体下子 scope 内同样可解析");
+        scope.ServiceProvider.GetRequiredService<IWechatWorkThirdPartyKfStatisticsService>().Should().NotBeNull(
+            "ValidateScopes = true 变体下子 scope 内同样可解析");
+        scope.ServiceProvider.GetRequiredService<IWechatWorkProviderKfStatisticsService>().Should().NotBeNull(
+            "ValidateScopes = true 变体下子 scope 内同样可解析");
+        scope.ServiceProvider.GetRequiredService<IWechatWorkInternalKfUpgradeService>().Should().NotBeNull(
+            "ValidateScopes = true 变体下子 scope 内同样可解析");
+        scope.ServiceProvider.GetRequiredService<IWechatWorkThirdPartyKfUpgradeService>().Should().NotBeNull(
+            "ValidateScopes = true 变体下子 scope 内同样可解析");
+        scope.ServiceProvider.GetRequiredService<IWechatWorkProviderKfUpgradeService>().Should().NotBeNull(
+            "ValidateScopes = true 变体下子 scope 内同样可解析");
+        scope.ServiceProvider.GetRequiredService<IWechatWorkInternalKfKnowledgeService>().Should().NotBeNull(
+            "ValidateScopes = true 变体下子 scope 内同样可解析");
+        scope.ServiceProvider.GetRequiredService<IWechatWorkThirdPartyKfComponentService>().Should().NotBeNull(
+            "ValidateScopes = true 变体下子 scope 内同样可解析");
+    }
+
+    /// <summary>
+    /// Pay 模块（企业支付域：对外收款记录域为三类应用公共面；收款商户号管理域 +
+    /// 资金流水域 + 创建对外收款账户域 + 普通支付域 + 退款域 + 交易账单域官方仅自建开放）：
+    /// AddPayApi 注册的应用类型子接口客户端必须可解析（公共父接口 IsAbstract 不参与 DI 注册；
+    /// 六个仅自建域的仅自建子接口承载端点）。
+    /// </summary>
+    [Fact]
+    public void AddPayApi_ShouldRegisterPayDomainClients_ResolvableInRootAndScope()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddWechatApp(new List<WechatAppConfig> { InternalConfig() });
+        services.AddWechatWorkServices(builder => builder.AddPayApi());
+
+        using var provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true });
+
+        provider.GetRequiredService<IWechatWorkInternalPayBillService>().Should().NotBeNull();
+        provider.GetRequiredService<IWechatWorkThirdPartyPayBillService>().Should().NotBeNull();
+        provider.GetRequiredService<IWechatWorkProviderPayBillService>().Should().NotBeNull();
+        provider.GetRequiredService<IWechatWorkInternalPayMerchantService>().Should().NotBeNull(
+            "官方仅向自建应用开放收款商户号管理域（代开发/第三方暂不支持），本域仅注册自建子接口");
+        provider.GetRequiredService<IWechatWorkInternalPayFundFlowService>().Should().NotBeNull(
+            "官方仅向自建应用开放资金流水域（代开发/第三方暂不支持），本域仅注册自建子接口");
+        provider.GetRequiredService<IWechatWorkInternalPayMchApplyService>().Should().NotBeNull(
+            "官方仅向自建应用开放创建对外收款账户域（代开发/第三方暂不支持），本域仅注册自建子接口");
+        provider.GetRequiredService<IWechatWorkInternalPayOrderService>().Should().NotBeNull(
+            "官方仅向自建应用开放普通支付域（代开发/第三方暂不支持），本域仅注册自建子接口");
+        provider.GetRequiredService<IWechatWorkInternalPayRefundService>().Should().NotBeNull(
+            "官方仅向自建应用开放退款域（代开发/第三方暂不支持），本域仅注册自建子接口");
+        provider.GetRequiredService<IWechatWorkInternalPayTradeBillService>().Should().NotBeNull(
+            "官方仅向自建应用开放交易账单域（代开发/第三方暂不支持），本域仅注册自建子接口");
+
+        provider.GetService<IWechatWorkPayBillService>().Should().BeNull(
+            "公共父接口 IsAbstract = true，不得注册进 DI（调用方须按应用类型选择子接口）");
+        provider.GetService<IWechatWorkPayMerchantService>().Should().BeNull(
+            "公共父接口 IsAbstract = true，不得注册进 DI（调用方须按应用类型选择子接口）");
+        provider.GetService<IWechatWorkPayFundFlowService>().Should().BeNull(
+            "公共父接口 IsAbstract = true，不得注册进 DI（调用方须按应用类型选择子接口）");
+        provider.GetService<IWechatWorkPayMchApplyService>().Should().BeNull(
+            "公共父接口 IsAbstract = true，不得注册进 DI（调用方须按应用类型选择子接口）");
+        provider.GetService<IWechatWorkPayOrderService>().Should().BeNull(
+            "公共父接口 IsAbstract = true，不得注册进 DI（调用方须按应用类型选择子接口）");
+        provider.GetService<IWechatWorkPayRefundService>().Should().BeNull(
+            "公共父接口 IsAbstract = true，不得注册进 DI（调用方须按应用类型选择子接口）");
+        provider.GetService<IWechatWorkPayTradeBillService>().Should().BeNull(
+            "公共父接口 IsAbstract = true，不得注册进 DI（调用方须按应用类型选择子接口）");
+
+        using var scope = provider.CreateScope();
+        scope.ServiceProvider.GetRequiredService<IWechatWorkInternalPayBillService>().Should().NotBeNull(
+            "ValidateScopes = true 变体下子 scope 内同样可解析");
+        scope.ServiceProvider.GetRequiredService<IWechatWorkThirdPartyPayBillService>().Should().NotBeNull(
+            "ValidateScopes = true 变体下子 scope 内同样可解析");
+        scope.ServiceProvider.GetRequiredService<IWechatWorkProviderPayBillService>().Should().NotBeNull(
+            "ValidateScopes = true 变体下子 scope 内同样可解析");
+        scope.ServiceProvider.GetRequiredService<IWechatWorkInternalPayMerchantService>().Should().NotBeNull(
+            "ValidateScopes = true 变体下子 scope 内同样可解析");
+        scope.ServiceProvider.GetRequiredService<IWechatWorkInternalPayFundFlowService>().Should().NotBeNull(
+            "ValidateScopes = true 变体下子 scope 内同样可解析");
+        scope.ServiceProvider.GetRequiredService<IWechatWorkInternalPayMchApplyService>().Should().NotBeNull(
+            "ValidateScopes = true 变体下子 scope 内同样可解析");
+        scope.ServiceProvider.GetRequiredService<IWechatWorkInternalPayOrderService>().Should().NotBeNull(
+            "ValidateScopes = true 变体下子 scope 内同样可解析");
+        scope.ServiceProvider.GetRequiredService<IWechatWorkInternalPayRefundService>().Should().NotBeNull(
+            "ValidateScopes = true 变体下子 scope 内同样可解析");
+        scope.ServiceProvider.GetRequiredService<IWechatWorkInternalPayTradeBillService>().Should().NotBeNull(
+            "ValidateScopes = true 变体下子 scope 内同样可解析");
+    }
+
+    /// <summary>
+    /// MsgAudit 模块（会话内容存档域：开启成员列表域 + 机器人信息域 + 会话同意情况域 +
+    /// 内部群信息域，官方仅自建开放）：AddMsgAuditApi 注册的仅自建子接口客户端必须可解析
+    /// （公共父接口 IsAbstract 不参与 DI 注册，仅自建子接口承载端点）。
+    /// </summary>
+    [Fact]
+    public void AddMsgAuditApi_ShouldRegisterMsgAuditDomainClients_ResolvableInRootAndScope()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddWechatApp(new List<WechatAppConfig> { InternalConfig() });
+        services.AddWechatWorkServices(builder => builder.AddMsgAuditApi());
+
+        using var provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true });
+
+        provider.GetRequiredService<IWechatWorkInternalMsgAuditPermitUserService>().Should().NotBeNull(
+            "官方仅向自建应用开放开启成员列表域（代开发/第三方暂不支持），本域仅注册自建子接口");
+        provider.GetRequiredService<IWechatWorkInternalMsgAuditRobotService>().Should().NotBeNull(
+            "官方仅向自建应用开放机器人信息域（代开发/第三方暂不支持），本域仅注册自建子接口");
+        provider.GetRequiredService<IWechatWorkInternalMsgAuditAgreeService>().Should().NotBeNull(
+            "官方仅向自建应用开放会话同意情况域（代开发/第三方暂不支持），本域仅注册自建子接口");
+        provider.GetRequiredService<IWechatWorkInternalMsgAuditGroupChatService>().Should().NotBeNull(
+            "官方仅向自建应用开放内部群信息域（代开发/第三方暂不支持），本域仅注册自建子接口");
+
+        provider.GetService<IWechatWorkMsgAuditPermitUserService>().Should().BeNull(
+            "公共父接口 IsAbstract = true，不得注册进 DI（调用方须按应用类型选择子接口）");
+        provider.GetService<IWechatWorkMsgAuditRobotService>().Should().BeNull(
+            "公共父接口 IsAbstract = true，不得注册进 DI（调用方须按应用类型选择子接口）");
+        provider.GetService<IWechatWorkMsgAuditAgreeService>().Should().BeNull(
+            "公共父接口 IsAbstract = true，不得注册进 DI（调用方须按应用类型选择子接口）");
+        provider.GetService<IWechatWorkMsgAuditGroupChatService>().Should().BeNull(
+            "公共父接口 IsAbstract = true，不得注册进 DI（调用方须按应用类型选择子接口）");
+
+        using var scope = provider.CreateScope();
+        scope.ServiceProvider.GetRequiredService<IWechatWorkInternalMsgAuditPermitUserService>().Should().NotBeNull(
+            "ValidateScopes = true 变体下子 scope 内同样可解析");
+        scope.ServiceProvider.GetRequiredService<IWechatWorkInternalMsgAuditRobotService>().Should().NotBeNull(
+            "ValidateScopes = true 变体下子 scope 内同样可解析");
+        scope.ServiceProvider.GetRequiredService<IWechatWorkInternalMsgAuditAgreeService>().Should().NotBeNull(
+            "ValidateScopes = true 变体下子 scope 内同样可解析");
+        scope.ServiceProvider.GetRequiredService<IWechatWorkInternalMsgAuditGroupChatService>().Should().NotBeNull(
+            "ValidateScopes = true 变体下子 scope 内同样可解析");
+    }
+
+    /// <summary>
+    /// School 模块（家校沟通域：家校沟通基础域为三类应用公共面；家校管理配置域官方仅自建与第三方开放，
+    /// 无代开发子接口）：AddSchoolApi 注册的应用类型子接口客户端必须可解析
+    /// （公共父接口 IsAbstract 不参与 DI 注册；配置域继承链上恰好只有自建与第三方子接口）。
+    /// </summary>
+    [Fact]
+    public void AddSchoolApi_ShouldRegisterSchoolDomainClients_ResolvableInRootAndScope()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddWechatApp(new List<WechatAppConfig> { InternalConfig() });
+        services.AddWechatWorkServices(builder => builder.AddSchoolApi());
+
+        using var provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true });
+
+        provider.GetRequiredService<IWechatWorkInternalSchoolService>().Should().NotBeNull();
+        provider.GetRequiredService<IWechatWorkThirdPartySchoolService>().Should().NotBeNull();
+        provider.GetRequiredService<IWechatWorkProviderSchoolService>().Should().NotBeNull();
+        provider.GetRequiredService<IWechatWorkInternalSchoolSettingService>().Should().NotBeNull(
+            "家校管理配置域注册自建子接口");
+        provider.GetRequiredService<IWechatWorkThirdPartySchoolSettingService>().Should().NotBeNull(
+            "家校管理配置域官方亦向第三方应用开放，本域注册第三方子接口");
+
+        provider.GetService<IWechatWorkSchoolService>().Should().BeNull(
+            "公共父接口 IsAbstract = true，不得注册进 DI（调用方须按应用类型选择子接口）");
+        provider.GetService<IWechatWorkSchoolSettingService>().Should().BeNull(
+            "公共父接口 IsAbstract = true，不得注册进 DI（调用方须按应用类型选择子接口）");
+
+        using var scope = provider.CreateScope();
+        scope.ServiceProvider.GetRequiredService<IWechatWorkInternalSchoolService>().Should().NotBeNull(
+            "ValidateScopes = true 变体下子 scope 内同样可解析");
+        scope.ServiceProvider.GetRequiredService<IWechatWorkThirdPartySchoolService>().Should().NotBeNull(
+            "ValidateScopes = true 变体下子 scope 内同样可解析");
+        scope.ServiceProvider.GetRequiredService<IWechatWorkProviderSchoolService>().Should().NotBeNull(
+            "ValidateScopes = true 变体下子 scope 内同样可解析");
+        scope.ServiceProvider.GetRequiredService<IWechatWorkInternalSchoolSettingService>().Should().NotBeNull(
+            "ValidateScopes = true 变体下子 scope 内同样可解析");
+        scope.ServiceProvider.GetRequiredService<IWechatWorkThirdPartySchoolSettingService>().Should().NotBeNull(
             "ValidateScopes = true 变体下子 scope 内同样可解析");
     }
 

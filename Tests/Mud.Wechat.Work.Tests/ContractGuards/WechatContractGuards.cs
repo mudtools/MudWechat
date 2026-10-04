@@ -263,8 +263,10 @@ public class WechatContractGuards
                 // 零端点父接口 + 仅第三方子接口）。
                 nameof(IWechatWorkExternalContactAcquisitionComponentBillService),
                 nameof(IWechatWorkThirdPartyExternalContactAcquisitionComponentBillService),
-                // 上下游域（CorpGroup 模块）：6 端点在父接口（第三方仅获取应用共享信息 95324，随父接口继承），父接口 + 三个空标记子接口。
+                // 上下游域（CorpGroup 模块）：公共面 1 端点在父接口 + 官方无第三方文档的 5 端点在自建代开发公共父接口
+                //（第三方仅获取应用共享信息 95324，其子接口不继承自建代开发公共父接口）。
                 nameof(IWechatWorkCorpGroupService),
+                nameof(IWechatWorkCorpGroupInternalProviderService),
                 nameof(IWechatWorkInternalCorpGroupService),
                 nameof(IWechatWorkThirdPartyCorpGroupService),
                 nameof(IWechatWorkProviderCorpGroupService),
@@ -293,8 +295,13 @@ public class WechatContractGuards
                 nameof(IWechatWorkProviderMessageService),
                 nameof(IWechatWorkAppChatService),
                 nameof(IWechatWorkInternalAppChatService),
+                // 消息推送·家校学校通知族（Message 模块）：8 个端点为三类应用公共面
+                //（发送「学校通知」8 种 msgtype，自建 91609、第三方 92291、代开发 96720/96723；
+                // 父接口 + 三个应用类型空标记子接口）。
                 nameof(IWechatWorkSchoolMessageService),
                 nameof(IWechatWorkInternalSchoolMessageService),
+                nameof(IWechatWorkThirdPartySchoolMessageService),
+                nameof(IWechatWorkProviderSchoolMessageService),
                 nameof(IWechatWorkSmartSheetGroupChatService),
                 nameof(IWechatWorkInternalSmartSheetGroupChatService),
                 // 账号ID域（AccountId 模块）：七接口族跨三种令牌路由键——ID 转换族 / tmp_external_userid 转换族 /
@@ -321,7 +328,7 @@ public class WechatContractGuards
                 nameof(IWechatWorkAccountIdChatIdUpgradeService),
                 nameof(IWechatWorkProviderAccountIdChatIdUpgradeService),
                 // 微信客服·客服账号管理域（Kf 模块）：5 个端点为三类应用公共面
-                //（添加 94661/96404、列表 94662/96415（官方即 POST）、删除 94663/96405、
+                //（添加 94662/96404、列表 94661/96415（官方即 POST）、删除 94663/96405、
                 // 修改 94664/96406、获取客服账号链接 94665/96416；父接口 + 三个应用类型空标记子接口）。
                 nameof(IWechatWorkKfAccountService),
                 nameof(IWechatWorkInternalKfAccountService),
@@ -348,6 +355,119 @@ public class WechatContractGuards
                 nameof(IWechatWorkThirdPartyIdentitySuiteService),
                 nameof(IWechatWorkIdentityTfaService),
                 nameof(IWechatWorkInternalIdentityTfaService),
+                // 微信客服·会话分配与消息收发域（Kf 模块）：4 条路由 / 14 个端点方法为三类应用公共面
+                //（会话状态 94669/94698/96425、发送消息 94677/94700/96427（10 种 msgtype 同路由多方法）、
+                // 事件响应消息 95122/94910/96428（2 种 msgtype 同路由多方法）；父接口 + 三个应用类型空标记子接口）。
+                nameof(IWechatWorkKfSessionService),
+                nameof(IWechatWorkInternalKfSessionService),
+                nameof(IWechatWorkThirdPartyKfSessionService),
+                nameof(IWechatWorkProviderKfSessionService),
+                // 微信客服·客户基础信息域（Kf 模块）：1 个端点为三类应用公共面
+                //（batchget 95159/95149/96429；父接口 + 三个应用类型空标记子接口）。
+                nameof(IWechatWorkKfCustomerService),
+                nameof(IWechatWorkInternalKfCustomerService),
+                nameof(IWechatWorkThirdPartyKfCustomerService),
+                nameof(IWechatWorkProviderKfCustomerService),
+                // 微信客服·「升级服务」配置域（Kf 模块）：3 个端点为三类应用公共面
+                //（get_upgrade_service_config（GET）/ upgrade_service / cancel_upgrade_service 94674/94702/96422；
+                // 父接口 + 三个应用类型空标记子接口）。
+                nameof(IWechatWorkKfUpgradeService),
+                nameof(IWechatWorkInternalKfUpgradeService),
+                nameof(IWechatWorkThirdPartyKfUpgradeService),
+                nameof(IWechatWorkProviderKfUpgradeService),
+                // 微信客服·统计管理域（Kf 模块）：2 个端点为三类应用公共面
+                //（企业汇总 95489/95492/96432、接待人员明细 95490/95493/96433；父接口 + 三个应用类型空标记子接口）。
+                nameof(IWechatWorkKfStatisticsService),
+                nameof(IWechatWorkInternalKfStatisticsService),
+                nameof(IWechatWorkThirdPartyKfStatisticsService),
+                nameof(IWechatWorkProviderKfStatisticsService),
+                // 微信客服·机器人管理域（Kf 模块）：8 个端点官方仅自建应用开放
+                //（知识库分组 95971、知识库问答 95972，路由在 kf/knowledge/ 下；零端点父接口 + 仅自建子接口）。
+                nameof(IWechatWorkKfKnowledgeService),
+                nameof(IWechatWorkInternalKfKnowledgeService),
+                // 微信客服·微信客服组件域（Kf 模块）：3 个端点官方仅由微信客服组件应用（套件形态）消费
+                //（99368/99400/99367，前两条与客服账号管理域共用路由；零端点父接口 + 仅第三方子接口）。
+                nameof(IWechatWorkKfComponentService),
+                nameof(IWechatWorkThirdPartyKfComponentService),
+                // 企业支付·对外收款记录域（Pay 模块）：2 个端点为三类应用公共面
+                //（获取对外收款记录 93667/93727/96701、获取收款项目的商户单号 95944/95936/96702；
+                // 父接口 + 三个应用类型空标记子接口）。
+                nameof(IWechatWorkPayBillService),
+                nameof(IWechatWorkInternalPayBillService),
+                nameof(IWechatWorkThirdPartyPayBillService),
+                nameof(IWechatWorkProviderPayBillService),
+                // 企业支付·收款商户号管理域（Pay 模块）：2 个端点官方仅自建应用开放
+                //（查询商户号详情 + 设置商户号使用范围 93666；零端点父接口 + 仅自建子接口）。
+                nameof(IWechatWorkPayMerchantService),
+                nameof(IWechatWorkInternalPayMerchantService),
+                // 企业支付·资金流水域（Pay 模块）：1 个端点官方仅自建应用开放
+                //（获取资金流水 98100；零端点父接口 + 仅自建子接口）。
+                nameof(IWechatWorkPayFundFlowService),
+                nameof(IWechatWorkInternalPayFundFlowService),
+                // 企业支付·创建对外收款账户域（Pay 模块）：3 个端点官方仅自建应用开放
+                //（提交申请单 98973、查询申请单状态 98974、提交图片 98972；零端点父接口 + 仅自建子接口）。
+                nameof(IWechatWorkPayMchApplyService),
+                nameof(IWechatWorkInternalPayMchApplyService),
+                // 企业支付·普通支付域（Pay 模块）：4 个端点官方仅自建应用开放
+                //（小程序下单 97322、查询订单 97323、关闭订单 97324、获取支付签名 98130；
+                // 零端点父接口 + 仅自建子接口）。
+                nameof(IWechatWorkPayOrderService),
+                nameof(IWechatWorkInternalPayOrderService),
+                // 企业支付·退款域（Pay 模块）：2 个端点官方仅自建应用开放
+                //（申请退款 97333、查询退款 97352；零端点父接口 + 仅自建子接口）。
+                nameof(IWechatWorkPayRefundService),
+                nameof(IWechatWorkInternalPayRefundService),
+                // 企业支付·交易账单域（Pay 模块）：1 个端点官方仅自建应用开放
+                //（交易账单申请 98115；零端点父接口 + 仅自建子接口）。
+                nameof(IWechatWorkPayTradeBillService),
+                nameof(IWechatWorkInternalPayTradeBillService),
+                // 会话内容存档·开启成员列表域（MsgAudit 模块）：1 个端点官方仅自建应用开放
+                //（获取开启成员列表 91774；零端点父接口 + 仅自建子接口）。
+                nameof(IWechatWorkMsgAuditPermitUserService),
+                nameof(IWechatWorkInternalMsgAuditPermitUserService),
+                // 会话内容存档·机器人信息域（MsgAudit 模块）：1 个端点官方仅自建应用开放
+                //（获取机器人信息 91614「获取会话内容」页内唯一 HTTP API，官方即 GET；零端点父接口 + 仅自建子接口）。
+                nameof(IWechatWorkMsgAuditRobotService),
+                nameof(IWechatWorkInternalMsgAuditRobotService),
+                // 会话内容存档·会话同意情况域（MsgAudit 模块）：2 个端点官方仅自建应用开放
+                //（单聊同意 91782 ≤2500 次/分钟、群聊同意 91782 ≤1500 次/分钟；零端点父接口 + 仅自建子接口）。
+                nameof(IWechatWorkMsgAuditAgreeService),
+                nameof(IWechatWorkInternalMsgAuditAgreeService),
+                // 会话内容存档·内部群信息域（MsgAudit 模块）：1 个端点官方仅自建应用开放
+                //（获取内部群信息 92951 ≤2000 次/分钟；零端点父接口 + 仅自建子接口）。
+                nameof(IWechatWorkMsgAuditGroupChatService),
+                nameof(IWechatWorkInternalMsgAuditGroupChatService),
+                // 家校沟通·家校沟通基础域（School 模块）：7 个端点为三类应用公共面
+                //（「学校通知」二维码 92320/92197/96719、关注模式 92318/92290、班级群创建方式 92430、
+                // 外部联系人 openid 转换 92323/92292/96721、可使用的家长范围 94895/94960/96725；
+                // 父接口 + 三个应用类型空标记子接口）。
+                nameof(IWechatWorkSchoolService),
+                nameof(IWechatWorkInternalSchoolService),
+                nameof(IWechatWorkThirdPartySchoolService),
+                nameof(IWechatWorkProviderSchoolService),
+                // 家校沟通·家校管理配置域（School 模块）：3 个端点官方仅自建与第三方应用开放
+                //（老师可查看班级模式 92652、手机号转外部联系人 ID 92506；零端点父接口 +
+                // 自建/第三方子接口，官方未向代开发开放，不设代开发子接口）。
+                nameof(IWechatWorkSchoolSettingService),
+                nameof(IWechatWorkInternalSchoolSettingService),
+                nameof(IWechatWorkThirdPartySchoolSettingService),
+                // 家校沟通·学生与家长管理域（School 模块）：16 个端点为三类应用公共面
+                //（学生增删改 92325~92327/92035/92039/92041/100145~100147、批量增删改学生 92328~92330/92037/92040/92042/100148~100150、
+                // 家长增删改 92331~92333/92077/92079/92081/100151~100153、批量增删改家长 92334~92336/92078/92080/92082/100154~100156、
+                // 读取学生或家长 92337/92038/96738、部门学生详情 92338/92043/96739、部门家长详情 92446/92627/96741、
+                // 家校通讯录自动同步模式 92345/92083/100157；父接口 + 三个应用类型空标记子接口）。
+                nameof(IWechatWorkSchoolUserService),
+                nameof(IWechatWorkInternalSchoolUserService),
+                nameof(IWechatWorkThirdPartySchoolUserService),
+                nameof(IWechatWorkProviderSchoolUserService),
+                // 家校沟通·网页授权登录域（School 模块）：自建/代开发 2 端点公共面收敛父接口
+                //（获取访问用户身份 91707/96712、获取家校访问用户身份 95791/96715）；
+                // 第三方为独立路由（getuserinfo3rd 91711、school/getuserinfo3rd 95790）且走 suite_access_token
+                // 令牌路由键，独立成接口不继承公共父接口。
+                nameof(IWechatWorkSchoolAuthService),
+                nameof(IWechatWorkInternalSchoolAuthService),
+                nameof(IWechatWorkProviderSchoolAuthService),
+                nameof(IWechatWorkThirdPartySchoolAuthService),
             },
             "企业微信官方契约强制 Query 注入（MUD005 已知接受风险），新增 Query 注入接口须评估后扩展本守卫");
     }

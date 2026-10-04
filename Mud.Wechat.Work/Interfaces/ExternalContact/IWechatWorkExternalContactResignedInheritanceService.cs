@@ -52,9 +52,9 @@ public interface IWechatWorkExternalContactResignedInheritanceService
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
     /// <returns>离职成员的客户列表（info[]）、是否最后一条（is_last）与下一页游标（next_cursor）。</returns>
     /// <remarks>
-    /// <para><b>企业自建应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/92273"/></para>
-    /// <para><b>第三方应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/92124"/></para>
-    /// <para><b>服务商代开发</b>SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/92273"/></para>
+    /// <para><b>企业自建应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/92124"/></para>
+    /// <para><b>第三方应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/92273"/></para>
+    /// <para><b>服务商代开发</b>SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/96330"/></para>
     /// </remarks>
     [Post("/cgi-bin/externalcontact/get_unassigned_list")]
     Task<GetUnassignedListResponse> GetUnassignedListAsync(
@@ -75,9 +75,9 @@ public interface IWechatWorkExternalContactResignedInheritanceService
     /// <returns>每个客户的分配结果列表（customer[]）。</returns>
     /// <remarks>
     /// <para>原接口「分配在职或离职成员的客户」官方不再更新维护，应使用本接口。</para>
-    /// <para><b>企业自建应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/94100"/></para>
-    /// <para><b>第三方应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/94081"/></para>
-    /// <para><b>服务商代开发</b>SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/94100"/></para>
+    /// <para><b>企业自建应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/94081"/></para>
+    /// <para><b>第三方应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/94100"/></para>
+    /// <para><b>服务商代开发</b>SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/96331"/></para>
     /// </remarks>
     [Post("/cgi-bin/externalcontact/resigned/transfer_customer")]
     Task<ResignedTransferCustomerResponse> ResignedTransferCustomerAsync(
@@ -94,9 +94,9 @@ public interface IWechatWorkExternalContactResignedInheritanceService
     /// <returns>每个客户的接替状态列表（customer[]）与下一页游标（next_cursor）。</returns>
     /// <remarks>
     /// <para>原接口「查询客户接替结果」官方不再更新维护，应使用本接口。</para>
-    /// <para><b>企业自建应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/94101"/></para>
-    /// <para><b>第三方应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/94082"/></para>
-    /// <para><b>服务商代开发</b>SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/94101"/></para>
+    /// <para><b>企业自建应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/94082"/></para>
+    /// <para><b>第三方应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/94101"/></para>
+    /// <para><b>服务商代开发</b>SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/96333"/></para>
     /// </remarks>
     [Post("/cgi-bin/externalcontact/resigned/transfer_result")]
     Task<GetResignedTransferResultResponse> GetResignedTransferResultAsync(
@@ -115,9 +115,9 @@ public interface IWechatWorkExternalContactResignedInheritanceService
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
     /// <returns>没能成功继承的群列表（failed_chat_list）。</returns>
     /// <remarks>
-    /// <para><b>企业自建应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/93242"/></para>
-    /// <para><b>第三方应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/92127"/></para>
-    /// <para><b>服务商代开发</b>SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/93242"/></para>
+    /// <para><b>企业自建应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/92127"/></para>
+    /// <para><b>第三方应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/93242"/></para>
+    /// <para><b>服务商代开发</b>SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/96334"/></para>
     /// </remarks>
     [Post("/cgi-bin/externalcontact/groupchat/transfer")]
     Task<ResignedTransferGroupChatResponse> ResignedTransferGroupChatAsync(

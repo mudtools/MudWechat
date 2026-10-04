@@ -21,7 +21,7 @@ public class GetBatchJobResultResponse : WechatWorkResponse
 
     /// <summary>
     /// 获取或设置操作类型：<c>sync_user</c>（增量更新成员）、<c>replace_user</c>（全量覆盖成员）、
-    /// <c>replace_party</c>（全量覆盖部门）。
+    /// <c>replace_party</c>（全量覆盖部门）、<c>invite_user</c>（邀请成员关注）。
     /// </summary>
     [JsonPropertyName("type")]
     public string? Type { get; set; }
@@ -37,6 +37,12 @@ public class GetBatchJobResultResponse : WechatWorkResponse
     /// </summary>
     [JsonPropertyName("percentage")]
     public int? Percentage { get; set; }
+
+    /// <summary>
+    /// 获取或设置预估剩余时间（单位：分钟；任务完成时为 0）。
+    /// </summary>
+    [JsonPropertyName("remaintime")]
+    public int? RemainTime { get; set; }
 
     /// <summary>
     /// 获取或设置详细的处理结果（任务完成后此字段有效；元素形状按 <see cref="Type"/> 区分，

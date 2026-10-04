@@ -78,4 +78,44 @@ public class ExternalContactInfo
     /// </summary>
     [JsonPropertyName("external_profile")]
     public ExternalProfile? ExternalProfile { get; set; }
+
+    /// <summary>
+    /// 获取或设置是否关注「学校通知」（官方可选）：1 - 已关注（仅已关注时返回）。
+    /// <para>家校沟通口径（官方文档 91670）：家长扫码关注「学校通知」后返回该字段。</para>
+    /// </summary>
+    [JsonPropertyName("is_subscribe")]
+    public int? IsSubscribe { get; set; }
+
+    /// <summary>
+    /// 获取或设置学校为家长设置的备注信息（官方可选，见 <see cref="CustomerSubscriberInfo"/>；
+    /// 家校沟通场景返回）。
+    /// </summary>
+    [JsonPropertyName("subscriber_info")]
+    public CustomerSubscriberInfo? SubscriberInfo { get; set; }
+}
+
+/// <summary>
+/// 学校为家长设置的备注信息（<see cref="ExternalContactInfo.SubscriberInfo"/>，
+/// 家校沟通场景的获取客户详情响应返回）。
+/// </summary>
+[HttpJsonSerializable(SerializerClassName = "Customer")]
+public class CustomerSubscriberInfo
+{
+    /// <summary>
+    /// 获取或设置学校为家长设置的标签 id。
+    /// </summary>
+    [JsonPropertyName("tag_id")]
+    public string? TagId { get; set; }
+
+    /// <summary>
+    /// 获取或设置学校为家长备注的手机号列表（第三方应用不返回）。
+    /// </summary>
+    [JsonPropertyName("remark_mobiles")]
+    public List<string>? RemarkMobiles { get; set; }
+
+    /// <summary>
+    /// 获取或设置学校对家长的备注（默认格式「学生姓名-关系」）。
+    /// </summary>
+    [JsonPropertyName("remark")]
+    public string? Remark { get; set; }
 }

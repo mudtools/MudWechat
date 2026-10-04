@@ -1,0 +1,52 @@
+// -----------------------------------------------------------------------
+//  作者：Mud Studio  版权所有 (c) Mud Studio 2026
+//  Mud.Wechat 项目的版权、商标、专利和其他相关权利均受相应法律法规的保护。
+//  本项目主要遵循 MIT 许可证进行分发和使用。许可证位于源代码树根目录中的 LICENSE-MIT 文件。
+//  不得利用本项目从事危害国家安全、扰乱社会秩序、侵犯他人合法权益等法律法规禁止的活动！任何基于本项目开发而产生的一切法律纠纷和责任，我们不承担任何责任！
+// -----------------------------------------------------------------------
+
+using Mud.Wechat.Work.DataModels.MsgAudit;
+
+namespace Mud.Wechat.Work;
+
+/// <summary>
+/// 企业微信「会话内容存档」模块内部群信息域企业自建应用 SDK（获取会话内容存档内部群信息）。
+/// <para>
+/// 官方仅向自建应用开放本域 1 个端点（代开发应用与第三方应用均暂不支持），
+/// 声明于本接口（形态对齐 <see cref="IWechatWorkInternalPayFundFlowService"/>）。
+/// </para>
+/// </summary>
+/// <remarks>
+/// <para>
+/// 消费应用自身 access_token（路由键 <see cref="WechatTokenTypes.AccessToken"/>）。
+/// 官方权限口径：access_token 必须由「会话内容存档」应用 secret 获取。
+/// </para>
+/// <para>
+/// MUD005 已知接受风险：企业微信官方契约强制令牌走 Query 参数（<c>access_token</c>），无法改用 Header。
+/// </para>
+/// </remarks>
+[HttpClientApi(RegistryGroupName = "MsgAudit",
+    TokenManage = nameof(IWechatAppManager), InheritedFrom = nameof(WechatWorkMsgAuditGroupChatService))]
+[Token(TokenType = WechatTokenTypes.AccessToken,
+      InjectionMode = TokenInjectionMode.Query, Name = "access_token")]
+public interface IWechatWorkInternalMsgAuditGroupChatService : IWechatWorkMsgAuditGroupChatService
+{
+    /// <summary>
+    /// 获取会话内容存档内部群信息
+    /// <para>按 roomid 查询内部群的名称、创建者、创建时间、群公告与群成员列表。</para>
+    /// <para>官方业务限制：仅支持查询内部群；调用频率不可超过 2000 次/分钟；
+    /// 错误码 301052 表示会话存档已过期。</para>
+    /// </summary>
+    /// <param name="request">查询请求体（<see cref="GetMsgAuditGroupChatRequest"/>：
+    /// roomid（填入会话内容存档中获取到的 roomid））。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
+    /// <returns>内部群信息（roomname / creator / room_create_time / notice / members）。</returns>
+    /// <remarks>
+    /// <para><b>企业自建应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/92951"/></para>
+    /// <para>官方业务限制：代开发应用、第三方应用均暂不支持本接口。</para>
+    /// </remarks>
+    [Post("/cgi-bin/msgaudit/groupchat/get")]
+    Task<GetMsgAuditGroupChatResponse> GetGroupChatInfoAsync(
+        [Body] GetMsgAuditGroupChatRequest request,
+        CancellationToken cancellationToken = default);
+}

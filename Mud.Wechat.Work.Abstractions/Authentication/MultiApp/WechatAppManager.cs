@@ -481,7 +481,8 @@ public class WechatAppManager : IWechatAppManager, IDisposable
                 null,
                 recoveryOptionsMonitor,
                 recoveryLogger,
-                new WechatTokenManagerRegistry(primaryTokenManager, providerTokenManager, suiteTokenManager, corpTokenManager));
+                new WechatTokenManagerRegistry(
+                    config.AppType, primaryTokenManager, providerTokenManager, suiteTokenManager, corpTokenManager));
 
             // MR5：增强客户端与生成认证客户端均未实现 IDisposable（handler 由 IHttpClientFactory 池管理），
             // Track 以 is IDisposable 判定收集——当前装配链仅令牌管理器命中，未来新增可释放产物自动纳管。
@@ -887,11 +888,19 @@ public class WechatAppManager : IWechatAppManager, IDisposable
     /// 按令牌类型路由的令牌管理器注册表（恢复执行器经 <see cref="ITokenManagerRegistry"/>
     /// 按 <c>TokenRecoveryContext.TokenManagerKey</c> 定位管理器）。
     /// </summary>
+    /// <remarks>
+    /// 覆盖三类键：① 业务令牌类型键（<see cref="WechatTokenTypes"/>，公共父接口与宿主直调用）；
+    /// ② 归属域键（<see cref="WechatTokenManagerKeys"/>，应用类型子接口用）——本应用的 AppType 只允许
+    /// 命中其一，另一键刻意不入表（对外来应用类型返回 null，由恢复链路回退构造注入实例）；
+    /// ③ 服务商/套件键。前述键在发送前的归属域校验处已 fail-fast，故此处的不入表仅影响
+    /// 「本不该发起的请求」的恢复路径。
+    /// </remarks>
     private sealed class WechatTokenManagerRegistry : ITokenManagerRegistry
     {
         private readonly Dictionary<string, ITokenManager> _managers;
 
         public WechatTokenManagerRegistry(
+            WechatAppType appType,
             ITokenManager primary,
             IWechatProviderTokenManager? provider,
             IWechatSuiteTokenManager? suite,
@@ -901,6 +910,15 @@ public class WechatAppManager : IWechatAppManager, IDisposable
             {
                 [WechatTokenTypes.AccessToken] = corp ?? primary,
             };
+
+            // 归属域键：本应用类型可拥有哪些键由 WechatTokenRouting.OwnedKeys 单一事实来源给出
+            // （与接口声明、契约守卫同源），避免「新增键却漏入恢复注册表」导致 errcode 恢复静默降级。
+            var ownedManager = appType == WechatAppType.Internal ? primary : (corp ?? primary);
+            foreach (var ownedKey in WechatTokenRouting.OwnedKeys(appType))
+            {
+                _managers[ownedKey] = ownedManager;
+            }
+
             if (provider != null) _managers[WechatTokenTypes.ProviderAccessToken] = provider;
             if (suite != null) _managers[WechatTokenTypes.SuiteAccessToken] = suite;
         }

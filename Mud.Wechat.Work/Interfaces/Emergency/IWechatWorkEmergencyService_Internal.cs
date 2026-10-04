@@ -26,6 +26,7 @@ namespace Mud.Wechat.Work;
 [HttpClientApi(RegistryGroupName = "Emergency",
     TokenManage = nameof(IWechatAppManager), InheritedFrom = nameof(WechatWorkEmergencyService))]
 [Token(TokenType = WechatTokenTypes.AccessToken,
+      TokenManagerKey = WechatTokenManagerKeys.InternalAccessToken,
       InjectionMode = TokenInjectionMode.Query, Name = "access_token")]
 public interface IWechatWorkInternalEmergencyService : IWechatWorkEmergencyService
 {

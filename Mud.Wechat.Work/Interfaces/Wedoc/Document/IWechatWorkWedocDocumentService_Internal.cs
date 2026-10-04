@@ -28,6 +28,7 @@ namespace Mud.Wechat.Work;
 [HttpClientApi(RegistryGroupName = "Wedoc",
     TokenManage = nameof(IWechatAppManager), InheritedFrom = nameof(WechatWorkWedocDocumentService))]
 [Token(TokenType = WechatTokenTypes.AccessToken,
+      TokenManagerKey = WechatTokenManagerKeys.InternalAccessToken,
       InjectionMode = TokenInjectionMode.Query, Name = "access_token")]
 public interface IWechatWorkInternalWedocDocumentService : IWechatWorkWedocDocumentService
 {

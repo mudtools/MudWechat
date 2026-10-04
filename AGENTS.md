@@ -115,6 +115,7 @@ scripts/                      # verify-build / audit-config-keys / GenerateJsonC
 - **模板 id**：代开发 `template_id` 即 `suite_id`（`dk` 开头）⇒ `WechatAppConfig` **不提供独立 `TemplateId`**（非法状态不可表达）。接口级 `templateid_list` 由宿主显式传入。
 - **令牌注入统一走 Query**（企微契约，非 Header）。白名单由守卫 G5 锁定，**新增须先评估、再显式扩展 G5**；例外 `get_customized_auth_url` 以显式 Query 参数传令牌且**不带 `[Token]`**。
 - **`TokenKey` 三段式 `{tokenType}:{appKey}:{scopeKey}`**（`WechatAppTokenManagerBase.BuildCache` 构造）；`WechatTokenTypes` 一律 `"Wechat."` 前缀。
+- **应用类型子接口必须声明「凭据归属域」**：`[Token(TokenManagerKey = WechatTokenManagerKeys.InternalAccessToken | CorpAccessToken)]`（键值 `Wechat.AccessToken@Internal` / `Wechat.AccessToken@Corp`）；公共父接口**不声明**。`TokenType` 恒为官方契约值（`Wechat.AccessToken`），**不得按应用类型拆分**（会改变注入参数名）。归属域在唯一咽喉点 `WechatAppContext.GetTokenManager` 校验，错配抛 `WechatTokenOwnerMismatchException`（fail-fast，不静默取错令牌）；恢复注册表的键集折叠自 `WechatTokenRouting.OwnedKeys`（单一事实来源）。批量落地用 `scripts/ApplyTokenOwnerKeys.ps1`，一致性由守卫 `WechatTokenOwnerContractGuards` 与 `Tests/.../Extensions/WechatTokenOwnerEndToEndTests.cs` 锁定（方案见本地方案文档 `.docs/MudWechatWork-接口应用类型契约与令牌归属域方案-v1.md`）。
 - **`AppKey` 形状受约束**（`WechatAppKeyValidator`，经 `Validate()` 单点收敛）：`[A-Za-z0-9]` 开头 + 仅 `[A-Za-z0-9._-]` + ≤128。含 `:` 会造成键别名 ⇒ 跨应用令牌串号。
 - **企业级令牌一企一份**（`scopeKey = authCorpId`），**不经声明式 `[Token]`**：显式 `GetTokenAsync(new[]{ authCorpId })`。errcode 恢复**必须显式传 scope**，否则对已缓存企业令牌是空转。
 - `SetCorp` 的 `authCorpId` **必填**（空白即抛），与 `appKey=null`「未声明归属」区分；读上下文须过两级校验（appKey 归属一致 + authCorpId 与 scope 一致）；`InvalidateTokenAsync` 的 `scopes` 非空但全为空白串 ⇒ 编程错误 fail-fast（`[]`/null 保持「全部」）。

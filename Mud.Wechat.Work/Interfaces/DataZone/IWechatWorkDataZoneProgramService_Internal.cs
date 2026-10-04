@@ -27,6 +27,7 @@ namespace Mud.Wechat.Work;
 [HttpClientApi(RegistryGroupName = "DataZone",
     TokenManage = nameof(IWechatAppManager), InheritedFrom = nameof(WechatWorkDataZoneProgramService))]
 [Token(TokenType = WechatTokenTypes.AccessToken,
+      TokenManagerKey = WechatTokenManagerKeys.InternalAccessToken,
       InjectionMode = TokenInjectionMode.Query, Name = "access_token")]
 public interface IWechatWorkInternalDataZoneProgramService : IWechatWorkDataZoneProgramService
 {

@@ -29,6 +29,7 @@ namespace Mud.Wechat.Work;
 [HttpClientApi(RegistryGroupName = "Gov",
     TokenManage = nameof(IWechatAppManager), InheritedFrom = nameof(WechatWorkGovGridListService))]
 [Token(TokenType = WechatTokenTypes.AccessToken,
+      TokenManagerKey = WechatTokenManagerKeys.InternalAccessToken,
       InjectionMode = TokenInjectionMode.Query, Name = "access_token")]
 public interface IWechatWorkInternalGovGridListService : IWechatWorkGovGridListService
 {

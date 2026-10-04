@@ -32,6 +32,7 @@ namespace Mud.Wechat.Work;
 [HttpClientApi(RegistryGroupName = "Approval",
     TokenManage = nameof(IWechatAppManager), InheritedFrom = nameof(WechatWorkApprovalService))]
 [Token(TokenType = WechatTokenTypes.AccessToken,
+      TokenManagerKey = WechatTokenManagerKeys.InternalAccessToken,
       InjectionMode = TokenInjectionMode.Query, Name = "access_token")]
 public interface IWechatWorkInternalApprovalService : IWechatWorkApprovalService
 {

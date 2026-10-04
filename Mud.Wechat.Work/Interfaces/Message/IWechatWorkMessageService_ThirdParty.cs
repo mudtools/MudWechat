@@ -33,6 +33,7 @@ namespace Mud.Wechat.Work;
 [HttpClientApi(RegistryGroupName = "Message",
     TokenManage = nameof(IWechatAppManager), InheritedFrom = nameof(WechatWorkMessageService))]
 [Token(TokenType = WechatTokenTypes.AccessToken,
+      TokenManagerKey = WechatTokenManagerKeys.CorpAccessToken,
       InjectionMode = TokenInjectionMode.Query, Name = "access_token")]
 public interface IWechatWorkThirdPartyMessageService : IWechatWorkMessageService
 {

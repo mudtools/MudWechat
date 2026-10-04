@@ -26,6 +26,7 @@ namespace Mud.Wechat.Work;
 [HttpClientApi(RegistryGroupName = "AccountId",
     TokenManage = nameof(IWechatAppManager), InheritedFrom = nameof(WechatWorkAccountIdInteropService))]
 [Token(TokenType = WechatTokenTypes.AccessToken,
+      TokenManagerKey = WechatTokenManagerKeys.InternalAccessToken,
       InjectionMode = TokenInjectionMode.Query, Name = "access_token")]
 public interface IWechatWorkInternalAccountIdInteropService : IWechatWorkAccountIdInteropService
 {

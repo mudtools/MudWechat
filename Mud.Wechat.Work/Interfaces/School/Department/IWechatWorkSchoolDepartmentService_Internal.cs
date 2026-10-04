@@ -30,6 +30,7 @@ namespace Mud.Wechat.Work;
 [HttpClientApi(RegistryGroupName = "School",
     TokenManage = nameof(IWechatAppManager), InheritedFrom = nameof(WechatWorkSchoolDepartmentService))]
 [Token(TokenType = WechatTokenTypes.AccessToken,
+      TokenManagerKey = WechatTokenManagerKeys.InternalAccessToken,
       InjectionMode = TokenInjectionMode.Query, Name = "access_token")]
 public interface IWechatWorkInternalSchoolDepartmentService : IWechatWorkSchoolDepartmentService
 {

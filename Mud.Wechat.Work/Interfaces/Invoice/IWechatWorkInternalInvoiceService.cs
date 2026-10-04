@@ -29,6 +29,7 @@ namespace Mud.Wechat.Work;
 [HttpClientApi(RegistryGroupName = "Invoice",
     TokenManage = nameof(IWechatAppManager), InheritedFrom = nameof(WechatWorkInvoiceService))]
 [Token(TokenType = WechatTokenTypes.AccessToken,
+      TokenManagerKey = WechatTokenManagerKeys.InternalAccessToken,
       InjectionMode = TokenInjectionMode.Query, Name = "access_token")]
 public interface IWechatWorkInternalInvoiceService : IWechatWorkInvoiceService
 {

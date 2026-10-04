@@ -437,6 +437,23 @@ public class WechatContractGuards
                 nameof(IWechatWorkSchoolSettingService),
                 nameof(IWechatWorkInternalSchoolSettingService),
                 nameof(IWechatWorkThirdPartySchoolSettingService),
+                // 家校沟通·学生与家长管理域（School 模块）：16 个端点为三类应用公共面
+                //（学生增删改 92325~92327/92035/92039/92041/100145~100147、批量增删改学生 92328~92330/92037/92040/92042/100148~100150、
+                // 家长增删改 92331~92333/92077/92079/92081/100151~100153、批量增删改家长 92334~92336/92078/92080/92082/100154~100156、
+                // 读取学生或家长 92337/92038/96738、部门学生详情 92338/92043/96739、部门家长详情 92446/92627/96741、
+                // 家校通讯录自动同步模式 92345/92083/100157；父接口 + 三个应用类型空标记子接口）。
+                nameof(IWechatWorkSchoolUserService),
+                nameof(IWechatWorkInternalSchoolUserService),
+                nameof(IWechatWorkThirdPartySchoolUserService),
+                nameof(IWechatWorkProviderSchoolUserService),
+                // 家校沟通·网页授权登录域（School 模块）：自建/代开发 2 端点公共面收敛父接口
+                //（获取访问用户身份 91707/96712、获取家校访问用户身份 95791/96715）；
+                // 第三方为独立路由（getuserinfo3rd 91711、school/getuserinfo3rd 95790）且走 suite_access_token
+                // 令牌路由键，独立成接口不继承公共父接口。
+                nameof(IWechatWorkSchoolAuthService),
+                nameof(IWechatWorkInternalSchoolAuthService),
+                nameof(IWechatWorkProviderSchoolAuthService),
+                nameof(IWechatWorkThirdPartySchoolAuthService),
             },
             "企业微信官方契约强制 Query 注入（MUD005 已知接受风险），新增 Query 注入接口须评估后扩展本守卫");
     }

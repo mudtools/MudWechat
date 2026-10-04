@@ -8,7 +8,7 @@ namespace Mud.Wechat.Work.DataModels.School;
 
 [JsonSourceGenerationOptions(
     PropertyNameCaseInsensitive = true,
-    PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower,
+    PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase,
     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     WriteIndented = false)]
 [JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.School.GetSchoolAllowScopeResponse))]
@@ -19,15 +19,43 @@ namespace Mud.Wechat.Work.DataModels.School;
 [JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.School.GetSchoolSubscribeModeResponse))]
 [JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.School.GetSchoolSubscribeQrCodeResponse))]
 [JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.School.GetSchoolTeacherViewModeResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.School.GetSchoolUserResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.School.SchoolBatchCreateParentRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.School.SchoolBatchCreateStudentRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.School.SchoolBatchDeleteParentRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.School.SchoolBatchDeleteStudentRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.School.SchoolBatchToExternalUserIdRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.School.SchoolBatchUpdateParentRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.School.SchoolBatchUpdateStudentRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.School.SchoolConvertToOpenIdRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.School.SchoolCreateParentRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.School.SchoolCreateStudentRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.School.SchoolParentChildItem))]
+[JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.School.SchoolSetArchSyncModeRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.School.SchoolUpdateParentRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.School.SchoolUpdateStudentRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.School.SetSchoolChatCreateModeRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.School.SetSchoolSubscribeModeRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.School.SetSchoolTeacherViewModeRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.School.SchoolAuthSchoolUserInfoResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.School.SchoolAuthThirdPartyParentItem))]
+[JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.School.SchoolAuthThirdPartySchoolUserInfoResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.School.SchoolAuthThirdPartyStudentItem))]
+[JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.School.SchoolAuthThirdPartyUserInfoResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.School.SchoolAuthUserInfoResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.School.SchoolBatchParentResultResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.School.SchoolBatchStudentResultResponse))]
 [JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.School.SchoolBatchToExternalUserIdResponse))]
 [JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.School.SchoolMobileConvertSuccessItem))]
 [JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.School.SchoolMobileConvertFailItem))]
+[JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.School.SchoolChildInfo))]
 [JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.School.SchoolConvertToOpenIdResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.School.SchoolDepartmentParentsResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.School.SchoolDepartmentStudentsResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.School.SchoolParentBatchResultItem))]
+[JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.School.SchoolParentInfo))]
+[JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.School.SchoolStudentBatchResultItem))]
+[JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.School.SchoolStudentInfo))]
 internal partial class SchoolJsonContext : JsonSerializerContext
 {
 }

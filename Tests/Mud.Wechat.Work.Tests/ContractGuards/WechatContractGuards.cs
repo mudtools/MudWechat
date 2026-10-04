@@ -548,6 +548,24 @@ public class WechatContractGuards
                 nameof(IWechatWorkInternalDataZoneProgramService),
                 nameof(IWechatWorkThirdPartyDataZoneProgramService),
                 nameof(IWechatWorkProviderDataZoneProgramService),
+                // 邮件·发送邮件族（Mail 模块）：3 个端点为三类应用公共面
+                //（发送普通邮件 97445/97515/97504、发送日程邮件 97854/97867/97865、发送会议邮件 97855/97868/97866；
+                // 三端点共用 compose_send 路由；父接口 + 三个应用类型空标记子接口）。
+                nameof(IWechatWorkMailSendService),
+                nameof(IWechatWorkInternalMailSendService),
+                nameof(IWechatWorkThirdPartyMailSendService),
+                nameof(IWechatWorkProviderMailSendService),
+                // 邮件·获取接收的邮件族（Mail 模块）：2 个端点为三类应用公共面
+                //（获取收件箱邮件列表 97369/97516/97505、获取邮件内容 97979/97983/97982；
+                // 父接口 + 三个应用类型空标记子接口）。
+                nameof(IWechatWorkMailReceiveService),
+                nameof(IWechatWorkInternalMailReceiveService),
+                nameof(IWechatWorkThirdPartyMailReceiveService),
+                nameof(IWechatWorkProviderMailReceiveService),
+                // 邮件·管理应用邮箱账号族（Mail 模块）：2 个端点官方仅自建应用开放
+                //（更新应用邮箱账号 97373、查询应用邮箱账号 97991；零端点父接口 + 仅自建子接口）。
+                nameof(IWechatWorkMailAccountService),
+                nameof(IWechatWorkInternalMailAccountService),
             },
             "企业微信官方契约强制 Query 注入（MUD005 已知接受风险），新增 Query 注入接口须评估后扩展本守卫");
     }

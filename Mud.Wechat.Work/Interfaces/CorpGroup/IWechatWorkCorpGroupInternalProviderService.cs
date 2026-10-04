@@ -58,6 +58,8 @@ public interface IWechatWorkCorpGroupInternalProviderService : IWechatWorkCorpGr
     /// <remarks>
     /// <para><b>企业自建应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/95816"/></para>
     /// <para><b>服务商代开发</b>SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/96873"/></para>
+    /// <para><b>「企业互联」文档树</b>（同路由同契约的旧编号）：<see href="https://developer.work.weixin.qq.com/document/path/93359"/>（自建）、
+    /// <see href="https://developer.work.weixin.qq.com/document/path/96814"/>（代开发）。</para>
     /// </remarks>
     [Post("/cgi-bin/corpgroup/corp/gettoken")]
     Task<GetCorpGroupTokenResponse> GetCorpGroupTokenAsync(
@@ -77,6 +79,8 @@ public interface IWechatWorkCorpGroupInternalProviderService : IWechatWorkCorpGr
     /// <remarks>
     /// <para><b>企业自建应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/95817"/></para>
     /// <para><b>服务商代开发</b>SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/96874"/></para>
+    /// <para><b>「企业互联」文档树</b>（同路由同契约的旧编号）：<see href="https://developer.work.weixin.qq.com/document/path/93355"/>（自建）、
+    /// <see href="https://developer.work.weixin.qq.com/document/path/96813"/>（代开发）。</para>
     /// </remarks>
     [Post("/cgi-bin/miniprogram/transfer_session")]
     Task<TransferMiniProgramSessionResponse> TransferMiniProgramSessionAsync(

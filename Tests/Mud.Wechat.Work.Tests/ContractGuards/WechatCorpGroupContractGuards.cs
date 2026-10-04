@@ -28,6 +28,13 @@ namespace Mud.Wechat.Work.Tests.ContractGuards;
 /// 守卫以反射断言两级继承链的接口集合不漂移，并断言第三方子接口<b>不</b>继承自建+代开发公共父接口；
 /// 新增应用类型须先核对官方文档。
 /// </para>
+/// <para>
+/// 官方「企业互联」与「上下游」两棵文档树并存（同路由同契约，旧/新编号成对）：
+/// 应用共享信息 93403/93405/96816 ↔ 95813/95324/96872，下级企业 access_token 93359/96814 ↔ 95816/96873，
+/// 小程序 session 93355/96813 ↔ 95817/96874；企业互联树 93404「获取下级企业付费版本信息」<b>非独立 HTTP 端点</b>，
+/// 仅为授权流响应 <c>edition_info.agent[].is_shared_from_other_corp</c> 的说明页（已建模于
+/// <c>ProviderAuthentication.Agent.IsSharedFromOtherCorp</c>）——不得据此重复新增端点。
+/// </para>
 /// </remarks>
 public class WechatCorpGroupContractGuards
 {

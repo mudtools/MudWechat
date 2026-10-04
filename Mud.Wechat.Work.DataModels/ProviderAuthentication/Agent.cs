@@ -117,7 +117,10 @@ public class EditionAgent
     public bool IsVirtualVersion { get; set; }
 
     /// <summary>
-    /// 获取或设置是否由企业互联或上下游分享安装。
+    /// 获取或设置是否由企业互联或上下游分享安装
+    ///（企业互联模式下应用由上级企业统一付费，下级企业经授权流接口获取付费应用版本信息时返回该状态；
+    /// 没开通应用版本付费功能的服务商忽略此字段）。
+    /// <para>官方说明文档：<see href="https://developer.work.weixin.qq.com/document/path/93404"/>（获取下级企业付费版本信息，非独立 HTTP 端点）。</para>
     /// </summary>
     [JsonPropertyName("is_shared_from_other_corp")]
     public bool IsSharedFromOtherCorp { get; set; }

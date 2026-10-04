@@ -89,7 +89,7 @@ scripts/                      # verify-build / audit-config-keys / GenerateJsonC
 | 素材管理 | `Interfaces/Media/` | `Media/` | `Media` / `AddMediaApi()` |
 | 电子发票 | `Interfaces/Invoice/` | `Invoice/` | `Invoice` / `AddInvoiceApi()` |
 | 身份验证 | `Interfaces/Identity/` | `Identity/` | `Identity` / `AddIdentityApi()` |
-| 政民沟通 | `Interfaces/Gov/{Grid,EventCategory}/`（按功能族分子目录，目录不参与命名空间） | `Gov/{Grid,EventCategory}/`（子目录仅作组织，命名空间统一 `Gov` 段） | `Gov` / `AddGovApi()` |
+| 政民沟通 | `Interfaces/Gov/{Grid,EventCategory,Patrol,Resident}/`（按功能族分子目录，目录不参与命名空间） | `Gov/{Grid,EventCategory,Patrol,Resident,Report}/`（子目录仅作组织，命名空间统一 `Gov` 段；`Report/` 为巡查/居民上报两族复用嵌套类型） | `Gov` / `AddGovApi()` |
 | 数据与智能专区 | `Interfaces/DataZone/`（基础接口域 + 应用调用专区程序域两族；差异端点在子接口：获取授权信息官方不支持自建、文档存档授权信息官方仅第三方） | `DataZone/` | `DataZone` / `AddDataZoneApi()` |
 | 邮件 | `Interfaces/Mail/{Send,Receive,Account}/`（按功能族分子目录；发送/接收族为三类应用公共面 + 空标记子接口，普通/日程/会议三端点共用 compose_send 路由；管理应用邮箱账号族官方仅自建开放，零端点父接口 + 仅自建子接口承载） | `Mail/` | `Mail` / `AddMailApi()` |
 

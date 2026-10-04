@@ -531,6 +531,18 @@ public class WechatContractGuards
                 nameof(IWechatWorkGovEventCategoryService),
                 nameof(IWechatWorkInternalGovEventCategoryService),
                 nameof(IWechatWorkProviderGovEventCategoryService),
+                // 政民沟通·巡查上报族（Gov 模块）：6 个端点官方仅自建应用开放
+                //（网格及负责人 93531、单位统计 93532、个人统计 93533、分类统计 93534、
+                // 事件列表 93536、事件详情 93535；代开发/第三方官方「暂不支持」，
+                // 零端点父接口 + 唯一自建子接口承载端点）。
+                nameof(IWechatWorkGovPatrolService),
+                nameof(IWechatWorkInternalGovPatrolService),
+                // 政民沟通·居民上报族（Gov 模块）：6 个端点官方仅自建应用开放
+                //（网格及负责人 93514、单位统计 93515、个人统计 93516、分类统计 93517、
+                // 事件列表 93518、事件详情 93519；代开发/第三方官方「暂不支持」，
+                // 零端点父接口 + 唯一自建子接口承载端点）。
+                nameof(IWechatWorkGovResidentService),
+                nameof(IWechatWorkInternalGovResidentService),
                 // 数据与智能专区·基础接口域（DataZone 模块）：9 个端点为三类应用公共面
                 //（设置公钥 99961/99845/100016、获取会话存档授权成员列表 99962/99846/100017、
                 // 设置专区接收回调事件 99963/99850/100018、会话组件敏感信息隐藏设置 100139/100055/100054、

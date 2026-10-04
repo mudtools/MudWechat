@@ -135,7 +135,7 @@ public class WechatWorkServiceBuilder
     /// <summary>注册电子发票业务接口（查询电子发票 / 更新发票状态 / 批量更新发票状态 / 批量查询电子发票，四端点为三类应用公共面收敛父接口 + 空标记子接口）。</summary>
     public WechatWorkServiceBuilder AddInvoiceApi() => AddModule(WechatModule.Invoice);
 
-    /// <summary>注册政民沟通业务接口（配置网格结构域与配置事件类别域为自建/代开发公共面；获取网格列表官方仅自建开放，不设代开发子接口；第三方应用官方暂不支持）。</summary>
+    /// <summary>注册政民沟通业务接口（配置网格结构域与配置事件类别域为自建/代开发公共面；获取网格列表、巡查上报族与居民上报族官方仅自建开放，不设代开发子接口；第三方应用官方暂不支持）。</summary>
     public WechatWorkServiceBuilder AddGovApi() => AddModule(WechatModule.Gov);
 
     /// <summary>注册数据与智能专区业务接口（基础接口域为三类应用公共面 + 差异端点子接口：获取授权信息官方不支持自建、文档存档授权信息官方仅第三方；应用调用专区程序域为三类应用公共面 + 空标记子接口）。</summary>

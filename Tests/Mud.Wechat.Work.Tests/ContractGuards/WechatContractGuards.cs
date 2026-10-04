@@ -326,7 +326,7 @@ public class WechatContractGuards
                 nameof(IWechatWorkAccountIdChatIdUpgradeService),
                 nameof(IWechatWorkProviderAccountIdChatIdUpgradeService),
                 // 微信客服·客服账号管理域（Kf 模块）：5 个端点为三类应用公共面
-                //（添加 94661/96404、列表 94662/96415（官方即 POST）、删除 94663/96405、
+                //（添加 94662/96404、列表 94661/96415（官方即 POST）、删除 94663/96405、
                 // 修改 94664/96406、获取客服账号链接 94665/96416；父接口 + 三个应用类型空标记子接口）。
                 nameof(IWechatWorkKfAccountService),
                 nameof(IWechatWorkInternalKfAccountService),

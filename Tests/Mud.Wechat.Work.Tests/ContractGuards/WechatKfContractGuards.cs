@@ -53,11 +53,11 @@ public class WechatKfContractGuards
     /// </summary>
     private static readonly (Type Interface, string Method, Type HttpAttribute, string Route)[] AccountRoutes =
     {
-        // 客服账号管理族（自建/第三方 94661、代开发 96404）。
+        // 添加客服账号（自建/第三方 94662、代开发 96404）。
         (typeof(IWechatWorkKfAccountService),
             nameof(IWechatWorkKfAccountService.AddAccountAsync),
             typeof(PostAttribute), "/cgi-bin/kf/account/add"),
-        // 获取客服账号列表（自建/第三方 94662、代开发 96415）。
+        // 获取客服账号列表（自建/第三方 94661、代开发 96415）。
         (typeof(IWechatWorkKfAccountService),
             nameof(IWechatWorkKfAccountService.GetAccountListAsync),
             typeof(PostAttribute), "/cgi-bin/kf/account/list"),
@@ -215,7 +215,7 @@ public class WechatKfContractGuards
     /// </summary>
     private static readonly (Type Interface, string Method, Type HttpAttribute, string Route)[] ComponentRoutes =
     {
-        // 获取客服账号列表·组件版（99368，与 94662/96415 客服账号管理域共用路由）。
+        // 获取客服账号列表·组件版（99368，与 94661/96415 客服账号管理域共用路由）。
         (typeof(IWechatWorkThirdPartyKfComponentService),
             nameof(IWechatWorkThirdPartyKfComponentService.GetAccountListAsync),
             typeof(PostAttribute), "/cgi-bin/kf/account/list"),

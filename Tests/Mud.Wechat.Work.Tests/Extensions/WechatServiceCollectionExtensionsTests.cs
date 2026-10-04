@@ -734,9 +734,9 @@ public class WechatServiceCollectionExtensionsTests
 
     /// <summary>
     /// Gov 模块（政民沟通域：配置网格结构域 + 配置事件类别域为自建/代开发公共面；
-    /// 获取网格列表官方仅自建开放，代开发/第三方「暂不支持」）：
+    /// 获取网格列表、巡查上报族与居民上报族官方仅自建开放，代开发/第三方「暂不支持」）：
     /// AddGovApi 注册的应用类型子接口客户端必须可解析
-    /// （公共父接口 IsAbstract 不参与 DI 注册；网格列表族继承链上恰好只有自建子接口）。
+    /// （公共父接口 IsAbstract 不参与 DI 注册；仅自建族继承链上恰好只有自建子接口）。
     /// </summary>
     [Fact]
     public void AddGovApi_ShouldRegisterGovDomainClients_ResolvableInRootAndScope()
@@ -758,12 +758,20 @@ public class WechatServiceCollectionExtensionsTests
             "配置事件类别域注册自建子接口");
         provider.GetRequiredService<IWechatWorkProviderGovEventCategoryService>().Should().NotBeNull(
             "配置事件类别域官方亦向代开发应用开放，本域注册代开发子接口");
+        provider.GetRequiredService<IWechatWorkInternalGovPatrolService>().Should().NotBeNull(
+            "巡查上报族官方仅向自建应用开放，本族仅注册自建子接口");
+        provider.GetRequiredService<IWechatWorkInternalGovResidentService>().Should().NotBeNull(
+            "居民上报族官方仅向自建应用开放，本族仅注册自建子接口");
 
         provider.GetService<IWechatWorkGovGridService>().Should().BeNull(
             "公共父接口 IsAbstract = true，不得注册进 DI（调用方须按应用类型选择子接口）");
         provider.GetService<IWechatWorkGovGridListService>().Should().BeNull(
             "公共父接口 IsAbstract = true，不得注册进 DI（调用方须按应用类型选择子接口）");
         provider.GetService<IWechatWorkGovEventCategoryService>().Should().BeNull(
+            "公共父接口 IsAbstract = true，不得注册进 DI（调用方须按应用类型选择子接口）");
+        provider.GetService<IWechatWorkGovPatrolService>().Should().BeNull(
+            "公共父接口 IsAbstract = true，不得注册进 DI（调用方须按应用类型选择子接口）");
+        provider.GetService<IWechatWorkGovResidentService>().Should().BeNull(
             "公共父接口 IsAbstract = true，不得注册进 DI（调用方须按应用类型选择子接口）");
 
         using var scope = provider.CreateScope();
@@ -776,6 +784,10 @@ public class WechatServiceCollectionExtensionsTests
         scope.ServiceProvider.GetRequiredService<IWechatWorkInternalGovEventCategoryService>().Should().NotBeNull(
             "ValidateScopes = true 变体下子 scope 内同样可解析");
         scope.ServiceProvider.GetRequiredService<IWechatWorkProviderGovEventCategoryService>().Should().NotBeNull(
+            "ValidateScopes = true 变体下子 scope 内同样可解析");
+        scope.ServiceProvider.GetRequiredService<IWechatWorkInternalGovPatrolService>().Should().NotBeNull(
+            "ValidateScopes = true 变体下子 scope 内同样可解析");
+        scope.ServiceProvider.GetRequiredService<IWechatWorkInternalGovResidentService>().Should().NotBeNull(
             "ValidateScopes = true 变体下子 scope 内同样可解析");
     }
 

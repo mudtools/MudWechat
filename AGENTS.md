@@ -89,7 +89,7 @@ scripts/                      # verify-build / audit-config-keys / GenerateJsonC
 | 素材管理 | `Interfaces/Media/` | `Media/` | `Media` / `AddMediaApi()` |
 | 电子发票 | `Interfaces/Invoice/` | `Invoice/` | `Invoice` / `AddInvoiceApi()` |
 | 身份验证 | `Interfaces/Identity/` | `Identity/` | `Identity` / `AddIdentityApi()` |
-| 政民沟通 | `Interfaces/Gov/{Grid,EventCategory}/`（按功能族分子目录，目录不参与命名空间） | `Gov/{Grid,EventCategory}/`（子目录仅作组织，命名空间统一 `Gov` 段） | `Gov` / `AddGovApi()` |
+| 政民沟通 | `Interfaces/Gov/{Grid,EventCategory,Patrol,Resident}/`（按功能族分子目录，目录不参与命名空间） | `Gov/{Grid,EventCategory,Patrol,Resident,Report}/`（子目录仅作组织，命名空间统一 `Gov` 段；`Report/` 为巡查/居民上报两族复用嵌套类型） | `Gov` / `AddGovApi()` |
 
 - 接口命名空间一律 `Mud.Wechat.Work`（**不含** `Interfaces` 段）；DTO 命名空间 `Mud.Wechat.Work.DataModels.{域}[.{子域}]`。
 - `RequestModel/`、`ResponseModel/` 仅作目录组织，命名空间不含该目录段。

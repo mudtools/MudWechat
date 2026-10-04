@@ -19,19 +19,25 @@ namespace Mud.Wechat.Work.Tests.ContractGuards;
 /// （配置网格结构域：4 个端点为自建/代开发公共面，收敛父接口 + 空标记子接口；
 /// 获取网格列表：官方权限表标注代开发与第三方均「暂不支持」，独立成族、继承链上恰好只有自建子接口；
 /// 配置事件类别域：4 个端点为自建/代开发公共面，收敛父接口 + 空标记子接口；
-/// 第三方应用对政民沟通全部 9 个端点标注「暂不支持」，三族均不设第三方子接口）。
+/// 巡查上报族 + 居民上报族：各 6 个端点官方仅自建开放（官方权限表对代开发/第三方均标注「暂不支持」），
+/// 零端点父接口 + 唯一自建子接口承载端点；
+/// 第三方应用对政民沟通全部 21 个端点标注「暂不支持」，各族均不设第三方子接口）。
 /// </summary>
 /// <remarks>
 /// <para>
 /// 形态对齐：配置网格结构域与配置事件类别域对齐家校沟通基础域（公共面收敛 + 空标记子接口）；
-/// 获取网格列表对齐家校沟通健康上报域（官方仅自建开放，仅自建空标记子接口）。
+/// 获取网格列表对齐家校沟通健康上报域（官方仅自建开放，仅自建空标记子接口）；
+/// 巡查上报族与居民上报族对齐身份验证二次验证族（官方仅自建开放，零端点父接口 + 唯一自建子接口承载端点）。
 /// </para>
 /// <para>
-/// 官方反直觉点（勿「顺手修正」）：政民沟通 9 个端点官方即 POST（含仅查询语义的
-/// grid/list / get_user_grid_info / list_cata）；list_cata 官方无请求包体；
+/// 官方反直觉点（勿「顺手修正」）：政民沟通 21 个端点中除巡查/居民 get_grid_info 官方即 GET 外
+/// 全部官方即 POST（含仅查询语义的 grid/list / get_user_grid_info / list_cata /
+/// get_order_list / get_order_info / category_statistic）；list_cata 官方无请求包体；
 /// list_cata 响应列表字段官方 JSON 示例为 <c>category_list</c>、参数说明表误写为
-/// <c>cata_list</c>，以示例为准；grid/list 响应示例的 <c>grid_name</c> 误标为数字，
-/// 参数说明表明确为网格名称字符串，照抄为字符串。
+/// <c>cata_list</c>，以示例为准；grid/list 与巡查/居民 get_grid_info 响应示例的
+/// <c>grid_name</c> 误标为数字，参数说明表明确为网格名称字符串，照抄为字符串；
+/// 巡查/居民上报的代开发文档页（97146~97158）与自建页逐字一致但权限表同为「暂不支持」，
+/// 不得据此为两族补代开发子接口。
 /// </para>
 /// </remarks>
 public class WechatGovContractGuards
@@ -45,6 +51,10 @@ public class WechatGovContractGuards
     private const string GovGridListParentImplementationClassName = "WechatWorkGovGridListService";
 
     private const string GovEventCategoryParentImplementationClassName = "WechatWorkGovEventCategoryService";
+
+    private const string GovPatrolParentImplementationClassName = "WechatWorkGovPatrolService";
+
+    private const string GovResidentParentImplementationClassName = "WechatWorkGovResidentService";
 
     private const string GovRegistryGroupName = "Gov";
 
@@ -105,6 +115,72 @@ public class WechatGovContractGuards
         (typeof(IWechatWorkGovEventCategoryService),
             nameof(IWechatWorkGovEventCategoryService.GetEventCategoryListAsync),
             typeof(PostAttribute), "/cgi-bin/report/grid/list_cata"),
+    };
+
+    /// <summary>
+    /// 巡查上报族官方路由表（官方仅自建应用开放，代开发/第三方「暂不支持」，
+    /// 6 条端点全部由唯一自建子接口承载；获取网格及网格负责人官方即 GET，其余官方即 POST）。
+    /// </summary>
+    private static readonly (Type Interface, string Method, Type HttpAttribute, string Route)[] GovPatrolRoutes =
+    {
+        // 获取配置的网格及网格负责人（93531；官方即 GET，无请求参数）。
+        (typeof(IWechatWorkInternalGovPatrolService),
+            nameof(IWechatWorkInternalGovPatrolService.GetGridInfoAsync),
+            typeof(GetAttribute), "/cgi-bin/report/patrol/get_grid_info"),
+        // 获取单位巡查上报数据统计（93532；官方即 POST）。
+        (typeof(IWechatWorkInternalGovPatrolService),
+            nameof(IWechatWorkInternalGovPatrolService.GetCorpStatusAsync),
+            typeof(PostAttribute), "/cgi-bin/report/patrol/get_corp_status"),
+        // 获取个人巡查上报数据统计（93533；官方即 POST）。
+        (typeof(IWechatWorkInternalGovPatrolService),
+            nameof(IWechatWorkInternalGovPatrolService.GetUserStatusAsync),
+            typeof(PostAttribute), "/cgi-bin/report/patrol/get_user_status"),
+        // 获取上报事件分类统计（93534；官方即 POST）。
+        (typeof(IWechatWorkInternalGovPatrolService),
+            nameof(IWechatWorkInternalGovPatrolService.GetCategoryStatisticAsync),
+            typeof(PostAttribute), "/cgi-bin/report/patrol/category_statistic"),
+        // 获取巡查上报事件列表（93536；官方即 POST，cursor/limit 分页）。
+        (typeof(IWechatWorkInternalGovPatrolService),
+            nameof(IWechatWorkInternalGovPatrolService.GetOrderListAsync),
+            typeof(PostAttribute), "/cgi-bin/report/patrol/get_order_list"),
+        // 获取巡查上报的事件详情信息（93535；官方即 POST）。
+        (typeof(IWechatWorkInternalGovPatrolService),
+            nameof(IWechatWorkInternalGovPatrolService.GetOrderInfoAsync),
+            typeof(PostAttribute), "/cgi-bin/report/patrol/get_order_info"),
+    };
+
+    /// <summary>
+    /// 居民上报族官方路由表（官方仅自建应用开放，代开发/第三方「暂不支持」，
+    /// 6 条端点全部由唯一自建子接口承载；获取网格及网格负责人官方即 GET，其余官方即 POST；
+    /// 与巡查上报族路由段不同（resident vs patrol）、统计字段集不同（pending/total_accepted vs to_be_assigned），
+    /// 两族 DTO 不共用端点请求/响应模型）。
+    /// </summary>
+    private static readonly (Type Interface, string Method, Type HttpAttribute, string Route)[] GovResidentRoutes =
+    {
+        // 获取配置的网格及网格负责人（93514；官方即 GET，无请求参数）。
+        (typeof(IWechatWorkInternalGovResidentService),
+            nameof(IWechatWorkInternalGovResidentService.GetGridInfoAsync),
+            typeof(GetAttribute), "/cgi-bin/report/resident/get_grid_info"),
+        // 获取单位居民上报数据统计（93515；官方即 POST）。
+        (typeof(IWechatWorkInternalGovResidentService),
+            nameof(IWechatWorkInternalGovResidentService.GetCorpStatusAsync),
+            typeof(PostAttribute), "/cgi-bin/report/resident/get_corp_status"),
+        // 获取个人居民上报数据统计（93516；官方即 POST）。
+        (typeof(IWechatWorkInternalGovResidentService),
+            nameof(IWechatWorkInternalGovResidentService.GetUserStatusAsync),
+            typeof(PostAttribute), "/cgi-bin/report/resident/get_user_status"),
+        // 获取上报事件分类统计（93517；官方即 POST）。
+        (typeof(IWechatWorkInternalGovResidentService),
+            nameof(IWechatWorkInternalGovResidentService.GetCategoryStatisticAsync),
+            typeof(PostAttribute), "/cgi-bin/report/resident/category_statistic"),
+        // 获取居民上报事件列表（93518；官方即 POST，cursor/limit 分页）。
+        (typeof(IWechatWorkInternalGovResidentService),
+            nameof(IWechatWorkInternalGovResidentService.GetOrderListAsync),
+            typeof(PostAttribute), "/cgi-bin/report/resident/get_order_list"),
+        // 获取居民上报的事件详情信息（93519；官方即 POST）。
+        (typeof(IWechatWorkInternalGovResidentService),
+            nameof(IWechatWorkInternalGovResidentService.GetOrderInfoAsync),
+            typeof(PostAttribute), "/cgi-bin/report/resident/get_order_info"),
     };
 
     /// <summary>
@@ -193,11 +269,85 @@ public class WechatGovContractGuards
     }
 
     /// <summary>
+    /// 契约守卫 GV1d：巡查上报族全部端点路由必须与官方契约一致
+    /// （官方仅自建应用开放，代开发/第三方「暂不支持」，6 条端点由唯一自建子接口承载；
+    /// 获取网格及网格负责人官方即 GET，其余官方即 POST，勿「顺手统一」）。
+    /// </summary>
+    [Fact]
+    public void GovPatrolEndpoints_ShouldMatchOfficialRoutes()
+    {
+        GovPatrolRoutes.Should().HaveCount(6,
+            "巡查上报族 6 个端点官方仅自建应用开放，由唯一自建子接口承载");
+
+        var distinctRoutes = GovPatrolRoutes.Select(r => r.Route).Distinct().ToList();
+        distinctRoutes.Should().HaveCount(6, "巡查上报族各端点路由互不重复");
+        distinctRoutes.Should().OnlyContain(r => r.StartsWith("/cgi-bin/report/patrol/", StringComparison.Ordinal),
+            "巡查上报族全部路由位于 /cgi-bin/report/patrol/ 段");
+
+        foreach (var (iface, method, httpAttribute, route) in GovPatrolRoutes)
+        {
+            var target = iface.GetMethod(method, BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+            target.Should().NotBeNull($"{iface.Name}.{method} 必须存在");
+
+            var attr = target!.GetCustomAttribute(httpAttribute) as HttpMethodAttribute;
+            attr.Should().NotBeNull($"{iface.Name}.{method} 必须声明 [{httpAttribute.Name.Replace("Attribute", string.Empty)}] 路由");
+            attr!.RequestUri.Should().Be(route, $"{iface.Name}.{method} 路由必须与官方契约一致");
+        }
+
+        // 路由段契约：获取网格及网格负责人官方即 GET，其余 5 条官方即 POST。
+        GovPatrolRoutes.Count(r => r.HttpAttribute == typeof(GetAttribute))
+            .Should().Be(1, "巡查上报族仅获取网格及网格负责人官方即 GET");
+        GovPatrolRoutes.Count(r => r.HttpAttribute == typeof(PostAttribute))
+            .Should().Be(5, "巡查上报族其余 5 条端点官方即 POST");
+    }
+
+    /// <summary>
+    /// 契约守卫 GV1e：居民上报族全部端点路由必须与官方契约一致
+    /// （官方仅自建应用开放，代开发/第三方「暂不支持」，6 条端点由唯一自建子接口承载；
+    /// 获取网格及网格负责人官方即 GET，其余官方即 POST，勿「顺手统一」；
+    /// 居民上报与巡查上报路由仅 patrol/resident 段不同，逐条独立断言防串族）。
+    /// </summary>
+    [Fact]
+    public void GovResidentEndpoints_ShouldMatchOfficialRoutes()
+    {
+        GovResidentRoutes.Should().HaveCount(6,
+            "居民上报族 6 个端点官方仅自建应用开放，由唯一自建子接口承载");
+
+        var distinctRoutes = GovResidentRoutes.Select(r => r.Route).Distinct().ToList();
+        distinctRoutes.Should().HaveCount(6, "居民上报族各端点路由互不重复");
+        distinctRoutes.Should().OnlyContain(r => r.StartsWith("/cgi-bin/report/resident/", StringComparison.Ordinal),
+            "居民上报族全部路由位于 /cgi-bin/report/resident/ 段");
+
+        foreach (var (iface, method, httpAttribute, route) in GovResidentRoutes)
+        {
+            var target = iface.GetMethod(method, BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+            target.Should().NotBeNull($"{iface.Name}.{method} 必须存在");
+
+            var attr = target!.GetCustomAttribute(httpAttribute) as HttpMethodAttribute;
+            attr.Should().NotBeNull($"{iface.Name}.{method} 必须声明 [{httpAttribute.Name.Replace("Attribute", string.Empty)}] 路由");
+            attr!.RequestUri.Should().Be(route, $"{iface.Name}.{method} 路由必须与官方契约一致");
+        }
+
+        // 路由段契约：获取网格及网格负责人官方即 GET，其余 5 条官方即 POST。
+        GovResidentRoutes.Count(r => r.HttpAttribute == typeof(GetAttribute))
+            .Should().Be(1, "居民上报族仅获取网格及网格负责人官方即 GET");
+        GovResidentRoutes.Count(r => r.HttpAttribute == typeof(PostAttribute))
+            .Should().Be(5, "居民上报族其余 5 条端点官方即 POST");
+
+        // 串族防漂移：巡查/居民上报路由尾段同名但 patrol/resident 段互斥。
+        GovPatrolRoutes.Select(r => r.Route)
+            .Should().NotIntersectWith(GovResidentRoutes.Select(r => r.Route).ToList(),
+                "巡查上报与居民上报路由不得共用同一路径（patrol/resident 段互斥）");
+    }
+
+    /// <summary>
     /// 契约守卫 GV2：接口层级与生成器注册形态——
     /// 配置网格结构域与配置事件类别域：自建/代开发公共面收敛父接口（IsAbstract），
     /// 自建/代开发子接口均为零差异端点空标记（第三方应用官方「暂不支持」，不得出现第三方子接口）；
     /// 获取网格列表：官方仅自建开放（代开发/第三方「暂不支持」），继承链上恰好只有自建子接口
-    /// （能力漂移守卫）。
+    /// （能力漂移守卫）；
+    /// 巡查上报族与居民上报族：官方仅自建开放（代开发/第三方「暂不支持」），
+    /// 零端点父接口 + 唯一自建子接口承载端点（对齐身份验证二次验证族，能力漂移守卫）。
     /// </summary>
     [Fact]
     public void GovInterfaceHierarchy_ShouldMatchOfficialOpenSurfaces()
@@ -260,11 +410,58 @@ public class WechatGovContractGuards
             "自建应用类型化面为官方开放的 4 条配置事件类别端点");
         CollectInterfaceEndpoints(typeof(IWechatWorkProviderGovEventCategoryService)).Should().HaveCount(4,
             "代开发应用类型化面为官方开放的 4 条配置事件类别端点");
+
+        // ── 巡查上报族 / 居民上报族：官方仅自建开放（代开发/第三方「暂不支持」），
+        //    零端点父接口 + 唯一自建子接口承载端点（对齐身份验证二次验证族，能力漂移守卫）──
+        var selfBuildOnlyFamilies = new[]
+        {
+            (typeof(IWechatWorkGovPatrolService),
+                new[] { typeof(IWechatWorkInternalGovPatrolService) },
+                GovPatrolParentImplementationClassName, 6,
+                "巡查上报族官方仅向自建应用开放（代开发/第三方暂不支持），继承链上不得出现其它子接口"),
+            (typeof(IWechatWorkGovResidentService),
+                new[] { typeof(IWechatWorkInternalGovResidentService) },
+                GovResidentParentImplementationClassName, 6,
+                "居民上报族官方仅向自建应用开放（代开发/第三方暂不支持），继承链上不得出现其它子接口"),
+        };
+
+        foreach (var (parent, children, implementationClassName, endpointCount, because) in selfBuildOnlyFamilies)
+        {
+            var assignable = parent.Assembly.GetTypes()
+                .Where(t => t.IsInterface && t != parent && parent.IsAssignableFrom(t))
+                .ToList();
+
+            assignable.Should().BeEquivalentTo(children, because);
+
+            var parentApi = parent.GetCustomAttribute<HttpClientApiAttribute>();
+            parentApi.Should().NotBeNull("父接口必须声明 [HttpClientApi]");
+            parentApi!.IsAbstract.Should().BeTrue("公共父接口不参与 DI 注册，必须 IsAbstract = true");
+            parentApi.RegistryGroupName.Should().BeNullOrEmpty("父接口不进入注册组（注册面由子接口承载）");
+            parent.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
+                .Should().BeEmpty("官方仅自建开放：父接口零端点，端点全部由唯一自建子接口承载");
+
+            foreach (var child in children)
+            {
+                var childApi = child.GetCustomAttribute<HttpClientApiAttribute>();
+                childApi.Should().NotBeNull($"{child.Name} 必须声明 [HttpClientApi]");
+                childApi!.RegistryGroupName.Should().Be(GovRegistryGroupName,
+                    $"{child.Name} 必须挂 {GovRegistryGroupName} 注册组" +
+                    $"（Gov 模块共用 Add{GovRegistryGroupName}WebApiHttpClient()）");
+                childApi.InheritedFrom.Should().Be(implementationClassName,
+                    $"{child.Name} 必须继承父接口生成实现类");
+
+                child.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
+                    .Should().HaveCount(endpointCount, $"{child.Name} 承载本族全部 {endpointCount} 条官方端点");
+            }
+
+            CollectInterfaceEndpoints(children[0]).Should().HaveCount(endpointCount,
+                "自建应用类型化面为官方开放的本族全部端点");
+        }
     }
 
     /// <summary>
-    /// 契约守卫 GV3：令牌绑定——Gov 模块三族（配置网格结构域 + 获取网格列表 + 配置事件类别域）
-    /// 统一消费 AccessToken 路由键并以 Query 注入（官方契约 access_token；
+    /// 契约守卫 GV3：令牌绑定——Gov 模块五族（配置网格结构域 + 获取网格列表 + 配置事件类别域 +
+    /// 巡查上报族 + 居民上报族）统一消费 AccessToken 路由键并以 Query 注入（官方契约 access_token；
     /// 自建为应用自身令牌，代开发为授权企业级令牌 scope = authCorpId）。
     /// </summary>
     [Fact]
@@ -280,6 +477,10 @@ public class WechatGovContractGuards
             typeof(IWechatWorkGovEventCategoryService),
             typeof(IWechatWorkInternalGovEventCategoryService),
             typeof(IWechatWorkProviderGovEventCategoryService),
+            typeof(IWechatWorkGovPatrolService),
+            typeof(IWechatWorkInternalGovPatrolService),
+            typeof(IWechatWorkGovResidentService),
+            typeof(IWechatWorkInternalGovResidentService),
         };
 
         foreach (var iface in accessTokenInterfaces)
@@ -296,9 +497,10 @@ public class WechatGovContractGuards
 
     /// <summary>
     /// 契约守卫 GV4：政民沟通模块的请求/响应 DTO 必须登记进 AOT JSON 上下文
-    /// （配置网格结构域 11 型 + 配置事件类别域 6 型，共 17 个契约面类型落 GovJsonContext；
+    /// （配置网格结构域 11 型 + 配置事件类别域 6 型 + 巡查上报族 12 型 + 居民上报族 12 型 +
+    /// 巡查/居民上报两族复用嵌套 4 型，共 45 个契约面类型落 GovJsonContext；
     /// 删除网格 / 修改事件类别 / 删除事件类别官方响应仅 errcode/errmsg，直接复用
-    /// <see cref="WechatWorkResponse"/>，list_cata 官方无请求包体、无请求 DTO）。
+    /// <see cref="WechatWorkResponse"/>，list_cata 与巡查/居民 get_grid_info 官方无请求包体、无请求 DTO）。
     /// </summary>
     [Fact]
     public void GovDataModels_ShouldBeRegisteredInJsonContext()
@@ -322,9 +524,30 @@ public class WechatGovContractGuards
             typeof(GovDeleteEventCategoryRequest),
             // 配置事件类别域：获取事件类别列表。
             typeof(GovGetEventCategoryListResponse), typeof(GovEventCategoryInfo),
+            // 巡查上报族（官方仅自建）：网格及负责人 / 单位统计 / 个人统计。
+            typeof(GovPatrolGetGridInfoResponse),
+            typeof(GovPatrolGetCorpStatusRequest), typeof(GovPatrolGetCorpStatusResponse),
+            typeof(GovPatrolGetUserStatusRequest), typeof(GovPatrolGetUserStatusResponse),
+            // 巡查上报族：分类统计 / 事件列表 / 事件详情。
+            typeof(GovPatrolGetCategoryStatisticRequest), typeof(GovPatrolGetCategoryStatisticResponse),
+            typeof(GovPatrolGetOrderListRequest), typeof(GovPatrolGetOrderListResponse),
+            typeof(GovPatrolGetOrderInfoRequest), typeof(GovPatrolGetOrderInfoResponse),
+            typeof(GovPatrolOrder),
+            // 居民上报族（官方仅自建）：网格及负责人 / 单位统计 / 个人统计。
+            typeof(GovResidentGetGridInfoResponse),
+            typeof(GovResidentGetCorpStatusRequest), typeof(GovResidentGetCorpStatusResponse),
+            typeof(GovResidentGetUserStatusRequest), typeof(GovResidentGetUserStatusResponse),
+            // 居民上报族：分类统计 / 事件列表 / 事件详情。
+            typeof(GovResidentGetCategoryStatisticRequest), typeof(GovResidentGetCategoryStatisticResponse),
+            typeof(GovResidentGetOrderListRequest), typeof(GovResidentGetOrderListResponse),
+            typeof(GovResidentGetOrderInfoRequest), typeof(GovResidentGetOrderInfoResponse),
+            typeof(GovResidentOrder),
+            // 巡查/居民上报两族复用嵌套（报文结构完全一致，按业务对象命名共享）。
+            typeof(GovReportGridInfo), typeof(GovReportCategoryStatistic),
+            typeof(GovReportLocation), typeof(GovReportProcessItem),
         };
 
-        govTypes.Should().HaveCount(17, "政民沟通模块契约面共 17 型");
+        govTypes.Should().HaveCount(45, "政民沟通模块契约面共 45 型");
         govTypes.Should().OnlyHaveUniqueItems("契约面类型不得重复断言");
 
         foreach (var type in govTypes)

@@ -531,6 +531,18 @@ public class WechatContractGuards
                 nameof(IWechatWorkGovEventCategoryService),
                 nameof(IWechatWorkInternalGovEventCategoryService),
                 nameof(IWechatWorkProviderGovEventCategoryService),
+                // 政民沟通·巡查上报族（Gov 模块）：6 个端点官方仅自建应用开放
+                //（网格及负责人 93531、单位统计 93532、个人统计 93533、分类统计 93534、
+                // 事件列表 93536、事件详情 93535；代开发/第三方官方「暂不支持」，
+                // 零端点父接口 + 唯一自建子接口承载端点）。
+                nameof(IWechatWorkGovPatrolService),
+                nameof(IWechatWorkInternalGovPatrolService),
+                // 政民沟通·居民上报族（Gov 模块）：6 个端点官方仅自建应用开放
+                //（网格及负责人 93514、单位统计 93515、个人统计 93516、分类统计 93517、
+                // 事件列表 93518、事件详情 93519；代开发/第三方官方「暂不支持」，
+                // 零端点父接口 + 唯一自建子接口承载端点）。
+                nameof(IWechatWorkGovResidentService),
+                nameof(IWechatWorkInternalGovResidentService),
             },
             "企业微信官方契约强制 Query 注入（MUD005 已知接受风险），新增 Query 注入接口须评估后扩展本守卫");
     }

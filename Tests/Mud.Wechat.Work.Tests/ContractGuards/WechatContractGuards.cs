@@ -460,6 +460,14 @@ public class WechatContractGuards
                 nameof(IWechatWorkInternalSchoolUserService),
                 nameof(IWechatWorkThirdPartySchoolUserService),
                 nameof(IWechatWorkProviderSchoolUserService),
+                // 家校沟通·部门管理域（School 模块）：5 个端点为三类应用公共面
+                //（创建部门 92340/92296/100158、更新部门 92341/92297/100159、删除部门 92342/92298/100160（GET，id 走 Query）、
+                // 获取部门列表 92343/92299/96745（GET，id 走 Query 可选）、修改自动升年级配置 92949/92950/100161；
+                // 父接口 + 三个应用类型空标记子接口）。
+                nameof(IWechatWorkSchoolDepartmentService),
+                nameof(IWechatWorkInternalSchoolDepartmentService),
+                nameof(IWechatWorkThirdPartySchoolDepartmentService),
+                nameof(IWechatWorkProviderSchoolDepartmentService),
                 // 家校沟通·网页授权登录域（School 模块）：自建/代开发 2 端点公共面收敛父接口
                 //（获取访问用户身份 91707/96712、获取家校访问用户身份 95791/96715）；
                 // 第三方为独立路由（getuserinfo3rd 91711、school/getuserinfo3rd 95790）且走 suite_access_token

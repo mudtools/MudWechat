@@ -531,6 +531,23 @@ public class WechatContractGuards
                 nameof(IWechatWorkGovEventCategoryService),
                 nameof(IWechatWorkInternalGovEventCategoryService),
                 nameof(IWechatWorkProviderGovEventCategoryService),
+                // 数据与智能专区·基础接口域（DataZone 模块）：9 个端点为三类应用公共面
+                //（设置公钥 99961/99845/100016、获取会话存档授权成员列表 99962/99846/100017、
+                // 设置专区接收回调事件 99963/99850/100018、会话组件敏感信息隐藏设置 100139/100055/100054、
+                // 设置/获取日志打印级别 100108/100106/100109、上传临时文件到专区 100174/100140/100175、
+                // 获取文件内容存档授权成员列表 101873/101681/101882；
+                // 父接口 + 自建空标记子接口；第三方/代开发子接口各持差异端点）。
+                nameof(IWechatWorkDataZoneService),
+                nameof(IWechatWorkInternalDataZoneService),
+                nameof(IWechatWorkThirdPartyDataZoneService),
+                nameof(IWechatWorkProviderDataZoneService),
+                // 数据与智能专区·应用调用专区程序域（DataZone 模块）：3 个端点为三类应用公共面
+                //（同步调用 99965/99811/100020、创建异步任务 + 查询结果 99966/99812/100021；
+                // 父接口 + 三个应用类型空标记子接口）。
+                nameof(IWechatWorkDataZoneProgramService),
+                nameof(IWechatWorkInternalDataZoneProgramService),
+                nameof(IWechatWorkThirdPartyDataZoneProgramService),
+                nameof(IWechatWorkProviderDataZoneProgramService),
             },
             "企业微信官方契约强制 Query 注入（MUD005 已知接受风险），新增 Query 注入接口须评估后扩展本守卫");
     }

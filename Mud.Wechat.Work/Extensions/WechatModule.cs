@@ -39,4 +39,7 @@ public enum WechatModule
 
     /// <summary>微信客服（客服账号管理域 + 接待人员管理域：三类应用公共面收敛父接口 + 空标记子接口）。</summary>
     Kf,
+
+    /// <summary>身份验证（网页授权登录/企业微信Web登录身份获取域 + 二次验证域：自建/代开发公共面收敛父接口；第三方身份获取走套件令牌独立成族）。</summary>
+    Identity,
 }

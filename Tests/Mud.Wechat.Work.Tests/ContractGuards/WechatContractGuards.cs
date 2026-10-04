@@ -334,6 +334,20 @@ public class WechatContractGuards
                 nameof(IWechatWorkInternalKfServicerService),
                 nameof(IWechatWorkThirdPartyKfServicerService),
                 nameof(IWechatWorkProviderKfServicerService),
+                // 身份验证域（Identity 模块）：网页授权/Web 登录身份获取族为自建+代开发公共面
+                //（getuserinfo 91023/96442/98176/98177 GET（code 走 Query）、getuserdetail 95833/96443 POST；
+                // 父接口 + 自建/代开发空标记子接口，第三方应用官方走独立路由与套件令牌，不设第三方子接口）；
+                // 第三方套件级身份获取族走 suite_access_token（getuserinfo3rd 91121/98179、getuserdetail3rd 91122；
+                // 零端点父接口 + 仅第三方子接口承载）；二次验证族官方仅「通讯录同步」或自建应用开放
+                //（get_tfa_info 99499、tfa_succ 99500；零端点父接口 + 仅自建子接口承载；
+                // authsucc 99521 已由通讯录成员域承载，不重复开放）。
+                nameof(IWechatWorkIdentityService),
+                nameof(IWechatWorkInternalIdentityService),
+                nameof(IWechatWorkProviderIdentityService),
+                nameof(IWechatWorkIdentitySuiteService),
+                nameof(IWechatWorkThirdPartyIdentitySuiteService),
+                nameof(IWechatWorkIdentityTfaService),
+                nameof(IWechatWorkInternalIdentityTfaService),
             },
             "企业微信官方契约强制 Query 注入（MUD005 已知接受风险），新增 Query 注入接口须评估后扩展本守卫");
     }

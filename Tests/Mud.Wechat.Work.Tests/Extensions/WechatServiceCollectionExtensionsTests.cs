@@ -512,4 +512,42 @@ public class WechatServiceCollectionExtensionsTests
         scope.ServiceProvider.GetRequiredService<IWechatWorkProviderKfServicerService>().Should().NotBeNull(
             "ValidateScopes = true 变体下子 scope 内同样可解析");
     }
+
+    /// <summary>
+    /// Identity 模块（身份验证域：网页授权登录/企业微信Web登录身份获取域 + 第三方套件级身份获取域 + 二次验证域）：
+    /// AddIdentityApi 注册的应用类型子接口客户端必须可解析（身份获取族公共父接口 IsAbstract + 自建/代开发空标记子接口；
+    /// 第三方身份获取族与二次验证族均为零端点父接口 IsAbstract + 唯一子接口承载端点）。
+    /// </summary>
+    [Fact]
+    public void AddIdentityApi_ShouldRegisterIdentityDomainClients_ResolvableInRootAndScope()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddWechatApp(new List<WechatAppConfig> { InternalConfig() });
+        services.AddWechatWorkServices(builder => builder.AddIdentityApi());
+
+        using var provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true });
+
+        provider.GetRequiredService<IWechatWorkInternalIdentityService>().Should().NotBeNull();
+        provider.GetRequiredService<IWechatWorkProviderIdentityService>().Should().NotBeNull();
+        provider.GetRequiredService<IWechatWorkThirdPartyIdentitySuiteService>().Should().NotBeNull();
+        provider.GetRequiredService<IWechatWorkInternalIdentityTfaService>().Should().NotBeNull();
+
+        provider.GetService<IWechatWorkIdentityService>().Should().BeNull(
+            "公共父接口 IsAbstract = true，不得注册进 DI（调用方须按应用类型选择子接口）");
+        provider.GetService<IWechatWorkIdentitySuiteService>().Should().BeNull(
+            "零端点父接口 IsAbstract = true，不得注册进 DI（调用方须使用第三方子接口）");
+        provider.GetService<IWechatWorkIdentityTfaService>().Should().BeNull(
+            "零端点父接口 IsAbstract = true，不得注册进 DI（调用方须使用自建子接口）");
+
+        using var scope = provider.CreateScope();
+        scope.ServiceProvider.GetRequiredService<IWechatWorkInternalIdentityService>().Should().NotBeNull(
+            "ValidateScopes = true 变体下子 scope 内同样可解析");
+        scope.ServiceProvider.GetRequiredService<IWechatWorkProviderIdentityService>().Should().NotBeNull(
+            "ValidateScopes = true 变体下子 scope 内同样可解析");
+        scope.ServiceProvider.GetRequiredService<IWechatWorkThirdPartyIdentitySuiteService>().Should().NotBeNull(
+            "ValidateScopes = true 变体下子 scope 内同样可解析");
+        scope.ServiceProvider.GetRequiredService<IWechatWorkInternalIdentityTfaService>().Should().NotBeNull(
+            "ValidateScopes = true 变体下子 scope 内同样可解析");
+    }
 }

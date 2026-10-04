@@ -10,10 +10,13 @@ namespace Mud.Wechat.Work;
 /// <summary>
 /// 企业微信「上下游」域企业自建应用 SDK。
 /// <para>
-/// 官方对自建应用开放了与代开发应用完全一致的 6 个上下游端点，全部继承自 <see cref="IWechatWorkCorpGroupService"/>；
-/// 本接口不新增端点，仅作为自建应用的类型化契约入口存在（形态对齐飞书用户态空接口 <c>IFeishuUserV1LingoEntity</c>）。
+/// 官方对自建应用开放了与代开发应用完全一致的 6 个上下游端点 = 公共父接口的「获取应用共享信息」
+/// + <see cref="IWechatWorkCorpGroupInternalProviderService"/> 的 5 个自建/代开发专属端点，
+/// 全部经继承获得；本接口不新增端点，仅作为自建应用的类型化契约入口存在
+/// （形态对齐飞书用户态空接口 <c>IFeishuUserV1LingoEntity</c>）。
 /// </para>
-/// <para>服务商代开发见 <see cref="IWechatWorkProviderCorpGroupService"/>；第三方应用官方无对应文档，不设子接口。</para>
+/// <para>服务商代开发见 <see cref="IWechatWorkProviderCorpGroupService"/>；
+/// 第三方应用仅开放 1 个端点，见 <see cref="IWechatWorkThirdPartyCorpGroupService"/>。</para>
 /// </summary>
 /// <remarks>
 /// <para>
@@ -25,9 +28,9 @@ namespace Mud.Wechat.Work;
 /// </para>
 /// </remarks>
 [HttpClientApi(RegistryGroupName = "CorpGroup",
-    TokenManage = nameof(IWechatAppManager), InheritedFrom = nameof(WechatWorkCorpGroupService))]
+    TokenManage = nameof(IWechatAppManager), InheritedFrom = nameof(WechatWorkCorpGroupInternalProviderService))]
 [Token(TokenType = WechatTokenTypes.AccessToken,
       InjectionMode = TokenInjectionMode.Query, Name = "access_token")]
-public interface IWechatWorkInternalCorpGroupService : IWechatWorkCorpGroupService
+public interface IWechatWorkInternalCorpGroupService : IWechatWorkCorpGroupInternalProviderService
 {
 }

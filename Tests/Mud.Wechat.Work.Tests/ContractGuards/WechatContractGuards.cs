@@ -263,8 +263,10 @@ public class WechatContractGuards
                 // 零端点父接口 + 仅第三方子接口）。
                 nameof(IWechatWorkExternalContactAcquisitionComponentBillService),
                 nameof(IWechatWorkThirdPartyExternalContactAcquisitionComponentBillService),
-                // 上下游域（CorpGroup 模块）：6 端点在父接口（第三方仅获取应用共享信息 95324，随父接口继承），父接口 + 三个空标记子接口。
+                // 上下游域（CorpGroup 模块）：公共面 1 端点在父接口 + 官方无第三方文档的 5 端点在自建代开发公共父接口
+                //（第三方仅获取应用共享信息 95324，其子接口不继承自建代开发公共父接口）。
                 nameof(IWechatWorkCorpGroupService),
+                nameof(IWechatWorkCorpGroupInternalProviderService),
                 nameof(IWechatWorkInternalCorpGroupService),
                 nameof(IWechatWorkThirdPartyCorpGroupService),
                 nameof(IWechatWorkProviderCorpGroupService),

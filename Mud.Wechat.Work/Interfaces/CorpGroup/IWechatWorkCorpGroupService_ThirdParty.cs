@@ -10,10 +10,14 @@ namespace Mud.Wechat.Work;
 /// <summary>
 /// 企业微信「上下游」域第三方应用 SDK。
 /// <para>
-/// 官方对第三方应用仅开放<b>获取应用共享信息</b>端点（95324，与自建/代开发同路由同契约，
-/// 已声明于 <see cref="IWechatWorkCorpGroupService"/>，随本接口继承）；其余 5 个端点
-/// （下级/下游企业凭证、小程序 session、关联客户信息）官方无第三方文档。本接口不新增端点，
-/// 仅作为第三方应用的类型化契约入口存在（形态对齐飞书用户态空接口 <c>IFeishuUserV1LingoEntity</c>）。
+/// 官方对第三方应用<b>仅开放「获取应用共享信息」</b> 1 个端点（95324，与自建/代开发同路由同契约），
+/// 随公共父接口 <see cref="IWechatWorkCorpGroupService"/> 继承；其余 5 个端点官方无第三方文档，
+/// 已下沉至 <see cref="IWechatWorkCorpGroupInternalProviderService"/>（自建/代开发专属父接口，本接口不继承）。
+/// </para>
+/// <para>
+/// 因此本接口的<b>类型化端点面恰为 1 个</b>（<see cref="IWechatWorkCorpGroupService.ListAppShareInfoAsync"/>）：
+/// 第三方应用调用方在编译期即无法触及官方未开放的端点，运行期不会收到 errcode。
+/// 本接口为应用类型空标记（形态对齐飞书用户态空接口 <c>IFeishuUserV1LingoEntity</c>）。
 /// </para>
 /// <para>自建应用见 <see cref="IWechatWorkInternalCorpGroupService"/>；服务商代开发见 <see cref="IWechatWorkProviderCorpGroupService"/>。</para>
 /// </summary>

@@ -614,6 +614,11 @@ public class WechatContractGuards
                 nameof(IWechatWorkInternalMailUserService),
                 nameof(IWechatWorkMailUserOptionService),
                 nameof(IWechatWorkInternalMailUserOptionService),
+                // 紧急通知（Emergency 模块）：2 个端点官方仅自建应用开放
+                //（发起语音电话 91627、获取接听状态 91628；代开发文档页 97115/97116 与自建页逐字一致
+                // 但权限表对代开发/第三方均标注「暂不支持」；零端点父接口 + 仅自建子接口承载）。
+                nameof(IWechatWorkEmergencyService),
+                nameof(IWechatWorkInternalEmergencyService),
             },
             "企业微信官方契约强制 Query 注入（MUD005 已知接受风险），新增 Query 注入接口须评估后扩展本守卫");
     }

@@ -93,6 +93,7 @@ scripts/                      # verify-build / audit-config-keys / GenerateJsonC
 | 数据与智能专区 | `Interfaces/DataZone/`（基础接口域 + 应用调用专区程序域两族；差异端点在子接口：获取授权信息官方不支持自建、文档存档授权信息官方仅第三方） | `DataZone/` | `DataZone` / `AddDataZoneApi()` |
 | 审批 | `Interfaces/Approval/`（审批申请数据域 + 审批模板域 + 假期管理域 + 审批流程引擎域四族；差异端点在子接口：获取审批数据（旧）官方仅自建、创建/更新模板自建与代开发开放（第三方官方暂不支持）、复制/更新模板到企业官方仅第三方） | `Approval/` | `Approval` / `AddApprovalApi()` |
 | 邮件 | `Interfaces/Mail/{Send,Receive,Account,Group,PublicMail,Vip,User,UserOption}/`（按功能族分子目录；发送/接收族为三类应用公共面 + 空标记子接口，普通/日程/会议三端点共用 compose_send 路由；其余六族官方仅自建开放，零端点父接口 + 仅自建子接口承载） | `Mail/` | `Mail` / `AddMailApi()` |
+| 紧急通知 | `Interfaces/Emergency/`（发起语音电话 + 获取接听状态官方仅自建开放，零端点父接口 + 仅自建子接口承载；代开发文档页与自建页逐字一致但权限表标注「暂不支持」，不设代开发/第三方子接口） | `Emergency/` | `Emergency` / `AddEmergencyApi()` |
 
 - 接口命名空间一律 `Mud.Wechat.Work`（**不含** `Interfaces` 段）；DTO 命名空间 `Mud.Wechat.Work.DataModels.{域}[.{子域}]`。
 - `RequestModel/`、`ResponseModel/` 仅作目录组织，命名空间不含该目录段。

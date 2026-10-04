@@ -51,4 +51,7 @@ public enum WechatModule
 
     /// <summary>家校沟通（家校沟通基础域：三类应用公共面收敛父接口 + 空标记子接口；家校管理配置域：官方仅自建与第三方开放，不设代开发子接口）。</summary>
     School,
+
+    /// <summary>素材管理（临时素材上传/获取 + 上传图片 + 高清语音素材 + 异步上传临时素材：三类应用公共面收敛父接口 + 空标记子接口；服务商上传临时素材：官方仅第三方开放，走 provider_access_token 独立成族）。</summary>
+    Media,
 }

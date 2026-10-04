@@ -476,6 +476,17 @@ public class WechatContractGuards
                 nameof(IWechatWorkInternalSchoolAuthService),
                 nameof(IWechatWorkProviderSchoolAuthService),
                 nameof(IWechatWorkThirdPartySchoolAuthService),
+                // 素材管理域（Media 模块）：公共面 6 端点为三类应用公共面收敛父接口 + 空标记子接口
+                //（上传临时素材 90253/90389/96484、获取临时素材 90256/90390/96486、上传图片 90254/90392/96485、
+                // 获取高清语音素材 90255/90391/96487、异步上传临时素材 96219/97126/96488）；
+                // 服务商上传临时素材（99310，路由在 /cgi-bin/service/media/ 下）官方仅第三方应用开放、
+                // 走 provider_access_token 鉴权，独立令牌路由键成族（零端点父接口 + 仅第三方子接口）。
+                nameof(IWechatWorkMediaService),
+                nameof(IWechatWorkInternalMediaService),
+                nameof(IWechatWorkThirdPartyMediaService),
+                nameof(IWechatWorkProviderMediaService),
+                nameof(IWechatWorkServiceMediaService),
+                nameof(IWechatWorkThirdPartyServiceMediaService),
             },
             "企业微信官方契约强制 Query 注入（MUD005 已知接受风险），新增 Query 注入接口须评估后扩展本守卫");
     }

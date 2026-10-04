@@ -76,6 +76,9 @@ public class WechatWorkServiceBuilder
             [WechatModule.School] = new WechatModuleRegistrar(
                 WechatModule.School,
                 s => s.AddSchoolWebApiHttpClient()),
+            [WechatModule.Media] = new WechatModuleRegistrar(
+                WechatModule.Media,
+                s => s.AddMediaWebApiHttpClient()),
         };
 
     /// <summary>注册授权流业务接口与授权编排服务（get_pre_auth_code / set_session_info / get_permanent_code / get_auth_info / get_customized_auth_url + 编排）。</summary>
@@ -113,6 +116,9 @@ public class WechatWorkServiceBuilder
 
     /// <summary>注册家校沟通业务接口（家校沟通基础域为三类应用公共面；家校管理配置域官方仅自建与第三方开放，不设代开发子接口）。</summary>
     public WechatWorkServiceBuilder AddSchoolApi() => AddModule(WechatModule.School);
+
+    /// <summary>注册素材管理业务接口（上传临时素材 / 获取临时素材 / 上传图片 / 获取高清语音素材 / 异步上传临时素材为三类应用公共面；服务商上传临时素材官方仅第三方开放，走 provider_access_token 独立成族）。</summary>
+    public WechatWorkServiceBuilder AddMediaApi() => AddModule(WechatModule.Media);
 
     /// <summary>注册全部模块。</summary>
     public WechatWorkServiceBuilder AddAllApis()

@@ -61,6 +61,9 @@ public interface IWechatWorkCorpGroupService
     /// <para><b>企业自建应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/95813"/></para>
     /// <para><b>第三方应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/95324"/></para>
     /// <para><b>服务商代开发</b>SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/96872"/></para>
+    /// <para><b>「企业互联」文档树</b>（同路由同契约的旧编号）：<see href="https://developer.work.weixin.qq.com/document/path/93403"/>（自建）、
+    /// <see href="https://developer.work.weixin.qq.com/document/path/93405"/>（第三方）、
+    /// <see href="https://developer.work.weixin.qq.com/document/path/96816"/>（代开发）。</para>
     /// </remarks>
     [Post("/cgi-bin/corpgroup/corp/list_app_share_info")]
     Task<ListAppShareInfoResponse> ListAppShareInfoAsync(

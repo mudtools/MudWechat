@@ -582,6 +582,38 @@ public class WechatContractGuards
                 nameof(IWechatWorkInternalApprovalEngineService),
                 nameof(IWechatWorkProviderApprovalEngineService),
                 nameof(IWechatWorkThirdPartyApprovalEngineService),
+                // 邮件·发送邮件族（Mail 模块）：3 个端点为三类应用公共面
+                //（发送普通邮件 97445/97515/97504、发送日程邮件 97854/97867/97865、发送会议邮件 97855/97868/97866；
+                // 三端点共用 compose_send 路由；父接口 + 三个应用类型空标记子接口）。
+                nameof(IWechatWorkMailSendService),
+                nameof(IWechatWorkInternalMailSendService),
+                nameof(IWechatWorkThirdPartyMailSendService),
+                nameof(IWechatWorkProviderMailSendService),
+                // 邮件·获取接收的邮件族（Mail 模块）：2 个端点为三类应用公共面
+                //（获取收件箱邮件列表 97369/97516/97505、获取邮件内容 97979/97983/97982；
+                // 父接口 + 三个应用类型空标记子接口）。
+                nameof(IWechatWorkMailReceiveService),
+                nameof(IWechatWorkInternalMailReceiveService),
+                nameof(IWechatWorkThirdPartyMailReceiveService),
+                nameof(IWechatWorkProviderMailReceiveService),
+                // 邮件·管理应用邮箱账号族（Mail 模块）：2 个端点官方仅自建应用开放
+                //（更新应用邮箱账号 97373、查询应用邮箱账号 97991；零端点父接口 + 仅自建子接口）。
+                nameof(IWechatWorkMailAccountService),
+                nameof(IWechatWorkInternalMailAccountService),
+                // 邮件·管理端五族（Mail 模块）：官方均仅自建应用开放
+                //（管理邮件群组 95510/97995/97996/97997/97998、管理公共邮箱 95511/98000/98001/98002/98003/100183/100184、
+                // 高级功能账号 99316/99317/99318、成员邮箱操作 95512/95514、其他邮件客户端登录设置 95513/98008；
+                // 各族零端点父接口 + 仅自建子接口承载）。
+                nameof(IWechatWorkMailGroupService),
+                nameof(IWechatWorkInternalMailGroupService),
+                nameof(IWechatWorkMailPublicMailService),
+                nameof(IWechatWorkInternalMailPublicMailService),
+                nameof(IWechatWorkMailVipService),
+                nameof(IWechatWorkInternalMailVipService),
+                nameof(IWechatWorkMailUserService),
+                nameof(IWechatWorkInternalMailUserService),
+                nameof(IWechatWorkMailUserOptionService),
+                nameof(IWechatWorkInternalMailUserOptionService),
             },
             "企业微信官方契约强制 Query 注入（MUD005 已知接受风险），新增 Query 注入接口须评估后扩展本守卫");
     }

@@ -43,6 +43,7 @@ using Mud.Wechat.Work.DataModels.Identity;
 using Mud.Wechat.Work.DataModels.Invoice;
 using Mud.Wechat.Work.DataModels.InternalAppAuthentication;
 using Mud.Wechat.Work.DataModels.Kf;
+using Mud.Wechat.Work.DataModels.Mail;
 using Mud.Wechat.Work.DataModels.Media;
 using Mud.Wechat.Work.DataModels.Message;
 using Mud.Wechat.Work.DataModels.MsgAudit;
@@ -122,6 +123,7 @@ public static class WechatJsonResolverExtensions
             GovJsonContext.Default,
             DataZoneJsonContext.Default,
             ApprovalJsonContext.Default,
+            MailJsonContext.Default,
             CorpTokenAuthenticationJsonContext.Default,
             InternalAppAuthenticationJsonContext.Default,
             ProviderAuthenticationJsonContext.Default,

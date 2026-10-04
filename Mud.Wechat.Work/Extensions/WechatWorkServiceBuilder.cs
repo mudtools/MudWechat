@@ -91,6 +91,9 @@ public class WechatWorkServiceBuilder
             [WechatModule.Approval] = new WechatModuleRegistrar(
                 WechatModule.Approval,
                 s => s.AddApprovalWebApiHttpClient()),
+            [WechatModule.Mail] = new WechatModuleRegistrar(
+                WechatModule.Mail,
+                s => s.AddMailWebApiHttpClient()),
         };
 
     /// <summary>注册授权流业务接口与授权编排服务（get_pre_auth_code / set_session_info / get_permanent_code / get_auth_info / get_customized_auth_url + 编排）。</summary>
@@ -143,6 +146,9 @@ public class WechatWorkServiceBuilder
 
     /// <summary>注册审批业务接口（审批申请数据域为三类应用公共面 + 差异端点子接口：获取审批数据（旧）官方仅自建；审批模板域为三类应用公共面 + 差异端点子接口：创建/更新模板自建与代开发开放、复制/更新模板到企业官方仅第三方；假期管理域与审批流程引擎域为三类应用公共面 + 空标记子接口）。</summary>
     public WechatWorkServiceBuilder AddApprovalApi() => AddModule(WechatModule.Approval);
+
+    /// <summary>注册邮件业务接口（应用邮箱侧：发送邮件族与获取接收的邮件族为三类应用公共面收敛父接口 + 空标记子接口，普通/日程/会议三端点共用 compose_send 路由；管理端侧：管理邮件群组/管理公共邮箱/高级功能账号/成员邮箱操作/其他邮件客户端登录设置五族官方仅自建开放，不设第三方/代开发子接口）。</summary>
+    public WechatWorkServiceBuilder AddMailApi() => AddModule(WechatModule.Mail);
 
     /// <summary>注册全部模块。</summary>
     public WechatWorkServiceBuilder AddAllApis()

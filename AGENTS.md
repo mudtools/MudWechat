@@ -51,7 +51,7 @@ AOT / Trim（`net8.0`、`net10.0` 默认开启分析；`AotStrictMode=true` 把 
 
 - **禁反射版 `JsonSerializer.Serialize<T>(T, JsonSerializerOptions)` / `Deserialize<T>`** —— 一律走 `JsonTypeInfo`（域 `JsonContext`）或 `WechatJsonResolverExtensions` 合并解析器。
 - `Generated/*JsonContext.g.cs` 是**生成物**：提交进版本控制、**勿手改**，改 DTO 后重跑脚本。
-- 主包合并 **42 个生成上下文 + 1 个手写上下文**（`Abstractions` 的 `Authentication/Models/AuthenticationJsonContext.cs`）：DTO 标 `[HttpJsonSerializable]`（`SerializerClassName` = 命名空间域段，根命名空间直属文件归 `Common`），上下文 `internal` 经 `InternalsVisibleTo` 供主包与测试直读。
+- 主包合并 **43 个生成上下文 + 1 个手写上下文**（`Abstractions` 的 `Authentication/Models/AuthenticationJsonContext.cs`）：DTO 标 `[HttpJsonSerializable]`（`SerializerClassName` = 命名空间域段，根命名空间直属文件归 `Common`），上下文 `internal` 经 `InternalsVisibleTo` 供主包与测试直读。
 - 配置绑定为源生成（`EnableConfigurationBindingGenerator=true`）：配置 DTO **禁 `required`**（生成器以 `new T()` 构造 ⇒ `CS9035`），校验写进 `Validate()`；绑定必须走 `Configure<T>(o => section.Bind(o))`，**不要**用 `Configure<T>(IConfiguration)` 重载（反射绑定无法被源生成器拦截，破坏 `IL2026`/`IL3050` 净零）。
 - `UnconditionalSuppressMessageAttribute` 在 `net10.0` 为 `internal`，用户代码不可引用；必要时 `#pragma warning disable` 并附理由注释。
 - 已知边界：开放泛型 `WechatChatbotResponse<>` 不登记（`SYSLIB1030`）；工具运行期 `AOT003` 为已知误报。
@@ -89,6 +89,7 @@ scripts/                      # verify-build / audit-config-keys / GenerateJsonC
 | 素材管理 | `Interfaces/Media/` | `Media/` | `Media` / `AddMediaApi()` |
 | 电子发票 | `Interfaces/Invoice/` | `Invoice/` | `Invoice` / `AddInvoiceApi()` |
 | 身份验证 | `Interfaces/Identity/` | `Identity/` | `Identity` / `AddIdentityApi()` |
+| 政民沟通 | `Interfaces/Gov/{Grid,EventCategory}/`（按功能族分子目录，目录不参与命名空间） | `Gov/{Grid,EventCategory}/`（子目录仅作组织，命名空间统一 `Gov` 段） | `Gov` / `AddGovApi()` |
 
 - 接口命名空间一律 `Mud.Wechat.Work`（**不含** `Interfaces` 段）；DTO 命名空间 `Mud.Wechat.Work.DataModels.{域}[.{子域}]`。
 - `RequestModel/`、`ResponseModel/` 仅作目录组织，命名空间不含该目录段。

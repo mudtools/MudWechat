@@ -82,6 +82,9 @@ public class WechatWorkServiceBuilder
             [WechatModule.Invoice] = new WechatModuleRegistrar(
                 WechatModule.Invoice,
                 s => s.AddInvoiceWebApiHttpClient()),
+            [WechatModule.Gov] = new WechatModuleRegistrar(
+                WechatModule.Gov,
+                s => s.AddGovWebApiHttpClient()),
         };
 
     /// <summary>注册授权流业务接口与授权编排服务（get_pre_auth_code / set_session_info / get_permanent_code / get_auth_info / get_customized_auth_url + 编排）。</summary>
@@ -125,6 +128,9 @@ public class WechatWorkServiceBuilder
 
     /// <summary>注册电子发票业务接口（查询电子发票 / 更新发票状态 / 批量更新发票状态 / 批量查询电子发票，四端点为三类应用公共面收敛父接口 + 空标记子接口）。</summary>
     public WechatWorkServiceBuilder AddInvoiceApi() => AddModule(WechatModule.Invoice);
+
+    /// <summary>注册政民沟通业务接口（配置网格结构域与配置事件类别域为自建/代开发公共面；获取网格列表官方仅自建开放，不设代开发子接口；第三方应用官方暂不支持）。</summary>
+    public WechatWorkServiceBuilder AddGovApi() => AddModule(WechatModule.Gov);
 
     /// <summary>注册全部模块。</summary>
     public WechatWorkServiceBuilder AddAllApis()

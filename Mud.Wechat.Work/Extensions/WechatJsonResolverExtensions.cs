@@ -36,6 +36,7 @@ using Mud.Wechat.Work.DataModels.ExternalContact.ResignedInheritance;
 using Mud.Wechat.Work.DataModels.ExternalContact.ServedContact;
 using Mud.Wechat.Work.DataModels.ExternalContact.Statistics;
 using Mud.Wechat.Work.DataModels.ExternalContact.Tag;
+using Mud.Wechat.Work.DataModels.Gov;
 using Mud.Wechat.Work.DataModels.Identity;
 using Mud.Wechat.Work.DataModels.Invoice;
 using Mud.Wechat.Work.DataModels.InternalAppAuthentication;
@@ -66,7 +67,7 @@ public static class WechatJsonResolverExtensions
     /// <param name="services">服务集合。</param>
     /// <remarks>
     /// <list type="bullet">
-    /// <item>全部 42 个 <c>*JsonContext</c>（<c>DataModels</c> 包 <c>Generated/</c> 目录，由
+    /// <item>全部 43 个 <c>*JsonContext</c>（<c>DataModels</c> 包 <c>Generated/</c> 目录，由
     /// <c>scripts/GenerateJsonContext.ps1</c>（mud-jsonctx）按 <c>[HttpJsonSerializable]</c>
     /// 标注生成，SerializerClassName = DTO 命名空间的域段，每个上下文与其域 DTO
     /// 同命名空间——与 Mud.Feishu.DataModels「每模块一上下文」同构）；</item>
@@ -116,6 +117,7 @@ public static class WechatJsonResolverExtensions
             HealthReportJsonContext.Default,
             LivingJsonContext.Default,
             ClassPayJsonContext.Default,
+            GovJsonContext.Default,
             CorpTokenAuthenticationJsonContext.Default,
             InternalAppAuthenticationJsonContext.Default,
             ProviderAuthenticationJsonContext.Default,

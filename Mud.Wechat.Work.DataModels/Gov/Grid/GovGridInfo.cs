@@ -1,0 +1,38 @@
+// -----------------------------------------------------------------------
+//  作者：Mud Studio  版权所有 (c) Mud Studio 2026
+//  Mud.Wechat 项目的版权、商标、专利和其他相关权利均受相应法律法规的保护。
+//  本项目主要遵循 MIT 许可证进行分发和使用。许可证位于源代码树根目录中的 LICENSE-MIT 文件。
+//  不得利用本项目从事危害国家安全、扰乱社会秩序、侵犯他人合法权益等法律法规禁止的活动！任何基于本项目开发而产生的一切法律纠纷和责任，我们不承担任何责任！
+// -----------------------------------------------------------------------
+
+namespace Mud.Wechat.Work.DataModels.Gov;
+
+/// <summary>
+/// 网格信息项（<c>/cgi-bin/report/grid/list</c> 响应 <c>grid_list</c> 元素，政民沟通配置网格结构域）。
+/// </summary>
+[HttpJsonSerializable(SerializerClassName = "Gov")]
+public class GovGridInfo
+{
+    /// <summary>获取或设置网格 id。</summary>
+    [JsonPropertyName("grid_id")]
+    public string? GridId { get; set; }
+
+    /// <summary>
+    /// 获取或设置网格名称。
+    /// <para>官方文档示例误将本字段标注为数字（<c>"grid_name": 1</c>），参数表明确为网格名称字符串，照抄为字符串。</para>
+    /// </summary>
+    [JsonPropertyName("grid_name")]
+    public string? GridName { get; set; }
+
+    /// <summary>获取或设置网格父节点的网格 id。</summary>
+    [JsonPropertyName("grid_parent_id")]
+    public string? GridParentId { get; set; }
+
+    /// <summary>获取或设置该节点的管理员列表。</summary>
+    [JsonPropertyName("grid_admin")]
+    public List<string>? GridAdmin { get; set; }
+
+    /// <summary>获取或设置该节点的成员列表。</summary>
+    [JsonPropertyName("grid_member")]
+    public List<string>? GridMember { get; set; }
+}

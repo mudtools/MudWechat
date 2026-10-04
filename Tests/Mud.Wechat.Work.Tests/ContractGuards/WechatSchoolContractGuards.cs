@@ -18,6 +18,7 @@ namespace Mud.Wechat.Work.Tests.ContractGuards;
 /// （家校沟通基础域：三类应用公共面收敛父接口 + 空标记子接口；
 /// 家校管理配置域：官方仅自建与第三方开放，不设代开发子接口；
 /// 学生与家长管理域：16 个端点为三类应用公共面，收敛父接口 + 空标记子接口；
+/// 部门管理域：5 个端点为三类应用公共面，收敛父接口 + 空标记子接口；
 /// 网页授权登录域：自建/代开发公共面收敛父接口，第三方为独立路由且走 suite_access_token
 /// 令牌路由键，独立成接口、不继承公共父接口）。
 /// </summary>
@@ -46,6 +47,8 @@ public class WechatSchoolContractGuards
     private const string SchoolSettingParentImplementationClassName = "WechatWorkSchoolSettingService";
 
     private const string SchoolUserParentImplementationClassName = "WechatWorkSchoolUserService";
+
+    private const string SchoolDepartmentParentImplementationClassName = "WechatWorkSchoolDepartmentService";
 
     private const string SchoolAuthParentImplementationClassName = "WechatWorkSchoolAuthService";
 
@@ -180,6 +183,35 @@ public class WechatSchoolContractGuards
     };
 
     /// <summary>
+    /// 部门管理域官方路由表（三类应用公共面，5 条端点全部收敛父接口；
+    /// 删除/列表官方即 GET 且 id 走 Query，删除接口官方参数表将 id 标注为「否」属官方原文，照抄不纠正）。
+    /// </summary>
+    private static readonly (Type Interface, string Method, Type HttpAttribute, string Route)[] SchoolDepartmentRoutes =
+    {
+        // 创建部门（自建 92340、第三方 92296、代开发 100158）。
+        (typeof(IWechatWorkSchoolDepartmentService),
+            nameof(IWechatWorkSchoolDepartmentService.CreateDepartmentAsync),
+            typeof(PostAttribute), "/cgi-bin/school/department/create"),
+        // 更新部门（自建 92341、第三方 92297、代开发 100159）。
+        (typeof(IWechatWorkSchoolDepartmentService),
+            nameof(IWechatWorkSchoolDepartmentService.UpdateDepartmentAsync),
+            typeof(PostAttribute), "/cgi-bin/school/department/update"),
+        // 删除部门（自建 92342、第三方 92298、代开发 100160；官方即 GET，id 走 Query）。
+        (typeof(IWechatWorkSchoolDepartmentService),
+            nameof(IWechatWorkSchoolDepartmentService.DeleteDepartmentAsync),
+            typeof(GetAttribute), "/cgi-bin/school/department/delete"),
+        // 获取部门列表（自建 92343、第三方 92299、代开发 96745；官方即 GET，
+        // id 走 Query 可选，不填默认全量组织架构）。
+        (typeof(IWechatWorkSchoolDepartmentService),
+            nameof(IWechatWorkSchoolDepartmentService.ListDepartmentsAsync),
+            typeof(GetAttribute), "/cgi-bin/school/department/list"),
+        // 修改自动升年级的配置（自建 92949、第三方 92950、代开发 100161）。
+        (typeof(IWechatWorkSchoolDepartmentService),
+            nameof(IWechatWorkSchoolDepartmentService.SetUpgradeInfoAsync),
+            typeof(PostAttribute), "/cgi-bin/school/set_upgrade_info"),
+    };
+
+    /// <summary>
     /// 网页授权登录域官方路由表（4 条：自建/代开发公共面 2 条收敛父接口；
     /// 第三方为独立路由 2 条、以 suite_access_token 鉴权，独立声明于第三方接口）。
     /// </summary>
@@ -302,6 +334,37 @@ public class WechatSchoolContractGuards
     }
 
     /// <summary>
+    /// 契约守卫 SCH1e：部门管理域全部端点路由必须与官方契约一致
+    /// （5 个端点为三类应用公共面；删除/列表官方即 GET（id 走 Query）、
+    /// 创建/更新/升年级配置官方即 POST，勿「顺手统一」）。
+    /// </summary>
+    [Fact]
+    public void SchoolDepartmentEndpoints_ShouldMatchOfficialRoutes()
+    {
+        SchoolDepartmentRoutes.Should().HaveCount(5,
+            "部门管理域 5 个端点为三类应用公共面，全部收敛父接口");
+
+        var distinctRoutes = SchoolDepartmentRoutes.Select(r => r.Route).Distinct().ToList();
+        distinctRoutes.Should().HaveCount(5, "部门管理域各端点路由互不重复");
+
+        foreach (var (iface, method, httpAttribute, route) in SchoolDepartmentRoutes)
+        {
+            var target = iface.GetMethod(method, BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+            target.Should().NotBeNull($"{iface.Name}.{method} 必须存在");
+
+            var attr = target!.GetCustomAttribute(httpAttribute) as HttpMethodAttribute;
+            attr.Should().NotBeNull($"{iface.Name}.{method} 必须声明 [{httpAttribute.Name.Replace("Attribute", string.Empty)}] 路由");
+            attr!.RequestUri.Should().Be(route, $"{iface.Name}.{method} 路由必须与官方契约一致");
+        }
+
+        // Query 参数契约：删除部门与获取部门列表的 id 均为官方 Query 参数，必须以 [Query("id")] 标注。
+        AssertHasQueryParameter(typeof(IWechatWorkSchoolDepartmentService),
+            nameof(IWechatWorkSchoolDepartmentService.DeleteDepartmentAsync), "id");
+        AssertHasQueryParameter(typeof(IWechatWorkSchoolDepartmentService),
+            nameof(IWechatWorkSchoolDepartmentService.ListDepartmentsAsync), "id");
+    }
+
+    /// <summary>
     /// 契约守卫 SCH1d：网页授权登录域全部端点路由必须与官方契约一致
     /// （自建/代开发公共面 2 条收敛父接口；第三方为独立路由 2 条；
     /// 4 个端点官方即 GET 且 code 均走 Query）。
@@ -368,6 +431,10 @@ public class WechatSchoolContractGuards
                 new[] { typeof(IWechatWorkInternalSchoolUserService), typeof(IWechatWorkThirdPartySchoolUserService), typeof(IWechatWorkProviderSchoolUserService) },
                 SchoolUserParentImplementationClassName,
                 "学生与家长管理域 16 个端点为三类应用公共面，继承链上不得出现其它子接口"),
+            (typeof(IWechatWorkSchoolDepartmentService),
+                new[] { typeof(IWechatWorkInternalSchoolDepartmentService), typeof(IWechatWorkThirdPartySchoolDepartmentService), typeof(IWechatWorkProviderSchoolDepartmentService) },
+                SchoolDepartmentParentImplementationClassName,
+                "部门管理域 5 个端点为三类应用公共面，继承链上不得出现其它子接口"),
         };
 
         foreach (var (parent, children, implementationClassName, because) in families)
@@ -484,6 +551,10 @@ public class WechatSchoolContractGuards
             typeof(IWechatWorkInternalSchoolUserService),
             typeof(IWechatWorkThirdPartySchoolUserService),
             typeof(IWechatWorkProviderSchoolUserService),
+            typeof(IWechatWorkSchoolDepartmentService),
+            typeof(IWechatWorkInternalSchoolDepartmentService),
+            typeof(IWechatWorkThirdPartySchoolDepartmentService),
+            typeof(IWechatWorkProviderSchoolDepartmentService),
             typeof(IWechatWorkSchoolAuthService),
             typeof(IWechatWorkInternalSchoolAuthService),
             typeof(IWechatWorkProviderSchoolAuthService),
@@ -559,9 +630,17 @@ public class WechatSchoolContractGuards
             // 网页授权登录：第三方。
             typeof(SchoolAuthThirdPartyUserInfoResponse), typeof(SchoolAuthThirdPartyParentItem),
             typeof(SchoolAuthThirdPartyStudentItem), typeof(SchoolAuthThirdPartySchoolUserInfoResponse),
+            // 部门管理：请求。
+            typeof(SchoolCreateDepartmentRequest), typeof(SchoolDepartmentAdminItem),
+            typeof(SchoolUpdateDepartmentRequest), typeof(SchoolUpdateDepartmentAdminItem),
+            typeof(SchoolSetUpgradeInfoRequest),
+            // 部门管理：响应。
+            typeof(SchoolCreateDepartmentResponse), typeof(SchoolDepartmentListResponse),
+            typeof(SchoolDepartmentInfo), typeof(SchoolDepartmentAdminInfo),
+            typeof(SchoolSetUpgradeInfoResponse),
         };
 
-        requiredTypes.Should().HaveCount(45, "家校沟通域契约面共 45 型");
+        requiredTypes.Should().HaveCount(55, "家校沟通域契约面共 55 型");
         requiredTypes.Should().OnlyHaveUniqueItems("契约面类型不得重复断言");
 
         foreach (var type in requiredTypes)

@@ -20,6 +20,7 @@ using Mud.Wechat.Work.DataModels.CorpGroup;
 using Mud.Wechat.Work.DataModels.CorpGroup.ChainContacts;
 using Mud.Wechat.Work.DataModels.CorpGroup.Rules;
 using Mud.Wechat.Work.DataModels.CorpTokenAuthentication;
+using Mud.Wechat.Work.DataModels.Approval;
 using Mud.Wechat.Work.DataModels.DataZone;
 using Mud.Wechat.Work.DataModels.ExternalContact.Attachment;
 using Mud.Wechat.Work.DataModels.ExternalContact.ContactWay;
@@ -121,6 +122,7 @@ public static class WechatJsonResolverExtensions
             ClassPayJsonContext.Default,
             GovJsonContext.Default,
             DataZoneJsonContext.Default,
+            ApprovalJsonContext.Default,
             MailJsonContext.Default,
             CorpTokenAuthenticationJsonContext.Default,
             InternalAppAuthenticationJsonContext.Default,

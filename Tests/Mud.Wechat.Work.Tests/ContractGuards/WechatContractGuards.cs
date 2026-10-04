@@ -560,6 +560,28 @@ public class WechatContractGuards
                 nameof(IWechatWorkInternalDataZoneProgramService),
                 nameof(IWechatWorkThirdPartyDataZoneProgramService),
                 nameof(IWechatWorkProviderDataZoneProgramService),
+                // 审批（Approval 模块）：审批申请数据域 3 个公共端点（91853/92632/96507、91816/94603/96509、
+                // 91983/92634/96510）+ 自建差异端点获取审批数据（旧）91530；审批模板域获取模板详情
+                //（91982/92631/96506）+ 创建/更新模板（97437/97438 自建、97439/97440 代开发，官方对第三方标注暂不支持）
+                // + 复制/更新模板到企业（92630 官方仅第三方）；假期管理域 3 个公共端点
+                //（93375~93377、94211~94213、96512~96514）；审批流程引擎域查询审批单当前状态（90269/93798/97114）。
+                // 四族父接口 + 应用类型子接口共 16 个。
+                nameof(IWechatWorkApprovalService),
+                nameof(IWechatWorkInternalApprovalService),
+                nameof(IWechatWorkProviderApprovalService),
+                nameof(IWechatWorkThirdPartyApprovalService),
+                nameof(IWechatWorkApprovalTemplateService),
+                nameof(IWechatWorkInternalApprovalTemplateService),
+                nameof(IWechatWorkProviderApprovalTemplateService),
+                nameof(IWechatWorkThirdPartyApprovalTemplateService),
+                nameof(IWechatWorkVacationService),
+                nameof(IWechatWorkInternalVacationService),
+                nameof(IWechatWorkProviderVacationService),
+                nameof(IWechatWorkThirdPartyVacationService),
+                nameof(IWechatWorkApprovalEngineService),
+                nameof(IWechatWorkInternalApprovalEngineService),
+                nameof(IWechatWorkProviderApprovalEngineService),
+                nameof(IWechatWorkThirdPartyApprovalEngineService),
                 // 邮件·发送邮件族（Mail 模块）：3 个端点为三类应用公共面
                 //（发送普通邮件 97445/97515/97504、发送日程邮件 97854/97867/97865、发送会议邮件 97855/97868/97866；
                 // 三端点共用 compose_send 路由；父接口 + 三个应用类型空标记子接口）。

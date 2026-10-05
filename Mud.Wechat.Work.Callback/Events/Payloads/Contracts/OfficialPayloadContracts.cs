@@ -10,7 +10,7 @@ using Mud.Wechat.Work.Abstractions.Callback.Payloads;
 namespace Mud.Wechat.Work.Callback.Events.Payloads;
 
 /// <summary>
-/// 官方事件键契约表（46 键）：事件键 → 上游映射表 + 本仓库两级开放面声明。
+/// 官方事件键契约表（52 键）：事件键 → 上游映射表 + 本仓库两级开放面声明。
 /// </summary>
 /// <remarks>
 /// <para>
@@ -42,6 +42,8 @@ namespace Mud.Wechat.Work.Callback.Events.Payloads;
 /// 获客助手 97299（自建）/97402·99485（第三方）/98958（代开发）、
 /// 消息与事件 90240（企业内部开发）/ 90376（第三方）/ 96468（服务商代开发，正文逐字一致）。
 /// 授权族 7 键<b>不登记契约</b>（走信封，ADR-8）。
+/// 收银台·应用版本付费订单回调族 91929~91933 / 99353（6 键，套件信封 InfoType，
+/// 第三方 × 套件指令通道；与授权族同属 <c>InfoType</c> 信封但确有业务载荷，故登记强类型载荷）。
 /// </para>
 /// <para>
 /// <b>三模式说明</b>：90240/90376/96468 三份文档正文一致 ⇒ 载荷与字段结构三模式同一（ADR-14），

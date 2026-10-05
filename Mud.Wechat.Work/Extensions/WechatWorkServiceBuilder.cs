@@ -126,6 +126,9 @@ public class WechatWorkServiceBuilder
             [WechatModule.PromotionQrCode] = new WechatModuleRegistrar(
                 WechatModule.PromotionQrCode,
                 s => s.AddPromotionQrCodeWebApiHttpClient()),
+            [WechatModule.PayTool] = new WechatModuleRegistrar(
+                WechatModule.PayTool,
+                s => s.AddPayToolWebApiHttpClient()),
         };
 
     /// <summary>注册授权流业务接口与授权编排服务（get_pre_auth_code / set_session_info / get_permanent_code / get_auth_info / get_customized_auth_url + 编排）。</summary>
@@ -214,6 +217,9 @@ public class WechatWorkServiceBuilder
 
     /// <summary>注册推广二维码业务接口（官方仅第三方应用开发开放，两族两令牌：企业注册族「获取注册码 + 查询注册状态」走 provider_access_token，零端点父接口 + 唯一第三方子接口承载；通讯录迁移族「设置授权应用可见范围 + 设置通讯录同步完成」消费查询注册状态返回的通讯录迁移 access_token，以显式 Query 传令牌、不带 [Token]、无父接口与子接口；查询注册状态仅支持 24 小时内且仅限注册完成回调事件或获取注册码返回的 register_code，非全新创建企业返回 84024；可见范围三参数未填即清空）。</summary>
     public WechatWorkServiceBuilder AddPromotionQrCodeApi() => AddModule(WechatModule.PromotionQrCode);
+
+    /// <summary>注册收银台业务接口（官方仅第三方应用开发开放，自建与代开发文档树均无对应 API；三族两令牌：收款工具族「创建收款订单 + 取消收款订单 + 获取收款订单列表 + 获取收款订单详情」与发票管理族「获取发票列表 + 标记开票状态」走 provider_access_token，各为「零端点父接口 + 唯一第三方子接口承载」；应用版本付费族「获取订单列表 + 获取订单详情 + 延长试用期」走 suite_access_token，同为「零端点父接口 + 唯一第三方子接口承载」；收款工具族须携带 nonce_str/ts/sig 签名三要素，收发票管理与应用版本付费族不签名；应用版本付费的「获取企业永久授权码 / 获取企业授权信息」与授权流族同端点、已在该族承载）。</summary>
+    public WechatWorkServiceBuilder AddPayToolApi() => AddModule(WechatModule.PayTool);
 
     /// <summary>注册全部模块。</summary>
     public WechatWorkServiceBuilder AddAllApis()

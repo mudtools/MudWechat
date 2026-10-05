@@ -34,6 +34,12 @@ namespace Mud.Wechat.Work.Abstractions.Callback;
 /// 消息与事件（关注/菜单/地理位置/审批/共享/模板卡片/应用状态）<see href="https://developer.work.weixin.qq.com/document/path/90240">path 90240</see>（企业内部开发）/
 /// <see href="https://developer.work.weixin.qq.com/document/path/90376">path 90376</see>（第三方）/ <see href="https://developer.work.weixin.qq.com/document/path/96468">path 96468</see>（服务商代开发）——
 /// 三份文档正文逐字一致，故同一事件键在三种应用模式下共用一个常量。
+/// 应用版本付费订单回调族（<see href="https://developer.work.weixin.qq.com/document/path/91929">path 91929</see> 下单成功/
+/// <see href="https://developer.work.weixin.qq.com/document/path/91930">path 91930</see> 改单/
+/// <see href="https://developer.work.weixin.qq.com/document/path/91931">path 91931</see> 支付成功/
+/// <see href="https://developer.work.weixin.qq.com/document/path/91932">path 91932</see> 退款/
+/// <see href="https://developer.work.weixin.qq.com/document/path/91933">path 91933</see> 应用版本变更/
+/// <see href="https://developer.work.weixin.qq.com/document/path/99353">path 99353</see> 取消订单）。
 /// </para>
 /// <para>
 /// 契约守卫 CB2（<c>WechatCallbackContractGuards</c>）按本类断言官方事件键全覆盖，新增官方事件键须同批登记。
@@ -393,4 +399,64 @@ public static class WechatCallbackEventTypes
     /// <summary>低活跃应用重新恢复活跃状态事件。</summary>
     /// <remarks>官方文档：<see href="https://developer.work.weixin.qq.com/document/path/90240">path 90240 低活跃应用活跃恢复事件</see>。</remarks>
     public const string ActiveRestored = "active_restored";
+
+    // ——— 应用版本付费订单回调族（官方 91929~91933 / 99353；InfoType 套件信封，指令回调 URL） ———
+
+    /// <summary>
+    /// 下单成功通知（官方键值 <c>open_order</c>）。
+    /// <para>当企业在应用市场购买付费应用完成下单后，或服务商在管理端为企业代下单后推送；
+    /// 携带 <c>OrderId</c>（订单号）与 <c>OperatorId</c>（下单操作者 userid，服务商或代理商代下单时为空）。</para>
+    /// </summary>
+    /// <remarks>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/91929">path 91929 下单成功通知</see>。
+    /// </remarks>
+    public const string OpenOrder = "open_order";
+
+    /// <summary>
+    /// 改单通知（官方键值 <c>change_order</c>）。
+    /// <para>当服务商管理员修改订单价格之后推送；官方明文「修改订单价格后，会产生新的订单号，
+    /// 服务商在改单之后要用新的订单号来查询订单详情，以及关联授权应用」——
+    /// 故本事件携带 <c>OldOrderId</c> 与 <c>NewOrderId</c>，<b>无 <c>OrderId</c> 节点</b>。</para>
+    /// </summary>
+    /// <remarks>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/91930">path 91930 改单通知</see>。
+    /// </remarks>
+    public const string ChangeOrder = "change_order";
+
+    /// <summary>
+    /// 应用版本付费「支付成功通知」（官方键值 <c>pay_for_app_success</c>）。
+    /// <para>官方文档键值带 <c>for_app</c> 前缀，勿与「接口调用许可」订单族的支付成功通知混淆。</para>
+    /// </summary>
+    /// <remarks>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/91931">path 91931 支付成功通知</see>。
+    /// </remarks>
+    public const string PayForAppSuccess = "pay_for_app_success";
+
+    /// <summary>
+    /// 退款通知（官方键值 <c>refund</c>）。
+    /// <para>官方裸值 <c>refund</c> 跨族同名（「接口调用许可」订单族的退款结果通知复用同键），
+    /// 本族与该族同属套件信封 + InfoType 键域，处理器按 <c>evt.AppType</c> 与套件通道消歧。</para>
+    /// </summary>
+    /// <remarks>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/91932">path 91932 退款通知</see>。
+    /// </remarks>
+    public const string Refund = "refund";
+
+    /// <summary>
+    /// 应用版本变更通知（官方键值 <c>change_editon</c>）。
+    /// <para><b>官方拼写陷阱</b>：官方为 <c>change_editon</c>（少一个字母 i，非 <c>change_edition</c>），本 SDK 照抄原文。</para>
+    /// </summary>
+    /// <remarks>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/91933">path 91933 应用版本变更通知</see>。
+    /// </remarks>
+    public const string ChangeEditon = "change_editon";
+
+    /// <summary>
+    /// 取消订单通知（官方键值 <c>cancel_order</c>）。
+    /// <para>服务商或客户企业取消订单时触发；官方参数表未标注「固定为」，仅列出该取值。</para>
+    /// </summary>
+    /// <remarks>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/99353">path 99353 取消订单通知</see>。
+    /// </remarks>
+    public const string CancelOrder = "cancel_order";
 }

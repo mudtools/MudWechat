@@ -33,7 +33,8 @@ public class WechatCallbackContractGuards
 {
     /// <summary>
     /// 官方事件键全集（授权 InfoType 6 + 通讯录 ChangeType 7 + 异步 Event 1 + 上下游 Event 1 + ChangeType 9
-    /// + 客户联系/获客助手族事件值 5 + 消息与事件 path 90240 的 24 个 Event 键，合计 53）。
+    /// + 客户联系/获客助手族事件值 5 + 消息与事件 path 90240 的 24 个 Event 键
+    /// + 应用版本付费订单回调 InfoType 6，合计 59）。
     /// </summary>
     /// <remarks>
     /// 客户联系/获客助手族（官方 92130/92277/96361/97299/97402/99485/98958）以<b>族事件值</b>为事件键：
@@ -95,6 +96,12 @@ public class WechatCallbackContractGuards
         (WechatCallbackEventTypes.LowActiveAlert, "消息与事件族 low_active_alert（90240）"),
         (WechatCallbackEventTypes.LowActive, "消息与事件族 low_active（90240）"),
         (WechatCallbackEventTypes.ActiveRestored, "消息与事件族 active_restored（90240）"),
+        (WechatCallbackEventTypes.OpenOrder, "应用版本付费订单回调族 open_order（91929）"),
+        (WechatCallbackEventTypes.ChangeOrder, "应用版本付费订单回调族 change_order（91930）"),
+        (WechatCallbackEventTypes.PayForAppSuccess, "应用版本付费订单回调族 pay_for_app_success（91931）"),
+        (WechatCallbackEventTypes.Refund, "应用版本付费订单回调族 refund（91932）"),
+        (WechatCallbackEventTypes.ChangeEditon, "应用版本付费订单回调族 change_editon（91933，官方拼写少一个字母 i）"),
+        (WechatCallbackEventTypes.CancelOrder, "应用版本付费订单回调族 cancel_order（99353）"),
     };
 
     // ---------------------------------------------------------------- CB1
@@ -123,7 +130,8 @@ public class WechatCallbackContractGuards
     /// <summary>
     /// 契约守卫 CB2：<see cref="WechatCallbackEventTypes"/> 常量必须覆盖官方事件键全集
     /// （授权 InfoType 6 + 通讯录 ChangeType 7 + 异步 Event 1 + 上下游 Event 1 与 ChangeType 9
-    /// + 客户联系/获客助手族事件值 5 + 消息与事件 path 90240 的 24 个 Event 键），且
+    /// + 客户联系/获客助手族事件值 5 + 消息与事件 path 90240 的 24 个 Event 键
+    /// + 应用版本付费订单回调 InfoType 6），且
     /// <see cref="WechatCallbackEvent.EventTypeKey"/> 判别优先级为
     /// 客户联系/获客族「外层事件值」→ InfoType → ChangeType → Event（v1 方案 D4 + ADR-14 三模式键统一）。
     /// </summary>
@@ -286,6 +294,11 @@ public class WechatCallbackContractGuards
             "LinkId", "State", "ExpireTime", "ExpireQuotaNum", "UserId", "ExternalUserId",
             "ChatSeq", "ChatKey", "OnceKey", "Price", "EffectiveTime");
 
+        // 收银台·应用版本付费订单回调族（官方 91929~91933 / 99353；套件信封 InfoType 键，指令回调 URL）。
+        AssertProperties(typeof(PayToolVersionOrderPayload),
+            "open_order / change_order / pay_for_app_success / refund / change_editon / cancel_order（6 键）",
+            "PaidCorpId", "OrderId", "OperatorId", "OldOrderId", "NewOrderId");
+
         var payloadTypes = new[]
         {
             typeof(ContactUserChangedPayload), typeof(ContactPartyChangedPayload),
@@ -297,6 +310,7 @@ public class WechatCallbackContractGuards
             typeof(ApprovalStatusChangedPayload), typeof(TemplateCardEventPayload),
             typeof(ExternalContactChangedPayload), typeof(ExternalChatChangedPayload),
             typeof(ExternalTagChangedPayload), typeof(CustomerAcquisitionPayload),
+            typeof(PayToolVersionOrderPayload),
         };
 
         foreach (var type in payloadTypes)
@@ -322,7 +336,7 @@ public class WechatCallbackContractGuards
     }
 
     /// <summary>
-    /// 契约守卫 CB4b（v2.2 新增；P2 扩展）：官方契约表必须登记全部 46 个载荷事件键，且授权族键不登记；
+    /// 契约守卫 CB4b（v2.2 新增；P2 扩展）：官方契约表必须登记全部 52 个载荷事件键，且授权族键不登记；
     /// 并断言「生成物登记键集 == <c>[WechatCallbackContract]</c> 特性声明并集」（生成器漂移闸）。
     /// 双面锁定：官方清单（expectedKeys）是外部契约的权威锚点，特性一致性断言锁内部链条 ——
     /// 二者不得互替（同源即同向逃逸）。
@@ -361,10 +375,16 @@ public class WechatCallbackContractGuards
             WechatCallbackEventTypes.InactiveAlert, WechatCallbackEventTypes.CloseInactiveAgent,
             WechatCallbackEventTypes.ReopenInactiveAgent, WechatCallbackEventTypes.LowActiveAlert,
             WechatCallbackEventTypes.LowActive, WechatCallbackEventTypes.ActiveRestored,
+
+            // 收银台·应用版本付费订单回调族 6 键（91929~91933 / 99353，套件信封 InfoType）。
+            WechatCallbackEventTypes.OpenOrder, WechatCallbackEventTypes.ChangeOrder,
+            WechatCallbackEventTypes.PayForAppSuccess, WechatCallbackEventTypes.Refund,
+            WechatCallbackEventTypes.ChangeEditon, WechatCallbackEventTypes.CancelOrder,
         };
 
         var registered = registry.RegisteredKeys;
-        registered.Should().HaveCount(46, "官方有强类型载荷的事件键共 46 个（17 + 客户联系/获客族 5 + 90240 的 24）");
+        registered.Should().HaveCount(52,
+            "官方有强类型载荷的事件键共 52 个（17 + 客户联系/获客族 5 + 90240 的 24 + 应用版本付费订单回调族 6）");
         foreach (var key in expectedKeys)
         {
             registered.Should().Contain(key, $"官方事件键 {key} 必须登记契约");
@@ -389,7 +409,7 @@ public class WechatCallbackContractGuards
             .SelectMany(t => t.GetCustomAttributes<WechatCallbackContractAttribute>(inherit: false))
             .SelectMany(a => a.EventTypes)
             .ToHashSet(StringComparer.Ordinal);
-        declaredKeys.Should().HaveCount(46, "[WechatCallbackContract] 特性声明的事件键并集应为 46 个");
+        declaredKeys.Should().HaveCount(52, "[WechatCallbackContract] 特性声明的事件键并集应为 52 个");
         registered.Should().BeEquivalentTo(declaredKeys, "生成器登记的键集必须与 [WechatCallbackContract] 特性声明并集一致（生成器漂移闸）");
     }
 

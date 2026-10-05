@@ -800,6 +800,15 @@ public class WechatContractGuards
                 //（分配 99512、取消 99513、获取列表 99514）。
                 nameof(IWechatWorkWedriveVipService),
                 nameof(IWechatWorkInternalWedriveVipService),
+                // 直播·直播管理域（Living 模块）：9 个端点为三类应用公共面收敛父接口 + 空标记子接口
+                //（创建预约直播 93637/93717/96837、修改预约直播 93640/93720/96839、取消预约直播 93638/93718/96838、
+                // 删除直播回放 93874/93719/96841、获取微信观看直播凭证 93641/93721/96840、
+                // 获取成员直播 ID 列表 93634/93714/96834（官方即 POST）、获取直播详情 93635/93715/96835（官方即 GET，livingid 走 Query）、
+                // 获取直播观看明细 93636/93716/96836、获取跳转小程序商城的直播观众信息 94442/94578/96843）。
+                nameof(IWechatWorkLivingService),
+                nameof(IWechatWorkInternalLivingService),
+                nameof(IWechatWorkProviderLivingService),
+                nameof(IWechatWorkThirdPartyLivingService),
             },
             "企业微信官方契约强制 Query 注入（MUD005 已知接受风险），新增 Query 注入接口须评估后扩展本守卫");
     }

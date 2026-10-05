@@ -4,13 +4,32 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace Mud.Wechat.Work.DataModels.School.Living;
+namespace Mud.Wechat.Work.DataModels.Living;
 
 [JsonSourceGenerationOptions(
     PropertyNameCaseInsensitive = true,
     PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower,
     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     WriteIndented = false)]
+[JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.Living.CancelLivingRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.Living.CreateLivingRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.Living.CreateLivingResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.Living.DeleteLivingReplayDataRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.Living.GetLivingCodeRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.Living.GetLivingCodeResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.Living.GetLivingInfoResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.Living.GetLivingShareInfoRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.Living.GetLivingShareInfoResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.Living.GetLivingWatchStatRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.Living.GetLivingWatchStatResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.Living.GetUserAllLivingIdRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.Living.GetUserAllLivingIdResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.Living.LivingActivityDetail))]
+[JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.Living.LivingDetail))]
+[JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.Living.LivingWatchStatExternalUser))]
+[JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.Living.LivingWatchStatInfo))]
+[JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.Living.LivingWatchStatUser))]
+[JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.Living.ModifyLivingRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.School.Living.LivingDeleteReplayDataRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.School.Living.LivingGetLivingInfoResponse))]
 [JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.School.Living.LivingGetUnwatchStatRequest))]

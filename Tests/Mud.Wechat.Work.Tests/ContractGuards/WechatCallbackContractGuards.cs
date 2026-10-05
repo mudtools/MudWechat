@@ -987,6 +987,12 @@ public class WechatCallbackContractGuards
     /// <para>
     /// 编号说明：<c>CB14</c>（XML 触点唯一）与 <c>CB23</c>（禁止载荷级安全闸）已被占用，故本守卫顺延为 CB24。
     /// </para>
+    /// <para>
+    /// 分两半：① <b>文本/路径断言</b>——本工程不引用 Analyzers 程序集与 Microsoft.CodeAnalysis；
+    /// ② <b>反射断言</b>——分析器只靠硬编码 metadata name 识别类型（不得引用被分析程序集），
+    /// 该名称一旦漂移，规则会**静默失效**（GetTypeByMetadataName 返回 null ⇒ 全规则空跑），
+    /// 故必须由本工程（引用真实 Abstractions）反射锁死。
+    /// </para>
     /// </summary>
     [Fact]
     public void CallbackHandlerAnalyzer_ShouldDeclareMatchingDiagnostics()
@@ -1018,12 +1024,32 @@ public class WechatCallbackContractGuards
         csprojSource.Should().Contain("<IsRoslynComponent>true</IsRoslynComponent>", "CB24：分析器工程标记");
         csprojSource.Should().Contain("<IsPackable>false</IsPackable>",
             "CB24：分析器不独立打包（随 Callback nupkg 内嵌）");
+        csprojSource.Should().Contain("<EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>",
+            "CB24：须开启扩展分析器规则（RS1xxx 拦截分析器自身缺陷）");
+        csprojSource.Should().Contain("<IncludeBuildOutput>false</IncludeBuildOutput>",
+            "CB24：分析器无 lib 分发形态，不参与 lib 资产");
         csprojSource.Should().NotContain("PackageReference Include=\"Microsoft.CodeAnalysis.CSharp.Workspaces\"",
             "CB24：不得引用 Workspaces（命令行编译进程不加载该程序集，RS1038）");
-        csprojSource.Should().Contain("<PackageReference Remove=\"Microsoft.Extensions.DependencyInjection.Abstractions\" />",
-            "CB24：分析器不得继承根 props 注入的运行时依赖");
-        csprojSource.Should().Contain("<PackageReference Remove=\"System.Text.Json\" />",
-            "CB24：分析器不得继承根 props 注入的 System.Text.Json");
+
+        // 根 Directory.Build.props 按 netstandard2.0 注入的 5 个运行时依赖必须逐一移除（含 Options：
+        // 它会传递引入 DI.Abstractions / Primitives / Bcl.AsyncInterfaces，并把 Options.SourceGeneration
+        // 当作分析器加载进本工程自身编译，违背「分析器程序集最小化」意图）。
+        foreach (var injected in new[]
+                 {
+                     "Microsoft.Extensions.DependencyInjection.Abstractions",
+                     "Microsoft.Extensions.Logging.Abstractions",
+                     "Microsoft.Extensions.Configuration.Binder",
+                     "Microsoft.Extensions.Options",
+                     "System.Text.Json",
+                 })
+        {
+            csprojSource.Should().Contain($"<PackageReference Remove=\"{injected}\" />",
+                $"CB24：分析器不得继承根 props 注入的 {injected}");
+        }
+
+        // AnalyzerReleases.Shipped.md 必须存在（空文件亦可）——缺失会让发布跟踪解析失败。
+        File.Exists(Path.Combine(analyzersRoot, "AnalyzerReleases.Shipped.md"))
+            .Should().BeTrue("CB24：AnalyzerReleases.Shipped.md 必须存在（RS2000发布跟踪需要成对文件）");
 
         // ③ Callback 含 analyzers/dotnet/cs 打包资产，直接引用本仓分析器 DLL（netstandard2.0 单 TFM，路径固定）。
         var callbackCsprojSource = File.ReadAllText(Path.Combine(
@@ -1032,6 +1058,64 @@ public class WechatCallbackContractGuards
         callbackCsprojSource.Should().Contain(
             "Mud.Wechat.Work.Callback.Analyzers.dll",
             "CB24：打包 ItemGroup 引用本仓分析器 DLL（排除上游 Mud.HttpUtils.Generator 与本仓 Callback.Generator）");
+
+        // ④ 工程登记：slnx 必须含分析器工程（否则 verify-build 步骤 1/2 的「随 slnx 构建」口径漏项）。
+        File.ReadAllText(Path.Combine(GetSolutionRoot(), "Mud.Wechat.slnx"))
+            .Should().Contain("Mud.Wechat.Work.Callback.Analyzers/Mud.Wechat.Work.Callback.Analyzers.csproj",
+                "CB24：分析器工程必须在 slnx 的 /src/ 下登记");
+
+        // ⑤ 狗粮面：Demo 必须以 Analyzer 形态引用分析器（普通引用不会在 Demo 源码上生效）。
+        var demoRoot = Path.Combine(GetSolutionRoot(), "Demos", "Mud.Wechat.Work.ContactCallbackDemo");
+        File.ReadAllText(Path.Combine(demoRoot, "Mud.Wechat.Work.ContactCallbackDemo.csproj"))
+            .Should().Contain("OutputItemType=\"Analyzer\"",
+                "CB24：Demo 狗粮面必须以 Analyzer 形态引用分析器，否则 4 条规则在 Demo 上不生效");
+
+        // ⑥ Demo 处理器一律引用 WechatCallbackEventTypes 常量（方案 §7.3 第 4 条；字面量即 MUDCB004）。
+        var handlerFiles = Directory.GetFiles(Path.Combine(demoRoot, "Handlers"), "*.cs");
+        handlerFiles.Should().NotBeEmpty("CB24：Demo Handlers 目录为空，定位失败");
+        foreach (var file in handlerFiles)
+        {
+            foreach (System.Text.RegularExpressions.Match key in Regex.Matches(
+                         File.ReadAllText(file), @"SupportedEventType\s*=>\s*(?<expr>[^;]+)"))
+            {
+                key.Groups["expr"].Value.Trim().Should().NotStartWith("\"",
+                    $"CB24：{Path.GetFileName(file)} 的 SupportedEventType 写成字符串字面量" +
+                    $"（MUDCB004：字面量是笔误与漂移源），应引用 WechatCallbackEventTypes 常量");
+            }
+        }
+    }
+
+    /// <summary>
+    /// 契约守卫 CB24 的另一半：分析器用于识别回调类型的<b>硬编码 metadata name</b>必须与真实类型一致。
+    /// </summary>
+    /// <remarks>
+    /// 分析器按红线要求<b>不得引用被分析程序集</b>，故只能靠字符串形式的 metadata name 识别
+    /// <c>WechatCallbackPayloadHandler&lt;T&gt;</c> / <c>IWechatCallbackEventHandler&lt;T&gt;</c> /
+    /// <c>WechatCallbackContractAttribute</c> / <c>GenericCallbackPayload</c>。
+    /// 一旦 Abstractions 改命名空间或改名，<c>GetTypeByMetadataName</c> 返回 <c>null</c> ⇒
+    /// 规则<b>静默空跑</b>（0 诊断、无任何报错），只有本守卫（反射真实类型）能发现。
+    /// </remarks>
+    [Fact]
+    public void CallbackHandlerAnalyzer_MetadataNames_ShouldMatchRuntimeTypes()
+    {
+        var analyzerSource = File.ReadAllText(Path.Combine(
+            GetSolutionRoot(), "Mud.Wechat.Work.Callback.Analyzers", "WechatCallbackHandlerAnalyzer.cs"));
+
+        var expected = new (string ConstName, string MetadataName)[]
+        {
+            ("PayloadHandlerBaseMetadataName", typeof(WechatCallbackPayloadHandler<>).FullName!),
+            ("TypedHandlerInterfaceMetadataName", typeof(IWechatCallbackEventHandler<>).FullName!),
+            ("ContractAttributeMetadataName", typeof(WechatCallbackContractAttribute).FullName!),
+            ("GenericPayloadMetadataName", typeof(GenericCallbackPayload).FullName!),
+        };
+
+        foreach (var (constName, metadataName) in expected)
+        {
+            metadataName.Should().NotBeNullOrWhiteSpace($"CB24：{constName} 对应的真实类型应可解析");
+            analyzerSource.Should().Contain($"\"{metadataName}\"",
+                $"CB24：分析器常量 {constName} 的 metadata name 与真实类型不一致" +
+                $"（期望 \"{metadataName}\"）—— 不一致时 GetTypeByMetadataName 返回 null，规则静默空跑");
+        }
     }
 
     /// <summary>

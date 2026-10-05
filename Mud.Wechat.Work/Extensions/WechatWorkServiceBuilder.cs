@@ -105,6 +105,9 @@ public class WechatWorkServiceBuilder
             [WechatModule.Schedule] = new WechatModuleRegistrar(
                 WechatModule.Schedule,
                 s => s.AddScheduleWebApiHttpClient()),
+            [WechatModule.Meeting] = new WechatModuleRegistrar(
+                WechatModule.Meeting,
+                s => s.AddMeetingWebApiHttpClient()),
         };
 
     /// <summary>注册授权流业务接口与授权编排服务（get_pre_auth_code / set_session_info / get_permanent_code / get_auth_info / get_customized_auth_url + 编排）。</summary>
@@ -172,6 +175,9 @@ public class WechatWorkServiceBuilder
 
     /// <summary>注册日程业务接口（管理日历族：创建/更新/获取/删除日历 4 端点为三类应用公共面收敛父接口 + 空标记子接口；创建日历路由官方即 calendar/add，更新操作为覆盖式而非增量式）。</summary>
     public WechatWorkServiceBuilder AddScheduleApi() => AddModule(WechatModule.Schedule);
+
+    /// <summary>注册会议业务接口（预约会议基础管理族：创建/修改/取消/获取成员会议 ID 列表 4 端点为三类应用公共面收敛父接口，获取会议详情为自建/第三方差异端点、代开发零端点空标记；会议统计管理族：获取会议发起记录官方仅自建开放，零端点父接口 + 仅自建子接口承载）。</summary>
+    public WechatWorkServiceBuilder AddMeetingApi() => AddModule(WechatModule.Meeting);
 
     /// <summary>注册全部模块。</summary>
     public WechatWorkServiceBuilder AddAllApis()

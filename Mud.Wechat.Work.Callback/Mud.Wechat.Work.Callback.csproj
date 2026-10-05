@@ -25,6 +25,13 @@
 		                  OutputItemType="Analyzer" ReferenceOutputAssembly="false" PrivateAssets="all" />
 	</ItemGroup>
 
+	<!-- 回调处理器契约分析器（本仓侧）：校验 SupportedEventType ↔ 载荷契约一致性（MUDCB002~005）。
+	     仅诊断、不发射 ⇒ 允许随包下发（analyzers/dotnet/cs）；工程 IsPackable=false，不新增第 6 个 nupkg。 -->
+	<ItemGroup>
+		<ProjectReference Include="..\Mud.Wechat.Work.Callback.Analyzers\Mud.Wechat.Work.Callback.Analyzers.csproj"
+		                  OutputItemType="Analyzer" ReferenceOutputAssembly="false" PrivateAssets="all" />
+	</ItemGroup>
+
 	<!-- v1 方案 D1（对齐 Mud.Feishu.Webhook）：netstandard2.0 保留旧包；net6.0+ 使用 FrameworkReference -->
 	<ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
 		<PackageReference Include="Microsoft.AspNetCore.Http" Version="2.3.9" />
@@ -37,6 +44,14 @@
 	<ItemGroup>
 		<!-- 抗重放时间窗常量（ReplayWindowSeconds）为 internal，供测试断言边界。 -->
 		<InternalsVisibleTo Include="Mud.Wechat.Work.Callback.Tests" />
+	</ItemGroup>
+
+	<!-- 随包下发分析器资产（不新增第 6 个 nupkg）：直接引用 Analyzers 工程输出 DLL（netstandard2.0 单 TFM，路径固定）。
+	     用 ItemGroup 而非 Target —— Pack="true" 的 None item 须在 _CollectPackageFiles 之前的 evaluation 阶段就存在。
+	     只挑本仓分析器 DLL；Mud.HttpUtils.Generator（独立包）与本仓 Callback.Generator（发射器，IsPackable=false）不内嵌。 -->
+	<ItemGroup>
+		<None Include="$(MSBuildThisFileDirectory)..\Mud.Wechat.Work.Callback.Analyzers\bin\$(Configuration)\netstandard2.0\Mud.Wechat.Work.Callback.Analyzers.dll"
+		      Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
 	</ItemGroup>
 
 </Project>

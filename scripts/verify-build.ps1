@@ -53,11 +53,12 @@ Assert-Zero -Step '步骤1' -Name 'NU1603 依赖降级' -Value $nu1603Count
 # ------------------------------------------------------------------ 步骤 2
 Write-Host "`n[步骤 2] AOT strict 冒烟（net8.0，逐源项目）" -ForegroundColor Cyan
 $sourceProjects = Get-ChildItem -Path $repoRoot -Filter '*.csproj' -File -Recurse |
-    Where-Object { $_.FullName -notmatch '\\(Tests|Demos)\\' -and $_.FullName -notmatch '\\(obj|bin)\\' }
-# Roslyn 源生成器工程（.Generator.csproj）为 netstandard2.0 单 TFM（跨宿主加载硬约束），
-# 无运行时 AOT 语义；其正确性由步骤 1 全量构建（随 Callback 编译触发）+ 步骤 3 守卫闭环承担。
+    Where-Object { $_.FullName -notmatch '\\(Tests|Demos)\\' -and $_.FullName -notmatch '\\(obj|bin)\\' -and $_.FullName -notmatch '\\\.codeartsdoer\\' }
+# 排除 .codeartsdoer（工具临时目录，含评测 harness 生成的 ses_*.csproj 临时产物，非源项目）。
+# Roslyn 扩展工程（.Generator.csproj 源生成器 / .Analyzers.csproj 诊断分析器）为 netstandard2.0 单 TFM
+# （跨宿主加载硬约束），无运行时 AOT 语义；其正确性由步骤 1 全量构建（随 Callback 编译触发）+ 步骤 3 守卫闭环承担。
 # 此排除是范围修正 —— 防假绿三条设置（双断言 / 递归 / --no-incremental）全部保留。
-$sourceProjects = $sourceProjects | Where-Object { $_.Name -notmatch '\.Generator\.csproj$' }
+$sourceProjects = $sourceProjects | Where-Object { $_.Name -notmatch '\.(Generator|Analyzers)\.csproj$' }
 
 foreach ($project in $sourceProjects) {
     Write-Host "  AOT strict 构建：$($project.Name)"

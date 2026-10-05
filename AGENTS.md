@@ -24,7 +24,7 @@ dotnet build Mud.Wechat.slnx -c Release
 dotnet test Tests/Mud.Wechat.Work.Tests -c Release -f net8.0 --filter "FullyQualifiedName~ContractGuards"
 ```
 
-- `verify-build.ps1` 三步：Release 全量构建 → 逐源项目 AOT strict（排除 `Tests`/`Demos`/`*.Generator.csproj`）→ 逐测试工程测试（单 TFM `net8.0`，产物落 gitignored `test-reports/`）。
+- `verify-build.ps1` 三步：Release 全量构建 → 逐源项目 AOT strict（排除 `Tests`/`Demos`/`.codeartsdoer`/`*.Generator.csproj`/`*.Analyzers.csproj`——`.codeartsdoer` 为工具临时目录，Roslyn 扩展工程为 netstandard2.0 单 TFM、无运行时 AOT 语义，其正确性由步骤 1 全量构建 + 步骤 3 守卫闭环承担）→ 逐测试工程测试（单 TFM `net8.0`，产物落 gitignored `test-reports/`）。
 - **改 `verify-build.ps1` 时三处设置删掉即假绿，不许优化掉**：① strict 步骤须**同时**断言「编译错误」与「IL 诊断」计数（构建本身失败时诊断计数仍为 0）；② `Get-ChildItem -Recurse`（否则找不到嵌套 `.csproj`，AOT 步骤静默空跑）；③ `--no-incremental`（`CoreCompile` 只比对时间戳、不比对 csc 命令行，紧跟步骤 1 的 strict 构建会被整体跳过）。
 - **门禁只统计编译错误与 AOT IL 诊断，不因 CS 警告失败** —— 不要为消警告大范围重构。
 - `scripts/*.ps1` 为 UTF-8 **含 BOM**（无 BOM 在 PowerShell 5.1 下按 ANSI 解码 ⇒ 语法解析失败）。
@@ -38,6 +38,7 @@ dotnet test Tests/Mud.Wechat.Work.Tests -c Release -f net8.0 --filter "FullyQual
 | 加 DTO | 标 `[HttpJsonSerializable]` → 跑 `AddHttpJsonSerializable.ps1` + `GenerateJsonContext.ps1`（Abstractions 域手写登记进 `AuthenticationJsonContext`）→ 更新守卫中的上下文登记断言 |
 | 加配置属性 | 补**真实消费点**；无消费点则**删属性**（`audit-config-keys.ps1` 无白名单、无 `-Strict`，`Validate`/`ToString` 不算消费点，正确处置是补消费点或删属性，不是加模式绕开） |
 | 加/改回调事件 | `[WechatCallbackContract]`（事件键 + 族前置 + 开放面）+ 载荷 `[PayloadContract]` + 回调守卫 |
+| 加/改回调处理器 | `WechatCallbackHandlerAnalyzer`（MUDCB002~005）自动生效（`SupportedEventType` ↔ 载荷契约一致性编译期校验）；若钥匙集/开放面变化则同批更新 `WechatCallbackContractGuards`（CB 系列） |
 | 改契约面（接口/路由/DTO/注册组/配置面） | 对应 `Tests/**/ContractGuards/` 守卫 —— **守卫是权威描述，不是「改完再补」的收尾项** |
 
 ## 3 红线：多 TFM、语言与 AOT
@@ -65,6 +66,7 @@ Mud.Wechat.Work.Abstractions/         # 令牌基座、多应用、配置、存�
 Mud.Wechat.Work.DataModels/           # 官方 DTO（[HttpJsonSerializable]）+ Generated/ 域 JsonContext（生成物）
 Mud.Wechat.Work.Callback/             # 回调接收（AES 解密、事件解析、分发）+ HTTP 中间件；Events/Payloads/ 载荷
 Mud.Wechat.Work.Callback.Generator/   # 回调契约登记生成器（IsPackable=false；发射 RegisterAll）
+Mud.Wechat.Work.Callback.Analyzers/   # 回调处理器契约分析器（诊断型、不发射；IsPackable=false，随 Callback nupkg 内嵌 analyzers/dotnet/cs）
 Mud.Wechat.Redis/                     # 四个存储端口的 Redis 实现 + 连接基座 + DI 编排
 Tests/                                # 5 个工程（Work / Abstractions / Callback / DataModels / Redis），镜像源结构，单 TFM net8.0
 scripts/                              # verify-build / audit-config-keys / GenerateJsonContext / AddHttpJsonSerializable / ApplyTokenOwnerKeys
@@ -152,6 +154,7 @@ scripts/                              # verify-build / audit-config-keys / Gener
 - **三模式无关性**（ADR-14）：三种 `AppType` 报文结构同一，差异只是「值是否出现」⇒ 一份可空超集载荷覆盖三模式；**载荷与转换器层禁止出现 `WechatAppType`/`WechatCallbackChannel` 分支**，需分支时在处理器层读 `evt.AppType`。载荷**不复用** DataModels 的 JSON DTO。
 - `Callback.csproj` 必须显式引用 `Mud.HttpUtils.Generator`（Abstractions 侧带 `PrivateAssets="all"`）与本仓生成器工程（`OutputItemType="Analyzer"`、`IsPackable=false`，不进「恰 5 nupkg」）。上游生成器引用与 `Mud.HttpUtils` 包版本须全仓单一（守卫 G1；`NU1605` 视为错误）。
 - 族事件键不可用逐 `ChangeType` 消歧（官方裸值跨族同名）：客户联系/获客族以 `change_external_contact`/`change_external_chat`/`change_external_tag`/`customer_acquisition`/`customer_acquisition_permit_change` 为键，类别由信封 `ChangeType` 判别。`JobType` 级差异属语义过滤、**不得做成安全闸**。
+- **回调处理器接线（编译期）**：`WechatCallbackHandlerAnalyzer`（`Mud.Wechat.Work.Callback.Analyzers`，随 Callback nupkg 的 `analyzers/dotnet/cs` 下发）以 `TPayload` 的 `[WechatCallbackContract]` 为唯一权威，校验 `SupportedEventType` ↔ 载荷契约一致性：**MUDCB002**（Error，键 ∉ 载荷键集，消灭运行期 `ContractMismatch` 静默丢事件）、**MUDCB003**（Info，键非常量）、**MUDCB004**（Warning，键写字符串字面量而非 `WechatCallbackEventTypes` 常量）、**MUDCB005**（Warning，处理器未 `AddHandler<T>` 注册）。豁免：空键（兜底）/ `GenericCallbackPayload` / 无契约特性；`.editorconfig` 可调 `severity`；**MUDCB005 为启发式规则、非安全闸**（跨程序集注册编排不覆盖）。分析器**只诊断、不发射**，运行期行为零变化。
 
 ### 5.6 消息推送落位
 

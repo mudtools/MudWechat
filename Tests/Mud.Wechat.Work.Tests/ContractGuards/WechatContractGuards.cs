@@ -715,6 +715,15 @@ public class WechatContractGuards
                 nameof(IWechatWorkInternalScheduleCalendarService),
                 nameof(IWechatWorkProviderScheduleCalendarService),
                 nameof(IWechatWorkThirdPartyScheduleCalendarService),
+                // 日程·管理日程族（Schedule 模块）：创建/更新日程、新增/删除日程参与者、获取日历下的日程列表、
+                // 获取日程详情、取消日程 7 端点为三类应用公共面收敛父接口 + 空标记子接口
+                //（创建日程 93648/93703/96824、更新日程 97720/97787/97761、新增日程参与者 97721/97789/97763、
+                // 删除日程参与者 97722/97794/97764、获取日历下的日程列表 97723/97796/97765、
+                // 获取日程详情 97724/97798/97766、取消日程 97725/97799/97767）。
+                nameof(IWechatWorkScheduleService),
+                nameof(IWechatWorkInternalScheduleService),
+                nameof(IWechatWorkProviderScheduleService),
+                nameof(IWechatWorkThirdPartyScheduleService),
                 // 会议·预约会议基础管理族（Meeting 模块）：创建/修改/取消/获取成员会议 ID 列表 4 端点为三类应用公共面收敛父接口
                 //（创建 99104/93706/97454、修改 99047/93710/97455、取消 99048/93709/97456、获取成员会议 ID 列表 99050/93707/97457；
                 // 获取会议详情 99049/93708 为自建/第三方差异端点，代开发零端点空标记）。

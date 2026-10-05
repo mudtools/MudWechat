@@ -806,6 +806,33 @@ public class WechatContractGuards
                 nameof(IWechatWorkInternalWedriveFileService),
                 nameof(IWechatWorkProviderWedriveFileService),
                 nameof(IWechatWorkThirdPartyWedriveFileService),
+                // 微盘·管理文件权限族（Wedrive 模块）：6 端点为三类应用公共面收敛父接口 + 空标记子接口
+                //（新增成员 93658/95860/96848、删除成员 97888/97959/97922、分享设置 97889/97960/97923、
+                // 获取分享链接 97890/97961/97924、获取文件权限信息 97891/97962/97925、修改文件安全设置 97892/97965/97926）。
+                nameof(IWechatWorkWedriveFileAclService),
+                nameof(IWechatWorkInternalWedriveFileAclService),
+                nameof(IWechatWorkProviderWedriveFileAclService),
+                nameof(IWechatWorkThirdPartyWedriveFileAclService),
+                // 微盘·版本和容量管理族（Wedrive 模块）：官方单文档页承载 2 条路由，三类应用公共面收敛父接口 + 空标记子接口
+                //（获取盘专业版信息 + 获取盘容量信息 95856/95861/96849；空请求体无请求 DTO）。
+                nameof(IWechatWorkWedriveCapacityService),
+                nameof(IWechatWorkInternalWedriveCapacityService),
+                nameof(IWechatWorkProviderWedriveCapacityService),
+                nameof(IWechatWorkThirdPartyWedriveCapacityService),
+                // 微盘·高级功能账号管理族（Wedrive 模块）：3 端点官方仅自建应用开放（代开发/第三方标注「暂不支持」），
+                // 零端点父接口 + 仅自建子接口承载；路由挂 /cgi-bin/wedrive/vip/ 段
+                //（分配 99512、取消 99513、获取列表 99514）。
+                nameof(IWechatWorkWedriveVipService),
+                nameof(IWechatWorkInternalWedriveVipService),
+                // 直播·直播管理域（Living 模块）：9 个端点为三类应用公共面收敛父接口 + 空标记子接口
+                //（创建预约直播 93637/93717/96837、修改预约直播 93640/93720/96839、取消预约直播 93638/93718/96838、
+                // 删除直播回放 93874/93719/96841、获取微信观看直播凭证 93641/93721/96840、
+                // 获取成员直播 ID 列表 93634/93714/96834（官方即 POST）、获取直播详情 93635/93715/96835（官方即 GET，livingid 走 Query）、
+                // 获取直播观看明细 93636/93716/96836、获取跳转小程序商城的直播观众信息 94442/94578/96843）。
+                nameof(IWechatWorkLivingService),
+                nameof(IWechatWorkInternalLivingService),
+                nameof(IWechatWorkProviderLivingService),
+                nameof(IWechatWorkThirdPartyLivingService),
             },
             "企业微信官方契约强制 Query 注入（MUD005 已知接受风险），新增 Query 注入接口须评估后扩展本守卫");
     }

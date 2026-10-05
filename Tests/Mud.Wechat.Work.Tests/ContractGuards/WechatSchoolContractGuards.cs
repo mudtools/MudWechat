@@ -13,6 +13,10 @@ using Mud.Wechat.Work.DataModels.School;
 using Mud.Wechat.Work.DataModels.School.ClassPay;
 using Mud.Wechat.Work.DataModels.School.HealthReport;
 using Mud.Wechat.Work.DataModels.School.Living;
+// LivingJsonContext 由 mud-jsonctx 落在多命名空间分组的字母序首个目录（DataModels.Living，见
+// GenerateJsonContext.ps1 头注）。本文件已 using School.Living（承载上课直播域 DTO，其中 LivingInfo
+// 与直播域 DataModels.Living.LivingInfo 同名），故以别名引用上下文类而非整命名空间导入，避免类型歧义。
+using LivingJsonContext = Mud.Wechat.Work.DataModels.Living.LivingJsonContext;
 
 namespace Mud.Wechat.Work.Tests.ContractGuards;
 

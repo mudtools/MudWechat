@@ -45,6 +45,7 @@ using Mud.Wechat.Work.DataModels.Identity;
 using Mud.Wechat.Work.DataModels.Invoice;
 using Mud.Wechat.Work.DataModels.InternalAppAuthentication;
 using Mud.Wechat.Work.DataModels.Kf;
+using Mud.Wechat.Work.DataModels.Living;
 using Mud.Wechat.Work.DataModels.Mail;
 using Mud.Wechat.Work.DataModels.Meeting;
 using Mud.Wechat.Work.DataModels.Media;
@@ -57,7 +58,6 @@ using Mud.Wechat.Work.DataModels.Schedule;
 using Mud.Wechat.Work.DataModels.School;
 using Mud.Wechat.Work.DataModels.School.ClassPay;
 using Mud.Wechat.Work.DataModels.School.HealthReport;
-using Mud.Wechat.Work.DataModels.School.Living;
 using Mud.Wechat.Work.DataModels.Wedoc;
 using Mud.Wechat.Work.DataModels.Wedrive;
 

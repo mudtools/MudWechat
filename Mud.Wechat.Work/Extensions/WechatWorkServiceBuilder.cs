@@ -111,6 +111,9 @@ public class WechatWorkServiceBuilder
             [WechatModule.Wedrive] = new WechatModuleRegistrar(
                 WechatModule.Wedrive,
                 s => s.AddWedriveWebApiHttpClient()),
+            [WechatModule.Living] = new WechatModuleRegistrar(
+                WechatModule.Living,
+                s => s.AddLivingWebApiHttpClient()),
         };
 
     /// <summary>注册授权流业务接口与授权编排服务（get_pre_auth_code / set_session_info / get_permanent_code / get_auth_info / get_customized_auth_url + 编排）。</summary>
@@ -182,8 +185,11 @@ public class WechatWorkServiceBuilder
     /// <summary>注册会议业务接口（预约会议基础管理族：创建/修改/取消/获取成员会议 ID 列表 4 端点为三类应用公共面收敛父接口，获取会议详情为自建/第三方差异端点、代开发零端点空标记；会议统计管理族：获取会议发起记录官方仅自建开放，零端点父接口 + 仅自建子接口承载）。</summary>
     public WechatWorkServiceBuilder AddMeetingApi() => AddModule(WechatModule.Meeting);
 
-    /// <summary>注册微盘业务接口（管理空间族：新建/重命名/解散空间 + 获取空间信息 4 端点；管理空间权限族：添加/移除成员/部门 + 安全设置 + 获取邀请链接 + 获取空间信息（新版）5 端点；管理文件族：获取文件列表 + 上传文件 + 文件分块上传（一页三路由） + 下载文件 + 新建文件夹/文档 + 重命名文件 + 移动文件 + 删除文件 + 获取文件信息 11 端点；均为三类应用公共面收敛父接口 + 空标记子接口，官方获取空间信息存在 space_info 旧版与 new_space_info 新版两条路由分挂两个分组）。</summary>
+    /// <summary>注册微盘业务接口（管理空间族 4 端点 + 管理空间权限族 5 端点 + 管理文件族 11 端点 + 管理文件权限族 6 端点 + 版本和容量管理族 2 端点，均为三类应用公共面收敛父接口 + 空标记子接口；高级功能账号管理族 3 端点官方仅自建开放，零端点父接口 + 仅自建子接口承载、路由挂 vip/ 段；官方获取空间信息存在 space_info 旧版与 new_space_info 新版两条路由分挂两个分组，文件分块上传与版本容量均为一页多路由）。</summary>
     public WechatWorkServiceBuilder AddWedriveApi() => AddModule(WechatModule.Wedrive);
+
+    /// <summary>注册直播业务接口（创建/修改/取消预约直播 + 删除直播回放 + 获取微信观看直播凭证 + 获取成员直播 ID 列表 + 获取直播详情 + 获取直播观看明细 + 获取跳转小程序商城的直播观众信息，9 端点为三类应用公共面收敛父接口 + 空标记子接口；获取直播详情官方即 GET，获取成员直播 ID 列表与删除直播回放两条路由与家校沟通·上课直播域共用）。</summary>
+    public WechatWorkServiceBuilder AddLivingApi() => AddModule(WechatModule.Living);
 
     /// <summary>注册全部模块。</summary>
     public WechatWorkServiceBuilder AddAllApis()

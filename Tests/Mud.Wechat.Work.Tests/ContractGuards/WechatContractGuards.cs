@@ -857,6 +857,13 @@ public class WechatContractGuards
                 // 故零端点父接口 + 仅自建子接口承载；suite_access_token 为官方包体参数，不经 Query 注入。
                 nameof(IWechatWorkAgentMigrationService),
                 nameof(IWechatWorkInternalAgentMigrationService),
+                // JS-SDK 域（JsSdk 模块）：获取企业 jsapi_ticket + 获取应用 jsapi_ticket 2 端点为三类应用公共面
+                //（自建 90506 / 第三方 90539 / 代开发 96909，官方三份文档逐字一致；父接口 + 三个应用类型空标记子接口；
+                // ticket/get 端点以方法级固定 Query type=agent_config 携带官方鉴权类型）。
+                nameof(IWechatWorkJsSdkService),
+                nameof(IWechatWorkInternalJsSdkService),
+                nameof(IWechatWorkThirdPartyJsSdkService),
+                nameof(IWechatWorkProviderJsSdkService),
             },
             "企业微信官方契约强制 Query 注入（MUD005 已知接受风险），新增 Query 注入接口须评估后扩展本守卫");
     }

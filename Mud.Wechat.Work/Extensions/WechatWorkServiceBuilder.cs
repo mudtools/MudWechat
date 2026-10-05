@@ -114,6 +114,12 @@ public class WechatWorkServiceBuilder
             [WechatModule.Living] = new WechatModuleRegistrar(
                 WechatModule.Living,
                 s => s.AddLivingWebApiHttpClient()),
+            [WechatModule.Agent] = new WechatModuleRegistrar(
+                WechatModule.Agent,
+                s => s.AddAgentWebApiHttpClient()),
+            [WechatModule.JsSdk] = new WechatModuleRegistrar(
+                WechatModule.JsSdk,
+                s => s.AddJsSdkWebApiHttpClient()),
         };
 
     /// <summary>注册授权流业务接口与授权编排服务（get_pre_auth_code / set_session_info / get_permanent_code / get_auth_info / get_customized_auth_url + 编排）。</summary>
@@ -193,6 +199,9 @@ public class WechatWorkServiceBuilder
 
     /// <summary>注册应用管理业务接口（获取应用族：agent/get + agent/list 两端点三类应用公共面收敛父接口 + 空标记子接口，设置应用官方仅企业可调用——第三方以及代开发自建应用不可调用、落自建差异端点；工作台自定义展示族 5 端点三类应用公共面收敛父接口 + 空标记子接口；自定义菜单族 3 端点官方仅自建应用开放，零端点父接口 + 仅自建子接口承载、agentid 走 Query；自建应用迁移成代开发应用族官方仅代开发章节提供但消费待迁移自建应用自身 access_token，落 Internal 归属域子接口、suite_access_token 为官方包体参数经请求体显式传入）。</summary>
     public WechatWorkServiceBuilder AddAgentApi() => AddModule(WechatModule.Agent);
+
+    /// <summary>注册 JS-SDK 业务接口（获取企业 jsapi_ticket + 获取应用 jsapi_ticket 两端点三类应用公共面收敛父接口 + 空标记子接口，官方三份文档逐字一致；ticket/get 端点以固定 Query 值 type=agent_config 携带官方鉴权类型；jsapi_ticket 频率限制一小时内一个企业最多 400 次、单个应用不超过 100 次，官方要求后台缓存）。</summary>
+    public WechatWorkServiceBuilder AddJsSdkApi() => AddModule(WechatModule.JsSdk);
 
     /// <summary>注册全部模块。</summary>
     public WechatWorkServiceBuilder AddAllApis()

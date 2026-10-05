@@ -33,21 +33,27 @@ namespace Mud.Wechat.Work.Tests.ContractGuards;
 /// 零端点父接口 + 唯一自建子接口承载端点；全部挂 webinar 段，报名 7 端点挂 webinar/enroll 子段，
 /// 报名问题/报名 ID/报名信息结构官方与普通会议报名同构、共用同一批嵌套 DTO）；
 /// 电话入会（PSTN）管理族（3 端点官方仅自建应用开放——第三方/代开发章节均无对应 API，
-/// 零端点父接口 + 唯一自建子接口承载端点；全部挂 phone 段）。
+/// 零端点父接口 + 唯一自建子接口承载端点；全部挂 phone 段）；
+/// Rooms 会议室管理族（12 端点官方仅自建应用开放——第三方/代开发章节均无对应 API，
+/// 零端点父接口 + 唯一自建子接口承载端点；全部挂 rooms 段；获取资源端点官方为无请求体 POST）；
+/// 会议室连接器（MRA）管理族（4 端点官方仅自建应用开放——第三方/代开发章节均无对应 API，
+/// 零端点父接口 + 唯一自建子接口承载端点；全部挂 mra 段）。
 /// </para>
 /// </summary>
 /// <remarks>
 /// <para>
-/// 官方反直觉点（勿「顺手修正」）：会议域 59 条路由官方全部即 POST（含仅查询语义的 meeting/get_info /
+/// 官方反直觉点（勿「顺手修正」）：会议域 75 条路由官方全部即 POST（含仅查询语义的 meeting/get_info /
 /// meeting/get_user_meetingid / meeting/statistics/get_start_list / meeting/get_invitees /
 /// meeting/get_customer_short_url / meeting/get_realtime_attendee_list / meeting/get_attendee_list /
 /// meeting/waitingroom/* / meeting/check_device_in_meeting / meeting/get_guests / meeting/get_quality /
-/// meeting/enroll/* / meeting/realcontrol/* / meeting/poll/* / meeting/webinar/* / meeting/phone/*）；
+/// meeting/enroll/* / meeting/realcontrol/* / meeting/poll/* / meeting/webinar/* / meeting/phone/* /
+/// meeting/rooms/* / meeting/mra/*）；
 /// 会议 ID 官方字段名作 <c>meetingid</c>（无下划线）、列表作 <c>meetingid_list</c>；获取成员会议 ID 列表用
 /// cursor+limit 翻页（cursor 初次调用可填 "0"）；会议统计管理路由挂 <c>/cgi-bin/meeting/statistics/</c> 段；
 /// 高级管理报名配置与等候室路由挂 <c>/cgi-bin/meeting/enroll/</c> 与 <c>/cgi-bin/meeting/waitingroom/</c> 段；
 /// 会控与投票路由挂 <c>/cgi-bin/meeting/realcontrol/</c> 与 <c>/cgi-bin/meeting/poll/</c> 段；
 /// 网络研讨会与电话入会路由挂 <c>/cgi-bin/meeting/webinar/</c> 与 <c>/cgi-bin/meeting/phone/</c> 段；
+/// Rooms 会议室与 MRA 路由挂 <c>/cgi-bin/meeting/rooms/</c> 与 <c>/cgi-bin/meeting/mra/</c> 段；
 /// 获取实时会中成员列表官方请求示例将分页游标误写为 <c>cursort</c>、参数表为 <c>cursor</c>，以参数表为准；
 /// 会控单数命名 <c>operated_user</c>（管理联席主持人/静音成员/关闭屏幕共享/开关成员视频）承载单个对象
 /// （参数表 object[] 标注为文档笔误），复数命名 <c>operated_users</c>（管理等候室成员/移出成员/修改昵称）承载数组；
@@ -57,6 +63,7 @@ namespace Mud.Wechat.Work.Tests.ContractGuards;
 /// 详情响应 media_setting 的入会静音字段示例作 <c>mute_enable_join</c>（参数表作 enable_enter_mute），
 /// 与请求形态分型承载；详情响应 status 为字符串枚举（MEETING_STATE_*）；
 /// 网络研讨会 start_time/end_time 参数表与示例均为字符串形态时间戳（单位秒）；
+/// Rooms 域 Rooms 会议室下的会议列表与设备列表（app_version）等响应也存在字符串枚举与说明错位陷阱（详见各 DTO remarks）；
 /// 创建预约会议响应 meetingid 可用于「进入会议」接口（小程序/JS-SDK）；
 /// 创建/修改预约会议请求与获取会议详情响应的 settings/reminders/invitees
 /// 三嵌套对象官方参数表高度同构，本 SDK 以共用结构承载；
@@ -352,8 +359,82 @@ public class WechatMeetingContractGuards
                 typeof(PostAttribute), "/cgi-bin/meeting/phone/get_tmp_openid"),
         };
 
+    private static readonly (Type Interface, string Method, Type HttpAttribute, string Route)[]
+        MeetingRoomsRoutes =
+        {
+            // 预定 Rooms 会议室（自建 98791；会议时长不得大于 24 小时且不支持周期性会议）。
+            (typeof(IWechatWorkInternalMeetingRoomsService),
+                nameof(IWechatWorkInternalMeetingRoomsService.BookMeetingRoomAsync),
+                typeof(PostAttribute), "/cgi-bin/meeting/rooms/book"),
+            // 释放 Rooms 会议室（自建 98792）。
+            (typeof(IWechatWorkInternalMeetingRoomsService),
+                nameof(IWechatWorkInternalMeetingRoomsService.ReleaseMeetingRoomAsync),
+                typeof(PostAttribute), "/cgi-bin/meeting/rooms/release"),
+            // 获取 Rooms 会议室列表（自建 98795；limit 最大 50、默认 20）。
+            (typeof(IWechatWorkInternalMeetingRoomsService),
+                nameof(IWechatWorkInternalMeetingRoomsService.ListMeetingRoomsAsync),
+                typeof(PostAttribute), "/cgi-bin/meeting/rooms/list"),
+            // 获取 Rooms 会议室详情（自建 98793；basic/account/hardware/pmi 四段信息）。
+            (typeof(IWechatWorkInternalMeetingRoomsService),
+                nameof(IWechatWorkInternalMeetingRoomsService.GetMeetingRoomInfoAsync),
+                typeof(PostAttribute), "/cgi-bin/meeting/rooms/get_info"),
+            // 获取 Rooms 会议室配置项（自建 98802；会议配置 + 录制配置两段）。
+            (typeof(IWechatWorkInternalMeetingRoomsService),
+                nameof(IWechatWorkInternalMeetingRoomsService.GetMeetingRoomConfigAsync),
+                typeof(PostAttribute), "/cgi-bin/meeting/rooms/get_config"),
+            // 获取 Rooms 会议室下的会议列表（自建 98796；meeting_room_id 与 rooms_id 二者填其一；时间区间 ≤90 天）。
+            (typeof(IWechatWorkInternalMeetingRoomsService),
+                nameof(IWechatWorkInternalMeetingRoomsService.ListMeetingRoomMeetingsAsync),
+                typeof(PostAttribute), "/cgi-bin/meeting/rooms/list_meetings"),
+            // 获取设备列表（自建 98798）。
+            (typeof(IWechatWorkInternalMeetingRoomsService),
+                nameof(IWechatWorkInternalMeetingRoomsService.ListRoomDevicesAsync),
+                typeof(PostAttribute), "/cgi-bin/meeting/rooms/list_devices"),
+            // 获取控制器列表（自建 98799；status 为字符串形态 "0"/"1"）。
+            (typeof(IWechatWorkInternalMeetingRoomsService),
+                nameof(IWechatWorkInternalMeetingRoomsService.ListRoomControllersAsync),
+                typeof(PostAttribute), "/cgi-bin/meeting/rooms/list_controllers"),
+            // 获取 Rooms 会议室资源（自建 98809；官方为无请求体 POST）。
+            (typeof(IWechatWorkInternalMeetingRoomsService),
+                nameof(IWechatWorkInternalMeetingRoomsService.GetMeetingRoomInventoryAsync),
+                typeof(PostAttribute), "/cgi-bin/meeting/rooms/get_inventory"),
+            // 呼叫 Rooms 会议室（自建 98804；meeting_room_id 与 mra_address 二选一）。
+            (typeof(IWechatWorkInternalMeetingRoomsService),
+                nameof(IWechatWorkInternalMeetingRoomsService.CallMeetingRoomAsync),
+                typeof(PostAttribute), "/cgi-bin/meeting/rooms/call"),
+            // 取消呼叫 Rooms 会议室（自建 98805）。
+            (typeof(IWechatWorkInternalMeetingRoomsService),
+                nameof(IWechatWorkInternalMeetingRoomsService.CancelCallMeetingRoomAsync),
+                typeof(PostAttribute), "/cgi-bin/meeting/rooms/cancel_call"),
+            // 获取 Rooms 会议室应答状态（自建 98806；status 0~6，仅 Rooms 有「取消呼叫」状态）。
+            (typeof(IWechatWorkInternalMeetingRoomsService),
+                nameof(IWechatWorkInternalMeetingRoomsService.GetMeetingRoomResponseStatusAsync),
+                typeof(PostAttribute), "/cgi-bin/meeting/rooms/get_response_status"),
+        };
+
+    private static readonly (Type Interface, string Method, Type HttpAttribute, string Route)[]
+        MeetingMraRoutes =
+        {
+            // 获取 MRA 状态信息（自建 98786；instance_id=9 voip/sip 设备）。
+            (typeof(IWechatWorkInternalMeetingMraService),
+                nameof(IWechatWorkInternalMeetingMraService.QueryMraStatusAsync),
+                typeof(PostAttribute), "/cgi-bin/meeting/mra/query_status"),
+            // 切换 MRA 默认布局（自建 98787；已显示自定义布局/个性布局/焦点视频时不支持设置）。
+            (typeof(IWechatWorkInternalMeetingMraService),
+                nameof(IWechatWorkInternalMeetingMraService.SetMraDefaultLayoutAsync),
+                typeof(PostAttribute), "/cgi-bin/meeting/mra/set_default_layout"),
+            // 设置 MRA 举手或手放下（自建 98788）。
+            (typeof(IWechatWorkInternalMeetingMraService),
+                nameof(IWechatWorkInternalMeetingMraService.SetMraRaiseHandAsync),
+                typeof(PostAttribute), "/cgi-bin/meeting/mra/set_raise_hand"),
+            // 挂断 MRA 呼叫（自建 98789）。
+            (typeof(IWechatWorkInternalMeetingMraService),
+                nameof(IWechatWorkInternalMeetingMraService.HangupMraAsync),
+                typeof(PostAttribute), "/cgi-bin/meeting/mra/hangup"),
+        };
+
     // ------------------------------------------------------------------
-    // MT1：全部端点路由与官方契约一致（46 条路由表项去重后 59 条官方路由，
+    // MT1：全部端点路由与官方契约一致（50 条路由表项去重后 75 条官方路由，
     // get_info 同路由两分支；基础管理族 4 端点与高级管理族 5 个文档页同路由不重复建端点）。
     // ------------------------------------------------------------------
 
@@ -418,6 +499,31 @@ public class WechatMeetingContractGuards
             r => r.StartsWith("/cgi-bin/meeting/phone/", StringComparison.Ordinal),
             "电话入会（PSTN）管理族路由全部挂 /cgi-bin/meeting/phone/ 段");
 
+        // Rooms 会议室管理族：12 端点全部挂于唯一自建子接口（rooms 段）。
+        MeetingRoomsRoutes.Should().HaveCount(12, "Rooms 会议室管理族 = 预定/释放 2 + 列表/详情/配置/资源 4 + 会议列表 1 + 设备/控制器列表 2 + 呼叫/取消呼叫/应答状态 3 端点");
+        MeetingRoomsRoutes.Select(r => r.Interface).Should().OnlyContain(
+            i => i == typeof(IWechatWorkInternalMeetingRoomsService),
+            "Rooms 会议室管理族官方仅自建应用开放（第三方/代开发章节均无对应 API）");
+        MeetingRoomsRoutes.Select(r => r.Route).Should().OnlyContain(
+            r => r.StartsWith("/cgi-bin/meeting/rooms/", StringComparison.Ordinal),
+            "Rooms 会议室管理族路由全部挂 /cgi-bin/meeting/rooms/ 段");
+
+        // 会议室连接器（MRA）管理族：4 端点全部挂于唯一自建子接口（mra 段）。
+        MeetingMraRoutes.Should().HaveCount(4, "会议室连接器（MRA）管理族 = 状态查询 + 默认布局 + 举手 + 挂断端点");
+        MeetingMraRoutes.Select(r => r.Interface).Should().OnlyContain(
+            i => i == typeof(IWechatWorkInternalMeetingMraService),
+            "会议室连接器（MRA）管理族官方仅自建应用开放（第三方/代开发章节均无对应 API）");
+        MeetingMraRoutes.Select(r => r.Route).Should().OnlyContain(
+            r => r.StartsWith("/cgi-bin/meeting/mra/", StringComparison.Ordinal),
+            "会议室连接器（MRA）管理族路由全部挂 /cgi-bin/meeting/mra/ 段");
+
+        // 获取 Rooms 会议室资源官方为无请求体 POST（对齐 get_openid_migration 先例），不得添加请求体参数。
+        typeof(IWechatWorkInternalMeetingRoomsService)
+            .GetMethod(nameof(IWechatWorkInternalMeetingRoomsService.GetMeetingRoomInventoryAsync), BindingFlags.Public | BindingFlags.Instance)!
+            .GetParameters().Should().ContainSingle("获取 Rooms 会议室资源官方无请求体，方法仅承载 CancellationToken")
+            .Which.ParameterType.Should().Be(typeof(CancellationToken),
+                "获取 Rooms 会议室资源无请求体，唯一参数必须是 CancellationToken");
+
         AssertRoutes(MeetingBaseRoutes);
         AssertRoutes(MeetingInfoRoutes);
         AssertRoutes(MeetingStatisticsRoutes);
@@ -425,12 +531,15 @@ public class WechatMeetingContractGuards
         AssertRoutes(MeetingControlRoutes);
         AssertRoutes(MeetingWebinarRoutes);
         AssertRoutes(MeetingPstnRoutes);
+        AssertRoutes(MeetingRoomsRoutes);
+        AssertRoutes(MeetingMraRoutes);
 
-        // 全部官方路由去重清单锁定（get_info 两分支去重后 59 条；基础管理族与高级管理族的
+        // 全部官方路由去重清单锁定（get_info 两分支去重后 75 条；基础管理族与高级管理族的
         // create/update/cancel/get_info/get_user_meetingid 5 条同路由仅计一次）。
         var allRoutes = MeetingBaseRoutes.Concat(MeetingInfoRoutes).Concat(MeetingStatisticsRoutes)
             .Concat(MeetingAdvancedRoutes).Concat(MeetingControlRoutes)
             .Concat(MeetingWebinarRoutes).Concat(MeetingPstnRoutes)
+            .Concat(MeetingRoomsRoutes).Concat(MeetingMraRoutes)
             .Select(r => r.Route).Distinct().ToList();
         allRoutes.Should().BeEquivalentTo(new[]
         {
@@ -499,8 +608,26 @@ public class WechatMeetingContractGuards
             "/cgi-bin/meeting/phone/callout",
             "/cgi-bin/meeting/phone/get_callout_status",
             "/cgi-bin/meeting/phone/get_tmp_openid",
+            // Rooms 会议室管理族（12 条）。
+            "/cgi-bin/meeting/rooms/book",
+            "/cgi-bin/meeting/rooms/release",
+            "/cgi-bin/meeting/rooms/list",
+            "/cgi-bin/meeting/rooms/get_info",
+            "/cgi-bin/meeting/rooms/get_config",
+            "/cgi-bin/meeting/rooms/list_meetings",
+            "/cgi-bin/meeting/rooms/list_devices",
+            "/cgi-bin/meeting/rooms/list_controllers",
+            "/cgi-bin/meeting/rooms/get_inventory",
+            "/cgi-bin/meeting/rooms/call",
+            "/cgi-bin/meeting/rooms/cancel_call",
+            "/cgi-bin/meeting/rooms/get_response_status",
+            // 会议室连接器（MRA）管理族（4 条）。
+            "/cgi-bin/meeting/mra/query_status",
+            "/cgi-bin/meeting/mra/set_default_layout",
+            "/cgi-bin/meeting/mra/set_raise_hand",
+            "/cgi-bin/meeting/mra/hangup",
         }, "会议域全部官方路由须与官方文档一一对应");
-        allRoutes.Should().HaveCount(59, "会议域共 59 条官方路由（get_info 同路由两分支去重；高级管理文档页与基础管理族 5 条同路由不重复计入）");
+        allRoutes.Should().HaveCount(75, "会议域共 75 条官方路由（get_info 同路由两分支去重；高级管理文档页与基础管理族 5 条同路由不重复计入）");
 
         // 无业务负载端点：响应直接用 WechatWorkResponse，不得新建空响应 DTO。
         typeof(IWechatWorkMeetingService)
@@ -614,6 +741,28 @@ public class WechatMeetingContractGuards
             {
                 (typeof(IWechatWorkInternalMeetingPstnService), 3),
             });
+
+        // Rooms 会议室管理族：官方仅自建应用开放（第三方/代开发章节均无对应 API），
+        // 父接口零端点 + 唯一自建子接口承载全部 12 端点（继承链上不得出现代开发/第三方子接口）。
+        AssertFamily(
+            parent: typeof(IWechatWorkMeetingRoomsService),
+            parentImplementation: "WechatWorkMeetingRoomsService",
+            parentDeclaredEndpointCount: 0,
+            new[]
+            {
+                (typeof(IWechatWorkInternalMeetingRoomsService), 12),
+            });
+
+        // 会议室连接器（MRA）管理族：官方仅自建应用开放（第三方/代开发章节均无对应 API），
+        // 父接口零端点 + 唯一自建子接口承载全部 4 端点（继承链上不得出现代开发/第三方子接口）。
+        AssertFamily(
+            parent: typeof(IWechatWorkMeetingMraService),
+            parentImplementation: "WechatWorkMeetingMraService",
+            parentDeclaredEndpointCount: 0,
+            new[]
+            {
+                (typeof(IWechatWorkInternalMeetingMraService), 4),
+            });
     }
 
     /// <summary>族断言：父接口 IsAbstract + 指定端点数，子接口集合不漂移 + 指定端点数 + 注册组/继承契约。</summary>
@@ -673,9 +822,13 @@ public class WechatMeetingContractGuards
             typeof(IWechatWorkInternalMeetingWebinarService),
             typeof(IWechatWorkMeetingPstnService),
             typeof(IWechatWorkInternalMeetingPstnService),
+            typeof(IWechatWorkMeetingRoomsService),
+            typeof(IWechatWorkInternalMeetingRoomsService),
+            typeof(IWechatWorkMeetingMraService),
+            typeof(IWechatWorkInternalMeetingMraService),
         };
 
-        accessTokenInterfaces.Should().HaveCount(14, "会议域六族 = 预约会议基础管理族 4 接口 + 会议统计管理族 2 接口 + 预约会议高级管理族 2 接口 + 会中控制管理族 2 接口 + 网络研讨会管理族 2 接口 + 电话入会管理族 2 接口");
+        accessTokenInterfaces.Should().HaveCount(18, "会议域八族 = 预约会议基础管理族 4 接口 + 会议统计管理族 2 接口 + 预约会议高级管理族 2 接口 + 会中控制管理族 2 接口 + 网络研讨会管理族 2 接口 + 电话入会管理族 2 接口 + Rooms 会议室管理族 2 接口 + MRA 管理族 2 接口");
 
         foreach (var iface in accessTokenInterfaces)
         {
@@ -705,8 +858,8 @@ public class WechatMeetingContractGuards
 
         // 全量守卫：命名空间下所有顶层 DTO 均须登记进 MeetingJsonContext 且 SerializerClassName 统一为 Meeting
         //（生成物 MeetingJsonContext 自身亦落同命名空间，按 JsonSerializerContext 派生类型排除）。
-        domainTypes.Should().HaveCount(145,
-            "会议模块契约面类型数漂移须先核对官方文档再同批调整本守卫（预约会议基础管理族 17：创建 2 + 修改 2 + 取消 1 + 获取详情 2 + 成员会议 ID 列表 2 + 共用嵌套 8；会议统计管理族 3；预约会议高级管理族 55：端点级请求/响应 36 + 嵌套对象 19；会中控制管理族 32：端点级请求/响应 22 + 嵌套对象 10；网络研讨会管理族 28：端点级请求/响应 24 + 嵌套对象 4；电话入会管理族 10：端点级请求/响应 6 + 嵌套对象 4）");
+        domainTypes.Should().HaveCount(184,
+            "会议模块契约面类型数漂移须先核对官方文档再同批调整本守卫（预约会议基础管理族 17：创建 2 + 修改 2 + 取消 1 + 获取详情 2 + 成员会议 ID 列表 2 + 共用嵌套 8；会议统计管理族 3；预约会议高级管理族 55：端点级请求/响应 36 + 嵌套对象 19；会中控制管理族 32：端点级请求/响应 22 + 嵌套对象 10；网络研讨会管理族 28：端点级请求/响应 24 + 嵌套对象 4；电话入会管理族 10：端点级请求/响应 6 + 嵌套对象 4；Rooms 会议室管理族 33：端点级请求 11 + 响应 10 + 嵌套对象 12（含 MRA 信令地址对象）；MRA 管理族 6：端点级请求 4 + 响应 1 + 嵌套对象 1）");
 
         foreach (var type in domainTypes)
         {
@@ -802,6 +955,28 @@ public class WechatMeetingContractGuards
             typeof(PstnGetTmpOpenidRequest), typeof(PstnGetTmpOpenidResponse),
             typeof(PstnPhoneNumber), typeof(PstnCalloutPhoneNumber),
             typeof(PstnCalloutStatusPhoneNumber), typeof(PstnTmpOpenidPhoneNumber),
+            // Rooms 会议室管理族（端点级请求/响应 + 嵌套对象全清单）。
+            typeof(BookMeetingRoomRequest), typeof(BookMeetingRoomResponse),
+            typeof(ReleaseMeetingRoomRequest),
+            typeof(ListMeetingRoomsRequest), typeof(ListMeetingRoomsResponse),
+            typeof(GetMeetingRoomInfoRequest), typeof(GetMeetingRoomInfoResponse),
+            typeof(GetMeetingRoomConfigRequest), typeof(GetMeetingRoomConfigResponse),
+            typeof(ListMeetingRoomMeetingsRequest), typeof(ListMeetingRoomMeetingsResponse),
+            typeof(ListRoomDevicesRequest), typeof(ListRoomDevicesResponse),
+            typeof(ListRoomControllersRequest), typeof(ListRoomControllersResponse),
+            typeof(GetMeetingRoomInventoryResponse),
+            typeof(CallMeetingRoomRequest), typeof(CallMeetingRoomResponse),
+            typeof(CancelCallMeetingRoomRequest),
+            typeof(GetMeetingRoomResponseStatusRequest), typeof(GetMeetingRoomResponseStatusResponse),
+            typeof(RoomsMeetingRoom), typeof(RoomsBasicInfo), typeof(RoomsAccountInfo),
+            typeof(RoomsHardwareInfo), typeof(RoomsPmiInfo),
+            typeof(RoomsMeetingSettings), typeof(RoomsRecordSettings),
+            typeof(RoomsMeetingInfo), typeof(RoomsDeviceInfo), typeof(RoomsDeviceMonitorInfo),
+            typeof(RoomsControllerInfo), typeof(RoomsMraAddress),
+            // 会议室连接器（MRA）管理族（端点级请求/响应 + 嵌套对象全清单）。
+            typeof(QueryMraStatusRequest), typeof(QueryMraStatusResponse),
+            typeof(SetMraDefaultLayoutRequest), typeof(SetMraRaiseHandRequest), typeof(HangupMraRequest),
+            typeof(MraDeviceRef),
         };
         domainTypes.Should().Contain(endpointContractTypes, "端点级请求/响应 DTO 必须落位于会议域命名空间");
     }
@@ -1085,6 +1260,63 @@ public class WechatMeetingContractGuards
         JsonNameShouldBe(typeof(PstnPhoneNumber), nameof(PstnPhoneNumber.ExtensionNumber), "extension_number");
         JsonNameShouldBe(typeof(PstnGetTmpOpenidResponse), nameof(PstnGetTmpOpenidResponse.TmpOpenidList), "tmp_openid_list");
         JsonNameShouldBe(typeof(PstnCalloutStatusPhoneNumber), nameof(PstnCalloutStatusPhoneNumber.TmpOpenid), "tmp_openid");
+
+        // ---- Rooms 会议室管理族契约陷阱 ----
+
+        // 会议室 ID 字段族照抄官方原文（meeting_room_id 无下划线、列表作 meeting_room_id_list）。
+        JsonNameShouldBe(typeof(BookMeetingRoomRequest), nameof(BookMeetingRoomRequest.MeetingRoomIdList), "meeting_room_id_list");
+        JsonNameShouldBe(typeof(RoomsMeetingRoom), nameof(RoomsMeetingRoom.MeetingRoomId), "meeting_room_id");
+        JsonNameShouldBe(typeof(RoomsMeetingRoom), nameof(RoomsMeetingRoom.MeetingRoomLocation), "meeting_room_location");
+        JsonNameShouldBe(typeof(GetMeetingRoomInfoRequest), nameof(GetMeetingRoomInfoRequest.MeetingRoomId), "meeting_room_id");
+        JsonNameShouldBe(typeof(ListMeetingRoomMeetingsRequest), nameof(ListMeetingRoomMeetingsRequest.RoomsId), "rooms_id");
+
+        // 预定/列表响应共用 RoomsMeetingRoom 超集结构（预定文档页 MeetingRoom 仅含基础三字段，列表页扩展账号/状态字段）。
+        typeof(BookMeetingRoomResponse).GetProperty(nameof(BookMeetingRoomResponse.MeetingRoomList))!
+            .PropertyType.Should().Be(typeof(List<RoomsMeetingRoom>), "预定 Rooms 会议室响应与列表响应共用 MeetingRoom 超集结构");
+        typeof(ListMeetingRoomsResponse).GetProperty(nameof(ListMeetingRoomsResponse.MeetingRoomList))!
+            .PropertyType.Should().Be(typeof(List<RoomsMeetingRoom>), "获取 Rooms 会议室列表与预定响应共用 MeetingRoom 超集结构");
+
+        // 详情四段信息与配置两段信息结构锁定。
+        typeof(GetMeetingRoomInfoResponse).GetProperty(nameof(GetMeetingRoomInfoResponse.BasicInfo))!
+            .PropertyType.Should().Be(typeof(RoomsBasicInfo), "Rooms 详情 basic_info 结构");
+        typeof(GetMeetingRoomInfoResponse).GetProperty(nameof(GetMeetingRoomInfoResponse.HardwareInfo))!
+            .PropertyType.Should().Be(typeof(RoomsHardwareInfo), "Rooms 详情 hardware_info 结构");
+        typeof(GetMeetingRoomConfigResponse).GetProperty(nameof(GetMeetingRoomConfigResponse.MeetingSettings))!
+            .PropertyType.Should().Be(typeof(RoomsMeetingSettings), "Rooms 配置项 meeting_settings 与预约会议 MeetingSettings 为两个不同结构");
+        JsonNameShouldBe(typeof(RoomsMeetingSettings), nameof(RoomsMeetingSettings.WaterMark), "water_mark");
+        JsonNameShouldBe(typeof(RoomsRecordSettings), nameof(RoomsRecordSettings.ShareRecord), "share_record");
+
+        // Rooms 会议室下的会议列表：status 为字符串枚举（MEETING_STATE_*，本页含 MEETING_STATE_NULL）。
+        typeof(RoomsMeetingInfo).GetProperty(nameof(RoomsMeetingInfo.Status))!
+            .PropertyType.Should().Be(typeof(string), "Rooms 会议室下的会议列表 status 官方为字符串枚举");
+        JsonNameShouldBe(typeof(RoomsMeetingInfo), nameof(RoomsMeetingInfo.Subject), "subject");
+        JsonNameShouldBe(typeof(RoomsMeetingInfo), nameof(RoomsMeetingInfo.MeetingType), "meeting_type");
+
+        // 设备/控制器列表字段名照抄官方原文（设备 app_version 文档说明误写「激活码」、控制器 status 为字符串形态）。
+        JsonNameShouldBe(typeof(RoomsDeviceInfo), nameof(RoomsDeviceInfo.AppVersion), "app_version");
+        JsonNameShouldBe(typeof(RoomsDeviceInfo), nameof(RoomsDeviceInfo.DeviceMonitorInfo), "device_monitor_info");
+        JsonNameShouldBe(typeof(RoomsDeviceMonitorInfo), nameof(RoomsDeviceMonitorInfo.MicrophoneStatus), "microphone_status");
+        JsonNameShouldBe(typeof(RoomsControllerInfo), nameof(RoomsControllerInfo.ManufactureName), "manufacture_name");
+        JsonNameShouldBe(typeof(RoomsControllerInfo), nameof(RoomsControllerInfo.FrameworkVersion), "framework_version");
+        typeof(RoomsControllerInfo).GetProperty(nameof(RoomsControllerInfo.Status))!
+            .PropertyType.Should().Be(typeof(string), "控制器设备状态官方为字符串形态（\"0\" 离线 / \"1\" 在线）");
+
+        // 呼叫类端点：meeting_room_id 与 mra_address 二选一（两字段均可空），信令地址对象结构锁定。
+        typeof(CallMeetingRoomRequest).GetProperty(nameof(CallMeetingRoomRequest.MraAddress))!
+            .PropertyType.Should().Be(typeof(RoomsMraAddress), "呼叫 Rooms 会议室 mra_address 为 MRA 信令地址对象");
+        JsonNameShouldBe(typeof(RoomsMraAddress), nameof(RoomsMraAddress.DialString), "dial_string");
+        JsonNameShouldBe(typeof(GetMeetingRoomResponseStatusResponse), nameof(GetMeetingRoomResponseStatusResponse.ResponseTime), "response_time");
+
+        // ---- 会议室连接器（MRA）管理族契约陷阱 ----
+
+        // MRA 被操作设备为 {tmp_openid} 单值包裹对象（区别于会控 operated_user 的多字段结构）。
+        typeof(SetMraDefaultLayoutRequest).GetProperty(nameof(SetMraDefaultLayoutRequest.Mra))!
+            .PropertyType.Should().Be(typeof(MraDeviceRef), "切换 MRA 默认布局 mra 为被操作设备对象");
+        JsonNameShouldBe(typeof(MraDeviceRef), nameof(MraDeviceRef.TmpOpenid), "tmp_openid");
+        JsonNameShouldBe(typeof(QueryMraStatusResponse), nameof(QueryMraStatusResponse.RaiseHandsState), "raise_hands_state");
+        JsonNameShouldBe(typeof(QueryMraStatusResponse), nameof(QueryMraStatusResponse.DefaultLayout), "default_layout");
+        JsonNameShouldBe(typeof(QueryMraStatusResponse), nameof(QueryMraStatusResponse.WebinarMemberRole), "webinar_member_role");
+        JsonNameShouldBe(typeof(SetMraDefaultLayoutRequest), nameof(SetMraDefaultLayoutRequest.DefaultNovideoUser), "default_novideo_user");
     }
 
     /// <summary>路由表断言：方法必须存在、必须声明对应 HTTP 方法特性且路由与官方契约一致。</summary>

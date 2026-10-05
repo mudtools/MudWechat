@@ -8,19 +8,20 @@
 namespace Mud.Wechat.Work.DataModels.Meeting;
 
 /// <summary>
-/// 取消预约会议请求体（<c>/cgi-bin/meeting/cancel</c>；三种应用类型请求形态一致）。
+/// 会议嘉宾对象（创建预约会议请求 <c>guests</c> 元素、获取/更新会议嘉宾列表与获取会议详情响应 <c>guests</c> 嵌套对象）。
 /// </summary>
 [HttpJsonSerializable(SerializerClassName = "Meeting")]
-public class CancelMeetingRequest
+public class MeetingGuest
 {
-    /// <summary>获取或设置会议 ID（官方必填；仅允许取消预约状态下的会议）。</summary>
-    [JsonPropertyName("meetingid")]
-    public string? Meetingid { get; set; }
+    /// <summary>获取或设置国家/地区代码（例如：中国传 86，不是 +86，也不是 0086）。</summary>
+    [JsonPropertyName("area")]
+    public string? Area { get; set; }
 
-    /// <summary>
-    /// 获取或设置周期性子会议 ID（仅预约会议高级管理文档页声明该参数）。
-    /// <para>如果取消周期性会议且该字段不传，则会取消该系列的周期性会议。</para>
-    /// </summary>
-    [JsonPropertyName("sub_meetingid")]
-    public string? SubMeetingid { get; set; }
+    /// <summary>获取或设置手机号。</summary>
+    [JsonPropertyName("phone_number")]
+    public string? PhoneNumber { get; set; }
+
+    /// <summary>获取或设置会议嘉宾姓名（1~16 位字符长度）。</summary>
+    [JsonPropertyName("guest_name")]
+    public string? GuestName { get; set; }
 }

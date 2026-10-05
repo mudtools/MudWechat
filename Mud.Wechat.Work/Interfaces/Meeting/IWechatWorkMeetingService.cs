@@ -44,11 +44,12 @@ public interface IWechatWorkMeetingService
     /// 超过 300 人需调用「更新会议受邀成员列表」接口；周期性会议每天/每个工作日/每周最多重复 200 次，每两周/每月最多 50 次；
     /// 仅购买了会议高级功能的企业可指定主持人（包含创建者 userid 会被自动过滤）；第三方应用必须指定 cal_id。</para>
     /// </summary>
-    /// <param name="request">请求体（<see cref="CreateMeetingRequest"/>：admin_userid / title / meeting_start / meeting_duration / description / location / agentid / invitees / cal_id / settings / reminders）。</param>
+    /// <param name="request">请求体（<see cref="CreateMeetingRequest"/>：admin_userid / title / meeting_start / meeting_duration / description / location / agentid / invitees / guests / cal_id / settings / reminders）。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
-    /// <returns>会议 ID（meetingid）与包含无效会议账号的参会人 userid 列表（excess_users，仅购买会议专业版企业且部分参会人无有效会议账号时返回）。</returns>
+    /// <returns>会议 ID（meetingid）、包含无效会议账号的参会人 userid 列表（excess_users，仅购买会议专业版企业且部分参会人无有效会议账号时返回）、会议号（meeting_code）与入会链接（meeting_link，后两者仅预约会议高级管理文档页声明）。</returns>
     /// <remarks>
     /// <para><b>企业自建应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/99104"/></para>
+    /// <para><b>企业自建应用·预约会议高级管理</b>SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/98148"/></para>
     /// <para><b>第三方应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/93706"/></para>
     /// <para><b>服务商代开发</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/97454"/></para>
     /// </remarks>
@@ -69,6 +70,7 @@ public interface IWechatWorkMeetingService
     /// <returns>包含无效会议账号的参会人 userid 列表（excess_users，仅购买会议专业版企业且部分参会人无有效会议账号时返回；无业务负载时仅 errcode / errmsg）。</returns>
     /// <remarks>
     /// <para><b>企业自建应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/99047"/></para>
+    /// <para><b>企业自建应用·预约会议高级管理</b>SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/98154"/></para>
     /// <para><b>第三方应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/93710"/></para>
     /// <para><b>服务商代开发</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/97455"/></para>
     /// </remarks>
@@ -82,11 +84,12 @@ public interface IWechatWorkMeetingService
     /// <para>取消一个指定的预约会议。</para>
     /// <para>官方限制：仅允许取消当前应用创建的会议；仅允许取消处于预约状态下的会议。</para>
     /// </summary>
-    /// <param name="request">请求体（<see cref="CancelMeetingRequest"/>：meetingid）。</param>
+    /// <param name="request">请求体（<see cref="CancelMeetingRequest"/>：meetingid / sub_meetingid）。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
     /// <returns>仅返回 errcode / errmsg（无业务负载）。</returns>
     /// <remarks>
     /// <para><b>企业自建应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/99048"/></para>
+    /// <para><b>企业自建应用·预约会议高级管理</b>SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/98153"/></para>
     /// <para><b>第三方应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/93709"/></para>
     /// <para><b>服务商代开发</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/97456"/></para>
     /// </remarks>
@@ -106,6 +109,7 @@ public interface IWechatWorkMeetingService
     /// <returns>分页游标（next_cursor，未返回或为空字符串表示数据已取完）与会议 ID 列表（meetingid_list，可能为空）。</returns>
     /// <remarks>
     /// <para><b>企业自建应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/99050"/></para>
+    /// <para><b>企业自建应用·预约会议高级管理</b>SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/98714"/></para>
     /// <para><b>第三方应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/93707"/></para>
     /// <para><b>服务商代开发</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/97457"/></para>
     /// </remarks>

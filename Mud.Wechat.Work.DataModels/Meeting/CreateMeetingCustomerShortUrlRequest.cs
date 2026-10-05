@@ -8,19 +8,25 @@
 namespace Mud.Wechat.Work.DataModels.Meeting;
 
 /// <summary>
-/// 取消预约会议请求体（<c>/cgi-bin/meeting/cancel</c>；三种应用类型请求形态一致）。
+/// 创建用户专属参会链接请求体（<c>/cgi-bin/meeting/create_customer_short_url</c>）。
 /// </summary>
+/// <remarks>
+/// <para>官方限制：该接口不支持网络研讨会（Webinar）；不同链接以 <c>customer_data</c> 进行区分。</para>
+/// </remarks>
 [HttpJsonSerializable(SerializerClassName = "Meeting")]
-public class CancelMeetingRequest
+public class CreateMeetingCustomerShortUrlRequest
 {
-    /// <summary>获取或设置会议 ID（官方必填；仅允许取消预约状态下的会议）。</summary>
+    /// <summary>获取或设置会议 ID（官方必填）。</summary>
     [JsonPropertyName("meetingid")]
     public string? Meetingid { get; set; }
 
     /// <summary>
-    /// 获取或设置周期性子会议 ID（仅预约会议高级管理文档页声明该参数）。
-    /// <para>如果取消周期性会议且该字段不传，则会取消该系列的周期性会议。</para>
+    /// 获取或设置用户专属字段（官方必填，长度不超过 256 字节）。
+    /// <para>
+    /// <c>customer_data</c> 需以 <c>{"ver": "1.0", "userData":"自定义字段"}</c> 的结构进行 Base64 编码；
+    /// 通过用户入会、用户进入等候室等事件，或通过获取等候室成员列表的 API 可查询到该参数。
+    /// </para>
     /// </summary>
-    [JsonPropertyName("sub_meetingid")]
-    public string? SubMeetingid { get; set; }
+    [JsonPropertyName("customer_data")]
+    public string? CustomerData { get; set; }
 }

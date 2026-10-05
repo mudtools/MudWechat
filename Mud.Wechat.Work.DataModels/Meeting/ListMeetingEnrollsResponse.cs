@@ -8,19 +8,20 @@
 namespace Mud.Wechat.Work.DataModels.Meeting;
 
 /// <summary>
-/// 取消预约会议请求体（<c>/cgi-bin/meeting/cancel</c>；三种应用类型请求形态一致）。
+/// 获取会议报名信息响应体（<c>/cgi-bin/meeting/enroll/list</c>）。
 /// </summary>
 [HttpJsonSerializable(SerializerClassName = "Meeting")]
-public class CancelMeetingRequest
+public class ListMeetingEnrollsResponse : WechatWorkResponse
 {
-    /// <summary>获取或设置会议 ID（官方必填；仅允许取消预约状态下的会议）。</summary>
-    [JsonPropertyName("meetingid")]
-    public string? Meetingid { get; set; }
+    /// <summary>获取或设置是否还有待拉取的成员列表。</summary>
+    [JsonPropertyName("has_more")]
+    public bool? HasMore { get; set; }
 
-    /// <summary>
-    /// 获取或设置周期性子会议 ID（仅预约会议高级管理文档页声明该参数）。
-    /// <para>如果取消周期性会议且该字段不传，则会取消该系列的周期性会议。</para>
-    /// </summary>
-    [JsonPropertyName("sub_meetingid")]
-    public string? SubMeetingid { get; set; }
+    /// <summary>获取或设置分页游标（下一次拉取列表将该字段填入 <c>cursor</c> 字段）。</summary>
+    [JsonPropertyName("next_cursor")]
+    public string? NextCursor { get; set; }
+
+    /// <summary>获取或设置当前页的报名列表（详见 <see cref="MeetingEnrollInfo"/>）。</summary>
+    [JsonPropertyName("enroll_list")]
+    public List<MeetingEnrollInfo>? EnrollList { get; set; }
 }

@@ -31,6 +31,7 @@ namespace Mud.Wechat.Work;
 [HttpClientApi(RegistryGroupName = "Mail",
     TokenManage = nameof(IWechatAppManager), InheritedFrom = nameof(WechatWorkMailAccountService))]
 [Token(TokenType = WechatTokenTypes.AccessToken,
+      TokenManagerKey = WechatTokenManagerKeys.InternalAccessToken,
       InjectionMode = TokenInjectionMode.Query, Name = "access_token")]
 public interface IWechatWorkInternalMailAccountService : IWechatWorkMailAccountService
 {

@@ -100,13 +100,26 @@ public class WechatAppContext : IWechatAppContext
     /// 按令牌类型路由令牌管理器（生成代码与 <c>DefaultTokenProvider</c> 的查找入口）。
     /// </summary>
     /// <remarks>
+    /// <para>
     /// <see cref="WechatTokenTypes.AccessToken"/> 在第三方/服务商模式下指「企业级 access_token」
     /// （<see cref="CorpTokenManager"/>，scope = authCorpId），与自建应用的
     /// <see cref="InternalAppTokenManager"/> 以应用类型区分——两个管理器不共存于同一上下文。
+    /// </para>
+    /// <para>
+    /// <b>归属域闸（应用类型契约）</b>：应用类型子接口经 <c>TokenAttribute.TokenManagerKey</c>
+    /// 声明其所需凭据归属域（<see cref="WechatTokenManagerKeys"/>），入口先经
+    /// <see cref="WechatTokenRouting"/> 校验，与本应用 <c>AppType</c> 不匹配即抛
+    /// <see cref="WechatTokenOwnerMismatchException"/>（fail-fast）——把「第三方/代开发契约入口
+    /// 被注入到自建应用」这类错配从静默取错令牌转为确定性失败。
+    /// 未携带归属域后缀的旧键（公共父接口、宿主直调）不校验，既有语义逐字节不变。
+    /// </para>
     /// </remarks>
     public ITokenManager GetTokenManager(string tokenType)
     {
-        switch (tokenType)
+        // 校验归属域并剥离后缀；未声明归属域时原样返回。
+        var baseTokenType = WechatTokenRouting.ResolveBaseTokenType(tokenType, AppKey, Config.AppType);
+
+        switch (baseTokenType)
         {
             case WechatTokenTypes.AccessToken:
                 if (Config.AppType == WechatAppType.Internal)

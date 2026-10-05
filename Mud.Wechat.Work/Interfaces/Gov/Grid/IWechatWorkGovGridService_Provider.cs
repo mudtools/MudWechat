@@ -30,6 +30,7 @@ namespace Mud.Wechat.Work;
 [HttpClientApi(RegistryGroupName = "Gov",
     TokenManage = nameof(IWechatAppManager), InheritedFrom = nameof(WechatWorkGovGridService))]
 [Token(TokenType = WechatTokenTypes.AccessToken,
+      TokenManagerKey = WechatTokenManagerKeys.CorpAccessToken,
       InjectionMode = TokenInjectionMode.Query, Name = "access_token")]
 public interface IWechatWorkProviderGovGridService : IWechatWorkGovGridService
 {

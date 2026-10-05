@@ -30,6 +30,7 @@ namespace Mud.Wechat.Work;
 [HttpClientApi(RegistryGroupName = "MsgAudit",
     TokenManage = nameof(IWechatAppManager), InheritedFrom = nameof(WechatWorkMsgAuditAgreeService))]
 [Token(TokenType = WechatTokenTypes.AccessToken,
+      TokenManagerKey = WechatTokenManagerKeys.InternalAccessToken,
       InjectionMode = TokenInjectionMode.Query, Name = "access_token")]
 public interface IWechatWorkInternalMsgAuditAgreeService : IWechatWorkMsgAuditAgreeService
 {

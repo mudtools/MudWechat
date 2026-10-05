@@ -29,6 +29,7 @@ namespace Mud.Wechat.Work;
 [HttpClientApi(RegistryGroupName = "Media",
     TokenManage = nameof(IWechatAppManager), InheritedFrom = nameof(WechatWorkMediaService))]
 [Token(TokenType = WechatTokenTypes.AccessToken,
+      TokenManagerKey = WechatTokenManagerKeys.InternalAccessToken,
       InjectionMode = TokenInjectionMode.Query, Name = "access_token")]
 public interface IWechatWorkInternalMediaService : IWechatWorkMediaService
 {

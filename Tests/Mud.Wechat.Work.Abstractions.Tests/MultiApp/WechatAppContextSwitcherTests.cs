@@ -5,6 +5,7 @@
 //  不得利用本项目从事危害国家安全、扰乱社会秩序、侵犯他人合法权益等法律法规禁止的活动！任何基于本项目开发而产生的一切法律纠纷和责任，我们不承担任何责任！
 // -----------------------------------------------------------------------
 
+using System.Reflection;
 using Mud.HttpUtils;
 using Mud.Wechat.Work.Abstractions.Authentication;
 using Mud.Wechat.Work.Abstractions.Authentication.MultiApp;
@@ -14,7 +15,8 @@ namespace Mud.Wechat.Work.Abstractions.Tests.MultiApp;
 /// <summary>
 /// 应用上下文切换器测试（R9 / R12）：
 /// <see cref="IWechatAppContextSwitcher"/> 可达性、<c>UseApp</c> 上下文传播、
-/// <c>SetCorp</c> 归属应用写入、授权拒绝路径。
+/// <c>SetCorp</c> 归属应用写入、授权拒绝路径，
+/// 以及 P2-1 强化的 <c>UseCorpScope</c> 复合作用域（两级还原 / 嵌套 / 失败安全 / 异常 / 幂等）。
 /// </summary>
 public class WechatAppContextSwitcherTests
 {
@@ -352,5 +354,228 @@ public class WechatAppContextSwitcherTests
 #pragma warning restore CS0618
 
         switcher.SwitchTo(null);
+    }
+
+    // ---------------------------------------------------------------- P2-1 强化：应用 + 企业复合作用域
+
+    /// <summary>
+    /// 复合作用域：进入时同时切换应用与企业上下文，释放时两级都还原——否则企业作用域残留到后续不相关调用
+    /// （同应用 + 旧 authCorpId）会取到错误企业的令牌。
+    /// </summary>
+    [Fact]
+    public void UseCorpScope_ShouldSwitchAppAndCorp_AndRestoreBothOnDispose()
+    {
+        var outerApp = CreateContext("app-outer");
+        var target = CreateContext("app-target");
+        var manager = new Mock<IWechatAppManager>();
+        manager.Setup(m => m.GetApp("app-target")).Returns(target.Object);
+
+        var switcher = new WechatAppContextSwitcher(manager.Object);
+        try
+        {
+            switcher.SwitchTo(outerApp.Object);
+
+            using (var scope = switcher.UseCorpScope("app-target", "corp-1", "pc-1"))
+            {
+                scope.Should().NotBeNull();
+                switcher.Current.Should().BeSameAs(target.Object, "复合作用域内应切到目标应用");
+                WechatCorpContext.AppKey.Should().Be("app-target",
+                    "归属应用取解析后的上下文 AppKey（R9：CorpTokenManager 归属校验据此命中）");
+                WechatCorpContext.AuthCorpId.Should().Be("corp-1");
+                WechatCorpContext.PermanentCode.Should().Be("pc-1");
+            }
+
+            switcher.Current.Should().BeSameAs(outerApp.Object,
+                "释放后必须还原进入前的应用上下文（与 UseAppScope 同一接缝：不得预先 SwitchTo）");
+            WechatCorpContext.AuthCorpId.Should().BeNull("释放后必须还原进入前的企业上下文，而非残留");
+            WechatCorpContext.AppKey.Should().BeNull();
+            WechatCorpContext.PermanentCode.Should().BeNull();
+        }
+        finally
+        {
+            WechatCorpContext.Clear();
+            switcher.SwitchTo(null);
+        }
+    }
+
+    /// <summary>
+    /// 嵌套安全：内层复合作用域释放后必须还原<b>外层</b>企业上下文（逆序还原 + 快照语义，
+    /// 而非 ClearCorp 的无条件清空）。
+    /// </summary>
+    [Fact]
+    public void UseCorpScope_ShouldRestoreOuterCorpContext_WhenNested()
+    {
+        var manager = new Mock<IWechatAppManager>();
+        manager.Setup(m => m.GetApp("app-a")).Returns(CreateContext("app-a").Object);
+        manager.Setup(m => m.GetApp("app-b")).Returns(CreateContext("app-b").Object);
+
+        var switcher = new WechatAppContextSwitcher(manager.Object);
+        try
+        {
+            WechatCorpContext.SetCorp("outer-app", "outer-corp", "outer-pc");
+
+            using (switcher.UseCorpScope("app-a", "inner-corp", "inner-pc"))
+            {
+                WechatCorpContext.AppKey.Should().Be("app-a");
+                WechatCorpContext.AuthCorpId.Should().Be("inner-corp");
+            }
+
+            WechatCorpContext.AppKey.Should().Be("outer-app", "内层代操作不得「清掉」外层企业上下文");
+            WechatCorpContext.AuthCorpId.Should().Be("outer-corp");
+            WechatCorpContext.PermanentCode.Should().Be("outer-pc");
+        }
+        finally
+        {
+            WechatCorpContext.Clear();
+            switcher.SwitchTo(null);
+        }
+    }
+
+    /// <summary>
+    /// 失败安全性：企业参数校验失败必须回滚已进入的应用作用域，不留半开作用域。
+    /// </summary>
+    [Theory]
+    [InlineData("")]
+    [InlineData("  ")]
+    [InlineData("\t")]
+    public void UseCorpScope_ShouldRollbackAppScope_WhenAuthCorpIdBlank(string authCorpId)
+    {
+        var outerApp = CreateContext("app-outer");
+        var manager = new Mock<IWechatAppManager>();
+        manager.Setup(m => m.GetApp("app-a")).Returns(CreateContext("app-a").Object);
+
+        var switcher = new WechatAppContextSwitcher(manager.Object);
+        try
+        {
+            switcher.SwitchTo(outerApp.Object);
+
+            var act = () => switcher.UseCorpScope("app-a", authCorpId);
+
+            act.Should().Throw<ArgumentException>("空白 CorpId 无法成为合法 scope（校验由 WechatCorpContext 收敛）");
+            switcher.Current.Should().BeSameAs(outerApp.Object,
+                "参数校验失败必须回滚已进入的应用作用域，否则应用上下文被静默切换走");
+            WechatCorpContext.AuthCorpId.Should().BeNull();
+        }
+        finally
+        {
+            WechatCorpContext.Clear();
+            switcher.SwitchTo(null);
+        }
+    }
+
+    /// <summary>失败安全性：authCorpId 为 null 时同样回滚应用作用域，且异常类型与既有校验一致。</summary>
+    [Fact]
+    public void UseCorpScope_ShouldRollbackAppScope_WhenAuthCorpIdNull()
+    {
+        var outerApp = CreateContext("app-outer");
+        var manager = new Mock<IWechatAppManager>();
+        manager.Setup(m => m.GetApp("app-a")).Returns(CreateContext("app-a").Object);
+
+        var switcher = new WechatAppContextSwitcher(manager.Object);
+        try
+        {
+            switcher.SwitchTo(outerApp.Object);
+
+            var act = () => switcher.UseCorpScope("app-a", null!);
+
+            act.Should().Throw<ArgumentNullException>("M7：authCorpId 不得缺省");
+            switcher.Current.Should().BeSameAs(outerApp.Object);
+        }
+        finally
+        {
+            WechatCorpContext.Clear();
+            switcher.SwitchTo(null);
+        }
+    }
+
+    /// <summary>异常路径：作用域块内抛异常时，<c>using</c> 仍须完整还原两级上下文。</summary>
+    [Fact]
+    public void UseCorpScope_ShouldRestoreBothContexts_WhenExceptionThrownInsideScope()
+    {
+        var outerApp = CreateContext("app-outer");
+        var manager = new Mock<IWechatAppManager>();
+        manager.Setup(m => m.GetApp("app-a")).Returns(CreateContext("app-a").Object);
+
+        var switcher = new WechatAppContextSwitcher(manager.Object);
+        try
+        {
+            switcher.SwitchTo(outerApp.Object);
+
+            var act = () =>
+            {
+                using (switcher.UseCorpScope("app-a", "corp-1", "pc-1"))
+                {
+                    throw new InvalidOperationException("业务异常");
+                }
+            };
+
+            act.Should().Throw<InvalidOperationException>().WithMessage("业务异常");
+            switcher.Current.Should().BeSameAs(outerApp.Object, "异常路径也必须归还应用上下文");
+            WechatCorpContext.AuthCorpId.Should().BeNull("异常路径也必须归还企业上下文");
+        }
+        finally
+        {
+            WechatCorpContext.Clear();
+            switcher.SwitchTo(null);
+        }
+    }
+
+    /// <summary>
+    /// 幂等释放：重复 <c>Dispose</c> 不得把「释放后新建立」的上下文改回快照
+    /// （<c>using</c> + 显式 Dispose 混用是常见写法）。
+    /// </summary>
+    [Fact]
+    public void UseCorpScope_ShouldBeIdempotent_OnRepeatedDispose()
+    {
+        var outerApp = CreateContext("app-outer");
+        var manager = new Mock<IWechatAppManager>();
+        manager.Setup(m => m.GetApp("app-a")).Returns(CreateContext("app-a").Object);
+
+        var switcher = new WechatAppContextSwitcher(manager.Object);
+        try
+        {
+            switcher.SwitchTo(outerApp.Object);
+
+            var scope = switcher.UseCorpScope("app-a", "corp-1", "pc-1");
+            scope.Dispose();
+
+            WechatCorpContext.SetCorp("later-app", "later-corp", "later-pc");
+            switcher.SwitchTo(CreateContext("app-later").Object);
+
+            scope.Dispose();
+
+            WechatCorpContext.AuthCorpId.Should().Be("later-corp", "重复释放不得把后续上下文改回旧快照");
+            switcher.Current!.AppKey.Should().Be("app-later");
+        }
+        finally
+        {
+            WechatCorpContext.Clear();
+            switcher.SwitchTo(null);
+        }
+    }
+
+    /// <summary>
+    /// 契约引导守卫：复合作用域入口必须声明在契约上（返回 <see cref="IDisposable"/> 以供 <c>using</c>），
+    /// 且裸写入原语 <c>SetCorp</c> 必须标记 <see cref="ObsoleteAttribute"/> 并指向该入口——防止引导退化。
+    /// </summary>
+    [Fact]
+    public void InterfaceContract_ShouldExposeCorpScopeEntry_AndSteerPrimitiveToIt()
+    {
+        var contract = typeof(IWechatAppContextSwitcher);
+
+        var useCorpScope = contract.GetMethod(nameof(IWechatAppContextSwitcher.UseCorpScope));
+        useCorpScope.Should().NotBeNull("「应用 + 企业」复合作用域入口必须声明在契约上（调用方经 DI 拿到的即接口类型）");
+        useCorpScope!.ReturnType.Should().Be(typeof(IDisposable), "必须可直接用于 using（释放时自动归还两级上下文）");
+        useCorpScope.GetParameters().Select(p => p.Name)
+            .Should().Equal("appKey", "authCorpId", "permanentCode");
+        useCorpScope.GetParameters()[2].HasDefaultValue.Should().BeTrue(
+            "permanentCode 可选：缺省时由 IWechatCorpAuthStore 持久化仓储提供");
+
+        var setCorp = contract.GetMethod(nameof(IWechatAppContextSwitcher.SetCorp))!;
+        var obsolete = setCorp.GetCustomAttribute<ObsoleteAttribute>();
+        obsolete.Should().NotBeNull(
+            "裸写入原语必须标记过时以引导迁移：忘记配对 ClearCorp 会让企业作用域残留（跨企业令牌串号）");
+        obsolete!.Message.Should().Contain(nameof(IWechatAppContextSwitcher.UseCorpScope),
+            "过时提示必须给出可执行的替代入口");
     }
 }

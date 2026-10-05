@@ -20,7 +20,8 @@ namespace Mud.Wechat.Work;
 /// </para>
 /// <para>管理文档内容族见 <see cref="IWechatWorkWedocDocumentService"/>；
 /// 管理表格内容族见 <see cref="IWechatWorkWedocSpreadsheetService"/>；
-/// 管理智能表格内容族见 <see cref="IWechatWorkWedocSmartSheetService"/>。</para>
+/// 管理智能表格内容族见 <see cref="IWechatWorkWedocSmartSheetService"/>；
+/// 管理智能文档内容族见 <see cref="IWechatWorkWedocSmartDocService"/>。</para>
 /// </summary>
 /// <remarks>
 /// <para>

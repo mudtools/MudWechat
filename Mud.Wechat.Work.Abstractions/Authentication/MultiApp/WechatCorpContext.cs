@@ -12,7 +12,8 @@ namespace Mud.Wechat.Work.Abstractions.Authentication.MultiApp;
 /// </summary>
 /// <remarks>
 /// 企业级 access_token「一企一份」的 scope（authCorpId）动态来源（详细设计 §7.6 实施注记方案①）：
-/// 业务侧经 <see cref="Authentication.IWechatAppContextSwitcher.SetCorp"/> 写入后，
+/// 业务侧经 <see cref="Authentication.IWechatAppContextSwitcher.UseCorpScope"/>（推荐，一次性 <c>using</c>，
+/// 自动归还应用与企业上下文）或裸 <see cref="Authentication.IWechatAppContextSwitcher.SetCorp"/> 写入后，
 /// <c>CorpTokenManager</c> 刷新时读取；跨异步边界自然隔离，多企业令牌互不串扰。
 /// <para>
 /// <b>归属维度（R9）</b>：<see cref="AppKey"/> 记录写入上下文的归属应用，防止多套件下

@@ -23,7 +23,8 @@ namespace Mud.Wechat.Work.Abstractions.Authentication;
 /// <list type="bullet">
 /// <item>显式 scopes：GetTokenAsync(new[] { authCorpId }) → 基类经
 /// <see cref="TokenManagerBase.RefreshTokenWithScopesAsync"/> 把 scope 交给刷新核心；</item>
-/// <item>环境上下文：业务侧经 <see cref="IWechatAppContextSwitcher.SetCorp"/> 切换后
+/// <item>环境上下文：业务侧经 <see cref="IWechatAppContextSwitcher.UseCorpScope"/>（推荐，
+/// 一次性 <c>using</c>、自动归还）或裸 <see cref="IWechatAppContextSwitcher.SetCorp"/> 切换后，
 /// 以无参 GetTokenAsync() 获取（由 <see cref="WechatCorpContext"/> 异步流解析 authCorpId）。</item>
 /// </list>
 /// <para>
@@ -96,8 +97,9 @@ internal sealed class CorpTokenManager : WechatAppTokenManagerBase, IWechatCorpT
         if (string.IsNullOrEmpty(authCorpId))
         {
             throw new InvalidOperationException(
-                "企业级令牌必须以 authCorpId 作为 scope 获取：请先经 IWechatAppContextSwitcher.SetCorp(...) " +
-                "切换代开发企业上下文，或以 GetTokenAsync(new[] { authCorpId }) 显式传入。");
+                "企业级令牌必须以 authCorpId 作为 scope 获取：请先经 " +
+                "IWechatAppContextSwitcher.UseCorpScope(appKey, authCorpId)（推荐，一次性 using）切换应用与企业上下文，" +
+                "或以 GetTokenAsync(new[] { authCorpId }) 显式传入。");
         }
 
         // ② 企业同源校验（P2-2）：仅当环境上下文的 corpId 与本次 scope 一致时才采用其 permanentCode。
@@ -109,7 +111,7 @@ internal sealed class CorpTokenManager : WechatAppTokenManagerBase, IWechatCorpT
             permanentCode = WechatCorpContext.PermanentCode;
         }
 
-        // permanent_code：环境上下文优先（SetCorp 显式传入），缺省走持久化仓储（复合键：AppKey + authCorpId）。
+        // permanent_code：环境上下文优先（UseCorpScope / SetCorp 显式传入），缺省走持久化仓储（复合键：AppKey + authCorpId）。
         if (string.IsNullOrEmpty(permanentCode))
         {
             var corpAuth = await _corpAuthStore.GetAsync(Options.AppKey, authCorpId, cancellationToken).ConfigureAwait(false)

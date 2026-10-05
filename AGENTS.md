@@ -94,7 +94,7 @@ scripts/                      # verify-build / audit-config-keys / GenerateJsonC
 | 审批 | `Interfaces/Approval/`（审批申请数据域 + 审批模板域 + 假期管理域 + 审批流程引擎域四族；差异端点在子接口：获取审批数据（旧）官方仅自建、创建/更新模板自建与代开发开放（第三方官方暂不支持）、复制/更新模板到企业官方仅第三方） | `Approval/` | `Approval` / `AddApprovalApi()` |
 | 邮件 | `Interfaces/Mail/{Send,Receive,Account,Group,PublicMail,Vip,User,UserOption}/`（按功能族分子目录；发送/接收族为三类应用公共面 + 空标记子接口，普通/日程/会议三端点共用 compose_send 路由；其余六族官方仅自建开放，零端点父接口 + 仅自建子接口承载） | `Mail/` | `Mail` / `AddMailApi()` |
 | 紧急通知 | `Interfaces/Emergency/`（发起语音电话 + 获取接听状态官方仅自建开放，零端点父接口 + 仅自建子接口承载；代开发文档页与自建页逐字一致但权限表标注「暂不支持」，不设代开发/第三方子接口） | `Emergency/` | `Emergency` / `AddEmergencyApi()` |
-| 文档 | `Interfaces/Wedoc/{Document,Spreadsheet,SmartSheet}/`（管理文档族在 `Interfaces/Wedoc/` 根；按官方菜单项分族，智能表格内容族按子表/视图/字段/记录/编组五组资源收敛在单一 `SmartSheet/` 子目录；四族均为三类应用公共面父接口 + 三个空标记子接口） | `Wedoc/` | `Wedoc` / `AddWedocApi()` |
+| 文档 | `Interfaces/Wedoc/{Document,Spreadsheet,SmartSheet,SmartDoc}/`（管理文档族在 `Interfaces/Wedoc/` 根；按官方菜单项分族，智能表格内容族按子表/视图/字段/记录/编组五组资源收敛在单一 `SmartSheet/` 子目录，智能文档内容族按发布与可见范围/页面/内容块/导出/数据表五组资源收敛在单一 `SmartDoc/` 子目录；五族均为三类应用公共面父接口 + 三个空标记子接口） | `Wedoc/` | `Wedoc` / `AddWedocApi()` |
 | 打卡 | `Interfaces/Checkin/{Rule,Record,Report,Schedule,Device}/`（规则族：获取员工打卡规则三类公共收敛父接口，获取企业所有打卡规则 + 管理打卡规则 4 写端点为自建/代开发差异端点、第三方零端点空标记；记录族 + 报表族：获取打卡记录/日报/月报三类开放但第三方文档页为旧字段结构——同路由不同构，零端点父接口 + 三分支子接口分形态承载，补卡/添加打卡记录/录入人脸官方仅自建；排班族 + 设备族：三类应用公共面收敛父接口 + 空标记子接口，设备打卡数据路由挂 `/cgi-bin/hardware/` 域） | `Checkin/{Rule,Record,Report,Schedule,Device}/`（子目录仅作组织，命名空间统一 `Checkin` 段） | `Checkin` / `AddCheckinApi()` |
 | 日程 | `Interfaces/Schedule/Calendar/`（管理日历族：创建/更新/获取/删除日历 4 端点三类应用公共面收敛父接口 + 空标记子接口；创建日历路由官方即 `calendar/add` 而非 create，更新为覆盖式，获取日历响应管理员字段官方示例作 `adminis`） | `Schedule/Calendar/`（子目录仅作组织，命名空间统一 `Schedule` 段） | `Schedule` / `AddScheduleApi()` |
 
@@ -117,9 +117,10 @@ scripts/                      # verify-build / audit-config-keys / GenerateJsonC
 - **模板 id**：代开发 `template_id` 即 `suite_id`（`dk` 开头）⇒ `WechatAppConfig` **不提供独立 `TemplateId`**（非法状态不可表达）。接口级 `templateid_list` 由宿主显式传入。
 - **令牌注入统一走 Query**（企微契约，非 Header）。白名单由守卫 G5 锁定，**新增须先评估、再显式扩展 G5**；例外 `get_customized_auth_url` 以显式 Query 参数传令牌且**不带 `[Token]`**。
 - **`TokenKey` 三段式 `{tokenType}:{appKey}:{scopeKey}`**（`WechatAppTokenManagerBase.BuildCache` 构造）；`WechatTokenTypes` 一律 `"Wechat."` 前缀。
+- **应用类型子接口必须声明「凭据归属域」**：`[Token(TokenManagerKey = WechatTokenManagerKeys.InternalAccessToken | CorpAccessToken)]`（键值 `Wechat.AccessToken@Internal` / `Wechat.AccessToken@Corp`）；公共父接口**不声明**。`TokenType` 恒为官方契约值（`Wechat.AccessToken`），**不得按应用类型拆分**（会改变注入参数名）。归属域在唯一咽喉点 `WechatAppContext.GetTokenManager` 校验，错配抛 `WechatTokenOwnerMismatchException`（fail-fast，不静默取错令牌）；恢复注册表的键集折叠自 `WechatTokenRouting.OwnedKeys`（单一事实来源）。批量落地用 `scripts/ApplyTokenOwnerKeys.ps1`，一致性由守卫 `WechatTokenOwnerContractGuards` 与 `Tests/.../Extensions/WechatTokenOwnerEndToEndTests.cs` 锁定（方案见本地方案文档 `.docs/MudWechatWork-接口应用类型契约与令牌归属域方案-v1.md`）。
 - **`AppKey` 形状受约束**（`WechatAppKeyValidator`，经 `Validate()` 单点收敛）：`[A-Za-z0-9]` 开头 + 仅 `[A-Za-z0-9._-]` + ≤128。含 `:` 会造成键别名 ⇒ 跨应用令牌串号。
 - **企业级令牌一企一份**（`scopeKey = authCorpId`），**不经声明式 `[Token]`**：显式 `GetTokenAsync(new[]{ authCorpId })`。errcode 恢复**必须显式传 scope**，否则对已缓存企业令牌是空转。
-- `SetCorp` 的 `authCorpId` **必填**（空白即抛），与 `appKey=null`「未声明归属」区分；读上下文须过两级校验（appKey 归属一致 + authCorpId 与 scope 一致）；`InvalidateTokenAsync` 的 `scopes` 非空但全为空白串 ⇒ 编程错误 fail-fast（`[]`/null 保持「全部」）。
+- **企业作用域一律用 `IWechatAppContextSwitcher.UseCorpScope(appKey, authCorpId, permanentCode)`**（第三方/代开发推荐入口）：一次性 `using`，进入时解析应用 + 快照并写入「应用 + 企业」两级上下文（归属应用取解析后 `AppKey`，R9），释放时逆序还原（企业 → 应用）且幂等；企业参数校验失败回滚已进入的应用作用域。裸写入原语 `SetCorp`（**必填** `authCorpId`，空白即抛，与 `appKey=null`「未声明归属」区分）已标 `[Obsolete]` 引导；`ClearCorp` 为**无条件清空**，嵌套场景会误伤外层企业上下文，勿与作用域还原混用。读上下文须过两级校验（appKey 归属一致 + authCorpId 与 scope 一致）；`InvalidateTokenAsync` 的 `scopes` 非空但全为空白串 ⇒ 编程错误 fail-fast（`[]`/null 保持「全部」）。
 
 ### 5.2 存储端口与多实例
 

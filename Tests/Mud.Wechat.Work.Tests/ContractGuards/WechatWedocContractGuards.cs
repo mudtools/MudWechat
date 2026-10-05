@@ -16,9 +16,10 @@ namespace Mud.Wechat.Work.Tests.ContractGuards;
 
 /// <summary>
 /// 文档模块（Wedoc 模块）契约守卫：路由表、接口层级、开放面与令牌绑定锁定
-/// （管理文档族 / 管理文档内容族 / 管理表格内容族 / 管理智能表格内容族四族均为三类应用公共面收敛父接口 + 空标记子接口；
+/// （管理文档族 / 管理文档内容族 / 管理表格内容族 / 管理智能表格内容族 / 管理智能文档内容族五族均为三类应用公共面收敛父接口 + 空标记子接口；
 /// 编辑文档内容与编辑表格内容为批量更新形态，单次操作数量官方分别限制 30 与 5；
 /// 管理智能表格内容族为 20 个端点（子表 4 / 视图 4 / 字段 4 / 记录 4 / 编组 4），单表上限与批量建议官方另有约束；
+/// 管理智能文档内容族为 17 个端点（发布与可见范围 3 / 页面 4 / 内容块 4 / 导出 2 / 数据表 4），发布耗时、分栏数量、分批大小与数据表 after_id 官方另有约束；
 /// 官方文档存在 verison / blod / property_ganttobect / typ / filed_id 等拼写陷阱，
 /// 字段名照抄官方原文，守卫锁定防「顺手修正」）。
 /// </summary>
@@ -35,6 +36,8 @@ public class WechatWedocContractGuards
     private const string WedocSpreadsheetParentImplementationClassName = "WechatWorkWedocSpreadsheetService";
 
     private const string WedocSmartSheetParentImplementationClassName = "WechatWorkWedocSmartSheetService";
+
+    private const string WedocSmartDocParentImplementationClassName = "WechatWorkWedocSmartDocService";
 
     private const string WedocRegistryGroupName = "Wedoc";
 
@@ -163,6 +166,71 @@ public class WechatWedocContractGuards
     };
 
     /// <summary>
+    /// 管理智能文档内容族官方路由表（父接口 17 条端点，官方即 POST，勿改 GET）。
+    /// 按官方菜单结构分五组：发布与可见范围 3 / 页面 4 / 内容块 4 / 导出 2 / 数据表 4。
+    /// 官方「导出内容块」一页承载两路由（export_task 与 get_export_result），故 16 个官方文档页对应 17 个端点。
+    /// </summary>
+    private static readonly (Type Interface, string Method, string Route)[] WedocSmartDocRoutes =
+    {
+        // —— 发布与可见范围（publish 内部异步任务耗时 3～8 秒，官方建议客户端超时 10 秒以上）——
+        // 发布智能文档（自建 101616、第三方 101633、代开发 101650）。
+        (typeof(IWechatWorkWedocSmartDocService),
+            nameof(IWechatWorkWedocSmartDocService.PublishSmartDocAsync), "/cgi-bin/wedoc/smartdoc/publish"),
+        // 取消发布智能文档（自建 101617、第三方 101634、代开发 101651）。
+        (typeof(IWechatWorkWedocSmartDocService),
+            nameof(IWechatWorkWedocSmartDocService.CancelPublishSmartDocAsync), "/cgi-bin/wedoc/smartdoc/cancel_publish"),
+        // 修改发布页可查看范围（自建 101618、第三方 101635、代开发 101652）：官方路由为名词 publish_setting。
+        (typeof(IWechatWorkWedocSmartDocService),
+            nameof(IWechatWorkWedocSmartDocService.UpdateSmartDocPublishSettingAsync), "/cgi-bin/wedoc/smartdoc/publish_setting"),
+        // —— 页面（删除页面会一并删除全部子页面且不可恢复）——
+        // 添加页面（自建 101620、第三方 101637、代开发 101654）。
+        (typeof(IWechatWorkWedocSmartDocService),
+            nameof(IWechatWorkWedocSmartDocService.AddPageAsync), "/cgi-bin/wedoc/smartdoc/add_page"),
+        // 更新页面（自建 101621、第三方 101638、代开发 101655）。
+        (typeof(IWechatWorkWedocSmartDocService),
+            nameof(IWechatWorkWedocSmartDocService.UpdatePageAsync), "/cgi-bin/wedoc/smartdoc/update_page"),
+        // 删除页面（自建 101622、第三方 101639、代开发 101656）。
+        (typeof(IWechatWorkWedocSmartDocService),
+            nameof(IWechatWorkWedocSmartDocService.DeletePageAsync), "/cgi-bin/wedoc/smartdoc/delete_page"),
+        // 获取页面结构（自建 101619、第三方 101636、代开发 101653）：官方返回扁平 pages 数组，路由为 get_page_hierarchy。
+        (typeof(IWechatWorkWedocSmartDocService),
+            nameof(IWechatWorkWedocSmartDocService.GetPageHierarchyAsync), "/cgi-bin/wedoc/smartdoc/get_page_hierarchy"),
+        // —— 内容块（官方路由单复数混用：get_block_list 为单数）——
+        // 添加内容块（自建 101623、第三方 101640、代开发 101657）：路由官方为复数 add_blocks。
+        (typeof(IWechatWorkWedocSmartDocService),
+            nameof(IWechatWorkWedocSmartDocService.AddBlocksAsync), "/cgi-bin/wedoc/smartdoc/add_blocks"),
+        // 更新内容块（自建 101624、第三方 101641、代开发 101658）：路由官方为复数 update_blocks。
+        (typeof(IWechatWorkWedocSmartDocService),
+            nameof(IWechatWorkWedocSmartDocService.UpdateBlocksAsync), "/cgi-bin/wedoc/smartdoc/update_blocks"),
+        // 删除内容块（自建 101625、第三方 101642、代开发 101659）：路由官方为复数 delete_blocks。
+        (typeof(IWechatWorkWedocSmartDocService),
+            nameof(IWechatWorkWedocSmartDocService.DeleteBlocksAsync), "/cgi-bin/wedoc/smartdoc/delete_blocks"),
+        // 获取内容块列表（自建 101626、第三方 101643、代开发 101660）：路由官方为<b>单数</b> get_block_list（与增删改的复数形式不同）。
+        (typeof(IWechatWorkWedocSmartDocService),
+            nameof(IWechatWorkWedocSmartDocService.GetBlockListAsync), "/cgi-bin/wedoc/smartdoc/get_block_list"),
+        // —— 导出（官方同一文档页承载两路由，故本组 2 端点）——
+        // 提交导出任务（自建 101627、第三方 101644、代开发 101661）。
+        (typeof(IWechatWorkWedocSmartDocService),
+            nameof(IWechatWorkWedocSmartDocService.ExportSmartDocTaskAsync), "/cgi-bin/wedoc/smartdoc/export_task"),
+        // 查询导出任务结果（自建 101627、第三方 101644、代开发 101661）：与提交导出任务同一官方文档页。
+        (typeof(IWechatWorkWedocSmartDocService),
+            nameof(IWechatWorkWedocSmartDocService.GetSmartDocExportResultAsync), "/cgi-bin/wedoc/smartdoc/get_export_result"),
+        // —— 数据表（官方路由沿用 smartsheet 词根；add/update 的 after_id 只支持数据表类型 block_id）——
+        // 获取数据源（自建 101628、第三方 101645、代开发 101662）：官方标题为「获取数据源」，路由为 get_smartsheet_info。
+        (typeof(IWechatWorkWedocSmartDocService),
+            nameof(IWechatWorkWedocSmartDocService.GetSmartDocDataSourceAsync), "/cgi-bin/wedoc/smartdoc/get_smartsheet_info"),
+        // 添加数据表（自建 101629、第三方 101646、代开发 101663）。
+        (typeof(IWechatWorkWedocSmartDocService),
+            nameof(IWechatWorkWedocSmartDocService.AddDataTableAsync), "/cgi-bin/wedoc/smartdoc/add_smartsheet"),
+        // 更新数据表（自建 101631、第三方 101648、代开发 101665）。
+        (typeof(IWechatWorkWedocSmartDocService),
+            nameof(IWechatWorkWedocSmartDocService.UpdateDataTableAsync), "/cgi-bin/wedoc/smartdoc/update_smartsheet"),
+        // 删除数据表（自建 101630、第三方 101647、代开发 101664）：仅删除关联内容块，不删除表内业务数据。
+        (typeof(IWechatWorkWedocSmartDocService),
+            nameof(IWechatWorkWedocSmartDocService.DeleteDataTableAsync), "/cgi-bin/wedoc/smartdoc/delete_smartsheet"),
+    };
+
+    /// <summary>
     /// 契约守卫 WD1：管理文档族全部端点路由必须与官方契约一致——
     /// 5 个端点为三类应用公共面，全部收敛父接口；del_doc / doc_share 为官方原文路由，勿「顺手改名」。
     /// </summary>
@@ -264,7 +332,70 @@ public class WechatWedocContractGuards
     }
 
     /// <summary>
-    /// 契约守卫 WD4：文档模块接口层级与生成器注册形态——四族公共端点收敛于 IsAbstract 父接口、
+    /// 契约守卫 WD10：管理智能文档内容族全部端点路由必须与官方契约一致——
+    /// 17 个端点为三类应用公共面（发布与可见范围 3 / 页面 4 / 内容块 4 / 导出 2 / 数据表 4），全部收敛父接口；
+    /// 官方路由三处易错点：① <c>get_block_list</c> 为单数而增删改为复数；
+    /// ② 数据表组路由沿用 <c>smartsheet</c> 词根而非 <c>datatable</c>；
+    /// ③ 路由前缀 <c>smartdoc/</c> 不得与智能表格族的 <c>smartsheet/</c> 混用。
+    /// </summary>
+    [Fact]
+    public void WedocSmartDocEndpoints_ShouldMatchOfficialRoutes()
+    {
+        WedocSmartDocRoutes.Should().HaveCount(17,
+            "管理智能文档内容族 17 个端点（发布与可见范围 3 + 页面 4 + 内容块 4 + 导出 2 + 数据表 4）为三类应用公共面，全部收敛父接口");
+        WedocSmartDocRoutes.Select(r => r.Route).Distinct().Should().HaveCount(17, "各端点路由互不重复");
+        WedocSmartDocRoutes.Select(r => r.Route)
+            .Should().OnlyContain(r => r.StartsWith("/cgi-bin/wedoc/smartdoc/"),
+                "管理智能文档内容族路由必须落在 wedoc/smartdoc/ 下，"
+                + "不得与智能表格内容域 wedoc/smartsheet/、表格内容域 wedoc/spreadsheet/ 或文档内容域 wedoc/document/ 混用");
+
+        // 五组资源的官方菜单结构即为契约（官方「导出内容块」一页两路由，故导出组为 2 而非 4）。
+        var expectedByGroup = new Dictionary<string, string[]>
+        {
+            ["发布与可见范围"] = new[]
+            {
+                "/cgi-bin/wedoc/smartdoc/publish", "/cgi-bin/wedoc/smartdoc/cancel_publish",
+                "/cgi-bin/wedoc/smartdoc/publish_setting",
+            },
+            ["页面"] = new[]
+            {
+                "/cgi-bin/wedoc/smartdoc/add_page", "/cgi-bin/wedoc/smartdoc/update_page",
+                "/cgi-bin/wedoc/smartdoc/delete_page", "/cgi-bin/wedoc/smartdoc/get_page_hierarchy",
+            },
+            ["内容块"] = new[]
+            {
+                "/cgi-bin/wedoc/smartdoc/add_blocks", "/cgi-bin/wedoc/smartdoc/update_blocks",
+                "/cgi-bin/wedoc/smartdoc/delete_blocks", "/cgi-bin/wedoc/smartdoc/get_block_list",
+            },
+            ["导出"] = new[]
+            {
+                "/cgi-bin/wedoc/smartdoc/export_task", "/cgi-bin/wedoc/smartdoc/get_export_result",
+            },
+            ["数据表"] = new[]
+            {
+                "/cgi-bin/wedoc/smartdoc/get_smartsheet_info", "/cgi-bin/wedoc/smartdoc/add_smartsheet",
+                "/cgi-bin/wedoc/smartdoc/update_smartsheet", "/cgi-bin/wedoc/smartdoc/delete_smartsheet",
+            },
+        };
+
+        foreach (var (group, routes) in expectedByGroup)
+        {
+            routes.Distinct().Should().HaveCount(routes.Length,
+                $"{group}组路由互不重复（官方单复数混用，逐条锁定）");
+            WedocSmartDocRoutes.Select(r => r.Route)
+                .Should().Contain(routes, $"{group}组路由必须与官方契约逐条一致（单复数与词根照抄官方原文）");
+        }
+
+        // 增删改为复数、查询为单数，是本族最容易「顺手归一」的一处，显式锁定。
+        WedocSmartDocRoutes.Select(r => r.Route)
+            .Should().Contain("/cgi-bin/wedoc/smartdoc/get_block_list",
+                "官方查询内容块路由为单数 get_block_list（增删改为复数），不得归一为 get_blocks");
+
+        AssertRoutes(WedocSmartDocRoutes);
+    }
+
+    /// <summary>
+    /// 契约守卫 WD4：文档模块接口层级与生成器注册形态——五族公共端点收敛于 IsAbstract 父接口、
     /// 三个应用类型子接口均为空标记（能力漂移守卫：子接口自身声明端点数必须为 0）。
     /// </summary>
     [Fact]
@@ -357,10 +488,32 @@ public class WechatWedocContractGuards
             new[] { (typeof(IWechatWorkInternalWedocSmartSheetService), 0),
                     (typeof(IWechatWorkThirdPartyWedocSmartSheetService), 0),
                     (typeof(IWechatWorkProviderWedocSmartSheetService), 0) });
+
+        // —— 管理智能文档内容族 ——
+        var smartDocChildren = new[]
+        {
+            typeof(IWechatWorkInternalWedocSmartDocService),
+            typeof(IWechatWorkThirdPartyWedocSmartDocService),
+            typeof(IWechatWorkProviderWedocSmartDocService),
+        };
+
+        foreach (var child in smartDocChildren)
+        {
+            child.Should().BeAssignableTo(typeof(IWechatWorkWedocSmartDocService),
+                $"{child.Name} 必须继承公共父接口 IWechatWorkWedocSmartDocService");
+        }
+
+        AssertFamilyHierarchy(
+            typeof(IWechatWorkWedocSmartDocService),
+            WedocSmartDocParentImplementationClassName,
+            expectedDeclaredMethods: 17,
+            new[] { (typeof(IWechatWorkInternalWedocSmartDocService), 0),
+                    (typeof(IWechatWorkThirdPartyWedocSmartDocService), 0),
+                    (typeof(IWechatWorkProviderWedocSmartDocService), 0) });
     }
 
     /// <summary>
-    /// 契约守卫 WD5：令牌绑定——文档模块全部 16 个接口统一消费 AccessToken 路由键并以 Query 注入
+    /// 契约守卫 WD5：令牌绑定——文档模块全部 20 个接口统一消费 AccessToken 路由键并以 Query 注入
     /// （官方契约 access_token；第三方/代开发消费授权企业级令牌，scope = authCorpId）。
     /// </summary>
     [Fact]
@@ -384,6 +537,10 @@ public class WechatWedocContractGuards
             typeof(IWechatWorkInternalWedocSmartSheetService),
             typeof(IWechatWorkThirdPartyWedocSmartSheetService),
             typeof(IWechatWorkProviderWedocSmartSheetService),
+            typeof(IWechatWorkWedocSmartDocService),
+            typeof(IWechatWorkInternalWedocSmartDocService),
+            typeof(IWechatWorkThirdPartyWedocSmartDocService),
+            typeof(IWechatWorkProviderWedocSmartDocService),
         };
 
         interfaces.Should().OnlyHaveUniqueItems("令牌守卫覆盖的接口清单不得重复");
@@ -487,7 +644,47 @@ public class WechatWedocContractGuards
     }
 
     /// <summary>
-    /// 契约守卫 WD7：文档模块的请求/响应 DTO 必须登记进 AOT JSON 上下文（全量 162 个契约面类型）。
+    /// 契约守卫 WD11：管理智能文档内容族的官方契约陷阱锁定——
+    /// <list type="bullet">
+    /// <item><c>title</c> / <c>content</c>：内容块文本字段在官方参数表与「添加内容块」「更新内容块」响应示例中作
+    /// <c>title</c>，在「更新内容块」请求示例与「获取内容块列表」响应示例中作 <c>content</c>，两种拼写同时承载，不得合并。</item>
+    /// <item><c>has_more</c>：获取内容块列表的 <c>has_more</c> <b>官方类型为字符串</b>（<c>"true"</c> / <c>"false"</c>），
+    /// 不得改为布尔，否则 <c>"true"</c> 之类的官方报文将解析失败。</item>
+    /// <item><c>ss_docid</c>：数据源 / 数据表组返回的智能文档 docid 官方字段名为 <c>ss_docid</c>（两个 s），
+    /// 与请求侧的 <c>docid</c> 不同名，不得统一为 <c>docid</c>。</item>
+    /// </list>
+    /// </summary>
+    [Fact]
+    public void WedocSmartDocOfficialTraps_ShouldBePreservedVerbatim()
+    {
+        var blockTitle = typeof(SmartDocBlockInfo).GetProperty(
+            nameof(SmartDocBlockInfo.Title), BindingFlags.Public | BindingFlags.Instance);
+        var blockContent = typeof(SmartDocBlockInfo).GetProperty(
+            nameof(SmartDocBlockInfo.Content), BindingFlags.Public | BindingFlags.Instance);
+        blockTitle!.GetCustomAttribute<JsonPropertyNameAttribute>()!.Name.Should().Be("title",
+            "内容块文本字段的官方参数表口径为 title");
+        blockContent!.GetCustomAttribute<JsonPropertyNameAttribute>()!.Name.Should().Be("content",
+            "「更新内容块」请求示例与「获取内容块列表」响应示例口径为 content；两种拼写并存，不得合并");
+
+        var hasMore = typeof(GetSmartDocBlockListResponse).GetProperty(
+            nameof(GetSmartDocBlockListResponse.HasMore), BindingFlags.Public | BindingFlags.Instance);
+        hasMore!.GetCustomAttribute<JsonPropertyNameAttribute>()!.Name.Should().Be("has_more",
+            "获取内容块列表官方字段名为 has_more");
+        hasMore.PropertyType.Should().Be<string>("官方把 has_more 定义为字符串（\"true\" / \"false\"），不得改为 bool");
+
+        var ssDocid = typeof(GetSmartDocDataSourceResponse).GetProperty(
+            nameof(GetSmartDocDataSourceResponse.SsDocid), BindingFlags.Public | BindingFlags.Instance);
+        ssDocid!.GetCustomAttribute<JsonPropertyNameAttribute>()!.Name.Should().Be("ss_docid",
+            "数据源返回的智能文档 docid 官方字段名为 ss_docid，不得统一为 docid");
+
+        var tableSsDocid = typeof(SmartDocDataTableInfo).GetProperty(
+            nameof(SmartDocDataTableInfo.SsDocid), BindingFlags.Public | BindingFlags.Instance);
+        tableSsDocid!.GetCustomAttribute<JsonPropertyNameAttribute>()!.Name.Should().Be("ss_docid",
+            "数据表信息中的智能文档 docid 官方字段名为 ss_docid，不得统一为 docid");
+    }
+
+    /// <summary>
+    /// 契约守卫 WD7：文档模块的请求/响应 DTO 必须登记进 AOT JSON 上下文（全量 209 个契约面类型）。
     /// </summary>
     [Fact]
     public void WedocDataModels_ShouldBeRegisteredInJsonContext()
@@ -594,11 +791,43 @@ public class WechatWedocContractGuards
             typeof(UpdateSmartSheetFieldGroupRequest), typeof(UpdateSmartSheetFieldGroupResponse),
             typeof(GetSmartSheetFieldGroupsRequest), typeof(GetSmartSheetFieldGroupsResponse),
             typeof(SmartSheetFieldGroup), typeof(SmartSheetFieldGroupChild),
+            // 管理智能文档内容族——发布与可见范围。
+            typeof(PublishSmartDocRequest), typeof(PublishSmartDocResponse),
+            typeof(CancelPublishSmartDocRequest),
+            typeof(UpdateSmartDocPublishSettingRequest),
+            typeof(SmartDocPublishAuth),
+            // 管理智能文档内容族——页面。
+            typeof(AddSmartDocPageRequest), typeof(AddSmartDocPageResponse),
+            typeof(UpdateSmartDocPageRequest), typeof(UpdateSmartDocPageResponse),
+            typeof(DeleteSmartDocPageRequest),
+            typeof(GetSmartDocPageHierarchyRequest), typeof(GetSmartDocPageHierarchyResponse),
+            typeof(SmartDocPageInfo), typeof(SmartDocPageNode),
+            // 管理智能文档内容族——内容块。
+            typeof(AddSmartDocBlocksRequest), typeof(AddSmartDocBlocksResponse),
+            typeof(UpdateSmartDocBlocksRequest), typeof(UpdateSmartDocBlocksResponse),
+            typeof(DeleteSmartDocBlocksRequest),
+            typeof(GetSmartDocBlockListRequest), typeof(GetSmartDocBlockListResponse),
+            typeof(SmartDocBlockInfo), typeof(SmartDocBlockProps),
+            typeof(SmartDocTextBlockProps), typeof(SmartDocImageBlockProps),
+            typeof(SmartDocFileBlockProps), typeof(SmartDocLinkBlockProps),
+            typeof(SmartDocTableBlockProps), typeof(SmartDocTableCellMerge),
+            typeof(SmartDocTableCellPosition), typeof(SmartDocSmartSheetViewBlockProps),
+            typeof(SmartDocColumnListProps), typeof(SmartDocHighlightBlockProps),
+            typeof(SmartDocCodeBlockProps), typeof(SmartDocTodoBlockProps),
+            // 管理智能文档内容族——导出。
+            typeof(ExportSmartDocTaskRequest), typeof(ExportSmartDocTaskResponse),
+            typeof(GetSmartDocExportResultRequest), typeof(GetSmartDocExportResultResponse),
+            // 管理智能文档内容族——数据表。
+            typeof(GetSmartDocDataSourceRequest), typeof(GetSmartDocDataSourceResponse),
+            typeof(AddSmartDocDataTableRequest), typeof(AddSmartDocDataTableResponse),
+            typeof(UpdateSmartDocDataTableRequest), typeof(UpdateSmartDocDataTableResponse),
+            typeof(DeleteSmartDocDataTableRequest),
+            typeof(SmartDocDataTableInfo),
         };
 
-        requiredTypes.Should().HaveCount(162,
+        requiredTypes.Should().HaveCount(209,
             "文档模块契约面类型总数漂移须先核对 DTO 落位再同批调整本守卫"
-            + "（管理文档族 10 + 管理文档内容族 34 + 管理表格内容族 37 + 管理智能表格内容族 81）");
+            + "（管理文档族 10 + 管理文档内容族 34 + 管理表格内容族 37 + 管理智能表格内容族 81 + 管理智能文档内容族 47）");
         requiredTypes.Should().OnlyHaveUniqueItems("契约面类型不得重复断言");
 
         foreach (var type in requiredTypes)

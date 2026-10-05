@@ -28,6 +28,7 @@ namespace Mud.Wechat.Work;
 [HttpClientApi(RegistryGroupName = "Pay",
     TokenManage = nameof(IWechatAppManager), InheritedFrom = nameof(WechatWorkPayTradeBillService))]
 [Token(TokenType = WechatTokenTypes.AccessToken,
+      TokenManagerKey = WechatTokenManagerKeys.InternalAccessToken,
       InjectionMode = TokenInjectionMode.Query, Name = "access_token")]
 public interface IWechatWorkInternalPayTradeBillService : IWechatWorkPayTradeBillService
 {

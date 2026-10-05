@@ -355,6 +355,15 @@ public class WechatContractGuards
                 nameof(IWechatWorkThirdPartyIdentitySuiteService),
                 nameof(IWechatWorkIdentityTfaService),
                 nameof(IWechatWorkInternalIdentityTfaService),
+                // 身份验证·小程序登录族（Identity 模块）：code2Session 自建/代开发 1 端点公共面收敛父接口
+                //（自建 91507、代开发 96959，GET，js_code 与固定 grant_type 走 Query；父接口 + 两个空标记子接口）；
+                // 第三方为独立路由（service/miniprogram/jscode2session 92423）且走 suite_access_token
+                // 令牌路由键，零端点套件父接口 + 仅第三方子接口承载（响应多 open_userid 字段）。
+                nameof(IWechatWorkIdentityMiniProgramService),
+                nameof(IWechatWorkInternalIdentityMiniProgramService),
+                nameof(IWechatWorkProviderIdentityMiniProgramService),
+                nameof(IWechatWorkIdentityMiniProgramSuiteService),
+                nameof(IWechatWorkThirdPartyIdentityMiniProgramSuiteService),
                 // 微信客服·会话分配与消息收发域（Kf 模块）：4 条路由 / 14 个端点方法为三类应用公共面
                 //（会话状态 94669/94698/96425、发送消息 94677/94700/96427（10 种 msgtype 同路由多方法）、
                 // 事件响应消息 95122/94910/96428（2 种 msgtype 同路由多方法）；父接口 + 三个应用类型空标记子接口）。

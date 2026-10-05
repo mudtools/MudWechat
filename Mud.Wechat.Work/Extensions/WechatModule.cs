@@ -96,4 +96,7 @@ public enum WechatModule
 
     /// <summary>JS-SDK（获取企业 jsapi_ticket + 获取应用 jsapi_ticket 两端点三类应用公共面收敛父接口 + 空标记子接口，官方三份文档逐字一致；ticket/get 端点以固定 Query 值 type=agent_config 携带官方鉴权类型；JS-SDK 签名算法为页面/服务器端 SHA-1 约定，不在 HTTP 端点面内）。</summary>
     JsSdk,
+
+    /// <summary>基础接口（获取企业微信接口IP段 + 获取企业微信回调IP段 2 端点为自建/代开发公共面收敛父接口 + 空标记子接口，官方权限说明均为「无限定」；官方第三方应用开发文档树无「基础接口」分组，不设第三方子接口；两端点官方即 GET、无请求体）。</summary>
+    Basic,
 }

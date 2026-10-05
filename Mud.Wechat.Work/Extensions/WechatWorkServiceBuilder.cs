@@ -120,6 +120,9 @@ public class WechatWorkServiceBuilder
             [WechatModule.JsSdk] = new WechatModuleRegistrar(
                 WechatModule.JsSdk,
                 s => s.AddJsSdkWebApiHttpClient()),
+            [WechatModule.Basic] = new WechatModuleRegistrar(
+                WechatModule.Basic,
+                s => s.AddBasicWebApiHttpClient()),
         };
 
     /// <summary>注册授权流业务接口与授权编排服务（get_pre_auth_code / set_session_info / get_permanent_code / get_auth_info / get_customized_auth_url + 编排）。</summary>
@@ -202,6 +205,9 @@ public class WechatWorkServiceBuilder
 
     /// <summary>注册 JS-SDK 业务接口（获取企业 jsapi_ticket + 获取应用 jsapi_ticket 两端点三类应用公共面收敛父接口 + 空标记子接口，官方三份文档逐字一致；ticket/get 端点以固定 Query 值 type=agent_config 携带官方鉴权类型；jsapi_ticket 频率限制一小时内一个企业最多 400 次、单个应用不超过 100 次，官方要求后台缓存）。</summary>
     public WechatWorkServiceBuilder AddJsSdkApi() => AddModule(WechatModule.JsSdk);
+
+    /// <summary>注册基础接口业务接口（获取企业微信接口IP段 + 获取企业微信回调IP段 2 端点为自建/代开发公共面收敛父接口 + 空标记子接口，官方权限说明均为「无限定」，两端点官方即 GET、无请求体；官方建议每天定时拉取 IP 段并更新防火墙设置；官方第三方应用开发文档树无「基础接口」分组，不设第三方子接口）。</summary>
+    public WechatWorkServiceBuilder AddBasicApi() => AddModule(WechatModule.Basic);
 
     /// <summary>注册全部模块。</summary>
     public WechatWorkServiceBuilder AddAllApis()

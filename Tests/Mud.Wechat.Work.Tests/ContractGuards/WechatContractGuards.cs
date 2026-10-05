@@ -873,6 +873,12 @@ public class WechatContractGuards
                 nameof(IWechatWorkInternalJsSdkService),
                 nameof(IWechatWorkThirdPartyJsSdkService),
                 nameof(IWechatWorkProviderJsSdkService),
+                // 基础接口域（Basic 模块）：2 个端点为自建/代开发公共面收敛父接口 + 空标记子接口
+                //（获取企业微信接口IP段 92520/97073、获取企业微信回调IP段 92521/98988，官方即 GET、无请求体；
+                //  官方第三方应用开发文档树无「基础接口」分组，不设第三方子接口）。
+                nameof(IWechatWorkBasicService),
+                nameof(IWechatWorkInternalBasicService),
+                nameof(IWechatWorkProviderBasicService),
             },
             "企业微信官方契约强制 Query 注入（MUD005 已知接受风险），新增 Query 注入接口须评估后扩展本守卫");
     }

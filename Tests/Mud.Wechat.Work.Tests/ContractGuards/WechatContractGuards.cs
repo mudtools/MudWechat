@@ -885,6 +885,16 @@ public class WechatContractGuards
                 // [Query("access_token")] 传令牌、不带 [Token]，故不进入本白名单（同 get_customized_auth_url 例外形态）。
                 nameof(IWechatWorkServicePromotionQrCodeService),
                 nameof(IWechatWorkThirdPartyServicePromotionQrCodeService),
+                // 收银台域（PayTool 模块，官方仅第三方应用开发开放）：三族两令牌、各为「零端点父接口 + 唯一第三方子接口承载」。
+                // 收款工具族 4 端点（创建收款订单 98045 / 取消收款订单 98046 / 获取收款订单列表 98053 / 获取收款订单详情 98054）
+                // 与发票管理族 2 端点（获取发票列表 99436 / 标记开票状态 99437）走 provider_access_token；
+                // 应用版本付费族 3 端点（获取订单列表 91910 / 获取订单详情 91909 / 延长试用期 91913）走 suite_access_token。
+                nameof(IWechatWorkPayToolOrderService),
+                nameof(IWechatWorkThirdPartyPayToolOrderService),
+                nameof(IWechatWorkPayToolInvoiceService),
+                nameof(IWechatWorkThirdPartyPayToolInvoiceService),
+                nameof(IWechatWorkPayToolVersionSuiteService),
+                nameof(IWechatWorkThirdPartyPayToolVersionSuiteService),
             },
             "企业微信官方契约强制 Query 注入（MUD005 已知接受风险），新增 Query 注入接口须评估后扩展本守卫");
     }

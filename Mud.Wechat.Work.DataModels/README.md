@@ -12,7 +12,7 @@
 
 - `SerializerClassName` = DTO 命名空间的域段（Users / Department / Tags / ContactRules / Batch /
   Export / FollowUser / Customer / Tag / JobInheritance / ResignedInheritance / GroupChat /
-  CorpGroup / ChainContacts / Rules / CorpTokenAuthentication /
+  CorpGroup / ChainContacts / Rules / CorpTokenAuthentication / PayTool /
   InternalAppAuthentication / ProviderAuthentication），根命名空间直属文件归 `Common` 组——
   每个生成的上下文与其域 DTO 同命名空间（对齐 Mud.Feishu.DataModels「每模块一上下文」）。
 - 新增/变更 DTO 后的流程：运行 `scripts/AddHttpJsonSerializable.ps1` 标注 →

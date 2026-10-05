@@ -980,4 +980,110 @@ public class WechatCallbackPayloadReaderTests
             s.RequiredChannel == WechatCallbackChannel.Suite);
         contract.RequiredEvent.Should().Be("customer_acquisition", "RequiredEvent 缺省 = 逐键自指");
     }
+
+    // ---------------------------------------- 收银台·应用版本付费订单回调族（91929~91933 / 99353）
+
+    [Fact]
+    public void Read_ShouldMapPayToolVersionOrderFields_WhenOpenOrder()
+    {
+        // 官方 91929 样报文（第三方指令回调，套件信封）：OrderId + OperatorId。
+        var evt = SuiteEvent(WechatCallbackEventTypes.OpenOrder, changeType: null,
+            "<xml><SuiteId><![CDATA[ww4asffe99e54c0aaa]]></SuiteId>" +
+            "<PaidCorpId><![CDATA[wxf8b4f85f3a794aaa]]></PaidCorpId>" +
+            "<InfoType><![CDATA[open_order]]></InfoType><TimeStamp>1403610513</TimeStamp>" +
+            "<OrderId><![CDATA[ORDERID]]></OrderId><OperatorId><![CDATA[OPERATORID]]></OperatorId></xml>");
+
+        evt.EventTypeKey.Should().Be("open_order");
+        evt.EventFamily.Should().Be(WechatCallbackEventFamily.Authorization, "套件信封（InfoType 非空）⇒ 授权族");
+
+        var result = CreateReader().Read<PayToolVersionOrderPayload>(evt);
+
+        result.Status.Should().Be(WechatPayloadReadStatus.Matched);
+        var payload = result.Payload!;
+        payload.PaidCorpId.Should().Be("wxf8b4f85f3a794aaa",
+            "官方报文无 AuthCorpId / FromUserName 节点 ⇒ 购买方 corpid 只能取自 PaidCorpId");
+        payload.OrderId.Should().Be("ORDERID");
+        payload.OperatorId.Should().Be("OPERATORID");
+        payload.OldOrderId.Should().BeNull("下单成功通知不含改单字段");
+        payload.NewOrderId.Should().BeNull("下单成功通知不含改单字段");
+        evt.AuthCorpId.Should().BeNull("本族报文无 AuthCorpId/FromUserName ⇒ 信封不得伪造授权企业");
+    }
+
+    [Fact]
+    public void Read_ShouldMapOldAndNewOrderId_WhenChangeOrder()
+    {
+        // 官方 91930 样报文：改单通知携带 OldOrderId / NewOrderId，无 OrderId。
+        var result = CreateReader().Read<PayToolVersionOrderPayload>(
+            SuiteEvent(WechatCallbackEventTypes.ChangeOrder, changeType: null,
+                "<xml><SuiteId><![CDATA[ww4asffe99e54c0aaa]]></SuiteId>" +
+                "<PaidCorpId><![CDATA[wxf8b4f85f3a794aaa]]></PaidCorpId>" +
+                "<InfoType><![CDATA[change_order]]></InfoType><TimeStamp>1403610513</TimeStamp>" +
+                "<OldOrderId><![CDATA[OLD_ORDER_ID]]></OldOrderId>" +
+                "<NewOrderId><![CDATA[NEW_ORDER_ID]]></NewOrderId></xml>"));
+
+        result.Status.Should().Be(WechatPayloadReadStatus.Matched);
+        result.Payload!.OldOrderId.Should().Be("OLD_ORDER_ID");
+        result.Payload!.NewOrderId.Should().Be("NEW_ORDER_ID");
+        result.Payload!.OrderId.Should().BeNull("改单通知不含 OrderId 节点，须用 NewOrderId");
+        result.Payload!.OperatorId.Should().BeNull();
+    }
+
+    [Theory]
+    [InlineData(WechatCallbackEventTypes.PayForAppSuccess)]
+    [InlineData(WechatCallbackEventTypes.Refund)]
+    [InlineData(WechatCallbackEventTypes.CancelOrder)]
+    public void Read_ShouldMapOrderIdOnly_WhenSingleOrderFieldEvent(string eventKey)
+    {
+        var result = CreateReader().Read<PayToolVersionOrderPayload>(
+            SuiteEvent(eventKey, changeType: null,
+                "<xml><SuiteId><![CDATA[ww4asffe99e54c0aaa]]></SuiteId>" +
+                "<PaidCorpId><![CDATA[wxf8b4f85f3a794aaa]]></PaidCorpId>" +
+                $"<InfoType><![CDATA[{eventKey}]]></InfoType><TimeStamp>1403610513</TimeStamp>" +
+                "<OrderId><![CDATA[ORDERID]]></OrderId></xml>"));
+
+        result.Status.Should().Be(WechatPayloadReadStatus.Matched);
+        result.Payload!.OrderId.Should().Be("ORDERID");
+        result.Payload!.OperatorId.Should().BeNull();
+        result.Payload!.OldOrderId.Should().BeNull();
+        result.Payload!.NewOrderId.Should().BeNull();
+    }
+
+    [Fact]
+    public void Read_ShouldMapNoOrderField_WhenEditionChanged()
+    {
+        // 官方 91933 样报文：应用版本变更通知仅四个信封字段（官方 InfoType 拼写为 change_editon）。
+        var evt = SuiteEvent(WechatCallbackEventTypes.ChangeEditon, changeType: null,
+            "<xml><SuiteId><![CDATA[ww4asffe99e54c0aaa]]></SuiteId>" +
+            "<PaidCorpId><![CDATA[wxf8b4f85f3a794aaa]]></PaidCorpId>" +
+            "<InfoType><![CDATA[change_editon]]></InfoType><TimeStamp>1403610513</TimeStamp></xml>");
+
+        evt.EventTypeKey.Should().Be("change_editon", "官方键值拼写为 change_editon（少一个字母 i）");
+
+        var result = CreateReader().Read<PayToolVersionOrderPayload>(evt);
+
+        result.Status.Should().Be(WechatPayloadReadStatus.Matched);
+        result.Payload!.PaidCorpId.Should().Be("wxf8b4f85f3a794aaa");
+        result.Payload!.OrderId.Should().BeNull();
+        result.Payload!.OperatorId.Should().BeNull();
+        result.Payload!.OldOrderId.Should().BeNull();
+        result.Payload!.NewOrderId.Should().BeNull();
+    }
+
+    [Theory]
+    [InlineData(WechatAppType.ThirdParty, WechatCallbackChannel.Suite, true)]
+    [InlineData(WechatAppType.Internal, WechatCallbackChannel.App, false)]
+    [InlineData(WechatAppType.Provider, WechatCallbackChannel.Suite, false)]
+    public void PayToolVersionOrderContract_ShouldOpenForOfficialMatrix(
+        WechatAppType appType, WechatCallbackChannel channel, bool expected)
+    {
+        CreateRegistry().TryResolve(WechatCallbackEventTypes.PayForAppSuccess, out var contract)
+            .Should().BeTrue();
+        var evt = new WechatCallbackEvent { InfoType = WechatCallbackEventTypes.PayForAppSuccess };
+
+        contract!.IsOpenFor(evt, appType, channel).Should().Be(expected,
+            "收银台应用版本付费回调族官方仅在第三方应用开发文档树提供 ⇒ 第三方 × 套件指令通道");
+        contract.RequiredFamily.Should().Be(WechatCallbackEventFamily.Authorization);
+        contract.RequiredEvent.Should().Be(WechatCallbackEventTypes.PayForAppSuccess,
+            "RequiredEvent 缺省 = 逐键自指（InfoType 即事件键）");
+    }
 }

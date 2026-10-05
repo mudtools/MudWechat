@@ -699,6 +699,15 @@ public class WechatContractGuards
                 nameof(IWechatWorkInternalScheduleCalendarService),
                 nameof(IWechatWorkProviderScheduleCalendarService),
                 nameof(IWechatWorkThirdPartyScheduleCalendarService),
+                // 日程·管理日程族（Schedule 模块）：创建/更新日程、新增/删除日程参与者、获取日历下的日程列表、
+                // 获取日程详情、取消日程 7 端点为三类应用公共面收敛父接口 + 空标记子接口
+                //（创建日程 93648/93703/96824、更新日程 97720/97787/97761、新增日程参与者 97721/97789/97763、
+                // 删除日程参与者 97722/97794/97764、获取日历下的日程列表 97723/97796/97765、
+                // 获取日程详情 97724/97798/97766、取消日程 97725/97799/97767）。
+                nameof(IWechatWorkScheduleService),
+                nameof(IWechatWorkInternalScheduleService),
+                nameof(IWechatWorkProviderScheduleService),
+                nameof(IWechatWorkThirdPartyScheduleService),
             },
             "企业微信官方契约强制 Query 注入（MUD005 已知接受风险），新增 Query 注入接口须评估后扩展本守卫");
     }

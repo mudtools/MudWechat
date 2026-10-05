@@ -8,7 +8,7 @@ namespace Mud.Wechat.Work.DataModels.Schedule;
 
 [JsonSourceGenerationOptions(
     PropertyNameCaseInsensitive = true,
-    PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase,
+    PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower,
     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     WriteIndented = false)]
 [JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.Schedule.AddScheduleCalendarRequest))]
@@ -24,6 +24,23 @@ namespace Mud.Wechat.Work.DataModels.Schedule;
 [JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.Schedule.ScheduleCalendarShare))]
 [JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.Schedule.UpdateScheduleCalendarRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.Schedule.UpdateScheduleCalendarResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.Schedule.AddScheduleAttendeesRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.Schedule.AddScheduleRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.Schedule.AddScheduleResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.Schedule.DelScheduleAttendeesRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.Schedule.DelScheduleRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.Schedule.GetScheduleRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.Schedule.GetScheduleResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.Schedule.ListSchedulesByCalendarRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.Schedule.ListSchedulesByCalendarResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.Schedule.ScheduleAttendee))]
+[JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.Schedule.ScheduleDetail))]
+[JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.Schedule.ScheduleExcludeTime))]
+[JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.Schedule.ScheduleInfo))]
+[JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.Schedule.ScheduleReminders))]
+[JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.Schedule.ScheduleRemindersInfo))]
+[JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.Schedule.UpdateScheduleRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.Schedule.UpdateScheduleResponse))]
 internal partial class ScheduleJsonContext : JsonSerializerContext
 {
 }

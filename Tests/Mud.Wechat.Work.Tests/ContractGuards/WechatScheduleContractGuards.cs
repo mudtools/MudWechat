@@ -20,6 +20,8 @@ namespace Mud.Wechat.Work.Tests.ContractGuards;
 /// <para>
 /// 管理日历族形态：创建/更新/获取/删除日历 4 端点官方对三类应用开放一致，
 /// 全部收敛声明于公共父接口，三个应用类型子接口均为零差异端点空标记。
+/// 管理日程族形态：创建/更新日程 + 新增/删除日程参与者 + 获取日历下的日程列表 + 获取日程详情 + 取消日程 7 端点
+/// 官方对三类应用开放一致，同样为公共父接口 + 三个应用类型空标记子接口。
 /// </para>
 /// </summary>
 /// <remarks>
@@ -30,6 +32,14 @@ namespace Mud.Wechat.Work.Tests.ContractGuards;
 ///（差异仅为 cal_id 与 set_as_default / is_public / is_corp_calendar 三个创建侧属性），本 SDK 以共用扁平结构承载；
 /// 获取日历详情响应的日历管理员字段官方参数表作 <c>admins</c>、三类应用文档页返回示例均作 <c>adminis</c>，以示例为准；
 /// 创建/更新日历整体 errcode 为 0 时响应仍可能携带 fail_result.shares（无效通知范围成员逐成员报错）。
+/// </para>
+/// <para>
+/// 管理日程族官方反直觉点（勿「顺手修正」）：取消日程官方路由为 <c>schedule/del</c>（官方标题作「取消日程」而非删除日程）；
+/// 日程域 7 条路由官方全部即 POST（含仅查询语义的 schedule/get 与 get_by_calendar）；
+/// 更新日程为<b>覆盖式</b>而非增量式，官方「更新重复日程」文档页（96204/96198/96826）与更新日程同一路由、非独立 HTTP API；
+/// 创建/更新日程请求的 schedule 对象官方参数表高度同构（差异仅为创建侧 cal_id 与更新侧 schedule_id），本 SDK 以共用扁平结构承载；
+/// 获取日历下的日程列表分页采用 offset + limit（区别于本仓多数域的 cursor + limit）；
+/// 被取消的日程仍可拉取详情（status = 1），调用方须自行检查 status。
 /// </para>
 /// </remarks>
 public class WechatScheduleContractGuards
@@ -59,6 +69,44 @@ public class WechatScheduleContractGuards
             (typeof(IWechatWorkScheduleCalendarService),
                 nameof(IWechatWorkScheduleCalendarService.DelCalendarAsync),
                 typeof(PostAttribute), "/cgi-bin/oa/calendar/del"),
+        };
+
+    // ------------------------------------------------------------------
+    // 管理日程族路由表：7 条官方路由，全部 POST，挂 /cgi-bin/oa/schedule/ 段。
+    // ------------------------------------------------------------------
+
+    private static readonly (Type Interface, string Method, Type HttpAttribute, string Route)[]
+        ScheduleRoutes =
+        {
+            // 创建日程（自建 93648 / 第三方 93703 / 代开发 96824；三类公共收敛父接口；官方即 POST）。
+            (typeof(IWechatWorkScheduleService),
+                nameof(IWechatWorkScheduleService.AddScheduleAsync),
+                typeof(PostAttribute), "/cgi-bin/oa/schedule/add"),
+            // 更新日程（自建 97720 / 第三方 97787 / 代开发 97761；覆盖式更新；官方即 POST；
+            // 「更新重复日程」说明页 96204/96198/96826 与本端点同一路由、非独立 HTTP API）。
+            (typeof(IWechatWorkScheduleService),
+                nameof(IWechatWorkScheduleService.UpdateScheduleAsync),
+                typeof(PostAttribute), "/cgi-bin/oa/schedule/update"),
+            // 新增日程参与者（自建 97721 / 第三方 97789 / 代开发 97763；增量式；官方即 POST）。
+            (typeof(IWechatWorkScheduleService),
+                nameof(IWechatWorkScheduleService.AddScheduleAttendeesAsync),
+                typeof(PostAttribute), "/cgi-bin/oa/schedule/add_attendees"),
+            // 删除日程参与者（自建 97722 / 第三方 97794 / 代开发 97764；增量式；官方即 POST）。
+            (typeof(IWechatWorkScheduleService),
+                nameof(IWechatWorkScheduleService.DelScheduleAttendeesAsync),
+                typeof(PostAttribute), "/cgi-bin/oa/schedule/del_attendees"),
+            // 获取日历下的日程列表（自建 97723 / 第三方 97796 / 代开发 97765；官方即 POST、分页 offset + limit）。
+            (typeof(IWechatWorkScheduleService),
+                nameof(IWechatWorkScheduleService.ListSchedulesByCalendarAsync),
+                typeof(PostAttribute), "/cgi-bin/oa/schedule/get_by_calendar"),
+            // 获取日程详情（自建 97724 / 第三方 97798 / 代开发 97766；官方即 POST）。
+            (typeof(IWechatWorkScheduleService),
+                nameof(IWechatWorkScheduleService.GetScheduleAsync),
+                typeof(PostAttribute), "/cgi-bin/oa/schedule/get"),
+            // 取消日程（自建 97725 / 第三方 97799 / 代开发 97767；官方标题「取消日程」而路由为 del，勿「顺手归位」）。
+            (typeof(IWechatWorkScheduleService),
+                nameof(IWechatWorkScheduleService.DelScheduleAsync),
+                typeof(PostAttribute), "/cgi-bin/oa/schedule/del"),
         };
 
     // ------------------------------------------------------------------
@@ -93,6 +141,50 @@ public class WechatScheduleContractGuards
     }
 
     // ------------------------------------------------------------------
+    // SC1b：管理日程族全部端点路由与官方契约一致（7 条官方路由）。
+    // ------------------------------------------------------------------
+
+    [Fact]
+    public void ManageScheduleEndpoints_ShouldMatchOfficialRoutes()
+    {
+        ScheduleRoutes.Should().HaveCount(7,
+            "管理日程族 = 创建日程 + 更新日程 + 新增/删除日程参与者 + 获取日历下的日程列表 + 获取日程详情 + 取消日程");
+        ScheduleRoutes.Select(r => r.Route).Should().OnlyContain(
+            r => r.StartsWith("/cgi-bin/oa/schedule/", StringComparison.Ordinal), "管理日程族路由位于 /cgi-bin/oa/schedule/ 段");
+        ScheduleRoutes.Single(r => r.Method == nameof(IWechatWorkScheduleService.DelScheduleAsync)).Route
+            .Should().Be("/cgi-bin/oa/schedule/del", "取消日程官方标题为「取消日程」而路由为 del（勿「顺手归位」为 cancel）");
+
+        AssertRoutes(ScheduleRoutes);
+
+        // 全部官方路由去重清单锁定。
+        ScheduleRoutes.Select(r => r.Route).Distinct().Should().BeEquivalentTo(new[]
+        {
+            "/cgi-bin/oa/schedule/add",
+            "/cgi-bin/oa/schedule/update",
+            "/cgi-bin/oa/schedule/add_attendees",
+            "/cgi-bin/oa/schedule/del_attendees",
+            "/cgi-bin/oa/schedule/get_by_calendar",
+            "/cgi-bin/oa/schedule/get",
+            "/cgi-bin/oa/schedule/del",
+        }, "管理日程族全部官方路由须与官方文档一一对应（7 条）");
+
+        // 无业务负载端点：响应直接用 WechatWorkResponse，不得新建空响应 DTO。
+        var noPayloadMethods = new[]
+        {
+            nameof(IWechatWorkScheduleService.DelScheduleAsync),
+            nameof(IWechatWorkScheduleService.AddScheduleAttendeesAsync),
+            nameof(IWechatWorkScheduleService.DelScheduleAttendeesAsync),
+        };
+        foreach (var method in noPayloadMethods)
+        {
+            typeof(IWechatWorkScheduleService)
+                .GetMethod(method, BindingFlags.Public | BindingFlags.Instance)!
+                .ReturnType.Should().Be(typeof(Task<WechatWorkResponse>),
+                    $"{method} 仅返回 errcode/errmsg，响应类型必须为 WechatWorkResponse");
+        }
+    }
+
+    // ------------------------------------------------------------------
     // SC2：接口层级与生成器注册形态（公共父 4 端点 + 三应用类型空标记子接口）。
     // ------------------------------------------------------------------
 
@@ -109,6 +201,26 @@ public class WechatScheduleContractGuards
                 (typeof(IWechatWorkInternalScheduleCalendarService), 0),
                 (typeof(IWechatWorkProviderScheduleCalendarService), 0),
                 (typeof(IWechatWorkThirdPartyScheduleCalendarService), 0),
+            });
+    }
+
+    // ------------------------------------------------------------------
+    // SC2b：管理日程族接口层级与生成器注册形态（公共父 7 端点 + 三应用类型空标记子接口）。
+    // ------------------------------------------------------------------
+
+    [Fact]
+    public void ManageScheduleInterfaceHierarchy_ShouldMatchOfficialOpenSurfaces()
+    {
+        // 管理日程族：官方对三类应用开放一致的 7 端点全部收敛于父接口；三个子接口零端点空标记。
+        AssertFamily(
+            parent: typeof(IWechatWorkScheduleService),
+            parentImplementation: "WechatWorkScheduleService",
+            parentDeclaredEndpointCount: 7,
+            new[]
+            {
+                (typeof(IWechatWorkInternalScheduleService), 0),
+                (typeof(IWechatWorkProviderScheduleService), 0),
+                (typeof(IWechatWorkThirdPartyScheduleService), 0),
             });
     }
 
@@ -146,7 +258,7 @@ public class WechatScheduleContractGuards
     }
 
     // ------------------------------------------------------------------
-    // SC3：令牌绑定——日程域 4 个接口统一 AccessToken 路由键 + Query 注入。
+    // SC3：令牌绑定——日程域 8 个接口统一 AccessToken 路由键 + Query 注入。
     // ------------------------------------------------------------------
 
     [Fact]
@@ -158,9 +270,13 @@ public class WechatScheduleContractGuards
             typeof(IWechatWorkInternalScheduleCalendarService),
             typeof(IWechatWorkProviderScheduleCalendarService),
             typeof(IWechatWorkThirdPartyScheduleCalendarService),
+            typeof(IWechatWorkScheduleService),
+            typeof(IWechatWorkInternalScheduleService),
+            typeof(IWechatWorkProviderScheduleService),
+            typeof(IWechatWorkThirdPartyScheduleService),
         };
 
-        accessTokenInterfaces.Should().HaveCount(4, "日程域管理日历族 = 公共父接口 + 三应用类型子接口");
+        accessTokenInterfaces.Should().HaveCount(8, "日程域 = 管理日历族 + 管理日程族，各为公共父接口 + 三应用类型子接口");
 
         foreach (var iface in accessTokenInterfaces)
         {
@@ -190,8 +306,10 @@ public class WechatScheduleContractGuards
 
         // 全量守卫：命名空间下所有顶层 DTO 均须登记进 ScheduleJsonContext 且 SerializerClassName 统一为 Schedule
         //（生成物 ScheduleJsonContext 自身亦落同命名空间，按 JsonSerializerContext 派生类型排除）。
-        domainTypes.Should().HaveCount(13,
-            "日程模块契约面类型数漂移须先核对官方文档再同批调整本守卫（端点级 7：创建/更新/获取请求响应 + 删除请求；复用型 6：calendar 对象 + 公开范围 + 通知成员 + fail_result + fail 成员 + 响应日历信息）");
+        domainTypes.Should().HaveCount(30,
+            "日程模块契约面类型数漂移须先核对官方文档再同批调整本守卫（端点级 18：管理日历 7 = 创建/更新/获取请求响应 + 删除请求、" +
+            "管理日程 11 = 创建/更新/获取/获取日历下日程列表请求响应 + 取消/新增参与者/删除参与者请求；复用型 12：日历族 6 = calendar 对象 + 公开范围 + 通知成员 + fail_result + fail 成员 + 响应日历信息、" +
+            "日程族 6 = schedule 对象 + 请求提醒 + 响应提醒 + 参与者 + 排除日期 + 响应日程详情）");
 
         foreach (var type in domainTypes)
         {
@@ -214,6 +332,15 @@ public class WechatScheduleContractGuards
             typeof(ScheduleCalendar), typeof(ScheduleCalendarInfo),
             typeof(ScheduleCalendarPublicRange), typeof(ScheduleCalendarShare),
             typeof(ScheduleCalendarFailResult), typeof(ScheduleCalendarFailShare),
+            typeof(AddScheduleRequest), typeof(AddScheduleResponse),
+            typeof(UpdateScheduleRequest), typeof(UpdateScheduleResponse),
+            typeof(GetScheduleRequest), typeof(GetScheduleResponse),
+            typeof(ListSchedulesByCalendarRequest), typeof(ListSchedulesByCalendarResponse),
+            typeof(DelScheduleRequest),
+            typeof(AddScheduleAttendeesRequest), typeof(DelScheduleAttendeesRequest),
+            typeof(ScheduleInfo), typeof(ScheduleDetail),
+            typeof(ScheduleReminders), typeof(ScheduleRemindersInfo),
+            typeof(ScheduleAttendee), typeof(ScheduleExcludeTime),
         };
         domainTypes.Should().Contain(endpointContractTypes, "端点级请求/响应 DTO 必须落位于日程域命名空间");
     }
@@ -250,6 +377,45 @@ public class WechatScheduleContractGuards
         JsonNameShouldBe(typeof(ScheduleCalendar), nameof(ScheduleCalendar.IsCorpCalendar), "is_corp_calendar");
         JsonNameShouldBe(typeof(ScheduleCalendarPublicRange), nameof(ScheduleCalendarPublicRange.Partyids), "partyids");
         JsonNameShouldBe(typeof(DelScheduleCalendarRequest), nameof(DelScheduleCalendarRequest.CalId), "cal_id");
+
+        // 创建/更新日程请求的 schedule 对象官方参数表高度同构，本 SDK 以共用扁平结构承载（Calendar 家族同型先例）。
+        typeof(AddScheduleRequest).GetProperty(nameof(AddScheduleRequest.Schedule))!
+            .PropertyType.Should().Be(typeof(ScheduleInfo), "创建日程 schedule 对象与更新日程共用同一扁平结构");
+        typeof(UpdateScheduleRequest).GetProperty(nameof(UpdateScheduleRequest.Schedule))!
+            .PropertyType.Should().Be(typeof(ScheduleInfo), "更新日程 schedule 对象与创建日程共用同一扁平结构");
+
+        // 获取日程详情/日历下日程列表两读端点共用响应侧日程对象（字段差异以可空性承载）。
+        typeof(GetScheduleResponse).GetProperty(nameof(GetScheduleResponse.ScheduleList))!
+            .PropertyType.Should().Be(typeof(List<ScheduleDetail>), "获取日程详情与日历下日程列表响应共用同一日程对象");
+        typeof(ListSchedulesByCalendarResponse).GetProperty(nameof(ListSchedulesByCalendarResponse.ScheduleList))!
+            .PropertyType.Should().Be(typeof(List<ScheduleDetail>), "获取日历下的日程列表与获取日程详情响应共用同一日程对象");
+
+        // 管理日程族关键字段名照抄官方原文。
+        JsonNameShouldBe(typeof(AddScheduleRequest), nameof(AddScheduleRequest.Schedule), "schedule");
+        JsonNameShouldBe(typeof(AddScheduleRequest), nameof(AddScheduleRequest.AgentId), "agentid");
+        JsonNameShouldBe(typeof(AddScheduleResponse), nameof(AddScheduleResponse.ScheduleId), "schedule_id");
+        JsonNameShouldBe(typeof(UpdateScheduleRequest), nameof(UpdateScheduleRequest.SkipAttendees), "skip_attendees");
+        JsonNameShouldBe(typeof(UpdateScheduleRequest), nameof(UpdateScheduleRequest.OpMode), "op_mode");
+        JsonNameShouldBe(typeof(UpdateScheduleRequest), nameof(UpdateScheduleRequest.OpStartTime), "op_start_time");
+        JsonNameShouldBe(typeof(UpdateScheduleResponse), nameof(UpdateScheduleResponse.ScheduleId), "schedule_id");
+        JsonNameShouldBe(typeof(GetScheduleRequest), nameof(GetScheduleRequest.ScheduleIdList), "schedule_id_list");
+        JsonNameShouldBe(typeof(ListSchedulesByCalendarRequest), nameof(ListSchedulesByCalendarRequest.CalId), "cal_id");
+        JsonNameShouldBe(typeof(DelScheduleRequest), nameof(DelScheduleRequest.ScheduleId), "schedule_id");
+        JsonNameShouldBe(typeof(DelScheduleRequest), nameof(DelScheduleRequest.OpMode), "op_mode");
+        JsonNameShouldBe(typeof(DelScheduleRequest), nameof(DelScheduleRequest.OpStartTime), "op_start_time");
+        JsonNameShouldBe(typeof(ScheduleInfo), nameof(ScheduleInfo.ScheduleId), "schedule_id");
+        JsonNameShouldBe(typeof(ScheduleInfo), nameof(ScheduleInfo.CalId), "cal_id");
+        JsonNameShouldBe(typeof(ScheduleInfo), nameof(ScheduleInfo.IsWholeDay), "is_whole_day");
+        JsonNameShouldBe(typeof(ScheduleReminders), nameof(ScheduleReminders.RemindBeforeEventSecs), "remind_before_event_secs");
+        JsonNameShouldBe(typeof(ScheduleReminders), nameof(ScheduleReminders.RemindTimeDiffs), "remind_time_diffs");
+        JsonNameShouldBe(typeof(ScheduleReminders), nameof(ScheduleReminders.IsCustomRepeat), "is_custom_repeat");
+        JsonNameShouldBe(typeof(ScheduleReminders), nameof(ScheduleReminders.RepeatUntil), "repeat_until");
+        JsonNameShouldBe(typeof(ScheduleReminders), nameof(ScheduleReminders.RepeatDayOfWeek), "repeat_day_of_week");
+        JsonNameShouldBe(typeof(ScheduleReminders), nameof(ScheduleReminders.RepeatDayOfMonth), "repeat_day_of_month");
+        JsonNameShouldBe(typeof(ScheduleRemindersInfo), nameof(ScheduleRemindersInfo.ExcludeTimeList), "exclude_time_list");
+        JsonNameShouldBe(typeof(ScheduleAttendee), nameof(ScheduleAttendee.ResponseStatus), "response_status");
+        JsonNameShouldBe(typeof(ScheduleAttendee), nameof(ScheduleAttendee.EventTime), "event_time");
+        JsonNameShouldBe(typeof(ScheduleDetail), nameof(ScheduleDetail.Sequence), "sequence");
     }
 
     /// <summary>路由表断言：方法必须存在、必须声明对应 HTTP 方法特性且路由与官方契约一致。</summary>

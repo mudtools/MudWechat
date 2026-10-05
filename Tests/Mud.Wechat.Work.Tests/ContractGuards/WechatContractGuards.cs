@@ -769,6 +769,24 @@ public class WechatContractGuards
                 nameof(IWechatWorkInternalWedriveFileService),
                 nameof(IWechatWorkProviderWedriveFileService),
                 nameof(IWechatWorkThirdPartyWedriveFileService),
+                // 微盘·管理文件权限族（Wedrive 模块）：6 端点为三类应用公共面收敛父接口 + 空标记子接口
+                //（新增成员 93658/95860/96848、删除成员 97888/97959/97922、分享设置 97889/97960/97923、
+                // 获取分享链接 97890/97961/97924、获取文件权限信息 97891/97962/97925、修改文件安全设置 97892/97965/97926）。
+                nameof(IWechatWorkWedriveFileAclService),
+                nameof(IWechatWorkInternalWedriveFileAclService),
+                nameof(IWechatWorkProviderWedriveFileAclService),
+                nameof(IWechatWorkThirdPartyWedriveFileAclService),
+                // 微盘·版本和容量管理族（Wedrive 模块）：官方单文档页承载 2 条路由，三类应用公共面收敛父接口 + 空标记子接口
+                //（获取盘专业版信息 + 获取盘容量信息 95856/95861/96849；空请求体无请求 DTO）。
+                nameof(IWechatWorkWedriveCapacityService),
+                nameof(IWechatWorkInternalWedriveCapacityService),
+                nameof(IWechatWorkProviderWedriveCapacityService),
+                nameof(IWechatWorkThirdPartyWedriveCapacityService),
+                // 微盘·高级功能账号管理族（Wedrive 模块）：3 端点官方仅自建应用开放（代开发/第三方标注「暂不支持」），
+                // 零端点父接口 + 仅自建子接口承载；路由挂 /cgi-bin/wedrive/vip/ 段
+                //（分配 99512、取消 99513、获取列表 99514）。
+                nameof(IWechatWorkWedriveVipService),
+                nameof(IWechatWorkInternalWedriveVipService),
             },
             "企业微信官方契约强制 Query 注入（MUD005 已知接受风险），新增 Query 注入接口须评估后扩展本守卫");
     }

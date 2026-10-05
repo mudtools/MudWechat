@@ -30,6 +30,7 @@ namespace Mud.Wechat.Work;
 [HttpClientApi(RegistryGroupName = "Checkin",
     TokenManage = nameof(IWechatAppManager), InheritedFrom = nameof(WechatWorkCheckinRuleService))]
 [Token(TokenType = WechatTokenTypes.AccessToken,
+      TokenManagerKey = WechatTokenManagerKeys.InternalAccessToken,
       InjectionMode = TokenInjectionMode.Query, Name = "access_token")]
 public interface IWechatWorkInternalCheckinRuleService : IWechatWorkCheckinRuleService
 {

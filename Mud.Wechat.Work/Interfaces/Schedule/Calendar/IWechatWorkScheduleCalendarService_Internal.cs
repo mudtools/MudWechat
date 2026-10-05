@@ -26,6 +26,7 @@ namespace Mud.Wechat.Work;
 [HttpClientApi(RegistryGroupName = "Schedule",
     TokenManage = nameof(IWechatAppManager), InheritedFrom = nameof(WechatWorkScheduleCalendarService))]
 [Token(TokenType = WechatTokenTypes.AccessToken,
+      TokenManagerKey = WechatTokenManagerKeys.InternalAccessToken,
       InjectionMode = TokenInjectionMode.Query, Name = "access_token")]
 public interface IWechatWorkInternalScheduleCalendarService : IWechatWorkScheduleCalendarService
 {

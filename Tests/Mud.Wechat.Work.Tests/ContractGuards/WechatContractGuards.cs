@@ -663,6 +663,22 @@ public class WechatContractGuards
                 nameof(IWechatWorkInternalWedocSmartDocService),
                 nameof(IWechatWorkThirdPartyWedocSmartDocService),
                 nameof(IWechatWorkProviderWedocSmartDocService),
+                // 文档·设置文档权限族（Wedoc 模块）：9 个端点为三类应用公共面
+                //（文档权限：获取权限信息 97461/97471、修改加入规则 97778/97792、修改成员与权限 97781/97795、修改安全设置 97782/97797；
+                //  智能表格内容权限（同一文档页 5 路由）99935/100193：查询子表权限、更新子表权限、
+                //  新增指定成员额外权限、更新指定成员额外权限、删除指定成员额外权限；
+                // 父接口 + 三个应用类型空标记子接口）。
+                nameof(IWechatWorkWedocDocPermissionService),
+                nameof(IWechatWorkInternalWedocDocPermissionService),
+                nameof(IWechatWorkThirdPartyWedocDocPermissionService),
+                nameof(IWechatWorkProviderWedocDocPermissionService),
+                // 文档·管理收集表族（Wedoc 模块）：5 个端点为三类应用公共面
+                //（创建 97462/97472、编辑 97816/97820、获取信息 97817/97821、统计查询 97818/97822、读取答案 97819/97823；
+                // 父接口 + 三个应用类型空标记子接口）。
+                nameof(IWechatWorkWedocFormService),
+                nameof(IWechatWorkInternalWedocFormService),
+                nameof(IWechatWorkThirdPartyWedocFormService),
+                nameof(IWechatWorkProviderWedocFormService),
                 // 打卡·打卡规则族（Checkin 模块）：获取员工打卡规则三类公共收敛父接口；
                 // 获取企业所有打卡规则 + 管理打卡规则 4 写端点为自建/代开发差异端点，第三方暂不支持零端点空标记。
                 nameof(IWechatWorkCheckinRuleService),

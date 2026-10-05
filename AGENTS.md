@@ -94,7 +94,7 @@ scripts/                      # verify-build / audit-config-keys / GenerateJsonC
 | 审批 | `Interfaces/Approval/`（审批申请数据域 + 审批模板域 + 假期管理域 + 审批流程引擎域四族；差异端点在子接口：获取审批数据（旧）官方仅自建、创建/更新模板自建与代开发开放（第三方官方暂不支持）、复制/更新模板到企业官方仅第三方） | `Approval/` | `Approval` / `AddApprovalApi()` |
 | 邮件 | `Interfaces/Mail/{Send,Receive,Account,Group,PublicMail,Vip,User,UserOption}/`（按功能族分子目录；发送/接收族为三类应用公共面 + 空标记子接口，普通/日程/会议三端点共用 compose_send 路由；其余六族官方仅自建开放，零端点父接口 + 仅自建子接口承载） | `Mail/` | `Mail` / `AddMailApi()` |
 | 紧急通知 | `Interfaces/Emergency/`（发起语音电话 + 获取接听状态官方仅自建开放，零端点父接口 + 仅自建子接口承载；代开发文档页与自建页逐字一致但权限表标注「暂不支持」，不设代开发/第三方子接口） | `Emergency/` | `Emergency` / `AddEmergencyApi()` |
-| 文档 | `Interfaces/Wedoc/{Document,Spreadsheet,SmartSheet,SmartDoc}/`（管理文档族在 `Interfaces/Wedoc/` 根；按官方菜单项分族，智能表格内容族按子表/视图/字段/记录/编组五组资源收敛在单一 `SmartSheet/` 子目录，智能文档内容族按发布与可见范围/页面/内容块/导出/数据表五组资源收敛在单一 `SmartDoc/` 子目录；五族均为三类应用公共面父接口 + 三个空标记子接口） | `Wedoc/` | `Wedoc` / `AddWedocApi()` |
+| 文档 | `Interfaces/Wedoc/{Document,Spreadsheet,SmartSheet,SmartDoc,DocPermission,Form}/`（管理文档族在 `Interfaces/Wedoc/` 根；按官方菜单项分族，智能表格内容族按子表/视图/字段/记录/编组五组资源收敛在单一 `SmartSheet/` 子目录，智能文档内容族按发布与可见范围/页面/内容块/导出/数据表五组资源收敛在单一 `SmartDoc/` 子目录，设置文档权限族按文档权限/智能表格内容权限两组资源收敛在单一 `DocPermission/` 子目录——官方「管理智能表格内容权限」一页承载 5 个路由、自建与第三方共用文档页，收集表族收敛在单一 `Form/` 子目录；七族均为三类应用公共面父接口 + 三个空标记子接口） | `Wedoc/` | `Wedoc` / `AddWedocApi()` |
 | 打卡 | `Interfaces/Checkin/{Rule,Record,Report,Schedule,Device}/`（规则族：获取员工打卡规则三类公共收敛父接口，获取企业所有打卡规则 + 管理打卡规则 4 写端点为自建/代开发差异端点、第三方零端点空标记；记录族 + 报表族：获取打卡记录/日报/月报三类开放但第三方文档页为旧字段结构——同路由不同构，零端点父接口 + 三分支子接口分形态承载，补卡/添加打卡记录/录入人脸官方仅自建；排班族 + 设备族：三类应用公共面收敛父接口 + 空标记子接口，设备打卡数据路由挂 `/cgi-bin/hardware/` 域） | `Checkin/{Rule,Record,Report,Schedule,Device}/`（子目录仅作组织，命名空间统一 `Checkin` 段） | `Checkin` / `AddCheckinApi()` |
 | 日程 | `Interfaces/Schedule/{Calendar,Schedule}/`（管理日历族：创建/更新/获取/删除日历 4 端点三类应用公共面收敛父接口 + 空标记子接口；创建日历路由官方即 `calendar/add` 而非 create，更新为覆盖式，获取日历响应管理员字段官方示例作 `adminis`。管理日程族：创建/更新日程 + 新增/删除日程参与者 + 获取日历下的日程列表 + 获取日程详情 + 取消日程 7 端点三类应用公共面收敛父接口 + 空标记子接口；官方「更新重复日程」文档页与更新日程同一路由非独立端点，取消日程官方标题「取消」而路由 `schedule/del`，日程列表分页 offset+limit，被取消日程仍可拉取须自查 status） | `Schedule/{Calendar,Schedule}/`（子目录仅作组织，命名空间统一 `Schedule` 段） | `Schedule` / `AddScheduleApi()` |
 
@@ -181,6 +181,8 @@ scripts/                      # verify-build / audit-config-keys / GenerateJsonC
 通用守卫 `WechatContractGuards.cs`（G1~G9）：全仓 `Mud.HttpUtils*` 单一版本（防混版 `TypeLoadException`）；配置 DTO 禁 `required`；`WechatTokenTypes` 前缀；失效码集合 `{40014,42001,42007,42009,42011}` 与判定器同源；Query 令牌白名单未放宽且子接口仅覆盖官方实际开放的应用类型；授权端点路由与官方一致（`get_customized_auth_url` 不带 `[Token]`）；Query 凭据参数名 ⊆ 脱敏词表 ∪ 显式豁免（**豁免自过期**，须附追踪号）；DI 桥接三接口同实例；`cancel_auth` 不得「未命中回退全部应用」。
 
 域守卫通用形态：令牌绑定（`Wechat.AccessToken` + Query 注入）、新增 DTO 的上下文登记、**官方未开放 ⇒ 零端点**、继承链子接口集合不漂移、父接口 `IsAbstract` + 子接口经 `InheritedFrom` 父实现类。
+
+全仓另有归属域守卫 `WechatTokenOwnerContractGuards.cs`（TO1~TO3）：按程序集反射枚举全部应用类型子接口（数量下限防枚举空跑），锁定族别 ↔ `TokenManagerKey` 归属域一一对应、`TokenType` → 官方 Query 参数名不漂移、声明的键被恢复注册表键集（`WechatTokenRouting.OwnedKeys`）覆盖且自建/非自建不交叉。切换器契约引导由 `Abstractions.Tests/WechatAppContextSwitcherTests` 锁定（`UseCorpScope` 必在契约上且返回 `IDisposable`；`SetCorp` 必带 `[Obsolete]` 指向它；实现类**不得**标 `[Obsolete]`——废弃标注只放抽象层）。
 
 多应用守卫（`Abstractions.Tests`，MA1~MA4）是**方法体文本断言**（花括号配平），签名漂移须同步更新。
 

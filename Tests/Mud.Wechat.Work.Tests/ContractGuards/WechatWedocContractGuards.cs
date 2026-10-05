@@ -16,11 +16,15 @@ namespace Mud.Wechat.Work.Tests.ContractGuards;
 
 /// <summary>
 /// 文档模块（Wedoc 模块）契约守卫：路由表、接口层级、开放面与令牌绑定锁定
-/// （管理文档族 / 管理文档内容族 / 管理表格内容族 / 管理智能表格内容族 / 管理智能文档内容族五族均为三类应用公共面收敛父接口 + 空标记子接口；
+/// （管理文档族 / 管理文档内容族 / 管理表格内容族 / 管理智能表格内容族 / 管理智能文档内容族 /
+/// 设置文档权限族 / 管理收集表族七族均为三类应用公共面收敛父接口 + 空标记子接口；
 /// 编辑文档内容与编辑表格内容为批量更新形态，单次操作数量官方分别限制 30 与 5；
 /// 管理智能表格内容族为 20 个端点（子表 4 / 视图 4 / 字段 4 / 记录 4 / 编组 4），单表上限与批量建议官方另有约束；
 /// 管理智能文档内容族为 17 个端点（发布与可见范围 3 / 页面 4 / 内容块 4 / 导出 2 / 数据表 4），发布耗时、分栏数量、分批大小与数据表 after_id 官方另有约束；
-/// 官方文档存在 verison / blod / property_ganttobect / typ / filed_id 等拼写陷阱，
+/// 设置文档权限族为 9 个端点（文档权限 4 / 智能表格内容权限 5，官方「管理智能表格内容权限」一页承载 5 个路由），
+/// 成员批次、管理员约束、额外权限条数（至多 20）与成员数（至多 50）官方另有约束；
+/// 管理收集表族为 5 个端点，问题数量、题型设置、定时重复互斥与分批大小官方另有约束；
+/// 官方文档存在 verison / blod / property_ganttobect / typ / filed_id / safty 等拼写陷阱，
 /// 字段名照抄官方原文，守卫锁定防「顺手修正」）。
 /// </summary>
 public class WechatWedocContractGuards
@@ -38,6 +42,10 @@ public class WechatWedocContractGuards
     private const string WedocSmartSheetParentImplementationClassName = "WechatWorkWedocSmartSheetService";
 
     private const string WedocSmartDocParentImplementationClassName = "WechatWorkWedocSmartDocService";
+
+    private const string WedocDocPermissionParentImplementationClassName = "WechatWorkWedocDocPermissionService";
+
+    private const string WedocFormParentImplementationClassName = "WechatWorkWedocFormService";
 
     private const string WedocRegistryGroupName = "Wedoc";
 
@@ -231,6 +239,67 @@ public class WechatWedocContractGuards
     };
 
     /// <summary>
+    /// 设置文档权限族官方路由表（父接口 9 条端点，官方即 POST，勿改 GET）。
+    /// 按官方菜单结构分两组：文档权限 4 / 智能表格内容权限 5（官方「管理智能表格内容权限」一个文档页承载 5 个路由，
+    /// 自建与第三方共用同一文档页，代开发独立成页）。
+    /// </summary>
+    private static readonly (Type Interface, string Method, string Route)[] WedocDocPermissionRoutes =
+    {
+        // —— 文档权限 ——
+        // 获取文档权限信息（自建/第三方 97461、代开发 97471）：适用于文档、智能文档、表格、智能表格。
+        (typeof(IWechatWorkWedocDocPermissionService),
+            nameof(IWechatWorkWedocDocPermissionService.GetDocAuthAsync), "/cgi-bin/wedoc/doc_get_auth"),
+        // 修改文档加入规则（自建/第三方 97778、代开发 97792）：路由为 mod_doc_join_rule（官方原文 mod 而非 modify）。
+        (typeof(IWechatWorkWedocDocPermissionService),
+            nameof(IWechatWorkWedocDocPermissionService.UpdateDocJoinRuleAsync), "/cgi-bin/wedoc/mod_doc_join_rule"),
+        // 修改文档成员与权限（自建/第三方 97781、代开发 97795）：两个成员列表批次大小均最大 100，成员仅支持按人配置。
+        (typeof(IWechatWorkWedocDocPermissionService),
+            nameof(IWechatWorkWedocDocPermissionService.UpdateDocMemberAsync), "/cgi-bin/wedoc/mod_doc_member"),
+        // 修改文档安全设置（自建/第三方 97782、代开发 97797）：官方路由拼写为 safty（safety 笔误），照抄官方原文。
+        (typeof(IWechatWorkWedocDocPermissionService),
+            nameof(IWechatWorkWedocDocPermissionService.UpdateDocSaftySettingAsync), "/cgi-bin/wedoc/mod_doc_safty_setting"),
+        // —— 智能表格内容权限（smartsheet/content_priv/ 前缀，与智能表格内容族的 smartsheet/ 直下路由区分）——
+        // 查询智能表格子表权限（自建/第三方 99935、代开发 100193）：rule_id_list 官方示例以字符串占位而参数表为 uint32[]，以参数表为准。
+        (typeof(IWechatWorkWedocDocPermissionService),
+            nameof(IWechatWorkWedocDocPermissionService.GetSheetPrivAsync), "/cgi-bin/wedoc/smartsheet/content_priv/get_sheet_priv"),
+        // 更新智能表格子表权限（自建/第三方 99935、代开发 100193）：每个智能表格有且只有一个全员权限。
+        (typeof(IWechatWorkWedocDocPermissionService),
+            nameof(IWechatWorkWedocDocPermissionService.UpdateSheetPrivAsync), "/cgi-bin/wedoc/smartsheet/content_priv/update_sheet_priv"),
+        // 新增指定成员额外权限（自建/第三方 99935、代开发 100193）：额外权限至多 20 条，权限规则名称不可重复。
+        (typeof(IWechatWorkWedocDocPermissionService),
+            nameof(IWechatWorkWedocDocPermissionService.CreateSheetPrivRuleAsync), "/cgi-bin/wedoc/smartsheet/content_priv/create_rule"),
+        // 更新指定成员额外权限（自建/第三方 99935、代开发 100193）：路由为 mod_rule_member，成员最多可设置 50 个。
+        (typeof(IWechatWorkWedocDocPermissionService),
+            nameof(IWechatWorkWedocDocPermissionService.UpdateSheetPrivRuleMemberAsync), "/cgi-bin/wedoc/smartsheet/content_priv/mod_rule_member"),
+        // 删除指定成员额外权限（自建/第三方 99935、代开发 100193）。
+        (typeof(IWechatWorkWedocDocPermissionService),
+            nameof(IWechatWorkWedocDocPermissionService.DeleteSheetPrivRuleAsync), "/cgi-bin/wedoc/smartsheet/content_priv/delete_rule"),
+    };
+
+    /// <summary>
+    /// 管理收集表族官方路由表（父接口 5 条端点，官方即 POST，勿改 GET）。
+    /// 官方「编辑收集表」标题对应 modify_form 路由（Modify 动词，区别于 KF 域 mod_* 的 Update 译法）。
+    /// </summary>
+    private static readonly (Type Interface, string Method, string Route)[] WedocFormRoutes =
+    {
+        // 创建收集表（自建/第三方 97462、代开发 97472）：问题数组不超过 200 个。
+        (typeof(IWechatWorkWedocFormService),
+            nameof(IWechatWorkWedocFormService.CreateFormAsync), "/cgi-bin/wedoc/create_form"),
+        // 编辑收集表（自建/第三方 97816、代开发 97820）：oper=1 全量修改问题、oper=2 全量修改设置。
+        (typeof(IWechatWorkWedocFormService),
+            nameof(IWechatWorkWedocFormService.ModifyFormAsync), "/cgi-bin/wedoc/modify_form"),
+        // 获取收集表信息（自建/第三方 97817、代开发 97821）：repeated_id 是统计与答案接口的定位字段。
+        (typeof(IWechatWorkWedocFormService),
+            nameof(IWechatWorkWedocFormService.GetFormInfoAsync), "/cgi-bin/wedoc/get_form_info"),
+        // 收集表的统计信息查询（自建/第三方 97818、代开发 97822）：limit 最大 10000，cursor 分页首次不传。
+        (typeof(IWechatWorkWedocFormService),
+            nameof(IWechatWorkWedocFormService.GetFormStatisticAsync), "/cgi-bin/wedoc/get_form_statistic"),
+        // 读取收集表答案（自建/第三方 97819、代开发 97823）：answer_ids 批次大小最大 100。
+        (typeof(IWechatWorkWedocFormService),
+            nameof(IWechatWorkWedocFormService.GetFormAnswerAsync), "/cgi-bin/wedoc/get_form_answer"),
+    };
+
+    /// <summary>
     /// 契约守卫 WD1：管理文档族全部端点路由必须与官方契约一致——
     /// 5 个端点为三类应用公共面，全部收敛父接口；del_doc / doc_share 为官方原文路由，勿「顺手改名」。
     /// </summary>
@@ -395,6 +464,59 @@ public class WechatWedocContractGuards
     }
 
     /// <summary>
+    /// 契约守卫 WD12：设置文档权限族全部端点路由必须与官方契约一致——
+    /// 9 个端点为三类应用公共面（文档权限 4 + 智能表格内容权限 5），全部收敛父接口；
+    /// 官方「管理智能表格内容权限」一个文档页承载 5 个路由，故 6 个官方文档页对应 9 个端点。
+    /// 官方契约陷阱：① <c>mod_doc_safty_setting</c> 的 safty 为官方原文拼写（safety 笔误），勿「顺手修正」；
+    /// ② 智能表格内容权限路由带 <c>smartsheet/content_priv/</c> 双段前缀，不得与智能表格内容族的
+    /// <c>smartsheet/</c> 直下路由混用；③ <c>rule_id_list</c> 官方示例以字符串占位而参数表为 uint32 数组，以参数表为准。
+    /// </summary>
+    [Fact]
+    public void WedocDocPermissionEndpoints_ShouldMatchOfficialRoutes()
+    {
+        WedocDocPermissionRoutes.Should().HaveCount(9,
+            "设置文档权限族 9 个端点（文档权限 4 + 智能表格内容权限 5）为三类应用公共面，全部收敛父接口");
+        WedocDocPermissionRoutes.Select(r => r.Route).Distinct().Should().HaveCount(9, "各端点路由互不重复");
+
+        // 文档权限组 4 条路由直接落在 wedoc/ 下（无子目录前缀）。
+        WedocDocPermissionRoutes.Take(4).Select(r => r.Route)
+            .Should().OnlyContain(r => r.StartsWith("/cgi-bin/wedoc/mod_") || r.StartsWith("/cgi-bin/wedoc/doc_"),
+                "文档权限组路由必须落在 wedoc/ 直下（doc_get_auth / mod_doc_* 官方原文）");
+
+        // 智能表格内容权限组 5 条路由带 smartsheet/content_priv/ 双段前缀。
+        WedocDocPermissionRoutes.Skip(4).Select(r => r.Route)
+            .Should().OnlyContain(r => r.StartsWith("/cgi-bin/wedoc/smartsheet/content_priv/"),
+                "智能表格内容权限组路由必须落在 wedoc/smartsheet/content_priv/ 下，"
+                + "不得与智能表格内容族的 smartsheet/ 直下路由混用");
+        WedocDocPermissionRoutes.Skip(4).Select(r => r.Route)
+            .Should().Contain("/cgi-bin/wedoc/smartsheet/content_priv/mod_rule_member",
+                "官方更新指定成员额外权限路由为 mod_rule_member（mod 而非 modify/update），照抄官方原文");
+
+        AssertRoutes(WedocDocPermissionRoutes);
+    }
+
+    /// <summary>
+    /// 契约守卫 WD13：管理收集表族全部端点路由必须与官方契约一致——
+    /// 5 个端点为三类应用公共面，全部收敛父接口；官方「编辑收集表」对应 modify_form 路由
+    /// （Modify 动词，对齐 CorpGroup 域 modify_rule 的既有译法，区别于 KF 域 mod_* 的 Update 译法），勿归一为 update_form。
+    /// </summary>
+    [Fact]
+    public void WedocFormEndpoints_ShouldMatchOfficialRoutes()
+    {
+        WedocFormRoutes.Should().HaveCount(5,
+            "管理收集表族 5 个端点（创建/编辑/获取信息/统计查询/读取答案）为三类应用公共面，全部收敛父接口");
+        WedocFormRoutes.Select(r => r.Route).Distinct().Should().HaveCount(5, "各端点路由互不重复");
+        WedocFormRoutes.Select(r => r.Route)
+            .Should().OnlyContain(r => r.StartsWith("/cgi-bin/wedoc/") && r.Contains("form"),
+                "管理收集表族路由必须落在 wedoc/ 下且沿用官方 form 词根，不得与智能表格内容域 smartsheet/ 混用");
+        WedocFormRoutes.Select(r => r.Route)
+            .Should().Contain("/cgi-bin/wedoc/modify_form",
+                "官方编辑收集表路由为 modify_form，方法名沿用 Modify 动词，不得归一为 update_form");
+
+        AssertRoutes(WedocFormRoutes);
+    }
+
+    /// <summary>
     /// 契约守卫 WD4：文档模块接口层级与生成器注册形态——五族公共端点收敛于 IsAbstract 父接口、
     /// 三个应用类型子接口均为空标记（能力漂移守卫：子接口自身声明端点数必须为 0）。
     /// </summary>
@@ -510,10 +632,54 @@ public class WechatWedocContractGuards
             new[] { (typeof(IWechatWorkInternalWedocSmartDocService), 0),
                     (typeof(IWechatWorkThirdPartyWedocSmartDocService), 0),
                     (typeof(IWechatWorkProviderWedocSmartDocService), 0) });
+
+        // —— 设置文档权限族 ——
+        var docPermissionChildren = new[]
+        {
+            typeof(IWechatWorkInternalWedocDocPermissionService),
+            typeof(IWechatWorkThirdPartyWedocDocPermissionService),
+            typeof(IWechatWorkProviderWedocDocPermissionService),
+        };
+
+        foreach (var child in docPermissionChildren)
+        {
+            child.Should().BeAssignableTo(typeof(IWechatWorkWedocDocPermissionService),
+                $"{child.Name} 必须继承公共父接口 IWechatWorkWedocDocPermissionService");
+        }
+
+        AssertFamilyHierarchy(
+            typeof(IWechatWorkWedocDocPermissionService),
+            WedocDocPermissionParentImplementationClassName,
+            expectedDeclaredMethods: 9,
+            new[] { (typeof(IWechatWorkInternalWedocDocPermissionService), 0),
+                    (typeof(IWechatWorkThirdPartyWedocDocPermissionService), 0),
+                    (typeof(IWechatWorkProviderWedocDocPermissionService), 0) });
+
+        // —— 管理收集表族 ——
+        var formChildren = new[]
+        {
+            typeof(IWechatWorkInternalWedocFormService),
+            typeof(IWechatWorkThirdPartyWedocFormService),
+            typeof(IWechatWorkProviderWedocFormService),
+        };
+
+        foreach (var child in formChildren)
+        {
+            child.Should().BeAssignableTo(typeof(IWechatWorkWedocFormService),
+                $"{child.Name} 必须继承公共父接口 IWechatWorkWedocFormService");
+        }
+
+        AssertFamilyHierarchy(
+            typeof(IWechatWorkWedocFormService),
+            WedocFormParentImplementationClassName,
+            expectedDeclaredMethods: 5,
+            new[] { (typeof(IWechatWorkInternalWedocFormService), 0),
+                    (typeof(IWechatWorkThirdPartyWedocFormService), 0),
+                    (typeof(IWechatWorkProviderWedocFormService), 0) });
     }
 
     /// <summary>
-    /// 契约守卫 WD5：令牌绑定——文档模块全部 20 个接口统一消费 AccessToken 路由键并以 Query 注入
+    /// 契约守卫 WD5：令牌绑定——文档模块全部 28 个接口统一消费 AccessToken 路由键并以 Query 注入
     /// （官方契约 access_token；第三方/代开发消费授权企业级令牌，scope = authCorpId）。
     /// </summary>
     [Fact]
@@ -541,6 +707,14 @@ public class WechatWedocContractGuards
             typeof(IWechatWorkInternalWedocSmartDocService),
             typeof(IWechatWorkThirdPartyWedocSmartDocService),
             typeof(IWechatWorkProviderWedocSmartDocService),
+            typeof(IWechatWorkWedocDocPermissionService),
+            typeof(IWechatWorkInternalWedocDocPermissionService),
+            typeof(IWechatWorkThirdPartyWedocDocPermissionService),
+            typeof(IWechatWorkProviderWedocDocPermissionService),
+            typeof(IWechatWorkWedocFormService),
+            typeof(IWechatWorkInternalWedocFormService),
+            typeof(IWechatWorkThirdPartyWedocFormService),
+            typeof(IWechatWorkProviderWedocFormService),
         };
 
         interfaces.Should().OnlyHaveUniqueItems("令牌守卫覆盖的接口清单不得重复");
@@ -823,11 +997,48 @@ public class WechatWedocContractGuards
             typeof(UpdateSmartDocDataTableRequest), typeof(UpdateSmartDocDataTableResponse),
             typeof(DeleteSmartDocDataTableRequest),
             typeof(SmartDocDataTableInfo),
+            // 设置文档权限族——文档权限。
+            typeof(GetWedocDocAuthRequest), typeof(GetWedocDocAuthResponse),
+            typeof(UpdateWedocDocJoinRuleRequest), typeof(UpdateWedocDocMemberRequest),
+            typeof(UpdateWedocDocSafetySettingRequest),
+            typeof(WedocDocAccessRule), typeof(WedocDocSecureSetting), typeof(WedocDocWatermark),
+            typeof(WedocDocMember), typeof(WedocDocCoAuth),
+            // 设置文档权限族——智能表格内容权限。
+            typeof(GetWedocSheetPrivRequest), typeof(GetWedocSheetPrivResponse),
+            typeof(UpdateWedocSheetPrivRequest), typeof(UpdateWedocSheetPrivRuleMemberRequest),
+            typeof(CreateWedocSheetPrivRuleRequest), typeof(CreateWedocSheetPrivRuleResponse),
+            typeof(DeleteWedocSheetPrivRuleRequest),
+            typeof(WedocSheetPrivRule), typeof(WedocSheetPriv),
+            typeof(WedocSheetFieldPriv), typeof(WedocSheetFieldRule), typeof(WedocSheetFieldDefaultRule),
+            typeof(WedocSheetRecordPriv), typeof(WedocSheetRecordRule), typeof(WedocSheetMemberRange),
+            // 管理收集表族——端点请求/响应。
+            typeof(CreateWedocFormRequest), typeof(CreateWedocFormResponse),
+            typeof(ModifyWedocFormRequest),
+            typeof(GetWedocFormInfoRequest), typeof(GetWedocFormInfoResponse),
+            typeof(GetWedocFormStatisticRequest), typeof(GetWedocFormStatisticResponse),
+            typeof(GetWedocFormAnswerRequest), typeof(GetWedocFormAnswerResponse),
+            // 管理收集表族——收集表信息结构树。
+            typeof(WedocFormInfo), typeof(WedocFormQuestion), typeof(WedocFormItem),
+            typeof(WedocFormOptionItem), typeof(WedocFormExtendSetting),
+            typeof(WedocFormTextSetting), typeof(WedocFormRadioSetting), typeof(WedocFormCheckboxSetting),
+            typeof(WedocFormLocationSetting), typeof(WedocFormImageSetting), typeof(WedocFormFileSetting),
+            typeof(WedocFormUploadLimit), typeof(WedocFormDateSetting), typeof(WedocFormTimeSetting),
+            typeof(WedocFormDurationSetting), typeof(WedocFormTemperatureSetting),
+            typeof(WedocFormDepartmentSetting), typeof(WedocFormMemberSetting),
+            typeof(WedocFormSetting), typeof(WedocFormRange), typeof(WedocFormTimedRepeatInfo),
+            // 管理收集表族——统计信息。
+            typeof(WedocFormSubmitUser), typeof(WedocFormUnfillUser),
+            // 管理收集表族——答案树。
+            typeof(WedocFormAnswer), typeof(WedocFormAnswerItem), typeof(WedocFormReply),
+            typeof(WedocFormReplyItem), typeof(WedocFormOptionExtendReply), typeof(WedocFormFileReply),
+            typeof(WedocFormDepartmentReply), typeof(WedocFormDepartmentReplyItem),
+            typeof(WedocFormMemberReply), typeof(WedocFormMemberReplyItem), typeof(WedocFormDurationReply),
         };
 
-        requiredTypes.Should().HaveCount(209,
+        requiredTypes.Should().HaveCount(277,
             "文档模块契约面类型总数漂移须先核对 DTO 落位再同批调整本守卫"
-            + "（管理文档族 10 + 管理文档内容族 34 + 管理表格内容族 37 + 管理智能表格内容族 81 + 管理智能文档内容族 47）");
+            + "（管理文档族 10 + 管理文档内容族 34 + 管理表格内容族 37 + 管理智能表格内容族 81 + 管理智能文档内容族 47"
+            + " + 设置文档权限族 25 + 管理收集表族 43）");
         requiredTypes.Should().OnlyHaveUniqueItems("契约面类型不得重复断言");
 
         foreach (var type in requiredTypes)

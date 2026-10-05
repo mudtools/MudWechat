@@ -980,6 +980,60 @@ public class WechatCallbackContractGuards
                                 "故 JobType 必须作为普通载荷字段保留，而不是被闸消费");
     }
 
+    // ---------------------------------------------------------------- CB24
+
+    /// <summary>
+    /// 契约守卫 CB24（回调处理器契约分析器方案）：<c>Mud.Wechat.Work.Callback.Analyzers</c> 诊断型分析器契约面。
+    /// <para>
+    /// 编号说明：<c>CB14</c>（XML 触点唯一）与 <c>CB23</c>（禁止载荷级安全闸）已被占用，故本守卫顺延为 CB24。
+    /// </para>
+    /// </summary>
+    [Fact]
+    public void CallbackHandlerAnalyzer_ShouldDeclareMatchingDiagnostics()
+    {
+        var analyzersRoot = Path.Combine(GetSolutionRoot(), "Mud.Wechat.Work.Callback.Analyzers");
+
+        // ① 分析器源码声明的诊断 ID 集合 双向等于 AnalyzerReleases.Unshipped.md 的登记（防漏登/残留）。
+        var analyzerSource = File.ReadAllText(Path.Combine(analyzersRoot, "WechatCallbackHandlerAnalyzer.cs"));
+        var declaredIds = Regex.Matches(analyzerSource, @"id:\s*""(MUDCB\d+)""")
+            .Cast<System.Text.RegularExpressions.Match>()
+            .Select(m => m.Groups[1].Value)
+            .ToHashSet(StringComparer.Ordinal);
+
+        var unshippedSource = File.ReadAllText(Path.Combine(analyzersRoot, "AnalyzerReleases.Unshipped.md"));
+        var registeredIds = Regex.Matches(unshippedSource, @"^(MUDCB\d+)\s+\|", RegexOptions.Multiline)
+            .Cast<System.Text.RegularExpressions.Match>()
+            .Select(m => m.Groups[1].Value)
+            .ToHashSet(StringComparer.Ordinal);
+
+        declaredIds.Should().NotBeEmpty("分析器必须声明至少一条诊断规则（否则 MUDCB 段空跑）");
+        declaredIds.Should().BeEquivalentTo(registeredIds,
+            "CB24：SupportAnalysis 声明的诊断 ID 与 AnalyzerReleases.Unshipped.md 登记必须双向一致" +
+            "（声明未登记 → RS2007/RS2000；登记了已删规则 → 漂移）");
+
+        // ② 分析器 csproj 形态：netstandard2.0 单 TFM / IsRoslynComponent / 不引用 Workspaces / 移除根 props 运行时依赖。
+        var csprojSource = File.ReadAllText(Path.Combine(analyzersRoot, "Mud.Wechat.Work.Callback.Analyzers.csproj"));
+        csprojSource.Should().Contain("<TargetFrameworks>netstandard2.0</TargetFrameworks>",
+            "CB24：Roslyn 分析器必须 netstandard2.0 单 TFM（跨宿主加载硬约束）");
+        csprojSource.Should().Contain("<IsRoslynComponent>true</IsRoslynComponent>", "CB24：分析器工程标记");
+        csprojSource.Should().Contain("<IsPackable>false</IsPackable>",
+            "CB24：分析器不独立打包（随 Callback nupkg 内嵌）");
+        csprojSource.Should().NotContain("PackageReference Include=\"Microsoft.CodeAnalysis.CSharp.Workspaces\"",
+            "CB24：不得引用 Workspaces（命令行编译进程不加载该程序集，RS1038）");
+        csprojSource.Should().Contain("<PackageReference Remove=\"Microsoft.Extensions.DependencyInjection.Abstractions\" />",
+            "CB24：分析器不得继承根 props 注入的运行时依赖");
+        csprojSource.Should().Contain("<PackageReference Remove=\"System.Text.Json\" />",
+            "CB24：分析器不得继承根 props 注入的 System.Text.Json");
+
+        // ③ Callback 含 analyzers/dotnet/cs 打包资产，直接引用本仓分析器 DLL（netstandard2.0 单 TFM，路径固定）。
+        var callbackCsprojSource = File.ReadAllText(Path.Combine(
+            GetSolutionRoot(), "Mud.Wechat.Work.Callback", "Mud.Wechat.Work.Callback.csproj"));
+        callbackCsprojSource.Should().Contain("analyzers/dotnet/cs", "CB24：随包下发分析器资产");
+        callbackCsprojSource.Should().Contain(
+            "Mud.Wechat.Work.Callback.Analyzers.dll",
+            "CB24：打包 ItemGroup 引用本仓分析器 DLL（排除上游 Mud.HttpUtils.Generator 与本仓 Callback.Generator）");
+    }
+
     /// <summary>
     /// 读取某个类型的源码文本（按「类型名 + .cs」在仓库内定位，排除 <c>obj</c>/<c>bin</c>）。
     /// </summary>

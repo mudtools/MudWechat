@@ -1,0 +1,43 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<!-- Roslyn 分析器跨宿主加载的硬约束：netstandard2.0 单 TFM。
+		     覆盖根 Directory.Build.props 的多 TFM（同 Callback.Generator 与 Tests/Directory.Build.props 的遮蔽思路）。 -->
+		<TargetFrameworks>netstandard2.0</TargetFrameworks>
+		<Description>Mud.Wechat 回调处理器契约分析器：编译期校验 SupportedEventType 与载荷契约的一致性（MUDCB002/003/004/005）。随 Callback 包以 analyzers/dotnet/cs 资产下发（不新增第 6 个 nupkg）。</Description>
+		<PackageTags>Mud Wechat Roslyn DiagnosticAnalyzer Analyzer Callback</PackageTags>
+		<Product>Mud.Wechat Callback Handler Contract Analyzer</Product>
+		<IsPackable>false</IsPackable>
+		<IsRoslynComponent>true</IsRoslynComponent>
+		<EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
+		<!-- 诊断登记：AnalyzerReleases.Unshipped.md 的「### New Rules」下必须保留
+		     「Rule ID | Category | Severity | Notes」表头 + 分隔行 + 条目（否则 RS2007/RS2000）。
+		     新增诊断时同批追加条目。 -->
+		<!-- 分析器无 lib 分发需求（IsPackable=false），保留上游生成器工程同款形态。 -->
+		<IncludeBuildOutput>false</IncludeBuildOutput>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<!-- 本工程【不得】引用 Microsoft.CodeAnalysis.CSharp.Workspaces：命令行编译进程不提供该程序集（RS1038）。 -->
+		<PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.11.0" PrivateAssets="all" />
+		<PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="5.6.0">
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
+	</ItemGroup>
+
+	<!-- 根 Directory.Build.props 按 netstandard2.0 注入的运行时依赖对分析器无意义，移除以保持分析器程序集最小化。 -->
+	<ItemGroup>
+		<PackageReference Remove="Microsoft.Extensions.DependencyInjection.Abstractions" />
+		<PackageReference Remove="Microsoft.Extensions.Logging.Abstractions" />
+		<PackageReference Remove="Microsoft.Extensions.Configuration.Binder" />
+		<PackageReference Remove="System.Text.Json" />
+	</ItemGroup>
+
+	<!-- 诊断发布跟踪（消除 RS2008）：登记 MUDCB002~005 的 ID/级别。 -->
+	<ItemGroup>
+		<AdditionalFiles Include="AnalyzerReleases.Shipped.md" />
+		<AdditionalFiles Include="AnalyzerReleases.Unshipped.md" />
+	</ItemGroup>
+
+</Project>

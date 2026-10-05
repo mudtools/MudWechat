@@ -37,23 +37,33 @@ namespace Mud.Wechat.Work.Tests.ContractGuards;
 /// Rooms 会议室管理族（12 端点官方仅自建应用开放——第三方/代开发章节均无对应 API，
 /// 零端点父接口 + 唯一自建子接口承载端点；全部挂 rooms 段；获取资源端点官方为无请求体 POST）；
 /// 会议室连接器（MRA）管理族（4 端点官方仅自建应用开放——第三方/代开发章节均无对应 API，
-/// 零端点父接口 + 唯一自建子接口承载端点；全部挂 mra 段）。
+/// 零端点父接口 + 唯一自建子接口承载端点；全部挂 mra 段）；
+/// 会议布局和背景管理族（15 端点官方仅自建应用开放——第三方/代开发章节均无对应 API，
+/// 零端点父接口 + 唯一自建子接口承载端点；基础布局与背景挂 layout 段、高级布局挂 advanced_layout 段；
+/// 获取布局模板列表为会议域唯一 GET 端点；基础/高级布局座次结构不同构分型承载）；
+/// 录制管理族（10 端点官方仅自建应用开放——第三方/代开发章节均无对应 API，
+/// 零端点父接口 + 唯一自建子接口承载端点；挂 record 段、转写挂 record/transcript 子段）；
+/// 高级功能账号管理族（3 个官方文档页承载 5 端点——分配/取消文档页各含提交任务与查询结果两端点，
+/// 官方仅自建应用开放，零端点父接口 + 唯一自建子接口承载端点；全部挂 vip 段）。
 /// </para>
 /// </summary>
 /// <remarks>
 /// <para>
-/// 官方反直觉点（勿「顺手修正」）：会议域 75 条路由官方全部即 POST（含仅查询语义的 meeting/get_info /
-/// meeting/get_user_meetingid / meeting/statistics/get_start_list / meeting/get_invitees /
-/// meeting/get_customer_short_url / meeting/get_realtime_attendee_list / meeting/get_attendee_list /
-/// meeting/waitingroom/* / meeting/check_device_in_meeting / meeting/get_guests / meeting/get_quality /
-/// meeting/enroll/* / meeting/realcontrol/* / meeting/poll/* / meeting/webinar/* / meeting/phone/* /
-/// meeting/rooms/* / meeting/mra/*）；
+/// 官方反直觉点（勿「顺手修正」）：会议域 105 条路由中 104 条官方即 POST、仅获取布局模板列表为 GET
+/// （含仅查询语义的 meeting/get_info / meeting/get_user_meetingid / meeting/statistics/get_start_list /
+/// meeting/get_invitees / meeting/get_customer_short_url / meeting/get_realtime_attendee_list /
+/// meeting/get_attendee_list / meeting/waitingroom/* / meeting/check_device_in_meeting / meeting/get_guests /
+/// meeting/get_quality / meeting/enroll/* / meeting/realcontrol/* / meeting/poll/* / meeting/webinar/* /
+/// meeting/phone/* / meeting/rooms/* / meeting/mra/* / meeting/layout/* / meeting/advanced_layout/* /
+/// meeting/record/* / meeting/vip/*，其中仅 layout/list_template 为 GET，勿「顺手统一」为 POST）；
 /// 会议 ID 官方字段名作 <c>meetingid</c>（无下划线）、列表作 <c>meetingid_list</c>；获取成员会议 ID 列表用
 /// cursor+limit 翻页（cursor 初次调用可填 "0"）；会议统计管理路由挂 <c>/cgi-bin/meeting/statistics/</c> 段；
 /// 高级管理报名配置与等候室路由挂 <c>/cgi-bin/meeting/enroll/</c> 与 <c>/cgi-bin/meeting/waitingroom/</c> 段；
 /// 会控与投票路由挂 <c>/cgi-bin/meeting/realcontrol/</c> 与 <c>/cgi-bin/meeting/poll/</c> 段；
 /// 网络研讨会与电话入会路由挂 <c>/cgi-bin/meeting/webinar/</c> 与 <c>/cgi-bin/meeting/phone/</c> 段；
 /// Rooms 会议室与 MRA 路由挂 <c>/cgi-bin/meeting/rooms/</c> 与 <c>/cgi-bin/meeting/mra/</c> 段；
+/// 布局/背景、高级布局、录制、高级功能账号路由挂 <c>/cgi-bin/meeting/layout/</c>、
+/// <c>/cgi-bin/meeting/advanced_layout/</c>、<c>/cgi-bin/meeting/record/</c> 与 <c>/cgi-bin/meeting/vip/</c> 段；
 /// 获取实时会中成员列表官方请求示例将分页游标误写为 <c>cursort</c>、参数表为 <c>cursor</c>，以参数表为准；
 /// 会控单数命名 <c>operated_user</c>（管理联席主持人/静音成员/关闭屏幕共享/开关成员视频）承载单个对象
 /// （参数表 object[] 标注为文档笔误），复数命名 <c>operated_users</c>（管理等候室成员/移出成员/修改昵称）承载数组；
@@ -63,7 +73,9 @@ namespace Mud.Wechat.Work.Tests.ContractGuards;
 /// 详情响应 media_setting 的入会静音字段示例作 <c>mute_enable_join</c>（参数表作 enable_enter_mute），
 /// 与请求形态分型承载；详情响应 status 为字符串枚举（MEETING_STATE_*）；
 /// 网络研讨会 start_time/end_time 参数表与示例均为字符串形态时间戳（单位秒）；
-/// Rooms 域 Rooms 会议室下的会议列表与设备列表（app_version）等响应也存在字符串枚举与说明错位陷阱（详见各 DTO remarks）；
+/// 录制列表响应字段以参数表 <c>record_list</c>/<c>record_file_list</c> 为准（示例误写 record_meetings/record_files）；
+/// 单个录制文件详情的 start_time/end_time 参数表标注 int64（示例为字符串形态）、meeting_summary 参数表标注 object[]（示例为单对象），
+/// 均以参数表为准；
 /// 创建预约会议响应 meetingid 可用于「进入会议」接口（小程序/JS-SDK）；
 /// 创建/修改预约会议请求与获取会议详情响应的 settings/reminders/invitees
 /// 三嵌套对象官方参数表高度同构，本 SDK 以共用结构承载；
@@ -433,9 +445,145 @@ public class WechatMeetingContractGuards
                 typeof(PostAttribute), "/cgi-bin/meeting/mra/hangup"),
         };
 
+    private static readonly (Type Interface, string Method, Type HttpAttribute, string Route)[]
+        MeetingLayoutRoutes =
+        {
+            // 获取布局模板列表（自建 98844；会议域唯一 GET 端点，勿「顺手统一」为 POST）。
+            (typeof(IWechatWorkInternalMeetingLayoutService),
+                nameof(IWechatWorkInternalMeetingLayoutService.ListLayoutTemplatesAsync),
+                typeof(GetAttribute), "/cgi-bin/meeting/layout/list_template"),
+            // 添加会议基础布局（自建 98845；一场会议最多 10 个布局）。
+            (typeof(IWechatWorkInternalMeetingLayoutService),
+                nameof(IWechatWorkInternalMeetingLayoutService.AddMeetingLayoutAsync),
+                typeof(PostAttribute), "/cgi-bin/meeting/layout/add"),
+            // 添加会议高级布局（自建 98861；最多 20 个高级布局，仅支持 H.323/SIP 会议室终端）。
+            (typeof(IWechatWorkInternalMeetingLayoutService),
+                nameof(IWechatWorkInternalMeetingLayoutService.AddAdvancedLayoutAsync),
+                typeof(PostAttribute), "/cgi-bin/meeting/advanced_layout/add"),
+            // 修改会议基础布局（自建 98846）。
+            (typeof(IWechatWorkInternalMeetingLayoutService),
+                nameof(IWechatWorkInternalMeetingLayoutService.UpdateMeetingLayoutAsync),
+                typeof(PostAttribute), "/cgi-bin/meeting/layout/update"),
+            // 修改会议高级布局（自建 98868；仅支持全量更新）。
+            (typeof(IWechatWorkInternalMeetingLayoutService),
+                nameof(IWechatWorkInternalMeetingLayoutService.UpdateAdvancedLayoutAsync),
+                typeof(PostAttribute), "/cgi-bin/meeting/advanced_layout/update"),
+            // 设置会议默认布局（自建 98847；selected_layout_id 传空恢复默认原始布局）。
+            (typeof(IWechatWorkInternalMeetingLayoutService),
+                nameof(IWechatWorkInternalMeetingLayoutService.SetDefaultMeetingLayoutAsync),
+                typeof(PostAttribute), "/cgi-bin/meeting/layout/set_default"),
+            // 设置高级布局（自建 98869；user_list 单次最多 20 个用户）。
+            (typeof(IWechatWorkInternalMeetingLayoutService),
+                nameof(IWechatWorkInternalMeetingLayoutService.ApplyAdvancedLayoutAsync),
+                typeof(PostAttribute), "/cgi-bin/meeting/advanced_layout/apply"),
+            // 获取会议布局列表（自建 98862；返回基础和高级自定义布局）。
+            (typeof(IWechatWorkInternalMeetingLayoutService),
+                nameof(IWechatWorkInternalMeetingLayoutService.ListMeetingLayoutsAsync),
+                typeof(PostAttribute), "/cgi-bin/meeting/advanced_layout/list"),
+            // 获取用户布局（自建 98865；布局优先级：个性布局 > 自定义布局 > 默认布局）。
+            (typeof(IWechatWorkInternalMeetingLayoutService),
+                nameof(IWechatWorkInternalMeetingLayoutService.GetUserLayoutAsync),
+                typeof(PostAttribute), "/cgi-bin/meeting/advanced_layout/get_user_layout"),
+            // 批量删除布局（自建 98866；最多 20 个布局 ID；正在被应用的布局无法删除）。
+            (typeof(IWechatWorkInternalMeetingLayoutService),
+                nameof(IWechatWorkInternalMeetingLayoutService.BatchDeleteLayoutsAsync),
+                typeof(PostAttribute), "/cgi-bin/meeting/advanced_layout/batch_delete"),
+            // 添加会议背景（自建 98851；最多 7 个背景，PNG ≤10MB、分辨率最小 1920x1080；异步上传）。
+            (typeof(IWechatWorkInternalMeetingLayoutService),
+                nameof(IWechatWorkInternalMeetingLayoutService.AddMeetingBackgroundAsync),
+                typeof(PostAttribute), "/cgi-bin/meeting/layout/add_background"),
+            // 设置会议默认背景（自建 98852；传空恢复默认黑色背景）。
+            (typeof(IWechatWorkInternalMeetingLayoutService),
+                nameof(IWechatWorkInternalMeetingLayoutService.SetDefaultMeetingBackgroundAsync),
+                typeof(PostAttribute), "/cgi-bin/meeting/layout/set_default_background"),
+            // 获取会议背景列表（自建 98856）。
+            (typeof(IWechatWorkInternalMeetingLayoutService),
+                nameof(IWechatWorkInternalMeetingLayoutService.ListMeetingBackgroundsAsync),
+                typeof(PostAttribute), "/cgi-bin/meeting/layout/list_background"),
+            // 删除会议背景（自建 98853）。
+            (typeof(IWechatWorkInternalMeetingLayoutService),
+                nameof(IWechatWorkInternalMeetingLayoutService.DeleteMeetingBackgroundAsync),
+                typeof(PostAttribute), "/cgi-bin/meeting/layout/delete_background"),
+            // 批量删除会议背景（自建 98854）。
+            (typeof(IWechatWorkInternalMeetingLayoutService),
+                nameof(IWechatWorkInternalMeetingLayoutService.BatchDeleteMeetingBackgroundsAsync),
+                typeof(PostAttribute), "/cgi-bin/meeting/layout/batch_delete_background"),
+        };
+
+    private static readonly (Type Interface, string Method, Type HttpAttribute, string Route)[]
+        MeetingRecordingRoutes =
+        {
+            // 获取会议录制列表（自建 98192；meetingid/meeting_code/userid 三选一；时间区间 ≤31 天；响应字段以参数表为准）。
+            (typeof(IWechatWorkInternalMeetingRecordingService),
+                nameof(IWechatWorkInternalMeetingRecordingService.ListMeetingRecordsAsync),
+                typeof(PostAttribute), "/cgi-bin/meeting/record/list"),
+            // 获取录制文件访问统计（自建 98209；按天维度返回）。
+            (typeof(IWechatWorkInternalMeetingRecordingService),
+                nameof(IWechatWorkInternalMeetingRecordingService.GetRecordStatisticsAsync),
+                typeof(PostAttribute), "/cgi-bin/meeting/record/get_statistics"),
+            // 修改会议录制共享设置（自建 98208）。
+            (typeof(IWechatWorkInternalMeetingRecordingService),
+                nameof(IWechatWorkInternalMeetingRecordingService.UpdateRecordSharingConfigAsync),
+                typeof(PostAttribute), "/cgi-bin/meeting/record/update_sharing_config"),
+            // 删除会议录制（自建 98206；删除会议录制 ID 对应的所有云录制文件）。
+            (typeof(IWechatWorkInternalMeetingRecordingService),
+                nameof(IWechatWorkInternalMeetingRecordingService.DeleteMeetingRecordAsync),
+                typeof(PostAttribute), "/cgi-bin/meeting/record/delete"),
+            // 删除单个录制文件（自建 98207）。
+            (typeof(IWechatWorkInternalMeetingRecordingService),
+                nameof(IWechatWorkInternalMeetingRecordingService.DeleteRecordFileAsync),
+                typeof(PostAttribute), "/cgi-bin/meeting/record/delete_file"),
+            // 获取单个录制文件详情（自建 98205；含会议纪要与录制转写文件列表）。
+            (typeof(IWechatWorkInternalMeetingRecordingService),
+                nameof(IWechatWorkInternalMeetingRecordingService.GetRecordFileAsync),
+                typeof(PostAttribute), "/cgi-bin/meeting/record/get_file"),
+            // 获取会议录制地址（自建 98196；播放/下载地址默认 6 小时过期）。
+            (typeof(IWechatWorkInternalMeetingRecordingService),
+                nameof(IWechatWorkInternalMeetingRecordingService.GetRecordFileListAsync),
+                typeof(PostAttribute), "/cgi-bin/meeting/record/get_file_list"),
+            // 获取录制转写段落信息（自建 98212）。
+            (typeof(IWechatWorkInternalMeetingRecordingService),
+                nameof(IWechatWorkInternalMeetingRecordingService.GetRecordTranscriptParagraphsAsync),
+                typeof(PostAttribute), "/cgi-bin/meeting/record/transcript/get_paragraph_list"),
+            // 获取录制转写详情（自建 98211；段落→句子→词条三级结构）。
+            (typeof(IWechatWorkInternalMeetingRecordingService),
+                nameof(IWechatWorkInternalMeetingRecordingService.GetRecordTranscriptDetailAsync),
+                typeof(PostAttribute), "/cgi-bin/meeting/record/transcript/get_detail"),
+            // 搜索录制转写（自建 98213）。
+            (typeof(IWechatWorkInternalMeetingRecordingService),
+                nameof(IWechatWorkInternalMeetingRecordingService.SearchRecordTranscriptAsync),
+                typeof(PostAttribute), "/cgi-bin/meeting/record/transcript/search"),
+        };
+
+    private static readonly (Type Interface, string Method, Type HttpAttribute, string Route)[]
+        MeetingPremiumAccountRoutes =
+        {
+            // 分配高级功能账号（自建 99508 上半页；userid_list 单次最多 100 个）。
+            (typeof(IWechatWorkInternalMeetingPremiumAccountService),
+                nameof(IWechatWorkInternalMeetingPremiumAccountService.AssignPremiumAccountsAsync),
+                typeof(PostAttribute), "/cgi-bin/meeting/vip/submit_batch_add_job"),
+            // 查询分配高级功能账号结果（自建 99508 下半页）。
+            (typeof(IWechatWorkInternalMeetingPremiumAccountService),
+                nameof(IWechatWorkInternalMeetingPremiumAccountService.GetAssignPremiumAccountsResultAsync),
+                typeof(PostAttribute), "/cgi-bin/meeting/vip/batch_add_job_result"),
+            // 取消高级功能账号（自建 99509 上半页；userid_list 单次最多 100 个）。
+            (typeof(IWechatWorkInternalMeetingPremiumAccountService),
+                nameof(IWechatWorkInternalMeetingPremiumAccountService.RevokePremiumAccountsAsync),
+                typeof(PostAttribute), "/cgi-bin/meeting/vip/submit_batch_del_job"),
+            // 查询取消高级功能账号结果（自建 99509 下半页）。
+            (typeof(IWechatWorkInternalMeetingPremiumAccountService),
+                nameof(IWechatWorkInternalMeetingPremiumAccountService.GetRevokePremiumAccountsResultAsync),
+                typeof(PostAttribute), "/cgi-bin/meeting/vip/batch_del_job_result"),
+            // 获取高级功能账号列表（自建 99510；limit 默认 100、最大 200，必须用 has_more 判断是否继续请求）。
+            (typeof(IWechatWorkInternalMeetingPremiumAccountService),
+                nameof(IWechatWorkInternalMeetingPremiumAccountService.ListPremiumAccountsAsync),
+                typeof(PostAttribute), "/cgi-bin/meeting/vip/list"),
+        };
+
     // ------------------------------------------------------------------
-    // MT1：全部端点路由与官方契约一致（50 条路由表项去重后 75 条官方路由，
-    // get_info 同路由两分支；基础管理族 4 端点与高级管理族 5 个文档页同路由不重复建端点）。
+    // MT1：全部端点路由与官方契约一致（65 条路由表项去重后 105 条官方路由，
+    // get_info 同路由两分支；基础管理族 4 端点与高级管理族 5 个文档页同路由不重复建端点；
+    // layout/list_template 为会议域唯一 GET 端点）。
     // ------------------------------------------------------------------
 
     [Fact]
@@ -517,12 +665,56 @@ public class WechatMeetingContractGuards
             r => r.StartsWith("/cgi-bin/meeting/mra/", StringComparison.Ordinal),
             "会议室连接器（MRA）管理族路由全部挂 /cgi-bin/meeting/mra/ 段");
 
+        // 会议布局和背景管理族：15 端点全部挂于唯一自建子接口（layout/advanced_layout 段）。
+        MeetingLayoutRoutes.Should().HaveCount(15, "会议布局和背景管理族 = 布局模板列表 1 + 基础布局 3（添加/修改/设置默认）+ 高级布局 6（添加/修改/应用/列表/用户布局/批量删除）+ 会议背景 5 端点");
+        MeetingLayoutRoutes.Select(r => r.Interface).Should().OnlyContain(
+            i => i == typeof(IWechatWorkInternalMeetingLayoutService),
+            "会议布局和背景管理族官方仅自建应用开放（第三方/代开发章节均无对应 API）");
+        MeetingLayoutRoutes.Select(r => r.Route)
+            .Should().OnlyContain(r => r.StartsWith("/cgi-bin/meeting/layout/", StringComparison.Ordinal)
+                || r.StartsWith("/cgi-bin/meeting/advanced_layout/", StringComparison.Ordinal),
+            "会议布局和背景管理族路由挂 /cgi-bin/meeting/layout/ 与 /cgi-bin/meeting/advanced_layout/ 段");
+        MeetingLayoutRoutes.Where(r => r.Route.StartsWith("/cgi-bin/meeting/advanced_layout/", StringComparison.Ordinal))
+            .Should().HaveCount(6, "高级布局 6 端点路由挂 /cgi-bin/meeting/advanced_layout/ 段");
+        MeetingLayoutRoutes.Where(r => r.Route.StartsWith("/cgi-bin/meeting/layout/", StringComparison.Ordinal))
+            .Should().HaveCount(9, "布局模板列表 1 + 基础布局 3 + 会议背景 5 端点路由挂 /cgi-bin/meeting/layout/ 段");
+        MeetingLayoutRoutes.Single(r => r.Route.EndsWith("/list_template", StringComparison.Ordinal)).HttpAttribute
+            .Should().Be(typeof(GetAttribute), "获取布局模板列表为会议域唯一 GET 端点（勿「顺手统一」为 POST）");
+        MeetingLayoutRoutes.Count(r => r.HttpAttribute == typeof(PostAttribute)).Should().Be(14,
+            "布局和背景管理族其余 14 端点官方均即 POST");
+
+        // 录制管理族：10 端点全部挂于唯一自建子接口（record 段，转写挂 record/transcript 子段）。
+        MeetingRecordingRoutes.Should().HaveCount(10, "录制管理族 = 列表/统计/共享设置 3 + 删除 2 + 详情/地址 2 + 转写 3 端点");
+        MeetingRecordingRoutes.Select(r => r.Interface).Should().OnlyContain(
+            i => i == typeof(IWechatWorkInternalMeetingRecordingService),
+            "录制管理族官方仅自建应用开放（第三方/代开发章节均无对应 API）");
+        MeetingRecordingRoutes.Select(r => r.Route).Should().OnlyContain(
+            r => r.StartsWith("/cgi-bin/meeting/record/", StringComparison.Ordinal),
+            "录制管理族路由全部挂 /cgi-bin/meeting/record/ 段");
+        MeetingRecordingRoutes.Where(r => r.Route.StartsWith("/cgi-bin/meeting/record/transcript/", StringComparison.Ordinal))
+            .Should().HaveCount(3, "录制转写 3 端点路由挂 /cgi-bin/meeting/record/transcript/ 子段");
+
+        // 高级功能账号管理族：3 个官方文档页承载 5 端点，全部挂于唯一自建子接口（vip 段）。
+        MeetingPremiumAccountRoutes.Should().HaveCount(5, "高级功能账号管理族 = 分配 + 分配结果 + 取消 + 取消结果 + 账号列表端点");
+        MeetingPremiumAccountRoutes.Select(r => r.Interface).Should().OnlyContain(
+            i => i == typeof(IWechatWorkInternalMeetingPremiumAccountService),
+            "高级功能账号管理族官方仅自建应用开放（代开发/第三方应用暂不支持）");
+        MeetingPremiumAccountRoutes.Select(r => r.Route).Should().OnlyContain(
+            r => r.StartsWith("/cgi-bin/meeting/vip/", StringComparison.Ordinal),
+            "高级功能账号管理族路由全部挂 /cgi-bin/meeting/vip/ 段");
+
         // 获取 Rooms 会议室资源官方为无请求体 POST（对齐 get_openid_migration 先例），不得添加请求体参数。
         typeof(IWechatWorkInternalMeetingRoomsService)
             .GetMethod(nameof(IWechatWorkInternalMeetingRoomsService.GetMeetingRoomInventoryAsync), BindingFlags.Public | BindingFlags.Instance)!
             .GetParameters().Should().ContainSingle("获取 Rooms 会议室资源官方无请求体，方法仅承载 CancellationToken")
             .Which.ParameterType.Should().Be(typeof(CancellationToken),
                 "获取 Rooms 会议室资源无请求体，唯一参数必须是 CancellationToken");
+        // 获取布局模板列表官方为无请求体 GET，同理不得添加请求体参数。
+        typeof(IWechatWorkInternalMeetingLayoutService)
+            .GetMethod(nameof(IWechatWorkInternalMeetingLayoutService.ListLayoutTemplatesAsync), BindingFlags.Public | BindingFlags.Instance)!
+            .GetParameters().Should().ContainSingle("获取布局模板列表官方无请求体，方法仅承载 CancellationToken")
+            .Which.ParameterType.Should().Be(typeof(CancellationToken),
+                "获取布局模板列表无请求体，唯一参数必须是 CancellationToken");
 
         AssertRoutes(MeetingBaseRoutes);
         AssertRoutes(MeetingInfoRoutes);
@@ -533,13 +725,17 @@ public class WechatMeetingContractGuards
         AssertRoutes(MeetingPstnRoutes);
         AssertRoutes(MeetingRoomsRoutes);
         AssertRoutes(MeetingMraRoutes);
+        AssertRoutes(MeetingLayoutRoutes);
+        AssertRoutes(MeetingRecordingRoutes);
+        AssertRoutes(MeetingPremiumAccountRoutes);
 
-        // 全部官方路由去重清单锁定（get_info 两分支去重后 75 条；基础管理族与高级管理族的
+        // 全部官方路由去重清单锁定（get_info 两分支去重后 105 条；基础管理族与高级管理族的
         // create/update/cancel/get_info/get_user_meetingid 5 条同路由仅计一次）。
         var allRoutes = MeetingBaseRoutes.Concat(MeetingInfoRoutes).Concat(MeetingStatisticsRoutes)
             .Concat(MeetingAdvancedRoutes).Concat(MeetingControlRoutes)
             .Concat(MeetingWebinarRoutes).Concat(MeetingPstnRoutes)
             .Concat(MeetingRoomsRoutes).Concat(MeetingMraRoutes)
+            .Concat(MeetingLayoutRoutes).Concat(MeetingRecordingRoutes).Concat(MeetingPremiumAccountRoutes)
             .Select(r => r.Route).Distinct().ToList();
         allRoutes.Should().BeEquivalentTo(new[]
         {
@@ -626,8 +822,41 @@ public class WechatMeetingContractGuards
             "/cgi-bin/meeting/mra/set_default_layout",
             "/cgi-bin/meeting/mra/set_raise_hand",
             "/cgi-bin/meeting/mra/hangup",
+            // 会议布局和背景管理族（15 条）。
+            "/cgi-bin/meeting/layout/list_template",
+            "/cgi-bin/meeting/layout/add",
+            "/cgi-bin/meeting/layout/update",
+            "/cgi-bin/meeting/layout/set_default",
+            "/cgi-bin/meeting/advanced_layout/add",
+            "/cgi-bin/meeting/advanced_layout/update",
+            "/cgi-bin/meeting/advanced_layout/apply",
+            "/cgi-bin/meeting/advanced_layout/list",
+            "/cgi-bin/meeting/advanced_layout/get_user_layout",
+            "/cgi-bin/meeting/advanced_layout/batch_delete",
+            "/cgi-bin/meeting/layout/add_background",
+            "/cgi-bin/meeting/layout/set_default_background",
+            "/cgi-bin/meeting/layout/list_background",
+            "/cgi-bin/meeting/layout/delete_background",
+            "/cgi-bin/meeting/layout/batch_delete_background",
+            // 录制管理族（10 条）。
+            "/cgi-bin/meeting/record/list",
+            "/cgi-bin/meeting/record/get_statistics",
+            "/cgi-bin/meeting/record/update_sharing_config",
+            "/cgi-bin/meeting/record/delete",
+            "/cgi-bin/meeting/record/delete_file",
+            "/cgi-bin/meeting/record/get_file",
+            "/cgi-bin/meeting/record/get_file_list",
+            "/cgi-bin/meeting/record/transcript/get_paragraph_list",
+            "/cgi-bin/meeting/record/transcript/get_detail",
+            "/cgi-bin/meeting/record/transcript/search",
+            // 高级功能账号管理族（5 条）。
+            "/cgi-bin/meeting/vip/submit_batch_add_job",
+            "/cgi-bin/meeting/vip/batch_add_job_result",
+            "/cgi-bin/meeting/vip/submit_batch_del_job",
+            "/cgi-bin/meeting/vip/batch_del_job_result",
+            "/cgi-bin/meeting/vip/list",
         }, "会议域全部官方路由须与官方文档一一对应");
-        allRoutes.Should().HaveCount(75, "会议域共 75 条官方路由（get_info 同路由两分支去重；高级管理文档页与基础管理族 5 条同路由不重复计入）");
+        allRoutes.Should().HaveCount(105, "会议域共 105 条官方路由（get_info 同路由两分支去重；高级管理文档页与基础管理族 5 条同路由不重复计入）");
 
         // 无业务负载端点：响应直接用 WechatWorkResponse，不得新建空响应 DTO。
         typeof(IWechatWorkMeetingService)
@@ -763,6 +992,39 @@ public class WechatMeetingContractGuards
             {
                 (typeof(IWechatWorkInternalMeetingMraService), 4),
             });
+
+        // 会议布局和背景管理族：官方仅自建应用开放（第三方/代开发章节均无对应 API），
+        // 父接口零端点 + 唯一自建子接口承载全部 15 端点（继承链上不得出现代开发/第三方子接口）。
+        AssertFamily(
+            parent: typeof(IWechatWorkMeetingLayoutService),
+            parentImplementation: "WechatWorkMeetingLayoutService",
+            parentDeclaredEndpointCount: 0,
+            new[]
+            {
+                (typeof(IWechatWorkInternalMeetingLayoutService), 15),
+            });
+
+        // 录制管理族：官方仅自建应用开放（第三方/代开发章节均无对应 API），
+        // 父接口零端点 + 唯一自建子接口承载全部 10 端点（继承链上不得出现代开发/第三方子接口）。
+        AssertFamily(
+            parent: typeof(IWechatWorkMeetingRecordingService),
+            parentImplementation: "WechatWorkMeetingRecordingService",
+            parentDeclaredEndpointCount: 0,
+            new[]
+            {
+                (typeof(IWechatWorkInternalMeetingRecordingService), 10),
+            });
+
+        // 高级功能账号管理族：官方仅自建应用开放（代开发/第三方应用暂不支持），
+        // 父接口零端点 + 唯一自建子接口承载全部 5 端点（继承链上不得出现代开发/第三方子接口）。
+        AssertFamily(
+            parent: typeof(IWechatWorkMeetingPremiumAccountService),
+            parentImplementation: "WechatWorkMeetingPremiumAccountService",
+            parentDeclaredEndpointCount: 0,
+            new[]
+            {
+                (typeof(IWechatWorkInternalMeetingPremiumAccountService), 5),
+            });
     }
 
     /// <summary>族断言：父接口 IsAbstract + 指定端点数，子接口集合不漂移 + 指定端点数 + 注册组/继承契约。</summary>
@@ -826,9 +1088,15 @@ public class WechatMeetingContractGuards
             typeof(IWechatWorkInternalMeetingRoomsService),
             typeof(IWechatWorkMeetingMraService),
             typeof(IWechatWorkInternalMeetingMraService),
+            typeof(IWechatWorkMeetingLayoutService),
+            typeof(IWechatWorkInternalMeetingLayoutService),
+            typeof(IWechatWorkMeetingRecordingService),
+            typeof(IWechatWorkInternalMeetingRecordingService),
+            typeof(IWechatWorkMeetingPremiumAccountService),
+            typeof(IWechatWorkInternalMeetingPremiumAccountService),
         };
 
-        accessTokenInterfaces.Should().HaveCount(18, "会议域八族 = 预约会议基础管理族 4 接口 + 会议统计管理族 2 接口 + 预约会议高级管理族 2 接口 + 会中控制管理族 2 接口 + 网络研讨会管理族 2 接口 + 电话入会管理族 2 接口 + Rooms 会议室管理族 2 接口 + MRA 管理族 2 接口");
+        accessTokenInterfaces.Should().HaveCount(24, "会议域十一族 = 预约会议基础管理族 4 接口 + 会议统计管理族 2 接口 + 预约会议高级管理族 2 接口 + 会中控制管理族 2 接口 + 网络研讨会管理族 2 接口 + 电话入会管理族 2 接口 + Rooms 会议室管理族 2 接口 + MRA 管理族 2 接口 + 会议布局和背景管理族 2 接口 + 录制管理族 2 接口 + 高级功能账号管理族 2 接口");
 
         foreach (var iface in accessTokenInterfaces)
         {
@@ -858,8 +1126,8 @@ public class WechatMeetingContractGuards
 
         // 全量守卫：命名空间下所有顶层 DTO 均须登记进 MeetingJsonContext 且 SerializerClassName 统一为 Meeting
         //（生成物 MeetingJsonContext 自身亦落同命名空间，按 JsonSerializerContext 派生类型排除）。
-        domainTypes.Should().HaveCount(184,
-            "会议模块契约面类型数漂移须先核对官方文档再同批调整本守卫（预约会议基础管理族 17：创建 2 + 修改 2 + 取消 1 + 获取详情 2 + 成员会议 ID 列表 2 + 共用嵌套 8；会议统计管理族 3；预约会议高级管理族 55：端点级请求/响应 36 + 嵌套对象 19；会中控制管理族 32：端点级请求/响应 22 + 嵌套对象 10；网络研讨会管理族 28：端点级请求/响应 24 + 嵌套对象 4；电话入会管理族 10：端点级请求/响应 6 + 嵌套对象 4；Rooms 会议室管理族 33：端点级请求 11 + 响应 10 + 嵌套对象 12（含 MRA 信令地址对象）；MRA 管理族 6：端点级请求 4 + 响应 1 + 嵌套对象 1）");
+        domainTypes.Should().HaveCount(261,
+            "会议模块契约面类型数漂移须先核对官方文档再同批调整本守卫（预约会议基础管理族 17：创建 2 + 修改 2 + 取消 1 + 获取详情 2 + 成员会议 ID 列表 2 + 共用嵌套 8；会议统计管理族 3；预约会议高级管理族 55：端点级请求/响应 36 + 嵌套对象 19；会中控制管理族 32：端点级请求/响应 22 + 嵌套对象 10；网络研讨会管理族 28：端点级请求/响应 24 + 嵌套对象 4；电话入会管理族 10：端点级请求/响应 6 + 嵌套对象 4；Rooms 会议室管理族 33：端点级请求 11 + 响应 10 + 嵌套对象 12（含 MRA 信令地址对象）；MRA 管理族 6：端点级请求 4 + 响应 1 + 嵌套对象 1；会议布局和背景管理族 35：端点级请求/响应 21 + 嵌套对象 14（基础与高级布局结构不同构分型承载）；录制管理族 31：端点级请求/响应 17 + 嵌套对象 14；高级功能账号管理族 11：端点级请求/响应 10 + 嵌套对象 1）");
 
         foreach (var type in domainTypes)
         {
@@ -977,6 +1245,49 @@ public class WechatMeetingContractGuards
             typeof(QueryMraStatusRequest), typeof(QueryMraStatusResponse),
             typeof(SetMraDefaultLayoutRequest), typeof(SetMraRaiseHandRequest), typeof(HangupMraRequest),
             typeof(MraDeviceRef),
+            // 会议布局和背景管理族（端点级请求/响应 + 嵌套对象全清单；
+            // 基础布局与高级布局结构不同构，按 LayoutBasic* / LayoutAdvanced* 分型承载）。
+            typeof(ListLayoutTemplatesResponse), typeof(LayoutTemplate),
+            typeof(AddMeetingLayoutRequest), typeof(AddMeetingLayoutResponse),
+            typeof(LayoutBasicRequest), typeof(LayoutBasicPage), typeof(LayoutBasicSeat), typeof(LayoutBasicInfo),
+            typeof(UpdateMeetingLayoutRequest),
+            typeof(AddAdvancedLayoutRequest), typeof(AddAdvancedLayoutResponse),
+            typeof(LayoutAdvancedRequest), typeof(LayoutAdvancedPage), typeof(LayoutAdvancedPollingSetting),
+            typeof(LayoutAdvancedSeat), typeof(LayoutAdvancedGridUser), typeof(LayoutAdvancedInfo),
+            typeof(UpdateAdvancedLayoutRequest),
+            typeof(SetDefaultMeetingLayoutRequest),
+            typeof(ApplyAdvancedLayoutRequest), typeof(LayoutApplyUser),
+            typeof(ListMeetingLayoutsRequest), typeof(ListMeetingLayoutsResponse),
+            typeof(GetUserLayoutRequest), typeof(GetUserLayoutResponse),
+            typeof(BatchDeleteLayoutsRequest),
+            typeof(AddMeetingBackgroundRequest), typeof(AddMeetingBackgroundResponse),
+            typeof(LayoutBackgroundImage), typeof(LayoutBackground),
+            typeof(SetDefaultMeetingBackgroundRequest),
+            typeof(ListMeetingBackgroundsRequest), typeof(ListMeetingBackgroundsResponse),
+            typeof(DeleteMeetingBackgroundRequest), typeof(BatchDeleteMeetingBackgroundsRequest),
+            // 录制管理族（端点级请求/响应 + 嵌套对象全清单）。
+            typeof(ListMeetingRecordsRequest), typeof(ListMeetingRecordsResponse),
+            typeof(MeetingRecord), typeof(MeetingRecordFile),
+            typeof(GetRecordStatisticsRequest), typeof(GetRecordStatisticsResponse), typeof(RecordStatisticsSummary),
+            typeof(UpdateRecordSharingConfigRequest), typeof(RecordSharingConfig),
+            typeof(DeleteMeetingRecordRequest), typeof(DeleteRecordFileRequest),
+            typeof(GetRecordFileRequest), typeof(GetRecordFileResponse), typeof(RecordFileDownload),
+            typeof(GetRecordFileListRequest), typeof(GetRecordFileListResponse), typeof(RecordFileAddress),
+            typeof(GetRecordTranscriptParagraphsRequest), typeof(GetRecordTranscriptParagraphsResponse),
+            typeof(RecordTranscriptParagraph),
+            typeof(GetRecordTranscriptDetailRequest), typeof(GetRecordTranscriptDetailResponse),
+            typeof(RecordTranscriptDetail), typeof(RecordTranscriptDetailParagraph),
+            typeof(RecordTranscriptSentence), typeof(RecordTranscriptWord), typeof(RecordTranscriptSpeaker),
+            typeof(SearchRecordTranscriptRequest), typeof(SearchRecordTranscriptResponse),
+            typeof(RecordTranscriptHit), typeof(RecordTranscriptTimeline),
+            // 高级功能账号管理族（端点级请求/响应 + 嵌套对象全清单；
+            // 分配/取消两个文档页各含「提交任务」与「查询结果」两端点，结构同构故共用嵌套对象）。
+            typeof(AssignPremiumAccountsRequest), typeof(AssignPremiumAccountsResponse),
+            typeof(GetAssignPremiumAccountsResultRequest), typeof(GetAssignPremiumAccountsResultResponse),
+            typeof(RevokePremiumAccountsRequest), typeof(RevokePremiumAccountsResponse),
+            typeof(GetRevokePremiumAccountsResultRequest), typeof(GetRevokePremiumAccountsResultResponse),
+            typeof(ListPremiumAccountsRequest), typeof(ListPremiumAccountsResponse),
+            typeof(PremiumAccountJobResult),
         };
         domainTypes.Should().Contain(endpointContractTypes, "端点级请求/响应 DTO 必须落位于会议域命名空间");
     }

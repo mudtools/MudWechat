@@ -767,6 +767,21 @@ public class WechatContractGuards
                 //（第三方/代开发章节均无对应 API；零端点父接口 + 仅自建子接口承载；全部挂 mra 段）。
                 nameof(IWechatWorkMeetingMraService),
                 nameof(IWechatWorkInternalMeetingMraService),
+                // 会议·会议布局和背景管理族（Meeting 模块）：15 端点官方仅自建应用开放
+                //（第三方应用开发与服务商代开发章节均无对应 API；零端点父接口 + 仅自建子接口承载；
+                // 基础布局与背景挂 layout 段、高级布局挂 advanced_layout 段；获取布局模板列表为本域唯一 GET 端点）。
+                nameof(IWechatWorkMeetingLayoutService),
+                nameof(IWechatWorkInternalMeetingLayoutService),
+                // 会议·录制管理族（Meeting 模块）：10 端点官方仅自建应用开放
+                //（第三方/代开发章节均无对应 API；零端点父接口 + 仅自建子接口承载；
+                // 挂 record 段、录制转写挂 record/transcript 子段）。
+                nameof(IWechatWorkMeetingRecordingService),
+                nameof(IWechatWorkInternalMeetingRecordingService),
+                // 会议·高级功能账号管理族（Meeting 模块）：3 个官方文档页承载 5 端点官方仅自建应用开放
+                //（分配 99508 / 取消 99509 各含「提交任务」与「查询结果」两端点，查询账号列表 99510；
+                // 第三方/代开发章节均无对应 API；零端点父接口 + 仅自建子接口承载；全部挂 vip 段）。
+                nameof(IWechatWorkMeetingPremiumAccountService),
+                nameof(IWechatWorkInternalMeetingPremiumAccountService),
                 // 微盘·管理空间族（Wedrive 模块）：新建/重命名/解散空间 + 获取空间信息 4 端点为三类应用公共面收敛父接口 + 空标记子接口
                 //（新建空间 93655/95857/96845、重命名空间 97856/97872/97862、解散空间 97857/97873/97863、
                 // 获取空间信息（旧版 space_info）97858/97874/97864）。

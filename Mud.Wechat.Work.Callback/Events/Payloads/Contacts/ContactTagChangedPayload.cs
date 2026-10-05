@@ -25,6 +25,10 @@ namespace Mud.Wechat.Work.Callback.Events.Payloads;
 /// <b>时序不保证</b>（官方明示）：标签的成员变更与成员/部门自身变更事件<b>时序不保证</b>，
 /// 须以「获取标签成员」等拉取接口对齐（v1 方案 §10.4）—— 处理器<b>不得</b>依赖本事件与其他事件的相对顺序。
 /// </para>
+/// <para>
+/// <b>官方文档（核对字段以此为准）</b>：
+/// <see href="https://developer.work.weixin.qq.com/document/path/90972">path 90972 标签成员变更事件</see>。
+/// </para>
 /// </remarks>
 [PayloadContract(Converter = typeof(WechatPayloadConverter))]
 [WechatCallbackContract(

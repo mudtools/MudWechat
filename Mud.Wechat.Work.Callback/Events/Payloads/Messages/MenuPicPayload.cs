@@ -18,6 +18,13 @@ namespace Mud.Wechat.Work.Callback.Events.Payloads;
 /// 差异仅在触发入口（系统拍照 / 拍照或相册 / 微信相册），不体现在报文上。
 /// <see cref="SendPicsInfo"/> 为三层嵌套结构（<c>SendPicsInfo/PicList/item/PicMd5Sum</c>），
 /// 经 G-ADR-17 <c>Object</c> + <c>ItemsObject</c> 通道声明化；节点缺失 ⇒ <c>null</c>。
+/// <para>
+/// <b>官方文档（核对字段以此为准）</b>：
+/// <see href="https://developer.work.weixin.qq.com/document/path/90240">path 90240 接收消息与事件（企业内部开发）</see>/
+/// <see href="https://developer.work.weixin.qq.com/document/path/90376">path 90376 接收消息与事件（第三方）</see>///
+/// <see href="https://developer.work.weixin.qq.com/document/path/96468">path 96468 接收消息与事件（服务商代开发）</see>
+/// （三份正文逐字一致，ADR-14）。
+/// </para>
 /// </remarks>
 [PayloadContract(Converter = typeof(WechatPayloadConverter))]
 [WechatCallbackContract(

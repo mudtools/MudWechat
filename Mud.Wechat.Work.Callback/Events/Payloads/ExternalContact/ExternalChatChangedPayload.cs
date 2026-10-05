@@ -30,6 +30,12 @@ namespace Mud.Wechat.Work.Callback.Events.Payloads;
 /// <see cref="LastMemberVersion"/> 与本地值 —— 一致则可信并更新；不一致说明回调丢失或乱序，
 /// 应调「获取客户群详情」拉取最新数据，以低成本保证一致性。
 /// </para>
+/// <para>
+/// <b>官方文档（核对字段以此为准）</b>：
+/// <see href="https://developer.work.weixin.qq.com/document/path/92130">path 92130 客户联系 事件回调（企业自建）</see>/
+/// <see href="https://developer.work.weixin.qq.com/document/path/92277">path 92277 客户联系 事件回调（第三方，套件信封）</see>/
+/// <see href="https://developer.work.weixin.qq.com/document/path/96361">path 96361 客户联系 事件回调（服务商代开发）</see>。
+/// </para>
 /// </remarks>
 [PayloadContract(Converter = typeof(WechatPayloadConverter))]
 [WechatCallbackContract(

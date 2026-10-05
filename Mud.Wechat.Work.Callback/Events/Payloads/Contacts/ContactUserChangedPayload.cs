@@ -35,6 +35,10 @@ namespace Mud.Wechat.Work.Callback.Events.Payloads;
 /// 字段映射由上游 <c>PayloadFieldMapGenerator</c> 依 <c>[PayloadContract]</c>/<c>[PayloadField]</c> 生成；
 /// 元素名与属性名的配对受<b>编译期校验</b>（改名/漏项即 <c>PAYLOAD004/006/007</c>）。
 /// </para>
+/// <para>
+/// <b>官方文档（核对字段以此为准）</b>：
+/// <see href="https://developer.work.weixin.qq.com/document/path/90970">path 90970 成员变更事件</see>。
+/// </para>
 /// </remarks>
 [PayloadContract(Converter = typeof(WechatPayloadConverter))]
 [WechatCallbackContract(

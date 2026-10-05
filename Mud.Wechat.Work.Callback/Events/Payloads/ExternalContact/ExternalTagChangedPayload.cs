@@ -29,6 +29,12 @@ namespace Mud.Wechat.Work.Callback.Events.Payloads;
 /// 收到后应尽快全量同步标签 order 值。注意重排报文的 <c>StrategyId</c> 为字符串形态（非数值），
 /// 故本字段按文本承载。
 /// </para>
+/// <para>
+/// <b>官方文档（核对字段以此为准）</b>：
+/// <see href="https://developer.work.weixin.qq.com/document/path/92130">path 92130 客户联系 事件回调（企业自建）</see>/
+/// <see href="https://developer.work.weixin.qq.com/document/path/92277">path 92277 客户联系 事件回调（第三方，套件信封）</see>/
+/// <see href="https://developer.work.weixin.qq.com/document/path/96361">path 96361 客户联系 事件回调（服务商代开发）</see>。
+/// </para>
 /// </remarks>
 [PayloadContract(Converter = typeof(WechatPayloadConverter))]
 [WechatCallbackContract(

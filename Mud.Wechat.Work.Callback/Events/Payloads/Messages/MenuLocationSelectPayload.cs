@@ -18,6 +18,13 @@ namespace Mud.Wechat.Work.Callback.Events.Payloads;
 /// <c>AppType</c> 是官方的「来源应用类型」标记（企业微信内恒为 <c>wxwork</c>，微信端不返回该节点），
 /// 与回调开放面的三模式判别<b>无关</b> —— 后者由事件键级开放面声明承载（ADR-14：载荷层不分叉）。
 /// <see cref="SendLocationInfo"/> 含下划线元素名与小数坐标，经 G-ADR-17 <c>Object</c> 通道声明化。
+/// <para>
+/// <b>官方文档（核对字段以此为准）</b>：
+/// <see href="https://developer.work.weixin.qq.com/document/path/90240">path 90240 接收消息与事件（企业内部开发）</see>/
+/// <see href="https://developer.work.weixin.qq.com/document/path/90376">path 90376 接收消息与事件（第三方）</see>/
+/// <see href="https://developer.work.weixin.qq.com/document/path/96468">path 96468 接收消息与事件（服务商代开发）</see>
+/// （三份正文逐字一致，ADR-14）。
+/// </para>
 /// </remarks>
 [PayloadContract(Converter = typeof(WechatPayloadConverter))]
 [WechatCallbackContract(

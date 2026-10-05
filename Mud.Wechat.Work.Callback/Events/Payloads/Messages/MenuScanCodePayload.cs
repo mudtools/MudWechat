@@ -19,6 +19,13 @@ namespace Mud.Wechat.Work.Callback.Events.Payloads;
 /// <see cref="ScanCodeInfo"/> 为单对象嵌套（G-ADR-17 <c>Object</c> 通道，内层字段声明化）；
 /// 节点缺失 ⇒ <c>null</c>（处理器不得假设必有值）。
 /// </remarks>
+/// <para>
+/// <b>官方文档（核对字段以此为准）</b>：
+/// <see href="https://developer.work.weixin.qq.com/document/path/90240">path 90240 接收消息与事件（企业内部开发）</see>/
+/// <see href="https://developer.work.weixin.qq.com/document/path/90376">path 90376 接收消息与事件（第三方）</see>/
+/// <see href="https://developer.work.weixin.qq.com/document/path/96468">path 96468 接收消息与事件（服务商代开发）</see>
+/// （三份正文逐字一致，ADR-14）。
+/// </para>
 [PayloadContract(Converter = typeof(WechatPayloadConverter))]
 [WechatCallbackContract(
     RequiredFamily = WechatCallbackEventFamily.Unknown,

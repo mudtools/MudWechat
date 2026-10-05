@@ -30,6 +30,10 @@ namespace Mud.Wechat.Work.Callback.Events.Payloads;
 /// <para>
 /// <c>corp_join</c> 仅对已加入上下游的企业产生事件；<c>update_corp</c> 在变更企业分组时触发。
 /// </para>
+/// <para>
+/// <b>官方文档（核对字段以此为准）</b>：
+/// <see href="https://developer.work.weixin.qq.com/document/path/95796">path 95796 上下游变更回调</see>。
+/// </para>
 /// </remarks>
 [PayloadContract(Converter = typeof(WechatPayloadConverter))]
 [WechatCallbackContract(

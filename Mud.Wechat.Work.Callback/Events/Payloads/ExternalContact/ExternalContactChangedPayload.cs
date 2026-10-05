@@ -35,6 +35,13 @@ namespace Mud.Wechat.Work.Callback.Events.Payloads;
 /// <b>获客助手组件形态</b>：第三方「获客助手」的添加成功事件（官方 99485）复用本事件键并额外携带
 /// <see cref="LinkId"/>（获客链接 id）—— 经 <see cref="LinkId"/> 是否有值即可识别该形态。
 /// </para>
+/// <para>
+/// <b>官方文档（核对字段以此为准）</b>：
+/// <see href="https://developer.work.weixin.qq.com/document/path/92130">path 92130 客户联系 事件回调（企业自建）</see>/
+/// <see href="https://developer.work.weixin.qq.com/document/path/92277">path 92277 客户联系 事件回调（第三方，套件信封）</see>/
+/// <see href="https://developer.work.weixin.qq.com/document/path/96361">path 96361 客户联系 事件回调（服务商代开发）</see>/
+/// <see href="https://developer.work.weixin.qq.com/document/path/99485">path 99485 获客助手组件（第三方，添加成功事件形态）</see>。
+/// </para>
 /// </remarks>
 [PayloadContract(Converter = typeof(WechatPayloadConverter))]
 [WechatCallbackContract(

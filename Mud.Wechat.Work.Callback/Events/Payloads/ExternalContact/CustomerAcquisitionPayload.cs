@@ -38,6 +38,13 @@ namespace Mud.Wechat.Work.Callback.Events.Payloads;
 /// <b>可建联范围变动</b>：<c>customer_acquisition_permit_change</c>（官方 92277，仅第三方）无业务字段节点，
 /// 复用本载荷（全字段为 <c>null</c>），类别由信封判别。
 /// </para>
+/// <para>
+/// <b>官方文档（核对字段以此为准）</b>：
+/// <see href="https://developer.work.weixin.qq.com/document/path/97299">path 97299 获客助手 事件通知（企业自建）</see>/
+/// <see href="https://developer.work.weixin.qq.com/document/path/97402">path 97402 获客助手 事件通知（第三方，套件信封）</see>/
+/// <see href="https://developer.work.weixin.qq.com/document/path/99485">path 99485 获客助手组件（第三方组件形态）</see>/
+/// <see href="https://developer.work.weixin.qq.com/document/path/98958">path 98958 获客助手 事件通知（服务商代开发）</see>。
+/// </para>
 /// </remarks>
 [PayloadContract(Converter = typeof(WechatPayloadConverter))]
 [WechatCallbackContract(

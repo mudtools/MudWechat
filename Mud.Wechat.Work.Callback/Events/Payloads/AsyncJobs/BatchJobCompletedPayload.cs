@@ -29,6 +29,12 @@ namespace Mud.Wechat.Work.Callback.Events.Payloads;
 /// <c>import_chain_contact</c> 仅自建应用会产生，但官方开放面约束的对象是「上下游变更回调」这一事件面，
 /// 而非某个 <c>JobType</c> 值 ⇒ 处理器按需自行判别，<b>不</b>在闸上分叉。
 /// </para>
+/// <para>
+/// <b>官方文档（核对字段以此为准）</b>：
+/// <see href="https://developer.work.weixin.qq.com/document/path/90973">path 90973 异步任务完成通知</see>（通讯录，字段在顶层）/
+/// <see href="https://developer.work.weixin.qq.com/document/path/95797">path 95797 异步任务完成通知</see>（上下游，<c>BatchJob</c> 包装布局）/
+/// <see href="https://developer.work.weixin.qq.com/document/path/92125">path 92125 获取异步任务结果</see>（按 <see cref="JobId"/> 调取结果文件）。
+/// </para>
 /// </remarks>
 [PayloadContract(Converter = typeof(WechatPayloadConverter), ScopeFallback = "BatchJob")]
 [WechatCallbackContract(

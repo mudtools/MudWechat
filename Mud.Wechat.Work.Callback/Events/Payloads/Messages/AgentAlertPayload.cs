@@ -23,6 +23,13 @@ namespace Mud.Wechat.Work.Callback.Events.Payloads;
 /// 与 <see cref="PlainEventPayload"/> 分立的原因是<b>字段集合不同</b>（本载荷无 <c>EventKey</c>、
 /// 多 <c>EffectTime</c>），按指南 §0 的「同构 = 字段集合一致」判据不合并。
 /// </para>
+/// <para>
+/// <b>官方文档（核对字段以此为准）</b>：
+/// <see href="https://developer.work.weixin.qq.com/document/path/90240">path 90240 接收消息与事件（企业内部开发）</see>/
+/// <see href="https://developer.work.weixin.qq.com/document/path/90376">path 90376 接收消息与事件（第三方）</see>/
+/// <see href="https://developer.work.weixin.qq.com/document/path/96468">path 96468 接收消息与事件（服务商代开发）</see>
+/// （三份正文逐字一致，ADR-14）。
+/// </para>
 /// </remarks>
 [PayloadContract(Converter = typeof(WechatPayloadConverter))]
 [WechatCallbackContract(

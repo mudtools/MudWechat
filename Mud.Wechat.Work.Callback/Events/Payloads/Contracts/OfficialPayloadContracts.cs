@@ -36,11 +36,25 @@ namespace Mud.Wechat.Work.Callback.Events.Payloads;
 /// （自建·代开发×应用数据通道 + 第三方×套件指令通道），由<b>同键多特性声明合并</b>的多组开放面承载。
 /// </para>
 /// <para>
-/// <b>逐条对照官方文档</b>（守卫 CB4b/CB4c，Tests/**/ContractGuards/WechatCallbackContractGuards.cs）：
-/// 通讯录 90967/90970/90971/90972、异步任务 90973/95797、上下游 95796、
-/// 客户联系 92130（自建）/92277（第三方）/96361（代开发）、
-/// 获客助手 97299（自建）/97402·99485（第三方）/98958（代开发）、
-/// 消息与事件 90240（企业内部开发）/ 90376（第三方）/ 96468（服务商代开发，正文逐字一致）。
+/// <b>逐条对照官方文档（核对字段以此为准）</b>（守卫 CB4b/CB4c，Tests/**/ContractGuards/WechatCallbackContractGuards.cs）：
+/// 通讯录 <see href="https://developer.work.weixin.qq.com/document/path/90967">path 90967 通讯录回调概述</see>/
+/// <see href="https://developer.work.weixin.qq.com/document/path/90970">path 90970 成员变更</see>/
+/// <see href="https://developer.work.weixin.qq.com/document/path/90971">path 90971 部门变更</see>/
+/// <see href="https://developer.work.weixin.qq.com/document/path/90972">path 90972 标签成员变更</see>；
+/// 异步任务 <see href="https://developer.work.weixin.qq.com/document/path/90973">path 90973 异步任务完成通知</see>/
+/// <see href="https://developer.work.weixin.qq.com/document/path/95797">path 95797 异步任务完成通知（上下游，BatchJob 包装）</see>
+/// （结果文件调取见 <see href="https://developer.work.weixin.qq.com/document/path/92125">path 92125 获取异步任务结果</see>）；
+/// 上下游 <see href="https://developer.work.weixin.qq.com/document/path/95796">path 95796 上下游变更回调</see>；
+/// 客户联系 <see href="https://developer.work.weixin.qq.com/document/path/92130">path 92130 事件回调（自建）</see>/
+/// <see href="https://developer.work.weixin.qq.com/document/path/92277">path 92277 事件回调（第三方）</see>/
+/// <see href="https://developer.work.weixin.qq.com/document/path/96361">path 96361 事件回调（服务商代开发）</see>；
+/// 获客助手 <see href="https://developer.work.weixin.qq.com/document/path/97299">path 97299 事件通知（自建）</see>/
+/// <see href="https://developer.work.weixin.qq.com/document/path/97402">path 97402 事件通知（第三方，套件信封）</see>/
+/// <see href="https://developer.work.weixin.qq.com/document/path/99485">path 99485 获客助手组件（第三方组件形态）</see>/
+/// <see href="https://developer.work.weixin.qq.com/document/path/98958">path 98958 事件通知（代开发）</see>；
+/// 消息与事件 <see href="https://developer.work.weixin.qq.com/document/path/90240">path 90240 接收消息与事件（企业内部开发）</see>/
+/// <see href="https://developer.work.weixin.qq.com/document/path/90376">path 90376 接收消息与事件（第三方）</see>/
+/// <see href="https://developer.work.weixin.qq.com/document/path/96468">path 96468 接收消息与事件（服务商代开发，正文逐字一致）</see>。
 /// 授权族 7 键<b>不登记契约</b>（走信封，ADR-8）。
 /// </para>
 /// <para>

@@ -32,6 +32,13 @@ namespace Mud.Wechat.Work.Callback.Events.Payloads;
 /// <para>
 /// <b>权限分层</b>：无授权差异；处理器<b>不得</b>假设 <c>EventKey</c> 必有值。
 /// </para>
+/// <para>
+/// <b>官方文档（核对字段以此为准）</b>：
+/// <see href="https://developer.work.weixin.qq.com/document/path/90240">path 90240 接收消息与事件（企业内部开发）</see>/
+/// <see href="https://developer.work.weixin.qq.com/document/path/90376">path 90376 接收消息与事件（第三方）</see>/
+/// <see href="https://developer.work.weixin.qq.com/document/path/96468">path 96468 接收消息与事件（服务商代开发）</see>
+/// （三份正文逐字一致，ADR-14）。
+/// </para>
 /// </remarks>
 [PayloadContract(Converter = typeof(WechatPayloadConverter))]
 [WechatCallbackContract(

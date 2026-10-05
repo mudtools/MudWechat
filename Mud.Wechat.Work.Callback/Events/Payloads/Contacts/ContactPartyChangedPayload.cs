@@ -20,6 +20,10 @@ namespace Mud.Wechat.Work.Callback.Events.Payloads;
 /// （2022-08-15 后新 URL 的部门事件仅回调 id 子集时不返回 <c>Name</c>）。
 /// </para>
 /// <para>三模式共用一份可空超集（ADR-14），不得按应用模式分叉。</para>
+/// <para>
+/// <b>官方文档（核对字段以此为准）</b>：
+/// <see href="https://developer.work.weixin.qq.com/document/path/90971">path 90971 部门变更事件</see>。
+/// </para>
 /// </remarks>
 [PayloadContract(Converter = typeof(WechatPayloadConverter))]
 [WechatCallbackContract(

@@ -73,7 +73,7 @@ public sealed class WechatCallbackHandlerAnalyzer : DiagnosticAnalyzer
     private static readonly DiagnosticDescriptor KeyLiteral = new(
         id: "MUDCB004",
         title: "处理器事件键应引用 WechatCallbackEventTypes 常量",
-        messageFormat: "处理器声明的事件键 \"{0}\" 是字符串字面量；请改用 WechatCallbackEventTypes 常量以消除笔误与漂移风险。",
+        messageFormat: "处理器 {0} 声明的事件键 \"{1}\" 是字符串字面量；请改用 WechatCallbackEventTypes 常量以消除笔误与漂移风险。",
         category: "MudWechatCallback",
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true);
@@ -96,7 +96,77 @@ public sealed class WechatCallbackHandlerAnalyzer : DiagnosticAnalyzer
     {
         context.EnableConcurrentExecution();
         context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
-        context.RegisterCompilationStartAction(CompilationStart);
+        context.RegisterCompilationStartAction(SafeCompilationStart);
+    }
+
+    /// <summary>
+    /// 全部注册入口的异常兜底：分析器内抛出的异常会被 Roslyn 转成 <c>AD0001</c> 并**使整次编译失败**，
+    /// 而本分析器随 Callback 包下发给消费者（宿主构建不可用），故任何对符号形态的假设失败都必须
+    /// 「静默跳过」而非升级为用户错误（方案 §9 风险表）。<see cref="OperationCanceledException"/>
+    /// 不在捕获面：取消语义须原样传播。
+    /// </summary>
+    private static void SafeCompilationStart(CompilationStartAnalysisContext context)
+    {
+        try
+        {
+            CompilationStart(context);
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception)
+        {
+            // 兜底静默：宁可漏报，也不得让分析器把宿主编译判失败。
+        }
+    }
+
+    private static void Safe(SyntaxNodeAnalysisContext context, Action<SyntaxNodeAnalysisContext> action)
+    {
+        try
+        {
+            action(context);
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception)
+        {
+            // 同 SafeCompilationStart。
+        }
+    }
+
+    private static void Safe(OperationAnalysisContext context, Action<OperationAnalysisContext> action)
+    {
+        try
+        {
+            action(context);
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception)
+        {
+            // 同 SafeCompilationStart。
+        }
+    }
+
+    private static void Safe(CompilationAnalysisContext context, Action<CompilationAnalysisContext> action)
+    {
+        try
+        {
+            action(context);
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception)
+        {
+            // 同 SafeCompilationStart。
+        }
     }
 
     private static void CompilationStart(CompilationStartAnalysisContext context)
@@ -114,20 +184,26 @@ public sealed class WechatCallbackHandlerAnalyzer : DiagnosticAnalyzer
         var state = new AnalysisState(handlerBase, typedInterface, contractAttribute, genericPayload);
 
         // ① 键求值：语法节点驱动（能直接拿 SemanticModel 与初始化表达式），MUDCB002/003/004。
-        context.RegisterSyntaxNodeAction(state.AnalyzePropertyDeclaration, SyntaxKind.PropertyDeclaration);
+        context.RegisterSyntaxNodeAction(
+            c => Safe(c, state.AnalyzePropertyDeclaration), SyntaxKind.PropertyDeclaration);
 
         // ② 处理类型收集：具体（非 abstract）载荷处理器，MUDCB005 的「全集 a」。
-        context.RegisterSyntaxNodeAction(state.CollectHandlerType, SyntaxKind.ClassDeclaration);
+        //    record class 处理器（RecordDeclarationSyntax）同样纳入 —— 否则该形态整体漏报「未注册」。
+        context.RegisterSyntaxNodeAction(
+            c => Safe(c, state.CollectHandlerType), SyntaxKind.ClassDeclaration, SyntaxKind.RecordDeclaration);
 
         // ③ 注册覆盖：AddHandler 调用点的类型实参（含「宿主编译单元」标记）。
-        context.RegisterOperationAction(state.CollectAddHandlerInvocation, OperationKind.Invocation);
+        context.RegisterOperationAction(
+            c => Safe(c, state.CollectAddHandlerInvocation), OperationKind.Invocation);
 
         // ④ 宽豁免引用：类型实参 / typeof 引用（覆盖「把 builder 传给宿主自建注册辅助方法」等形态）。
-        context.RegisterSyntaxNodeAction(state.CollectTypeReference, SyntaxKind.TypeArgumentList);
-        context.RegisterSyntaxNodeAction(state.CollectTypeOfReference, SyntaxKind.TypeOfExpression);
+        context.RegisterSyntaxNodeAction(
+            c => Safe(c, state.CollectTypeReference), SyntaxKind.TypeArgumentList);
+        context.RegisterSyntaxNodeAction(
+            c => Safe(c, state.CollectTypeOfReference), SyntaxKind.TypeOfExpression);
 
         // ⑤ 汇总：a - (b ∪ c) 报 MUDCB005。
-        context.RegisterCompilationEndAction(state.ReportUnregisteredHandlers);
+        context.RegisterCompilationEndAction(c => Safe(c, state.ReportUnregisteredHandlers));
     }
 
     /// <summary>
@@ -212,7 +288,8 @@ public sealed class WechatCallbackHandlerAnalyzer : DiagnosticAnalyzer
             // MUDCB004：字面量（而非 WechatCallbackEventTypes 常量引用）——即使键值正确也显式提示。
             if (initializer.IsKind(SyntaxKind.StringLiteralExpression))
             {
-                context.ReportDiagnostic(Diagnostic.Create(KeyLiteral, initializer.GetLocation(), key));
+                context.ReportDiagnostic(Diagnostic.Create(
+                    KeyLiteral, initializer.GetLocation(), declared.ContainingType.Name, key));
             }
 
             // MUDCB002：键为可证明的编译期常量但 ∉ 载荷自身声明的契约键集。
@@ -228,11 +305,11 @@ public sealed class WechatCallbackHandlerAnalyzer : DiagnosticAnalyzer
             }
         }
 
-        /// <summary>MUDCB005 全集 a：具体（非 abstract）载荷处理器（仅源码声明）。</summary>
+        /// <summary>MUDCB005 全集 a：具体（非 abstract）载荷处理器（仅源码声明，含 <c>record class</c>形态）。</summary>
         public void CollectHandlerType(SyntaxNodeAnalysisContext context)
         {
-            var classDecl = (ClassDeclarationSyntax)context.Node;
-            var symbol = context.SemanticModel.GetDeclaredSymbol(classDecl, context.CancellationToken) as INamedTypeSymbol;
+            var typeDecl = (BaseTypeDeclarationSyntax)context.Node;
+            var symbol = context.SemanticModel.GetDeclaredSymbol(typeDecl, context.CancellationToken) as INamedTypeSymbol;
             if (symbol == null || symbol.IsAbstract)
             {
                 return;

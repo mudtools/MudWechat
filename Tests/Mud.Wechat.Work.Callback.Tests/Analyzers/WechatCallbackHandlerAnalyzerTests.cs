@@ -388,6 +388,42 @@ public class WechatCallbackHandlerAnalyzerTests
     // ---------------------------------------------------------------- E MUDCB005
 
     [Fact]
+    public async Task RecordHandler_ShouldBeCovered_ByMUDCB005()
+    {
+        // record class 处理器走 RecordDeclarationSyntax；若收集动作只挂 ClassDeclaration，
+        // 该形态会整体漏报「忘注册」（方案 §3豁免②要求「具体处理器」全覆盖）。
+        var source = CommonUsings + """
+
+            [WechatCallbackContract(EventTypes = new[] { "create_user" })]
+            public sealed class MyPayload : WechatCallbackPayload { }
+
+            public sealed record MyRecordHandler : WechatCallbackPayloadHandler<MyPayload>
+            {
+                public override string SupportedEventType => WechatCallbackEventTypes.CreateUser;
+                public override Task HandleAsync(WechatCallbackEvent eventData, MyPayload payload, CancellationToken cancellationToken = default)
+                    => Task.CompletedTask;
+            }
+
+            public sealed class MyHandler : WechatCallbackPayloadHandler<MyPayload>
+            {
+                public override string SupportedEventType => WechatCallbackEventTypes.CreateUser;
+                public override Task HandleAsync(WechatCallbackEvent eventData, MyPayload payload, CancellationToken cancellationToken = default)
+                    => Task.CompletedTask;
+            }
+
+            public static class Host
+            {
+                public static void Configure() => AddHandler<MyHandler>();
+                public static void AddHandler<T>() where T : class { }
+            }
+            """;
+
+        var diagnostics = await AnalyzeAsync(source);
+
+        Of(diagnostics, "MUDCB005").Should().HaveCount(1, "record class 处理器同样受未注册诊断覆盖");
+    }
+
+    [Fact]
     public async Task UnregisteredHandler_ShouldReportMUDCB005_WhenHostCompilationHasAddHandler()
     {
         var source = CommonUsings + """
@@ -571,5 +607,88 @@ public class WechatCallbackHandlerAnalyzerTests
         var diagnostics = await AnalyzeAsync(hostSource, new[] { libReference });
 
         Of(diagnostics, "MUDCB002").Should().HaveCount(1, "元数据符号与源码符号同一 GetAttributes 路径（消费者编译期校验）");
+    }
+
+    // ---------------------------------------------------------------- G健壮性（异常兜底）
+
+    [Fact]
+    public async Task MalformedShapes_ShouldNotProduce_AD0001()
+    {
+        // 方案 §9：分析器异常会被 Roslyn 转成 AD0001 并使**整次编译失败**；而本分析器随包下发给消费者，
+        // 故任何非预期符号形态（泛型中间基类 / 显式接口实现 / null 键 / partial / static 宿主 / 语法错误）
+        // 都必须「静默跳过」而不是升级为用户错误。此用例锁死该兜底不被后续改动移除。
+        var source = CommonUsings + """
+
+            [WechatCallbackContract(EventTypes = new[] { "create_user" })]
+            public sealed class MyPayload : WechatCallbackPayload { }
+
+            // 泛型中间基类：TPayload 解析为类型参数 T（无契约特性 ⇒ MUDCB002 豁免）
+            public abstract class AuditBase<T> : WechatCallbackPayloadHandler<T> where T : WechatCallbackPayload
+            {
+                public override string SupportedEventType => WechatCallbackEventTypes.CreateUser;
+            }
+
+            public sealed class DerivedFromGeneric : AuditBase<MyPayload>
+            {
+                public override Task HandleAsync(WechatCallbackEvent eventData, MyPayload payload, CancellationToken cancellationToken = default)
+                    => Task.CompletedTask;
+            }
+
+            // null 键 = 兜底处理器（运行期 WechatCallbackDispatcher 同样按兜底处理）
+            public sealed class NullKeyHandler : WechatCallbackPayloadHandler<MyPayload>
+            {
+                public override string SupportedEventType => null!;
+                public override Task HandleAsync(WechatCallbackEvent eventData, MyPayload payload, CancellationToken cancellationToken = default)
+                    => Task.CompletedTask;
+            }
+
+            // partial 处理器（多声明 ⇒ 收集动作被触发两次，须按符号去重）
+            public sealed partial class PartialHandler : WechatCallbackPayloadHandler<MyPayload>
+            {
+                public override string SupportedEventType => WechatCallbackEventTypes.CreateParty;
+            }
+
+            public partial class PartialHandler
+            {
+                public override Task HandleAsync(WechatCallbackEvent eventData, MyPayload payload, CancellationToken cancellationToken = default)
+                    => Task.CompletedTask;
+            }
+
+            public static class Host
+            {
+                public static void Configure()
+                {
+                    AddHandler<DerivedFromGeneric>();
+                    AddHandler<NullKeyHandler>();
+                }
+
+                public static void AddHandler<T>() where T : class { }
+            }
+            """;
+
+        var diagnostics = await AnalyzeAsync(source);
+
+        diagnostics.Should().NotContain(
+            d => d.Id == "AD0001",
+            "分析器不得在畸形符号形态上抛异常（异常会被转为 AD0001 使宿主整次编译失败）");
+    }
+
+    [Fact]
+    public async Task BrokenSyntax_ShouldNotProduce_AD0001()
+    {
+        var source = CommonUsings + """
+
+            [WechatCallbackContract(EventTypes = new[] { "create_user" })]
+            public sealed class MyPayload : WechatCallbackPayload { }
+
+            public sealed class BrokenHandler : WechatCallbackPayloadHandler<MyPayload>
+            {
+                public override string SupportedEventType => ;
+            }
+            """;
+
+        var diagnostics = await AnalyzeAsync(source);
+
+        diagnostics.Should().NotContain(d => d.Id == "AD0001", "语法错误输入下分析器须静默");
     }
 }

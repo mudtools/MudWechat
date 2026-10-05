@@ -26,11 +26,14 @@
 		</PackageReference>
 	</ItemGroup>
 
-	<!-- 根 Directory.Build.props 按 netstandard2.0 注入的运行时依赖对分析器无意义，移除以保持分析器程序集最小化。 -->
+	<!-- 根 Directory.Build.props 按 netstandard2.0 注入的运行时依赖对分析器无意义，移除以保持分析器程序集最小化。
+	     Microsoft.Extensions.Options 亦必须移除：它会传递引入 DependencyInjection.Abstractions /
+	     Primitives / Bcl.AsyncInterfaces，并把 Options.SourceGeneration 当作分析器加载进本工程自身编译。 -->
 	<ItemGroup>
 		<PackageReference Remove="Microsoft.Extensions.DependencyInjection.Abstractions" />
 		<PackageReference Remove="Microsoft.Extensions.Logging.Abstractions" />
 		<PackageReference Remove="Microsoft.Extensions.Configuration.Binder" />
+		<PackageReference Remove="Microsoft.Extensions.Options" />
 		<PackageReference Remove="System.Text.Json" />
 	</ItemGroup>
 

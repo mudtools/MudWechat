@@ -724,6 +724,11 @@ public class WechatContractGuards
                 nameof(IWechatWorkInternalScheduleService),
                 nameof(IWechatWorkProviderScheduleService),
                 nameof(IWechatWorkThirdPartyScheduleService),
+                // 日程·待办族（Schedule 模块）：获取待办详情、更新待办状态 2 端点官方仅向企业自建应用开放
+                //（第三方应用开发与服务商代开发均无对应 API），零端点父接口 + 仅自建子接口承载端点
+                //（获取待办详情 101524、更新待办状态 101534；路由挂 /cgi-bin/todo/ 段）。
+                nameof(IWechatWorkScheduleTodoService),
+                nameof(IWechatWorkInternalScheduleTodoService),
                 // 会议·预约会议基础管理族（Meeting 模块）：创建/修改/取消/获取成员会议 ID 列表 4 端点为三类应用公共面收敛父接口
                 //（创建 99104/93706/97454、修改 99047/93710/97455、取消 99048/93709/97456、获取成员会议 ID 列表 99050/93707/97457；
                 // 获取会议详情 99049/93708 为自建/第三方差异端点，代开发零端点空标记）。
@@ -740,6 +745,21 @@ public class WechatContractGuards
                 // 创建/修改/取消预约会议、获取会议详情、获取成员会议 ID 列表 5 个文档页与基础管理族同路由，不重复建端点）。
                 nameof(IWechatWorkMeetingAdvancedService),
                 nameof(IWechatWorkInternalMeetingAdvancedService),
+                // 微盘·管理空间族（Wedrive 模块）：新建/重命名/解散空间 + 获取空间信息 4 端点为三类应用公共面收敛父接口 + 空标记子接口
+                //（新建空间 93655/95857/96845、重命名空间 97856/97872/97862、解散空间 97857/97873/97863、
+                // 获取空间信息（旧版 space_info）97858/97874/97864）。
+                nameof(IWechatWorkWedriveSpaceService),
+                nameof(IWechatWorkInternalWedriveSpaceService),
+                nameof(IWechatWorkProviderWedriveSpaceService),
+                nameof(IWechatWorkThirdPartyWedriveSpaceService),
+                // 微盘·管理空间权限族（Wedrive 模块）：添加/移除成员部门 + 安全设置 + 获取邀请链接 + 获取空间信息（新版）5 端点
+                // 为三类应用公共面收敛父接口 + 空标记子接口
+                //（添加成员/部门 93656/95858/96846、移除成员/部门 97875/97947/97910、安全设置 97876/97948/97911、
+                // 获取邀请链接 97877/97949/97912、获取空间信息（新版 new_space_info）97878/97950/97913）。
+                nameof(IWechatWorkWedriveSpaceAclService),
+                nameof(IWechatWorkInternalWedriveSpaceAclService),
+                nameof(IWechatWorkProviderWedriveSpaceAclService),
+                nameof(IWechatWorkThirdPartyWedriveSpaceAclService),
             },
             "企业微信官方契约强制 Query 注入（MUD005 已知接受风险），新增 Query 注入接口须评估后扩展本守卫");
     }

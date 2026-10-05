@@ -41,6 +41,11 @@ namespace Mud.Wechat.Work.DataModels.Schedule;
 [JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.Schedule.ScheduleRemindersInfo))]
 [JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.Schedule.UpdateScheduleRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.Schedule.UpdateScheduleResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.Schedule.GetScheduleTodoResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.Schedule.GetScheduleTodoRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.Schedule.UpdateScheduleTodoRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.Schedule.ScheduleTodoAttendee))]
+[JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.Schedule.ScheduleTodoReminder))]
 internal partial class ScheduleJsonContext : JsonSerializerContext
 {
 }

@@ -18,7 +18,7 @@ namespace Mud.Wechat.Work.Tests.ContractGuards;
 /// <summary>
 /// 会议模块（Meeting 模块）契约守卫：路由表、接口层级、开放面与令牌绑定锁定。
 /// <para>
-/// 三功能族形态：
+/// 四功能族形态：
 /// 预约会议基础管理族（创建/修改/取消/获取成员会议 ID 列表 4 端点官方对三类应用开放一致，
 /// 收敛声明于公共父接口；获取会议详情为自建/第三方差异端点——同路由两分支子接口各自声明，
 /// 服务商代开发章节未开放该端点、其子接口为零端点空标记）；
@@ -26,20 +26,37 @@ namespace Mud.Wechat.Work.Tests.ContractGuards;
 /// 零端点父接口 + 唯一自建子接口承载端点）；
 /// 预约会议高级管理族（19 端点官方仅自建应用开放——第三方应用开发与服务商代开发章节均无对应 API，
 /// 零端点父接口 + 唯一自建子接口承载端点；创建/修改/取消预约会议、获取会议详情、获取成员会议 ID 列表
-/// 5 个高级管理文档页与基础管理族同路由，不重复声明端点、仅将请求/响应 DTO 扩展为高级文档参数超集）。
+/// 5 个高级管理文档页与基础管理族同路由，不重复声明端点、仅将请求/响应 DTO 扩展为高级文档参数超集）；
+/// 会中控制管理族（17 端点官方仅自建应用开放——第三方/代开发章节均无对应 API，
+/// 零端点父接口 + 唯一自建子接口承载端点；会控 9 端点挂 realcontrol 段、投票 8 端点挂 poll 段）；
+/// 网络研讨会管理族（14 端点官方仅自建应用开放——第三方/代开发章节均无对应 API，
+/// 零端点父接口 + 唯一自建子接口承载端点；全部挂 webinar 段，报名 7 端点挂 webinar/enroll 子段，
+/// 报名问题/报名 ID/报名信息结构官方与普通会议报名同构、共用同一批嵌套 DTO）；
+/// 电话入会（PSTN）管理族（3 端点官方仅自建应用开放——第三方/代开发章节均无对应 API，
+/// 零端点父接口 + 唯一自建子接口承载端点；全部挂 phone 段）。
 /// </para>
 /// </summary>
 /// <remarks>
 /// <para>
-/// 官方反直觉点（勿「顺手修正」）：会议域 25 条路由官方全部即 POST（含仅查询语义的 meeting/get_info /
+/// 官方反直觉点（勿「顺手修正」）：会议域 59 条路由官方全部即 POST（含仅查询语义的 meeting/get_info /
 /// meeting/get_user_meetingid / meeting/statistics/get_start_list / meeting/get_invitees /
 /// meeting/get_customer_short_url / meeting/get_realtime_attendee_list / meeting/get_attendee_list /
 /// meeting/waitingroom/* / meeting/check_device_in_meeting / meeting/get_guests / meeting/get_quality /
-/// meeting/enroll/*）；会议 ID 官方字段名作 <c>meetingid</c>（无下划线）、列表作 <c>meetingid_list</c>；
-/// 获取成员会议 ID 列表用 cursor+limit 翻页（cursor 初次调用可填 "0"）；
-/// 会议统计管理路由挂 <c>/cgi-bin/meeting/statistics/</c> 段；高级管理报名配置与等候室路由挂
-/// <c>/cgi-bin/meeting/enroll/</c> 与 <c>/cgi-bin/meeting/waitingroom/</c> 段；
+/// meeting/enroll/* / meeting/realcontrol/* / meeting/poll/* / meeting/webinar/* / meeting/phone/*）；
+/// 会议 ID 官方字段名作 <c>meetingid</c>（无下划线）、列表作 <c>meetingid_list</c>；获取成员会议 ID 列表用
+/// cursor+limit 翻页（cursor 初次调用可填 "0"）；会议统计管理路由挂 <c>/cgi-bin/meeting/statistics/</c> 段；
+/// 高级管理报名配置与等候室路由挂 <c>/cgi-bin/meeting/enroll/</c> 与 <c>/cgi-bin/meeting/waitingroom/</c> 段；
+/// 会控与投票路由挂 <c>/cgi-bin/meeting/realcontrol/</c> 与 <c>/cgi-bin/meeting/poll/</c> 段；
+/// 网络研讨会与电话入会路由挂 <c>/cgi-bin/meeting/webinar/</c> 与 <c>/cgi-bin/meeting/phone/</c> 段；
 /// 获取实时会中成员列表官方请求示例将分页游标误写为 <c>cursort</c>、参数表为 <c>cursor</c>，以参数表为准；
+/// 会控单数命名 <c>operated_user</c>（管理联席主持人/静音成员/关闭屏幕共享/开关成员视频）承载单个对象
+/// （参数表 object[] 标注为文档笔误），复数命名 <c>operated_users</c>（管理等候室成员/移出成员/修改昵称）承载数组；
+/// 修改成员昵称参数表 <c>opereated_users</c>、开关成员视频参数表 <c>instanceid</c>、静音成员参数表
+/// <c>option</c> 标注 string 均为文档笔误，以官方示例（operated_users / instance_id / bool）为准；
+/// 网络研讨会详情响应主题字段参数表作 <c>subject</c>、示例作 <c>title</c>（与创建响应一致），以示例为准；
+/// 详情响应 media_setting 的入会静音字段示例作 <c>mute_enable_join</c>（参数表作 enable_enter_mute），
+/// 与请求形态分型承载；详情响应 status 为字符串枚举（MEETING_STATE_*）；
+/// 网络研讨会 start_time/end_time 参数表与示例均为字符串形态时间戳（单位秒）；
 /// 创建预约会议响应 meetingid 可用于「进入会议」接口（小程序/JS-SDK）；
 /// 创建/修改预约会议请求与获取会议详情响应的 settings/reminders/invitees
 /// 三嵌套对象官方参数表高度同构，本 SDK 以共用结构承载；
@@ -47,7 +64,7 @@ namespace Mud.Wechat.Work.Tests.ContractGuards;
 /// 获取受邀成员列表的 <c>invitees</c> 为 <see cref="MeetingInvitee"/> 对象数组，与创建/修改请求的
 /// <see cref="MeetingInvitees"/>（userid 字符串数组包裹对象）同名字段两种形态并存；
 /// 删除会议报名信息请求的 <c>enroll_id_list</c> 为对象数组（<see cref="MeetingEnrollIdRef"/>），
-/// 而审批会议报名信息请求的同名字段为字符串数组。
+/// 而审批会议报名信息请求的同名字段为字符串数组（普通会议与网络研讨会报名域同构同规）。
 /// </para>
 /// </remarks>
 public class WechatMeetingContractGuards
@@ -55,7 +72,7 @@ public class WechatMeetingContractGuards
     private const string MeetingRegistryGroupName = "Meeting";
 
     // ------------------------------------------------------------------
-    // 路由表：25 条官方路由（get_info 同路由两分支；高级管理文档页与基础管理族 5 条同路由不重复建端点），
+    // 路由表：59 条官方路由（get_info 同路由两分支；高级管理文档页与基础管理族 5 条同路由不重复建端点），
     // 全部 POST（勿「顺手统一」为 GET）。
     // ------------------------------------------------------------------
 
@@ -184,8 +201,159 @@ public class WechatMeetingContractGuards
                 typeof(PostAttribute), "/cgi-bin/meeting/enroll/delete"),
         };
 
+    private static readonly (Type Interface, string Method, Type HttpAttribute, string Route)[]
+        MeetingControlRoutes =
+        {
+            // 管理会中设置（自建 98175；allow_unmute_self 需 mute_all=true 才生效；暂不支持 MRA 被操作）。
+            (typeof(IWechatWorkInternalMeetingControlService),
+                nameof(IWechatWorkInternalMeetingControlService.SetRealtimeSettingsAsync),
+                typeof(PostAttribute), "/cgi-bin/meeting/realcontrol/set"),
+            // 管理联席主持人（自建 98180；action 为布尔设置/撤销；暂不支持 MRA 被操作）。
+            (typeof(IWechatWorkInternalMeetingControlService),
+                nameof(IWechatWorkInternalMeetingControlService.SetCoHostAsync),
+                typeof(PostAttribute), "/cgi-bin/meeting/realcontrol/set_cohost"),
+            // 静音成员（自建 98184；option 参数表标 string、示例为 bool，以示例为准）。
+            (typeof(IWechatWorkInternalMeetingControlService),
+                nameof(IWechatWorkInternalMeetingControlService.MuteUserAsync),
+                typeof(PostAttribute), "/cgi-bin/meeting/realcontrol/mute_user"),
+            // 关闭或开启成员视频（自建 98189；video=true 仅支持 MRA 设备；参数表 instanceid 为笔误，示例为 instance_id）。
+            (typeof(IWechatWorkInternalMeetingControlService),
+                nameof(IWechatWorkInternalMeetingControlService.SwitchUserVideoAsync),
+                typeof(PostAttribute), "/cgi-bin/meeting/realcontrol/switch_user_video"),
+            // 关闭成员屏幕共享（自建 98185；暂不支持 MRA 被操作）。
+            (typeof(IWechatWorkInternalMeetingControlService),
+                nameof(IWechatWorkInternalMeetingControlService.CloseScreenShareAsync),
+                typeof(PostAttribute), "/cgi-bin/meeting/realcontrol/close_screen_share"),
+            // 修改成员在会中显示的昵称（自建 98188；参数表 opereated_users 为笔误，示例为 operated_users）。
+            (typeof(IWechatWorkInternalMeetingControlService),
+                nameof(IWechatWorkInternalMeetingControlService.SetUserNicknamesAsync),
+                typeof(PostAttribute), "/cgi-bin/meeting/realcontrol/set_nicknames"),
+            // 管理等候室成员（自建 98186；allow_rejoin 仅 operate_type=3 时允许设置）。
+            (typeof(IWechatWorkInternalMeetingControlService),
+                nameof(IWechatWorkInternalMeetingControlService.ManageWaitingRoomUsersAsync),
+                typeof(PostAttribute), "/cgi-bin/meeting/realcontrol/manage_waiting_room_users"),
+            // 移出成员（自建 98181）。
+            (typeof(IWechatWorkInternalMeetingControlService),
+                nameof(IWechatWorkInternalMeetingControlService.KickoutUsersAsync),
+                typeof(PostAttribute), "/cgi-bin/meeting/realcontrol/kickout_users"),
+            // 结束会议（自建 98187；周期性会议还有子会议时 retrieve_code 须为 0）。
+            (typeof(IWechatWorkInternalMeetingControlService),
+                nameof(IWechatWorkInternalMeetingControlService.DismissMeetingAsync),
+                typeof(PostAttribute), "/cgi-bin/meeting/realcontrol/dismiss"),
+            // 创建会议投票主题（自建 98834；仅进行中的会议；操作者须为主持人或会议管理员）。
+            (typeof(IWechatWorkInternalMeetingControlService),
+                nameof(IWechatWorkInternalMeetingControlService.CreatePollThemeAsync),
+                typeof(PostAttribute), "/cgi-bin/meeting/poll/create_theme"),
+            // 修改会议投票主题（自建 98835；目前仅支持全覆盖修改）。
+            (typeof(IWechatWorkInternalMeetingControlService),
+                nameof(IWechatWorkInternalMeetingControlService.UpdatePollThemeAsync),
+                typeof(PostAttribute), "/cgi-bin/meeting/poll/update_theme"),
+            // 获取会议投票列表（自建 98836）。
+            (typeof(IWechatWorkInternalMeetingControlService),
+                nameof(IWechatWorkInternalMeetingControlService.GetPollListAsync),
+                typeof(PostAttribute), "/cgi-bin/meeting/poll/get_poll_list"),
+            // 获取会议投票主题信息（自建 98837；meetingid 为投票组端点中唯一非必填）。
+            (typeof(IWechatWorkInternalMeetingControlService),
+                nameof(IWechatWorkInternalMeetingControlService.GetPollThemeInfoAsync),
+                typeof(PostAttribute), "/cgi-bin/meeting/poll/get_theme_info"),
+            // 获取会议投票详情（自建 98838；含投票结果）。
+            (typeof(IWechatWorkInternalMeetingControlService),
+                nameof(IWechatWorkInternalMeetingControlService.GetPollDetailAsync),
+                typeof(PostAttribute), "/cgi-bin/meeting/poll/get_poll_detail"),
+            // 删除会议投票（自建 98839；poll_theme_id 与 poll_id 二选一，都传以投票 ID 为准）。
+            (typeof(IWechatWorkInternalMeetingControlService),
+                nameof(IWechatWorkInternalMeetingControlService.DeletePollAsync),
+                typeof(PostAttribute), "/cgi-bin/meeting/poll/delete"),
+            // 发起会议投票（自建 98840；使用已有投票主题发起）。
+            (typeof(IWechatWorkInternalMeetingControlService),
+                nameof(IWechatWorkInternalMeetingControlService.StartPollAsync),
+                typeof(PostAttribute), "/cgi-bin/meeting/poll/start"),
+            // 结束会议投票（自建 98841；路由官方作 finish，勿「顺手归一」为 cancel/stop）。
+            (typeof(IWechatWorkInternalMeetingControlService),
+                nameof(IWechatWorkInternalMeetingControlService.FinishPollAsync),
+                typeof(PostAttribute), "/cgi-bin/meeting/poll/finish"),
+        };
+
+    private static readonly (Type Interface, string Method, Type HttpAttribute, string Route)[]
+        MeetingWebinarRoutes =
+        {
+            // 创建网络研讨会（自建 98842；admission_type=2 时 password 必传；playback_for_audience 开启须开云录制）。
+            (typeof(IWechatWorkInternalMeetingWebinarService),
+                nameof(IWechatWorkInternalMeetingWebinarService.CreateWebinarAsync),
+                typeof(PostAttribute), "/cgi-bin/meeting/webinar/create"),
+            // 修改网络研讨会（自建 98843；media_setting 参数表 object[] 为笔误，示例为单对象）。
+            (typeof(IWechatWorkInternalMeetingWebinarService),
+                nameof(IWechatWorkInternalMeetingWebinarService.UpdateWebinarAsync),
+                typeof(PostAttribute), "/cgi-bin/meeting/webinar/update"),
+            // 取消网络研讨会（自建 98870）。
+            (typeof(IWechatWorkInternalMeetingWebinarService),
+                nameof(IWechatWorkInternalMeetingWebinarService.CancelWebinarAsync),
+                typeof(PostAttribute), "/cgi-bin/meeting/webinar/cancel"),
+            // 获取网络研讨会详情（自建 98860；meetingid/meeting_code 二选一；响应 subject/title、mute_enable_join 均以示例为准）。
+            (typeof(IWechatWorkInternalMeetingWebinarService),
+                nameof(IWechatWorkInternalMeetingWebinarService.GetWebinarAsync),
+                typeof(PostAttribute), "/cgi-bin/meeting/webinar/get"),
+            // 获取网络研讨会嘉宾列表（自建 98871；guests 参数表标 object、示例为数组）。
+            (typeof(IWechatWorkInternalMeetingWebinarService),
+                nameof(IWechatWorkInternalMeetingWebinarService.ListWebinarGuestsAsync),
+                typeof(PostAttribute), "/cgi-bin/meeting/webinar/list_guest"),
+            // 更新网络研讨会嘉宾列表（自建 98872）。
+            (typeof(IWechatWorkInternalMeetingWebinarService),
+                nameof(IWechatWorkInternalMeetingWebinarService.UpdateWebinarGuestsAsync),
+                typeof(PostAttribute), "/cgi-bin/meeting/webinar/update_guest_list"),
+            // 管理网络研讨会暖场配置（自建 98882；图片与视频二选一，同时传以图片为准）。
+            (typeof(IWechatWorkInternalMeetingWebinarService),
+                nameof(IWechatWorkInternalMeetingWebinarService.UpdateWebinarWarmUpAsync),
+                typeof(PostAttribute), "/cgi-bin/meeting/webinar/update_warm_up"),
+            // 修改网络研讨会报名配置（自建 98875；特殊问题类型额外支持 6 - 组织规模）。
+            (typeof(IWechatWorkInternalMeetingWebinarService),
+                nameof(IWechatWorkInternalMeetingWebinarService.SetWebinarEnrollConfigAsync),
+                typeof(PostAttribute), "/cgi-bin/meeting/webinar/enroll/set_config"),
+            // 获取网络研讨会报名配置（自建 98874）。
+            (typeof(IWechatWorkInternalMeetingWebinarService),
+                nameof(IWechatWorkInternalMeetingWebinarService.GetWebinarEnrollConfigAsync),
+                typeof(PostAttribute), "/cgi-bin/meeting/webinar/enroll/get_config"),
+            // 获取网络研讨会成员报名 ID（自建 98873；tmp_openid_list 单次最多 500 条）。
+            (typeof(IWechatWorkInternalMeetingWebinarService),
+                nameof(IWechatWorkInternalMeetingWebinarService.QueryWebinarEnrollIdsAsync),
+                typeof(PostAttribute), "/cgi-bin/meeting/webinar/enroll/query_by_tmp_openid"),
+            // 获取网络研讨会报名信息（自建 98876）。
+            (typeof(IWechatWorkInternalMeetingWebinarService),
+                nameof(IWechatWorkInternalMeetingWebinarService.ListWebinarEnrollsAsync),
+                typeof(PostAttribute), "/cgi-bin/meeting/webinar/enroll/list"),
+            // 审批网络研讨会报名信息（自建 98877）。
+            (typeof(IWechatWorkInternalMeetingWebinarService),
+                nameof(IWechatWorkInternalMeetingWebinarService.ApproveWebinarEnrollsAsync),
+                typeof(PostAttribute), "/cgi-bin/meeting/webinar/enroll/approve"),
+            // 导入网络研讨会报名信息（自建 98880）。
+            (typeof(IWechatWorkInternalMeetingWebinarService),
+                nameof(IWechatWorkInternalMeetingWebinarService.ImportWebinarEnrollsAsync),
+                typeof(PostAttribute), "/cgi-bin/meeting/webinar/enroll/import"),
+            // 删除网络研讨会报名信息（自建 98881）。
+            (typeof(IWechatWorkInternalMeetingWebinarService),
+                nameof(IWechatWorkInternalMeetingWebinarService.DeleteWebinarEnrollsAsync),
+                typeof(PostAttribute), "/cgi-bin/meeting/webinar/enroll/delete"),
+        };
+
+    private static readonly (Type Interface, string Method, Type HttpAttribute, string Route)[]
+        MeetingPstnRoutes =
+        {
+            // 批量外呼（自建 98823；单次最多 50 路；支持境外电话号及分机号；Webinar 暂不支持外呼）。
+            (typeof(IWechatWorkInternalMeetingPstnService),
+                nameof(IWechatWorkInternalMeetingPstnService.BatchCalloutAsync),
+                typeof(PostAttribute), "/cgi-bin/meeting/phone/callout"),
+            // 获取会议的外呼状态（自建 98824；不针对呼叫人做数据隔离；分页最大 100）。
+            (typeof(IWechatWorkInternalMeetingPstnService),
+                nameof(IWechatWorkInternalMeetingPstnService.GetCalloutStatusAsync),
+                typeof(PostAttribute), "/cgi-bin/meeting/phone/get_callout_status"),
+            // 获取电话入会的成员 ID（自建 98825；phone_numbers 上限 20 个；同一座机号可能对应多个 tmp_openid）。
+            (typeof(IWechatWorkInternalMeetingPstnService),
+                nameof(IWechatWorkInternalMeetingPstnService.GetTmpOpenidAsync),
+                typeof(PostAttribute), "/cgi-bin/meeting/phone/get_tmp_openid"),
+        };
+
     // ------------------------------------------------------------------
-    // MT1：全部端点路由与官方契约一致（26 条路由表项去重后 25 条官方路由，
+    // MT1：全部端点路由与官方契约一致（46 条路由表项去重后 59 条官方路由，
     // get_info 同路由两分支；基础管理族 4 端点与高级管理族 5 个文档页同路由不重复建端点）。
     // ------------------------------------------------------------------
 
@@ -220,15 +388,49 @@ public class WechatMeetingContractGuards
         MeetingAdvancedRoutes.Where(r => r.Route.StartsWith("/cgi-bin/meeting/waitingroom/", StringComparison.Ordinal))
             .Should().HaveCount(2, "等候室 2 端点路由挂 /cgi-bin/meeting/waitingroom/ 段");
 
+        // 会中控制管理族：17 端点全部挂于唯一自建子接口（realcontrol 9 + poll 8）。
+        MeetingControlRoutes.Should().HaveCount(17, "会中控制管理族 = 会控 9 + 会议投票 8 端点");
+        MeetingControlRoutes.Select(r => r.Interface).Should().OnlyContain(
+            i => i == typeof(IWechatWorkInternalMeetingControlService),
+            "会中控制管理族官方仅自建应用开放（第三方/代开发章节均无对应 API）");
+        MeetingControlRoutes.Where(r => r.Route.StartsWith("/cgi-bin/meeting/realcontrol/", StringComparison.Ordinal))
+            .Should().HaveCount(9, "会控 9 端点路由挂 /cgi-bin/meeting/realcontrol/ 段");
+        MeetingControlRoutes.Where(r => r.Route.StartsWith("/cgi-bin/meeting/poll/", StringComparison.Ordinal))
+            .Should().HaveCount(8, "会议投票 8 端点路由挂 /cgi-bin/meeting/poll/ 段");
+
+        // 网络研讨会管理族：14 端点全部挂于唯一自建子接口（webinar 段，报名 7 端点挂 webinar/enroll 子段）。
+        MeetingWebinarRoutes.Should().HaveCount(14, "网络研讨会管理族 = 基础管理 4 + 嘉宾 2 + 暖场 1 + 报名 7 端点");
+        MeetingWebinarRoutes.Select(r => r.Interface).Should().OnlyContain(
+            i => i == typeof(IWechatWorkInternalMeetingWebinarService),
+            "网络研讨会管理族官方仅自建应用开放（第三方/代开发章节均无对应 API）");
+        MeetingWebinarRoutes.Select(r => r.Route).Should().OnlyContain(
+            r => r.StartsWith("/cgi-bin/meeting/webinar/", StringComparison.Ordinal),
+            "网络研讨会管理族路由全部挂 /cgi-bin/meeting/webinar/ 段");
+        MeetingWebinarRoutes.Where(r => r.Route.StartsWith("/cgi-bin/meeting/webinar/enroll/", StringComparison.Ordinal))
+            .Should().HaveCount(7, "网络研讨会报名 7 端点路由挂 /cgi-bin/meeting/webinar/enroll/ 子段");
+
+        // 电话入会（PSTN）管理族：3 端点全部挂于唯一自建子接口（phone 段）。
+        MeetingPstnRoutes.Should().HaveCount(3, "电话入会（PSTN）管理族 = 批量外呼 + 外呼状态 + 成员 ID 端点");
+        MeetingPstnRoutes.Select(r => r.Interface).Should().OnlyContain(
+            i => i == typeof(IWechatWorkInternalMeetingPstnService),
+            "电话入会（PSTN）管理族官方仅自建应用开放（第三方/代开发章节均无对应 API）");
+        MeetingPstnRoutes.Select(r => r.Route).Should().OnlyContain(
+            r => r.StartsWith("/cgi-bin/meeting/phone/", StringComparison.Ordinal),
+            "电话入会（PSTN）管理族路由全部挂 /cgi-bin/meeting/phone/ 段");
+
         AssertRoutes(MeetingBaseRoutes);
         AssertRoutes(MeetingInfoRoutes);
         AssertRoutes(MeetingStatisticsRoutes);
         AssertRoutes(MeetingAdvancedRoutes);
+        AssertRoutes(MeetingControlRoutes);
+        AssertRoutes(MeetingWebinarRoutes);
+        AssertRoutes(MeetingPstnRoutes);
 
-        // 全部官方路由去重清单锁定（get_info 两分支去重后 25 条；基础管理族与高级管理族的
+        // 全部官方路由去重清单锁定（get_info 两分支去重后 59 条；基础管理族与高级管理族的
         // create/update/cancel/get_info/get_user_meetingid 5 条同路由仅计一次）。
         var allRoutes = MeetingBaseRoutes.Concat(MeetingInfoRoutes).Concat(MeetingStatisticsRoutes)
-            .Concat(MeetingAdvancedRoutes)
+            .Concat(MeetingAdvancedRoutes).Concat(MeetingControlRoutes)
+            .Concat(MeetingWebinarRoutes).Concat(MeetingPstnRoutes)
             .Select(r => r.Route).Distinct().ToList();
         allRoutes.Should().BeEquivalentTo(new[]
         {
@@ -260,10 +462,47 @@ public class WechatMeetingContractGuards
             "/cgi-bin/meeting/enroll/approve",
             "/cgi-bin/meeting/enroll/import",
             "/cgi-bin/meeting/enroll/delete",
+            // 会中控制管理族（17 条）。
+            "/cgi-bin/meeting/realcontrol/set",
+            "/cgi-bin/meeting/realcontrol/set_cohost",
+            "/cgi-bin/meeting/realcontrol/mute_user",
+            "/cgi-bin/meeting/realcontrol/switch_user_video",
+            "/cgi-bin/meeting/realcontrol/close_screen_share",
+            "/cgi-bin/meeting/realcontrol/set_nicknames",
+            "/cgi-bin/meeting/realcontrol/manage_waiting_room_users",
+            "/cgi-bin/meeting/realcontrol/kickout_users",
+            "/cgi-bin/meeting/realcontrol/dismiss",
+            "/cgi-bin/meeting/poll/create_theme",
+            "/cgi-bin/meeting/poll/update_theme",
+            "/cgi-bin/meeting/poll/get_poll_list",
+            "/cgi-bin/meeting/poll/get_theme_info",
+            "/cgi-bin/meeting/poll/get_poll_detail",
+            "/cgi-bin/meeting/poll/delete",
+            "/cgi-bin/meeting/poll/start",
+            "/cgi-bin/meeting/poll/finish",
+            // 网络研讨会管理族（14 条）。
+            "/cgi-bin/meeting/webinar/create",
+            "/cgi-bin/meeting/webinar/update",
+            "/cgi-bin/meeting/webinar/cancel",
+            "/cgi-bin/meeting/webinar/get",
+            "/cgi-bin/meeting/webinar/list_guest",
+            "/cgi-bin/meeting/webinar/update_guest_list",
+            "/cgi-bin/meeting/webinar/update_warm_up",
+            "/cgi-bin/meeting/webinar/enroll/set_config",
+            "/cgi-bin/meeting/webinar/enroll/get_config",
+            "/cgi-bin/meeting/webinar/enroll/query_by_tmp_openid",
+            "/cgi-bin/meeting/webinar/enroll/list",
+            "/cgi-bin/meeting/webinar/enroll/approve",
+            "/cgi-bin/meeting/webinar/enroll/import",
+            "/cgi-bin/meeting/webinar/enroll/delete",
+            // 电话入会（PSTN）管理族（3 条）。
+            "/cgi-bin/meeting/phone/callout",
+            "/cgi-bin/meeting/phone/get_callout_status",
+            "/cgi-bin/meeting/phone/get_tmp_openid",
         }, "会议域全部官方路由须与官方文档一一对应");
-        allRoutes.Should().HaveCount(25, "会议域共 25 条官方路由（get_info 同路由两分支去重；高级管理文档页与基础管理族 5 条同路由不重复计入）");
+        allRoutes.Should().HaveCount(59, "会议域共 59 条官方路由（get_info 同路由两分支去重；高级管理文档页与基础管理族 5 条同路由不重复计入）");
 
-        // 取消预约会议、更新受邀成员列表、更新嘉宾列表无业务负载：响应直接用 WechatWorkResponse，不得新建空响应 DTO。
+        // 无业务负载端点：响应直接用 WechatWorkResponse，不得新建空响应 DTO。
         typeof(IWechatWorkMeetingService)
             .GetMethod(nameof(IWechatWorkMeetingService.CancelMeetingAsync), BindingFlags.Public | BindingFlags.Instance)!
             .ReturnType.Should().Be(typeof(Task<WechatWorkResponse>),
@@ -276,6 +515,30 @@ public class WechatMeetingContractGuards
             .GetMethod(nameof(IWechatWorkInternalMeetingAdvancedService.SetGuestsAsync), BindingFlags.Public | BindingFlags.Instance)!
             .ReturnType.Should().Be(typeof(Task<WechatWorkResponse>),
                 "更新会议嘉宾列表仅返回 errcode/errmsg，响应类型必须为 WechatWorkResponse");
+        typeof(IWechatWorkInternalMeetingControlService)
+            .GetMethod(nameof(IWechatWorkInternalMeetingControlService.SetRealtimeSettingsAsync), BindingFlags.Public | BindingFlags.Instance)!
+            .ReturnType.Should().Be(typeof(Task<WechatWorkResponse>),
+                "管理会中设置仅返回 errcode/errmsg，响应类型必须为 WechatWorkResponse");
+        typeof(IWechatWorkInternalMeetingControlService)
+            .GetMethod(nameof(IWechatWorkInternalMeetingControlService.UpdatePollThemeAsync), BindingFlags.Public | BindingFlags.Instance)!
+            .ReturnType.Should().Be(typeof(Task<WechatWorkResponse>),
+                "修改会议投票主题仅返回 errcode/errmsg，响应类型必须为 WechatWorkResponse");
+        typeof(IWechatWorkInternalMeetingWebinarService)
+            .GetMethod(nameof(IWechatWorkInternalMeetingWebinarService.UpdateWebinarAsync), BindingFlags.Public | BindingFlags.Instance)!
+            .ReturnType.Should().Be(typeof(Task<WechatWorkResponse>),
+                "修改网络研讨会仅返回 errcode/errmsg，响应类型必须为 WechatWorkResponse");
+        typeof(IWechatWorkInternalMeetingWebinarService)
+            .GetMethod(nameof(IWechatWorkInternalMeetingWebinarService.CancelWebinarAsync), BindingFlags.Public | BindingFlags.Instance)!
+            .ReturnType.Should().Be(typeof(Task<WechatWorkResponse>),
+                "取消网络研讨会仅返回 errcode/errmsg，响应类型必须为 WechatWorkResponse");
+        typeof(IWechatWorkInternalMeetingWebinarService)
+            .GetMethod(nameof(IWechatWorkInternalMeetingWebinarService.UpdateWebinarGuestsAsync), BindingFlags.Public | BindingFlags.Instance)!
+            .ReturnType.Should().Be(typeof(Task<WechatWorkResponse>),
+                "更新网络研讨会嘉宾列表仅返回 errcode/errmsg，响应类型必须为 WechatWorkResponse");
+        typeof(IWechatWorkInternalMeetingWebinarService)
+            .GetMethod(nameof(IWechatWorkInternalMeetingWebinarService.UpdateWebinarWarmUpAsync), BindingFlags.Public | BindingFlags.Instance)!
+            .ReturnType.Should().Be(typeof(Task<WechatWorkResponse>),
+                "管理网络研讨会暖场配置仅返回 errcode/errmsg，响应类型必须为 WechatWorkResponse");
     }
 
     // ------------------------------------------------------------------
@@ -317,6 +580,39 @@ public class WechatMeetingContractGuards
             new[]
             {
                 (typeof(IWechatWorkInternalMeetingAdvancedService), 19),
+            });
+
+        // 会中控制管理族：官方仅自建应用开放（第三方/代开发章节均无对应 API），
+        // 父接口零端点 + 唯一自建子接口承载全部 17 端点（继承链上不得出现代开发/第三方子接口）。
+        AssertFamily(
+            parent: typeof(IWechatWorkMeetingControlService),
+            parentImplementation: "WechatWorkMeetingControlService",
+            parentDeclaredEndpointCount: 0,
+            new[]
+            {
+                (typeof(IWechatWorkInternalMeetingControlService), 17),
+            });
+
+        // 网络研讨会管理族：官方仅自建应用开放（第三方/代开发章节均无对应 API），
+        // 父接口零端点 + 唯一自建子接口承载全部 14 端点（继承链上不得出现代开发/第三方子接口）。
+        AssertFamily(
+            parent: typeof(IWechatWorkMeetingWebinarService),
+            parentImplementation: "WechatWorkMeetingWebinarService",
+            parentDeclaredEndpointCount: 0,
+            new[]
+            {
+                (typeof(IWechatWorkInternalMeetingWebinarService), 14),
+            });
+
+        // 电话入会（PSTN）管理族：官方仅自建应用开放（第三方/代开发章节均无对应 API），
+        // 父接口零端点 + 唯一自建子接口承载全部 3 端点（继承链上不得出现代开发/第三方子接口）。
+        AssertFamily(
+            parent: typeof(IWechatWorkMeetingPstnService),
+            parentImplementation: "WechatWorkMeetingPstnService",
+            parentDeclaredEndpointCount: 0,
+            new[]
+            {
+                (typeof(IWechatWorkInternalMeetingPstnService), 3),
             });
     }
 
@@ -371,9 +667,15 @@ public class WechatMeetingContractGuards
             typeof(IWechatWorkInternalMeetingStatisticsService),
             typeof(IWechatWorkMeetingAdvancedService),
             typeof(IWechatWorkInternalMeetingAdvancedService),
+            typeof(IWechatWorkMeetingControlService),
+            typeof(IWechatWorkInternalMeetingControlService),
+            typeof(IWechatWorkMeetingWebinarService),
+            typeof(IWechatWorkInternalMeetingWebinarService),
+            typeof(IWechatWorkMeetingPstnService),
+            typeof(IWechatWorkInternalMeetingPstnService),
         };
 
-        accessTokenInterfaces.Should().HaveCount(8, "会议域三族 = 预约会议基础管理族 4 接口 + 会议统计管理族 2 接口 + 预约会议高级管理族 2 接口");
+        accessTokenInterfaces.Should().HaveCount(14, "会议域六族 = 预约会议基础管理族 4 接口 + 会议统计管理族 2 接口 + 预约会议高级管理族 2 接口 + 会中控制管理族 2 接口 + 网络研讨会管理族 2 接口 + 电话入会管理族 2 接口");
 
         foreach (var iface in accessTokenInterfaces)
         {
@@ -403,8 +705,8 @@ public class WechatMeetingContractGuards
 
         // 全量守卫：命名空间下所有顶层 DTO 均须登记进 MeetingJsonContext 且 SerializerClassName 统一为 Meeting
         //（生成物 MeetingJsonContext 自身亦落同命名空间，按 JsonSerializerContext 派生类型排除）。
-        domainTypes.Should().HaveCount(75,
-            "会议模块契约面类型数漂移须先核对官方文档再同批调整本守卫（预约会议基础管理族 17：创建 2 + 修改 2 + 取消 1 + 获取详情 2 + 成员会议 ID 列表 2 + 共用嵌套 8；会议统计管理族 3；预约会议高级管理族 55：端点级请求/响应 36 + 嵌套对象 19）");
+        domainTypes.Should().HaveCount(145,
+            "会议模块契约面类型数漂移须先核对官方文档再同批调整本守卫（预约会议基础管理族 17：创建 2 + 修改 2 + 取消 1 + 获取详情 2 + 成员会议 ID 列表 2 + 共用嵌套 8；会议统计管理族 3；预约会议高级管理族 55：端点级请求/响应 36 + 嵌套对象 19；会中控制管理族 32：端点级请求/响应 22 + 嵌套对象 10；网络研讨会管理族 28：端点级请求/响应 24 + 嵌套对象 4；电话入会管理族 10：端点级请求/响应 6 + 嵌套对象 4）");
 
         foreach (var type in domainTypes)
         {
@@ -462,6 +764,44 @@ public class WechatMeetingContractGuards
             typeof(MeetingEnrollImportItem), typeof(MeetingEnrollImportResult),
             typeof(DeleteMeetingEnrollsRequest), typeof(DeleteMeetingEnrollsResponse), typeof(MeetingEnrollIdRef),
             typeof(MeetingSubMeeting), typeof(MeetingSubRepeatInfo),
+            // 会中控制管理族（端点级请求/响应 + 嵌套对象全清单）。
+            typeof(SetMeetingRealtimeSettingsRequest),
+            typeof(SetMeetingCoHostRequest), typeof(MuteMeetingUserRequest),
+            typeof(SwitchMeetingUserVideoRequest), typeof(CloseMeetingScreenShareRequest),
+            typeof(SetMeetingUserNicknamesRequest), typeof(ManageMeetingWaitingRoomUsersRequest),
+            typeof(KickoutMeetingUsersRequest), typeof(DismissMeetingRequest),
+            typeof(MeetingOperatedUser), typeof(MeetingOperatedNicknameUser),
+            typeof(CreateMeetingPollThemeRequest), typeof(CreateMeetingPollThemeResponse),
+            typeof(UpdateMeetingPollThemeRequest),
+            typeof(GetMeetingPollListRequest), typeof(GetMeetingPollListResponse),
+            typeof(GetMeetingPollThemeInfoRequest), typeof(GetMeetingPollThemeInfoResponse),
+            typeof(GetMeetingPollDetailRequest), typeof(GetMeetingPollDetailResponse),
+            typeof(DeleteMeetingPollRequest),
+            typeof(StartMeetingPollRequest), typeof(StartMeetingPollResponse),
+            typeof(FinishMeetingPollRequest),
+            typeof(MeetingPollQuestion), typeof(MeetingPollThemeInfo), typeof(MeetingPollInfo),
+            typeof(MeetingPollThemeQuestion), typeof(MeetingPollThemeOption),
+            typeof(MeetingPollDetailQuestion), typeof(MeetingPollDetailOption), typeof(MeetingPollOptionUser),
+            // 网络研讨会管理族（端点级请求/响应 + 嵌套对象全清单）。
+            typeof(CreateWebinarRequest), typeof(CreateWebinarResponse),
+            typeof(UpdateWebinarRequest), typeof(CancelWebinarRequest),
+            typeof(GetWebinarRequest), typeof(GetWebinarResponse),
+            typeof(ListWebinarGuestsRequest), typeof(ListWebinarGuestsResponse),
+            typeof(UpdateWebinarGuestsRequest), typeof(UpdateWebinarWarmUpRequest),
+            typeof(SetWebinarEnrollConfigRequest), typeof(SetWebinarEnrollConfigResponse),
+            typeof(GetWebinarEnrollConfigRequest), typeof(GetWebinarEnrollConfigResponse),
+            typeof(QueryWebinarEnrollIdsRequest), typeof(QueryWebinarEnrollIdsResponse),
+            typeof(ListWebinarEnrollsRequest), typeof(ListWebinarEnrollsResponse),
+            typeof(ApproveWebinarEnrollsRequest), typeof(ApproveWebinarEnrollsResponse),
+            typeof(ImportWebinarEnrollsRequest), typeof(ImportWebinarEnrollsResponse),
+            typeof(DeleteWebinarEnrollsRequest), typeof(DeleteWebinarEnrollsResponse),
+            typeof(WebinarHostInfo), typeof(WebinarMediaSetting), typeof(WebinarMediaSettingInfo), typeof(WebinarGuest),
+            // 电话入会（PSTN）管理族（端点级请求/响应 + 嵌套对象全清单）。
+            typeof(PstnBatchCalloutRequest), typeof(PstnBatchCalloutResponse),
+            typeof(PstnGetCalloutStatusRequest), typeof(PstnGetCalloutStatusResponse),
+            typeof(PstnGetTmpOpenidRequest), typeof(PstnGetTmpOpenidResponse),
+            typeof(PstnPhoneNumber), typeof(PstnCalloutPhoneNumber),
+            typeof(PstnCalloutStatusPhoneNumber), typeof(PstnTmpOpenidPhoneNumber),
         };
         domainTypes.Should().Contain(endpointContractTypes, "端点级请求/响应 DTO 必须落位于会议域命名空间");
     }
@@ -623,6 +963,128 @@ public class WechatMeetingContractGuards
         JsonNameShouldBe(typeof(MeetingSubMeeting), nameof(MeetingSubMeeting.RepeatId), "repeat_id");
         JsonNameShouldBe(typeof(MeetingSubRepeatInfo), nameof(MeetingSubRepeatInfo.RepeatId), "repeat_id");
         JsonNameShouldBe(typeof(MeetingSubRepeatInfo), nameof(MeetingSubRepeatInfo.RepeatUntilCount), "repeat_until_count");
+
+        // ---- 会中控制管理族契约陷阱 ----
+
+        // 会控单数 operated_user 承载单个对象（参数表 object[] 为文档笔误），复数 operated_users 承载数组——勿统一。
+        typeof(SetMeetingCoHostRequest).GetProperty(nameof(SetMeetingCoHostRequest.OperatedUser))!
+            .PropertyType.Should().Be(typeof(MeetingOperatedUser), "管理联席主持人 operated_user 为单个对象");
+        typeof(MuteMeetingUserRequest).GetProperty(nameof(MuteMeetingUserRequest.OperatedUser))!
+            .PropertyType.Should().Be(typeof(MeetingOperatedUser), "静音成员 operated_user 为单个对象");
+        typeof(CloseMeetingScreenShareRequest).GetProperty(nameof(CloseMeetingScreenShareRequest.OperatedUser))!
+            .PropertyType.Should().Be(typeof(MeetingOperatedUser), "关闭成员屏幕共享 operated_user 为单个对象");
+        typeof(SwitchMeetingUserVideoRequest).GetProperty(nameof(SwitchMeetingUserVideoRequest.OperatedUser))!
+            .PropertyType.Should().Be(typeof(MeetingOperatedUser), "开关成员视频 operated_user 为单个对象");
+        typeof(ManageMeetingWaitingRoomUsersRequest).GetProperty(nameof(ManageMeetingWaitingRoomUsersRequest.OperatedUsers))!
+            .PropertyType.Should().Be(typeof(List<MeetingOperatedUser>), "管理等候室成员 operated_users 为对象数组");
+        typeof(KickoutMeetingUsersRequest).GetProperty(nameof(KickoutMeetingUsersRequest.OperatedUsers))!
+            .PropertyType.Should().Be(typeof(List<MeetingOperatedUser>), "移出成员 operated_users 为对象数组");
+        typeof(SetMeetingUserNicknamesRequest).GetProperty(nameof(SetMeetingUserNicknamesRequest.OperatedUsers))!
+            .PropertyType.Should().Be(typeof(List<MeetingOperatedNicknameUser>), "修改成员昵称 operated_users 为对象数组（参数表 opereated_users 为笔误，以示例 operated_users 为准）");
+
+        // 静音成员 option 参数表标 string、示例为 bool——以示例为准；开关成员视频参数表 instanceid 为笔误、以示例 instance_id 为准。
+        typeof(MuteMeetingUserRequest).GetProperty(nameof(MuteMeetingUserRequest.Option))!
+            .PropertyType.Should().Be(typeof(bool?), "静音成员 option 官方示例为布尔值（参数表 string 为文档笔误）");
+        JsonNameShouldBe(typeof(MeetingOperatedUser), nameof(MeetingOperatedUser.InstanceId), "instance_id");
+        JsonNameShouldBe(typeof(MeetingOperatedUser), nameof(MeetingOperatedUser.TmpOpenid), "tmp_openid");
+        JsonNameShouldBe(typeof(MeetingOperatedNicknameUser), nameof(MeetingOperatedNicknameUser.Nickname), "nickname");
+
+        // 管理会中设置：allow_unmute_self 需 mute_all=true 才生效（联动约束锁定字段形态）。
+        typeof(SetMeetingRealtimeSettingsRequest).GetProperty(nameof(SetMeetingRealtimeSettingsRequest.MuteAll))!
+            .PropertyType.Should().Be(typeof(bool?), "管理会中设置 mute_all 为布尔可空");
+        JsonNameShouldBe(typeof(SetMeetingRealtimeSettingsRequest), nameof(SetMeetingRealtimeSettingsRequest.HideMeetingCodePassword), "hide_meeting_code_password");
+        JsonNameShouldBe(typeof(SetMeetingRealtimeSettingsRequest), nameof(SetMeetingRealtimeSettingsRequest.PlayIvrOnJoin), "play_ivr_on_join");
+
+        // 结束会议：force_dismiss 默认 1、retrieve_code 默认 0（周期性会议还有子会议时须不回收会议号）。
+        JsonNameShouldBe(typeof(DismissMeetingRequest), nameof(DismissMeetingRequest.ForceDismiss), "force_dismiss");
+        JsonNameShouldBe(typeof(DismissMeetingRequest), nameof(DismissMeetingRequest.RetrieveCode), "retrieve_code");
+
+        // 会议投票：操作者三元组（operator_userid/instance_id/meetingid）字段名与投票状态/共享/匿名枚举字段名照抄官方原文。
+        JsonNameShouldBe(typeof(CreateMeetingPollThemeRequest), nameof(CreateMeetingPollThemeRequest.OperatorUserid), "operator_userid");
+        JsonNameShouldBe(typeof(CreateMeetingPollThemeRequest), nameof(CreateMeetingPollThemeRequest.IsAnony), "is_anony");
+        JsonNameShouldBe(typeof(CreateMeetingPollThemeRequest), nameof(CreateMeetingPollThemeRequest.PollQuestions), "poll_questions");
+        JsonNameShouldBe(typeof(MeetingPollQuestion), nameof(MeetingPollQuestion.QuestionDesc), "question_desc");
+        JsonNameShouldBe(typeof(MeetingPollQuestion), nameof(MeetingPollQuestion.PollOption), "poll_option");
+        JsonNameShouldBe(typeof(CreateMeetingPollThemeResponse), nameof(CreateMeetingPollThemeResponse.PollThemeId), "poll_theme_id");
+        JsonNameShouldBe(typeof(GetMeetingPollListResponse), nameof(GetMeetingPollListResponse.PollsThemeInfo), "polls_theme_info");
+        JsonNameShouldBe(typeof(MeetingPollThemeInfo), nameof(MeetingPollThemeInfo.PollsInfo), "polls_info");
+        JsonNameShouldBe(typeof(MeetingPollInfo), nameof(MeetingPollInfo.PollId), "poll_id");
+        JsonNameShouldBe(typeof(MeetingPollInfo), nameof(MeetingPollInfo.IsShared), "is_shared");
+        JsonNameShouldBe(typeof(GetMeetingPollThemeInfoResponse), nameof(GetMeetingPollThemeInfoResponse.PollQuestionData), "poll_question_data");
+        JsonNameShouldBe(typeof(MeetingPollThemeOption), nameof(MeetingPollThemeOption.OptionDesc), "option_desc");
+        JsonNameShouldBe(typeof(GetMeetingPollDetailResponse), nameof(GetMeetingPollDetailResponse.VoteTotalNum), "vote_total_num");
+        JsonNameShouldBe(typeof(MeetingPollDetailQuestion), nameof(MeetingPollDetailQuestion.QuestionId), "question_id");
+        JsonNameShouldBe(typeof(MeetingPollDetailOption), nameof(MeetingPollDetailOption.OptionNum), "option_num");
+        JsonNameShouldBe(typeof(MeetingPollDetailOption), nameof(MeetingPollDetailOption.Rate), "rate");
+        JsonNameShouldBe(typeof(MeetingPollDetailOption), nameof(MeetingPollDetailOption.OptionUser), "option_user");
+        JsonNameShouldBe(typeof(StartMeetingPollResponse), nameof(StartMeetingPollResponse.PollId), "poll_id");
+
+        // ---- 网络研讨会管理族契约陷阱 ----
+
+        // 详情响应主题字段参数表作 subject、示例作 title（与创建响应一致）——以示例为准。
+        JsonNameShouldBe(typeof(GetWebinarResponse), nameof(GetWebinarResponse.Title), "title");
+        JsonNameShouldBe(typeof(GetWebinarResponse), nameof(GetWebinarResponse.MeetingCode), "meeting_code");
+        JsonNameShouldBe(typeof(CreateWebinarResponse), nameof(CreateWebinarResponse.Meetingid), "meetingid");
+
+        // 详情响应 status 为字符串枚举（MEETING_STATE_*），display_number_of_attendees 响应表标 string、示例为数字，按整数承载。
+        typeof(GetWebinarResponse).GetProperty(nameof(GetWebinarResponse.Status))!
+            .PropertyType.Should().Be(typeof(string), "网络研讨会详情 status 官方为字符串枚举（MEETING_STATE_*）");
+        typeof(GetWebinarResponse).GetProperty(nameof(GetWebinarResponse.DisplayNumberOfAttendees))!
+            .PropertyType.Should().Be(typeof(int?), "display_number_of_attendees 官方示例为数字（响应表 string 为笔误）");
+
+        // start_time/end_time 参数表与示例均为字符串形态时间戳（单位秒），按字符串承载。
+        typeof(CreateWebinarRequest).GetProperty(nameof(CreateWebinarRequest.StartTime))!
+            .PropertyType.Should().Be(typeof(string), "网络研讨会 start_time 官方为字符串形态时间戳");
+        typeof(GetWebinarResponse).GetProperty(nameof(GetWebinarResponse.StartTime))!
+            .PropertyType.Should().Be(typeof(string), "网络研讨会详情 start_time 官方为字符串形态时间戳");
+
+        // media_setting 请求/响应分型承载：请求入会静音作 enable_enter_mute，响应官方示例作 mute_enable_join。
+        typeof(WebinarMediaSetting).GetProperty(nameof(WebinarMediaSetting.EnableEnterMute))!
+            .PropertyType.Should().Be(typeof(bool?), "创建/修改网络研讨会请求入会静音字段为 enable_enter_mute");
+        JsonNameShouldBe(typeof(WebinarMediaSetting), nameof(WebinarMediaSetting.EnableEnterMute), "enable_enter_mute");
+        JsonNameShouldBe(typeof(WebinarMediaSettingInfo), nameof(WebinarMediaSettingInfo.MuteEnableJoin), "mute_enable_join");
+        typeof(GetWebinarResponse).GetProperty(nameof(GetWebinarResponse.MediaSetting))!
+            .PropertyType.Should().Be(typeof(WebinarMediaSettingInfo), "获取网络研讨会详情 media_setting 与请求形态分型（字段名不同构）");
+        typeof(UpdateWebinarRequest).GetProperty(nameof(UpdateWebinarRequest.MediaSetting))!
+            .PropertyType.Should().Be(typeof(WebinarMediaSetting), "修改网络研讨会 media_setting 参数表 object[] 为笔误，与创建共用单对象结构");
+
+        // 主持人列表为 {userid} 单值对象数组（区别于预约会议 hosts 的 userid 数组包裹对象）。
+        typeof(CreateWebinarRequest).GetProperty(nameof(CreateWebinarRequest.Hosts))!
+            .PropertyType.Should().Be(typeof(List<WebinarHostInfo>), "创建网络研讨会 hosts 为主持人对象数组（ userid 单值）");
+        JsonNameShouldBe(typeof(WebinarHostInfo), nameof(WebinarHostInfo.Userid), "userid");
+
+        // 网络研讨会嘉宾为多字段对象（guest_type/userid/area/phone_number/guest_name/email），区别于普通会议嘉宾 MeetingGuest。
+        typeof(ListWebinarGuestsResponse).GetProperty(nameof(ListWebinarGuestsResponse.Guests))!
+            .PropertyType.Should().Be(typeof(List<WebinarGuest>), "网络研讨会嘉宾列表 guests 参数表标 object、示例为数组，按数组承载");
+        JsonNameShouldBe(typeof(WebinarGuest), nameof(WebinarGuest.GuestType), "guest_type");
+        JsonNameShouldBe(typeof(WebinarGuest), nameof(WebinarGuest.Email), "email");
+
+        // 网络研讨会报名 7 端点与普通会议报名域同构，复用同一批嵌套 DTO（勿另建平行类型）。
+        typeof(SetWebinarEnrollConfigRequest).GetProperty(nameof(SetWebinarEnrollConfigRequest.QuestionList))!
+            .PropertyType.Should().Be(typeof(List<MeetingEnrollQuestion>), "网络研讨会报名问题与普通会议报名共用同一结构");
+        typeof(QueryWebinarEnrollIdsResponse).GetProperty(nameof(QueryWebinarEnrollIdsResponse.EnrollIdList))!
+            .PropertyType.Should().Be(typeof(List<MeetingEnrollId>), "网络研讨会报名 ID 与普通会议报名 ID 共用同一结构");
+        typeof(ListWebinarEnrollsResponse).GetProperty(nameof(ListWebinarEnrollsResponse.EnrollList))!
+            .PropertyType.Should().Be(typeof(List<MeetingEnrollInfo>), "网络研讨会报名信息与普通会议报名信息共用同一结构");
+        typeof(ImportWebinarEnrollsRequest).GetProperty(nameof(ImportWebinarEnrollsRequest.EnrollList))!
+            .PropertyType.Should().Be(typeof(List<MeetingEnrollImportItem>), "网络研讨会导入报名条目与普通会议共用同一结构");
+        typeof(DeleteWebinarEnrollsRequest).GetProperty(nameof(DeleteWebinarEnrollsRequest.EnrollIdList))!
+            .PropertyType.Should().Be(typeof(List<MeetingEnrollIdRef>), "网络研讨会删除报名 enroll_id_list 与普通会议同为对象数组");
+
+        // ---- 电话入会（PSTN）管理族契约陷阱 ----
+
+        // 号码对象按形态分型：请求/不合法号码无回执字段，外呼成功带 status，外呼状态查询再带 tmp_openid——勿合并。
+        typeof(PstnBatchCalloutRequest).GetProperty(nameof(PstnBatchCalloutRequest.PhoneNumbers))!
+            .PropertyType.Should().Be(typeof(List<PstnPhoneNumber>), "批量外呼请求 phone_numbers 为基础号码对象数组");
+        typeof(PstnBatchCalloutResponse).GetProperty(nameof(PstnBatchCalloutResponse.PhoneNumbers))!
+            .PropertyType.Should().Be(typeof(List<PstnCalloutPhoneNumber>), "批量外呼成功号码带外呼状态 status");
+        typeof(PstnBatchCalloutResponse).GetProperty(nameof(PstnBatchCalloutResponse.InvalidPhoneNumbers))!
+            .PropertyType.Should().Be(typeof(List<PstnPhoneNumber>), "批量外呼不合法号码为基础号码对象数组");
+        typeof(PstnGetCalloutStatusResponse).GetProperty(nameof(PstnGetCalloutStatusResponse.PhoneNumbers))!
+            .PropertyType.Should().Be(typeof(List<PstnCalloutStatusPhoneNumber>), "外呼状态号码在 status 之上另有 tmp_openid");
+        JsonNameShouldBe(typeof(PstnPhoneNumber), nameof(PstnPhoneNumber.ExtensionNumber), "extension_number");
+        JsonNameShouldBe(typeof(PstnGetTmpOpenidResponse), nameof(PstnGetTmpOpenidResponse.TmpOpenidList), "tmp_openid_list");
+        JsonNameShouldBe(typeof(PstnCalloutStatusPhoneNumber), nameof(PstnCalloutStatusPhoneNumber.TmpOpenid), "tmp_openid");
     }
 
     /// <summary>路由表断言：方法必须存在、必须声明对应 HTTP 方法特性且路由与官方契约一致。</summary>

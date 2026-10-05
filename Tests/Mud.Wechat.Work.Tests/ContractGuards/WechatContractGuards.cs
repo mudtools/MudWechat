@@ -750,6 +750,14 @@ public class WechatContractGuards
                 // 会控 9 端点挂 realcontrol 段、会议投票 8 端点挂 poll 段）。
                 nameof(IWechatWorkMeetingControlService),
                 nameof(IWechatWorkInternalMeetingControlService),
+                // 会议·网络研讨会管理族（Meeting 模块）：14 端点官方仅自建应用开放
+                //（第三方/代开发章节均无对应 API；零端点父接口 + 仅自建子接口承载；全部挂 webinar 段）。
+                nameof(IWechatWorkMeetingWebinarService),
+                nameof(IWechatWorkInternalMeetingWebinarService),
+                // 会议·电话入会（PSTN）管理族（Meeting 模块）：3 端点官方仅自建应用开放
+                //（第三方/代开发章节均无对应 API；零端点父接口 + 仅自建子接口承载；全部挂 phone 段）。
+                nameof(IWechatWorkMeetingPstnService),
+                nameof(IWechatWorkInternalMeetingPstnService),
                 // 微盘·管理空间族（Wedrive 模块）：新建/重命名/解散空间 + 获取空间信息 4 端点为三类应用公共面收敛父接口 + 空标记子接口
                 //（新建空间 93655/95857/96845、重命名空间 97856/97872/97862、解散空间 97857/97873/97863、
                 // 获取空间信息（旧版 space_info）97858/97874/97864）。

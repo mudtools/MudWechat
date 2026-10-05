@@ -71,6 +71,31 @@ public class WechatCallbackTypeRegistry<T>
 
         return Array.Empty<Type>();
     }
+
+    /// <summary>
+    /// 按「appKey 专属 → 通配全局」顺序枚举注册类型（分发器的匹配序第一步，D11）。
+    /// </summary>
+    /// <param name="appKey">应用键（通配键自身不会重复枚举）。</param>
+    /// <returns>专属桶在前、通配桶在后的类型序列。</returns>
+    /// <remarks>
+    /// 匹配序的单一权威落点：XML 回调分发器与智能机器人回调分发器共用本方法，
+    /// 避免两处分发逻辑各自实现一遍桶序而漂移。
+    /// </remarks>
+    public IEnumerable<Type> EnumerateWithWildcard(string appKey)
+    {
+        foreach (var type in GetAll(appKey))
+        {
+            yield return type;
+        }
+
+        if (!string.Equals(appKey, WechatCallbackOptions.WildcardAppKey, StringComparison.Ordinal))
+        {
+            foreach (var type in GetAll(WechatCallbackOptions.WildcardAppKey))
+            {
+                yield return type;
+            }
+        }
+    }
 }
 
 /// <summary>

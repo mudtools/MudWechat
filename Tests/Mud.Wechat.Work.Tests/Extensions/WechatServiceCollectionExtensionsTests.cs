@@ -1028,4 +1028,28 @@ public class WechatServiceCollectionExtensionsTests
         scope.ServiceProvider.GetRequiredService<IWechatWorkProviderJsSdkService>().Should().NotBeNull(
             "ValidateScopes = true 变体下子 scope 内同样可解析");
     }
+
+    /// <summary>
+    /// 智能机器人模块（Aibot 模块）：AddAibotApi 注册的唯一天赋子接口客户端必须可解析——
+    /// 回归锁定：注册器字典漏配 [WechatModule.Aibot] 条目时 AddAibotApi 会静默空转（不注册、不报错）；
+    /// 且本域<b>无令牌</b>（response_code 一次性凭据），父接口 IsAbstract 不进 DI。
+    /// </summary>
+    [Fact]
+    public void AddAibotApi_ShouldRegisterAibotDomainClients_ResolvableInRootAndScope()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddWechatApp(new List<WechatAppConfig> { InternalConfig() });
+        services.AddWechatWorkServices(builder => builder.AddAibotApi());
+
+        using var provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true });
+
+        provider.GetRequiredService<IWechatWorkInternalAibotService>().Should().NotBeNull();
+        provider.GetService<IWechatWorkAibotService>().Should().BeNull(
+            "公共父接口 IsAbstract = true，不得注册进 DI（本域官方仅自建开放，端点全部由唯一自建子接口承载）");
+
+        using var scope = provider.CreateScope();
+        scope.ServiceProvider.GetRequiredService<IWechatWorkInternalAibotService>().Should().NotBeNull(
+            "ValidateScopes = true 变体下子 scope 内同样可解析");
+    }
 }

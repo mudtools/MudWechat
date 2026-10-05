@@ -21,7 +21,14 @@ namespace Mud.Wechat.Work.Abstractions.Enums;
 /// <para>
 /// 通道决定 <c>receiveid</c> 的校验语义（见 <c>WechatCallbackReceiver.ValidateReceiveId</c>）：
 /// Suite 通道的 receiveid 恒为静态 <c>SuiteId</c>；App 通道的 receiveid 对企业自建为静态 <c>CorpId</c>，
-/// 对第三方/代开发则为<b>动态的授权企业 CorpId</b>（随授权企业变化，只能比对解密明文外层 <c>ToUserName</c>）。
+/// 对第三方/代开发则为<b>动态的授权企业 CorpId</b>（随授权企业变化，只能比对解密明文外层 <c>ToUserName</c>）；
+/// Bot 通道（智能机器人）官方 101033 明确 <c>receiveid</c> 恒为<b>空字符串</b>。
+/// </para>
+/// <para>
+/// <b>Bot 通道与 App/Suite 通道互不兼容</b>：Bot 通道的报文形态是 JSON（<c>{"encrypt":...}</c>）而非加密 XML，
+/// 且不承载 XML 事件信封的 <c>ToUserName</c>/<c>InfoType</c>/<c>ChangeType</c>，故
+/// <c>WechatAppCallbackOptions.IsEventFamilyAllowed</c> 对 Bot 通道<b>恒返回 false</b>（Bot 事件不经 XML 族闸，
+/// 由智能机器人自身的分发面判定）。
 /// </para>
 /// </remarks>
 public enum WechatCallbackChannel
@@ -31,4 +38,13 @@ public enum WechatCallbackChannel
 
     /// <summary>套件指令/票据回调通道（receiveid = SuiteId）。</summary>
     Suite = 2,
+
+    /// <summary>
+    /// 智能机器人回调通道（Bot；官方 101033：企业内部场景 <c>receiveid</c> 恒为 <c>""</c> 空字符串）。
+    /// </summary>
+    /// <remarks>
+    /// 仅企业自建（<see cref="WechatAppType.Internal"/>）可用；报文为 JSON 加密外壳，由智能机器人专用
+    /// 接收器与返回式处理器分发面承载，<b>不进入</b> XML 事件信封与族级开放面闸。
+    /// </remarks>
+    Bot = 3,
 }

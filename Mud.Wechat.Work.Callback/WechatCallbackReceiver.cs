@@ -304,6 +304,20 @@ public sealed class WechatCallbackReceiver : IWechatCallbackReceiver
     /// </remarks>
     private void ValidateReceiveId(WechatAppCallbackOptions app, string? receiveId, string? toUserName)
     {
+        // 智能机器人通道（Bot）：官方 101033 明确企业内部场景 receiveid 恒为 ""（空字符串）——
+        // 空串是"期望形态"而非"配置缺失"，故不落下面的「跳过 + 一次性告警」分支（避免误导宿主）。
+        if (app.Channel == WechatCallbackChannel.Bot)
+        {
+            if (!string.IsNullOrEmpty(receiveId))
+            {
+                throw new WechatCallbackException(
+                    WechatCallbackFailureKind.ReceiveIdMismatch,
+                    "回调验签失败：智能机器人通道（Bot）的明文 receiveid 必须为空字符串（官方 101033）。");
+            }
+
+            return;
+        }
+
         if (string.IsNullOrEmpty(receiveId))
         {
             // P3-2：明文未携带 receiveid（官方「个人主体第三方为空串」兼容，90968）时跳过校验，

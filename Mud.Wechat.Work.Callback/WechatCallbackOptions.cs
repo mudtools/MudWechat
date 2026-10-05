@@ -213,6 +213,27 @@ public class WechatAppCallbackOptions
             return;
         }
 
+        // 智能机器人通道（Bot，v1.2）：官方 101033 明确「企业内部智能机器人场景 ReceiveId 为 ""」⇒
+        // 该通道 receiveid 恒为空串，配置非空即为非法状态（不可表达）；且官方文档树仅自建开放。
+        if (Channel == WechatCallbackChannel.Bot)
+        {
+            if (AppType != WechatAppType.Internal)
+            {
+                throw new InvalidOperationException(
+                    $"回调配置 Apps[\"{appKey}\"] 的智能机器人通道（Channel=Bot）仅企业自建应用可用" +
+                    $"（官方智能机器人文档树位于「企业自建应用开发」分类下，无第三方 / 服务商代开发开放面）。");
+            }
+
+            if (!string.IsNullOrEmpty(ReceiveId))
+            {
+                throw new InvalidOperationException(
+                    $"回调配置 Apps[\"{appKey}\"] 的智能机器人通道（Channel=Bot）不得配置 ReceiveId：" +
+                    "官方 101033 明确企业内部智能机器人场景 receiveid 恒为\"\"（空字符串）。");
+            }
+
+            return;
+        }
+
         // 企业自建应用只存在「应用数据回调」，不拥有套件指令/票据回调（suite_ticket 等仅服务商形态）。
         if (AppType == WechatAppType.Internal && Channel != WechatCallbackChannel.App)
         {
@@ -247,6 +268,13 @@ public class WechatAppCallbackOptions
     /// </remarks>
     public bool IsEventFamilyAllowed(WechatCallbackEventFamily family)
     {
+        // 智能机器人通道（Bot）：报文为 JSON 且不承载 XML 事件信封 ⇒ 本闸恒拒绝（显式默认拒绝，
+        // 防止新增枚举值在 switch 中落 default 分支被 fail-open 放行）。Bot 事件由其自身分发面判定。
+        if (Channel == WechatCallbackChannel.Bot)
+        {
+            return false;
+        }
+
         switch (family)
         {
             case WechatCallbackEventFamily.Authorization:

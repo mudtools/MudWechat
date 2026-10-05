@@ -14,10 +14,18 @@ namespace Mud.Wechat.Work.DataModels.Message;
 public class TemplateCardJump
 {
     /// <summary>
-    /// 获取或设置跳转链接类型：0 或不填=不是链接，1=跳转 url，2=跳转小程序。
+    /// 获取或设置跳转链接类型：0 或不填=不是链接，1=跳转 url，2=跳转小程序，
+    /// 3=触发消息智能回复（官方智能机器人 101032；<b>仅文本通知型/图文展示型卡片的跳转指引区支持</b>，且此时 <see cref="Question"/> 必填）。
     /// </summary>
     [JsonPropertyName("type")]
     public int? Type { get; set; }
+
+    /// <summary>
+    /// 获取或设置智能问答问题（官方智能机器人 101032；<see cref="Type"/> 为 3 时必填，最长不超过 200 个字节）。
+    /// </summary>
+    /// <remarks>该字段为智能机器人应答上下文专用；应用消息侧（<c>/cgi-bin/message/send</c>）不使用 Type=3 与 question。</remarks>
+    [JsonPropertyName("question")]
+    public string? Question { get; set; }
 
     /// <summary>
     /// 获取或设置跳转链接样式的文案内容，建议不超过 18 个字。

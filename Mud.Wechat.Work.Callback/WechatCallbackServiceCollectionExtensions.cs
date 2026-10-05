@@ -71,6 +71,15 @@ public static class WechatCallbackServiceCollectionExtensions
         services.AddSingleton(handlerRegistry);
         services.AddSingleton(interceptorRegistry);
 
+        // 智能机器人回调面（v1.2）：接收器与分发器<b>无条件注册</b>——
+        // ① 中间件为经典约定式（构造注入），若仅由 AddWechatBotCallback 注册则未接线 Bot 的宿主会整体解析失败；
+        // ② 两者在无 Bot 条目时完全惰性（接收器只在 JSON 报文到达时被调用；分发器只在命中处理器时工作）；
+        // ③ 处理器注册表实例在此创建，AddWechatBotCallback() 复用同一实例（宿主未先调 AddWechatCallback 即 fail-fast）。
+        var botHandlerRegistry = new WechatBotHandlerRegistry();
+        services.AddSingleton(botHandlerRegistry);
+        services.TryAddSingleton<IWechatBotCallbackReceiver, WechatBotCallbackReceiver>();
+        services.TryAddSingleton<WechatBotEventDispatcher>();
+
         // 载荷体系（v2.2）：契约注册表 + 读取器 + 与接收器共享的源缓存。
         // 读取器构造函数为 internal（源缓存是实现细节），故以工厂委托注册。
         var payloadRegistry = new WechatPayloadContractRegistry();

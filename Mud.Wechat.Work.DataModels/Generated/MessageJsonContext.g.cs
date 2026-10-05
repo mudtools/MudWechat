@@ -19,6 +19,7 @@ namespace Mud.Wechat.Work.DataModels.Message;
 [JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.Message.GetSmartSheetGroupChatListResponse))]
 [JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.Message.GetSmartSheetGroupChatResponse))]
 [JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.Message.MessageContentItem))]
+[JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.Message.MessageFeedbackBody))]
 [JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.Message.MessageMarkdownBody))]
 [JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.Message.MessageMediaBody))]
 [JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.Message.MessageMiniProgramNoticeBody))]

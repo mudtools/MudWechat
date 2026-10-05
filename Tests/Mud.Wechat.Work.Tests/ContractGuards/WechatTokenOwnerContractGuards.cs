@@ -169,8 +169,15 @@ public class WechatTokenOwnerContractGuards
         violations.Should().BeEmpty("应用类型子接口的归属域声明必须与族别一一对应（漏改 / 越界均在此拦截）");
 
         withoutToken.Should().Equal(
-            new[] { "IWechatWorkProviderAuthenticationUrl" },
-            "唯一既存例外：get_customized_auth_url 以显式 Query 参数传令牌、不带 [Token]（G5 白名单例外，见接口 XML 注释）");
+            new[]
+            {
+                // 既存例外：get_customized_auth_url 以显式 Query 参数传令牌、不带 [Token]（G5 白名单例外）。
+                "IWechatWorkInternalAibotService",
+                "IWechatWorkProviderAuthenticationUrl",
+            },
+            "无 [Token] 的应用类型子接口精确清单（按名称升序）：" +
+            "① 智能机器人主动回复端点以 URL 一次性凭据 response_code 鉴权（官方 101138，不走任何令牌链路）；" +
+            "② get_customized_auth_url 以显式 Query 参数传令牌。新增条目须附理由并同步 G5/G7 评估");
     }
 
     /// <summary>

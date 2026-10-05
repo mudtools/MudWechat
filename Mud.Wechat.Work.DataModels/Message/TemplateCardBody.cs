@@ -133,4 +133,22 @@ public class TemplateCardBody
     /// </summary>
     [JsonPropertyName("replace_text")]
     public string? ReplaceText { get; set; }
+
+    /// <summary>
+    /// 获取或设置消息反馈信息（<c>feedback.id</c>）：字段不为空值时，该卡片被用户反馈会触发
+    /// 智能机器人 <c>feedback_event</c> 回调事件。
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// 该字段为<b>应答上下文</b>字段：官方智能机器人 101031（被动回复）/ 101138（主动回复）/ 101463（长连接）
+    /// 的 <c>template_card</c> 示例均含 <c>feedback.id</c>（有效长度 256 字节以内，utf-8 编码），
+    /// 而 101032（模板卡片类型）类型页未声明根级 <c>feedback</c>。
+    /// </para>
+    /// <para>
+    /// 按「可空超集一次声明」原则并入本共用结构体，<b>不</b>为智能机器人另建平行卡片 DTO 家族；
+    /// 应用消息侧不使用该字段时留空即可（不会出现在请求体）。
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("feedback")]
+    public MessageFeedbackBody? Feedback { get; set; }
 }

@@ -6,6 +6,7 @@
 // -----------------------------------------------------------------------
 
 using Microsoft.AspNetCore.Http;
+using Mud.Wechat.Work.DataModels.Aibot;
 using System.Net;
 using System.Net.Sockets;
 
@@ -40,6 +41,8 @@ public sealed class WechatCallbackMiddleware(
     RequestDelegate next,
     IWechatCallbackReceiver receiver,
     WechatCallbackDispatcher dispatcher,
+    IWechatBotCallbackReceiver botReceiver,
+    WechatBotEventDispatcher botDispatcher,
     IOptionsMonitor<WechatCallbackOptions> optionsMonitor,
     ILogger<WechatCallbackMiddleware> logger)
 {
@@ -49,6 +52,8 @@ public sealed class WechatCallbackMiddleware(
     private readonly RequestDelegate _next = next ?? throw new ArgumentNullException(nameof(next));
     private readonly IWechatCallbackReceiver _receiver = receiver ?? throw new ArgumentNullException(nameof(receiver));
     private readonly WechatCallbackDispatcher _dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
+    private readonly IWechatBotCallbackReceiver _botReceiver = botReceiver ?? throw new ArgumentNullException(nameof(botReceiver));
+    private readonly WechatBotEventDispatcher _botDispatcher = botDispatcher ?? throw new ArgumentNullException(nameof(botDispatcher));
     private readonly IOptionsMonitor<WechatCallbackOptions> _optionsMonitor = optionsMonitor ?? throw new ArgumentNullException(nameof(optionsMonitor));
     private readonly ILogger<WechatCallbackMiddleware> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
@@ -144,11 +149,16 @@ public sealed class WechatCallbackMiddleware(
     /// <summary>POST 事件接收：Content-Type/体长校验 → 验签解密 → 分发 → 按结果应答。</summary>
     private async Task HandleReceiveAsync(HttpContext context, string appKey, WechatCallbackOptions options)
     {
+        // 两条回调通道的报文格式互斥：应用/套件回调为加密 XML（含 Encrypt 节点），
+        // 智能机器人为加密 JSON（{"encrypt":...}）。判定沿用「包含子串」启发式（与 xml 同款）。
         var contentType = context.Request.ContentType;
-        if (string.IsNullOrEmpty(contentType) ||
-            contentType.IndexOf("xml", StringComparison.OrdinalIgnoreCase) < 0)
+        var isXml = !string.IsNullOrEmpty(contentType)
+                    && contentType.IndexOf("xml", StringComparison.OrdinalIgnoreCase) >= 0;
+        var isJson = !string.IsNullOrEmpty(contentType)
+                     && contentType.IndexOf("json", StringComparison.OrdinalIgnoreCase) >= 0;
+        if (!isXml && !isJson)
         {
-            // 回调报文为加密 XML（application/xml / text/xml），非 JSON（对齐飞书 415 语义）。
+            // 既非加密 XML 亦非加密 JSON：415（对齐飞书 415 语义）。
             context.Response.StatusCode = StatusCodes.Status415UnsupportedMediaType;
             return;
         }
@@ -168,6 +178,14 @@ public sealed class WechatCallbackMiddleware(
             query = query.Substring(1);
         }
 
+        // — 智能机器人 JSON 通道（官方 101033/101039）：独立接收器 + 返回式应答 ——
+        // 注意：请求体已在上面读取一次，必须传入而不能再次读流（重复读只会得到空体 → 误判 403）。
+        if (isJson)
+        {
+            await HandleBotReceiveAsync(context, appKey, options, query, body).ConfigureAwait(false);
+            return;
+        }
+
         var evt = await _receiver.ReceiveAsync(appKey, query, body, context.RequestAborted).ConfigureAwait(false);
         var outcome = await _dispatcher.DispatchAsync(appKey, evt, context.RequestAborted).ConfigureAwait(false);
 
@@ -183,6 +201,101 @@ public sealed class WechatCallbackMiddleware(
         await WriteTextAsync(context, StatusCodes.Status200OK, SuccessResponseBody, context.RequestAborted)
             .ConfigureAwait(false);
     }
+
+    /// <summary>
+    /// 智能机器人回调接收：JSON 解密 → 返回式分发 → 加密被动回复应答。
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>软超时应答为「加密空包 + 200」</b>（与 XML 通道的 503 不同，理由）：
+    /// ① 智能机器人官方对模板卡片事件与欢迎语<b>只推一次</b>（超时即丢弃，不存在可供重试的窗口）；
+    /// ② 抗重放指纹在分发前已消费 ⇒ 即便平台重推，同指纹报文也会被 403 拒绝，503 无恢复价值；
+    /// ③ 应答壳是协议的一部分，返回无密文的 503 会破坏连接。
+    /// 长耗时业务须走「先回空包 → 用 response_url 主动回复或长连接流式补发」。
+    /// </para>
+    /// </remarks>
+    private Task HandleBotReceiveAsync(
+        HttpContext context, string appKey, WechatCallbackOptions options, string query, string body)
+    {
+#if !NET8_0_OR_GREATER
+        // 低目标框架无源生成 JSON 上下文 ⇒ 显式上报不可用（回 415，不静默降级）。
+        _logger.LogWarning(
+            "当前目标框架不支持智能机器人 JSON 回调（需 net8.0+ 的源生成 JSON 上下文），已回 415。AppKey: {AppKey}",
+            appKey);
+        context.Response.StatusCode = StatusCodes.Status415UnsupportedMediaType;
+        return Task.CompletedTask;
+#else
+        return HandleBotReceiveCoreAsync(context, appKey, options, query, body);
+#endif
+    }
+
+#if NET8_0_OR_GREATER
+    /// <summary>智能机器人回调接收主体（net8.0+：具备源生成 JSON 上下文）。</summary>
+    /// <param name="context">HTTP 上下文。</param>
+    /// <param name="appKey">回调配置键（路由提取）。</param>
+    /// <param name="options">回调配置（应答组装用 PushToken / PushEncodingAESKey）。</param>
+    /// <param name="query">已剥离前导 <c>?</c> 的查询串。</param>
+    /// <param name="body">请求体（由调用方读取一次后传入；<b>不得</b>再次读流）。</param>
+    private async Task HandleBotReceiveCoreAsync(
+        HttpContext context, string appKey, WechatCallbackOptions options, string query, string body)
+    {
+        if (!_botReceiver.IsSupported)
+        {
+            _logger.LogWarning(
+                "智能机器人回调接收器在当前目标框架不可用（需 net8.0+），已回 415。AppKey: {AppKey}", appKey);
+            context.Response.StatusCode = StatusCodes.Status415UnsupportedMediaType;
+            return;
+        }
+
+        if (string.IsNullOrEmpty(body))
+        {
+            _logger.LogWarning("智能机器人回调请求体为空，AppKey: {AppKey}", appKey);
+            context.Response.StatusCode = StatusCodes.Status400BadRequest;
+            return;
+        }
+
+        var botEvent = await _botReceiver.ReceiveAsync(appKey, query, body, context.RequestAborted).ConfigureAwait(false);
+
+        AibotMessage? reply = null;
+        try
+        {
+            var result = await _botDispatcher.DispatchAsync(appKey, botEvent, context.RequestAborted).ConfigureAwait(false);
+            reply = result.Reply;
+        }
+        catch (OperationCanceledException) when (!context.RequestAborted.IsCancellationRequested)
+        {
+            _logger.LogWarning(
+                "智能机器人回调分发软超时（处理器未在 {TimeoutMs}ms 内返回），已回加密空包；" +
+                "长耗时业务请先回空包再经 response_url 主动回复（官方模板卡片事件只推一次）。AppKey: {AppKey}",
+                options.EventHandlingTimeoutMs, appKey);
+        }
+
+        // 应答形态校验失败属宿主编程错误（非验签失败），与 403 语义区分开：记 Error 后回 500。
+        try
+        {
+            var app = options.ResolveApp(appKey);
+            if (app == null)
+            {
+                _logger.LogError("智能机器人回调应答时未命中回调配置。AppKey: {AppKey}", appKey);
+                context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+                return;
+            }
+
+            var (_, _, nonce) = WechatCallbackCrypto.ParseSignatureQuery(query);
+            var payload = WechatBotReplyWriter.WriteReply(app, reply, nonce);
+
+            context.Response.StatusCode = StatusCodes.Status200OK;
+            context.Response.ContentType = WechatBotReplyWriter.ResponseContentType;
+            await context.Response.WriteAsync(payload, context.RequestAborted).ConfigureAwait(false);
+        }
+        catch (InvalidOperationException ex) when (ex is not WechatCallbackException)
+        {
+            _logger.LogError(ex,
+                "智能机器人应答组装失败（处理器返回的应答形态不被 HTTP 被动回复支持）。AppKey: {AppKey}", appKey);
+            context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+        }
+    }
+#endif
 
     /// <summary>
     /// 从路径提取应用键：<c>/{prefix}/{appKey}</c> → appKey；<c>/{prefix}</c> → 空串（按通配键解析）；

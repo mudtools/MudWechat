@@ -192,7 +192,7 @@ public static class WechatCallbackCrypto
     /// <remarks>
     /// 兼容性：16 块 PKCS7 密文（padLen ≤ 16）同样满足该校验（校验界为 [1..32] 而非 [17..32]），可正常剥离。
     /// </remarks>
-    private static byte[] StripPkcs7Padding(byte[] plain)
+    internal static byte[] StripPkcs7Padding(byte[] plain)
     {
         var padLen = plain[plain.Length - 1];
         if (padLen < 1 || padLen > Pkcs7BlockSize || padLen > plain.Length)
@@ -312,7 +312,14 @@ public static class WechatCallbackCrypto
         }
     }
 
-    private static Aes CreateAes(string encodingAESKey)
+    /// <summary>
+    /// 按 43 位 EncodingAESKey 新建<b>未缓存</b>的 Aes 实例（Mode/Key/IV/Padding 一次性配置）。
+    /// </summary>
+    /// <remarks>
+    /// 供媒体解密器复用：长连接模式的媒体 <c>aeskey</c> <b>每个下载链接唯一</b>，
+    /// 若走 <see cref="GetOrCreateAes"/> 的按 key 缓存会造成缓存无界增长，故此处显式提供无缓存工厂。
+    /// </remarks>
+    internal static Aes CreateAes(string encodingAESKey)
     {
         var keyBytes = Convert.FromBase64String(encodingAESKey + "=");
         var aes = Aes.Create();

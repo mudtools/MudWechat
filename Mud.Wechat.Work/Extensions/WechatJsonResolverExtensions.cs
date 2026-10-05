@@ -10,6 +10,7 @@ using System.Text.Json.Serialization.Metadata;
 using Mud.Wechat.Work.Abstractions.Authentication.Models;
 using Mud.Wechat.Work.DataModels;
 using Mud.Wechat.Work.DataModels.AccountId;
+using Mud.Wechat.Work.DataModels.Aibot;
 using Mud.Wechat.Work.DataModels.Checkin;
 using Mud.Wechat.Work.DataModels.Contacts.Batch;
 using Mud.Wechat.Work.DataModels.Contacts.ContactRules;
@@ -77,7 +78,7 @@ public static class WechatJsonResolverExtensions
     /// <param name="services">服务集合。</param>
     /// <remarks>
     /// <list type="bullet">
-    /// <item>全部 53 个 <c>*JsonContext</c>（<c>DataModels</c> 包 <c>Generated/</c> 目录，由
+    /// <item>全部 <c>*JsonContext</c>（<c>DataModels</c> 包 <c>Generated/</c> 目录，由
     /// <c>scripts/GenerateJsonContext.ps1</c>（mud-jsonctx）按 <c>[HttpJsonSerializable]</c>
     /// 标注生成，SerializerClassName = DTO 命名空间的域段，每个上下文与其域 DTO
     /// 同命名空间——与 Mud.Feishu.DataModels「每模块一上下文」同构）；</item>
@@ -142,6 +143,7 @@ public static class WechatJsonResolverExtensions
             ProviderAuthenticationJsonContext.Default,
             AccountIdJsonContext.Default,
             JsSdkJsonContext.Default,
+            AibotJsonContext.Default,
             AuthenticationJsonContext.Default);
         services.AddMudHttpClientJsonContext(resolver);
     }

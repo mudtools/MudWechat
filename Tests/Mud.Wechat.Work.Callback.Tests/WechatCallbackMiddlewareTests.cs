@@ -58,6 +58,8 @@ public class WechatCallbackMiddlewareTests
             _ => Task.CompletedTask,
             provider.GetRequiredService<IWechatCallbackReceiver>(),
             provider.GetRequiredService<WechatCallbackDispatcher>(),
+            provider.GetRequiredService<IWechatBotCallbackReceiver>(),
+            provider.GetRequiredService<WechatBotEventDispatcher>(),
             provider.GetRequiredService<IOptionsMonitor<WechatCallbackOptions>>(),
             NullLogger<WechatCallbackMiddleware>.Instance);
 
@@ -145,6 +147,8 @@ public class WechatCallbackMiddlewareTests
             _ => { nextCalled = true; return Task.CompletedTask; },
             provider.GetRequiredService<IWechatCallbackReceiver>(),
             provider.GetRequiredService<WechatCallbackDispatcher>(),
+            provider.GetRequiredService<IWechatBotCallbackReceiver>(),
+            provider.GetRequiredService<WechatBotEventDispatcher>(),
             provider.GetRequiredService<IOptionsMonitor<WechatCallbackOptions>>(),
             NullLogger<WechatCallbackMiddleware>.Instance);
         var context = CreateContext("GET", "/other/app1");
@@ -165,6 +169,8 @@ public class WechatCallbackMiddlewareTests
             _ => { nextCalled = true; return Task.CompletedTask; },
             provider.GetRequiredService<IWechatCallbackReceiver>(),
             provider.GetRequiredService<WechatCallbackDispatcher>(),
+            provider.GetRequiredService<IWechatBotCallbackReceiver>(),
+            provider.GetRequiredService<WechatBotEventDispatcher>(),
             provider.GetRequiredService<IOptionsMonitor<WechatCallbackOptions>>(),
             NullLogger<WechatCallbackMiddleware>.Instance);
         var context = CreateContext("POST", "/wechat/app1/extra");
@@ -188,6 +194,8 @@ public class WechatCallbackMiddlewareTests
             _ => { nextCalled = true; return Task.CompletedTask; },
             provider.GetRequiredService<IWechatCallbackReceiver>(),
             provider.GetRequiredService<WechatCallbackDispatcher>(),
+            provider.GetRequiredService<IWechatBotCallbackReceiver>(),
+            provider.GetRequiredService<WechatBotEventDispatcher>(),
             provider.GetRequiredService<IOptionsMonitor<WechatCallbackOptions>>(),
             NullLogger<WechatCallbackMiddleware>.Instance);
         var context = CreateContext("GET", "/wechat/unknown-app");
@@ -212,15 +220,34 @@ public class WechatCallbackMiddlewareTests
     }
 
     [Fact]
-    public async Task InvokeAsync_ShouldReturn415_WhenPostBodyNotXml()
+    public async Task InvokeAsync_ShouldReturn415_WhenPostBodyNotXmlNorJson()
     {
         var (middleware, provider) = CreateMiddleware();
         using var _ = provider;
-        var context = CreateContext("POST", "/wechat/app1", body: "{}", contentType: "application/json");
+        var context = CreateContext("POST", "/wechat/app1", body: "plain", contentType: "text/plain");
 
         await middleware.InvokeAsync(context);
 
-        context.Response.StatusCode.Should().Be(415, "回调报文为 XML 非 JSON");
+        context.Response.StatusCode.Should().Be(415, "回调报文为加密 XML 或加密 JSON，其余 Content-Type 一律 415");
+    }
+
+    /// <summary>
+    /// v1.2：JSON 报文不再被 415 拒绝，而是进入智能机器人通道；
+    /// 本用例的配置为 <b>App 通道</b>（默认），故 fail-closed 返回 403（Channel 错配）。
+    /// </summary>
+    [Fact]
+    public async Task InvokeAsync_ShouldReturn403_WhenJsonPostedToAppChannelEntry()
+    {
+        var (middleware, provider) = CreateMiddleware();
+        using var _ = provider;
+        var context = CreateContext(
+            "POST", "/wechat/app1", query: "msg_signature=x&timestamp=1&nonce=n",
+            body: "{\"encrypt\":\"x\"}", contentType: "application/json");
+
+        await middleware.InvokeAsync(context);
+
+        context.Response.StatusCode.Should().Be(403,
+            "JSON 回调只可能来自 Channel=Bot 的条目；App 条目收到 JSON 属配置错配（fail-closed）");
     }
 
     [Fact]

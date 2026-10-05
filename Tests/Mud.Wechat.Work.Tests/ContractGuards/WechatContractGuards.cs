@@ -765,6 +765,15 @@ public class WechatContractGuards
                 nameof(IWechatWorkInternalWedriveSpaceAclService),
                 nameof(IWechatWorkProviderWedriveSpaceAclService),
                 nameof(IWechatWorkThirdPartyWedriveSpaceAclService),
+                // 微盘·管理文件族（Wedrive 模块）：9 页文档承载 11 条路由，为三类应用公共面收敛父接口 + 空标记子接口
+                //（获取文件列表 93657/95859/96847、上传文件 97880/97951/97914、文件分块上传一页三路由
+                // file_upload_init/file_upload_part/file_upload_finish 98004/98005/98007、下载文件 97881/97953/97915、
+                // 新建文件夹/文档 97882/97954/97916、重命名文件 97883/97955/97917、移动文件 97884/97956/97918、
+                // 删除文件 97885/97957/97919、获取文件信息 97886/97958/97920）。
+                nameof(IWechatWorkWedriveFileService),
+                nameof(IWechatWorkInternalWedriveFileService),
+                nameof(IWechatWorkProviderWedriveFileService),
+                nameof(IWechatWorkThirdPartyWedriveFileService),
             },
             "企业微信官方契约强制 Query 注入（MUD005 已知接受风险），新增 Query 注入接口须评估后扩展本守卫");
     }

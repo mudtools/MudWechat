@@ -18,16 +18,18 @@ namespace Mud.Wechat.Work.Tests.ContractGuards;
 /// <summary>
 /// 微盘模块（Wedrive 模块）契约守卫：路由表、接口层级、开放面与令牌绑定锁定。
 /// <para>
-/// 两功能族形态（均为三类应用公共面收敛父接口 + 三个应用类型空标记子接口）：
+/// 三功能族形态（均为三类应用公共面收敛父接口 + 三个应用类型空标记子接口）：
 /// 管理空间族（新建空间 + 重命名空间 + 解散空间 + 获取空间信息 4 端点）；
 /// 管理空间权限族（添加成员/部门 + 移除成员/部门 + 安全设置 + 获取邀请链接 +
-/// 获取空间信息（新版）5 端点）。
+/// 获取空间信息（新版）5 端点）；
+/// 管理文件族（获取文件列表 + 上传文件 + 文件分块上传（一页三路由：初始化/分块/完成） +
+/// 下载文件 + 新建文件夹/文档 + 重命名文件 + 移动文件 + 删除文件 + 获取文件信息，9 页文档承载 11 条路由）。
 /// </para>
 /// </summary>
 /// <remarks>
 /// <para>
-/// 官方反直觉点（勿「顺手修正」）：微盘域 9 条路由官方全部即 POST（含仅查询语义的
-/// space_info / new_space_info / space_share）；「获取空间信息」存在新旧两条路由——旧版
+/// 官方反直觉点（勿「顺手修正」）：微盘域 20 条路由官方全部即 POST（含仅查询语义的
+/// space_info / new_space_info / space_share / file_list / file_info）；「获取空间信息」存在新旧两条路由——旧版
 /// <c>space_info</c> 挂官方「管理空间」分组，新版 <c>new_space_info</c> 额外返回安全设置
 /// secure_setting 与已退出空间成员 quit_userid、官方归入「管理空间权限」分组，两版响应结构
 /// 不同构，本 SDK 以两个类型分别承载；「禁止文件分享到企业外」写入口（space_setting）官方
@@ -35,6 +37,11 @@ namespace Mud.Wechat.Work.Tests.ContractGuards;
 /// <c>enable_share_external</c>，两侧不同名；移除成员/部门（space_acl_del）官方请求形态不携带
 /// auth 字段；空间 ID 官方字段名作 <c>spaceid</c>（无下划线）；应用空间管理员（auth = 7）
 /// 最多可指定 3 个且不支持设置部门；安全设置仅支持设置由本应用创建的空间。
+/// 管理文件族：文件列表分页用 start + limit（start 首次填 0、后续填上一次返回的 next_start），
+/// 区别于本仓多数域的 cursor + limit；file_list 响应官方为对象内含 item 数组（<c>file_list.item</c>）；
+/// 移动/删除文件的请求字段官方即作 <c>fileid</c> 但为数组形态；上传/下载文件官方以
+/// spaceid/fatherid 与 selected_ticket（或 fileid 与 selected_ticket）「必须填且仅填其中一组」的
+/// 互斥参数组表达；文件名统一最多 255 个字符（英文算 1 个，汉字算 2 个）。
 /// </para>
 /// </remarks>
 public class WechatWedriveContractGuards
@@ -96,8 +103,64 @@ public class WechatWedriveContractGuards
                 typeof(PostAttribute), "/cgi-bin/wedrive/new_space_info"),
         };
 
+    private static readonly (Type Interface, string Method, Type HttpAttribute, string Route)[]
+        WedriveFileRoutes =
+        {
+            // 获取文件列表（自建 93657 / 第三方 95859 / 代开发 96847；三类公共收敛父接口；
+            // start + limit 分页，limit 不超过 1000）。
+            (typeof(IWechatWorkWedriveFileService),
+                nameof(IWechatWorkWedriveFileService.GetFileListAsync),
+                typeof(PostAttribute), "/cgi-bin/wedrive/file_list"),
+            // 上传文件（自建 97880 / 第三方 97951 / 代开发 97914；三类公共收敛父接口；
+            // 整文件 base64 上限 10M）。
+            (typeof(IWechatWorkWedriveFileService),
+                nameof(IWechatWorkWedriveFileService.UploadFileAsync),
+                typeof(PostAttribute), "/cgi-bin/wedrive/file_upload"),
+            // 分块上传初始化（自建 98004 / 第三方 98005 / 代开发 98007；三类公共收敛父接口；
+            // 文件分块上传官方单文档页承载 3 条路由；size 最大 20G，命中秒传直接返回 fileid）。
+            (typeof(IWechatWorkWedriveFileService),
+                nameof(IWechatWorkWedriveFileService.InitFileUploadAsync),
+                typeof(PostAttribute), "/cgi-bin/wedrive/file_upload_init"),
+            // 分块上传文件（自建 98004 / 第三方 98005 / 代开发 98007；三类公共收敛父接口；
+            // 2M 固定分块，index 从 1 开始，官方建议并发数不超过 10）。
+            (typeof(IWechatWorkWedriveFileService),
+                nameof(IWechatWorkWedriveFileService.UploadFilePartAsync),
+                typeof(PostAttribute), "/cgi-bin/wedrive/file_upload_part"),
+            // 分块上传完成（自建 98004 / 第三方 98005 / 代开发 98007；三类公共收敛父接口）。
+            (typeof(IWechatWorkWedriveFileService),
+                nameof(IWechatWorkWedriveFileService.FinishFileUploadAsync),
+                typeof(PostAttribute), "/cgi-bin/wedrive/file_upload_finish"),
+            // 下载文件（自建 97881 / 第三方 97953 / 代开发 97915；三类公共收敛父接口；
+            // download_url 有效期 2 小时，仅支持普通文件）。
+            (typeof(IWechatWorkWedriveFileService),
+                nameof(IWechatWorkWedriveFileService.DownloadFileAsync),
+                typeof(PostAttribute), "/cgi-bin/wedrive/file_download"),
+            // 新建文件夹/文档（自建 97882 / 第三方 97954 / 代开发 97916；三类公共收敛父接口）。
+            (typeof(IWechatWorkWedriveFileService),
+                nameof(IWechatWorkWedriveFileService.CreateFileAsync),
+                typeof(PostAttribute), "/cgi-bin/wedrive/file_create"),
+            // 重命名文件（自建 97883 / 第三方 97955 / 代开发 97917；三类公共收敛父接口）。
+            (typeof(IWechatWorkWedriveFileService),
+                nameof(IWechatWorkWedriveFileService.RenameFileAsync),
+                typeof(PostAttribute), "/cgi-bin/wedrive/file_rename"),
+            // 移动文件（自建 97884 / 第三方 97956 / 代开发 97918；三类公共收敛父接口；
+            // fileid 为数组形态、支持批量）。
+            (typeof(IWechatWorkWedriveFileService),
+                nameof(IWechatWorkWedriveFileService.MoveFileAsync),
+                typeof(PostAttribute), "/cgi-bin/wedrive/file_move"),
+            // 删除文件（自建 97885 / 第三方 97957 / 代开发 97919；三类公共收敛父接口；
+            // fileid 为数组形态、支持批量）。
+            (typeof(IWechatWorkWedriveFileService),
+                nameof(IWechatWorkWedriveFileService.DeleteFileAsync),
+                typeof(PostAttribute), "/cgi-bin/wedrive/file_delete"),
+            // 获取文件信息（自建 97886 / 第三方 97958 / 代开发 97920；三类公共收敛父接口）。
+            (typeof(IWechatWorkWedriveFileService),
+                nameof(IWechatWorkWedriveFileService.GetFileInfoAsync),
+                typeof(PostAttribute), "/cgi-bin/wedrive/file_info"),
+        };
+
     // ------------------------------------------------------------------
-    // WR1：全部端点路由与官方契约一致（9 条路由，两族 4 + 5）。
+    // WR1：全部端点路由与官方契约一致（20 条路由，三族 4 + 5 + 11）。
     // ------------------------------------------------------------------
 
     [Fact]
@@ -113,11 +176,17 @@ public class WechatWedriveContractGuards
         WedriveSpaceAclRoutes.Select(r => r.Route).Should().OnlyContain(
             r => r.StartsWith("/cgi-bin/wedrive/", StringComparison.Ordinal), "微盘域路由位于 /cgi-bin/wedrive/ 段");
 
+        // 管理文件族公共面：11 端点收敛父接口（分块上传一页三路由）。
+        WedriveFileRoutes.Should().HaveCount(11, "管理文件族公共面 = 列表 + 上传 + 分块上传三路由 + 下载 + 新建 + 重命名 + 移动 + 删除 + 获取文件信息");
+        WedriveFileRoutes.Select(r => r.Route).Should().OnlyContain(
+            r => r.StartsWith("/cgi-bin/wedrive/", StringComparison.Ordinal), "微盘域路由位于 /cgi-bin/wedrive/ 段");
+
         AssertRoutes(WedriveSpaceRoutes);
         AssertRoutes(WedriveSpaceAclRoutes);
+        AssertRoutes(WedriveFileRoutes);
 
-        // 全部官方路由清单锁定（9 条，space_info 与 new_space_info 为两条独立官方路由）。
-        var allRoutes = WedriveSpaceRoutes.Concat(WedriveSpaceAclRoutes)
+        // 全部官方路由清单锁定（20 条，space_info 与 new_space_info 为两条独立官方路由）。
+        var allRoutes = WedriveSpaceRoutes.Concat(WedriveSpaceAclRoutes).Concat(WedriveFileRoutes)
             .Select(r => r.Route).Distinct().ToList();
         allRoutes.Should().BeEquivalentTo(new[]
         {
@@ -130,11 +199,22 @@ public class WechatWedriveContractGuards
             "/cgi-bin/wedrive/space_setting",
             "/cgi-bin/wedrive/space_share",
             "/cgi-bin/wedrive/new_space_info",
+            "/cgi-bin/wedrive/file_list",
+            "/cgi-bin/wedrive/file_upload",
+            "/cgi-bin/wedrive/file_upload_init",
+            "/cgi-bin/wedrive/file_upload_part",
+            "/cgi-bin/wedrive/file_upload_finish",
+            "/cgi-bin/wedrive/file_download",
+            "/cgi-bin/wedrive/file_create",
+            "/cgi-bin/wedrive/file_rename",
+            "/cgi-bin/wedrive/file_move",
+            "/cgi-bin/wedrive/file_delete",
+            "/cgi-bin/wedrive/file_info",
         }, "微盘域全部官方路由须与官方文档一一对应");
-        allRoutes.Should().HaveCount(9, "微盘域共 9 条官方路由（新旧获取空间信息为两条独立路由）");
+        allRoutes.Should().HaveCount(20, "微盘域共 20 条官方路由（新旧获取空间信息为两条独立路由，分块上传一页三路由）");
 
         // 无业务负载端点：响应直接用 WechatWorkResponse，不得新建空响应 DTO
-        //（重命名 / 解散 / 添加成员部门 / 移除成员部门 / 安全设置共 5 个）。
+        //（重命名 / 解散 / 添加成员部门 / 移除成员部门 / 安全设置 / 分块上传文件 / 删除文件共 7 个）。
         var noPayloadEndpoints = new (Type Interface, string Method)[]
         {
             (typeof(IWechatWorkWedriveSpaceService), nameof(IWechatWorkWedriveSpaceService.RenameSpaceAsync)),
@@ -142,6 +222,8 @@ public class WechatWedriveContractGuards
             (typeof(IWechatWorkWedriveSpaceAclService), nameof(IWechatWorkWedriveSpaceAclService.AddSpaceAclAsync)),
             (typeof(IWechatWorkWedriveSpaceAclService), nameof(IWechatWorkWedriveSpaceAclService.DelSpaceAclAsync)),
             (typeof(IWechatWorkWedriveSpaceAclService), nameof(IWechatWorkWedriveSpaceAclService.SetSpaceSettingAsync)),
+            (typeof(IWechatWorkWedriveFileService), nameof(IWechatWorkWedriveFileService.UploadFilePartAsync)),
+            (typeof(IWechatWorkWedriveFileService), nameof(IWechatWorkWedriveFileService.DeleteFileAsync)),
         };
         foreach (var (iface, method) in noPayloadEndpoints)
         {
@@ -181,6 +263,18 @@ public class WechatWedriveContractGuards
                 (typeof(IWechatWorkProviderWedriveSpaceAclService), 0),
                 (typeof(IWechatWorkThirdPartyWedriveSpaceAclService), 0),
             });
+
+        // 管理文件族：公共父 11 端点（分块上传一页三路由），三个应用类型子接口均为零端点空标记。
+        AssertFamily(
+            parent: typeof(IWechatWorkWedriveFileService),
+            parentImplementation: "WechatWorkWedriveFileService",
+            parentDeclaredEndpointCount: 11,
+            new[]
+            {
+                (typeof(IWechatWorkInternalWedriveFileService), 0),
+                (typeof(IWechatWorkProviderWedriveFileService), 0),
+                (typeof(IWechatWorkThirdPartyWedriveFileService), 0),
+            });
     }
 
     /// <summary>族断言：父接口 IsAbstract + 指定端点数，子接口集合不漂移 + 指定端点数 + 注册组/继承契约。</summary>
@@ -217,7 +311,7 @@ public class WechatWedriveContractGuards
     }
 
     // ------------------------------------------------------------------
-    // WR3：令牌绑定——微盘域 8 个接口统一 AccessToken 路由键 + Query 注入
+    // WR3：令牌绑定——微盘域 12 个接口统一 AccessToken 路由键 + Query 注入
     //（归属域键由 WechatTokenOwnerContractGuards 全局锁定，此处不重复）。
     // ------------------------------------------------------------------
 
@@ -234,9 +328,13 @@ public class WechatWedriveContractGuards
             typeof(IWechatWorkInternalWedriveSpaceAclService),
             typeof(IWechatWorkProviderWedriveSpaceAclService),
             typeof(IWechatWorkThirdPartyWedriveSpaceAclService),
+            typeof(IWechatWorkWedriveFileService),
+            typeof(IWechatWorkInternalWedriveFileService),
+            typeof(IWechatWorkProviderWedriveFileService),
+            typeof(IWechatWorkThirdPartyWedriveFileService),
         };
 
-        accessTokenInterfaces.Should().HaveCount(8, "微盘域两族 = 管理空间族 4 接口 + 管理空间权限族 4 接口");
+        accessTokenInterfaces.Should().HaveCount(12, "微盘域三族 = 管理空间族 4 接口 + 管理空间权限族 4 接口 + 管理文件族 4 接口");
 
         foreach (var iface in accessTokenInterfaces)
         {
@@ -266,9 +364,10 @@ public class WechatWedriveContractGuards
 
         // 全量守卫：命名空间下所有顶层 DTO 均须登记进 WedriveJsonContext 且 SerializerClassName 统一为 Wedrive
         //（生成物 WedriveJsonContext 自身亦落同命名空间，按 JsonSerializerContext 派生类型排除）。
-        domainTypes.Should().HaveCount(18,
+        domainTypes.Should().HaveCount(40,
             "微盘模块契约面类型数漂移须先核对官方文档再同批调整本守卫（管理空间族 9：新建 2 + 重命名 1 + 解散 1 + 获取空间信息（旧版）3；" +
-            "管理空间权限族 6：添加 1 + 移除 1 + 安全设置 1 + 获取邀请链接 2 + 获取空间信息（新版）1；共用嵌套 3）");
+            "管理空间权限族 6：添加 1 + 移除 1 + 安全设置 1 + 获取邀请链接 2 + 获取空间信息（新版）1；空间共用嵌套 3；" +
+            "管理文件族 22：列表 2 + 上传 2 + 分块上传 5 + 下载 2 + 新建 2 + 重命名 2 + 移动 2 + 删除 1 + 获取文件信息 2，文件共用嵌套 2）");
 
         foreach (var type in domainTypes)
         {
@@ -295,9 +394,22 @@ public class WechatWedriveContractGuards
             typeof(SetWedriveSpaceSettingRequest),
             typeof(GetWedriveSpaceShareUrlRequest), typeof(GetWedriveSpaceShareUrlResponse),
             typeof(GetWedriveNewSpaceInfoRequest), typeof(GetWedriveNewSpaceInfoResponse),
+            // 管理文件族。
+            typeof(GetWedriveFileListRequest), typeof(GetWedriveFileListResponse),
+            typeof(UploadWedriveFileRequest), typeof(UploadWedriveFileResponse),
+            typeof(InitWedriveFileUploadRequest), typeof(InitWedriveFileUploadResponse),
+            typeof(UploadWedriveFilePartRequest),
+            typeof(FinishWedriveFileUploadRequest), typeof(FinishWedriveFileUploadResponse),
+            typeof(DownloadWedriveFileRequest), typeof(DownloadWedriveFileResponse),
+            typeof(CreateWedriveFileRequest), typeof(CreateWedriveFileResponse),
+            typeof(RenameWedriveFileRequest), typeof(RenameWedriveFileResponse),
+            typeof(MoveWedriveFileRequest), typeof(MoveWedriveFileResponse),
+            typeof(DeleteWedriveFileRequest),
+            typeof(GetWedriveFileInfoRequest), typeof(GetWedriveFileInfoResponse),
             // 共用嵌套对象。
             typeof(WedriveSpaceAclMember), typeof(WedriveSpaceAuthList),
             typeof(WedriveSpaceInfo), typeof(WedriveNewSpaceInfo), typeof(WedriveSpaceSecureSetting),
+            typeof(WedriveFileInfo), typeof(WedriveFileList),
         };
         domainTypes.Should().Contain(endpointContractTypes, "端点级请求/响应 DTO 必须落位于微盘域命名空间");
     }
@@ -363,6 +475,73 @@ public class WechatWedriveContractGuards
         JsonNameShouldBe(typeof(SetWedriveSpaceSettingRequest), nameof(SetWedriveSpaceSettingRequest.ShareUrlNoApprove), "share_url_no_approve");
         JsonNameShouldBe(typeof(SetWedriveSpaceSettingRequest), nameof(SetWedriveSpaceSettingRequest.ShareUrlNoApproveDefaultAuth), "share_url_no_approve_default_auth");
         JsonNameShouldBe(typeof(SetWedriveSpaceSettingRequest), nameof(SetWedriveSpaceSettingRequest.DefaultFileScope), "default_file_scope");
+
+        // ------------------------------------------------------------------
+        // 管理文件族契约陷阱。
+        // ------------------------------------------------------------------
+
+        // 文件信息对象跨四处共用同一结构：file_list.item / file_info / 重命名响应 file / 移动响应 file_list.item。
+        typeof(GetWedriveFileListResponse).GetProperty(nameof(GetWedriveFileListResponse.FileList))!
+            .PropertyType.Should().Be(typeof(WedriveFileList),
+                "file_list 响应官方为对象内含 item 数组（file_list.item），不得建成裸数组");
+        typeof(MoveWedriveFileResponse).GetProperty(nameof(MoveWedriveFileResponse.FileList))!
+            .PropertyType.Should().Be(typeof(WedriveFileList), "移动文件响应 file_list 与文件列表共用同一结构");
+        typeof(WedriveFileList).GetProperty(nameof(WedriveFileList.Item))!
+            .PropertyType.Should().Be(typeof(List<WedriveFileInfo>), "file_list.item 与获取文件信息/重命名响应共用同一文件结构");
+        typeof(RenameWedriveFileResponse).GetProperty(nameof(RenameWedriveFileResponse.File))!
+            .PropertyType.Should().Be(typeof(WedriveFileInfo), "重命名响应 file 字段与获取文件信息共用同一结构（官方字段名作 file 非 file_info）");
+        typeof(GetWedriveFileInfoResponse).GetProperty(nameof(GetWedriveFileInfoResponse.FileInfo))!
+            .PropertyType.Should().Be(typeof(WedriveFileInfo), "获取文件信息响应字段官方名作 file_info");
+
+        // 文件列表分页字段名照抄官方原文：has_more / next_start（start+limit 形态，非 cursor+limit）。
+        JsonNameShouldBe(typeof(GetWedriveFileListResponse), nameof(GetWedriveFileListResponse.HasMore), "has_more");
+        JsonNameShouldBe(typeof(GetWedriveFileListResponse), nameof(GetWedriveFileListResponse.NextStart), "next_start");
+        JsonNameShouldBe(typeof(GetWedriveFileListRequest), nameof(GetWedriveFileListRequest.Start), "start");
+        JsonNameShouldBe(typeof(GetWedriveFileListRequest), nameof(GetWedriveFileListRequest.SortType), "sort_type");
+
+        // 移动/删除文件的请求字段官方即作 fileid 但为数组形态（单数名复数承载，照抄勿改）。
+        JsonNameShouldBe(typeof(MoveWedriveFileRequest), nameof(MoveWedriveFileRequest.Fileid), "fileid");
+        typeof(MoveWedriveFileRequest).GetProperty(nameof(MoveWedriveFileRequest.Fileid))!
+            .PropertyType.Should().Be(typeof(List<string>), "移动文件 fileid 官方为数组形态");
+        JsonNameShouldBe(typeof(DeleteWedriveFileRequest), nameof(DeleteWedriveFileRequest.Fileid), "fileid");
+        typeof(DeleteWedriveFileRequest).GetProperty(nameof(DeleteWedriveFileRequest.Fileid))!
+            .PropertyType.Should().Be(typeof(List<string>), "删除文件 fileid 官方为数组形态");
+
+        // 文件 ID 官方字段名作 fileid（无下划线）、目录字段作 fatherid——照抄勿「顺手修正」。
+        JsonNameShouldBe(typeof(UploadWedriveFileResponse), nameof(UploadWedriveFileResponse.Fileid), "fileid");
+        JsonNameShouldBe(typeof(InitWedriveFileUploadResponse), nameof(InitWedriveFileUploadResponse.Fileid), "fileid");
+        JsonNameShouldBe(typeof(FinishWedriveFileUploadResponse), nameof(FinishWedriveFileUploadResponse.Fileid), "fileid");
+        JsonNameShouldBe(typeof(CreateWedriveFileResponse), nameof(CreateWedriveFileResponse.Fileid), "fileid");
+        JsonNameShouldBe(typeof(GetWedriveFileInfoRequest), nameof(GetWedriveFileInfoRequest.Fileid), "fileid");
+        JsonNameShouldBe(typeof(RenameWedriveFileRequest), nameof(RenameWedriveFileRequest.Fileid), "fileid");
+        JsonNameShouldBe(typeof(RenameWedriveFileRequest), nameof(RenameWedriveFileRequest.NewName), "new_name");
+        JsonNameShouldBe(typeof(WedriveFileInfo), nameof(WedriveFileInfo.Fileid), "fileid");
+        JsonNameShouldBe(typeof(WedriveFileInfo), nameof(WedriveFileInfo.FileName), "file_name");
+        JsonNameShouldBe(typeof(WedriveFileInfo), nameof(WedriveFileInfo.Fatherid), "fatherid");
+        JsonNameShouldBe(typeof(WedriveFileInfo), nameof(WedriveFileInfo.FileSize), "file_size");
+        JsonNameShouldBe(typeof(WedriveFileInfo), nameof(WedriveFileInfo.FileType), "file_type");
+        JsonNameShouldBe(typeof(WedriveFileInfo), nameof(WedriveFileInfo.FileStatus), "file_status");
+
+        // 分块上传：秒传判定 hit_exist、上传凭证 upload_key、分块号 index（int 从 1 开始）。
+        JsonNameShouldBe(typeof(InitWedriveFileUploadResponse), nameof(InitWedriveFileUploadResponse.HitExist), "hit_exist");
+        JsonNameShouldBe(typeof(InitWedriveFileUploadResponse), nameof(InitWedriveFileUploadResponse.UploadKey), "upload_key");
+        JsonNameShouldBe(typeof(InitWedriveFileUploadRequest), nameof(InitWedriveFileUploadRequest.BlockSha), "block_sha");
+        JsonNameShouldBe(typeof(InitWedriveFileUploadRequest), nameof(InitWedriveFileUploadRequest.SkipPushCard), "skip_push_card");
+        JsonNameShouldBe(typeof(UploadWedriveFilePartRequest), nameof(UploadWedriveFilePartRequest.UploadKey), "upload_key");
+        JsonNameShouldBe(typeof(UploadWedriveFilePartRequest), nameof(UploadWedriveFilePartRequest.Index), "index");
+        typeof(UploadWedriveFilePartRequest).GetProperty(nameof(UploadWedriveFilePartRequest.Index))!
+            .PropertyType.Should().Be(typeof(int?), "分块号官方标注 int32（区别于域内其余 uint32 字段）");
+
+        // 上传/下载互斥参数组：spaceid/fatherid 与 selected_ticket（下载为 fileid 与 selected_ticket）。
+        JsonNameShouldBe(typeof(UploadWedriveFileRequest), nameof(UploadWedriveFileRequest.SelectedTicket), "selected_ticket");
+        JsonNameShouldBe(typeof(UploadWedriveFileRequest), nameof(UploadWedriveFileRequest.FileBase64Content), "file_base64_content");
+        JsonNameShouldBe(typeof(InitWedriveFileUploadRequest), nameof(InitWedriveFileUploadRequest.SelectedTicket), "selected_ticket");
+        JsonNameShouldBe(typeof(DownloadWedriveFileRequest), nameof(DownloadWedriveFileRequest.SelectedTicket), "selected_ticket");
+
+        // 下载文件响应：download_url 有效期 2 小时，Cookie 键值对随响应返回。
+        JsonNameShouldBe(typeof(DownloadWedriveFileResponse), nameof(DownloadWedriveFileResponse.DownloadUrl), "download_url");
+        JsonNameShouldBe(typeof(DownloadWedriveFileResponse), nameof(DownloadWedriveFileResponse.CookieName), "cookie_name");
+        JsonNameShouldBe(typeof(DownloadWedriveFileResponse), nameof(DownloadWedriveFileResponse.CookieValue), "cookie_value");
     }
 
     /// <summary>路由表断言：方法必须存在、必须声明对应 HTTP 方法特性且路由与官方契约一致。</summary>

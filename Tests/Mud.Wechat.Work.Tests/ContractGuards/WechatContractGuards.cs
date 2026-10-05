@@ -833,6 +833,30 @@ public class WechatContractGuards
                 nameof(IWechatWorkInternalLivingService),
                 nameof(IWechatWorkProviderLivingService),
                 nameof(IWechatWorkThirdPartyLivingService),
+                // 应用管理·获取应用族（Agent 模块）：agent/get + agent/list 两端点为三类应用公共面收敛父接口
+                //（自建 90227 / 第三方 90363 / 代开发 96448，官方即 GET、agentid 走 Query）；
+                // 设置应用 90228 官方仅企业可调用——第三方以及代开发自建应用不可调用，落自建差异端点。
+                nameof(IWechatWorkAgentService),
+                nameof(IWechatWorkInternalAgentService),
+                nameof(IWechatWorkProviderAgentService),
+                nameof(IWechatWorkThirdPartyAgentService),
+                // 应用管理·工作台自定义展示族（Agent 模块）：设置/获取模版 + 设置/批量设置/获取用户数据 5 端点
+                // 为三类应用公共面收敛父接口 + 空标记子接口
+                //（自建 92535 / 第三方 94620 / 代开发 96454，官方全部即 POST）。
+                nameof(IWechatWorkAgentWorkbenchService),
+                nameof(IWechatWorkInternalAgentWorkbenchService),
+                nameof(IWechatWorkProviderAgentWorkbenchService),
+                nameof(IWechatWorkThirdPartyAgentWorkbenchService),
+                // 应用管理·自定义菜单族（Agent 模块）：创建/获取/删除菜单 3 端点官方权限均为
+                //「仅企业可调用；第三方不可调用」（代开发章节无对应 API），零端点父接口 + 仅自建子接口承载
+                //（创建 90231、获取 90232、删除 90233；官方即 POST/GET/GET，agentid 走 Query）。
+                nameof(IWechatWorkAgentMenuService),
+                nameof(IWechatWorkInternalAgentMenuService),
+                // 应用管理·自建应用迁移成代开发应用族（Agent 模块）：官方仅服务商代开发章节提供（99617），
+                // 但消费待迁移自建应用自身 access_token（URL 参数，调用上下文须为自建应用），
+                // 故零端点父接口 + 仅自建子接口承载；suite_access_token 为官方包体参数，不经 Query 注入。
+                nameof(IWechatWorkAgentMigrationService),
+                nameof(IWechatWorkInternalAgentMigrationService),
             },
             "企业微信官方契约强制 Query 注入（MUD005 已知接受风险），新增 Query 注入接口须评估后扩展本守卫");
     }

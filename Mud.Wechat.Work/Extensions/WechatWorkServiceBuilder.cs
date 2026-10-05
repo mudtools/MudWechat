@@ -191,6 +191,9 @@ public class WechatWorkServiceBuilder
     /// <summary>注册直播业务接口（创建/修改/取消预约直播 + 删除直播回放 + 获取微信观看直播凭证 + 获取成员直播 ID 列表 + 获取直播详情 + 获取直播观看明细 + 获取跳转小程序商城的直播观众信息，9 端点为三类应用公共面收敛父接口 + 空标记子接口；获取直播详情官方即 GET，获取成员直播 ID 列表与删除直播回放两条路由与家校沟通·上课直播域共用）。</summary>
     public WechatWorkServiceBuilder AddLivingApi() => AddModule(WechatModule.Living);
 
+    /// <summary>注册应用管理业务接口（获取应用族：agent/get + agent/list 两端点三类应用公共面收敛父接口 + 空标记子接口，设置应用官方仅企业可调用——第三方以及代开发自建应用不可调用、落自建差异端点；工作台自定义展示族 5 端点三类应用公共面收敛父接口 + 空标记子接口；自定义菜单族 3 端点官方仅自建应用开放，零端点父接口 + 仅自建子接口承载、agentid 走 Query；自建应用迁移成代开发应用族官方仅代开发章节提供但消费待迁移自建应用自身 access_token，落 Internal 归属域子接口、suite_access_token 为官方包体参数经请求体显式传入）。</summary>
+    public WechatWorkServiceBuilder AddAgentApi() => AddModule(WechatModule.Agent);
+
     /// <summary>注册全部模块。</summary>
     public WechatWorkServiceBuilder AddAllApis()
     {

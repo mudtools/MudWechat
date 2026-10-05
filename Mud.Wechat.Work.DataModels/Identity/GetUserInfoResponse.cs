@@ -16,6 +16,12 @@ namespace Mud.Wechat.Work.DataModels.Identity;
 /// 官方契约陷阱：企业成员与非企业成员两类返回互斥——成员返回 <see cref="Userid"/> 系字段，
 /// 非成员返回 <see cref="Openid"/> / <see cref="ExternalUserid"/>，调用方须按可空性分流。
 /// </para>
+/// <para>
+/// <b>可空超集</b>：本端点在「家校沟通-网页授权登录」场景下额外返回 <see cref="ParentUserid"/>
+/// （学校家长形态），官方以两套文档分文档承载同一路由。按 ADR-14「一份可空超集载荷覆盖多模式」原则，
+/// 家校形态字段并入本响应体，原「家校沟通」域平行 DTO 家族
+/// （<c>SchoolAuthUserInfoResponse</c>）已随单一所有者收敛而废弃。
+/// </para>
 /// </remarks>
 [HttpJsonSerializable(SerializerClassName = "Identity")]
 public class GetUserInfoResponse : WechatWorkResponse
@@ -48,8 +54,16 @@ public class GetUserInfoResponse : WechatWorkResponse
     public string? Openid { get; set; }
 
     /// <summary>
-    /// 获取或设置外部联系人 id；当且仅当用户是企业的客户且跟进人在应用可见范围内时返回。
+    /// 获取或设置外部联系人 id；当且仅当用户是企业的客户且跟进人在应用可见范围内时返回
+    /// （家校场景下为学校家长的外部联系人 id）。
     /// </summary>
     [JsonPropertyName("external_userid")]
     public string? ExternalUserid { get; set; }
+
+    /// <summary>
+    /// 获取或设置家校通讯录里家长的 userid（家校沟通-网页授权登录场景下用户为学校家长时返回；
+    /// 局校互联场景下格式为 <c>CorpId/parent_userid</c>）。
+    /// </summary>
+    [JsonPropertyName("parent_userid")]
+    public string? ParentUserid { get; set; }
 }

@@ -228,15 +228,14 @@ public class WechatSchoolContractGuards
     };
 
     /// <summary>
-    /// 网页授权登录域官方路由表（4 条：自建/代开发公共面 2 条收敛父接口；
+    /// 网页授权登录域官方路由表（3 条：自建/代开发公共面 1 条收敛父接口；
     /// 第三方为独立路由 2 条、以 suite_access_token 鉴权，独立声明于第三方接口）。
+    /// <para><b>单一所有者</b>：<c>/cgi-bin/auth/getuserinfo</c>（自建 91707 / 代开发 96712）官方以
+    /// 「身份验证」域与本域两套文档分文档承载，已收敛为 <see cref="IWechatWorkIdentityService"/> 唯一声明
+    /// （家校家长形态的 <c>parent_userid</c> 以可空字段并入 <c>GetUserInfoResponse</c>）。</para>
     /// </summary>
     private static readonly (Type Interface, string Method, Type HttpAttribute, string Route)[] SchoolAuthRoutes =
     {
-        // 获取访问用户身份（自建 91707、代开发 96712；官方即 GET，code 走 Query）。
-        (typeof(IWechatWorkSchoolAuthService),
-            nameof(IWechatWorkSchoolAuthService.GetUserInfoAsync),
-            typeof(GetAttribute), "/cgi-bin/auth/getuserinfo"),
         // 获取家校访问用户身份（自建 95791、代开发 96715；官方即 GET，code 走 Query）。
         (typeof(IWechatWorkSchoolAuthService),
             nameof(IWechatWorkSchoolAuthService.GetSchoolUserInfoAsync),
@@ -275,17 +274,14 @@ public class WechatSchoolContractGuards
     };
 
     /// <summary>
-    /// 上课直播域官方路由表（三类应用公共面，7 条端点全部收敛父接口；
-    /// 获取老师直播 ID 列表与删除直播回放官方路由位于 /cgi-bin/living/ 段、
-    /// 其余 5 条位于 /cgi-bin/school/living/ 段，照抄不纠正；
+    /// 上课直播域官方路由表（三类应用公共面，5 条端点全部收敛父接口；
+    /// <b>单一所有者</b>：获取老师直播 ID 列表与删除直播回放官方虽另以「直播」域文档分文档承载，
+    /// 但路由与 DTO 完全相同，已收敛为 <see cref="IWechatWorkLivingService"/> 唯一声明；
+    /// 本域 5 条端点全部位于 /cgi-bin/school/living/ 段，照抄不纠正；
     /// 获取直播详情官方即 GET（livingid 走 Query），其余官方即 POST）。
     /// </summary>
     private static readonly (Type Interface, string Method, Type HttpAttribute, string Route)[] SchoolLivingRoutes =
     {
-        // 获取老师直播 ID 列表（自建 93739、第三方 93856、代开发 97127）。
-        (typeof(IWechatWorkSchoolLivingService),
-            nameof(IWechatWorkSchoolLivingService.GetUserAllLivingIdAsync),
-            typeof(PostAttribute), "/cgi-bin/living/get_user_all_livingid"),
         // 获取直播详情（自建 93740、第三方 93857、代开发 97128；官方即 GET，livingid 走 Query）。
         (typeof(IWechatWorkSchoolLivingService),
             nameof(IWechatWorkSchoolLivingService.GetLivingInfoAsync),
@@ -298,10 +294,6 @@ public class WechatSchoolContractGuards
         (typeof(IWechatWorkSchoolLivingService),
             nameof(IWechatWorkSchoolLivingService.GetUnwatchStatAsync),
             typeof(PostAttribute), "/cgi-bin/school/living/get_unwatch_stat"),
-        // 删除直播回放（自建 93743、第三方 93860、代开发 97131）。
-        (typeof(IWechatWorkSchoolLivingService),
-            nameof(IWechatWorkSchoolLivingService.DeleteReplayDataAsync),
-            typeof(PostAttribute), "/cgi-bin/living/delete_replay_data"),
         // 获取观看直播统计 V2（自建 95793、第三方 95799、代开发 97132）。
         (typeof(IWechatWorkSchoolLivingService),
             nameof(IWechatWorkSchoolLivingService.GetWatchStatV2Async),
@@ -465,11 +457,11 @@ public class WechatSchoolContractGuards
     [Fact]
     public void SchoolAuthEndpoints_ShouldMatchOfficialRoutes()
     {
-        SchoolAuthRoutes.Should().HaveCount(4,
-            "网页授权登录域 4 个端点 = 自建/代开发公共面 2 条（父接口）+ 第三方独立路由 2 条");
+        SchoolAuthRoutes.Should().HaveCount(3,
+            "网页授权登录域 3 个端点 = 自建/代开发公共面 1 条（父接口）+ 第三方独立路由 2 条");
 
         var distinctRoutes = SchoolAuthRoutes.Select(r => r.Route).Distinct().ToList();
-        distinctRoutes.Should().HaveCount(4, "网页授权登录域各端点路由互不重复");
+        distinctRoutes.Should().HaveCount(3, "网页授权登录域各端点路由互不重复");
 
         foreach (var (iface, method, httpAttribute, route) in SchoolAuthRoutes)
         {
@@ -518,11 +510,11 @@ public class WechatSchoolContractGuards
     [Fact]
     public void SchoolLivingEndpoints_ShouldMatchOfficialRoutes()
     {
-        SchoolLivingRoutes.Should().HaveCount(7,
-            "上课直播域 7 个端点为三类应用公共面，全部收敛父接口");
+        SchoolLivingRoutes.Should().HaveCount(5,
+            "上课直播域 5 个端点为三类应用公共面，全部收敛父接口（同路由端点归「直播」域单一所有者）");
 
         var distinctRoutes = SchoolLivingRoutes.Select(r => r.Route).Distinct().ToList();
-        distinctRoutes.Should().HaveCount(7, "上课直播域各端点路由互不重复");
+        distinctRoutes.Should().HaveCount(5, "上课直播域各端点路由互不重复");
 
         foreach (var (iface, method, httpAttribute, route) in SchoolLivingRoutes)
         {
@@ -534,11 +526,11 @@ public class WechatSchoolContractGuards
             attr!.RequestUri.Should().Be(route, $"{iface.Name}.{method} 路由必须与官方契约一致");
         }
 
-        // 路由段契约：2 条端点位于 /cgi-bin/living/ 段（官方原文），5 条位于 /cgi-bin/school/living/ 段。
+        // 路由段契约：单一所有者收敛后本域 5 条端点全部位于 /cgi-bin/school/living/ 段。
         SchoolLivingRoutes.Count(r => r.Route.StartsWith("/cgi-bin/living/", StringComparison.Ordinal))
-            .Should().Be(2, "获取老师直播 ID 列表与删除直播回放的官方路由位于 /cgi-bin/living/ 段");
+            .Should().Be(0, "获取老师直播 ID 列表与删除直播回放已归「直播」域单一所有者，本域不再声明 /cgi-bin/living/ 段路由");
         SchoolLivingRoutes.Count(r => r.Route.StartsWith("/cgi-bin/school/living/", StringComparison.Ordinal))
-            .Should().Be(5, "其余 5 条上课直播端点的官方路由位于 /cgi-bin/school/living/ 段");
+            .Should().Be(5, "本域 5 条上课直播端点的官方路由位于 /cgi-bin/school/living/ 段");
 
         // Query 参数契约：获取直播详情的 livingid 为官方 Query 参数，必须以 [Query("livingid")] 标注。
         AssertHasQueryParameter(typeof(IWechatWorkSchoolLivingService),
@@ -693,7 +685,7 @@ public class WechatSchoolContractGuards
         authParentApi!.IsAbstract.Should().BeTrue("公共父接口不参与 DI 注册，必须 IsAbstract = true");
         authParentApi.RegistryGroupName.Should().BeNullOrEmpty("父接口不进入注册组（注册面由子接口承载）");
         authParent.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
-            .Should().HaveCount(2, "自建/代开发公共面 2 个端点必须声明于网页授权登录域公共父接口");
+            .Should().HaveCount(1, "自建/代开发公共面 1 个端点必须声明于网页授权登录域公共父接口（获取访问用户身份归「身份验证」域单一所有者）");
 
         foreach (var child in new[] { authInternal, authProvider })
         {
@@ -716,11 +708,12 @@ public class WechatSchoolContractGuards
         authThirdParty.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
             .Should().HaveCount(2, "第三方独立路由的 2 个端点必须声明于第三方接口自身");
 
-        // 类型化面：自建/代开发为官方开放的 2 条公共面，第三方为官方开放的 2 条独立路由。
-        CollectInterfaceEndpoints(authInternal).Should().HaveCount(2,
-            "自建应用类型化面为官方开放的 2 条网页授权端点");
-        CollectInterfaceEndpoints(authProvider).Should().HaveCount(2,
-            "代开发应用类型化面为官方开放的 2 条网页授权端点");
+        // 类型化面：自建/代开发为官方开放的 1 条公共面（获取访问用户身份归「身份验证」域单一所有者），
+        // 第三方为官方开放的 2 条独立路由。
+        CollectInterfaceEndpoints(authInternal).Should().HaveCount(1,
+            "自建应用类型化面为官方开放的 1 条网页授权端点");
+        CollectInterfaceEndpoints(authProvider).Should().HaveCount(1,
+            "代开发应用类型化面为官方开放的 1 条网页授权端点");
         CollectInterfaceEndpoints(authThirdParty).Should().HaveCount(2,
             "第三方应用类型化面为官方开放的 2 条独立路由网页授权端点");
     }
@@ -832,8 +825,9 @@ public class WechatSchoolContractGuards
             typeof(GetSchoolUserResponse), typeof(SchoolStudentInfo), typeof(SchoolParentInfo),
             typeof(SchoolChildInfo),
             typeof(SchoolDepartmentStudentsResponse), typeof(SchoolDepartmentParentsResponse),
-            // 网页授权登录：自建/代开发公共面。
-            typeof(SchoolAuthUserInfoResponse), typeof(SchoolAuthSchoolUserInfoResponse),
+            // 网页授权登录：自建/代开发公共面（获取访问用户身份归「身份验证」域单一所有者，
+            // 家校家长形态 parent_userid 已并入 Identity 域 GetUserInfoResponse）。
+            typeof(SchoolAuthSchoolUserInfoResponse),
             // 网页授权登录：第三方。
             typeof(SchoolAuthThirdPartyUserInfoResponse), typeof(SchoolAuthThirdPartyParentItem),
             typeof(SchoolAuthThirdPartyStudentItem), typeof(SchoolAuthThirdPartySchoolUserInfoResponse),
@@ -847,7 +841,7 @@ public class WechatSchoolContractGuards
             typeof(SchoolSetUpgradeInfoResponse),
         };
 
-        schoolTypes.Should().HaveCount(55, "家校沟通既有域契约面共 55 型");
+        schoolTypes.Should().HaveCount(54, "家校沟通既有域契约面共 54 型（3 型随单一所有者收敛迁出：SchoolAuthUserInfoResponse / LivingGetUserAllLivingId{Request,Response} / LivingDeleteReplayDataRequest）");
         schoolTypes.Should().OnlyHaveUniqueItems("契约面类型不得重复断言");
 
         foreach (var type in schoolTypes)
@@ -888,8 +882,7 @@ public class WechatSchoolContractGuards
 
         var livingTypes = new[]
         {
-            // 获取老师直播 ID 列表。
-            typeof(LivingGetUserAllLivingIdRequest), typeof(LivingGetUserAllLivingIdResponse),
+            // 获取老师直播 ID 列表 / 删除直播回放归「直播」域单一所有者（DTO 同族，本域不再重复登记）。
             // 获取直播详情。
             typeof(LivingGetLivingInfoResponse), typeof(LivingInfo), typeof(LivingRange),
             // 观看/未观看直播统计（V1，next_key 分页）。
@@ -897,8 +890,6 @@ public class WechatSchoolContractGuards
             typeof(LivingWatchStatInfoes), typeof(LivingWatchStudent), typeof(LivingVisitor),
             typeof(LivingGetUnwatchStatRequest), typeof(LivingGetUnwatchStatResponse),
             typeof(LivingUnwatchStatInfo), typeof(LivingUnwatchStudent),
-            // 删除直播回放。
-            typeof(LivingDeleteReplayDataRequest),
             // 观看/未观看直播统计 V2（next_cursor 分页，较 V1 新增家长列表）。
             typeof(LivingGetWatchStatV2Request), typeof(LivingGetWatchStatV2Response),
             typeof(LivingWatchStatInfoV2), typeof(LivingWatchStudentV2), typeof(LivingWatchParent),
@@ -906,7 +897,7 @@ public class WechatSchoolContractGuards
             typeof(LivingUnwatchStatInfoV2), typeof(LivingUnwatchStudentV2), typeof(LivingUnwatchParent),
         };
 
-        livingTypes.Should().HaveCount(25, "上课直播域契约面共 25 型");
+        livingTypes.Should().HaveCount(22, "上课直播域契约面共 22 型（3 型随单一所有者收敛迁至「直播」域）");
         livingTypes.Should().OnlyHaveUniqueItems("契约面类型不得重复断言");
 
         foreach (var type in livingTypes)

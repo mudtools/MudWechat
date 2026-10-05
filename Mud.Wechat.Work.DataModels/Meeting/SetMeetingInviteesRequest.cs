@@ -8,19 +8,19 @@
 namespace Mud.Wechat.Work.DataModels.Meeting;
 
 /// <summary>
-/// 取消预约会议请求体（<c>/cgi-bin/meeting/cancel</c>；三种应用类型请求形态一致）。
+/// 更新会议受邀成员列表请求体（<c>/cgi-bin/meeting/set_invitees</c>）。
 /// </summary>
 [HttpJsonSerializable(SerializerClassName = "Meeting")]
-public class CancelMeetingRequest
+public class SetMeetingInviteesRequest
 {
-    /// <summary>获取或设置会议 ID（官方必填；仅允许取消预约状态下的会议）。</summary>
+    /// <summary>获取或设置会议 ID（官方必填）。</summary>
     [JsonPropertyName("meetingid")]
     public string? Meetingid { get; set; }
 
     /// <summary>
-    /// 获取或设置周期性子会议 ID（仅预约会议高级管理文档页声明该参数）。
-    /// <para>如果取消周期性会议且该字段不传，则会取消该系列的周期性会议。</para>
+    /// 获取或设置受邀成员列表（详见 <see cref="MeetingInvitee"/>）。
+    /// <para>官方限制：最大支持 2000 人（与企业所购在线会议室最大方数相关）；管理员必须在受邀成员列表中。</para>
     /// </summary>
-    [JsonPropertyName("sub_meetingid")]
-    public string? SubMeetingid { get; set; }
+    [JsonPropertyName("invitees")]
+    public List<MeetingInvitee>? Invitees { get; set; }
 }

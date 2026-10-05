@@ -735,6 +735,11 @@ public class WechatContractGuards
                 //（第三方/代开发章节未提供会议统计管理文档页；零端点父接口 + 仅自建子接口承载）。
                 nameof(IWechatWorkMeetingStatisticsService),
                 nameof(IWechatWorkInternalMeetingStatisticsService),
+                // 会议·预约会议高级管理族（Meeting 模块）：19 端点官方仅自建应用开放
+                //（第三方应用开发与服务商代开发章节均无对应 API；零端点父接口 + 仅自建子接口承载；
+                // 创建/修改/取消预约会议、获取会议详情、获取成员会议 ID 列表 5 个文档页与基础管理族同路由，不重复建端点）。
+                nameof(IWechatWorkMeetingAdvancedService),
+                nameof(IWechatWorkInternalMeetingAdvancedService),
             },
             "企业微信官方契约强制 Query 注入（MUD005 已知接受风险），新增 Query 注入接口须评估后扩展本守卫");
     }

@@ -38,7 +38,7 @@ public interface IWechatWorkThirdPartyMeetingService : IWechatWorkMeetingService
 {
     /// <summary>
     /// 获取会议详情
-    /// <para>获取该应用创建的某个预约会议的详情（基础信息 + 会议成员 + 会议配置 + 重复会议配置）。</para>
+    /// <para>获取该应用创建的某个预约会议的详情（基础信息 + 会议成员 + 会议配置 + 重复会议配置；预约会议高级管理文档页额外覆盖嘉宾、周期性子会议等字段，但其高级参数口径官方仅自建应用声明）。</para>
     /// <para>官方限制：只能拉取该应用创建的会议；快速会议仅返回已参与成员列表。</para>
     /// </summary>
     /// <param name="request">请求体（<see cref="GetMeetingInfoRequest"/>：meetingid 官方必填）。</param>

@@ -10,6 +10,12 @@ namespace Mud.Wechat.Work.DataModels.Meeting;
 /// <summary>
 /// 创建预约会议请求体（<c>/cgi-bin/meeting/create</c>；三种应用类型请求形态一致）。
 /// </summary>
+/// <remarks>
+/// <para>
+/// 字段为预约会议基础管理（99104/93706/97454）与预约会议高级管理（98148，官方仅自建应用）两组文档页的并集超集；
+/// <see cref="Guests"/> 仅预约会议高级管理文档页声明。
+/// </para>
+/// </remarks>
 [HttpJsonSerializable(SerializerClassName = "Meeting")]
 public class CreateMeetingRequest
 {
@@ -44,6 +50,12 @@ public class CreateMeetingRequest
     /// <summary>获取或设置邀请参会成员对象（任何 userid 不合法或不在应用可见范围内将直接报错）。</summary>
     [JsonPropertyName("invitees")]
     public MeetingInvitees? Invitees { get; set; }
+
+    /// <summary>
+    /// 获取或设置会议嘉宾列表（详见 <see cref="MeetingGuest"/>；仅预约会议高级管理文档页声明该参数）。
+    /// </summary>
+    [JsonPropertyName("guests")]
+    public List<MeetingGuest>? Guests { get; set; }
 
     /// <summary>
     /// 获取或设置会议所属日历 ID（不多于 64 字节，须为 access_token 对应应用创建的日历）。

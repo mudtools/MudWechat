@@ -8,27 +8,24 @@
 namespace Mud.Wechat.Work.DataModels.Meeting;
 
 /// <summary>
-/// 创建预约会议响应体（<c>/cgi-bin/meeting/create</c>）。
+/// 获取会议嘉宾列表响应体（<c>/cgi-bin/meeting/get_guests</c>）。
 /// </summary>
 [HttpJsonSerializable(SerializerClassName = "Meeting")]
-public class CreateMeetingResponse : WechatWorkResponse
+public class GetMeetingGuestsResponse : WechatWorkResponse
 {
-    /// <summary>获取或设置会议 ID（可用于调用「进入会议」接口，通过小程序和 JS-SDK 提供入会入口）。</summary>
+    /// <summary>获取或设置会议 ID。</summary>
     [JsonPropertyName("meetingid")]
     public string? Meetingid { get; set; }
 
-    /// <summary>
-    /// 获取或设置参会人中包含无效会议账号的 userid 列表。
-    /// <para>仅在购买会议专业版的企业且参会人中存在无有效会议账号的用户时返回。</para>
-    /// </summary>
-    [JsonPropertyName("excess_users")]
-    public List<string>? ExcessUsers { get; set; }
-
-    /// <summary>获取或设置会议的会议号（仅预约会议高级管理文档页声明该字段）。</summary>
+    /// <summary>获取或设置入会码。</summary>
     [JsonPropertyName("meeting_code")]
     public string? MeetingCode { get; set; }
 
-    /// <summary>获取或设置入会链接（仅预约会议高级管理文档页声明该字段）。</summary>
-    [JsonPropertyName("meeting_link")]
-    public string? MeetingLink { get; set; }
+    /// <summary>获取或设置会议主题。</summary>
+    [JsonPropertyName("title")]
+    public string? Title { get; set; }
+
+    /// <summary>获取或设置嘉宾列表（详见 <see cref="MeetingGuest"/>）。</summary>
+    [JsonPropertyName("guests")]
+    public List<MeetingGuest>? Guests { get; set; }
 }

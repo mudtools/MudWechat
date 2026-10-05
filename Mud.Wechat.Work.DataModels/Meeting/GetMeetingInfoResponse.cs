@@ -12,6 +12,11 @@ namespace Mud.Wechat.Work.DataModels.Meeting;
 /// </summary>
 /// <remarks>
 /// <para>官方限制：只能拉取该应用创建的会议；快速会议仅返回已参与成员列表。</para>
+/// <para>
+/// <see cref="MeetingType"/> / <see cref="Guests"/> / <see cref="HasVote"/> / <see cref="SubMeetings"/> /
+/// <see cref="HasMoreSubMeeting"/> / <see cref="RemainSubMeetings"/> / <see cref="CurrentSubMeetingid"/> /
+/// <see cref="SubRepeatList"/> 仅预约会议高级管理文档页（98149，官方仅自建应用）声明。
+/// </para>
 /// </remarks>
 [HttpJsonSerializable(SerializerClassName = "Meeting")]
 public class GetMeetingInfoResponse : WechatWorkResponse
@@ -48,6 +53,12 @@ public class GetMeetingInfoResponse : WechatWorkResponse
     [JsonPropertyName("status")]
     public int? Status { get; set; }
 
+    /// <summary>
+    /// 获取或设置会议类型：0 - 一次性会议；1 - 周期性会议；2 - 微信专属会议；3 - Rooms 投屏会议；5 - 个人会议号会议；6 - 网络研讨会（仅预约会议高级管理文档页声明该字段）。
+    /// </summary>
+    [JsonPropertyName("meeting_type")]
+    public int? MeetingType { get; set; }
+
     /// <summary>获取或设置应用 agentid。</summary>
     [JsonPropertyName("agentid")]
     public int? Agentid { get; set; }
@@ -75,4 +86,38 @@ public class GetMeetingInfoResponse : WechatWorkResponse
     /// <summary>获取或设置重复会议相关配置对象（详见 <see cref="MeetingReminders"/>）。</summary>
     [JsonPropertyName("reminders")]
     public MeetingReminders? Reminders { get; set; }
+
+    /// <summary>获取或设置会议嘉宾列表（详见 <see cref="MeetingGuest"/>；仅预约会议高级管理文档页声明该字段）。</summary>
+    [JsonPropertyName("guests")]
+    public List<MeetingGuest>? Guests { get; set; }
+
+    /// <summary>
+    /// 获取或设置是否存在投票（仅预约会议高级管理文档页声明该字段）。
+    /// <para>官方限制：会议创建人和主持人才有权限查询。</para>
+    /// </summary>
+    [JsonPropertyName("has_vote")]
+    public bool? HasVote { get; set; }
+
+    /// <summary>获取或设置周期性子会议列表（详见 <see cref="MeetingSubMeeting"/>；仅预约会议高级管理文档页声明该字段）。</summary>
+    [JsonPropertyName("sub_meetings")]
+    public List<MeetingSubMeeting>? SubMeetings { get; set; }
+
+    /// <summary>获取或设置是否还有更多子会议特例：0 - 无更多；1 - 有更多子会议特例（仅预约会议高级管理文档页声明该字段）。</summary>
+    [JsonPropertyName("has_more_sub_meeting")]
+    public int? HasMoreSubMeeting { get; set; }
+
+    /// <summary>获取或设置剩余子会议场数（仅预约会议高级管理文档页声明该字段）。</summary>
+    [JsonPropertyName("remain_sub_meetings")]
+    public int? RemainSubMeetings { get; set; }
+
+    /// <summary>获取或设置当前子会议 ID（进行中/即将开始；仅预约会议高级管理文档页声明该字段）。</summary>
+    [JsonPropertyName("current_sub_meetingid")]
+    public string? CurrentSubMeetingid { get; set; }
+
+    /// <summary>
+    /// 获取或设置周期性会议分段信息列表（详见 <see cref="MeetingSubRepeatInfo"/>；仅预约会议高级管理文档页声明该字段）。
+    /// <para>企业微信客户端可对周期性会议中某一场子会议执行「修改此会议」和「修改此及后续会议」，修改后会议可能被分裂成不同分段，每个分段有不同的重复规则，通过该字段获取所有分段信息。</para>
+    /// </summary>
+    [JsonPropertyName("sub_repeat_list")]
+    public List<MeetingSubRepeatInfo>? SubRepeatList { get; set; }
 }

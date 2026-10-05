@@ -8,19 +8,23 @@
 namespace Mud.Wechat.Work.DataModels.Meeting;
 
 /// <summary>
-/// 取消预约会议请求体（<c>/cgi-bin/meeting/cancel</c>；三种应用类型请求形态一致）。
+/// 审批会议报名信息请求体（<c>/cgi-bin/meeting/enroll/approve</c>；批量审批会议的报名信息）。
 /// </summary>
 [HttpJsonSerializable(SerializerClassName = "Meeting")]
-public class CancelMeetingRequest
+public class ApproveMeetingEnrollsRequest
 {
-    /// <summary>获取或设置会议 ID（官方必填；仅允许取消预约状态下的会议）。</summary>
+    /// <summary>获取或设置会议 ID（官方必填）。</summary>
     [JsonPropertyName("meetingid")]
     public string? Meetingid { get; set; }
 
     /// <summary>
-    /// 获取或设置周期性子会议 ID（仅预约会议高级管理文档页声明该参数）。
-    /// <para>如果取消周期性会议且该字段不传，则会取消该系列的周期性会议。</para>
+    /// 获取或设置审批动作（官方必填）：1 - 取消批准；2 - 拒绝；3 - 批准。
+    /// <para>官方限制：取消批准后状态将变成待审批。</para>
     /// </summary>
-    [JsonPropertyName("sub_meetingid")]
-    public string? SubMeetingid { get; set; }
+    [JsonPropertyName("action")]
+    public int? Action { get; set; }
+
+    /// <summary>获取或设置报名 ID 列表（官方必填）。</summary>
+    [JsonPropertyName("enroll_id_list")]
+    public List<string>? EnrollIdList { get; set; }
 }

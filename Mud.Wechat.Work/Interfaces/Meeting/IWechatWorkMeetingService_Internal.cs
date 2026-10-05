@@ -37,14 +37,15 @@ public interface IWechatWorkInternalMeetingService : IWechatWorkMeetingService
 {
     /// <summary>
     /// 获取会议详情
-    /// <para>获取该应用创建的某个预约会议的详情（基础信息 + 会议成员 + 会议配置 + 重复会议配置）。</para>
+    /// <para>获取该应用创建的某个预约会议的详情（基础信息 + 会议成员 + 会议嘉宾 + 会议配置 + 重复会议配置 + 周期性子会议）。</para>
     /// <para>官方限制：只能拉取该应用创建的会议；快速会议仅返回已参与成员列表。</para>
     /// </summary>
-    /// <param name="request">请求体（<see cref="GetMeetingInfoRequest"/>：meetingid 官方必填）。</param>
+    /// <param name="request">请求体（<see cref="GetMeetingInfoRequest"/>：meetingid / meeting_code / sub_meetingid；预约会议高级管理文档页口径为 meetingid 与 meeting_code 必须填一个）。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
-    /// <returns>会议详情（admin_userid / title / meeting_start / meeting_duration / description / location / main_department / status / agentid / meeting_code / meeting_link / cal_id / attendees / settings / reminders）。</returns>
+    /// <returns>会议详情（admin_userid / title / meeting_start / meeting_duration / description / location / main_department / status / meeting_type / agentid / meeting_code / meeting_link / cal_id / attendees / settings / reminders / guests / has_vote / sub_meetings / has_more_sub_meeting / remain_sub_meetings / current_sub_meetingid / sub_repeat_list）。</returns>
     /// <remarks>
     /// <para><b>企业自建应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/99049"/></para>
+    /// <para><b>企业自建应用·预约会议高级管理</b>SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/98149"/></para>
     /// <para>官方权限：仅允许拉取当前应用创建的会议；自建应用需配置在「可调用接口的应用」列表中。</para>
     /// </remarks>
     [Post("/cgi-bin/meeting/get_info")]

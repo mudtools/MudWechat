@@ -8,19 +8,23 @@
 namespace Mud.Wechat.Work.DataModels.Meeting;
 
 /// <summary>
-/// 取消预约会议请求体（<c>/cgi-bin/meeting/cancel</c>；三种应用类型请求形态一致）。
+/// 获取实时等候室成员列表请求体（<c>/cgi-bin/meeting/waitingroom/get_current_user_list</c>）。
 /// </summary>
 [HttpJsonSerializable(SerializerClassName = "Meeting")]
-public class CancelMeetingRequest
+public class GetMeetingWaitingRoomCurrentUserListRequest
 {
-    /// <summary>获取或设置会议 ID（官方必填；仅允许取消预约状态下的会议）。</summary>
+    /// <summary>获取或设置会议 ID（官方必填；需开启等候室且会议为「会议进行中」状态，否则返回空列表）。</summary>
     [JsonPropertyName("meetingid")]
     public string? Meetingid { get; set; }
 
     /// <summary>
-    /// 获取或设置周期性子会议 ID（仅预约会议高级管理文档页声明该参数）。
-    /// <para>如果取消周期性会议且该字段不传，则会取消该系列的周期性会议。</para>
+    /// 获取或设置分页大小（默认 10，最大 50）。
+    /// <para>官方限制：<c>limit</c> 参数必须与首次调用获得 <c>cursor</c> 时传入的 limit 一致。</para>
     /// </summary>
-    [JsonPropertyName("sub_meetingid")]
-    public string? SubMeetingid { get; set; }
+    [JsonPropertyName("limit")]
+    public int? Limit { get; set; }
+
+    /// <summary>获取或设置分页查询游标（将上一个请求返回的 <c>next_cursor</c> 字段传入；第一次查询时可不传值）。</summary>
+    [JsonPropertyName("cursor")]
+    public string? Cursor { get; set; }
 }

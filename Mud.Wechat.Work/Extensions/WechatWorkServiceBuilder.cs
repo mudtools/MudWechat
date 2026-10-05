@@ -99,6 +99,12 @@ public class WechatWorkServiceBuilder
             [WechatModule.Wedoc] = new WechatModuleRegistrar(
                 WechatModule.Wedoc,
                 s => s.AddWedocWebApiHttpClient()),
+            [WechatModule.Checkin] = new WechatModuleRegistrar(
+                WechatModule.Checkin,
+                s => s.AddCheckinWebApiHttpClient()),
+            [WechatModule.Schedule] = new WechatModuleRegistrar(
+                WechatModule.Schedule,
+                s => s.AddScheduleWebApiHttpClient()),
         };
 
     /// <summary>注册授权流业务接口与授权编排服务（get_pre_auth_code / set_session_info / get_permanent_code / get_auth_info / get_customized_auth_url + 编排）。</summary>
@@ -160,6 +166,12 @@ public class WechatWorkServiceBuilder
 
     /// <summary>注册文档业务接口（管理文档族 + 管理文档内容族 + 管理表格内容族 + 管理智能表格内容族 + 管理智能文档内容族：三类应用公共面收敛父接口 + 空标记子接口；编辑文档内容与编辑表格内容为批量更新形态，单次操作数量官方分别限制 30 与 5；管理智能表格内容族为 20 个端点，子表/视图/字段/记录/编组各 4 个；管理智能文档内容族为 17 个端点，发布与可见范围 3 / 页面 4 / 内容块 4 / 导出 2 / 数据表 4）。</summary>
     public WechatWorkServiceBuilder AddWedocApi() => AddModule(WechatModule.Wedoc);
+
+    /// <summary>注册打卡业务接口（打卡规则族：获取员工打卡规则三类公共，获取企业所有打卡规则与管理打卡规则 4 写端点自建/代开发开放、第三方暂不支持；打卡记录族 + 打卡报表族：获取打卡记录/日报/月报三类开放但第三方文档页为旧字段结构，同路由不同构由子接口分形态承载，补卡/添加打卡记录/录入人脸官方仅自建；打卡排班族 + 设备打卡数据族：三类应用公共面收敛父接口 + 空标记子接口，设备打卡数据路由挂 /cgi-bin/hardware/ 域）。</summary>
+    public WechatWorkServiceBuilder AddCheckinApi() => AddModule(WechatModule.Checkin);
+
+    /// <summary>注册日程业务接口（管理日历族：创建/更新/获取/删除日历 4 端点为三类应用公共面收敛父接口 + 空标记子接口；创建日历路由官方即 calendar/add，更新操作为覆盖式而非增量式）。</summary>
+    public WechatWorkServiceBuilder AddScheduleApi() => AddModule(WechatModule.Schedule);
 
     /// <summary>注册全部模块。</summary>
     public WechatWorkServiceBuilder AddAllApis()

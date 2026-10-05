@@ -871,6 +871,10 @@ public class WechatServiceCollectionExtensionsTests
         provider.GetRequiredService<IWechatWorkProviderIdentityService>().Should().NotBeNull();
         provider.GetRequiredService<IWechatWorkThirdPartyIdentitySuiteService>().Should().NotBeNull();
         provider.GetRequiredService<IWechatWorkInternalIdentityTfaService>().Should().NotBeNull();
+        provider.GetRequiredService<IWechatWorkInternalIdentityMiniProgramService>().Should().NotBeNull();
+        provider.GetRequiredService<IWechatWorkProviderIdentityMiniProgramService>().Should().NotBeNull();
+        provider.GetRequiredService<IWechatWorkThirdPartyIdentityMiniProgramSuiteService>().Should().NotBeNull(
+            "小程序登录套件族官方仅第三方应用开放，本族仅注册第三方子接口");
 
         provider.GetService<IWechatWorkIdentityService>().Should().BeNull(
             "公共父接口 IsAbstract = true，不得注册进 DI（调用方须按应用类型选择子接口）");
@@ -878,6 +882,10 @@ public class WechatServiceCollectionExtensionsTests
             "零端点父接口 IsAbstract = true，不得注册进 DI（调用方须使用第三方子接口）");
         provider.GetService<IWechatWorkIdentityTfaService>().Should().BeNull(
             "零端点父接口 IsAbstract = true，不得注册进 DI（调用方须使用自建子接口）");
+        provider.GetService<IWechatWorkIdentityMiniProgramService>().Should().BeNull(
+            "公共父接口 IsAbstract = true，不得注册进 DI（调用方须按应用类型选择子接口）");
+        provider.GetService<IWechatWorkIdentityMiniProgramSuiteService>().Should().BeNull(
+            "零端点父接口 IsAbstract = true，不得注册进 DI（调用方须使用第三方子接口）");
 
         using var scope = provider.CreateScope();
         scope.ServiceProvider.GetRequiredService<IWechatWorkInternalIdentityService>().Should().NotBeNull(
@@ -887,6 +895,10 @@ public class WechatServiceCollectionExtensionsTests
         scope.ServiceProvider.GetRequiredService<IWechatWorkThirdPartyIdentitySuiteService>().Should().NotBeNull(
             "ValidateScopes = true 变体下子 scope 内同样可解析");
         scope.ServiceProvider.GetRequiredService<IWechatWorkInternalIdentityTfaService>().Should().NotBeNull(
+            "ValidateScopes = true 变体下子 scope 内同样可解析");
+        scope.ServiceProvider.GetRequiredService<IWechatWorkInternalIdentityMiniProgramService>().Should().NotBeNull(
+            "ValidateScopes = true 变体下子 scope 内同样可解析");
+        scope.ServiceProvider.GetRequiredService<IWechatWorkThirdPartyIdentityMiniProgramSuiteService>().Should().NotBeNull(
             "ValidateScopes = true 变体下子 scope 内同样可解析");
     }
 
@@ -950,6 +962,70 @@ public class WechatServiceCollectionExtensionsTests
         scope.ServiceProvider.GetRequiredService<IWechatWorkInternalWedocSmartDocService>().Should().NotBeNull(
             "ValidateScopes = true 变体下子 scope 内同样可解析");
         scope.ServiceProvider.GetRequiredService<IWechatWorkProviderWedocSmartDocService>().Should().NotBeNull(
+            "ValidateScopes = true 变体下子 scope 内同样可解析");
+    }
+
+    /// <summary>
+    /// Agent 模块（应用管理域）：AddAgentApi 注册的应用类型子接口客户端必须可解析——
+    /// 回归锁定：注册器字典曾漏配 [WechatModule.Agent] 条目，AddAgentApi 静默空转（不注册、不报错）。
+    /// </summary>
+    [Fact]
+    public void AddAgentApi_ShouldRegisterAgentDomainClients_ResolvableInRootAndScope()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddWechatApp(new List<WechatAppConfig> { InternalConfig() });
+        services.AddWechatWorkServices(builder => builder.AddAgentApi());
+
+        using var provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true });
+
+        provider.GetRequiredService<IWechatWorkInternalAgentService>().Should().NotBeNull();
+        provider.GetRequiredService<IWechatWorkProviderAgentService>().Should().NotBeNull();
+        provider.GetRequiredService<IWechatWorkThirdPartyAgentService>().Should().NotBeNull();
+        provider.GetRequiredService<IWechatWorkInternalAgentWorkbenchService>().Should().NotBeNull();
+        provider.GetRequiredService<IWechatWorkInternalAgentMenuService>().Should().NotBeNull(
+            "自定义菜单族官方仅自建应用开放，本族仅注册自建子接口");
+        provider.GetRequiredService<IWechatWorkInternalAgentMigrationService>().Should().NotBeNull(
+            "自建应用迁移成代开发应用族仅自建子接口承载端点");
+
+        provider.GetService<IWechatWorkAgentService>().Should().BeNull(
+            "公共父接口 IsAbstract = true，不得注册进 DI（调用方须按应用类型选择子接口）");
+
+        using var scope = provider.CreateScope();
+        scope.ServiceProvider.GetRequiredService<IWechatWorkInternalAgentService>().Should().NotBeNull(
+            "ValidateScopes = true 变体下子 scope 内同样可解析");
+        scope.ServiceProvider.GetRequiredService<IWechatWorkThirdPartyAgentService>().Should().NotBeNull(
+            "ValidateScopes = true 变体下子 scope 内同样可解析");
+    }
+
+    /// <summary>
+    /// JsSdk 模块（JS-SDK 域：获取企业 jsapi_ticket + 获取应用 jsapi_ticket，三类应用公共面）：
+    /// AddJsSdkApi 注册的应用类型子接口客户端必须可解析
+    ///（公共父接口 IsAbstract 不参与 DI 注册，三个空标记子接口承载继承面）。
+    /// </summary>
+    [Fact]
+    public void AddJsSdkApi_ShouldRegisterJsSdkDomainClients_ResolvableInRootAndScope()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddWechatApp(new List<WechatAppConfig> { InternalConfig() });
+        services.AddWechatWorkServices(builder => builder.AddJsSdkApi());
+
+        using var provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true });
+
+        provider.GetRequiredService<IWechatWorkInternalJsSdkService>().Should().NotBeNull();
+        provider.GetRequiredService<IWechatWorkThirdPartyJsSdkService>().Should().NotBeNull();
+        provider.GetRequiredService<IWechatWorkProviderJsSdkService>().Should().NotBeNull();
+
+        provider.GetService<IWechatWorkJsSdkService>().Should().BeNull(
+            "公共父接口 IsAbstract = true，不得注册进 DI（调用方须按应用类型选择子接口）");
+
+        using var scope = provider.CreateScope();
+        scope.ServiceProvider.GetRequiredService<IWechatWorkInternalJsSdkService>().Should().NotBeNull(
+            "ValidateScopes = true 变体下子 scope 内同样可解析");
+        scope.ServiceProvider.GetRequiredService<IWechatWorkThirdPartyJsSdkService>().Should().NotBeNull(
+            "ValidateScopes = true 变体下子 scope 内同样可解析");
+        scope.ServiceProvider.GetRequiredService<IWechatWorkProviderJsSdkService>().Should().NotBeNull(
             "ValidateScopes = true 变体下子 scope 内同样可解析");
     }
 }

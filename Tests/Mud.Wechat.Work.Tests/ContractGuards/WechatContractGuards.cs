@@ -355,6 +355,15 @@ public class WechatContractGuards
                 nameof(IWechatWorkThirdPartyIdentitySuiteService),
                 nameof(IWechatWorkIdentityTfaService),
                 nameof(IWechatWorkInternalIdentityTfaService),
+                // 身份验证·小程序登录族（Identity 模块）：code2Session 自建/代开发 1 端点公共面收敛父接口
+                //（自建 91507、代开发 96959，GET，js_code 与固定 grant_type 走 Query；父接口 + 两个空标记子接口）；
+                // 第三方为独立路由（service/miniprogram/jscode2session 92423）且走 suite_access_token
+                // 令牌路由键，零端点套件父接口 + 仅第三方子接口承载（响应多 open_userid 字段）。
+                nameof(IWechatWorkIdentityMiniProgramService),
+                nameof(IWechatWorkInternalIdentityMiniProgramService),
+                nameof(IWechatWorkProviderIdentityMiniProgramService),
+                nameof(IWechatWorkIdentityMiniProgramSuiteService),
+                nameof(IWechatWorkThirdPartyIdentityMiniProgramSuiteService),
                 // 微信客服·会话分配与消息收发域（Kf 模块）：4 条路由 / 14 个端点方法为三类应用公共面
                 //（会话状态 94669/94698/96425、发送消息 94677/94700/96427（10 种 msgtype 同路由多方法）、
                 // 事件响应消息 95122/94910/96428（2 种 msgtype 同路由多方法）；父接口 + 三个应用类型空标记子接口）。
@@ -857,6 +866,19 @@ public class WechatContractGuards
                 // 故零端点父接口 + 仅自建子接口承载；suite_access_token 为官方包体参数，不经 Query 注入。
                 nameof(IWechatWorkAgentMigrationService),
                 nameof(IWechatWorkInternalAgentMigrationService),
+                // JS-SDK 域（JsSdk 模块）：获取企业 jsapi_ticket + 获取应用 jsapi_ticket 2 端点为三类应用公共面
+                //（自建 90506 / 第三方 90539 / 代开发 96909，官方三份文档逐字一致；父接口 + 三个应用类型空标记子接口；
+                // ticket/get 端点以方法级固定 Query type=agent_config 携带官方鉴权类型）。
+                nameof(IWechatWorkJsSdkService),
+                nameof(IWechatWorkInternalJsSdkService),
+                nameof(IWechatWorkThirdPartyJsSdkService),
+                nameof(IWechatWorkProviderJsSdkService),
+                // 基础接口域（Basic 模块）：2 个端点为自建/代开发公共面收敛父接口 + 空标记子接口
+                //（获取企业微信接口IP段 92520/97073、获取企业微信回调IP段 92521/98988，官方即 GET、无请求体；
+                //  官方第三方应用开发文档树无「基础接口」分组，不设第三方子接口）。
+                nameof(IWechatWorkBasicService),
+                nameof(IWechatWorkInternalBasicService),
+                nameof(IWechatWorkProviderBasicService),
             },
             "企业微信官方契约强制 Query 注入（MUD005 已知接受风险），新增 Query 注入接口须评估后扩展本守卫");
     }

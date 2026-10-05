@@ -15,13 +15,17 @@ namespace Mud.Wechat.Work.Tests.ContractGuards;
 
 /// <summary>
 /// 身份验证模块（Identity 模块）契约守卫：路由表、接口层级、令牌绑定、JSON 上下文登记
-/// 与 authsucc 单一声明锁定（网页授权登录/企业微信Web登录身份获取域 + 第三方套件级身份获取域 + 二次验证域）。
+/// 与 authsucc 单一声明锁定（网页授权登录/企业微信Web登录身份获取域 + 第三方套件级身份获取域 +
+/// 二次验证域 + 小程序登录域）。
 /// </summary>
 /// <remarks>
 /// <para>
 /// 形态：①网页授权/Web 登录身份获取族 2 个端点收敛于父接口（自建 + 代开发空标记子接口，无第三方子接口）；
 /// ②第三方身份获取族 2 个端点走 suite_access_token（零端点父接口 + 仅第三方子接口承载，官方不允许代开发自建应用调用）；
-/// ③二次验证族 2 个端点官方仅「通讯录同步」或自建应用开放（零端点父接口 + 仅自建子接口承载）。
+/// ③二次验证族 2 个端点官方仅「通讯录同步」或自建应用开放（零端点父接口 + 仅自建子接口承载）；
+/// ④小程序登录族 code2Session 自建/代开发公共面 1 端点收敛父接口（自建 + 代开发空标记子接口），
+/// 第三方走独立路由 <c>/cgi-bin/service/miniprogram/jscode2session</c> 且以 suite_access_token 鉴权
+///（零端点套件父接口 + 仅第三方子接口承载，响应多 open_userid 字段）。
 /// </para>
 /// </remarks>
 public class WechatIdentityContractGuards
@@ -39,6 +43,12 @@ public class WechatIdentityContractGuards
 
     /// <summary>二次验证族父接口生成实现类名（锁定规则同上）。</summary>
     private const string IdentityTfaParentImplementationClassName = "WechatWorkIdentityTfaService";
+
+    /// <summary>小程序登录族父接口生成实现类名（锁定规则同上）。</summary>
+    private const string IdentityMiniProgramParentImplementationClassName = "WechatWorkIdentityMiniProgramService";
+
+    /// <summary>小程序登录套件族父接口生成实现类名（锁定规则同上）。</summary>
+    private const string IdentityMiniProgramSuiteParentImplementationClassName = "WechatWorkIdentityMiniProgramSuiteService";
 
     /// <summary>
     /// 网页授权/Web 登录身份获取族官方路由表（父接口 2 条公共端点：getuserinfo GET + getuserdetail POST）。
@@ -84,6 +94,21 @@ public class WechatIdentityContractGuards
         (typeof(IWechatWorkInternalIdentityTfaService),
             nameof(IWechatWorkInternalIdentityTfaService.TfaSuccAsync),
             typeof(PostAttribute), "/cgi-bin/user/tfa_succ"),
+    };
+
+    /// <summary>
+    /// 小程序登录族官方路由表（自建/代开发公共父接口 1 条 + 仅第三方套件子接口 1 条，全 GET、无请求体）。
+    /// </summary>
+    private static readonly (Type Interface, string Method, Type HttpAttribute, string Route)[] IdentityMiniProgramRoutes =
+    {
+        // code2Session 小程序登录凭证校验（自建 91507、代开发 96959），官方即 GET；js_code 与固定 grant_type 走 Query。
+        (typeof(IWechatWorkIdentityMiniProgramService),
+            nameof(IWechatWorkIdentityMiniProgramService.Code2SessionAsync),
+            typeof(GetAttribute), "/cgi-bin/miniprogram/jscode2session"),
+        // code2Session 第三方独立路由（92423），suite_access_token 鉴权、响应多 open_userid 字段。
+        (typeof(IWechatWorkThirdPartyIdentityMiniProgramSuiteService),
+            nameof(IWechatWorkThirdPartyIdentityMiniProgramSuiteService.Code2SessionAsync),
+            typeof(GetAttribute), "/cgi-bin/service/miniprogram/jscode2session"),
     };
 
     /// <summary>
@@ -178,8 +203,64 @@ public class WechatIdentityContractGuards
     }
 
     /// <summary>
-    /// 契约守卫 IDN2：接口层级与生成器注册形态——身份获取族公共端点收敛于 IsAbstract 父接口
-    /// （自建/代开发空标记子接口、无第三方子接口）；第三方身份获取族与二次验证族均为
+    /// 契约守卫 IDN1d：小程序登录族端点路由必须与官方契约一致
+    /// （code2Session 官方即 GET、无请求体；js_code 走 Query、grant_type 官方固定
+    /// authorization_code 以方法级固定 Query 发射；第三方为独立路由
+    /// <c>/cgi-bin/service/miniprogram/jscode2session</c>，勿与自建/代开发路由合并）。
+    /// </summary>
+    [Fact]
+    public void MiniProgramEndpoints_ShouldMatchOfficialRoutes()
+    {
+        IdentityMiniProgramRoutes.Should().HaveCount(2,
+            "小程序登录族 2 条路由：自建/代开发公共面 1 条 + 第三方套件独立路由 1 条");
+
+        var distinctRoutes = IdentityMiniProgramRoutes.Select(r => r.Route).Distinct().ToList();
+        distinctRoutes.Should().HaveCount(2, "小程序登录族两条路由互不重复（access_token 与 suite_access_token 分属不同令牌路由键）");
+
+        foreach (var (iface, method, httpAttribute, route) in IdentityMiniProgramRoutes)
+        {
+            var target = iface.GetMethod(method, BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+            target.Should().NotBeNull($"{iface.Name}.{method} 必须存在");
+
+            var attr = target!.GetCustomAttribute(httpAttribute) as HttpMethodAttribute;
+            attr.Should().NotBeNull($"{iface.Name}.{method} 必须声明 [{httpAttribute.Name.Replace("Attribute", string.Empty)}] 路由");
+            attr!.RequestUri.Should().Be(route, $"{iface.Name}.{method} 路由必须与官方契约一致");
+        }
+
+        // js_code 为官方必填 Query 参数（wx.qy.login 返回的登录 code），须以 [Query("js_code")] 显式声明（非可空）；
+        // grant_type 官方固定 authorization_code，以方法级固定 [Query("grant_type", "authorization_code")] 发射
+        //（QueryAttribute 无 Value 属性，生成器固定值取自构造位置参数 [1]，故走 CustomAttributeData 断言）。
+        foreach (var iface in new[]
+                 {
+                     typeof(IWechatWorkIdentityMiniProgramService),
+                     typeof(IWechatWorkThirdPartyIdentityMiniProgramSuiteService),
+                 })
+        {
+            var code2Session = iface.GetMethod(
+                nameof(IWechatWorkIdentityMiniProgramService.Code2SessionAsync),
+                BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+            code2Session.Should().NotBeNull($"{iface.Name}.Code2SessionAsync 必须存在");
+
+            var jsCodeParam = code2Session!.GetParameters().SingleOrDefault(p =>
+                p.GetCustomAttribute<QueryAttribute>() is { } q && q.Name == "js_code");
+            jsCodeParam.Should().NotBeNull($"{iface.Name} 的 js_code 必须以 [Query(\"js_code\")] 显式承载");
+            jsCodeParam!.ParameterType.Should().Be<string>("js_code 为官方必填参数，不得声明为可选");
+
+            var grantTypeData = code2Session.GetCustomAttributesData().SingleOrDefault(d =>
+                d.AttributeType == typeof(QueryAttribute)
+                && d.ConstructorArguments.Count > 0
+                && string.Equals(d.ConstructorArguments[0].Value as string, "grant_type", StringComparison.Ordinal));
+            grantTypeData.Should().NotBeNull($"{iface.Name} 必须以方法级 [Query(\"grant_type\", \"authorization_code\")] 固定授权类型");
+            grantTypeData!.ConstructorArguments.Should().HaveCount(2,
+                "方法级固定 Query 须以双位置参数 (name, value) 声明");
+            grantTypeData.ConstructorArguments[1].Value.Should().Be("authorization_code",
+                "grant_type 官方固定值为 authorization_code（勿改成可变参数或其它取值）");
+        }
+    }
+
+    /// <summary>
+    /// 契约守卫 IDN2：接口层级与生成器注册形态——身份获取族与小程序登录族公共端点收敛于 IsAbstract 父接口
+    ///（自建/代开发空标记子接口、无第三方子接口）；第三方身份获取族、二次验证族与小程序登录套件族均为
     /// 零端点父接口 + 唯一子接口承载端点（继承链恰 1 个子接口）。
     /// </summary>
     [Fact]
@@ -211,6 +292,31 @@ public class WechatIdentityContractGuards
         AssertDerivedInterfaces(identityTfaParent, identityTfaChildren, "二次验证族继承链恰 1 个自建子接口");
         AssertRegistryChild(identityTfaParent, identityTfaChildren[0], 2, IdentityTfaParentImplementationClassName,
             "二次验证族恰持 get_tfa_info/tfa_succ 2 条端点");
+
+        // ④ 小程序登录族：自建/代开发公共面 1 端点收敛父接口（两个空标记子接口）；
+        // 第三方套件族零端点父接口 + 仅第三方子接口承载 1 条独立路由端点（响应多 open_userid）。
+        var miniProgramParent = typeof(IWechatWorkIdentityMiniProgramService);
+        var miniProgramChildren = new[]
+        {
+            typeof(IWechatWorkInternalIdentityMiniProgramService),
+            typeof(IWechatWorkProviderIdentityMiniProgramService),
+        };
+        AssertAbstractParentWithEndpoints(miniProgramParent, 1, "小程序登录族父接口恰持 jscode2session 1 条公共端点");
+        AssertDerivedInterfaces(miniProgramParent, miniProgramChildren,
+            "小程序登录族继承链恰为自建/代开发两个空标记子接口（第三方走套件族）");
+        foreach (var child in miniProgramChildren)
+        {
+            AssertRegistryChild(miniProgramParent, child, 0,
+                IdentityMiniProgramParentImplementationClassName, "小程序登录族子接口为空标记");
+        }
+
+        var miniProgramSuiteParent = typeof(IWechatWorkIdentityMiniProgramSuiteService);
+        var miniProgramSuiteChildren = new[] { typeof(IWechatWorkThirdPartyIdentityMiniProgramSuiteService) };
+        AssertAbstractParentWithEndpoints(miniProgramSuiteParent, 0, "小程序登录套件族父接口零端点");
+        AssertDerivedInterfaces(miniProgramSuiteParent, miniProgramSuiteChildren, "小程序登录套件族继承链恰 1 个第三方子接口");
+        AssertRegistryChild(miniProgramSuiteParent, miniProgramSuiteChildren[0], 1,
+            IdentityMiniProgramSuiteParentImplementationClassName,
+            "小程序登录套件族恰持第三方 jscode2session 1 条端点");
     }
 
     /// <summary>
@@ -227,11 +333,16 @@ public class WechatIdentityContractGuards
             typeof(IWechatWorkProviderIdentityService),
             typeof(IWechatWorkIdentityTfaService),
             typeof(IWechatWorkInternalIdentityTfaService),
+            typeof(IWechatWorkIdentityMiniProgramService),
+            typeof(IWechatWorkInternalIdentityMiniProgramService),
+            typeof(IWechatWorkProviderIdentityMiniProgramService),
         };
         var suiteTokenInterfaces = new[]
         {
             typeof(IWechatWorkIdentitySuiteService),
             typeof(IWechatWorkThirdPartyIdentitySuiteService),
+            typeof(IWechatWorkIdentityMiniProgramSuiteService),
+            typeof(IWechatWorkThirdPartyIdentityMiniProgramSuiteService),
         };
 
         foreach (var (interfaces, tokenType, queryName) in new[]
@@ -268,9 +379,10 @@ public class WechatIdentityContractGuards
             typeof(GetUserInfoResponse), typeof(GetUserDetailResponse),
             typeof(GetUserInfo3rdResponse), typeof(GetUserDetail3rdResponse),
             typeof(GetTfaInfoResponse),
+            typeof(Code2SessionResponse), typeof(Code2Session3rdResponse),
         };
 
-        requiredTypes.Should().HaveCount(9, "身份验证域契约面共 9 个 DTO 类型");
+        requiredTypes.Should().HaveCount(11, "身份验证域契约面共 11 个 DTO 类型");
         requiredTypes.Should().OnlyHaveUniqueItems("契约面类型不得重复断言");
 
         foreach (var type in requiredTypes)
@@ -306,6 +418,42 @@ public class WechatIdentityContractGuards
         declarations[0].Method.Name.Should().Be(
             nameof(IWechatWorkInternalUsersService.CompleteSecondaryAuthAsync),
             "authsucc 端点唯一声明点为 CompleteSecondaryAuthAsync");
+    }
+
+    /// <summary>
+    /// 契约守卫 IDN6：code2Session（jscode2session）全仓仅身份验证域两处声明——
+    /// 自建/代开发路由 <c>/cgi-bin/miniprogram/jscode2session</c> 与第三方套件路由
+    /// <c>/cgi-bin/service/miniprogram/jscode2session</c> 各恰一处（能力重复守卫；
+    /// 上下游域「小程序 session 转换」transfer_session 是另一端点，不在此列）。
+    /// </summary>
+    [Fact]
+    public void JsCode2SessionEndpoints_ShouldRemainSingleFamilyDeclarations()
+    {
+        var mainAssembly = typeof(WechatWorkServiceCollectionExtensions).Assembly;
+        var declarations = mainAssembly.GetTypes()
+            .Where(t => t.IsInterface)
+            .SelectMany(i => i
+                .GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
+                .Select(m => (Interface: i, Method: m)))
+            .SelectMany(x => x.Method.GetCustomAttributes()
+                .OfType<HttpMethodAttribute>()
+                .Where(a => a.RequestUri != null
+                            && a.RequestUri.EndsWith("jscode2session", StringComparison.Ordinal))
+                .Select(a => (x.Interface, MethodName: x.Method.Name, Route: a.RequestUri!)))
+            .ToList();
+
+        declarations.Should().HaveCount(2,
+            "code2Session 全仓恰两条路由（自建/代开发 miniprogram + 第三方套件 service/miniprogram），不得在其它域重复声明");
+        declarations.Should().Contain(d =>
+            d.Route == "/cgi-bin/miniprogram/jscode2session"
+            && d.Interface == typeof(IWechatWorkIdentityMiniProgramService),
+            "自建/代开发 code2Session 必须由小程序登录族父接口声明");
+        declarations.Should().Contain(d =>
+            d.Route == "/cgi-bin/service/miniprogram/jscode2session"
+            && d.Interface == typeof(IWechatWorkThirdPartyIdentityMiniProgramSuiteService),
+            "第三方 code2Session 必须由小程序登录套件族第三方子接口声明");
+        declarations.Should().OnlyContain(d => d.MethodName == nameof(IWechatWorkIdentityMiniProgramService.Code2SessionAsync),
+            "code2Session 端点唯一声明方法名为 Code2SessionAsync");
     }
 
     private static void AssertAbstractParentWithEndpoints(Type parent, int endpointCount, string because)

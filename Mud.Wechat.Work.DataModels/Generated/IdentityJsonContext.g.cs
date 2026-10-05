@@ -11,6 +11,8 @@ namespace Mud.Wechat.Work.DataModels.Identity;
     PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase,
     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     WriteIndented = false)]
+[JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.Identity.Code2Session3rdResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.Identity.Code2SessionResponse))]
 [JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.Identity.GetTfaInfoResponse))]
 [JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.Identity.GetUserDetail3rdResponse))]
 [JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.Identity.GetUserDetailResponse))]

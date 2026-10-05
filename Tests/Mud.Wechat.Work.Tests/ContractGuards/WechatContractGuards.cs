@@ -652,6 +652,42 @@ public class WechatContractGuards
                 nameof(IWechatWorkInternalWedocSmartSheetService),
                 nameof(IWechatWorkThirdPartyWedocSmartSheetService),
                 nameof(IWechatWorkProviderWedocSmartSheetService),
+                // 打卡·打卡规则族（Checkin 模块）：获取员工打卡规则三类公共收敛父接口；
+                // 获取企业所有打卡规则 + 管理打卡规则 4 写端点为自建/代开发差异端点，第三方暂不支持零端点空标记。
+                nameof(IWechatWorkCheckinRuleService),
+                nameof(IWechatWorkInternalCheckinRuleService),
+                nameof(IWechatWorkProviderCheckinRuleService),
+                nameof(IWechatWorkThirdPartyCheckinRuleService),
+                // 打卡·打卡记录族（Checkin 模块）：获取打卡记录数据三类开放但第三方文档页为旧字段结构（同路由不同构，
+                // 父接口零端点、三分支子接口各自承载）；补卡/添加打卡记录/录入人脸官方仅自建。
+                nameof(IWechatWorkCheckinRecordService),
+                nameof(IWechatWorkInternalCheckinRecordService),
+                nameof(IWechatWorkProviderCheckinRecordService),
+                nameof(IWechatWorkThirdPartyCheckinRecordService),
+                // 打卡·打卡报表族（Checkin 模块）：日报/月报三类开放但第三方文档页为旧字段结构（同路由不同构，
+                // 父接口零端点、三分支子接口各自承载）。
+                nameof(IWechatWorkCheckinReportService),
+                nameof(IWechatWorkInternalCheckinReportService),
+                nameof(IWechatWorkProviderCheckinReportService),
+                nameof(IWechatWorkThirdPartyCheckinReportService),
+                // 打卡·打卡排班族（Checkin 模块）：获取/设置排班三类应用公共面收敛父接口 + 空标记子接口。
+                nameof(IWechatWorkCheckinScheduleService),
+                nameof(IWechatWorkInternalCheckinScheduleService),
+                nameof(IWechatWorkProviderCheckinScheduleService),
+                nameof(IWechatWorkThirdPartyCheckinScheduleService),
+                // 打卡·设备打卡数据族（Checkin 模块）：获取设备打卡数据三类应用公共面收敛父接口 + 空标记子接口
+                //（路由挂 /cgi-bin/hardware/ 域）。
+                nameof(IWechatWorkCheckinDeviceService),
+                nameof(IWechatWorkInternalCheckinDeviceService),
+                nameof(IWechatWorkProviderCheckinDeviceService),
+                nameof(IWechatWorkThirdPartyCheckinDeviceService),
+                // 日程·管理日历族（Schedule 模块）：创建/更新/获取/删除日历 4 端点为三类应用公共面收敛父接口 +
+                // 空标记子接口（创建日历 93647/93702/96823、更新日历 97716/97783/97758、获取日历详情 97717/97784/97759、
+                // 删除日历 97718/97785/97760；创建日历路由官方即 calendar/add）。
+                nameof(IWechatWorkScheduleCalendarService),
+                nameof(IWechatWorkInternalScheduleCalendarService),
+                nameof(IWechatWorkProviderScheduleCalendarService),
+                nameof(IWechatWorkThirdPartyScheduleCalendarService),
             },
             "企业微信官方契约强制 Query 注入（MUD005 已知接受风险），新增 Query 注入接口须评估后扩展本守卫");
     }

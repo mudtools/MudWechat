@@ -22,6 +22,8 @@ namespace Mud.Wechat.Work.Tests.ContractGuards;
 /// 全部收敛声明于公共父接口，三个应用类型子接口均为零差异端点空标记。
 /// 管理日程族形态：创建/更新日程 + 新增/删除日程参与者 + 获取日历下的日程列表 + 获取日程详情 + 取消日程 7 端点
 /// 官方对三类应用开放一致，同样为公共父接口 + 三个应用类型空标记子接口。
+/// 待办族形态：获取待办详情 + 更新待办状态 2 端点官方仅向企业自建应用开放
+///（第三方应用开发与服务商代开发均无对应 API），为零端点父接口 + 唯一自建子接口承载端点（对齐紧急通知域形态）。
 /// </para>
 /// </summary>
 /// <remarks>
@@ -40,6 +42,13 @@ namespace Mud.Wechat.Work.Tests.ContractGuards;
 /// 创建/更新日程请求的 schedule 对象官方参数表高度同构（差异仅为创建侧 cal_id 与更新侧 schedule_id），本 SDK 以共用扁平结构承载；
 /// 获取日历下的日程列表分页采用 offset + limit（区别于本仓多数域的 cursor + limit）；
 /// 被取消的日程仍可拉取详情（status = 1），调用方须自行检查 status。
+/// </para>
+/// <para>
+/// 待办族官方反直觉点（勿「顺手修正」）：待办 2 条路由挂 <c>/cgi-bin/todo/</c> 段（区别于日历/日程族的 /cgi-bin/oa/ 段），
+/// 且官方全部即 POST（含仅查询语义的 todo/get）；
+/// 更新待办状态为按需增量修改（status 与 attendees 均官方选填，attendees 不传或为空数组时不修改参与人列表）；
+/// 官方请求示例中 attendees.status 出现值 2，与参数表仅列出 0/1 两种状态不一致，以参数表为准；
+/// 获取待办详情响应整体状态口径为「0 - 已完成；1 - 进行中」，更新请求整体状态口径为「0 - 完成；1 - 进行中」，照抄各自原文。
 /// </para>
 /// </remarks>
 public class WechatScheduleContractGuards
@@ -107,6 +116,23 @@ public class WechatScheduleContractGuards
             (typeof(IWechatWorkScheduleService),
                 nameof(IWechatWorkScheduleService.DelScheduleAsync),
                 typeof(PostAttribute), "/cgi-bin/oa/schedule/del"),
+        };
+
+    // ------------------------------------------------------------------
+    // 待办族路由表：2 条官方路由，全部 POST，挂 /cgi-bin/todo/ 段（区别于日历/日程族的 /cgi-bin/oa/ 段）。
+    // ------------------------------------------------------------------
+
+    private static readonly (Type Interface, string Method, Type HttpAttribute, string Route)[]
+        ScheduleTodoRoutes =
+        {
+            // 获取待办详情（自建 101524；官方仅自建应用开放，第三方应用开发与服务商代开发均无对应 API；官方即 POST）。
+            (typeof(IWechatWorkInternalScheduleTodoService),
+                nameof(IWechatWorkInternalScheduleTodoService.GetTodoAsync),
+                typeof(PostAttribute), "/cgi-bin/todo/get"),
+            // 更新待办状态（自建 101534；官方仅自建应用开放；官方即 POST；按需增量修改，attendees 不传不修改参与人列表）。
+            (typeof(IWechatWorkInternalScheduleTodoService),
+                nameof(IWechatWorkInternalScheduleTodoService.UpdateTodoAsync),
+                typeof(PostAttribute), "/cgi-bin/todo/update"),
         };
 
     // ------------------------------------------------------------------
@@ -185,6 +211,33 @@ public class WechatScheduleContractGuards
     }
 
     // ------------------------------------------------------------------
+    // SC1c：待办族全部端点路由与官方契约一致（2 条官方路由，仅自建开放）。
+    // ------------------------------------------------------------------
+
+    [Fact]
+    public void TodoEndpoints_ShouldMatchOfficialRoutes()
+    {
+        ScheduleTodoRoutes.Should().HaveCount(2, "待办族 = 获取待办详情 + 更新待办状态");
+        ScheduleTodoRoutes.Select(r => r.Route).Should().OnlyContain(
+            r => r.StartsWith("/cgi-bin/todo/", StringComparison.Ordinal), "待办族路由位于 /cgi-bin/todo/ 段（区别于日历/日程族的 /cgi-bin/oa/ 段）");
+
+        AssertRoutes(ScheduleTodoRoutes);
+
+        // 全部官方路由去重清单锁定。
+        ScheduleTodoRoutes.Select(r => r.Route).Distinct().Should().BeEquivalentTo(new[]
+        {
+            "/cgi-bin/todo/get",
+            "/cgi-bin/todo/update",
+        }, "待办族全部官方路由须与官方文档一一对应（2 条）");
+
+        // 更新待办状态无业务负载：响应直接用 WechatWorkResponse，不得新建空响应 DTO。
+        typeof(IWechatWorkInternalScheduleTodoService)
+            .GetMethod(nameof(IWechatWorkInternalScheduleTodoService.UpdateTodoAsync), BindingFlags.Public | BindingFlags.Instance)!
+            .ReturnType.Should().Be(typeof(Task<WechatWorkResponse>),
+                "更新待办状态仅返回 errcode/errmsg，响应类型必须为 WechatWorkResponse");
+    }
+
+    // ------------------------------------------------------------------
     // SC2：接口层级与生成器注册形态（公共父 4 端点 + 三应用类型空标记子接口）。
     // ------------------------------------------------------------------
 
@@ -224,6 +277,25 @@ public class WechatScheduleContractGuards
             });
     }
 
+    // ------------------------------------------------------------------
+    // SC2c：待办族接口层级与生成器注册形态（仅自建开放：零端点父接口 + 唯一自建子接口承载 2 端点）。
+    // ------------------------------------------------------------------
+
+    [Fact]
+    public void TodoInterfaceHierarchy_ShouldMatchOfficialOpenSurfaces()
+    {
+        // 待办族：官方仅向企业自建应用开放（第三方应用开发与服务商代开发均无对应 API），
+        // 继承链上不得出现代开发 / 第三方子接口（能力漂移守卫）。
+        AssertFamily(
+            parent: typeof(IWechatWorkScheduleTodoService),
+            parentImplementation: "WechatWorkScheduleTodoService",
+            parentDeclaredEndpointCount: 0,
+            new[]
+            {
+                (typeof(IWechatWorkInternalScheduleTodoService), 2),
+            });
+    }
+
     /// <summary>族断言：父接口 IsAbstract + 指定端点数，子接口集合不漂移 + 指定端点数 + 注册组/继承契约。</summary>
     private static void AssertFamily(
         Type parent,
@@ -258,7 +330,8 @@ public class WechatScheduleContractGuards
     }
 
     // ------------------------------------------------------------------
-    // SC3：令牌绑定——日程域 8 个接口统一 AccessToken 路由键 + Query 注入。
+    // SC3：令牌绑定——日程域 10 个接口统一 AccessToken 路由键 + Query 注入；
+    // 待办族仅自建子接口须声明凭据归属域键（InternalAccessToken）。
     // ------------------------------------------------------------------
 
     [Fact]
@@ -274,9 +347,12 @@ public class WechatScheduleContractGuards
             typeof(IWechatWorkInternalScheduleService),
             typeof(IWechatWorkProviderScheduleService),
             typeof(IWechatWorkThirdPartyScheduleService),
+            typeof(IWechatWorkScheduleTodoService),
+            typeof(IWechatWorkInternalScheduleTodoService),
         };
 
-        accessTokenInterfaces.Should().HaveCount(8, "日程域 = 管理日历族 + 管理日程族，各为公共父接口 + 三应用类型子接口");
+        accessTokenInterfaces.Should().HaveCount(10,
+            "日程域 = 管理日历族（父 + 三子）+ 管理日程族（父 + 三子）+ 待办族（零端点父 + 仅自建子，官方未对第三方/代开发开放）");
 
         foreach (var iface in accessTokenInterfaces)
         {
@@ -288,6 +364,14 @@ public class WechatScheduleContractGuards
                 $"{iface.Name} 官方契约强制 Query 注入（MUD005 已知接受风险）");
             token.Name.Should().Be("access_token", $"{iface.Name} Query 注入参数名必须为官方契约的 access_token");
         }
+
+        // 待办族零端点父接口不声明归属域（默认旧键 "AccessToken"，运行期不校验）；仅自建子接口必须声明内部应用令牌归属域键。
+        var parentTokenKey = typeof(IWechatWorkScheduleTodoService).GetCustomAttribute<TokenAttribute>()!.TokenManagerKey;
+        parentTokenKey.Should().NotBe(WechatTokenManagerKeys.InternalAccessToken, "待办族父接口不声明凭据归属域（归属域由应用类型子接口承载）");
+        parentTokenKey.Should().NotBe(WechatTokenManagerKeys.CorpAccessToken, "待办族父接口不声明凭据归属域（归属域由应用类型子接口承载）");
+        typeof(IWechatWorkInternalScheduleTodoService).GetCustomAttribute<TokenAttribute>()!
+            .TokenManagerKey.Should().Be(WechatTokenManagerKeys.InternalAccessToken,
+                "待办族官方仅自建应用开放，自建子接口必须声明 InternalAccessToken 归属域键");
     }
 
     // ------------------------------------------------------------------
@@ -306,10 +390,12 @@ public class WechatScheduleContractGuards
 
         // 全量守卫：命名空间下所有顶层 DTO 均须登记进 ScheduleJsonContext 且 SerializerClassName 统一为 Schedule
         //（生成物 ScheduleJsonContext 自身亦落同命名空间，按 JsonSerializerContext 派生类型排除）。
-        domainTypes.Should().HaveCount(30,
-            "日程模块契约面类型数漂移须先核对官方文档再同批调整本守卫（端点级 18：管理日历 7 = 创建/更新/获取请求响应 + 删除请求、" +
-            "管理日程 11 = 创建/更新/获取/获取日历下日程列表请求响应 + 取消/新增参与者/删除参与者请求；复用型 12：日历族 6 = calendar 对象 + 公开范围 + 通知成员 + fail_result + fail 成员 + 响应日历信息、" +
-            "日程族 6 = schedule 对象 + 请求提醒 + 响应提醒 + 参与者 + 排除日期 + 响应日程详情）");
+        domainTypes.Should().HaveCount(35,
+            "日程模块契约面类型数漂移须先核对官方文档再同批调整本守卫（端点级 21：管理日历 7 = 创建/更新/获取请求响应 + 删除请求、" +
+            "管理日程 11 = 创建/更新/获取/获取日历下日程列表请求响应 + 取消/新增参与者/删除参与者请求、" +
+            "待办 3 = 获取请求响应 + 更新请求；复用型 14：日历族 6 = calendar 对象 + 公开范围 + 通知成员 + fail_result + fail 成员 + 响应日历信息、" +
+            "日程族 6 = schedule 对象 + 请求提醒 + 响应提醒 + 参与者 + 排除日期 + 响应日程详情、" +
+            "待办族 2 = 参与人 + 提醒）");
 
         foreach (var type in domainTypes)
         {
@@ -341,6 +427,9 @@ public class WechatScheduleContractGuards
             typeof(ScheduleInfo), typeof(ScheduleDetail),
             typeof(ScheduleReminders), typeof(ScheduleRemindersInfo),
             typeof(ScheduleAttendee), typeof(ScheduleExcludeTime),
+            typeof(GetScheduleTodoRequest), typeof(GetScheduleTodoResponse),
+            typeof(UpdateScheduleTodoRequest),
+            typeof(ScheduleTodoAttendee), typeof(ScheduleTodoReminder),
         };
         domainTypes.Should().Contain(endpointContractTypes, "端点级请求/响应 DTO 必须落位于日程域命名空间");
     }
@@ -416,6 +505,22 @@ public class WechatScheduleContractGuards
         JsonNameShouldBe(typeof(ScheduleAttendee), nameof(ScheduleAttendee.ResponseStatus), "response_status");
         JsonNameShouldBe(typeof(ScheduleAttendee), nameof(ScheduleAttendee.EventTime), "event_time");
         JsonNameShouldBe(typeof(ScheduleDetail), nameof(ScheduleDetail.Sequence), "sequence");
+
+        // 待办族关键字段名照抄官方原文（todo/get 与 todo/update 均官方即 POST，路由挂 /cgi-bin/todo/ 段）。
+        JsonNameShouldBe(typeof(GetScheduleTodoRequest), nameof(GetScheduleTodoRequest.TodoId), "todo_id");
+        JsonNameShouldBe(typeof(UpdateScheduleTodoRequest), nameof(UpdateScheduleTodoRequest.TodoId), "todo_id");
+        JsonNameShouldBe(typeof(UpdateScheduleTodoRequest), nameof(UpdateScheduleTodoRequest.Status), "status");
+        JsonNameShouldBe(typeof(UpdateScheduleTodoRequest), nameof(UpdateScheduleTodoRequest.Attendees), "attendees");
+        JsonNameShouldBe(typeof(GetScheduleTodoResponse), nameof(GetScheduleTodoResponse.Content), "content");
+        JsonNameShouldBe(typeof(GetScheduleTodoResponse), nameof(GetScheduleTodoResponse.Creator), "creator");
+        JsonNameShouldBe(typeof(GetScheduleTodoResponse), nameof(GetScheduleTodoResponse.Status), "status");
+        JsonNameShouldBe(typeof(GetScheduleTodoResponse), nameof(GetScheduleTodoResponse.CreateTime), "create_time");
+        JsonNameShouldBe(typeof(GetScheduleTodoResponse), nameof(GetScheduleTodoResponse.Attendees), "attendees");
+        JsonNameShouldBe(typeof(GetScheduleTodoResponse), nameof(GetScheduleTodoResponse.EndTime), "end_time");
+        JsonNameShouldBe(typeof(GetScheduleTodoResponse), nameof(GetScheduleTodoResponse.Reminders), "reminders");
+        JsonNameShouldBe(typeof(ScheduleTodoAttendee), nameof(ScheduleTodoAttendee.Userid), "userid");
+        JsonNameShouldBe(typeof(ScheduleTodoAttendee), nameof(ScheduleTodoAttendee.Status), "status");
+        JsonNameShouldBe(typeof(ScheduleTodoReminder), nameof(ScheduleTodoReminder.RemindTime), "remind_time");
     }
 
     /// <summary>路由表断言：方法必须存在、必须声明对应 HTTP 方法特性且路由与官方契约一致。</summary>

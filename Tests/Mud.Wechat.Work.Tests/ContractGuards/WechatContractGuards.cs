@@ -724,6 +724,11 @@ public class WechatContractGuards
                 nameof(IWechatWorkInternalScheduleService),
                 nameof(IWechatWorkProviderScheduleService),
                 nameof(IWechatWorkThirdPartyScheduleService),
+                // 日程·待办族（Schedule 模块）：获取待办详情、更新待办状态 2 端点官方仅向企业自建应用开放
+                //（第三方应用开发与服务商代开发均无对应 API），零端点父接口 + 仅自建子接口承载端点
+                //（获取待办详情 101524、更新待办状态 101534；路由挂 /cgi-bin/todo/ 段）。
+                nameof(IWechatWorkScheduleTodoService),
+                nameof(IWechatWorkInternalScheduleTodoService),
             },
             "企业微信官方契约强制 Query 注入（MUD005 已知接受风险），新增 Query 注入接口须评估后扩展本守卫");
     }

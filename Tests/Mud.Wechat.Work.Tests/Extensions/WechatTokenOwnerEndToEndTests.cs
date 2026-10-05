@@ -105,7 +105,7 @@ public class WechatTokenOwnerEndToEndTests
         var act = () => context.GetTokenManager(WechatTokenManagerKeys.CorpAccessToken);
         act.Should().Throw<WechatTokenOwnerMismatchException>()
             .WithMessage("*ThirdParty/Provider*", "消息必须说明期望的应用类型")
-            .WithMessage("*UseAppScope*", "消息必须给出可执行的修复动作")
+            .WithMessage("*UseCorpScope*", "消息必须给出可执行的修复动作（推荐入口：一次性 using）")
             .Which.AppKey.Should().Be(DefaultAppKey);
     }
 

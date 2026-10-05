@@ -89,6 +89,47 @@ public sealed class WechatAppContextSwitcher : AsyncLocalAppContextSwitcher, IWe
     /// </remarks>
     public IDisposable UseDefaultAppScope() => BeginScope(_appManager.GetDefaultApp());
 
+    /// <summary>
+    /// 建立「应用 + 授权企业」复合作用域（一次性 <c>using</c>；第三方 / 服务商代开发调用的推荐入口）。
+    /// </summary>
+    /// <param name="appKey">应用标识（须为已注册应用）。</param>
+    /// <param name="authCorpId">授权方（企业）CorpId（企业令牌 scope 的唯一来源，必填）。</param>
+    /// <param name="permanentCode">该企业的永久授权码（可选）。</param>
+    /// <returns>释放时同时还原「应用上下文」与「企业上下文」两个快照的作用域对象（幂等）。</returns>
+    /// <remarks>
+    /// <para>
+    /// <b>进入顺序</b>：① 解析应用（守卫与 <see cref="UseAppScope"/> 逐字一致，失败不产生任何状态变更）
+    /// → ② 用 <c>BeginScope</c> 进入应用作用域（不预先 <c>SwitchTo</c>，保证释放时正确回滚）
+    /// → ③ 进入企业作用域（<see cref="WechatCorpContext.BeginCorpScope"/>，内部快照并收敛 authCorpId 校验）。
+    /// 释放时<b>逆序还原</b>（企业 → 应用），嵌套下内层不会清掉外层的企业上下文。
+    /// </para>
+    /// <para>
+    /// <b>归属维度（R9）</b>：企业上下文的归属应用取<b>解析后</b>上下文的 <see cref="IMudAppContext.AppKey"/>
+    /// （而非入参原样），与 <c>CorpTokenManager</c> 的归属校验同源。
+    /// </para>
+    /// <para>
+    /// <b>失败安全性</b>：第 ③ 步的参数校验（authCorpId 空白即抛）失败时回滚第 ② 步已进入的应用作用域，
+    /// 不留半开作用域。
+    /// </para>
+    /// </remarks>
+    public IDisposable UseCorpScope(string appKey, string authCorpId, string? permanentCode = null)
+    {
+        var context = ResolveAppContext(appKey);
+        var appScope = BeginScope(context);
+
+        try
+        {
+            var corpScope = WechatCorpContext.BeginCorpScope(context.AppKey, authCorpId, permanentCode);
+            return new CombinedCorpScope(corpScope, appScope);
+        }
+        catch
+        {
+            // 参数校验失败（authCorpId null/空白）不得留下已进入的应用作用域。
+            appScope.Dispose();
+            throw;
+        }
+    }
+
     /// <inheritdoc />
     /// <remarks>
     /// 与 <see cref="UseAppScope"/> 为<b>同一实现</b>（迁移别名）：本方法自 Mud.HttpUtils 3.0.0 起
@@ -124,7 +165,11 @@ public sealed class WechatAppContextSwitcher : AsyncLocalAppContextSwitcher, IWe
         => WechatCorpContext.SetCorp(Current?.AppKey, authCorpId, permanentCode);
 
     /// <inheritdoc />
-    /// <remarks>P2-1：<see cref="SetCorp"/> 的对称重置入口（暴露既有 <see cref="WechatCorpContext.Clear"/>）。</remarks>
+    /// <remarks>
+    /// P2-1：裸写入路径（<see cref="SetCorp"/>）的对称重置入口（暴露既有 <see cref="WechatCorpContext.Clear"/>）。
+    /// 本方法<b>无条件清空</b>，而 <see cref="UseCorpScope"/> 释放时<b>还原进入前快照</b>——
+    /// 嵌套 / 长生命周期执行上下文请用作用域入口（清空会误伤外层企业上下文）。
+    /// </remarks>
     public void ClearCorp() => WechatCorpContext.Clear();
 
     /// <summary>
@@ -157,5 +202,37 @@ public sealed class WechatAppContextSwitcher : AsyncLocalAppContextSwitcher, IWe
         }
 
         return _appManager.GetApp(appKey);
+    }
+
+    /// <summary>
+    /// 「企业作用域 + 应用作用域」的复合作用域：释放时<b>逆序还原</b>（企业 → 应用），且幂等。
+    /// </summary>
+    /// <remarks>
+    /// 两个内层作用域各自已实现「进入前快照 → 释放时还原」，本类只负责顺序与幂等：
+    /// 逆序保证与进入顺序对称；幂等（<see cref="Interlocked.Exchange(ref int, int)"/>）
+    /// 使 <c>using</c> + 显式 <c>Dispose</c> 混用或异常路径重复释放都安全。
+    /// </remarks>
+    private sealed class CombinedCorpScope : IDisposable
+    {
+        private readonly IDisposable _corpScope;
+        private readonly IDisposable _appScope;
+        private int _disposed;
+
+        public CombinedCorpScope(IDisposable corpScope, IDisposable appScope)
+        {
+            _corpScope = corpScope;
+            _appScope = appScope;
+        }
+
+        public void Dispose()
+        {
+            if (Interlocked.Exchange(ref _disposed, 1) != 0)
+            {
+                return;
+            }
+
+            _corpScope.Dispose();
+            _appScope.Dispose();
+        }
     }
 }

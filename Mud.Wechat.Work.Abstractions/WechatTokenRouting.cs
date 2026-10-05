@@ -146,8 +146,9 @@ internal static class WechatTokenRouting
             ? "该接口为「企业自建应用」契约入口：请改用对应的 IWechatWorkThirdParty* / IWechatWorkProvider* 子接口，"
               + "或经 IWechatAppContextSwitcher.UseAppScope(\"<企业自建应用 AppKey>\") 切换到自建应用后再调用。"
             : "该接口为「第三方应用 / 服务商代开发」契约入口：请改用对应的 IWechatWorkInternal* 子接口；"
-              + "若确需授权企业级令牌，请经 IWechatAppContextSwitcher.UseAppScope(\"<第三方/代开发应用 AppKey>\") "
-              + "切换到该应用并 SetCorp(authCorpId) 后再调用。";
+              + "若确需授权企业级令牌，请改用 "
+              + "IWechatAppContextSwitcher.UseCorpScope(\"<第三方/代开发应用 AppKey>\", authCorpId)"
+              + "（一次性 using，自动归还应用与企业上下文）后再调用。";
 
         return $"令牌归属域不匹配：接口声明的查找键 '{tokenManagerKey}' 需要 {requirement}，"
             + $"但当前应用 '{appKey}' 的 AppType={appType}。{remediation}";

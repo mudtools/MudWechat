@@ -13,8 +13,8 @@ namespace Mud.Wechat.Work.Abstractions.Authentication;
 /// <remarks>
 /// <para>提供在不同企业微信应用上下文之间切换的能力。</para>
 /// <para>当系统配置了多个企业微信应用时，可通过此接口快速切换当前使用的应用上下文；
-/// 第三方/服务商代开发场景可进一步经 <see cref="SetCorp"/> 切换代操作企业
-/// （企业级 access_token 的 scope 来源）。</para>
+/// 第三方/服务商代开发场景使用 <see cref="UseCorpScope"/> 一次性建立「应用 + 授权企业」作用域
+/// （企业级 access_token 的 scope 来源），释放时自动归还，杜绝企业上下文残留。</para>
 /// </remarks>
 /// <remarks>
 /// <para>
@@ -58,27 +58,74 @@ public interface IWechatAppContextSwitcher : IAppContextSwitcher, IAppScopeSwitc
     IDisposable BeginScope(string appKey);
 
     /// <summary>
-    /// 切换代开发企业上下文（设置当前异步流的 authCorpId / permanentCode）。
+    /// 建立「应用 + 授权企业」复合作用域（一次性 <c>using</c> 语义；第三方 / 服务商代开发调用的<b>推荐入口</b>）。
+    /// </summary>
+    /// <param name="appKey">应用标识（须为已注册应用；守卫与 <see cref="IAppScopeSwitcher.UseAppScope"/> 完全一致）。</param>
+    /// <param name="authCorpId">授权方（企业）CorpId（企业级 access_token 的 scope 唯一来源，必填）。</param>
+    /// <param name="permanentCode">该企业的永久授权码（可选；缺省时由 <c>IWechatCorpAuthStore</c> 持久化仓储提供）。</param>
+    /// <returns>释放时同时还原「应用上下文」与「企业上下文」两个快照的作用域对象（幂等）。</returns>
+    /// <exception cref="ArgumentException"><paramref name="appKey"/> 格式非法（校验先于应用解析，失败不触碰 <c>IWechatAppManager</c>）。</exception>
+    /// <exception cref="InvalidOperationException">授权器拒绝切换，或目标应用未注册。</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="authCorpId"/> 为 <c>null</c>。</exception>
+    /// <exception cref="ArgumentException"><paramref name="authCorpId"/> 为空白字符串。</exception>
+    /// <remarks>
+    /// <para>
+    /// <b>为何需要本入口</b>：企业上下文是 <c>WechatCorpContext</c> 的 <c>AsyncLocal</c> 状态，
+    /// 用裸 <see cref="SetCorp"/> 写入后若忘记配对 <see cref="ClearCorp"/>，
+    /// 残留作用域会污染同一异步流上后续不相关的调用（跨企业令牌串号）。
+    /// 本方法把「切应用 + 设企业 + 归还」收敛为一个 <c>using</c>：进入时先<b>快照</b>两级上下文再写入，
+    /// 释放时<b>逆序还原</b>（企业 → 应用），因此嵌套与长生命周期执行上下文都安全
+    /// （内层代操作不会清掉外层的企业上下文）。
+    /// </para>
+    /// <para>
+    /// <b>归属维度（R9）</b>：写入企业上下文的归属应用取自<b>解析后的应用上下文</b>的 <c>AppKey</c>
+    /// （而非入参原样），保证 <c>CorpTokenManager</c> 的归属校验命中——
+    /// 多套件下 A 应用的 <c>permanentCode</c> 不会被 B 应用误用。
+    /// </para>
+    /// <para>
+    /// <b>失败安全性</b>：应用解析失败不产生任何状态变更；企业参数校验失败会回滚已进入的应用作用域，
+    /// 不留半开作用域。
+    /// </para>
+    /// <para>
+    /// <b>用法</b>：<c>using (switcher.UseCorpScope("dk-app", authCorpId, permanentCode)) { await …; }</c>。
+    /// 已在目标应用作用域内时可传同一 <paramref name="appKey"/>（重复进入同一应用上下文等价且安全）。
+    /// </para>
+    /// </remarks>
+    IDisposable UseCorpScope(string appKey, string authCorpId, string? permanentCode = null);
+
+    /// <summary>
+    /// 切换代开发企业上下文（设置当前异步流的 authCorpId / permanentCode）——<b>低层原语</b>。
     /// </summary>
     /// <param name="authCorpId">授权方（企业）CorpId。</param>
     /// <param name="permanentCode">该企业的永久授权码（可选；缺省时由
     /// <c>IWechatCorpAuthStore</c> 持久化仓储提供）。</param>
     /// <remarks>
+    /// <para>
     /// 作用域为当前异步执行流（AsyncLocal），跨异步边界自然隔离，多企业令牌互不串扰。
+    /// </para>
     /// <para>
     /// <b>P2-1 配对要求</b>：长生命周期执行上下文（如后台任务、常驻队列消费者）在完成代操作后必须配对
-    /// <see cref="ClearCorp"/> 或改用 <c>WechatCorpContext.BeginCorpScope(...)</c>（<c>using</c> 语义），
-    /// 否则环境企业上下文会残留到后续不相关的调用（造成 scope 误用）。
+    /// <see cref="ClearCorp"/>，否则环境企业上下文会残留到后续不相关的调用（造成 scope 误用）。
+    /// <b>推荐改用 <see cref="UseCorpScope"/>（一次性 <c>using</c>，自动归还且不残留）</b>；
+    /// 确需「不切换应用、不声明归属」的裸写入时，用 <c>WechatCorpContext.BeginCorpScope(...)</c>。
     /// </para>
     /// </remarks>
+    [Obsolete("请改用 UseCorpScope(appKey, authCorpId, permanentCode)：一次性 using 语义，释放时同时还原应用与企业上下文，杜绝忘记配对 ClearCorp 造成的企业作用域残留。裸写入场景请用 WechatCorpContext.BeginCorpScope(...)。")]
     void SetCorp(string authCorpId, string? permanentCode = null);
 
     /// <summary>
-    /// 清除当前异步流的代开发企业上下文（<see cref="SetCorp"/> 的对称重置入口，P2-1）。
+    /// 清除当前异步流的代开发企业上下文（裸写入路径 <see cref="SetCorp"/> 的对称重置入口，P2-1）。
     /// </summary>
     /// <remarks>
+    /// <para>
     /// 清空属性（authCorpId / permanentCode / 归属 AppKey），后续企业级令牌必须重新经
-    /// <see cref="SetCorp"/> 或显式 <c>GetTokenAsync(new[]{ authCorpId })</c> 指定 scope。
+    /// <see cref="UseCorpScope"/> / <c>WechatCorpContext.BeginCorpScope(...)</c> /
+    /// 显式 <c>GetTokenAsync(new[]{ authCorpId })</c> 指定 scope。
+    /// </para>
+    /// <para>
+    /// 与作用域还原的差异：本方法<b>无条件清空</b>，而 <see cref="UseCorpScope"/> 释放时<b>还原进入前快照</b>
+    /// ——嵌套场景下清空会误伤外层企业上下文，故嵌套 / 长生命周期执行上下文请用作用域入口。
+    /// </para>
     /// </remarks>
     void ClearCorp();
 

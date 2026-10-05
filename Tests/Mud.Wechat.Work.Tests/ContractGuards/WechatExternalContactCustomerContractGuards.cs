@@ -35,7 +35,10 @@ public class WechatExternalContactCustomerContractGuards
     private const string ExternalContactRegistryGroupName = "ExternalContact";
 
     /// <summary>
-    /// 官方路由表（父接口 10 条公共端点 + 第三方 3 条差异端点）。
+    /// 官方路由表（父接口 10 条公共端点 + 第三方 1 条差异端点）。
+    /// <para><b>单一所有者</b>：<c>/cgi-bin/idconvert/unionid_to_external_userid</c>与
+    /// <c>/cgi-bin/idconvert/batch/external_userid_to_pending_id</c> 归「账号ID」域
+    /// <see cref="IWechatWorkAccountIdService"/> 唯一声明（其载荷为本域原平行家族的可空超集）。</para>
     /// </summary>
     private static readonly (Type Interface, string Method, Type HttpAttribute, string Route)[] Routes =
     {
@@ -70,12 +73,6 @@ public class WechatExternalContactCustomerContractGuards
             nameof(IWechatWorkExternalContactCustomerService.DeleteCustomerStrategyAsync),
             typeof(PostAttribute), "/cgi-bin/externalcontact/customer_strategy/del"),
         (typeof(IWechatWorkThirdPartyExternalContactCustomerService),
-            nameof(IWechatWorkThirdPartyExternalContactCustomerService.ConvertUnionIdToExternalUserIdAsync),
-            typeof(PostAttribute), "/cgi-bin/idconvert/unionid_to_external_userid"),
-        (typeof(IWechatWorkThirdPartyExternalContactCustomerService),
-            nameof(IWechatWorkThirdPartyExternalContactCustomerService.GetPendingIdByExternalUserIdsAsync),
-            typeof(PostAttribute), "/cgi-bin/idconvert/batch/external_userid_to_pending_id"),
-        (typeof(IWechatWorkThirdPartyExternalContactCustomerService),
             nameof(IWechatWorkThirdPartyExternalContactCustomerService.ConvertToServiceExternalUserIdAsync),
             typeof(PostAttribute), "/cgi-bin/externalcontact/to_service_external_userid"),
     };
@@ -88,11 +85,11 @@ public class WechatExternalContactCustomerContractGuards
     [Fact]
     public void CustomerEndpoints_ShouldMatchOfficialRoutes()
     {
-        Routes.Should().HaveCount(13,
-            "本域为父接口 10 条公共端点 + 第三方 3 条差异端点");
+        Routes.Should().HaveCount(11,
+            "本域为父接口 10 条公共端点 + 第三方 1 条差异端点（unionid/pending_id 转换归「账号ID」域单一所有者）");
 
         var distinctRoutes = Routes.Select(r => r.Route).Distinct().ToList();
-        distinctRoutes.Should().HaveCount(13, "本域各端点路由互不重复");
+        distinctRoutes.Should().HaveCount(11, "本域各端点路由互不重复");
 
         foreach (var (iface, method, httpAttribute, route) in Routes)
         {
@@ -148,10 +145,11 @@ public class WechatExternalContactCustomerContractGuards
             .Should().BeEmpty(
                 "自建子接口为空标记：公共端点全部声明于父接口，新增差异端点须先核对官方文档并同批调整 CU1/CU2");
 
-        // 第三方子接口恰持 3 条差异端点（unionid 转换 / pending_id 查询 / 代开发 external_userid 转换）。
+        // 第三方子接口恰持 1 条差异端点（代开发 external_userid 转换）；
+        // unionid 转换 / pending_id 查询归「账号ID」域 IWechatWorkAccountIdService 单一所有者。
         typeof(IWechatWorkThirdPartyExternalContactCustomerService)
             .GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
-            .Should().HaveCount(3, "第三方子接口仅承载 3 条身份转换差异端点");
+            .Should().HaveCount(1, "第三方子接口仅承载 1 条身份转换差异端点（其余归「账号ID」域单一所有者）");
 
         // 代开发子接口零差异端点（官方文档未向代开发单列差异端点）。
         typeof(IWechatWorkProviderExternalContactCustomerService)
@@ -206,13 +204,11 @@ public class WechatExternalContactCustomerContractGuards
             typeof(GetCustomerStrategyListResponse), typeof(CustomerStrategyIdItem),
             typeof(CreateCustomerStrategyResponse), typeof(GetCustomerStrategyDetailResponse),
             typeof(GetCustomerStrategyRangeResponse),
-            typeof(ConvertUnionIdToExternalUserIdResponse), typeof(PendingIdMapItem),
-            typeof(ExternalUserIdToPendingIdResponse), typeof(ConvertToServiceExternalUserIdResponse),
+            typeof(ConvertToServiceExternalUserIdResponse),
             typeof(BatchGetCustomerDetailsRequest), typeof(UpdateCustomerRemarkRequest),
             typeof(GetCustomerStrategyListRequest), typeof(GetCustomerStrategyDetailRequest),
             typeof(GetCustomerStrategyRangeRequest), typeof(CreateCustomerStrategyRequest),
             typeof(UpdateCustomerStrategyRequest), typeof(DeleteCustomerStrategyRequest),
-            typeof(ConvertUnionIdToExternalUserIdRequest), typeof(ExternalUserIdToPendingIdRequest),
             typeof(ConvertToServiceExternalUserIdRequest),
         };
 

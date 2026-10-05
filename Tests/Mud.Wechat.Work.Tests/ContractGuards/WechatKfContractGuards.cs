@@ -210,19 +210,13 @@ public class WechatKfContractGuards
     };
 
     /// <summary>
-    /// 微信客服组件域官方路由表（仅第三方/组件应用消费，3 条端点全部声明于第三方子接口；
-    /// 前两条与客服账号管理域共用路由，组件语义为仅可见企业已授权的客服账号）。
+    /// 微信客服组件域官方路由表（仅第三方/组件应用消费；<b>单一所有者</b>：客服账号列表
+    /// <c>kf/account/list</c> 与客服账号链接 <c>kf/add_contact_way</c>虽官方以组件文档
+    /// （99368/99400）分文档承载，但与客服账号管理域为<b>同路由、同 DTO</b>，故只在客服账号管理域
+    /// 父接口声明一次（见 <see cref="AccountRoutes"/>），本表仅保留组件域独有路由）。
     /// </summary>
     private static readonly (Type Interface, string Method, Type HttpAttribute, string Route)[] ComponentRoutes =
     {
-        // 获取客服账号列表·组件版（99368，与 94661/96415 客服账号管理域共用路由）。
-        (typeof(IWechatWorkThirdPartyKfComponentService),
-            nameof(IWechatWorkThirdPartyKfComponentService.GetAccountListAsync),
-            typeof(PostAttribute), "/cgi-bin/kf/account/list"),
-        // 获取客服账号链接·组件版（99400，与 94665/96416 客服账号管理域共用路由）。
-        (typeof(IWechatWorkThirdPartyKfComponentService),
-            nameof(IWechatWorkThirdPartyKfComponentService.GetAccountContactWayAsync),
-            typeof(PostAttribute), "/cgi-bin/kf/add_contact_way"),
         // 获取客服数据统计·组件版（99367，企业级口径、无 open_kfid 入参，为组件域独有路由）。
         (typeof(IWechatWorkThirdPartyKfComponentService),
             nameof(IWechatWorkThirdPartyKfComponentService.GetStatisticAsync),
@@ -406,15 +400,15 @@ public class WechatKfContractGuards
     }
 
     /// <summary>
-    /// 契约守卫 KF1g：微信客服组件域全部端点路由必须与官方契约一致；
-    /// 组件版 <c>kf/account/list</c> 与 <c>kf/add_contact_way</c> 与客服账号管理域共用路由
-    /// （形态对齐获客助手组件先例），<c>kf/get_statistic</c> 为组件域独有路由且无 open_kfid 入参。
+    /// 契约守卫 KF1g：微信客服组件域<b>独有</b>端点路由必须与官方契约一致；
+    /// <c>kf/account/list</c> 与 <c>kf/add_contact_way</c> 与客服账号管理域为同路由同 DTO，
+    /// 已按单一所有者收敛为账号域声明，本守卫反向锁定组件域<b>不得</b>重复声明（KF1g2）。
     /// </summary>
     [Fact]
     public void KfComponentEndpoints_ShouldMatchOfficialRoutes()
     {
-        ComponentRoutes.Should().HaveCount(3,
-            "微信客服组件域 3 个端点官方仅由微信客服组件应用（套件形态）消费，全部声明于第三方子接口");
+        ComponentRoutes.Should().HaveCount(1,
+            "组件域仅保留 1 个独有端点（同路由端点归客服账号管理域单一所有者）");
 
         foreach (var (iface, method, httpAttribute, route) in ComponentRoutes)
         {
@@ -425,12 +419,26 @@ public class WechatKfContractGuards
             attr.Should().NotBeNull($"{iface.Name}.{method} 必须声明 [{httpAttribute.Name.Replace("Attribute", string.Empty)}] 路由");
             attr!.RequestUri.Should().Be(route, $"{iface.Name}.{method} 路由必须与官方契约一致");
         }
+    }
 
-        // 组件域与客服账号管理域共用路由的契约锚点：若账号域路由漂移而组件域未同步，此处立即打红。
-        ComponentRoutes[0].Route.Should().Be("/cgi-bin/kf/account/list",
-            "组件版获取客服账号列表必须与客服账号管理域（KF1a）共用同一路由");
-        ComponentRoutes[1].Route.Should().Be("/cgi-bin/kf/add_contact_way",
-            "组件版获取客服账号链接必须与客服账号管理域（KF1a）共用同一路由");
+    /// <summary>
+    /// 契约守卫 KF1g2（反重复守卫）：客服账号列表与客服账号链接两条路由在 SDK 内只允许
+    /// 客服账号管理域一处声明——官方虽另以组件文档（99368/99400）分文档承载，但二者
+    /// <b>同路由且共用同一批 DTO</b>，重复声明只会产生两份同形契约面。
+    /// </summary>
+    [Fact]
+    public void KfComponentEndpoints_ShouldNotRedundantlyDeclareAccountRoutes()
+    {
+        var componentChild = typeof(IWechatWorkThirdPartyKfComponentService);
+        var accountRoutes = new HashSet<string>(
+            AccountRoutes.Select(r => r.Route), StringComparer.Ordinal);
+
+        foreach (var route in accountRoutes)
+        {
+            var redeclared = AccountRoutes.First(r => r.Route == route);
+            componentChild.GetMethod(redeclared.Method, BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
+                .Should().BeNull($"{route} 归客服账号管理域单一所有者声明，组件域不得重复声明");
+        }
     }
 
     /// <summary>

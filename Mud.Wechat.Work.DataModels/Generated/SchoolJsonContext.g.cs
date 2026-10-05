@@ -47,7 +47,6 @@ namespace Mud.Wechat.Work.DataModels.School;
 [JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.School.SchoolAuthThirdPartySchoolUserInfoResponse))]
 [JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.School.SchoolAuthThirdPartyStudentItem))]
 [JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.School.SchoolAuthThirdPartyUserInfoResponse))]
-[JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.School.SchoolAuthUserInfoResponse))]
 [JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.School.SchoolBatchParentResultResponse))]
 [JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.School.SchoolBatchStudentResultResponse))]
 [JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.School.SchoolBatchToExternalUserIdResponse))]

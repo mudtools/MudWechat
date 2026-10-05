@@ -12,10 +12,16 @@ namespace Mud.Wechat.Work;
 /// <summary>
 /// 企业微信「家校沟通」模块网页授权登录域<b>企业自建 + 服务商代开发</b>公共 SDK 接口。
 /// <para>
-/// 官方网页授权登录对自建与代开发开放完全一致的 2 个端点（获取访问用户身份 +
-/// 获取家校访问用户身份，同路由同契约、均以 <c>access_token</c> 鉴权），全部收敛声明于本接口；
+/// 官方网页授权登录对自建与代开发开放完全一致的 1 个端点（获取家校访问用户身份，同路由同契约、
+/// 以 <c>access_token</c> 鉴权），收敛声明于本接口；
 /// 应用类型子接口均为零差异端点空标记：自建见 <see cref="IWechatWorkInternalSchoolAuthService"/>，
 /// 服务商代开发见 <see cref="IWechatWorkProviderSchoolAuthService"/>。
+/// </para>
+/// <para>
+/// 架构决策（单一所有者）：「获取访问用户身份」（<c>/cgi-bin/auth/getuserinfo</c>）曾在本接口重复声明，
+/// 因与「身份验证」域 <see cref="IWechatWorkIdentityService"/> 构成同路由重复声明、且平行 DTO 家族互为同构，
+/// 现已收敛为「身份验证」域单一所有者声明，家校场景请改用
+/// <see cref="IWechatWorkIdentityService.GetUserInfoAsync"/>。
 /// </para>
 /// <para>
 /// 官方对<b>第三方应用</b>开放的是独立路由（<c>/cgi-bin/service/getuserinfo3rd</c>、
@@ -44,30 +50,6 @@ namespace Mud.Wechat.Work;
       InjectionMode = TokenInjectionMode.Query, Name = "access_token")]
 public interface IWechatWorkSchoolAuthService
 {
-    /// <summary>
-    /// 获取访问用户身份（code 换用户身份，官方即 GET）
-    /// <para>根据网页授权回调携带的 code 获取访问用户身份。</para>
-    /// <para>官方响应按用户身份三选一：企业成员返回 userid（如需详情可调用通讯录「读取成员」）；
-    /// 学校家长返回 external_userid + parent_userid（局校互联场景下 parent_userid 格式为 CorpId/parent_userid）；
-    /// 非企业成员或学生家长返回 openid。</para>
-    /// <para>官方业务限制：code 最大 512 字节、每次授权的 code 不同、只能使用一次、
-    /// 5 分钟未被使用自动过期；跳转的域名须完全匹配该 access_token 对应应用的可信域名，否则返回 50001 错误。</para>
-    /// </summary>
-    /// <param name="code">通过成员授权获取到的 code（最大 512 字节，只能使用一次，
-    /// 5 分钟未被使用自动过期）。</param>
-    /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
-    /// <returns>访问用户身份（userid / external_userid + parent_userid / openid 三形态之一）。</returns>
-    /// <remarks>
-    /// <para><b>企业自建应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/91707"/></para>
-    /// <para><b>服务商代开发</b>SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/96712"/></para>
-    /// <para><b>第三方应用</b>走独立路由与 suite_access_token，见
-    /// <see cref="IWechatWorkThirdPartySchoolAuthService"/>（官方文档 91711）。</para>
-    /// </remarks>
-    [Get("/cgi-bin/auth/getuserinfo")]
-    Task<SchoolAuthUserInfoResponse> GetUserInfoAsync(
-        [Query("code")] string code,
-        CancellationToken cancellationToken = default);
-
     /// <summary>
     /// 获取家校访问用户身份（code 换家长/学生身份，官方即 GET）
     /// <para>根据网页授权回调携带的 code 获取访问用户在家校通讯录中的身份。</para>

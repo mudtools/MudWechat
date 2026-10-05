@@ -27,6 +27,11 @@ namespace Mud.Wechat.Work.Tests.ContractGuards;
 /// <c>suite_access_token</c>（获客助手组件的应用凭证）鉴权，与本域其余端点的企业级
 /// <c>access_token</c> 分属不同令牌路由键 —— 一接口族一令牌路由键。
 /// </para>
+/// <para>
+/// <b>单一所有者</b>：获客链接列表 / 详情 / 使用统计 / 成员收消息详情 4 条端点官方以组件 / 直连两套文档
+/// 承载同一路由，组件版返回字段为直连版的可空真子集。按 ADR-14「一份可空超集载荷覆盖多模式」原则，
+/// 该4 条端点只在 <c>CustomerAcquisition</c> 域声明一次，组件域不再重复声明（AC0 反重复守卫锁定）。
+/// </para>
 /// </remarks>
 public class WechatExternalContactAcquisitionComponentContractGuards
 {
@@ -42,27 +47,46 @@ public class WechatExternalContactAcquisitionComponentContractGuards
     private const string ExternalContactRegistryGroupName = "ExternalContact";
 
     /// <summary>
-    /// 获客助手组件接口族路由表（全部 POST；组件版与自建/第三方直连版
-    /// <c>CustomerAcquisition</c> 域共用路由，但仅可见授权给组件的链接，语义以官方组件文档为准）。
+    /// 获客助手组件接口族路由表（全部 POST；官方对本域与「获客助手域」以<b>同一路由、两套文档</b>承载，
+    /// 本表仅锁定组件<b>专属</b>端点——获客链接列表 / 详情 / 使用统计 / 成员收消息详情 4 条同路由端点
+    /// 已按「单一所有者」原则收敛为 <c>CustomerAcquisition</c> 域声明，见
+    /// <see cref="WechatExternalContactCustomerAcquisitionContractGuards"/>）。
     /// </summary>
     private static readonly (string MethodName, string Route)[] ComponentEndpoints =
     {
         (nameof(IWechatWorkThirdPartyExternalContactAcquisitionComponentService.GetAcquisitionComponentAuthInfoAsync),
             "/cgi-bin/externalcontact/customer_acquisition/get_comp_auth_info"),
-        (nameof(IWechatWorkThirdPartyExternalContactAcquisitionComponentService.GetAcquisitionComponentLinkListAsync),
-            "/cgi-bin/externalcontact/customer_acquisition/list_link"),
-        (nameof(IWechatWorkThirdPartyExternalContactAcquisitionComponentService.GetAcquisitionComponentLinkDetailAsync),
-            "/cgi-bin/externalcontact/customer_acquisition/get"),
-        (nameof(IWechatWorkThirdPartyExternalContactAcquisitionComponentService.GetAcquisitionComponentLinkStatisticAsync),
-            "/cgi-bin/externalcontact/customer_acquisition/statistic"),
         (nameof(IWechatWorkThirdPartyExternalContactAcquisitionComponentService.CreateAcquisitionComponentOnceKeyAsync),
             "/cgi-bin/externalcontact/customer_acquisition/create_once_key"),
-        (nameof(IWechatWorkThirdPartyExternalContactAcquisitionComponentService.GetAcquisitionComponentChatInfoAsync),
-            "/cgi-bin/externalcontact/customer_acquisition/get_chat_info"),
     };
 
     /// <summary>
-    /// 契约守卫 AC1：获客助手组件 6 个端点与代支付流水 1 个端点的路由必须与官方契约一致
+    /// 契约守卫 AC0（反重复守卫）：组件专属端点与「获客助手域」同路由端点不得在两个接口族重复声明——
+    /// 官方对同一端点以组件 / 直连两套文档承载，SDK 内只允许存在单一所有者声明。
+    /// </summary>
+    [Fact]
+    public void AcquisitionComponentEndpoints_ShouldNotRedundantlyDeclareCustomerAcquisitionRoutes()
+    {
+        var componentRoutes = ComponentEndpoints.Select(e => e.Route).ToHashSet(StringComparer.Ordinal);
+
+        foreach (var route in new[]
+                 {
+                     "/cgi-bin/externalcontact/customer_acquisition/list_link",
+                     "/cgi-bin/externalcontact/customer_acquisition/get",
+                     "/cgi-bin/externalcontact/customer_acquisition/statistic",
+                     "/cgi-bin/externalcontact/customer_acquisition/get_chat_info",
+                 })
+        {
+            componentRoutes.Should().NotContain(route,
+                $"{route} 归「获客助手域」单一所有者声明，组件域不得重复声明（组件形态差异由可空超集载荷承载）");
+        }
+
+        ComponentEndpoints.Select(e => e.Route).Distinct().Should().HaveCount(
+            ComponentEndpoints.Length, "组件专属端点路由互不重复");
+    }
+
+    /// <summary>
+    /// 契约守卫 AC1：获客助手组件 2 个专属端点与代支付流水 1 个端点的路由必须与官方契约一致
     /// （新增/改名端点须同批更新本表）。
     /// </summary>
     [Fact]
@@ -118,7 +142,7 @@ public class WechatExternalContactAcquisitionComponentContractGuards
 
         AssertRegistryChild(componentChild, ExternalContactRegistryGroupName, ComponentParentImplementationClassName);
         componentChild.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
-            .Should().HaveCount(ComponentEndpoints.Length, "官方仅开放 6 个组件端点，必须声明在第三方子接口");
+            .Should().HaveCount(ComponentEndpoints.Length, "组件域仅保留2 个组件专属端点（同路由端点归获客助手域单一所有者）");
         AssertRegistryChild(billChild, ExternalContactRegistryGroupName, BillParentImplementationClassName);
         billChild.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
             .Should().HaveCount(1, "官方仅开放 1 个代支付流水端点，必须声明在第三方子接口");
@@ -184,18 +208,10 @@ public class WechatExternalContactAcquisitionComponentContractGuards
 
         var requiredTypes = new[]
         {
-            typeof(GetAcquisitionComponentLinkListRequest),
-            typeof(GetAcquisitionComponentLinkDetailRequest),
-            typeof(GetAcquisitionComponentLinkStatisticRequest),
             typeof(CreateAcquisitionComponentOnceKeyRequest),
-            typeof(GetAcquisitionComponentChatInfoRequest),
             typeof(GetAcquisitionBillListRequest),
             typeof(GetAcquisitionComponentAuthInfoResponse), typeof(AcquisitionComponentAuthApp),
-            typeof(GetAcquisitionComponentLinkListResponse),
-            typeof(GetAcquisitionComponentLinkDetailResponse), typeof(AcquisitionComponentLinkInfo),
-            typeof(GetAcquisitionComponentLinkStatisticResponse),
             typeof(CreateAcquisitionComponentOnceKeyResponse),
-            typeof(GetAcquisitionComponentChatInfoResponse), typeof(AcquisitionComponentChatInfo),
             typeof(GetAcquisitionBillListResponse), typeof(AcquisitionBillRecord),
         };
 

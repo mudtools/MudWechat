@@ -16,18 +16,8 @@ namespace Mud.Wechat.Work.DataModels.ExternalContact.AcquisitionComponent;
 [JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.ExternalContact.AcquisitionComponent.AcquisitionBillRecord))]
 [JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.ExternalContact.AcquisitionComponent.GetAcquisitionComponentAuthInfoResponse))]
 [JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.ExternalContact.AcquisitionComponent.AcquisitionComponentAuthApp))]
-[JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.ExternalContact.AcquisitionComponent.GetAcquisitionComponentChatInfoResponse))]
-[JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.ExternalContact.AcquisitionComponent.AcquisitionComponentChatInfo))]
-[JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.ExternalContact.AcquisitionComponent.GetAcquisitionComponentLinkDetailResponse))]
-[JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.ExternalContact.AcquisitionComponent.AcquisitionComponentLinkInfo))]
-[JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.ExternalContact.AcquisitionComponent.GetAcquisitionComponentLinkListResponse))]
-[JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.ExternalContact.AcquisitionComponent.GetAcquisitionComponentLinkStatisticResponse))]
 [JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.ExternalContact.AcquisitionComponent.CreateAcquisitionComponentOnceKeyRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.ExternalContact.AcquisitionComponent.GetAcquisitionBillListRequest))]
-[JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.ExternalContact.AcquisitionComponent.GetAcquisitionComponentChatInfoRequest))]
-[JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.ExternalContact.AcquisitionComponent.GetAcquisitionComponentLinkDetailRequest))]
-[JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.ExternalContact.AcquisitionComponent.GetAcquisitionComponentLinkListRequest))]
-[JsonSerializable(typeof(global::Mud.Wechat.Work.DataModels.ExternalContact.AcquisitionComponent.GetAcquisitionComponentLinkStatisticRequest))]
 internal partial class AcquisitionComponentJsonContext : JsonSerializerContext
 {
 }

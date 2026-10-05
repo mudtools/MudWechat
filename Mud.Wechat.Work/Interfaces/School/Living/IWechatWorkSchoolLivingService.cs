@@ -12,15 +12,22 @@ namespace Mud.Wechat.Work;
 /// <summary>
 /// 企业微信「家校沟通」模块上课直播域公共 SDK。
 /// <para>
-/// 官方对三类应用开放完全一致的 7 个端点（老师直播 ID 列表、直播详情、观看/未观看直播统计
-/// 及其 V2 版本、删除直播回放），全部收敛声明于本接口；应用类型子接口均为零差异端点空标记：
+/// 官方对三类应用开放完全一致的 5 个端点（直播详情、观看/未观看直播统计及其 V2 版本），
+/// 全部收敛声明于本接口；应用类型子接口均为零差异端点空标记：
 /// 自建见 <see cref="IWechatWorkInternalSchoolLivingService"/>，
 /// 第三方见 <see cref="IWechatWorkThirdPartySchoolLivingService"/>，
 /// 服务商代开发见 <see cref="IWechatWorkProviderSchoolLivingService"/>。
 /// </para>
 /// <para>
-/// 注意官方路由差异：获取老师直播 ID 列表与删除直播回放位于
-/// <c>/cgi-bin/living/</c> 段下，其余 5 个端点位于 <c>/cgi-bin/school/living/</c> 段下，照抄不纠正。
+/// 架构决策（单一所有者）：获取老师直播 ID 列表（<c>/cgi-bin/living/get_user_all_livingid</c>）
+/// 与删除直播回放（<c>/cgi-bin/living/delete_replay_data</c>）曾在本接口重复声明——官方以两套文档
+/// 分文档承载同一端点，SDK 内遂产生同路由重复声明与平行 DTO 家族。现已收敛为「直播」域
+/// <see cref="IWechatWorkLivingService"/> 单一所有者声明（其请求体为可空超集，覆盖家校场景），
+/// 家校场景请改用 <see cref="IWechatWorkLivingService.GetUserAllLivingIdAsync"/> 与
+/// <see cref="IWechatWorkLivingService.DeleteReplayDataAsync"/>。
+/// </para>
+/// <para>
+/// 本接口全部端点位于 <c>/cgi-bin/school/living/</c> 段下（家校专属口径），照抄官方不纠正。
 /// </para>
 /// </summary>
 /// <remarks>
@@ -46,25 +53,6 @@ namespace Mud.Wechat.Work;
       InjectionMode = TokenInjectionMode.Query, Name = "access_token")]
 public interface IWechatWorkSchoolLivingService
 {
-    /// <summary>
-    /// 获取老师直播 ID 列表（官方即 POST，路由位于 /cgi-bin/living/ 段）
-    /// <para>通过此接口可以获取指定老师的所有直播 ID。</para>
-    /// <para>官方业务限制：只能获取本应用创建的直播；
-    /// limit 默认值和最大值都为 100；以 next_cursor 分页，返回空字符串表示已是最后一页。</para>
-    /// </summary>
-    /// <param name="request">请求体（<see cref="LivingGetUserAllLivingIdRequest"/>，userid 必填）。</param>
-    /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
-    /// <returns>直播 ID 列表（livingid_list）与分页游标（next_cursor）。</returns>
-    /// <remarks>
-    /// <para><b>企业自建应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/93739"/></para>
-    /// <para><b>第三方应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/93856"/></para>
-    /// <para><b>服务商代开发</b>SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/97127"/></para>
-    /// </remarks>
-    [Post("/cgi-bin/living/get_user_all_livingid")]
-    Task<LivingGetUserAllLivingIdResponse> GetUserAllLivingIdAsync(
-        [Body] LivingGetUserAllLivingIdRequest request,
-        CancellationToken cancellationToken = default);
-
     /// <summary>
     /// 获取直播详情（官方即 GET，livingid 走 Query）
     /// <para>获取直播详情（主题、开播时间、时长、主播、直播范围、观看/评论数、回放开关等）。</para>
@@ -121,24 +109,6 @@ public interface IWechatWorkSchoolLivingService
     [Post("/cgi-bin/school/living/get_unwatch_stat")]
     Task<LivingGetUnwatchStatResponse> GetUnwatchStatAsync(
         [Body] LivingGetUnwatchStatRequest request,
-        CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// 删除直播回放（官方即 POST，路由位于 /cgi-bin/living/ 段）
-    /// <para>删除指定直播的回放数据。</para>
-    /// <para>官方业务限制：仅允许取消当前应用创建的直播。</para>
-    /// </summary>
-    /// <param name="request">请求体（<see cref="LivingDeleteReplayDataRequest"/>，livingid 必填）。</param>
-    /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
-    /// <returns>删除结果（errcode/errmsg）。</returns>
-    /// <remarks>
-    /// <para><b>企业自建应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/93743"/></para>
-    /// <para><b>第三方应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/93860"/></para>
-    /// <para><b>服务商代开发</b>SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/97131"/></para>
-    /// </remarks>
-    [Post("/cgi-bin/living/delete_replay_data")]
-    Task<WechatWorkResponse> DeleteReplayDataAsync(
-        [Body] LivingDeleteReplayDataRequest request,
         CancellationToken cancellationToken = default);
 
     /// <summary>

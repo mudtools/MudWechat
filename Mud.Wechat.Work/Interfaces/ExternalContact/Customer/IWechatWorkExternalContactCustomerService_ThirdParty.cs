@@ -13,9 +13,15 @@ namespace Mud.Wechat.Work;
 /// 企业微信「客户联系」模块客户管理域第三方应用 SDK。
 /// <para>
 /// 除继承自 <see cref="IWechatWorkExternalContactCustomerService"/> 的公共端点外，
-/// 本接口提供第三方应用独有的身份转换端点：unionid 与 external_userid 的关联
-/// （unionid 转换为第三方 external_userid、external_userid 查询 pending_id）
-/// 与代开发应用 external_userid 转换。
+/// 本接口仅提供代开发应用 external_userid 转换这1 个第三方侧差异端点。
+/// </para>
+/// <para>
+/// 架构决策（单一所有者）：unionid转 external_userid、external_userid 查询 pending_id
+/// （<c>/cgi-bin/idconvert/unionid_to_external_userid</c>、<c>/cgi-bin/idconvert/batch/external_userid_to_pending_id</c>）
+/// 曾在本接口重复声明，因与「账号ID」域 <see cref="IWechatWorkAccountIdService"/> 构成同路由重复声明、
+/// 且平行 DTO 家族互为真子集，现已收敛为「账号ID」域单一所有者声明，第三方应用侧请改用
+/// <see cref="IWechatWorkAccountIdService.ConvertUnionidToExternalUserIdAsync"/> 与
+/// <see cref="IWechatWorkAccountIdService.ConvertExternalUserIdToPendingIdAsync"/>。
 /// </para>
 /// <para>自建应用见 <see cref="IWechatWorkInternalExternalContactCustomerService"/>；
 /// 服务商代开发见 <see cref="IWechatWorkProviderExternalContactCustomerService"/>。</para>
@@ -36,40 +42,6 @@ namespace Mud.Wechat.Work;
       InjectionMode = TokenInjectionMode.Query, Name = "access_token")]
 public interface IWechatWorkThirdPartyExternalContactCustomerService : IWechatWorkExternalContactCustomerService
 {
-    /// <summary>
-    /// unionid 转换为第三方 external_userid
-    /// <para>将微信客户的 unionid 转为第三方主体的 external_userid；若该微信用户尚未成为企业的客户，
-    /// 则返回 pending_id（90 天内有效，仅用于关联，不能当成 external_userid 调用接口）。</para>
-    /// <para>unionid 与 openid 必须取自同一个小程序（或公众号），且账号主体名称需与当前授权企业主体一致
-    /// （或与服务商主体一致）。subject_type = 0 按企业限频（10 万次/小时），subject_type = 1 按服务商限频。</para>
-    /// </summary>
-    /// <param name="request">转换请求体（<see cref="ConvertUnionIdToExternalUserIdRequest"/>）。</param>
-    /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
-    /// <returns>外部联系人 ID（external_userid）或临时 ID（pending_id）。</returns>
-    /// <remarks>
-    /// <para><b>第三方应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/101134"/></para>
-    /// </remarks>
-    [Post("/cgi-bin/idconvert/unionid_to_external_userid")]
-    Task<ConvertUnionIdToExternalUserIdResponse> ConvertUnionIdToExternalUserIdAsync(
-        [Body] ConvertUnionIdToExternalUserIdRequest request,
-        CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// external_userid 查询 pending_id
-    /// <para>将已关联过 unionid 的客户 external_userid 批量换取 pending_id
-    /// （最多 100 个；pending_id 有效期 90 天）。传入 chat_id 时只检查群主可见性并忽略群外 ID。</para>
-    /// </summary>
-    /// <param name="request">查询请求体（<see cref="ExternalUserIdToPendingIdRequest"/>）。</param>
-    /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
-    /// <returns>转换结果列表（result：external_userid 与 pending_id 映射）。</returns>
-    /// <remarks>
-    /// <para><b>第三方应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/101134"/></para>
-    /// </remarks>
-    [Post("/cgi-bin/idconvert/batch/external_userid_to_pending_id")]
-    Task<ExternalUserIdToPendingIdResponse> GetPendingIdByExternalUserIdsAsync(
-        [Body] ExternalUserIdToPendingIdRequest request,
-        CancellationToken cancellationToken = default);
-
     /// <summary>
     /// 代开发应用 external_userid 转换
     /// <para>企业同时授权了服务商的第三方应用与代开发应用时，将代开发应用获取到的 external_userid

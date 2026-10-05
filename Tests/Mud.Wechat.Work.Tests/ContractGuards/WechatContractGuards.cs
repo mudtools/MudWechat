@@ -879,6 +879,12 @@ public class WechatContractGuards
                 nameof(IWechatWorkBasicService),
                 nameof(IWechatWorkInternalBasicService),
                 nameof(IWechatWorkProviderBasicService),
+                // 推广二维码域（PromotionQrCode 模块）：企业注册族 2 端点为第三方应用专有、走 provider_access_token
+                //（获取注册码 90581、查询注册状态 90582；零端点父接口 + 唯一第三方子接口承载）。
+                // 注意：同域「通讯录迁移」族（设置授权应用可见范围 90583 / 设置通讯录同步完成 90584）以显式
+                // [Query("access_token")] 传令牌、不带 [Token]，故不进入本白名单（同 get_customized_auth_url 例外形态）。
+                nameof(IWechatWorkServicePromotionQrCodeService),
+                nameof(IWechatWorkThirdPartyServicePromotionQrCodeService),
             },
             "企业微信官方契约强制 Query 注入（MUD005 已知接受风险），新增 Query 注入接口须评估后扩展本守卫");
     }

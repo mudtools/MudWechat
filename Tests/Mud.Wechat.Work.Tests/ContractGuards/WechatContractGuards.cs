@@ -740,6 +740,21 @@ public class WechatContractGuards
                 //（第三方/代开发章节未提供会议统计管理文档页；零端点父接口 + 仅自建子接口承载）。
                 nameof(IWechatWorkMeetingStatisticsService),
                 nameof(IWechatWorkInternalMeetingStatisticsService),
+                // 微盘·管理空间族（Wedrive 模块）：新建/重命名/解散空间 + 获取空间信息 4 端点为三类应用公共面收敛父接口 + 空标记子接口
+                //（新建空间 93655/95857/96845、重命名空间 97856/97872/97862、解散空间 97857/97873/97863、
+                // 获取空间信息（旧版 space_info）97858/97874/97864）。
+                nameof(IWechatWorkWedriveSpaceService),
+                nameof(IWechatWorkInternalWedriveSpaceService),
+                nameof(IWechatWorkProviderWedriveSpaceService),
+                nameof(IWechatWorkThirdPartyWedriveSpaceService),
+                // 微盘·管理空间权限族（Wedrive 模块）：添加/移除成员部门 + 安全设置 + 获取邀请链接 + 获取空间信息（新版）5 端点
+                // 为三类应用公共面收敛父接口 + 空标记子接口
+                //（添加成员/部门 93656/95858/96846、移除成员/部门 97875/97947/97910、安全设置 97876/97948/97911、
+                // 获取邀请链接 97877/97949/97912、获取空间信息（新版 new_space_info）97878/97950/97913）。
+                nameof(IWechatWorkWedriveSpaceAclService),
+                nameof(IWechatWorkInternalWedriveSpaceAclService),
+                nameof(IWechatWorkProviderWedriveSpaceAclService),
+                nameof(IWechatWorkThirdPartyWedriveSpaceAclService),
             },
             "企业微信官方契约强制 Query 注入（MUD005 已知接受风险），新增 Query 注入接口须评估后扩展本守卫");
     }

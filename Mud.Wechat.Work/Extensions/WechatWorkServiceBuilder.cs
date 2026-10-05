@@ -108,6 +108,9 @@ public class WechatWorkServiceBuilder
             [WechatModule.Meeting] = new WechatModuleRegistrar(
                 WechatModule.Meeting,
                 s => s.AddMeetingWebApiHttpClient()),
+            [WechatModule.Wedrive] = new WechatModuleRegistrar(
+                WechatModule.Wedrive,
+                s => s.AddWedriveWebApiHttpClient()),
         };
 
     /// <summary>注册授权流业务接口与授权编排服务（get_pre_auth_code / set_session_info / get_permanent_code / get_auth_info / get_customized_auth_url + 编排）。</summary>
@@ -178,6 +181,9 @@ public class WechatWorkServiceBuilder
 
     /// <summary>注册会议业务接口（预约会议基础管理族：创建/修改/取消/获取成员会议 ID 列表 4 端点为三类应用公共面收敛父接口，获取会议详情为自建/第三方差异端点、代开发零端点空标记；会议统计管理族：获取会议发起记录官方仅自建开放，零端点父接口 + 仅自建子接口承载）。</summary>
     public WechatWorkServiceBuilder AddMeetingApi() => AddModule(WechatModule.Meeting);
+
+    /// <summary>注册微盘业务接口（管理空间族：新建/重命名/解散空间 + 获取空间信息 4 端点；管理空间权限族：添加/移除成员/部门 + 安全设置 + 获取邀请链接 + 获取空间信息（新版）5 端点；均为三类应用公共面收敛父接口 + 空标记子接口，官方获取空间信息存在 space_info 旧版与 new_space_info 新版两条路由分挂两个分组）。</summary>
+    public WechatWorkServiceBuilder AddWedriveApi() => AddModule(WechatModule.Wedrive);
 
     /// <summary>注册全部模块。</summary>
     public WechatWorkServiceBuilder AddAllApis()

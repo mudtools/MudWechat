@@ -31,6 +31,9 @@ namespace Mud.Wechat.Work.Abstractions;
 /// </para>
 /// <para>
 /// <b>落位规则</b>：应用类型子接口的 <c>[Token]</c> 必须声明本类常量；公共父接口不声明。
+/// 仅 <see cref="WechatTokenTypes.AccessToken"/> 因「自建 / 企业级」双凭据来源需要消歧——
+/// <see cref="WechatTokenTypes.SuiteAccessToken"/> / <see cref="WechatTokenTypes.ProviderAccessToken"/>
+/// 凭据来源唯一、无二义性，对应管理端点接口不使用归属域后缀。
 /// 全仓一致性由契约守卫 <c>WechatTokenOwnerContractGuards</c> 锁定。
 /// </para>
 /// </remarks>

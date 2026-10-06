@@ -45,6 +45,9 @@ public class MpServiceBuilder
             [MpModule.Menu] = new MpModuleRegistrar(
                 MpModule.Menu,
                 s => s.AddMenuWebApiHttpClient()),
+            [MpModule.CustomerMessage] = new MpModuleRegistrar(
+                MpModule.CustomerMessage,
+                s => s.AddCustomerMessageWebApiHttpClient()),
         };
 
     /// <summary>
@@ -70,6 +73,12 @@ public class MpServiceBuilder
     /// </summary>
     /// <returns>注册器（链式）。</returns>
     public MpServiceBuilder AddMenuApi() => AddModule(MpModule.Menu);
+
+    /// <summary>
+    /// 注册客服消息（3 端点；认证的订阅号与服务号均可调用，非服务号专属）。
+    /// </summary>
+    /// <returns>注册器（链式）。</returns>
+    public MpServiceBuilder AddCustomerMessageApi() => AddModule(MpModule.CustomerMessage);
 
     /// <summary>注册全部模块。</summary>
     /// <returns>注册器（链式）。</returns>

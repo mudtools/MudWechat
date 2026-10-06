@@ -9,6 +9,7 @@
 using System.Text.Json.Serialization.Metadata;
 using Mud.Wechat.OfficialAccount.DataModels;
 using Mud.Wechat.OfficialAccount.DataModels.Basic;
+using Mud.Wechat.OfficialAccount.DataModels.CustomerMessage;
 using Mud.Wechat.OfficialAccount.DataModels.Menu;
 using Mud.Wechat.OfficialAccount.DataModels.Tag;
 using Mud.Wechat.OfficialAccount.DataModels.User;
@@ -39,7 +40,8 @@ public static class MpJsonResolverExtensions
             BasicJsonContext.Default,
             TagJsonContext.Default,
             UserJsonContext.Default,
-            MenuJsonContext.Default);
+            MenuJsonContext.Default,
+            CustomerMessageJsonContext.Default);
         services.AddMudHttpClientJsonContext(resolver);
     }
 }

@@ -57,6 +57,16 @@ public enum MpModule
     Menu,
 
     /// <summary>
+    /// 客服消息 → 客服消息（发送客服消息 / 客服输入状态 / 获取聊天记录共 3 端点）。
+    /// </summary>
+    /// <remarks>
+    /// 域级约束：下发额度 5 条/48 小时（用户发消息）或 3 条/1 分钟（菜单、关注、扫码）；
+    /// 输入状态需 30 秒内有过交互；聊天记录查询区间 ≤ 24 小时、每次 ≤ 10000 条。
+    /// 官方适用范围为「公众号 / 服务号 均仅认证」（**非服务号专属**），故不设账号类型本地闸。
+    /// </remarks>
+    CustomerMessage,
+
+    /// <summary>
     /// 令牌签发（<c>getAccessToken</c> + <c>getStableAccessToken</c>）：随 <c>AddMpApp</c> 自动注册，
     /// 本枚举成员仅供模块清单对齐使用（不作为 <c>AddAuthenticationApi()</c> 的必要入口）。
     /// </summary>

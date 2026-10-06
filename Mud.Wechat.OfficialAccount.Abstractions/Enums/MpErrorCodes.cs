@@ -225,4 +225,33 @@ public static class MpErrorCodes
 
     /// <summary>appid error：appid 没有迁移关系。</summary>
     public const int ChangeOpenIdAppIdError = 63183;
+
+    // ---------------------------------------------------------------- 客服消息（M2，取值逐页核验官方文档）
+
+    /// <summary>invalid account type：账号类型不符合要求（如非服务号/公众号形态调用小程序专属接口）。</summary>
+    public const int InvalidAccountType = 40200;
+
+    /// <summary>客服消息图文条数超出限制（官方 <c>mpnews</c> 分支条数限制 1 条以内）。</summary>
+    public const int NewsCountExceeded = 45008;
+
+    /// <summary>invalid command：<c>command</c> 字段取值不对（客服输入状态）。</summary>
+    public const int InvalidTypingCommand = 45072;
+
+    /// <summary>下发输入状态前需在 <b>30 秒内</b>与该用户有过消息交互。</summary>
+    public const int TypingNeedsRecentInteraction = 45080;
+
+    /// <summary>you are already typing：已在输入状态，不可重复下发。</summary>
+    public const int AlreadyTyping = 45081;
+
+    /// <summary>为保护未成年人权益，该条消息发送失败（官方 <c>70000</c>，<b>非通用错误码</b>）。</summary>
+    public const int MinorProtectionRejected = 70000;
+
+    /// <summary>未开通或未升级到新版客服功能（获取聊天记录专用码）。</summary>
+    public const int NewCustomServiceNotEnabled = 65400;
+
+    /// <summary>查询参数不合法（获取聊天记录）。</summary>
+    public const int MsgRecordParamInvalid = 65416;
+
+    /// <summary>查询时间段超出限制（官方：查询时间段不能超过 <b>24 小时</b>）。</summary>
+    public const int MsgRecordTimeRangeTooLong = 65417;
 }

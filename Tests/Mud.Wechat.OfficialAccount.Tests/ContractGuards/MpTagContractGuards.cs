@@ -209,12 +209,9 @@ public class MpTagContractGuards
             .OrderBy(n => n, StringComparer.Ordinal)
             .ToList();
 
-        queryInterfaces.Should().BeEquivalentTo(
-            new[]
-            {
-                nameof(IMpBasicService), nameof(IMpTagService), nameof(IMpUserService), nameof(IMpMenuService),
-            },
-            "公众号官方契约强制 Query 注入；新增 Query 注入接口须评估后扩展本白名单");
+        queryInterfaces.Should().Contain(nameof(IMpTagService),
+            "本域必须在内；全量白名单由 MpQueryTokenWhitelistGuard（QT1）单点持有");
+        queryInterfaces.Should().NotBeEmpty("防「发现机制失效导致白名单真空」的静默空跑");
     }
 
     /// <summary>契约守卫 TG9：已核验官方错误码常量锁定（漂移即红——错误码是调用方重试策略的判据）。</summary>

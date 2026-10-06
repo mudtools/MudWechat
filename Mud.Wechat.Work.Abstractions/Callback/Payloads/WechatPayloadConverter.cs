@@ -224,6 +224,65 @@ public static class WechatPayloadConverter
     }
 
     /// <summary>
+    /// 重复同名复杂兄弟元素 → 契约化对象列表（官方会议「素材上传结果」的
+    /// <c>&lt;UploadInfo&gt;…&lt;/UploadInfo&gt;&lt;UploadInfo&gt;…&lt;/UploadInfo&gt;</c> 形态，
+    /// <b>无包装容器</b>）；节点缺失 ⇒ 空列表。
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// 依赖 <c>XElementPayloadSource</c> 的根层同名兄弟合并投影：≥2 个同名复杂兄弟在节点树上呈现为
+    /// 「同名容器（<see cref="PayloadNode.Children"/> = 原始元素全集）」。合成容器的判别依据是
+    /// <b>子节点中存在与容器同名的节点</b>（合并语义保证容器与成员同名）；恰 1 个元素时未触发合并，
+    /// 定位到的就是元素本身，直接按单项绑定。
+    /// </para>
+    /// <para>
+    /// 与 <see cref="RepeatSiblings"/>（叶列表）同理属 <c>Method</c> 显式通道；因 <c>Method</c> 方法
+    /// 须非泛型，本方法绑定具体项类型 <see cref="WechatCallbackMeetingMediumUploadItem"/>
+    /// （其字段映射仍由 <c>[PayloadContract]</c> 生成物承担，本方法只做「单/多形态分派」）。
+    /// </para>
+    /// </remarks>
+    public static List<WechatCallbackMeetingMediumUploadItem> RepeatMediumUploadItems(PayloadNode? node)
+    {
+        var items = new List<WechatCallbackMeetingMediumUploadItem>();
+        if (node == null)
+            return items;
+
+        List<PayloadNode>? members = null;
+        var children = node.Children;
+        for (var i = 0; i < children.Count; i++)
+        {
+            var child = children[i];
+            if (child != null && string.Equals(child.Name, node.Name, StringComparison.Ordinal))
+            {
+                members ??= new List<PayloadNode>();
+                members.Add(child);
+            }
+        }
+
+        if (members == null)
+        {
+            // 单元素形态：定位节点即 UploadInfo 元素本身（未触发合并投影）。
+            AddMediumUploadItem(items, node);
+            return items;
+        }
+
+        // 合并形态：同名容器的子节点即原始 UploadInfo 元素（保序）。
+        for (var i = 0; i < members.Count; i++)
+        {
+            AddMediumUploadItem(items, members[i]);
+        }
+
+        return items;
+    }
+
+    private static void AddMediumUploadItem(List<WechatCallbackMeetingMediumUploadItem> items, PayloadNode node)
+    {
+        var item = new WechatCallbackMeetingMediumUploadItem();
+        WechatCallbackMeetingMediumUploadItem.PayloadFieldMap.Bind(node, item);
+        items.Add(item);
+    }
+
+    /// <summary>
     /// 带属性的嵌套项 → 列表（成员扩展属性 <c>&lt;ExtAttr&gt;&lt;Item Name Type&gt;&lt;Text/&gt;&lt;/Item&gt;&lt;/ExtAttr&gt;</c> 形态）；
     /// 节点缺失 ⇒ 空列表。
     /// </summary>

@@ -52,7 +52,13 @@ namespace Mud.Wechat.Work.Abstractions.Callback;
 /// <see href="https://developer.work.weixin.qq.com/document/path/97836">path 97836</see>（代开发，起）·
 /// 智能表格族 <see href="https://developer.work.weixin.qq.com/document/path/100986">path 100986</see>（企业自建）/
 /// <see href="https://developer.work.weixin.qq.com/document/path/101016">path 101016</see>（第三方）/
-/// <see href="https://developer.work.weixin.qq.com/document/path/101018">path 101018</see>（代开发）。
+/// <see href="https://developer.work.weixin.qq.com/document/path/101018">path 101018</see>（代开发）·
+/// 日程族 <see href="https://developer.work.weixin.qq.com/document/path/97728">path 97728</see>（企业自建，起）/
+/// <see href="https://developer.work.weixin.qq.com/document/path/97806">path 97806</see>（第三方，起）/
+/// <see href="https://developer.work.weixin.qq.com/document/path/97771">path 97771</see>（代开发，起）·
+/// 会议族 <see href="https://developer.work.weixin.qq.com/document/path/99081">path 99081</see>（企业自建，起）/
+/// <see href="https://developer.work.weixin.qq.com/document/path/97451">path 97451</see>（第三方，修改/取消合页）/
+/// <see href="https://developer.work.weixin.qq.com/document/path/97459">path 97459</see>（代开发，同 97451）。
 /// </para>
 /// <para>
 /// 契约守卫 CB2（<c>WechatCallbackContractGuards</c>）按本类断言官方事件键全覆盖，新增官方事件键须同批登记。
@@ -636,4 +642,247 @@ public static class WechatCallbackEventTypes
     /// <see href="https://developer.work.weixin.qq.com/document/path/101019">path 101019</see>（服务商代开发）。
     /// </remarks>
     public const string DeleteRecord = "delete_record";
+
+    // ——— 日程族（官方 97728/97730/97731/97732/98111 自建 · 97806~97810/98099 第三方 · 97771~97774/98110 代开发） ———
+
+    /// <summary>删除日历（日历管理员删除 API 创建的日历；携带 <c>CalId</c>；无 <c>ChangeType</c> 分组段）。</summary>
+    /// <remarks>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/97728">path 97728 删除日历事件</see>（企业自建）/
+    /// <see href="https://developer.work.weixin.qq.com/document/path/97806">path 97806</see>（第三方）/
+    /// <see href="https://developer.work.weixin.qq.com/document/path/97771">path 97771</see>（服务商代开发）。
+    /// </remarks>
+    public const string DeleteCalendar = "delete_calendar";
+
+    /// <summary>修改日历（日历管理员修改 API 创建的日历；携带 <c>CalId</c>；无 <c>ChangeType</c> 分组段）。</summary>
+    /// <remarks>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/97730">path 97730 修改日历事件</see>（企业自建）/
+    /// <see href="https://developer.work.weixin.qq.com/document/path/97808">path 97808</see>（第三方）/
+    /// <see href="https://developer.work.weixin.qq.com/document/path/97772">path 97772</see>（服务商代开发）。
+    /// </remarks>
+    public const string ModifyCalendar = "modify_calendar";
+
+    /// <summary>修改日程（日程管理员修改 API 创建的日程；携带 <c>CalId</c> + <c>ScheduleId</c>；无 <c>ChangeType</c> 分组段）。</summary>
+    /// <remarks>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/97731">path 97731 修改日程事件</see>（企业自建）/
+    /// <see href="https://developer.work.weixin.qq.com/document/path/97809">path 97809</see>（第三方）/
+    /// <see href="https://developer.work.weixin.qq.com/document/path/97773">path 97773</see>（服务商代开发）。
+    /// </remarks>
+    public const string ModifySchedule = "modify_schedule";
+
+    /// <summary>删除日程（日程管理员在 API 创建的日历上删除日程；携带 <c>CalId</c> + <c>ScheduleId</c>；无 <c>ChangeType</c> 分组段）。</summary>
+    /// <remarks>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/97732">path 97732 删除日程事件</see>（企业自建）/
+    /// <see href="https://developer.work.weixin.qq.com/document/path/97810">path 97810</see>（第三方）/
+    /// <see href="https://developer.work.weixin.qq.com/document/path/97774">path 97774</see>（服务商代开发）。
+    /// </remarks>
+    public const string DeleteSchedule = "delete_schedule";
+
+    /// <summary>日程回执（参与人对 API 创建的日程回执：接受、待定、拒绝；携带 <c>CalId</c> + <c>ScheduleId</c>；
+    /// 信封 <c>FromUserName</c> 为进行回执操作的成员；无 <c>ChangeType</c> 分组段）。</summary>
+    /// <remarks>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/98111">path 98111 日程回执事件</see>（企业自建）/
+    /// <see href="https://developer.work.weixin.qq.com/document/path/98099">path 98099</see>（第三方）/
+    /// <see href="https://developer.work.weixin.qq.com/document/path/98110">path 98110</see>（服务商代开发）。
+    /// </remarks>
+    public const string RespondSchedule = "respond_schedule";
+
+    // ——— 会议族（官方 99081~99648 自建 · 97451 第三方 · 97459 代开发；Event = meeting_change / meeting_statistics） ———
+
+    /// <summary>会议变更事件的 <c>Event</c> 信封值（具体变更类别看 <c>ChangeType</c>；仅 API 创建的会议触发）。</summary>
+    /// <remarks>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/99081">path 99081 修改会议事件</see>（企业自建）/
+    /// <see href="https://developer.work.weixin.qq.com/document/path/97451">path 97451</see>（第三方）/
+    /// <see href="https://developer.work.weixin.qq.com/document/path/97459">path 97459</see>（服务商代开发）。
+    /// </remarks>
+    public const string MeetingChange = "meeting_change";
+
+    /// <summary>修改会议（管理员对 API 创建的会议进行修改）。</summary>
+    /// <remarks>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/99081">path 99081 修改会议事件</see>（企业自建）。
+    /// </remarks>
+    public const string ModifyMeeting = "modify_meeting";
+
+    /// <summary>取消会议（管理员取消 API 创建的会议）。</summary>
+    /// <remarks>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/99082">path 99082 取消会议事件</see>（企业自建）。
+    /// </remarks>
+    public const string CancelMeeting = "cancel_meeting";
+
+    /// <summary>会议开始（API 创建的会议开始）。</summary>
+    /// <remarks>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/98333">path 98333 会议开始事件</see>（企业自建）。
+    /// </remarks>
+    public const string MeetingStart = "meeting_start";
+
+    /// <summary>会议结束（API 创建的会议结束）。</summary>
+    /// <remarks>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/98337">path 98337 会议结束事件</see>（企业自建）。
+    /// </remarks>
+    public const string MeetingEnd = "meeting_end";
+
+    /// <summary>会议全体静音（API 创建的会议开启全体静音）。</summary>
+    /// <remarks>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/98341">path 98341 会议全体静音事件</see>（企业自建）。
+    /// </remarks>
+    public const string MeetingMuteAll = "meeting_mute_all";
+
+    /// <summary>会议解除全体静音（可多次触发，与全体静音并非成对出现）。</summary>
+    /// <remarks>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/98345">path 98345 会议解除全体静音事件</see>（企业自建）。
+    /// </remarks>
+    public const string MeetingUnmuteAll = "meeting_unmute_all";
+
+    /// <summary>成员入会（每个与会者加入 API 创建的会议时各触发一次；与会者含普通与会者与主持人）。</summary>
+    /// <remarks>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/98348">path 98348 成员入会事件</see>（企业自建）。
+    /// </remarks>
+    public const string JoinMeeting = "join_meeting";
+
+    /// <summary>成员离会（与会者离开 API 创建的会议）。</summary>
+    /// <remarks>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/98352">path 98352 成员离会事件</see>（企业自建）。
+    /// </remarks>
+    public const string QuitMeeting = "quit_meeting";
+
+    /// <summary>成员等待主持人入会（需预定会议时勾选「允许成员在主持人进会前加入会议选项」）。</summary>
+    /// <remarks>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/98353">path 98353 成员等待主持人入会事件</see>（企业自建）。
+    /// </remarks>
+    public const string JoinMeetingBeforeHost = "join_meeting_before_host";
+
+    /// <summary>成员进入等候室（与会者每次进入等候室均触发）。</summary>
+    /// <remarks>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/98354">path 98354 成员进入等候室事件</see>（企业自建）。
+    /// </remarks>
+    public const string JoinWaitingRoom = "join_waiting_room";
+
+    /// <summary>成员离开等候室（主持人移出或与会者主动离开；携带 <c>OperatedUser</c>）。</summary>
+    /// <remarks>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/98355">path 98355 成员离开等候室事件</see>（企业自建）。
+    /// </remarks>
+    public const string QuitWaitingRoom = "quit_waiting_room";
+
+    /// <summary>成员从等候室进入会议（主持人允许与会者入会；携带 <c>OperatedUser</c>）。</summary>
+    /// <remarks>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/98393">path 98393 成员从等候室进入会议事件</see>（企业自建）。
+    /// </remarks>
+    public const string JoinFromMeetingRoom = "join_from_meeting_room";
+
+    /// <summary>成员从会议中被移入等候室（携带 <c>OperatedUser</c>）。</summary>
+    /// <remarks>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/98394">path 98394 成员从会议中被移入等候室事件</see>（企业自建）。
+    /// </remarks>
+    public const string MoveToWaitingRoom = "move_to_waiting_room";
+
+    /// <summary>共享屏幕开启（屏幕共享开始）。</summary>
+    /// <remarks>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/98395">path 98395 共享屏幕开启事件</see>（企业自建）。
+    /// </remarks>
+    public const string OpenScreenShare = "open_screen_share";
+
+    /// <summary>共享屏幕结束（屏幕共享结束）。</summary>
+    /// <remarks>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/98396">path 98396 共享屏幕结束事件</see>（企业自建）。
+    /// </remarks>
+    public const string CloseScreenShare = "close_screen_share";
+
+    /// <summary>会议成员角色变更（携带 <c>OperatedUser</c>，<c>UserRole</c> 值域 0~8）。</summary>
+    /// <remarks>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/98397">path 98397 会议成员角色变更事件</see>（企业自建）。
+    /// </remarks>
+    public const string RoleChange = "role_change";
+
+    /// <summary>网络研讨会成员角色变更（携带 <c>OperatedUser</c>，<c>UserRole</c> 值域 0~8 + 30~34）。</summary>
+    /// <remarks>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/98771">path 98771 网络研讨会成员角色变更事件</see>（企业自建）。
+    /// </remarks>
+    public const string WebinarRoleChange = "webinar_role_change";
+
+    /// <summary>网络研讨会暖场上传结果（携带 <c>WarmUpInfo</c>；系统触发，信封 <c>FromUserName</c> 固定 sys）。</summary>
+    /// <remarks>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/98773">path 98773 网络研讨会暖场上传结果</see>（企业自建）。
+    /// </remarks>
+    public const string WebinarWarmUpUpload = "webinar_warm_up_upload";
+
+    /// <summary>PSTN 外呼状态更新（携带 <c>PstnStatus</c>；
+    /// <b>官方拼写陷阱</b>：枚举值 <c>CANCLE_INVITE</c> 为官方原文拼写，勿「修正」）。</summary>
+    /// <remarks>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/98774">path 98774 PSTN 外呼状态更新事件</see>（企业自建）。
+    /// </remarks>
+    public const string PstnStatusUpdate = "pstn_status_update";
+
+    /// <summary>素材上传结果（携带 <c>AllUploadStatus</c> 与 <c>UploadInfo</c> 元素列表
+    /// ——根下重复同名兄弟元素、无包装容器；系统触发，信封 <c>FromUserName</c> 固定 sys）。</summary>
+    /// <remarks>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/98775">path 98775 素材上传结果</see>（企业自建）。
+    /// </remarks>
+    public const string MediumUpload = "medium_upload";
+
+    /// <summary>会议统计事件的 <c>Event</c> 信封值（具体类别看 <c>ChangeType</c>；与 <see cref="MeetingChange"/> 是两个独立的 Event 值）。</summary>
+    /// <remarks>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/99648">path 99648 会议发起事件</see>（企业自建）。
+    /// </remarks>
+    public const string MeetingStatistics = "meeting_statistics";
+
+    /// <summary>会议发起（应用可见范围内成员发起快速会议，或作为首位参与者进入预约会议；
+    /// 携带 <c>Status</c>：1 发起成功 / 2 发起失败）。</summary>
+    /// <remarks>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/99648">path 99648 会议发起事件</see>（企业自建）。
+    /// </remarks>
+    public const string StartMeeting = "start_meeting";
+
+    /// <summary>开始云录制（会议开启云录制；主持人/联席主持人手动或企业管理员自动录制）。</summary>
+    /// <remarks>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/98398">path 98398 开始云录制事件</see>（企业自建）。
+    /// </remarks>
+    public const string StartRecording = "start_recording";
+
+    /// <summary>暂停云录制（云录制开启后被主持人或联席主持人暂停）。</summary>
+    /// <remarks>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/98399">path 98399 暂停云录制事件</see>（企业自建）。
+    /// </remarks>
+    public const string PauseRecording = "pause_recording";
+
+    /// <summary>恢复云录制（恢复之前暂停的云录制）。</summary>
+    /// <remarks>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/98400">path 98400 恢复云录制事件</see>（企业自建）。
+    /// </remarks>
+    public const string ResumeRecording = "resume_recording";
+
+    /// <summary>停止云录制（被主持人或联席主持人停止，或会议自动结束云录制）。</summary>
+    /// <remarks>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/98401">path 98401 停止云录制事件</see>（企业自建）。
+    /// </remarks>
+    public const string StopRecording = "stop_recording";
+
+    /// <summary>云录制已完成（会议结束且云录制转码完成）。</summary>
+    /// <remarks>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/98402">path 98402 云录制已完成事件</see>（企业自建）。
+    /// </remarks>
+    public const string RecordingComplete = "recording_complete";
+
+    /// <summary>删除云录制（云录制文件被手动删除或经 API 接口删除）。</summary>
+    /// <remarks>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/98404">path 98404 删除云录制事件</see>（企业自建）。
+    /// </remarks>
+    public const string DeleteRecording = "delete_recording";
+
+    /// <summary>用户报名（API 创建的会议或网络研讨会用户报名；携带 <c>EnrollId</c>）。</summary>
+    /// <remarks>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/98781">path 98781 用户报名事件</see>（企业自建）。
+    /// </remarks>
+    public const string Enroll = "enroll";
+
+    /// <summary>用户取消报名（携带 <c>EnrollId</c>）。</summary>
+    /// <remarks>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/98782">path 98782 用户取消报名事件</see>（企业自建）。
+    /// </remarks>
+    public const string CancelEnroll = "cancel_enroll";
+
+    /// <summary>会议室应答（API 创建的会议对会议室发起的呼叫有应答结果；
+    /// 携带 <c>MeetingRoomId</c> 与 <c>MraAddress</c> 二选一 + <c>RoomResponseStatus</c>）。</summary>
+    /// <remarks>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/98783">path 98783 会议室应答事件</see>（企业自建）。
+    /// </remarks>
+    public const string MeetingRoomResponse = "meeting_room_response";
 }

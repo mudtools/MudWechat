@@ -10,7 +10,7 @@ using Mud.Wechat.Work.Abstractions.Callback.Payloads;
 namespace Mud.Wechat.Work.Callback.Events.Payloads;
 
 /// <summary>
-/// 官方事件键契约表（66 键）：事件键 → 上游映射表 + 本仓库两级开放面声明。
+/// 官方事件键契约表（101 键）：事件键 → 上游映射表 + 本仓库两级开放面声明。
 /// </summary>
 /// <remarks>
 /// <para>
@@ -69,7 +69,14 @@ namespace Mud.Wechat.Work.Callback.Events.Payloads;
 /// 97839~97841/98055/98056（第三方）· 97836~97838/98097/98098（代开发）（5 键，<c>Event = doc_change</c>）；
 /// 智能表格族 100986/100987（自建）· 101016/101017（第三方）· 101018/101019（代开发）
 /// （6 键，<c>Event = smart_sheet_change</c>；id 列表为根下重复同名兄弟元素形态，经
-/// <c>RepeatSiblings</c> + 同名叶兄弟合并投影读取）。
+/// <c>RepeatSiblings</c> + 同名叶兄弟合并投影读取）；
+/// 日程族 97728/97730/97731/97732/98111（自建）· 97806/97808/97809/97810/98099（第三方）·
+/// 97771/97772/97773/97774/98110（代开发）（5 键，<c>Event</c> 节点即事件键、无 <c>ChangeType</c> 分组段）；
+/// 会议族 99081~99648（自建 30 页）+ <see href="https://developer.work.weixin.qq.com/document/path/97451">path 97451</see>（第三方）/
+/// <see href="https://developer.work.weixin.qq.com/document/path/97459">path 97459</see>（代开发，均为修改/取消合页）
+/// （30 键，<c>Event = meeting_change</c> 29 键 + <c>meeting_statistics</c> 1 键；修改/取消会议三模式开放、
+/// 其余仅自建；<c>medium_upload</c> 的 <c>UploadInfo</c> 为根下重复复杂兄弟元素（对象列表），经
+/// <c>RepeatMediumUploadItems</c> + 根层同名兄弟合并投影读取）。
 /// </para>
 /// <para>
 /// <b>三模式说明</b>：90240/90376/96468 三份文档正文一致 ⇒ 载荷与字段结构三模式同一（ADR-14），

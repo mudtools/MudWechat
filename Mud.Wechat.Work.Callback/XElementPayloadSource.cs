@@ -57,9 +57,11 @@ internal static class XElementPayloadSource
     /// <param name="element">根元素。</param>
     /// <returns>节点树根节点。</returns>
     /// <remarks>
-    /// 投影含「根层同名叶兄弟合并」步骤（<see cref="CoalesceRepeatedLeafSiblings"/>）：
-    /// 官方存在无包装容器的重复元素列表形态（如 wedoc 回调根下的
-    /// <c>&lt;DocId&gt;A&lt;/DocId&gt;&lt;DocId&gt;B&lt;/DocId&gt;</c>），须在投影期归拢才能被列表转换器读取。
+    /// 投影含「根层同名兄弟合并」步骤（<see cref="CoalesceRepeatedSiblings"/>）：
+    /// 官方存在无包装容器的重复元素列表形态——既有叶列表（如 wedoc 回调根下的
+    /// <c>&lt;DocId&gt;A&lt;/DocId&gt;&lt;DocId&gt;B&lt;/DocId&gt;</c>），也有对象列表
+    /// （如会议「素材上传结果」根下的 <c>&lt;UploadInfo&gt;…&lt;/UploadInfo&gt;&lt;UploadInfo&gt;…&lt;/UploadInfo&gt;</c>）——
+    /// 须在投影期归拢才能被列表转换器读取。
     /// </remarks>
     internal static PayloadNode Project(XElement element)
     {
@@ -68,11 +70,11 @@ internal static class XElementPayloadSource
 
         var root = ProjectCore(element);
 
-        // 仅根层合并（见 CoalesceRepeatedLeafSiblings 的保守边界）：根下的「容器 + 叶项」
+        // 仅根层合并（见 CoalesceRepeatedSiblings 的保守边界）：根下的「容器 + 项」
         // 包装形态（GroupIds/GroupId、SelectedItems/SelectedItem、ExtAttr/Item 等）由 Items/
         // ItemsObject 的 ItemName 通道逐项绑定，若在容器内部合并会令 ItemName 命中合成容器
         // 而非原始项 —— 故合并严格限定在根元素这一层。
-        return new PayloadNode(root.Name, root.Value, CoalesceRepeatedLeafSiblings(root.Children), root.Attributes);
+        return new PayloadNode(root.Name, root.Value, CoalesceRepeatedSiblings(root.Children), root.Attributes);
     }
 
     private static PayloadNode ProjectCore(XElement element)
@@ -97,30 +99,32 @@ internal static class XElementPayloadSource
     }
 
     /// <summary>
-    /// 根层同名叶兄弟合并：≥2 个同名<b>叶</b>兄弟节点合成为一个<b>同名容器</b>节点。
+    /// 根层同名兄弟合并：≥2 个同名兄弟节点（<b>全叶组</b>或<b>全复杂组</b>）合成为一个<b>同名容器</b>节点。
     /// </summary>
     /// <param name="children">根节点的全部直接子节点（投影序）。</param>
     /// <returns>合并后的子节点列表（无合并需求时原样返回）。</returns>
     /// <remarks>
     /// <para>
-    /// <b>为何需要</b>：官方 wedoc 回调的 id 列表是「根下重复同名兄弟元素」形态（无包装容器，
-    /// 如 <c>&lt;DocId&gt;A&lt;/DocId&gt;&lt;DocId&gt;B&lt;/DocId&gt;</c>），而上游
-    /// <see cref="PayloadNode.Child(string)"/> 对同名子节点只取第一个（重复即视为畸形输入）——
+    /// <b>为何需要</b>：官方存在两类「根下重复同名兄弟元素」的无包装容器列表形态——
+    /// 叶列表（wedoc 回调 <c>&lt;DocId&gt;A&lt;/DocId&gt;&lt;DocId&gt;B&lt;/DocId&gt;</c>）与
+    /// 对象列表（会议「素材上传结果」的 <c>UploadInfo</c> 元素，参数表明文「上传的素材对象列表」），
+    /// 而上游 <see cref="PayloadNode.Child(string)"/> 对同名子节点只取第一个（重复即视为畸形输入）——
     /// 不归拢则第 2..N 个元素在映射期不可达（静默丢字段）。合并后容器即「该名」节点：
     /// 首取语义（<c>Child</c>/<c>Has</c>/<c>ResolveScope</c>）行为不变，
     /// 容器 <see cref="PayloadNode.Children"/> 携带原始元素全集供列表转换器读取
-    /// （<c>WechatPayloadConverter.RepeatSiblings</c>）。
+    /// （叶列表走 <c>WechatPayloadConverter.RepeatSiblings</c>、对象列表走各业务的专用方法）。
     /// </para>
     /// <para>
-    /// <b>保守边界一（仅根层）</b>：根之下的「容器 + 叶项」包装形态
+    /// <b>保守边界一（仅根层）</b>：根之下的「容器 + 项」包装形态
     /// （<c>GroupIds/GroupId</c>、<c>SelectedItems/SelectedItem</c>、<c>ExtAttr/Item</c> 等）
     /// 由 <c>Items</c>/<c>ItemsObject</c> 的 ItemName 通道逐项绑定 —— 若在容器内部合并会让
     /// ItemName 命中合成容器而非原始项（首项之外全丢），故合并严格限定在根元素这一层；
     /// 根层的单一容器节点（出现恰 1 次）不受影响。
     /// </para>
     /// <para>
-    /// <b>保守边界二（只合并「全部命中的同名节点皆为叶」的组）</b>：混合形态
-    /// （同名既有叶又有复杂节点）不合并，保持「首取」旧行为。
+    /// <b>保守边界二（只合并「全部命中成员同质」的组）</b>：全叶组（标量列表形态）或
+    /// 全复杂组（对象列表形态）才合并；混合形态（同名既有叶又有复杂节点）不合并，
+    /// 保持「首取」旧行为。
     /// </para>
     /// <para>
     /// <b>合成容器的 <see cref="PayloadNode.Value"/> 取末位成员文本</b>：与 <c>WechatPayloadMaterializer.ReadValues</c>
@@ -129,22 +133,24 @@ internal static class XElementPayloadSource
     /// 无法代表全集）。
     /// </para>
     /// </remarks>
-    private static IReadOnlyList<PayloadNode> CoalesceRepeatedLeafSiblings(IReadOnlyList<PayloadNode> children)
+    private static IReadOnlyList<PayloadNode> CoalesceRepeatedSiblings(IReadOnlyList<PayloadNode> children)
     {
         if (children.Count < 2)
         {
             return children;
         }
 
-        // 单次计数：名字 → (出现次数, 是否全部为叶)。
+        // 单次计数：名字 → (出现次数, 是否全部为叶, 是否全部为复杂节点)。
         var counts = new Dictionary<string, int>(StringComparer.Ordinal);
         var allLeaves = new Dictionary<string, bool>(StringComparer.Ordinal);
+        var allComplex = new Dictionary<string, bool>(StringComparer.Ordinal);
         for (var i = 0; i < children.Count; i++)
         {
             var name = children[i].Name;
             var isLeaf = children[i].Children.Count == 0;
             counts[name] = counts.TryGetValue(name, out var count) ? count + 1 : 1;
             allLeaves[name] = allLeaves.TryGetValue(name, out var leaves) ? leaves && isLeaf : isLeaf;
+            allComplex[name] = allComplex.TryGetValue(name, out var complex) ? complex && !isLeaf : !isLeaf;
         }
 
         List<PayloadNode>? coalesced = null;
@@ -158,7 +164,9 @@ internal static class XElementPayloadSource
                 continue;
             }
 
-            if (counts[child.Name] < 2 || !allLeaves[child.Name])
+            var qualify = counts[child.Name] >= 2 &&
+                          (allLeaves[child.Name] || allComplex[child.Name]);
+            if (!qualify)
             {
                 coalesced?.Add(child);
                 continue;

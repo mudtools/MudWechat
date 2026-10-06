@@ -57,10 +57,11 @@ internal static class XElementPayloadSource
     /// <param name="element">根元素。</param>
     /// <returns>节点树根节点。</returns>
     /// <remarks>
-    /// 投影含「根层同名兄弟合并」步骤（<see cref="CoalesceRepeatedSiblings"/>）：
-    /// 官方存在无包装容器的重复元素列表形态——既有叶列表（如 wedoc 回调根下的
-    /// <c>&lt;DocId&gt;A&lt;/DocId&gt;&lt;DocId&gt;B&lt;/DocId&gt;</c>），也有对象列表
-    /// （如会议「素材上传结果」根下的 <c>&lt;UploadInfo&gt;…&lt;/UploadInfo&gt;&lt;UploadInfo&gt;…&lt;/UploadInfo&gt;</c>）——
+    /// 投影含「同名兄弟合并」步骤（<see cref="CoalesceRepeatedSiblings"/>，全树生效）：
+    /// 官方存在两类无包装容器的重复元素列表形态——平铺叶列表（如 wedoc 回调根下的
+    /// <c>&lt;DocId&gt;A&lt;/DocId&gt;&lt;DocId&gt;B&lt;/DocId&gt;</c>）、平铺对象列表
+    /// （如会议「素材上传结果」根下的 <c>UploadInfo</c>×N 与 OA 审批 <c>ApprovalInfo</c> 子树内的
+    /// <c>SpRecord</c>/<c>Notifyer</c>/<c>Comments</c>/<c>NodeList</c>/<c>SubNodeList</c>）——
     /// 须在投影期归拢才能被列表转换器读取。
     /// </remarks>
     internal static PayloadNode Project(XElement element)
@@ -68,13 +69,7 @@ internal static class XElementPayloadSource
         if (element == null)
             throw new ArgumentNullException(nameof(element));
 
-        var root = ProjectCore(element);
-
-        // 仅根层合并（见 CoalesceRepeatedSiblings 的保守边界）：根下的「容器 + 项」
-        // 包装形态（GroupIds/GroupId、SelectedItems/SelectedItem、ExtAttr/Item 等）由 Items/
-        // ItemsObject 的 ItemName 通道逐项绑定，若在容器内部合并会令 ItemName 命中合成容器
-        // 而非原始项 —— 故合并严格限定在根元素这一层。
-        return new PayloadNode(root.Name, root.Value, CoalesceRepeatedSiblings(root.Children), root.Attributes);
+        return ProjectCore(element);
     }
 
     private static PayloadNode ProjectCore(XElement element)
@@ -84,6 +79,10 @@ internal static class XElementPayloadSource
         {
             children.Add(ProjectCore(child));
         }
+
+        // 全树合并（见 CoalesceRepeatedSiblings 的保守边界）：每层独立归拢，
+        // 根层与包装子树（如 ApprovalInfo）内的平铺列表同样可达。
+        var coalesced = CoalesceRepeatedSiblings(children);
 
         var attributes = new Dictionary<string, string>(StringComparer.Ordinal);
         foreach (var attribute in element.Attributes())
@@ -95,31 +94,49 @@ internal static class XElementPayloadSource
             attributes[attribute.Name.LocalName] = attribute.Value;
         }
 
-        return new PayloadNode(element.Name.LocalName, element.Value, children, attributes);
+        return new PayloadNode(element.Name.LocalName, element.Value, coalesced, attributes);
     }
 
     /// <summary>
-    /// 根层同名兄弟合并：≥2 个同名兄弟节点（<b>全叶组</b>或<b>全复杂组</b>）合成为一个<b>同名容器</b>节点。
+    /// 官方「包装容器 + 项」形态的项名豁免表：这些项名的同名重复组<b>不合并</b>。
     /// </summary>
-    /// <param name="children">根节点的全部直接子节点（投影序）。</param>
+    /// <remarks>
+    /// <para>
+    /// 官方列表有两种承载形态：<b>包装容器式</b>（<c>&lt;GroupIds&gt;&lt;GroupId&gt;…&lt;/GroupIds&gt;</c>、
+    /// <c>ApprovalNodes/ApprovalNode</c>、<c>SelectedItems/SelectedItem</c>、<c>ExtAttr/Item</c> 等）
+    /// 与<b>平铺重复式</b>（<c>&lt;DocId&gt;A&lt;/DocId&gt;&lt;DocId&gt;B&lt;/DocId&gt;</c>、
+    /// <c>SpRecord</c>×N 等，无容器）。包装容器式由上游 <c>Items</c>/<c>ItemsWithAttributes</c>/
+    /// <c>ItemsObject</c> 的 ItemName 通道逐项绑定 —— 若对其项名合并，ItemName 会命中合成容器
+    /// 而非原始项（首项之外全丢），故这些项名豁免合并（本表 = 全仓
+    /// <c>[PayloadField(ItemName = …)]</c> 的既有项名全集，新增包装形态映射时须同批登记）。
+    /// 平铺重复式（项名不在表中）合并后由 <c>RepeatSiblings</c>/各业务的专用分派方法读取。
+    /// </para>
+    /// </remarks>
+    private static readonly HashSet<string> WrapperFormItemNames = new HashSet<string>(StringComparer.Ordinal)
+    {
+        "GroupId", "CorpId", "Item", "item", "ApprovalNode", "NotifyNode", "SelectedItem", "OptionId",
+    };
+
+    /// <summary>
+    /// 同名兄弟合并：≥2 个同名兄弟节点（<b>全叶组</b>或<b>全复杂组</b>，项名不在豁免表）合成为一个<b>同名容器</b>节点。
+    /// </summary>
+    /// <param name="children">某节点的全部直接子节点（投影序）。</param>
     /// <returns>合并后的子节点列表（无合并需求时原样返回）。</returns>
     /// <remarks>
     /// <para>
-    /// <b>为何需要</b>：官方存在两类「根下重复同名兄弟元素」的无包装容器列表形态——
+    /// <b>为何需要</b>：官方存在两类「重复同名兄弟元素」的无包装容器列表形态——
     /// 叶列表（wedoc 回调 <c>&lt;DocId&gt;A&lt;/DocId&gt;&lt;DocId&gt;B&lt;/DocId&gt;</c>）与
-    /// 对象列表（会议「素材上传结果」的 <c>UploadInfo</c> 元素，参数表明文「上传的素材对象列表」），
+    /// 对象列表（会议「素材上传结果」的 <c>UploadInfo</c>、OA 审批的 <c>SpRecord</c>/<c>Notifyer</c>/
+    /// <c>Comments</c>/<c>NodeList</c>/<c>SubNodeList</c>，参数表明文「可能有多个…」），
     /// 而上游 <see cref="PayloadNode.Child(string)"/> 对同名子节点只取第一个（重复即视为畸形输入）——
     /// 不归拢则第 2..N 个元素在映射期不可达（静默丢字段）。合并后容器即「该名」节点：
     /// 首取语义（<c>Child</c>/<c>Has</c>/<c>ResolveScope</c>）行为不变，
     /// 容器 <see cref="PayloadNode.Children"/> 携带原始元素全集供列表转换器读取
-    /// （叶列表走 <c>WechatPayloadConverter.RepeatSiblings</c>、对象列表走各业务的专用方法）。
+    /// （叶列表走 <c>WechatPayloadConverter.RepeatSiblings</c>、对象列表走各业务的专用分派方法）。
     /// </para>
     /// <para>
-    /// <b>保守边界一（仅根层）</b>：根之下的「容器 + 项」包装形态
-    /// （<c>GroupIds/GroupId</c>、<c>SelectedItems/SelectedItem</c>、<c>ExtAttr/Item</c> 等）
-    /// 由 <c>Items</c>/<c>ItemsObject</c> 的 ItemName 通道逐项绑定 —— 若在容器内部合并会让
-    /// ItemName 命中合成容器而非原始项（首项之外全丢），故合并严格限定在根元素这一层；
-    /// 根层的单一容器节点（出现恰 1 次）不受影响。
+    /// <b>保守边界一（包装形态豁免）</b>：项名命中 <see cref="WrapperFormItemNames"/> 的同名组不合并
+    /// —— 它们是「容器 + 项」包装形态的项，由 ItemName 通道逐项绑定。
     /// </para>
     /// <para>
     /// <b>保守边界二（只合并「全部命中成员同质」的组）</b>：全叶组（标量列表形态）或
@@ -164,7 +181,8 @@ internal static class XElementPayloadSource
                 continue;
             }
 
-            var qualify = counts[child.Name] >= 2 &&
+            var qualify = !WrapperFormItemNames.Contains(child.Name) &&
+                          counts[child.Name] >= 2 &&
                           (allLeaves[child.Name] || allComplex[child.Name]);
             if (!qualify)
             {

@@ -283,6 +283,210 @@ public static class WechatPayloadConverter
     }
 
     /// <summary>
+    /// 平铺重复兄弟元素的分派选择器（OA 审批 <c>sys_approval_change</c> 子树的列表通用前置）。
+    /// </summary>
+    /// <param name="node">按 <c>[PayloadField]</c> 元素名定位到的节点。</param>
+    /// <returns>
+    /// 合并形态（≥2 个同名兄弟经投影归拢为同名容器）返回容器内的原始元素全集；
+    /// 单元素形态（未触发合并，定位节点即元素本身）返回 <c>null</c>。
+    /// </returns>
+    /// <remarks>
+    /// 判别依据：子节点中存在与容器<b>同名</b>的节点 ⇒ 本节点是合并投影产生的同名容器
+    /// （合并语义保证容器与成员同名）；OA 审批子树的各列表（<c>SpRecord</c>/<c>Details</c>/
+    /// <c>Notifyer</c>/<c>Comments</c>/<c>NodeList</c>/<c>SubNodeList</c>）均为此形态。
+    /// </remarks>
+    private static List<PayloadNode>? SelectCoalescedMembers(PayloadNode node)
+    {
+        List<PayloadNode>? members = null;
+        var children = node.Children;
+        for (var i = 0; i < children.Count; i++)
+        {
+            var child = children[i];
+            if (child != null && string.Equals(child.Name, node.Name, StringComparison.Ordinal))
+            {
+                members ??= new List<PayloadNode>();
+                members.Add(child);
+            }
+        }
+
+        return members;
+    }
+
+    /// <summary>OA 审批流程信息列表（官方 <c>SpRecord</c>，ApprovalInfo 下重复兄弟元素；节点缺失 ⇒ 空列表）。</summary>
+    public static List<WechatCallbackOaApprovalRecord> RepeatOaApprovalRecords(PayloadNode? node)
+    {
+        var items = new List<WechatCallbackOaApprovalRecord>();
+        if (node == null)
+            return items;
+
+        var members = SelectCoalescedMembers(node);
+        if (members == null)
+        {
+            items.Add(BindOaApprovalRecord(node));
+            return items;
+        }
+
+        for (var i = 0; i < members.Count; i++)
+        {
+            items.Add(BindOaApprovalRecord(members[i]));
+        }
+
+        return items;
+    }
+
+    private static WechatCallbackOaApprovalRecord BindOaApprovalRecord(PayloadNode node)
+    {
+        var item = new WechatCallbackOaApprovalRecord();
+        WechatCallbackOaApprovalRecord.PayloadFieldMap.Bind(node, item);
+        return item;
+    }
+
+    /// <summary>OA 审批节点分支列表（官方 <c>Details</c>，SpRecord 内重复兄弟元素；节点缺失 ⇒ 空列表）。</summary>
+    public static List<WechatCallbackOaApprovalDetail> RepeatOaApprovalDetails(PayloadNode? node)
+    {
+        var items = new List<WechatCallbackOaApprovalDetail>();
+        if (node == null)
+            return items;
+
+        var members = SelectCoalescedMembers(node);
+        if (members == null)
+        {
+            items.Add(BindOaApprovalDetail(node));
+            return items;
+        }
+
+        for (var i = 0; i < members.Count; i++)
+        {
+            items.Add(BindOaApprovalDetail(members[i]));
+        }
+
+        return items;
+    }
+
+    private static WechatCallbackOaApprovalDetail BindOaApprovalDetail(PayloadNode node)
+    {
+        var item = new WechatCallbackOaApprovalDetail();
+        WechatCallbackOaApprovalDetail.PayloadFieldMap.Bind(node, item);
+        return item;
+    }
+
+    /// <summary>OA 审批抄送人列表（官方 <c>Notifyer</c>，ApprovalInfo 下重复兄弟元素；节点缺失 ⇒ 空列表）。</summary>
+    public static List<WechatCallbackOaApprovalNotifyer> RepeatOaApprovalNotifyers(PayloadNode? node)
+    {
+        var items = new List<WechatCallbackOaApprovalNotifyer>();
+        if (node == null)
+            return items;
+
+        var members = SelectCoalescedMembers(node);
+        if (members == null)
+        {
+            items.Add(BindOaApprovalNotifyer(node));
+            return items;
+        }
+
+        for (var i = 0; i < members.Count; i++)
+        {
+            items.Add(BindOaApprovalNotifyer(members[i]));
+        }
+
+        return items;
+    }
+
+    private static WechatCallbackOaApprovalNotifyer BindOaApprovalNotifyer(PayloadNode node)
+    {
+        var item = new WechatCallbackOaApprovalNotifyer();
+        WechatCallbackOaApprovalNotifyer.PayloadFieldMap.Bind(node, item);
+        return item;
+    }
+
+    /// <summary>OA 审批备注列表（官方 <c>Comments</c>，ApprovalInfo 下重复兄弟元素；节点缺失 ⇒ 空列表）。</summary>
+    public static List<WechatCallbackOaApprovalComment> RepeatOaApprovalComments(PayloadNode? node)
+    {
+        var items = new List<WechatCallbackOaApprovalComment>();
+        if (node == null)
+            return items;
+
+        var members = SelectCoalescedMembers(node);
+        if (members == null)
+        {
+            items.Add(BindOaApprovalComment(node));
+            return items;
+        }
+
+        for (var i = 0; i < members.Count; i++)
+        {
+            items.Add(BindOaApprovalComment(members[i]));
+        }
+
+        return items;
+    }
+
+    private static WechatCallbackOaApprovalComment BindOaApprovalComment(PayloadNode node)
+    {
+        var item = new WechatCallbackOaApprovalComment();
+        WechatCallbackOaApprovalComment.PayloadFieldMap.Bind(node, item);
+        return item;
+    }
+
+    /// <summary>OA 审批流程节点列表（官方 <c>ProcessList/NodeList</c>，ProcessList 内重复兄弟元素；节点缺失 ⇒ 空列表）。</summary>
+    public static List<WechatCallbackOaProcessNode> RepeatOaProcessNodes(PayloadNode? node)
+    {
+        var items = new List<WechatCallbackOaProcessNode>();
+        if (node == null)
+            return items;
+
+        var members = SelectCoalescedMembers(node);
+        if (members == null)
+        {
+            items.Add(BindOaProcessNode(node));
+            return items;
+        }
+
+        for (var i = 0; i < members.Count; i++)
+        {
+            items.Add(BindOaProcessNode(members[i]));
+        }
+
+        return items;
+    }
+
+    private static WechatCallbackOaProcessNode BindOaProcessNode(PayloadNode node)
+    {
+        var item = new WechatCallbackOaProcessNode();
+        WechatCallbackOaProcessNode.PayloadFieldMap.Bind(node, item);
+        return item;
+    }
+
+    /// <summary>OA 审批子节点列表（官方 <c>SubNodeList</c>，NodeList 内重复兄弟元素；节点缺失 ⇒ 空列表）。</summary>
+    public static List<WechatCallbackOaProcessSubNode> RepeatOaProcessSubNodes(PayloadNode? node)
+    {
+        var items = new List<WechatCallbackOaProcessSubNode>();
+        if (node == null)
+            return items;
+
+        var members = SelectCoalescedMembers(node);
+        if (members == null)
+        {
+            items.Add(BindOaProcessSubNode(node));
+            return items;
+        }
+
+        for (var i = 0; i < members.Count; i++)
+        {
+            items.Add(BindOaProcessSubNode(members[i]));
+        }
+
+        return items;
+    }
+
+    private static WechatCallbackOaProcessSubNode BindOaProcessSubNode(PayloadNode node)
+    {
+        var item = new WechatCallbackOaProcessSubNode();
+        WechatCallbackOaProcessSubNode.PayloadFieldMap.Bind(node, item);
+        return item;
+    }
+
+    /// <summary>
     /// 带属性的嵌套项 → 列表（成员扩展属性 <c>&lt;ExtAttr&gt;&lt;Item Name Type&gt;&lt;Text/&gt;&lt;/Item&gt;&lt;/ExtAttr&gt;</c> 形态）；
     /// 节点缺失 ⇒ 空列表。
     /// </summary>

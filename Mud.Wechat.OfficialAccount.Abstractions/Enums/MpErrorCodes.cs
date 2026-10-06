@@ -147,4 +147,21 @@ public static class MpErrorCodes
 
     /// <summary>access clientip is not registered：第三方平台出口 IP 未设置（仅第三方平台调用场景）。</summary>
     public const int ThirdPartyClientIpNotRegistered = 61004;
+
+    // ---------------------------------------------------------------- 用户管理·用户信息（M2，取值逐页核验官方文档）
+
+    /// <summary>invalid remark name：备注名非法（官方限制「长度必须小于 30 字节」）。</summary>
+    public const int InvalidRemarkName = 40092;
+
+    /// <summary>require subscribe：该 openid 未关注当前账号（设置备注名等场景）。</summary>
+    public const int RequireSubscribe = 43004;
+
+    /// <summary>
+    /// 平台级「系统繁忙」码（拉黑用户接口，官方解决方案「稍后重试」）——属<b>可重试</b>错误。
+    /// </summary>
+    /// <remarks>官方新增码段（非 4xxxx / 6xxxx 段），故单列常量并注明可重试语义。</remarks>
+    public const int BatchBlacklistSystemBusy = 268487001;
+
+    /// <summary>平台级「系统繁忙」码（获取关注者列表接口，官方解决方案「稍后重试」）——属<b>可重试</b>错误。</summary>
+    public const int GetFansSystemBusy = 268487002;
 }

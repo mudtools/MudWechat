@@ -37,6 +37,16 @@ public enum MpModule
     Tag,
 
     /// <summary>
+    /// 用户管理 → 用户信息（获取用户基本信息 / 批量获取用户基本信息 / 获取关注用户列表 / 设置用户备注名 /
+    /// 获取黑名单列表 / 拉黑用户 / 取消拉黑用户共 7 端点）。
+    /// </summary>
+    /// <remarks>
+    /// 域级约束：均「仅认证」；<c>updateRemark</c> 正文原文为「暂时开放给微信认证的服务号」；
+    /// 批量 100 条 / 关注者单批 10000 / 黑名单单批 1000 / 拉黑单次 20 个。
+    /// </remarks>
+    User,
+
+    /// <summary>
     /// 令牌签发（<c>getAccessToken</c> + <c>getStableAccessToken</c>）：随 <c>AddMpApp</c> 自动注册，
     /// 本枚举成员仅供模块清单对齐使用（不作为 <c>AddAuthenticationApi()</c> 的必要入口）。
     /// </summary>

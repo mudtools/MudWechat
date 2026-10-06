@@ -209,7 +209,8 @@ public class MpTagContractGuards
             .OrderBy(n => n, StringComparer.Ordinal)
             .ToList();
 
-        queryInterfaces.Should().BeEquivalentTo(new[] { nameof(IMpBasicService), nameof(IMpTagService) },
+        queryInterfaces.Should().BeEquivalentTo(
+            new[] { nameof(IMpBasicService), nameof(IMpTagService), nameof(IMpUserService) },
             "公众号官方契约强制 Query 注入；新增 Query 注入接口须评估后扩展本白名单");
     }
 

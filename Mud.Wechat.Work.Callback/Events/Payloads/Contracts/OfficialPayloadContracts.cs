@@ -10,7 +10,7 @@ using Mud.Wechat.Work.Abstractions.Callback.Payloads;
 namespace Mud.Wechat.Work.Callback.Events.Payloads;
 
 /// <summary>
-/// 官方事件键契约表（65 键）：事件键 → 上游映射表 + 本仓库两级开放面声明。
+/// 官方事件键契约表（66 键）：事件键 → 上游映射表 + 本仓库两级开放面声明。
 /// </summary>
 /// <remarks>
 /// <para>
@@ -44,7 +44,10 @@ namespace Mud.Wechat.Work.Callback.Events.Payloads;
 /// 异步任务 <see href="https://developer.work.weixin.qq.com/document/path/90973">path 90973 异步任务完成通知</see>/
 /// <see href="https://developer.work.weixin.qq.com/document/path/95797">path 95797 异步任务完成通知（上下游，BatchJob 包装）</see>
 /// （结果文件调取见 <see href="https://developer.work.weixin.qq.com/document/path/92125">path 92125 获取异步任务结果</see>）；
-/// 上下游 <see href="https://developer.work.weixin.qq.com/document/path/95796">path 95796 上下游变更回调</see>；
+/// 上下游 <see href="https://developer.work.weixin.qq.com/document/path/95796">path 95796 上下游变更回调</see>
+/// （配套异步任务见 <see href="https://developer.work.weixin.qq.com/document/path/95797">path 95797 异步任务完成通知</see>）；
+/// 安全管理 <see href="https://developer.work.weixin.qq.com/document/path/100080">path 100080 企业微信域名IP变更事件</see>
+/// （仅自建应用可配置接收；第三方/代开发暂不支持）；
 /// 客户联系 <see href="https://developer.work.weixin.qq.com/document/path/92130">path 92130 事件回调（自建）</see>/
 /// <see href="https://developer.work.weixin.qq.com/document/path/92277">path 92277 事件回调（第三方）</see>/
 /// <see href="https://developer.work.weixin.qq.com/document/path/96361">path 96361 事件回调（服务商代开发）</see>；

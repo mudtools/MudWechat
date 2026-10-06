@@ -24,6 +24,7 @@ namespace Mud.Wechat.Work.Abstractions.Enums;
 /// <item><description><see cref="BatchJob"/>：<c>Event = batch_job_result</c>（异步任务完成通知，通讯录 / 上下游双布局）。</description></item>
 /// <item><description><see cref="ExternalContactChange"/>：客户联系变更族（<c>change_external_contact</c> / <c>change_external_chat</c> / <c>change_external_tag</c>；官方 92130/92277/96361）。</description></item>
 /// <item><description><see cref="CustomerAcquisition"/>：获客助手族（<c>customer_acquisition</c> / <c>customer_acquisition_permit_change</c>；官方 97299/97402/98958/99485）。</description></item>
+/// <item><description><see cref="SecurityChange"/>：<c>Event = security</c>（安全管理族：域名IP变更等；官方 100080，仅自建应用可配置接收）。</description></item>
 /// <item><description><see cref="Unknown"/>：无法判别（协议外报文），不拦截。</description></item>
 /// </list>
 /// <para>
@@ -68,4 +69,13 @@ public enum WechatCallbackEventFamily
     /// （99485 的 <c>service_*</c> / <c>change_price</c> 组件事件仅第三方套件通道）。
     /// </remarks>
     CustomerAcquisition = 6,
+
+    /// <summary>
+    /// 安全事件族（<c>Event = security</c>；官方 100080 域名IP变更事件，具体类别看 <c>ChangeType</c>）。
+    /// </summary>
+    /// <remarks>
+    /// 官方开放面：<b>仅企业自建应用</b>可配置接收（配置到「我的企业 - 设置 - 域名IP - 可调用API的应用」），
+    /// 第三方 / 代开发应用暂不支持；经应用数据回调 URL（<c>Event</c> 信封）承载。
+    /// </remarks>
+    SecurityChange = 7,
 }

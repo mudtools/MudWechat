@@ -62,6 +62,15 @@ internal static class WechatEventFamilyOpenSurface
                 };
                 return true;
 
+            // 安全事件族（域名IP变更等）：仅企业自建 + 应用数据通道
+            // （官方 100080：配置到「我的企业-设置-域名IP-可调用API的应用」；第三方/代开发暂不支持）。
+            case WechatCallbackEventFamily.SecurityChange:
+                defaultSurfaces = new[]
+                {
+                    new WechatOpenSurface(WechatAppTypeSet.Internal, WechatCallbackChannel.App),
+                };
+                return true;
+
             // 授权族：第三方 / 代开发 + 套件指令通道（官方 99487/100964/90628）。
             // 注：授权族**不登记载荷契约**（走信封，ADR-8）；此处保留仅为矩阵完整性。
             case WechatCallbackEventFamily.Authorization:

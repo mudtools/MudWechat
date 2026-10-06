@@ -32,6 +32,7 @@ namespace Mud.Wechat.Work.Abstractions.Callback;
 /// <see href="https://developer.work.weixin.qq.com/document/path/98958">path 98958</see>（代开发）·
 /// 上下游变更族 <see href="https://developer.work.weixin.qq.com/document/path/95796">path 95796</see> ·
 /// 异步任务族 <see href="https://developer.work.weixin.qq.com/document/path/90973">path 90973</see>（通讯录）/ <see href="https://developer.work.weixin.qq.com/document/path/95797">path 95797</see>（上下游）·
+/// 安全事件族 <see href="https://developer.work.weixin.qq.com/document/path/100080">path 100080</see>（域名IP变更，仅自建）·
 /// 消息与事件（关注/菜单/地理位置/审批/共享/模板卡片/应用状态）<see href="https://developer.work.weixin.qq.com/document/path/90240">path 90240</see>（企业内部开发）/
 /// <see href="https://developer.work.weixin.qq.com/document/path/90376">path 90376</see>（第三方）/ <see href="https://developer.work.weixin.qq.com/document/path/96468">path 96468</see>（服务商代开发）——
 /// 三份文档正文逐字一致，故同一事件键在三种应用模式下共用一个常量。
@@ -217,6 +218,25 @@ public static class WechatCallbackEventTypes
     /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/95796">path 95796 上下游变更回调</see>。
     /// </remarks>
     public const string RemoveCorp = "remove_corp";
+
+    // ——— 安全事件族（官方 100080；Event = Security，仅自建应用可配置接收） ———
+
+    /// <summary>安全管理事件的 <c>Event</c> 信封值（具体变更类别看 ChangeType）。</summary>
+    /// <remarks>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/100080">path 100080 域名IP变更事件</see>。
+    /// </remarks>
+    public const string Security = "security";
+
+    /// <summary>
+    /// 企业微信域名IP变更（官方 <c>ChangeType = change_domain_ip</c>；信封之外无业务字段）。
+    /// <para>企业微信的域名或 IP 发生变更时回调；自建应用须配置到「我的企业 - 设置 - 域名IP - 可调用API的应用」，
+    /// <b>第三方 / 代开发应用暂不支持</b>（官方权限表明示）。处理器收到后应刷新本地缓存的域名/IP 白名单。</para>
+    /// </summary>
+    /// <remarks>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/100080">path 100080 域名IP变更事件</see>
+    /// （配套查询接口 <see href="https://developer.work.weixin.qq.com/document/path/100079">path 100079 获取企业微信域名IP信息</see>）。
+    /// </remarks>
+    public const string ChangeDomainIp = "change_domain_ip";
 
     // ——— 客户联系变更族（官方 92130 自建 / 92277 第三方 / 96361 代开发；族事件值为键） ———
 

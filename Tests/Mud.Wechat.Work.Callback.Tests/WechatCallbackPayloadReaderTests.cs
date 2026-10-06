@@ -1191,4 +1191,285 @@ public class WechatCallbackPayloadReaderTests
         contract.RequiredEvent.Should().Be(WechatCallbackEventTypes.PayForAppSuccess,
             "RequiredEvent 缺省 = 逐键自指（InfoType 即事件键）");
     }
+
+    // ---------------------------------------- 邮箱族（97495/97517/97506 + 100180；族事件值为键）
+
+    /// <summary>邮箱族事件：<c>Event</c> 节点即事件键（<c>receive_email</c> 跨族同名，族事件值消歧）。</summary>
+    private static WechatCallbackEvent EmailEvent(string eventKey, string plainXml) => new()
+    {
+        Event = eventKey,
+        ChangeType = "receive_email",
+        DecryptedXml = plainXml,
+    };
+
+    [Fact]
+    public void Read_ShouldMapAppEmailAmount_WhenReceiveEmail()
+    {
+        // 官方 97495 样报文：Amount 以 CDATA 承载数值。
+        var result = CreateReader().Read<AppEmailChangedPayload>(
+            EmailEvent(WechatCallbackEventTypes.AppEmailChange,
+                "<xml><ToUserName><![CDATA[toUser]]></ToUserName><FromUserName><![CDATA[sys]]></FromUserName>" +
+                "<CreateTime>1668831860</CreateTime><MsgType><![CDATA[event]]></MsgType>" +
+                "<Event><![CDATA[app_email_change]]></Event><ChangeType><![CDATA[receive_email]]></ChangeType>" +
+                "<Amount><![CDATA[2]]></Amount></xml>"));
+
+        result.Status.Should().Be(WechatPayloadReadStatus.Matched);
+        result.Payload!.Amount.Should().Be(2, "官方样报文 Amount=2（CDATA 数值文本）");
+    }
+
+    [Fact]
+    public void Read_ShouldMapPublicEmailFields_WhenReceiveEmail()
+    {
+        // 官方 100180 样报文：Id/Amount 为裸数字文本节点（无 CDATA），较应用邮箱多 Id 节点。
+        var result = CreateReader().Read<PublicEmailChangedPayload>(
+            EmailEvent(WechatCallbackEventTypes.PublicEmailChange,
+                "<xml><ToUserName><![CDATA[toUser]]></ToUserName><FromUserName><![CDATA[sys]]></FromUserName>" +
+                "<CreateTime>1668831860</CreateTime><MsgType><![CDATA[event]]></MsgType>" +
+                "<Event><![CDATA[public_email_change]]></Event><ChangeType><![CDATA[receive_email]]></ChangeType>" +
+                "<Id>1</Id><Amount>2</Amount></xml>"));
+
+        result.Status.Should().Be(WechatPayloadReadStatus.Matched);
+        result.Payload!.Id.Should().Be("1");
+        result.Payload!.Amount.Should().Be(2L);
+    }
+
+    [Fact]
+    public void Read_ShouldKeepEmailKeysIsolated_WhenSameReceiveEmailChangeType()
+    {
+        // receive_email 跨族同名 ⇒ 键为族事件值：应用邮箱报文不得命中公共邮箱载荷（RequiredEvent 拦截）。
+        var reader = CreateReader();
+
+        reader.Read<PublicEmailChangedPayload>(EmailEvent(WechatCallbackEventTypes.AppEmailChange,
+                "<xml><Event><![CDATA[app_email_change]]></Event>" +
+                "<ChangeType><![CDATA[receive_email]]></ChangeType><Amount>1</Amount></xml>"))
+            .Status.Should().Be(WechatPayloadReadStatus.ContractMismatch,
+                "应用邮箱报文的 Event 与公共邮箱契约的族前置条件不一致");
+        reader.Read<AppEmailChangedPayload>(EmailEvent(WechatCallbackEventTypes.PublicEmailChange,
+                "<xml><Event><![CDATA[public_email_change]]></Event>" +
+                "<ChangeType><![CDATA[receive_email]]></ChangeType><Id>1</Id><Amount>1</Amount></xml>"))
+            .Status.Should().Be(WechatPayloadReadStatus.ContractMismatch);
+    }
+
+    [Theory]
+    [InlineData(WechatAppType.Internal, WechatCallbackChannel.App, true)]
+    [InlineData(WechatAppType.ThirdParty, WechatCallbackChannel.App, true)]
+    [InlineData(WechatAppType.Provider, WechatCallbackChannel.App, true)]
+    public void AppEmailContract_ShouldOpenForAllThreeModes(WechatAppType appType, WechatCallbackChannel channel, bool expected)
+    {
+        CreateRegistry().TryResolve(WechatCallbackEventTypes.AppEmailChange, out var contract).Should().BeTrue();
+        var evt = EmailEvent(WechatCallbackEventTypes.AppEmailChange, "<xml><Amount>1</Amount></xml>");
+
+        contract!.IsOpenFor(evt, appType, channel).Should().Be(expected,
+            "邮件回调通知官方 97495/97517/97506 三份文档逐字一致 ⇒ 三类应用均开放");
+    }
+
+    [Theory]
+    [InlineData(WechatAppType.Internal, WechatCallbackChannel.App, true)]
+    [InlineData(WechatAppType.ThirdParty, WechatCallbackChannel.App, false)]
+    [InlineData(WechatAppType.Provider, WechatCallbackChannel.App, false)]
+    public void PublicEmailContract_ShouldOpenOnlyForInternal(
+        WechatAppType appType, WechatCallbackChannel channel, bool expected)
+    {
+        CreateRegistry().TryResolve(WechatCallbackEventTypes.PublicEmailChange, out var contract).Should().BeTrue();
+        var evt = EmailEvent(WechatCallbackEventTypes.PublicEmailChange, "<xml><Id>1</Id><Amount>1</Amount></xml>");
+
+        contract!.IsOpenFor(evt, appType, channel).Should().Be(expected,
+            "官方第三方/代开发无「管理公共邮箱」回调事件 ⇒ 仅企业自建开放");
+    }
+
+    // ---------------------------------------- 文档族（doc_change 5 键；97833~97835/98095/98096 等）
+
+    [Theory]
+    [InlineData(WechatCallbackEventTypes.DocMemberChange)]
+    [InlineData(WechatCallbackEventTypes.DeleteDoc)]
+    public void Read_ShouldMapDocIdSiblings_WhenDocEvent(string changeType)
+    {
+        // 官方样报文：DocId 为根下重复同名兄弟元素（无包装容器）。
+        var result = CreateReader().Read<DocChangedPayload>(new WechatCallbackEvent
+        {
+            Event = WechatCallbackEventTypes.DocChange,
+            ChangeType = changeType,
+            DecryptedXml = "<xml><ToUserName><![CDATA[toUser]]></ToUserName>" +
+                           "<FromUserName><![CDATA[fromUser]]></FromUserName>" +
+                           "<CreateTime>1348831860</CreateTime><MsgType><![CDATA[event]]></MsgType>" +
+                           "<Event><![CDATA[doc_change]]></Event>" +
+                           $"<ChangeType><![CDATA[{changeType}]]></ChangeType>" +
+                           "<DocId><![CDATA[wcjgewCwAAqeJcPI1d8Pwbjt7nttzAAA]]></DocId>" +
+                           "<DocId><![CDATA[wcjgewCwAAqeJcPI1d8Pwbjt7nttzBBB]]></DocId></xml>",
+        });
+
+        result.Status.Should().Be(WechatPayloadReadStatus.Matched);
+        result.Payload!.DocIds.Should().Equal(new[]
+            {
+                "wcjgewCwAAqeJcPI1d8Pwbjt7nttzAAA", "wcjgewCwAAqeJcPI1d8Pwbjt7nttzBBB",
+            }, "重复同名兄弟元素经合并投影全量读取");
+        result.Payload!.FormIds.Should().BeEmpty("文档类事件不携带 FormId");
+    }
+
+    [Theory]
+    [InlineData(WechatCallbackEventTypes.FormComplete)]
+    [InlineData(WechatCallbackEventTypes.DeleteForm)]
+    [InlineData(WechatCallbackEventTypes.FormSettingsChange)]
+    public void Read_ShouldMapFormIdSiblings_WhenFormEvent(string changeType)
+    {
+        var result = CreateReader().Read<DocChangedPayload>(new WechatCallbackEvent
+        {
+            Event = WechatCallbackEventTypes.DocChange,
+            ChangeType = changeType,
+            DecryptedXml = "<xml><Event><![CDATA[doc_change]]></Event>" +
+                           $"<ChangeType><![CDATA[{changeType}]]></ChangeType>" +
+                           "<FormId><![CDATA[form-1]]></FormId><FormId><![CDATA[form-2]]></FormId></xml>",
+        });
+
+        result.Status.Should().Be(WechatPayloadReadStatus.Matched);
+        result.Payload!.FormIds.Should().Equal("form-1", "form-2");
+        result.Payload!.DocIds.Should().BeEmpty("收集表类事件不携带 DocId");
+    }
+
+    [Fact]
+    public void Read_ShouldMapSingleDocId_WhenOnlyOneSiblingPresent()
+    {
+        // 恰 1 个元素时未触发合并投影，RepeatSiblings 须从叶节点自有文本取值。
+        var result = CreateReader().Read<DocChangedPayload>(new WechatCallbackEvent
+        {
+            Event = WechatCallbackEventTypes.DocChange,
+            ChangeType = WechatCallbackEventTypes.DeleteDoc,
+            DecryptedXml = "<xml><Event><![CDATA[doc_change]]></Event>" +
+                           "<ChangeType><![CDATA[delete_doc]]></ChangeType>" +
+                           "<DocId><![CDATA[doc-solo]]></DocId></xml>",
+        });
+
+        result.Payload!.DocIds.Should().Equal("doc-solo");
+    }
+
+    [Fact]
+    public void Read_ShouldRejectDocMessage_WhenContactPayloadRequested()
+    {
+        // B4：doc_change 报文即便携带同名形态字段也不得进入通讯录载荷（RequiredEvent 隔离）。
+        var reader = CreateReader();
+        var evt = new WechatCallbackEvent
+        {
+            Event = WechatCallbackEventTypes.DocChange,
+            ChangeType = WechatCallbackEventTypes.DeleteUser,
+            DecryptedXml = "<xml><Event><![CDATA[doc_change]]></Event>" +
+                           "<ChangeType><![CDATA[delete_user]]></ChangeType></xml>",
+        };
+
+        reader.Read<ContactUserChangedPayload>(evt).Status
+            .Should().Be(WechatPayloadReadStatus.ContractMismatch, "契约登记 RequiredEvent=change_contact");
+    }
+
+    // ------------------------ 智能表格族（smart_sheet_change 6 键；100986/100987 等）
+
+    [Fact]
+    public void Read_ShouldMapFieldIds_WhenFieldChanged()
+    {
+        // 官方 100987 样报文：DocId/SheetId 单节点，FieldId 重复兄弟元素；官方限制一次最多 1000 个。
+        var result = CreateReader().Read<SmartSheetFieldChangedPayload>(new WechatCallbackEvent
+        {
+            Event = WechatCallbackEventTypes.SmartSheetChange,
+            ChangeType = WechatCallbackEventTypes.AddFiled,
+            DecryptedXml = "<xml><ToUserName><![CDATA[toUser]]></ToUserName>" +
+                           "<FromUserName><![CDATA[fromUser]]></FromUserName>" +
+                           "<CreateTime>1348831860</CreateTime><MsgType><![CDATA[event]]></MsgType>" +
+                           "<Event><![CDATA[smart_sheet_change]]></Event>" +
+                           "<ChangeType><![CDATA[add_filed]]></ChangeType>" +
+                           "<DocId><![CDATA[dcjgewCwAAqeJcPI1d8Pwbjt7nttzAAA]]></DocId>" +
+                           "<SheetId><![CDATA[SheetId]]></SheetId>" +
+                           "<FieldId><![CDATA[FieldId1]]></FieldId><FieldId><![CDATA[FieldId2]]></FieldId></xml>",
+        });
+
+        result.Status.Should().Be(WechatPayloadReadStatus.Matched);
+        result.Payload!.DocId.Should().Be("dcjgewCwAAqeJcPI1d8Pwbjt7nttzAAA");
+        result.Payload!.SheetId.Should().Be("SheetId");
+        result.Payload!.FieldIds.Should().Equal("FieldId1", "FieldId2");
+    }
+
+    [Fact]
+    public void Read_ShouldMapRecordIds_WhenRecordChanged()
+    {
+        var result = CreateReader().Read<SmartSheetRecordChangedPayload>(new WechatCallbackEvent
+        {
+            Event = WechatCallbackEventTypes.SmartSheetChange,
+            ChangeType = WechatCallbackEventTypes.UpdateRecord,
+            DecryptedXml = "<xml><Event><![CDATA[smart_sheet_change]]></Event>" +
+                           "<ChangeType><![CDATA[update_record]]></ChangeType>" +
+                           "<DocId><![CDATA[doc-1]]></DocId><SheetId><![CDATA[sheet-1]]></SheetId>" +
+                           "<RecordId><![CDATA[RecordId1]]></RecordId><RecordId><![CDATA[RecordId2]]></RecordId></xml>",
+        });
+
+        result.Status.Should().Be(WechatPayloadReadStatus.Matched);
+        result.Payload!.DocId.Should().Be("doc-1");
+        result.Payload!.SheetId.Should().Be("sheet-1");
+        result.Payload!.RecordIds.Should().Equal("RecordId1", "RecordId2");
+    }
+
+    [Fact]
+    public void Read_ShouldReturnNullSheetId_WhenSmartSheetMessageOmitsNode()
+    {
+        // 缺失字段 ⇒ null 不抛（处理器不得假设必有值）。
+        var result = CreateReader().Read<SmartSheetFieldChangedPayload>(new WechatCallbackEvent
+        {
+            Event = WechatCallbackEventTypes.SmartSheetChange,
+            ChangeType = WechatCallbackEventTypes.DeleteFiled,
+            DecryptedXml = "<xml><Event><![CDATA[smart_sheet_change]]></Event>" +
+                           "<ChangeType><![CDATA[delete_filed]]></ChangeType>" +
+                           "<DocId><![CDATA[doc-1]]></DocId><FieldId><![CDATA[f-1]]></FieldId></xml>",
+        });
+
+        result.Payload!.SheetId.Should().BeNull("官方未携带 SheetId ⇒ null");
+        result.Payload!.FieldIds.Should().Equal("f-1");
+    }
+
+    [Fact]
+    public void Read_ShouldRejectSmartSheetMessage_WhenDocPayloadRequested()
+    {
+        // 智能表格与文档族共享「根下 id 列表」形态，但 Event 值不同 ⇒ RequiredEvent 隔离。
+        var reader = CreateReader();
+        var evt = new WechatCallbackEvent
+        {
+            Event = WechatCallbackEventTypes.SmartSheetChange,
+            ChangeType = WechatCallbackEventTypes.DeleteDoc,
+            DecryptedXml = "<xml><Event><![CDATA[smart_sheet_change]]></Event>" +
+                           "<ChangeType><![CDATA[delete_doc]]></ChangeType></xml>",
+        };
+
+        reader.Read<DocChangedPayload>(evt).Status
+            .Should().Be(WechatPayloadReadStatus.ContractMismatch, "契约登记 RequiredEvent=doc_change");
+    }
+
+    // ---------------------------------------- 同名叶兄弟合并投影（Values 全量袋语义回归）
+
+    [Fact]
+    public void Values_ShouldKeepLastWins_WhenRepeatedLeafSiblingsCoalesced()
+    {
+        // ADR-5 既有语义：Values 全量袋同名重复子节点取最后一个 —— 合并投影不得改变该行为。
+        var result = CreateReader().Read<GenericCallbackPayload>(new WechatCallbackEvent
+        {
+            Event = "host_private_event",
+            DecryptedXml = "<xml><Event><![CDATA[host_private_event]]></Event>" +
+                           "<DocId><![CDATA[first]]></DocId><DocId><![CDATA[second]]></DocId></xml>",
+        });
+
+        result.Status.Should().Be(WechatPayloadReadStatus.GenericFallback);
+        result.Payload!.Values["DocId"].Should().Be("second",
+            "合并容器的 Value 取末位成员文本 ⇒ 全量袋「同名取最后」不变");
+    }
+
+    [Fact]
+    public void Project_ShouldNotCoalesce_WhenRepeatedSiblingsAreComplex()
+    {
+        // 复杂兄弟重复（包装容器 + 项序列）不合并：ItemsObject 通道仍逐项绑定既有报文形态。
+        var result = CreateReader().Read<ContactUserChangedPayload>(
+            Event(WechatCallbackEventTypes.CreateUser,
+                "<xml><Event><![CDATA[change_contact]]></Event><ChangeType><![CDATA[create_user]]></ChangeType>" +
+                "<UserID><![CDATA[zhangsan]]></UserID>" +
+                "<ExtAttr><Item Name=\"工号\" Type=\"0\"><Text>A1001</Text></Item>" +
+                "<Item Name=\"职位\" Type=\"0\"><Text>工程师</Text></Item></ExtAttr></xml>"));
+
+        result.Status.Should().Be(WechatPayloadReadStatus.Matched);
+        result.Payload!.ExtAttr.Should().HaveCount(2, "ExtAttr/Item 复杂兄弟重复不受合并投影影响");
+        result.Payload!.ExtAttr[0].Name.Should().Be("工号");
+        result.Payload!.ExtAttr[1].Name.Should().Be("职位");
+    }
 }

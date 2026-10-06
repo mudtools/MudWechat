@@ -10,7 +10,7 @@ using Mud.Wechat.Work.Abstractions.Callback.Payloads;
 namespace Mud.Wechat.Work.Callback.Events.Payloads;
 
 /// <summary>
-/// 官方事件键契约表（54 键）：事件键 → 上游映射表 + 本仓库两级开放面声明。
+/// 官方事件键契约表（67 键）：事件键 → 上游映射表 + 本仓库两级开放面声明。
 /// </summary>
 /// <remarks>
 /// <para>
@@ -66,6 +66,15 @@ namespace Mud.Wechat.Work.Callback.Events.Payloads;
 /// 授权族 7 键<b>不登记契约</b>（走信封，ADR-8）。
 /// 收银台·应用版本付费订单回调族 91929~91933 / 99353（6 键，套件信封 InfoType，
 /// 第三方 × 套件指令通道；与授权族同属 <c>InfoType</c> 信封但确有业务载荷，故登记强类型载荷）。
+/// 邮箱族 <see href="https://developer.work.weixin.qq.com/document/path/97495">path 97495 应用邮箱（自建）</see>/
+/// <see href="https://developer.work.weixin.qq.com/document/path/97517">path 97517（第三方）</see>/
+/// <see href="https://developer.work.weixin.qq.com/document/path/97506">path 97506（代开发）</see>/
+/// <see href="https://developer.work.weixin.qq.com/document/path/100180">path 100180 公共邮箱（仅自建）</see>
+/// （2 键，<c>receive_email</c> 跨族同名 ⇒ 以族事件值为键）；文档族 97833~97835/98095/98096（自建）·
+/// 97839~97841/98055/98056（第三方）· 97836~97838/98097/98098（代开发）（5 键，<c>Event = doc_change</c>）；
+/// 智能表格族 100986/100987（自建）· 101016/101017（第三方）· 101018/101019（代开发）
+/// （6 键，<c>Event = smart_sheet_change</c>；id 列表为根下重复同名兄弟元素形态，经
+/// <c>RepeatSiblings</c> + 同名叶兄弟合并投影读取）。
 /// </para>
 /// <para>
 /// <b>三模式说明</b>：90240/90376/96468 三份文档正文一致 ⇒ 载荷与字段结构三模式同一（ADR-14），

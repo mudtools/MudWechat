@@ -21,7 +21,8 @@ namespace Mud.Wechat.Work.Abstractions.Callback.Payloads;
 /// 由上游 <c>PayloadFieldMapGenerator</c> 在编译期校验，不符即 <c>PAYLOAD004</c>。
 /// 本类的方法集与上游推断表（<c>Text</c>/<c>Number&lt;T&gt;</c>/<c>Flag&lt;T&gt;</c>/<c>Delimited&lt;T&gt;</c>/
 /// <c>Items&lt;T&gt;</c>/<c>ItemsWithAttributes&lt;T&gt;</c>/<c>Object&lt;TSingle&gt;</c>/<c>ItemsObject&lt;TItem&gt;</c>）
-/// 逐项对应。
+/// 逐项对应；另有 <see cref="RepeatSiblings"/> 走特性 <c>Method</c> 显式通道
+/// （上游推断表无「重复同名叶兄弟」形态，见该方法备注）。
 /// </para>
 /// <para>
 /// <b>不变量：节点缺失 ⇒ 返回默认值，绝不抛异常</b>。这是「字段可空」语义的机器化表达：
@@ -171,6 +172,55 @@ public static class WechatPayloadConverter
         }
 
         return items;
+    }
+
+    /// <summary>
+    /// 重复同名叶兄弟元素 → 列表（官方 wedoc 回调的 id 列表形态：
+    /// <c>&lt;DocId&gt;A&lt;/DocId&gt;&lt;DocId&gt;B&lt;/DocId&gt;</c>，<b>无包装容器</b>）；
+    /// 空白项跳过；节点缺失 ⇒ 空列表。
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// 依赖 <c>XElementPayloadSource</c> 的同名叶兄弟合并投影：≥2 个同名叶兄弟在节点树上呈现为
+    /// 「同名容器（<see cref="PayloadNode.Children"/> = 原始元素全集）」，本方法取容器子节点文本；
+    /// 恰 1 个元素时未触发合并，定位到的就是叶节点本身，取其自有文本。
+    /// 仅适用于<b>叶</b>兄弟重复形态——复杂节点（含子节点）的重复请走
+    /// <see cref="ItemsObject{TItem}"/> 的包装容器通道。
+    /// </para>
+    /// </remarks>
+    public static List<string> RepeatSiblings(PayloadNode? node)
+    {
+        var items = new List<string>();
+        if (node == null)
+            return items;
+
+        if (node.Children.Count == 0)
+        {
+            // 单元素形态：定位节点即叶本身（未触发合并投影）。
+            AddSiblingValue(items, node.Value);
+            return items;
+        }
+
+        // 合并形态：同名容器的子节点即原始重复元素（保序）。
+        var children = node.Children;
+        for (var i = 0; i < children.Count; i++)
+        {
+            AddSiblingValue(items, children[i]?.Value);
+        }
+
+        return items;
+    }
+
+    private static void AddSiblingValue(List<string> items, string? value)
+    {
+        if (string.IsNullOrEmpty(value))
+            return;
+
+        var token = value!.Trim();
+        if (token.Length == 0)
+            return;
+
+        items.Add(token);
     }
 
     /// <summary>

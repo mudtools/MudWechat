@@ -15,8 +15,9 @@ namespace Mud.Wechat.Work.Abstractions.Callback;
 /// 企业微信回调的事件类型分布在三个信封段上（v1 方案 §5.4.2）：
 /// 授权族走 <c>InfoType</c>、通讯录变更族走 <c>ChangeType</c>（<c>Event = change_contact</c>）、
 /// 异步任务族与上下游任务走 <c>Event</c>、上下游变更族走 <c>ChangeType</c>（<c>Event = change_chain</c>）、
-/// 客户联系/获客助手族以<b>族事件值</b>为事件键（<c>Event</c> 信封取 <c>Event</c> 节点、
-/// 第三方套件信封取 <c>InfoType</c> 节点，具体类别由 <c>ChangeType</c> 判别）。
+/// 客户联系/获客助手族与邮箱族以<b>族事件值</b>为事件键（<c>Event</c> 信封取 <c>Event</c> 节点、
+/// 第三方套件信封取 <c>InfoType</c> 节点，具体类别由 <c>ChangeType</c> 判别；邮箱族
+/// <c>receive_email</c> 在应用邮箱/公共邮箱两族同名，逐 <c>ChangeType</c> 键无法消歧）。
 /// 处理器 <see cref="IWechatCallbackEventHandler.SupportedEventType"/> 必须填本类常量之一（或空串 = 兜底）。
 /// </para>
 /// <para>
@@ -42,7 +43,18 @@ namespace Mud.Wechat.Work.Abstractions.Callback;
 /// <see href="https://developer.work.weixin.qq.com/document/path/91931">path 91931</see> 支付成功/
 /// <see href="https://developer.work.weixin.qq.com/document/path/91932">path 91932</see> 退款/
 /// <see href="https://developer.work.weixin.qq.com/document/path/91933">path 91933</see> 应用版本变更/
-/// <see href="https://developer.work.weixin.qq.com/document/path/99353">path 99353</see> 取消订单）。
+/// <see href="https://developer.work.weixin.qq.com/document/path/99353">path 99353</see> 取消订单）·
+/// 邮箱族 <see href="https://developer.work.weixin.qq.com/document/path/97495">path 97495</see>（应用邮箱，企业自建）/
+/// <see href="https://developer.work.weixin.qq.com/document/path/97517">path 97517</see>（第三方）/
+/// <see href="https://developer.work.weixin.qq.com/document/path/97506">path 97506</see>（代开发）/
+/// <see href="https://developer.work.weixin.qq.com/document/path/100180">path 100180</see>（公共邮箱，仅自建）——
+/// 邮箱族以<b>族事件值</b>为事件键（<c>receive_email</c> 跨族同名）·
+/// 文档族 <see href="https://developer.work.weixin.qq.com/document/path/97833">path 97833</see>（企业自建，起）/
+/// <see href="https://developer.work.weixin.qq.com/document/path/97839">path 97839</see>（第三方，起）/
+/// <see href="https://developer.work.weixin.qq.com/document/path/97836">path 97836</see>（代开发，起）·
+/// 智能表格族 <see href="https://developer.work.weixin.qq.com/document/path/100986">path 100986</see>（企业自建）/
+/// <see href="https://developer.work.weixin.qq.com/document/path/101016">path 101016</see>（第三方）/
+/// <see href="https://developer.work.weixin.qq.com/document/path/101018">path 101018</see>（代开发）。
 /// </para>
 /// <para>
 /// 契约守卫 CB2（<c>WechatCallbackContractGuards</c>）按本类断言官方事件键全覆盖，新增官方事件键须同批登记。
@@ -522,4 +534,149 @@ public static class WechatCallbackEventTypes
     /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/99353">path 99353 取消订单通知</see>。
     /// </remarks>
     public const string CancelOrder = "cancel_order";
+
+    // ——— 邮箱族（官方 97495 自建 / 97517 第三方 / 97506 代开发 + 公共邮箱 100180；族事件值为键） ———
+
+    /// <summary>
+    /// 应用邮箱接收邮件事件的<b>族事件值</b>（应用邮箱收到邮件后触发；<c>ChangeType</c> 为 <c>receive_email</c>）。
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>族事件值即事件键</b>：官方 <c>receive_email</c> 与公共邮箱族（<see cref="PublicEmailChange"/>）同名，
+    /// 逐 <c>ChangeType</c> 键无法消歧，故本族以族事件值为事件键、<c>ChangeType</c> 经信封判别
+    /// （与客户联系/获客族同理）。<c>Amount</c> 表示应用邮箱当前的新邮件数。
+    /// </para>
+    /// <para>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/97495">path 97495 邮件 回调通知</see>（企业自建）/
+    /// <see href="https://developer.work.weixin.qq.com/document/path/97517">path 97517</see>（第三方）/
+    /// <see href="https://developer.work.weixin.qq.com/document/path/97506">path 97506</see>（服务商代开发）
+    /// —— 三份正文逐字一致（ADR-14）。
+    /// </para>
+    /// </remarks>
+    public const string AppEmailChange = "app_email_change";
+
+    /// <summary>
+    /// 公共邮箱接收邮件事件的<b>族事件值</b>（公共邮箱收到邮件后触发；<c>ChangeType</c> 为 <c>receive_email</c>）。
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// 与 <see cref="AppEmailChange"/> 同理以族事件值为事件键（<c>receive_email</c> 跨族同名）；
+    /// 携带 <c>Id</c>（公共邮箱 id）与 <c>Amount</c>（新邮件数）。
+    /// <b>仅企业自建应用</b>可接收（官方第三方/代开发无对应回调事件）。
+    /// </para>
+    /// <para>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/100180">path 100180 管理公共邮箱 回调通知</see>（企业自建）。
+    /// </para>
+    /// </remarks>
+    public const string PublicEmailChange = "public_email_change";
+
+    // ——— 文档族（官方 97833/97834/97835/98095/98096 自建 · 97839~97841/98055/98056 第三方 · 97836~97838/98097/98098 代开发） ———
+
+    /// <summary>文档变更事件的 <c>Event</c> 信封值（具体变更类别看 <c>ChangeType</c>；仅 API 创建的文档/表格/智能表格触发）。</summary>
+    /// <remarks>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/97833">path 97833 修改文档成员事件</see>（企业自建）/
+    /// <see href="https://developer.work.weixin.qq.com/document/path/97839">path 97839</see>（第三方）/
+    /// <see href="https://developer.work.weixin.qq.com/document/path/97836">path 97836</see>（服务商代开发）。
+    /// </remarks>
+    public const string DocChange = "doc_change";
+
+    /// <summary>修改文档成员（API 创建的文档、表格、智能表格有成员添加了其他成员；携带 <c>DocId</c> 列表）。</summary>
+    /// <remarks>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/97833">path 97833 修改文档成员事件</see>（企业自建）/
+    /// <see href="https://developer.work.weixin.qq.com/document/path/97839">path 97839</see>（第三方）/
+    /// <see href="https://developer.work.weixin.qq.com/document/path/97836">path 97836</see>（服务商代开发）。
+    /// </remarks>
+    public const string DocMemberChange = "doc_member_change";
+
+    /// <summary>删除文档（文档管理员删除 API 创建的文档、表格；携带 <c>DocId</c> 列表）。</summary>
+    /// <remarks>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/97834">path 97834 删除文档事件</see>（企业自建）/
+    /// <see href="https://developer.work.weixin.qq.com/document/path/97840">path 97840</see>（第三方）/
+    /// <see href="https://developer.work.weixin.qq.com/document/path/97837">path 97837</see>（服务商代开发）。
+    /// </remarks>
+    public const string DeleteDoc = "delete_doc";
+
+    /// <summary>收集表完成（成员完成 API 创建的收集表；携带 <c>FormId</c> 列表）。</summary>
+    /// <remarks>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/97835">path 97835 收集表完成事件</see>（企业自建）/
+    /// <see href="https://developer.work.weixin.qq.com/document/path/97841">path 97841</see>（第三方）/
+    /// <see href="https://developer.work.weixin.qq.com/document/path/97838">path 97838</see>（服务商代开发）。
+    /// </remarks>
+    public const string FormComplete = "form_complete";
+
+    /// <summary>删除收集表（文档管理员删除 API 创建的收集表；携带 <c>FormId</c> 列表）。</summary>
+    /// <remarks>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/98095">path 98095 删除收集表事件</see>（企业自建）/
+    /// <see href="https://developer.work.weixin.qq.com/document/path/98055">path 98055</see>（第三方）/
+    /// <see href="https://developer.work.weixin.qq.com/document/path/98097">path 98097</see>（服务商代开发）。
+    /// </remarks>
+    public const string DeleteForm = "delete_form";
+
+    /// <summary>修改收集表设置（管理员权限/收集范围等收集表设置变更；携带 <c>FormId</c> 列表）。</summary>
+    /// <remarks>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/98096">path 98096 修改收集表设置事件</see>（企业自建）/
+    /// <see href="https://developer.work.weixin.qq.com/document/path/98056">path 98056</see>（第三方）/
+    /// <see href="https://developer.work.weixin.qq.com/document/path/98098">path 98098</see>（服务商代开发）。
+    /// </remarks>
+    public const string FormSettingsChange = "form_settings_change";
+
+    // ——— 智能表格族（官方 100986/100987 自建 · 101016/101017 第三方 · 101018/101019 代开发） ———
+
+    /// <summary>智能表格变更事件的 <c>Event</c> 信封值（具体变更类别看 <c>ChangeType</c>；仅 API 创建的智能表格触发）。</summary>
+    /// <remarks>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/100987">path 100987 字段变更事件</see>（企业自建）/
+    /// <see href="https://developer.work.weixin.qq.com/document/path/101016">path 101016</see>（第三方）/
+    /// <see href="https://developer.work.weixin.qq.com/document/path/101018">path 101018</see>（服务商代开发）。
+    /// </remarks>
+    public const string SmartSheetChange = "smart_sheet_change";
+
+    /// <summary>新增智能表格字段（携带 <c>FieldId</c> 列表）。
+    /// <para><b>官方拼写陷阱</b>：官方键值为 <c>add_filed</c>（filed，非 field），本 SDK 照抄原文。</para>
+    /// </summary>
+    /// <remarks>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/100987">path 100987 字段变更事件</see>（企业自建）/
+    /// <see href="https://developer.work.weixin.qq.com/document/path/101016">path 101016</see>（第三方）/
+    /// <see href="https://developer.work.weixin.qq.com/document/path/101018">path 101018</see>（服务商代开发）。
+    /// </remarks>
+    public const string AddFiled = "add_filed";
+
+    /// <summary>更新智能表格字段（携带 <c>FieldId</c> 列表；官方键值 <c>update_filed</c>，拼写陷阱同 <see cref="AddFiled"/>）。</summary>
+    /// <remarks>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/100987">path 100987 字段变更事件</see>（企业自建）/
+    /// <see href="https://developer.work.weixin.qq.com/document/path/101016">path 101016</see>（第三方）/
+    /// <see href="https://developer.work.weixin.qq.com/document/path/101018">path 101018</see>（服务商代开发）。
+    /// </remarks>
+    public const string UpdateFiled = "update_filed";
+
+    /// <summary>删除智能表格字段（携带 <c>FieldId</c> 列表；官方键值 <c>delete_filed</c>，拼写陷阱同 <see cref="AddFiled"/>）。</summary>
+    /// <remarks>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/100987">path 100987 字段变更事件</see>（企业自建）/
+    /// <see href="https://developer.work.weixin.qq.com/document/path/101016">path 101016</see>（第三方）/
+    /// <see href="https://developer.work.weixin.qq.com/document/path/101018">path 101018</see>（服务商代开发）。
+    /// </remarks>
+    public const string DeleteFiled = "delete_filed";
+
+    /// <summary>新增智能表格记录（携带 <c>RecordId</c> 列表，一次最多回调 1000 个、超过分批回调）。</summary>
+    /// <remarks>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/100986">path 100986 记录变更事件</see>（企业自建）/
+    /// <see href="https://developer.work.weixin.qq.com/document/path/101017">path 101017</see>（第三方）/
+    /// <see href="https://developer.work.weixin.qq.com/document/path/101019">path 101019</see>（服务商代开发）。
+    /// </remarks>
+    public const string AddRecord = "add_record";
+
+    /// <summary>更新智能表格记录（携带 <c>RecordId</c> 列表，一次最多回调 1000 个、超过分批回调）。</summary>
+    /// <remarks>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/100986">path 100986 记录变更事件</see>（企业自建）/
+    /// <see href="https://developer.work.weixin.qq.com/document/path/101017">path 101017</see>（第三方）/
+    /// <see href="https://developer.work.weixin.qq.com/document/path/101019">path 101019</see>（服务商代开发）。
+    /// </remarks>
+    public const string UpdateRecord = "update_record";
+
+    /// <summary>删除智能表格记录（携带 <c>RecordId</c> 列表，一次最多回调 1000 个、超过分批回调）。</summary>
+    /// <remarks>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/100986">path 100986 记录变更事件</see>（企业自建）/
+    /// <see href="https://developer.work.weixin.qq.com/document/path/101017">path 101017</see>（第三方）/
+    /// <see href="https://developer.work.weixin.qq.com/document/path/101019">path 101019</see>（服务商代开发）。
+    /// </remarks>
+    public const string DeleteRecord = "delete_record";
 }

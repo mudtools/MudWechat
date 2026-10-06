@@ -15,9 +15,10 @@ namespace Mud.Wechat.Work.Abstractions.Callback;
 /// 企业微信回调的事件类型分布在三个信封段上（v1 方案 §5.4.2）：
 /// 授权族走 <c>InfoType</c>、通讯录变更族走 <c>ChangeType</c>（<c>Event = change_contact</c>）、
 /// 异步任务族与上下游任务走 <c>Event</c>、上下游变更族走 <c>ChangeType</c>（<c>Event = change_chain</c>）、
-/// 客户联系/获客助手族与邮箱族以<b>族事件值</b>为事件键（<c>Event</c> 信封取 <c>Event</c> 节点、
+/// 客户联系/获客助手族、邮箱族与家校沟通族以<b>族事件值</b>为事件键（<c>Event</c> 信封取 <c>Event</c> 节点、
 /// 第三方套件信封取 <c>InfoType</c> 节点，具体类别由 <c>ChangeType</c> 判别；邮箱族
-/// <c>receive_email</c> 在应用邮箱/公共邮箱两族同名，逐 <c>ChangeType</c> 键无法消歧）。
+/// <c>receive_email</c> 在应用邮箱/公共邮箱两族同名，家校沟通族 <c>subscribe</c>/<c>unsubscribe</c>
+/// 与消息与事件族 90240 同名，逐 <c>ChangeType</c> 键无法消歧）。
 /// 处理器 <see cref="IWechatCallbackEventHandler.SupportedEventType"/> 必须填本类常量之一（或空串 = 兜底）。
 /// </para>
 /// <para>
@@ -60,7 +61,15 @@ namespace Mud.Wechat.Work.Abstractions.Callback;
 /// <see href="https://developer.work.weixin.qq.com/document/path/97771">path 97771</see>（代开发，起）·
 /// 会议族 <see href="https://developer.work.weixin.qq.com/document/path/99081">path 99081</see>（企业自建，起）/
 /// <see href="https://developer.work.weixin.qq.com/document/path/97451">path 97451</see>（第三方，修改/取消合页）/
-/// <see href="https://developer.work.weixin.qq.com/document/path/97459">path 97459</see>（代开发，同 97451）。
+/// <see href="https://developer.work.weixin.qq.com/document/path/97459">path 97459</see>（代开发，同 97451）·
+/// 家校沟通族 <see href="https://developer.work.weixin.qq.com/document/path/92032">path 92032</see>（成员变更·企业自建）/
+/// <see href="https://developer.work.weixin.qq.com/document/path/92052">path 92052</see>（部门变更·企业自建）/
+/// <see href="https://developer.work.weixin.qq.com/document/path/92051">path 92051</see>（成员变更·第三方，套件信封）/
+/// <see href="https://developer.work.weixin.qq.com/document/path/92050">path 92050</see>（部门变更·第三方，套件信封）/
+/// <see href="https://developer.work.weixin.qq.com/document/path/97281">path 97281</see>（批量变更·第三方，套件信封）/
+/// <see href="https://developer.work.weixin.qq.com/document/path/96716">path 96716</see>（成员变更·代开发）/
+/// <see href="https://developer.work.weixin.qq.com/document/path/96717">path 96717</see>（部门变更·代开发）·
+/// 会话内容存档 <see href="https://developer.work.weixin.qq.com/document/path/95039">path 95039</see>（仅企业自建）。
 /// </para>
 /// <para>
 /// 契约守卫 CB2（<c>WechatCallbackContractGuards</c>）按本类断言官方事件键全覆盖，新增官方事件键须同批登记。
@@ -928,4 +937,61 @@ public static class WechatCallbackEventTypes
     /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/98783">path 98783 会议室应答事件</see>（企业自建）。
     /// </remarks>
     public const string MeetingRoomResponse = "meeting_room_response";
+
+    // ——— 家校沟通族（官方 92032/92052 自建 · 92050/92051/97281 第三方 · 96716/96717 代开发；族事件值为键） ———
+
+    /// <summary>
+    /// 家校通讯录变更族的<b>族事件值</b>（成员 8 类 + 部门 3 类变更，具体类别看信封 <c>ChangeType</c>）。
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>族事件值即事件键</b>：成员事件的 <c>ChangeType</c> <c>subscribe</c>/<c>unsubscribe</c> 与
+    /// 消息与事件族（官方 90240）的事件键同名（成员关注应用 vs 家长关注家校通知），逐 <c>ChangeType</c> 键
+    /// 无法消歧，故本族以族事件值为事件键、<c>ChangeType</c> 经信封判别（与客户联系/邮箱族同理）。
+    /// 第三方应用经<b>指令回调 URL</b>（套件信封）接收同类事件，外层事件值在 <c>InfoType</c> 节点，
+    /// 与 <c>Event</c> 信封产出同一事件键。
+    /// </para>
+    /// <para>
+    /// <b>官方文档（核对字段以此为准）</b>：
+    /// <see href="https://developer.work.weixin.qq.com/document/path/92032">path 92032 成员变更事件（企业自建）</see>/
+    /// <see href="https://developer.work.weixin.qq.com/document/path/92052">path 92052 部门变更事件（企业自建）</see>/
+    /// <see href="https://developer.work.weixin.qq.com/document/path/92051">path 92051 成员变更事件（第三方，套件信封）</see>/
+    /// <see href="https://developer.work.weixin.qq.com/document/path/92050">path 92050 部门变更事件（第三方，套件信封）</see>/
+    /// <see href="https://developer.work.weixin.qq.com/document/path/96716">path 96716 成员变更事件（服务商代开发）</see>/
+    /// <see href="https://developer.work.weixin.qq.com/document/path/96717">path 96717 部门变更事件（服务商代开发）</see>。
+    /// </para>
+    /// </remarks>
+    public const string ChangeSchoolContact = "change_school_contact";
+
+    /// <summary>
+    /// 家校通讯录批量变更事件（官方 97281；套件信封 <c>InfoType</c> 即事件键，无 <c>Event</c> 节点）。
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// 短时间内多个家校通讯录成员/部门变更被官方合并为一个批量事件推送（携带 <c>ChangeList</c> 列表，
+    /// <b>目前最大支持合并 1000 条，后续可能调整</b>，以实际收到数据为准）；
+    /// 经第三方应用/套件的<b>指令回调 URL</b> 推送，外层事件值在 <c>InfoType</c> 节点。
+    /// </para>
+    /// <para>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/97281">path 97281 家校通讯录批量变更事件（第三方）</see>。
+    /// </para>
+    /// </remarks>
+    public const string ChangeSchoolContactBatch = "change_school_contact_batch";
+
+    // ——— 会话内容存档族（官方 95039；仅企业自建应用） ———
+
+    /// <summary>
+    /// 会话内容存档「产生会话回调事件」（<c>msgaudit_notify</c>；仅企业自建应用，
+    /// 官方第三方/代开发无对应事件回调）。
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// 为减少无效轮询，企业收到或发送新消息时推送本事件；<b>回调间隔为 15 秒</b>——15 秒内有消息则触发、
+    /// 无消息不触发。事件<b>不携带消息内容</b>（信封外仅 <c>AgentID</c>），企业收到后须调「获取会话内容」拉取。
+    /// </para>
+    /// <para>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/95039">path 95039 产生会话回调事件（企业自建）</see>。
+    /// </para>
+    /// </remarks>
+    public const string MsgAuditNotify = "msgaudit_notify";
 }

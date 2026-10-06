@@ -10,7 +10,7 @@ using Mud.Wechat.Work.Abstractions.Callback.Payloads;
 namespace Mud.Wechat.Work.Callback.Events.Payloads;
 
 /// <summary>
-/// 官方事件键契约表（102 键）：事件键 → 上游映射表 + 本仓库两级开放面声明。
+/// 官方事件键契约表（105 键）：事件键 → 上游映射表 + 本仓库两级开放面声明。
 /// </summary>
 /// <remarks>
 /// <para>
@@ -81,7 +81,20 @@ namespace Mud.Wechat.Work.Callback.Events.Payloads;
 /// <see href="https://developer.work.weixin.qq.com/document/path/97459">path 97459</see>（代开发，均为修改/取消合页）
 /// （30 键，<c>Event = meeting_change</c> 29 键 + <c>meeting_statistics</c> 1 键；修改/取消会议三模式开放、
 /// 其余仅自建；<c>medium_upload</c> 的 <c>UploadInfo</c> 为根下重复复杂兄弟元素（对象列表），经
-/// <c>RepeatMediumUploadItems</c> + 根层同名兄弟合并投影读取）。
+/// <c>RepeatMediumUploadItems</c> + 根层同名兄弟合并投影读取）；
+/// 家校沟通族 <see href="https://developer.work.weixin.qq.com/document/path/92032">path 92032 成员变更（自建）</see>/
+/// <see href="https://developer.work.weixin.qq.com/document/path/92052">path 92052 部门变更（自建）</see>/
+/// <see href="https://developer.work.weixin.qq.com/document/path/92051">path 92051 成员变更（第三方，套件信封）</see>/
+/// <see href="https://developer.work.weixin.qq.com/document/path/92050">path 92050 部门变更（第三方，套件信封）</see>/
+/// <see href="https://developer.work.weixin.qq.com/document/path/96716">path 96716 成员变更（代开发）</see>/
+/// <see href="https://developer.work.weixin.qq.com/document/path/96717">path 96717 部门变更（代开发）</see>
+/// （族事件值键 <c>change_school_contact</c>：<c>subscribe</c>/<c>unsubscribe</c> 与 90240 消息族同名 ⇒
+/// 逐 <c>ChangeType</c> 键无法消歧；自建·代开发×App + 第三方×Suite 双组合对）/
+/// <see href="https://developer.work.weixin.qq.com/document/path/97281">path 97281 批量变更（第三方，套件信封）</see>
+/// （<c>ChangeList</c> 为根下重复复杂兄弟元素（对象列表），经 <c>RepeatSchoolContactChangeItems</c> +
+/// 根层同名兄弟合并投影读取；最大合并 1000 条，官方注明后续可能调整）；
+/// 会话内容存档 <see href="https://developer.work.weixin.qq.com/document/path/95039">path 95039 产生会话回调事件（仅自建）</see>
+/// （<c>msgaudit_notify</c>：15 秒回调间隔，事件不携带消息内容、须调「获取会话内容」拉取）。
 /// </para>
 /// <para>
 /// <b>三模式说明</b>：90240/90376/96468 三份文档正文一致 ⇒ 载荷与字段结构三模式同一（ADR-14），

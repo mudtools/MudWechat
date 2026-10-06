@@ -265,6 +265,9 @@ public class WechatAppCallbackOptions
     /// <item><description>通讯录变更族 / 异步任务族经<b>应用数据通道</b>承载（三类应用均开放）；</description></item>
     /// <item><description>客户联系/获客助手族：<b>自建·代开发 × 应用数据通道</b>（Event 信封）+
     /// <b>第三方 × 套件指令通道</b>（指令回调 URL，InfoType 信封，官方 92277/97402/99485）；</description></item>
+    /// <item><description>家校通讯录变更族：官方接入方式同客户联系族按应用模式分通道 ——
+    /// <b>自建·代开发 × 应用数据通道</b>（Event 信封，92032/92052/96716/96717）+
+    /// <b>第三方 × 套件指令通道</b>（指令回调 URL，InfoType 信封，92050/92051/97281）；</description></item>
     /// <item><description>无法判别的族不拦截（协议外报文交由兜底处理器自行处置）。</description></item>
     /// </list>
     /// </remarks>
@@ -304,6 +307,22 @@ public class WechatAppCallbackOptions
             case WechatCallbackEventFamily.CustomerAcquisition:
                 // 客户联系/获客助手族的官方接入方式按应用模式分通道（92130/92277/96361/97299/98958/99485）：
                 // 自建与代开发经应用数据回调 URL（Event 信封）；第三方经套件指令回调 URL（InfoType 信封，92277）。
+                if (Channel == WechatCallbackChannel.App)
+                {
+                    return AppType == WechatAppType.Internal || AppType == WechatAppType.Provider;
+                }
+
+                if (Channel == WechatCallbackChannel.Suite)
+                {
+                    return AppType == WechatAppType.ThirdParty;
+                }
+
+                return false;
+
+            case WechatCallbackEventFamily.SchoolContactChange:
+                // 家校通讯录变更族的官方接入方式同客户联系族按应用模式分通道
+                // （92032/92052/96716/96717 应用数据回调 URL + 92050/92051/97281 套件指令回调 URL）：
+                // 自建与代开发经应用数据回调 URL（Event 信封）；第三方经套件指令回调 URL（InfoType 信封）。
                 if (Channel == WechatCallbackChannel.App)
                 {
                     return AppType == WechatAppType.Internal || AppType == WechatAppType.Provider;

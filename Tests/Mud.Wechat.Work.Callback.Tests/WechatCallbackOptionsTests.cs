@@ -264,4 +264,21 @@ public class WechatCallbackOptionsTests
         AppOf(WechatAppType.ThirdParty, WechatCallbackChannel.App)
             .IsEventFamilyAllowed(WechatCallbackEventFamily.CustomerAcquisition).Should().BeFalse("第三方应用数据通道不承载获客助手族");
     }
+
+    [Fact]
+    public void IsEventFamilyAllowed_ShouldRouteSchoolContactFamilyByAppTypeAndChannel()
+    {
+        // 家校通讯录变更族（92032/92052/96716/96717 + 92050/92051/97281）：接入方式同客户联系族按应用模式分通道 ——
+        // 自建·代开发经应用数据通道（Event 信封）；第三方经套件指令通道（指令回调 URL，InfoType 信封）。
+        AppOf(WechatAppType.Internal, WechatCallbackChannel.App)
+            .IsEventFamilyAllowed(WechatCallbackEventFamily.SchoolContactChange).Should().BeTrue("自建应用数据通道承载家校通讯录变更族（92032/92052）");
+        AppOf(WechatAppType.Provider, WechatCallbackChannel.App)
+            .IsEventFamilyAllowed(WechatCallbackEventFamily.SchoolContactChange).Should().BeTrue("代开发应用数据通道承载家校通讯录变更族（96716/96717）");
+        AppOf(WechatAppType.ThirdParty, WechatCallbackChannel.Suite)
+            .IsEventFamilyAllowed(WechatCallbackEventFamily.SchoolContactChange).Should().BeTrue("第三方套件指令通道承载家校通讯录变更族（92050/92051/97281 指令回调 URL）");
+        AppOf(WechatAppType.ThirdParty, WechatCallbackChannel.App)
+            .IsEventFamilyAllowed(WechatCallbackEventFamily.SchoolContactChange).Should().BeFalse("第三方应用数据通道不承载家校通讯录变更族（官方推送至指令回调 URL）");
+        AppOf(WechatAppType.Internal, WechatCallbackChannel.Suite)
+            .IsEventFamilyAllowed(WechatCallbackEventFamily.SchoolContactChange).Should().BeFalse("套件通道不承载业务事件");
+    }
 }

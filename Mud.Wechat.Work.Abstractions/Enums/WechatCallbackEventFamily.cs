@@ -26,6 +26,7 @@ namespace Mud.Wechat.Work.Abstractions.Enums;
 /// <item><description><see cref="CustomerAcquisition"/>：获客助手族（<c>customer_acquisition</c> / <c>customer_acquisition_permit_change</c>；官方 97299/97402/98958/99485）。</description></item>
 /// <item><description><see cref="SecurityChange"/>：<c>Event = security</c>（安全管理族：域名IP变更等；官方 100080，仅自建应用可配置接收）。</description></item>
 /// <item><description><see cref="KfEvent"/>：微信客服族（<c>kf_msg_or_event</c> / <c>kf_account_auth_change</c>；官方 94670/97712/94699/97302/96426/97713，三类应用）。</description></item>
+/// <item><description><see cref="SchoolContactChange"/>：家校通讯录变更族（<c>change_school_contact</c> / <c>change_school_contact_batch</c>；官方 92032/92052/92050/92051/97281/96716/96717）。</description></item>
 /// <item><description><see cref="Unknown"/>：无法判别（协议外报文），不拦截。</description></item>
 /// </list>
 /// <para>
@@ -89,4 +90,16 @@ public enum WechatCallbackEventFamily
     /// 「微信客服→管理账号、分配会话和收发消息」权限），经应用数据回调 URL（<c>Event</c> 信封）承载。
     /// </remarks>
     KfEvent = 8,
+
+    /// <summary>
+    /// 家校通讯录变更族（族事件值 <c>change_school_contact</c> 与 <c>change_school_contact_batch</c>；
+    /// 官方 92032/92052 企业自建 / 92050/92051/97281 第三方 / 96716/96717 服务商代开发）。
+    /// </summary>
+    /// <remarks>
+    /// 官方开放面矩阵：企业自建与服务商代开发经<b>应用数据通道</b>（<c>Event</c> 信封），
+    /// 第三方应用经<b>套件指令通道</b>（指令回调 URL，<c>InfoType</c> 信封，官方 92050/92051/97281）。
+    /// 成员事件的 <c>ChangeType</c> <c>subscribe</c>/<c>unsubscribe</c> 与消息与事件族（官方 90240）
+    /// 的事件键同名，逐 <c>ChangeType</c> 键无法消歧 ⇒ 本族以族事件值为事件键（同客户联系/邮箱族）。
+    /// </remarks>
+    SchoolContactChange = 9,
 }

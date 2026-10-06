@@ -1850,4 +1850,223 @@ public class WechatCallbackPayloadReaderTests
                 "日程回调通知官方三份文档（自建/第三方/代开发）正文逐字一致 ⇒ 三类应用开放");
         }
     }
+
+    // ------------------- 家校沟通族（92032/92052/92050/92051/96716/96717 + 97281；族事件值为键）
+
+    [Fact]
+    public void Read_ShouldMapSchoolContactMemberFields_WhenCreateStudent()
+    {
+        // 官方 92032「新增学生」样报文（企业自建 Event 信封）。
+        var result = CreateReader().Read<SchoolContactChangedPayload>(new WechatCallbackEvent
+        {
+            Event = WechatCallbackEventTypes.ChangeSchoolContact,
+            ChangeType = "create_student",
+            DecryptedXml = "<xml><ToUserName><![CDATA[toUser]]></ToUserName><FromUserName><![CDATA[sys]]></FromUserName>" +
+                           "<CreateTime>1403610513</CreateTime><MsgType><![CDATA[event]]></MsgType>" +
+                           "<Event><![CDATA[change_school_contact]]></Event>" +
+                           "<ChangeType><![CDATA[create_student]]></ChangeType>" +
+                           "<Id><![CDATA[xiaoming]]></Id></xml>",
+        });
+
+        result.Status.Should().Be(WechatPayloadReadStatus.Matched);
+        result.Payload!.EventTypeKey.Should().Be("change_school_contact", "家校沟通族以族事件值为键");
+        result.Payload!.Id.Should().Be("xiaoming", "官方 Id 为学生的家校通讯录 userid");
+        result.Payload!.NewId.Should().BeNull("NewId 仅第三方 update_student/update_parent 且 userid 变更时携带");
+    }
+
+    [Fact]
+    public void Read_ShouldMapSchoolContactSameKey_WhenThirdPartySuiteEnvelope()
+    {
+        // 官方 92051「编辑学生」样报文（第三方指令回调，套件信封）：外层事件值在 InfoType ⇒ 与 Event 信封同键。
+        var evt = SuiteEvent(WechatCallbackEventTypes.ChangeSchoolContact, "update_student",
+            "<xml><SuiteId><![CDATA[ww4asffe99e54c0f4c]]></SuiteId>" +
+            "<AuthCorpId><![CDATA[wxf8b4f85f3a794e77]]></AuthCorpId>" +
+            "<InfoType><![CDATA[change_school_contact]]></InfoType><TimeStamp>1403610513</TimeStamp>" +
+            "<ChangeType><![CDATA[update_student]]></ChangeType>" +
+            "<Id><![CDATA[zhangsan]]></Id>" +
+            "<NewId><![CDATA[zhangsan2]]></NewId></xml>");
+
+        evt.EventTypeKey.Should().Be("change_school_contact", "套件信封与 Event 信封产出同一事件键（三模式键统一，ADR-14）");
+        evt.EventFamily.Should().Be(WechatCallbackEventFamily.SchoolContactChange,
+            "套件信封的 InfoType 承载家校沟通族事件值，不得误判为授权族");
+
+        var result = CreateReader().Read<SchoolContactChangedPayload>(evt);
+
+        result.Status.Should().Be(WechatPayloadReadStatus.Matched);
+        result.Payload!.Id.Should().Be("zhangsan");
+        result.Payload!.NewId.Should().Be("zhangsan2", "官方 92051：NewId 只在 userid 被修改时回调");
+    }
+
+    [Fact]
+    public void Read_ShouldMapSchoolContactDepartmentFields_WhenCreateDepartment()
+    {
+        // 官方 92052「创建部门」样报文（企业自建 Event 信封；ChangeType 取参数表拼写 create_department）。
+        var result = CreateReader().Read<SchoolContactChangedPayload>(new WechatCallbackEvent
+        {
+            Event = WechatCallbackEventTypes.ChangeSchoolContact,
+            ChangeType = "create_department",
+            DecryptedXml = "<xml><ToUserName><![CDATA[toUser]]></ToUserName><FromUserName><![CDATA[sys]]></FromUserName>" +
+                           "<CreateTime>1403610513</CreateTime><MsgType><![CDATA[event]]></MsgType>" +
+                           "<Event><![CDATA[change_school_contact]]></Event>" +
+                           "<ChangeType><![CDATA[create_department]]></ChangeType>" +
+                           "<Id><![CDATA[1]]></Id></xml>",
+        });
+
+        result.Status.Should().Be(WechatPayloadReadStatus.Matched, "部门事件与成员事件同键（同结构族 ⇒ 共用一份载荷）");
+        result.Payload!.Id.Should().Be("1", "部门事件的 Id 为家校通讯录部门 id");
+        result.Payload!.NewId.Should().BeNull("部门事件无 NewId 节点");
+    }
+
+    [Fact]
+    public void Read_ShouldKeepSchoolContactKeyIsolated_WhenParentSubscribe()
+    {
+        // 家长关注（ChangeType=subscribe）不得落入 90240 消息族的 subscribe 键 —— 族事件值键消歧的核心断言。
+        var evt = new WechatCallbackEvent
+        {
+            Event = WechatCallbackEventTypes.ChangeSchoolContact,
+            ChangeType = "subscribe",
+            DecryptedXml = "<xml><Event><![CDATA[change_school_contact]]></Event>" +
+                           "<ChangeType><![CDATA[subscribe]]></ChangeType>" +
+                           "<Id><![CDATA[zhangsan]]></Id></xml>",
+        };
+
+        evt.EventTypeKey.Should().Be("change_school_contact",
+            "若逐 ChangeType 键则与本仓已登记的 90240 subscribe 键在契约注册表撞键");
+
+        var matched = CreateReader().Read<SchoolContactChangedPayload>(evt);
+        matched.Status.Should().Be(WechatPayloadReadStatus.Matched);
+        matched.Payload!.Id.Should().Be("zhangsan");
+
+        var rejected = CreateReader().Read<PlainEventPayload>(evt);
+        rejected.Status.Should().Be(WechatPayloadReadStatus.ContractMismatch,
+            "90240 的 subscribe 契约要求 Event=subscribe，家校报文 Event=change_school_contact ⇒ RequiredEvent 隔离");
+    }
+
+    [Fact]
+    public void Read_ShouldMapSchoolContactBatchItems_WhenRepeatedSiblingsPresent()
+    {
+        // 官方 97281 样报文（第三方指令回调，套件信封）：ChangeList 为根下重复同名复杂兄弟元素（对象列表）。
+        var evt = SuiteEvent(WechatCallbackEventTypes.ChangeSchoolContactBatch, changeType: null,
+            "<xml><SuiteId><![CDATA[wwSuiteId]]></SuiteId>" +
+            "<AuthCorpId><![CDATA[wxAuthCorpId]]></AuthCorpId>" +
+            "<InfoType><![CDATA[change_school_contact_batch]]></InfoType>" +
+            "<TimeStamp>1403610513</TimeStamp>" +
+            "<ChangeList><TimeStamp>1403610513</TimeStamp>" +
+            "<ChangeType><![CDATA[create_student]]></ChangeType>" +
+            "<Id><![CDATA[zhangsan]]></Id></ChangeList>" +
+            "<ChangeList><TimeStamp>1403610514</TimeStamp>" +
+            "<ChangeType><![CDATA[update_parent]]></ChangeType>" +
+            "<Id><![CDATA[zhangsan-baba]]></Id>" +
+            "<NewId><![CDATA[zhangsan-baba-new]]></NewId></ChangeList>" +
+            "<ChangeList><TimeStamp>1403610515</TimeStamp>" +
+            "<ChangeType><![CDATA[create_department]]></ChangeType>" +
+            "<Id><![CDATA[1]]></Id></ChangeList></xml>");
+
+        evt.EventTypeKey.Should().Be("change_school_contact_batch", "批量变更事件键为 InfoType 本身");
+        evt.EventFamily.Should().Be(WechatCallbackEventFamily.SchoolContactChange,
+            "批量变更事件按外层事件值归入家校沟通族，不得误判为授权族");
+
+        var result = CreateReader().Read<SchoolContactBatchChangedPayload>(evt);
+
+        result.Status.Should().Be(WechatPayloadReadStatus.Matched);
+        var items = result.Payload!.ChangeItems;
+        items.Should().HaveCount(3, "重复复杂兄弟元素经合并投影全量读取");
+        items[0].ChangeType.Should().Be("create_student");
+        items[0].Id.Should().Be("zhangsan");
+        items[0].TimeStamp.Should().Be(1403610513);
+        items[0].NewId.Should().BeNull();
+        items[1].ChangeType.Should().Be("update_parent");
+        items[1].NewId.Should().Be("zhangsan-baba-new", "update 项且 userid 被修改时携带 NewId");
+        items[1].TimeStamp.Should().Be(1403610514);
+        items[2].ChangeType.Should().Be("create_department");
+        items[2].Id.Should().Be("1", "批量项的 Id 亦承载家校通讯录部门 id");
+        items[2].NewId.Should().BeNull();
+    }
+
+    [Fact]
+    public void Read_ShouldMapSingleSchoolContactBatchItem_WhenOnlyOneSiblingPresent()
+    {
+        // 恰 1 个元素时未触发合并投影，RepeatSchoolContactChangeItems 须按单项绑定。
+        var result = CreateReader().Read<SchoolContactBatchChangedPayload>(
+            SuiteEvent(WechatCallbackEventTypes.ChangeSchoolContactBatch, changeType: null,
+                "<xml><SuiteId><![CDATA[wwSuiteId]]></SuiteId>" +
+                "<AuthCorpId><![CDATA[wxAuthCorpId]]></AuthCorpId>" +
+                "<InfoType><![CDATA[change_school_contact_batch]]></InfoType>" +
+                "<TimeStamp>1403610513</TimeStamp>" +
+                "<ChangeList><TimeStamp>1403610513</TimeStamp>" +
+                "<ChangeType><![CDATA[unsubscribe]]></ChangeType>" +
+                "<Id><![CDATA[zhangsan]]></Id></ChangeList></xml>"));
+
+        result.Status.Should().Be(WechatPayloadReadStatus.Matched);
+        var item = result.Payload!.ChangeItems.Should().ContainSingle().Subject;
+        item.ChangeType.Should().Be("unsubscribe");
+        item.Id.Should().Be("zhangsan");
+        item.TimeStamp.Should().Be(1403610513);
+    }
+
+    [Theory]
+    [InlineData(WechatAppType.Internal, WechatCallbackChannel.App, true)]
+    [InlineData(WechatAppType.Provider, WechatCallbackChannel.App, true)]
+    [InlineData(WechatAppType.ThirdParty, WechatCallbackChannel.Suite, true)]
+    [InlineData(WechatAppType.Internal, WechatCallbackChannel.Suite, false)]
+    [InlineData(WechatAppType.Provider, WechatCallbackChannel.Suite, false)]
+    [InlineData(WechatAppType.ThirdParty, WechatCallbackChannel.App, false)]
+    public void SchoolContactContract_ShouldOpenForOfficialMatrix(
+        WechatAppType appType, WechatCallbackChannel channel, bool expected)
+    {
+        CreateRegistry().TryResolve(WechatCallbackEventTypes.ChangeSchoolContact, out var contract)
+            .Should().BeTrue();
+        var evt = new WechatCallbackEvent
+        {
+            Event = WechatCallbackEventTypes.ChangeSchoolContact,
+            ChangeType = "create_student",
+        };
+
+        contract!.IsOpenFor(evt, appType, channel).Should().Be(expected,
+            "官方接入矩阵：自建·代开发×应用数据通道（92032/92052/96716/96717）+ 第三方×套件指令通道（92050/92051）");
+    }
+
+    // ---------------------------------------- 会话内容存档族（95039；仅自建）
+
+    [Fact]
+    public void Read_ShouldMapMsgAuditNotifyFields_WhenEventEnvelope()
+    {
+        // 官方 95039 样报文（企业自建 Event 信封）：Event 节点即事件键（逐键自指），信封外仅 AgentID。
+        var evt = new WechatCallbackEvent
+        {
+            Event = WechatCallbackEventTypes.MsgAuditNotify,
+            DecryptedXml = "<xml><ToUserName><![CDATA[CorpID]]></ToUserName>" +
+                           "<FromUserName><![CDATA[sys]]></FromUserName>" +
+                           "<CreateTime>1629101687</CreateTime><MsgType><![CDATA[event]]></MsgType>" +
+                           "<AgentID>2000004</AgentID>" +
+                           "<Event><![CDATA[msgaudit_notify]]></Event></xml>",
+        };
+
+        evt.EventTypeKey.Should().Be("msgaudit_notify", "无 InfoType/ChangeType 段 ⇒ Event 节点即事件键");
+        evt.EventFamily.Should().Be(WechatCallbackEventFamily.Unknown,
+            "会话内容存档不归类既有事件族，族闸放行、开放面由事件键级声明承载（同邮箱族口径）");
+
+        var result = CreateReader().Read<MsgAuditNotifyPayload>(evt);
+
+        result.Status.Should().Be(WechatPayloadReadStatus.Matched);
+        result.Payload!.AgentId.Should().Be("2000004");
+        result.Payload!.Values.Should().Contain("Event", "msgaudit_notify",
+            "Values 为全量袋（ADR-5），信封字段 Event 亦在袋中（仅凭据节点被排除）");
+    }
+
+    [Theory]
+    [InlineData(WechatAppType.Internal, WechatCallbackChannel.App, true)]
+    [InlineData(WechatAppType.ThirdParty, WechatCallbackChannel.App, false)]
+    [InlineData(WechatAppType.Provider, WechatCallbackChannel.App, false)]
+    public void MsgAuditContract_ShouldOpenOnlyForInternal(WechatAppType appType, WechatCallbackChannel channel, bool expected)
+    {
+        CreateRegistry().TryResolve(WechatCallbackEventTypes.MsgAuditNotify, out var contract).Should().BeTrue();
+        var evt = new WechatCallbackEvent { Event = WechatCallbackEventTypes.MsgAuditNotify };
+
+        contract!.IsOpenFor(evt, appType, channel).Should().Be(expected,
+            "会话内容存档官方仅在企业自建应用开发文档树提供（95039；第三方/代开发无对应事件回调）");
+        contract.RequiredFamily.Should().Be(WechatCallbackEventFamily.Unknown);
+        contract.RequiredEvent.Should().Be(WechatCallbackEventTypes.MsgAuditNotify,
+            "RequiredEvent 缺省 = 逐键自指（Event 节点即事件键）");
+    }
 }

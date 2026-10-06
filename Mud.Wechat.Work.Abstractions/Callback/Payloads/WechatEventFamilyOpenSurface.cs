@@ -103,6 +103,17 @@ internal static class WechatEventFamilyOpenSurface
                 };
                 return true;
 
+            // 家校通讯录变更族：自建·代开发 × 应用数据通道（Event 信封，92032/92052/96716/96717）
+            // + 第三方 × 套件指令通道（指令回调 URL，InfoType 信封，92050/92051/97281）。
+            case WechatCallbackEventFamily.SchoolContactChange:
+                defaultSurfaces = new[]
+                {
+                    new WechatOpenSurface(
+                        WechatAppTypeSet.Internal | WechatAppTypeSet.Provider, WechatCallbackChannel.App),
+                    new WechatOpenSurface(WechatAppTypeSet.ThirdParty, WechatCallbackChannel.Suite),
+                };
+                return true;
+
             // 协议外 / 官方未文档化：无官方基线，不做比对。
             default:
                 defaultSurfaces = System.Array.Empty<WechatOpenSurface>();

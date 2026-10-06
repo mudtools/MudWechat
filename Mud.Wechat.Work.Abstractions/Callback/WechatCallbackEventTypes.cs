@@ -32,6 +32,8 @@ namespace Mud.Wechat.Work.Abstractions.Callback;
 /// 上下游变更族 <see href="https://developer.work.weixin.qq.com/document/path/95796">path 95796</see> ·
 /// 异步任务族 <see href="https://developer.work.weixin.qq.com/document/path/90973">path 90973</see>（通讯录）/ <see href="https://developer.work.weixin.qq.com/document/path/95797">path 95797</see>（上下游）·
 /// 安全事件族 <see href="https://developer.work.weixin.qq.com/document/path/100080">path 100080</see>（域名IP变更，仅自建）·
+/// 微信客服族 <see href="https://developer.work.weixin.qq.com/document/path/94670">path 94670</see>（接收消息与事件·自建）/
+/// <see href="https://developer.work.weixin.qq.com/document/path/97712">path 97712</see>（回调通知）·
 /// 消息与事件（关注/菜单/地理位置/审批/共享/模板卡片/应用状态）<see href="https://developer.work.weixin.qq.com/document/path/90240">path 90240</see>（企业内部开发）/
 /// <see href="https://developer.work.weixin.qq.com/document/path/90376">path 90376</see>（第三方）/ <see href="https://developer.work.weixin.qq.com/document/path/96468">path 96468</see>（服务商代开发）——
 /// 三份文档正文逐字一致，故同一事件键在三种应用模式下共用一个常量。
@@ -225,6 +227,47 @@ public static class WechatCallbackEventTypes
     /// （配套查询接口 <see href="https://developer.work.weixin.qq.com/document/path/100079">path 100079 获取企业微信域名IP信息</see>）。
     /// </remarks>
     public const string ChangeDomainIp = "change_domain_ip";
+
+    // ——— 微信客服族（官方 94670/94699/96426 接收消息与事件、97712/97302/97713 回调通知；Event 信封值） ———
+
+    /// <summary>
+    /// 微信客服新消息通知（<c>kf_msg_or_event</c>；外层仅 <c>Token</c> + <c>OpenKfId</c>，
+    /// 具体消息/事件内容须调 sync_msg 接口拉取，内容保留最近 3 天）。
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// 三种应用模式报文同构（ADR-14）。接收前置：自建应用配置到「微信客服-可调用接口的应用」并授权客服账号；
+    /// 第三方/代开发需「微信客服→管理账号、分配会话和收发消息」权限；客服账号须设置为 API 管理、
+    /// 接待人员需在应用可见范围内（2023-12-01 起不再支持系统应用 secret 调用）。
+    /// </para>
+    /// <para>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/94670">path 94670 接收消息和事件（企业自建）</see>/
+    /// <see href="https://developer.work.weixin.qq.com/document/path/94699">path 94699（第三方）</see>/
+    /// <see href="https://developer.work.weixin.qq.com/document/path/96426">path 96426（服务商代开发）</see>。
+    /// </para>
+    /// </remarks>
+    public const string KfMsgOrEvent = "kf_msg_or_event";
+
+    /// <summary>
+    /// 客服账号授权变更（<c>kf_account_auth_change</c>；应用授权的客服账号发生变化时推送）。
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>本版未登记强类型载荷（ADR-4 降级）</b>：官方 <c>AuthAddOpenKfId</c>/<c>AuthDelOpenKfId</c>
+    /// 为<b>同级重名多节点</b>形态（官方参数表「多个节点表示多个新增账号」），现有载荷声明面
+    /// （<c>Items</c> 需「容器/子项」两层嵌套，字段解析取首个同名节点）无法无损表达。
+    /// 宿主以 <see cref="GenericCallbackPayload"/> 接收（注意 <c>Values</c> 对同名重复子节点取
+    /// <b>最后一个</b>）；全量列表须解析 <see cref="WechatCallbackEvent.DecryptedXml"/> 原文获取。
+    /// 待上游映射面支持重名兄弟聚合后补登记载荷。
+    /// </para>
+    /// <para>
+    /// 「取消客服账号的授权」不需要微信客服权限（如权限被移除导致的取消授权仍会推送）。
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/97712">path 97712 回调通知（企业自建）</see>/
+    /// <see href="https://developer.work.weixin.qq.com/document/path/97302">path 97302（第三方）</see>/
+    /// <see href="https://developer.work.weixin.qq.com/document/path/97713">path 97713（服务商代开发）</see>。
+    /// </para>
+    /// </remarks>
+    public const string KfAccountAuthChange = "kf_account_auth_change";
 
     // ——— 客户联系变更族（官方 92130 自建 / 92277 第三方 / 96361 代开发；族事件值为键） ———
 

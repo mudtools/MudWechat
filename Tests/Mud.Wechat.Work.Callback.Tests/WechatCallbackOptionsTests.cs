@@ -218,7 +218,7 @@ public class WechatCallbackOptionsTests
         AppOf(WechatAppType.Internal, WechatCallbackChannel.Suite)
             .IsEventFamilyAllowed(WechatCallbackEventFamily.SecurityChange).Should().BeFalse("套件通道不承载业务事件");
 
-        // 通讯录/异步族：应用数据通道承载，三类应用均开放。
+        // 通讯录/异步/微信客服族：应用数据通道承载，三类应用均开放。
         AppOf(WechatAppType.Internal, WechatCallbackChannel.App)
             .IsEventFamilyAllowed(WechatCallbackEventFamily.ContactChange).Should().BeTrue();
         AppOf(WechatAppType.ThirdParty, WechatCallbackChannel.App)
@@ -227,6 +227,12 @@ public class WechatCallbackOptionsTests
             .IsEventFamilyAllowed(WechatCallbackEventFamily.BatchJob).Should().BeTrue();
         AppOf(WechatAppType.ThirdParty, WechatCallbackChannel.Suite)
             .IsEventFamilyAllowed(WechatCallbackEventFamily.ContactChange).Should().BeFalse("套件通道不承载业务事件");
+        AppOf(WechatAppType.ThirdParty, WechatCallbackChannel.App)
+            .IsEventFamilyAllowed(WechatCallbackEventFamily.KfEvent).Should().BeTrue("第三方应用数据通道承载微信客服族（94699）");
+        AppOf(WechatAppType.Provider, WechatCallbackChannel.App)
+            .IsEventFamilyAllowed(WechatCallbackEventFamily.KfEvent).Should().BeTrue("代开发应用数据通道承载微信客服族（96426）");
+        AppOf(WechatAppType.Internal, WechatCallbackChannel.Suite)
+            .IsEventFamilyAllowed(WechatCallbackEventFamily.KfEvent).Should().BeFalse("套件通道不承载业务事件");
 
         // 无法判别族：不拦截（协议外报文交兜底处理器）。
         AppOf(WechatAppType.Internal, WechatCallbackChannel.App)

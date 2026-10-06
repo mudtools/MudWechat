@@ -33,8 +33,9 @@ public class WechatCallbackContractGuards
 {
     /// <summary>
     /// 官方事件键全集（授权 InfoType 6 + 通讯录 ChangeType 7 + 异步 Event 1 + 上下游 Event 1 + ChangeType 9
-    /// + 安全管理 ChangeType 1（官方 100080）+ 客户联系/获客助手族事件值 5 + 消息与事件 path 90240 的 24 个 Event 键
-    /// + 应用版本付费订单回调 InfoType 6，合计 60）。
+    /// + 安全管理 ChangeType 1（官方 100080）+ 微信客服 Event 2（官方 94670/97712 等三模式文档）
+    /// + 客户联系/获客助手族事件值 5 + 消息与事件 path 90240 的 24 个 Event 键
+    /// + 应用版本付费订单回调 InfoType 6，合计 62）。
     /// </summary>
     /// <remarks>
     /// 客户联系/获客助手族（官方 92130/92277/96361/97299/97402/99485/98958）以<b>族事件值</b>为事件键：
@@ -68,6 +69,8 @@ public class WechatCallbackContractGuards
         (WechatCallbackEventTypes.UpdateCorp, "上下游族 update_corp"),
         (WechatCallbackEventTypes.RemoveCorp, "上下游族 remove_corp"),
         (WechatCallbackEventTypes.ChangeDomainIp, "安全管理族 change_domain_ip（100080，仅自建）"),
+        (WechatCallbackEventTypes.KfMsgOrEvent, "微信客服族 kf_msg_or_event（94670/94699/96426）"),
+        (WechatCallbackEventTypes.KfAccountAuthChange, "微信客服族 kf_account_auth_change（97712/97302/97713）"),
         (WechatCallbackEventTypes.ChangeExternalContact, "客户联系族 change_external_contact（92130/92277/96361）"),
         (WechatCallbackEventTypes.ChangeExternalChat, "客户联系族 change_external_chat"),
         (WechatCallbackEventTypes.ChangeExternalTag, "客户联系族 change_external_tag"),
@@ -131,7 +134,7 @@ public class WechatCallbackContractGuards
     /// <summary>
     /// 契约守卫 CB2：<see cref="WechatCallbackEventTypes"/> 常量必须覆盖官方事件键全集
     /// （授权 InfoType 6 + 通讯录 ChangeType 7 + 异步 Event 1 + 上下游 Event 1 与 ChangeType 9
-    /// + 安全管理 ChangeType 1（官方 100080）
+    /// + 安全管理 ChangeType 1（官方 100080）+ 微信客服 Event 2（官方 94670/97712 等三模式文档）
     /// + 客户联系/获客助手族事件值 5 + 消息与事件 path 90240 的 24 个 Event 键
     /// + 应用版本付费订单回调 InfoType 6），且
     /// <see cref="WechatCallbackEvent.EventTypeKey"/> 判别优先级为
@@ -154,7 +157,6 @@ public class WechatCallbackContractGuards
         constants.Should().Contain(WechatCallbackEventTypes.ChangeContact, "通讯录变更事件信封值");
         constants.Should().Contain(WechatCallbackEventTypes.ChangeChain, "上下游变更事件信封值（95796）");
         constants.Should().Contain(WechatCallbackEventTypes.Security, "安全管理事件信封值（100080）");
-
         // EventTypeKey 判别优先级（D4）。
         new WechatCallbackEvent { InfoType = "suite_ticket", Event = "change_contact", ChangeType = "create_user" }
             .EventTypeKey.Should().Be("suite_ticket", "InfoType 优先");
@@ -188,6 +190,12 @@ public class WechatCallbackContractGuards
             .EventFamily.Should().Be(WechatCallbackEventFamily.SecurityChange, "安全事件族按 Event=security 归类（100080）");
         new WechatCallbackEvent { Event = "security", ChangeType = "change_domain_ip" }
             .EventTypeKey.Should().Be("change_domain_ip", "安全事件族以 ChangeType 为事件键（信封 Event=security 是族前置条件）");
+        new WechatCallbackEvent { Event = "kf_msg_or_event" }
+            .EventFamily.Should().Be(WechatCallbackEventFamily.KfEvent, "微信客服族按 Event 值归类（94670）");
+        new WechatCallbackEvent { Event = "kf_msg_or_event" }.EventTypeKey
+            .Should().Be("kf_msg_or_event", "微信客服族无 InfoType/ChangeType 段 ⇒ Event 节点即事件键（逐键自指）");
+        new WechatCallbackEvent { Event = "kf_account_auth_change" }
+            .EventTypeKey.Should().Be("kf_account_auth_change", "授权变更事件键为 Event 值本身");
     }
 
     // ---------------------------------------------------------------- CB3
@@ -309,6 +317,9 @@ public class WechatCallbackContractGuards
         // 安全管理族（官方 100080；信封外无业务字段 —— 断言意义在下方 payloadTypes 循环的契约/密封形态锁）。
         AssertProperties(typeof(SecurityDomainIpChangedPayload), "change_domain_ip（100080，信封外无业务字段）");
 
+        // 微信客服族（官方 94670/94699/96426；外层通知仅 Token + OpenKfId，内容经 sync_msg 拉取）。
+        AssertProperties(typeof(KfMsgOrEventPayload), "kf_msg_or_event（94670）", "Token", "OpenKfId");
+
         var payloadTypes = new[]
         {
             typeof(ContactUserChangedPayload), typeof(ContactPartyChangedPayload),
@@ -321,6 +332,7 @@ public class WechatCallbackContractGuards
             typeof(ExternalContactChangedPayload), typeof(ExternalChatChangedPayload),
             typeof(ExternalTagChangedPayload), typeof(CustomerAcquisitionPayload),
             typeof(PayToolVersionOrderPayload), typeof(SecurityDomainIpChangedPayload),
+            typeof(KfMsgOrEventPayload),
         };
 
         foreach (var type in payloadTypes)
@@ -346,7 +358,7 @@ public class WechatCallbackContractGuards
     }
 
     /// <summary>
-    /// 契约守卫 CB4b（v2.2 新增；P2 扩展）：官方契约表必须登记全部 53 个载荷事件键，且授权族键不登记；
+    /// 契约守卫 CB4b（v2.2 新增；P2 扩展）：官方契约表必须登记全部 54 个载荷事件键，且授权族键不登记；
     /// 并断言「生成物登记键集 == <c>[WechatCallbackContract]</c> 特性声明并集」（生成器漂移闸）。
     /// 双面锁定：官方清单（expectedKeys）是外部契约的权威锚点，特性一致性断言锁内部链条 ——
     /// 二者不得互替（同源即同向逃逸）。
@@ -367,6 +379,7 @@ public class WechatCallbackContractGuards
             WechatCallbackEventTypes.CreateGroup, WechatCallbackEventTypes.UpdateGroup, WechatCallbackEventTypes.DeleteGroup,
             WechatCallbackEventTypes.CorpJoin, WechatCallbackEventTypes.UpdateCorp, WechatCallbackEventTypes.RemoveCorp,
             WechatCallbackEventTypes.ChangeDomainIp,
+            WechatCallbackEventTypes.KfMsgOrEvent,
 
             // 客户联系变更族 / 获客助手族族事件值键（92130/92277/96361/97299/97402/99485/98958）。
             WechatCallbackEventTypes.ChangeExternalContact, WechatCallbackEventTypes.ChangeExternalChat,
@@ -394,8 +407,8 @@ public class WechatCallbackContractGuards
         };
 
         var registered = registry.RegisteredKeys;
-        registered.Should().HaveCount(53,
-            "官方有强类型载荷的事件键共 53 个（17 + 安全管理 1 + 客户联系/获客族 5 + 90240 的 24 + 应用版本付费订单回调族 6）");
+        registered.Should().HaveCount(54,
+            "官方有强类型载荷的事件键共 54 个（17 + 安全管理 1 + 微信客服 1 + 客户联系/获客族 5 + 90240 的 24 + 应用版本付费订单回调族 6）");
         foreach (var key in expectedKeys)
         {
             registered.Should().Contain(key, $"官方事件键 {key} 必须登记契约");
@@ -414,13 +427,20 @@ public class WechatCallbackContractGuards
             registered.Should().NotContain(authKey, $"授权族事件键 {authKey} 走信封，不得登记载荷契约（ADR-8）");
         }
 
+        // 微信客服客服账号授权变更：官方 AuthAddOpenKfId/AuthDelOpenKfId 为同级重名多节点形态，
+        // 现有声明面（Items 需「容器/子项」两层）无法无损表达 ⇒ 按 ADR-4 降级为 GenericCallbackPayload，
+        // 不得以「仅取首个同名节点」的有损映射登记（静默丢字段正是本体系要消灭的缺陷）。
+        // 待上游映射面支持重名兄弟聚合（如 RepeatedItems 形态）后，同批登记载荷并把它移入 expectedKeys。
+        registered.Should().NotContain(WechatCallbackEventTypes.KfAccountAuthChange,
+            "kf_account_auth_change 的重名多节点形态超出声明面，登记有损映射即静默丢字段（ADR-4 降级）");
+
         // P2 生成器一致性闸：生成物登记键集必须与载荷类 [WechatCallbackContract] 特性声明的并集一致 ——
         // 特性漏声明 / 生成器漂移在此红；官方契约面变更仍以 expectedKeys（硬编码官方清单）为权威锚点。
         var declaredKeys = typeof(OfficialPayloadContracts).Assembly.GetTypes()
             .SelectMany(t => t.GetCustomAttributes<WechatCallbackContractAttribute>(inherit: false))
             .SelectMany(a => a.EventTypes)
             .ToHashSet(StringComparer.Ordinal);
-        declaredKeys.Should().HaveCount(53, "[WechatCallbackContract] 特性声明的事件键并集应为 53 个");
+        declaredKeys.Should().HaveCount(54, "[WechatCallbackContract] 特性声明的事件键并集应为 54 个");
         registered.Should().BeEquivalentTo(declaredKeys, "生成器登记的键集必须与 [WechatCallbackContract] 特性声明并集一致（生成器漂移闸）");
     }
 
@@ -464,6 +484,12 @@ public class WechatCallbackContractGuards
         security.OpenSurfaces[0].SupportedAppTypes.Should().Be(WechatAppTypeSet.Internal,
             "安全管理族官方仅向自建应用开放（100080：第三方/代开发暂不支持）");
         security.OpenSurfaces[0].RequiredChannel.Should().Be(WechatCallbackChannel.App);
+
+        registry.TryResolve(WechatCallbackEventTypes.KfMsgOrEvent, out var kf).Should().BeTrue();
+        kf!.OpenSurfaces.Should().ContainSingle();
+        kf.OpenSurfaces[0].SupportedAppTypes.Should().Be(WechatAppTypeSet.All,
+            "微信客服族三类应用均可接收（94670/94699/96426：自建配置 + 第三方/代开发权限）");
+        kf.OpenSurfaces[0].RequiredChannel.Should().Be(WechatCallbackChannel.App);
     }
 
     /// <summary>
@@ -559,7 +585,7 @@ public class WechatCallbackContractGuards
             typeof(ApprovalStatusChangedPayload), typeof(TemplateCardEventPayload),
             typeof(ExternalContactChangedPayload), typeof(ExternalChatChangedPayload),
             typeof(ExternalTagChangedPayload), typeof(CustomerAcquisitionPayload),
-            typeof(SecurityDomainIpChangedPayload), typeof(WechatPayloadConverter),
+            typeof(SecurityDomainIpChangedPayload), typeof(KfMsgOrEventPayload), typeof(WechatPayloadConverter),
         };
 
         foreach (var type in payloadTypes)
@@ -891,6 +917,7 @@ public class WechatCallbackContractGuards
 
         source.Should().Contain("case WechatCallbackEventFamily.ContactChange:", "CB12：通讯录变更族分支配齐");
         source.Should().Contain("case WechatCallbackEventFamily.BatchJob:", "CB12：异步任务族分支配齐");
+        source.Should().Contain("case WechatCallbackEventFamily.KfEvent:", "CB12：微信客服族分支配齐（三类应用 × 应用通道）");
         source.Should().Contain("case WechatCallbackEventFamily.ExternalContactChange:",
             "CB12：客户联系变更族分支配齐（官方矩阵按模式分通道，92277 指令回调 URL）");
         source.Should().Contain("case WechatCallbackEventFamily.CustomerAcquisition:",
@@ -995,7 +1022,7 @@ public class WechatCallbackContractGuards
             typeof(ChainChangedPayload), typeof(GenericCallbackPayload),
             typeof(ExternalContactChangedPayload), typeof(ExternalChatChangedPayload),
             typeof(ExternalTagChangedPayload), typeof(CustomerAcquisitionPayload),
-            typeof(SecurityDomainIpChangedPayload),
+            typeof(SecurityDomainIpChangedPayload), typeof(KfMsgOrEventPayload),
             typeof(WechatPayloadConverter),
         };
 

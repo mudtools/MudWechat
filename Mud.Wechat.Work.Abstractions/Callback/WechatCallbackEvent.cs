@@ -161,7 +161,7 @@ public class WechatCallbackEvent
     /// </summary>
     /// <remarks>
     /// <para>判别优先级与 <see cref="EventTypeKey"/> 对齐：客户联系/获客族（外层事件值命中）最优先，
-    /// 其次授权族（<c>InfoType</c> 非空），再次按 <c>Event</c> 值归入上下游/通讯录/异步/安全四族，
+    /// 其次授权族（<c>InfoType</c> 非空），再次按 <c>Event</c> 值归入上下游/通讯录/异步/安全/微信客服五族，
     /// 均未命中返回 <see cref="WechatCallbackEventFamily.Unknown"/>（不拦截）。</para>
     /// </remarks>
     public WechatCallbackEventFamily EventFamily
@@ -200,6 +200,11 @@ public class WechatCallbackEvent
             if (IsSecurityEvent)
             {
                 return WechatCallbackEventFamily.SecurityChange;
+            }
+
+            if (IsKfEvent)
+            {
+                return WechatCallbackEventFamily.KfEvent;
             }
 
             return WechatCallbackEventFamily.Unknown;
@@ -305,6 +310,19 @@ public class WechatCallbackEvent
     /// </remarks>
     public bool IsSecurityEvent =>
         string.Equals(Event, WechatCallbackEventTypes.Security, StringComparison.Ordinal);
+
+    /// <summary>
+    /// 是否为微信客服族事件（<see cref="WechatCallbackEventTypes.KfMsgOrEvent"/> 新消息通知 /
+    /// <see cref="WechatCallbackEventTypes.KfAccountAuthChange"/> 客服账号授权变更）。
+    /// </summary>
+    /// <remarks>
+    /// 三类应用均可接收（自建配置到「微信客服-可调用接口的应用」；第三方/代开发需微信客服权限）。
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/94670">path 94670 接收消息和事件</see>/
+    /// <see href="https://developer.work.weixin.qq.com/document/path/97712">path 97712 回调通知</see>。
+    /// </remarks>
+    public bool IsKfEvent =>
+        string.Equals(Event, WechatCallbackEventTypes.KfMsgOrEvent, StringComparison.Ordinal) ||
+        string.Equals(Event, WechatCallbackEventTypes.KfAccountAuthChange, StringComparison.Ordinal);
 
     /// <summary>是否为客户联系·企业客户变更事件（外层事件值 = change_external_contact；具体类别看 <see cref="ChangeType"/>）。</summary>
     /// <remarks>

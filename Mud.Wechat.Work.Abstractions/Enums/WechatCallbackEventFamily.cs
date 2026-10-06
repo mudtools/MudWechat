@@ -25,6 +25,7 @@ namespace Mud.Wechat.Work.Abstractions.Enums;
 /// <item><description><see cref="ExternalContactChange"/>：客户联系变更族（<c>change_external_contact</c> / <c>change_external_chat</c> / <c>change_external_tag</c>；官方 92130/92277/96361）。</description></item>
 /// <item><description><see cref="CustomerAcquisition"/>：获客助手族（<c>customer_acquisition</c> / <c>customer_acquisition_permit_change</c>；官方 97299/97402/98958/99485）。</description></item>
 /// <item><description><see cref="SecurityChange"/>：<c>Event = security</c>（安全管理族：域名IP变更等；官方 100080，仅自建应用可配置接收）。</description></item>
+/// <item><description><see cref="KfEvent"/>：微信客服族（<c>kf_msg_or_event</c> / <c>kf_account_auth_change</c>；官方 94670/97712/94699/97302/96426/97713，三类应用）。</description></item>
 /// <item><description><see cref="Unknown"/>：无法判别（协议外报文），不拦截。</description></item>
 /// </list>
 /// <para>
@@ -78,4 +79,14 @@ public enum WechatCallbackEventFamily
     /// 第三方 / 代开发应用暂不支持；经应用数据回调 URL（<c>Event</c> 信封）承载。
     /// </remarks>
     SecurityChange = 7,
+
+    /// <summary>
+    /// 微信客服族（<c>kf_msg_or_event</c> 新消息通知 / <c>kf_account_auth_change</c> 客服账号授权变更；
+    /// 官方 94670/94699/96426 与 97712/97302/97713，三模式报文同构）。
+    /// </summary>
+    /// <remarks>
+    /// 官方开放面：三类应用均可接收（自建配置到「微信客服-可调用接口的应用」；第三方/代开发需
+    /// 「微信客服→管理账号、分配会话和收发消息」权限），经应用数据回调 URL（<c>Event</c> 信封）承载。
+    /// </remarks>
+    KfEvent = 8,
 }

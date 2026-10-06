@@ -60,6 +60,15 @@ public class WechatCallbackPayloadReaderTests
     };
 
     /// <summary>
+    /// 官方 path 94670 的微信客服事件：<c>Event</c> 节点自身即事件键（无 <c>ChangeType</c> 分组段）。
+    /// </summary>
+    private static WechatCallbackEvent KfEvent(string eventKey, string plainXml) => new()
+    {
+        Event = eventKey,
+        DecryptedXml = plainXml,
+    };
+
+    /// <summary>
     /// 官方 path 90240 的消息与事件：<c>Event</c> 节点自身即事件键（无 <c>ChangeType</c> 分组段）。
     /// </summary>
     private static WechatCallbackEvent SelfEvent(string eventKey, string plainXml) => new()
@@ -238,6 +247,62 @@ public class WechatCallbackPayloadReaderTests
         reader.Read<SecurityDomainIpChangedPayload>(evt).Status
             .Should().Be(WechatPayloadReadStatus.ContractMismatch,
                 "契约登记了 RequiredEvent=security；change_contact 报文不得命中安全管理载荷");
+    }
+
+    // ------------------------------------------------------------------ 微信客服族
+
+    [Fact]
+    public void Read_ShouldMapKfMsgOrEventNotification()
+    {
+        // 官方 94670 样报文：外层仅 Token + OpenKfId，内容须调 sync_msg 拉取（三模式文档同构，ADR-14）。
+        var result = CreateReader().Read<KfMsgOrEventPayload>(
+            KfEvent(WechatCallbackEventTypes.KfMsgOrEvent,
+                "<xml><ToUserName><![CDATA[ww12345678910]]></ToUserName><CreateTime>1348831860</CreateTime>" +
+                "<MsgType><![CDATA[event]]></MsgType><Event><![CDATA[kf_msg_or_event]]></Event>" +
+                "<Token><![CDATA[ENCApHxnGDNAVNY4AaSJKj4Tb5mwsEMzxhFmHVGcra996NR]]></Token>" +
+                "<OpenKfId><![CDATA[wkxxxxxxx]]></OpenKfId></xml>"));
+
+        result.Status.Should().Be(WechatPayloadReadStatus.Matched);
+        var payload = result.Payload!;
+        payload.Token.Should().Be("ENCApHxnGDNAVNY4AaSJKj4Tb5mwsEMzxhFmHVGcra996NR",
+            "官方 Token 为 sync_msg 拉取校验令牌（10 分钟内有效）");
+        payload.OpenKfId.Should().Be("wkxxxxxxx");
+        result.EventTypeKey.Should().Be(WechatCallbackEventTypes.KfMsgOrEvent, "无 ChangeType 分组段 ⇒ Event 即事件键");
+    }
+
+    [Fact]
+    public void Read_ShouldFallBackToGeneric_WhenKfAccountAuthChangeNotRegistered()
+    {
+        // kf_account_auth_change 的 AuthAdd/DelOpenKfId 为同级重名多节点形态，超出声明面（ADR-4 降级）：
+        // 未登记契约 ⇒ 读取器返回 GenericCallbackPayload（GenericFallback 是正常降级，不是失败）。
+        var reader = CreateReader();
+        var result = reader.Read<GenericCallbackPayload>(
+            KfEvent(WechatCallbackEventTypes.KfAccountAuthChange,
+                "<xml><ToUserName><![CDATA[toUser]]></ToUserName><FromUserName><![CDATA[sys]]></FromUserName>" +
+                "<CreateTime>1348831860</CreateTime><MsgType><![CDATA[event]]></MsgType>" +
+                "<Event><![CDATA[kf_account_auth_change]]></Event>" +
+                "<AuthAddOpenKfId><![CDATA[wkxxxx1]]></AuthAddOpenKfId>" +
+                "<AuthAddOpenKfId><![CDATA[wkxxxx2]]></AuthAddOpenKfId>" +
+                "<AuthDelOpenKfId><![CDATA[wkxxxx3]]></AuthDelOpenKfId></xml>"));
+
+        result.Status.Should().Be(WechatPayloadReadStatus.GenericFallback,
+            "官方键未登记契约 ⇒ 降级为通用载荷（宿主以 Values/原文读取；全量列表须解析 DecryptedXml）");
+        result.Payload!.Values["AuthAddOpenKfId"].Should().Be("wkxxxx2",
+            "Values 对同名重复子节点取最后一个（已文档化语义；首个值须从 DecryptedXml 原文获取）");
+        result.Payload!.Values["AuthDelOpenKfId"].Should().Be("wkxxxx3");
+    }
+
+    [Fact]
+    public void Read_ShouldReturnNullToken_WhenKfNotificationOmitsOptionalNodes()
+    {
+        // 权限分层：字段缺失 ⇒ null 不抛（处理器不得假设 Token/OpenKfId 必有值）。
+        var result = CreateReader().Read<KfMsgOrEventPayload>(
+            KfEvent(WechatCallbackEventTypes.KfMsgOrEvent,
+                "<xml><Event><![CDATA[kf_msg_or_event]]></Event><OpenKfId><![CDATA[wkA]]></OpenKfId></xml>"));
+
+        result.Status.Should().Be(WechatPayloadReadStatus.Matched);
+        result.Payload!.Token.Should().BeNull();
+        result.Payload!.OpenKfId.Should().Be("wkA");
     }
 
     // ------------------------------------------------------------------ 异步任务（双布局）

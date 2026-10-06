@@ -36,6 +36,9 @@ public class MpServiceBuilder
             [MpModule.Basic] = new MpModuleRegistrar(
                 MpModule.Basic,
                 s => s.AddBasicWebApiHttpClient()),
+            [MpModule.Tag] = new MpModuleRegistrar(
+                MpModule.Tag,
+                s => s.AddTagWebApiHttpClient()),
         };
 
     /// <summary>
@@ -43,6 +46,12 @@ public class MpServiceBuilder
     /// </summary>
     /// <returns>注册器（链式）。</returns>
     public MpServiceBuilder AddBasicApi() => AddModule(MpModule.Basic);
+
+    /// <summary>
+    /// 注册用户管理·标签管理（8 端点，均为「仅认证」账号可用）。
+    /// </summary>
+    /// <returns>注册器（链式）。</returns>
+    public MpServiceBuilder AddTagApi() => AddModule(MpModule.Tag);
 
     /// <summary>注册全部模块。</summary>
     /// <returns>注册器（链式）。</returns>

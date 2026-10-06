@@ -161,10 +161,11 @@ public class MpBasicContractGuards
             .OrderBy(n => n, StringComparer.Ordinal)
             .ToList();
 
-        queryInjectionInterfaces.Should().BeEquivalentTo(new[]
-        {
-            nameof(IMpBasicService),
-        }, "公众号官方契约强制 Query 注入；新增 Query 注入接口须评估后扩展本白名单");
+        // 精确白名单集由 MP-TG8（标签域守卫）持有——两处都断言全集会在新增域时双改，故此处只断言「本域在内」
+        // 并防止「整个 Query 注入面为空」的静默空跑。
+        queryInjectionInterfaces.Should().Contain(nameof(IMpBasicService),
+            "基础域必须在内；全集白名单由 MpTagContractGuards.MP-TG8 锁定");
+        queryInjectionInterfaces.Should().NotBeEmpty();
     }
 
     /// <summary>

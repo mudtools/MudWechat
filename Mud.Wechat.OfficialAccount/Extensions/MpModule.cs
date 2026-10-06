@@ -27,6 +27,16 @@ public enum MpModule
     Basic,
 
     /// <summary>
+    /// 用户管理 → 标签管理（创建标签 / 获取标签 / 编辑标签 / 删除标签 / 获取标签下粉丝列表 /
+    /// 批量打标签 / 批量取消标签 / 获取用户标签列表共 8 端点）。
+    /// </summary>
+    /// <remarks>
+    /// 域级约束：全部端点适用范围均为「公众号 / 服务号 —— 仅认证」（仅企业主体已认证账号可调用）；
+    /// 标签上限 100 个、单用户标签上限 20 个、标签名 ≤ 30 字符。
+    /// </remarks>
+    Tag,
+
+    /// <summary>
     /// 令牌签发（<c>getAccessToken</c> + <c>getStableAccessToken</c>）：随 <c>AddMpApp</c> 自动注册，
     /// 本枚举成员仅供模块清单对齐使用（不作为 <c>AddAuthenticationApi()</c> 的必要入口）。
     /// </summary>

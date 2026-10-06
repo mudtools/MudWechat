@@ -9,6 +9,7 @@
 using System.Text.Json.Serialization.Metadata;
 using Mud.Wechat.OfficialAccount.DataModels;
 using Mud.Wechat.OfficialAccount.DataModels.Basic;
+using Mud.Wechat.OfficialAccount.DataModels.Tag;
 
 namespace Mud.Wechat.OfficialAccount.Extensions;
 
@@ -33,7 +34,8 @@ public static class MpJsonResolverExtensions
     {
         var resolver = JsonTypeInfoResolver.Combine(
             CommonJsonContext.Default,
-            BasicJsonContext.Default);
+            BasicJsonContext.Default,
+            TagJsonContext.Default);
         services.AddMudHttpClientJsonContext(resolver);
     }
 }

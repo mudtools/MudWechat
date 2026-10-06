@@ -88,4 +88,63 @@ public static class MpErrorCodes
 
     /// <summary>网络通信检测：不正确的运营商参数。</summary>
     public const int CallbackCheckInvalidOperator = 40203;
+
+    // ---------------------------------------------------------------- 用户管理·标签管理（M2，取值逐页核验官方文档）
+
+    /// <summary>invalid openid：不合法的 OpenID（确认该用户是否已关注公众号，或是否为其他公众号的 OpenID）。</summary>
+    public const int InvalidOpenId = 40003;
+
+    /// <summary>invalid openid list size：不合法的 openid 列表长度。</summary>
+    public const int InvalidOpenIdListSize = 40032;
+
+    /// <summary>empty post data：传递的参数为空（如删除标签未带 <c>tag.id</c>）。</summary>
+    public const int EmptyPostData = 44002;
+
+    /// <summary>reach max api daily quota limit：超出接口每日调用限制。</summary>
+    public const int DailyQuotaReached = 45009;
+
+    /// <summary>标签数超限（官方：一个公众号最多可以创建 100 个标签，适当删减标签）。</summary>
+    public const int TagCountExceeded = 45056;
+
+    /// <summary>can't modify sys tag：禁止修改系统标签。</summary>
+    public const int SystemTagImmutable = 45058;
+
+    /// <summary>单用户标签数超过限制（官方：标签功能支持公众号为用户打上最多 20 个标签）。</summary>
+    public const int UserTagCountExceeded = 45059;
+
+    /// <summary>invalid tag name：检查标签名。</summary>
+    public const int InvalidTagName = 45157;
+
+    /// <summary>tag name too long：调小标签名长度（官方限制 30 个字符以内）。</summary>
+    public const int TagNameTooLong = 45158;
+
+    /// <summary>invalid tag id：非法的标签。</summary>
+    public const int InvalidTagId = 45159;
+
+    /// <summary>openid much req：一般是因为对同个 openid 并发打标 / 取消标签导致（应串行化同一 openid 的标签变更）。</summary>
+    public const int ConcurrentTaggingConflict = 45169;
+
+    /// <summary>
+    /// some openid fail：<b>部分</b> openid 失败（响应体 <c>fail_openid_list</c> 给出失败的 openid，可定向重试）。
+    /// </summary>
+    /// <remarks>整批重放会对已成功的 openid 重复打标，故调用方应读取 <c>fail_openid_list</c> 做定向重试。</remarks>
+    public const int SomeOpenIdFailed = 45171;
+
+    /// <summary>post data format error：参数格式错误。</summary>
+    public const int PostDataFormatError = 47001;
+
+    /// <summary>api unauthorized：接口功能未授权（可在「公众平台官网 - 开发者中心页」查看接口权限）。</summary>
+    public const int ApiUnauthorized = 48001;
+
+    /// <summary>not match openid with appid：传入的 openid 不属于此 AppID。</summary>
+    public const int OpenIdAppIdMismatch = 49003;
+
+    /// <summary>user limited：用户受限，可能是用户账号被冻结或注销。</summary>
+    public const int UserLimited = 50002;
+
+    /// <summary>user is unsubscribed：用户未关注公众号。</summary>
+    public const int UserUnsubscribed = 50005;
+
+    /// <summary>access clientip is not registered：第三方平台出口 IP 未设置（仅第三方平台调用场景）。</summary>
+    public const int ThirdPartyClientIpNotRegistered = 61004;
 }

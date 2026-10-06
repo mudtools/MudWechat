@@ -1472,4 +1472,382 @@ public class WechatCallbackPayloadReaderTests
         result.Payload!.ExtAttr[0].Name.Should().Be("工号");
         result.Payload!.ExtAttr[1].Name.Should().Be("职位");
     }
+
+    // ---------------------------------------- 日程族（97728/97730/97731/97732/98111 等；Event 节点即事件键）
+
+    [Theory]
+    [InlineData(WechatCallbackEventTypes.DeleteCalendar)]
+    [InlineData(WechatCallbackEventTypes.ModifyCalendar)]
+    public void Read_ShouldMapCalendarFields_WhenCalendarEvent(string eventKey)
+    {
+        var result = CreateReader().Read<CalendarChangedPayload>(new WechatCallbackEvent
+        {
+            Event = eventKey,
+            DecryptedXml = "<xml><ToUserName><![CDATA[toUser]]></ToUserName>" +
+                           "<FromUserName><![CDATA[fromUser]]></FromUserName>" +
+                           "<CreateTime>1348831860</CreateTime><MsgType><![CDATA[event]]></MsgType>" +
+                           $"<Event><![CDATA[{eventKey}]]></Event>" +
+                           "<CalId><![CDATA[wcjgewCwAAqeJcPI1d8Pwbjt7nttzAAA]]></CalId></xml>",
+        });
+
+        result.Status.Should().Be(WechatPayloadReadStatus.Matched, "日程族无 ChangeType 分组段 ⇒ Event 节点即事件键");
+        result.Payload!.CalId.Should().Be("wcjgewCwAAqeJcPI1d8Pwbjt7nttzAAA");
+    }
+
+    [Fact]
+    public void Read_ShouldMapScheduleFields_WhenRespondSchedule()
+    {
+        var result = CreateReader().Read<ScheduleChangedPayload>(new WechatCallbackEvent
+        {
+            Event = WechatCallbackEventTypes.RespondSchedule,
+            DecryptedXml = "<xml><MsgType><![CDATA[event]]></MsgType>" +
+                           "<Event><![CDATA[respond_schedule]]></Event>" +
+                           "<CalId><![CDATA[wcjgewCwAAqeJcPI1d8Pwbjt7nttzAAA]]></CalId>" +
+                           "<ScheduleId><![CDATA[17c7d2bd9f20d652840f72f59e796AAA]]></ScheduleId></xml>",
+        });
+
+        result.Status.Should().Be(WechatPayloadReadStatus.Matched);
+        result.Payload!.CalId.Should().Be("wcjgewCwAAqeJcPI1d8Pwbjt7nttzAAA");
+        result.Payload!.ScheduleId.Should().Be("17c7d2bd9f20d652840f72f59e796AAA");
+    }
+
+    [Fact]
+    public void Read_ShouldRejectCalendarMessage_WhenSchedulePayloadRequested()
+    {
+        // 日历与日程是不同的 Event 值（键不同）⇒ 逐键自指的 RequiredEvent 隔离。
+        var result = CreateReader().Read<ScheduleChangedPayload>(new WechatCallbackEvent
+        {
+            Event = WechatCallbackEventTypes.DeleteCalendar,
+            DecryptedXml = "<xml><Event><![CDATA[delete_calendar]]></Event>" +
+                           "<CalId><![CDATA[c]]></CalId></xml>",
+        });
+
+        result.Status.Should().Be(WechatPayloadReadStatus.ContractMismatch);
+    }
+
+    // ---------------------------------------- 会议族（meeting_change / meeting_statistics；ChangeType 为键）
+
+    [Fact]
+    public void Read_ShouldMapMeetingFlatFields_WhenModifyMeeting()
+    {
+        // 官方 99081 样报文：旧式信封，无 FromUserTmpOpenId 节点 ⇒ null。
+        var result = CreateReader().Read<MeetingChangedPayload>(new WechatCallbackEvent
+        {
+            Event = WechatCallbackEventTypes.MeetingChange,
+            ChangeType = WechatCallbackEventTypes.ModifyMeeting,
+            DecryptedXml = "<xml><MsgType><![CDATA[event]]></MsgType>" +
+                           "<Event><![CDATA[meeting_change]]></Event>" +
+                           "<ChangeType><![CDATA[modify_meeting]]></ChangeType>" +
+                           "<MeetingId><![CDATA[wcjgewCwAAqeJcPI1d8Pwbjt7nttzAAA]]></MeetingId></xml>",
+        });
+
+        result.Status.Should().Be(WechatPayloadReadStatus.Matched);
+        result.Payload!.MeetingId.Should().Be("wcjgewCwAAqeJcPI1d8Pwbjt7nttzAAA");
+        result.Payload!.FromUserTmpOpenId.Should().BeNull("修改/取消会议报文无 FromUserTmpOpenId 节点");
+    }
+
+    [Fact]
+    public void Read_ShouldMapMeetingFlatFields_WhenMemberJoinsMeeting()
+    {
+        var result = CreateReader().Read<MeetingChangedPayload>(new WechatCallbackEvent
+        {
+            Event = WechatCallbackEventTypes.MeetingChange,
+            ChangeType = WechatCallbackEventTypes.JoinMeeting,
+            DecryptedXml = "<xml><FromUserName><![CDATA[userId]]></FromUserName>" +
+                           "<FromUserTmpOpenId><![CDATA[tmpOpenId]]></FromUserTmpOpenId>" +
+                           "<MsgType><![CDATA[event]]></MsgType><Event><![CDATA[meeting_change]]></Event>" +
+                           "<ChangeType><![CDATA[join_meeting]]></ChangeType>" +
+                           "<MeetingId><![CDATA[m-1]]></MeetingId></xml>",
+        });
+
+        result.Status.Should().Be(WechatPayloadReadStatus.Matched);
+        result.Payload!.FromUserTmpOpenId.Should().Be("tmpOpenId");
+        result.Payload!.MeetingId.Should().Be("m-1");
+    }
+
+    [Fact]
+    public void Read_ShouldMapMeetingFlatFields_WhenRecordingStarted()
+    {
+        // 云录制族与会议平铺事件同构（信封 + TmpOpenId + MeetingId），共用 MeetingChangedPayload。
+        var result = CreateReader().Read<MeetingChangedPayload>(new WechatCallbackEvent
+        {
+            Event = WechatCallbackEventTypes.MeetingChange,
+            ChangeType = WechatCallbackEventTypes.StartRecording,
+            DecryptedXml = "<xml><Event><![CDATA[meeting_change]]></Event>" +
+                           "<ChangeType><![CDATA[start_recording]]></ChangeType>" +
+                           "<FromUserTmpOpenId><![CDATA[tmpOpenId]]></FromUserTmpOpenId>" +
+                           "<MeetingId><![CDATA[m-1]]></MeetingId></xml>",
+        });
+
+        result.Status.Should().Be(WechatPayloadReadStatus.Matched);
+        result.Payload!.MeetingId.Should().Be("m-1");
+    }
+
+    [Fact]
+    public void Read_ShouldMapEnrollFields_WhenUserEnrolls()
+    {
+        var result = CreateReader().Read<MeetingEnrollPayload>(new WechatCallbackEvent
+        {
+            Event = WechatCallbackEventTypes.MeetingChange,
+            ChangeType = WechatCallbackEventTypes.Enroll,
+            DecryptedXml = "<xml><Event><![CDATA[meeting_change]]></Event>" +
+                           "<ChangeType><![CDATA[enroll]]></ChangeType>" +
+                           "<FromUserTmpOpenId><![CDATA[tmpOpenId]]></FromUserTmpOpenId>" +
+                           "<MeetingId><![CDATA[m-1]]></MeetingId>" +
+                           "<EnrollId><![CDATA[EnrollId01]]></EnrollId></xml>",
+        });
+
+        result.Status.Should().Be(WechatPayloadReadStatus.Matched);
+        result.Payload!.MeetingId.Should().Be("m-1");
+        result.Payload!.EnrollId.Should().Be("EnrollId01");
+    }
+
+    [Fact]
+    public void Read_ShouldMapOperatedUser_WhenRoleChanged()
+    {
+        // 官方 98397 样报文：OperatedUser 单节点对象（UserId + TmpOpenId + UserRole）。
+        var result = CreateReader().Read<MeetingMemberChangedPayload>(new WechatCallbackEvent
+        {
+            Event = WechatCallbackEventTypes.MeetingChange,
+            ChangeType = WechatCallbackEventTypes.RoleChange,
+            DecryptedXml = "<xml><FromUserName><![CDATA[userId]]></FromUserName>" +
+                           "<FromUserTmpOpenId><![CDATA[tmpOpenId]]></FromUserTmpOpenId>" +
+                           "<OperatedUser><UserId><![CDATA[userId]]></UserId>" +
+                           "<TmpOpenId><![CDATA[tmpOpenId]]></TmpOpenId><UserRole>2</UserRole></OperatedUser>" +
+                           "<MsgType><![CDATA[event]]></MsgType><Event><![CDATA[meeting_change]]></Event>" +
+                           "<ChangeType><![CDATA[role_change]]></ChangeType>" +
+                           "<MeetingId><![CDATA[m-1]]></MeetingId></xml>",
+        });
+
+        result.Status.Should().Be(WechatPayloadReadStatus.Matched);
+        var operated = result.Payload!.OperatedUser;
+        operated.Should().NotBeNull();
+        operated!.UserId.Should().Be("userId");
+        operated.TmpOpenId.Should().Be("tmpOpenId");
+        operated.UserRole.Should().Be(2, "官方 UserRole=2 ⇒ 主持人权限");
+    }
+
+    [Fact]
+    public void Read_ShouldReturnNullOperatedUserRole_WhenWaitingRoomEvent()
+    {
+        // 可空超集：等候室事件不带 UserRole ⇒ null，处理器不得假设必有值。
+        var result = CreateReader().Read<MeetingMemberChangedPayload>(new WechatCallbackEvent
+        {
+            Event = WechatCallbackEventTypes.MeetingChange,
+            ChangeType = WechatCallbackEventTypes.QuitWaitingRoom,
+            DecryptedXml = "<xml><Event><![CDATA[meeting_change]]></Event>" +
+                           "<ChangeType><![CDATA[quit_waiting_room]]></ChangeType>" +
+                           "<OperatedUser><UserId><![CDATA[userId]]></UserId>" +
+                           "<TmpOpenId><![CDATA[tmpOpenId]]></TmpOpenId></OperatedUser>" +
+                           "<MeetingId><![CDATA[m-1]]></MeetingId></xml>",
+        });
+
+        result.Payload!.OperatedUser!.UserRole.Should().BeNull();
+    }
+
+    [Fact]
+    public void Read_ShouldMapWarmUpInfo_WhenWebinarWarmUpUploaded()
+    {
+        var result = CreateReader().Read<MeetingWarmUpUploadPayload>(new WechatCallbackEvent
+        {
+            Event = WechatCallbackEventTypes.MeetingChange,
+            ChangeType = WechatCallbackEventTypes.WebinarWarmUpUpload,
+            DecryptedXml = "<xml><FromUserName><![CDATA[sys]]></FromUserName>" +
+                           "<Event><![CDATA[meeting_change]]></Event>" +
+                           "<ChangeType><![CDATA[webinar_warm_up_upload]]></ChangeType>" +
+                           "<MeetingId><![CDATA[m-1]]></MeetingId>" +
+                           "<WarmUpInfo><WarmUpPicture><![CDATA[https://image.qq.com/12519.png]]></WarmUpPicture>" +
+                           "<WarmUpVideo><![CDATA[https://image.qq.com/a135.mp4]]></WarmUpVideo>" +
+                           "<UploadStatus>1</UploadStatus></WarmUpInfo></xml>",
+        });
+
+        result.Status.Should().Be(WechatPayloadReadStatus.Matched);
+        result.Payload!.MeetingId.Should().Be("m-1");
+        var warmUp = result.Payload!.WarmUpInfo;
+        warmUp.Should().NotBeNull();
+        warmUp!.WarmUpPicture.Should().Be("https://image.qq.com/12519.png");
+        warmUp.WarmUpVideo.Should().Be("https://image.qq.com/a135.mp4");
+        warmUp.UploadStatus.Should().Be(1);
+        warmUp.ErrorMsg.Should().BeNull("上传成功时官方不返回 ErrorMsg");
+    }
+
+    [Fact]
+    public void Read_ShouldMapMediumUploadInfos_WhenRepeatedSiblingsPresent()
+    {
+        // 官方 98775 样报文：UploadInfo 为根下重复同名复杂兄弟元素（对象列表、无包装容器）。
+        var result = CreateReader().Read<MeetingMediumUploadPayload>(new WechatCallbackEvent
+        {
+            Event = WechatCallbackEventTypes.MeetingChange,
+            ChangeType = WechatCallbackEventTypes.MediumUpload,
+            DecryptedXml = "<xml><FromUserName><![CDATA[sys]]></FromUserName>" +
+                           "<Event><![CDATA[meeting_change]]></Event>" +
+                           "<ChangeType><![CDATA[medium_upload]]></ChangeType>" +
+                           "<MeetingId><![CDATA[m-1]]></MeetingId>" +
+                           "<AllUploadStatus>false</AllUploadStatus>" +
+                           "<UploadInfo><MediumUrl><![CDATA[https://image.qq.com/12519.png]]></MediumUrl>" +
+                           "<MediumType>2</MediumType><UploadStatus>0</UploadStatus>" +
+                           "<ErrorMsg><![CDATA[low-resolution]]></ErrorMsg></UploadInfo>" +
+                           "<UploadInfo><MediumUrl><![CDATA[https://image.qq.com/12520.png]]></MediumUrl>" +
+                           "<MediumType>2</MediumType><UploadStatus>1</UploadStatus></UploadInfo></xml>",
+        });
+
+        result.Status.Should().Be(WechatPayloadReadStatus.Matched);
+        result.Payload!.AllUploadStatus.Should().BeFalse("官方以 true/false 文本承载布尔");
+        var infos = result.Payload!.UploadInfos;
+        infos.Should().HaveCount(2, "重复复杂兄弟元素经合并投影全量读取");
+        infos[0].MediumUrl.Should().Be("https://image.qq.com/12519.png");
+        infos[0].MediumType.Should().Be(2);
+        infos[0].UploadStatus.Should().Be(0);
+        infos[0].ErrorMsg.Should().Be("low-resolution");
+        infos[1].MediumUrl.Should().Be("https://image.qq.com/12520.png");
+        infos[1].UploadStatus.Should().Be(1);
+        infos[1].ErrorMsg.Should().BeNull();
+    }
+
+    [Fact]
+    public void Read_ShouldMapSingleMediumUploadInfo_WhenOnlyOneSiblingPresent()
+    {
+        // 恰 1 个元素时未触发合并投影，RepeatMediumUploadItems 须按单项绑定。
+        var result = CreateReader().Read<MeetingMediumUploadPayload>(new WechatCallbackEvent
+        {
+            Event = WechatCallbackEventTypes.MeetingChange,
+            ChangeType = WechatCallbackEventTypes.MediumUpload,
+            DecryptedXml = "<xml><Event><![CDATA[meeting_change]]></Event>" +
+                           "<ChangeType><![CDATA[medium_upload]]></ChangeType>" +
+                           "<MeetingId><![CDATA[m-1]]></MeetingId>" +
+                           "<AllUploadStatus>true</AllUploadStatus>" +
+                           "<UploadInfo><MediumUrl><![CDATA[https://image.qq.com/1.png]]></MediumUrl>" +
+                           "<MediumType>2</MediumType><UploadStatus>1</UploadStatus></UploadInfo></xml>",
+        });
+
+        result.Payload!.AllUploadStatus.Should().BeTrue();
+        result.Payload!.UploadInfos.Should().ContainSingle().Which.MediumUrl.Should().Be("https://image.qq.com/1.png");
+    }
+
+    [Fact]
+    public void Read_ShouldMapRoomResponse_WhenMeetingRoomAnswered()
+    {
+        // 官方 98783 样报文：MeetingRoomId 与 MraAddress 二选一；系统触发无 FromUserTmpOpenId。
+        var result = CreateReader().Read<MeetingRoomResponsePayload>(new WechatCallbackEvent
+        {
+            Event = WechatCallbackEventTypes.MeetingChange,
+            ChangeType = WechatCallbackEventTypes.MeetingRoomResponse,
+            DecryptedXml = "<xml><FromUserName><![CDATA[sys]]></FromUserName>" +
+                           "<Event><![CDATA[meeting_change]]></Event>" +
+                           "<ChangeType><![CDATA[meeting_room_response]]></ChangeType>" +
+                           "<MeetingId><![CDATA[m-1]]></MeetingId>" +
+                           "<MeetingRoomId><![CDATA[mRidadc]]></MeetingRoomId>" +
+                           "<MraAddress><Protocol>1</Protocol>" +
+                           "<DialString><![CDATA[DialString]]></DialString></MraAddress>" +
+                           "<RoomResponseStatus>2</RoomResponseStatus></xml>",
+        });
+
+        result.Status.Should().Be(WechatPayloadReadStatus.Matched);
+        result.Payload!.MeetingRoomId.Should().Be("mRidadc");
+        var address = result.Payload!.MraAddress;
+        address.Should().NotBeNull();
+        address!.Protocol.Should().Be(1, "官方 Protocol=1 ⇒ SIP");
+        address.DialString.Should().Be("DialString");
+        result.Payload!.RoomResponseStatus.Should().Be(2, "官方 2 ⇒ 入会中");
+        result.Payload!.FromUserTmpOpenId.Should().BeNull("会议室应答为系统触发，无操作者临时 ID");
+    }
+
+    [Fact]
+    public void Read_ShouldMapMeetingStatus_WhenQuickMeetingStarted()
+    {
+        // 官方 99648：Event=meeting_statistics（独立 Event 值），键取 ChangeType=start_meeting。
+        var evt = new WechatCallbackEvent
+        {
+            Event = WechatCallbackEventTypes.MeetingStatistics,
+            ChangeType = WechatCallbackEventTypes.StartMeeting,
+            DecryptedXml = "<xml><FromUserName><![CDATA[fromUser]]></FromUserName>" +
+                           "<Event><![CDATA[meeting_statistics]]></Event>" +
+                           "<ChangeType><![CDATA[start_meeting]]></ChangeType>" +
+                           "<Status>1</Status></xml>",
+        };
+
+        evt.EventTypeKey.Should().Be("start_meeting", "会议统计族键取 ChangeType（与 meeting_change 族键域互异）");
+
+        var result = CreateReader().Read<MeetingStatisticsPayload>(evt);
+
+        result.Status.Should().Be(WechatPayloadReadStatus.Matched);
+        result.Payload!.Status.Should().Be(1, "官方 Status=1 ⇒ 会议发起成功");
+    }
+
+    [Fact]
+    public void Read_ShouldRejectMeetingMessage_WhenRequiredEventDiffers()
+    {
+        // B4：meeting_change 报文不得进入 meeting_statistics 族载荷（RequiredEvent 隔离）。
+        var result = CreateReader().Read<MeetingStatisticsPayload>(new WechatCallbackEvent
+        {
+            Event = WechatCallbackEventTypes.MeetingChange,
+            ChangeType = WechatCallbackEventTypes.StartMeeting,
+            DecryptedXml = "<xml><Event><![CDATA[meeting_change]]></Event>" +
+                           "<ChangeType><![CDATA[start_meeting]]></ChangeType>" +
+                           "<Status>1</Status></xml>",
+        });
+
+        result.Status.Should().Be(WechatPayloadReadStatus.ContractMismatch,
+            "start_meeting 键在 meeting_statistics 族下的契约要求 Event=meeting_statistics");
+    }
+
+    // ---------------------------------------- 日程/会议族开放面（ADR-15）
+
+    [Theory]
+    [InlineData(WechatAppType.Internal, WechatCallbackChannel.App, true)]
+    [InlineData(WechatAppType.ThirdParty, WechatCallbackChannel.App, true)]
+    [InlineData(WechatAppType.Provider, WechatCallbackChannel.App, true)]
+    public void ModifyMeetingContract_ShouldOpenForAllThreeModes(
+        WechatAppType appType, WechatCallbackChannel channel, bool expected)
+    {
+        CreateRegistry().TryResolve(WechatCallbackEventTypes.ModifyMeeting, out var contract).Should().BeTrue();
+        var evt = new WechatCallbackEvent
+        {
+            Event = WechatCallbackEventTypes.MeetingChange,
+            ChangeType = WechatCallbackEventTypes.ModifyMeeting,
+        };
+
+        contract!.IsOpenFor(evt, appType, channel).Should().Be(expected,
+            "官方第三方 97451 / 代开发 97459 均提供修改/取消会议回调 ⇒ 三类应用开放");
+    }
+
+    [Theory]
+    [InlineData(WechatAppType.Internal, WechatCallbackChannel.App, true)]
+    [InlineData(WechatAppType.ThirdParty, WechatCallbackChannel.App, false)]
+    [InlineData(WechatAppType.Provider, WechatCallbackChannel.App, false)]
+    public void InternalOnlyMeetingContracts_ShouldOpenOnlyForInternal(
+        WechatAppType appType, WechatCallbackChannel channel, bool expected)
+    {
+        // join_meeting 与 start_meeting（meeting_statistics 族）官方仅自建文档树提供。
+        foreach (var key in new[] { WechatCallbackEventTypes.JoinMeeting, WechatCallbackEventTypes.StartMeeting })
+        {
+            CreateRegistry().TryResolve(key, out var contract).Should().BeTrue();
+            var evt = new WechatCallbackEvent
+            {
+                Event = key == WechatCallbackEventTypes.StartMeeting
+                    ? WechatCallbackEventTypes.MeetingStatistics
+                    : WechatCallbackEventTypes.MeetingChange,
+                ChangeType = key,
+            };
+
+            contract!.IsOpenFor(evt, appType, channel).Should().Be(expected,
+                $"事件键 {key} 官方仅在企业自建文档树提供");
+        }
+    }
+
+    [Theory]
+    [InlineData(WechatAppType.Internal)]
+    [InlineData(WechatAppType.ThirdParty)]
+    [InlineData(WechatAppType.Provider)]
+    public void ScheduleContracts_ShouldOpenForAllThreeModes(WechatAppType appType)
+    {
+        foreach (var key in new[] { WechatCallbackEventTypes.DeleteCalendar, WechatCallbackEventTypes.RespondSchedule })
+        {
+            CreateRegistry().TryResolve(key, out var contract).Should().BeTrue();
+            var evt = new WechatCallbackEvent { Event = key };
+
+            contract!.IsOpenFor(evt, appType, WechatCallbackChannel.App).Should().BeTrue(
+                "日程回调通知官方三份文档（自建/第三方/代开发）正文逐字一致 ⇒ 三类应用开放");
+        }
+    }
 }

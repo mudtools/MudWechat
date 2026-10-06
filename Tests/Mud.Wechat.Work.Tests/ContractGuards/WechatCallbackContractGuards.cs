@@ -35,8 +35,9 @@ public class WechatCallbackContractGuards
     /// 官方事件键全集（授权 InfoType 6 + 通讯录 ChangeType 7 + 异步 Event 1 + 上下游 Event 1 + ChangeType 9
     /// + 安全管理 ChangeType 1（官方 100080）+ 微信客服 Event 2（官方 94670/97712 等三模式文档）
     /// + 客户联系/获客助手族事件值 5 + 消息与事件 path 90240 的 24 个 Event 键
-    /// + 应用版本付费订单回调 InfoType 6 + 邮箱族事件值 2 + 文档族 ChangeType 5 + 智能表格族 ChangeType 6，
-    /// 合计 75）。
+    /// + 应用版本付费订单回调 InfoType 6 + 邮箱族事件值 2 + 文档族 ChangeType 5 + 智能表格族 ChangeType 6
+    /// + 日程族 Event 5 + 会议族 ChangeType 30，
+    /// 合计 110）。
     /// </summary>
     /// <remarks>
     /// 客户联系/获客助手族（官方 92130/92277/96361/97299/97402/99485/98958）以<b>族事件值</b>为事件键：
@@ -121,6 +122,41 @@ public class WechatCallbackContractGuards
         (WechatCallbackEventTypes.AddRecord, "智能表格族 add_record（100986/101017/101019）"),
         (WechatCallbackEventTypes.UpdateRecord, "智能表格族 update_record（同上）"),
         (WechatCallbackEventTypes.DeleteRecord, "智能表格族 delete_record（同上）"),
+        (WechatCallbackEventTypes.DeleteCalendar, "日程族 delete_calendar（97728/97806/97771）"),
+        (WechatCallbackEventTypes.ModifyCalendar, "日程族 modify_calendar（97730/97808/97772）"),
+        (WechatCallbackEventTypes.ModifySchedule, "日程族 modify_schedule（97731/97809/97773）"),
+        (WechatCallbackEventTypes.DeleteSchedule, "日程族 delete_schedule（97732/97810/97774）"),
+        (WechatCallbackEventTypes.RespondSchedule, "日程族 respond_schedule（98111/98099/98110）"),
+        (WechatCallbackEventTypes.ModifyMeeting, "会议族 modify_meeting（99081/97451/97459）"),
+        (WechatCallbackEventTypes.CancelMeeting, "会议族 cancel_meeting（99082/97451/97459）"),
+        (WechatCallbackEventTypes.MeetingStart, "会议族 meeting_start（98333，仅自建）"),
+        (WechatCallbackEventTypes.MeetingEnd, "会议族 meeting_end（98337，仅自建）"),
+        (WechatCallbackEventTypes.MeetingMuteAll, "会议族 meeting_mute_all（98341，仅自建）"),
+        (WechatCallbackEventTypes.MeetingUnmuteAll, "会议族 meeting_unmute_all（98345，仅自建）"),
+        (WechatCallbackEventTypes.JoinMeeting, "会议族 join_meeting（98348，仅自建）"),
+        (WechatCallbackEventTypes.QuitMeeting, "会议族 quit_meeting（98352，仅自建）"),
+        (WechatCallbackEventTypes.JoinMeetingBeforeHost, "会议族 join_meeting_before_host（98353，仅自建）"),
+        (WechatCallbackEventTypes.JoinWaitingRoom, "会议族 join_waiting_room（98354，仅自建）"),
+        (WechatCallbackEventTypes.OpenScreenShare, "会议族 open_screen_share（98395，仅自建）"),
+        (WechatCallbackEventTypes.CloseScreenShare, "会议族 close_screen_share（98396，仅自建）"),
+        (WechatCallbackEventTypes.QuitWaitingRoom, "会议族 quit_waiting_room（98355，仅自建）"),
+        (WechatCallbackEventTypes.JoinFromMeetingRoom, "会议族 join_from_meeting_room（98393，仅自建）"),
+        (WechatCallbackEventTypes.MoveToWaitingRoom, "会议族 move_to_waiting_room（98394，仅自建）"),
+        (WechatCallbackEventTypes.RoleChange, "会议族 role_change（98397，仅自建）"),
+        (WechatCallbackEventTypes.WebinarRoleChange, "会议族 webinar_role_change（98771，仅自建）"),
+        (WechatCallbackEventTypes.WebinarWarmUpUpload, "会议族 webinar_warm_up_upload（98773，仅自建）"),
+        (WechatCallbackEventTypes.PstnStatusUpdate, "会议族 pstn_status_update（98774，仅自建）"),
+        (WechatCallbackEventTypes.MediumUpload, "会议族 medium_upload（98775，仅自建）"),
+        (WechatCallbackEventTypes.StartRecording, "会议族 start_recording（98398，仅自建）"),
+        (WechatCallbackEventTypes.PauseRecording, "会议族 pause_recording（98399，仅自建）"),
+        (WechatCallbackEventTypes.ResumeRecording, "会议族 resume_recording（98400，仅自建）"),
+        (WechatCallbackEventTypes.StopRecording, "会议族 stop_recording（98401，仅自建）"),
+        (WechatCallbackEventTypes.RecordingComplete, "会议族 recording_complete（98402，仅自建）"),
+        (WechatCallbackEventTypes.DeleteRecording, "会议族 delete_recording（98404，仅自建）"),
+        (WechatCallbackEventTypes.Enroll, "会议族 enroll（98781，仅自建）"),
+        (WechatCallbackEventTypes.CancelEnroll, "会议族 cancel_enroll（98782，仅自建）"),
+        (WechatCallbackEventTypes.MeetingRoomResponse, "会议族 meeting_room_response（98783，仅自建）"),
+        (WechatCallbackEventTypes.StartMeeting, "会议族 start_meeting（99648，meeting_statistics 族，仅自建）"),
     };
 
     // ---------------------------------------------------------------- CB1
@@ -151,7 +187,8 @@ public class WechatCallbackContractGuards
     /// （授权 InfoType 6 + 通讯录 ChangeType 7 + 异步 Event 1 + 上下游 Event 1 与 ChangeType 9
     /// + 安全管理 ChangeType 1（官方 100080）+ 微信客服 Event 2（官方 94670/97712 等三模式文档）
     /// + 客户联系/获客助手族事件值 5 + 消息与事件 path 90240 的 24 个 Event 键
-    /// + 应用版本付费订单回调 InfoType 6 + 邮箱族事件值 2 + 文档族 ChangeType 5 + 智能表格族 ChangeType 6），
+    /// + 应用版本付费订单回调 InfoType 6 + 邮箱族事件值 2 + 文档族 ChangeType 5 + 智能表格族 ChangeType 6
+    /// + 日程族 Event 5 + 会议族 ChangeType 30），
     /// 且 <see cref="WechatCallbackEvent.EventTypeKey"/> 判别优先级为
     /// 客户联系/获客族与邮箱族「外层事件值」→ InfoType → ChangeType → Event（v1 方案 D4 + ADR-14 三模式键统一）。
     /// </summary>
@@ -172,6 +209,11 @@ public class WechatCallbackContractGuards
         constants.Should().Contain(WechatCallbackEventTypes.ChangeContact, "通讯录变更事件信封值");
         constants.Should().Contain(WechatCallbackEventTypes.ChangeChain, "上下游变更事件信封值（95796）");
         constants.Should().Contain(WechatCallbackEventTypes.Security, "安全管理事件信封值（100080）");
+        constants.Should().Contain(WechatCallbackEventTypes.DocChange, "文档族事件信封值（97833 等）");
+        constants.Should().Contain(WechatCallbackEventTypes.SmartSheetChange, "智能表格族事件信封值（100986 等）");
+        constants.Should().Contain(WechatCallbackEventTypes.MeetingChange, "会议族事件信封值（99081 等）");
+        constants.Should().Contain(WechatCallbackEventTypes.MeetingStatistics, "会议统计族事件信封值（99648）");
+
         // EventTypeKey 判别优先级（D4）。
         new WechatCallbackEvent { InfoType = "suite_ticket", Event = "change_contact", ChangeType = "create_user" }
             .EventTypeKey.Should().Be("suite_ticket", "InfoType 优先");
@@ -359,6 +401,35 @@ public class WechatCallbackContractGuards
             "add_record / update_record / delete_record",
             "DocId", "SheetId", "RecordIds");
 
+        // 日程族（官方 97728/97730/97731/97732/98111 等；Event 节点即事件键）。
+        AssertProperties(typeof(CalendarChangedPayload),
+            "delete_calendar / modify_calendar", "CalId");
+        AssertProperties(typeof(ScheduleChangedPayload),
+            "modify_schedule / delete_schedule / respond_schedule", "CalId", "ScheduleId");
+
+        // 会议族（官方 meeting_change 29 键 + meeting_statistics 1 键；modify/cancel 三模式开放，其余仅自建）。
+        AssertProperties(typeof(MeetingChangedPayload),
+            "modify_meeting / cancel_meeting / meeting_start / meeting_end / meeting_mute_all /" +
+            " meeting_unmute_all / join_meeting / quit_meeting / join_meeting_before_host /" +
+            " join_waiting_room / open_screen_share / close_screen_share / 云录制 6 键（18 键）",
+            "FromUserTmpOpenId", "MeetingId");
+        AssertProperties(typeof(MeetingEnrollPayload),
+            "enroll / cancel_enroll", "FromUserTmpOpenId", "MeetingId", "EnrollId");
+        AssertProperties(typeof(MeetingPstnStatusPayload),
+            "pstn_status_update", "FromUserTmpOpenId", "MeetingId", "PstnStatus");
+        AssertProperties(typeof(MeetingMemberChangedPayload),
+            "quit_waiting_room / join_from_meeting_room / move_to_waiting_room / role_change /" +
+            " webinar_role_change（5 键）",
+            "FromUserTmpOpenId", "OperatedUser", "MeetingId");
+        AssertProperties(typeof(MeetingWarmUpUploadPayload),
+            "webinar_warm_up_upload", "MeetingId", "WarmUpInfo");
+        AssertProperties(typeof(MeetingMediumUploadPayload),
+            "medium_upload（UploadInfo 为根下重复同名兄弟元素）", "MeetingId", "AllUploadStatus", "UploadInfos");
+        AssertProperties(typeof(MeetingRoomResponsePayload),
+            "meeting_room_response", "MeetingId", "MeetingRoomId", "MraAddress", "RoomResponseStatus");
+        AssertProperties(typeof(MeetingStatisticsPayload),
+            "start_meeting（meeting_statistics 族）", "Status");
+
         var payloadTypes = new[]
         {
             typeof(ContactUserChangedPayload), typeof(ContactPartyChangedPayload),
@@ -375,6 +446,11 @@ public class WechatCallbackContractGuards
             typeof(AppEmailChangedPayload), typeof(PublicEmailChangedPayload),
             typeof(DocChangedPayload), typeof(SmartSheetFieldChangedPayload),
             typeof(SmartSheetRecordChangedPayload),
+            typeof(CalendarChangedPayload), typeof(ScheduleChangedPayload),
+            typeof(MeetingChangedPayload), typeof(MeetingEnrollPayload),
+            typeof(MeetingPstnStatusPayload), typeof(MeetingMemberChangedPayload),
+            typeof(MeetingWarmUpUploadPayload), typeof(MeetingMediumUploadPayload),
+            typeof(MeetingRoomResponsePayload), typeof(MeetingStatisticsPayload),
         };
 
         foreach (var type in payloadTypes)
@@ -400,7 +476,7 @@ public class WechatCallbackContractGuards
     }
 
     /// <summary>
-    /// 契约守卫 CB4b（v2.2 新增；P2 扩展）：官方契约表必须登记全部 67 个载荷事件键，且授权族键不登记；
+    /// 契约守卫 CB4b（v2.2 新增；P2 扩展）：官方契约表必须登记全部 102 个载荷事件键，且授权族键不登记；
     /// 并断言「生成物登记键集 == <c>[WechatCallbackContract]</c> 特性声明并集」（生成器漂移闸）。
     /// 双面锁定：官方清单（expectedKeys）是外部契约的权威锚点，特性一致性断言锁内部链条 ——
     /// 二者不得互替（同源即同向逃逸）。
@@ -459,12 +535,35 @@ public class WechatCallbackContractGuards
             WechatCallbackEventTypes.AddFiled, WechatCallbackEventTypes.UpdateFiled,
             WechatCallbackEventTypes.DeleteFiled, WechatCallbackEventTypes.AddRecord,
             WechatCallbackEventTypes.UpdateRecord, WechatCallbackEventTypes.DeleteRecord,
+
+            // 日程族 5 键（Event 节点即事件键；97728/97730/97731/97732/98111 等）。
+            WechatCallbackEventTypes.DeleteCalendar, WechatCallbackEventTypes.ModifyCalendar,
+            WechatCallbackEventTypes.ModifySchedule, WechatCallbackEventTypes.DeleteSchedule,
+            WechatCallbackEventTypes.RespondSchedule,
+
+            // 会议族 30 键（meeting_change 的 ChangeType + meeting_statistics 的 start_meeting；
+            // modify_meeting/cancel_meeting 三模式开放，其余仅自建）。
+            WechatCallbackEventTypes.ModifyMeeting, WechatCallbackEventTypes.CancelMeeting,
+            WechatCallbackEventTypes.MeetingStart, WechatCallbackEventTypes.MeetingEnd,
+            WechatCallbackEventTypes.MeetingMuteAll, WechatCallbackEventTypes.MeetingUnmuteAll,
+            WechatCallbackEventTypes.JoinMeeting, WechatCallbackEventTypes.QuitMeeting,
+            WechatCallbackEventTypes.JoinMeetingBeforeHost, WechatCallbackEventTypes.JoinWaitingRoom,
+            WechatCallbackEventTypes.OpenScreenShare, WechatCallbackEventTypes.CloseScreenShare,
+            WechatCallbackEventTypes.QuitWaitingRoom, WechatCallbackEventTypes.JoinFromMeetingRoom,
+            WechatCallbackEventTypes.MoveToWaitingRoom, WechatCallbackEventTypes.RoleChange,
+            WechatCallbackEventTypes.WebinarRoleChange, WechatCallbackEventTypes.WebinarWarmUpUpload,
+            WechatCallbackEventTypes.PstnStatusUpdate, WechatCallbackEventTypes.MediumUpload,
+            WechatCallbackEventTypes.StartRecording, WechatCallbackEventTypes.PauseRecording,
+            WechatCallbackEventTypes.ResumeRecording, WechatCallbackEventTypes.StopRecording,
+            WechatCallbackEventTypes.RecordingComplete, WechatCallbackEventTypes.DeleteRecording,
+            WechatCallbackEventTypes.Enroll, WechatCallbackEventTypes.CancelEnroll,
+            WechatCallbackEventTypes.MeetingRoomResponse, WechatCallbackEventTypes.StartMeeting,
         };
 
         var registered = registry.RegisteredKeys;
-        registered.Should().HaveCount(67,
-            "官方有强类型载荷的事件键共 67 个（17 + 安全管理 1 + 微信客服 1 + 客户联系/获客族 5 + 90240 的 24" +
-            " + 应用版本付费订单回调族 6 + 邮箱族 2 + 文档族 5 + 智能表格族 6）");
+        registered.Should().HaveCount(102,
+            "官方有强类型载荷的事件键共 102 个（17 + 安全管理 1 + 微信客服 1 + 客户联系/获客族 5 + 90240 的 24" +
+            " + 应用版本付费订单回调族 6 + 邮箱族 2 + 文档族 5 + 智能表格族 6 + 日程族 5 + 会议族 30）");
         foreach (var key in expectedKeys)
         {
             registered.Should().Contain(key, $"官方事件键 {key} 必须登记契约");
@@ -496,7 +595,7 @@ public class WechatCallbackContractGuards
             .SelectMany(t => t.GetCustomAttributes<WechatCallbackContractAttribute>(inherit: false))
             .SelectMany(a => a.EventTypes)
             .ToHashSet(StringComparer.Ordinal);
-        declaredKeys.Should().HaveCount(67, "[WechatCallbackContract] 特性声明的事件键并集应为 67 个");
+        declaredKeys.Should().HaveCount(102, "[WechatCallbackContract] 特性声明的事件键并集应为 102 个");
         registered.Should().BeEquivalentTo(declaredKeys, "生成器登记的键集必须与 [WechatCallbackContract] 特性声明并集一致（生成器漂移闸）");
     }
 

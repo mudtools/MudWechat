@@ -170,6 +170,14 @@ public static class MpMultiAppExtensions
             sp.GetRequiredService<IMpHttpClientFactory>(),
             sp.GetService<ILogger<PerAppMpAuthenticationFactory>>()));
 
+        // 票据 API 工厂（per-app 票据客户端；由 MpAppManager 装配票据管理器时使用）。
+        // 官方对本端点的调用频次有硬约束（「次数非常有限，频繁刷新会导致调用受限」），
+        // 故票据一律经管理器缓存取用，不注册可供宿主逐次直调的默认客户端（避免误用面）。
+        services.TryAddSingleton<IMpTicketFactory>(sp => new PerAppMpTicketFactory(
+            sp,
+            sp.GetRequiredService<IMpHttpClientFactory>(),
+            sp.GetService<ILogger<PerAppMpTicketFactory>>()));
+
         // 公众号 errcode 失效判定器（子判定器身份；由公用层组合器统一消费）。
         services.TryAddEnumerable(
             ServiceDescriptor.Singleton<ITokenInvalidationDetector, MpTokenInvalidationDetector>());

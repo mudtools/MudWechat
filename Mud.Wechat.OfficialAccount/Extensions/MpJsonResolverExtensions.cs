@@ -15,6 +15,7 @@ using Mud.Wechat.OfficialAccount.DataModels.KfSession;
 using Mud.Wechat.OfficialAccount.DataModels.Menu;
 using Mud.Wechat.OfficialAccount.DataModels.Tag;
 using Mud.Wechat.OfficialAccount.DataModels.User;
+using Mud.Wechat.OfficialAccount.DataModels.WebDev;
 
 namespace Mud.Wechat.OfficialAccount.Extensions;
 
@@ -45,7 +46,8 @@ public static class MpJsonResolverExtensions
             MenuJsonContext.Default,
             CustomerMessageJsonContext.Default,
             KfAccountJsonContext.Default,
-            KfSessionJsonContext.Default);
+            KfSessionJsonContext.Default,
+            WebDevJsonContext.Default);
         services.AddMudHttpClientJsonContext(resolver);
     }
 }

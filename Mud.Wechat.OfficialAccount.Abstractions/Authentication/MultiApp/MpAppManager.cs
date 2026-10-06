@@ -441,7 +441,28 @@ public sealed class MpAppManager : IMpAppManager, IDisposable
                 new MpTokenManagerRegistry(tokenManager));
 
             var httpClient = clientFactory.Create(config.AppKey, recoveryExecutor);
-            return new MpAppContext(config, httpClient, tokenManager, provider, scope);
+
+            // 票据管理器（jsapi / wx_card 各一份；与令牌管理器同应用、同持久化仓储、键空间隔离）。
+            var ticketFactory = provider.GetRequiredService<IMpTicketFactory>();
+            var ticketService = ticketFactory.Create(config.AppKey);
+            var ticketStore = provider.GetService<IWechatTokenStore>();
+
+            var jsApiTicketManager = new MpJsApiTicketManager(
+                ticketService,
+                tokenManager,
+                Options.Create(config),
+                provider.GetRequiredService<ILogger<MpJsApiTicketManager>>(),
+                ticketStore);
+
+            var wxCardTicketManager = new MpWxCardTicketManager(
+                ticketService,
+                tokenManager,
+                Options.Create(config),
+                provider.GetRequiredService<ILogger<MpWxCardTicketManager>>(),
+                ticketStore);
+
+            return new MpAppContext(
+                config, httpClient, tokenManager, provider, scope, jsApiTicketManager, wxCardTicketManager);
         }
         catch
         {

@@ -33,13 +33,17 @@ public class MpAppContext : IMpAppContext
         IEnhancedHttpClient httpClient,
         IMpAccessTokenManager accessTokenManager,
         IServiceProvider? serviceProvider = null,
-        IServiceScope? scope = null)
+        IServiceScope? scope = null,
+        IMpJsApiTicketManager? jsApiTicketManager = null,
+        IMpWxCardTicketManager? wxCardTicketManager = null)
     {
         Config = config ?? throw new ArgumentNullException(nameof(config));
         HttpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
         AccessTokenManager = accessTokenManager ?? throw new ArgumentNullException(nameof(accessTokenManager));
         _serviceProvider = serviceProvider;
         _scope = scope;
+        JsApiTicketManager = jsApiTicketManager;
+        WxCardTicketManager = wxCardTicketManager;
     }
 
     /// <inheritdoc />
@@ -59,6 +63,12 @@ public class MpAppContext : IMpAppContext
 
     /// <inheritdoc />
     public IMpAccessTokenManager AccessTokenManager { get; }
+
+    /// <summary>本应用的 JS-SDK 票据管理器（<c>type=jsapi</c>；未装配时为 <c>null</c>）。</summary>
+    public IMpJsApiTicketManager? JsApiTicketManager { get; }
+
+    /// <summary>本应用的卡券票据管理器（<c>type=wx_card</c>；未装配时为 <c>null</c>）。</summary>
+    public IMpWxCardTicketManager? WxCardTicketManager { get; }
 
     /// <summary>
     /// 按令牌类型路由令牌管理器（生成代码与 <c>DefaultTokenProvider</c> 的查找入口）。
@@ -111,6 +121,12 @@ public class MpAppContext : IMpAppContext
                 return AccessTokenManager as T;
             case var t when t == typeof(IEnhancedHttpClient):
                 return HttpClient as T;
+            case var t when t == typeof(IMpJsApiTicketManager):
+                return (T?)(object?)JsApiTicketManager;
+            case var t when t == typeof(IMpWxCardTicketManager):
+                return (T?)(object?)WxCardTicketManager;
+            case var t when t == typeof(IMpTicketManager):
+                return (T?)(object?)JsApiTicketManager;
             default:
                 return _serviceProvider?.GetService<T>();
         }
@@ -129,6 +145,17 @@ public class MpAppContext : IMpAppContext
             if (AccessTokenManager is IDisposable tokenManager)
             {
                 tokenManager.Dispose();
+            }
+
+            // 票据管理器各自持有缓存与（潜在的）刷新资源，必须随上下文释放。
+            if (JsApiTicketManager is IDisposable jsApiTicketManager)
+            {
+                jsApiTicketManager.Dispose();
+            }
+
+            if (WxCardTicketManager is IDisposable wxCardTicketManager)
+            {
+                wxCardTicketManager.Dispose();
             }
 
             if (HttpClient is IDisposable httpClient)

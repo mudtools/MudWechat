@@ -116,7 +116,7 @@ public class WechatCallbackEvent
 
     /// <summary>
     /// 事件类型键（处理器匹配键，v1 方案 D4）：
-    /// 客户联系/获客族以<b>族事件值</b>为键（<c>Event</c> 优先、套件信封回退 <c>InfoType</c>）；
+    /// 客户联系/获客族与邮箱族以<b>族事件值</b>为键（<c>Event</c> 优先、套件信封回退 <c>InfoType</c>）；
     /// 其余按 <c>InfoType</c> → <c>ChangeType</c> → <c>Event</c> 优先级；三者皆空返回空串（仅兜底处理器可见）。
     /// </summary>
     /// <remarks>
@@ -128,6 +128,11 @@ public class WechatCallbackEvent
     /// 第三方应用的指令回调（套件信封）无 <c>Event</c> 节点，外层事件值在 <c>InfoType</c>，
     /// 与 <c>Event</c> 信封产出<b>同一事件键</b>（三模式键统一，ADR-14）。
     /// </para>
+    /// <para>
+    /// <b>邮箱族同理</b>：应用邮箱（<c>app_email_change</c>，官方 97495/97517/97506）与公共邮箱
+    /// （<c>public_email_change</c>，官方 100180）两族的 <c>ChangeType</c> 同为裸 <c>receive_email</c>，
+    /// 逐 <c>ChangeType</c> 键无法消歧 ⇒ 以族事件值为键。
+    /// </para>
     /// <para>netstandard2.0 的 <c>string.IsNullOrEmpty</c> 无 <c>[NotNullWhen]</c> 标注，改用显式判空收窄。</para>
     /// </remarks>
     public string EventTypeKey
@@ -135,7 +140,7 @@ public class WechatCallbackEvent
         get
         {
             var outerEvent = OuterEventValue;
-            if (outerEvent != null && IsExternalContactFamilyEventValue(outerEvent))
+            if (outerEvent != null && IsFamilyKeyEventValue(outerEvent))
             {
                 return outerEvent;
             }
@@ -225,6 +230,23 @@ public class WechatCallbackEvent
                string.Equals(eventValue, WechatCallbackEventTypes.ChangeExternalTag, StringComparison.Ordinal) ||
                string.Equals(eventValue, WechatCallbackEventTypes.CustomerAcquisition, StringComparison.Ordinal) ||
                string.Equals(eventValue, WechatCallbackEventTypes.CustomerAcquisitionPermitChange, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// 外层事件值是否以「族事件值」为事件键（<see cref="IsExternalContactFamilyEventValue"/> 的
+    /// 客户联系/获客族 + 邮箱族：应用邮箱 <c>app_email_change</c> 与公共邮箱 <c>public_email_change</c>
+    /// 的 <c>ChangeType</c> 同为裸 <c>receive_email</c>，跨族同名，逐 <c>ChangeType</c> 键无法消歧）。
+    /// </summary>
+    /// <remarks>
+    /// 仅 <see cref="EventTypeKey"/> 使用本判定；<see cref="EventFamily"/> 仍按
+    /// <see cref="IsExternalContactFamilyEventValue"/> 归类（邮箱族无独立事件族，
+    /// 落 <see cref="WechatCallbackEventFamily.Unknown"/> 由族闸放行、事件键级开放面闸承载判定）。
+    /// </remarks>
+    private static bool IsFamilyKeyEventValue(string eventValue)
+    {
+        return IsExternalContactFamilyEventValue(eventValue) ||
+               string.Equals(eventValue, WechatCallbackEventTypes.AppEmailChange, StringComparison.Ordinal) ||
+               string.Equals(eventValue, WechatCallbackEventTypes.PublicEmailChange, StringComparison.Ordinal);
     }
 
     /// <summary>是否为授权成功事件（create_auth；携带一次性 auth_code）。</summary>

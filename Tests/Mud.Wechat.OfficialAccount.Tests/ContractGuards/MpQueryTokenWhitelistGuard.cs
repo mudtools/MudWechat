@@ -43,7 +43,9 @@ public class MpQueryTokenWhitelistGuard
             nameof(IMpTagService),                // 用户管理·标签管理（8 端点）
             nameof(IMpUserService),               // 用户管理·用户信息 + 转换 openid（8 端点）
             nameof(IMpMenuService),               // 自定义菜单（7 端点）
-            nameof(IMpCustomerMessageService),    // 客服消息（3 端点）
+            nameof(IMpCustomerMessageService),    // 客服消息·客服消息（3 端点）
+            nameof(IMpKfAccountService),          // 客服消息·客服管理（7 端点）
+            nameof(IMpKfSessionService),          // 客服消息·会话控制（5 端点）
         }, "公众号官方契约强制 Query 注入（MUD005 已知接受风险）；新增 Query 注入接口须先评估再显式扩展本白名单");
 
         // 防静默空跑：白名单非空且每条均为 Query 注入（若发现机制失效，上面 BeEquivalentTo 会退化为真空断言）。

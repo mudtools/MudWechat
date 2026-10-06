@@ -48,6 +48,12 @@ public class MpServiceBuilder
             [MpModule.CustomerMessage] = new MpModuleRegistrar(
                 MpModule.CustomerMessage,
                 s => s.AddCustomerMessageWebApiHttpClient()),
+            [MpModule.KfAccount] = new MpModuleRegistrar(
+                MpModule.KfAccount,
+                s => s.AddKfAccountWebApiHttpClient()),
+            [MpModule.KfSession] = new MpModuleRegistrar(
+                MpModule.KfSession,
+                s => s.AddKfSessionWebApiHttpClient()),
         };
 
     /// <summary>
@@ -79,6 +85,18 @@ public class MpServiceBuilder
     /// </summary>
     /// <returns>注册器（链式）。</returns>
     public MpServiceBuilder AddCustomerMessageApi() => AddModule(MpModule.CustomerMessage);
+
+    /// <summary>
+    /// 注册客服管理（7 端点；认证的订阅号与服务号均可调用）。
+    /// </summary>
+    /// <returns>注册器（链式）。</returns>
+    public MpServiceBuilder AddKfAccountApi() => AddModule(MpModule.KfAccount);
+
+    /// <summary>
+    /// 注册会话控制（5 端点；认证的订阅号与服务号均可调用）。
+    /// </summary>
+    /// <returns>注册器（链式）。</returns>
+    public MpServiceBuilder AddKfSessionApi() => AddModule(MpModule.KfSession);
 
     /// <summary>注册全部模块。</summary>
     /// <returns>注册器（链式）。</returns>

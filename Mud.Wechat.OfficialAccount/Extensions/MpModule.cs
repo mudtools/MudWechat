@@ -67,6 +67,23 @@ public enum MpModule
     CustomerMessage,
 
     /// <summary>
+    /// 客服消息 → 客服管理（获取全部 / 在线客服列表、增删改客服账号、设置客服头像、邀请绑定共 7 端点）。
+    /// </summary>
+    /// <remarks>
+    /// 域级约束：每账号最多 100 个客服账号；账号形状「前缀(≤10，英文/数字/下划线)@公众号微信号(≤30)」；
+    /// 公众号须先在官网设置微信号；未绑定微信号的客服账号不能投入使用（须走邀请绑定）。
+    /// </remarks>
+    KfAccount,
+
+    /// <summary>
+    /// 客服消息 → 会话控制（创建 / 关闭会话、会话状态 / 列表、未接入列表共 5 端点）。
+    /// </summary>
+    /// <remarks>
+    /// 域级约束：创建会话要求客服已绑定微信号<b>且在线</b>；未接入列表最多返回 100 条且无分页游标。
+    /// </remarks>
+    KfSession,
+
+    /// <summary>
     /// 令牌签发（<c>getAccessToken</c> + <c>getStableAccessToken</c>）：随 <c>AddMpApp</c> 自动注册，
     /// 本枚举成员仅供模块清单对齐使用（不作为 <c>AddAuthenticationApi()</c> 的必要入口）。
     /// </summary>

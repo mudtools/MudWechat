@@ -10,6 +10,8 @@ using System.Text.Json.Serialization.Metadata;
 using Mud.Wechat.OfficialAccount.DataModels;
 using Mud.Wechat.OfficialAccount.DataModels.Basic;
 using Mud.Wechat.OfficialAccount.DataModels.CustomerMessage;
+using Mud.Wechat.OfficialAccount.DataModels.KfAccount;
+using Mud.Wechat.OfficialAccount.DataModels.KfSession;
 using Mud.Wechat.OfficialAccount.DataModels.Menu;
 using Mud.Wechat.OfficialAccount.DataModels.Tag;
 using Mud.Wechat.OfficialAccount.DataModels.User;
@@ -41,7 +43,9 @@ public static class MpJsonResolverExtensions
             TagJsonContext.Default,
             UserJsonContext.Default,
             MenuJsonContext.Default,
-            CustomerMessageJsonContext.Default);
+            CustomerMessageJsonContext.Default,
+            KfAccountJsonContext.Default,
+            KfSessionJsonContext.Default);
         services.AddMudHttpClientJsonContext(resolver);
     }
 }

@@ -254,4 +254,54 @@ public static class MpErrorCodes
 
     /// <summary>查询时间段超出限制（官方：查询时间段不能超过 <b>24 小时</b>）。</summary>
     public const int MsgRecordTimeRangeTooLong = 65417;
+
+    // ---------------------------------------------------------------- 客服管理 / 会话控制（M2，取值逐页核验官方文档）
+
+    /// <summary>invalid file type / 不支持的媒体类型（如客服头像上传文件格式不对）。</summary>
+    public const int InvalidFileType = 40005;
+
+    /// <summary>无效客服账号。</summary>
+    public const int InvalidKfAccount = 65401;
+
+    /// <summary>客服账号尚未绑定微信号，不能投入使用。</summary>
+    public const int KfAccountNotBound = 65402;
+
+    /// <summary>客服昵称不合法（官方：昵称最长 16 个字）。</summary>
+    public const int IllegalKfNickname = 65403;
+
+    /// <summary>客服账号不合法（官方：账号前缀最多 10 字符，仅英文/数字/下划线，后缀为公众号微信号且长度不超过 30 字符）。</summary>
+    public const int IllegalKfAccount = 65404;
+
+    /// <summary>账号数目已达到上限，不能继续添加（官方：每个账号最多 <b>100</b> 个客服账号）。</summary>
+    public const int KfAccountCountExceeded = 65405;
+
+    /// <summary>已经存在的客服账号。</summary>
+    public const int KfAccountExists = 65406;
+
+    /// <summary>邀请对象已经是该账号客服。</summary>
+    public const int InviteeAlreadyWorker = 65407;
+
+    /// <summary>已向该微信发送过邀请（本账号已有一个邀请给该微信）。</summary>
+    public const int InviteeAlreadyInvited = 65408;
+
+    /// <summary>无效的微信号。</summary>
+    public const int InvalidWeChatId = 65409;
+
+    /// <summary>邀请对象绑定的客服账号数达到上限。</summary>
+    public const int InviteeBindingLimitReached = 65410;
+
+    /// <summary>该账号已有一个等待确认的邀请，不能重复邀请。</summary>
+    public const int PendingInvitationExists = 65411;
+
+    /// <summary>该客服账号已经绑定微信号，不能进行邀请。</summary>
+    public const int KfAccountAlreadyBound = 65412;
+
+    /// <summary>不存在对应用户的会话信息。</summary>
+    public const int NoEffectiveSession = 65413;
+
+    /// <summary>客户正在被其他客服接待。</summary>
+    public const int CustomerServedByAnother = 65414;
+
+    /// <summary>指定的客服不在线（创建会话前置条件：客服须已绑定微信号<b>且在线</b>）。</summary>
+    public const int WorkerNotOnline = 65415;
 }

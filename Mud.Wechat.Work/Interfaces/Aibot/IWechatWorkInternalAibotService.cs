@@ -17,17 +17,25 @@ namespace Mud.Wechat.Work;
 /// <para>
 /// <b>无令牌</b>：本接口<b>不声明 <c>[Token]</c></b> —— 端点以 URL 上的 <c>response_code</c> 为一次性凭据
 /// （官方 101138），不属于 <c>access_token</c> / <c>suite_access_token</c> / <c>provider_access_token</c>
-/// 任一令牌链路；故也不进入通用守卫 G5（Query 令牌注入白名单）。
+/// 任一令牌链路；故也不进入通用守卫 G5（Query 令牌注入白名单）。组件分析器据此场景发出的
+/// HTTPCLIENT018（建议补 <c>[Token]</c>）为不适用告警，已在下方声明处局部 <c>#pragma</c> 豁免；
+/// <c>TokenManage</c> 与父接口保持一致（全仓父接口恒为 <c>nameof(IWechatAppManager)</c>），
+/// 防止生成器以 <c>new</c> 隐藏基类切换成员（HTTPCLIENT028）。
 /// </para>
 /// <para>
 /// 应用类型开放面：官方 9 篇智能机器人文档正文零提及第三方应用 / 服务商代开发，且机器人本体与其凭证
 /// 均在「企业微信管理后台 → 智能机器人 → API 设置」配置，故无第三方 / 代开发子接口。
 /// </para>
 /// </remarks>
+// HTTPCLIENT018 豁免理由：同父接口 IWechatWorkAibotService——本域为「无令牌端点」既存例外
+//（官方 101138 以 response_code 一次性凭据鉴权，守卫 AI3 锁定不得声明 [Token]），
+// 分析器唯一消警路径与本域契约冲突；此处仅本接口局部豁免，不影响全仓其余接口的 018 检查。
+#pragma warning disable HTTPCLIENT018
 [HttpClientApi(RegistryGroupName = "Aibot",
     TokenManage = nameof(IWechatAppManager), InheritedFrom = nameof(WechatWorkAibotService))]
 public interface IWechatWorkInternalAibotService : IWechatWorkAibotService
 {
+#pragma warning restore HTTPCLIENT018
     /// <summary>
     /// 主动回复消息
     /// <para>

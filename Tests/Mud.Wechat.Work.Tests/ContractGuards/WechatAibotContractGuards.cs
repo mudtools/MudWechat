@@ -10,6 +10,7 @@ using System.Text.Json.Serialization;
 using Mud.HttpUtils.Attributes;
 using Mud.Wechat.Work;
 using Mud.Wechat.Work.Abstractions;
+using Mud.Wechat.Work.Abstractions.Authentication;
 using Mud.Wechat.Work.Abstractions.Callback.Bots;
 using Mud.Wechat.Work.DataModels.Aibot;
 
@@ -99,6 +100,10 @@ public class WechatAibotContractGuards
         var parentApi = parent.GetCustomAttribute<HttpClientApiAttribute>();
         parentApi.Should().NotBeNull("父接口必须声明 [HttpClientApi]");
         parentApi!.IsAbstract.Should().BeTrue("公共父接口不参与 DI 注册，必须 IsAbstract = true");
+        parentApi.TokenManage.Should().Be(nameof(IWechatAppManager),
+            "无令牌 ≠ 不参与多应用切换：与全仓各域父接口形态一致（TokenManage 恒为 IWechatAppManager，"
+            + "仅配置应用切换管理器、与令牌注入无关），且父子两级必须统一——否则生成器以 new 隐藏基类切换成员"
+            + "（组件分析器 HTTPCLIENT028），基类调用会静默走默认模式");
         parentApi.RegistryGroupName.Should().BeNullOrEmpty("父接口不进入注册组（注册面由子接口承载）");
         parent.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
             .Should().BeEmpty("官方仅自建开放：父接口零端点，端点全部由唯一自建子接口承载");
@@ -110,6 +115,8 @@ public class WechatAibotContractGuards
             $"{child.Name} 必须挂 {AibotRegistryGroupName} 注册组");
         childApi.InheritedFrom.Should().Be(AibotParentImplementationClassName,
             $"{child.Name} 必须继承父接口生成实现类");
+        childApi.TokenManage.Should().Be(nameof(IWechatAppManager),
+            $"{child.Name} 的 TokenManage 须与父接口一致（两级统一，防基类切换成员被 new 隐藏）");
         child.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
             .Should().HaveCount(1, $"{child.Name} 承载本域全部 1 条官方端点");
     }

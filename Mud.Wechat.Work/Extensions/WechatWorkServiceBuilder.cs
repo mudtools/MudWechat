@@ -132,6 +132,9 @@ public class WechatWorkServiceBuilder
             [WechatModule.Aibot] = new WechatModuleRegistrar(
                 WechatModule.Aibot,
                 s => s.AddAibotWebApiHttpClient()),
+            [WechatModule.License] = new WechatModuleRegistrar(
+                WechatModule.License,
+                s => s.AddLicenseWebApiHttpClient()),
         };
 
     /// <summary>注册授权流业务接口与授权编排服务（get_pre_auth_code / set_session_info / get_permanent_code / get_auth_info / get_customized_auth_url + 编排）。</summary>
@@ -226,6 +229,9 @@ public class WechatWorkServiceBuilder
 
     /// <summary>注册智能机器人业务接口（官方仅自建开放：主动回复消息 1 端点，以 URL 一次性凭据 response_code 鉴权、不带 [Token]；回调接收与被动回复由 Callback 包的 JSON 通道承载，长连接为可选后续里程碑）。</summary>
     public WechatWorkServiceBuilder AddAibotApi() => AddModule(WechatModule.Aibot);
+
+    /// <summary>注册接口调用许可业务接口（官方在第三方应用开发与服务商代开发两棵文档树开放、共享同一端点页，自建文档树无对应 API；四族 25 端点统一走 provider_access_token，各为「零端点父接口 + 唯一第三方子接口承载」：订单管理族 13 端点、账号管理族 9 端点、应用管理族 1 端点、自动激活设置族 2 端点；官方契约陷阱：路由 list_actived_account 官方拼写少一个 i、试用期字段名官方拼写为 trail_info、余额支付结果顶层 errcode 表示接口调用成功而非支付成功）。</summary>
+    public WechatWorkServiceBuilder AddLicenseApi() => AddModule(WechatModule.License);
 
     /// <summary>注册全部模块。</summary>
     public WechatWorkServiceBuilder AddAllApis()

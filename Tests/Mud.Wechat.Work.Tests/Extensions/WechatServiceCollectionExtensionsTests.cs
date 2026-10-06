@@ -1052,4 +1052,39 @@ public class WechatServiceCollectionExtensionsTests
         scope.ServiceProvider.GetRequiredService<IWechatWorkInternalAibotService>().Should().NotBeNull(
             "ValidateScopes = true 变体下子 scope 内同样可解析");
     }
+
+    /// <summary>
+    /// 接口调用许可模块（License 模块）：AddLicenseApi 注册的四族第三方子接口客户端必须可解析——
+    /// 回归锁定：注册器字典漏配 [WechatModule.License] 条目时 AddLicenseApi 会静默空转（不注册、不报错）；
+    /// 本域走 provider_access_token（独立 provider 令牌成族），父接口 IsAbstract 不进 DI。
+    /// </summary>
+    [Fact]
+    public void AddLicenseApi_ShouldRegisterLicenseDomainClients_ResolvableInRootAndScope()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddWechatApp(new List<WechatAppConfig> { InternalConfig() });
+        services.AddWechatWorkServices(builder => builder.AddLicenseApi());
+
+        using var provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true });
+
+        provider.GetRequiredService<IWechatWorkThirdPartyLicenseOrderService>().Should().NotBeNull();
+        provider.GetRequiredService<IWechatWorkThirdPartyLicenseAccountService>().Should().NotBeNull();
+        provider.GetRequiredService<IWechatWorkThirdPartyLicenseAppService>().Should().NotBeNull();
+        provider.GetRequiredService<IWechatWorkThirdPartyLicenseAutoActiveService>().Should().NotBeNull();
+        provider.GetService<IWechatWorkLicenseOrderService>().Should().BeNull(
+            "公共父接口 IsAbstract = true，不得注册进 DI（本域四族均为零端点父接口 + 唯一第三方子接口承载）");
+        provider.GetService<IWechatWorkLicenseAccountService>().Should().BeNull(
+            "公共父接口 IsAbstract = true，不得注册进 DI（本域四族均为零端点父接口 + 唯一第三方子接口承载）");
+
+        using var scope = provider.CreateScope();
+        scope.ServiceProvider.GetRequiredService<IWechatWorkThirdPartyLicenseOrderService>().Should().NotBeNull(
+            "ValidateScopes = true 变体下子 scope 内同样可解析");
+        scope.ServiceProvider.GetRequiredService<IWechatWorkThirdPartyLicenseAccountService>().Should().NotBeNull(
+            "ValidateScopes = true 变体下子 scope 内同样可解析");
+        scope.ServiceProvider.GetRequiredService<IWechatWorkThirdPartyLicenseAppService>().Should().NotBeNull(
+            "ValidateScopes = true 变体下子 scope 内同样可解析");
+        scope.ServiceProvider.GetRequiredService<IWechatWorkThirdPartyLicenseAutoActiveService>().Should().NotBeNull(
+            "ValidateScopes = true 变体下子 scope 内同样可解析");
+    }
 }

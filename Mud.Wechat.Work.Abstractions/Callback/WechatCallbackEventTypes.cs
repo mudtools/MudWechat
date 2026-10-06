@@ -994,4 +994,110 @@ public static class WechatCallbackEventTypes
     /// </para>
     /// </remarks>
     public const string MsgAuditNotify = "msgaudit_notify";
+
+    // ——— 微盘族（官方 97898~97903 自建 · 97972~97978 第三方 · 97932~97937 代开发；三份文档逐字一致） ———
+
+    /// <summary>微盘容量不足（企业微盘容量使用率超过 90% 时触发；无 <c>ChangeType</c> 分组段，信封外无业务字段）。
+    /// <para><b>官方业务限制（不得弱化）</b>：非实时回调，每天定时检测触发，单个授权企业每天最多回调一次。</para>
+    /// </summary>
+    /// <remarks>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/97898">path 97898 微盘容量不足事件</see>（企业自建）/
+    /// <see href="https://developer.work.weixin.qq.com/document/path/97972">path 97972</see>（第三方）/
+    /// <see href="https://developer.work.weixin.qq.com/document/path/97932">path 97932</see>（服务商代开发）。
+    /// </remarks>
+    public const string WedriveInsufficientCapacity = "wedrive_insufficient_capacity";
+
+    /// <summary>微盘空间变更事件的 <c>Event</c> 信封值（具体变更类别看 <c>ChangeType</c>）。</summary>
+    /// <remarks>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/97899">path 97899 空间变更事件</see>（企业自建）/
+    /// <see href="https://developer.work.weixin.qq.com/document/path/97973">path 97973</see>（第三方）/
+    /// <see href="https://developer.work.weixin.qq.com/document/path/97933">path 97933</see>（服务商代开发）。
+    /// </remarks>
+    public const string WedriveSpaceChange = "wedrive_space_change";
+
+    /// <summary>解散空间（接口指定的管理员解散应用创建的空间；携带 <c>SpaceId</c> 列表）。</summary>
+    /// <remarks>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/97901">path 97901 解散空间</see>（企业自建）/
+    /// <see href="https://developer.work.weixin.qq.com/document/path/97976">path 97976</see>（第三方）/
+    /// <see href="https://developer.work.weixin.qq.com/document/path/97935">path 97935</see>（服务商代开发）。
+    /// </remarks>
+    public const string DismissSpace = "dismiss_space";
+
+    /// <summary>修改空间成员（接口指定的管理员修改 API 创建的空间成员；携带 <c>SpaceId</c> 列表）。</summary>
+    /// <remarks>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/97902">path 97902 修改空间成员</see>（企业自建）/
+    /// <see href="https://developer.work.weixin.qq.com/document/path/97977">path 97977</see>（第三方）/
+    /// <see href="https://developer.work.weixin.qq.com/document/path/97936">path 97936</see>（服务商代开发）。
+    /// </remarks>
+    public const string SpaceMemberChange = "space_member_change";
+
+    /// <summary>修改空间安全设置（接口指定的管理员修改应用创建的空间的安全设置；携带 <c>SpaceId</c> 列表）。</summary>
+    /// <remarks>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/97903">path 97903 修改空间安全设置</see>（企业自建）/
+    /// <see href="https://developer.work.weixin.qq.com/document/path/97978">path 97978</see>（第三方）/
+    /// <see href="https://developer.work.weixin.qq.com/document/path/97937">path 97937</see>（服务商代开发）。
+    /// </remarks>
+    public const string SpaceSecuritySettingsChange = "space_security_settings_change";
+
+    /// <summary>微盘文件变更事件的 <c>Event</c> 信封值（具体变更类别看 <c>ChangeType</c>）。</summary>
+    /// <remarks>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/97900">path 97900 文件变更事件</see>（企业自建）/
+    /// <see href="https://developer.work.weixin.qq.com/document/path/97975">path 97975</see>（第三方）/
+    /// <see href="https://developer.work.weixin.qq.com/document/path/97934">path 97934</see>（服务商代开发）。
+    /// </remarks>
+    public const string WedriveFileChange = "wedrive_file_change";
+
+    /// <summary>创建文件（携带 <c>FileId</c> 列表，官方明示可能有多个节点）。</summary>
+    /// <remarks>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/97900">path 97900 文件变更事件</see>（企业自建）。
+    /// </remarks>
+    public const string CreateFile = "create_file";
+
+    /// <summary>重命名文件（携带 <c>FileId</c> 列表）。</summary>
+    /// <remarks>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/97900">path 97900 文件变更事件</see>（企业自建）。
+    /// </remarks>
+    public const string RenameFile = "rename_file";
+
+    /// <summary>更新文件内容（携带 <c>FileId</c> 列表）。</summary>
+    /// <remarks>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/97900">path 97900 文件变更事件</see>（企业自建）。
+    /// </remarks>
+    public const string UpdateFile = "update_file";
+
+    /// <summary>删除文件（携带 <c>FileId</c> 列表）。</summary>
+    /// <remarks>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/97900">path 97900 文件变更事件</see>（企业自建）。
+    /// </remarks>
+    public const string DeleteFile = "delete_file";
+
+    /// <summary>移动文件（携带 <c>FileId</c> 列表）。</summary>
+    /// <remarks>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/97900">path 97900 文件变更事件</see>（企业自建）。
+    /// </remarks>
+    public const string MoveFile = "move_file";
+
+    // ——— 直播族（官方 94145 自建 / 94308 第三方 / 96842 代开发；三份 XML 逐字一致） ———
+
+    /// <summary>直播状态变更（预约/开始/结束等状态变化；携带 <c>LivingId</c> + <c>Status</c> + <c>AgentID</c>；
+    /// 无 <c>ChangeType</c> 分组段。仅 API 创建的直播才会回调）。</summary>
+    /// <remarks>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/94145">path 94145 直播回调事件</see>（企业自建）/
+    /// <see href="https://developer.work.weixin.qq.com/document/path/94308">path 94308</see>（第三方）/
+    /// <see href="https://developer.work.weixin.qq.com/document/path/96842">path 96842</see>（服务商代开发）。
+    /// </remarks>
+    public const string LivingStatusChange = "living_status_change";
+
+    // ——— OA 审批族（官方 91815 自建 / 92633 第三方 / 96508 代开发；自建与代开发全文逐字一致） ———
+
+    /// <summary>审批申请状态变化（指定类型的审批单据流程变化时推送：催办、撤销、同意、驳回、转审、添加备注等；
+    /// 无 <c>ChangeType</c> 分组段，业务载荷在 <c>ApprovalInfo</c> 包装节点内）。
+    /// <para>与 <see cref="OpenApprovalChange"/>（90240 旧式审批状态通知）是两个独立事件。</para>
+    /// </summary>
+    /// <remarks>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/91815">path 91815 审批申请状态变化回调通知</see>（企业自建）/
+    /// <see href="https://developer.work.weixin.qq.com/document/path/92633">path 92633</see>（第三方，指令回调 URL）/
+    /// <see href="https://developer.work.weixin.qq.com/document/path/96508">path 96508</see>（服务商代开发）。
+    /// </remarks>
+    public const string SysApprovalChange = "sys_approval_change";
 }

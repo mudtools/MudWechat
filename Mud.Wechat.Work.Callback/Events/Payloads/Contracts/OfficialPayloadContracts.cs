@@ -10,7 +10,7 @@ using Mud.Wechat.Work.Abstractions.Callback.Payloads;
 namespace Mud.Wechat.Work.Callback.Events.Payloads;
 
 /// <summary>
-/// 官方事件键契约表（105 键）：事件键 → 上游映射表 + 本仓库两级开放面声明。
+/// 官方事件键契约表（116 键）：事件键 → 上游映射表 + 本仓库两级开放面声明。
 /// </summary>
 /// <remarks>
 /// <para>
@@ -94,7 +94,20 @@ namespace Mud.Wechat.Work.Callback.Events.Payloads;
 /// （<c>ChangeList</c> 为根下重复复杂兄弟元素（对象列表），经 <c>RepeatSchoolContactChangeItems</c> +
 /// 根层同名兄弟合并投影读取；最大合并 1000 条，官方注明后续可能调整）；
 /// 会话内容存档 <see href="https://developer.work.weixin.qq.com/document/path/95039">path 95039 产生会话回调事件（仅自建）</see>
-/// （<c>msgaudit_notify</c>：15 秒回调间隔，事件不携带消息内容、须调「获取会话内容」拉取）。
+/// （<c>msgaudit_notify</c>：15 秒回调间隔，事件不携带消息内容、须调「获取会话内容」拉取）；
+/// 微盘族 97898~97903（自建）· 97972~97978（第三方）· 97932~97937（代开发）（9 键，
+/// <c>wedrive_space_change</c> 3 键 + <c>wedrive_file_change</c> 5 键 + 容量不足 1 键；
+/// <c>SpaceId</c>/<c>FileId</c> 为根下平铺重复叶兄弟元素，经 <c>RepeatSiblings</c> 读取）；
+/// 直播族 <see href="https://developer.work.weixin.qq.com/document/path/94145">path 94145</see>（自建）/
+/// <see href="https://developer.work.weixin.qq.com/document/path/94308">path 94308</see>（第三方）/
+/// <see href="https://developer.work.weixin.qq.com/document/path/96842">path 96842</see>（代开发）
+/// （1 键，<c>living_status_change</c>，三份 XML 逐字节一致）；
+/// OA 审批族 <see href="https://developer.work.weixin.qq.com/document/path/91815">path 91815</see>（自建）/
+/// <see href="https://developer.work.weixin.qq.com/document/path/92633">path 92633</see>（第三方，指令回调 URL）/
+/// <see href="https://developer.work.weixin.qq.com/document/path/96508">path 96508</see>（代开发）
+/// （1 键，<c>sys_approval_change</c>，载荷在 <c>ApprovalInfo</c> 包装节点内；其 <c>SpRecord</c>/<c>Notifyer</c>/
+/// <c>Comments</c>/<c>NodeList</c>/<c>SubNodeList</c> 为包装子树内的平铺重复兄弟元素，
+/// 经专用分派方法 + 全树同名兄弟合并投影（包装形态豁免表除外）读取）。
 /// </para>
 /// <para>
 /// <b>三模式说明</b>：90240/90376/96468 三份文档正文一致 ⇒ 载荷与字段结构三模式同一（ADR-14），

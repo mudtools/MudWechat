@@ -2004,6 +2004,219 @@ public class WechatCallbackPayloadReaderTests
         item.TimeStamp.Should().Be(1403610513);
     }
 
+    // ------------------------ 微盘族（wedrive；97898~97903 / 97972~97978 / 97932~97937）
+
+    [Fact]
+    public void Read_ShouldMapWedriveCapacityEvent_WhenInsufficientCapacity()
+    {
+        // 官方 97898 样报文：信封外无业务字段；无 ChangeType 分组段 ⇒ Event 节点即事件键。
+        var result = CreateReader().Read<WedriveInsufficientCapacityPayload>(new WechatCallbackEvent
+        {
+            Event = WechatCallbackEventTypes.WedriveInsufficientCapacity,
+            DecryptedXml = "<xml><ToUserName><![CDATA[toUser]]></ToUserName>" +
+                           "<FromUserName><![CDATA[sys]]></FromUserName>" +
+                           "<CreateTime>1348831860</CreateTime><MsgType><![CDATA[event]]></MsgType>" +
+                           "<Event><![CDATA[wedrive_insufficient_capacity]]></Event></xml>",
+        });
+
+        result.Status.Should().Be(WechatPayloadReadStatus.Matched);
+    }
+
+    [Fact]
+    public void Read_ShouldMapSpaceIds_WhenSpaceDismissed()
+    {
+        // 官方 97901 样报文：SpaceId 为根下重复同名兄弟元素（"空间ID列表"）。
+        var result = CreateReader().Read<WedriveSpaceChangedPayload>(new WechatCallbackEvent
+        {
+            Event = WechatCallbackEventTypes.WedriveSpaceChange,
+            ChangeType = WechatCallbackEventTypes.DismissSpace,
+            DecryptedXml = "<xml><FromUserName><![CDATA[fromUser]]></FromUserName>" +
+                           "<MsgType><![CDATA[event]]></MsgType>" +
+                           "<Event><![CDATA[wedrive_space_change]]></Event>" +
+                           "<ChangeType><![CDATA[dismiss_space]]></ChangeType>" +
+                           "<SpaceId><![CDATA[wcjgewCwAAqeJcPI1d8Pwbjt7nttzAAA]]></SpaceId>" +
+                           "<SpaceId><![CDATA[wcjgewCwAAqeJcPI1d8Pwbjt7nttzBBB]]></SpaceId></xml>",
+        });
+
+        result.Status.Should().Be(WechatPayloadReadStatus.Matched);
+        result.Payload!.SpaceIds.Should().Equal(new[]
+        {
+            "wcjgewCwAAqeJcPI1d8Pwbjt7nttzAAA", "wcjgewCwAAqeJcPI1d8Pwbjt7nttzBBB",
+        }, "官方示例即两个并列 SpaceId 节点");
+    }
+
+    [Fact]
+    public void Read_ShouldMapSingleSpaceId_WhenOverviewStyleMessage()
+    {
+        // 官方 97899（空间变更概述页）为单 SpaceId 节点 + sys 信封 ⇒ 单元素形态同样覆盖。
+        var result = CreateReader().Read<WedriveSpaceChangedPayload>(new WechatCallbackEvent
+        {
+            Event = WechatCallbackEventTypes.WedriveSpaceChange,
+            ChangeType = WechatCallbackEventTypes.DismissSpace,
+            DecryptedXml = "<xml><FromUserName><![CDATA[sys]]></FromUserName>" +
+                           "<Event><![CDATA[wedrive_space_change]]></Event>" +
+                           "<ChangeType><![CDATA[dismiss_space]]></ChangeType>" +
+                           "<SpaceId><![CDATA[spxxxxxxxxxxxxx]]></SpaceId></xml>",
+        });
+
+        result.Payload!.SpaceIds.Should().Equal("spxxxxxxxxxxxxx");
+    }
+
+    [Fact]
+    public void Read_ShouldMapFileIds_WhenFileCreated()
+    {
+        // 官方 97900：FileId "可能有多个FileId节点，表示多个文件"。
+        var result = CreateReader().Read<WedriveFileChangedPayload>(new WechatCallbackEvent
+        {
+            Event = WechatCallbackEventTypes.WedriveFileChange,
+            ChangeType = WechatCallbackEventTypes.CreateFile,
+            DecryptedXml = "<xml><Event><![CDATA[wedrive_file_change]]></Event>" +
+                           "<ChangeType><![CDATA[create_file]]></ChangeType>" +
+                           "<FileId><![CDATA[file-1]]></FileId><FileId><![CDATA[file-2]]></FileId></xml>",
+        });
+
+        result.Status.Should().Be(WechatPayloadReadStatus.Matched);
+        result.Payload!.FileIds.Should().Equal("file-1", "file-2");
+    }
+
+    // ------------------------ 直播族（living_status_change；94145/94308/96842）
+
+    [Fact]
+    public void Read_ShouldMapLivingStatusFields_WhenLivingStatusChanged()
+    {
+        var result = CreateReader().Read<LivingStatusChangedPayload>(new WechatCallbackEvent
+        {
+            Event = WechatCallbackEventTypes.LivingStatusChange,
+            DecryptedXml = "<xml><ToUserName><![CDATA[toUser]]></ToUserName>" +
+                           "<FromUserName><![CDATA[fromUser]]></FromUserName>" +
+                           "<CreateTime>1348831860</CreateTime><MsgType><![CDATA[event]]></MsgType>" +
+                           "<Event><![CDATA[living_status_change]]></Event>" +
+                           "<LivingId><![CDATA[LivingId]]></LivingId>" +
+                           "<Status>1</Status><AgentID>1</AgentID></xml>",
+        });
+
+        result.Status.Should().Be(WechatPayloadReadStatus.Matched, "直播族无 ChangeType 分组段 ⇒ Event 节点即事件键");
+        result.Payload!.LivingId.Should().Be("LivingId");
+        result.Payload!.Status.Should().Be(1, "官方 Status=1 ⇒ 直播中");
+        result.Payload!.AgentId.Should().Be("1");
+    }
+
+    // ------------------------ OA 审批族（sys_approval_change；91815/92633/96508）
+
+    [Fact]
+    public void Read_ShouldMapOaApprovalFields_WhenApprovalStatusChanged()
+    {
+        // 官方 91815 样报文（ApprovalInfo 包装节点；SpRecord×2、Details×2+1、Notifyer、
+        // ProcessList>NodeList×2>SubNodeList×2+1、Comments）。
+        var result = CreateReader().Read<SysApprovalChangedPayload>(new WechatCallbackEvent
+        {
+            Event = WechatCallbackEventTypes.SysApprovalChange,
+            AgentID = "3010040",
+            DecryptedXml = "<xml><ToUserName><![CDATA[ww1cSD21f1e9c0caaa]]></ToUserName>" +
+                           "<FromUserName><![CDATA[sys]]></FromUserName>" +
+                           "<CreateTime>1571732272</CreateTime><MsgType><![CDATA[event]]></MsgType>" +
+                           "<Event><![CDATA[sys_approval_change]]></Event><AgentID>3010040</AgentID>" +
+                           "<ApprovalInfo>" +
+                           "<SpNoStr><![CDATA[202506110001]]></SpNoStr><SpNo>202506110001</SpNo>" +
+                           "<SpName><![CDATA[示例模板]]></SpName><SpStatus>1</SpStatus>" +
+                           "<TemplateId><![CDATA[3TkaH5KFbrG9heEQWLJjhgpFwmqAFB4dLEnapaB7aaa]]></TemplateId>" +
+                           "<ApplyTime>1571728713</ApplyTime>" +
+                           "<Applyer><UserId><![CDATA[WuJunJie]]></UserId><Party><![CDATA[1]]></Party></Applyer>" +
+                           "<SpRecord><SpStatus>1</SpStatus><ApproverAttr>2</ApproverAttr>" +
+                           "<Details><Approver><UserId><![CDATA[WangXiaoMing]]></UserId></Approver>" +
+                           "<Speech><![CDATA[]]></Speech><SpStatus>1</SpStatus><SpTime>0</SpTime></Details>" +
+                           "<Details><Approver><UserId><![CDATA[XiaoGangHuang]]></UserId></Approver>" +
+                           "<Speech><![CDATA[]]></Speech><SpStatus>1</SpStatus><SpTime>0</SpTime></Details>" +
+                           "</SpRecord>" +
+                           "<SpRecord><SpStatus>1</SpStatus><ApproverAttr>1</ApproverAttr>" +
+                           "<Details><Approver><UserId><![CDATA[XiaoHongLiu]]></UserId></Approver>" +
+                           "<Speech><![CDATA[]]></Speech><SpStatus>1</SpStatus><SpTime>0</SpTime></Details>" +
+                           "</SpRecord>" +
+                           "<Notifyer><UserId><![CDATA[ChengLiang]]></UserId></Notifyer>" +
+                           "<ProcessList>" +
+                           "<NodeList><NodeType>1</NodeType><SpStatus>1</SpStatus><ApvRel>2</ApvRel>" +
+                           "<SubNodeList><UserInfo><UserId><![CDATA[userid1]]></UserId></UserInfo>" +
+                           "<Speech><![CDATA[]]></Speech><SpYj>1</SpYj><Sptime>0</Sptime></SubNodeList>" +
+                           "<SubNodeList><UserInfo><UserId><![CDATA[userid2]]></UserId></UserInfo>" +
+                           "<Speech><![CDATA[]]></Speech><SpYj>1</SpYj><Sptime>0</Sptime></SubNodeList>" +
+                           "</NodeList>" +
+                           "<NodeList><NodeType>2</NodeType>" +
+                           "<SubNodeList><UserInfo><UserId><![CDATA[userid3]]></UserId></UserInfo>" +
+                           "</SubNodeList></NodeList>" +
+                           "</ProcessList>" +
+                           "<Comments><CommentUserInfo><UserId><![CDATA[LiuZhi]]></UserId></CommentUserInfo>" +
+                           "<CommentTime>1571732272</CommentTime>" +
+                           "<CommentContent><![CDATA[这是一个备注]]></CommentContent>" +
+                           "<CommentId><![CDATA[6750538708562308220]]></CommentId></Comments>" +
+                           "<StatuChangeEvent>10</StatuChangeEvent>" +
+                           "</ApprovalInfo></xml>",
+        });
+
+        result.Status.Should().Be(WechatPayloadReadStatus.Matched,
+            "ScopeFallback=ApprovalInfo：字段全部命中包装容器");
+
+        var payload = result.Payload!;
+        payload.SpNoStr.Should().Be("202506110001");
+        payload.SpNo.Should().Be("202506110001");
+        payload.SpName.Should().Be("示例模板");
+        payload.SpStatus.Should().Be(1);
+        payload.TemplateId.Should().Be("3TkaH5KFbrG9heEQWLJjhgpFwmqAFB4dLEnapaB7aaa");
+        payload.ApplyTime.Should().Be(1571728713);
+        payload.Applyer!.UserId.Should().Be("WuJunJie");
+        payload.Applyer.Party.Should().Be("1");
+        payload.StatuChangeEvent.Should().Be(10, "官方 StatuChangeEvent=10 ⇒ 添加备注");
+
+        // SpRecord×2（平铺重复兄弟元素 → 合并投影 + 分派方法）。
+        payload.SpRecords.Should().HaveCount(2);
+        payload.SpRecords[0].ApproverAttr.Should().Be(2);
+        payload.SpRecords[0].Details.Should().HaveCount(2, "SpRecord 内 Details 平铺重复兄弟元素同样全量读取");
+        payload.SpRecords[0].Details[0].Approver!.UserId.Should().Be("WangXiaoMing");
+        payload.SpRecords[1].ApproverAttr.Should().Be(1);
+        payload.SpRecords[1].Details.Should().ContainSingle().Which.Approver!.UserId.Should().Be("XiaoHongLiu");
+
+        // Notifyer / Comments。
+        payload.Notifyers.Should().ContainSingle().Which.UserId.Should().Be("ChengLiang");
+        payload.Comments.Should().ContainSingle();
+        payload.Comments[0].CommentUserInfo!.UserId.Should().Be("LiuZhi");
+        payload.Comments[0].CommentContent.Should().Be("这是一个备注");
+        payload.Comments[0].CommentId.Should().Be("6750538708562308220");
+
+        // ProcessList > NodeList×2 > SubNodeList×2+1。
+        var process = payload.ProcessList;
+        process.Should().NotBeNull();
+        process!.Nodes.Should().HaveCount(2);
+        process.Nodes[0].NodeType.Should().Be(1);
+        process.Nodes[0].ApvRel.Should().Be(2);
+        process.Nodes[0].SubNodes.Should().HaveCount(2);
+        process.Nodes[0].SubNodes[0].UserInfo!.UserId.Should().Be("userid1");
+        process.Nodes[0].SubNodes[0].SpYj.Should().Be(1);
+        process.Nodes[1].SubNodes.Should().ContainSingle().Which.UserInfo!.UserId.Should().Be("userid3");
+    }
+
+    [Fact]
+    public void Read_ShouldMapSingleSpRecord_WhenOnlyOneNodePresent()
+    {
+        // 恰 1 个 SpRecord 时未触发合并投影，分派方法须按单项绑定。
+        var result = CreateReader().Read<SysApprovalChangedPayload>(new WechatCallbackEvent
+        {
+            Event = WechatCallbackEventTypes.SysApprovalChange,
+            DecryptedXml = "<xml><Event><![CDATA[sys_approval_change]]></Event>" +
+                           "<ApprovalInfo><SpNoStr><![CDATA[202506110002]]></SpNoStr>" +
+                           "<SpStatus>2</SpStatus><StatuChangeEvent>2</StatuChangeEvent>" +
+                           "<SpRecord><SpStatus>2</SpStatus><ApproverAttr>1</ApproverAttr>" +
+                           "<Details><Approver><UserId><![CDATA[u1]]></UserId></Approver>" +
+                           "<SpStatus>2</SpStatus><SpTime>1571732273</SpTime></Details>" +
+                           "</SpRecord></ApprovalInfo></xml>",
+        });
+
+        result.Status.Should().Be(WechatPayloadReadStatus.Matched);
+        result.Payload!.SpRecords.Should().ContainSingle();
+        result.Payload!.SpRecords[0].Details.Should().ContainSingle().Which.SpStatus.Should().Be(2);
+        result.Payload!.Notifyers.Should().BeEmpty();
+        result.Payload!.Comments.Should().BeEmpty();
+        result.Payload!.ProcessList.Should().BeNull("官方未携带 ProcessList ⇒ null，处理器不得假设必有值");
+    }
+
     [Theory]
     [InlineData(WechatAppType.Internal, WechatCallbackChannel.App, true)]
     [InlineData(WechatAppType.Provider, WechatCallbackChannel.App, true)]
@@ -2068,5 +2281,62 @@ public class WechatCallbackPayloadReaderTests
         contract.RequiredFamily.Should().Be(WechatCallbackEventFamily.Unknown);
         contract.RequiredEvent.Should().Be(WechatCallbackEventTypes.MsgAuditNotify,
             "RequiredEvent 缺省 = 逐键自指（Event 节点即事件键）");
+    }
+
+    [Theory]
+    [InlineData(WechatAppType.Internal, WechatCallbackChannel.App, true)]
+    [InlineData(WechatAppType.Provider, WechatCallbackChannel.App, true)]
+    [InlineData(WechatAppType.ThirdParty, WechatCallbackChannel.Suite, true)]
+    [InlineData(WechatAppType.ThirdParty, WechatCallbackChannel.App, false)]
+    [InlineData(WechatAppType.Internal, WechatCallbackChannel.Suite, false)]
+    public void SysApprovalContract_ShouldOpenForOfficialMatrix(
+        WechatAppType appType, WechatCallbackChannel channel, bool expected)
+    {
+        CreateRegistry().TryResolve(WechatCallbackEventTypes.SysApprovalChange, out var contract).Should().BeTrue();
+        var evt = new WechatCallbackEvent { Event = WechatCallbackEventTypes.SysApprovalChange };
+
+        contract!.IsOpenFor(evt, appType, channel).Should().Be(expected,
+            "自建/代开发经应用数据通道（91815/96508），第三方经服务商后台指令回调 URL（92633）");
+
+        // 同键双声明合并为多组开放面（v1.2 机制）。
+        contract.OpenSurfaces.Should().HaveCount(2);
+    }
+
+    [Theory]
+    [InlineData(WechatAppType.Internal)]
+    [InlineData(WechatAppType.ThirdParty)]
+    [InlineData(WechatAppType.Provider)]
+    public void WedriveAndLivingContracts_ShouldOpenForAllThreeModes(WechatAppType appType)
+    {
+        foreach (var key in new[]
+                 {
+                     WechatCallbackEventTypes.WedriveInsufficientCapacity,
+                     WechatCallbackEventTypes.DismissSpace,
+                     WechatCallbackEventTypes.CreateFile,
+                     WechatCallbackEventTypes.LivingStatusChange,
+                 })
+        {
+            CreateRegistry().TryResolve(key, out var contract).Should().BeTrue();
+            // 空间/文件变更族的信封 Event 为族值（wedrive_space_change / wedrive_file_change），
+            // 容量不足与直播的 Event 即键本身。
+            var isSpaceFamily = key == WechatCallbackEventTypes.DismissSpace ||
+                                key == WechatCallbackEventTypes.SpaceMemberChange ||
+                                key == WechatCallbackEventTypes.SpaceSecuritySettingsChange;
+            var isFileFamily = key == WechatCallbackEventTypes.CreateFile ||
+                               key == WechatCallbackEventTypes.RenameFile ||
+                               key == WechatCallbackEventTypes.UpdateFile ||
+                               key == WechatCallbackEventTypes.DeleteFile ||
+                               key == WechatCallbackEventTypes.MoveFile;
+            var evt = new WechatCallbackEvent
+            {
+                Event = isSpaceFamily ? WechatCallbackEventTypes.WedriveSpaceChange
+                    : isFileFamily ? WechatCallbackEventTypes.WedriveFileChange
+                    : key,
+                ChangeType = isSpaceFamily || isFileFamily ? key : null,
+            };
+
+            contract!.IsOpenFor(evt, appType, WechatCallbackChannel.App).Should().BeTrue(
+                $"事件键 {key} 官方三份文档（自建/第三方/代开发）正文逐字一致 ⇒ 三类应用开放");
+        }
     }
 }

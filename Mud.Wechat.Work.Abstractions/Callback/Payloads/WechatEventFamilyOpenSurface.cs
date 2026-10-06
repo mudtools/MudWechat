@@ -71,6 +71,16 @@ internal static class WechatEventFamilyOpenSurface
                 };
                 return true;
 
+            // 微信客服族：三类应用 + 应用数据通道
+            // （官方 94670/94699/96426、97712/97302/97713：三模式报文同构，自建配置到「微信客服-可调用接口的应用」，
+            // 第三方/代开发需「微信客服→管理账号、分配会话和收发消息」权限）。
+            case WechatCallbackEventFamily.KfEvent:
+                defaultSurfaces = new[]
+                {
+                    new WechatOpenSurface(WechatAppTypeSet.All, WechatCallbackChannel.App),
+                };
+                return true;
+
             // 授权族：第三方 / 代开发 + 套件指令通道（官方 99487/100964/90628）。
             // 注：授权族**不登记载荷契约**（走信封，ADR-8）；此处保留仅为矩阵完整性。
             case WechatCallbackEventFamily.Authorization:

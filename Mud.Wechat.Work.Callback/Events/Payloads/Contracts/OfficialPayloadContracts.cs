@@ -10,7 +10,7 @@ using Mud.Wechat.Work.Abstractions.Callback.Payloads;
 namespace Mud.Wechat.Work.Callback.Events.Payloads;
 
 /// <summary>
-/// 官方事件键契约表（112 键）：事件键 → 上游映射表 + 本仓库两级开放面声明。
+/// 官方事件键契约表（113 键）：事件键 → 上游映射表 + 本仓库两级开放面声明。
 /// </summary>
 /// <remarks>
 /// <para>
@@ -48,6 +48,11 @@ namespace Mud.Wechat.Work.Callback.Events.Payloads;
 /// （配套异步任务见 <see href="https://developer.work.weixin.qq.com/document/path/95797">path 95797 异步任务完成通知</see>）；
 /// 安全管理 <see href="https://developer.work.weixin.qq.com/document/path/100080">path 100080 企业微信域名IP变更事件</see>
 /// （仅自建应用可配置接收；第三方/代开发暂不支持）；
+/// 微信客服 <see href="https://developer.work.weixin.qq.com/document/path/94670">path 94670 接收消息和事件（自建）</see>/
+/// <see href="https://developer.work.weixin.qq.com/document/path/94699">path 94699（第三方）</see>/
+/// <see href="https://developer.work.weixin.qq.com/document/path/96426">path 96426（代开发）</see>
+/// （内容须调 sync_msg 拉取；<c>kf_account_auth_change</c> 的重名多节点形态超出声明面，
+/// 按 ADR-4 降级不登记，见 <c>WechatCallbackEventTypes.KfAccountAuthChange</c> 注释）；
 /// 客户联系 <see href="https://developer.work.weixin.qq.com/document/path/92130">path 92130 事件回调（自建）</see>/
 /// <see href="https://developer.work.weixin.qq.com/document/path/92277">path 92277 事件回调（第三方）</see>/
 /// <see href="https://developer.work.weixin.qq.com/document/path/96361">path 96361 事件回调（服务商代开发）</see>；

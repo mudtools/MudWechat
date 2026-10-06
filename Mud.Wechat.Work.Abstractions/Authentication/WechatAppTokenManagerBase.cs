@@ -70,6 +70,11 @@ internal abstract class WechatAppTokenManagerBase : TokenManagerBase
     protected override string MetricsKey => $"{GetType().Name}:{_options.AppKey}:{_tokenTypeKey}";
 
     /// <inheritdoc />
+    /// <remarks>
+    /// 多实例共享令牌<b>无需显式水合</b>：装配了持久化仓储时，组件 <c>TokenManagerBase</c> 会在本方法的
+    /// 异步管线上探测 <c>IAsyncTokenCache&lt;T&gt;</c> 并走<b>真读穿透</b>（镜像未命中 ⇒ 直达 store 读取并回填），
+    /// 故冷启动即读到其它实例写入的令牌。
+    /// </remarks>
     public override Task<string> GetTokenAsync(CancellationToken cancellationToken = default)
         => GetOrRefreshTokenAsync(cancellationToken);
 
@@ -101,7 +106,7 @@ internal abstract class WechatAppTokenManagerBase : TokenManagerBase
     /// <summary>唯一模板点：子类只负责「调签发接口换令牌」，返回 (AccessToken, 有效期秒数)。</summary>
     protected abstract Task<(string? AccessToken, int ExpireSeconds)> RefreshTokenFromApiAsync(CancellationToken cancellationToken);
 
-    /// <summary>构建令牌缓存：有持久化存储时装配桥接器，否则退回进程内缓存（公用层统一装配）。</summary>
+    /// <summary>构建令牌缓存：有持久化存储时装配桥接器（读穿透 + 写穿），否则退回进程内缓存。</summary>
     private static ITokenCache<CredentialToken> BuildCache(
         IWechatTokenStore? tokenStore,
         IOptions<WechatAppConfig>? options,

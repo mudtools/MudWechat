@@ -118,4 +118,42 @@ public class CrossProductLineCoexistenceTests
             .Should().NotBeNull();
         provider.GetRequiredService<MpAppManager>().Should().NotBeNull();
     }
+
+    /// <summary>
+    /// X6：后台刷新的启用是「两条产品线各自 PostConfigure 的并集」——任一产品线存在已配置应用即启用。
+    /// </summary>
+    /// <remarks>
+    /// 两条产品线各注册一个 <c>PostConfigure&lt;TokenRefreshBackgroundOptions&gt;</c>（依赖各自的配置列表类型），
+    /// 属隐式并集语义；须有用例锁定，否则将来某产品线改默认值时会静默关闭整体刷新。
+    /// </remarks>
+    [Fact]
+    public void BackgroundRefresh_ShouldBeEnabledWhenAnyProductLineHasApps()
+    {
+        var services = BuildBothProductLines();
+        using var provider = services.BuildServiceProvider();
+
+        provider.GetRequiredService<IOptions<TokenRefreshBackgroundOptions>>().Value.Enabled
+            .Should().BeTrue("存在已配置应用时后台刷新必须自动启用（两产品线的 PostConfigure 取并集）");
+    }
+
+    /// <summary>
+    /// X7：多应用注册必须一次传列表——重复调用 <c>AddXxxApp</c> 会覆盖注册表（先注册的应用静默丢失）。
+    /// </summary>
+    /// <remarks>
+    /// 两条产品线均以「注册表单一来源 = 本次传入的配置列表」实现，故都要 fail-fast；
+    /// 公众号侧由 <c>AddMpApp</c> 守卫，企微侧由 <c>AddWechatApp</c> 守卫。
+    /// </remarks>
+    [Fact]
+    public void RepeatedAppRegistration_ShouldFailFastOnBothProductLines()
+    {
+        var workServices = new ServiceCollection();
+        workServices.AddWechatApp(config => { config.AppKey = "w1"; config.CorpId = "c"; config.AgentSecret = "s"; });
+        var workAct = () => workServices.AddWechatApp(config => { config.AppKey = "w2"; config.CorpId = "c"; config.AgentSecret = "s"; });
+        workAct.Should().Throw<InvalidOperationException>().WithMessage("*已被调用过*");
+
+        var mpServices = new ServiceCollection();
+        mpServices.AddMpApp(config => { config.AppKey = "m1"; config.AppId = "a"; config.AppSecret = "s"; });
+        var mpAct = () => mpServices.AddMpApp(config => { config.AppKey = "m2"; config.AppId = "b"; config.AppSecret = "s"; });
+        mpAct.Should().Throw<InvalidOperationException>().WithMessage("*已被调用过*");
+    }
 }

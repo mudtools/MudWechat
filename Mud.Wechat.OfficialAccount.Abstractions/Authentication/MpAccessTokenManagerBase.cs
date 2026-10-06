@@ -77,6 +77,17 @@ internal abstract class MpAccessTokenManagerBase : TokenManagerBase
     protected override string MetricsKey => $"{GetType().Name}:{_options.AppKey}:{_tokenTypeKey}";
 
     /// <inheritdoc />
+    /// <remarks>
+    /// <para>
+    /// 多实例共享令牌<b>无需显式水合</b>：装配了持久化仓储时，组件 <c>TokenManagerBase</c> 会在本方法的
+    /// 异步管线上探测 <c>IAsyncTokenCache&lt;T&gt;</c> 并走<b>真读穿透</b>（镜像未命中 ⇒ 直达 store 读取并回填镜像），
+    /// 故冷启动即读到其它实例写入的令牌（省一次平台换取 + 更快就绪）。
+    /// </para>
+    /// <para>
+    /// <b>读穿透为 fail-closed</b>：store 读故障会从本方法上抛（不静默降级为平台换取）。
+    /// 该语义由组件决定，SDK 不叠加吞异常的装饰器——见方案文档 §10.4-R6。
+    /// </para>
+    /// </remarks>
     public override Task<string> GetTokenAsync(CancellationToken cancellationToken = default)
         => GetOrRefreshTokenAsync(cancellationToken);
 
@@ -131,7 +142,7 @@ internal abstract class MpAccessTokenManagerBase : TokenManagerBase
         return half < _options.TokenRefreshThreshold ? half : _options.TokenRefreshThreshold;
     }
 
-    /// <summary>构建令牌缓存：有持久化存储时装配桥接器，否则退回进程内缓存（公用层统一装配）。</summary>
+    /// <summary>构建令牌缓存：有持久化存储时装配桥接器（读穿透 + 写穿），否则退回进程内缓存。</summary>
     private static ITokenCache<CredentialToken> BuildCache(
         IWechatTokenStore? tokenStore,
         IOptions<MpAppConfig>? options,

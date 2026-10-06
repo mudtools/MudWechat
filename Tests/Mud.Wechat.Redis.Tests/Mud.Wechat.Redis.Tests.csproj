@@ -13,9 +13,11 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<!-- Redis 包（传递 Abstractions）；Callback 用于 RD-G5 全名锁定与回调链路用例。 -->
+		<!-- Redis 包（传递 Abstractions）；Callback 用于 RD-G5 全名锁定与回调链路用例；
+		     OfficialAccount.Abstractions 用于跨产品线顺序守卫与全名锁定（RD-G7）。 -->
 		<ProjectReference Include="..\..\Mud.Wechat.Redis\Mud.Wechat.Redis.csproj" />
 		<ProjectReference Include="..\..\Mud.Wechat.Work.Callback\Mud.Wechat.Work.Callback.csproj" />
+		<ProjectReference Include="..\..\Mud.Wechat.OfficialAccount.Abstractions\Mud.Wechat.OfficialAccount.Abstractions.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>

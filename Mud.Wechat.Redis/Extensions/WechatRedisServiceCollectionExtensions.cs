@@ -64,7 +64,7 @@ public static class WechatRedisServiceCollectionExtensions
         if (services == null) throw new ArgumentNullException(nameof(services));
         if (configuration == null) throw new ArgumentNullException(nameof(configuration));
 
-        EnsureWechatAppNotRegistered(services, nameof(AddWechatRedis));
+        EnsureApplicationRegistriesNotRegistered(services, nameof(AddWechatRedis));
 
         var section = configuration.GetSection(sectionName);
         services.Configure<WechatRedisOptions>(options => section.Bind(options));
@@ -86,7 +86,7 @@ public static class WechatRedisServiceCollectionExtensions
         if (services == null) throw new ArgumentNullException(nameof(services));
         if (configureOptions == null) throw new ArgumentNullException(nameof(configureOptions));
 
-        EnsureWechatAppNotRegistered(services, nameof(AddWechatRedis));
+        EnsureApplicationRegistriesNotRegistered(services, nameof(AddWechatRedis));
 
         services.Configure(configureOptions);
         return services.AddWechatRedisCore(registerHealthCheck);
@@ -161,10 +161,10 @@ public static class WechatRedisServiceCollectionExtensions
     }
 
     /// <summary>
-    /// 顺序守卫（fail-fast）：检测「先 AddWechatApp / AddWechatWorkServices / AddWechatCallback
+    /// 顺序守卫（fail-fast）：检测「先 AddWechatApp / AddMpApp / AddWechatWorkServices / AddWechatCallback
     /// 后 AddWechatRedis」的颠倒顺序——TryAddSingleton 语义下 Redis 实现会被既有默认实现静默跳过。
     /// </summary>
-    private static void EnsureWechatAppNotRegistered(IServiceCollection services, string callerName)
+    private static void EnsureApplicationRegistriesNotRegistered(IServiceCollection services, string callerName)
     {
         if (services.Any(s => s.ServiceType == typeof(IWechatAppManager)))
         {
@@ -172,6 +172,17 @@ public static class WechatRedisServiceCollectionExtensions
                 $"{callerName} 必须在 AddWechatApp（或 AddWechatWorkServices）之前调用。"
                 + "四个存储端口的默认实现为 TryAddSingleton 注册，颠倒顺序时 Redis 实现会被静默跳过（永不生效且无任何错误）。"
                 + "正确顺序：services.AddWechatRedis(...); services.AddWechatApp(...); services.AddWechatCallback(...);");
+        }
+
+        // 跨产品线（M1）：公众号的 IMpAppManager 同样是「产品线已在装配」的信号。
+        // 本包不引用 MP.Abstractions（保持产品线隔离），故按全名探测（同 InMemory 重放守卫的 R-1 手法）；
+        // 全名漂移由 RD-G6 契约守卫以反射锁定。
+        if (services.Any(s => s.ServiceType.FullName == MpAppManagerTypeName))
+        {
+            throw new InvalidOperationException(
+                $"{callerName} 必须在 AddMpApp 之前调用（检测到公众号应用管理器已注册）。"
+                + "令牌存储端口的默认实现为 TryAddSingleton 注册，颠倒顺序时 Redis 实现会被静默跳过（永不生效且无任何错误）。"
+                + "正确顺序：services.AddWechatRedis(...); services.AddMpApp(...); services.AddMpServices(...);");
         }
 
         if (HasInMemoryReplayGuardRegistration(services))
@@ -188,6 +199,12 @@ public static class WechatRedisServiceCollectionExtensions
     /// 「AddWechatCallback 已运行」；全名漂移由 T-R8 契约守卫 RD-G5 以反射锁定——测试工程可引用 Callback）。
     /// </summary>
     internal const string InMemoryReplayGuardTypeName = "Mud.Wechat.Work.Callback.InMemoryWechatCallbackReplayGuard";
+
+    /// <summary>
+    /// 公众号应用管理器接口全名（同 R-1 手法：Redis 包不引用 MP.Abstractions，经全名字符串探测
+    /// 「AddMpApp 已运行」；全名漂移由契约守卫 RD-G6 以反射锁定——测试工程可引用 MP.Abstractions）。
+    /// </summary>
+    internal const string MpAppManagerTypeName = "Mud.Wechat.OfficialAccount.Abstractions.Authentication.IMpAppManager";
 
     /// <summary>探测「AddWechatCallbackCore 的 TryAddSingleton 已注册进程内重放守卫」。</summary>
     /// <remarks>

@@ -88,6 +88,17 @@ public static class WechatWorkMultiAppExtensions
         List<WechatAppConfig> configs,
         IConfiguration? configuration = null)
     {
+        // 重复调用防护（对齐公众号侧：AddMpApp 同形守卫）：
+        // WechatAppManager 是单例且以「本次传入的配置列表」为注册表唯一来源 ⇒
+        // 重复 AddWechatApp 会让后一次注册的管理器覆盖前一次（先注册的应用<b>静默丢失</b>，
+        // 仅在手写测试时才被发现）。故 fail-fast 并指明正确用法。
+        if (services.Any(descriptor => descriptor.ServiceType == typeof(IWechatAppManager)))
+        {
+            throw new InvalidOperationException(
+                "AddWechatApp 已被调用过。多应用请使用 AddWechatApp(List<WechatAppConfig>) 一次性注册全部应用"
+                + "（重复调用会以最后一次的配置列表覆盖注册表，导致先注册的应用静默丢失）。");
+        }
+
         // 公用层唯一登记点：SSRF 白名单（并集单一来源）+ 令牌恢复判定器组合器 + 选项校验器 +
         // 令牌提供器 + 后台刷新框架服务。
         // 顺序敏感：白名单必须在任何客户端创建前登记；组合判定器经 PostConfigure 组装，

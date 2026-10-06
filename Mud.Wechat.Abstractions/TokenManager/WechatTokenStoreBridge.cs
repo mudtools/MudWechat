@@ -18,13 +18,25 @@ namespace Mud.Wechat.Abstractions.TokenManager;
 /// 互不覆盖，故同一份存储实例可安全服务全部产品线。
 /// </para>
 /// <para>
-/// 组件桥接器自带「内存镜像 + 异步写穿 + 补偿重放 + 冷启动水合 / 读穿透」，产品线无需自建叠层。
+/// <b>读穿透与写穿均由组件桥接器承担，SDK <u>不得</u>自建叠层</b>：
+/// </para>
+/// <list type="bullet">
+/// <item><b>读</b>：桥接器实现 <c>IAsyncTokenCache&lt;T&gt;</c>，管理器在异步管线
+/// <c>GetOrRefreshTokenAsync</c> 上做能力探测（<c>is IAsyncTokenCache&lt;T&gt;</c>）后走
+/// <b>真读穿透</b>（镜像未命中 ⇒ 直达 store 读取并回填镜像）⇒ <b>多实例冷启动天然共享令牌，
+/// 无需任何显式水合</b>；</item>
+/// <item><b>写</b>：异步写穿 + 补偿重放 + 失败计数（不抛）。</item>
+/// </list>
+/// <para>
+/// 故本桥刻意<b>只做接线</b>（构造桥接器 + 键映射），不重复实现水合 / 重试 / 解码：
+/// 早前版本曾在外层叠加「首次取令牌前显式水合」，实测为<b>纯冗余</b>（读穿透已覆盖该场景，
+/// 且会掩盖 store 故障的真实传播路径），已移除。
 /// </para>
 /// </remarks>
 internal static class WechatTokenStoreBridge
 {
     /// <summary>
-    /// 创建令牌缓存：提供持久化仓储时装配写穿桥接器，否则退回进程内并发字典缓存。
+    /// 创建令牌缓存：提供持久化仓储时装配写穿 / 读穿透桥接器，否则退回进程内并发字典缓存。
     /// </summary>
     /// <param name="tokenStore">持久化仓储（可为 null）。</param>
     /// <param name="tokenTypeKey">令牌类型键（<c>{令牌类型}:{AppKey}</c>）。</param>
@@ -44,7 +56,7 @@ internal static class WechatTokenStoreBridge
             tokenStore,
             valueAdapter: AdaptCredentialToken,
             valueFactory: CreateCredentialToken,
-            storeKeyMapper: cacheKey => tokenTypeKey + ":" + cacheKey,
+            storeKeyMapper: cacheKey => BuildStoreKey(tokenTypeKey, cacheKey),
             logger: logger);
     }
 
@@ -54,6 +66,13 @@ internal static class WechatTokenStoreBridge
     /// <returns>令牌类型键。</returns>
     public static string BuildTokenTypeKey(string? tokenTypeKeyPrefix, string? appKey)
         => (tokenTypeKeyPrefix ?? string.Empty) + ":" + (appKey ?? string.Empty);
+
+    /// <summary>构建持久化键（<c>{tokenTypeKey}:{cacheKey}</c>；读写两方向同源）。</summary>
+    /// <param name="tokenTypeKey">令牌类型键。</param>
+    /// <param name="cacheKey">镜像侧缓存键（scope）。</param>
+    /// <returns>持久化键。</returns>
+    public static string BuildStoreKey(string tokenTypeKey, string cacheKey)
+        => tokenTypeKey + ":" + cacheKey;
 
     private static TokenStoreValue? AdaptCredentialToken(CredentialToken? token)
         => token is null

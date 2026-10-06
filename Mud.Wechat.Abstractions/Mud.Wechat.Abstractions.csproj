@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<Description>Mud.Wechat 跨产品线公用横切层：响应判错契约、AppKey 形状校验、域名与 SSRF 白名单常量、配置基座、令牌持久化端口、errcode 令牌失效判定组合器。企业微信 / 公众号等产品线共同引用，本层零产品线依赖。</Description>
+		<PackageTags>Wechat;SDK;MudWechat;Abstractions;企业微信;公众号</PackageTags>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Mud.HttpUtils" Version="3.0.1" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<!-- 收紧的 internals 面：公用层成员（WechatCustomBaseUrlRegistry / WechatTokenRouting 等）仅供本仓产品线与测试直读，
+		     不进入对外契约（对齐 Work.Abstractions 的既有形态）。 -->
+		<InternalsVisibleTo Include="Mud.Wechat.Work.Abstractions" />
+		<InternalsVisibleTo Include="Mud.Wechat.Work" />
+		<InternalsVisibleTo Include="Mud.Wechat.Work.Callback" />
+		<InternalsVisibleTo Include="Mud.Wechat.OfficialAccount.Abstractions" />
+		<InternalsVisibleTo Include="Mud.Wechat.OfficialAccount" />
+		<InternalsVisibleTo Include="Mud.Wechat.Redis" />
+		<InternalsVisibleTo Include="Mud.Wechat.Abstractions.Tests" />
+		<InternalsVisibleTo Include="Mud.Wechat.Work.Tests" />
+		<InternalsVisibleTo Include="Mud.Wechat.Work.Abstractions.Tests" />
+		<InternalsVisibleTo Include="Mud.Wechat.OfficialAccount.Tests" />
+		<InternalsVisibleTo Include="DynamicProxyGenAssembly2" />
+	</ItemGroup>
+
+</Project>

@@ -1,0 +1,12 @@
+global using System;
+global using System.Collections.Generic;
+global using System.Linq;
+global using Microsoft.Extensions.Configuration;
+global using Microsoft.Extensions.DependencyInjection;
+global using Microsoft.Extensions.Logging;
+global using Mud.HttpUtils;
+global using Mud.HttpUtils.Attributes;
+global using Mud.Wechat.Abstractions;
+global using Mud.Wechat.OfficialAccount.Abstractions;
+global using Mud.Wechat.OfficialAccount.Abstractions.Authentication;
+global using Mud.Wechat.OfficialAccount.DataModels.Basic;

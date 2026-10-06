@@ -101,54 +101,17 @@ internal abstract class WechatAppTokenManagerBase : TokenManagerBase
     /// <summary>唯一模板点：子类只负责「调签发接口换令牌」，返回 (AccessToken, 有效期秒数)。</summary>
     protected abstract Task<(string? AccessToken, int ExpireSeconds)> RefreshTokenFromApiAsync(CancellationToken cancellationToken);
 
-    /// <summary>构建令牌缓存：有持久化存储时装配桥接器，否则退回进程内缓存。</summary>
+    /// <summary>构建令牌缓存：有持久化存储时装配桥接器，否则退回进程内缓存（公用层统一装配）。</summary>
     private static ITokenCache<CredentialToken> BuildCache(
         IWechatTokenStore? tokenStore,
         IOptions<WechatAppConfig>? options,
         ILogger logger,
         string tokenTypeKeyPrefix)
-    {
-        if (tokenStore is null)
-        {
-            return new ConcurrentDictionaryTokenCache<CredentialToken>();
-        }
-
-        var tokenTypeKey = BuildTokenTypeKey(options, tokenTypeKeyPrefix);
-
-        // 键映射（对齐 Feishu BD-1）：{tokenType}:{appKey} 前缀 + 缓存键（scope）单射拼接，
-        // 企业级令牌的多 scope（authCorpId）缓存条目映射到不同 store 键，互不覆盖。
-        return new TokenStoreBackedTokenCache<CredentialToken>(
+        => WechatTokenStoreBridge.CreateCache(
             tokenStore,
-            valueAdapter: AdaptCredentialToken,
-            valueFactory: CreateCredentialToken,
-            storeKeyMapper: cacheKey => $"{tokenTypeKey}:{cacheKey}",
-            logger: logger);
-    }
+            BuildTokenTypeKey(options, tokenTypeKeyPrefix),
+            logger);
 
     private static string BuildTokenTypeKey(IOptions<WechatAppConfig>? options, string tokenTypeKeyPrefix)
-        => $"{tokenTypeKeyPrefix}:{options?.Value?.AppKey ?? string.Empty}";
-
-    private static TokenStoreValue? AdaptCredentialToken(CredentialToken? token)
-        => token is null
-            ? null
-            : new TokenStoreValue(
-                accessToken: WechatTokenBridgeCodec.EncodeToken(token.AccessToken, token.Expire),
-                refreshToken: null,
-                expiresInSeconds: WechatTokenBridgeCodec.RemainingSeconds(token.Expire));
-
-    private static CredentialToken? CreateCredentialToken(TokenStoreValue value)
-    {
-        var (accessToken, expireTimestampMs) = WechatTokenBridgeCodec.DecodeToken(value.AccessToken);
-        if (string.IsNullOrEmpty(accessToken) || expireTimestampMs <= 0)
-        {
-            return null;
-        }
-
-        return new CredentialToken
-        {
-            AccessToken = accessToken,
-            Expire = expireTimestampMs,
-            IssuedAt = 0,
-        };
-    }
+        => WechatTokenStoreBridge.BuildTokenTypeKey(tokenTypeKeyPrefix, options?.Value?.AppKey);
 }

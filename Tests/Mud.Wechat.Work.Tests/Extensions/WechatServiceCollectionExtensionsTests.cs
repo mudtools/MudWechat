@@ -9,7 +9,7 @@ using System.Net;
 using Microsoft.Extensions.DependencyInjection;
 using Mud.HttpUtils;
 using Mud.Wechat.Work.Abstractions.Configuration;
-using Mud.Wechat.Work.TokenManagers;
+using Mud.Wechat.Work.Abstractions.Authentication;
 using Mud.Wechat.Work.Abstractions.Enums;
 
 namespace Mud.Wechat.Work.Tests.Extensions;
@@ -50,7 +50,7 @@ public class WechatServiceCollectionExtensionsTests
             .Should().NotBeNull("get_customized_auth_url 复用 AddAuthenticationWebApiHttpClient() 注册，不新增独立注册项");
         provider.GetRequiredService<Mud.HttpUtils.ITokenProvider>().Should().NotBeNull();
         provider.GetRequiredService<Mud.HttpUtils.IAppContextHolder>().Should().NotBeNull();
-        provider.GetRequiredService<Abstractions.Authentication.TokenManager.IWechatTokenStore>().Should().NotBeNull();
+        provider.GetRequiredService<Mud.Wechat.Abstractions.TokenManager.IWechatTokenStore>().Should().NotBeNull();
         provider.GetRequiredService<Abstractions.Authentication.TokenManager.IWechatCorpAuthStore>().Should().NotBeNull();
         provider.GetRequiredService<Abstractions.Authentication.TokenManager.IWechatSuiteTicketStore>().Should().NotBeNull();
         provider.GetRequiredService<Abstractions.Authentication.TokenManager.IWechatSuiteTicketProvider>().Should().NotBeNull();
@@ -101,8 +101,15 @@ public class WechatServiceCollectionExtensionsTests
         using var provider = BuildProvider();
 
         var options = provider.GetRequiredService<IOptionsMonitor<TokenRecoveryOptions>>().CurrentValue;
-        options.TokenInvalidationDetector.Should().NotBeNull("PostConfigure 保证每次快照携带判定器（§14）");
-        options.TokenInvalidationDetector.Should().BeOfType<WechatTokenInvalidationDetector>();
+        options.TokenInvalidationDetector.Should().NotBeNull("PostConfigure 保证每次快照携带判定器");
+
+        // 跨产品线共存约束：选项属性是单槽，必须由公用层组合器持有，
+        // 各产品线以「子判定器」身份登记（否则公众号产品线写入时会覆盖本判定器）。
+        var composite = options.TokenInvalidationDetector.Should().BeOfType<WechatCompositeTokenInvalidationDetector>().Subject;
+        composite.Count.Should().Be(1);
+        provider.GetServices<Mud.HttpUtils.ITokenInvalidationDetector>()
+            .Should().ContainSingle(d => d is WechatTokenInvalidationDetector,
+                "企微判定器以子判定器身份登记，由组合器统一消费");
     }
 
     [Fact]

@@ -17,6 +17,7 @@ global using FluentAssertions;
 global using Microsoft.Extensions.Logging;
 global using Microsoft.Extensions.Logging.Abstractions;
 global using Moq;
+global using Mud.Wechat.Abstractions.TokenManager;
 global using Mud.Wechat.Redis.Configuration;
 global using Mud.Wechat.Redis.Extensions;
 global using Mud.Wechat.Redis.HealthChecks;

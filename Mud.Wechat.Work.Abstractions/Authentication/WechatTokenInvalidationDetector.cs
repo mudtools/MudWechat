@@ -8,7 +8,7 @@
 using Mud.Wechat.Work.Abstractions.Enums;
 using System.Text.Json;
 
-namespace Mud.Wechat.Work.TokenManagers;
+namespace Mud.Wechat.Work.Abstractions.Authentication;
 
 /// <summary>
 /// 企业微信 errcode 令牌失效判定器（<see cref="ITokenInvalidationDetector"/> 两阶段实现）。
@@ -19,8 +19,15 @@ namespace Mud.Wechat.Work.TokenManagers;
 /// 触发恢复链路：失效缓存 → 强制刷新 → 重建请求重注入 → 重试。
 /// </para>
 /// <para>
-/// 注入方式：经 <c>TokenRecoveryOptions.TokenInvalidationDetector</c> 属性编程式注入
-/// （PostConfigure 保证 IOptionsMonitor 每次快照都携带判定器），<b>不是</b> DI 集合注入。
+/// <b>登记方式</b>：以「子判定器」身份注册为 DI 集合项
+/// （<c>services.TryAddEnumerable(...)</c>），由公用层
+/// <see cref="WechatTokenRecoveryRegistration.AddWechatTokenRecovery"/> 组装为
+/// <see cref="WechatCompositeTokenInvalidationDetector"/> 并经 <c>IPostConfigureOptions</c> 写入
+/// <c>TokenRecoveryOptions.TokenInvalidationDetector</c>。
+/// </para>
+/// <para>
+/// <b>不可退回「本判定器直接写选项属性」</b>：该选项为<b>单槽</b>，公众号产品线同样需要写入 ⇒
+/// 后注册者会覆盖前者，导致另一方 errcode 令牌恢复静默失效。
 /// </para>
 /// </remarks>
 public sealed class WechatTokenInvalidationDetector : ITokenInvalidationDetector
@@ -53,7 +60,7 @@ public sealed class WechatTokenInvalidationDetector : ITokenInvalidationDetector
             return false;
         }
 
-        foreach (var domain in Consts.AllowedBaseUrlDomains)
+        foreach (var domain in WechatApiHosts.AllowedBaseUrlDomains)
         {
             if (string.Equals(host, domain, StringComparison.OrdinalIgnoreCase)
                 || host!.EndsWith("." + domain, StringComparison.OrdinalIgnoreCase))

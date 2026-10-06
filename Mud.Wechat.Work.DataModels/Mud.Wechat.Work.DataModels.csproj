@@ -13,6 +13,11 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<!-- 响应基底实现公用层判错契约 IWechatApiResponse（非序列化契约；依赖方向 DataModels → 公用层，公用层为叶子）。 -->
+		<ProjectReference Include="..\Mud.Wechat.Abstractions\Mud.Wechat.Abstractions.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<InternalsVisibleTo Include="Mud.Wechat.Work" />
 		<InternalsVisibleTo Include="Mud.Wechat.Work.Abstractions" />
 		<InternalsVisibleTo Include="Mud.Wechat.Work.Callback" />

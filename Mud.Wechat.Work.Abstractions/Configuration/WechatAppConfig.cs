@@ -15,6 +15,12 @@ namespace Mud.Wechat.Work.Abstractions.Configuration;
 /// </summary>
 /// <remarks>
 /// <para>
+/// 公共形状（AppKey / BaseUrl / AllowCustomBaseUrl / TimeoutSeconds / TokenRefreshThreshold / IsDefault
+/// 与三条通用校验）由公用层 <see cref="WechatAppConfigBase"/> 承担；本类只声明企业微信专属字段
+/// （AppType / CorpId / AgentId / AgentSecret / ProviderSecret / SuiteId / SuiteSecret）与按应用类型的
+/// 互斥必填组合。
+/// </para>
+/// <para>
 /// AOT：配置 DTO 不使用 <c>required</c>（ConfigurationBinder 以 <c>new T()</c> 构造，
 /// required 触发 CS9035），必填校验统一走 <see cref="Validate"/>，在启动阶段按
 /// <see cref="AppType"/> 校验互斥必填项组合，配置错误即时报错。
@@ -24,15 +30,8 @@ namespace Mud.Wechat.Work.Abstractions.Configuration;
 /// 随 <c>Mud.Wechat.Work.Callback</c> 包配置，不进本配置。
 /// </para>
 /// </remarks>
-public class WechatAppConfig
+public class WechatAppConfig : WechatAppConfigBase
 {
-    /// <summary>
-    /// 应用唯一标识（用于在代码中引用此应用）。
-    /// </summary>
-    /// <remarks>示例值："default"、"saas-suite"。AppKey 必须唯一——重复 AppKey
-    /// 会导致命名 HttpClient 与令牌管理器注册冲突。</remarks>
-    public string AppKey { get; set; } = string.Empty;
-
     /// <summary>
     /// 应用类型，决定必填项组合与令牌链（默认企业内部自建应用）。
     /// </summary>
@@ -69,58 +68,17 @@ public class WechatAppConfig
     /// </summary>
     public string SuiteSecret { get; set; } = string.Empty;
 
-    /// <summary>
-    /// 企业微信 API 入口点（默认 <c>https://qyapi.weixin.qq.com</c>）。
-    /// </summary>
-    public string BaseUrl { get; set; } = Consts.DefaultBaseUrl;
-
-    /// <summary>
-    /// 是否允许自定义 BaseUrl。默认 <c>false</c>（SSRF 防线：非白名单域名校验失败）。
-    /// </summary>
-    public bool AllowCustomBaseUrl { get; set; }
-
-    /// <summary>
-    /// 请求超时时间（单位：秒，默认 30）。
-    /// </summary>
-    public int TimeoutSeconds { get; set; } = 30;
-
-    /// <summary>
-    /// 令牌提前刷新阈值（单位：秒，默认 300）。
-    /// </summary>
-    /// <remarks>D9 阈值同源：恢复阈值 = 缓存有效性阈值 = 本配置，禁止第二套阈值。</remarks>
-    public int TokenRefreshThreshold { get; set; } = 300;
-
-    /// <summary>
-    /// 是否为默认应用。多应用注册时必须存在且仅存在一个默认应用
-    /// （AppKey 等于 "default" 的应用会被自动推断为默认）。
-    /// </summary>
-    public bool IsDefault { get; set; }
+    /// <inheritdoc />
+    protected override string DefaultBaseUrl => WechatApiHosts.WorkBaseUrl;
 
     /// <summary>
     /// 按 <see cref="AppType"/> 校验互斥必填项组合，配置错误抛出
     /// <see cref="InvalidOperationException"/>（启动阶段即失败，避免运行期深埋错误）。
     /// </summary>
-    public void Validate()
+    /// <remarks>通用校验（AppKey 形状 / 数值范围 / BaseUrl HTTPS + 白名单）由基类承担。</remarks>
+    public override void Validate()
     {
-        if (string.IsNullOrWhiteSpace(AppKey))
-        {
-            throw new InvalidOperationException("AppKey 不能为空。");
-        }
-
-        // P1-7：键形状校验（单点收敛，三入口 + AddApp 全部经此）。
-        WechatAppKeyValidator.Validate(AppKey);
-
-        if (TimeoutSeconds < 1 || TimeoutSeconds > 300)
-        {
-            throw new InvalidOperationException($"应用 {AppKey} 的 TimeoutSeconds 必须在 1-300 秒之间。");
-        }
-
-        if (TokenRefreshThreshold < 60 || TokenRefreshThreshold > 3600)
-        {
-            throw new InvalidOperationException($"应用 {AppKey} 的 TokenRefreshThreshold 必须在 60-3600 秒之间。");
-        }
-
-        ValidateBaseUrl();
+        base.Validate();
 
         switch (AppType)
         {
@@ -153,37 +111,8 @@ public class WechatAppConfig
         }
     }
 
-    private void ValidateBaseUrl()
-    {
-        if (string.IsNullOrWhiteSpace(BaseUrl))
-        {
-            BaseUrl = Consts.DefaultBaseUrl;
-        }
-
-        if (!Uri.TryCreate(BaseUrl, UriKind.Absolute, out var uri) ||
-            !string.Equals(uri.Scheme, "https", StringComparison.OrdinalIgnoreCase))
-        {
-            throw new InvalidOperationException($"应用 {AppKey} 的 BaseUrl 必须是绝对 HTTPS 地址：{BaseUrl}");
-        }
-
-        if (!AllowCustomBaseUrl)
-        {
-            var host = uri.Host;
-            var allowed = Consts.AllowedBaseUrlDomains.Any(domain =>
-                string.Equals(host, domain, StringComparison.OrdinalIgnoreCase) ||
-                host.EndsWith("." + domain, StringComparison.OrdinalIgnoreCase));
-            if (!allowed)
-            {
-                throw new InvalidOperationException(
-                    $"应用 {AppKey} 的 BaseUrl 域名 {host} 不在白名单内" +
-                    $"（{string.Join(", ", Consts.AllowedBaseUrlDomains)}）；" +
-                    "如需自定义域名请显式设置 AllowCustomBaseUrl = true。");
-            }
-        }
-    }
-
     /// <summary>
-    /// 返回掩码后的配置描述（AppKey / AppType / CorpId；密钥永不写入日志）。
+    /// 返回掩码后的配置描述（AppKey / AppType / CorpId / BaseUrl；密钥永不写入日志）。
     /// </summary>
     public override string ToString()
         => $"WechatAppConfig(AppKey={AppKey}, AppType={AppType}, CorpId={CorpId}, BaseUrl={BaseUrl})";

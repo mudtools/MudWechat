@@ -16,7 +16,11 @@ Set-Location $repoRoot
 $failures = New-Object System.Collections.Generic.List[string]
 
 $configFiles = @(
+    # 公用层配置基座：公共形状（AppKey/BaseUrl/AllowCustomBaseUrl/TimeoutSeconds/TokenRefreshThreshold/IsDefault）
+    # 已上移至本文件，若不同批纳入扫描即为门禁盲区。
+    'Mud.Wechat.Abstractions/Configuration/WechatAppConfigBase.cs',
     'Mud.Wechat.Work.Abstractions/Configuration/WechatAppConfig.cs',
+    'Mud.Wechat.OfficialAccount.Abstractions/Configuration/MpAppConfig.cs',
     'Mud.Wechat.Work.Callback/WechatCallbackOptions.cs',
     'Mud.Wechat.Redis/Configuration/WechatRedisOptions.cs',
     'Mud.Wechat.Redis/Configuration/WechatRedisConnectionOptions.cs'
@@ -38,7 +42,17 @@ foreach ($file in $configFiles) {
     }
 
     # 消费点搜索范围：全部源码（排除配置 DTO 自身与生成目录）。
-    $searchRoots = @('Mud.Wechat.Work', 'Mud.Wechat.Work.Abstractions', 'Mud.Wechat.Work.Callback', 'Mud.Wechat.Redis')
+    # 新增产品线（公众号/服务号）的三个工程必须在内，否则其配置属性恒「无消费点」或被整体绕过。
+    $searchRoots = @(
+        'Mud.Wechat.Abstractions',
+        'Mud.Wechat.Work',
+        'Mud.Wechat.Work.Abstractions',
+        'Mud.Wechat.Work.Callback',
+        'Mud.Wechat.Redis',
+        'Mud.Wechat.OfficialAccount',
+        'Mud.Wechat.OfficialAccount.Abstractions',
+        'Mud.Wechat.OfficialAccount.DataModels'
+    )
 
     foreach ($prop in $propNames) {
         $consumed = $false

@@ -21,6 +21,14 @@
 /Mud.Wechat.Work.Callback.Generator/obj
 /Mud.Wechat.Work.Callback.Analyzers/bin
 /Mud.Wechat.Work.Callback.Analyzers/obj
+/Mud.Wechat.Abstractions/bin
+/Mud.Wechat.Abstractions/obj
+/Mud.Wechat.OfficialAccount/bin
+/Mud.Wechat.OfficialAccount/obj
+/Mud.Wechat.OfficialAccount.Abstractions/bin
+/Mud.Wechat.OfficialAccount.Abstractions/obj
+/Mud.Wechat.OfficialAccount.DataModels/bin
+/Mud.Wechat.OfficialAccount.DataModels/obj
 /Tests/Mud.Wechat.Work.Tests/bin
 /Tests/Mud.Wechat.Work.Tests/obj
 /Tests/Mud.Wechat.Work.Abstractions.Tests/bin
@@ -33,6 +41,10 @@
 /Tests/Mud.Wechat.Redis.Tests/obj
 /Tests/Mud.Wechat.Work.Callback.Tests/bin
 /Tests/Mud.Wechat.Work.Callback.Tests/obj
+/Tests/Mud.Wechat.Abstractions.Tests/bin
+/Tests/Mud.Wechat.Abstractions.Tests/obj
+/Tests/Mud.Wechat.OfficialAccount.Tests/bin
+/Tests/Mud.Wechat.OfficialAccount.Tests/obj
 /Demos/Mud.Wechat.Work.ContactCallbackDemo/bin
 /Demos/Mud.Wechat.Work.ContactCallbackDemo/obj
 /Demos/Mud.Wechat.Work.ContactDemo/bin

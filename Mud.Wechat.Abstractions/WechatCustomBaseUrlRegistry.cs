@@ -5,22 +5,21 @@
 //  不得利用本项目从事危害国家安全、扰乱社会秩序、侵犯他人合法权益等法律法规禁止的活动！任何基于本项目开发而产生的一切法律纠纷和责任，我们不承担任何责任！
 // -----------------------------------------------------------------------
 
-namespace Mud.Wechat.Work.Abstractions;
+namespace Mud.Wechat.Abstractions;
 
 /// <summary>
-/// 「显式登记的自定义 BaseUrl 主机」注册表（P2-9：供 errcode 判定器的同步预过滤使用）。
+/// 「显式登记的自定义 BaseUrl 主机」注册表（P2-9：供各产品线 errcode 判定器的同步预过滤使用）。
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>为何需要</b>：<c>WechatTokenInvalidationDetector.ShouldInspect</c> 是<b>同步</b>预过滤，
+/// <b>为何需要</b>：<c>ITokenInvalidationDetector.ShouldInspect</c> 是<b>同步</b>预过滤，
 /// 只有请求对象、拿不到「该请求属于哪个应用」，故无法按应用读取
-/// <see cref="Configuration.WechatAppConfig.AllowCustomBaseUrl"/>。原实现硬编码
-/// <c>weixin.qq.com</c>，使 <c>AllowCustomBaseUrl=true</c> 的私有化/网关部署**完全失去**
-/// errcode 令牌恢复能力（静默降级）。
+/// <see cref="Configuration.WechatAppConfigBase.AllowCustomBaseUrl"/>。若硬编码官方域名集合，
+/// 会使 <c>AllowCustomBaseUrl = true</c> 的私有化 / 网关部署**完全失去** errcode 令牌恢复能力（静默降级）。
 /// </para>
 /// <para>
-/// 故在注册期（<c>AddWechatTokenInfrastructure</c>）把「显式允许的自定义主机」登记到本表，
-/// 判定器据此放行。仅登记 <c>AllowCustomBaseUrl = true</c> 的应用主机（严格模式本就无法配置成功）。
+/// 故在各产品线注册期把「显式允许的自定义主机」登记到本表，判定器据此放行。仅登记
+/// <c>AllowCustomBaseUrl = true</c> 的应用主机（严格模式本就无法配置成功）。
 /// </para>
 /// <para>进程级静态表：内容只增不删，且登记发生在启动期（单线程），读取为并发安全字典。</para>
 /// </remarks>

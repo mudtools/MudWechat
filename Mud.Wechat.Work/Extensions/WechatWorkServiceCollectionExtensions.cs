@@ -6,7 +6,6 @@
 // -----------------------------------------------------------------------
 
 using Mud.Wechat.Work.Extensions;
-using Mud.Wechat.Work.TokenManagers;
 
 namespace Mud.Wechat.Work;
 
@@ -90,17 +89,4 @@ public static class WechatWorkServiceCollectionExtensions
         return builder.Build();
     }
 
-    /// <summary>
-    /// 注册 errcode 令牌失效判定器（Mud.HttpUtils v2.0.9）：
-    /// 经 <see cref="TokenRecoveryOptions.TokenInvalidationDetector"/> 属性编程式注入，
-    /// PostConfigure 保证 IOptionsMonitor 热更新每次快照都携带判定器
-    /// （不是 DI 集合注入——原草案作废，见详细设计 §11.2）。
-    /// </summary>
-    internal static IServiceCollection AddWechatTokenInvalidationDetector(this IServiceCollection services)
-    {
-        services.AddOptions<TokenRecoveryOptions>();
-        services.PostConfigure<TokenRecoveryOptions>(options =>
-            options.TokenInvalidationDetector = new WechatTokenInvalidationDetector());
-        return services;
-    }
 }

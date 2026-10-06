@@ -5,12 +5,12 @@
 //  不得利用本项目从事危害国家安全、扰乱社会秩序、侵犯他人合法权益等法律法规禁止的活动！任何基于本项目开发而产生的一切法律纠纷和责任，我们不承担任何责任！
 // -----------------------------------------------------------------------
 
-namespace Mud.Wechat.Work.Abstractions.Authentication.TokenManager;
+namespace Mud.Wechat.Abstractions.TokenManager;
 
 /// <summary>
-/// <see cref="IWechatTokenStore"/> 的进程内默认实现（并发字典 + 绝对过期判定）。
+/// <see cref="IWechatTokenStore"/> 的进程内默认实现（并发字典 + 绝对过期判定），各产品线共用。
 /// </summary>
-/// <remarks>W1（M10）：进程内逐键删除即等价批量，直接实现批量能力接口（管理器探测后走一次提交）。</remarks>
+/// <remarks>进程内逐键删除即等价批量，直接实现批量能力接口（调用方探测后走一次提交）。</remarks>
 public sealed class InMemoryWechatTokenStore : IWechatTokenStoreBatchRemove
 {
     private sealed class StoreEntry
@@ -23,8 +23,8 @@ public sealed class InMemoryWechatTokenStore : IWechatTokenStoreBatchRemove
 
     /// <inheritdoc />
     /// <remarks>
-    /// <b>P1-9</b>：过期条目在<b>读路径</b>即回收（O(1)）——原实现只在"读取时判过期返回 null"，
-    /// 条目（含令牌明文）会永久驻留 `_entries`，长时间运行 + 多 scope（多企业 authCorpId）下无界增长。
+    /// <b>P1-9</b>：过期条目在<b>读路径</b>即回收（O(1)）—— 若只在「读取时判过期返回 null」，
+    /// 条目（含令牌明文）会永久驻留 <c>_entries</c>，长时间运行 + 多 scope 下无界增长。
     /// </remarks>
     public Task<string?> GetAccessTokenAsync(string tokenType, CancellationToken cancellationToken = default)
     {

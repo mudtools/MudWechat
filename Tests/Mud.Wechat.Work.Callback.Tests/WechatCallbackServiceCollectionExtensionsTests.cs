@@ -6,12 +6,14 @@
 // -----------------------------------------------------------------------
 
 using Microsoft.Extensions.DependencyInjection;
+using Mud.Wechat.Work.Abstractions.Callback.Bots;
+using Mud.Wechat.Work.DataModels.Aibot;
 
 namespace Mud.Wechat.Work.Callback.Tests;
 
 /// <summary>
 /// 回调 DI 装配测试（P0-2 + v1 方案 §5.8）：抗重放守卫可解析、跨 scope 同一实例、宿主可前置覆盖为分布式实现；
-/// v1.2 追加注册表/分发器/中间件装配与建造者注册行为。
+/// v1.2 追加注册表/分发器/中间件装配、智能机器人接收面装配与两侧建造者注册行为。
 /// </summary>
 public class WechatCallbackServiceCollectionExtensionsTests
 {
@@ -121,9 +123,63 @@ public class WechatCallbackServiceCollectionExtensionsTests
             .Should().BeTrue("宿主注册的分布式实现优先（多实例部署必需）");
     }
 
-    /// <summary>测试用精确键处理器（create_user）。</summary>
-    private sealed class StubEventHandler : IWechatCallbackEventHandler
+    /// <summary>
+    /// v1.2：<c>AddWechatBotCallback</c> 的前置依赖契约——未先调 <c>AddWechatCallback</c> 即 fail-fast。
+    /// 处理器注册表实例在 <c>AddWechatCallback</c> 核心装配中创建，静默空转会让宿主注册的机器人处理器永不执行。
+    /// </summary>
+    [Fact]
+    public void AddWechatBotCallback_ShouldFailFast_WhenAddWechatCallbackNotCalled()
     {
+        var services = new ServiceCollection();
+        services.AddLogging();
+
+        var act = () => services.AddWechatBotCallback();
+
+        act.Should().Throw<InvalidOperationException>().WithMessage("*AddWechatCallback*");
+    }
+
+    /// <summary>
+    /// v1.2：机器人接收面（接收器 / 分发器 / 注册表）在 <c>AddWechatCallback</c> 中<b>无条件注册</b>为单例——
+    /// 中间件为经典约定式构造注入，未接线机器人处理器的宿主也须能整体解析（否则整个回调面解析失败）。
+    /// </summary>
+    [Fact]
+    public void BotCallbackPipeline_ShouldBeResolvableAsSingletons()
+    {
+        var services = CreateServices();
+        using var provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true });
+
+        var receiver = provider.GetRequiredService<IWechatBotCallbackReceiver>();
+        var dispatcher = provider.GetRequiredService<WechatBotEventDispatcher>();
+        var registry = provider.GetRequiredService<WechatBotHandlerRegistry>();
+
+        using var scope = provider.CreateScope();
+        ReferenceEquals(receiver, scope.ServiceProvider.GetRequiredService<IWechatBotCallbackReceiver>())
+            .Should().BeTrue("接收器 Singleton（无状态，凭据按 appKey 请求期解析）");
+        ReferenceEquals(dispatcher, scope.ServiceProvider.GetRequiredService<WechatBotEventDispatcher>())
+            .Should().BeTrue("分发器 Singleton（并发信号量跨请求共享）");
+        ReferenceEquals(registry, scope.ServiceProvider.GetRequiredService<WechatBotHandlerRegistry>())
+            .Should().BeTrue("注册表为组合根期创建的单例实例（AddWechatBotCallback 复用同一实例）");
+    }
+
+    /// <summary>v1.2：机器人建造者按 botKey 分桶（未传 botKey ⇒ 通配键全局生效）。</summary>
+    [Fact]
+    public void BotBuilder_ShouldRegisterHandlerToBotKeyOrWildcardBucket()
+    {
+        var services = CreateServices();
+        services.AddWechatBotCallback()
+            .AddHandler<StubBotEventHandler>("bot1")
+            .AddHandler<FallbackBotEventHandler>();
+
+        using var provider = services.BuildServiceProvider();
+        var registry = provider.GetRequiredService<WechatBotHandlerRegistry>();
+
+        registry.GetAll("bot1").Should().Contain(typeof(StubBotEventHandler));
+        registry.GetAll(WechatCallbackOptions.WildcardAppKey)
+            .Should().Contain(typeof(FallbackBotEventHandler), "未传 botKey 时注册到通配键（全局生效）");
+    }
+
+    /// <summary>测试用精确键处理器（create_user）。</summary>
+    private sealed class StubEventHandler : IWechatCallbackEventHandler    {
         public string SupportedEventType => WechatCallbackEventTypes.CreateUser;
 
         public Task HandleAsync(WechatCallbackEvent eventData, CancellationToken cancellationToken = default)
@@ -147,5 +203,25 @@ public class WechatCallbackServiceCollectionExtensionsTests
 
         public Task AfterHandleAsync(string eventType, WechatCallbackEvent eventData, CancellationToken cancellationToken = default)
             => Task.CompletedTask;
+    }
+
+    /// <summary>测试用机器人处理器（精确键 text；返回 null = 空包）。</summary>
+    private sealed class StubBotEventHandler : IWechatBotCallbackEventHandler
+    {
+        public string SupportedEventType => WechatBotEventTypes.Text;
+
+        public Task<AibotMessage?> HandleAsync(
+            WechatBotCallbackEvent eventData, CancellationToken cancellationToken = default)
+            => Task.FromResult<AibotMessage?>(null);
+    }
+
+    /// <summary>测试用机器人兜底处理器（空键）。</summary>
+    private sealed class FallbackBotEventHandler : IWechatBotCallbackEventHandler
+    {
+        public string SupportedEventType => string.Empty;
+
+        public Task<AibotMessage?> HandleAsync(
+            WechatBotCallbackEvent eventData, CancellationToken cancellationToken = default)
+            => Task.FromResult<AibotMessage?>(null);
     }
 }

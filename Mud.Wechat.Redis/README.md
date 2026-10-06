@@ -17,9 +17,16 @@
 四个端口的默认实现均为进程内（`TryAddSingleton` 注册）。本包**先注册即胜出**：
 
 ```csharp
-services.AddWechatRedis(configuration)   // ① 必须最先
-        .AddWechatApp(configuration)      // ② 令牌/授权/票据基座（Redis 实现已就位）
-        .AddWechatCallback(...);          // ③ 回调（重放守卫已就位）
+// Program.cs —— 完整装配：顺序即契约，Redis 必须最先
+builder.Services
+    .AddWechatRedis(builder.Configuration)                 // ① 连接基座 + 四个存储端口（默认注册健康检查）
+    .AddWechatApp(builder.Configuration, "WechatApps")     // ② 令牌/授权/票据基座（Redis 实现已就位）
+    .AddWechatCallback(o => { /* 回调凭据与处理器 */ });    // ③ 回调（抗重放窗口跨实例生效）
+
+var app = builder.Build();
+app.MapHealthChecks("/health");                            // 健康检查端点（唯一判据 PING，端点连通数仅作 data 呈现）
+
+app.Run();
 ```
 
 **调用顺序 = 契约**：颠倒顺序时 TryAdd 语义会让 Redis 实现**静默失效**（默认进程内实现仍然生效且无任何错误）。

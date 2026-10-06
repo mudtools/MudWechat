@@ -71,6 +71,14 @@ public sealed class WechatCallbackMiddleware(
             return;
         }
 
+        // 仅前缀路由（/{prefix}，如通讯录同步助手）：归一为通配键 "*"——接收器 / 注册表 / 分发器
+        // 三处的「命中键」必须同形：接收器与 <see cref="WechatCallbackOptions.ResolveApp"/> 能容忍空串，
+        // 但分发器对空键 fail-fast（ArgumentException → 500），故空串只允许出现在本处并立即归一。
+        if (appKey.Length == 0)
+        {
+            appKey = WechatCallbackOptions.WildcardAppKey;
+        }
+
         // 未知 AppKey 且无通配：跳过（404 由管线末端给出），不打劫非回调端点。
         if (options.ResolveApp(appKey) == null)
         {
@@ -298,7 +306,8 @@ public sealed class WechatCallbackMiddleware(
 #endif
 
     /// <summary>
-    /// 从路径提取应用键：<c>/{prefix}/{appKey}</c> → appKey；<c>/{prefix}</c> → 空串（按通配键解析）；
+    /// 从路径提取应用键：<c>/{prefix}/{appKey}</c> → appKey；<c>/{prefix}</c> → 空串
+    /// （调用方立即归一为 <see cref="WechatCallbackOptions.WildcardAppKey"/> 通配键）；
     /// 其余（前缀不匹配、深层路径）→ <c>null</c>（非本中间件路由）。
     /// </summary>
     private static string? ExtractAppKey(string path, string routePrefix)

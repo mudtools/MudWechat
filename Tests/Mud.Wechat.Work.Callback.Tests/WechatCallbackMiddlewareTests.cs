@@ -340,6 +340,26 @@ public class WechatCallbackMiddlewareTests
         CollectingHandler.LastUserId.Should().Be("zhangsan", "类型化处理器经分发执行");
     }
 
+    /// <summary>
+    /// v1.2 修复：仅前缀路由（<c>/{prefix}</c>，通讯录同步助手形态）必须按通配键解析——
+    /// 中间件把空键归一为 <c>"*"</c>；否则分发器对空键 fail-fast（<c>ArgumentException</c> → 500），
+    /// 症状为「GET 验签可通过、POST 事件恒 500」，通讯录同步助手事件永远无法送达（隐蔽且难排查）。
+    /// </summary>
+    [Fact]
+    public async Task InvokeAsync_ShouldReturn200Success_WhenPostUsesPrefixOnlyRoute()
+    {
+        var (middleware, provider) = CreateMiddleware(
+            configure: b => b.AddHandler<CollectingHandler>());
+        using var _ = provider;
+        var context = CreatePostContext(UserCreatedPlain, path: "/wechat");
+
+        await middleware.InvokeAsync(context);
+
+        context.Response.StatusCode.Should().Be(200, "仅前缀路由落通配键桶，不得因空键触发分发器 fail-fast");
+        ResponseBody(context).Should().Be("success");
+        CollectingHandler.LastUserId.Should().Be("zhangsan", "通配键处理器桶必须被枚举到");
+    }
+
     [Fact]
     public async Task InvokeAsync_ShouldReturn403_WhenPostReplayed()
     {

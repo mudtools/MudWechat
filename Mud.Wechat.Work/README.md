@@ -4,22 +4,116 @@
 
 ## 内容
 
-- **声明式业务客户端**（`Interfaces/`）：按功能族（模块）分目录，族内按域拆分接口，公共面父接口 + 自建/第三方/代开发能力差异端点子接口：
-  - `Interfaces/Contacts/` — 通讯录：成员管理 / 部门管理 / 标签管理 / 查看权限（`ContactRules`）/ 异步导入（`Batch`）/ 异步导出（`Export`，独立子目录）
-  - `Interfaces/ExternalContact/` — 客户联系：企业服务人员管理（`FollowUser`）/ 客户管理（`Customer`）/ 客户标签管理（`Tag`）/ 在职继承（`JobInheritance`）/ 离职继承（`ResignedInheritance`）/ 客户群管理（`GroupChat`）
+- **声明式业务客户端**（`Interfaces/`）：按功能族（模块）分目录，族内按域拆分接口，公共面父接口 + 自建/第三方/代开发能力差异端点子接口。共 31 个业务域：
+  - `Interfaces/Contacts/` — 通讯录：成员管理 / 部门管理 / 标签管理 / 查看权限（`ContactRules`）/ 异步导入（`Batch`）/ 异步导出（`Export`）
+  - `Interfaces/ExternalContact/` — 客户联系：企业服务人员 / 客户 / 客户标签 / 在职继承 / 离职继承 / 客户群 / 群发 / 朋友圈 / 商品相册 / 联系我 / 拦截规则 / 统计 / 附件 / 获客助手等族
   - `Interfaces/CorpGroup/` — 上下游：基础 / 上下游通讯录（`ChainContacts`）/ 上下游规则（`Rules`）
   - `Interfaces/Authentication/` — 授权流接口（`get_pre_auth_code` / `set_session_info` / v2 换码 / `get_auth_info` 等）
-- **模块注册器**（`Extensions/`）：`AddWechatWorkServices(...)` + `WechatModule` 枚举（`Authentication` / `Contact` / `ExternalContact` / `CorpGroup`，`Message` 预留），按需注册模块客户端。
+  - `Interfaces/Message/` — 消息推送：发送应用消息族（每 msgtype 一端点）/ 群聊会话 / 家校学校通知 / 智能表格群聊
+  - `Interfaces/Approval/` — 审批：审批申请数据 / 审批模板 / 假期管理 / 审批流程引擎
+  - `Interfaces/Media/` — 素材管理：临时素材上传·获取 / 上传图片 / 高清语音 / 异步上传 / 服务商上传
+  - `Interfaces/Identity/` — 身份验证：网页授权登录 / Web 登录身份获取 / 二次验证
+  - `Interfaces/JsSdk/` — JS-SDK：企业 / 应用 `jsapi_ticket` 获取
+  - `Interfaces/Agent/` — 应用管理：获取应用 / 工作台自定义展示 / 自定义菜单 / 自建应用迁移代开发
+  - `Interfaces/Basic/` — 基础接口：企业微信接口 IP 段 / 回调 IP 段
+  - `Interfaces/Checkin/` — 打卡：规则 / 记录 / 报表 / 排班 / 设备打卡数据
+  - `Interfaces/Meeting/` — 会议：预约会议基础管理 / 会议统计
+  - `Interfaces/Schedule/` — 日程：管理日历 / 管理日程
+  - `Interfaces/Wedoc/` — 文档：管理文档 / 文档内容 / 表格内容 / 智能表格内容（子表 / 视图 / 字段 / 记录 / 编组）
+  - `Interfaces/Wedrive/` — 微盘：空间 / 空间权限 / 文件 / 文件权限 / 版本容量 / 高级功能账号
+  - `Interfaces/AccountId/` — 账号 ID：ID 与 `tmp_external_userid` / `corpid` 转换、ID 迁移、智能机器人 userid 转换、群 ID 升级七接口族
+  - `Interfaces/KF/` — 微信客服：客服账号管理 + 接待人员管理
+  - `Interfaces/Mail/` — 邮件：应用邮箱发送·接收·账号管理 + 管理端邮件群组 / 公共邮箱 / 高级功能账号 / 成员邮箱操作
+  - `Interfaces/Pay/` — 企业支付：对外收款 / 商户号管理 / 资金流水 / 退款 / 交易账单
+  - `Interfaces/PayTool/` — 收银台：收款工具 / 发票管理 / 应用版本付费（官方仅第三方开放）
+  - `Interfaces/Security/` — 安全管理：文件防泄漏 / 设备管理 / 截屏录屏 / 域名 IP / 高级功能账号 / 操作日志
+  - `Interfaces/School/` — 家校沟通：基础 / 管理配置 / 学生与家长 / 访问授权 / 健康上报 / 上课直播 / 学生付款等子域
+  - `Interfaces/Living/` — 直播：预约直播 / 直播回放 / 观看凭证 / 直播详情 / 观看明细
+  - `Interfaces/DataZone/` — 数据与智能专区：基础接口 + 应用调用专区程序
+  - `Interfaces/MsgAudit/` — 会话内容存档：开启成员 / 机器人信息 / 会话同意情况 / 内部群信息
+  - `Interfaces/Invoice/` — 电子发票：查询 / 更新状态 / 批量更新 / 批量查询
+  - `Interfaces/Gov/` — 政民沟通：网格结构 / 事件类别 / 巡查上报 / 居民上报
+  - `Interfaces/Emergency/` — 紧急通知：发起语音电话 + 获取接听状态
+  - `Interfaces/PromotionQrCode/` — 推广二维码：企业注册（注册码 / 注册状态）+ 通讯录迁移（官方仅第三方开放）
+  - `Interfaces/Aibot/` — 智能机器人：主动回复消息（`response_code` 一次性凭据鉴权，不带 `[Token]`）
+- **模块注册器**（`Extensions/`）：`AddWechatWorkServices(...)` + `WechatModule` 枚举 31 个成员（`ExternalContact` / `Message` / `Contact` / `Approval` / `Media` / `Identity` / `JsSdk` / `Agent` / `Authentication` / `Basic` / `Checkin` / `Meeting` / `Schedule` / `Wedoc` / `Wedrive` / `AccountId` / `Kf` / `Mail` / `Pay` / `Security` / `CorpGroup` / `School` / `Living` / `DataZone` / `MsgAudit` / `Invoice` / `Gov` / `Emergency` / `PromotionQrCode` / `PayTool` / `Aibot`），按需注册模块客户端。
 - **授权编排**（`Services/Authorization/`）：`IWechatWorkAuthorizationService`（换码/刷新/撤销/枚举，单飞门 + 结果记忆）与 `IWechatAuthorizationCoordinator`（回调驱动自动化），策略统一落 `WechatAuthorizationOptions`。
 - **errcode 令牌失效判定器**（`TokenManagers/`）：识别令牌失效错误码并触发恢复，经 `TokenRecoveryOptions.TokenInvalidationDetector` 编程式注入。
 - **JSON 解析器合并**（`Extensions/WechatJsonResolverExtensions.cs`）：合并组件与领域 JSON 上下文进组件序列化管线。
 
 ## 用法
 
+### 注册模块
+
 ```csharp
-services.AddWechatWorkServices(builder => builder
-    .AddAuthenticationApi()  // 授权流接口
-    .AddContactApi());       // 通讯录（成员/部门/标签）
+// Program.cs：多应用底座先行，再按需链式注册模块（模块全集见 WechatModule 枚举）
+builder.Services.AddWechatApp(builder.Configuration, "WechatApps");
+builder.Services.AddWechatWorkServices(builder => builder
+    .AddContactApi()           // 通讯录
+    .AddApprovalApi()          // 审批
+    .AddKfApi());              // 微信客服
+```
+
+### 注入客户端、调用端点
+
+客户端基于 `Mud.HttpUtils` 声明式生成，**令牌的获取 / 缓存 / 提前刷新 / errcode 失效恢复全自动**（注入统一走 Query，企微官方契约）。公共面父接口为抽象声明（不注册），须按应用形态注入对应子接口（`*Internal*` / `*ThirdParty*` / `*Provider*`）：
+
+```csharp
+public sealed class MemberService(
+    IWechatWorkInternalUsersService users,          // 自建应用子接口
+    IWechatAppContextSwitcher switcher,             // 企业作用域切换器（第三方/代开发场景）
+    IWechatWorkAuthorizationService auth)           // 授权编排（换码/刷新/撤销/枚举）
+{
+    // 自建应用：默认应用上下文下直接调用
+    public Task<UserInfo> GetUserAsync(string userid, CancellationToken ct)
+        => users.GetUserAsync(userid, ct);
+
+    // 第三方/代开发：企业级令牌一企一份（scopeKey = authCorpId），
+    // 先切换企业作用域（using 一次性，释放幂等还原），再调用客户端——令牌解析到该授权企业
+    public async Task<UserInfo> GetAuthCorpUserAsync(
+        string authCorpId, string userid, CancellationToken ct)
+    {
+        var authorization = await auth.GetAuthorizationAsync(authCorpId, appKey: null, ct)
+            ?? throw new InvalidOperationException($"企业 {authCorpId} 尚未授权。");
+
+        using (switcher.UseCorpScope(appKey: "default", authCorpId, authorization.PermanentCode))
+        {
+            return await users.GetUserAsync(userid, ct);
+        }
+    }
+}
+```
+
+错误处理：官方非零 errcode 统一抛 `WechatWorkException`（`ErrorCode` + `RequestUri`，后者构造期剥离 query 不泄露令牌）；也可用 `WechatWorkException.ThrowIfFailed(response)` 对响应显式断言：
+
+```csharp
+try
+{
+    var user = await users.GetUserAsync(userid, ct);
+}
+catch (WechatWorkException ex) when (ex.ErrorCode == 42001)
+{
+    // SDK 已内置令牌失效恢复（重试后仍失败才会抛到这里）；按 errcode 语义做业务处理
+}
+```
+
+### errcode 令牌失效恢复（可编程式自定义）
+
+默认检测器（`WechatTokenInvalidationDetector`，识别 40014 / 42001 等官方令牌失效码）随模块注册自动生效；私有化部署或网关改写 errcode 时可替换为自定义判定器（`TokenRecoveryOptions` 来自 `Mud.HttpUtils`）：
+
+```csharp
+services.PostConfigure<TokenRecoveryOptions>(o =>
+    o.TokenInvalidationDetector = new MyErrcodeDetector());   // 实现 ITokenInvalidationDetector
+```
+
+### 授权编排（第三方 / 代开发）
+
+```csharp
+// 临时授权码 → 永久授权码并落库（幂等：同 authCode 并发/重复调用收敛为一次落库）
+WechatCorpAuthorization authorization = await auth.ExchangeAuthCodeAsync(authCode, appKey: "suite-a");
+
+// 其余能力：RefreshAuthorizationAsync（get_auth_info 刷新并回写）、ListAuthorizationsAsync（枚举已授权企业）、
+//           RevokeAuthorizationAsync（先失效该应用下企业令牌、后删库）、CreateSuiteAuthorizationUrlAsync（安装链接）
 ```
 
 ## 依赖
@@ -30,4 +124,6 @@ services.AddWechatWorkServices(builder => builder
 ## 说明
 
 - 令牌注入统一走 Query（企业微信契约），白名单由契约守卫锁定，新增注入接口须评估后显式扩展守卫。
-- 新增 `[HttpJsonSerializable]` DTO 必须同步登记到 `Abstractions/Authentication/Models/AuthenticationJsonContext.cs`，否则 AOT strict 门禁失败。
+- 应用类型子接口必须声明凭据归属域 `[Token(TokenManagerKey = WechatTokenManagerKeys.InternalAccessToken | CorpAccessToken)]`，归属域错配在 `WechatAppContext.GetTokenManager` 单点 fail-fast。
+- 新增 `[HttpJsonSerializable]` DTO 后运行 `scripts/AddHttpJsonSerializable.ps1` + `scripts/GenerateJsonContext.ps1` 重新生成所在域的 JsonContext（生成物提交进版本控制，勿手改）；Abstractions 域手写登记进 `AuthenticationJsonContext`。未登记类型被组件分析器 `AOT006` 拦下。
+- 各域面向的应用类型差异（官方仅自建开放 / 三类应用公共面 / 差异端点在子接口 / 零端点父接口）以接口 XML 注释与 `Tests/**/ContractGuards/` 契约守卫为权威。

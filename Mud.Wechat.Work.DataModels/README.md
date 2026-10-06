@@ -10,11 +10,9 @@
 
 ## 说明
 
-- `SerializerClassName` = DTO 命名空间的域段（Users / Department / Tags / ContactRules / Batch /
-  Export / FollowUser / Customer / Tag / JobInheritance / ResignedInheritance / GroupChat /
-  CorpGroup / ChainContacts / Rules / CorpTokenAuthentication / PayTool /
-  InternalAppAuthentication / ProviderAuthentication），根命名空间直属文件归 `Common` 组——
-  每个生成的上下文与其域 DTO 同命名空间（对齐 Mud.Feishu.DataModels「每模块一上下文」）。
+- `SerializerClassName` = DTO 命名空间的域段，与 `DataModels/` 目录树一一对应（通讯录 `Users` / `Department` / `Tags` / `ContactRules` / `Batch` / `Export`，客户联系 `FollowUser` / `Customer` / `Tag` / `JobInheritance` / `ResignedInheritance` / `GroupChat` 等，及其余业务域 `CorpGroup` / `ChainContacts` / `Rules` / `Message` / `Approval` / `Checkin` / `Schedule` / `Meeting` / `Wedoc` / `Wedrive` / `Living` / `Kf` / `Mail` / `Pay` / `PayTool` / `Security` / `School` / `Gov` / `Emergency` / `Basic` / `Agent` / `JsSdk` / `AccountId` / `Aibot` / `DataZone` / `Media` / `Invoice` / `Identity` / `PromotionQrCode` 等，令牌签发 `CorpTokenAuthentication` / `InternalAppAuthentication` / `ProviderAuthentication`），根命名空间直属文件归 `Common` 组——
+  每个生成的上下文与其域 DTO 同命名空间（对齐 Mud.Feishu.DataModels「每模块一上下文」）。**域分组全量清单以 `Generated/` 目录为准**，本文不逐一维护。
+- 生成上下文以 `#if NET8_0_OR_GREATER` 门控（低 TFM 为反射 STJ，AOT 门禁仅对 net8.0+ 构建）。
 - 新增/变更 DTO 后的流程：运行 `scripts/AddHttpJsonSerializable.ps1` 标注 →
   运行 `scripts/GenerateJsonContext.ps1` 重新生成 → 提交 `Generated/` 变更。
   未登记的标注类型会被组件分析器 `AOT006` 拦下（`AotStrictMode=true` 下为 error）。

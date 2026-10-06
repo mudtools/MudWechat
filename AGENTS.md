@@ -64,7 +64,7 @@ AOT / Trim（`net8.0`/`net10.0` 默认开启；`AotStrictMode=true` 把 `IL2026;
 Mud.Wechat.Work/                      # 主包：Interfaces/{域}/ 接口声明 + 服务 + DI + 模块注册
 Mud.Wechat.Work.Abstractions/         # 令牌基座、多应用、配置、存储端口、枚举、异常、回调信封与载荷转换器
 Mud.Wechat.Work.DataModels/           # 官方 DTO（[HttpJsonSerializable]）+ Generated/ 域 JsonContext（生成物）
-Mud.Wechat.Work.Callback/             # 回调接收（AES 解密、事件解析、分发）+ HTTP 中间件；Events/Payloads/ 载荷
+Mud.Wechat.Work.Callback/             # 回调接收（AES 解密、事件解析、分发）+ HTTP 中间件；Events/Payloads/ 载荷；智能机器人 JSON 回调通道（同包，见 §5.5）
 Mud.Wechat.Work.Callback.Generator/   # 回调契约登记生成器（IsPackable=false；发射 RegisterAll）
 Mud.Wechat.Work.Callback.Analyzers/   # 回调处理器契约分析器（诊断型、不发射；IsPackable=false，随 Callback nupkg 内嵌 analyzers/dotnet/cs）
 Mud.Wechat.Redis/                     # 四个存储端口的 Redis 实现 + 连接基座 + DI 编排
@@ -143,6 +143,7 @@ scripts/                              # verify-build / audit-config-keys / Gener
 | 分发 | 组合根期急切注册、**无 Freeze**；通配键 `"*"` 双语义（通讯录同步助手路由 + 全局处理器/拦截器桶）；匹配序 appKey 专属精确 → 全局精确 → 专属兜底 → 全局兜底。同步分发 + 软超时（默认 4500ms，**必须 < 5s 契约**）；超时/中断 → 503 触发重推；**指纹在分发前消费** ⇒ 重推同指纹被 403（fail-closed 优先于 at-least-once，**处理器须幂等**）；单处理器异常隔离（LogError 后继续）；`MaxConcurrentEvents` 为构造期快照（热更不改容量） |
 | 配置面 | `WechatAppCallbackOptions`：`PushToken`/`PushEncodingAESKey`/`ReceiveId`/`AppType`/`Channel`，必须与主配置同类文件才纳入 audit 扫描。`ReceiveId` 是接收方 ID（自建填 `CorpId`、**套件填 `SuiteId`**）；非空时校验解密明文 `receiveid`，留空或明文未携带时跳过并一次性告警 |
 | AppType × Channel | `Channel`（`App=1` 应用数据通道 / `Suite=2` 套件指令通道，默认 `App`）；`Validate()` 拒绝「自建应用占用套件通道」「套件通道非第三方/代开发」。`ValidateReceiveId` 三元分流，`IsEventFamilyAllowed` 为**族级默认**合法性闸、**先于**拦截器 `BeforeHandleAsync`，不适用族返回 `Rejected`（→200 不重推） |
+| 智能机器人 JSON 通道 | `WechatCallbackChannel.Bot=3`（仅 `AppType=Internal` + **空 `ReceiveId`**，`Validate()` fail-fast）；报文为 JSON（`{"encrypt":...}`）⇒ 复用密码学/时效/指纹/凭据来源，但**不走** XML 事件信封与族闸（`IsEventFamilyAllowed` 对 Bot 恒 `false`）；键集独立（`WechatBotEventTypes`，**不得**并入 `OfficialPayloadContracts`、**不得**改值与 XML 侧消歧）；处理器为**返回式** `Task<AibotMessage?>`（`null` = 加密空包 `{}`），经 `AddWechatBotCallback().AddHandler<T>(botKey)` 注册（未先 `AddWechatCallback` 即 fail-fast）；应答外壳 `{encrypt, msgsignature, timestamp, nonce}`（`msgsignature` **无下划线**）；**软超时回加密空包 + 200**（非 XML 侧 503：官方只推一次 + 指纹已消费）；**仅 net8.0+** 可用（低 TFM 回 415 + 告警，**不得**静默降级）；**请求体只读一次**（中间件先读再分派，二次读流 ⇒ 恒 403）；路由 `/{GlobalRoutePrefix}/{BotKey}`，仅前缀路由 `/{prefix}` 归一为通配键 `"*"` 后分发 |
 
 **事件载荷体系**：**不得**再新增「逐事件 DTO + 手写 `ParseXxx`」，**不得**手写多级嵌套解析或手改 `OfficialPayloadContracts.RegisterAll` 方法体。
 

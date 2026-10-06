@@ -104,7 +104,7 @@ public enum WechatModule
     /// <summary>推广二维码（官方仅第三方应用开发开放，两族两令牌：企业注册族「获取注册码 + 查询注册状态」走 provider_access_token，零端点父接口 + 唯一第三方子接口承载；通讯录迁移族「设置授权应用可见范围 + 设置通讯录同步完成」消费查询注册状态返回的通讯录迁移 access_token，以显式 Query 传令牌、不带 [Token]、无父接口与子接口；查询注册状态仅支持 24 小时内且仅限注册完成回调事件或获取注册码返回的 register_code，非全新创建企业返回 84024；可见范围三参数未填即清空）。</summary>
     PromotionQrCode,
 
-    /// <summary>收银台（官方仅第三方应用开发开放，自建与代开发文档树均无对应 API；三族两令牌：收款工具族 4 端点与发票管理族 2 端点走 provider_access_token，各为「零端点父接口 + 唯一第三方子接口承载」；应用版本付费族 3 端点走 suite_access_token，为「零端点父接口 + 唯一第三方子接口承载」；官方契约要点：收款工具族须携带 nonce_str/ts/sig 签名三要素（HMAC-SHA256 + Base64），发票管理与应用版本付费族不签名；应用版本付费的「获取企业永久授权码 / 获取企业授权信息」与授权流族为同一端点、已在该族承载故不重复声明；收款订单详情官方同时列出 pay_from 与 pay_type 而示例只用 pay_type；应用版本变更通知官方键值拼写为 change_editon（少一个字母 i）；回调事件 open_order/change_order/pay_for_app_success/refund/change_editon/cancel_order 经指令回调 URL 以套件信封推送）。</summary>
+    /// <summary>收银台（官方在第三方应用开发与服务商代开发两棵文档树的「收银台」分组下提供端点、共享同一端点页（第三方树 98045/98046/98053/98054/99436/99437 = 代开发树 99358/99359/99360/99361/99447/99448，签名算法 98768 = 99362），企业自建应用开发文档树无对应 API；三族两令牌：收款工具族 4 端点与发票管理族 2 端点走 provider_access_token，各为「零端点父接口 + 唯一第三方子接口承载」；应用版本付费族 3 端点走 suite_access_token，为「零端点父接口 + 唯一第三方子接口承载」；官方契约要点：收款工具族须携带 nonce_str/ts/sig 签名三要素（HMAC-SHA256 + Base64），发票管理与应用版本付费族不签名；应用版本付费的「获取企业永久授权码 / 获取企业授权信息」与授权流族为同一端点、已在该族承载故不重复声明；收款订单详情官方同时列出 pay_from 与 pay_type 而示例只用 pay_type；应用版本变更通知官方键值拼写为 change_editon（少一个字母 i）；回调事件 open_order/change_order/pay_for_app_success/refund/change_editon/cancel_order 经指令回调 URL 以套件信封推送）。</summary>
     PayTool,
 
     /// <summary>智能机器人（官方文档树整体位于「企业自建应用开发」分类下，正文零提及第三方 / 服务商代开发，凭证在企业侧后台配置 ⇒ 零端点父接口 + 唯一自建子接口承载端点：主动回复消息 1 端点，以 URL 一次性凭据 response_code 鉴权、不带 [Token]；回调接收与被动回复走 Callback 包的 JSON 通道（不并入 XML 事件信封）；长连接为可选后续里程碑）。</summary>

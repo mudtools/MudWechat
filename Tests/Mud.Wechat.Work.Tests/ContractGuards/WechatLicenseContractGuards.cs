@@ -17,18 +17,18 @@ namespace Mud.Wechat.Work.Tests.ContractGuards;
 
 /// <summary>
 /// 接口调用许可域（License 模块）契约守卫：路由表、四族一令牌形态、接口层级、官方契约陷阱与
-/// JSON 上下文全量登记锁定（订单管理 13 端点 + 账号管理 9 端点 + 应用管理 1 端点 + 自动激活设置 2 端点）。
+/// JSON 上下文全量登记锁定（订单管理 15 端点 + 账号管理 9 端点 + 应用管理 1 端点 + 自动激活设置 2 端点）。
 /// </summary>
 /// <remarks>
 /// <para>
 /// <b>开放面</b>：官方在第三方应用开发与服务商代开发两棵文档树的「接口调用许可」分组下提供本域端点
-/// （97182~97194、97199/97200、98887/98888/99420，两棵文档树共享同一端点页），
+/// （97182~97194、97199/97200、97208、98887/98888/99420、100138，两棵文档树共享同一端点页），
 /// 企业自建应用开发文档树<b>无对应 API</b>，故全域不设自建 / 代开发子接口；
 /// 官方文档树中该分组无对应事件回调，回调面零增量。
 /// </para>
 /// <para>
-/// <b>四族一令牌（本域最关键的结构约束）</b>：25 个端点全部消费服务商 <c>provider_access_token</c>，
-/// 按官方分组拆为四族：① 订单管理族（<see cref="IWechatWorkThirdPartyLicenseOrderService"/>）13 端点、
+/// <b>四族一令牌（本域最关键的结构约束）</b>：27 个端点全部消费服务商 <c>provider_access_token</c>，
+/// 按官方分组拆为四族：① 订单管理族（<see cref="IWechatWorkThirdPartyLicenseOrderService"/>）15 端点、
 /// ② 账号管理族（<see cref="IWechatWorkThirdPartyLicenseAccountService"/>）9 端点、
 /// ③ 应用管理族（<see cref="IWechatWorkThirdPartyLicenseAppService"/>）1 端点、
 /// ④ 自动激活设置族（<see cref="IWechatWorkThirdPartyLicenseAutoActiveService"/>）2 端点，
@@ -58,7 +58,7 @@ public class WechatLicenseContractGuards
 
     private const string AutoActiveParentImplementationClassName = "WechatWorkLicenseAutoActiveService";
 
-    /// <summary>接口调用许可域官方路由表（25 端点分属四族：订单管理 13 条 + 账号管理 9 条 + 应用管理 1 条 + 自动激活设置 2 条，官方全部即 POST）。</summary>
+    /// <summary>接口调用许可域官方路由表（27 端点分属四族：订单管理 15 条 + 账号管理 9 条 + 应用管理 1 条 + 自动激活设置 2 条；余额查询官方即 GET，其余全部 POST）。</summary>
     private static readonly (Type Interface, string Method, Type HttpAttribute, string Route)[] Routes =
     {
         // 订单管理族（官方 97182/97183/97184/97185/97186/97187/98887/98888/99420，路由挂 /cgi-bin/license/ 段，官方全部即 POST）。
@@ -101,6 +101,12 @@ public class WechatLicenseContractGuards
         (typeof(IWechatWorkThirdPartyLicenseOrderService),
             nameof(IWechatWorkThirdPartyLicenseOrderService.GetPayJobResultAsync),
             typeof(PostAttribute), "/cgi-bin/license/pay_job_result"),
+        (typeof(IWechatWorkThirdPartyLicenseOrderService),
+            nameof(IWechatWorkThirdPartyLicenseOrderService.QuerySupportPolicyAsync),
+            typeof(PostAttribute), "/cgi-bin/license/support_policy_query"),
+        (typeof(IWechatWorkThirdPartyLicenseOrderService),
+            nameof(IWechatWorkThirdPartyLicenseOrderService.GetAccountBalanceAsync),
+            typeof(GetAttribute), "/cgi-bin/service/get_account_balance"),
 
         // 账号管理族（官方 97188/97189/97190/97191/97192/97193，路由挂 /cgi-bin/license/ 段，官方全部即 POST）。
         (typeof(IWechatWorkThirdPartyLicenseAccountService),
@@ -151,11 +157,11 @@ public class WechatLicenseContractGuards
     [Fact]
     public void LicenseEndpoints_ShouldMatchOfficialRoutes()
     {
-        Routes.Should().HaveCount(25,
-            "接口调用许可域官方共 25 个端点 = 订单管理族 13 条 + 账号管理族 9 条 + 应用管理族 1 条 + 自动激活设置族 2 条");
+        Routes.Should().HaveCount(27,
+            "接口调用许可域官方共 27 个端点 = 订单管理族 15 条 + 账号管理族 9 条 + 应用管理族 1 条 + 自动激活设置族 2 条");
 
         var distinctRoutes = Routes.Select(r => r.Route).Distinct().ToList();
-        distinctRoutes.Should().HaveCount(25, "本域各端点路由互不重复");
+        distinctRoutes.Should().HaveCount(27, "本域各端点路由互不重复");
 
         foreach (var (iface, method, httpAttribute, route) in Routes)
         {
@@ -206,7 +212,7 @@ public class WechatLicenseContractGuards
     /// 官方自建 / 代开发（企业侧）文档树无对应 API，继承链上不得出现自建 / 代开发子接口（能力漂移守卫）。
     /// </summary>
     [Theory]
-    [InlineData(typeof(IWechatWorkLicenseOrderService), typeof(IWechatWorkThirdPartyLicenseOrderService), 13, "WechatWorkLicenseOrderService")]
+    [InlineData(typeof(IWechatWorkLicenseOrderService), typeof(IWechatWorkThirdPartyLicenseOrderService), 15, "WechatWorkLicenseOrderService")]
     [InlineData(typeof(IWechatWorkLicenseAccountService), typeof(IWechatWorkThirdPartyLicenseAccountService), 9, "WechatWorkLicenseAccountService")]
     [InlineData(typeof(IWechatWorkLicenseAppService), typeof(IWechatWorkThirdPartyLicenseAppService), 1, "WechatWorkLicenseAppService")]
     [InlineData(typeof(IWechatWorkLicenseAutoActiveService), typeof(IWechatWorkThirdPartyLicenseAutoActiveService), 2, "WechatWorkLicenseAutoActiveService")]
@@ -291,8 +297,8 @@ public class WechatLicenseContractGuards
                         && !typeof(System.Text.Json.Serialization.JsonSerializerContext).IsAssignableFrom(t))
             .ToList();
 
-        // 全量守卫：命名空间下所有顶层 DTO 均须登记（请求 25 + 响应 20 + 嵌套对象 26 = 71）。
-        domainTypes.Should().HaveCount(71,
+        // 全量守卫：命名空间下所有顶层 DTO 均须登记（请求 26 + 响应 22 + 嵌套对象 26 = 74）。
+        domainTypes.Should().HaveCount(74,
             "接口调用许可模块契约面类型数漂移须先核对官方文档再同批调整本守卫");
 
         foreach (var type in domainTypes)
@@ -364,6 +370,14 @@ public class WechatLicenseContractGuards
         JsonNameShouldBe(typeof(BatchShareLicenseActiveCodeRequest), nameof(BatchShareLicenseActiveCodeRequest.CorpLinkType), "corp_link_type");
         JsonNameShouldBe(typeof(GetAppLicenseInfoRequest), nameof(GetAppLicenseInfoRequest.SuiteId), "suite_id");
         JsonNameShouldBe(typeof(GetAppLicenseInfoRequest), nameof(GetAppLicenseInfoRequest.Appid), "appid");
+
+        // 民生优惠条件查询（97208）与充值账户余额查询（100138）字段照抄官方原文。
+        JsonNameShouldBe(typeof(QueryLicenseSupportPolicyRequest), nameof(QueryLicenseSupportPolicyRequest.Corpid), "corpid");
+        JsonNameShouldBe(typeof(QueryLicenseSupportPolicyResponse), nameof(QueryLicenseSupportPolicyResponse.QueryResult), "query_result");
+        JsonNameShouldBe(typeof(QueryLicenseSupportPolicyResponse), nameof(QueryLicenseSupportPolicyResponse.UnsatisfiedReason), "unsatisfied_reason");
+        JsonNameShouldBe(typeof(GetAccountBalanceResponse), nameof(GetAccountBalanceResponse.Balance), "balance");
+        typeof(GetAccountBalanceResponse).GetProperty(nameof(GetAccountBalanceResponse.Balance))!.PropertyType
+            .Should().Be(typeof(long?), "balance 官方为充值账户余额（单位分），以 long? 承载");
     }
 
     /// <summary>JSON 字段名断言：属性映射的官方字段名必须与官方原文一致。</summary>

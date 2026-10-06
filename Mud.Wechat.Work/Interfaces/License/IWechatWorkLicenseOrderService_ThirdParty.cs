@@ -12,9 +12,9 @@ namespace Mud.Wechat.Work;
 /// <summary>
 /// 企业微信「接口调用许可」模块订单管理域第三方应用 / 服务商代开发 SDK
 /// （下单购买账号 / 下单续期账号 / 获取订单列表 / 获取订单详情 / 获取订单中的账号列表 / 取消订单 /
-/// 下单购买多企业账号 / 获取多企业订单详情 / 使用余额支付订单，共 13 个端点）。
+/// 下单购买多企业账号 / 获取多企业订单详情 / 使用余额支付订单 / 民生优惠条件查询 / 充值账户余额查询，共 15 个端点）。
 /// <para>官方在第三方应用开发与服务商代开发两棵文档树开放本族端点（共享同一端点页），
-/// 全部 13 个端点声明于本接口；企业自建应用官方不开放，不设自建子接口。</para>
+/// 全部 15 个端点声明于本接口；企业自建应用官方不开放，不设自建子接口。</para>
 /// </summary>
 /// <remarks>
 /// <para>消费服务商级 provider_access_token（路由键 <see cref="WechatTokenTypes.ProviderAccessToken"/>）。</para>
@@ -296,4 +296,41 @@ public interface IWechatWorkThirdPartyLicenseOrderService : IWechatWorkLicenseOr
     Task<GetLicensePayJobResultResponse> GetPayJobResultAsync(
         [Body] GetLicensePayJobResultRequest request,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 民生优惠条件查询
+    /// <para>查询企业是否满足民生行业政策的优惠条件。</para>
+    /// <para>官方约束：查询的企业必须安装了服务商的第三方应用或者代开发应用；
+    /// 一个企业在 30 天内最多只能查询一次。</para>
+    /// <para>官方注记：民生行业接口许可优惠政策于 2023 年 3 月 31 日到期，到期后不再支持查询。</para>
+    /// </summary>
+    /// <param name="request">请求体（<see cref="QueryLicenseSupportPolicyRequest"/>：corpid 企业id，
+    /// 支持加密和非加密的 corpid）。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
+    /// <returns>查询结果（query_result：<c>0</c>-不符合减免条件 / <c>1</c>-符合减免条件）/
+    /// 不符合减免条件的原因错误码列表（unsatisfied_reason，701090 认证或验证状态不符合 /
+    /// 701091 行业类型不符合 / 701092 统一社会信用代码不符合 / 701096 风控审核不通过 /
+    /// 701110 学校不符合单校条件 / 701111 学校不符合局校条件）。</returns>
+    /// <remarks>
+    /// <para><b>第三方应用 / 服务商代开发</b>SDK文档（官方两棵文档树共享同一端点页）：<see href="https://developer.work.weixin.qq.com/document/path/97208"/></para>
+    /// <para>官方页面未给出本端点的独立频率限制，走官方全局访问频率限制。</para>
+    /// </remarks>
+    [Post("/cgi-bin/license/support_policy_query")]
+    Task<QueryLicenseSupportPolicyResponse> QuerySupportPolicyAsync(
+        [Body] QueryLicenseSupportPolicyRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 充值账户余额查询
+    /// <para>可以通过该接口查询服务商充值账户余额。</para>
+    /// <para>官方约束：请求无业务参数、无请求体，仅经 provider_access_token 鉴权（官方本端点即 GET）。</para>
+    /// </summary>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
+    /// <returns>充值账户余额（balance，单位为分）。</returns>
+    /// <remarks>
+    /// <para><b>第三方应用 / 服务商代开发</b>SDK文档（官方两棵文档树共享同一端点页）：<see href="https://developer.work.weixin.qq.com/document/path/100138"/></para>
+    /// <para>官方页面未给出本端点的独立频率限制，走官方全局访问频率限制。</para>
+    /// </remarks>
+    [Get("/cgi-bin/service/get_account_balance")]
+    Task<GetAccountBalanceResponse> GetAccountBalanceAsync(CancellationToken cancellationToken = default);
 }

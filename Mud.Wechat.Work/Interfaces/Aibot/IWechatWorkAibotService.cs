@@ -30,6 +30,14 @@ namespace Mud.Wechat.Work;
 /// 父接口不进入令牌归属域守卫 TO1 的枚举面，子接口的例外登记见 <c>WechatTokenOwnerContractGuards</c>。
 /// </para>
 /// <para>
+/// <b>无令牌 ≠ 不参与多应用切换</b>：<c>TokenManage</c> 只配置应用切换管理器（生成器据此发射
+/// <c>UseApp</c> / <c>BeginScope</c>），与令牌注入无关；与全仓各域父接口形态一致（恒为
+/// <c>nameof(IWechatAppManager)</c>），且父子两级必须统一——否则生成器以 <c>new</c> 隐藏基类切换成员
+/// （组件分析器 HTTPCLIENT028），基类调用会静默走默认模式而非 <c>IWechatAppManager</c>。
+/// 因「无令牌例外」无法声明 <c>[Token]</c>，组件分析器的 HTTPCLIENT018（建议补
+/// <c>[Token]</c> 显式归属域）对本域为不适用告警，已在该声明处局部 <c>#pragma</c> 豁免并注明理由。
+/// </para>
+/// <para>
 /// <b>服务商的唯一交集</b>：<c>AccountId</c> 域的
 /// <see cref="IWechatWorkAccountIdBotService"/>（官方 96516 / 97106，以 <c>provider_access_token</c> 鉴权）
 /// 用于把「企业主体下的加密 userid」转成「服务商主体下的 open_userid」——与本域能力线正交，无需新令牌链。
@@ -40,7 +48,12 @@ namespace Mud.Wechat.Work;
 /// 已在方案文档中登记为已知接受风险（泄露窗口有限且一次性），不在 SDK 内抢占组件脱敏面。
 /// </para>
 /// </remarks>
-[HttpClientApi(IsAbstract = true)]
+// HTTPCLIENT018 豁免理由：本域为「无令牌端点」既存例外（官方 101138 以 response_code 一次性凭据鉴权，
+// 与任何令牌链路均无关，见上方 remarks 与守卫 AI3），分析器唯一消警路径「补 [Token]」会让生成器注入
+// 本不该存在的令牌参数、违反域契约；此处仅本接口局部豁免，全仓其余接口的 018 检查不受影响。
+#pragma warning disable HTTPCLIENT018
+[HttpClientApi(TokenManage = nameof(IWechatAppManager), IsAbstract = true)]
 public interface IWechatWorkAibotService
 {
 }
+#pragma warning restore HTTPCLIENT018

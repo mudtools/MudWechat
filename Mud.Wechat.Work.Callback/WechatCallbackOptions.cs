@@ -260,6 +260,7 @@ public class WechatAppCallbackOptions
     /// <list type="bullet">
     /// <item><description>授权族（suite_ticket / 授权通知）仅<b>套件通道</b>——企业自建无套件指令回调；</description></item>
     /// <item><description>上下游变更族仅<b>自建应用 + 应用数据通道</b>（官方 95796：第三方/代开发暂不支持）；</description></item>
+    /// <item><description>安全事件族（域名IP变更等）仅<b>自建应用 + 应用数据通道</b>（官方 100080：第三方/代开发暂不支持）；</description></item>
     /// <item><description>通讯录变更族 / 异步任务族经<b>应用数据通道</b>承载（三类应用均开放）；</description></item>
     /// <item><description>客户联系/获客助手族：<b>自建·代开发 × 应用数据通道</b>（Event 信封）+
     /// <b>第三方 × 套件指令通道</b>（指令回调 URL，InfoType 信封，官方 92277/97402/99485）；</description></item>
@@ -284,6 +285,11 @@ public class WechatAppCallbackOptions
 
             case WechatCallbackEventFamily.ChainChange:
                 // 上下游变更族（change_chain）官方仅向自建应用开放（配置到「上下游-可调用接口的应用」）。
+                return Channel == WechatCallbackChannel.App && AppType == WechatAppType.Internal;
+
+            case WechatCallbackEventFamily.SecurityChange:
+                // 安全事件族（域名IP变更等，官方 100080）官方仅向自建应用开放
+                // （配置到「我的企业-设置-域名IP-可调用API的应用」；第三方/代开发暂不支持）。
                 return Channel == WechatCallbackChannel.App && AppType == WechatAppType.Internal;
 
             case WechatCallbackEventFamily.ContactChange:

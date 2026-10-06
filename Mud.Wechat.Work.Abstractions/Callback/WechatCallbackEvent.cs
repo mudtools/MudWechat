@@ -161,7 +161,7 @@ public class WechatCallbackEvent
     /// </summary>
     /// <remarks>
     /// <para>判别优先级与 <see cref="EventTypeKey"/> 对齐：客户联系/获客族（外层事件值命中）最优先，
-    /// 其次授权族（<c>InfoType</c> 非空），再次按 <c>Event</c> 值归入上下游/通讯录/异步三族，
+    /// 其次授权族（<c>InfoType</c> 非空），再次按 <c>Event</c> 值归入上下游/通讯录/异步/安全四族，
     /// 均未命中返回 <see cref="WechatCallbackEventFamily.Unknown"/>（不拦截）。</para>
     /// </remarks>
     public WechatCallbackEventFamily EventFamily
@@ -195,6 +195,11 @@ public class WechatCallbackEvent
             if (IsBatchJobResult)
             {
                 return WechatCallbackEventFamily.BatchJob;
+            }
+
+            if (IsSecurityEvent)
+            {
+                return WechatCallbackEventFamily.SecurityChange;
             }
 
             return WechatCallbackEventFamily.Unknown;
@@ -291,6 +296,15 @@ public class WechatCallbackEvent
     /// </remarks>
     public bool IsBatchJobResult =>
         string.Equals(Event, WechatCallbackEventTypes.BatchJobResult, StringComparison.Ordinal);
+
+    /// <summary>是否为安全管理事件（Event = security；具体变更类别看 <see cref="ChangeType"/>，官方 100080）。</summary>
+    /// <remarks>
+    /// 仅自建应用可配置接收（配置到「我的企业 - 设置 - 域名IP - 可调用API的应用」）；
+    /// 第三方 / 代开发应用暂不支持。
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/100080">path 100080 域名IP变更事件</see>。
+    /// </remarks>
+    public bool IsSecurityEvent =>
+        string.Equals(Event, WechatCallbackEventTypes.Security, StringComparison.Ordinal);
 
     /// <summary>是否为客户联系·企业客户变更事件（外层事件值 = change_external_contact；具体类别看 <see cref="ChangeType"/>）。</summary>
     /// <remarks>

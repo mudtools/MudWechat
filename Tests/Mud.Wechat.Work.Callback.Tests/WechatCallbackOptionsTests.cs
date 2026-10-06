@@ -208,6 +208,16 @@ public class WechatCallbackOptionsTests
         AppOf(WechatAppType.ThirdParty, WechatCallbackChannel.App)
             .IsEventFamilyAllowed(WechatCallbackEventFamily.ChainChange).Should().BeFalse("第三方/代开发暂不支持上下游变更");
 
+        // 安全事件族：仅自建应用 + 应用通道（官方 100080，配置到「我的企业-设置-域名IP-可调用API的应用」）。
+        AppOf(WechatAppType.Internal, WechatCallbackChannel.App)
+            .IsEventFamilyAllowed(WechatCallbackEventFamily.SecurityChange).Should().BeTrue("自建应用可配置安全管理回调（域名IP变更）");
+        AppOf(WechatAppType.ThirdParty, WechatCallbackChannel.App)
+            .IsEventFamilyAllowed(WechatCallbackEventFamily.SecurityChange).Should().BeFalse("第三方应用暂不支持安全管理回调");
+        AppOf(WechatAppType.Provider, WechatCallbackChannel.App)
+            .IsEventFamilyAllowed(WechatCallbackEventFamily.SecurityChange).Should().BeFalse("代开发应用暂不支持安全管理回调");
+        AppOf(WechatAppType.Internal, WechatCallbackChannel.Suite)
+            .IsEventFamilyAllowed(WechatCallbackEventFamily.SecurityChange).Should().BeFalse("套件通道不承载业务事件");
+
         // 通讯录/异步族：应用数据通道承载，三类应用均开放。
         AppOf(WechatAppType.Internal, WechatCallbackChannel.App)
             .IsEventFamilyAllowed(WechatCallbackEventFamily.ContactChange).Should().BeTrue();

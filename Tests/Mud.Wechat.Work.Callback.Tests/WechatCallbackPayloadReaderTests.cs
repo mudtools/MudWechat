@@ -50,6 +50,16 @@ public class WechatCallbackPayloadReaderTests
     };
 
     /// <summary>
+    /// 官方 path 100080 的安全管理事件：<c>Event = security</c>，事件键取 <c>ChangeType</c>。
+    /// </summary>
+    private static WechatCallbackEvent SecurityEvent(string changeType, string plainXml) => new()
+    {
+        Event = WechatCallbackEventTypes.Security,
+        ChangeType = changeType,
+        DecryptedXml = plainXml,
+    };
+
+    /// <summary>
     /// 官方 path 90240 的消息与事件：<c>Event</c> 节点自身即事件键（无 <c>ChangeType</c> 分组段）。
     /// </summary>
     private static WechatCallbackEvent SelfEvent(string eventKey, string plainXml) => new()
@@ -198,6 +208,36 @@ public class WechatCallbackPayloadReaderTests
         reader.Read<ChainChangedPayload>(evt).Status
             .Should().Be(WechatPayloadReadStatus.ContractMismatch,
                 "契约登记了 RequiredEvent=change_chain；change_contact 报文不得命中上下游载荷");
+    }
+
+    // ------------------------------------------------------------------ 安全管理族（信封外无业务字段）
+
+    [Fact]
+    public void Read_ShouldMatchDomainIpChanged_WithEnvelopeOnlyMessage()
+    {
+        // 官方 100080 样报文：标准信封 + Event=security + ChangeType=change_domain_ip，参数表无业务字段。
+        var result = CreateReader().Read<SecurityDomainIpChangedPayload>(
+            SecurityEvent(WechatCallbackEventTypes.ChangeDomainIp,
+                "<xml><ToUserName><![CDATA[ww-corp]]></ToUserName><FromUserName><![CDATA[sys]]></FromUserName>" +
+                "<CreateTime>1403610513</CreateTime><MsgType><![CDATA[event]]></MsgType>" +
+                "<Event><![CDATA[security]]></Event><ChangeType><![CDATA[change_domain_ip]]></ChangeType></xml>"));
+
+        result.Status.Should().Be(WechatPayloadReadStatus.Matched, "信封外无业务字段的载荷仍须按契约命中并产出实例");
+        result.Payload!.Should().NotBeNull();
+        result.EventTypeKey.Should().Be(WechatCallbackEventTypes.ChangeDomainIp);
+    }
+
+    [Fact]
+    public void Read_ShouldRejectForeignFamily_WhenEventEnvelopeDiffers()
+    {
+        // B4：Event=change_contact 报文即便 ChangeType 撞名也不得进入安全管理载荷（RequiredEvent 隔离）。
+        var reader = CreateReader();
+        var evt = Event(WechatCallbackEventTypes.ChangeDomainIp,
+            "<xml><Event><![CDATA[change_contact]]></Event><ChangeType><![CDATA[change_domain_ip]]></ChangeType></xml>");
+
+        reader.Read<SecurityDomainIpChangedPayload>(evt).Status
+            .Should().Be(WechatPayloadReadStatus.ContractMismatch,
+                "契约登记了 RequiredEvent=security；change_contact 报文不得命中安全管理载荷");
     }
 
     // ------------------------------------------------------------------ 异步任务（双布局）

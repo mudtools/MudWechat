@@ -34,14 +34,19 @@ public class MpUserContractGuards
         (typeof(IMpUserService), nameof(IMpUserService.GetBlacklistAsync), typeof(PostAttribute), "/cgi-bin/tags/members/getblacklist"),
         (typeof(IMpUserService), nameof(IMpUserService.BatchBlacklistAsync), typeof(PostAttribute), "/cgi-bin/tags/members/batchblacklist"),
         (typeof(IMpUserService), nameof(IMpUserService.BatchUnblacklistAsync), typeof(PostAttribute), "/cgi-bin/tags/members/batchunblacklist"),
+        // 转换 openid：官方列为「用户管理」下与「用户信息」并列的子分组，本 SDK 以「用户管理」为域边界收在本接口。
+        (typeof(IMpUserService), nameof(IMpUserService.ChangeOpenIdAsync), typeof(PostAttribute), "/cgi-bin/changeopenid"),
     };
 
-    /// <summary>契约守卫 US1：用户信息域 7 端点路由必须与官方契约一致。</summary>
+    /// <summary>
+    /// 契约守卫 US1：用户管理域 8 端点路由必须与官方契约一致
+    /// （用户信息 7 + 转换 openid 1；域边界合并的理由见接口 remarks 与实现文档）。
+    /// </summary>
     [Fact]
     public void UserEndpoints_ShouldMatchOfficialRoutes()
     {
-        UserRoutes.Should().HaveCount(7, "官方「用户管理 → 用户信息」恰 7 个端点（含黑名单三端点）");
-        UserRoutes.Select(r => r.Route).Distinct().Should().HaveCount(7, "各端点路由互不重复");
+        UserRoutes.Should().HaveCount(8, "本域 = 用户信息 7 端点 + 转换 openid 1 端点");
+        UserRoutes.Select(r => r.Route).Distinct().Should().HaveCount(8, "各端点路由互不重复");
 
         foreach (var (iface, method, httpAttribute, route) in UserRoutes)
         {
@@ -103,10 +108,10 @@ public class MpUserContractGuards
                         && !typeof(JsonSerializerContext).IsAssignableFrom(t))
             .ToList();
 
-        const int expectedCount = 11;
+        const int expectedCount = 14;
         domainTypes.Should().HaveCount(expectedCount,
-            "用户信息域契约面类型数漂移须先核对官方文档再同批调整本守卫" +
-            "（2 用户信息 + 3 批量 + 4 分页/黑名单 + 1 备注 + 1 拉黑请求）");
+            "用户管理域契约面类型数漂移须先核对官方文档再同批调整本守卫" +
+            "（2 用户信息 + 3 批量 + 4 分页/黑名单 + 1 备注 + 1 拉黑请求 + 3 转换 openid）");
 
         foreach (var type in domainTypes)
         {
@@ -185,6 +190,17 @@ public class MpUserContractGuards
         AssertJsonProperty<MpGetBlacklistResponse>("next_openid", "响应游标（回填为请求的 begin_openid）");
 
         AssertJsonProperty<MpBlacklistRequest>("openid_list", "拉黑 / 取消拉黑共用请求字段（单次最多 20）");
+
+        // 转换 openid：from_appid 是「原账号原始 id（gh_ 开头，不是 appid）」；官方无 to_appid。
+        AssertJsonProperty<MpChangeOpenIdRequest>("from_appid", "原账号原始 id（不是 appid）");
+        AssertJsonProperty<MpChangeOpenIdRequest>("openid_list", "单次最多 100 个，且必须是旧账号仍关注的用户");
+        AssertJsonProperty<MpChangeOpenIdResponse>("result_list", "逐项转换结果");
+        AssertJsonProperty<MpChangeOpenIdResult>("ori_openid", "旧 openid");
+        AssertJsonProperty<MpChangeOpenIdResult>("new_openid", "新 openid");
+        AssertJsonProperty<MpChangeOpenIdResult>("err_msg", "逐项错误描述（ok / ori_openid error）");
+
+        JsonNamesOf<MpChangeOpenIdRequest>().Should().NotContain("to_appid",
+            "官方字段表无 to_appid（目标账号由调用方令牌身份隐含）⇒ 不得凭空建模");
     }
 
     /// <summary>契约守卫 US6：GET 端点无请求体（签名仅剩 Query 参数与取消令牌）。</summary>
@@ -240,11 +256,14 @@ public class MpUserContractGuards
             .ToList();
 
         queryInterfaces.Should().BeEquivalentTo(
-            new[] { nameof(IMpBasicService), nameof(IMpTagService), nameof(IMpUserService) },
+            new[]
+            {
+                nameof(IMpBasicService), nameof(IMpTagService), nameof(IMpUserService), nameof(IMpMenuService),
+            },
             "公众号官方契约强制 Query 注入；新增 Query 注入接口须评估后扩展本白名单");
     }
 
-    /// <summary>契约守卫 US9：用户信息域已核验错误码常量锁定。</summary>
+    /// <summary>契约守卫 US9：用户管理域已核验错误码常量锁定。</summary>
     [Fact]
     public void UserErrorCodes_ShouldMatchVerifiedOfficialValues()
     {
@@ -253,7 +272,17 @@ public class MpUserContractGuards
         MpErrorCodes.RequirePostMethod.Should().Be(43002);
         MpErrorCodes.BatchBlacklistSystemBusy.Should().Be(268487001);
         MpErrorCodes.GetFansSystemBusy.Should().Be(268487002);
+        MpErrorCodes.ChangeOpenIdAppIdWrong.Should().Be(63178);
+        MpErrorCodes.ChangeOpenIdListEmpty.Should().Be(63182);
+        MpErrorCodes.ChangeOpenIdAppIdError.Should().Be(63183);
     }
+
+    private static List<string> JsonNamesOf<T>()
+        => typeof(T).GetProperties()
+            .Select(p => p.GetCustomAttribute<JsonPropertyNameAttribute>()?.Name)
+            .Where(n => n != null)
+            .Select(n => n!)
+            .ToList();
 
     /// <remarks>
     /// 以 LINQ <c>Any</c> + <c>BeTrue</c> 表达（<c>Should().Contain(表达式, because)</c> 的谓词是表达式树，

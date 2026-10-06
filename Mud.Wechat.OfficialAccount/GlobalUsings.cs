@@ -11,5 +11,6 @@ global using Mud.Wechat.OfficialAccount.Abstractions;
 global using Mud.Wechat.OfficialAccount.Abstractions.Authentication;
 global using Mud.Wechat.OfficialAccount.DataModels;
 global using Mud.Wechat.OfficialAccount.DataModels.Basic;
+global using Mud.Wechat.OfficialAccount.DataModels.Menu;
 global using Mud.Wechat.OfficialAccount.DataModels.Tag;
 global using Mud.Wechat.OfficialAccount.DataModels.User;

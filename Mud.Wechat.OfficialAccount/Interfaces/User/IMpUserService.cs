@@ -226,4 +226,39 @@ public interface IMpUserService
     Task<MpResponse> BatchUnblacklistAsync(
         [Body] MpBlacklistRequest request,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 转换 openid（账号迁移场景）。官方文档：<see href="https://developers.weixin.qq.com/doc/subscription/api/usermanage/changeopenid/api_changeopenid.html"/>
+    /// （官方接口英文名 <c>changeopenid</c>）。
+    /// </summary>
+    /// <param name="request">转换请求（<c>from_appid</c> 为原账号<b>原始 id</b>；<c>openid_list</c> 单次最多 100）。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
+    /// <returns>逐项转换结果（<c>result_list</c>）。</returns>
+    /// <remarks>
+    /// <para>
+    /// <b>归属说明</b>：官方把它列为「用户管理」下与「用户信息」并列的子分组；本 SDK 以「用户管理」为域边界
+    /// 收在本接口内（1 端点的独立模块只有注册开销而无隔离收益），DTO 仍按官方子分组分目录（同一命名空间）。
+    /// </para>
+    /// <para>
+    /// <b>时效窗口（官方「注意事项」原文）</b>：可在<b>账号迁移审核完成后</b>开始调用，<b>最多保留 15 天</b>
+    /// ——迁移未完成时调用无返回结果或报错；15 天后接口<b>失效</b>、无法拉取数据。
+    /// </para>
+    /// <para>
+    /// <b>前置条件</b>：①原账号为<b>个人主体</b>的不支持该接口；②必须在<b>原账号被冻结之前</b>
+    /// （最好在提交审核前）获取原账号用户列表，否则转换工具不可用。
+    /// </para>
+    /// <para>
+    /// <b>逐项错误语义</b>：整包成功不代表各项成功——须逐项检查 <c>result_list[].err_msg</c>
+    /// （<c>ok</c> 为成功；<c>"ori_openid error"</c> 表示该 openid 目前没有关注旧账号）。
+    /// </para>
+    /// <para>
+    /// 官方错误码：<c>63178</c>（<c>from_appid</c> 错误，与调用的账号没有迁移关系）/ <c>63182</c>
+    /// （<c>openid_list</c> 为空）/ <c>63183</c>（appid 没有迁移关系）。
+    /// </para>
+    /// <para>MUD005：令牌强制走 Query 参数 <c>access_token</c>（官方契约，无法改用 Header）。</para>
+    /// </remarks>
+    [Post("/cgi-bin/changeopenid")]
+    Task<MpChangeOpenIdResponse> ChangeOpenIdAsync(
+        [Body] MpChangeOpenIdRequest request,
+        CancellationToken cancellationToken = default);
 }

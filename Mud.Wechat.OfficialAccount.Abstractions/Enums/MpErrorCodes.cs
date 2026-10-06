@@ -164,4 +164,65 @@ public static class MpErrorCodes
 
     /// <summary>平台级「系统繁忙」码（获取关注者列表接口，官方解决方案「稍后重试」）——属<b>可重试</b>错误。</summary>
     public const int GetFansSystemBusy = 268487002;
+
+    // ---------------------------------------------------------------- 自定义菜单（M2，取值逐页核验官方文档）
+
+    /// <summary>invalid button size：不合法的按钮个数（官方：最多 3 个一级菜单）。</summary>
+    public const int InvalidButtonSize = 40016;
+
+    /// <summary>invalid button type：不合法的按钮类型。</summary>
+    public const int InvalidButtonType = 40017;
+
+    /// <summary>invalid button name size：不合法的按钮名字长度（一级 ≤ 16 字节 / 子菜单 ≤ 60 字节）。</summary>
+    public const int InvalidButtonNameSize = 40018;
+
+    /// <summary>invalid button key size：不合法的按钮 KEY 长度（≤ 128 字节）。</summary>
+    public const int InvalidButtonKeySize = 40019;
+
+    /// <summary>invalid button url size：不合法的按钮 URL 长度（≤ 1024 字节）。</summary>
+    public const int InvalidButtonUrlSize = 40020;
+
+    /// <summary>invalid sub button size：不合法的子菜单按钮个数（官方：每个一级最多 5 个二级）。</summary>
+    public const int InvalidSubButtonSize = 40023;
+
+    /// <summary>invalid sub button type：不合法的子菜单按钮类型。</summary>
+    public const int InvalidSubButtonType = 40024;
+
+    /// <summary>invalid sub button url size：不合法的子菜单按钮 URL 长度。</summary>
+    public const int InvalidSubButtonUrlSize = 40027;
+
+    /// <summary>
+    /// invalid charset：请求字符非法——官方描述明确「<b>请检查请求是否包含 <c>\uxxxx</c> 格式的字符，
+    /// 会导致创建失败</b>」。
+    /// </summary>
+    /// <remarks>
+    /// <b>对 SDK 的硬约束</b>：JSON 序列化<b>不得</b>把非 ASCII（如中文菜单名）转义为 <c>\uXXXX</c>，
+    /// 否则菜单创建直接失败。故本产品线在注册期把序列化编码器放宽为
+    /// <c>JavaScriptEncoder.UnsafeRelaxedJsonEscaping</c>（见 MP 注册期 remarks），
+    /// 由用例锁定「中文菜单名不得出现 <c>\u</c> 转义」。
+    /// </remarks>
+    public const int InvalidCharsetEscaped = 40033;
+
+    /// <summary>invalid sub button url domain：不合法的子菜单按钮 url 域名。</summary>
+    public const int InvalidSubButtonUrlDomain = 40054;
+
+    /// <summary>invalid button url domain：不合法的菜单按钮 url 域名。</summary>
+    public const int InvalidButtonUrlDomain = 40055;
+
+    /// <summary>Article ID 无效（图文 ID 无效）。</summary>
+    public const int InvalidArticleId = 53600;
+
+    /// <summary>match rule violates privacy：匹配规则包含隐私字段。</summary>
+    public const int MatchRulePrivacyViolation = 65320;
+
+    // ---------------------------------------------------------------- 转换 openid（M2，取值逐页核验官方文档）
+
+    /// <summary>appid wrong：<c>from_appid</c> 参数错误（与调用的账号没有迁移关系）。</summary>
+    public const int ChangeOpenIdAppIdWrong = 63178;
+
+    /// <summary>openid_list empty：<c>openid_list</c> 为空。</summary>
+    public const int ChangeOpenIdListEmpty = 63182;
+
+    /// <summary>appid error：appid 没有迁移关系。</summary>
+    public const int ChangeOpenIdAppIdError = 63183;
 }

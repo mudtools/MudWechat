@@ -42,6 +42,9 @@ public class MpServiceBuilder
             [MpModule.User] = new MpModuleRegistrar(
                 MpModule.User,
                 s => s.AddUserWebApiHttpClient()),
+            [MpModule.Menu] = new MpModuleRegistrar(
+                MpModule.Menu,
+                s => s.AddMenuWebApiHttpClient()),
         };
 
     /// <summary>
@@ -61,6 +64,12 @@ public class MpServiceBuilder
     /// </summary>
     /// <returns>注册器（链式）。</returns>
     public MpServiceBuilder AddUserApi() => AddModule(MpModule.User);
+
+    /// <summary>
+    /// 注册自定义菜单（7 端点）。
+    /// </summary>
+    /// <returns>注册器（链式）。</returns>
+    public MpServiceBuilder AddMenuApi() => AddModule(MpModule.Menu);
 
     /// <summary>注册全部模块。</summary>
     /// <returns>注册器（链式）。</returns>

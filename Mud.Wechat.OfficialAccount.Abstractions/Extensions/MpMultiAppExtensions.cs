@@ -100,7 +100,19 @@ public static class MpMultiAppExtensions
                 "（重复调用会以最后一次的配置列表覆盖注册表，导致先注册的公众号静默丢失）。");
         }
 
-        // 公用层唯一登记点：SSRF 白名单（并集单一来源）+ 令牌恢复判定器组合器 + 选项校验器 +
+        // ① 官方字符集硬约束的修复（errcode 40033）：
+        //    官方「创建自定义菜单 / 创建个性化菜单」错误码明确要求「请求不能包含 \uxxxx 格式的字符，
+        //    否则创建失败」；而 .NET 源生成 JSON 上下文默认使用 JavaScriptEncoder.Default，
+        //    会把所有非 ASCII 字符（中文菜单名、中文标签名等）转义为 \uXXXX ⇒ 中文菜单直接创建失败。
+        //    故把组件序列化管线所用 JsonSerializerOptions 的 Encoder 放宽为 UnsafeRelaxedJsonEscaping：
+        //    仅改变「编码形式」（不再转义非 ASCII），不改变 JSON 结构，转义安全性由 JSON 规范本身保证
+        //    （引号与反斜杠仍被转义）；库内遥测另有 DefaultSensitiveDataMasker 独立脱敏，不受影响。
+        //    组件 IHttpContentSerializer 是首次解析时经 IOptions<JsonSerializerOptions> 构造的单例，
+        //    故此处的 Configure 必须在任何客户端解析之前登记（本方法即注册入口，满足该顺序约束）。
+        services.Configure<JsonSerializerOptions>(options =>
+            options.Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping);
+
+        // ② 公用层唯一登记点：SSRF 白名单（并集单一来源）+ 令牌恢复判定器组合器 + 选项校验器 +
         // 令牌提供器 + 后台刷新框架服务（后者带「已注册即跳过」守卫，多产品线共存时只有一个刷新循环）。
         services.AddWechatTokenRecovery();
 

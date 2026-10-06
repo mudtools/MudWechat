@@ -210,7 +210,10 @@ public class MpTagContractGuards
             .ToList();
 
         queryInterfaces.Should().BeEquivalentTo(
-            new[] { nameof(IMpBasicService), nameof(IMpTagService), nameof(IMpUserService) },
+            new[]
+            {
+                nameof(IMpBasicService), nameof(IMpTagService), nameof(IMpUserService), nameof(IMpMenuService),
+            },
             "公众号官方契约强制 Query 注入；新增 Query 注入接口须评估后扩展本白名单");
     }
 

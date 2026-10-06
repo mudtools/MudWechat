@@ -47,6 +47,16 @@ public enum MpModule
     User,
 
     /// <summary>
+    /// 自定义菜单（创建菜单 / 获取菜单 / 删除菜单 / 创建个性化菜单 / 删除个性化菜单 / 测试个性化菜单匹配 /
+    /// 查询自定义菜单信息共 7 端点）。
+    /// </summary>
+    /// <remarks>
+    /// 域级约束：菜单规模硬上限（3 个一级 / 每级 5 个二级）；个性化菜单每日新增 2000、删除 2000、测试 20000；
+    /// 删除默认菜单会级联删除全部个性化菜单；无个性化菜单编辑 API。
+    /// </remarks>
+    Menu,
+
+    /// <summary>
     /// 令牌签发（<c>getAccessToken</c> + <c>getStableAccessToken</c>）：随 <c>AddMpApp</c> 自动注册，
     /// 本枚举成员仅供模块清单对齐使用（不作为 <c>AddAuthenticationApi()</c> 的必要入口）。
     /// </summary>

@@ -6,7 +6,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Mud.HttpUtils" Version="3.0.1" />
+		<PackageReference Include="Mud.HttpUtils" Version="3.0.2" />
 	</ItemGroup>
 
 	<ItemGroup>

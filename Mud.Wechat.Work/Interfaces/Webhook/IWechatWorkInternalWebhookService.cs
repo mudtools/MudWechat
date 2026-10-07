@@ -29,8 +29,12 @@ namespace Mud.Wechat.Work;
 /// （无更深层应用类型子接口）。
 /// </para>
 /// <para>
-/// <b>官方凭证脱敏缺口</b>：Query 参数 <c>key</c> 为长期有效凭据、不在组件 <c>SensitiveUrlRedactor</c>
-/// 词表内，已按「豁免（附追踪号）」路径登记（追踪号 WEBHOOK-KEY-REDACT-01，审计断言见守卫 WEB3）。
+/// <b>官方凭证脱敏</b>：Query 参数 <c>key</c> 为长期有效凭据、不在组件静态词表内，
+/// 已在 <see cref="WechatModule.Webhook"/> 模块注册期经组件公开登记门面
+/// <c>SensitiveUrlKeys.Register("key")</c> 登记为进程级强制掩码键（见父接口 remarks 与守卫 WEB3）。
+/// 宿主若绕过 builder 直调生成器产出的 <c>AddWebhookWebApiHttpClient()</c>（非常规用法、
+/// 不经模块注册组），须自行调用 <c>SensitiveUrlKeys.Register("key")</c>，否则 <c>key</c>
+/// 将随异常与遥测 URL 明文输出。
 /// </para>
 /// </remarks>
 // HTTPCLIENT018 豁免理由：同父接口 IWechatWorkWebhookService——本域为「无令牌端点」既存例外

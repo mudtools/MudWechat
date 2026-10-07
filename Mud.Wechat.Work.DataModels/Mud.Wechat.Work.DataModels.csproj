@@ -8,8 +8,8 @@
 	<ItemGroup>
 		<!-- [HttpJsonSerializable] 标注特性来源（零依赖特性包，传递 Mud.HttpUtils.Abstractions）。
 		     Generated/ 目录由 scripts/GenerateJsonContext.ps1（mud-jsonctx）按标注生成。 -->
-		<PackageReference Include="Mud.HttpUtils.Attributes" Version="3.0.1" />
-		<PackageReference Include="Mud.HttpUtils.Generator" Version="3.0.1" PrivateAssets="all" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+		<PackageReference Include="Mud.HttpUtils.Attributes" Version="3.0.2" />
+		<PackageReference Include="Mud.HttpUtils.Generator" Version="3.0.2" PrivateAssets="all" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
 	</ItemGroup>
 
 	<ItemGroup>

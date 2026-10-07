@@ -31,8 +31,9 @@ namespace Mud.Wechat.Work.Tests.ContractGuards;
 /// <b>不使用任何令牌链路</b> ⇒ 本域父子接口均不得声明 <c>[Token]</c>（例外清单见
 /// <see cref="WechatTokenOwnerContractGuards"/> TO1）；官方 91770 同一路由承载 8 种 msgtype
 /// （逐类型一方法，L1 类型化重载，不做运行时多态）；<c>key</c> 为<b>长期有效</b>凭据且不在组件
-/// <c>SensitiveUrlRedactor</c> 词表内（G7 的 token/secret 过滤器亦不覆盖该参数名），
-/// 脱敏缺口按「豁免（附追踪号）」登记并由 WEB3 自审计。
+/// <c>SensitiveUrlRedactor</c> 静态词表内（G7 的 token/secret 过滤器亦不覆盖该参数名），
+/// 脱敏由模块注册期经组件公开登记门面 <see cref="Mud.HttpUtils.SensitiveUrlKeys"/> 登记强制掩码键闭环，
+/// WEB3 锁定其持续生效（静态词表反向自过期 + 运行期功能断言）。
 /// </para>
 /// </remarks>
 public class WechatWebhookContractGuards
@@ -43,9 +44,6 @@ public class WechatWebhookContractGuards
     private const string WebhookRegistryGroupName = "Webhook";
 
     private const string WebhookNamespace = "Mud.Wechat.Work.DataModels.Webhook";
-
-    /// <summary>Webhook 凭据脱敏豁免追踪号（组件词表覆盖 <c>key</c> 前持续有效，见 WEB3）。</summary>
-    private const string KeyRedactionExemptionTrackingId = "WEBHOOK-KEY-REDACT-01";
 
     /// <summary>群机器人域官方路由表（唯一子接口承载；send 同路由 8 方法 + upload_media 1 方法）。</summary>
     private static readonly (Type Interface, string Method, Type HttpAttribute, string Route)[] WebhookRoutes =
@@ -164,7 +162,7 @@ public class WechatWebhookContractGuards
     }
 
     /// <summary>
-    /// 契约守卫 WEB3：<b>无令牌面 + 凭据脱敏豁免审计</b>。
+    /// 契约守卫 WEB3：<b>无令牌面 + 凭据 key 脱敏闭环断言</b>。
     /// </summary>
     /// <remarks>
     /// <para>
@@ -174,14 +172,20 @@ public class WechatWebhookContractGuards
     /// 子接口的无 <c>[Token]</c> 例外已同步登记在 TO1 的精确清单中。
     /// </para>
     /// <para>
-    /// <b>脱敏豁免自审计（反向自过期，追踪号 {KeyRedactionExemptionTrackingId}）</b>：
-    /// <c>key</c> 为长期有效凭据、不在组件 <c>SensitiveUrlRedactor</c> 词表内（实测 3.0.1 精确匹配词表 60 项不含 key），
-    /// 且 G7 的「名称含 token/secret」过滤器不覆盖该参数名 ⇒ 本守卫按 G7 同源反射路径读取组件词表，
-    /// 断言豁免<b>仍然必要</b>——组件词表一旦覆盖 <c>key</c>，本断言转红并要求移除豁免与接口 XML 的风险备注。
+    /// <b>凭据脱敏闭环（定夺一，原「豁免 + 追踪号 WEBHOOK-KEY-REDACT-01」过渡姿态已收敛）</b>：
+    /// <c>key</c> 为长期有效凭据，组件静态词表刻意不收该通用名（<c>key</c> 过于通用，全局收词会过度脱敏）
+    /// ⇒ SDK 在 <see cref="WechatModule.Webhook"/> 模块注册组 lambda 中经组件公开登记门面
+    /// <see cref="Mud.HttpUtils.SensitiveUrlKeys.Register(string?)"/> 将其登记为<b>进程级强制掩码键</b>
+    /// （幂等、线程安全，<c>AddAllApis</c> 复入亦安全）。本守卫两段断言：
+    /// ① <b>静态词表反向自过期</b>——组件词表若未来收录 <c>key</c>，断言转红，此时模块注册期的
+    /// <c>Register("key")</c> 调用降级为冗余，应同批简化（移除调用与相关 remarks，改由词表覆盖）；
+    /// ② <b>运行期功能断言</b>——测试内登记动作即生产行为复放（进程级状态幂等、不影响其它用例），
+    /// 断言登记后 <c>key</c> 值恒被掩码、词表外参数保留原文，且 <c>RedactUrlInTelemetry=false</c>
+    /// 时登记键仍掩码（强制语义回归）。
     /// </para>
     /// </remarks>
     [Fact]
-    public void WebhookInterfaces_ShouldNotDeclareTokenAttribute_AndKeyRedactionExemptionShouldStayAuditable()
+    public void WebhookInterfaces_ShouldNotDeclareTokenAttribute_AndKeyRedactionShouldStayEnforced()
     {
         foreach (var iface in new[] { typeof(IWechatWorkWebhookService), typeof(IWechatWorkInternalWebhookService) })
         {
@@ -190,16 +194,52 @@ public class WechatWebhookContractGuards
                 "不属任何令牌链路（G5 白名单与令牌归属域守卫均不覆盖本域）");
         }
 
-        // —— 脱敏豁免自审计（与 G7 ReadComponentSensitiveVocabulary 同源反射路径）——
-        KeyRedactionExemptionTrackingId.Should().NotBeEmpty(
-            "豁免必须携带追踪号（G7 决策要求「豁免须附追踪号」）");
-
+        // —— ① 静态词表反向自过期（与 G7 ReadComponentSensitiveVocabulary 同源反射路径）——
+        // 该断言是 Webhook 注册组 lambda 中 SensitiveUrlKeys.Register("key") 调用存在的前提：
+        // 组件词表一旦覆盖 key，调用降级为冗余，转红要求同批简化。
         var vocabulary = ReadComponentSensitiveVocabulary();
         vocabulary.Should().NotBeEmpty("未能读取组件脱敏词表（组件版本或字段名变更，请同步本守卫）");
 
         vocabulary.Should().NotContain("key",
-            $"组件 SensitiveUrlRedactor 词表尚未覆盖 key（豁免 {KeyRedactionExemptionTrackingId} 仍然必要）。" +
-            "若该断言转红：组件词表已覆盖 key，请移除本守卫的豁免断言与 Webhook 接口 XML 的脱敏缺口备注（豁免自过期）");
+            "组件 SensitiveUrlRedactor 静态词表已收录 key：Webhook 模块注册期的 " +
+            "SensitiveUrlKeys.Register(\"key\") 调用已降级为冗余，请同批简化" +
+            "（移除 WechatWorkServiceBuilder 的 Register 调用与 Webhook 接口 / WechatModule.Webhook remarks 的登记说明，改由词表覆盖）");
+
+        // —— ② 运行期功能断言（生产行为复放：与 Webhook 注册组 lambda 同一登记调用）——
+        SensitiveUrlKeys.Register("key");
+
+        var redactor = typeof(Mud.HttpUtils.ApiException).Assembly.GetType("Mud.HttpUtils.Helpers.SensitiveUrlRedactor");
+        redactor.Should().NotBeNull("组件 Helpers.SensitiveUrlRedactor 必须存在（WEB3 功能断言依赖其 Redact 通路）");
+        var redact = redactor!.GetMethod("Redact",
+            BindingFlags.Public | BindingFlags.Static, binder: null, new[] { typeof(string) }, modifiers: null);
+        redact.Should().NotBeNull("组件 SensitiveUrlRedactor.Redact(string) 必须存在（SDK 异常与遥测脱敏的统一出口）");
+
+        var original = "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=SECRET&foo=bar";
+
+        // 默认开关（true）：登记键强制掩码、词表外参数保留原文。
+        var redacted = redact!.Invoke(null, new object?[] { original }) as string;
+        redacted.Should().NotBeNull("Redact 对非空 URL 必须返回非空结果");
+        redacted.Should().Contain("key=***REDACTED***",
+            "key 为进程级登记强制掩码键，值不得随 URL 明文输出（脱敏闭环的核心断言）");
+        redacted.Should().Contain("foo=bar",
+            "词表外参数不受登记影响（保持排障可用性，登记键精确匹配）");
+
+        // 开关关闭：登记键仍掩码（RedactUrlInTelemetry=false 不是已确认凭据的逃生门），词表外参数保留原文。
+        var restore = MudHttpObservabilityOptions.RedactUrlInTelemetry;
+        try
+        {
+            MudHttpObservabilityOptions.RedactUrlInTelemetry = false;
+            var redactedSwitchOff = redact.Invoke(null, new object?[] { original }) as string;
+            redactedSwitchOff.Should().NotBeNull();
+            redactedSwitchOff.Should().Contain("key=***REDACTED***",
+                "登记键不受 RedactUrlInTelemetry 开关约束（强制掩码语义，与静态词表键同权）");
+            redactedSwitchOff.Should().Contain("foo=bar",
+                "开关关闭时词表外参数保留原文（该开关的既有语义边界不变）");
+        }
+        finally
+        {
+            MudHttpObservabilityOptions.RedactUrlInTelemetry = restore;
+        }
     }
 
     /// <summary>

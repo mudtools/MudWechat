@@ -54,6 +54,50 @@ public class MpServiceBuilder
             [MpModule.KfSession] = new MpModuleRegistrar(
                 MpModule.KfSession,
                 s => s.AddKfSessionWebApiHttpClient()),
+            // 素材域双通道：上传走生成管线 AddMediaWebApiHttpClient()；下载走独立请求形态服务（I3）。
+            [MpModule.Template] = new MpModuleRegistrar(
+                MpModule.Template,
+                s => s.AddTemplateWebApiHttpClient()),
+            [MpModule.SubscriptionNotice] = new MpModuleRegistrar(
+                MpModule.SubscriptionNotice,
+                s => s.AddSubscriptionNoticeWebApiHttpClient()),
+            [MpModule.OpenApi] = new MpModuleRegistrar(
+                MpModule.OpenApi,
+                s => s.AddOpenApiWebApiHttpClient()),
+            [MpModule.Sns] = new MpModuleRegistrar(
+                MpModule.Sns,
+                s => s.AddSnsWebApiHttpClient()),
+            [MpModule.Mass] = new MpModuleRegistrar(
+                MpModule.Mass,
+                s => s.AddMassWebApiHttpClient()),
+            [MpModule.Qrcode] = new MpModuleRegistrar(
+                MpModule.Qrcode,
+                s => s.AddQrcodeWebApiHttpClient()),
+            [MpModule.AutoReply] = new MpModuleRegistrar(
+                MpModule.AutoReply,
+                s => s.AddAutoReplyWebApiHttpClient()),
+            [MpModule.Draft] = new MpModuleRegistrar(
+                MpModule.Draft,
+                s => s.AddDraftWebApiHttpClient()),
+            [MpModule.FreePublish] = new MpModuleRegistrar(
+                MpModule.FreePublish,
+                s => s.AddFreePublishWebApiHttpClient()),
+            [MpModule.ProductCard] = new MpModuleRegistrar(
+                MpModule.ProductCard,
+                s => s.AddProductCardWebApiHttpClient()),
+            [MpModule.Comment] = new MpModuleRegistrar(
+                MpModule.Comment,
+                s => s.AddCommentWebApiHttpClient()),
+            [MpModule.DataCube] = new MpModuleRegistrar(
+                MpModule.DataCube,
+                s => s.AddDataCubeWebApiHttpClient()),
+            [MpModule.Media] = new MpModuleRegistrar(
+                MpModule.Media,
+                s =>
+                {
+                    s.AddMediaWebApiHttpClient();
+                    s.AddSingleton<IMpMediaDownloadService, MpMediaDownloadService>();
+                }),
         };
 
     /// <summary>
@@ -97,6 +141,85 @@ public class MpServiceBuilder
     /// </summary>
     /// <returns>注册器（链式）。</returns>
     public MpServiceBuilder AddKfSessionApi() => AddModule(MpModule.KfSession);
+
+    /// <summary>
+    /// 注册模板消息（7 端点，服务号专属；发送结果经 templatesendjobfinish 回调异步回执）。
+    /// </summary>
+    /// <returns>注册器（链式）。</returns>
+    public MpServiceBuilder AddTemplateApi() => AddModule(MpModule.Template);
+
+    /// <summary>
+    /// 注册订阅通知（7 端点，服务号专属；一次性消耗用户订阅次数，结果经 subscribe_msg_sent_event 回执）。
+    /// </summary>
+    /// <returns>注册器（链式）。</returns>
+    public MpServiceBuilder AddSubscriptionNoticeApi() => AddModule(MpModule.SubscriptionNotice);
+
+    /// <summary>
+    /// 注册 openApi 管理（5 端点双接口：IMpOpenApiService 4 端点带令牌 + IMpOpenApiTokenFreeService
+    /// clear_quota/v2 免令牌应急逃生端点；同注册组由同一条生成注册入口装载）。
+    /// </summary>
+    /// <returns>注册器（链式）。</returns>
+    public MpServiceBuilder AddOpenApiApi() => AddModule(MpModule.OpenApi);
+
+    /// <summary>
+    /// 注册网页授权（sns 4 端点，服务号专属；全部免令牌——用户级凭证显式传参，refresh_token 归宿主）。
+    /// </summary>
+    /// <returns>注册器（链式）。</returns>
+    public MpServiceBuilder AddSnsApi() => AddModule(MpModule.Sns);
+
+    /// <summary>
+    /// 注册群发消息（7 端点；提交成功 ≠ 群发完成，结果经 masssendjobfinish 回调异步推送）。
+    /// </summary>
+    /// <returns>注册器（链式）。</returns>
+    public MpServiceBuilder AddMassApi() => AddModule(MpModule.Mass);
+
+    /// <summary>
+    /// 注册带参二维码（1 端点，服务号专属；扫码关注/扫描事件与回调 subscribe/SCAN 族闭环）。
+    /// </summary>
+    /// <returns>注册器（链式）。</returns>
+    public MpServiceBuilder AddQrcodeApi() => AddModule(MpModule.Qrcode);
+
+    /// <summary>
+    /// 注册自动回复（1 端点只读查询；认证/未认证账号均可——官方原文）。
+    /// </summary>
+    /// <returns>注册器（链式）。</returns>
+    public MpServiceBuilder AddAutoReplyApi() => AddModule(MpModule.AutoReply);
+
+    /// <summary>
+    /// 注册草稿管理（6 端点；draft/switch 官方已废弃不实现）。
+    /// </summary>
+    /// <returns>注册器（链式）。</returns>
+    public MpServiceBuilder AddDraftApi() => AddModule(MpModule.Draft);
+
+    /// <summary>
+    /// 注册发布能力（5 端点，仅认证；提交成功不等于发布完成）。
+    /// </summary>
+    /// <returns>注册器（链式）。</returns>
+    public MpServiceBuilder AddFreePublishApi() => AddModule(MpModule.FreePublish);
+
+    /// <summary>
+    /// 注册商品卡片（1 端点；/channels/ec/ 视频号小店域前缀）。
+    /// </summary>
+    /// <returns>注册器（链式）。</returns>
+    public MpServiceBuilder AddProductCardApi() => AddModule(MpModule.ProductCard);
+
+    /// <summary>
+    /// 注册留言管理（8 端点，仅认证 + 留言权限前置）。
+    /// </summary>
+    /// <returns>注册器（链式）。</returns>
+    public MpServiceBuilder AddCommentApi() => AddModule(MpModule.Comment);
+
+    /// <summary>
+    /// 注册数据统计（21 端点单域承载，仅认证；旧图文 6 端点官方声明停止维护照常建模）。
+    /// </summary>
+    /// <returns>注册器（链式）。</returns>
+    public MpServiceBuilder AddDataCubeApi() => AddModule(MpModule.DataCube);
+
+    /// <summary>
+    /// 注册素材管理（上传通道 JSON 端点 + 下载通道 <c>IMpMediaDownloadService</c>；临时素材 3 天有效）。
+    /// </summary>
+    /// <returns>注册器（链式）。</returns>
+    public MpServiceBuilder AddMediaApi() => AddModule(MpModule.Media);
 
     /// <summary>注册全部模块。</summary>
     /// <returns>注册器（链式）。</returns>

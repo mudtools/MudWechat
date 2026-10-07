@@ -183,6 +183,31 @@ public sealed class MpCallbackReply
         builder.Append("</Articles>");
         return new MpCallbackReply(MpCallbackReplyTypes.News, EmptyFields, builder.ToString());
     }
+
+    /// <summary>
+    /// 构造「转发到客服」回复（官方「将消息转发到客服」页，P0-e 已核验；I1 补齐的第七型）。
+    /// </summary>
+    /// <param name="kfAccount">指定会话接入的客服账号（可选；提供时附 <c>TransInfo/KfAccount</c> 节点，
+    /// 把消息转给指定客服——须先确认该客服具备接入能力，否则用户会被直接接入且不再通知其他客服）。</param>
+    /// <returns>转客服类型回复体（<c>MsgType = transfer_customer_service</c>；无其他专有字段）。</returns>
+    /// <remarks>
+    /// <para>
+    /// <b>官方语义（原文要点）</b>：回复本类型后微信服务器把当次用户消息转发至客服系统；
+    /// 「用户被客服接入以后，客服关闭会话以前……用户发送的消息均会被直接转发至客服系统。
+    /// 当会话超过 30 分钟客服没有关闭时，微信服务器会自动停止转发至客服」；
+    /// 「<b>只针对微信用户发来的消息才进行转发</b>，而对于其他任何事件（比如菜单点击、地理位置上报等）
+    /// 都不应该转接」；等待队列中的用户消息仍会推送到开发者 URL。
+    /// </para>
+    /// <para>
+    /// <b>与客服消息接口的额度关系</b>：转客服回复是「5 秒内不能处理完 → 转人工」的标准姿势，
+    /// <b>不消耗 48 小时客服下发额度</b>（那是客服消息接口 <see cref="IMpCustomerMessageService"/> 的约束）。
+    /// </para>
+    /// </remarks>
+    public static MpCallbackReply TransferToCustomerService(string? kfAccount = null)
+        => kfAccount is { Length: > 0 }
+            ? new(MpCallbackReplyTypes.TransferToCustomerService, EmptyFields,
+                MpReplyXml.Container("TransInfo", "KfAccount", kfAccount))
+            : new(MpCallbackReplyTypes.TransferToCustomerService, EmptyFields);
 }
 
 /// <summary>图文回复条目（官方 <c>Articles/item</c> 的四个必填字段）。</summary>

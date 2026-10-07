@@ -304,4 +304,202 @@ public static class MpErrorCodes
 
     /// <summary>指定的客服不在线（创建会话前置条件：客服须已绑定微信号<b>且在线</b>）。</summary>
     public const int WorkerNotOnline = 65415;
+
+    // ---------------------------------------------------------------- 素材管理（P0-a，取值逐页核验官方文档）
+
+    /// <summary>invalid media type：不合法的媒体文件类型（新增临时素材，type 取值须为 image/voice/video/thumb）。</summary>
+    public const int InvalidMediaType = 40004;
+
+    /// <summary>invalid media_id：无效的媒体 ID（获取临时素材 / 获取高清语音素材，素材不存在或已超 3 天有效期）。</summary>
+    public const int InvalidMediaId = 40007;
+
+    /// <summary>invalid image size：图片尺寸太大（上传发表内容中的图片，官方限制 jpg/png 且 1MB 以下）。</summary>
+    public const int InvalidImageSize = 40009;
+
+    // ---------------------------------------------------------------- 模板消息（P0-c，取值逐页核验官方文档；服务号专属域）
+
+    /// <summary>invalid message type：不合法的消息类型（发送模板消息）。</summary>
+    public const int InvalidMessageType = 40008;
+
+    /// <summary>invalid template_id size：不合法的 template_id 长度（发送模板消息）。</summary>
+    public const int InvalidTemplateIdSize = 40036;
+
+    /// <summary>invalid template_id：不合法的 template_id（发送 / 选用模板）。</summary>
+    public const int InvalidTemplateId = 40037;
+
+    /// <summary>invalid url size：不合法的 URL 长度（发送模板消息）。</summary>
+    public const int InvalidUrlSize = 40039;
+
+    /// <summary>invalid keyword_name_list：需要传入正确的 keyword_name_list（选用模板）。</summary>
+    public const int InvalidKeywordNameList = 40246;
+
+    /// <summary>need new category template：请使用类目模板库 ID 进行添加（选用模板）。</summary>
+    public const int NeedNewCategoryTemplate = 40247;
+
+    /// <summary>禁止发送营销内容（发送模板消息）。</summary>
+    public const int MarketingContentRejected = 40249;
+
+    /// <summary>模板被限制下发（发送模板消息）。</summary>
+    public const int TemplateDeliveryLimited = 43116;
+
+    /// <summary>参数不符合模板参数规则（发送模板消息，如 thing01.DATA is invalid；与 47001 的「参数为空/格式错误」不同码）。</summary>
+    public const int TemplateParamInvalid = 47003;
+
+    // ---------------------------------------------------------------- openApi 管理（P1-a，取值逐页核验官方文档）
+
+    /// <summary>api 禁止清零调用次数：清零次数达到上限（clear_quota / clear_quota/v2，两接口合计每月 10 次）。</summary>
+    public const int ClearQuotaLimitReached = 48006;
+
+    /// <summary>rid 不存在（openapi/rid/get；rid 有效期仅 7 天）。</summary>
+    public const int RidNotFound = 76001;
+
+    /// <summary>rid 为空或格式错误（openapi/rid/get）。</summary>
+    public const int RidInvalid = 76002;
+
+    /// <summary>无权查询该 rid：当前账号无权限（rid 属其他账号调用所产生；openapi/rid/get 与额度查询共用语义面）。</summary>
+    public const int RidPermissionDenied = 76003;
+
+    /// <summary>rid 过期：仅支持持续 7 天内的 rid（openapi/rid/get）。</summary>
+    public const int RidExpired = 76004;
+
+    /// <summary>cgi_path not found：cgi_path 填错了（openapi/quota/get 与 openapi/quota/clear）。</summary>
+    public const int CgiPathNotFound = 76021;
+
+    /// <summary>could not use this cgi_path：当前调用接口使用的 token 与 api 所属账号不符（含「/xxx/sns/xxx」类接口不支持查询）。</summary>
+    public const int CgiPathPermissionDenied = 76022;
+
+    // ---------------------------------------------------------------- 群发消息 / 一次性订阅 / 二维码（P0-e，取值逐页核验官方文档）
+
+    /// <summary>invalid tag id：tag_id 不存在（sendall）。</summary>
+    public const int MassTagIdNotFound = 40152;
+
+    /// <summary>invalid image count：图片个数超限（sendall，官方解决方案「减少图片个数」）。</summary>
+    public const int MassImageCountExceeded = 40215;
+
+    /// <summary>invalid msgtype：msgtype 参数错误（mass/send）。</summary>
+    public const int MassMsgTypeInvalid = 45162;
+
+    /// <summary>当前周期内的发表次数已用完（sendall；核验页面无频次上限数值，由官方此码表达）。</summary>
+    public const int MassQuotaExhausted = 45028;
+
+    /// <summary>已接广告，不支持 api 群发（sendall）。</summary>
+    public const int MassAdContractBlocked = 45062;
+
+    /// <summary>相同 clientmsgid 已存在群发记录（响应携带已存在任务的 msgid，24 小时防重窗口）。</summary>
+    public const int MassClientMsgIdExists = 45065;
+
+    /// <summary>相同 clientmsgid 重试速度过快（官方：请间隔 1 分钟重试）。</summary>
+    public const int MassClientMsgIdRetryTooFast = 45066;
+
+    /// <summary>clientmsgid 长度超过限制（官方 ≤ 32 字节）。</summary>
+    public const int MassClientMsgIdTooLong = 45067;
+
+    /// <summary>已不支持商品消息与卡券发表（官方 45113，附公告链接）。</summary>
+    public const int MassWxCardUnsupported = 45113;
+
+    /// <summary>该草稿最后一次是系统自动保存的，不允许群发（须在公众平台手动保存后重试）。</summary>
+    public const int MassAutoSavedDraftBlocked = 48021;
+
+    /// <summary>api 上传的视频不允许用 api 发表（sendall）。</summary>
+    public const int MassApiUploadVideoBlocked = 48022;
+
+    /// <summary>不符合声明文字原创的要求（sendall / mass/send，41040）。</summary>
+    public const int MassOriginalityRequired = 41040;
+
+    /// <summary>入参至少需要 2 个 openid（mass/send；touser 上限 10000 由 40032 表达）。</summary>
+    public const int MassOpenIdListTooSmall = 40130;
+
+    /// <summary>群发仍在审批流程中（API 群发安全保护；请稍等或联系管理员确认）。</summary>
+    public const int MassApprovalPending = 89504;
+
+    /// <summary>群发进入管理员确认流程（API 群发安全保护；管理员拒绝或 30 分钟无确认即失败）。</summary>
+    public const int MassAdminConfirmPending = 89505;
+
+    /// <summary>invalid title size：消息标题超限（一次性订阅消息，title 15 字以内；官方解决方案列留空，照录）。</summary>
+    public const int OneTimeSubscribeTitleSizeInvalid = 40062;
+
+    /// <summary>invalid action name：action 值有误（qrcode/create）。</summary>
+    public const int QrcodeActionNameInvalid = 40052;
+
+    /// <summary>invalid action info：action_info 不合法（qrcode/create；官方解决方案列留空，照录）。</summary>
+    public const int QrcodeActionInfoInvalid = 40053;
+
+    // ---------------------------------------------------------------- 草稿 / 发布 / 商品卡片 / 留言（P2，取值逐页核验官方文档）
+
+    /// <summary>invalid index value：index 参数不合法（draft/update；官方解决方案列留空，照录）。</summary>
+    public const int DraftIndexInvalid = 40114;
+
+    /// <summary>invalid content_source_url：原文地址不合法（draft/update）。</summary>
+    public const int DraftContentSourceUrlInvalid = 41039;
+
+    /// <summary>invalid content：内容不合法（draft/update）。</summary>
+    public const int DraftContentInvalid = 45166;
+
+    /// <summary>账号已被限制带货能力（draft/add，请删除商品后重试）。</summary>
+    public const int CommerceAbilityLimited = 53404;
+
+    /// <summary>插入商品信息有误（draft/add，检查参数及商品状态）。</summary>
+    public const int CommerceProductInfoInvalid = 53405;
+
+    /// <summary>请先开通带货能力（draft/add）。</summary>
+    public const int CommerceAbilityNotEnabled = 53406;
+
+    /// <summary>该草稿未通过发布检查（freepublish/submit，检查草稿信息）。</summary>
+    public const int PublishDraftCheckFailed = 53503;
+
+    /// <summary>需前往公众平台官网使用草稿（freepublish/submit）。</summary>
+    public const int PublishDraftMpOnly = 53504;
+
+    /// <summary>请手动保存成功后再发表（freepublish/submit）。</summary>
+    public const int PublishDraftNotManuallySaved = 53505;
+
+    /// <summary>不合法的商品 ID（商品卡片）。</summary>
+    public const int ProductCardProductIdInvalid = 10170001;
+
+    /// <summary>不支持的文章类型（商品卡片）。</summary>
+    public const int ProductCardArticleTypeUnsupported = 10170002;
+
+    /// <summary>不支持的卡片类型（商品卡片）。</summary>
+    public const int ProductCardCardTypeUnsupported = 10170003;
+
+    /// <summary>without comment privilege：没有留言权限（留言管理全域前置）。</summary>
+    public const int CommentPrivilegeMissing = 88000;
+
+    /// <summary>msg_data is not exists：图文不存在（留言管理）。</summary>
+    public const int CommentMsgDataNotExists = 88001;
+
+    /// <summary>article is limit for safety：文章存在敏感信息（comment/open）。</summary>
+    public const int CommentArticleSafetyLimited = 88002;
+
+    /// <summary>elected comment upper limit：精选评论数已达上限（comment/markelect）。</summary>
+    public const int CommentElectLimitReached = 88003;
+
+    /// <summary>comment was deleted by user：已被用户删除，无法精选（comment/markelect）。</summary>
+    public const int CommentDeletedByUser = 88004;
+
+    /// <summary>already reply：已经回复过了（comment/reply/add）。</summary>
+    public const int CommentAlreadyReplied = 88005;
+
+    /// <summary>reply content beyond max len or content len is zero：回复超过长度限制或为空（comment/reply/add；官方文案「或为 0」照录）。</summary>
+    public const int CommentReplyContentInvalid = 88007;
+
+    /// <summary>comment is not exists：该评论不存在（留言管理）。</summary>
+    public const int CommentNotExists = 88008;
+
+    /// <summary>count range error：获取数目越界（comment/list；count 50 以上被拒绝；官方描述原文拼写「cout」照录）。</summary>
+    public const int CommentCountOutOfRange = 88010;
+
+    /// <summary>invalid signature：无效的签名（comment/reply/delete 页错误码表——本接口无签名参数，疑官方全局码表残留，照录）。</summary>
+    public const int CommentReplySignatureInvalid = 87009;
+
+    // ---------------------------------------------------------------- 数据统计（P2-d，取值逐页核验官方文档；21 端点错误码表跨页复用）
+
+    /// <summary>date format error：日期格式错误（数据统计全域；getarticlesummary 页把 61500 描述为 date range error——官方跨页措辞不一，照录）。</summary>
+    public const int DataCubeDateFormatError = 61500;
+
+    /// <summary>date range error：日期跨度超过限制（数据统计全域；各端点跨度上限措辞不一，见 MpDateRangeRequest remarks）。</summary>
+    public const int DataCubeDateRangeError = 61501;
+
+    /// <summary>data not ready please try later：指定日期数据尚未生成（数据统计全域；getupstreammsg 页描述为「未完成数据统计处理」，照录）。</summary>
+    public const int DataCubeDataNotReady = 61503;
 }

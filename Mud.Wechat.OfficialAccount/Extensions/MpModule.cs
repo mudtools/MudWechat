@@ -84,8 +84,126 @@ public enum MpModule
     KfSession,
 
     /// <summary>
+    /// 模板消息（发送模板消息 / 设置行业 / 获取行业 / 选用模板 / 获取已选用列表 / 删除模板 /
+    /// 查询拦截的模板消息共 7 端点，<b>服务号专属</b>）。
+    /// </summary>
+    /// <remarks>
+    /// 域级约束：7 页适用范围均为「服务号（仅认证）」（SDK 不做本地闸，官方 48001 表达）；
+    /// 频率上限为指南页「日调用上限 10 万次」；行业每月可修改 1 次（修改后原行业模板删除）；
+    /// 每账号可同时使用 25 个模板；发送结果经回调 templatesendjobfinish 异步回执。
+    /// 文档位于服务号域 /doc/service/api/（非订阅号域）。
+    /// </remarks>
+    Template,
+
+    /// <summary>
+    /// 订阅通知（发送订阅通知 bizsend 1 + 模板管理 /wxaapi/newtmpl/* 6，共 7 端点，<b>服务号专属</b>）。
+    /// </summary>
+    /// <remarks>
+    /// 域级约束：bizsend 页适用范围「公众号 / 服务号 —— 仅认证」，newtmpl 六页「小程序 ✔ / 公众号 仅认证 /
+    /// 服务号 仅认证 / 小游戏 ✔」（小程序文案复用痕迹，照录）；一次性消耗用户订阅次数；
+    /// 发送结果经回调 subscribe_msg_sent_event 异步回执；模板管理路径前缀 /wxaapi/newtmpl/（无 /cgi-bin 段）。
+    /// </remarks>
+    SubscriptionNotice,
+
+    /// <summary>
+    /// openApi 管理（重置 API 调用次数 / AppSecret 重置 / 额度查询 / 指定 API 清零 / rid 查询共 5 端点，
+    /// 双接口同注册组：IMpOpenApiService 4 端点带令牌 + IMpOpenApiTokenFreeService 1 端点免令牌）。
+    /// </summary>
+    /// <remarks>
+    /// 域级约束：clear_quota 与 clear_quota/v2 合计每月 10 次清零；openapi/quota/clear 每月 50 次；
+    /// rid 查询仅同账号且有效期 7 天；clear_quota/v2 为「access_token 耗尽」应急逃生端点（I4 裁决独立接口）。
+    /// </remarks>
+    OpenApi,
+
+    /// <summary>
+    /// 网页授权（sns 四端点，<b>服务号专属</b>；全部<b>免令牌端点</b>——不消费应用级 access_token）。
+    /// </summary>
+    /// <remarks>
+    /// 域级约束：4 页适用范围「服务号 —— 仅认证」；频率限制 5 万/分钟（access_token/refresh_token/userinfo 三页）；
+    /// I4/I5 裁决：无 [Token] 特性、不建模用户级令牌管理器，refresh_token（30 天）生命周期归宿主；
+    /// sns/oauth2/access_token 的 secret 走 Query（官方契约，脱敏词表已覆盖）。
+    /// </remarks>
+    Sns,
+
+    /// <summary>
+    /// 群发消息（sendall/send/preview/delete/get/speed 双端点共 7 端点；uploadimg 归素材域、
+    /// uploadnews 官方标注迁移草稿箱不建模——N5 裁决）。
+    /// </summary>
+    /// <remarks>
+    /// 域级约束：mass/send 服务号专属（官方原文，48001 表达）；提交成功 ≠ 群发完成，
+    /// 结果经回调 masssendjobfinish 异步推送；clientmsgid 24 小时防重；
+    /// 核验页面无群发频次上限数值（45028 由官方表达），SDK 不编造数值。
+    /// </remarks>
+    Mass,
+
+    /// <summary>
+    /// 服务号二维码·带参二维码（qrcode/create 1 端点，<b>服务号专属</b>；
+    /// showqrcode 换图走 mp.weixin.qq.com 域名、官方无须登录态，SDK 暂不建模——XML 记录换图方式）。
+    /// </summary>
+    Qrcode,
+
+    /// <summary>
+    /// 自动回复（get_current_autoreply_info 1 端点，只读查询；公众号 / 服务号均可——
+    /// 官方原文「认证/未认证的服务号/订阅号，以及接口测试号，均拥有该接口权限」）。
+    /// </summary>
+    AutoReply,
+
+    /// <summary>
+    /// 草稿管理（draft/add / update / get / delete / count / batchget 共 6 端点；draft/switch 官方已废弃不实现）。
+    /// </summary>
+    /// <remarks>
+    /// 域级约束：草稿被群发或发布后从草稿箱移除；add 的 articles 为数组、update 的为单对象（官方两页不一致照录）；
+    /// batchget count 1~20；「单篇 8 条上限」在官方页面无原文（仅第三方转述，不编造）。
+    /// </remarks>
+    Draft,
+
+    /// <summary>
+    /// 发布能力（freepublish/submit / get / delete / getarticle / batchget 共 5 端点，仅认证）。
+    /// </summary>
+    /// <remarks>
+    /// 域级约束：提交成功不等于发布完成（结果经 PUBLISHJOBFINISH 事件推送——官方无独立 XML 页，事件暂不建模）；
+    /// publish_status 标量 0~6；batchget count 1~20（官方原文，非旧版口径 100）；条目键 article_id（非 item_id）。
+    /// </remarks>
+    FreePublish,
+
+    /// <summary>
+    /// 商品卡片（channels/ec/service/product/getcardinfo 1 端点；/channels/ec/ 视频号小店域前缀，非 /cgi-bin/）。
+    /// </summary>
+    ProductCard,
+
+    /// <summary>
+    /// 留言管理（comment/open / close / list / markelect / unmarkelect / delete / reply/add / reply/delete 共 8 端点，仅认证 + 留言权限）。
+    /// </summary>
+    /// <remarks>
+    /// 域级约束：需留言功能权限（88000）；均以 msg_data_id + index 定位文章（非 article_id）；
+    /// 评论列表 count 50 以内（88010）。
+    /// </remarks>
+    Comment,
+
+    /// <summary>
+    /// 数据统计（21 端点单域承载：用户 2 + 图文 10 + 消息 7 + 接口 2；全部 POST /datacube/*、请求体同构——N3 裁决不拆 4 域）。
+    /// </summary>
+    /// <remarks>
+    /// 域级约束：适用范围全部「公众号 / 服务号 —— 仅认证」；跨度上限措辞逐端点核验（7 天 / 15 天 / 30 天 / 1 天 /
+    /// 必须为同一天——详见 MpDateRangeRequest remarks）；旧图文 6 端点官方声明已停止维护（照常建模并标注）；
+    /// 越界由官方 61501 表达，SDK 不做本地校验。
+    /// </remarks>
+    DataCube,
+
+    /// <summary>
     /// 令牌签发（<c>getAccessToken</c> + <c>getStableAccessToken</c>）：随 <c>AddMpApp</c> 自动注册，
     /// 本枚举成员仅供模块清单对齐使用（不作为 <c>AddAuthenticationApi()</c> 的必要入口）。
     /// </summary>
     Authentication,
+
+    /// <summary>
+    /// 素材管理（临时素材上传 1 端点 + 下载通道 2 端点；永久素材与 uploadimg 随 P0-b 批次并入本域）。
+    /// </summary>
+    /// <remarks>
+    /// 域级约束：临时素材 3 天有效且可复用；类型大小限制逐类核验（image 10M / voice 2M·60s /
+    /// video 10M / thumb 64KB；官方页面内两处表述不一致，以字段表为口径，详见接口 remarks）。
+    /// <b>双通道</b>：上传（JSON 响应）走生成管线；下载（<c>media/get</c> / <c>media/get/jssdk</c>，
+    /// 文件流响应）走 <c>IMpMediaDownloadService</c> 独立请求形态（Content-Type 分支判错）。
+    /// </remarks>
+    Media,
 }

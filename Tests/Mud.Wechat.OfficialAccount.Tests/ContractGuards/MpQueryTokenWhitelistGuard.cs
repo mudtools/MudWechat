@@ -46,6 +46,18 @@ public class MpQueryTokenWhitelistGuard
             nameof(IMpCustomerMessageService),    // 客服消息·客服消息（3 端点）
             nameof(IMpKfAccountService),          // 客服消息·客服管理（7 端点）
             nameof(IMpKfSessionService),          // 客服消息·会话控制（5 端点）
+            nameof(IMpMediaService),              // 素材管理·上传通道（下载通道 IMpMediaDownloadService 无 [Token]，手工注入）
+            nameof(IMpTemplateService),           // 模板消息（7 端点，服务号专属）
+            nameof(IMpSubscriptionNoticeService), // 订阅通知（7 端点，服务号专属；bizsend + /wxaapi/newtmpl/*）
+            nameof(IMpOpenApiService),            // openApi 管理（4 端点；clear_quota/v2 免令牌接口 IMpOpenApiTokenFreeService 无 [Token]，不入白名单）
+            nameof(IMpMassMessageService),        // 群发消息（7 端点；uploadnews 废弃不建模、uploadimg 归素材域）
+            nameof(IMpQrcodeService),             // 带参二维码（1 端点，服务号专属）
+            nameof(IMpAutoReplyService),          // 自动回复（1 端点只读查询）
+            nameof(IMpDraftService),              // 草稿管理（6 端点；draft/switch 废弃不实现）
+            nameof(IMpFreePublishService),        // 发布能力（5 端点，仅认证）
+            nameof(IMpProductCardService),        // 商品卡片（1 端点；/channels/ec/ 前缀）
+            nameof(IMpCommentService),            // 留言管理（8 端点，仅认证 + 留言权限）
+            nameof(IMpDataCubeService),           // 数据统计（21 端点单域承载，仅认证）
         }, "公众号官方契约强制 Query 注入（MUD005 已知接受风险）；新增 Query 注入接口须先评估再显式扩展本白名单");
 
         // 防静默空跑：白名单非空且每条均为 Query 注入（若发现机制失效，上面 BeEquivalentTo 会退化为真空断言）。

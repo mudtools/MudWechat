@@ -201,9 +201,10 @@ public class MpCallbackReceiverTests
         var registry = new MpPayloadContractRegistry();
         MpPayloadContracts.RegisterAll(registry);
 
-        registry.RegisteredKeys.Should().HaveCount(45,
+        registry.RegisteredKeys.Should().HaveCount(48,
             "已核验键全集：7 消息 + 13 事件（9 菜单 + subscribe/unsubscribe/SCAN/LOCATION）" +
-            "+ 13 卡券（12 小节，审核小节含通过与不通过两键）+ 3 用户授权变更 + 3 订阅通知 + 6 微信认证");
+            "+ 13 卡券（12 小节，审核小节含通过与不通过两键）+ 3 用户授权变更 + 3 订阅通知 + 6 微信认证" +
+            "+ 3 发送结果事件（群发 MASSSENDJOBFINISH 1 + 模板大写/小写双形态 2）");
         registry.RegisteredKeys.Should().Contain(new[]
         {
             MpCallbackEventTypes.Subscribe,
@@ -242,6 +243,9 @@ public class MpCallbackReceiverTests
             MpCallbackEventTypes.PicWeixin,
             MpCallbackEventTypes.LocationSelect,
             MpCallbackEventTypes.ViewMiniProgram,
+            MpSendJobFinishEventTypes.MassSendJobFinish,
+            MpSendJobFinishEventTypes.TemplateSendJobFinish,
+            MpSendJobFinishEventTypes.TemplateSendJobFinishLowered,
         });
     }
 

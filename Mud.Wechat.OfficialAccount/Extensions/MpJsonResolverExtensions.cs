@@ -8,12 +8,25 @@
 #if NET8_0_OR_GREATER
 using System.Text.Json.Serialization.Metadata;
 using Mud.Wechat.OfficialAccount.DataModels;
+using Mud.Wechat.OfficialAccount.DataModels.AutoReply;
 using Mud.Wechat.OfficialAccount.DataModels.Basic;
+using Mud.Wechat.OfficialAccount.DataModels.Comment;
 using Mud.Wechat.OfficialAccount.DataModels.CustomerMessage;
+using Mud.Wechat.OfficialAccount.DataModels.DataCube;
 using Mud.Wechat.OfficialAccount.DataModels.KfAccount;
+using Mud.Wechat.OfficialAccount.DataModels.Mass;
+using Mud.Wechat.OfficialAccount.DataModels.Qrcode;
 using Mud.Wechat.OfficialAccount.DataModels.KfSession;
+using Mud.Wechat.OfficialAccount.DataModels.Draft;
+using Mud.Wechat.OfficialAccount.DataModels.FreePublish;
+using Mud.Wechat.OfficialAccount.DataModels.Media;
 using Mud.Wechat.OfficialAccount.DataModels.Menu;
+using Mud.Wechat.OfficialAccount.DataModels.OpenApi;
+using Mud.Wechat.OfficialAccount.DataModels.ProductCard;
+using Mud.Wechat.OfficialAccount.DataModels.SubscriptionNotice;
+using Mud.Wechat.OfficialAccount.DataModels.Sns;
 using Mud.Wechat.OfficialAccount.DataModels.Tag;
+using Mud.Wechat.OfficialAccount.DataModels.Template;
 using Mud.Wechat.OfficialAccount.DataModels.User;
 using Mud.Wechat.OfficialAccount.DataModels.WebDev;
 
@@ -39,7 +52,10 @@ public static class MpJsonResolverExtensions
     public static void ConfigureDataModelsResolver(IServiceCollection services)
     {
         var resolver = JsonTypeInfoResolver.Combine(
+            AutoReplyJsonContext.Default,
+            CommentJsonContext.Default,
             CommonJsonContext.Default,
+            DataCubeJsonContext.Default,
             BasicJsonContext.Default,
             TagJsonContext.Default,
             UserJsonContext.Default,
@@ -47,6 +63,16 @@ public static class MpJsonResolverExtensions
             CustomerMessageJsonContext.Default,
             KfAccountJsonContext.Default,
             KfSessionJsonContext.Default,
+            MassJsonContext.Default,
+            DraftJsonContext.Default,
+            FreePublishJsonContext.Default,
+            MediaJsonContext.Default,
+            ProductCardJsonContext.Default,
+            QrcodeJsonContext.Default,
+            TemplateJsonContext.Default,
+            SubscriptionNoticeJsonContext.Default,
+            OpenApiJsonContext.Default,
+            SnsJsonContext.Default,
             WebDevJsonContext.Default);
         services.AddMudHttpClientJsonContext(resolver);
     }

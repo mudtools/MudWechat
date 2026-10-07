@@ -217,17 +217,27 @@ public class MpCallbackContractGuards
             .Where(f => f.IsLiteral)
             .Select(f => (string)f.GetRawConstantValue()!)
             .ToList();
+        var sendJobFinishKeys = typeof(MpSendJobFinishEventTypes)
+            .GetFields(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)
+            .Where(f => f.IsLiteral)
+            .Select(f => (string)f.GetRawConstantValue()!)
+            .ToList();
 
         // 消息键 8 个常量（含 event）⇒ 7 个普通消息键；事件键 13 个（9 菜单 + 4 通用）；
-        // 卡券 13 个（含审核通过/不通过两键）；用户授权变更 3 个；订阅通知 3 个；微信认证 6 个。
+        // 卡券 13 个（含审核通过/不通过两键）；用户授权变更 3 个；订阅通知 3 个；微信认证 6 个；
+        // 发送结果事件 3 个（群发大写 + 模板大写/小写双形态）。
         messageKeys.Should().HaveCount(8);
         eventKeys.Should().HaveCount(13);
         cardKeys.Should().HaveCount(13);
         authorizationKeys.Should().HaveCount(3);
         subscriptionKeys.Should().HaveCount(3);
         verificationKeys.Should().HaveCount(6);
+        sendJobFinishKeys.Should().HaveCount(3,
+            "群发 MASSSENDJOBFINISH 1 + 模板 TEMPLATESENDJOBFINISH/templatesendjobfinish 大小写双形态 2 " +
+            "（官方现网示例为大写、历史资料通行小写——官方页无大小写说明，双键并存）");
         // 跨族不得撞键（官方键全局唯一，撞键会让注册表相互覆盖）。
         eventKeys.Concat(cardKeys).Concat(authorizationKeys).Concat(subscriptionKeys).Concat(verificationKeys)
+            .Concat(sendJobFinishKeys)
             .Should().OnlyHaveUniqueItems();
 
         // V6 已核验：菜单事件键**恰为官方页列出的 9 个**（media_id / view_limited 当前官方页未列出，

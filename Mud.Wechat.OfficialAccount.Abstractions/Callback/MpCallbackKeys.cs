@@ -61,12 +61,14 @@ public static class MpCallbackMessageTypes
 }
 
 /// <summary>
-/// 被动回复的消息类型（<c>MsgType</c>）取值（官方「被动回复用户消息」页，V9 已核验）。
+/// 被动回复的消息类型（<c>MsgType</c>）取值（官方「被动回复用户消息」页 V9 已核验六型 +
+/// 「将消息转发到客服」页 P0-e 已核验的转客服型）。
 /// </summary>
 /// <remarks>
 /// <b>与 <see cref="MpCallbackMessageTypes"/> 的区别</b>：后者是**收到**的消息类型（含 <c>shortvideo</c>/<c>location</c>/<c>link</c>），
-/// 本类是**回复**的消息类型（含 <c>music</c>/<c>news</c>，不含 <c>shortvideo</c>/<c>location</c>/<c>link</c>）——
-/// 两组键**不可混用**。官方另有灰度中的 <c>transfer_biz_ai_ivr</c>（仅公共字段），本轮不建模。
+/// 本类是**回复**的消息类型（含 <c>music</c>/<c>news</c>/<c>transfer_customer_service</c>，不含 <c>shortvideo</c>/<c>location</c>/<c>link</c>）——
+/// 两组键**不可混用**。官方另有灰度中的 <c>transfer_biz_ai_ivr</c>（转接 AI 回复，2026-10-07 核验页面仅给形态说明）
+/// ——灰度中且无字段表，本轮不建模。
 /// </remarks>
 public static class MpCallbackReplyTypes
 {
@@ -87,6 +89,12 @@ public static class MpCallbackReplyTypes
 
     /// <summary>图文回复（<c>ArticleCount</c> + <c>Articles/item</c>；官方上限 8 条，六类消息场景仅 1 条）。</summary>
     public const string News = "news";
+
+    /// <summary>
+    /// 转发到客服（官方「将消息转发到客服」页，P0-e 已核验）：回复本类型即把当次用户消息转给客服系统；
+    /// 可附 <c>TransInfo/KfAccount</c> 指定客服账号（I1 补齐；**不消耗 48 小时客服下发额度**——转客服不走客服消息接口）。
+    /// </summary>
+    public const string TransferToCustomerService = "transfer_customer_service";
 }
 
 /// <summary>
@@ -273,4 +281,36 @@ public static class MpVerificationEventTypes
 
     /// <summary>认证过期失效通知（<c>ExpiredTime</c> 为已过期时间，需重新发起微信认证）。</summary>
     public const string VerifyExpired = "verify_expired";
+}
+
+/// <summary>
+/// 消息发送结果事件的 <c>Event</c> 取值（P0-e 已核验：模板结果事件见服务号模板消息指南页「事件推送」节、
+/// 群发结果事件见群发消息指南页「4、事件推送群发结果」节；均为 2026-10-07 实抓）。
+/// </summary>
+/// <remarks>
+/// <para>
+/// <b>大小写漂移（官方文档失真，照实建模）</b>：官方现网示例 Event 值为<b>全大写</b>
+/// <c>TEMPLATESENDJOBFINISH</c>/<c>MASSSENDJOBFINISH</c>；历史资料通行小写驼峰
+/// （<c>templatesendjobfinish</c>/<c>masssendjobfinish</c>），官方页未说明大小写规则
+/// ⇒ 载荷契约<b>双键登记</b>（大写 + 小写各一声明），两形态报文均可命中强类型载荷。
+/// </para>
+/// <para>
+/// <b>客服会话事件不建模（官方文档失存裁决）</b>：<c>kf_create_session</c>/<c>kf_close_session</c>/
+/// <c>kf_switch_session</c> 在官方现网两棵文档树（服务号 / 订阅号）均<b>无任何页面</b>
+/// （旧 Customer_Service 页 301 粗映射后内容不含事件；全站扫描 0 命中，2026-10-07 多路核验）
+/// ——无官方字段表即无法逐页核验建模，按 V6 先例（media_id/view_limited 处置）<b>不做假设性建模</b>；
+/// 真实收到时经信封降级为 <see cref="Payloads.GenericCallbackPayload"/>（不丢事件），
+/// 待官方文档恢复或实测报文后另行立项。
+/// </para>
+/// </remarks>
+public static class MpSendJobFinishEventTypes
+{
+    /// <summary>群发结果事件（官方示例 Event 值为大写；FromUserName 恒为群发助手 mphelper）。</summary>
+    public const string MassSendJobFinish = "MASSSENDJOBFINISH";
+
+    /// <summary>模板消息发送结果事件（官方示例 Event 值为大写）。</summary>
+    public const string TemplateSendJobFinish = "TEMPLATESENDJOBFINISH";
+
+    /// <summary>模板消息发送结果事件的小写形态（历史资料通行写法；与官方大写形态<b>双键并存</b>，命中同一载荷）。</summary>
+    public const string TemplateSendJobFinishLowered = "templatesendjobfinish";
 }

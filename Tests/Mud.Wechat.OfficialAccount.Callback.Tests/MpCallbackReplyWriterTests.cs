@@ -60,6 +60,23 @@ public class MpCallbackReplyWriterTests
         root.Element("Content")!.Value.Should().Be("a<b>&\"c\"");
     }
 
+    /// <summary>
+    /// 转客服（I1 补齐的第七型）：基本形态仅 MsgType；指定客服形态附 <c>TransInfo/KfAccount</c>
+    /// （官方「将消息转发到客服」页两种 XML 形态）。
+    /// </summary>
+    [Fact]
+    public void TransferToCustomerService_ShouldEmitOptionalTransInfo()
+    {
+        var basic = WriteXml(MpCallbackReply.TransferToCustomerService(), MpCallbackSecurityMode.Plain);
+        basic.Element("MsgType")!.Value.Should().Be("transfer_customer_service");
+        basic.Element("TransInfo").Should().BeNull("基本形态无专有字段（官方示例仅 4 公共节点）");
+
+        var assigned = WriteXml(
+            MpCallbackReply.TransferToCustomerService("test1@test"), MpCallbackSecurityMode.Plain);
+        assigned.Element("MsgType")!.Value.Should().Be("transfer_customer_service");
+        assigned.Element("TransInfo")!.Element("KfAccount")!.Value.Should().Be("test1@test");
+    }
+
     /// <summary>图片 / 语音：官方容器 <c>Image</c> / <c>Voice</c> 内为 <c>MediaId</c>。</summary>
     [Fact]
     public void ImageAndVoice_ShouldUseOfficialContainers()

@@ -429,7 +429,7 @@ public sealed class WechatCallbackReceiver : IWechatCallbackReceiver
         // 登记进源缓存（此处完成本次请求唯一的一次 XML 解析）
         var root = string.IsNullOrEmpty(decryptedXml)
             ? null
-            : _payloadSourceCache.GetOrCreate(evt).Root;
+            : _payloadSourceCache.GetOrCreate(evt, decryptedXml).Root;
 
         // 明文缺失或非法 XML（协议外报文）时缓存的 Root 为 null ⇒ 字段保持为空、原文保留（不抛）。
         // 注：XmlException 已由 WechatPayloadSourceCache 在解析点吞掉，此处无需再捕获。

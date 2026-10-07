@@ -21,14 +21,14 @@
 	<!-- 契约登记生成器（本仓侧）：依据 [WechatCallbackContract] 特性发射 OfficialPayloadContracts.RegisterAll
 	     方法体。仅本工程消费（PrivateAssets 不流向主包）；工程 IsPackable=false，不进发布链的「恰 5 nupkg」。 -->
 	<ItemGroup>
-		<ProjectReference Include="..\Mud.Wechat.Work.Callback.Generator\Mud.Wechat.Work.Callback.Generator.csproj"
+		<ProjectReference Include="..\Mud.Wechat.Callback.Generator\Mud.Wechat.Callback.Generator.csproj"
 		                  OutputItemType="Analyzer" ReferenceOutputAssembly="false" PrivateAssets="all" />
 	</ItemGroup>
 
 	<!-- 回调处理器契约分析器（本仓侧）：校验 SupportedEventType ↔ 载荷契约一致性（MUDCB002~005）。
 	     仅诊断、不发射 ⇒ 允许随包下发（analyzers/dotnet/cs）；工程 IsPackable=false，不新增第 6 个 nupkg。 -->
 	<ItemGroup>
-		<ProjectReference Include="..\Mud.Wechat.Work.Callback.Analyzers\Mud.Wechat.Work.Callback.Analyzers.csproj"
+		<ProjectReference Include="..\Mud.Wechat.Callback.Analyzers\Mud.Wechat.Callback.Analyzers.csproj"
 		                  OutputItemType="Analyzer" ReferenceOutputAssembly="false" PrivateAssets="all" />
 	</ItemGroup>
 
@@ -50,7 +50,7 @@
 	     用 ItemGroup 而非 Target —— Pack="true" 的 None item 须在 _CollectPackageFiles 之前的 evaluation 阶段就存在。
 	     只挑本仓分析器 DLL；Mud.HttpUtils.Generator（独立包）与本仓 Callback.Generator（发射器，IsPackable=false）不内嵌。 -->
 	<ItemGroup>
-		<None Include="$(MSBuildThisFileDirectory)..\Mud.Wechat.Work.Callback.Analyzers\bin\$(Configuration)\netstandard2.0\Mud.Wechat.Work.Callback.Analyzers.dll"
+		<None Include="$(MSBuildThisFileDirectory)..\Mud.Wechat.Callback.Analyzers\bin\$(Configuration)\netstandard2.0\Mud.Wechat.Callback.Analyzers.dll"
 		      Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
 	</ItemGroup>
 

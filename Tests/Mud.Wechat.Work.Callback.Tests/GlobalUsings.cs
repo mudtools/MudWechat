@@ -9,6 +9,7 @@ global using System.Threading;
 global using System.Threading.Tasks;
 global using Microsoft.Extensions.Logging.Abstractions;
 global using Microsoft.Extensions.Options;
+global using Mud.Wechat.Abstractions.Callback;
 global using Mud.Wechat.Work.Abstractions.Authentication;
 global using Mud.Wechat.Work.Abstractions.Authentication.TokenManager;
 global using Mud.Wechat.Work.Abstractions.Callback;

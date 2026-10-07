@@ -1,0 +1,1068 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TestRun id="a2c4e147-d226-4c76-9f6d-e4a9a277c3cf" name="xia@XIA-PC 2026-10-07 09:28:02" runUser="xia-pc\xia" xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
+  <Times creation="2026-10-07T09:28:02.8782433+08:00" queuing="2026-10-07T09:28:02.8782437+08:00" start="2026-10-07T09:28:02.1482965+08:00" finish="2026-10-07T09:28:02.9739497+08:00" />
+  <TestSettings name="default" id="122f2a06-a90d-4fc8-b128-73c63524651f">
+    <Deployment runDeploymentRoot="xia_XIA-PC_2026-10-07_09_28_02" />
+  </TestSettings>
+  <Results>
+    <UnitTestResult executionId="6382a552-f2b7-40b5-924d-f57d30efe4f1" testId="b3fee2c3-68a5-f004-7e3c-4bbc60ff2212" testName="Mud.Wechat.OfficialAccount.Callback.Tests.MpCallbackReceiverTests.Receive_SafeMode_ShouldRejectPlainText" computerName="XIA-PC" duration="00:00:00.0013771" startTime="2026-10-07T09:28:02.8113283+08:00" endTime="2026-10-07T09:28:02.8113286+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="6382a552-f2b7-40b5-924d-f57d30efe4f1" />
+    <UnitTestResult executionId="05a7562b-05df-40c9-8ada-64db47840dce" testId="37cb30e5-f8c5-08ce-74b6-049ef200960f" testName="Mud.Wechat.OfficialAccount.Callback.Tests.MpCallbackReceiverTests.Receive_ShouldTolerateDtdPayload" computerName="XIA-PC" duration="00:00:00.0022816" startTime="2026-10-07T09:28:02.8519773+08:00" endTime="2026-10-07T09:28:02.8519775+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="05a7562b-05df-40c9-8ada-64db47840dce" />
+    <UnitTestResult executionId="9fb52fdb-9ab8-4058-94a5-5163fb39dbe6" testId="6b7d67fe-1cbf-aa69-b68e-9b1f73db2cb1" testName="Mud.Wechat.OfficialAccount.Callback.Tests.MpCallbackContractGuards.SignaturePolicy_ShouldBeFourParamOnPostAndConstantTime" computerName="XIA-PC" duration="00:00:00.0778689" startTime="2026-10-07T09:28:02.8902143+08:00" endTime="2026-10-07T09:28:02.8902146+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Failed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="9fb52fdb-9ab8-4058-94a5-5163fb39dbe6">
+      <Output>
+        <ErrorInfo>
+          <Message>Expected receiver "// -----------------------------------------------------------------------&#xD;
+//  作者：Mud Studio  版权所有 (c) Mud Studio 2026&#xD;
+//  Mud.Wechat 项目的版权、商标、专利和其他相关权利均受相应法律法规的保护。&#xD;
+//  本项目主要遵循 MIT 许可证进行分发和使用。许可证位于源代码树根目录中的 LICENSE-MIT 文件。&#xD;
+//  不得利用本项目从事危害国家安全、扰乱社会秩序、侵犯他人合法权益等法律法规禁止的活动！任何基于本项目开发而产生的一切法律纠纷和责任，我们不承担任何责任！&#xD;
+// -----------------------------------------------------------------------&#xD;
+&#xD;
+using System.Globalization;&#xD;
+using System.Security.Cryptography;&#xD;
+using System.Xml;&#xD;
+using System.Xml.Linq;&#xD;
+using Mud.Wechat.Abstractions.Callback;&#xD;
+using Mud.Wechat.OfficialAccount.Abstractions.Callback;&#xD;
+&#xD;
+namespace Mud.Wechat.OfficialAccount.Callback;&#xD;
+&#xD;
+/// &lt;summary&gt;&#xD;
+/// 公众号回调接收器：URL 验证（GET 回显）与消息推送（三模式 + 双验签 + appid 校验 + 抗重放指纹）。&#xD;
+/// &lt;/summary&gt;&#xD;
+/// &lt;remarks&gt;&#xD;
+/// &lt;para&gt;&#xD;
+/// &lt;b&gt;双验签（官方明确要求）&lt;/b&gt;：GET 用 3 参 &lt;c&gt;signature&lt;/c&gt;（&lt;c&gt;sort(token,timestamp,nonce)&lt;/c&gt;，&lt;b&gt;不含&lt;/b&gt; echostr）；&#xD;
+/// POST 用 4 参 &lt;c&gt;msg_signature&lt;/c&gt;（含包体内 &lt;c&gt;Encrypt&lt;/c&gt;）。官方原文警告「不要使用 signature 验证！」⇒&#xD;
+/// POST 路径**禁止**回落到 &lt;c&gt;signature&lt;/c&gt;（守卫 CB-MP-2 + 反例用例）。&#xD;
+/// &lt;/para&gt;&#xD;
+/// &lt;para&gt;&#xD;
+/// &lt;b&gt;三模式&lt;/b&gt;：安全模式仅收密文（明文 403）；兼容模式按&lt;b&gt;请求实际形态&lt;/b&gt;分支；明文模式仅收明文。&#xD;
+/// &lt;/para&gt;&#xD;
+/// &lt;para&gt;&#xD;
+/// &lt;b&gt;抗重放&lt;/b&gt;：指纹闸在「解密 + appid 校验成功」之后、事件返回之前消费（解密失败不消耗指纹 ⇒ 官方重试可重入）；&#xD;
+/// GET 回显只过时效闸、&lt;b&gt;不消费指纹&lt;/b&gt;（同 echostr 二次保存配置必须成功）。&#xD;
+/// &lt;/para&gt;&#xD;
+/// &lt;/remarks&gt;&#xD;
+public interface IMpCallbackReceiver&#xD;
+{&#xD;
+    /// &lt;summary&gt;接收 POST 消息推送并解析为信封。&lt;/summary&gt;&#xD;
+    /// &lt;param name="appKey"&gt;路由提取的应用键。&lt;/param&gt;&#xD;
+    /// &lt;param name="urlQuery"&gt;回调 URL 查询串（可含前导 &lt;c&gt;?&lt;/c&gt;）。&lt;/param&gt;&#xD;
+    /// &lt;param name="body"&gt;请求体原文（XML）。&lt;/param&gt;&#xD;
+    /// &lt;param name="cancellationToken"&gt;取消令牌。&lt;/param&gt;&#xD;
+    /// &lt;returns&gt;解密并解析后的信封。&lt;/returns&gt;&#xD;
+    /// &lt;exception cref="WechatCallbackException"&gt;验签失败、时效越界、重放、解密失败或 appid 不匹配时抛出。&lt;/exception&gt;&#xD;
+    Task&lt;MpCallbackEnvelope&gt; ReceiveAsync(&#xD;
+        string appKey, string urlQuery, string body, CancellationToken cancellationToken = default);&#xD;
+&#xD;
+    /// &lt;summary&gt;处理 GET URL 验证并返回应回写的明文（= &lt;c&gt;echostr&lt;/c&gt; 原文）。&lt;/summary&gt;&#xD;
+    /// &lt;param name="appKey"&gt;路由提取的应用键。&lt;/param&gt;&#xD;
+    /// &lt;param name="urlQuery"&gt;回调 URL 查询串。&lt;/param&gt;&#xD;
+    /// &lt;param name="cancellationToken"&gt;取消令牌。&lt;/param&gt;&#xD;
+    /// &lt;returns&gt;回写体（&lt;c&gt;echostr&lt;/c&gt; 原文）。&lt;/returns&gt;&#xD;
+    /// &lt;exception cref="WechatCallbackException"&gt;验签失败、时效越界或 echostr 解密后的 appid 不匹配时抛出。&lt;/exception&gt;&#xD;
+    Task&lt;string&gt; EchoAsync(string appKey, string urlQuery, CancellationToken cancellationToken = default);&#xD;
+}&#xD;
+&#xD;
+/// &lt;inheritdoc cref="IMpCallbackReceiver" /&gt;&#xD;
+public sealed class MpCallbackReceiver : IMpCallbackReceiver&#xD;
+{&#xD;
+    private readonly IOptionsMonitor&lt;MpCallbackOptions&gt; _optionsMonitor;&#xD;
+    private readonly IWechatCallbackReplayGuard _replayGuard;&#xD;
+    private readonly Func&lt;DateTimeOffset&gt; _utcNow;&#xD;
+    private readonly ILogger&lt;MpCallbackReceiver&gt;? _logger;&#xD;
+&#xD;
+    /// &lt;summary&gt;创建回调接收器。&lt;/summary&gt;&#xD;
+    /// &lt;param name="optionsMonitor"&gt;回调配置监视器（请求期热更）。&lt;/param&gt;&#xD;
+    /// &lt;param name="replayGuard"&gt;抗重放守卫（默认进程内实现）。&lt;/param&gt;&#xD;
+    /// &lt;param name="utcNow"&gt;当前时间提供器（测试可注入）。&lt;/param&gt;&#xD;
+    /// &lt;param name="logger"&gt;日志器。&lt;/param&gt;&#xD;
+    public MpCallbackReceiver(&#xD;
+        IOptionsMonitor&lt;MpCallbackOptions&gt; optionsMonitor,&#xD;
+        IWechatCallbackReplayGuard replayGuard,&#xD;
+        Func&lt;DateTimeOffset&gt;? utcNow = null,&#xD;
+        ILogger&lt;MpCallbackReceiver&gt;? logger = null)&#xD;
+    {&#xD;
+        _optionsMonitor = optionsMonitor ?? throw new ArgumentNullException(nameof(optionsMonitor));&#xD;
+        _replayGuard = replayGuard ?? throw new ArgumentNullException(nameof(replayGuard));&#xD;
+        _utcNow = utcNow ?? (() =&gt; DateTimeOffset.UtcNow);&#xD;
+        _logger = logger;&#xD;
+    }&#xD;
+&#xD;
+    /// &lt;inheritdoc /&gt;&#xD;
+    public async Task&lt;MpCallbackEnvelope&gt; ReceiveAsync(&#xD;
+        string appKey, string urlQuery, string body, CancellationToken cancellationToken = default)&#xD;
+    {&#xD;
+        var options = _optionsMonitor.CurrentValue;&#xD;
+        var app = ResolveApp(options, appKey);&#xD;
+        var mode = app.ResolveMode(options.DefaultSecurityMode);&#xD;
+        var query = WechatCallbackQuery.Parse(urlQuery);&#xD;
+&#xD;
+        var timestamp = query.TryGetValue("timestamp", out var ts) ? ts : null;&#xD;
+        var nonce = query.TryGetValue("nonce", out var n) ? n : null;&#xD;
+        query.TryGetValue("msg_signature", out var msgSignature);&#xD;
+        query.TryGetValue("signature", out var signature);&#xD;
+        query.TryGetValue("encrypt_type", out var encryptType);&#xD;
+&#xD;
+        var encrypt = ExtractEncrypt(body);&#xD;
+        var isEncrypted = encrypt != null;&#xD;
+&#xD;
+        string plaintext;&#xD;
+        string fingerprint;&#xD;
+&#xD;
+        if (isEncrypted)&#xD;
+        {&#xD;
+            // —— 密文分支：4 参 msg_signature（**禁止**用 signature 验 POST）——&#xD;
+            if (string.IsNullOrEmpty(msgSignature))&#xD;
+            {&#xD;
+                throw new WechatCallbackException(&#xD;
+                    WechatCallbackFailureKind.MissingSignature, "回调验签失败：缺少 msg_signature 参数。");&#xD;
+            }&#xD;
+&#xD;
+            var expected = WechatCallbackCrypto.ComputeSignature(&#xD;
+                app.PushToken, timestamp ?? string.Empty, nonce ?? string.Empty, encrypt!);&#xD;
+            if (!FixedTimeEquals(expected, msgSignature!))&#xD;
+            {&#xD;
+                throw new WechatCallbackException(&#xD;
+                    WechatCallbackFailureKind.InvalidSignature,&#xD;
+                    "回调验签失败：msg_signature 不匹配（请检查 PushToken 配置）。");&#xD;
+            }&#xD;
+&#xD;
+            ValidateTimestampWindow(options, timestamp);&#xD;
+            ValidateNonce(nonce);&#xD;
+&#xD;
+            plaintext = WechatCallbackCrypto.Decrypt(app.PushEncodingAESKey, encrypt!, out var receiveId);&#xD;
+            if (!string.Equals(receiveId, app.AppId, StringComparison.Ordinal))&#xD;
+            {&#xD;
+                throw new WechatCallbackException(&#xD;
+                    WechatCallbackFailureKind.ReceiveIdMismatch,&#xD;
+                    "回调验签失败：解密明文尾部的 appid 与配置 AppId 不一致（官方要求校验该值是否与自身公众号相符）。");&#xD;
+            }&#xD;
+&#xD;
+            // P2-3：同一次 SHA1 结果先做验签比对，解密成功后再作为一次性指纹 —— 指纹取材于密文，密文缺失则不可得。&#xD;
+            fingerprint = expected;&#xD;
+        }&#xD;
+        else&#xD;
+        {&#xD;
+            // —— 明文分支：安全模式一律拒收；明文/兼容模式用 3 参 signature 验签 ——&#xD;
+            if (mode == MpCallbackSecurityMode.Safe)&#xD;
+            {&#xD;
+                throw new WechatCallbackException(&#xD;
+                    WechatCallbackFailureKind.PlainTextRejected,&#xD;
+                    "回调拒收：当前公众号配置为安全模式（纯密文），明文推送一律拒绝。");&#xD;
+            }&#xD;
+&#xD;
+            if (string.IsNullOrEmpty(signature))&#xD;
+            {&#xD;
+                throw new WechatCallbackException(&#xD;
+                    WechatCallbackFailureKind.MissingSignature, "回调验签失败：缺少 signature 参数（明文模式）。");&#xD;
+            }&#xD;
+&#xD;
+            var expected = WechatCallbackCrypto.ComputeSignature(&#xD;
+                app.PushToken, timestamp ?? string.Empty, nonce ?? string.Empty);&#xD;
+            if (!FixedTimeEquals(expected, signature!))&#xD;
+            {&#xD;
+                throw new WechatCallbackException(&#xD;
+                    WechatCallbackFailureKind.InvalidSignature,&#xD;
+                    "回调验签失败：signature 不匹配（请检查 PushToken 配置）。");&#xD;
+            }&#xD;
+&#xD;
+            ValidateTimestampWindow(options, timestamp);&#xD;
+            ValidateNonce(nonce);&#xD;
+&#xD;
+            plaintext = body;&#xD;
+            // 明文模式无密文可取材：以「时效参数 + 明文包体」计算传输级摘要（非签名值，仅作一次性指纹）。&#xD;
+            fingerprint = WechatCallbackCrypto.ComputeSignature(&#xD;
+                string.Empty, timestamp ?? string.Empty, nonce ?? string.Empty, plaintext);&#xD;
+        }&#xD;
+&#xD;
+        if (app.RequireReplayGuard)&#xD;
+        {&#xD;
+            var window = TimeSpan.FromSeconds(options.AllowClockSkewSeconds);&#xD;
+            if (!await _replayGuard.TryMarkAsync(fingerprint, window, cancellationToken).ConfigureAwait(false))&#xD;
+            {&#xD;
+                throw new WechatCallbackException(&#xD;
+                    WechatCallbackFailureKind.ReplaySuspected, "回调验签失败：报文已处理过（疑似重放）。");&#xD;
+            }&#xD;
+        }&#xD;
+&#xD;
+        var envelope = new MpCallbackEnvelope&#xD;
+        {&#xD;
+            AppKey = appKey,&#xD;
+            DecryptedXml = plaintext,&#xD;
+            TimeStamp = timestamp,&#xD;
+            Nonce = nonce,&#xD;
+            EncryptType = encryptType,&#xD;
+            SecurityMode = mode,&#xD;
+            IsEncrypted = isEncrypted,&#xD;
+        };&#xD;
+&#xD;
+        FillEnvelopeFields(envelope, plaintext);&#xD;
+        return envelope;&#xD;
+    }&#xD;
+&#xD;
+    /// &lt;inheritdoc /&gt;&#xD;
+    public Task&lt;string&gt; EchoAsync(string appKey, string urlQuery, CancellationToken cancellationToken = default)&#xD;
+    {&#xD;
+        var options = _optionsMonitor.CurrentValue;&#xD;
+        var app = ResolveApp(options, appKey);&#xD;
+        var mode = app.ResolveMode(options.DefaultSecurityMode);&#xD;
+        var query = WechatCallbackQuery.Parse(urlQuery);&#xD;
+&#xD;
+        query.TryGetValue("signature", out var signature);&#xD;
+        query.TryGetValue("timestamp", out var timestamp);&#xD;
+        query.TryGetValue("nonce", out var nonce);&#xD;
+        query.TryGetValue("echostr", out var echoStr);&#xD;
+&#xD;
+        if (string.IsNullOrEmpty(signature))&#xD;
+        {&#xD;
+            throw new WechatCallbackException(&#xD;
+                WechatCallbackFailureKind.MissingSignature, "URL 验证失败：缺少 signature 参数。");&#xD;
+        }&#xD;
+&#xD;
+        if (string.IsNullOrEmpty(echoStr))&#xD;
+        {&#xD;
+            throw new WechatCallbackException(&#xD;
+                WechatCallbackFailureKind.MissingEncrypt, "URL 验证失败：缺少 echostr 参数。");&#xD;
+        }&#xD;
+&#xD;
+        // F3：URL 验证签名只含 token / timestamp / nonce（**不含** echostr）。&#xD;
+        var expected = WechatCallbackCrypto.ComputeSignature(&#xD;
+            app.PushToken, timestamp ?? string.Empty, nonce ?? string.Empty);&#xD;
+        if (!FixedTimeEquals(expected, signature!))&#xD;
+        {&#xD;
+            throw new WechatCallbackException(&#xD;
+                WechatCallbackFailureKind.InvalidSignature, "URL 验证失败：signature 不匹配（请检查 PushToken 配置）。");&#xD;
+        }&#xD;
+&#xD;
+        ValidateTimestampWindow(options, timestamp);&#xD;
+        // 幂等：GET 回显**不消费**指纹（平台会反复点「提交」，同 echostr 二次保存配置必须成功）。&#xD;
+&#xD;
+        // 安全/兼容模式下 echostr 为密文：解密校验 appid（明文模式无解密环节，跳过 —— 见方案 R4）。&#xD;
+        if (mode != MpCallbackSecurityMode.Plain)&#xD;
+        {&#xD;
+            try&#xD;
+            {&#xD;
+                WechatCallbackCrypto.Decrypt(app.PushEncodingAESKey, echoStr!, out var receiveId);&#xD;
+                if (!string.Equals(receiveId, app.AppId, StringComparison.Ordinal))&#xD;
+                {&#xD;
+                    throw new WechatCallbackException(&#xD;
+                        WechatCallbackFailureKind.ReceiveIdMismatch,&#xD;
+                        "URL 验证失败：echostr 解密出的 appid 与配置 AppId 不一致。");&#xD;
+                }&#xD;
+            }&#xD;
+            catch (WechatCallbackException ex) when (ex.Kind == WechatCallbackFailureKind.DecryptFailed)&#xD;
+            {&#xD;
+                // 兼容模式下平台可能以明文发送 echostr：此时无解密环节，跳过 appid 校验。&#xD;
+                _logger?.LogDebug("URL 验证的 echostr 非密文形态（兼容/明文模式），跳过 appid 校验。");&#xD;
+            }&#xD;
+        }&#xD;
+&#xD;
+        // F3：通过校验后「原样返回 echostr 参数内容」。&#xD;
+        return Task.FromResult(echoStr!);&#xD;
+    }&#xD;
+&#xD;
+    private static MpAppCallbackOptions ResolveApp(MpCallbackOptions options, string appKey)&#xD;
+        =&gt; options.ResolveApp(appKey)&#xD;
+           ?? throw new WechatCallbackException(&#xD;
+               WechatCallbackFailureKind.UnknownReceiver,&#xD;
+               $"回调配置未命中应用 \"{appKey}\"（既无精确键也无通配 \"{MpCallbackOptions.WildcardAppKey}\" 键）。");&#xD;
+&#xD;
+    private void ValidateTimestampWindow(MpCallbackOptions options, string? timestamp)&#xD;
+    {&#xD;
+        if (string.IsNullOrEmpty(timestamp)&#xD;
+            || !long.TryParse(timestamp, NumberStyles.Integer, CultureInfo.InvariantCulture, out var ts))&#xD;
+        {&#xD;
+            throw new WechatCallbackException(&#xD;
+                WechatCallbackFailureKind.MissingTimestamp, "回调验签失败：timestamp 缺失或非数字。");&#xD;
+        }&#xD;
+&#xD;
+        var now = _utcNow().ToUnixTimeSeconds();&#xD;
+        if (Math.Abs(now - ts) &gt; options.AllowClockSkewSeconds)&#xD;
+        {&#xD;
+            throw new WechatCallbackException(&#xD;
+                WechatCallbackFailureKind.TimestampOutOfRange,&#xD;
+                $"回调验签失败：timestamp 超出时效窗口（±{options.AllowClockSkewSeconds}s），疑似重放或时钟偏差。");&#xD;
+        }&#xD;
+    }&#xD;
+&#xD;
+    private static void ValidateNonce(string? nonce)&#xD;
+    {&#xD;
+        if (string.IsNullOrEmpty(nonce))&#xD;
+        {&#xD;
+            throw new WechatCallbackException(WechatCallbackFailureKind.MissingNonce, "回调验签失败：nonce 缺失。");&#xD;
+        }&#xD;
+    }&#xD;
+&#xD;
+    /// &lt;summary&gt;常量时间比较（防时序侧信道）；&lt;c&gt;netstandard2.0&lt;/c&gt; 无 &lt;c&gt;CryptographicOperations&lt;/c&gt;，手工等价实现。&lt;/summary&gt;&#xD;
+    private static bool FixedTimeEquals(string expected, string actual)&#xD;
+    {&#xD;
+#if NET6_0_OR_GREATER&#xD;
+        return CryptographicOperations.FixedTimeEquals(&#xD;
+            Encoding.UTF8.GetBytes(expected), Encoding.UTF8.GetBytes(actual));&#xD;
+#else&#xD;
+        var a = Encoding.UTF8.GetBytes(expected);&#xD;
+        var b = Encoding.UTF8.GetBytes(actual);&#xD;
+        if (a.Length != b.Length)&#xD;
+        {&#xD;
+            return false;&#xD;
+        }&#xD;
+&#xD;
+        var diff = 0;&#xD;
+        for (var i = 0; i &lt; a.Length; i++)&#xD;
+        {&#xD;
+            diff |= a[i] ^ b[i];&#xD;
+        }&#xD;
+&#xD;
+        return diff == 0;&#xD;
+#endif&#xD;
+    }&#xD;
+&#xD;
+    /// &lt;summary&gt;提取包体内 &lt;c&gt;&amp;lt;Encrypt&amp;gt;&lt;/c&gt; 节点；缺失或非 XML 返回 &lt;c&gt;null&lt;/c&gt;（明文形态）。&lt;/summary&gt;&#xD;
+    private static string? ExtractEncrypt(string body)&#xD;
+    {&#xD;
+        var root = TryParseXml(body);&#xD;
+        var value = root?.Element("Encrypt")?.Value;&#xD;
+        return string.IsNullOrEmpty(value) ? null : value;&#xD;
+    }&#xD;
+&#xD;
+    /// &lt;summary&gt;填充信封公共与专有字段（明文非 XML 时字段留空，不抛 —— 协议外报文交兜底处理器）。&lt;/summary&gt;&#xD;
+    private static void FillEnvelopeFields(MpCallbackEnvelope envelope, string plaintext)&#xD;
+    {&#xD;
+        var root = TryParseXml(plaintext);&#xD;
+        if (root == null)&#xD;
+        {&#xD;
+            return;&#xD;
+        }&#xD;
+&#xD;
+        envelope.ToUserName = ElementText(root, "ToUserName");&#xD;
+        envelope.FromUserName = ElementText(root, "FromUserName");&#xD;
+        envelope.CreateTime = ElementText(root, "CreateTime");&#xD;
+        envelope.MsgType = ElementText(root, "MsgType");&#xD;
+        envelope.Event = ElementText(root, "Event");&#xD;
+        envelope.MsgId = ElementText(root, "MsgId");&#xD;
+        envelope.MsgDataId = ElementText(root, "MsgDataId");&#xD;
+        envelope.Idx = ElementText(root, "Idx");&#xD;
+    }&#xD;
+&#xD;
+    private static string? ElementText(XElement root, string name)&#xD;
+    {&#xD;
+        var element = root.Element(name);&#xD;
+        return element == null ? null : element.Value;&#xD;
+    }&#xD;
+&#xD;
+    /// &lt;summary&gt;&#xD;
+    /// 解析 XML（**显式禁用 DTD 与外部实体解析**，防 XXE / 十亿笑声）。&#xD;
+    /// &lt;/summary&gt;&#xD;
+    /// &lt;param name="xml"&gt;待解析文本。&lt;/param&gt;&#xD;
+    /// &lt;returns&gt;根元素；文本为空、非法或含 DTD 时返回 &lt;c&gt;null&lt;/c&gt;（不抛）。&lt;/returns&gt;&#xD;
+    private static XElement? TryParseXml(string? xml)&#xD;
+    {&#xD;
+        if (string.IsNullOrEmpty(xml))&#xD;
+        {&#xD;
+            return null;&#xD;
+        }&#xD;
+&#xD;
+        try&#xD;
+        {&#xD;
+            var settings = new XmlReaderSettings&#xD;
+            {&#xD;
+                DtdProcessing = DtdProcessing.Prohibit,&#xD;
+                XmlResolver = null,&#xD;
+                MaxCharactersFromEntities = 0,&#xD;
+            };&#xD;
+&#xD;
+            using var reader = XmlReader.Create(new StringReader(xml!), settings);&#xD;
+            return XDocument.Load(reader).Root;&#xD;
+        }&#xD;
+        catch (XmlException)&#xD;
+        {&#xD;
+            return null;&#xD;
+        }&#xD;
+    }&#xD;
+}&#xD;
+" to contain "ComputeSignature(
+                app.PushToken, timestamp ?? string.Empty, nonce ?? string.Empty);" because GET 回显 / 明文分支必须使用 3 参验签（不含 echostr）.</Message>
+          <StackTrace>   at FluentAssertions.Execution.XUnit2TestFramework.Throw(String message)&#xD;
+   at FluentAssertions.Execution.TestFrameworkProvider.Throw(String message)&#xD;
+   at FluentAssertions.Execution.DefaultAssertionStrategy.HandleFailure(String message)&#xD;
+   at FluentAssertions.Execution.AssertionScope.FailWith(Func`1 failReasonFunc)&#xD;
+   at FluentAssertions.Execution.AssertionScope.FailWith(Func`1 failReasonFunc)&#xD;
+   at FluentAssertions.Execution.AssertionScope.FailWith(String message, Object[] args)&#xD;
+   at FluentAssertions.Primitives.StringAssertions`1.Contain(String expected, String because, Object[] becauseArgs)&#xD;
+   at Mud.Wechat.OfficialAccount.Callback.Tests.MpCallbackContractGuards.SignaturePolicy_ShouldBeFourParamOnPostAndConstantTime() in D:\Repos\MudWechat\Tests\Mud.Wechat.OfficialAccount.Callback.Tests\MpCallbackContractGuards.cs:line 146&#xD;
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)&#xD;
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)</StackTrace>
+        </ErrorInfo>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="08f51004-d979-4373-909a-b6891bb95fa0" testId="d7685ba1-0cad-1040-bdf6-34b24b48e033" testName="Mud.Wechat.OfficialAccount.Callback.Tests.MpCallbackContractGuards.Validation_ShouldFailFastOnIllegalValues" computerName="XIA-PC" duration="00:00:00.0023086" startTime="2026-10-07T09:28:02.8904482+08:00" endTime="2026-10-07T09:28:02.8904483+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="08f51004-d979-4373-909a-b6891bb95fa0" />
+    <UnitTestResult executionId="8640ddf5-46ee-440b-a220-855fa67b0286" testId="8eaeaaf3-55d6-121e-c788-fef5560ccb2c" testName="Mud.Wechat.OfficialAccount.Callback.Tests.MpCallbackReceiverTests.Receive_ShouldRejectWhenSignatureValidButMsgSignatureWrong" computerName="XIA-PC" duration="00:00:00.0013203" startTime="2026-10-07T09:28:02.8186233+08:00" endTime="2026-10-07T09:28:02.8186235+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="8640ddf5-46ee-440b-a220-855fa67b0286" />
+    <UnitTestResult executionId="3b56c538-2b5e-4d98-b510-8011a01217ee" testId="6ce752cf-0050-0daf-cc26-794a6f4b6f87" testName="Mud.Wechat.OfficialAccount.Callback.Tests.MpCallbackContractGuards.ReplyPolicy_ShouldEncryptEverythingButSuccess" computerName="XIA-PC" duration="00:00:00.0003153" startTime="2026-10-07T09:28:02.8904176+08:00" endTime="2026-10-07T09:28:02.8904177+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="3b56c538-2b5e-4d98-b510-8011a01217ee" />
+    <UnitTestResult executionId="2329f7a2-262a-4bde-9947-7c7fc008c0aa" testId="768c17b8-2e63-94f7-92fe-350f136f1af1" testName="Mud.Wechat.OfficialAccount.Callback.Tests.MpCallbackReceiverTests.Reader_ShouldBindTextMessageContent" computerName="XIA-PC" duration="00:00:00.0058082" startTime="2026-10-07T09:28:02.8172277+08:00" endTime="2026-10-07T09:28:02.8172282+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="2329f7a2-262a-4bde-9947-7c7fc008c0aa" />
+    <UnitTestResult executionId="bc0596be-d242-4bdb-a30c-8d4969a41731" testId="72ab7fc8-a5c9-b2ea-5a03-71e806f4a692" testName="Mud.Wechat.OfficialAccount.Callback.Tests.MpCallbackReceiverTests.Receive_PlainMode_ShouldAcceptPlainText" computerName="XIA-PC" duration="00:00:00.0026770" startTime="2026-10-07T09:28:02.8098724+08:00" endTime="2026-10-07T09:28:02.8098726+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="bc0596be-d242-4bdb-a30c-8d4969a41731" />
+    <UnitTestResult executionId="b021472f-8823-4e1c-9958-3de77b8bd3d7" testId="9914c11f-1143-aa9d-cc13-13841bb864e0" testName="Mud.Wechat.OfficialAccount.Callback.Tests.MpCallbackContractGuards.RouteAndMethodWhitelist_ShouldMatchDesign" computerName="XIA-PC" duration="00:00:00.0009282" startTime="2026-10-07T09:28:02.9046587+08:00" endTime="2026-10-07T09:28:02.9046588+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="b021472f-8823-4e1c-9958-3de77b8bd3d7" />
+    <UnitTestResult executionId="6dae473b-8eb8-4813-8d6d-ab39366981d8" testId="7b0c42d6-9317-2ea2-d6ba-43f529f79c3a" testName="Mud.Wechat.OfficialAccount.Callback.Tests.MpCallbackContractGuards.WorkSide_ShouldNotReferenceOfficialAccount" computerName="XIA-PC" duration="00:00:00.0008696" startTime="2026-10-07T09:28:02.9046004+08:00" endTime="2026-10-07T09:28:02.9046005+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="6dae473b-8eb8-4813-8d6d-ab39366981d8" />
+    <UnitTestResult executionId="9614c061-1cfa-4b3f-b037-b35dd8db77fe" testId="397ec907-05e5-9389-1ec7-3699f0b6bd80" testName="Mud.Wechat.OfficialAccount.Callback.Tests.MpCallbackReceiverTests.Receive_SafeMode_ShouldDecryptAndFillEnvelope" computerName="XIA-PC" duration="00:00:00.0015665" startTime="2026-10-07T09:28:02.8520724+08:00" endTime="2026-10-07T09:28:02.8520724+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="9614c061-1cfa-4b3f-b037-b35dd8db77fe" />
+    <UnitTestResult executionId="d647876d-2670-4d1d-9aba-b311def6ceb6" testId="a1a99ad1-1a69-9d94-a7d4-ae0e44106ae2" testName="Mud.Wechat.OfficialAccount.Callback.Tests.MpCallbackReceiverTests.PayloadContracts_ShouldRegisterAllVerifiedKeys" computerName="XIA-PC" duration="00:00:00.0069512" startTime="2026-10-07T09:28:02.8070925+08:00" endTime="2026-10-07T09:28:02.8070930+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="d647876d-2670-4d1d-9aba-b311def6ceb6" />
+    <UnitTestResult executionId="a645fc49-7700-445a-a312-6fe03fba41f2" testId="fd81167b-14c5-f86c-51a7-eeaa2c4fe875" testName="Mud.Wechat.OfficialAccount.Callback.Tests.MpCallbackReceiverTests.Receive_ShouldRejectAppIdMismatch" computerName="XIA-PC" duration="00:00:00.0016352" startTime="2026-10-07T09:28:02.8203536+08:00" endTime="2026-10-07T09:28:02.8203538+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="a645fc49-7700-445a-a312-6fe03fba41f2" />
+    <UnitTestResult executionId="39ebfb80-9349-4bb9-aa31-6b9cb2f1f9fa" testId="edf6d9a6-f337-e0a5-f275-9323c90ca73e" testName="Mud.Wechat.OfficialAccount.Callback.Tests.MpCallbackReceiverTests.Reader_ShouldFallbackForUnregisteredKey" computerName="XIA-PC" duration="00:00:00.0045200" startTime="2026-10-07T09:28:02.8470119+08:00" endTime="2026-10-07T09:28:02.8470119+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="39ebfb80-9349-4bb9-aa31-6b9cb2f1f9fa" />
+    <UnitTestResult executionId="b57bdc2d-5c59-4053-8b6b-e2bfbcaaf7b9" testId="b3ab804d-40d5-1986-fb7e-1be902f8132d" testName="Mud.Wechat.OfficialAccount.Callback.Tests.MpCallbackReceiverTests.Receive_ShouldRejectReplay" computerName="XIA-PC" duration="00:00:00.0230330" startTime="2026-10-07T09:28:02.8000706+08:00" endTime="2026-10-07T09:28:02.8000711+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="b57bdc2d-5c59-4053-8b6b-e2bfbcaaf7b9" />
+    <UnitTestResult executionId="90a4e273-2a03-4f2a-8c1c-a712f9ba8266" testId="d7072ef2-80ea-8f5b-891d-dbf902fbed62" testName="Mud.Wechat.OfficialAccount.Callback.Tests.MpCallbackContractGuards.OfficialAccountSide_ShouldNotReferenceWork" computerName="XIA-PC" duration="00:00:00.0030315" startTime="2026-10-07T09:28:02.9044398+08:00" endTime="2026-10-07T09:28:02.9044402+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Failed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="90a4e273-2a03-4f2a-8c1c-a712f9ba8266">
+      <Output>
+        <ErrorInfo>
+          <Message>Did not expect ReadSource(project) "&lt;Project Sdk="Microsoft.NET.Sdk"&gt;&#xD;
+&#xD;
+	&lt;PropertyGroup&gt;&#xD;
+		&lt;Description&gt;微信公众号/服务号 SDK 认证与多应用基座包：接口调用凭据签发接口、令牌管理器（普通/稳定双通道）、多公众号管理、配置面、常量/枚举/异常。对应 Mud.Wechat.Work.Abstractions。&lt;/Description&gt;&#xD;
+		&lt;PackageTags&gt;Wechat;OfficialAccount;公众号;服务号;Authentication;TokenManager;MultiApp;MudWechat&lt;/PackageTags&gt;&#xD;
+		&lt;!-- MUD005（Query 令牌注入存在 URL 泄露面）：微信公众号官方契约强制令牌走 Query 参数&#xD;
+		（access_token 为 URL 查询参数，官方不支持 Header 注入），无法改用 Header。&#xD;
+		TokenRecoveryOptions.TokenInvalidationDetector 为接口类型属性、不做配置绑定，配置绑定源生成器&#xD;
+		对接口属性报 SYSLIB1100/1101（生成器上报，#pragma 无法抑制），一并项目级静默并注明原因。 --&gt;&#xD;
+		&lt;NoWarn&gt;$(NoWarn);MUD005;SYSLIB1100;SYSLIB1101&lt;/NoWarn&gt;&#xD;
+	&lt;/PropertyGroup&gt;&#xD;
+&#xD;
+	&lt;ItemGroup&gt;&#xD;
+		&lt;PackageReference Include="Mud.HttpUtils" Version="3.0.1" /&gt;&#xD;
+	&lt;/ItemGroup&gt;&#xD;
+&#xD;
+	&lt;ItemGroup&gt;&#xD;
+		&lt;PackageReference Include="Mud.HttpUtils.Generator" Version="3.0.1" PrivateAssets="all" OutputItemType="Analyzer" ReferenceOutputAssembly="false" /&gt;&#xD;
+	&lt;/ItemGroup&gt;&#xD;
+&#xD;
+	&lt;!-- 回调契约登记生成器（产品线中立工具，回调接收模块设计方案 v3 §3.4）：按 [MpCallbackContract] 声明&#xD;
+	     发射 MpPayloadContracts.RegisterAll 方法体。**必须挂在本工程**：partial 方法体与 partial 宿主&#xD;
+	     必须同属一个程序集，而公众号载荷 DTO 与契约宿主落 OA.Abstractions（宿主引本包即可定义类型化处理器，&#xD;
+	     零 ASP.NET 依赖）。工具为中立名，不构成对 Work 产品线的横向引用。 --&gt;&#xD;
+	&lt;ItemGroup&gt;&#xD;
+		&lt;ProjectReference Include="..\Mud.Wechat.Callback.Generator\Mud.Wechat.Callback.Generator.csproj"&#xD;
+		                  OutputItemType="Analyzer" ReferenceOutputAssembly="false" PrivateAssets="all" /&gt;&#xD;
+	&lt;/ItemGroup&gt;&#xD;
+&#xD;
+	&lt;ItemGroup Condition="'$(TargetFramework)' == 'net8.0' Or '$(TargetFramework)' == 'net10.0'"&gt;&#xD;
+		&lt;PackageReference Include="Microsoft.Extensions.Http" Version="10.0.9" /&gt;&#xD;
+		&lt;PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.9" /&gt;&#xD;
+	&lt;/ItemGroup&gt;&#xD;
+	&lt;ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' or '$(TargetFramework)' == 'net6.0'"&gt;&#xD;
+		&lt;PackageReference Include="Microsoft.Extensions.Http" Version="8.0.1" /&gt;&#xD;
+		&lt;PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="8.0.1" /&gt;&#xD;
+	&lt;/ItemGroup&gt;&#xD;
+&#xD;
+	&lt;ItemGroup&gt;&#xD;
+		&lt;ProjectReference Include="..\Mud.Wechat.Abstractions\Mud.Wechat.Abstractions.csproj" /&gt;&#xD;
+		&lt;ProjectReference Include="..\Mud.Wechat.OfficialAccount.DataModels\Mud.Wechat.OfficialAccount.DataModels.csproj" /&gt;&#xD;
+	&lt;/ItemGroup&gt;&#xD;
+&#xD;
+	&lt;ItemGroup&gt;&#xD;
+		&lt;InternalsVisibleTo Include="Mud.Wechat.OfficialAccount" /&gt;&#xD;
+		&lt;InternalsVisibleTo Include="Mud.Wechat.OfficialAccount.Tests" /&gt;&#xD;
+		&lt;!-- 回调载荷/信封的 internal set 由运行时包（读取器/接收器）与测试工程填写（与企微侧 Work.Callback 同款）。 --&gt;&#xD;
+		&lt;InternalsVisibleTo Include="Mud.Wechat.OfficialAccount.Callback" /&gt;&#xD;
+		&lt;InternalsVisibleTo Include="Mud.Wechat.OfficialAccount.Callback.Tests" /&gt;&#xD;
+		&lt;InternalsVisibleTo Include="DynamicProxyGenAssembly2" /&gt;&#xD;
+	&lt;/ItemGroup&gt;&#xD;
+&#xD;
+&lt;/Project&gt;&#xD;
+" to contain "Mud.Wechat.Work" because Mud.Wechat.OfficialAccount.Abstractions/Mud.Wechat.OfficialAccount.Abstractions.csproj 不得横向引用企业微信产品线（含 Work.Callback.Generator / Work.Callback.Analyzers 旧名形态）.</Message>
+          <StackTrace>   at FluentAssertions.Execution.XUnit2TestFramework.Throw(String message)&#xD;
+   at FluentAssertions.Execution.TestFrameworkProvider.Throw(String message)&#xD;
+   at FluentAssertions.Execution.DefaultAssertionStrategy.HandleFailure(String message)&#xD;
+   at FluentAssertions.Execution.AssertionScope.FailWith(Func`1 failReasonFunc)&#xD;
+   at FluentAssertions.Execution.AssertionScope.FailWith(Func`1 failReasonFunc)&#xD;
+   at FluentAssertions.Execution.AssertionScope.FailWith(String message, Object[] args)&#xD;
+   at FluentAssertions.Primitives.StringAssertions`1.NotContain(String unexpected, String because, Object[] becauseArgs)&#xD;
+   at Mud.Wechat.OfficialAccount.Callback.Tests.MpCallbackContractGuards.OfficialAccountSide_ShouldNotReferenceWork() in D:\Repos\MudWechat\Tests\Mud.Wechat.OfficialAccount.Callback.Tests\MpCallbackContractGuards.cs:line 46&#xD;
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)&#xD;
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)</StackTrace>
+        </ErrorInfo>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="5fedeaac-96ce-43dc-b743-e3a17d56e5ff" testId="12574933-278e-9a17-ec2b-eb3673839de0" testName="Mud.Wechat.OfficialAccount.Callback.Tests.MpCallbackContractGuards.CallbackProjects_ShouldBeExactlyFour" computerName="XIA-PC" duration="00:00:00.0120844" startTime="2026-10-07T09:28:02.7922828+08:00" endTime="2026-10-07T09:28:02.7923013+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="5fedeaac-96ce-43dc-b743-e3a17d56e5ff" />
+    <UnitTestResult executionId="418fb518-1381-47ae-ab39-1cb4720f211e" testId="9c2b3984-543a-b178-f4e5-f4219334fa56" testName="Mud.Wechat.OfficialAccount.Callback.Tests.MpCallbackContractGuards.CallbackTools_ShouldBeNeutralNamedAndShared" computerName="XIA-PC" duration="00:00:00.0008631" startTime="2026-10-07T09:28:02.8903842+08:00" endTime="2026-10-07T09:28:02.8903843+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="418fb518-1381-47ae-ab39-1cb4720f211e" />
+    <UnitTestResult executionId="64a3d99a-f390-46bb-80a9-f880cb157c98" testId="38e5fbd2-4f22-2e8c-55cb-1ce7b1bec665" testName="Mud.Wechat.OfficialAccount.Callback.Tests.MpCallbackContractGuards.KeySets_ShouldMatchVerifiedScope" computerName="XIA-PC" duration="00:00:00.0037020" startTime="2026-10-07T09:28:02.9045429+08:00" endTime="2026-10-07T09:28:02.9045429+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="64a3d99a-f390-46bb-80a9-f880cb157c98" />
+    <UnitTestResult executionId="4b2a3f5b-c9c0-4799-a674-c6cac14f6d92" testId="630e90bc-e500-0260-e5f1-7dddea1650f4" testName="Mud.Wechat.OfficialAccount.Callback.Tests.MpCallbackReceiverTests.Echo_ShouldReturnEchoStrAndBeIdempotent" computerName="XIA-PC" duration="00:00:00.0010958" startTime="2026-10-07T09:28:02.8467835+08:00" endTime="2026-10-07T09:28:02.8467841+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="4b2a3f5b-c9c0-4799-a674-c6cac14f6d92" />
+    <UnitTestResult executionId="cb257638-3dc4-49bb-80b5-3de9f9e888bc" testId="a2821637-8a26-9233-0ea6-ad4cb47d4e64" testName="Mud.Wechat.OfficialAccount.Callback.Tests.MpCallbackReceiverTests.Echo_ShouldRejectInvalidSignature" computerName="XIA-PC" duration="00:00:00.0012991" startTime="2026-10-07T09:28:02.8469731+08:00" endTime="2026-10-07T09:28:02.8469731+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="cb257638-3dc4-49bb-80b5-3de9f9e888bc" />
+  </Results>
+  <TestDefinitions>
+    <UnitTest name="Mud.Wechat.OfficialAccount.Callback.Tests.MpCallbackReceiverTests.Echo_ShouldReturnEchoStrAndBeIdempotent" storage="d:\repos\mudwechat\tests\mud.wechat.officialaccount.callback.tests\bin\release\net8.0\mud.wechat.officialaccount.callback.tests.dll" id="630e90bc-e500-0260-e5f1-7dddea1650f4">
+      <Execution id="4b2a3f5b-c9c0-4799-a674-c6cac14f6d92" />
+      <TestMethod codeBase="D:\Repos\MudWechat\Tests\Mud.Wechat.OfficialAccount.Callback.Tests\bin\Release\net8.0\Mud.Wechat.OfficialAccount.Callback.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Mud.Wechat.OfficialAccount.Callback.Tests.MpCallbackReceiverTests" name="Echo_ShouldReturnEchoStrAndBeIdempotent" />
+    </UnitTest>
+    <UnitTest name="Mud.Wechat.OfficialAccount.Callback.Tests.MpCallbackContractGuards.KeySets_ShouldMatchVerifiedScope" storage="d:\repos\mudwechat\tests\mud.wechat.officialaccount.callback.tests\bin\release\net8.0\mud.wechat.officialaccount.callback.tests.dll" id="38e5fbd2-4f22-2e8c-55cb-1ce7b1bec665">
+      <Execution id="64a3d99a-f390-46bb-80a9-f880cb157c98" />
+      <TestMethod codeBase="D:\Repos\MudWechat\Tests\Mud.Wechat.OfficialAccount.Callback.Tests\bin\Release\net8.0\Mud.Wechat.OfficialAccount.Callback.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Mud.Wechat.OfficialAccount.Callback.Tests.MpCallbackContractGuards" name="KeySets_ShouldMatchVerifiedScope" />
+    </UnitTest>
+    <UnitTest name="Mud.Wechat.OfficialAccount.Callback.Tests.MpCallbackContractGuards.SignaturePolicy_ShouldBeFourParamOnPostAndConstantTime" storage="d:\repos\mudwechat\tests\mud.wechat.officialaccount.callback.tests\bin\release\net8.0\mud.wechat.officialaccount.callback.tests.dll" id="6b7d67fe-1cbf-aa69-b68e-9b1f73db2cb1">
+      <Execution id="9fb52fdb-9ab8-4058-94a5-5163fb39dbe6" />
+      <TestMethod codeBase="D:\Repos\MudWechat\Tests\Mud.Wechat.OfficialAccount.Callback.Tests\bin\Release\net8.0\Mud.Wechat.OfficialAccount.Callback.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Mud.Wechat.OfficialAccount.Callback.Tests.MpCallbackContractGuards" name="SignaturePolicy_ShouldBeFourParamOnPostAndConstantTime" />
+    </UnitTest>
+    <UnitTest name="Mud.Wechat.OfficialAccount.Callback.Tests.MpCallbackReceiverTests.Receive_SafeMode_ShouldDecryptAndFillEnvelope" storage="d:\repos\mudwechat\tests\mud.wechat.officialaccount.callback.tests\bin\release\net8.0\mud.wechat.officialaccount.callback.tests.dll" id="397ec907-05e5-9389-1ec7-3699f0b6bd80">
+      <Execution id="9614c061-1cfa-4b3f-b037-b35dd8db77fe" />
+      <TestMethod codeBase="D:\Repos\MudWechat\Tests\Mud.Wechat.OfficialAccount.Callback.Tests\bin\Release\net8.0\Mud.Wechat.OfficialAccount.Callback.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Mud.Wechat.OfficialAccount.Callback.Tests.MpCallbackReceiverTests" name="Receive_SafeMode_ShouldDecryptAndFillEnvelope" />
+    </UnitTest>
+    <UnitTest name="Mud.Wechat.OfficialAccount.Callback.Tests.MpCallbackReceiverTests.Reader_ShouldFallbackForUnregisteredKey" storage="d:\repos\mudwechat\tests\mud.wechat.officialaccount.callback.tests\bin\release\net8.0\mud.wechat.officialaccount.callback.tests.dll" id="edf6d9a6-f337-e0a5-f275-9323c90ca73e">
+      <Execution id="39ebfb80-9349-4bb9-aa31-6b9cb2f1f9fa" />
+      <TestMethod codeBase="D:\Repos\MudWechat\Tests\Mud.Wechat.OfficialAccount.Callback.Tests\bin\Release\net8.0\Mud.Wechat.OfficialAccount.Callback.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Mud.Wechat.OfficialAccount.Callback.Tests.MpCallbackReceiverTests" name="Reader_ShouldFallbackForUnregisteredKey" />
+    </UnitTest>
+    <UnitTest name="Mud.Wechat.OfficialAccount.Callback.Tests.MpCallbackReceiverTests.Receive_ShouldTolerateDtdPayload" storage="d:\repos\mudwechat\tests\mud.wechat.officialaccount.callback.tests\bin\release\net8.0\mud.wechat.officialaccount.callback.tests.dll" id="37cb30e5-f8c5-08ce-74b6-049ef200960f">
+      <Execution id="05a7562b-05df-40c9-8ada-64db47840dce" />
+      <TestMethod codeBase="D:\Repos\MudWechat\Tests\Mud.Wechat.OfficialAccount.Callback.Tests\bin\Release\net8.0\Mud.Wechat.OfficialAccount.Callback.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Mud.Wechat.OfficialAccount.Callback.Tests.MpCallbackReceiverTests" name="Receive_ShouldTolerateDtdPayload" />
+    </UnitTest>
+    <UnitTest name="Mud.Wechat.OfficialAccount.Callback.Tests.MpCallbackContractGuards.ReplyPolicy_ShouldEncryptEverythingButSuccess" storage="d:\repos\mudwechat\tests\mud.wechat.officialaccount.callback.tests\bin\release\net8.0\mud.wechat.officialaccount.callback.tests.dll" id="6ce752cf-0050-0daf-cc26-794a6f4b6f87">
+      <Execution id="3b56c538-2b5e-4d98-b510-8011a01217ee" />
+      <TestMethod codeBase="D:\Repos\MudWechat\Tests\Mud.Wechat.OfficialAccount.Callback.Tests\bin\Release\net8.0\Mud.Wechat.OfficialAccount.Callback.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Mud.Wechat.OfficialAccount.Callback.Tests.MpCallbackContractGuards" name="ReplyPolicy_ShouldEncryptEverythingButSuccess" />
+    </UnitTest>
+    <UnitTest name="Mud.Wechat.OfficialAccount.Callback.Tests.MpCallbackReceiverTests.PayloadContracts_ShouldRegisterAllVerifiedKeys" storage="d:\repos\mudwechat\tests\mud.wechat.officialaccount.callback.tests\bin\release\net8.0\mud.wechat.officialaccount.callback.tests.dll" id="a1a99ad1-1a69-9d94-a7d4-ae0e44106ae2">
+      <Execution id="d647876d-2670-4d1d-9aba-b311def6ceb6" />
+      <TestMethod codeBase="D:\Repos\MudWechat\Tests\Mud.Wechat.OfficialAccount.Callback.Tests\bin\Release\net8.0\Mud.Wechat.OfficialAccount.Callback.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Mud.Wechat.OfficialAccount.Callback.Tests.MpCallbackReceiverTests" name="PayloadContracts_ShouldRegisterAllVerifiedKeys" />
+    </UnitTest>
+    <UnitTest name="Mud.Wechat.OfficialAccount.Callback.Tests.MpCallbackContractGuards.CallbackProjects_ShouldBeExactlyFour" storage="d:\repos\mudwechat\tests\mud.wechat.officialaccount.callback.tests\bin\release\net8.0\mud.wechat.officialaccount.callback.tests.dll" id="12574933-278e-9a17-ec2b-eb3673839de0">
+      <Execution id="5fedeaac-96ce-43dc-b743-e3a17d56e5ff" />
+      <TestMethod codeBase="D:\Repos\MudWechat\Tests\Mud.Wechat.OfficialAccount.Callback.Tests\bin\Release\net8.0\Mud.Wechat.OfficialAccount.Callback.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Mud.Wechat.OfficialAccount.Callback.Tests.MpCallbackContractGuards" name="CallbackProjects_ShouldBeExactlyFour" />
+    </UnitTest>
+    <UnitTest name="Mud.Wechat.OfficialAccount.Callback.Tests.MpCallbackReceiverTests.Receive_ShouldRejectAppIdMismatch" storage="d:\repos\mudwechat\tests\mud.wechat.officialaccount.callback.tests\bin\release\net8.0\mud.wechat.officialaccount.callback.tests.dll" id="fd81167b-14c5-f86c-51a7-eeaa2c4fe875">
+      <Execution id="a645fc49-7700-445a-a312-6fe03fba41f2" />
+      <TestMethod codeBase="D:\Repos\MudWechat\Tests\Mud.Wechat.OfficialAccount.Callback.Tests\bin\Release\net8.0\Mud.Wechat.OfficialAccount.Callback.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Mud.Wechat.OfficialAccount.Callback.Tests.MpCallbackReceiverTests" name="Receive_ShouldRejectAppIdMismatch" />
+    </UnitTest>
+    <UnitTest name="Mud.Wechat.OfficialAccount.Callback.Tests.MpCallbackContractGuards.RouteAndMethodWhitelist_ShouldMatchDesign" storage="d:\repos\mudwechat\tests\mud.wechat.officialaccount.callback.tests\bin\release\net8.0\mud.wechat.officialaccount.callback.tests.dll" id="9914c11f-1143-aa9d-cc13-13841bb864e0">
+      <Execution id="b021472f-8823-4e1c-9958-3de77b8bd3d7" />
+      <TestMethod codeBase="D:\Repos\MudWechat\Tests\Mud.Wechat.OfficialAccount.Callback.Tests\bin\Release\net8.0\Mud.Wechat.OfficialAccount.Callback.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Mud.Wechat.OfficialAccount.Callback.Tests.MpCallbackContractGuards" name="RouteAndMethodWhitelist_ShouldMatchDesign" />
+    </UnitTest>
+    <UnitTest name="Mud.Wechat.OfficialAccount.Callback.Tests.MpCallbackContractGuards.OfficialAccountSide_ShouldNotReferenceWork" storage="d:\repos\mudwechat\tests\mud.wechat.officialaccount.callback.tests\bin\release\net8.0\mud.wechat.officialaccount.callback.tests.dll" id="d7072ef2-80ea-8f5b-891d-dbf902fbed62">
+      <Execution id="90a4e273-2a03-4f2a-8c1c-a712f9ba8266" />
+      <TestMethod codeBase="D:\Repos\MudWechat\Tests\Mud.Wechat.OfficialAccount.Callback.Tests\bin\Release\net8.0\Mud.Wechat.OfficialAccount.Callback.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Mud.Wechat.OfficialAccount.Callback.Tests.MpCallbackContractGuards" name="OfficialAccountSide_ShouldNotReferenceWork" />
+    </UnitTest>
+    <UnitTest name="Mud.Wechat.OfficialAccount.Callback.Tests.MpCallbackReceiverTests.Receive_ShouldRejectReplay" storage="d:\repos\mudwechat\tests\mud.wechat.officialaccount.callback.tests\bin\release\net8.0\mud.wechat.officialaccount.callback.tests.dll" id="b3ab804d-40d5-1986-fb7e-1be902f8132d">
+      <Execution id="b57bdc2d-5c59-4053-8b6b-e2bfbcaaf7b9" />
+      <TestMethod codeBase="D:\Repos\MudWechat\Tests\Mud.Wechat.OfficialAccount.Callback.Tests\bin\Release\net8.0\Mud.Wechat.OfficialAccount.Callback.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Mud.Wechat.OfficialAccount.Callback.Tests.MpCallbackReceiverTests" name="Receive_ShouldRejectReplay" />
+    </UnitTest>
+    <UnitTest name="Mud.Wechat.OfficialAccount.Callback.Tests.MpCallbackContractGuards.CallbackTools_ShouldBeNeutralNamedAndShared" storage="d:\repos\mudwechat\tests\mud.wechat.officialaccount.callback.tests\bin\release\net8.0\mud.wechat.officialaccount.callback.tests.dll" id="9c2b3984-543a-b178-f4e5-f4219334fa56">
+      <Execution id="418fb518-1381-47ae-ab39-1cb4720f211e" />
+      <TestMethod codeBase="D:\Repos\MudWechat\Tests\Mud.Wechat.OfficialAccount.Callback.Tests\bin\Release\net8.0\Mud.Wechat.OfficialAccount.Callback.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Mud.Wechat.OfficialAccount.Callback.Tests.MpCallbackContractGuards" name="CallbackTools_ShouldBeNeutralNamedAndShared" />
+    </UnitTest>
+    <UnitTest name="Mud.Wechat.OfficialAccount.Callback.Tests.MpCallbackReceiverTests.Reader_ShouldBindTextMessageContent" storage="d:\repos\mudwechat\tests\mud.wechat.officialaccount.callback.tests\bin\release\net8.0\mud.wechat.officialaccount.callback.tests.dll" id="768c17b8-2e63-94f7-92fe-350f136f1af1">
+      <Execution id="2329f7a2-262a-4bde-9947-7c7fc008c0aa" />
+      <TestMethod codeBase="D:\Repos\MudWechat\Tests\Mud.Wechat.OfficialAccount.Callback.Tests\bin\Release\net8.0\Mud.Wechat.OfficialAccount.Callback.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Mud.Wechat.OfficialAccount.Callback.Tests.MpCallbackReceiverTests" name="Reader_ShouldBindTextMessageContent" />
+    </UnitTest>
+    <UnitTest name="Mud.Wechat.OfficialAccount.Callback.Tests.MpCallbackReceiverTests.Echo_ShouldRejectInvalidSignature" storage="d:\repos\mudwechat\tests\mud.wechat.officialaccount.callback.tests\bin\release\net8.0\mud.wechat.officialaccount.callback.tests.dll" id="a2821637-8a26-9233-0ea6-ad4cb47d4e64">
+      <Execution id="cb257638-3dc4-49bb-80b5-3de9f9e888bc" />
+      <TestMethod codeBase="D:\Repos\MudWechat\Tests\Mud.Wechat.OfficialAccount.Callback.Tests\bin\Release\net8.0\Mud.Wechat.OfficialAccount.Callback.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Mud.Wechat.OfficialAccount.Callback.Tests.MpCallbackReceiverTests" name="Echo_ShouldRejectInvalidSignature" />
+    </UnitTest>
+    <UnitTest name="Mud.Wechat.OfficialAccount.Callback.Tests.MpCallbackReceiverTests.Receive_ShouldRejectWhenSignatureValidButMsgSignatureWrong" storage="d:\repos\mudwechat\tests\mud.wechat.officialaccount.callback.tests\bin\release\net8.0\mud.wechat.officialaccount.callback.tests.dll" id="8eaeaaf3-55d6-121e-c788-fef5560ccb2c">
+      <Execution id="8640ddf5-46ee-440b-a220-855fa67b0286" />
+      <TestMethod codeBase="D:\Repos\MudWechat\Tests\Mud.Wechat.OfficialAccount.Callback.Tests\bin\Release\net8.0\Mud.Wechat.OfficialAccount.Callback.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Mud.Wechat.OfficialAccount.Callback.Tests.MpCallbackReceiverTests" name="Receive_ShouldRejectWhenSignatureValidButMsgSignatureWrong" />
+    </UnitTest>
+    <UnitTest name="Mud.Wechat.OfficialAccount.Callback.Tests.MpCallbackContractGuards.Validation_ShouldFailFastOnIllegalValues" storage="d:\repos\mudwechat\tests\mud.wechat.officialaccount.callback.tests\bin\release\net8.0\mud.wechat.officialaccount.callback.tests.dll" id="d7685ba1-0cad-1040-bdf6-34b24b48e033">
+      <Execution id="08f51004-d979-4373-909a-b6891bb95fa0" />
+      <TestMethod codeBase="D:\Repos\MudWechat\Tests\Mud.Wechat.OfficialAccount.Callback.Tests\bin\Release\net8.0\Mud.Wechat.OfficialAccount.Callback.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Mud.Wechat.OfficialAccount.Callback.Tests.MpCallbackContractGuards" name="Validation_ShouldFailFastOnIllegalValues" />
+    </UnitTest>
+    <UnitTest name="Mud.Wechat.OfficialAccount.Callback.Tests.MpCallbackReceiverTests.Receive_PlainMode_ShouldAcceptPlainText" storage="d:\repos\mudwechat\tests\mud.wechat.officialaccount.callback.tests\bin\release\net8.0\mud.wechat.officialaccount.callback.tests.dll" id="72ab7fc8-a5c9-b2ea-5a03-71e806f4a692">
+      <Execution id="bc0596be-d242-4bdb-a30c-8d4969a41731" />
+      <TestMethod codeBase="D:\Repos\MudWechat\Tests\Mud.Wechat.OfficialAccount.Callback.Tests\bin\Release\net8.0\Mud.Wechat.OfficialAccount.Callback.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Mud.Wechat.OfficialAccount.Callback.Tests.MpCallbackReceiverTests" name="Receive_PlainMode_ShouldAcceptPlainText" />
+    </UnitTest>
+    <UnitTest name="Mud.Wechat.OfficialAccount.Callback.Tests.MpCallbackReceiverTests.Receive_SafeMode_ShouldRejectPlainText" storage="d:\repos\mudwechat\tests\mud.wechat.officialaccount.callback.tests\bin\release\net8.0\mud.wechat.officialaccount.callback.tests.dll" id="b3fee2c3-68a5-f004-7e3c-4bbc60ff2212">
+      <Execution id="6382a552-f2b7-40b5-924d-f57d30efe4f1" />
+      <TestMethod codeBase="D:\Repos\MudWechat\Tests\Mud.Wechat.OfficialAccount.Callback.Tests\bin\Release\net8.0\Mud.Wechat.OfficialAccount.Callback.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Mud.Wechat.OfficialAccount.Callback.Tests.MpCallbackReceiverTests" name="Receive_SafeMode_ShouldRejectPlainText" />
+    </UnitTest>
+    <UnitTest name="Mud.Wechat.OfficialAccount.Callback.Tests.MpCallbackContractGuards.WorkSide_ShouldNotReferenceOfficialAccount" storage="d:\repos\mudwechat\tests\mud.wechat.officialaccount.callback.tests\bin\release\net8.0\mud.wechat.officialaccount.callback.tests.dll" id="7b0c42d6-9317-2ea2-d6ba-43f529f79c3a">
+      <Execution id="6dae473b-8eb8-4813-8d6d-ab39366981d8" />
+      <TestMethod codeBase="D:\Repos\MudWechat\Tests\Mud.Wechat.OfficialAccount.Callback.Tests\bin\Release\net8.0\Mud.Wechat.OfficialAccount.Callback.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Mud.Wechat.OfficialAccount.Callback.Tests.MpCallbackContractGuards" name="WorkSide_ShouldNotReferenceOfficialAccount" />
+    </UnitTest>
+  </TestDefinitions>
+  <TestEntries>
+    <TestEntry testId="b3fee2c3-68a5-f004-7e3c-4bbc60ff2212" executionId="6382a552-f2b7-40b5-924d-f57d30efe4f1" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="37cb30e5-f8c5-08ce-74b6-049ef200960f" executionId="05a7562b-05df-40c9-8ada-64db47840dce" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="6b7d67fe-1cbf-aa69-b68e-9b1f73db2cb1" executionId="9fb52fdb-9ab8-4058-94a5-5163fb39dbe6" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="d7685ba1-0cad-1040-bdf6-34b24b48e033" executionId="08f51004-d979-4373-909a-b6891bb95fa0" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="8eaeaaf3-55d6-121e-c788-fef5560ccb2c" executionId="8640ddf5-46ee-440b-a220-855fa67b0286" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="6ce752cf-0050-0daf-cc26-794a6f4b6f87" executionId="3b56c538-2b5e-4d98-b510-8011a01217ee" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="768c17b8-2e63-94f7-92fe-350f136f1af1" executionId="2329f7a2-262a-4bde-9947-7c7fc008c0aa" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="72ab7fc8-a5c9-b2ea-5a03-71e806f4a692" executionId="bc0596be-d242-4bdb-a30c-8d4969a41731" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="9914c11f-1143-aa9d-cc13-13841bb864e0" executionId="b021472f-8823-4e1c-9958-3de77b8bd3d7" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="7b0c42d6-9317-2ea2-d6ba-43f529f79c3a" executionId="6dae473b-8eb8-4813-8d6d-ab39366981d8" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="397ec907-05e5-9389-1ec7-3699f0b6bd80" executionId="9614c061-1cfa-4b3f-b037-b35dd8db77fe" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="a1a99ad1-1a69-9d94-a7d4-ae0e44106ae2" executionId="d647876d-2670-4d1d-9aba-b311def6ceb6" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="fd81167b-14c5-f86c-51a7-eeaa2c4fe875" executionId="a645fc49-7700-445a-a312-6fe03fba41f2" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="edf6d9a6-f337-e0a5-f275-9323c90ca73e" executionId="39ebfb80-9349-4bb9-aa31-6b9cb2f1f9fa" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="b3ab804d-40d5-1986-fb7e-1be902f8132d" executionId="b57bdc2d-5c59-4053-8b6b-e2bfbcaaf7b9" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="d7072ef2-80ea-8f5b-891d-dbf902fbed62" executionId="90a4e273-2a03-4f2a-8c1c-a712f9ba8266" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="12574933-278e-9a17-ec2b-eb3673839de0" executionId="5fedeaac-96ce-43dc-b743-e3a17d56e5ff" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="9c2b3984-543a-b178-f4e5-f4219334fa56" executionId="418fb518-1381-47ae-ab39-1cb4720f211e" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="38e5fbd2-4f22-2e8c-55cb-1ce7b1bec665" executionId="64a3d99a-f390-46bb-80a9-f880cb157c98" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="630e90bc-e500-0260-e5f1-7dddea1650f4" executionId="4b2a3f5b-c9c0-4799-a674-c6cac14f6d92" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="a2821637-8a26-9233-0ea6-ad4cb47d4e64" executionId="cb257638-3dc4-49bb-80b5-3de9f9e888bc" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+  </TestEntries>
+  <TestLists>
+    <TestList name="列表中未列出的结果" id="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestList name="所有已加载的结果" id="19431567-8539-422a-85d7-44ee4e166bda" />
+  </TestLists>
+  <ResultSummary outcome="Failed">
+    <Counters total="21" executed="21" passed="19" failed="2" error="0" timeout="0" aborted="0" inconclusive="0" passedButRunAborted="0" notRunnable="0" notExecuted="0" disconnected="0" warning="0" completed="0" inProgress="0" pending="0" />
+    <Output>
+      <StdOut>[xUnit.net 00:00:00.00] xUnit.net VSTest Adapter v2.8.2+699d445a1a (64-bit .NET 8.0.31)&#xD;
+[xUnit.net 00:00:00.09]   Discovering: Mud.Wechat.OfficialAccount.Callback.Tests&#xD;
+[xUnit.net 00:00:00.13]   Discovered:  Mud.Wechat.OfficialAccount.Callback.Tests&#xD;
+[xUnit.net 00:00:00.13]   Starting:    Mud.Wechat.OfficialAccount.Callback.Tests&#xD;
+[xUnit.net 00:00:00.28]       Expected receiver "// -----------------------------------------------------------------------&#xD;
+[xUnit.net 00:00:00.28]       //  作者：Mud Studio  版权所有 (c) Mud Studio 2026&#xD;
+[xUnit.net 00:00:00.28]       //  Mud.Wechat 项目的版权、商标、专利和其他相关权利均受相应法律法规的保护。&#xD;
+[xUnit.net 00:00:00.28]       //  本项目主要遵循 MIT 许可证进行分发和使用。许可证位于源代码树根目录中的 LICENSE-MIT 文件。&#xD;
+[xUnit.net 00:00:00.28]       //  不得利用本项目从事危害国家安全、扰乱社会秩序、侵犯他人合法权益等法律法规禁止的活动！任何基于本项目开发而产生的一切法律纠纷和责任，我们不承担任何责任！&#xD;
+[xUnit.net 00:00:00.28]       // -----------------------------------------------------------------------&#xD;
+[xUnit.net 00:00:00.28]       &#xD;
+[xUnit.net 00:00:00.28]       using System.Globalization;&#xD;
+[xUnit.net 00:00:00.28]       using System.Security.Cryptography;&#xD;
+[xUnit.net 00:00:00.28]       using System.Xml;&#xD;
+[xUnit.net 00:00:00.28]       using System.Xml.Linq;&#xD;
+[xUnit.net 00:00:00.28]       using Mud.Wechat.Abstractions.Callback;&#xD;
+[xUnit.net 00:00:00.28]       using Mud.Wechat.OfficialAccount.Abstractions.Callback;&#xD;
+[xUnit.net 00:00:00.28]       &#xD;
+[xUnit.net 00:00:00.28]       namespace Mud.Wechat.OfficialAccount.Callback;&#xD;
+[xUnit.net 00:00:00.28]       &#xD;
+[xUnit.net 00:00:00.28]       /// &lt;summary&gt;&#xD;
+[xUnit.net 00:00:00.28]       /// 公众号回调接收器：URL 验证（GET 回显）与消息推送（三模式 + 双验签 + appid 校验 + 抗重放指纹）。&#xD;
+[xUnit.net 00:00:00.28]       /// &lt;/summary&gt;&#xD;
+[xUnit.net 00:00:00.28]       /// &lt;remarks&gt;&#xD;
+[xUnit.net 00:00:00.28]       /// &lt;para&gt;&#xD;
+[xUnit.net 00:00:00.28]       /// &lt;b&gt;双验签（官方明确要求）&lt;/b&gt;：GET 用 3 参 &lt;c&gt;signature&lt;/c&gt;（&lt;c&gt;sort(token,timestamp,nonce)&lt;/c&gt;，&lt;b&gt;不含&lt;/b&gt; echostr）；&#xD;
+[xUnit.net 00:00:00.28]       /// POST 用 4 参 &lt;c&gt;msg_signature&lt;/c&gt;（含包体内 &lt;c&gt;Encrypt&lt;/c&gt;）。官方原文警告「不要使用 signature 验证！」⇒&#xD;
+[xUnit.net 00:00:00.28]       /// POST 路径**禁止**回落到 &lt;c&gt;signature&lt;/c&gt;（守卫 CB-MP-2 + 反例用例）。&#xD;
+[xUnit.net 00:00:00.28]       /// &lt;/para&gt;&#xD;
+[xUnit.net 00:00:00.28]       /// &lt;para&gt;&#xD;
+[xUnit.net 00:00:00.28]       /// &lt;b&gt;三模式&lt;/b&gt;：安全模式仅收密文（明文 403）；兼容模式按&lt;b&gt;请求实际形态&lt;/b&gt;分支；明文模式仅收明文。&#xD;
+[xUnit.net 00:00:00.28]       /// &lt;/para&gt;&#xD;
+[xUnit.net 00:00:00.28]       /// &lt;para&gt;&#xD;
+[xUnit.net 00:00:00.28]       /// &lt;b&gt;抗重放&lt;/b&gt;：指纹闸在「解密 + appid 校验成功」之后、事件返回之前消费（解密失败不消耗指纹 ⇒ 官方重试可重入）；&#xD;
+[xUnit.net 00:00:00.28]       /// GET 回显只过时效闸、&lt;b&gt;不消费指纹&lt;/b&gt;（同 echostr 二次保存配置必须成功）。&#xD;
+[xUnit.net 00:00:00.28]       /// &lt;/para&gt;&#xD;
+[xUnit.net 00:00:00.28]       /// &lt;/remarks&gt;&#xD;
+[xUnit.net 00:00:00.28]       public interface IMpCallbackReceiver&#xD;
+[xUnit.net 00:00:00.28]       {&#xD;
+[xUnit.net 00:00:00.28]           /// &lt;summary&gt;接收 POST 消息推送并解析为信封。&lt;/summary&gt;&#xD;
+[xUnit.net 00:00:00.28]           /// &lt;param name="appKey"&gt;路由提取的应用键。&lt;/param&gt;&#xD;
+[xUnit.net 00:00:00.28]           /// &lt;param name="urlQuery"&gt;回调 URL 查询串（可含前导 &lt;c&gt;?&lt;/c&gt;）。&lt;/param&gt;&#xD;
+[xUnit.net 00:00:00.28]           /// &lt;param name="body"&gt;请求体原文（XML）。&lt;/param&gt;&#xD;
+[xUnit.net 00:00:00.28]           /// &lt;param name="cancellationToken"&gt;取消令牌。&lt;/param&gt;&#xD;
+[xUnit.net 00:00:00.28]           /// &lt;returns&gt;解密并解析后的信封。&lt;/returns&gt;&#xD;
+[xUnit.net 00:00:00.28]           /// &lt;exception cref="WechatCallbackException"&gt;验签失败、时效越界、重放、解密失败或 appid 不匹配时抛出。&lt;/exception&gt;&#xD;
+[xUnit.net 00:00:00.28]           Task&lt;MpCallbackEnvelope&gt; ReceiveAsync(&#xD;
+[xUnit.net 00:00:00.28]               string appKey, string urlQuery, string body, CancellationToken cancellationToken = default);&#xD;
+[xUnit.net 00:00:00.28]       &#xD;
+[xUnit.net 00:00:00.28]           /// &lt;summary&gt;处理 GET URL 验证并返回应回写的明文（= &lt;c&gt;echostr&lt;/c&gt; 原文）。&lt;/summary&gt;&#xD;
+[xUnit.net 00:00:00.28]           /// &lt;param name="appKey"&gt;路由提取的应用键。&lt;/param&gt;&#xD;
+[xUnit.net 00:00:00.28]           /// &lt;param name="urlQuery"&gt;回调 URL 查询串。&lt;/param&gt;&#xD;
+[xUnit.net 00:00:00.28]           /// &lt;param name="cancellationToken"&gt;取消令牌。&lt;/param&gt;&#xD;
+[xUnit.net 00:00:00.28]           /// &lt;returns&gt;回写体（&lt;c&gt;echostr&lt;/c&gt; 原文）。&lt;/returns&gt;&#xD;
+[xUnit.net 00:00:00.28]           /// &lt;exception cref="WechatCallbackException"&gt;验签失败、时效越界或 echostr 解密后的 appid 不匹配时抛出。&lt;/exception&gt;&#xD;
+[xUnit.net 00:00:00.28]           Task&lt;string&gt; EchoAsync(string appKey, string urlQuery, CancellationToken cancellationToken = default);&#xD;
+[xUnit.net 00:00:00.28]       }&#xD;
+[xUnit.net 00:00:00.28]       &#xD;
+[xUnit.net 00:00:00.28]       /// &lt;inheritdoc cref="IMpCallbackReceiver" /&gt;&#xD;
+[xUnit.net 00:00:00.28]       public sealed class MpCallbackReceiver : IMpCallbackReceiver&#xD;
+[xUnit.net 00:00:00.28]       {&#xD;
+[xUnit.net 00:00:00.28]           private readonly IOptionsMonitor&lt;MpCallbackOptions&gt; _optionsMonitor;&#xD;
+[xUnit.net 00:00:00.28]           private readonly IWechatCallbackReplayGuard _replayGuard;&#xD;
+[xUnit.net 00:00:00.28]           private readonly Func&lt;DateTimeOffset&gt; _utcNow;&#xD;
+[xUnit.net 00:00:00.28]           private readonly ILogger&lt;MpCallbackReceiver&gt;? _logger;&#xD;
+[xUnit.net 00:00:00.28]       &#xD;
+[xUnit.net 00:00:00.28]           /// &lt;summary&gt;创建回调接收器。&lt;/summary&gt;&#xD;
+[xUnit.net 00:00:00.28]           /// &lt;param name="optionsMonitor"&gt;回调配置监视器（请求期热更）。&lt;/param&gt;&#xD;
+[xUnit.net 00:00:00.28]           /// &lt;param name="replayGuard"&gt;抗重放守卫（默认进程内实现）。&lt;/param&gt;&#xD;
+[xUnit.net 00:00:00.28]           /// &lt;param name="utcNow"&gt;当前时间提供器（测试可注入）。&lt;/param&gt;&#xD;
+[xUnit.net 00:00:00.28]           /// &lt;param name="logger"&gt;日志器。&lt;/param&gt;&#xD;
+[xUnit.net 00:00:00.28]           public MpCallbackReceiver(&#xD;
+[xUnit.net 00:00:00.28]               IOptionsMonitor&lt;MpCallbackOptions&gt; optionsMonitor,&#xD;
+[xUnit.net 00:00:00.28]               IWechatCallbackReplayGuard replayGuard,&#xD;
+[xUnit.net 00:00:00.28]               Func&lt;DateTimeOffset&gt;? utcNow = null,&#xD;
+[xUnit.net 00:00:00.28]               ILogger&lt;MpCallbackReceiver&gt;? logger = null)&#xD;
+[xUnit.net 00:00:00.28]           {&#xD;
+[xUnit.net 00:00:00.28]               _optionsMonitor = optionsMonitor ?? throw new ArgumentNullException(nameof(optionsMonitor));&#xD;
+[xUnit.net 00:00:00.28]               _replayGuard = replayGuard ?? throw new ArgumentNullException(nameof(replayGuard));&#xD;
+[xUnit.net 00:00:00.28]               _utcNow = utcNow ?? (() =&gt; DateTimeOffset.UtcNow);&#xD;
+[xUnit.net 00:00:00.28]               _logger = logger;&#xD;
+[xUnit.net 00:00:00.28]           }&#xD;
+[xUnit.net 00:00:00.28]       &#xD;
+[xUnit.net 00:00:00.28]           /// &lt;inheritdoc /&gt;&#xD;
+[xUnit.net 00:00:00.28]           public async Task&lt;MpCallbackEnvelope&gt; ReceiveAsync(&#xD;
+[xUnit.net 00:00:00.28]               string appKey, string urlQuery, string body, CancellationToken cancellationToken = default)&#xD;
+[xUnit.net 00:00:00.28]           {&#xD;
+[xUnit.net 00:00:00.28]               var options = _optionsMonitor.CurrentValue;&#xD;
+[xUnit.net 00:00:00.28]               var app = ResolveApp(options, appKey);&#xD;
+[xUnit.net 00:00:00.28]               var mode = app.ResolveMode(options.DefaultSecurityMode);&#xD;
+[xUnit.net 00:00:00.28]               var query = WechatCallbackQuery.Parse(urlQuery);&#xD;
+[xUnit.net 00:00:00.28]       &#xD;
+[xUnit.net 00:00:00.28]               var timestamp = query.TryGetValue("timestamp", out var ts) ? ts : null;&#xD;
+[xUnit.net 00:00:00.28]               var nonce = query.TryGetValue("nonce", out var n) ? n : null;&#xD;
+[xUnit.net 00:00:00.28]               query.TryGetValue("msg_signature", out var msgSignature);&#xD;
+[xUnit.net 00:00:00.28]               query.TryGetValue("signature", out var signature);&#xD;
+[xUnit.net 00:00:00.28]               query.TryGetValue("encrypt_type", out var encryptType);&#xD;
+[xUnit.net 00:00:00.28]       &#xD;
+[xUnit.net 00:00:00.28]               var encrypt = ExtractEncrypt(body);&#xD;
+[xUnit.net 00:00:00.28]               var isEncrypted = encrypt != null;&#xD;
+[xUnit.net 00:00:00.28]       &#xD;
+[xUnit.net 00:00:00.28]               string plaintext;&#xD;
+[xUnit.net 00:00:00.28]               string fingerprint;&#xD;
+[xUnit.net 00:00:00.28]       &#xD;
+[xUnit.net 00:00:00.28]               if (isEncrypted)&#xD;
+[xUnit.net 00:00:00.28]               {&#xD;
+[xUnit.net 00:00:00.28]                   // —— 密文分支：4 参 msg_signature（**禁止**用 signature 验 POST）——&#xD;
+[xUnit.net 00:00:00.28]                   if (string.IsNullOrEmpty(msgSignature))&#xD;
+[xUnit.net 00:00:00.28]                   {&#xD;
+[xUnit.net 00:00:00.28]                       throw new WechatCallbackException(&#xD;
+[xUnit.net 00:00:00.28]                           WechatCallbackFailureKind.MissingSignature, "回调验签失败：缺少 msg_signature 参数。");&#xD;
+[xUnit.net 00:00:00.28]                   }&#xD;
+[xUnit.net 00:00:00.28]       &#xD;
+[xUnit.net 00:00:00.28]                   var expected = WechatCallbackCrypto.ComputeSignature(&#xD;
+[xUnit.net 00:00:00.28]                       app.PushToken, timestamp ?? string.Empty, nonce ?? string.Empty, encrypt!);&#xD;
+[xUnit.net 00:00:00.28]                   if (!FixedTimeEquals(expected, msgSignature!))&#xD;
+[xUnit.net 00:00:00.28]                   {&#xD;
+[xUnit.net 00:00:00.28]                       throw new WechatCallbackException(&#xD;
+[xUnit.net 00:00:00.28]                           WechatCallbackFailureKind.InvalidSignature,&#xD;
+[xUnit.net 00:00:00.28]                           "回调验签失败：msg_signature 不匹配（请检查 PushToken 配置）。");&#xD;
+[xUnit.net 00:00:00.28]                   }&#xD;
+[xUnit.net 00:00:00.28]       &#xD;
+[xUnit.net 00:00:00.28]                   ValidateTimestampWindow(options, timestamp);&#xD;
+[xUnit.net 00:00:00.28]                   ValidateNonce(nonce);&#xD;
+[xUnit.net 00:00:00.28]       &#xD;
+[xUnit.net 00:00:00.28]                   plaintext = WechatCallbackCrypto.Decrypt(app.PushEncodingAESKey, encrypt!, out var receiveId);&#xD;
+[xUnit.net 00:00:00.28]                   if (!string.Equals(receiveId, app.AppId, StringComparison.Ordinal))&#xD;
+[xUnit.net 00:00:00.28]                   {&#xD;
+[xUnit.net 00:00:00.28]                       throw new WechatCallbackException(&#xD;
+[xUnit.net 00:00:00.28]                           WechatCallbackFailureKind.ReceiveIdMismatch,&#xD;
+[xUnit.net 00:00:00.28]                           "回调验签失败：解密明文尾部的 appid 与配置 AppId 不一致（官方要求校验该值是否与自身公众号相符）。");&#xD;
+[xUnit.net 00:00:00.28]                   }&#xD;
+[xUnit.net 00:00:00.28]       &#xD;
+[xUnit.net 00:00:00.28]                   // P2-3：同一次 SHA1 结果先做验签比对，解密成功后再作为一次性指纹 —— 指纹取材于密文，密文缺失则不可得。&#xD;
+[xUnit.net 00:00:00.28]                   fingerprint = expected;&#xD;
+[xUnit.net 00:00:00.28]               }&#xD;
+[xUnit.net 00:00:00.28]               else&#xD;
+[xUnit.net 00:00:00.28]               {&#xD;
+[xUnit.net 00:00:00.28]                   // —— 明文分支：安全模式一律拒收；明文/兼容模式用 3 参 signature 验签 ——&#xD;
+[xUnit.net 00:00:00.28]                   if (mode == MpCallbackSecurityMode.Safe)&#xD;
+[xUnit.net 00:00:00.28]                   {&#xD;
+[xUnit.net 00:00:00.28]                       throw new WechatCallbackException(&#xD;
+[xUnit.net 00:00:00.28]                           WechatCallbackFailureKind.PlainTextRejected,&#xD;
+[xUnit.net 00:00:00.28]                           "回调拒收：当前公众号配置为安全模式（纯密文），明文推送一律拒绝。");&#xD;
+[xUnit.net 00:00:00.28]                   }&#xD;
+[xUnit.net 00:00:00.28]       &#xD;
+[xUnit.net 00:00:00.28]                   if (string.IsNullOrEmpty(signature))&#xD;
+[xUnit.net 00:00:00.28]                   {&#xD;
+[xUnit.net 00:00:00.28]                       throw new WechatCallbackException(&#xD;
+[xUnit.net 00:00:00.28]                           WechatCallbackFailureKind.MissingSignature, "回调验签失败：缺少 signature 参数（明文模式）。");&#xD;
+[xUnit.net 00:00:00.28]                   }&#xD;
+[xUnit.net 00:00:00.28]       &#xD;
+[xUnit.net 00:00:00.28]                   var expected = WechatCallbackCrypto.ComputeSignature(&#xD;
+[xUnit.net 00:00:00.28]                       app.PushToken, timestamp ?? string.Empty, nonce ?? string.Empty);&#xD;
+[xUnit.net 00:00:00.28]                   if (!FixedTimeEquals(expected, signature!))&#xD;
+[xUnit.net 00:00:00.28]                   {&#xD;
+[xUnit.net 00:00:00.28]                       throw new WechatCallbackException(&#xD;
+[xUnit.net 00:00:00.28]                           WechatCallbackFailureKind.InvalidSignature,&#xD;
+[xUnit.net 00:00:00.28]                           "回调验签失败：signature 不匹配（请检查 PushToken 配置）。");&#xD;
+[xUnit.net 00:00:00.28]                   }&#xD;
+[xUnit.net 00:00:00.28]       &#xD;
+[xUnit.net 00:00:00.28]                   ValidateTimestampWindow(options, timestamp);&#xD;
+[xUnit.net 00:00:00.28]                   ValidateNonce(nonce);&#xD;
+[xUnit.net 00:00:00.28]       &#xD;
+[xUnit.net 00:00:00.28]                   plaintext = body;&#xD;
+[xUnit.net 00:00:00.28]                   // 明文模式无密文可取材：以「时效参数 + 明文包体」计算传输级摘要（非签名值，仅作一次性指纹）。&#xD;
+[xUnit.net 00:00:00.28]                   fingerprint = WechatCallbackCrypto.ComputeSignature(&#xD;
+[xUnit.net 00:00:00.28]                       string.Empty, timestamp ?? string.Empty, nonce ?? string.Empty, plaintext);&#xD;
+[xUnit.net 00:00:00.28]               }&#xD;
+[xUnit.net 00:00:00.28]       &#xD;
+[xUnit.net 00:00:00.28]               if (app.RequireReplayGuard)&#xD;
+[xUnit.net 00:00:00.28]               {&#xD;
+[xUnit.net 00:00:00.28]                   var window = TimeSpan.FromSeconds(options.AllowClockSkewSeconds);&#xD;
+[xUnit.net 00:00:00.28]                   if (!await _replayGuard.TryMarkAsync(fingerprint, window, cancellationToken).ConfigureAwait(false))&#xD;
+[xUnit.net 00:00:00.28]                   {&#xD;
+[xUnit.net 00:00:00.28]                       throw new WechatCallbackException(&#xD;
+[xUnit.net 00:00:00.28]                           WechatCallbackFailureKind.ReplaySuspected, "回调验签失败：报文已处理过（疑似重放）。");&#xD;
+[xUnit.net 00:00:00.28]                   }&#xD;
+[xUnit.net 00:00:00.28]               }&#xD;
+[xUnit.net 00:00:00.28]       &#xD;
+[xUnit.net 00:00:00.28]               var envelope = new MpCallbackEnvelope&#xD;
+[xUnit.net 00:00:00.28]               {&#xD;
+[xUnit.net 00:00:00.28]                   AppKey = appKey,&#xD;
+[xUnit.net 00:00:00.28]                   DecryptedXml = plaintext,&#xD;
+[xUnit.net 00:00:00.28]                   TimeStamp = timestamp,&#xD;
+[xUnit.net 00:00:00.28]                   Nonce = nonce,&#xD;
+[xUnit.net 00:00:00.28]                   EncryptType = encryptType,&#xD;
+[xUnit.net 00:00:00.28]                   SecurityMode = mode,&#xD;
+[xUnit.net 00:00:00.28]                   IsEncrypted = isEncrypted,&#xD;
+[xUnit.net 00:00:00.28]               };&#xD;
+[xUnit.net 00:00:00.28]       &#xD;
+[xUnit.net 00:00:00.28]               FillEnvelopeFields(envelope, plaintext);&#xD;
+[xUnit.net 00:00:00.28]               return envelope;&#xD;
+[xUnit.net 00:00:00.28]           }&#xD;
+[xUnit.net 00:00:00.28]       &#xD;
+[xUnit.net 00:00:00.28]           /// &lt;inheritdoc /&gt;&#xD;
+[xUnit.net 00:00:00.28]           public Task&lt;string&gt; EchoAsync(string appKey, string urlQuery, CancellationToken cancellationToken = default)&#xD;
+[xUnit.net 00:00:00.28]           {&#xD;
+[xUnit.net 00:00:00.28]               var options = _optionsMonitor.CurrentValue;&#xD;
+[xUnit.net 00:00:00.28]               var app = ResolveApp(options, appKey);&#xD;
+[xUnit.net 00:00:00.28]               var mode = app.ResolveMode(options.DefaultSecurityMode);&#xD;
+[xUnit.net 00:00:00.28]               var query = WechatCallbackQuery.Parse(urlQuery);&#xD;
+[xUnit.net 00:00:00.28]       &#xD;
+[xUnit.net 00:00:00.28]               query.TryGetValue("signature", out var signature);&#xD;
+[xUnit.net 00:00:00.28]               query.TryGetValue("timestamp", out var timestamp);&#xD;
+[xUnit.net 00:00:00.28]               query.TryGetValue("nonce", out var nonce);&#xD;
+[xUnit.net 00:00:00.28]               query.TryGetValue("echostr", out var echoStr);&#xD;
+[xUnit.net 00:00:00.28]       &#xD;
+[xUnit.net 00:00:00.28]               if (string.IsNullOrEmpty(signature))&#xD;
+[xUnit.net 00:00:00.28]               {&#xD;
+[xUnit.net 00:00:00.28]                   throw new WechatCallbackException(&#xD;
+[xUnit.net 00:00:00.28]                       WechatCallbackFailureKind.MissingSignature, "URL 验证失败：缺少 signature 参数。");&#xD;
+[xUnit.net 00:00:00.28]               }&#xD;
+[xUnit.net 00:00:00.28]       &#xD;
+[xUnit.net 00:00:00.28]               if (string.IsNullOrEmpty(echoStr))&#xD;
+[xUnit.net 00:00:00.28]               {&#xD;
+[xUnit.net 00:00:00.28]                   throw new WechatCallbackException(&#xD;
+[xUnit.net 00:00:00.28]                       WechatCallbackFailureKind.MissingEncrypt, "URL 验证失败：缺少 echostr 参数。");&#xD;
+[xUnit.net 00:00:00.28]               }&#xD;
+[xUnit.net 00:00:00.28]       &#xD;
+[xUnit.net 00:00:00.28]               // F3：URL 验证签名只含 token / timestamp / nonce（**不含** echostr）。&#xD;
+[xUnit.net 00:00:00.28]               var expected = WechatCallbackCrypto.ComputeSignature(&#xD;
+[xUnit.net 00:00:00.28]                   app.PushToken, timestamp ?? string.Empty, nonce ?? string.Empty);&#xD;
+[xUnit.net 00:00:00.28]               if (!FixedTimeEquals(expected, signature!))&#xD;
+[xUnit.net 00:00:00.28]               {&#xD;
+[xUnit.net 00:00:00.28]                   throw new WechatCallbackException(&#xD;
+[xUnit.net 00:00:00.28]                       WechatCallbackFailureKind.InvalidSignature, "URL 验证失败：signature 不匹配（请检查 PushToken 配置）。");&#xD;
+[xUnit.net 00:00:00.28]               }&#xD;
+[xUnit.net 00:00:00.28]       &#xD;
+[xUnit.net 00:00:00.28]               ValidateTimestampWindow(options, timestamp);&#xD;
+[xUnit.net 00:00:00.28]               // 幂等：GET 回显**不消费**指纹（平台会反复点「提交」，同 echostr 二次保存配置必须成功）。&#xD;
+[xUnit.net 00:00:00.28]       &#xD;
+[xUnit.net 00:00:00.28]               // 安全/兼容模式下 echostr 为密文：解密校验 appid（明文模式无解密环节，跳过 —— 见方案 R4）。&#xD;
+[xUnit.net 00:00:00.28]               if (mode != MpCallbackSecurityMode.Plain)&#xD;
+[xUnit.net 00:00:00.28]               {&#xD;
+[xUnit.net 00:00:00.28]                   try&#xD;
+[xUnit.net 00:00:00.28]                   {&#xD;
+[xUnit.net 00:00:00.28]                       WechatCallbackCrypto.Decrypt(app.PushEncodingAESKey, echoStr!, out var receiveId);&#xD;
+[xUnit.net 00:00:00.28]                       if (!string.Equals(receiveId, app.AppId, StringComparison.Ordinal))&#xD;
+[xUnit.net 00:00:00.28]                       {&#xD;
+[xUnit.net 00:00:00.28]                           throw new WechatCallbackException(&#xD;
+[xUnit.net 00:00:00.28]                               WechatCallbackFailureKind.ReceiveIdMismatch,&#xD;
+[xUnit.net 00:00:00.28]                               "URL 验证失败：echostr 解密出的 appid 与配置 AppId 不一致。");&#xD;
+[xUnit.net 00:00:00.28]                       }&#xD;
+[xUnit.net 00:00:00.28]                   }&#xD;
+[xUnit.net 00:00:00.28]                   catch (WechatCallbackException ex) when (ex.Kind == WechatCallbackFailureKind.DecryptFailed)&#xD;
+[xUnit.net 00:00:00.28]                   {&#xD;
+[xUnit.net 00:00:00.28]                       // 兼容模式下平台可能以明文发送 echostr：此时无解密环节，跳过 appid 校验。&#xD;
+[xUnit.net 00:00:00.28]                       _logger?.LogDebug("URL 验证的 echostr 非密文形态（兼容/明文模式），跳过 appid 校验。");&#xD;
+[xUnit.net 00:00:00.28]                   }&#xD;
+[xUnit.net 00:00:00.28]               }&#xD;
+[xUnit.net 00:00:00.29]       &#xD;
+[xUnit.net 00:00:00.29]               // F3：通过校验后「原样返回 echostr 参数内容」。&#xD;
+[xUnit.net 00:00:00.29]               return Task.FromResult(echoStr!);&#xD;
+[xUnit.net 00:00:00.29]           }&#xD;
+[xUnit.net 00:00:00.29]       &#xD;
+[xUnit.net 00:00:00.29]           private static MpAppCallbackOptions ResolveApp(MpCallbackOptions options, string appKey)&#xD;
+[xUnit.net 00:00:00.29]               =&gt; options.ResolveApp(appKey)&#xD;
+[xUnit.net 00:00:00.29]                  ?? throw new WechatCallbackException(&#xD;
+[xUnit.net 00:00:00.29]                      WechatCallbackFailureKind.UnknownReceiver,&#xD;
+[xUnit.net 00:00:00.29]                      $"回调配置未命中应用 \"{appKey}\"（既无精确键也无通配 \"{MpCallbackOptions.WildcardAppKey}\" 键）。");&#xD;
+[xUnit.net 00:00:00.29]       &#xD;
+[xUnit.net 00:00:00.29]           private void ValidateTimestampWindow(MpCallbackOptions options, string? timestamp)&#xD;
+[xUnit.net 00:00:00.29]           {&#xD;
+[xUnit.net 00:00:00.29]               if (string.IsNullOrEmpty(timestamp)&#xD;
+[xUnit.net 00:00:00.29]                   || !long.TryParse(timestamp, NumberStyles.Integer, CultureInfo.InvariantCulture, out var ts))&#xD;
+[xUnit.net 00:00:00.29]               {&#xD;
+[xUnit.net 00:00:00.29]                   throw new WechatCallbackException(&#xD;
+[xUnit.net 00:00:00.29]                       WechatCallbackFailureKind.MissingTimestamp, "回调验签失败：timestamp 缺失或非数字。");&#xD;
+[xUnit.net 00:00:00.29]               }&#xD;
+[xUnit.net 00:00:00.29]       &#xD;
+[xUnit.net 00:00:00.29]               var now = _utcNow().ToUnixTimeSeconds();&#xD;
+[xUnit.net 00:00:00.29]               if (Math.Abs(now - ts) &gt; options.AllowClockSkewSeconds)&#xD;
+[xUnit.net 00:00:00.29]               {&#xD;
+[xUnit.net 00:00:00.29]                   throw new WechatCallbackException(&#xD;
+[xUnit.net 00:00:00.29]                       WechatCallbackFailureKind.TimestampOutOfRange,&#xD;
+[xUnit.net 00:00:00.29]                       $"回调验签失败：timestamp 超出时效窗口（±{options.AllowClockSkewSeconds}s），疑似重放或时钟偏差。");&#xD;
+[xUnit.net 00:00:00.29]               }&#xD;
+[xUnit.net 00:00:00.29]           }&#xD;
+[xUnit.net 00:00:00.29]       &#xD;
+[xUnit.net 00:00:00.29]           private static void ValidateNonce(string? nonce)&#xD;
+[xUnit.net 00:00:00.29]           {&#xD;
+[xUnit.net 00:00:00.29]               if (string.IsNullOrEmpty(nonce))&#xD;
+[xUnit.net 00:00:00.29]               {&#xD;
+[xUnit.net 00:00:00.29]                   throw new WechatCallbackException(WechatCallbackFailureKind.MissingNonce, "回调验签失败：nonce 缺失。");&#xD;
+[xUnit.net 00:00:00.29]               }&#xD;
+[xUnit.net 00:00:00.29]           }&#xD;
+[xUnit.net 00:00:00.29]       &#xD;
+[xUnit.net 00:00:00.29]           /// &lt;summary&gt;常量时间比较（防时序侧信道）；&lt;c&gt;netstandard2.0&lt;/c&gt; 无 &lt;c&gt;CryptographicOperations&lt;/c&gt;，手工等价实现。&lt;/summary&gt;&#xD;
+[xUnit.net 00:00:00.29]           private static bool FixedTimeEquals(string expected, string actual)&#xD;
+[xUnit.net 00:00:00.29]           {&#xD;
+[xUnit.net 00:00:00.29]       #if NET6_0_OR_GREATER&#xD;
+[xUnit.net 00:00:00.29]               return CryptographicOperations.FixedTimeEquals(&#xD;
+[xUnit.net 00:00:00.29]                   Encoding.UTF8.GetBytes(expected), Encoding.UTF8.GetBytes(actual));&#xD;
+[xUnit.net 00:00:00.29]       #else&#xD;
+[xUnit.net 00:00:00.29]               var a = Encoding.UTF8.GetBytes(expected);&#xD;
+[xUnit.net 00:00:00.29]               var b = Encoding.UTF8.GetBytes(actual);&#xD;
+[xUnit.net 00:00:00.29]               if (a.Length != b.Length)&#xD;
+[xUnit.net 00:00:00.29]               {&#xD;
+[xUnit.net 00:00:00.29]                   return false;&#xD;
+[xUnit.net 00:00:00.29]               }&#xD;
+[xUnit.net 00:00:00.29]       &#xD;
+[xUnit.net 00:00:00.29]               var diff = 0;&#xD;
+[xUnit.net 00:00:00.29]               for (var i = 0; i &lt; a.Length; i++)&#xD;
+[xUnit.net 00:00:00.29]               {&#xD;
+[xUnit.net 00:00:00.29]                   diff |= a[i] ^ b[i];&#xD;
+[xUnit.net 00:00:00.29]               }&#xD;
+[xUnit.net 00:00:00.29]       &#xD;
+[xUnit.net 00:00:00.29]               return diff == 0;&#xD;
+[xUnit.net 00:00:00.29]       #endif&#xD;
+[xUnit.net 00:00:00.29]           }&#xD;
+[xUnit.net 00:00:00.29]       &#xD;
+[xUnit.net 00:00:00.29]           /// &lt;summary&gt;提取包体内 &lt;c&gt;&amp;lt;Encrypt&amp;gt;&lt;/c&gt; 节点；缺失或非 XML 返回 &lt;c&gt;null&lt;/c&gt;（明文形态）。&lt;/summary&gt;&#xD;
+[xUnit.net 00:00:00.29]           private static string? ExtractEncrypt(string body)&#xD;
+[xUnit.net 00:00:00.29]           {&#xD;
+[xUnit.net 00:00:00.29]               var root = TryParseXml(body);&#xD;
+[xUnit.net 00:00:00.29]               var value = root?.Element("Encrypt")?.Value;&#xD;
+[xUnit.net 00:00:00.29]               return string.IsNullOrEmpty(value) ? null : value;&#xD;
+[xUnit.net 00:00:00.29]           }&#xD;
+[xUnit.net 00:00:00.29]       &#xD;
+[xUnit.net 00:00:00.29]           /// &lt;summary&gt;填充信封公共与专有字段（明文非 XML 时字段留空，不抛 —— 协议外报文交兜底处理器）。&lt;/summary&gt;&#xD;
+[xUnit.net 00:00:00.29]           private static void FillEnvelopeFields(MpCallbackEnvelope envelope, string plaintext)&#xD;
+[xUnit.net 00:00:00.29]           {&#xD;
+[xUnit.net 00:00:00.29]               var root = TryParseXml(plaintext);&#xD;
+[xUnit.net 00:00:00.29]               if (root == null)&#xD;
+[xUnit.net 00:00:00.29]               {&#xD;
+[xUnit.net 00:00:00.29]                   return;&#xD;
+[xUnit.net 00:00:00.29]               }&#xD;
+[xUnit.net 00:00:00.29]       &#xD;
+[xUnit.net 00:00:00.29]               envelope.ToUserName = ElementText(root, "ToUserName");&#xD;
+[xUnit.net 00:00:00.29]               envelope.FromUserName = ElementText(root, "FromUserName");&#xD;
+[xUnit.net 00:00:00.29]               envelope.CreateTime = ElementText(root, "CreateTime");&#xD;
+[xUnit.net 00:00:00.29]               envelope.MsgType = ElementText(root, "MsgType");&#xD;
+[xUnit.net 00:00:00.29]               envelope.Event = ElementText(root, "Event");&#xD;
+[xUnit.net 00:00:00.29]               envelope.MsgId = ElementText(root, "MsgId");&#xD;
+[xUnit.net 00:00:00.29]               envelope.MsgDataId = ElementText(root, "MsgDataId");&#xD;
+[xUnit.net 00:00:00.29]               envelope.Idx = ElementText(root, "Idx");&#xD;
+[xUnit.net 00:00:00.29]           }&#xD;
+[xUnit.net 00:00:00.29]       &#xD;
+[xUnit.net 00:00:00.29]           private static string? ElementText(XElement root, string name)&#xD;
+[xUnit.net 00:00:00.29]           {&#xD;
+[xUnit.net 00:00:00.29]               var element = root.Element(name);&#xD;
+[xUnit.net 00:00:00.29]               return element == null ? null : element.Value;&#xD;
+[xUnit.net 00:00:00.29]           }&#xD;
+[xUnit.net 00:00:00.29]       &#xD;
+[xUnit.net 00:00:00.29]           /// &lt;summary&gt;&#xD;
+[xUnit.net 00:00:00.29]           /// 解析 XML（**显式禁用 DTD 与外部实体解析**，防 XXE / 十亿笑声）。&#xD;
+[xUnit.net 00:00:00.29]           /// &lt;/summary&gt;&#xD;
+[xUnit.net 00:00:00.29]           /// &lt;param name="xml"&gt;待解析文本。&lt;/param&gt;&#xD;
+[xUnit.net 00:00:00.29]           /// &lt;returns&gt;根元素；文本为空、非法或含 DTD 时返回 &lt;c&gt;null&lt;/c&gt;（不抛）。&lt;/returns&gt;&#xD;
+[xUnit.net 00:00:00.29]           private static XElement? TryParseXml(string? xml)&#xD;
+[xUnit.net 00:00:00.29]           {&#xD;
+[xUnit.net 00:00:00.29]               if (string.IsNullOrEmpty(xml))&#xD;
+[xUnit.net 00:00:00.29]               {&#xD;
+[xUnit.net 00:00:00.29]                   return null;&#xD;
+[xUnit.net 00:00:00.29]               }&#xD;
+[xUnit.net 00:00:00.29]       &#xD;
+[xUnit.net 00:00:00.29]               try&#xD;
+[xUnit.net 00:00:00.29]               {&#xD;
+[xUnit.net 00:00:00.29]                   var settings = new XmlReaderSettings&#xD;
+[xUnit.net 00:00:00.29]                   {&#xD;
+[xUnit.net 00:00:00.29]                       DtdProcessing = DtdProcessing.Prohibit,&#xD;
+[xUnit.net 00:00:00.29]                       XmlResolver = null,&#xD;
+[xUnit.net 00:00:00.29]                       MaxCharactersFromEntities = 0,&#xD;
+[xUnit.net 00:00:00.29]                   };&#xD;
+[xUnit.net 00:00:00.29]       &#xD;
+[xUnit.net 00:00:00.29]                   using var reader = XmlReader.Create(new StringReader(xml!), settings);&#xD;
+[xUnit.net 00:00:00.29]                   return XDocument.Load(reader).Root;&#xD;
+[xUnit.net 00:00:00.29]               }&#xD;
+[xUnit.net 00:00:00.29]               catch (XmlException)&#xD;
+[xUnit.net 00:00:00.29]               {&#xD;
+[xUnit.net 00:00:00.29]                   return null;&#xD;
+[xUnit.net 00:00:00.29]               }&#xD;
+[xUnit.net 00:00:00.29]           }&#xD;
+[xUnit.net 00:00:00.29]       }&#xD;
+[xUnit.net 00:00:00.29]       " to contain "ComputeSignature(
+                app.PushToken, timestamp ?? string.Empty, nonce ?? string.Empty);" because GET 回显 / 明文分支必须使用 3 参验签（不含 echostr）.&#xD;
+[xUnit.net 00:00:00.29]       Stack Trace:&#xD;
+[xUnit.net 00:00:00.29]            at FluentAssertions.Execution.XUnit2TestFramework.Throw(String message)&#xD;
+[xUnit.net 00:00:00.29]            at FluentAssertions.Execution.TestFrameworkProvider.Throw(String message)&#xD;
+[xUnit.net 00:00:00.29]            at FluentAssertions.Execution.DefaultAssertionStrategy.HandleFailure(String message)&#xD;
+[xUnit.net 00:00:00.29]            at FluentAssertions.Execution.AssertionScope.FailWith(Func`1 failReasonFunc)&#xD;
+[xUnit.net 00:00:00.29]            at FluentAssertions.Execution.AssertionScope.FailWith(Func`1 failReasonFunc)&#xD;
+[xUnit.net 00:00:00.29]            at FluentAssertions.Execution.AssertionScope.FailWith(String message, Object[] args)&#xD;
+[xUnit.net 00:00:00.29]            at FluentAssertions.Primitives.StringAssertions`1.Contain(String expected, String because, Object[] becauseArgs)&#xD;
+[xUnit.net 00:00:00.29]         D:\Repos\MudWechat\Tests\Mud.Wechat.OfficialAccount.Callback.Tests\MpCallbackContractGuards.cs(146,0): at Mud.Wechat.OfficialAccount.Callback.Tests.MpCallbackContractGuards.SignaturePolicy_ShouldBeFourParamOnPostAndConstantTime()&#xD;
+[xUnit.net 00:00:00.29]            at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)&#xD;
+[xUnit.net 00:00:00.29]            at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)&#xD;
+[xUnit.net 00:00:00.30]       Did not expect ReadSource(project) "&lt;Project Sdk="Microsoft.NET.Sdk"&gt;&#xD;
+[xUnit.net 00:00:00.30]       &#xD;
+[xUnit.net 00:00:00.30]       	&lt;PropertyGroup&gt;&#xD;
+[xUnit.net 00:00:00.30]       		&lt;Description&gt;微信公众号/服务号 SDK 认证与多应用基座包：接口调用凭据签发接口、令牌管理器（普通/稳定双通道）、多公众号管理、配置面、常量/枚举/异常。对应 Mud.Wechat.Work.Abstractions。&lt;/Description&gt;&#xD;
+[xUnit.net 00:00:00.30]       		&lt;PackageTags&gt;Wechat;OfficialAccount;公众号;服务号;Authentication;TokenManager;MultiApp;MudWechat&lt;/PackageTags&gt;&#xD;
+[xUnit.net 00:00:00.30]       		&lt;!-- MUD005（Query 令牌注入存在 URL 泄露面）：微信公众号官方契约强制令牌走 Query 参数&#xD;
+[xUnit.net 00:00:00.30]       		（access_token 为 URL 查询参数，官方不支持 Header 注入），无法改用 Header。&#xD;
+[xUnit.net 00:00:00.30]       		TokenRecoveryOptions.TokenInvalidationDetector 为接口类型属性、不做配置绑定，配置绑定源生成器&#xD;
+[xUnit.net 00:00:00.30]       		对接口属性报 SYSLIB1100/1101（生成器上报，#pragma 无法抑制），一并项目级静默并注明原因。 --&gt;&#xD;
+[xUnit.net 00:00:00.30]       		&lt;NoWarn&gt;$(NoWarn);MUD005;SYSLIB1100;SYSLIB1101&lt;/NoWarn&gt;&#xD;
+[xUnit.net 00:00:00.30]       	&lt;/PropertyGroup&gt;&#xD;
+[xUnit.net 00:00:00.30]       &#xD;
+[xUnit.net 00:00:00.30]       	&lt;ItemGroup&gt;&#xD;
+[xUnit.net 00:00:00.30]       		&lt;PackageReference Include="Mud.HttpUtils" Version="3.0.1" /&gt;&#xD;
+[xUnit.net 00:00:00.30]       	&lt;/ItemGroup&gt;&#xD;
+[xUnit.net 00:00:00.30]       &#xD;
+[xUnit.net 00:00:00.30]       	&lt;ItemGroup&gt;&#xD;
+[xUnit.net 00:00:00.30]       		&lt;PackageReference Include="Mud.HttpUtils.Generator" Version="3.0.1" PrivateAssets="all" OutputItemType="Analyzer" ReferenceOutputAssembly="false" /&gt;&#xD;
+[xUnit.net 00:00:00.30]       	&lt;/ItemGroup&gt;&#xD;
+[xUnit.net 00:00:00.30]       &#xD;
+[xUnit.net 00:00:00.30]       	&lt;!-- 回调契约登记生成器（产品线中立工具，回调接收模块设计方案 v3 §3.4）：按 [MpCallbackContract] 声明&#xD;
+[xUnit.net 00:00:00.30]       	     发射 MpPayloadContracts.RegisterAll 方法体。**必须挂在本工程**：partial 方法体与 partial 宿主&#xD;
+[xUnit.net 00:00:00.30]       	     必须同属一个程序集，而公众号载荷 DTO 与契约宿主落 OA.Abstractions（宿主引本包即可定义类型化处理器，&#xD;
+[xUnit.net 00:00:00.30]       	     零 ASP.NET 依赖）。工具为中立名，不构成对 Work 产品线的横向引用。 --&gt;&#xD;
+[xUnit.net 00:00:00.30]       	&lt;ItemGroup&gt;&#xD;
+[xUnit.net 00:00:00.30]       		&lt;ProjectReference Include="..\Mud.Wechat.Callback.Generator\Mud.Wechat.Callback.Generator.csproj"&#xD;
+[xUnit.net 00:00:00.30]       		                  OutputItemType="Analyzer" ReferenceOutputAssembly="false" PrivateAssets="all" /&gt;&#xD;
+[xUnit.net 00:00:00.30]       	&lt;/ItemGroup&gt;&#xD;
+[xUnit.net 00:00:00.30]       &#xD;
+[xUnit.net 00:00:00.30]       	&lt;ItemGroup Condition="'$(TargetFramework)' == 'net8.0' Or '$(TargetFramework)' == 'net10.0'"&gt;&#xD;
+[xUnit.net 00:00:00.30]       		&lt;PackageReference Include="Microsoft.Extensions.Http" Version="10.0.9" /&gt;&#xD;
+[xUnit.net 00:00:00.30]       		&lt;PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.9" /&gt;&#xD;
+[xUnit.net 00:00:00.30]       	&lt;/ItemGroup&gt;&#xD;
+[xUnit.net 00:00:00.30]       	&lt;ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' or '$(TargetFramework)' == 'net6.0'"&gt;&#xD;
+[xUnit.net 00:00:00.30]       		&lt;PackageReference Include="Microsoft.Extensions.Http" Version="8.0.1" /&gt;&#xD;
+[xUnit.net 00:00:00.30]       		&lt;PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="8.0.1" /&gt;&#xD;
+[xUnit.net 00:00:00.30]       	&lt;/ItemGroup&gt;&#xD;
+[xUnit.net 00:00:00.30]       &#xD;
+[xUnit.net 00:00:00.30]       	&lt;ItemGroup&gt;&#xD;
+[xUnit.net 00:00:00.30]       		&lt;ProjectReference Include="..\Mud.Wechat.Abstractions\Mud.Wechat.Abstractions.csproj" /&gt;&#xD;
+[xUnit.net 00:00:00.30]       		&lt;ProjectReference Include="..\Mud.Wechat.OfficialAccount.DataModels\Mud.Wechat.OfficialAccount.DataModels.csproj" /&gt;&#xD;
+[xUnit.net 00:00:00.30]       	&lt;/ItemGroup&gt;&#xD;
+[xUnit.net 00:00:00.30]       &#xD;
+[xUnit.net 00:00:00.30]       	&lt;ItemGroup&gt;&#xD;
+[xUnit.net 00:00:00.30]       		&lt;InternalsVisibleTo Include="Mud.Wechat.OfficialAccount" /&gt;&#xD;
+[xUnit.net 00:00:00.30]       		&lt;InternalsVisibleTo Include="Mud.Wechat.OfficialAccount.Tests" /&gt;&#xD;
+[xUnit.net 00:00:00.30]       		&lt;!-- 回调载荷/信封的 internal set 由运行时包（读取器/接收器）与测试工程填写（与企微侧 Work.Callback 同款）。 --&gt;&#xD;
+[xUnit.net 00:00:00.30]       		&lt;InternalsVisibleTo Include="Mud.Wechat.OfficialAccount.Callback" /&gt;&#xD;
+[xUnit.net 00:00:00.30]       		&lt;InternalsVisibleTo Include="Mud.Wechat.OfficialAccount.Callback.Tests" /&gt;&#xD;
+[xUnit.net 00:00:00.30]       		&lt;InternalsVisibleTo Include="DynamicProxyGenAssembly2" /&gt;&#xD;
+[xUnit.net 00:00:00.30]       	&lt;/ItemGroup&gt;&#xD;
+[xUnit.net 00:00:00.30]       &#xD;
+[xUnit.net 00:00:00.30]       &lt;/Project&gt;&#xD;
+[xUnit.net 00:00:00.30]       " to contain "Mud.Wechat.Work" because Mud.Wechat.OfficialAccount.Abstractions/Mud.Wechat.OfficialAccount.Abstractions.csproj 不得横向引用企业微信产品线（含 Work.Callback.Generator / Work.Callback.Analyzers 旧名形态）.&#xD;
+[xUnit.net 00:00:00.30]       Stack Trace:&#xD;
+[xUnit.net 00:00:00.30]            at FluentAssertions.Execution.XUnit2TestFramework.Throw(String message)&#xD;
+[xUnit.net 00:00:00.30]            at FluentAssertions.Execution.TestFrameworkProvider.Throw(String message)&#xD;
+[xUnit.net 00:00:00.30]            at FluentAssertions.Execution.DefaultAssertionStrategy.HandleFailure(String message)&#xD;
+[xUnit.net 00:00:00.30]            at FluentAssertions.Execution.AssertionScope.FailWith(Func`1 failReasonFunc)&#xD;
+[xUnit.net 00:00:00.30]            at FluentAssertions.Execution.AssertionScope.FailWith(Func`1 failReasonFunc)&#xD;
+[xUnit.net 00:00:00.30]            at FluentAssertions.Execution.AssertionScope.FailWith(String message, Object[] args)&#xD;
+[xUnit.net 00:00:00.30]            at FluentAssertions.Primitives.StringAssertions`1.NotContain(String unexpected, String because, Object[] becauseArgs)&#xD;
+[xUnit.net 00:00:00.30]         D:\Repos\MudWechat\Tests\Mud.Wechat.OfficialAccount.Callback.Tests\MpCallbackContractGuards.cs(46,0): at Mud.Wechat.OfficialAccount.Callback.Tests.MpCallbackContractGuards.OfficialAccountSide_ShouldNotReferenceWork()&#xD;
+[xUnit.net 00:00:00.30]            at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)&#xD;
+[xUnit.net 00:00:00.30]            at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)&#xD;
+[xUnit.net 00:00:00.31]   Finished:    Mud.Wechat.OfficialAccount.Callback.Tests&#xD;
+</StdOut>
+    </Output>
+    <RunInfos>
+      <RunInfo computerName="XIA-PC" outcome="Error" timestamp="2026-10-07T09:28:02.8885688+08:00">
+        <Text>[xUnit.net 00:00:00.27]     Mud.Wechat.OfficialAccount.Callback.Tests.MpCallbackContractGuards.SignaturePolicy_ShouldBeFourParamOnPostAndConstantTime [FAIL]</Text>
+      </RunInfo>
+      <RunInfo computerName="XIA-PC" outcome="Error" timestamp="2026-10-07T09:28:02.9040340+08:00">
+        <Text>[xUnit.net 00:00:00.30]     Mud.Wechat.OfficialAccount.Callback.Tests.MpCallbackContractGuards.OfficialAccountSide_ShouldNotReferenceWork [FAIL]</Text>
+      </RunInfo>
+    </RunInfos>
+  </ResultSummary>
+</TestRun>

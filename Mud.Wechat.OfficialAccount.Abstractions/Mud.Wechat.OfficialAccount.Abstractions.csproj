@@ -18,6 +18,15 @@
 		<PackageReference Include="Mud.HttpUtils.Generator" Version="3.0.1" PrivateAssets="all" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
 	</ItemGroup>
 
+	<!-- 回调契约登记生成器（产品线中立工具，回调接收模块设计方案 v3 §3.4）：按 [MpCallbackContract] 声明
+	     发射 MpPayloadContracts.RegisterAll 方法体。**必须挂在本工程**：partial 方法体与 partial 宿主
+	     必须同属一个程序集，而公众号载荷 DTO 与契约宿主落 OA.Abstractions（宿主引本包即可定义类型化处理器，
+	     零 ASP.NET 依赖）。工具为中立名，不构成对 Work 产品线的横向引用。 -->
+	<ItemGroup>
+		<ProjectReference Include="..\Mud.Wechat.Callback.Generator\Mud.Wechat.Callback.Generator.csproj"
+		                  OutputItemType="Analyzer" ReferenceOutputAssembly="false" PrivateAssets="all" />
+	</ItemGroup>
+
 	<ItemGroup Condition="'$(TargetFramework)' == 'net8.0' Or '$(TargetFramework)' == 'net10.0'">
 		<PackageReference Include="Microsoft.Extensions.Http" Version="10.0.9" />
 		<PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.9" />
@@ -35,6 +44,9 @@
 	<ItemGroup>
 		<InternalsVisibleTo Include="Mud.Wechat.OfficialAccount" />
 		<InternalsVisibleTo Include="Mud.Wechat.OfficialAccount.Tests" />
+		<!-- 回调载荷/信封的 internal set 由运行时包（读取器/接收器）与测试工程填写（与企微侧 Work.Callback 同款）。 -->
+		<InternalsVisibleTo Include="Mud.Wechat.OfficialAccount.Callback" />
+		<InternalsVisibleTo Include="Mud.Wechat.OfficialAccount.Callback.Tests" />
 		<InternalsVisibleTo Include="DynamicProxyGenAssembly2" />
 	</ItemGroup>
 

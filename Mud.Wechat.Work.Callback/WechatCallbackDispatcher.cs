@@ -8,24 +8,6 @@
 namespace Mud.Wechat.Work.Callback;
 
 /// <summary>
-/// 事件分发结果（v1 方案 §5.4.3；由中间件映射为 HTTP 应答）。
-/// </summary>
-public enum WechatCallbackDispatchOutcome
-{
-    /// <summary>处理器已执行（含单处理器异常被隔离的情形）→ 200。</summary>
-    Handled,
-
-    /// <summary>无匹配处理器（unhandled，已告警）→ 200（企业微信契约：事件已接收）。</summary>
-    Unhandled,
-
-    /// <summary>拦截器中断（BeforeHandleAsync 返回 false）→ 503（触发企业微信重推）。</summary>
-    Interrupted,
-
-    /// <summary>事件族不适用于当前「应用类型 × 回调通道」（开放面闸）→ 200（事件已接收、不重推）。</summary>
-    Rejected,
-}
-
-/// <summary>
 /// 回调事件分发器（v1 方案 §5.4.3，对齐 <c>FeishuWebhookService.HandleEventWithInterceptorsAsync</c>
 /// 并按企业微信契约裁剪）：
 /// 事件族合法性闸（区分企业自建 / 第三方 / 代开发 × 回调通道的开放面）→ 拦截器 Before（appKey 专属先于全局；

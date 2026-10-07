@@ -5,4 +5,5 @@
 
 Rule ID | Category | Severity | Notes
 --------|----------|----------|-------
-MUDCB001 | MudWechatCallback | Error | 回调契约声明不完整
+MUDCB001 | MudWechatCallback | Error | 回调契约声明不完整（企微档位）
+MUDCB006 | MudWechatCallback | Error | 公众号回调契约声明不完整（公众号档位）

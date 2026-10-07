@@ -9,17 +9,21 @@ using System.Collections.Generic;
 using System.Xml.Linq;
 using Mud.HttpUtils.Payloads;
 
-namespace Mud.Wechat.Work.Callback;
+namespace Mud.Wechat.Abstractions.Callback;
 
 /// <summary>
-/// <c>XElement</c> → <see cref="PayloadNode"/> 投影器：本包对 XML 的<b>唯一触点</b>。
+/// <c>XElement</c> → <see cref="PayloadNode"/> 投影器：叶层回调子域对 XML 的<b>唯一触点</b>。
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>架构边界（守卫 CB14/CB18）</b>：上游 <c>Mud.HttpUtils</c> 的载荷契约是 XML-free 的，
-/// 故「报文 → 节点」的适配必须由<b>消费方</b>提供；本类是全包唯一允许出现
-/// <c>System.Xml.Linq</c> 类型的文件（另有 <see cref="WechatCallbackReceiver"/> 仅用于提取请求体的
-/// <c>Encrypt</c> 节点，不参与载荷路径）。
+/// <b>架构边界（守卫 CB14 / CB-L1i）</b>：上游 <c>Mud.HttpUtils</c> 的载荷契约是 XML-free 的，
+/// 故「报文 → 节点」的适配必须由<b>消费方</b>提供；本类是叶层回调子域内唯一允许出现
+/// <c>System.Xml.Linq</c> 类型的文件。各产品线接收器另有自己的请求体 XML 触点
+/// （如企微 <c>WechatCallbackReceiver</c> 仅用于提取请求体的 <c>Encrypt</c> 节点，不参与载荷路径）。
+/// </para>
+/// <para>
+/// <b>为何落叶层</b>：投影含「全树同名兄弟合并 + 包装形态豁免表」等经官方报文逐族验证的语义，
+/// 双份实现即双份漂移面；且它与产品线无关（入参为解密明文，出参为上游 <c>PayloadNode</c>）。
 /// </para>
 /// <para>
 /// <b>投影语义与上游一致</b>：<see cref="PayloadNode.Value"/> 取元素的<b>全后代文本</b>

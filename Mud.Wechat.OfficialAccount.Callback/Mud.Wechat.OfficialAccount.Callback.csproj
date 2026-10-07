@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<Description>微信公众号/服务号 SDK 回调接收包：URL 验证（GET echostr 回显）、消息推送（明文/兼容/安全三模式）、双验签（GET signature / POST msg_signature）、appid 校验、抗重放指纹、事件分发（类型化处理器 + 拦截器）与被动回复（加密 XML 回写）的 HTTP 中间件与多应用路由。</Description>
+		<PackageTags>Wechat;OfficialAccount;公众号;服务号;Callback;Webhook;Middleware;MpCallback;MudWechat</PackageTags>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\Mud.Wechat.OfficialAccount.Abstractions\Mud.Wechat.OfficialAccount.Abstractions.csproj" />
+	</ItemGroup>
+
+	<!-- 说明（v3 方案 §3.4/E9）：契约登记生成器挂在 OA.Abstractions（partial 方法体与宿主必须同程序集），
+	     本工程**不**引用生成器 —— 否则生成器会在本程序集发射「无宿主」的 partial 方法实现（CS0759）。
+	     处理器契约分析器亦不引用：其元数据名表当前仅覆盖企微档位，对本工程为**空跑**，
+	     公众号档位扩展列入 P4 附带项（见方案 §11）。 -->
+
+	<!-- v3 方案 D2：ASP.NET 依赖只存在于运行时 Callback 包（叶层与 Abstractions 保持零 ASP.NET）。
+	     netstandard2.0 走 2.3.9 包；net6.0+ 走 FrameworkReference（对齐 Work.Callback）。 -->
+	<ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+		<PackageReference Include="Microsoft.AspNetCore.Http" Version="2.3.9" />
+		<PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.3.9" />
+	</ItemGroup>
+	<ItemGroup Condition="'$(TargetFramework)' != 'netstandard2.0'">
+		<FrameworkReference Include="Microsoft.AspNetCore.App" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<!-- 抗重放时间窗与响应常量（internal）供测试断言边界。 -->
+		<InternalsVisibleTo Include="Mud.Wechat.OfficialAccount.Callback.Tests" />
+	</ItemGroup>
+
+</Project>

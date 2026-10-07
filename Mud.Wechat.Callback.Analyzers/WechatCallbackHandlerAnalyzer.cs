@@ -16,7 +16,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Operations;
 
-namespace Mud.Wechat.Work.Callback.Analyzers;
+namespace Mud.Wechat.Callback.Analyzers;
 
 /// <summary>
 /// 回调处理器契约分析器：把「handler 的 <c>SupportedEventType</c> ↔ 载荷契约」这条当前只有运行期日志兜底的

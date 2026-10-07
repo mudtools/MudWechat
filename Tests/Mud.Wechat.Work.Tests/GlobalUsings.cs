@@ -12,6 +12,7 @@ global using System.Text;
 global using System.Threading;
 global using System.Threading.Tasks;
 global using Microsoft.Extensions.Options;
+global using Mud.Wechat.Abstractions.Callback;
 global using Mud.Wechat.Abstractions.TokenManager;
 global using Mud.Wechat.Work.Abstractions;
 global using Mud.HttpUtils;

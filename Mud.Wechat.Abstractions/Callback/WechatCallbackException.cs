@@ -5,11 +5,15 @@
 //  不得利用本项目从事危害国家安全、扰乱社会秩序、侵犯他人合法权益等法律法规禁止的活动！任何基于本项目开发而产生的一切法律纠纷和责任，我们不承担任何责任！
 // -----------------------------------------------------------------------
 
-namespace Mud.Wechat.Work.Callback;
+namespace Mud.Wechat.Abstractions.Callback;
 
 /// <summary>
-/// 回调接收失败类别（P2-2 异常细分；宿主可据此映射 HTTP 应答，见回调域方案附录 A）。
+/// 微信系回调接收失败类别（企业微信 / 公众号共用；宿主可据此映射 HTTP 应答，见各产品线回调域方案附录）。
 /// </summary>
+/// <remarks>
+/// 本枚举为<b>叶层中立面</b>：取值语义与产品线无关（缺参 / 验签不匹配 / 时效越界 / 指纹重放 / 解密失败 /
+/// 接收方不匹配 / 路由未命中），故不按产品线复制（复制会导致宿主 <c>catch</c> 分支与失败类别映射漂移）。
+/// </remarks>
 public enum WechatCallbackFailureKind
 {
     /// <summary>缺少 msg_signature 参数。</summary>
@@ -27,8 +31,14 @@ public enum WechatCallbackFailureKind
     /// <summary>nonce 缺失。</summary>
     MissingNonce,
 
-    /// <summary>回调报文未找到 Encrypt 节点。</summary>
+    /// <summary>回调报文未找到 Encrypt 节点（明文报文 / 密文缺失）。</summary>
     MissingEncrypt,
+
+    /// <summary>
+    /// 安全模式下收到<b>明文</b>报文（公众号三模式语义：安全模式须为纯密文，明文一律拒收）。
+    /// </summary>
+    /// <remarks>企业微信恒为密文，不会产生本类别。</remarks>
+    PlainTextRejected,
 
     /// <summary>疑似重放（一次性指纹已被消费）。</summary>
     ReplaySuspected,
@@ -44,17 +54,16 @@ public enum WechatCallbackFailureKind
 }
 
 /// <summary>
-/// 回调接收统一异常（P2-2：携带失败类别，供宿主区分失败类别与应答策略）。
+/// 微信系回调接收统一异常（携带失败类别，供宿主区分失败类别与应答策略）。
 /// </summary>
 /// <remarks>
 /// <para>
 /// 继承 <see cref="InvalidOperationException"/>：既有 <c>catch (InvalidOperationException)</c> 块零破坏（决策 D7）。
 /// </para>
 /// <para>
-/// 异常消息不含密钥/密文材料。各 <see cref="Kind"/> 的建议 HTTP 应答见回调域方案附录 A：
-/// 验签类 400/403、<see cref="WechatCallbackFailureKind.ReplaySuspected"/> 200 空体（幂等吞掉）、
-/// <see cref="WechatCallbackFailureKind.DecryptFailed"/>/<see cref="WechatCallbackFailureKind.ReceiveIdMismatch"/> 500 + 告警、
-/// <see cref="WechatCallbackFailureKind.UnknownReceiver"/> 400/403。
+/// 异常消息不含密钥/密文材料。产品线应答映射：企微验签类 403、
+/// <see cref="WechatCallbackFailureKind.DecryptFailed"/>/<see cref="WechatCallbackFailureKind.ReceiveIdMismatch"/> 500 + 告警；
+/// 公众号验签类 403 + 空体、<see cref="WechatCallbackFailureKind.PlainTextRejected"/> 403（安全模式拒明文）。
 /// </para>
 /// </remarks>
 public class WechatCallbackException : InvalidOperationException

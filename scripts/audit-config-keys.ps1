@@ -22,6 +22,9 @@ $configFiles = @(
     'Mud.Wechat.Work.Abstractions/Configuration/WechatAppConfig.cs',
     'Mud.Wechat.OfficialAccount.Abstractions/Configuration/MpAppConfig.cs',
     'Mud.Wechat.Work.Callback/WechatCallbackOptions.cs',
+    # 公众号回调配置面（与企微 WechatCallbackOptions 同层同形）：路由前缀/超时/白名单/
+    # 逐应用凭据（Token/EncodingAESKey/AppId）——新增配置属性必须有真实消费点，否则本脚本 fail-closed。
+    'Mud.Wechat.OfficialAccount.Callback/MpCallbackOptions.cs',
     'Mud.Wechat.Redis/Configuration/WechatRedisOptions.cs',
     'Mud.Wechat.Redis/Configuration/WechatRedisConnectionOptions.cs'
 )
@@ -33,6 +36,8 @@ foreach ($file in $configFiles) {
 
     # 提取 public string/int/bool 属性名（配置 DTO 全部为可写基元属性）；
     # 回调域新增 AppType/Channel 两个枚举配置属性（区分企业自建/第三方/代开发 × 回调通道），一并纳入扫描。
+    # 注：公众号侧 SecurityMode 为**可空枚举**（未设置 = 回落配置级默认值），不匹配本正则——其消费点由
+    # ResolveMode 承载，属有意不入扫描（可空语义无法用「必有消费点」表达）。
     $propNames = [regex]::Matches($content, 'public\s+(?:string|int|bool|WechatAppType|WechatCallbackChannel)\s+(\w+)\s*\{\s*get;\s*set;') |
         ForEach-Object { $_.Groups[1].Value } | Sort-Object -Unique
 
@@ -51,7 +56,9 @@ foreach ($file in $configFiles) {
         'Mud.Wechat.Redis',
         'Mud.Wechat.OfficialAccount',
         'Mud.Wechat.OfficialAccount.Abstractions',
-        'Mud.Wechat.OfficialAccount.DataModels'
+        'Mud.Wechat.OfficialAccount.DataModels',
+        # 公众号回调运行时包（配置消费点所在；未纳入即为门禁盲区）。
+        'Mud.Wechat.OfficialAccount.Callback'
     )
 
     foreach ($prop in $propNames) {

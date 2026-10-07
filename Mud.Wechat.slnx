@@ -6,8 +6,8 @@
   <Folder Name="/src/">
     <Project Path="Mud.Wechat.Abstractions/Mud.Wechat.Abstractions.csproj" />
     <Project Path="Mud.Wechat.Work.Abstractions/Mud.Wechat.Work.Abstractions.csproj" />
-    <Project Path="Mud.Wechat.Work.Callback.Generator/Mud.Wechat.Work.Callback.Generator.csproj" />
-    <Project Path="Mud.Wechat.Work.Callback.Analyzers/Mud.Wechat.Work.Callback.Analyzers.csproj" />
+    <Project Path="Mud.Wechat.Callback.Generator/Mud.Wechat.Callback.Generator.csproj" />
+    <Project Path="Mud.Wechat.Callback.Analyzers/Mud.Wechat.Callback.Analyzers.csproj" />
     <Project Path="Mud.Wechat.Work.Callback/Mud.Wechat.Work.Callback.csproj" />
     <Project Path="Mud.Wechat.Work.DataModels/Mud.Wechat.Work.DataModels.csproj" />
     <Project Path="Mud.Wechat.Redis/Mud.Wechat.Redis.csproj" />
@@ -15,6 +15,7 @@
     <Project Path="Mud.Wechat.OfficialAccount.Abstractions/Mud.Wechat.OfficialAccount.Abstractions.csproj" />
     <Project Path="Mud.Wechat.OfficialAccount.DataModels/Mud.Wechat.OfficialAccount.DataModels.csproj" />
     <Project Path="Mud.Wechat.OfficialAccount/Mud.Wechat.OfficialAccount.csproj" />
+    <Project Path="Mud.Wechat.OfficialAccount.Callback/Mud.Wechat.OfficialAccount.Callback.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="Tests/Mud.Wechat.Abstractions.Tests/Mud.Wechat.Abstractions.Tests.csproj" />
@@ -24,5 +25,6 @@
     <Project Path="Tests/Mud.Wechat.Redis.Tests/Mud.Wechat.Redis.Tests.csproj" />
     <Project Path="Tests/Mud.Wechat.Work.Tests/Mud.Wechat.Work.Tests.csproj" />
     <Project Path="Tests/Mud.Wechat.OfficialAccount.Tests/Mud.Wechat.OfficialAccount.Tests.csproj" />
+    <Project Path="Tests/Mud.Wechat.OfficialAccount.Callback.Tests/Mud.Wechat.OfficialAccount.Callback.Tests.csproj" />
   </Folder>
 </Solution>

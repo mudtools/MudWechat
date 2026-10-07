@@ -4,7 +4,7 @@
 		<!-- Roslyn 源生成器跨宿主加载的硬约束：netstandard2.0 单 TFM。
 		     覆盖根 Directory.Build.props 的多 TFM（同 Tests/Directory.Build.props 的遮蔽思路）。 -->
 		<TargetFrameworks>netstandard2.0</TargetFrameworks>
-		<Description>Mud.Wechat 回调契约登记生成器：扫描载荷类上的 [WechatCallbackContract] 特性声明（事件键 + 族前置条件 + 事件键级开放面），编译期发射 OfficialPayloadContracts.RegisterAll 的方法体。仅随 Callback 工程 OutputItemType=Analyzer 引用，不打包（IsPackable=false）。</Description>
+		<Description>Mud.Wechat 回调契约登记生成器（产品线中立工具）：按档位分别扫描企微 [WechatCallbackContract]（事件键 + 族前置 + 开放面）与公众号 [MpCallbackContract]（事件键），编译期发射各自登记宿主的 RegisterAll 方法体。以 OutputItemType=Analyzer 被两条产品线引用，不打包（IsPackable=false），不引用任何产品线程序集。</Description>
 		<PackageTags>Mud Wechat Roslyn SourceGenerator Analyzer Callback</PackageTags>
 		<Product>Mud.Wechat Callback Contract Registration Generator</Product>
 		<IsPackable>false</IsPackable>
@@ -34,7 +34,7 @@
 		<PackageReference Remove="System.Text.Json" />
 	</ItemGroup>
 
-	<!-- 诊断发布跟踪（消除 RS2008）：登记 MUDCB001 的 ID/级别。 -->
+	<!-- 诊断发布跟踪（消除 RS2008）：登记 MUDCB001（企微档位）与 MUDCB006（公众号档位）的 ID/级别。 -->
 	<ItemGroup>
 		<AdditionalFiles Include="AnalyzerReleases.Shipped.md" />
 		<AdditionalFiles Include="AnalyzerReleases.Unshipped.md" />

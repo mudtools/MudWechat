@@ -938,8 +938,9 @@ public class WechatCallbackContractGuards
         echoBody.Should().Contain("ValidateTimestampWindow", "时效窗口闸保持 fail-closed");
 
         // 被动应答扩展点（本期不实现组装，算法基座不得移除）。
+        // v3：加解密内核已下沉叶层（协议与安全内核单一事实来源），断言路径随之迁移。
         var cryptoPath = Path.Combine(GetSolutionRoot(),
-            "Mud.Wechat.Work.Callback", "WechatCallbackCrypto.cs");
+            "Mud.Wechat.Abstractions", "Callback", "WechatCallbackCrypto.cs");
         var cryptoSource = File.ReadAllText(cryptoPath);
         cryptoSource.Should().Contain("public static string Encrypt(", "被动应答包 Encrypt 算法基座");
         cryptoSource.Should().Contain("public static string ComputeSignature(", "MsgSignature 算法基座");
@@ -991,14 +992,18 @@ public class WechatCallbackContractGuards
     }
 
     /// <summary>
-    /// 契约守卫 CB14（v2.2 新增）：Mud.Wechat 的 XML 触点必须唯一 ——
-    /// <c>WechatCallbackReceiver</c>（请求体 <c>Encrypt</c> 提取）与
-    /// <c>XElementPayloadSource</c>（载荷投影）之外的文件不得出现 XML 类型。
+    /// 契约守卫 CB14（v2.2 新增；v3 收敛）：Mud.Wechat 的 XML 触点必须唯一 ——
+    /// <c>WechatCallbackReceiver</c>（请求体 <c>Encrypt</c> 提取）之外的文件不得出现 XML 类型。
     /// </summary>
+    /// <remarks>
+    /// <b>v3</b>：载荷投影 <c>XElementPayloadSource</c> 已随「协议与安全内核」下沉
+    /// <c>Mud.Wechat.Abstractions/Callback</c>，故本包允许清单由 2 项收敛为 1 项；
+    /// 叶层另有等价守卫（CB-L1i：叶层回调子域内 XML 触点唯一）。
+    /// </remarks>
     [Fact]
     public void CallbackPackage_ShouldKeepXmlTouchPointsUnique()
     {
-        var allowed = new[] { "WechatCallbackReceiver.cs", "XElementPayloadSource.cs" };
+        var allowed = new[] { "WechatCallbackReceiver.cs" };
 
         var files = Directory.GetFiles(
                 Path.Combine(GetSolutionRoot(), "Mud.Wechat.Work.Callback"), "*.cs", SearchOption.AllDirectories)
@@ -1062,8 +1067,9 @@ public class WechatCallbackContractGuards
     [Fact]
     public void CallbackCrypto_ShouldUseManualPkcs7PaddingOf32Bytes()
     {
+        // v3：加解密内核已下沉叶层 Mud.Wechat.Abstractions/Callback（守卫随源迁址，见 CB-MP-10）。
         var cryptoPath = Path.Combine(GetSolutionRoot(),
-            "Mud.Wechat.Work.Callback", "WechatCallbackCrypto.cs");
+            "Mud.Wechat.Abstractions", "Callback", "WechatCallbackCrypto.cs");
         File.Exists(cryptoPath).Should().BeTrue($"未找到回调加解密实现：{cryptoPath}");
 
         var source = File.ReadAllText(cryptoPath);
@@ -1313,7 +1319,7 @@ public class WechatCallbackContractGuards
     // ---------------------------------------------------------------- CB24
 
     /// <summary>
-    /// 契约守卫 CB24（回调处理器契约分析器方案）：<c>Mud.Wechat.Work.Callback.Analyzers</c> 诊断型分析器契约面。
+    /// 契约守卫 CB24（回调处理器契约分析器方案）：<c>Mud.Wechat.Callback.Analyzers</c> 诊断型分析器契约面。
     /// <para>
     /// 编号说明：<c>CB14</c>（XML 触点唯一）与 <c>CB23</c>（禁止载荷级安全闸）已被占用，故本守卫顺延为 CB24。
     /// </para>
@@ -1327,7 +1333,7 @@ public class WechatCallbackContractGuards
     [Fact]
     public void CallbackHandlerAnalyzer_ShouldDeclareMatchingDiagnostics()
     {
-        var analyzersRoot = Path.Combine(GetSolutionRoot(), "Mud.Wechat.Work.Callback.Analyzers");
+        var analyzersRoot = Path.Combine(GetSolutionRoot(), "Mud.Wechat.Callback.Analyzers");
 
         // ① 分析器源码声明的诊断 ID 集合 双向等于 AnalyzerReleases.Unshipped.md 的登记（防漏登/残留）。
         var analyzerSource = File.ReadAllText(Path.Combine(analyzersRoot, "WechatCallbackHandlerAnalyzer.cs"));
@@ -1348,7 +1354,7 @@ public class WechatCallbackContractGuards
             "（声明未登记 → RS2007/RS2000；登记了已删规则 → 漂移）");
 
         // ② 分析器 csproj 形态：netstandard2.0 单 TFM / IsRoslynComponent / 不引用 Workspaces / 移除根 props 运行时依赖。
-        var csprojSource = File.ReadAllText(Path.Combine(analyzersRoot, "Mud.Wechat.Work.Callback.Analyzers.csproj"));
+        var csprojSource = File.ReadAllText(Path.Combine(analyzersRoot, "Mud.Wechat.Callback.Analyzers.csproj"));
         csprojSource.Should().Contain("<TargetFrameworks>netstandard2.0</TargetFrameworks>",
             "CB24：Roslyn 分析器必须 netstandard2.0 单 TFM（跨宿主加载硬约束）");
         csprojSource.Should().Contain("<IsRoslynComponent>true</IsRoslynComponent>", "CB24：分析器工程标记");
@@ -1386,12 +1392,12 @@ public class WechatCallbackContractGuards
             GetSolutionRoot(), "Mud.Wechat.Work.Callback", "Mud.Wechat.Work.Callback.csproj"));
         callbackCsprojSource.Should().Contain("analyzers/dotnet/cs", "CB24：随包下发分析器资产");
         callbackCsprojSource.Should().Contain(
-            "Mud.Wechat.Work.Callback.Analyzers.dll",
+            "Mud.Wechat.Callback.Analyzers.dll",
             "CB24：打包 ItemGroup 引用本仓分析器 DLL（排除上游 Mud.HttpUtils.Generator 与本仓 Callback.Generator）");
 
         // ④ 工程登记：slnx 必须含分析器工程（否则 verify-build 步骤 1/2 的「随 slnx 构建」口径漏项）。
         File.ReadAllText(Path.Combine(GetSolutionRoot(), "Mud.Wechat.slnx"))
-            .Should().Contain("Mud.Wechat.Work.Callback.Analyzers/Mud.Wechat.Work.Callback.Analyzers.csproj",
+            .Should().Contain("Mud.Wechat.Callback.Analyzers/Mud.Wechat.Callback.Analyzers.csproj",
                 "CB24：分析器工程必须在 slnx 的 /src/ 下登记");
 
         // ⑤ 狗粮面：Demo 必须以 Analyzer 形态引用分析器（普通引用不会在 Demo 源码上生效）。
@@ -1429,7 +1435,7 @@ public class WechatCallbackContractGuards
     public void CallbackHandlerAnalyzer_MetadataNames_ShouldMatchRuntimeTypes()
     {
         var analyzerSource = File.ReadAllText(Path.Combine(
-            GetSolutionRoot(), "Mud.Wechat.Work.Callback.Analyzers", "WechatCallbackHandlerAnalyzer.cs"));
+            GetSolutionRoot(), "Mud.Wechat.Callback.Analyzers", "WechatCallbackHandlerAnalyzer.cs"));
 
         var expected = new (string ConstName, string MetadataName)[]
         {

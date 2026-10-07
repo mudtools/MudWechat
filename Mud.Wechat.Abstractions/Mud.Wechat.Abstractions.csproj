@@ -17,6 +17,9 @@
 		<InternalsVisibleTo Include="Mud.Wechat.Work.Callback" />
 		<InternalsVisibleTo Include="Mud.Wechat.OfficialAccount.Abstractions" />
 		<InternalsVisibleTo Include="Mud.Wechat.OfficialAccount" />
+		<!-- 回调协议与安全内核（Callback/ 子域）的 internal 类型（XML 源缓存/投影器）供两条产品线的运行时包复用。 -->
+		<InternalsVisibleTo Include="Mud.Wechat.OfficialAccount.Callback" />
+		<InternalsVisibleTo Include="Mud.Wechat.OfficialAccount.Callback.Tests" />
 		<InternalsVisibleTo Include="Mud.Wechat.Redis" />
 		<InternalsVisibleTo Include="Mud.Wechat.Abstractions.Tests" />
 		<InternalsVisibleTo Include="Mud.Wechat.Work.Tests" />

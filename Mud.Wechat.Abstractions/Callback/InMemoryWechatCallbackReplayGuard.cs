@@ -5,11 +5,12 @@
 //  不得利用本项目从事危害国家安全、扰乱社会秩序、侵犯他人合法权益等法律法规禁止的活动！任何基于本项目开发而产生的一切法律纠纷和责任，我们不承担任何责任！
 // -----------------------------------------------------------------------
 
-namespace Mud.Wechat.Work.Callback;
+namespace Mud.Wechat.Abstractions.Callback;
 
 /// <summary>
 /// <see cref="IWechatCallbackReplayGuard"/> 的进程内默认实现（并发字典 + 机会式过期回收，无 Timer）。
 /// </summary>
+/// <remarks>企业微信与公众号共用（同源协议：指纹 + 时间窗）；多实例部署由宿主替换为分布式实现。</remarks>
 /// <remarks>
 /// <para>
 /// 单 key 语义幂等：<see cref="ConcurrentDictionary{TKey,TValue}.TryAdd"/> 的原子性保证

@@ -24,6 +24,7 @@ global using Mud.Wechat.Work.Abstractions.Callback;
 global using Mud.Wechat.Work.Abstractions.Callback.Payloads;
 global using Mud.HttpUtils.Payloads;
 global using Mud.Wechat.Abstractions;
+global using Mud.Wechat.Abstractions.Callback;
 global using Mud.Wechat.Abstractions.Configuration;
 global using Mud.Wechat.Abstractions.Contracts;
 global using Mud.Wechat.Abstractions.Exceptions;

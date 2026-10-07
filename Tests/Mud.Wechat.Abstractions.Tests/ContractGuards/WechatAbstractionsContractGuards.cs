@@ -173,6 +173,10 @@ public class WechatAbstractionsContractGuards
         audit.Should().Contain("Mud.Wechat.OfficialAccount.Abstractions/Configuration/MpAppConfig.cs",
             "公众号配置必须纳入审计");
         audit.Should().Contain("Mud.Wechat.OfficialAccount'", "公众号工程必须纳入消费点搜索范围");
+        audit.Should().Contain("Mud.Wechat.OfficialAccount.Callback/MpCallbackOptions.cs",
+            "公众号回调配置面必须纳入审计白名单（否则配置属性无消费点也无人发现）");
+        audit.Should().Contain("Mud.Wechat.OfficialAccount.Callback'",
+            "公众号回调运行时包必须纳入消费点搜索范围（未纳入即门禁盲区）");
 
         var annotate = File.ReadAllText(Path.Combine(root, "scripts", "AddHttpJsonSerializable.ps1"));
         annotate.Should().Contain("$RootNamespace", "根命名空间必须参数化，否则非默认产品线根级 DTO 分组错误");
@@ -184,14 +188,18 @@ public class WechatAbstractionsContractGuards
                      "Mud.Wechat.OfficialAccount/Mud.Wechat.OfficialAccount.csproj",
                      "Mud.Wechat.OfficialAccount.Abstractions/Mud.Wechat.OfficialAccount.Abstractions.csproj",
                      "Mud.Wechat.OfficialAccount.DataModels/Mud.Wechat.OfficialAccount.DataModels.csproj",
+                     "Mud.Wechat.OfficialAccount.Callback/Mud.Wechat.OfficialAccount.Callback.csproj",
+                     "Mud.Wechat.Callback.Generator/Mud.Wechat.Callback.Generator.csproj",
+                     "Mud.Wechat.Callback.Analyzers/Mud.Wechat.Callback.Analyzers.csproj",
                      "Tests/Mud.Wechat.Abstractions.Tests/Mud.Wechat.Abstractions.Tests.csproj",
                      "Tests/Mud.Wechat.OfficialAccount.Tests/Mud.Wechat.OfficialAccount.Tests.csproj",
+                     "Tests/Mud.Wechat.OfficialAccount.Callback.Tests/Mud.Wechat.OfficialAccount.Callback.Tests.csproj",
                  })
         {
             slnx.Should().Contain(project, "新增工程必须纳入解决方案（否则 verify-build 步骤 1 覆盖不到）");
         }
 
         var ci = File.ReadAllText(Path.Combine(root, ".github", "workflows", "dotnet-publish.yml"));
-        ci.Should().Contain("-ne 9", "制品数量守卫必须随新增产品线更新（否则打包步骤 fail-closed 必红）");
+        ci.Should().Contain("-ne 10", "制品数量守卫必须随新增产品线更新（否则打包步骤 fail-closed 必红）");
     }
 }

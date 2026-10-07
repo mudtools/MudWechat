@@ -9,6 +9,7 @@ global using Microsoft.Extensions.Logging;
 global using Mud.Wechat.Redis.Configuration;
 global using Mud.Wechat.Redis.Services;
 global using Mud.Wechat.Abstractions;
+global using Mud.Wechat.Abstractions.Callback;
 global using Mud.Wechat.Abstractions.TokenManager;
 global using Mud.Wechat.Work.Abstractions.Authentication.Models;
 global using Mud.Wechat.Work.Abstractions.Authentication.TokenManager;

@@ -101,7 +101,7 @@ public sealed class WechatCallbackPayloadReader : IWechatPayloadReader
                 WechatPayloadReadStatus.EnvelopeMissing, evt.EventTypeKey, "信封未携带解密明文。");
         }
 
-        var root = _sources.GetOrCreate(evt).Projected;
+        var root = _sources.GetOrCreate(evt, evt.DecryptedXml).Projected;
         if (root == null)
         {
             return WechatPayloadReadResult<WechatCallbackPayload>.Failed(

@@ -13,6 +13,7 @@ global using Microsoft.Extensions.DependencyInjection;
 global using Microsoft.Extensions.Logging;
 global using Microsoft.Extensions.Options;
 global using Mud.Wechat.Abstractions;
+global using Mud.Wechat.Abstractions.Callback;
 global using Mud.Wechat.Work.Abstractions;
 global using Mud.Wechat.Work.Abstractions.Authentication;
 global using Mud.Wechat.Work.Abstractions.Enums;

@@ -21,8 +21,14 @@ namespace Mud.Wechat.Work.Abstractions.Callback;
 /// 本类型从 <c>Mud.Wechat.Work.Callback</c> 上移至 <c>Abstractions</c>（v1 方案 D2）：使宿主业务层
 /// 「定义处理器」与回调包「装配分发」解耦。项目未发布，上移一步到位、无旧命名空间垫片。
 /// </para>
+/// <para>
+/// <b>叶层信封接口</b>：本类实现 <see cref="IWechatCallbackEnvelope"/>（叶层定义的最小公共字段契约）——
+/// 接口只声明两家产品线共有的字段（属性均已存在，故为<b>零签名破坏</b>的纯实现声明），
+/// 企微专有字段（<c>AgentID</c>/<c>InfoType</c>/<c>SuiteTicket</c>/<c>AuthCode</c>/<c>AppType</c>/<c>Channel</c> 等）
+/// 与 <c>EventFamily</c>/<c>IsXxx</c> 判定属性仍留本类。
+/// </para>
 /// </remarks>
-public class WechatCallbackEvent
+public class WechatCallbackEvent : IWechatCallbackEnvelope
 {
     // ——— 通用信封（解密后明文 XML 顶层） ———
 

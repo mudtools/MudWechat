@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<IsPackable>false</IsPackable>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+		<PackageReference Include="xunit" Version="2.9.2" />
+		<PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
+		<PackageReference Include="FluentAssertions" Version="7.0.0" />
+		<PackageReference Include="Moq" Version="4.20.72" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\..\Mud.Wechat.OfficialAccount.Callback\Mud.Wechat.OfficialAccount.Callback.csproj" />
+		<ProjectReference Include="..\..\Mud.Wechat.OfficialAccount.Abstractions\Mud.Wechat.OfficialAccount.Abstractions.csproj" />
+	</ItemGroup>
+
+	<!-- 中间件用例需 HttpContext（DefaultHttpContext）与路由/状态码 API。 -->
+	<ItemGroup>
+		<FrameworkReference Include="Microsoft.AspNetCore.App" />
+	</ItemGroup>
+
+</Project>

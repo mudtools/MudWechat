@@ -9,14 +9,21 @@ using System.Collections.Concurrent;
 using System.Globalization;
 using System.Security.Cryptography;
 
-namespace Mud.Wechat.Work.Callback;
+namespace Mud.Wechat.Abstractions.Callback;
 
 /// <summary>
-/// 企业微信回调加解密实现（对齐微信消息加解密协议）。
+/// 微信系回调加解密实现（企业微信 / 公众号同源协议：对齐微信消息加解密协议）。
 /// </summary>
 /// <remarks>
 /// <para>
-/// 原主包 <c>WechatWorkHttpClient.EncryptContent</c>（NotImplementedException）的加解密职责移入本类。
+/// 本类为<b>叶层（Mud.Wechat.Abstractions）协议与安全内核</b>：企业微信与公众号共用同一套
+/// SHA1 排序验签、AES-256-CBC、32 字节块 PKCS#7 与明文结构解析 —— 安全代码必须单一事实来源
+/// （双份即双份缺陷面），故自 <c>Mud.Wechat.Work.Callback</c> 整体下沉。
+/// </para>
+/// <para>
+/// <b>不下沉策略</b>：验签<b>比较</b>策略留各产品线接收器 —— 企业微信保持 <see cref="StringComparison.OrdinalIgnoreCase"/>
+/// 宽比较（兼容平台大小写差异，零行为漂移），公众号使用常量时间精确比较（<c>CryptographicOperations.FixedTimeEquals</c>）。
+/// 本类只提供 <see cref="ComputeSignature"/> 纯计算与显式比较入口 <see cref="VerifySignature"/>。
 /// </para>
 /// <para>
 /// 解密协议（90968）：Base64 解码密文 → AES-256-CBC 解密（Key = Base64Decode(EncodingAESKey + "=")，
@@ -61,10 +68,25 @@ public static class WechatCallbackCrypto
         return string.Equals(expected, signature, StringComparison.OrdinalIgnoreCase);
     }
 
-    /// <summary>计算回调签名。</summary>
+    /// <summary>
+    /// 计算回调签名（<b>三参形态</b>：URL 验证 GET 的 <c>sha1(sort(token, timestamp, nonce))</c>）。
+    /// </summary>
+    /// <param name="token">回调 Token（公众号/企微后台配置）。</param>
+    /// <param name="timestamp">URL 查询参数 timestamp。</param>
+    /// <param name="nonce">URL 查询参数 nonce。</param>
+    /// <returns>小写十六进制 SHA1 值。</returns>
+    /// <remarks>
+    /// 公众号 GET 回显验签（官方 F3）与 POST 密文验签（F6）只在「是否含 <c>Encrypt</c> 参与项」上不同，
+    /// 故 4 参形态委托本形态实现，避免两份排序/拼接逻辑漂移。
+    /// </remarks>
+    public static string ComputeSignature(string token, string timestamp, string nonce)
+        => ComputeSignature(token, timestamp, nonce, null!);
+
+    /// <summary>计算回调签名（4 参形态：含 <c>Encrypt</c> 参与项）。</summary>
     /// <remarks>
     /// F14（D8 保持现状）：null 过滤仅影响直接调用方（容忍空参）；SDK 管线内四参数恒非 null
     /// （接收器对缺失参数显式 <c>?? string.Empty</c>），保留过滤（移除无收益且可能破坏外部调用者）。
+    /// 三参形态把 <paramref name="encrypt"/> 传 <c>null</c> 即可复用同一排序/拼接实现。
     /// </remarks>
     public static string ComputeSignature(string token, string timestamp, string nonce, string encrypt)
     {
@@ -108,7 +130,8 @@ public static class WechatCallbackCrypto
     /// <param name="encodingAESKey">43 位 EncodingAESKey。</param>
     /// <param name="encryptedBase64">Base64 编码的密文（XML 报文 Encrypt 节点内容）。</param>
     /// <param name="receiveId">
-    /// 明文尾部的接收方 ID：企业自建应用回调为企业 <c>CorpId</c>，第三方/服务商套件回调为 <c>SuiteId</c>。
+    /// 明文尾部的接收方 ID（receiveid）：企业微信自建应用为 <c>CorpId</c>、套件回调为 <c>SuiteId</c>；
+    /// 公众号为 <c>AppId</c>（官方要求与自身公众号一致，调用方须显式校验）。
     /// 报文未附带时为 <see cref="string.Empty"/>（兼容官方「个人主体第三方为空串」形态）。
     /// </param>
     /// <returns>去掉随机前缀、长度头与接收方 ID 后的消息明文。</returns>
@@ -156,7 +179,7 @@ public static class WechatCallbackCrypto
         {
             throw new WechatCallbackException(
                 WechatCallbackFailureKind.DecryptFailed,
-                "回调密文解密失败：请检查 PushEncodingAESKey 是否与企业微信后台一致。",
+                "回调密文解密失败：请检查回调 EncodingAESKey 是否与平台后台（企业微信/公众号）一致。",
                 ex);
         }
 
@@ -227,7 +250,7 @@ public static class WechatCallbackCrypto
     /// </remarks>
     /// <param name="encodingAESKey">43 位 EncodingAESKey。</param>
     /// <param name="plainText">待加密的消息明文。</param>
-    /// <param name="receiveId">接收方 ID（拼在明文尾部；企业自建=CorpId / 套件=SuiteId）。</param>
+    /// <param name="receiveId">接收方 ID（拼在明文尾部；企微：自建=<c>CorpId</c> / 套件=<c>SuiteId</c>；公众号=<c>AppId</c>）。</param>
     /// <returns>Base64 编码的密文。</returns>
     /// <exception cref="InvalidOperationException">密钥缺失、非 43 位或非合法 Base64 字符串时抛出。</exception>
     public static string Encrypt(string encodingAESKey, string plainText, string receiveId)

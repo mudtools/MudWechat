@@ -198,7 +198,12 @@ public static class WechatRedisServiceCollectionExtensions
     /// InMemory 重放守卫实现的全名（R-1：Redis 包不引用 Callback 程序集，经全名字符串探测
     /// 「AddWechatCallback 已运行」；全名漂移由 T-R8 契约守卫 RD-G5 以反射锁定——测试工程可引用 Callback）。
     /// </summary>
-    internal const string InMemoryReplayGuardTypeName = "Mud.Wechat.Work.Callback.InMemoryWechatCallbackReplayGuard";
+    /// <remarks>
+    /// <b>已下沉叶层</b>：重放端口与进程内实现随「协议与安全内核」下沉至
+    /// <c>Mud.Wechat.Abstractions.Callback</c>（两条产品线共用），故全名随之变更——
+    /// 该常量与 RD-G5 同批更新（漂移即宿主顺序守卫静默失效）。
+    /// </remarks>
+    internal const string InMemoryReplayGuardTypeName = "Mud.Wechat.Abstractions.Callback.InMemoryWechatCallbackReplayGuard";
 
     /// <summary>
     /// 公众号应用管理器接口全名（同 R-1 手法：Redis 包不引用 MP.Abstractions，经全名字符串探测

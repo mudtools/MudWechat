@@ -17,6 +17,7 @@ global using FluentAssertions;
 global using Microsoft.Extensions.Logging;
 global using Microsoft.Extensions.Logging.Abstractions;
 global using Moq;
+global using Mud.Wechat.Abstractions.Callback;
 global using Mud.Wechat.Abstractions.TokenManager;
 global using Mud.Wechat.OfficialAccount.Abstractions;
 global using Mud.Wechat.OfficialAccount.Abstractions.Authentication;

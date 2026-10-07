@@ -41,7 +41,7 @@ SDK 完整封装了企业微信接入中最繁琐的部分——**多应用、�
 | `Mud.Wechat.Work.Abstractions`   | 认证与多应用基座：令牌签发客户端、令牌管理器、多应用管理、配置面、回调事件信封   |
 | `Mud.Wechat.Work.DataModels`     | 官方 DTO（纯数据模型，无外部依赖）+ AOT 源生成 JSON 上下文                       |
 | `Mud.Wechat.Work.Callback`       | 回调接收：验签、AES 解密、事件分发、HTTP 中间件、抗重放守卫                      |
-| `Mud.Wechat.Work.Callback.Generator` | 回调契约登记源码生成器（`IsPackable=false`，仅构建期消费，不进发布链）       |
+| `Mud.Wechat.Callback.Generator` | 回调契约登记源码生成器（中立名、按档位服务两条产品线；`IsPackable=false`，仅构建期消费，不进发布链） |
 | `Mud.Wechat.Redis`               | Redis 分布式存储扩展：四个存储端口的 Redis 实现 + 连接基座 + 健康检查 + DI 编排 |
 
 发布链恰 **5 个 nupkg**（`Callback.Generator` 不可打包）。依赖方向单向：`Work → {Abstractions, DataModels}`、`Callback → {Abstractions, DataModels}`、`Abstractions → DataModels`、`Redis → Abstractions`。硬边界：`Callback` 不引用主包 `Work`；`Redis` 不引用 `Work`/`Callback`。
@@ -281,7 +281,7 @@ Mud.Wechat/
 ├── Mud.Wechat.Work.Abstractions/   # 抽象：令牌基座、多应用、配置、回调事件信封
 ├── Mud.Wechat.Work.DataModels/     # 官方 DTO + JSON 源生成上下文
 ├── Mud.Wechat.Work.Callback/       # 回调接收：验签、AES 解密、事件分发、HTTP 中间件
-├── Mud.Wechat.Work.Callback.Generator/ # 回调契约登记源码生成器（不打包）
+├── Mud.Wechat.Callback.Generator/ # 回调契约登记源码生成器（中立名、按档位服务两条产品线；不打包）
 ├── Mud.Wechat.Redis/               # Redis 分布式存储扩展
 ├── Tests/                          # 5 个测试工程（镜像源结构，单 TFM net8.0）
 ├── Demos/                          # 示例工程（不加入主解决方案，被 AOT 冒烟排除）

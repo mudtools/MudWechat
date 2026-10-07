@@ -39,8 +39,10 @@ public class WechatCallbackOptions
     /// <remarks>
     /// <c>"*"</c> 不满足 <see cref="WechatAppKeyValidator"/> 的应用键形状（首字符须字母/数字），
     /// <see cref="Validate"/> 对其显式豁免——也正因形状非法，通配键与任何真实应用键不可能碰撞。
+    /// <b>取值来源</b>：叶层常量 <see cref="WechatCallbackRouteKeys.Wildcard"/>（注册表基类与两条产品线共用同一字面量，
+    /// 各写一份会造成通配桶静默失配）。
     /// </remarks>
-    public const string WildcardAppKey = "*";
+    public const string WildcardAppKey = WechatCallbackRouteKeys.Wildcard;
 
     /// <summary>
     /// 回调路由前缀（中间件路径形如 <c>/{GlobalRoutePrefix}/{AppKey}</c>）。

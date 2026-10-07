@@ -1,0 +1,14 @@
+global using Xunit;
+global using FluentAssertions;
+global using System;
+global using System.Collections.Generic;
+global using System.Linq;
+global using System.Threading;
+global using System.Threading.Tasks;
+global using Microsoft.AspNetCore.Http;
+global using Microsoft.Extensions.Logging.Abstractions;
+global using Microsoft.Extensions.Options;
+global using Mud.Wechat.Abstractions.Callback;
+global using Mud.Wechat.OfficialAccount.Abstractions.Callback;
+global using Mud.Wechat.OfficialAccount.Abstractions.Callback.Payloads;
+global using Mud.Wechat.OfficialAccount.Callback;

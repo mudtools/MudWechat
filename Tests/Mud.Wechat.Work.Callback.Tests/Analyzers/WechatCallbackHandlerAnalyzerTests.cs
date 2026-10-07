@@ -9,7 +9,7 @@ using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Diagnostics;
-using Mud.Wechat.Work.Callback.Analyzers;
+using Mud.Wechat.Callback.Analyzers;
 
 namespace Mud.Wechat.Work.Callback.Tests.Analyzers;
 

@@ -206,4 +206,40 @@ public enum MpModule
     /// 文件流响应）走 <c>IMpMediaDownloadService</c> 独立请求形态（Content-Type 分支判错）。
     /// </remarks>
     Media,
+
+    /// <summary>
+    /// 智能接口（12 端点单域承载：AI 开放接口 3 + OCR 识别 7 + 图像处理 2——
+    /// 三种官方路径前缀 <c>/cgi-bin/media/voice/*</c>、<c>/cv/ocr/*</c>、<c>/cv/img/*</c> 照实同域）。
+    /// </summary>
+    /// <remarks>
+    /// 域级约束：账号适用范围 OCR / 图像处理九端点为「公众号 / 服务号 —— <b>仅认证</b>」、
+    /// AI 三端点为全开放；OCR 七端点 100 次/天（<b>菜单识别页无频率上限</b>），
+    /// 图像处理与 AI 页无频率数值；图片小于 2M；OCR / 图像处理九端点支持第三方平台代调用（权限集 117）。
+    /// <b>不做编排</b>：AI 语音「上传 → 10s 内轮询」两步语义只写 XML。
+    /// <b>9 端点双调用形态</b>（form 上传 <c>img</c> / Query <c>img_url</c> 互斥）⇒ 每端点双方法
+    /// （生成管线对 <c>[MultipartForm]</c> 参数无 null 分支，单方法可选形态会 NRE）。
+    /// </remarks>
+    SmartApi,
+
+    /// <summary>
+    /// 扫二维码打开小程序（<c>/cgi-bin/wxopen/qrcodejump*</c> 4 端点，<b>服务号专属</b>）。
+    /// </summary>
+    /// <remarks>
+    /// 域级约束：官方 5 次/秒（错误码 44990）；发布配额每月 100 次（错误码 886000，
+    /// 可用 <c>qrcodejumpget</c> 的 <c>qrcodejump_pub_quota</c> 前置探量）；须先关联小程序（否则 61007）；
+    /// 支持第三方平台代调用（权限集 3、18）。
+    /// 与 <see cref="Qrcode"/> 域的分工：本域管理小程序跳转<b>规则</b>，非带参二维码 ticket。
+    /// </remarks>
+    QrcodeJump,
+
+    /// <summary>
+    /// 长信息与短链（<c>/cgi-bin/shorten/*</c> 2 端点）。
+    /// </summary>
+    /// <remarks>
+    /// 域级约束：<c>long_data</c> ≤ 4KB、<c>expire_seconds</c> ≤ 2592000 秒（30 天，默认同值）——
+    /// 越界由官方 9410010/9410011 表达，SDK 不做本地拦截；
+    /// 适用范围「小程序 ✔ / 服务号 仅认证 / 小游戏 ✔」；官方无频率数值；
+    /// 支持第三方平台代调用（权限集 3、17）。
+    /// </remarks>
+    ShortLink,
 }

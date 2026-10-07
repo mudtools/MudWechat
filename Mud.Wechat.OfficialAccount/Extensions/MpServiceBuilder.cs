@@ -98,6 +98,15 @@ public class MpServiceBuilder
                     s.AddMediaWebApiHttpClient();
                     s.AddSingleton<IMpMediaDownloadService, MpMediaDownloadService>();
                 }),
+            [MpModule.SmartApi] = new MpModuleRegistrar(
+                MpModule.SmartApi,
+                s => s.AddSmartApiWebApiHttpClient()),
+            [MpModule.QrcodeJump] = new MpModuleRegistrar(
+                MpModule.QrcodeJump,
+                s => s.AddQrcodeJumpWebApiHttpClient()),
+            [MpModule.ShortLink] = new MpModuleRegistrar(
+                MpModule.ShortLink,
+                s => s.AddShortLinkWebApiHttpClient()),
         };
 
     /// <summary>
@@ -220,6 +229,25 @@ public class MpServiceBuilder
     /// </summary>
     /// <returns>注册器（链式）。</returns>
     public MpServiceBuilder AddMediaApi() => AddModule(MpModule.Media);
+
+    /// <summary>
+    /// 注册智能接口（12 端点单域承载：AI 开放接口 3 + OCR 识别 7 + 图像处理 2；
+    /// 9 端点双调用形态 ⇒ 双方法；不做「上传→轮询」编排）。
+    /// </summary>
+    /// <returns>注册器（链式）。</returns>
+    public MpServiceBuilder AddSmartApiApi() => AddModule(MpModule.SmartApi);
+
+    /// <summary>
+    /// 注册扫二维码打开小程序（4 端点，服务号专属；5 次/秒、发布配额 100 次/月，须先关联小程序）。
+    /// </summary>
+    /// <returns>注册器（链式）。</returns>
+    public MpServiceBuilder AddQrcodeJumpApi() => AddModule(MpModule.QrcodeJump);
+
+    /// <summary>
+    /// 注册长信息与短链（2 端点；long_data ≤ 4KB、有效期 ≤ 30 天，越界由官方错误码表达）。
+    /// </summary>
+    /// <returns>注册器（链式）。</returns>
+    public MpServiceBuilder AddShortLinkApi() => AddModule(MpModule.ShortLink);
 
     /// <summary>注册全部模块。</summary>
     /// <returns>注册器（链式）。</returns>

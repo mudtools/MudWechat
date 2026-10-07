@@ -502,4 +502,89 @@ public static class MpErrorCodes
 
     /// <summary>data not ready please try later：指定日期数据尚未生成（数据统计全域；getupstreammsg 页描述为「未完成数据统计处理」，照录）。</summary>
     public const int DataCubeDataNotReady = 61503;
+
+    // ---------------------------------------------------------------- 智能接口（P3-a，取值逐页核验官方文档）
+
+    /// <summary>invalid voice size：不合法的语音文件大小（voice/addvoicetorecofortext）。</summary>
+    public const int VoiceSizeInvalid = 40010;
+
+    /// <summary>invalid args size：不合法的参数（voice/translatecontent）。</summary>
+    public const int ArgsSizeInvalid = 40035;
+
+    /// <summary>invalid image url：图片 URL 错误（OCR 与图像处理全域共用）。</summary>
+    public const int OcrImageUrlInvalid = 101000;
+
+    /// <summary>certificate not found：未检测到证件（OCR 系 idcard / bankcard / bizlicense / menu）。</summary>
+    public const int OcrCertificateNotFound = 101001;
+
+    /// <summary>decode image failed：图片解码失败（OCR 系；官方解决方案列写「图片大小超过限制，resp_type = 0: 2MB，resp_type = 1: 10MB」但全文未定义 resp_type，照录）。</summary>
+    public const int OcrImageDecodeFailed = 101002;
+
+    /// <summary>not enough market quota：市场额度不足（OCR 系；官方解决方案列留空，照录）。</summary>
+    public const int OcrMarketQuotaNotEnough = 101003;
+
+    // ---------------------------------------------------------------- 扫二维码打开小程序 / 长信息与短链（P3-b，取值逐页核验官方文档）
+
+    /// <summary>接口请求太快：超过 5 次/秒频率限制（qrcodejump* 四端点）。</summary>
+    public const int QrcodeJumpRequestTooFast = 44990;
+
+    /// <summary>invalid appid：appid 参数不合法（qrcodejumpget / qrcodejumpadd）。</summary>
+    public const int QrcodeJumpInvalidAppId = 40166;
+
+    /// <summary>链接错误（qrcodejumpadd；请检查链接合法性）。</summary>
+    public const int QrcodeJumpLinkError = 85066;
+
+    /// <summary>test url is not the sub prefix：测试链接不是子链接（qrcodejumpadd）。</summary>
+    public const int QrcodeJumpTestUrlNotSubPrefix = 85068;
+
+    /// <summary>check confirm file fail：校验文件失败（qrcodejumpadd；普通二维码场景）。</summary>
+    public const int QrcodeJumpConfirmFileFailed = 85069;
+
+    /// <summary>URL 命中黑名单 / 个人类型小程序无法设置二维码规则（qrcodejumpadd；官方一行承载两义，照录）。</summary>
+    public const int QrcodeJumpUrlBlacklisted = 85070;
+
+    /// <summary>链接重复：请勿重复添加（qrcodejumpadd）。</summary>
+    public const int QrcodeJumpLinkDuplicated = 85071;
+
+    /// <summary>链接被占用：检查链接归属（qrcodejumpadd）。</summary>
+    public const int QrcodeJumpLinkOccupied = 85072;
+
+    /// <summary>规则数已满：前缀个数已满（qrcodejumpadd）。</summary>
+    public const int QrcodeJumpRuleQuotaFull = 85073;
+
+    /// <summary>小程序未发布：小程序必须先发布代码才可以发布二维码跳转规则（qrcodejumppublish）。</summary>
+    public const int QrcodeJumpMiniProgramNotPublished = 85074;
+
+    /// <summary>can not access：个人类型小程序无法设置二维码规则（qrcodejumpget / qrcodejumppublish / qrcodejumpdelete）。</summary>
+    public const int QrcodeJumpPersonalMiniProgramDenied = 85075;
+
+    /// <summary>check ICP fail：检查 ICP 失败（qrcodejumpadd）。</summary>
+    public const int QrcodeJumpIcpCheckFailed = 85076;
+
+    /// <summary>数据异常：请删除后重新添加（qrcodejumppublish）。</summary>
+    public const int QrcodeJumpDataAbnormal = 85095;
+
+    /// <summary>beyond publish count this month：本月发布次数达到上限（qrcodejumppublish，原文标注 100 次/月）。</summary>
+    public const int QrcodeJumpPublishQuotaExceeded = 886000;
+
+    /// <summary>系统繁忙，请重试（qrcodejump* 全域；与 -1 并存，照录）。</summary>
+    public const int QrcodeJumpSystemBusy = 886001;
+
+    // 注：shorten/* 的 empty post data（44002）复用既存 EmptyPostData 常量（原注释「如删除标签未带 tag.id」
+    // 为标签域场景举例，本域语义为「POST 数据包为空」——官方同一码值跨域复用，不复造常量）。
+
+    /// <summary>data format error：解析 JSON/XML 内容错误（shorten/* 两端点）。</summary>
+    public const int DataFormatError = 47001;
+
+    /// <summary>参数错误 / argument invalid（shorten/* 两端点；fetch 页原文为「模板参数不准确」，本接口无模板概念，疑通用文案残留，照录）。</summary>
+    public const int ShortLinkArgumentInvalid = 47003;
+
+    /// <summary>long_data 长度超过限制（shorten/gen；上限 4KB）。</summary>
+    public const int ShortenLongDataTooLong = 9410010;
+
+    /// <summary>expire_seconds 超过限制（shorten/gen；上限 30 天）。</summary>
+    public const int ShortenExpireOutOfRange = 9410011;
+
+    /// <summary>short_key 不存在 / 过期 / 不属于本账号（shorten/fetch；官方错误码描述列留空，照录）。</summary>
+    public const int ShortenKeyNotExists = 9410012;
 }

@@ -58,6 +58,9 @@ public class MpQueryTokenWhitelistGuard
             nameof(IMpProductCardService),        // 商品卡片（1 端点；/channels/ec/ 前缀）
             nameof(IMpCommentService),            // 留言管理（8 端点，仅认证 + 留言权限）
             nameof(IMpDataCubeService),           // 数据统计（21 端点单域承载，仅认证）
+            nameof(IMpSmartApiService),           // 智能接口（12 端点：AI 语音 3 + OCR 7 + 图像处理 2）
+            nameof(IMpQrcodeJumpService),         // 扫二维码打开小程序（4 端点，服务号专属）
+            nameof(IMpShortLinkService),          // 长信息与短链（2 端点）
         }, "公众号官方契约强制 Query 注入（MUD005 已知接受风险）；新增 Query 注入接口须先评估再显式扩展本白名单");
 
         // 防静默空跑：白名单非空且每条均为 Query 注入（若发现机制失效，上面 BeEquivalentTo 会退化为真空断言）。

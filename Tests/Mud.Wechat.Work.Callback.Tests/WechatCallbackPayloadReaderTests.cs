@@ -1177,7 +1177,7 @@ public class WechatCallbackPayloadReaderTests
     [Theory]
     [InlineData(WechatAppType.ThirdParty, WechatCallbackChannel.Suite, true)]
     [InlineData(WechatAppType.Internal, WechatCallbackChannel.App, false)]
-    [InlineData(WechatAppType.Provider, WechatCallbackChannel.Suite, false)]
+    [InlineData(WechatAppType.Provider, WechatCallbackChannel.Suite, true)]
     public void PayToolVersionOrderContract_ShouldOpenForOfficialMatrix(
         WechatAppType appType, WechatCallbackChannel channel, bool expected)
     {
@@ -1186,10 +1186,192 @@ public class WechatCallbackPayloadReaderTests
         var evt = new WechatCallbackEvent { InfoType = WechatCallbackEventTypes.PayForAppSuccess };
 
         contract!.IsOpenFor(evt, appType, channel).Should().Be(expected,
-            "收银台应用版本付费回调族官方仅在第三方应用开发文档树提供 ⇒ 第三方 × 套件指令通道");
+            "收银台应用版本付费回调族官方在第三方树（91931）与代开发·收银台树（99389）均提供 ⇒ 第三方/代开发 × 套件指令通道");
         contract.RequiredFamily.Should().Be(WechatCallbackEventFamily.Authorization);
         contract.RequiredEvent.Should().Be(WechatCallbackEventTypes.PayForAppSuccess,
             "RequiredEvent 缺省 = 逐键自指（InfoType 即事件键）");
+    }
+
+    [Theory]
+    [InlineData(WechatAppType.ThirdParty, WechatCallbackChannel.Suite, true)]
+    [InlineData(WechatAppType.Provider, WechatCallbackChannel.Suite, false)]
+    [InlineData(WechatAppType.Internal, WechatCallbackChannel.App, false)]
+    public void PayToolVersionOrderContract_ShouldKeepEditonThirdPartyOnly(
+        WechatAppType appType, WechatCallbackChannel channel, bool expected)
+    {
+        // 应用版本变更通知（change_editon）为应用版本付费专属：收银台树（99387~99392）无对应文档 ⇒ 不对代开发开放。
+        CreateRegistry().TryResolve(WechatCallbackEventTypes.ChangeEditon, out var contract)
+            .Should().BeTrue();
+        var evt = new WechatCallbackEvent { InfoType = WechatCallbackEventTypes.ChangeEditon };
+
+        contract!.IsOpenFor(evt, appType, channel).Should().Be(expected,
+            "change_editon 仅第三方 × 套件指令通道开放（同键多特性声明合并后仍不得放宽）");
+    }
+
+    // ---------------------------------------- 接口调用许可族（97195~97198；仅服务商代开发）
+
+    [Fact]
+    public void Read_ShouldMapLicensePaySuccessFields()
+    {
+        // 官方 97196 样报文（服务商指令回调，套件信封）：ServiceCorpId + AuthCorpId + OrderId + BuyerUserId。
+        var evt = SuiteEvent(WechatCallbackEventTypes.LicensePaySuccess, changeType: null,
+            "<xml><ServiceCorpId><![CDATA[xxxx]]></ServiceCorpId>" +
+            "<InfoType><![CDATA[license_pay_success]]></InfoType>" +
+            "<AuthCorpId><![CDATA[yyyy]]></AuthCorpId>" +
+            "<OrderId><![CDATA[zzzz]]></OrderId><BuyerUserId><![CDATA[USERID]]></BuyerUserId>" +
+            "<TimeStamp>1403610513</TimeStamp></xml>");
+
+        evt.EventTypeKey.Should().Be("license_pay_success");
+        evt.EventFamily.Should().Be(WechatCallbackEventFamily.Authorization, "套件信封（InfoType 非空）⇒ 授权族");
+
+        var result = CreateReader().Read<LicenseOrderPayload>(evt);
+
+        result.Status.Should().Be(WechatPayloadReadStatus.Matched);
+        var payload = result.Payload!;
+        payload.ServiceCorpId.Should().Be("xxxx",
+            "信封无 ServiceCorpId 对应字段（本族报文亦无 SuiteId 节点）⇒ 服务商身份只能取自本字段");
+        payload.OrderId.Should().Be("zzzz", "多企业新购订单时官方口径为子订单号");
+        payload.BuyerUserId.Should().Be("USERID");
+        payload.OrderStatus.Should().BeNull("OrderStatus 仅退款结果通知携带");
+        // 信封 AuthCorpId 由接收器从报文 AuthCorpId 节点解析（WechatCallbackReceiver.ParseEvent），
+        // 本测试手工构造信封不经该路径，故不在此断言。
+    }
+
+    [Theory]
+    [InlineData(1L)]
+    [InlineData(2L)]
+    public void Read_ShouldMapLicenseRefundOrderStatus(long orderStatus)
+    {
+        // 官方 97197 样报文（服务商指令回调，套件信封）：OrderStatus 1 = 退款成功 / 2 = 退款被拒绝。
+        var result = CreateReader().Read<LicenseOrderPayload>(
+            SuiteEvent(WechatCallbackEventTypes.LicenseRefund, changeType: null,
+                "<xml><ServiceCorpId><![CDATA[xxxx]]></ServiceCorpId>" +
+                "<InfoType><![CDATA[license_refund]]></InfoType>" +
+                "<AuthCorpId><![CDATA[yyyy]]></AuthCorpId>" +
+                "<OrderId><![CDATA[zzzz]]></OrderId>" +
+                $"<OrderStatus>{orderStatus}</OrderStatus>" +
+                "<TimeStamp>1403610513</TimeStamp></xml>"));
+
+        result.Status.Should().Be(WechatPayloadReadStatus.Matched);
+        result.Payload!.ServiceCorpId.Should().Be("xxxx");
+        result.Payload!.OrderId.Should().Be("zzzz");
+        result.Payload!.OrderStatus.Should().Be(orderStatus);
+        result.Payload!.BuyerUserId.Should().BeNull("BuyerUserId 仅支付成功通知携带");
+    }
+
+    [Theory]
+    [InlineData(WechatAppType.Provider, WechatCallbackChannel.Suite, true)]
+    [InlineData(WechatAppType.ThirdParty, WechatCallbackChannel.Suite, false)]
+    [InlineData(WechatAppType.Internal, WechatCallbackChannel.App, false)]
+    public void LicenseOrderContract_ShouldOpenOnlyForProvider(
+        WechatAppType appType, WechatCallbackChannel channel, bool expected)
+    {
+        // 官方 97196/97197 仅在服务商代开发文档树提供（自建/第三方无对应事件回调）。
+        CreateRegistry().TryResolve(WechatCallbackEventTypes.LicensePaySuccess, out var contract)
+            .Should().BeTrue();
+        var evt = new WechatCallbackEvent { InfoType = WechatCallbackEventTypes.LicensePaySuccess };
+
+        contract!.IsOpenFor(evt, appType, channel).Should().Be(expected,
+            "接口调用许可订单回调族官方仅向代开发 × 套件指令通道开放");
+        contract.RequiredFamily.Should().Be(WechatCallbackEventFamily.Authorization);
+        contract.RequiredEvent.Should().Be(WechatCallbackEventTypes.LicensePaySuccess,
+            "RequiredEvent 缺省 = 逐键自指（InfoType 即事件键）");
+    }
+
+    [Fact]
+    public void Read_ShouldMapAutoActivateFields_WhenSingleAccountList()
+    {
+        // 官方 97198 样报文（服务商指令回调，套件信封）：单个 AccountList（未触发合并投影，单元素形态）。
+        var result = CreateReader().Read<LicenseAutoActivatePayload>(
+            SuiteEvent(WechatCallbackEventTypes.AutoActivate, changeType: null,
+                "<xml><ServiceCorpId><![CDATA[aaaa]]></ServiceCorpId>" +
+                "<InfoType><![CDATA[auto_activate]]></InfoType>" +
+                "<AuthCorpId><![CDATA[bbbb]]></AuthCorpId><Scene>1</Scene>" +
+                "<TimeStamp>1403610513</TimeStamp>" +
+                "<AccountList><ActiveCode><![CDATA[XXXX]]></ActiveCode><Type>1</Type>" +
+                "<ExpireTime>1700000000</ExpireTime><UserId><![CDATA[USERID]]></UserId>" +
+                "<PreviousStatus>1</PreviousStatus></AccountList></xml>"));
+
+        result.Status.Should().Be(WechatPayloadReadStatus.Matched);
+        var payload = result.Payload!;
+        payload.ServiceCorpId.Should().Be("aaaa");
+        payload.Scene.Should().Be(1, "官方 Scene=1 ⇒ 企业成员主动访问应用");
+        payload.AccountItems.Should().HaveCount(1);
+        payload.AccountItems[0].ActiveCode.Should().Be("XXXX");
+        payload.AccountItems[0].Type.Should().Be(1, "官方 Type=1 ⇒ 基础许可");
+        payload.AccountItems[0].ExpireTime.Should().Be(1700000000L);
+        payload.AccountItems[0].UserId.Should().Be("USERID");
+        payload.AccountItems[0].PreviousStatus.Should().Be(1, "官方 PreviousStatus=1 ⇒ 激活前未激活");
+        payload.AccountItems[0].PreviousActiveCode.Should().BeNull(
+            "PreviousActiveCode 仅对已激活成员自动激活时返回，处理器不得假设必有值");
+    }
+
+    [Fact]
+    public void Read_ShouldCoalesceAccountListSiblings_WhenMultipleAccountsActivated()
+    {
+        // 多账号同时自动激活：官方 AccountList 为根下重复同名兄弟元素（无包装容器）⇒ 合并投影承载。
+        var result = CreateReader().Read<LicenseAutoActivatePayload>(
+            SuiteEvent(WechatCallbackEventTypes.AutoActivate, changeType: null,
+                "<xml><ServiceCorpId><![CDATA[aaaa]]></ServiceCorpId>" +
+                "<InfoType><![CDATA[auto_activate]]></InfoType>" +
+                "<AuthCorpId><![CDATA[bbbb]]></AuthCorpId><Scene>3</Scene>" +
+                "<TimeStamp>1403610513</TimeStamp>" +
+                "<AccountList><ActiveCode><![CDATA[CODE_A]]></ActiveCode><Type>1</Type>" +
+                "<ExpireTime>1700000000</ExpireTime><UserId><![CDATA[USER_A]]></UserId>" +
+                "<PreviousStatus>1</PreviousStatus></AccountList>" +
+                "<AccountList><ActiveCode><![CDATA[CODE_B]]></ActiveCode><Type>2</Type>" +
+                "<ExpireTime>1800000000</ExpireTime><UserId><![CDATA[USER_B]]></UserId>" +
+                "<PreviousStatus>2</PreviousStatus>" +
+                "<PreviousActiveCode><![CDATA[OLD_CODE_B]]></PreviousActiveCode></AccountList></xml>"));
+
+        result.Status.Should().Be(WechatPayloadReadStatus.Matched);
+        var payload = result.Payload!;
+        payload.Scene.Should().Be(3, "官方 Scene=3 ⇒ 服务商调用互通接口");
+        payload.AccountItems.Should().HaveCount(2, "根下两个同名 AccountList 兄弟元素经合并投影全数保留");
+        payload.AccountItems[0].ActiveCode.Should().Be("CODE_A");
+        payload.AccountItems[0].PreviousActiveCode.Should().BeNull();
+        payload.AccountItems[1].ActiveCode.Should().Be("CODE_B");
+        payload.AccountItems[1].Type.Should().Be(2, "官方 Type=2 ⇒ 互通许可");
+        payload.AccountItems[1].PreviousStatus.Should().Be(2, "官方 PreviousStatus=2 ⇒ 已激活且未过期（剩余 ≤ 7 天）");
+        payload.AccountItems[1].PreviousActiveCode.Should().Be("OLD_CODE_B");
+    }
+
+    [Fact]
+    public void Read_ShouldMapUnlicensedNotifyAgentId()
+    {
+        // 官方 97195 样报文（Event 信封逐键自指，信封外仅 AgentID）。
+        var evt = SelfEvent(WechatCallbackEventTypes.UnlicensedNotify,
+            "<xml><ToUserName><![CDATA[toUser]]></ToUserName><FromUserName><![CDATA[FromUser]]></FromUserName>" +
+            "<CreateTime>1408091189</CreateTime><MsgType><![CDATA[event]]></MsgType>" +
+            "<Event><![CDATA[unlicensed_notify]]></Event><AgentID>1</AgentID></xml>");
+
+        evt.EventTypeKey.Should().Be("unlicensed_notify", "Event 节点即事件键（逐键自指）");
+        evt.EventFamily.Should().Be(WechatCallbackEventFamily.Unknown, "不归既有族，族闸放行、键级开放面承载判定");
+
+        var result = CreateReader().Read<UnlicensedNotifyPayload>(evt);
+
+        result.Status.Should().Be(WechatPayloadReadStatus.Matched);
+        result.Payload!.AgentId.Should().Be("1");
+        // 触发成员（FromUserName）与归属企业（ToUserName）由信封承载，且经接收器解析；
+        // 本测试手工构造信封不经该路径，故不在此断言。
+    }
+
+    [Theory]
+    [InlineData(WechatAppType.Provider, WechatCallbackChannel.App, true)]
+    [InlineData(WechatAppType.Internal, WechatCallbackChannel.App, false)]
+    [InlineData(WechatAppType.ThirdParty, WechatCallbackChannel.Suite, false)]
+    public void UnlicensedNotifyContract_ShouldOpenOnlyForProvider(
+        WechatAppType appType, WechatCallbackChannel channel, bool expected)
+    {
+        // 官方 97195 仅在服务商代开发文档树提供（自建/第三方无对应事件回调）。
+        CreateRegistry().TryResolve(WechatCallbackEventTypes.UnlicensedNotify, out var contract)
+            .Should().BeTrue();
+        var evt = new WechatCallbackEvent { Event = WechatCallbackEventTypes.UnlicensedNotify };
+
+        contract!.IsOpenFor(evt, appType, channel).Should().Be(expected,
+            "接口许可失效通知官方仅向代开发 × 应用数据通道开放（Event 信封逐键自指）");
+        contract.RequiredFamily.Should().Be(WechatCallbackEventFamily.Unknown);
+        contract.RequiredEvent.Should().Be(WechatCallbackEventTypes.UnlicensedNotify);
     }
 
     // ---------------------------------------- 邮箱族（97495/97517/97506 + 100180；族事件值为键）

@@ -10,7 +10,7 @@ using Mud.Wechat.Work.Abstractions.Callback.Payloads;
 namespace Mud.Wechat.Work.Callback.Events.Payloads;
 
 /// <summary>
-/// 官方事件键契约表（116 键）：事件键 → 上游映射表 + 本仓库两级开放面声明。
+/// 官方事件键契约表（120 键）：事件键 → 上游映射表 + 本仓库两级开放面声明。
 /// </summary>
 /// <remarks>
 /// <para>
@@ -64,8 +64,16 @@ namespace Mud.Wechat.Work.Callback.Events.Payloads;
 /// <see href="https://developer.work.weixin.qq.com/document/path/90376">path 90376 接收消息与事件（第三方）</see>/
 /// <see href="https://developer.work.weixin.qq.com/document/path/96468">path 96468 接收消息与事件（服务商代开发，正文逐字一致）</see>。
 /// 授权族 7 键<b>不登记契约</b>（走信封，ADR-8）。
-/// 收银台·应用版本付费订单回调族 91929~91933 / 99353（6 键，套件信封 InfoType，
-/// 第三方 × 套件指令通道；与授权族同属 <c>InfoType</c> 信封但确有业务载荷，故登记强类型载荷）。
+/// 收银台·应用版本付费订单回调族 91929~91933 / 99353（第三方）· 99387~99392（服务商代开发·收银台，
+/// <c>change_editon</c> 除外）—— 6 键，套件信封 InfoType，两棵文档树的开放面由同键多特性声明合并承载
+/// （第三方 × 套件指令通道全 6 键 + 代开发 × 套件指令通道 5 键；与授权族同属 <c>InfoType</c> 信封但确有业务载荷，
+/// 故登记强类型载荷）；接口调用许可族 <see href="https://developer.work.weixin.qq.com/document/path/97195">path 97195 接口许可失效通知</see>/
+/// <see href="https://developer.work.weixin.qq.com/document/path/97196">path 97196 支付成功通知</see>/
+/// <see href="https://developer.work.weixin.qq.com/document/path/97197">path 97197 退款结果通知</see>/
+/// <see href="https://developer.work.weixin.qq.com/document/path/97198">path 97198 自动激活回调通知</see>
+/// （4 键，仅服务商代开发文档树提供、自建/第三方无对应事件回调；<c>unlicensed_notify</c> 为 Event 信封逐键自指，
+/// 其余三键走套件信封；<c>auto_activate</c> 的 <c>AccountList</c> 为根下重复复杂兄弟元素（对象列表），经
+/// <c>RepeatLicenseAccountItems</c> + 根层同名兄弟合并投影读取）。
 /// 邮箱族 <see href="https://developer.work.weixin.qq.com/document/path/97495">path 97495 应用邮箱（自建）</see>/
 /// <see href="https://developer.work.weixin.qq.com/document/path/97517">path 97517（第三方）</see>/
 /// <see href="https://developer.work.weixin.qq.com/document/path/97506">path 97506（代开发）</see>/

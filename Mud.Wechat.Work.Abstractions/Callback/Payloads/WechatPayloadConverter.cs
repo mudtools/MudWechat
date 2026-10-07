@@ -342,6 +342,54 @@ public static class WechatPayloadConverter
     }
 
     /// <summary>
+    /// 重复同名复杂兄弟元素 → 契约化对象列表（官方接口调用许可「自动激活回调通知」的
+    /// <c>&lt;AccountList&gt;…&lt;/AccountList&gt;&lt;AccountList&gt;…&lt;/AccountList&gt;</c> 形态，
+    /// <b>无包装容器</b>，官方 97198）；节点缺失 ⇒ 空列表。
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// 依赖 <c>XElementPayloadSource</c> 的根层同名兄弟合并投影：≥2 个同名复杂兄弟在节点树上呈现为
+    /// 「同名容器（<see cref="PayloadNode.Children"/> = 原始元素全集）」。合成容器的判别依据是
+    /// <b>子节点中存在与容器同名的节点</b>（合并语义保证容器与成员同名）；恰 1 个元素时未触发合并，
+    /// 定位到的就是元素本身，直接按单项绑定。
+    /// </para>
+    /// <para>
+    /// 与 <see cref="RepeatSchoolContactChangeItems"/> 同理属 <c>Method</c> 显式通道；因 <c>Method</c> 方法
+    /// 须非泛型，本方法绑定具体项类型 <see cref="WechatCallbackLicenseAccountItem"/>
+    /// （其字段映射仍由 <c>[PayloadContract]</c> 生成物承担，本方法只做「单/多形态分派」）。
+    /// </para>
+    /// </remarks>
+    public static List<WechatCallbackLicenseAccountItem> RepeatLicenseAccountItems(PayloadNode? node)
+    {
+        var items = new List<WechatCallbackLicenseAccountItem>();
+        if (node == null)
+            return items;
+
+        var members = SelectCoalescedMembers(node);
+        if (members == null)
+        {
+            // 单元素形态：定位节点即 AccountList 元素本身（未触发合并投影）。
+            items.Add(BindLicenseAccountItem(node));
+            return items;
+        }
+
+        // 合并形态：同名容器的子节点即原始 AccountList 元素（保序）。
+        for (var i = 0; i < members.Count; i++)
+        {
+            items.Add(BindLicenseAccountItem(members[i]));
+        }
+
+        return items;
+    }
+
+    private static WechatCallbackLicenseAccountItem BindLicenseAccountItem(PayloadNode node)
+    {
+        var item = new WechatCallbackLicenseAccountItem();
+        WechatCallbackLicenseAccountItem.PayloadFieldMap.Bind(node, item);
+        return item;
+    }
+
+    /// <summary>
     /// 平铺重复兄弟元素的分派选择器（OA 审批 <c>sys_approval_change</c> 子树的列表通用前置）。
     /// </summary>
     /// <param name="node">按 <c>[PayloadField]</c> 元素名定位到的节点。</param>

@@ -15,7 +15,7 @@
 	     注意 Abstractions 中的本包引用带 PrivateAssets="all"，**不会**流向本工程，
 	     故此处必须显式引用（否则本工程的载荷类无生成物 ⇒ PayloadFieldMap 成员缺失）。 -->
 	<ItemGroup>
-		<PackageReference Include="Mud.HttpUtils.Generator" Version="3.0.1" PrivateAssets="all" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+		<PackageReference Include="Mud.HttpUtils.Generator" Version="3.0.2" PrivateAssets="all" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
 	</ItemGroup>
 
 	<!-- 契约登记生成器（本仓侧）：依据 [WechatCallbackContract] 特性发射 OfficialPayloadContracts.RegisterAll

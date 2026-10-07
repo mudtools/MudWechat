@@ -153,10 +153,14 @@ public class WechatTokenOwnerContractGuards
             }
 
             // 非 AccessToken 族（ProviderAccessToken / SuiteAccessToken）本身已无歧义：不得叠加归属域键。
+            // 设计定夺（.docs/MudWechatWork-定夺二-Provider令牌归属域-v1.md 方案 A）：该族凭据来源唯一、
+            // 族内不存在错配空间，错配防线由 WechatAppContext.GetTokenManager 的「未装配即抛」承担，
+            // 归属域键对该族无新增拦截能力 ⇒ 永不增设 @Provider / @Suite 归属域键。
             if (token.TokenManagerKey == WechatTokenManagerKeys.InternalAccessToken
                 || token.TokenManagerKey == WechatTokenManagerKeys.CorpAccessToken)
             {
-                violations.Add($"{facade.Name}：TokenType={token.TokenType} 已无歧义，不得叠加归属域键");
+                violations.Add($"{facade.Name}：TokenType={token.TokenType} 已无歧义，不得叠加归属域键" +
+                    "（归属域键仅服务于 AccessToken 的双凭据来源消歧，永不增设 @Provider/@Suite——设计定夺见 .docs 定夺二）");
             }
 
             if (family == FamilyInternal)

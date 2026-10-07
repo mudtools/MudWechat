@@ -36,6 +36,19 @@ namespace Mud.Wechat.Work.Abstractions;
 /// 凭据来源唯一、无二义性，对应管理端点接口不使用归属域后缀。
 /// 全仓一致性由契约守卫 <c>WechatTokenOwnerContractGuards</c> 锁定。
 /// </para>
+/// <para>
+/// <b>永不增设 <c>@Provider</c> / <c>@Suite</c> 归属域键（设计定夺见 .docs 定夺二）</b>：
+/// 归属域键解决的是 <see cref="WechatTokenTypes.AccessToken"/> 的「双凭据来源不可区分」问题；
+/// <c>provider_access_token</c> 凭据来源唯一（服务商主体）、第三方与代开发应用都装配
+/// <c>ProviderTokenManager</c>（套件族同理），族内不存在错配空间 ⇒ 归属域键对该族
+/// <b>无新增拦截能力</b>，仅剩错误信息措辞层面的边际差异，纯为对称性付费。
+/// 「把 provider/suite 族接口注入到自建应用上下文」的错配防线由
+/// <c>WechatAppContext.GetTokenManager</c> 按 <see cref="WechatTokenTypes"/> 分派的
+/// 「未装配即抛」承担（fail-fast，错误信息已指明成因）。
+/// 重开议题的判据（需同时满足）：① 官方语义变化——provider_access_token 出现第二种凭据来源
+/// 或按应用类型的开放面分裂；② 运行期防线不足被实证——真实故障或审计案例证明
+/// <c>GetTokenManager</c> 的「未装配即抛」不足以拦截某类错配。
+/// </para>
 /// </remarks>
 public static class WechatTokenManagerKeys
 {

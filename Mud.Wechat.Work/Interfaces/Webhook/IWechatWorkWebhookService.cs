@@ -37,12 +37,18 @@ namespace Mud.Wechat.Work;
 /// （组件分析器 HTTPCLIENT028）。
 /// </para>
 /// <para>
-/// <b>官方凭证脱敏缺口（已知接受风险，追踪号 WEBHOOK-KEY-REDACT-01）</b>：
-/// <c>key</c> 是<b>长期有效</b>的 URL 凭据（与 response_code 的一次性窗口不同），但其参数名
-/// 不在组件 <c>SensitiveUrlRedactor</c> 脱敏词表内（该词表为精确匹配、组件侧 NuGet 单一版本锁定，
-/// 3.0.1 词表实测不含 <c>key</c>；且 <c>key</c> 一词过于通用，直接进全局词表会过度脱敏）。
-/// SDK 侧不得抢占组件脱敏面，按 G7 同源决策登记为显式豁免（理由 + 追踪号见守卫 WEB3）；
-/// 组件词表若后续覆盖 <c>key</c>，守卫 WEB3 会红并要求清理本豁免。
+/// <b>官方凭证脱敏（模块注册期强制掩码）</b>：
+/// <c>key</c> 是<b>长期有效</b>的 URL 凭据（与 response_code 的一次性窗口不同），随
+/// <c>ApiException.RequestUri</c> 与请求/响应遥测 URL 输出。其参数名不在组件
+/// <c>SensitiveUrlRedactor</c> 静态词表内（该词表为精确匹配、组件侧刻意不收全局通用名
+/// —— <c>key</c> 一词过于通用，直接进全局词表会过度脱敏）。
+/// 因此 <see cref="WechatModule.Webhook"/> 模块注册期经组件公开登记门面
+/// <c>Mud.HttpUtils.SensitiveUrlKeys.Register("key")</c> 将其登记为<b>进程级强制掩码键</b>
+/// （幂等、线程安全、<c>AddAllApis</c> 复入亦安全；登记后不受
+/// <c>MudHttpObservabilityOptions.RedactUrlInTelemetry</c> 开关约束）。
+/// 需 Mud.HttpUtils ≥ 3.0.2；静态词表是否仍不含 <c>key</c> 的反向自过期断言与登记后的
+/// 运行期功能断言见守卫 WEB3。宿主若绕过 builder 直调 <c>AddWebhookWebApiHttpClient()</c>
+/// （非常规用法），需自行登记，见接口 remarks。
 /// </para>
 /// </remarks>
 // HTTPCLIENT018 豁免理由：本域为「无令牌端点」既存例外（官方 91770 以 URL Query 上的 key 为机器人凭据，

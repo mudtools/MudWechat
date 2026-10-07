@@ -10,11 +10,15 @@
 		<PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
 		<PackageReference Include="FluentAssertions" Version="7.0.0" />
 		<PackageReference Include="Moq" Version="4.20.72" />
+		<PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.11.0" />
 	</ItemGroup>
 
 	<ItemGroup>
 		<ProjectReference Include="..\..\Mud.Wechat.OfficialAccount.Callback\Mud.Wechat.OfficialAccount.Callback.csproj" />
 		<ProjectReference Include="..\..\Mud.Wechat.OfficialAccount.Abstractions\Mud.Wechat.OfficialAccount.Abstractions.csproj" />
+		<!-- 分析器单测以【普通引用】驱动（ReferenceOutputAssembly=true，**不得**带 OutputItemType=Analyzer），
+		     否则分析器会在本测试工程自身源码上生效，与夹具中的「故意违规」冲突（同 Work 侧）。 -->
+		<ProjectReference Include="..\..\Mud.Wechat.Callback.Analyzers\Mud.Wechat.Callback.Analyzers.csproj" />
 	</ItemGroup>
 
 	<!-- 中间件用例需 HttpContext（DefaultHttpContext）与路由/状态码 API。 -->

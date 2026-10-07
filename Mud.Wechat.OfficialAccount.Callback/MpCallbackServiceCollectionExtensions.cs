@@ -174,6 +174,10 @@ public static class MpCallbackServiceCollectionExtensions
         services.AddSingleton<IMpCallbackReceiver>(sp => new MpCallbackReceiver(
             sp.GetRequiredService<IOptionsMonitor<MpCallbackOptions>>(),
             sp.GetRequiredService<IWechatCallbackReplayGuard>(),
+            new MpAppIdCrossChecker(
+                sp,
+                sp.GetService<ILogger<MpAppIdCrossChecker>>()
+                ?? (ILogger)Microsoft.Extensions.Logging.Abstractions.NullLogger.Instance),
             null,
             sp.GetService<ILogger<MpCallbackReceiver>>()));
 

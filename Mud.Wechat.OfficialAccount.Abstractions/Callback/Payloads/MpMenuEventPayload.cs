@@ -17,11 +17,9 @@ namespace Mud.Wechat.OfficialAccount.Abstractions.Callback.Payloads;
 /// <b>标量字段</b>：<c>EventKey</c>（菜单 KEY / 跳转 URL / 小程序路径）与 <c>MenuId</c>（跳转类事件携带）。
 /// </para>
 /// <para>
-/// <b>嵌套结构（<c>ScanCodeInfo</c> / <c>SendPicsInfo</c> / <c>SendLocationInfo</c>）本轮经
-/// <see cref="MpCallbackPayload.Values"/> 全量值袋读取</b>：这些节点为「容器 + 重复项」的包装形态，
-/// 其类型化建模须与叶层投影器的「包装形态豁免表」同批登记（与企微侧
-/// <c>WechatCallbackScanCodeInfo</c> 等子节点 DTO 同款）；在官方字段表逐页核验完成前，
-/// 以值袋暴露可避免用未核验的字段名建模（方案 §12 纪律：不得凭记忆补齐字段）。
+/// <b>嵌套结构已类型化</b>（F18 已逐页核验）：<c>scancode_*</c> → <see cref="ScanCodeInfo"/>（<c>Object</c> 通道）、
+/// <c>pic_*</c> → <see cref="SendPicsInfo"/>（<c>Object</c> + <c>ItemsObject</c> 三层，项元素名官方固定 <c>item</c>）、
+/// <c>location_select</c> → <see cref="SendLocationInfo"/>（<c>Object</c> 通道）。未携带对应节点的报文 ⇒ 相应属性为 <c>null</c>。
 /// </para>
 /// <para>
 /// <b>不登记</b> <c>media_id</c>/<c>view_limited</c>：本轮官方菜单事件页未列出，须逐页核验后增量补入（方案 §12 V6）。
@@ -52,4 +50,16 @@ public sealed partial class MpMenuEventPayload : MpCallbackPayload
     /// <summary>菜单 ID（跳转类事件 <c>VIEW</c> / <c>view_miniprogram</c> 携带）。</summary>
     [PayloadField("MenuId")]
     public string? MenuId { get; set; }
+
+    /// <summary>扫码信息（<c>scancode_push</c> / <c>scancode_waitmsg</c> 携带；其余事件为 <c>null</c>）。</summary>
+    [PayloadField("ScanCodeInfo")]
+    public MpScanCodeInfo? ScanCodeInfo { get; set; }
+
+    /// <summary>发送的图片信息（<c>pic_sysphoto</c> / <c>pic_photo_or_album</c> / <c>pic_weixin</c> 携带；其余为 <c>null</c>）。</summary>
+    [PayloadField("SendPicsInfo")]
+    public MpSendPicsInfo? SendPicsInfo { get; set; }
+
+    /// <summary>地理位置信息（<c>location_select</c> 携带；其余事件为 <c>null</c>）。</summary>
+    [PayloadField("SendLocationInfo")]
+    public MpSendLocationInfo? SendLocationInfo { get; set; }
 }

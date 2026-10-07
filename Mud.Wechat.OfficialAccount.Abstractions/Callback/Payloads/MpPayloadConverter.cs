@@ -107,4 +107,66 @@ public static class MpPayloadConverter
             ? value
             : (double?)null;
     }
+
+    // ——— 嵌套结构（上游 G-ADR-17：Object / ItemsObject 通道，由生成器按属性类型与 Format 发射调用）———
+
+    /// <summary>
+    /// 单对象嵌套（官方菜单事件的 <c>ScanCodeInfo</c>/<c>SendPicsInfo</c>/<c>SendLocationInfo</c> 形态）；
+    /// 节点缺失 ⇒ <c>null</c>。
+    /// </summary>
+    /// <typeparam name="TSingle">内层 DTO（须标 <c>[PayloadContract]</c>；生成器只引用、不验证）。</typeparam>
+    /// <param name="node">嵌套对象节点（由 <c>[PayloadField]</c> 定位）。</param>
+    /// <param name="accessor">内层映射表的非泛型桥（<see cref="IPayloadContractAccessor"/>）。</param>
+    /// <returns>内层 DTO 实例或 <c>null</c>。</returns>
+    public static TSingle? Object<TSingle>(PayloadNode? node, IPayloadContractAccessor accessor)
+        where TSingle : class
+    {
+        if (node == null || accessor == null || accessor.PayloadType != typeof(TSingle))
+        {
+            return null;
+        }
+
+        var instance = accessor.CreateInstance();
+        accessor.Bind(node, instance);
+        return instance as TSingle;
+    }
+
+    /// <summary>
+    /// 契约化对象项 → 列表（官方 <c>SendPicsInfo/PicList/item</c> 形态：项节点无文本、文本在其子节点）；
+    /// 节点缺失或不含 <paramref name="itemName"/> 项 ⇒ 空列表（语义不变量：绝不抛异常）。
+    /// </summary>
+    /// <typeparam name="TItem">项 DTO（须标 <c>[PayloadContract]</c>）。</typeparam>
+    /// <param name="node">容器节点（由 <c>[PayloadField]</c> 定位到容器本身）。</param>
+    /// <param name="itemName">项元素名（<c>ItemName</c> 声明，官方固定 <c>item</c>）。</param>
+    /// <param name="itemAccessor">项映射表的非泛型桥。</param>
+    /// <returns>项列表（无项为空列表）。</returns>
+    public static List<TItem> ItemsObject<TItem>(
+        PayloadNode? node, string itemName, IPayloadContractAccessor itemAccessor)
+        where TItem : class
+    {
+        var items = new List<TItem>();
+        if (node == null || string.IsNullOrEmpty(itemName) || itemAccessor == null)
+        {
+            return items;
+        }
+
+        var children = node.Children;
+        for (var i = 0; i < children.Count; i++)
+        {
+            var child = children[i];
+            if (child == null || !string.Equals(child.Name, itemName, StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            var instance = itemAccessor.CreateInstance();
+            itemAccessor.Bind(child, instance);
+            if (instance is TItem typed)
+            {
+                items.Add(typed);
+            }
+        }
+
+        return items;
+    }
 }

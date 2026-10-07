@@ -57,10 +57,11 @@ public sealed class MpCallbackReceiver : IMpCallbackReceiver
 {
     private readonly IOptionsMonitor<MpCallbackOptions> _optionsMonitor;
     private readonly IWechatCallbackReplayGuard _replayGuard;
+    private readonly MpAppIdCrossChecker? _appIdCrossChecker;
     private readonly Func<DateTimeOffset> _utcNow;
     private readonly ILogger<MpCallbackReceiver>? _logger;
 
-    /// <summary>创建回调接收器。</summary>
+    /// <summary>创建回调接收器（无 AppId 交叉校验；宿主直接构造 / 测试用）。</summary>
     /// <param name="optionsMonitor">回调配置监视器（请求期热更）。</param>
     /// <param name="replayGuard">抗重放守卫（默认进程内实现）。</param>
     /// <param name="utcNow">当前时间提供器（测试可注入）。</param>
@@ -70,11 +71,28 @@ public sealed class MpCallbackReceiver : IMpCallbackReceiver
         IWechatCallbackReplayGuard replayGuard,
         Func<DateTimeOffset>? utcNow = null,
         ILogger<MpCallbackReceiver>? logger = null)
+        : this(optionsMonitor, replayGuard, null, utcNow, logger)
+    {
+    }
+
+    /// <summary>创建回调接收器（DI 用：含 AppId 交叉校验协作者）。</summary>
+    /// <param name="optionsMonitor">回调配置监视器。</param>
+    /// <param name="replayGuard">抗重放守卫。</param>
+    /// <param name="appIdCrossChecker">AppId 交叉校验（<c>null</c> = 跳过；未注册多应用基座时为空转）。</param>
+    /// <param name="utcNow">当前时间提供器。</param>
+    /// <param name="logger">日志器。</param>
+    internal MpCallbackReceiver(
+        IOptionsMonitor<MpCallbackOptions> optionsMonitor,
+        IWechatCallbackReplayGuard replayGuard,
+        MpAppIdCrossChecker? appIdCrossChecker,
+        Func<DateTimeOffset>? utcNow = null,
+        ILogger<MpCallbackReceiver>? logger = null)
     {
         _optionsMonitor = optionsMonitor ?? throw new ArgumentNullException(nameof(optionsMonitor));
         _replayGuard = replayGuard ?? throw new ArgumentNullException(nameof(replayGuard));
         _utcNow = utcNow ?? (() => DateTimeOffset.UtcNow);
         _logger = logger;
+        _appIdCrossChecker = appIdCrossChecker;
     }
 
     /// <inheritdoc />
@@ -126,6 +144,9 @@ public sealed class MpCallbackReceiver : IMpCallbackReceiver
                     WechatCallbackFailureKind.ReceiveIdMismatch,
                     "回调验签失败：解密明文尾部的 appid 与配置 AppId 不一致（官方要求校验该值是否与自身公众号相符）。");
             }
+
+            // 加固（非安全闸）：若宿主同时注册了多应用基座，核对两处 AppId 配置是否自相矛盾（首包一次、不 fail-fast）。
+            _appIdCrossChecker?.Check(appKey, app.AppId);
 
             // P2-3：同一次 SHA1 结果先做验签比对，解密成功后再作为一次性指纹 —— 指纹取材于密文，密文缺失则不可得。
             fingerprint = expected;

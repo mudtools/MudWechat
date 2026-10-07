@@ -17,6 +17,7 @@ global using Mud.Wechat.OfficialAccount.DataModels.DataCube;
 global using Mud.Wechat.OfficialAccount.DataModels.KfAccount;
 global using Mud.Wechat.OfficialAccount.DataModels.KfSession;
 global using Mud.Wechat.OfficialAccount.DataModels.Draft;
+global using Mud.Wechat.OfficialAccount.DataModels.Invoice;
 global using Mud.Wechat.OfficialAccount.DataModels.FreePublish;
 global using Mud.Wechat.OfficialAccount.DataModels.Media;
 global using Mud.Wechat.OfficialAccount.DataModels.AutoReply;

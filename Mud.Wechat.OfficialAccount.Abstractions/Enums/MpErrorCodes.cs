@@ -673,4 +673,135 @@ public static class MpErrorCodes
 
     /// <summary>store status is invalid：该门店状态不允许更新（update_store）。</summary>
     public const int StoreStatusInvalid = 65118;
+
+    // ---------------------------------------------------------------- 微信发票（P4 第三域，取值逐页核验官方文档）
+    // 说明：官方在「微信发票」**多个页面重复列出同一张族级错误码表**（商户开票 / 开票平台 / 发票报销三族共用，
+    // 部分码（如 72023/72024）语义仅对特定端点成立）——本段即该**族级共用错误码面**的去重结果，
+    // 不按端点逐页重复建模。4xx 段另有 40078/40097（40097 复用既存 InvalidArgs）。
+
+    /// <summary>invalid card status：card_id 未授权（沙箱未加测试白名单；正式为公众号未开通卡券权限或建卡与插卡间隔过短）。</summary>
+    public const int InvoiceCardStatusInvalid = 40078;
+
+    /// <summary>unauthorized create invoice：没有操作权限（检查是否已开通相应权限）。</summary>
+    public const int InvoiceUnauthorized = 72015;
+
+    /// <summary>invalid invoice title：发票抬头不一致。</summary>
+    public const int InvoiceTitleMismatch = 72017;
+
+    /// <summary>invoice has been lock by others：发票已被其他公众号锁定。</summary>
+    public const int InvoiceLockedByOthers = 72023;
+
+    /// <summary>invoice status error：发票状态错误。</summary>
+    public const int InvoiceStatusError = 72024;
+
+    /// <summary>invoice token error：wx_invoice_token 无效。</summary>
+    public const int InvoiceTokenError = 72025;
+
+    /// <summary>invoice never set pay mch info：未设置微信支付商户信息（需先 set_pay_mch）。</summary>
+    public const int InvoicePayMchNotSet = 72028;
+
+    /// <summary>invoice never set auth field：未设置授权字段（需先 set_auth_field）。</summary>
+    public const int InvoiceAuthFieldNotSet = 72029;
+
+    /// <summary>invalid mchid：微信支付商户号无效。</summary>
+    public const int InvoiceMchIdInvalid = 72030;
+
+    /// <summary>invalid params：参数错误（含无效参数名或未通过后台校验的值）。</summary>
+    public const int InvoiceParamsInvalid = 72031;
+
+    /// <summary>biz reject insert：财政电子票据已被拒绝领取（order_id 曾被用于拒绝开票即不可再插卡）。</summary>
+    public const int InvoiceBizRejectInsert = 72035;
+
+    /// <summary>invoice is busy：票据状态正在修改，请稍后再试。</summary>
+    public const int InvoiceBusy = 72036;
+
+    /// <summary>invoice order never auth：订单没有授权（s_pappid / 执收单位 appid / order_id 不匹配）。</summary>
+    public const int InvoiceOrderNotAuthorized = 72038;
+
+    /// <summary>invoice must be lock first：发票须先锁定（如报销前须先 LOCK）。</summary>
+    public const int InvoiceMustLockFirst = 72039;
+
+    /// <summary>invoice pdf error：Pdf 无效，请提供真实有效的 pdf。</summary>
+    public const int InvoicePdfError = 72040;
+
+    /// <summary>billing_code and billing_no repeated：票据号码与票据代码重复。</summary>
+    public const int InvoiceBillingRepeated = 72042;
+
+    /// <summary>billing_code or billing_no size error：票据号码或票据代码长度错误。</summary>
+    public const int InvoiceBillingSizeError = 72043;
+
+    /// <summary>scan text out of time：发票抬头二维码超时（scantitle）。</summary>
+    public const int InvoiceScanTextOutOfTime = 72044;
+
+    /// <summary>biz contact is empty：商户联系方式为空（需先 set_contact）。</summary>
+    public const int InvoiceContactEmpty = 72063;
+
+    /// <summary>sys error make out invoice failed：开票失败。</summary>
+    public const int InvoiceMakeOutFailed = 73000;
+
+    /// <summary>wxopenid error：微信 openid 错误。</summary>
+    public const int InvoiceOpenIdError = 73001;
+
+    /// <summary>ddh orderid empty：订单号（ddh）为空。</summary>
+    public const int InvoiceOrderIdEmpty = 73002;
+
+    /// <summary>fpqqlsh empty：发票请求流水号为空。</summary>
+    public const int InvoiceFpqqlshEmpty = 73003;
+
+    /// <summary>kplx empty：开票类型为空。</summary>
+    public const int InvoiceKplxEmpty = 73004;
+
+    /// <summary>nsrmc empty：纳税人名称为空。</summary>
+    public const int InvoiceNsrmcEmpty = 73007;
+
+    /// <summary>nsrdz empty：纳税人地址为空。</summary>
+    public const int InvoiceNsrdzEmpty = 73008;
+
+    /// <summary>nsrdh empty：纳税人电话为空。</summary>
+    public const int InvoiceNsrdhEmpty = 73009;
+
+    /// <summary>ghfmc empty：购货方名称为空。</summary>
+    public const int InvoiceGhfmcEmpty = 73010;
+
+    /// <summary>kpr empty：开票人为空。</summary>
+    public const int InvoiceKprEmpty = 73011;
+
+    /// <summary>jshj empty：价税合计为空。</summary>
+    public const int InvoiceJshjEmpty = 73012;
+
+    /// <summary>hjje empty：合计金额为空。</summary>
+    public const int InvoiceHjjeEmpty = 73013;
+
+    /// <summary>hjse empty：合计税额为空。</summary>
+    public const int InvoiceHjseEmpty = 73014;
+
+    /// <summary>hylx empty：行业类型为空。</summary>
+    public const int InvoiceHylxEmpty = 73015;
+
+    /// <summary>nsrsbh empty：纳税人识别号为空。</summary>
+    public const int InvoiceNsrsbhEmpty = 73016;
+
+    /// <summary>ka plat error：开票平台错误。</summary>
+    public const int InvoiceKaPlatError = 73100;
+
+    /// <summary>nsrsbh not cmp：纳税人识别号不匹。</summary>
+    public const int InvoiceNsrsbhNotCmp = 73101;
+
+    /// <summary>sys error：微信开票平台系统错误。</summary>
+    public const int InvoicePlatformSystemError = 73102;
+
+    /// <summary>Kp plat make invoice timeout：开票平台开票超时。</summary>
+    public const int InvoicePlatformMakeTimeout = 73105;
+
+    /// <summary>Fpqqlsh exist with different ddh：发票请求流水号已存在且对应不同订单号。</summary>
+    public const int InvoiceFpqqlshExistWithDifferentOrder = 73106;
+
+    /// <summary>Fpqqlsh is processing：发票请求流水号正在处理中。</summary>
+    public const int InvoiceFpqqlshProcessing = 73107;
+
+    /// <summary>This ddh with other fpqqlsh already exist：该订单号已存在其他发票请求流水号。</summary>
+    public const int InvoiceOrderExistWithOtherFpqqlsh = 73108;
+
+    /// <summary>fpqqlsh first 6 byte not cmp：发票请求流水号前 6 字节不匹配。</summary>
+    public const int InvoiceFpqqlshPrefixNotCmp = 73110;
 }

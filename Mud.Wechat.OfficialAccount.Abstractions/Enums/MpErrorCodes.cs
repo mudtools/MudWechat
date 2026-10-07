@@ -502,4 +502,175 @@ public static class MpErrorCodes
 
     /// <summary>data not ready please try later：指定日期数据尚未生成（数据统计全域；getupstreammsg 页描述为「未完成数据统计处理」，照录）。</summary>
     public const int DataCubeDataNotReady = 61503;
+
+    // ---------------------------------------------------------------- 智能接口（P3-a，取值逐页核验官方文档）
+
+    /// <summary>invalid voice size：不合法的语音文件大小（voice/addvoicetorecofortext）。</summary>
+    public const int VoiceSizeInvalid = 40010;
+
+    /// <summary>invalid args size：不合法的参数（voice/translatecontent）。</summary>
+    public const int ArgsSizeInvalid = 40035;
+
+    /// <summary>invalid image url：图片 URL 错误（OCR 与图像处理全域共用）。</summary>
+    public const int OcrImageUrlInvalid = 101000;
+
+    /// <summary>certificate not found：未检测到证件（OCR 系 idcard / bankcard / bizlicense / menu）。</summary>
+    public const int OcrCertificateNotFound = 101001;
+
+    /// <summary>decode image failed：图片解码失败（OCR 系；官方解决方案列写「图片大小超过限制，resp_type = 0: 2MB，resp_type = 1: 10MB」但全文未定义 resp_type，照录）。</summary>
+    public const int OcrImageDecodeFailed = 101002;
+
+    /// <summary>not enough market quota：市场额度不足（OCR 系；官方解决方案列留空，照录）。</summary>
+    public const int OcrMarketQuotaNotEnough = 101003;
+
+    // ---------------------------------------------------------------- 扫二维码打开小程序 / 长信息与短链（P3-b，取值逐页核验官方文档）
+
+    /// <summary>接口请求太快：超过 5 次/秒频率限制（qrcodejump* 四端点）。</summary>
+    public const int QrcodeJumpRequestTooFast = 44990;
+
+    /// <summary>invalid appid：appid 参数不合法（qrcodejumpget / qrcodejumpadd）。</summary>
+    public const int QrcodeJumpInvalidAppId = 40166;
+
+    /// <summary>链接错误（qrcodejumpadd；请检查链接合法性）。</summary>
+    public const int QrcodeJumpLinkError = 85066;
+
+    /// <summary>test url is not the sub prefix：测试链接不是子链接（qrcodejumpadd）。</summary>
+    public const int QrcodeJumpTestUrlNotSubPrefix = 85068;
+
+    /// <summary>check confirm file fail：校验文件失败（qrcodejumpadd；普通二维码场景）。</summary>
+    public const int QrcodeJumpConfirmFileFailed = 85069;
+
+    /// <summary>URL 命中黑名单 / 个人类型小程序无法设置二维码规则（qrcodejumpadd；官方一行承载两义，照录）。</summary>
+    public const int QrcodeJumpUrlBlacklisted = 85070;
+
+    /// <summary>链接重复：请勿重复添加（qrcodejumpadd）。</summary>
+    public const int QrcodeJumpLinkDuplicated = 85071;
+
+    /// <summary>链接被占用：检查链接归属（qrcodejumpadd）。</summary>
+    public const int QrcodeJumpLinkOccupied = 85072;
+
+    /// <summary>规则数已满：前缀个数已满（qrcodejumpadd）。</summary>
+    public const int QrcodeJumpRuleQuotaFull = 85073;
+
+    /// <summary>小程序未发布：小程序必须先发布代码才可以发布二维码跳转规则（qrcodejumppublish）。</summary>
+    public const int QrcodeJumpMiniProgramNotPublished = 85074;
+
+    /// <summary>can not access：个人类型小程序无法设置二维码规则（qrcodejumpget / qrcodejumppublish / qrcodejumpdelete）。</summary>
+    public const int QrcodeJumpPersonalMiniProgramDenied = 85075;
+
+    /// <summary>check ICP fail：检查 ICP 失败（qrcodejumpadd）。</summary>
+    public const int QrcodeJumpIcpCheckFailed = 85076;
+
+    /// <summary>数据异常：请删除后重新添加（qrcodejumppublish）。</summary>
+    public const int QrcodeJumpDataAbnormal = 85095;
+
+    /// <summary>beyond publish count this month：本月发布次数达到上限（qrcodejumppublish，原文标注 100 次/月）。</summary>
+    public const int QrcodeJumpPublishQuotaExceeded = 886000;
+
+    /// <summary>系统繁忙，请重试（qrcodejump* 全域；与 -1 并存，照录）。</summary>
+    public const int QrcodeJumpSystemBusy = 886001;
+
+    // 注：shorten/* 的 empty post data（44002）复用既存 EmptyPostData 常量（原注释「如删除标签未带 tag.id」
+    // 为标签域场景举例，本域语义为「POST 数据包为空」——官方同一码值跨域复用，不复造常量）。
+
+    /// <summary>data format error：解析 JSON/XML 内容错误（shorten/* 两端点）。</summary>
+    public const int DataFormatError = 47001;
+
+    /// <summary>参数错误 / argument invalid（shorten/* 两端点；fetch 页原文为「模板参数不准确」，本接口无模板概念，疑通用文案残留，照录）。</summary>
+    public const int ShortLinkArgumentInvalid = 47003;
+
+    /// <summary>long_data 长度超过限制（shorten/gen；上限 4KB）。</summary>
+    public const int ShortenLongDataTooLong = 9410010;
+
+    /// <summary>expire_seconds 超过限制（shorten/gen；上限 30 天）。</summary>
+    public const int ShortenExpireOutOfRange = 9410011;
+
+    /// <summary>short_key 不存在 / 过期 / 不属于本账号（shorten/fetch；官方错误码描述列留空，照录）。</summary>
+    public const int ShortenKeyNotExists = 9410012;
+
+    // ---------------------------------------------------------------- 微信门店·门店小程序（P4 首域，取值逐页核验官方文档）
+
+    /// <summary>invalid args：参数错误（update_store；qrcodejumpget 页亦列 40097 且描述为「参数有误」，共用本常量）。</summary>
+    public const int InvalidArgs = 40097;
+
+    /// <summary>this appid does not have permission：无调用权限（apply_merchant；官方原文「仅开放给电商类目（电商平台、商家自营、跨境电商）」，照录）。</summary>
+    public const int StoreAppIdPermissionDenied = 43104;
+
+    /// <summary>需要补充资料：需填写 org_code 与 other_files 字段（apply_merchant；两字段官方标非必填，必填性矛盾照录）。</summary>
+    public const int StoreSupplementRequired = 85024;
+
+    /// <summary>this phone reach bind limit：管理员手机登记数量超上限，该主体不能开通门店（apply_merchant）。</summary>
+    public const int StoreAdminPhoneBindLimit = 85025;
+
+    /// <summary>this wechat account reach bind limit：该微信号已绑定 5 个管理员（apply_merchant）。</summary>
+    public const int StoreAdminWeChatBindLimit = 85026;
+
+    /// <summary>this idcard reach bind limit：管理员身份证已登记 5 次（apply_merchant）。</summary>
+    public const int StoreAdminIdCardBindLimit = 85027;
+
+    /// <summary>this contractor reach bind limit：该主体登记数量超上限，不能开通门店（apply_merchant）。</summary>
+    public const int StoreContractorBindLimit = 85028;
+
+    /// <summary>nickname has used：商家名称已被占用（apply_merchant）。</summary>
+    public const int StoreNicknameUsed = 85029;
+
+    /// <summary>invalid nickname size：昵称长度非法（apply_merchant；官方原文 4-30 字符、一中文占两字符）。</summary>
+    public const int StoreNicknameSizeInvalid = 85030;
+
+    /// <summary>nickname is forbidden：不能使用该名称（apply_merchant）。</summary>
+    public const int StoreNicknameForbidden = 85031;
+
+    /// <summary>nickname is complained：名称处于侵权投诉保护期（apply_merchant）。</summary>
+    public const int StoreNicknameComplained = 85032;
+
+    /// <summary>nickname is illegal：名称含违反公众平台协议或法律法规内容（apply_merchant）。</summary>
+    public const int StoreNicknameIllegal = 85033;
+
+    /// <summary>nickname is protected：名称在改名 15 天保护期内（apply_merchant）。</summary>
+    public const int StoreNicknameProtected = 85034;
+
+    /// <summary>nickname is forbidden for different contractor：需与该账号相同主体才可申请（apply_merchant）。</summary>
+    public const int StoreNicknameContractorMismatch = 85035;
+
+    /// <summary>introduction is illegal：介绍内容违规（apply_merchant）。</summary>
+    public const int StoreIntroductionIllegal = 85036;
+
+    /// <summary>store has added：请勿添加重复门店（add_store）。</summary>
+    public const int StoreAlreadyAdded = 85038;
+
+    /// <summary>store has added by others：此门店状态不能被获取信息（add_store）。</summary>
+    public const int StoreNotAccessible = 85039;
+
+    /// <summary>store has added by yourself：此门店已被绑定，无需重复绑定（add_store；官方描述拼写「yourseld」照录）。</summary>
+    public const int StoreAlreadyBound = 85040;
+
+    /// <summary>credential has used：该经营资质已添加（add_store）。</summary>
+    public const int StoreCredentialUsed = 85041;
+
+    /// <summary>nearby reach limit：附近地点添加数量达到上限（add_store）。</summary>
+    public const int StoreNearbyLimitReached = 85042;
+
+    /// <summary>reach headimg or introduction quota limit：头像或简介修改达每月上限（apply_merchant）。</summary>
+    public const int StoreHeadImageQuotaLimit = 85049;
+
+    /// <summary>verifying don't apply again：审核中，勿重复提交（apply_merchant）。</summary>
+    public const int StoreAuditing = 85050;
+
+    /// <summary>please apply merchant first：需先成功创建门店小程序再调用（apply_merchant / update_store）。</summary>
+    public const int StoreMerchantNotApplied = 85053;
+
+    /// <summary>poi_id is null：门店小程序尚未升级成功，需填写 poi_id 进行门店迁移（add_store）。</summary>
+    public const int StorePoiIdRequired = 85054;
+
+    /// <summary>map_poi_id is invalid：map_poi_id 无效（add_store）。</summary>
+    public const int StoreMapPoiIdInvalid = 85055;
+
+    /// <summary>mediaid is invalid：临时 mediaid 无效（apply_merchant / add_store）。</summary>
+    public const int StoreMediaIdInvalid = 85056;
+
+    /// <summary>poi_id is not exist：门店不存在（update_store）。</summary>
+    public const int StorePoiNotExists = 65115;
+
+    /// <summary>store status is invalid：该门店状态不允许更新（update_store）。</summary>
+    public const int StoreStatusInvalid = 65118;
 }

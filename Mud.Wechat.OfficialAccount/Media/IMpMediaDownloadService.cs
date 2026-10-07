@@ -17,7 +17,7 @@ namespace Mud.Wechat.OfficialAccount;
 /// <see cref="Mud.HttpUtils.IBaseHttpClient.SendRawAsync"/> 原始响应直读，按 <b>Content-Type</b> 分支：
 /// </para>
 /// <list type="bullet">
-/// <item><b>JSON + errcode != 0</b>：抛 <see cref="MpException"/>；令牌失效码
+/// <item><b>JSON + errcode != 0</b>：抛 <see cref="Abstractions.Exceptions.MpException"/>；令牌失效码
 /// （<c>{40001, 40014, 42001}</c>，与 <c>MpTokenInvalidationDetector</c> 集合同源）
 /// 先失效本应用 access_token 并<b>重试一次</b>（镜像票据管理器的 40001 自愈先例）。</item>
 /// <item><b>JSON + video_url</b>（<c>media/get</c> 对视频素材的官方形态）：

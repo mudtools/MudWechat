@@ -31,7 +31,8 @@ namespace Mud.Wechat.OfficialAccount;
 /// <item><b>模板数量</b>：指南页「每个账号可同时使用 <b>25</b> 个模板」；「每个服务号最多 5 个类目、
 /// 每月可更改 5 次，更改或删除类目后原类目模板被删除」。</item>
 /// <item><b>结果回执</b>：发送结果经回调事件 <c>templatesendjobfinish</c> 异步推送
-/// （<c>MpCallbackEventTypes.TemplateSendJobFinish</c> 族，见回调包）。</item>
+/// （大写 <c>TEMPLATESENDJOBFINISH</c> 与小写双键登记，见
+/// <c>Abstractions.Callback.MpSendJobFinishEventTypes.TemplateSendJobFinish</c> 族）。</item>
 /// <item><b>第三方平台</b>：7 页均支持代商家调用（权限集 id 7、100-101，authorizer_access_token）——
 /// 按 M0-R3 裁决只在 XML 记录，不扩实现面。</item>
 /// </list>

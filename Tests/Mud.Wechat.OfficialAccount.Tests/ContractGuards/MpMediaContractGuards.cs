@@ -283,6 +283,30 @@ public class MpMediaContractGuards
         MpErrorCodes.InvalidImageSize.Should().Be(40009);
     }
 
+    /// <summary>
+    /// 契约守卫 MD10：下载通道的 JSON 解释必须走 <b>源生成 JsonTypeInfo 快车道</b>
+    /// （AOT 净零锚点）——<c>MediaJsonContext.Default</c> 必须为永久素材响应与 media_id 请求体
+    /// 暴露强类型元数据；缺失即意味着 <c>MpMediaDownloadService</c> 退回反射路径
+    /// （AGENTS §3 红线：禁反射版 Serialize/Deserialize&lt;T&gt;）。
+    /// </summary>
+    /// <remarks>
+    /// 快车道形态（<c>IAotJsonContentSerializer</c> + <c>MediaJsonContext</c>）与 AOT/裁剪分析同属
+    /// <b>net8.0+</b>：低 TFM（netstandard2.0 / net6.0）不启用裁剪/AOT 分析器，SDK 走 options 路径。
+    /// 本守卫在 <c>net8.0</c> 单 TFM 测试工程内执行 ⇒ 断言的正是启用 AOT 门禁的那条路径。
+    /// </remarks>
+    [Fact]
+    public void DownloadChannel_ShouldUseSourceGeneratedJsonTypeInfo()
+    {
+        MediaJsonContext.Default.MpPermanentMaterialResponse.Should().NotBeNull(
+            "get_material 的图文 news_item / 视频 down_url 统一响应体必须登记进 MediaJsonContext（下载通道 AOT 快车道锚点）");
+        MediaJsonContext.Default.MpMediaIdRequest.Should().NotBeNull(
+            "get_material 的 {\"media_id\":…} 请求体必须登记进 MediaJsonContext（下载通道 AOT 快车道锚点）");
+
+        // 默认组件序列化器实现 IAotJsonContentSerializer ⇒ 快车道在标准装配下即可生效（非仅理论路径）。
+        HttpContentSerializerFactory.CreateDefault().Should().BeAssignableTo<IAotJsonContentSerializer>(
+            "组件默认序列化器须实现 IAotJsonContentSerializer，否则下载通道永远退回 options 解析路径");
+    }
+
     private static void AssertJsonProperty<T>(string jsonName, string because)
     {
         typeof(T).GetProperties()

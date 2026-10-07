@@ -21,7 +21,7 @@ namespace Mud.Wechat.OfficialAccount;
 /// （**不返回文件流**，也非 302 跳转）⇒ <see cref="VideoUrl"/> 承载下载地址，
 /// <see cref="Content"/> 为 <c>null</c>，由调用方自行下载该 URL（SDK 不代下载）。</item>
 /// <item><b>JSON 错误</b>（如 <c>40007 invalid media_id</c>）：不出本信封——按 Content-Type
-/// 分支判错后抛 <see cref="MpException"/>（令牌失效码走失效重试链路）。</item>
+/// 分支判错后抛 <see cref="Abstractions.Exceptions.MpException"/>（令牌失效码走失效重试链路）。</item>
 /// </list>
 /// <para>
 /// <b>生命周期</b>：实现 <see cref="IDisposable"/>——<see cref="Content"/> 流绑定在底层

@@ -81,7 +81,7 @@ public class MpSubscribeNoticeDataValue
 /// <summary>发送订阅通知（<c>message/subscribe/bizsend</c>）响应。</summary>
 /// <remarks>
 /// 官方契约：响应仅 <c>errcode</c>/<c>errmsg</c>（本页无独立错误码表，官方指向通用错误码文档，照录）。
-/// 发送结果另有回调事件 <c>subscribe_msg_sent_event</c> 异步回执（<see cref="Abstractions.Callback.MpSubscriptionEventTypes.Sent"/>）。
+/// 发送结果另有回调事件 <c>subscribe_msg_sent_event</c> 异步回执（<c>MpSubscriptionEventTypes.Sent</c>）。
 /// </remarks>
 [HttpJsonSerializable(SerializerClassName = "SubscriptionNotice")]
 public class MpSendSubscribeNoticeResponse : MpResponse

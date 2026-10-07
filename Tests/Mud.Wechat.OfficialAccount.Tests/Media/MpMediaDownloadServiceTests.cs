@@ -7,7 +7,9 @@
 
 using System.Net;
 using System.Net.Http;
+using System.Text.Json.Serialization.Metadata;
 using Mud.Wechat.OfficialAccount.Abstractions.Authentication;
+using Mud.Wechat.OfficialAccount.DataModels.Media;
 using Mud.Wechat.OfficialAccount.Extensions;
 
 namespace Mud.Wechat.OfficialAccount.Tests.Media;
@@ -234,6 +236,39 @@ public class MpMediaDownloadServiceTests
             .Which.ErrorCode.Should().Be(40007);
     }
 
+    /// <summary>D16：AOT 快车道——宿主序列化器实现 <see cref="IAotJsonContentSerializer"/> 时，
+    /// 永久素材 JSON 走源生成 <c>JsonTypeInfo</c> 反序列化、请求体走 <c>ToHttpContent(T, JsonTypeInfo)</c>，
+    /// <b>不落</b> <c>IHttpContentSerializer</c> 的 options 解析路径（AGENTS §3 AOT 红线）。</summary>
+    [Fact]
+    public async Task GetPermanentMaterialAsync_ShouldUseAotFastLane_WhenSerializerSupportsIt()
+    {
+        var response = JsonResponse("""{"news_item":[{"title":"T"}]}""");
+
+        var serializer = new Mock<IHttpContentSerializer>();
+        serializer.Setup(s => s.Deserialize<MpPermanentMaterialResponse>(It.IsAny<string>(), It.IsAny<object>()))
+            .Throws(new InvalidOperationException("下载通道不得落 options 解析路径（须走 IAotJsonContentSerializer 快车道）"));
+        serializer.Setup(s => s.ToHttpContent(It.IsAny<MpMediaIdRequest>(), It.IsAny<object>()))
+            .Throws(new InvalidOperationException("下载通道不得落 options 解析路径（须走 IAotJsonContentSerializer 快车道）"));
+
+        var aot = serializer.As<IAotJsonContentSerializer>();
+        aot.Setup(s => s.Deserialize(It.IsAny<string>(), It.IsAny<JsonTypeInfo<MpPermanentMaterialResponse>>()))
+            .Returns(new MpPermanentMaterialResponse { NewsItems = new List<MpMaterialNewsItem> { new() { Title = "T" } } });
+        aot.Setup(s => s.ToHttpContent(It.IsAny<MpMediaIdRequest>(), It.IsAny<JsonTypeInfo<MpMediaIdRequest>>()))
+            .Returns(new StringContent("""{"media_id":"M"}""", System.Text.Encoding.UTF8, "application/json"));
+
+        using var harness = new Harness(serializer.Object, response);
+        using var result = await harness.Service.GetPermanentMaterialAsync("MEDIA-ID-1");
+
+        result.NewsItems.Should().NotBeNull();
+        result.NewsItems!.Should().ContainSingle();
+        aot.Verify(s => s.Deserialize(It.IsAny<string>(), It.IsAny<JsonTypeInfo<MpPermanentMaterialResponse>>()),
+            Times.Once, "永久素材 JSON 必须经源生成 JsonTypeInfo 反序列化");
+        aot.Verify(s => s.ToHttpContent(It.IsAny<MpMediaIdRequest>(), It.IsAny<JsonTypeInfo<MpMediaIdRequest>>()),
+            Times.Once, "get_material 请求体必须经源生成 JsonTypeInfo 序列化");
+        serializer.Verify(s => s.Deserialize<MpPermanentMaterialResponse>(It.IsAny<string>(), It.IsAny<object>()),
+            Times.Never, "反射/options 路径不得被调用");
+    }
+
     /// <summary>D10：DI——下载服务随 AddMediaApi 注册为单例（ValidateScopes=true 下可解析且同实例）。</summary>
     [Fact]
     public void DownloadService_ShouldBeSingletonViaMediaModule()
@@ -261,6 +296,11 @@ public class MpMediaDownloadServiceTests
         private static readonly string[] Tokens = { "TOKEN-1", "TOKEN-2", "TOKEN-3", "TOKEN-4" };
 
         public Harness(params HttpResponseMessage[] responses)
+            : this(null, responses)
+        {
+        }
+
+        public Harness(IHttpContentSerializer? contentSerializer, params HttpResponseMessage[] responses)
         {
             var queue = new Queue<HttpResponseMessage>(responses);
             var httpClient = new Mock<IEnhancedHttpClient>();
@@ -292,7 +332,8 @@ public class MpMediaDownloadServiceTests
 
             Service = new MpMediaDownloadService(
                 holder.Object,
-                NullLogger<MpMediaDownloadService>.Instance);
+                NullLogger<MpMediaDownloadService>.Instance,
+                contentSerializer);
         }
 
         public MpMediaDownloadService Service { get; }

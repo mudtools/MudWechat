@@ -207,15 +207,28 @@ public class MpCallbackContractGuards
             .Where(f => f.IsLiteral)
             .Select(f => (string)f.GetRawConstantValue()!)
             .ToList();
+        var subscriptionKeys = typeof(MpSubscriptionEventTypes)
+            .GetFields(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)
+            .Where(f => f.IsLiteral)
+            .Select(f => (string)f.GetRawConstantValue()!)
+            .ToList();
+        var verificationKeys = typeof(MpVerificationEventTypes)
+            .GetFields(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)
+            .Where(f => f.IsLiteral)
+            .Select(f => (string)f.GetRawConstantValue()!)
+            .ToList();
 
         // 消息键 8 个常量（含 event）⇒ 7 个普通消息键；事件键 13 个（9 菜单 + 4 通用）；
-        // 卡券 13 个（含审核通过/不通过两键）；用户授权变更 3 个。
+        // 卡券 13 个（含审核通过/不通过两键）；用户授权变更 3 个；订阅通知 3 个；微信认证 6 个。
         messageKeys.Should().HaveCount(8);
         eventKeys.Should().HaveCount(13);
         cardKeys.Should().HaveCount(13);
         authorizationKeys.Should().HaveCount(3);
+        subscriptionKeys.Should().HaveCount(3);
+        verificationKeys.Should().HaveCount(6);
         // 跨族不得撞键（官方键全局唯一，撞键会让注册表相互覆盖）。
-        eventKeys.Concat(cardKeys).Concat(authorizationKeys).Should().OnlyHaveUniqueItems();
+        eventKeys.Concat(cardKeys).Concat(authorizationKeys).Concat(subscriptionKeys).Concat(verificationKeys)
+            .Should().OnlyHaveUniqueItems();
         messageKeys.Should().OnlyHaveUniqueItems();
         eventKeys.Should().OnlyHaveUniqueItems();
     }

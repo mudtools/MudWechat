@@ -132,6 +132,92 @@ public static class MpPayloadConverter
     }
 
     /// <summary>
+    /// 订阅通知项列表（官方三键的 <c>SubscribeMsg*Event/List</c> 形态；**项元素名固定 <c>List</c>**，可 1~N 项）。
+    /// </summary>
+    /// <param name="node">外层包裹节点（由 <c>[PayloadField]</c> 定位，如 <c>SubscribeMsgPopupEvent</c>）。</param>
+    /// <returns>项列表（无项为空列表；**绝不抛异常**）。</returns>
+    /// <remarks>
+    /// <para>
+    /// <b>为何不用通用 <see cref="ItemsObject{TItem}"/> 通道</b>：叶层投影器对「同名复杂兄弟」做合并 ——
+    /// 当报文含 <b>多个</b> <c>List</c> 时，外层节点的子节点会呈现为一个<b>合成容器 <c>List</c></b>
+    /// （其子节点才是原始各项）；而**单个** <c>List</c> 时不合并。两种形态下「子节点名为 List 的项」含义不同，
+    /// 通用通道只能覆盖其一。本方法按「子节点是否仍含名为 <c>List</c> 的子节点」判别合成容器并下沉一层，
+    /// 单/多两项皆可（与 Work 侧 <c>RepeatOaApprovalRecords</c> 等同构做法）。
+    /// </para>
+    /// </remarks>
+    public static List<MpSubscribeMsgItem> RepeatSubscribeMsgItems(PayloadNode? node)
+    {
+        var items = new List<MpSubscribeMsgItem>();
+        if (node == null)
+        {
+            return items;
+        }
+
+        CollectSubscribeMsgItems(node, items);
+        return items;
+    }
+
+    private static void CollectSubscribeMsgItems(PayloadNode node, List<MpSubscribeMsgItem> items)
+    {
+        var accessor = (IPayloadContractAccessor)MpSubscribeMsgItem.PayloadFieldMap;
+        var children = node.Children;
+
+        var listNamed = 0;
+        var nestedListNamed = 0;
+        for (var i = 0; i < children.Count; i++)
+        {
+            var child = children[i];
+            if (child == null || !string.Equals(child.Name, "List", StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            listNamed++;
+            var grandChildren = child.Children;
+            for (var j = 0; j < grandChildren.Count; j++)
+            {
+                if (grandChildren[j] != null
+                    && string.Equals(grandChildren[j].Name, "List", StringComparison.Ordinal))
+                {
+                    nestedListNamed++;
+                    break;
+                }
+            }
+        }
+
+        // 合成容器判别：名为 List 的子节点**自身仍含**名为 List 的子节点 ⇒ 当前层是合并容器，下沉一层。
+        if (listNamed > 0 && nestedListNamed == listNamed)
+        {
+            for (var i = 0; i < children.Count; i++)
+            {
+                var child = children[i];
+                if (child != null && string.Equals(child.Name, "List", StringComparison.Ordinal))
+                {
+                    CollectSubscribeMsgItems(child, items);
+                }
+            }
+
+            return;
+        }
+
+        for (var i = 0; i < children.Count; i++)
+        {
+            var child = children[i];
+            if (child == null || !string.Equals(child.Name, "List", StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            var instance = accessor.CreateInstance();
+            accessor.Bind(child, instance);
+            if (instance is MpSubscribeMsgItem item)
+            {
+                items.Add(item);
+            }
+        }
+    }
+
+    /// <summary>
     /// 契约化对象项 → 列表（官方 <c>SendPicsInfo/PicList/item</c> 形态：项节点无文本、文本在其子节点）；
     /// 节点缺失或不含 <paramref name="itemName"/> 项 ⇒ 空列表（语义不变量：绝不抛异常）。
     /// </summary>

@@ -16,6 +16,11 @@
 	<ItemGroup>
 		<ProjectReference Include="..\..\Mud.Wechat.OfficialAccount.Callback\Mud.Wechat.OfficialAccount.Callback.csproj" />
 		<ProjectReference Include="..\..\Mud.Wechat.OfficialAccount.Abstractions\Mud.Wechat.OfficialAccount.Abstractions.csproj" />
+		<!-- P7 跨产品线共存验证（**仅测试边**）：同宿主同时接入企微与公众号两套回调链路，
+		     断言共用叶层内核为同一事实来源、两侧注册互不干扰、默认路由前缀不冲突。
+		     生产程序集仍严格单向（CB-L1a/L1b 守卫锁定 csproj 引用行）。 -->
+		<ProjectReference Include="..\..\Mud.Wechat.Work.Callback\Mud.Wechat.Work.Callback.csproj" />
+		<ProjectReference Include="..\..\Mud.Wechat.Work.Abstractions\Mud.Wechat.Work.Abstractions.csproj" />
 		<!-- 分析器单测以【普通引用】驱动（ReferenceOutputAssembly=true，**不得**带 OutputItemType=Analyzer），
 		     否则分析器会在本测试工程自身源码上生效，与夹具中的「故意违规」冲突（同 Work 侧）。 -->
 		<ProjectReference Include="..\..\Mud.Wechat.Callback.Analyzers\Mud.Wechat.Callback.Analyzers.csproj" />

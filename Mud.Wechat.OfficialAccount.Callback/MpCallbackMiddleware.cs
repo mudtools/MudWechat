@@ -32,25 +32,33 @@ public sealed class MpCallbackMiddleware
     private readonly IMpCallbackReceiver _receiver;
     private readonly MpCallbackDispatcher _dispatcher;
     private readonly IOptionsMonitor<MpCallbackOptions> _optionsMonitor;
+    private readonly IServiceProvider _services;
     private readonly ILogger<MpCallbackMiddleware> _logger;
+    private IMpCallbackSourceIpProvider? _sourceIps;
+    private bool _sourceIpsResolved;
+    private bool _sourceIpsNotReadyWarned;
+    private readonly object _sourceIpsLock = new();
 
     /// <summary>创建中间件。</summary>
     /// <param name="next">下一中间件。</param>
     /// <param name="receiver">回调接收器。</param>
     /// <param name="dispatcher">事件分发器。</param>
     /// <param name="optionsMonitor">回调配置监视器（路由前缀与白名单请求期热更）。</param>
+    /// <param name="services">服务提供者（**惰性可选**解析动态来源 IP 提供者：未注册即纯静态白名单）。</param>
     /// <param name="logger">日志器。</param>
     public MpCallbackMiddleware(
         RequestDelegate next,
         IMpCallbackReceiver receiver,
         MpCallbackDispatcher dispatcher,
         IOptionsMonitor<MpCallbackOptions> optionsMonitor,
+        IServiceProvider services,
         ILogger<MpCallbackMiddleware> logger)
     {
         _next = next ?? throw new ArgumentNullException(nameof(next));
         _receiver = receiver ?? throw new ArgumentNullException(nameof(receiver));
         _dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
         _optionsMonitor = optionsMonitor ?? throw new ArgumentNullException(nameof(optionsMonitor));
+        _services = services ?? throw new ArgumentNullException(nameof(services));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
@@ -69,7 +77,8 @@ public sealed class MpCallbackMiddleware
 
         if (!IsSourceAllowed(context, options))
         {
-            _logger.LogWarning("回调来源 IP {RemoteIp} 不在白名单中，拒绝。AppKey: {AppKey}",
+            _logger.LogWarning(MpCallbackLogEvents.SourceIpRejected,
+                "回调来源 IP {RemoteIp} 不在白名单中，拒绝。AppKey: {AppKey}",
                 ResolveRemoteIp(context, options), appKey);
             context.Response.StatusCode = StatusCodes.Status403Forbidden;
             return;
@@ -95,7 +104,8 @@ public sealed class MpCallbackMiddleware
         {
             // 验签/时效/重放/解密/appid/明文拒收 统一 403 + **空体**（不得回 success：
             // 否则攻击者可据响应体差异探测「验签是否通过」）。
-            _logger.LogWarning(ex, "回调验证失败（{Kind}），AppKey: {AppKey}", ex.Kind, appKey);
+            _logger.LogWarning(MpCallbackLogEvents.VerificationFailed, ex,
+                "回调验证失败（{Kind}），AppKey: {AppKey}", ex.Kind, appKey);
             context.Response.StatusCode = StatusCodes.Status403Forbidden;
         }
         catch (OperationCanceledException) when (context.RequestAborted.IsCancellationRequested)
@@ -105,13 +115,15 @@ public sealed class MpCallbackMiddleware
         catch (OperationCanceledException)
         {
             // 分发软超时 → 明文 success + 200（见类型注释）。
-            _logger.LogWarning("回调分发软超时，回 success + 200（不触发重推），AppKey: {AppKey}", appKey);
+            _logger.LogWarning(MpCallbackLogEvents.DispatchTimedOut,
+                "回调分发软超时，回 success + 200（不触发重推），AppKey: {AppKey}", appKey);
             await WriteTextAsync(context, StatusCodes.Status200OK, MpCallbackReplyWriter.SuccessResponseBody,
                 CancellationToken.None).ConfigureAwait(false);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "回调处理发生未预期异常，AppKey: {AppKey}", appKey);
+            _logger.LogError(MpCallbackLogEvents.UnhandledError, ex,
+                "回调处理发生未预期异常，AppKey: {AppKey}", appKey);
             context.Response.StatusCode = StatusCodes.Status500InternalServerError;
         }
     }
@@ -216,46 +228,58 @@ public sealed class MpCallbackMiddleware
         return rest;
     }
 
-    /// <summary>来源 IP 白名单校验（空白名单 = 不限；支持精确 IPv4 与 IPv4 CIDR）。</summary>
-    private static bool IsSourceAllowed(HttpContext context, MpCallbackOptions options)
+    /// <summary>
+    /// 来源 IP 准入校验：静态白名单（<c>MpCallbackOptions.AllowedSourceIPs</c>）∪ 动态推送 IP
+    /// （可选注册 <see cref="IMpCallbackSourceIpProvider"/>；未注册即纯静态）。
+    /// </summary>
+    private bool IsSourceAllowed(HttpContext context, MpCallbackOptions options)
     {
-        if (options.AllowedSourceIPs == null || options.AllowedSourceIPs.Count == 0)
+        var provider = ResolveSourceIpProvider();
+        var dynamicIps = provider?.CurrentSourceIps;
+
+        var allowed = MpCallbackSourceIpFilter.IsAllowed(
+            ResolveRemoteIp(context, options), options.AllowedSourceIPs, dynamicIps, out var dynamicActive);
+
+        // 动态白名单已启用但尚未刷新出结果 ⇒ 一次性告警（放行语义见 MpCallbackSourceIpFilter 备注）。
+        if (dynamicActive == false && provider != null && !_sourceIpsNotReadyWarned)
         {
-            return true;
+            _sourceIpsNotReadyWarned = true;
+            _logger.LogWarning(MpCallbackLogEvents.SourceIpWhitelistNotReady,
+                "动态回调来源 IP 白名单已注册但尚无数据（getcallbackip 首次刷新未完成或失败）；" +
+                "本次及后续请求在刷新成功前按「不限动态来源」放行。请确认公众号令牌可用。");
         }
 
-        var remote = ResolveRemoteIp(context, options);
-        if (remote == null)
+        return allowed;
+    }
+
+    /// <summary>惰性解析动态来源 IP 提供者（未注册 ⇒ <c>null</c>，回调链路保持纯静态白名单语义）。</summary>
+    private IMpCallbackSourceIpProvider? ResolveSourceIpProvider()
+    {
+        if (_sourceIpsResolved)
         {
-            return false;
+            return _sourceIps;
         }
 
-        foreach (var entry in options.AllowedSourceIPs)
+        lock (_sourceIpsLock)
         {
-            if (string.IsNullOrWhiteSpace(entry))
+            if (_sourceIpsResolved)
             {
-                continue;
+                return _sourceIps;
             }
 
-            var candidate = entry.Trim();
-            var slash = candidate.IndexOf('/');
-            if (slash < 0)
+            try
             {
-                if (string.Equals(candidate, remote.ToString(), StringComparison.Ordinal))
-                {
-                    return true;
-                }
-
-                continue;
+                _sourceIps = _services.GetService(typeof(IMpCallbackSourceIpProvider)) as IMpCallbackSourceIpProvider;
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                _sourceIps = null;
+                _logger.LogWarning(ex, "动态回调来源 IP 提供者解析失败，回退纯静态白名单。");
             }
 
-            if (IsInCidr(remote, candidate.Substring(0, slash), candidate.Substring(slash + 1)))
-            {
-                return true;
-            }
+            _sourceIpsResolved = true;
+            return _sourceIps;
         }
-
-        return false;
     }
 
     private static IPAddress? ResolveRemoteIp(HttpContext context, MpCallbackOptions options)
@@ -277,40 +301,6 @@ public sealed class MpCallbackMiddleware
         }
 
         return context.Connection.RemoteIpAddress;
-    }
-
-    private static bool IsInCidr(IPAddress address, string network, string prefixText)
-    {
-        if (address.AddressFamily != AddressFamily.InterNetwork
-            || !IPAddress.TryParse(network.Trim(), out var networkAddress)
-            || networkAddress.AddressFamily != AddressFamily.InterNetwork
-            || !int.TryParse(prefixText.Trim(), out var prefix)
-            || prefix < 0
-            || prefix > 32)
-        {
-            return false;
-        }
-
-        var addressBytes = address.GetAddressBytes();
-        var networkBytes = networkAddress.GetAddressBytes();
-        var fullBytes = prefix / 8;
-        var remainingBits = prefix % 8;
-
-        for (var i = 0; i < fullBytes; i++)
-        {
-            if (addressBytes[i] != networkBytes[i])
-            {
-                return false;
-            }
-        }
-
-        if (remainingBits == 0)
-        {
-            return true;
-        }
-
-        var mask = (byte)(0xFF << (8 - remainingBits));
-        return (addressBytes[fullBytes] & mask) == (networkBytes[fullBytes] & mask);
     }
 
     /// <summary>逐块读取请求体（按字节计数防多字节超限；超限返回 <c>null</c>）。</summary>

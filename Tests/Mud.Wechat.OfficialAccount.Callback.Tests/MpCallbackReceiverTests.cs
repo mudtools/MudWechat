@@ -201,9 +201,9 @@ public class MpCallbackReceiverTests
         var registry = new MpPayloadContractRegistry();
         MpPayloadContracts.RegisterAll(registry);
 
-        registry.RegisteredKeys.Should().HaveCount(36,
-            "已核验键集：7 消息 + 13 事件（9 菜单 + subscribe/unsubscribe/SCAN/LOCATION）" +
-            "+ 13 卡券（12 个小节，其中审核小节含通过与不通过两键）+ 3 用户授权变更");
+        registry.RegisteredKeys.Should().HaveCount(45,
+            "已核验键全集：7 消息 + 13 事件（9 菜单 + subscribe/unsubscribe/SCAN/LOCATION）" +
+            "+ 13 卡券（12 小节，审核小节含通过与不通过两键）+ 3 用户授权变更 + 3 订阅通知 + 6 微信认证");
         registry.RegisteredKeys.Should().Contain(new[]
         {
             MpCallbackEventTypes.Subscribe,

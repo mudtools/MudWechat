@@ -61,6 +61,35 @@ public static class MpCallbackMessageTypes
 }
 
 /// <summary>
+/// 被动回复的消息类型（<c>MsgType</c>）取值（官方「被动回复用户消息」页，V9 已核验）。
+/// </summary>
+/// <remarks>
+/// <b>与 <see cref="MpCallbackMessageTypes"/> 的区别</b>：后者是**收到**的消息类型（含 <c>shortvideo</c>/<c>location</c>/<c>link</c>），
+/// 本类是**回复**的消息类型（含 <c>music</c>/<c>news</c>，不含 <c>shortvideo</c>/<c>location</c>/<c>link</c>）——
+/// 两组键**不可混用**。官方另有灰度中的 <c>transfer_biz_ai_ivr</c>（仅公共字段），本轮不建模。
+/// </remarks>
+public static class MpCallbackReplyTypes
+{
+    /// <summary>文本回复（<c>Content</c>）。</summary>
+    public const string Text = "text";
+
+    /// <summary>图片回复（<c>Image/MediaId</c>；官方约束：不支持 gif 动图）。</summary>
+    public const string Image = "image";
+
+    /// <summary>语音回复（<c>Voice/MediaId</c>）。</summary>
+    public const string Voice = "voice";
+
+    /// <summary>视频回复（<c>Video/MediaId</c> 必填，Title/Description 可选）。</summary>
+    public const string Video = "video";
+
+    /// <summary>音乐回复（<c>Music</c>；仅 <c>ThumbMediaId</c> 必填，<c>HQMusicUrl</c> 在 WIFI 优先）。</summary>
+    public const string Music = "music";
+
+    /// <summary>图文回复（<c>ArticleCount</c> + <c>Articles/item</c>；官方上限 8 条，六类消息场景仅 1 条）。</summary>
+    public const string News = "news";
+}
+
+/// <summary>
 /// 自定义菜单事件推送的 <c>Event</c> 取值（官方自定义菜单事件推送页）。
 /// </summary>
 /// <remarks>
@@ -190,4 +219,54 @@ public static class MpAuthorizationEventTypes
 
     /// <summary>授权用户完成注销（需依法履行个人信息保护义务，删除或匿名化处理）。</summary>
     public const string UserAuthorizationCancellation = "user_authorization_cancellation";
+}
+
+/// <summary>
+/// 订阅通知事件推送的 <c>Event</c> 取值（官方「订阅通知的事件推送」页，V3 已核验；共 3 键）。
+/// </summary>
+/// <remarks>
+/// <b>三键的项列表结构一致</b>（外层包裹节点名各异：<c>SubscribeMsgPopupEvent</c>/<c>SubscribeMsgChangeEvent</c>/
+/// <c>SubscribeMsgSentEvent</c>，内部均为若干 <c>List</c> 项 —— **项元素名官方固定为 <c>List</c>**，
+/// 且一次订阅可携带多个模板 id ⇒ 必须支持多项）。
+/// </remarks>
+public static class MpSubscriptionEventTypes
+{
+    /// <summary>用户操作订阅通知弹窗（图文/H5 场景内订阅；项的 <c>SubscribeStatusString</c> 取 accept/reject）。</summary>
+    public const string Popup = "subscribe_msg_popup_event";
+
+    /// <summary>用户管理订阅通知（在服务通知管理页操作；<b>仅推送拒收</b>，项内**不含** <c>PopupScene</c>）。</summary>
+    public const string Change = "subscribe_msg_change_event";
+
+    /// <summary>发送订阅通知结果（调用 bizsend 后异步回执；项内 <c>ErrorCode = 0</c> 表示成功）。</summary>
+    public const string Sent = "subscribe_msg_sent_event";
+}
+
+/// <summary>
+/// 微信认证事件推送的 <c>Event</c> 取值（官方「微信认证事件推送」页，V4 已核验；共 6 键）。
+/// </summary>
+/// <remarks>
+/// 官方业务链：资质认证成功 <b>一定早于</b>名称认证成功；名称认证成功后才在客户端获得打勾标识；
+/// 名称认证失败时**仍有接口权限**（仅不打勾）；<c>annual_renew</c> 提示需尽快年审；
+/// <c>verify_expired</c> 表示已过期、需重新发起认证。推送对象为**账号管理权限集**持有方
+/// （第三方平台代收时推送到套件的「消息与事件接收 URL」）。
+/// </remarks>
+public static class MpVerificationEventTypes
+{
+    /// <summary>资质认证成功（此刻起获得认证相关接口权限）。字段：<c>ExpiredTime</c>。</summary>
+    public const string QualificationVerifySuccess = "qualification_verify_success";
+
+    /// <summary>资质认证失败。字段：<c>FailTime</c> + <c>FailReason</c>。</summary>
+    public const string QualificationVerifyFail = "qualification_verify_fail";
+
+    /// <summary>名称认证成功（客户端开始显示打勾标识）。字段：<c>ExpiredTime</c>。</summary>
+    public const string NamingVerifySuccess = "naming_verify_success";
+
+    /// <summary>名称认证失败（**仍有接口权限**，仅无打勾标识）。字段：<c>FailTime</c> + <c>FailReason</c>。</summary>
+    public const string NamingVerifyFail = "naming_verify_fail";
+
+    /// <summary>年审通知（<c>ExpiredTime</c> 为认证过期时间戳，需尽快年审）。</summary>
+    public const string AnnualRenew = "annual_renew";
+
+    /// <summary>认证过期失效通知（<c>ExpiredTime</c> 为已过期时间，需重新发起微信认证）。</summary>
+    public const string VerifyExpired = "verify_expired";
 }

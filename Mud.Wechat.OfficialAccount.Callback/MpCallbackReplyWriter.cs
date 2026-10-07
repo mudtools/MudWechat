@@ -68,6 +68,12 @@ internal static class MpCallbackReplyWriter
             AppendElement(builder, field.Key, field.Value);
         }
 
+        // 嵌套体（Image/Voice/Video/Music/Articles）由 Abstractions 的工厂方法预渲染（已转义）后原样拼入。
+        if (!string.IsNullOrEmpty(reply.BodyXml))
+        {
+            builder.Append(reply.BodyXml);
+        }
+
         builder.Append("</xml>");
         var plainXml = builder.ToString();
 

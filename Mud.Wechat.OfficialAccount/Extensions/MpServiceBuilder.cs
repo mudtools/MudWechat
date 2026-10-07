@@ -113,6 +113,9 @@ public class MpServiceBuilder
             [MpModule.OneCode] = new MpModuleRegistrar(
                 MpModule.OneCode,
                 s => s.AddOneCodeWebApiHttpClient()),
+            [MpModule.Invoice] = new MpModuleRegistrar(
+                MpModule.Invoice,
+                s => s.AddInvoiceWebApiHttpClient()),
         };
 
     /// <summary>
@@ -266,6 +269,12 @@ public class MpServiceBuilder
     /// </summary>
     /// <returns>注册器（链式）。</returns>
     public MpServiceBuilder AddOneCodeApi() => AddModule(MpModule.OneCode);
+
+    /// <summary>
+    /// 注册微信发票（17 端点；全消费 <c>access_token</c>、不引入 <c>api_ticket</c>；<c>scantitle</c> 不支持第三方代调用）。
+    /// </summary>
+    /// <returns>注册器（链式）。</returns>
+    public MpServiceBuilder AddInvoiceApi() => AddModule(MpModule.Invoice);
 
     /// <summary>注册全部模块。</summary>
     /// <returns>注册器（链式）。</returns>

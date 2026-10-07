@@ -270,4 +270,16 @@ public enum MpModule
     /// <c>isv_application_id</c> 为幂等键；<c>code_count</c> 须 10000 的整数倍且 ∈ [10000, 20000000]。
     /// </remarks>
     OneCode,
+
+    /// <summary>
+    /// 微信发票（17 端点单域承载：商户开票 5 + 开票平台 5 + 发票报销 4 + 极速开发票 3）。
+    /// </summary>
+    /// <remarks>
+    /// 域级约束（逐页核验，勿弱化）：<b>17 页全部消费应用级 <c>access_token</c>，不引入 <c>api_ticket</c> 建模</b>
+    /// （<c>getauthurl</c> 的 <c>ticket</c> 为授权页票据、<c>s_pappid</c> 为开票平台标识，均非票据）；
+    /// 账号门槛三档并存（开票平台族「需申请」、插入/报销族「公众号/服务号 ✔」、<c>scantitle</c>「仅认证」）；
+    /// 与支付不耦合（仅消费 <c>mchid</c> 作配置）；16/17 页支持第三方平台代调用（权限集 <b>26</b>；<c>seturl</c>/<c>insert</c> 为 8、26），
+    /// <b><c>scantitle</c> 独家不支持</b>；无频率数值；<b>错误码为族级共用表</b>（约 43 枚，多页重复列出同一张表）。
+    /// </remarks>
+    Invoice,
 }

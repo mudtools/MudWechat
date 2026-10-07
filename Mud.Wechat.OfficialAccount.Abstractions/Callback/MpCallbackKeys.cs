@@ -90,12 +90,16 @@ public static class MpCallbackReplyTypes
 }
 
 /// <summary>
-/// 自定义菜单事件推送的 <c>Event</c> 取值（官方自定义菜单事件推送页）。
+/// 自定义菜单事件推送的 <c>Event</c> 取值（官方「自定义菜单的事件推送」页；键集合**恰为官方列出的 9 个**）。
 /// </summary>
 /// <remarks>
-/// 官方补充约束：点击菜单弹出子菜单<b>不产生上报</b>；第 3~8 个事件
-/// （<c>scancode_push</c>～<c>location_select</c>）仅支持 iOS 微信 5.4.1+ / Android 微信 5.4+。
-/// <b>不得凭记忆补入</b> <c>media_id</c>/<c>view_limited</c>（本轮官方页面未列出，须逐页核验后增量补）。
+/// <b>官方补充约束（V6 已核验）</b>：① 点击菜单弹出子菜单<b>不产生上报</b>；② 第 3~8 个事件
+/// （<c>scancode_push</c> / <c>scancode_waitmsg</c> / <c>pic_sysphoto</c> / <c>pic_photo_or_album</c> /
+/// <c>pic_weixin</c> / <c>location_select</c>）仅支持微信 iPhone 5.4.1+ 与 Android 5.4+，
+/// 旧版本点击无回应且收不到推送；③ <c>VIEW</c> / <c>view_miniprogram</c> 携带 <c>MenuId</c>（个性化菜单据此判断规则）；
+/// ④ <c>location_select</c> 的 <c>Poiname</c> <b>可能为空</b>。
+/// <b>不登记</b> <c>media_id</c>/<c>view_limited</c>：V6 复核确认<b>当前官方菜单事件页未列出该两个事件</b>
+/// （无字段表、无报文）⇒ 属历史遗留键，不做假设性建模；真收到时按未登记键降级为通用载荷（不丢事件）。
 /// </remarks>
 public static class MpCallbackEventTypes
 {

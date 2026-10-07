@@ -229,6 +229,15 @@ public class MpCallbackContractGuards
         // 跨族不得撞键（官方键全局唯一，撞键会让注册表相互覆盖）。
         eventKeys.Concat(cardKeys).Concat(authorizationKeys).Concat(subscriptionKeys).Concat(verificationKeys)
             .Should().OnlyHaveUniqueItems();
+
+        // V6 已核验：菜单事件键**恰为官方页列出的 9 个**（media_id / view_limited 当前官方页未列出，
+        // 属历史遗留键 ⇒ 不得凭记忆补入；本断言锁死该边界，新增菜单键必须先核验官方页）。
+        eventKeys.Should().BeEquivalentTo(new[]
+        {
+            "subscribe", "unsubscribe", "SCAN", "LOCATION",
+            "CLICK", "VIEW", "scancode_push", "scancode_waitmsg", "pic_sysphoto",
+            "pic_photo_or_album", "pic_weixin", "location_select", "view_miniprogram",
+        });
         messageKeys.Should().OnlyHaveUniqueItems();
         eventKeys.Should().OnlyHaveUniqueItems();
     }

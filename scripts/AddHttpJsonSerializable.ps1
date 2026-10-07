@@ -21,7 +21,12 @@
 param(
     # 数据模型根目录；留空则取「仓库根目录\Mud.Wechat.Work.DataModels」。
     # 也可传入相对路径（相对仓库根目录）或绝对路径。
-    [string]$RootPath
+    # 公众号产品线用法：-RootPath Mud.Wechat.OfficialAccount.DataModels -RootNamespace Mud.Wechat.OfficialAccount.DataModels
+    [string]$RootPath,
+    # 根命名空间：命中该命名空间的直属文件（无域段）归入 "Common" 组。
+    # 多产品线必须显式传入，否则非默认产品线的根级 DTO 会被打成 "DataModels" 等错误分组
+    # （生成上下文与 DTO 命名空间错位 ⇒ AOT resolver 合并后类型不可解析）。
+    [string]$RootNamespace = 'Mud.Wechat.Work.DataModels'
 )
 
 # 脚本位于 <仓库根>\scripts\ 下，仓库根为其上一级目录
@@ -102,7 +107,7 @@ foreach ($file in $files) {
         throw "文件含 DTO 类型但未声明命名空间（file-scoped namespace 为本仓库约定）：$($file.FullName)"
     }
     $namespace = ($nsLine -replace '^namespace\s+', '' -replace '\s*;.*$', '').Trim()
-    if ($namespace -eq 'Mud.Wechat.Work.DataModels') { $module = 'Common' } else { $module = $namespace.Split('.')[-1] }
+    if ($namespace -eq $RootNamespace) { $module = 'Common' } else { $module = $namespace.Split('.')[-1] }
 
     # 通过缩进过滤嵌套类型：取所有候选行的最小缩进作为"顶层"基准
     $minIndent = ($candidates | ForEach-Object { $lines[$_ - 1].Length - $lines[$_ - 1].TrimStart().Length } | Measure-Object -Minimum).Minimum

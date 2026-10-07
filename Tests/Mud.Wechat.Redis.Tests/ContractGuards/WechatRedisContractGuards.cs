@@ -161,6 +161,22 @@ public class WechatRedisContractGuards
     }
 
     /// <summary>
+    /// RD-G7：顺序守卫对公众号注册的探测全名必须与 MP 接口 FullName 一致
+    ///（Redis 包不引用 MP.Abstractions，经全名字符串探测；漂移即测试失败，须同步更新常量）。
+    /// </summary>
+    [Fact]
+    public void MpAppManagerTypeName_ShouldMatchOfficialAccountInterfaceFullName()
+    {
+        WechatRedisServiceCollectionExtensions.MpAppManagerTypeName
+            .Should().Be(typeof(IMpAppManager).FullName);
+
+        // 防静默空跑：该类型必须是接口且位于产品线 Abstractions 程序集。
+        typeof(IMpAppManager).IsInterface.Should().BeTrue();
+        typeof(IMpAppManager).Assembly.GetName().Name
+            .Should().Be("Mud.Wechat.OfficialAccount.Abstractions");
+    }
+
+    /// <summary>
     /// RD-G6：Redis 包单依赖（RD11）——csproj 不得引用 Callback / Work 主包，仅 Abstractions。
     /// </summary>
     [Fact]

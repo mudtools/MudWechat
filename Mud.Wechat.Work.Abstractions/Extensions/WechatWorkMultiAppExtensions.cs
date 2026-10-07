@@ -88,8 +88,28 @@ public static class WechatWorkMultiAppExtensions
         List<WechatAppConfig> configs,
         IConfiguration? configuration = null)
     {
-        // SSRF 防线：BaseUrl 域白名单（AllowCustomBaseUrl=false 时校验）。
-        UrlValidator.ConfigureAllowedDomains(Consts.AllowedBaseUrlDomains);
+        // 重复调用防护（对齐公众号侧：AddMpApp 同形守卫）：
+        // WechatAppManager 是单例且以「本次传入的配置列表」为注册表唯一来源 ⇒
+        // 重复 AddWechatApp 会让后一次注册的管理器覆盖前一次（先注册的应用<b>静默丢失</b>，
+        // 仅在手写测试时才被发现）。故 fail-fast 并指明正确用法。
+        if (services.Any(descriptor => descriptor.ServiceType == typeof(IWechatAppManager)))
+        {
+            throw new InvalidOperationException(
+                "AddWechatApp 已被调用过。多应用请使用 AddWechatApp(List<WechatAppConfig>) 一次性注册全部应用"
+                + "（重复调用会以最后一次的配置列表覆盖注册表，导致先注册的应用静默丢失）。");
+        }
+
+        // 公用层唯一登记点：SSRF 白名单（并集单一来源）+ 令牌恢复判定器组合器 + 选项校验器 +
+        // 令牌提供器 + 后台刷新框架服务。
+        // 顺序敏感：白名单必须在任何客户端创建前登记；组合判定器经 PostConfigure 组装，
+        // 保证不被后续 TokenRecoveryOptions 配置绑定覆盖。
+        services.AddWechatTokenRecovery();
+
+        // 企微 errcode 判定器以「子判定器」身份登记（由公用层组合器统一消费）。
+        // 放在 AddWechatApp（而非 AddWechatWorkServices）之后仍可解析：判定器无构造期依赖，
+        // 组合器经 IPostConfigureOptions 在**选项首次解析时**才读取 DI 集合，故注册顺序无关。
+        services.TryAddEnumerable(
+            ServiceDescriptor.Singleton<ITokenInvalidationDetector, Authentication.WechatTokenInvalidationDetector>());
 
         // MT-02：带 appKey 的切换入口（UseAppScope/UseApp，二者守卫一致）默认拒绝（未注册授权器即抛出）。
         // 本 SDK 的 appKey 始终来源于 WechatAppConfig 注册表（未知 appKey 由 GetApp 校验），
@@ -118,7 +138,7 @@ public static class WechatWorkMultiAppExtensions
         foreach (var config in configs)
         {
             var clientName = WechatHttpClientFactory.BuildClientName(config.AppKey);
-            var baseUrl = string.IsNullOrWhiteSpace(config.BaseUrl) ? Consts.DefaultBaseUrl : config.BaseUrl;
+            var baseUrl = string.IsNullOrWhiteSpace(config.BaseUrl) ? WechatApiHosts.WorkBaseUrl : config.BaseUrl;
 
             // P2-9：显式允许的自定义主机登记到进程级表，供 errcode 判定器的同步预过滤放行
             // （否则 AllowCustomBaseUrl=true 的私有化/网关部署会静默失去令牌恢复能力）。
@@ -150,8 +170,8 @@ public static class WechatWorkMultiAppExtensions
             sp.GetRequiredService<IWechatHttpClientFactory>(),
             sp.GetService<ILogger<PerAppWechatAuthenticationFactory>>()));
 
-        // 令牌恢复选项（errcode 判定器由主包 PostConfigure 注入，见 WechatWorkServiceCollectionExtensions）。
-        services.AddOptions<TokenRecoveryOptions>();
+        // 令牌恢复选项的宿主配置节绑定（选项本体、校验器与判定器组合器由
+        // WechatTokenRecoveryRegistration.AddWechatTokenRecovery 在本方法开头统一登记）。
         if (configuration != null)
         {
             var tokenRecoverySection = configuration.GetSection(TokenRecoveryOptions.SectionName);
@@ -159,9 +179,6 @@ public static class WechatWorkMultiAppExtensions
             services.AddSingleton<IOptionsChangeTokenSource<TokenRecoveryOptions>>(
                 new ConfigurationChangeTokenSource<TokenRecoveryOptions>(Options.DefaultName, tokenRecoverySection));
         }
-
-        services.TryAddSingleton<IValidateOptions<TokenRecoveryOptions>, TokenRecoveryOptionsValidator>();
-        services.TryAddSingleton(sp => sp.GetRequiredService<IOptions<TokenRecoveryOptions>>().Value);
 
         // 令牌 / 授权信息 / 套件票据仓储（默认进程内实现；分布式场景由宿主预注册覆盖，TryAdd 语义）。
         services.TryAddSingleton<IWechatTokenStore, InMemoryWechatTokenStore>();
@@ -186,19 +203,18 @@ public static class WechatWorkMultiAppExtensions
         services.AddSingleton<IValidateOptions<WechatAppConfig>, WechatAppConfigValidator>();
         services.AddSingleton<IValidateOptions<List<WechatAppConfig>>, WechatAppConfigValidator>();
 
-        // 令牌提供器（框架 DefaultTokenProvider：BindTenantGuard + GetTokenManager 路由）。
+        // 令牌提供器（框架 DefaultTokenProvider：BindTenantGuard + GetTokenManager 路由）与
+        // 后台刷新框架服务均由 WechatTokenRecoveryRegistration.AddWechatTokenRecovery（方法开头）
+        // 统一登记（后者带「已注册即跳过」守卫，保证多产品线共存时只有一个刷新循环）。
         // 注意：上下文切换器/持有器已在方法开头（AddMudHttpClient 之前）注册，此处不得重复注册——
         // 重复注册会因 TryAdd 语义失效而再次出现「两个独立 AsyncLocal」的 P0-1 缺陷。
-        services.AddTokenProvider();
 
 #if NET6_0_OR_GREATER
         // 令牌管理器登记（HostedService）：先注册管理器，再启动后台刷新服务（IHostedService 按注册顺序启动）。
         services.AddHostedService<WechatTokenRegistrationService>();
 #endif
 
-        // 后台主动刷新复用框架服务（不自建 HostedService）；默认 Enabled=false，
-        // 存在已配置应用时自动启用（PostConfigure）。
-        services.AddTokenRefreshBackgroundService();
+        // 存在已配置应用时自动启用后台刷新（PostConfigure）。
         services.AddOptions<TokenRefreshBackgroundOptions>()
             .PostConfigure<IOptions<List<WechatAppConfig>>>((tokenOptions, appOptions) =>
             {

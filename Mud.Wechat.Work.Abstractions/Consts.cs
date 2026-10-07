@@ -10,21 +10,13 @@ namespace Mud.Wechat.Work.Abstractions;
 /// <summary>
 /// 企业微信 SDK 全局常量（对齐 Feishu Consts）。
 /// </summary>
+/// <remarks>
+/// 域名与 SSRF 白名单已下沉公用层：<see cref="WechatApiHosts.WorkBaseUrl"/> /
+/// <see cref="WechatApiHosts.AllowedBaseUrlDomains"/>（跨产品线并集单一来源，白名单由
+/// <c>WechatTokenRecoveryRegistration.AddWechatTokenRecovery</c> 统一登记）。
+/// </remarks>
 internal static class Consts
 {
-    /// <summary>企业微信 API 默认域名（企业主体/服务商接口统一）。</summary>
-    public const string DefaultBaseUrl = "https://qyapi.weixin.qq.com";
-
-    /// <summary>
-    /// <see cref="Configuration.WechatAppConfig.AllowCustomBaseUrl"/> 为 false 时的 BaseUrl 域名白名单
-    /// （SSRF 防线；host 等于域或以其子域结尾即放行）。
-    /// </summary>
-    public static readonly string[] AllowedBaseUrlDomains =
-    {
-        "weixin.qq.com",
-        "work.weixin.qq.com",
-    };
-
     /// <summary>命名 HttpClient 客户端名前缀（per-app 客户端名 = 前缀 + "-" + AppKey）。</summary>
     public const string HttpClientNamePrefix = "wechat-work";
 

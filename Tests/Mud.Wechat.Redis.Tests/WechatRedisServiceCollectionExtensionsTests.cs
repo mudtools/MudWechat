@@ -41,6 +41,24 @@ public class WechatRedisServiceCollectionExtensionsTests
     }
 
     [Fact]
+    public void AddWechatRedis_ShouldThrow_WhenCalledAfterAddMpApp()
+    {
+        // M1：策略由 Redis 包与产品线无关 ⇒ 公众号同样必须在 redis 之后注册；
+        // 否则令牌存储端口被默认 InMemory 实现占位，Redis 实现静默失效（多实例令牌共享随之失效）。
+        var services = new ServiceCollection();
+        services.AddMpApp(config =>
+        {
+            config.AppKey = "mp-default";
+            config.AppId = "wx-a";
+            config.AppSecret = "s-a";
+        });
+
+        var act = () => services.AddWechatRedis(o => { });
+
+        act.Should().Throw<InvalidOperationException>().WithMessage("*AddMpApp*");
+    }
+
+    [Fact]
     public void AddWechatRedis_ShouldThrow_WhenCalledAfterAddWechatCallback()
     {
         var services = new ServiceCollection();

@@ -289,8 +289,12 @@ public class WechatWorkServiceBuilder
     }
 
     /// <summary>
-    /// 完成注册：校验必需服务、接入 errcode 令牌失效判定器并合并 AOT JsonContext。
+    /// 完成注册：校验必需服务并合并 AOT JsonContext。
     /// </summary>
+    /// <remarks>
+    /// errcode 令牌失效判定器不在此登记：它已随 <c>AddWechatApp</c>（令牌基础设施装配）以子判定器身份注册，
+    /// 由公用层组合器统一消费（与公众号产品线对称；该选项属性为单槽，两产品线各自写入会互相覆盖）。
+    /// </remarks>
     public IServiceCollection Build()
     {
         if (!_configuration.HasAnyService())
@@ -306,9 +310,6 @@ public class WechatWorkServiceBuilder
                 "未注册 IWechatAppManager。请在 AddWechatWorkServices 之前调用 AddWechatApp 注册企业微信应用配置。" +
                 "示例：services.AddWechatApp(configuration, \"WechatApps\").AddWechatWorkServices(builder => builder.AddAuthenticationApi());");
         }
-
-        // errcode 令牌失效判定器（Mud.HttpUtils v3.0.1）：TokenRecoveryOptions 编程式注入。
-        _services.AddWechatTokenInvalidationDetector();
 
 #if NET8_0_OR_GREATER
         WechatJsonResolverExtensions.ConfigureDataModelsResolver(_services);

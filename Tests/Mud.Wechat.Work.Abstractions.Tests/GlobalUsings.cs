@@ -8,5 +8,7 @@ global using System.Threading;
 global using System.Threading.Tasks;
 global using Microsoft.Extensions.Logging.Abstractions;
 global using Microsoft.Extensions.Options;
+global using Mud.Wechat.Abstractions;
+global using Mud.Wechat.Abstractions.TokenManager;
 global using Mud.Wechat.Work.Abstractions.Configuration;
 global using Mud.Wechat.Work.Abstractions.Enums;

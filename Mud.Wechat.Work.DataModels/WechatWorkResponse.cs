@@ -10,8 +10,12 @@ namespace Mud.Wechat.Work.DataModels;
 /// <summary>
 /// 企业微信统一响应基底。
 /// </summary>
+/// <remarks>
+/// 实现公用层判错契约 <see cref="Mud.Wechat.Abstractions.Contracts.IWechatApiResponse"/>，
+/// 使判错出口（<c>WechatWorkException.ThrowIfFailed</c>）可在跨产品线层面统一。
+/// </remarks>
 [HttpJsonSerializable(SerializerClassName = "Common")]
-public class WechatWorkResponse
+public class WechatWorkResponse : Mud.Wechat.Abstractions.Contracts.IWechatApiResponse
 {
     /// <summary>
     /// 获取或设置企业微信 API 返回的错误码（0 表示成功）。

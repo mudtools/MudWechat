@@ -20,7 +20,10 @@ namespace Mud.Wechat.OfficialAccount;
 /// 走 <see cref="IBaseHttpClient.SendRawAsync"/> 原始响应直读（I3 裁决的独立请求形态），
 /// 按 Content-Type 分支：JSON+errcode → 判错 / 令牌失效自愈重试；JSON 成功体 → 按端点解释
 /// （临时素材 video_url / 永久素材 news_item·down_url）；其余 → 文件流。
-/// JSON 成功体的结构化解释一律经 <c>MediaJsonContext</c> 源生成反序列化（零手写解析、AOT 净零）。
+/// JSON 成功体的结构化解释一律经 <c>MediaJsonContext</c> 源生成的 <c>JsonTypeInfo</c>
+/// 快车道（<c>IAotJsonContentSerializer</c>，零反射、零动态代码，不依赖运行期options 解析顺序）；
+/// 该接口与源生成上下文同属 <b>net8.0+</b> 形态，低 TFM（netstandard2.0 / net6.0，不启用裁剪/AOT 分析）
+/// 回退 options 解析路径。
 /// </para>
 /// <para>
 /// <b>令牌失效自愈</b>：镜像票据管理器先例（<c>MpTicketManagerBase</c> 的 40001 处置）——
@@ -41,6 +44,10 @@ public sealed class MpMediaDownloadService : IMpMediaDownloadService
 
     private readonly IAppContextHolder _appContextHolder;
     private readonly IHttpContentSerializer _contentSerializer;
+#if NET8_0_OR_GREATER
+    /// <summary>源生成快车道（<c>IAotJsonContentSerializer</c> 仅在 net8.0+ 形态提供）。</summary>
+    private readonly IAotJsonContentSerializer? _aotSerializer;
+#endif
     private readonly ILogger<MpMediaDownloadService> _logger;
 
     /// <summary>创建素材下载服务。</summary>
@@ -55,6 +62,11 @@ public sealed class MpMediaDownloadService : IMpMediaDownloadService
         _appContextHolder = appContextHolder ?? throw new ArgumentNullException(nameof(appContextHolder));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _contentSerializer = contentSerializer ?? HttpContentSerializerFactory.CreateDefault();
+#if NET8_0_OR_GREATER
+        // AOT 快车道：宿主注入的序列化器实现 IAotJsonContentSerializer 时，直接用源生成上下文的
+        // JsonTypeInfo 走「零反射」通道（AGENTS §3 红线：不使用反射版 Serialize/Deserialize<T>）。
+        _aotSerializer = _contentSerializer as IAotJsonContentSerializer;
+#endif
     }
 
     /// <inheritdoc />
@@ -113,9 +125,16 @@ public sealed class MpMediaDownloadService : IMpMediaDownloadService
             using var request = new HttpRequestMessage(method, requestUri);
             if (method == HttpMethod.Post)
             {
-                // 官方契约：请求体 {"media_id":…}（经组件序列化器——与生成客户端同一通路，net8+ 由
-                // 消费方 JsonTypeInfoResolver 保证 AOT 安全）。
-                request.Content = _contentSerializer.ToHttpContent(new MpMediaIdRequest { MediaId = mediaId });
+                // 官方契约：请求体{"media_id":…}。优先走源生成 JsonTypeInfo 快车道（零反射、AOT 安全），
+                // 宿主序列化器不具备快车道能力时回退 options 路径（与生成客户端同一通路）。
+                var body = new MpMediaIdRequest { MediaId = mediaId };
+#if NET8_0_OR_GREATER
+                request.Content = _aotSerializer != null
+                    ? _aotSerializer.ToHttpContent(body, MediaJsonContext.Default.MpMediaIdRequest)
+                    : _contentSerializer.ToHttpContent(body);
+#else
+                request.Content = _contentSerializer.ToHttpContent(body);
+#endif
             }
 
             var response = await app.HttpClient.SendRawAsync(request, cancellationToken).ConfigureAwait(false);
@@ -181,7 +200,16 @@ public sealed class MpMediaDownloadService : IMpMediaDownloadService
         MpPermanentMaterialResponse? payload;
         try
         {
-            payload = _contentSerializer.Deserialize<MpPermanentMaterialResponse>(outcome.JsonBody ?? string.Empty, null);
+            // 官方契约：图文 news_item / 视频 down_url 三形态的统一 JSON 载体；
+            // 优先走 MediaJsonContext 源生成 JsonTypeInfo（零反射），否则回退 options 路径。
+            var json = outcome.JsonBody ?? string.Empty;
+#if NET8_0_OR_GREATER
+            payload = _aotSerializer != null
+                ? _aotSerializer.Deserialize(json, MediaJsonContext.Default.MpPermanentMaterialResponse)
+                : _contentSerializer.Deserialize<MpPermanentMaterialResponse>(json, null);
+#else
+            payload = _contentSerializer.Deserialize<MpPermanentMaterialResponse>(json, null);
+#endif
         }
         catch (Exception exception)
         {

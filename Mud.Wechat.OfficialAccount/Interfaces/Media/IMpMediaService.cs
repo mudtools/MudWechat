@@ -21,7 +21,7 @@ namespace Mud.Wechat.OfficialAccount;
 /// 上传端点（响应 JSON）落本接口走生成管线；下载端点（<c>media/get</c> / <c>media/get/jssdk</c>，
 /// 响应为文件流）落 <c>IMpMediaDownloadService</c> 走独立 HttpClient 请求形态
 /// （<see cref="Mud.HttpUtils.IBaseHttpClient.SendRawAsync"/> 原始响应直读 + Content-Type 分支判错，
-/// 不进 JSON 反序列化管线）。两通道同属 <see cref="MpModule.Media"/> 注册组。
+/// 不进 JSON 反序列化管线）。两通道同属 <see cref="Extensions.MpModule.Media"/> 注册组。
 /// </para>
 /// <para>
 /// <b>域级业务约束（逐页核验，勿弱化）</b>：

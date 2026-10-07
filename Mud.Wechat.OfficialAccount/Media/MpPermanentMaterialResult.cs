@@ -27,7 +27,7 @@ namespace Mud.Wechat.OfficialAccount;
 /// <para>
 /// <b>形态判定</b>：<see cref="NewsItems"/> != null ⇒ 图文；否则 <see cref="VideoDownUrl"/> != null ⇒ 视频；
 /// 否则 <see cref="Content"/> != null ⇒ 文件流。JSON 错误体（errcode != 0）不出信封——抛
-/// <see cref="MpException"/>（令牌失效码走失效重试链路）。
+/// <see cref="Abstractions.Exceptions.MpException"/>（令牌失效码走失效重试链路）。
 /// </para>
 /// <para>
 /// <b>生命周期</b>：文件流形态实现 <see cref="IDisposable"/>（流绑定底层响应报文）；

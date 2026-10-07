@@ -49,7 +49,7 @@ public class MpGetMaterialCountResponse : MpResponse
 [HttpJsonSerializable(SerializerClassName = "Media")]
 public class MpBatchGetMaterialRequest
 {
-    /// <summary>获取或设置素材的类型（官方 <c>type</c>：<see cref="MpMediaTypes"/> 四类）。</summary>
+    /// <summary>获取或设置素材的类型（官方 <c>type</c>：<c>MpMediaTypes</c> 四类）。</summary>
     [JsonPropertyName("type")]
     public string Type { get; set; } = string.Empty;
 

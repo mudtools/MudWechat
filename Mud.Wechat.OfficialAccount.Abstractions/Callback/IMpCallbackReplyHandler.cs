@@ -200,7 +200,7 @@ public sealed class MpCallbackReply
     /// </para>
     /// <para>
     /// <b>与客服消息接口的额度关系</b>：转客服回复是「5 秒内不能处理完 → 转人工」的标准姿势，
-    /// <b>不消耗 48 小时客服下发额度</b>（那是客服消息接口 <see cref="IMpCustomerMessageService"/> 的约束）。
+    /// <b>不消耗 48 小时客服下发额度</b>（那是客服消息接口 <c>IMpCustomerMessageService</c> 的约束）。
     /// </para>
     /// </remarks>
     public static MpCallbackReply TransferToCustomerService(string? kfAccount = null)

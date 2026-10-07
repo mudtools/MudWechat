@@ -83,7 +83,7 @@ public class WechatCallbackException : InvalidOperationException
     /// <summary>创建带内部异常的回调异常。</summary>
     /// <param name="kind">失败类别。</param>
     /// <param name="message">异常消息（不得含密钥/密文材料）。</param>
-    /// <param name="innerException">内部异常（如 <see cref="FormatException"/> / <see cref="CryptographicException"/>）。</param>
+    /// <param name="innerException">内部异常（如 <see cref="FormatException"/> / <see cref="System.Security.Cryptography.CryptographicException"/>）。</param>
     public WechatCallbackException(WechatCallbackFailureKind kind, string message, Exception innerException)
         : base(message, innerException)
     {

@@ -23,7 +23,8 @@ namespace Mud.Wechat.Abstractions.Callback;
 /// <para>
 /// <b>不下沉策略</b>：验签<b>比较</b>策略留各产品线接收器 —— 企业微信保持 <see cref="StringComparison.OrdinalIgnoreCase"/>
 /// 宽比较（兼容平台大小写差异，零行为漂移），公众号使用常量时间精确比较（<c>CryptographicOperations.FixedTimeEquals</c>）。
-/// 本类只提供 <see cref="ComputeSignature"/> 纯计算与显式比较入口 <see cref="VerifySignature"/>。
+/// 本类只提供 <see cref="ComputeSignature(string, string, string)"/> 纯计算与显式比较入口
+/// <see cref="VerifySignature(string, string, string, string, string)"/>。
 /// </para>
 /// <para>
 /// 解密协议（90968）：Base64 解码密文 → AES-256-CBC 解密（Key = Base64Decode(EncodingAESKey + "=")，

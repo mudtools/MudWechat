@@ -34,7 +34,7 @@ public class MpQrcodeCreateRequest
     [JsonPropertyName("expire_seconds")]
     public int? ExpireSeconds { get; set; }
 
-    /// <summary>获取或设置二维码类型（官方 <c>action_name</c>，四形态见 <see cref="MpQrcodeActionNames"/>）。</summary>
+    /// <summary>获取或设置二维码类型（官方 <c>action_name</c>，四形态见 <c>MpQrcodeActionNames</c>）。</summary>
     [JsonPropertyName("action_name")]
     public string ActionName { get; set; } = string.Empty;
 

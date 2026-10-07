@@ -202,4 +202,70 @@ public class WechatAbstractionsContractGuards
         var ci = File.ReadAllText(Path.Combine(root, ".github", "workflows", "dotnet-publish.yml"));
         ci.Should().Contain("-ne 10", "制品数量守卫必须随新增产品线更新（否则打包步骤 fail-closed 必红）");
     }
+
+    /// <summary>
+    /// AB-G7：<b>打包契约</b>守卫 —— 两个回调宿主包<b>必须产出 nupkg</b>（分析器随包内嵌），
+    /// 而生成器 / 分析器工程必须 <c>IsPackable=false</c>。
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// 起因：两个回调 <b>宿主包</b>的 csproj 注释曾写「工程 IsPackable=false，不新增 nupkg」，
+    /// 与实际行为（各产出 1 个 nupkg，且 CI 期望数已含它们）<b>矛盾</b>。
+    /// 该注释会诱导后来者「按注释修正」为 <c>IsPackable=false</c> ⇒ 既让 CI 计数 fail-closed 变红，
+    /// 又使 <c>Mud.Wechat.Callback.Analyzers</c> 失去随包下发渠道（诊断能力对消费者失效）。
+    /// </para>
+    /// <para>
+    /// 实测口径（<c>dotnet pack Mud.Wechat.slnx -c Release</c>）：恰 <b>10</b> 个 nupkg，
+    /// 其中两个回调包内均含 <c>analyzers/dotnet/cs/Mud.Wechat.Callback.Analyzers.dll</c> 与 4 个 TFM 的 lib。
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void CallbackPackages_ShouldShipAndEmbedAnalyzer()
+    {
+        var root = GetSolutionRoot();
+
+        // ① 宿主包：不得声明 IsPackable=false（否则包不再发布，诊断能力对消费者失效）。
+        foreach (var hostPackage in new[]
+                 {
+                     "Mud.Wechat.Work.Callback/Mud.Wechat.Work.Callback.csproj",
+                     "Mud.Wechat.OfficialAccount.Callback/Mud.Wechat.OfficialAccount.Callback.csproj",
+                 })
+        {
+            var source = File.ReadAllText(Path.Combine(root, hostPackage.Replace('/', Path.DirectorySeparatorChar)));
+            var withoutComments = StripXmlComments(source);
+
+            withoutComments.Should().NotContain("<IsPackable>",
+                $"{hostPackage} 是回调宿主包，必须产出 nupkg（分析器随包内嵌）；" +
+                "若确实要停止发布，须同步修改 CI 制品数量守卫与本文档说明");
+
+            withoutComments.Should().Contain("analyzers/dotnet/cs",
+                $"{hostPackage} 必须把 Mud.Wechat.Callback.Analyzers 内嵌到 analyzers/dotnet/cs");
+        }
+
+        // ② 工具链工程：生成器 / 分析器不得独立打包（否则多出无消费者的空包）。
+        foreach (var toolProject in new[]
+                 {
+                     "Mud.Wechat.Callback.Generator/Mud.Wechat.Callback.Generator.csproj",
+                     "Mud.Wechat.Callback.Analyzers/Mud.Wechat.Callback.Analyzers.csproj",
+                 })
+        {
+            var source = File.ReadAllText(Path.Combine(root, toolProject.Replace('/', Path.DirectorySeparatorChar)));
+            StripXmlComments(source).Should().Contain("<IsPackable>false</IsPackable>",
+                $"{toolProject} 为随包下发的工具链，必须 IsPackable=false");
+        }
+
+        // ③ CI 期望清单必须显式列出两个回调包（口径漂移会在打包步骤 fail-closed）。
+        // 注意：CI 的清单按**短名**列举（与既有写法一致），故此处按短名断言。
+        var ci = File.ReadAllText(Path.Combine(root, ".github", "workflows", "dotnet-publish.yml"));
+        ci.Should().Contain("Work.Callback", "CI 制品清单必须含企微回调包");
+        ci.Should().Contain("OfficialAccount.Callback", "CI 制品清单必须含公众号回调包");
+    }
+
+    /// <summary>去掉 XML 注释，避免注释文本里的属性字样被误判为真实配置。</summary>
+    private static string StripXmlComments(string xml)
+    {
+        var result = System.Text.RegularExpressions.Regex.Replace(xml, "<!--.*?-->", string.Empty,
+            System.Text.RegularExpressions.RegexOptions.Singleline);
+        return result;
+    }
 }

@@ -14,7 +14,7 @@
 
 	<!-- 回调处理器契约分析器（中立工具，档位表驱动）：校验 SupportedEventType ↔ 载荷契约（MUDCB002~005），
 	     公众号档位已并入同一分析器（元数据名/键常量类/注册方法名由 Profiles 表声明）。
-	     仅诊断、不发射 ⇒ 允许随包下发（analyzers/dotnet/cs）；工程 IsPackable=false，不新增 nupkg。 -->
+	     仅诊断、不发射 ⇒ 允许随包下发（analyzers/dotnet/cs）；<b>本工程本身照常产出 nupkg</b>（内嵌该分析器）。 -->
 	<ItemGroup>
 		<ProjectReference Include="..\Mud.Wechat.Callback.Analyzers\Mud.Wechat.Callback.Analyzers.csproj"
 		                  OutputItemType="Analyzer" ReferenceOutputAssembly="false" PrivateAssets="all" />

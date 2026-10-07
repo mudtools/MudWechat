@@ -96,10 +96,15 @@ public class MpJsApiSignatureTests
             .ReturnsAsync(OfficialTicket);
 
         var fixedNow = DateTimeOffset.FromUnixTimeSeconds(OfficialTimestamp);
-        var service = new MpJsApiSignatureService(ticketManager.Object, () => fixedNow);
+        var service = new MpJsApiSignatureService(
+            ticketManager.Object,
+            Microsoft.Extensions.Options.Options.Create(
+                new MpAppConfig { AppKey = "mp1", AppId = "wxTestAppId" }),
+            () => fixedNow);
 
         var result = await service.SignAsync("https://a.com/p#/route");
 
+        result.AppId.Should().Be("wxTestAppId", "前端 wx.config 需要 appId（四份官方样例均回传）");
         result.Url.Should().Be("https://a.com/p", "签名 URL 不含 # 片段");
         result.TimeStamp.Should().Be(OfficialTimestamp);
         result.NonceStr.Should().HaveLength(16);
@@ -116,9 +121,24 @@ public class MpJsApiSignatureTests
         ticketManager.Setup(m => m.GetTicketAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(string.Empty);
 
-        var service = new MpJsApiSignatureService(ticketManager.Object);
+        var service = new MpJsApiSignatureService(
+            ticketManager.Object,
+            Microsoft.Extensions.Options.Options.Create(
+                new MpAppConfig { AppKey = "mp1", AppId = "wxTestAppId" }));
 
         await service.Invoking(s => s.SignAsync("https://a.com/p"))
             .Should().ThrowAsync<InvalidOperationException>();
+    }
+
+    /// <summary>应用配置缺 AppId ⇒ 构造即失败（不回包让前端拿不到 appId 的签名结果）。</summary>
+    [Fact]
+    public void Constructor_ShouldRequireAppId()
+    {
+        var ticketManager = new Mock<IMpJsApiTicketManager>();
+
+        ((Action)(() => new MpJsApiSignatureService(
+                ticketManager.Object,
+                Microsoft.Extensions.Options.Options.Create(new MpAppConfig { AppKey = "mp1" }))))
+            .Should().Throw<ArgumentException>();
     }
 }

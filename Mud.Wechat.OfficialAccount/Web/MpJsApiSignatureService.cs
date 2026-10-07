@@ -8,7 +8,9 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Options;
 using Mud.Wechat.OfficialAccount.Abstractions.Authentication;
+using Mud.Wechat.OfficialAccount.Abstractions.Configuration;
 
 namespace Mud.Wechat.OfficialAccount.Web;
 
@@ -16,23 +18,31 @@ namespace Mud.Wechat.OfficialAccount.Web;
 /// JS-SDK 前端注入签名结果（供 <c>wx.config</c> 使用）。
 /// </summary>
 /// <remarks>
-/// <b>前端字段名对应（官方注意事项）</b>：<see cref="NonceStr"/> 必须原样传给 <c>wx.config</c> 的
-/// <c>nonceStr</c>（驼峰），<see cref="TimeStamp"/> 传给 <c>timestamp</c>，两者与签名所用值必须一致。
+/// <b>字段集与官方样例一致</b>：四份官方样例（java/node/python/php）的签名返回对象均含
+/// <c>appId</c>/<c>timestamp</c>/<c>nonceStr</c>/<c>url</c>/<c>signature</c>（前端 <c>wx.config</c> 需要这五项）。
+/// <b>刻意不返回 <c>jsapi_ticket</c> 与 <c>rawString</c></b>：二者都含票据原文，
+/// 一旦随响应外泄即等于公开票据（官方 PHP 样例同样不把 ticket 放进 <c>signPackage</c>；
+/// node 样例把 ticket 放进返回对象仅供其自身调试，不可照搬到服务端响应）。
 /// </remarks>
 public sealed class MpJsApiSignatureResult
 {
     /// <summary>创建签名结果。</summary>
+    /// <param name="appId">公众号 AppID（前端 <c>wx.config</c> 的 <c>appId</c>）。</param>
     /// <param name="url">参与签名的 URL（已去除 <c>#</c> 片段）。</param>
     /// <param name="nonceStr">随机字符串。</param>
     /// <param name="timeStamp">时间戳（Unix 秒）。</param>
     /// <param name="signature">签名值（sha1 小写十六进制）。</param>
-    public MpJsApiSignatureResult(string url, string nonceStr, long timeStamp, string signature)
+    public MpJsApiSignatureResult(string appId, string url, string nonceStr, long timeStamp, string signature)
     {
+        AppId = appId;
         Url = url;
         NonceStr = nonceStr;
         TimeStamp = timeStamp;
         Signature = signature;
     }
+
+    /// <summary>公众号 AppID（前端 <c>wx.config</c> 的 <c>appId</c>）。</summary>
+    public string AppId { get; }
 
     /// <summary>参与签名的 URL（**不含 <c>#</c> 及其后片段**）。</summary>
     public string Url { get; }
@@ -71,14 +81,27 @@ public interface IMpJsApiSignatureService
 public sealed class MpJsApiSignatureService : IMpJsApiSignatureService
 {
     private readonly IMpJsApiTicketManager _ticketManager;
+    private readonly string _appId;
     private readonly Func<DateTimeOffset> _utcNow;
 
     /// <summary>创建签名服务。</summary>
     /// <param name="ticketManager">JS-SDK 票据管理器（<c>type=jsapi</c>）。</param>
+    /// <param name="options">当前应用配置（取 <see cref="MpAppConfig.AppId"/> 回包给前端 <c>wx.config</c>；与票据管理器同源）。</param>
     /// <param name="utcNow">当前时间提供器（测试可注入）。</param>
-    public MpJsApiSignatureService(IMpJsApiTicketManager ticketManager, Func<DateTimeOffset>? utcNow = null)
+    public MpJsApiSignatureService(
+        IMpJsApiTicketManager ticketManager,
+        IOptions<MpAppConfig> options,
+        Func<DateTimeOffset>? utcNow = null)
     {
         _ticketManager = ticketManager ?? throw new ArgumentNullException(nameof(ticketManager));
+        var appId = (options ?? throw new ArgumentNullException(nameof(options))).Value?.AppId;
+        if (string.IsNullOrEmpty(appId))
+        {
+            // 前端 wx.config 必须带 appId；缺失即无法产出可用签名包 ⇒ fail-fast 而非回包半成品。
+            throw new ArgumentException("应用配置缺少 AppId（前端 wx.config 需要该字段）。", nameof(options));
+        }
+
+        _appId = appId!;
         _utcNow = utcNow ?? (() => DateTimeOffset.UtcNow);
     }
 
@@ -97,6 +120,6 @@ public sealed class MpJsApiSignatureService : IMpJsApiSignatureService
         var timestamp = _utcNow().ToUnixTimeSeconds();
         var signature = MpJsApiSignature.Compute(ticket, nonceStr, timestamp, normalizedUrl);
 
-        return new MpJsApiSignatureResult(normalizedUrl, nonceStr, timestamp, signature);
+        return new MpJsApiSignatureResult(_appId, normalizedUrl, nonceStr, timestamp, signature);
     }
 }

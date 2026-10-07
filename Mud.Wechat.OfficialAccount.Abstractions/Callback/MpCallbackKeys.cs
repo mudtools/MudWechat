@@ -70,6 +70,31 @@ public static class MpCallbackMessageTypes
 /// </remarks>
 public static class MpCallbackEventTypes
 {
+    /// <summary>
+    /// 关注事件（官方「接收事件推送」页）。无专有字段的普通关注；**扫码关注**（未关注）同为本键，
+    /// 但携带 <c>EventKey</c>（<c>qrscene_</c> 前缀 + 场景值 ID）与 <c>Ticket</c>。
+    /// </summary>
+    public const string Subscribe = "subscribe";
+
+    /// <summary>
+    /// 取消关注事件。**官方硬约束**：「为保护用户数据隐私，开发者收到取消关注事件时必须删除该用户的所有信息」
+    /// —— 处理器须据此清理本地用户数据（不得忽略）。
+    /// </summary>
+    public const string Unsubscribe = "unsubscribe";
+
+    /// <summary>扫描带参数二维码事件（已关注；EventKey = 场景值 ID，Ticket = 二维码 ticket）。</summary>
+    public const string Scan = "SCAN";
+
+    /// <summary>
+    /// 上报地理位置事件（EventKey 无关；专有字段 <c>Latitude</c>/<c>Longitude</c>/<c>Precision</c>）。
+    /// </summary>
+    /// <remarks>
+    /// <b>与普通 <c>location</c> 消息不是同一结构</b>：后者字段为 <c>Location_X</c>/<c>Location_Y</c>/<c>Scale</c>/<c>Label</c>
+    /// 且事件键为小写 <c>location</c>（<see cref="MpCallbackMessageTypes.Location"/>）——两者大小写敏感、不得混用。
+    /// 上报频率：进入会话时一次，进入后每 5 秒一次（公众平台可改设置）。
+    /// </remarks>
+    public const string Location = "LOCATION";
+
     /// <summary>点击菜单拉取消息时的事件推送（EventKey 为菜单 KEY 值）。</summary>
     public const string Click = "CLICK";
 

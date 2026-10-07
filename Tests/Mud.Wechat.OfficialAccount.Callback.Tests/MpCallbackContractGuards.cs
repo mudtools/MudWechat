@@ -198,9 +198,9 @@ public class MpCallbackContractGuards
             .Select(f => (string)f.GetRawConstantValue()!)
             .ToList();
 
-        // 消息键 8 个常量（含 event）⇒ 7 个普通消息键；菜单事件键 9 个。
+        // 消息键 8 个常量（含 event）⇒ 7 个普通消息键；事件键 13 个（9 菜单 + 4 通用）。
         messageKeys.Should().HaveCount(8);
-        eventKeys.Should().HaveCount(9);
+        eventKeys.Should().HaveCount(13);
         messageKeys.Should().OnlyHaveUniqueItems();
         eventKeys.Should().OnlyHaveUniqueItems();
     }

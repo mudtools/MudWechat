@@ -201,9 +201,13 @@ public class MpCallbackReceiverTests
         var registry = new MpPayloadContractRegistry();
         MpPayloadContracts.RegisterAll(registry);
 
-        registry.RegisteredKeys.Should().HaveCount(16, "本轮可锁定：7 消息键 + 9 菜单事件键");
+        registry.RegisteredKeys.Should().HaveCount(20, "本轮可锁定：7 消息键 + 9 菜单事件键 + 4 通用事件键（V1 已核验）");
         registry.RegisteredKeys.Should().Contain(new[]
         {
+            MpCallbackEventTypes.Subscribe,
+            MpCallbackEventTypes.Unsubscribe,
+            MpCallbackEventTypes.Scan,
+            MpCallbackEventTypes.Location,
             MpCallbackMessageTypes.Text,
             MpCallbackMessageTypes.Image,
             MpCallbackMessageTypes.Voice,
@@ -254,8 +258,9 @@ public class MpCallbackReceiverTests
     {
         var timestamp = Now();
         var nonce = "nonce-1";
+        // 未登记键用「宿主私有 / 未来官方事件」，避免与已登记键集耦合（键集变动不会让本用例变红）。
         var plainXml = "<xml><ToUserName>" + AppId + "</ToUserName><MsgType>event</MsgType>" +
-                       "<Event>subscribe</Event><EventKey>qrscene_1</EventKey></xml>";
+                       "<Event>custom_private_event</Event><EventKey>some-key</EventKey></xml>";
         var (body, _, msgSignature) = EncryptMessage(plainXml, timestamp, nonce);
         var query = "timestamp=" + timestamp + "&nonce=" + nonce + "&msg_signature=" + msgSignature;
 
@@ -267,7 +272,7 @@ public class MpCallbackReceiverTests
 
         var result = reader.Read(envelope, typeof(GenericCallbackPayload));
 
-        result.Status.Should().Be(MpPayloadReadStatus.GenericFallback, "subscribe 属待核验事件族（方案 §12 V1），本轮按值袋降级");
+        result.Status.Should().Be(MpPayloadReadStatus.GenericFallback, "未登记契约的事件键按值袋降级（不抛）");
         result.Payload!.Values.Should().ContainKey("EventKey");
     }
 

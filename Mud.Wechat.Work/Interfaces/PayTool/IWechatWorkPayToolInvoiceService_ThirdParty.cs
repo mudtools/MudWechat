@@ -10,9 +10,9 @@ using Mud.Wechat.Work.DataModels.PayTool;
 namespace Mud.Wechat.Work;
 
 /// <summary>
-/// 企业微信「收银台」模块发票管理域第三方应用 SDK（获取发票列表 / 标记开票状态）。
-/// <para>官方仅在第三方应用开发文档树开放本族端点，全部 2 个端点声明于本接口；
-/// 企业自建应用与服务商代开发官方不开放，不设对应子接口。</para>
+/// 企业微信「收银台」模块发票管理域第三方应用 / 服务商代开发 SDK（获取发票列表 / 标记开票状态）。
+/// <para>官方在第三方应用开发与服务商代开发两棵文档树开放本族端点（共享同一端点页），
+/// 全部 2 个端点声明于本接口；企业自建应用官方不开放，不设对应子接口。</para>
 /// </summary>
 /// <remarks>
 /// <para>消费服务商级 provider_access_token（路由键 <see cref="WechatTokenTypes.ProviderAccessToken"/>）。</para>
@@ -44,6 +44,7 @@ public interface IWechatWorkThirdPartyPayToolInvoiceService : IWechatWorkPayTool
     /// receive_email / company_addr / company_tel / bank_name / bank_account_number / invoice_note。</para></returns>
     /// <remarks>
     /// <para><b>第三方应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/99436">path 99436 获取发票列表</see></para>
+    /// <para><b>服务商代开发</b>SDK文档（官方两棵文档树共享同一端点页）：<see href="https://developer.work.weixin.qq.com/document/path/99447">path 99447 获取发票列表</see></para>
     /// <para>官方页面未给出本端点的独立频率限制，走官方全局访问频率限制。</para>
     /// </remarks>
     [Post("/cgi-bin/paytool/get_invoice_list")]
@@ -68,6 +69,7 @@ public interface IWechatWorkThirdPartyPayToolInvoiceService : IWechatWorkPayTool
     /// <returns>仅 errcode / errmsg（官方本端点无业务负载）。</returns>
     /// <remarks>
     /// <para><b>第三方应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/99437">path 99437 标记开票状态</see></para>
+    /// <para><b>服务商代开发</b>SDK文档（官方两棵文档树共享同一端点页）：<see href="https://developer.work.weixin.qq.com/document/path/99448">path 99448 标记开票状态</see></para>
     /// <para>官方页面未给出本端点的独立频率限制，走官方全局访问频率限制。</para>
     /// </remarks>
     [Post("/cgi-bin/paytool/mark_invoice_status")]

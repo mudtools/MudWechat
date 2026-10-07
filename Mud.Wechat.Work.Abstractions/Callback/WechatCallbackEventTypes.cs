@@ -39,12 +39,20 @@ namespace Mud.Wechat.Work.Abstractions.Callback;
 /// 消息与事件（关注/菜单/地理位置/审批/共享/模板卡片/应用状态）<see href="https://developer.work.weixin.qq.com/document/path/90240">path 90240</see>（企业内部开发）/
 /// <see href="https://developer.work.weixin.qq.com/document/path/90376">path 90376</see>（第三方）/ <see href="https://developer.work.weixin.qq.com/document/path/96468">path 96468</see>（服务商代开发）——
 /// 三份文档正文逐字一致，故同一事件键在三种应用模式下共用一个常量。
-/// 应用版本付费订单回调族（<see href="https://developer.work.weixin.qq.com/document/path/91929">path 91929</see> 下单成功/
-/// <see href="https://developer.work.weixin.qq.com/document/path/91930">path 91930</see> 改单/
-/// <see href="https://developer.work.weixin.qq.com/document/path/91931">path 91931</see> 支付成功/
-/// <see href="https://developer.work.weixin.qq.com/document/path/91932">path 91932</see> 退款/
-/// <see href="https://developer.work.weixin.qq.com/document/path/91933">path 91933</see> 应用版本变更/
-/// <see href="https://developer.work.weixin.qq.com/document/path/99353">path 99353</see> 取消订单）·
+    /// 应用版本付费订单回调族（<see href="https://developer.work.weixin.qq.com/document/path/91929">path 91929</see> 下单成功/
+    /// <see href="https://developer.work.weixin.qq.com/document/path/91930">path 91930</see> 改单/
+    /// <see href="https://developer.work.weixin.qq.com/document/path/91931">path 91931</see> 支付成功/
+    /// <see href="https://developer.work.weixin.qq.com/document/path/91932">path 91932</see> 退款/
+    /// <see href="https://developer.work.weixin.qq.com/document/path/91933">path 91933</see> 应用版本变更/
+    /// <see href="https://developer.work.weixin.qq.com/document/path/99353">path 99353</see> 取消订单；
+    /// 服务商代开发·收银台树复用同键文档
+    /// <see href="https://developer.work.weixin.qq.com/document/path/99387">path 99387</see>~
+    /// <see href="https://developer.work.weixin.qq.com/document/path/99392">path 99392</see>，应用版本变更除外）·
+    /// 接口调用许可族 <see href="https://developer.work.weixin.qq.com/document/path/97195">path 97195</see>（接口许可失效通知）/
+    /// <see href="https://developer.work.weixin.qq.com/document/path/97196">path 97196</see>（支付成功）/
+    /// <see href="https://developer.work.weixin.qq.com/document/path/97197">path 97197</see>（退款结果）/
+    /// <see href="https://developer.work.weixin.qq.com/document/path/97198">path 97198</see>（自动激活）
+    /// —— 仅服务商代开发文档树提供，自建/第三方无对应事件回调·
 /// 邮箱族 <see href="https://developer.work.weixin.qq.com/document/path/97495">path 97495</see>（应用邮箱，企业自建）/
 /// <see href="https://developer.work.weixin.qq.com/document/path/97517">path 97517</see>（第三方）/
 /// <see href="https://developer.work.weixin.qq.com/document/path/97506">path 97506</see>（代开发）/
@@ -490,7 +498,7 @@ public static class WechatCallbackEventTypes
     /// <remarks>官方文档：<see href="https://developer.work.weixin.qq.com/document/path/90240">path 90240 低活跃应用活跃恢复事件</see>。</remarks>
     public const string ActiveRestored = "active_restored";
 
-    // ——— 应用版本付费订单回调族（官方 91929~91933 / 99353；InfoType 套件信封，指令回调 URL） ———
+    // ——— 收银台·应用版本付费订单回调族（官方 91929~91933 / 99353 第三方 · 99387~99392 代开发；InfoType 套件信封，指令回调 URL） ———
 
     /// <summary>
     /// 下单成功通知（官方键值 <c>open_order</c>）。
@@ -498,7 +506,8 @@ public static class WechatCallbackEventTypes
     /// 携带 <c>OrderId</c>（订单号）与 <c>OperatorId</c>（下单操作者 userid，服务商或代理商代下单时为空）。</para>
     /// </summary>
     /// <remarks>
-    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/91929">path 91929 下单成功通知</see>。
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/91929">path 91929 下单成功通知</see>（第三方）
+    /// / <see href="https://developer.work.weixin.qq.com/document/path/99387">path 99387（服务商代开发·收银台）</see>。
     /// </remarks>
     public const string OpenOrder = "open_order";
 
@@ -509,26 +518,31 @@ public static class WechatCallbackEventTypes
     /// 故本事件携带 <c>OldOrderId</c> 与 <c>NewOrderId</c>，<b>无 <c>OrderId</c> 节点</b>。</para>
     /// </summary>
     /// <remarks>
-    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/91930">path 91930 改单通知</see>。
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/91930">path 91930 改单通知</see>（第三方）
+    /// / <see href="https://developer.work.weixin.qq.com/document/path/99388">path 99388（服务商代开发·收银台）</see>。
     /// </remarks>
     public const string ChangeOrder = "change_order";
 
     /// <summary>
     /// 应用版本付费「支付成功通知」（官方键值 <c>pay_for_app_success</c>）。
-    /// <para>官方文档键值带 <c>for_app</c> 前缀，勿与「接口调用许可」订单族的支付成功通知混淆。</para>
+    /// <para>官方文档键值带 <c>for_app</c> 前缀，勿与「接口调用许可」订单族的支付成功通知
+    /// （<see cref="LicensePaySuccess"/>）混淆。</para>
     /// </summary>
     /// <remarks>
-    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/91931">path 91931 支付成功通知</see>。
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/91931">path 91931 支付成功通知</see>（第三方）
+    /// / <see href="https://developer.work.weixin.qq.com/document/path/99389">path 99389（服务商代开发·收银台）</see>。
     /// </remarks>
     public const string PayForAppSuccess = "pay_for_app_success";
 
     /// <summary>
     /// 退款通知（官方键值 <c>refund</c>）。
-    /// <para>官方裸值 <c>refund</c> 跨族同名（「接口调用许可」订单族的退款结果通知复用同键），
-    /// 本族与该族同属套件信封 + InfoType 键域，处理器按 <c>evt.AppType</c> 与套件通道消歧。</para>
+    /// <para>收银台·应用版本付费族在第三方（91932）与代开发（99390）两棵文档树复用同键同构报文；
+    /// 「接口调用许可」族的退款结果通知是<b>独立事件键</b> <see cref="LicenseRefund"/>，勿混淆。
+    /// 回调不携带退款明细，服务商须凭 OrderId 自行调接口重新获取该客户最新购买状态。</para>
     /// </summary>
     /// <remarks>
-    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/91932">path 91932 退款通知</see>。
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/91932">path 91932 退款通知</see>（第三方）
+    /// / <see href="https://developer.work.weixin.qq.com/document/path/99390">path 99390（服务商代开发·收银台）</see>。
     /// </remarks>
     public const string Refund = "refund";
 
@@ -546,9 +560,56 @@ public static class WechatCallbackEventTypes
     /// <para>服务商或客户企业取消订单时触发；官方参数表未标注「固定为」，仅列出该取值。</para>
     /// </summary>
     /// <remarks>
-    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/99353">path 99353 取消订单通知</see>。
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/99353">path 99353 取消订单通知</see>（第三方）
+    /// / <see href="https://developer.work.weixin.qq.com/document/path/99392">path 99392（服务商代开发·收银台）</see>。
     /// </remarks>
     public const string CancelOrder = "cancel_order";
+
+    // ——— 接口调用许可族（官方 97195~97198；仅服务商代开发文档树提供，自建/第三方无对应事件回调） ———
+
+    /// <summary>
+    /// 接口许可失效通知（官方键值 <c>unlicensed_notify</c>；<c>Event</c> 信封即事件键，无 <c>ChangeType</c> 分组段）。
+    /// <para>当许可账号失效（未激活或已过期）的企业成员访问应用或小程序时，企业微信提示用户联系服务商
+    /// 开通许可账号并自动推送本事件；<b>成员不在应用可见范围内则不回调</b>。
+    /// 事件不携带业务字段（信封外仅 <c>AgentID</c>），服务商收到后应开通/激活许可账号。</para>
+    /// </summary>
+    /// <remarks>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/97195">path 97195 接口许可失效通知（服务商代开发）</see>。
+    /// </remarks>
+    public const string UnlicensedNotify = "unlicensed_notify";
+
+    /// <summary>
+    /// 接口调用许可「支付成功通知」（官方键值 <c>license_pay_success</c>；套件信封，指令回调 URL）。
+    /// <para>服务商购买接口调用许可账号并完成付款后推送；官方明示时序：支付完成后<b>先生成账号码、
+    /// 后推送本通知</b>，且一次购买较多数量的账号码时通知会出现一定延迟 ——
+    /// 处理器不得假设「收到通知时账号码已可立即查询」，与订单接口的对齐须容忍延迟与重排。</para>
+    /// </summary>
+    /// <remarks>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/97196">path 97196 支付成功通知（服务商代开发）</see>。
+    /// </remarks>
+    public const string LicensePaySuccess = "license_pay_success";
+
+    /// <summary>
+    /// 接口调用许可「退款结果通知」（官方键值 <c>license_refund</c>；套件信封，指令回调 URL）。
+    /// <para>服务商提交退款申请的订单状态变更时推送（<see cref="LicenseOrderPayload.OrderStatus"/>：
+    /// 1 退款成功 / 2 退款被拒绝）。与收银台·应用版本付费族的退款通知（<see cref="Refund"/>）是
+    /// <b>两个独立事件键</b>，勿混淆。</para>
+    /// </summary>
+    /// <remarks>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/97197">path 97197 退款结果通知（服务商代开发）</see>。
+    /// </remarks>
+    public const string LicenseRefund = "license_refund";
+
+    /// <summary>
+    /// 接口调用许可「自动激活回调通知」（官方键值 <c>auto_activate</c>；套件信封，指令回调 URL）。
+    /// <para>成员满足自动激活条件并触发自动激活后推送；携带 <see cref="LicenseAutoActivatePayload.Scene"/>
+    /// （激活时机）与 <see cref="LicenseAutoActivatePayload.AccountItems"/>（激活的许可账号列表，
+    /// 根下重复同名兄弟元素形态）。</para>
+    /// </summary>
+    /// <remarks>
+    /// 官方文档：<see href="https://developer.work.weixin.qq.com/document/path/97198">path 97198 自动激活回调通知（服务商代开发）</see>。
+    /// </remarks>
+    public const string AutoActivate = "auto_activate";
 
     // ——— 邮箱族（官方 97495 自建 / 97517 第三方 / 97506 代开发 + 公共邮箱 100180；族事件值为键） ———
 

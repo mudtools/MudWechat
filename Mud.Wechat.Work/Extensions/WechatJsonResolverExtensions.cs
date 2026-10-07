@@ -10,7 +10,9 @@ using System.Text.Json.Serialization.Metadata;
 using Mud.Wechat.Work.Abstractions.Authentication.Models;
 using Mud.Wechat.Work.DataModels;
 using Mud.Wechat.Work.DataModels.AccountId;
+using Mud.Wechat.Work.DataModels.Agent;
 using Mud.Wechat.Work.DataModels.Aibot;
+using Mud.Wechat.Work.DataModels.Basic;
 using Mud.Wechat.Work.DataModels.Checkin;
 using Mud.Wechat.Work.DataModels.Contacts.Batch;
 using Mud.Wechat.Work.DataModels.Contacts.ContactRules;
@@ -47,6 +49,7 @@ using Mud.Wechat.Work.DataModels.Invoice;
 using Mud.Wechat.Work.DataModels.InternalAppAuthentication;
 using Mud.Wechat.Work.DataModels.JsSdk;
 using Mud.Wechat.Work.DataModels.Kf;
+using Mud.Wechat.Work.DataModels.License;
 using Mud.Wechat.Work.DataModels.Living;
 using Mud.Wechat.Work.DataModels.Mail;
 using Mud.Wechat.Work.DataModels.Meeting;
@@ -54,6 +57,8 @@ using Mud.Wechat.Work.DataModels.Media;
 using Mud.Wechat.Work.DataModels.Message;
 using Mud.Wechat.Work.DataModels.MsgAudit;
 using Mud.Wechat.Work.DataModels.Pay;
+using Mud.Wechat.Work.DataModels.PayTool;
+using Mud.Wechat.Work.DataModels.PromotionQrCode;
 using Mud.Wechat.Work.DataModels.ProviderAuthentication;
 using Mud.Wechat.Work.DataModels.Security;
 using Mud.Wechat.Work.DataModels.Schedule;
@@ -117,10 +122,14 @@ public static class WechatJsonResolverExtensions
             ChainContactsJsonContext.Default,
             RulesJsonContext.Default,
             SecurityJsonContext.Default,
+            AgentJsonContext.Default,
+            BasicJsonContext.Default,
             MessageJsonContext.Default,
             KfJsonContext.Default,
             IdentityJsonContext.Default,
             PayJsonContext.Default,
+            PayToolJsonContext.Default,
+            PromotionQrCodeJsonContext.Default,
             MsgAuditJsonContext.Default,
             SchoolJsonContext.Default,
             MediaJsonContext.Default,
@@ -144,6 +153,7 @@ public static class WechatJsonResolverExtensions
             AccountIdJsonContext.Default,
             JsSdkJsonContext.Default,
             AibotJsonContext.Default,
+            LicenseJsonContext.Default,
             AuthenticationJsonContext.Default);
         services.AddMudHttpClientJsonContext(resolver);
     }

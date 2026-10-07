@@ -21,8 +21,9 @@ namespace Mud.Wechat.Work.Tests.ContractGuards;
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>开放面</b>：官方仅在第三方应用开发文档树「收银台」分组下提供本域端点，
-/// 企业自建应用开发与服务商代开发文档树<b>均无对应 API</b>，故全域不设自建 / 代开发子接口。
+/// <b>开放面</b>：官方在第三方应用开发与服务商代开发两棵文档树的「收银台」分组下提供本域端点、
+/// 共享同一端点页（第三方树 98045/98046/98053/98054/99436/99437 = 代开发树 99358/99359/99360/99361/99447/99448），
+/// 企业自建应用开发文档树<b>无对应 API</b>，故全域不设自建子接口。
 /// </para>
 /// <para>
 /// <b>三族两令牌（本域最关键的结构约束）</b>：9 个端点消费两种互不兼容的凭据，故按令牌路由键拆为三族：
@@ -116,7 +117,8 @@ public class WechatPayToolContractGuards
 
     /// <summary>
     /// 契约守卫 PT2：三族接口层级——均为零端点父接口（IsAbstract）+ 唯一第三方子接口承载；
-    /// 官方自建 / 代开发文档树无对应 API，继承链上不得出现自建 / 代开发子接口（能力漂移守卫）。
+    /// 官方自建文档树无对应 API（代开发树与第三方树共享同一端点页、消费同一 provider / suite 令牌，
+    /// 不另设子接口），继承链上不得出现其它子接口（能力漂移守卫）。
     /// </summary>
     [Theory]
     [InlineData(typeof(IWechatWorkPayToolOrderService), typeof(IWechatWorkThirdPartyPayToolOrderService), 4, "WechatWorkPayToolOrderService")]
@@ -139,7 +141,7 @@ public class WechatPayToolContractGuards
             .Where(t => t.IsInterface && t != parent && parent.IsAssignableFrom(t))
             .Select(t => t.Name).OrderBy(n => n, StringComparer.Ordinal).ToList();
         derived.Should().BeEquivalentTo(new[] { child.Name },
-            "收银台域官方仅第三方应用开放（自建 / 代开发无对应 API），继承链上不得出现其它子接口");
+            "收银台域官方自建应用不开放（代开发树与第三方树共享同一端点页），继承链上不得出现其它子接口");
 
         var childApi = child.GetCustomAttribute<HttpClientApiAttribute>();
         childApi.Should().NotBeNull($"{child.Name} 必须声明 [HttpClientApi]");

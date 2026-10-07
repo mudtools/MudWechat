@@ -13,7 +13,8 @@ namespace Mud.Wechat.Work.Callback.Events.Payloads;
 /// <summary>
 /// 应用版本付费订单回调事件载荷（<b>结构族</b>：覆盖官方事件键 <c>open_order</c> / <c>change_order</c> /
 /// <c>pay_for_app_success</c> / <c>refund</c> / <c>change_editon</c> / <c>cancel_order</c> 六键；
-/// 官方 91929~91933 / 99353，经<b>指令回调 URL</b> 以套件信封推送，外层事件值在 <c>InfoType</c> 节点）。
+/// 官方 91929~91933 / 99353（第三方）与 99387~99392（服务商代开发·收银台，<c>change_editon</c> 除外），
+/// 经<b>指令回调 URL</b> 以套件信封推送，外层事件值在 <c>InfoType</c> 节点）。
 /// </summary>
 /// <remarks>
 /// <para>
@@ -33,8 +34,10 @@ namespace Mud.Wechat.Work.Callback.Events.Payloads;
 /// </para>
 /// <para>
 /// <b>族与开放面</b>：本族走套件信封（<c>InfoType</c> 非空）⇒ 事件族为
-/// <see cref="WechatCallbackEventFamily.Authorization"/>；官方仅在第三方应用开发文档树提供，
-/// 故开放面声明为「第三方 × 套件指令通道」（不宽于族默认，组合根期 fail-fast 校验）。
+/// <see cref="WechatCallbackEventFamily.Authorization"/>；官方开放面按文档树分两段，由<b>同键多特性声明合并</b>承载 ——
+/// 第三方树（91929~91933/99353）开放六键（第三方的套件指令通道），代开发·收银台树（99387~99392）
+/// 复用其中五键（代开发的套件指令通道；<c>change_editon</c> 为应用版本变更专属，收银台树无对应文档故不开放）。
+/// 两段声明均不宽于族默认，组合根期 fail-fast 校验。
 /// </para>
 /// <para>
 /// <b>官方拼写陷阱</b>：应用版本变更通知的 <c>InfoType</c> 官方原文为 <c>change_editon</c>（少一个字母 i）。
@@ -52,6 +55,18 @@ namespace Mud.Wechat.Work.Callback.Events.Payloads;
         WechatCallbackEventTypes.PayForAppSuccess,
         WechatCallbackEventTypes.Refund,
         WechatCallbackEventTypes.ChangeEditon,
+        WechatCallbackEventTypes.CancelOrder,
+    })]
+[WechatCallbackContract(
+    RequiredFamily = WechatCallbackEventFamily.Authorization,
+    SupportedAppTypes = WechatAppTypeSet.Provider,
+    RequiredChannel = WechatCallbackChannel.Suite,
+    EventTypes = new[]
+    {
+        WechatCallbackEventTypes.OpenOrder,
+        WechatCallbackEventTypes.ChangeOrder,
+        WechatCallbackEventTypes.PayForAppSuccess,
+        WechatCallbackEventTypes.Refund,
         WechatCallbackEventTypes.CancelOrder,
     })]
 public sealed partial class PayToolVersionOrderPayload : WechatCallbackPayload

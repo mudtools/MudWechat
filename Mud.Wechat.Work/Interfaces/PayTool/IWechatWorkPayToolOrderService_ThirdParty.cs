@@ -10,10 +10,10 @@ using Mud.Wechat.Work.DataModels.PayTool;
 namespace Mud.Wechat.Work;
 
 /// <summary>
-/// 企业微信「收银台」模块收款工具域第三方应用 SDK
+/// 企业微信「收银台」模块收款工具域第三方应用 / 服务商代开发 SDK
 /// （创建收款订单 / 取消收款订单 / 获取收款订单列表 / 获取收款订单详情）。
-/// <para>官方仅在第三方应用开发文档树开放本族端点，全部 4 个端点声明于本接口；
-/// 企业自建应用与服务商代开发官方不开放，不设对应子接口。</para>
+/// <para>官方在第三方应用开发与服务商代开发两棵文档树开放本族端点（共享同一端点页），
+/// 全部 4 个端点声明于本接口；企业自建应用官方不开放，不设对应子接口。</para>
 /// </summary>
 /// <remarks>
 /// <para>消费服务商级 provider_access_token（路由键 <see cref="WechatTokenTypes.ProviderAccessToken"/>）。</para>
@@ -52,7 +52,8 @@ public interface IWechatWorkThirdPartyPayToolOrderService : IWechatWorkPayToolOr
     /// 两个价格仅部分可以确定价格的请求下会返回，代开发应用的原价和折后价一致。</para></returns>
     /// <remarks>
     /// <para><b>第三方应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/98045">path 98045 创建收款订单</see></para>
-    /// <para><b>签名算法</b>SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/98768">path 98768 签名算法</see></para>
+    /// <para><b>服务商代开发</b>SDK文档（官方两棵文档树共享同一端点页）：<see href="https://developer.work.weixin.qq.com/document/path/99358">path 99358 创建收款订单</see></para>
+    /// <para><b>签名算法</b>SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/98768">path 98768 签名算法</see>（代开发树同文：<see href="https://developer.work.weixin.qq.com/document/path/99362">path 99362</see>）</para>
     /// <para>官方页面未给出本端点的独立频率限制，走官方全局访问频率限制。</para>
     /// </remarks>
     [Post("/cgi-bin/paytool/open_order")]
@@ -73,6 +74,7 @@ public interface IWechatWorkThirdPartyPayToolOrderService : IWechatWorkPayToolOr
     /// <returns>仅 errcode / errmsg（官方本端点无业务负载）。</returns>
     /// <remarks>
     /// <para><b>第三方应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/98046">path 98046 取消收款订单</see></para>
+    /// <para><b>服务商代开发</b>SDK文档（官方两棵文档树共享同一端点页）：<see href="https://developer.work.weixin.qq.com/document/path/99359">path 99359 取消收款订单</see></para>
     /// <para>官方页面未给出本端点的独立频率限制，走官方全局访问频率限制。</para>
     /// </remarks>
     [Post("/cgi-bin/paytool/close_order")]
@@ -96,6 +98,7 @@ public interface IWechatWorkThirdPartyPayToolOrderService : IWechatWorkPayToolOr
     /// order_status / order_from / creator / pay_type。</para></returns>
     /// <remarks>
     /// <para><b>第三方应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/98053">path 98053 获取收款订单列表</see></para>
+    /// <para><b>服务商代开发</b>SDK文档（官方两棵文档树共享同一端点页）：<see href="https://developer.work.weixin.qq.com/document/path/99360">path 99360 获取收款订单列表</see></para>
     /// <para>官方页面未给出本端点的独立频率限制，走官方全局访问频率限制。</para>
     /// </remarks>
     [Post("/cgi-bin/paytool/get_order_list")]
@@ -122,6 +125,7 @@ public interface IWechatWorkThirdPartyPayToolOrderService : IWechatWorkPayToolOr
     /// income_type、income_time、income_amount 收入未到账时为空。</para></returns>
     /// <remarks>
     /// <para><b>第三方应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/98054">path 98054 获取收款订单详情</see></para>
+    /// <para><b>服务商代开发</b>SDK文档（官方两棵文档树共享同一端点页）：<see href="https://developer.work.weixin.qq.com/document/path/99361">path 99361 获取收款订单详情</see></para>
     /// <para>官方页面未给出本端点的独立频率限制，走官方全局访问频率限制。</para>
     /// </remarks>
     [Post("/cgi-bin/paytool/get_order_detail")]

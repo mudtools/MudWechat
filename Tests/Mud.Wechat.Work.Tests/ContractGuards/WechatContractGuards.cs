@@ -895,6 +895,19 @@ public class WechatContractGuards
                 nameof(IWechatWorkThirdPartyPayToolInvoiceService),
                 nameof(IWechatWorkPayToolVersionSuiteService),
                 nameof(IWechatWorkThirdPartyPayToolVersionSuiteService),
+                // 接口调用许可域（License 模块，官方在第三方应用开发与服务商代开发两棵文档树开放、共享同一端点页）：
+                // 四族 25 端点统一走 provider_access_token，各为「零端点父接口 + 唯一第三方子接口承载」。
+                // 订单管理族 13 端点（97182/97183/97184/97185/97186/97187/98887/98888/99420）、
+                // 账号管理族 9 端点（97188/97189/97190/97191/97192/97193）、
+                // 应用管理族 1 端点（97194）、自动激活设置族 2 端点（97199/97200）。
+                nameof(IWechatWorkLicenseOrderService),
+                nameof(IWechatWorkThirdPartyLicenseOrderService),
+                nameof(IWechatWorkLicenseAccountService),
+                nameof(IWechatWorkThirdPartyLicenseAccountService),
+                nameof(IWechatWorkLicenseAppService),
+                nameof(IWechatWorkThirdPartyLicenseAppService),
+                nameof(IWechatWorkLicenseAutoActiveService),
+                nameof(IWechatWorkThirdPartyLicenseAutoActiveService),
             },
             "企业微信官方契约强制 Query 注入（MUD005 已知接受风险），新增 Query 注入接口须评估后扩展本守卫");
     }

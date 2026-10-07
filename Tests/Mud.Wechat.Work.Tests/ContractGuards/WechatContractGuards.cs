@@ -908,6 +908,16 @@ public class WechatContractGuards
                 nameof(IWechatWorkThirdPartyLicenseAppService),
                 nameof(IWechatWorkLicenseAutoActiveService),
                 nameof(IWechatWorkThirdPartyLicenseAutoActiveService),
+                // 服务商登录授权域（Authentication 模块）：获取登录用户信息 91154 走服务商主体级
+                // provider_access_token（Query 注入；单接口直接注册，无父/子接口分层）。
+                nameof(IWechatWorkProviderLoginService),
+                // 数据与智能·会话记录/消息统计族（DataZone 模块）：2 个端点为三类应用公共面
+                //（获取会话记录 99864、获取消息统计 99824，路由挂 /cgi-bin/data/ 段；
+                // 父接口 + 三个应用类型空标记子接口）。
+                nameof(IWechatWorkDataIntelligenceService),
+                nameof(IWechatWorkInternalDataIntelligenceService),
+                nameof(IWechatWorkThirdPartyDataIntelligenceService),
+                nameof(IWechatWorkProviderDataIntelligenceService),
             },
             "企业微信官方契约强制 Query 注入（MUD005 已知接受风险），新增 Query 注入接口须评估后扩展本守卫");
     }

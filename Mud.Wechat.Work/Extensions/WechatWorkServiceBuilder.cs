@@ -135,6 +135,9 @@ public class WechatWorkServiceBuilder
             [WechatModule.License] = new WechatModuleRegistrar(
                 WechatModule.License,
                 s => s.AddLicenseWebApiHttpClient()),
+            [WechatModule.Webhook] = new WechatModuleRegistrar(
+                WechatModule.Webhook,
+                s => s.AddWebhookWebApiHttpClient()),
         };
 
     /// <summary>注册授权流业务接口与授权编排服务（get_pre_auth_code / set_session_info / get_permanent_code / get_auth_info / get_customized_auth_url + 编排）。</summary>
@@ -182,7 +185,7 @@ public class WechatWorkServiceBuilder
     /// <summary>注册政民沟通业务接口（配置网格结构域与配置事件类别域为自建/代开发公共面；获取网格列表、巡查上报族与居民上报族官方仅自建开放，不设代开发子接口；第三方应用官方暂不支持）。</summary>
     public WechatWorkServiceBuilder AddGovApi() => AddModule(WechatModule.Gov);
 
-    /// <summary>注册数据与智能专区业务接口（基础接口域为三类应用公共面 + 差异端点子接口：获取授权信息官方不支持自建、文档存档授权信息官方仅第三方；应用调用专区程序域为三类应用公共面 + 空标记子接口）。</summary>
+    /// <summary>注册数据与智能专区业务接口（基础接口域为三类应用公共面 + 差异端点子接口：获取授权信息官方不支持自建、文档存档授权信息官方仅第三方；应用调用专区程序域为三类应用公共面 + 空标记子接口；数据与智能功能族获取会话记录 + 获取消息统计 2 端点为三类应用公共面 + 空标记子接口，路由挂 /cgi-bin/data/ 段）。</summary>
     public WechatWorkServiceBuilder AddDataZoneApi() => AddModule(WechatModule.DataZone);
 
     /// <summary>注册审批业务接口（审批申请数据域为三类应用公共面 + 差异端点子接口：获取审批数据（旧）官方仅自建；审批模板域为三类应用公共面 + 差异端点子接口：创建/更新模板自建与代开发开放、复制/更新模板到企业官方仅第三方；假期管理域与审批流程引擎域为三类应用公共面 + 空标记子接口）。</summary>
@@ -232,6 +235,9 @@ public class WechatWorkServiceBuilder
 
     /// <summary>注册接口调用许可业务接口（官方在第三方应用开发与服务商代开发两棵文档树开放、共享同一端点页，自建文档树无对应 API；四族 25 端点统一走 provider_access_token，各为「零端点父接口 + 唯一第三方子接口承载」：订单管理族 13 端点、账号管理族 9 端点、应用管理族 1 端点、自动激活设置族 2 端点；官方契约陷阱：路由 list_actived_account 官方拼写少一个 i、试用期字段名官方拼写为 trail_info、余额支付结果顶层 errcode 表示接口调用成功而非支付成功）。</summary>
     public WechatWorkServiceBuilder AddLicenseApi() => AddModule(WechatModule.License);
+
+    /// <summary>注册群机器人 Webhook 推送业务接口（发送消息 8 种 msgtype 同路由多方法 + 上传媒体文件共 9 端点，官方文档 91770；以 URL Query 上的 key 为机器人凭据、不带 [Token]，频率限制每个机器人 20 条/分钟）。</summary>
+    public WechatWorkServiceBuilder AddWebhookApi() => AddModule(WechatModule.Webhook);
 
     /// <summary>注册全部模块。</summary>
     public WechatWorkServiceBuilder AddAllApis()

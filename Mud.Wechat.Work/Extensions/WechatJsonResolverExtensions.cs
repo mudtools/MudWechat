@@ -14,6 +14,7 @@ using Mud.Wechat.Work.DataModels.Agent;
 using Mud.Wechat.Work.DataModels.Aibot;
 using Mud.Wechat.Work.DataModels.Basic;
 using Mud.Wechat.Work.DataModels.Checkin;
+using Mud.Wechat.Work.DataModels.Webhook;
 using Mud.Wechat.Work.DataModels.Contacts.Batch;
 using Mud.Wechat.Work.DataModels.Contacts.ContactRules;
 using Mud.Wechat.Work.DataModels.Contacts.Department;
@@ -154,6 +155,7 @@ public static class WechatJsonResolverExtensions
             JsSdkJsonContext.Default,
             AibotJsonContext.Default,
             LicenseJsonContext.Default,
+            WebhookJsonContext.Default,
             AuthenticationJsonContext.Default);
         services.AddMudHttpClientJsonContext(resolver);
     }

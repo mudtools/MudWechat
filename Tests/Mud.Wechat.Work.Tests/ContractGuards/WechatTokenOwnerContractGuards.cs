@@ -173,11 +173,14 @@ public class WechatTokenOwnerContractGuards
             {
                 // 既存例外：get_customized_auth_url 以显式 Query 参数传令牌、不带 [Token]（G5 白名单例外）。
                 "IWechatWorkInternalAibotService",
+                "IWechatWorkInternalWebhookService",
                 "IWechatWorkProviderAuthenticationUrl",
             },
             "无 [Token] 的应用类型子接口精确清单（按名称升序）：" +
             "① 智能机器人主动回复端点以 URL 一次性凭据 response_code 鉴权（官方 101138，不走任何令牌链路）；" +
-            "② get_customized_auth_url 以显式 Query 参数传令牌。新增条目须附理由并同步 G5/G7 评估");
+            "② get_customized_auth_url 以显式 Query 参数传令牌；" +
+            "③ 群机器人 Webhook 端点以 URL Query 上的 key 为机器人凭据（官方 91770，不走任何令牌链路，" +
+            "无令牌锁定见守卫 WEB3）。新增条目须附理由并同步 G5/G7 评估");
     }
 
     /// <summary>

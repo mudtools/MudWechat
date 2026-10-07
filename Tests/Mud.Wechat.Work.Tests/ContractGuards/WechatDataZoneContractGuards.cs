@@ -16,7 +16,8 @@ namespace Mud.Wechat.Work.Tests.ContractGuards;
 /// <summary>
 /// 数据与智能专区模块（DataZone 模块）契约守卫：路由表、接口层级、开放面差异与令牌绑定锁定
 /// （基础接口域：三类应用公共面收敛父接口 + 差异端点子接口——「获取数据与智能专区授权信息」官方不支持自建、
-/// 「获取数据与智能专区文档存档授权信息」官方仅第三方；应用调用专区程序域：三类应用公共面收敛父接口 + 空标记子接口）。
+/// 「获取数据与智能专区文档存档授权信息」官方仅第三方；应用调用专区程序域：三类应用公共面收敛父接口 + 空标记子接口；
+/// 数据与智能功能族：会话记录/消息统计 2 端点为三类应用公共面收敛父接口 + 空标记子接口，路由挂 /cgi-bin/data/ 段）。
 /// </summary>
 /// <remarks>
 /// <para>
@@ -26,6 +27,9 @@ namespace Mud.Wechat.Work.Tests.ContractGuards;
 /// 第三方子接口额外声明 2 个差异端点、代开发子接口额外声明 1 个差异端点、自建子接口为空标记。
 /// 应用调用专区程序域 3 个端点（同步调用 / 创建异步任务 / 查询任务结果）收敛声明于
 /// <see cref="IWechatWorkDataZoneProgramService"/> 父接口，三个子接口均为空标记。
+/// 数据与智能功能族 2 个端点（获取会话记录 / 获取消息统计）收敛声明于
+/// <see cref="IWechatWorkDataIntelligenceService"/> 父接口，三个子接口均为空标记
+/// （路由前缀 /cgi-bin/data/* 与既有 chatdata/docdata 不同，独立成族、共用 DataZone 注册组）。
 /// </para>
 /// </remarks>
 public class WechatDataZoneContractGuards
@@ -37,6 +41,8 @@ public class WechatDataZoneContractGuards
     private const string DataZoneParentImplementationClassName = "WechatWorkDataZoneService";
 
     private const string DataZoneProgramParentImplementationClassName = "WechatWorkDataZoneProgramService";
+
+    private const string DataIntelligenceParentImplementationClassName = "WechatWorkDataIntelligenceService";
 
     private const string DataZoneRegistryGroupName = "DataZone";
 
@@ -105,6 +111,20 @@ public class WechatDataZoneContractGuards
     };
 
     /// <summary>
+    /// 数据与智能功能族官方路由表（父接口 2 条端点；路由前缀 /cgi-bin/data/* 与本模块
+    /// 既有 chatdata/docdata 前缀不同，属另一功能族）。
+    /// </summary>
+    private static readonly (Type Interface, string Method, string Route)[] DataIntelligenceRoutes =
+    {
+        // 获取会话记录（官方 99864；时间范围 + 游标分页拉取，limit 最大 1000）。
+        (typeof(IWechatWorkDataIntelligenceService),
+            nameof(IWechatWorkDataIntelligenceService.GetConversationRecordsAsync), "/cgi-bin/data/get_conversation_records"),
+        // 获取消息统计（官方 99824；时间范围 + 粒度 day/week/month 聚合）。
+        (typeof(IWechatWorkDataIntelligenceService),
+            nameof(IWechatWorkDataIntelligenceService.GetMessageStatisticsAsync), "/cgi-bin/data/get_message_statistics"),
+    };
+
+    /// <summary>
     /// 契约守卫 DZ1：数据与智能专区基础接口域全部端点路由必须与官方契约一致（新增/改名端点须同批更新本表）。
     /// 全部端点官方即 POST（含分页查询类，勿改 GET）。
     /// </summary>
@@ -168,6 +188,19 @@ public class WechatDataZoneContractGuards
     }
 
     /// <summary>
+    /// 契约守卫 DZ1d：数据与智能功能族全部端点路由必须与官方契约一致
+    /// （路由前缀 /cgi-bin/data/* 与既有 chatdata/docdata 不同，勿混用）。
+    /// </summary>
+    [Fact]
+    public void DataIntelligenceEndpoints_ShouldMatchOfficialRoutes()
+    {
+        DataIntelligenceRoutes.Should().HaveCount(2, "数据与智能功能族 2 个端点为三类应用公共面");
+        DataIntelligenceRoutes.Select(r => r.Route).Distinct().Should().HaveCount(2, "各端点路由互不重复");
+
+        AssertRoutes(DataIntelligenceRoutes);
+    }
+
+    /// <summary>
     /// 契约守卫 DZ2：数据与智能专区接口层级与生成器注册形态——公共端点收敛于 IsAbstract 父接口，
     /// 自建子接口为空标记；第三方/代开发子接口仅承载官方标注的差异端点（能力漂移守卫）。
     /// </summary>
@@ -217,10 +250,32 @@ public class WechatDataZoneContractGuards
             new[] { (typeof(IWechatWorkInternalDataZoneProgramService), 0),
                     (typeof(IWechatWorkThirdPartyDataZoneProgramService), 0),
                     (typeof(IWechatWorkProviderDataZoneProgramService), 0) });
+
+        // —— 数据与智能功能族 ——
+        var intelligenceChildren = new[]
+        {
+            typeof(IWechatWorkInternalDataIntelligenceService),
+            typeof(IWechatWorkThirdPartyDataIntelligenceService),
+            typeof(IWechatWorkProviderDataIntelligenceService),
+        };
+
+        foreach (var child in intelligenceChildren)
+        {
+            child.Should().BeAssignableTo(typeof(IWechatWorkDataIntelligenceService),
+                $"{child.Name} 必须继承公共父接口 IWechatWorkDataIntelligenceService");
+        }
+
+        AssertFamilyHierarchy(
+            typeof(IWechatWorkDataIntelligenceService),
+            DataIntelligenceParentImplementationClassName,
+            expectedDeclaredMethods: 2,
+            new[] { (typeof(IWechatWorkInternalDataIntelligenceService), 0),
+                    (typeof(IWechatWorkThirdPartyDataIntelligenceService), 0),
+                    (typeof(IWechatWorkProviderDataIntelligenceService), 0) });
     }
 
     /// <summary>
-    /// 契约守卫 DZ3：令牌绑定——数据与智能专区全部 8 个接口统一消费 AccessToken 路由键并以 Query 注入
+    /// 契约守卫 DZ3：令牌绑定——数据与智能专区全部 12 个接口统一消费 AccessToken 路由键并以 Query 注入
     /// （官方契约 access_token；第三方/代开发消费授权企业级令牌，scope = authCorpId）。
     /// </summary>
     [Fact]
@@ -236,6 +291,10 @@ public class WechatDataZoneContractGuards
             typeof(IWechatWorkInternalDataZoneProgramService),
             typeof(IWechatWorkThirdPartyDataZoneProgramService),
             typeof(IWechatWorkProviderDataZoneProgramService),
+            typeof(IWechatWorkDataIntelligenceService),
+            typeof(IWechatWorkInternalDataIntelligenceService),
+            typeof(IWechatWorkThirdPartyDataIntelligenceService),
+            typeof(IWechatWorkProviderDataIntelligenceService),
         };
 
         foreach (var iface in interfaces)
@@ -251,7 +310,7 @@ public class WechatDataZoneContractGuards
     }
 
     /// <summary>
-    /// 契约守卫 DZ4：数据与智能专区模块的请求/响应 DTO 必须登记进 AOT JSON 上下文（全量 24 个契约面类型）。
+    /// 契约守卫 DZ4：数据与智能专区模块的请求/响应 DTO 必须登记进 AOT JSON 上下文（全量 31 个契约面类型）。
     /// </summary>
     [Fact]
     public void DataZoneDataModels_ShouldBeRegisteredInJsonContext()
@@ -286,6 +345,11 @@ public class WechatDataZoneContractGuards
             // 获取数据与智能专区授权信息 / 文档存档授权信息。
             typeof(GetDataZoneCorpAuthInfoResponse), typeof(DataZoneCorpAuthEdition), typeof(DataZoneAuthScope),
             typeof(GetDocArchiveAuthInfoResponse),
+            // 数据与智能功能族（会话记录 / 消息统计）。
+            typeof(GetConversationRecordsRequest), typeof(GetConversationRecordsResponse),
+            typeof(ConversationRecord), typeof(ConversationContent),
+            typeof(GetMessageStatisticsRequest), typeof(GetMessageStatisticsResponse),
+            typeof(MessageStatistics),
         };
 
         foreach (var type in requiredTypes)

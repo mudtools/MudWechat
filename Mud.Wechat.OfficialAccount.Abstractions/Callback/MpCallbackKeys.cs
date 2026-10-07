@@ -122,3 +122,72 @@ public static class MpCallbackEventTypes
     /// <summary>点击菜单跳转小程序的事件推送（EventKey 为小程序路径，附 MenuId）。</summary>
     public const string ViewMiniProgram = "view_miniprogram";
 }
+
+/// <summary>
+/// 卡券事件推送的 <c>Event</c> 取值（官方「卡券事件推送」页，V2 已核验；共 12 键）。
+/// </summary>
+/// <remarks>
+/// <b>官方通用约束</b>：5 秒未响应即断连并重试共 3 次；消息排重推荐 <c>FromUserName + CreateTime</c>；
+/// 无法及时处理可直接回复空串（SDK 默认回 <c>success</c>）。
+/// </remarks>
+public static class MpCardEventTypes
+{
+    /// <summary>卡券通过审核（字段 <c>CardId</c>；官方示例中不通过才带 <c>RefuseReason</c>）。</summary>
+    public const string CardPassCheck = "card_pass_check";
+
+    /// <summary>卡券未通过审核（<c>CardId</c> + <c>RefuseReason</c>）。</summary>
+    public const string CardNotPassCheck = "card_not_pass_check";
+
+    /// <summary>用户领取卡券（字段最多：含是否转赠领取、领取场景值、UnionId 等）。</summary>
+    public const string UserGetCard = "user_get_card";
+
+    /// <summary>用户转赠卡券（含是否转赠退回、是否群转赠）。</summary>
+    public const string UserGiftingCard = "user_gifting_card";
+
+    /// <summary>用户删除卡券。</summary>
+    public const string UserDelCard = "user_del_card";
+
+    /// <summary>卡券核销（含核销来源 <c>ConsumeSource</c>、核销员、自助核销验证码等）。</summary>
+    public const string UserConsumeCard = "user_consume_card";
+
+    /// <summary>微信买单（含交易号、门店 ID 与实付/应付金额，单位分）。</summary>
+    public const string UserPayFromPayCell = "user_pay_from_pay_cell";
+
+    /// <summary>用户点击/进入会员卡（需创建会员卡时开启 <c>need_push_on_view</c>，开发者须自行评估推送压力）。</summary>
+    public const string UserViewCard = "user_view_card";
+
+    /// <summary>用户从卡券进入服务号会话（识别卡券来源用户身份）。</summary>
+    public const string UserEnterSessionFromCard = "user_enter_session_from_card";
+
+    /// <summary>会员卡内容更新（积分/余额变动）。</summary>
+    public const string UpdateMemberCard = "update_member_card";
+
+    /// <summary>库存报警（初始库存 &gt; 200 且当前 ≤ 100 时触发，每 12 小时一次）。</summary>
+    public const string CardSkuRemind = "card_sku_remind";
+
+    /// <summary>券点流水详情（**不含 <c>CardId</c>**，字段为订单号/状态/券点数量等）。</summary>
+    public const string CardPayOrder = "card_pay_order";
+
+    /// <summary>会员卡激活（用户一键激活或修改会员卡信息后推送）。</summary>
+    public const string SubmitMemberCardUserInfo = "submit_membercard_user_info";
+}
+
+/// <summary>
+/// 「用户授权信息变更事件推送」的 <c>Event</c> 取值（官方 H5 授权页，V5 已核验；共 3 键）。
+/// </summary>
+/// <remarks>
+/// <b>官方合规约束（不得忽略）</b>：三个事件分别要求「及时更新或清理头像昵称」「及时删除用户信息」
+/// 「依法依规履行个人信息保护义务」；<c>user_info_modified</c> 仅推送给**最近 30 天内授权过**的服务号。
+/// 报文另携带 <c>OpenID</c>/<c>UnionID</c>/<c>AppID</c>（可直接取信封外的三个专有字段）。
+/// </remarks>
+public static class MpAuthorizationEventTypes
+{
+    /// <summary>授权用户资料变更（资料有风险被平台清理时通知，需主动更新/清理本地头像昵称）。</summary>
+    public const string UserInfoModified = "user_info_modified";
+
+    /// <summary>授权用户资料撤回（需及时删除用户信息；<c>RevokeInfo</c> 指示撤回范围）。</summary>
+    public const string UserAuthorizationRevoke = "user_authorization_revoke";
+
+    /// <summary>授权用户完成注销（需依法履行个人信息保护义务，删除或匿名化处理）。</summary>
+    public const string UserAuthorizationCancellation = "user_authorization_cancellation";
+}

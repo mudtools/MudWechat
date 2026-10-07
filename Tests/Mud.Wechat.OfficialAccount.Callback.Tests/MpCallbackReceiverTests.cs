@@ -201,13 +201,31 @@ public class MpCallbackReceiverTests
         var registry = new MpPayloadContractRegistry();
         MpPayloadContracts.RegisterAll(registry);
 
-        registry.RegisteredKeys.Should().HaveCount(20, "本轮可锁定：7 消息键 + 9 菜单事件键 + 4 通用事件键（V1 已核验）");
+        registry.RegisteredKeys.Should().HaveCount(36,
+            "已核验键集：7 消息 + 13 事件（9 菜单 + subscribe/unsubscribe/SCAN/LOCATION）" +
+            "+ 13 卡券（12 个小节，其中审核小节含通过与不通过两键）+ 3 用户授权变更");
         registry.RegisteredKeys.Should().Contain(new[]
         {
             MpCallbackEventTypes.Subscribe,
             MpCallbackEventTypes.Unsubscribe,
             MpCallbackEventTypes.Scan,
             MpCallbackEventTypes.Location,
+            MpCardEventTypes.CardPassCheck,
+            MpCardEventTypes.CardNotPassCheck,
+            MpCardEventTypes.UserGetCard,
+            MpCardEventTypes.UserGiftingCard,
+            MpCardEventTypes.UserDelCard,
+            MpCardEventTypes.UserConsumeCard,
+            MpCardEventTypes.UserPayFromPayCell,
+            MpCardEventTypes.UserViewCard,
+            MpCardEventTypes.UserEnterSessionFromCard,
+            MpCardEventTypes.UpdateMemberCard,
+            MpCardEventTypes.CardSkuRemind,
+            MpCardEventTypes.CardPayOrder,
+            MpCardEventTypes.SubmitMemberCardUserInfo,
+            MpAuthorizationEventTypes.UserInfoModified,
+            MpAuthorizationEventTypes.UserAuthorizationRevoke,
+            MpAuthorizationEventTypes.UserAuthorizationCancellation,
             MpCallbackMessageTypes.Text,
             MpCallbackMessageTypes.Image,
             MpCallbackMessageTypes.Voice,

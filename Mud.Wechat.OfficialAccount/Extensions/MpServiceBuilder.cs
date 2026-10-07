@@ -107,6 +107,9 @@ public class MpServiceBuilder
             [MpModule.ShortLink] = new MpModuleRegistrar(
                 MpModule.ShortLink,
                 s => s.AddShortLinkWebApiHttpClient()),
+            [MpModule.Store] = new MpModuleRegistrar(
+                MpModule.Store,
+                s => s.AddStoreWebApiHttpClient()),
         };
 
     /// <summary>
@@ -248,6 +251,12 @@ public class MpServiceBuilder
     /// </summary>
     /// <returns>注册器（链式）。</returns>
     public MpServiceBuilder AddShortLinkApi() => AddModule(MpModule.ShortLink);
+
+    /// <summary>
+    /// 注册微信门店·门店小程序（12 端点；开放面仅电商类目，无新票据体系、与支付不耦合）。
+    /// </summary>
+    /// <returns>注册器（链式）。</returns>
+    public MpServiceBuilder AddStoreApi() => AddModule(MpModule.Store);
 
     /// <summary>注册全部模块。</summary>
     /// <returns>注册器（链式）。</returns>

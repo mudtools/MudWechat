@@ -61,6 +61,7 @@ public class MpQueryTokenWhitelistGuard
             nameof(IMpSmartApiService),           // 智能接口（12 端点：AI 语音 3 + OCR 7 + 图像处理 2）
             nameof(IMpQrcodeJumpService),         // 扫二维码打开小程序（4 端点，服务号专属）
             nameof(IMpShortLinkService),          // 长信息与短链（2 端点）
+            nameof(IMpStoreService),              // 微信门店·门店小程序（12 端点；开放面仅电商类目）
         }, "公众号官方契约强制 Query 注入（MUD005 已知接受风险）；新增 Query 注入接口须先评估再显式扩展本白名单");
 
         // 防静默空跑：白名单非空且每条均为 Query 注入（若发现机制失效，上面 BeEquivalentTo 会退化为真空断言）。

@@ -28,6 +28,7 @@ global using Mud.Wechat.OfficialAccount.DataModels.Qrcode;
 global using Mud.Wechat.OfficialAccount.DataModels.QrcodeJump;
 global using Mud.Wechat.OfficialAccount.DataModels.ShortLink;
 global using Mud.Wechat.OfficialAccount.DataModels.SmartApi;
+global using Mud.Wechat.OfficialAccount.DataModels.Store;
 global using Mud.Wechat.OfficialAccount.DataModels.SubscriptionNotice;
 global using Mud.Wechat.OfficialAccount.DataModels.Sns;
 global using Mud.Wechat.OfficialAccount.DataModels.Tag;

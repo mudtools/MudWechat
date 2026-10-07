@@ -587,4 +587,90 @@ public static class MpErrorCodes
 
     /// <summary>short_key 不存在 / 过期 / 不属于本账号（shorten/fetch；官方错误码描述列留空，照录）。</summary>
     public const int ShortenKeyNotExists = 9410012;
+
+    // ---------------------------------------------------------------- 微信门店·门店小程序（P4 首域，取值逐页核验官方文档）
+
+    /// <summary>invalid args：参数错误（update_store；qrcodejumpget 页亦列 40097 且描述为「参数有误」，共用本常量）。</summary>
+    public const int InvalidArgs = 40097;
+
+    /// <summary>this appid does not have permission：无调用权限（apply_merchant；官方原文「仅开放给电商类目（电商平台、商家自营、跨境电商）」，照录）。</summary>
+    public const int StoreAppIdPermissionDenied = 43104;
+
+    /// <summary>需要补充资料：需填写 org_code 与 other_files 字段（apply_merchant；两字段官方标非必填，必填性矛盾照录）。</summary>
+    public const int StoreSupplementRequired = 85024;
+
+    /// <summary>this phone reach bind limit：管理员手机登记数量超上限，该主体不能开通门店（apply_merchant）。</summary>
+    public const int StoreAdminPhoneBindLimit = 85025;
+
+    /// <summary>this wechat account reach bind limit：该微信号已绑定 5 个管理员（apply_merchant）。</summary>
+    public const int StoreAdminWeChatBindLimit = 85026;
+
+    /// <summary>this idcard reach bind limit：管理员身份证已登记 5 次（apply_merchant）。</summary>
+    public const int StoreAdminIdCardBindLimit = 85027;
+
+    /// <summary>this contractor reach bind limit：该主体登记数量超上限，不能开通门店（apply_merchant）。</summary>
+    public const int StoreContractorBindLimit = 85028;
+
+    /// <summary>nickname has used：商家名称已被占用（apply_merchant）。</summary>
+    public const int StoreNicknameUsed = 85029;
+
+    /// <summary>invalid nickname size：昵称长度非法（apply_merchant；官方原文 4-30 字符、一中文占两字符）。</summary>
+    public const int StoreNicknameSizeInvalid = 85030;
+
+    /// <summary>nickname is forbidden：不能使用该名称（apply_merchant）。</summary>
+    public const int StoreNicknameForbidden = 85031;
+
+    /// <summary>nickname is complained：名称处于侵权投诉保护期（apply_merchant）。</summary>
+    public const int StoreNicknameComplained = 85032;
+
+    /// <summary>nickname is illegal：名称含违反公众平台协议或法律法规内容（apply_merchant）。</summary>
+    public const int StoreNicknameIllegal = 85033;
+
+    /// <summary>nickname is protected：名称在改名 15 天保护期内（apply_merchant）。</summary>
+    public const int StoreNicknameProtected = 85034;
+
+    /// <summary>nickname is forbidden for different contractor：需与该账号相同主体才可申请（apply_merchant）。</summary>
+    public const int StoreNicknameContractorMismatch = 85035;
+
+    /// <summary>introduction is illegal：介绍内容违规（apply_merchant）。</summary>
+    public const int StoreIntroductionIllegal = 85036;
+
+    /// <summary>store has added：请勿添加重复门店（add_store）。</summary>
+    public const int StoreAlreadyAdded = 85038;
+
+    /// <summary>store has added by others：此门店状态不能被获取信息（add_store）。</summary>
+    public const int StoreNotAccessible = 85039;
+
+    /// <summary>store has added by yourself：此门店已被绑定，无需重复绑定（add_store；官方描述拼写「yourseld」照录）。</summary>
+    public const int StoreAlreadyBound = 85040;
+
+    /// <summary>credential has used：该经营资质已添加（add_store）。</summary>
+    public const int StoreCredentialUsed = 85041;
+
+    /// <summary>nearby reach limit：附近地点添加数量达到上限（add_store）。</summary>
+    public const int StoreNearbyLimitReached = 85042;
+
+    /// <summary>reach headimg or introduction quota limit：头像或简介修改达每月上限（apply_merchant）。</summary>
+    public const int StoreHeadImageQuotaLimit = 85049;
+
+    /// <summary>verifying don't apply again：审核中，勿重复提交（apply_merchant）。</summary>
+    public const int StoreAuditing = 85050;
+
+    /// <summary>please apply merchant first：需先成功创建门店小程序再调用（apply_merchant / update_store）。</summary>
+    public const int StoreMerchantNotApplied = 85053;
+
+    /// <summary>poi_id is null：门店小程序尚未升级成功，需填写 poi_id 进行门店迁移（add_store）。</summary>
+    public const int StorePoiIdRequired = 85054;
+
+    /// <summary>map_poi_id is invalid：map_poi_id 无效（add_store）。</summary>
+    public const int StoreMapPoiIdInvalid = 85055;
+
+    /// <summary>mediaid is invalid：临时 mediaid 无效（apply_merchant / add_store）。</summary>
+    public const int StoreMediaIdInvalid = 85056;
+
+    /// <summary>poi_id is not exist：门店不存在（update_store）。</summary>
+    public const int StorePoiNotExists = 65115;
+
+    /// <summary>store status is invalid：该门店状态不允许更新（update_store）。</summary>
+    public const int StoreStatusInvalid = 65118;
 }

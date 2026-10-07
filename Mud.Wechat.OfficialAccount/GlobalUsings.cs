@@ -22,6 +22,7 @@ global using Mud.Wechat.OfficialAccount.DataModels.Media;
 global using Mud.Wechat.OfficialAccount.DataModels.AutoReply;
 global using Mud.Wechat.OfficialAccount.DataModels.Mass;
 global using Mud.Wechat.OfficialAccount.DataModels.Menu;
+global using Mud.Wechat.OfficialAccount.DataModels.OneCode;
 global using Mud.Wechat.OfficialAccount.DataModels.OpenApi;
 global using Mud.Wechat.OfficialAccount.DataModels.ProductCard;
 global using Mud.Wechat.OfficialAccount.DataModels.Qrcode;

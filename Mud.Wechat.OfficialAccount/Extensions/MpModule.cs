@@ -257,4 +257,17 @@ public enum MpModule
     /// <c>IMpStoreService</c> remarks。
     /// </remarks>
     Store,
+
+    /// <summary>
+    /// 微信「一物一码」（<c>/intp/marketcode/*</c> 6 端点：申请 / 查询申请单 / 下载二维码包 / 激活 /
+    /// 查询激活状态 / CODE_TICKET 换 CODE）。
+    /// </summary>
+    /// <remarks>
+    /// 域级约束（逐页核验，勿弱化）：账号门槛为「<b>服务号（需申请）</b>」（须先申请开通，非「仅认证」）；
+    /// 无新票据体系（下载所得 <c>buffer</c> 走 base64 decode + 解密，与令牌无关）；与支付不耦合；
+    /// 6 页全部支持第三方平台代调用（权限集 <b>46</b>）；无频率数值；
+    /// <b>响应为平级字段</b>（无 <c>data</c> 包裹）；<b>错误码面极薄</b>（仅通用 <c>40001</c>）⇒ 本域不新增错误码常量；
+    /// <c>isv_application_id</c> 为幂等键；<c>code_count</c> 须 10000 的整数倍且 ∈ [10000, 20000000]。
+    /// </remarks>
+    OneCode,
 }

@@ -110,6 +110,9 @@ public class MpServiceBuilder
             [MpModule.Store] = new MpModuleRegistrar(
                 MpModule.Store,
                 s => s.AddStoreWebApiHttpClient()),
+            [MpModule.OneCode] = new MpModuleRegistrar(
+                MpModule.OneCode,
+                s => s.AddOneCodeWebApiHttpClient()),
         };
 
     /// <summary>
@@ -257,6 +260,12 @@ public class MpServiceBuilder
     /// </summary>
     /// <returns>注册器（链式）。</returns>
     public MpServiceBuilder AddStoreApi() => AddModule(MpModule.Store);
+
+    /// <summary>
+    /// 注册微信「一物一码」（6 端点；服务号需申请开通，无新票据体系、与支付不耦合，错误码面仅通用码）。
+    /// </summary>
+    /// <returns>注册器（链式）。</returns>
+    public MpServiceBuilder AddOneCodeApi() => AddModule(MpModule.OneCode);
 
     /// <summary>注册全部模块。</summary>
     /// <returns>注册器（链式）。</returns>

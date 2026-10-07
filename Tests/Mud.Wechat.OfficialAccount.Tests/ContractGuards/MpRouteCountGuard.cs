@@ -34,11 +34,11 @@ namespace Mud.Wechat.OfficialAccount.Tests.ContractGuards;
 /// </remarks>
 public class MpRouteCountGuard
 {
-    /// <summary>P4 首域（Store 12）完成后主程序集公开接口的去重路由数（127 − 6 非特性路由 + 18 + 12 = 151）。</summary>
-    private const int ExpectedMainInterfaceRoutes = 151;
+    /// <summary>P4 已完成域（Store 12 + OneCode 6）后主程序集公开接口的去重路由数（127 − 6 非特性路由 + 18 + 12 + 6 = 157）。</summary>
+    private const int ExpectedMainInterfaceRoutes = 157;
 
-    /// <summary>P4 首域完成后全量去重路由数（151 + AbstractsAuth 3 + 下载通道 3 = 157）。</summary>
-    private const int ExpectedTotalRoutes = 157;
+    /// <summary>全量去重路由数（157 + AbstractsAuth 3 + 下载通道 3 = 163）。</summary>
+    private const int ExpectedTotalRoutes = 163;
 
     /// <summary>官方面唯一路由数（索引页表格取值并集，方案 §1.1 口径）。</summary>
     private const int ExpectedOfficialRoutes = 196;

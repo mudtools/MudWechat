@@ -42,7 +42,7 @@ public interface IWechatWorkInternalMsgAuditRobotService : IWechatWorkMsgAuditRo
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
     /// <returns>机器人信息（robot_id / name / creator_userid）。</returns>
     /// <remarks>
-    /// <para><b>企业自建应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/91614"/></para>
+    /// <para><b>企业自建应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/91774"/></para>
     /// <para>官方业务限制：代开发应用、第三方应用均暂不支持本接口。</para>
     /// </remarks>
     [Get("/cgi-bin/msgaudit/get_robot_info")]

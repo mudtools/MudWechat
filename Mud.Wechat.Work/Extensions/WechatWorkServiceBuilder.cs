@@ -146,6 +146,12 @@ public class WechatWorkServiceBuilder
                     SensitiveUrlKeys.Register("key");
                     s.AddWebhookWebApiHttpClient();
                 }),
+            [WechatModule.Hr] = new WechatModuleRegistrar(
+                WechatModule.Hr,
+                s => s.AddHrWebApiHttpClient()),
+            [WechatModule.Dial] = new WechatModuleRegistrar(
+                WechatModule.Dial,
+                s => s.AddDialWebApiHttpClient()),
         };
 
     /// <summary>注册授权流业务接口与授权编排服务（get_pre_auth_code / set_session_info / get_permanent_code / get_auth_info / get_customized_auth_url + 编排）。</summary>
@@ -193,7 +199,7 @@ public class WechatWorkServiceBuilder
     /// <summary>注册政民沟通业务接口（配置网格结构域与配置事件类别域为自建/代开发公共面；获取网格列表、巡查上报族与居民上报族官方仅自建开放，不设代开发子接口；第三方应用官方暂不支持）。</summary>
     public WechatWorkServiceBuilder AddGovApi() => AddModule(WechatModule.Gov);
 
-    /// <summary>注册数据与智能专区业务接口（基础接口域为三类应用公共面 + 差异端点子接口：获取授权信息官方不支持自建、文档存档授权信息官方仅第三方；应用调用专区程序域为三类应用公共面 + 空标记子接口。原「数据与智能功能族」获取会话记录 + 获取消息统计两端点经证伪回退删除——官方文档树无该 HTTP 分组，见 WechatDataZoneContractGuards remarks）。</summary>
+    /// <summary>注册数据与智能专区业务接口（基础接口域为三类应用公共面 + 差异端点子接口：获取授权信息官方不支持自建、文档存档授权信息官方仅第三方，专区调试模式开启/关闭/查询状态三端点为三类应用公共面；应用调用专区程序域为三类应用公共面 + 空标记子接口。原「数据与智能功能族」获取会话记录 + 获取消息统计两端点经证伪回退删除——官方文档树无该 HTTP 分组，见 WechatDataZoneContractGuards remarks）。</summary>
     public WechatWorkServiceBuilder AddDataZoneApi() => AddModule(WechatModule.DataZone);
 
     /// <summary>注册审批业务接口（审批申请数据域为三类应用公共面 + 差异端点子接口：获取审批数据（旧）官方仅自建；审批模板域为三类应用公共面 + 差异端点子接口：创建/更新模板自建与代开发开放、复制/更新模板到企业官方仅第三方；假期管理域与审批流程引擎域为三类应用公共面 + 空标记子接口）。</summary>
@@ -246,6 +252,12 @@ public class WechatWorkServiceBuilder
 
     /// <summary>注册群机器人 Webhook 推送业务接口（发送消息 8 种 msgtype 同路由多方法 + 上传媒体文件共 9 端点，官方文档 91770；以 URL Query 上的 key 为机器人凭据、不带 [Token]，频率限制每个机器人 20 条/分钟；注册期经组件公开门面 SensitiveUrlKeys.Register("key") 将该长期凭据登记为进程级强制掩码键，见守卫 WEB3）。</summary>
     public WechatWorkServiceBuilder AddWebhookApi() => AddModule(WechatModule.Webhook);
+
+    /// <summary>注册人事助手业务接口（官方「人事助手 → 花名册」分组 3 端点官方仅自建开放：获取员工字段配置 GET + 获取员工花名册信息 + 更新员工花名册信息，零端点父接口 + 仅自建子接口承载；官方文档陷阱：get_fields 参数表记作 field_id 而示例均为 fieldid，以示例为准）。</summary>
+    public WechatWorkServiceBuilder AddHrApi() => AddModule(WechatModule.Hr);
+
+    /// <summary>注册公费电话业务接口（获取公费电话拨打记录 1 端点官方仅自建开放，零端点父接口 + 仅自建子接口承载；查询范围双闭区间、最大跨度 30 天；与紧急通知域 pstncc 路由族分属官方两棵章节树；健康上报已由家校 School 模块承载，不在本模块）。</summary>
+    public WechatWorkServiceBuilder AddDialApi() => AddModule(WechatModule.Dial);
 
     /// <summary>注册全部模块。</summary>
     public WechatWorkServiceBuilder AddAllApis()

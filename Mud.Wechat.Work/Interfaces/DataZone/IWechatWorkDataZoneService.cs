@@ -12,9 +12,9 @@ namespace Mud.Wechat.Work;
 /// <summary>
 /// 企业微信「数据与智能专区」模块基础接口域公共 SDK（设置公钥 / 获取会话存档授权成员列表 /
 /// 设置专区接收回调事件 / 会话组件敏感信息隐藏设置 / 设置与获取日志打印级别 / 上传临时文件到专区 /
-/// 获取文件内容存档授权成员列表，九端点收敛面）。
+/// 获取文件内容存档授权成员列表 / 开启·关闭·查询专区调试模式，十二端点收敛面）。
 /// <para>
-/// 官方对三类应用开放一致的 9 个端点，全部收敛声明于本接口；应用类型子接口承载官方开放面差异端点：
+/// 官方对三类应用开放一致的 12 个端点，全部收敛声明于本接口；应用类型子接口承载官方开放面差异端点：
 /// 企业自建应用见 <see cref="IWechatWorkInternalDataZoneService"/>（零差异端点空标记），
 /// 服务商代开发见 <see cref="IWechatWorkProviderDataZoneService"/>（额外开放「获取数据与智能专区授权信息」），
 /// 第三方应用见 <see cref="IWechatWorkThirdPartyDataZoneService"/>（额外开放「获取数据与智能专区授权信息」与
@@ -212,5 +212,60 @@ public interface IWechatWorkDataZoneService
     [Post("/cgi-bin/docdata/get_auth_user_list")]
     Task<GetDocArchiveAuthUserListResponse> GetDocArchiveAuthUserListAsync(
         [Body] GetDocArchiveAuthUserListRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 开启专区调试模式
+    /// <para>开启应用关联的专区程序的调试模式；调试凭证 debug_token 由专区程序侧生成，
+    /// 仅用于调试链路，请勿与 <see cref="WechatTokenTypes"/> 体系下的业务令牌混淆。</para>
+    /// </summary>
+    /// <param name="request">请求体（<see cref="OpenDataZoneDebugModeRequest"/>：program_id / debug_token）。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
+    /// <returns>仅返回 errcode / errmsg（无业务负载）。</returns>
+    /// <remarks>
+    /// <para><b>企业自建应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/100087"/></para>
+    /// <para><b>第三方应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/100083"/></para>
+    /// <para>官方权限口径：自建 / 代开发 / 第三方应用均需具备「数据与智能专区权限」；
+    /// 服务商代开发侧官方文档树虽列出「开启专区调试模式」导航项，但对应文档页未发布正文，本注释以自建 / 第三方文档页为准。</para>
+    /// </remarks>
+    [Post("/cgi-bin/chatdata/open_debug_mode")]
+    Task<WechatWorkResponse> OpenDebugModeAsync(
+        [Body] OpenDataZoneDebugModeRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 关闭专区调试模式
+    /// <para>关闭应用关联的专区程序的调试模式。</para>
+    /// </summary>
+    /// <param name="request">请求体（<see cref="CloseDataZoneDebugModeRequest"/>：program_id）。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
+    /// <returns>仅返回 errcode / errmsg（无业务负载）。</returns>
+    /// <remarks>
+    /// <para><b>企业自建应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/100088"/></para>
+    /// <para><b>第三方应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/100084"/></para>
+    /// <para>官方权限口径：自建 / 代开发 / 第三方应用均需具备「数据与智能专区权限」；
+    /// 服务商代开发侧官方文档树虽列出「关闭专区调试模式」导航项，但对应文档页未发布正文，本注释以自建 / 第三方文档页为准。</para>
+    /// </remarks>
+    [Post("/cgi-bin/chatdata/close_debug_mode")]
+    Task<WechatWorkResponse> CloseDebugModeAsync(
+        [Body] CloseDataZoneDebugModeRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 获取专区调试模式状态
+    /// <para>查询应用关联的专区程序当前的调试模式状态。</para>
+    /// </summary>
+    /// <param name="request">请求体（<see cref="CheckDataZoneDebugModeRequest"/>：program_id）。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
+    /// <returns>程序当前的调试模式状态（debug_mode_status：1 - 关闭；2 - 开启）。</returns>
+    /// <remarks>
+    /// <para><b>企业自建应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/100113"/></para>
+    /// <para><b>第三方应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/100112"/></para>
+    /// <para><b>服务商代开发</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/100114"/></para>
+    /// <para>官方权限口径：自建 / 代开发 / 第三方应用均需具备「数据与智能专区权限」。</para>
+    /// </remarks>
+    [Post("/cgi-bin/chatdata/check_debug_mode")]
+    Task<CheckDataZoneDebugModeResponse> CheckDebugModeAsync(
+        [Body] CheckDataZoneDebugModeRequest request,
         CancellationToken cancellationToken = default);
 }

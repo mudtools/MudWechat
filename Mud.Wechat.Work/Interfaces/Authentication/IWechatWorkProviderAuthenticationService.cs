@@ -94,4 +94,21 @@ public interface IWechatWorkProviderAuthenticationService
     /// <remarks>请参照原SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/100795"/></remarks>
     [Post("/cgi-bin/service/v2/get_auth_info")]
     Task<GetAuthInfoResponse> GetAuthInfoV2Async([Body] GetAuthInfoRequest request, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 获取应用二维码
+    /// <para>获取第三方应用的应用二维码（用于扫码授权安装）；
+    /// <c>state</c> 可区分安装渠道，扫带参二维码授权安装后「获取企业永久授权码」会返回该 state 值。</para>
+    /// </summary>
+    /// <param name="request">请求参数（<see cref="GetAppQrcodeRequest"/>：suite_id / appid / state / style / result_type）。</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>二维码 url 地址（官方 qrcode 字段；官方契约陷阱：result_type=2 时 JSON 返回该 url，result_type=1 时返回 image/png 二进制流而非 JSON）。</returns>
+    /// <remarks>
+    /// <para>请参照原SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/95430"/></para>
+    /// <para>官方权限说明：要求第三方应用是已上线的第三方通用应用；state 仅可填写 a-zA-Z0-9、长度不可超过 32 个字节。</para>
+    /// <para>官方契约陷阱：result_type 官方默认为 1（返回二维码图片 buffer，非 JSON），
+    /// 走本 SDK JSON 契约面时须传 2（返回二维码图片 url）；响应字段官方原文为 qrcode。</para>
+    /// </remarks>
+    [Post("/cgi-bin/service/get_app_qrcode")]
+    Task<GetAppQrcodeResponse> GetAppQrcodeAsync([Body] GetAppQrcodeRequest request, CancellationToken cancellationToken = default);
 }

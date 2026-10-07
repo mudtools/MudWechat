@@ -20,8 +20,10 @@ namespace Mud.Wechat.Work.Tests.ContractGuards;
 /// </summary>
 /// <remarks>
 /// <para>
-/// 形态：基础接口域 9 个公共端点（设置公钥 / 获取会话存档授权成员列表 / 设置专区接收回调事件 /
-/// 会话组件敏感信息隐藏设置×2 / 日志打印级别×2 / 上传临时文件到专区 / 获取文件内容存档授权成员列表）
+/// 形态：基础接口域 12 个公共端点（设置公钥 / 获取会话存档授权成员列表 / 设置专区接收回调事件 /
+/// 会话组件敏感信息隐藏设置×2 / 日志打印级别×2 / 上传临时文件到专区 / 获取文件内容存档授权成员列表 /
+/// 专区调试模式×3——开启·关闭·查询状态，官方文档落位于「数据与智能专区 → 专区调试模式」子节，
+/// 三类应用均需「数据与智能专区权限」）
 /// 收敛声明于 <see cref="IWechatWorkDataZoneService"/> 父接口（IsAbstract）；
 /// 第三方子接口额外声明 2 个差异端点、代开发子接口额外声明 1 个差异端点、自建子接口为空标记。
 /// 应用调用专区程序域 3 个端点（同步调用 / 创建异步任务 / 查询任务结果）收敛声明于
@@ -80,6 +82,14 @@ public class WechatDataZoneContractGuards
         // 获取文件内容存档授权成员列表（自建 101873、第三方 101681、代开发 101882）。
         (typeof(IWechatWorkDataZoneService),
             nameof(IWechatWorkDataZoneService.GetDocArchiveAuthUserListAsync), "/cgi-bin/docdata/get_auth_user_list"),
+        // 专区调试模式（自建 100087/100088/100113、第三方 100083/100084/100112、代开发 100114；
+        // 三类应用均需「数据与智能专区权限」；代开发侧开启/关闭文档页未发布正文，见接口 XML 注释）。
+        (typeof(IWechatWorkDataZoneService),
+            nameof(IWechatWorkDataZoneService.OpenDebugModeAsync), "/cgi-bin/chatdata/open_debug_mode"),
+        (typeof(IWechatWorkDataZoneService),
+            nameof(IWechatWorkDataZoneService.CloseDebugModeAsync), "/cgi-bin/chatdata/close_debug_mode"),
+        (typeof(IWechatWorkDataZoneService),
+            nameof(IWechatWorkDataZoneService.CheckDebugModeAsync), "/cgi-bin/chatdata/check_debug_mode"),
     };
 
     /// <summary>
@@ -121,9 +131,9 @@ public class WechatDataZoneContractGuards
     [Fact]
     public void DataZoneEndpoints_ShouldMatchOfficialRoutes()
     {
-        DataZoneRoutes.Should().HaveCount(9,
-            "基础接口域 9 个端点为三类应用公共面，全部收敛父接口");
-        DataZoneRoutes.Select(r => r.Route).Distinct().Should().HaveCount(9, "基础接口域各端点路由互不重复");
+        DataZoneRoutes.Should().HaveCount(12,
+            "基础接口域 12 个端点为三类应用公共面，全部收敛父接口");
+        DataZoneRoutes.Select(r => r.Route).Distinct().Should().HaveCount(12, "基础接口域各端点路由互不重复");
 
         AssertRoutes(DataZoneRoutes);
 
@@ -261,7 +271,7 @@ public class WechatDataZoneContractGuards
     }
 
     /// <summary>
-    /// 契约守卫 DZ4：数据与智能专区模块的请求/响应 DTO 必须登记进 AOT JSON 上下文（全量 24 个契约面类型）。
+    /// 契约守卫 DZ4：数据与智能专区模块的请求/响应 DTO 必须登记进 AOT JSON 上下文（全量 28 个契约面类型）。
     /// </summary>
     [Fact]
     public void DataZoneDataModels_ShouldBeRegisteredInJsonContext()
@@ -296,6 +306,9 @@ public class WechatDataZoneContractGuards
             // 获取数据与智能专区授权信息 / 文档存档授权信息。
             typeof(GetDataZoneCorpAuthInfoResponse), typeof(DataZoneCorpAuthEdition), typeof(DataZoneAuthScope),
             typeof(GetDocArchiveAuthInfoResponse),
+            // 专区调试模式（开启 / 关闭 / 查询状态）。
+            typeof(OpenDataZoneDebugModeRequest), typeof(CloseDataZoneDebugModeRequest),
+            typeof(CheckDataZoneDebugModeRequest), typeof(CheckDataZoneDebugModeResponse),
         };
 
         foreach (var type in requiredTypes)

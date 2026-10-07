@@ -431,11 +431,11 @@ public class WechatContractGuards
                 nameof(IWechatWorkPayTradeBillService),
                 nameof(IWechatWorkInternalPayTradeBillService),
                 // 会话内容存档·开启成员列表域（MsgAudit 模块）：1 个端点官方仅自建应用开放
-                //（获取开启成员列表 91774；零端点父接口 + 仅自建子接口）。
+                //（获取开启成员列表 91614；零端点父接口 + 仅自建子接口）。
                 nameof(IWechatWorkMsgAuditPermitUserService),
                 nameof(IWechatWorkInternalMsgAuditPermitUserService),
                 // 会话内容存档·机器人信息域（MsgAudit 模块）：1 个端点官方仅自建应用开放
-                //（获取机器人信息 91614「获取会话内容」页内唯一 HTTP API，官方即 GET；零端点父接口 + 仅自建子接口）。
+                //（获取机器人信息 91774「获取会话内容」页内唯一 HTTP API，官方即 GET；零端点父接口 + 仅自建子接口）。
                 nameof(IWechatWorkMsgAuditRobotService),
                 nameof(IWechatWorkInternalMsgAuditRobotService),
                 // 会话内容存档·会话同意情况域（MsgAudit 模块）：2 个端点官方仅自建应用开放
@@ -911,6 +911,14 @@ public class WechatContractGuards
                 // 服务商登录授权域（Authentication 模块）：获取登录用户信息 91154 走服务商主体级
                 // provider_access_token（Query 注入；单接口直接注册，无父/子接口分层）。
                 nameof(IWechatWorkProviderLoginService),
+                // 人事助手·花名册域（Hr 模块）：3 个端点官方仅自建应用开放
+                //（字段配置 99131、花名册信息 99132、更新花名册 99133；零端点父接口 + 仅自建子接口）。
+                nameof(IWechatWorkHrService),
+                nameof(IWechatWorkInternalHrService),
+                // 公费电话域（Dial 模块）：1 个端点官方仅自建应用开放
+                //（拨打记录 93662；零端点父接口 + 仅自建子接口）。
+                nameof(IWechatWorkDialService),
+                nameof(IWechatWorkInternalDialService),
             },
             "企业微信官方契约强制 Query 注入（MUD005 已知接受风险），新增 Query 注入接口须评估后扩展本守卫");
     }
@@ -931,6 +939,9 @@ public class WechatContractGuards
             (typeof(IWechatWorkProviderAuthenticationService),
                 nameof(IWechatWorkProviderAuthenticationService.GetAuthInfoV2Async),
                 "/cgi-bin/service/v2/get_auth_info"),
+            (typeof(IWechatWorkProviderAuthenticationService),
+                nameof(IWechatWorkProviderAuthenticationService.GetAppQrcodeAsync),
+                "/cgi-bin/service/get_app_qrcode"),
             (typeof(IWechatWorkProviderAuthenticationUrl),
                 nameof(IWechatWorkProviderAuthenticationUrl.GetCustomizedAuthUrlAsync),
                 "/cgi-bin/service/get_customized_auth_url"),

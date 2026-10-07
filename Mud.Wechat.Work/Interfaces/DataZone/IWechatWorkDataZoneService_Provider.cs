@@ -12,7 +12,7 @@ namespace Mud.Wechat.Work;
 /// <summary>
 /// 企业微信「数据与智能专区」模块基础接口域服务商代开发 SDK。
 /// <para>
-/// 官方对代开发应用开放与三类应用公共面一致的 9 个端点（继承自
+/// 官方对代开发应用开放与三类应用公共面一致的 12 个端点（继承自
 /// <see cref="IWechatWorkDataZoneService"/>），并额外开放 1 个差异端点：
 /// 「获取数据与智能专区授权信息」（官方不支持自建应用；第三方应用亦开放，见
 /// <see cref="IWechatWorkThirdPartyDataZoneService"/>）。

@@ -21,7 +21,7 @@ namespace Mud.Wechat.Work.Tests.ContractGuards;
 /// <remarks>
 /// <para>
 /// 形态：四个域均为零端点父接口 + 仅自建子接口承载端点（形态对齐企业支付域守卫）；
-/// 官方「获取会话内容」页（91614）主体为原生 C SDK（GetChatData / DecryptData / GetMediaData），
+/// 官方「获取会话内容」页（91774）主体为原生 C SDK（GetChatData / DecryptData / GetMediaData），
 /// 不属于 HTTP 端点面，本模块仅承载该页面的 get_robot_info。
 /// </para>
 /// </remarks>
@@ -46,7 +46,7 @@ public class WechatMsgAuditContractGuards
     /// </summary>
     private static readonly (Type Interface, string Method, Type HttpAttribute, string Route)[] PermitUserRoutes =
     {
-        // 获取会话内容存档开启成员列表（91774）。
+        // 获取会话内容存档开启成员列表（91614）。
         (typeof(IWechatWorkInternalMsgAuditPermitUserService),
             nameof(IWechatWorkInternalMsgAuditPermitUserService.GetPermitUserListAsync),
             typeof(PostAttribute), "/cgi-bin/msgaudit/get_permit_user_list"),
@@ -58,7 +58,7 @@ public class WechatMsgAuditContractGuards
     /// </summary>
     private static readonly (Type Interface, string Method, Type HttpAttribute, string Route)[] RobotRoutes =
     {
-        // 获取机器人信息（91614「获取会话内容」页内的唯一 HTTP API）。
+        // 获取机器人信息（91774「获取会话内容」页内的唯一 HTTP API）。
         (typeof(IWechatWorkInternalMsgAuditRobotService),
             nameof(IWechatWorkInternalMsgAuditRobotService.GetRobotInfoAsync),
             typeof(GetAttribute), "/cgi-bin/msgaudit/get_robot_info"),

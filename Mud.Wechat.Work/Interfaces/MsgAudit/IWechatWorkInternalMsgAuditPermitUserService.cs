@@ -44,7 +44,7 @@ public interface IWechatWorkInternalMsgAuditPermitUserService : IWechatWorkMsgAu
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
     /// <returns>开启范围内的成员 userid 列表（ids）。</returns>
     /// <remarks>
-    /// <para><b>企业自建应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/91774"/></para>
+    /// <para><b>企业自建应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/91614"/></para>
     /// <para>官方业务限制：代开发应用、第三方应用均暂不支持本接口。</para>
     /// </remarks>
     [Post("/cgi-bin/msgaudit/get_permit_user_list")]

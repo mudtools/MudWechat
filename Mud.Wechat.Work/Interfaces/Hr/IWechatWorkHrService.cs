@@ -8,20 +8,19 @@
 namespace Mud.Wechat.Work;
 
 /// <summary>
-/// 企业微信「会话内容存档」模块机器人信息域公共 SDK（获取机器人信息）。
+/// 企业微信「人事助手」模块花名册域公共 SDK（获取员工字段配置 / 获取员工花名册信息 / 更新员工花名册信息）。
 /// <para>
 /// 官方仅向<b>企业自建应用</b>开放本域端点（代开发应用与第三方应用均暂不支持），
 /// 因此本父接口没有公共端点，亦不设第三方 / 代开发子接口；
-/// 全部 1 个端点声明于 <see cref="IWechatWorkInternalMsgAuditRobotService"/>
-/// （形态对齐 <see cref="IWechatWorkPayMchApplyService"/> 零端点父接口）。
+/// 全部 3 个端点声明于 <see cref="IWechatWorkInternalHrService"/>
+/// （形态对齐 <see cref="IWechatWorkMsgAuditPermitUserService"/> 零端点父接口）。
 /// </para>
 /// </summary>
 /// <remarks>
 /// <para>
-/// 「获取会话内容」页（官方文档 91774）的主体为<b>原生 C SDK</b>（Init / GetChatData /
-/// DecryptData / GetMediaData 等，负责密文消息拉取、RSA 解密与媒体文件分片下载），
-/// 不属于本 HTTP SDK 的端点面，本仓不承载；该页面上唯一 HTTP API（get_robot_info）
-/// 落位于本域。
+/// 落位与形态对齐 <see cref="IWechatWorkContactRulesService"/>：令牌路由键为
+/// <see cref="WechatTokenTypes.AccessToken"/>（Query 注入 <c>access_token</c>），由多应用基座按当前应用上下文
+/// （AppKey + scope）路由。本模块全部接口的调用应用须配置到「人事助手 - 可调用接口的应用」中。
 /// </para>
 /// <para>
 /// MUD005 已知接受风险：企业微信官方契约强制令牌走 Query 参数（<c>access_token</c>），无法改用 Header。
@@ -30,6 +29,6 @@ namespace Mud.Wechat.Work;
 [HttpClientApi(TokenManage = nameof(IWechatAppManager), IsAbstract = true)]
 [Token(TokenType = WechatTokenTypes.AccessToken,
       InjectionMode = TokenInjectionMode.Query, Name = "access_token")]
-public interface IWechatWorkMsgAuditRobotService
+public interface IWechatWorkHrService
 {
 }

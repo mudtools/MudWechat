@@ -10,7 +10,7 @@ namespace Mud.Wechat.Work;
 /// <summary>
 /// 企业微信「数据与智能专区」模块基础接口域企业自建应用 SDK。
 /// <para>
-/// 官方对自建应用开放与三类应用公共面一致的 9 个端点（继承自
+/// 官方对自建应用开放与三类应用公共面一致的 12 个端点（继承自
 /// <see cref="IWechatWorkDataZoneService"/>）；本接口不新增端点，仅作为
 /// 企业自建应用的类型化契约入口存在（形态对齐 <see cref="IWechatWorkInternalMediaService"/> 空标记）。
 /// 「获取数据与智能专区授权信息」与「获取数据与智能专区文档存档授权信息」官方不支持自建应用，不在本接口开放。

@@ -13,7 +13,18 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Mud.HttpUtils" Version="3.0.2" />
+		<!-- 产品贡献描述（WechatOpenTelemetryExtensions.CreateContribution）与选项映射
+		     （WechatOpenTelemetryOptionsMapper）为 internal，供测试直读：
+		     前者锁定 IncludeMudHttpUtils → IncludeMudHttpSources 与通配 Meter 的产品特有契约，
+		     后者锁定「每个公开配置属性都被读取」（audit-config-keys.ps1 的消费点要求）。 -->
+		<InternalsVisibleTo Include="Mud.Wechat.OpenTelemetry.Tests" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<!-- 可观测性共享装配内核（MudObservabilityBootstrap / MudObservabilityDefaults 等）由上游包提供；
+		     本包不再直接引用 Mud.HttpUtils（MudHttpActivitySource/MudHttpMeter 由内核内部使用）。
+		     ⚠ 全仓 Mud.HttpUtils* 必须同版本（守卫 G1：WechatContractGuards.MudHttpUtils_PackageReference_ShouldBeSingleVersion）。 -->
+		<PackageReference Include="Mud.HttpUtils.OpenTelemetry" Version="3.0.3" />
 		<PackageReference Include="OpenTelemetry" Version="1.16.0" />
 		<PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.16.0" />
 		<PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.16.0" />
@@ -22,7 +33,8 @@
 	</ItemGroup>
 
 	<!-- net6.0+ 使用 FrameworkReference（与 Mud.Wechat.Work.Callback.csproj 的既有条件化同款）；
-	     netstandard2.0 不引用 AspNetCore.App，EnableAspNetCoreInstrumentation 在 Validate 中被置 false。 -->
+	     netstandard2.0 不引用 AspNetCore.App，EnableAspNetCoreInstrumentation 由共享内核
+	     （MudObservabilityBootstrap 的 #if NETSTANDARD2_0 分支）强制置 false。 -->
 	<ItemGroup Condition="'$(TargetFramework)' != 'netstandard2.0'">
 		<FrameworkReference Include="Microsoft.AspNetCore.App" />
 	</ItemGroup>

@@ -18,4 +18,10 @@ global using OpenTelemetry.Metrics;
 global using OpenTelemetry.Resources;
 global using OpenTelemetry.Trace;
 global using Mud.Wechat.Abstractions.Observability;
-global using Mud.HttpUtils;
+// 上游可观测性共享装配内核（Mud.HttpUtils.OpenTelemetry 3.0.3+）。
+// 本包不再直接引用 Mud.HttpUtils：MudHttpActivitySource / MudHttpMeter 由内核经
+// MudObservabilityContribution.IncludeMudHttpSources 内部注册。
+global using Mud.HttpUtils.OpenTelemetry;
+// 别名消歧：Mud.HttpUtils.OpenTelemetry 也导出 OtlpExportProtocol，与 OpenTelemetry.Exporter 的同名类型
+// 在本工程（上一条 global using OpenTelemetry.Exporter）中形成二义（CS0104）。
+global using MudOtlpExportProtocol = Mud.HttpUtils.OpenTelemetry.OtlpExportProtocol;

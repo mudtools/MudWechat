@@ -189,6 +189,9 @@ public static class WorkMetrics
         /// <summary>企业授权：写入</summary>
         public const string CorpStoreSet = "corp_store_set";
 
+        /// <summary>企业授权：删除</summary>
+        public const string CorpStoreRemove = "corp_store_remove";
+
         /// <summary>套件票据：读取</summary>
         public const string TicketGet = "ticket_get";
 

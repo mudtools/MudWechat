@@ -35,7 +35,7 @@ public static class MpMetricsHelper
             { WechatActivitySource.Tags.AppKey, appKey },
         };
 
-        MpMetrics.CallbackRequestCount.Add(1, tags);
+        // 只记录耗时直方图；计数由 RecordCallbackOutcome 统一完成（避免重复计数）。
         return MpMetrics.CallbackRequestDuration.RecordDuration(tags);
     }
 
@@ -75,7 +75,7 @@ public static class MpMetricsHelper
             { MpMetrics.Tags.EventType, eventType },
         };
 
-        MpMetrics.EventHandlingCount.Add(1, tags);
+        // 只记录耗时直方图；计数由 RecordEventOutcome 统一完成（避免重复计数）。
         return MpMetrics.EventHandlingDuration.RecordDuration(tags);
     }
 

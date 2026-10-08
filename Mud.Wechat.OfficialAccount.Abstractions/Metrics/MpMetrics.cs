@@ -48,7 +48,7 @@ public static class MpMetrics
     /// 回调入站计数（维度：app_key, outcome）。
     /// </summary>
     public static readonly Counter<long> CallbackRequestCount = Instance.CreateCounter<long>(
-        "mp.callback.request",
+        "callback.request",
         unit: "{request}",
         description: "公众号回调入站计数（含 echo / receive）");
 
@@ -56,7 +56,7 @@ public static class MpMetrics
     /// 回调全程耗时直方图（毫秒，维度：app_key）。
     /// </summary>
     public static readonly Histogram<double> CallbackRequestDuration = Instance.CreateHistogram<double>(
-        "mp.callback.request.duration",
+        "callback.request.duration",
         unit: "ms",
         description: "公众号回调全程耗时分布");
 
@@ -66,7 +66,7 @@ public static class MpMetrics
     /// 事件分发次数（维度：app_key, event_type, outcome）。
     /// </summary>
     public static readonly Counter<long> EventHandlingCount = Instance.CreateCounter<long>(
-        "mp.event.handling",
+        "event.handling",
         unit: "{event}",
         description: "公众号事件分发次数");
 
@@ -74,7 +74,7 @@ public static class MpMetrics
     /// 事件处理耗时直方图（毫秒，维度：app_key, event_type）。
     /// </summary>
     public static readonly Histogram<double> EventHandlingDuration = Instance.CreateHistogram<double>(
-        "mp.event.handling.duration",
+        "event.handling.duration",
         unit: "ms",
         description: "公众号事件处理耗时分布");
 

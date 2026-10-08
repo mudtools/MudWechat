@@ -49,10 +49,7 @@ public class WechatWildcardMeterTests
         var oaCounter = oaMeter.CreateCounter<double>("callback.request");
         oaCounter.Add(1);
 
-        // 确保测量事件被处理（MeterListener 的回调在 RecordMeasurement 时同步触发）
-        // 等待一小段时间确保异步处理完成
-        Thread.Sleep(50);
-
+        // MeterListener 的回调在 RecordMeasurement 时同步触发，无需等待。
         listener.Dispose();
 
         measurements.Should().NotBeEmpty();
@@ -85,7 +82,7 @@ public class WechatWildcardMeterTests
         var counter = otherMeter.CreateCounter<double>("some.metric");
         counter.Add(1);
 
-        Thread.Sleep(50);
+        // MeterListener 的回调在 RecordMeasurement 时同步触发，无需等待。
         listener.Dispose();
 
         measurements.Should().NotContain("MyApp.Other");

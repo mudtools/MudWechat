@@ -97,6 +97,9 @@ public static class WechatOpenTelemetryExtensions
         if (configuration is null) throw new ArgumentNullException(nameof(configuration));
 
         var options = new WechatOpenTelemetryOptions();
+        // 配置绑定走 Configure<T>(o => section.Bind(o)) 源生成路径（AGENTS.md 红线），
+        // 不使用 Configure<T>(IConfiguration) 反射重载。此处 section.Bind(options) 由
+        // EnableConfigurationBindingGenerator 拦截为源生成代码，满足 AOT IL2026/IL3050 净零。
         configuration.GetSection(sectionPath).Bind(options);
         configure?.Invoke(options);
 

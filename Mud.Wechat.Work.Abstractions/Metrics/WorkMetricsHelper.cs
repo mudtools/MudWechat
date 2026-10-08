@@ -36,7 +36,7 @@ public static class WorkMetricsHelper
             { WorkMetrics.Tags.Channel, channel },
         };
 
-        WorkMetrics.CallbackRequestCount.Add(1, tags);
+        // 只记录耗时直方图；计数由 RecordCallbackOutcome 统一完成（避免重复计数）。
         return WorkMetrics.CallbackRequestDuration.RecordDuration(tags);
     }
 
@@ -101,7 +101,7 @@ public static class WorkMetricsHelper
         if (handlerType != null)
             tags.Add(new(WorkMetrics.Tags.HandlerType, handlerType));
 
-        WorkMetrics.EventHandlingCount.Add(1, tags);
+        // 只记录耗时直方图；计数由 RecordEventOutcome 统一完成（避免重复计数）。
         return WorkMetrics.EventHandlingDuration.RecordDuration(tags);
     }
 

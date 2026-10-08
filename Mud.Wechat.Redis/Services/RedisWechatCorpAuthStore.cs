@@ -129,15 +129,15 @@ public class RedisWechatCorpAuthStore : IWechatCorpAuthStore
     public async Task RemoveAsync(string appKey, string authCorpId, CancellationToken cancellationToken = default)
     {
         var key = WechatRedisKeyBuilder.Combine(_prefix, CorpAuthSegment, appKey, authCorpId);
-        var metricsScope = RedisMetricsHelper.BeginOperation(appKey, WorkMetrics.RedisCommands.CorpStoreSet);
+        var metricsScope = RedisMetricsHelper.BeginOperation(appKey, WorkMetrics.RedisCommands.CorpStoreRemove);
         try
         {
             await _redis.GetDatabase().KeyDeleteAsync(key).ConfigureAwait(false);
-            RedisMetricsHelper.RecordSuccess(appKey, WorkMetrics.RedisCommands.CorpStoreSet);
+            RedisMetricsHelper.RecordSuccess(appKey, WorkMetrics.RedisCommands.CorpStoreRemove);
         }
         catch (Exception ex) when (WechatRedisErrors.ShouldWrap(ex))
         {
-            RedisMetricsHelper.RecordFailure(appKey, WorkMetrics.RedisCommands.CorpStoreSet, ex);
+            RedisMetricsHelper.RecordFailure(appKey, WorkMetrics.RedisCommands.CorpStoreRemove, ex);
             throw WechatRedisErrors.Map("删除企业授权", key, ex);
         }
         finally

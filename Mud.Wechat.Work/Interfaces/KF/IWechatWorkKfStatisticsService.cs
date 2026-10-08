@@ -7,7 +7,7 @@
 
 using Mud.Wechat.Work.DataModels.Kf;
 
-namespace Mud.Wechat.Work;
+namespace Mud.Wechat.Work.Interfaces;
 
 /// <summary>
 /// 企业微信「微信客服」模块统计管理域公共 SDK（「客户数据统计」企业汇总数据 + 接待人员明细数据）。

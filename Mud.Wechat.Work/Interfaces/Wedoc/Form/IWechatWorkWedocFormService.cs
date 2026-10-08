@@ -7,7 +7,7 @@
 
 using Mud.Wechat.Work.DataModels.Wedoc;
 
-namespace Mud.Wechat.Work;
+namespace Mud.Wechat.Work.Interfaces;
 
 /// <summary>
 /// 企业微信「文档」模块管理收集表域公共 SDK

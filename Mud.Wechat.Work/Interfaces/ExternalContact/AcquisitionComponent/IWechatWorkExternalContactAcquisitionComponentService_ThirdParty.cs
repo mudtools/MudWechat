@@ -6,6 +6,7 @@
 // -----------------------------------------------------------------------
 
 using Mud.Wechat.Work.DataModels.ExternalContact.AcquisitionComponent;
+using Mud.Wechat.Work.Interfaces;
 
 namespace Mud.Wechat.Work;
 

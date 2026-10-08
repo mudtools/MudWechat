@@ -7,7 +7,7 @@
 
 using Mud.Wechat.Work.DataModels.Message;
 
-namespace Mud.Wechat.Work;
+namespace Mud.Wechat.Work.Interfaces;
 
 /// <summary>
 /// 企业微信「消息推送」模块发送应用消息族公共 SDK

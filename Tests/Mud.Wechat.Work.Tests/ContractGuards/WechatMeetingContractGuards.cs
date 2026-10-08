@@ -12,6 +12,7 @@ using Mud.Wechat.Work;
 using Mud.Wechat.Work.Abstractions;
 using Mud.Wechat.Work.DataModels;
 using Mud.Wechat.Work.DataModels.Meeting;
+using Mud.Wechat.Work.Interfaces;
 
 namespace Mud.Wechat.Work.Tests.ContractGuards;
 

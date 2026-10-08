@@ -7,7 +7,7 @@
 
 using Mud.Wechat.Work.DataModels.School.Living;
 
-namespace Mud.Wechat.Work;
+namespace Mud.Wechat.Work.Interfaces;
 
 /// <summary>
 /// 企业微信「家校沟通」模块上课直播域公共 SDK。

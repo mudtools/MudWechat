@@ -7,7 +7,7 @@
 
 using Mud.Wechat.Work.DataModels.Media;
 
-namespace Mud.Wechat.Work;
+namespace Mud.Wechat.Work.Interfaces;
 
 /// <summary>
 /// 企业微信「素材管理」域公共 SDK（上传临时素材 / 获取临时素材 / 上传图片 / 获取高清语音素材 / 异步上传临时素材，

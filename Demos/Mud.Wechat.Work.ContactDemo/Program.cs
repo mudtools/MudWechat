@@ -9,6 +9,7 @@ using Mud.Wechat.Work;
 using Mud.Wechat.Work.Abstractions;
 using Mud.Wechat.Work.Abstractions.Enums;
 using Mud.Wechat.Work.DataModels.Contracts.Users;
+using Mud.Wechat.Work.Interfaces;
 
 // 企业微信通讯录（联系人）功能 Demo：
 // 演示「多应用底座注册 → 通讯录模块注册 → 自建子接口注入 → 端点调用」的最小闭环。

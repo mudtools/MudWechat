@@ -7,7 +7,7 @@
 
 using Mud.Wechat.Work.DataModels.CorpGroup.ChainContacts;
 
-namespace Mud.Wechat.Work;
+namespace Mud.Wechat.Work.Interfaces;
 
 /// <summary>
 /// 企业微信「上下游通讯录管理」域公共 SDK（获取上下游列表、通讯录分组、分组下企业列表、企业信息）。

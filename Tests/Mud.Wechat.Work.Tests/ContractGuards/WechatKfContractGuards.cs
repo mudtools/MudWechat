@@ -11,6 +11,7 @@ using Mud.HttpUtils.Attributes;
 using Mud.Wechat.Work;
 using Mud.Wechat.Work.Abstractions;
 using Mud.Wechat.Work.DataModels.Kf;
+using Mud.Wechat.Work.Interfaces;
 
 namespace Mud.Wechat.Work.Tests.ContractGuards;
 
@@ -32,7 +33,7 @@ public class WechatKfContractGuards
 {
     /// <summary>
     /// 各父接口生成实现类名（生成器规则：接口名去 <c>I</c> 前缀，落位于
-    /// <c>Mud.Wechat.Work.Internal</c>，internal 不可跨程序集引用，故以字面量锁定）。
+    /// <c>Mud.Wechat.Work.Interfaces.Internal</c>，internal 不可跨程序集引用，故以字面量锁定）。
     /// </summary>
     private const string AccountParentImplementationClassName = "WechatWorkKfAccountService";
 

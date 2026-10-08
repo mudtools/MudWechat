@@ -7,7 +7,7 @@
 
 using Mud.Wechat.Work.DataModels.Contacts.Export;
 
-namespace Mud.Wechat.Work;
+namespace Mud.Wechat.Work.Interfaces;
 
 /// <summary>
 /// 企业微信通讯录「异步导出接口」域公共 SDK（导出成员、导出成员详情、导出部门、导出标签成员、获取导出结果）。

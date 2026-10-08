@@ -7,7 +7,7 @@
 
 using Mud.Wechat.Work.DataModels.Approval;
 
-namespace Mud.Wechat.Work;
+namespace Mud.Wechat.Work.Interfaces;
 
 /// <summary>
 /// 企业微信「审批」模块审批申请数据域公共 SDK

@@ -17,6 +17,7 @@ using Mud.Wechat.Work.DataModels.School.Living;
 // GenerateJsonContext.ps1 头注）。本文件已 using School.Living（承载上课直播域 DTO，其中 LivingInfo
 // 与直播域 DataModels.Living.LivingInfo 同名），故以别名引用上下文类而非整命名空间导入，避免类型歧义。
 using LivingJsonContext = Mud.Wechat.Work.DataModels.Living.LivingJsonContext;
+using Mud.Wechat.Work.Interfaces;
 
 namespace Mud.Wechat.Work.Tests.ContractGuards;
 
@@ -50,7 +51,7 @@ public class WechatSchoolContractGuards
 {
     /// <summary>
     /// 各父接口生成实现类名（生成器规则：接口名去 <c>I</c> 前缀，落位于
-    /// <c>Mud.Wechat.Work.Internal</c>，internal 不可跨程序集引用，故以字面量锁定）。
+    /// <c>Mud.Wechat.Work.Interfaces.Internal</c>，internal 不可跨程序集引用，故以字面量锁定）。
     /// </summary>
     private const string SchoolParentImplementationClassName = "WechatWorkSchoolService";
 

@@ -7,7 +7,7 @@
 
 using Mud.Wechat.Work.DataModels.Basic;
 
-namespace Mud.Wechat.Work;
+namespace Mud.Wechat.Work.Interfaces;
 
 /// <summary>
 /// 企业微信「基础接口」域公共 SDK（获取企业微信接口IP段 + 获取企业微信回调IP段，

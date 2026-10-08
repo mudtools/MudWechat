@@ -7,7 +7,7 @@
 
 using Mud.Wechat.Work.DataModels.DataZone;
 
-namespace Mud.Wechat.Work;
+namespace Mud.Wechat.Work.Interfaces;
 
 /// <summary>
 /// 企业微信「数据与智能专区」模块应用调用专区程序域公共 SDK（应用同步调用专区程序 /

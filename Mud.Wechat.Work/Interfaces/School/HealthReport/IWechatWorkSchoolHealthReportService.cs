@@ -7,7 +7,7 @@
 
 using Mud.Wechat.Work.DataModels.School.HealthReport;
 
-namespace Mud.Wechat.Work;
+namespace Mud.Wechat.Work.Interfaces;
 
 /// <summary>
 /// 企业微信「家校沟通」模块健康上报域公共 SDK。

@@ -7,7 +7,7 @@
 
 using Mud.Wechat.Work.DataModels.Meeting;
 
-namespace Mud.Wechat.Work;
+namespace Mud.Wechat.Work.Interfaces;
 
 /// <summary>
 /// 企业微信「会议」模块 Rooms 会议室管理域公共 SDK

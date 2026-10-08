@@ -7,7 +7,7 @@
 
 using Mud.Wechat.Work.DataModels.Pay;
 
-namespace Mud.Wechat.Work;
+namespace Mud.Wechat.Work.Interfaces;
 
 /// <summary>
 /// 企业微信「企业支付」模块「对外收款记录」域公共 SDK

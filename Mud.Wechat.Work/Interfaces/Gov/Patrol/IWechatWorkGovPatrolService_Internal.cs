@@ -6,6 +6,7 @@
 // -----------------------------------------------------------------------
 
 using Mud.Wechat.Work.DataModels.Gov;
+using Mud.Wechat.Work.Interfaces;
 
 namespace Mud.Wechat.Work;
 

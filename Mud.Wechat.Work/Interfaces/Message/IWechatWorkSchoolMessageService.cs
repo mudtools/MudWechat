@@ -7,7 +7,7 @@
 
 using Mud.Wechat.Work.DataModels.Message;
 
-namespace Mud.Wechat.Work;
+namespace Mud.Wechat.Work.Interfaces;
 
 /// <summary>
 /// 企业微信「消息推送」模块家校消息推送域公共 SDK（发送「学校通知」）。

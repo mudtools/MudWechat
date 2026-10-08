@@ -7,7 +7,7 @@
 
 using Mud.Wechat.Work.DataModels.Mail;
 
-namespace Mud.Wechat.Work;
+namespace Mud.Wechat.Work.Interfaces;
 
 /// <summary>
 /// 企业微信「邮件」模块发送邮件族公共 SDK

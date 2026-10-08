@@ -7,7 +7,7 @@
 
 using Mud.Wechat.Work.DataModels.Contacts.Batch;
 
-namespace Mud.Wechat.Work;
+namespace Mud.Wechat.Work.Interfaces;
 
 /// <summary>
 /// 企业微信通讯录「异步导入接口」域公共 SDK（增量更新成员、全量覆盖成员、全量覆盖部门、获取异步任务结果）。

@@ -10,6 +10,7 @@ using Mud.HttpUtils.Attributes;
 using Mud.Wechat.Work;
 using Mud.Wechat.Work.Abstractions.Enums;
 using Mud.Wechat.Work.Abstractions.Exceptions;
+using Mud.Wechat.Work.Interfaces;
 
 namespace Mud.Wechat.Work.Tests.ContractGuards;
 

@@ -7,7 +7,7 @@
 
 using Mud.Wechat.Work.DataModels.ExternalContact.JobInheritance;
 
-namespace Mud.Wechat.Work;
+namespace Mud.Wechat.Work.Interfaces;
 
 /// <summary>
 /// 企业微信「客户联系」模块在职继承域公共 SDK（分配在职成员的客户 / 查询客户接替状态 / 分配在职成员的客户群）。

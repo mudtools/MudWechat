@@ -7,7 +7,7 @@
 
 using Mud.Wechat.Work.DataModels.CorpGroup;
 
-namespace Mud.Wechat.Work;
+namespace Mud.Wechat.Work.Interfaces;
 
 /// <summary>
 /// 企业微信「上下游」域<b>三类应用公共面</b> SDK 接口。

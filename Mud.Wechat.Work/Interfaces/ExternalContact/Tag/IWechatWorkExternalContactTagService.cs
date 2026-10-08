@@ -7,7 +7,7 @@
 
 using Mud.Wechat.Work.DataModels.ExternalContact.Tag;
 
-namespace Mud.Wechat.Work;
+namespace Mud.Wechat.Work.Interfaces;
 
 /// <summary>
 /// 企业微信「客户联系」模块客户标签管理域公共 SDK（企业标签库 / 企业客户标签管理 / 客户打标签 / 规则组标签管理）。

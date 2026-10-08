@@ -11,6 +11,7 @@ using Mud.HttpUtils;
 using Mud.Wechat.Work.Abstractions.Configuration;
 using Mud.Wechat.Work.Abstractions.Authentication;
 using Mud.Wechat.Work.Abstractions.Enums;
+using Mud.Wechat.Work.Interfaces;
 
 namespace Mud.Wechat.Work.Tests.Extensions;
 

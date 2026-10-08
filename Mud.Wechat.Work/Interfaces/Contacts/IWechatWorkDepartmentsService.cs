@@ -7,7 +7,7 @@
 
 using Mud.Wechat.Work.DataModels.Contacts.Department;
 
-namespace Mud.Wechat.Work;
+namespace Mud.Wechat.Work.Interfaces;
 
 /// <summary>
 /// 企业微信通讯录「部门管理」域公共 SDK（自建应用 / 第三方应用 / 服务商代开发三类应用均可调用的读取面端点）。

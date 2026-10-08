@@ -7,7 +7,7 @@
 
 using Mud.Wechat.Work.DataModels.Contacts.Tags;
 
-namespace Mud.Wechat.Work;
+namespace Mud.Wechat.Work.Interfaces;
 
 /// <summary>
 /// 企业微信通讯录「标签管理」域公共 SDK（创建、更新名字、删除、获取成员、增加成员、删除成员、获取标签列表）。

@@ -7,7 +7,7 @@
 
 using Mud.Wechat.Work.DataModels.ExternalContact.FollowUser;
 
-namespace Mud.Wechat.Work;
+namespace Mud.Wechat.Work.Interfaces;
 
 /// <summary>
 /// 企业微信「客户联系」模块企业服务人员管理域公共 SDK。

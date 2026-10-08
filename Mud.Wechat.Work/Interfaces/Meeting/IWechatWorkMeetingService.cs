@@ -7,7 +7,7 @@
 
 using Mud.Wechat.Work.DataModels.Meeting;
 
-namespace Mud.Wechat.Work;
+namespace Mud.Wechat.Work.Interfaces;
 
 /// <summary>
 /// 企业微信「会议」模块预约会议基础管理域公共 SDK（创建预约会议 + 修改预约会议 + 取消预约会议 + 获取成员会议 ID 列表）。

@@ -7,7 +7,7 @@
 
 using Mud.Wechat.Work.DataModels.Checkin;
 
-namespace Mud.Wechat.Work;
+namespace Mud.Wechat.Work.Interfaces;
 
 /// <summary>
 /// 企业微信「打卡」模块打卡规则域公共 SDK（获取员工打卡规则）。

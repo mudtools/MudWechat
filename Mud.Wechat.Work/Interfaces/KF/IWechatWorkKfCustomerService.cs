@@ -7,7 +7,7 @@
 
 using Mud.Wechat.Work.DataModels.Kf;
 
-namespace Mud.Wechat.Work;
+namespace Mud.Wechat.Work.Interfaces;
 
 /// <summary>
 /// 企业微信「微信客服」模块客户基础信息域公共 SDK（批量获取客户基础信息）。

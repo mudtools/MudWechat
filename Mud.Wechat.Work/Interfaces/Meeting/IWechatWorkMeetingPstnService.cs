@@ -7,7 +7,7 @@
 
 using Mud.Wechat.Work.DataModels.Meeting;
 
-namespace Mud.Wechat.Work;
+namespace Mud.Wechat.Work.Interfaces;
 
 /// <summary>
 /// 企业微信「会议」模块电话入会（PSTN）管理域公共 SDK

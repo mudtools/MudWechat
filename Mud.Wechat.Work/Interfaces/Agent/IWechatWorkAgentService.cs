@@ -7,7 +7,7 @@
 
 using Mud.Wechat.Work.DataModels.Agent;
 
-namespace Mud.Wechat.Work;
+namespace Mud.Wechat.Work.Interfaces;
 
 /// <summary>
 /// 企业微信「应用管理」模块基础管理域公共 SDK（获取指定的应用详情 + 获取 access_token 对应的应用列表）。

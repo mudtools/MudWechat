@@ -7,7 +7,7 @@
 
 using Mud.Wechat.Work.DataModels.Approval;
 
-namespace Mud.Wechat.Work;
+namespace Mud.Wechat.Work.Interfaces;
 
 /// <summary>
 /// 企业微信「审批」模块审批流程引擎域公共 SDK（查询审批单当前状态，单端点收敛面）。

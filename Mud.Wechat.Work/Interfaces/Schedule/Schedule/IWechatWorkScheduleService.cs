@@ -7,7 +7,7 @@
 
 using Mud.Wechat.Work.DataModels.Schedule;
 
-namespace Mud.Wechat.Work;
+namespace Mud.Wechat.Work.Interfaces;
 
 /// <summary>
 /// 企业微信「日程」模块管理日程域公共 SDK（创建日程 + 更新日程 + 新增/删除日程参与者 + 获取日历下的日程列表 + 获取日程详情 + 取消日程）。

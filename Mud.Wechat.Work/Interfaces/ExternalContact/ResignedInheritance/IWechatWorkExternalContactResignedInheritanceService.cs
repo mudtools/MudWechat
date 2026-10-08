@@ -7,7 +7,7 @@
 
 using Mud.Wechat.Work.DataModels.ExternalContact.ResignedInheritance;
 
-namespace Mud.Wechat.Work;
+namespace Mud.Wechat.Work.Interfaces;
 
 /// <summary>
 /// 企业微信「客户联系」模块离职继承域公共 SDK

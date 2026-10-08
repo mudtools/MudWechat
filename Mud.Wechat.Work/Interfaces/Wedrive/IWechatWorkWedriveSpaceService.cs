@@ -7,7 +7,7 @@
 
 using Mud.Wechat.Work.DataModels.Wedrive;
 
-namespace Mud.Wechat.Work;
+namespace Mud.Wechat.Work.Interfaces;
 
 /// <summary>
 /// 企业微信「微盘」模块管理空间域公共 SDK（新建空间 + 重命名空间 + 解散空间 + 获取空间信息）。

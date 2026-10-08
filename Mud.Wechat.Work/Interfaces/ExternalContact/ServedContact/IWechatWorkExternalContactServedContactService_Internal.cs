@@ -6,6 +6,7 @@
 // -----------------------------------------------------------------------
 
 using Mud.Wechat.Work.DataModels.ExternalContact.ServedContact;
+using Mud.Wechat.Work.Interfaces;
 
 namespace Mud.Wechat.Work;
 

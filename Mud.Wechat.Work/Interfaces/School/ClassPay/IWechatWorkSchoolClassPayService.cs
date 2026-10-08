@@ -7,7 +7,7 @@
 
 using Mud.Wechat.Work.DataModels.School.ClassPay;
 
-namespace Mud.Wechat.Work;
+namespace Mud.Wechat.Work.Interfaces;
 
 /// <summary>
 /// 企业微信「家校沟通」模块班级收款域公共 SDK。

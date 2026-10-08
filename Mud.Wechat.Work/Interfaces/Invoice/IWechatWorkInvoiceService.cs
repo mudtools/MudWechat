@@ -7,7 +7,7 @@
 
 using Mud.Wechat.Work.DataModels.Invoice;
 
-namespace Mud.Wechat.Work;
+namespace Mud.Wechat.Work.Interfaces;
 
 /// <summary>
 /// 企业微信「电子发票」域公共 SDK（查询电子发票 / 更新发票状态 / 批量更新发票状态 / 批量查询电子发票，

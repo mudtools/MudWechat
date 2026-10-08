@@ -10,6 +10,7 @@ using Mud.HttpUtils.Attributes;
 using Mud.Wechat.Work;
 using Mud.Wechat.Work.Abstractions;
 using Mud.Wechat.Work.DataModels.Contacts.ContactRules;
+using Mud.Wechat.Work.Interfaces;
 
 namespace Mud.Wechat.Work.Tests.ContractGuards;
 
@@ -28,7 +29,7 @@ public class WechatContactRulesContractGuards
 {
     /// <summary>
     /// 父接口生成实现类名（生成器规则：接口名去 <c>I</c> 前缀，落位于
-    /// <c>Mud.Wechat.Work.Internal</c>，internal 不可跨程序集引用，故以字面量锁定）。
+    /// <c>Mud.Wechat.Work.Interfaces.Internal</c>，internal 不可跨程序集引用，故以字面量锁定）。
     /// 自建子接口继承父实现类——父接口无端点，端点由自建子接口自身声明。
     /// </summary>
     private const string ParentImplementationClassName = "WechatWorkContactRulesService";

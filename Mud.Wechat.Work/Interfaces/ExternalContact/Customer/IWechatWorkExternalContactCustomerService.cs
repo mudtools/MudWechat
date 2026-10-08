@@ -7,7 +7,7 @@
 
 using Mud.Wechat.Work.DataModels.ExternalContact.Customer;
 
-namespace Mud.Wechat.Work;
+namespace Mud.Wechat.Work.Interfaces;
 
 /// <summary>
 /// 企业微信「客户联系」模块客户管理域公共 SDK（客户列表 / 客户详情 / 批量详情 / 备注信息 / 客户联系规则组管理）。

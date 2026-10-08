@@ -40,6 +40,7 @@ dotnet test Tests/Mud.Wechat.Work.Tests -c Release -f net8.0 --filter "FullyQual
 | 加/改回调事件 | `[WechatCallbackContract]`（事件键 + 族前置 + 开放面）+ 载荷 `[PayloadContract]` + 回调守卫 |
 | 加/改回调处理器 | `WechatCallbackHandlerAnalyzer`（MUDCB002~005）自动生效（`SupportedEventType` ↔ 载荷契约一致性编译期校验）；若钥匙集/开放面变化则同批更新 `WechatCallbackContractGuards`（CB 系列） |
 | 改契约面（接口/路由/DTO/注册组/配置面） | 对应 `Tests/**/ContractGuards/` 守卫 —— **守卫是权威描述，不是「改完再补」的收尾项** |
+| 加/改业务接口（`[HttpClientApi]`） | 命名空间按形态落位：`IsAbstract = true` 的父接口 → `Mud.Wechat.Work.Interfaces`，可注入接口 → `Mud.Wechat.Work`（见 §4）；**跑 `WechatInterfaceNamespaceContractGuards`（N1~N3）**，新增接口须同批调整其 147/299 计数 |
 
 ## 3 红线：多 TFM、语言与 AOT
 
@@ -77,7 +78,11 @@ scripts/                              # verify-build / audit-config-keys / Gener
 
 **新文件落位三处一致（目录 / 命名空间 / 注册入口）**：
 
-- 接口命名空间恒为 `Mud.Wechat.Work`（**不含** `Interfaces` 段）；DTO 命名空间 `Mud.Wechat.Work.DataModels.{域}[.{子域}]`。
+- **接口命名空间按 `IsAbstract` 形态二分**（唯一判据，不看目录不看文件名）：
+  - 公共父接口（`IsAbstract = true`，不注册 DI、仅作继承基座、**不得直接给最终用户使用**）→ `Mud.Wechat.Work.Interfaces`（契约面）；
+  - 可注入接口（应用类型子接口与独立端点接口）→ `Mud.Wechat.Work`（运行时面）。
+  - 二者由守卫 `WechatInterfaceNamespaceContractGuards`（N1~N3）锁定；DTO 命名空间仍为 `Mud.Wechat.Work.DataModels.{域}[.{子域}]`。
+- **生成实现类随接口命名空间迁移**：生成器按「实现类名 = 接口名去 `I` 前缀、落 `<接口命名空间>.Internal`」发射，故父接口实现类在 `Mud.Wechat.Work.Interfaces.Internal`、子接口实现类在 `Mud.Wechat.Work.Internal`（`Mud.Wechat.Work.Internal` 无任何手写类型）。子接口的 `InheritedFrom = nameof(Xxx)` 依赖主包 `GlobalUsings.cs` 的 `global using Mud.Wechat.Work.Interfaces.Internal;`——**改父接口命名空间必须同批改这一行**。
 - `RequestModel/`、`ResponseModel/` 与各功能族子目录**仅作组织，不入命名空间**（如 `Checkin/Schedule/` 仍是 `...DataModels.Checkin`）。
 - 模块注册三段式：`WechatModule.{域}` 枚举值 + `Add{域}Api()`（在 `Extensions/WechatWorkServiceBuilder.cs`）+ 源生成器产出的 `Add{域}WebApiHttpClient()`（**无签入源文件**）；注册组名与域同名。
 
@@ -89,6 +94,14 @@ scripts/                              # verify-build / audit-config-keys / Gener
 | 微信客服 | `Interfaces/KF/`（大写 F） | `Kf/`（小写 f） | `Kf` / `AddKfApi()` |
 | 令牌签发 | 无接口目录 | `{CorpToken,InternalApp,Provider}Authentication/` | 无对应模块枚举 |
 | 通讯录 Users | — | `Contacts/Users/` → 命名空间 `...DataModels.Contracts.Users`（全仓唯一插入 `Contracts` 段） | — |
+| 公共父接口 | 与子接口**同目录**（如 `Interfaces/Agent/IWechatWorkAgentService.cs`） | — | 命名空间 `Mud.Wechat.Work.Interfaces`（与子接口分面，见上） |
+
+**已否决：把全部 446 个接口统一迁入 `Mud.Wechat.Work.Interfaces`（对齐 `MudFeishu/FeishuV3` 的单一 `Interfaces` 命名空间）。勿「顺手对齐」。**
+
+- 参照架构形态：`Mud.Feishu.Interfaces` 装全部接口（父 + 子同一命名空间）。本仓**有意不采用**——该形态下最终用户一个 `using Mud.Feishu.Interfaces;` 就会把 147 个父接口全部请回自动完成列表，**隔离目的完全落空**（命名空间本身无隐藏语义，隐藏只来自「用户不导入该命名空间」）。
+- 本仓形态：父接口单独占 `Mud.Wechat.Work.Interfaces`，可注入接口留在 `Mud.Wechat.Work`，用户只 `using Mud.Wechat.Work;` 即得全部可用接口且不见父接口；确需向上转型的用户自行补 `using Mud.Wechat.Work.Interfaces;`（少数场景、主动行为）。
+- 代价与接受理由：与参照架构存在形态差异、二分规则比单一规则复杂、147/299 计数须随契约面同批调整。接受理由是隔离意图为本仓的第一诉求，且漂移风险已由 `WechatInterfaceNamespaceContractGuards`（N1~N3）完全锁定。
+- 若日后要改回全量对齐：N1 守卫会精确列出全部 446 个接口的目标命名空间，方向不会迷失；**但须先确认是否放弃隔离意图**。
 
 ## 5 领域契约（不可违反）
 
@@ -172,6 +185,7 @@ scripts/                              # verify-build / audit-config-keys / Gener
 - 归属域守卫 `WechatTokenOwnerContractGuards.cs`（TO1~TO3）：按程序集反射枚举全部应用类型子接口（数量下限防枚举空跑），锁定族别 ↔ `TokenManagerKey` 归属域一一对应、`TokenType` → 官方 Query 参数名不漂移、声明的键被 `WechatTokenRouting.OwnedKeys` 覆盖且自建/非自建不交叉。切换器契约由 `Abstractions.Tests/WechatAppContextSwitcherTests` 锁定（`UseCorpScope` 必在契约上且返回 `IDisposable`；`SetCorp` 必带 `[Obsolete]` 指向它；实现类**不得**标 `[Obsolete]`——废弃标注只放抽象层）。
 - 多应用守卫（`Abstractions.Tests`，MA1~MA4）是**方法体文本断言**（花括号配平），签名漂移须同步更新。
 - 域守卫通用形态：令牌绑定（`Wechat.AccessToken` + Query 注入）、新增 DTO 的上下文登记、**官方未开放 ⇒ 零端点**、继承链子接口集合不漂移、父接口 `IsAbstract` + 子接口经 `InheritedFrom` 父实现类。
+- **接口命名空间分区守卫** `WechatInterfaceNamespaceContractGuards.cs`（N1~N3，跨域通用，非单域守卫）：**N1** 命名空间 ⇔ `IsAbstract` 形态严格二分（父接口 → `Mud.Wechat.Work.Interfaces`、可注入接口 → `Mud.Wechat.Work`）并锁定 147/299 计数；**N2** 生成器契约——父接口实现类落 `Mud.Wechat.Work.Interfaces.Internal`、子接口实现类落 `Mud.Wechat.Work.Internal`，且每个业务接口恰好一个实现类（判据取「`I` + 实现类名」的本体接口，**不可**用传递性的 `GetInterfaces()`，子接口实现类同时实现父接口）；**N3** 父接口 `RegistryGroupName` 恒空（命名空间分区只是 IDE 展示层隔离，运行期隔离仍由不注册 DI 提供）。**新增或迁移任何 `[HttpClientApi]` 接口必须先跑此守卫。**
 
 ## 7 编码风格与测试
 

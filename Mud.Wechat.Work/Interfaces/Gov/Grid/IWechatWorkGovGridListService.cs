@@ -7,7 +7,7 @@
 
 using Mud.Wechat.Work.DataModels.Gov;
 
-namespace Mud.Wechat.Work;
+namespace Mud.Wechat.Work.Interfaces;
 
 /// <summary>
 /// 企业微信「政民沟通」模块获取网格列表公共 SDK。

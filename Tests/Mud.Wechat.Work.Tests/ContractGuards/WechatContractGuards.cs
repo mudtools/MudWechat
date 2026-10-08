@@ -10,6 +10,7 @@ using System.Text.RegularExpressions;
 using Mud.Wechat.Work.Abstractions;
 using Mud.Wechat.Work.Abstractions.Configuration;
 using Mud.Wechat.Work.Abstractions.Enums;
+using Mud.Wechat.Work.Interfaces;
 
 namespace Mud.Wechat.Work.Tests.ContractGuards;
 

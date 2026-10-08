@@ -7,7 +7,7 @@
 
 using Mud.Wechat.Work.DataModels.AccountId;
 
-namespace Mud.Wechat.Work;
+namespace Mud.Wechat.Work.Interfaces;
 
 /// <summary>
 /// 企业微信「账号ID」域「tmp_external_userid 转换」接口族公共 SDK。

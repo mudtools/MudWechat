@@ -7,7 +7,7 @@
 
 using Mud.Wechat.Work.DataModels.Checkin;
 
-namespace Mud.Wechat.Work;
+namespace Mud.Wechat.Work.Interfaces;
 
 /// <summary>
 /// 企业微信「打卡」模块设备打卡数据域公共 SDK（获取设备打卡数据；路由挂 /cgi-bin/hardware/ 域）。

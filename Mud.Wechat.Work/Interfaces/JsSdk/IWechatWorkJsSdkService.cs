@@ -7,7 +7,7 @@
 
 using Mud.Wechat.Work.DataModels.JsSdk;
 
-namespace Mud.Wechat.Work;
+namespace Mud.Wechat.Work.Interfaces;
 
 /// <summary>
 /// 企业微信「JS-SDK」模块公共 SDK（获取企业 jsapi_ticket + 获取应用 jsapi_ticket，

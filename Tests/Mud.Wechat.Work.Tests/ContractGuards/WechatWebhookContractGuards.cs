@@ -12,6 +12,7 @@ using Mud.Wechat.Work;
 using Mud.Wechat.Work.Abstractions;
 using Mud.Wechat.Work.Abstractions.Authentication;
 using Mud.Wechat.Work.DataModels.Webhook;
+using Mud.Wechat.Work.Interfaces;
 
 namespace Mud.Wechat.Work.Tests.ContractGuards;
 
@@ -38,7 +39,7 @@ namespace Mud.Wechat.Work.Tests.ContractGuards;
 /// </remarks>
 public class WechatWebhookContractGuards
 {
-    /// <summary>父接口生成实现类名（生成器规则：接口名去 <c>I</c> 前缀，落 <c>Mud.Wechat.Work.Internal</c>）。</summary>
+    /// <summary>父接口生成实现类名（生成器规则：接口名去 <c>I</c> 前缀，落 <c>Mud.Wechat.Work.Interfaces.Internal</c>）。</summary>
     private const string WebhookParentImplementationClassName = "WechatWorkWebhookService";
 
     private const string WebhookRegistryGroupName = "Webhook";

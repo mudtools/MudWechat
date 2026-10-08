@@ -7,7 +7,7 @@
 
 using Mud.Wechat.Work.DataModels.Agent;
 
-namespace Mud.Wechat.Work;
+namespace Mud.Wechat.Work.Interfaces;
 
 /// <summary>
 /// 企业微信「应用管理」模块「设置工作台自定义展示」域公共 SDK

@@ -7,7 +7,7 @@
 
 using Mud.Wechat.Work.DataModels.Identity;
 
-namespace Mud.Wechat.Work;
+namespace Mud.Wechat.Work.Interfaces;
 
 /// <summary>
 /// 企业微信「身份验证」模块网页授权登录域公共 SDK

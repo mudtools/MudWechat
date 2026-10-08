@@ -7,7 +7,7 @@
 
 using Mud.Wechat.Work.DataModels.Living;
 
-namespace Mud.Wechat.Work;
+namespace Mud.Wechat.Work.Interfaces;
 
 /// <summary>
 /// 企业微信「直播」模块直播管理域公共 SDK（创建预约直播 + 修改预约直播 + 取消预约直播 + 删除直播回放

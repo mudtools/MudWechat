@@ -6,6 +6,7 @@
 // -----------------------------------------------------------------------
 
 using StackExchange.Redis;
+using Mud.Wechat.Work.Abstractions.Metrics;
 
 namespace Mud.Wechat.Redis.Services;
 
@@ -59,16 +60,24 @@ public class RedisWechatCallbackReplayGuard : IWechatCallbackReplayGuard
         }
 
         var redisKey = WechatRedisKeyBuilder.Combine(_prefix, ReplaySegment, key);
+        var metricsScope = RedisMetricsHelper.BeginOperation(null, WorkMetrics.RedisCommands.ReplayTryMark);
         try
         {
-            return await _redis.GetDatabase()
+            var result = await _redis.GetDatabase()
                 .StringSetAsync(redisKey, "1", window, keepTtl: false, when: When.NotExists)
                 .ConfigureAwait(false);
+            RedisMetricsHelper.RecordSuccess(null, WorkMetrics.RedisCommands.ReplayTryMark);
+            return result;
         }
         catch (Exception ex) when (WechatRedisErrors.ShouldWrap(ex))
         {
             // RD3：fail-closed——异常上抛（不得吞成 true/false）。
+            RedisMetricsHelper.RecordFailure(null, WorkMetrics.RedisCommands.ReplayTryMark, ex);
             throw WechatRedisErrors.Map("回调重放指纹标记", redisKey, ex);
+        }
+        finally
+        {
+            metricsScope.Dispose();
         }
     }
 }

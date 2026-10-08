@@ -16,6 +16,7 @@
     <Project Path="Mud.Wechat.OfficialAccount.DataModels/Mud.Wechat.OfficialAccount.DataModels.csproj" />
     <Project Path="Mud.Wechat.OfficialAccount/Mud.Wechat.OfficialAccount.csproj" />
     <Project Path="Mud.Wechat.OfficialAccount.Callback/Mud.Wechat.OfficialAccount.Callback.csproj" />
+    <Project Path="Mud.Wechat.OpenTelemetry/Mud.Wechat.OpenTelemetry.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="Tests/Mud.Wechat.Abstractions.Tests/Mud.Wechat.Abstractions.Tests.csproj" />
@@ -26,5 +27,6 @@
     <Project Path="Tests/Mud.Wechat.Work.Tests/Mud.Wechat.Work.Tests.csproj" />
     <Project Path="Tests/Mud.Wechat.OfficialAccount.Tests/Mud.Wechat.OfficialAccount.Tests.csproj" />
     <Project Path="Tests/Mud.Wechat.OfficialAccount.Callback.Tests/Mud.Wechat.OfficialAccount.Callback.Tests.csproj" />
+    <Project Path="Tests/Mud.Wechat.OpenTelemetry.Tests/Mud.Wechat.OpenTelemetry.Tests.csproj" />
   </Folder>
 </Solution>

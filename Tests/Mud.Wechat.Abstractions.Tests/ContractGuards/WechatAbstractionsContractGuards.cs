@@ -193,14 +193,16 @@ public class WechatAbstractionsContractGuards
                      "Mud.Wechat.Callback.Analyzers/Mud.Wechat.Callback.Analyzers.csproj",
                      "Tests/Mud.Wechat.Abstractions.Tests/Mud.Wechat.Abstractions.Tests.csproj",
                      "Tests/Mud.Wechat.OfficialAccount.Tests/Mud.Wechat.OfficialAccount.Tests.csproj",
-                     "Tests/Mud.Wechat.OfficialAccount.Callback.Tests/Mud.Wechat.OfficialAccount.Callback.Tests.csproj",
-                 })
+"Tests/Mud.Wechat.OfficialAccount.Callback.Tests/Mud.Wechat.OfficialAccount.Callback.Tests.csproj",
+"Mud.Wechat.OpenTelemetry/Mud.Wechat.OpenTelemetry.csproj",
+"Tests/Mud.Wechat.OpenTelemetry.Tests/Mud.Wechat.OpenTelemetry.Tests.csproj",
+})
         {
             slnx.Should().Contain(project, "新增工程必须纳入解决方案（否则 verify-build 步骤 1 覆盖不到）");
         }
 
         var ci = File.ReadAllText(Path.Combine(root, ".github", "workflows", "dotnet-publish.yml"));
-        ci.Should().Contain("-ne 10", "制品数量守卫必须随新增产品线更新（否则打包步骤 fail-closed 必红）");
+        ci.Should().Contain("-ne 11", "制品数量守卫必须随新增产品线更新（否则打包步骤 fail-closed 必红）");
     }
 
     /// <summary>

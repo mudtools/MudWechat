@@ -32,6 +32,8 @@
 /Mud.Wechat.OfficialAccount.DataModels/obj
 /Mud.Wechat.OfficialAccount.Callback/bin
 /Mud.Wechat.OfficialAccount.Callback/obj
+/Mud.Wechat.OpenTelemetry/bin
+/Mud.Wechat.OpenTelemetry/obj
 /Tests/Mud.Wechat.Work.Tests/bin
 /Tests/Mud.Wechat.Work.Tests/obj
 /Tests/Mud.Wechat.Work.Abstractions.Tests/bin
@@ -50,6 +52,8 @@
 /Tests/Mud.Wechat.OfficialAccount.Tests/obj
 /Tests/Mud.Wechat.OfficialAccount.Callback.Tests/bin
 /Tests/Mud.Wechat.OfficialAccount.Callback.Tests/obj
+/Tests/Mud.Wechat.OpenTelemetry.Tests/bin
+/Tests/Mud.Wechat.OpenTelemetry.Tests/obj
 /Demos/Mud.Wechat.Work.ContactCallbackDemo/bin
 /Demos/Mud.Wechat.Work.ContactCallbackDemo/obj
 /Demos/Mud.Wechat.Work.ContactDemo/bin

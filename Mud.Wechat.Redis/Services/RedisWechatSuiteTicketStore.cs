@@ -6,6 +6,7 @@
 // -----------------------------------------------------------------------
 
 using StackExchange.Redis;
+using Mud.Wechat.Work.Abstractions.Metrics;
 
 namespace Mud.Wechat.Redis.Services;
 
@@ -46,14 +47,21 @@ public class RedisWechatSuiteTicketStore : IWechatSuiteTicketStore
     public async Task<string?> GetAsync(string suiteId, CancellationToken cancellationToken = default)
     {
         var key = WechatRedisKeyBuilder.Combine(NormalizedPrefix, TicketSegment, suiteId);
+        var metricsScope = RedisMetricsHelper.BeginOperation(null, WorkMetrics.RedisCommands.TicketGet);
         try
         {
             var value = await _redis.GetDatabase().StringGetAsync(key).ConfigureAwait(false);
+            RedisMetricsHelper.RecordSuccess(null, WorkMetrics.RedisCommands.TicketGet);
             return value.HasValue ? value.ToString() : null;
         }
         catch (Exception ex) when (WechatRedisErrors.ShouldWrap(ex))
         {
+            RedisMetricsHelper.RecordFailure(null, WorkMetrics.RedisCommands.TicketGet, ex);
             throw WechatRedisErrors.Map("读取套件票据", key, ex);
+        }
+        finally
+        {
+            metricsScope.Dispose();
         }
     }
 
@@ -61,6 +69,7 @@ public class RedisWechatSuiteTicketStore : IWechatSuiteTicketStore
     public async Task SetAsync(string suiteId, string ticket, CancellationToken cancellationToken = default)
     {
         var key = WechatRedisKeyBuilder.Combine(NormalizedPrefix, TicketSegment, suiteId);
+        var metricsScope = RedisMetricsHelper.BeginOperation(null, WorkMetrics.RedisCommands.TicketSet);
         try
         {
             var ttl = _options.SuiteTicketTtl;
@@ -75,11 +84,17 @@ public class RedisWechatSuiteTicketStore : IWechatSuiteTicketStore
                 await database.StringSetAsync(key, ticket ?? string.Empty, expiry: null, keepTtl: false).ConfigureAwait(false);
             }
 
+            RedisMetricsHelper.RecordSuccess(null, WorkMetrics.RedisCommands.TicketSet);
             _logger?.LogInformation("已写入套件票据（suiteId = {SuiteId}，TTL = {Ttl}）。", suiteId ?? string.Empty, ttl);
         }
         catch (Exception ex) when (WechatRedisErrors.ShouldWrap(ex))
         {
+            RedisMetricsHelper.RecordFailure(null, WorkMetrics.RedisCommands.TicketSet, ex);
             throw WechatRedisErrors.Map("写入套件票据", key, ex);
+        }
+        finally
+        {
+            metricsScope.Dispose();
         }
     }
 

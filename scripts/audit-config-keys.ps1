@@ -26,7 +26,8 @@ $configFiles = @(
     # 逐应用凭据（Token/EncodingAESKey/AppId）——新增配置属性必须有真实消费点，否则本脚本 fail-closed。
     'Mud.Wechat.OfficialAccount.Callback/MpCallbackOptions.cs',
     'Mud.Wechat.Redis/Configuration/WechatRedisOptions.cs',
-    'Mud.Wechat.Redis/Configuration/WechatRedisConnectionOptions.cs'
+    'Mud.Wechat.Redis/Configuration/WechatRedisConnectionOptions.cs',
+    'Mud.Wechat.OpenTelemetry/WechatOpenTelemetryOptions.cs'
 )
 
 foreach ($file in $configFiles) {
@@ -58,7 +59,8 @@ foreach ($file in $configFiles) {
         'Mud.Wechat.OfficialAccount.Abstractions',
         'Mud.Wechat.OfficialAccount.DataModels',
         # 公众号回调运行时包（配置消费点所在；未纳入即为门禁盲区）。
-        'Mud.Wechat.OfficialAccount.Callback'
+        'Mud.Wechat.OfficialAccount.Callback',
+        'Mud.Wechat.OpenTelemetry'
     )
 
     foreach ($prop in $propNames) {

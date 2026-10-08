@@ -8,6 +8,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using StackExchange.Redis;
+using Mud.Wechat.Work.Abstractions.Metrics;
 
 namespace Mud.Wechat.Redis.Services;
 
@@ -62,21 +63,26 @@ public class RedisWechatCorpAuthStore : IWechatCorpAuthStore
     public async Task<WechatCorpAuthorization?> GetAsync(string appKey, string authCorpId, CancellationToken cancellationToken = default)
     {
         var key = WechatRedisKeyBuilder.Combine(_prefix, CorpAuthSegment, appKey, authCorpId);
+        var metricsScope = RedisMetricsHelper.BeginOperation(appKey, WorkMetrics.RedisCommands.CorpStoreGet);
         try
         {
             var json = await _redis.GetDatabase().StringGetAsync(key).ConfigureAwait(false);
             if (json.IsNullOrEmpty)
             {
+                RedisMetricsHelper.RecordSuccess(appKey, WorkMetrics.RedisCommands.CorpStoreGet);
                 return null;
             }
 
             try
             {
-                return Deserialize(json!);
+                var result = Deserialize(json!);
+                RedisMetricsHelper.RecordSuccess(appKey, WorkMetrics.RedisCommands.CorpStoreGet);
+                return result;
             }
             catch (JsonException ex)
             {
                 // 聚合含永久授权码：损坏数据只报键名，绝不携带 JSON 内容。
+                RedisMetricsHelper.RecordFailure(appKey, WorkMetrics.RedisCommands.CorpStoreGet, ex);
                 throw new WechatRedisException(
                     WechatRedisFailureKind.Server,
                     $"企业授权记录反序列化失败（存储数据损坏，key = {key}），请联系运维清理该键后重新授权。",
@@ -85,7 +91,12 @@ public class RedisWechatCorpAuthStore : IWechatCorpAuthStore
         }
         catch (Exception ex) when (WechatRedisErrors.ShouldWrap(ex))
         {
+            RedisMetricsHelper.RecordFailure(appKey, WorkMetrics.RedisCommands.CorpStoreGet, ex);
             throw WechatRedisErrors.Map("读取企业授权", key, ex);
+        }
+        finally
+        {
+            metricsScope.Dispose();
         }
     }
 
@@ -95,15 +106,22 @@ public class RedisWechatCorpAuthStore : IWechatCorpAuthStore
         if (auth == null) throw new ArgumentNullException(nameof(auth));
 
         var key = WechatRedisKeyBuilder.Combine(_prefix, CorpAuthSegment, auth.AppKey, auth.AuthCorpId);
+        var metricsScope = RedisMetricsHelper.BeginOperation(auth.AppKey, WorkMetrics.RedisCommands.CorpStoreSet);
         try
         {
             // when: 显式传参钉住 (key,value,expiry,when) 经典重载——3.3.0 新增 Expiration 形态重载后
             // 裸 2/3 参调用的重载决胜不再确定，显式命名参数消除绑定漂移。
             await _redis.GetDatabase().StringSetAsync(key, Serialize(auth), expiry: null, keepTtl: false).ConfigureAwait(false);
+            RedisMetricsHelper.RecordSuccess(auth.AppKey, WorkMetrics.RedisCommands.CorpStoreSet);
         }
         catch (Exception ex) when (WechatRedisErrors.ShouldWrap(ex))
         {
+            RedisMetricsHelper.RecordFailure(auth.AppKey, WorkMetrics.RedisCommands.CorpStoreSet, ex);
             throw WechatRedisErrors.Map("写入企业授权", key, ex);
+        }
+        finally
+        {
+            metricsScope.Dispose();
         }
     }
 
@@ -111,13 +129,20 @@ public class RedisWechatCorpAuthStore : IWechatCorpAuthStore
     public async Task RemoveAsync(string appKey, string authCorpId, CancellationToken cancellationToken = default)
     {
         var key = WechatRedisKeyBuilder.Combine(_prefix, CorpAuthSegment, appKey, authCorpId);
+        var metricsScope = RedisMetricsHelper.BeginOperation(appKey, WorkMetrics.RedisCommands.CorpStoreSet);
         try
         {
             await _redis.GetDatabase().KeyDeleteAsync(key).ConfigureAwait(false);
+            RedisMetricsHelper.RecordSuccess(appKey, WorkMetrics.RedisCommands.CorpStoreSet);
         }
         catch (Exception ex) when (WechatRedisErrors.ShouldWrap(ex))
         {
+            RedisMetricsHelper.RecordFailure(appKey, WorkMetrics.RedisCommands.CorpStoreSet, ex);
             throw WechatRedisErrors.Map("删除企业授权", key, ex);
+        }
+        finally
+        {
+            metricsScope.Dispose();
         }
     }
 

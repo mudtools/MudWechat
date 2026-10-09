@@ -6,7 +6,9 @@
 // -----------------------------------------------------------------------
 
 using Mud.Wechat.Pay.Abstractions.Credential;
+using Mud.Wechat.Pay.Certificates;
 using Mud.Wechat.Pay.Download;
+using Mud.Wechat.Pay.Transactions;
 
 namespace Mud.Wechat.Pay.Extensions;
 
@@ -45,9 +47,30 @@ public class PayServiceBuilder
         {
             // Add{组名}WebApiHttpClient() 由 Mud.HttpUtils.Generator 按各接口上的
             // [HttpClientApi(RegistryGroupName = "…")] 自动产出（无签入源文件）。
-            [PayModule.Transactions] = static s => s.AddTransactionsWebApiHttpClient(),
+            // 交易域额外注册**小程序调起支付签名**服务：官方把它列在下单产品 TOC 内，但它是
+            // **本地密码学运算**（无请求路由 / 无应答体）⇒ 没有对应的 Add{域}WebApiHttpClient()。
+            // 它依赖 AddPayApp 提供的商户上下文与按商户缓存的签名工厂。TryAdd：宿主预注册者胜出。
+            [PayModule.Transactions] = static s =>
+            {
+                s.AddTransactionsWebApiHttpClient();
+                s.TryAddSingleton<IWechatPayMiniProgramPaySignService, WechatPayMiniProgramPaySignService>();
+            },
             [PayModule.Refund] = static s => s.AddRefundWebApiHttpClient(),
-            [PayModule.Certificates] = static s => s.AddCertificatesWebApiHttpClient(),
+            // 证书模块额外注册**按需刷新器**：它依赖 <c>GET /v3/certificates</c> 客户端，
+            // 故归本域（无客户端即无从刷新）。回调包以**可选**方式解析该端口 ——
+            // 宿主只装 AddPayApp + 回调包、不装本模块时，未知序列号仍按 fail-closed 拒绝，
+            // 只是少了「轮换期自愈」这一层。TryAdd 语义：宿主预注册者胜出。
+            [PayModule.Certificates] = static s =>
+            {
+                s.AddCertificatesWebApiHttpClient();
+                s.TryAddSingleton<IWechatPayPlatformCertificateRefresher>(
+                    static sp => new WechatPayPlatformCertificateRefresher(
+                        sp.GetRequiredService<IWechatPayCertificatesService>(),
+                        sp.GetRequiredService<IWechatPayMerchantCredentialProvider>(),
+                        sp.GetRequiredService<IWechatPayPlatformCertificateStore>(),
+                        sp.GetService<IWechatPayPlatformCertificateWriter>(),
+                        sp.GetService<ILogger<WechatPayPlatformCertificateRefresher>>()));
+            },
 
             // 账单模块额外注册**账单下载通道**：它没有 [HttpClientApi] 声明（路由由 download_url 动态给出、
             // 返回非 JSON），故无对应的 AddBillDownloadWebApiHttpClient()。它依赖 AddPayApp 注册的

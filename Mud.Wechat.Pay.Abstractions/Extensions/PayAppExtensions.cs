@@ -157,8 +157,16 @@ public static class PayAppExtensions
 
         // 平台证书缓存：请求签名只用商户私钥，验签（回调 / 应答验签）才需要平台证书；
         // 这里给出默认进程内实现，宿主可预注册自己的（如需跨实例共享）。
+        //
+        // **读写两端口必须指向同一实例**：默认缓存同时实现 Store 与 Writer，若各自 new 一份，
+        // 「刷新写进 A、验签读 B」会让按需刷新看起来成功而验签继续失败（静默不一致）。
+        // 宿主预注册自己的 IWechatPayPlatformCertificateStore 时，读端口归宿主（TryAdd 让位），
+        // 而此时写入仍落本默认缓存 ⇒ 刷新侧在复查读端口时会判 false 并点名告警（fail-closed）。
+        services.TryAddSingleton<WechatPayPlatformCertificateCache>();
         services.TryAddSingleton<IWechatPayPlatformCertificateStore>(
-            static _ => new WechatPayPlatformCertificateCache());
+            static sp => sp.GetRequiredService<WechatPayPlatformCertificateCache>());
+        services.TryAddSingleton<IWechatPayPlatformCertificateWriter>(
+            static sp => sp.GetRequiredService<WechatPayPlatformCertificateCache>());
 
         services.TryAddSingleton<IWechatPaySignatureProviderFactory>(
             static sp => new WechatPaySignatureProviderFactory(

@@ -59,6 +59,7 @@ public sealed class WechatPayCallbackReceiver
     private readonly IWechatCallbackReplayGuard _replayGuard;
     private readonly IOptionsMonitor<WechatPayCallbackOptions> _optionsMonitor;
     private readonly IWechatPayCallbackClock _clock;
+    private readonly IWechatPayPlatformCertificateRefresher? _refresher;
     private readonly ILogger<WechatPayCallbackReceiver>? _logger;
 
     /// <summary>创建接收器（DI 用）。</summary>
@@ -67,6 +68,10 @@ public sealed class WechatPayCallbackReceiver
     /// <param name="credentials">凭据取用端口（取 APIv3 密钥解密 <c>resource</c>）。</param>
     /// <param name="replayGuard">抗重放端口（一次性指纹）。</param>
     /// <param name="optionsMonitor">回调配置监视器。</param>
+    /// <param name="refresher">
+    /// 平台证书按需刷新端口（<b>可选</b>）：未知 <c>Wechatpay-Serial</c> 时补齐证书（§2.6 闸①）。
+    /// 未注册时未知序列号直接拒绝（仍是 fail-closed，只是少了轮换期自愈）。
+    /// </param>
     /// <param name="logger">日志器（可选）。</param>
     /// <exception cref="ArgumentNullException">任一必填参数为 <c>null</c>。</exception>
     public WechatPayCallbackReceiver(
@@ -75,13 +80,14 @@ public sealed class WechatPayCallbackReceiver
         IWechatPayMerchantCredentialProvider credentials,
         IWechatCallbackReplayGuard replayGuard,
         IOptionsMonitor<WechatPayCallbackOptions> optionsMonitor,
+        IWechatPayPlatformCertificateRefresher? refresher = null,
         ILogger<WechatPayCallbackReceiver>? logger = null)
         : this(merchants, signatureProviders, credentials, replayGuard, optionsMonitor,
-            new SystemWechatPayCallbackClock(), logger)
+            new SystemWechatPayCallbackClock(), refresher, logger)
     {
     }
 
-    /// <summary>创建接收器（测试可注入时钟）。</summary>
+    /// <summary>创建接收器（测试可注入时钟与刷新端口）。</summary>
     internal WechatPayCallbackReceiver(
         IWechatPayMerchantManager merchants,
         IWechatPaySignatureProviderFactory signatureProviders,
@@ -89,6 +95,7 @@ public sealed class WechatPayCallbackReceiver
         IWechatCallbackReplayGuard replayGuard,
         IOptionsMonitor<WechatPayCallbackOptions> optionsMonitor,
         IWechatPayCallbackClock clock,
+        IWechatPayPlatformCertificateRefresher? refresher = null,
         ILogger<WechatPayCallbackReceiver>? logger = null)
     {
         _merchants = merchants ?? throw new ArgumentNullException(nameof(merchants));
@@ -97,6 +104,7 @@ public sealed class WechatPayCallbackReceiver
         _replayGuard = replayGuard ?? throw new ArgumentNullException(nameof(replayGuard));
         _optionsMonitor = optionsMonitor ?? throw new ArgumentNullException(nameof(optionsMonitor));
         _clock = clock ?? throw new ArgumentNullException(nameof(clock));
+        _refresher = refresher;
         _logger = logger;
     }
 
@@ -197,10 +205,21 @@ public sealed class WechatPayCallbackReceiver
 
         if (!signatureProvider.Verify(headers.SerialNumber, verifyMessage, headers.Signature))
         {
-            // 不区分「序列号未知」与「签名不匹配」对外提示，避免成为探测 oracle；细节只经日志类别体现。
-            throw new WechatCallbackException(
-                WechatCallbackFailureKind.InvalidSignature,
-                "通知验签未通过（序列号未知或签名与报文体不匹配）。");
+            // §2.6 闸① 的「未知序列号可自愈」路径：官方在到期前**并行**下发新旧平台证书，
+            // 新序列号可能先于本机拉取就出现在通知头里 ⇒ 给一次刷新后复验的机会。
+            //
+            // **只**补一次、失败即拒（不得重试到成功）；且刷新是否真的下载由端口实现决定 ——
+            // 它对「已命中本地存储」的序列号直接短路，故**签名不匹配绝不会触发下载**
+            // （否则任意伪造请求都能驱动一次证书仓库往返 = 放大型 DoS）。
+            if (_refresher is null
+                || !await _refresher.TryRefreshAsync(merchant, headers.SerialNumber!, cancellationToken).ConfigureAwait(false)
+                || !signatureProvider.Verify(headers.SerialNumber, verifyMessage, headers.Signature))
+            {
+                // 不区分「序列号未知」与「签名不匹配」对外提示，避免成为探测 oracle；细节只经日志类别体现。
+                throw new WechatCallbackException(
+                    WechatCallbackFailureKind.InvalidSignature,
+                    "通知验签未通过（序列号未知或签名与报文体不匹配）。");
+            }
         }
 
         // ⑥ 验签通过后才解析报文（原始字节验签是官方 FAQ 的第一要求）。
@@ -282,64 +301,22 @@ public sealed class WechatPayCallbackReceiver
     }
 
     /// <summary>
-    /// 解密 <c>resource</c>：<c>nonce</c> 为 12 字符 ASCII，<c>ciphertext</c> 为 Base64（<b>末 16 字节为 GCM tag</b>）。
+    /// 解密 <c>resource</c>：<c>nonce</c> 为 12 个 ASCII 字符、<c>ciphertext</c> 为 Base64（<b>末 16 字节为 GCM tag</b>）。
     /// </summary>
     /// <param name="apiKey">32 字节 APIv3 密钥。</param>
     /// <param name="resource">通知资源节点。</param>
     /// <param name="plaintext">成功时为解密后的 JSON 明文。</param>
     /// <returns>是否成功。</returns>
     /// <remarks>
-    /// <b>tag 位置</b>：APIv3 把 16 字节认证标签<b>拼接在密文尾部</b>再整体 Base64，故须先切分；
-    /// 把「密文+tag」整段当密文交给 <c>TryDecrypt</c> 会 100% 认证失败。
+    /// <b>线格式解析统一收在 <see cref="WechatPayAesGcmCodec.TryDecryptOfficialPayload"/></b>：
+    /// 「nonce 为字符串、tag 拼接在密文尾部」是官方对<b>所有</b> <c>AEAD_AES_256_GCM</c> 载荷的统一约定
+    /// （回调 <c>resource</c> 与平台证书 <c>encrypt_certificate</c> 完全同形）。曾各自实现一份 ⇒
+    /// 任一处漏切 tag 都是「编译期无感、运行期 100% 认证失败」的错位缺陷，故收敛为单一实现。
     /// </remarks>
     private static bool TryDecryptResource(
         byte[] apiKey, WechatPayNotificationResource resource, out string? plaintext)
-    {
-        plaintext = null;
-
-        byte[] nonce;
-        byte[] ciphertextAndTag;
-        try
-        {
-            nonce = Encoding.UTF8.GetBytes(resource.Nonce!);
-            ciphertextAndTag = Convert.FromBase64String(resource.CipherText!);
-        }
-        catch (FormatException)
-        {
-            // 非法 Base64 ⇒ 拒绝，且不回显原文。
-            return false;
-        }
-
-        if (nonce.Length != WechatPayAesGcmCodec.NonceSizeBytes)
-        {
-            return false;
-        }
-
-        if (ciphertextAndTag.Length <= WechatPayAesGcmCodec.TagSizeBytes)
-        {
-            return false;
-        }
-
-        var tag = new byte[WechatPayAesGcmCodec.TagSizeBytes];
-        Array.Copy(ciphertextAndTag, ciphertextAndTag.Length - tag.Length, tag, 0, tag.Length);
-
-        var ciphertext = new byte[ciphertextAndTag.Length - tag.Length];
-        Array.Copy(ciphertextAndTag, 0, ciphertext, 0, ciphertext.Length);
-
-        var associatedData = string.IsNullOrEmpty(resource.AssociatedData)
-            ? null
-            : Encoding.UTF8.GetBytes(resource.AssociatedData!);
-
-        if (!WechatPayAesGcmCodec.TryDecrypt(apiKey, nonce, ciphertext, tag, associatedData, out var bytes)
-            || bytes is null)
-        {
-            return false;
-        }
-
-        plaintext = Encoding.UTF8.GetString(bytes);
-        CryptographicOperations.ZeroMemory(bytes);
-        return true;
-    }
+        => WechatPayAesGcmCodec.TryDecryptOfficialPayload(
+            apiKey, resource.Nonce, resource.CipherText, resource.AssociatedData, out plaintext);
 
     /// <summary>
     /// 组装指纹：<c>{商户键}:{SHA1(ciphertext) 小写十六进制}</c>。

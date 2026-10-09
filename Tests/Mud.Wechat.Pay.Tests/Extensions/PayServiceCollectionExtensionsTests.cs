@@ -135,6 +135,10 @@ public class PayServiceCollectionExtensionsTests
 
         // 账单下载通道随账单模块注册（无 [HttpClientApi]，故无对应的源生成注册方法）。
         provider.GetRequiredService<IWechatPayBillDownloadService>().Should().NotBeNull();
+
+        // 小程序调起支付签名是**本地密码学运算**（官方 TOC 内但无 HTTP 路由），同样随交易域注册 ——
+        // 它是 P1-a 清单里最后一个非 HTTP 端点，缺它则小程序端无法调起支付。
+        provider.GetRequiredService<IWechatPayMiniProgramPaySignService>().Should().NotBeNull();
     }
 
     /// <summary>
@@ -166,6 +170,29 @@ public class PayServiceCollectionExtensionsTests
 #else
         provider.GetRequiredService<IOptions<JsonSerializerOptions>>().Should().NotBeNull();
 #endif
+    }
+
+    /// <summary>
+    /// 平台证书<b>读写端口必须指向同一实例</b>，且证书域注册后按需刷新器可解析。
+    /// </summary>
+    /// <remarks>
+    /// 若两个端口各 new 一份默认缓存，则「刷新写进 A、验签读 B」——刷新看起来成功而验签继续失败，
+    /// 是本线最难排查的一类静默不一致，故在此锁死实例同一性。
+    /// </remarks>
+    [Fact]
+    public void AddWechatPayApi_ShouldWireCertificateStoreAndWriterToSameInstance()
+    {
+        using var provider = BuildProvider(services =>
+            services.AddPayApp(CreateMerchant()).AddWechatPayApi(b => b.AddAllApis()));
+
+        var cache = provider.GetRequiredService<WechatPayPlatformCertificateCache>();
+
+        provider.GetRequiredService<IWechatPayPlatformCertificateStore>().Should().BeSameAs(cache);
+        provider.GetRequiredService<IWechatPayPlatformCertificateWriter>().Should().BeSameAs(cache,
+            "刷新写入的缓存必须就是验签读取的存储，否则「刷新成功」而验签继续失败（静默不一致）");
+
+        provider.GetRequiredService<IWechatPayPlatformCertificateRefresher>().Should().NotBeNull(
+            "证书域注册后按需刷新器可解析（回调包以可选方式消费它）");
     }
 
     /// <summary>辅助：单商户 + 注册密钥端口后构建根容器（开 scope 校验）。</summary>

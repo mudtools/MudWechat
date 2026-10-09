@@ -321,4 +321,94 @@ public class WechatPayCallbackReceiverTests
         (await act.Should().ThrowAsync<WechatCallbackException>())
             .Which.Kind.Should().Be(WechatCallbackFailureKind.MissingSignature);
     }
+
+    /// <summary>
+    /// 闸① 自愈路径：官方<b>轮换</b>平台证书后，新序列号先于本机拉取到达 ⇒
+    /// 触发一次刷新后复验通过（设计方案 §2.6「未知 serial ⇒ 触发一次刷新后仍失败即拒」）。
+    /// </summary>
+    [Fact]
+    public async Task ReceiveAsync_ShouldRecoverViaRefresh_WhenSerialJustRotated()
+    {
+        using var fixture = new WechatPayCallbackTestFixture();
+        var refresher = new WechatPayCallbackTestFixture.FakeCertificateRefresher(fixture);
+        var receiver = fixture.CreateReceiver(refresher);
+
+        // 官方已换新钥并在通知头里给出新序列号，而本机存储里还没有这本证书。
+        fixture.RotateSigningCertificate();
+        var (headers, body) = fixture.CreateNotification(WechatPayCallbackTestFixture.TransactionResourceJson);
+
+        fixture.Certificates.TryGetCertificate(headers.SerialNumber, out _)
+            .Should().BeFalse("前置条件：刷新之前本机不得认识该新序列号");
+
+        var context = await receiver.ReceiveAsync(WechatPayCallbackTestFixture.MerchantKey, headers, body);
+
+        context.GetTransaction()!.OutTradeNo.Should().Be("ORDER-1");
+        refresher.CallCount.Should().Be(1);
+        refresher.DownloadCount.Should().Be(1, "未知序列号只允许触发一次真实下载");
+    }
+
+    /// <summary>刷新仍拿不到该序列号 ⇒ 照常拒绝（fail-closed，<b>不</b>因「刷过」而放宽）。</summary>
+    [Fact]
+    public async Task ReceiveAsync_ShouldReject_WhenRefreshCannotResolveSerial()
+    {
+        using var fixture = new WechatPayCallbackTestFixture();
+        var refresher = new WechatPayCallbackTestFixture.FakeCertificateRefresher(fixture, canPublish: false);
+        var receiver = fixture.CreateReceiver(refresher);
+
+        fixture.RotateSigningCertificate();
+        var (headers, body) = fixture.CreateNotification(WechatPayCallbackTestFixture.TransactionResourceJson);
+
+        var act = async () => await receiver.ReceiveAsync(
+            WechatPayCallbackTestFixture.MerchantKey, headers, body);
+
+        (await act.Should().ThrowAsync<WechatCallbackException>())
+            .Which.Kind.Should().Be(WechatCallbackFailureKind.InvalidSignature);
+        refresher.CallCount.Should().Be(1, "只补一次，不得重试到成功");
+    }
+
+    /// <summary>未注册刷新端口（宿主只装回调包）⇒ 未知序列号直接拒绝，且不抛其它异常。</summary>
+    [Fact]
+    public async Task ReceiveAsync_ShouldReject_WhenNoRefresherRegistered()
+    {
+        using var fixture = new WechatPayCallbackTestFixture();
+        var receiver = fixture.CreateReceiver();
+
+        fixture.RotateSigningCertificate();
+        var (headers, body) = fixture.CreateNotification(WechatPayCallbackTestFixture.TransactionResourceJson);
+
+        var act = async () => await receiver.ReceiveAsync(
+            WechatPayCallbackTestFixture.MerchantKey, headers, body);
+
+        (await act.Should().ThrowAsync<WechatCallbackException>())
+            .Which.Kind.Should().Be(WechatCallbackFailureKind.InvalidSignature);
+    }
+
+    /// <summary>
+    /// <b>防放大</b>：序列号已知却签名不匹配（攻击者可随意构造的最廉价形态）时，
+    /// 绝不会触发证书下载 —— 端口实现须以「已命中即短路」守住这一点。
+    /// </summary>
+    /// <remarks>
+    /// 若改成「验签失败就刷新」，每个伪造请求都会变成一次证书仓库往返（放大型 DoS）。
+    /// 判据分两层锁定：本用例锁「短路不下载」，<c>WechatPayPlatformCertificateRefresherTests</c>
+    /// 另有「已命中 ⇒ 客户端零调用」的实现级用例。
+    /// </remarks>
+    [Fact]
+    public async Task ReceiveAsync_ShouldNotDownload_WhenSerialKnownButSignatureTampered()
+    {
+        using var fixture = new WechatPayCallbackTestFixture();
+        var refresher = new WechatPayCallbackTestFixture.FakeCertificateRefresher(fixture);
+        var receiver = fixture.CreateReceiver(refresher);
+
+        var (headers, body) = fixture.CreateNotification(WechatPayCallbackTestFixture.TransactionResourceJson);
+
+        // 序列号仍是本机已知的那一本，但报文体被改过 ⇒ 验签必然失败。
+        var act = async () => await receiver.ReceiveAsync(
+            WechatPayCallbackTestFixture.MerchantKey, headers, body + " ");
+
+        (await act.Should().ThrowAsync<WechatCallbackException>())
+            .Which.Kind.Should().Be(WechatCallbackFailureKind.InvalidSignature);
+
+        refresher.CallCount.Should().Be(1, "端口会被征询一次（由它自行短路）");
+        refresher.DownloadCount.Should().Be(0, "序列号已知 ⇒ 不得下载：否则伪造请求可驱动证书仓库流量");
+    }
 }

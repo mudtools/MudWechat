@@ -10,16 +10,24 @@ using System.Security.Cryptography.X509Certificates;
 namespace Mud.Wechat.Pay.Abstractions.Credential;
 
 /// <summary>
-/// 平台证书**进程内**缓存（<see cref="IWechatPayPlatformCertificateStore"/> 的默认实现）。
+/// 平台证书**进程内**缓存（<see cref="IWechatPayPlatformCertificateStore"/> 与
+/// <see cref="IWechatPayPlatformCertificateWriter"/> 的默认实现）。
 /// </summary>
 /// <remarks>
 /// <para>
 /// 多实例部署须换分布式实现（走宿主前置 <c>TryAdd</c> 覆盖，与四个存储端口同款纪律）——
 /// 否则每个实例各自拉证书，序列号视图不一致会在轮换瞬间产生**间歇性**验签失败，极难排障。
 /// </para>
+/// <para>
+/// <b>同时实现读写两端口是刻意的</b>：<c>AddPayApp</c> 把两个端口都指向<b>同一实例</b>，
+/// 否则「刷新写进 A 缓存、验签读 B 存储」会让刷新看起来成功而验签继续失败（静默不一致）。
+/// 宿主若只自定义<b>读</b>端口（如从配置中心读），则刷新侧会因写不进宿主存储而在复查时返回
+/// <c>false</c>（fail-closed）并由 <see cref="IWechatPayPlatformCertificateRefresher"/> 点名告警。
+/// </para>
 /// <para><b>本类持有证书所有权</b>：<see cref="Set"/> 后由缓存负责，<see cref="Dispose"/> 时统一释放。</para>
 /// </remarks>
-public sealed class WechatPayPlatformCertificateCache : IWechatPayPlatformCertificateStore, IDisposable
+public sealed class WechatPayPlatformCertificateCache
+    : IWechatPayPlatformCertificateStore, IWechatPayPlatformCertificateWriter, IDisposable
 {
     private readonly Dictionary<string, X509Certificate2> _bySerial =
         new(StringComparer.OrdinalIgnoreCase);

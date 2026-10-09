@@ -125,6 +125,70 @@ public static class WechatPaySignatureMessages
         return string.Concat(timestamp, NewLine, nonce, NewLine, body ?? string.Empty, NewLine);
     }
 
+    /// <summary>小程序调起支付的签名类型（官方 <c>signType</c>，<b>仅支持</b> <c>RSA</c>）。</summary>
+    public const string MiniProgramPaySignType = "RSA";
+
+    /// <summary>
+    /// 组装**小程序调起支付**签名串：<c>appId\n时间戳\n随机串\npackage\n</c>。
+    /// </summary>
+    /// <param name="appId">调起支付小程序的 AppID（<b>必须</b>与下单时传入的一致，微信支付会校验一致性）。</param>
+    /// <param name="timeStamp">秒级时间戳字符串（10 位；官方字段名<b>就是这个驼峰写法</b>）。</param>
+    /// <param name="nonceStr">随机串（≤32 位）。</param>
+    /// <param name="package">预支付交易会话标识，官方格式固定为 <c>prepay_id={prepay_id}</c>。</param>
+    /// <returns>逐字节对齐官方规范的签名串。</returns>
+    /// <remarks>
+    /// <para>
+    /// <b>官方依据</b>：<see href="https://pay.weixin.qq.com/doc/v3/merchant/4012791898"/>（小程序调起支付）
+    /// 明确列出参与签名的字段与<b>顺序</b>为 <c>appId</c> → <c>timeStamp</c> → <c>nonceStr</c> → <c>package</c>，
+    /// 并指向「小程序调起支付签名」；该页未复述分隔符，而 APIv3 全部签名串共用
+    /// <b>「每项后跟一个 <c>\n</c>（含末项）」</b> 的同一规则（与本类另两个组装方法一致）——
+    /// 少一个 <c>\n</c> 即线上 100% 调起失败。
+    /// </para>
+    /// <para>
+    /// <b>顺序不可改</b>：<c>signType</c> <b>不</b>参与签名（官方字段表中它只是前端参数），
+    /// 而 <c>package</c> <b>必须</b>带 <c>prepay_id=</c> 前缀 —— 传裸 <c>prepay_id</c> 会签名不匹配。
+    /// </para>
+    /// </remarks>
+    public static string BuildMiniProgramPaySignMessage(
+        string appId, string timeStamp, string nonceStr, string package)
+    {
+        if (appId is null)
+        {
+            throw new ArgumentNullException(nameof(appId));
+        }
+
+        if (timeStamp is null)
+        {
+            throw new ArgumentNullException(nameof(timeStamp));
+        }
+
+        if (nonceStr is null)
+        {
+            throw new ArgumentNullException(nameof(nonceStr));
+        }
+
+        if (package is null)
+        {
+            throw new ArgumentNullException(nameof(package));
+        }
+
+        return string.Concat(appId, NewLine, timeStamp, NewLine, nonceStr, NewLine, package, NewLine);
+    }
+
+    /// <summary>组装 <c>package</c> 字段值：官方固定格式 <c>prepay_id={prepay_id}</c>。</summary>
+    /// <param name="prepayId">下单接口返回的 <c>prepay_id</c>。</param>
+    /// <returns><c>package</c> 字段值。</returns>
+    /// <exception cref="ArgumentException"><paramref name="prepayId"/> 为 <c>null</c>/空白。</exception>
+    public static string BuildPackageValue(string prepayId)
+    {
+        if (string.IsNullOrWhiteSpace(prepayId))
+        {
+            throw new ArgumentException("prepay_id 不可为空白。", nameof(prepayId));
+        }
+
+        return string.Concat("prepay_id=", prepayId);
+    }
+
     /// <summary>组装 <c>Authorization</c> 头值。</summary>
     /// <remarks>
     /// 字段顺序照官方原文：<c>mchid</c> → <c>nonce_str</c> → <c>timestamp</c> → <c>serial_no</c> → <c>signature</c>。

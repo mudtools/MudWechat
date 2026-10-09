@@ -65,7 +65,15 @@ public class PlatformCertificateCipher
     [JsonPropertyName("algorithm")]
     public string? Algorithm { get; set; }
 
-    /// <summary>加密随机串（<c>nonce</c>，必填 string(16)），即 GCM 的 12 字节 IV 的 Base64 表达。</summary>
+    /// <summary>
+    /// 加密随机串（<c>nonce</c>，必填 string(16)）——即 GCM 的 <b>12 字节 IV</b>，
+    /// 以 <b>12 个 ASCII 字符</b>表达，消费侧按 <b>UTF8</b> 还原为字节（<b>不是</b> Base64）。
+    /// </summary>
+    /// <remarks>
+    /// 官方各语言示例均以 <c>nonce.getBytes(UTF_8)</c> 转字节；字段表标注的 <c>string(16)</c> 是
+    /// 字符串上限，实际取值恒为 12 字符（<c>AesGcm</c> 硬性要求 12 字节 IV）。
+    /// 解密统一走 <c>WechatPayAesGcmCodec.TryDecryptOfficialPayload</c>（含 tag 末位切分）。
+    /// </remarks>
     [JsonPropertyName("nonce")]
     public string? Nonce { get; set; }
 

@@ -149,6 +149,8 @@ public static class WechatPayCallbackServiceCollectionExtensions
             sp.GetRequiredService<IWechatPayMerchantCredentialProvider>(),
             sp.GetRequiredService<IWechatCallbackReplayGuard>(),
             sp.GetRequiredService<IOptionsMonitor<WechatPayCallbackOptions>>(),
+            // 可选：仅装 AddPayApp（未装证书域）的宿主拿不到刷新器 ⇒ 未知序列号仍 fail-closed 拒绝。
+            sp.GetService<IWechatPayPlatformCertificateRefresher>(),
             sp.GetService<ILogger<WechatPayCallbackReceiver>>()));
 
         services.AddSingleton(sp => new WechatPayCallbackDispatcher(

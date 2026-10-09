@@ -20,6 +20,12 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<!-- 证书刷新的**最小刷新间隔**是安全参数（防未知序列号风暴），须被测试锁定其取值，
+		     故对本包测试开放内部可见（与 Pay.Callback / Work / OA 各线同款）。 -->
+		<InternalsVisibleTo Include="Mud.Wechat.Pay.Tests" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<ProjectReference Include="..\Mud.Wechat.Abstractions\Mud.Wechat.Abstractions.csproj" />
 		<ProjectReference Include="..\Mud.Wechat.Pay.Abstractions\Mud.Wechat.Pay.Abstractions.csproj" />
 		<ProjectReference Include="..\Mud.Wechat.Pay.DataModels\Mud.Wechat.Pay.DataModels.csproj" />

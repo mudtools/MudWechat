@@ -27,6 +27,7 @@ namespace Mud.Wechat.Pay.DataModels.Transactions;
 [JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.Transactions.TransactionSceneInfo))]
 [JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.Transactions.TransactionPromotionDetail))]
 [JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.Transactions.TransactionPromotionGoodsDetail))]
+[JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.Transactions.WechatPayMiniProgramPaySign))]
 internal partial class TransactionsJsonContext : JsonSerializerContext
 {
 }

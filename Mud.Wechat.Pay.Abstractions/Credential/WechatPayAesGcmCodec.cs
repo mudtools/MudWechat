@@ -6,6 +6,7 @@
 // -----------------------------------------------------------------------
 
 using System.Security.Cryptography;
+using System.Text;
 
 namespace Mud.Wechat.Pay.Abstractions.Credential;
 
@@ -221,6 +222,82 @@ public static class WechatPayAesGcmCodec
         }
 
         plaintext = buffer;
+        return true;
+    }
+
+    /// <summary>
+    /// 解密官方<b>线格式</b>载荷：<c>nonce</c> 为<b>字符串</b>（UTF8 还原为 12 字节）、
+    /// <c>ciphertext</c> 为 <b>Base64(密文 ‖ tag)</b>（tag 拼接在密文尾部）。
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>为什么必须有这一层（而不是让各调用点自己切 tag）</b>：官方把「tag 拼接在密文尾部」这一约定
+    /// 用于<b>所有</b> <c>AEAD_AES_256_GCM</c> 载荷 —— 回调 <c>resource</c> 与平台证书
+    /// <c>encrypt_certificate</c> <b>完全同形</b>。若各写一份，任何一处漏切 tag 都会
+    /// <b>100% 认证失败且编译期无感</b>（这正是「静默错位」类缺陷的典型形态）。
+    /// </para>
+    /// <para>
+    /// <b>fail-closed 且不泄漏</b>（PAY-B4）：非法 Base64 / 长度不合形 / 认证失败一律返回 <c>false</c>、
+    /// <paramref name="plaintext"/> 为 <c>null</c>，<b>绝不抛出</b>（异常消息会带上密文字节）。
+    /// </para>
+    /// <para>
+    /// <b>nonce 为何按 UTF8 而非 Base64 还原</b>：官方的 <c>nonce</c> 是<b>12 个 ASCII 字符</b>的字符串，
+    /// 官方各语言示例（Java / PHP）均以 <c>nonce.getBytes(UTF_8)</c> 转字节；按 Base64 解会得到 9 字节而必然失败。
+    /// </para>
+    /// </remarks>
+    /// <param name="key">32 字节 APIv3 密钥（<b>不得</b>入日志，PAY-B7）。</param>
+    /// <param name="nonce">官方 <c>nonce</c> 字符串（12 个 ASCII 字符）。</param>
+    /// <param name="cipherTextWithTag">官方 <c>ciphertext</c>（Base64，<b>末 16 字节为 GCM tag</b>）。</param>
+    /// <param name="associatedData">关联数据原文（<c>associated_data</c>）；<c>null</c>/<c>空</c> 表示无。</param>
+    /// <param name="plaintext">成功时为 UTF8 明文；失败时恒为 <c>null</c>。</param>
+    /// <returns>是否解密成功。</returns>
+    public static bool TryDecryptOfficialPayload(
+        byte[]? key,
+        string? nonce,
+        string? cipherTextWithTag,
+        string? associatedData,
+        out string? plaintext)
+    {
+        plaintext = null;
+
+        if (string.IsNullOrEmpty(nonce) || string.IsNullOrEmpty(cipherTextWithTag))
+        {
+            return false;
+        }
+
+        byte[] nonceBytes;
+        byte[] withTag;
+        try
+        {
+            nonceBytes = Encoding.UTF8.GetBytes(nonce);
+            withTag = Convert.FromBase64String(cipherTextWithTag);
+        }
+        catch (FormatException)
+        {
+            // 非法 Base64 ⇒ 拒绝，且不回显原文。
+            return false;
+        }
+
+        if (nonceBytes.Length != NonceSizeBytes || withTag.Length <= TagSizeBytes)
+        {
+            return false;
+        }
+
+        var tag = new byte[TagSizeBytes];
+        Array.Copy(withTag, withTag.Length - TagSizeBytes, tag, 0, TagSizeBytes);
+
+        var ciphertext = new byte[withTag.Length - TagSizeBytes];
+        Array.Copy(withTag, 0, ciphertext, 0, ciphertext.Length);
+
+        var aad = string.IsNullOrEmpty(associatedData) ? null : Encoding.UTF8.GetBytes(associatedData);
+
+        if (!TryDecrypt(key, nonceBytes, ciphertext, tag, aad, out var bytes) || bytes is null)
+        {
+            return false;
+        }
+
+        plaintext = Encoding.UTF8.GetString(bytes);
+        CryptographicOperations.ZeroMemory(bytes);
         return true;
     }
 

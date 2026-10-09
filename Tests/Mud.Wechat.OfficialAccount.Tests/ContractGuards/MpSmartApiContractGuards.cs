@@ -248,6 +248,40 @@ public class MpSmartApiContractGuards
         MpErrorCodes.OcrMarketQuotaNotEnough.Should().Be(101003);
     }
 
+    /// <summary>
+    /// 契约守卫 SM7：**图片高清化 <c>/cv/img/superresolution</c> 刻意不建模**（官方已下架）。
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>事实来源（2026-10-09 核验）</b>：官方服务端 API 索引页在图像处理表内对该端点直接标注
+    /// 「该接口用于将图片高清化，<b>由于系统维护原因，已下架</b>，如有需要使用，可前往微信开放社区发帖/
+    /// 联系微信服务市场客服」；其专属文档页 <c>…/openpoc/image/api_imgsuperresolution.html</c>
+    /// <b>实测返回 HTTP 404</b>。
+    /// </para>
+    /// <para>
+    /// <b>为何本守卫不是「漏实现」而是「显式裁决」</b>：设计方案 §3.4 ⑤ 曾把它列为 P1-c 的
+    /// 「SmartApi 增量」，并建议并入公众号线；后续复核发现该端点已被官方下架 ⇒ 按本仓既有纪律
+    /// （<b>「官方页面 404 或声明下架即不建模」</b>，同 <c>/wxa/img_sec_check</c> 的处置）
+    /// <b>不实现</b>，并把裁决固化在此，避免后来者照设计方案的字面清单「补」一个死端点。
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void SuperResolutionEndpoint_ShouldStayUnmodeled()
+    {
+        var declaredRoutes = typeof(IMpSmartApiService)
+            .GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
+            .SelectMany(m => m.GetCustomAttributes<HttpMethodAttribute>())
+            .Select(a => a.RequestUri)
+            .ToList();
+
+        declaredRoutes.Should().NotContain("/cv/img/superresolution",
+            "官方索引页已标注该接口「由于系统维护原因，已下架」且文档页 404 ⇒ 不建模；" +
+            "若将来官方恢复，须先复核字段契约再同批解除本裁决");
+
+        // 防静默空跑：路由集合非空，说明上面的反射口径没失效。
+        declaredRoutes.Should().NotBeEmpty();
+    }
+
     private static MethodInfo FindMethod(string methodName)
         => typeof(IMpSmartApiService)
                .GetMethod(methodName, BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)

@@ -29,8 +29,8 @@ internal sealed class WechatPayCallbackTestFixture : IDisposable
     /// <summary>非 12 字符的 nonce（用于形状校验用例）。</summary>
     public const string ShortNonce = "abc";
 
-    /// <summary>平台证书序列号（非法定值，测试自签）。</summary>
-    public string PlatformSerial { get; }
+    /// <summary>平台证书序列号（非法定值，测试自签）；<see cref="RotateSigningCertificate"/> 后会切换。</summary>
+    public string PlatformSerial { get; private set; }
 
     /// <summary>测试时钟（可前进以验证时效闸）。</summary>
     public TestClock Clock { get; } = new();
@@ -38,9 +38,12 @@ internal sealed class WechatPayCallbackTestFixture : IDisposable
     /// <summary>可切换 APIv3 密钥的凭据替身（验证「解密失败不消耗指纹」）。</summary>
     public FakeCredentialProvider Credentials { get; }
 
-    private readonly RSA _platformKey;
+    private RSA _platformKey;
     private readonly X509Certificate2 _platformCertificate;
     private readonly RSA _merchantKey;
+
+    /// <summary>「官方已换新证书、但本机尚未拉取」的那一本（由刷新替身发布）。</summary>
+    private X509Certificate2? _pendingRotationCertificate;
 
     /// <summary>创建夹具（自签平台证书 + 商户密钥）。</summary>
     public WechatPayCallbackTestFixture()
@@ -85,9 +88,43 @@ internal sealed class WechatPayCallbackTestFixture : IDisposable
     /// <summary>真实的内存抗重放实现（闸③ 的行为必须真实）。</summary>
     public InMemoryWechatCallbackReplayGuard ReplayGuard { get; }
 
-    /// <summary>构造接收器（注入测试时钟）。</summary>
-    public WechatPayCallbackReceiver CreateReceiver()
-        => new(MerchantManager, SignatureProviders, Credentials, ReplayGuard, OptionsMonitor, Clock);
+    /// <summary>构造接收器（注入测试时钟；可选注入平台证书刷新端口）。</summary>
+    /// <param name="refresher">平台证书刷新替身；<c>null</c> = 未注册（宿主只装回调的形态）。</param>
+    public WechatPayCallbackReceiver CreateReceiver(IWechatPayPlatformCertificateRefresher? refresher = null)
+        => new(MerchantManager, SignatureProviders, Credentials, ReplayGuard, OptionsMonitor, Clock, refresher);
+
+    /// <summary>
+    /// 模拟官方<b>轮换平台证书</b>：换一把新私钥 + 自签新证书并切换到它签名，
+    /// 但<b>不</b>把证书放进本机存储（= 「新序列号先于本机拉取到达」的真实时序）。
+    /// </summary>
+    /// <remarks>须由刷新替身经 <see cref="PublishPendingRotation"/> 发布后才对本机可见。</remarks>
+    public void RotateSigningCertificate()
+    {
+        _pendingRotationCertificate?.Dispose();
+        _platformKey.Dispose();
+
+        _platformKey = RSA.Create(2048);
+        var request = new CertificateRequest(
+            "CN=MudWechatPayRotatedPlatform", _platformKey, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+
+        _pendingRotationCertificate = request.CreateSelfSigned(
+            DateTimeOffset.UtcNow, DateTimeOffset.UtcNow.AddDays(30));
+
+        PlatformSerial = _pendingRotationCertificate.SerialNumber;
+    }
+
+    /// <summary>把「待轮换」证书发布到本机存储（刷新成功的等价动作）。</summary>
+    /// <returns>是否有待发布的证书。</returns>
+    public bool PublishPendingRotation()
+    {
+        if (_pendingRotationCertificate is null)
+        {
+            return false;
+        }
+
+        Certificates.Add(_pendingRotationCertificate.SerialNumber, _pendingRotationCertificate);
+        return true;
+    }
 
     /// <summary>
     /// 构造一条**合法签名**的通知（平台私钥签名 + APIv3 密钥加密）。
@@ -211,6 +248,7 @@ internal sealed class WechatPayCallbackTestFixture : IDisposable
     /// <inheritdoc />
     public void Dispose()
     {
+        _pendingRotationCertificate?.Dispose();
         _platformCertificate.Dispose();
         _platformKey.Dispose();
         _merchantKey.Dispose();
@@ -301,27 +339,74 @@ internal sealed class WechatPayCallbackTestFixture : IDisposable
             => throw new NotSupportedException("回调链路不取商户私钥。");
     }
 
-    /// <summary>平台证书存储替身（单序列号）。</summary>
-    internal sealed class FakeCertificateStore : IWechatPayPlatformCertificateStore
+    /// <summary>平台证书刷新替身（按端口契约：已命中即短路、未知才「下载」）。</summary>
+    internal sealed class FakeCertificateRefresher : IWechatPayPlatformCertificateRefresher
     {
-        private readonly string _serial;
-        private readonly X509Certificate2 _certificate;
+        private readonly WechatPayCallbackTestFixture _fixture;
+        private readonly bool _canPublish;
 
         /// <summary>创建替身。</summary>
+        /// <param name="fixture">夹具（用于查存储与发布待轮换证书）。</param>
+        /// <param name="canPublish"><c>false</c> = 模拟刷新拿不到该序列号（仍返回失败）。</param>
+        public FakeCertificateRefresher(WechatPayCallbackTestFixture fixture, bool canPublish = true)
+        {
+            _fixture = fixture;
+            _canPublish = canPublish;
+        }
+
+        /// <summary>被调用次数（含短路）。</summary>
+        public int CallCount { get; private set; }
+
+        /// <summary>真正发起「下载」的次数（<b>短路时不递增</b>）。</summary>
+        public int DownloadCount { get; private set; }
+
+        /// <inheritdoc />
+        public Task<bool> TryRefreshAsync(
+            WechatPayMerchantConfig merchant, string serialNumber, CancellationToken cancellationToken = default)
+        {
+            CallCount++;
+
+            // 端口契约第一闸：已命中 ⇒ 幂等短路，零下载。
+            if (_fixture.Certificates.TryGetCertificate(serialNumber, out _))
+            {
+                return Task.FromResult(true);
+            }
+
+            DownloadCount++;
+            if (_canPublish)
+            {
+                _fixture.PublishPendingRotation();
+            }
+
+            return Task.FromResult(_fixture.Certificates.TryGetCertificate(serialNumber, out _));
+        }
+    }
+
+    /// <summary>平台证书存储替身（按序列号分槽，支持轮换后追加）。</summary>
+    internal sealed class FakeCertificateStore : IWechatPayPlatformCertificateStore
+    {
+        private readonly Dictionary<string, X509Certificate2> _bySerial = new(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>创建替身。</summary>
+        /// <param name="serial">初始序列号。</param>
+        /// <param name="certificate">初始证书。</param>
+        public FakeCertificateStore(string serial, X509Certificate2 certificate)
+            => _bySerial[serial] = certificate;
+
+        /// <summary>追加（或覆盖）一本证书 —— 模拟刷新成功后的入库。</summary>
         /// <param name="serial">序列号。</param>
         /// <param name="certificate">证书。</param>
-        public FakeCertificateStore(string serial, X509Certificate2 certificate)
-        {
-            _serial = serial;
-            _certificate = certificate;
-        }
+        public void Add(string serial, X509Certificate2 certificate) => _bySerial[serial] = certificate;
+
+        /// <summary>当前已知序列号数。</summary>
+        public int Count => _bySerial.Count;
 
         /// <inheritdoc />
         public bool TryGetCertificate(string? serialNumber, out X509Certificate2? certificate)
         {
-            if (string.Equals(serialNumber, _serial, StringComparison.OrdinalIgnoreCase))
+            if (!string.IsNullOrWhiteSpace(serialNumber) && _bySerial.TryGetValue(serialNumber, out var found))
             {
-                certificate = _certificate;
+                certificate = found;
                 return true;
             }
 

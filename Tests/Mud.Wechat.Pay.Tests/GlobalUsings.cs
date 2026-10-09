@@ -31,6 +31,7 @@ global using Mud.Wechat.Pay.DataModels.Refund;
 global using Mud.Wechat.Pay.DataModels.Transactions;
 global using Mud.Wechat.Pay.Download;
 global using Mud.Wechat.Pay.Extensions;
+global using Mud.Wechat.Pay.Transactions;
 global using System.Security.Cryptography;
 global using System.Security.Cryptography.X509Certificates;
 global using System.Text;

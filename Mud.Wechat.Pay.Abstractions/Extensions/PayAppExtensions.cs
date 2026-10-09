@@ -9,6 +9,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Mud.HttpUtils;
+using Mud.Wechat.Abstractions.TokenManager;
 using Mud.Wechat.Pay.Abstractions.Credential;
 using Mud.Wechat.Pay.Abstractions.Configuration;
 using Mud.Wechat.Pay.Abstractions.Transport;
@@ -118,6 +119,13 @@ public static class PayAppExtensions
     {
         if (services == null) throw new ArgumentNullException(nameof(services));
 
+        // SSRF 白名单（进程级全局态）必须在这里登记：支付线有意不走 [Token]，
+        // 因而不会触发 AddWechatTokenRecovery，纯支付宿主若不登记会让**每笔请求**被
+        // 组件的连接期 SSRF 严格模式拦下（实测缺陷，见 WechatPayTransportPipelineTests）。
+        // 经公用层窄入口登记 ⇒ 不违反 AB-G4「产品线不得自行登记白名单」的单点约束，
+        // 且白名单数组零改动（PAY-B8 / AB-G9）。
+        services.AddWechatApiHosts();
+
         // 立刻构造一次：把「配置非法 / 重复商户键 / 空集合」钉在注册期而非首次交易期。
         // 支付无 errcode 令牌自愈，坏配置拖到真实下单才暴露的排查成本极高。
         var manager = new WechatPayMerchantManager(configs);
@@ -162,6 +170,10 @@ public static class PayAppExtensions
         // 且 TryAddSingleton 保证 IWechatPayHttpClient 单实例。
         if (services.All(static d => d.ServiceType != typeof(IWechatPayHttpClient)))
         {
+            // AddHttpMessageHandler<T> 是**从 DI 解析 T**（不是 new），漏注册会在**首次请求**才抛
+            // 「No service for type ... has been registered」—— 已由 WechatPayTransportPipelineTests 锁定。
+            services.TryAddSingleton<WechatPayAuthorizationHandler>();
+
             services.AddMudHttpClient(
                 WechatPayHttpClientNames.ClientName,
                 static client => client.BaseAddress = new Uri(WechatPayHttpClientNames.BaseAddress))

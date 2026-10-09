@@ -34,6 +34,38 @@ namespace Mud.Wechat.Abstractions.TokenManager;
 /// </remarks>
 public static class WechatTokenRecoveryRegistration
 {
+    /// <summary>
+    /// 登记微信系 API 域名白名单（<b>SSRF 白名单的唯一登记入口</b>；同值幂等，可重复调用）。
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// 从 <see cref="AddWechatTokenRecovery"/> 中<b>拆出的窄入口</b>：微信支付线（<c>AddPayApp</c>）
+    /// 有意不使用 <c>[Token]</c>（APIv3 无 access_token），因而不需要令牌恢复设施 ——
+    /// 但它的命名客户端同样受组件<b>连接期 SSRF 严格模式</b>校验。纯支付宿主若不登记白名单，
+    /// 每一笔支付请求都会被 <c>UrlValidator</c> 拦下（本缺陷由
+    /// <c>WechatPayTransportPipelineTests</c> 实测捕获）。
+    /// </para>
+    /// <para>
+    /// 拆分<b>不改变</b> AB-G4 的单点约束：<c>ConfigureAllowedDomains</c> 仍只在本类出现一次，
+    /// 各产品线（含支付）只能调用本方法，不得自行登记（全局静态 + 整体替换 ⇒ 后调用者会清空前者）。
+    /// </para>
+    /// </remarks>
+    /// <param name="services">服务集合。</param>
+    /// <returns>服务集合（链式）。</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="services"/> 为 null。</exception>
+    public static IServiceCollection AddWechatApiHosts(this IServiceCollection services)
+    {
+        if (services == null)
+        {
+            throw new ArgumentNullException(nameof(services));
+        }
+
+        // SSRF 白名单：并集单一来源（同值调用幂等）。
+        UrlValidator.ConfigureAllowedDomains(WechatApiHosts.AllowedBaseUrlDomains);
+
+        return services;
+    }
+
     /// <summary>登记微信系令牌恢复设施（白名单 + 组合判定器 + 选项校验器）。</summary>
     /// <param name="services">服务集合。</param>
     /// <returns>服务集合（链式）。</returns>
@@ -45,8 +77,8 @@ public static class WechatTokenRecoveryRegistration
             throw new ArgumentNullException(nameof(services));
         }
 
-        // ① SSRF 白名单：并集单一来源（同值调用幂等）。
-        UrlValidator.ConfigureAllowedDomains(WechatApiHosts.AllowedBaseUrlDomains);
+        // ① SSRF 白名单：并集单一来源（同值调用幂等）——窄入口，支付线亦经此登记。
+        services.AddWechatApiHosts();
 
         // ② 令牌恢复选项 + 判定器组合器（PostConfigure 保证晚于任何配置绑定）。
         services.AddOptions<TokenRecoveryOptions>();

@@ -18,10 +18,13 @@ global using Mud.HttpUtils.Attributes;
 global using Mud.Wechat.Abstractions;
 // P0-b 起首批源文件落位：Mud.Wechat.Pay.Abstractions.Credential（签名串/RSA/AES-GCM/时间戳闸）。
 // P0-c 增补：Configuration（商户配置 DTO）与 Extensions（AddPayApp 注册入口）。
-// 注：Mud.Wechat.Pay 与 Mud.Wechat.Pay.DataModels 在 P1-a 才有源文件，届时再补 —— 提前写会 CS0234。
+// P1-a 增补：主包（接口 + PayModule/PayServiceBuilder/AddWechatPayApi）与 DataModels（Transactions 域 DTO）。
+global using Mud.Wechat.Pay;
 global using Mud.Wechat.Pay.Abstractions.Credential;
 global using Mud.Wechat.Pay.Abstractions.Configuration;
 global using Mud.Wechat.Pay.Abstractions.Extensions;
+global using Mud.Wechat.Pay.DataModels.Transactions;
+global using Mud.Wechat.Pay.Extensions;
 global using System.Security.Cryptography;
 global using System.Security.Cryptography.X509Certificates;
 global using System.Text;

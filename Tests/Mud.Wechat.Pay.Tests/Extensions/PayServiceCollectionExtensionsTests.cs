@@ -201,6 +201,7 @@ public class PayServiceCollectionExtensionsTests
                      typeof(TransferBillResponse),
                      typeof(TransferBillQueryResponse),
                      typeof(TransferElecsignResponse),
+                     typeof(TransferRevokeResponse),
                      typeof(FapiaoIssueRequest),
                      typeof(FapiaoQueryResponse),
                      typeof(CouponStockCreateRequest),

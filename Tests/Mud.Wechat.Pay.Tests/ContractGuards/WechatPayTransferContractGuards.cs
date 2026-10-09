@@ -95,10 +95,33 @@ public class WechatPayTransferContractGuards
             .Where(static p => p.GetCustomAttribute<PathAttribute>() != null)
             .Select(static p => p.Name)
             .Should().BeEquivalentTo(new[] { "outBillNo" });
+
+        // 微信单号查询电子回单：同样仅 path 参数；且与商户单号版**共用同一应答 DTO**（官方两页字段表逐项一致）。
+        AssertRoute<GetAttribute>(
+            nameof(IWechatPayTransferService.QueryElecsignByTransferBillNoAsync),
+            "/v3/fund-app/mch-transfer/elecsign/transfer-bill-no/{transferBillNo}");
+        FindMethod(nameof(IWechatPayTransferService.QueryElecsignByTransferBillNoAsync))
+            .ReturnType.Should().Be(typeof(Task<TransferElecsignResponse>),
+                "官方两页回单应答字段表逐项一致 ⇒ 复用同一 DTO（防两处字段各自漂移）");
+
+        // 撤销转账：**普通商户**面路由；官方本接口**无请求体** ⇒ 方法不得声明 [Body] 参数
+        // （发一个官方没定义的 {} 会被判 PARAM_ERROR）。
+        AssertRoute<PostAttribute>(
+            nameof(IWechatPayTransferService.RevokeTransferAsync),
+            "/v3/fund-app/mch-transfer/transfer-bills/out-bill-no/{outBillNo}/cancel");
+        var revoke = FindMethod(nameof(IWechatPayTransferService.RevokeTransferAsync));
+        revoke.GetParameters().Should().NotContain(
+            static p => p.GetCustomAttribute<BodyAttribute>() != null,
+            "官方《撤销转账》字段表无任何 body 字段 ⇒ 不得造空请求体");
+        revoke.GetParameters()
+            .Where(static p => p.GetCustomAttribute<PathAttribute>() != null)
+            .Select(static p => p.Name)
+            .Should().BeEquivalentTo(new[] { "outBillNo" });
+        revoke.ReturnType.Should().NotBe(typeof(Task), "撤销有应答体（4 字段），不是 204 无包体");
     }
 
     /// <summary>
-    /// TR5：<b>撤销转账刻意不建模</b>（merchant 侧路由未核验，仅核到 partner 侧含 <c>/partner/</c> 段的路由）。
+    /// TR5：撤销转账走 <b>普通商户面</b>路由，<b>不得</b>混入服务商侧的 <c>/partner/</c> 变体。
     /// </summary>
     /// <remarks>
     /// <para>
@@ -109,16 +132,25 @@ public class WechatPayTransferContractGuards
     /// （比查询多一个 <c>sub_mchid</c>）。
     /// </para>
     /// <para>
-    /// <b>为何不实现</b>：本接口 <see cref="IWechatPayTransferService"/> 声明的是<b>普通商户</b>面
-    /// （发起/查询/回单三页均标注【普通商户】）。把 partner 专属路由（含 <c>/partner/</c>）塞进来属<b>范围错配</b>；
-    /// 而 merchant 侧《撤销转账》页面本轮<b>未定位到</b>（探测 4012716438/439/440/441/442 与
-    /// <c>mch-trans/transfer-bill/cancel*.html</c> 均 404）。
-    /// <b>按「未核验不实现」纪律暂缺，且严禁把 partner 路由「去掉 /partner/ 段」后当 merchant 路由使用</b>
-    /// —— 合单域已有同类先例（<c>direct-complete</c> 的示例路径带 partner、说明路径不带，属官方自相矛盾）。
+    /// <b>本轮已核到普通商户面的对应页并完成实现</b>（<c>pay.weixin.qq.com/doc/v3/merchant/4012716458</c>，
+    /// 更新 2025.03.18，标注【普通商户】）：路由为
+    /// <c>POST /v3/fund-app/mch-transfer/transfer-bills/out-bill-no/{out_bill_no}/cancel</c>
+    /// —— <b>无 <c>/partner/</c> 段、且无请求体</b>，应答为 4 字段（<c>out_bill_no</c> /
+    /// <c>transfer_bill_no</c> / <c>state</c> / <c>update_time</c>）。
+    /// </para>
+    /// <para>
+    /// <b>本守卫的裁决已随之更新</b>：上轮「merchant 路由未核验 ⇒ 暂不建模」的处置在当时是正确的
+    /// （当时只核到 partner 页），拿到 merchant 官方页后<b>同批解除</b>并改为<b>正向</b>断言。
+    /// <b>但 partner 路由仍严禁进入本接口</b>：两套面在官方是不同文档、不同必填性
+    /// （partner 侧要 <c>sub_mchid</c> 与 13 字段应答），去掉 <c>/partner/</c> 段照搬会静默错。
+    /// </para>
+    /// <para>
+    /// <b>⚠️ 守卫与事实的同步纪律</b>：本用例是「裁决随核验结果变更」的示范 ——
+    /// 事实变化时，守卫必须在<b>同一批</b>改动里改写，否则守卫会从「防错」退化为「锁错」。
     /// </para>
     /// </remarks>
     [Fact]
-    public void RevokeTransfer_ShouldStayUnmodeled_UntilMerchantRouteVerified()
+    public void RevokeTransfer_ShouldUseMerchantRoute_NotPartnerRoute()
     {
         var routes = typeof(IWechatPayTransferService)
             .GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
@@ -126,12 +158,12 @@ public class WechatPayTransferContractGuards
             .Select(static a => a.RequestUri)
             .ToList();
 
+        routes.Should().Contain(
+            "/v3/fund-app/mch-transfer/transfer-bills/out-bill-no/{outBillNo}/cancel",
+            "普通商户面撤销路由已由官方页 4012716458 核验 ⇒ 必须实现");
         routes.Should().NotContain(
             "/v3/fund-app/mch-transfer/partner/transfer-bills/out-bill-no/{outBillNo}/cancel",
-            "partner 专属路由不得进入普通商户面接口");
-        routes.Should().NotContain(
-            "/v3/fund-app/mch-transfer/transfer-bills/out-bill-no/{outBillNo}/cancel",
-            "merchant 侧撤销路由未经官方页面核验，不得由 partner 路由去段推断");
+            "partner 专属路由不得进入普通商户面接口（官方两套文档、必填性不同）");
         routes.Should().NotBeEmpty("防「发现机制失效导致白名单真空」的静默空跑");
     }
 
@@ -186,6 +218,10 @@ public class WechatPayTransferContractGuards
         JsonNameShouldBe<TransferElecsignResponse>(nameof(TransferElecsignResponse.HashValue), "hash_value");
         JsonNameShouldBe<TransferElecsignResponse>(nameof(TransferElecsignResponse.DownloadUrl), "download_url");
 
+        JsonNameShouldBe<TransferRevokeResponse>(nameof(TransferRevokeResponse.OutBillNo), "out_bill_no");
+        JsonNameShouldBe<TransferRevokeResponse>(nameof(TransferRevokeResponse.TransferBillNo), "transfer_bill_no");
+        JsonNameShouldBe<TransferRevokeResponse>(nameof(TransferRevokeResponse.UpdateTime), "update_time");
+
         // ⚠️ 商户号字段名陷阱：本域（商家转账）官方用 mch_id（**带下划线**），
         // 而支付线其它域一律 mchid（无下划线）⇒ 两侧都钉死，禁止互相「纠正」。
         JsonNameShouldBe<TransferBillQueryResponse>(nameof(TransferBillQueryResponse.MchId), "mch_id");
@@ -233,8 +269,8 @@ public class WechatPayTransferContractGuards
             .Where(static t => !typeof(JsonSerializerContext).IsAssignableFrom(t))
             .ToList();
 
-        domainTypes.Should().HaveCount(6,
-            "商家转账域 DTO：发起族 4（请求/场景报备/收款样式/应答） + 查询应答 1 + 电子回单应答 1");
+        domainTypes.Should().HaveCount(7,
+            "商家转账域 DTO：发起族 4（请求/场景报备/收款样式/应答） + 查询应答 1 + 电子回单应答 1 + 撤销应答 1");
 
         foreach (var type in domainTypes)
         {

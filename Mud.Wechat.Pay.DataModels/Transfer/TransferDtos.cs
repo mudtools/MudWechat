@@ -256,3 +256,47 @@ public class TransferElecsignResponse : WechatPayResponse
     [JsonPropertyName("download_url")]
     public string? DownloadUrl { get; set; }
 }
+
+/// <summary>
+/// 撤销转账应答（<c>POST /v3/fund-app/mch-transfer/transfer-bills/out-bill-no/{out_bill_no}/cancel</c>，<b>仅 4 字段</b>）。
+/// </summary>
+/// <remarks>
+/// <para>
+/// <b>官方文档</b>：<see href="https://pay.weixin.qq.com/doc/v3/merchant/4012716458"/>
+/// （2026-10-09 逐字段核验；更新时间 2025.03.18）。<b>支持商户：【普通商户】</b>。
+/// </para>
+/// <para>
+/// <b>⚠️ 本接口<b>无请求体</b></b>（官方字段表明确：仅 path 参数 <c>out_bill_no</c>，不携带请求体字段）
+/// ⇒ 接口方法<b>只有</b> path 参数，刻意不造「空请求体」DTO（那会向官方发送一个它没定义的 <c>{}</c>）。
+/// </para>
+/// <para>
+/// <b>为何不复用 <see cref="TransferBillQueryResponse"/></b>：官方本页应答<b>只有</b>
+/// <c>out_bill_no</c> / <c>transfer_bill_no</c> / <c>state</c> / <c>update_time</c> 四项，
+/// <b>无</b> <c>mch_id</c> / <c>appid</c> / 金额 / 收款人等信息 ⇒ 与查询应答不是同一张表，独立建模。
+/// </para>
+/// <para>
+/// <b>异步语义（官方原文）</b>：返回成功<b>仅表示撤销请求已受理</b>，系统会异步处理退款等操作，
+/// <b>以最终查询单据返回状态为准</b>；且仅在<b>用户确认收款之前</b>可撤销。
+/// 本页 <c>state</c> 只出现 <c>CANCELING</c>（撤销中）与 <c>CANCELLED</c>（已撤销）
+/// —— 取值仍属 <see cref="TransferBillStates"/> 那一套 <c>state</c> 枚举的子集。
+/// </para>
+/// </remarks>
+[HttpJsonSerializable(SerializerClassName = "Transfer")]
+public class TransferRevokeResponse : WechatPayResponse
+{
+    /// <summary>商户单号（<c>out_bill_no</c>，必填 string(32)）。</summary>
+    [JsonPropertyName("out_bill_no")]
+    public string? OutBillNo { get; set; }
+
+    /// <summary>微信转账单号（<c>transfer_bill_no</c>，必填 string(64)）：商家转账订单的主键。</summary>
+    [JsonPropertyName("transfer_bill_no")]
+    public string? TransferBillNo { get; set; }
+
+    /// <summary>单据状态（<c>state</c>，必填）：撤销场景为 <c>CANCELING</c> / <c>CANCELLED</c>，见 <see cref="TransferBillStates"/>。</summary>
+    [JsonPropertyName("state")]
+    public string? State { get; set; }
+
+    /// <summary>最后一次单据状态变更时间（<c>update_time</c>，必填，rfc3339）。</summary>
+    [JsonPropertyName("update_time")]
+    public string? UpdateTime { get; set; }
+}

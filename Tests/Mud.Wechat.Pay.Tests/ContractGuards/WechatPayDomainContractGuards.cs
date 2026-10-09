@@ -73,7 +73,7 @@ public class WechatPayDomainContractGuards
     }
 
     /// <summary>
-    /// PAY-B5：端点计数（<b>41</b>）+ 官方路由表逐条比对（照官方原文，<b>不得「纠正」</b>）。
+    /// PAY-B5：端点计数（<b>43</b>）+ 官方路由表逐条比对（照官方原文，<b>不得「纠正」</b>）。
     /// </summary>
     /// <remarks>
     /// <para>
@@ -158,13 +158,16 @@ public class WechatPayDomainContractGuards
             "/v3/combine-transactions/out-trade-no/{combineOutTradeNo}",
         });
 
-        // P2 商家转账 4 端点：发起转账 + 两个查询（共用应答 DTO） + 商户单号查询电子回单。
+        // P2 商家转账 6 端点：发起 + 两查询 + 撤销 + 两电子回单查询（两组各自共用应答 DTO）。
+        // ⚠️ 撤销走的是**普通商户**面路由；服务商侧的 /partner/ 变体属另一套文档，不得混入。
         RoutesOf(asm, "IWechatPayTransferService").Should().BeEquivalentTo(new[]
         {
             "/v3/fund-app/mch-transfer/transfer-bills",
             "/v3/fund-app/mch-transfer/transfer-bills/out-bill-no/{outBillNo}",
             "/v3/fund-app/mch-transfer/transfer-bills/transfer-bill-no/{transferBillNo}",
+            "/v3/fund-app/mch-transfer/transfer-bills/out-bill-no/{outBillNo}/cancel",
             "/v3/fund-app/mch-transfer/elecsign/out-bill-no/{outBillNo}",
+            "/v3/fund-app/mch-transfer/elecsign/transfer-bill-no/{transferBillNo}",
         });
 
         // P2 电子发票首批 2 端点（普通商户侧）：开具 + 查询。
@@ -188,7 +191,7 @@ public class WechatPayDomainContractGuards
             .SelectMany(static m => m.GetCustomAttributes(false))
             .Select(static a => a.GetType().GetProperty("RequestUri")?.GetValue(a) as string)
             .Count(static uri => !string.IsNullOrWhiteSpace(uri))
-            .Should().Be(41, "支付线端点总数为 41（… + 2 电子发票 + 2 代金券）");
+            .Should().Be(43, "支付线端点总数为 43（… + 2 电子发票 + 2 代金券 + 2 商家转账）");
     }
 
     /// <summary>
@@ -261,6 +264,7 @@ public class WechatPayDomainContractGuards
                      typeof(TransferBillResponse),
                      typeof(TransferBillQueryResponse),
                      typeof(TransferElecsignResponse),
+                     typeof(TransferRevokeResponse),
                      typeof(FapiaoQueryResponse),
                      typeof(CouponStockCreateResponse),
                      typeof(CouponQueryResponse),

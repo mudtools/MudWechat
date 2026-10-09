@@ -128,4 +128,55 @@ public interface IWechatPayTransferService
     Task<TransferElecsignResponse> QueryElecsignByOutBillNoAsync(
         [Path] string outBillNo,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 微信单号查询电子回单。官方文档：<see href="https://pay.weixin.qq.com/doc/v3/merchant/4012716455"/>。
+    /// </summary>
+    /// <param name="transferBillNo">微信转账单号（官方 path <c>transfer_bill_no</c>，必填 string(64)）。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/> 取消操作令牌对象。</param>
+    /// <returns>回单申请单，见 <see cref="TransferElecsignResponse"/>。</returns>
+    /// <remarks>
+    /// <para><b>官方契约</b>：<b>GET</b> <c>/v3/fund-app/mch-transfer/elecsign/transfer-bill-no/{transfer_bill_no}</c>；
+    /// 仅 path 参数（更新时间 2025.03.21）。</para>
+    /// <para>
+    /// <b>返回类型为何与「商户单号查询电子回单」共用</b>：官方两页的应答字段表<b>逐项完全一致</b>
+    /// （<c>state</c> / <c>create_time</c> / <c>update_time</c> / <c>hash_type</c> / <c>hash_value</c> /
+    /// <c>download_url</c>），只是<b>入参维度</b>不同（微信单号 vs 商户单号）⇒ 复用同一 DTO
+    /// （与「两个查询转账单」共用应答同款判断：<b>表相同则共用，表不同则分建</b>）。
+    /// </para>
+    /// <para><b>两段式与时限同商户单号版</b>：须轮询到 <c>state = FINISHED</c>；<c>download_url</c> 有效期 10 分钟。</para>
+    /// </remarks>
+    [Get("/v3/fund-app/mch-transfer/elecsign/transfer-bill-no/{transferBillNo}")]
+    Task<TransferElecsignResponse> QueryElecsignByTransferBillNoAsync(
+        [Path] string transferBillNo,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 撤销转账。官方文档：<see href="https://pay.weixin.qq.com/doc/v3/merchant/4012716458"/>。
+    /// </summary>
+    /// <param name="outBillNo">商户转账单号（官方 path <c>out_bill_no</c>，必填 string(32)，仅数字与大小写字母）。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/> 取消操作令牌对象。</param>
+    /// <returns>撤销后的单据标识与状态（<c>CANCELING</c> / <c>CANCELLED</c>），见 <see cref="TransferRevokeResponse"/>。</returns>
+    /// <remarks>
+    /// <para><b>官方契约</b>：<b>POST</b> <c>/v3/fund-app/mch-transfer/transfer-bills/out-bill-no/{out_bill_no}/cancel</c>；
+    /// path 必带 <c>out_bill_no</c>；<b>无请求体</b>（官方字段表未定义任何 body 字段）。</para>
+    /// <para>
+    /// <b>⚠️ 可撤销时机</b>：官方原文「商户通过转账接口发起付款后，在<b>用户确认收款之前</b>可以通过该接口撤销付款」
+    /// —— 已确认收款或已完成的单据不能撤销。
+    /// </para>
+    /// <para>
+    /// <b>异步语义（官方原文）</b>：返回成功<b>仅表示撤销请求已受理</b>，系统会异步处理退款等操作，
+    /// <b>以最终查询单据返回状态为准</b> ⇒ 拿到 <c>CANCELING</c> 时<b>必须</b>继续经
+    /// <see cref="QueryByOutBillNoAsync"/> 查到 <c>CANCELLED</c> 终态才算撤销完成。
+    /// </para>
+    /// <para>
+    /// <b>路由对照（防串用）</b>：本接口是<b>普通商户</b>面的
+    /// <c>/v3/fund-app/mch-transfer/transfer-bills/…</c>；<b>服务商</b>侧另有
+    /// <c>/v3/fund-app/mch-transfer/<b>partner</b>/transfer-bills/…</c> 的对应文档，二者<b>不可互换</b>。
+    /// </para>
+    /// </remarks>
+    [Post("/v3/fund-app/mch-transfer/transfer-bills/out-bill-no/{outBillNo}/cancel")]
+    Task<TransferRevokeResponse> RevokeTransferAsync(
+        [Path] string outBillNo,
+        CancellationToken cancellationToken = default);
 }

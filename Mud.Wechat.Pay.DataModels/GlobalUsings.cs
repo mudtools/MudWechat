@@ -6,4 +6,5 @@
 // -----------------------------------------------------------------------
 
 global using Mud.HttpUtils.Attributes;
+global using Mud.Wechat.Abstractions.Contracts;
 global using System.Text.Json.Serialization;

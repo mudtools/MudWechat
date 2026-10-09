@@ -86,6 +86,15 @@ SDK 完整封装了企业微信接入中最繁琐的部分——**多应用、�
 
 各域面向的应用类型存在差异（官方仅自建开放 / 三类应用公共面 / 差异端点在子接口），详见接口 XML 注释与契约守卫。
 
+> ⚠️ **两条「支付」产品线勿混淆**：上表的 `AddPayApi()`（企业支付）与 `AddPayToolApi()`（收银台）属**企业微信**支付能力，走企微 `access_token`。另有独立的 **微信支付 APIv3** 产品线（`Mud.Wechat.Pay*`，凭据为**商户 RSA 私钥签名**、**无 `access_token`**），入口为：
+>
+> ```csharp
+> services.AddPayApp(configuration, "WechatPayMerchants")   // 凭据底座（商户私钥 / APIv3 密钥 / 传输层签名）
+>         .AddWechatPayApi(b => b.AddAllApis());            // 业务接口：Transactions / Refund / Bill / Certificates
+> ```
+>
+> 该线**不声明 `[Token]`**（守卫 PAY-B1 fail-closed），回调/应答验签另见 `Mud.Wechat.Pay.Callback`。详见 `.docs/` 支付方案与 `Tests/Mud.Wechat.Pay.Tests/ContractGuards/`。
+
 ## 安装
 
 通常只需安装主包与回调包（其余随依赖传递）；多实例部署再引入 Redis 扩展：

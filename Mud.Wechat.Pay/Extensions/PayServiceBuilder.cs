@@ -6,6 +6,7 @@
 // -----------------------------------------------------------------------
 
 using Mud.Wechat.Pay.Abstractions.Credential;
+using Mud.Wechat.Pay.Download;
 
 namespace Mud.Wechat.Pay.Extensions;
 
@@ -42,9 +43,21 @@ public class PayServiceBuilder
     private static Dictionary<PayModule, Action<IServiceCollection>> InitializeRegistrars()
         => new()
         {
-            // AddTransactionsWebApiHttpClient() 由 Mud.HttpUtils.Generator 按
-            // IWechatPayTransactionsService 上的 [HttpClientApi(RegistryGroupName = "Transactions")] 产出。
+            // Add{组名}WebApiHttpClient() 由 Mud.HttpUtils.Generator 按各接口上的
+            // [HttpClientApi(RegistryGroupName = "…")] 自动产出（无签入源文件）。
             [PayModule.Transactions] = static s => s.AddTransactionsWebApiHttpClient(),
+            [PayModule.Refund] = static s => s.AddRefundWebApiHttpClient(),
+            [PayModule.Certificates] = static s => s.AddCertificatesWebApiHttpClient(),
+
+            // 账单模块额外注册**账单下载通道**：它没有 [HttpClientApi] 声明（路由由 download_url 动态给出、
+            // 返回非 JSON），故无对应的 AddBillDownloadWebApiHttpClient()。它依赖 AddPayApp 注册的
+            // IWechatPayHttpClient，宿主若只用 AddPayApp 而不加任何模块则不会被注册 —— 这正是
+            // 「账单下载属账单域」的自然归属（TryAdd 语义：宿主预注册者胜出）。
+            [PayModule.Bill] = static s =>
+            {
+                s.AddBillWebApiHttpClient();
+                s.TryAddSingleton<IWechatPayBillDownloadService, WechatPayBillDownloadService>();
+            },
         };
 
     /// <summary>注册全部模块。</summary>

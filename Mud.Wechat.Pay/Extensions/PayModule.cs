@@ -27,8 +27,26 @@ namespace Mud.Wechat.Pay.Extensions;
 public enum PayModule
 {
     /// <summary>
-    /// 基础交易（下单 / 查单 / 关单）：JSAPI·小程序下单 + 微信支付订单号查单 + 商户订单号查单 + 关闭订单。
+    /// 基础交易（下单 / 查单 / 关单，4 端点）：JSAPI·小程序下单 + 微信支付订单号查单 + 商户订单号查单 + 关闭订单。
     /// 官方文档 <see href="https://pay.weixin.qq.com/doc/v3/merchant/4012791897"/>。
     /// </summary>
     Transactions,
+
+    /// <summary>
+    /// 退款（3 端点）：申请退款 + 查询单笔退款 + 发起异常退款。
+    /// 官方文档 <see href="https://pay.weixin.qq.com/doc/v3/merchant/4012791903"/>。
+    /// </summary>
+    Refund,
+
+    /// <summary>
+    /// 账单（2 端点）：申请交易账单 + 申请资金账单（账单文件本身经 <c>IWechatPayBillDownloadService</c> 下载）。
+    /// 官方文档 <see href="https://pay.weixin.qq.com/doc/v3/merchant/4012791907"/>。
+    /// </summary>
+    Bill,
+
+    /// <summary>
+    /// 平台证书（1 端点）：获取平台证书列表（用于应答 / 回调验签与 <c>Wechatpay-Serial</c> 轮换）。
+    /// 官方文档 <see href="https://pay.weixin.qq.com/doc/v3/merchant/4012551764"/>。
+    /// </summary>
+    Certificates,
 }

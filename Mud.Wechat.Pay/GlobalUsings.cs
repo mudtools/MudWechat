@@ -8,6 +8,8 @@
 // 注：根 Directory.Build.props 已开 ImplicitUsings（System / Collections.Generic / Linq / IO /
 // Net.Http / Threading / Threading.Tasks），此处仅补**非隐式**的组件面与本产品线命名空间。
 global using Microsoft.Extensions.DependencyInjection;
+global using Microsoft.Extensions.DependencyInjection.Extensions;
+global using Microsoft.Extensions.Logging;
 global using Mud.HttpUtils;
 global using Mud.HttpUtils.Attributes;
 global using Mud.Wechat.Pay.Abstractions.Transport;

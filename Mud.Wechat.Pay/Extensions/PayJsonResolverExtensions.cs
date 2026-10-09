@@ -5,6 +5,10 @@
 //  不得利用本项目从事危害国家安全、扰乱社会秩序、侵犯他人合法权益等法律法规禁止的活动！任何基于本项目开发而产生的一切法律纠纷和责任，我们不承担任何责任！
 // -----------------------------------------------------------------------
 
+using Mud.Wechat.Pay.DataModels.Bill;
+using Mud.Wechat.Pay.DataModels.Certificates;
+using Mud.Wechat.Pay.DataModels.Common;
+using Mud.Wechat.Pay.DataModels.Refund;
 using Mud.Wechat.Pay.DataModels.Transactions;
 using System.Text.Json.Serialization.Metadata;
 
@@ -42,7 +46,11 @@ public static class PayJsonResolverExtensions
         }
 
         var resolver = JsonTypeInfoResolver.Combine(
-            TransactionsJsonContext.Default);
+            CommonJsonContext.Default,
+            TransactionsJsonContext.Default,
+            RefundJsonContext.Default,
+            BillJsonContext.Default,
+            CertificatesJsonContext.Default);
 
         services.AddMudHttpClientJsonContext(resolver);
     }

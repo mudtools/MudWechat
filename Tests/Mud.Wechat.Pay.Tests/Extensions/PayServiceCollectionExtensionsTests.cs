@@ -115,6 +115,59 @@ public class PayServiceCollectionExtensionsTests
 #endif
     }
 
+    /// <summary>
+    /// 四域三段式齐备：<see cref="PayServiceBuilder.AddAllApis"/> 后四域接口与账单下载通道全部可解析。
+    /// </summary>
+    /// <remarks>
+    /// 锁定「枚举成员 ↔ 注册器 ↔ 源生成 <c>Add{域}WebApiHttpClient()</c>」三者同批成立
+    /// （AGENTS §4 三段式的出口门禁）；某一域漏挂会在此 fail，而不是等到宿主首次调用才发现。
+    /// </remarks>
+    [Fact]
+    public void AddWechatPayApi_AddAllApis_ShouldRegisterAllDomainsAndBillDownload()
+    {
+        using var provider = BuildProvider(services =>
+            services.AddPayApp(CreateMerchant()).AddWechatPayApi(b => b.AddAllApis()));
+
+        provider.GetRequiredService<IWechatPayTransactionsService>().Should().NotBeNull();
+        provider.GetRequiredService<IWechatPayRefundService>().Should().NotBeNull();
+        provider.GetRequiredService<IWechatPayBillService>().Should().NotBeNull();
+        provider.GetRequiredService<IWechatPayCertificatesService>().Should().NotBeNull();
+
+        // 账单下载通道随账单模块注册（无 [HttpClientApi]，故无对应的源生成注册方法）。
+        provider.GetRequiredService<IWechatPayBillDownloadService>().Should().NotBeNull();
+    }
+
+    /// <summary>
+    /// 新增域 DTO 必须并入 AOT resolver：退款 / 账单 / 平台证书三域与 Common 基底均须可解析。
+    /// </summary>
+    [Fact]
+    public void AddWechatPayApi_ShouldRegisterAllDomainJsonContexts_WhenBuiltOnNet8OrGreater()
+    {
+        using var provider = BuildProvider(services =>
+            services.AddPayApp(CreateMerchant()).AddWechatPayApi(b => b.AddAllApis()));
+
+#if NET8_0_OR_GREATER
+        var options = provider.GetRequiredService<IOptions<JsonSerializerOptions>>().Value;
+        var resolver = options.TypeInfoResolver;
+        resolver.Should().NotBeNull();
+
+        foreach (var dto in new[]
+                 {
+                     typeof(WechatPayResponse),
+                     typeof(RefundApplyRequest),
+                     typeof(RefundResponse),
+                     typeof(BillDownloadInfoResponse),
+                     typeof(PlatformCertificatesResponse),
+                 })
+        {
+            resolver!.GetTypeInfo(dto, options).Should().NotBeNull(
+                $"{dto.Name} 必须被源生成上下文覆盖，否则 Native AOT 下无元数据");
+        }
+#else
+        provider.GetRequiredService<IOptions<JsonSerializerOptions>>().Should().NotBeNull();
+#endif
+    }
+
     /// <summary>辅助：单商户 + 注册密钥端口后构建根容器（开 scope 校验）。</summary>
     private static ServiceProvider BuildProvider(Action<IServiceCollection> configure)
     {

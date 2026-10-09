@@ -11,6 +11,7 @@ namespace Mud.Wechat.Pay.DataModels.Transactions;
     PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower,
     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     WriteIndented = false)]
+[JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.Transactions.CloseOrderRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.Transactions.JsapiPrepayRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.Transactions.JsapiAmountInfo))]
 [JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.Transactions.JsapiPayerInfo))]
@@ -20,6 +21,12 @@ namespace Mud.Wechat.Pay.DataModels.Transactions;
 [JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.Transactions.JsapiStoreInfo))]
 [JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.Transactions.JsapiSettleInfo))]
 [JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.Transactions.JsapiPrepayResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.Transactions.TransactionQueryResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.Transactions.TransactionPayerInfo))]
+[JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.Transactions.TransactionAmountInfo))]
+[JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.Transactions.TransactionSceneInfo))]
+[JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.Transactions.TransactionPromotionDetail))]
+[JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.Transactions.TransactionPromotionGoodsDetail))]
 internal partial class TransactionsJsonContext : JsonSerializerContext
 {
 }

@@ -168,4 +168,39 @@ public interface IWechatPayPayScoreService
         [Path] string outOrderNo,
         [Body] PayScoreCollectRequest request,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 商户预授权。官方文档：<see href="https://pay.weixin.qq.com/wiki/doc/apiv3/apis/chapter6_1_2.shtml"/>。
+    /// </summary>
+    /// <param name="request">预授权请求体，见 <see cref="PayScorePermissionsRequest"/>。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/> 取消操作令牌对象。</param>
+    /// <returns>预授权令牌（唯一字段），见 <see cref="PayScorePermissionsResponse"/>。</returns>
+    /// <remarks>
+    /// <para><b>官方契约</b>：<b>POST</b> <c>/v3/payscore/permissions</c>；无 path / query 参数；
+    /// body 必填 <c>service_id</c> / <c>appid</c> / <c>authorization_code</c>，<c>notify_url</c> 选填。</para>
+    /// <para><b>产品线归属</b>：官方把本端点归入「微信支付分（<b>免确认模式</b>）」—— 免确认模式才有预授权流程。</para>
+    /// </remarks>
+    [Post("/v3/payscore/permissions")]
+    Task<PayScorePermissionsResponse> PreAuthorizeAsync(
+        [Body] PayScorePermissionsRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 查询用户授权记录（授权协议号）。官方文档：<see href="https://pay.weixin.qq.com/wiki/doc/apiv3/apis/chapter6_1_3.shtml"/>。
+    /// </summary>
+    /// <param name="authorizationCode">授权协议号（官方 path <c>authorization_code</c>，必填 string(32)）。</param>
+    /// <param name="serviceId">服务 ID（官方 query <c>service_id</c>，必填 string(32)）。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/> 取消操作令牌对象。</param>
+    /// <returns>授权记录（含授权状态与授权/取消时间），见 <see cref="PayScoreAuthorizationRecordResponse"/>。</returns>
+    /// <remarks>
+    /// <para><b>官方契约</b>：<b>GET</b> <c>/v3/payscore/permissions/authorization-code/{authorization_code}?service_id=…</c>；
+    /// path 必带 <c>authorization_code</c>、query 必带 <c>service_id</c>。</para>
+    /// <para><b>未完成项（诚实记录）</b>：<c>authorization_state</c> 的<b>值域</b>本轮未取得（核验只覆盖字段表）
+    /// ⇒ SDK 不臆造枚举常量；使用方须以官方值表判定，后续增量将补该值表并加守卫。</para>
+    /// </remarks>
+    [Get("/v3/payscore/permissions/authorization-code/{authorizationCode}")]
+    Task<PayScoreAuthorizationRecordResponse> QueryAuthorizationRecordAsync(
+        [Path] string authorizationCode,
+        [Query("service_id")] string serviceId,
+        CancellationToken cancellationToken = default);
 }

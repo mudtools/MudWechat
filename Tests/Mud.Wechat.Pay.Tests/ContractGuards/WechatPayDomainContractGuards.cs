@@ -130,7 +130,7 @@ public class WechatPayDomainContractGuards
             "/v3/profitsharing/receivers/delete",
         });
 
-        // P2 支付分 6 端点：创建 / 查询 / 取消 / 完结 / 修改金额 / 发起催收扣款。
+        // P2 支付分 8 端点：服务订单 6（创建/查询/取消/完结/修改/催收扣款）+ 授权面 2（预授权/查授权记录）。
         RoutesOf(asm, "IWechatPayPayScoreService").Should().BeEquivalentTo(new[]
         {
             "/v3/payscore/serviceorder",
@@ -139,6 +139,8 @@ public class WechatPayDomainContractGuards
             "/v3/payscore/serviceorder/{outOrderNo}/complete",
             "/v3/payscore/serviceorder/{outOrderNo}/modify",
             "/v3/payscore/serviceorder/{outOrderNo}/pay",
+            "/v3/payscore/permissions",
+            "/v3/payscore/permissions/authorization-code/{authorizationCode}",
         });
 
         // 合计计数（PAY-B5 断言的单一来源）。
@@ -148,7 +150,7 @@ public class WechatPayDomainContractGuards
             .SelectMany(static m => m.GetCustomAttributes(false))
             .Select(static a => a.GetType().GetProperty("RequestUri")?.GetValue(a) as string)
             .Count(static uri => !string.IsNullOrWhiteSpace(uri))
-            .Should().Be(25, "支付线端点总数为 25（4 交易 + 3 退款 + 2 账单 + 1 平台证书 + 9 分账 + 6 支付分）");
+            .Should().Be(27, "支付线端点总数为 27（4 交易 + 3 退款 + 2 账单 + 1 平台证书 + 9 分账 + 8 支付分）");
     }
 
     /// <summary>
@@ -213,6 +215,8 @@ public class WechatPayDomainContractGuards
                      typeof(PayScoreCompleteOrderResponse),
                      typeof(PayScoreModifyOrderResponse),
                      typeof(PayScoreCollectResponse),
+                     typeof(PayScorePermissionsResponse),
+                     typeof(PayScoreAuthorizationRecordResponse),
                  })
         {
             typeof(WechatPayResponse).IsAssignableFrom(responseType).Should().BeTrue(

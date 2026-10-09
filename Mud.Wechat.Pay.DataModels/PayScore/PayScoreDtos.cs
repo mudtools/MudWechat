@@ -938,3 +938,96 @@ public class PayScoreCollectResponse : WechatPayResponse
     [JsonPropertyName("order_id")]
     public string? OrderId { get; set; }
 }
+
+/// <summary>
+/// 商户预授权（<c>POST /v3/payscore/permissions</c>）。
+/// </summary>
+/// <remarks>
+/// <para>
+/// <b>官方文档</b>：<see href="https://pay.weixin.qq.com/wiki/doc/apiv3/apis/chapter6_1_2.shtml"/>
+/// （2026-10-09 逐字段核验；更新时间 2024.12.10；<b>免确认模式</b>产品线；支持商户：普通商户）。
+/// </para>
+/// <para>
+/// <b>用途</b>：免确认模式下由商户<b>代用户发起预授权</b>，取得 <c>apply_permissions_token</c>
+/// （官方应答的<b>唯一</b>字段）后拉起授权页完成用户授权。
+/// </para>
+/// </remarks>
+[HttpJsonSerializable(SerializerClassName = "PayScore")]
+public class PayScorePermissionsRequest
+{
+    /// <summary>服务 ID（<c>service_id</c>，必填 string(32)，32 位数字）。</summary>
+    [JsonPropertyName("service_id")]
+    public string? ServiceId { get; set; }
+
+    /// <summary>公众账号 ID（<c>appid</c>，必填 string(32)）。</summary>
+    [JsonPropertyName("appid")]
+    public string? AppId { get; set; }
+
+    /// <summary>授权协议号（<c>authorization_code</c>，必填 string(32)）：商户侧生成的授权协议标识。</summary>
+    [JsonPropertyName("authorization_code")]
+    public string? AuthorizationCode { get; set; }
+
+    /// <summary>商户回调地址（<c>notify_url</c>，<b>选填</b> string(255)）：授权结果回调。</summary>
+    [JsonPropertyName("notify_url")]
+    public string? NotifyUrl { get; set; }
+}
+
+/// <summary>
+/// 商户预授权应答（<b>仅</b> <c>apply_permissions_token</c> 一个字段）。
+/// </summary>
+[HttpJsonSerializable(SerializerClassName = "PayScore")]
+public class PayScorePermissionsResponse : WechatPayResponse
+{
+    /// <summary>预授权令牌（<c>apply_permissions_token</c>，必填 string(300)）：用于拉起授权页。</summary>
+    [JsonPropertyName("apply_permissions_token")]
+    public string? ApplyPermissionsToken { get; set; }
+}
+
+/// <summary>
+/// 查询用户授权记录（授权协议号）应答（<c>GET /v3/payscore/permissions/authorization-code/{authorization_code}</c>）。
+/// </summary>
+/// <remarks>
+/// <para>
+/// <b>官方文档</b>：<see href="https://pay.weixin.qq.com/wiki/doc/apiv3/apis/chapter6_1_3.shtml"/>
+/// （2026-10-09 逐字段核验；更新时间 2024.12.10；<b>免确认模式</b>产品线）。
+/// </para>
+/// <para>
+/// <b>⚠️ <c>authorization_state</c> 的值域本轮<b>未</b>取得</b>（核验只覆盖字段表，官方值表未含在内）
+/// ⇒ 本 DTO <b>不臆造</b>枚举常量，保持字符串，由调用方按官方值表自行判定并留待后续核验补齐。
+/// </para>
+/// </remarks>
+[HttpJsonSerializable(SerializerClassName = "PayScore")]
+public class PayScoreAuthorizationRecordResponse : WechatPayResponse
+{
+    /// <summary>服务 ID（<c>service_id</c>，string(32)）。</summary>
+    [JsonPropertyName("service_id")]
+    public string? ServiceId { get; set; }
+
+    /// <summary>公众账号 ID（<c>appid</c>，string(32)）。</summary>
+    [JsonPropertyName("appid")]
+    public string? AppId { get; set; }
+
+    /// <summary>商户号（<c>mchid</c>，string(32)）。</summary>
+    [JsonPropertyName("mchid")]
+    public string? MchId { get; set; }
+
+    /// <summary>用户标识（<c>openid</c>，string(128)）：用户在商户 <c>appid</c> 下的唯一标识。</summary>
+    [JsonPropertyName("openid")]
+    public string? OpenId { get; set; }
+
+    /// <summary>授权协议号（<c>authorization_code</c>，string(32)）。</summary>
+    [JsonPropertyName("authorization_code")]
+    public string? AuthorizationCode { get; set; }
+
+    /// <summary>授权状态（<c>authorization_state</c>，string）：<b>值域以官方值表为准</b>（本仓未臆造常量）。</summary>
+    [JsonPropertyName("authorization_state")]
+    public string? AuthorizationState { get; set; }
+
+    /// <summary>取消授权时间（<c>cancel_authorization_time</c>，string，rfc3339）。</summary>
+    [JsonPropertyName("cancel_authorization_time")]
+    public string? CancelAuthorizationTime { get; set; }
+
+    /// <summary>授权成功时间（<c>authorization_success_time</c>，string，rfc3339）。</summary>
+    [JsonPropertyName("authorization_success_time")]
+    public string? AuthorizationSuccessTime { get; set; }
+}

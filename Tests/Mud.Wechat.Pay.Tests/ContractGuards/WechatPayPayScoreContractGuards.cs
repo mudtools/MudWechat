@@ -52,6 +52,12 @@ public class WechatPayPayScoreContractGuards
         // 官方接口名是「发起催收扣款」，路由为 /pay（不是 /collect 之类的直觉名）。
         AssertRoute<PostAttribute>(nameof(IWechatPayPayScoreService.CollectServiceOrderAsync), "/v3/payscore/serviceorder/{outOrderNo}/pay");
 
+        // 授权面（免确认模式）：预授权 + 查授权记录（授权协议号走 path、service_id 走 query）。
+        AssertRoute<PostAttribute>(nameof(IWechatPayPayScoreService.PreAuthorizeAsync), "/v3/payscore/permissions");
+        AssertRoute<GetAttribute>(
+            nameof(IWechatPayPayScoreService.QueryAuthorizationRecordAsync),
+            "/v3/payscore/permissions/authorization-code/{authorizationCode}");
+
         // 查询：必填 service_id + appid；out_order_no 与 query_id 为「二选一」的可选参数。
         var query = FindMethod(nameof(IWechatPayPayScoreService.QueryServiceOrderAsync));
         query.GetParameters()
@@ -114,6 +120,11 @@ public class WechatPayPayScoreContractGuards
 
         JsonNameShouldBe<PayScoreCollectRequest>(nameof(PayScoreCollectRequest.ServiceId), "service_id");
         JsonNameShouldBe<PayScoreCollectResponse>(nameof(PayScoreCollectResponse.OrderId), "order_id");
+
+        JsonNameShouldBe<PayScorePermissionsRequest>(nameof(PayScorePermissionsRequest.AuthorizationCode), "authorization_code");
+        JsonNameShouldBe<PayScorePermissionsResponse>(nameof(PayScorePermissionsResponse.ApplyPermissionsToken), "apply_permissions_token");
+        JsonNameShouldBe<PayScoreAuthorizationRecordResponse>(nameof(PayScoreAuthorizationRecordResponse.AuthorizationState), "authorization_state");
+        JsonNameShouldBe<PayScoreAuthorizationRecordResponse>(nameof(PayScoreAuthorizationRecordResponse.CancelAuthorizationTime), "cancel_authorization_time");
     }
 
     /// <summary>
@@ -222,11 +233,12 @@ public class WechatPayPayScoreContractGuards
             .Where(static t => !typeof(JsonSerializerContext).IsAssignableFrom(t))
             .ToList();
 
-        domainTypes.Should().HaveCount(22,
+        domainTypes.Should().HaveCount(25,
             "支付分域 DTO：创单族 7（请求/后付费/优惠/时间段/位置/风险金/设备）" +
             " + 创建应答 1 + 查询应答 1 + 查询嵌套 4（收款/收款明细/优惠/优惠单品）" +
             " + 取消族 2（请求/应答） + 完结族 2（请求/应答）" +
-            " + 修改族 3（请求/收款/应答） + 催收扣款族 2（请求/应答）");
+            " + 修改族 3（请求/收款/应答） + 催收扣款族 2（请求/应答）" +
+            " + 授权面 3（预授权请求/预授权应答/授权记录应答）");
 
         foreach (var type in domainTypes)
         {

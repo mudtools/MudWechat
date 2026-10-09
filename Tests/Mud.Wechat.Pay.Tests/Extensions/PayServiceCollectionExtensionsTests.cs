@@ -178,6 +178,8 @@ public class PayServiceCollectionExtensionsTests
                      typeof(PayScoreCompleteOrderResponse),
                      typeof(PayScoreModifyOrderResponse),
                      typeof(PayScoreCollectResponse),
+                     typeof(PayScoreAuthorizationRecordResponse),
+                     typeof(PayScorePermissionsRequest),
                  })
         {
             resolver!.GetTypeInfo(dto, options).Should().NotBeNull(

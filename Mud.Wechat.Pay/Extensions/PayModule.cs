@@ -56,4 +56,11 @@ public enum PayModule
     /// </summary>
     /// <remarks>其余分账端点（回退 / 解冻 / 待分金额 / 删除接收方 / 分账账单）待逐页核验后增量。</remarks>
     ProfitSharing,
+
+    /// <summary>
+    /// 支付分（<b>P2 首批 3 端点</b>）：创建 / 查询 / 取消服务订单。
+    /// 官方文档 <see href="https://pay.weixin.qq.com/doc/v3/merchant/4012587900"/>。
+    /// </summary>
+    /// <remarks>完结 / 收款 / 同步 / 授权与回调等待逐页核验后增量。</remarks>
+    PayScore,
 }

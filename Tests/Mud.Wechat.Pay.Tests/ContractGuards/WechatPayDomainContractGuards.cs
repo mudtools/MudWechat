@@ -44,9 +44,9 @@ public class WechatPayDomainContractGuards
             .OrderBy(static t => t.Name, StringComparer.Ordinal)
             .ToArray();
 
-        // 数量下限防枚举空跑（AGENTS §6）：五域接口 = Transactions / Refund / Bill / Certificates / ProfitSharing。
-        interfaces.Should().HaveCount(5,
-            "支付线五域接口（Transactions/Refund/Bill/Certificates/ProfitSharing）——数量变化须同批更新 PayModule 与本守卫");
+        // 数量下限防枚举空跑（AGENTS §6）：六域接口 = Transactions / Refund / Bill / Certificates / ProfitSharing / PayScore。
+        interfaces.Should().HaveCount(6,
+            "支付线六域接口（Transactions/Refund/Bill/Certificates/ProfitSharing/PayScore）——数量变化须同批更新 PayModule 与本守卫");
 
         interfaces.Select(static t => t.Name).Should().BeEquivalentTo(new[]
         {
@@ -55,6 +55,7 @@ public class WechatPayDomainContractGuards
             "IWechatPayBillService",
             "IWechatPayCertificatesService",
             "IWechatPayProfitSharingService",
+            "IWechatPayPayScoreService",
         });
 
         var offenders = interfaces
@@ -129,6 +130,14 @@ public class WechatPayDomainContractGuards
             "/v3/profitsharing/receivers/delete",
         });
 
+        // P2 支付分首批 3 端点：创建 / 查询 / 取消服务订单（查询与创建同路径、不同方法）。
+        RoutesOf(asm, "IWechatPayPayScoreService").Should().BeEquivalentTo(new[]
+        {
+            "/v3/payscore/serviceorder",
+            "/v3/payscore/serviceorder",
+            "/v3/payscore/serviceorder/{outOrderNo}/cancel",
+        });
+
         // 合计计数（PAY-B5 断言的单一来源）。
         asm.GetTypes()
             .Where(static t => t.IsInterface && t.IsPublic)
@@ -136,7 +145,7 @@ public class WechatPayDomainContractGuards
             .SelectMany(static m => m.GetCustomAttributes(false))
             .Select(static a => a.GetType().GetProperty("RequestUri")?.GetValue(a) as string)
             .Count(static uri => !string.IsNullOrWhiteSpace(uri))
-            .Should().Be(19, "支付线端点总数为 19（4 交易 + 3 退款 + 2 账单 + 1 平台证书 + 9 分账）");
+            .Should().Be(22, "支付线端点总数为 22（4 交易 + 3 退款 + 2 账单 + 1 平台证书 + 9 分账 + 3 支付分）");
     }
 
     /// <summary>
@@ -195,6 +204,9 @@ public class WechatPayDomainContractGuards
                      typeof(ProfitSharingReturnOrderResponse),
                      typeof(ProfitSharingAmountsResponse),
                      typeof(ProfitSharingDeleteReceiverResponse),
+                     typeof(PayScoreServiceOrderResponse),
+                     typeof(PayScoreServiceOrderQueryResponse),
+                     typeof(PayScoreCancelOrderResponse),
                  })
         {
             typeof(WechatPayResponse).IsAssignableFrom(responseType).Should().BeTrue(

@@ -109,4 +109,23 @@ public interface IWechatPayTransferService
     Task<TransferBillQueryResponse> QueryByTransferBillNoAsync(
         [Path] string transferBillNo,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 商户单号查询电子回单。官方文档：<see href="https://pay.weixin.qq.com/doc/v3/merchant/4012716436"/>。
+    /// </summary>
+    /// <param name="outBillNo">商户转账单号（官方 path <c>out_bill_no</c>，必填 string(32)）。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/> 取消操作令牌对象。</param>
+    /// <returns>回单申请单（含状态与（已完成时）摘要与下载地址），见 <see cref="TransferElecsignResponse"/>。</returns>
+    /// <remarks>
+    /// <para><b>官方契约</b>：<b>GET</b> <c>/v3/fund-app/mch-transfer/elecsign/out-bill-no/{out_bill_no}</c>；
+    /// 仅 path 参数。</para>
+    /// <para><b>两段式</b>：回单是<b>异步生成</b>的 —— 首次调用常返回 <c>state = GENERATING</c>，
+    /// <b>必须轮询</b>到 <c>FINISHED</c> 才有 <c>hash_value</c> / <c>download_url</c>。</para>
+    /// <para><b>时限</b>：<c>download_url</c> <b>有效期仅 10 分钟</b>，过期须重新调用本接口；官方要求原样使用、勿拼接。</para>
+    /// <para><b>完整性</b>：下载后须用 <c>hash_type</c>/<c>hash_value</c> 比对文件摘要（官方要求），勿只凭下载成功采信。</para>
+    /// </remarks>
+    [Get("/v3/fund-app/mch-transfer/elecsign/out-bill-no/{outBillNo}")]
+    Task<TransferElecsignResponse> QueryElecsignByOutBillNoAsync(
+        [Path] string outBillNo,
+        CancellationToken cancellationToken = default);
 }

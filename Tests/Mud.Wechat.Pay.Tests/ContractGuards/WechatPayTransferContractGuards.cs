@@ -85,6 +85,78 @@ public class WechatPayTransferContractGuards
             .Should().BeEquivalentTo(new[] { "transferBillNo" });
         byTransferNo.ReturnType.Should().Be(typeof(Task<TransferBillQueryResponse>),
             "官方两页应答字段表逐项一致 ⇒ 复用同一 DTO（防两处字段各自漂移）");
+
+        // 商户单号查询电子回单：仅 path 参数。
+        AssertRoute<GetAttribute>(
+            nameof(IWechatPayTransferService.QueryElecsignByOutBillNoAsync),
+            "/v3/fund-app/mch-transfer/elecsign/out-bill-no/{outBillNo}");
+        FindMethod(nameof(IWechatPayTransferService.QueryElecsignByOutBillNoAsync))
+            .GetParameters()
+            .Where(static p => p.GetCustomAttribute<PathAttribute>() != null)
+            .Select(static p => p.Name)
+            .Should().BeEquivalentTo(new[] { "outBillNo" });
+    }
+
+    /// <summary>
+    /// TR5：<b>撤销转账刻意不建模</b>（merchant 侧路由未核验，仅核到 partner 侧含 <c>/partner/</c> 段的路由）。
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>已核事实（2026-10-09）</b>：partner 侧《撤销转账》
+    /// （<c>pay.weixin.qq.com/doc/v3/partner/4015469118</c>，更新 2025.07.29）给的请求路径是
+    /// <c>POST /v3/fund-app/mch-transfer/<b>partner</b>/transfer-bills/out-bill-no/{out_bill_no}/cancel</c>
+    /// —— <b>含 <c>/partner/</c> 段</b>；请求体仅 <c>sub_mchid</c>（必填），应答为转账单 13 字段
+    /// （比查询多一个 <c>sub_mchid</c>）。
+    /// </para>
+    /// <para>
+    /// <b>为何不实现</b>：本接口 <see cref="IWechatPayTransferService"/> 声明的是<b>普通商户</b>面
+    /// （发起/查询/回单三页均标注【普通商户】）。把 partner 专属路由（含 <c>/partner/</c>）塞进来属<b>范围错配</b>；
+    /// 而 merchant 侧《撤销转账》页面本轮<b>未定位到</b>（探测 4012716438/439/440/441/442 与
+    /// <c>mch-trans/transfer-bill/cancel*.html</c> 均 404）。
+    /// <b>按「未核验不实现」纪律暂缺，且严禁把 partner 路由「去掉 /partner/ 段」后当 merchant 路由使用</b>
+    /// —— 合单域已有同类先例（<c>direct-complete</c> 的示例路径带 partner、说明路径不带，属官方自相矛盾）。
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void RevokeTransfer_ShouldStayUnmodeled_UntilMerchantRouteVerified()
+    {
+        var routes = typeof(IWechatPayTransferService)
+            .GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
+            .SelectMany(static m => m.GetCustomAttributes<HttpMethodAttribute>())
+            .Select(static a => a.RequestUri)
+            .ToList();
+
+        routes.Should().NotContain(
+            "/v3/fund-app/mch-transfer/partner/transfer-bills/out-bill-no/{outBillNo}/cancel",
+            "partner 专属路由不得进入普通商户面接口");
+        routes.Should().NotContain(
+            "/v3/fund-app/mch-transfer/transfer-bills/out-bill-no/{outBillNo}/cancel",
+            "merchant 侧撤销路由未经官方页面核验，不得由 partner 路由去段推断");
+        routes.Should().NotBeEmpty("防「发现机制失效导致白名单真空」的静默空跑");
+    }
+
+    /// <summary>TR6：电子回单状态与摘要类型取值锁定（与转账单状态是两套枚举）。</summary>
+    [Fact]
+    public void ElecsignConstants_ShouldMatchOfficialValues()
+    {
+        var elecsignStates = typeof(TransferElecsignStates)
+            .GetFields(BindingFlags.Public | BindingFlags.Static)
+            .Where(static f => f.IsLiteral)
+            .Select(static f => (string)f.GetRawConstantValue()!)
+            .ToArray();
+        elecsignStates.Should().BeEquivalentTo(new[] { "GENERATING", "FINISHED", "FAILED" });
+        elecsignStates.Should().HaveCount(3, "官方电子回单申请单状态为 3 值");
+
+        // 两套 state 枚举不得混用：转账单有 ACCEPTED，电子回单没有。
+        TransferElecsignStates.Finished.Should().NotBe(TransferBillStates.Success,
+            "电子回单的 FINISHED 与转账单的 SUCCESS 是两套语义");
+
+        var hashTypes = typeof(TransferElecsignHashTypes)
+            .GetFields(BindingFlags.Public | BindingFlags.Static)
+            .Where(static f => f.IsLiteral)
+            .Select(static f => (string)f.GetRawConstantValue()!)
+            .ToArray();
+        hashTypes.Should().BeEquivalentTo(new[] { "SHA256", "SM3" });
     }
 
     /// <summary>TR2：官方字段名锁定。</summary>
@@ -109,6 +181,10 @@ public class WechatPayTransferContractGuards
         JsonNameShouldBe<TransferBillQueryResponse>(nameof(TransferBillQueryResponse.OutBillNo), "out_bill_no");
         JsonNameShouldBe<TransferBillQueryResponse>(nameof(TransferBillQueryResponse.FailReason), "fail_reason");
         JsonNameShouldBe<TransferBillQueryResponse>(nameof(TransferBillQueryResponse.UpdateTime), "update_time");
+
+        JsonNameShouldBe<TransferElecsignResponse>(nameof(TransferElecsignResponse.HashType), "hash_type");
+        JsonNameShouldBe<TransferElecsignResponse>(nameof(TransferElecsignResponse.HashValue), "hash_value");
+        JsonNameShouldBe<TransferElecsignResponse>(nameof(TransferElecsignResponse.DownloadUrl), "download_url");
 
         // ⚠️ 商户号字段名陷阱：本域（商家转账）官方用 mch_id（**带下划线**），
         // 而支付线其它域一律 mchid（无下划线）⇒ 两侧都钉死，禁止互相「纠正」。
@@ -157,8 +233,8 @@ public class WechatPayTransferContractGuards
             .Where(static t => !typeof(JsonSerializerContext).IsAssignableFrom(t))
             .ToList();
 
-        domainTypes.Should().HaveCount(5,
-            "商家转账域 DTO：发起族 4（请求/场景报备/收款样式/应答） + 查询应答 1");
+        domainTypes.Should().HaveCount(6,
+            "商家转账域 DTO：发起族 4（请求/场景报备/收款样式/应答） + 查询应答 1 + 电子回单应答 1");
 
         foreach (var type in domainTypes)
         {

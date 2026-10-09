@@ -194,6 +194,7 @@ public class PayServiceCollectionExtensionsTests
                      typeof(TransferBillRequest),
                      typeof(TransferBillResponse),
                      typeof(TransferBillQueryResponse),
+                     typeof(TransferElecsignResponse),
                  })
         {
             resolver!.GetTypeInfo(dto, options).Should().NotBeNull(

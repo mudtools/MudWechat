@@ -57,3 +57,33 @@ public static class TransferBillStates
     /// <summary>转账撤销完成（官方 <c>CANCELLED</c>，<b>终态</b>）。</summary>
     public const string Cancelled = "CANCELLED";
 }
+
+/// <summary>
+/// 电子回单申请单状态（官方 <c>state</c>，3 值）。
+/// </summary>
+/// <remarks>
+/// <b>官方文档</b>：<see href="https://pay.weixin.qq.com/doc/v3/merchant/4012716436"/>
+/// （2026-10-09 逐值核验）。注意本状态与<b>转账单</b>状态（<see cref="TransferBillStates"/>）
+/// 是<b>两套枚举</b>，只是都叫 <c>state</c> —— 勿混用。
+/// </remarks>
+public static class TransferElecsignStates
+{
+    /// <summary>生成中（官方 <c>GENERATING</c>）：已受理成功并在处理中。</summary>
+    public const string Generating = "GENERATING";
+
+    /// <summary>已完成（官方 <c>FINISHED</c>）：此时才返回摘要与下载地址。</summary>
+    public const string Finished = "FINISHED";
+
+    /// <summary>生成失败（官方 <c>FAILED</c>）：失败原因字段会返回具体原因。</summary>
+    public const string Failed = "FAILED";
+}
+
+/// <summary>回单文件摘要类型（官方 <c>hash_type</c>）。</summary>
+public static class TransferElecsignHashTypes
+{
+    /// <summary>SHA256 摘要算法（官方 <c>SHA256</c>）。</summary>
+    public const string Sha256 = "SHA256";
+
+    /// <summary>国密 SM3 摘要算法（官方 <c>SM3</c>）。</summary>
+    public const string Sm3 = "SM3";
+}

@@ -16,6 +16,7 @@ namespace Mud.Wechat.Pay.DataModels.Transfer;
 [JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.Transfer.TransferUserRecvStyle))]
 [JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.Transfer.TransferBillResponse))]
 [JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.Transfer.TransferBillQueryResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.Transfer.TransferElecsignResponse))]
 internal partial class TransferJsonContext : JsonSerializerContext
 {
 }

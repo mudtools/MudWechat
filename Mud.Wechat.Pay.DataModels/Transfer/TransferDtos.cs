@@ -203,3 +203,56 @@ public class TransferBillQueryResponse : WechatPayResponse
     [JsonPropertyName("update_time")]
     public string? UpdateTime { get; set; }
 }
+
+/// <summary>
+/// 商户单号查询电子回单应答（<c>GET /v3/fund-app/mch-transfer/elecsign/out-bill-no/{out_bill_no}</c>）。
+/// </summary>
+/// <remarks>
+/// <para>
+/// <b>官方文档</b>：<see href="https://pay.weixin.qq.com/doc/v3/merchant/4012716436"/>
+/// （2026-10-09 逐字段核验；更新时间 2025.03.21）。<b>支持商户：【普通商户】</b>。
+/// </para>
+/// <para>
+/// <b>🔴 <c>download_url</c> 有效期仅 <b>10 分钟</b></b>（官方原文），过期须重新调用本接口获取；
+/// 且官方明示「<b>域名/路径/参数都可能变化，请勿自行拼接</b>」⇒ 必须原样使用返回的 URL。
+/// </para>
+/// <para>
+/// <b>⚠️ 下载安全提示</b>：本仓的账单下载通道（<c>IWechatPayBillDownloadService</c>）带<b>主机白名单前置闸</b>。
+/// 回单域名若不在该白名单内会被<b>拒绝</b>（fail-closed，正确行为）—— 宿主若需下载回单，
+/// 须先核验回单域名并自行放行，<b>不得</b>为了「能下」而放宽白名单。
+/// </para>
+/// <para>
+/// <b>完整性校验</b>：<c>hash_type</c> / <c>hash_value</c> 仅在 <c>state = FINISHED</c> 时返回，
+/// 官方要求<b>与下载到的文件摘要比对</b>以确认完整性与真实性 —— 不要只看下载成功就采信。
+/// </para>
+/// </remarks>
+[HttpJsonSerializable(SerializerClassName = "Transfer")]
+public class TransferElecsignResponse : WechatPayResponse
+{
+    /// <summary>申请单状态（<c>state</c>，必填）：取值见 <see cref="TransferElecsignStates"/>。</summary>
+    [JsonPropertyName("state")]
+    public string? State { get; set; }
+
+    /// <summary>申请单创建时间（<c>create_time</c>，必填，rfc3339）。</summary>
+    [JsonPropertyName("create_time")]
+    public string? CreateTime { get; set; }
+
+    /// <summary>申请单更新时间（<c>update_time</c>，必填，rfc3339）。</summary>
+    [JsonPropertyName("update_time")]
+    public string? UpdateTime { get; set; }
+
+    /// <summary>回单文件摘要类型（<c>hash_type</c>，选填）：<b>仅</b>申请单已完成时返回，见 <see cref="TransferElecsignHashTypes"/>。</summary>
+    [JsonPropertyName("hash_type")]
+    public string? HashType { get; set; }
+
+    /// <summary>回单文件摘要值（<c>hash_value</c>，选填）：<b>仅</b>已完成时返回，须与下载文件摘要比对。</summary>
+    [JsonPropertyName("hash_value")]
+    public string? HashValue { get; set; }
+
+    /// <summary>
+    /// 回单文件下载地址（<c>download_url</c>，选填）：<b>仅</b>已完成时返回，
+    /// <b>有效期 10 分钟</b>，且官方要求<b>原样使用、勿自行拼接</b>。
+    /// </summary>
+    [JsonPropertyName("download_url")]
+    public string? DownloadUrl { get; set; }
+}

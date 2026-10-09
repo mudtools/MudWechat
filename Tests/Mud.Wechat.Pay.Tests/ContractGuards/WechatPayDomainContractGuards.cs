@@ -73,7 +73,7 @@ public class WechatPayDomainContractGuards
     }
 
     /// <summary>
-    /// PAY-B5：端点计数（<b>44</b>）+ 官方路由表逐条比对（照官方原文，<b>不得「纠正」</b>）。
+    /// PAY-B5：端点计数（<b>52</b>）+ 官方路由表逐条比对（照官方原文，<b>不得「纠正」</b>）。
     /// </summary>
     /// <remarks>
     /// <para>
@@ -173,17 +173,28 @@ public class WechatPayDomainContractGuards
         });
 
         // P2 电子发票首批 2 端点（普通商户侧）：开具 + 查询。
+        // P2 电子发票 5 端点：开具 + 查询 + 冲红 + 获取下载信息 + 插入卡包。
+        // （《上传电子发票文件》是 multipart、非 JSON 端点；《下载发票文件》按 30s 有效 URL 直取且不签名验签 ⇒ 均不在本生成式接口内。）
         RoutesOf(asm, "IWechatPayFapiaoService").Should().BeEquivalentTo(new[]
         {
             "/v3/new-tax-control-fapiao/fapiao-applications",
             "/v3/new-tax-control-fapiao/fapiao-applications/{fapiaoApplyId}",
+            "/v3/new-tax-control-fapiao/fapiao-applications/{fapiaoApplyId}/reverse",
+            "/v3/new-tax-control-fapiao/fapiao-applications/{fapiaoApplyId}/fapiao-files",
+            "/v3/new-tax-control-fapiao/fapiao-applications/{fapiaoApplyId}/insert-cards",
         });
 
-        // P2 代金券首批 2 端点：创建批次 + 查询券详情。
+        // P2 代金券 7 端点：创建批次 + 查询券详情 + 激活/暂停/重启批次 + 查询批次详情 + 发放。
+        // ⚠️ 两族路径前缀**不一致**：创建走 /coupon-stocks，批次管理四个动作走 /stocks/…（官方原文如此）。
         RoutesOf(asm, "IWechatPayMarketingFavorService").Should().BeEquivalentTo(new[]
         {
             "/v3/marketing/favor/coupon-stocks",
             "/v3/marketing/favor/users/{openId}/coupons/{couponId}",
+            "/v3/marketing/favor/stocks/{stockId}/start",
+            "/v3/marketing/favor/stocks/{stockId}/pause",
+            "/v3/marketing/favor/stocks/{stockId}/restart",
+            "/v3/marketing/favor/stocks/{stockId}",
+            "/v3/marketing/favor/users/{openId}/coupons",
         });
 
         // 合计计数（PAY-B5 断言的单一来源）。
@@ -193,7 +204,7 @@ public class WechatPayDomainContractGuards
             .SelectMany(static m => m.GetCustomAttributes(false))
             .Select(static a => a.GetType().GetProperty("RequestUri")?.GetValue(a) as string)
             .Count(static uri => !string.IsNullOrWhiteSpace(uri))
-            .Should().Be(44, "支付线端点总数为 44（… + 2 电子发票 + 2 代金券 + 2 商家转账 + 1 合单 Native）");
+            .Should().Be(52, "支付线端点总数为 52（… + 5 电子发票 + 7 代金券 + 2 商家转账 + 1 合单 Native）");
     }
 
     /// <summary>

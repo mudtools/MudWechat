@@ -8,6 +8,7 @@
 using Mud.Wechat.Pay.Abstractions.Credential;
 using Mud.Wechat.Pay.Certificates;
 using Mud.Wechat.Pay.Download;
+using Mud.Wechat.Pay.Fapiao;
 using Mud.Wechat.Pay.Transactions;
 
 namespace Mud.Wechat.Pay.Extensions;
@@ -84,8 +85,15 @@ public class PayServiceBuilder
             // P2 商家转账首批（发起转账）——纯声明式域。
             [PayModule.Transfer] = static s => s.AddTransferWebApiHttpClient(),
 
-            // P2 电子发票首批（开具 / 查询）——纯声明式域。
-            [PayModule.NewTaxControlFapiao] = static s => s.AddNewTaxControlFapiaoWebApiHttpClient(),
+            // P2 电子发票（开具 / 查询 / 冲红 / 获取下载信息 / 插卡）+ **文件通道**：
+            // 上传发票文件是 multipart/form-data（且 meta 走 SM3 摘要）⇒ 非 JSON、无源生成方法，
+            // 与账单下载通道同款归属（依赖 AddPayApp 注册的 IWechatPayHttpClient）。
+            // 下载发票文件**不在此列**：其官方文件域名 pay.wechatpay.cn 不在进程级白名单内（见接口裁决）。
+            [PayModule.NewTaxControlFapiao] = static s =>
+            {
+                s.AddNewTaxControlFapiaoWebApiHttpClient();
+                s.TryAddSingleton<IWechatPayFapiaoFileService, WechatPayFapiaoFileService>();
+            },
 
             // P2 代金券首批（创建批次 / 查询券详情）——纯声明式域。
             [PayModule.MarketingFavor] = static s => s.AddMarketingFavorWebApiHttpClient(),

@@ -149,6 +149,38 @@ public sealed class WechatPayCallbackContext
     public WechatPayPayScoreAuthorizationResource? GetPayScoreAuthorization()
         => TryDeserialize(WechatPayCallbackJsonContext.Default.WechatPayPayScoreAuthorizationResource);
 
+    /// <summary>
+    /// 把解密后的载荷按<b>电子发票</b>（<c>FAPIAO.ISSUED</c> / <c>FAPIAO.CARD_INSERTED</c> /
+    /// <c>FAPIAO.REVERSED</c> / <c>FAPIAO.CARD_DISCARDED</c>）类型化解析。
+    /// </summary>
+    /// <returns>解析失败或载荷非本形态时返回 <c>null</c>。</returns>
+    /// <remarks>
+    /// <para>
+    /// <b>四类事件共用本载荷</b>（官方四页字段表逐项一致）：拿到载荷后须再看
+    /// <c>fapiao_information[].fapiao_status</c> / <c>card_status</c> 才能判断到了哪一步。
+    /// </para>
+    /// <para>
+    /// <b>判别只能靠 <c>event_type</c></b>：这些通知的 <c>resource</c> <b>没有</b>
+    /// <c>original_type</c>（与分账通知相反）⇒ 不得依赖该字段。
+    /// </para>
+    /// </remarks>
+    public WechatPayFapiaoResource? GetFapiao()
+        => TryDeserialize(WechatPayCallbackJsonContext.Default.WechatPayFapiaoResource);
+
+    /// <summary>
+    /// 把解密后的载荷按<b>用户发票抬头填写完成</b>（<c>event_type = FAPIAO.USER_APPLIED</c>）类型化解析。
+    /// </summary>
+    /// <returns>解析失败或载荷非本形态时返回 <c>null</c>。</returns>
+    /// <remarks>
+    /// <b>与其余四类发票通知<b>不是</b>同一形态</b>：本载荷无 <c>fapiao_information</c>，
+    /// 只有 <c>mchid</c> / <c>fapiao_apply_id</c> / <c>apply_time</c> ⇒ 不可用
+    /// <see cref="GetFapiao"/> 代替：反序列化<b>不会</b>失败（<c>mchid</c> / <c>fapiao_apply_id</c> 恰好同名），
+    /// 但 <c>FapiaoInformation</c> 恒为 <c>null</c> —— 这是典型的「解析成功但形态错」静默错位
+    /// （用例 <c>GetFapiao_ShouldYieldEmptyInformation_WhenUsedOnUserAppliedPayload</c> 已锁死该形态）。
+    /// </remarks>
+    public WechatPayFapiaoUserAppliedResource? GetFapiaoUserApplied()
+        => TryDeserialize(WechatPayCallbackJsonContext.Default.WechatPayFapiaoUserAppliedResource);
+
     private T? TryDeserialize<T>(System.Text.Json.Serialization.Metadata.JsonTypeInfo<T> typeInfo)
         where T : class
     {

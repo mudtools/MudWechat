@@ -145,8 +145,11 @@ public class PayServiceCollectionExtensionsTests
         // P2 商家转账首批（源生成 AddTransferWebApiHttpClient）。
         provider.GetRequiredService<IWechatPayTransferService>().Should().NotBeNull();
 
-        // P2 电子发票首批（源生成 AddNewTaxControlFapiaoWebApiHttpClient）。
+        // P2 电子发票（源生成 AddNewTaxControlFapiaoWebApiHttpClient）。
         provider.GetRequiredService<IWechatPayFapiaoService>().Should().NotBeNull();
+
+        // 电子发票**文件通道**（上传为 multipart ⇒ 无 [HttpClientApi]，与账单下载通道同款归属）。
+        provider.GetRequiredService<IWechatPayFapiaoFileService>().Should().NotBeNull();
 
         // P2 代金券首批（P2 表内最后一项；源生成 AddMarketingFavorWebApiHttpClient）。
         provider.GetRequiredService<IWechatPayMarketingFavorService>().Should().NotBeNull();
@@ -205,8 +208,13 @@ public class PayServiceCollectionExtensionsTests
                      typeof(TransferRevokeResponse),
                      typeof(FapiaoIssueRequest),
                      typeof(FapiaoQueryResponse),
+                     typeof(FapiaoFilesResponse),
+                     typeof(FapiaoInsertCardsRequest),
+                     typeof(FapiaoUploadFileResponse),
                      typeof(CouponStockCreateRequest),
                      typeof(CouponQueryResponse),
+                     typeof(CouponStockQueryResponse),
+                     typeof(CouponIssueResponse),
                  })
         {
             resolver!.GetTypeInfo(dto, options).Should().NotBeNull(

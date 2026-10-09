@@ -22,6 +22,13 @@ namespace Mud.Wechat.Pay.DataModels.Fapiao;
 [JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.Fapiao.FapiaoSellerInformation))]
 [JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.Fapiao.FapiaoExtraInformation))]
 [JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.Fapiao.FapiaoQueryItem))]
+[JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.Fapiao.FapiaoReverseRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.Fapiao.FapiaoReverseInformation))]
+[JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.Fapiao.FapiaoFilesResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.Fapiao.FapiaoDownloadInfo))]
+[JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.Fapiao.FapiaoInsertCardsRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.Fapiao.FapiaoInsertCardInformation))]
+[JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.Fapiao.FapiaoUploadFileResponse))]
 internal partial class NewTaxControlFapiaoJsonContext : JsonSerializerContext
 {
 }

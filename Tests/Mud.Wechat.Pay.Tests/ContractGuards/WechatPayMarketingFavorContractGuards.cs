@@ -33,13 +33,34 @@ namespace Mud.Wechat.Pay.Tests.ContractGuards;
 /// <b>⚠️ 值域未核验</b>：<c>stock_type</c> / <c>status</c> / <c>coupon_type</c> / <c>business_type</c>
 /// 的取值表本轮未取得 ⇒ 守卫<b>不</b>断言任何常量。
 /// </para>
+/// <para>
+/// <b>【本批已补齐上面那条「未核验」】</b>（2026-10-09 逐字段核验「查询批次详情」页
+/// <c>…/docs/merchant/apis/cash-coupons/stock/query-stock.html</c>，更新时间 2025.03.25，
+/// 支持商户<b>【普通商户】</b>）：该页给出了 <c>status</c>（<b>全小写</b> 5 值，
+/// 其中官方拼写为 <c>stoped</c> —— <b>少一个 p，属官方拼写，照录</b>）、
+/// <c>coupon_type</c>（2 值）、<c>stock_type</c>（3 值）、
+/// <c>trade_type</c>（6 值）、<c>business_type</c> 与地域级别（4 值）的完整取值表
+/// ⇒ 已建 <c>MarketingFavorConstants.cs</c> 并逐值断言（MF4）。
+/// </para>
+/// <para>
+/// <b>本批新增的五个端点</b>（同批核验，更新时间 2024.09.19）：
+/// 激活 <c>…/stock/start-stock.html</c>、暂停 <c>…/stock/pause-stock.html</c>、
+/// 重启 <c>…/stock/restart-stock.html</c>、查询批次详情（上页）、
+/// 发放指定批次代金券 <c>…/doc/v3/merchant/4012463767</c>。
+/// <b>三者均「支持幂等重入」</b>；发放接口的幂等键是请求体的 <c>out_request_no</c>。
+/// </para>
+/// <para>
+/// <b>⚠️ 路径前缀族不一致（官方原文）</b>：创建批次是
+/// <c>POST /v3/marketing/favor/<b>coupon-stocks</b></c>，而批次管理四动作都在
+/// <c>/v3/marketing/favor/<b>stocks</b>/…</c> 下 —— <b>不得</b>为「统一」而改动任一侧。
+/// </para>
 /// </remarks>
 public class WechatPayMarketingFavorContractGuards
 {
     private const string RegistryGroupName = "MarketingFavor";
     private const string DomainNamespace = "Mud.Wechat.Pay.DataModels.MarketingFavor";
 
-    /// <summary>MF1：2 端点路由与方法照官方原文；查询的两个 path 参数与 appid query 位置不可混。</summary>
+    /// <summary>MF1：7 端点路由与方法照官方原文；查询的两个 path 参数与 appid query 位置不可混。</summary>
     [Fact]
     public void MarketingFavorEndpoints_ShouldMatchOfficialRoutes()
     {
@@ -60,6 +81,59 @@ public class WechatPayMarketingFavorContractGuards
             .SelectMany(static p => p.GetCustomAttributes<QueryAttribute>())
             .Select(static a => a.Name)
             .Should().BeEquivalentTo(new[] { "appid" }, "官方 query 只有 appid，且为必填");
+
+        // 批次生命周期三动作：动作式路径（/start /pause /restart），且批次号走 path。
+        AssertRoute<PostAttribute>(
+            nameof(IWechatPayMarketingFavorService.StartCouponStockAsync),
+            "/v3/marketing/favor/stocks/{stockId}/start");
+        AssertRoute<PostAttribute>(
+            nameof(IWechatPayMarketingFavorService.PauseCouponStockAsync),
+            "/v3/marketing/favor/stocks/{stockId}/pause");
+        AssertRoute<PostAttribute>(
+            nameof(IWechatPayMarketingFavorService.RestartCouponStockAsync),
+            "/v3/marketing/favor/stocks/{stockId}/restart");
+
+        foreach (var name in new[]
+                 {
+                     nameof(IWechatPayMarketingFavorService.StartCouponStockAsync),
+                     nameof(IWechatPayMarketingFavorService.PauseCouponStockAsync),
+                     nameof(IWechatPayMarketingFavorService.RestartCouponStockAsync),
+                 })
+        {
+            FindMethod(name)
+                .GetParameters()
+                .Where(static p => p.GetCustomAttribute<PathAttribute>() != null)
+                .Select(static p => p.Name)
+                .Should().BeEquivalentTo(new[] { "stockId" }, "批次号 stock_id 走 path（占位符名 = C# 参数名）");
+        }
+
+        // 查询批次详情：GET，且**path 与 query 两个参数均必填**（stock_creator_mchid 是易漏的一项）。
+        AssertRoute<GetAttribute>(
+            nameof(IWechatPayMarketingFavorService.QueryCouponStockAsync),
+            "/v3/marketing/favor/stocks/{stockId}");
+        var queryStock = FindMethod(nameof(IWechatPayMarketingFavorService.QueryCouponStockAsync));
+        queryStock.GetParameters()
+            .Where(static p => p.GetCustomAttribute<PathAttribute>() != null)
+            .Select(static p => p.Name)
+            .Should().BeEquivalentTo(new[] { "stockId" });
+        queryStock.GetParameters()
+            .SelectMany(static p => p.GetCustomAttributes<QueryAttribute>())
+            .Select(static a => a.Name)
+            .Should().BeEquivalentTo(new[] { "stock_creator_mchid" },
+                "官方该页 query 参数只有 stock_creator_mchid，且为**必填**（不是可选）");
+
+        // 发放：openid 走 path、**无 query**（appid 在请求体里，不在 query）。
+        AssertRoute<PostAttribute>(
+            nameof(IWechatPayMarketingFavorService.IssueCouponAsync),
+            "/v3/marketing/favor/users/{openId}/coupons");
+        var issue = FindMethod(nameof(IWechatPayMarketingFavorService.IssueCouponAsync));
+        issue.GetParameters()
+            .Where(static p => p.GetCustomAttribute<PathAttribute>() != null)
+            .Select(static p => p.Name)
+            .Should().BeEquivalentTo(new[] { "openId" });
+        issue.GetParameters()
+            .SelectMany(static p => p.GetCustomAttributes<QueryAttribute>())
+            .Should().BeEmpty("发放接口的 appid 在**请求体**内（官方字段表），不在 query");
     }
 
     /// <summary>MF2：官方字段名锁定（含创建批次的三层嵌套与查询应答的四类券型信息）。</summary>
@@ -90,13 +164,96 @@ public class WechatPayMarketingFavorContractGuards
         JsonNameShouldBe<CouponQueryResponse>(nameof(CouponQueryResponse.DiscountMessage), "discount_msg");
         JsonNameShouldBe<CouponCutToMessage>(nameof(CouponCutToMessage.CutToPrice), "cut_to_price");
         JsonNameShouldBe<CouponDiscountMessage>(nameof(CouponDiscountMessage.DiscountPercent), "discount_percent");
+
+        JsonNameShouldBe<CouponStockOperationRequest>(nameof(CouponStockOperationRequest.StockCreatorMchId), "stock_creator_mchid");
+        JsonNameShouldBe<CouponStockStartResponse>(nameof(CouponStockStartResponse.StartTime), "start_time");
+        JsonNameShouldBe<CouponStockPauseResponse>(nameof(CouponStockPauseResponse.PauseTime), "pause_time");
+        JsonNameShouldBe<CouponStockRestartResponse>(nameof(CouponStockRestartResponse.RestartTime), "restart_time");
+        JsonNameShouldBe<CouponStockQueryResponse>(nameof(CouponStockQueryResponse.AvailableBeginTime), "available_begin_time");
+        JsonNameShouldBe<CouponStockQueryResponse>(nameof(CouponStockQueryResponse.AvailableRegionList), "available_region_list");
+        JsonNameShouldBe<CouponStockQueryResponse>(nameof(CouponStockQueryResponse.AvailableIndustryList), "available_industry_list");
+        JsonNameShouldBe<CouponStockQueryUseRule>(nameof(CouponStockQueryUseRule.MaxAmountByDay), "max_amount_by_day");
+        JsonNameShouldBe<CouponStockQueryUseRule>(nameof(CouponStockQueryUseRule.FixedDiscountCoupon), "fixed_discount_coupon");
+        JsonNameShouldBe<CouponAvailableRegion>(nameof(CouponAvailableRegion.District), "district");
+        JsonNameShouldBe<CouponIssueRequest>(nameof(CouponIssueRequest.OutRequestNo), "out_request_no");
+        JsonNameShouldBe<CouponIssueRequest>(nameof(CouponIssueRequest.StockCreatorMchId), "stock_creator_mchid");
+        JsonNameShouldBe<CouponIssueResponse>(nameof(CouponIssueResponse.CouponId), "coupon_id");
+    }
+
+    /// <summary>
+    /// MF4：<b>三张「使用规则」字段表必须分开</b> + 复用关系 + 取值常量逐值锁定。
+    /// </summary>
+    /// <remarks>
+    /// 本域同一份业务里有三处形似而不同的规则表（创建的 <c>stock_use_rule</c>、创建的
+    /// <c>coupon_use_rule</c>、查询应答的 <c>stock_use_rule</c>），合并任一方向都会造出
+    /// 「某接口永不返回的字段」；另有 <c>available_begin_time</c> 属<b>顶层</b>而非规则内的坑。
+    /// </remarks>
+    [Fact]
+    public void CouponUseRuleShapes_ShouldStayStructurallySeparate()
+    {
+        // 三张表互不相同：各自有对方没有的字段。
+        typeof(CouponStockUseRule).GetProperty("PreventApiAbuse").Should().NotBeNull();
+        typeof(CouponStockUseRule).GetProperty("CouponType").Should().BeNull(
+            "创建侧的 stock_use_rule 没有 coupon_type（它在 coupon_use_rule 与查询应答里）");
+
+        typeof(CouponUseRule).GetProperty("AvailableMerchants").Should().NotBeNull();
+        typeof(CouponStockQueryUseRule).GetProperty("AvailableMerchants").Should().BeNull(
+            "查询应答的 stock_use_rule 没有可用商户（那是创建侧 coupon_use_rule 的字段）");
+
+        typeof(CouponStockQueryUseRule).GetProperty("CouponType").Should().NotBeNull();
+        typeof(CouponStockQueryUseRule).GetProperty("FixedDiscountCoupon").Should().NotBeNull();
+
+        // available_begin_time / available_end_time 在**应答顶层**，不在规则对象里。
+        typeof(CouponStockQueryResponse).GetProperty("AvailableBeginTime").Should().NotBeNull();
+        typeof(CouponStockQueryUseRule).GetProperty("AvailableBeginTime").Should().BeNull(
+            "官方该页把可用时间放在顶层，规则对象下**没有** available_time / available_begin_time");
+
+        // 复用关系（表相同则共用，禁另建同形类）。
+        typeof(CouponStockQueryResponse).GetProperty("CutToMessage")!.PropertyType
+            .Should().Be<CouponCutToMessage>();
+        typeof(CouponStockQueryUseRule).GetProperty("FixedNormalCoupon")!.PropertyType
+            .Should().Be<CouponFixedNormalCoupon>();
+        typeof(CouponStockQueryUseRule).GetProperty("FixedDiscountCoupon")!.PropertyType
+            .Should().Be<CouponDiscountMessage>("与券详情的 discount_msg 三字段一致 ⇒ 复用");
+
+        // 三个生命周期应答**必须分建**（时间字段名各不相同，合并会给出永不返回的字段）。
+        typeof(CouponStockStartResponse).GetProperty("PauseTime").Should().BeNull();
+        typeof(CouponStockPauseResponse).GetProperty("StartTime").Should().BeNull();
+        typeof(CouponStockRestartResponse).GetProperty("StartTime").Should().BeNull();
+
+        // 取值常量逐值锁定（官方原文，注意 status 全小写且 stoped 官方拼写少一个 p）。
+        CouponStockStatuses.Unactivated.Should().Be("unactivated");
+        CouponStockStatuses.Audit.Should().Be("audit");
+        CouponStockStatuses.Running.Should().Be("running");
+        CouponStockStatuses.Stoped.Should().Be("stoped");
+        CouponStockStatuses.Paused.Should().Be("paused");
+        CouponStockStatuses.Stoped.Should().NotBe("stopped",
+            "官方页面逐字为 stoped（少一个 p）—— 擅自「纠正」拼写会导致状态永远匹配不上");
+
+        CouponTypes.Normal.Should().Be("NORMAL");
+        CouponTypes.CutTo.Should().Be("CUT_TO");
+        CouponStockTypes.DiscountCut.Should().Be("DISCOUNT_CUT");
+        CouponTradeTypes.Ppay.Should().Be("PPAY");
+        CouponTradeTypes.MicroApp.Should().Be("MICROAPP");
+        CouponRegionTypes.Country.Should().Be("COUNTRY");
+        CouponRegionTypes.District.Should().Be("DISTRICT");
+        CouponBusinessTypes.MultiUse.Should().Be("MULTIUSE");
+
+        // 枚举族口径：status 全小写，而其余取值全大写 —— 两种风格混在同一产品线里，勿类推。
+        CouponStockStatuses.Running.Should().NotBe(CouponStockStatuses.Running.ToUpperInvariant());
     }
 
     /// <summary>MF3：判错面 + AOT 上下文登记（分组名一致）。</summary>
     [Fact]
     public void MarketingFavorDataModels_ShouldBeRegisteredInJsonContext()
     {
-        foreach (var responseType in new[] { typeof(CouponStockCreateResponse), typeof(CouponQueryResponse) })
+        foreach (var responseType in new[]
+                 {
+                     typeof(CouponStockCreateResponse), typeof(CouponQueryResponse),
+                     typeof(CouponStockStartResponse), typeof(CouponStockPauseResponse),
+                     typeof(CouponStockRestartResponse), typeof(CouponStockQueryResponse),
+                     typeof(CouponIssueResponse),
+                 })
         {
             typeof(WechatPayResponse).IsAssignableFrom(responseType).Should().BeTrue(
                 $"{responseType.Name} 必须承载官方 code/message（判错面）");
@@ -108,9 +265,11 @@ public class WechatPayMarketingFavorContractGuards
             .Where(static t => !typeof(JsonSerializerContext).IsAssignableFrom(t))
             .ToList();
 
-        domainTypes.Should().HaveCount(13,
+        domainTypes.Should().HaveCount(22,
             "代金券域 DTO：创建族 9（请求/发放规则/详情页/核销规则/生效时间/固定时段/满减券/卡BIN/应答）" +
-            " + 查询族 4（应答/立减信息/普通券信息/折扣信息）");
+            " + 查询族 4（应答/立减信息/普通券信息/折扣信息）" +
+            " + 批次管理族 7（操作请求/激活应答/暂停应答/重启应答/批次应答/批次规则/地域）" +
+            " + 发放族 2（请求/应答）");
 
         foreach (var type in domainTypes)
         {

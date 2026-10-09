@@ -24,6 +24,15 @@ namespace Mud.Wechat.Pay.DataModels.MarketingFavor;
 [JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.MarketingFavor.CouponCutToMessage))]
 [JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.MarketingFavor.CouponNormalCouponInformation))]
 [JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.MarketingFavor.CouponDiscountMessage))]
+[JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.MarketingFavor.CouponStockOperationRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.MarketingFavor.CouponStockStartResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.MarketingFavor.CouponStockPauseResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.MarketingFavor.CouponStockRestartResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.MarketingFavor.CouponStockQueryResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.MarketingFavor.CouponStockQueryUseRule))]
+[JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.MarketingFavor.CouponAvailableRegion))]
+[JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.MarketingFavor.CouponIssueRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.MarketingFavor.CouponIssueResponse))]
 internal partial class MarketingFavorJsonContext : JsonSerializerContext
 {
 }

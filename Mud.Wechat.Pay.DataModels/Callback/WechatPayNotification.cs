@@ -163,6 +163,121 @@ public static class WechatPayNotificationEventTypes
     /// <c>PAYSCORE.USER_CLOSE_SERVICE</c>（<b>同样是大写</b>）。
     /// </remarks>
     public const string PayScoreUserCloseService = "PAYSCORE.USER_CLOSE_SERVICE";
+
+    /// <summary>
+    /// 电子发票：用户完成发票抬头填写（官方 <c>FAPIAO.USER_APPLIED</c>）。
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>官方文档</b>：<see href="https://pay.weixin.qq.com/doc/v3/merchant/4012286009"/>
+    /// （用户发票抬头填写完成通知，2026-10-09 逐字核验；更新时间 2025.09.26）。
+    /// </para>
+    /// <para>
+    /// <b>反直觉命名（留档）</b>：该通知的官方名是「用户发票<b>抬头填写完成</b>」，
+    /// 而 <c>event_type</c> 却是 <c>USER_APPLIED</c>（<b>申请</b>）—— <b>不是</b>
+    /// <c>USER_FILLED</c> 之类的直觉名 ⇒ SDK 一律以官方原文为准。
+    /// </para>
+    /// </remarks>
+    public const string FapiaoUserApplied = "FAPIAO.USER_APPLIED";
+
+    /// <summary>
+    /// 电子发票：发票开具成功（官方 <c>FAPIAO.ISSUED</c>）。
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// 官方文档：<see href="https://pay.weixin.qq.com/doc/v3/merchant/4012286057"/>
+    /// （发票开具成功通知，2026-10-09 逐字核验；更新时间 2025.09.26）。
+    /// </para>
+    /// <para>
+    /// <b>⚠️ 与「发票卡券已作废」只差一个前缀词</b>：开具成功是 <c>FAPIAO.ISSUED</c>，
+    /// 而发票<b>状态</b>里的 <c>ISSUED</c> 是同一拼写但语域不同（一个是事件、一个是状态值）
+    /// ⇒ 二者都在本仓出现，<b>不得</b>互相赋值。
+    /// </para>
+    /// </remarks>
+    public const string FapiaoIssued = "FAPIAO.ISSUED";
+
+    /// <summary>
+    /// 电子发票：发票插入用户卡包成功（官方 <c>FAPIAO.CARD_INSERTED</c>）。
+    /// </summary>
+    /// <remarks>
+    /// 官方文档：<see href="https://pay.weixin.qq.com/doc/v3/merchant/4012286082"/>
+    /// （2026-10-09 逐字核验；更新时间 2025.09.26）。与
+    /// <see cref="FapiaoReversed"/> / <see cref="FapiaoCardDiscarded"/> <b>共用同一载荷类型</b>
+    /// （官方三页字段表逐项一致）—— 三者的差别只体现在 <c>card_status</c> / <c>fapiao_status</c> 的取值上。
+    /// </remarks>
+    public const string FapiaoCardInserted = "FAPIAO.CARD_INSERTED";
+
+    /// <summary>
+    /// 电子发票：发票冲红成功（官方 <c>FAPIAO.REVERSED</c>）。
+    /// </summary>
+    /// <remarks>
+    /// 官方文档：<c>…/docs/merchant/apis/fapiao/fapiao-applications/invoice-flush-success-notice.html</c>
+    /// （2026-10-09 逐字核验；更新时间 2025.09.26）。<b>⚠️ 命名不对称</b>：接口叫「冲红」（reverse），
+    /// 而事件类型用的是 <c>REVERSED</c>（英文页面 slug 却用 <c>flush</c>）—— 三者不一致，照官方原文取用。
+    /// </remarks>
+    public const string FapiaoReversed = "FAPIAO.REVERSED";
+
+    /// <summary>
+    /// 电子发票：发票卡券作废（官方 <c>FAPIAO.CARD_DISCARDED</c>）。
+    /// </summary>
+    /// <remarks>
+    /// 官方文档：<c>…/docs/merchant/apis/fapiao/fapiao-card-template/invoice-card-cancel-notice.html</c>
+    /// （2026-10-09 逐字核验；更新时间 2025.09.26）。页面标题用「作废」、slug 用 <c>cancel</c>、
+    /// 事件类型用 <c>DISCARDED</c> —— 三处用词各不相同，只有 <c>DISCARDED</c> 是判别用的真值。
+    /// </remarks>
+    public const string FapiaoCardDiscarded = "FAPIAO.CARD_DISCARDED";
+}
+
+/// <summary>
+/// 电子发票通知的两组状态枚举（官方原文，<b>两套不同维度的状态</b>）。
+/// </summary>
+/// <remarks>
+/// <para>
+/// <b>官方来源</b>：电子发票三类通知页（<c>4012286082</c> 插卡成功 / 冲红成功 /
+/// <c>invoice-card-cancel-notice</c> 卡券作废）的明文字段说明，2026-10-09 逐字核验；
+/// 三页给出的取值<b>完全一致</b>。
+/// </para>
+/// <para>
+/// <b>⚠️ 两组状态必须分开判断</b>：<c>fapiao_status</c> 描述<b>开票/冲红</b>这条线，
+/// <c>card_status</c> 描述<b>卡券</b>这条线；同一张发票可以「已开具但还没插卡」，
+/// 也可以「已作废但仍处于已开具」—— 用一组去判断另一组的状态会得出错误结论。
+/// </para>
+/// </remarks>
+public static class FapiaoStatuses
+{
+    /// <summary>开票请求已受理（官方 <c>ISSUE_ACCEPTED</c>）：非终态。</summary>
+    public const string IssueAccepted = "ISSUE_ACCEPTED";
+
+    /// <summary>发票已开具（官方 <c>ISSUED</c>）：<b>只有</b>此状态才能取到下载链接。</summary>
+    public const string Issued = "ISSUED";
+
+    /// <summary>冲红申请已受理（官方 <c>REVERSE_ACCEPTED</c>）：非终态。</summary>
+    public const string ReverseAccepted = "REVERSE_ACCEPTED";
+
+    /// <summary>发票已冲红（官方 <c>REVERSED</c>）：终态。</summary>
+    public const string Reversed = "REVERSED";
+}
+
+/// <summary>
+/// 电子发票卡券状态枚举（官方原文 <c>card_status</c>）。
+/// </summary>
+/// <remarks>
+/// <b>与 <see cref="FapiaoStatuses"/> 是两套</b>（维度不同，勿混用）；
+/// 其中 <see cref="Inserted"/> 才表示发票真正进了用户卡包。
+/// </remarks>
+public static class FapiaoCardStatuses
+{
+    /// <summary>插卡申请已受理（官方 <c>INSERT_ACCEPTED</c>）：非终态。</summary>
+    public const string InsertAccepted = "INSERT_ACCEPTED";
+
+    /// <summary>已插入用户卡包（官方 <c>INSERTED</c>）：终态。</summary>
+    public const string Inserted = "INSERTED";
+
+    /// <summary>作废申请已受理（官方 <c>DISCARD_ACCEPTED</c>）：非终态。</summary>
+    public const string DiscardAccepted = "DISCARD_ACCEPTED";
+
+    /// <summary>发票卡券已作废（官方 <c>DISCARDED</c>）：终态。</summary>
+    public const string Discarded = "DISCARDED";
 }
 
 /// <summary>

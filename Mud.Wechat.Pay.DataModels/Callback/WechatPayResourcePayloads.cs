@@ -578,3 +578,104 @@ public class WechatPayPayScoreAuthorizationResource
     [JsonPropertyName("authorization_code")]
     public string? AuthorizationCode { get; set; }
 }
+
+/// <summary>
+/// 解密后的<b>电子发票</b>资源载荷（<b>四类事件共用</b>）：<c>FAPIAO.ISSUED</c>（开具成功）、
+/// <c>FAPIAO.CARD_INSERTED</c>（插卡成功）、<c>FAPIAO.REVERSED</c>（冲红成功）、
+/// <c>FAPIAO.CARD_DISCARDED</c>（卡券作废）。
+/// </summary>
+/// <remarks>
+/// <para>
+/// <b>官方文档</b>（2026-10-09 逐字段核验，四页<b>字段表逐项一致</b>；更新时间 2025.09.26）：
+/// <c>4012286057</c> 开具成功 / <c>4012286082</c> 插卡成功 /
+/// <c>…/docs/merchant/apis/fapiao/fapiao-applications/invoice-flush-success-notice.html</c> 冲红成功 /
+/// <c>…/docs/merchant/apis/fapiao/fapiao-card-template/invoice-card-cancel-notice.html</c> 卡券作废。
+/// </para>
+/// <para>
+/// <b>为何四类共用一个类型</b>：四页的明文字段表<b>完全相同</b>
+/// （<c>mchid</c> / <c>fapiao_apply_id</c> / <c>fapiao_information[]</c>），
+/// 事件差别只体现在 <c>fapiao_status</c> / <c>card_status</c> 的<b>取值</b>上 ⇒
+/// 按本仓纪律「表相同则共用」合建；分建四个会让同一份事实四处漂移。
+/// </para>
+/// <para>
+/// <b>⚠️ 判别只能靠 <c>event_type</c></b>：这四页的 <c>resource</c> <b>都没有</b>
+/// <c>original_type</c> 字段（只有 <c>algorithm</c> / <c>ciphertext</c> / <c>associated_data</c> / <c>nonce</c>）——
+/// 与分账通知「必须靠 <c>original_type</c> 区分」的形态<b>正好相反</b>，勿套用。
+/// </para>
+/// <para>
+/// <b>两组状态别混用</b>：<c>fapiao_status</c>（开票/冲红线）与 <c>card_status</c>（卡券线）
+/// 是两套枚举，见 <c>FapiaoStatuses</c> / <c>FapiaoCardStatuses</c>。
+/// </para>
+/// </remarks>
+[HttpJsonSerializable(SerializerClassName = "Callback")]
+public class WechatPayFapiaoResource
+{
+    /// <summary>商户号（<c>mchid</c>，必填 string(32)）。</summary>
+    [JsonPropertyName("mchid")]
+    public string? MchId { get; set; }
+
+    /// <summary>
+    /// 发票申请单号（<c>fapiao_apply_id</c>，必填 string(64)）：开票时指定的发票申请单号。
+    /// </summary>
+    [JsonPropertyName("fapiao_apply_id")]
+    public string? FapiaoApplyId { get; set; }
+
+    /// <summary>发票申请单下关联的所有发票信息（<c>fapiao_information</c>，必填 array），见 <see cref="WechatPayFapiaoInformation"/>。</summary>
+    [JsonPropertyName("fapiao_information")]
+    public List<WechatPayFapiaoInformation>? FapiaoInformation { get; set; }
+}
+
+/// <summary>
+/// 单张电子发票的状态（<c>fapiao_information</c> 项）。
+/// </summary>
+[HttpJsonSerializable(SerializerClassName = "Callback")]
+public class WechatPayFapiaoInformation
+{
+    /// <summary>商户发票单号（<c>fapiao_id</c>，必填 string(32)）：唯一标识一张发票。</summary>
+    [JsonPropertyName("fapiao_id")]
+    public string? FapiaoId { get; set; }
+
+    /// <summary>发票状态（<c>fapiao_status</c>，必填）：取值见 <c>FapiaoStatuses</c>（开票 / 冲红维度）。</summary>
+    [JsonPropertyName("fapiao_status")]
+    public string? FapiaoStatus { get; set; }
+
+    /// <summary>发票卡券状态（<c>card_status</c>，必填）：取值见 <c>FapiaoCardStatuses</c>（卡券维度，与上面那组<b>不是</b>同一套）。</summary>
+    [JsonPropertyName("card_status")]
+    public string? CardStatus { get; set; }
+}
+
+/// <summary>
+/// 解密后的<b>用户发票抬头填写完成</b>资源载荷（<c>FAPIAO.USER_APPLIED</c>）。
+/// </summary>
+/// <remarks>
+/// <para>
+/// <b>官方文档</b>：<see href="https://pay.weixin.qq.com/doc/v3/merchant/4012286009"/>
+/// （2026-10-09 逐字段核验；更新时间 2025.09.26）。
+/// </para>
+/// <para>
+/// <b>为何不与其余四类发票通知共用</b>：本载荷只有 <c>mchid</c> / <c>fapiao_apply_id</c> /
+/// <c>apply_time</c> <b>三</b>个字段，<b>没有</b> <c>fapiao_information</c>
+/// （此刻还没有任何发票可言）⇒ 表不同则分建。
+/// </para>
+/// <para>
+/// <b>同样是「无 <c>original_type</c>」形态</b>：判别只能靠 <c>event_type</c>。
+/// </para>
+/// </remarks>
+[HttpJsonSerializable(SerializerClassName = "Callback")]
+public class WechatPayFapiaoUserAppliedResource
+{
+    /// <summary>商户号（<c>mchid</c>，必填 string(32)）。</summary>
+    [JsonPropertyName("mchid")]
+    public string? MchId { get; set; }
+
+    /// <summary>
+    /// 发票申请单号（<c>fapiao_apply_id</c>，必填）：官方原文「唯一标识一次开票行为；
+    /// <b>微信支付场景下为微信支付订单号</b>，非微信支付场景下为调用【获取抬头填写链接】时指定的发票申请单号」。
+    /// </summary>
+    [JsonPropertyName("fapiao_apply_id")]
+    public string? FapiaoApplyId { get; set; }
+
+    /// <summary>用户完成发票抬头填写的时间（<c>apply_time</c>，RFC3339 格式）。</summary>
+    [JsonPropertyName("apply_time")]
+    public string? ApplyTime { get; set; }
+}

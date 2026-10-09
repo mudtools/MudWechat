@@ -27,7 +27,7 @@ public class WechatPayDomainContractGuards
 {
     /// <summary>
     /// PAY-B1：支付线<b>全部</b> <c>[HttpClientApi]</c> 接口<b>不得</b>声明 <c>[Token]</c>，
-    /// 且四域接口数量须与模块枚举一致（防漏注册 / 防误加令牌）。
+    /// 且各域接口数量须与模块枚举一致（防漏注册 / 防误加令牌）。
     /// </summary>
     /// <remarks>
     /// 理由链见 <c>WechatPayScaffoldContractGuards.TokenInjectionMode_ShouldHaveNoAsymmetricSignatureMode_WhenScaffold</c>
@@ -44,9 +44,9 @@ public class WechatPayDomainContractGuards
             .OrderBy(static t => t.Name, StringComparer.Ordinal)
             .ToArray();
 
-        // 数量下限防枚举空跑（AGENTS §6）：四域接口 = Transactions / Refund / Bill / Certificates。
-        interfaces.Should().HaveCount(4,
-            "支付线首批四域接口（Transactions/Refund/Bill/Certificates）——数量变化须同批更新 PayModule 与本守卫");
+        // 数量下限防枚举空跑（AGENTS §6）：五域接口 = Transactions / Refund / Bill / Certificates / ProfitSharing。
+        interfaces.Should().HaveCount(5,
+            "支付线五域接口（Transactions/Refund/Bill/Certificates/ProfitSharing）——数量变化须同批更新 PayModule 与本守卫");
 
         interfaces.Select(static t => t.Name).Should().BeEquivalentTo(new[]
         {
@@ -54,6 +54,7 @@ public class WechatPayDomainContractGuards
             "IWechatPayRefundService",
             "IWechatPayBillService",
             "IWechatPayCertificatesService",
+            "IWechatPayProfitSharingService",
         });
 
         var offenders = interfaces
@@ -67,14 +68,20 @@ public class WechatPayDomainContractGuards
     }
 
     /// <summary>
-    /// PAY-B5：端点计数（<b>10</b>）+ 官方路由表逐条比对（照官方原文，<b>不得「纠正」</b>）。
+    /// PAY-B5：端点计数（<b>13</b>）+ 官方路由表逐条比对（照官方原文，<b>不得「纠正」</b>）。
     /// </summary>
     /// <remarks>
+    /// <para>
     /// 路由来源（2026-10-09 逐页核验普通商户文档中心）：
     /// <c>4012791897</c> 下单 / <c>4012791899</c> 微信支付订单号查单 / <c>4012791900</c> 商户订单号查单 /
     /// <c>4012791901</c> 关单 / <c>4012791903</c> 退款申请 / <c>4012791904</c> 查询退款 /
     /// <c>4012791905</c> 异常退款 / <c>4012791907</c> 交易账单 / <c>4012791908</c> 资金账单 /
     /// <c>4012551764</c> 平台证书。
+    /// </para>
+    /// <para>
+    /// <b>P2 分账首批</b>（同日核验）：<c>4012524936</c> 请求分账 / <c>4012528995</c> 添加分账接收方 /
+    /// <c>chapter8_1_2</c> 查询分账结果。
+    /// </para>
     /// </remarks>
     [Fact]
     public void Endpoints_ShouldMatchOfficialRoutes()
@@ -107,6 +114,14 @@ public class WechatPayDomainContractGuards
             "/v3/certificates",
         });
 
+        // P2 分账首批 3 端点：接收方入库 + 请求分账 + 查询（查询兼查「解冻剩余资金」执行结果，官方原文）。
+        RoutesOf(asm, "IWechatPayProfitSharingService").Should().BeEquivalentTo(new[]
+        {
+            "/v3/profitsharing/receivers/add",
+            "/v3/profitsharing/orders",
+            "/v3/profitsharing/orders/{outOrderNo}",
+        });
+
         // 合计计数（PAY-B5 断言的单一来源）。
         asm.GetTypes()
             .Where(static t => t.IsInterface && t.IsPublic)
@@ -114,7 +129,7 @@ public class WechatPayDomainContractGuards
             .SelectMany(static m => m.GetCustomAttributes(false))
             .Select(static a => a.GetType().GetProperty("RequestUri")?.GetValue(a) as string)
             .Count(static uri => !string.IsNullOrWhiteSpace(uri))
-            .Should().Be(10, "支付线首批端点总数为 10（4 交易 + 3 退款 + 2 账单 + 1 平台证书）");
+            .Should().Be(13, "支付线端点总数为 13（4 交易 + 3 退款 + 2 账单 + 1 平台证书 + 3 分账）");
     }
 
     /// <summary>
@@ -168,6 +183,7 @@ public class WechatPayDomainContractGuards
                      typeof(RefundResponse),
                      typeof(BillDownloadInfoResponse),
                      typeof(PlatformCertificatesResponse),
+                     typeof(ProfitSharingOrderResponse),
                  })
         {
             typeof(WechatPayResponse).IsAssignableFrom(responseType).Should().BeTrue(

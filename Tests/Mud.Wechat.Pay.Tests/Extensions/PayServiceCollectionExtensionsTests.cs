@@ -133,6 +133,9 @@ public class PayServiceCollectionExtensionsTests
         provider.GetRequiredService<IWechatPayBillService>().Should().NotBeNull();
         provider.GetRequiredService<IWechatPayCertificatesService>().Should().NotBeNull();
 
+        // P2 首批分账域（三段式第三段：源生成 AddProfitSharingWebApiHttpClient 是否真被挂上）。
+        provider.GetRequiredService<IWechatPayProfitSharingService>().Should().NotBeNull();
+
         // 账单下载通道随账单模块注册（无 [HttpClientApi]，故无对应的源生成注册方法）。
         provider.GetRequiredService<IWechatPayBillDownloadService>().Should().NotBeNull();
 
@@ -162,6 +165,8 @@ public class PayServiceCollectionExtensionsTests
                      typeof(RefundResponse),
                      typeof(BillDownloadInfoResponse),
                      typeof(PlatformCertificatesResponse),
+                     typeof(ProfitSharingOrderResponse),
+                     typeof(ProfitSharingAddReceiverRequest),
                  })
         {
             resolver!.GetTypeInfo(dto, options).Should().NotBeNull(

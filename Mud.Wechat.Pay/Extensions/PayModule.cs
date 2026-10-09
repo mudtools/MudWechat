@@ -49,4 +49,11 @@ public enum PayModule
     /// 官方文档 <see href="https://pay.weixin.qq.com/doc/v3/merchant/4012551764"/>。
     /// </summary>
     Certificates,
+
+    /// <summary>
+    /// 分账（<b>P2 首批 3 端点</b>）：添加分账接收方 + 请求分账 + 查询分账结果。
+    /// 官方文档 <see href="https://pay.weixin.qq.com/doc/v3/merchant/4012524936"/>。
+    /// </summary>
+    /// <remarks>其余分账端点（回退 / 解冻 / 待分金额 / 删除接收方 / 分账账单）待逐页核验后增量。</remarks>
+    ProfitSharing,
 }

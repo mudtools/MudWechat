@@ -72,6 +72,9 @@ public class PayServiceBuilder
                         sp.GetService<ILogger<WechatPayPlatformCertificateRefresher>>()));
             },
 
+            // P2 首批：分账（接收方 / 请求分账 / 查询）——纯声明式域，无额外服务注册。
+            [PayModule.ProfitSharing] = static s => s.AddProfitSharingWebApiHttpClient(),
+
             // 账单模块额外注册**账单下载通道**：它没有 [HttpClientApi] 声明（路由由 download_url 动态给出、
             // 返回非 JSON），故无对应的 AddBillDownloadWebApiHttpClient()。它依赖 AddPayApp 注册的
             // IWechatPayHttpClient，宿主若只用 AddPayApp 而不加任何模块则不会被注册 —— 这正是

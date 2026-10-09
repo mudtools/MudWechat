@@ -1,0 +1,49 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<!-- 受控 TFM 例外，理由见 Mud.Wechat.Pay.Abstractions.csproj 同名属性组的详注
+		     （AesGcm 在 netstandard2.0 不存在；AEAD_AES_256_GCM 为 APIv3 官方强制）。 -->
+		<TargetFrameworks>net6.0;net8.0;net10.0</TargetFrameworks>
+		<Description>微信支付 APIv3 SDK 回调接收包：平台证书验签、时间戳窗口闸、抗重放指纹、AEAD_AES_256_GCM resource 解密、通知分发与应答（{"code":"SUCCESS"} 阻止官方重试）的 HTTP 中间件与多商户路由。</Description>
+		<PackageTags>Wechat;Pay;微信支付;Tenpay;APIv3;Callback;Webhook;Middleware;MudWechat</PackageTags>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\Mud.Wechat.Pay.Abstractions\Mud.Wechat.Pay.Abstractions.csproj" />
+		<!-- 直接引用共享叶层：抗重放端口 IWechatCallbackReplayGuard、回调选项基座均落 Abstractions，
+		     支付回调三闸（验签/时间窗/指纹）复用之，不得自建第二套（方案 §5.7 PAY-CB1）。 -->
+		<ProjectReference Include="..\Mud.Wechat.Abstractions\Mud.Wechat.Abstractions.csproj" />
+	</ItemGroup>
+
+	<!-- 说明（对齐 OA.Callback §3.4/E9）：契约登记生成器挂在 Pay.Abstractions（partial 方法体与宿主必须同程序集），
+	     本工程**不**引用生成器 —— 否则生成器会在本程序集发射「无宿主」的 partial 方法实现（CS0759）。
+	     支付通知为 JSON 信封（非 XML），且为「验签 + 解密 resource」两段式，尚不引入载荷契约生成档位；
+	     若后续引入，须在 Mud.Wechat.Callback.Generator 增设独立 IIncrementalGenerator 档位并登记 MUDCB0xx。 -->
+
+	<!-- 回调处理器契约分析器（中立工具，档位表驱动）：校验 SupportedEventType ↔ 载荷契约（MUDCB002~005）。
+	     仅诊断、不发射 ⇒ 允许随包下发（analyzers/dotnet/cs）；<b>本工程本身照常产出 nupkg</b>（内嵌该分析器）。
+	     支付档位未加入 Profiles 表前，本工程不含类型化处理器，分析器对其零诊断。 -->
+	<ItemGroup>
+		<ProjectReference Include="..\Mud.Wechat.Callback.Analyzers\Mud.Wechat.Callback.Analyzers.csproj"
+		                  OutputItemType="Analyzer" ReferenceOutputAssembly="false" PrivateAssets="all" />
+	</ItemGroup>
+
+	<!-- ASP.NET 依赖只存在于运行时 Callback 包（叶层与 Abstractions 保持零 ASP.NET）。
+	     支付线无 netstandard2.0 ⇒ 恒走 FrameworkReference（对齐 Work.Callback / OA.Callback）。 -->
+	<ItemGroup>
+		<FrameworkReference Include="Microsoft.AspNetCore.App" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<!-- 抗重放时间窗与响应常量（internal）供测试断言边界。 -->
+		<InternalsVisibleTo Include="Mud.Wechat.Pay.Callback.Tests" />
+	</ItemGroup>
+
+	<!-- 随包下发分析器资产（不新增 nupkg）：与 Work.Callback / OA.Callback 同款
+	     （同一 DLL 三份拷贝，各包互不引用）。只挑本仓分析器 DLL。 -->
+	<ItemGroup>
+		<None Include="$(MSBuildThisFileDirectory)..\Mud.Wechat.Callback.Analyzers\bin\$(Configuration)\netstandard2.0\Mud.Wechat.Callback.Analyzers.dll"
+		      Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+	</ItemGroup>
+
+</Project>

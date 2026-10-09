@@ -25,6 +25,12 @@ $configFiles = @(
     # 公众号回调配置面（与企微 WechatCallbackOptions 同层同形）：路由前缀/超时/白名单/
     # 逐应用凭据（Token/EncodingAESKey/AppId）——新增配置属性必须有真实消费点，否则本脚本 fail-closed。
     'Mud.Wechat.OfficialAccount.Callback/MpCallbackOptions.cs',
+    # 微信支付产品线（P0-c 已落地）：商户凭据配置面。私钥与 APIv3 密钥**永不落 DTO**
+    # （经组件 ISecretProvider 取用，字段只存密钥名）——若在配置 DTO 出现密钥原文即属凭据面越界，
+    # 由 WechatPayMerchantConfig.ValidateSecretName 启动期点名拒绝。
+    'Mud.Wechat.Pay.Abstractions/Configuration/WechatPayMerchantConfig.cs',
+    # 微信小程序产品线的配置 DTO 登记位：P1-c 落地时**创建文件的同批**必须在此登记，
+    # 否则 AB-G6 的双向不变式（文件存在 ⇔ 已登记）会失败。本脚本对不存在的文件是 fail-closed 硬错误 ⇒ 不得预登记。
     'Mud.Wechat.Redis/Configuration/WechatRedisOptions.cs',
     'Mud.Wechat.Redis/Configuration/WechatRedisConnectionOptions.cs'
 )
@@ -58,14 +64,27 @@ foreach ($file in $configFiles) {
         'Mud.Wechat.OfficialAccount.Abstractions',
         'Mud.Wechat.OfficialAccount.DataModels',
         # 公众号回调运行时包（配置消费点所在；未纳入即为门禁盲区）。
-        'Mud.Wechat.OfficialAccount.Callback'
+        'Mud.Wechat.OfficialAccount.Callback',
+        # 微信小程序产品线：消费点可落在主包（客户端声明）或抽象包（配置基座派生类）。
+        'Mud.Wechat.MiniProgram',
+        'Mud.Wechat.MiniProgram.Abstractions',
+        'Mud.Wechat.MiniProgram.DataModels',
+        # 微信支付产品线（含回调运行时包；未纳入即为门禁盲区）。
+        'Mud.Wechat.Pay',
+        'Mud.Wechat.Pay.Abstractions',
+        'Mud.Wechat.Pay.DataModels',
+        'Mud.Wechat.Pay.Callback'
     )
 
     foreach ($prop in $propNames) {
         $consumed = $false
         foreach ($root in $searchRoots) {
+            # 排除配置 DTO 自身：**必须按叶子文件名**比较。
+            # 原写法 -notlike "*$file*" 用的是仓库相对路径（正斜杠），而 $_.FullName 是 Windows 反斜杠路径，
+            # 两者永不相等 ⇒ 该排除**从未生效**（静默假绿：属性只在自身 DTO 内被引用也会判为「有消费点」）。
+            $dtoLeaf = Split-Path $file -Leaf
             $hits = Get-ChildItem -Path (Join-Path $repoRoot $root) -Filter '*.cs' -Recurse -File |
-                Where-Object { $_.FullName -notmatch 'obj|bin' -and $_.FullName -notlike "*$file*" } |
+                Where-Object { $_.FullName -notmatch 'obj|bin' -and $_.Name -ne $dtoLeaf } |
                 Where-Object { (Get-Content $_.FullName -Raw) -match "\.$prop\b" }
             if ($hits) { $consumed = $true; break }
         }

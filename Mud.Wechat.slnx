@@ -16,6 +16,13 @@
     <Project Path="Mud.Wechat.OfficialAccount.DataModels/Mud.Wechat.OfficialAccount.DataModels.csproj" />
     <Project Path="Mud.Wechat.OfficialAccount/Mud.Wechat.OfficialAccount.csproj" />
     <Project Path="Mud.Wechat.OfficialAccount.Callback/Mud.Wechat.OfficialAccount.Callback.csproj" />
+    <Project Path="Mud.Wechat.MiniProgram.Abstractions/Mud.Wechat.MiniProgram.Abstractions.csproj" />
+    <Project Path="Mud.Wechat.MiniProgram.DataModels/Mud.Wechat.MiniProgram.DataModels.csproj" />
+    <Project Path="Mud.Wechat.MiniProgram/Mud.Wechat.MiniProgram.csproj" />
+    <Project Path="Mud.Wechat.Pay.Abstractions/Mud.Wechat.Pay.Abstractions.csproj" />
+    <Project Path="Mud.Wechat.Pay.DataModels/Mud.Wechat.Pay.DataModels.csproj" />
+    <Project Path="Mud.Wechat.Pay/Mud.Wechat.Pay.csproj" />
+    <Project Path="Mud.Wechat.Pay.Callback/Mud.Wechat.Pay.Callback.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="Tests/Mud.Wechat.Abstractions.Tests/Mud.Wechat.Abstractions.Tests.csproj" />
@@ -26,5 +33,8 @@
     <Project Path="Tests/Mud.Wechat.Work.Tests/Mud.Wechat.Work.Tests.csproj" />
     <Project Path="Tests/Mud.Wechat.OfficialAccount.Tests/Mud.Wechat.OfficialAccount.Tests.csproj" />
     <Project Path="Tests/Mud.Wechat.OfficialAccount.Callback.Tests/Mud.Wechat.OfficialAccount.Callback.Tests.csproj" />
+    <Project Path="Tests/Mud.Wechat.MiniProgram.Tests/Mud.Wechat.MiniProgram.Tests.csproj" />
+    <Project Path="Tests/Mud.Wechat.Pay.Tests/Mud.Wechat.Pay.Tests.csproj" />
+    <Project Path="Tests/Mud.Wechat.Pay.Callback.Tests/Mud.Wechat.Pay.Callback.Tests.csproj" />
   </Folder>
 </Solution>

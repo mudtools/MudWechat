@@ -103,21 +103,35 @@ public class MpCallbackContractGuards
     }
 
     /// <summary>
-    /// CB-L1g：去中间层 —— 不新建 <c>Mud.Wechat.Callback.Abstractions</c>；回调相关工程恰为 4 个
-    /// （两条产品线运行时 + 两个中立工具）。
+    /// CB-L1g：去中间层 —— 不新建 <c>Mud.Wechat.Callback.Abstractions</c>；回调相关工程恰为 5 个
+    /// （三条产品线运行时 + 两个中立工具）。
     /// </summary>
+    /// <remarks>
+    /// 微信支付产品线新增第 3 个回调运行时包（设计方案 v2 §1）：其通知为「验签 + AES-256-GCM 解密 resource」
+    /// 的两段式 JSON 信封，密码学与事件分发形态均不同于企微 XML / 公众号 XML，确有必要独立成包。
+    /// <para>
+    /// 微信小程序产品线<b>不</b>新增回调包：其服务端侧无推送型回调面（订阅消息与客服消息均为「服务端 → 微信」
+    /// 出向，入向由微信自有客服体系承接；第三方平台回调属开放平台令牌链，见方案 v2 §3.5）。
+    /// 若将来为小程序新增回调包，本守卫与 AB-G7 的打包契约断言须同批更新。
+    /// </para>
+    /// </remarks>
     [Fact]
-    public void CallbackProjects_ShouldBeExactlyFour()
+    public void CallbackProjects_ShouldBeExactlyFive()
     {
         var root = GetSolutionRoot();
         Directory.Exists(Path.Combine(root, "Mud.Wechat.Callback.Abstractions"))
             .Should().BeFalse("跨产品线回调中间层已被否决（叶层是唯一公共祖先）");
+
+        // 小程序线刻意不建回调包（无推送型回调面）—— 若出现即为形态漂移，需先复核方案结论。
+        Directory.Exists(Path.Combine(root, "Mud.Wechat.MiniProgram.Callback"))
+            .Should().BeFalse("小程序线刻意不建回调包（无推送型回调面）；若确需新增须同批更新本守卫与 AB-G7");
 
         var slnx = ReadSource("Mud.Wechat.slnx");
         foreach (var project in new[]
                  {
                      "Mud.Wechat.Work.Callback/Mud.Wechat.Work.Callback.csproj",
                      "Mud.Wechat.OfficialAccount.Callback/Mud.Wechat.OfficialAccount.Callback.csproj",
+                     "Mud.Wechat.Pay.Callback/Mud.Wechat.Pay.Callback.csproj",
                      "Mud.Wechat.Callback.Generator/Mud.Wechat.Callback.Generator.csproj",
                      "Mud.Wechat.Callback.Analyzers/Mud.Wechat.Callback.Analyzers.csproj",
                  })

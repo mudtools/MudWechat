@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<Description>微信小程序 SDK 数据模型包（纯 DTO）。Generated/ 目录由 scripts/GenerateJsonContext.ps1（mud-jsonctx）按 [HttpJsonSerializable] 标注生成。</Description>
+		<PackageTags>Wechat;MiniProgram;小程序;DTO;DataModels;MudWechat</PackageTags>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Mud.HttpUtils.Attributes" Version="3.0.2" />
+		<PackageReference Include="Mud.HttpUtils.Generator" Version="3.0.2" PrivateAssets="all" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<!-- 响应基底实现公用层判错契约 IWechatApiResponse（非序列化契约；依赖方向 DataModels → 公用层，公用层为叶子）。 -->
+		<ProjectReference Include="..\Mud.Wechat.Abstractions\Mud.Wechat.Abstractions.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<InternalsVisibleTo Include="Mud.Wechat.MiniProgram" />
+		<InternalsVisibleTo Include="Mud.Wechat.MiniProgram.Abstractions" />
+		<!-- 生成上下文为 internal（对齐 Work.DataModels / OA.DataModels 模式），契约守卫与反序列化测试需直读。 -->
+		<InternalsVisibleTo Include="Mud.Wechat.MiniProgram.Tests" />
+	</ItemGroup>
+
+</Project>

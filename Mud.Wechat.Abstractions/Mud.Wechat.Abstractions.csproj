@@ -25,6 +25,17 @@
 		<InternalsVisibleTo Include="Mud.Wechat.Work.Tests" />
 		<InternalsVisibleTo Include="Mud.Wechat.Work.Abstractions.Tests" />
 		<InternalsVisibleTo Include="Mud.Wechat.OfficialAccount.Tests" />
+		<!-- 微信小程序产品线（设计方案 v2 §3.2）：令牌与多应用基座复用 OfficialAccount，
+		     但响应判错契约、配置基座、令牌存储端口与回调内核仍须直读公用层 internal 面。 -->
+		<InternalsVisibleTo Include="Mud.Wechat.MiniProgram" />
+		<InternalsVisibleTo Include="Mud.Wechat.MiniProgram.Abstractions" />
+		<InternalsVisibleTo Include="Mud.Wechat.MiniProgram.Tests" />
+		<!-- 微信支付产品线（设计方案 v2 §2）：支付回调复用 IWechatCallbackReplayGuard 与 WechatCallbackFailureKind 语义。 -->
+		<InternalsVisibleTo Include="Mud.Wechat.Pay" />
+		<InternalsVisibleTo Include="Mud.Wechat.Pay.Abstractions" />
+		<InternalsVisibleTo Include="Mud.Wechat.Pay.Callback" />
+		<InternalsVisibleTo Include="Mud.Wechat.Pay.Tests" />
+		<InternalsVisibleTo Include="Mud.Wechat.Pay.Callback.Tests" />
 		<InternalsVisibleTo Include="DynamicProxyGenAssembly2" />
 	</ItemGroup>
 

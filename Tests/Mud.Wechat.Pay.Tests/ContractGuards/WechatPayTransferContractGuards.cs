@@ -73,6 +73,18 @@ public class WechatPayTransferContractGuards
             .SelectMany(static p => p.GetCustomAttributes<QueryAttribute>())
             .Should().BeEmpty("官方查询页无 query 参数");
         query.ReturnType.Should().NotBe(typeof(Task), "查询有应答体（12 字段）");
+
+        // 微信单号查询转账单：同样仅 path 参数；且与商户单号版**共用同一应答 DTO**（官方两页字段表逐项一致）。
+        AssertRoute<GetAttribute>(
+            nameof(IWechatPayTransferService.QueryByTransferBillNoAsync),
+            "/v3/fund-app/mch-transfer/transfer-bills/transfer-bill-no/{transferBillNo}");
+        var byTransferNo = FindMethod(nameof(IWechatPayTransferService.QueryByTransferBillNoAsync));
+        byTransferNo.GetParameters()
+            .Where(static p => p.GetCustomAttribute<PathAttribute>() != null)
+            .Select(static p => p.Name)
+            .Should().BeEquivalentTo(new[] { "transferBillNo" });
+        byTransferNo.ReturnType.Should().Be(typeof(Task<TransferBillQueryResponse>),
+            "官方两页应答字段表逐项一致 ⇒ 复用同一 DTO（防两处字段各自漂移）");
     }
 
     /// <summary>TR2：官方字段名锁定。</summary>

@@ -87,4 +87,26 @@ public interface IWechatPayTransferService
     Task<TransferBillQueryResponse> QueryByOutBillNoAsync(
         [Path] string outBillNo,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 微信单号查询转账单。官方文档：<see href="https://pay.weixin.qq.com/docs/merchant/apis/mch-trans/transfer-bill/get-transfer-bill-by-no.html"/>。
+    /// </summary>
+    /// <param name="transferBillNo">微信转账单号（官方 path <c>transfer_bill_no</c>，必填 string(64)）。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/> 取消操作令牌对象。</param>
+    /// <returns>转账单详情，见 <see cref="TransferBillQueryResponse"/>。</returns>
+    /// <remarks>
+    /// <para><b>官方契约</b>：<b>GET</b> <c>/v3/fund-app/mch-transfer/transfer-bills/transfer-bill-no/{transfer_bill_no}</c>；
+    /// 仅 path 参数，无 query / body。</para>
+    /// <para>
+    /// <b>返回类型为何与「商户单号查询转账单」共用</b>：官方两页的应答字段表<b>逐项完全一致</b>
+    /// （12 个平铺字段，含 <c>state</c> 的 8 个取值亦相同），只是<b>入参维度</b>不同（微信单号 vs 商户单号）。
+    /// 同一份事实两处类型只会让字段漂移 ⇒ 复用同一 DTO（与支付分「按协议号/按 openid 查授权记录」
+    /// 共用应答同款判断：<b>表相同则共用，表不同则分建</b>）。
+    /// </para>
+    /// <para><b>时限</b>：官方产品介绍注明当前 API <b>仅支持查询 30 天内</b>的转账单。</para>
+    /// </remarks>
+    [Get("/v3/fund-app/mch-transfer/transfer-bills/transfer-bill-no/{transferBillNo}")]
+    Task<TransferBillQueryResponse> QueryByTransferBillNoAsync(
+        [Path] string transferBillNo,
+        CancellationToken cancellationToken = default);
 }

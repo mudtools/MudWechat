@@ -47,6 +47,10 @@ public class WechatPayPayScoreContractGuards
         AssertRoute<GetAttribute>(nameof(IWechatPayPayScoreService.QueryServiceOrderAsync), "/v3/payscore/serviceorder");
         AssertRoute<PostAttribute>(nameof(IWechatPayPayScoreService.CancelServiceOrderAsync), "/v3/payscore/serviceorder/{outOrderNo}/cancel");
         AssertRoute<PostAttribute>(nameof(IWechatPayPayScoreService.CompleteServiceOrderAsync), "/v3/payscore/serviceorder/{outOrderNo}/complete");
+        AssertRoute<PostAttribute>(nameof(IWechatPayPayScoreService.ModifyServiceOrderAsync), "/v3/payscore/serviceorder/{outOrderNo}/modify");
+
+        // 官方接口名是「发起催收扣款」，路由为 /pay（不是 /collect 之类的直觉名）。
+        AssertRoute<PostAttribute>(nameof(IWechatPayPayScoreService.CollectServiceOrderAsync), "/v3/payscore/serviceorder/{outOrderNo}/pay");
 
         // 查询：必填 service_id + appid；out_order_no 与 query_id 为「二选一」的可选参数。
         var query = FindMethod(nameof(IWechatPayPayScoreService.QueryServiceOrderAsync));
@@ -102,6 +106,36 @@ public class WechatPayPayScoreContractGuards
         JsonNameShouldBe<PayScoreCompleteOrderRequest>(nameof(PayScoreCompleteOrderRequest.ProfitSharing), "profit_sharing");
         JsonNameShouldBe<PayScoreCompleteOrderRequest>(nameof(PayScoreCompleteOrderRequest.GoodsTag), "goods_tag");
         JsonNameShouldBe<PayScoreCompleteOrderResponse>(nameof(PayScoreCompleteOrderResponse.NeedCollection), "need_collection");
+
+        JsonNameShouldBe<PayScoreModifyOrderRequest>(nameof(PayScoreModifyOrderRequest.Reason), "reason");
+        JsonNameShouldBe<PayScoreModifyOrderRequest>(nameof(PayScoreModifyOrderRequest.TotalAmount), "total_amount");
+        JsonNameShouldBe<PayScoreModifyOrderResponse>(nameof(PayScoreModifyOrderResponse.Collection), "collection");
+        JsonNameShouldBe<PayScoreModifyCollection>(nameof(PayScoreModifyCollection.PromotionDetail), "promotion_detail");
+
+        JsonNameShouldBe<PayScoreCollectRequest>(nameof(PayScoreCollectRequest.ServiceId), "service_id");
+        JsonNameShouldBe<PayScoreCollectResponse>(nameof(PayScoreCollectResponse.OrderId), "order_id");
+    }
+
+    /// <summary>
+    /// PY-B7：<b>两个 <c>collection</c> 类型不得合并</b>（官方两页嵌套结构不同）。
+    /// </summary>
+    /// <remarks>
+    /// 修改页把 <c>promotion_detail</c> / <c>goods_detail</c> <b>嵌在 collection 下</b>；
+    /// 查询页把它们放在<b>顶层</b>。合并任一方向都会让一个接口带上另一个接口才有的嵌套，
+    /// 调用方据此写出的解析路径在真实报文中必然落空。
+    /// </remarks>
+    [Fact]
+    public void CollectionShapes_ShouldStayStructurallySeparate()
+    {
+        typeof(PayScoreModifyCollection).GetProperty("PromotionDetail").Should().NotBeNull(
+            "修改页 collection 内嵌 promotion_detail");
+        typeof(PayScoreModifyCollection).GetProperty("GoodsDetail").Should().NotBeNull(
+            "修改页 collection 内嵌 goods_detail");
+
+        typeof(PayScoreCollection).GetProperty("PromotionDetail").Should().BeNull(
+            "查询页的 collection 不含 promotion_detail（它在顶层）");
+        typeof(PayScoreServiceOrderQueryResponse).GetProperty("PromotionDetail").Should().NotBeNull(
+            "查询页的 promotion_detail 在顶层");
     }
 
     /// <summary>
@@ -188,10 +222,11 @@ public class WechatPayPayScoreContractGuards
             .Where(static t => !typeof(JsonSerializerContext).IsAssignableFrom(t))
             .ToList();
 
-        domainTypes.Should().HaveCount(17,
+        domainTypes.Should().HaveCount(22,
             "支付分域 DTO：创单族 7（请求/后付费/优惠/时间段/位置/风险金/设备）" +
             " + 创建应答 1 + 查询应答 1 + 查询嵌套 4（收款/收款明细/优惠/优惠单品）" +
-            " + 取消族 2（请求/应答） + 完结族 2（请求/应答）");
+            " + 取消族 2（请求/应答） + 完结族 2（请求/应答）" +
+            " + 修改族 3（请求/收款/应答） + 催收扣款族 2（请求/应答）");
 
         foreach (var type in domainTypes)
         {

@@ -714,3 +714,227 @@ public class PayScoreCompleteOrderResponse : WechatPayResponse
     [JsonPropertyName("need_collection")]
     public bool? NeedCollection { get; set; }
 }
+
+/// <summary>
+/// 修改订单金额（<c>POST /v3/payscore/serviceorder/{out_order_no}/modify</c>）。
+/// </summary>
+/// <remarks>
+/// <para>
+/// <b>官方文档</b>：<see href="https://pay.weixin.qq.com/wiki/doc/apiv3/apis/chapter6_1_17.shtml"/>
+/// （2026-10-09 逐字段核验；更新时间 2025.03.06；支持商户：普通商户）。
+/// </para>
+/// <para>
+/// <b>与创单的两处差异（官方原样）</b>：① <c>post_payments</c> 在本接口是<b>必填</b>（创单为选填）；
+/// ② <c>post_discounts[].name</c> 在本接口是<b>选填</b>（创单为必填）—— 必填性不随 DTO 表达，
+/// 故在此留档以免调用方按创单的约束照搬。
+/// </para>
+/// <para><b><c>reason</c> 必填</b>且官方未标注长度以外的语义约束（string(50)）。</para>
+/// </remarks>
+[HttpJsonSerializable(SerializerClassName = "PayScore")]
+public class PayScoreModifyOrderRequest
+{
+    /// <summary>公众账号 ID（<c>appid</c>，必填 string(32)）。</summary>
+    [JsonPropertyName("appid")]
+    public string? AppId { get; set; }
+
+    /// <summary>服务 ID（<c>service_id</c>，必填 string(32)）。</summary>
+    [JsonPropertyName("service_id")]
+    public string? ServiceId { get; set; }
+
+    /// <summary>后付费项目（<c>post_payments</c>，<b>必填</b>；子字段 <c>name</c> 必填）。</summary>
+    [JsonPropertyName("post_payments")]
+    public List<PayScorePostPayment>? PostPayments { get; set; }
+
+    /// <summary>商户优惠（<c>post_discounts</c>，选填；本接口子字段 <c>name</c> 为<b>选填</b>）。</summary>
+    [JsonPropertyName("post_discounts")]
+    public List<PayScorePostDiscount>? PostDiscounts { get; set; }
+
+    /// <summary>订单最终收款总金额（<c>total_amount</c>，必填 integer，单位分）。</summary>
+    [JsonPropertyName("total_amount")]
+    public long? TotalAmount { get; set; }
+
+    /// <summary>修改原因（<c>reason</c>，必填 string(50)）。</summary>
+    [JsonPropertyName("reason")]
+    public string? Reason { get; set; }
+
+    /// <summary>设备信息（<c>device</c>，选填）。</summary>
+    [JsonPropertyName("device")]
+    public PayScoreDevice? Device { get; set; }
+}
+
+/// <summary>
+/// 修改订单金额应答的收款信息（<c>collection</c>）—— <b>结构与查询应答的 <c>collection</c> 不同</b>。
+/// </summary>
+/// <remarks>
+/// <b>⚠️ 官方两页的 <c>collection</c> 结构不一致（照录，不「统一」）</b>：
+/// 本（修改）页把 <c>promotion_detail</c> 与 <c>goods_detail</c> <b>嵌在 collection 之下</b>；
+/// 而查询页把 <c>promotion_detail</c> 放在<b>顶层</b>。故二者是两个类型，
+/// 不得为「省一个类」把它们并成一个 —— 那会让两个接口各自带上对方才有的嵌套。
+/// </remarks>
+[HttpJsonSerializable(SerializerClassName = "PayScore")]
+public class PayScoreModifyCollection
+{
+    /// <summary>收款状态（<c>state</c>）：见 <see cref="PayScoreCollectionStates"/>。</summary>
+    [JsonPropertyName("state")]
+    public string? State { get; set; }
+
+    /// <summary>总收款金额（<c>total_amount</c>，整型，单位分）。</summary>
+    [JsonPropertyName("total_amount")]
+    public long? TotalAmount { get; set; }
+
+    /// <summary>待收金额（<c>paying_amount</c>，整型，单位分）。</summary>
+    [JsonPropertyName("paying_amount")]
+    public long? PayingAmount { get; set; }
+
+    /// <summary>已收金额（<c>paid_amount</c>，整型，单位分）。</summary>
+    [JsonPropertyName("paid_amount")]
+    public long? PaidAmount { get; set; }
+
+    /// <summary>收款明细（<c>details</c>）。</summary>
+    [JsonPropertyName("details")]
+    public List<PayScoreCollectionDetail>? Details { get; set; }
+
+    /// <summary>优惠信息（<c>promotion_detail</c>，<b>嵌在 collection 下</b>）。</summary>
+    [JsonPropertyName("promotion_detail")]
+    public List<PayScorePromotionDetail>? PromotionDetail { get; set; }
+
+    /// <summary>优惠单品（<c>goods_detail</c>，<b>与 promotion_detail 平级嵌在 collection 下</b>）。</summary>
+    [JsonPropertyName("goods_detail")]
+    public List<PayScorePromotionGoodsDetail>? GoodsDetail { get; set; }
+}
+
+/// <summary>
+/// 修改订单金额应答（顶层 18 字段）。
+/// </summary>
+/// <remarks>
+/// <b>与查询应答的关系</b>：顶层字段集与查询应答接近（本应答<b>无</b> <c>openid</c>），
+/// 但 <c>collection</c> 的<b>内部结构不同</b>（见 <see cref="PayScoreModifyCollection"/>）
+/// ⇒ 官方两页字段表不同即两个类型，不合并。
+/// </remarks>
+[HttpJsonSerializable(SerializerClassName = "PayScore")]
+public class PayScoreModifyOrderResponse : WechatPayResponse
+{
+    /// <summary>商户服务订单号（<c>out_order_no</c>，必填）。</summary>
+    [JsonPropertyName("out_order_no")]
+    public string? OutOrderNo { get; set; }
+
+    /// <summary>服务 ID（<c>service_id</c>，必填）。</summary>
+    [JsonPropertyName("service_id")]
+    public string? ServiceId { get; set; }
+
+    /// <summary>公众账号 ID（<c>appid</c>，必填）。</summary>
+    [JsonPropertyName("appid")]
+    public string? AppId { get; set; }
+
+    /// <summary>商户号（<c>mchid</c>，必填）。</summary>
+    [JsonPropertyName("mchid")]
+    public string? MchId { get; set; }
+
+    /// <summary>服务信息（<c>service_introduction</c>，必填）。</summary>
+    [JsonPropertyName("service_introduction")]
+    public string? ServiceIntroduction { get; set; }
+
+    /// <summary>服务订单状态（<c>state</c>，必填）。</summary>
+    [JsonPropertyName("state")]
+    public string? State { get; set; }
+
+    /// <summary>订单状态说明（<c>state_description</c>，选填）。</summary>
+    [JsonPropertyName("state_description")]
+    public string? StateDescription { get; set; }
+
+    /// <summary>后付费项目（<c>post_payments</c>，必填）。</summary>
+    [JsonPropertyName("post_payments")]
+    public List<PayScorePostPayment>? PostPayments { get; set; }
+
+    /// <summary>后付费商户优惠（<c>post_discounts</c>，选填）。</summary>
+    [JsonPropertyName("post_discounts")]
+    public List<PayScorePostDiscount>? PostDiscounts { get; set; }
+
+    /// <summary>服务风险金（<c>risk_fund</c>，选填）。</summary>
+    [JsonPropertyName("risk_fund")]
+    public PayScoreRiskFund? RiskFund { get; set; }
+
+    /// <summary>订单最终收款总金额（<c>total_amount</c>，选填，单位分）。</summary>
+    [JsonPropertyName("total_amount")]
+    public long? TotalAmount { get; set; }
+
+    /// <summary>是否需要收款（<c>need_collection</c>，选填 bool）。</summary>
+    [JsonPropertyName("need_collection")]
+    public bool? NeedCollection { get; set; }
+
+    /// <summary>收款信息（<c>collection</c>，选填；<b>本页嵌套结构见 <see cref="PayScoreModifyCollection"/></b>）。</summary>
+    [JsonPropertyName("collection")]
+    public PayScoreModifyCollection? Collection { get; set; }
+
+    /// <summary>服务时间段（<c>time_range</c>，选填）。</summary>
+    [JsonPropertyName("time_range")]
+    public PayScoreTimeRange? TimeRange { get; set; }
+
+    /// <summary>服务位置（<c>location</c>，选填）。</summary>
+    [JsonPropertyName("location")]
+    public PayScoreLocation? Location { get; set; }
+
+    /// <summary>商户数据包（<c>attach</c>，选填）。</summary>
+    [JsonPropertyName("attach")]
+    public string? Attach { get; set; }
+
+    /// <summary>商户回调地址（<c>notify_url</c>，选填）。</summary>
+    [JsonPropertyName("notify_url")]
+    public string? NotifyUrl { get; set; }
+
+    /// <summary>微信支付服务订单号（<c>order_id</c>，选填）。</summary>
+    [JsonPropertyName("order_id")]
+    public string? OrderId { get; set; }
+}
+
+/// <summary>
+/// 发起催收扣款（<c>POST /v3/payscore/serviceorder/{out_order_no}/pay</c>）。
+/// </summary>
+/// <remarks>
+/// <para>
+/// <b>官方文档</b>：<see href="https://pay.weixin.qq.com/wiki/doc/apiv3/apis/chapter6_1_19.shtml"/>
+/// （2026-10-09 逐字段核验；更新时间 2025.01.02；支持商户：普通商户）。
+/// </para>
+/// <para>
+/// <b>⚠️ 官方接口名是「发起催收扣款」，不是「收款」</b> —— 即这是一次<b>主动催收</b>动作
+/// （对已完结、待收款 <c>USER_PAYING</c> 的订单发起扣款），勿按「收款」的语义理解成对账或入账。
+/// </para>
+/// </remarks>
+[HttpJsonSerializable(SerializerClassName = "PayScore")]
+public class PayScoreCollectRequest
+{
+    /// <summary>公众账号 ID（<c>appid</c>，必填 string）。</summary>
+    [JsonPropertyName("appid")]
+    public string? AppId { get; set; }
+
+    /// <summary>服务 ID（<c>service_id</c>，必填 string）。</summary>
+    [JsonPropertyName("service_id")]
+    public string? ServiceId { get; set; }
+}
+
+/// <summary>
+/// 发起催收扣款应答（<b>仅 4 个顶层字段</b>，无嵌套）。
+/// </summary>
+/// <remarks>
+/// 官方本页应答字段表为 <c>appid</c> / <c>out_order_no</c> / <c>service_id</c> / <c>order_id</c> ——
+/// <b>无 <c>mchid</c></b>，故与取消应答（5 字段含 <c>mchid</c>）也不是同一形态，不合并建模。
+/// </remarks>
+[HttpJsonSerializable(SerializerClassName = "PayScore")]
+public class PayScoreCollectResponse : WechatPayResponse
+{
+    /// <summary>公众账号 ID（<c>appid</c>，必填 string）。</summary>
+    [JsonPropertyName("appid")]
+    public string? AppId { get; set; }
+
+    /// <summary>商户订单号（<c>out_order_no</c>，必填 string）。</summary>
+    [JsonPropertyName("out_order_no")]
+    public string? OutOrderNo { get; set; }
+
+    /// <summary>服务 ID（<c>service_id</c>，必填 string(32)）。</summary>
+    [JsonPropertyName("service_id")]
+    public string? ServiceId { get; set; }
+
+    /// <summary>微信支付服务订单号（<c>order_id</c>，必填 string(128)）。</summary>
+    [JsonPropertyName("order_id")]
+    public string? OrderId { get; set; }
+}

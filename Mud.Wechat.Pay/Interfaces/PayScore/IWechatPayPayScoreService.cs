@@ -127,4 +127,45 @@ public interface IWechatPayPayScoreService
         [Path] string outOrderNo,
         [Body] PayScoreCompleteOrderRequest request,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 修改订单金额。官方文档：<see href="https://pay.weixin.qq.com/wiki/doc/apiv3/apis/chapter6_1_17.shtml"/>。
+    /// </summary>
+    /// <param name="outOrderNo">商户服务订单号（官方 path <c>out_order_no</c>，必填 string(32)）。</param>
+    /// <param name="request">修改请求体，见 <see cref="PayScoreModifyOrderRequest"/>。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/> 取消操作令牌对象。</param>
+    /// <returns>修改后的订单（含收款信息），见 <see cref="PayScoreModifyOrderResponse"/>。</returns>
+    /// <remarks>
+    /// <para><b>官方契约</b>：<b>POST</b> <c>/v3/payscore/serviceorder/{out_order_no}/modify</c>；
+    /// path 必带 <c>out_order_no</c>；body 的 <c>post_payments</c> / <c>total_amount</c> / <c>reason</c> 均<b>必填</b>。</para>
+    /// <para><b>必填性差异</b>：<c>post_payments</c> 在此为必填（创单选填）；<c>post_discounts[].name</c> 在此为选填（创单必填）。</para>
+    /// <para><b>结构差异（勿按查询应答解析）</b>：本接口应答的 <c>collection</c> <b>内嵌</b>
+    /// <c>promotion_detail</c> 与 <c>goods_detail</c>，而查询应答把它们放在顶层。</para>
+    /// </remarks>
+    [Post("/v3/payscore/serviceorder/{outOrderNo}/modify")]
+    Task<PayScoreModifyOrderResponse> ModifyServiceOrderAsync(
+        [Path] string outOrderNo,
+        [Body] PayScoreModifyOrderRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 发起催收扣款。官方文档：<see href="https://pay.weixin.qq.com/wiki/doc/apiv3/apis/chapter6_1_19.shtml"/>。
+    /// </summary>
+    /// <param name="outOrderNo">商户服务订单号（官方 path <c>out_order_no</c>，必填 string(32)）。</param>
+    /// <param name="request">扣款请求体（仅 <c>appid</c> + <c>service_id</c>），见 <see cref="PayScoreCollectRequest"/>。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/> 取消操作令牌对象。</param>
+    /// <returns>被催收的订单标识（仅 4 字段），见 <see cref="PayScoreCollectResponse"/>。</returns>
+    /// <remarks>
+    /// <para><b>官方契约</b>：<b>POST</b> <c>/v3/payscore/serviceorder/{out_order_no}/pay</c>；
+    /// path 必带 <c>out_order_no</c>；body 仅 <c>appid</c> / <c>service_id</c>（两者均必填）。</para>
+    /// <para>
+    /// <b>⚠️ 语义</b>：官方接口名是「<b>发起催收扣款</b>」—— 对已完结且待收款（<c>USER_PAYING</c>）
+    /// 的订单<b>主动发起扣款</b>；<b>不等于</b>入账、也不等于查询。扣款结果须经查询接口或支付成功回调确认。
+    /// </para>
+    /// </remarks>
+    [Post("/v3/payscore/serviceorder/{outOrderNo}/pay")]
+    Task<PayScoreCollectResponse> CollectServiceOrderAsync(
+        [Path] string outOrderNo,
+        [Body] PayScoreCollectRequest request,
+        CancellationToken cancellationToken = default);
 }

@@ -70,6 +70,43 @@ public class MpQueryTokenWhitelistGuard
         actual.Should().NotBeEmpty();
     }
 
+    /// <summary>
+    /// 契约守卫 QT1（小程序线部分）：小程序 Query 令牌注入白名单。
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>为何在同一守卫内断言两条线</b>：本守卫是 Query 令牌注入白名单的<b>全量集合唯一持有者</b>
+    /// （见类型 remarks）。小程序与公众号<b>同属微信公众平台、同一令牌域、同一 Query 注入契约</b>
+    /// （设计方案 §3.2/§3.3），若把小程序白名单另放一处，就重新制造了「多处持有、改漏即红」的问题。
+    /// </para>
+    /// <para>
+    /// <b>登录 <c>code2Session</c> 不在白名单内</b>：它<b>免令牌</b>（以 <c>appid</c> + <c>secret</c> 换用户级会话，
+    /// 不消费应用级 <c>access_token</c>），刻意不声明 <c>[Token]</c> —— 声明之反而会把应用级令牌错误注入该请求。
+    /// 同理，小程序码三端点走 <c>IWxaCodeService</c> 手工通道（无 <c>[Token]</c> 特性，手工拼 Query），也不入白名单。
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void QueryTokenInjectionInterfaces_ShouldMatchWhitelist_ForMiniProgramLine()
+    {
+        var actual = typeof(Mud.Wechat.MiniProgram.Extensions.MiniProgramServiceBuilder).Assembly.GetTypes()
+            .Where(t => t.IsInterface && t.IsPublic)
+            .Where(i => i.GetCustomAttribute<TokenAttribute>() is { } attr
+                        && attr.InjectionMode == TokenInjectionMode.Query)
+            .Select(i => i.Name)
+            .OrderBy(n => n, StringComparer.Ordinal)
+            .ToList();
+
+        actual.Should().BeEquivalentTo(new[]
+        {
+            nameof(Mud.Wechat.MiniProgram.IWxaAuthService),           // 登录与用户（4 端点；code2Session 免令牌独立接口）
+            nameof(Mud.Wechat.MiniProgram.IWxaQrCodeLinkService),     // 二维码 / 链接 JSON 通道（5 端点；图片通道 IWxaCodeService 手工注入）
+            nameof(Mud.Wechat.MiniProgram.IWxaSecurityService),       // 内容安全（2 端点）
+            nameof(Mud.Wechat.MiniProgram.IWxaDataAnalysisService),   // 数据分析（9 端点）
+        }, "小程序官方契约同样强制 Query 注入；新增 Query 注入接口须先评估再显式扩展本白名单");
+
+        actual.Should().NotBeEmpty();
+    }
+
     /// <summary>契约守卫 QT2：白名单接口必须全部声明 <c>[Token]</c> 的 <c>access_token</c> 参数名（官方契约）。</summary>
     [Fact]
     public void QueryTokenInterfaces_ShouldDeclareOfficialParameterName()

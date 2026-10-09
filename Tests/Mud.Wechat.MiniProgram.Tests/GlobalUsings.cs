@@ -16,6 +16,13 @@ global using Microsoft.Extensions.Options;
 global using Mud.HttpUtils;
 global using Mud.HttpUtils.Attributes;
 global using Mud.Wechat.Abstractions;
-// 说明：Mud.Wechat.MiniProgram{,.Abstractions,.DataModels} 三包在 P0-a 期为**空工程**（尚无任何
-// 命名空间声明），故此处不 global using —— 否则 CS0234。P1 落端点时随首批源文件补入。
+// P1-c 起三包已有源文件（接口 + DTO + 模块注册），此处随首批源文件补入命名空间。
+global using Mud.Wechat.MiniProgram;
+global using Mud.Wechat.MiniProgram.Abstractions;
+global using Mud.Wechat.MiniProgram.DataModels;
+global using Mud.Wechat.MiniProgram.DataModels.Auth;
+global using Mud.Wechat.MiniProgram.DataModels.DataAnalysis;
+global using Mud.Wechat.MiniProgram.DataModels.QrCodeLink;
+global using Mud.Wechat.MiniProgram.DataModels.Security;
+global using Mud.Wechat.MiniProgram.Extensions;
 global using Mud.Wechat.OfficialAccount.Abstractions;

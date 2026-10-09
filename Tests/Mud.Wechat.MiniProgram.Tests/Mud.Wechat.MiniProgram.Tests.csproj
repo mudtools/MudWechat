@@ -16,6 +16,11 @@
 		<ProjectReference Include="..\..\Mud.Wechat.MiniProgram\Mud.Wechat.MiniProgram.csproj" />
 		<ProjectReference Include="..\..\Mud.Wechat.MiniProgram.Abstractions\Mud.Wechat.MiniProgram.Abstractions.csproj" />
 		<ProjectReference Include="..\..\Mud.Wechat.MiniProgram.DataModels\Mud.Wechat.MiniProgram.DataModels.csproj" />
+		<!-- 跨包路由唯一性守卫（MP-X1）的**参照集**是公众号线路由表：必须让本测试工程能反射到
+		     公众号**主包**（接口上的 [RequestUri] 都在那里），否则参照集为空、守卫会静默假绿。
+		     这是**测试工程**的引用，不影响产品线依赖边界：Mud.Wechat.MiniProgram 本身仍只引
+		     Abstractions/DataModels 与公众号 Abstractions（§3.5）。 -->
+		<ProjectReference Include="..\..\Mud.Wechat.OfficialAccount\Mud.Wechat.OfficialAccount.csproj" />
 	</ItemGroup>
 
 </Project>

@@ -19,9 +19,15 @@ namespace Mud.Wechat.MiniProgram.Tests.ContractGuards;
 /// （恢复链空转、无异常），属于最危险的一类漂移。
 /// </para>
 /// <para>
-/// <b>本组守卫为脚手架期形态</b>：小程序程序集当前**零端点**（P1 才落端点）。因此「重叠路由回潮」类
-/// 断言此刻恒真，但其参照集（公众号线路由）被强制断言为**非空**——参照集为空时守卫会**失败**而非
-/// 静默通过，避免反射失效导致的假绿（AGENTS §6「数量下限防枚举空跑」同款纪律）。
+/// <b>本组守卫的形态已随 P1-c 落地演进</b>：脚手架期小程序程序集**零端点**，「重叠路由回潮」类断言恒真；
+/// P1-c 起本线已有 24 端点，断言<b>真正生效</b>——参照集（公众号线路由）仍被强制断言为<b>非空</b>：
+/// 参照集为空时守卫会**失败**而非静默通过，避免反射失效导致的假绿
+/// （AGENTS §6「数量下限防枚举空跑」同款纪律）。
+/// </para>
+/// <para>
+/// <b>本文件只保留「形态类」断言</b>（令牌复用 / 无 IsAbstract 父接口 / 重叠路由 / 依赖隔离 / 无回调包）；
+/// 端点计数、路由表、字段名、白名单与装配面等<b>契约类</b>断言集中在
+/// <c>MiniProgramContractGuards</c>（MP-X1/X2/X3/X5/X6/X7/X8）。
 /// </para>
 /// </remarks>
 public class MiniProgramScaffoldContractGuards
@@ -53,17 +59,27 @@ public class MiniProgramScaffoldContractGuards
 
     /// <summary>
     /// MP-X4：接口形态 —— 小程序线**平铺命名空间、无 <c>IsAbstract</c> 公共父接口**（对齐公众号线形态，
-    /// 不采用 Work 线的父子二分）。当前零接口，断言恒成立；一旦有人引入 <c>IsAbstract</c> 父接口即失败。
+    /// 不采用 Work 线的父子二分）。
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>判据是「特性属性」而非 <c>Type.IsAbstract</c></b>：反射里 <c>Type.IsAbstract</c> 对
+    /// <b>接口恒为 <c>true</c></b>（接口本就是抽象类型），照它判定会让本守卫<b>永远为红</b> ——
+    /// 反过来说，脚手架期「零接口」时它又恒为绿，属<b>双向失效</b>的写法（P1-c 落地时实测踩到）。
+    /// 真正的判据是 <c>[HttpClientApi(IsAbstract = true)]</c> 的特性属性（决定是否进 DI 注册组）。
+    /// </para>
+    /// <para>P1-c 起本线已有 5 个接口（4 带令牌 + 1 免令牌），断言由此真正生效。</para>
+    /// </remarks>
     [Fact]
-    public void Interfaces_ShouldNotUseAbstractParents_WhenScaffold()
+    public void Interfaces_ShouldNotUseAbstractParents_WhenContractLanded()
     {
         var asm = LoadProductLine("Mud.Wechat.MiniProgram");
 
         var abstractParents = asm.GetTypes()
-            .Where(t => t.IsInterface && t.IsAbstract)
-            .Where(t => t.GetCustomAttributes(false)
-                .Any(a => a.GetType().Name is "HttpClientApiAttribute" or "TokenAttribute"))
+            .Where(static t => t.IsInterface)
+            .Where(static t => t.GetCustomAttributes(false)
+                .Any(static a => a.GetType().Name is "HttpClientApiAttribute" or "TokenAttribute"
+                                 && a.GetType().GetProperty("IsAbstract")?.GetValue(a) is true))
             .ToArray();
 
         abstractParents.Should().BeEmpty(

@@ -94,6 +94,17 @@ SDK 完整封装了企业微信接入中最繁琐的部分——**多应用、�
 > ```
 >
 > 该线**不声明 `[Token]`**（守卫 PAY-B1 fail-closed）。**回调接收**独立成包（`Mud.Wechat.Pay.Callback`），只需凭据底座即可工作，不必拉起业务接口客户端：
+
+> **微信小程序线**（`Mud.Wechat.MiniProgram*`）：与公众号线**同属微信公众平台、同一 `/cgi-bin/token` 端点、同一令牌域**，因此**不新增令牌类型**，直接以 `AddMpApp` 注册（其 `AppId`/`AppSecret` 即小程序的），令牌沿用 `Wechat.Mp.AccessToken`：
+>
+> ```csharp
+> services.AddMpApp(configuration, "MpApps")                        // 复用公众号令牌底座（零增量）
+>         .AddMiniProgramServices(b => b.AddAllApis());            // Auth / QrCodeLink / Security / DataAnalysis
+> ```
+>
+> 一期净新增 **24 端点**（登录 5 + 二维码链接 8 + 内容安全 2 + 数据分析 9）。其中**小程序码 3 端点响应为图片二进制流**（失败时才是 JSON），走独立图片通道 `IWxaCodeService`（Content-Type 分支判错），不进 JSON 管线。`session_key` 与手机号 `code` 属敏感项，SDK 不入日志（守卫 MP-X7）。详见 `.docs/` 支付小程序方案 §3 与 `Tests/Mud.Wechat.MiniProgram.Tests/`。
+
+> 以下为微信支付回调的接入方式：
 >
 > ```csharp
 > services.AddPayApp(configuration, "WechatPayMerchants")          // 凭据底座（必需）

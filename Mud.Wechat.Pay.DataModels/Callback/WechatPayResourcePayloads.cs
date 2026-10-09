@@ -5,6 +5,7 @@
 //  不得利用本项目从事危害国家安全、扰乱社会秩序、侵犯他人合法权益等法律法规禁止的活动！任何基于本项目开发而产生的一切法律纠纷和责任，我们不承担任何责任！
 // -----------------------------------------------------------------------
 
+using Mud.Wechat.Pay.DataModels.Combine;
 using Mud.Wechat.Pay.DataModels.PayScore;
 
 namespace Mud.Wechat.Pay.DataModels.Callback;
@@ -678,4 +679,206 @@ public class WechatPayFapiaoUserAppliedResource
     /// <summary>用户完成发票抬头填写的时间（<c>apply_time</c>，RFC3339 格式）。</summary>
     [JsonPropertyName("apply_time")]
     public string? ApplyTime { get; set; }
+}
+
+/// <summary>
+/// 解密后的<b>合单支付成功</b>资源载荷（<c>event_type = TRANSACTION.SUCCESS</c>，<b>合单形态</b>）。
+/// </summary>
+/// <remarks>
+/// <para>
+/// <b>官方文档</b>：<see href="https://pay.weixin.qq.com/doc/v3/partner/4013462574"/>
+/// （合单订单支付成功回调通知，2026-10-09 逐字段核验；更新时间 2025.01.16）。
+/// </para>
+/// <para>
+/// <b>🔴 本载荷最重要的一点：通知信封与「普通支付成功通知」<b>完全相同</b></b> ——
+/// 二者的 <c>event_type</c> 都是 <c>TRANSACTION.SUCCESS</c>，
+/// <c>resource.original_type</c> 也都是 <c>transaction</c>（官方两页各自逐字确认）。
+/// 即：<b>无法凭信封区分合单与普通单</b>，唯一判据是<b>解密后的载荷形态</b> ——
+/// 合单载荷有 <c>combine_appid</c> / <c>combine_mchid</c> / <c>combine_out_trade_no</c>
+/// 与<b>复数</b>的 <c>sub_orders[]</c>；普通支付载荷是单数的
+/// <c>appid</c> / <c>mchid</c> / <c>out_trade_no</c> / <c>amount</c>。
+/// </para>
+/// <para>
+/// <b>⚠️ 误用访问器不会报错（典型静默错位）</b>：两个载荷的字段名<b>没有一个重叠</b>，
+/// 所以拿 <c>GetTransaction()</c> 去解合单密文（或反之）<b>不会抛异常</b>，只会得到一份
+/// 「字段全空」的对象 ⇒ 消费侧<b>必须</b>用 <see cref="CombineOutTradeNo"/> /
+/// <see cref="CombineAppId"/> 之类字段做<b>存在性校验</b>，再决定走哪条业务分支。
+/// </para>
+/// <para>
+/// <b>与 <c>CombineQueryResponse</c> 的关系</b>：本载荷是通知形态（字段是查询应答的<b>子集</b>，
+/// 无 <c>combine_payer_info.sub_openid</c> 之外的查询附加信息，且 <c>scene_info</c> 只有 <c>device_id</c>）
+/// ⇒ 有意不复用查询应答类型（与交易域「查询应答 vs 通知载荷分建」同款理由）。
+/// </para>
+/// </remarks>
+[HttpJsonSerializable(SerializerClassName = "Callback")]
+public class WechatPayCombineTransactionResource
+{
+    /// <summary>合单服务商 APPID（<c>combine_appid</c>，必填）：下单时传入的服务商 APPID。</summary>
+    [JsonPropertyName("combine_appid")]
+    public string? CombineAppId { get; set; }
+
+    /// <summary>合单服务商商户号（<c>combine_mchid</c>，必填）：下单时传入的合单服务商商户号。</summary>
+    [JsonPropertyName("combine_mchid")]
+    public string? CombineMchId { get; set; }
+
+    /// <summary>
+    /// 合单商户订单号（<c>combine_out_trade_no</c>，必填）：合单下单时传入。
+    /// </summary>
+    /// <remarks>
+    /// <b>本字段是区分「合单通知」与「普通支付通知」的首选判据</b>（见类型 remarks）：
+    /// 普通支付载荷没有它 ⇒ 取到非空值即可断定这是合单通知。
+    /// </remarks>
+    [JsonPropertyName("combine_out_trade_no")]
+    public string? CombineOutTradeNo { get; set; }
+
+    /// <summary>场景信息（<c>scene_info</c>，选填），见 <see cref="WechatPayCombineSceneInfo"/>。</summary>
+    [JsonPropertyName("scene_info")]
+    public WechatPayCombineSceneInfo? SceneInfo { get; set; }
+
+    /// <summary>商品单列表（<c>sub_orders</c>，必填 array），见 <see cref="WechatPayCombineSubOrder"/>。</summary>
+    [JsonPropertyName("sub_orders")]
+    public List<WechatPayCombineSubOrder>? SubOrders { get; set; }
+
+    /// <summary>合单支付者信息（<c>combine_payer_info</c>，必填），见 <see cref="WechatPayCombinePayerInfo"/>。</summary>
+    [JsonPropertyName("combine_payer_info")]
+    public WechatPayCombinePayerInfo? CombinePayerInfo { get; set; }
+}
+
+/// <summary>
+/// 合单通知的场景信息（<c>scene_info</c>，<b>通知形态</b>）。
+/// </summary>
+/// <remarks>
+/// <b>⚠️ 与本域<b>下单</b>请求的 <c>CombineSceneInfo</c> 不同表</b>：通知里<b>只有 <c>device_id</c></b>
+/// （官方原文：下单时传入的支付场景描述），<b>没有</b> <c>payer_client_ip</c> ——
+/// 后者是<b>下单入参</b>（服务端采集的客户端 IP），通知不会回吐。
+/// </remarks>
+[HttpJsonSerializable(SerializerClassName = "Callback")]
+public class WechatPayCombineSceneInfo
+{
+    /// <summary>商户端设备号（<c>device_id</c>）：终端设备号（门店号或收银设备 ID），下单时传入。</summary>
+    [JsonPropertyName("device_id")]
+    public string? DeviceId { get; set; }
+}
+
+/// <summary>
+/// 合单通知里的单个商品单（<c>sub_orders[]</c>，<b>通知形态</b>）。
+/// </summary>
+/// <remarks>
+/// <para>
+/// <b>⚠️ 与本域<b>查询</b>应答的 <c>CombineQuerySubOrder</c> 不是同一张表</b>：本表<b>多</b>
+/// <c>trade_type</c> / <c>bank_type</c> / <c>success_time</c> / <c>promotion_detail</c>，
+/// 而<b>无</b>查询侧的 <c>description</c> 等字段 ⇒ 分建（本域 CB5 纪律：表相同则共用，表不同则分建）。
+/// </para>
+/// <para>
+/// <b>状态取值</b>见 <see cref="CombineTradeStates"/>（<c>SUCCESS</c> / <c>NOTPAY</c> / <c>CLOSED</c>），
+/// <b>交易类型取值</b>见 <see cref="CombineTradeTypes"/>（<c>JSAPI</c> / <c>NATIVE</c> / <c>APP</c> / <c>MWEB</c>）。
+/// </para>
+/// </remarks>
+[HttpJsonSerializable(SerializerClassName = "Callback")]
+public class WechatPayCombineSubOrder
+{
+    /// <summary>商品单商户号（<c>mchid</c>）：合单下单时传入的服务商商户号。</summary>
+    [JsonPropertyName("mchid")]
+    public string? MchId { get; set; }
+
+    /// <summary>交易类型（<c>trade_type</c>）：取值见 <see cref="CombineTradeTypes"/>（<b>H5 场景的取值是 <c>MWEB</c></b>）。</summary>
+    [JsonPropertyName("trade_type")]
+    public string? TradeType { get; set; }
+
+    /// <summary>交易状态（<c>trade_state</c>）：取值见 <see cref="CombineTradeStates"/>，<b>须显式判定为 <c>SUCCESS</c></b>。</summary>
+    [JsonPropertyName("trade_state")]
+    public string? TradeState { get; set; }
+
+    /// <summary>
+    /// 付款银行（<c>bank_type</c>）：官方原文「银行卡支付返回如 <c>ICBC_DEBIT</c>，
+    /// <b>非银行卡统一返回 <c>OTHERS</c></b>」⇒ 勿把 <c>OTHERS</c> 当成"未知/异常"。
+    /// </summary>
+    [JsonPropertyName("bank_type")]
+    public string? BankType { get; set; }
+
+    /// <summary>商户数据包（<c>attach</c>，选填）：下单传入的自定义数据包，<b>原样返回</b>。</summary>
+    [JsonPropertyName("attach")]
+    public string? Attach { get; set; }
+
+    /// <summary>支付完成时间（<c>success_time</c>，rfc3339）。</summary>
+    [JsonPropertyName("success_time")]
+    public string? SuccessTime { get; set; }
+
+    /// <summary>商品单微信支付订单号（<c>transaction_id</c>）：微信为<b>每个商品单</b>分配的唯一标识（非合单总单）。</summary>
+    [JsonPropertyName("transaction_id")]
+    public string? TransactionId { get; set; }
+
+    /// <summary>商品单商户订单号（<c>out_trade_no</c>）：合单下单时传入的商品单商户订单号。</summary>
+    [JsonPropertyName("out_trade_no")]
+    public string? OutTradeNo { get; set; }
+
+    /// <summary>子商户号（<c>sub_mchid</c>）：合单下单时传入的特约商户号。</summary>
+    [JsonPropertyName("sub_mchid")]
+    public string? SubMchId { get; set; }
+
+    /// <summary>子商户 APPID（<c>sub_appid</c>，选填）：<c>sub_mchid</c> 绑定的 <c>sub_appid</c>。</summary>
+    [JsonPropertyName("sub_appid")]
+    public string? SubAppId { get; set; }
+
+    /// <summary>用户子商户标识（<c>sub_openid</c>，选填）：下单传入 <c>sub_appid</c> 后返回。</summary>
+    [JsonPropertyName("sub_openid")]
+    public string? SubOpenId { get; set; }
+
+    /// <summary>商品单金额信息（<c>amount</c>，必填），见 <see cref="WechatPayCombineSubOrderAmount"/>。</summary>
+    [JsonPropertyName("amount")]
+    public WechatPayCombineSubOrderAmount? Amount { get; set; }
+
+    /// <summary>
+    /// 优惠功能（<c>promotion_detail</c>，选填 array）：字段表与支付分域一致 ⇒ 复用
+    /// <see cref="PayScorePromotionDetail"/>（其内已含 <c>goods_detail</c> 单品列表）。
+    /// </summary>
+    [JsonPropertyName("promotion_detail")]
+    public List<PayScorePromotionDetail>? PromotionDetail { get; set; }
+}
+
+/// <summary>
+/// 合单通知的商品单金额信息（<c>sub_orders[].amount</c>）。
+/// </summary>
+/// <remarks>
+/// <b>⚠️ 字段比下单请求的 <c>CombineSubOrderAmount</c> 多</b>：下单只有
+/// <c>total_amount</c> / <c>currency</c>，而通知另有<b>实付</b>维度
+/// （<c>payer_amount</c> / <c>payer_currency</c> / <c>settlement_rate</c>）⇒ 分建。
+/// </remarks>
+[HttpJsonSerializable(SerializerClassName = "Callback")]
+public class WechatPayCombineSubOrderAmount
+{
+    /// <summary>标价金额（<c>total_amount</c>，必填，单位分）。</summary>
+    [JsonPropertyName("total_amount")]
+    public long? TotalAmount { get; set; }
+
+    /// <summary>标价币种（<c>currency</c>，必填）：下单时传入的标价币种。</summary>
+    [JsonPropertyName("currency")]
+    public string? Currency { get; set; }
+
+    /// <summary>用户支付金额（<c>payer_amount</c>，必填，单位分）：官方原文「= 标价金额 − 代金券金额」。</summary>
+    [JsonPropertyName("payer_amount")]
+    public long? PayerAmount { get; set; }
+
+    /// <summary>用户支付币种（<c>payer_currency</c>）：ISO 4217 三位字母代码，如 <c>CNY</c>。</summary>
+    [JsonPropertyName("payer_currency")]
+    public string? PayerCurrency { get; set; }
+
+    /// <summary>结算汇率（<c>settlement_rate</c>，选填）：标价币种与结算币种不一致时返回（<b>汇率 × 10^8</b>）。</summary>
+    [JsonPropertyName("settlement_rate")]
+    public long? SettlementRate { get; set; }
+}
+
+/// <summary>
+/// 合单通知的支付者信息（<c>combine_payer_info</c>）。
+/// </summary>
+/// <remarks>
+/// <b>通知里只有 <c>openid</c></b>（实际支付的用户在 <c>combine_appid</c> 下对应的标识）——
+/// 与下单请求的 <c>CombinePayerInfo</c>（<c>openid</c> / <c>sub_openid</c> 二选一）<b>不是</b>同一张表。
+/// </remarks>
+[HttpJsonSerializable(SerializerClassName = "Callback")]
+public class WechatPayCombinePayerInfo
+{
+    /// <summary>用户服务商标识（<c>openid</c>，必填）：实际支付的用户在 <c>combine_appid</c> 下对应的 openid。</summary>
+    [JsonPropertyName("openid")]
+    public string? OpenId { get; set; }
 }

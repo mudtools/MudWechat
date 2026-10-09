@@ -41,8 +41,8 @@ public class CallbackPayloadRegistryGuards
             .ToList();
 
         // 防「发现机制失效导致白名单真空」的静默空跑（AGENTS §6）。
-        payloadTypes.Should().HaveCount(17,
-            "回调载荷类型数：通知信封 2 + 交易族 3 + 退款族 2 + 分账族 2 + 支付分族 5 + 电子发票族 3；" +
+        payloadTypes.Should().HaveCount(22,
+            "回调载荷类型数：通知信封 2 + 交易族 3 + 退款族 2 + 分账族 2 + 支付分族 5 + 电子发票族 3 + 合单族 5；" +
             "数量变化须同批更新本守卫，并确认新类型已登记进手写上下文");
 
         foreach (var type in payloadTypes)

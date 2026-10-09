@@ -14,7 +14,7 @@ using Mud.Wechat.Pay.DataModels.Common;
 namespace Mud.Wechat.Pay.Tests.ContractGuards;
 
 /// <summary>
-/// P2 合单支付域契约守卫（<b>4 端点</b>：JSAPI 下单 + Native 下单 + 关单 + 查询）。
+/// P2 合单支付域契约守卫（<b>6 端点</b>：JSAPI / Native / APP / H5 四个下单 + 关单 + 查询）。
 /// </summary>
 /// <remarks>
 /// <para>
@@ -23,6 +23,10 @@ namespace Mud.Wechat.Pay.Tests.ContractGuards;
 /// （<b>POST</b> <c>/v3/combine-transactions/jsapi</c>，更新 2025.01.16）、
 /// Native 合单下单 <c>…/doc/v3/partner/4012758240</c>
 /// （<b>POST</b> <c>/v3/combine-transactions/native</c>，更新 2025.01.16）、
+/// APP 合单下单 <c>…/doc/v3/partner/4015973099</c>
+/// （<b>POST</b> <c>/v3/combine-transactions/app</c>，更新 2025.09.02，页面标注支持【普通服务商】【平台商户】）、
+/// H5 合单下单 <c>…/doc/v3/partner/4012758208</c>
+/// （<b>POST</b> <c>/v3/combine-transactions/h5</c>，更新 2025.01.16）、
 /// 合单关闭订单 <c>…/doc/v3/partner/4012709095</c>
 /// （<b>POST</b> <c>/v3/combine-transactions/out-trade-no/{combine_out_trade_no}/close</c>，更新 2024.10.24）、
 /// 合单查询订单 <c>…/wiki/doc/apiv3_partner/apis/chapter7_3_11.shtml</c>。
@@ -89,6 +93,34 @@ public class WechatPayCombineContractGuards
         FindMethod(nameof(IWechatPayCombineService.CreateNativeOrderAsync))
             .ReturnType.Should().Be(typeof(Task<CombineNativePrepayResponse>),
                 "Native 应答只有 code_url（与服务商模式下单的 prepay_id 是两种应答）");
+
+        // APP 下单：应答与 JSAPI **同为 prepay_id** ⇒ 复用同一 DTO（两页应答表一致）。
+        AssertRoute<PostAttribute>(
+            nameof(IWechatPayCombineService.CreateAppOrderAsync), "/v3/combine-transactions/app");
+        FindMethod(nameof(IWechatPayCombineService.CreateAppOrderAsync))
+            .ReturnType.Should().Be(typeof(Task<CombinePrepayResponse>),
+                "APP 应答表与 JSAPI 逐项一致（均只有 prepay_id）⇒ 共用 DTO");
+
+        // H5 下单：应答是 h5_url（既不是 prepay_id 也不是 code_url）⇒ 必须独立 DTO。
+        AssertRoute<PostAttribute>(
+            nameof(IWechatPayCombineService.CreateH5OrderAsync), "/v3/combine-transactions/h5");
+        FindMethod(nameof(IWechatPayCombineService.CreateH5OrderAsync))
+            .ReturnType.Should().Be(typeof(Task<CombineH5PrepayResponse>),
+                "H5 应答只有 h5_url（可直接跳转的支付链接），与 prepay_id / code_url 都不同");
+
+        // 四个下单端点都无 path / query 参数（官方四页一致）。
+        foreach (var name in new[]
+                 {
+                     nameof(IWechatPayCombineService.CreateAppOrderAsync),
+                     nameof(IWechatPayCombineService.CreateH5OrderAsync),
+                 })
+        {
+            FindMethod(name)
+                .GetParameters()
+                .Where(static p => p.GetCustomAttribute<PathAttribute>() != null
+                                   || p.GetCustomAttribute<QueryAttribute>() != null)
+                .Should().BeEmpty($"官方 {name} 页无 path / query 参数");
+        }
     }
 
     /// <summary>CB2：官方字段名锁定（含 <c>combine_*</c> 前缀与 <c>sub_orders</c> 子字段）。</summary>
@@ -123,6 +155,16 @@ public class WechatPayCombineContractGuards
         JsonNameShouldBe<CombineNativePrepayRequest>(nameof(CombineNativePrepayRequest.CombineMchId), "combine_mchid");
         JsonNameShouldBe<CombineNativePrepayRequest>(nameof(CombineNativePrepayRequest.SubOrders), "sub_orders");
         JsonNameShouldBe<CombineNativePrepayResponse>(nameof(CombineNativePrepayResponse.CodeUrl), "code_url");
+
+        JsonNameShouldBe<CombineAppPrepayRequest>(nameof(CombineAppPrepayRequest.CombineOutTradeNo), "combine_out_trade_no");
+        JsonNameShouldBe<CombineAppPrepayRequest>(nameof(CombineAppPrepayRequest.TimeStart), "time_start");
+        JsonNameShouldBe<CombineAppPrepayRequest>(nameof(CombineAppPrepayRequest.PrepayId), "prepay_id");
+        JsonNameShouldBe<CombineAppSubOrder>(nameof(CombineAppSubOrder.TimeExpire), "time_expire");
+
+        JsonNameShouldBe<CombineH5PrepayRequest>(nameof(CombineH5PrepayRequest.SubOrders), "sub_orders");
+        JsonNameShouldBe<CombineH5SceneInfo>(nameof(CombineH5SceneInfo.DeviceId), "device_id");
+        JsonNameShouldBe<CombineH5Info>(nameof(CombineH5Info.PackageName), "package_name");
+        JsonNameShouldBe<CombineH5PrepayResponse>(nameof(CombineH5PrepayResponse.H5Url), "h5_url");
     }
 
     /// <summary>
@@ -258,9 +300,10 @@ public class WechatPayCombineContractGuards
             .Where(static t => !typeof(JsonSerializerContext).IsAssignableFrom(t))
             .ToList();
 
-        domainTypes.Should().HaveCount(16,
+        domainTypes.Should().HaveCount(22,
             "合单域 DTO：下单族 6（请求/场景/子单/金额/结算/支付者） + 下单应答 1 + 关单族 2（请求/子单）" +
-            " + 查询族 5（应答/支付者/场景/子单/金额） + Native 族 2（请求/应答）");
+            " + 查询族 5（应答/支付者/场景/子单/金额） + Native 族 2（请求/应答）" +
+            " + APP 族 2（请求/子单） + H5 族 4（请求/场景/H5信息/应答）");
 
         foreach (var type in domainTypes)
         {
@@ -269,6 +312,73 @@ public class WechatPayCombineContractGuards
             type.GetCustomAttribute<HttpJsonSerializableAttribute>()!.SerializerClassName
                 .Should().Be(RegistryGroupName, $"{type.Name} 的 SerializerClassName 必须为 {RegistryGroupName}");
         }
+    }
+
+    /// <summary>
+    /// CB7：APP / H5 两个下单接口的<b>结构分合判断</b>与<b>面差异</b>。
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>官方事实</b>（2026-10-09 逐字段核验）：APP 页 <c>…/doc/v3/partner/4015973099</c>（更新 2025.09.02）、
+    /// H5 页 <c>…/doc/v3/partner/4012758208</c>（更新 2025.01.16）。
+    /// </para>
+    /// <para>
+    /// <b>本用例锁两类最容易做错的地方</b>：① 「该合没合、该分没分」的 DTO 复用决策
+    /// （APP 子单多 2 字段 ⇒ 必须分建；APP 场景与 JSAPI 同表 ⇒ 必须复用）；
+    /// ② 两处<b>照官方原文</b>的反直觉事实 —— <c>device_id</c> 在 H5 页是<b>必填</b>（其余页选填）、
+    /// 服务商面 H5 <b>无</b> <c>combine_payer_info</c>（普通商户面同路由页「指定身份支付」才有）。
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void AppAndH5Prepay_ShouldSplitAndShareTypesPerOfficialTables()
+    {
+        // ① APP：scene_info 与 JSAPI 同表 ⇒ 复用；应答同为 prepay_id ⇒ 复用。
+        typeof(CombineAppPrepayRequest).GetProperty(nameof(CombineAppPrepayRequest.SceneInfo))!
+            .PropertyType.Should().Be(typeof(CombineSceneInfo),
+                "官方 APP 页 scene_info 与 JSAPI 页逐项一致（device_id 选填 / payer_client_ip 必填、无 h5_info）⇒ 共用");
+        typeof(CombineAppPrepayRequest).GetProperty(nameof(CombineAppPrepayRequest.SubOrders))!
+            .PropertyType.Should().Be(typeof(List<CombineAppSubOrder>),
+                "APP 子单比 JSAPI 多 time_start / time_expire ⇒ 必须分建（复用会让 APP 传不了官方定义的字段）");
+        typeof(CombineAppPrepayRequest).GetProperty(nameof(CombineAppPrepayRequest.PrepayId)).Should().NotBeNull(
+            "请求侧 prepay_id 是官方定义的「追加订单」专用字段 —— 不能因为「应答里也有 prepay_id」就误判为多余而删掉");
+
+        // ⚠️ APP 不得有 combine_payer_info（官方 APP 页顶层无此字段）。
+        typeof(CombineAppPrepayRequest).GetProperty("CombinePayerInfo").Should().BeNull(
+            "APP 由客户端 SDK 调起，官方 APP 页顶层没有 combine_payer_info");
+
+        // ⚠️ APP 子单独有 time_start / time_expire；反向也不得把它们塞进 JSAPI 子单表。
+        typeof(CombineAppSubOrder).GetProperty(nameof(CombineAppSubOrder.TimeStart)).Should().NotBeNull();
+        typeof(CombinePrepaySubOrder).GetProperty("TimeStart").Should().BeNull(
+            "JSAPI 子单表没有 time_start —— 塞进去会让 JSAPI 调用方能传官方该页未定义的字段");
+        typeof(CombinePrepaySubOrder).GetProperty("TimeExpire").Should().BeNull();
+
+        // ⚠️ sub_mchid 的必填性跨页不一致（APP 页选填 / JSAPI·H5 页必填）⇒ 两类型都保留该字段，照录不「统一」。
+        typeof(CombineAppSubOrder).GetProperty(nameof(CombineAppSubOrder.SubMchId)).Should().NotBeNull();
+        typeof(CombinePrepaySubOrder).GetProperty(nameof(CombinePrepaySubOrder.SubMchId)).Should().NotBeNull();
+
+        // ② H5：子单与 JSAPI 同表 ⇒ 复用；但 scene_info 不同表（多 h5_info、device_id 必填）⇒ 分建。
+        typeof(CombineH5PrepayRequest).GetProperty(nameof(CombineH5PrepayRequest.SubOrders))!
+            .PropertyType.Should().Be(typeof(List<CombinePrepaySubOrder>),
+                "官方 H5 页的子单字段表与 JSAPI 页一致（9 字段、sub_mchid 必填）⇒ 共用");
+        typeof(CombineH5PrepayRequest).GetProperty(nameof(CombineH5PrepayRequest.SceneInfo))!
+            .PropertyType.Should().Be(typeof(CombineH5SceneInfo),
+                "H5 场景信息多 h5_info 且 device_id 必填 ⇒ 不复用 CombineSceneInfo");
+        typeof(CombineH5SceneInfo).GetProperty(nameof(CombineH5SceneInfo.H5Info)).Should().NotBeNull();
+        typeof(CombineSceneInfo).GetProperty("H5Info").Should().BeNull(
+            "h5_info 只属 H5 场景 —— 放进通用 scene_info 会让其它下单接口能传官方未定义的字段");
+        typeof(CombineH5Info).GetProperty(nameof(CombineH5Info.Type)).Should().NotBeNull(
+            "h5_info.type 是官方唯一给出取值的子字段（Wap / iOS / Android）");
+
+        // ⚠️ 服务商面 H5 **无** combine_payer_info（普通商户面同路由页「指定身份支付」才有实名 identity）。
+        typeof(CombineH5PrepayRequest).GetProperty("CombinePayerInfo").Should().BeNull(
+            "服务商面 H5 页明确没有该字段 —— 两面字段不得互推（本域按服务商面建模）");
+
+        // ③ 三种应答互不共用：prepay_id / code_url / h5_url。
+        typeof(CombineH5PrepayResponse).GetProperty(nameof(CombineH5PrepayResponse.H5Url)).Should().NotBeNull();
+        typeof(CombineH5PrepayResponse).GetProperty("PrepayId").Should().BeNull();
+        typeof(CombineH5PrepayResponse).GetProperty("CodeUrl").Should().BeNull();
+        typeof(CombinePrepayResponse).GetProperty("H5Url").Should().BeNull(
+            "h5_url 与 prepay_id 不可互换（一个直接跳转、一个供客户端 SDK 调起支付）");
     }
 
     // ---- helpers -------------------------------------------------------------

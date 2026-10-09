@@ -200,6 +200,7 @@ public class PayServiceCollectionExtensionsTests
                      typeof(CombinePrepayRequest),
                      typeof(CombinePrepayResponse),
                      typeof(CombineNativePrepayResponse),
+                     typeof(CombineH5PrepayResponse),
                      typeof(CombineQueryResponse),
                      typeof(TransferBillRequest),
                      typeof(TransferBillResponse),

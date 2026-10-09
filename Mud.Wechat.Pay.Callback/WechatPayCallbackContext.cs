@@ -181,6 +181,27 @@ public sealed class WechatPayCallbackContext
     public WechatPayFapiaoUserAppliedResource? GetFapiaoUserApplied()
         => TryDeserialize(WechatPayCallbackJsonContext.Default.WechatPayFapiaoUserAppliedResource);
 
+    /// <summary>
+    /// 把解密后的载荷按<b>合单支付成功</b>（<c>event_type = TRANSACTION.SUCCESS</c>，合单形态）类型化解析。
+    /// </summary>
+    /// <returns>解析失败或载荷非本形态时返回 <c>null</c>。</returns>
+    /// <remarks>
+    /// <para>
+    /// <b>🔴 必须与 <see cref="GetTransaction"/> 配合判别（本包最易踩的静默错位）</b>：
+    /// 合单支付通知与普通支付通知的<b>信封完全相同</b> ——
+    /// <c>event_type</c> 同为 <c>TRANSACTION.SUCCESS</c>、<c>original_type</c> 同为 <c>transaction</c>。
+    /// 两类载荷的字段名<b>没有一个重叠</b> ⇒ 用错访问器<b>不会抛异常</b>，
+    /// 只会得到一份「字段全空」的对象。
+    /// </para>
+    /// <para>
+    /// <b>正确用法</b>：先按 <c>event_type = TRANSACTION.SUCCESS</c> 进入分支，
+    /// 再看<b>解密后</b>的 <c>combine_out_trade_no</c> / <c>sub_orders</c> 是否存在 ——
+    /// 存在走本访问器，否则走 <see cref="GetTransaction"/>。<b>不要</b>只看信封就选访问器。
+    /// </para>
+    /// </remarks>
+    public WechatPayCombineTransactionResource? GetCombineTransaction()
+        => TryDeserialize(WechatPayCallbackJsonContext.Default.WechatPayCombineTransactionResource);
+
     private T? TryDeserialize<T>(System.Text.Json.Serialization.Metadata.JsonTypeInfo<T> typeInfo)
         where T : class
     {

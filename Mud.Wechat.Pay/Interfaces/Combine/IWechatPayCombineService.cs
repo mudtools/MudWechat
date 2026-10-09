@@ -10,8 +10,8 @@ using Mud.Wechat.Pay.DataModels.Combine;
 namespace Mud.Wechat.Pay;
 
 /// <summary>
-/// 微信支付「合单支付」域 SDK（APIv3 合单，<b>4 端点</b>：JSAPI 合单下单 / Native 合单下单 /
-/// 合单关闭订单 / 合单查询订单）。
+/// 微信支付「合单支付」域 SDK（APIv3 合单，<b>6 端点</b>：JSAPI 合单下单 / Native 合单下单 /
+/// <b>APP 合单下单</b> / <b>H5 合单下单</b> / 合单关闭订单 / 合单查询订单）。
 /// </summary>
 /// <remarks>
 /// <para>
@@ -32,8 +32,17 @@ namespace Mud.Wechat.Pay;
 /// 本仓商户基座已支持服务商（<c>{sp_mchid}:{sub_mchid}</c> 分槽），故两面均可使用。
 /// </para>
 /// <para>
-/// <b>本域尚未覆盖的端点</b>：APP / H5 合单下单（官方各有独立页）、调起支付（客户端 SDK，非 HTTP）、
-/// 合单支付 / 退款通知（归回调包）。<b>不要凭推断补路由</b>。
+/// <b>✅ 四个下单场景现已齐全</b>（JSAPI / Native / APP / H5）—— 原「APP / H5 尚未覆盖」留档已随增量关闭。
+/// 四个接口<b>顶层字段表各不相同</b>，故各自独立 DTO；<b>下单应答也有两种</b>
+/// （JSAPI / APP 给 <c>prepay_id</c>，Native 给 <c>code_url</c>，H5 给 <c>h5_url</c>）。
+/// </para>
+/// <para>
+/// <b>本域仅剩「非 HTTP 能力」未覆盖</b>：调起支付（客户端 SDK）。
+/// <b>✅ 通知面已完成</b>：合单支付成功通知载荷见回调包 <c>GetCombineTransaction</c>
+/// （⚠️ 其信封 <c>event_type</c> / <c>original_type</c> 与普通支付成功通知<b>完全同值</b>，
+/// 判别只能靠<b>解密后的载荷形态</b>）；合单退款通知复用标准 <c>REFUND.*</c> 事件
+/// （退款逐子单走退款域，<b>无</b>专属事件类型）。
+/// <b>不要凭推断补路由</b>。
 /// </para>
 /// <para>
 /// <b>⚠️「合单退款」不是一个接口</b>：官方《订单退款》开发指引
@@ -139,5 +148,63 @@ public interface IWechatPayCombineService
     [Post("/v3/combine-transactions/native")]
     Task<CombineNativePrepayResponse> CreateNativeOrderAsync(
         [Body] CombineNativePrepayRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// APP 合单下单。官方文档：<see href="https://pay.weixin.qq.com/doc/v3/partner/4015973099"/>。
+    /// </summary>
+    /// <param name="request">APP 合单下单请求体，见 <see cref="CombineAppPrepayRequest"/>。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/> 取消操作令牌对象。</param>
+    /// <returns>预支付交易会话标识（<c>prepay_id</c>，<b>有效期 2 小时</b>），见 <see cref="CombinePrepayResponse"/>。</returns>
+    /// <remarks>
+    /// <para><b>官方契约</b>：<b>POST</b> <c>/v3/combine-transactions/app</c>；无 path / query 参数。
+    /// 支持商户<b>【普通服务商】【平台商户】</b>（更新时间 2025.09.02）。</para>
+    /// <para>
+    /// <b>⚠️ 请求里的 <c>prepay_id</c> 是「追加订单」专用</b>：官方中文说明为
+    /// 「当<b>发起追加订单</b>，需传入目标追加的合单单号对应的预支付交易会话标识」
+    /// ⇒ 首次下单<b>不传</b>；<b>勿与应答里的 <c>prepay_id</c> 混淆</b>
+    /// （同名、同意义，但一个是入参、一个是回参）。
+    /// </para>
+    /// <para>
+    /// <b>应答类型与 JSAPI 共用</b>：APP 应答<b>同样只有 <c>prepay_id</c></b>（两页应答表一致）⇒
+    /// 复用 <see cref="CombinePrepayResponse"/>，由「调起支付」的客户端 SDK 场景决定怎么用。
+    /// </para>
+    /// <para>
+    /// <b>子单表与 JSAPI <b>不</b>共用</b>：APP 页的子单<b>多</b> <c>time_start</c> / <c>time_expire</c>，
+    /// 且 <c>sub_mchid</c> 被标为<b>选填</b>（JSAPI / H5 页为必填）⇒ 见 <see cref="CombineAppSubOrder"/> 的 remarks。
+    /// </para>
+    /// </remarks>
+    [Post("/v3/combine-transactions/app")]
+    Task<CombinePrepayResponse> CreateAppOrderAsync(
+        [Body] CombineAppPrepayRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// H5 合单下单。官方文档：<see href="https://pay.weixin.qq.com/doc/v3/partner/4012758208"/>。
+    /// </summary>
+    /// <param name="request">H5 合单下单请求体，见 <see cref="CombineH5PrepayRequest"/>。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/> 取消操作令牌对象。</param>
+    /// <returns>H5 支付跳转链接（<c>h5_url</c>），见 <see cref="CombineH5PrepayResponse"/>。</returns>
+    /// <remarks>
+    /// <para><b>官方契约</b>：<b>POST</b> <c>/v3/combine-transactions/h5</c>；无 path / query 参数。
+    /// 服务商模式支持 <b>1–50 笔</b>（更新时间 2025.01.16）。</para>
+    /// <para>
+    /// <b>⚠️ 服务商面与普通商户面字段不同</b>：官方<b>普通商户</b>面同路由页
+    /// （<c>…/doc/v3/merchant/4012545879</c>，产品线标注「指定身份支付」）<b>有</b> <c>combine_payer_info</c>
+    /// （含实名 <c>identity</c>）与 <c>time_start</c>；而<b>服务商面本页无</b>这两处
+    /// ⇒ 本接口按<b>服务商面</b>建模（普通商户接入须以自身页面字段为准）。
+    /// </para>
+    /// <para>
+    /// <b>⚠️ H5 场景下最容易漏的一处</b>：<see cref="CombineH5SceneInfo"/> 的 <c>device_id</c>
+    /// 在<b>本页标注必填</b>（其它下单页均选填）⇒ 从别的下单接口复制请求体会漏掉它。
+    /// </para>
+    /// <para>
+    /// <b>拿到 <c>h5_url</c> 后</b>须按官方《H5 调起支付》指引跳转（含 <c>Referer</c> 等要求），
+    /// <b>严禁</b>自行改写或拼装该链接。
+    /// </para>
+    /// </remarks>
+    [Post("/v3/combine-transactions/h5")]
+    Task<CombineH5PrepayResponse> CreateH5OrderAsync(
+        [Body] CombineH5PrepayRequest request,
         CancellationToken cancellationToken = default);
 }

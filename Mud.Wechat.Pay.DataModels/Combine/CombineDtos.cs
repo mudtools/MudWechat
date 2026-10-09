@@ -306,11 +306,11 @@ public class CombineQuerySubOrder
     [JsonPropertyName("mchid")]
     public string? MchId { get; set; }
 
-    /// <summary>交易类型（<c>trade_type</c>，选填 string）。</summary>
+    /// <summary>交易类型（<c>trade_type</c>，选填 string）：取值见 <see cref="CombineTradeTypes"/>（H5 场景的取值是 <c>MWEB</c>）。</summary>
     [JsonPropertyName("trade_type")]
     public string? TradeType { get; set; }
 
-    /// <summary>交易状态（<c>trade_state</c>，必填 string）：如 <c>SUCCESS</c>；须显式判定，勿假定查得到即已支付。</summary>
+    /// <summary>交易状态（<c>trade_state</c>，必填 string）：取值见 <see cref="CombineTradeStates"/>；须显式判定，勿假定查得到即已支付。</summary>
     [JsonPropertyName("trade_state")]
     public string? TradeState { get; set; }
 
@@ -457,4 +457,282 @@ public class CombineNativePrepayResponse : WechatPayResponse
     /// <summary>二维码链接（<c>code_url</c>，必填 string(512)）：有效期为 2 小时。</summary>
     [JsonPropertyName("code_url")]
     public string? CodeUrl { get; set; }
+}
+
+/// <summary>
+/// APP 合单下单请求（<c>POST /v3/combine-transactions/app</c>）。
+/// </summary>
+/// <remarks>
+/// <para>
+/// <b>官方文档</b>：<see href="https://pay.weixin.qq.com/doc/v3/partner/4015973099"/>
+/// （服务商面，2026-10-09 逐字段核验；更新时间 2025.09.02）。
+/// <b>支持商户：【普通服务商】【平台商户】</b>；服务商模式支持 <b>1–50 笔</b>商品单。
+/// </para>
+/// <para>
+/// <b>为何单独建类型而不复用 <see cref="CombinePrepayRequest"/> / <see cref="CombineNativePrepayRequest"/></b>：
+/// 三个下单接口的顶层字段表<b>各不相同</b> ——
+/// APP <b>无</b> <c>combine_payer_info</c>（APP 由客户端 SDK 调起，无需服务端传支付者标识），
+/// 但<b>多</b> <c>time_start</c> 与 <c>prepay_id</c>；
+/// Native 两者都没有。复用任一都会让调用方传官方<b>未定义</b>的字段（或传不了已定义的字段）。
+/// </para>
+/// <para>
+/// <b>可复用的部分</b>：<c>scene_info</c> 与 JSAPI 页<b>逐项一致</b>（<c>device_id</c> 选填 /
+/// <c>payer_client_ip</c> 必填，且<b>无</b> <c>h5_info</c>）⇒ 共用 <see cref="CombineSceneInfo"/>;
+/// 应答与 JSAPI 同为<b>仅 <c>prepay_id</c></b> ⇒ 共用 <see cref="CombinePrepayResponse"/>。
+/// </para>
+/// </remarks>
+[HttpJsonSerializable(SerializerClassName = "CombineTransactions")]
+public class CombineAppPrepayRequest
+{
+    /// <summary>合单发起方的 AppID（<c>combine_appid</c>，必填 string(32)）：服务商的 AppID。</summary>
+    [JsonPropertyName("combine_appid")]
+    public string? CombineAppId { get; set; }
+
+    /// <summary>合单商户订单号（<c>combine_out_trade_no</c>，必填 string(32)）：商户系统内部唯一，不超过 32 字符。</summary>
+    [JsonPropertyName("combine_out_trade_no")]
+    public string? CombineOutTradeNo { get; set; }
+
+    /// <summary>合单发起方商户号（<c>combine_mchid</c>，必填 string(32)）：服务商的商户号。</summary>
+    [JsonPropertyName("combine_mchid")]
+    public string? CombineMchId { get; set; }
+
+    /// <summary>场景信息（<c>scene_info</c>，选填）：与 JSAPI 页同表 ⇒ 复用 <see cref="CombineSceneInfo"/>（<b>无</b> <c>h5_info</c>）。</summary>
+    [JsonPropertyName("scene_info")]
+    public CombineSceneInfo? SceneInfo { get; set; }
+
+    /// <summary>商品单列表（<c>sub_orders</c>，必填 array，1–50 笔），见 <see cref="CombineAppSubOrder"/>。</summary>
+    [JsonPropertyName("sub_orders")]
+    public List<CombineAppSubOrder>? SubOrders { get; set; }
+
+    /// <summary>支付起始时间（<c>time_start</c>，选填，rfc3339）：又名「订单生效时间」。</summary>
+    [JsonPropertyName("time_start")]
+    public string? TimeStart { get; set; }
+
+    /// <summary>支付结束时间（<c>time_expire</c>，选填，rfc3339）：超过 7 天未支付的订单无法再支付（官方原文）。</summary>
+    [JsonPropertyName("time_expire")]
+    public string? TimeExpire { get; set; }
+
+    /// <summary>
+    /// 预支付交易会话标识（<c>prepay_id</c>，选填 string(64)）<b>—— 请求侧字段，勿与应答的 <c>prepay_id</c> 混淆</b>。
+    /// </summary>
+    /// <remarks>
+    /// 官方中文说明：「【预支付交易会话标识】<b>当发起追加订单</b>，需传入目标追加的合单单号对应的
+    /// 预支付交易会话标识」⇒ 只在<b>追加订单</b>场景填；普通首次下单<b>不传</b>。
+    /// </remarks>
+    [JsonPropertyName("prepay_id")]
+    public string? PrepayId { get; set; }
+
+    /// <summary>支付结果通知地址（<c>notify_url</c>，必填）：须为可直接访问的 https 地址，不允许携带参数。</summary>
+    [JsonPropertyName("notify_url")]
+    public string? NotifyUrl { get; set; }
+}
+
+/// <summary>
+/// APP 合单下单的商品单条目（<c>sub_orders[]</c>，<b>APP 专用形态，11 字段</b>）。
+/// </summary>
+/// <remarks>
+/// <para>
+/// <b>为何不复用 <see cref="CombinePrepaySubOrder"/></b>：官方 APP 页的该表<b>多两个字段</b>
+/// （<c>time_start</c> / <c>time_expire</c>，均选填）—— 复用会让 APP 调用方<b>无法</b>传这两个官方字段；
+/// 反之把这两个字段加进 JSAPI 那支，JSAPI 调用方就能传官方该页<b>未定义</b>的字段。
+/// 两条路都错，故分建（本域 CB5 纪律：<b>表相同则共用，表不同则分建</b>）。
+/// </para>
+/// <para>
+/// <b>⚠️ 官方跨页不一致（照录，不「纠正」）</b>：<c>sub_mchid</c> 在本（APP）页标为<b>选填</b>，
+/// 而在 JSAPI / H5 两页均标为<b>必填</b> ⇒ 本类按<b>本页</b>照录。两页事实<b>不得互推</b>：
+/// 接入 APP 场景以 APP 页为准（至于实际调用是否放宽，由官方侧校验决定）。
+/// </para>
+/// <para>
+/// <c>amount</c> 与 JSAPI 页同表（<c>total_amount</c> / <c>currency</c>）⇒ 共用
+/// <see cref="CombineSubOrderAmount"/>；<c>settle_info</c> 同理共用 <see cref="CombineSettleInfo"/>。
+/// </para>
+/// </remarks>
+[HttpJsonSerializable(SerializerClassName = "CombineTransactions")]
+public class CombineAppSubOrder
+{
+    /// <summary>商品单商户号（<c>mchid</c>，必填 string(32)）：官方注明<b>填 <c>combine_mchid</c></b>。</summary>
+    [JsonPropertyName("mchid")]
+    public string? MchId { get; set; }
+
+    /// <summary>商户数据包（<c>attach</c>，必填 string(128)）。</summary>
+    [JsonPropertyName("attach")]
+    public string? Attach { get; set; }
+
+    /// <summary>商品单金额信息（<c>amount</c>，必填）：与 JSAPI 页同表 ⇒ 复用 <see cref="CombineSubOrderAmount"/>。</summary>
+    [JsonPropertyName("amount")]
+    public CombineSubOrderAmount? Amount { get; set; }
+
+    /// <summary>商品单商户订单号（<c>out_trade_no</c>，必填 string(32)）。</summary>
+    [JsonPropertyName("out_trade_no")]
+    public string? OutTradeNo { get; set; }
+
+    /// <summary>子商户号（<c>sub_mchid</c>）：<b>本（APP）页标注选填</b>，与 JSAPI / H5 页的「必填」不一致（见类型 remarks）。</summary>
+    [JsonPropertyName("sub_mchid")]
+    public string? SubMchId { get; set; }
+
+    /// <summary>商品描述（<c>description</c>，必填 string(127)）。</summary>
+    [JsonPropertyName("description")]
+    public string? Description { get; set; }
+
+    /// <summary>结算信息（<c>settle_info</c>，选填）：复用 <see cref="CombineSettleInfo"/>。</summary>
+    [JsonPropertyName("settle_info")]
+    public CombineSettleInfo? SettleInfo { get; set; }
+
+    /// <summary>子商户 APPID（<c>sub_appid</c>，选填 string(32)）：官方注明<b>仅允许一笔商品单填写</b>。</summary>
+    [JsonPropertyName("sub_appid")]
+    public string? SubAppId { get; set; }
+
+    /// <summary>订单优惠标记（<c>goods_tag</c>，选填 string(32)）。</summary>
+    [JsonPropertyName("goods_tag")]
+    public string? GoodsTag { get; set; }
+
+    /// <summary>商品单支付起始时间（<c>time_start</c>，选填，rfc3339）<b>—— APP 页独有字段</b>（JSAPI 子单表没有）。</summary>
+    [JsonPropertyName("time_start")]
+    public string? TimeStart { get; set; }
+
+    /// <summary>商品单支付结束时间（<c>time_expire</c>，选填，rfc3339）<b>—— APP 页独有字段</b>（JSAPI 子单表没有）。</summary>
+    [JsonPropertyName("time_expire")]
+    public string? TimeExpire { get; set; }
+}
+
+/// <summary>
+/// H5 合单下单请求（<c>POST /v3/combine-transactions/h5</c>）。
+/// </summary>
+/// <remarks>
+/// <para>
+/// <b>官方文档</b>：<see href="https://pay.weixin.qq.com/doc/v3/partner/4012758208"/>
+/// （服务商面，2026-10-09 逐字段核验；更新时间 2025.01.16）。<b>支持商户：【普通服务商】</b>；
+/// 服务商模式支持 <b>1–50 笔</b>商品单。
+/// </para>
+/// <para>
+/// <b>与服务商面其它下单接口的字段差</b>：H5 <b>无</b> <c>combine_payer_info</c>、
+/// <b>无</b> <c>time_start</c>，只有 <c>time_expire</c> ⇒ 单独建表。
+/// </para>
+/// <para>
+/// <b>⚠️ 面（face）差异 —— 本域按服务商面建模，须留档</b>：<b>普通商户</b>面《合单下单-H5》
+/// （<c>…/doc/v3/merchant/4012545879</c>，产品线标注为「<b>指定身份支付</b>」）的该接口
+/// <b>有</b> <c>combine_payer_info</c>（含 <c>openid</c> 与 <c>identity</c> 实名子对象），
+/// 且顶层另有 <c>time_start</c>；而<b>服务商面本页</b>明确<b>没有</b>这两处
+/// ⇒ 本 DTO 按<b>服务商面</b>建模，普通商户接入时以自身页面字段为准（勿照本类硬编码）。
+/// </para>
+/// <para>
+/// <b>可复用的部分</b>：<c>sub_orders</c> 与本域 JSAPI 页<b>同表</b>（9 字段，<c>sub_mchid</c> 必填，
+/// 无 <c>time_start</c> / <c>time_expire</c>）⇒ 共用 <see cref="CombinePrepaySubOrder"/>。
+/// </para>
+/// </remarks>
+[HttpJsonSerializable(SerializerClassName = "CombineTransactions")]
+public class CombineH5PrepayRequest
+{
+    /// <summary>合单发起方的 AppID（<c>combine_appid</c>，必填 string(32)）：服务商的 AppID。</summary>
+    [JsonPropertyName("combine_appid")]
+    public string? CombineAppId { get; set; }
+
+    /// <summary>合单商户订单号（<c>combine_out_trade_no</c>，必填 string(32)）。</summary>
+    [JsonPropertyName("combine_out_trade_no")]
+    public string? CombineOutTradeNo { get; set; }
+
+    /// <summary>合单发起方商户号（<c>combine_mchid</c>，必填 string(32)）。</summary>
+    [JsonPropertyName("combine_mchid")]
+    public string? CombineMchId { get; set; }
+
+    /// <summary>场景信息（<c>scene_info</c>，选填），见 <see cref="CombineH5SceneInfo"/>（<b>含</b> H5 专属 <c>h5_info</c>）。</summary>
+    [JsonPropertyName("scene_info")]
+    public CombineH5SceneInfo? SceneInfo { get; set; }
+
+    /// <summary>商品单列表（<c>sub_orders</c>，必填 array，1–50 笔）：与本域 JSAPI 页同表 ⇒ 复用 <see cref="CombinePrepaySubOrder"/>。</summary>
+    [JsonPropertyName("sub_orders")]
+    public List<CombinePrepaySubOrder>? SubOrders { get; set; }
+
+    /// <summary>支付结束时间（<c>time_expire</c>，选填，rfc3339）。</summary>
+    [JsonPropertyName("time_expire")]
+    public string? TimeExpire { get; set; }
+
+    /// <summary>支付结果通知地址（<c>notify_url</c>，必填）。</summary>
+    [JsonPropertyName("notify_url")]
+    public string? NotifyUrl { get; set; }
+}
+
+/// <summary>
+/// H5 合单下单的场景信息（<c>scene_info</c>，<b>H5 专用形态</b>）。
+/// </summary>
+/// <remarks>
+/// <para>
+/// <b>为何不复用 <see cref="CombineSceneInfo"/></b>：两点不同 ——
+/// ① <c>device_id</c> 在本（H5）页标为<b>必填</b>，而 JSAPI / APP / Native 三页均为<b>选填</b>；
+/// ② 本页多出 H5 专属的 <c>h5_info</c>（见 <see cref="CombineH5Info"/>）。
+/// 服务商面 H5 页的 <c>device_id</c> 与 <c>payer_client_ip</c> <b>均为必填</b>（照录）。
+/// </para>
+/// <para>
+/// <b>⚠️ 注意本页字段的必填性与其它页「正好相反」的一处</b>：H5 页把 <c>payer_client_ip</c> 标为<b>必填</b>
+/// 而 <c>device_id</c> <b>也</b>是必填；其它页 <c>device_id</c> 是选填 ⇒ 从别的下单接口复制请求体时，
+/// <b>最容易漏的正是 H5 场景下的 <c>device_id</c></b>。
+/// </para>
+/// </remarks>
+[HttpJsonSerializable(SerializerClassName = "CombineTransactions")]
+public class CombineH5SceneInfo
+{
+    /// <summary>用户终端 IP（<c>payer_client_ip</c>，<b>必填</b> string(45)，支持 IPv4/IPv6）。</summary>
+    [JsonPropertyName("payer_client_ip")]
+    public string? PayerClientIp { get; set; }
+
+    /// <summary>商户端设备号（<c>device_id</c>，<b>H5 页标注必填</b> string(32)）—— 与其它下单页的「选填」不一致（见类型 remarks）。</summary>
+    [JsonPropertyName("device_id")]
+    public string? DeviceId { get; set; }
+
+    /// <summary>H5 场景信息（<c>h5_info</c>，选填），见 <see cref="CombineH5Info"/>。</summary>
+    [JsonPropertyName("h5_info")]
+    public CombineH5Info? H5Info { get; set; }
+}
+
+/// <summary>
+/// H5 支付场景信息（<c>h5_info</c>，<b>H5 合单下单专属</b>）。
+/// </summary>
+/// <remarks>
+/// <b>官方来源</b>：服务商面《H5合单下单》页（<c>…/doc/v3/partner/4012758208</c>，更新 2025.01.16）。
+/// 官方原文：<c>type</c> 为「H5 合单支付场景」<b>且给出取值 <c>Wap</c> / <c>iOS</c> / <c>Android</c></b>；
+/// 其余四项（<c>app_name</c> / <c>app_url</c> / <c>bundle_id</c> / <c>package_name</c>）为选填。
+/// </remarks>
+[HttpJsonSerializable(SerializerClassName = "CombineTransactions")]
+public class CombineH5Info
+{
+    /// <summary>H5 支付场景类型（<c>type</c>，必填 string(32)）：取值 <c>Wap</c> / <c>iOS</c> / <c>Android</c>（官方给出）。</summary>
+    [JsonPropertyName("type")]
+    public string? Type { get; set; }
+
+    /// <summary>应用名（<c>app_name</c>，选填 string(64)）。</summary>
+    [JsonPropertyName("app_name")]
+    public string? AppName { get; set; }
+
+    /// <summary>网站 URL（<c>app_url</c>，选填 string(128)）。</summary>
+    [JsonPropertyName("app_url")]
+    public string? AppUrl { get; set; }
+
+    /// <summary>iOS bundle id（<c>bundle_id</c>，选填 string(128)）。</summary>
+    [JsonPropertyName("bundle_id")]
+    public string? BundleId { get; set; }
+
+    /// <summary>Android 包名（<c>package_name</c>，选填 string(128)）。</summary>
+    [JsonPropertyName("package_name")]
+    public string? PackageName { get; set; }
+}
+
+/// <summary>
+/// H5 合单下单应答（<b>仅 <c>h5_url</c> 一个字段</b>）。
+/// </summary>
+/// <remarks>
+/// <para>
+/// <b>为何不复用 <see cref="CombinePrepayResponse"/></b>：JSAPI / APP 给的是 <c>prepay_id</c>，
+/// 而 H5 给的是<b>可直接跳转的支付链接 <c>h5_url</c></b>（string(512)）—— 二者不可互换。
+/// </para>
+/// <para>
+/// <b>官方另有《H5 调起支付》指引</b>：拿到 <c>h5_url</c> 后须按官方要求在
+/// <c>Referer</c> 等条件下跳转（<b>不得</b>自行改写或拼装该链接）。
+/// </para>
+/// </remarks>
+[HttpJsonSerializable(SerializerClassName = "CombineTransactions")]
+public class CombineH5PrepayResponse : WechatPayResponse
+{
+    /// <summary>支付跳转链接（<c>h5_url</c>，必填 string(512)）：有效期与调起要求见官方《H5 调起支付》指引。</summary>
+    [JsonPropertyName("h5_url")]
+    public string? H5Url { get; set; }
 }

@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<Description>微信开放平台「第三方平台」（component）SDK 基座包：component_verify_ticket 凭证票存储端口、component_access_token 刷新策略与官方契约常量。**独立产品线**：与自建形态的公众号/小程序线令牌域严格分离（避免令牌串号）。</Description>
+		<PackageTags>Wechat;OpenPlatform;开放平台;第三方平台;component;TokenManager;MudWechat</PackageTags>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<InternalsVisibleTo Include="Mud.Wechat.OpenPlatform.Tests" />
+	</ItemGroup>
+
+</Project>

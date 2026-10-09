@@ -167,6 +167,9 @@ public class PayServiceCollectionExtensionsTests
                      typeof(PlatformCertificatesResponse),
                      typeof(ProfitSharingOrderResponse),
                      typeof(ProfitSharingAddReceiverRequest),
+                     typeof(ProfitSharingReturnOrderResponse),
+                     typeof(ProfitSharingAmountsResponse),
+                     typeof(ProfitSharingDeleteReceiverResponse),
                  })
         {
             resolver!.GetTypeInfo(dto, options).Should().NotBeNull(

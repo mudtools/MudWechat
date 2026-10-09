@@ -110,3 +110,49 @@ public static class ProfitSharingFailReasons
     /// <summary>描述参数设置失败（官方 <c>INVALID_REQUEST</c>）。</summary>
     public const string InvalidRequest = "INVALID_REQUEST";
 }
+
+/// <summary>
+/// 分账回退结果（官方 <c>result</c>，请求/查询分账回退共用）。
+/// </summary>
+/// <remarks>
+/// <b>与分账单状态是两套枚举，勿混用</b>：分账单是 <c>PROCESSING</c>/<c>FINISHED</c>（见
+/// <see cref="ProfitSharingOrderStates"/>），回退单是 <c>PROCESSING</c>/<c>SUCCESS</c>/<c>FAILED</c>。
+/// 二者都有 <c>PROCESSING</c> 但终态语义完全不同（官方原文）。
+/// </remarks>
+public static class ProfitSharingReturnResults
+{
+    /// <summary>处理中（官方 <c>PROCESSING</c>）：非终态。</summary>
+    public const string Processing = "PROCESSING";
+
+    /// <summary>已成功（官方 <c>SUCCESS</c>）：终态。</summary>
+    public const string Success = "SUCCESS";
+
+    /// <summary>已失败（官方 <c>FAILED</c>）：终态；随附 <c>fail_reason</c>。</summary>
+    public const string Failed = "FAILED";
+}
+
+/// <summary>
+/// 分账回退失败原因（官方 <c>fail_reason</c>，5 值）。
+/// </summary>
+/// <remarks>
+/// 官方注明<b>仅</b> <c>result=FAILED</c> 时返回
+/// （<see href="https://pay.weixin.qq.com/wiki/doc/apiv3/apis/chapter8_1_4.shtml"/>）。
+/// 与分账单失败原因（<see cref="ProfitSharingFailReasons"/>，8 值）<b>不是同一张表</b>。
+/// </remarks>
+public static class ProfitSharingReturnFailReasons
+{
+    /// <summary>原分账接收方账户异常（官方 <c>ACCOUNT_ABNORMAL</c>）。</summary>
+    public const string AccountAbnormal = "ACCOUNT_ABNORMAL";
+
+    /// <summary>余额不足（官方 <c>BALANCE_NOT_ENOUGH</c>）。</summary>
+    public const string BalanceNotEnough = "BALANCE_NOT_ENOUGH";
+
+    /// <summary>超时关单（官方 <c>TIME_OUT_CLOSED</c>）。</summary>
+    public const string TimeOutClosed = "TIME_OUT_CLOSED";
+
+    /// <summary>原分账分出方账户异常（官方 <c>PAYER_ACCOUNT_ABNORMAL</c>）。</summary>
+    public const string PayerAccountAbnormal = "PAYER_ACCOUNT_ABNORMAL";
+
+    /// <summary>描述参数设置失败（官方 <c>INVALID_REQUEST</c>）。</summary>
+    public const string InvalidRequest = "INVALID_REQUEST";
+}

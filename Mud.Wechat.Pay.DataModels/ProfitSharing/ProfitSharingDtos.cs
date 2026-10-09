@@ -49,8 +49,12 @@ public class ProfitSharingAddReceiverRequest
 }
 
 /// <summary>分账接收方（<c>receivers/add</c> 应答体，官方与请求同字段）。</summary>
+/// <remarks>
+/// 继承 <see cref="WechatPayResponse"/> 以承载官方失败体的 <c>code</c>/<c>message</c>（判错面）——
+/// 本域接口带 <c>[AllowAnyStatusCode]</c>，4xx 错误体不被组件拦成异常，错误体必须有落点。
+/// </remarks>
 [HttpJsonSerializable(SerializerClassName = "ProfitSharing")]
-public class ProfitSharingReceiver
+public class ProfitSharingReceiver : WechatPayResponse
 {
     /// <summary>接收方类型（<c>type</c>）：见 <see cref="ProfitSharingReceiverTypes"/>。</summary>
     [JsonPropertyName("type")]

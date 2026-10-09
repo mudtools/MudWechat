@@ -68,7 +68,7 @@ public class WechatPayDomainContractGuards
     }
 
     /// <summary>
-    /// PAY-B5：端点计数（<b>13</b>）+ 官方路由表逐条比对（照官方原文，<b>不得「纠正」</b>）。
+    /// PAY-B5：端点计数（<b>17</b>）+ 官方路由表逐条比对（照官方原文，<b>不得「纠正」</b>）。
     /// </summary>
     /// <remarks>
     /// <para>
@@ -114,12 +114,19 @@ public class WechatPayDomainContractGuards
             "/v3/certificates",
         });
 
-        // P2 分账首批 3 端点：接收方入库 + 请求分账 + 查询（查询兼查「解冻剩余资金」执行结果，官方原文）。
+        // P2 分账 7 端点：接收方入库 + 请求分账 + 查询 + 回退请求 + 回退查询 + 解冻剩余资金 + 查剩余待分金额。
+        // ⚠️ 「回退单」是独立资源族（/v3/profitsharing/return-orders…），不是分账单的子资源（官方实测）。
         RoutesOf(asm, "IWechatPayProfitSharingService").Should().BeEquivalentTo(new[]
         {
             "/v3/profitsharing/receivers/add",
             "/v3/profitsharing/orders",
             "/v3/profitsharing/orders/{outOrderNo}",
+            "/v3/profitsharing/orders/unfreeze",
+            "/v3/profitsharing/return-orders",
+            "/v3/profitsharing/return-orders/{outReturnNo}",
+            "/v3/profitsharing/transactions/{transactionId}/amounts",
+            "/v3/profitsharing/bills",
+            "/v3/profitsharing/receivers/delete",
         });
 
         // 合计计数（PAY-B5 断言的单一来源）。
@@ -129,7 +136,7 @@ public class WechatPayDomainContractGuards
             .SelectMany(static m => m.GetCustomAttributes(false))
             .Select(static a => a.GetType().GetProperty("RequestUri")?.GetValue(a) as string)
             .Count(static uri => !string.IsNullOrWhiteSpace(uri))
-            .Should().Be(13, "支付线端点总数为 13（4 交易 + 3 退款 + 2 账单 + 1 平台证书 + 3 分账）");
+            .Should().Be(19, "支付线端点总数为 19（4 交易 + 3 退款 + 2 账单 + 1 平台证书 + 9 分账）");
     }
 
     /// <summary>
@@ -183,7 +190,11 @@ public class WechatPayDomainContractGuards
                      typeof(RefundResponse),
                      typeof(BillDownloadInfoResponse),
                      typeof(PlatformCertificatesResponse),
+                     typeof(ProfitSharingReceiver),
                      typeof(ProfitSharingOrderResponse),
+                     typeof(ProfitSharingReturnOrderResponse),
+                     typeof(ProfitSharingAmountsResponse),
+                     typeof(ProfitSharingDeleteReceiverResponse),
                  })
         {
             typeof(WechatPayResponse).IsAssignableFrom(responseType).Should().BeTrue(

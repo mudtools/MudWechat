@@ -84,6 +84,9 @@ public class PayServiceBuilder
             // P2 商家转账首批（发起转账）——纯声明式域。
             [PayModule.Transfer] = static s => s.AddTransferWebApiHttpClient(),
 
+            // P2 电子发票首批（开具 / 查询）——纯声明式域。
+            [PayModule.NewTaxControlFapiao] = static s => s.AddNewTaxControlFapiaoWebApiHttpClient(),
+
             // 账单模块额外注册**账单下载通道**：它没有 [HttpClientApi] 声明（路由由 download_url 动态给出、
             // 返回非 JSON），故无对应的 AddBillDownloadWebApiHttpClient()。它依赖 AddPayApp 注册的
             // IWechatPayHttpClient，宿主若只用 AddPayApp 而不加任何模块则不会被注册 —— 这正是

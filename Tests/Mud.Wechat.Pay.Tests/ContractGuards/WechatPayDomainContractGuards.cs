@@ -45,8 +45,8 @@ public class WechatPayDomainContractGuards
             .ToArray();
 
         // 数量下限防枚举空跑（AGENTS §6）：八域接口 = Transactions / Refund / Bill / Certificates / ProfitSharing / PayScore / CombineTransactions / Transfer。
-        interfaces.Should().HaveCount(8,
-            "支付线八域接口（…/CombineTransactions/Transfer）——数量变化须同批更新 PayModule 与本守卫");
+        interfaces.Should().HaveCount(9,
+            "支付线九域接口（…/Transfer/NewTaxControlFapiao）——数量变化须同批更新 PayModule 与本守卫");
 
         interfaces.Select(static t => t.Name).Should().BeEquivalentTo(new[]
         {
@@ -58,6 +58,7 @@ public class WechatPayDomainContractGuards
             "IWechatPayPayScoreService",
             "IWechatPayCombineService",
             "IWechatPayTransferService",
+            "IWechatPayFapiaoService",
         });
 
         var offenders = interfaces
@@ -71,7 +72,7 @@ public class WechatPayDomainContractGuards
     }
 
     /// <summary>
-    /// PAY-B5：端点计数（<b>37</b>）+ 官方路由表逐条比对（照官方原文，<b>不得「纠正」</b>）。
+    /// PAY-B5：端点计数（<b>39</b>）+ 官方路由表逐条比对（照官方原文，<b>不得「纠正」</b>）。
     /// </summary>
     /// <remarks>
     /// <para>
@@ -165,6 +166,13 @@ public class WechatPayDomainContractGuards
             "/v3/fund-app/mch-transfer/elecsign/out-bill-no/{outBillNo}",
         });
 
+        // P2 电子发票首批 2 端点（普通商户侧）：开具 + 查询。
+        RoutesOf(asm, "IWechatPayFapiaoService").Should().BeEquivalentTo(new[]
+        {
+            "/v3/new-tax-control-fapiao/fapiao-applications",
+            "/v3/new-tax-control-fapiao/fapiao-applications/{fapiaoApplyId}",
+        });
+
         // 合计计数（PAY-B5 断言的单一来源）。
         asm.GetTypes()
             .Where(static t => t.IsInterface && t.IsPublic)
@@ -172,7 +180,7 @@ public class WechatPayDomainContractGuards
             .SelectMany(static m => m.GetCustomAttributes(false))
             .Select(static a => a.GetType().GetProperty("RequestUri")?.GetValue(a) as string)
             .Count(static uri => !string.IsNullOrWhiteSpace(uri))
-            .Should().Be(37, "支付线端点总数为 37（4 交易 + 3 退款 + 2 账单 + 1 平台证书 + 9 分账 + 11 支付分 + 3 合单 + 4 商家转账）");
+            .Should().Be(39, "支付线端点总数为 39（4 交易 + 3 退款 + 2 账单 + 1 平台证书 + 9 分账 + 11 支付分 + 3 合单 + 4 商家转账 + 2 电子发票）");
     }
 
     /// <summary>
@@ -245,6 +253,7 @@ public class WechatPayDomainContractGuards
                      typeof(TransferBillResponse),
                      typeof(TransferBillQueryResponse),
                      typeof(TransferElecsignResponse),
+                     typeof(FapiaoQueryResponse),
                  })
         {
             typeof(WechatPayResponse).IsAssignableFrom(responseType).Should().BeTrue(

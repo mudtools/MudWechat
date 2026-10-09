@@ -24,6 +24,7 @@ global using Mud.Wechat.Pay.Abstractions.Extensions;
 global using Mud.Wechat.Pay.DataModels.Bill;
 global using Mud.Wechat.Pay.DataModels.Certificates;
 global using Mud.Wechat.Pay.DataModels.Combine;
+global using Mud.Wechat.Pay.DataModels.Fapiao;
 global using Mud.Wechat.Pay.DataModels.PayScore;
 global using Mud.Wechat.Pay.DataModels.ProfitSharing;
 global using Mud.Wechat.Pay.DataModels.Common;

@@ -81,4 +81,14 @@ public enum PayModule
     /// <b>仍缺</b>：微信单号查询转账单 · 撤销转账 · 获取电子回单（商户单号/微信单号）。
     /// </remarks>
     Transfer,
+
+    /// <summary>
+    /// 电子发票（<b>P2 首批 2 端点</b>）：开具 + 查询电子发票。
+    /// 官方文档 <see href="https://pay.weixin.qq.com/doc/v3/merchant/4012538301"/>。
+    /// </summary>
+    /// <remarks>
+    /// 已核并更正设计方案 §2.5：<b>普通商户侧有</b>完整电子发票文档（非「无独立入口」）；
+    /// 服务商侧的「开具通用行业电子发票」是另一路由（<c>issue-general</c>），本域不覆盖。
+    /// </remarks>
+    NewTaxControlFapiao,
 }

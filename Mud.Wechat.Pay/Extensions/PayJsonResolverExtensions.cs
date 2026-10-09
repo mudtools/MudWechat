@@ -10,6 +10,7 @@ using Mud.Wechat.Pay.DataModels.Callback;
 using Mud.Wechat.Pay.DataModels.Certificates;
 using Mud.Wechat.Pay.DataModels.Combine;
 using Mud.Wechat.Pay.DataModels.Common;
+using Mud.Wechat.Pay.DataModels.Fapiao;
 using Mud.Wechat.Pay.DataModels.PayScore;
 using Mud.Wechat.Pay.DataModels.ProfitSharing;
 using Mud.Wechat.Pay.DataModels.Refund;
@@ -60,6 +61,7 @@ public static class PayJsonResolverExtensions
             PayScoreJsonContext.Default,
             CombineTransactionsJsonContext.Default,
             TransferJsonContext.Default,
+            NewTaxControlFapiaoJsonContext.Default,
             CallbackJsonContext.Default);
 
         services.AddMudHttpClientJsonContext(resolver);

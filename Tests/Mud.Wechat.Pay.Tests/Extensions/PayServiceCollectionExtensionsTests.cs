@@ -148,6 +148,9 @@ public class PayServiceCollectionExtensionsTests
         // P2 电子发票首批（源生成 AddNewTaxControlFapiaoWebApiHttpClient）。
         provider.GetRequiredService<IWechatPayFapiaoService>().Should().NotBeNull();
 
+        // P2 代金券首批（P2 表内最后一项；源生成 AddMarketingFavorWebApiHttpClient）。
+        provider.GetRequiredService<IWechatPayMarketingFavorService>().Should().NotBeNull();
+
         // 账单下载通道随账单模块注册（无 [HttpClientApi]，故无对应的源生成注册方法）。
         provider.GetRequiredService<IWechatPayBillDownloadService>().Should().NotBeNull();
 
@@ -200,6 +203,8 @@ public class PayServiceCollectionExtensionsTests
                      typeof(TransferElecsignResponse),
                      typeof(FapiaoIssueRequest),
                      typeof(FapiaoQueryResponse),
+                     typeof(CouponStockCreateRequest),
+                     typeof(CouponQueryResponse),
                  })
         {
             resolver!.GetTypeInfo(dto, options).Should().NotBeNull(

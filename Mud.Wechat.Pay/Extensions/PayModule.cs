@@ -91,4 +91,13 @@ public enum PayModule
     /// 服务商侧的「开具通用行业电子发票」是另一路由（<c>issue-general</c>），本域不覆盖。
     /// </remarks>
     NewTaxControlFapiao,
+
+    /// <summary>
+    /// 代金券（<b>P2 表内最后一项，首批 2 端点</b>）：创建代金券批次 + 查询代金券详情。
+    /// 官方文档 <see href="https://pay.weixin.qq.com/doc/v3/merchant/4012534633"/>。
+    /// </summary>
+    /// <remarks>
+    /// 官方流程：创建 → <b>激活</b>（未实现）→ 发放；<b>创建成功 ≠ 可发放</b>。
+    /// </remarks>
+    MarketingFavor,
 }

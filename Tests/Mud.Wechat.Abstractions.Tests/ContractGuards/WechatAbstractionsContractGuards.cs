@@ -311,14 +311,19 @@ public class WechatAbstractionsContractGuards
                      "Mud.Wechat.Pay.Callback/Mud.Wechat.Pay.Callback.csproj",
                      "Tests/Mud.Wechat.Pay.Tests/Mud.Wechat.Pay.Tests.csproj",
                      "Tests/Mud.Wechat.Pay.Callback.Tests/Mud.Wechat.Pay.Callback.Tests.csproj",
+                     // 可观测性适配包（1 源 + 1 测试）。
+                     "Mud.Wechat.OpenTelemetry/Mud.Wechat.OpenTelemetry.csproj",
+                     "Tests/Mud.Wechat.OpenTelemetry.Tests/Mud.Wechat.OpenTelemetry.Tests.csproj",
                  })
         {
             slnx.Should().Contain(project, "新增工程必须纳入解决方案（否则 verify-build 步骤 1 覆盖不到）");
         }
 
         var ci = File.ReadAllText(Path.Combine(root, ".github", "workflows", "dotnet-publish.yml"));
-        ci.Should().Contain("-ne 17", "制品数量守卫必须随新增产品线更新（否则打包步骤 fail-closed 必红）");
+        ci.Should().Contain("-ne 18", "制品数量守卫必须随新增产品线更新（否则打包步骤 fail-closed 必红）");
         ci.Should().NotContain("-ne 10", "旧制品数量断言已随产品线扩展作废，残留即 CI 与守卫口径分裂");
+        ci.Should().NotContain("-ne 17", "OpenTelemetry 包并入后计数为 18，残留 -ne 17 即 CI 与守卫口径分裂");
+        ci.Should().NotContain("-ne 11", "旧制品数量断言已随产品线扩展作废，残留即 CI 与守卫口径分裂");
     }
 
     /// <summary>

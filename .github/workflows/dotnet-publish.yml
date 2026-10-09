@@ -426,7 +426,7 @@ jobs:
       - name: Pack NuGet package
         run: dotnet pack ${{ env.SOLUTION_FILE }} --configuration ${{ env.CONFIGURATION }} --output ./nupkg --no-build
 
-      # 制品数量守卫：可打包源项目为 17 个。
+      # 制品数量守卫：可打包源项目为 18 个。
       #   跨产品线公用层 1 个（Abstractions）
       #   企业微信产品线 5 个（Work / Work.Abstractions / Work.Callback / Work.DataModels / Redis）
       #   公众号产品线 4 个（OfficialAccount / OfficialAccount.Abstractions / OfficialAccount.DataModels
@@ -434,14 +434,15 @@ jobs:
       #   微信小程序产品线 3 个（MiniProgram / MiniProgram.Abstractions / MiniProgram.DataModels
       #                       ——**无回调包**：小程序服务端侧无推送型回调面）
       #   微信支付产品线 4 个（Pay / Pay.Abstractions / Pay.DataModels / Pay.Callback）
+      #   可观测性适配包 1 个（OpenTelemetry）
       # 少包通常意味着某个 csproj 被误设为不可打包（或 slnx 漏项），此处 fail-closed 而非静默发漏包。
       # 守卫断言见 Tests/Mud.Wechat.Abstractions.Tests 的 AB-G6（会因口径漂移先行变红）。
       - name: Verify package count
         run: |
           COUNT=$(ls -1 ./nupkg/*.nupkg 2>/dev/null | wc -l)
           echo "生成 nupkg 数量：$COUNT"
-          if [ "$COUNT" -ne 17 ]; then
-            echo "::error::期望 17 个 nupkg（Abstractions / Work / Work.Abstractions / Work.Callback / Work.DataModels / Redis / OfficialAccount / OfficialAccount.Abstractions / OfficialAccount.DataModels / OfficialAccount.Callback / MiniProgram / MiniProgram.Abstractions / MiniProgram.DataModels / Pay / Pay.Abstractions / Pay.DataModels / Pay.Callback），实际 $COUNT 个。"
+          if [ "$COUNT" -ne 18 ]; then
+            echo "::error::期望 18 个 nupkg（Abstractions / Work / Work.Abstractions / Work.Callback / Work.DataModels / Redis / OfficialAccount / OfficialAccount.Abstractions / OfficialAccount.DataModels / OfficialAccount.Callback / MiniProgram / MiniProgram.Abstractions / MiniProgram.DataModels / Pay / Pay.Abstractions / Pay.DataModels / Pay.Callback / OpenTelemetry），实际 $COUNT 个。"
             ls -1 ./nupkg || true
             exit 1
           fi

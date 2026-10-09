@@ -6,8 +6,12 @@
 // -----------------------------------------------------------------------
 
 using System.Text;
+using System.Diagnostics;
+using Mud.Wechat.Abstractions.Observability;
 using Mud.Wechat.Work.Abstractions.Authentication.Models;
 using Mud.Wechat.Work.Abstractions.Exceptions;
+using Mud.Wechat.Work.Abstractions.Metrics;
+using Mud.Wechat.Work.Abstractions.Observability;
 using Mud.Wechat.Work.Services.Authorization.Models;
 
 namespace Mud.Wechat.Work.Services.Authorization;
@@ -209,6 +213,39 @@ internal sealed class WechatWorkAuthorizationService : IWechatWorkAuthorizationS
         }
 
         var targetAppKey = ResolveAppKey(appKey);
+        var activity = WechatActivitySource.Instance.StartActivity(
+            WorkActivityNames.Authorization, ActivityKind.Internal);
+        activity?.SetTag(WechatActivitySource.Tags.Product, WechatActivitySource.Products.Work);
+        activity?.SetTag(WechatActivitySource.Tags.AppKey, targetAppKey);
+        activity?.SetTag("wechat.work.auth_operation", "exchange");
+
+        try
+        {
+            var result = await ExchangeAuthCodeCoreAsync(authCode, targetAppKey, cancellationToken).ConfigureAwait(false);
+            WorkMetricsHelper.RecordAuthorizationExchange(targetAppKey, "success");
+            return result;
+        }
+        catch (OperationCanceledException)
+        {
+            WorkMetricsHelper.RecordAuthorizationExchange(targetAppKey, "timeout");
+            activity?.SetStatus(ActivityStatusCode.Error);
+            throw;
+        }
+        catch (Exception ex)
+        {
+            WorkMetricsHelper.RecordAuthorizationExchange(targetAppKey, "failure");
+            activity?.SetStatus(ActivityStatusCode.Error);
+            throw;
+        }
+        finally
+        {
+            activity?.Dispose();
+        }
+    }
+
+    private async Task<WechatCorpAuthorization> ExchangeAuthCodeCoreAsync(
+        string authCode, string targetAppKey, CancellationToken cancellationToken)
+    {
         var flightKey = BuildFlightKey(targetAppKey, authCode);
 
         // 结果记忆命中：避免对已消费的一次性 auth_code 重复换码。
@@ -259,7 +296,39 @@ internal sealed class WechatWorkAuthorizationService : IWechatWorkAuthorizationS
         }
 
         var targetAppKey = ResolveAppKey(appKey);
+        var activity = WechatActivitySource.Instance.StartActivity(
+            WorkActivityNames.Authorization, ActivityKind.Internal);
+        activity?.SetTag(WechatActivitySource.Tags.Product, WechatActivitySource.Products.Work);
+        activity?.SetTag(WechatActivitySource.Tags.AppKey, targetAppKey);
+        activity?.SetTag("wechat.work.auth_operation", "refresh");
 
+        try
+        {
+            var result = await RefreshAuthorizationCoreAsync(authCorpId, targetAppKey, cancellationToken).ConfigureAwait(false);
+            WorkMetricsHelper.RecordAuthorizationExchange(targetAppKey, "success");
+            return result;
+        }
+        catch (OperationCanceledException)
+        {
+            WorkMetricsHelper.RecordAuthorizationExchange(targetAppKey, "timeout");
+            activity?.SetStatus(ActivityStatusCode.Error);
+            throw;
+        }
+        catch (Exception)
+        {
+            WorkMetricsHelper.RecordAuthorizationExchange(targetAppKey, "failure");
+            activity?.SetStatus(ActivityStatusCode.Error);
+            throw;
+        }
+        finally
+        {
+            activity?.Dispose();
+        }
+    }
+
+    private async Task<WechatCorpAuthorization> RefreshAuthorizationCoreAsync(
+        string authCorpId, string targetAppKey, CancellationToken cancellationToken)
+    {
         var existing = await _authStore.GetAsync(targetAppKey, authCorpId, cancellationToken).ConfigureAwait(false)
             ?? throw new InvalidOperationException(
                 $"未找到应用 {targetAppKey} 下企业 {authCorpId} 的授权记录，无法刷新授权信息。");
@@ -314,16 +383,41 @@ internal sealed class WechatWorkAuthorizationService : IWechatWorkAuthorizationS
         }
 
         var targetAppKey = ResolveAppKey(appKey);
+        var activity = WechatActivitySource.Instance.StartActivity(
+            WorkActivityNames.Authorization, ActivityKind.Internal);
+        activity?.SetTag(WechatActivitySource.Tags.Product, WechatActivitySource.Products.Work);
+        activity?.SetTag(WechatActivitySource.Tags.AppKey, targetAppKey);
+        activity?.SetTag("wechat.work.auth_operation", "revoke");
 
-        // R4/P1-5：先失效令牌（失败即中止，授权记录保持完整 ⇒ 调用方可直接重试）；
-        // 旧实现"先删库后失效"在失效失败时留下「记录已删、令牌仍可用」的不一致窗口。
-        await _appManager.InvalidateTokenAsync(
-            targetAppKey, WechatTokenTypes.AccessToken, new[] { authCorpId }, cancellationToken).ConfigureAwait(false);
+        try
+        {
+            // R4/P1-5：先失效令牌（失败即中止，授权记录保持完整 ⇒ 调用方可直接重试）；
+            // 旧实现"先删库后失效"在失效失败时留下「记录已删、令牌仍可用」的不一致窗口。
+            await _appManager.InvalidateTokenAsync(
+                targetAppKey, WechatTokenTypes.AccessToken, new[] { authCorpId }, cancellationToken).ConfigureAwait(false);
 
-        // 仅失效本 AppKey 的该企业令牌（同一 authCorpId 在其它套件下是独立授权，不得连带失效）。
-        await _authStore.RemoveAsync(targetAppKey, authCorpId, cancellationToken).ConfigureAwait(false);
+            // 仅失效本 AppKey 的该企业令牌（同一 authCorpId 在其它套件下是独立授权，不得连带失效）。
+            await _authStore.RemoveAsync(targetAppKey, authCorpId, cancellationToken).ConfigureAwait(false);
 
-        _logger.LogInformation("已撤销企业授权（应用 {AppKey}，AuthCorpId {AuthCorpId}）。", targetAppKey, authCorpId);
+            WorkMetricsHelper.RecordAuthorizationExchange(targetAppKey, "success");
+            _logger.LogInformation("已撤销企业授权（应用 {AppKey}，AuthCorpId {AuthCorpId}）。", targetAppKey, authCorpId);
+        }
+        catch (OperationCanceledException)
+        {
+            WorkMetricsHelper.RecordAuthorizationExchange(targetAppKey, "timeout");
+            activity?.SetStatus(ActivityStatusCode.Error);
+            throw;
+        }
+        catch (Exception)
+        {
+            WorkMetricsHelper.RecordAuthorizationExchange(targetAppKey, "failure");
+            activity?.SetStatus(ActivityStatusCode.Error);
+            throw;
+        }
+        finally
+        {
+            activity?.Dispose();
+        }
     }
 
     private async Task<WechatCorpAuthorization> ExchangeCoreAsync(

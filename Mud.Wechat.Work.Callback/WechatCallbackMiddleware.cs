@@ -6,7 +6,11 @@
 // -----------------------------------------------------------------------
 
 using Microsoft.AspNetCore.Http;
+using Mud.Wechat.Abstractions.Observability;
+using Mud.Wechat.Work.Abstractions.Metrics;
+using Mud.Wechat.Work.Abstractions.Observability;
 using Mud.Wechat.Work.DataModels.Aibot;
+using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
 
@@ -97,33 +101,50 @@ public sealed class WechatCallbackMiddleware(
             return;
         }
 
+        // ── 可观测性：回调入站 Activity + 指标 ──
+        var activity = WechatActivitySource.Instance.StartActivity(WorkActivityNames.CallbackRequest, ActivityKind.Server);
+        activity?.SetTag(WechatActivitySource.Tags.Product, WechatActivitySource.Products.Work);
+        activity?.SetTag(WechatActivitySource.Tags.AppKey, appKey);
+        // 通道判定：GET 走 echo（app 通道），POST 按 Content-Type 区分 XML（app/suite）与 JSON（bot）。
+        var contentType = context.Request.ContentType;
+        var isJsonPost = HttpMethods.IsPost(context.Request.Method)
+                         && !string.IsNullOrEmpty(contentType)
+                         && contentType.IndexOf("json", StringComparison.OrdinalIgnoreCase) >= 0;
+        var channel = isJsonPost ? WorkMetrics.Channels.Bot : WorkMetrics.Channels.App;
+        var metricsScope = WorkMetricsHelper.RecordCallbackRequest(appKey, channel);
+
         try
         {
             if (HttpMethods.IsGet(context.Request.Method))
             {
                 await HandleEchoAsync(context, appKey).ConfigureAwait(false);
+                WorkMetricsHelper.RecordCallbackOutcome(appKey, channel, "success");
                 return;
             }
 
             if (HttpMethods.IsPost(context.Request.Method))
             {
                 await HandleReceiveAsync(context, appKey, options).ConfigureAwait(false);
+                WorkMetricsHelper.RecordCallbackOutcome(appKey, channel, "success");
                 return;
             }
 
             // 回调协议方法固定：GET = URL 验证、POST = 事件接收（v1.2 删除 AllowedHttpMethods 死面配置）。
             context.Response.StatusCode = StatusCodes.Status405MethodNotAllowed;
+            WorkMetricsHelper.RecordCallbackOutcome(appKey, channel, "failure", "method_not_allowed");
         }
         catch (InvalidOperationException ex)
         {
             // 验签/时效/解密/receiveid/凭据失败统一 403（fail-closed；报文解析失败同属验证失败类）。
             _logger.LogWarning(ex, "回调验证失败，AppKey: {AppKey}", appKey);
             context.Response.StatusCode = StatusCodes.Status403Forbidden;
+            WorkMetricsHelper.RecordCallbackOutcome(appKey, channel, "failure", ex.GetType().Name);
         }
         catch (OperationCanceledException) when (context.RequestAborted.IsCancellationRequested)
         {
             // 客户端断开：记日志后直接返回，禁止再向已中止连接写响应（对齐飞书 WHF-16）。
             _logger.LogWarning("回调处理期间客户端断开连接，AppKey: {AppKey}", appKey);
+            WorkMetricsHelper.RecordCallbackOutcome(appKey, channel, "failure", "client_disconnected");
         }
         catch (OperationCanceledException)
         {
@@ -131,11 +152,18 @@ public sealed class WechatCallbackMiddleware(
             _logger.LogWarning("回调分发软超时，返回 503 触发重推，AppKey: {AppKey}", appKey);
             await WriteTextAsync(context, StatusCodes.Status503ServiceUnavailable, string.Empty, CancellationToken.None)
                 .ConfigureAwait(false);
+            WorkMetricsHelper.RecordCallbackOutcome(appKey, channel, "timeout");
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "回调处理发生未预期异常，AppKey: {AppKey}", appKey);
             context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+            WorkMetricsHelper.RecordCallbackOutcome(appKey, channel, "failure", ex.GetType().Name);
+        }
+        finally
+        {
+            metricsScope.Dispose();
+            activity?.Dispose();
         }
     }
 

@@ -23,6 +23,7 @@
     <Project Path="Mud.Wechat.Pay.DataModels/Mud.Wechat.Pay.DataModels.csproj" />
     <Project Path="Mud.Wechat.Pay/Mud.Wechat.Pay.csproj" />
     <Project Path="Mud.Wechat.Pay.Callback/Mud.Wechat.Pay.Callback.csproj" />
+    <Project Path="Mud.Wechat.OpenTelemetry/Mud.Wechat.OpenTelemetry.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="Tests/Mud.Wechat.Abstractions.Tests/Mud.Wechat.Abstractions.Tests.csproj" />
@@ -36,5 +37,6 @@
     <Project Path="Tests/Mud.Wechat.MiniProgram.Tests/Mud.Wechat.MiniProgram.Tests.csproj" />
     <Project Path="Tests/Mud.Wechat.Pay.Tests/Mud.Wechat.Pay.Tests.csproj" />
     <Project Path="Tests/Mud.Wechat.Pay.Callback.Tests/Mud.Wechat.Pay.Callback.Tests.csproj" />
+    <Project Path="Tests/Mud.Wechat.OpenTelemetry.Tests/Mud.Wechat.OpenTelemetry.Tests.csproj" />
   </Folder>
 </Solution>

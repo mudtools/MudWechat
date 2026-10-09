@@ -32,7 +32,8 @@ $configFiles = @(
     # 微信小程序产品线的配置 DTO 登记位：P1-c 落地时**创建文件的同批**必须在此登记，
     # 否则 AB-G6 的双向不变式（文件存在 ⇔ 已登记）会失败。本脚本对不存在的文件是 fail-closed 硬错误 ⇒ 不得预登记。
     'Mud.Wechat.Redis/Configuration/WechatRedisOptions.cs',
-    'Mud.Wechat.Redis/Configuration/WechatRedisConnectionOptions.cs'
+    'Mud.Wechat.Redis/Configuration/WechatRedisConnectionOptions.cs',
+    'Mud.Wechat.OpenTelemetry/WechatOpenTelemetryOptions.cs'
 )
 
 foreach ($file in $configFiles) {
@@ -69,11 +70,13 @@ foreach ($file in $configFiles) {
         'Mud.Wechat.MiniProgram',
         'Mud.Wechat.MiniProgram.Abstractions',
         'Mud.Wechat.MiniProgram.DataModels',
-        # 微信支付产品线（含回调运行时包；未纳入即为门禁盲区）。
+        # 微信支付产品线：消费点可落在主包与抽象包。
         'Mud.Wechat.Pay',
         'Mud.Wechat.Pay.Abstractions',
         'Mud.Wechat.Pay.DataModels',
-        'Mud.Wechat.Pay.Callback'
+        'Mud.Wechat.Pay.Callback',
+        # 可观测性装配包：WechatOpenTelemetryOptions 的消费点位于映射器中。
+        'Mud.Wechat.OpenTelemetry'
     )
 
     foreach ($prop in $propNames) {

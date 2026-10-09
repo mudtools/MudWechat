@@ -7,14 +7,14 @@ REM   [version]  Package version (e.g. 1.0.3). Default: <Version> from
 REM              Directory.Build.props.
 REM   /nopause   Do not pause at the end (for scripting / CI).
 REM
-REM Packs the 10 SDK packages into .\artifacts. No quality gate,
+REM Packs the 11 SDK packages into .\artifacts. No quality gate,
 REM no tests, no push - build validation is your own responsibility.
 REM ===============================================================
 setlocal EnableExtensions EnableDelayedExpansion
 cd /d "%~dp0"
 
 set "OUTPUT_DIR=artifacts"
-set "PROJECTS=Mud.Wechat.Abstractions Mud.Wechat.Work Mud.Wechat.Work.Abstractions Mud.Wechat.Work.Callback Mud.Wechat.Work.DataModels Mud.Wechat.Redis Mud.Wechat.OfficialAccount Mud.Wechat.OfficialAccount.Abstractions Mud.Wechat.OfficialAccount.DataModels Mud.Wechat.OfficialAccount.Callback"
+set "PROJECTS=Mud.Wechat.Abstractions Mud.Wechat.Work Mud.Wechat.Work.Abstractions Mud.Wechat.Work.Callback Mud.Wechat.Work.DataModels Mud.Wechat.Redis Mud.Wechat.OfficialAccount Mud.Wechat.OfficialAccount.Abstractions Mud.Wechat.OfficialAccount.DataModels Mud.Wechat.OfficialAccount.Callback Mud.Wechat.OpenTelemetry"
 set "VERSION=%~1"
 set "NO_PAUSE=%~2"
 set "EC=0"
@@ -54,7 +54,7 @@ for %%P in (%PROJECTS%) do (
     if exist "%OUTPUT_DIR%\%%P.%VERSION%.nupkg" set /a COUNT+=1
 )
 echo.
-echo Produced %COUNT%/10 packages in %cd%\%OUTPUT_DIR%:
+echo Produced %COUNT%/11 packages in %cd%\%OUTPUT_DIR%:
 dir /b "%OUTPUT_DIR%\*%VERSION%.nupkg"
 
 :done

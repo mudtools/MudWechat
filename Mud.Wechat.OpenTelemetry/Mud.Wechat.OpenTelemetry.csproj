@@ -1,0 +1,50 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<Description>Mud.Wechat OpenTelemetry 适配包，一键开启微信 SDK 的分布式追踪与指标采集，自动注册 Wechat ActivitySource、产品线 Meter 以及 Mud.HttpUtils 可观测性源，net8.0+ 原生 AOT 兼容。</Description>
+		<PackageTags>Wechat;WeChatWork;企业微信;OfficialAccount;公众号;OpenTelemetry;OTel;Tracing;Metrics;Observability;AOT;NativeAOT;MudWechat</PackageTags>
+		<!-- OTel 1.16.0 及其传递依赖的 M.E.* 10.x 只声明 net8/net10/netstandard2.0 目标，在 net6.0 下回落
+		netstandard2.0 资产（net6 完整实现 ns2.0 API 面），产生「未测试 TFM」提示性警告（与 Redis 包同款）。 -->
+		<SuppressTfmSupportBuildWarnings>true</SuppressTfmSupportBuildWarnings>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\Mud.Wechat.Abstractions\Mud.Wechat.Abstractions.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<!-- 产品贡献描述（WechatOpenTelemetryExtensions.CreateContribution）与选项映射
+		     （WechatOpenTelemetryOptionsMapper）为 internal，供测试直读：
+		     前者锁定 IncludeMudHttpUtils → IncludeMudHttpSources 与通配 Meter 的产品特有契约，
+		     后者锁定「每个公开配置属性都被读取」（audit-config-keys.ps1 的消费点要求）。 -->
+		<InternalsVisibleTo Include="Mud.Wechat.OpenTelemetry.Tests" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<!-- 可观测性共享装配内核（MudObservabilityBootstrap / MudObservabilityDefaults 等）由上游包提供；
+		     本包不再直接引用 Mud.HttpUtils（MudHttpActivitySource/MudHttpMeter 由内核内部使用）。
+		     ⚠ 全仓 Mud.HttpUtils* 必须同版本（守卫 G1：WechatContractGuards.MudHttpUtils_PackageReference_ShouldBeSingleVersion）。 -->
+		<PackageReference Include="Mud.HttpUtils.OpenTelemetry" Version="3.0.3" />
+		<PackageReference Include="OpenTelemetry" Version="1.16.0" />
+		<PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.16.0" />
+		<PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.16.0" />
+		<PackageReference Include="OpenTelemetry.Instrumentation.Http" Version="1.16.0" />
+		<PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.16.0" />
+	</ItemGroup>
+
+	<!-- net6.0+ 使用 FrameworkReference（与 Mud.Wechat.Work.Callback.csproj 的既有条件化同款）；
+	     netstandard2.0 不引用 AspNetCore.App，EnableAspNetCoreInstrumentation 由共享内核
+	     （MudObservabilityBootstrap 的 #if NETSTANDARD2_0 分支）强制置 false。 -->
+	<ItemGroup Condition="'$(TargetFramework)' != 'netstandard2.0'">
+		<FrameworkReference Include="Microsoft.AspNetCore.App" />
+	</ItemGroup>
+
+	<ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' or '$(TargetFramework)' == 'net6.0'">
+		<!-- 对齐根 props 低 TFM 定版，消除 Bcl.AsyncInterfaces 传递依赖的 MSB3277 版本冲突。 -->
+		<PackageReference Update="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.9" />
+		<PackageReference Update="Microsoft.Extensions.Options" Version="10.0.9" />
+		<PackageReference Update="Microsoft.Extensions.Configuration.Binder" Version="10.0.9" />
+		<PackageReference Update="Microsoft.Extensions.Logging.Abstractions" Version="10.0.9" />
+	</ItemGroup>
+
+</Project>

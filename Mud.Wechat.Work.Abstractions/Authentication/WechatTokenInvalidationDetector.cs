@@ -6,6 +6,7 @@
 // -----------------------------------------------------------------------
 
 using Mud.Wechat.Work.Abstractions.Enums;
+using Mud.Wechat.Work.Abstractions.Metrics;
 using System.Text.Json;
 
 namespace Mud.Wechat.Work.Abstractions.Authentication;
@@ -100,4 +101,18 @@ public sealed class WechatTokenInvalidationDetector : ITokenInvalidationDetector
             return new ValueTask<bool>(false);
         }
     }
+
+    /// <summary>
+    /// 记录令牌失效判定结果（由组件恢复链路在 <see cref="IsTokenInvalidAsync"/> 返回 true 后调用）。
+    /// </summary>
+    /// <param name="appKey">应用键。</param>
+    /// <param name="tokenOwner">令牌归属域（取 <see cref="WorkMetrics.TokenOwners"/> 常量）。</param>
+    /// <param name="success">恢复是否成功。</param>
+    /// <remarks>
+    /// 本方法为便利方法，供宿主或测试在恢复链路完成后显式调用。
+    /// 上游组件 <c>TokenManagerBase</c> 已自带 <c>mud.token.refresh</c> 指标记录刷新耗时与结果，
+    /// 此处补充微信侧的归属域维度。
+    /// </remarks>
+    public static void RecordInvalidation(string appKey, string tokenOwner, bool success)
+        => WorkMetricsHelper.RecordTokenInvalidation(appKey, tokenOwner, success ? "success" : "failure");
 }

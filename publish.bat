@@ -12,8 +12,8 @@ REM               Requires the NUGET_API_KEY environment variable.
 REM   /nopause    Do not pause at the end (for scripting / CI).
 REM
 REM Notes:
-REM   * All 10 packages are packed into .\artifacts (Mud.Wechat
-REM     .Abstractions / .Work.* / .Redis / .OfficialAccount.*).
+REM   * All 11 packages are packed into .\artifacts (Mud.Wechat
+REM     .Abstractions / .Work.* / .Redis / .OfficialAccount.* / .OpenTelemetry).
 REM   * Version is passed as -p:Version=... so assembly and package
 REM     versions cannot drift apart (Directory.Build.props pins <Version>,
 REM     which makes --version-suffix silently ignored).
@@ -24,7 +24,7 @@ setlocal EnableExtensions EnableDelayedExpansion
 cd /d "%~dp0"
 
 set "OUTPUT_DIR=artifacts"
-set "PROJECTS=Mud.Wechat.Abstractions Mud.Wechat.Work Mud.Wechat.Work.Abstractions Mud.Wechat.Work.Callback Mud.Wechat.Work.DataModels Mud.Wechat.Redis Mud.Wechat.OfficialAccount Mud.Wechat.OfficialAccount.Abstractions Mud.Wechat.OfficialAccount.DataModels Mud.Wechat.OfficialAccount.Callback"
+set "PROJECTS=Mud.Wechat.Abstractions Mud.Wechat.Work Mud.Wechat.Work.Abstractions Mud.Wechat.Work.Callback Mud.Wechat.Work.DataModels Mud.Wechat.Redis Mud.Wechat.OfficialAccount Mud.Wechat.OfficialAccount.Abstractions Mud.Wechat.OfficialAccount.DataModels Mud.Wechat.OfficialAccount.Callback Mud.Wechat.OpenTelemetry"
 set "VERSION="
 set "PREVIEW=0"
 set "SKIP_CHECK=0"
@@ -102,7 +102,7 @@ if "%SKIP_CHECK%"=="1" (
 )
 
 REM ------------------------------------------------------------- pack
-echo Packing packages ^(10 expected^) ...
+echo Packing packages ^(11 expected^) ...
 if not exist "%OUTPUT_DIR%" mkdir "%OUTPUT_DIR%"
 del /q "%OUTPUT_DIR%\*%VERSION%.nupkg" 2>nul
 set "FAILED="

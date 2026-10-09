@@ -5,6 +5,11 @@
 //  不得利用本项目从事危害国家安全、扰乱社会秩序、侵犯他人合法权益等法律法规禁止的活动！任何基于本项目开发而产生的一切法律纠纷和责任，我们不承担任何责任！
 // -----------------------------------------------------------------------
 
+using System.Diagnostics;
+using Mud.Wechat.Abstractions.Observability;
+using Mud.Wechat.Work.Abstractions.Metrics;
+using Mud.Wechat.Work.Abstractions.Observability;
+
 namespace Mud.Wechat.Work.Callback;
 
 /// <summary>
@@ -93,140 +98,182 @@ public sealed class WechatCallbackDispatcher
 
         var eventType = evt.EventTypeKey;
 
-        // — 0. 事件族合法性闸（区分企业自建 / 第三方 / 代开发 × 回调通道的开放面）——
-        // 授权族仅套件通道、上下游变更族仅自建 + 应用通道；不适用的事件族在此拒绝（返回 200，不触发重推）。
-        var app = _optionsMonitor.CurrentValue.ResolveApp(appKey);
-        if (app != null && !app.IsEventFamilyAllowed(evt.EventFamily))
-        {
-            _logger.LogWarning(
-                "事件 {EventType} 的事件族 {EventFamily} 不适用于当前应用类型 {AppType} × 回调通道 {Channel}，" +
-                "已拒绝接收（返回 200 不触发重推）。AppKey: {AppKey}",
-                eventType, evt.EventFamily, app.AppType, app.Channel, appKey);
-            return WechatCallbackDispatchOutcome.Rejected;
-        }
+        // ── 可观测性：事件分发 Activity + 指标 ──
+        var activity = WechatActivitySource.Instance.StartActivity(
+            WorkActivityNames.EventHandle, ActivityKind.Internal);
+        activity?.SetTag(WechatActivitySource.Tags.Product, WechatActivitySource.Products.Work);
+        activity?.SetTag(WechatActivitySource.Tags.AppKey, appKey);
+        activity?.SetTag(WorkMetrics.Tags.EventType, eventType);
 
-        // — 0b. 事件键级闸（ADR-15，守卫 CB13b 断言其先于拦截器）——
-        // 族级闸只按「事件族」判定；宿主注册新 Event 值会落 Unknown 族而被族闸放行，
-        // 故此处按事件键的契约声明（族前置条件 + 应用模式/通道）再判一次。
-        // 键未登记 ⇒ 落回族级闸结论（协议外报文不拦截，与 v1 行为一致）。
-        if (app != null && _payloadContracts.TryResolve(eventType, out var contract) && contract != null)
-        {
-            if (!contract.IsOpenFor(evt, app.AppType, app.Channel))
-            {
-                _logger.LogWarning(
-                    "事件 {EventType} 不适用于当前应用类型 {AppType} × 回调通道 {Channel}（事件键级开放面声明），" +
-                    "已拒绝接收（返回 200 不触发重推）。AppKey: {AppKey}",
-                    eventType, app.AppType, app.Channel, appKey);
-                return WechatCallbackDispatchOutcome.Rejected;
-            }
-        }
+        var metricsScope = WorkMetricsHelper.RecordEventHandling(appKey, eventType);
+        var dispatchSuccess = true;
 
-        // — 1. 拦截器 Before（appKey 专属先于全局；异常传播 → 中间件 500） —
-        using (var interceptorScope = _scopeFactory.CreateScope())
-        {
-            foreach (var interceptor in ResolveInterceptors(interceptorScope.ServiceProvider, appKey))
-            {
-                var proceed = await interceptor
-                    .BeforeHandleAsync(eventType, evt, cancellationToken)
-                    .ConfigureAwait(false);
-                if (!proceed)
-                {
-                    _logger.LogInformation(
-                        "事件 {EventType}（appKey: {AppKey}）被拦截器 {Interceptor} 中断，返回 503 触发重推。",
-                        eventType, appKey, interceptor.GetType().FullName);
-                    return WechatCallbackDispatchOutcome.Interrupted;
-                }
-            }
-        }
-
-        // — 2. 并发闸 + 软超时（必须 < 企业微信 5s 契约，v1.2 D7） —
-        var timeoutMs = Math.Max(1, _optionsMonitor.CurrentValue.EventHandlingTimeoutMs);
-        using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        timeoutCts.CancelAfter(timeoutMs);
-        var dispatchToken = timeoutCts.Token;
-
-        await _concurrencyGate.WaitAsync(dispatchToken).ConfigureAwait(false);
         try
         {
-            using var scope = _scopeFactory.CreateScope();
-            var handlers = ResolveHandlers(scope.ServiceProvider, appKey, eventType);
-
-            if (handlers.Count == 0)
+            // — 0. 事件族合法性闸（区分企业自建 / 第三方 / 代开发 × 回调通道的开放面）——
+            // 授权族仅套件通道、上下游变更族仅自建 + 应用通道；不适用的事件族在此拒绝（返回 200，不触发重推）。
+            var app = _optionsMonitor.CurrentValue.ResolveApp(appKey);
+            if (app != null && !app.IsEventFamilyAllowed(evt.EventFamily))
             {
                 _logger.LogWarning(
-                    "未找到事件 {EventType}（appKey: {AppKey}）的处理器，事件已接收但未处理（unhandled）。",
-                    eventType, appKey);
+                    "事件 {EventType} 的事件族 {EventFamily} 不适用于当前应用类型 {AppType} × 回调通道 {Channel}，" +
+                    "已拒绝接收（返回 200 不触发重推）。AppKey: {AppKey}",
+                    eventType, evt.EventFamily, app.AppType, app.Channel, appKey);
+                WorkMetricsHelper.RecordEventOutcome(appKey, eventType, success: true);
+                return WechatCallbackDispatchOutcome.Rejected;
             }
-            else
+
+            // — 0b. 事件键级闸（ADR-15，守卫 CB13b 断言其先于拦截器）——
+            // 族级闸只按「事件族」判定；宿主注册新 Event 值会落 Unknown 族而被族闸放行，
+            // 故此处按事件键的契约声明（族前置条件 + 应用模式/通道）再判一次。
+            // 键未登记 ⇒ 落回族级闸结论（协议外报文不拦截，与 v1 行为一致）。
+            if (app != null && _payloadContracts.TryResolve(eventType, out var contract) && contract != null)
             {
-                foreach (var handler in handlers)
+                if (!contract.IsOpenFor(evt, app.AppType, app.Channel))
                 {
-                    try
+                    _logger.LogWarning(
+                        "事件 {EventType} 不适用于当前应用类型 {AppType} × 回调通道 {Channel}（事件键级开放面声明），" +
+                        "已拒绝接收（返回 200 不触发重推）。AppKey: {AppKey}",
+                        eventType, app.AppType, app.Channel, appKey);
+                    WorkMetricsHelper.RecordEventOutcome(appKey, eventType, success: true);
+                    return WechatCallbackDispatchOutcome.Rejected;
+                }
+            }
+
+            // — 1. 拦截器 Before（appKey 专属先于全局；异常传播 → 中间件 500） —
+            using (var interceptorScope = _scopeFactory.CreateScope())
+            {
+                foreach (var interceptor in ResolveInterceptors(interceptorScope.ServiceProvider, appKey))
+                {
+                    var proceed = await interceptor
+                        .BeforeHandleAsync(eventType, evt, cancellationToken)
+                        .ConfigureAwait(false);
+                    if (!proceed)
                     {
-                        // 载荷感知处理器：先按声明的载荷类型读取（同一事件的多处理器共享一次节点投影，ADR-6）。
-                        if (handler is IWechatCallbackPayloadHandler payloadHandler)
+                        _logger.LogInformation(
+                            "事件 {EventType}（appKey: {AppKey}）被拦截器 {Interceptor} 中断，返回 503 触发重推。",
+                            eventType, appKey, interceptor.GetType().FullName);
+                        WorkMetricsHelper.RecordEventOutcome(appKey, eventType, success: false, "interrupted");
+                        return WechatCallbackDispatchOutcome.Interrupted;
+                    }
+                }
+            }
+
+            // — 2. 并发闸 + 软超时（必须 < 企业微信 5s 契约，v1.2 D7） —
+            var timeoutMs = Math.Max(1, _optionsMonitor.CurrentValue.EventHandlingTimeoutMs);
+            using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            timeoutCts.CancelAfter(timeoutMs);
+            var dispatchToken = timeoutCts.Token;
+
+            await _concurrencyGate.WaitAsync(dispatchToken).ConfigureAwait(false);
+            WechatCallbackDispatchOutcome outcome;
+            try
+            {
+                using var scope = _scopeFactory.CreateScope();
+                var handlers = ResolveHandlers(scope.ServiceProvider, appKey, eventType);
+
+                if (handlers.Count == 0)
+                {
+                    _logger.LogWarning(
+                        "未找到事件 {EventType}（appKey: {AppKey}）的处理器，事件已接收但未处理（unhandled）。",
+                        eventType, appKey);
+                    WorkMetricsHelper.RecordEventOutcome(appKey, eventType, success: true, "unhandled");
+                }
+                else
+                {
+                    foreach (var handler in handlers)
+                    {
+                        try
                         {
-                            var read = _payloadReader.Read(evt, payloadHandler.PayloadType);
-                            if (read.Status != WechatPayloadReadStatus.Matched || read.Payload == null)
+                            // 载荷感知处理器：先按声明的载荷类型读取（同一事件的多处理器共享一次节点投影，ADR-6）。
+                            if (handler is IWechatCallbackPayloadHandler payloadHandler)
                             {
-                                _logger.LogError(
-                                    "事件 {EventType} 的处理器 {Handler} 所需载荷 {PayloadType} 读取失败" +
-                                    "（状态 {Status}{Diagnostic}），已跳过该处理器（宿主接线错误：请确认该事件键已登记" +
-                                    "对应载荷类型的契约，或改用 GenericCallbackPayload）。AppKey: {AppKey}",
-                                    eventType, handler.GetType().FullName, payloadHandler.PayloadType.Name,
-                                    read.Status, read.Diagnostic == null ? string.Empty : "：" + read.Diagnostic,
-                                    appKey);
+                                var read = _payloadReader.Read(evt, payloadHandler.PayloadType);
+                                if (read.Status != WechatPayloadReadStatus.Matched || read.Payload == null)
+                                {
+                                    _logger.LogError(
+                                        "事件 {EventType} 的处理器 {Handler} 所需载荷 {PayloadType} 读取失败" +
+                                        "（状态 {Status}{Diagnostic}），已跳过该处理器（宿主接线错误：请确认该事件键已登记" +
+                                        "对应载荷类型的契约，或改用 GenericCallbackPayload）。AppKey: {AppKey}",
+                                        eventType, handler.GetType().FullName, payloadHandler.PayloadType.Name,
+                                        read.Status, read.Diagnostic == null ? string.Empty : "：" + read.Diagnostic,
+                                        appKey);
+                                    continue;
+                                }
+
+                                await payloadHandler
+                                    .HandlePayloadAsync(evt, read.Payload, dispatchToken)
+                                    .ConfigureAwait(false);
                                 continue;
                             }
 
-                            await payloadHandler
-                                .HandlePayloadAsync(evt, read.Payload, dispatchToken)
-                                .ConfigureAwait(false);
-                            continue;
+                            await handler.HandleAsync(evt, dispatchToken).ConfigureAwait(false);
                         }
+                        catch (OperationCanceledException) when (dispatchToken.IsCancellationRequested)
+                        {
+                            // 软超时或请求中止：向中间件传播（超时 → 503 → 企业微信重推）。
+                            throw;
+                        }
+                        catch (Exception ex)
+                        {
+                            dispatchSuccess = false;
+                            _logger.LogError(ex,
+                                "事件 {EventType} 的处理器 {Handler} 执行失败（已隔离，继续其余处理器）。",
+                                eventType, handler.GetType().FullName);
+                            WorkMetricsHelper.RecordEventOutcome(appKey, eventType, success: false, ex.GetType().Name);
+                        }
+                    }
+                }
 
-                        await handler.HandleAsync(evt, dispatchToken).ConfigureAwait(false);
+                // — 3. 拦截器 After（后置审计/埋点；异常记日志不打断应答） —
+                foreach (var interceptor in ResolveInterceptors(scope.ServiceProvider, appKey))
+                {
+                    try
+                    {
+                        await interceptor.AfterHandleAsync(eventType, evt, dispatchToken).ConfigureAwait(false);
                     }
                     catch (OperationCanceledException) when (dispatchToken.IsCancellationRequested)
                     {
-                        // 软超时或请求中止：向中间件传播（超时 → 503 → 企业微信重推）。
                         throw;
                     }
                     catch (Exception ex)
                     {
                         _logger.LogError(ex,
-                            "事件 {EventType} 的处理器 {Handler} 执行失败（已隔离，继续其余处理器）。",
-                            eventType, handler.GetType().FullName);
+                            "事件 {EventType} 的拦截器 {Interceptor} AfterHandle 失败（已忽略）。",
+                            eventType, interceptor.GetType().FullName);
                     }
                 }
-            }
 
-            // — 3. 拦截器 After（后置审计/埋点；异常记日志不打断应答） —
-            foreach (var interceptor in ResolveInterceptors(scope.ServiceProvider, appKey))
+                outcome = handlers.Count == 0
+                    ? WechatCallbackDispatchOutcome.Unhandled
+                    : WechatCallbackDispatchOutcome.Handled;
+
+                if (dispatchSuccess && outcome == WechatCallbackDispatchOutcome.Handled)
+                    WorkMetricsHelper.RecordEventOutcome(appKey, eventType, success: true);
+            }
+            finally
             {
-                try
-                {
-                    await interceptor.AfterHandleAsync(eventType, evt, dispatchToken).ConfigureAwait(false);
-                }
-                catch (OperationCanceledException) when (dispatchToken.IsCancellationRequested)
-                {
-                    throw;
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex,
-                        "事件 {EventType} 的拦截器 {Interceptor} AfterHandle 失败（已忽略）。",
-                        eventType, interceptor.GetType().FullName);
-                }
+                _concurrencyGate.Release();
             }
 
-            return handlers.Count == 0
-                ? WechatCallbackDispatchOutcome.Unhandled
-                : WechatCallbackDispatchOutcome.Handled;
+            return outcome;
+        }
+        catch (OperationCanceledException)
+        {
+            WorkMetricsHelper.RecordEventOutcome(appKey, eventType, success: false, "timeout");
+            activity?.SetStatus(ActivityStatusCode.Error);
+            throw;
+        }
+        catch (Exception ex)
+        {
+            WorkMetricsHelper.RecordEventOutcome(appKey, eventType, success: false, ex.GetType().Name);
+            activity?.SetStatus(ActivityStatusCode.Error);
+            throw;
         }
         finally
         {
-            _concurrencyGate.Release();
+            metricsScope.Dispose();
+            activity?.Dispose();
         }
     }
 

@@ -6,6 +6,7 @@
 // -----------------------------------------------------------------------
 
 using StackExchange.Redis;
+using Mud.Wechat.Work.Abstractions.Metrics;
 
 namespace Mud.Wechat.Redis.Services;
 
@@ -58,14 +59,21 @@ public class RedisWechatTokenStore : IWechatTokenStoreBatchRemove
     public async Task<string?> GetAccessTokenAsync(string tokenType, CancellationToken cancellationToken = default)
     {
         var key = WechatRedisKeyBuilder.TokenKey(_prefix, tokenType);
+        var metricsScope = RedisMetricsHelper.BeginOperation(null, WorkMetrics.RedisCommands.TokenGet);
         try
         {
             var value = await _redis.GetDatabase().StringGetAsync(key).ConfigureAwait(false);
+            RedisMetricsHelper.RecordSuccess(null, WorkMetrics.RedisCommands.TokenGet);
             return value.HasValue ? value.ToString() : null;
         }
         catch (Exception ex) when (WechatRedisErrors.ShouldWrap(ex))
         {
+            RedisMetricsHelper.RecordFailure(null, WorkMetrics.RedisCommands.TokenGet, ex);
             throw WechatRedisErrors.Map("读取令牌", key, ex);
+        }
+        finally
+        {
+            metricsScope.Dispose();
         }
     }
 
@@ -73,6 +81,7 @@ public class RedisWechatTokenStore : IWechatTokenStoreBatchRemove
     public async Task SetAccessTokenAsync(string tokenType, string accessToken, long expiresInSeconds, CancellationToken cancellationToken = default)
     {
         var key = WechatRedisKeyBuilder.TokenKey(_prefix, tokenType);
+        var metricsScope = RedisMetricsHelper.BeginOperation(null, WorkMetrics.RedisCommands.TokenSet);
         try
         {
             var database = _redis.GetDatabase();
@@ -80,16 +89,23 @@ public class RedisWechatTokenStore : IWechatTokenStoreBatchRemove
             {
                 // RD10：<=0 视为「立即过期」，执行删键而非写 TTL=0（SE.Redis 的 TimeSpan.Zero = 永不过期，方向相反）。
                 await database.KeyDeleteAsync(key).ConfigureAwait(false);
+                RedisMetricsHelper.RecordSuccess(null, WorkMetrics.RedisCommands.TokenSet);
                 return;
             }
 
             await database
                 .StringSetAsync(key, accessToken ?? string.Empty, TimeSpan.FromSeconds(expiresInSeconds), keepTtl: false)
                 .ConfigureAwait(false);
+            RedisMetricsHelper.RecordSuccess(null, WorkMetrics.RedisCommands.TokenSet);
         }
         catch (Exception ex) when (WechatRedisErrors.ShouldWrap(ex))
         {
+            RedisMetricsHelper.RecordFailure(null, WorkMetrics.RedisCommands.TokenSet, ex);
             throw WechatRedisErrors.Map("写入令牌", key, ex);
+        }
+        finally
+        {
+            metricsScope.Dispose();
         }
     }
 
@@ -107,13 +123,20 @@ public class RedisWechatTokenStore : IWechatTokenStoreBatchRemove
     public async Task RemoveAsync(string tokenType, CancellationToken cancellationToken = default)
     {
         var key = WechatRedisKeyBuilder.TokenKey(_prefix, tokenType);
+        var metricsScope = RedisMetricsHelper.BeginOperation(null, WorkMetrics.RedisCommands.TokenRemove);
         try
         {
             await _redis.GetDatabase().KeyDeleteAsync(key).ConfigureAwait(false);
+            RedisMetricsHelper.RecordSuccess(null, WorkMetrics.RedisCommands.TokenRemove);
         }
         catch (Exception ex) when (WechatRedisErrors.ShouldWrap(ex))
         {
+            RedisMetricsHelper.RecordFailure(null, WorkMetrics.RedisCommands.TokenRemove, ex);
             throw WechatRedisErrors.Map("删除令牌", key, ex);
+        }
+        finally
+        {
+            metricsScope.Dispose();
         }
     }
 

@@ -16,6 +16,13 @@ namespace Mud.Wechat.Pay.DataModels.Callback;
 /// （交易成功 <c>TRANSACTION.SUCCESS</c>、退款结果 <c>REFUND.SUCCESS</c> 等）。
 /// </para>
 /// <para>
+/// <b>⚠️ <c>event_type</c> 不足以唯一确定载荷</b>：官方把<b>分账动态通知</b>（分账 / 分账回退）
+/// <b>也</b>标为 <c>TRANSACTION.SUCCESS</c>，与支付成功通知<b>同值</b>。可靠区分须结合
+/// <c>resource.original_type</c>（分账为 <c>profitsharing</c>）—— 见
+/// <see cref="WechatPayNotificationResource.OriginalType"/> 与
+/// <see cref="WechatPayNotificationOriginalTypes"/>。
+/// </para>
+/// <para>
 /// <b>字段名照官方原文</b>（<c>create_time</c> / <c>event_type</c> / <c>resource_type</c>）。
 /// </para>
 /// <para>
@@ -40,9 +47,12 @@ public class WechatPayNotification
     public string? ResourceType { get; set; }
 
     /// <summary>
-    /// 通知事件类型（<c>event_type</c>，string(32)），如 <c>TRANSACTION.SUCCESS</c> /
-    /// <c>REFUND.SUCCESS</c> / <c>REFUND.ABNORMAL</c> / <c>REFUND.CLOSED</c>。
+    /// 通知事件类型（<c>event_type</c>，string(32)），取值见 <see cref="WechatPayNotificationEventTypes"/>。
     /// </summary>
+    /// <remarks>
+    /// <b>不得单独用它选载荷</b>：<c>TRANSACTION.SUCCESS</c> 同时用于「支付成功」与「分账动态通知」，
+    /// 须结合 <see cref="WechatPayNotificationResource.OriginalType"/> 判定。
+    /// </remarks>
     [JsonPropertyName("event_type")]
     public string? EventType { get; set; }
 
@@ -78,4 +88,49 @@ public class WechatPayNotificationResource
     /// <summary>随机串（<c>nonce</c>，string(12)），即 GCM 的 12 字节 IV 的字符串表达。</summary>
     [JsonPropertyName("nonce")]
     public string? Nonce { get; set; }
+}
+
+/// <summary>
+/// 通知事件类型（官方 <c>event_type</c> 取值）。
+/// </summary>
+/// <remarks>
+/// <para>
+/// <b>⚠️ 同名复用</b>：<see cref="TransactionSuccess"/> 同时是「支付成功」与「分账动态通知」
+/// （分账 / 分账回退）的 <c>event_type</c> —— 官方原文如此。区分载荷必须再看
+/// <see cref="WechatPayNotificationOriginalTypes"/>。
+/// </para>
+/// <para>取值来源：交易/退款通知页与本仓已核验的各回调页（2026-10-09）。</para>
+/// </remarks>
+public static class WechatPayNotificationEventTypes
+{
+    /// <summary>交易成功（官方 <c>TRANSACTION.SUCCESS</c>）；<b>分账动态通知也取此值</b>。</summary>
+    public const string TransactionSuccess = "TRANSACTION.SUCCESS";
+
+    /// <summary>退款成功（官方 <c>REFUND.SUCCESS</c>）。</summary>
+    public const string RefundSuccess = "REFUND.SUCCESS";
+
+    /// <summary>退款异常（官方 <c>REFUND.ABNORMAL</c>）。</summary>
+    public const string RefundAbnormal = "REFUND.ABNORMAL";
+
+    /// <summary>退款关闭（官方 <c>REFUND.CLOSED</c>）。</summary>
+    public const string RefundClosed = "REFUND.CLOSED";
+}
+
+/// <summary>
+/// 原始回调类型（官方 <c>resource.original_type</c> 取值）—— <b>载荷形态的真正判别式</b>。
+/// </summary>
+/// <remarks>
+/// 官方原文：「加密前的对象类型」；分账动账通知的类型为 <c>profitsharing</c>。
+/// 当 <c>event_type</c> 出现同名复用时（如 <c>TRANSACTION.SUCCESS</c>），本字段是<b>唯一可靠</b>的区分依据。
+/// </remarks>
+public static class WechatPayNotificationOriginalTypes
+{
+    /// <summary>交易（官方 <c>transaction</c>）。</summary>
+    public const string Transaction = "transaction";
+
+    /// <summary>退款（官方 <c>refund</c>）。</summary>
+    public const string Refund = "refund";
+
+    /// <summary>分账动账（官方 <c>profitsharing</c>）。</summary>
+    public const string ProfitSharing = "profitsharing";
 }

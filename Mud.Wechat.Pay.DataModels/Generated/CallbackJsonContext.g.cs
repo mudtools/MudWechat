@@ -18,6 +18,8 @@ namespace Mud.Wechat.Pay.DataModels.Callback;
 [JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.Callback.WechatPayTransactionAmount))]
 [JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.Callback.WechatPayRefundResource))]
 [JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.Callback.WechatPayRefundAmount))]
+[JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.Callback.WechatPayProfitSharingResource))]
+[JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.Callback.WechatPayProfitSharingReceiver))]
 internal partial class CallbackJsonContext : JsonSerializerContext
 {
 }

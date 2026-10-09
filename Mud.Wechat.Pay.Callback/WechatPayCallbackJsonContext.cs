@@ -46,6 +46,8 @@ namespace Mud.Wechat.Pay.Callback;
 [JsonSerializable(typeof(WechatPayTransactionAmount))]
 [JsonSerializable(typeof(WechatPayRefundResource))]
 [JsonSerializable(typeof(WechatPayRefundAmount))]
+[JsonSerializable(typeof(WechatPayProfitSharingResource))]
+[JsonSerializable(typeof(WechatPayProfitSharingReceiver))]
 internal partial class WechatPayCallbackJsonContext : JsonSerializerContext
 {
 }

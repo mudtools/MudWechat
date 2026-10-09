@@ -78,6 +78,25 @@ public sealed class WechatPayCallbackContext
     public WechatPayRefundResource? GetRefund()
         => TryDeserialize(WechatPayCallbackJsonContext.Default.WechatPayRefundResource);
 
+    /// <summary>
+    /// 把解密后的载荷按<b>分账</b>（<c>original_type = profitsharing</c>）类型化解析。
+    /// </summary>
+    /// <returns>解析失败或载荷非分账形态时返回 <c>null</c>。</returns>
+    /// <remarks>
+    /// <para>
+    /// <b>⚠️ 调用前必须自行判 <c>resource.original_type</c></b>：分账动态通知的 <c>event_type</c> 与
+    /// 支付成功通知<b>同为</b> <c>TRANSACTION.SUCCESS</c>（官方原文），只看 <c>event_type</c> 会把交易载荷
+    /// 按分账解析 —— 字段大面积为空但<b>不报错</b>，是最危险的静默错位。判别式见
+    /// <see cref="WechatPayNotificationOriginalTypes.ProfitSharing"/>。
+    /// </para>
+    /// <para>
+    /// 本上下文<b>刻意不做</b>「按 <c>event_type</c> 自动选载荷」的便利方法：官方事件类型存在同名复用，
+    /// 任何自动选择都会在复用场景下静默选错；把判别显式留给调用方是唯一诚实的形态。
+    /// </para>
+    /// </remarks>
+    public WechatPayProfitSharingResource? GetProfitSharing()
+        => TryDeserialize(WechatPayCallbackJsonContext.Default.WechatPayProfitSharingResource);
+
     private T? TryDeserialize<T>(System.Text.Json.Serialization.Metadata.JsonTypeInfo<T> typeInfo)
         where T : class
     {

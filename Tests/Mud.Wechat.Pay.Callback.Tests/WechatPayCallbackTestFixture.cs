@@ -137,6 +137,10 @@ internal sealed class WechatPayCallbackTestFixture : IDisposable
     /// <param name="associatedData">AAD（默认 <c>transaction</c>）。</param>
     /// <param name="algorithm">算法标识（默认合法值）。</param>
     /// <param name="cipherTextOverride">直接指定 ciphertext（用于形状/篡改用例）。</param>
+    /// <param name="originalType">
+    /// <c>resource.original_type</c>（默认 <c>transaction</c>）—— <b>载荷形态的真正判别式</b>：
+    /// 官方把分账动态通知的 <c>event_type</c> 也定为 <c>TRANSACTION.SUCCESS</c>，与支付成功同值。
+    /// </param>
     /// <returns>请求头与报文体。</returns>
     public (WechatPayCallbackHeaders Headers, string Body) CreateNotification(
         string resourceJson,
@@ -146,10 +150,11 @@ internal sealed class WechatPayCallbackTestFixture : IDisposable
         string? serial = null,
         string associatedData = "transaction",
         string algorithm = WechatPayAesGcmCodec.Algorithm,
-        string? cipherTextOverride = null)
+        string? cipherTextOverride = null,
+        string originalType = "transaction")
     {
         var cipherText = cipherTextOverride ?? EncryptResource(resourceJson, associatedData);
-        var body = BuildBody(eventType, algorithm, cipherText, associatedData);
+        var body = BuildBody(eventType, algorithm, cipherText, associatedData, originalType);
 
         return WithSignedBody(body, timestamp, nonce, serial ?? PlatformSerial);
     }
@@ -215,14 +220,18 @@ internal sealed class WechatPayCallbackTestFixture : IDisposable
 
     /// <summary>构造通知报文体（显式拼串：同时锁定官方字段名）。</summary>
     public static string BuildBody(
-        string eventType, string algorithm, string cipherText, string associatedData)
+        string eventType,
+        string algorithm,
+        string cipherText,
+        string associatedData,
+        string originalType = "transaction")
         => "{\"id\":\"EV-TEST-1\"," +
            "\"create_time\":\"2026-10-09T12:00:00+08:00\"," +
            "\"resource_type\":\"encrypt-resource\"," +
            "\"event_type\":\"" + eventType + "\"," +
            "\"summary\":\"支付成功\"," +
            "\"resource\":{" +
-           "\"original_type\":\"transaction\"," +
+           "\"original_type\":\"" + originalType + "\"," +
            "\"algorithm\":\"" + algorithm + "\"," +
            "\"ciphertext\":\"" + cipherText + "\"," +
            "\"associated_data\":\"" + associatedData + "\"," +

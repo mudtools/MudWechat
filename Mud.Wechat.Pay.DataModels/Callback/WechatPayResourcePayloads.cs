@@ -164,3 +164,77 @@ public class WechatPayRefundAmount
     [JsonPropertyName("payer_refund")]
     public long? PayerRefund { get; set; }
 }
+
+/// <summary>
+/// 解密后的<b>分账</b>资源载荷（分账动态通知；<c>resource.ciphertext</c> 解密所得的 JSON 明文）。
+/// </summary>
+/// <remarks>
+/// <para>
+/// <b>官方文档</b>：<see href="https://pay.weixin.qq.com/wiki/doc/apiv3/apis/chapter8_1_10.shtml"/>
+/// （分账动态通知，2026-10-09 逐字段核验；更新时间 2025.02.19）。
+/// </para>
+/// <para>
+/// <b>⚠️ 本通知不能靠 <c>event_type</c> 区分</b>：官方本页把「分账」与「分账回退」两种通知
+/// <b>都</b>标为 <c>event_type = TRANSACTION.SUCCESS</c> —— 与<b>支付成功通知同值</b>。
+/// 唯一可靠的区分字段是 <c>resource.original_type = profitsharing</c>
+/// （官方原文：「加密前的对象类型，分账动账通知的类型为 profitsharing」）。
+/// 因此消费侧<b>必须</b>先看 <c>OriginalType</c>，再决定按本类型还是按
+/// <see cref="WechatPayTransactionResource"/> 解析 —— 只看 <c>event_type</c> 会把分账通知错解析成交易载荷
+/// （字段大面积为空但<b>不报错</b>，最危险的静默形态）。
+/// </para>
+/// <para>
+/// <b>⚠️ 官方文档缺口（照录 + 显式标注）</b>：本页同时列出「分账」与「分账回退」两种通知，
+/// 但<b>只给出一张</b>解密字段表（即下表）。回退通知是否另带 <c>out_return_no</c> / <c>return_mchid</c> 等字段
+/// 官方未列 ⇒ 本模型照录已列字段，<b>不臆造</b>；若收到回退通知，可用
+/// <c>WechatPayCallbackContext.ResourceJson</c> 取明文兜底。
+/// </para>
+/// </remarks>
+[HttpJsonSerializable(SerializerClassName = "Callback")]
+public class WechatPayProfitSharingResource
+{
+    /// <summary>商户号（<c>mchid</c>，string(32)）。</summary>
+    [JsonPropertyName("mchid")]
+    public string? MchId { get; set; }
+
+    /// <summary>微信支付订单号（<c>transaction_id</c>，string(32)）。</summary>
+    [JsonPropertyName("transaction_id")]
+    public string? TransactionId { get; set; }
+
+    /// <summary>微信分账单号（<c>order_id</c>，string(64)）：微信系统返回的唯一标识。</summary>
+    [JsonPropertyName("order_id")]
+    public string? OrderId { get; set; }
+
+    /// <summary>商户分账单号（<c>out_order_no</c>，string(64)）；<b>业务幂等键</b>（与请求分账同一单号）。</summary>
+    [JsonPropertyName("out_order_no")]
+    public string? OutOrderNo { get; set; }
+
+    /// <summary>本次成功分账的接收方（<c>receiver</c>，对象），见 <see cref="WechatPayProfitSharingReceiver"/>。</summary>
+    [JsonPropertyName("receiver")]
+    public WechatPayProfitSharingReceiver? Receiver { get; set; }
+
+    /// <summary>分账成功时间（<c>success_time</c>，string(64)，rfc3339）。</summary>
+    [JsonPropertyName("success_time")]
+    public string? SuccessTime { get; set; }
+}
+
+/// <summary>分账载荷的接收方（<c>receiver</c>）。</summary>
+/// <remarks>官方按<b>单数对象</b>给出（每个接收方一条通知），<b>不是</b> <c>receivers[]</c> 数组 —— 勿按下单侧形态套用。</remarks>
+[HttpJsonSerializable(SerializerClassName = "Callback")]
+public class WechatPayProfitSharingReceiver
+{
+    /// <summary>接收方类型（<c>type</c>，string）：<c>MERCHANT_ID</c> / <c>PERSONAL_OPENID</c>。</summary>
+    [JsonPropertyName("type")]
+    public string? Type { get; set; }
+
+    /// <summary>接收方账号（<c>account</c>，string(64)）。</summary>
+    [JsonPropertyName("account")]
+    public string? Account { get; set; }
+
+    /// <summary>分账金额（<c>amount</c>，整型，单位为分）。</summary>
+    [JsonPropertyName("amount")]
+    public long? Amount { get; set; }
+
+    /// <summary>分账描述（<c>description</c>，string(80)）。</summary>
+    [JsonPropertyName("description")]
+    public string? Description { get; set; }
+}

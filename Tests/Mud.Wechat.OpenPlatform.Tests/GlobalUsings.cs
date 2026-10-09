@@ -1,4 +1,15 @@
 global using System;
+global using System.Net;
+global using System.Net.Http;
+global using System.Text;
+global using System.Threading;
+global using System.Threading.Tasks;
 global using FluentAssertions;
+global using Microsoft.Extensions.DependencyInjection;
+global using Microsoft.Extensions.Logging.Abstractions;
+global using Moq;
+global using Mud.Wechat.OpenPlatform;
 global using Mud.Wechat.OpenPlatform.Abstractions;
+global using Mud.Wechat.OpenPlatform.Abstractions.Transport;
+global using Mud.Wechat.OpenPlatform.Extensions;
 global using Xunit;

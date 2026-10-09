@@ -51,6 +51,8 @@
 /Mud.Wechat.OpenTelemetry/obj
 /Mud.Wechat.OpenPlatform.Abstractions/bin
 /Mud.Wechat.OpenPlatform.Abstractions/obj
+/Mud.Wechat.OpenPlatform/bin
+/Mud.Wechat.OpenPlatform/obj
 /Tests/Mud.Wechat.Work.Tests/bin
 /Tests/Mud.Wechat.Work.Tests/obj
 /Tests/Mud.Wechat.Work.Abstractions.Tests/bin

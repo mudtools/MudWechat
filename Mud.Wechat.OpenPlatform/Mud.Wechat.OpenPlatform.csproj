@@ -1,11 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<!-- 开放平台线的 Abstractions 层与支付线同款：窄化到 net6.0+（组件 AddMudHttpClient / HttpClientFactoryEnhancedClient 的最小面），
-		     不带 netstandard2.0（开放平台凭证链是本仓最新的一层，没有历史兼容包袱）。 -->
 		<TargetFrameworks>net6.0;net8.0;net10.0</TargetFrameworks>
-		<Description>微信开放平台「第三方平台」（component）SDK 基座包：component_verify_ticket 存储端口、component_access_token 刷新策略、命名 HttpClient 契约与官方契约常量。**独立产品线**：与自建形态的公众号/小程序线令牌域严格分离（避免令牌串号）。</Description>
-		<PackageTags>Wechat;OpenPlatform;开放平台;第三方平台;component;TokenManager;MudWechat</PackageTags>
+		<Description>微信开放平台「第三方平台」（component）SDK 主包：component_access_token 的按需刷新、缓存与并发单飞，以及组件化装配（AddOpenPlatform）。**独立产品线**：不引用公众号/小程序线，令牌域严格分离。</Description>
+		<PackageTags>Wechat;OpenPlatform;开放平台;第三方平台;component;MudWechat</PackageTags>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -25,12 +23,11 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\Mud.Wechat.Abstractions\Mud.Wechat.Abstractions.csproj" />
+		<ProjectReference Include="..\Mud.Wechat.OpenPlatform.Abstractions\Mud.Wechat.OpenPlatform.Abstractions.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>
-		<InternalsVisibleTo Include="Mud.Wechat.OpenPlatform" />
 		<InternalsVisibleTo Include="Mud.Wechat.OpenPlatform.Tests" />
-		<InternalsVisibleTo Include="DynamicProxyGenAssembly2" />
 	</ItemGroup>
 
 </Project>

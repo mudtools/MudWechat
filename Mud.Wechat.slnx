@@ -25,6 +25,7 @@
     <Project Path="Mud.Wechat.Pay.Callback/Mud.Wechat.Pay.Callback.csproj" />
     <Project Path="Mud.Wechat.OpenTelemetry/Mud.Wechat.OpenTelemetry.csproj" />
     <Project Path="Mud.Wechat.OpenPlatform.Abstractions/Mud.Wechat.OpenPlatform.Abstractions.csproj" />
+    <Project Path="Mud.Wechat.OpenPlatform/Mud.Wechat.OpenPlatform.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="Tests/Mud.Wechat.Abstractions.Tests/Mud.Wechat.Abstractions.Tests.csproj" />

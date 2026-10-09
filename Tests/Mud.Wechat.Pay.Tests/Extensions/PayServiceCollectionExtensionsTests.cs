@@ -175,6 +175,7 @@ public class PayServiceCollectionExtensionsTests
                      typeof(ProfitSharingDeleteReceiverResponse),
                      typeof(PayScoreServiceOrderResponse),
                      typeof(PayScoreServiceOrderRequest),
+                     typeof(PayScoreCompleteOrderResponse),
                  })
         {
             resolver!.GetTypeInfo(dto, options).Should().NotBeNull(

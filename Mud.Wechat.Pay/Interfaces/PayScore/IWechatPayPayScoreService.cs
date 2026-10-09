@@ -97,4 +97,34 @@ public interface IWechatPayPayScoreService
         [Path] string outOrderNo,
         [Body] PayScoreCancelOrderRequest request,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 完结支付分订单。官方文档：<see href="https://pay.weixin.qq.com/doc/v3/merchant/4012587955"/>。
+    /// </summary>
+    /// <param name="outOrderNo">商户服务订单号（官方 path <c>out_order_no</c>，必填 string(64)）。</param>
+    /// <param name="request">完结请求体，见 <see cref="PayScoreCompleteOrderRequest"/>。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/> 取消操作令牌对象。</param>
+    /// <returns>完结后的订单（<c>need_collection</c> 固定为 <c>true</c>），见 <see cref="PayScoreCompleteOrderResponse"/>。</returns>
+    /// <remarks>
+    /// <para><b>官方契约</b>：<b>POST</b> <c>/v3/payscore/serviceorder/{out_order_no}/complete</c>；
+    /// path 必带 <c>out_order_no</c>；body 的 <c>post_payments</c> 与 <c>total_amount</c> 均为<b>必填</b>。</para>
+    /// <para>
+    /// <b>与创单的必填性差异（官方原样）</b>：<c>post_payments</c> 在创单里是<b>选填</b>、在完结里是<b>必填</b>；
+    /// <c>total_amount</c> 只在本接口出现（创单不含最终金额）。
+    /// </para>
+    /// <para>
+    /// <b>金额上限</b>：官方注明 <c>total_amount</c> <b>受服务 ID 风险金额上限影响</b> ——
+    /// 超限会被风控拒绝，不是本地校验能替的。
+    /// </para>
+    /// <para>
+    /// <b>后续动作</b>：完结只代表金额已确认并进入待收款（<c>need_collection = true</c>），
+    /// <b>不等于</b>已收到款；收款侧须另用「发起催收扣款」（<c>POST /v3/payscore/serviceorder/{out_order_no}/pay</c>）
+    /// 或等用户自动扣款，并以查询接口/回调确认终态。
+    /// </para>
+    /// </remarks>
+    [Post("/v3/payscore/serviceorder/{outOrderNo}/complete")]
+    Task<PayScoreCompleteOrderResponse> CompleteServiceOrderAsync(
+        [Path] string outOrderNo,
+        [Body] PayScoreCompleteOrderRequest request,
+        CancellationToken cancellationToken = default);
 }

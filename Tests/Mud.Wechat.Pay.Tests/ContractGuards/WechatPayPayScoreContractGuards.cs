@@ -46,6 +46,7 @@ public class WechatPayPayScoreContractGuards
         AssertRoute<PostAttribute>(nameof(IWechatPayPayScoreService.CreateServiceOrderAsync), "/v3/payscore/serviceorder");
         AssertRoute<GetAttribute>(nameof(IWechatPayPayScoreService.QueryServiceOrderAsync), "/v3/payscore/serviceorder");
         AssertRoute<PostAttribute>(nameof(IWechatPayPayScoreService.CancelServiceOrderAsync), "/v3/payscore/serviceorder/{outOrderNo}/cancel");
+        AssertRoute<PostAttribute>(nameof(IWechatPayPayScoreService.CompleteServiceOrderAsync), "/v3/payscore/serviceorder/{outOrderNo}/complete");
 
         // 查询：必填 service_id + appid；out_order_no 与 query_id 为「二选一」的可选参数。
         var query = FindMethod(nameof(IWechatPayPayScoreService.QueryServiceOrderAsync));
@@ -96,6 +97,30 @@ public class WechatPayPayScoreContractGuards
 
         JsonNameShouldBe<PayScoreCancelOrderRequest>(nameof(PayScoreCancelOrderRequest.Reason), "reason");
         JsonNameShouldBe<PayScoreCancelOrderResponse>(nameof(PayScoreCancelOrderResponse.OrderId), "order_id");
+
+        JsonNameShouldBe<PayScoreCompleteOrderRequest>(nameof(PayScoreCompleteOrderRequest.TotalAmount), "total_amount");
+        JsonNameShouldBe<PayScoreCompleteOrderRequest>(nameof(PayScoreCompleteOrderRequest.ProfitSharing), "profit_sharing");
+        JsonNameShouldBe<PayScoreCompleteOrderRequest>(nameof(PayScoreCompleteOrderRequest.GoodsTag), "goods_tag");
+        JsonNameShouldBe<PayScoreCompleteOrderResponse>(nameof(PayScoreCompleteOrderResponse.NeedCollection), "need_collection");
+    }
+
+    /// <summary>
+    /// PY-B6：<b>完结应答与查询应答不得合并</b>（完结应答是查询应答的真子集，但官方两页字段表不同）。
+    /// </summary>
+    /// <remarks>
+    /// 合并会给出「本接口永不返回的字段」（<c>collection</c> / <c>promotion_detail</c> / <c>attach</c> /
+    /// <c>notify_url</c> / <c>openid</c>）——永不返回的字段是静默误导，调用方会据此写出永不命中的分支。
+    /// </remarks>
+    [Fact]
+    public void CompleteOrderResponse_ShouldNotBeMergedWithQueryResponse()
+    {
+        typeof(PayScoreCompleteOrderResponse).GetProperty("Collection").Should().BeNull(
+            "官方完结应答字段表没有 collection");
+        typeof(PayScoreCompleteOrderResponse).GetProperty("NotifyUrl").Should().BeNull(
+            "官方完结应答字段表没有 notify_url");
+        typeof(PayScoreCompleteOrderResponse).GetProperty("TotalAmount").Should().NotBeNull();
+
+        typeof(PayScoreServiceOrderQueryResponse).GetProperty("Collection").Should().NotBeNull();
     }
 
     /// <summary>
@@ -163,10 +188,10 @@ public class WechatPayPayScoreContractGuards
             .Where(static t => !typeof(JsonSerializerContext).IsAssignableFrom(t))
             .ToList();
 
-        domainTypes.Should().HaveCount(15,
+        domainTypes.Should().HaveCount(17,
             "支付分域 DTO：创单族 7（请求/后付费/优惠/时间段/位置/风险金/设备）" +
             " + 创建应答 1 + 查询应答 1 + 查询嵌套 4（收款/收款明细/优惠/优惠单品）" +
-            " + 取消族 2（请求/应答）");
+            " + 取消族 2（请求/应答） + 完结族 2（请求/应答）");
 
         foreach (var type in domainTypes)
         {

@@ -25,6 +25,8 @@ namespace Mud.Wechat.Pay.DataModels.Combine;
 [JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.Combine.CombineQuerySceneInfo))]
 [JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.Combine.CombineQuerySubOrder))]
 [JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.Combine.CombineQuerySubOrderAmount))]
+[JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.Combine.CombineNativePrepayRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.Combine.CombineNativePrepayResponse))]
 internal partial class CombineTransactionsJsonContext : JsonSerializerContext
 {
 }

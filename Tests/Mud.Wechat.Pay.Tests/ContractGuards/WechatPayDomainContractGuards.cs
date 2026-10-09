@@ -73,7 +73,7 @@ public class WechatPayDomainContractGuards
     }
 
     /// <summary>
-    /// PAY-B5：端点计数（<b>43</b>）+ 官方路由表逐条比对（照官方原文，<b>不得「纠正」</b>）。
+    /// PAY-B5：端点计数（<b>44</b>）+ 官方路由表逐条比对（照官方原文，<b>不得「纠正」</b>）。
     /// </summary>
     /// <remarks>
     /// <para>
@@ -150,10 +150,12 @@ public class WechatPayDomainContractGuards
             "/v3/payscore/permissions/openid/{openId}",
         });
 
-        // P2 合单支付 3 端点（**仅服务商**）：JSAPI 合单下单 + 关单 + 查询。
+        // P2 合单支付 4 端点（本域按**服务商面**建模）：JSAPI 下单 + Native 下单 + 关单 + 查询。
+        // ⚠️ 无「合单退款」路由 —— 官方明示合单订单只能按**子单**退款（走退款域），守卫 CB6 固化。
         RoutesOf(asm, "IWechatPayCombineService").Should().BeEquivalentTo(new[]
         {
             "/v3/combine-transactions/jsapi",
+            "/v3/combine-transactions/native",
             "/v3/combine-transactions/out-trade-no/{combineOutTradeNo}/close",
             "/v3/combine-transactions/out-trade-no/{combineOutTradeNo}",
         });
@@ -191,7 +193,7 @@ public class WechatPayDomainContractGuards
             .SelectMany(static m => m.GetCustomAttributes(false))
             .Select(static a => a.GetType().GetProperty("RequestUri")?.GetValue(a) as string)
             .Count(static uri => !string.IsNullOrWhiteSpace(uri))
-            .Should().Be(43, "支付线端点总数为 43（… + 2 电子发票 + 2 代金券 + 2 商家转账）");
+            .Should().Be(44, "支付线端点总数为 44（… + 2 电子发票 + 2 代金券 + 2 商家转账 + 1 合单 Native）");
     }
 
     /// <summary>

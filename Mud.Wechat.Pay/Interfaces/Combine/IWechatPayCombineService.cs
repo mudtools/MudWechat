@@ -10,25 +10,39 @@ using Mud.Wechat.Pay.DataModels.Combine;
 namespace Mud.Wechat.Pay;
 
 /// <summary>
-/// 微信支付「合单支付」域 SDK（APIv3 合单，<b>首批 2 端点</b>：JSAPI/小程序合单下单 + 合单关闭订单）。
+/// 微信支付「合单支付」域 SDK（APIv3 合单，<b>4 端点</b>：JSAPI 合单下单 / Native 合单下单 /
+/// 合单关闭订单 / 合单查询订单）。
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>官方文档</b>（<b>合作伙伴</b>文档中心，2026-10-09 核验）：
+/// <b>官方文档</b>（<b>合作伙伴</b>文档中心，2026-10-09 逐页核验；本域按<b>服务商面</b>建模）：
 /// JSAPI/小程序合单下单 <see href="https://pay.weixin.qq.com/wiki/doc/apiv3_partner/apis/chapter5_1_4.shtml"/>
+/// （更新时间 2025.01.16）、Native 合单下单 <see href="https://pay.weixin.qq.com/doc/v3/partner/4012758240"/>
 /// （更新时间 2025.01.16）、合单关闭订单 <see href="https://pay.weixin.qq.com/doc/v3/partner/4012709095"/>
-/// （更新时间 2024.10.24）。
+/// （更新时间 2024.10.24）、合单查询订单
+/// <see href="https://pay.weixin.qq.com/wiki/doc/apiv3_partner/apis/chapter7_3_11.shtml"/>。
 /// </para>
 /// <para>
-/// <b>⚠️ 本域仅服务商可用</b>：官方两页均标注<b>支持商户：【普通服务商】</b> ——
-/// 合单支付是服务商能力（多商户商品单合并支付，1–50 笔），<b>普通商户不可用</b>。
-/// 本仓商户基座已支持服务商（<c>{sp_mchid}:{sub_mchid}</c> 分槽），故可正常使用。
+/// <b>⚠️ 合单支付在官方文档中同时存在「普通商户」与「普通服务商」两个面</b>，本域按<b>服务商面</b>建模
+/// —— 各页均标注<b>支持商户：【普通服务商】</b>，服务商模式支持 <b>1–50 笔</b>商品单。
+/// 普通商户面亦有对应页（Native 合单下单 <c>…/wiki/doc/apiv3/apis/chapter5_1_5.shtml</c>、
+/// App 合单下单 <c>…/wiki/doc/apiv3/open/pay/chapter2_9_3.shtml</c>，均标注【普通商户】），
+/// 差异是<b>只支持 2–10 笔</b>、且子单字段表<b>无</b> <c>sub_mchid</c> / <c>sub_appid</c>。
+/// <b>路由两面共用</b>，故本域 DTO 以服务商面为准；<b>普通商户接入时勿填 <c>sub_mchid</c> / <c>sub_appid</c></b>。
+/// 本仓商户基座已支持服务商（<c>{sp_mchid}:{sub_mchid}</c> 分槽），故两面均可使用。
 /// </para>
 /// <para>
-/// <b>本域尚未覆盖的端点</b>（官方「合单支付」产品页族中确有，本批未实现）：
-/// 合单查询订单（按商户合单订单号 / 按微信支付订单号）、Native 合单下单
-/// （<c>POST /v3/combine-transactions/native</c>，已核路由）、APP/H5 合单下单、调起支付（客户端 SDK，非 HTTP）、
-/// 合单退款、合单支付/退款通知等。<b>不要凭推断补路由</b>。
+/// <b>本域尚未覆盖的端点</b>：APP / H5 合单下单（官方各有独立页）、调起支付（客户端 SDK，非 HTTP）、
+/// 合单支付 / 退款通知（归回调包）。<b>不要凭推断补路由</b>。
+/// </para>
+/// <para>
+/// <b>⚠️「合单退款」不是一个接口</b>：官方《订单退款》开发指引
+/// （<see href="https://pay.weixin.qq.com/doc/v3/partner/4013080623"/>，更新 2026.06.10）明示
+/// 「对于合单支付的订单，<b>无法通过合单支付总单号 <c>combine_out_trade_no</c> 退款，
+/// 只能根据单个子单进行退款</b>」，且 <c>transaction_id</c> 须填 <c>sub_orders.transaction_id</c>、
+/// <c>out_trade_no</c> 须填 <c>sub_orders.out_trade_no</c> ⇒ 退款<b>逐子单</b>调用退款域的
+/// <see cref="IWechatPayRefundService"/> 即可，本域<b>不</b>另设端点（守卫 CB6 固化该裁决，
+/// 防后来者照第三方博客臆造的 <c>/v3/combine-transactions/refunds</c> 去补一个不存在的路由）。
 /// </para>
 /// <para>
 /// <b>无 <c>[Token]</c>、走商户签名</b>（守卫 PAY-B1）：形态与
@@ -102,5 +116,28 @@ public interface IWechatPayCombineService
     [Get("/v3/combine-transactions/out-trade-no/{combineOutTradeNo}")]
     Task<CombineQueryResponse> QueryOrderAsync(
         [Path] string combineOutTradeNo,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Native 合单下单。官方文档：<see href="https://pay.weixin.qq.com/doc/v3/partner/4012758240"/>。
+    /// </summary>
+    /// <param name="request">Native 合单下单请求体，见 <see cref="CombineNativePrepayRequest"/>。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/> 取消操作令牌对象。</param>
+    /// <returns>支付二维码链接（<c>code_url</c>，<b>有效期 2 小时</b>），见 <see cref="CombineNativePrepayResponse"/>。</returns>
+    /// <remarks>
+    /// <para><b>官方契约</b>：<b>POST</b> <c>/v3/combine-transactions/native</c>；无 path / query 参数。</para>
+    /// <para>
+    /// <b>与 JSAPI 下单的三点差异</b>（勿混用 DTO）：① 请求<b>无支付者信息</b>
+    /// （无 <c>combine_payer_info</c>）；② 应答<b>只有 <c>code_url</c></b>（无 <c>prepay_id</c>）；
+    /// ③ 支付由用户<b>扫码</b>发起，服务端须自行把 <c>code_url</c> 生成二维码展示。
+    /// </para>
+    /// <para>
+    /// <b><c>code_url</c> 有效期 2 小时</b>（官方原文）：失效后须<b>重新调用本接口</b>取新链接，
+    /// 不得对旧链接做拼接或改写。
+    /// </para>
+    /// </remarks>
+    [Post("/v3/combine-transactions/native")]
+    Task<CombineNativePrepayResponse> CreateNativeOrderAsync(
+        [Body] CombineNativePrepayRequest request,
         CancellationToken cancellationToken = default);
 }

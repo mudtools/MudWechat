@@ -379,3 +379,81 @@ public class CombineQuerySubOrderAmount
     [JsonPropertyName("settlement_rate")]
     public long? SettlementRate { get; set; }
 }
+
+/// <summary>
+/// Native 合单下单请求（<c>POST /v3/combine-transactions/native</c>）。
+/// </summary>
+/// <remarks>
+/// <para>
+/// <b>官方文档</b>：<see href="https://pay.weixin.qq.com/doc/v3/partner/4012758240"/>
+/// （服务商面，2026-10-09 逐字段核验；更新时间 2025.01.16）。<b>支持商户：【普通服务商】</b>。
+/// </para>
+/// <para>
+/// <b>为何单独建类型而不复用 <see cref="CombinePrepayRequest"/></b>：两者顶层字段表<b>只差一项</b> ——
+/// Native 页<b>没有</b> <c>combine_payer_info</c>（Native 支付二维码由用户扫码后自行确认，
+/// 下单时<b>不需要</b>支付者标识）。若复用，调用方就能在 Native 请求里塞进官方<b>未定义</b>的
+/// <c>combine_payer_info</c>，而该值对 Native 无意义（要么被忽略、要么被判参数错）。
+/// 这正是本域 CB5 已确立的纪律：<b>表相同则共用，表不同则分建</b>。
+/// </para>
+/// <para>
+/// <b>子单与场景信息则<b>复用</b> JSAPI 的类型</b>：官方两页的
+/// <c>sub_orders[]</c>（含 <c>sub_mchid</c> 必填 / <c>sub_appid</c> 选填）与
+/// <c>scene_info</c>（<c>device_id</c> 选填 / <c>payer_client_ip</c> 必填）字段表<b>逐项一致</b>
+/// ⇒ 共用 <see cref="CombinePrepaySubOrder"/> / <see cref="CombineSceneInfo"/>（守卫 CB5 锁死该复用）。
+/// </para>
+/// <para>
+/// <b>笔数限制</b>：官方原文「服务商模式支持 <b>1–50 笔</b>订单进行合单支付」；
+/// (<b>普通商户</b>面另有对应页且「<b>只支持 2–10 笔</b>」，见 <see cref="WechatPayCombineContractGuards"/> 类注释)。
+/// </para>
+/// </remarks>
+[HttpJsonSerializable(SerializerClassName = "CombineTransactions")]
+public class CombineNativePrepayRequest
+{
+    /// <summary>合单发起方的 AppID（<c>combine_appid</c>，必填 string(32)）：服务商的 AppID。</summary>
+    [JsonPropertyName("combine_appid")]
+    public string? CombineAppId { get; set; }
+
+    /// <summary>合单商户订单号（<c>combine_out_trade_no</c>，必填 string(32)）：商户系统内部唯一，不超过 32 字符。</summary>
+    [JsonPropertyName("combine_out_trade_no")]
+    public string? CombineOutTradeNo { get; set; }
+
+    /// <summary>合单发起方商户号（<c>combine_mchid</c>，必填 string(32)）：服务商的商户号。</summary>
+    [JsonPropertyName("combine_mchid")]
+    public string? CombineMchId { get; set; }
+
+    /// <summary>场景信息（<c>scene_info</c>，选填），见 <see cref="CombineSceneInfo"/>。</summary>
+    [JsonPropertyName("scene_info")]
+    public CombineSceneInfo? SceneInfo { get; set; }
+
+    /// <summary>商品单列表（<c>sub_orders</c>，必填 array，1–50 笔），见 <see cref="CombinePrepaySubOrder"/>。</summary>
+    [JsonPropertyName("sub_orders")]
+    public List<CombinePrepaySubOrder>? SubOrders { get; set; }
+
+    /// <summary>订单失效时间（<c>time_expire</c>，选填，rfc3339）：最短 1 分钟、最长 1 年。</summary>
+    [JsonPropertyName("time_expire")]
+    public string? TimeExpire { get; set; }
+
+    /// <summary>支付结果通知地址（<c>notify_url</c>，必填）：须为<b>可直接访问</b>的 https 地址，不允许携带参数。</summary>
+    [JsonPropertyName("notify_url")]
+    public string? NotifyUrl { get; set; }
+}
+
+/// <summary>
+/// Native 合单下单应答（<b>仅 <c>code_url</c> 一个字段</b>）。
+/// </summary>
+/// <remarks>
+/// <b>为何不复用 <see cref="CombinePrepayResponse"/></b>：JSAPI 应答给的是 <c>prepay_id</c>
+/// （供小程序 <c>wx.requestPayment</c> 调起），Native 给的是 <c>code_url</c>
+/// （供服务端自行生成支付二维码）—— <b>二者不可互换</b>，官方两页应答表各自只有一个字段且字段名不同。
+/// <para>
+/// <b>有效期 2 小时</b>（官方原文）：失效后须<b>重新请求本接口</b>获取新的 <c>code_url</c>，
+/// 不可对旧链接做任何拼接或改写。
+/// </para>
+/// </remarks>
+[HttpJsonSerializable(SerializerClassName = "CombineTransactions")]
+public class CombineNativePrepayResponse : WechatPayResponse
+{
+    /// <summary>二维码链接（<c>code_url</c>，必填 string(512)）：有效期为 2 小时。</summary>
+    [JsonPropertyName("code_url")]
+    public string? CodeUrl { get; set; }
+}

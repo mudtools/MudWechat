@@ -196,6 +196,7 @@ public class PayServiceCollectionExtensionsTests
                      typeof(PayScoreTerminateAuthorizationRequest),
                      typeof(CombinePrepayRequest),
                      typeof(CombinePrepayResponse),
+                     typeof(CombineNativePrepayResponse),
                      typeof(CombineQueryResponse),
                      typeof(TransferBillRequest),
                      typeof(TransferBillResponse),

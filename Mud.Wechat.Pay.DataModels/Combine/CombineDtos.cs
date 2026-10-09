@@ -403,7 +403,8 @@ public class CombineQuerySubOrderAmount
 /// </para>
 /// <para>
 /// <b>笔数限制</b>：官方原文「服务商模式支持 <b>1–50 笔</b>订单进行合单支付」；
-/// (<b>普通商户</b>面另有对应页且「<b>只支持 2–10 笔</b>」，见 <see cref="WechatPayCombineContractGuards"/> 类注释)。
+/// (<b>普通商户</b>面另有对应页且「<b>只支持 2–10 笔</b>」，详见测试工程
+/// <c>WechatPayCombineContractGuards</c> 的类注释 —— 该守卫跨程序集，故此处用 <c>&lt;c&gt;</c> 而非 cref)。
 /// </para>
 /// </remarks>
 [HttpJsonSerializable(SerializerClassName = "CombineTransactions")]

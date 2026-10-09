@@ -42,8 +42,8 @@ public sealed class ComponentAccessTokenState
 /// 每个边界（未取得 / 已过期 / 进入提前窗口 / 窗口外）都能在<b>不触网</b>的前提下逐条锁定。
 /// </para>
 /// <para>
-/// <b>两种判定的分工</b>：<see cref="IsUsable"/> 回答「这把令牌<b>现在</b>还能不能拿去调接口」，
-/// <see cref="ShouldRefresh"/> 回答「是否<b>该去换</b>新的」。两者在提前窗口内<b>同时为真</b>
+/// <b>两种判定的分工</b>：<c>IsUsable</c> 回答「这把令牌<b>现在</b>还能不能拿去调接口」，
+/// <c>ShouldRefresh</c> 回答「是否<b>该去换</b>新的」。两者在提前窗口内<b>同时为真</b>
 /// （旧令牌还能用，但应尽快换）—— 这正是官方建议「1 小时 50 分刷新」的语义。
 /// </para>
 /// </remarks>

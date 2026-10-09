@@ -610,7 +610,7 @@ public class FapiaoInsertCardInformation
 /// </para>
 /// <para>
 /// <b>⚠️ 该 ID <b>三天内有效</b></b>（官方原文）：上传后须<b>尽快</b>调用
-/// <see cref="IWechatPayFapiaoService.InsertFapiaoCardsAsync"/> 执行插卡，
+/// <c>IWechatPayFapiaoService.InsertFapiaoCardsAsync</c> 执行插卡，
 /// 过期后只能重新上传。
 /// </para>
 /// <para>

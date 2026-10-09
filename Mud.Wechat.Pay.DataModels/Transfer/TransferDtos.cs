@@ -25,9 +25,13 @@ namespace Mud.Wechat.Pay.DataModels.Transfer;
 /// —— 即：<b>换 <c>out_bill_no</c> 重试前必须先查清原单状态</b>，这是本域区别于其它域的第一原则。
 /// </para>
 /// <para>
-/// <b>⚠️ 值域未核验（诚实记录）</b>：本轮核验覆盖<b>字段名与必填性</b>，未取得各枚举字段的<b>取值表</b>
-/// —— <c>state</c>、<c>transfer_scene_id</c>、<c>user_recv_perception</c>、<c>user_recv_style.type</c>
-/// 的值域均<b>未</b>核实 ⇒ SDK <b>不臆造</b>常量，一律保持字符串，留待后续增量补值表与守卫。
+/// <b>✅ 值表已补齐（原「值域未核验」留档已关闭）</b>：四个字段的取值现均来自官方页面 ——
+/// <c>state</c> → <see cref="TransferBillStates"/>（8 值，含终态语义）、
+/// <c>user_recv_style.type</c> → <see cref="TransferRecvStyleTypes"/>（2 值）、
+/// <c>user_recv_perception</c> → <see cref="TransferUserRecvPerceptions"/>（14 个<b>中文</b>取值）、
+/// <c>transfer_scene_report_infos[].info_type</c> → <see cref="TransferSceneReportInfoTypes"/>（13 个中文取值）。
+/// <b>⚠️ <c>transfer_scene_id</c> 是唯一的例外</b>：官方<b>没有</b>集中值表（只指到商户平台查看），
+/// 故 <see cref="TransferSceneIds"/> 只收录已由场景页逐字确证的 <c>1000</c>，其余值<b>不臆造</b>。
 /// </para>
 /// </remarks>
 [HttpJsonSerializable(SerializerClassName = "Transfer")]
@@ -41,7 +45,13 @@ public class TransferBillRequest
     [JsonPropertyName("out_bill_no")]
     public string? OutBillNo { get; set; }
 
-    /// <summary>转账场景 ID（<c>transfer_scene_id</c>，必填 string(36)）：值域未核验（见类型 remarks）。</summary>
+    /// <summary>
+    /// 转账场景 ID（<c>transfer_scene_id</c>，必填 string(36)）。
+    /// </summary>
+    /// <remarks>
+    /// <b>⚠️ 官方<b>无</b>集中值表</b>：以商户平台「产品中心 - 商家转账 - 产品设置」中的实际场景 ID 为准；
+    /// 已由官方场景页确证的取值见 <see cref="TransferSceneIds"/>（<b>不臆造</b>其余场景值）。
+    /// </remarks>
     [JsonPropertyName("transfer_scene_id")]
     public string? TransferSceneId { get; set; }
 
@@ -65,7 +75,14 @@ public class TransferBillRequest
     [JsonPropertyName("notify_url")]
     public string? NotifyUrl { get; set; }
 
-    /// <summary>用户收款感知（<c>user_recv_perception</c>，选填）：值域未核验（见类型 remarks）。</summary>
+    /// <summary>
+    /// 用户收款感知（<c>user_recv_perception</c>，选填）：<b>中文</b>取值，见
+    /// <see cref="TransferUserRecvPerceptions"/>。
+    /// </summary>
+    /// <remarks>
+    /// <b>不传即按转账场景展示默认内容</b>（官方原文）⇒ 只在需要「非默认感知」时才传；
+    /// 取值与场景强相关，跨场景乱传会被判参数错（见常量类 remarks 的场景对照）。
+    /// </remarks>
     [JsonPropertyName("user_recv_perception")]
     public string? UserRecvPerception { get; set; }
 
@@ -82,7 +99,14 @@ public class TransferBillRequest
 [HttpJsonSerializable(SerializerClassName = "Transfer")]
 public class TransferSceneReportInfo
 {
-    /// <summary>报备信息类型（<c>info_type</c>，必填 string(15)）：值域未核验。</summary>
+    /// <summary>
+    /// 报备信息类型（<c>info_type</c>，必填 string(15)）：<b>中文</b>取值，见
+    /// <see cref="TransferSceneReportInfoTypes"/>。
+    /// </summary>
+    /// <remarks>
+    /// <b>取值随转账场景而定，且「有多个字段时需填写完整」</b>（官方原文）⇒
+    /// 少传报备项会被判参数错；具体该传哪几项须按官方场景页逐场景核对。
+    /// </remarks>
     [JsonPropertyName("info_type")]
     public string? InfoType { get; set; }
 
@@ -95,7 +119,14 @@ public class TransferSceneReportInfo
 [HttpJsonSerializable(SerializerClassName = "Transfer")]
 public class TransferUserRecvStyle
 {
-    /// <summary>样式类型（<c>type</c>，必填 string）：值域未核验（见 <see cref="TransferBillRequest"/> 的 remarks）。</summary>
+    /// <summary>
+    /// 样式类型（<c>type</c>，必填 string）：取值见 <see cref="TransferRecvStyleTypes"/>
+    /// （<c>CONFIRM_PAGE</c> / <c>RED_PACKET</c>）。
+    /// </summary>
+    /// <remarks>
+    /// <b>⚠️ 红包样式有硬约束</b>：单笔金额 ≤ 200 元且<b>仅部分场景支持</b>（官方原文）
+    /// —— 传 <c>RED_PACKET</c> 前须先确认该场景是否支持红包样式。
+    /// </remarks>
     [JsonPropertyName("type")]
     public string? Type { get; set; }
 }
@@ -106,7 +137,7 @@ public class TransferUserRecvStyle
 /// <remarks>
 /// <b>注意</b>：<c>package_info</c> 是<b>调起用户确认收款</b>所需的凭据（官方另有 APP/JSAPI
 /// 「调起用户确认收款」两份客户端文档）—— 它<b>不</b>代表转账已成功，<c>state</c> 才是状态位
-/// （其值域本轮未核验）。
+/// （取值见 <see cref="TransferBillStates"/>，注意其中只有 3 个是<b>终态</b>）。
 /// </remarks>
 [HttpJsonSerializable(SerializerClassName = "Transfer")]
 public class TransferBillResponse : WechatPayResponse
@@ -123,7 +154,13 @@ public class TransferBillResponse : WechatPayResponse
     [JsonPropertyName("create_time")]
     public string? CreateTime { get; set; }
 
-    /// <summary>转账单状态（<c>state</c>，必填 string）：<b>值域未核验</b>，勿臆造取值判定。</summary>
+    /// <summary>
+    /// 转账单状态（<c>state</c>，必填 string）：取值见 <see cref="TransferBillStates"/>（官方 8 值）。
+    /// </summary>
+    /// <remarks>
+    /// <b>⚠️ 只有 <c>SUCCESS</c> / <c>FAIL</c> / <c>CANCELLED</c> 是终态</b>：
+    /// 拿非终态做业务判定会得出错误结论，须继续轮询到终态。
+    /// </remarks>
     [JsonPropertyName("state")]
     public string? State { get; set; }
 

@@ -21,12 +21,24 @@ namespace Mud.Wechat.Pay;
 /// 三页均标注支持商户：<b>普通商户</b>。
 /// </para>
 /// <para>
-/// <b>本域尚未覆盖的端点</b>（官方「支付分 → API 列表」中确有此页，本批未实现）：
-/// 商户预授权（<c>POST /v3/payscore/permissions</c>）、查询用户授权记录（授权协议号 /
-/// <c>GET /v3/payscore/permissions/authorization-code/{authorization_code}</c>）、
-/// 创单结单合并（<c>POST /v3/payscore/serviceorder/direct-complete</c>）、
-/// 完结服务订单、修改订单金额、订单收款、同步订单、查询用户授权状态、解除授权、
-/// 以及确认订单 / 支付成功 / 授权变更 / 订单状态变更等回调。
+/// <b>✅ 本域现已 11 端点</b>（原「尚未覆盖」清单已随增量关闭）：创建订单 · 查询订单 · 取消订单 ·
+/// <b>完结服务订单</b> · <b>修改订单金额</b> · <b>订单收款</b> · <b>同步订单</b> ·
+/// <b>商户预授权</b> · <b>查询用户授权记录</b> · <b>查询用户授权状态</b> · <b>解除授权</b>。
+/// </para>
+/// <para>
+/// <b>⚠️ 唯一刻意不建模的是「创单结单合并」</b>
+/// （<c>POST /v3/payscore/serviceorder/direct-complete</c>）：官方页明示
+/// 「特别提醒：创单结单合并接口<b>暂未对外开放</b>」⇒ 按「未开放不建模」纪律暂缺
+/// （守卫 <c>PY-B9</c> 固化该裁决，恢复前须先确认开通权限与真实路径）。
+/// </para>
+/// <para>
+/// <b>回调面</b>：已覆盖确认订单 / 支付成功 / 授权成功 / 解除授权四类
+/// （<c>PAYSCORE.USER_CONFIRM</c> / <c>USER_PAID</c> / <c>USER_OPEN_SERVICE</c> / <c>USER_CLOSE_SERVICE</c>，
+/// 均<b>大写</b>前缀），归回调包。
+/// <b>⚠️ 留档一处未核验</b>：「订单状态变更通知」是否存在<b>本轮未单独核实</b> ⇒
+/// 勿按其它产品线的习惯臆造事件名。
+/// </para>
+/// <para>
 /// <b>不要凭推断补路由</b>——须先按接口名核验其页面。
 /// </para>
 /// <para>

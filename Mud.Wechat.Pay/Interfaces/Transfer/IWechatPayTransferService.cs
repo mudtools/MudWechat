@@ -21,20 +21,26 @@ namespace Mud.Wechat.Pay;
 /// <b>官方「商家转账」接口清单（共 8 项，照录自该页导航）</b>：① 发起转账 ✔本批已实现；
 /// ② APP 调起用户确认收款（客户端 SDK）；③ JSAPI 调起用户确认收款（客户端 SDK）；
 /// ④ 撤销转账；⑤ 商户单号查询转账单；⑥ 微信单号查询转账单；⑦ 商家转账回调通知（归回调包）；
-/// ⑧ 获取电子回单（已核一条路由：商户单号查询电子回单
-/// <c>GET /v3/fund-app/mch-transfer/elecsign/out-bill-no/{out_bill_no}</c>）。
+/// ⑧ 获取电子回单（商户单号查询 / 微信单号查询，两条路由）。
 /// </para>
 /// <para>
 /// <b>🔴 本域第一原则（官方原文）</b>：发起转账遇到错误码时<b>不得换单重试</b> ——
 /// 必须先经『商户单号/微信单号查询转账单』确认原单结果，<b>明确为失败后</b>才可换号重试，
-/// 否则有<b>重复转账的资金风险</b>。故本域<b>必须先补齐两个查询端点</b>才具备生产可用性；
-/// 本批先落发起端点是**刻意的最小步**（见下条待办）。
+/// 否则有<b>重复转账的资金风险</b>。故本域<b>必须</b>具备两个查询端点才谈生产可用性
+/// —— <b>本域现已 6 端点齐全</b>（发起 + 两查询 + 撤销 + 两回单），该流程可完整执行。
 /// </para>
 /// <para>
-/// <b>本批未覆盖</b>：撤销转账 · 商户单号查询转账单 · 微信单号查询转账单 · 获取电子回单。
-/// 并且：各枚举字段（<c>state</c> / <c>transfer_scene_id</c> / <c>user_recv_perception</c> /
-/// <c>user_recv_style.type</c>）的<b>值域本轮未核验</b> ⇒ SDK 不臆造常量。
-/// <b>不要凭推断补路由或补取值</b>。
+/// <b>✅ 值表已补齐（原「值域未核验」留档已关闭）</b>：<c>state</c>（8 值，含终态与「可原单重试」语义）
+/// → <see cref="TransferBillStates"/>；<c>user_recv_style.type</c>（2 值）→
+/// <see cref="TransferRecvStyleTypes"/>；<c>user_recv_perception</c>（14 个<b>中文</b>取值）→
+/// <see cref="TransferUserRecvPerceptions"/>；<c>transfer_scene_report_infos[].info_type</c>
+/// （13 个中文取值）→ <see cref="TransferSceneReportInfoTypes"/>。
+/// </para>
+/// <para>
+/// <b>⚠️ <c>transfer_scene_id</c> 是唯一例外，且这是官方事实</b>：官方<b>无</b>集中值表
+/// （《产品介绍》原文只指向「商户平台 - 产品中心 - 商家转账 - 产品设置」查看），
+/// 数值由各<b>场景页</b>分页给出 ⇒ <see cref="TransferSceneIds"/> 只收录已逐字确证的
+/// 现金营销 <c>1000</c>，其余<b>不臆造</b>；<b>不要凭推断补路由或补取值</b>。
 /// </para>
 /// <para>
 /// <b>无 <c>[Token]</c>、走商户签名</b>（守卫 PAY-B1）：形态与
@@ -59,7 +65,8 @@ public interface IWechatPayTransferService
     /// </para>
     /// <para>
     /// <b>异步语义</b>：应答中的 <c>package_info</c> 只是<b>调起用户确认收款</b>的凭据，
-    /// <b>不等于</b>转账成功；终态须经查询端点或回调通知确认（<c>state</c> 值域本轮未核验）。
+    /// <b>不等于</b>转账成功；终态须经查询端点或回调通知确认（取值见 <see cref="TransferBillStates"/>，
+    /// 其中只有 <c>SUCCESS</c> / <c>FAIL</c> / <c>CANCELLED</c> 是终态）。
     /// </para>
     /// </remarks>
     [Post("/v3/fund-app/mch-transfer/transfer-bills")]

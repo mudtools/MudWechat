@@ -97,7 +97,16 @@ public interface IWechatPayFapiaoService
     /// <para><b>官方契约</b>：<b>GET</b> <c>/v3/new-tax-control-fapiao/fapiao-applications/{fapiao_apply_id}?fapiao_id=…</c>；
     /// path 必带 <c>fapiao_apply_id</c>，query 的 <c>fapiao_id</c> <b>选填</b>。</para>
     /// <para><b>官方建议</b>：「【将电子发票插入微信用户卡包】接口成功后，应调用本接口查询电子发票开票结果」。</para>
-    /// <para><b>值域未核验</b>：<c>status</c> / <c>card_information.card_status</c> 的取值表本轮未取得 ⇒ SDK 不臆造常量。</para>
+    /// <para>
+    /// <b>✅ 值表可交叉引用（原「值域未核验」留档已关闭）</b>：本应答的 <c>status</c> 与
+    /// <c>card_information.card_status</c> 取值见常量 <c>FapiaoStatuses</c> / <c>FapiaoCardStatuses</c>
+    /// —— 二者由官方<b>四张通知页</b>（开具成功 / 插卡成功 / 冲红成功 / 卡券作废，字段表逐项一致）逐字取得。
+    /// </para>
+    /// <para>
+    /// <b>⚠️ 保留一处边界（不夸大核验范围）</b>：本轮<b>未</b>在「查询电子发票」页本身找到单独的取值表
+    /// （该页只给出字段名）⇒ 常量与该页字段的对应是「<b>同名字段、同域取值</b>」的合理映射，
+    /// 而非该页逐字确认。若联调发现查询页返回常量之外的取值，须先核验官方再补，<b>勿臆造</b>。
+    /// </para>
     /// </remarks>
     [Get("/v3/new-tax-control-fapiao/fapiao-applications/{fapiaoApplyId}")]
     Task<FapiaoQueryResponse> QueryFapiaoApplicationsAsync(

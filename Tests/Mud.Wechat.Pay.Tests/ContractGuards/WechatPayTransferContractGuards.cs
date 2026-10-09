@@ -28,15 +28,22 @@ namespace Mud.Wechat.Pay.Tests.ContractGuards;
 /// <b>当查询原订单结果明确为「失败」时，再更换商户订单号进行重试。否则会有重复转账的资金风险。</b>」
 /// </para>
 /// <para>
-/// <b>本批刻意的范围限制</b>：仅落「发起转账」。两个<b>查询端点尚未实现</b> ⇒ 按官方要求
-/// 「遇错必须先查原单」的流程<b>尚不可执行</b>，故本域<b>暂不具备生产可用性</b>。
-/// 下一增量必须优先补：商户单号查询转账单 / 微信单号查询转账单 / 撤销转账 / 获取电子回单
-/// （其中「商户单号查询电子回单」路由已核：<c>GET /v3/fund-app/mch-transfer/elecsign/out-bill-no/{out_bill_no}</c>）。
+/// <b>✅ 本域现已 6 端点、具备生产可用性</b>（原先留档的「仅落发起转账 ⇒ 尚不可生产」已随增量关闭）：
+/// 发起转账 + <b>两个查询</b>（商户单号 / 微信单号）+ <b>撤销转账</b> +
+/// <b>两个电子回单</b>（商户单号 / 微信单号）⇒ 官方要求的「遇错必须先查原单」流程可执行。
 /// </para>
 /// <para>
-/// <b>⚠️ 值域未核验</b>：<c>state</c> / <c>transfer_scene_id</c> / <c>user_recv_perception</c> /
-/// <c>user_recv_style.type</c> 的取值表本轮<b>未</b>取得 ⇒ 守卫<b>不</b>断言任何常量
-/// （臆造取值比留空字符串危险得多）。
+/// <b>✅ 值表已补齐（原「值域未核验」留档已关闭）</b>：
+/// <c>state</c>（8 值，含终态语义）→ <c>TransferBillStates</c>；
+/// <c>user_recv_style.type</c>（2 值）→ <c>TransferRecvStyleTypes</c>；
+/// <c>user_recv_perception</c>（14 个<b>中文</b>取值）→ <c>TransferUserRecvPerceptions</c>；
+/// <c>info_type</c>（13 个中文取值）→ <c>TransferSceneReportInfoTypes</c>。
+/// </para>
+/// <para>
+/// <b>⚠️ 唯一未成表的是 <c>transfer_scene_id</c>，且这是官方事实而非本仓遗漏</b>：
+/// 官方《产品介绍》原文只指向「商户平台 - 产品中心 - 商家转账 - 产品设置」查看，
+/// <b>没有</b>集中值表；数值由各<b>场景页</b>分页给出 ⇒ 本仓只收录已逐字确证的一项
+/// （现金营销 <c>1000</c>），其余<b>不臆造</b>（二手资料流传的「1000–1011 全表」<b>不予采信</b>）。
 /// </para>
 /// </remarks>
 public class WechatPayTransferContractGuards
@@ -281,7 +288,62 @@ public class WechatPayTransferContractGuards
         }
     }
 
+    /// <summary>
+    /// TR7：本轮补齐的<b>三张值表</b> + <c>transfer_scene_id</c> 的「<b>不臆造</b>」裁决。
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>官方来源</b>：发起转账页 <c>4012716434</c>（<c>user_recv_style.type</c>）·
+    /// 《商家转账 - 产品介绍》<c>4012711988</c>（<c>user_recv_perception</c> 与 <c>info_type</c> 的中文取值）·
+    /// 《现金营销》场景页 <c>4013774588</c>（<c>transfer_scene_id = 1000</c>）。
+    /// </para>
+    /// <para>
+    /// <b>本用例的重点是最后一条</b>：<c>transfer_scene_id</c> 在官方<b>没有</b>集中值表
+    /// （原文只指向「商户平台 - 产品中心 - 商家转账 - 产品设置」查看）⇒ 用<b>精确相等</b>断言
+    /// 锁死「只收录已逐字确证的一项」，防止后来者照二手资料的「1000–1011 全场景表」补齐
+    /// —— 那些数字在官方页面中<b>并不存在</b>。
+    /// </para>
+    /// <para>
+    /// <b>另一条有意为之的断言</b>：<c>user_recv_perception</c> / <c>info_type</c> 的取值
+    /// <b>一律为中文</b>（本仓支付线罕见的非英文取值）⇒ 用「必须含中日韩统一表意文字」把它锁住，
+    /// 一旦有人「顺手规范化」成英文，会被立刻判错。
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void RecvStyleAndSceneValueTables_ShouldMatchOfficialValues()
+    {
+        // 收款样式：2 值（英文）。
+        LiteralValues(typeof(TransferRecvStyleTypes))
+            .Should().BeEquivalentTo(new[] { "CONFIRM_PAGE", "RED_PACKET" });
+
+        // 用户收款感知：14 个**中文**取值。
+        var perceptions = LiteralValues(typeof(TransferUserRecvPerceptions));
+        perceptions.Should().HaveCount(14, "官方《产品介绍》场景表逐字给出 14 个中文取值");
+        perceptions.Should().Contain("活动奖励").And.Contain("保险理赔款");
+        perceptions.Should().OnlyContain(
+            static value => value.Any(static c => c > 0x4e00),
+            "官方这些取值是**中文** —— 若出现英文值，说明「照官方原文」的纪律被破坏");
+
+        // 报备信息类型：13 个**中文**取值。
+        var infoTypes = LiteralValues(typeof(TransferSceneReportInfoTypes));
+        infoTypes.Should().HaveCount(13);
+        infoTypes.Should().Contain("活动名称").And.Contain("保险操作单号");
+        infoTypes.Should().OnlyContain(static value => value.Any(static c => c > 0x4e00));
+
+        // ⚠️ transfer_scene_id：官方**无**集中值表 ⇒ 只收录已逐字确证的「现金营销 1000」。
+        LiteralValues(typeof(TransferSceneIds))
+            .Should().Equal(new[] { "1000" },
+                "官方场景 ID 没有集中值表（只指到商户平台查看）⇒ 本仓只收录已由场景页确证的一项，其余不臆造");
+    }
+
     // ---- helpers -------------------------------------------------------------
+
+    /// <summary>取某常量类的全部字面量取值（用于值表锁定）。</summary>
+    private static string[] LiteralValues(Type type)
+        => type.GetFields(BindingFlags.Public | BindingFlags.Static)
+            .Where(static f => f.IsLiteral)
+            .Select(static f => (string)f.GetRawConstantValue()!)
+            .ToArray();
 
     private static void AssertRoute<TAttribute>(string methodName, string route)
         where TAttribute : HttpMethodAttribute

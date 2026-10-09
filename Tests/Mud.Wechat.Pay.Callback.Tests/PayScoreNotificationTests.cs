@@ -94,11 +94,43 @@ public class PayScoreNotificationTests
             "优惠的单品明细比收款明细再深一层（三层嵌套全链路可解析）");
     }
 
+    /// <summary>确认订单通知：<c>PAYSCORE.USER_CONFIRM</c>，载荷无 <c>collection</c> 而有 <c>state_description</c>。</summary>
+    [Fact]
+    public async Task ReceiveAsync_ShouldExposePayScoreConfirmPayload()
+    {
+        using var fixture = new WechatPayCallbackTestFixture();
+        var receiver = fixture.CreateReceiver();
+
+        const string confirmJson =
+            "{\"appid\":\"wx-test\",\"mchid\":\"1900000000\",\"out_order_no\":\"PS-ORDER-2\"," +
+            "\"service_id\":\"123456\",\"openid\":\"o-test\",\"state\":\"DOING\"," +
+            "\"state_description\":\"USER_CONFIRM\",\"total_amount\":100," +
+            "\"service_introduction\":\"测试服务\",\"need_collection\":true," +
+            "\"order_id\":\"3008450740201411110007820473\"}";
+
+        var (headers, body) = fixture.CreateNotification(
+            confirmJson,
+            eventType: WechatPayNotificationEventTypes.PayScoreUserConfirm);
+
+        var context = await receiver.ReceiveAsync(WechatPayCallbackTestFixture.MerchantKey, headers, body);
+
+        var payload = context.GetPayScoreConfirm();
+        payload.Should().NotBeNull();
+        payload!.OutOrderNo.Should().Be("PS-ORDER-2");
+        payload.State.Should().Be("DOING");
+        payload.StateDescription.Should().Be("USER_CONFIRM");
+    }
+
     /// <summary>事件类型常量锁定（含「支付分自带前缀」这一与分账不同的形态）。</summary>
     [Fact]
     public void PayScoreEventType_ShouldMatchOfficialValue()
     {
         WechatPayNotificationEventTypes.PayScoreUserPaid.Should().Be("PAYSCORE.USER_PAID");
+
+        // 大小写敏感：官方页面原文为大写（检索摘要里的全小写是失真）。
+        WechatPayNotificationEventTypes.PayScoreUserConfirm.Should().Be("PAYSCORE.USER_CONFIRM");
+        WechatPayNotificationEventTypes.PayScoreUserConfirm.Should().NotBe("payscore.user_confirm",
+            "event_type 是字符串等值匹配 ⇒ 大小写错即静默不命中回调");
 
         // 与分账通知的形态差异：分账复用 TRANSACTION.SUCCESS，支付分用自己的前缀。
         WechatPayNotificationEventTypes.PayScoreUserPaid

@@ -50,6 +50,7 @@ namespace Mud.Wechat.Pay.Callback;
 [JsonSerializable(typeof(WechatPayProfitSharingResource))]
 [JsonSerializable(typeof(WechatPayProfitSharingReceiver))]
 [JsonSerializable(typeof(WechatPayPayScorePaidResource))]
+[JsonSerializable(typeof(WechatPayPayScoreConfirmResource))]
 [JsonSerializable(typeof(WechatPayPayScoreCollection))]
 [JsonSerializable(typeof(WechatPayPayScoreCollectionDetail))]
 // 支付分载荷复用的子类型（定义在 PayScore 域，但本上下文在 net6.0 也须能解析它们）。

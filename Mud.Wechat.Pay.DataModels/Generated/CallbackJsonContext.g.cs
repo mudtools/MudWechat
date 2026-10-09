@@ -23,6 +23,7 @@ namespace Mud.Wechat.Pay.DataModels.Callback;
 [JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.Callback.WechatPayPayScorePaidResource))]
 [JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.Callback.WechatPayPayScoreCollection))]
 [JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.Callback.WechatPayPayScoreCollectionDetail))]
+[JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.Callback.WechatPayPayScoreConfirmResource))]
 internal partial class CallbackJsonContext : JsonSerializerContext
 {
 }

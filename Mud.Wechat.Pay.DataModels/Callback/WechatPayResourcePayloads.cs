@@ -404,3 +404,95 @@ public class WechatPayPayScoreCollectionDetail
     [JsonPropertyName("promotion_detail")]
     public List<PayScorePromotionDetail>? PromotionDetail { get; set; }
 }
+
+/// <summary>
+/// 解密后的<b>支付分订单确认成功</b>资源载荷（<c>PAYSCORE.USER_CONFIRM</c> 通知）。
+/// </summary>
+/// <remarks>
+/// <para>
+/// <b>官方文档</b>：<see href="https://pay.weixin.qq.com/doc/v3/merchant/4012587953"/>
+/// （确认订单回调通知，2026-10-09 逐字段核验；更新时间 2024.12.10）。官方原文：
+/// 「支付分订单确认成功通知为 <c>PAYSCORE.USER_CONFIRM</c>」。
+/// </para>
+/// <para>
+/// <b>⚠️ 大小写的坑（已实测纠正）</b>：检索摘要里该值一度呈现为全小写
+/// <c>payscore.user_confirm</c>，而<b>官方页面逐字为大写 <c>PAYSCORE.USER_CONFIRM</c></b> ——
+/// <c>event_type</c> 是<b>大小写敏感</b>的字符串匹配键，按小写实现会让回调永远不命中（静默、无异常）。
+/// 本仓取值一律以<b>页面原文</b>为准，不采信二手摘要。
+/// </para>
+/// <para>
+/// <b>与支付成功载荷的形态差异</b>：本载荷<b>无</b> <c>notify_url</c>、<b>无</b> <c>collection</c>，
+/// 但<b>有</b> <c>state_description</c>（支付成功载荷反之）⇒ 两个类型分建，不合并。
+/// </para>
+/// </remarks>
+[HttpJsonSerializable(SerializerClassName = "Callback")]
+public class WechatPayPayScoreConfirmResource
+{
+    /// <summary>公众账号 ID（<c>appid</c>）。</summary>
+    [JsonPropertyName("appid")]
+    public string? AppId { get; set; }
+
+    /// <summary>商户号（<c>mchid</c>）。</summary>
+    [JsonPropertyName("mchid")]
+    public string? MchId { get; set; }
+
+    /// <summary>商户服务订单号（<c>out_order_no</c>）；<b>业务幂等键</b>。</summary>
+    [JsonPropertyName("out_order_no")]
+    public string? OutOrderNo { get; set; }
+
+    /// <summary>服务 ID（<c>service_id</c>）。</summary>
+    [JsonPropertyName("service_id")]
+    public string? ServiceId { get; set; }
+
+    /// <summary>用户标识（<c>openid</c>，string(128)）。</summary>
+    [JsonPropertyName("openid")]
+    public string? OpenId { get; set; }
+
+    /// <summary>服务订单状态（<c>state</c>）：用户确认后为 <c>DOING</c>。</summary>
+    [JsonPropertyName("state")]
+    public string? State { get; set; }
+
+    /// <summary>订单状态说明（<c>state_description</c>）：如 <c>USER_CONFIRM</c>。</summary>
+    [JsonPropertyName("state_description")]
+    public string? StateDescription { get; set; }
+
+    /// <summary>总金额（<c>total_amount</c>，整型，单位分）。</summary>
+    [JsonPropertyName("total_amount")]
+    public long? TotalAmount { get; set; }
+
+    /// <summary>服务信息（<c>service_introduction</c>，string(20)）。</summary>
+    [JsonPropertyName("service_introduction")]
+    public string? ServiceIntroduction { get; set; }
+
+    /// <summary>后付费项目（<c>post_payments</c>）：复用支付分域类型。</summary>
+    [JsonPropertyName("post_payments")]
+    public List<PayScorePostPayment>? PostPayments { get; set; }
+
+    /// <summary>后付费商户优惠（<c>post_discounts</c>）：复用支付分域类型。</summary>
+    [JsonPropertyName("post_discounts")]
+    public List<PayScorePostDiscount>? PostDiscounts { get; set; }
+
+    /// <summary>服务风险金（<c>risk_fund</c>）：复用支付分域类型。</summary>
+    [JsonPropertyName("risk_fund")]
+    public PayScoreRiskFund? RiskFund { get; set; }
+
+    /// <summary>服务时间段（<c>time_range</c>）：复用支付分域类型。</summary>
+    [JsonPropertyName("time_range")]
+    public PayScoreTimeRange? TimeRange { get; set; }
+
+    /// <summary>服务位置（<c>location</c>）：复用支付分域类型。</summary>
+    [JsonPropertyName("location")]
+    public PayScoreLocation? Location { get; set; }
+
+    /// <summary>商户数据包（<c>attach</c>，string(256)）。</summary>
+    [JsonPropertyName("attach")]
+    public string? Attach { get; set; }
+
+    /// <summary>微信支付服务订单号（<c>order_id</c>，31 位数字）。</summary>
+    [JsonPropertyName("order_id")]
+    public string? OrderId { get; set; }
+
+    /// <summary>是否需要收款（<c>need_collection</c>，bool）。</summary>
+    [JsonPropertyName("need_collection")]
+    public bool? NeedCollection { get; set; }
+}

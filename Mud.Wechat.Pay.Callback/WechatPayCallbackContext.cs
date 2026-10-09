@@ -110,6 +110,18 @@ public sealed class WechatPayCallbackContext
     public WechatPayPayScorePaidResource? GetPayScorePaid()
         => TryDeserialize(WechatPayCallbackJsonContext.Default.WechatPayPayScorePaidResource);
 
+    /// <summary>
+    /// 把解密后的载荷按<b>支付分订单确认成功</b>（<c>event_type = PAYSCORE.USER_CONFIRM</c>）类型化解析。
+    /// </summary>
+    /// <returns>解析失败或载荷非本形态时返回 <c>null</c>。</returns>
+    /// <remarks>
+    /// <b>判别方式</b>：凭 <c>event_type</c>（<b>大写</b> <c>PAYSCORE.USER_CONFIRM</c>，大小写敏感）。
+    /// 本载荷<b>无</b> <c>collection</c> / <c>notify_url</c>，与支付成功载荷（<c>PAYSCORE.USER_PAID</c>）
+    /// 是<b>两个</b>类型 —— 不要因为「都是 <c>PAYSCORE.*</c>」就按同一类型解析。
+    /// </remarks>
+    public WechatPayPayScoreConfirmResource? GetPayScoreConfirm()
+        => TryDeserialize(WechatPayCallbackJsonContext.Default.WechatPayPayScoreConfirmResource);
+
     private T? TryDeserialize<T>(System.Text.Json.Serialization.Metadata.JsonTypeInfo<T> typeInfo)
         where T : class
     {

@@ -125,6 +125,16 @@ public static class WechatPayNotificationEventTypes
     /// 一律按「先看判别字段、再看具体取值」处理。
     /// </remarks>
     public const string PayScoreUserPaid = "PAYSCORE.USER_PAID";
+
+    /// <summary>
+    /// 支付分订单确认成功（官方 <c>PAYSCORE.USER_CONFIRM</c>）。
+    /// </summary>
+    /// <remarks>
+    /// <b>⚠️ 大小写敏感</b>：官方页面逐字为<b>大写</b> <c>PAYSCORE.USER_CONFIRM</c>
+    /// （检索摘要里曾呈现为全小写 <c>payscore.user_confirm</c>，属二手来源的失真）。
+    /// <c>event_type</c> 是字符串等值匹配 ⇒ 按小写实现会<b>静默不命中</b>回调。
+    /// </remarks>
+    public const string PayScoreUserConfirm = "PAYSCORE.USER_CONFIRM";
 }
 
 /// <summary>

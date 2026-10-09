@@ -85,6 +85,9 @@ public static class OpenPlatformServiceCollectionExtensions
         // （官方要求回 success，判定见 ComponentVerifyTicketReceiver.ShouldReturnSuccess）。
         services.TryAddSingleton<ComponentVerifyTicketReceiver>();
 
+        // 授权流程（预授权码 / 换取授权信息 / 刷新授权方令牌）。
+        services.TryAddSingleton<IComponentAuthorizationService, ComponentAuthorizationService>();
+
         return services;
     }
 }

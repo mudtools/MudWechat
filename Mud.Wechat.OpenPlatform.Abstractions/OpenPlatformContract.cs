@@ -67,4 +67,65 @@ public static class OpenPlatformContract
 
     /// <summary>应答字段：有效期秒数（官方 <c>expires_in</c>）。</summary>
     public const string ExpiresInField = "expires_in";
+
+    // ==================== 授权流程（预授权码 / 换取授权信息 / 刷新授权方令牌） ====================
+
+    /// <summary>获取预授权码的请求路径（官方原文）。</summary>
+    public const string PreAuthCodePath = "/cgi-bin/component/api_create_preauthcode";
+
+    /// <summary>换取授权信息的请求路径（官方原文）。</summary>
+    public const string QueryAuthPath = "/cgi-bin/component/api_query_auth";
+
+    /// <summary>获取 / 刷新授权方接口调用令牌的请求路径（官方原文）。</summary>
+    public const string AuthorizerTokenPath = "/cgi-bin/component/api_authorizer_token";
+
+    /// <summary>
+    /// 平台令牌在 URL 上的查询参数名。
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⚠️ 官方页面之间存在自相矛盾（照录并择一，勿静默「统一」）</b>：
+    /// 「预授权码」页与「获取/刷新接口调用令牌」页均写作
+    /// <c>?component_access_token=…</c>，而「获取授权信息」（<c>api_query_auth</c>）页
+    /// 写成 <c>?access_token=…</c>。本仓统一采用<b>多数页面的 <c>component_access_token</c></b>
+    /// （且它与本线令牌名一致）；若实际联调发现官方只认另一种拼写，须<b>同批</b>
+    /// 修改本常量与相关用例，不要在两处各写一份。
+    /// </para>
+    /// <para>
+    /// <b>安全提示（与 MUD005 同类）</b>：令牌走 URL 查询参数是<b>官方契约强制</b>的，
+    /// 无法改为 Header；因此<b>任何日志 / 遥测 / 异常消息都不得打印完整请求 URL</b>
+    /// （令牌会随 URL 一起泄露）。本线实现里对 URL 只做「不含令牌」的形态记录。
+    /// </para>
+    /// </remarks>
+    public const string ComponentAccessTokenQueryName = "component_access_token";
+
+    /// <summary>预授权码有效期（秒）：官方原文「每个预授权码有效期为 1800 秒」。</summary>
+    public const int PreAuthCodeLifetimeSeconds = 1800;
+
+    /// <summary>授权方接口调用令牌有效期（秒）：官方原文「authorizer_access_token 有效期为 2 小时」。</summary>
+    public const int AuthorizerTokenLifetimeSeconds = 7200;
+
+    /// <summary>请求体字段：预授权码（官方 <c>pre_auth_code</c>）。</summary>
+    public const string PreAuthCodeField = "pre_auth_code";
+
+    /// <summary>请求体字段：授权码（官方 <c>authorization_code</c>，由授权回调 URI 的 URL 参数给出）。</summary>
+    public const string AuthorizationCodeField = "authorization_code";
+
+    /// <summary>应答字段：授权信息对象（官方 <c>authorization_info</c>）。</summary>
+    public const string AuthorizationInfoField = "authorization_info";
+
+    /// <summary>应答字段：授权方 appid（官方 <c>authorizer_appid</c>）。</summary>
+    public const string AuthorizerAppIdField = "authorizer_appid";
+
+    /// <summary>应答字段：授权方接口调用令牌（官方 <c>authorizer_access_token</c>）。</summary>
+    public const string AuthorizerAccessTokenField = "authorizer_access_token";
+
+    /// <summary>应答字段：授权方刷新令牌（官方 <c>authorizer_refresh_token</c>）。</summary>
+    public const string AuthorizerRefreshTokenField = "authorizer_refresh_token";
+
+    /// <summary>官方错误码字段（官方 <c>errcode</c>）。</summary>
+    public const string ErrCodeField = "errcode";
+
+    /// <summary>官方错误描述字段（官方 <c>errmsg</c>）。</summary>
+    public const string ErrMsgField = "errmsg";
 }

@@ -8,6 +8,7 @@
 using Mud.Wechat.Pay.DataModels.Bill;
 using Mud.Wechat.Pay.DataModels.Callback;
 using Mud.Wechat.Pay.DataModels.Certificates;
+using Mud.Wechat.Pay.DataModels.Combine;
 using Mud.Wechat.Pay.DataModels.Common;
 using Mud.Wechat.Pay.DataModels.PayScore;
 using Mud.Wechat.Pay.DataModels.ProfitSharing;
@@ -56,6 +57,7 @@ public static class PayJsonResolverExtensions
             CertificatesJsonContext.Default,
             ProfitSharingJsonContext.Default,
             PayScoreJsonContext.Default,
+            CombineTransactionsJsonContext.Default,
             CallbackJsonContext.Default);
 
         services.AddMudHttpClientJsonContext(resolver);

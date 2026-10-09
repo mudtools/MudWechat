@@ -63,4 +63,11 @@ public enum PayModule
     /// </summary>
     /// <remarks>完结 / 收款 / 同步 / 授权与回调等待逐页核验后增量。</remarks>
     PayScore,
+
+    /// <summary>
+    /// 合单支付（<b>P2 首批 2 端点</b>，<b>仅服务商</b>）：JSAPI/小程序合单下单 + 合单关闭订单。
+    /// 官方文档 <see href="https://pay.weixin.qq.com/wiki/doc/apiv3_partner/apis/chapter5_1_4.shtml"/>。
+    /// </summary>
+    /// <remarks>合单查询 / Native 下单 / 合单退款等待逐页核验后增量。</remarks>
+    CombineTransactions,
 }

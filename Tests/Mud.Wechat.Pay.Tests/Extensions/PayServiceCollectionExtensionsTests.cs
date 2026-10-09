@@ -139,6 +139,9 @@ public class PayServiceCollectionExtensionsTests
         // P2 支付分首批（三段式第三段：源生成 AddPayScoreWebApiHttpClient）。
         provider.GetRequiredService<IWechatPayPayScoreService>().Should().NotBeNull();
 
+        // P2 合单支付首批（**仅服务商**；源生成 AddCombineTransactionsWebApiHttpClient）。
+        provider.GetRequiredService<IWechatPayCombineService>().Should().NotBeNull();
+
         // 账单下载通道随账单模块注册（无 [HttpClientApi]，故无对应的源生成注册方法）。
         provider.GetRequiredService<IWechatPayBillDownloadService>().Should().NotBeNull();
 
@@ -182,6 +185,8 @@ public class PayServiceCollectionExtensionsTests
                      typeof(PayScorePermissionsRequest),
                      typeof(PayScoreSyncOrderResponse),
                      typeof(PayScoreTerminateAuthorizationRequest),
+                     typeof(CombinePrepayRequest),
+                     typeof(CombinePrepayResponse),
                  })
         {
             resolver!.GetTypeInfo(dto, options).Should().NotBeNull(

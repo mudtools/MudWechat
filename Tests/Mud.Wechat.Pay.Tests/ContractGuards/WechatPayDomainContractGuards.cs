@@ -70,7 +70,7 @@ public class WechatPayDomainContractGuards
     }
 
     /// <summary>
-    /// PAY-B5：端点计数（<b>32</b>）+ 官方路由表逐条比对（照官方原文，<b>不得「纠正」</b>）。
+    /// PAY-B5：端点计数（<b>33</b>）+ 官方路由表逐条比对（照官方原文，<b>不得「纠正」</b>）。
     /// </summary>
     /// <remarks>
     /// <para>
@@ -147,11 +147,12 @@ public class WechatPayDomainContractGuards
             "/v3/payscore/permissions/openid/{openId}",
         });
 
-        // P2 合单支付首批 2 端点（**仅服务商**）：JSAPI 合单下单 + 关单。
+        // P2 合单支付 3 端点（**仅服务商**）：JSAPI 合单下单 + 关单 + 查询。
         RoutesOf(asm, "IWechatPayCombineService").Should().BeEquivalentTo(new[]
         {
             "/v3/combine-transactions/jsapi",
             "/v3/combine-transactions/out-trade-no/{combineOutTradeNo}/close",
+            "/v3/combine-transactions/out-trade-no/{combineOutTradeNo}",
         });
 
         // 合计计数（PAY-B5 断言的单一来源）。
@@ -161,7 +162,7 @@ public class WechatPayDomainContractGuards
             .SelectMany(static m => m.GetCustomAttributes(false))
             .Select(static a => a.GetType().GetProperty("RequestUri")?.GetValue(a) as string)
             .Count(static uri => !string.IsNullOrWhiteSpace(uri))
-            .Should().Be(32, "支付线端点总数为 32（4 交易 + 3 退款 + 2 账单 + 1 平台证书 + 9 分账 + 11 支付分 + 2 合单）");
+            .Should().Be(33, "支付线端点总数为 33（4 交易 + 3 退款 + 2 账单 + 1 平台证书 + 9 分账 + 11 支付分 + 3 合单）");
     }
 
     /// <summary>
@@ -230,6 +231,7 @@ public class WechatPayDomainContractGuards
                      typeof(PayScoreAuthorizationRecordResponse),
                      typeof(PayScoreSyncOrderResponse),
                      typeof(CombinePrepayResponse),
+                     typeof(CombineQueryResponse),
                  })
         {
             typeof(WechatPayResponse).IsAssignableFrom(responseType).Should().BeTrue(

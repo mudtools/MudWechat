@@ -80,4 +80,27 @@ public interface IWechatPayCombineService
         [Path] string combineOutTradeNo,
         [Body] CombineCloseOrderRequest request,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 合单查询订单。官方文档：<see href="https://pay.weixin.qq.com/wiki/doc/apiv3_partner/apis/chapter7_3_11.shtml"/>。
+    /// </summary>
+    /// <param name="combineOutTradeNo">合单商户订单号（官方 path <c>combine_out_trade_no</c>，必填 string(32)）。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/> 取消操作令牌对象。</param>
+    /// <returns>合单订单（含各商品单的交易状态与实付金额），见 <see cref="CombineQueryResponse"/>。</returns>
+    /// <remarks>
+    /// <para><b>官方契约</b>：<b>GET</b> <c>/v3/combine-transactions/out-trade-no/{combine_out_trade_no}</c>；
+    /// <b>无 query 参数</b>。</para>
+    /// <para>
+    /// <b>查询方式只有一种</b>：官方本页仅提供按<b>合单商户订单号</b>查询，
+    /// <b>没有</b>「按微信支付订单号」的等价入口（与单笔交易域的两种入口不同）—— 勿照搬交易域的直觉。
+    /// </para>
+    /// <para>
+    /// <b>状态判定</b>：<c>sub_orders[].trade_state</c>（必填）是<b>每个商品单各自</b>的交易状态，
+    /// 须逐单显式判定；<c>amount.payer_amount</c> 才是实付金额（<c>total_amount</c> 是标价）。
+    /// </para>
+    /// </remarks>
+    [Get("/v3/combine-transactions/out-trade-no/{combineOutTradeNo}")]
+    Task<CombineQueryResponse> QueryOrderAsync(
+        [Path] string combineOutTradeNo,
+        CancellationToken cancellationToken = default);
 }

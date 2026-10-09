@@ -64,6 +64,15 @@ public class WechatPayCombineContractGuards
             .Where(static p => p.GetCustomAttribute<PathAttribute>() != null)
             .Select(static p => p.Name)
             .Should().BeEquivalentTo(new[] { "combineOutTradeNo" });
+
+        // 查询：只有一种查询方式（按合单商户订单号），且**无任何 query 参数**。
+        AssertRoute<GetAttribute>(
+            nameof(IWechatPayCombineService.QueryOrderAsync),
+            "/v3/combine-transactions/out-trade-no/{combineOutTradeNo}");
+        FindMethod(nameof(IWechatPayCombineService.QueryOrderAsync))
+            .GetParameters()
+            .SelectMany(static p => p.GetCustomAttributes<QueryAttribute>())
+            .Should().BeEmpty("官方合单查询页无 query 参数（仅按合单商户订单号查）");
     }
 
     /// <summary>CB2：官方字段名锁定（含 <c>combine_*</c> 前缀与 <c>sub_orders</c> 子字段）。</summary>
@@ -87,6 +96,41 @@ public class WechatPayCombineContractGuards
 
         JsonNameShouldBe<CombineCloseSubOrder>(nameof(CombineCloseSubOrder.MchId), "mchid");
         JsonNameShouldBe<CombineCloseSubOrder>(nameof(CombineCloseSubOrder.SubAppId), "sub_appid");
+
+        JsonNameShouldBe<CombineQueryResponse>(nameof(CombineQueryResponse.CombineOutTradeNo), "combine_out_trade_no");
+        JsonNameShouldBe<CombineQuerySubOrder>(nameof(CombineQuerySubOrder.TradeState), "trade_state");
+        JsonNameShouldBe<CombineQuerySubOrder>(nameof(CombineQuerySubOrder.SubOpenId), "sub_openid");
+        JsonNameShouldBe<CombineQuerySubOrderAmount>(nameof(CombineQuerySubOrderAmount.PayerAmount), "payer_amount");
+        JsonNameShouldBe<CombineQuerySubOrderAmount>(nameof(CombineQuerySubOrderAmount.SettlementRate), "settlement_rate");
+    }
+
+    /// <summary>
+    /// CB5：<b>三个子单形态互不相同</b>，且查询的 <c>combine_payer_info</c> / <c>scene_info</c> 也不得与下单共用。
+    /// </summary>
+    /// <remarks>
+    /// 本域已出现 <b>三</b> 套商品单字段表（下单 / 关单 / 查询）与两套支付者与场景字段表 —— 都按官方表分建。
+    /// 合并任一方向都会给出「某接口永不返回的字段」，调用方据此写出的分支永不命中。
+    /// </remarks>
+    [Fact]
+    public void QueryShapes_ShouldStayStructurallySeparate()
+    {
+        // 查询子单有交易结果与实付金额；下单/关单子单没有。
+        typeof(CombineQuerySubOrder).GetProperty("TradeState").Should().NotBeNull();
+        typeof(CombineQuerySubOrderAmount).GetProperty("PayerAmount").Should().NotBeNull();
+        typeof(CombineSubOrderAmount).GetProperty("PayerAmount").Should().BeNull(
+            "下单页的金额表只有标价金额与币种");
+        typeof(CombineCloseSubOrder).GetProperty("TradeState").Should().BeNull(
+            "关单页的子单只有身份字段");
+
+        // 下单的支付者信息有 sub_openid；查询的没有。
+        typeof(CombinePayerInfo).GetProperty("SubOpenId").Should().NotBeNull();
+        typeof(CombineQueryPayerInfo).GetProperty("SubOpenId").Should().BeNull(
+            "官方查询页的 combine_payer_info 只有 openid");
+
+        // 下单的场景信息有 payer_client_ip；查询的没有。
+        typeof(CombineSceneInfo).GetProperty("PayerClientIp").Should().NotBeNull();
+        typeof(CombineQuerySceneInfo).GetProperty("PayerClientIp").Should().BeNull(
+            "官方查询页的 scene_info 只有 device_id");
     }
 
     /// <summary>
@@ -132,8 +176,9 @@ public class WechatPayCombineContractGuards
             .Where(static t => !typeof(JsonSerializerContext).IsAssignableFrom(t))
             .ToList();
 
-        domainTypes.Should().HaveCount(9,
-            "合单域 DTO：下单族 6（请求/场景/子单/金额/结算/支付者） + 下单应答 1 + 关单族 2（请求/子单）");
+        domainTypes.Should().HaveCount(14,
+            "合单域 DTO：下单族 6（请求/场景/子单/金额/结算/支付者） + 下单应答 1 + 关单族 2（请求/子单）" +
+            " + 查询族 5（应答/支付者/场景/子单/金额）");
 
         foreach (var type in domainTypes)
         {

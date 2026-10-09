@@ -187,6 +187,7 @@ public class PayServiceCollectionExtensionsTests
                      typeof(PayScoreTerminateAuthorizationRequest),
                      typeof(CombinePrepayRequest),
                      typeof(CombinePrepayResponse),
+                     typeof(CombineQueryResponse),
                  })
         {
             resolver!.GetTypeInfo(dto, options).Should().NotBeNull(

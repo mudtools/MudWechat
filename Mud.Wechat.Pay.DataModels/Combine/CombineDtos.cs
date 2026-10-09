@@ -6,6 +6,7 @@
 // -----------------------------------------------------------------------
 
 using Mud.Wechat.Pay.DataModels.Common;
+using Mud.Wechat.Pay.DataModels.PayScore;
 
 namespace Mud.Wechat.Pay.DataModels.Combine;
 
@@ -221,4 +222,160 @@ public class CombineCloseSubOrder
     /// <summary>子商户绑定的 APPID（<c>sub_appid</c>，选填 string(32)）。</summary>
     [JsonPropertyName("sub_appid")]
     public string? SubAppId { get; set; }
+}
+
+/// <summary>
+/// 合单查询订单应答（<c>GET /v3/combine-transactions/out-trade-no/{combine_out_trade_no}</c>）。
+/// </summary>
+/// <remarks>
+/// <para>
+/// <b>官方文档</b>：<see href="https://pay.weixin.qq.com/wiki/doc/apiv3_partner/apis/chapter7_3_11.shtml"/>
+/// （2026-10-09 逐字段核验；更新时间 2024.10.24）。<b>支持商户：【普通服务商】</b>。
+/// </para>
+/// <para>
+/// <b>查询方式只有一种</b>：官方本页仅给出按<b>合单商户订单号</b>查询（<c>out-trade-no/{combine_out_trade_no}</c>），
+/// <b>无</b> query 参数、<b>无</b>「按微信支付订单号」的等价入口 —— 与单笔交易域（两种查询入口）<b>不同</b>。
+/// </para>
+/// </remarks>
+[HttpJsonSerializable(SerializerClassName = "CombineTransactions")]
+public class CombineQueryResponse : WechatPayResponse
+{
+    /// <summary>合单商户 AppID（<c>combine_appid</c>，必填 string(32)）。</summary>
+    [JsonPropertyName("combine_appid")]
+    public string? CombineAppId { get; set; }
+
+    /// <summary>合单商户号（<c>combine_mchid</c>，必填 string(32)）。</summary>
+    [JsonPropertyName("combine_mchid")]
+    public string? CombineMchId { get; set; }
+
+    /// <summary>合单支付者信息（<c>combine_payer_info</c>，选填）：<b>本页只有 <c>openid</c></b>，见 <see cref="CombineQueryPayerInfo"/>。</summary>
+    [JsonPropertyName("combine_payer_info")]
+    public CombineQueryPayerInfo? CombinePayerInfo { get; set; }
+
+    /// <summary>商品单列表（<c>sub_orders</c>，选填），见 <see cref="CombineQuerySubOrder"/>。</summary>
+    [JsonPropertyName("sub_orders")]
+    public List<CombineQuerySubOrder>? SubOrders { get; set; }
+
+    /// <summary>支付场景描述（<c>scene_info</c>，选填）：<b>本页只有 <c>device_id</c></b>，见 <see cref="CombineQuerySceneInfo"/>。</summary>
+    [JsonPropertyName("scene_info")]
+    public CombineQuerySceneInfo? SceneInfo { get; set; }
+
+    /// <summary>合单商户订单号（<c>combine_out_trade_no</c>，必填 string(32)）。</summary>
+    [JsonPropertyName("combine_out_trade_no")]
+    public string? CombineOutTradeNo { get; set; }
+}
+
+/// <summary>
+/// 查询应答的支付者信息（<c>combine_payer_info</c>）—— <b>只有 <c>openid</c></b>。
+/// </summary>
+/// <remarks>
+/// <b>为何不与下单的 <see cref="CombinePayerInfo"/> 共用</b>：官方查询页的 <c>combine_payer_info</c>
+/// <b>没有</b> <c>sub_openid</c> 字段（下单页有）。共用会让调用方以为查询结果里能读到
+/// <c>SubOpenId</c> 而永远拿到 <c>null</c> ——「永不返回的字段」比多一个类型更有害。
+/// </remarks>
+[HttpJsonSerializable(SerializerClassName = "CombineTransactions")]
+public class CombineQueryPayerInfo
+{
+    /// <summary>用户在商户 appid 下的唯一标识（<c>openid</c>，选填 string(128)）。</summary>
+    [JsonPropertyName("openid")]
+    public string? OpenId { get; set; }
+}
+
+/// <summary>
+/// 查询应答的场景信息（<c>scene_info</c>）—— <b>只有 <c>device_id</c></b>。
+/// </summary>
+/// <remarks>官方查询页未列 <c>payer_client_ip</c>（下单页有，且为必填）⇒ 独立类型，不与下单共用（理由同 <see cref="CombineQueryPayerInfo"/>）。</remarks>
+[HttpJsonSerializable(SerializerClassName = "CombineTransactions")]
+public class CombineQuerySceneInfo
+{
+    /// <summary>商户端设备号（<c>device_id</c>，选填 string(32)）。</summary>
+    [JsonPropertyName("device_id")]
+    public string? DeviceId { get; set; }
+}
+
+/// <summary>查询应答的商品单条目（<c>sub_orders[]</c>）。</summary>
+/// <remarks>
+/// <b>第三个子单形态</b>（下单 / 关单 / 查询各不相同）：本形态含<b>交易结果</b>字段
+/// （<c>trade_state</c> 必填、<c>trade_type</c>/<c>bank_type</c>/<c>success_time</c>/<c>transaction_id</c>）
+/// 与<b>实付金额</b>（<c>payer_amount</c> 必填），这些在下单/关单页都不存在 ⇒ 独立类型。
+/// </remarks>
+[HttpJsonSerializable(SerializerClassName = "CombineTransactions")]
+public class CombineQuerySubOrder
+{
+    /// <summary>商品单商户号（<c>mchid</c>，必填 string(32)）。</summary>
+    [JsonPropertyName("mchid")]
+    public string? MchId { get; set; }
+
+    /// <summary>交易类型（<c>trade_type</c>，选填 string）。</summary>
+    [JsonPropertyName("trade_type")]
+    public string? TradeType { get; set; }
+
+    /// <summary>交易状态（<c>trade_state</c>，必填 string）：如 <c>SUCCESS</c>；须显式判定，勿假定查得到即已支付。</summary>
+    [JsonPropertyName("trade_state")]
+    public string? TradeState { get; set; }
+
+    /// <summary>付款银行（<c>bank_type</c>，选填 string(32)）。</summary>
+    [JsonPropertyName("bank_type")]
+    public string? BankType { get; set; }
+
+    /// <summary>附加数据（<c>attach</c>，选填 string(128)）。</summary>
+    [JsonPropertyName("attach")]
+    public string? Attach { get; set; }
+
+    /// <summary>支付完成时间（<c>success_time</c>，选填 string(32)）。</summary>
+    [JsonPropertyName("success_time")]
+    public string? SuccessTime { get; set; }
+
+    /// <summary>订单金额（<c>amount</c>，选填），见 <see cref="CombineQuerySubOrderAmount"/>。</summary>
+    [JsonPropertyName("amount")]
+    public CombineQuerySubOrderAmount? Amount { get; set; }
+
+    /// <summary>微信支付订单号（<c>transaction_id</c>，选填 string(32)）。</summary>
+    [JsonPropertyName("transaction_id")]
+    public string? TransactionId { get; set; }
+
+    /// <summary>商品单订单号（<c>out_trade_no</c>，必填 string(32)）。</summary>
+    [JsonPropertyName("out_trade_no")]
+    public string? OutTradeNo { get; set; }
+
+    /// <summary>特约商户商户号（<c>sub_mchid</c>，必填 string(32)）。</summary>
+    [JsonPropertyName("sub_mchid")]
+    public string? SubMchId { get; set; }
+
+    /// <summary>子商户绑定的 Appid（<c>sub_appid</c>，选填 string(32)）。</summary>
+    [JsonPropertyName("sub_appid")]
+    public string? SubAppId { get; set; }
+
+    /// <summary>子商户 openid（<c>sub_openid</c>，选填 string(128)）：<c>sub_appid</c> 对应的 openid。</summary>
+    [JsonPropertyName("sub_openid")]
+    public string? SubOpenId { get; set; }
+
+    /// <summary>优惠功能（<c>promotion_detail</c>，选填）：字段表与支付分域一致 ⇒ 复用 <c>PayScorePromotionDetail</c>（内含 <c>goods_detail</c>）。</summary>
+    [JsonPropertyName("promotion_detail")]
+    public List<PayScorePromotionDetail>? PromotionDetail { get; set; }
+}
+
+/// <summary>查询应答的商品单金额（<c>amount</c>）—— 含实付与汇率字段（下单页没有）。</summary>
+[HttpJsonSerializable(SerializerClassName = "CombineTransactions")]
+public class CombineQuerySubOrderAmount
+{
+    /// <summary>标价金额（<c>total_amount</c>，必填 integer，单位分）。</summary>
+    [JsonPropertyName("total_amount")]
+    public long? TotalAmount { get; set; }
+
+    /// <summary>用户支付金额（<c>payer_amount</c>，必填 integer，单位分）。</summary>
+    [JsonPropertyName("payer_amount")]
+    public long? PayerAmount { get; set; }
+
+    /// <summary>标价币种（<c>currency</c>，必填 string(16)）。</summary>
+    [JsonPropertyName("currency")]
+    public string? Currency { get; set; }
+
+    /// <summary>用户支付币种（<c>payer_currency</c>，必填 string(16)）。</summary>
+    [JsonPropertyName("payer_currency")]
+    public string? PayerCurrency { get; set; }
+
+    /// <summary>结算汇率（<c>settlement_rate</c>，选填 integer）。</summary>
+    [JsonPropertyName("settlement_rate")]
+    public long? SettlementRate { get; set; }
 }

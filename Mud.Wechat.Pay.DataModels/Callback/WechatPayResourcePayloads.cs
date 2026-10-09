@@ -496,3 +496,85 @@ public class WechatPayPayScoreConfirmResource
     [JsonPropertyName("need_collection")]
     public bool? NeedCollection { get; set; }
 }
+
+/// <summary>
+/// 解密后的<b>支付分开启 / 解除授权服务</b>资源载荷
+/// （<c>PAYSCORE.USER_OPEN_SERVICE</c> / <c>PAYSCORE.USER_CLOSE_SERVICE</c> 通知）。
+/// </summary>
+/// <remarks>
+/// <para>
+/// <b>官方文档</b>：<see href="https://pay.weixin.qq.com/doc/v3/partner/4012086446"/>
+/// （开启/解除授权服务回调通知，2026-10-09 逐字段核验；更新时间 2025.04.22）。
+/// </para>
+/// <para>
+/// <b>为何两类事件共用一个类型</b>：官方同一页给出两类通知的<b>同一张</b>字段表，
+/// 差别只在 <c>user_service_status</c> / <c>openorclose_time</c> 的取值 ——
+/// 字段集合<b>相同</b> ⇒ 共用（本仓纪律：表相同则共用）；分建两个类型只会让同一份事实两处漂移。
+/// </para>
+/// <para>
+/// <b>⚠️ 面（face）</b>：该页是官方的<b>从业机构（支付机构）· 支付分免确认模式</b>页，
+/// 含 <c>sub_appid</c> / <c>sub_mchid</c> / <c>channel_id</c> 等<b>从业机构侧</b>字段；
+/// 普通商户侧本轮<b>未</b>检索到对应页 ⇒ 普通商户侧字段可能不全，未填字段解析为 <c>null</c> 属正常
+/// （本类全部允许为空，<b>不</b>对必填性做运行期强制，以免把「从业机构面」的契约强加给普通商户）。
+/// </para>
+/// <para>
+/// <b>该页未列出 <c>resource.original_type</c></b>（只有 <c>resource_type</c>）⇒
+/// 本载荷的判别只能凭 <c>event_type</c>，<b>不得</b>假定 <c>original_type = payscore</c> 一定存在。
+/// </para>
+/// <para>
+/// <b>官方字段说明的一处自相重复（照录，不「纠正」）</b>：<c>sub_mchid</c> 与 <c>channel_id</c>
+/// 的中文说明<b>完全相同</b>（均为「【子商户号】」）—— 按其名与「渠道」语义，二者应不同，
+/// 但页面原文如此，故本类注释按原文照录。
+/// </para>
+/// </remarks>
+[HttpJsonSerializable(SerializerClassName = "Callback")]
+public class WechatPayPayScoreAuthorizationResource
+{
+    /// <summary>从业机构公众账号 ID（<c>appid</c>，必填 string(32)）。</summary>
+    [JsonPropertyName("appid")]
+    public string? AppId { get; set; }
+
+    /// <summary>服务商商户号（<c>mchid</c>，必填 string(32)）。</summary>
+    [JsonPropertyName("mchid")]
+    public string? MchId { get; set; }
+
+    /// <summary>子商户公众账号 ID（<c>sub_appid</c>，选填 string(32)）。</summary>
+    [JsonPropertyName("sub_appid")]
+    public string? SubAppId { get; set; }
+
+    /// <summary>子商户号（<c>sub_mchid</c>，必填 string(32)）。</summary>
+    [JsonPropertyName("sub_mchid")]
+    public string? SubMchId { get; set; }
+
+    /// <summary>子商户号（<c>channel_id</c>，选填 string(32)）—— 官方中文说明与 <c>sub_mchid</c> 重复，照录。</summary>
+    [JsonPropertyName("channel_id")]
+    public string? ChannelId { get; set; }
+
+    /// <summary>服务 ID（<c>service_id</c>，必填 string(32)）。</summary>
+    [JsonPropertyName("service_id")]
+    public string? ServiceId { get; set; }
+
+    /// <summary>用户标识（<c>openid</c>，选填 string(128)）。</summary>
+    [JsonPropertyName("openid")]
+    public string? OpenId { get; set; }
+
+    /// <summary>用户标识（<c>sub_openid</c>，选填 string(128)）。</summary>
+    [JsonPropertyName("sub_openid")]
+    public string? SubOpenId { get; set; }
+
+    /// <summary>
+    /// 回调状态（<c>user_service_status</c>，选填 string(32)）——
+    /// <b>授权成功与解除授权成功的判别字段</b>。官方该页只写「【回调状态】」，
+    /// <b>未列取值</b> ⇒ 本仓<b>不</b>臆造枚举常量（消费侧按官方页面/实际报文取值判断）。
+    /// </summary>
+    [JsonPropertyName("user_service_status")]
+    public string? UserServiceStatus { get; set; }
+
+    /// <summary>服务开启 / 解除授权时间（<c>openorclose_time</c>，选填 string(32)，rfc3339）。</summary>
+    [JsonPropertyName("openorclose_time")]
+    public string? OpenOrCloseTime { get; set; }
+
+    /// <summary>授权协议号（<c>authorization_code</c>，选填 string(32)）：免确认模式下调用预授权/解冻等接口的钥匙。</summary>
+    [JsonPropertyName("authorization_code")]
+    public string? AuthorizationCode { get; set; }
+}

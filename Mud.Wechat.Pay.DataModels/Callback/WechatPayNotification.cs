@@ -135,6 +135,34 @@ public static class WechatPayNotificationEventTypes
     /// <c>event_type</c> 是字符串等值匹配 ⇒ 按小写实现会<b>静默不命中</b>回调。
     /// </remarks>
     public const string PayScoreUserConfirm = "PAYSCORE.USER_CONFIRM";
+
+    /// <summary>
+    /// 支付分<b>授权成功</b>（官方 <c>PAYSCORE.USER_OPEN_SERVICE</c>）。
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>官方文档</b>：<see href="https://pay.weixin.qq.com/doc/v3/partner/4012086446"/>
+    /// （开启/解除授权服务回调通知，2026-10-09 逐字核验；更新时间 2025.04.22）。
+    /// 官方原文：「微信支付分回调通知的类型 1、授权成功通知的类型为 <c>PAYSCORE.USER_OPEN_SERVICE</c>」。
+    /// </para>
+    /// <para>
+    /// <b>⚠️ 大小写的坑（再次实测）</b>：检索摘要里该值呈现为<b>全小写</b>
+    /// <c>payscore.user_open_service</c>，而<b>官方页面逐字为大写</b> <c>PAYSCORE.USER_OPEN_SERVICE</c>
+    /// —— 这是本仓第三次遇到「二手摘要把 <c>event_type</c> 小写化」的失真
+    /// （前两次：<c>PAYSCORE.USER_CONFIRM</c>、<c>PAYSCORE.USER_PAID</c>）。
+    /// <c>event_type</c> 是大小写敏感的等值匹配 ⇒ 按小写实现会<b>静默不命中</b>。
+    /// </para>
+    /// </remarks>
+    public const string PayScoreUserOpenService = "PAYSCORE.USER_OPEN_SERVICE";
+
+    /// <summary>
+    /// 支付分<b>解除授权成功</b>（官方 <c>PAYSCORE.USER_CLOSE_SERVICE</c>）。
+    /// </summary>
+    /// <remarks>
+    /// 官方文档同 <see cref="PayScoreUserOpenService"/>。官方原文：解除授权成功通知的类型为
+    /// <c>PAYSCORE.USER_CLOSE_SERVICE</c>（<b>同样是大写</b>）。
+    /// </remarks>
+    public const string PayScoreUserCloseService = "PAYSCORE.USER_CLOSE_SERVICE";
 }
 
 /// <summary>
@@ -154,4 +182,28 @@ public static class WechatPayNotificationOriginalTypes
 
     /// <summary>分账动账（官方 <c>profitsharing</c>）。</summary>
     public const string ProfitSharing = "profitsharing";
+
+    /// <summary>
+    /// 支付分（官方 <c>payscore</c>）。
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>官方文档</b>：<see href="https://pay.weixin.qq.com/doc/v3/merchant/4012587960"/>
+    /// （支付成功回调通知，2026-10-09 逐字段核验；更新时间 2025.09.15）。
+    /// 官方原文：<c>resource.original_type</c> 取值为 <c>payscore</c>（「加密前的对象类型为 <c>payscore</c>」）。
+    /// </para>
+    /// <para>
+    /// <b>本常量补上了一处此前的「未核验项」</b>：支付分通知落地时该取值<b>未取得</b>，
+    /// 当时按纪律<b>不</b>对 <c>original_type</c> 做任何断言（以免把猜测固化成契约）；
+    /// 现已由官方页核实为<b>小写</b> <c>payscore</c> —— 与 <c>event_type</c> 的<b>大写</b>前缀
+    /// （<c>PAYSCORE.</c>）<b>大小写不一致</b>，同一产品线两处取值风格不同，勿互相类推。
+    /// </para>
+    /// <para>
+    /// <b>适用面</b>：支付分<b>订单类</b>通知（<c>PAYSCORE.USER_PAID</c> / <c>PAYSCORE.USER_CONFIRM</c>）页
+    /// 明确列出本字段；而<b>授权类</b>通知页（<c>…/partner/4012086446</c>）
+    /// <b>只列出 <c>resource_type</c>、未列出 <c>original_type</c></b> ⇒ 对授权类通知<b>不得</b>
+    /// 假定该字段存在（消费侧须容忍缺失）。
+    /// </para>
+    /// </remarks>
+    public const string PayScore = "payscore";
 }

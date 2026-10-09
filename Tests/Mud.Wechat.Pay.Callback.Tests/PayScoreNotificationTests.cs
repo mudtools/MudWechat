@@ -19,9 +19,14 @@ namespace Mud.Wechat.Pay.Callback.Tests;
 /// <c>TRANSACTION.SUCCESS</c>」的形态<b>完全不同</b>（本仓两条都已留档，勿套用规则）。
 /// </para>
 /// <para>
-/// <b>未核验项（诚实记录）</b>：本通知的 <c>resource.original_type</c> 取值本轮<b>未</b>取得
-/// （核验覆盖了 <c>event_type</c> 与解密后字段表，未含该字段取值）⇒ 用例<b>不</b>对其做断言，
-/// 以免把猜测固化成契约。后续核验后再补守卫。
+/// <b>曾经的「未核验项」现已补上</b>：本通知的 <c>resource.original_type</c> 取值此前<b>未</b>取得，
+/// 当时按纪律<b>不</b>做任何断言（以免把猜测固化成契约）；本轮由官方《支付成功回调通知》页
+/// （<c>…/doc/v3/merchant/4012587960</c>）核实为<b>小写</b> <c>payscore</c> ⇒ 已补常量与断言。
+/// </para>
+/// <para>
+/// <b>本轮新增覆盖</b>：支付分<b>授权类</b>通知（<c>PAYSCORE.USER_OPEN_SERVICE</c> /
+/// <c>PAYSCORE.USER_CLOSE_SERVICE</c>）—— 与订单类同属「支付分自带大写前缀」形态，
+/// 但二者<b>载荷字段表完全不同</b>，故各自独立建模。
 /// </para>
 /// </remarks>
 public class PayScoreNotificationTests
@@ -51,7 +56,8 @@ public class PayScoreNotificationTests
 
         var (headers, body) = fixture.CreateNotification(
             PaidResourceJson,
-            eventType: WechatPayNotificationEventTypes.PayScoreUserPaid);
+            eventType: WechatPayNotificationEventTypes.PayScoreUserPaid,
+            originalType: WechatPayNotificationOriginalTypes.PayScore);
 
         var context = await receiver.ReceiveAsync(WechatPayCallbackTestFixture.MerchantKey, headers, body);
 
@@ -77,7 +83,8 @@ public class PayScoreNotificationTests
 
         var (headers, body) = fixture.CreateNotification(
             PaidResourceJson,
-            eventType: WechatPayNotificationEventTypes.PayScoreUserPaid);
+            eventType: WechatPayNotificationEventTypes.PayScoreUserPaid,
+            originalType: WechatPayNotificationOriginalTypes.PayScore);
 
         var context = await receiver.ReceiveAsync(WechatPayCallbackTestFixture.MerchantKey, headers, body);
         var payload = context.GetPayScorePaid()!;
@@ -136,5 +143,77 @@ public class PayScoreNotificationTests
         WechatPayNotificationEventTypes.PayScoreUserPaid
             .Should().NotBe(WechatPayNotificationEventTypes.TransactionSuccess);
         WechatPayNotificationEventTypes.PayScoreUserPaid.Should().StartWith("PAYSCORE.");
+
+        // 授权类事件**同样大写** —— 检索摘要里的全小写是失真（本仓第三次遇到该失真：
+        // PAYSCORE.USER_PAID / USER_CONFIRM / USER_OPEN_SERVICE 三次摘要均为小写、页面均为大写）。
+        WechatPayNotificationEventTypes.PayScoreUserOpenService.Should().Be("PAYSCORE.USER_OPEN_SERVICE");
+        WechatPayNotificationEventTypes.PayScoreUserCloseService.Should().Be("PAYSCORE.USER_CLOSE_SERVICE");
+        WechatPayNotificationEventTypes.PayScoreUserOpenService.Should().StartWith("PAYSCORE.");
+
+        // original_type 是**小写** payscore —— 与 event_type 的大写前缀风格不一致，两者不可互相类推。
+        WechatPayNotificationOriginalTypes.PayScore.Should().Be("payscore");
+        WechatPayNotificationOriginalTypes.PayScore
+            .Should().NotBe(WechatPayNotificationEventTypes.PayScoreUserPaid,
+                "original_type 与 event_type 的取值风格确实不同（小写 vs 大写前缀）");
+    }
+
+    /// <summary>
+    /// <b>判别式锁定</b>：支付分<b>订单类</b>通知的 <c>resource.original_type</c> 为小写 <c>payscore</c>
+    /// （官方《支付成功回调通知》页逐字核实）—— 本仓此前把它记为「未核验项」，本轮补齐。
+    /// </summary>
+    [Fact]
+    public async Task ReceiveAsync_ShouldCarryPayscoreOriginalType_ForOrderNotifications()
+    {
+        using var fixture = new WechatPayCallbackTestFixture();
+        var receiver = fixture.CreateReceiver();
+
+        var (headers, body) = fixture.CreateNotification(
+            PaidResourceJson,
+            eventType: WechatPayNotificationEventTypes.PayScoreUserPaid,
+            originalType: WechatPayNotificationOriginalTypes.PayScore);
+
+        var context = await receiver.ReceiveAsync(WechatPayCallbackTestFixture.MerchantKey, headers, body);
+
+        context.Notification.Resource!.OriginalType.Should().Be("payscore",
+            "original_type 才是载荷形态的真正判别式（event_type 存在跨产品线同名复用）");
+    }
+
+    /// <summary>
+    /// <b>授权成功 / 解除授权成功通知</b>（<c>PAYSCORE.USER_OPEN_SERVICE</c> /
+    /// <c>PAYSCORE.USER_CLOSE_SERVICE</c>）：两类事件<b>共用一个载荷类型</b>。
+    /// </summary>
+    /// <remarks>
+    /// <b>测试值说明</b>：官方该页仅写 <c>user_service_status</c> 为「【回调状态】」，<b>未列取值</b>
+    /// ⇒ 用例里的状态值<b>刻意</b>用测试标记串，只验证「明文可原样解析」，
+    /// <b>不</b>代表官方枚举取值（不臆造）。
+    /// </remarks>
+    [Theory]
+    [InlineData("PAYSCORE.USER_OPEN_SERVICE", "TEST_OPEN")]
+    [InlineData("PAYSCORE.USER_CLOSE_SERVICE", "TEST_CLOSE")]
+    public async Task ReceiveAsync_ShouldExposePayScoreAuthorizationPayload(string eventType, string status)
+    {
+        using var fixture = new WechatPayCallbackTestFixture();
+        var receiver = fixture.CreateReceiver();
+
+        var json =
+            "{\"appid\":\"wx-test\",\"mchid\":\"1900000000\",\"sub_appid\":\"wx-sub\"," +
+            "\"sub_mchid\":\"1900000001\",\"channel_id\":\"CH-1\",\"service_id\":\"123456\"," +
+            "\"openid\":\"o-test\",\"sub_openid\":\"o-sub\"," +
+            "\"user_service_status\":\"" + status + "\"," +
+            "\"openorclose_time\":\"2026-10-09T12:00:00+08:00\"," +
+            "\"authorization_code\":\"AUTH-CODE-1\"}";
+
+        var (headers, body) = fixture.CreateNotification(json, eventType: eventType);
+        var context = await receiver.ReceiveAsync(WechatPayCallbackTestFixture.MerchantKey, headers, body);
+
+        context.EventType.Should().Be(eventType);
+
+        var payload = context.GetPayScoreAuthorization();
+        payload.Should().NotBeNull();
+        payload!.ServiceId.Should().Be("123456");
+        payload.AuthorizationCode.Should().Be("AUTH-CODE-1", "授权协议号是后续调用预授权 / 解冻的钥匙");
+        payload.UserServiceStatus.Should().Be(status, "两类事件共用同一载荷类型，差别只在状态与时间字段");
+        payload.SubMchId.Should().Be("1900000001", "从业机构面载荷含子商户号");
+        payload.OpenOrCloseTime.Should().Be("2026-10-09T12:00:00+08:00");
     }
 }

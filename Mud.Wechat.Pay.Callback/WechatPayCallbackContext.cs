@@ -122,6 +122,33 @@ public sealed class WechatPayCallbackContext
     public WechatPayPayScoreConfirmResource? GetPayScoreConfirm()
         => TryDeserialize(WechatPayCallbackJsonContext.Default.WechatPayPayScoreConfirmResource);
 
+    /// <summary>
+    /// 把解密后的载荷按<b>支付分开启/解除授权</b>
+    /// （<c>event_type = PAYSCORE.USER_OPEN_SERVICE</c> 或 <c>PAYSCORE.USER_CLOSE_SERVICE</c>）类型化解析。
+    /// </summary>
+    /// <returns>解析失败或载荷非本形态时返回 <c>null</c>。</returns>
+    /// <remarks>
+    /// <para>
+    /// <b>两种事件共用一个载荷类型</b>（官方同一页给出两类通知的同一张字段表）：
+    /// 授权成功与解除授权成功的差别体现在 <c>user_service_status</c>（及 <c>openorclose_time</c>），
+    /// 而<b>不是</b>字段集合 ⇒ 分建两个类型只会让同一份事实在两处漂移。
+    /// </para>
+    /// <para>
+    /// <b>判别方式</b>：凭 <c>event_type</c>（大写，见
+    /// <see cref="WechatPayNotificationEventTypes.PayScoreUserOpenService"/>）。官方该页
+    /// <b>未列出</b> <c>resource.original_type</c>（只有 <c>resource_type</c>）
+    /// ⇒ 本载荷的判别<b>不可</b>依赖 <c>original_type</c>。
+    /// </para>
+    /// <para>
+    /// <b>面（重要）</b>：本载荷字段表来自官方的<b>从业机构（支付机构）·支付分免确认模式</b>页，
+    /// 含 <c>sub_appid</c> / <c>sub_mchid</c> / <c>channel_id</c> 等<b>从业机构侧</b>字段；
+    /// 普通商户侧<b>未</b>出现该页 ⇒ 普通商户接入时应以自身收到的实际报文为准，
+    /// 未填字段解析为 <c>null</c> 属正常。
+    /// </para>
+    /// </remarks>
+    public WechatPayPayScoreAuthorizationResource? GetPayScoreAuthorization()
+        => TryDeserialize(WechatPayCallbackJsonContext.Default.WechatPayPayScoreAuthorizationResource);
+
     private T? TryDeserialize<T>(System.Text.Json.Serialization.Metadata.JsonTypeInfo<T> typeInfo)
         where T : class
     {

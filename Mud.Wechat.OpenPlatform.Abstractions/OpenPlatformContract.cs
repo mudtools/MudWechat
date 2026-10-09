@@ -105,6 +105,16 @@ public static class OpenPlatformContract
     /// <summary>授权方接口调用令牌有效期（秒）：官方原文「authorizer_access_token 有效期为 2 小时」。</summary>
     public const int AuthorizerTokenLifetimeSeconds = 7200;
 
+    /// <summary>
+    /// 授权方接口调用令牌的<b>本仓</b>提前刷新窗口（秒）。
+    /// </summary>
+    /// <remarks>
+    /// <b>⚠️ 这不是官方契约</b>：官方对授权方令牌只要求「缓存 authorizer_access_token，
+    /// 避免获取/刷新接口调用令牌的 API 调用触发<b>每日限额</b>」，<b>未</b>规定任何提前量。
+    /// 本仓取 600 秒（与平台令牌一致）属<b>经验值</b> —— 明确标注以免后来者把它当官方事实引用。
+    /// </remarks>
+    public const int AuthorizerTokenRefreshLeadSeconds = 600;
+
     /// <summary>请求体字段：预授权码（官方 <c>pre_auth_code</c>）。</summary>
     public const string PreAuthCodeField = "pre_auth_code";
 

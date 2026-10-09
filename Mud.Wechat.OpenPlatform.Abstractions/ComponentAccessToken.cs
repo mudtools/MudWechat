@@ -56,9 +56,21 @@ public static class ComponentAccessTokenPolicy
     /// <param name="nowUtc">当前 UTC 时间。</param>
     /// <returns>可用为 <c>true</c>。</returns>
     public static bool IsUsable(ComponentAccessTokenState? state, DateTimeOffset nowUtc)
-        => state != null
-           && !string.IsNullOrWhiteSpace(state.AccessToken)
-           && nowUtc < state.ExpiresAt;
+        => IsUsable(state?.AccessToken, state?.ExpiresAt ?? default, nowUtc);
+
+    /// <summary>
+    /// 判断令牌是否<b>当前可用</b>（<b>基础重载</b>：直接给令牌与到期时刻）。
+    /// </summary>
+    /// <param name="accessToken">令牌内容。</param>
+    /// <param name="expiresAt">失效时刻（UTC）。</param>
+    /// <param name="nowUtc">当前 UTC 时间。</param>
+    /// <remarks>
+    /// <b>为何做成基础重载</b>：授权方接口调用令牌（<c>authorizer_access_token</c>）与平台令牌
+    /// 的<b>时效语义完全一致</b>（同样是 2 小时、同样需要提前刷新）⇒ 两条链共用同一份经过
+    /// 逐边界测试的判定，而不是各写一份「看起来一样」的实现。
+    /// </remarks>
+    public static bool IsUsable(string? accessToken, DateTimeOffset expiresAt, DateTimeOffset nowUtc)
+        => !string.IsNullOrWhiteSpace(accessToken) && nowUtc < expiresAt;
 
     /// <summary>
     /// 判断是否<b>应当刷新</b>令牌。
@@ -79,8 +91,25 @@ public static class ComponentAccessTokenPolicy
         ComponentAccessTokenState? state,
         DateTimeOffset nowUtc,
         TimeSpan? refreshLead = null)
+        => ShouldRefresh(state?.AccessToken, state?.ExpiresAt ?? default, nowUtc, refreshLead);
+
+    /// <summary>
+    /// 判断是否<b>应当刷新</b>令牌（<b>基础重载</b>：直接给令牌与到期时刻）。
+    /// </summary>
+    /// <param name="accessToken">令牌内容（<c>null</c>/空白视为「尚未取得」⇒ 应刷新）。</param>
+    /// <param name="expiresAt">失效时刻（UTC）。</param>
+    /// <param name="nowUtc">当前 UTC 时间。</param>
+    /// <param name="refreshLead">
+    /// 提前刷新窗口；<c>null</c> 取官方建议值（<see cref="OpenPlatformContract.RecommendedRefreshLeadSeconds"/> 秒）。
+    /// <b>负值按 0 处理</b>。
+    /// </param>
+    public static bool ShouldRefresh(
+        string? accessToken,
+        DateTimeOffset expiresAt,
+        DateTimeOffset nowUtc,
+        TimeSpan? refreshLead = null)
     {
-        if (state == null || string.IsNullOrWhiteSpace(state.AccessToken))
+        if (string.IsNullOrWhiteSpace(accessToken))
         {
             return true;
         }
@@ -91,6 +120,6 @@ public static class ComponentAccessTokenPolicy
             lead = TimeSpan.Zero;
         }
 
-        return nowUtc >= state.ExpiresAt - lead;
+        return nowUtc >= expiresAt - lead;
     }
 }

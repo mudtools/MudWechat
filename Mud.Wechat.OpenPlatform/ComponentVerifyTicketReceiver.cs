@@ -13,22 +13,17 @@ using Mud.Wechat.OpenPlatform.Abstractions;
 
 namespace Mud.Wechat.OpenPlatform;
 
-/// <summary>票据推送的处置结果。</summary>
+/// <summary>推送的处置结果分类。</summary>
 public enum ComponentTicketPushOutcome
 {
-    /// <summary>验签 + 解密 + 类型判定 + appid 比对全通过，票据<b>已写入</b>存储。</summary>
+    /// <summary>票据推送：验签 + 解密 + 类型 + appid 全通过，票据<b>已写入</b>存储。</summary>
     Accepted,
 
-    /// <summary>
-    /// 验签与解密通过，但 <c>InfoType</c> 不是 <c>component_verify_ticket</c>
-    /// （同一「授权事件接收 URL」还会推授权结果等事件）。
-    /// </summary>
-    /// <remarks>
-    /// <b>本线目前只消费票据</b>：其余事件类型尚未建模 ⇒ 宿主须自行决定回 <c>success</c>（放弃该事件）
-    /// 还是回非 <c>success</c>（让微信重试，直到后续步骤落地）。见
-    /// <see cref="ComponentVerifyTicketReceiver.ShouldReturnSuccess"/> 的 remarks。
-    /// </remarks>
-    NotTicketPush,
+    /// <summary>授权变更事件（授权成功 / 更新授权 / 取消授权）：事件已解析并随结果返回。</summary>
+    AuthorizerEvent,
+
+    /// <summary>未知 <c>InfoType</c>（本线尚未建模的类型，含官方未来新增的事件）。</summary>
+    UnknownInfoType,
 
     /// <summary>缺少 <c>msg_signature</c> / <c>timestamp</c> / <c>nonce</c> / 包体，或信封内没有 <c>Encrypt</c>。</summary>
     MalformedEnvelope,
@@ -42,37 +37,61 @@ public enum ComponentTicketPushOutcome
     /// <summary>解密出的 <c>receiveId</c> 与本平台 appid 不一致（防跨平台重放）。</summary>
     AppIdMismatch,
 
-    /// <summary>类型正确但 <c>ComponentVerifyTicket</c> 为空。</summary>
+    /// <summary>类型为票据推送但 <c>ComponentVerifyTicket</c> 为空。</summary>
     MissingTicket,
 }
 
+/// <summary>一次推送的处置结果。</summary>
+public sealed class ComponentPushResult
+{
+    internal ComponentPushResult(
+        ComponentTicketPushOutcome outcome,
+        string? infoType = null,
+        ComponentAuthorizerEvent? authorizerEvent = null)
+    {
+        Outcome = outcome;
+        InfoType = infoType;
+        AuthorizerEvent = authorizerEvent;
+    }
+
+    /// <summary>结果分类。</summary>
+    public ComponentTicketPushOutcome Outcome { get; }
+
+    /// <summary>解密后的 <c>InfoType</c>（仅在验签解密通过后才有值）。</summary>
+    public string? InfoType { get; }
+
+    /// <summary>授权变更事件（仅 <see cref="ComponentTicketPushOutcome.AuthorizerEvent"/> 时非空）。</summary>
+    public ComponentAuthorizerEvent? AuthorizerEvent { get; }
+
+    /// <summary>是否应向微信回 <c>success</c>（判定见 <see cref="ComponentVerifyTicketReceiver.ShouldReturnSuccess"/>）。</summary>
+    public bool ShouldReturnSuccess => ComponentVerifyTicketReceiver.ShouldReturnSuccess(Outcome);
+}
+
 /// <summary>
-/// <c>component_verify_ticket</c> 推送的接收器（<b>本线凭证链的入口</b>）。
+/// 「授权事件接收 URL」推送的接收器（<b>本线凭证链与授权链的共同入口</b>）。
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>官方契约（2026-10-09 核验）</b>：第三方平台创建审核通过后，微信服务器会向「授权事件接收 URL」
-/// <b>每隔 10 分钟</b>以 <b>POST</b> 推送 <c>component_verify_ticket</c>；
-/// 官方原文「接收 POST 请求后，只需直接返回字符串 <c>success</c>」；
-/// 推送内容为<b>加密</b>信封（解密后为 XML：<c>AppId</c> / <c>CreateTime</c> / <c>InfoType</c> /
-/// <c>ComponentVerifyTicket</c>）。来源：
-/// <see href="https://developers.weixin.qq.com/doc/oplatform/Third-party_Platforms/2.0/api/Before_Develop/component_verify_ticket.html"/>。
+/// <b>官方契约（2026-10-09 核验，两页）</b>：同一个接收 URL 会收到两类推送 ——
+/// ① 《验证票据》：每 10 分钟推 <c>component_verify_ticket</c>；
+/// ② 《授权变更通知推送》：用户授权 / 取消授权 / 更新授权后推
+/// <c>authorized</c> / <c>unauthorized</c> / <c>updateauthorized</c>。
+/// 两页均要求「接收 POST 请求后，只需直接返回字符串 <c>success</c>」。
 /// </para>
 /// <para>
-/// <b>加解密与验签复用共享内核</b>：本类<b>不</b>另写一份 AES/签名实现，而是调用
-/// <see cref="WechatCallbackCrypto"/>（与公众号 / 企微线同一份、同一套官方算法：
-/// 4 参 <c>msg_signature</c> + AES-256-CBC/PKCS#7 + 明文 <c>random(16B)+len(4B)+msg+appid</c>）。
-/// <b>安全算法绝不复制第二份</b> —— 任何一处漂移都会变成「验签通过但解出乱码」这类极难定位的缺陷。
+/// <b>加解密与验签复用共享内核</b>（<see cref="WechatCallbackCrypto"/>，与公众号 / 企微线同一份），
+/// 不另写第二份安全算法；并<b>接住其领域异常</b> <see cref="WechatCallbackException"/>
+/// （共享算法以它表达「密文长度非法」等前置校验失败 —— 漏接会让畸形密文以异常穿透接收器）。
 /// </para>
 /// <para>
-/// <b>XML 解析安全</b>：用 <see cref="XDocument"/> 解析；.NET 默认 <c>DtdProcessing.Prohibit</c>，
-/// 即<b>不</b>解析 DTD / 外部实体 ⇒ 天然免疫 XXE（无自定义 <c>XmlResolver</c>）。
+/// <b>XML 解析安全</b>：<see cref="XDocument"/> 解析，.NET 默认 <c>DtdProcessing.Prohibit</c>
+/// ⇒ 不解析 DTD / 外部实体，天然免疫 XXE。
 /// </para>
 /// </remarks>
 public sealed class ComponentVerifyTicketReceiver
 {
-    /// <summary>票据推送的 <c>InfoType</c> 取值（官方原文 <c>component_verify_ticket</c>）。</summary>
-    public const string TicketInfoType = "component_verify_ticket";
+    /// <summary>票据推送的 <c>InfoType</c>（官方原文；等价于 <see cref="ComponentPushInfoTypes.ComponentVerifyTicket"/>）。</summary>
+    public const string TicketInfoType = ComponentPushInfoTypes.ComponentVerifyTicket;
 
     /// <summary>官方要求返回的应答字符串。</summary>
     public const string SuccessResponse = "success";
@@ -93,19 +112,19 @@ public sealed class ComponentVerifyTicketReceiver
     }
 
     /// <summary>
-    /// 处置一次推送。
+    /// 处置一次推送（票据推送或授权变更推送）。
     /// </summary>
     /// <param name="msgSignature">URL 查询参数 <c>msg_signature</c>。</param>
     /// <param name="timestamp">URL 查询参数 <c>timestamp</c>。</param>
     /// <param name="nonce">URL 查询参数 <c>nonce</c>。</param>
     /// <param name="body">请求体（加密信封 XML）。</param>
-    /// <returns>处置结果；仅 <see cref="ComponentTicketPushOutcome.Accepted"/> 时票据被写入。</returns>
+    /// <returns>处置结果；票据推送成功时票据已写入存储，授权变更事件随结果返回。</returns>
     /// <remarks>
-    /// <b>判定顺序是安全相关的</b>：先验签、再解密、再比对 appid，最后才看类型与票据 ——
-    /// 任何一步失败都<b>不写</b>存储。若把写入提前到验签之前，一个伪造报文就能覆盖真票据
-    /// （等于让攻击者关掉整条凭证链）。
+    /// <b>判定顺序是安全相关的</b>：先验签、再解密、再比对 appid，最后才看类型并<b>分流</b> ——
+    /// 任何一步失败都<b>不写</b>存储、也<b>不</b>返回事件。若把写入/返回提前到验签之前，
+    /// 一个伪造报文就能覆盖真票据或伪造一次「授权成功」（等于让攻击者拿到授权码）。
     /// </remarks>
-    public ComponentTicketPushOutcome Receive(
+    public ComponentPushResult Receive(
         string? msgSignature,
         string? timestamp,
         string? nonce,
@@ -116,27 +135,23 @@ public sealed class ComponentVerifyTicketReceiver
             || string.IsNullOrWhiteSpace(nonce)
             || string.IsNullOrWhiteSpace(body))
         {
-            return ComponentTicketPushOutcome.MalformedEnvelope;
+            return new ComponentPushResult(ComponentTicketPushOutcome.MalformedEnvelope);
         }
 
-        var encrypt = ReadElement(body!, "Encrypt");
+        var envelope = Parse(body!);
+        var encrypt = ReadElement(envelope, ComponentPushXmlElements.Encrypt);
         if (string.IsNullOrWhiteSpace(encrypt))
         {
-            return ComponentTicketPushOutcome.MalformedEnvelope;
+            return new ComponentPushResult(ComponentTicketPushOutcome.MalformedEnvelope);
         }
 
-        // ① 验签（4 参形态：含 Encrypt 参与项）—— 失败即返回，绝不进入解密与写入。
+        // ① 验签（4 参形态：含 Encrypt 参与项）—— 失败即返回，绝不进入解密 / 写入 / 事件返回。
         if (!WechatCallbackCrypto.VerifySignature(_config.Token!, timestamp!, nonce!, encrypt!, msgSignature!))
         {
-            return ComponentTicketPushOutcome.InvalidSignature;
+            return new ComponentPushResult(ComponentTicketPushOutcome.InvalidSignature);
         }
 
-        // ② 解密。捕获面刻意收窄：只接「密文本身有问题」这一类异常，其余（如 OOM、取消）不吞。
-        //
-        // ⚠️ **必须包含 <see cref="WechatCallbackException"/>**：共享内核以该**领域异常**表达
-        // 「密文长度非法」等前置校验失败（本轮实测踩到：漏了它，一个畸形密文会以异常形式
-        // 直接穿透接收器，而不是被归一为 DecryptFailed 结果）。
-        // 复用共享算法的同时，也**必须接住它的异常契约** —— 这是跨线复用的常见集成盲点。
+        // ② 解密。捕获面刻意收窄，但**必须**含共享内核的领域异常（见类注释）。
         string plaintext;
         string receiveId;
         try
@@ -146,31 +161,48 @@ public sealed class ComponentVerifyTicketReceiver
         catch (Exception ex) when (
             ex is WechatCallbackException or CryptographicException or FormatException or ArgumentException)
         {
-            return ComponentTicketPushOutcome.DecryptFailed;
+            return new ComponentPushResult(ComponentTicketPushOutcome.DecryptFailed);
         }
 
-        // ③ appid 比对：防跨平台重放（同一条密文被搬到另一个平台的接收 URL 上）。
+        // ③ appid 比对：防跨平台重放。
         if (!string.Equals(receiveId, _config.ComponentAppId, StringComparison.Ordinal))
         {
-            return ComponentTicketPushOutcome.AppIdMismatch;
+            return new ComponentPushResult(ComponentTicketPushOutcome.AppIdMismatch);
         }
 
-        // ④ 类型判定：同一接收 URL 也会推授权结果等事件，本线只消费票据。
-        var infoType = ReadElement(plaintext, "InfoType");
-        if (!string.Equals(infoType, TicketInfoType, StringComparison.Ordinal))
+        var payload = Parse(plaintext);
+        var infoType = ReadElement(payload, ComponentPushXmlElements.InfoType);
+
+        // ④ 分流：票据 或 授权变更事件 或 未知类型。
+        if (string.Equals(infoType, ComponentPushInfoTypes.ComponentVerifyTicket, StringComparison.Ordinal))
         {
-            return ComponentTicketPushOutcome.NotTicketPush;
+            var ticket = ReadElement(payload, ComponentPushXmlElements.ComponentVerifyTicket);
+            if (string.IsNullOrWhiteSpace(ticket))
+            {
+                return new ComponentPushResult(
+                    ComponentTicketPushOutcome.MissingTicket, ComponentPushInfoTypes.ComponentVerifyTicket);
+            }
+
+            _ticketStore.Set(ticket);
+            return new ComponentPushResult(
+                ComponentTicketPushOutcome.Accepted, ComponentPushInfoTypes.ComponentVerifyTicket);
         }
 
-        // ⑤ 取票据并写入（唯一写点）。
-        var ticket = ReadElement(plaintext, "ComponentVerifyTicket");
-        if (string.IsNullOrWhiteSpace(ticket))
+        if (IsAuthorizerEvent(infoType))
         {
-            return ComponentTicketPushOutcome.MissingTicket;
+            return new ComponentPushResult(
+                ComponentTicketPushOutcome.AuthorizerEvent,
+                infoType,
+                new ComponentAuthorizerEvent(
+                    infoType,
+                    ReadElement(payload, ComponentPushXmlElements.AuthorizerAppId),
+                    ReadElement(payload, ComponentPushXmlElements.AuthorizationCode),
+                    ReadElement(payload, ComponentPushXmlElements.AuthorizationCodeExpiredTime),
+                    ReadElement(payload, ComponentPushXmlElements.PreAuthCode),
+                    ReadElement(payload, ComponentPushXmlElements.CreateTime)));
         }
 
-        _ticketStore.Set(ticket);
-        return ComponentTicketPushOutcome.Accepted;
+        return new ComponentPushResult(ComponentTicketPushOutcome.UnknownInfoType, infoType);
     }
 
     /// <summary>
@@ -178,35 +210,44 @@ public sealed class ComponentVerifyTicketReceiver
     /// </summary>
     /// <remarks>
     /// <para>
-    /// <b>只有 <see cref="ComponentTicketPushOutcome.Accepted"/> 才回 <c>success</c></b>：
+    /// <b>只有「已被本线完整消化」的两类结果才回 <c>success</c></b>：
+    /// <see cref="ComponentTicketPushOutcome.Accepted"/>（票据已落存储）与
+    /// <see cref="ComponentTicketPushOutcome.AuthorizerEvent"/>（事件已随返回值交付给调用方）。
     /// 验签/解密失败若也回 <c>success</c>，等于告诉微信「一切正常」—— 真票据丢失、攻击尝试
-    /// 都会在监控上<b>静默消失</b>（微信不再重试，我方也没有任何告警线索）。
+    /// 都会在监控上<b>静默消失</b>（微信不再重试，我方也无告警线索）。
     /// </para>
     /// <para>
-    /// <b><see cref="ComponentTicketPushOutcome.NotTicketPush"/> 刻意不自动回 success</b>：
-    /// 本线尚未建模授权结果事件，自动回 <c>success</c> 会让这些事件被<b>静默丢弃</b>。
-    /// 宿主应显式选择：回 <c>success</c>（放弃）或回非 <c>success</c>（让微信重试，
-    /// 直到本线落地授权结果事件处理）。
+    /// <b>⚠️ 本判定在上一步曾是「授权类事件一律不回 success」</b>：当时本线尚未建模授权变更事件，
+    /// 自动回 <c>success</c> 会让这些事件被静默丢弃 —— 那个结论在<b>未建模时是正确的</b>。
+    /// 本步已把三类事件解析并<b>同步</b>随返回值交付 ⇒ 同批解除该处置（与守卫「事实变化则同批改判」同款纪律）。
+    /// 保留下来的保守面是 <see cref="ComponentTicketPushOutcome.UnknownInfoType"/>：<b>未知类型仍不回</b>
+    /// <c>success</c>，让宿主在监控上看得见（微信会重试若干次后放弃）。
     /// </para>
     /// </remarks>
     public static bool ShouldReturnSuccess(ComponentTicketPushOutcome outcome)
-        => outcome == ComponentTicketPushOutcome.Accepted;
+        => outcome is ComponentTicketPushOutcome.Accepted or ComponentTicketPushOutcome.AuthorizerEvent;
 
-    /// <summary>读取 XML 中某元素的文本（解析失败 / 元素缺失返回 <c>null</c>）。</summary>
-    /// <remarks>
-    /// <b>CDATA 已由 XML 解析器处理</b>：官方推送的 <c>Encrypt</c> 常以 <c>&lt;![CDATA[...]]&gt;</c> 包裹，
-    /// <see cref="XElement.Value"/> 会给出其内容（无需自行剥 CDATA）。
-    /// </remarks>
-    private static string? ReadElement(string xml, string elementName)
+    /// <summary>是否为授权变更事件（三类）。</summary>
+    private static bool IsAuthorizerEvent(string? infoType)
+        => string.Equals(infoType, ComponentPushInfoTypes.Authorized, StringComparison.Ordinal)
+           || string.Equals(infoType, ComponentPushInfoTypes.UpdateAuthorized, StringComparison.Ordinal)
+           || string.Equals(infoType, ComponentPushInfoTypes.Unauthorized, StringComparison.Ordinal);
+
+    /// <summary>解析 XML（失败返回 <c>null</c>，不抛出）。</summary>
+    private static XElement? Parse(string xml)
     {
         try
         {
-            var root = XDocument.Parse(xml).Root;
-            return root?.Element(elementName)?.Value;
+            return XDocument.Parse(xml).Root;
         }
         catch (XmlException)
         {
             return null;
         }
     }
+
+    /// <summary>读取元素文本（根为 <c>null</c> / 元素缺失时返回 <c>null</c>）。</summary>
+    /// <remarks>CDATA 由 XML 解析器处理，<see cref="XElement.Value"/> 直接给出内容。</remarks>
+    private static string? ReadElement(XElement? root, string elementName)
+        => root?.Element(elementName)?.Value;
 }

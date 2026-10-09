@@ -88,6 +88,10 @@ public static class OpenPlatformServiceCollectionExtensions
         // 授权流程（预授权码 / 换取授权信息 / 刷新授权方令牌）。
         services.TryAddSingleton<IComponentAuthorizationService, ComponentAuthorizationService>();
 
+        // 授权方令牌：存储端口（多实例部署须预注册分布式实现覆盖）+ 缓存/刷新提供者。
+        services.TryAddSingleton<IAuthorizerTokenStore, InMemoryAuthorizerTokenStore>();
+        services.TryAddSingleton<IAuthorizerTokenProvider, AuthorizerTokenProvider>();
+
         return services;
     }
 }

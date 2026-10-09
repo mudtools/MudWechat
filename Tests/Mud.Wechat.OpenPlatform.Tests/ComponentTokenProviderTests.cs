@@ -253,6 +253,8 @@ public class ComponentTokenProviderTests
         {
             c.ComponentAppId = "wx-comp";
             c.ComponentAppSecret = "secret";
+            c.Token = "push-token";
+            c.EncodingAesKey = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFG";
         });
 
         using var provider = services.BuildServiceProvider(new ServiceProviderOptions
@@ -277,8 +279,18 @@ public class ComponentTokenProviderTests
             client.Object,
             store,
             clock,
-            new OpenPlatformAppConfig { ComponentAppId = "wx-comp", ComponentAppSecret = "secret" },
+            CreateConfig(),
             NullLogger<ComponentTokenProvider>.Instance);
+
+    /// <summary>完整配置（含推送凭据 —— 它们同样由注册期校验强制要求）。</summary>
+    private static OpenPlatformAppConfig CreateConfig()
+        => new()
+        {
+            ComponentAppId = "wx-comp",
+            ComponentAppSecret = "secret",
+            Token = "push-token",
+            EncodingAesKey = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFG",
+        };
 
     private static IComponentVerifyTicketStore CreateStore(IOpenPlatformClock clock, string ticket)
     {

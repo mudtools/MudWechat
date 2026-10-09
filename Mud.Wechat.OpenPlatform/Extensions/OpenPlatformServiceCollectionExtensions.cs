@@ -81,6 +81,10 @@ public static class OpenPlatformServiceCollectionExtensions
         services.TryAddSingleton<IComponentVerifyTicketStore, InMemoryComponentVerifyTicketStore>();
         services.TryAddSingleton<IComponentTokenProvider, ComponentTokenProvider>();
 
+        // 票据推送接收器：凭证链的入口。宿主把「授权事件接收 URL」的 POST 转交它即可
+        // （官方要求回 success，判定见 ComponentVerifyTicketReceiver.ShouldReturnSuccess）。
+        services.TryAddSingleton<ComponentVerifyTicketReceiver>();
+
         return services;
     }
 }

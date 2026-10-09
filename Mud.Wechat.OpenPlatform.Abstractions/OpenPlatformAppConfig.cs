@@ -30,6 +30,22 @@ public sealed class OpenPlatformAppConfig
     public string? ComponentAppSecret { get; set; }
 
     /// <summary>
+    /// 消息校验 Token（开放平台后台「授权事件接收 URL」处配置的 Token）。
+    /// </summary>
+    /// <remarks>用于校验推送签名（<c>msg_signature</c>）；<b>不得入日志</b>。</remarks>
+    public string? Token { get; set; }
+
+    /// <summary>
+    /// 消息加解密密钥（开放平台后台配置的 43 位 EncodingAESKey）。
+    /// </summary>
+    /// <remarks>
+    /// <b>必须 43 位</b>：官方以 <c>Base64Decode(EncodingAESKey + "=")</c> 得到 32 字节 AES 密钥，
+    /// 43 位字符是「32 字节 → Base64（无填充）」的固定长度。长度不对会在解密时抛出难以定位的
+    /// 格式异常，故在<b>注册期</b>就点名。<b>不得入日志</b>。
+    /// </remarks>
+    public string? EncodingAesKey { get; set; }
+
+    /// <summary>
     /// 注册期校验（fail-fast）。
     /// </summary>
     /// <exception cref="InvalidOperationException">任一必填项为空白。</exception>
@@ -50,6 +66,21 @@ public sealed class OpenPlatformAppConfig
         {
             throw new InvalidOperationException(
                 "第三方平台配置缺少 ComponentAppSecret（官方 component_appsecret）。");
+        }
+
+        if (string.IsNullOrWhiteSpace(Token))
+        {
+            throw new InvalidOperationException(
+                "第三方平台配置缺少 Token（授权事件接收 URL 的消息校验 Token）—— 无它无法校验推送签名。");
+        }
+
+        // 推送凭据**同样是硬前提**：component_verify_ticket 只能由微信后台推送到达，
+        // 没有 Token/EncodingAESKey 就收不了票据 ⇒ 也就永远取不到令牌（整条链断在起点）。
+        if (string.IsNullOrWhiteSpace(EncodingAesKey) || EncodingAesKey!.Length != 43)
+        {
+            throw new InvalidOperationException(
+                "第三方平台配置的 EncodingAesKey 必须为 43 位字符"
+                + $"（当前 {(EncodingAesKey?.Length ?? 0)} 位）—— 官方以 Base64Decode(key + \"=\") 得到 32 字节 AES 密钥。");
         }
     }
 }

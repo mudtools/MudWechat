@@ -119,3 +119,41 @@ public static class PayScorePromotionTypes
     /// <summary>折扣券（官方 <c>DISCOUNT</c>）。</summary>
     public const string Discount = "DISCOUNT";
 }
+
+/// <summary>
+/// 授权状态（官方 <c>authorization_state</c>，3 值）。
+/// </summary>
+/// <remarks>
+/// <b>官方说明照录</b>（<see href="https://pay.weixin.qq.com/wiki/doc/apiv3/apis/chapter6_1_3.shtml"/>，
+/// 2026-10-09 核验）：<c>UNBINDUSER</c>「未绑定用户（<b>仅完成预授权</b>）」、
+/// <c>AVAILABLE</c>「用户已授权服务」、<c>UNAVAILABLE</c>「用户未授权服务
+/// （用户授权过服务后面<b>解除了授权</b>）」。
+/// <para>
+/// <b>判别要点</b>：<c>UNBINDUSER</c> 表示<b>只做了预授权、用户尚未真正授权</b> ——
+/// 它与 <c>UNAVAILABLE</c>（曾授权后解除）语义相反，不可混为一谈。
+/// </para>
+/// </remarks>
+public static class PayScoreAuthorizationStates
+{
+    /// <summary>未绑定用户（官方 <c>UNBINDUSER</c>）：仅完成预授权。</summary>
+    public const string UnbindUser = "UNBINDUSER";
+
+    /// <summary>用户已授权服务（官方 <c>AVAILABLE</c>）。</summary>
+    public const string Available = "AVAILABLE";
+
+    /// <summary>用户未授权服务（官方 <c>UNAVAILABLE</c>）：曾授权后解除授权。</summary>
+    public const string Unavailable = "UNAVAILABLE";
+}
+
+/// <summary>
+/// 同步订单状态的场景类型（官方 <c>type</c>）。
+/// </summary>
+/// <remarks>
+/// 官方只给出<b>一个</b>取值：<c>Order_Paid</c>（「收款场景，商户固定传 <c>Order_Paid</c>，
+/// 表示订单收款成功」）—— 注意它是<b>混合大小写</b>而非下划线风格，勿「规范化」。
+/// </remarks>
+public static class PayScoreSyncOrderTypes
+{
+    /// <summary>收款场景（官方 <c>Order_Paid</c>）：表示订单收款成功。</summary>
+    public const string OrderPaid = "Order_Paid";
+}

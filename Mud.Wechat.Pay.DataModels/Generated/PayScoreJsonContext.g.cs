@@ -36,6 +36,10 @@ namespace Mud.Wechat.Pay.DataModels.PayScore;
 [JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.PayScore.PayScorePermissionsRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.PayScore.PayScorePermissionsResponse))]
 [JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.PayScore.PayScoreAuthorizationRecordResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.PayScore.PayScoreTerminateAuthorizationRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.PayScore.PayScoreSyncOrderRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.PayScore.PayScoreSyncOrderDetail))]
+[JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.PayScore.PayScoreSyncOrderResponse))]
 internal partial class PayScoreJsonContext : JsonSerializerContext
 {
 }

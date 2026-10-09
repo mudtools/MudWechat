@@ -203,4 +203,44 @@ public interface IWechatPayPayScoreService
         [Path] string authorizationCode,
         [Query("service_id")] string serviceId,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 同步订单状态。官方文档：<see href="https://pay.weixin.qq.com/wiki/doc/apiv3/apis/chapter6_1_20.shtml"/>。
+    /// </summary>
+    /// <param name="outOrderNo">商户服务订单号（官方 path <c>out_order_no</c>，必填 string(32)）。</param>
+    /// <param name="request">同步请求体，见 <see cref="PayScoreSyncOrderRequest"/>。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/> 取消操作令牌对象。</param>
+    /// <returns>同步后的订单，见 <see cref="PayScoreSyncOrderResponse"/>。</returns>
+    /// <remarks>
+    /// <para><b>官方契约</b>：<b>POST</b> <c>/v3/payscore/serviceorder/{out_order_no}/sync</c>；
+    /// path 必带 <c>out_order_no</c>；body 必填 <c>appid</c> / <c>service_id</c> / <c>type</c> / <c>detail</c>
+    /// （<c>detail.paid_time</c> 必填）。</para>
+    /// <para><b><c>type</c> 取值</b>：官方只给 <c>Order_Paid</c>（收款场景固定值，<b>混合大小写</b>），
+    /// 见 <see cref="PayScoreSyncOrderTypes"/>。</para>
+    /// </remarks>
+    [Post("/v3/payscore/serviceorder/{outOrderNo}/sync")]
+    Task<PayScoreSyncOrderResponse> SyncServiceOrderAsync(
+        [Path] string outOrderNo,
+        [Body] PayScoreSyncOrderRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 解除用户授权（授权协议号）。官方文档：<see href="https://pay.weixin.qq.com/wiki/doc/apiv3/apis/chapter6_1_4.shtml"/>。
+    /// </summary>
+    /// <param name="authorizationCode">授权协议号（官方 path <c>authorization_code</c>，必填 string(32)）。</param>
+    /// <param name="request">解除请求体（<c>service_id</c> + <c>reason</c> 均必填），见 <see cref="PayScoreTerminateAuthorizationRequest"/>。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/> 取消操作令牌对象。</param>
+    /// <remarks>
+    /// <para><b>官方契约</b>：<b>POST</b> <c>/v3/payscore/permissions/authorization-code/{authorization_code}/terminate</c>；
+    /// path 必带 <c>authorization_code</c>，<b>无 query</b>；body 必填 <c>service_id</c> / <c>reason</c>。</para>
+    /// <para>
+    /// <b>返回类型为何是 <c>Task</c></b>：官方明确「<b>无应答包体</b>」，成功状态码 <b>204 No Content</b>
+    /// ⇒ 与交易域关单（同为 204）同款处置：声明为无返回值，避免调用方去解一个不存在的包体。
+    /// </para>
+    /// </remarks>
+    [Post("/v3/payscore/permissions/authorization-code/{authorizationCode}/terminate")]
+    Task TerminateAuthorizationAsync(
+        [Path] string authorizationCode,
+        [Body] PayScoreTerminateAuthorizationRequest request,
+        CancellationToken cancellationToken = default);
 }

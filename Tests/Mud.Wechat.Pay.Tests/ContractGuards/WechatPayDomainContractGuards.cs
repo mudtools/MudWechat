@@ -141,6 +141,8 @@ public class WechatPayDomainContractGuards
             "/v3/payscore/serviceorder/{outOrderNo}/pay",
             "/v3/payscore/permissions",
             "/v3/payscore/permissions/authorization-code/{authorizationCode}",
+            "/v3/payscore/serviceorder/{outOrderNo}/sync",
+            "/v3/payscore/permissions/authorization-code/{authorizationCode}/terminate",
         });
 
         // 合计计数（PAY-B5 断言的单一来源）。
@@ -150,7 +152,7 @@ public class WechatPayDomainContractGuards
             .SelectMany(static m => m.GetCustomAttributes(false))
             .Select(static a => a.GetType().GetProperty("RequestUri")?.GetValue(a) as string)
             .Count(static uri => !string.IsNullOrWhiteSpace(uri))
-            .Should().Be(27, "支付线端点总数为 27（4 交易 + 3 退款 + 2 账单 + 1 平台证书 + 9 分账 + 8 支付分）");
+            .Should().Be(29, "支付线端点总数为 29（4 交易 + 3 退款 + 2 账单 + 1 平台证书 + 9 分账 + 10 支付分）");
     }
 
     /// <summary>
@@ -217,6 +219,7 @@ public class WechatPayDomainContractGuards
                      typeof(PayScoreCollectResponse),
                      typeof(PayScorePermissionsResponse),
                      typeof(PayScoreAuthorizationRecordResponse),
+                     typeof(PayScoreSyncOrderResponse),
                  })
         {
             typeof(WechatPayResponse).IsAssignableFrom(responseType).Should().BeTrue(

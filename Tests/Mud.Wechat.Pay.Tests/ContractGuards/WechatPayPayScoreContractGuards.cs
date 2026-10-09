@@ -58,6 +58,20 @@ public class WechatPayPayScoreContractGuards
             nameof(IWechatPayPayScoreService.QueryAuthorizationRecordAsync),
             "/v3/payscore/permissions/authorization-code/{authorizationCode}");
 
+        AssertRoute<PostAttribute>(nameof(IWechatPayPayScoreService.SyncServiceOrderAsync), "/v3/payscore/serviceorder/{outOrderNo}/sync");
+
+        // 解除授权是**动作式**路径（/terminate），不是对 permissions/{code} 发 DELETE。
+        AssertRoute<PostAttribute>(
+            nameof(IWechatPayPayScoreService.TerminateAuthorizationAsync),
+            "/v3/payscore/permissions/authorization-code/{authorizationCode}/terminate");
+
+        // 解除授权官方「无应答包体」（204）⇒ 方法必须声明为无返回值（Task），
+        // 防后来者「顺手」给它加一个应答 DTO 而去解一个不存在的包体。
+        FindMethod(nameof(IWechatPayPayScoreService.TerminateAuthorizationAsync))
+            .ReturnType.Should().Be(typeof(Task), "官方 204 No Content ⇒ 无应答体，返回类型必须是 Task");
+        FindMethod(nameof(IWechatPayPayScoreService.CancelServiceOrderAsync))
+            .ReturnType.Should().NotBe(typeof(Task), "取消订单有应答体（5 字段），不得退化成无返回");
+
         // 查询：必填 service_id + appid；out_order_no 与 query_id 为「二选一」的可选参数。
         var query = FindMethod(nameof(IWechatPayPayScoreService.QueryServiceOrderAsync));
         query.GetParameters()
@@ -125,6 +139,21 @@ public class WechatPayPayScoreContractGuards
         JsonNameShouldBe<PayScorePermissionsResponse>(nameof(PayScorePermissionsResponse.ApplyPermissionsToken), "apply_permissions_token");
         JsonNameShouldBe<PayScoreAuthorizationRecordResponse>(nameof(PayScoreAuthorizationRecordResponse.AuthorizationState), "authorization_state");
         JsonNameShouldBe<PayScoreAuthorizationRecordResponse>(nameof(PayScoreAuthorizationRecordResponse.CancelAuthorizationTime), "cancel_authorization_time");
+
+        JsonNameShouldBe<PayScoreTerminateAuthorizationRequest>(nameof(PayScoreTerminateAuthorizationRequest.Reason), "reason");
+        JsonNameShouldBe<PayScoreSyncOrderRequest>(nameof(PayScoreSyncOrderRequest.Type), "type");
+        JsonNameShouldBe<PayScoreSyncOrderRequest>(nameof(PayScoreSyncOrderRequest.Detail), "detail");
+        JsonNameShouldBe<PayScoreSyncOrderDetail>(nameof(PayScoreSyncOrderDetail.PaidTime), "paid_time");
+        JsonNameShouldBe<PayScoreSyncOrderResponse>(nameof(PayScoreSyncOrderResponse.OpenId), "openid");
+    }
+
+    /// <summary>PY-B8：同步应答<b>不得</b>并入查询应答（官方本页无 <c>promotion_detail</c>）。</summary>
+    [Fact]
+    public void SyncOrderResponse_ShouldNotBeMergedWithQueryResponse()
+    {
+        typeof(PayScoreSyncOrderResponse).GetProperty("PromotionDetail").Should().BeNull(
+            "官方同步订单状态页的应答字段表没有 promotion_detail");
+        typeof(PayScoreServiceOrderQueryResponse).GetProperty("PromotionDetail").Should().NotBeNull();
     }
 
     /// <summary>
@@ -221,6 +250,15 @@ public class WechatPayPayScoreContractGuards
         LiteralsOf(typeof(PayScoreCollectionPaidTypes)).Should().BeEquivalentTo(new[] { "NEWTON", "ADVANCE", "BALANCE" });
         LiteralsOf(typeof(PayScorePromotionScopes)).Should().BeEquivalentTo(new[] { "GLOBAL", "SINGLE" });
         LiteralsOf(typeof(PayScorePromotionTypes)).Should().BeEquivalentTo(new[] { "CASH", "DISCOUNT" });
+
+        // 授权状态：UNBINDUSER（仅完成预授权）与 UNAVAILABLE（授权后解除）语义相反，两者都必须在表内。
+        var authorizationStates = LiteralsOf(typeof(PayScoreAuthorizationStates));
+        authorizationStates.Should().BeEquivalentTo(new[] { "UNBINDUSER", "AVAILABLE", "UNAVAILABLE" });
+        authorizationStates.Should().HaveCount(3, "官方授权状态为 3 值");
+
+        // 同步场景类型：官方仅一值，且是**混合大小写** Order_Paid（勿「规范化」）。
+        PayScoreSyncOrderTypes.OrderPaid.Should().Be("Order_Paid");
+        LiteralsOf(typeof(PayScoreSyncOrderTypes)).Should().HaveCount(1, "官方 type 只给出 Order_Paid 一个取值");
     }
 
     /// <summary>PY-B5：支付分域 DTO 全量登记进 AOT 上下文且分组名一致。</summary>
@@ -233,7 +271,7 @@ public class WechatPayPayScoreContractGuards
             .Where(static t => !typeof(JsonSerializerContext).IsAssignableFrom(t))
             .ToList();
 
-        domainTypes.Should().HaveCount(25,
+        domainTypes.Should().HaveCount(29,
             "支付分域 DTO：创单族 7（请求/后付费/优惠/时间段/位置/风险金/设备）" +
             " + 创建应答 1 + 查询应答 1 + 查询嵌套 4（收款/收款明细/优惠/优惠单品）" +
             " + 取消族 2（请求/应答） + 完结族 2（请求/应答）" +

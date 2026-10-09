@@ -243,4 +243,29 @@ public interface IWechatPayPayScoreService
         [Path] string authorizationCode,
         [Body] PayScoreTerminateAuthorizationRequest request,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 查询用户授权记录（OPENID）。官方文档：<see href="https://pay.weixin.qq.com/wiki/doc/apiv3/apis/chapter6_1_5.shtml"/>。
+    /// </summary>
+    /// <param name="openId">用户标识（官方 path <c>openid</c>，必填 string(128)）。</param>
+    /// <param name="serviceId">服务 ID（官方 query <c>service_id</c>，必填 string(32)）。</param>
+    /// <param name="appId">公众账号 ID（官方 query <c>appid</c>，必填 string(32)）。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/> 取消操作令牌对象。</param>
+    /// <returns>授权记录，见 <see cref="PayScoreAuthorizationRecordResponse"/>。</returns>
+    /// <remarks>
+    /// <para><b>官方契约</b>：<b>GET</b> <c>/v3/payscore/permissions/openid/{openid}?service_id=…&amp;appid=…</c>；
+    /// path 必带 <c>openid</c>，query 必填 <c>service_id</c> 与 <c>appid</c>（<b>两个都是必填</b>）。</para>
+    /// <para>
+    /// <b>返回类型为何与「授权协议号」版共用</b>：官方两页的应答字段表<b>逐项完全一致</b>
+    /// （8 个平铺字段，含 <c>authorization_state</c>），只是<b>入参维度</b>不同（按协议号 vs 按 openid）。
+    /// 同一份事实两处类型只会让字段漂移 —— 故复用同一 DTO（与「请求分账/查询分账结果」共用应答同款判断：
+    /// <b>表相同则共用，表不同则分建</b>）。
+    /// </para>
+    /// </remarks>
+    [Get("/v3/payscore/permissions/openid/{openId}")]
+    Task<PayScoreAuthorizationRecordResponse> QueryAuthorizationRecordByOpenIdAsync(
+        [Path] string openId,
+        [Query("service_id")] string serviceId,
+        [Query("appid")] string appId,
+        CancellationToken cancellationToken = default);
 }

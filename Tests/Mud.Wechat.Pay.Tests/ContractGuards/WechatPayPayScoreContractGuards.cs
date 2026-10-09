@@ -72,6 +72,69 @@ public class WechatPayPayScoreContractGuards
         FindMethod(nameof(IWechatPayPayScoreService.CancelServiceOrderAsync))
             .ReturnType.Should().NotBe(typeof(Task), "取消订单有应答体（5 字段），不得退化成无返回");
 
+        // 授权面·按 OPENID 查询：两个 query 参数缺一不可。
+        AssertRoute<GetAttribute>(
+            nameof(IWechatPayPayScoreService.QueryAuthorizationRecordByOpenIdAsync),
+            "/v3/payscore/permissions/openid/{openId}");
+        FindMethod(nameof(IWechatPayPayScoreService.QueryAuthorizationRecordByOpenIdAsync))
+            .GetParameters()
+            .SelectMany(static p => p.GetCustomAttributes<QueryAttribute>())
+            .Select(static a => a.Name)
+            .Should().BeEquivalentTo(new[] { "service_id", "appid" },
+                "官方把 service_id 与 appid 都标为必填（与「授权协议号」版只需 service_id 不同）");
+
+        // 两个「查授权记录」入口的应答表完全一致 ⇒ 必须共用同一 DTO（防两处字段各自漂移）。
+        FindMethod(nameof(IWechatPayPayScoreService.QueryAuthorizationRecordByOpenIdAsync))
+            .ReturnType.Should().Be(typeof(Task<PayScoreAuthorizationRecordResponse>),
+                "官方两页应答字段表逐项一致 ⇒ 复用同一 DTO");
+    }
+
+    /// <summary>
+    /// PY-B9：<b>创单结单合并 <c>direct-complete</c> 刻意不建模</b>（官方声明暂未对外开放）。
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>官方事实（2026-10-09 核验，页面 chapter6_1_1 / 更新时间 2024.11.06）</b>：
+    /// </para>
+    /// <list type="number">
+    /// <item><b>「特别提醒：创单结单合并接口暂未对外开放</b>，如有需要请咨询对接的微信支付运营人员，
+    /// <b>申请开通调用权限</b>」——即对绝大多数商户不可调用；</item>
+    /// <item>限制条件：<b>免确认订单模式</b>，且用户需处于<b>已授权</b>状态；</item>
+    /// <item><b>官方自相矛盾（照录）</b>：接口说明给的路径是 <c>/payscore/serviceorder/direct-complete</c>，
+    /// 而<b>请求示例</b>用的是 <c>/v3/payscore/<b>partner</b>/serviceorder/direct-complete</c>。</item>
+    /// </list>
+    /// <para>
+    /// <b>处置</b>：按本仓「官方声明不可用即不建模」的既定纪律（同 <c>/cv/img/superresolution</c> 已下架页）
+    /// <b>不实现</b> —— 否则 SDK 会多出一个整体不可调用的公开面。待宿主实际取得开通权限、
+    /// 且路径矛盾被官方澄清后再增量。
+    /// </para>
+    /// <para>
+    /// <b>字段契约已核验并留档在此</b>（下次无需重新核验）：请求 <c>out_order_no</c> / <c>appid</c> /
+    /// <c>openid</c> / <c>service_id</c> / <c>service_introduction</c> / <c>post_payments</c>（必填，1~100 条）/
+    /// <c>post_discounts</c>（选填，<b>最多 5 条</b>，注意与其它接口的 30 条不同）/ <c>time_range</c>（必填）/
+    /// <c>location</c>（选填）/ <c>total_amount</c>（必填）/ <c>profit_sharing</c> / <c>goods_tag</c> /
+    /// <c>attach</c> / <c>notify_url</c>；应答为 <c>appid</c> / <c>mchid</c> / <c>out_order_no</c> /
+    /// <c>service_id</c> / <c>order_id</c> / <c>service_introduction</c> / <c>state</c> /
+    /// <c>state_description</c> / <c>post_payments</c> / <c>post_discounts</c> / <c>time_range</c> /
+    /// <c>location</c> / <c>total_amount</c> / <c>attach</c> / <c>notify_url</c>。
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void DirectCompleteEndpoint_ShouldStayUnmodeled()
+    {
+        var routes = typeof(IWechatPayPayScoreService)
+            .GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
+            .SelectMany(static m => m.GetCustomAttributes<HttpMethodAttribute>())
+            .Select(static a => a.RequestUri)
+            .ToList();
+
+        routes.Should().NotContain("/v3/payscore/serviceorder/direct-complete",
+            "官方声明「暂未对外开放」⇒ 不建模；恢复建模前须先确认开通权限与真实路径");
+        routes.Should().NotContain("/v3/payscore/partner/serviceorder/direct-complete",
+            "官方示例里的 partner 路径与接口说明矛盾，未经澄清不得采用");
+
+        routes.Should().NotBeEmpty("防「发现机制失效导致白名单真空」的静默空跑");
+
         // 查询：必填 service_id + appid；out_order_no 与 query_id 为「二选一」的可选参数。
         var query = FindMethod(nameof(IWechatPayPayScoreService.QueryServiceOrderAsync));
         query.GetParameters()

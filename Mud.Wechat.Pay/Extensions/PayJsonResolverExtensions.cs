@@ -6,6 +6,7 @@
 // -----------------------------------------------------------------------
 
 using Mud.Wechat.Pay.DataModels.Bill;
+using Mud.Wechat.Pay.DataModels.Callback;
 using Mud.Wechat.Pay.DataModels.Certificates;
 using Mud.Wechat.Pay.DataModels.Common;
 using Mud.Wechat.Pay.DataModels.Refund;
@@ -50,7 +51,8 @@ public static class PayJsonResolverExtensions
             TransactionsJsonContext.Default,
             RefundJsonContext.Default,
             BillJsonContext.Default,
-            CertificatesJsonContext.Default);
+            CertificatesJsonContext.Default,
+            CallbackJsonContext.Default);
 
         services.AddMudHttpClientJsonContext(resolver);
     }

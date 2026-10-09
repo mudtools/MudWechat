@@ -93,7 +93,19 @@ SDK 完整封装了企业微信接入中最繁琐的部分——**多应用、�
 >         .AddWechatPayApi(b => b.AddAllApis());            // 业务接口：Transactions / Refund / Bill / Certificates
 > ```
 >
-> 该线**不声明 `[Token]`**（守卫 PAY-B1 fail-closed），回调/应答验签另见 `Mud.Wechat.Pay.Callback`。详见 `.docs/` 支付方案与 `Tests/Mud.Wechat.Pay.Tests/ContractGuards/`。
+> 该线**不声明 `[Token]`**（守卫 PAY-B1 fail-closed）。**回调接收**独立成包（`Mud.Wechat.Pay.Callback`），只需凭据底座即可工作，不必拉起业务接口客户端：
+>
+> ```csharp
+> services.AddPayApp(configuration, "WechatPayMerchants")          // 凭据底座（必需）
+>         .AddWechatPayCallback(configuration)                     // 节名默认 WechatPayCallback
+>         .AddHandler<TransactionSuccessHandler>("TRANSACTION.SUCCESS");
+>
+> app.UseWechatPayCallback();                                      // 路由 /pay/{mchid}
+> ```
+>
+> 回调走**三道 fail-closed 闸**（平台证书 RSA-SHA256 验签 / 时间戳 ±300s / 一次性指纹 `{mchid}:SHA1(ciphertext)`）+
+> `AEAD_AES_256_GCM` 解密 `resource`，成功应答 `{"code":"SUCCESS"}` 阻止官方重推；处理器须**幂等**（按 `out_trade_no` 落库）。
+> 详见 `.docs/MudWechat-支付小程序广告产品线设计方案-v1.md` §2.6 与 `Tests/Mud.Wechat.Pay.Callback.Tests/`。
 
 ## 安装
 

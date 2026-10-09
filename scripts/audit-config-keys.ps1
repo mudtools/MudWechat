@@ -29,6 +29,10 @@ $configFiles = @(
     # （经组件 ISecretProvider 取用，字段只存密钥名）——若在配置 DTO 出现密钥原文即属凭据面越界，
     # 由 WechatPayMerchantConfig.ValidateSecretName 启动期点名拒绝。
     'Mud.Wechat.Pay.Abstractions/Configuration/WechatPayMerchantConfig.cs',
+    # 微信支付回调配置面（P1-b）：路由前缀 / 体长上限 / 时效窗 / 指纹保留窗 / 分发软超时 / 指纹闸开关。
+    # 全部属性均有真实消费点（中间件与接收器），无消费点则本脚本 fail-closed。
+    # 与【文件创建同批】登记 —— AB-G6 的双向不变式（存在 ⇔ 已登记）会拦下另一方向。
+    'Mud.Wechat.Pay.Callback/WechatPayCallbackOptions.cs',
     # 微信小程序产品线的配置 DTO 登记位：P1-c 落地时**创建文件的同批**必须在此登记，
     # 否则 AB-G6 的双向不变式（文件存在 ⇔ 已登记）会失败。本脚本对不存在的文件是 fail-closed 硬错误 ⇒ 不得预登记。
     'Mud.Wechat.Redis/Configuration/WechatRedisOptions.cs',

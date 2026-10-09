@@ -16,5 +16,12 @@ global using Microsoft.Extensions.Options;
 global using Mud.HttpUtils;
 global using Mud.HttpUtils.Attributes;
 global using Mud.Wechat.Abstractions;
-// 说明：Mud.Wechat.Pay{,.Abstractions,.DataModels} 三包在 P0-a 期为**空工程**（尚无任何命名空间声明），
-// 故此处不 global using —— 否则 CS0234。P0-c 落回调三闸时随首批源文件补入。
+global using Mud.Wechat.Abstractions.Callback;
+global using Mud.Wechat.Pay.Callback;
+global using Mud.Wechat.Pay.Abstractions.Configuration;
+global using Mud.Wechat.Pay.Abstractions.Credential;
+global using Mud.Wechat.Pay.DataModels.Callback;
+global using Microsoft.AspNetCore.Http;
+global using System.Security.Cryptography;
+global using System.Security.Cryptography.X509Certificates;
+global using System.Text;

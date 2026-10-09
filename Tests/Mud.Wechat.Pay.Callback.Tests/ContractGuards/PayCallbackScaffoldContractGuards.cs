@@ -26,9 +26,9 @@ public class PayCallbackScaffoldContractGuards
     /// <remarks>
     /// 关键事实：<c>WechatCallbackCrypto</c> 声明在 <b><c>Mud.Wechat.Abstractions</c></b> 里，而支付回调包
     /// **必须**引用 Abstractions（PAY-CB1）⇒ 该类型对支付回调是**编译期可见的**。诱惑是真实的，
-    /// 只能靠本守卫拦截。当前支付回调包尚无源文件（P0-c 才落），故断言分两段：
+    /// 只能靠本守卫拦截。P1-b 起支付回调包已有源文件（接收器 / 中间件 / 分发器），故断言分两段：
     /// ① 危害源必须仍存在（防守卫因上游改名而静默空跑，AGENTS §6 同款纪律）；
-    /// ② 一旦出现源文件，即禁止引用该类型与 PKCS7 填充。
+    /// ② 包内源文件禁止引用该类型与 PKCS7 填充（现状：全量源文件已纳入扫描）。
     /// </remarks>
     [Fact]
     public void Source_ShouldNotReuseXmlCallbackCrypto_WhenScaffold()

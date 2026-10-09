@@ -79,6 +79,21 @@ public class WechatPayMerchantConfig
     public string MerchantKey => IsServicePartner ? $"{SpMchId}:{SubMchId}" : MchId;
 
     /// <summary>
+    /// <c>Authorization</c> 头中的 <c>mchid</c> 值（字段名照官方原文，不「纠正」）。
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// 服务商形态填 <b><c>sp_mchid</c></b>：签名用的是<b>服务商</b>的 API 证书私钥与序列号
+    /// （本配置对服务商只提供<b>一套</b> <see cref="PrivateKeySecretName"/>/<see cref="SerialNumber"/>，
+    /// 即服务商自己的证书）；子商户<b>没有</b> API 证书，故不参与签名，<c>sub_mchid</c> 只出现在请求体。
+    /// </para>
+    /// <para>
+    /// 这与官方 SDK 形态一致：<c>WechatPay2Credential</c> 构造时即绑定<b>单个</b> mchid。
+    /// </para>
+    /// </remarks>
+    public string AuthorizationMchId => IsServicePartner ? SpMchId : MchId;
+
+    /// <summary>
     /// 校验本商户配置（启动期调用，非法即抛，避免带着坏配置跑真实交易）。
     /// </summary>
     /// <exception cref="InvalidOperationException">配置非法时抛出。</exception>

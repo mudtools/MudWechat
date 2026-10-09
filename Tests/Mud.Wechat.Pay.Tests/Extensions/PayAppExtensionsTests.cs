@@ -125,6 +125,46 @@ public class PayAppExtensionsTests
             .Should().BeSameAs(hostManager.Object, "宿主预注册者按契约胜出");
     }
 
+    /// <summary>环境商户上下文为 Singleton：跨 scope 同一实例（否则作用域内外读到两份「当前商户」）。</summary>
+    [Fact]
+    public void MerchantContext_ShouldBeResolvableSingletonAcrossScopes_WhenRegistered()
+    {
+        // 两个商户 ⇒ 没有「默认商户」，未开作用域时上下文必须 fail-fast（顺带证明上下文已接管判定）。
+        using var provider = BuildProvider(
+            s => s.AddPayApp(CreateMerchants()),
+            withSecrets: true);
+
+        IWechatPayMerchantContext Resolve(IServiceProvider sp) =>
+            sp.GetRequiredService<IWechatPayMerchantContext>();
+
+        var act = () => Resolve(provider).ResolveCurrent();
+
+        act.Should().Throw<InvalidOperationException>()
+            .WithMessage("*UseMerchant*", "因为注册了多个商户，静默挑第一个会让请求签到错误商户");
+
+        using var scopeA = provider.CreateScope();
+        using var scopeB = provider.CreateScope();
+
+        Resolve(scopeA.ServiceProvider)
+            .Should().BeSameAs(Resolve(scopeB.ServiceProvider), "because 环境商户上下文必须跨 scope 同一实例");
+    }
+
+    /// <summary>宿主预注册自己的上下文时按契约胜出（与管理器同一 TryAdd 语义）。</summary>
+    [Fact]
+    public void AddPayApp_ShouldNotOverrideHostRegisteredMerchantContext_WhenPreRegistered()
+    {
+        var services = new ServiceCollection();
+        var hostContext = new Mock<IWechatPayMerchantContext>();
+
+        services.AddSingleton(hostContext.Object);
+        services.AddPayApp(CreateMerchants());
+
+        using var provider = services.BuildServiceProvider();
+
+        provider.GetRequiredService<IWechatPayMerchantContext>()
+            .Should().BeSameAs(hostContext.Object, "宿主预注册者按契约胜出");
+    }
+
     /// <summary>辅助：构造两个合法商户。</summary>
     private static List<WechatPayMerchantConfig> CreateMerchants() => new()
     {

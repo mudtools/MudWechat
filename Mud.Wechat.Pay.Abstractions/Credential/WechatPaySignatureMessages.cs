@@ -6,6 +6,7 @@
 // -----------------------------------------------------------------------
 
 using System.Globalization;
+using System.Security.Cryptography;
 
 namespace Mud.Wechat.Pay.Abstractions.Credential;
 
@@ -164,5 +165,34 @@ public static class WechatPaySignatureMessages
             "\",serial_no=\"", serialNo,
             "\",signature=\"", signature,
             "\"");
+    }
+
+    /// <summary>随机串字母表：官方请求 nonce 使用 <c>[a-zA-Z0-9]</c>。</summary>
+    private const string NonceAlphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+
+    /// <summary>生成请求用随机串长度（官方 32 位）。</summary>
+    public const int NonceLength = 32;
+
+    /// <summary>
+    /// 生成请求签名用随机串（<c>nonce_str</c>，官方 32 位 <c>[a-zA-Z0-9]</c>）。
+    /// </summary>
+    /// <returns>随机串。</returns>
+    /// <remarks>
+    /// 用 <see cref="RandomNumberGenerator"/>（密码学随机）而非 <see cref="Random"/>：
+    /// nonce 的不可预测性决定攻击者无法预知待签消息，且逐请求唯一性是防重放的第一道前提。
+    /// </remarks>
+    public static string CreateNonce()
+    {
+        Span<char> buffer = stackalloc char[NonceLength];
+        Span<byte> random = stackalloc byte[NonceLength];
+        RandomNumberGenerator.Fill(random);
+
+        for (var i = 0; i < random.Length; i++)
+        {
+            // 取模：字母表 62 个字符可整除性偏差可忽略，且官方对 nonce 无均匀性要求（只需唯一 + 限长）。
+            buffer[i] = NonceAlphabet[random[i] % NonceAlphabet.Length];
+        }
+
+        return new string(buffer);
     }
 }

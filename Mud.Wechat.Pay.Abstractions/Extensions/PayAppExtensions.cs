@@ -11,6 +11,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Mud.HttpUtils;
 using Mud.Wechat.Pay.Abstractions.Credential;
 using Mud.Wechat.Pay.Abstractions.Configuration;
+using Mud.Wechat.Pay.Abstractions.Transport;
 
 namespace Mud.Wechat.Pay.Abstractions.Extensions;
 
@@ -99,11 +100,18 @@ public static class PayAppExtensions
     }
 
     /// <summary>
-    /// 装配商户凭据底座：多商户管理器 + 凭据取用器（均为 Singleton）。
+    /// 装配商户凭据底座：多商户管理器 + 环境商户上下文 + 凭据取用器 + 签名工厂 + 传输层签名（均为 Singleton）。
     /// </summary>
     /// <remarks>
+    /// <para>
+    /// <b>为什么传输层签名放这里</b>：签名要的商户私钥与序列号本就出自本底座，拆开注册只会让
+    /// 「只装了凭据、忘了签名」这类半装配状态成为可能（到了真实下单才暴露）。命名客户端是<b>惰性</b>的 ——
+    /// 只调用 <c>AddPayApp</c> 而不发支付请求（如仅用回调包验签）不会真的建连。
+    /// </para>
+    /// <para>
     /// <b>TryAdd 语义</b>：宿主可预注册自己的 <see cref="IWechatPayMerchantManager"/>（如需要从配置中心
     /// 动态增删商户），预注册者按契约胜出，本方法不会覆盖。
+    /// </para>
     /// </remarks>
     internal static IServiceCollection AddPayInfrastructure(
         this IServiceCollection services, List<WechatPayMerchantConfig> configs)
@@ -115,6 +123,12 @@ public static class PayAppExtensions
         var manager = new WechatPayMerchantManager(configs);
 
         services.TryAddSingleton<IWechatPayMerchantManager>(manager);
+
+        // 环境商户上下文：经 DI 解析管理器（而非捕获上面的局部 manager），
+        // 否则宿主预注册了自己的 IWechatPayMerchantManager 时，上下文会读到另一份商户表。
+        services.TryAddSingleton<IWechatPayMerchantContext>(
+            static sp => new WechatPayMerchantContext(
+                sp.GetRequiredService<IWechatPayMerchantManager>()));
 
         services.TryAddSingleton<IWechatPayMerchantCredentialProvider>(
             static sp =>
@@ -132,6 +146,29 @@ public static class PayAppExtensions
 
                 return new WechatPayMerchantCredentialProvider(secrets);
             });
+
+        // 平台证书缓存：请求签名只用商户私钥，验签（回调 / 应答验签）才需要平台证书；
+        // 这里给出默认进程内实现，宿主可预注册自己的（如需跨实例共享）。
+        services.TryAddSingleton<IWechatPayPlatformCertificateStore>(
+            static _ => new WechatPayPlatformCertificateCache());
+
+        services.TryAddSingleton<IWechatPaySignatureProviderFactory>(
+            static sp => new WechatPaySignatureProviderFactory(
+                sp.GetRequiredService<IWechatPayMerchantCredentialProvider>(),
+                sp.GetRequiredService<IWechatPayPlatformCertificateStore>()));
+
+        // 传输层签名：命名客户端（组件 AddMudHttpClient 负责追踪 Handler 与连接期 SSRF 严格模式）
+        // + 支付签名 Handler。重复 AddPayApp 不会重复挂 Handler —— Handler 对已带 Authorization 的请求幂等，
+        // 且 TryAddSingleton 保证 IWechatPayHttpClient 单实例。
+        if (services.All(static d => d.ServiceType != typeof(IWechatPayHttpClient)))
+        {
+            services.AddMudHttpClient(
+                WechatPayHttpClientNames.ClientName,
+                static client => client.BaseAddress = new Uri(WechatPayHttpClientNames.BaseAddress))
+                .AddHttpMessageHandler<WechatPayAuthorizationHandler>();
+        }
+
+        services.TryAddSingleton<IWechatPayHttpClient, WechatPayHttpClient>();
 
         return services;
     }

@@ -131,3 +131,75 @@ public class TransferBillResponse : WechatPayResponse
     [JsonPropertyName("package_info")]
     public string? PackageInfo { get; set; }
 }
+
+/// <summary>
+/// 商户单号查询转账单应答（<c>GET /v3/fund-app/mch-transfer/transfer-bills/out-bill-no/{out_bill_no}</c>）。
+/// </summary>
+/// <remarks>
+/// <para>
+/// <b>官方文档</b>：<see href="https://pay.weixin.qq.com/doc/v3/merchant/4012716437"/>
+/// （2026-10-09 逐字段核验；更新时间 2025.03.21）。<b>支持商户：【普通商户】</b>。
+/// </para>
+/// <para>
+/// <b>本端点是「不换单重试」红线（见 <see cref="TransferBillRequest"/> remarks）的执行手段</b>：
+/// 发起转账遇错后<b>必须</b>先据此查单；<c>state</c> 取 <c>ACCEPTED</c> / <c>PROCESSING</c> 时官方明确
+/// <b>应「原单重试」</b>（<b>不要</b>换 <c>out_bill_no</c>）—— 语义见 <see cref="TransferBillStates"/>。
+/// </para>
+/// <para>
+/// <b>⚠️ 字段名陷阱</b>：官方本页商户号字段是 <c>mch_id</c>（<b>带下划线</b>），
+/// 而支付线其它域（交易 / 退款 / 分账 / 支付分…）一律是 <c>mchid</c>（<b>无下划线</b>）。
+/// 二者<b>不可互相「纠正」</b> —— 这正是守卫要拦的「顺手统一」类漂移。另注意本页参数表
+/// <b>未</b>列出嵌套对象（<c>transfer_scene_id</c> / <c>user_recv_perception</c> 也不在本页）。
+/// </para>
+/// </remarks>
+[HttpJsonSerializable(SerializerClassName = "Transfer")]
+public class TransferBillQueryResponse : WechatPayResponse
+{
+    /// <summary>商户号（<c>mch_id</c>，<b>带下划线</b> —— 与支付线其它域的 <c>mchid</c> 不同）。</summary>
+    [JsonPropertyName("mch_id")]
+    public string? MchId { get; set; }
+
+    /// <summary>商户转账单号（<c>out_bill_no</c>）。</summary>
+    [JsonPropertyName("out_bill_no")]
+    public string? OutBillNo { get; set; }
+
+    /// <summary>微信转账单号（<c>transfer_bill_no</c>，string(64)）。</summary>
+    [JsonPropertyName("transfer_bill_no")]
+    public string? TransferBillNo { get; set; }
+
+    /// <summary>公众账号 ID（<c>appid</c>）。</summary>
+    [JsonPropertyName("appid")]
+    public string? AppId { get; set; }
+
+    /// <summary>转账单状态（<c>state</c>）：取值与重试语义见 <see cref="TransferBillStates"/>。</summary>
+    [JsonPropertyName("state")]
+    public string? State { get; set; }
+
+    /// <summary>转账金额（<c>transfer_amount</c>，整型，单位分）。</summary>
+    [JsonPropertyName("transfer_amount")]
+    public long? TransferAmount { get; set; }
+
+    /// <summary>转账备注（<c>transfer_remark</c>）。</summary>
+    [JsonPropertyName("transfer_remark")]
+    public string? TransferRemark { get; set; }
+
+    /// <summary>失败原因（<c>fail_reason</c>）：<c>state = FAIL</c> 时的原因说明。</summary>
+    [JsonPropertyName("fail_reason")]
+    public string? FailReason { get; set; }
+
+    /// <summary>收款用户 OpenID（<c>openid</c>）。</summary>
+    [JsonPropertyName("openid")]
+    public string? OpenId { get; set; }
+
+    /// <summary>收款用户姓名（<c>user_name</c>）。</summary>
+    [JsonPropertyName("user_name")]
+    public string? UserName { get; set; }
+
+    /// <summary>转账单创建时间（<c>create_time</c>）。</summary>
+    [JsonPropertyName("create_time")]
+    public string? CreateTime { get; set; }
+
+    /// <summary>转账单更新时间（<c>update_time</c>）。</summary>
+    [JsonPropertyName("update_time")]
+    public string? UpdateTime { get; set; }
+}

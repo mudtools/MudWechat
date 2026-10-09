@@ -66,4 +66,25 @@ public interface IWechatPayTransferService
     Task<TransferBillResponse> CreateTransferBillAsync(
         [Body] TransferBillRequest request,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 商户单号查询转账单。官方文档：<see href="https://pay.weixin.qq.com/doc/v3/merchant/4012716437"/>。
+    /// </summary>
+    /// <param name="outBillNo">商户转账单号（官方 path <c>out_bill_no</c>，必填 string(32)）。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/> 取消操作令牌对象。</param>
+    /// <returns>转账单详情（含 <c>state</c> 与 <c>fail_reason</c>），见 <see cref="TransferBillQueryResponse"/>。</returns>
+    /// <remarks>
+    /// <para><b>官方契约</b>：<b>GET</b> <c>/v3/fund-app/mch-transfer/transfer-bills/out-bill-no/{out_bill_no}</c>；
+    /// 仅 path 参数，无 query / body。</para>
+    /// <para>
+    /// <b>🔴 本端点是发起转账红线的配套</b>：遇错后<b>先查单</b>；
+    /// <c>state</c> 为 <c>ACCEPTED</c> / <c>PROCESSING</c> 时官方要求<b>原单重试</b>（<b>不要</b>换单），
+    /// 只有 <c>FAIL</c> 终态才允许重新生成单据 —— 判定表见 <see cref="TransferBillStates"/>。
+    /// </para>
+    /// <para><b>时限</b>：官方产品介绍注明当前 API <b>仅支持查询 30 天内</b>的转账单。</para>
+    /// </remarks>
+    [Get("/v3/fund-app/mch-transfer/transfer-bills/out-bill-no/{outBillNo}")]
+    Task<TransferBillQueryResponse> QueryByOutBillNoAsync(
+        [Path] string outBillNo,
+        CancellationToken cancellationToken = default);
 }

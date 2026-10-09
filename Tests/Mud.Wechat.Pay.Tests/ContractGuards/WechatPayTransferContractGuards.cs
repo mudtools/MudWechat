@@ -59,6 +59,20 @@ public class WechatPayTransferContractGuards
         method.GetParameters()
             .Where(static p => p.GetCustomAttribute<PathAttribute>() != null)
             .Should().BeEmpty("官方本页无 path 参数");
+
+        // 商户单号查询转账单：仅 path 参数，无 query / body。
+        AssertRoute<GetAttribute>(
+            nameof(IWechatPayTransferService.QueryByOutBillNoAsync),
+            "/v3/fund-app/mch-transfer/transfer-bills/out-bill-no/{outBillNo}");
+        var query = FindMethod(nameof(IWechatPayTransferService.QueryByOutBillNoAsync));
+        query.GetParameters()
+            .Where(static p => p.GetCustomAttribute<PathAttribute>() != null)
+            .Select(static p => p.Name)
+            .Should().BeEquivalentTo(new[] { "outBillNo" });
+        query.GetParameters()
+            .SelectMany(static p => p.GetCustomAttributes<QueryAttribute>())
+            .Should().BeEmpty("官方查询页无 query 参数");
+        query.ReturnType.Should().NotBe(typeof(Task), "查询有应答体（12 字段）");
     }
 
     /// <summary>TR2：官方字段名锁定。</summary>
@@ -79,6 +93,43 @@ public class WechatPayTransferContractGuards
         JsonNameShouldBe<TransferBillResponse>(nameof(TransferBillResponse.TransferBillNo), "transfer_bill_no");
         JsonNameShouldBe<TransferBillResponse>(nameof(TransferBillResponse.CreateTime), "create_time");
         JsonNameShouldBe<TransferBillResponse>(nameof(TransferBillResponse.PackageInfo), "package_info");
+
+        JsonNameShouldBe<TransferBillQueryResponse>(nameof(TransferBillQueryResponse.OutBillNo), "out_bill_no");
+        JsonNameShouldBe<TransferBillQueryResponse>(nameof(TransferBillQueryResponse.FailReason), "fail_reason");
+        JsonNameShouldBe<TransferBillQueryResponse>(nameof(TransferBillQueryResponse.UpdateTime), "update_time");
+
+        // ⚠️ 商户号字段名陷阱：本域（商家转账）官方用 mch_id（**带下划线**），
+        // 而支付线其它域一律 mchid（无下划线）⇒ 两侧都钉死，禁止互相「纠正」。
+        JsonNameShouldBe<TransferBillQueryResponse>(nameof(TransferBillQueryResponse.MchId), "mch_id");
+        JsonNameShouldBe<CloseOrderRequest>(nameof(CloseOrderRequest.MchId), "mchid");
+    }
+
+    /// <summary>TR4：<c>state</c> 取值逐项锁定（含「可原单重试」的非终态与三个终态）。</summary>
+    /// <remarks>
+    /// 本表是「发起转账遇错不得换单重试」红线的<b>判定依据</b>：<c>ACCEPTED</c>/<c>PROCESSING</c>
+    /// 属可原单重试的非终态，<c>FAIL</c> 才是允许重新生成单据的终态。取值错一个字符即判定失效。
+    /// </remarks>
+    [Fact]
+    public void TransferBillStates_ShouldMatchOfficialValues()
+    {
+        var states = typeof(TransferBillStates)
+            .GetFields(BindingFlags.Public | BindingFlags.Static)
+            .Where(static f => f.IsLiteral)
+            .Select(static f => (string)f.GetRawConstantValue()!)
+            .ToArray();
+
+        states.Should().BeEquivalentTo(new[]
+        {
+            "ACCEPTED", "PROCESSING", "WAIT_USER_CONFIRM", "TRANSFERING",
+            "SUCCESS", "FAIL", "CANCELING", "CANCELLED",
+        });
+        states.Should().HaveCount(8, "官方 state 为 8 值");
+
+        // 可原单重试的两个非终态必须存在且拼写正确（本红线的判定入口）。
+        TransferBillStates.Accepted.Should().Be("ACCEPTED");
+        TransferBillStates.Processing.Should().Be("PROCESSING");
+        // 唯一允许「重新生成单据」的终态。
+        TransferBillStates.Fail.Should().Be("FAIL");
     }
 
     /// <summary>TR3：判错面 + AOT 上下文登记（分组名一致）。</summary>
@@ -94,8 +145,8 @@ public class WechatPayTransferContractGuards
             .Where(static t => !typeof(JsonSerializerContext).IsAssignableFrom(t))
             .ToList();
 
-        domainTypes.Should().HaveCount(4,
-            "商家转账域 DTO：请求 1 + 场景报备 1 + 收款样式 1 + 应答 1");
+        domainTypes.Should().HaveCount(5,
+            "商家转账域 DTO：发起族 4（请求/场景报备/收款样式/应答） + 查询应答 1");
 
         foreach (var type in domainTypes)
         {

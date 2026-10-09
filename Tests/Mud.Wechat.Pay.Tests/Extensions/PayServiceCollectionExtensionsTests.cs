@@ -193,6 +193,7 @@ public class PayServiceCollectionExtensionsTests
                      typeof(CombineQueryResponse),
                      typeof(TransferBillRequest),
                      typeof(TransferBillResponse),
+                     typeof(TransferBillQueryResponse),
                  })
         {
             resolver!.GetTypeInfo(dto, options).Should().NotBeNull(

@@ -72,12 +72,13 @@ public enum PayModule
     CombineTransactions,
 
     /// <summary>
-    /// 商家转账（<b>P2 首批 1 端点</b>）：发起转账。
+    /// 商家转账（<b>P2 首批 2 端点</b>）：发起转账 + 商户单号查询转账单。
     /// 官方文档 <see href="https://pay.weixin.qq.com/doc/v3/merchant/4012716434"/>。
     /// </summary>
     /// <remarks>
-    /// <b>🔴 尚不具备生产可用性</b>：官方要求「遇错误码不得换单重试，须先查原单」，
-    /// 而两个查询端点尚未落地 ⇒ 生产使用前<b>必须先补</b>撤销 / 商户单号查询 / 微信单号查询 / 电子回单。
+    /// <b>「不换单重试」红线的最低闭环已具备</b>：发起转账遇错后可按商户单号查单，再依 <c>state</c>
+    /// （<c>ACCEPTED</c>/<c>PROCESSING</c> ⇒ <b>原单重试</b>；<c>FAIL</c> ⇒ 才可重新生成单据）处置。
+    /// <b>仍缺</b>：微信单号查询转账单 · 撤销转账 · 获取电子回单（商户单号/微信单号）。
     /// </remarks>
     Transfer,
 }

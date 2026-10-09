@@ -114,6 +114,17 @@ public static class WechatPayNotificationEventTypes
 
     /// <summary>退款关闭（官方 <c>REFUND.CLOSED</c>）。</summary>
     public const string RefundClosed = "REFUND.CLOSED";
+
+    /// <summary>
+    /// 支付分订单支付成功（官方 <c>PAYSCORE.USER_PAID</c>）。
+    /// </summary>
+    /// <remarks>
+    /// <b>与分账通知的形态不同</b>：分账动态通知<b>复用</b>了交易成功的 <c>TRANSACTION.SUCCESS</c>（需靠
+    /// <c>original_type</c> 判别），而支付分通知有<b>自己的前缀</b> <c>PAYSCORE.</c> ——
+    /// 即 <c>event_type</c> 在不同产品线的复用情况<b>不一致</b>，消费侧不应假定某种统一规则，
+    /// 一律按「先看判别字段、再看具体取值」处理。
+    /// </remarks>
+    public const string PayScoreUserPaid = "PAYSCORE.USER_PAID";
 }
 
 /// <summary>

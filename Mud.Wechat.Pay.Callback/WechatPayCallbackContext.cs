@@ -97,6 +97,19 @@ public sealed class WechatPayCallbackContext
     public WechatPayProfitSharingResource? GetProfitSharing()
         => TryDeserialize(WechatPayCallbackJsonContext.Default.WechatPayProfitSharingResource);
 
+    /// <summary>
+    /// 把解密后的载荷按<b>支付分订单支付成功</b>（<c>event_type = PAYSCORE.USER_PAID</c>）类型化解析。
+    /// </summary>
+    /// <returns>解析失败或载荷非本形态时返回 <c>null</c>。</returns>
+    /// <remarks>
+    /// <b>判别方式</b>：支付分通知有<b>自己的 <c>event_type</c> 前缀</b>（<c>PAYSCORE.</c>），
+    /// 与分账通知「复用 <c>TRANSACTION.SUCCESS</c>、需靠 <c>original_type</c> 区分」的形态<b>不同</b>
+    /// ⇒ 本方法可在判定 <c>event_type == PAYSCORE.USER_PAID</c> 后调用；
+    /// 但若将来出现其它 <c>PAYSCORE.*</c> 事件，仍须结合载荷判别，勿假定「前缀相同即同形态」。
+    /// </remarks>
+    public WechatPayPayScorePaidResource? GetPayScorePaid()
+        => TryDeserialize(WechatPayCallbackJsonContext.Default.WechatPayPayScorePaidResource);
+
     private T? TryDeserialize<T>(System.Text.Json.Serialization.Metadata.JsonTypeInfo<T> typeInfo)
         where T : class
     {

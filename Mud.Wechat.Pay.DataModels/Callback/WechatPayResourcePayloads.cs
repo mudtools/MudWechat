@@ -5,6 +5,8 @@
 //  不得利用本项目从事危害国家安全、扰乱社会秩序、侵犯他人合法权益等法律法规禁止的活动！任何基于本项目开发而产生的一切法律纠纷和责任，我们不承担任何责任！
 // -----------------------------------------------------------------------
 
+using Mud.Wechat.Pay.DataModels.PayScore;
+
 namespace Mud.Wechat.Pay.DataModels.Callback;
 
 /// <summary>
@@ -237,4 +239,168 @@ public class WechatPayProfitSharingReceiver
     /// <summary>分账描述（<c>description</c>，string(80)）。</summary>
     [JsonPropertyName("description")]
     public string? Description { get; set; }
+}
+
+/// <summary>
+/// 解密后的<b>支付分订单支付成功</b>资源载荷（<c>PAYSCORE.USER_PAID</c> 通知；解密所得的 JSON 明文）。
+/// </summary>
+/// <remarks>
+/// <para>
+/// <b>官方文档</b>：<see href="https://pay.weixin.qq.com/doc/v3/merchant/4012587960"/>
+/// （2026-10-09 逐字段核验；更新时间 2025.09.15）。官方原文：「支付分订单支付成功通知为
+/// <c>PAYSCORE.USER_PAID</c>」。
+/// </para>
+/// <para>
+/// <b>⚠️ 与「查询支付分订单」应答<b>结构不同</b>（第三处形态差异）</b>：本载荷<b>没有顶层</b>
+/// <c>promotion_detail</c>，而是把它嵌在 <c>collection.details[]</c> <b>每一项之下</b>。
+/// 至此本域已出现三种 <c>promotion_detail</c> 位置：查询页（顶层）、修改页（collection 下）、
+/// 本载荷（<b>collection.details[] 项下</b>）—— <b>三者都照官方原文建模，不「统一」</b>。
+/// </para>
+/// <para>
+/// <b>复用既有子类型</b>：<c>post_payments</c> / <c>post_discounts</c> / <c>risk_fund</c> /
+/// <c>time_range</c> / <c>location</c> 与支付分域字段表一致 ⇒ 直接复用 <c>Mud.Wechat.Pay.DataModels.PayScore</c>
+/// 下的既有类型；仅容器（<c>collection</c> 与 <c>details[]</c>）因嵌套结构不同而另建。
+/// </para>
+/// </remarks>
+[HttpJsonSerializable(SerializerClassName = "Callback")]
+public class WechatPayPayScorePaidResource
+{
+    /// <summary>公众账号 ID（<c>appid</c>）。</summary>
+    [JsonPropertyName("appid")]
+    public string? AppId { get; set; }
+
+    /// <summary>商户号（<c>mchid</c>）。</summary>
+    [JsonPropertyName("mchid")]
+    public string? MchId { get; set; }
+
+    /// <summary>商户服务订单号（<c>out_order_no</c>）；<b>业务幂等键</b>。</summary>
+    [JsonPropertyName("out_order_no")]
+    public string? OutOrderNo { get; set; }
+
+    /// <summary>服务 ID（<c>service_id</c>）。</summary>
+    [JsonPropertyName("service_id")]
+    public string? ServiceId { get; set; }
+
+    /// <summary>用户标识（<c>openid</c>，string(128)）。</summary>
+    [JsonPropertyName("openid")]
+    public string? OpenId { get; set; }
+
+    /// <summary>服务订单状态（<c>state</c>）：见 <c>PayScoreServiceOrderStates</c>。</summary>
+    [JsonPropertyName("state")]
+    public string? State { get; set; }
+
+    /// <summary>总金额（<c>total_amount</c>，整型，单位分）。</summary>
+    [JsonPropertyName("total_amount")]
+    public long? TotalAmount { get; set; }
+
+    /// <summary>服务信息（<c>service_introduction</c>，string(20)）。</summary>
+    [JsonPropertyName("service_introduction")]
+    public string? ServiceIntroduction { get; set; }
+
+    /// <summary>后付费项目（<c>post_payments</c>）：复用支付分域类型。</summary>
+    [JsonPropertyName("post_payments")]
+    public List<PayScorePostPayment>? PostPayments { get; set; }
+
+    /// <summary>后付费商户优惠（<c>post_discounts</c>）：复用支付分域类型。</summary>
+    [JsonPropertyName("post_discounts")]
+    public List<PayScorePostDiscount>? PostDiscounts { get; set; }
+
+    /// <summary>服务风险金（<c>risk_fund</c>）：复用支付分域类型。</summary>
+    [JsonPropertyName("risk_fund")]
+    public PayScoreRiskFund? RiskFund { get; set; }
+
+    /// <summary>服务时间段（<c>time_range</c>）：复用支付分域类型。</summary>
+    [JsonPropertyName("time_range")]
+    public PayScoreTimeRange? TimeRange { get; set; }
+
+    /// <summary>服务位置（<c>location</c>）：复用支付分域类型。</summary>
+    [JsonPropertyName("location")]
+    public PayScoreLocation? Location { get; set; }
+
+    /// <summary>商户数据包（<c>attach</c>，string(256)）：下单时上送、原样回传。</summary>
+    [JsonPropertyName("attach")]
+    public string? Attach { get; set; }
+
+    /// <summary>微信支付服务订单号（<c>order_id</c>，31 位数字）。</summary>
+    [JsonPropertyName("order_id")]
+    public string? OrderId { get; set; }
+
+    /// <summary>是否需要收款（<c>need_collection</c>，bool）。</summary>
+    [JsonPropertyName("need_collection")]
+    public bool? NeedCollection { get; set; }
+
+    /// <summary>商户回调地址（<c>notify_url</c>，string(256)）。</summary>
+    [JsonPropertyName("notify_url")]
+    public string? NotifyUrl { get; set; }
+
+    /// <summary>收款信息（<c>collection</c>）：<b>本载荷的嵌套结构与查询应答不同</b>，见 <see cref="WechatPayPayScoreCollection"/>。</summary>
+    [JsonPropertyName("collection")]
+    public WechatPayPayScoreCollection? Collection { get; set; }
+}
+
+/// <summary>支付分支付成功载荷的收款信息（<c>collection</c>）。</summary>
+/// <remarks>
+/// 与查询应答的 <c>collection</c> 字段集相同，但本类型存在的原因是<b>其 <c>details[]</c> 项内嵌
+/// <c>promotion_detail</c></b>（见 <see cref="WechatPayPayScoreCollectionDetail"/>）。
+/// </remarks>
+[HttpJsonSerializable(SerializerClassName = "Callback")]
+public class WechatPayPayScoreCollection
+{
+    /// <summary>收款状态（<c>state</c>）：<c>USER_PAYING</c> / <c>USER_PAID</c>。</summary>
+    [JsonPropertyName("state")]
+    public string? State { get; set; }
+
+    /// <summary>总收款金额（<c>total_amount</c>，整型，单位分）。</summary>
+    [JsonPropertyName("total_amount")]
+    public long? TotalAmount { get; set; }
+
+    /// <summary>待收金额（<c>paying_amount</c>，整型，单位分）。</summary>
+    [JsonPropertyName("paying_amount")]
+    public long? PayingAmount { get; set; }
+
+    /// <summary>已收金额（<c>paid_amount</c>，整型，单位分）。</summary>
+    [JsonPropertyName("paid_amount")]
+    public long? PaidAmount { get; set; }
+
+    /// <summary>收款明细（<c>details</c>），见 <see cref="WechatPayPayScoreCollectionDetail"/>。</summary>
+    [JsonPropertyName("details")]
+    public List<WechatPayPayScoreCollectionDetail>? Details { get; set; }
+}
+
+/// <summary>
+/// 支付分支付成功载荷的收款明细项（<c>collection.details[]</c>）—— <b>内嵌 <c>promotion_detail</c></b>。
+/// </summary>
+/// <remarks>
+/// 官方本载荷把 <c>promotion_detail</c> 放在<b>每个收款明细项之内</b>（查询页在顶层、修改页在
+/// <c>collection</c> 之下）—— 三处位置各不相同，均为官方原样。
+/// </remarks>
+[HttpJsonSerializable(SerializerClassName = "Callback")]
+public class WechatPayPayScoreCollectionDetail
+{
+    /// <summary>序号（<c>seq</c>）。</summary>
+    [JsonPropertyName("seq")]
+    public long? Seq { get; set; }
+
+    /// <summary>收款金额（<c>amount</c>，整型，单位分）。</summary>
+    [JsonPropertyName("amount")]
+    public long? Amount { get; set; }
+
+    /// <summary>收款类型（<c>paid_type</c>）：<c>NEWTON</c> / <c>ADVANCE</c> / <c>BALANCE</c>。</summary>
+    [JsonPropertyName("paid_type")]
+    public string? PaidType { get; set; }
+
+    /// <summary>收款时间（<c>paid_time</c>）。</summary>
+    [JsonPropertyName("paid_time")]
+    public string? PaidTime { get; set; }
+
+    /// <summary>微信支付订单号（<c>transaction_id</c>）。</summary>
+    [JsonPropertyName("transaction_id")]
+    public string? TransactionId { get; set; }
+
+    /// <summary>
+    /// 优惠信息（<c>promotion_detail</c>，<b>嵌在明细项之下</b>）：字段表与支付分域一致 ⇒ 复用
+    /// <c>PayScorePromotionDetail</c>（其内已含 <c>goods_detail</c>）。
+    /// </summary>
+    [JsonPropertyName("promotion_detail")]
+    public List<PayScorePromotionDetail>? PromotionDetail { get; set; }
 }

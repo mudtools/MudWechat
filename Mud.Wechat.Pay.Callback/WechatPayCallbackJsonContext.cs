@@ -6,6 +6,7 @@
 // -----------------------------------------------------------------------
 
 using System.Text.Json.Serialization;
+using Mud.Wechat.Pay.DataModels.PayScore;
 
 namespace Mud.Wechat.Pay.Callback;
 
@@ -48,6 +49,17 @@ namespace Mud.Wechat.Pay.Callback;
 [JsonSerializable(typeof(WechatPayRefundAmount))]
 [JsonSerializable(typeof(WechatPayProfitSharingResource))]
 [JsonSerializable(typeof(WechatPayProfitSharingReceiver))]
+[JsonSerializable(typeof(WechatPayPayScorePaidResource))]
+[JsonSerializable(typeof(WechatPayPayScoreCollection))]
+[JsonSerializable(typeof(WechatPayPayScoreCollectionDetail))]
+// 支付分载荷复用的子类型（定义在 PayScore 域，但本上下文在 net6.0 也须能解析它们）。
+[JsonSerializable(typeof(PayScorePostPayment))]
+[JsonSerializable(typeof(PayScorePostDiscount))]
+[JsonSerializable(typeof(PayScoreRiskFund))]
+[JsonSerializable(typeof(PayScoreTimeRange))]
+[JsonSerializable(typeof(PayScoreLocation))]
+[JsonSerializable(typeof(PayScorePromotionDetail))]
+[JsonSerializable(typeof(PayScorePromotionGoodsDetail))]
 internal partial class WechatPayCallbackJsonContext : JsonSerializerContext
 {
 }

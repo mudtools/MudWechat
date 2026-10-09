@@ -29,6 +29,7 @@ global using Mud.Wechat.Pay.DataModels.ProfitSharing;
 global using Mud.Wechat.Pay.DataModels.Common;
 global using Mud.Wechat.Pay.DataModels.Refund;
 global using Mud.Wechat.Pay.DataModels.Transactions;
+global using Mud.Wechat.Pay.DataModels.Transfer;
 global using Mud.Wechat.Pay.Download;
 global using Mud.Wechat.Pay.Extensions;
 global using Mud.Wechat.Pay.Transactions;

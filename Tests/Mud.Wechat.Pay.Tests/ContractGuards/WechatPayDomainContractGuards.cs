@@ -44,9 +44,9 @@ public class WechatPayDomainContractGuards
             .OrderBy(static t => t.Name, StringComparer.Ordinal)
             .ToArray();
 
-        // 数量下限防枚举空跑（AGENTS §6）：七域接口 = Transactions / Refund / Bill / Certificates / ProfitSharing / PayScore / CombineTransactions。
-        interfaces.Should().HaveCount(7,
-            "支付线七域接口（…/ProfitSharing/PayScore/CombineTransactions）——数量变化须同批更新 PayModule 与本守卫");
+        // 数量下限防枚举空跑（AGENTS §6）：八域接口 = Transactions / Refund / Bill / Certificates / ProfitSharing / PayScore / CombineTransactions / Transfer。
+        interfaces.Should().HaveCount(8,
+            "支付线八域接口（…/CombineTransactions/Transfer）——数量变化须同批更新 PayModule 与本守卫");
 
         interfaces.Select(static t => t.Name).Should().BeEquivalentTo(new[]
         {
@@ -57,6 +57,7 @@ public class WechatPayDomainContractGuards
             "IWechatPayProfitSharingService",
             "IWechatPayPayScoreService",
             "IWechatPayCombineService",
+            "IWechatPayTransferService",
         });
 
         var offenders = interfaces
@@ -70,7 +71,7 @@ public class WechatPayDomainContractGuards
     }
 
     /// <summary>
-    /// PAY-B5：端点计数（<b>33</b>）+ 官方路由表逐条比对（照官方原文，<b>不得「纠正」</b>）。
+    /// PAY-B5：端点计数（<b>34</b>）+ 官方路由表逐条比对（照官方原文，<b>不得「纠正」</b>）。
     /// </summary>
     /// <remarks>
     /// <para>
@@ -155,6 +156,12 @@ public class WechatPayDomainContractGuards
             "/v3/combine-transactions/out-trade-no/{combineOutTradeNo}",
         });
 
+        // P2 商家转账首批 1 端点（发起转账）。
+        RoutesOf(asm, "IWechatPayTransferService").Should().BeEquivalentTo(new[]
+        {
+            "/v3/fund-app/mch-transfer/transfer-bills",
+        });
+
         // 合计计数（PAY-B5 断言的单一来源）。
         asm.GetTypes()
             .Where(static t => t.IsInterface && t.IsPublic)
@@ -162,7 +169,7 @@ public class WechatPayDomainContractGuards
             .SelectMany(static m => m.GetCustomAttributes(false))
             .Select(static a => a.GetType().GetProperty("RequestUri")?.GetValue(a) as string)
             .Count(static uri => !string.IsNullOrWhiteSpace(uri))
-            .Should().Be(33, "支付线端点总数为 33（4 交易 + 3 退款 + 2 账单 + 1 平台证书 + 9 分账 + 11 支付分 + 3 合单）");
+            .Should().Be(34, "支付线端点总数为 34（4 交易 + 3 退款 + 2 账单 + 1 平台证书 + 9 分账 + 11 支付分 + 3 合单 + 1 商家转账）");
     }
 
     /// <summary>
@@ -232,6 +239,7 @@ public class WechatPayDomainContractGuards
                      typeof(PayScoreSyncOrderResponse),
                      typeof(CombinePrepayResponse),
                      typeof(CombineQueryResponse),
+                     typeof(TransferBillResponse),
                  })
         {
             typeof(WechatPayResponse).IsAssignableFrom(responseType).Should().BeTrue(

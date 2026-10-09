@@ -70,4 +70,14 @@ public enum PayModule
     /// </summary>
     /// <remarks>合单查询 / Native 下单 / 合单退款等待逐页核验后增量。</remarks>
     CombineTransactions,
+
+    /// <summary>
+    /// 商家转账（<b>P2 首批 1 端点</b>）：发起转账。
+    /// 官方文档 <see href="https://pay.weixin.qq.com/doc/v3/merchant/4012716434"/>。
+    /// </summary>
+    /// <remarks>
+    /// <b>🔴 尚不具备生产可用性</b>：官方要求「遇错误码不得换单重试，须先查原单」，
+    /// 而两个查询端点尚未落地 ⇒ 生产使用前<b>必须先补</b>撤销 / 商户单号查询 / 微信单号查询 / 电子回单。
+    /// </remarks>
+    Transfer,
 }

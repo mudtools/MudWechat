@@ -142,6 +142,9 @@ public class PayServiceCollectionExtensionsTests
         // P2 合单支付首批（**仅服务商**；源生成 AddCombineTransactionsWebApiHttpClient）。
         provider.GetRequiredService<IWechatPayCombineService>().Should().NotBeNull();
 
+        // P2 商家转账首批（源生成 AddTransferWebApiHttpClient）。
+        provider.GetRequiredService<IWechatPayTransferService>().Should().NotBeNull();
+
         // 账单下载通道随账单模块注册（无 [HttpClientApi]，故无对应的源生成注册方法）。
         provider.GetRequiredService<IWechatPayBillDownloadService>().Should().NotBeNull();
 
@@ -188,6 +191,8 @@ public class PayServiceCollectionExtensionsTests
                      typeof(CombinePrepayRequest),
                      typeof(CombinePrepayResponse),
                      typeof(CombineQueryResponse),
+                     typeof(TransferBillRequest),
+                     typeof(TransferBillResponse),
                  })
         {
             resolver!.GetTypeInfo(dto, options).Should().NotBeNull(

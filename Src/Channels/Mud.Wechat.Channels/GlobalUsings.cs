@@ -5,27 +5,16 @@
 //  不得利用本项目从事危害国家安全、扰乱社会秩序、侵犯他人合法权益等法律法规禁止的活动！任何基于本项目开发而产生的一切法律纠纷和责任，我们不承担任何责任！
 // -----------------------------------------------------------------------
 
-global using Xunit;
-global using FluentAssertions;
-global using Moq;
 global using System;
 global using System.Collections.Generic;
-global using System.IO;
-global using System.Linq;
-global using System.Reflection;
-global using System.Text.Json;
 global using System.Threading;
 global using System.Threading.Tasks;
 global using Microsoft.Extensions.DependencyInjection;
-global using Microsoft.Extensions.Logging.Abstractions;
-global using Microsoft.Extensions.Options;
+global using Microsoft.Extensions.DependencyInjection.Extensions;
 global using Mud.HttpUtils;
 global using Mud.HttpUtils.Attributes;
-global using Mud.Wechat.Abstractions;
-global using Mud.Wechat.Channels;
 global using Mud.Wechat.Channels.Abstractions;
 global using Mud.Wechat.Channels.Abstractions.Authentication;
-global using Mud.Wechat.Channels.Abstractions.Authentication.MultiApp;
-global using Mud.Wechat.Channels.Abstractions.Configuration;
-global using Mud.Wechat.Channels.Abstractions.Enums;
 global using Mud.Wechat.Channels.DataModels;
+global using Mud.Wechat.Channels.DataModels.Basic;
+global using Mud.Wechat.Channels.DataModels.Funds;

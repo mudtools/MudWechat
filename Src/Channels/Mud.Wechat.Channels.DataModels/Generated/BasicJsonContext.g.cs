@@ -11,6 +11,21 @@ namespace Mud.Wechat.Channels.DataModels.Basic;
     PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower,
     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     WriteIndented = false)]
+[JsonSerializable(typeof(global::Mud.Wechat.Channels.DataModels.Basic.ChannelsGetApiDomainIpResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.Channels.DataModels.Basic.ChannelsGetCallbackIpResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.Channels.DataModels.Basic.ChannelsCallbackCheckRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.Channels.DataModels.Basic.ChannelsCallbackCheckResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.Channels.DataModels.Basic.ChannelsDnsCheckResult))]
+[JsonSerializable(typeof(global::Mud.Wechat.Channels.DataModels.Basic.ChannelsPingCheckResult))]
+[JsonSerializable(typeof(global::Mud.Wechat.Channels.DataModels.Basic.ChannelsClearQuotaRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.Channels.DataModels.Basic.ChannelsClearQuotaV2Request))]
+[JsonSerializable(typeof(global::Mud.Wechat.Channels.DataModels.Basic.ChannelsCgiPathRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.Channels.DataModels.Basic.ChannelsGetApiQuotaResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.Channels.DataModels.Basic.ChannelsApiQuota))]
+[JsonSerializable(typeof(global::Mud.Wechat.Channels.DataModels.Basic.ChannelsApiRateLimit))]
+[JsonSerializable(typeof(global::Mud.Wechat.Channels.DataModels.Basic.ChannelsGetRidInfoRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.Channels.DataModels.Basic.ChannelsGetRidInfoResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.Channels.DataModels.Basic.ChannelsRidRequestInfo))]
 [JsonSerializable(typeof(global::Mud.Wechat.Channels.DataModels.Basic.ChannelsGetTokenResponse))]
 [JsonSerializable(typeof(global::Mud.Wechat.Channels.DataModels.Basic.ChannelsStableTokenRequest))]
 internal partial class BasicJsonContext : JsonSerializerContext

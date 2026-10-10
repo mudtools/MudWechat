@@ -83,4 +83,62 @@ public static class ChannelsErrorCodes
 
     /// <summary>该 IP 调用请求已被小店管理员拒绝（请 1 小时后再试）。</summary>
     public const int IpRejectedRetryAfterHour = 89507;
+
+    // ---- Basic 域（设计方案 v1 P1：openApi 管理 + callback check + 双 IP，官方错误码核验）----
+
+    /// <summary>未设置回调 URL（callback/check）。</summary>
+    public const int CallbackUrlNotSet = 40201;
+
+    /// <summary>非法 action（callback/check，官方 40202）。</summary>
+    public const int InvalidCheckAction = 40202;
+
+    /// <summary>非法运营商参数（callback/check，官方 40203）。</summary>
+    public const int InvalidCheckOperator = 40203;
+
+    /// <summary>清零次数达到上限（clear_quota / clear_quota/v2，官方 48006；每账号每月 10 次清零机会）。</summary>
+    public const int ClearQuotaLimitReached = 48006;
+
+    /// <summary>rid 不存在（openapi/rid/get，官方 76001；rid 有效期仅 7 天）。</summary>
+    public const int RidNotFound = 76001;
+
+    /// <summary>rid 为空或格式错误（openapi/rid/get，官方 76002）。</summary>
+    public const int RidInvalid = 76002;
+
+    /// <summary>无权查询（openapi/rid/get，官方 76003；rid 属其他账号）。</summary>
+    public const int RidPermissionDenied = 76003;
+
+    /// <summary>rid 过期（openapi/rid/get，官方 76004；仅支持 7 天内）。</summary>
+    public const int RidExpired = 76004;
+
+    /// <summary>cgi_path not found（openapi/quota/get|clear，官方 76021）。</summary>
+    public const int CgiPathNotFound = 76021;
+
+    /// <summary>无权限使用该 cgi_path（openapi/quota/get|clear，官方 76022；token 与 api 所属账号不符）。</summary>
+    public const int CgiPathPermissionDenied = 76022;
+
+    // ---- Funds 域（设计方案 v1 P1：资金结算 16 端点，官方错误码核验）----
+
+    /// <summary>token 太长（qrcode/get，官方 -2；二维码 ticket 参数超长）。</summary>
+    public const int QrcodeTokenTooLong = -2;
+
+    /// <summary>违规行为，橱窗被禁止使用（getwithdrawlist，官方 10022002；请前往「带货中心-&gt;个人中心-&gt;带货权限」检查橱窗带货权限）。</summary>
+    public const int WindowForbidden = 10022002;
+
+    /// <summary>暂无数据（getfundsflowdetail，官方 10021302）。</summary>
+    public const int FundsFlowNotFound = 10021302;
+
+    /// <summary>错误的 ticket（qrcode/get，官方 60208）。</summary>
+    public const int QrcodeTicketInvalid = 60208;
+
+    /// <summary>ticket 已失效（qrcode/get，官方 60220）。</summary>
+    public const int QrcodeTicketExpired = 60220;
+
+    /// <summary>参数错误（listorderflow，官方 669900000；具体查看 errmsg）。</summary>
+    public const int OrderFlowParamError = 669900000;
+
+    /// <summary>系统异常（listorderflow，官方 669900001；请重试）。</summary>
+    public const int OrderFlowSystemError = 669900001;
+
+    /// <summary>暂无数据（getcity / getbanklist / getsubbranch / getbankbynum，官方 9710001）。</summary>
+    public const int BankDataNotFound = 9710001;
 }

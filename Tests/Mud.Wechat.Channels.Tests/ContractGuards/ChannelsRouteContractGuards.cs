@@ -33,12 +33,28 @@ public class ChannelsRouteContractGuards
     /// 新增（P1：quota / rid / clear_quota / callback check / 双 IP）必须同批扩展并注明追踪理由；
     /// 白名单之外任何与既有四线的路由交叠都是变红项。
     /// </summary>
+    /// <remarks>
+    /// <b>P1 落位（设计方案 v1 §4.5）</b>：8 个 Basic 端点与公众号线<b>云端同路由</b>，但令牌凭据
+    /// 体系不同（小店 AppID vs 公众号 AppID）→ 本线自建 <c>AddBasicApi</c>，不抽共享、不并入公众号线。
+    /// 该 8 路由与公众号线 <c>IMpBasicService</c> / <c>IMpOpenApiService</c> / <c>IMpOpenApiTokenFreeService</c>
+    /// 路由精确重叠，故列入白名单放行（两线各自声明各自消费）。
+    /// </remarks>
     private static readonly IReadOnlySet<string> SharedInfrastructureRoutes =
         new HashSet<string>(StringComparer.Ordinal)
         {
             // token 签发（小店令牌基座；公众号 IMpAuthentication 亦声明同路由）
             "/cgi-bin/token",
             "/cgi-bin/stable_token",
+
+            // P1 Basic 域（设计方案 §4.5：云端同路由、凭据独立，与公众号线各自声明各自消费）
+            "/cgi-bin/get_api_domain_ip",
+            "/cgi-bin/getcallbackip",
+            "/cgi-bin/callback/check",
+            "/cgi-bin/clear_quota",
+            "/cgi-bin/clear_quota/v2",
+            "/cgi-bin/openapi/quota/get",
+            "/cgi-bin/openapi/quota/clear",
+            "/cgi-bin/openapi/rid/get",
         };
 
     /// <summary>设计方案 §2.2：27 个业务域 → 注册方法名（守卫按域枚举接口，命名即契约）。</summary>
@@ -58,7 +74,17 @@ public class ChannelsRouteContractGuards
     private static readonly IReadOnlyDictionary<string, IReadOnlyList<string>> ExpectedRoutesByDomain =
         new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal)
         {
-            ["Basic"] = Array.Empty<string>(),
+            ["Basic"] = new[]
+            {
+                "/cgi-bin/callback/check",
+                "/cgi-bin/clear_quota",
+                "/cgi-bin/clear_quota/v2",
+                "/cgi-bin/get_api_domain_ip",
+                "/cgi-bin/getcallbackip",
+                "/cgi-bin/openapi/quota/clear",
+                "/cgi-bin/openapi/quota/get",
+                "/cgi-bin/openapi/rid/get",
+            },
             ["Resource"] = Array.Empty<string>(),
             ["Shop"] = Array.Empty<string>(),
             ["HomePage"] = Array.Empty<string>(),
@@ -66,7 +92,27 @@ public class ChannelsRouteContractGuards
             ["Favorite"] = Array.Empty<string>(),
             ["Category"] = Array.Empty<string>(),
             ["Order"] = Array.Empty<string>(),
-            ["Funds"] = Array.Empty<string>(),
+            ["Funds"] = new[]
+            {
+                // /channels/ec/funds/*（9 端点：资金账户 + 提现 + 流水）
+                "/channels/ec/funds/getbalance",
+                "/channels/ec/funds/getbankacct",
+                "/channels/ec/funds/setbankacct",
+                "/channels/ec/funds/submitwithdraw",
+                "/channels/ec/funds/getwithdrawlist",
+                "/channels/ec/funds/getwithdrawdetail",
+                "/channels/ec/funds/getfundsflowlist",
+                "/channels/ec/funds/getfundsflowdetail",
+                "/channels/ec/funds/listorderflow",
+                // /shop/funds/*（7 端点：官方历史前缀照抄原文，设计方案 v1 §4.3）
+                "/shop/funds/getcity",
+                "/shop/funds/getprovince",
+                "/shop/funds/getbanklist",
+                "/shop/funds/getsubbranch",
+                "/shop/funds/getbankbynum",
+                "/shop/funds/qrcode/get",
+                "/shop/funds/qrcode/check",
+            },
             ["Marketing"] = Array.Empty<string>(),
             ["Aftersale"] = Array.Empty<string>(),
             ["Kf"] = Array.Empty<string>(),
@@ -140,12 +186,16 @@ public class ChannelsRouteContractGuards
             .ToArray();
 
         // 每个域：存在对应接口则断言其路由表；不存在接口则断言「表中该域仍为空」（P0 全空）。
+        // 双接口同域形态（对齐公众号 OpenApi 域先例）：主接口 IChannels{Domain}Service +
+        // 免令牌变体 IChannels{Domain}TokenFreeService（clear_quota/v2 等应急逃生端点）。
         var actualByDomain = new Dictionary<string, List<string>>(StringComparer.Ordinal);
         foreach (var domain in Domains)
         {
             var expectedName = "IChannels" + domain + "Service";
+            var tokenFreeName = "IChannels" + domain + "TokenFreeService";
             var ifaces = interfaces
-                .Where(t => t.Name.Equals(expectedName, StringComparison.Ordinal))
+                .Where(t => t.Name.Equals(expectedName, StringComparison.Ordinal)
+                            || t.Name.Equals(tokenFreeName, StringComparison.Ordinal))
                 .ToArray();
             actualByDomain[domain] = ifaces
                 .SelectMany(static i => CollectRequestUrisOfType(i))

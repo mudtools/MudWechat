@@ -480,7 +480,7 @@ dotnet test Tests/Mud.Wechat.Work.Tests -c Release -f net8.0 --filter "FullyQual
 
 **15 个测试工程**（`Tests/`，镜像源结构，单 TFM `net8.0`）覆盖六条产品线 + Core 叶层 + Redis。契约守卫分布：企业微信 `Tests/Mud.Wechat.Work.Tests/ContractGuards/` 60 个文件（通用 G1~G10、令牌归属 TO1~TO3、命名空间分区 N1~N3、回调 CB 系列、群机器人 WEB1~WEB4 + 逐域端点/路由守卫）、公众号 23 个（逐域前缀 + QT 令牌注入白名单 + RC 路由计数纪律）、小程序 MP-X1~MP-X8、支付 PAY-B1~B11 与 PAY-CB1、小店 `Tests/Mud.Wechat.Channels.Tests/ContractGuards/`（CH-X1~X4 形态 / CH-T1~T3+CH-V1 令牌归属 / CH-R1~R2 路由，P1 起逐域守卫加挂）、叶层 AB-G1~G7 与 CB-L1 系列、Redis RD-G1~G7。
 
-**AOT / 裁剪**：`net8.0` / `net10.0` 下逐源工程跑 `AotStrictMode`（把 10 类反射诊断升为错误）并保持净零；六条线 DataModels 共 **109 个源生成 JSON 上下文**（Work 62 / 公众号 28 / 支付 12 / 小程序 5 / 小店 2），配置绑定同样源生成。
+**AOT / 裁剪**：`net8.0` / `net10.0` 下逐源工程跑 `AotStrictMode`（把 10 类反射诊断升为错误）并保持净零；六条线 DataModels 共 **110 个源生成 JSON 上下文**（Work 62 / 公众号 28 / 支付 12 / 小程序 5 / 小店 3），配置绑定同样源生成。
 
 真实 Redis 端到端用例由环境变量门控（CI 默认不跑）：
 

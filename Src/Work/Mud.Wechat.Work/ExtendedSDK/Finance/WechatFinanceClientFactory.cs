@@ -129,12 +129,12 @@ public sealed class WechatFinanceClientFactory : IWechatWorkFinanceClientFactory
         var winner = await Task.WhenAny(shared, Task.Delay(Timeout.Infinite, cancellationToken))
             .ConfigureAwait(false);
 
-        if (winner == shared)
+        if (winner != shared)
         {
-            return await shared.ConfigureAwait(false);
+            // Delay 先完成 ⇒ 令牌已取消：本调用者放弃等待，装配继续在后台（见 remarks）。
+            cancellationToken.ThrowIfCancellationRequested();
         }
 
-        cancellationToken.ThrowIfCancellationRequested();
         return await shared.ConfigureAwait(false);
     }
 

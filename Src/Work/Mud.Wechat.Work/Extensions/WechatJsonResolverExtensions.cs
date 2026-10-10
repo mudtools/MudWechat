@@ -27,7 +27,9 @@ using Mud.Wechat.Work.DataModels.CorpGroup.Rules;
 using Mud.Wechat.Work.DataModels.CorpTokenAuthentication;
 using Mud.Wechat.Work.DataModels.Approval;
 using Mud.Wechat.Work.DataModels.DataZone;
+using Mud.Wechat.Work.DataModels.Dial;
 using Mud.Wechat.Work.DataModels.Emergency;
+using Mud.Wechat.Work.DataModels.Hr;
 using Mud.Wechat.Work.DataModels.ExternalContact.Attachment;
 using Mud.Wechat.Work.DataModels.ExternalContact.ContactWay;
 using Mud.Wechat.Work.DataModels.ExternalContact.Customer;
@@ -97,6 +99,12 @@ public static class WechatJsonResolverExtensions
     /// 写回明文 JSON），故该上下文由 <c>WechatWorkFinanceClient</c> 直接以 <c>JsonTypeInfo</c> 使用，
     /// 不并入本管线 —— 并入即是一支<b>永不命中</b>的死注册（本域没有任何走组件序列化管线的入口）。
     /// </para>
+    /// <para>
+    /// <b>登记完备性由 <c>Generated/</c> 逐项对齐</b>（对齐公众号线 <c>MpJsonResolverExtensions</c> 的纪律）：
+    /// 新增域上下文时必须同批追加进合并列表 —— 本列表曾漏登记 <c>DialJsonContext</c> / <c>HrJsonContext</c>
+    /// （公费电话 / 人事助手两域的响应 DTO 在 Native AOT 下无法经组件管线反序列化，JIT 下无症状），
+    /// 已于 2026-10-10 补齐。
+    /// </para>
     /// </remarks>
     public static void ConfigureDataModelsResolver(IServiceCollection services)
     {
@@ -161,6 +169,8 @@ public static class WechatJsonResolverExtensions
             AibotJsonContext.Default,
             LicenseJsonContext.Default,
             WebhookJsonContext.Default,
+            DialJsonContext.Default,
+            HrJsonContext.Default,
             AuthenticationJsonContext.Default);
         services.AddMudHttpClientJsonContext(resolver);
     }

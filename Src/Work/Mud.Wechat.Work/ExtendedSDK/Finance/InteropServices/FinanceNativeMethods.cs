@@ -40,10 +40,11 @@ namespace Mud.Wechat.Work.ExtendedSDK.Finance.InteropServices;
 /// 而不是把野指针送进原生函数（守卫 FIN-B1）。
 /// </para>
 /// <para>
-/// <b>签名来源</b>：与本地 SKIT 源码
-/// <c>SKIT.FlurlHttpClient.Wechat.Work/ExtendedSDK/Finance/InteropServices/FinanceDll{Windows,Linux}PInvoker.cs</c>
-/// 逐条对齐 —— SKIT 按平台各写一份<b>签名完全相同</b>的 17 支声明，本面合并为一份、由解析器选文件，
-/// 从而消灭「改一处忘改另一处」的平台漂移。官方 C 头文件才是权威 ⇒ <b>待逐页核验</b>。
+/// <b>签名来源</b>：官方 C 头（<c>WeWorkFinanceSdk_C.h</c>，path/91774 逐字核验）才是权威 ——
+/// <c>GetChatData</c> 的 <c>limit</c> 为 <c>unsigned int</c>、两支 <c>timeout</c> 为 <c>int</c>，
+/// 与本地 SKIT 源码（<c>FinanceDll{Windows,Linux}PInvoker.cs</c>，声明为 <c>long</c>）的偏差见
+/// <see cref="GetChatData"/> 的 remarks。SKIT 按平台各写一份签名声明，本面合并为一份、由解析器选文件，
+/// 从而消灭「改一处忘改另一处」的平台漂移。
 /// </para>
 /// </remarks>
 internal static class FinanceNativeMethods
@@ -69,16 +70,22 @@ internal static class FinanceNativeMethods
     /// </summary>
     /// <param name="sdk">SDK 实例。</param>
     /// <param name="seq">起始游标（首次 0，后续传上次拉到的<b>最大</b> seq）。</param>
-    /// <param name="limit">本次最多拉取条数。</param>
+    /// <param name="limit">本次最多拉取条数（官方 <c>unsigned int</c>，≤1000）。</param>
     /// <param name="proxy">代理地址（<c>null</c> = 不走代理）。</param>
     /// <param name="proxyPasswd">代理口令（<c>null</c> = 无凭据）。</param>
-    /// <param name="timeout">超时（<b>秒</b>）。</param>
+    /// <param name="timeout">超时（<b>秒</b>，官方 <c>int</c>）。</param>
     /// <param name="chatData">承接结果的切片句柄，由调用方创建与释放。</param>
     /// <returns>0 表示成功。</returns>
+    /// <remarks>
+    /// <b>参数类型逐字照抄官方 C 头</b>（<c>unsigned int limit</c> / <c>int timeout</c>，path/91774）：
+    /// 声明成 8 字节 <c>long</c> 在 x64/ARM64 上因寄存器传参侥幸无害，x86（32 位 cdecl 全栈传参）
+    /// 上会把栈读错位（本包 TFM 含 netstandard2.0，.NET Framework 宿主可跑 32 位，不是纯理论）。
+    /// 本地 SKIT 源码同样声明为 <c>long</c>，系 SKIT 缺陷，未照抄。
+    /// </remarks>
     [DllImport(LibraryName, CallingConvention = CallingConvention.Cdecl)]
     internal static extern int GetChatData(
-        FinanceSdkHandle sdk, ulong seq, long limit,
-        string? proxy, string? proxyPasswd, long timeout, FinanceSliceHandle chatData);
+        FinanceSdkHandle sdk, ulong seq, uint limit,
+        string? proxy, string? proxyPasswd, int timeout, FinanceSliceHandle chatData);
 
     /// <summary>
     /// 拉取媒体文件的<b>一个分片</b>，结果写入 <paramref name="mediaData"/> 指向的 <c>MediaData_t</c>。
@@ -89,13 +96,13 @@ internal static class FinanceNativeMethods
     /// <param name="fileId">官方 <c>sdkfileid</c>。</param>
     /// <param name="proxy">代理地址（<c>null</c> = 不走代理）。</param>
     /// <param name="proxyPasswd">代理口令。</param>
-    /// <param name="timeout">超时（<b>秒</b>）。</param>
+    /// <param name="timeout">超时（<b>秒</b>，官方 <c>int</c>）。</param>
     /// <param name="mediaData">承接结果的媒体句柄，由调用方创建与释放。</param>
     /// <returns>0 表示成功。</returns>
     [DllImport(LibraryName, CallingConvention = CallingConvention.Cdecl)]
     internal static extern int GetMediaData(
         FinanceSdkHandle sdk, string? indexBuf, string fileId,
-        string? proxy, string? proxyPasswd, long timeout, FinanceMediaDataHandle mediaData);
+        string? proxy, string? proxyPasswd, int timeout, FinanceMediaDataHandle mediaData);
 
     /// <summary>
     /// 用 AES 密钥解密单条会话正文（<b>静态入口，不依赖 SDK 实例</b>）。

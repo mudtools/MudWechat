@@ -32,7 +32,10 @@ public class WechatFinanceOptions
     /// <summary>默认配置节名。</summary>
     public const string DefaultSectionName = "WechatFinance";
 
-    /// <summary>官方单片上限（512KB）—— 仅诊断与分片预估用，不据此截断数据。</summary>
+    /// <summary>
+    /// 官方单片上限（512KB）。契约留档 + 测试的边界锚点（守卫 FIN-B3b 以它构造 512KB 边界分片），
+    /// 生产代码<b>不</b>据此截断数据（真实分片尺寸以原生回写为准）。
+    /// </summary>
     public const int OfficialMediaShardBytes = 512 * 1024;
 
     /// <summary>
@@ -136,7 +139,10 @@ public class WechatFinanceRobotOptions
     /// </summary>
     /// <remarks>
     /// 消费点：<c>WechatWorkFinanceClientFactory</c> 取值后送原生 <c>Init</c>。取值须为 ISecretProvider 已登记的名字
-    /// （如 <c>finance:robot:archive-01:secret</c>）。<b>填入 secret 原文会被 <see cref="Validate"/> 启动期拒绝</b>。
+    /// （如 <c>finance:robot:archive-01:secret</c>）。
+    /// <see cref="Validate"/> 的启动期判据<b>只能拦住 PEM/长 base64 形态</b>的密钥体误填（见
+    /// <c>ValidateSecretName</c>）—— 存档 secret 本身是短串，贴进本属性不会被启动期拒绝，只会落到
+    /// 运行期「ISecretProvider 查无密钥名」的点名异常；最终防线是把真实值登记进 ISecretProvider 而非配置文件。
     /// </remarks>
     public string SecretSecretName { get; set; } = string.Empty;
 

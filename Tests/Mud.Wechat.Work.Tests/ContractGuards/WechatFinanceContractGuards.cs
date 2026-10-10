@@ -71,6 +71,19 @@ public class WechatFinanceContractGuards
             "库名一律用简单名（由 FinanceNativeLibrary 的解析器映射平台文件名）");
         methods.Should().OnlyContain(static x => x.Attr!.CallingConvention == CallingConvention.Cdecl,
             "官方 C 接口为 cdecl，写成 StdCall 在 x86 上会破坏栈平衡");
+
+        // 参数类型逐字照抄官方 C 头：limit/timeout 漂移在 x64 上靠寄存器传参侥幸无害，
+        // x86（.NET Framework 32 位宿主可跑）上会把栈读错位 —— 必须在类型层面锁死。
+        var getChatData = methods.Single(static x => x.Method.Name == "GetChatData").Method;
+        var getChatDataParams = getChatData.GetParameters();
+        getChatDataParams.Should().HaveCount(7);
+        getChatDataParams[1].ParameterType.Should().Be<ulong>("官方 seq 为 unsigned long long（uint64）");
+        getChatDataParams[2].ParameterType.Should().Be<uint>("官方 limit 为 unsigned int（声明成 long 在 x86 上栈错位）");
+        getChatDataParams[5].ParameterType.Should().Be<int>("官方 timeout 为 int");
+        var getMediaData = methods.Single(static x => x.Method.Name == "GetMediaData").Method;
+        var getMediaDataParams = getMediaData.GetParameters();
+        getMediaDataParams.Should().HaveCount(7);
+        getMediaDataParams[5].ParameterType.Should().Be<int>("官方 timeout 为 int");
     }
 
     /// <summary>FIN-B1b：三类原生句柄皆由 <c>SafeHandle</c> 承载且不公开（封送期引用计数 + 最终器兜底）。</summary>
@@ -409,7 +422,12 @@ public class WechatFinanceContractGuards
 
         // 设备控制符只在异常路径上清洗一次（先原样解析）。
         source.Should().Contain("catch (JsonException ex)", "清洗必须发生在解析失败之后");
-        source.Should().Contain("\"\\\\u0011\"", "官方脏数据形态：\\\\u0011~\\\\u0014 转义");
+        // 清洗对象是「原始 U+0011 字符」的源码形态（单反斜杠转义），而不是 6 字符转义文本 "\\u0011"：
+        // 后者是合法 JSON、解析不会失败，剥它对 JsonException 路径永不生效（行为级验证见
+        // WechatWorkFinanceClientParseTests）。
+        source.Should().Contain("\"\\u0011\"", "官方脏数据形态：原始 U+0011~U+0014 控制字节（单反斜杠转义的字符字面量）");
+        source.Should().NotContain("\\\\u0011",
+            "6 字符转义文本形态（源码双反斜杠）是永不生效的死分支（合法 JSON 不进 JsonException 路径），出现即回归");
     }
 
     /// <summary>FIN-B4c：不使用 <c>GetDelegateForFunctionPointer</c>（IL3050 红线），也不依赖 NUL 结尾。</summary>

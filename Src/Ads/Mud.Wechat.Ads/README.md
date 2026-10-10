@@ -2,7 +2,7 @@
 
 腾讯广告 **Marketing API v3.0** 产品线**主包**（**在建**：已落地 3 个业务域 15 支声明式端点，路由与逐参数名镜像官方原文）。
 
-**当前状态**：本包公开面 = 3 支可注入接口 + `AdsModule` 三枚举值 + 三个 `Add{域}Api()` + `AddWechatAdsApi` 三重载。授权与传输底座在 `.Abstractions`（`AddAdsApp` / `IAdsAuthorizationService` / `AdsJsonResolverExtensions`），官方 DTO 与五个源生成 `JsonContext` 在 `.DataModels`。守卫族 ADS-S1/S2 + ADS-B1~B6（24 条断言）已随端点面同批生效。
+**当前状态**：本包公开面 = 3 支可注入接口 + `AdsModule` 三枚举值 + 三个 `Add{域}Api()` + `AddWechatAdsApi` 两重载（`params` / builder 委托；三重载是 `AddAdsApp` 的事实）。授权与传输底座在 `.Abstractions`（`AddAdsApp` / `IAdsAuthorizationService` / `AdsJsonResolverExtensions`），官方 DTO 与五个源生成 `JsonContext` 在 `.DataModels`。守卫族 ADS-S1/S2 + ADS-B1~B6（24 条断言）已随端点面同批生效。
 
 **尚未落地**（守卫内逐条点名，不是空断言）：`dynamic_creatives` / `components` / `images` / `videos` / `async_tasks`（官方文档的字段**层级**只有平面证据，须先按 `.docs/Ads-v3.0-官方页面核验留档.md` §11.2 的补法做 DOM `level-*` 核验才能建模——平面括号分组推层级已在本线实测证伪七次）；`async_report_files/get`（请求地址在另一主机 `dl.e.qq.com`，本线目前只有一条指向 `api.e.qq.com` 的业务客户端 ⇒ 报表域计数恰为 4 支）。
 

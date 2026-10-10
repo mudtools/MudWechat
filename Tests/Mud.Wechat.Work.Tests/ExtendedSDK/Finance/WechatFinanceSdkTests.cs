@@ -139,17 +139,22 @@ public class WechatFinanceSdkTests
     }
 
     /// <summary>字典键是文化无关字面量：非英语文化下若用 <c>ToString()</c> 会查不到自己配的键。</summary>
+    /// <remarks>版本号取 1234：de-DE 的 <c>ToString()</c> 会产出 "1.234"（带分组符），与 InvariantCulture 的
+    /// "1234" 可区分 —— 版本号 1 在两种文化下字符串相同，对该缺陷零检测力。</remarks>
     [Fact]
     public void TryGetPrivateKeySecretName_ShouldBeCultureInvariant()
     {
+        const int version = 1234;
+        var versionSecretName = "finance:archive:pk:1234";
         var original = System.Globalization.CultureInfo.CurrentCulture;
         try
         {
             System.Globalization.CultureInfo.CurrentCulture = new("de-DE");
             var robot = NewRobot();
+            robot.PrivateKeySecretNames[version.ToString(System.Globalization.CultureInfo.InvariantCulture)] = versionSecretName;
 
-            robot.TryGetPrivateKeySecretName(1, out var secretName).Should().BeTrue();
-            secretName.Should().Be(PrivateKeySecretName);
+            robot.TryGetPrivateKeySecretName(version, out var secretName).Should().BeTrue();
+            secretName.Should().Be(versionSecretName);
 
             robot.TryGetPrivateKeySecretName(2, out var missing).Should().BeFalse();
             missing.Should().BeNull();

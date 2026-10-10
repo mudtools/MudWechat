@@ -188,6 +188,30 @@ public class AdsAuthorizationServiceTests
     }
 
     /// <summary>
+    /// <b>传输层空应答 ≠ 官方拒绝</b>：null 应答（组件未得到可解析应答体）意味着官方是否已处理请求不可知
+    /// ⇒ 一次性 refresh_token 未被确认消耗，抛 <see cref="InvalidOperationException"/>（传输层失败）
+    /// 且<b>不删</b>授权状态 —— 删库会把一次可重试的传输抖动升级为强制人工重新授权。
+    /// </summary>
+    /// <remarks>2026-10-10 修复：此前 null 应答经 ThrowIfFailed 的哨兵（ErrorCode=-1）被
+    /// <c>catch (WechatAdsException)</c> 误判为「官方拒绝」而删库；GetAsync 现已把 null 应答
+    /// 转成 InvalidOperationException，与官方拒绝在异常类型上区分。</remarks>
+    [Fact]
+    public async Task RefreshAsync_ShouldKeepState_AndThrowTransportError_WhenResponseIsNull()
+    {
+        await SeedAsync(accessToken: "expired", accessTtlMs: -1, refreshToken: "rt-live");
+        _responder = (_, _) => Task.FromResult<AdsTokenResponse?>(null);
+
+        var act = () => _service.RefreshAsync(AppKey);
+
+        (await act.Should().ThrowAsync<InvalidOperationException>())
+            .Which.Message.Should().Contain("可解析的应答");
+
+        _store.EventList.Should().NotContain(static e => e.StartsWith("remove", StringComparison.Ordinal),
+            "官方未确认拒绝 ⇒ refresh_token 未被消耗 ⇒ 不得删状态");
+        _store.EventList.Should().NotContain(static e => e.StartsWith("set", StringComparison.Ordinal));
+    }
+
+    /// <summary>
     /// 刷新端点若<b>少回</b>任一支令牌 ⇒ 无法安全落库（旧值已被官方作废），同样按 ADS-B3 先删后抛。
     /// </summary>
     [Fact]

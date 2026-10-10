@@ -41,14 +41,21 @@ public class WechatAdsException : WechatApiException
 
     /// <summary>用官方错误码、描述与请求地址构造异常。</summary>
     /// <param name="errorCode">官方 <c>code</c>。</param>
-    /// <param name="message">官方 <c>message</c>（英文权威支）。</param>
-    /// <param name="messageCn">官方 <c>message_cn</c>（中文支，多数场景为空串）。</param>
+    /// <param name="message">
+    /// 错误消息（<b>调用方拼装后直传</b>：经 <see cref="ThrowIfFailed{TResponse}"/> 时由公用守卫
+    /// <c>WechatApiResponseGuard</c> 拼装，直接构造时自行拼装 —— 本构造不再二次包装，对齐其它四线形态）。
+    /// </param>
+    /// <param name="messageCn">官方 <c>message_cn</c>（中文支，非空时追加进消息文本）。</param>
     /// <param name="requestUri">请求地址（诊断用，构造期自动脱敏）。</param>
     public WechatAdsException(int errorCode, string message, string? messageCn = null, string? requestUri = null)
-        : base(errorCode, BuildMessage(errorCode, message, messageCn), requestUri)
+        : base(errorCode, AppendChinese(message, messageCn), requestUri)
     {
         MessageCn = messageCn;
     }
+
+    /// <summary>中文支（<c>message_cn</c>）非空时追加进消息文本；为空时原样直传。</summary>
+    private static string AppendChinese(string message, string? messageCn)
+        => string.IsNullOrEmpty(messageCn) ? message : $"{message}, message_cn={messageCn}";
 
     /// <summary>用官方错误码、描述与内部异常构造异常。</summary>
     /// <param name="errorCode">官方 <c>code</c>。</param>
@@ -69,21 +76,14 @@ public class WechatAdsException : WechatApiException
     /// <typeparam name="TResponse">响应类型（须实现公用层判错契约）。</typeparam>
     /// <param name="response">响应实例。</param>
     /// <param name="requestUri">请求地址（可选，诊断用）。</param>
+    /// <remarks>
+    /// <b>null 应答是传输层事实</b>（组件未得到可解析应答），抛出的哨兵异常 <c>ErrorCode == -1</c>
+    /// 不代表官方给出过 <c>code</c> —— 消费侧（如刷新链路）不得把它当成「官方拒绝」处置
+    /// （一次性 refresh_token 只在官方应答存在且拒绝时才视为已作废）。
+    /// </remarks>
     public static void ThrowIfFailed<TResponse>(TResponse? response, string? requestUri = null)
         where TResponse : class, IWechatApiResponse
         => WechatApiResponseGuard.ThrowIfFailed(response, ExceptionFactory, requestUri);
-
-    /// <summary>拼装异常消息：英文支恒显示，中文支非空时追加（<b>不含</b>任何令牌值）。</summary>
-    private static string BuildMessage(int errorCode, string? message, string? messageCn)
-    {
-        var text = $"腾讯广告 API 调用失败：code={errorCode}, message={message}";
-        if (!string.IsNullOrEmpty(messageCn))
-        {
-            text += $", message_cn={messageCn}";
-        }
-
-        return text + "。";
-    }
 }
 
 /// <summary>
@@ -114,11 +114,16 @@ public sealed class WechatAdsReauthorizationRequiredException : WechatAdsExcepti
     /// <param name="appKey">应用键。</param>
     /// <param name="reason">失败原因（<b>不得</b>包含令牌值）。</param>
     /// <param name="underlyingCode">官方返回的 <c>code</c>；本地判定（如库里根本没有 refresh_token）时为 <c>null</c>。</param>
+    /// <param name="innerException">官方原始错误（保留 <c>message</c> 文本的回溯通道，诊断用）。</param>
     public WechatAdsReauthorizationRequiredException(
         string appKey,
         string reason,
-        int? underlyingCode = null)
-        : base(underlyingCode ?? ReauthorizationRequiredSentinel, Build(appKey, reason, underlyingCode))
+        int? underlyingCode = null,
+        Exception? innerException = null)
+        : base(
+            underlyingCode ?? ReauthorizationRequiredSentinel,
+            Build(appKey, reason, underlyingCode),
+            innerException!)
     {
         AppKey = appKey;
     }

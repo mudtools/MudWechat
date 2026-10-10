@@ -84,9 +84,6 @@ public sealed class AdsAppContextSwitcher : IAdsAppContextSwitcher
 /// </summary>
 public interface IAdsAppManager
 {
-    /// <summary>已注册的应用配置（注册期快照，不随运行期变化）。</summary>
-    IReadOnlyList<AdsAppConfig> Apps { get; }
-
     /// <summary>默认应用键；未注册任何应用时为 <c>null</c>。</summary>
     string? DefaultAppKey { get; }
 
@@ -172,9 +169,6 @@ public sealed class AdsAppManager : IAdsAppManager
     }
 
     private readonly IAdsAppContextSwitcher _switcher;
-
-    /// <inheritdoc />
-    public IReadOnlyList<AdsAppConfig> Apps => _apps.Values.ToList();
 
     /// <inheritdoc />
     public string? DefaultAppKey { get; }

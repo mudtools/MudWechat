@@ -12,7 +12,7 @@ using System.Text.Json;
 namespace Mud.Wechat.Ads.Abstractions.Transport;
 
 /// <summary>
-/// 广告线命名 HttpClient 的名称、默认接入点与类型名（供 <c>[HttpClientApi]</c> 引用）。
+/// 广告线命名 HttpClient 的名称与类型名。
 /// </summary>
 /// <remarks>
 /// <para>
@@ -33,6 +33,12 @@ namespace Mud.Wechat.Ads.Abstractions.Transport;
 /// 精确查找（仅 <c>IEnhancedHttpClient</c> / <c>IBaseHttpClient</c> 有短名特判），
 /// 用 <c>nameof(...)</c> 只会产出短名 ⇒ HTTPCLIENT014。故此处提供常量而非让调用方拼写。
 /// </para>
+/// <para>
+/// <b>默认接入点的唯一来源</b>是 <see cref="WechatApiHosts.AdsBaseUrl"/>（经
+/// <c>AdsAppConfig.DefaultBaseUrl</c> 落到应用配置；报表文件下载走另一台主机 <c>dl.e.qq.com</c>，
+/// 同被 <c>e.qq.com</c> 后缀白名单覆盖 ⇒ 不新增独立白名单条目，守卫 ADS-B4）——
+/// 本类不再复制 BaseAddress 字面量（复制即两处来源）。
+/// </para>
 /// </remarks>
 public static class AdsHttpClientNames
 {
@@ -42,24 +48,8 @@ public static class AdsHttpClientNames
     /// <summary>OAuth 客户端名称（<b>不带</b>任何令牌注入）。</summary>
     public const string OAuthClientName = "ads-oauth";
 
-    /// <summary>
-    /// 默认接入点（官方主域名，已在 SSRF 白名单内：以 <c>e.qq.com</c> 后缀条目覆盖）。
-    /// 值直接取公用层唯一来源 <see cref="WechatApiHosts.AdsBaseUrl"/>，<b>不</b>在本线复制字面量。
-    /// </summary>
-    /// <remarks>
-    /// 报表文件下载走<b>另一台主机</b> <c>dl.e.qq.com</c>（官方 <c>async_report_files/get</c> 的请求地址原文），
-    /// 该主机同样被 <c>e.qq.com</c> 后缀覆盖 ⇒ <b>不</b>新增独立白名单条目（守卫 ADS-B4）。
-    /// </remarks>
-    public const string BaseAddress = WechatApiHosts.AdsBaseUrl;
-
-    /// <summary>报表文件下载主机（<c>async_report_files/get</c> 专用）。</summary>
-    public const string DownloadHost = "dl.e.qq.com";
-
     /// <summary>业务客户端类型的全限定 metadata name，供 <c>[HttpClientApi(HttpClient = ...)]</c> 使用。</summary>
     public const string TypeName = "Mud.Wechat.Ads.Abstractions.Transport.IAdsHttpClient";
-
-    /// <summary>OAuth 客户端类型的全限定 metadata name。</summary>
-    public const string OAuthTypeName = "Mud.Wechat.Ads.Abstractions.Transport.IAdsOAuthHttpClient";
 }
 
 /// <summary>

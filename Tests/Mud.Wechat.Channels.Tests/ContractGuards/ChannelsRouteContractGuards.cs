@@ -5,6 +5,14 @@
 //  不得利用本项目从事危害国家安全、扰乱社会秩序、侵犯他人合法权益等法律法规禁止的活动！任何基于本项目开发而产生的一切法律纠纷和责任，我们不承担任何责任！
 // -----------------------------------------------------------------------
 
+using Mud.Wechat.Ads.Extensions;
+using Mud.Wechat.Channels.Abstractions.Authentication;
+using Mud.Wechat.Channels.Extensions;
+using Mud.Wechat.MiniProgram.Extensions;
+using Mud.Wechat.OfficialAccount.Extensions;
+using Mud.Wechat.Pay.Extensions;
+using Mud.Wechat.Work.Extensions;
+
 namespace Mud.Wechat.Channels.Tests.ContractGuards;
 
 /// <summary>
@@ -145,12 +153,12 @@ public class ChannelsRouteContractGuards
     public void OverlappingRoutes_ShouldNotBeDeclared_WhenChannelsLineAddsEndpoints()
     {
         var existingRoutes = new HashSet<string>(StringComparer.Ordinal);
-        existingRoutes.UnionWith(CollectRequestUris(LoadProductLine("Mud.Wechat.OfficialAccount")));
-        existingRoutes.UnionWith(CollectRequestUris(LoadProductLine("Mud.Wechat.Work")));
-        existingRoutes.UnionWith(CollectRequestUris(LoadProductLine("Mud.Wechat.MiniProgram")));
-        existingRoutes.UnionWith(CollectRequestUris(LoadProductLine("Mud.Wechat.Pay")));
+        existingRoutes.UnionWith(CollectRequestUris(LoadProductLine(typeof(MpModule))));
+        existingRoutes.UnionWith(CollectRequestUris(LoadProductLine(typeof(WechatModule))));
+        existingRoutes.UnionWith(CollectRequestUris(LoadProductLine(typeof(MiniProgramModule))));
+        existingRoutes.UnionWith(CollectRequestUris(LoadProductLine(typeof(PayModule))));
         // 广告线（2026-10 并入本仓）亦为声明式路由线，必须纳入参照集：漏掉它 = 小店线可静默回潮广告线路由。
-        existingRoutes.UnionWith(CollectRequestUris(LoadProductLine("Mud.Wechat.Ads")));
+        existingRoutes.UnionWith(CollectRequestUris(LoadProductLine(typeof(AdsModule))));
 
         existingRoutes.Should().NotBeEmpty("既有五线路由是本守卫的参照集，为空说明反射口径失效，守卫会假绿");
 
@@ -159,8 +167,9 @@ public class ChannelsRouteContractGuards
             "公众号线 IMpProductCardService 的产品卡路由是 CH-R1 的锚点（设计方案 §4.2），不得从参照集消失");
 
         var channelsRoutes = new HashSet<string>(StringComparer.Ordinal);
-        channelsRoutes.UnionWith(CollectRequestUris(LoadProductLine("Mud.Wechat.Channels")));
-        channelsRoutes.UnionWith(CollectRequestUris(LoadProductLine("Mud.Wechat.Channels.Abstractions")));
+        channelsRoutes.UnionWith(CollectRequestUris(LoadProductLine(typeof(ChannelsModule))));
+        channelsRoutes.UnionWith(CollectRequestUris(LoadProductLine(typeof(IChannelsAuthentication))));
+        // 本包为纯宿主包（零手写类型），无编译期锚点可用 ⇒ 名称加载（含探测失败兜底，见 LoadProductLine）。
         channelsRoutes.UnionWith(CollectRequestUris(LoadProductLine("Mud.Wechat.Channels.Callback")));
 
         var overlap = channelsRoutes
@@ -183,7 +192,7 @@ public class ChannelsRouteContractGuards
     [Fact]
     public void DomainRouteTables_ShouldMatchDeclaredEndpoints()
     {
-        var asm = LoadProductLine("Mud.Wechat.Channels");
+        var asm = LoadProductLine(typeof(ChannelsModule));
         var interfaces = asm.GetTypes()
             .Where(static t => t.IsInterface)
             .ToArray();
@@ -267,11 +276,40 @@ public class ChannelsRouteContractGuards
         }
     }
 
+    /// <summary>
+    /// 按编译期类型锚点取产品线程序集（<c>anchor.Assembly</c>）：引用在编译期即绑定，
+    /// 加载由 CLR 统一管理，<b>不经</b>运行时按名称探测 —— 字符串版 <see cref="LoadProductLine(string)"/>
+    /// 曾在 CI 上偶发 <c>FileNotFoundException</c>（deps.json 探测瞬态失败，trx 留档 2026-10-10）。
+    /// </summary>
+    private static Assembly LoadProductLine(Type anchor)
+    {
+        var asm = anchor.Assembly;
+        asm.GetName().Name.Should().NotBeNullOrEmpty();
+        return asm;
+    }
+
+    /// <summary>
+    /// 按名称取程序集（仅用于<b>零手写类型</b>的纯宿主包）：先查已加载表，再按名称加载；
+    /// 名称探测偶发失败而构建产物内文件确在（构建门禁保证）时，按文件路径兜底一次。
+    /// </summary>
     private static Assembly LoadProductLine(string name)
     {
         var asm = AppDomain.CurrentDomain.GetAssemblies()
-            .FirstOrDefault(a => a.GetName().Name == name)
-            ?? Assembly.Load(name);
+            .FirstOrDefault(a => a.GetName().Name == name);
+        if (asm is not null)
+        {
+            return asm;
+        }
+
+        try
+        {
+            asm = Assembly.Load(name);
+        }
+        catch (FileNotFoundException) when (File.Exists(Path.Combine(AppContext.BaseDirectory, name + ".dll")))
+        {
+            asm = Assembly.LoadFrom(Path.Combine(AppContext.BaseDirectory, name + ".dll"));
+        }
+
         asm.GetName().Name.Should().Be(name);
         return asm;
     }

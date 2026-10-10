@@ -366,6 +366,13 @@ public class WechatAbstractionsContractGuards
             audit.Should().Contain(adsProject, $"广告线 {adsProject} 工程必须纳入配置消费点搜索范围");
         }
 
+        // 腾讯广告配置 DTO 与支付线同一双向不变式：文件存在 ⇔ 已登记进 $configFiles
+        // （2026-10-10 补登记 —— 此前只断言了搜索根、漏了 DTO 本身，AdsAppConfig 曾整体绕过审计）。
+        var adsConfigDto = "Mud.Wechat.Ads.Abstractions/Configuration/AdsAppConfig.cs";
+        var adsDtoExists = File.Exists(SourcePath(adsConfigDto.Split('/')));
+        audit.Contains(adsConfigDto).Should().Be(adsDtoExists,
+            $"广告线配置 DTO「{adsConfigDto}」的文件存在性与 $configFiles 登记必须同批（存在={adsDtoExists}，登记={audit.Contains(adsConfigDto)}）");
+
         var annotate = File.ReadAllText(Path.Combine(root, "scripts", "AddHttpJsonSerializable.ps1"));
         annotate.Should().Contain("$RootNamespace", "根命名空间必须参数化，否则非默认产品线根级 DTO 分组错误");
 

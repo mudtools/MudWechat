@@ -45,10 +45,15 @@ public sealed class WechatWorkFinanceClient : IWechatWorkFinanceClient, IDisposa
     /// <summary>Dispose 前等待在途调用排空的上限（秒）。超时仍继续，安全性由 SafeHandle 引用计数保证。</summary>
     private const int DisposeDrainWaitSeconds = 30;
 
-    /// <summary>官方设备控制符转义序列（明文 JSON 的已知脏数据形态，见 <c>Parse</c>）。</summary>
+    /// <summary>
+    /// 官方偶发的设备控制符脏数据（<see cref="Parse{T}"/>）：<b>原始 U+0011~U+0014 字节</b>直接出现在
+    /// 明文 JSON 的字符串字面量内 —— 这是非法 JSON 形态（JSON 规范禁止 U+0000~U+001F 未转义出现在字符串内），
+    /// <see cref="JsonException"/> 由它们触发；含「<c>\u0011</c>」<b>转义文本</b>的 JSON 是合法 JSON，
+    /// 源生成器解析不会失败，与本清洗无关。
+    /// </summary>
     private static readonly string[] ControlCharEscapes =
     {
-        "\\u0011", "\\u0012", "\\u0013", "\\u0014",
+        "\u0011", "\u0012", "\u0013", "\u0014",
     };
 
     private readonly FinanceSdkHandle _sdk;
@@ -142,7 +147,8 @@ public sealed class WechatWorkFinanceClient : IWechatWorkFinanceClient, IDisposa
             nameof(FinanceNativeMethods.GetChatData),
             cancellationToken,
             slice => FinanceNativeMethods.GetChatData(
-                _sdk, seq, limit, _proxyAddress, _proxyPassword, _timeoutSeconds, slice))
+                // limit 公开面是 int（>0 已在上方校验），原生面照官方 C 头为 unsigned int。
+                _sdk, seq, (uint)limit, _proxyAddress, _proxyPassword, _timeoutSeconds, slice))
             .ConfigureAwait(false);
 
         var envelope = ParseEnvelope(json);
@@ -305,7 +311,7 @@ public sealed class WechatWorkFinanceClient : IWechatWorkFinanceClient, IDisposa
             // 「取消即跳过本轮」逻辑会被吞掉）。
             throw;
         }
-        catch (Exception ex) when (entryName != null && !(ex is WechatFinanceNativeException)
+        catch (Exception ex) when (!(ex is WechatFinanceNativeException)
                                    && !(ex is ObjectDisposedException)
                                    && !(ex is DllNotFoundException)
                                    && !(ex is EntryPointNotFoundException))
@@ -387,8 +393,9 @@ public sealed class WechatWorkFinanceClient : IWechatWorkFinanceClient, IDisposa
     /// <remarks>
     /// 「先原样、失败再清洗」而非「总是清洗」：总是清洗会把真正的坏数据洗成合法形状，
     /// 从而把协议问题伪装成业务数据（清洗后仍失败时，诊断文本会明确指出走到了清洗分支）。
+    /// <c>internal</c> 供行为测试直接驱动（清洗路径在无原生库环境下唯一可达的验证入口）。
     /// </remarks>
-    private static T Parse<T>(string json, Func<string, T?> deserialize, string entryName)
+    internal static T Parse<T>(string json, Func<string, T?> deserialize, string entryName)
         where T : class
     {
         try
@@ -414,7 +421,7 @@ public sealed class WechatWorkFinanceClient : IWechatWorkFinanceClient, IDisposa
 
             // 明文即敏感：异常消息只报入口名与「是否已清洗」，绝不回显报文（守卫 FIN-B5）。
             throw new InvalidOperationException(
-                $"{entryName} 写回的明文 JSON 解析失败（{(stripped ? "已剥设备控制符转义后仍失败" : "未检出设备控制符转义")}）。" +
+                $"{entryName} 写回的明文 JSON 解析失败（{(stripped ? "已剥设备控制符后仍失败" : "未检出设备控制符脏数据")}）。" +
                 "出于「解密后明文不得进异常消息」的约束，此处不含报文内容，请结合本轮 seq 与 msgtype 定位。",
                 ex);
         }
@@ -423,7 +430,12 @@ public sealed class WechatWorkFinanceClient : IWechatWorkFinanceClient, IDisposa
     private static InvalidOperationException EmptyPayload(string entryName)
         => new($"{entryName} 原生返回 0 但写回的明文为空 JSON（null），无法解析。");
 
-    /// <summary>剥官方偶发的设备控制符转义序列（无命中时原样返回同一实例，供上层判断是否发生过清洗）。</summary>
+    /// <summary>剥官方偶发的设备控制符脏数据（无命中时原样返回同一实例，供上层判断是否发生过清洗）。</summary>
+    /// <remarks>
+    /// 清洗的是<b>原始控制字节</b>而非「<c>\u0011</c>」6 字符转义文本：后者是合法 JSON 转义、
+    /// 解析根本不会失败，把它的 Replace 放在 <see cref="JsonException"/> 路径上是永不生效的死分支
+    /// （本地 SKIT 源码同为转义文本形态，系同源缺陷，未照抄）。
+    /// </remarks>
     private static string StripDeviceControlEscapes(string json)
     {
         var result = json;

@@ -33,10 +33,10 @@ public class FinanceChatDataModelTests
         "msgid", "action", "from", "tolist", "user", "roomid", "msgtime", "msgtype", "voiceid", "voipid",
     };
 
-    /// <summary>官方正文键集（26 支，与 msgtype 同名）。</summary>
+    /// <summary>官方正文键集（27 支：26 种 msgtype 与 msgtype 同名 + disagree；markdown 等七种 msgtype 收敛在 info 键下共用一支）。</summary>
     private static readonly string[] BodyKeys =
     {
-        "text", "image", "revoke", "agree", "voice", "video", "card", "location", "emotion", "file",
+        "text", "image", "revoke", "agree", "disagree", "voice", "video", "card", "location", "emotion", "file",
         "link", "weapp", "chatrecord", "todo", "vote", "collect", "redpacket", "external_redpacket",
         "meeting", "doc", "info", "calendar", "mixed", "meeting_voice_call", "voip_doc_share", "sphfeed",
     };
@@ -47,7 +47,7 @@ public class FinanceChatDataModelTests
         var keys = JsonKeysOf(typeof(FinanceChatMessage));
 
         keys.Should().Equal(Sort(HeaderKeys.Concat(BodyKeys)),
-            "消息头与 26 支正文键必须逐字照抄官方（驼峰化或美化改名会让字段静默丢失）");
+            "消息头与 27 支正文键必须逐字照抄官方（驼峰化或美化改名会让字段静默丢失）");
         keys.Should().HaveCount(HeaderKeys.Length + BodyKeys.Length,
             "一个类型覆盖全部 msgtype ⇒ 少一支键就等于少一种正文形态");
     }
@@ -159,7 +159,7 @@ public class FinanceChatDataModelTests
     }
 
     /// <summary>
-    /// 全 26 支正文一次反序列化：验证源生成上下文<b>传递覆盖</b>了全部嵌套类型
+    /// 全 27 支正文一次反序列化：验证源生成上下文<b>传递覆盖</b>了全部嵌套类型
     /// （漏覆盖只在这里才炸，而不是编译期）。
     /// </summary>
     [Fact]
@@ -185,6 +185,8 @@ public class FinanceChatDataModelTests
         message.Revoke!.PreviousMessageId.Should().Be("msg-0");
         message.Agree!.UserId.Should().Be("lisi");
         message.Agree.AgreeTimestampMilli.Should().Be(1700000000001L);
+        message.Disagree!.UserId.Should().Be("lisi");
+        message.Disagree.DisagreeTimestampMilli.Should().Be(1700000000003L);
         message.Voice!.DurationSeconds.Should().Be(12);
         message.Voice.FileSize.Should().Be(2048);
         message.Video!.FileSize.Should().Be(4096);
@@ -216,6 +218,11 @@ public class FinanceChatDataModelTests
         message.Info!.NewsItems![0].PictureUrl.Should().Be("https://np");
         message.Info.VoIpCallDuration.Should().Be(60);
         message.Info.MeetingId.Should().Be("150000000001");
+        message.Info.WedriveFileUrl.Should().Be("https://disk");
+        message.Info.SolitaireType.Should().Be(101);
+        message.Info.SolitaireContent.Should().Be("SL");
+        message.Info.NoteItems![0].MessageType.Should().Be("text");
+        message.Info.NoteItems[0].ContentJson.Should().Contain("note-inner");
         message.Calendar!.AttendeeNameList!.Should().Equal(new[] { "p1", "p2" });
         message.Mixed!.Items![0].Type.Should().Be("text");
         message.MeetingVoiceCall!.ShareFileDataList![0].OperatorUserId.Should().Be("lisi");
@@ -297,6 +304,7 @@ public class FinanceChatDataModelTests
   "image": { "sdkfileid": "img-id", "md5sum": "m1", "filesize": 1024 },
   "revoke": { "pre_msgid": "msg-0" },
   "agree": { "userid": "lisi", "agree_time": 1700000000001 },
+  "disagree": { "userid": "lisi", "disagree_time": 1700000000003 },
   "voice": { "play_length": 12, "sdkfileid": "voice-id", "md5sum": "m2", "voice_size": 2048 },
   "video": { "play_length": 30, "sdkfileid": "video-id", "md5sum": "m3", "filesize": 4096 },
   "card": { "corpname": "ACME", "userid": "lisi" },
@@ -313,7 +321,7 @@ public class FinanceChatDataModelTests
   "external_redpacket": { "type": 2, "wish": "EW", "totalcnt": 5, "totalamount": 500 },
   "meeting": { "meetingtype": 1, "meetingid": "150000000000", "topic": "TP", "starttime": 1700000000, "endtime": 1700003600, "address": "MA", "remarks": "MR", "status": 2 },
   "doc": { "title": "DOC", "link_url": "https://doc", "doc_creator": "lisi" },
-  "info": { "content": "MD", "item": [ { "url": "https://n", "title": "NT", "description": "ND", "picurl": "https://np" } ], "callduration": 60, "invitetype": 1, "filename": "wf", "meeting_id": "150000000001", "notification_type": 3 },
+  "info": { "content": "MD", "item": [ { "url": "https://n", "title": "NT", "description": "ND", "picurl": "https://np" } ], "callduration": 60, "invitetype": 1, "filename": "wf", "url": "https://disk", "meeting_id": "150000000001", "notification_type": 3, "solitaire_type": 101, "solitaire_content": "SL", "items": [ { "msg_type": "text", "content": "{\"content\":\"note-inner\"}" } ] },
   "calendar": { "title": "CAL", "creatorname": "CN", "starttime": 1700000000, "endtime": 1700003600, "attendeename": ["p1", "p2"], "place": "PL", "remarks": "CR2" },
   "mixed": { "item": [ { "type": "text", "content": "{\"content\":\"mixed-inner\"}" } ] },
   "meeting_voice_call": { "sdkfileid": "mvc-id", "endtime": 1700003600, "demofiledata": [ { "filename": "d1", "demooperator": "lisi", "starttime": 1700000000, "endtime": 1700001000 } ], "sharescreendata": [ { "share": "lisi", "starttime": 1700001000, "endtime": 1700002000 } ] },

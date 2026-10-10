@@ -273,6 +273,10 @@ public class AdsAdvertiserJsonTests
         thrown.ErrorCode.Should().Be(12345);
         thrown.Message.Should().Contain("quota exceeded");
         thrown.MessageCn.Should().BeNull();
+        // 消息由公用守卫拼装后直传、构造不再二次包装（2026-10-10 修复双包装缺陷）——
+        // 恰一次「调用失败」前缀、不以句号叠句号结尾，双包装回归时此断言即红。
+        thrown.Message.Should().Match("*调用失败*errcode=12345*errmsg=quota exceeded*")
+            .And.NotMatch("*调用失败*调用失败*");
     }
 
     /// <summary>宿主直接构造时两支都进消息（英文支恒显示、中文支非空时追加）。</summary>

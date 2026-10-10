@@ -15,7 +15,9 @@ namespace Mud.Wechat.Work.DataModels.Finance;
 /// <b>一个类型覆盖全部 msgtype</b>：官方把消息体做成「公共头字段 + 与 <c>msgtype</c> 同名的一个对象字段」
 /// （如 <c>msgtype == "image"</c> 时正文在 <c>image</c> 键下），而不是多态信封 ⇒ 这里按同名兄弟字段逐个建模为
 /// 可空属性，调用侧按 <see cref="MessageType"/> 取对应属性。这与「三种模式共用一份可空超集」的回调载荷纪律同源，
-/// 好处是<b>无需反射即可判定形态</b>、AOT 友好；代价是一次反序列化会尝试绑定全部 26 支正文类型。
+/// 好处是<b>无需反射即可判定形态</b>、AOT 友好；代价是一次反序列化会尝试绑定全部 27 支正文属性
+/// （27 支同名键；markdown / news / meeting_notification / voiptext / qydiskfile / solitaire / note
+/// 七种 msgtype 的正文收敛在 <c>info</c> 键下共用一支、docmsg 用 <c>doc</c> 键）。
 /// </para>
 /// <para>
 /// <b>只登记 1 支根类型</b>：<see cref="FinanceChatMessage"/> 标 <c>[HttpJsonSerializable]</c>，
@@ -39,9 +41,9 @@ public class FinanceChatMessage
     [JsonPropertyName("msgid")]
     public string? MessageId { get; set; }
 
-    /// <summary>消息动作（官方键 <c>action</c>，如 <c>send</c> / <c>revoke</c>）。</summary>
-    [JsonPropertyName("action")]
-    public string? Action { get; set; }
+/// <summary>消息动作（官方键 <c>action</c>，取值 <c>send</c> / <c>recall</c> / <c>switch</c> —— path/91774 原文）。</summary>
+[JsonPropertyName("action")]
+public string? Action { get; set; }
 
     /// <summary>发送方账号（官方键 <c>from</c>）。</summary>
     [JsonPropertyName("from")]
@@ -90,6 +92,14 @@ public class FinanceChatMessage
     /// <summary>同意/不同意存档正文（官方键 <c>agree</c>）。</summary>
     [JsonPropertyName("agree")]
     public FinanceAgreeMessageContent? Agree { get; set; }
+
+    /// <summary>拒绝存档正文（官方键 <c>disagree</c>，字段与 <c>agree</c> 同形 —— path/91774）。</summary>
+    /// <remarks>
+    /// <c>disagree</c> 是官方独立 msgtype（不复用 <c>agree</c> 键）：缺了它，
+    /// <see cref="MessageType"/> == <c>disagree</c> 的消息正文被静默丢弃（未知键被忽略），调用侧无从分派。
+    /// </remarks>
+    [JsonPropertyName("disagree")]
+    public FinanceDisagreeMessageContent? Disagree { get; set; }
 
     /// <summary>语音正文（官方键 <c>voice</c>）。</summary>
     [JsonPropertyName("voice")]
@@ -212,7 +222,7 @@ public class FinanceRevokeMessageContent
     public string? PreviousMessageId { get; set; }
 }
 
-/// <summary>同意/不同意会话存档正文。</summary>
+/// <summary>同意会话存档正文（官方 msgtype <c>agree</c>）。</summary>
 public class FinanceAgreeMessageContent
 {
     /// <summary>操作成员账号（官方键 <c>userid</c>）。</summary>
@@ -222,6 +232,18 @@ public class FinanceAgreeMessageContent
     /// <summary>同意时间戳（官方键 <c>agree_time</c>，毫秒级）。</summary>
     [JsonPropertyName("agree_time")]
     public long AgreeTimestampMilli { get; set; }
+}
+
+/// <summary>拒绝会话存档正文（官方 msgtype <c>disagree</c>，与 <c>agree</c> 同形）。</summary>
+public class FinanceDisagreeMessageContent
+{
+    /// <summary>操作成员账号（官方键 <c>userid</c>）。</summary>
+    [JsonPropertyName("userid")]
+    public string? UserId { get; set; }
+
+    /// <summary>拒绝时间戳（官方键 <c>disagree_time</c>，毫秒级）。</summary>
+    [JsonPropertyName("disagree_time")]
+    public long DisagreeTimestampMilli { get; set; }
 }
 
 /// <summary>语音消息正文。</summary>
@@ -576,39 +598,59 @@ public class FinanceDocumentMessageContent
     public string? CreatorUserId { get; set; }
 }
 
-/// <summary>Markdown / 图文 / 音视频通话正文（官方把多形态收敛在同一 <c>info</c> 键下）。</summary>
+/// <summary>
+/// Markdown / 图文 / 音视频通话 / 会议控制 / 微盘文件 / 接龙 / 笔记正文
+/// （官方把 <c>markdown</c>、<c>news</c>、<c>meeting_notification</c>、<c>voiptext</c>、<c>qydiskfile</c>、
+/// <c>solitaire</c>、<c>note</c> 多形态收敛在同一 <c>info</c> 键下 —— path/91774）。
+/// </summary>
 public class FinanceInfoMessageContent
 {
-    /// <summary>内容（官方键 <c>content</c>）。</summary>
+    /// <summary>内容（官方键 <c>content</c>，承载 markdown 与会议系统消息文本）。</summary>
     [JsonPropertyName("content")]
     public string? Content { get; set; }
 
-    /// <summary>图文列表（官方键 <c>item</c>）。</summary>
+    /// <summary>图文列表（官方键 <c>item</c>，<c>news</c> 形态）。</summary>
     [JsonPropertyName("item")]
     public FinanceInfoNewsItem[]? NewsItems { get; set; }
 
-    /// <summary>VoIP 通话时长（官方键 <c>callduration</c>，单位秒）。</summary>
+    /// <summary>VoIP 通话时长（官方键 <c>callduration</c>，单位秒，<c>voiptext</c> 形态）。</summary>
     [JsonPropertyName("callduration")]
     public int? VoIpCallDuration { get; set; }
 
-    /// <summary>VoIP 邀请类型（官方键 <c>invitetype</c>）。</summary>
+    /// <summary>VoIP 邀请类型（官方键 <c>invitetype</c>，1 单人视频 / 2 单人语音 / 3 多人视频 / 4 多人语音）。</summary>
     [JsonPropertyName("invitetype")]
     public int? VoIpInviteType { get; set; }
 
-    /// <summary>微盘文件名（官方键 <c>filename</c>）。</summary>
+    /// <summary>微盘文件名（官方键 <c>filename</c>，<c>qydiskfile</c> 形态）。</summary>
     [JsonPropertyName("filename")]
     public string? WedriveFileName { get; set; }
 
-    /// <summary>会议 ID（官方键 <c>meeting_id</c>，注意此处带下划线、与 <c>meetingid</c> 不同键）。</summary>
+    /// <summary>微盘文件链接（官方键 <c>url</c>，<c>qydiskfile</c> 形态）。</summary>
+    [JsonPropertyName("url")]
+    public string? WedriveFileUrl { get; set; }
+
+    /// <summary>会议 ID（官方键 <c>meeting_id</c>，注意此处带下划线、与 <c>meetingid</c> 不同键，<c>meeting_notification</c> 形态）。</summary>
     [JsonPropertyName("meeting_id")]
     public string? MeetingId { get; set; }
 
-    /// <summary>通知类型（官方键 <c>notification_type</c>）。</summary>
+    /// <summary>通知类型（官方键 <c>notification_type</c>，1 有人加入会议 / 2 会议已结束）。</summary>
     [JsonPropertyName("notification_type")]
     public int? NotificationType { get; set; }
+
+    /// <summary>接龙类型（官方键 <c>solitaire_type</c>，101 发起 / 102 参与，<c>solitaire</c> 形态）。</summary>
+    [JsonPropertyName("solitaire_type")]
+    public int? SolitaireType { get; set; }
+
+    /// <summary>接龙内容（官方键 <c>solitaire_content</c>）。</summary>
+    [JsonPropertyName("solitaire_content")]
+    public string? SolitaireContent { get; set; }
+
+    /// <summary>笔记条目（官方键 <c>items</c>，<c>note</c> 形态）。</summary>
+    [JsonPropertyName("items")]
+    public FinanceInfoNoteItem[]? NoteItems { get; set; }
 }
 
-/// <summary><c>info</c> 正文中的一条图文。</summary>
+/// <summary><c>info</c> 正文中的一条图文（<c>news</c> 形态）。</summary>
 public class FinanceInfoNewsItem
 {
     /// <summary>链接（官方键 <c>url</c>）。</summary>
@@ -626,6 +668,18 @@ public class FinanceInfoNewsItem
     /// <summary>配图 URL（官方键 <c>picurl</c>）。</summary>
     [JsonPropertyName("picurl")]
     public string? PictureUrl { get; set; }
+}
+
+/// <summary><c>info</c> 正文中的笔记条目（<c>note</c> 形态）。</summary>
+public class FinanceInfoNoteItem
+{
+    /// <summary>条目的消息类型（官方键 <c>msg_type</c>，取值 text/image/voice/video/location/file）。</summary>
+    [JsonPropertyName("msg_type")]
+    public string? MessageType { get; set; }
+
+    /// <summary>条目正文的 <b>JSON 字符串</b>（官方键 <c>content</c> —— 官方原文即字符串，需按 <c>msg_type</c> 二次解析）。</summary>
+    [JsonPropertyName("content")]
+    public string? ContentJson { get; set; }
 }
 
 /// <summary>日程消息正文。</summary>

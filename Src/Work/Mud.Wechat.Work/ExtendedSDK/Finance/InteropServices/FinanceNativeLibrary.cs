@@ -55,9 +55,6 @@ internal static class FinanceNativeLibrary
         => false;
 #endif
 
-    /// <summary>当前生效的绝对路径（<c>null</c> = 走平台默认名探测）。</summary>
-    internal static string? ProbePath => s_probePath;
-
     /// <summary>
     /// 设置原生库绝对路径（装配期一次）。已设置过再次给出<b>不同</b>值时抛错 ——
     /// 进程只有一份原生库，两个机器人给两条路径不可能是同一份实现。

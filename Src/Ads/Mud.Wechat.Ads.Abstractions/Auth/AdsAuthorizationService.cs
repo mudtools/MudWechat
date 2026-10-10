@@ -324,9 +324,11 @@ public sealed class AdsAuthorizationService : IAdsAuthorizationService
         }
         catch (WechatAdsException ex)
         {
-            // 官方拒绝刷新 ⇒ 旧 refresh_token 已不可信（一次性凭据），先删后抛（ADS-B3 的顺序即契约）。
+            // 官方拒绝刷新（code != 0）⇒ 旧 refresh_token 已不可信（一次性凭据），先删后抛（ADS-B3 的顺序即契约）。
+            // GetAsync 已把「null 应答」转成 InvalidOperationException，故走到这里必然是官方应答存在且判错；
+            // 传输层异常（HttpRequestException 等）不经本 catch，原样上抛、不删状态（官方可能根本没收到请求）。
             await _store.RemoveAsync(appKey, cancellationToken).ConfigureAwait(false);
-            throw new WechatAdsReauthorizationRequiredException(appKey, "刷新请求被官方拒绝", ex.ErrorCode);
+            throw new WechatAdsReauthorizationRequiredException(appKey, "刷新请求被官方拒绝", ex.ErrorCode, ex);
         }
 
         var data = RequireData(response, uri);
@@ -377,6 +379,16 @@ public sealed class AdsAuthorizationService : IAdsAuthorizationService
         using var request = new HttpRequestMessage(HttpMethod.Get, uri);
         var response = await _httpClient.SendAsync<AdsTokenResponse>(request, cancellationToken: cancellationToken)
             .ConfigureAwait(false);
+
+        // null 应答 = 组件未得到可解析的应答对象（空 body / 媒体类型不符）：官方是否已处理请求不可知。
+        // 以 InvalidOperationException 表达「传输层失败」而非走 ThrowIfFailed 的哨兵（ErrorCode=-1）——
+        // 刷新链路只把「官方应答存在且 code != 0」升级为重新授权（删一次性 refresh_token），
+        // 传输层失败不得删库（token 未被官方消耗，重试是安全的）。
+        if (response is null)
+        {
+            throw new InvalidOperationException(
+                $"腾讯广告 OAuth 请求未得到可解析的应答（{uri.GetLeftPart(UriPartial.Path)}）。");
+        }
 
         // 判错前不记录 URI：Query 里就是 client_secret / refresh_token（RedactUri 会剥 query，异常侧安全）。
         WechatAdsException.ThrowIfFailed(response, uri.GetLeftPart(UriPartial.Path));

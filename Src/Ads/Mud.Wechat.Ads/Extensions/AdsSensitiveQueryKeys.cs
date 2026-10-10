@@ -19,7 +19,7 @@ namespace Mud.Wechat.Ads.Extensions;
 /// <c>ApiException.RequestUri</c>、日志与遥测 URL 中即为凭据明文外泄。
 /// </para>
 /// <para>
-/// <b>处置方式取组件的公开登记门面</b> <c>Mud.HttpUtils.SensitiveUrlKeys.Register</c>
+/// <b>处置方式取组件的公开登记门面</b> <c>Mud.HttpUtils.SensitiveUrlKeys.RegisterAll</c>
 /// （登记后的键<b>无论可观测性开关为何都强制掩码</b>），与企微线群机器人 <c>key</c> 参数的既有做法同形
 /// （见守卫 <c>WEB3</c>）。<b>不</b>去改组件静态词表：那是全局面，且本仓无权替上游决定通用键名。
 /// </para>

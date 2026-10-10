@@ -8,7 +8,7 @@
 namespace Mud.Wechat.MiniProgram;
 
 /// <summary>
-/// 微信小程序「二维码 / 链接」域 SDK —— <b>JSON 通道</b>（5 端点：URL Link / URL Scheme / ShortLink）。
+/// 微信小程序「二维码 / 链接」域 SDK —— <b>JSON 通道</b>（6 端点：URL Link / URL Scheme / ShortLink / NFC Scheme）。
 /// </summary>
 /// <remarks>
 /// <para>
@@ -17,11 +17,12 @@ namespace Mud.Wechat.MiniProgram;
 /// 查询 URL Link <c>qrcode-link/url-link/api_queryurllink.html</c>、
 /// 生成 URL Scheme <c>qrcode-link/url-scheme/api_generatescheme.html</c>、
 /// 查询 URL Scheme <c>qrcode-link/url-scheme/api_queryscheme.html</c>、
-/// 生成 ShortLink <c>qrcode-link/short-link/api_generateshortlink.html</c>。
+/// 生成 ShortLink <c>qrcode-link/short-link/api_generateshortlink.html</c>、
+/// 获取 NFC scheme <c>qrcode-link/url-scheme/api_generatenfcscheme.html</c>。
 /// </para>
 /// <para>
-/// <b>双通道分工（对齐公众号线素材域先例，勿合并）</b>：本域 8 端点中，
-/// <b>URL Link / URL Scheme / ShortLink 五端点响应为 JSON</b>（本接口，走生成管线）；
+/// <b>双通道分工（对齐公众号线素材域先例，勿合并）</b>：本域 9 端点中，
+/// <b>URL Link / URL Scheme / ShortLink / NFC Scheme 六端点响应为 JSON</b>（本接口，走生成管线）；
 /// <b>小程序码三端点响应为图片二进制流</b>（失败时才是 JSON）⇒ 落独立请求形态
 /// <c>IWxaCodeService</c>（Content-Type 分支判错，不进 JSON 反序列化管线）。两者同挂
 /// <c>QrCodeLink</c> 注册组。
@@ -124,5 +125,29 @@ public interface IWxaQrCodeLinkService
     [Post("/wxa/genwxashortlink")]
     Task<WxaShortLinkResponse> GenerateShortLinkAsync(
         [Body] WxaShortLinkRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 获取 NFC 的小程序 scheme。官方文档：<c>qrcode-link/url-scheme/api_generatenfcscheme.html</c>。
+    /// </summary>
+    /// <param name="request">NFC 场景生成请求（<c>sn</c> / <c>model_id</c> 必填），见 <see cref="WxaNfcSchemeRequest"/>。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
+    /// <returns>生成的 scheme（<c>openlink</c>，与 URL Scheme 同形）。</returns>
+    /// <remarks>
+    /// <para>官方契约：<b>POST</b> <c>/wxa/generatenfcscheme</c> ＋ 请求体 JSON；Query 携带 <c>access_token</c>。</para>
+    /// <para>
+    /// <b>适用场景（官方原文）</b>：用于 NFC 拉起小程序的业务场景（如智能硬件碰一碰直达页面）；
+    /// 生成参数（<c>sn</c> 设备序列号 / <c>model_id</c> 设备型号 ID）为<b> NFC 专属</b>，
+    /// 其余字段与 URL Scheme <b>同形但不等价</b>（勿与 <see cref="GenerateSchemeAsync"/> 混杂使用）。
+    /// </para>
+    /// <para>
+    /// <b>有效期</b>：<c>expire_type</c> = <c>0</c>（失效间隔，<c>expire_interval</c> 官方范围 7~30 天）/ 
+    /// <c>1</c>（失效日期 <c>expire_time</c> 绝对时间戳）；<c>is_expire</c> 为是否过期开关（官方原文：
+    /// 使用失效字段前先将此值设为 <c>true</c>）。取值语义以官方页面为准，SDK 不做本地校验。
+    /// </para>
+    /// </remarks>
+    [Post("/wxa/generatenfcscheme")]
+    Task<WxaSchemeResponse> GenerateNfcSchemeAsync(
+        [Body] WxaNfcSchemeRequest request,
         CancellationToken cancellationToken = default);
 }

@@ -46,6 +46,29 @@ public class MiniProgramServiceBuilder
 
             [MiniProgramModule.Security] = static s => s.AddSecurityWebApiHttpClient(),
             [MiniProgramModule.DataAnalysis] = static s => s.AddDataAnalysisWebApiHttpClient(),
+            [MiniProgramModule.SubscribeMessage] = static s => s.AddSubscribeMessageWebApiHttpClient(),
+            [MiniProgramModule.DynamicMessage] = static s => s.AddDynamicMessageWebApiHttpClient(),
+            [MiniProgramModule.Kf] = static s => s.AddKfWebApiHttpClient(),
+            [MiniProgramModule.HardwareDevice] = static s => s.AddHardwareDeviceWebApiHttpClient(),
+
+            // 运维中心：反馈图片（getfeedbackmedia）成功时返回**图片二进制流**（失败时才是 JSON），
+            // 走独立请求形态 IWxaFeedbackMediaService（Content-Type 分支判错），其余 9 端点走生成管线。
+            [MiniProgramModule.Operation] = static s =>
+            {
+                s.AddOperationWebApiHttpClient();
+                s.TryAddSingleton<IWxaFeedbackMediaService, WxaFeedbackMediaService>();
+            },
+
+            [MiniProgramModule.Plugin] = static s => s.AddPluginWebApiHttpClient(),
+            [MiniProgramModule.Charge] = static s => s.AddChargeWebApiHttpClient(),
+            [MiniProgramModule.NearbyPoi] = static s => s.AddNearbyPoiWebApiHttpClient(),
+            [MiniProgramModule.Search] = static s => s.AddSearchWebApiHttpClient(),
+            [MiniProgramModule.Soter] = static s => s.AddSoterWebApiHttpClient(),
+            [MiniProgramModule.ServiceMarket] = static s => s.AddServiceMarketWebApiHttpClient(),
+            [MiniProgramModule.RedPacketCover] = static s => s.AddRedPacketCoverWebApiHttpClient(),
+            [MiniProgramModule.Student] = static s => s.AddStudentWebApiHttpClient(),
+            [MiniProgramModule.FaceVerify] = static s => s.AddFaceVerifyWebApiHttpClient(),
+            [MiniProgramModule.LaborUse] = static s => s.AddLaborUseWebApiHttpClient(),
         };
 
     /// <summary>注册登录与用户（5 端点：4 带令牌 + 1 免令牌）。</summary>
@@ -60,9 +83,69 @@ public class MiniProgramServiceBuilder
     /// <returns>注册器（链式）。</returns>
     public MiniProgramServiceBuilder AddSecurityApi() => AddModule(MiniProgramModule.Security);
 
-    /// <summary>注册数据分析（9 端点）。</summary>
+    /// <summary>注册数据分析（11 端点）。</summary>
     /// <returns>注册器（链式）。</returns>
     public MiniProgramServiceBuilder AddDataAnalysisApi() => AddModule(MiniProgramModule.DataAnalysis);
+
+    /// <summary>注册订阅消息（4 端点：发送订阅消息 + 用户通知面）。</summary>
+    /// <returns>注册器（链式）。</returns>
+    public MiniProgramServiceBuilder AddSubscribeMessageApi() => AddModule(MiniProgramModule.SubscribeMessage);
+
+    /// <summary>注册动态消息（3 端点）。</summary>
+    /// <returns>注册器（链式）。</returns>
+    public MiniProgramServiceBuilder AddDynamicMessageApi() => AddModule(MiniProgramModule.DynamicMessage);
+
+    /// <summary>注册客服（9 端点：客服角色 + 客服子商户 + 微信客服绑定）。</summary>
+    /// <returns>注册器（链式）。</returns>
+    public MiniProgramServiceBuilder AddKfApi() => AddModule(MiniProgramModule.Kf);
+
+    /// <summary>注册硬件设备（9 端点）。</summary>
+    /// <returns>注册器（链式）。</returns>
+    public MiniProgramServiceBuilder AddHardwareDeviceApi() => AddModule(MiniProgramModule.HardwareDevice);
+
+    /// <summary>注册运维中心（10 端点：9 JSON + 1 反馈图片流）。</summary>
+    /// <returns>注册器（链式）。</returns>
+    public MiniProgramServiceBuilder AddOperationApi() => AddModule(MiniProgramModule.Operation);
+
+    /// <summary>注册插件管理（2 端点：devplugin + plugin）。</summary>
+    /// <returns>注册器（链式）。</returns>
+    public MiniProgramServiceBuilder AddPluginApi() => AddModule(MiniProgramModule.Plugin);
+
+    /// <summary>注册付费管理（2 端点：资源包用量 + 最近平均用量）。</summary>
+    /// <returns>注册器（链式）。</returns>
+    public MiniProgramServiceBuilder AddChargeApi() => AddModule(MiniProgramModule.Charge);
+
+    /// <summary>注册附近小程序（4 端点）。</summary>
+    /// <returns>注册器（链式）。</returns>
+    public MiniProgramServiceBuilder AddNearbyPoiApi() => AddModule(MiniProgramModule.NearbyPoi);
+
+    /// <summary>注册微信搜一搜（1 端点：数据推送）。</summary>
+    /// <returns>注册器（链式）。</returns>
+    public MiniProgramServiceBuilder AddSearchApi() => AddModule(MiniProgramModule.Search);
+
+    /// <summary>注册生物认证（1 端点：秘钥签名验证）。</summary>
+    /// <returns>注册器（链式）。</returns>
+    public MiniProgramServiceBuilder AddSoterApi() => AddModule(MiniProgramModule.Soter);
+
+    /// <summary>注册微信服务市场（2 端点：调用 + 异步获取）。</summary>
+    /// <returns>注册器（链式）。</returns>
+    public MiniProgramServiceBuilder AddServiceMarketApi() => AddModule(MiniProgramModule.ServiceMarket);
+
+    /// <summary>注册微信红包封面（1 端点：获取红包封面）。</summary>
+    /// <returns>注册器（链式）。</returns>
+    public MiniProgramServiceBuilder AddRedPacketCoverApi() => AddModule(MiniProgramModule.RedPacketCover);
+
+    /// <summary>注册学生身份（1 端点：快速获取学生身份）。</summary>
+    /// <returns>注册器（链式）。</returns>
+    public MiniProgramServiceBuilder AddStudentApi() => AddModule(MiniProgramModule.Student);
+
+    /// <summary>注册微信人脸核身（2 端点：会话标识 + 结果查询）。</summary>
+    /// <returns>注册器（链式）。</returns>
+    public MiniProgramServiceBuilder AddFaceVerifyApi() => AddModule(MiniProgramModule.FaceVerify);
+
+    /// <summary>注册用工关系（2 端点：推送消息 + 解绑）。</summary>
+    /// <returns>注册器（链式）。</returns>
+    public MiniProgramServiceBuilder AddLaborUseApi() => AddModule(MiniProgramModule.LaborUse);
 
     /// <summary>注册全部模块。</summary>
     /// <returns>注册器（链式）。</returns>

@@ -17,6 +17,12 @@ namespace Mud.Wechat.MiniProgram.DataModels.Auth;
 [JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Auth.WxaPhoneInfo))]
 [JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Auth.WxaWatermark))]
 [JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Auth.WxaGetPaidUnionIdResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Auth.WxaGetPluginOpenPidResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Auth.WxaCheckEncryptedMsgRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Auth.WxaCheckEncryptedMsgResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Auth.WxaGetUserEncryptKeyRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Auth.WxaGetUserEncryptKeyResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Auth.WxaUserEncryptKeyInfo))]
 internal partial class AuthJsonContext : JsonSerializerContext
 {
 }

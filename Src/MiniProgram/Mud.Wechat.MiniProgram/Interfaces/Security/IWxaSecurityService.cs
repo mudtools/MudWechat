@@ -8,13 +8,14 @@
 namespace Mud.Wechat.MiniProgram;
 
 /// <summary>
-/// 微信小程序「内容安全」域 SDK（2 端点：文本同步审核 + 音视频异步审核）。
+/// 微信小程序「内容安全」域 SDK（3 端点：文本同步审核 + 音视频异步审核 + 安全风控）。
 /// </summary>
 /// <remarks>
 /// <para>
 /// <b>官方文档</b>（小程序服务端 API → 内容安全，2026-10-09 核验）：
 /// 文本 <c>sec-center/sec-check/api_msgseccheck.html</c>、
-/// 音视频 <c>sec-center/sec-check/api_mediacheckasync.html</c>。
+/// 音视频 <c>sec-center/sec-check/api_mediacheckasync.html</c>、
+/// 安全风控 <c>sec-center/safety-control-capability/api_getuserriskrank.html</c>。
 /// </para>
 /// <para>
 /// <b>图片内容安全 <c>/wxa/img_sec_check</c> 刻意不实现</b>：官方文档页
@@ -83,5 +84,26 @@ public interface IWxaSecurityService
     [Post("/wxa/media_check_async")]
     Task<WxaMediaCheckAsyncResponse> MediaCheckAsyncAsync(
         [Body] WxaMediaCheckAsyncRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 获取用户安全等级（<c>risk_rank</c>）。官方文档：<c>sec-center/safety-control-capability/api_getuserriskrank.html</c>。
+    /// </summary>
+    /// <param name="request">用户信息与场景，见 <see cref="WxaGetUserRiskRankRequest"/>。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
+    /// <returns>风险等级（<c>risk_rank</c>，0~4），见 <see cref="WxaGetUserRiskRankResponse"/>。</returns>
+    /// <remarks>
+    /// <para>官方契约：<b>POST</b> <c>/wxa/getuserriskrank</c> ＋ 请求体 JSON；Query 携带 <c>access_token</c>。</para>
+    /// <para>
+    /// <b>能力口径（官方原文）</b>：根据提交的用户信息获取安全等级，<b>无需用户授权</b>；
+    /// <c>appid</c> / <c>openid</c> 为用户侧标识，<c>scene</c> 默认 <c>2</c>（营销活动）。
+    /// </para>
+    /// <para><b>等级语义（勿把数值当布尔）</b>：<c>0</c> 通过 / <c>1</c> 未知 / <c>2</c> 风险待确认 /
+    /// <c>3</c> 风险命中 / <c>4</c> 高风险命中。</para>
+    /// <para>官方错误码：<c>40001</c>（令牌无效，走自愈）/ <c>43104</c>（未开通安全风控能力）。</para>
+    /// </remarks>
+    [Post("/wxa/getuserriskrank")]
+    Task<WxaGetUserRiskRankResponse> GetUserRiskRankAsync(
+        [Body] WxaGetUserRiskRankRequest request,
         CancellationToken cancellationToken = default);
 }

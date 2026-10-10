@@ -255,3 +255,84 @@ public class WxaVisitPageItem
     [JsonPropertyName("page_share_uv")]
     public long? PageShareUv { get; set; }
 }
+
+/// <summary>用户访问小程序数据概况应答（<c>POST /datacube/getweanalysisappiddailysummarytrend</c>）。</summary>
+/// <remarks>
+/// <para>官方文档：<c>data-analysis/others/api_getdailysummary.html</c>。</para>
+/// <para><b>与「日趋势」差异（勿混淆）</b>：趋势返回打开 / 访问 / 停留等<b>过程指标</b>；概况返回
+/// 累计用户数 / 转发次数 / 转发人数等<b>结果指标</b>。</para>
+/// </remarks>
+[HttpJsonSerializable(SerializerClassName = "DataAnalysis")]
+public class WxaDailySummaryResponse : WxaResponse
+{
+    /// <summary>概况数据列表（<c>list</c>），见 <see cref="WxaDailySummaryItem"/>。</summary>
+    [JsonPropertyName("list")]
+    public List<WxaDailySummaryItem>? List { get; set; }
+}
+
+/// <summary>概况数据条目（<c>list[]</c>）。</summary>
+[HttpJsonSerializable(SerializerClassName = "DataAnalysis")]
+public class WxaDailySummaryItem
+{
+    /// <summary>日期（<c>ref_date</c>，格式 <c>yyyymmdd</c>）。</summary>
+    [JsonPropertyName("ref_date")]
+    public string? RefDate { get; set; }
+
+    /// <summary>累计用户数（<c>visit_total</c>）。</summary>
+    [JsonPropertyName("visit_total")]
+    public long? VisitTotal { get; set; }
+
+    /// <summary>转发次数（<c>share_pv</c>）。</summary>
+    [JsonPropertyName("share_pv")]
+    public long? SharePv { get; set; }
+
+    /// <summary>转发人数（<c>share_uv</c>）。</summary>
+    [JsonPropertyName("share_uv")]
+    public long? ShareUv { get; set; }
+}
+
+/// <summary>获取小程序性能数据请求体（<c>POST /wxa/business/performance/boot</c>）。</summary>
+/// <remarks>
+/// <para>官方文档：<c>data-analysis/others/api_getperformancedata.html</c>。</para>
+/// <para>
+/// <b>时间粒度（官方原文）</b>：<c>time</c> 为开始时间，格式 <c>yyyymmddhh</c>，<b>精确到小时</b>
+/// （与 datacube 各端点的 <c>yyyymmdd</c> 粒度不同，勿混用）。
+/// </para>
+/// </remarks>
+[HttpJsonSerializable(SerializerClassName = "DataAnalysis")]
+public class WxaPerformanceBootRequest
+{
+    /// <summary>开始时间（<c>time</c>，必填；格式 <c>yyyymmddhh</c>，精确到小时）。</summary>
+    [JsonPropertyName("time")]
+    public string? Time { get; set; }
+
+    /// <summary>模块类型（<c>module</c>，必填）：<c>1</c> 启动性能 / <c>2</c> 运行性能。</summary>
+    [JsonPropertyName("module")]
+    public long? Module { get; set; }
+
+    /// <summary>模块扩展参数（<c>extinfo</c>，选填；标准 JSON 序列化字符串，具体字段以官方页面为准）。</summary>
+    [JsonPropertyName("extinfo")]
+    public string? ExtInfo { get; set; }
+}
+
+/// <summary>获取小程序性能数据应答（<c>data</c>，<c>{key,value}</c> 数组）。</summary>
+[HttpJsonSerializable(SerializerClassName = "DataAnalysis")]
+public class WxaPerformanceBootResponse : WxaResponse
+{
+    /// <summary>性能指标数组（<c>data</c>），见 <see cref="WxaPerformanceDataItem"/>。</summary>
+    [JsonPropertyName("data")]
+    public List<WxaPerformanceDataItem>? Data { get; set; }
+}
+
+/// <summary>性能指标条目（<c>data[]</c>）。</summary>
+[HttpJsonSerializable(SerializerClassName = "DataAnalysis")]
+public class WxaPerformanceDataItem
+{
+    /// <summary>指标名（<c>key</c>；如启动性能的 <c>app_start_elapsed_time</c>）。</summary>
+    [JsonPropertyName("key")]
+    public string? Key { get; set; }
+
+    /// <summary>指标值（<c>value</c>，<b>数值型</b>；单位以官方口径为准）。</summary>
+    [JsonPropertyName("value")]
+    public double? Value { get; set; }
+}

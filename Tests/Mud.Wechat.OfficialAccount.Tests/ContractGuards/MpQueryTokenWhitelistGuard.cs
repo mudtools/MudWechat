@@ -82,7 +82,8 @@ public class MpQueryTokenWhitelistGuard
     /// <para>
     /// <b>登录 <c>code2Session</c> 不在白名单内</b>：它<b>免令牌</b>（以 <c>appid</c> + <c>secret</c> 换用户级会话，
     /// 不消费应用级 <c>access_token</c>），刻意不声明 <c>[Token]</c> —— 声明之反而会把应用级令牌错误注入该请求。
-    /// 同理，小程序码三端点走 <c>IWxaCodeService</c> 手工通道（无 <c>[Token]</c> 特性，手工拼 Query），也不入白名单。
+    /// 同理，小程序码三端点走 <c>IWxaCodeService</c> 手工通道（无 <c>[Token]</c> 特性，手工拼 Query），
+    /// 反馈图片走 <c>IWxaFeedbackMediaService</c> 手工通道（同形态），也不入白名单。
     /// </para>
     /// </remarks>
     [Fact]
@@ -98,10 +99,25 @@ public class MpQueryTokenWhitelistGuard
 
         actual.Should().BeEquivalentTo(new[]
         {
-            nameof(Mud.Wechat.MiniProgram.IWxaAuthService),           // 登录与用户（4 端点；code2Session 免令牌独立接口）
-            nameof(Mud.Wechat.MiniProgram.IWxaQrCodeLinkService),     // 二维码 / 链接 JSON 通道（5 端点；图片通道 IWxaCodeService 手工注入）
-            nameof(Mud.Wechat.MiniProgram.IWxaSecurityService),       // 内容安全（2 端点）
-            nameof(Mud.Wechat.MiniProgram.IWxaDataAnalysisService),   // 数据分析（9 端点）
+            nameof(Mud.Wechat.MiniProgram.IWxaAuthService),              // 登录与用户（7 端点；code2Session 免令牌独立接口）
+            nameof(Mud.Wechat.MiniProgram.IWxaChargeService),            // 付费管理（2 端点）
+            nameof(Mud.Wechat.MiniProgram.IWxaDataAnalysisService),      // 数据分析（11 端点）
+            nameof(Mud.Wechat.MiniProgram.IWxaDynamicMessageService),    // 动态消息（3 端点）
+            nameof(Mud.Wechat.MiniProgram.IWxaFaceVerifyService),        // 微信人脸核身（2 端点）
+            nameof(Mud.Wechat.MiniProgram.IWxaHardwareDeviceService),    // 硬件设备（9 端点）
+            nameof(Mud.Wechat.MiniProgram.IWxaKfService),                // 客服（9 端点）
+            nameof(Mud.Wechat.MiniProgram.IWxaLaborUseService),          // 用工关系（2 端点）
+            nameof(Mud.Wechat.MiniProgram.IWxaNearbyPoiService),         // 附近小程序（4 端点）
+            nameof(Mud.Wechat.MiniProgram.IWxaOperationService),         // 运维中心（9 端点；反馈图片 IWxaFeedbackMediaService 手工通道不入白名单）
+            nameof(Mud.Wechat.MiniProgram.IWxaPluginService),            // 插件管理（2 端点）
+            nameof(Mud.Wechat.MiniProgram.IWxaQrCodeLinkService),        // 二维码 / 链接 JSON 通道（6 端点；图片通道 IWxaCodeService 手工注入）
+            nameof(Mud.Wechat.MiniProgram.IWxaRedPacketCoverService),    // 微信红包封面（1 端点）
+            nameof(Mud.Wechat.MiniProgram.IWxaSearchService),            // 微信搜一搜（1 端点）
+            nameof(Mud.Wechat.MiniProgram.IWxaSecurityService),          // 内容安全（3 端点）
+            nameof(Mud.Wechat.MiniProgram.IWxaServiceMarketService),     // 微信服务市场（2 端点）
+            nameof(Mud.Wechat.MiniProgram.IWxaSoterService),             // 生物认证（1 端点）
+            nameof(Mud.Wechat.MiniProgram.IWxaStudentService),           // 学生身份（1 端点）
+            nameof(Mud.Wechat.MiniProgram.IWxaSubscribeMessageService),  // 订阅消息 / 服务卡片（4 端点）
         }, "小程序官方契约同样强制 Query 注入；新增 Query 注入接口须先评估再显式扩展本白名单");
 
         actual.Should().NotBeEmpty();

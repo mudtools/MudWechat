@@ -1,6 +1,6 @@
 # Mud.Wechat
 
-微信生态的 .NET SDK：**企业微信、公众号、小程序、微信支付 APIv3、开放平台第三方平台**五条产品线装在一个解决方案里，共用同一套令牌基座、回调内核与质量门禁。
+微信生态的 .NET SDK：**企业微信、公众号、小程序、微信支付 APIv3、开放平台第三方平台、微信小店 / 视频号（channels 生态）**六条产品线装在一个解决方案里，共用同一套令牌基座、回调内核与质量门禁。
 
 **能干什么**
 
@@ -16,7 +16,7 @@
 - **安全默认不可协商**：回调两道闸 fail-closed；`BaseUrl` 强制 HTTPS + 主机白名单；支付线的私钥与 APIv3 密钥只以「名称」进配置。
 - **老宿主到 net10.0 同一套 API**：从 `netstandard2.0`（.NET Framework 4.6.1+）一路覆盖，只用原生 `IConfiguration` / `ILogger` / DI / `ActivitySource`，不自建抽象层、不绑架你的架构。
 
-各线的域数、端点数、事件键与载荷数见下文「能力全景」，包与守卫的分布见「包家族」与「质量门禁」。架构对齐 Mud.Feishu（FeishuV3）——包家族、令牌基座、契约守卫与质量门禁模式一致，两套 SDK 使用体验高度一致。五条产品线**独立可选**，按平台装对应主包即可（其余随依赖传递）：
+各线的域数、端点数、事件键与载荷数见下文「能力全景」，包与守卫的分布见「包家族」与「质量门禁」。架构对齐 Mud.Feishu（FeishuV3）——包家族、令牌基座、契约守卫与质量门禁模式一致，两套 SDK 使用体验高度一致。六条产品线**独立可选**，按平台装对应主包即可（其余随依赖传递）：
 
 | 产品线 | 平台 | 包前缀 | 凭据 / 令牌模型 |
 | --- | --- | --- | --- |
@@ -25,6 +25,7 @@
 | 微信小程序 | 小程序 | `Mud.Wechat.MiniProgram*` | **复用公众号令牌域**（同一 `/cgi-bin/token` 端点，不新增令牌类型） |
 | 微信开放平台 | 公众平台第三方平台（component 体系） | `Mud.Wechat.OpenPlatform*` | `component_access_token` + 每授权方令牌（显式提供者，不走声明式 `[Token]`） |
 | 微信支付 | APIv3（商户 / 服务商） | `Mud.Wechat.Pay*` | **商户 RSA 私钥签名**（`WECHATPAY2-SHA256-RSA2048`），**无 `access_token`** |
+| 微信小店 / 视频号（channels 生态） | 微信小店（含视频号小店升级形态：内容运营 + 交易管理 + 本地生活三面） | `Mud.Wechat.Channels*` | `Wechat.Channels.AccessToken`（`/cgi-bin/token` 普通 + `stable_token` 稳定双通道，**独立小店 AppID**，与公众号/小程序不互通） |
 
 **配置即校验**：应用配置在 DI 注册阶段就按应用类型完成互斥必填校验（自建 `CorpId`+`AgentSecret`、第三方 / 代开发 `CorpId`+`ProviderSecret`+`SuiteId`+`SuiteSecret`），非法组合直接注册期抛错，不潜伏到第一次调用；模板 id 不提供独立属性（代开发 `template_id` 即 `suite_id`，独立字段等于允许非法状态）。
 
@@ -32,7 +33,7 @@
 
 ## 包家族
 
-`Src/` 下 **22 个源工程**（`Src/Core` 4 + `Src/Work` 4 + `Src/OfficialAccount` 4 + `Src/MiniProgram` 3 + `Src/Pay` 4 + `Src/OpenPlatform` 3），其中 **20 个产出 nupkg**、2 个构建期工具工程 `IsPackable=false`。
+`Src/` 下 **26 个源工程**（`Src/Core` 4 + `Src/Work` 4 + `Src/OfficialAccount` 4 + `Src/MiniProgram` 3 + `Src/Pay` 4 + `Src/OpenPlatform` 3 + `Src/Channels` 4），其中 **24 个产出 nupkg**、2 个构建期工具工程 `IsPackable=false`。
 
 ### 共享层（Src/Core）
 
@@ -40,8 +41,8 @@
 | --- | --- |
 | `Mud.Wechat.Abstractions` | **跨产品线共享叶层**（零工程引用）：响应契约 `IWechatApiResponse`、令牌存储端口与桥接编解码、回调密码学内核 `WechatCallbackCrypto` 与重放端口、配置基座 `WechatAppConfigBase`、`WechatApiHosts`（SSRF 白名单单一来源）、`WechatActivitySource` 可观测性契约面 |
 | `Mud.Wechat.Redis` | Redis 分布式存储：四个存储端口（令牌 / 企业授权 / 套件票据 / 回调抗重放）的 Redis 实现 + 连接基座 + 健康检查 + 顺序守卫 |
-| `Mud.Wechat.Callback.Generator` | 回调契约登记源码生成器（产品线中立，发射企微 `OfficialPayloadContracts.RegisterAll` 与公众号 `MpPayloadContracts.RegisterAll`；不打包） |
-| `Mud.Wechat.Callback.Analyzers` | 回调处理器契约分析器（`MUDCB002~005`，只诊断不发射；随三个回调宿主包内嵌 `analyzers/dotnet/cs` 下发；不打包） |
+| `Mud.Wechat.Callback.Generator` | 回调契约登记源码生成器（产品线中立，按档位发射企微 `OfficialPayloadContracts.RegisterAll` 与公众号 `MpPayloadContracts.RegisterAll`；小店回调档位随 P3 加挂；不打包） |
+| `Mud.Wechat.Callback.Analyzers` | 回调处理器契约分析器（`MUDCB002~005`，只诊断不发射；随四个回调宿主包——企微 / 公众号 / 支付 / 小店——内嵌 `analyzers/dotnet/cs` 下发；不打包） |
 
 依赖单向：各线主包 → `{本线 Abstractions, 本线 DataModels}` → `Mud.Wechat.Abstractions`。硬边界：`Callback` 包不引用同线主包；`Redis` 不引用任何线的主包 / Callback 包；公众号线与小程序线之间只允许「小程序 → 公众号 Abstractions」一条边。
 
@@ -54,7 +55,7 @@
 | `Mud.Wechat.Work.DataModels` | 官方 DTO + 62 个域 AOT 源生成 JSON 上下文 |
 | `Mud.Wechat.Work.Callback` | 回调接收：验签、AES 解密、事件分发、HTTP 中间件、抗重放守卫、智能机器人 JSON 通道 |
 
-### 其余四条线
+### 其余五条线
 
 | 包 | 说明 |
 | --- | --- |
@@ -62,9 +63,10 @@
 | `Mud.Wechat.MiniProgram` / `.Abstractions` / `.DataModels` | 小程序：4 个业务域（登录、二维码与链接、内容安全、数据分析）；复用公众号令牌底座；官方 DTO。**无 Callback 工程**（消息接收走公众号线 XML 通道，由脚手架守卫锁定） |
 | `Mud.Wechat.Pay` / `.Abstractions` / `.DataModels` / `.Callback` | 微信支付 APIv3：10 个业务域 54 端点；商户配置面与签名/验签端口；官方 DTO（snake_case 字段名照官方）；通知接收（平台证书验签 + AEAD-GCM 解密 + 三道 fail-closed 闸） |
 | `Mud.Wechat.OpenPlatform` / `.Abstractions` | 开放平台第三方平台：component 令牌与授权方令牌提供者、预授权码 / 换授权 / 刷新令牌、`component_verify_ticket` 与授权变更事件接收 |
+| `Mud.Wechat.Channels` / `.Abstractions` / `.DataModels` / `.Callback` | 微信小店 / 视频号（channels 生态）：27 个业务域声明式客户端（规划，P1 起逐域落地）；双通道令牌基座（`token` / `stable_token`，`UseStableToken` 切换）；官方 DTO；回调接收（msg_signature + EncodingAESKey + receiveid，与公众号同构，复用 Core 密码学与抗重放两道闸） |
 | `Mud.Wechat.OpenTelemetry` | 可观测性一键装配（Tracing + Metrics + OTLP），委托叶层 `WechatActivitySource` 契约面 |
 
-**目标框架**：企业微信 / 公众号 / 小程序 / Core 线为 `netstandard2.0` / `net6.0` / `net8.0` / `net10.0`；**微信支付与开放平台线为 `net6.0` / `net8.0` / `net10.0`**（刻意不含 `netstandard2.0`——`AesGcm` 在 ns2.0 不存在，由守卫 PAY-B9 锁定）。全仓 `LangVersion 13.0`。
+**目标框架**：企业微信 / 公众号 / 小程序 / 微信小店 / Core 线为 `netstandard2.0` / `net6.0` / `net8.0` / `net10.0`；**微信支付与开放平台线为 `net6.0` / `net8.0` / `net10.0`**（刻意不含 `netstandard2.0`——`AesGcm` 在 ns2.0 不存在，由守卫 PAY-B9 锁定）。全仓 `LangVersion 13.0`。
 
 ## 安装
 
@@ -82,6 +84,9 @@ dotnet add package Mud.Wechat.MiniProgram
 # 微信支付 APIv3
 dotnet add package Mud.Wechat.Pay
 dotnet add package Mud.Wechat.Pay.Callback
+# 微信小店 / 视频号（channels 生态，P1 起逐域可用）
+dotnet add package Mud.Wechat.Channels
+dotnet add package Mud.Wechat.Channels.Callback
 # 微信开放平台（第三方平台）
 dotnet add package Mud.Wechat.OpenPlatform
 # 可选：跨线通用
@@ -190,6 +195,36 @@ var outcome = receiver.Receive(msgSignature, timestamp, nonce, rawBody);
 // 令牌不走声明式 [Token]：显式经 IComponentTokenProvider / IAuthorizerTokenProvider 取用
 ```
 
+### 微信小店 / 视频号（channels 生态）
+
+`appsettings.json`（配置节 `ChannelsApps`，AppID 为**独立小店 AppID**——wx 开头但与公众号 / 小程序 AppID 不互通）：
+
+```json
+{
+  "ChannelsApps": [
+    {
+      "AppKey": "default",
+      "AppId": "wx-your-store-appid",
+      "AppSecret": "your-app-secret",
+      "UseStableToken": true
+    }
+  ]
+}
+```
+
+```csharp
+// ① 令牌与多小店底座（token / stable_token 双通道，UseStableToken 切换，默认稳定版）；
+//    多小店请用 AddChannelsApp(List<ChannelsAppConfig>) 一次性注册（重复调用注册期 fail-fast）
+builder.Services.AddChannelsApp(builder.Configuration);
+
+// ② 业务模块（P1 起逐域落地：AddWechatChannelsApi(b => b.AddProductApi().AddOrderApi()...)）
+builder.Services.AddWechatChannelsApi(b => b.AddAllApis());
+
+// ③ 回调（P3 收口）：AddWechatChannelsCallback(...).AddHandler<T>(...); app.UseWechatChannelsWebhook();
+```
+
+小店令牌类型恒为 `Wechat.Channels.AccessToken`（守卫 CH-T1~T3 锁定，与公众号 / 企微令牌键天然隔离）；`/wxa/` 前缀 6 个「小程序会员服务」端点令牌归属未确认，暂缓落位（守卫 CH-V1）。
+
 ### 企业微信：回调接收
 
 凭据以 `Apps` 字典为**唯一来源**，路由 `/{GlobalRoutePrefix}/{AppKey}`；类型化处理器按 AppKey 隔离注册。接收链两道闸 **fail-closed**——① 时间戳 ±300s（缺失或非数字即拒），② 一次性 SHA1 指纹（在「解密 + receiveid 校验」成功后、分发前消费 ⇒ 重推同报文被 403，**处理器须幂等**）；加解密按官方 **32 字节块 PKCS7** 手工补位与剥离（用 .NET 内置 16 字节块填充会误拒官方报文）。
@@ -240,12 +275,13 @@ public sealed class MyUserChangeHandler : WechatCallbackPayloadHandler<ContactUs
 
 ### 分布式存储（多实例部署）
 
-`AddWechatRedis` **必须先于** `AddWechatApp` / `AddMpApp` / `AddWechatCallback` / `AddMpCallback`（`TryAdd` 语义，颠倒即默认进程内实现静默生效且注册期 fail-fast）：
+`AddWechatRedis` **必须先于** `AddWechatApp` / `AddMpApp` / `AddChannelsApp` / `AddWechatCallback` / `AddMpCallback`（`TryAdd` 语义，颠倒即默认进程内实现静默生效且注册期 fail-fast）：
 
 ```csharp
-builder.Services.AddWechatRedis(builder.Configuration)   // ① Redis 连接 + 四个存储端口（默认注册健康检查）
-        .AddWechatApp(builder.Configuration)             // ② 令牌 / 授权 / 票据基座（Redis 实现已就位）
-        .AddWechatCallback(/* 同上文 */);                // ③ 回调（抗重放窗口跨实例生效）
+builder.Services.AddWechatRedis(builder.Configuration)      // ① Redis 连接 + 四个存储端口（默认注册健康检查）
+        .AddWechatApp(builder.Configuration)                // ② 企微多应用基座（Redis 令牌存储已就位）
+        .AddChannelsApp(builder.Configuration)             // ③ 小店多应用基座（同端口，键按令牌类型隔离）
+        .AddWechatCallback(/* 同上文 */)                   // ④ 回调（抗重放窗口跨实例生效）
 ```
 
 ### 可观测性
@@ -271,6 +307,7 @@ builder.Services.AddWechatOpenTelemetry(o =>
 | 微信小程序 | **4** | **24**（Auth 5 + QrCodeLink 8 + Security 2 + DataAnalysis 9） | **无 Callback 工程**——消息接收属公众号 XML 通道，由脚手架守卫锁定 | MP-X1~MP-X8 |
 | 微信支付 APIv3 | **10** | **54**（+ 账单 / 发票文件下载通道，非 JSON 生成管线） | 通知接收：平台证书验签 + `AEAD_AES_256_GCM` 解密 + 三道 fail-closed 闸 | PAY-B1~B11、PAY-CB1 |
 | 微信开放平台 | — | **4** 个 component 端点 + 双层令牌链 | `component_verify_ticket` + 授权变更事件接收 | 契约测试（`OpenPlatformContractTests` 等） |
+| 微信小店 / 视频号 | **27**（规划，P1 起逐域落地） | **318 端点**（规划口径：小店清单 287 + 视频号清单 49 − 精确重叠 18；`token`/`stable_token` 进令牌基座、其余 8 个 `/cgi-bin/` 基础端点落 Basic 域；`/wxa/` 6 个暂缓） | 自建 `Mud.Wechat.Channels.Callback` 包（P3 收口：订单 / 售后 / 物流 / 纠纷等事件键与载荷族登记） | CH-X1~X4、CH-T1~T3、CH-V1、CH-R1/R2 + 逐域（P1 起） |
 
 ### 企业微信：35 个业务域 / 446 个契约接口
 
@@ -316,7 +353,7 @@ builder.Services.AddWechatOpenTelemetry(o =>
 
 各域面向的应用类型存在差异（官方仅自建开放 / 三类应用公共面 / 差异端点在子接口），详见接口 XML 注释与契约守卫。
 
-> ⚠️ **两条「支付」产品线勿混淆**：上表的 `AddPayApi()`（企业支付）与 `AddPayToolApi()`（收银台）属**企业微信**支付能力，走企微 `access_token`。另有独立的 **微信支付 APIv3** 产品线（`Mud.Wechat.Pay*`），凭据为商户 RSA 私钥签名、**无 `access_token`**、四包零 `[Token]` 声明（守卫 PAY-B1 fail-closed）。
+> ⚠️ **三条「支付 / 资金」面勿混淆**：上表的 `AddPayApi()`（企业支付）与 `AddPayToolApi()`（收银台）属**企业微信**支付能力，走企微 `access_token`；**微信支付 APIv3** 产品线（`Mud.Wechat.Pay*`）凭据为商户 RSA 私钥签名、**无 `access_token`**、四包零 `[Token]` 声明（守卫 PAY-B1 fail-closed）；**微信小店资金结算**（`Channels.AddFundsApi`）走小店 `access_token`，语义是小店余额 / 结算账户 / 提现 / 流水，不是交易收单（设计方案 v1 §4.6）
 
 ### 微信公众号：26 个业务域 / 174 个去重端点
 
@@ -395,6 +432,42 @@ builder.Services.AddWechatOpenTelemetry(o =>
 | `IComponentVerifyTicketStore` / `IWechatOpenPlatformHttpClient` / `IOpenPlatformClock` | 票据存储端口、命名客户端、可注入时钟（测试确定性） |
 | `ComponentVerifyTicketReceiver.Receive(...)` | `component_verify_ticket` 与授权变更事件**一处入口分流**，返回 `ComponentPushResult`（票据推送结论为 8 态枚举，区分「重复推送 / 校验失败 / 存储失败」等原因） |
 
+### 微信小店 / 视频号：27 个业务域 / 318 端点（规划口径）
+
+微信小店与视频号经路由比对确认为**同一产品**的两面（内容运营面 + 交易管理面 + 本地生活面），合并为一条产品线（`.docs/微信小店/微信小店×视频号产品线设计方案 v1.md`）。下表端点计数为**规划口径**：小店清单 287 + 视频号清单 49 − 精确重叠 18 = **318**，同一路由只计 1；`/wxa/` 6 个「小程序会员服务」端点令牌归属未确认、暂缓落位（守卫 CH-V1）；`token` / `stable_token` 进令牌基座不入域计数。**权威口径以 P1 起逐域守卫为准。**
+
+| 注册方法 | 域 | 端点 | 路由族与关键约束 |
+| --- | --- | --- | --- |
+| `AddBasicApi()` | 基础接口 | 8 | `/cgi-bin/openapi|clear_quota|callback|get_*`（剔除 token/stable_token 2 个进基座） |
+| `AddResourceApi()` | 资源管理 | 7 | `/shop/ec/basics/*`（图片 / 资质 / 视频分块上传） |
+| `AddShopApi()` | 店铺管理 | 4 | `/channels/ec/basics/(info|shop/*)` |
+| `AddHomePageApi()` | 主页管理 | 14 | `/channels/ec/store/window/*`、`/channels/ec/basics/homepage/*`、`/channels/ec/store/classification/*` |
+| `AddProductApi()` | 商品管理 | 43 | `/channels/ec/product/*`（商品 / 库存 / 赠品 / 买赠活动 / 限时抢购） |
+| `AddFavoriteApi()` | 收藏管理 | 1 | `/channels/ec/favorites/count/get` |
+| `AddCategoryApi()` | 类目管理 | 11 | `/shop/ec/category/*`、`/channels/ec/category/*`（类目 8 + 类目规则 3） |
+| `AddOrderApi()` | 订单管理 | 27 | `/channels/ec/order/*`、`/channels/ec/merchant/privatenumber/*` |
+| `AddFundsApi()` | 资金结算 | 16 | `/channels/ec/funds/*`、`/shop/funds/*`（小店余额 / 结算账户 / 提现 / 流水，**非**支付收单） |
+| `AddMarketingApi()` | 营销管理 | 7 | `/channels/ec/coupon/*`（优惠券） |
+| `AddAftersaleApi()` | 售后管理 | 27 | `/channels/ec/aftersale/*`（售后单 / 纠纷单 / 保障单） |
+| `AddKfApi()` | 商家客服 | 2 | `/channels/ec/commkf/*` |
+| `AddQicApi()` | 质检管理 | 5 | `/channels/ec/qic/inspect/*` |
+| `AddLogisticsApi()` | 物流发货 | 28 | `/channels/ec/merchant/address|freight*`、`/channels/ec/logistics/ewaybill/*`、`/channels/ec/order/delivery*` |
+| `AddWarehouseApi()` | 区域仓库 | 11 | `/channels/ec/warehouse/*`、`/channels/ec/basics/addresscode/get` |
+| `AddLeagueApi()` | 优选联盟 | 11 | `/channels/ec/league/*`（带货者 / 商品） |
+| `AddBrandApi()` | 品牌资质 | 8 | `/shop/ec/brand/*`、`/channels/ec/brand/*` |
+| `AddDeliveryApi()` | 代发与供货 | 16 | `/channels/ec/supplier/*`、`/channels/ec/order/(dropship|supplyorder)*` |
+| `AddWecomApi()` | 企业微信关联 | 1 | `/channels/ec/wecom/get_wecom_id` |
+| `AddMiniStoreApi()` | 连接小程序 | 10 | `/channels/ec/open/*`、`/channels/ec/b2c/*`、`/channels/ec/order/present*`（基础 + 授权送礼） |
+| `AddCompassApi()` | 罗盘 | 14 | `/channels/ec/compass/*`（商家版 10 + 达人版 4） |
+| `AddVipApi()` | 会员营销 | 4 | `/channels/ec/vip/user/*` |
+| `AddLiveApi()` | 直播与留资 | 12 | `/channels/finderlive/*`、`/channels/leads/*`、`/channels/livedashboard/*`（视频号内容面） |
+| `AddWindowApi()` | 橱窗与本地生活商品 | 13 | `/channels/ec/window/product/*`、`/channels/ec/product/locallife/*`（双前缀同族并组） |
+| `AddLocallifeApi()` | 本地生活 | 8 | `/channels/ec/voucher/*`（团购券 / 核销 / 售后 / 券账单） |
+| `AddSubsidyApi()` | 国补管理 | 3 | `/channels/ec/subsidy/*` |
+| `AddPlatformKfApi()` | 客诉工单 | 4 | `/channels/ec/platformkf/*` |
+
+小店线**平铺命名空间、无 `IsAbstract` 父接口**（守卫 CH-X2）；四包不引用既有五线任何工程（守卫 CH-X3）；与既有线路由交叠必须为空、仅共享基础设施路由白名单内可重复声明——`/cgi-bin/token`、`/cgi-bin/stable_token`（守卫 CH-R1）；回调不借公众号 / 企微既有通道（守卫 CH-X4）。**`ProductCard` 是公众号线既存先例**（`IMpProductCardService`，公众号令牌）——小店线不得重复声明（守卫 CH-R1）。
+
 ## 质量门禁
 
 ```bash
@@ -405,9 +478,9 @@ dotnet build Mud.Wechat.slnx -c Release
 dotnet test Tests/Mud.Wechat.Work.Tests -c Release -f net8.0 --filter "FullyQualifiedName~ContractGuards"
 ```
 
-**13 个测试工程**（`Tests/`，镜像源结构，单 TFM `net8.0`）覆盖五条产品线 + Core 叶层 + Redis。契约守卫分布：企业微信 `Tests/Mud.Wechat.Work.Tests/ContractGuards/` 60 个文件（通用 G1~G10、令牌归属 TO1~TO3、命名空间分区 N1~N3、回调 CB 系列、群机器人 WEB1~WEB4 + 逐域端点/路由守卫）、公众号 23 个（逐域前缀 + QT 令牌注入白名单 + RC 路由计数纪律）、小程序 MP-X1~MP-X8、支付 PAY-B1~B11 与 PAY-CB1、叶层 AB-G1~G7 与 CB-L1 系列、Redis RD-G1~G7。
+**15 个测试工程**（`Tests/`，镜像源结构，单 TFM `net8.0`）覆盖六条产品线 + Core 叶层 + Redis。契约守卫分布：企业微信 `Tests/Mud.Wechat.Work.Tests/ContractGuards/` 60 个文件（通用 G1~G10、令牌归属 TO1~TO3、命名空间分区 N1~N3、回调 CB 系列、群机器人 WEB1~WEB4 + 逐域端点/路由守卫）、公众号 23 个（逐域前缀 + QT 令牌注入白名单 + RC 路由计数纪律）、小程序 MP-X1~MP-X8、支付 PAY-B1~B11 与 PAY-CB1、小店 `Tests/Mud.Wechat.Channels.Tests/ContractGuards/`（CH-X1~X4 形态 / CH-T1~T3+CH-V1 令牌归属 / CH-R1~R2 路由，P1 起逐域守卫加挂）、叶层 AB-G1~G7 与 CB-L1 系列、Redis RD-G1~G7。
 
-**AOT / 裁剪**：`net8.0` / `net10.0` 下逐源工程跑 `AotStrictMode`（把 10 类反射诊断升为错误）并保持净零；五条线 DataModels 共 **107 个源生成 JSON 上下文**（Work 62 / 公众号 28 / 支付 12 / 小程序 5），配置绑定同样源生成。
+**AOT / 裁剪**：`net8.0` / `net10.0` 下逐源工程跑 `AotStrictMode`（把 10 类反射诊断升为错误）并保持净零；六条线 DataModels 共 **109 个源生成 JSON 上下文**（Work 62 / 公众号 28 / 支付 12 / 小程序 5 / 小店 2），配置绑定同样源生成。
 
 真实 Redis 端到端用例由环境变量门控（CI 默认不跑）：
 
@@ -425,8 +498,9 @@ Mud.Wechat/
 │   ├── OfficialAccount/     # 公众号线（4 包）
 │   ├── MiniProgram/         # 小程序线（3 包，无 Callback）
 │   ├── Pay/                 # 微信支付 APIv3 线（4 包）
-│   └── OpenPlatform/        # 开放平台线（2 包）+ OpenTelemetry 装配
-├── Tests/                   # 13 个测试工程（单 TFM net8.0，含 ContractGuards/）
+│   ├── OpenPlatform/        # 开放平台线（2 包）+ OpenTelemetry 装配
+│   └── Channels/            # 微信小店/视频号线（4 包）
+├── Tests/                   # 15 个测试工程（单 TFM net8.0，含 ContractGuards/）
 ├── Demos/                   # 示例工程（联系人功能 + 联系人事件回调；不入主链、被 AOT 冒烟排除）
 ├── scripts/                 # verify-build / audit-config-keys / GenerateJsonContext / AddHttpJsonSerializable / ApplyTokenOwnerKeys
 ├── .docs/                   # 方案与设计文档（中文；已 gitignore，fresh clone 无此目录）

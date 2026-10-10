@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<IsPackable>false</IsPackable>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+		<PackageReference Include="xunit" Version="2.9.2" />
+		<PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
+		<PackageReference Include="FluentAssertions" Version="7.0.0" />
+		<PackageReference Include="Moq" Version="4.20.72" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\..\Src\Channels\Mud.Wechat.Channels\Mud.Wechat.Channels.csproj" />
+		<ProjectReference Include="..\..\Src\Channels\Mud.Wechat.Channels.Abstractions\Mud.Wechat.Channels.Abstractions.csproj" />
+		<ProjectReference Include="..\..\Src\Channels\Mud.Wechat.Channels.DataModels\Mud.Wechat.Channels.DataModels.csproj" />
+		<ProjectReference Include="..\..\Src\Channels\Mud.Wechat.Channels.Callback\Mud.Wechat.Channels.Callback.csproj" />
+		<!-- 跨线重叠路由零回潮守卫（CH-R1）的**参照集**是既有四线的路由表（公众号/企微/小程序/支付）：
+		     必须让本测试工程能反射到四线**主包**（接口上的 [Get]/[Post] 路由属性都在那里），否则参照集
+		     为空、守卫会静默假绿。这是**测试工程**的引用，不影响产品线依赖边界：Channels 四包本身
+		     仍然只引用 Core Abstractions 与同线兄弟包（由 ChannelsScaffoldContractGuards 锁定）。 -->
+		<ProjectReference Include="..\..\Src\OfficialAccount\Mud.Wechat.OfficialAccount\Mud.Wechat.OfficialAccount.csproj" />
+		<ProjectReference Include="..\..\Src\Work\Mud.Wechat.Work\Mud.Wechat.Work.csproj" />
+		<ProjectReference Include="..\..\Src\MiniProgram\Mud.Wechat.MiniProgram\Mud.Wechat.MiniProgram.csproj" />
+		<ProjectReference Include="..\..\Src\Pay\Mud.Wechat.Pay\Mud.Wechat.Pay.csproj" />
+	</ItemGroup>
+
+</Project>

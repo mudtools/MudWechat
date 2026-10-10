@@ -1,0 +1,42 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<Description>微信小店/视频号（channels 生态）SDK 抽象包：配置面 ChannelsAppConfig、令牌类型/管理器（Wechat.Channels.AccessToken，双通道 token/stable_token）、多应用基座、异常与错误码、回调信封与载荷契约。小店 AppID 与公众号/小程序 AppID 不互通，令牌域独立（设计方案 v1 §3.2）。</Description>
+		<PackageTags>Wechat;Channels;微信小店;视频号;Enums;Exceptions;Configuration;MudWechat</PackageTags>
+		<!-- MUD005（Query 令牌注入存在 URL 泄露面）：微信小店官方契约强制令牌走 Query 参数
+		     （access_token 为 URL 查询参数，官方不支持 Header 注入），无法改用 Header。
+		     本包承载令牌签发接口（appid/secret 走 Query 是官方契约）；库内遥测已由 SensitiveUrlRedactor 脱敏。
+		     TokenRecoveryOptions.TokenInvalidationDetector 为接口类型属性、不做配置绑定，配置绑定源生成器
+		     对接口属性报 SYSLIB1100/1101（生成器上报，#pragma 无法抑制），一并项目级静默并注明原因。 -->
+		<NoWarn>$(NoWarn);MUD005;SYSLIB1100;SYSLIB1101</NoWarn>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Mud.HttpUtils" Version="3.0.3" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Mud.HttpUtils.Generator" Version="3.0.3" PrivateAssets="all" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+	</ItemGroup>
+
+	<ItemGroup Condition="'$(TargetFramework)' == 'net8.0' Or '$(TargetFramework)' == 'net10.0'">
+		<PackageReference Include="Microsoft.Extensions.Http" Version="10.0.9" />
+		<PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.9" />
+	</ItemGroup>
+	<ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' or '$(TargetFramework)' == 'net6.0'">
+		<PackageReference Include="Microsoft.Extensions.Http" Version="8.0.1" />
+		<PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="8.0.1" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\..\Core\Mud.Wechat.Abstractions\Mud.Wechat.Abstractions.csproj" />
+		<ProjectReference Include="..\Mud.Wechat.Channels.DataModels\Mud.Wechat.Channels.DataModels.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<InternalsVisibleTo Include="Mud.Wechat.Channels" />
+		<InternalsVisibleTo Include="Mud.Wechat.Channels.Tests" />
+		<InternalsVisibleTo Include="DynamicProxyGenAssembly2" />
+	</ItemGroup>
+
+</Project>

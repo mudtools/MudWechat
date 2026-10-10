@@ -50,7 +50,7 @@
 	     用 ItemGroup 而非 Target —— Pack="true" 的 None item 须在 _CollectPackageFiles 之前的 evaluation 阶段就存在。
 	     只挑本仓分析器 DLL；Mud.HttpUtils.Generator（独立包）与本仓 Callback.Generator（发射器，IsPackable=false）不内嵌。 -->
 	<ItemGroup>
-		<None Include="$(MSBuildThisFileDirectory)..\Src\Mud.Wechat.Callback.Analyzers\bin\$(Configuration)\netstandard2.0\Mud.Wechat.Callback.Analyzers.dll"
+		<None Include="$(MSBuildThisFileDirectory)..\..\..\Src\Core\Mud.Wechat.Callback.Analyzers\bin\$(Configuration)\netstandard2.0\Mud.Wechat.Callback.Analyzers.dll"
 		      Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
 	</ItemGroup>
 

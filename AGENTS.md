@@ -12,6 +12,7 @@
 | 官方文档 URL/ID、频率上限、串行、覆盖删除、权限可见范围 | 接口 XML 文档注释（`Interfaces/{域}/`） |
 | 模块枚举值、`Add{域}Api()` | `Extensions/WechatModule.cs`、`Extensions/WechatWorkServiceBuilder.cs` |
 | 域 → 目录 / 命名空间实际映射 | `Interfaces/`、`DataModels/` 目录树 |
+| 小店线（微信小店/视频号）域 / 守卫 / 方案 | `Tests/Mud.Wechat.Channels.Tests/ContractGuards/`（CH-X1~X4 形态 / CH-T1~T3+CH-V1 令牌归属 / CH-R1~R2 路由；P1 起逐域守卫）；`.docs/微信小店/微信小店×视频号产品线设计方案 v1.md` |
 
 ## 1 门禁（提交前必跑，全绿才算完成）
 
@@ -28,7 +29,7 @@ dotnet test Tests/Mud.Wechat.Work.Tests -c Release -f net8.0 --filter "FullyQual
 - **改 `verify-build.ps1` 时三处设置删掉即假绿，不许优化掉**：① strict 步骤须**同时**断言「编译错误」与「IL 诊断」计数（构建本身失败时诊断计数仍为 0）；② `Get-ChildItem -Recurse`（否则找不到嵌套 `.csproj`，AOT 步骤静默空跑）；③ `--no-incremental`（`CoreCompile` 只比对时间戳、不比对 csc 命令行，紧跟步骤 1 的 strict 构建会被整体跳过）。
 - **门禁只统计编译错误与 AOT IL 诊断，不因 CS 警告失败** —— 不要为消警告大范围重构。
 - `scripts/*.ps1` 为 UTF-8 **含 BOM**（无 BOM 在 PowerShell 5.1 下按 ANSI 解码 ⇒ 语法解析失败）。
-- CI（`.github/workflows/dotnet-publish.yml`）的日志桶白名单、恰 5 个 nupkg 断言等只在该文件内维护，改动看文件即可。注意 `AOT006`、`MUD005` 是只打印计数的 INFO 桶（前者漂移守卫、后者企微官方 Query 传令牌契约），**断言为 0 即假红**。
+- CI（`.github/workflows/dotnet-publish.yml`）的日志桶白名单、**nupkg 计数断言（当前 24）**等只在该文件内维护，改动看文件即可，**新增产品线必须同批更新该计数与注释清单**。注意 `AOT006`、`MUD005` 是只打印计数的 INFO 桶（前者漂移守卫、后者企微官方 Query 传令牌契约），**断言为 0 即假红**。
 
 ## 2 改动配方（必须同批完成，缺一项即半成品）
 
@@ -75,6 +76,8 @@ scripts/                              # verify-build / audit-config-keys / Gener
 ```
 
 依赖单向：`Work → {Abstractions, DataModels}`、`Callback → {Abstractions, DataModels}`、`Abstractions → DataModels`、`Redis → Abstractions`。硬边界：**`Callback` 不引用 `Work`**；**`Redis` 不引用 `Work`/`Callback`**。
+
+**其它产品线（公众号 / 小程序 / 支付 / 开放平台 / 小店）各持 `Src/{线}/` 包家族与 `Tests/Mud.Wechat.{线}.Tests/` 守卫，契约与落位以各自 `.docs/` 设计方案为准**（本文为企微线专属）。小店线关键决策锚点：独立令牌类型 `Wechat.Channels.AccessToken`（与 `Wechat.AccessToken`/`Wechat.Mp.AccessToken` 在共享注册表天然隔离）、平铺命名空间无 `IsAbstract` 父接口、与既有五线路由交叠零回潮（共享基础设施白名单仅 `token`/`stable_token`）、`/wxa/vip/*` 未确认归属不得声明 —— 全部为 CH 系列守卫锁定，改动见 `Tests/Mud.Wechat.Channels.Tests/ContractGuards/`。
 
 **新文件落位三处一致（目录 / 命名空间 / 注册入口）**：
 

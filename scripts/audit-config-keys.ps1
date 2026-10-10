@@ -57,7 +57,10 @@ $configFiles = @(
     # 否则 AB-G6 的双向不变式（文件存在 ⇔ 已登记）会失败。本脚本对不存在的文件是 fail-closed 硬错误 ⇒ 不得预登记。
     'Mud.Wechat.Redis/Configuration/WechatRedisOptions.cs',
     'Mud.Wechat.Redis/Configuration/WechatRedisConnectionOptions.cs',
-    'Mud.Wechat.OpenTelemetry/WechatOpenTelemetryOptions.cs'
+    'Mud.Wechat.OpenTelemetry/WechatOpenTelemetryOptions.cs',
+    # 微信小店/视频号（channels 生态）产品线配置面（P0-b 已落地）：小店应用配置（AppId/AppSecret/UseStableToken）。
+    # 与【文件创建同批】登记 —— 若只建文件不登记，AB-G6 的双向不变式（存在 ⇔ 已登记）会失败。
+    'Mud.Wechat.Channels.Abstractions/Configuration/ChannelsAppConfig.cs'
 )
 
 foreach ($file in $configFiles) {
@@ -106,7 +109,12 @@ foreach ($file in $configFiles) {
         'Mud.Wechat.OpenTelemetry',
         # 开放平台产品线（2026-10 新增）：消费点可落在主包与抽象包。
         'Mud.Wechat.OpenPlatform',
-        'Mud.Wechat.OpenPlatform.Abstractions'
+        'Mud.Wechat.OpenPlatform.Abstractions',
+        # 微信小店/视频号（channels 生态）产品线（设计方案 v1 §3.6）：消费点可落在四包任一处。
+        'Mud.Wechat.Channels',
+        'Mud.Wechat.Channels.Abstractions',
+        'Mud.Wechat.Channels.DataModels',
+        'Mud.Wechat.Channels.Callback'
     )
 
     foreach ($prop in $propNames) {

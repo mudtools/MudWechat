@@ -87,6 +87,8 @@ public class WechatAbstractionsContractGuards
             "Mud.Wechat.OfficialAccount.DataModels/Mud.Wechat.OfficialAccount.DataModels.csproj",
             "Mud.Wechat.MiniProgram.DataModels/Mud.Wechat.MiniProgram.DataModels.csproj",
             "Mud.Wechat.Pay.DataModels/Mud.Wechat.Pay.DataModels.csproj",
+            // 微信小店/视频号产品线（设计方案 v1 §3.1）：DTO 面同样只向公用层取判错契约。
+            "Mud.Wechat.Channels.DataModels/Mud.Wechat.Channels.DataModels.csproj",
         };
 
         var sources = dataModelsProjects
@@ -125,6 +127,7 @@ public class WechatAbstractionsContractGuards
                      "Mud.Wechat.MiniProgram.Abstractions/Mud.Wechat.MiniProgram.Abstractions.csproj",
                      "Mud.Wechat.Pay.Abstractions/Mud.Wechat.Pay.Abstractions.csproj",
                      "Mud.Wechat.OpenPlatform.Abstractions/Mud.Wechat.OpenPlatform.Abstractions.csproj",
+                     "Mud.Wechat.Channels.Abstractions/Mud.Wechat.Channels.Abstractions.csproj",
                  })
         {
             ReadCsproj(project).Should().Contain("Mud.Wechat.Abstractions.csproj", $"{project} 必须引用公用层");
@@ -187,8 +190,8 @@ public class WechatAbstractionsContractGuards
     /// 又使 <c>Mud.Wechat.Callback.Analyzers</c> 失去随包下发渠道（诊断能力对消费者失效）。
     /// </para>
     /// <para>
-    /// 实测口径（<c>dotnet pack Mud.Wechat.slnx -c Release</c>）：恰 <b>17</b> 个 nupkg，
-    /// 其中三个回调包内均含 <c>analyzers/dotnet/cs/Mud.Wechat.Callback.Analyzers.dll</c>。
+    /// 实测口径（<c>dotnet pack Mud.Wechat.slnx -c Release</c>）：恰 <b>24</b> 个 nupkg，
+    /// 其中四个回调包内均含 <c>analyzers/dotnet/cs/Mud.Wechat.Callback.Analyzers.dll</c>。
     /// </para>
     /// </remarks>
     [Fact]
@@ -202,6 +205,8 @@ public class WechatAbstractionsContractGuards
                      "Mud.Wechat.Work.Callback/Mud.Wechat.Work.Callback.csproj",
                      "Mud.Wechat.OfficialAccount.Callback/Mud.Wechat.OfficialAccount.Callback.csproj",
                      "Mud.Wechat.Pay.Callback/Mud.Wechat.Pay.Callback.csproj",
+                     // 微信小店/视频号（channels 生态）产品线（设计方案 v1 §3.5）：回调包随包下发分析器。
+                     "Mud.Wechat.Channels.Callback/Mud.Wechat.Channels.Callback.csproj",
                  })
         {
             var source = File.ReadAllText(SourcePath(hostPackage.Split('/')));
@@ -233,6 +238,7 @@ public class WechatAbstractionsContractGuards
         ci.Should().Contain("Work.Callback", "CI 制品清单必须含企微回调包");
         ci.Should().Contain("OfficialAccount.Callback", "CI 制品清单必须含公众号回调包");
         ci.Should().Contain("Pay.Callback", "CI 制品清单必须含微信支付回调包");
+        ci.Should().Contain("Channels.Callback", "CI 制品清单必须含小店回调包（设计方案 v1 §5.2）");
     }
 
     /// <summary>
@@ -257,6 +263,12 @@ public class WechatAbstractionsContractGuards
             // 微信开放平台产品线（2026-10 新增）：同受 AB-G4 / AB-G5 单点登记约束。
             SourceProjectDir("Mud.Wechat.OpenPlatform"),
             SourceProjectDir("Mud.Wechat.OpenPlatform.Abstractions"),
+            // 微信小店/视频号（channels 生态）产品线（设计方案 v1）：SSRF 白名单与判定器单槽同受
+            // 公用层单点登记约束（AddChannelsApp 只登记子判定器与自定义主机，不得直接写单槽）。
+            SourceProjectDir("Mud.Wechat.Channels"),
+            SourceProjectDir("Mud.Wechat.Channels.Abstractions"),
+            SourceProjectDir("Mud.Wechat.Channels.DataModels"),
+            SourceProjectDir("Mud.Wechat.Channels.Callback"),
         };
     }
 
@@ -303,6 +315,12 @@ public class WechatAbstractionsContractGuards
         // 微信小程序：三工程均须纳入搜索范围（消费点可能出现在主包 / 抽象包任一处）。
         audit.Should().Contain("Mud.Wechat.MiniProgram.Abstractions'", "微信小程序抽象包必须纳入消费点搜索范围");
         audit.Should().Contain("Mud.Wechat.MiniProgram'", "微信小程序主包必须纳入消费点搜索范围");
+        // 微信小店/视频号（channels 生态）产品线（设计方案 v1 §3.6）：配置 DTO 与四个搜索根必须纳入审计。
+        audit.Should().Contain("Mud.Wechat.Channels.Abstractions/Configuration/ChannelsAppConfig.cs", "小店配置面必须纳入审计（缺登记即属性无消费点无人发现）");
+        audit.Should().Contain("Mud.Wechat.Channels.Abstractions'", "小店抽象包必须纳入消费点搜索范围");
+        audit.Should().Contain("Mud.Wechat.Channels'", "小店主包必须纳入消费点搜索范围");
+        audit.Should().Contain("Mud.Wechat.Channels.DataModels'", "小店 DataModels 必须纳入消费点搜索范围");
+        audit.Should().Contain("Mud.Wechat.Channels.Callback'", "小店回调运行时包必须纳入消费点搜索范围");
 
         var annotate = File.ReadAllText(Path.Combine(root, "scripts", "AddHttpJsonSerializable.ps1"));
         annotate.Should().Contain("$RootNamespace", "根命名空间必须参数化，否则非默认产品线根级 DTO 分组错误");
@@ -340,13 +358,22 @@ public class WechatAbstractionsContractGuards
                      "Src/OpenPlatform/Mud.Wechat.OpenPlatform/Mud.Wechat.OpenPlatform.csproj",
                      "Src/OpenPlatform/Mud.Wechat.OpenPlatform.Abstractions/Mud.Wechat.OpenPlatform.Abstractions.csproj",
                      "Tests/Mud.Wechat.OpenPlatform.Tests/Mud.Wechat.OpenPlatform.Tests.csproj",
+                     // 微信小店/视频号（channels 生态）产品线（4 源 + 2 测试，设计方案 v1 §5.2）。
+                     "Src/Channels/Mud.Wechat.Channels/Mud.Wechat.Channels.csproj",
+                     "Src/Channels/Mud.Wechat.Channels.Abstractions/Mud.Wechat.Channels.Abstractions.csproj",
+                     "Src/Channels/Mud.Wechat.Channels.DataModels/Mud.Wechat.Channels.DataModels.csproj",
+                     "Src/Channels/Mud.Wechat.Channels.Callback/Mud.Wechat.Channels.Callback.csproj",
+                     "Tests/Mud.Wechat.Channels.Tests/Mud.Wechat.Channels.Tests.csproj",
+                     "Tests/Mud.Wechat.Channels.Callback.Tests/Mud.Wechat.Channels.Callback.Tests.csproj",
                  })
         {
             slnx.Should().Contain(project, "新增工程必须纳入解决方案（否则 verify-build 步骤 1 覆盖不到）");
         }
 
         var ci = File.ReadAllText(Path.Combine(root, ".github", "workflows", "dotnet-publish.yml"));
-        ci.Should().Contain("-ne 18", "制品数量守卫必须随新增产品线更新（否则打包步骤 fail-closed 必红）");
+        ci.Should().Contain("-ne 24", "制品数量守卫必须随新增产品线更新（否则打包步骤 fail-closed 必红）");
+        ci.Should().NotContain("-ne 18", "旧制品数量断言已随小店线扩展作废，残留即 CI 与守卫口径分裂");
+        ci.Should().NotContain("-ne 22", "回调包打包路径修复后计数为 24，残留 -ne 22 即 CI 与守卫口径分裂");
         ci.Should().NotContain("-ne 10", "旧制品数量断言已随产品线扩展作废，残留即 CI 与守卫口径分裂");
         ci.Should().NotContain("-ne 17", "OpenTelemetry 包并入后计数为 18，残留 -ne 17 即 CI 与守卫口径分裂");
         ci.Should().NotContain("-ne 11", "旧制品数量断言已随产品线扩展作废，残留即 CI 与守卫口径分裂");

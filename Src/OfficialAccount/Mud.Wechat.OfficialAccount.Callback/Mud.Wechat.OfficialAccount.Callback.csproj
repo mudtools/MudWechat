@@ -38,7 +38,7 @@
 	<!-- 随包下发分析器资产（不新增 nupkg）：与 Work.Callback 同款（同一 DLL 两份拷贝，两包互不引用）。
 	     只挑本仓分析器 DLL；Mud.HttpUtils.Generator（独立包）与发射型 Callback.Generator 不内嵌。 -->
 	<ItemGroup>
-		<None Include="$(MSBuildThisFileDirectory)..\Src\Mud.Wechat.Callback.Analyzers\bin\$(Configuration)\netstandard2.0\Mud.Wechat.Callback.Analyzers.dll"
+		<None Include="$(MSBuildThisFileDirectory)..\..\..\Src\Core\Mud.Wechat.Callback.Analyzers\bin\$(Configuration)\netstandard2.0\Mud.Wechat.Callback.Analyzers.dll"
 		      Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
 	</ItemGroup>
 

@@ -36,6 +36,14 @@
 		<InternalsVisibleTo Include="Mud.Wechat.Pay.Callback" />
 		<InternalsVisibleTo Include="Mud.Wechat.Pay.Tests" />
 		<InternalsVisibleTo Include="Mud.Wechat.Pay.Callback.Tests" />
+		<!-- 微信小店/视频号（channels 生态，设计方案 v1 §3.1）：令牌基座复用公用层 internal 面
+			（WechatTokenStoreBridge 缓存接线 / WechatCustomBaseUrlRegistry SSRF 预过滤白名单登记），
+			与既有五线同法授予；回调协议与安全内核 internal 类型供 Channels.Callback 复用。 -->
+		<InternalsVisibleTo Include="Mud.Wechat.Channels" />
+		<InternalsVisibleTo Include="Mud.Wechat.Channels.Abstractions" />
+		<InternalsVisibleTo Include="Mud.Wechat.Channels.Callback" />
+		<InternalsVisibleTo Include="Mud.Wechat.Channels.Tests" />
+		<InternalsVisibleTo Include="Mud.Wechat.Channels.Callback.Tests" />
 		<InternalsVisibleTo Include="DynamicProxyGenAssembly2" />
 	</ItemGroup>
 

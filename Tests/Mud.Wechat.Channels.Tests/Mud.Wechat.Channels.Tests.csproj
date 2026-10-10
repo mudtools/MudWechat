@@ -17,14 +17,16 @@
 		<ProjectReference Include="..\..\Src\Channels\Mud.Wechat.Channels.Abstractions\Mud.Wechat.Channels.Abstractions.csproj" />
 		<ProjectReference Include="..\..\Src\Channels\Mud.Wechat.Channels.DataModels\Mud.Wechat.Channels.DataModels.csproj" />
 		<ProjectReference Include="..\..\Src\Channels\Mud.Wechat.Channels.Callback\Mud.Wechat.Channels.Callback.csproj" />
-		<!-- 跨线重叠路由零回潮守卫（CH-R1）的**参照集**是既有四线的路由表（公众号/企微/小程序/支付）：
-		     必须让本测试工程能反射到四线**主包**（接口上的 [Get]/[Post] 路由属性都在那里），否则参照集
+		<!-- 跨线重叠路由零回潮守卫（CH-R1）的**参照集**是既有五线的路由表（公众号/企微/小程序/支付/广告）：
+		     必须让本测试工程能反射到五线**主包**（接口上的 [Get]/[Post] 路由属性都在那里），否则参照集
 		     为空、守卫会静默假绿。这是**测试工程**的引用，不影响产品线依赖边界：Channels 四包本身
-		     仍然只引用 Core Abstractions 与同线兄弟包（由 ChannelsScaffoldContractGuards 锁定）。 -->
+		     仍然只引用 Core Abstractions 与同线兄弟包（由 ChannelsScaffoldContractGuards 锁定）。
+		     开放平台线用显式客户端、无声明式路由属性，故不入参照集。 -->
 		<ProjectReference Include="..\..\Src\OfficialAccount\Mud.Wechat.OfficialAccount\Mud.Wechat.OfficialAccount.csproj" />
 		<ProjectReference Include="..\..\Src\Work\Mud.Wechat.Work\Mud.Wechat.Work.csproj" />
 		<ProjectReference Include="..\..\Src\MiniProgram\Mud.Wechat.MiniProgram\Mud.Wechat.MiniProgram.csproj" />
 		<ProjectReference Include="..\..\Src\Pay\Mud.Wechat.Pay\Mud.Wechat.Pay.csproj" />
+		<ProjectReference Include="..\..\Src\Ads\Mud.Wechat.Ads\Mud.Wechat.Ads.csproj" />
 	</ItemGroup>
 
 </Project>

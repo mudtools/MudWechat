@@ -61,7 +61,7 @@
 | 包 | 说明 |
 | --- | --- |
 | `Mud.Wechat.OfficialAccount` / `.Abstractions` / `.DataModels` / `.Callback` | 公众号：27 个业务域声明式客户端；令牌与票据基座（普通 / 稳定双通道）；官方 DTO；消息与事件回调（明文 / 兼容 / 安全三模式、被动回复写回） |
-| `Mud.Wechat.MiniProgram` / `.Abstractions` / `.DataModels` | 小程序：4 个业务域（登录、二维码与链接、内容安全、数据分析）；复用公众号令牌底座；官方 DTO。**无 Callback 工程**（消息接收走公众号线 XML 通道，由脚手架守卫锁定） |
+| `Mud.Wechat.MiniProgram` / `.Abstractions` / `.DataModels` | 小程序：19 个业务域 84 端点（登录 / 二维码与链接 / 内容安全 / 数据分析 / 订阅消息 / 动态消息 / 客服 / 硬件设备 / 运维 / 插件 / 付费 / 附近小程序 / 搜一搜 / 生物认证 / 服务市场 / 红包封面 / 学生身份 / 人脸核身 / 用工关系）；复用公众号令牌底座；官方 DTO。**无 Callback 工程**（消息接收走公众号线 XML 通道，由脚手架守卫锁定） |
 | `Mud.Wechat.Pay` / `.Abstractions` / `.DataModels` / `.Callback` | 微信支付 APIv3：10 个业务域 57 端点；商户配置面与签名/验签端口；官方 DTO（snake_case 字段名照官方）；通知接收（平台证书验签 + AEAD-GCM 解密 + 三道 fail-closed 闸） |
 | `Mud.Wechat.OpenPlatform` / `.Abstractions` | 开放平台第三方平台：component 令牌与授权方令牌提供者、预授权码 / 换授权 / 刷新令牌、`component_verify_ticket` 与授权变更事件接收 |
 | `Mud.Wechat.Channels` / `.Abstractions` / `.DataModels` / `.Callback` | 微信小店 / 视频号（channels 生态）：27 个业务域声明式客户端（规划，P1 起逐域落地）；双通道令牌基座（`token` / `stable_token`，`UseStableToken` 切换）；官方 DTO；回调接收（msg_signature + EncodingAESKey + receiveid，与公众号同构，复用 Core 密码学与抗重放两道闸） |
@@ -183,7 +183,7 @@ app.UseMpCallback();                                                     // 路�
 
 // 小程序：与公众号同属微信公众平台、同一令牌域 ⇒ 复用 AddMpApp 底座，不新增令牌类型
 builder.Services.AddMpApp(builder.Configuration, "MpApps")
-        .AddMiniProgramServices(b => b.AddAllApis());                    // Auth / QrCodeLink / Security / DataAnalysis
+        .AddMiniProgramServices(b => b.AddAllApis());                    // 19 个业务域 84 端点
 ```
 
 小程序码 3 个端点的响应是**图片二进制流**（失败时才是 JSON），走独立通道 `IWxaCodeService`（按 Content-Type 分支判错，返回 `WxaCodeResult : IDisposable`），不进 JSON 管线。`session_key` 与手机号 `code` 属敏感项，SDK 不入日志（守卫 MP-X7）。
@@ -354,7 +354,7 @@ builder.Services.AddWechatOpenTelemetry(o =>
 | --- | --- | --- | --- | --- |
 | 企业微信 | **35** | **446** 个契约接口（147 公共父接口 + 299 可注入子接口），逐域端点与路由由域守卫锁定；另有会话存档原生封装 4 方法门面（非 HTTP） | **122** 已登记事件键 / **47** 结构族载荷（常量 138、官方 130）+ 智能机器人 JSON 通道 | G1~G10、TO1~TO3、N1~N3、CB1~CB24、WEB1~WEB4、FIN-B1~B6 + 逐域 |
 | 微信公众号 | **27**（+ 认证基座） | 主接口去重 **188** ⇒ 全量 **194**（+ 令牌 / 票据 3 + 下载通道 3），官方面 **196** | **7 类键集 48 键**（消息 7 + 事件 13 + 卡券 13 + 授权 3 + 订阅 3 + 认证 6 + 发送结果 3）+ 7 种被动回复类型；明文 / 兼容 / 安全三模式 | 逐域前缀 + QT + RC + CD + CB-L1 系列 + CB-MP 系列 |
-| 微信小程序 | **4** | **24**（Auth 5 + QrCodeLink 8 + Security 2 + DataAnalysis 9） | **无 Callback 工程**——消息接收属公众号 XML 通道，由脚手架守卫锁定 | MP-X1~MP-X9 |
+| 微信小程序 | **19** | **84**（Auth 8 + QrCodeLink 9 + Security 3 + DataAnalysis 11 + SubscribeMessage 4 + DynamicMessage 3 + Kf 9 + HardwareDevice 9 + Operation 10 + Plugin 2 + Charge 2 + NearbyPoi 4 + Search 1 + Soter 1 + ServiceMarket 2 + RedPacketCover 1 + Student 1 + FaceVerify 2 + LaborUse 2） | **无 Callback 工程**——消息接收属公众号 XML 通道，由脚手架守卫锁定 | MP-X1~MP-X9 |
 | 微信支付 APIv3 | **10** | **57**（+ 账单 / 发票文件下载通道，非 JSON 生成管线） | 通知接收：平台证书验签 + `AEAD_AES_256_GCM` 解密 + 三道 fail-closed 闸 | PAY-B1~B11、PAY-CB1 |
 | 微信开放平台 | — | **4** 个 component 端点 + 双层令牌链 | `component_verify_ticket` + 授权变更事件接收 | 契约测试（`OpenPlatformContractTests` 等） |
 | 微信小店 / 视频号 | **27**（规划，P1 起逐域落地） | **318 端点**（规划口径：小店清单 287 + 视频号清单 49 − 精确重叠 18；`token`/`stable_token` 进令牌基座、其余 8 个 `/cgi-bin/` 基础端点落 Basic 域；`/wxa/` 6 个暂缓） | 自建 `Mud.Wechat.Channels.Callback` 包（P3 收口：订单 / 售后 / 物流 / 纠纷等事件键与载荷族登记） | CH-X1~X4、CH-T1~T3、CH-V1、CH-R1/R2 + 逐域（P1 起） |
@@ -443,16 +443,31 @@ builder.Services.AddWechatOpenTelemetry(o =>
 | `AddCardApi()` | 卡券 | 14 | 主体生命周期 / 投放 11 + 券码核销 3，**双接口同注册组**（`IMpCardService` / `IMpCardCodeService`，照 openApi 先例）；全 POST；建卡 `card` 包装 + `card_type` 判别 11 分支与修改方向「平级 + 无 `advanced_info`」**不同构**；`/card/` 前缀与发票域 17 端点**共用**（CD8 双向锁定）；前端取卡 `api_ticket` 由 `IMpTicketService` 承载；未建模 10 族共 39 端点以零路由断言留档 |
 | —（基座） | 认证与票据 | 3 | `token` + `stable_token` + `ticket/getticket`；`jsapi` / `wx_card` 两类票据经 `IMpTicketManager` 取用后由宿主自行使用，不参与请求注入与 errcode 恢复链路 |
 
-### 微信小程序：4 个业务域 / 24 个端点
+### 微信小程序：19 个业务域 / 84 个端点
 
 与公众号同属微信公众平台、**同一令牌域**（MP-X2 禁止新增令牌类型，否则 errcode 自愈静默失效）⇒ 复用 `AddMpApp` 底座，跨线路由重复由 MP-X1 全局校验。
 
 | 注册方法 | 域 | 端点 | 能力与约束 |
 | --- | --- | --- | --- |
-| `AddAuthApi()` | 登录与身份 | 5 | `sns/jscode2session`（免令牌）+ `checksession` + `resetusersessionkey` + `getuserphonenumber` + `getpaidunionid`；`session_key` 与手机号 `code` 不入日志（MP-X7） |
-| `AddQrCodeLinkApi()` | 二维码与链接 | 8 | 小程序码 **3 端点走手工通道 `IWxaCodeService`**（响应为图片二进制，失败才是 JSON ⇒ 按 Content-Type 分支判错，返回 `WxaCodeResult : IDisposable`）+ 短链 / URL Scheme / URL Link 的生成与查询 5 端点 |
-| `AddSecurityApi()` | 内容安全 | 2 | `msg_sec_check`（同步文本）+ `media_check_async`（异步媒体，回调结果另取） |
-| `AddDataAnalysisApi()` | 数据分析 | 9 | `/datacube/getweanalysisappid*`：日 / 周 / 月访问趋势与留存 + 页面访问 + 访问分布 + 用户画像 |
+| `AddAuthApi()` | 登录与身份 | 8 | `IWxaAuthService` 7 端点（`checksession` / `resetusersessionkey` / `getuserphonenumber` / `getpaidunionid` / 插件用户 openpid / 检查加密信息 / 用户 encryptKey）+ `IWxaCode2SessionService`（`sns/jscode2session`，免令牌）；`session_key` 与手机号 `code` 不入日志（MP-X7） |
+| `AddQrCodeLinkApi()` | 二维码与链接 | 9 | 小程序码 **3 端点走手工通道 `IWxaCodeService`**（响应为图片二进制，失败才是 JSON ⇒ 按 Content-Type 分支判错，返回 `WxaCodeResult : IDisposable`）+ 短链 / URL Scheme / NFC Scheme / URL Link 的生成与查询 6 端点 |
+| `AddSecurityApi()` | 内容安全 | 3 | `msg_sec_check`（同步文本）+ `media_check_async`（异步媒体，回调结果另取）+ `getuserriskrank`（用户安全等级）；`/wxa/img_sec_check` 官方已下架 ⇒ 不实现 |
+| `AddDataAnalysisApi()` | 数据分析 | 11 | `/datacube/getweanalysisappid*`：日 / 周 / 月访问趋势与留存 + 用户画像 + 访问分布 + 访问页面 + 数据概况 + `wxa/business/performance/boot`；应答信封不成一形 ⇒ 逐端点各自 DTO |
+| `AddSubscribeMessageApi()` | 订阅消息 | 4 | 发送订阅消息 + 用户通知开关 / 扩展（`set_user_notify` / `set_user_notifyext` / `get_user_notify`）；模板与类目等「设置面」归公众号线 |
+| `AddDynamicMessageApi()` | 动态消息 | 3 | `cgi-bin/message/wxopen/activityid/create` + 动态消息发送 + 聊天工具动态卡片消息 |
+| `AddKfApi()` | 客服 | 9 | 客服角色 2 + 客服子商户 4 + 微信客服绑定 3（只补公众号线**未覆盖**的端点，单注册组） |
+| `AddHardwareDeviceApi()` | 硬件设备 | 9 | 设备消息发送 + `wxa/getsnticket` + 设备组 4（建组 / 查 / 加删设备）+ License 3 |
+| `AddOperationApi()` | 运维中心 | 10 | `IWxaOperationService` 9 端点（域名配置 / 性能·来源·客户端版本 / 实时与错误日志 / 反馈列表 / 灰度发布）+ `IWxaFeedbackMediaService`（反馈图片手工通道，图片二进制） |
+| `AddPluginApi()` | 插件管理 | 2 | `/wxa/devplugin`、`/wxa/plugin`（`action` 驱动，单路由多操作） |
+| `AddChargeApi()` | 付费管理 | 2 | 资源包用量查询 + 最近平均用量查询 |
+| `AddNearbyPoiApi()` | 附近小程序 | 4 | 添加 / 删除地点 + 查看地点列表 + 设置展示状态；添加后进入**审核**，`poi_id` 为删除与展示状态的键 |
+| `AddSearchApi()` | 微信搜一搜 | 1 | `wxaapi_submitpages` 搜一搜数据推送 |
+| `AddSoterApi()` | 生物认证 | 1 | SOTER 生物认证秘钥签名验证 |
+| `AddServiceMarketApi()` | 服务市场 | 2 | 调用服务市场接口 + 异步获取处理数据 |
+| `AddRedPacketCoverApi()` | 红包封面 | 1 | 获取微信红包封面；`ctoken` 为发放凭据，属敏感信息（禁止落日志） |
+| `AddStudentApi()` | 学生身份 | 1 | 快速获取学生身份 |
+| `AddFaceVerifyApi()` | 人脸核身 | 2 | 获取人脸核身会话唯一标识 + 查询真实验证结果；`cert_info` 含证件姓名 / 号码（禁止落日志），官方标注不支持第三方平台代调用 |
+| `AddLaborUseApi()` | 用工关系 | 2 | 推送用工消息 + 解绑用工关系 |
 
 小程序线另有 `WxaErrorCodes`（13 个错误码常量）与 `MiniProgramScaffoldContractGuards` 锁定的「无 Callback 工程」形态。
 

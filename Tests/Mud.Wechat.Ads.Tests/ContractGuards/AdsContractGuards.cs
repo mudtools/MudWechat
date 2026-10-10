@@ -66,6 +66,8 @@ public class AdsContractGuards
                          "Mud.Wechat.MiniProgram", "Mud.Wechat.MiniProgram.Abstractions",
                          "Mud.Wechat.Pay", "Mud.Wechat.Pay.Abstractions",
                          "Mud.Wechat.OpenPlatform", "Mud.Wechat.OpenPlatform.Abstractions",
+                         // 微信小店 / 视频号（channels 生态，2026-10 并入本仓）：与广告线无共享凭据域，同样禁引用。
+                         "Mud.Wechat.Channels", "Mud.Wechat.Channels.Abstractions", "Mud.Wechat.Channels.Callback",
                          "Mud.Wechat.Redis",
                      })
             {

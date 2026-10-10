@@ -13,7 +13,7 @@ namespace Mud.Wechat.Channels.Tests.ContractGuards;
 /// <remarks>
 /// <para>
 /// <b>CH-R1（重叠路由零回潮）</b>：小店线（<c>/channels/ec/*</c>、<c>/shop/*</c>、<c>/cgi-bin/*</c>、
-/// <c>/channels/finderlive|leads|livedashboard/*</c>）与既有四线（公众号 / 企微 / 小程序 / 支付）
+/// <c>/channels/finderlive|leads|livedashboard/*</c>）与既有五线（公众号 / 企微 / 小程序 / 支付 / 广告）
 /// 的路由<b>交叠必须为空</b>，公众号线「产品卡」先例（<c>IMpProductCardService</c>，
 /// <c>/channels/ec/service/product/getcardinfo</c>，公众号令牌）不得在小店线重复声明。
 /// 唯一豁免：基础面<b>同令牌族内</b>的同路由重复（token / stable_token，授权于设计方案 §4.5
@@ -31,7 +31,7 @@ public class ChannelsRouteContractGuards
     /// <summary>
     /// 官方基础面「同令牌族内允许重复声明」的共享基础设施路由白名单（对齐 §4.5）。
     /// 新增（P1：quota / rid / clear_quota / callback check / 双 IP）必须同批扩展并注明追踪理由；
-    /// 白名单之外任何与既有四线的路由交叠都是变红项。
+    /// 白名单之外任何与既有五线的路由交叠都是变红项。
     /// </summary>
     /// <remarks>
     /// <b>P1 落位（设计方案 v1 §4.5）</b>：8 个 Basic 端点与公众号线<b>云端同路由</b>，但令牌凭据
@@ -134,11 +134,12 @@ public class ChannelsRouteContractGuards
         };
 
     /// <summary>
-    /// CH-R1：重叠路由零回潮 —— 小店线路由 ⊆ 白名单 ∪ ∅，与既有四线路由的交叠必须为空。
+    /// CH-R1：重叠路由零回潮 —— 小店线路由 ⊆ 白名单 ∪ ∅，与既有五线路由的交叠必须为空。
     /// </summary>
     /// <remarks>
-    /// 参照集（公众号 / 企微 / 小程序 / 支付四线主包路由并集）强制<b>非空</b>：参照集为空说明
-    /// 反射口径失效，守卫会假绿（AGENTS §6「数量下限防枚举空跑」同款纪律）。
+    /// 参照集（公众号 / 企微 / 小程序 / 支付 / 广告五线主包路由并集）强制<b>非空</b>：参照集为空说明
+    /// 反射口径失效，守卫会假绿（AGENTS §6「数量下限防枚举空跑」同款纪律）。开放平台线用显式客户端、
+    /// 无声明式路由属性，故不入参照集。
     /// </remarks>
     [Fact]
     public void OverlappingRoutes_ShouldNotBeDeclared_WhenChannelsLineAddsEndpoints()
@@ -148,8 +149,10 @@ public class ChannelsRouteContractGuards
         existingRoutes.UnionWith(CollectRequestUris(LoadProductLine("Mud.Wechat.Work")));
         existingRoutes.UnionWith(CollectRequestUris(LoadProductLine("Mud.Wechat.MiniProgram")));
         existingRoutes.UnionWith(CollectRequestUris(LoadProductLine("Mud.Wechat.Pay")));
+        // 广告线（2026-10 并入本仓）亦为声明式路由线，必须纳入参照集：漏掉它 = 小店线可静默回潮广告线路由。
+        existingRoutes.UnionWith(CollectRequestUris(LoadProductLine("Mud.Wechat.Ads")));
 
-        existingRoutes.Should().NotBeEmpty("既有四线路由是本守卫的参照集，为空说明反射口径失效，守卫会假绿");
+        existingRoutes.Should().NotBeEmpty("既有五线路由是本守卫的参照集，为空说明反射口径失效，守卫会假绿");
 
         // 公众号「产品卡」先例路由必须存在于参照集（防参照集漏检该唯一例外）。
         existingRoutes.Should().Contain("/channels/ec/service/product/getcardinfo",
@@ -165,7 +168,7 @@ public class ChannelsRouteContractGuards
             .Intersect(existingRoutes, StringComparer.Ordinal)
             .ToArray();
         overlap.Should().BeEmpty(
-            "小店线不得重复声明既有四线路由（设计方案 CH-R1）；基础面同令牌族重复仅限白名单豁免：" +
+            "小店线不得重复声明既有五线路由（设计方案 CH-R1）；基础面同令牌族重复仅限白名单豁免：" +
             string.Join(", ", overlap));
     }
 

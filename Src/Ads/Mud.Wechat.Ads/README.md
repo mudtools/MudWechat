@@ -13,14 +13,14 @@
 - `AdsSensitiveQueryKeys`：本线带来的新 Query 凭据参数名（`user_token`）显式登记，与组件静态词表取并集（ADS-B5 的另一半）。
 - 复合查询参数**只能收 `string`**：官方线格式要求 `date_range` / `fields` / `group_by` / `order_by` / `filtering` 各以**单个 JSON 字面量**上送，而组件对数组走「重复同名参数」、对复杂类型走「逐属性展平」，两种都不是官方形态 ⇒ 调用侧用 `.DataModels` 的 `AdsQueryJson` 编码器构造。
 
-`.Abstractions` 侧另有 `AddAdsApp(...)`（应用注册入口，经公用层 `AddWechatApiHosts` 单点登记 SSRF 白名单——**不在本包调用** `ConfigureAllowedDomains`：该 API 是进程级全局静态 + 整体替换语义，产品线自行登记会清空其它五线的放行面，守卫 AB-G4 / ADS-B4）与 `AdsJsonResolverExtensions`（把各域 `JsonContext` **合并**进组件解析器；组件的 AOT 分支只合并已登记上下文、永不回退反射 ⇒ 漏登记在 Native AOT 下首调即失败，守卫 ADS-B6 逐生成文件断言覆盖面）。
+`.Abstractions` 侧另有 `AddAdsApp(...)`（应用注册入口，经公用层 `AddWechatApiHosts` 单点登记 SSRF 白名单——**不在本包调用** `ConfigureAllowedDomains`：该 API 是进程级全局静态 + 整体替换语义，产品线自行登记会清空其它六线的放行面，守卫 AB-G4 / ADS-B4）与 `AdsJsonResolverExtensions`（把各域 `JsonContext` **合并**进组件解析器；组件的 AOT 分支只合并已登记上下文、永不回退反射 ⇒ 漏登记在 Native AOT 下首调即失败，守卫 ADS-B6 逐生成文件断言覆盖面）。
 
 
-## 与其余五线的三点不同（建模时勿套用既有假设）
+## 与其余六线的三点不同（建模时勿套用既有假设）
 
 1. **凭据模型**：OAuth2 双令牌，且官方要求 `access_token` / `timestamp` / `nonce` **成组、每请求现取** ⇒ 不走声明式 `[Token]`，注入在传输层（ADS-B1）。
 2. **判错信封**：`{code, message, message_cn, data}` 而非 `errcode/errmsg`，令牌失效码与微信线完全不同 ⇒ **不得**把微信侧的失效码集合 / 判定器套到本线（各线的子判定器仍经公用层复合判定器登记，AB-G5）。
-3. **依赖边界**：与其余五线**双向零引用**（ADS-S1 两向都扫）。把本线类型注进 Work / 公众号线同样违规——凭据模型不兼容，且会让本线的非微信域假设渗进微信线调用链。
+3. **依赖边界**：与其余六线**双向零引用**（ADS-S1 两向都扫）。把本线类型注进 Work / 公众号线同样违规——凭据模型不兼容，且会让本线的非微信域假设渗进微信线调用链。
 
 ## 域名与白名单
 

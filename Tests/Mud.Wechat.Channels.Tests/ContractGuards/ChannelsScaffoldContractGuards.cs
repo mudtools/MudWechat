@@ -13,7 +13,7 @@ namespace Mud.Wechat.Channels.Tests.ContractGuards;
 /// <remarks>
 /// <para>
 /// 本守卫把「小店是独立产品线（4 包、自建回调），<b>不并入</b>公众号 / 小程序 / 企微 / 支付 /
-/// 开放平台任何既有线」的产品决策<b>在实现期之前</b>锁死：若实现期「顺手」复用公众号回调通道、
+/// 开放平台 / 广告任何既有线」的产品决策<b>在实现期之前</b>锁死：若实现期「顺手」复用公众号回调通道、
 /// 引用公众号令牌基座或把接口建成父接口形态，守卫立即变红。
 /// </para>
 /// <para>
@@ -73,7 +73,7 @@ public class ChannelsScaffoldContractGuards
     }
 
     /// <summary>
-    /// CH-X3：工程引用隔离 —— 小店线四包<b>不得</b>引用公众号 / 小程序 / 企微 / 支付 / 开放平台
+    /// CH-X3：工程引用隔离 —— 小店线四包<b>不得</b>引用公众号 / 小程序 / 企微 / 支付 / 开放平台 / 广告
     /// 任何工程的 csproj；只允许引用 Core <c>Mud.Wechat.Abstractions</c>（唯一共享叶子）与同线兄弟包。
     /// </summary>
     [Fact]
@@ -98,12 +98,14 @@ public class ChannelsScaffoldContractGuards
                          "Mud.Wechat.Work",
                          "Mud.Wechat.Pay",
                          "Mud.Wechat.OpenPlatform",
+                         // 腾讯广告线（2026-10 并入本仓）：与其余各线零引用同口径，小店线亦不得引用。
+                         "Mud.Wechat.Ads",
                          "Mud.Wechat.Redis",
-                     })
+                         })
             {
                 xml.Should().NotContain(banned,
                     $"{project} 不得引用既有产品线工程（设计方案 §3.1 依赖硬边界：{banned}）；" +
-                    "小店线与五线平行，只允许共享 Core Abstractions 叶层");
+                    "小店线与六线平行，只允许共享 Core Abstractions 叶层");
             }
         }
     }

@@ -23,6 +23,11 @@ namespace Mud.Wechat.MiniProgram.DataModels.DataAnalysis;
 [JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.DataAnalysis.WxaVisitDistributionItem))]
 [JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.DataAnalysis.WxaVisitPageResponse))]
 [JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.DataAnalysis.WxaVisitPageItem))]
+[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.DataAnalysis.WxaDailySummaryResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.DataAnalysis.WxaDailySummaryItem))]
+[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.DataAnalysis.WxaPerformanceBootRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.DataAnalysis.WxaPerformanceBootResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.DataAnalysis.WxaPerformanceDataItem))]
 internal partial class DataAnalysisJsonContext : JsonSerializerContext
 {
 }

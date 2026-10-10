@@ -8,14 +8,15 @@
 namespace Mud.Wechat.MiniProgram;
 
 /// <summary>
-/// 微信小程序「数据分析」域 SDK（9 端点：访问趋势 3 + 访问留存 3 + 用户画像 1 + 访问分布 1 + 访问页面 1）。
+/// 微信小程序「数据分析」域 SDK（11 端点：访问趋势 3 + 访问留存 3 + 用户画像 1 + 访问分布 1 + 访问页面 1 + 概况 1 + 性能 1）。
 /// </summary>
 /// <remarks>
 /// <para>
 /// <b>官方文档</b>：小程序服务端 API → 数据分析（2026-10-09 逐页核验）：
 /// <c>data-analysis/visit-trend/api_getdailyvisittrend.html</c>、<c>visit-retain/api_getdailyretain.html</c>、
 /// <c>others/api_getuserportrait.html</c>、<c>others/api_getvisitdistribution.html</c>、
-/// <c>others/api_getvisitpage.html</c>（weekly / monthly 为同级页面，路径仅周期词不同）。
+/// <c>others/api_getvisitpage.html</c>（weekly / monthly 为同级页面，路径仅周期词不同）、
+/// <c>others/api_getdailysummary.html</c>、<c>others/api_getperformancedata.html</c>。
 /// </para>
 /// <para>
 /// <b>域级约束（逐页核验，勿弱化）</b>：
@@ -162,5 +163,37 @@ public interface IWxaDataAnalysisService
     [Post("/datacube/getweanalysisappidvisitpage")]
     Task<WxaVisitPageResponse> GetVisitPageAsync(
         [Body] WxaDateRangeRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 获取用户访问小程序数据概况。官方文档：<c>data-analysis/others/api_getdailysummary.html</c>。
+    /// </summary>
+    /// <param name="request">日期区间（<c>begin_date</c> / <c>end_date</c>），见 <see cref="WxaDateRangeRequest"/>。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
+    /// <returns>概况列表（<c>list</c>：累计用户数 / 转发次数 / 转发人数），见 <see cref="WxaDailySummaryResponse"/>。</returns>
+    /// <remarks>
+    /// <para>官方契约：<b>POST</b> <c>/datacube/getweanalysisappiddailysummarytrend</c>；跨度<b>限定 1 天</b>、最大值为昨日。</para>
+    /// <para><b>与「日趋势」差异（勿混淆）</b>：趋势返回打开 / 访问 / 停留等<b>过程指标</b>；概况返回
+    /// <c>visit_total</c>（累计用户数）与 <c>share_pv</c> / <c>share_uv</c>（转发次数 / 人数）等<b>结果指标</b>。</para>
+    /// </remarks>
+    [Post("/datacube/getweanalysisappiddailysummarytrend")]
+    Task<WxaDailySummaryResponse> GetDailySummaryAsync(
+        [Body] WxaDateRangeRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 获取小程序性能数据（启动 / 运行性能）。官方文档：<c>data-analysis/others/api_getperformancedata.html</c>。
+    /// </summary>
+    /// <param name="request">时间与模块，见 <see cref="WxaPerformanceBootRequest"/>。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
+    /// <returns>性能指标数组（<c>data</c>，<c>{key,value}</c>），见 <see cref="WxaPerformanceBootResponse"/>。</returns>
+    /// <remarks>
+    /// <para>官方契约：<b>POST</b> <c>/wxa/business/performance/boot</c> ＋ 请求体 JSON；Query 携带 <c>access_token</c>。</para>
+    /// <para><b>时间粒度（官方原文）</b>：<c>time</c> 为开始时间，格式 <c>yyyymmddhh</c>，<b>精确到小时</b>；
+    /// <c>module</c> = <c>1</c> 启动性能 / <c>2</c> 运行性能。</para>
+    /// </remarks>
+    [Post("/wxa/business/performance/boot")]
+    Task<WxaPerformanceBootResponse> GetPerformanceBootDataAsync(
+        [Body] WxaPerformanceBootRequest request,
         CancellationToken cancellationToken = default);
 }

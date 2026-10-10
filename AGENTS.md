@@ -2,7 +2,7 @@
 
 企业微信（WeCom）.NET SDK 的 AI 协作指南。架构对齐 `D:/Repos/MudFeishu/FeishuV3`。
 
-**适用范围**：本仓现为**六线共仓**（企业微信 / 公众号 / 小程序 / 微信支付 APIv3 / 开放平台 / 在建的腾讯广告）。本文 §5~§7 的领域契约是**企微线**的细则，其余各线的公开面与已踩陷阱看其 `Src/<线>/*/README.md`；**跨线通用**的约束（§1 门禁、§2 同批纪律、§3 多 TFM 与 AOT 红线、§4 落位与依赖边界、§8 配置与安全、§9 自检）适用于全部六线。
+**适用范围**：本仓现为**七线共仓**（企业微信 / 公众号 / 小程序 / 微信支付 APIv3 / 开放平台 / 微信小店 · 视频号 / 在建的腾讯广告）。本文 §5~§7 的领域契约是**企微线**的细则，其余各线的公开面与已踩陷阱看其 `Src/<线>/*/README.md`；**跨线通用**的约束（§1 门禁、§2 同批纪律、§3 多 TFM 与 AOT 红线、§4 落位与依赖边界、§8 配置与安全、§9 自检）适用于全部七线。
 
 **工作方式**：能力增量 = 在既有域内加端点 + **同批**更新契约守卫。不引入新范式。
 
@@ -14,6 +14,7 @@
 | 官方文档 URL/ID、频率上限、串行、覆盖删除、权限可见范围 | 接口 XML 文档注释（`Interfaces/{域}/`） |
 | 模块枚举值、`Add{域}Api()` | `Extensions/WechatModule.cs`、`Extensions/WechatWorkServiceBuilder.cs` |
 | 域 → 目录 / 命名空间实际映射 | `Interfaces/`、`DataModels/` 目录树 |
+| 小店线（微信小店/视频号）域 / 守卫 / 方案 | `Tests/Mud.Wechat.Channels.Tests/ContractGuards/`（CH-X1~X4 形态 / CH-T1~T3+CH-V1 令牌归属 / CH-R1~R2 路由；P1 起逐域守卫）；`.docs/微信小店/微信小店×视频号产品线设计方案 v1.md` |
 
 ## 1 门禁（提交前必跑，全绿才算完成）
 
@@ -51,7 +52,7 @@ dotnet test Tests/Mud.Wechat.Work.Tests -c Release -f net8.0 --filter "FullyQual
 
 **`netstandard2.0` 无 `IsExternalInit` polyfill**，该 TFM 下：禁 `init`、禁 `record`/`with`；无 `ArgumentNullException.ThrowIfNull`；`string.IsNullOrEmpty`/`IsNullOrWhiteSpace` 无 `[NotNullWhen]`、流分析不收窄（须显式 `x == null`）；禁 `Math.Clamp`。既存大量 CS86xx 警告属正常形态（见 §1）。
 
-**`Tests/Directory.Build.props` 导入根 props**（`Import` 必须在自身覆盖之前）：测试工程与源工程同受一套治理，14 个测试工程自动继承 `LangVersion` / `Nullable` / `ImplicitUsings` / `Version` / TFM 集，故**新增治理属性只需写在根 props 一处**（此前的「遮蔽」形态要求同批写两遍，且靠人记无编译期强制）。该文件只额外做两件事：① 把 `TargetFrameworks` 收为单档 `net8.0`（避免 `TargetFramework`/`TargetFrameworks` 双属性冲突使 restore 进入跨目标模式）；② 显式关闭 `IsAotCompatible` / `EnableTrimAnalyzer` / `EnableAotAnalyzer` / `EnableSingleFileAnalyzer` —— 测试宿主（xunit / FluentAssertions / Moq）大量使用反射，开启后实测产生约 900 条 IL 噪声告警，既掩盖真实信号，也与「测试工程不进 Native AOT 发布、正确性由用例断言承担」的分工不符（源工程的 AOT 净零仍由 `verify-build.ps1` 步骤 2 逐工程保证）。
+**`Tests/Directory.Build.props` 导入根 props**（`Import` 必须在自身覆盖之前）：测试工程与源工程同受一套治理，16 个测试工程自动继承 `LangVersion` / `Nullable` / `ImplicitUsings` / `Version` / TFM 集，故**新增治理属性只需写在根 props 一处**（此前的「遮蔽」形态要求同批写两遍，且靠人记无编译期强制）。该文件只额外做两件事：① 把 `TargetFrameworks` 收为单档 `net8.0`（避免 `TargetFramework`/`TargetFrameworks` 双属性冲突使 restore 进入跨目标模式）；② 显式关闭 `IsAotCompatible` / `EnableTrimAnalyzer` / `EnableAotAnalyzer` / `EnableSingleFileAnalyzer` —— 测试宿主（xunit / FluentAssertions / Moq）大量使用反射，开启后实测产生约 900 条 IL 噪声告警，既掩盖真实信号，也与「测试工程不进 Native AOT 发布、正确性由用例断言承担」的分工不符（源工程的 AOT 净零仍由 `verify-build.ps1` 步骤 2 逐工程保证）。
 
 AOT / Trim（`net8.0`/`net10.0` 默认开启；`AotStrictMode=true` 把 `IL2026;IL2046;IL2050;IL2057;IL2067;IL2070;IL2072;IL2075;IL2080;IL3050` 升为错误）：
 
@@ -71,23 +72,25 @@ Src/Core/
   Mud.Wechat.Redis/                   # 四个存储端口的 Redis 实现 + 连接基座 + DI 编排
   Mud.Wechat.Callback.Generator/      # 回调契约登记生成器（中立名；发射 RegisterAll；IsPackable=false）
   Mud.Wechat.Callback.Analyzers/      # 回调处理器契约分析器（中立名；诊断型、不发射；netstandard2.0 单 TFM；
-                                      # IsPackable=false，**由三个 Callback 宿主包以字面相对路径内嵌** analyzers/dotnet/cs）
+                                      # IsPackable=false，**由四个 Callback 宿主包以字面相对路径内嵌** analyzers/dotnet/cs）
 Src/Work/                             # 企业微信线（本文件 §5~§7 的主体）
   Mud.Wechat.Work/                    # 主包：Interfaces/{域}/ 接口声明 + 服务 + DI + 模块注册
   Mud.Wechat.Work.Abstractions/       # 令牌基座、多应用、配置、存储端口、枚举、异常、回调信封与载荷转换器
   Mud.Wechat.Work.DataModels/         # 官方 DTO（[HttpJsonSerializable]）+ Generated/ 域 JsonContext（生成物）
   Mud.Wechat.Work.Callback/           # 回调接收（AES 解密、事件解析、分发）+ HTTP 中间件；Events/Payloads/ 载荷；智能机器人 JSON 回调通道（见 §5.5）
-Src/{OfficialAccount,MiniProgram,Pay,OpenPlatform,Ads}/   # 其余四条线 + 在建广告线，同形态分包
-                                      # 公众号 4 包 / 小程序 3 包（**无 Callback**）/ 支付 4 包 / 开放平台 2 包 / 广告 3 包（在建）
+Src/{OfficialAccount,MiniProgram,Pay,OpenPlatform,Channels,Ads}/   # 其余五条线 + 在建广告线，同形态分包
+                                      # 公众号 4 包 / 小程序 3 包（**无 Callback**）/ 支付 4 包 / 开放平台 2 包 / 小店 4 包 / 广告 3 包（在建）
                                       # 每包的公开面与已踩陷阱见其目录下的 README.md
-Tests/                                # 14 个工程（六线 + Core 叶层 + Redis + OpenTelemetry），镜像源结构，单 TFM net8.0
+Tests/                                # 16 个工程（七线 + Core 叶层 + Redis + OpenTelemetry），镜像源结构，单 TFM net8.0
 scripts/                              # verify-build / audit-config-keys / GenerateJsonContext / AddHttpJsonSerializable / ApplyTokenOwnerKeys
 .docs/                                # 方案与设计文档（中文；已 gitignore，fresh clone 无此目录）
 ```
 
-依赖单向：`Work → {Abstractions, DataModels}`、`Callback → {Abstractions, DataModels}`、`Abstractions → DataModels`、`Redis → Abstractions`。硬边界：**`Callback` 不引用 `Work`**；**`Redis` 不引用 `Work`/`Callback`**；**广告线与其余五线双向零引用**（ADS-S1 两向都扫）。
+依赖单向：`Work → {Abstractions, DataModels}`、`Callback → {Abstractions, DataModels}`、`Abstractions → DataModels`、`Redis → Abstractions`。硬边界：**`Callback` 不引用 `Work`**；**`Redis` 不引用 `Work`/`Callback`**；**广告线与其余六线双向零引用**（ADS-S1 两向都扫）。
 
 **新增产品线的门禁接入口只有一个**：`AB-G6` 会同时校验解决方案工程清单（每个可打包工程须已在 `slnx` 内）、`audit-config-keys.ps1` 搜索根、DTO 标注脚本根命名空间、以及 CI / `pack.bat` / `publish.bat` 三处的**推导口径**（可打包集由 `Src/**/*.csproj` 现场推导，三处各自推导、不持有名单，也不硬编码包数 —— 唯一被维护的名单是「非可打包工程白名单」，仅两个构建期工具）。
+
+**其它产品线（公众号 / 小程序 / 支付 / 开放平台 / 小店）各持 `Src/{线}/` 包家族与 `Tests/Mud.Wechat.{线}.Tests/` 守卫，契约与落位以各自 `.docs/` 设计方案为准**（本文为企微线专属）。小店线关键决策锚点：独立令牌类型 `Wechat.Channels.AccessToken`（与 `Wechat.AccessToken`/`Wechat.Mp.AccessToken` 在共享注册表天然隔离）、平铺命名空间无 `IsAbstract` 父接口、与既有六线路由交叠零回潮（共享基础设施白名单仅 `token`/`stable_token`）、`/wxa/vip/*` 未确认归属不得声明 —— 全部为 CH 系列守卫锁定，改动见 `Tests/Mud.Wechat.Channels.Tests/ContractGuards/`。
 
 **新文件落位三处一致（目录 / 命名空间 / 注册入口）**：
 

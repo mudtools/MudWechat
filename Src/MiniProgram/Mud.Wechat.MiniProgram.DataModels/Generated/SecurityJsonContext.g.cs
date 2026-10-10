@@ -17,6 +17,8 @@ namespace Mud.Wechat.MiniProgram.DataModels.Security;
 [JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Security.WxaSecCheckDetail))]
 [JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Security.WxaMediaCheckAsyncRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Security.WxaMediaCheckAsyncResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Security.WxaGetUserRiskRankRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Security.WxaGetUserRiskRankResponse))]
 internal partial class SecurityJsonContext : JsonSerializerContext
 {
 }

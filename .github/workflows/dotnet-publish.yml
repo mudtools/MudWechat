@@ -429,7 +429,7 @@ jobs:
       # 制品数量守卫：期望值**由 Src/**/*.csproj 现场推导**（未声明 <IsPackable>false</IsPackable> 者为
       # 可打包工程），本文件不再硬编码包名/包数 —— 2026-10 曾两次因「清单与工程目录各自成文」而漂移
       # （CI 停在 18、pack.bat/publish.bat 停在 11）。
-      # 仍 fail-closed 的两类失效：① slnx 漏项 ⇒ 产物少于推导值；② 三个 Callback 包以**字面相对路径**内嵌
+      # 仍 fail-closed 的两类失效：① slnx 漏项 ⇒ 产物少于推导值；② 四个 Callback 包以**字面相对路径**内嵌
       #   Mud.Wechat.Callback.Analyzers.dll，源码目录再次归类会让路径失效 ⇒ 这些包 pack 失败。
       # 「某工程被误设 IsPackable=false」不会体现在本比对里（推导值会同降）⇒ 由 Tests 侧 AB-G6 的
       # 「非可打包工程白名单」断言兜住。守卫断言见 Tests/Mud.Wechat.Abstractions.Tests 的 AB-G6。

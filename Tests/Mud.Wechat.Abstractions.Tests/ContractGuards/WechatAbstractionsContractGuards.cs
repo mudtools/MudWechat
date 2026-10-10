@@ -94,6 +94,8 @@ public class WechatAbstractionsContractGuards
             "Mud.Wechat.OfficialAccount.DataModels/Mud.Wechat.OfficialAccount.DataModels.csproj",
             "Mud.Wechat.MiniProgram.DataModels/Mud.Wechat.MiniProgram.DataModels.csproj",
             "Mud.Wechat.Pay.DataModels/Mud.Wechat.Pay.DataModels.csproj",
+            // 微信小店/视频号产品线（设计方案 v1 §3.1）：DTO 面同样只向公用层取判错契约。
+            "Mud.Wechat.Channels.DataModels/Mud.Wechat.Channels.DataModels.csproj",
         };
 
         var sources = dataModelsProjects
@@ -132,6 +134,7 @@ public class WechatAbstractionsContractGuards
                      "Mud.Wechat.MiniProgram.Abstractions/Mud.Wechat.MiniProgram.Abstractions.csproj",
                      "Mud.Wechat.Pay.Abstractions/Mud.Wechat.Pay.Abstractions.csproj",
                      "Mud.Wechat.OpenPlatform.Abstractions/Mud.Wechat.OpenPlatform.Abstractions.csproj",
+                     "Mud.Wechat.Channels.Abstractions/Mud.Wechat.Channels.Abstractions.csproj",
                  })
         {
             ReadCsproj(project).Should().Contain("Mud.Wechat.Abstractions.csproj", $"{project} 必须引用公用层");
@@ -194,8 +197,8 @@ public class WechatAbstractionsContractGuards
     /// 又使 <c>Mud.Wechat.Callback.Analyzers</c> 失去随包下发渠道（诊断能力对消费者失效）。
     /// </para>
     /// <para>
-    /// 实测口径（<c>dotnet pack Mud.Wechat.slnx -c Release</c>）：恰 <b>23</b> 个 nupkg（与 CI 制品数量
-    /// 守卫、AB-G6 同一口径），其中三个回调包内均含 <c>analyzers/dotnet/cs/Mud.Wechat.Callback.Analyzers.dll</c>。
+    /// 实测口径（<c>dotnet pack Mud.Wechat.slnx -c Release</c>）：恰 <b>27</b> 个 nupkg（与 CI 制品数量
+    /// 守卫、AB-G6 同一口径），其中四个回调包内均含 <c>analyzers/dotnet/cs/Mud.Wechat.Callback.Analyzers.dll</c>。
     /// </para>
     /// <para>
     /// 2026-10 源码归类后曾实测只有 <b>17</b> 个：三个回调包 pack 失败（下述 ①-b 的相对路径仍指向旧的
@@ -214,6 +217,8 @@ public class WechatAbstractionsContractGuards
                      "Mud.Wechat.Work.Callback/Mud.Wechat.Work.Callback.csproj",
                      "Mud.Wechat.OfficialAccount.Callback/Mud.Wechat.OfficialAccount.Callback.csproj",
                      "Mud.Wechat.Pay.Callback/Mud.Wechat.Pay.Callback.csproj",
+                     // 微信小店/视频号（channels 生态）产品线（设计方案 v1 §3.5）：回调包随包下发分析器。
+                     "Mud.Wechat.Channels.Callback/Mud.Wechat.Channels.Callback.csproj",
                  })
         {
             var projectPath = SourcePath(hostPackage.Split('/'));
@@ -286,6 +291,12 @@ public class WechatAbstractionsContractGuards
             // 微信开放平台产品线（2026-10 新增）：同受 AB-G4 / AB-G5 单点登记约束。
             SourceProjectDir("Mud.Wechat.OpenPlatform"),
             SourceProjectDir("Mud.Wechat.OpenPlatform.Abstractions"),
+            // 微信小店/视频号（channels 生态）产品线（设计方案 v1）：SSRF 白名单与判定器单槽同受
+            // 公用层单点登记约束（AddChannelsApp 只登记子判定器与自定义主机，不得直接写单槽）。
+            SourceProjectDir("Mud.Wechat.Channels"),
+            SourceProjectDir("Mud.Wechat.Channels.Abstractions"),
+            SourceProjectDir("Mud.Wechat.Channels.DataModels"),
+            SourceProjectDir("Mud.Wechat.Channels.Callback"),
             // 腾讯广告产品线（2026-10 新增）：第一条非微信域线，白名单要它**追加**了一条后缀域，
             // 于是「产品线不得自行登记」这条单点约束对它尤其要紧（自行登记 = 清空微信四线的放行）。
             SourceProjectDir("Mud.Wechat.Ads"),
@@ -337,6 +348,12 @@ public class WechatAbstractionsContractGuards
         // 微信小程序：三工程均须纳入搜索范围（消费点可能出现在主包 / 抽象包任一处）。
         audit.Should().Contain("Mud.Wechat.MiniProgram.Abstractions'", "微信小程序抽象包必须纳入消费点搜索范围");
         audit.Should().Contain("Mud.Wechat.MiniProgram'", "微信小程序主包必须纳入消费点搜索范围");
+        // 微信小店/视频号（channels 生态）产品线（设计方案 v1 §3.6）：配置 DTO 与四个搜索根必须纳入审计。
+        audit.Should().Contain("Mud.Wechat.Channels.Abstractions/Configuration/ChannelsAppConfig.cs", "小店配置面必须纳入审计（缺登记即属性无消费点无人发现）");
+        audit.Should().Contain("Mud.Wechat.Channels.Abstractions'", "小店抽象包必须纳入消费点搜索范围");
+        audit.Should().Contain("Mud.Wechat.Channels'", "小店主包必须纳入消费点搜索范围");
+        audit.Should().Contain("Mud.Wechat.Channels.DataModels'", "小店 DataModels 必须纳入消费点搜索范围");
+        audit.Should().Contain("Mud.Wechat.Channels.Callback'", "小店回调运行时包必须纳入消费点搜索范围");
         // 腾讯广告：三条源包全部纳入消费点搜索范围（配置属性的消费点可能落在主包或抽象包）。
         // 缺一即「该包的属性被整体绕过」= 门禁盲区，与本守卫存在的初衷直接冲突。
         foreach (var adsProject in new[]
@@ -431,6 +448,13 @@ public class WechatAbstractionsContractGuards
                      "Src/OpenPlatform/Mud.Wechat.OpenPlatform/Mud.Wechat.OpenPlatform.csproj",
                      "Src/OpenPlatform/Mud.Wechat.OpenPlatform.Abstractions/Mud.Wechat.OpenPlatform.Abstractions.csproj",
                      "Tests/Mud.Wechat.OpenPlatform.Tests/Mud.Wechat.OpenPlatform.Tests.csproj",
+                     // 微信小店/视频号（channels 生态）产品线（4 源 + 2 测试，设计方案 v1 §5.2）。
+                     "Src/Channels/Mud.Wechat.Channels/Mud.Wechat.Channels.csproj",
+                     "Src/Channels/Mud.Wechat.Channels.Abstractions/Mud.Wechat.Channels.Abstractions.csproj",
+                     "Src/Channels/Mud.Wechat.Channels.DataModels/Mud.Wechat.Channels.DataModels.csproj",
+                     "Src/Channels/Mud.Wechat.Channels.Callback/Mud.Wechat.Channels.Callback.csproj",
+                     "Tests/Mud.Wechat.Channels.Tests/Mud.Wechat.Channels.Tests.csproj",
+                     "Tests/Mud.Wechat.Channels.Callback.Tests/Mud.Wechat.Channels.Callback.Tests.csproj",
                      // 腾讯广告产品线（2026-10 新增，3 源 + 1 测试）。
                      "Src/Ads/Mud.Wechat.Ads/Mud.Wechat.Ads.csproj",
                      "Src/Ads/Mud.Wechat.Ads.Abstractions/Mud.Wechat.Ads.Abstractions.csproj",
@@ -445,7 +469,7 @@ public class WechatAbstractionsContractGuards
         // 制品数量守卫必须与「现场推导值」比对，不得硬编码包数；下列历史硬编码值一律不得复活。
         ci.Should().Contain("-ne \"$EXPECTED\"",
             "CI 制品数量守卫必须与由 Src/**/*.csproj 推导出的可打包集比对，不得硬编码包数");
-        foreach (var staleCount in new[] { "-ne 11", "-ne 10", "-ne 17", "-ne 18", "-ne 21", "-ne 23" })
+        foreach (var staleCount in new[] { "-ne 10", "-ne 11", "-ne 17", "-ne 18", "-ne 21", "-ne 22", "-ne 23", "-ne 24" })
         {
             ci.Should().NotContain(staleCount,
                 $"旧制品数量断言 {staleCount} 已作废（口径改为现场推导），残留即 CI 与工程目录分裂");

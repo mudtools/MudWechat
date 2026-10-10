@@ -105,3 +105,107 @@ public class WxaGetPaidUnionIdResponse : WxaResponse
     [JsonPropertyName("unionid")]
     public string? UnionId { get; set; }
 }
+
+/// <summary>获取插件用户 <c>openpid</c> 应答（<c>GET /wxa/getpluginopenpid</c>）。</summary>
+/// <remarks>
+/// <para>官方文档：<c>user-info/basic-info/api_getpluginopenpid.html</c>。</para>
+/// <para>
+/// <b>前置约束（官方原文）</b>：须先经小程序端 <c>wx.pluginLogin</c> 取得插件用户标志凭证
+/// <c>code</c> 再传至开发者服务器；<c>plugin_appid</c> 为插件 AppID。
+/// 返回的 <c>openpid</c> 是<b>插件维度</b>的用户唯一标识（同用户在不同插件下 openpid 不同）。
+/// </para>
+/// </remarks>
+[HttpJsonSerializable(SerializerClassName = "Auth")]
+public class WxaGetPluginOpenPidResponse : WxaResponse
+{
+    /// <summary>插件用户唯一标识（<c>openpid</c>）。</summary>
+    [JsonPropertyName("openpid")]
+    public string? OpenPid { get; set; }
+}
+
+/// <summary>检查加密信息请求体（<c>POST /wxa/business/checkencryptedmsg</c>）。</summary>
+/// <remarks>
+/// <para>官方文档：<c>user-info/basic-info/api_checkencrypteddata.html</c>。</para>
+/// <para>
+/// <b>能力边界（官方原文）</b>：当前只支持<b>手机号加密数据</b>，且只能检测<b>最近 3 天</b>生成的加密数据。
+/// <c>encrypted_msg_hash</c> 为 <c>to_hexstr(sha1(encrypted_msg))</c>（对加密消息原文做 SHA1 后转十六进制）。
+/// </para>
+/// </remarks>
+[HttpJsonSerializable(SerializerClassName = "Auth")]
+public class WxaCheckEncryptedMsgRequest
+{
+    /// <summary>加密消息哈希（<c>encrypted_msg_hash</c>，必填；<c>SHA1(encrypted_msg)</c> 的十六进制串）。</summary>
+    [JsonPropertyName("encrypted_msg_hash")]
+    public string? EncryptedMsgHash { get; set; }
+
+    /// <summary>用户唯一标识（<c>openid</c>，必填）。</summary>
+    [JsonPropertyName("openid")]
+    public string? OpenId { get; set; }
+}
+
+/// <summary>检查加密信息应答（<c>POST /wxa/business/checkencryptedmsg</c>）。</summary>
+/// <remarks>
+/// <b>官方字段名照录</b>：返回字段是 <c>vaild</c>（官方原文拼写，非 <c>valid</c>），
+/// 取值 <c>true</c> = 微信生成、<c>false</c> = 非微信生成或已超 3 天。
+/// </remarks>
+[HttpJsonSerializable(SerializerClassName = "Auth")]
+public class WxaCheckEncryptedMsgResponse : WxaResponse
+{
+    /// <summary>是否由微信生成（<c>vaild</c>，官方原文拼写）。</summary>
+    [JsonPropertyName("vaild")]
+    public bool? Vaild { get; set; }
+}
+
+/// <summary>获取用户 <c>encryptKey</c> 请求体（<c>POST /wxa/business/getuserencryptkey</c>）。</summary>
+/// <remarks>
+/// <para>官方文档：<c>user-info/internet/api_getuserencryptkey.html</c>。</para>
+/// <para>
+/// <b>签名算法（官方原文）</b>：<c>signature = hmac_sha256(session_key, openid)</c>，
+/// <c>sig_method</c> 固定 <c>hmac_sha256</c>；<c>session_key</c> 由 <c>code2Session</c> 获取。
+/// </para>
+/// </remarks>
+[HttpJsonSerializable(SerializerClassName = "Auth")]
+public class WxaGetUserEncryptKeyRequest
+{
+    /// <summary>用户唯一标识（<c>openid</c>，必填）。</summary>
+    [JsonPropertyName("openid")]
+    public string? OpenId { get; set; }
+
+    /// <summary>会话签名（<c>signature</c>，必填；<c>hmac_sha256(session_key, openid)</c>）。</summary>
+    [JsonPropertyName("signature")]
+    public string? Signature { get; set; }
+
+    /// <summary>签名算法（<c>sig_method</c>，必填；固定 <see cref="WxaSignatureMethods.HmacSha256"/>）。</summary>
+    [JsonPropertyName("sig_method")]
+    public string? SigMethod { get; set; }
+}
+
+/// <summary>获取用户 <c>encryptKey</c> 应答（<c>POST /wxa/business/getuserencryptkey</c>）。</summary>
+[HttpJsonSerializable(SerializerClassName = "Auth")]
+public class WxaGetUserEncryptKeyResponse : WxaResponse
+{
+    /// <summary>密钥信息列表（<c>key_info_list</c>），见 <see cref="WxaUserEncryptKeyInfo"/>。</summary>
+    [JsonPropertyName("key_info_list")]
+    public List<WxaUserEncryptKeyInfo>? KeyInfoList { get; set; }
+}
+
+/// <summary>用户 <c>encryptKey</c> 信息条目（<c>key_info_list[]</c>）。</summary>
+[HttpJsonSerializable(SerializerClassName = "Auth")]
+public class WxaUserEncryptKeyInfo
+{
+    /// <summary>加密密钥（<c>encrypt_key</c>）。</summary>
+    [JsonPropertyName("encrypt_key")]
+    public string? EncryptKey { get; set; }
+
+    /// <summary>密钥版本（<c>version</c>）。</summary>
+    [JsonPropertyName("version")]
+    public long? Version { get; set; }
+
+    /// <summary>剩余有效时间（<c>expire_in</c>，秒）。</summary>
+    [JsonPropertyName("expire_in")]
+    public long? ExpireIn { get; set; }
+
+    /// <summary>加密初始化向量（<c>iv</c>）。</summary>
+    [JsonPropertyName("iv")]
+    public string? Iv { get; set; }
+}

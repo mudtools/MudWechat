@@ -30,6 +30,7 @@ namespace Mud.Wechat.MiniProgram.DataModels.QrCodeLink;
 [JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.QrCodeLink.WxaSchemeInfo))]
 [JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.QrCodeLink.WxaShortLinkRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.QrCodeLink.WxaShortLinkResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.QrCodeLink.WxaNfcSchemeRequest))]
 internal partial class QrCodeLinkJsonContext : JsonSerializerContext
 {
 }

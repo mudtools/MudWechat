@@ -39,7 +39,7 @@ public class MiniProgramContractGuards
             .Concat(ManualChannelRoutes())
             .ToArray();
 
-        mpRoutes.Should().NotBeEmpty("小程序线路由非空（21 特性路由 + 3 手工通道路由）");
+        mpRoutes.Should().NotBeEmpty("小程序线路由非空（80 特性路由 + 4 手工通道路由）");
 
         var overlap = mpRoutes.Intersect(oaRoutes, StringComparer.Ordinal).ToArray();
         overlap.Should().BeEmpty(
@@ -80,8 +80,11 @@ public class MiniProgramContractGuards
             .Where(static t => t.GetCustomAttributes(false).Any(static a => a.GetType().Name == "TokenAttribute"))
             .ToArray();
 
-        tokenInterfaces.Should().HaveCount(4,
-            "带令牌接口 = Auth / QrCodeLink / Security / DataAnalysis（登录 code2Session 为免令牌独立接口）");
+        tokenInterfaces.Should().HaveCount(19,
+            "带令牌接口 = Auth / QrCodeLink / Security / DataAnalysis / SubscribeMessage / DynamicMessage / Kf / " +
+            "HardwareDevice / Operation / Plugin / Charge / NearbyPoi / Search / Soter / ServiceMarket / " +
+            "RedPacketCover / Student / FaceVerify / LaborUse（登录 code2Session 为免令牌独立接口；" +
+            "图片通道 Code / FeedbackMedia 为手工服务不走 [Token]）");
 
         foreach (var iface in tokenInterfaces)
         {
@@ -114,7 +117,7 @@ public class MiniProgramContractGuards
     }
 
     /// <summary>
-    /// MP-X5：<b>端点计数 24</b> + 逐域路由表 + 字段名照官方原文（<c>session_key</c> / <c>js_code</c> /
+    /// MP-X5：<b>端点计数 84</b> + 逐域路由表 + 字段名照官方原文（<c>session_key</c> / <c>js_code</c> /
     /// <c>trace_id</c> / <c>page_url</c> 等<b>不得驼峰化</b>）。
     /// </summary>
     [Fact]
@@ -126,6 +129,8 @@ public class MiniProgramContractGuards
         {
             "/wxa/checksession", "/wxa/resetusersessionkey",
             "/wxa/business/getuserphonenumber", "/wxa/getpaidunionid",
+            "/wxa/getpluginopenpid", "/wxa/business/checkencryptedmsg",
+            "/wxa/business/getuserencryptkey",
         });
 
         RoutesOf(asm, nameof(IWxaCode2SessionService)).Should().BeEquivalentTo(new[] { "/sns/jscode2session" });
@@ -134,11 +139,12 @@ public class MiniProgramContractGuards
         {
             "/wxa/generate_urllink", "/wxa/query_urllink",
             "/wxa/generatescheme", "/wxa/queryscheme", "/wxa/genwxashortlink",
+            "/wxa/generatenfcscheme",
         });
 
         RoutesOf(asm, nameof(IWxaSecurityService)).Should().BeEquivalentTo(new[]
         {
-            "/wxa/msg_sec_check", "/wxa/media_check_async",
+            "/wxa/msg_sec_check", "/wxa/media_check_async", "/wxa/getuserriskrank",
         });
 
         RoutesOf(asm, nameof(IWxaDataAnalysisService)).Should().BeEquivalentTo(new[]
@@ -152,17 +158,103 @@ public class MiniProgramContractGuards
             "/datacube/getweanalysisappiduserportrait",
             "/datacube/getweanalysisappidvisitdistribution",
             "/datacube/getweanalysisappidvisitpage",
+            "/datacube/getweanalysisappiddailysummarytrend",
+            "/wxa/business/performance/boot",
+        });
+
+        RoutesOf(asm, nameof(IWxaSubscribeMessageService)).Should().BeEquivalentTo(new[]
+        {
+            "/cgi-bin/message/subscribe/send",
+            "/wxa/set_user_notify", "/wxa/set_user_notifyext", "/wxa/get_user_notify",
+        });
+
+        RoutesOf(asm, nameof(IWxaDynamicMessageService)).Should().BeEquivalentTo(new[]
+        {
+            "/cgi-bin/message/wxopen/activityid/create",
+            "/cgi-bin/message/wxopen/updatablemsg/send",
+            "/cgi-bin/message/wxopen/chattoolmsg/send",
+        });
+
+        RoutesOf(asm, nameof(IWxaKfService)).Should().BeEquivalentTo(new[]
+        {
+            "/customservice/kfaccount/setadmin", "/customservice/kfaccount/canceladmin",
+            "/cgi-bin/business/register", "/cgi-bin/business/update",
+            "/cgi-bin/business/get", "/cgi-bin/business/list",
+            "/customservice/work/get", "/customservice/work/bind", "/customservice/work/unbind",
+        });
+
+        RoutesOf(asm, nameof(IWxaHardwareDeviceService)).Should().BeEquivalentTo(new[]
+        {
+            "/cgi-bin/message/device/subscribe/send",
+            "/wxa/getsnticket", "/wxa/business/group/createid", "/wxa/business/group/getinfo",
+            "/wxa/business/group/adddevice", "/wxa/business/group/removedevice",
+            "/wxa/business/license/getpkglist", "/wxa/business/license/activedevice",
+            "/wxa/business/license/getdeviceinfo",
+        });
+
+        RoutesOf(asm, nameof(IWxaOperationService)).Should().BeEquivalentTo(new[]
+        {
+            "/wxa/getwxadevinfo", "/wxaapi/log/get_performance", "/wxaapi/log/get_scene",
+            "/wxaapi/log/get_client_version", "/wxaapi/userlog/userlog_search",
+            "/wxaapi/feedback/list", "/wxaapi/log/jserr_detail", "/wxaapi/log/jserr_list",
+            "/wxa/getgrayreleaseplan",
+        });
+
+        RoutesOf(asm, nameof(IWxaPluginService)).Should().BeEquivalentTo(new[]
+        {
+            "/wxa/devplugin", "/wxa/plugin",
+        });
+
+        RoutesOf(asm, nameof(IWxaChargeService)).Should().BeEquivalentTo(new[]
+        {
+            "/wxa/charge/usage/get", "/wxa/charge/usage/get_recent_average",
+        });
+
+        RoutesOf(asm, nameof(IWxaNearbyPoiService)).Should().BeEquivalentTo(new[]
+        {
+            "/wxa/addnearbypoi", "/wxa/delnearbypoi",
+            "/wxa/getnearbypoilist", "/wxa/setnearbypoishowstatus",
+        });
+
+        RoutesOf(asm, nameof(IWxaSearchService)).Should().BeEquivalentTo(new[] { "/wxa/search/wxaapi_submitpages" });
+        RoutesOf(asm, nameof(IWxaSoterService)).Should().BeEquivalentTo(new[] { "/cgi-bin/soter/verify_signature" });
+
+        RoutesOf(asm, nameof(IWxaServiceMarketService)).Should().BeEquivalentTo(new[]
+        {
+            "/wxa/servicemarket", "/wxa/servicemarketretrieve",
+        });
+
+        RoutesOf(asm, nameof(IWxaRedPacketCoverService)).Should().BeEquivalentTo(new[]
+        {
+            "/redpacketcover/wxapp/cover_url/get_by_token",
+        });
+
+        RoutesOf(asm, nameof(IWxaStudentService)).Should().BeEquivalentTo(new[] { "/intp/quickcheckstudentidentity" });
+
+        RoutesOf(asm, nameof(IWxaFaceVerifyService)).Should().BeEquivalentTo(new[]
+        {
+            "/cityservice/face/identify/getverifyid", "/cityservice/face/identify/queryverifyinfo",
+        });
+
+        RoutesOf(asm, nameof(IWxaLaborUseService)).Should().BeEquivalentTo(new[]
+        {
+            "/cgi-bin/message/wxopen/employeerelationmsg/send",
+            "/wxa/business/unbinduserb2cauthinfo",
         });
 
         ManualChannelRoutes().Should().BeEquivalentTo(new[]
         {
             WxaCodeService.UnlimitedCodePath, WxaCodeService.CodePath, WxaCodeService.QrCodePath,
+            WxaFeedbackMediaService.FeedbackMediaPath,
         });
 
-        // 合计计数（MP-X5 的单一来源）：21 特性路由 + 3 手工通道路由 = 24（基线见 Tests/ContractBaseline.cs）。
+        // 合计计数（MP-X5 的单一来源）：80 特性路由 + 4 手工通道路由 = 84（基线见 Tests/ContractBaseline.cs）。
         (CollectAttributeRoutes(asm).Length + ManualChannelRoutes().Length)
             .Should().Be(Baseline.MiniProgram.Endpoints,
-                "小程序线一期净新增 24 端点（Auth 5 + QrCodeLink 8 + Security 2 + DataAnalysis 9）；"
+                "小程序线合计 84 端点（Auth 8 + QrCodeLink 9 + Security 3 + DataAnalysis 11 + "
+                + "SubscribeMessage 4 + DynamicMessage 3 + Kf 9 + HardwareDevice 9 + Operation 10 + "
+                + "Plugin 2 + Charge 2 + NearbyPoi 4 + Search 1 + Soter 1 + ServiceMarket 2 + "
+                + "RedPacketCover 1 + Student 1 + FaceVerify 2 + LaborUse 2）；"
                 + "数量变化须同批调整 Tests/ContractBaseline.cs");
     }
 
@@ -355,13 +447,33 @@ public class MiniProgramContractGuards
         provider.GetRequiredService<IWxaQrCodeLinkService>().Should().NotBeNull();
         provider.GetRequiredService<IWxaSecurityService>().Should().NotBeNull();
         provider.GetRequiredService<IWxaDataAnalysisService>().Should().NotBeNull();
+        provider.GetRequiredService<IWxaSubscribeMessageService>().Should().NotBeNull();
+        provider.GetRequiredService<IWxaDynamicMessageService>().Should().NotBeNull();
+        provider.GetRequiredService<IWxaKfService>().Should().NotBeNull();
+        provider.GetRequiredService<IWxaHardwareDeviceService>().Should().NotBeNull();
+        provider.GetRequiredService<IWxaOperationService>().Should().NotBeNull();
+        provider.GetRequiredService<IWxaPluginService>().Should().NotBeNull();
+        provider.GetRequiredService<IWxaChargeService>().Should().NotBeNull();
+        provider.GetRequiredService<IWxaNearbyPoiService>().Should().NotBeNull();
+        provider.GetRequiredService<IWxaSearchService>().Should().NotBeNull();
+        provider.GetRequiredService<IWxaSoterService>().Should().NotBeNull();
+        provider.GetRequiredService<IWxaServiceMarketService>().Should().NotBeNull();
+        provider.GetRequiredService<IWxaRedPacketCoverService>().Should().NotBeNull();
+        provider.GetRequiredService<IWxaStudentService>().Should().NotBeNull();
+        provider.GetRequiredService<IWxaFaceVerifyService>().Should().NotBeNull();
+        provider.GetRequiredService<IWxaLaborUseService>().Should().NotBeNull();
         provider.GetRequiredService<IWxaCodeService>().Should().NotBeNull("小程序码图片通道随 QrCodeLink 模块注册");
+        provider.GetRequiredService<IWxaFeedbackMediaService>().Should().NotBeNull("反馈图片通道随 Operation 模块注册");
     }
 
     // ---- helpers -------------------------------------------------------------
 
     private static string[] ManualChannelRoutes()
-        => new[] { WxaCodeService.UnlimitedCodePath, WxaCodeService.CodePath, WxaCodeService.QrCodePath };
+        => new[]
+        {
+            WxaCodeService.UnlimitedCodePath, WxaCodeService.CodePath, WxaCodeService.QrCodePath,
+            WxaFeedbackMediaService.FeedbackMediaPath,
+        };
 
     private static string[] RoutesOf(Assembly asm, string interfaceName)
     {

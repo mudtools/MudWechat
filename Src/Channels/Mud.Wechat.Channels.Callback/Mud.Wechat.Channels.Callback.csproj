@@ -1,0 +1,49 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<Description>微信小店/视频号（channels 生态）SDK 回调接收包：URL 验证（GET echostr 回显）、消息推送验签、AES 解密、抗重放指纹、事件分发（类型化处理器 + 拦截器）的 HTTP 中间件与多应用路由。回调体系与公众号同构（msg_signature + EncodingAESKey + receiveid）。</Description>
+		<PackageTags>Wechat;Channels;微信小店;视频号;Callback;Webhook;Middleware;MudWechat</PackageTags>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\Mud.Wechat.Channels.Abstractions\Mud.Wechat.Channels.Abstractions.csproj" />
+		<ProjectReference Include="..\Mud.Wechat.Channels.DataModels\Mud.Wechat.Channels.DataModels.csproj" />
+	</ItemGroup>
+
+	<!-- 契约登记生成器（本仓侧）：依据 [WechatCallbackContract] 特性为本产品线发射
+	     ChannelsPayloadContracts.RegisterAll（不改工具本体；档位表驱动）。
+	     仅本工程消费（PrivateAssets 不流向主包）；<b>本工程是可打包的运行时包</b>。 -->
+	<ItemGroup>
+		<ProjectReference Include="..\..\Core\Mud.Wechat.Callback.Generator\Mud.Wechat.Callback.Generator.csproj"
+		                  OutputItemType="Analyzer" ReferenceOutputAssembly="false" PrivateAssets="all" />
+	</ItemGroup>
+
+	<!-- 回调处理器契约分析器（本仓侧，中立工具档位表驱动）：校验 SupportedEventType ↔ 载荷契约（MUDCB002~005）。
+	     仅诊断、不发射 ⇒ 允许随包下发（analyzers/dotnet/cs）；<b>本工程本身照常产出 nupkg</b>（内嵌该分析器）。 -->
+	<ItemGroup>
+		<ProjectReference Include="..\..\Core\Mud.Wechat.Callback.Analyzers\Mud.Wechat.Callback.Analyzers.csproj"
+		                  OutputItemType="Analyzer" ReferenceOutputAssembly="false" PrivateAssets="all" />
+	</ItemGroup>
+
+	<!-- v3 方案 D2：ASP.NET 依赖只存在于运行时 Callback 包（叶层与 Abstractions 保持零 ASP.NET）。
+	     netstandard2.0 走 2.3.9 包；net6.0+ 走 FrameworkReference（对齐 Work.Callback / OA.Callback）。 -->
+	<ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+		<PackageReference Include="Microsoft.AspNetCore.Http" Version="2.3.9" />
+		<PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.3.9" />
+	</ItemGroup>
+	<ItemGroup Condition="'$(TargetFramework)' != 'netstandard2.0'">
+		<FrameworkReference Include="Microsoft.AspNetCore.App" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<InternalsVisibleTo Include="Mud.Wechat.Channels.Callback.Tests" />
+	</ItemGroup>
+
+	<!-- 随包下发分析器资产（不新增 nupkg）：直接引用 Analyzers 工程输出 DLL（netstandard2.0 单 TFM，路径固定）。
+	     只挑本仓分析器 DLL；Mud.HttpUtils.Generator（独立包）与本仓 Callback.Generator（发射器，IsPackable=false）不内嵌。 -->
+	<ItemGroup>
+		<None Include="$(MSBuildThisFileDirectory)..\..\..\Src\Core\Mud.Wechat.Callback.Analyzers\bin\$(Configuration)\netstandard2.0\Mud.Wechat.Callback.Analyzers.dll"
+		      Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+	</ItemGroup>
+
+</Project>

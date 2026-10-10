@@ -133,6 +133,64 @@ public interface IWxaAuthService
         [Query("transaction_id")] string? transactionId = null,
         [Query("out_trade_no")] string? outTradeNo = null,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 获取插件用户 <c>openpid</c>。官方文档：<c>user-info/basic-info/api_getpluginopenpid.html</c>。
+    /// </summary>
+    /// <param name="code">插件用户标志凭证（官方 <c>code</c>，必填；经 <c>wx.pluginLogin</c> 取得）。</param>
+    /// <param name="pluginAppId">插件 AppID（官方 <c>plugin_appid</c>，必填）。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
+    /// <returns>插件用户唯一标识（<c>openpid</c>），见 <see cref="WxaGetPluginOpenPidResponse"/>。</returns>
+    /// <remarks>
+    /// <para>官方契约：<b>GET</b>，无请求体；Query <c>access_token</c> / <c>code</c> / <c>plugin_appid</c>。</para>
+    /// <para>
+    /// <b>插件维度标识（官方原文）</b>：<c>openpid</c> 是<b>插件维度</b>的用户唯一标识
+    /// （同一用户在<b>不同插件</b>下 openpid 不同），不可跨插件当 openid 使用。
+    /// </para>
+    /// <para>官方错误码：<c>40001</c>（令牌无效，走自愈）/ <c>40029</c>（code 无效或已使用）。</para>
+    /// </remarks>
+    [Get("/wxa/getpluginopenpid")]
+    Task<WxaGetPluginOpenPidResponse> GetPluginOpenPidAsync(
+        [Query("code")] string code,
+        [Query("plugin_appid")] string pluginAppId,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 检查加密信息是否由微信生成。官方文档：<c>user-info/basic-info/api_checkencrypteddata.html</c>。
+    /// </summary>
+    /// <param name="request">加密消息哈希与用户标识，见 <see cref="WxaCheckEncryptedMsgRequest"/>。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
+    /// <returns>校验结论（<c>vaild</c>，官方原文拼写），见 <see cref="WxaCheckEncryptedMsgResponse"/>。</returns>
+    /// <remarks>
+    /// <para>官方契约：<b>POST</b> <c>/wxa/business/checkencryptedmsg</c> ＋ 请求体 JSON；Query 携带 <c>access_token</c>。</para>
+    /// <para>
+    /// <b>能力边界（官方原文）</b>：当前只支持<b>手机号加密数据</b>，且只能检测<b>最近 3 天</b>生成的加密数据；
+    /// <c>encrypted_msg_hash</c> = <c>to_hexstr(sha1(encrypted_msg))</c>。
+    /// </para>
+    /// <para>官方错误码：<c>40001</c>（令牌无效，走自愈）/ <c>47001</c>（数据格式错误）。</para>
+    /// </remarks>
+    [Post("/wxa/business/checkencryptedmsg")]
+    Task<WxaCheckEncryptedMsgResponse> CheckEncryptedMsgAsync(
+        [Body] WxaCheckEncryptedMsgRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 获取用户 <c>encryptKey</c>（用于端侧对用户数据做对称加密 / 解密）。官方文档：<c>user-info/internet/api_getuserencryptkey.html</c>。
+    /// </summary>
+    /// <param name="request">用户标识与会话签名，见 <see cref="WxaGetUserEncryptKeyRequest"/>。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
+    /// <returns>密钥信息列表（<c>key_info_list</c>），见 <see cref="WxaGetUserEncryptKeyResponse"/>。</returns>
+    /// <remarks>
+    /// <para>官方契约：<b>POST</b> <c>/wxa/business/getuserencryptkey</c> ＋ 请求体 JSON；Query 携带 <c>access_token</c>。</para>
+    /// <para>
+    /// <b>签名算法（官方原文）</b>：<c>signature = hmac_sha256(session_key, openid)</c>，
+    /// <c>sig_method</c> 固定 <see cref="WxaSignatureMethods.HmacSha256"/>；<c>session_key</c> 不得入日志（MP-X7）。
+    /// </para>
+    /// </remarks>
+    [Post("/wxa/business/getuserencryptkey")]
+    Task<WxaGetUserEncryptKeyResponse> GetUserEncryptKeyAsync(
+        [Body] WxaGetUserEncryptKeyRequest request,
+        CancellationToken cancellationToken = default);
 }
 
 /// <summary>登录态签名算法取值（官方 <c>sig_method</c>）。</summary>

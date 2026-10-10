@@ -7,9 +7,24 @@
 
 using Mud.Wechat.MiniProgram.DataModels;
 using Mud.Wechat.MiniProgram.DataModels.Auth;
+using Mud.Wechat.MiniProgram.DataModels.Charge;
 using Mud.Wechat.MiniProgram.DataModels.DataAnalysis;
+using Mud.Wechat.MiniProgram.DataModels.DynamicMessage;
+using Mud.Wechat.MiniProgram.DataModels.FaceVerify;
+using Mud.Wechat.MiniProgram.DataModels.HardwareDevice;
+using Mud.Wechat.MiniProgram.DataModels.Kf;
+using Mud.Wechat.MiniProgram.DataModels.LaborUse;
+using Mud.Wechat.MiniProgram.DataModels.NearbyPoi;
+using Mud.Wechat.MiniProgram.DataModels.Operation;
+using Mud.Wechat.MiniProgram.DataModels.Plugin;
 using Mud.Wechat.MiniProgram.DataModels.QrCodeLink;
+using Mud.Wechat.MiniProgram.DataModels.RedPacketCover;
+using Mud.Wechat.MiniProgram.DataModels.Search;
 using Mud.Wechat.MiniProgram.DataModels.Security;
+using Mud.Wechat.MiniProgram.DataModels.ServiceMarket;
+using Mud.Wechat.MiniProgram.DataModels.Soter;
+using Mud.Wechat.MiniProgram.DataModels.Student;
+using Mud.Wechat.MiniProgram.DataModels.SubscribeMessage;
 using System.Text.Json.Serialization.Metadata;
 
 namespace Mud.Wechat.MiniProgram.Extensions;
@@ -48,7 +63,22 @@ public static class MiniProgramJsonResolverExtensions
             AuthJsonContext.Default,
             QrCodeLinkJsonContext.Default,
             SecurityJsonContext.Default,
-            DataAnalysisJsonContext.Default);
+            DataAnalysisJsonContext.Default,
+            SubscribeMessageJsonContext.Default,
+            DynamicMessageJsonContext.Default,
+            KfJsonContext.Default,
+            HardwareDeviceJsonContext.Default,
+            OperationJsonContext.Default,
+            PluginJsonContext.Default,
+            ChargeJsonContext.Default,
+            NearbyPoiJsonContext.Default,
+            SearchJsonContext.Default,
+            SoterJsonContext.Default,
+            ServiceMarketJsonContext.Default,
+            RedPacketCoverJsonContext.Default,
+            StudentJsonContext.Default,
+            FaceVerifyJsonContext.Default,
+            LaborUseJsonContext.Default);
 
         services.AddMudHttpClientJsonContext(resolver);
     }

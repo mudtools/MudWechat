@@ -9,7 +9,7 @@
 - `WechatCallbackDispatcher` / `WechatCallbackHandlerRegistry` / `WechatCallbackInterceptorRegistry`：同步分发、软超时、处理器/拦截器匹配与隔离（注册表基座 `WechatCallbackTypeRegistry<T>` 在叶层，「专属桶先于通配桶」的匹配序跨线一致）。
 - `WechatCallbackCrypto`（叶层实现，本包消费）：企业微信回调 AES 加解密（官方 32 字节块 PKCS7 填充，P0-1）。
 - `WechatCallbackEvent`（`Mud.Wechat.Work.Abstractions.Callback`）：事件信封与 `EventTypeKey`；并携带事件归属 `AppKey` / `AppType` / `Channel`（处理器可据此按应用模式分支，无需复制多份 handler）。
-- **事件载荷体系**（`Events/Payloads/` + `IWechatPayloadReader`）：把事件信封解析为**强类型载荷**（见下方「事件载荷」章节），45 个结构族载荷覆盖已登记的 120 个事件键，未登记键由 `GenericCallbackPayload` 兜底。旧的手写解析器与 11 个逐事件 DTO 已移除。
+- **事件载荷体系**（`Events/Payloads/` + `IWechatPayloadReader`）：把事件信封解析为**强类型载荷**（见下方「事件载荷」章节），46 个结构族载荷覆盖已登记的 120 个事件键，未登记键由 `GenericCallbackPayload` 兜底。旧的手写解析器与 11 个逐事件 DTO 已移除。
 - **智能机器人 JSON 通道**（`WechatBotCallbackReceiver` / `WechatBotEventDispatcher` / `WechatBotHandlerRegistry` / `WechatBotMediaDecryptor` / `WechatBotReplyWriter`）：智能机器人回调（官方 101033，`{"encrypt":"..."}` JSON 报文）的接收、分发、媒体解密与回复写入，验签/时效窗/指纹闸与 XML 侧同族同算法，GET echo 复用 XML 侧（见下方「智能机器人 JSON 通道」章节）。
 - `WechatCallbackException` / `WechatCallbackFailureKind`：失败类别与统一异常面（继承 `InvalidOperationException`）。
 - `IWechatCallbackReplayGuard` / `InMemoryWechatCallbackReplayGuard`（叶层类型，本包按 `TryAdd` 注册默认实现）：抗重放一次性指纹去重。
@@ -39,7 +39,7 @@ public sealed class UserSyncHandler : WechatCallbackPayloadHandler<ContactUserCh
 }
 ```
 
-**结构族载荷**（官方报文结构同一的事件键共用一个类型，具体类别由信封 `ChangeType` 判别；**45 个载荷覆盖已登记的 120 个事件键**，守卫 CB4 / CB4b 锁定）：
+**结构族载荷**（官方报文结构同一的事件键共用一个类型，具体类别由信封 `ChangeType` 判别；**46 个载荷覆盖已登记的 120 个事件键**，守卫 CB4 / CB4b 锁定）：
 
 | 目录 | 载荷 | 覆盖事件键 |
 |---|---|---|

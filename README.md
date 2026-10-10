@@ -1,6 +1,22 @@
 # Mud.Wechat
 
-**Mud.Wechat** 是覆盖**微信生态**的现代化 .NET SDK 集合，按平台分为五条独立产品线，共用同一套令牌基座、回调内核与质量门禁：
+微信生态的 .NET SDK：**企业微信、公众号、小程序、微信支付 APIv3、开放平台第三方平台**五条产品线装在一个解决方案里，共用同一套令牌基座、回调内核与质量门禁。
+
+**能干什么**
+
+- **调接口**：注入声明式客户端接口直接调微信开放 API——HTTP 拼装、序列化、令牌获取与提前刷新、errcode 失效恢复都不用你写。
+- **收推送**：回调验签、解密、事件解析、分发、被动回复一条链跑完，时效窗与抗重放默认开启。
+- **一套程序服务多个主体**：多应用 / 多授权企业 / 多商户按作用域切换，取错凭据在入口抛错而不是静默串号。
+- **横向扩到多实例**：一个 `AddWechatRedis` 调用把令牌、企业授权、套件票据、抗重放四个状态从进程内换成 Redis。
+
+**特色**
+
+- **声明式 + 源生成**：`[HttpClientApi]` + `[Token]` 一贴，实现类由生成器编译期产出；序列化与配置绑定全走源生成，AOT / 裁剪下零反射。
+- **契约漂移打红在编译期**：官方路由、字段名、事件键与载荷字段的配对由契约守卫和 Roslyn 分析器钉死，不等线上暴露。
+- **安全默认不可协商**：回调两道闸 fail-closed；`BaseUrl` 强制 HTTPS + 主机白名单；支付线的私钥与 APIv3 密钥只以「名称」进配置。
+- **老宿主到 net10.0 同一套 API**：从 `netstandard2.0`（.NET Framework 4.6.1+）一路覆盖，只用原生 `IConfiguration` / `ILogger` / DI / `ActivitySource`，不自建抽象层、不绑架你的架构。
+
+各线的域数、端点数、事件键与载荷数见下文「能力全景」，包与守卫的分布见「包家族」与「质量门禁」。架构对齐 Mud.Feishu（FeishuV3）——包家族、令牌基座、契约守卫与质量门禁模式一致，两套 SDK 使用体验高度一致。五条产品线**独立可选**，按平台装对应主包即可（其余随依赖传递）：
 
 | 产品线 | 平台 | 包前缀 | 凭据 / 令牌模型 |
 | --- | --- | --- | --- |
@@ -10,14 +26,9 @@
 | 微信开放平台 | 公众平台第三方平台（component 体系） | `Mud.Wechat.OpenPlatform*` | `component_access_token` + 每授权方令牌（显式提供者，不走声明式 `[Token]`） |
 | 微信支付 | APIv3（商户 / 服务商） | `Mud.Wechat.Pay*` | **商户 RSA 私钥签名**（`WECHATPAY2-SHA256-RSA2048`），**无 `access_token`** |
 
-架构上对齐 Mud.Feishu（FeishuV3）——一致的包家族、令牌基座、契约守卫与质量门禁模式，两套 SDK 使用体验高度一致。
+**配置即校验**：应用配置在 DI 注册阶段就按应用类型完成互斥必填校验（自建 `CorpId`+`AgentSecret`、第三方 / 代开发 `CorpId`+`ProviderSecret`+`SuiteId`+`SuiteSecret`），非法组合直接注册期抛错，不潜伏到第一次调用；模板 id 不提供独立属性（代开发 `template_id` 即 `suite_id`，独立字段等于允许非法状态）。
 
-设计取向：
-
-- **AOT / 裁剪友好**：序列化与配置绑定全源生成，`net8.0`/`net10.0` 下以 `AotStrictMode` 门禁锁定零反射诊断。
-- **契约驱动**：接口路由、令牌绑定方式、错误码语义、事件键与载荷字段名等官方契约以测试守卫固化，防止随迭代悄然漂移；守卫是契约的**权威描述**，不是「改完再补」的收尾项。
-- **启动即失败**：应用配置在 DI 注册阶段即按应用类型完成互斥必填校验，错误配置不会潜伏到运行期。
-- **安全内建**：回调验签 + AES 解密 + 抗重放（fail-closed）、BaseUrl 白名单（SSRF 防线）、AppKey 形状约束（防令牌键别名）、凭据脱敏词表与自过期豁免。
+**凭据不外泄**：`AppKey` 形状受约束（含 `:` 会造成令牌键别名、跨应用串号）；企微侧被官方强制放 Query 的凭据参数，一律要求「进脱敏词表」或「登记带追踪号的自过期豁免」二选一；异常消息里的 URL 在构造期剥掉 query 与 userinfo。
 
 ## 包家族
 
@@ -125,51 +136,9 @@ using (switcher.UseCorpScope(appKey: "suite-a", authCorpId, authorization.Perman
 
 调用失败统一抛 `WechatWorkException`（`ErrorCode` = 官方 errcode；`RequestUri` 构造期已剥离 query，不泄露令牌）。
 
-### 企业微信：35 个业务域
+### 企业微信：模块注册（35 个业务域）
 
-主包按模块链式注册（`AddWechatWorkServices(builder => builder.AddXxxApi())`），也可 `AddAllApis()`：
-
-| 注册方法 | 域 | 能力概述 |
-| --- | --- | --- |
-| `AddExternalContactApi()` | 客户联系 | 服务人员 / 客户 / 客户标签 / 在职·离职继承 / 客户群 / 群发 / 朋友圈 / 商品相册 / 联系我 / 拦截规则 / 统计 / 附件 / 获客助手等族 |
-| `AddMessageApi()` | 消息推送 | 发送应用消息（每 msgtype 一端点）/ 群聊会话 / 家校学校通知 / 智能表格群聊 |
-| `AddContactApi()` | 通讯录 | 成员 / 部门 / 标签 / 查看权限 / 异步导入 / 异步导出六域 |
-| `AddApprovalApi()` | 审批 | 审批申请数据 / 审批模板 / 假期管理 / 审批流程引擎 |
-| `AddMediaApi()` | 素材管理 | 临时素材上传·获取 / 上传图片 / 高清语音 / 异步上传 / 服务商上传 |
-| `AddIdentityApi()` | 身份验证 | 网页授权登录 / Web 登录身份获取 / 二次验证 |
-| `AddJsSdkApi()` | JS-SDK | 企业 / 应用 `jsapi_ticket` 获取 |
-| `AddAgentApi()` | 应用管理 | 获取应用 / 工作台自定义展示 / 自定义菜单 / 自建应用迁移代开发 |
-| `AddAuthenticationApi()` | 授权流 | `get_pre_auth_code` / `set_session_info` / `get_permanent_code` / `get_auth_info` / `get_customized_auth_url` + 授权编排 |
-| `AddBasicApi()` | 基础接口 | 企业微信接口 IP 段 / 回调 IP 段 |
-| `AddCheckinApi()` | 打卡 | 打卡规则 / 记录 / 报表 / 排班 / 设备打卡数据 |
-| `AddMeetingApi()` | 会议 | 预约会议管理 / 会议统计 |
-| `AddScheduleApi()` | 日程 | 日历管理 / 日程管理 |
-| `AddWedocApi()` | 文档 | 管理文档 / 文档内容 / 表格内容 / 智能表格内容（子表 / 视图 / 字段 / 记录 / 编组） |
-| `AddWedriveApi()` | 微盘 | 空间 / 空间权限 / 文件 / 文件权限 / 版本容量 / 高级功能账号 |
-| `AddAccountIdApi()` | 账号 ID | ID 与 `tmp_external_userid` / `corpid` 转换、ID 迁移、智能机器人 userid 转换、群 ID 升级等七接口族 |
-| `AddKfApi()` | 微信客服 | 客服账号管理 + 接待人员管理 |
-| `AddMailApi()` | 邮件 | 应用邮箱发送·接收 / 邮箱账号管理 / 邮件群组 / 公共邮箱 / 高级功能账号 / 成员邮箱操作 |
-| `AddPayApi()` | 企业支付 | 对外收款 / 商户号管理 / 资金流水 / 退款 / 交易账单 |
-| `AddSecurityApi()` | 安全管理 | 文件防泄漏 / 设备管理 / 截屏录屏 / 域名 IP / 高级功能账号 / 操作日志 |
-| `AddCorpGroupApi()` | 上下游 | 基础接口 + 关联客户信息 + 上下游通讯录管理 |
-| `AddSchoolApi()` | 家校沟通 | 家校基础 / 管理配置 / 学生与家长 / 访问授权 / 健康上报 / 上课直播 / 学生付款等子域 |
-| `AddLivingApi()` | 直播 | 预约直播 / 直播回放 / 观看凭证 / 直播详情 / 观看明细 |
-| `AddDataZoneApi()` | 数据与智能专区 | 基础接口域 + 应用调用专区程序域 |
-| `AddMsgAuditApi()` | 会话内容存档 | 开启成员 / 机器人信息 / 会话同意情况 / 内部群信息 |
-| `AddInvoiceApi()` | 电子发票 | 查询 / 更新状态 / 批量更新 / 批量查询 |
-| `AddGovApi()` | 政民沟通 | 网格结构 / 事件类别 / 巡查上报 / 居民上报 |
-| `AddEmergencyApi()` | 紧急通知 | 语音电话 + 接听状态 |
-| `AddPromotionQrCodeApi()` | 推广二维码 | 企业注册（注册码 / 注册状态）+ 通讯录迁移（官方仅第三方开放） |
-| `AddPayToolApi()` | 收银台 | 收款工具 / 发票管理 / 应用版本付费（官方仅第三方开放，`HMAC-SHA256` 签名） |
-| `AddAibotApi()` | 智能机器人 | 主动回复消息（`response_code` 一次性凭据鉴权）；回调接收与被动回复走 Callback 包 JSON 通道 |
-| `AddLicenseApi()` | 接口调用许可 | 订单管理 13 / 账号管理 9 / 应用管理 1 / 自动激活设置 2，共 25 端点（官方仅第三方与代开发，走 `provider_access_token`） |
-| `AddWebhookApi()` | 群机器人 Webhook | 发送消息 8 种 msgtype + 上传媒体文件，共 9 端点；凭据为 URL 上的 `key`（注册期登记为强制掩码参数名） |
-| `AddHrApi()` | 人事助手 | 花名册字段配置 / 读取 / 更新 3 端点（官方仅自建） |
-| `AddDialApi()` | 公费电话 | 拨打记录查询 1 端点（官方仅自建） |
-
-各域面向的应用类型存在差异（官方仅自建开放 / 三类应用公共面 / 差异端点在子接口），详见接口 XML 注释与契约守卫。
-
-> ⚠️ **两条「支付」产品线勿混淆**：上表的 `AddPayApi()`（企业支付）与 `AddPayToolApi()`（收银台）属**企业微信**支付能力，走企微 `access_token`。另有独立的 **微信支付 APIv3** 产品线（`Mud.Wechat.Pay*`），凭据为商户 RSA 私钥签名、**无 `access_token`**、四包零 `[Token]` 声明（守卫 PAY-B1 fail-closed）。
+主包按模块链式注册：`AddWechatWorkServices(b => b.AddContactApi().AddExternalContactApi())`，也可 `b.AddAllApis()`、`b.AddModules(...)` 按 `WechatModule` 枚举装载后 `b.Build()`。逐域能力清单见下文「能力全景（按产品线）」的企业微信小节；端点计数与路由的权威来源是 `Tests/Mud.Wechat.Work.Tests/ContractGuards/` 下的 60 个守卫文件。
 
 ### 微信公众号 / 小程序
 
@@ -223,7 +192,7 @@ var outcome = receiver.Receive(msgSignature, timestamp, nonce, rawBody);
 
 ### 企业微信：回调接收
 
-凭据以 `Apps` 字典为**唯一来源**，路由 `/{GlobalRoutePrefix}/{AppKey}`；类型化处理器按 AppKey 隔离注册：
+凭据以 `Apps` 字典为**唯一来源**，路由 `/{GlobalRoutePrefix}/{AppKey}`；类型化处理器按 AppKey 隔离注册。接收链两道闸 **fail-closed**——① 时间戳 ±300s（缺失或非数字即拒），② 一次性 SHA1 指纹（在「解密 + receiveid 校验」成功后、分发前消费 ⇒ 重推同报文被 403，**处理器须幂等**）；加解密按官方 **32 字节块 PKCS7** 手工补位与剥离（用 .NET 内置 16 字节块填充会误拒官方报文）。
 
 ```csharp
 builder.Services.AddWechatCallback(options =>
@@ -265,7 +234,7 @@ public sealed class MyUserChangeHandler : WechatCallbackPayloadHandler<ContactUs
 }
 ```
 
-载荷体系按官方**报文结构族**声明（`[WechatCallbackContract]` 事件键 + 族前置 + 开放面；`[PayloadContract]` 字段映射），登记方法体由 `Mud.Wechat.Callback.Generator` 编译期发射，键与载荷的一致性由 `Mud.Wechat.Callback.Analyzers` 编译期校验，全程零反射。当前已登记事件键 **120 个** / 结构族载荷 **45 个**，未登记键由 `GenericCallbackPayload` 兜底。
+载荷体系按官方**报文结构族**声明（`[WechatCallbackContract]` 事件键 + 族前置 + 开放面；`[PayloadContract]` 字段映射），登记方法体由 `Mud.Wechat.Callback.Generator` 编译期发射，键与载荷的一致性由 `Mud.Wechat.Callback.Analyzers` 编译期校验，全程零反射。当前已登记事件键 **120 个** / 结构族载荷 **46 个**，未登记键由 `GenericCallbackPayload` 兜底。
 
 智能机器人回调为 **JSON 报文**（`{"encrypt":"..."}`，官方 101033），独立接收面：`AddWechatBotCallback().AddHandler<T>(botKey)`，返回式处理器（`null` = 加密空包），仅 `net8.0+` 可用。
 
@@ -291,6 +260,141 @@ builder.Services.AddWechatOpenTelemetry(o =>
 
 契约面在叶层：ActivitySource 名恒 `Mud.Wechat`，标签 `wechat.product` / `wechat.app_key` / `wechat.correlation_id`，`product` 取 `work` / `officialaccount` / `miniprogram` / `openplatform` / `pay`。
 
+## 能力全景（按产品线）
+
+下列数字全部取自契约守卫与模块枚举（权威口径见「质量门禁」的守卫索引），不是宣传口径。
+
+| 产品线 | 业务域 | 端点 / 契约面 | 回调接收面 | 守卫族 |
+| --- | --- | --- | --- | --- |
+| 企业微信 | **35** | **446** 个契约接口（147 公共父接口 + 299 可注入子接口），逐域端点与路由由域守卫锁定 | **120** 已登记事件键 / **46** 结构族载荷（常量 136、官方 128）+ 智能机器人 JSON 通道 | G1~G10、TO1~TO3、N1~N3、CB1~CB24、WEB1~WEB4 + 逐域 |
+| 微信公众号 | **26**（+ 认证基座） | 主接口去重 **174** ⇒ 全量 **180**（+ 令牌 / 票据 3 + 下载通道 3），官方面 **196** | **7 类键集 48 键**（消息 7 + 事件 13 + 卡券 13 + 授权 3 + 订阅 3 + 认证 6 + 发送结果 3）+ 7 种被动回复类型；明文 / 兼容 / 安全三模式 | 逐域前缀 + QT + RC + CB-L1 系列 + CB-MP 系列 |
+| 微信小程序 | **4** | **24**（Auth 5 + QrCodeLink 8 + Security 2 + DataAnalysis 9） | **无 Callback 工程**——消息接收属公众号 XML 通道，由脚手架守卫锁定 | MP-X1~MP-X8 |
+| 微信支付 APIv3 | **10** | **54**（+ 账单 / 发票文件下载通道，非 JSON 生成管线） | 通知接收：平台证书验签 + `AEAD_AES_256_GCM` 解密 + 三道 fail-closed 闸 | PAY-B1~B11、PAY-CB1 |
+| 微信开放平台 | — | **4** 个 component 端点 + 双层令牌链 | `component_verify_ticket` + 授权变更事件接收 | 契约测试（`OpenPlatformContractTests` 等） |
+
+### 企业微信：35 个业务域 / 446 个契约接口
+
+35 个 `WechatModule` 枚举成员各对应一个 `Add{域}Api()`（注册用法见上文「企业微信：模块注册」），下表逐域列出能力面：
+
+| 注册方法 | 域 | 能力概述 |
+| --- | --- | --- |
+| `AddExternalContactApi()` | 客户联系 | 服务人员 / 客户 / 客户标签 / 在职·离职继承 / 客户群 / 群发 / 朋友圈 / 商品相册 / 联系我 / 拦截规则 / 统计 / 附件 / 获客助手等族 |
+| `AddMessageApi()` | 消息推送 | 发送应用消息（每 msgtype 一端点）/ 群聊会话 / 家校学校通知 / 智能表格群聊 |
+| `AddContactApi()` | 通讯录 | 成员 / 部门 / 标签 / 查看权限 / 异步导入 / 异步导出六域 |
+| `AddApprovalApi()` | 审批 | 审批申请数据 / 审批模板 / 假期管理 / 审批流程引擎 |
+| `AddMediaApi()` | 素材管理 | 临时素材上传·获取 / 上传图片 / 高清语音 / 异步上传 / 服务商上传 |
+| `AddIdentityApi()` | 身份验证 | 网页授权登录 / Web 登录身份获取 / 二次验证 |
+| `AddJsSdkApi()` | JS-SDK | 企业 / 应用 `jsapi_ticket` 获取 |
+| `AddAgentApi()` | 应用管理 | 获取应用 / 工作台自定义展示 / 自定义菜单 / 自建应用迁移代开发 |
+| `AddAuthenticationApi()` | 授权流 | `get_pre_auth_code` / `set_session_info` / `get_permanent_code` / `get_auth_info` / `get_customized_auth_url` + 授权编排 |
+| `AddBasicApi()` | 基础接口 | 企业微信接口 IP 段 / 回调 IP 段 |
+| `AddCheckinApi()` | 打卡 | 打卡规则 / 记录 / 报表 / 排班 / 设备打卡数据 |
+| `AddMeetingApi()` | 会议 | 预约会议管理 / 会议统计 |
+| `AddScheduleApi()` | 日程 | 日历管理 / 日程管理 |
+| `AddWedocApi()` | 文档 | 管理文档 / 文档内容 / 表格内容 / 智能表格内容（子表 / 视图 / 字段 / 记录 / 编组） |
+| `AddWedriveApi()` | 微盘 | 空间 / 空间权限 / 文件 / 文件权限 / 版本容量 / 高级功能账号 |
+| `AddAccountIdApi()` | 账号 ID | ID 与 `tmp_external_userid` / `corpid` 转换、ID 迁移、智能机器人 userid 转换、群 ID 升级等七接口族 |
+| `AddKfApi()` | 微信客服 | 客服账号管理 + 接待人员管理 |
+| `AddMailApi()` | 邮件 | 应用邮箱发送·接收 / 邮箱账号管理 / 邮件群组 / 公共邮箱 / 高级功能账号 / 成员邮箱操作 |
+| `AddPayApi()` | 企业支付 | 对外收款 / 商户号管理 / 资金流水 / 退款 / 交易账单 |
+| `AddSecurityApi()` | 安全管理 | 文件防泄漏 / 设备管理 / 截屏录屏 / 域名 IP / 高级功能账号 / 操作日志 |
+| `AddCorpGroupApi()` | 上下游 | 基础接口 + 关联客户信息 + 上下游通讯录管理 |
+| `AddSchoolApi()` | 家校沟通 | 家校基础 / 管理配置 / 学生与家长 / 访问授权 / 健康上报 / 上课直播 / 学生付款等子域 |
+| `AddLivingApi()` | 直播 | 预约直播 / 直播回放 / 观看凭证 / 直播详情 / 观看明细 |
+| `AddDataZoneApi()` | 数据与智能专区 | 基础接口域 + 应用调用专区程序域 |
+| `AddMsgAuditApi()` | 会话内容存档 | 开启成员 / 机器人信息 / 会话同意情况 / 内部群信息 |
+| `AddInvoiceApi()` | 电子发票 | 查询 / 更新状态 / 批量更新 / 批量查询 |
+| `AddGovApi()` | 政民沟通 | 网格结构 / 事件类别 / 巡查上报 / 居民上报 |
+| `AddEmergencyApi()` | 紧急通知 | 语音电话 + 接听状态 |
+| `AddPromotionQrCodeApi()` | 推广二维码 | 企业注册（注册码 / 注册状态）+ 通讯录迁移（官方仅第三方开放） |
+| `AddPayToolApi()` | 收银台 | 收款工具 / 发票管理 / 应用版本付费（官方仅第三方开放，`HMAC-SHA256` 签名） |
+| `AddAibotApi()` | 智能机器人 | 主动回复消息（`response_code` 一次性凭据鉴权）；回调接收与被动回复走 Callback 包 JSON 通道 |
+| `AddLicenseApi()` | 接口调用许可 | 订单管理 13 / 账号管理 9 / 应用管理 1 / 自动激活设置 2，共 25 端点（官方仅第三方与代开发，走 `provider_access_token`） |
+| `AddWebhookApi()` | 群机器人 Webhook | 发送消息 8 种 msgtype + 上传媒体文件，共 9 端点；凭据为 URL 上的 `key`（注册期登记为强制掩码参数名） |
+| `AddHrApi()` | 人事助手 | 花名册字段配置 / 读取 / 更新 3 端点（官方仅自建） |
+| `AddDialApi()` | 公费电话 | 拨打记录查询 1 端点（官方仅自建） |
+
+各域面向的应用类型存在差异（官方仅自建开放 / 三类应用公共面 / 差异端点在子接口），详见接口 XML 注释与契约守卫。
+
+> ⚠️ **两条「支付」产品线勿混淆**：上表的 `AddPayApi()`（企业支付）与 `AddPayToolApi()`（收银台）属**企业微信**支付能力，走企微 `access_token`。另有独立的 **微信支付 APIv3** 产品线（`Mud.Wechat.Pay*`），凭据为商户 RSA 私钥签名、**无 `access_token`**、四包零 `[Token]` 声明（守卫 PAY-B1 fail-closed）。
+
+### 微信公众号：26 个业务域 / 174 个去重端点
+
+`MpModule` 27 个成员（26 个可注册业务域 + `Authentication` 令牌与票据基座），`AddMpServices(b => b.AddAllApis())` 一键装载。计数口径由 `MpRouteCountGuard` 定义：**同一路由的多方法形态只计 1 条端点**（如 OCR 的 `*ByUpload` / `*ByUrl` 双形态）。
+
+| 注册方法 | 域 | 端点 | 关键约束（守卫锁定） |
+| --- | --- | --- | --- |
+| `AddBasicApi()` | 基础接口 | 3 | API 服务器 IP + 推送服务器 IP + 网络通信检测；3 端点均支持第三方平台令牌 |
+| `AddTagApi()` | 标签管理 | 8 | 批量打标 / 取消 / 获取标签列表等；**仅认证** |
+| `AddUserApi()` | 用户管理 | 8 | 用户信息 7 + openid 转换 1；黑名单三端点官方路径在 `tags/members` 前缀下 |
+| `AddMenuApi()` | 自定义菜单 | 7 | 查询菜单信息族 |
+| `AddCustomerMessageApi()` | 客服消息 | 3 | 发送客服消息 / 输入状态 / 聊天记录 |
+| `AddKfAccountApi()` | 客服管理 | 7 | 全部 / 在线客服列表、增删改账号、头像、邀请绑定 |
+| `AddKfSessionApi()` | 会话控制 | 5 | 创建 / 关闭会话、会话状态 / 列表、未接入列表 |
+| `AddTemplateApi()` | 模板消息 | 8 | 发送 1 + 行业 2 + 模板管理 3 + 拦截查询 1 + 一次性订阅 1（一次性订阅并入本域） |
+| `AddSubscriptionNoticeApi()` | 订阅通知 | 7 | `bizsend` 1 + `/wxaapi/newtmpl/*` 6，**服务号专属** |
+| `AddOpenApiApi()` | 额度管理 | 5 | 双接口同注册组：`IMpOpenApiService` 4 端点带令牌 + `IMpOpenApiTokenFreeService` 1 端点免令牌（`clear_quota/v2` 是额度耗尽应急逃生端点） |
+| `AddSnsApi()` | 网页授权 | 4 | **服务号专属**且全部免应用级 `access_token` |
+| `AddMassApi()` | 群发消息 | 7 | `sendall` / `send` / `preview` / `delete` / `get` / `speed`（双端点）；`uploadimg` 归素材域 |
+| `AddQrcodeApi()` | 带参二维码 | 1 | `qrcode/create`，**服务号专属** |
+| `AddAutoReplyApi()` | 自动回复 | 1 | 只读查询；认证 / 未认证服务号与测试号均可调用 |
+| `AddDraftApi()` | 草稿管理 | 6 | `add`/`update`/`get`/`delete`/`count`/`batchget`；`draft/switch` 官方已废弃 ⇒ 不实现 |
+| `AddFreePublishApi()` | 发布能力 | 5 | 仅认证 |
+| `AddProductCardApi()` | 商品卡片 | 1 | `/channels/ec/…` 视频号小店前缀，**非** `/cgi-bin/` |
+| `AddCommentApi()` | 留言管理 | 8 | 仅认证 + 留言权限 |
+| `AddDataCubeApi()` | 数据统计 | 21 | 用户 2 + 图文 10 + 消息 7 + 接口 2，**全部 POST `/datacube/*`**、请求体同构；跨度上限措辞逐端点核验（1 / 7 / 15 / 30 天） |
+| `AddMediaApi()` | 素材管理 | 6 | 临时上传 1 + 永久上传 / 计数 / 列表 / 删除 4 + `uploadimg` 1；另有**下载通道 3**（非 JSON 管线，不计入 174） |
+| `AddSmartApiApi()` | 智能接口 | 12 | AI 3 + OCR 7 + 图像处理 2；**9 端点双调用形态**（form `img` / Query `img_url` 互斥 ⇒ 每端点双方法，共 21 个方法）；OCR 100 次/天、图片 <2M；九端点支持第三方代调用（权限集 117） |
+| `AddQrcodeJumpApi()` | 扫码打开小程序 | 4 | `/cgi-bin/wxopen/qrcodejump*`，**服务号专属** |
+| `AddShortLinkApi()` | 长转短链 | 2 | `/cgi-bin/shorten/*` |
+| `AddStoreApi()` | 门店小程序 | 12 | 类目 / 主体申请与审核 / 修改主体 / 省市区 / 地图点位搜索等 |
+| `AddOneCodeApi()` | 一物一码 | 6 | `/intp/marketcode/*`（非 `/cgi-bin/` 前缀） |
+| `AddInvoiceApi()` | 微信发票 | 17 | 商户开票 5 + 开票平台 5 + 发票报销 4 + 极速开发票 3；17 页全部用 `access_token`、**零 `api_ticket`** |
+| —（基座） | 认证与票据 | 3 | `token` + `stable_token` + `ticket/getticket`；`jsapi` / `wx_card` 两类票据经 `IMpTicketManager` 取用后由宿主自行使用，不参与请求注入与 errcode 恢复链路 |
+
+### 微信小程序：4 个业务域 / 24 个端点
+
+与公众号同属微信公众平台、**同一令牌域**（MP-X2 禁止新增令牌类型，否则 errcode 自愈静默失效）⇒ 复用 `AddMpApp` 底座，跨线路由重复由 MP-X1 全局校验。
+
+| 注册方法 | 域 | 端点 | 能力与约束 |
+| --- | --- | --- | --- |
+| `AddAuthApi()` | 登录与身份 | 5 | `sns/jscode2session`（免令牌）+ `checksession` + `resetusersessionkey` + `getuserphonenumber` + `getpaidunionid`；`session_key` 与手机号 `code` 不入日志（MP-X7） |
+| `AddQrCodeLinkApi()` | 二维码与链接 | 8 | 小程序码 **3 端点走手工通道 `IWxaCodeService`**（响应为图片二进制，失败才是 JSON ⇒ 按 Content-Type 分支判错，返回 `WxaCodeResult : IDisposable`）+ 短链 / URL Scheme / URL Link 的生成与查询 5 端点 |
+| `AddSecurityApi()` | 内容安全 | 2 | `msg_sec_check`（同步文本）+ `media_check_async`（异步媒体，回调结果另取） |
+| `AddDataAnalysisApi()` | 数据分析 | 9 | `/datacube/getweanalysisappid*`：日 / 周 / 月访问趋势与留存 + 页面访问 + 访问分布 + 用户画像 |
+
+小程序线另有 `WxaErrorCodes`（13 个错误码常量）与 `MiniProgramScaffoldContractGuards` 锁定的「无 Callback 工程」形态。
+
+### 微信支付 APIv3：10 个业务域 / 54 个端点
+
+凭据模型与其余四线根本不同：**商户 RSA 私钥签名**（`WECHATPAY2-SHA256-RSA2048`），全线**零 `[Token]` 声明**（PAY-B1 fail-closed），私钥与 APIv3 密钥只以名称进配置、运行期经 `ISecretProvider` 取用。
+
+| 注册模块 | 域 | 端点 | 路由族与关键约束 |
+| --- | --- | --- | --- |
+| `Transactions` | 基础交易 | 4 | `/v3/pay/transactions/*`：JSAPI·小程序下单 + 按 `transactionId` / `outTradeNo` 查单 + 关单 |
+| `Refund` | 退款 | 3 | `/v3/refund/domestic/refunds*`：申请退款 + 按 `outRefundNo` 查询 + 异常退款 |
+| `Bill` | 账单 | 2 | `tradebill` / `fundflowbill` 申请；账单文件本身走 `IWechatPayBillDownloadService` 下载通道 |
+| `Certificates` | 平台证书 | 1 | `/v3/certificates`：应答与回调验签的证书来源 + `Wechatpay-Serial` 轮换 |
+| `ProfitSharing` | 分账 | 9 | 接收方添加 / 删除 + 请求分账 / 查询 + 解冻剩余资金 + **回退单独立资源族**（`/profitsharing/return-orders`，非分账单子资源）+ 待分金额 + 分账账单 |
+| `PayScore` | 支付分 | 11 | 服务订单 创建 / 查询 / 取消 / 完结 / 修改 / 催收扣款 / 同步 + 授权面（预授权、按 `authorizationCode` 查询与解除、按 `openid` 查询） |
+| `CombineTransactions` | 合单支付 | 6 | JSAPI / Native / APP / H5 四场景下单 + 合单关单 + 合单查询；**无合单退款**——合单订单只能按子单走退款域 |
+| `Transfer` | 商家转账 | 6 | 发起转账 + 按 `outBillNo` / `transferBillNo` 查询 + 撤销 + 电子回单两查询；撤销走普通商户面路由，服务商 `/partner/` 变体属另一套文档不得混入 |
+| `NewTaxControlFapiao` | 电子发票 | 5 | 开具 + 查询 + 冲红 + 获取下载信息 + 插入卡包；上传（multipart）与下载（30s 有效 URL，不签名验签）不属生成式接口 |
+| `MarketingFavor` | 代金券 | 7 | 创建批次 + 券详情 + 批次 启动 / 暂停 / 重启 / 详情 + 发券；两族路径前缀不一致（创建 `/coupon-stocks`、动作 `/stocks/…`，官方原文如此） |
+
+### 微信开放平台（第三方平台）
+
+单入口 `AddOpenPlatform(cfg => …)`，**全部 `TryAdd`**（宿主预注册实现优先，如把票据存储换成 Redis 分布式实现）。不走声明式 `[Token]`，令牌经显式提供者取用，两侧都是「单飞门 + 结果记忆」：
+
+| 端点 / 端口 | 说明 |
+| --- | --- |
+| `/cgi-bin/component/api_component_token` | `component_access_token`（`IComponentTokenProvider`，提前刷新窗口默认对齐官方建议） |
+| `/cgi-bin/component/api_create_preauthcode` | 预授权码，官方有效期 1800 秒 |
+| `/cgi-bin/component/api_query_auth` | 用 `auth_code` 换授权方令牌与刷新令牌（`IComponentAuthorizationService`） |
+| `/cgi-bin/component/api_authorizer_token` | 刷新授权方令牌（`IAuthorizerTokenProvider`，`authorizer_access_token` 有效期 2 小时） |
+| `IComponentVerifyTicketStore` / `IWechatOpenPlatformHttpClient` / `IOpenPlatformClock` | 票据存储端口、命名客户端、可注入时钟（测试确定性） |
+| `ComponentVerifyTicketReceiver.Receive(...)` | `component_verify_ticket` 与授权变更事件**一处入口分流**，返回 `ComponentPushResult`（票据推送结论为 8 态枚举，区分「重复推送 / 校验失败 / 存储失败」等原因） |
+
 ## 质量门禁
 
 ```bash
@@ -302,6 +406,8 @@ dotnet test Tests/Mud.Wechat.Work.Tests -c Release -f net8.0 --filter "FullyQual
 ```
 
 **13 个测试工程**（`Tests/`，镜像源结构，单 TFM `net8.0`）覆盖五条产品线 + Core 叶层 + Redis。契约守卫分布：企业微信 `Tests/Mud.Wechat.Work.Tests/ContractGuards/` 60 个文件（通用 G1~G10、令牌归属 TO1~TO3、命名空间分区 N1~N3、回调 CB 系列、群机器人 WEB1~WEB4 + 逐域端点/路由守卫）、公众号 23 个（逐域前缀 + QT 令牌注入白名单 + RC 路由计数纪律）、小程序 MP-X1~MP-X8、支付 PAY-B1~B11 与 PAY-CB1、叶层 AB-G1~G7 与 CB-L1 系列、Redis RD-G1~G7。
+
+**AOT / 裁剪**：`net8.0` / `net10.0` 下逐源工程跑 `AotStrictMode`（把 10 类反射诊断升为错误）并保持净零；五条线 DataModels 共 **107 个源生成 JSON 上下文**（Work 62 / 公众号 28 / 支付 12 / 小程序 5），配置绑定同样源生成。
 
 真实 Redis 端到端用例由环境变量门控（CI 默认不跑）：
 

@@ -13,13 +13,13 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\..\Mud.Wechat.OfficialAccount\Mud.Wechat.OfficialAccount.csproj" />
-		<ProjectReference Include="..\..\Mud.Wechat.OfficialAccount.Abstractions\Mud.Wechat.OfficialAccount.Abstractions.csproj" />
-		<ProjectReference Include="..\..\Mud.Wechat.OfficialAccount.DataModels\Mud.Wechat.OfficialAccount.DataModels.csproj" />
+		<ProjectReference Include="..\..\Src\OfficialAccount\Mud.Wechat.OfficialAccount\Mud.Wechat.OfficialAccount.csproj" />
+		<ProjectReference Include="..\..\Src\OfficialAccount\Mud.Wechat.OfficialAccount.Abstractions\Mud.Wechat.OfficialAccount.Abstractions.csproj" />
+		<ProjectReference Include="..\..\Src\OfficialAccount\Mud.Wechat.OfficialAccount.DataModels\Mud.Wechat.OfficialAccount.DataModels.csproj" />
 		<!-- Query 令牌白名单（QT1）是**全量集合的唯一持有者**，须同时覆盖小程序线
 		     （两线共用同一令牌域与同一 Query 注入契约，见设计方案 §3.3 / §3.6 MP-X2）。
 		     仅**测试工程**引用，不影响产品线依赖边界。 -->
-		<ProjectReference Include="..\..\Mud.Wechat.MiniProgram\Mud.Wechat.MiniProgram.csproj" />
+		<ProjectReference Include="..\..\Src\MiniProgram\Mud.Wechat.MiniProgram\Mud.Wechat.MiniProgram.csproj" />
 	</ItemGroup>
 
 </Project>

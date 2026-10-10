@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<Description>微信小程序 SDK 主包：业务声明式客户端（登录/二维码链接/内容安全/数据分析）、模块注册器、AOT JsonContext 合并。对应 Mud.Wechat.OfficialAccount。</Description>
+		<PackageTags>Wechat;MiniProgram;小程序;SDK;MudWechat</PackageTags>
+		<!-- MUD005（Query 令牌注入存在 URL 泄露面）：微信公众平台官方契约强制令牌走 Query 参数
+		     （access_token 为 URL 查询参数，官方不支持 Header 注入），无法改用 Header。
+		     本包全部接口均为该官方契约，属已知接受风险（详见各接口 remarks 与契约守卫测试），
+		     故在项目级抑制；库内遥测已由 SensitiveUrlRedactor 脱敏。 -->
+		<NoWarn>$(NoWarn);MUD005</NoWarn>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Mud.HttpUtils" Version="3.0.3" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Mud.HttpUtils.Generator" Version="3.0.3" PrivateAssets="all" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\..\Core\Mud.Wechat.Abstractions\Mud.Wechat.Abstractions.csproj" />
+		<ProjectReference Include="..\Mud.Wechat.MiniProgram.Abstractions\Mud.Wechat.MiniProgram.Abstractions.csproj" />
+		<ProjectReference Include="..\Mud.Wechat.MiniProgram.DataModels\Mud.Wechat.MiniProgram.DataModels.csproj" />
+	</ItemGroup>
+
+</Project>

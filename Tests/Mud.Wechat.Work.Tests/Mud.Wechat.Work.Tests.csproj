@@ -13,9 +13,9 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\..\Mud.Wechat.Work\Mud.Wechat.Work.csproj" />
+		<ProjectReference Include="..\..\Src\Work\Mud.Wechat.Work\Mud.Wechat.Work.csproj" />
 		<!-- CB1~CB7 回调域守卫需反射 Callback 包的 DTO 与选项类型（测试专用边，不产生生产依赖）。 -->
-		<ProjectReference Include="..\..\Mud.Wechat.Work.Callback\Mud.Wechat.Work.Callback.csproj" />
+		<ProjectReference Include="..\..\Src\Work\Mud.Wechat.Work.Callback\Mud.Wechat.Work.Callback.csproj" />
 	</ItemGroup>
 
 </Project>

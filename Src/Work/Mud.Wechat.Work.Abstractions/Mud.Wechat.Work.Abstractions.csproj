@@ -1,0 +1,49 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<Description>企业微信 SDK 认证与多应用基座包：令牌签发客户端、令牌管理器模板基座与四管理器、多应用管理、配置面、常量/枚举/异常。对应 Mud.Feishu.Abstractions。</Description>
+		<PackageTags>Wechat;WeChatWork;企业微信;Authentication;TokenManager;MultiApp;MudWechat</PackageTags>
+		<!-- TokenRecoveryOptions.TokenInvalidationDetector 为接口类型属性，不做配置绑定；
+		配置绑定源生成器对接口属性报 SYSLIB1100/1101（生成器上报，#pragma 无法抑制），项目级静默并在此注明原因。 -->
+		<NoWarn>$(NoWarn);SYSLIB1100;SYSLIB1101</NoWarn>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<!-- 3.0.1 引入第 4 个生成器族 PayloadFieldMapGenerator 与其 XML-free 运行时契约
+		     （3.0.2 增补 SensitiveUrlKeys 下游登记门面，Webhook 域注册期登记 key 用）。
+		     （Mud.HttpUtils.Abstractions/Payloads/，命名空间 Mud.HttpUtils.Payloads）。 -->
+		<PackageReference Include="Mud.HttpUtils" Version="3.0.3" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Mud.HttpUtils.Generator" Version="3.0.3" PrivateAssets="all" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+	</ItemGroup>
+
+	<ItemGroup Condition="'$(TargetFramework)' == 'net8.0' Or '$(TargetFramework)' == 'net10.0'">
+		<PackageReference Include="Microsoft.Extensions.Http" Version="10.0.9" />
+	</ItemGroup>
+	<ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' or '$(TargetFramework)' == 'net6.0'">
+		<PackageReference Include="Microsoft.Extensions.Http" Version="8.0.1" />
+	</ItemGroup>
+
+	<ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' or '$(TargetFramework)' == 'net6.0'">
+		<PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="8.0.1" />
+	</ItemGroup>
+	<ItemGroup Condition="'$(TargetFramework)' == 'net8.0' or '$(TargetFramework)' == 'net10.0'">
+		<PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.9" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\..\Core\Mud.Wechat.Abstractions\Mud.Wechat.Abstractions.csproj" />
+		<ProjectReference Include="..\Mud.Wechat.Work.DataModels\Mud.Wechat.Work.DataModels.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<InternalsVisibleTo Include="Mud.Wechat.Work" />
+		<InternalsVisibleTo Include="Mud.Wechat.Work.Callback" />
+		<InternalsVisibleTo Include="Mud.Wechat.Work.Abstractions.Tests" />
+		<InternalsVisibleTo Include="Mud.Wechat.Work.Tests" />
+		<InternalsVisibleTo Include="DynamicProxyGenAssembly2" />
+	</ItemGroup>
+
+</Project>

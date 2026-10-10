@@ -1,0 +1,57 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<Description>企业微信 SDK 回调接收包：URL 验证（GET echostr 回显）、suite_ticket / 授权事件推送与通讯录变更、异步任务完成通知的验签、AES 解密、事件分发（类型化处理器 + 拦截器）与多应用 HTTP 中间件。对应 Mud.Feishu.Webhook + EventCallback 职能。</Description>
+		<PackageTags>Wechat;WeChatWork;企业微信;Callback;Webhook;suite_ticket;Middleware;MudWechat</PackageTags>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\Mud.Wechat.Work.Abstractions\Mud.Wechat.Work.Abstractions.csproj" />
+		<ProjectReference Include="..\Mud.Wechat.Work.DataModels\Mud.Wechat.Work.DataModels.csproj" />
+	</ItemGroup>
+
+	<!-- v1 方案 D1（对齐 Mud.Feishu.Webhook）：netstandard2.0 保留旧包；net6.0+ 使用 FrameworkReference -->
+	<!-- 载荷字段映射生成器：为 [PayloadContract] 载荷类生成 PayloadFieldMap 映射表。
+	     注意 Abstractions 中的本包引用带 PrivateAssets="all"，**不会**流向本工程，
+	     故此处必须显式引用（否则本工程的载荷类无生成物 ⇒ PayloadFieldMap 成员缺失）。 -->
+	<ItemGroup>
+		<PackageReference Include="Mud.HttpUtils.Generator" Version="3.0.3" PrivateAssets="all" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+	</ItemGroup>
+
+	<!-- 契约登记生成器（本仓侧）：依据 [WechatCallbackContract] 特性发射 OfficialPayloadContracts.RegisterAll
+	     方法体。仅本工程消费（PrivateAssets 不流向主包）；<b>本工程是可打包的运行时包</b>（产物清单中的 Mud.Wechat.Work.Callback）。 -->
+	<ItemGroup>
+		<ProjectReference Include="..\..\Core\Mud.Wechat.Callback.Generator\Mud.Wechat.Callback.Generator.csproj"
+		                  OutputItemType="Analyzer" ReferenceOutputAssembly="false" PrivateAssets="all" />
+	</ItemGroup>
+
+	<!-- 回调处理器契约分析器（本仓侧）：校验 SupportedEventType ↔ 载荷契约一致性（MUDCB002~005）。
+	     仅诊断、不发射 ⇒ 允许随包下发（analyzers/dotnet/cs）；<b>本工程本身照常产出 nupkg</b>（内嵌该分析器）。 -->
+	<ItemGroup>
+		<ProjectReference Include="..\..\Core\Mud.Wechat.Callback.Analyzers\Mud.Wechat.Callback.Analyzers.csproj"
+		                  OutputItemType="Analyzer" ReferenceOutputAssembly="false" PrivateAssets="all" />
+	</ItemGroup>
+
+	<!-- v1 方案 D1（对齐 Mud.Feishu.Webhook）：netstandard2.0 保留旧包；net6.0+ 使用 FrameworkReference -->
+	<ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+		<PackageReference Include="Microsoft.AspNetCore.Http" Version="2.3.9" />
+		<PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.3.9" />
+	</ItemGroup>
+	<ItemGroup Condition="'$(TargetFramework)' != 'netstandard2.0'">
+		<FrameworkReference Include="Microsoft.AspNetCore.App" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<!-- 抗重放时间窗常量（ReplayWindowSeconds）为 internal，供测试断言边界。 -->
+		<InternalsVisibleTo Include="Mud.Wechat.Work.Callback.Tests" />
+	</ItemGroup>
+
+	<!-- 随包下发分析器资产（不新增第 6 个 nupkg）：直接引用 Analyzers 工程输出 DLL（netstandard2.0 单 TFM，路径固定）。
+	     用 ItemGroup 而非 Target —— Pack="true" 的 None item 须在 _CollectPackageFiles 之前的 evaluation 阶段就存在。
+	     只挑本仓分析器 DLL；Mud.HttpUtils.Generator（独立包）与本仓 Callback.Generator（发射器，IsPackable=false）不内嵌。 -->
+	<ItemGroup>
+		<None Include="$(MSBuildThisFileDirectory)..\Src\Mud.Wechat.Callback.Analyzers\bin\$(Configuration)\netstandard2.0\Mud.Wechat.Callback.Analyzers.dll"
+		      Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+	</ItemGroup>
+
+</Project>

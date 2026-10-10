@@ -14,9 +14,9 @@
 
 	<ItemGroup>
 		<!-- 跨产品线共存守卫需同时引用两条产品线的 Abstractions（测试专用边，不产生生产依赖）。 -->
-		<ProjectReference Include="..\..\Mud.Wechat.Abstractions\Mud.Wechat.Abstractions.csproj" />
-		<ProjectReference Include="..\..\Mud.Wechat.Work.Abstractions\Mud.Wechat.Work.Abstractions.csproj" />
-		<ProjectReference Include="..\..\Mud.Wechat.OfficialAccount.Abstractions\Mud.Wechat.OfficialAccount.Abstractions.csproj" />
+		<ProjectReference Include="..\..\Src\Core\Mud.Wechat.Abstractions\Mud.Wechat.Abstractions.csproj" />
+		<ProjectReference Include="..\..\Src\Work\Mud.Wechat.Work.Abstractions\Mud.Wechat.Work.Abstractions.csproj" />
+		<ProjectReference Include="..\..\Src\OfficialAccount\Mud.Wechat.OfficialAccount.Abstractions\Mud.Wechat.OfficialAccount.Abstractions.csproj" />
 	</ItemGroup>
 
 </Project>

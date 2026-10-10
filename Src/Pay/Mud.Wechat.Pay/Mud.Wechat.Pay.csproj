@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<!-- 受控 TFM 例外，理由见 Mud.Wechat.Pay.Abstractions.csproj 同名属性组的详注
+		     （AesGcm 在 netstandard2.0 不存在；AEAD_AES_256_GCM 为 APIv3 官方强制）。 -->
+		<TargetFrameworks>net6.0;net8.0;net10.0</TargetFrameworks>
+		<Description>微信支付 APIv3 SDK 主包：业务声明式客户端（基础交易/退款/账单/平台证书）、模块注册器、RSA 签名器、AES-256-GCM 加解密、账单下载通道、AOT JsonContext 合并。</Description>
+		<PackageTags>Wechat;Pay;微信支付;Tenpay;APIv3;SDK;MudWechat</PackageTags>
+		<!-- MUD005：支付线**不声明 [Token]**（无 access_token），MUD005 理论上不触发；
+		     保留抑制仅为防止未来误加 [Token] 时被误读为已知接受风险，令牌/签名禁令由 PAY-B1 fail-closed 断言。 -->
+		<NoWarn>$(NoWarn);MUD005</NoWarn>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Mud.HttpUtils" Version="3.0.3" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Mud.HttpUtils.Generator" Version="3.0.3" PrivateAssets="all" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<!-- 证书刷新的**最小刷新间隔**是安全参数（防未知序列号风暴），须被测试锁定其取值，
+		     故对本包测试开放内部可见（与 Pay.Callback / Work / OA 各线同款）。 -->
+		<InternalsVisibleTo Include="Mud.Wechat.Pay.Tests" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\..\Core\Mud.Wechat.Abstractions\Mud.Wechat.Abstractions.csproj" />
+		<ProjectReference Include="..\Mud.Wechat.Pay.Abstractions\Mud.Wechat.Pay.Abstractions.csproj" />
+		<ProjectReference Include="..\Mud.Wechat.Pay.DataModels\Mud.Wechat.Pay.DataModels.csproj" />
+	</ItemGroup>
+
+</Project>

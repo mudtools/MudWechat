@@ -1,0 +1,55 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<!-- ══ 受控 TFM 例外（设计方案 v2 §2.3，已定案）══
+		     微信支付 APIv3 的敏感字段加解密强制使用 AEAD_AES_256_GCM（回调 resource 解密 +
+		     账单资源解密），而 System.Security.Cryptography.AesGcm 类型在 netstandard2.0
+		     **不存在**（netcoreapp3.0+ / netstandard2.1 起才引入）。
+		     三个候选方案中：
+		       (a) 支付线去掉 netstandard2.0 —— 采用此项；
+		       (b) 手写 GCM —— 密码学手写不可接受；
+		       (c) 引入 BouncyCastle 等第三方密码学包 —— 违反「不引入新范式」且扩大安全审计面。
+		     本仓红线（AGENTS §3）要求 4 档 TFM，支付线作为**显式记录在案的受控例外**：
+		     最��� TFM 为 net6.0，自该版本起 AesGcm / RSA.ImportFromPem / RSA.SignData /
+		     RSA.Decrypt 均原生可用 ⇒ **无需手写 PEM 解析、无需第三方密码学包**，三档全部走 BCL、AOT 安全。
+		     守卫 PAY-B9 锁定本例外不被静默放宽。 -->
+		<TargetFrameworks>net6.0;net8.0;net10.0</TargetFrameworks>
+		<Description>微信支付 APIv3 SDK 抽象包：商户配置面、签名/验签与加解密端口、平台证书存储端口、通知信封、官方错误码与异常。对应 Mud.Wechat.OfficialAccount.Abstractions。</Description>
+		<PackageTags>Wechat;Pay;微信支付;Tenpay;APIv3;Security;Configuration;MudWechat</PackageTags>
+		<!-- MUD005：微信支付**不使用 [Token] 特性**（无 access_token，凭据为 RSA 签名 Authorization 头），
+		     故本包不应产生 MUD005。保留抑制仅为防止未来误加 [Token] 时被误读为已知风险，
+		     真正的禁令由契约守卫 PAY-B1 fail-closed 断言。 -->
+		<NoWarn>$(NoWarn);SYSLIB1100;SYSLIB1101</NoWarn>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Mud.HttpUtils" Version="3.0.3" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Mud.HttpUtils.Generator" Version="3.0.3" PrivateAssets="all" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+	</ItemGroup>
+
+	<ItemGroup Condition="'$(TargetFramework)' == 'net8.0' Or '$(TargetFramework)' == 'net10.0'">
+		<PackageReference Include="Microsoft.Extensions.Http" Version="10.0.9" />
+		<PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.9" />
+	</ItemGroup>
+	<ItemGroup Condition="'$(TargetFramework)' == 'net6.0'">
+		<PackageReference Include="Microsoft.Extensions.Http" Version="8.0.1" />
+		<PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="8.0.1" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\..\Core\Mud.Wechat.Abstractions\Mud.Wechat.Abstractions.csproj" />
+		<ProjectReference Include="..\Mud.Wechat.Pay.DataModels\Mud.Wechat.Pay.DataModels.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<InternalsVisibleTo Include="Mud.Wechat.Pay" />
+		<InternalsVisibleTo Include="Mud.Wechat.Pay.Callback" />
+		<InternalsVisibleTo Include="Mud.Wechat.Pay.Tests" />
+		<InternalsVisibleTo Include="Mud.Wechat.Pay.Callback.Tests" />
+		<InternalsVisibleTo Include="DynamicProxyGenAssembly2" />
+	</ItemGroup>
+
+</Project>

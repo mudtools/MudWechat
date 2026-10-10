@@ -12,7 +12,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\..\Mud.Wechat.Work.DataModels\Mud.Wechat.Work.DataModels.csproj" />
+		<ProjectReference Include="..\..\Src\Work\Mud.Wechat.Work.DataModels\Mud.Wechat.Work.DataModels.csproj" />
 	</ItemGroup>
 
 </Project>

@@ -13,11 +13,11 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\..\Mud.Wechat.Pay.Callback\Mud.Wechat.Pay.Callback.csproj" />
-		<ProjectReference Include="..\..\Mud.Wechat.Pay.Abstractions\Mud.Wechat.Pay.Abstractions.csproj" />
-		<ProjectReference Include="..\..\Mud.Wechat.Pay.DataModels\Mud.Wechat.Pay.DataModels.csproj" />
+		<ProjectReference Include="..\..\Src\Pay\Mud.Wechat.Pay.Callback\Mud.Wechat.Pay.Callback.csproj" />
+		<ProjectReference Include="..\..\Src\Pay\Mud.Wechat.Pay.Abstractions\Mud.Wechat.Pay.Abstractions.csproj" />
+		<ProjectReference Include="..\..\Src\Pay\Mud.Wechat.Pay.DataModels\Mud.Wechat.Pay.DataModels.csproj" />
 		<!-- 三闸 fail-closed 用例复用共享叶层的抗重放端口与内存实现（同 OA.Callback.Tests 形态）。 -->
-		<ProjectReference Include="..\..\Mud.Wechat.Abstractions\Mud.Wechat.Abstractions.csproj" />
+		<ProjectReference Include="..\..\Src\Core\Mud.Wechat.Abstractions\Mud.Wechat.Abstractions.csproj" />
 	</ItemGroup>
 
 	<!-- 中间件用例需 HttpContext（DefaultHttpContext）与路由/状态码 API。 -->

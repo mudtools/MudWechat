@@ -13,8 +13,8 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\..\Mud.Wechat.OpenPlatform\Mud.Wechat.OpenPlatform.csproj" />
-		<ProjectReference Include="..\..\Mud.Wechat.OpenPlatform.Abstractions\Mud.Wechat.OpenPlatform.Abstractions.csproj" />
+		<ProjectReference Include="..\..\Src\OpenPlatform\Mud.Wechat.OpenPlatform\Mud.Wechat.OpenPlatform.csproj" />
+		<ProjectReference Include="..\..\Src\OpenPlatform\Mud.Wechat.OpenPlatform.Abstractions\Mud.Wechat.OpenPlatform.Abstractions.csproj" />
 	</ItemGroup>
 
 </Project>

@@ -13,9 +13,9 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\..\Mud.Wechat.Pay\Mud.Wechat.Pay.csproj" />
-		<ProjectReference Include="..\..\Mud.Wechat.Pay.Abstractions\Mud.Wechat.Pay.Abstractions.csproj" />
-		<ProjectReference Include="..\..\Mud.Wechat.Pay.DataModels\Mud.Wechat.Pay.DataModels.csproj" />
+		<ProjectReference Include="..\..\Src\Pay\Mud.Wechat.Pay\Mud.Wechat.Pay.csproj" />
+		<ProjectReference Include="..\..\Src\Pay\Mud.Wechat.Pay.Abstractions\Mud.Wechat.Pay.Abstractions.csproj" />
+		<ProjectReference Include="..\..\Src\Pay\Mud.Wechat.Pay.DataModels\Mud.Wechat.Pay.DataModels.csproj" />
 	</ItemGroup>
 
 </Project>

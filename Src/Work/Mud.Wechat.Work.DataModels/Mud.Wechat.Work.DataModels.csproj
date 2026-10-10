@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<Description>企业微信 SDK 数据模型包（纯 DTO，无外部依赖）。对应 Mud.Feishu.DataModels 的独立 DTO 交付模式。</Description>
+		<PackageTags>Wechat;WeChatWork;企业微信;DTO;DataModels;MudWechat</PackageTags>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<!-- [HttpJsonSerializable] 标注特性来源（零依赖特性包，传递 Mud.HttpUtils.Abstractions）。
+		     Generated/ 目录由 scripts/GenerateJsonContext.ps1（mud-jsonctx）按标注生成。 -->
+		<PackageReference Include="Mud.HttpUtils.Attributes" Version="3.0.3" />
+		<PackageReference Include="Mud.HttpUtils.Generator" Version="3.0.3" PrivateAssets="all" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<!-- 响应基底实现公用层判错契约 IWechatApiResponse（非序列化契约；依赖方向 DataModels → 公用层，公用层为叶子）。 -->
+		<ProjectReference Include="..\..\Core\Mud.Wechat.Abstractions\Mud.Wechat.Abstractions.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<InternalsVisibleTo Include="Mud.Wechat.Work" />
+		<InternalsVisibleTo Include="Mud.Wechat.Work.Abstractions" />
+		<InternalsVisibleTo Include="Mud.Wechat.Work.Callback" />
+		<!-- 生成上下文为 internal（对齐 Mud.Feishu.DataModels 模式），契约守卫与反序列化测试需直读。 -->
+		<InternalsVisibleTo Include="Mud.Wechat.Work.Tests" />
+		<InternalsVisibleTo Include="Mud.Wechat.Work.Abstractions.Tests" />
+		<InternalsVisibleTo Include="Mud.Wechat.Work.DataModels.Tests" />
+	</ItemGroup>
+
+</Project>

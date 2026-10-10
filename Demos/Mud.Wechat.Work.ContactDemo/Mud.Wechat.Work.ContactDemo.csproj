@@ -5,7 +5,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\..\Mud.Wechat.Work\Mud.Wechat.Work.csproj" />
+		<ProjectReference Include="..\..\Src\Work\Mud.Wechat.Work\Mud.Wechat.Work.csproj" />
 	</ItemGroup>
 
 </Project>

@@ -15,6 +15,26 @@ Set-Location $repoRoot
 
 $failures = New-Object System.Collections.Generic.List[string]
 
+# 源码归类（2026-10）后工程目录迁入 Src/<Area>/<ProjectName>。
+# 一律按 csproj 名称定位工程目录并缓存，不再硬编码层级 —— 目录再迁移时本脚本不随之漂移。
+$projectDirCache = @{}
+
+function Get-SourceProjectDir([string]$projectName) {
+    if ($projectDirCache.ContainsKey($projectName)) {
+        return $projectDirCache[$projectName]
+    }
+
+    $csproj = Get-ChildItem -Path $repoRoot -Filter "$projectName.csproj" -Recurse -File |
+        Where-Object { $_.FullName -notmatch '\\(bin|obj)\\' } |
+        Select-Object -First 1
+    if ($null -eq $csproj) {
+        throw "未找到工程 $projectName.csproj（源码归类目录漂移，审计脚本定位失效）"
+    }
+
+    $projectDirCache[$projectName] = $csproj.DirectoryName
+    return $csproj.DirectoryName
+}
+
 $configFiles = @(
     # 公用层配置基座：公共形状（AppKey/BaseUrl/AllowCustomBaseUrl/TimeoutSeconds/TokenRefreshThreshold/IsDefault）
     # 已上移至本文件，若不同批纳入扫描即为门禁盲区。
@@ -42,7 +62,10 @@ $configFiles = @(
 
 foreach ($file in $configFiles) {
     Write-Host "审计：$file" -ForegroundColor Cyan
-    $fullPath = Join-Path $repoRoot $file
+    # 登记格式：<ProjectName>/<工程内相对路径>；首段为工程名，按 csproj 定位后拼接。
+    $segments = $file -split '/', 2
+    $projectDir = Get-SourceProjectDir $segments[0]
+    $fullPath = if ($segments.Count -gt 1) { Join-Path $projectDir $segments[1] } else { Join-Path $projectDir (Split-Path $file -Leaf) }
     $content = Get-Content $fullPath -Raw
 
     # 提取 public string/int/bool 属性名（配置 DTO 全部为可写基元属性）；
@@ -80,7 +103,10 @@ foreach ($file in $configFiles) {
         'Mud.Wechat.Pay.DataModels',
         'Mud.Wechat.Pay.Callback',
         # 可观测性装配包：WechatOpenTelemetryOptions 的消费点位于映射器中。
-        'Mud.Wechat.OpenTelemetry'
+        'Mud.Wechat.OpenTelemetry',
+        # 开放平台产品线（2026-10 新增）：消费点可落在主包与抽象包。
+        'Mud.Wechat.OpenPlatform',
+        'Mud.Wechat.OpenPlatform.Abstractions'
     )
 
     foreach ($prop in $propNames) {
@@ -90,7 +116,8 @@ foreach ($file in $configFiles) {
             # 原写法 -notlike "*$file*" 用的是仓库相对路径（正斜杠），而 $_.FullName 是 Windows 反斜杠路径，
             # 两者永不相等 ⇒ 该排除**从未生效**（静默假绿：属性只在自身 DTO 内被引用也会判为「有消费点」）。
             $dtoLeaf = Split-Path $file -Leaf
-            $hits = Get-ChildItem -Path (Join-Path $repoRoot $root) -Filter '*.cs' -Recurse -File |
+            $searchDir = Get-SourceProjectDir $root
+            $hits = Get-ChildItem -Path $searchDir -Filter '*.cs' -Recurse -File |
                 Where-Object { $_.FullName -notmatch 'obj|bin' -and $_.Name -ne $dtoLeaf } |
                 Where-Object { (Get-Content $_.FullName -Raw) -match "\.$prop\b" }
             if ($hits) { $consumed = $true; break }

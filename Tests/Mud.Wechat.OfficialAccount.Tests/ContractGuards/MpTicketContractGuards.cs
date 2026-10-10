@@ -96,9 +96,8 @@ public class MpTicketContractGuards
     [Fact]
     public void TicketService_ShouldNotBeRegisteredAsResolvableClient()
     {
-        var root = GetRepositoryRoot();
-        var extensions = File.ReadAllText(Path.Combine(
-            root, "Mud.Wechat.OfficialAccount.Abstractions", "Extensions", "MpMultiAppExtensions.cs"));
+        var extensions = File.ReadAllText(SourcePath(
+            "Mud.Wechat.OfficialAccount.Abstractions", "Extensions", "MpMultiAppExtensions.cs"));
 
         extensions.Should().NotContain("AddTicketWebApiHttpClient",
             "票据必须经管理器缓存取用；暴露默认客户端会让宿主绕过缓存触发官方频次限制");
@@ -111,14 +110,12 @@ public class MpTicketContractGuards
     [Fact]
     public void TicketFrequencyConstraint_ShouldBeDocumented()
     {
-        var root = GetRepositoryRoot();
-
-        var dto = File.ReadAllText(Path.Combine(
-            root, "Mud.Wechat.OfficialAccount.DataModels", "WebDev", "MpGetTicketResponse.cs"));
+        var dto = File.ReadAllText(SourcePath(
+            "Mud.Wechat.OfficialAccount.DataModels", "WebDev", "MpGetTicketResponse.cs"));
         dto.Should().Contain("调用次数非常有限", "官方「注意事项」原文必须留在 DTO 文档中");
 
-        var manager = File.ReadAllText(Path.Combine(
-            root, "Mud.Wechat.OfficialAccount.Abstractions", "Authentication", "Tickets", "IMpTicketManager.cs"));
+        var manager = File.ReadAllText(SourcePath(
+            "Mud.Wechat.OfficialAccount.Abstractions", "Authentication", "Tickets", "IMpTicketManager.cs"));
         manager.Should().Contain("调用次数非常有限");
         manager.Should().Contain("不得", "必须显式声明「宿主不得绕过管理器逐次直调」");
     }
@@ -127,12 +124,29 @@ public class MpTicketContractGuards
     [Fact]
     public void TicketThirdPartyExclusion_ShouldBeDocumented()
     {
-        var root = GetRepositoryRoot();
-        var service = File.ReadAllText(Path.Combine(
-            root, "Mud.Wechat.OfficialAccount.Abstractions", "Authentication", "Interfaces", "IMpTicketService.cs"));
+        var service = File.ReadAllText(SourcePath(
+            "Mud.Wechat.OfficialAccount.Abstractions", "Authentication", "Interfaces", "IMpTicketService.cs"));
 
         service.Should().Contain("不支持第三方平台调用");
     }
+
+    /// <summary>
+    /// 解析源工程内路径。源码已归类至 <c>Src/&lt;Area&gt;/&lt;ProjectName&gt;</c>（2026-10 源码归类迁移），
+    /// 守卫按 csproj 名称定位工程目录（带缓存），不再硬编码层级 —— 目录再迁移时守卫不随之漂移。
+    /// </summary>
+    private static string SourcePath(params string[] segments) =>
+        Path.Combine(new[] { SourceProjectDir(segments[0]) }.Concat(segments.Skip(1)).ToArray());
+
+    private static string SourceProjectDir(string projectName) =>
+        SourceProjectDirs.GetOrAdd(projectName, static name =>
+            Directory.EnumerateFiles(GetRepositoryRoot(), $"{name}.csproj", SearchOption.AllDirectories)
+                .Where(static f => !f.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.Ordinal)
+                                   && !f.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
+                .Select(static f => Path.GetDirectoryName(f))!
+                .FirstOrDefault()
+            ?? throw new DirectoryNotFoundException($"未找到工程 {name}.csproj（源码归类目录漂移，守卫定位失效）"));
+
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, string> SourceProjectDirs = new();
 
     private static string GetRepositoryRoot()
     {

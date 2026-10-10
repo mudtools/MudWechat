@@ -191,7 +191,7 @@ public class WechatCallbackContractGuards
     [Fact]
     public void CallbackPackage_ShouldNotReferenceWorkProject()
     {
-        var csprojPath = Path.Combine(GetSolutionRoot(),
+        var csprojPath = SourcePath(
             "Mud.Wechat.Work.Callback", "Mud.Wechat.Work.Callback.csproj");
         File.Exists(csprojPath).Should().BeTrue($"未找到回调包工程文件：{csprojPath}");
 
@@ -332,7 +332,7 @@ public class WechatCallbackContractGuards
     [Fact]
     public void CallbackHandlers_ShouldRegisterBuiltinAuthorizationFamily()
     {
-        var handlerPath = Path.Combine(GetSolutionRoot(),
+        var handlerPath = SourcePath(
             "Mud.Wechat.Work.Callback", "WechatCallbackHandler.cs");
         File.Exists(handlerPath).Should().BeTrue($"未找到回调处理器源码（勿移动文件位置，G9 按路径断言）：{handlerPath}");
         var handlerSource = File.ReadAllText(handlerPath);
@@ -344,7 +344,7 @@ public class WechatCallbackContractGuards
         handlerSource.Should().NotContain("ResolveAppKeys(", "G9：不得回退「全部应用清理」");
 
         // 授权族 6 InfoType 判别落位信封（经 WechatCallbackEventTypes 常量名引用）。
-        var envelopePath = Path.Combine(GetSolutionRoot(),
+        var envelopePath = SourcePath(
             "Mud.Wechat.Work.Abstractions", "Callback", "WechatCallbackEvent.cs");
         File.Exists(envelopePath).Should().BeTrue();
         var envelopeSource = File.ReadAllText(envelopePath);
@@ -908,14 +908,14 @@ public class WechatCallbackContractGuards
     [Fact]
     public void CallbackOptions_ShouldKeepSingleSourceOfCredentialTruth()
     {
-        var appConfigPath = Path.Combine(GetSolutionRoot(),
+        var appConfigPath = SourcePath(
             "Mud.Wechat.Work.Abstractions", "Configuration", "WechatAppConfig.cs");
         var appConfigSource = File.ReadAllText(appConfigPath);
         // 仅断言属性声明形态（文档注释中允许提及回调凭据的迁移史）。
         appConfigSource.Should().NotContain("public string PushToken", "回调凭据不得回流主配置（回调运维面独立）");
         appConfigSource.Should().NotContain("public string PushEncodingAESKey", "回调凭据不得回流主配置");
 
-        var callbackOptionsPath = Path.Combine(GetSolutionRoot(),
+        var callbackOptionsPath = SourcePath(
             "Mud.Wechat.Work.Callback", "WechatCallbackOptions.cs");
         var optionsSource = File.ReadAllText(callbackOptionsPath);
 
@@ -952,7 +952,7 @@ public class WechatCallbackContractGuards
     [Fact]
     public void EchoAndPassiveReply_ShouldMatchOfficialProtocol()
     {
-        var receiverPath = Path.Combine(GetSolutionRoot(),
+        var receiverPath = SourcePath(
             "Mud.Wechat.Work.Callback", "WechatCallbackReceiver.cs");
         var receiverSource = File.ReadAllText(receiverPath);
 
@@ -973,7 +973,7 @@ public class WechatCallbackContractGuards
 
         // 被动应答扩展点（本期不实现组装，算法基座不得移除）。
         // v3：加解密内核已下沉叶层（协议与安全内核单一事实来源），断言路径随之迁移。
-        var cryptoPath = Path.Combine(GetSolutionRoot(),
+        var cryptoPath = SourcePath(
             "Mud.Wechat.Abstractions", "Callback", "WechatCallbackCrypto.cs");
         var cryptoSource = File.ReadAllText(cryptoPath);
         cryptoSource.Should().Contain("public static string Encrypt(", "被动应答包 Encrypt 算法基座");
@@ -996,7 +996,7 @@ public class WechatCallbackContractGuards
     [Fact]
     public void CallbackEnvelope_ShouldNotExposeXmlTypes()
     {
-        var callbackDir = Path.Combine(GetSolutionRoot(), "Mud.Wechat.Work.Abstractions", "Callback");
+        var callbackDir = SourcePath("Mud.Wechat.Work.Abstractions", "Callback");
         Directory.Exists(callbackDir).Should().BeTrue($"未找到 Abstractions 回调契约目录：{callbackDir}");
 
         var files = Directory.GetFiles(callbackDir, "*.cs", SearchOption.AllDirectories)
@@ -1040,7 +1040,7 @@ public class WechatCallbackContractGuards
         var allowed = new[] { "WechatCallbackReceiver.cs" };
 
         var files = Directory.GetFiles(
-                Path.Combine(GetSolutionRoot(), "Mud.Wechat.Work.Callback"), "*.cs", SearchOption.AllDirectories)
+                SourcePath("Mud.Wechat.Work.Callback"), "*.cs", SearchOption.AllDirectories)
             .Where(f => !f.Contains(
                             Path.DirectorySeparatorChar + "obj" + Path.DirectorySeparatorChar,
                             StringComparison.OrdinalIgnoreCase)
@@ -1102,7 +1102,7 @@ public class WechatCallbackContractGuards
     public void CallbackCrypto_ShouldUseManualPkcs7PaddingOf32Bytes()
     {
         // v3：加解密内核已下沉叶层 Mud.Wechat.Abstractions/Callback（守卫随源迁址，见 CB-MP-10）。
-        var cryptoPath = Path.Combine(GetSolutionRoot(),
+        var cryptoPath = SourcePath(
             "Mud.Wechat.Abstractions", "Callback", "WechatCallbackCrypto.cs");
         File.Exists(cryptoPath).Should().BeTrue($"未找到回调加解密实现：{cryptoPath}");
 
@@ -1126,7 +1126,7 @@ public class WechatCallbackContractGuards
     [Fact]
     public void CallbackFingerprintMark_ShouldFollowDecrypt()
     {
-        var receiverPath = Path.Combine(GetSolutionRoot(),
+        var receiverPath = SourcePath(
             "Mud.Wechat.Work.Callback", "WechatCallbackReceiver.cs");
         var source = File.ReadAllText(receiverPath);
 
@@ -1150,14 +1150,14 @@ public class WechatCallbackContractGuards
     [Fact]
     public void CallbackAppOptions_ShouldExposeAppTypeAndChannelSurface()
     {
-        var channelPath = Path.Combine(GetSolutionRoot(),
+        var channelPath = SourcePath(
             "Mud.Wechat.Work.Abstractions", "Enums", "WechatCallbackChannel.cs");
         File.Exists(channelPath).Should().BeTrue($"未找到回调通道枚举（勿移动文件，CB10 按路径断言）：{channelPath}");
         var channelSource = File.ReadAllText(channelPath);
         channelSource.Should().Contain("App = 1", "CB10：应用数据通道取值（应用级 change_contact/batch_job_result/change_chain）");
         channelSource.Should().Contain("Suite = 2", "CB10：套件指令/票据通道取值（suite_ticket / 授权族）");
 
-        var optionsPath = Path.Combine(GetSolutionRoot(),
+        var optionsPath = SourcePath(
             "Mud.Wechat.Work.Callback", "WechatCallbackOptions.cs");
         var optionsSource = File.ReadAllText(optionsPath);
         optionsSource.Should().Contain("public WechatAppType AppType", "CB10：应用类型配置面（区分企业自建/第三方/代开发）");
@@ -1175,7 +1175,7 @@ public class WechatCallbackContractGuards
     [Fact]
     public void ReceiveIdValidation_ShouldDistinguishAppTypeByChannel()
     {
-        var receiverPath = Path.Combine(GetSolutionRoot(),
+        var receiverPath = SourcePath(
             "Mud.Wechat.Work.Callback", "WechatCallbackReceiver.cs");
         var source = File.ReadAllText(receiverPath);
 
@@ -1201,7 +1201,7 @@ public class WechatCallbackContractGuards
     [Fact]
     public void EventFamilyGate_ShouldEnforceOpenSurfaceMatrix()
     {
-        var optionsPath = Path.Combine(GetSolutionRoot(),
+        var optionsPath = SourcePath(
             "Mud.Wechat.Work.Callback", "WechatCallbackOptions.cs");
         var source = File.ReadAllText(optionsPath);
 
@@ -1238,7 +1238,7 @@ public class WechatCallbackContractGuards
     [Fact]
     public void DispatcherFamilyGate_ShouldPrecedeInterceptors_AndReturnRejected()
     {
-        var dispatcherPath = Path.Combine(GetSolutionRoot(),
+        var dispatcherPath = SourcePath(
             "Mud.Wechat.Work.Callback", "WechatCallbackDispatcher.cs");
         var source = File.ReadAllText(dispatcherPath);
 
@@ -1272,7 +1272,7 @@ public class WechatCallbackContractGuards
     [Fact]
     public void DispatcherEventKeyGate_ShouldExistAndPrecedeInterceptors()
     {
-        var dispatcherPath = Path.Combine(GetSolutionRoot(),
+        var dispatcherPath = SourcePath(
             "Mud.Wechat.Work.Callback", "WechatCallbackDispatcher.cs");
         var source = File.ReadAllText(dispatcherPath);
 
@@ -1367,7 +1367,7 @@ public class WechatCallbackContractGuards
     [Fact]
     public void CallbackHandlerAnalyzer_ShouldDeclareMatchingDiagnostics()
     {
-        var analyzersRoot = Path.Combine(GetSolutionRoot(), "Mud.Wechat.Callback.Analyzers");
+        var analyzersRoot = SourcePath("Mud.Wechat.Callback.Analyzers");
 
         // ① 分析器源码声明的诊断 ID 集合 双向等于 AnalyzerReleases.Unshipped.md 的登记（防漏登/残留）。
         var analyzerSource = File.ReadAllText(Path.Combine(analyzersRoot, "WechatCallbackHandlerAnalyzer.cs"));
@@ -1422,8 +1422,8 @@ public class WechatCallbackContractGuards
             .Should().BeTrue("CB24：AnalyzerReleases.Shipped.md 必须存在（RS2000发布跟踪需要成对文件）");
 
         // ③ Callback 含 analyzers/dotnet/cs 打包资产，直接引用本仓分析器 DLL（netstandard2.0 单 TFM，路径固定）。
-        var callbackCsprojSource = File.ReadAllText(Path.Combine(
-            GetSolutionRoot(), "Mud.Wechat.Work.Callback", "Mud.Wechat.Work.Callback.csproj"));
+        var callbackCsprojSource = File.ReadAllText(SourcePath(
+            "Mud.Wechat.Work.Callback", "Mud.Wechat.Work.Callback.csproj"));
         callbackCsprojSource.Should().Contain("analyzers/dotnet/cs", "CB24：随包下发分析器资产");
         callbackCsprojSource.Should().Contain(
             "Mud.Wechat.Callback.Analyzers.dll",
@@ -1468,8 +1468,8 @@ public class WechatCallbackContractGuards
     [Fact]
     public void CallbackHandlerAnalyzer_MetadataNames_ShouldMatchRuntimeTypes()
     {
-        var analyzerSource = File.ReadAllText(Path.Combine(
-            GetSolutionRoot(), "Mud.Wechat.Callback.Analyzers", "WechatCallbackHandlerAnalyzer.cs"));
+        var analyzerSource = File.ReadAllText(SourcePath(
+            "Mud.Wechat.Callback.Analyzers", "WechatCallbackHandlerAnalyzer.cs"));
 
         var expected = new (string ConstName, string MetadataName)[]
         {
@@ -1522,4 +1522,22 @@ public class WechatCallbackContractGuards
 
         return directory!.FullName;
     }
+
+    /// <summary>
+    /// 解析源工程内路径。源码已归类至 <c>Src/&lt;Area&gt;/&lt;ProjectName&gt;</c>（2026-10 源码归类迁移），
+    /// 守卫按 csproj 名称定位工程目录（带缓存），不再硬编码层级 —— 目录再迁移时守卫不随之漂移。
+    /// </summary>
+    private static string SourcePath(params string[] segments) =>
+        Path.Combine(new[] { SourceProjectDir(segments[0]) }.Concat(segments.Skip(1)).ToArray());
+
+    private static string SourceProjectDir(string projectName) =>
+        SourceProjectDirs.GetOrAdd(projectName, static name =>
+            Directory.EnumerateFiles(GetSolutionRoot(), $"{name}.csproj", SearchOption.AllDirectories)
+                .Where(static f => !f.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.Ordinal)
+                                   && !f.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
+                .Select(static f => Path.GetDirectoryName(f))!
+                .FirstOrDefault()
+            ?? throw new DirectoryNotFoundException($"未找到工程 {name}.csproj（源码归类目录漂移，守卫定位失效）"));
+
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, string> SourceProjectDirs = new();
 }

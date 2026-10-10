@@ -24,9 +24,27 @@ public class WechatAbstractionsContractGuards
         return dir?.FullName ?? throw new InvalidOperationException("未找到 Mud.Wechat.slnx");
     }
 
+    /// <summary>
+    /// 解析源工程内路径。源码已归类至 <c>Src/&lt;Area&gt;/&lt;ProjectName&gt;</c>（2026-10 源码归类迁移），
+    /// 守卫按 csproj 名称定位工程目录（带缓存），不再硬编码层级 —— 目录再迁移时守卫不随之漂移。
+    /// </summary>
+    private static string SourcePath(params string[] segments) =>
+        Path.Combine(new[] { SourceProjectDir(segments[0]) }.Concat(segments.Skip(1)).ToArray());
+
+    private static string SourceProjectDir(string projectName) =>
+        SourceProjectDirs.GetOrAdd(projectName, static name =>
+            Directory.EnumerateFiles(GetSolutionRoot(), $"{name}.csproj", SearchOption.AllDirectories)
+                .Where(static f => !f.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.Ordinal)
+                                   && !f.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
+                .Select(static f => Path.GetDirectoryName(f))!
+                .FirstOrDefault()
+            ?? throw new DirectoryNotFoundException($"未找到工程 {name}.csproj（源码归类目录漂移，守卫定位失效）"));
+
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, string> SourceProjectDirs = new();
+
     private static string ReadCsproj(string relativePath)
     {
-        var path = Path.Combine(GetSolutionRoot(), relativePath);
+        var path = SourcePath(relativePath.Split('/'));
         File.Exists(path).Should().BeTrue($"守卫依赖的工程文件必须存在：{relativePath}");
         return File.ReadAllText(path);
     }
@@ -106,6 +124,7 @@ public class WechatAbstractionsContractGuards
                      "Mud.Wechat.OfficialAccount.Abstractions/Mud.Wechat.OfficialAccount.Abstractions.csproj",
                      "Mud.Wechat.MiniProgram.Abstractions/Mud.Wechat.MiniProgram.Abstractions.csproj",
                      "Mud.Wechat.Pay.Abstractions/Mud.Wechat.Pay.Abstractions.csproj",
+                     "Mud.Wechat.OpenPlatform.Abstractions/Mud.Wechat.OpenPlatform.Abstractions.csproj",
                  })
         {
             ReadCsproj(project).Should().Contain("Mud.Wechat.Abstractions.csproj", $"{project} 必须引用公用层");
@@ -185,7 +204,7 @@ public class WechatAbstractionsContractGuards
                      "Mud.Wechat.Pay.Callback/Mud.Wechat.Pay.Callback.csproj",
                  })
         {
-            var source = File.ReadAllText(Path.Combine(root, hostPackage.Replace('/', Path.DirectorySeparatorChar)));
+            var source = File.ReadAllText(SourcePath(hostPackage.Split('/')));
             var withoutComments = StripXmlComments(source);
 
             withoutComments.Should().NotContain("<IsPackable>",
@@ -203,7 +222,7 @@ public class WechatAbstractionsContractGuards
                      "Mud.Wechat.Callback.Analyzers/Mud.Wechat.Callback.Analyzers.csproj",
                  })
         {
-            var source = File.ReadAllText(Path.Combine(root, toolProject.Replace('/', Path.DirectorySeparatorChar)));
+            var source = File.ReadAllText(SourcePath(toolProject.Split('/')));
             StripXmlComments(source).Should().Contain("<IsPackable>false</IsPackable>",
                 $"{toolProject} 为随包下发的工具链，必须 IsPackable=false");
         }
@@ -221,21 +240,23 @@ public class WechatAbstractionsContractGuards
     /// </summary>
     private static string[] ProductLineSourceRoots()
     {
-        var root = GetSolutionRoot();
         return new[]
         {
-            Path.Combine(root, "Mud.Wechat.Work"),
-            Path.Combine(root, "Mud.Wechat.Work.Abstractions"),
-            Path.Combine(root, "Mud.Wechat.Work.Callback"),
-            Path.Combine(root, "Mud.Wechat.OfficialAccount"),
-            Path.Combine(root, "Mud.Wechat.OfficialAccount.Abstractions"),
+            SourceProjectDir("Mud.Wechat.Work"),
+            SourceProjectDir("Mud.Wechat.Work.Abstractions"),
+            SourceProjectDir("Mud.Wechat.Work.Callback"),
+            SourceProjectDir("Mud.Wechat.OfficialAccount"),
+            SourceProjectDir("Mud.Wechat.OfficialAccount.Abstractions"),
             // 微信小程序产品线（设计方案 v2 §3）：令牌复用公众号基座，但不得自行登记白名单/判定器单槽。
-            Path.Combine(root, "Mud.Wechat.MiniProgram"),
-            Path.Combine(root, "Mud.Wechat.MiniProgram.Abstractions"),
+            SourceProjectDir("Mud.Wechat.MiniProgram"),
+            SourceProjectDir("Mud.Wechat.MiniProgram.Abstractions"),
             // 微信支付产品线（设计方案 v2 §2）：**不使用 [Token]**，白名单零改动（PAY-B8）。
-            Path.Combine(root, "Mud.Wechat.Pay"),
-            Path.Combine(root, "Mud.Wechat.Pay.Abstractions"),
-            Path.Combine(root, "Mud.Wechat.Pay.Callback"),
+            SourceProjectDir("Mud.Wechat.Pay"),
+            SourceProjectDir("Mud.Wechat.Pay.Abstractions"),
+            SourceProjectDir("Mud.Wechat.Pay.Callback"),
+            // 微信开放平台产品线（2026-10 新增）：同受 AB-G4 / AB-G5 单点登记约束。
+            SourceProjectDir("Mud.Wechat.OpenPlatform"),
+            SourceProjectDir("Mud.Wechat.OpenPlatform.Abstractions"),
         };
     }
 
@@ -273,7 +294,7 @@ public class WechatAbstractionsContractGuards
                      "Mud.Wechat.Pay.Callback/WechatPayCallbackOptions.cs",
                  })
         {
-            var exists = File.Exists(Path.Combine(root, payConfigDto));
+            var exists = File.Exists(SourcePath(payConfigDto.Split('/')));
             var registered = audit.Contains(payConfigDto);
             registered.Should().Be(exists,
                 $"支付线配置 DTO「{payConfigDto}」的文件存在性与 $configFiles 登记必须同批（存在={exists}，登记={registered}）");
@@ -289,31 +310,36 @@ public class WechatAbstractionsContractGuards
         var slnx = File.ReadAllText(Path.Combine(root, "Mud.Wechat.slnx"));
         foreach (var project in new[]
                  {
-                     "Mud.Wechat.Abstractions/Mud.Wechat.Abstractions.csproj",
-                     "Mud.Wechat.OfficialAccount/Mud.Wechat.OfficialAccount.csproj",
-                     "Mud.Wechat.OfficialAccount.Abstractions/Mud.Wechat.OfficialAccount.Abstractions.csproj",
-                     "Mud.Wechat.OfficialAccount.DataModels/Mud.Wechat.OfficialAccount.DataModels.csproj",
-                     "Mud.Wechat.OfficialAccount.Callback/Mud.Wechat.OfficialAccount.Callback.csproj",
-                     "Mud.Wechat.Callback.Generator/Mud.Wechat.Callback.Generator.csproj",
-                     "Mud.Wechat.Callback.Analyzers/Mud.Wechat.Callback.Analyzers.csproj",
+                     // 2026-10 源码归类后，源工程位于 Src/<Area>/<ProjectName>（下同）。
+                     "Src/Core/Mud.Wechat.Abstractions/Mud.Wechat.Abstractions.csproj",
+                     "Src/OfficialAccount/Mud.Wechat.OfficialAccount/Mud.Wechat.OfficialAccount.csproj",
+                     "Src/OfficialAccount/Mud.Wechat.OfficialAccount.Abstractions/Mud.Wechat.OfficialAccount.Abstractions.csproj",
+                     "Src/OfficialAccount/Mud.Wechat.OfficialAccount.DataModels/Mud.Wechat.OfficialAccount.DataModels.csproj",
+                     "Src/OfficialAccount/Mud.Wechat.OfficialAccount.Callback/Mud.Wechat.OfficialAccount.Callback.csproj",
+                     "Src/Core/Mud.Wechat.Callback.Generator/Mud.Wechat.Callback.Generator.csproj",
+                     "Src/Core/Mud.Wechat.Callback.Analyzers/Mud.Wechat.Callback.Analyzers.csproj",
                      "Tests/Mud.Wechat.Abstractions.Tests/Mud.Wechat.Abstractions.Tests.csproj",
                      "Tests/Mud.Wechat.OfficialAccount.Tests/Mud.Wechat.OfficialAccount.Tests.csproj",
                      "Tests/Mud.Wechat.OfficialAccount.Callback.Tests/Mud.Wechat.OfficialAccount.Callback.Tests.csproj",
                      // 微信小程序产品线（3 源 + 1 测试）。
-                     "Mud.Wechat.MiniProgram/Mud.Wechat.MiniProgram.csproj",
-                     "Mud.Wechat.MiniProgram.Abstractions/Mud.Wechat.MiniProgram.Abstractions.csproj",
-                     "Mud.Wechat.MiniProgram.DataModels/Mud.Wechat.MiniProgram.DataModels.csproj",
+                     "Src/MiniProgram/Mud.Wechat.MiniProgram/Mud.Wechat.MiniProgram.csproj",
+                     "Src/MiniProgram/Mud.Wechat.MiniProgram.Abstractions/Mud.Wechat.MiniProgram.Abstractions.csproj",
+                     "Src/MiniProgram/Mud.Wechat.MiniProgram.DataModels/Mud.Wechat.MiniProgram.DataModels.csproj",
                      "Tests/Mud.Wechat.MiniProgram.Tests/Mud.Wechat.MiniProgram.Tests.csproj",
                      // 微信支付产品线（4 源 + 2 测试）。
-                     "Mud.Wechat.Pay/Mud.Wechat.Pay.csproj",
-                     "Mud.Wechat.Pay.Abstractions/Mud.Wechat.Pay.Abstractions.csproj",
-                     "Mud.Wechat.Pay.DataModels/Mud.Wechat.Pay.DataModels.csproj",
-                     "Mud.Wechat.Pay.Callback/Mud.Wechat.Pay.Callback.csproj",
+                     "Src/Pay/Mud.Wechat.Pay/Mud.Wechat.Pay.csproj",
+                     "Src/Pay/Mud.Wechat.Pay.Abstractions/Mud.Wechat.Pay.Abstractions.csproj",
+                     "Src/Pay/Mud.Wechat.Pay.DataModels/Mud.Wechat.Pay.DataModels.csproj",
+                     "Src/Pay/Mud.Wechat.Pay.Callback/Mud.Wechat.Pay.Callback.csproj",
                      "Tests/Mud.Wechat.Pay.Tests/Mud.Wechat.Pay.Tests.csproj",
                      "Tests/Mud.Wechat.Pay.Callback.Tests/Mud.Wechat.Pay.Callback.Tests.csproj",
                      // 可观测性适配包（1 源 + 1 测试）。
-                     "Mud.Wechat.OpenTelemetry/Mud.Wechat.OpenTelemetry.csproj",
+                     "Src/OpenPlatform/Mud.Wechat.OpenTelemetry/Mud.Wechat.OpenTelemetry.csproj",
                      "Tests/Mud.Wechat.OpenTelemetry.Tests/Mud.Wechat.OpenTelemetry.Tests.csproj",
+                     // 微信开放平台产品线（2026-10 新增，2 源 + 1 测试）。
+                     "Src/OpenPlatform/Mud.Wechat.OpenPlatform/Mud.Wechat.OpenPlatform.csproj",
+                     "Src/OpenPlatform/Mud.Wechat.OpenPlatform.Abstractions/Mud.Wechat.OpenPlatform.Abstractions.csproj",
+                     "Tests/Mud.Wechat.OpenPlatform.Tests/Mud.Wechat.OpenPlatform.Tests.csproj",
                  })
         {
             slnx.Should().Contain(project, "新增工程必须纳入解决方案（否则 verify-build 步骤 1 覆盖不到）");
@@ -376,7 +402,7 @@ public class WechatAbstractionsContractGuards
     public void AllowedBaseUrlDomains_ShouldCoverNewLinesWithoutDuplication()
     {
         var hosts = File.ReadAllText(
-            Path.Combine(GetSolutionRoot(), "Mud.Wechat.Abstractions", "WechatApiHosts.cs"));
+            SourcePath("Mud.Wechat.Abstractions", "WechatApiHosts.cs"));
 
         var allowed = WechatApiHosts.AllowedBaseUrlDomains;
 

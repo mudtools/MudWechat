@@ -42,9 +42,27 @@ public class WechatCallbackKernelContractGuards
         return dir?.FullName ?? throw new InvalidOperationException("未找到 Mud.Wechat.slnx");
     }
 
+    /// <summary>
+    /// 解析源工程内路径。源码已归类至 <c>Src/&lt;Area&gt;/&lt;ProjectName&gt;</c>（2026-10 源码归类迁移），
+    /// 守卫按 csproj 名称定位工程目录（带缓存），不再硬编码层级 —— 目录再迁移时守卫不随之漂移。
+    /// </summary>
+    private static string SourcePath(params string[] segments) =>
+        Path.Combine(new[] { SourceProjectDir(segments[0]) }.Concat(segments.Skip(1)).ToArray());
+
+    private static string SourceProjectDir(string projectName) =>
+        SourceProjectDirs.GetOrAdd(projectName, static name =>
+            Directory.EnumerateFiles(GetSolutionRoot(), $"{name}.csproj", SearchOption.AllDirectories)
+                .Where(static f => !f.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.Ordinal)
+                                   && !f.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
+                .Select(static f => Path.GetDirectoryName(f))!
+                .FirstOrDefault()
+            ?? throw new DirectoryNotFoundException($"未找到工程 {name}.csproj（源码归类目录漂移，守卫定位失效）"));
+
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, string> SourceProjectDirs = new();
+
     private static string ReadSource(string relativePath)
     {
-        var path = Path.Combine(GetSolutionRoot(), relativePath);
+        var path = SourcePath(relativePath.Split('/'));
         File.Exists(path).Should().BeTrue($"守卫依赖的源文件必须存在：{relativePath}");
         return File.ReadAllText(path, Encoding.UTF8);
     }
@@ -52,7 +70,7 @@ public class WechatCallbackKernelContractGuards
     /// <summary>枚举叶层回调内核目录下的全部 .cs（相对仓库根）。</summary>
     private static List<string> GetKernelFiles()
         => Directory
-            .EnumerateFiles(Path.Combine(GetSolutionRoot(), "Mud.Wechat.Abstractions", "Callback"), "*.cs",
+            .EnumerateFiles(SourcePath("Mud.Wechat.Abstractions", "Callback"), "*.cs",
                 SearchOption.AllDirectories)
             .Where(f => !f.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase)
                         && !f.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase))
@@ -184,7 +202,7 @@ public class WechatCallbackKernelContractGuards
             .Where(f => !f.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase)
                         && !f.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase)
                         && !f.Contains($"{Path.DirectorySeparatorChar}.docs{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase)
-                        && !f.StartsWith(Path.Combine(GetSolutionRoot(), "Mud.Wechat.Abstractions") + Path.DirectorySeparatorChar,
+                        && !f.StartsWith(SourceProjectDir("Mud.Wechat.Abstractions") + Path.DirectorySeparatorChar,
                             StringComparison.OrdinalIgnoreCase))
             .ToList();
 

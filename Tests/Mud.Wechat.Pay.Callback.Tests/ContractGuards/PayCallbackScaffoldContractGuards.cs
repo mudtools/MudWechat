@@ -34,7 +34,7 @@ public class PayCallbackScaffoldContractGuards
     public void Source_ShouldNotReuseXmlCallbackCrypto_WhenScaffold()
     {
         // ① 危害源存在性：WechatCallbackCrypto 必须仍公开于 Abstractions（支付回调可见）。
-        var abstractionsDir = Path.Combine(Root, "Mud.Wechat.Abstractions");
+        var abstractionsDir = SourceProjectDir("Mud.Wechat.Abstractions");
         var hazard = Directory.GetFiles(abstractionsDir, "WechatCallbackCrypto.cs", SearchOption.AllDirectories)
             .Where(f => !f.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.Ordinal)
                         && !f.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
@@ -43,7 +43,7 @@ public class PayCallbackScaffoldContractGuards
             "WechatCallbackCrypto 消失/改名 ⇒ 红线 7 守卫对象漂移，须同批核对本守卫（AGENTS §6：防静默空跑）");
 
         // ② 引用禁令：支付线全部源文件不得触碰 XML 回调密码学。
-        var srcRoot = Path.Combine(Root, "Mud.Wechat.Pay.Callback");
+        var srcRoot = SourceProjectDir("Mud.Wechat.Pay.Callback");
         Directory.Exists(srcRoot).Should().BeTrue($"目录缺失：{srcRoot}");
 
         var files = Directory.GetFiles(srcRoot, "*.cs", SearchOption.AllDirectories)
@@ -69,7 +69,7 @@ public class PayCallbackScaffoldContractGuards
     [Fact]
     public void ProjectReferences_ShouldReuseSharedLeafOnly_WhenScaffold()
     {
-        var csproj = Path.Combine(Root, "Mud.Wechat.Pay.Callback", "Mud.Wechat.Pay.Callback.csproj");
+        var csproj = SourcePath("Mud.Wechat.Pay.Callback", "Mud.Wechat.Pay.Callback.csproj");
         File.Exists(csproj).Should().BeTrue($"工程文件缺失：{csproj}");
 
         var xml = File.ReadAllText(csproj);
@@ -96,7 +96,7 @@ public class PayCallbackScaffoldContractGuards
     [Fact]
     public void CallbackProject_ShouldNotTargetNetStandard20_WhenScaffold()
     {
-        var csproj = Path.Combine(Root, "Mud.Wechat.Pay.Callback", "Mud.Wechat.Pay.Callback.csproj");
+        var csproj = SourcePath("Mud.Wechat.Pay.Callback", "Mud.Wechat.Pay.Callback.csproj");
         var raw = File.ReadAllText(csproj);
 
         raw.Should().Contain("<TargetFrameworks>net6.0;net8.0;net10.0</TargetFrameworks>");
@@ -130,4 +130,22 @@ public class PayCallbackScaffoldContractGuards
             return dir?.FullName ?? throw new InvalidOperationException("未找到仓库根（Mud.Wechat.slnx）");
         }
     }
+
+    /// <summary>
+    /// 解析源工程内路径。源码已归类至 <c>Src/&lt;Area&gt;/&lt;ProjectName&gt;</c>（2026-10 源码归类迁移），
+    /// 守卫按 csproj 名称定位工程目录（带缓存），不再硬编码层级 —— 目录再迁移时守卫不随之漂移。
+    /// </summary>
+    private static string SourcePath(params string[] segments) =>
+        Path.Combine(new[] { SourceProjectDir(segments[0]) }.Concat(segments.Skip(1)).ToArray());
+
+    private static string SourceProjectDir(string projectName) =>
+        SourceProjectDirs.GetOrAdd(projectName, static name =>
+            Directory.EnumerateFiles(Root, $"{name}.csproj", SearchOption.AllDirectories)
+                .Where(static f => !f.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.Ordinal)
+                                   && !f.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
+                .Select(static f => Path.GetDirectoryName(f))!
+                .FirstOrDefault()
+            ?? throw new DirectoryNotFoundException($"未找到工程 {name}.csproj（源码归类目录漂移，守卫定位失效）"));
+
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, string> SourceProjectDirs = new();
 }

@@ -431,12 +431,12 @@ public class WechatPayCryptoContractGuards
         }
 
         // 算法实现必须显式落在 System.Security.Cryptography（BCL 直调，无第三方密码学包）。
-        var signatureProvider = File.ReadAllText(Path.Combine(Root,
+        var signatureProvider = File.ReadAllText(SourcePath(
             "Mud.Wechat.Pay.Abstractions", "Credential", "WechatPaySignatureProvider.cs"));
         signatureProvider.Should().Contain("System.Security.Cryptography",
             "RSA 签名必须 BCL 直调（PAY-B6），不得引入 BouncyCastle 等第三方包");
 
-        var aesCodec = File.ReadAllText(Path.Combine(Root,
+        var aesCodec = File.ReadAllText(SourcePath(
             "Mud.Wechat.Pay.Abstractions", "Credential", "WechatPayAesGcmCodec.cs"));
         aesCodec.Should().Contain("System.Security.Cryptography",
             "AesGcm 必须 BCL 直调（PAY-B6）");
@@ -549,10 +549,38 @@ public class WechatPayCryptoContractGuards
         }
     }
 
+    /// <summary>
+    /// 解析源工程内路径。源码已归类至 <c>Src/&lt;Area&gt;/&lt;ProjectName&gt;</c>（2026-10 源码归类迁移），
+    /// 守卫按 csproj 名称定位工程目录（带缓存），不再硬编码层级 —— 目录再迁移时守卫不随之漂移。
+    /// </summary>
+    private static string SourcePath(params string[] segments) =>
+        Path.Combine(new[] { SourceProjectDir(segments[0]) }.Concat(segments.Skip(1)).ToArray());
+
+    private static string SourceProjectDir(string projectName) =>
+        SourceProjectDirs.GetOrAdd(projectName, static name =>
+            Directory.EnumerateFiles(Root, $"{name}.csproj", SearchOption.AllDirectories)
+                .Where(static f => !f.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.Ordinal)
+                                   && !f.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
+                .Select(static f => Path.GetDirectoryName(f))!
+                .FirstOrDefault()
+            ?? throw new DirectoryNotFoundException($"未找到工程 {name}.csproj（源码归类目录漂移，守卫定位失效）"));
+
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, string> SourceProjectDirs = new();
+
+    /// <summary>支付线四个工程的源码目录（按 csproj 定位，不硬编码层级）。</summary>
+    private static string[] PayProjectDirs()
+        => new[]
+        {
+            "Mud.Wechat.Pay",
+            "Mud.Wechat.Pay.Abstractions",
+            "Mud.Wechat.Pay.DataModels",
+            "Mud.Wechat.Pay.Callback",
+        }.Select(SourceProjectDir).ToArray();
+
     /// <summary>支付线源码（不含 bin/obj 与测试工程）——PAY-B6/B7 源码扫描的枚举集。</summary>
     private static string[] CollectPaySourceFiles()
-        => Directory.GetFiles(Root, "*.cs", SearchOption.AllDirectories)
-            .Where(p => p.StartsWith(Path.Combine(Root, "Mud.Wechat.Pay"), StringComparison.OrdinalIgnoreCase))
+        => PayProjectDirs()
+            .SelectMany(dir => Directory.GetFiles(dir, "*.cs", SearchOption.AllDirectories))
             .Where(p => !p.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
             .Where(p => !p.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
             .ToArray();

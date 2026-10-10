@@ -1,18 +1,18 @@
 # Mud.Wechat.Work.Callback
 
-企业微信 SDK **回调接收包**：多应用路由中间件、官方回调事件（授权 / 通讯录变更 / 客户联系 / 微信客服 / 邮箱 / 文档 / 日程 / 会议 / 微盘 / 直播 / OA 审批 / 家校 / 会话存档 / 安全 / 收银台订单等，**116 个事件键**）的验签、AES 解密、类型化事件分发、`suite_ticket` 仓储，以及智能机器人 JSON 回调通道。
+企业微信 SDK **回调接收包**：多应用路由中间件、官方回调事件（授权 / 通讯录变更 / 客户联系 / 微信客服 / 邮箱 / 文档 / 日程 / 会议 / 微盘 / 直播 / OA 审批 / 家校 / 会话存档 / 安全 / 接口调用许可 / 收银台订单等，已登记契约的事件键 **120 个**，官方口径合计 128）的验签、AES 解密、类型化事件分发、`suite_ticket` 仓储，以及智能机器人 JSON 回调通道。
 
 ## 内容
 
 - `WechatCallbackMiddleware`（`UseWechatWebhook()`）：HTTP 接入面——路径提取 AppKey（多应用路由）→ IP 白名单/方法/Content-Type/体长前置校验 → GET 走 URL 验证、POST 走事件接收与分发。
-- `WechatCallbackReceiver`：验签 → 时效窗口 → AES 解密 → `receiveid` 校验 → 一次性指纹去重 → 事件信封提取。
-- `WechatCallbackDispatcher` / `WechatCallbackHandlerRegistry` / `WechatCallbackInterceptorRegistry`：同步分发、软超时、处理器/拦截器匹配与隔离。
-- `WechatCallbackCrypto`：企业微信回调 AES 加解密（官方 32 字节块 PKCS7 填充，P0-1）。
+- `WechatCallbackReceiver`：验签 → 时效窗口 → AES 解密 → `receiveid` 校验 → 一次性指纹去重 → 事件信封提取。密码学内核（`WechatCallbackCrypto`）与重放端口（`IWechatCallbackReplayGuard`）已下沉 `Mud.Wechat.Abstractions` 叶层，与公众号 / 支付回调线共用。
+- `WechatCallbackDispatcher` / `WechatCallbackHandlerRegistry` / `WechatCallbackInterceptorRegistry`：同步分发、软超时、处理器/拦截器匹配与隔离（注册表基座 `WechatCallbackTypeRegistry<T>` 在叶层，「专属桶先于通配桶」的匹配序跨线一致）。
+- `WechatCallbackCrypto`（叶层实现，本包消费）：企业微信回调 AES 加解密（官方 32 字节块 PKCS7 填充，P0-1）。
 - `WechatCallbackEvent`（`Mud.Wechat.Work.Abstractions.Callback`）：事件信封与 `EventTypeKey`；并携带事件归属 `AppKey` / `AppType` / `Channel`（处理器可据此按应用模式分支，无需复制多份 handler）。
-- **事件载荷体系**（`Events/Payloads/` + `IWechatPayloadReader`）：把事件信封解析为**强类型载荷**（见下方「事件载荷」章节），覆盖官方 116 个事件键、42 个结构族载荷。旧的手写解析器与 11 个逐事件 DTO 已移除。
+- **事件载荷体系**（`Events/Payloads/` + `IWechatPayloadReader`）：把事件信封解析为**强类型载荷**（见下方「事件载荷」章节），45 个结构族载荷覆盖已登记的 120 个事件键，未登记键由 `GenericCallbackPayload` 兜底。旧的手写解析器与 11 个逐事件 DTO 已移除。
 - **智能机器人 JSON 通道**（`WechatBotCallbackReceiver` / `WechatBotEventDispatcher` / `WechatBotHandlerRegistry` / `WechatBotMediaDecryptor` / `WechatBotReplyWriter`）：智能机器人回调（官方 101033，`{"encrypt":"..."}` JSON 报文）的接收、分发、媒体解密与回复写入，验签/时效窗/指纹闸与 XML 侧同族同算法，GET echo 复用 XML 侧（见下方「智能机器人 JSON 通道」章节）。
 - `WechatCallbackException` / `WechatCallbackFailureKind`：失败类别与统一异常面（继承 `InvalidOperationException`）。
-- `IWechatCallbackReplayGuard` / `InMemoryWechatCallbackReplayGuard`：抗重放一次性指纹去重。
+- `IWechatCallbackReplayGuard` / `InMemoryWechatCallbackReplayGuard`（叶层类型，本包按 `TryAdd` 注册默认实现）：抗重放一次性指纹去重。
 - `WechatCallbackOptions` / `WechatAppCallbackOptions`：回调配置（`Apps` 字典为凭据唯一来源）。
 - `WechatCallbackServiceCollectionExtensions` / `WechatCallbackServiceBuilder`：DI 注册入口与处理器/拦截器链式注册。
 
@@ -39,7 +39,7 @@ public sealed class UserSyncHandler : WechatCallbackPayloadHandler<ContactUserCh
 }
 ```
 
-**结构族载荷**（官方报文结构同一的事件键共用一个类型，具体类别由信封 `ChangeType` 判别；**42 个载荷覆盖官方 116 个事件键**）：
+**结构族载荷**（官方报文结构同一的事件键共用一个类型，具体类别由信封 `ChangeType` 判别；**45 个载荷覆盖已登记的 120 个事件键**，守卫 CB4 / CB4b 锁定）：
 
 | 目录 | 载荷 | 覆盖事件键 |
 |---|---|---|
@@ -85,11 +85,15 @@ public sealed class UserSyncHandler : WechatCallbackPayloadHandler<ContactUserCh
 | `SchoolContact/` | `SchoolContactBatchChangedPayload` | `change_school_contact_batch`（家校通讯录批量变更） |
 | `Security/` | `SecurityDomainIpChangedPayload` | `change_domain_ip`（域名 IP 变更，官方仅自建） |
 | `MsgAudit/` | `MsgAuditNotifyPayload` | `msgaudit_notify`（会话内容存档） |
+| `License/` | `UnlicensedNotifyPayload` | `unlicensed_notify`（成员无许可提醒，应用数据通道） |
+| `License/` | `LicenseOrderPayload` | `license_pay_success` / `license_refund`（接口调用许可订单结果，套件指令通道） |
+| `License/` | `LicenseAutoActivatePayload` | `auto_activate`（自动激活通知，套件指令通道） |
 | `PayTool/` | `PayToolVersionOrderPayload` | `open_order` / `change_order` / `pay_for_app_success` / `refund` / `change_editon` / `cancel_order`（应用版本付费订单族，套件信封推送；`change_editon` 照抄官方原文拼写） |
 | — | `GenericCallbackPayload` | **任何未登记契约的事件键**（降级，`Values` 携带全部直系子节点） |
 
-> 官方回调契约事件键 **116 个**全部已登记（契约守卫 CB4b 双面锁定，授权族 `InfoType` 键由信封承载；
-> `kf_account_auth_change` 因官方同级重名多节点形态超出声明映射面，按 ADR-4 降级为通用载荷、不登记有损映射）。
+> 已登记契约的事件键 **120 个**（守卫 CB4b 以「`payloadTypes` 载荷侧并集」与「`[WechatCallbackContract]` 声明侧并集」
+> 双面锁定，授权族 `InfoType` 键由信封承载）；`WechatCallbackEventTypes` 常量共 136 个，官方口径合计 128（含授权信封 6）。
+> `kf_account_auth_change` 因官方同级重名多节点形态超出声明映射面，按 ADR-4 降级为通用载荷、不登记有损映射。
 > 企业内部开发 90240 / 第三方 90376 / 服务商代开发 96468 等三份文档正文逐字一致 ⇒ 一份载荷覆盖三模式；
 > 个别事件的开放面差异由契约声明承载（`open_approval_change` 不含代开发、`share_agent_change`/`share_chain_change` 仅自建、
 > 收银台订单族仅第三方套件通道、`change_domain_ip`/`msgaudit_notify` 仅自建）。
@@ -114,6 +118,7 @@ public sealed class UserSyncHandler : WechatCallbackPayloadHandler<ContactUserCh
 | `SchoolContact/` | 家校通讯录变更族 |
 | `Security/` | 安全事件族（域名 IP 变更） |
 | `MsgAudit/` | 会话内容存档族 |
+| `License/` | 接口调用许可族（无许可提醒 + 订单结果 + 自动激活） |
 | `PayTool/` | 应用版本付费订单族（收银台，套件指令通道） |
 | `Contracts/` | 跨族契约基座（不属单一族）—— `OfficialPayloadContracts`（partial 声明，方法体由生成器发射） |
 
@@ -124,8 +129,9 @@ public sealed class UserSyncHandler : WechatCallbackPayloadHandler<ContactUserCh
 > 与 `Abstractions/Enums/`）—— 嵌套 DTO 的 `[PayloadContract]` 与转换器必须同工程或依赖链内。
 >
 > **契约登记（P2）**：事件键 + 族前置条件 + 开放面声明在载荷类的 `[WechatCallbackContract]` 特性，
-> `OfficialPayloadContracts.RegisterAll` 方法体由 `Mud.Wechat.Work.Callback.Generator` 编译期发射
-> —— 新增事件键只需在载荷类声明特性，勿手改登记方法体（116 键全覆盖由守卫 CB4b 双面锁定）。
+> `OfficialPayloadContracts.RegisterAll` 方法体由 `Mud.Wechat.Callback.Generator`（`Src/Core/`，产品线中立工具工程）编译期发射
+> —— 新增事件键只需在载荷类声明特性，勿手改登记方法体（120 键全覆盖由守卫 CB4b 双面锁定，声明不完整由 `MUDCB001` 打红；
+> 处理器键与载荷契约的一致性由随包下发的 `Mud.Wechat.Callback.Analyzers` 在编译期校验，`MUDCB002~005`）。
 
 **三模式共用一份契约**：企业自建 / 第三方 / 服务商代开发的报文结构相同，
 差异只是「值是否出现」——由可空字段与 `payload.Values` 兜底读面承载，
@@ -372,4 +378,8 @@ public sealed class MyBotReplyHandler : IWechatBotCallbackEventHandler
 
 ## 依赖
 
-- `Mud.Wechat.Work.Abstractions`、`Mud.Wechat.Work.DataModels`
+- `Mud.Wechat.Work.Abstractions`、`Mud.Wechat.Work.DataModels`（**不引用主包 `Work`**，硬边界由守卫 CB1 锁定）
+- `Mud.HttpUtils.Generator` 3.0.3（分析器，产 `[PayloadContract]` 载荷的 `PayloadFieldMap`；Abstractions 侧的 `PrivateAssets` 不流向本工程，故此处显式引用）
+- `Mud.Wechat.Callback.Generator`（构建期分析器，发射 `RegisterAll`，`IsPackable=false` 不进发布链）
+- `Mud.Wechat.Callback.Analyzers`（构建期分析器 + 随本包内嵌 `analyzers/dotnet/cs` 下发给宿主，使 MUDCB002~005 在宿主侧生效）
+- ASP.NET 接入面：`netstandard2.0` 用 `Microsoft.AspNetCore.Http` / `.Abstractions` 2.3.9，`net6.0+` 用 `FrameworkReference Microsoft.AspNetCore.App`

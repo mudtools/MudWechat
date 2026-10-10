@@ -2,9 +2,13 @@
 
 企业微信 SDK **主包**：业务声明式客户端、模块注册器、AOT JsonContext 合并、errcode 令牌失效判定器。
 
+> **工程位置**：`Src/Work/Mud.Wechat.Work/`（解决方案按产品线分目录：`Src/Core` 跨线共享层、`Src/Work` 企业微信线、`Src/OfficialAccount`、`Src/MiniProgram`、`Src/Pay`、`Src/OpenPlatform`）。
+>
+> **勿与微信支付 APIv3 线混淆**：本包的 `AddPayApi()`（企业支付）与 `AddPayToolApi()`（收银台）是**企业微信**的支付能力、走企微 `access_token`；商户侧支付在独立产品线 `Mud.Wechat.Pay*`（凭据为商户 RSA 私钥签名、无 `access_token`）。
+
 ## 内容
 
-- **声明式业务客户端**（`Interfaces/`）：按功能族（模块）分目录，族内按域拆分接口，公共面父接口 + 自建/第三方/代开发能力差异端点子接口。共 31 个业务域：
+- **声明式业务客户端**（`Interfaces/`）：按功能族（模块）分目录，族内按域拆分接口，公共面父接口 + 自建/第三方/代开发能力差异端点子接口。共 35 个业务域（`Interfaces/` 35 个子目录）：
   - `Interfaces/Contacts/` — 通讯录：成员管理 / 部门管理 / 标签管理 / 查看权限（`ContactRules`）/ 异步导入（`Batch`）/ 异步导出（`Export`）
   - `Interfaces/ExternalContact/` — 客户联系：企业服务人员 / 客户 / 客户标签 / 在职继承 / 离职继承 / 客户群 / 群发 / 朋友圈 / 商品相册 / 联系我 / 拦截规则 / 统计 / 附件 / 获客助手等族
   - `Interfaces/CorpGroup/` — 上下游：基础 / 上下游通讯录（`ChainContacts`）/ 上下游规则（`Rules`）
@@ -35,8 +39,12 @@
   - `Interfaces/Gov/` — 政民沟通：网格结构 / 事件类别 / 巡查上报 / 居民上报
   - `Interfaces/Emergency/` — 紧急通知：发起语音电话 + 获取接听状态
   - `Interfaces/PromotionQrCode/` — 推广二维码：企业注册（注册码 / 注册状态）+ 通讯录迁移（官方仅第三方开放）
-  - `Interfaces/Aibot/` — 智能机器人：主动回复消息（`response_code` 一次性凭据鉴权，不带 `[Token]`）
-- **模块注册器**（`Extensions/`）：`AddWechatWorkServices(...)` + `WechatModule` 枚举 31 个成员（`ExternalContact` / `Message` / `Contact` / `Approval` / `Media` / `Identity` / `JsSdk` / `Agent` / `Authentication` / `Basic` / `Checkin` / `Meeting` / `Schedule` / `Wedoc` / `Wedrive` / `AccountId` / `Kf` / `Mail` / `Pay` / `Security` / `CorpGroup` / `School` / `Living` / `DataZone` / `MsgAudit` / `Invoice` / `Gov` / `Emergency` / `PromotionQrCode` / `PayTool` / `Aibot`），按需注册模块客户端。
+  - `Interfaces/Aibot/` — 智能机器人：主动回复消息（`response_code` 一次性凭据鉴权，不带 `[Token]`）；回调接收与被动回复走 Callback 包 JSON 通道
+  - `Interfaces/License/` — 接口调用许可（官方仅第三方/代开发开放，四族 25 端点统一走 `provider_access_token`）：订单管理 13 / 账号管理 9 / 应用管理 1 / 自动激活设置 2
+  - `Interfaces/Webhook/` — 群机器人 Webhook 推送：发送消息 8 种 msgtype 逐类型一方法（同路由 `/cgi-bin/webhook/send`）+ 上传媒体文件，共 9 端点；凭据为 URL Query 上的 `key`（官方文档 91770，每个机器人 20 条/分钟）
+  - `Interfaces/Hr/` — 人事助手（花名册）：获取员工字段配置 99131 / 获取花名册信息 99132 / 更新花名册信息 99133，官方仅自建开放
+  - `Interfaces/Dial/` — 公费电话：获取公费电话拨打记录 93662（官方仅自建；与「紧急通知」域的 `pstncc` 路由族分属官方两棵章节树）
+- **模块注册器**（`Extensions/`）：`AddWechatWorkServices(...)` + `WechatModule` 枚举 35 个成员（`ExternalContact` / `Message` / `Contact` / `Approval` / `Media` / `Identity` / `JsSdk` / `Agent` / `Authentication` / `Basic` / `Checkin` / `Meeting` / `Schedule` / `Wedoc` / `Wedrive` / `AccountId` / `Kf` / `Mail` / `Pay` / `Security` / `CorpGroup` / `School` / `Living` / `DataZone` / `MsgAudit` / `Invoice` / `Gov` / `Emergency` / `PromotionQrCode` / `PayTool` / `Aibot` / `License` / `Webhook` / `Hr` / `Dial`）+ `AddAllApis()` / `AddModules()`，按需注册模块客户端。`Build()` 校验 `AddWechatApp` 已先行，否则抛；`AddAuthenticationApi()` 额外挂授权编排服务，`AddWebhookApi()` 在注册期把 `key` 登记为进程级强制掩码参数名。
 - **授权编排**（`Services/Authorization/`）：`IWechatWorkAuthorizationService`（换码/刷新/撤销/枚举，单飞门 + 结果记忆）与 `IWechatAuthorizationCoordinator`（回调驱动自动化），策略统一落 `WechatAuthorizationOptions`。
 - **errcode 令牌失效判定器**（`TokenManagers/`）：识别令牌失效错误码并触发恢复，经 `TokenRecoveryOptions.TokenInvalidationDetector` 编程式注入。
 - **JSON 解析器合并**（`Extensions/WechatJsonResolverExtensions.cs`）：合并组件与领域 JSON 上下文进组件序列化管线。
@@ -118,12 +126,14 @@ WechatCorpAuthorization authorization = await auth.ExchangeAuthCodeAsync(authCod
 
 ## 依赖
 
-- `Mud.Wechat.Work.Abstractions`、`Mud.Wechat.Work.DataModels`
-- `Mud.HttpUtils` 3.0.1
+- `Mud.Wechat.Work.Abstractions`、`Mud.Wechat.Work.DataModels`（后者与企业微信叶层 `Mud.Wechat.Abstractions` 的共享关系经 Abstractions 传递，本包不直接引用叶层）
+- `Mud.HttpUtils` 3.0.3 + `Mud.HttpUtils.Generator` 3.0.3（分析器，`PrivateAssets=all`）
 
 ## 说明
 
-- 令牌注入统一走 Query（企业微信契约），白名单由契约守卫锁定，新增注入接口须评估后显式扩展守卫。
+- **接口命名空间按形态二分**（守卫 `WechatInterfaceNamespaceContractGuards` N1~N3 锁定，计数 147 父接口 / 299 可注入接口，合计 446）：`IsAbstract = true` 的公共父接口落 `Mud.Wechat.Work.Interfaces`（契约面，不注册 DI），可注入的子接口落 `Mud.Wechat.Work`——宿主只 `using Mud.Wechat.Work;` 即得全部可用接口且不被 147 个父接口污染；确需向上转型者自行补 `using Mud.Wechat.Work.Interfaces;`。生成实现类随之落 `…Work.Interfaces.Internal` / `…Work.Internal`。
+- 令牌注入统一走 Query（企业微信契约），白名单由契约守卫 G5 锁定，**新增注入接口须评估后显式扩展守卫**。
 - 应用类型子接口必须声明凭据归属域 `[Token(TokenManagerKey = WechatTokenManagerKeys.InternalAccessToken | CorpAccessToken)]`，归属域错配在 `WechatAppContext.GetTokenManager` 单点 fail-fast。
 - 新增 `[HttpJsonSerializable]` DTO 后运行 `scripts/AddHttpJsonSerializable.ps1` + `scripts/GenerateJsonContext.ps1` 重新生成所在域的 JsonContext（生成物提交进版本控制，勿手改）；Abstractions 域手写登记进 `AuthenticationJsonContext`。未登记类型被组件分析器 `AOT006` 拦下。
 - 各域面向的应用类型差异（官方仅自建开放 / 三类应用公共面 / 差异端点在子接口 / 零端点父接口）以接口 XML 注释与 `Tests/**/ContractGuards/` 契约守卫为权威。
+- 契约守卫位于 `Tests/Mud.Wechat.Work.Tests/ContractGuards/`（60 个文件）：通用面 `WechatContractGuards`（G1 HttpUtils 单版本 … G10 路由单一所有者，其中 G5 = Query 令牌注入白名单、G7 = 脱敏词表与自过期豁免）、令牌归属域 `WechatTokenOwnerContractGuards`（TO1~TO3）、命名空间分区 `WechatInterfaceNamespaceContractGuards`（N1~N3）、回调面 `WechatCallbackContractGuards`（CB 系列）、群机器人 `WechatWebhookContractGuards`（WEB1~WEB4）+ 逐域端点/路由守卫。新增或迁移 `[HttpClientApi]` 接口必须先跑 N1~N3。

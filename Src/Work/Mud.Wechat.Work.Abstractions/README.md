@@ -6,10 +6,10 @@
 
 - **令牌基座**（`Authentication/`）：`gettoken` / `get_provider_token` / `get_suite_token` / `get_corp_token` 令牌签发客户端，令牌管理器模板基座与各类型管理器（企业令牌按 `AppType` 分流，企业级令牌一企一份由 scope 机制承担）。应用类型子接口声明**凭据归属域**（`WechatTokenManagerKeys`：`Internal` / `Corp` 两管理器键），归属域错配在 `WechatAppContext.GetTokenManager` 单点 fail-fast（`WechatTokenOwnerMismatchException`，不静默取错令牌）。
 - **多应用管理**（`Authentication/MultiApp/`）：`IAppManager<IWechatAppContext>` 直连实现，注册表单一来源；配置读取非物化。企业作用域切换经 `IWechatAppContextSwitcher.UseCorpScope(appKey, authCorpId, permanentCode)`（一次性 `using`，进入时写入「应用 + 企业」两级上下文快照、释放时幂等逆序还原）。
-- **配置面**（`Configuration/`）：`WechatAppConfig` 按应用类型校验互斥必填项（启动阶段即失败）；`BaseUrl` 白名单（SSRF 防线，自定义主机登记 `WechatCustomBaseUrlRegistry`）；AppKey 形状校验（防令牌键别名）。
-- **回调事件信封与载荷转换基座**（`Callback/`）：`WechatCallbackEvent` 信封（`EventTypeKey` + 只读快照 `AppKey`/`AppType`/`Channel`）、官方事件键常量 `WechatCallbackEventTypes`；载荷声明化契约与转换器（`[WechatCallbackContract]` / `[PayloadContract]`、`WechatPayloadConverter`、`WechatPayloadMaterializer`、事件键级开放面 `WechatOpenSurface` / `WechatEventFamilyOpenSurface`）；智能机器人信封（`Callback/Bots/`：`WechatBotCallbackEvent` / `WechatBotEventTypes` / `IWechatBotCallbackEventHandler` / 回复支撑）。
+- **配置面**（`Configuration/`）：`WechatAppConfig : WechatAppConfigBase`（叶层基座给 `AppKey`/`BaseUrl`/`AllowCustomBaseUrl`/`TimeoutSeconds`/`TokenRefreshThreshold`/`IsDefault`，本包补 `AppType`/`CorpId`/`AgentId`/`AgentSecret`/`ProviderSecret`/`SuiteId`/`SuiteSecret`）按应用类型校验互斥必填项（启动阶段即失败）；`BaseUrl` 白名单（SSRF 防线，域名与 `AllowedBaseUrlDomains` 已下沉叶层 `WechatApiHosts`，跨产品线并集单一来源；自定义主机登记 `WechatCustomBaseUrlRegistry`）；AppKey 形状校验（防令牌键别名）。
+- **回调事件信封与载荷转换基座**（`Callback/`）：`WechatCallbackEvent` 信封（`EventTypeKey` + 只读快照 `AppKey`/`AppType`/`Channel`）、官方事件键常量 `WechatCallbackEventTypes`（**136 个 `public const string`**，其中有强类型载荷并登记契约的键为 120，其余按官方文档口径见守卫 CB 系列）；载荷声明化契约与转换器（`[WechatCallbackContract]` / `[PayloadContract]`、`WechatPayloadConverter`、`WechatPayloadMaterializer`、事件键级开放面 `WechatOpenSurface` / `WechatEventFamilyOpenSurface`）；智能机器人信封（`Callback/Bots/`：`WechatBotCallbackEvent` / `WechatBotEventTypes` / `IWechatBotCallbackEventHandler` / 回复支撑）。加解密与验签本身在叶层 `Mud.Wechat.Abstractions.Callback.WechatCallbackCrypto`。
 - **收银台签名**：`WechatPayToolSignature`（官方 `sig` = `HMAC-SHA256` + Base64，`sig` 字段本身与空值不参与签名）。
-- **常量/枚举/异常**：`WechatTokenTypes`（`"Wechat."` 前缀隔离）、错误码、异常类型。
+- **常量/枚举/异常**：`WechatTokenTypes`（`"Wechat."` 前缀隔离）、`WechatTokenManagerKeys`（仅 `InternalAccessToken` / `CorpAccessToken` 两键——只有 `Wechat.AccessToken` 需要归属域消歧，provider/suite 令牌不增设）、错误码、`WechatWorkException : WechatApiException`（叶层）并经 `WechatApiResponseGuard.ThrowIfFailed` 单点判定。
 
 ## 令牌键布局
 
@@ -41,8 +41,9 @@ public sealed class AuthCorpCaller(IWechatAppContextSwitcher switcher)
 
 ## 依赖
 
+- `Mud.Wechat.Abstractions`（跨产品线共享叶层：配置基座、令牌存储端口、响应契约与异常基底、回调密码学与重放端口、可观测性契约面）
 - `Mud.Wechat.Work.DataModels`
-- `Mud.HttpUtils` 3.0.1、`Microsoft.Extensions.Http` / `Hosting.Abstractions`
+- `Mud.HttpUtils` 3.0.3、`Mud.HttpUtils.Generator` 3.0.3（分析器）、`Microsoft.Extensions.Http` / `Hosting.Abstractions`
 
 ## 说明
 

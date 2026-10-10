@@ -244,7 +244,7 @@ public class WechatBotContractGuards
     [Fact]
     public void Middleware_ShouldKeepXmlPathIntactWhileAddingJsonPath()
     {
-        var path = Path.Combine(GetSolutionRoot(),
+        var path = SourcePath(
             "Mud.Wechat.Work.Callback", "WechatCallbackMiddleware.cs");
         var source = File.ReadAllText(path);
 
@@ -293,7 +293,7 @@ public class WechatBotContractGuards
                 "空包取空 JSON 对象：兼容官方「直接回复空包」与「应答壳可被 JSON 解析」两种解读");
 
         // 指纹闸顺序：解密之后（与 XML 侧同一条 fail-closed 语义）。
-        var receiverPath = Path.Combine(GetSolutionRoot(),
+        var receiverPath = SourcePath(
             "Mud.Wechat.Work.Callback", "WechatBotCallbackReceiver.cs");
         var receiverSource = File.ReadAllText(receiverPath);
         var decryptIndex = receiverSource.IndexOf("WechatCallbackCrypto.Decrypt(", StringComparison.Ordinal);
@@ -318,4 +318,22 @@ public class WechatBotContractGuards
 
         return directory!.FullName;
     }
+
+    /// <summary>
+    /// 解析源工程内路径。源码已归类至 <c>Src/&lt;Area&gt;/&lt;ProjectName&gt;</c>（2026-10 源码归类迁移），
+    /// 守卫按 csproj 名称定位工程目录（带缓存），不再硬编码层级 —— 目录再迁移时守卫不随之漂移。
+    /// </summary>
+    private static string SourcePath(params string[] segments) =>
+        Path.Combine(new[] { SourceProjectDir(segments[0]) }.Concat(segments.Skip(1)).ToArray());
+
+    private static string SourceProjectDir(string projectName) =>
+        SourceProjectDirs.GetOrAdd(projectName, static name =>
+            Directory.EnumerateFiles(GetSolutionRoot(), $"{name}.csproj", SearchOption.AllDirectories)
+                .Where(static f => !f.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.Ordinal)
+                                   && !f.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
+                .Select(static f => Path.GetDirectoryName(f))!
+                .FirstOrDefault()
+            ?? throw new DirectoryNotFoundException($"未找到工程 {name}.csproj（源码归类目录漂移，守卫定位失效）"));
+
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, string> SourceProjectDirs = new();
 }

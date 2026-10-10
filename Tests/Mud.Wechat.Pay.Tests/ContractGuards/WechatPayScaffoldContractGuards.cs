@@ -128,7 +128,7 @@ public class WechatPayScaffoldContractGuards
     [Fact]
     public void ProjectReferences_ShouldIsolateProductLines_WhenScaffold()
     {
-        var csproj = Path.Combine(Root, "Mud.Wechat.Pay", "Mud.Wechat.Pay.csproj");
+        var csproj = SourcePath("Mud.Wechat.Pay", "Mud.Wechat.Pay.csproj");
         File.Exists(csproj).Should().BeTrue($"工程文件缺失：{csproj}");
 
         var xml = File.ReadAllText(csproj);
@@ -160,4 +160,22 @@ public class WechatPayScaffoldContractGuards
             return dir?.FullName ?? throw new InvalidOperationException("未找到仓库根（Mud.Wechat.slnx）");
         }
     }
+
+    /// <summary>
+    /// 解析源工程内路径。源码已归类至 <c>Src/&lt;Area&gt;/&lt;ProjectName&gt;</c>（2026-10 源码归类迁移），
+    /// 守卫按 csproj 名称定位工程目录（带缓存），不再硬编码层级 —— 目录再迁移时守卫不随之漂移。
+    /// </summary>
+    private static string SourcePath(params string[] segments) =>
+        Path.Combine(new[] { SourceProjectDir(segments[0]) }.Concat(segments.Skip(1)).ToArray());
+
+    private static string SourceProjectDir(string projectName) =>
+        SourceProjectDirs.GetOrAdd(projectName, static name =>
+            Directory.EnumerateFiles(Root, $"{name}.csproj", SearchOption.AllDirectories)
+                .Where(static f => !f.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.Ordinal)
+                                   && !f.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
+                .Select(static f => Path.GetDirectoryName(f))!
+                .FirstOrDefault()
+            ?? throw new DirectoryNotFoundException($"未找到工程 {name}.csproj（源码归类目录漂移，守卫定位失效）"));
+
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, string> SourceProjectDirs = new();
 }

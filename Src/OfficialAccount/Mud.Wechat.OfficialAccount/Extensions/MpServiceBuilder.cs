@@ -116,6 +116,11 @@ public class MpServiceBuilder
             [MpModule.Invoice] = new MpModuleRegistrar(
                 MpModule.Invoice,
                 s => s.AddInvoiceWebApiHttpClient()),
+            // 卡券域双接口同注册组（照 openApi 先例）：主体生命周期/投放 11 端点 + 券码核销 3 端点，
+            // 由同一条生成注册入口 AddCardWebApiHttpClient() 装载。
+            [MpModule.Card] = new MpModuleRegistrar(
+                MpModule.Card,
+                s => s.AddCardWebApiHttpClient()),
         };
 
     /// <summary>
@@ -275,6 +280,14 @@ public class MpServiceBuilder
     /// </summary>
     /// <returns>注册器（链式）。</returns>
     public MpServiceBuilder AddInvoiceApi() => AddModule(MpModule.Invoice);
+
+    /// <summary>
+    /// 注册卡券（mp 卡券）（14 端点双接口：<c>IMpCardService</c> 11 端点建卡/查卡/改卡/库存/删除/
+    /// 二维码/落地页/卡面组件开关/测试白名单 + <c>IMpCardCodeService</c> 3 端点核销/查码状态/解密；
+    /// 全部 POST、只消费 <c>access_token</c>，前端取卡用的 <c>api_ticket</c> 由 Abstractions 的票据服务承载）。
+    /// </summary>
+    /// <returns>注册器（链式）。</returns>
+    public MpServiceBuilder AddCardApi() => AddModule(MpModule.Card);
 
     /// <summary>注册全部模块。</summary>
     /// <returns>注册器（链式）。</returns>

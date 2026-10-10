@@ -26,8 +26,9 @@ public class WechatPayScaffoldContractGuards
     [Fact]
     public void Interfaces_ShouldNotDeclareTokenAttribute_WhenScaffold()
     {
-        var asm = Assembly.Load("Mud.Wechat.Pay.Abstractions");
-        asm.GetName().Name.Should().Be("Mud.Wechat.Pay.Abstractions");
+        // 以锚定类型取契约面程序集，不用 Assembly.Load("…")：按名加载在 AOT / 裁剪下不可用，
+        // 且与 WechatPayCryptoContractGuards 对支付源码的反模式断言（禁 Assembly.Load）自相矛盾。
+        var asm = typeof(Mud.Wechat.Pay.Abstractions.Configuration.WechatPayMerchantConfig).Assembly;
 
         var offenders = asm.GetTypes()
             .Where(t => t.IsInterface)

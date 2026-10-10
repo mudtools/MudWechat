@@ -34,15 +34,11 @@ namespace Mud.Wechat.OfficialAccount.Tests.ContractGuards;
 /// </remarks>
 public class MpRouteCountGuard
 {
-    /// <summary>P4 已完成域（Store 12 + OneCode 6 + Invoice 17）后主程序集公开接口的去重路由数
-    /// （127 − 6 非特性路由 + 18 + 12 + 6 + 17 = 174）。</summary>
-    private const int ExpectedMainInterfaceRoutes = 174;
-
-    /// <summary>全量去重路由数（174 + AbstractsAuth 3 + 下载通道 3 = 180）。</summary>
-    private const int ExpectedTotalRoutes = 180;
-
-    /// <summary>官方面唯一路由数（索引页表格取值并集，方案 §1.1 口径）。</summary>
-    private const int ExpectedOfficialRoutes = 196;
+    // 三个聚合计数集中维护在 Tests/ContractBaseline.cs（改数字只改那一处）；
+    // 各自的推导算式（各域增量、基座与下载通道的加项）也记在该文件的 remarks 中。
+    private const int ExpectedMainInterfaceRoutes = Baseline.OfficialAccount.MainInterfaceRoutes;
+    private const int ExpectedTotalRoutes = Baseline.OfficialAccount.TotalRoutes;
+    private const int ExpectedOfficialRoutes = Baseline.OfficialAccount.OfficialRoutes;
 
     /// <summary>核验守卫 RC1：主程序集接口路由去重计数与方案台账一致。</summary>
     [Fact]

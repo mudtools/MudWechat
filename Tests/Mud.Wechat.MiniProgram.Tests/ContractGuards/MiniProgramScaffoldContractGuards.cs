@@ -51,7 +51,7 @@ public class MiniProgramScaffoldContractGuards
         forbidden.Should().BeEmpty("MiniProgramTokenTypes 会让 MpTokenManagerRegistry 单槽 Resolve 失效");
 
         // 小程序程序集内亦不得自立令牌类型常量类。
-        var mpAsm = LoadProductLine("Mud.Wechat.MiniProgram");
+        var mpAsm = LoadMiniProgramAssembly();
         mpAsm.GetTypes()
             .Where(t => t.IsClass && t.IsPublic && t.Name.EndsWith("TokenTypes", StringComparison.Ordinal))
             .Should().BeEmpty("小程序线不得自建令牌类型常量，统一走 MpTokenTypes");
@@ -73,7 +73,7 @@ public class MiniProgramScaffoldContractGuards
     [Fact]
     public void Interfaces_ShouldNotUseAbstractParents_WhenContractLanded()
     {
-        var asm = LoadProductLine("Mud.Wechat.MiniProgram");
+        var asm = LoadMiniProgramAssembly();
 
         var abstractParents = asm.GetTypes()
             .Where(static t => t.IsInterface)
@@ -99,7 +99,7 @@ public class MiniProgramScaffoldContractGuards
         var oaRoutes = CollectRequestUris(typeof(MpTokenTypes).Assembly);
         oaRoutes.Should().NotBeEmpty("公众号线路由是本守卫的参照集，为空说明反射口径失效，守卫会假绿");
 
-        var mpRoutes = CollectRequestUris(LoadProductLine("Mud.Wechat.MiniProgram"));
+        var mpRoutes = CollectRequestUris(LoadMiniProgramAssembly());
 
         var overlap = mpRoutes.Intersect(oaRoutes, StringComparer.Ordinal).ToArray();
         overlap.Should().BeEmpty(
@@ -174,14 +174,13 @@ public class MiniProgramScaffoldContractGuards
 
     private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, string> SourceProjectDirs = new();
 
-    private static Assembly LoadProductLine(string name)
-    {
-        var asm = AppDomain.CurrentDomain.GetAssemblies()
-            .FirstOrDefault(a => a.GetName().Name == name)
-            ?? Assembly.Load(name);
-        asm.GetName().Name.Should().Be(name);
-        return asm;
-    }
+    /// <summary>
+    /// 取小程序主包程序集：以该包内的<b>锚定类型</b>定位（<c>typeof(T).Assembly</c>）。
+    /// 不用 <c>Assembly.Load("Mud.Wechat.MiniProgram")</c> —— 按名加载在 AOT / 裁剪下不可用，
+    /// 且把「程序集叫什么」写进断言（改名 / 合并即红，掩盖真正要守的分层语义）。
+    /// </summary>
+    private static Assembly LoadMiniProgramAssembly() =>
+        typeof(Mud.Wechat.MiniProgram.Extensions.MiniProgramModule).Assembly;
 
     private static HashSet<string> CollectRequestUris(Assembly asm)
     {

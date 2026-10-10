@@ -12,8 +12,14 @@ REM               Requires the NUGET_API_KEY environment variable.
 REM   /nopause    Do not pause at the end (for scripting / CI).
 REM
 REM Notes:
-REM   * All 11 packages are packed into .\artifacts (Mud.Wechat
-REM     .Abstractions / .Work.* / .Redis / .OfficialAccount.* / .OpenTelemetry).
+REM   * Every packable source project is packed into .\artifacts - six product lines
+REM     (.Work.* / .OfficialAccount.* / .MiniProgram.* / .Pay.* / .OpenPlatform.*
+REM     / .Ads.*) plus the shared .Abstractions leaf and .OpenTelemetry.
+REM   * The **solution** drives the packing, and the expected set is **derived from
+REM     Src\**\*.csproj** (a project with <IsPackable>false</IsPackable> is a build-time
+REM     tool and produces no package): moving a csproj between Src/<Area> folders
+REM     therefore cannot silently drop it from the release (that is exactly how the
+REM     hard-coded 11-package list went stale).
 REM   * Version is passed as -p:Version=... so assembly and package
 REM     versions cannot drift apart (Directory.Build.props pins <Version>,
 REM     which makes --version-suffix silently ignored).
@@ -24,7 +30,11 @@ setlocal EnableExtensions EnableDelayedExpansion
 cd /d "%~dp0"
 
 set "OUTPUT_DIR=artifacts"
-set "PROJECTS=Mud.Wechat.Abstractions Mud.Wechat.Work Mud.Wechat.Work.Abstractions Mud.Wechat.Work.Callback Mud.Wechat.Work.DataModels Mud.Wechat.Redis Mud.Wechat.OfficialAccount Mud.Wechat.OfficialAccount.Abstractions Mud.Wechat.OfficialAccount.DataModels Mud.Wechat.OfficialAccount.Callback Mud.Wechat.OpenTelemetry"
+set "SOLUTION=Mud.Wechat.slnx"
+REM No hard-coded package checklist: the expected set is derived from Src\**\*.csproj
+REM in the VERIFY section below. Single source of truth shared with the CI package-count
+REM guard and AB-G6 / AB-G7.
+
 set "VERSION="
 set "PREVIEW=0"
 set "SKIP_CHECK=0"
@@ -51,7 +61,7 @@ goto :parse_args
 
 REM ---------------------------------------------------------- version
 if not defined VERSION (
-    for /f "usebackq delims=" %%V in (`dotnet msbuild "Mud.Wechat.Work\Mud.Wechat.Work.csproj" -getProperty:Version -nologo`) do set "VERSION=%%V"
+    for /f "usebackq delims=" %%V in (`dotnet msbuild "Src\Work\Mud.Wechat.Work\Mud.Wechat.Work.csproj" -getProperty:Version -nologo`) do set "VERSION=%%V"
 )
 if not defined VERSION (
     echo Error: cannot resolve the package version. Pass it explicitly, e.g. publish.bat 1.0.3
@@ -102,31 +112,35 @@ if "%SKIP_CHECK%"=="1" (
 )
 
 REM ------------------------------------------------------------- pack
-echo Packing packages ^(11 expected^) ...
+echo Packing packages ^(expected set derived from Src\**\*.csproj^) ...
 if not exist "%OUTPUT_DIR%" mkdir "%OUTPUT_DIR%"
 del /q "%OUTPUT_DIR%\*%VERSION%.nupkg" 2>nul
-set "FAILED="
-for %%P in (%PROJECTS%) do (
-    echo   - %%P
-    dotnet pack "%%P\%%P.csproj" -c Release --nologo -o "%OUTPUT_DIR%" -p:Version=%VERSION% || set "FAILED=!FAILED! %%P"
-)
-if defined FAILED (
-    echo Error: packing failed for:!FAILED!
+dotnet pack "%SOLUTION%" -c Release --nologo -o "%OUTPUT_DIR%" -p:Version=%VERSION% || (
+    echo Error: dotnet pack failed for %SOLUTION%.
     set "EC=1"
     goto :finish
 )
 
+REM ---- VERIFY: derive the packable set from the source tree, then check each product ----
 set "COUNT=0"
+set "EXPECTED=0"
 set "MISSING="
-for %%P in (%PROJECTS%) do (
-    if exist "%OUTPUT_DIR%\%%P.%VERSION%.nupkg" ( set /a COUNT+=1 ) else set "MISSING=!MISSING! %%P"
+for /f "delims=" %%F in ('dir /s /b "Src\*.csproj" 2^>nul') do (
+    findstr /m /c:"<IsPackable>false" "%%F" >nul 2>nul
+    if errorlevel 1 (
+        set /a EXPECTED+=1
+        if exist "%OUTPUT_DIR%\%%~nF.%VERSION%.nupkg" ( set /a COUNT+=1 ) else set "MISSING=!MISSING! %%~nF"
+    )
 )
 if defined MISSING (
-    echo Error: missing packages for:!MISSING!
+    echo Error: expected !EXPECTED! packages derived from Src\**\*.csproj, missing:!MISSING!
+    echo          A package disappears when its csproj sets IsPackable=false, when it
+    echo          drops out of %SOLUTION%, or when a literal asset path inside it no
+    echo          longer resolves - see AB-G7.
     set "EC=1"
     goto :finish
 )
-echo Produced %COUNT% packages:
+echo Produced !COUNT! of !EXPECTED! derived packages:
 dir /b "%OUTPUT_DIR%\*%VERSION%.nupkg"
 
 REM ------------------------------------------------------------- push

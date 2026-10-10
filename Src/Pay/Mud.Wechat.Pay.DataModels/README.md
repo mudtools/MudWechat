@@ -8,7 +8,7 @@
 
 - **域 DTO**（12 个域目录，共 **162** 个 `[HttpJsonSerializable]` 类型，均标注 `SerializerClassName`）：
   - `Common/` 1 —— 响应基底 `WechatPayResponse`
-  - `Transactions/` 17 —— JSAPI 下单请求/应答（含 `JsapiAmountInfo` / `JsapiPayerInfo` / 商品明细 / 场景 / 结算信息）、查单应答、关单请求、小程序调起支付五参数
+  - `Transactions/` 27 —— 直连下单四族（JSAPI/小程序、Native、APP、H5）请求与应答（JSAPI 与 APP 共用 `PrepayIdResponse`；含 `JsapiAmountInfo` / `JsapiPayerInfo` / 商品明细 / 场景 / 门店 / 结算信息、`H5SceneInfo`+`H5Info`、`AppSubsidyInfo` 补贴族）、查单应答、关单请求、小程序调起支付五参数
   - `Refund/` 8、`Bill/` 1、`Certificates/` 3、`Transfer/` 7
   - `ProfitSharing/` 12、`PayScore/` 29、`Combine/` 22（命名空间 `…DataModels.Combine`）、`Fapiao/` 18（命名空间 `…DataModels.Fapiao`）、`MarketingFavor/` 22
   - `Callback/` 22 —— 通知信封 `WechatPayNotification` / `WechatPayNotificationResource` + 各域解密后 `resource` 载荷

@@ -426,23 +426,23 @@ jobs:
       - name: Pack NuGet package
         run: dotnet pack ${{ env.SOLUTION_FILE }} --configuration ${{ env.CONFIGURATION }} --output ./nupkg --no-build
 
-      # 制品数量守卫：可打包源项目为 18 个。
-      #   跨产品线公用层 1 个（Abstractions）
-      #   企业微信产品线 5 个（Work / Work.Abstractions / Work.Callback / Work.DataModels / Redis）
-      #   公众号产品线 4 个（OfficialAccount / OfficialAccount.Abstractions / OfficialAccount.DataModels
-      #                    / OfficialAccount.Callback）
-      #   微信小程序产品线 3 个（MiniProgram / MiniProgram.Abstractions / MiniProgram.DataModels
-      #                       ——**无回调包**：小程序服务端侧无推送型回调面）
-      #   微信支付产品线 4 个（Pay / Pay.Abstractions / Pay.DataModels / Pay.Callback）
-      #   可观测性适配包 1 个（OpenTelemetry）
-      # 少包通常意味着某个 csproj 被误设为不可打包（或 slnx 漏项），此处 fail-closed 而非静默发漏包。
-      # 守卫断言见 Tests/Mud.Wechat.Abstractions.Tests 的 AB-G6（会因口径漂移先行变红）。
+      # 制品数量守卫：期望值**由 Src/**/*.csproj 现场推导**（未声明 <IsPackable>false</IsPackable> 者为
+      # 可打包工程），本文件不再硬编码包名/包数 —— 2026-10 曾两次因「清单与工程目录各自成文」而漂移
+      # （CI 停在 18、pack.bat/publish.bat 停在 11）。
+      # 仍 fail-closed 的两类失效：① slnx 漏项 ⇒ 产物少于推导值；② 三个 Callback 包以**字面相对路径**内嵌
+      #   Mud.Wechat.Callback.Analyzers.dll，源码目录再次归类会让路径失效 ⇒ 这些包 pack 失败。
+      # 「某工程被误设 IsPackable=false」不会体现在本比对里（推导值会同降）⇒ 由 Tests 侧 AB-G6 的
+      # 「非可打包工程白名单」断言兜住。守卫断言见 Tests/Mud.Wechat.Abstractions.Tests 的 AB-G6。
       - name: Verify package count
         run: |
+          EXPECTED=0
+          while IFS= read -r csproj; do
+            grep -q '<IsPackable>false' "$csproj" || EXPECTED=$((EXPECTED + 1))
+          done < <(find Src -name '*.csproj' -not -path '*/obj/*' -not -path '*/bin/*')
           COUNT=$(ls -1 ./nupkg/*.nupkg 2>/dev/null | wc -l)
-          echo "生成 nupkg 数量：$COUNT"
-          if [ "$COUNT" -ne 18 ]; then
-            echo "::error::期望 18 个 nupkg（Abstractions / Work / Work.Abstractions / Work.Callback / Work.DataModels / Redis / OfficialAccount / OfficialAccount.Abstractions / OfficialAccount.DataModels / OfficialAccount.Callback / MiniProgram / MiniProgram.Abstractions / MiniProgram.DataModels / Pay / Pay.Abstractions / Pay.DataModels / Pay.Callback / OpenTelemetry），实际 $COUNT 个。"
+          echo "可打包源工程（由 Src/**/*.csproj 推导）：$EXPECTED；实际生成 nupkg：$COUNT"
+          if [ "$COUNT" -ne "$EXPECTED" ]; then
+            echo "::error::nupkg 数量与可打包源工程数不一致（实际 $COUNT vs 推导 $EXPECTED）。漏包原因：slnx 漏项，或某 csproj 被设 IsPackable=false（后者亦会被 AB-G6 白名单断言拦下）。"
             ls -1 ./nupkg || true
             exit 1
           fi

@@ -26,6 +26,9 @@
     <Project Path="Src/OpenPlatform/Mud.Wechat.OpenTelemetry/Mud.Wechat.OpenTelemetry.csproj" />
     <Project Path="Src/OpenPlatform/Mud.Wechat.OpenPlatform.Abstractions/Mud.Wechat.OpenPlatform.Abstractions.csproj" />
     <Project Path="Src/OpenPlatform/Mud.Wechat.OpenPlatform/Mud.Wechat.OpenPlatform.csproj" />
+    <Project Path="Src/Ads/Mud.Wechat.Ads.Abstractions/Mud.Wechat.Ads.Abstractions.csproj" />
+    <Project Path="Src/Ads/Mud.Wechat.Ads.DataModels/Mud.Wechat.Ads.DataModels.csproj" />
+    <Project Path="Src/Ads/Mud.Wechat.Ads/Mud.Wechat.Ads.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="Tests/Mud.Wechat.Abstractions.Tests/Mud.Wechat.Abstractions.Tests.csproj" />
@@ -41,5 +44,6 @@
     <Project Path="Tests/Mud.Wechat.Pay.Callback.Tests/Mud.Wechat.Pay.Callback.Tests.csproj" />
     <Project Path="Tests/Mud.Wechat.OpenTelemetry.Tests/Mud.Wechat.OpenTelemetry.Tests.csproj" />
     <Project Path="Tests/Mud.Wechat.OpenPlatform.Tests/Mud.Wechat.OpenPlatform.Tests.csproj" />
+    <Project Path="Tests/Mud.Wechat.Ads.Tests/Mud.Wechat.Ads.Tests.csproj" />
   </Folder>
 </Solution>

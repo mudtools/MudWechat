@@ -40,3 +40,4 @@ global using Mud.Wechat.Pay.Transactions;
 global using System.Security.Cryptography;
 global using System.Security.Cryptography.X509Certificates;
 global using System.Text;
+global using Mud.Wechat.ContractBaseline;

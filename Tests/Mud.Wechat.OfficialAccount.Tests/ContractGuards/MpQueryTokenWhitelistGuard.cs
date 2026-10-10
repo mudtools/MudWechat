@@ -64,6 +64,8 @@ public class MpQueryTokenWhitelistGuard
             nameof(IMpStoreService),              // 微信门店·门店小程序（12 端点；开放面仅电商类目）
             nameof(IMpOneCodeService),            // 微信「一物一码」（6 端点；服务号需申请）
             nameof(IMpInvoiceService),            // 微信发票（17 端点；全消费 access_token，不引入 api_ticket）
+            nameof(IMpCardService),               // 卡券·主体与投放（11 端点；前端取卡 api_ticket 由 IMpTicketService 承载，不入本接口）
+            nameof(IMpCardCodeService),           // 卡券·券码核销（3 端点；同注册组 Card，双接口先例照 openApi）
         }, "公众号官方契约强制 Query 注入（MUD005 已知接受风险）；新增 Query 注入接口须先评估再显式扩展本白名单");
 
         // 防静默空跑：白名单非空且每条均为 Query 注入（若发现机制失效，上面 BeEquivalentTo 会退化为真空断言）。

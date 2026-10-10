@@ -188,10 +188,12 @@ public class WechatRedisContractGuards
         WechatRedisServiceCollectionExtensions.MpAppManagerTypeName
             .Should().Be(typeof(IMpAppManager).FullName);
 
-        // 防静默空跑：该类型必须是接口且位于产品线 Abstractions 程序集。
+        // 防静默空跑：该类型必须是接口，且与公众号**基座配置面同源**（即落在 Redis 实际依赖的那个基座包上，
+        // 而非别处的同名类型）。断言「与锚点同源」而非「程序集叫什么」。
         typeof(IMpAppManager).IsInterface.Should().BeTrue();
-        typeof(IMpAppManager).Assembly.GetName().Name
-            .Should().Be("Mud.Wechat.OfficialAccount.Abstractions");
+        typeof(IMpAppManager).Assembly.Should().BeSameAs(
+            typeof(Mud.Wechat.OfficialAccount.Abstractions.Configuration.MpAppConfig).Assembly,
+            "RD-G7：IMpAppManager 必须与公众号基座配置面同源，全名探测才落在 Redis 依赖的那个包上");
     }
 
     /// <summary>

@@ -42,7 +42,7 @@
 	<!-- 随包下发分析器资产（不新增 nupkg）：与 Work.Callback / OA.Callback 同款
 	     （同一 DLL 三份拷贝，各包互不引用）。只挑本仓分析器 DLL。 -->
 	<ItemGroup>
-		<None Include="$(MSBuildThisFileDirectory)..\Src\Mud.Wechat.Callback.Analyzers\bin\$(Configuration)\netstandard2.0\Mud.Wechat.Callback.Analyzers.dll"
+		<None Include="$(MSBuildThisFileDirectory)..\..\Core\Mud.Wechat.Callback.Analyzers\bin\$(Configuration)\netstandard2.0\Mud.Wechat.Callback.Analyzers.dll"
 		      Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
 	</ItemGroup>
 

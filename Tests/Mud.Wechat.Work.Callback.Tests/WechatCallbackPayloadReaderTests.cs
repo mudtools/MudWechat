@@ -2465,6 +2465,77 @@ public class WechatCallbackPayloadReaderTests
             "RequiredEvent 缺省 = 逐键自指（Event 节点即事件键）");
     }
 
+    // ---------------------------------------- 会话内容存档「客户同意存档」（101385/99532；服务商套件信封）
+    // 字段面以本地 SKIT ChatArchiveAuditApprovedSingleEvent 为对齐依据（官方文档站为 SPA、正文不可达）⇒ **待官方逐页核验**。
+
+    [Fact]
+    public void Read_ShouldMapChatArchiveAuditApprovedSingleFields()
+    {
+        // 单聊变体：OpenUserID + ExternalUserID，**不携带 ChatId**；SuiteId/AuthCorpId 属信封字段不入载荷。
+        var evt = SuiteEvent(WechatCallbackEventTypes.ChatArchiveAuditApprovedSingle, changeType: null,
+            "<xml><AppType>1</AppType><SuiteId><![CDATA[suite_id]]></SuiteId>" +
+            "<AuthCorpId><![CDATA[auth_corpid]]></AuthCorpId>" +
+            "<InfoType><![CDATA[chat_archive_audit_approved_single]]></InfoType>" +
+            "<OpenUserID><![CDATA[zhangsan]]></OpenUserID>" +
+            "<ExternalUserID><![CDATA[wmABCDEF]]></ExternalUserID>" +
+            "<TimeStamp>1700000000</TimeStamp></xml>");
+
+        evt.EventTypeKey.Should().Be("chat_archive_audit_approved_single",
+            "套件信封无 Event/ChangeType 分组段 ⇒ InfoType 即事件键（逐键自指）");
+        evt.EventFamily.Should().Be(WechatCallbackEventFamily.Authorization, "InfoType 非空 ⇒ 授权族");
+
+        var result = CreateReader().Read<ChatArchiveAuditApprovedPayload>(evt);
+
+        result.Status.Should().Be(WechatPayloadReadStatus.Matched);
+        var payload = result.Payload!;
+        payload.OpenUserId.Should().Be("zhangsan", "元素名 OpenUserID（ID 全大写）照官方原文拼写");
+        payload.ExternalUserId.Should().Be("wmABCDEF");
+        payload.ChatId.Should().BeNull("单聊变体不携带 ChatId");
+        payload.Values.Should().Contain("InfoType", "chat_archive_audit_approved_single",
+            "Values 为全量袋（ADR-5），事件键节点亦在袋中");
+    }
+
+    [Fact]
+    public void Read_ShouldMapChatArchiveAuditApprovedRoomChatId()
+    {
+        // 群聊变体：与单聊同一报文骨架，差异仅为额外携带 ChatId（ADR-14 一份可空超集覆盖两键）。
+        var result = CreateReader().Read<ChatArchiveAuditApprovedPayload>(
+            SuiteEvent(WechatCallbackEventTypes.ChatArchiveAuditApprovedRoom, changeType: null,
+                "<xml><SuiteId><![CDATA[suite_id]]></SuiteId>" +
+                "<AuthCorpId><![CDATA[auth_corpid]]></AuthCorpId>" +
+                "<InfoType><![CDATA[chat_archive_audit_approved_room]]></InfoType>" +
+                "<OpenUserID><![CDATA[lisi]]></OpenUserID>" +
+                "<ExternalUserID><![CDATA[wmGHIJKL]]></ExternalUserID>" +
+                "<ChatId><![CDATA[wrAAAA]]></ChatId>" +
+                "<TimeStamp>1700000000</TimeStamp></xml>"));
+
+        result.Status.Should().Be(WechatPayloadReadStatus.Matched);
+        result.Payload!.ChatId.Should().Be("wrAAAA", "群聊变体携带 ChatId");
+        result.Payload!.OpenUserId.Should().Be("lisi");
+        result.Payload!.ExternalUserId.Should().Be("wmGHIJKL");
+    }
+
+    [Theory]
+    [InlineData(WechatAppType.ThirdParty, WechatCallbackChannel.Suite, true)]
+    [InlineData(WechatAppType.Provider, WechatCallbackChannel.Suite, true)]
+    [InlineData(WechatAppType.Internal, WechatCallbackChannel.Suite, false)]
+    [InlineData(WechatAppType.ThirdParty, WechatCallbackChannel.App, false)]
+    [InlineData(WechatAppType.Internal, WechatCallbackChannel.App, false)]
+    public void ChatArchiveAuditApprovedContract_ShouldOpenForProviderOnSuiteChannel(
+        WechatAppType appType, WechatCallbackChannel channel, bool expected)
+    {
+        // 本键经「系统事件接收 URL」推送 ⇒ 仅套件指令通道；自建应用不开放（不宽于授权族默认）。
+        CreateRegistry().TryResolve(WechatCallbackEventTypes.ChatArchiveAuditApprovedSingle, out var contract)
+            .Should().BeTrue();
+        var evt = new WechatCallbackEvent { InfoType = WechatCallbackEventTypes.ChatArchiveAuditApprovedSingle };
+
+        contract!.IsOpenFor(evt, appType, channel).Should().Be(expected,
+            "开放面 = 第三方 | 代开发 × 套件指令通道（与 WechatEventFamilyOpenSurface 授权族默认一致）");
+        contract.RequiredFamily.Should().Be(WechatCallbackEventFamily.Authorization);
+        contract.RequiredEvent.Should().Be(WechatCallbackEventTypes.ChatArchiveAuditApprovedSingle,
+            "RequiredEvent 缺省 = 逐键自指（InfoType 即事件键）");
+    }
+
     [Theory]
     [InlineData(WechatAppType.Internal, WechatCallbackChannel.App, true)]
     [InlineData(WechatAppType.Provider, WechatCallbackChannel.App, true)]

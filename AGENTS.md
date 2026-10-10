@@ -2,6 +2,8 @@
 
 企业微信（WeCom）.NET SDK 的 AI 协作指南。架构对齐 `D:/Repos/MudFeishu/FeishuV3`。
 
+**适用范围**：本仓现为**六线共仓**（企业微信 / 公众号 / 小程序 / 微信支付 APIv3 / 开放平台 / 在建的腾讯广告）。本文 §5~§7 的领域契约是**企微线**的细则，其余各线的公开面与已踩陷阱看其 `Src/<线>/*/README.md`；**跨线通用**的约束（§1 门禁、§2 同批纪律、§3 多 TFM 与 AOT 红线、§4 落位与依赖边界、§8 配置与安全、§9 自检）适用于全部六线。
+
 **工作方式**：能力增量 = 在既有域内加端点 + **同批**更新契约守卫。不引入新范式。
 
 **事实来源**（本文只写「不可违反的约束」，明细一律去源头查，本文不复述）：
@@ -28,7 +30,8 @@ dotnet test Tests/Mud.Wechat.Work.Tests -c Release -f net8.0 --filter "FullyQual
 - **改 `verify-build.ps1` 时三处设置删掉即假绿，不许优化掉**：① strict 步骤须**同时**断言「编译错误」与「IL 诊断」计数（构建本身失败时诊断计数仍为 0）；② `Get-ChildItem -Recurse`（否则找不到嵌套 `.csproj`，AOT 步骤静默空跑）；③ `--no-incremental`（`CoreCompile` 只比对时间戳、不比对 csc 命令行，紧跟步骤 1 的 strict 构建会被整体跳过）。
 - **门禁只统计编译错误与 AOT IL 诊断，不因 CS 警告失败** —— 不要为消警告大范围重构。
 - `scripts/*.ps1` 为 UTF-8 **含 BOM**（无 BOM 在 PowerShell 5.1 下按 ANSI 解码 ⇒ 语法解析失败）。
-- CI（`.github/workflows/dotnet-publish.yml`）的日志桶白名单、恰 5 个 nupkg 断言等只在该文件内维护，改动看文件即可。注意 `AOT006`、`MUD005` 是只打印计数的 INFO 桶（前者漂移守卫、后者企微官方 Query 传令牌契约），**断言为 0 即假红**。
+- **Windows PowerShell 5.1 无长路径支持（MAX_PATH 260）**：脚本**不得**用 `Get-ChildItem -Path <仓库根> -Recurse` 去按名称找工程 —— `obj/generated-probe/` 下配置绑定源生成器留下的深路径（实测 223 字符）叠加长工程名（如 `Mud.Wechat.OfficialAccount.Abstractions.csproj`）即超过 260，5.1 抛 `DirectoryNotFoundException`；而 `pwsh`（.NET Core 有长路径支持）会侥幸通过，从而**掩盖该缺陷**（`audit-config-keys.ps1` 实际踩过）。按名称定位工程须**有界深度且不进入 `obj`**（如 `Get-ChildItem -Path <仓库根>/Src -Filter "<Project>.csproj" -Recurse -File -Depth 2`）。
+- CI（`.github/workflows/dotnet-publish.yml`）的日志桶白名单只在该文件内维护，改动看文件即可。**包清单是单一来源**：可打包集由 `Src/**/*.csproj` 现场推导（未声明 `<IsPackable>false` 者），CI、`pack.bat`、`publish.bat` 三处**各自推导**（不再持有名单，也不硬编码包数），`AB-G6` 断言三处走推导且与推导值一致 —— 历史上四处清单各自成文曾两次漂移（CI 停在 18、bat 停在 11）。「某工程被误设 `IsPackable=false`」不会体现在「推导值 vs 产物」比对里（推导值同降），由 `AB-G6` 的**非可打包工程白名单**（仅两个构建期工具）兜住。注意 `AOT006`、`MUD005` 是只打印计数的 INFO 桶（前者漂移守卫、后者企微官方 Query 传令牌契约），**断言为 0 即假红**。
 
 ## 2 改动配方（必须同批完成，缺一项即半成品）
 
@@ -48,7 +51,7 @@ dotnet test Tests/Mud.Wechat.Work.Tests -c Release -f net8.0 --filter "FullyQual
 
 **`netstandard2.0` 无 `IsExternalInit` polyfill**，该 TFM 下：禁 `init`、禁 `record`/`with`；无 `ArgumentNullException.ThrowIfNull`；`string.IsNullOrEmpty`/`IsNullOrWhiteSpace` 无 `[NotNullWhen]`、流分析不收窄（须显式 `x == null`）；禁 `Math.Clamp`。既存大量 CS86xx 警告属正常形态（见 §1）。
 
-**`Tests/Directory.Build.props` 遮蔽根 props**：新增任何治理属性必须同时写入该文件，否则测试工程成为门禁盲区。
+**`Tests/Directory.Build.props` 导入根 props**（`Import` 必须在自身覆盖之前）：测试工程与源工程同受一套治理，14 个测试工程自动继承 `LangVersion` / `Nullable` / `ImplicitUsings` / `Version` / TFM 集，故**新增治理属性只需写在根 props 一处**（此前的「遮蔽」形态要求同批写两遍，且靠人记无编译期强制）。该文件只额外做两件事：① 把 `TargetFrameworks` 收为单档 `net8.0`（避免 `TargetFramework`/`TargetFrameworks` 双属性冲突使 restore 进入跨目标模式）；② 显式关闭 `IsAotCompatible` / `EnableTrimAnalyzer` / `EnableAotAnalyzer` / `EnableSingleFileAnalyzer` —— 测试宿主（xunit / FluentAssertions / Moq）大量使用反射，开启后实测产生约 900 条 IL 噪声告警，既掩盖真实信号，也与「测试工程不进 Native AOT 发布、正确性由用例断言承担」的分工不符（源工程的 AOT 净零仍由 `verify-build.ps1` 步骤 2 逐工程保证）。
 
 AOT / Trim（`net8.0`/`net10.0` 默认开启；`AotStrictMode=true` 把 `IL2026;IL2046;IL2050;IL2057;IL2067;IL2070;IL2072;IL2075;IL2080;IL3050` 升为错误）：
 
@@ -62,19 +65,29 @@ AOT / Trim（`net8.0`/`net10.0` 默认开启；`AotStrictMode=true` 把 `IL2026;
 ## 4 结构与落位
 
 ```
-Mud.Wechat.Work/                      # 主包：Interfaces/{域}/ 接口声明 + 服务 + DI + 模块注册
-Mud.Wechat.Work.Abstractions/         # 令牌基座、多应用、配置、存储端口、枚举、异常、回调信封与载荷转换器
-Mud.Wechat.Work.DataModels/           # 官方 DTO（[HttpJsonSerializable]）+ Generated/ 域 JsonContext（生成物）
-Mud.Wechat.Work.Callback/             # 回调接收（AES 解密、事件解析、分发）+ HTTP 中间件；Events/Payloads/ 载荷；智能机器人 JSON 回调通道（同包，见 §5.5）
-Mud.Wechat.Callback.Generator/        # 回调契约登记生成器（中立名；按档位各持一生成器，发射 RegisterAll；IsPackable=false）
-Mud.Wechat.Callback.Analyzers/        # 回调处理器契约分析器（中立名；诊断型、不发射；随 Callback nupkg 内嵌 analyzers/dotnet/cs）
-Mud.Wechat.Redis/                     # 四个存储端口的 Redis 实现 + 连接基座 + DI 编排
-Tests/                                # 5 个工程（Work / Abstractions / Callback / DataModels / Redis），镜像源结构，单 TFM net8.0
+Src/Core/
+  Mud.Wechat.Abstractions/            # 跨产品线共享叶层（零工程引用）：响应契约、令牌存储端口与桥接编解码、
+                                      # 回调密码学内核、配置基座、WechatApiHosts（SSRF 白名单单一来源）
+  Mud.Wechat.Redis/                   # 四个存储端口的 Redis 实现 + 连接基座 + DI 编排
+  Mud.Wechat.Callback.Generator/      # 回调契约登记生成器（中立名；发射 RegisterAll；IsPackable=false）
+  Mud.Wechat.Callback.Analyzers/      # 回调处理器契约分析器（中立名；诊断型、不发射；netstandard2.0 单 TFM；
+                                      # IsPackable=false，**由三个 Callback 宿主包以字面相对路径内嵌** analyzers/dotnet/cs）
+Src/Work/                             # 企业微信线（本文件 §5~§7 的主体）
+  Mud.Wechat.Work/                    # 主包：Interfaces/{域}/ 接口声明 + 服务 + DI + 模块注册
+  Mud.Wechat.Work.Abstractions/       # 令牌基座、多应用、配置、存储端口、枚举、异常、回调信封与载荷转换器
+  Mud.Wechat.Work.DataModels/         # 官方 DTO（[HttpJsonSerializable]）+ Generated/ 域 JsonContext（生成物）
+  Mud.Wechat.Work.Callback/           # 回调接收（AES 解密、事件解析、分发）+ HTTP 中间件；Events/Payloads/ 载荷；智能机器人 JSON 回调通道（见 §5.5）
+Src/{OfficialAccount,MiniProgram,Pay,OpenPlatform,Ads}/   # 其余四条线 + 在建广告线，同形态分包
+                                      # 公众号 4 包 / 小程序 3 包（**无 Callback**）/ 支付 4 包 / 开放平台 2 包 / 广告 3 包（在建）
+                                      # 每包的公开面与已踩陷阱见其目录下的 README.md
+Tests/                                # 14 个工程（六线 + Core 叶层 + Redis + OpenTelemetry），镜像源结构，单 TFM net8.0
 scripts/                              # verify-build / audit-config-keys / GenerateJsonContext / AddHttpJsonSerializable / ApplyTokenOwnerKeys
 .docs/                                # 方案与设计文档（中文；已 gitignore，fresh clone 无此目录）
 ```
 
-依赖单向：`Work → {Abstractions, DataModels}`、`Callback → {Abstractions, DataModels}`、`Abstractions → DataModels`、`Redis → Abstractions`。硬边界：**`Callback` 不引用 `Work`**；**`Redis` 不引用 `Work`/`Callback`**。
+依赖单向：`Work → {Abstractions, DataModels}`、`Callback → {Abstractions, DataModels}`、`Abstractions → DataModels`、`Redis → Abstractions`。硬边界：**`Callback` 不引用 `Work`**；**`Redis` 不引用 `Work`/`Callback`**；**广告线与其余五线双向零引用**（ADS-S1 两向都扫）。
+
+**新增产品线的门禁接入口只有一个**：`AB-G6` 会同时校验解决方案工程清单（每个可打包工程须已在 `slnx` 内）、`audit-config-keys.ps1` 搜索根、DTO 标注脚本根命名空间、以及 CI / `pack.bat` / `publish.bat` 三处的**推导口径**（可打包集由 `Src/**/*.csproj` 现场推导，三处各自推导、不持有名单，也不硬编码包数 —— 唯一被维护的名单是「非可打包工程白名单」，仅两个构建期工具）。
 
 **新文件落位三处一致（目录 / 命名空间 / 注册入口）**：
 
@@ -209,7 +222,7 @@ scripts/                              # verify-build / audit-config-keys / Gener
 
 ## 8 配置与安全
 
-- 配置 API 仅三处：`WechatAppConfig`（节 `WechatApps`）、`WechatAuthorizationOptions`（节 `WechatAuthorization`）、`WechatCallbackOptions`。**禁止新增「日志开关」类配置属性**；日志级别统一由 `Logging:LogLevel:{Category}` 控制。
+- 配置 API 按线分布（**企微线三处**：`WechatAppConfig`（节 `WechatApps`）、`WechatAuthorizationOptions`（节 `WechatAuthorization`）、`WechatCallbackOptions`；其余各线各持「应用配置 + 回调配置」两面：`MpAppConfig`/`MpCallbackOptions`、`WechatPayMerchantConfig`/`WechatPayCallbackOptions`、`OpenPlatformAppConfig`、`WechatRedisOptions`/`WechatRedisConnectionOptions`、`WechatOpenTelemetryOptions`），公共形状收敛在 `WechatAppConfigBase`。**凡有可写基元属性的配置 DTO 都必须在 `audit-config-keys.ps1` 的 `$configFiles` 登记，且与建文件同批**（AB-G6 的双向不变式；`OpenPlatformAppConfig` 因无可写基元属性而不在此列）。**禁止新增「日志开关」类配置属性**；日志级别统一由 `Logging:LogLevel:{Category}` 控制。
 - **每个公开配置属性必须有真实消费点**（`Validate`/`ToString` 不算）。
 - **安全默认不得削弱**：`BaseUrl` 必须 HTTPS + 白名单（`AllowCustomBaseUrl=false` 是 SSRF 防线）；登记到 `WechatCustomBaseUrlRegistry` 的自定义主机才能被 errcode 判定器预过滤放行（否则私有化部署静默失去令牌恢复能力）。
 - 绝不记录或暴露 `AgentSecret`/`SuiteSecret`/`ProviderSecret`/`permanent_code`/`auth_code`/`suite_ticket`；`WechatCallbackEvent` 的 `DecryptedXml`/`SuiteTicket`/`AuthCode` 不得进日志、遥测或异常消息。`WechatWorkException.RequestUri` 构造期剥离 query 与 userinfo。

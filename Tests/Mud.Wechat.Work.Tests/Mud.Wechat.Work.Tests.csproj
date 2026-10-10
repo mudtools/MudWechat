@@ -18,4 +18,12 @@
 		<ProjectReference Include="..\..\Src\Work\Mud.Wechat.Work.Callback\Mud.Wechat.Work.Callback.csproj" />
 	</ItemGroup>
 
+
+	<ItemGroup>
+		<!-- 聚合契约基线（跨域 / 跨族的汇总数字，一处维护）。`Tests/` 根下的文件不属任何工程的
+		     默认 glob，故须显式链接；四个产品线测试工程（Work / OfficialAccount / MiniProgram / Pay）
+		     共用同一份源文件，各得一份同名类型的副本。 -->
+		<Compile Include="..\ContractBaseline.cs" Link="ContractBaseline.cs" />
+	</ItemGroup>
+
 </Project>

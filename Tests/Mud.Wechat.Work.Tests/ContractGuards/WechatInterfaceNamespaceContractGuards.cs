@@ -78,11 +78,13 @@ public class WechatInterfaceNamespaceContractGuards
         }
 
         // 分区计数锁定：父接口 147 + 可注入接口 299。
-        // 契约面类型数漂移须先核对官方文档再同批调整本守卫。
+        // 两个数字是**聚合报警**，集中维护在 Tests/ContractBaseline.cs（改数字只改那一处）。
         interfaces.Count(t => t.GetCustomAttribute<HttpClientApiAttribute>()!.IsAbstract)
-            .Should().Be(147, "公共父接口总数漂移须先核对官方开放面再同批调整本守卫");
+            .Should().Be(Baseline.Work.AbstractParentInterfaces,
+                "公共父接口总数漂移须先核对官方开放面，再同批调整 Tests/ContractBaseline.cs");
         interfaces.Count(t => !t.GetCustomAttribute<HttpClientApiAttribute>()!.IsAbstract)
-            .Should().Be(299, "可注入接口总数漂移须先核对官方开放面再同批调整本守卫");
+            .Should().Be(Baseline.Work.InjectableInterfaces,
+                "可注入接口总数漂移须先核对官方开放面，再同批调整 Tests/ContractBaseline.cs");
 
         // 双向无残留：两个命名空间内不得混入形态不符的接口。
         typeof(IWechatWorkAgentService).Assembly.GetTypes()

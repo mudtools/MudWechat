@@ -84,7 +84,7 @@ public static class WechatJsonResolverExtensions
     /// <param name="services">服务集合。</param>
     /// <remarks>
     /// <list type="bullet">
-    /// <item>全部 <c>*JsonContext</c>（<c>DataModels</c> 包 <c>Generated/</c> 目录，由
+    /// <item><c>DataModels</c> 包 <c>Generated/</c> 目录里的各域 <c>*JsonContext</c>（由
     /// <c>scripts/GenerateJsonContext.ps1</c>（mud-jsonctx）按 <c>[HttpJsonSerializable]</c>
     /// 标注生成，SerializerClassName = DTO 命名空间的域段，每个上下文与其域 DTO
     /// 同命名空间——与 Mud.Feishu.DataModels「每模块一上下文」同构）；</item>
@@ -92,6 +92,11 @@ public static class WechatJsonResolverExtensions
     /// （<c>[HttpJsonSerializable]</c> 覆盖要求，见 P0-5）。</item>
     /// </list>
     /// 各上下文键空间不重叠，合并顺序无关（<c>JsonTypeInfoResolver.Combine</c> 按序命中）。
+    /// <para>
+    /// <b>唯一有意排除的是 <c>FinanceJsonContext</c></b>：会话存档载荷不经 HTTP（原生 C SDK 在进程内
+    /// 写回明文 JSON），故该上下文由 <c>WechatWorkFinanceClient</c> 直接以 <c>JsonTypeInfo</c> 使用，
+    /// 不并入本管线 —— 并入即是一支<b>永不命中</b>的死注册（本域没有任何走组件序列化管线的入口）。
+    /// </para>
     /// </remarks>
     public static void ConfigureDataModelsResolver(IServiceCollection services)
     {

@@ -1056,6 +1056,39 @@ public static class WechatCallbackEventTypes
     /// </remarks>
     public const string MsgAuditNotify = "msgaudit_notify";
 
+    /// <summary>
+    /// 会话内容存档「客户同意存档事件（单聊）」（<c>chat_archive_audit_approved_single</c>；
+    /// 服务商侧事件，经<b>指令回调 URL</b>以套件信封推送，外层事件值在 <c>InfoType</c> 节点）。
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// 客户（外部联系人）在会话中同意进行聊天内容存档后推送本事件，企业据此可开始拉取该单聊的会话内容。
+    /// 载荷字段见 <c>ChatArchiveAuditApprovedPayload</c>；<b>本键不携带 <c>ChatId</c></b>（群聊变体才出现）。
+    /// </para>
+    /// <para>
+    /// <b>URL 分歧（待官方逐页核验）</b>：本仓对齐基准 SKIT 引
+    /// <see href="https://developer.work.weixin.qq.com/document/path/99532">path 99532</see>，
+    /// 补齐方案引 <see href="https://developer.work.weixin.qq.com/document/path/101385">path 101385</see>
+    /// （二者标题同为「客户同意进行聊天内容存档事件回调」）；官方文档站为 SPA、正文当前不可达，
+    /// <b>事件键与字段名以 SKIT 源码为对齐依据</b>，恢复官方可达后须逐页核验并同步守卫计数。
+    /// </para>
+    /// </remarks>
+    public const string ChatArchiveAuditApprovedSingle = "chat_archive_audit_approved_single";
+
+    /// <summary>
+    /// 会话内容存档「客户同意存档事件（群聊）」（<c>chat_archive_audit_approved_room</c>；
+    /// 与 <see cref="ChatArchiveAuditApprovedSingle"/> 同一报文骨架，差异仅为<b>额外携带 <c>ChatId</c></b>）。
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>待官方逐页核验</b>：SKIT 仅建模 <see cref="ChatArchiveAuditApprovedSingle"/> 一键
+    /// （其类内已含 <c>ChatId</c> 节点），本键来自补齐方案 §5.1 的官方 path 101385 事件族清单；
+    /// 若核验证明官方不存在本键，删除声明即令 <c>WechatCallbackContractGuards</c>（CB4b）硬计数变红，
+    /// 不会留下无人看守的过期契约。
+    /// </para>
+    /// </remarks>
+    public const string ChatArchiveAuditApprovedRoom = "chat_archive_audit_approved_room";
+
     // ——— 微盘族（官方 97898~97903 自建 · 97972~97978 第三方 · 97932~97937 代开发；三份文档逐字一致） ———
 
     /// <summary>微盘容量不足（企业微盘容量使用率超过 90% 时触发；无 <c>ChangeType</c> 分组段，信封外无业务字段）。

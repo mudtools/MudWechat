@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<Description>腾讯广告（Tencent Ads） Marketing API v3.0 SDK 抽象包：应用配置面、OAuth 令牌类型与凭据端口、官方错误码与异常。对应 Mud.Wechat.OfficialAccount.Abstractions。</Description>
+		<PackageTags>Wechat;Ads;腾讯广告;TencentAds;MarketingAPI;Configuration;MudWechat</PackageTags>
+		<!-- 广告线凭据为 OAuth access_token（Query 注入，官方契约），MUD005 属已接受风险；
+		     令牌注入面与敏感参数词表由 ADS-B3 / G6 与 SensitiveUrlRedactor 词表核验锁定。 -->
+		<NoWarn>$(NoWarn);MUD005</NoWarn>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Mud.HttpUtils" Version="3.0.3" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Mud.HttpUtils.Generator" Version="3.0.3" PrivateAssets="all" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+	</ItemGroup>
+
+	<ItemGroup Condition="'$(TargetFramework)' == 'net8.0' Or '$(TargetFramework)' == 'net10.0'">
+		<PackageReference Include="Microsoft.Extensions.Http" Version="10.0.9" />
+		<PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.9" />
+	</ItemGroup>
+	<ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' or '$(TargetFramework)' == 'net6.0'">
+		<PackageReference Include="Microsoft.Extensions.Http" Version="8.0.1" />
+		<PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="8.0.1" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\..\Core\Mud.Wechat.Abstractions\Mud.Wechat.Abstractions.csproj" />
+		<ProjectReference Include="..\Mud.Wechat.Ads.DataModels\Mud.Wechat.Ads.DataModels.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<InternalsVisibleTo Include="Mud.Wechat.Ads" />
+		<InternalsVisibleTo Include="Mud.Wechat.Ads.Tests" />
+		<InternalsVisibleTo Include="DynamicProxyGenAssembly2" />
+	</ItemGroup>
+
+</Project>

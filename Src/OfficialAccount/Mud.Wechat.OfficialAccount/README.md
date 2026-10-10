@@ -4,7 +4,7 @@
 
 ## 内容
 
-- **声明式业务客户端**（`Interfaces/`，命名空间平铺为 `Mud.Wechat.OfficialAccount`）：26 个域目录 / 27 个公开接口 / **174 条去重路由**（守卫 RC1 锁定）。公众号无「自建 / 套件 / 代开发」三类形态 ⇒ **不设 `IsAbstract` 公共父接口、不设应用类型子接口**，每个域接口直接作注册与注入面。
+- **声明式业务客户端**（`Interfaces/`，命名空间平铺为 `Mud.Wechat.OfficialAccount`）：27 个域目录 / 29 个公开接口 / **188 条去重路由**（守卫 RC1 锁定）。公众号无「自建 / 套件 / 代开发」三类形态 ⇒ **不设 `IsAbstract` 公共父接口、不设应用类型子接口**，每个域接口直接作注册与注入面。
 
   | 目录（= 模块） | 端点 | 关键官方约束（详见各接口 XML 注释与 `MpModule` 注释） |
   |---|---|---|
@@ -34,12 +34,13 @@
   | `Store/` | 12 | **仅开放电商类目**（43104）；主体级配额上限（管理员手机/微信号/身份证/主体各 5 次） |
   | `OneCode/` | 6 | 服务号需**申请开通**（非「仅认证」）；`code_count` 须为 10000 的整数倍且 ∈ [10000, 20000000] |
   | `Invoice/` | 17 | 全部消费应用级 `access_token`、不引入 `api_ticket`；`scantitle` 独家不支持第三方代调用 |
+  | `Card/` | 14（双接口） | 主体生命周期 / 投放 11 + 券码核销 3；全 POST；建卡（`card` 包装 + `card_type` 判别 11 分支）与修改（`card_id` + 分支平级、无 `advanced_info`）**不同构**；`api_ticket` 前端取卡由 `IMpTicketService` 承载；未建模 10 族共 39 端点由守卫 CD8 零路由留档 |
 
-- **模块注册器**（`Extensions/`）：`MpModule` 枚举 27 个成员（含 `Authentication`，令牌签发随 `AddMpApp` 自动注册、不经本枚举注册路径）；`MpServiceBuilder` 26 个 `Add{域}Api()` + `AddAllApis()` + `AddModules(params MpModule[])`；每域注册委托指向源生成器产出的 `Add{域}WebApiHttpClient()`（无签入源文件）。`Build()` 期校验 `IMpAppManager` 已注册（未先 `AddMpApp` 即注册期 fail-fast）。
+- **模块注册器**（`Extensions/`）：`MpModule` 枚举 28 个成员（含 `Authentication`，令牌签发随 `AddMpApp` 自动注册、不经本枚举注册路径）；`MpServiceBuilder` 27 个 `Add{域}Api()` + `AddAllApis()` + `AddModules(params MpModule[])`；每域注册委托指向源生成器产出的 `Add{域}WebApiHttpClient()`（无签入源文件）。`Build()` 期校验 `IMpAppManager` 已注册（未先 `AddMpApp` 即注册期 fail-fast）。
 - **素材下载双通道**（`Media/`）：`IMpMediaDownloadService` 承载 3 条**响应为二进制流**的端点（`/cgi-bin/media/get`、`/cgi-bin/media/get/jssdk`、`/cgi-bin/material/get_material`），走 `SendRawAsync` + Content-Type 分支判错，**不进 JSON 生成管线**；命中令牌失效码时失效并重试一次。
 - **JS-SDK 签名服务**（`Web/` + `Extensions/MpJsApiSignatureExtensions.cs`）：`AddMpJsApiSignature()` 注册 `IMpJsApiSignatureService`，取 `type=jsapi` 票据按官方算法产出 `wx.config` 五字段；**刻意不返回 `jsapi_ticket` 与原始签名串**。
 - **动态回调来源 IP 白名单**（`Callback/`，命名空间复用 `Mud.Wechat.OfficialAccount.Callback`）：`AddMpCallbackSourceIpWhitelist()` 注册刷新服务 + 内存快照提供者，实现 Abstractions 的 `IMpCallbackSourceIpProvider`。**默认不注册即完全关闭**（该能力必然带来周期性 API 调用，故用注册式开关而非配置项）；与静态 `MpCallbackOptions.AllowedSourceIPs` 取并集。
-- **AOT JsonContext 合并**（`Extensions/MpJsonResolverExtensions.cs`）：合并 OA DataModels 的 28 个域 `JsonContext` 进组件序列化管线（仅 `NET8_0_OR_GREATER`）。
+- **AOT JsonContext 合并**（`Extensions/MpJsonResolverExtensions.cs`）：合并 OA DataModels 的 29 个域 `JsonContext` 进组件序列化管线（仅 `NET8_0_OR_GREATER`）。**该清单必须与 `Generated/` 目录逐项对齐**——组件的 AOT 分支只组合此处登记的上下文、绝不回退反射，漏登记在 JIT 下无症状、只在 Native AOT 首次真实调用失败。
 
 ## 用法
 
@@ -130,6 +131,6 @@ var sign = await jsApi.SignAsync("https://example.com/page");   // URL 中的 # 
 - 目标框架继承根 `Directory.Build.props`（`netstandard2.0;net6.0;net8.0;net10.0`、Version `1.0.3`），可打包。
 - `MUD005`（Query 传令牌的 URL 泄露面）项目级抑制：微信公众平台官方契约强制 `access_token` 走 Query、不支持 Header 注入，属已知接受风险；库内遥测由 `SensitiveUrlRedactor` 脱敏。
 - **免令牌端点必须独立成接口**（`[Token]` 是接口级特性）：`IMpSnsService`（sns 四端点）、`IMpOpenApiTokenFreeService`（`clear_quota/v2` 应急逃生端点）与带令牌接口同注册组，由同一条生成注册入口装载。
-- 下载通道不计入接口特性路由，但计入守卫 RC2 的全量 180 条（174 接口 + 3 令牌/票据 + 3 下载路径常量）；官方面索引页唯一路由 196 条（RC4，`.docs/` 缺失时自动跳过）。
+- 下载通道不计入接口特性路由，但计入守卫 RC2 的全量 194 条（188 接口 + 3 令牌/票据 + 3 下载路径常量）；官方面索引页唯一路由 196 条（RC4，`.docs/` 缺失时自动跳过）。
 - `netstandard2.0` 下禁 `init`/`record`/`with`、无 `ArgumentNullException.ThrowIfNull`；新增代码沿用既有 TFM 条件编译形态。
-- 契约守卫位于 `Tests/Mud.Wechat.OfficialAccount.Tests/ContractGuards/`（23 个文件，按域前缀 BS/TG/US/MG/CM/KF/TP/SN/OA/MS/CT/DC/MD/SM/QJ/SL/ST/OT/IT/TK + QT Query 令牌注入白名单 + RC 路由计数纪律）。**端点 / 路由 / DTO / 注册面变更须同批更新守卫**。
+- 契约守卫位于 `Tests/Mud.Wechat.OfficialAccount.Tests/ContractGuards/`（24 个文件，按域前缀 BS/TG/US/MG/CM/KF/TP/SN/OA/MS/CT/DC/MD/SM/QJ/SL/ST/OT/IT/TK/CD + QT Query 令牌注入白名单 + RC 路由计数纪律）。**端点 / 路由 / DTO / 注册面变更须同批更新守卫**。

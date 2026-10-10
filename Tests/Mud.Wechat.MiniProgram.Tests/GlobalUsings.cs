@@ -26,3 +26,4 @@ global using Mud.Wechat.MiniProgram.DataModels.QrCodeLink;
 global using Mud.Wechat.MiniProgram.DataModels.Security;
 global using Mud.Wechat.MiniProgram.Extensions;
 global using Mud.Wechat.OfficialAccount.Abstractions;
+global using Mud.Wechat.ContractBaseline;

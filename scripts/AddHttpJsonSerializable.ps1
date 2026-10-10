@@ -19,9 +19,9 @@
 #>
 
 param(
-    # 数据模型根目录；留空则取「仓库根目录\Mud.Wechat.Work.DataModels」。
+    # 数据模型根目录；留空则取「仓库根目录\Src\Work\Mud.Wechat.Work.DataModels」。
     # 也可传入相对路径（相对仓库根目录）或绝对路径。
-    # 公众号产品线用法：-RootPath Mud.Wechat.OfficialAccount.DataModels -RootNamespace Mud.Wechat.OfficialAccount.DataModels
+    # 公众号产品线用法：-RootPath Src/OfficialAccount/Mud.Wechat.OfficialAccount.DataModels -RootNamespace Mud.Wechat.OfficialAccount.DataModels
     [string]$RootPath,
     # 根命名空间：命中该命名空间的直属文件（无域段）归入 "Common" 组。
     # 多产品线必须显式传入，否则非默认产品线的根级 DTO 会被打成 "DataModels" 等错误分组
@@ -34,7 +34,7 @@ $RepoRoot = Split-Path $PSScriptRoot -Parent
 
 # ---- 解析根目录为绝对路径（相对路径基于仓库根目录，不依赖当前工作目录）----
 if ([string]::IsNullOrWhiteSpace($RootPath)) {
-    $RootPath = Join-Path $RepoRoot 'Mud.Wechat.Work.DataModels'
+    $RootPath = Join-Path $RepoRoot 'Src/Work/Mud.Wechat.Work.DataModels'
 } elseif (-not [System.IO.Path]::IsPathRooted($RootPath)) {
     $RootPath = Join-Path $RepoRoot $RootPath
 }

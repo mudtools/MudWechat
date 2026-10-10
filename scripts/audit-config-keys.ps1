@@ -24,8 +24,15 @@ function Get-SourceProjectDir([string]$projectName) {
         return $projectDirCache[$projectName]
     }
 
-    $csproj = Get-ChildItem -Path $repoRoot -Filter "$projectName.csproj" -Recurse -File |
-        Where-Object { $_.FullName -notmatch '\\(bin|obj)\\' } |
+    # 只在 Src 下按**有界深度**定位工程（Src/<Area>/<ProjectName>/<ProjectName>.csproj）。
+    # **不要**改成 Get-ChildItem -Path $repoRoot -Recurse：那会进入 obj/generated-probe 下
+    # Microsoft.Extensions.Configuration.Binder 源生成器留下的深路径（实测 223 字符），
+    # 叠加长工程名（如 Mud.Wechat.OfficialAccount.Abstractions.csproj）后超过 MAX_PATH(260)，
+    # 在 Windows PowerShell 5.1（.NET Framework，无长路径支持）下抛 DirectoryNotFoundException
+    # —— 而 README / AGENTS §1 记载的调用方式恰是 powershell(5.1)，即该形态必失败
+    # （pwsh 因 .NET Core 的长路径支持侥幸通过，掩盖了问题）。
+    # 本脚本解析的工程名全部落在 Src 下（配置 DTO 与消费点均不出现在 Tests）。
+    $csproj = Get-ChildItem -Path (Join-Path $repoRoot 'Src') -Filter "$projectName.csproj" -Recurse -File -Depth 2 -ErrorAction SilentlyContinue |
         Select-Object -First 1
     if ($null -eq $csproj) {
         throw "未找到工程 $projectName.csproj（源码归类目录漂移，审计脚本定位失效）"
@@ -42,6 +49,10 @@ $configFiles = @(
     'Mud.Wechat.Work.Abstractions/Configuration/WechatAppConfig.cs',
     'Mud.Wechat.OfficialAccount.Abstractions/Configuration/MpAppConfig.cs',
     'Mud.Wechat.Work.Callback/WechatCallbackOptions.cs',
+    # 会话内容存档 C SDK 封装的配置面（Work 主包 ExtendedSDK/Finance/）。存档 secret、代理口令与
+    # RSA 私钥**永不落 DTO**（只登记 ISecretProvider 中的密钥名，误填原文由 Validate 启动期点名拒绝）；
+    # Robots / PrivateKeySecretNames 两支字典非基元属性不入本正则，其消费点分别由工厂与解密链路承载。
+    'Mud.Wechat.Work/ExtendedSDK/Finance/WechatFinanceOptions.cs',
     # 公众号回调配置面（与企微 WechatCallbackOptions 同层同形）：路由前缀/超时/白名单/
     # 逐应用凭据（Token/EncodingAESKey/AppId）——新增配置属性必须有真实消费点，否则本脚本 fail-closed。
     'Mud.Wechat.OfficialAccount.Callback/MpCallbackOptions.cs',
@@ -106,7 +117,13 @@ foreach ($file in $configFiles) {
         'Mud.Wechat.OpenTelemetry',
         # 开放平台产品线（2026-10 新增）：消费点可落在主包与抽象包。
         'Mud.Wechat.OpenPlatform',
-        'Mud.Wechat.OpenPlatform.Abstractions'
+        'Mud.Wechat.OpenPlatform.Abstractions',
+        # 腾讯广告产品线（2026-10 新增）：三包全部纳入。本线是仓内第一条**非微信域**线
+        # （api.e.qq.com + 独立 OAuth2 双令牌），漏出搜索范围即「属性无消费点被整体绕过」= 门禁盲区，
+        # AB-G6 对本线三包逐一断言存在。
+        'Mud.Wechat.Ads',
+        'Mud.Wechat.Ads.Abstractions',
+        'Mud.Wechat.Ads.DataModels'
     )
 
     foreach ($prop in $propNames) {

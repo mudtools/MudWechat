@@ -10,11 +10,18 @@ using System.Text.Json.Serialization.Metadata;
 using Mud.Wechat.OfficialAccount.DataModels;
 using Mud.Wechat.OfficialAccount.DataModels.AutoReply;
 using Mud.Wechat.OfficialAccount.DataModels.Basic;
+using Mud.Wechat.OfficialAccount.DataModels.Card;
 using Mud.Wechat.OfficialAccount.DataModels.Comment;
 using Mud.Wechat.OfficialAccount.DataModels.CustomerMessage;
 using Mud.Wechat.OfficialAccount.DataModels.DataCube;
+using Mud.Wechat.OfficialAccount.DataModels.Invoice;
 using Mud.Wechat.OfficialAccount.DataModels.KfAccount;
 using Mud.Wechat.OfficialAccount.DataModels.Mass;
+using Mud.Wechat.OfficialAccount.DataModels.OneCode;
+using Mud.Wechat.OfficialAccount.DataModels.QrcodeJump;
+using Mud.Wechat.OfficialAccount.DataModels.ShortLink;
+using Mud.Wechat.OfficialAccount.DataModels.SmartApi;
+using Mud.Wechat.OfficialAccount.DataModels.Store;
 using Mud.Wechat.OfficialAccount.DataModels.Qrcode;
 using Mud.Wechat.OfficialAccount.DataModels.KfSession;
 using Mud.Wechat.OfficialAccount.DataModels.Draft;
@@ -48,11 +55,17 @@ public static class MpJsonResolverExtensions
     /// （SerializerClassName = DTO 命名空间的域段，上下文与域 DTO 同命名空间）。
     /// 各上下文键空间不重叠，合并顺序无关（<c>JsonTypeInfoResolver.Combine</c> 按序命中）；
     /// 与企微产品线的上下文<b>类型集合不相交</b>，同一宿主共存时两个 resolver 合并亦无冲突。
+    /// <para>
+    /// <b>本清单必须与 <c>Generated/</c> 目录逐项对齐</b>：组件的 AOT 分支只组合此处登记的上下文、
+    /// <b>绝不回退反射</b>，漏登记在 JIT 下毫无症状、只在 Native AOT 的首次真实调用上失败
+    /// （同形态与后果见 <c>Mud.Wechat.Pay</c> 线 <c>PayJsonResolverExtensions</c> 的说明）。
+    /// </para>
     /// </remarks>
     public static void ConfigureDataModelsResolver(IServiceCollection services)
     {
         var resolver = JsonTypeInfoResolver.Combine(
             AutoReplyJsonContext.Default,
+            CardJsonContext.Default,
             CommentJsonContext.Default,
             CommonJsonContext.Default,
             DataCubeJsonContext.Default,
@@ -73,7 +86,13 @@ public static class MpJsonResolverExtensions
             SubscriptionNoticeJsonContext.Default,
             OpenApiJsonContext.Default,
             SnsJsonContext.Default,
-            WebDevJsonContext.Default);
+            WebDevJsonContext.Default,
+            SmartApiJsonContext.Default,
+            QrcodeJumpJsonContext.Default,
+            ShortLinkJsonContext.Default,
+            StoreJsonContext.Default,
+            OneCodeJsonContext.Default,
+            InvoiceJsonContext.Default);
         services.AddMudHttpClientJsonContext(resolver);
     }
 }

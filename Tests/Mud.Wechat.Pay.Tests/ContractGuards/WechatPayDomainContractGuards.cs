@@ -36,7 +36,7 @@ public class WechatPayDomainContractGuards
     [Fact]
     public void PayInterfaces_ShouldNotDeclareToken_AndShouldMatchModuleCount()
     {
-        var interfaces = LoadProductLine("Mud.Wechat.Pay")
+        var interfaces = LoadPayAssembly()
             .GetTypes()
             .Where(static t => t.IsInterface && t.IsPublic)
             .Where(static t => t.GetCustomAttributes(false)
@@ -44,9 +44,11 @@ public class WechatPayDomainContractGuards
             .OrderBy(static t => t.Name, StringComparer.Ordinal)
             .ToArray();
 
-        // 数量下限防枚举空跑（AGENTS §6）：八域接口 = Transactions / Refund / Bill / Certificates / ProfitSharing / PayScore / CombineTransactions / Transfer。
-        interfaces.Should().HaveCount(10,
-            "支付线十域接口（…/NewTaxControlFapiao/MarketingFavor）——数量变化须同批更新 PayModule 与本守卫");
+        // 聚合计数（防枚举空跑，AGENTS §6）：十域接口 = Transactions / Refund / Bill / Certificates / ProfitSharing /
+        // PayScore / CombineTransactions / Transfer / NewTaxControlFapiao / MarketingFavor。
+        // 数字集中维护在 Tests/ContractBaseline.cs；数量变化须同批更新 PayModule 与该基线。
+        interfaces.Should().HaveCount(Baseline.Pay.HttpApiInterfaces,
+            "支付线十域接口——数量变化须同批更新 PayModule 与 Tests/ContractBaseline.cs");
 
         interfaces.Select(static t => t.Name).Should().BeEquivalentTo(new[]
         {
@@ -73,7 +75,7 @@ public class WechatPayDomainContractGuards
     }
 
     /// <summary>
-    /// PAY-B5：端点计数（<b>54</b>）+ 官方路由表逐条比对（照官方原文，<b>不得「纠正」</b>）。
+    /// PAY-B5：端点计数（<b>57</b>）+ 官方路由表逐条比对（照官方原文，<b>不得「纠正」</b>）。
     /// </summary>
     /// <remarks>
     /// <para>
@@ -84,6 +86,12 @@ public class WechatPayDomainContractGuards
     /// <c>4012551764</c> 平台证书。
     /// </para>
     /// <para>
+    /// <b>下单四族的路由来源</b>：JSAPI <c>4012791897</c> 为本仓逐页核验过的锚点；Native <c>4012791877</c> /
+    /// APP <c>4013070347</c> / H5 <c>4012791834</c> 三页 docId 与路由取自本地 SKIT <c>TenpayV3</c>
+    /// 的登记（2026-10-10 对齐），<b>官方逐页核验待补</b>（文档中心为 SPA，正文不可达）。
+    /// 本守卫只锁<b>路由字符串</b>与<b>已对齐的 DTO 形态</b>，不声称字段表已经官方核验。
+    /// </para>
+    /// <para>
     /// <b>P2 分账首批</b>（同日核验）：<c>4012524936</c> 请求分账 / <c>4012528995</c> 添加分账接收方 /
     /// <c>chapter8_1_2</c> 查询分账结果。
     /// </para>
@@ -91,11 +99,14 @@ public class WechatPayDomainContractGuards
     [Fact]
     public void Endpoints_ShouldMatchOfficialRoutes()
     {
-        var asm = LoadProductLine("Mud.Wechat.Pay");
+        var asm = LoadPayAssembly();
 
         RoutesOf(asm, "IWechatPayTransactionsService").Should().BeEquivalentTo(new[]
         {
             "/v3/pay/transactions/jsapi",
+            "/v3/pay/transactions/native",
+            "/v3/pay/transactions/app",
+            "/v3/pay/transactions/h5",
             "/v3/pay/transactions/id/{transactionId}",
             "/v3/pay/transactions/out-trade-no/{outTradeNo}",
             "/v3/pay/transactions/out-trade-no/{outTradeNo}/close",
@@ -206,7 +217,8 @@ public class WechatPayDomainContractGuards
             .SelectMany(static m => m.GetCustomAttributes(false))
             .Select(static a => a.GetType().GetProperty("RequestUri")?.GetValue(a) as string)
             .Count(static uri => !string.IsNullOrWhiteSpace(uri))
-            .Should().Be(54, "支付线端点总数为 54（… + 5 电子发票 + 7 代金券 + 2 商家转账 + 3 合单：Native/APP/H5）");
+            .Should().Be(Baseline.Pay.Endpoints,
+                "支付线端点总数为 57（原 54 + 直连下单三族：Native/APP/H5）；数量变化须同批调整 Tests/ContractBaseline.cs");
     }
 
     /// <summary>
@@ -221,6 +233,14 @@ public class WechatPayDomainContractGuards
     {
         JsonNameShouldBe<JsapiPrepayRequest>(nameof(JsapiPrepayRequest.OutTradeNo), "out_trade_no");
         JsonNameShouldBe<JsapiPrepayRequest>(nameof(JsapiPrepayRequest.SupportFapiao), "support_fapiao");
+
+        // 直连下单三族：应答字段名即三族形态的区分点（code_url / prepay_id / h5_url），拼写照官方原文。
+        JsonNameShouldBe<NativePrepayResponse>(nameof(NativePrepayResponse.CodeUrl), "code_url");
+        JsonNameShouldBe<H5PrepayResponse>(nameof(H5PrepayResponse.H5Url), "h5_url");
+        JsonNameShouldBe<H5Info>(nameof(H5Info.BundleId), "bundle_id");
+        JsonNameShouldBe<H5SceneInfo>(nameof(H5SceneInfo.PayerClientIp), "payer_client_ip");
+        JsonNameShouldBe<AppSubsidyDetail>(nameof(AppSubsidyDetail.SubsidyPeriodType), "subsidy_period_type");
+        JsonNameShouldBe<AppSubsidyPlan>(nameof(AppSubsidyPlan.SubsidyInstallmentNum), "subsidy_installment_num");
         JsonNameShouldBe<CloseOrderRequest>(nameof(CloseOrderRequest.MchId), "mchid");
 
         JsonNameShouldBe<TransactionQueryResponse>(nameof(TransactionQueryResponse.TradeStateDesc), "trade_state_desc");
@@ -255,7 +275,9 @@ public class WechatPayDomainContractGuards
 
         foreach (var responseType in new[]
                  {
-                     typeof(JsapiPrepayResponse),
+                     typeof(PrepayIdResponse),
+                     typeof(NativePrepayResponse),
+                     typeof(H5PrepayResponse),
                      typeof(TransactionQueryResponse),
                      typeof(RefundResponse),
                      typeof(BillDownloadInfoResponse),
@@ -297,7 +319,7 @@ public class WechatPayDomainContractGuards
     [Fact]
     public void Interfaces_ShouldAllowAnyStatusCode_SoErrorBodiesAreReadable()
     {
-        var interfaces = LoadProductLine("Mud.Wechat.Pay")
+        var interfaces = LoadPayAssembly()
             .GetTypes()
             .Where(static t => t.IsInterface && t.IsPublic)
             .Where(static t => t.GetCustomAttributes(false)
@@ -317,14 +339,13 @@ public class WechatPayDomainContractGuards
 
     // ---- helpers -------------------------------------------------------------
 
-    private static Assembly LoadProductLine(string name)
-    {
-        var asm = AppDomain.CurrentDomain.GetAssemblies()
-            .FirstOrDefault(a => a.GetName().Name == name)
-            ?? Assembly.Load(name);
-        asm.GetName().Name.Should().Be(name);
-        return asm;
-    }
+    /// <summary>
+    /// 取支付主包程序集：以该包内的<b>锚定类型</b>定位（<c>typeof(T).Assembly</c>）。
+    /// 不用 <c>Assembly.Load("Mud.Wechat.Pay")</c> —— 按名加载在 AOT / 裁剪下不可用，
+    /// 且把「程序集叫什么」写进断言（改名 / 合并即红，掩盖真正要守的分层语义）。
+    /// </summary>
+    private static Assembly LoadPayAssembly() =>
+        typeof(Mud.Wechat.Pay.Extensions.PayModule).Assembly;
 
     private static string[] RoutesOf(Assembly asm, string interfaceName)
     {

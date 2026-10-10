@@ -25,4 +25,11 @@
 		<ProjectReference Include="..\Mud.Wechat.Work.DataModels\Mud.Wechat.Work.DataModels.csproj" />
 	</ItemGroup>
 
+	<ItemGroup>
+		<!-- 会话存档原生封装的实现细节（P/Invoke 声明、SafeHandle、分片聚合器）一律 internal：
+		     原生契约不是公开面（宿主只经 IWechatWorkFinanceClientFactory 取用）。
+		     契约守卫 FIN-B1/B3 与相应测试需直读，故开给测试工程。 -->
+		<InternalsVisibleTo Include="Mud.Wechat.Work.Tests" />
+	</ItemGroup>
+
 </Project>

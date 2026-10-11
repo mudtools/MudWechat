@@ -83,6 +83,60 @@ public class AibotMessage
     /// <remarks>官方 101031：开发者可通过模版卡片事件中的 userid 获取；替换会覆盖原消息的 feedback 信息。</remarks>
     [JsonPropertyName("userids")]
     public List<string>? UserIds { get; set; }
+
+    /// <summary>文件消息体（<c>msgtype=file</c>，官方 101463 长连接回复；<c>media_id</c> 须先经素材上传获得）。</summary>
+    [JsonPropertyName("file")]
+    public AibotMediaReplyBody? File { get; set; }
+
+    /// <summary>图片消息体（<c>msgtype=image</c>，官方 101463 长连接回复；<c>media_id</c> 承载）。</summary>
+    [JsonPropertyName("image")]
+    public AibotMediaReplyBody? Image { get; set; }
+
+    /// <summary>语音消息体（<c>msgtype=voice</c>，官方 101463 长连接回复；<c>media_id</c> 承载）。</summary>
+    [JsonPropertyName("voice")]
+    public AibotMediaReplyBody? Voice { get; set; }
+
+    /// <summary>
+    /// 视频消息体（<c>msgtype=video</c>，官方 101463 长连接回复；<c>media_id</c> 必填 +
+    /// 可选 <c>title</c>（≤64 字节）/ <c>description</c>（≤512 字节）—— 与其余三分支不同构）。
+    /// </summary>
+    [JsonPropertyName("video")]
+    public AibotVideoReplyBody? Video { get; set; }
+}
+
+/// <summary>
+/// 智能机器人媒体回复消息体（<c>file</c> / <c>image</c> / <c>voice</c> 三分支共用；
+/// 官方 101463 的 <c>media_id</c> 来自 <c>aibot_upload_media_finish</c>，<b>3 天内有效</b>）。
+/// </summary>
+/// <remarks>
+/// <para>
+/// <b>不复用回调侧 <c>AibotMediaContent</c></b>：那是「下载凭据」（<c>url</c> + <c>aeskey</c>，解密用），
+/// 本类型是「上传产物引用」（<c>media_id</c>）—— 两处字段零交集，合并只会制造「填错字段名」的隐患。
+/// </para>
+/// </remarks>
+[HttpJsonSerializable(SerializerClassName = "Aibot")]
+public class AibotMediaReplyBody
+{
+    /// <summary>素材 id（官方 <c>media_id</c>，必填；来自素材上传，3 天内有效）。</summary>
+    [JsonPropertyName("media_id")]
+    public string? MediaId { get; set; }
+}
+
+/// <summary>智能机器人视频回复消息体（<c>video</c>；官方 101463 在 <c>media_id</c> 之外多标题与描述两个字段）。</summary>
+[HttpJsonSerializable(SerializerClassName = "Aibot")]
+public class AibotVideoReplyBody
+{
+    /// <summary>素材 id（官方 <c>media_id</c>，必填；3 天内有效）。</summary>
+    [JsonPropertyName("media_id")]
+    public string? MediaId { get; set; }
+
+    /// <summary>视频标题（官方 <c>title</c>，≤64 字节）。</summary>
+    [JsonPropertyName("title")]
+    public string? Title { get; set; }
+
+    /// <summary>视频描述（官方 <c>description</c>，≤512 字节）。</summary>
+    [JsonPropertyName("description")]
+    public string? Description { get; set; }
 }
 
 /// <summary>智能机器人文本消息体（<c>text</c>）。</summary>

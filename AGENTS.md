@@ -69,7 +69,7 @@ AOT / Trim（`net8.0`/`net10.0` 默认开启；`AotStrictMode=true` 把 `IL2026;
 Src/Core/
   Mud.Wechat.Abstractions/            # 跨产品线共享叶层（零工程引用）：响应契约、令牌存储端口与桥接编解码、
                                       # 回调密码学内核、配置基座、WechatApiHosts（SSRF 白名单单一来源）
-  Mud.Wechat.Redis/                   # 四个存储端口的 Redis 实现 + 连接基座 + DI 编排
+  Mud.Wechat.Redis/                   # 五个存储端口（含长连接租约 `IWechatBotConnectionLease`）的 Redis 实现 + 连接基座 + DI 编排
   Mud.Wechat.Callback.Generator/      # 回调契约登记生成器（中立名；发射 RegisterAll；IsPackable=false）
   Mud.Wechat.Callback.Analyzers/      # 回调处理器契约分析器（中立名；诊断型、不发射；netstandard2.0 单 TFM；
                                       # IsPackable=false，**由四个 Callback 宿主包以字面相对路径内嵌** analyzers/dotnet/cs）
@@ -77,7 +77,7 @@ Src/Work/                             # 企业微信线（本文件 §5~§7 的�
   Mud.Wechat.Work/                    # 主包：Interfaces/{域}/ 接口声明 + 服务 + DI + 模块注册
   Mud.Wechat.Work.Abstractions/       # 令牌基座、多应用、配置、存储端口、枚举、异常、回调信封与载荷转换器
   Mud.Wechat.Work.DataModels/         # 官方 DTO（[HttpJsonSerializable]）+ Generated/ 域 JsonContext（生成物）
-  Mud.Wechat.Work.Callback/           # 回调接收（AES 解密、事件解析、分发）+ HTTP 中间件；Events/Payloads/ 载荷；智能机器人 JSON 回调通道（见 §5.5）
+  Mud.Wechat.Work.Callback/           # 回调接收（AES 解密、事件解析、分发）+ HTTP 中间件；Events/Payloads/ 载荷；智能机器人 JSON 回调通道 + 长连接（`LongConnection/`，net8+ 门控，见 §5.5）
 Src/{OfficialAccount,MiniProgram,Pay,OpenPlatform,Channels,Ads}/   # 其余五条线 + 在建广告线，同形态分包
                                       # 公众号 4 包 / 小程序 3 包（**无 Callback**）/ 支付 4 包 / 开放平台 2 包 / 小店 4 包 / 广告 3 包（在建）
                                       # 每包的公开面与已踩陷阱见其目录下的 README.md
@@ -142,7 +142,7 @@ scripts/                              # verify-build / audit-config-keys / Gener
 
 - `IWechatCorpAuthStore` 复合键 `(AppKey, AuthCorpId)`；`IWechatSuiteTicketStore` 按 `suiteId` 分槽（多套件互不覆盖）。
 - 默认实现仅进程内 ⇒ 多实例部署引用 `Mud.Wechat.Redis`（`AddWechatRedis` **必须先于** `AddWechatApp`/`AddWechatCallback`，颠倒即注册期 fail-fast），或由宿主前置 `TryAdd` 分布式实现覆盖（宿主预注册者按契约胜出）。
-- 四个存储端口（含 `IWechatCallbackReplayGuard`：接口落 `Abstractions.TokenManager`，InMemory 实现留 `Callback` 包）由 Redis 包单依赖 Abstractions 实现、共享连接基座。
+- 五个存储端口（含 `IWechatCallbackReplayGuard`：接口落 `Abstractions.TokenManager`，InMemory 实现留 `Callback` 包；`IWechatBotConnectionLease`：接口落 `Abstractions.Callback.Bots`，长连接主备基座）：接口落 `Abstractions.TokenManager`，InMemory 实现留 `Callback` 包）由 Redis 包单依赖 Abstractions 实现、共享连接基座。
 - 退役清库批量能力为**可选**接口 `IWechatTokenStoreBatchRemove`（管理器先 `is` 探测，命中批删、未实现回退逐键）。
 - **SE.Redis 3.3.0 陷阱**：① `RedisTimeoutException` 继承 `TimeoutException` 而非 `RedisException`，捕获须走 `WechatRedisErrors.ShouldWrap`，裸 `catch (RedisException)` 会漏超时；② `StringSetAsync` 有四套重载，**生产调用一律用命名参数钉住形态**（`keepTtl: false` / `when: ...`）。
 
@@ -173,6 +173,7 @@ scripts/                              # verify-build / audit-config-keys / Gener
 | 配置面 | `WechatAppCallbackOptions`：`PushToken`/`PushEncodingAESKey`/`ReceiveId`/`AppType`/`Channel`，必须与主配置同类文件才纳入 audit 扫描。`ReceiveId` 是接收方 ID（自建填 `CorpId`、**套件填 `SuiteId`**）；非空时校验解密明文 `receiveid`，留空或明文未携带时跳过并一次性告警 |
 | AppType × Channel | `Channel`（`App=1` 应用数据通道 / `Suite=2` 套件指令通道，默认 `App`）；`Validate()` 拒绝「自建应用占用套件通道」「套件通道非第三方/代开发」。`ValidateReceiveId` 三元分流，`IsEventFamilyAllowed` 为**族级默认**合法性闸、**先于**拦截器 `BeforeHandleAsync`，不适用族返回 `Rejected`（→200 不重推） |
 | 智能机器人 JSON 通道 | `WechatCallbackChannel.Bot=3`（仅 `AppType=Internal` + **空 `ReceiveId`**，`Validate()` fail-fast）；报文为 JSON（`{"encrypt":...}`）⇒ 复用密码学/时效/指纹/凭据来源，但**不走** XML 事件信封与族闸（`IsEventFamilyAllowed` 对 Bot 恒 `false`）；键集独立（`WechatBotEventTypes`，**不得**并入 `OfficialPayloadContracts`、**不得**改值与 XML 侧消歧）；处理器为**返回式** `Task<AibotMessage?>`（`null` = 加密空包 `{}`），经 `AddWechatBotCallback().AddHandler<T>(botKey)` 注册（未先 `AddWechatCallback` 即 fail-fast）；应答外壳 `{encrypt, msgsignature, timestamp, nonce}`（`msgsignature` **无下划线**）；**软超时回加密空包 + 200**（非 XML 侧 503：官方只推一次 + 指纹已消费）；**仅 net8.0+** 可用（低 TFM 回 415 + 告警，**不得**静默降级）；**请求体只读一次**（中间件先读再分派，二次读流 ⇒ 恒 403）；路由 `/{GlobalRoutePrefix}/{BotKey}`，仅前缀路由 `/{prefix}` 归一为通配键 `"*"` 后分发 |
+| 智能机器人长连接（101463，P3） | `wss://openws.work.weixin.qq.com`；建连后 `aibot_subscribe`（`bot_id`+`secret`，**每连接恰一次**）；帧外壳 `{cmd, headers.req_id, body}` 两阶段反序列化（先外壳后按 `cmd` 解 body，**禁反射多态**）；**仅 net8.0+**（依赖源生成上下文，同 ADR-12）；应答帧统一 `{headers, errcode, errmsg}`；`aibot_respond_*` 三支各有事件限定（welcome 仅 enter_chat / update 仅卡片事件 / req_id **透传**回调帧值）；流式刷新须同 `stream.id` + 10 分钟窗口 + `finish` 终结（`WechatBotStreamRegistry` 记账「id → 首次 req_id」）；**无指纹闸**（帧无签名，`msgid` 去重归宿主，R10）；重连**先退避再夺租约**（`IWechatBotConnectionLease`，多实例必须注册；`disconnected_event` 不得立即抢占）；素材三步帧 `aibot_upload_media_init/_chunk/_finish`（≤512KB/片、≤100 片、`media_id` 3 天有效）；跨面互斥：同 BotKey 不得同时配长连接与回调凭据（启动期 fail-fast） |
 
 **事件载荷体系**：**不得**再新增「逐事件 DTO + 手写 `ParseXxx`」，**不得**手写多级嵌套解析或手改 `OfficialPayloadContracts.RegisterAll` 方法体。
 
@@ -225,7 +226,7 @@ scripts/                              # verify-build / audit-config-keys / Gener
 
 ## 8 配置与安全
 
-- 配置 API 按线分布（**企微线三处**：`WechatAppConfig`（节 `WechatApps`）、`WechatAuthorizationOptions`（节 `WechatAuthorization`）、`WechatCallbackOptions`；其余各线各持「应用配置 + 回调配置」两面：`MpAppConfig`/`MpCallbackOptions`、`WechatPayMerchantConfig`/`WechatPayCallbackOptions`、`OpenPlatformAppConfig`、`WechatRedisOptions`/`WechatRedisConnectionOptions`、`WechatOpenTelemetryOptions`），公共形状收敛在 `WechatAppConfigBase`。**凡有可写基元属性的配置 DTO 都必须在 `audit-config-keys.ps1` 的 `$configFiles` 登记，且与建文件同批**（AB-G6 的双向不变式；`OpenPlatformAppConfig` 因无可写基元属性而不在此列）。**禁止新增「日志开关」类配置属性**；日志级别统一由 `Logging:LogLevel:{Category}` 控制。
+- 配置 API 按线分布（**企微线四处**：`WechatAppConfig`（节 `WechatApps`）、`WechatAuthorizationOptions`（节 `WechatAuthorization`）、`WechatCallbackOptions`、`WechatBotOptions`（节 `WechatBots`，长连接 P3）；其余各线各持「应用配置 + 回调配置」两面：`MpAppConfig`/`MpCallbackOptions`、`WechatPayMerchantConfig`/`WechatPayCallbackOptions`、`OpenPlatformAppConfig`、`WechatRedisOptions`/`WechatRedisConnectionOptions`、`WechatOpenTelemetryOptions`），公共形状收敛在 `WechatAppConfigBase`。**凡有可写基元属性的配置 DTO 都必须在 `audit-config-keys.ps1` 的 `$configFiles` 登记，且与建文件同批**（AB-G6 的双向不变式；`OpenPlatformAppConfig` 因无可写基元属性而不在此列）。**禁止新增「日志开关」类配置属性**；日志级别统一由 `Logging:LogLevel:{Category}` 控制。
 - **每个公开配置属性必须有真实消费点**（`Validate`/`ToString` 不算）。
 - **安全默认不得削弱**：`BaseUrl` 必须 HTTPS + 白名单（`AllowCustomBaseUrl=false` 是 SSRF 防线）；登记到 `WechatCustomBaseUrlRegistry` 的自定义主机才能被 errcode 判定器预过滤放行（否则私有化部署静默失去令牌恢复能力）。
 - 绝不记录或暴露 `AgentSecret`/`SuiteSecret`/`ProviderSecret`/`permanent_code`/`auth_code`/`suite_ticket`；`WechatCallbackEvent` 的 `DecryptedXml`/`SuiteTicket`/`AuthCode` 不得进日志、遥测或异常消息。`WechatWorkException.RequestUri` 构造期剥离 query 与 userinfo。

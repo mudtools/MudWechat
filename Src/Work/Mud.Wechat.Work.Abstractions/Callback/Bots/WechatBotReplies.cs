@@ -131,4 +131,46 @@ public static class WechatBotReplies
             TemplateCard = templateCard,
             UserIds = userIds == null ? null : new List<string>(userIds),
         };
+
+    /// <summary>构造文件消息应答（长连接专用；<paramref name="mediaId"/> 须先经 <c>aibot_upload_media_*</c> 上传获得）。</summary>
+    /// <param name="mediaId">素材 id（官方 <c>media_id</c>，3 天内有效）。</param>
+    /// <returns>应答消息。</returns>
+    public static AibotMessage File(string mediaId)
+        => new()
+        {
+            MsgType = WechatBotReplyTypes.File,
+            File = new AibotMediaReplyBody { MediaId = mediaId },
+        };
+
+    /// <summary>构造图片消息应答（长连接专用）。</summary>
+    /// <param name="mediaId">素材 id（官方 <c>media_id</c>，3 天内有效）。</param>
+    /// <returns>应答消息。</returns>
+    public static AibotMessage Image(string mediaId)
+        => new()
+        {
+            MsgType = WechatBotReplyTypes.Image,
+            Image = new AibotMediaReplyBody { MediaId = mediaId },
+        };
+
+    /// <summary>构造语音消息应答（长连接专用）。</summary>
+    /// <param name="mediaId">素材 id（官方 <c>media_id</c>，3 天内有效）。</param>
+    /// <returns>应答消息。</returns>
+    public static AibotMessage Voice(string mediaId)
+        => new()
+        {
+            MsgType = WechatBotReplyTypes.Voice,
+            Voice = new AibotMediaReplyBody { MediaId = mediaId },
+        };
+
+    /// <summary>构造视频消息应答（长连接专用；官方在 <c>media_id</c> 之外支持标题与描述）。</summary>
+    /// <param name="mediaId">素材 id（官方 <c>media_id</c>，3 天内有效）。</param>
+    /// <param name="title">视频标题（≤64 字节）。</param>
+    /// <param name="description">视频描述（≤512 字节）。</param>
+    /// <returns>应答消息。</returns>
+    public static AibotMessage Video(string mediaId, string? title = null, string? description = null)
+        => new()
+        {
+            MsgType = WechatBotReplyTypes.Video,
+            Video = new AibotVideoReplyBody { MediaId = mediaId, Title = title, Description = description },
+        };
 }

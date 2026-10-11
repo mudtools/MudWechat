@@ -156,6 +156,9 @@ public static class WechatRedisServiceCollectionExtensions
         services.TryAddSingleton<IWechatSuiteTicketStore>(sp => sp.GetRequiredService<RedisWechatSuiteTicketStore>());
         services.AddSingleton<RedisWechatCallbackReplayGuard>();
         services.TryAddSingleton<IWechatCallbackReplayGuard>(sp => sp.GetRequiredService<RedisWechatCallbackReplayGuard>());
+        // 第五端口（P3 长连接租约，多实例主备切换基座；R-3 同款「恒注册具体类型 + 接口 TryAdd」）。
+        services.AddSingleton<RedisWechatBotConnectionLease>();
+        services.TryAddSingleton<IWechatBotConnectionLease>(sp => sp.GetRequiredService<RedisWechatBotConnectionLease>());
 
         return services;
     }

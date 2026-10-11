@@ -49,6 +49,10 @@ $configFiles = @(
     'Mud.Wechat.Work.Abstractions/Configuration/WechatAppConfig.cs',
     'Mud.Wechat.OfficialAccount.Abstractions/Configuration/MpAppConfig.cs',
     'Mud.Wechat.Work.Callback/WechatCallbackOptions.cs',
+    # 智能机器人长连接配置面（P3，官方 101463）：BotId / 长连接专用 BotSecret / EnableLongConnection /
+    # 心跳与重连退避参数。BotSecret 是**凭据**（经 aibot_subscribe 帧上送）——不得进日志/遥测/异常消息；
+    # 与回调地址模式「二选一」的跨面互斥由长连接启动期校验（同 BotKey 双配置即 fail-fast）。
+    'Mud.Wechat.Work.Abstractions/Configuration/WechatBotOptions.cs',
     # 会话内容存档 C SDK 封装的配置面（Work 主包 ExtendedSDK/Finance/）。存档 secret、代理口令与
     # RSA 私钥**永不落 DTO**（只登记 ISecretProvider 中的密钥名，误填原文由 Validate 启动期点名拒绝）；
     # Robots / PrivateKeySecretNames 两支字典非基元属性不入本正则，其消费点分别由工厂与解密链路承载。

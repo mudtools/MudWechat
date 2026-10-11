@@ -1005,3 +1005,135 @@ public class WxaExpressMockNotifyRequest
     [JsonPropertyName("order_status")]
     public int OrderStatus { get; set; }
 }
+
+/// <summary>查询支持同城配送的城市请求体（<c>POST /cgi-bin/express/intracity/getcity</c>）。</summary>
+/// <remarks>
+/// <para>
+/// 官方文档：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/weixin-express/same_city_distribution/api_intracity_getcity"/>
+/// （接口英文名 <c>intracity_getcity</c>，2026-10-12 核验）。
+/// </para>
+/// <para>
+/// <c>service_trans_id</c> <b>不传</b>即返回<b>全部运力</b>的支持城市；传值则只返回该运力的结果
+/// （官方示例取值：<c>SFTC</c> 顺丰同城、<c>DADA</c> 达达）。
+/// </para>
+/// </remarks>
+[HttpJsonSerializable(SerializerClassName = "Express")]
+public class WxaExpressGetCityRequest
+{
+    /// <summary>运力 ID（<c>service_trans_id</c>，可选；不传则返回全部运力结果）。</summary>
+    [JsonPropertyName("service_trans_id")]
+    public string? ServiceTransId { get; set; }
+}
+
+/// <summary>单个运力支持的城市信息（<c>support_list</c> 元素，<c>getcity</c> 响应）。</summary>
+[HttpJsonSerializable(SerializerClassName = "Express")]
+public class WxaExpressCitySupport
+{
+    /// <summary>运力 ID（<c>service_trans_id</c>）。</summary>
+    [JsonPropertyName("service_trans_id")]
+    public string? ServiceTransId { get; set; }
+
+    /// <summary>该运力支持的城市列表（<c>city_list</c>），见 <see cref="WxaExpressCity"/>。</summary>
+    [JsonPropertyName("city_list")]
+    public WxaExpressCity[]? CityList { get; set; }
+}
+
+/// <summary>同城配送城市项（<c>city_list</c> 元素）。</summary>
+[HttpJsonSerializable(SerializerClassName = "Express")]
+public class WxaExpressCity
+{
+    /// <summary>城市行政区域编码（<c>city_code</c>；官方示例：北京市 <c>110000</c>、天津市 <c>120000</c>）。</summary>
+    [JsonPropertyName("city_code")]
+    public int CityCode { get; set; }
+
+    /// <summary>城市名称（<c>city_name</c>；官方示例：「北京市」）。</summary>
+    [JsonPropertyName("city_name")]
+    public string? CityName { get; set; }
+}
+
+/// <summary>查询支持同城配送的城市响应（<c>POST /cgi-bin/express/intracity/getcity</c>）。</summary>
+/// <remarks>
+/// 官方错误码要点：<c>48001</c>（小程序未获同城配送接口权限，需在管理后台开通）、
+/// <c>934003</c>（运力 ID 错误）、<c>934009</c>（不支持该门店所在城市）。
+/// </remarks>
+[HttpJsonSerializable(SerializerClassName = "Express")]
+public class WxaExpressGetCityResponse : WxaResponse
+{
+    /// <summary>各运力支持的城市信息（<c>support_list</c>），见 <see cref="WxaExpressCitySupport"/>。</summary>
+    [JsonPropertyName("support_list")]
+    public WxaExpressCitySupport[]? SupportList { get; set; }
+}
+
+/// <summary>查询扣费主体请求体（<c>POST /cgi-bin/express/intracity/getpaymode</c>）。</summary>
+/// <remarks>
+/// <para>
+/// 官方文档：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/weixin-express/same_city_distribution/api_intracity_getpaymode"/>
+/// （接口英文名 <c>intracity_getpaymode</c>）。
+/// </para>
+/// <para><b>官方原文约束</b>：<c>appid</c> <b>必须</b>与当前 <c>access_token</c> 匹配，否则返回 <c>934012</c>（appid 和 access_token 不匹配）。</para>
+/// </remarks>
+[HttpJsonSerializable(SerializerClassName = "Express")]
+public class WxaExpressGetPayModeRequest
+{
+    /// <summary>小程序 AppId（<c>appid</c>，必填；必须与 access_token 匹配）。</summary>
+    [JsonPropertyName("appid")]
+    public string? AppId { get; set; }
+}
+
+/// <summary>查询扣费主体响应（<c>POST /cgi-bin/express/intracity/getpaymode</c>）。</summary>
+/// <remarks>
+/// <c>pay_mode</c> 取值见 <see cref="WxaExpressPayModes"/>。
+/// <c>pay_appid</c> 与 <c>pay_component_appid</c> <b>互斥</b>：扣费主体为小程序时返回前者、为服务商时返回后者。
+/// </remarks>
+[HttpJsonSerializable(SerializerClassName = "Express")]
+public class WxaExpressGetPayModeResponse : WxaResponse
+{
+    /// <summary>扣费主体（<c>pay_mode</c>；<c>PAY_MODE_STORE</c> 门店 / <c>PAY_MODE_APP</c> 小程序 / <c>PAY_MODE_COMPONENT</c> 服务商）。</summary>
+    [JsonPropertyName("pay_mode")]
+    public string? PayMode { get; set; }
+
+    /// <summary>扣费小程序 AppId（<c>pay_appid</c>；扣费主体为小程序时返回）。</summary>
+    [JsonPropertyName("pay_appid")]
+    public string? PayAppId { get; set; }
+
+    /// <summary>扣费服务商 AppId（<c>pay_component_appid</c>；扣费主体为服务商时返回）。</summary>
+    [JsonPropertyName("pay_component_appid")]
+    public string? PayComponentAppId { get; set; }
+}
+
+/// <summary>设置扣费主体请求体（<c>POST /cgi-bin/express/intracity/setpaymode</c>）。</summary>
+/// <remarks>
+/// <para>
+/// 官方文档：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/weixin-express/same_city_distribution/api_intracity_setpaymode"/>
+/// （接口英文名 <c>intracity_setpaymode</c>）。成功仅返回 <c>errcode</c>/<c>errmsg</c>。
+/// </para>
+/// <para><b>官方原文约束</b>：<c>appid</c> <b>必须</b>与当前 <c>access_token</c> 匹配（同 <see cref="WxaExpressGetPayModeRequest"/>）。</para>
+/// </remarks>
+[HttpJsonSerializable(SerializerClassName = "Express")]
+public class WxaExpressSetPayModeRequest
+{
+    /// <summary>小程序 AppId（<c>appid</c>，必填；必须与 access_token 匹配）。</summary>
+    [JsonPropertyName("appid")]
+    public string? AppId { get; set; }
+
+    /// <summary>扣费主体（<c>pay_mode</c>，必填），取值见 <see cref="WxaExpressPayModes"/>。</summary>
+    [JsonPropertyName("pay_mode")]
+    public string? PayMode { get; set; }
+}
+
+/// <summary>同城配送「扣费主体」取值（<c>pay_mode</c>，官方固定值）。</summary>
+/// <remarks>
+/// 官方原文：<c>PAY_MODE_STORE</c> 门店、<c>PAY_MODE_APP</c> 小程序、<c>PAY_MODE_COMPONENT</c> 服务商。
+/// 该组常量由 <c>intracity_setpaymode</c> 入参与 <c>intracity_getpaymode</c> 出参共用。
+/// </remarks>
+public static class WxaExpressPayModes
+{
+    /// <summary>门店扣费（<c>PAY_MODE_STORE</c>）。</summary>
+    public const string Store = "PAY_MODE_STORE";
+
+    /// <summary>小程序扣费（<c>PAY_MODE_APP</c>）。</summary>
+    public const string App = "PAY_MODE_APP";
+
+    /// <summary>服务商扣费（<c>PAY_MODE_COMPONENT</c>）。</summary>
+    public const string Component = "PAY_MODE_COMPONENT";
+}

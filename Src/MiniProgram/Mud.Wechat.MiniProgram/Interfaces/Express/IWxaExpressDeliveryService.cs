@@ -8,11 +8,11 @@
 namespace Mud.Wechat.MiniProgram;
 
 /// <summary>
-/// 微信小程序「物流助手 · 服务商侧 / 物流消息 / 退货组件」域 SDK（26 端点）—— <b>带令牌</b>通道。
+/// 微信小程序「物流助手 · 服务商侧 / 物流消息 / 退货组件 / 消息推送」域 SDK（29 端点）—— <b>带令牌</b>通道。
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>官方文档</b>（2026-10-11 逐页核验）：
+/// <b>官方文档</b>（2026-10-12 逐页核验）：
 /// 面单联系人 <see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/express/express-by-provider/api_getcontact"/>、
 /// 面单预览 <see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/express/express-by-provider/api_previewtemplate"/>、
 /// 订单审核 <see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/express/express-by-provider/api_updatebusiness"/>、
@@ -21,7 +21,10 @@ namespace Mud.Wechat.MiniProgram;
 /// 物流消息 <see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/express/express-open-msg/api_followwaybill"/>（及 query/update/get_delivery_list）、
 /// 物流查询插件 <see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/express/express-search/api_tracewaybill"/>（及 query_trace/update_waybill_goods）、
 /// 退货组件 <see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/express/express-sale-return/api_addreturn"/>（及 get/unbind）、
-/// 散单寄件 <see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/express/express-by-provider/api_scatterupdateorderstatus"/>（及 fee/cancel/refund/evaluate_feedback）。
+/// 散单寄件 <see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/express/express-by-provider/api_scatterupdateorderstatus"/>（及 fee/cancel/refund/evaluate_feedback）、
+/// 投诉处理 <see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/express/express-by-provider/api_scatterupdatecomplainresult"/>、
+/// 消息推送 <see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/weixin-express/msgpush/api_deliverypathnotify"/>
+/// 与 <see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/weixin-express/msgpush/api_deliveryuserquery"/>。
 /// </para>
 /// <para>
 /// <b>令牌形态（MP-X2 / MP-X3）</b>：复用 <c>MpTokenTypes.AccessToken</c> + Query 注入 <c>access_token</c>。
@@ -418,5 +421,64 @@ public interface IWxaExpressDeliveryService
     [Post("/cgi-bin/express/delivery/single_waybill/evaluate_feedback")]
     Task<WxaResponse> EvaluateSingleWaybillFeedbackAsync(
         [Body] WxaExpressSingleWaybillEvaluateFeedbackRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 运力返回用户投诉处理结果（散单寄件，<c>POST /cgi-bin/express/delivery/scatter/update_complaint_result</c>）。
+    /// 官方文档：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/express/express-by-provider/api_scatterupdatecomplainresult"/>。
+    /// </summary>
+    /// <param name="request">投诉处理结果请求体（<c>token</c>/<c>waybill_id</c>/<c>result</c>/<c>desc</c> 必填），见 <see cref="WxaExpressUpdateComplaintResultRequest"/>。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
+    /// <returns>仅 <c>errcode</c>/<c>errmsg</c>（<c>0</c> 表示成功）。</returns>
+    /// <remarks>
+    /// <para>官方契约：<b>POST</b> ＋ 请求体 JSON；Query 携带 <c>access_token</c>。</para>
+    /// <para>
+    /// <b>官方原文</b>：<c>token</c> 为<b>商户侧下单事件中推送的 Token 字段</b>（与
+    /// <see cref="EvaluateSingleWaybillFeedbackAsync"/> 同源），<b>不得</b>用应用级令牌替代；
+    /// 本接口<b>不支持</b>第三方平台代调用。
+    /// </para>
+    /// </remarks>
+    [Post("/cgi-bin/express/delivery/scatter/update_complaint_result")]
+    Task<WxaResponse> UpdateComplaintResultAsync(
+        [Body] WxaExpressUpdateComplaintResultRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 推送已绑定物流轨迹信息（<c>POST /cgi-bin/express/delivery/pathnotify</c>）。
+    /// 官方文档：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/weixin-express/msgpush/api_deliverypathnotify"/>。
+    /// </summary>
+    /// <param name="request">轨迹推送请求体（<c>sender</c>/<c>receiver</c>/<c>waybill_id</c>/<c>path</c>/<c>create_time</c> 必填），见 <see cref="WxaExpressPathNotifyRequest"/>。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
+    /// <returns>推送结果（<c>exist</c> 表示用户是否绑定），见 <see cref="WxaExpressPathNotifyResponse"/>。</returns>
+    /// <remarks>
+    /// <para>官方契约：<b>POST</b> ＋ 请求体 JSON；Query 携带 <c>access_token</c>。</para>
+    /// <para>
+    /// <b>业务语义</b>：运力方调用本接口向<b>已绑定</b>用户推送物流轨迹消息。
+    /// <c>exist</c> 为 <c>0</c>（未绑定）时消息<b>不会</b>送达，须先引导用户完成绑定
+    /// （绑定状态可用 <see cref="QueryUserBindingAsync"/> 预检）。
+    /// </para>
+    /// </remarks>
+    [Post("/cgi-bin/express/delivery/pathnotify")]
+    Task<WxaExpressPathNotifyResponse> NotifyPathAsync(
+        [Body] WxaExpressPathNotifyRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 用户手机状态查询（<c>POST /cgi-bin/express/delivery/userquery</c>）。
+    /// 官方文档：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/weixin-express/msgpush/api_deliveryuserquery"/>。
+    /// </summary>
+    /// <param name="request">查询请求体（<c>phone</c> 必填），见 <see cref="WxaExpressUserQueryRequest"/>。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
+    /// <returns>绑定状态（<c>exist</c>：<c>0</c> 未绑定，<c>1</c> 已绑定），见 <see cref="WxaExpressUserQueryResponse"/>。</returns>
+    /// <remarks>
+    /// <para>官方契约：<b>POST</b> ＋ 请求体 JSON；Query 携带 <c>access_token</c>。</para>
+    /// <para>
+    /// <b>敏感字段（MP-X7 同口径）</b>：<c>phone</c> 为<b>用户手机号</b>，
+    /// <b>不得</b>入日志 / 遥测 / 异常消息；SDK 只在 DTO 上承载，不做任何回显。
+    /// </para>
+    /// </remarks>
+    [Post("/cgi-bin/express/delivery/userquery")]
+    Task<WxaExpressUserQueryResponse> QueryUserBindingAsync(
+        [Body] WxaExpressUserQueryRequest request,
         CancellationToken cancellationToken = default);
 }

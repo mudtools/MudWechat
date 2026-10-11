@@ -8,11 +8,11 @@
 namespace Mud.Wechat.MiniProgram;
 
 /// <summary>
-/// 微信小程序「物流助手 · 同城配送」域 SDK（13 端点）—— <b>带令牌</b>通道。
+/// 微信小程序「物流助手 · 同城配送」域 SDK（16 端点）—— <b>带令牌</b>通道。
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>官方文档</b>（小程序服务端 API → 物流 → 同城配送，2026-10-11 逐页核验）：
+/// <b>官方文档</b>（小程序服务端 API → 微信物流服务 → 同城配送，2026-10-12 逐页核验）：
 /// 申请开通 <see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/express/express-intracity/api_apply"/>、
 /// 创建门店 <see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/express/express-intracity/api_createstore"/>、
 /// 查询门店 <see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/express/express-intracity/api_querystore"/>、
@@ -25,7 +25,10 @@ namespace Mud.Wechat.MiniProgram;
 /// 下单 <see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/express/express-intracity/api_addorder"/>、
 /// 查询配送单 <see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/express/express-intracity/api_queryorder"/>、
 /// 取消配送单 <see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/express/express-intracity/api_cancelorder"/>、
-/// 模拟回调 <see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/express/express-intracity/api_mocknotify"/>。
+/// 模拟回调 <see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/express/express-intracity/api_mocknotify"/>、
+/// 设置扣费主体 <see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/weixin-express/same_city_distribution/api_intracity_setpaymode"/>、
+/// 查询扣费主体 <see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/weixin-express/same_city_distribution/api_intracity_getpaymode"/>、
+/// 查询支持同城配送的城市 <see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/weixin-express/same_city_distribution/api_intracity_getcity"/>。
 /// </para>
 /// <para>
 /// <b>令牌形态（MP-X2 / MP-X3）</b>：复用 <c>MpTokenTypes.AccessToken</c> + Query 注入 <c>access_token</c>。
@@ -238,5 +241,64 @@ public interface IWxaExpressIntracityService
     [Post("/cgi-bin/express/intracity/mocknotify")]
     Task<WxaResponse> MockNotifyAsync(
         [Body] WxaExpressMockNotifyRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 查询支持同城配送的城市（<c>POST /cgi-bin/express/intracity/getcity</c>）。
+    /// 官方文档：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/weixin-express/same_city_distribution/api_intracity_getcity"/>。
+    /// </summary>
+    /// <param name="request">城市查询请求体（<c>service_trans_id</c> 可选，不传返回全部运力），见 <see cref="WxaExpressGetCityRequest"/>。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
+    /// <returns>各运力支持的城市列表，见 <see cref="WxaExpressGetCityResponse"/>。</returns>
+    /// <remarks>
+    /// <para>官方契约：<b>POST</b> ＋ 请求体 JSON；Query 携带 <c>access_token</c>。</para>
+    /// <para>
+    /// <b>业务语义（官方原文）</b>：用于查询全国可以使用微信同城配送的城市；
+    /// 指定 <c>service_trans_id</c>（如 <c>SFTC</c> 顺丰同城、<c>DADA</c> 达达）时只返回该运力结果。
+    /// 常见错误码：<c>48001</c>（未开通同城配送权限）、<c>934003</c>（运力 ID 错误）、<c>934009</c>（不支持该门店所在城市）。
+    /// </para>
+    /// </remarks>
+    [Post("/cgi-bin/express/intracity/getcity")]
+    Task<WxaExpressGetCityResponse> GetCityAsync(
+        [Body] WxaExpressGetCityRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 查询扣费主体（<c>POST /cgi-bin/express/intracity/getpaymode</c>）。
+    /// 官方文档：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/weixin-express/same_city_distribution/api_intracity_getpaymode"/>。
+    /// </summary>
+    /// <param name="request">扣费主体查询请求体（<c>appid</c> 必填），见 <see cref="WxaExpressGetPayModeRequest"/>。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
+    /// <returns>扣费主体与对应的扣费 AppId，见 <see cref="WxaExpressGetPayModeResponse"/>。</returns>
+    /// <remarks>
+    /// <para>官方契约：<b>POST</b> ＋ 请求体 JSON；Query 携带 <c>access_token</c>。</para>
+    /// <para>
+    /// <b>官方原文约束</b>：<c>appid</c> <b>必须</b>与当前 <c>access_token</c> 匹配，否则返回 <c>934012</c>。
+    /// 返回 <c>pay_appid</c>（扣费主体为小程序）与 <c>pay_component_appid</c>（扣费主体为服务商）<b>互斥</b>出现。
+    /// </para>
+    /// </remarks>
+    [Post("/cgi-bin/express/intracity/getpaymode")]
+    Task<WxaExpressGetPayModeResponse> GetPayModeAsync(
+        [Body] WxaExpressGetPayModeRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 设置扣费主体（<c>POST /cgi-bin/express/intracity/setpaymode</c>）。
+    /// 官方文档：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/weixin-express/same_city_distribution/api_intracity_setpaymode"/>。
+    /// </summary>
+    /// <param name="request">扣费主体设置请求体（<c>appid</c> / <c>pay_mode</c> 必填），见 <see cref="WxaExpressSetPayModeRequest"/>。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
+    /// <returns>仅 <c>errcode</c>/<c>errmsg</c>（<c>0</c> 表示设置成功）。</returns>
+    /// <remarks>
+    /// <para>官方契约：<b>POST</b> ＋ 请求体 JSON；Query 携带 <c>access_token</c>。</para>
+    /// <para>
+    /// <c>pay_mode</c> 取值见 <see cref="WxaExpressPayModes"/>（<c>PAY_MODE_STORE</c> 门店 /
+    /// <c>PAY_MODE_APP</c> 小程序 / <c>PAY_MODE_COMPONENT</c> 服务商）；
+    /// 与 <see cref="GetPayModeAsync"/> 配对使用（后者读、本端点写）。
+    /// </para>
+    /// </remarks>
+    [Post("/cgi-bin/express/intracity/setpaymode")]
+    Task<WxaResponse> SetPayModeAsync(
+        [Body] WxaExpressSetPayModeRequest request,
         CancellationToken cancellationToken = default);
 }

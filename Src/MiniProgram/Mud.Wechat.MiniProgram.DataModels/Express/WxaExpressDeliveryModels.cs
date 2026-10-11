@@ -857,3 +857,188 @@ public class WxaExpressSingleWaybillEvaluateFeedbackRequest
     [JsonPropertyName("desc")]
     public string? Description { get; set; }
 }
+
+/// <summary>运力返回用户投诉处理结果请求体（<c>POST /cgi-bin/express/delivery/scatter/update_complaint_result</c>，散单寄件）。</summary>
+/// <remarks>
+/// <para>
+/// 官方文档：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/express/express-by-provider/api_scatterupdatecomplainresult"/>
+/// （接口英文名 <c>scatterupdatecomplainresult</c>，2026-10-12 核验）。成功仅返回 <c>errcode</c>/<c>errmsg</c>。
+/// </para>
+/// <para>
+/// <b>官方原文</b>：<c>token</c> 为<b>商户侧下单事件中推送的 Token 字段</b>——与用户评价反馈
+/// （<see cref="WxaExpressSingleWaybillEvaluateFeedbackRequest"/>）同源，<b>不得</b>用应用级令牌替代。
+/// 本接口<b>不支持</b>第三方平台代调用。
+/// </para>
+/// </remarks>
+[HttpJsonSerializable(SerializerClassName = "Express")]
+public class WxaExpressUpdateComplaintResultRequest
+{
+    /// <summary>商户侧下单事件中推送的 Token 字段（<c>token</c>，必填）。</summary>
+    [JsonPropertyName("token")]
+    public string? Token { get; set; }
+
+    /// <summary>运单 ID（<c>waybill_id</c>，必填）。</summary>
+    [JsonPropertyName("waybill_id")]
+    public string? WaybillId { get; set; }
+
+    /// <summary>处理结果（<c>result</c>，必填）。</summary>
+    [JsonPropertyName("result")]
+    public string? Result { get; set; }
+
+    /// <summary>处理结果说明（<c>desc</c>，必填）。</summary>
+    [JsonPropertyName("desc")]
+    public string? Description { get; set; }
+}
+
+/// <summary>物流轨迹推送的「寄件人 / 收件人」信息（<c>sender</c> / <c>receiver</c> 内嵌对象，<c>pathnotify</c> 专用）。</summary>
+/// <remarks>
+/// <para>
+/// 官方字段以 <c>delivery/pathnotify</c> 的「Body.sender / Body.receiver Object Payload」为准（2026-10-12 核验）。
+/// </para>
+/// <para>
+/// <b>与 <see cref="WxaExpressContact"/> 的差异（勿混用）</b>：本结构的收寄件人只有单一 <c>phone</c>
+/// （无 <c>tel</c>/<c>mobile</c> 二选一），且带 <c>street</c> / <c>id</c> 两个地址扩展字段。
+/// 官方原文：姓名<b>收件人必传、寄件人非必传</b>；电话<b>收件人必传、寄件人非必传</b>。
+/// </para>
+/// </remarks>
+[HttpJsonSerializable(SerializerClassName = "Express")]
+public class WxaExpressPathNotifyContact
+{
+    /// <summary>姓名（<c>name</c>；收件人必传，寄件人非必传）。</summary>
+    [JsonPropertyName("name")]
+    public string? Name { get; set; }
+
+    /// <summary>电话（<c>phone</c>；收件人必传，寄件人非必传）。</summary>
+    [JsonPropertyName("phone")]
+    public string? PhoneNumber { get; set; }
+
+    /// <summary>省（<c>province</c>，必填）。</summary>
+    [JsonPropertyName("province")]
+    public string? Province { get; set; }
+
+    /// <summary>市（<c>city</c>，必填）。</summary>
+    [JsonPropertyName("city")]
+    public string? City { get; set; }
+
+    /// <summary>区/县（<c>area</c>，必填）。</summary>
+    [JsonPropertyName("area")]
+    public string? Area { get; set; }
+
+    /// <summary>街道（<c>street</c>，可选）。</summary>
+    [JsonPropertyName("street")]
+    public string? Street { get; set; }
+
+    /// <summary>地址（<c>address</c>，可选）。</summary>
+    [JsonPropertyName("address")]
+    public string? Address { get; set; }
+
+    /// <summary>地址 ID（<c>id</c>，可选）。</summary>
+    [JsonPropertyName("id")]
+    public string? AddressId { get; set; }
+}
+
+/// <summary>待推送的物流轨迹（<c>path</c> 内嵌对象，<c>pathnotify</c> 专用）。</summary>
+/// <remarks>
+/// <c>action_type</c> 为官方枚举（与普通单一致）：<c>90001</c> 网点接单、<c>90002</c> 分配业务员、
+/// <c>100001</c> 揽件成功、<c>200001</c> 更新运输轨迹、<c>300002</c> 派送中、<c>300003</c> 签收成功、
+/// <c>400001</c> 订单取消、<c>500001</c> 兜底状态等。
+/// </remarks>
+[HttpJsonSerializable(SerializerClassName = "Express")]
+public class WxaExpressPathNotifyPath
+{
+    /// <summary>轨迹变化 Unix 时间戳（<c>action_time</c>，必填；单位：秒）。</summary>
+    [JsonPropertyName("action_time")]
+    public long ActionTime { get; set; }
+
+    /// <summary>轨迹变化类型（<c>action_type</c>，必填；官方枚举值，见类说明）。</summary>
+    [JsonPropertyName("action_type")]
+    public int ActionType { get; set; }
+
+    /// <summary>轨迹变化具体信息说明（<c>action_msg</c>，必填；展示在快递轨迹详情页中）。</summary>
+    [JsonPropertyName("action_msg")]
+    public string? ActionMessage { get; set; }
+
+    /// <summary>取件员姓名（<c>pickup_courier_name</c>，可选；分配取件员成功时返回）。</summary>
+    [JsonPropertyName("pickup_courier_name")]
+    public string? PickupCourierName { get; set; }
+
+    /// <summary>取件员电话（<c>pickup_courier_phone</c>，可选；分配取件员成功时返回）。</summary>
+    [JsonPropertyName("pickup_courier_phone")]
+    public string? PickupCourierPhoneNumber { get; set; }
+
+    /// <summary>派件员姓名（<c>delivery_courier_name</c>，可选；分配派件员成功时返回）。</summary>
+    [JsonPropertyName("delivery_courier_name")]
+    public string? DeliveryCourierName { get; set; }
+
+    /// <summary>派件员电话（<c>delivery_courier_phone</c>，可选；分配派件员成功时返回）。</summary>
+    [JsonPropertyName("delivery_courier_phone")]
+    public string? DeliveryCourierPhoneNumber { get; set; }
+}
+
+/// <summary>推送已绑定物流轨迹信息请求体（<c>POST /cgi-bin/express/delivery/pathnotify</c>）。</summary>
+/// <remarks>
+/// <para>
+/// 官方文档：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/weixin-express/msgpush/api_deliverypathnotify"/>
+/// （接口英文名 <c>deliveryPathNotify</c>）。运力方调用本接口向已绑定用户推送物流轨迹消息。
+/// </para>
+/// <para>
+/// 响应 <c>exist</c> 表示<b>该手机号是否已绑定</b>（<c>0</c> 未绑定 / <c>1</c> 已绑定）；
+/// 未绑定时轨迹消息<b>不会</b>送达，需先引导用户完成绑定。
+/// </para>
+/// </remarks>
+[HttpJsonSerializable(SerializerClassName = "Express")]
+public class WxaExpressPathNotifyRequest
+{
+    /// <summary>寄件人（<c>sender</c>，必填），见 <see cref="WxaExpressPathNotifyContact"/>。</summary>
+    [JsonPropertyName("sender")]
+    public WxaExpressPathNotifyContact? Sender { get; set; }
+
+    /// <summary>收件人（<c>receiver</c>，必填），见 <see cref="WxaExpressPathNotifyContact"/>。</summary>
+    [JsonPropertyName("receiver")]
+    public WxaExpressPathNotifyContact? Receiver { get; set; }
+
+    /// <summary>运单号（<c>waybill_id</c>，必填）。</summary>
+    [JsonPropertyName("waybill_id")]
+    public string? WaybillId { get; set; }
+
+    /// <summary>当前需要推送消息的轨迹（<c>path</c>，必填），见 <see cref="WxaExpressPathNotifyPath"/>。</summary>
+    [JsonPropertyName("path")]
+    public WxaExpressPathNotifyPath? Path { get; set; }
+
+    /// <summary>运单创建时间（<c>create_time</c>，必填；Unix 时间戳，单位：秒）。</summary>
+    [JsonPropertyName("create_time")]
+    public long CreateTime { get; set; }
+}
+
+/// <summary>推送已绑定物流轨迹信息响应（<c>POST /cgi-bin/express/delivery/pathnotify</c>）。</summary>
+/// <remarks>官方错误码要点：<c>150004</c>（运力配置不存在）、<c>932001</c>~<c>932003</c>（反查运单系统 / 逻辑错误 / 数据异常）。</remarks>
+[HttpJsonSerializable(SerializerClassName = "Express")]
+public class WxaExpressPathNotifyResponse : WxaResponse
+{
+    /// <summary>用户是否绑定（<c>exist</c>；<c>0</c> 未绑定，<c>1</c> 已绑定）。</summary>
+    [JsonPropertyName("exist")]
+    public int Exist { get; set; }
+}
+
+/// <summary>用户手机状态查询请求体（<c>POST /cgi-bin/express/delivery/userquery</c>）。</summary>
+/// <remarks>
+/// 官方文档：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/weixin-express/msgpush/api_deliveryuserquery"/>
+/// （接口英文名 <c>deliveryUserQuery</c>）。运力方调用本接口查询某手机号是否已绑定。
+/// </remarks>
+[HttpJsonSerializable(SerializerClassName = "Express")]
+public class WxaExpressUserQueryRequest
+{
+    /// <summary>手机号（<c>phone</c>，必填）。</summary>
+    [JsonPropertyName("phone")]
+    public string? PhoneNumber { get; set; }
+}
+
+/// <summary>用户手机状态查询响应（<c>POST /cgi-bin/express/delivery/userquery</c>）。</summary>
+/// <remarks>错误码口径与 <see cref="WxaExpressPathNotifyResponse"/> 相同（<c>150004</c> 运力配置不存在、<c>932001</c>~<c>932003</c> 反查运单异常）。</remarks>
+[HttpJsonSerializable(SerializerClassName = "Express")]
+public class WxaExpressUserQueryResponse : WxaResponse
+{
+    /// <summary>用户是否绑定（<c>exist</c>；<c>0</c> 未绑定，<c>1</c> 已绑定）。</summary>
+    [JsonPropertyName("exist")]
+    public int Exist { get; set; }
+}

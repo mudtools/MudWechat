@@ -118,7 +118,7 @@ public class MiniProgramContractGuards
     }
 
     /// <summary>
-    /// MP-X5：<b>端点计数 141</b> + 逐域路由表 + 字段名照官方原文（<c>session_key</c> / <c>js_code</c> /
+    /// MP-X5：<b>端点计数 147</b> + 逐域路由表 + 字段名照官方原文（<c>session_key</c> / <c>js_code</c> /
     /// <c>trace_id</c> / <c>page_url</c> 等<b>不得驼峰化</b>）。
     /// </summary>
     [Fact]
@@ -254,7 +254,7 @@ public class MiniProgramContractGuards
             "/cgi-bin/express/business/quota/get", "/cgi-bin/express/business/test_update_order",
         });
 
-        // 物流助手 · 服务商 / 物流消息 / 退货 / 散单寄件（25，get_bill 为手动通道不计特性路由）
+        // 物流助手 · 服务商 / 物流消息 / 退货 / 散单寄件 / 消息推送（28，get_bill 为手动通道不计特性路由）
         RoutesOf(asm, nameof(IWxaExpressDeliveryService)).Should().BeEquivalentTo(new[]
         {
             "/cgi-bin/express/delivery/contact/get", "/cgi-bin/express/delivery/template/preview",
@@ -270,9 +270,11 @@ public class MiniProgramContractGuards
             "/cgi-bin/express/delivery/single_waybill/update", "/cgi-bin/express/delivery/single_waybill/fee",
             "/cgi-bin/express/delivery/single_waybill/cancel_order", "/cgi-bin/express/delivery/single_waybill/refund_order",
             "/cgi-bin/express/delivery/single_waybill/evaluate_feedback",
+            "/cgi-bin/express/delivery/scatter/update_complaint_result",
+            "/cgi-bin/express/delivery/pathnotify", "/cgi-bin/express/delivery/userquery",
         });
 
-        // 物流助手 · 同城配送（13）
+        // 物流助手 · 同城配送（16）
         RoutesOf(asm, nameof(IWxaExpressIntracityService)).Should().BeEquivalentTo(new[]
         {
             "/cgi-bin/express/intracity/apply", "/cgi-bin/express/intracity/createstore",
@@ -282,6 +284,8 @@ public class MiniProgramContractGuards
             "/cgi-bin/express/intracity/preaddorder", "/cgi-bin/express/intracity/addorder",
             "/cgi-bin/express/intracity/queryorder", "/cgi-bin/express/intracity/cancelorder",
             "/cgi-bin/express/intracity/mocknotify",
+            "/cgi-bin/express/intracity/getcity", "/cgi-bin/express/intracity/getpaymode",
+            "/cgi-bin/express/intracity/setpaymode",
         });
 
         ManualChannelRoutes().Should().BeEquivalentTo(new[]
@@ -291,14 +295,14 @@ public class MiniProgramContractGuards
             WxaExpressBillService.BillPath,
         });
 
-        // 合计计数（MP-X5 的单一来源）：136 特性路由 + 5 手工通道路由 = 141（基线见 Tests/ContractBaseline.cs）。
+        // 合计计数（MP-X5 的单一来源）：142 特性路由 + 5 手工通道路由 = 147（基线见 Tests/ContractBaseline.cs）。
         (CollectAttributeRoutes(asm).Length + ManualChannelRoutes().Length)
             .Should().Be(Baseline.MiniProgram.Endpoints,
-                "小程序线合计 141 端点（Auth 8 + QrCodeLink 9 + Security 3 + DataAnalysis 11 + "
+                "小程序线合计 147 端点（Auth 8 + QrCodeLink 9 + Security 3 + DataAnalysis 11 + "
                 + "SubscribeMessage 4 + DynamicMessage 3 + Kf 9 + HardwareDevice 9 + Operation 10 + "
                 + "Plugin 2 + Charge 2 + NearbyPoi 4 + Search 1 + Soter 1 + ServiceMarket 2 + "
                 + "RedPacketCover 1 + Student 1 + FaceVerify 2 + LaborUse 2 + ExpressBusiness 12 + "
-                + "ExpressDelivery 25 + ExpressIntracity 13 + ExpressBill 1 + Vip 6）；"
+                + "ExpressDelivery 28 + ExpressIntracity 16 + ExpressBill 1 + Vip 6）；"
                 + "数量变化须同批调整 Tests/ContractBaseline.cs");
     }
 

@@ -19,6 +19,8 @@
 /Src/Work/Mud.Wechat.Work.Callback/obj
 /Src/Work/Mud.Wechat.Work.DataModels/bin
 /Src/Work/Mud.Wechat.Work.DataModels/obj
+/Src/Core/Mud.Wechat.OpenTelemetry/bin
+/Src/Core/Mud.Wechat.OpenTelemetry/obj
 /Src/Core/Mud.Wechat.Redis/bin
 /Src/Core/Mud.Wechat.Redis/obj
 /Src/Core/Mud.Wechat.Callback.Generator/bin
@@ -57,8 +59,6 @@
 /Src/Pay/Mud.Wechat.Pay.Callback/obj
 /Src/Pay/Mud.Wechat.Pay.DataModels/bin
 /Src/Pay/Mud.Wechat.Pay.DataModels/obj
-/Src/OpenPlatform/Mud.Wechat.OpenTelemetry/bin
-/Src/OpenPlatform/Mud.Wechat.OpenTelemetry/obj
 /Src/OpenPlatform/Mud.Wechat.OpenPlatform.Abstractions/bin
 /Src/OpenPlatform/Mud.Wechat.OpenPlatform.Abstractions/obj
 /Src/OpenPlatform/Mud.Wechat.OpenPlatform/bin

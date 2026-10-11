@@ -343,12 +343,12 @@ powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/audit-config-keys.
 
 ```
 Src/
-├── Core/                # 跨线共享：Abstractions 叶层 / Redis / Callback 生成器与分析器
+├── Core/                # 跨线共享：Abstractions 叶层 / Redis / OpenTelemetry 可观测性装配 / Callback 生成器与分析器
 ├── Work/                # 企业微信（4 包）
 ├── OfficialAccount/     # 公众号（4 包）
 ├── MiniProgram/         # 小程序（3 包，无 Callback）
 ├── Pay/                 # 微信支付 APIv3（4 包）
-├── OpenPlatform/        # 开放平台（2 包）+ OpenTelemetry
+├── OpenPlatform/        # 开放平台（3 包）
 ├── Channels/            # 微信小店 / 视频号（4 包）
 └── Ads/                 # 腾讯广告（3 包，在建）
 ```

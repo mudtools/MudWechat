@@ -70,6 +70,9 @@ Src/Core/
   Mud.Wechat.Abstractions/            # 跨产品线共享叶层（零工程引用）：响应契约、令牌存储端口与桥接编解码、
                                       # 回调密码学内核、配置基座、WechatApiHosts（SSRF 白名单单一来源）
   Mud.Wechat.Redis/                   # 五个存储端口（含长连接租约 `IWechatBotConnectionLease`）的 Redis 实现 + 连接基座 + DI 编排
+  Mud.Wechat.OpenTelemetry/           # 可观测性装配包（**跨线共享**：单根源 `Mud.Wechat` + 产品线通配 Meter `Mud.Wechat*` +
+                                      # Mud.HttpUtils 可观测性源；仅依赖 Abstractions，装配委托 `MudObservabilityBootstrap`；
+                                      # 2026-10 由 `Src/OpenPlatform/` 迁入 —— 它不属任何产品线，与 Redis 同为跨线基建）
   Mud.Wechat.Callback.Generator/      # 回调契约登记生成器（中立名；发射 RegisterAll；IsPackable=false）
   Mud.Wechat.Callback.Analyzers/      # 回调处理器契约分析器（中立名；诊断型、不发射；netstandard2.0 单 TFM；
                                       # IsPackable=false，**由四个 Callback 宿主包以字面相对路径内嵌** analyzers/dotnet/cs）
@@ -79,7 +82,7 @@ Src/Work/                             # 企业微信线（本文件 §5~§7 的�
   Mud.Wechat.Work.DataModels/         # 官方 DTO（[HttpJsonSerializable]）+ Generated/ 域 JsonContext（生成物）
   Mud.Wechat.Work.Callback/           # 回调接收（AES 解密、事件解析、分发）+ HTTP 中间件；Events/Payloads/ 载荷；智能机器人 JSON 回调通道 + 长连接（`LongConnection/`，net8+ 门控，见 §5.5）
 Src/{OfficialAccount,MiniProgram,Pay,OpenPlatform,Channels,Ads}/   # 其余五条线 + 在建广告线，同形态分包
-                                      # 公众号 4 包 / 小程序 3 包（**无 Callback**）/ 支付 4 包 / 开放平台 2 包 / 小店 4 包 / 广告 3 包（在建）
+                                      # 公众号 4 包 / 小程序 3 包（**无 Callback**）/ 支付 4 包 / 开放平台 3 包 / 小店 4 包 / 广告 3 包（在建）
                                       # 每包的公开面与已踩陷阱见其目录下的 README.md
 Tests/                                # 16 个工程（七线 + Core 叶层 + Redis + OpenTelemetry），镜像源结构，单 TFM net8.0
 scripts/                              # verify-build / audit-config-keys / GenerateJsonContext / AddHttpJsonSerializable / ApplyTokenOwnerKeys

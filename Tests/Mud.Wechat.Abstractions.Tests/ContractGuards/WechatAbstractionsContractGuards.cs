@@ -510,6 +510,10 @@ public class WechatAbstractionsContractGuards
                      "Src/OfficialAccount/Mud.Wechat.OfficialAccount.Callback/Mud.Wechat.OfficialAccount.Callback.csproj",
                      "Src/Core/Mud.Wechat.Callback.Generator/Mud.Wechat.Callback.Generator.csproj",
                      "Src/Core/Mud.Wechat.Callback.Analyzers/Mud.Wechat.Callback.Analyzers.csproj",
+                     // 可观测性装配包（1 源 + 1 测试）：**跨线共享**（单根源 + 产品线通配 Meter），
+                     // 不属任何产品线，故落 Src/Core（2026-10 由 Src/OpenPlatform 迁入；仅路径变，
+                     // 包标识 / 命名空间 / TFM 均不变，对消费者零影响）。
+                     "Src/Core/Mud.Wechat.OpenTelemetry/Mud.Wechat.OpenTelemetry.csproj",
                      "Tests/Mud.Wechat.Abstractions.Tests/Mud.Wechat.Abstractions.Tests.csproj",
                      "Tests/Mud.Wechat.OfficialAccount.Tests/Mud.Wechat.OfficialAccount.Tests.csproj",
                      "Tests/Mud.Wechat.OfficialAccount.Callback.Tests/Mud.Wechat.OfficialAccount.Callback.Tests.csproj",
@@ -525,8 +529,7 @@ public class WechatAbstractionsContractGuards
                      "Src/Pay/Mud.Wechat.Pay.Callback/Mud.Wechat.Pay.Callback.csproj",
                      "Tests/Mud.Wechat.Pay.Tests/Mud.Wechat.Pay.Tests.csproj",
                      "Tests/Mud.Wechat.Pay.Callback.Tests/Mud.Wechat.Pay.Callback.Tests.csproj",
-                     // 可观测性适配包（1 源 + 1 测试）。
-                     "Src/OpenPlatform/Mud.Wechat.OpenTelemetry/Mud.Wechat.OpenTelemetry.csproj",
+                     // 可观测性适配包的测试工程（源工程已登记于上方 Src/Core 组）。
                      "Tests/Mud.Wechat.OpenTelemetry.Tests/Mud.Wechat.OpenTelemetry.Tests.csproj",
                      // 微信开放平台产品线（2026-10 新增，3 源 + 1 测试；B1 落地 DataModels）。
                      "Src/OpenPlatform/Mud.Wechat.OpenPlatform/Mud.Wechat.OpenPlatform.csproj",

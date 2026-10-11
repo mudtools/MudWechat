@@ -13,7 +13,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\..\Src\OpenPlatform\Mud.Wechat.OpenTelemetry\Mud.Wechat.OpenTelemetry.csproj" />
+		<ProjectReference Include="..\..\Src\Core\Mud.Wechat.OpenTelemetry\Mud.Wechat.OpenTelemetry.csproj" />
 		<!-- Work.Abstractions 提供 WorkMetrics，用于 MeterListener 通配注册行为验证。 -->
 		<ProjectReference Include="..\..\Src\Work\Mud.Wechat.Work.Abstractions\Mud.Wechat.Work.Abstractions.csproj" />
 	</ItemGroup>

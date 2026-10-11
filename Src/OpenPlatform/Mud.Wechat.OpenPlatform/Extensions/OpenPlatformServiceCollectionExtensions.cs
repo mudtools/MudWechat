@@ -52,10 +52,22 @@ public static class OpenPlatformServiceCollectionExtensions
     /// <para>
     /// <b>声明式客户端（B1 起）</b>：本方法同时装配应用上下文基座
     /// （<see cref="IOpenPlatformAppManager"/> / <see cref="IComponentAppContextSwitcher"/> /
-    /// 平台与授权方令牌管理器 / 令牌类型注册表）——
-    /// <b>注册先于 <c>AddMudHttpClient</c></b>（DI 桥接不变量：切换器与组件持有器同实例，
-    /// 后注册会被组件 TryAdd 抢占槽位）。业务客户端经 <see cref="AddOpenPlatformApis(IServiceCollection, OpenPlatformModule[])"/>
+    /// 平台与授权方令牌管理器 / 令牌类型注册表）——holder 桥接为<b>无条件注册（最后注册者胜）</b>，
+    /// 注册位置不影响语义（组件 3.0.4+ 委托式适配器在场时也收敛到本 SDK 切换器）。业务客户端经
+    /// <see cref="AddOpenPlatformApis(IServiceCollection, OpenPlatformModule[])"/>
     /// 或 <see cref="AddOpenPlatform(IServiceCollection, Action{OpenPlatformAppConfig}, OpenPlatformModule[])"/> 选择性注册。
+    /// </para>
+    /// <para>
+    /// <b>与 Work/MP/Channels 三线的形态差异（有意设计，不得照抄三线补齐）</b>：
+    /// ① <b>无 <c>IAppAccessAuthorizer</c></b>——本线"appKey"空间 = 授权方 appid，随授权事件<b>运行期动态</b>增长，
+    /// 静态白名单不可用（会拒绝一切 <c>UseAuthorizerScope</c> 切换）；带 appKey 的切换入口
+    /// （<c>UseAppScope</c>/<c>UseAuthorizerScope</c>）以「空白/格式校验 + <c>GetApp</c> 解析」为闸门，
+    /// 未注册的授权方 appid 由 <c>GetApp</c> 拒绝；若宿主需按调用主体鉴权，请自行注册与租户绑定的授权器并
+    /// 在派生切换器中消费。② <b>无 <c>TokenRecoveryOptions</c> 配置节绑定</b>——本方法不接收
+    /// <c>IConfiguration</c>（刻意不为此新增重载）；宿主调整恢复参数走编程式
+    /// <c>services.Configure&lt;TokenRecoveryOptions&gt;(…)</c>。③ <b>无 <c>UnsafeRelaxedJsonEscaping</c></b>——
+    /// 本线请求体字段按官方契约为 ASCII（component_appid / verify_ticket / auth_code 等），
+    /// 无「非 ASCII 被 \u 转义被官方拒绝」（40033 类）暴露面。
     /// </para>
     /// </remarks>
     public static IServiceCollection AddOpenPlatform(
@@ -79,17 +91,21 @@ public static class OpenPlatformServiceCollectionExtensions
         // ① 令牌恢复设施（跨产品线唯一登记点）：SSRF 白名单 + 组合失效判定器 + ITokenProvider（组件 DefaultTokenProvider）。
         services.AddWechatTokenRecovery();
 
-        // ② 应用上下文基座（**必须先于** AddMudHttpClient——组件会 TryAdd IAppContextHolder，
-        //    先注册自有实现即占据槽位；IComponentAppContextSwitcher 与 IAppContextHolder 同实例）。
+        // ② 应用上下文基座（holder 桥接为「无条件注册（最后注册者胜）」——与企微/公众号/小店线同形，
+        //    组件委托式适配器在场时也收敛到本 SDK 切换器，注册位置不影响语义；
+        //    IComponentAppContextSwitcher 与 IAppContextHolder 同实例）。
         services.TryAddSingleton<IOpenPlatformAppManager, OpenPlatformAppManager>();
         services.TryAddSingleton<IComponentAppContextSwitcher, ComponentAppContextSwitcher>();
-        services.TryAddSingleton<IAppContextHolder>(static sp => sp.GetRequiredService<IComponentAppContextSwitcher>());
+        services.AddSingleton<IAppContextHolder>(static sp => sp.GetRequiredService<IComponentAppContextSwitcher>());
         services.TryAddSingleton<IAppContextSwitcher>(static sp => sp.GetRequiredService<IComponentAppContextSwitcher>());
         services.TryAddSingleton<ITokenManagerRegistry>(static sp => new OpenPlatformTokenManagerRegistry(
             sp.GetRequiredService<IAppContextHolder>(),
             sp.GetRequiredService<IOpenPlatformAppManager>()));
 
         // ③ 命名客户端：组件 AddMudHttpClient 负责追踪 Handler 与连接期 SSRF 严格模式。
+        // 热更语义（实测结论，W-18）：BaseAddress 在 ConfigureHttpClient 委托内赋值（每次 CreateClient 重跑）
+        // ⇒ 配置生效不依赖框架缓存失效；本仓不使用 MudHttpClientApplicationOptions，上游 per-client
+        // 指纹 Invalidate 对本仓无效果面，勿补自建失效桥接。
         // **不挂签名 Handler**：开放平台的 component 凭证是请求参数，不存在 APIv3 报文签名。
         // 重复调用 AddOpenPlatform 不会重复注册（幂等守卫与支付线同款）。
         if (services.All(static d => d.ServiceType != typeof(IWechatOpenPlatformHttpClient)))

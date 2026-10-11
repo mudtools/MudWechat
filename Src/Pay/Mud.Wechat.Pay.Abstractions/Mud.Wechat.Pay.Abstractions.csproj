@@ -17,17 +17,17 @@
 		<Description>微信支付 APIv3 SDK 抽象包：商户配置面、签名/验签与加解密端口、平台证书存储端口、通知信封、官方错误码与异常。对应 Mud.Wechat.OfficialAccount.Abstractions。</Description>
 		<PackageTags>Wechat;Pay;微信支付;Tenpay;APIv3;Security;Configuration;MudWechat</PackageTags>
 		<!-- MUD005：微信支付**不使用 [Token] 特性**（无 access_token，凭据为 RSA 签名 Authorization 头），
-		     故本包不应产生 MUD005。保留抑制仅为防止未来误加 [Token] 时被误读为已知风险，
-		     真正的禁令由契约守卫 PAY-B1 fail-closed 断言。 -->
-		<NoWarn>$(NoWarn);SYSLIB1100;SYSLIB1101</NoWarn>
+		     故本包不应产生 MUD005，真正的禁令由契约守卫 PAY-B1 fail-closed 断言。
+		     旧的 SYSLIB1100/1101 项目级抑制已删除：本包唯一绑定目标为基元 DTO
+		     （List<WechatAppConfig>，PayAppExtensions），可被配置绑定源生成器完整生成。 -->
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Mud.HttpUtils" Version="3.0.3" />
+		<PackageReference Include="Mud.HttpUtils" Version="3.0.6" />
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Mud.HttpUtils.Generator" Version="3.0.3" PrivateAssets="all" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+		<PackageReference Include="Mud.HttpUtils.Generator" Version="3.0.6" PrivateAssets="all" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
 	</ItemGroup>
 
 	<ItemGroup Condition="'$(TargetFramework)' == 'net8.0' Or '$(TargetFramework)' == 'net10.0'">

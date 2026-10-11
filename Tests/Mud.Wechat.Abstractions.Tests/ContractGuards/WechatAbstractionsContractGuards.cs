@@ -142,18 +142,25 @@ public class WechatAbstractionsContractGuards
     }
 
     /// <summary>
-    /// AB-G4：SSRF 白名单单一来源——`ConfigureAllowedDomains` 只允许在公用层登记点被调用，
-    /// 各产品线不得各自调用（全局静态 + 整体替换 ⇒ 后调用者清空前者）。
+    /// AB-G4：SSRF 白名单单一来源——白名单登记（无论整体替换 <c>ConfigureAllowedDomains</c> 还是
+    /// 增量并集 <c>AddAllowedDomain</c>，W-17 后采用后者）只允许在公用层登记点被调用，
+    /// 各产品线不得各自调用（增量并集虽幂等，登记点分散会让「白名单包含哪些域名」失去单一事实源）。
     /// </summary>
     [Fact]
     public void AllowedDomainRegistration_ShouldBeCentralized()
     {
+        // ① 产品线不得出现任一登记入口（ConfigureAllowedDomains / AddAllowedDomain）。
         foreach (var lineRoot in ProductLineSourceRoots())
         {
             var hits = Directory.EnumerateFiles(lineRoot, "*.cs", SearchOption.AllDirectories)
                 .Where(f => !f.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}")
                             && !f.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}"))
-                .Where(f => File.ReadAllText(f).Contains("ConfigureAllowedDomains", StringComparison.Ordinal))
+                .Where(f =>
+                {
+                    var text = File.ReadAllText(f);
+                    return text.Contains("ConfigureAllowedDomains", StringComparison.Ordinal)
+                           || text.Contains("AddAllowedDomain", StringComparison.Ordinal);
+                })
                 .Select(f => Path.GetFileName(f))
                 .ToList();
 
@@ -161,6 +168,76 @@ public class WechatAbstractionsContractGuards
                 $"SSRF 白名单登记只能出现在公用层单点（WechatTokenRecoveryRegistration）；" +
                 $"实际命中：{string.Join(", ", hits)}");
         }
+
+        // ② 公用层内 AddAllowedDomain 只在 WechatTokenRecoveryRegistration 一处（W-17 语义矩阵的代码面锚点）。
+        var coreRoot = SourceProjectDir("Mud.Wechat.Abstractions");
+        var addAllowedHits = Directory.EnumerateFiles(coreRoot, "*.cs", SearchOption.AllDirectories)
+            .Where(f => !f.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}")
+                        && !f.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}"))
+            .Where(f =>
+            {
+                var codeOnly = System.Text.RegularExpressions.Regex.Replace(
+                    File.ReadAllText(f), @"//.*?$|/\*.*?\*/|///.*?$", string.Empty,
+                    System.Text.RegularExpressions.RegexOptions.Multiline
+                    | System.Text.RegularExpressions.RegexOptions.Singleline);
+                return codeOnly.Contains("AddAllowedDomain", StringComparison.Ordinal);
+            })
+            .Select(Path.GetFileName)
+            .ToList();
+
+        addAllowedHits.Should().ContainSingle("AddAllowedDomain（增量并集）只能在 WechatTokenRecoveryRegistration 出现一次")
+            .Which.Should().Be("WechatTokenRecoveryRegistration.cs");
+    }
+
+    /// <summary>
+    /// W-44(a)：授权器注册面——<c>AllowAllAppAccessAuthorizer</c>（无条件放行）在 <c>Src</c> 归零，
+    /// 每条带切换能力的线（Work / MP / Channels）恰好在各自扩展内注册一次 <c>IAppAccessAuthorizer</c>
+    /// （W-21：appKey 白名单，与注册表同源）。开放平台线有意不注册（形态差异见其扩展 XML 注释）。
+    /// </summary>
+    [Fact]
+    public void AppAccessAuthorizer_Registration_ShouldBeAllowListPerSwitchableLine()
+    {
+        // ① 无条件放行实现不得再出现在生产代码（含注释——防止"顺手照抄"回潮）。
+        var srcRoot = Path.Combine(GetSolutionRoot(), "Src");
+        var allowAllHits = Directory.EnumerateFiles(srcRoot, "*.cs", SearchOption.AllDirectories)
+            .Where(f => !f.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}")
+                        && !f.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}"))
+            .Where(f => File.ReadAllText(f).Contains("AllowAllAppAccessAuthorizer", StringComparison.Ordinal))
+            .Select(f => Path.GetFileName(f))
+            .ToList();
+        allowAllHits.Should().BeEmpty(
+            "W-21：AllowAllAppAccessAuthorizer（无条件放行）已被 AppKeyAllowListAuthorizer（appKey 白名单）替代，" +
+            $"生产代码不得回潮。实际命中：{string.Join(", ", allowAllHits)}");
+
+        // ② 三线各恰好多注册一次 IAppAccessAuthorizer，且形态为白名单（与注册表同源）。
+        foreach (var (project, extensionFile, switcherTypeName) in new[]
+                 {
+                     ("Mud.Wechat.Work.Abstractions", "Extensions/WechatWorkMultiAppExtensions.cs", "IWechatAppContextSwitcher"),
+                     ("Mud.Wechat.OfficialAccount.Abstractions", "Extensions/MpMultiAppExtensions.cs", "IMpAppContextSwitcher"),
+                     ("Mud.Wechat.Channels.Abstractions", "Extensions/ChannelsMultiAppExtensions.cs", "IChannelsAppContextSwitcher"),
+                 })
+        {
+            var source = File.ReadAllText(Path.Combine(
+                SourceProjectDir(project), extensionFile.Replace('/', Path.DirectorySeparatorChar)));
+            var count = System.Text.RegularExpressions.Regex.Matches(
+                source, @"TryAddSingleton<IAppAccessAuthorizer>").Count;
+            count.Should().Be(1, $"{project} 恰好注册一次 IAppAccessAuthorizer");
+            source.Should().Contain("AppKeyAllowListAuthorizer(",
+                $"{project} 的授权器必须为 appKey 白名单形态（与注册表同源）");
+            source.Should().Contain(switcherTypeName,
+                $"{project} 扩展必须装配带切换能力的上下文（授权面才有意义）");
+        }
+    }
+
+    /// <summary>
+    /// W-44(b)：<c>TokenRecoveryOptions</c> 配置节名锁定 —— 三线绑定/变更令牌均以
+    /// <see cref="TokenRecoveryOptions.SectionName"/> 为节名锚点，常量漂移会静默改变宿主配置契约。
+    /// </summary>
+    [Fact]
+    public void TokenRecoveryOptions_SectionName_ShouldRemainStable()
+    {
+        TokenRecoveryOptions.SectionName.Should().Be("MudHttpTokenRecovery",
+            "节名是宿主 appsettings 的公开契约（三线共用同名节，多线共存时变更令牌只需一份）");
     }
 
     /// <summary>

@@ -53,10 +53,8 @@ namespace Mud.Wechat.Work.Interfaces;
 /// </remarks>
 // HTTPCLIENT018 豁免理由：本域为「无令牌端点」既存例外（官方 91770 以 URL Query 上的 key 为机器人凭据，
 // 与任何令牌链路均无关，见上方 remarks 与守卫 WEB3），分析器唯一消警路径「补 [Token]」会让生成器注入
-// 本不该存在的令牌参数、违反域契约；此处仅本接口局部豁免，全仓其余接口的 018 检查不受影响。
-#pragma warning disable HTTPCLIENT018
+// 本不该存在的令牌参数、违反域契约；豁免通道见本工程 csproj 的 F6(b) 声明式开关与同目录 .editorconfig。
 [HttpClientApi(TokenManage = nameof(IWechatAppManager), IsAbstract = true)]
 public interface IWechatWorkWebhookService
 {
 }
-#pragma warning restore HTTPCLIENT018

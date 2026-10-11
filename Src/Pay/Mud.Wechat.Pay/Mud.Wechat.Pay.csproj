@@ -7,16 +7,16 @@
 		<Description>微信支付 APIv3 SDK 主包：业务声明式客户端（基础交易/退款/账单/平台证书）、模块注册器、RSA 签名器、AES-256-GCM 加解密、账单下载通道、AOT JsonContext 合并。</Description>
 		<PackageTags>Wechat;Pay;微信支付;Tenpay;APIv3;SDK;MudWechat</PackageTags>
 		<!-- MUD005：支付线**不声明 [Token]**（无 access_token），MUD005 理论上不触发；
-		     保留抑制仅为防止未来误加 [Token] 时被误读为已知接受风险，令牌/签名禁令由 PAY-B1 fail-closed 断言。 -->
-		<NoWarn>$(NoWarn);MUD005</NoWarn>
+		     F6(b) 声明式开关（组件 3.0.5+）替代旧 NoWarn，防止未来误加 [Token] 时被误读为已知接受风险，令牌/签名禁令由 PAY-B1 fail-closed 断言。 -->
+		<MudHttpSuppressQueryTokenInjection>true</MudHttpSuppressQueryTokenInjection>
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Mud.HttpUtils" Version="3.0.3" />
+		<PackageReference Include="Mud.HttpUtils" Version="3.0.6" />
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Mud.HttpUtils.Generator" Version="3.0.3" PrivateAssets="all" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+		<PackageReference Include="Mud.HttpUtils.Generator" Version="3.0.6" PrivateAssets="all" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
 	</ItemGroup>
 
 	<ItemGroup>

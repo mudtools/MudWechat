@@ -40,13 +40,11 @@ namespace Mud.Wechat.Work;
 /// </remarks>
 // HTTPCLIENT018 豁免理由：同父接口 IWechatWorkWebhookService——本域为「无令牌端点」既存例外
 //（官方 91770 以 URL Query 上的 key 为机器人凭据，守卫 WEB3 锁定不得声明 [Token]），
-// 分析器唯一消警路径与本域契约冲突；此处仅本接口局部豁免，不影响全仓其余接口的 018 检查。
-#pragma warning disable HTTPCLIENT018
+// 分析器唯一消警路径与本域契约冲突；豁免通道：本目录 .editorconfig 的 dotnet_diagnostic.HTTPCLIENT018.severity = none（目录级标准通道）。
 [HttpClientApi(RegistryGroupName = "Webhook",
     TokenManage = nameof(IWechatAppManager), InheritedFrom = nameof(WechatWorkWebhookService))]
 public interface IWechatWorkInternalWebhookService : IWechatWorkWebhookService
 {
-#pragma warning restore HTTPCLIENT018
     /// <summary>
     /// 群机器人发送文本消息（<c>msgtype=text</c>）
     /// <para>支持的 markdown/模板卡片等其余消息类型见本接口各 <c>Send*Async</c> 方法（同路由逐 msgtype 一方法）。</para>

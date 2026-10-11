@@ -30,13 +30,11 @@ namespace Mud.Wechat.Work;
 /// </remarks>
 // HTTPCLIENT018 豁免理由：同父接口 IWechatWorkAibotService——本域为「无令牌端点」既存例外
 //（官方 101138 以 response_code 一次性凭据鉴权，守卫 AI3 锁定不得声明 [Token]），
-// 分析器唯一消警路径与本域契约冲突；此处仅本接口局部豁免，不影响全仓其余接口的 018 检查。
-#pragma warning disable HTTPCLIENT018
+// 分析器唯一消警路径与本域契约冲突；豁免通道：本目录 .editorconfig 的 dotnet_diagnostic.HTTPCLIENT018.severity = none（目录级标准通道）。
 [HttpClientApi(RegistryGroupName = "Aibot",
     TokenManage = nameof(IWechatAppManager), InheritedFrom = nameof(WechatWorkAibotService))]
 public interface IWechatWorkInternalAibotService : IWechatWorkAibotService
 {
-#pragma warning restore HTTPCLIENT018
     /// <summary>
     /// 主动回复消息
     /// <para>

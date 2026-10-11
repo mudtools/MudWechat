@@ -131,7 +131,9 @@ internal abstract class MpTicketManagerBase : TokenManagerBase, IMpTicketManager
         // 必须早于返回值被基类用于有效性判定：把阈值收敛到不超过剩余窗口的一半。
         _effectiveRefreshThreshold = ComputeEffectiveThreshold(expireSeconds);
 
-        var issuedAt = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        // 经基类时钟接缝（TokenManagerBase.UtcNow，protected virtual）取时：TTL/阈值判定可确定性测试
+        //（派生探针覆写 UtcNow 即可，无需真实等待；覆写体必须直取 DateTimeOffset.UtcNow，勿写成 => UtcNow）。
+        var issuedAt = UtcNow.ToUnixTimeMilliseconds();
         return new CredentialToken
         {
             // 组件基座以 AccessToken 字段承载「任意字符串凭据」；此处承载的是票据，不代表 access_token。

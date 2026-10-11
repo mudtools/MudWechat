@@ -96,6 +96,62 @@ public class WechatServiceCollectionExtensionsTests
         ReferenceEquals(holder, switcher).Should().BeTrue();
     }
 
+    /// <summary>
+    /// P0-1 逆序态（W-16）：组件先注册持有器（委托式适配器 <c>DelegatingAppContextHolder</c>）⇒
+    /// 本 SDK 的 holder 桥接（无条件注册）仍须让 <c>IAppContextHolder</c> 解析到本 SDK 切换器。
+    /// </summary>
+    /// <remarks>
+    /// 这是对「组件先注册」场景的直接锁定：TryAdd 时代的桥接在此场景静默失效（适配器找不到其它
+    /// IAppContextHolder 实现 ⇒ 回退其内部 switcher ⇒ 与本 SDK 切换器形成两个 AsyncLocal）；
+    /// 改为最后注册者胜后，适配器转发目标与 GetRequiredService 解析结果都收敛到本 SDK 切换器。
+    /// </remarks>
+    [Fact]
+    public void AppContextHolder_ShouldResolveToSdkSwitcher_WhenComponentHolderRegisteredFirst()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+
+        // 模拟组件/另一 SDK 先占持有器槽位（AddMudHttpAppContextHolder 为 public 注册入口）。
+        services.AddMudHttpAppContextHolder();
+
+        services.AddWechatApp(new List<WechatAppConfig> { InternalConfig() });
+        services.AddWechatWorkServices(builder => builder.AddAuthenticationApi());
+
+        using var provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true });
+
+        var switcher = provider.GetRequiredService<Abstractions.Authentication.IWechatAppContextSwitcher>();
+        var holder = provider.GetRequiredService<Mud.HttpUtils.IAppContextHolder>();
+        ReferenceEquals(holder, switcher).Should().BeTrue(
+            "组件适配器先注册时，holder 桥接（最后注册者胜）仍必须让 IAppContextHolder 解析到本 SDK 切换器");
+
+        var frameworkSwitcher = provider.GetRequiredService<Mud.HttpUtils.IAppContextSwitcher>();
+        ReferenceEquals(frameworkSwitcher, switcher).Should().BeTrue(
+            "框架 IAppContextSwitcher 契约同样必须落到本 SDK 切换器实例");
+    }
+
+    /// <summary>
+    /// W-21：授权器为 appKey 白名单（与注册表同源）——名单外 appKey 在授权闸即被拒（fail-closed），
+    /// 名单内 appKey 正常切换。此前 AllowAllAppAccessAuthorizer 对任何 appKey 放行，
+    /// 未注册 appKey 要等 GetApp 校验才拦（授权闸形同虚设）。
+    /// </summary>
+    [Fact]
+    public void UseAppScope_ShouldRejectUnknownAppKey_AndAllowRegisteredOne()
+    {
+        using var provider = BuildProvider();
+
+        var switcher = provider.GetRequiredService<Abstractions.Authentication.IWechatAppContextSwitcher>();
+
+        var rejected = () => switcher.UseAppScope("not-registered-key");
+        rejected.Should().Throw<InvalidOperationException>(
+            "名单外 appKey 必须在授权闸被拒（AppKeyAllowListAuthorizer fail-closed）");
+
+        using (switcher.UseAppScope("default"))
+        {
+            provider.GetRequiredService<Mud.HttpUtils.IAppContextHolder>().Current
+                .Should().NotBeNull("名单内 appKey 正常建立作用域");
+        }
+    }
+
     [Fact]
     public void AddWechatWorkServices_ShouldAttachErrcodeDetector_ViaPostConfigure()
     {
@@ -106,8 +162,8 @@ public class WechatServiceCollectionExtensionsTests
 
         // 跨产品线共存约束：选项属性是单槽，必须由公用层组合器持有，
         // 各产品线以「子判定器」身份登记（否则公众号产品线写入时会覆盖本判定器）。
-        var composite = options.TokenInvalidationDetector.Should().BeOfType<WechatCompositeTokenInvalidationDetector>().Subject;
-        composite.Count.Should().Be(1);
+        options.TokenInvalidationDetector.Should().BeOfType<Mud.HttpUtils.CompositeTokenInvalidationDetector>(
+            "组合器为组件 3.0.4+ 公共实现（自建组合器已删除）");
         provider.GetServices<Mud.HttpUtils.ITokenInvalidationDetector>()
             .Should().ContainSingle(d => d is WechatTokenInvalidationDetector,
                 "企微判定器以子判定器身份登记，由组合器统一消费");

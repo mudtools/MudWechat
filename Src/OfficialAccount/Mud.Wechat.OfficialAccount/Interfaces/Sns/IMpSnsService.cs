@@ -39,7 +39,6 @@ namespace Mud.Wechat.OfficialAccount;
 // HTTPCLIENT018：生成器要求显式声明 TokenManagerKey/TokenType。本接口是 I4/I5 裁决的**免令牌端点**
 // ——sns 四端点不消费应用级 access_token（换/刷新凭证走 appid+secret，检验/用户信息走用户级凭证），
 // 刻意不声明 [Token]；声明之反而会把应用级令牌注入 sns 请求（错误语义）。守卫 SN2 锁定该裁决。
-#pragma warning disable HTTPCLIENT018
 [HttpClientApi(RegistryGroupName = "Sns", TokenManage = nameof(IMpAppManager))]
 public interface IMpSnsService
 {
@@ -150,7 +149,6 @@ public interface IMpSnsService
         [Query("lang")] string? lang = null,
         CancellationToken cancellationToken = default);
 }
-#pragma warning restore HTTPCLIENT018
 
 /// <summary>网页授权 <c>grant_type</c> 取值（官方两值，各端点固定其一）。</summary>
 public static class MpSnsGrantTypes

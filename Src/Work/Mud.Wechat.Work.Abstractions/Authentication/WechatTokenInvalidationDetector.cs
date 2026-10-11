@@ -22,8 +22,8 @@ namespace Mud.Wechat.Work.Abstractions.Authentication;
 /// <para>
 /// <b>登记方式</b>：以「子判定器」身份注册为 DI 集合项
 /// （<c>services.TryAddEnumerable(...)</c>），由公用层
-/// <see cref="WechatTokenRecoveryRegistration.AddWechatTokenRecovery"/> 组装为
-/// <see cref="WechatCompositeTokenInvalidationDetector"/> 并经 <c>IPostConfigureOptions</c> 写入
+/// <see cref="WechatTokenRecoveryRegistration.AddWechatTokenRecovery"/> 组装为组件
+/// <see cref="Mud.HttpUtils.CompositeTokenInvalidationDetector"/> 并经 <c>IPostConfigureOptions</c> 写入
 /// <c>TokenRecoveryOptions.TokenInvalidationDetector</c>。
 /// </para>
 /// <para>

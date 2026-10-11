@@ -260,7 +260,6 @@ public interface IWechatOpenPlatformComponentService
 // HTTPCLIENT018：生成器要求显式声明 TokenManagerKey/TokenType。本接口是官方契约的**免令牌端点**
 // ——api_start_push_ticket 的语义是「尚未建立票据链时的推送引导」，凭证（component_secret）走请求体，
 // 刻意不声明 [Token]；声明之会在令牌尚不可能存在的阶段强制取令牌（必然失败）。
-#pragma warning disable HTTPCLIENT018
 [HttpClientApi(RegistryGroupName = "Component", TokenManage = nameof(IOpenPlatformAppManager))]
 public interface IWechatOpenPlatformComponentTicketFreeService
 {
@@ -282,4 +281,3 @@ public interface IWechatOpenPlatformComponentTicketFreeService
         [Body] OpenPlatformStartPushTicketRequest request,
         CancellationToken cancellationToken = default);
 }
-#pragma warning restore HTTPCLIENT018

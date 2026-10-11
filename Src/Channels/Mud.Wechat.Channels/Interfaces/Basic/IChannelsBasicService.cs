@@ -223,7 +223,6 @@ public interface IChannelsBasicService
 // ——clear_quota/v2 官方设计为「access_token 耗尽无法调用 clear_quota」的应急逃生通道
 //（appid + appsecret 入请求体），刻意不声明 [Token]；声明之恰好复刻它要解救的故障场景。
 // 守卫锁定该裁决（带令牌的 IChannelsBasicService 7 端点仍显式声明 [Token]）。
-#pragma warning disable HTTPCLIENT018
 [HttpClientApi(RegistryGroupName = "Basic", TokenManage = nameof(IChannelsAppManager))]
 public interface IChannelsBasicTokenFreeService
 {
@@ -253,4 +252,3 @@ public interface IChannelsBasicTokenFreeService
         [Body] ChannelsClearQuotaV2Request request,
         CancellationToken cancellationToken = default);
 }
-#pragma warning restore HTTPCLIENT018

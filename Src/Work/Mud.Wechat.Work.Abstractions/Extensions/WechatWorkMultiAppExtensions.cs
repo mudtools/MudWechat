@@ -111,10 +111,13 @@ public static class WechatWorkMultiAppExtensions
         services.TryAddEnumerable(
             ServiceDescriptor.Singleton<ITokenInvalidationDetector, Authentication.WechatTokenInvalidationDetector>());
 
-        // MT-02：带 appKey 的切换入口（UseAppScope/UseApp，二者守卫一致）默认拒绝（未注册授权器即抛出）。
-        // 本 SDK 的 appKey 始终来源于 WechatAppConfig 注册表（未知 appKey 由 GetApp 校验），
-        // 注册放行型授权器恢复多应用切换能力；宿主可先注册更严格实现（TryAdd 先注册者胜出）。
-        services.TryAddSingleton<IAppAccessAuthorizer, AllowAllAppAccessAuthorizer>();
+        // MT-02：带 appKey 的切换入口（UseAppScope/UseApp，二者守卫一致）的授权判定。
+        // 改用 appKey 白名单授权器（名单 = 本次注册的应用集合，与注册表同源）替代无条件放行：
+        // 名单内 appKey 放行、名单外拒绝（fail-closed）、null/空白拒绝——比 AllowAll 收紧的只是
+        // 「未注册 appKey 在授权闸即被拒」（此前要等 GetApp 校验才拦）。
+        // TryAdd ⇒ 宿主仍可先注册更严格实现（如与租户/用户绑定的授权器；本授权器不感知调用主体）。
+        services.TryAddSingleton<IAppAccessAuthorizer>(
+            _ => new AppKeyAllowListAuthorizer(configs.Select(c => c.AppKey)));
 
         // 重复 AppKey 在注册阶段即失败（命名 HttpClient / 令牌管理器键会冲突）。
         var duplicate = configs.GroupBy(c => c.AppKey, StringComparer.Ordinal).FirstOrDefault(g => g.Count() > 1);
@@ -125,16 +128,25 @@ public static class WechatWorkMultiAppExtensions
         }
 
         // P0-1（G8-A）：切换器必须与框架上下文持有器共用同一 AsyncLocal 状态。
-        // 顺序敏感：下方 AddMudHttpClient 内部会以 TryAddSingleton 注册
-        // IAppContextHolder → 组件 AsyncLocalAppContextSwitcher（A1 修复：任何客户端注册路径都补齐持有器）。
-        // 若在此之后注册，TryAdd 失效 ⇒ 框架/生成代码读到的 IAppContextHolder.Current 恒为 null，
-        // 多套件下声明式（[Token]）客户端将静默回退默认应用令牌。故必须先注册（先注册者胜）。
+        // 组件（Mud.HttpUtils ≥ 3.0.4）默认注册为委托式适配器（DelegatingAppContextHolder，internal）：
+        // 其 Current/SwitchTo/BeginScope 转发到容器中「最后注册的其它 IAppContextHolder」。
+        // 本桥接为「无条件注册（最后注册者胜）」，两个方向都收敛到本 SDK 切换器：
+        // ① 本注册在先：组件后续 TryAdd 失败 ⇒ holder = 本切换器（单注册）。
+        // ② 组件在先（宿主/其它 SDK 先调 AddMudHttpClient 或 AddMudHttpAppContextHolder）：本注册落在其后
+        //    ⇒ GetRequiredService 解析末位 = 本切换器；适配器若被解析也转发到「最后注册的其它实现」。
+        // 故注册位置不再影响语义（TryAdd 时代的「组件先注册 ⇒ 适配器回退内部 switcher ⇒ 两个 AsyncLocal」
+        // 的静默桥接断裂已消除）。两个 Switcher 接口保持 TryAdd（组件不注册它们，无冲突）。
+        // 边界：IAppContextHolder.Current 为 init 访问器，适配器不支持 init 写入（运行时切换用 SwitchTo/BeginScope）。
         services.TryAddSingleton<IWechatAppContextSwitcher, WechatAppContextSwitcher>();
         services.TryAddSingleton<IAppContextSwitcher>(sp => sp.GetRequiredService<IWechatAppContextSwitcher>());
-        services.TryAddSingleton<IAppContextHolder>(sp => sp.GetRequiredService<IWechatAppContextSwitcher>());
+        services.AddSingleton<IAppContextHolder>(sp => sp.GetRequiredService<IWechatAppContextSwitcher>());
 
         // per-app 命名 HttpClient：BaseAddress / Timeout / SSRF 白名单校验；
         // 默认应用与 IsDefault 严格对应（setAsDefault 决定 IEnhancedHttpClient 默认注册）。
+        // 热更语义（实测结论，W-18）：BaseAddress/Timeout 在 ConfigureHttpClient 委托内赋值
+        // （IHttpClientFactory 语义：每次 CreateClient 重跑该委托）⇒ 配置生效不依赖框架的
+        // 缓存失效机制；本仓不使用 MudHttpClientApplicationOptions，上游 per-client 指纹
+        // Invalidate 对本仓无效果面，勿补自建失效桥接。
         foreach (var config in configs)
         {
             var clientName = WechatHttpClientFactory.BuildClientName(config.AppKey);
@@ -172,11 +184,24 @@ public static class WechatWorkMultiAppExtensions
 
         // 令牌恢复选项的宿主配置节绑定（选项本体、校验器与判定器组合器由
         // WechatTokenRecoveryRegistration.AddWechatTokenRecovery 在本方法开头统一登记）。
+        // 绑定走"纯 DTO + Apply"两段式（在 Options 的 Configure 委托内联执行，不引入第二个选项缓存）：
+        // TokenRecoveryOptions 含接口型判定器属性，直接 Bind 会被配置绑定源生成器判为不可生成
+        // （SYSLIB1100/1101，旧写法靠项目级 NoWarn 整体静音，抑制已删除）；TokenRecoveryConfiguration
+        // 只含可生成字段 ⇒ 诊断消失；Apply 不触碰判定器槽位（PostConfigure 组装不受影响）。
+        // 热更：变更令牌指向同一节 ⇒ 配置重载使 Options 缓存失效 ⇒ Configure 重跑（Bind+Apply 取新值）。
         if (configuration != null)
         {
             var tokenRecoverySection = configuration.GetSection(TokenRecoveryOptions.SectionName);
-            services.Configure<TokenRecoveryOptions>(options => tokenRecoverySection.Bind(options));
-            services.AddSingleton<IOptionsChangeTokenSource<TokenRecoveryOptions>>(
+
+            services.Configure<TokenRecoveryOptions>(o =>
+            {
+                var dto = new TokenRecoveryConfiguration();
+                tokenRecoverySection.Bind(dto);
+                o.Apply(dto);
+            });
+
+            // TryAdd：多产品线共用同名节（MudHttpTokenRecovery），同一宿主只需一份（先注册者胜）。
+            services.TryAddSingleton<IOptionsChangeTokenSource<TokenRecoveryOptions>>(
                 new ConfigurationChangeTokenSource<TokenRecoveryOptions>(Options.DefaultName, tokenRecoverySection));
         }
 

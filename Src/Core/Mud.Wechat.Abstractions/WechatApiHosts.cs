@@ -17,12 +17,13 @@ namespace Mud.Wechat.Abstractions;
 /// 「默认域名注册表」这类 DI 抽象只会增加一层无消费方的间接与注册顺序负担（YAGNI）。
 /// </para>
 /// <para>
-/// <b>白名单为何必须在此单点持有</b>：组件 <c>UrlValidator.ConfigureAllowedDomains</c> 是
-/// <b>进程级全局静态 + 整体替换语义</b>（调用后白名单<b>恰好</b>等于传入集合，并清空运行期桶）。
-/// 若各产品线以各自的白名单分别调用，后调用者会<b>清空</b>前者 —— 多产品线共存时静默失去 SSRF 放行。
-/// 故白名单数组在此单点定义，并由
-/// <see cref="TokenManager.WechatTokenRecoveryRegistration.AddWechatTokenRecovery"/> 统一登记
-/// （同值调用幂等）。
+/// <b>白名单为何必须在此单点持有</b>：组件 <c>UrlValidator</c> 的白名单是<b>进程级全局静态</b>。
+/// 本仓以增量入口 <c>AddAllowedDomain</c> 登记（只加不删、HashSet 幂等，多 SDK/多产品线共存互不影响；
+/// 组件配置热更重放也不会清除运行期桶）——但「白名单包含哪些域名」仍必须是单一事实源：若各产品线
+/// 各自维护并登记自己的清单，「是否该放行某新域名」将无从审计。故白名单数组在此单点定义，并由
+/// <see cref="TokenManager.WechatTokenRecoveryRegistration.AddWechatTokenRecovery"/> 统一登记。
+/// 语义矩阵：<c>ConfigureAllowedDomains</c> = 完全替换（含清空运行期桶；仅"我就是唯一真相源"的
+/// 宿主/测试使用，本仓生产代码不使用，由 AB-G4/AB-G9 锁定）；<c>AddAllowedDomain</c> = 追加（共存场景唯一正确入口）。
 /// </para>
 /// <para>
 /// 白名单判定语义（组件侧）：host 等于域或以其子域结尾即放行。因此 <c>weixin.qq.com</c> 一项即覆盖
@@ -59,7 +60,8 @@ public static class WechatApiHosts
     /// <remarks>
     /// 全仓唯一来源：各产品线的 <c>AddXxxApp</c> 均经
     /// <see cref="TokenManager.WechatTokenRecoveryRegistration.AddWechatTokenRecovery"/> 以<b>本数组</b>
-    /// 调用组件 <c>UrlValidator.ConfigureAllowedDomains</c>，从而在多产品线共存时保持一致（幂等）。
+    /// 调用组件 <c>UrlValidator.AddAllowedDomain</c> 逐域增量登记（只加不删，HashSet 幂等，
+    /// 多产品线/多 SDK 共存互不影响）。
     /// </remarks>
     public static readonly string[] AllowedBaseUrlDomains =
     {

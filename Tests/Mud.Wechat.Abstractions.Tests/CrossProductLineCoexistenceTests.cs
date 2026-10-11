@@ -5,6 +5,7 @@
 //  不得利用本项目从事危害国家安全、扰乱社会秩序、侵犯他人合法权益等法律法规禁止的活动！任何基于本项目开发而产生的一切法律纠纷和责任，我们不承担任何责任！
 // -----------------------------------------------------------------------
 
+using Microsoft.Extensions.Configuration;
 using Mud.Wechat.OfficialAccount.Abstractions;
 using Mud.Wechat.OfficialAccount.Abstractions.Authentication.MultiApp;
 using Mud.Wechat.Work.Abstractions;
@@ -58,11 +59,12 @@ public class CrossProductLineCoexistenceTests
     }
 
     /// <summary>
-    /// X2：令牌失效判定器为组合器，且同时覆盖两条产品线的失效码集合。
+    /// X2：令牌失效判定器为组件组合器（3.0.4+ 公共实现），且同时覆盖两条产品线的失效码集合。
     /// </summary>
     /// <remarks>
     /// 组件选项属性为<b>单槽</b>：若两条产品线各自 PostConfigure，后注册者会覆盖前者 ⇒
-    /// 一方令牌恢复静默失效。本用例锁定组合器的存在与「任一判真即真」语义。
+    /// 一方令牌恢复静默失效。组件组合器无子判定器公开访问器 ⇒ 「两线判定器均已登记」以
+    /// 行为断言锁定：各线子判定器只放行自身域名，两域名同时被放行 ⇔ 两线判定器同时在组合器内。
     /// </remarks>
     [Fact]
     public void TokenInvalidationDetector_ShouldComposeBothProductLines()
@@ -71,10 +73,9 @@ public class CrossProductLineCoexistenceTests
         using var provider = services.BuildServiceProvider();
 
         var detector = provider.GetRequiredService<IOptions<TokenRecoveryOptions>>().Value.TokenInvalidationDetector;
-        detector.Should().BeOfType<WechatCompositeTokenInvalidationDetector>();
+        detector.Should().BeOfType<Mud.HttpUtils.CompositeTokenInvalidationDetector>();
 
-        var composite = (WechatCompositeTokenInvalidationDetector)detector!;
-        composite.Count.Should().BeGreaterOrEqualTo(2, "企微与公众号各登记一个子判定器");
+        var composite = (Mud.HttpUtils.CompositeTokenInvalidationDetector)detector!;
 
         // 非同步断言上下文内执行（组合器 API 为 ValueTask，这里同步阻塞以保证用例简洁）。
         using var qyapi = new System.Net.Http.HttpRequestMessage(
@@ -82,18 +83,46 @@ public class CrossProductLineCoexistenceTests
         using var api = new System.Net.Http.HttpRequestMessage(
             System.Net.Http.HttpMethod.Get, "https://api.weixin.qq.com/cgi-bin/token");
 
-        composite.ShouldInspect(qyapi).Should().BeTrue("企微域名必须被放行");
-        composite.ShouldInspect(api).Should().BeTrue("公众号域名必须被放行");
+        composite.ShouldInspect(qyapi).Should().BeTrue("企微域名必须被放行（企微子判定器在组合器内）");
+        composite.ShouldInspect(api).Should().BeTrue("公众号域名必须被放行（公众号子判定器在组合器内）");
     }
 
-    /// <summary>X3：后台刷新框架服务只登记一次（组件注册非幂等，多产品线各自调用会产生多个刷新循环）。</summary>
+    /// <summary>X3：后台刷新框架服务只登记一次（组件注册自 3.0.4 起幂等；多产品线各自调用只会有一份）。</summary>
     [Fact]
     public void TokenRefreshBackgroundService_ShouldBeRegisteredOnce()
     {
         var services = BuildBothProductLines();
 
         services.Count(d => d.ServiceType == typeof(ITokenRefreshBackgroundService))
-            .Should().Be(1, "多产品线共存时只能有一个后台刷新循环（公用层登记点带「已注册即跳过」守卫）");
+            .Should().Be(1, "多产品线共存时只能有一个后台刷新循环（公用层登记点 + 组件幂等注册）");
+    }
+
+    /// <summary>
+    /// X3b（W-19）：两条产品线经<b>配置节重载</b>注册（均指向同名节 <c>MudHttpTokenRecovery</c>）时，
+    /// <c>IOptionsChangeTokenSource&lt;TokenRecoveryOptions&gt;</c> 只登记一份（TryAdd，先注册者胜）。
+    /// AddSingleton 时代后注册者会覆盖前者 ⇒ 两者指向同一节时虽无行为差，但登记数膨胀、语义不可审计。
+    /// </summary>
+    [Fact]
+    public void TokenRecoveryChangeTokenSource_ShouldBeRegisteredOnce_AcrossProductLines()
+    {
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["WechatApps:0:AppKey"] = "work-cfg",
+                ["WechatApps:0:CorpId"] = "ww-corp",
+                ["WechatApps:0:AgentSecret"] = "work-secret",
+                ["MpApps:0:AppKey"] = "mp-cfg",
+                ["MpApps:0:AppId"] = "wx-mp",
+                ["MpApps:0:AppSecret"] = "mp-secret",
+            })
+            .Build();
+
+        var services = new ServiceCollection();
+        services.AddWechatApp(configuration);
+        services.AddMpApp(configuration);
+
+        services.Count(d => d.ServiceType == typeof(IOptionsChangeTokenSource<TokenRecoveryOptions>))
+            .Should().Be(1, "多产品线共用 TokenRecoveryOptions（同名节），变更令牌来源只需一份（TryAdd 先注册者胜）");
     }
 
     /// <summary>X4：两条产品线的令牌存储端口共用同一实现实例（键前缀含产品线令牌类型，故键空间不交叠）。</summary>

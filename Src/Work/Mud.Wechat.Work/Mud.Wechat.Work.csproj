@@ -6,18 +6,19 @@
 		<!-- MUD005（Query/Path 令牌注入存在 URL 泄露面）：企业微信官方契约强制令牌走 Query 参数
 		（access_token / suite_access_token 均为 URL 查询参数，官方不支持 Header 注入），无法改用 Header。
 		本 SDK 全部接口均为该官方契约，属已知接受风险（详见各接口 remarks 与 AGENTS.md、契约守卫测试），
-		故在项目级抑制；库内遥测已由 SensitiveUrlRedactor 脱敏。 -->
-		<NoWarn>$(NoWarn);MUD005</NoWarn>
+		以 F6(b) 声明式 MSBuild 开关豁免（组件 3.0.5+，可审计）；库内遥测已由 SensitiveUrlRedactor 脱敏。 -->
+		<MudHttpSuppressQueryTokenInjection>true</MudHttpSuppressQueryTokenInjection>
 	</PropertyGroup>
 
 	<ItemGroup>
 		<!-- 3.0.2：载荷字段映射运行时契约（Mud.HttpUtils.Payloads）随 Abstractions 传递而来，
 		     本包须显式对齐同一版本，否则 NuGet 判定「包降级」（NU1605，本仓库门禁将其视为错误）。 -->
-		<PackageReference Include="Mud.HttpUtils" Version="3.0.3" />
+		<PackageReference Include="Mud.HttpUtils" Version="3.0.6" />
 	</ItemGroup>
 
+
 	<ItemGroup>
-		<PackageReference Include="Mud.HttpUtils.Generator" Version="3.0.3" PrivateAssets="all" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+		<PackageReference Include="Mud.HttpUtils.Generator" Version="3.0.6" PrivateAssets="all" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
 	</ItemGroup>
 
 	<ItemGroup>

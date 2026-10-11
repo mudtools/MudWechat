@@ -5,7 +5,6 @@
 //  不得利用本项目从事危害国家安全、扰乱社会秩序、侵犯他人合法权益等法律法规禁止的活动！任何基于本项目开发而产生的一切法律纠纷和责任，我们不承担任何责任！
 // -----------------------------------------------------------------------
 
-using System.Reflection;
 using System.Text.Json;
 using Microsoft.Extensions.Options;
 using Mud.HttpUtils;
@@ -197,20 +196,18 @@ public class MudHttpUtilsUpgradeSmokeTests
             "响应体捕获替换后内容头应保持可读");
     }
 
-    /// <summary>V4（Phase B）：ISharedTokenManager 标记使 EnforceTenantBinding 默认豁免；非标记管理器保持守卫。</summary>
+    /// <summary>V4（Phase B）：ISharedTokenManager 标记使租户绑定守卫默认豁免；非标记管理器保持守卫。</summary>
+    /// <remarks>组件 3.0.4+ 提供公开只读判定 <see cref="TokenManagerBase.IsTenantBindingEnforced"/>（镜像
+    /// <c>protected virtual EnforceTenantBinding</c>），测试不再反射非公共成员名。</remarks>
     [Fact]
     public void SharedTokenManagerMarker_ShouldFlipTenantBindingDefault()
     {
-        var bindingProperty = typeof(TokenManagerBase).GetProperty("EnforceTenantBinding",
-            BindingFlags.NonPublic | BindingFlags.Instance);
-        bindingProperty.Should().NotBeNull("Phase B 的判定点在 TokenManagerBase.EnforceTenantBinding");
-
         using var shared = new SharedFakeTokenManager();
-        ((bool)bindingProperty!.GetValue(shared)!).Should().BeFalse(
+        shared.IsTenantBindingEnforced.Should().BeFalse(
             "实现 ISharedTokenManager 即声明凭据无租户属性（provider/suite 令牌跨 AppKey 共享）");
 
         using var tenant = new TenantFakeTokenManager();
-        ((bool)bindingProperty.GetValue(tenant)!).Should().BeTrue("非标记管理器默认保留租户绑定守卫");
+        tenant.IsTenantBindingEnforced.Should().BeTrue("非标记管理器默认保留租户绑定守卫");
     }
 
     /// <summary>V5：SDK 自身契约不回归——WechatWorkResponse errcode JSON 契约与 WechatTokenTypes 常量。</summary>

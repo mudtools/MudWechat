@@ -30,7 +30,6 @@ namespace Mud.Wechat.MiniProgram;
 /// </remarks>
 // HTTPCLIENT018：生成器要求显式声明 TokenManagerKey/TokenType。本接口是**免令牌端点**
 // —— 换会话走 appid + secret，刻意不声明 [Token]；声明之反而会把应用级令牌注入本请求（错误语义）。
-#pragma warning disable HTTPCLIENT018
 [HttpClientApi(RegistryGroupName = "Auth", TokenManage = nameof(IMpAppManager))]
 public interface IWxaCode2SessionService
 {
@@ -68,7 +67,6 @@ public interface IWxaCode2SessionService
         [Query("grant_type")] string grantType,
         CancellationToken cancellationToken = default);
 }
-#pragma warning restore HTTPCLIENT018
 
 /// <summary>登录凭证校验的 <c>grant_type</c> 取值（官方固定值）。</summary>
 public static class WxaGrantTypes

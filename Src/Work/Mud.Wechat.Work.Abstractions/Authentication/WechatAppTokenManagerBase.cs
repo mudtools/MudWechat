@@ -94,7 +94,9 @@ internal abstract class WechatAppTokenManagerBase : TokenManagerBase
                 $"企业微信 API 刷新 {_tokenTypeKey} 令牌失败：返回的 AccessToken 为空。AppKey: {_options.AppKey}");
         }
 
-        var issuedAt = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        // 经基类时钟接缝（TokenManagerBase.UtcNow，protected virtual）取时：TTL/阈值判定可确定性测试
+        //（派生探针覆写 UtcNow 即可，无需真实等待；覆写体必须直取 DateTimeOffset.UtcNow，勿写成 => UtcNow）。
+        var issuedAt = UtcNow.ToUnixTimeMilliseconds();
         return new CredentialToken
         {
             AccessToken = result.AccessToken,

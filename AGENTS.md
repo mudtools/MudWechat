@@ -144,11 +144,12 @@ scripts/                              # verify-build / audit-config-keys / Gener
 - 默认实现仅进程内 ⇒ 多实例部署引用 `Mud.Wechat.Redis`（`AddWechatRedis` **必须先于** `AddWechatApp`/`AddWechatCallback`，颠倒即注册期 fail-fast），或由宿主前置 `TryAdd` 分布式实现覆盖（宿主预注册者按契约胜出）。
 - 五个存储端口（含 `IWechatCallbackReplayGuard`：接口落 `Abstractions.TokenManager`，InMemory 实现留 `Callback` 包；`IWechatBotConnectionLease`：接口落 `Abstractions.Callback.Bots`，长连接主备基座）：接口落 `Abstractions.TokenManager`，InMemory 实现留 `Callback` 包）由 Redis 包单依赖 Abstractions 实现、共享连接基座。
 - 退役清库批量能力为**可选**接口 `IWechatTokenStoreBatchRemove`（管理器先 `is` 探测，命中批删、未实现回退逐键）。
+- **后台刷新停机语义（组件 ≥ 3.0.5 / M7-HC-04）**：刷新服务 `Dispose` 会取消在途刷新（实例级 CTS：置位 → Cancel → 停表 → Dispose CTS），在途刷新以 `OperationCanceledException` 结束且**不产生**刷新未处理异常 Error 日志（优雅关闭口径）；本仓各线 `*TokenRegistrationService` 的登记路径已有 `catch (OperationCanceledException) { throw; }` 先行于 `catch (Exception)`，取消不会被吞。
 - **SE.Redis 3.3.0 陷阱**：① `RedisTimeoutException` 继承 `TimeoutException` 而非 `RedisException`，捕获须走 `WechatRedisErrors.ShouldWrap`，裸 `catch (RedisException)` 会漏超时；② `StringSetAsync` 有四套重载，**生产调用一律用命名参数钉住形态**（`keepTtl: false` / `when: ...`）。
 
 ### 5.3 多应用基座与 DI 装配
 
-- **DI 桥接不变量**：`IAppContextHolder` / `IAppContextSwitcher` / `IWechatAppContextSwitcher` **必须是同一实例**，且 SDK 注册**必须先于** `AddMudHttpClient`（组件内部会 `TryAdd IAppContextHolder`）。破坏 ⇒ 声明式 `[Token]` 客户端上下文恒 `null`，多套件静默回退默认应用令牌。
+- **DI 桥接不变量**：`IAppContextHolder` / `IAppContextSwitcher` / `IWechatAppContextSwitcher` **必须是同一实例**；`IAppContextHolder` 桥接为**无条件注册（最后注册者胜，`AddSingleton` 而非 `TryAdd`）**——组件（Mud.HttpUtils ≥ 3.0.4）默认注册委托式适配器 `DelegatingAppContextHolder`（internal，转发到容器中最后注册的其它 `IAppContextHolder`），无论注册顺序如何 holder 都收敛到本 SDK 切换器。**不得改回 `TryAdd`**（组件先注册时 TryAdd 静默失效 ⇒ 适配器回退其内部 switcher ⇒ 两个 AsyncLocal，P0-1 类缺陷以更隐蔽形态复现）。`TryAdd` 仅适用于两个 Switcher 接口（组件不注册它们）。边界：适配器不支持 `IAppContextHolder.Current` 的 `init` 写入（运行时切换用 `SwitchTo`/`BeginScope`）。破坏同实例 ⇒ 声明式 `[Token]` 客户端上下文恒 `null`，多套件静默回退默认应用令牌。
 - **`WechatAppManager` 直接实现 `IAppManager<IWechatAppContext>`**，**不继承**组件 `DefaultAppManager<T>`（基类另有影子注册表与非 virtual 写入口，会让注册静默写进读不到的表）。注册表单一来源 = `_configs` + `_lazyContexts`；`RegisterApp`/`UpdateApp`/`RegisterSwitcherFactory` 显式 `NotSupportedException`。
 - 配置读取走 `ConfiguredConfigs`/`TryGetConfig`（非物化）；`TryGetApp` 会构造 HttpClient/DI scope/Timer，**回调的 `SuiteId → appKey` 匹配不得用它**。
 - 细则（均已被测试锁定，改动前先读对应测试）：`RemoveApp` 顺序恒为 `TryRemove` 先于配置删除、全部移除后 `DefaultAppKey` 置 `null` 且 `GetDefaultApp` 抛明确错误；重建白名单仅瞬时 IO 型异常组，`InvalidOperationException` 直抛；退役队列 fire-and-forget + 停机限时（默认 5s）排空；`CreateAppContext` 经 `WechatOwnedResourceTracker` 登记 scope 外产物，装配中途失败逆序回收后原样重抛。

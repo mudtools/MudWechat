@@ -1,0 +1,7 @@
+# 本目录接口（Webhook 域）为「无令牌端点」既存例外：官方 91770 以 URL Query 上的 key 为机器人凭据，
+# 与任何令牌链路均无关（守卫 WEB3 锁定不得声明 [Token]），补 [Token] 会让生成器注入本不该存在的令牌参数。
+# 故以目录级 severity 豁免（F6(b) 一等豁免面之外的 Roslyn 标准通道）替代逐文件 #pragma。
+# 注意：HTTPCLIENT018 经生成器快照只读 GlobalOptions，自定义豁免键 mud_suppress_token_manager_key_inference
+# 对生成器侧诊断无效（该键仅对 MUD005 的分析器读取路径生效）⇒ 必须用标准 severity 通道。
+[*.cs]
+dotnet_diagnostic.HTTPCLIENT018.severity = none

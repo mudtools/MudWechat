@@ -8,13 +8,16 @@
 using System.Net;
 using System.Net.Http;
 using System.Text;
+using Mud.HttpUtils;
 
 namespace Mud.Wechat.Abstractions.Tests.TokenManager;
 
 /// <summary>
-/// 令牌失效判定器组合器语义（跨产品线共存的架构基石）。
+/// 组件组合判定器（<see cref="CompositeTokenInvalidationDetector"/>，组件 3.0.4+ 公共实现）
+/// 在本仓登记点上的语义锁定：并集短路、单判定器故障隔离、取消异常原样传播。
+/// 自建组合器 <c>WechatCompositeTokenInvalidationDetector</c> 已删除（W-13）。
 /// </summary>
-public class WechatCompositeTokenInvalidationDetectorTests
+public class CompositeTokenInvalidationDetectorTests
 {
     private sealed class FakeDetector : ITokenInvalidationDetector
     {
@@ -58,6 +61,26 @@ public class WechatCompositeTokenInvalidationDetectorTests
         }
     }
 
+    /// <summary>恒抛异常的判定器（故障隔离用）。</summary>
+    private sealed class ThrowingDetector : ITokenInvalidationDetector
+    {
+        public bool ShouldInspect(HttpRequestMessage request) => true;
+
+        public ValueTask<bool> IsTokenInvalidAsync(
+            HttpResponseMessage response, ReadOnlyMemory<byte>? body, CancellationToken cancellationToken)
+            => throw new InvalidOperationException("子判定器故障");
+    }
+
+    /// <summary>恒抛取消的判定器（取消传播用）。</summary>
+    private sealed class CancellingDetector : ITokenInvalidationDetector
+    {
+        public bool ShouldInspect(HttpRequestMessage request) => true;
+
+        public ValueTask<bool> IsTokenInvalidAsync(
+            HttpResponseMessage response, ReadOnlyMemory<byte>? body, CancellationToken cancellationToken)
+            => throw new OperationCanceledException(cancellationToken);
+    }
+
     private static HttpResponseMessage Response() => new(HttpStatusCode.OK)
     {
         Content = new ByteArrayContent(Array.Empty<byte>()),
@@ -73,13 +96,10 @@ public class WechatCompositeTokenInvalidationDetectorTests
     [Fact]
     public void ShouldInspect_ShouldShortCircuitOnAnyDetector()
     {
-        var composite = new WechatCompositeTokenInvalidationDetector(new ITokenInvalidationDetector[]
-        {
+        var composite = new CompositeTokenInvalidationDetector(
             new FakeDetector("qyapi.weixin.qq.com", 42001),
-            new FakeDetector("api.weixin.qq.com", 40001),
-        });
+            new FakeDetector("api.weixin.qq.com", 40001));
 
-        composite.Count.Should().Be(2);
         composite.ShouldInspect(Request("qyapi.weixin.qq.com")).Should().BeTrue();
         composite.ShouldInspect(Request("api.weixin.qq.com")).Should().BeTrue();
         composite.ShouldInspect(Request("example.com")).Should().BeFalse();
@@ -91,11 +111,9 @@ public class WechatCompositeTokenInvalidationDetectorTests
     [Fact]
     public async Task IsTokenInvalidAsync_ShouldReturnTrueIfAnyDetectorMatches()
     {
-        var composite = new WechatCompositeTokenInvalidationDetector(new ITokenInvalidationDetector[]
-        {
+        var composite = new CompositeTokenInvalidationDetector(
             new FakeDetector("qyapi.weixin.qq.com", 42001),
-            new FakeDetector("api.weixin.qq.com", 40001),
-        });
+            new FakeDetector("api.weixin.qq.com", 40001));
 
         using var response = Response();
 
@@ -131,8 +149,7 @@ public class WechatCompositeTokenInvalidationDetectorTests
         using var provider = services.BuildServiceProvider();
         var detector = provider.GetRequiredService<IOptions<TokenRecoveryOptions>>().Value.TokenInvalidationDetector;
 
-        detector.Should().BeOfType<WechatCompositeTokenInvalidationDetector>();
-        ((WechatCompositeTokenInvalidationDetector)detector!).Count.Should().Be(2);
+        detector.Should().BeOfType<CompositeTokenInvalidationDetector>();
     }
 
     /// <summary>CD5：重复调用登记入口幂等（多产品线各调一次不会重复装配 PostConfigure）。</summary>
@@ -149,5 +166,35 @@ public class WechatCompositeTokenInvalidationDetectorTests
 
         services.Count(d => d.ServiceType == typeof(IValidateOptions<TokenRecoveryOptions>))
             .Should().Be(1, "选项校验器只登记一次");
+    }
+
+    /// <summary>
+    /// CD6（W-13 语义增强锁）：单个子判定器抛异常 ⇒ 组合层降级为「该判定器未失效」并继续后续判定，
+    /// 一个产品线的判定器故障不得放大为调用失败（上游 3.0.4+ 行为；自建实现无此隔离）。
+    /// </summary>
+    [Fact]
+    public async Task FaultedDetector_ShouldDegradeToNotInvalid_AndContinueOtherDetectors()
+    {
+        var healthy = new FakeDetector("api.weixin.qq.com", 40001);
+        var composite = new CompositeTokenInvalidationDetector(new ThrowingDetector(), healthy);
+
+        using var response = Response();
+
+        (await composite.IsTokenInvalidAsync(response, Body("{\"errcode\":40001}"), CancellationToken.None))
+            .Should().BeTrue("故障判定器降级为「未失效」后，健康判定器仍被求值并命中");
+        healthy.InspectCalls.Should().BeGreaterThan(0, "健康判定器不得被故障判定器阻断");
+    }
+
+    /// <summary>CD7（W-13 语义锁定）：子判定器抛取消 ⇒ 组合层原样上抛（不被降级吞掉）。</summary>
+    [Fact]
+    public async Task CancelledDetector_ShouldPropagateOperationCanceledException()
+    {
+        var composite = new CompositeTokenInvalidationDetector(new CancellingDetector());
+
+        using var response = Response();
+        using var cts = new CancellationTokenSource();
+
+        var act = async () => await composite.IsTokenInvalidAsync(response, Body("{\"errcode\":0}"), cts.Token);
+        await act.Should().ThrowAsync<OperationCanceledException>("取消必须原样传播，不得降级为「未失效」");
     }
 }

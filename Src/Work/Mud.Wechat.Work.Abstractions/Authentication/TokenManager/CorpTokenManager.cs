@@ -121,7 +121,9 @@ internal sealed class CorpTokenManager : WechatAppTokenManagerBase, IWechatCorpT
             permanentCode = corpAuth.PermanentCode;
         }
 
-        var issuedAt = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        // 经基类时钟接缝（TokenManagerBase.UtcNow，protected virtual）取时：TTL/阈值判定可确定性测试
+        //（派生探针覆写 UtcNow 即可，无需真实等待；覆写体必须直取 DateTimeOffset.UtcNow，勿写成 => UtcNow）。
+        var issuedAt = UtcNow.ToUnixTimeMilliseconds();
 
         if (Options.AppType == WechatAppType.Provider)
         {

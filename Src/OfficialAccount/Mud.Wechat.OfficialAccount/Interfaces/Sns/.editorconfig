@@ -1,0 +1,6 @@
+# 本目录接口（Sns 域）的令牌形态为官方默认推断的既存例外（开放能力凭据非标准 access_token 语义，
+# 详见各接口 remarks），补显式 TokenManagerKey 会改变生成器注入面、违反域契约。
+# 以目录级 severity 豁免（Roslyn 标准通道）替代逐文件 #pragma（HTTPCLIENT018 经生成器快照
+# 只读 GlobalOptions，自定义豁免键对生成器侧诊断无效 ⇒ 必须用标准 severity 通道）。
+[*.cs]
+dotnet_diagnostic.HTTPCLIENT018.severity = none

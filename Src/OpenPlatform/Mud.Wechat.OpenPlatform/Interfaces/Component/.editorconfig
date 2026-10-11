@@ -1,0 +1,6 @@
+# 本目录接口（开放平台 Component 域）的凭据为 component_access_token / 授权方令牌（Query 注入官方契约，
+# 详见各接口 remarks），TokenManagerKey 走官方默认推断属既存例外，补显式声明会改变生成器注入面。
+# 以目录级 severity 豁免（Roslyn 标准通道）替代逐文件 #pragma（HTTPCLIENT018 经生成器快照
+# 只读 GlobalOptions，自定义豁免键对生成器侧诊断无效 ⇒ 必须用标准 severity 通道）。
+[*.cs]
+dotnet_diagnostic.HTTPCLIENT018.severity = none

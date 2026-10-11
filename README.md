@@ -1,4 +1,4 @@
-# Mud.Wechat
+# MudWechat
 
 > 微信生态的 **AI 原生** .NET SDK —— 七条产品线一个底座，声明式接口 + 源生成 + AOT 净零 + 多租户隔离，
 > 让 AI Agent、MCP 工具服务器与传统业务系统共享同一套可信调用面。
@@ -12,7 +12,7 @@
 - **多租户串号**：全局静态凭据字典，一个 Agent 的令牌失效波及全部，无作用域隔离。
 - **AOT 不可发布**：反射序列化在 Native AOT 下大量 trim 警告，MCP 工具服务器无法单文件冷启动。
 
-Mud.Wechat 从第一行代码就为 AI 时代设计：**声明式契约面是 AI 工具 Schema 的生成源，DI 注入是 Agent 的调用入口，
+MudWechat 从第一行代码就为 AI 时代设计：**声明式契约面是 AI 工具 Schema 的生成源，DI 注入是 Agent 的调用入口，
 源生成 JSON 是 AOT 部署的前提，多应用作用域切换是多租户隔离的基石。** AI 能力不是外挂补丁，是架构的必然产物。
 
 ---
@@ -83,15 +83,15 @@ using (switcher.UseCorpScope(appKey: "suite-a", authCorpId, permanentCode))
 
 ## 七条产品线，一个底座
 
-| 产品线 | 包前缀 | 业务域 | 端点 | 凭据模型 |
-| --- | --- | --- | --- | --- |
-| 企业微信（WeCom） | `Mud.Wechat.Work*` | 35 | 446 契约接口 | `access_token` / `provider_access_token` / `suite_access_token`（Query 注入） |
-| 微信公众号 | `Mud.Wechat.OfficialAccount*` | 27 | 194 | `Wechat.Mp.AccessToken`（普通 + 稳定双通道）+ `jsapi` / `wx_card` 票据 |
-| 微信小程序 | `Mud.Wechat.MiniProgram*` | 21 | 141 | 复用公众号令牌域（同一 `/cgi-bin/token`，不新增令牌类型） |
-| 微信支付 APIv3 | `Mud.Wechat.Pay*` | 10 | 57 | 商户 RSA 私钥签名（`WECHATPAY2-SHA256-RSA2048`），**无 `access_token`** |
-| 微信开放平台 | `Mud.Wechat.OpenPlatform*` | — | 4 | `component_access_token` + 每授权方令牌（显式提供者） |
-| 微信小店 / 视频号 | `Mud.Wechat.Channels*` | 27 | 309 已落地 | `Wechat.Channels.AccessToken`（`token` + `stable_token` 双通道，独立 AppID） |
-| 腾讯广告（在建） | `Mud.Wechat.Ads*` | 8 | 33 | OAuth `access_token` + `refresh_token`（每请求现取，不走声明式 `[Token]`） |
+| 产品线            | 包前缀                        | 业务域 | 端点         | 凭据模型                                                                      |
+| ----------------- | ----------------------------- | ------ | ------------ | ----------------------------------------------------------------------------- |
+| 企业微信（WeCom） | `Mud.Wechat.Work*`            | 35     | 446 契约接口 | `access_token` / `provider_access_token` / `suite_access_token`（Query 注入） |
+| 微信公众号        | `Mud.Wechat.OfficialAccount*` | 27     | 194          | `Wechat.Mp.AccessToken`（普通 + 稳定双通道）+ `jsapi` / `wx_card` 票据        |
+| 微信小程序        | `Mud.Wechat.MiniProgram*`     | 21     | 141          | 复用公众号令牌域（同一 `/cgi-bin/token`，不新增令牌类型）                     |
+| 微信支付 APIv3    | `Mud.Wechat.Pay*`             | 10     | 57           | 商户 RSA 私钥签名（`WECHATPAY2-SHA256-RSA2048`），**无 `access_token`**       |
+| 微信开放平台      | `Mud.Wechat.OpenPlatform*`    | —      | 4            | `component_access_token` + 每授权方令牌（显式提供者）                         |
+| 微信小店 / 视频号 | `Mud.Wechat.Channels*`        | 27     | 309 已落地   | `Wechat.Channels.AccessToken`（`token` + `stable_token` 双通道，独立 AppID）  |
+| 腾讯广告（在建）  | `Mud.Wechat.Ads*`             | 8      | 33           | OAuth `access_token` + `refresh_token`（每请求现取，不走声明式 `[Token]`）    |
 
 **七线共仓**：共用同一套令牌基座、回调密码学内核、配置基座、SSRF 白名单、可观测性契约面与质量门禁。
 各线**独立可选**，按平台装对应主包即可。依赖单向、硬边界由守卫锁定（`Callback` 不引用主包、`Redis` 不引用任何线主包、
@@ -172,31 +172,31 @@ builder.Services.AddWechatRedis(builder.Configuration)       // ① 必须先于
 
 ## 安全默认不可协商
 
-| 闸 | 约束 |
-| --- | --- |
-| 回调抗重放 | 两道 fail-closed：时间戳 ±300s + 一次性 SHA1 指纹；分布式守卫异常必须上抛（→ 5xx → 官方重试），**禁止**吞异常放行 |
-| SSRF 防线 | `BaseUrl` 强制 HTTPS + 主机白名单（`AllowCustomBaseUrl=false`）；自定义主机须登记 `WechatCustomBaseUrlRegistry` |
-| 凭据脱敏 | 官方强制放 Query 的凭据参数，一律「进脱敏词表」或「登记带追踪号的自过期豁免」二选一；异常 URL 构造期剥 query 与 userinfo |
+| 闸         | 约束                                                                                                                        |
+| ---------- | --------------------------------------------------------------------------------------------------------------------------- |
+| 回调抗重放 | 两道 fail-closed：时间戳 ±300s + 一次性 SHA1 指纹；分布式守卫异常必须上抛（→ 5xx → 官方重试），**禁止**吞异常放行           |
+| SSRF 防线  | `BaseUrl` 强制 HTTPS + 主机白名单（`AllowCustomBaseUrl=false`）；自定义主机须登记 `WechatCustomBaseUrlRegistry`             |
+| 凭据脱敏   | 官方强制放 Query 的凭据参数，一律「进脱敏词表」或「登记带追踪号的自过期豁免」二选一；异常 URL 构造期剥 query 与 userinfo    |
 | 凭据不外泄 | `AgentSecret` / `SuiteSecret` / `ProviderSecret` / `permanent_code` / `auth_code` / `suite_ticket` 不进日志、遥测、异常消息 |
-| 支付密钥 | 私钥与 APIv3 密钥只以「名称」进配置，运行期经 `ISecretProvider` 取用；启动期拒绝把 PEM 贴进配置 |
-| 配置即校验 | 应用配置在 DI 注册阶段按应用类型完成互斥必填校验，非法组合直接注册期抛错，不潜伏到第一次调用 |
+| 支付密钥   | 私钥与 APIv3 密钥只以「名称」进配置，运行期经 `ISecretProvider` 取用；启动期拒绝把 PEM 贴进配置                             |
+| 配置即校验 | 应用配置在 DI 注册阶段按应用类型完成互斥必填校验，非法组合直接注册期抛错，不潜伏到第一次调用                                |
 
 ---
 
-## 与传统方案的差异（不点名，只列事实）
+## 与传统方案的差异
 
-| 维度 | 传统 .NET 微信 SDK 的普遍形态 | Mud.Wechat |
-| --- | --- | --- |
-| API 形态 | 静态类 + 静态方法（`XxxApi.Send(...)`） | 声明式接口 + DI 注入 + 源生成实现类 |
-| 凭据管理 | 全局静态容器，键 = `AppId`，进程级单例 | 三段式键 + 作用域切换 + 归属域 fail-fast 校验 |
-| 序列化 | `Newtonsoft.Json` 反射（AOT 不可用） | 源生成 `JsonContext`（`JsonTypeInfo`），AOT strict 净零 |
-| MCP 工具 | 反射调用器（`Type.GetType` + `method.Invoke`）或「API 目录搜索 → AI 生成代码」 | 声明式接口即 Schema 源，可编译期生成强类型 MCP 工具 |
-| AI 集成 | Sample 层补丁（挂 `AIChatAsync()` 于 MessageHandler） | 架构原生：DI 注入 + 多租户 + AOT 是 AI Agent / MCP 的前提 |
-| 契约校验 | 运行期发现路由 / 字段漂移 | 编译期契约守卫 + Roslyn 分析器打红 |
-| 回调加解密 | .NET 内置 16 字节块 PKCS7（误拒官方 17~32 字节 pad） | 官方 32 字节块手工补位 / 剥离 |
-| 目标框架 | `net462` + `netstandard2.0` + `LangVersion 10` | `netstandard2.0` / `net6.0` / `net8.0` / `net10.0` + `LangVersion 13` |
-| 产品线覆盖 | 单线或数线，各仓独立 | 七线共仓，统一令牌基座 / 回调内核 / 质量门禁 |
-| 配置审计 | 无 | 每个公开配置属性必须有真实消费点，无白名单无绕开 |
+| 维度       | 传统 .NET 微信 SDK 的普遍形态                                                  | Mud.Wechat                                                            |
+| ---------- | ------------------------------------------------------------------------------ | --------------------------------------------------------------------- |
+| API 形态   | 静态类 + 静态方法（`XxxApi.Send(...)`）                                        | 声明式接口 + DI 注入 + 源生成实现类                                   |
+| 凭据管理   | 全局静态容器，键 = `AppId`，进程级单例                                         | 三段式键 + 作用域切换 + 归属域 fail-fast 校验                         |
+| 序列化     | `Newtonsoft.Json` 反射（AOT 不可用）                                           | 源生成 `JsonContext`（`JsonTypeInfo`），AOT strict 净零               |
+| MCP 工具   | 反射调用器（`Type.GetType` + `method.Invoke`）或「API 目录搜索 → AI 生成代码」 | 声明式接口即 Schema 源，可编译期生成强类型 MCP 工具                   |
+| AI 集成    | Sample 层补丁（挂 `AIChatAsync()` 于 MessageHandler）                          | 架构原生：DI 注入 + 多租户 + AOT 是 AI Agent / MCP 的前提             |
+| 契约校验   | 运行期发现路由 / 字段漂移                                                      | 编译期契约守卫 + Roslyn 分析器打红                                    |
+| 回调加解密 | .NET 内置 16 字节块 PKCS7（误拒官方 17~32 字节 pad）                           | 官方 32 字节块手工补位 / 剥离                                         |
+| 目标框架   | `net462` + `netstandard2.0` + `LangVersion 10`                                 | `netstandard2.0` / `net6.0` / `net8.0` / `net10.0` + `LangVersion 13` |
+| 产品线覆盖 | 单线或数线，各仓独立                                                           | 七线共仓，统一令牌基座 / 回调内核 / 质量门禁                          |
+| 配置审计   | 无                                                                             | 每个公开配置属性必须有真实消费点，无白名单无绕开                      |
 
 ---
 
@@ -369,7 +369,6 @@ Mud.Wechat/
 ├── Tests/                  # 16 个测试工程（含 ContractGuards/）
 ├── Demos/                  # 示例工程
 ├── scripts/                # verify-build / audit-config-keys / GenerateJsonContext / ...
-├── .docs/                  # 方案与设计文档（中文；已 gitignore）
 ├── Directory.Build.props   # 全局 MSBuild 属性（TFM / LangVersion / Version 唯一来源）
 ├── pack.bat / publish.bat  # 打包与推送
 └── Mud.Wechat.slnx         # 解决方案

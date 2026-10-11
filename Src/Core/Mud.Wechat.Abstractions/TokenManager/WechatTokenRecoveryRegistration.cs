@@ -16,11 +16,11 @@ namespace Mud.Wechat.Abstractions.TokenManager;
 /// 「进程级全局态」的登记，二者若由各产品线自行登记必然互相破坏：
 /// </para>
 /// <list type="number">
-/// <item><b>SSRF 域名白名单</b>：组件 <c>UrlValidator.ConfigureAllowedDomains</c> 是全局静态 +
-/// 整体替换语义 ⇒ 统一以 <see cref="WechatApiHosts.AllowedBaseUrlDomains"/> 这一<b>并集单一来源</b>登记，
-/// 多产品线共存时结果恒等；</item>
-/// <item><b>errcode 失效判定器</b>：组件选项属性为单槽 ⇒ 统一登记
-/// <see cref="WechatCompositeTokenInvalidationDetector"/>（消费各产品线自注册的子判定器），
+/// <item><b>SSRF 域名白名单</b>：组件 <c>UrlValidator.AddAllowedDomain</c> 为增量并集语义（只加不删、幂等）
+/// ⇒ 统一以 <see cref="WechatApiHosts.AllowedBaseUrlDomains"/> 这一<b>并集单一来源</b>登记，
+/// 多产品线共存/多 SDK 共存互不影响（整体替换入口 <c>ConfigureAllowedDomains</c> 会清空运行期桶，本仓不使用）；</item>
+/// <item><b>errcode 失效判定器</b>：组件选项属性为单槽 ⇒ 统一登记组件
+/// <see cref="Mud.HttpUtils.CompositeTokenInvalidationDetector"/>（消费各产品线自注册的子判定器），
 /// 避免「后注册者覆盖前者」导致某产品线令牌恢复静默失效。</item>
 /// </list>
 /// <para>
@@ -46,8 +46,9 @@ public static class WechatTokenRecoveryRegistration
     /// <c>WechatPayTransportPipelineTests</c> 实测捕获）。
     /// </para>
     /// <para>
-    /// 拆分<b>不改变</b> AB-G4 的单点约束：<c>ConfigureAllowedDomains</c> 仍只在本类出现一次，
-    /// 各产品线（含支付）只能调用本方法，不得自行登记（全局静态 + 整体替换 ⇒ 后调用者会清空前者）。
+    /// 拆分<b>不改变</b> AB-G4 的单点约束：<c>AddAllowedDomain</c> 的登记只在本类出现一次，
+    /// 各产品线（含支付）只能调用本方法，不得自行登记（增量并集虽幂等，登记点分散会让
+    /// 「白名单包含哪些域名」失去单一事实源）。
     /// </para>
     /// </remarks>
     /// <param name="services">服务集合。</param>
@@ -60,8 +61,15 @@ public static class WechatTokenRecoveryRegistration
             throw new ArgumentNullException(nameof(services));
         }
 
-        // SSRF 白名单：并集单一来源（同值调用幂等）。
-        UrlValidator.ConfigureAllowedDomains(WechatApiHosts.AllowedBaseUrlDomains);
+        // SSRF 白名单：增量并集（AddAllowedDomain 只加不删，写运行期桶，HashSet 幂等）。
+        // 多 SDK / 多产品线共存互不影响：不 clear 其它 SDK/宿主此前登记的域名；
+        // 组件配置热更重放（SetConfigurationDomains，internal）也不会清除运行期桶（上游不变量 I-13）。
+        // 「进程级整体替换」入口 ConfigureAllowedDomains 仍公开（仅"我就是唯一真相源"的宿主/测试使用，
+        // 本仓生产代码不使用——由 AB-G4/AB-G9 守卫锁定）。
+        foreach (var domain in WechatApiHosts.AllowedBaseUrlDomains)
+        {
+            UrlValidator.AddAllowedDomain(domain);
+        }
 
         return services;
     }
@@ -90,14 +98,11 @@ public static class WechatTokenRecoveryRegistration
         services.TryAddSingleton(sp => sp.GetRequiredService<IOptions<TokenRecoveryOptions>>().Value);
 
         // ④ 令牌提供器与后台刷新框架服务（各产品线共用）。
-        // 组件 AddTokenProvider 为 TryAdd（幂等），但 AddTokenRefreshBackgroundService 内部使用
-        // AddSingleton + AddHostedService（**非幂等**）：多产品线各自调用会注册多个后台刷新循环。
-        // 故在此以「已注册即跳过」的显式判断收敛为单点，使同一宿主引用多个产品线时只有一个刷新循环。
+        // 组件 AddTokenProvider 为 TryAdd（幂等）；AddTokenRefreshBackgroundService 自组件 3.0.4 起亦幂等
+        // （net6+ 以 TokenRefreshHostedService 类型存在性为守卫，ns2.0 以 TokenRefreshBackgroundService 判定，
+        // 且 IHostedService / ITokenRefreshBackgroundService 解析到同一实例）——多产品线多次调用只注册一份。
         services.AddTokenProvider();
-        if (!services.Any(descriptor => descriptor.ServiceType == typeof(ITokenRefreshBackgroundService)))
-        {
-            services.AddTokenRefreshBackgroundService();
-        }
+        services.AddTokenRefreshBackgroundService();
 
         return services;
     }
@@ -135,6 +140,6 @@ public sealed class WechatTokenRecoveryPostConfigure : IPostConfigureOptions<Tok
         var detectors = _detectors as IReadOnlyList<ITokenInvalidationDetector> ?? _detectors.ToArray();
         options.TokenInvalidationDetector = detectors.Count == 0
             ? null
-            : new WechatCompositeTokenInvalidationDetector(detectors);
+            : new Mud.HttpUtils.CompositeTokenInvalidationDetector(detectors.ToArray());
     }
 }

@@ -22,6 +22,30 @@ public sealed class ChannelsCallbackInterceptorRegistry : WechatCallbackTypeRegi
 {
 }
 
+/// <summary>结构化应答处理器注册表（键 = 应用键或通配键；仅官方要求同步应答的事件需要注册）。</summary>
+public sealed class ChannelsCallbackReplyRegistry : WechatCallbackTypeRegistry<IChannelsCallbackReplyHandler>
+{
+}
+
+/// <summary>分发结果（结局 + 结构化应答；应答为 <c>null</c> 时中间件回明文 success）。</summary>
+public sealed class WechatChannelsCallbackDispatchResult
+{
+    /// <summary>创建分发结果。</summary>
+    /// <param name="outcome">分发结局。</param>
+    /// <param name="reply">结构化应答；<c>null</c> = 无应答。</param>
+    public WechatChannelsCallbackDispatchResult(WechatCallbackDispatchOutcome outcome, ChannelsCallbackReply? reply)
+    {
+        Outcome = outcome;
+        Reply = reply;
+    }
+
+    /// <summary>分发结局。</summary>
+    public WechatCallbackDispatchOutcome Outcome { get; }
+
+    /// <summary>结构化应答（无应答为 <c>null</c>）。</summary>
+    public ChannelsCallbackReply? Reply { get; }
+}
+
 /// <summary>
 /// 微信小店回调事件分发器：拦截器 Before → 并发闸 → 软超时 → 匹配处理器（精确优先、兜底次之）→
 /// 类型化载荷反序列化（net8+ 且事件键已登记契约）→ 执行 → 拦截器 After。
@@ -40,6 +64,7 @@ public sealed class WechatChannelsCallbackDispatcher
 {
     private readonly ChannelsCallbackHandlerRegistry _handlerRegistry;
     private readonly ChannelsCallbackInterceptorRegistry _interceptorRegistry;
+    private readonly ChannelsCallbackReplyRegistry _replyRegistry;
     private readonly IChannelsPayloadContractRegistry _payloadContracts;
     private readonly IOptionsMonitor<ChannelsCallbackOptions> _optionsMonitor;
     private readonly IServiceScopeFactory _scopeFactory;
@@ -49,6 +74,7 @@ public sealed class WechatChannelsCallbackDispatcher
     /// <summary>创建分发器。</summary>
     /// <param name="handlerRegistry">处理器注册表。</param>
     /// <param name="interceptorRegistry">拦截器注册表。</param>
+    /// <param name="replyRegistry">结构化应答处理器注册表（仅官方要求同步应答的事件需要注册）。</param>
     /// <param name="payloadContracts">载荷契约注册表（事件键 → 载荷类型）。</param>
     /// <param name="optionsMonitor">配置监视器（软超时热读取；并发容量为构造期快照）。</param>
     /// <param name="scopeFactory">scope 工厂（处理器/拦截器实例解析）。</param>
@@ -56,6 +82,7 @@ public sealed class WechatChannelsCallbackDispatcher
     public WechatChannelsCallbackDispatcher(
         ChannelsCallbackHandlerRegistry handlerRegistry,
         ChannelsCallbackInterceptorRegistry interceptorRegistry,
+        ChannelsCallbackReplyRegistry replyRegistry,
         IChannelsPayloadContractRegistry payloadContracts,
         IOptionsMonitor<ChannelsCallbackOptions> optionsMonitor,
         IServiceScopeFactory scopeFactory,
@@ -63,6 +90,7 @@ public sealed class WechatChannelsCallbackDispatcher
     {
         _handlerRegistry = handlerRegistry ?? throw new ArgumentNullException(nameof(handlerRegistry));
         _interceptorRegistry = interceptorRegistry ?? throw new ArgumentNullException(nameof(interceptorRegistry));
+        _replyRegistry = replyRegistry ?? throw new ArgumentNullException(nameof(replyRegistry));
         _payloadContracts = payloadContracts ?? throw new ArgumentNullException(nameof(payloadContracts));
         _optionsMonitor = optionsMonitor ?? throw new ArgumentNullException(nameof(optionsMonitor));
         _scopeFactory = scopeFactory ?? throw new ArgumentNullException(nameof(scopeFactory));
@@ -76,8 +104,8 @@ public sealed class WechatChannelsCallbackDispatcher
     /// <param name="appKey">事件归属应用键（路由提取）。</param>
     /// <param name="envelope">回调事件信封。</param>
     /// <param name="cancellationToken">取消令牌（分发器内部再链接软超时 CTS）。</param>
-    /// <returns>分发结局；软超时/请求中止以 <see cref="OperationCanceledException"/> 传播。</returns>
-    public async Task<WechatCallbackDispatchOutcome> DispatchAsync(
+    /// <returns>分发结果（含结构化应答）；软超时/请求中止以 <see cref="OperationCanceledException"/> 传播。</returns>
+    public async Task<WechatChannelsCallbackDispatchResult> DispatchAsync(
         string appKey, WechatChannelsCallbackEvent envelope, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrEmpty(appKey))
@@ -105,7 +133,7 @@ public sealed class WechatChannelsCallbackDispatcher
                     _logger.LogInformation(
                         "事件 {EventType}（appKey: {AppKey}）被拦截器 {Interceptor} 中断，按官方语义回 success（不触发重推）。",
                         eventType, appKey, interceptor.GetType().FullName);
-                    return WechatCallbackDispatchOutcome.Interrupted;
+                    return new WechatChannelsCallbackDispatchResult(WechatCallbackDispatchOutcome.Interrupted, null);
                 }
             }
         }
@@ -191,14 +219,49 @@ public sealed class WechatChannelsCallbackDispatcher
                 }
             }
 
-            return handled
+            var outcome = handled
                 ? WechatCallbackDispatchOutcome.Handled
                 : WechatCallbackDispatchOutcome.Unhandled;
+            var reply = await TryBuildReplyAsync(scope.ServiceProvider, appKey, envelope, dispatchToken)
+                .ConfigureAwait(false);
+            return new WechatChannelsCallbackDispatchResult(outcome, reply);
         }
         finally
         {
             _concurrencyGate.Release();
         }
+    }
+
+    /// <summary>解析结构化应答：appKey 专属先于全局通配，取第一个返回非 <c>null</c> 的应答处理器。</summary>
+    private async Task<ChannelsCallbackReply?> TryBuildReplyAsync(
+        IServiceProvider provider, string appKey, WechatChannelsCallbackEvent envelope, CancellationToken cancellationToken)
+    {
+        foreach (var type in EnumerateWithWildcard(_replyRegistry, appKey))
+        {
+            IChannelsCallbackReplyHandler? handler;
+            try
+            {
+                handler = provider.GetService(type) as IChannelsCallbackReplyHandler;
+            }
+            catch (Exception ex) when (!(ex is OperationCanceledException))
+            {
+                _logger.LogError(ex, "结构化应答处理器 {Type} 从 DI 解析失败（依赖缺失？），已跳过。", type.FullName);
+                continue;
+            }
+
+            if (handler == null)
+            {
+                continue;
+            }
+
+            var reply = await handler.TryReplyAsync(envelope, cancellationToken).ConfigureAwait(false);
+            if (reply != null)
+            {
+                return reply;
+            }
+        }
+
+        return null;
     }
 
     /// <summary>

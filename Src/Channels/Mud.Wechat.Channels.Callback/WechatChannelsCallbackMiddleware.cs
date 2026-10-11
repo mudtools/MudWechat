@@ -162,9 +162,30 @@ public sealed class WechatChannelsCallbackMiddleware
 
         var envelope = await _receiver.ReceiveAsync(appKey, query, body, context.RequestAborted)
             .ConfigureAwait(false);
-        await _dispatcher.DispatchAsync(appKey, envelope, context.RequestAborted).ConfigureAwait(false);
+        var result = await _dispatcher.DispatchAsync(appKey, envelope, context.RequestAborted)
+            .ConfigureAwait(false);
 
-        // 小店无被动回复语义：官方许可回明文 success / 空串（无需加密）。
+        // 结构化应答（会员三事件等）：加密 + 签名信封回写（官方 dev_before/message_push「其他回包内容需加密」）。
+        if (result.Reply != null)
+        {
+            var app = options.ResolveApp(appKey);
+            if (app == null)
+            {
+                _logger.LogError("结构化应答回写时未命中回调配置，AppKey: {AppKey}", appKey);
+                context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+                return;
+            }
+
+            var urlNonce = WechatCallbackQuery.Get(query, "nonce");
+            var payload = WechatChannelsCallbackReplyWriter.WriteReply(
+                app, result.Reply, urlNonce, DateTimeOffset.UtcNow);
+            context.Response.StatusCode = StatusCodes.Status200OK;
+            context.Response.ContentType = WechatChannelsCallbackReplyWriter.JsonContentType;
+            await context.Response.WriteAsync(payload, context.RequestAborted).ConfigureAwait(false);
+            return;
+        }
+
+        // 其余事件：官方许可回明文 success / 空串（无需加密）。
         await WriteTextAsync(context, StatusCodes.Status200OK, SuccessResponseBody, context.RequestAborted)
             .ConfigureAwait(false);
     }

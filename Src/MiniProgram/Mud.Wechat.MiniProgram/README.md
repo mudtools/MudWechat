@@ -1,10 +1,10 @@
 # Mud.Wechat.MiniProgram
 
-微信小程序 SDK **主包**：**19 个业务域 84 端点**（登录与身份 / 二维码与链接 / 内容安全 / 数据分析 / 订阅消息 / 动态消息 / 客服 / 硬件设备 / 运维中心 / 插件 / 付费 / 附近小程序 / 搜一搜 / 生物认证 / 服务市场 / 红包封面 / 学生身份 / 人脸核身 / 用工关系）的声明式 HTTP 客户端、模块注册器、AOT JsonContext 合并，以及小程序码与反馈图片的**二进制响应手工通道**。
+微信小程序 SDK **主包**：**20 个业务域 90 端点**（登录与身份 / 二维码与链接 / 内容安全 / 数据分析 / 订阅消息 / 动态消息 / 客服 / 硬件设备 / 运维中心 / 插件 / 付费 / 附近小程序 / 搜一搜 / 生物认证 / 服务市场 / 红包封面 / 学生身份 / 人脸核身 / 用工关系 / 会员服务）的声明式 HTTP 客户端、模块注册器、AOT JsonContext 合并，以及小程序码与反馈图片的**二进制响应手工通道**。
 
 **小程序与公众号同属微信公众平台**：同一令牌域、同一批路由前缀（`/wxa/`、`/datacube/`、`/sns/`），因此本线**不重复实现令牌与多应用基座**，直接复用 `Mud.Wechat.OfficialAccount.Abstractions`（守卫 MP-X2 锁定）。装配入口也因此是两段式的——先 `AddMpApp` 建底座，再 `AddMiniProgramServices` 装本线模块。
 
-## 能力面（84 端点，计数与路由表由 MP-X5 锁定）
+## 能力面（90 端点，计数与路由表由 MP-X5 锁定）
 
 | 模块（`MiniProgramModule`） | 注册方法 | 端点 | 接口 |
 | --- | --- | --- | --- |
@@ -27,6 +27,7 @@
 | `Student` | `AddStudentApi()` | 1 | `IWxaStudentService`（快速获取学生身份） |
 | `FaceVerify` | `AddFaceVerifyApi()` | 2 | `IWxaFaceVerifyService`（获取 verifyid + 查询验证信息；`cert_info` 敏感） |
 | `LaborUse` | `AddLaborUseApi()` | 2 | `IWxaLaborUseService`（推送用工消息 + 解绑用工关系） |
+| `Vip` | `AddVipApi()` | 6 | `IWxaVipService`（会员信息增改查删 4 + 会员列表 1 + 已关联小店列表 1；2026-10 核对为小程序令牌、自小店线设计方案 §4.1 结论 A 划入） |
 
 三个模块级方法之外还有 `AddAllApis()`、`AddModules(params MiniProgramModule[])` 与 `Build()`（返回 `IServiceCollection`）。
 

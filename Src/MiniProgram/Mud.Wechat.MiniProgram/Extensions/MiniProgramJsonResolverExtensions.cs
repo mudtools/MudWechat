@@ -6,6 +6,7 @@
 // -----------------------------------------------------------------------
 
 using Mud.Wechat.MiniProgram.DataModels;
+using Mud.Wechat.MiniProgram.DataModels.Vip;
 using Mud.Wechat.MiniProgram.DataModels.Auth;
 using Mud.Wechat.MiniProgram.DataModels.Charge;
 using Mud.Wechat.MiniProgram.DataModels.DataAnalysis;
@@ -60,6 +61,7 @@ public static class MiniProgramJsonResolverExtensions
 
         var resolver = JsonTypeInfoResolver.Combine(
             CommonJsonContext.Default,
+            VipJsonContext.Default,
             AuthJsonContext.Default,
             QrCodeLinkJsonContext.Default,
             SecurityJsonContext.Default,

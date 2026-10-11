@@ -44,4 +44,4 @@ var product = await productService.GetProductAsync(new ChannelsGetProductRequest
 - **草稿 / 线上双份数据语义**：`product/add|update` 只影响草稿，需上架 + 审核通过才覆盖线上数据（`data_type` 区分读取面）。
 - **同一路由只计 1**：与视频号老清单重叠的 5 条商品路由与 `aftersale/getaftersaleorder` 在域内只声明一次；`order/get` 等与 SHIPINHAO 本地生活重叠路由同口径。
 - **资金 ≠ 支付**：本线 `Funds` 是小店结算 / 提现 / 流水（小店 `access_token`），与微信支付 APIv3（`Mud.Wechat.Pay`，商户私钥签名）、企微企业支付 / 收银台（Work 线）概念严格区分。
-- **`/wxa/vip/*` 6 端点未落位**：令牌归属待官方逐页核对（CH-V1 锁定「未确认归属不得声明」）。
+- **`/wxa/vip/*` 6 端点归 MiniProgram 线**：2026-10 逐页核对官方文档确认全部使用**小程序 access_token**（结论 A）——由小程序线 `IWxaVipService` 承载；CH-V1 锁定小店线不得跨线声明任何 `/wxa/` 路由。

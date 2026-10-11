@@ -102,13 +102,13 @@ public static class Baseline
         /// </summary>
         /// <remarks>
         /// 锁定于 `MiniProgramContractGuards`（MP-X5）。
-        /// 现行推导：80 特性路由 + 4 手工通道（小程序码 3 + 反馈媒体 1 的图片二进制响应通道）= 84；
+        /// 现行推导：86 特性路由 + 4 手工通道（小程序码 3 + 反馈媒体 1 的图片二进制响应通道）= 90；
         /// 按域拆分即 Auth 8 + QrCodeLink 9 + Security 3 + DataAnalysis 11 + SubscribeMessage 4 +
         /// DynamicMessage 3 + Kf 9 + HardwareDevice 9 + Operation 10 + Plugin 2 + Charge 2 +
         /// NearbyPoi 4 + Search 1 + Soter 1 + ServiceMarket 2 + RedPacketCover 1 + Student 1 +
-        /// FaceVerify 2 + LaborUse 2 = 84。
+        /// FaceVerify 2 + LaborUse 2 + Vip 6 = 90（Vip 域为 2026-10 小店线设计方案 §4.1 结论 A 划入）。
         /// </remarks>
-        public const int Endpoints = 84;
+        public const int Endpoints = 90;
     }
 
     /// <summary>微信支付 APIv3 线（`Tests/Mud.Wechat.Pay.Tests`）。</summary>

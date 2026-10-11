@@ -87,15 +87,17 @@ public static class WechatChannelsCallbackServiceCollectionExtensions
         // 注册表实例急切创建并以实例登记（建造者组合根期直接写入，容器内同实例共享）。
         var handlers = new ChannelsCallbackHandlerRegistry();
         var interceptors = new ChannelsCallbackInterceptorRegistry();
+        var replies = new ChannelsCallbackReplyRegistry();
 
         services.TryAddSingleton<IWechatCallbackReplayGuard, InMemoryWechatCallbackReplayGuard>();
         services.AddSingleton(handlers);
         services.AddSingleton(interceptors);
+        services.AddSingleton(replies);
         services.AddSingleton<WechatChannelsCallbackReceiver>();
         services.AddSingleton<IWechatChannelsCallbackReceiver>(static sp => sp.GetRequiredService<WechatChannelsCallbackReceiver>());
         services.AddSingleton<WechatChannelsCallbackDispatcher>();
 
-        return new WechatChannelsCallbackServiceBuilder(services, handlers, interceptors);
+        return new WechatChannelsCallbackServiceBuilder(services, handlers, interceptors, replies);
     }
 }
 
@@ -107,16 +109,19 @@ public sealed class WechatChannelsCallbackServiceBuilder
     private readonly IServiceCollection _services;
     private readonly ChannelsCallbackHandlerRegistry _handlers;
     private readonly ChannelsCallbackInterceptorRegistry _interceptors;
+    private readonly ChannelsCallbackReplyRegistry _replies;
 
     /// <summary>创建建造者。</summary>
     public WechatChannelsCallbackServiceBuilder(
         IServiceCollection services,
         ChannelsCallbackHandlerRegistry handlers,
-        ChannelsCallbackInterceptorRegistry interceptors)
+        ChannelsCallbackInterceptorRegistry interceptors,
+        ChannelsCallbackReplyRegistry replies)
     {
         _services = services ?? throw new ArgumentNullException(nameof(services));
         _handlers = handlers ?? throw new ArgumentNullException(nameof(handlers));
         _interceptors = interceptors ?? throw new ArgumentNullException(nameof(interceptors));
+        _replies = replies ?? throw new ArgumentNullException(nameof(replies));
     }
 
     /// <summary>登记事件处理器（信封级或载荷级；类型由容器按 scope 解析）。</summary>
@@ -132,6 +137,24 @@ public sealed class WechatChannelsCallbackServiceBuilder
     {
         _services.AddScoped<THandler>();
         _handlers.Register(appKey, typeof(THandler));
+        return this;
+    }
+
+    /// <summary>
+    /// 登记结构化应答处理器（仅官方要求同步返回业务数据的事件需要——会员三事件等；其余事件回明文 success）。
+    /// </summary>
+    /// <typeparam name="THandler">应答处理器类型。</typeparam>
+    /// <param name="appKey">应用键（精确匹配；传通配键注册全局兜底桶）。</param>
+    /// <returns>建造者（链式）。</returns>
+    public WechatChannelsCallbackServiceBuilder AddReplyHandler<
+#if NET6_0_OR_GREATER
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
+#endif
+        THandler>(string appKey)
+        where THandler : class, IChannelsCallbackReplyHandler
+    {
+        _services.AddScoped<THandler>();
+        _replies.Register(appKey, typeof(THandler));
         return this;
     }
 

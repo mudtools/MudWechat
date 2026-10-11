@@ -101,6 +101,13 @@ namespace Mud.Wechat.Channels.DataModels.Callback;
 [JsonSerializable(typeof(global::Mud.Wechat.Channels.DataModels.Callback.ChannelsVipDiscountPriceInfo))]
 [JsonSerializable(typeof(global::Mud.Wechat.Channels.DataModels.Callback.ChannelsOrderUnuseVipDiscountPayload))]
 [JsonSerializable(typeof(global::Mud.Wechat.Channels.DataModels.Callback.ChannelsUnuseVipDiscountOrderInfo))]
+[JsonSerializable(typeof(global::Mud.Wechat.Channels.DataModels.Callback.ChannelsVipUserInfoGetReply))]
+[JsonSerializable(typeof(global::Mud.Wechat.Channels.DataModels.Callback.ChannelsVipUserInfoGetReplyInfo))]
+[JsonSerializable(typeof(global::Mud.Wechat.Channels.DataModels.Callback.ChannelsGenOrderInfoInitReply))]
+[JsonSerializable(typeof(global::Mud.Wechat.Channels.DataModels.Callback.ChannelsGenOrderInfoInitReplyInfo))]
+[JsonSerializable(typeof(global::Mud.Wechat.Channels.DataModels.Callback.ChannelsGenOrderInfoInitReplyProduct))]
+[JsonSerializable(typeof(global::Mud.Wechat.Channels.DataModels.Callback.ChannelsOrderUseVipDiscountReply))]
+[JsonSerializable(typeof(global::Mud.Wechat.Channels.DataModels.Callback.ChannelsCallbackReplyEnvelope))]
 internal partial class CallbackJsonContext : JsonSerializerContext
 {
 }

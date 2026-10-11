@@ -90,7 +90,7 @@ scripts/                              # verify-build / audit-config-keys / Gener
 
 **新增产品线的门禁接入口只有一个**：`AB-G6` 会同时校验解决方案工程清单（每个可打包工程须已在 `slnx` 内）、`audit-config-keys.ps1` 搜索根、DTO 标注脚本根命名空间、以及 CI / `pack.bat` / `publish.bat` 三处的**推导口径**（可打包集由 `Src/**/*.csproj` 现场推导，三处各自推导、不持有名单，也不硬编码包数 —— 唯一被维护的名单是「非可打包工程白名单」，仅两个构建期工具）。
 
-**其它产品线（公众号 / 小程序 / 支付 / 开放平台 / 小店）各持 `Src/{线}/` 包家族与 `Tests/Mud.Wechat.{线}.Tests/` 守卫，契约与落位以各自 `.docs/` 设计方案为准**（本文为企微线专属）。小店线关键决策锚点：独立令牌类型 `Wechat.Channels.AccessToken`（与 `Wechat.AccessToken`/`Wechat.Mp.AccessToken` 在共享注册表天然隔离）、平铺命名空间无 `IsAbstract` 父接口、与既有六线路由交叠零回潮（共享基础设施白名单仅 `token`/`stable_token` + 8 个 `/cgi-bin/` 基础端点）、`/wxa/vip/*` 未确认归属不得声明、回调为**官方强制 JSON + 仅安全模式**（信封 `{"ToUserName","Encrypt"}`，事件键 42 个经 `[ChannelsCallbackContract]` 声明式登记、契约机制与事件键常量落 DataModels/Callback、类型化通道仅 net8+）—— 全部为 CH / CB-CH 系列守卫锁定，改动见 `Tests/Mud.Wechat.Channels.Tests/ContractGuards/` 与 `Tests/Mud.Wechat.Channels.Callback.Tests/`。
+**其它产品线（公众号 / 小程序 / 支付 / 开放平台 / 小店）各持 `Src/{线}/` 包家族与 `Tests/Mud.Wechat.{线}.Tests/` 守卫，契约与落位以各自 `.docs/` 设计方案为准**（本文为企微线专属）。小店线关键决策锚点：独立令牌类型 `Wechat.Channels.AccessToken`（与 `Wechat.AccessToken`/`Wechat.Mp.AccessToken` 在共享注册表天然隔离）、平铺命名空间无 `IsAbstract` 父接口、与既有六线路由交叠零回潮（共享基础设施白名单仅 `token`/`stable_token` + 8 个 `/cgi-bin/` 基础端点）、`/wxa/vip/*` 已核定为小程序令牌、归 MiniProgram 线，小店线不得跨线声明、回调为**官方强制 JSON + 仅安全模式**（信封 `{"ToUserName","Encrypt"}`，事件键 42 个经 `[ChannelsCallbackContract]` 声明式登记、契约机制与事件键常量落 DataModels/Callback、类型化通道仅 net8+）—— 全部为 CH / CB-CH 系列守卫锁定，改动见 `Tests/Mud.Wechat.Channels.Tests/ContractGuards/` 与 `Tests/Mud.Wechat.Channels.Callback.Tests/`。
 
 **新文件落位三处一致（目录 / 命名空间 / 注册入口）**：
 

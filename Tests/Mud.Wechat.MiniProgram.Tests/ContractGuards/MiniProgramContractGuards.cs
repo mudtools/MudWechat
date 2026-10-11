@@ -80,11 +80,12 @@ public class MiniProgramContractGuards
             .Where(static t => t.GetCustomAttributes(false).Any(static a => a.GetType().Name == "TokenAttribute"))
             .ToArray();
 
-        tokenInterfaces.Should().HaveCount(22,
+        tokenInterfaces.Should().HaveCount(23,
             "带令牌接口 = Auth / QrCodeLink / Security / DataAnalysis / SubscribeMessage / DynamicMessage / Kf / " +
             "HardwareDevice / Operation / Plugin / Charge / NearbyPoi / Search / Soter / ServiceMarket / " +
-            "RedPacketCover / Student / FaceVerify / LaborUse / ExpressBusiness / ExpressDelivery / ExpressIntracity" +
-            "（登录 code2Session 为免令牌独立接口；图片通道 Code / FeedbackMedia 与对账文件通道 Bill 为手工服务不走 [Token]）");
+            "RedPacketCover / Student / FaceVerify / LaborUse / ExpressBusiness / ExpressDelivery / ExpressIntracity / " +
+            "Vip（登录 code2Session 为免令牌独立接口；图片通道 Code / FeedbackMedia 与对账文件通道 Bill 为手工服务不走 [Token]；" +
+            "Vip 域为 2026-10 小店线设计方案 §4.1 结论 A 划入）");
 
         foreach (var iface in tokenInterfaces)
         {
@@ -117,7 +118,7 @@ public class MiniProgramContractGuards
     }
 
     /// <summary>
-    /// MP-X5：<b>端点计数 84</b> + 逐域路由表 + 字段名照官方原文（<c>session_key</c> / <c>js_code</c> /
+    /// MP-X5：<b>端点计数 141</b> + 逐域路由表 + 字段名照官方原文（<c>session_key</c> / <c>js_code</c> /
     /// <c>trace_id</c> / <c>page_url</c> 等<b>不得驼峰化</b>）。
     /// </summary>
     [Fact]
@@ -290,14 +291,14 @@ public class MiniProgramContractGuards
             WxaExpressBillService.BillPath,
         });
 
-        // 合计计数（MP-X5 的单一来源）：130 特性路由 + 5 手工通道路由 = 135（基线见 Tests/ContractBaseline.cs）。
+        // 合计计数（MP-X5 的单一来源）：136 特性路由 + 5 手工通道路由 = 141（基线见 Tests/ContractBaseline.cs）。
         (CollectAttributeRoutes(asm).Length + ManualChannelRoutes().Length)
             .Should().Be(Baseline.MiniProgram.Endpoints,
-                "小程序线合计 135 端点（Auth 8 + QrCodeLink 9 + Security 3 + DataAnalysis 11 + "
+                "小程序线合计 141 端点（Auth 8 + QrCodeLink 9 + Security 3 + DataAnalysis 11 + "
                 + "SubscribeMessage 4 + DynamicMessage 3 + Kf 9 + HardwareDevice 9 + Operation 10 + "
                 + "Plugin 2 + Charge 2 + NearbyPoi 4 + Search 1 + Soter 1 + ServiceMarket 2 + "
                 + "RedPacketCover 1 + Student 1 + FaceVerify 2 + LaborUse 2 + ExpressBusiness 12 + "
-                + "ExpressDelivery 25 + ExpressIntracity 13 + ExpressBill 1）；"
+                + "ExpressDelivery 25 + ExpressIntracity 13 + ExpressBill 1 + Vip 6）；"
                 + "数量变化须同批调整 Tests/ContractBaseline.cs");
     }
 

@@ -77,6 +77,7 @@ public class MiniProgramServiceBuilder
                 s.AddExpressWebApiHttpClient();
                 s.TryAddSingleton<IWxaExpressBillService, WxaExpressBillService>();
             },
+            [MiniProgramModule.Vip] = static s => s.AddVipWebApiHttpClient(),
         };
 
     /// <summary>注册登录与用户（5 端点：4 带令牌 + 1 免令牌）。</summary>
@@ -158,6 +159,12 @@ public class MiniProgramServiceBuilder
     /// <summary>注册物流助手（51 端点：50 JSON + 1 对账文件文本）。</summary>
     /// <returns>注册器（链式）。</returns>
     public MiniProgramServiceBuilder AddExpressApi() => AddModule(MiniProgramModule.Express);
+    /// <summary>
+    /// 注册小程序会员服务接口（6 端点：会员信息增改查删 / 会员列表 / 已关联小店列表，
+    /// <c>/wxa/vip/*</c>；2026-10 核对为小程序令牌、自小店线设计方案 §4.1 结论 A 归本线）。
+    /// </summary>
+    /// <returns>注册器（链式）。</returns>
+    public MiniProgramServiceBuilder AddVipApi() => AddModule(MiniProgramModule.Vip);
 
     /// <summary>注册全部模块。</summary>
     /// <returns>注册器（链式）。</returns>

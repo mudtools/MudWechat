@@ -129,6 +129,8 @@ public class MpQueryTokenWhitelistGuard
             nameof(Mud.Wechat.MiniProgram.IWxaSoterService),             // 生物认证（1 端点）
             nameof(Mud.Wechat.MiniProgram.IWxaStudentService),           // 学生身份（1 端点）
             nameof(Mud.Wechat.MiniProgram.IWxaSubscribeMessageService),  // 订阅消息 / 服务卡片（4 端点）
+            // Vip 域（6 端点）2026-10 自小店线设计方案 §4.1 结论 A 划入：官方同为 Query access_token 契约。
+            nameof(Mud.Wechat.MiniProgram.IWxaVipService),
         }, "小程序官方契约同样强制 Query 注入；新增 Query 注入接口须先评估再显式扩展本白名单");
 
         actual.Should().NotBeEmpty();

@@ -157,4 +157,16 @@ public enum MiniProgramModule
     /// <para><b>同城配送</b> 12 端点（<c>express/intracity</c>）：创建 / 查询 / 更新门店 + 运费充值 / 退款 / 流水 / 余额 + 询价 / 下单 / 查询 / 取消配送单 + 模拟回调（<c>mocknotify</c> 仅测试环境）。</para>
     /// </remarks>
     Express,
+
+    /// <summary>
+    /// 小程序会员服务（6 端点：<c>/wxa/vip/user/info/{add,update,get,delete}</c>、<c>/wxa/vip/user/list/get</c>、
+    /// <c>/wxa/vip/shop/list/get</c>；小店→小程序会员同步的小程序侧开放面）。
+    /// </summary>
+    /// <remarks>
+    /// <b>归属裁定（2026-10-12 逐页核对官方文档）</b>：6 端点虽出现在小店文档，但官方逐页标注
+    /// 「小程序 API 请使用小程序身份，即小程序的 access_token 调用」（适用范围「小程序账号类型」，
+    /// 第三方平台以 authorizer_access_token 代调用，权限集 185）⇒ 归本线（小店线设计方案 §4.1 结论 A，
+    /// CH-V1 锁定小店线不得跨线声明）。
+    /// </remarks>
+    Vip,
 }

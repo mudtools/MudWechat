@@ -1,10 +1,10 @@
 # Mud.Wechat.MiniProgram
 
-微信小程序 SDK **主包**：**19 个业务域 84 端点**（登录与身份 / 二维码与链接 / 内容安全 / 数据分析 / 订阅消息 / 动态消息 / 客服 / 硬件设备 / 运维中心 / 插件 / 付费 / 附近小程序 / 搜一搜 / 生物认证 / 服务市场 / 红包封面 / 学生身份 / 人脸核身 / 用工关系）的声明式 HTTP 客户端、模块注册器、AOT JsonContext 合并，以及小程序码与反馈图片的**二进制响应手工通道**。
+微信小程序 SDK **主包**：**21 个业务域 141 端点**（登录与身份 / 二维码与链接 / 内容安全 / 数据分析 / 订阅消息 / 动态消息 / 客服 / 硬件设备 / 运维中心 / 插件 / 付费 / 附近小程序 / 搜一搜 / 生物认证 / 服务市场 / 红包封面 / 学生身份 / 人脸核身 / 用工关系 / 物流助手 / 会员服务）的声明式 HTTP 客户端、模块注册器、AOT JsonContext 合并，以及小程序码 / 反馈图片（二进制流）与物流对账文件（文本）的**手工通道**。
 
 **小程序与公众号同属微信公众平台**：同一令牌域、同一批路由前缀（`/wxa/`、`/datacube/`、`/sns/`），因此本线**不重复实现令牌与多应用基座**，直接复用 `Mud.Wechat.OfficialAccount.Abstractions`（守卫 MP-X2 锁定）。装配入口也因此是两段式的——先 `AddMpApp` 建底座，再 `AddMiniProgramServices` 装本线模块。
 
-## 能力面（84 端点，计数与路由表由 MP-X5 锁定）
+## 能力面（141 端点，计数与路由表由 MP-X5 锁定）
 
 | 模块（`MiniProgramModule`） | 注册方法 | 端点 | 接口 |
 | --- | --- | --- | --- |
@@ -27,6 +27,8 @@
 | `Student` | `AddStudentApi()` | 1 | `IWxaStudentService`（快速获取学生身份） |
 | `FaceVerify` | `AddFaceVerifyApi()` | 2 | `IWxaFaceVerifyService`（获取 verifyid + 查询验证信息；`cert_info` 敏感） |
 | `LaborUse` | `AddLaborUseApi()` | 2 | `IWxaLaborUseService`（推送用工消息 + 解绑用工关系） |
+| `Express` | `AddExpressApi()` | 51 | `IWxaExpressBusinessService`（商家寄件 12）+ `IWxaExpressDeliveryService`（服务商 / 物流消息 / 退货 / 散单寄件 25）+ `IWxaExpressIntracityService`（同城配送 13）+ `IWxaExpressBillService`（对账文件**文本**手工通道 1；`single_waybill/get_bill` 成功返回对账文件、失败才是 JSON ⇒ 按 Content-Type 分支判错） |
+| `Vip` | `AddVipApi()` | 6 | `IWxaVipService`（会员信息增改查删 4 + 会员列表 1 + 已关联小店列表 1；2026-10 核对为小程序令牌、自小店线设计方案 §4.1 结论 A 划入） |
 
 三个模块级方法之外还有 `AddAllApis()`、`AddModules(params MiniProgramModule[])` 与 `Build()`（返回 `IServiceCollection`）。
 
@@ -45,7 +47,7 @@ using var code = await wxaCode.GetUnlimitedCodeAsync(request, ct);              
 
 小程序线**没有回调工程**：消息与事件接收属公众号 XML 通道（`Mud.Wechat.OfficialAccount.Callback`），本线的 `MiniProgramScaffoldContractGuards` 锁定「无 Callback 程序集」这一形态，防止「顺手补一个」造成两条线各自解析同一信封。
 
-## 小程序码的二进制通道（本包唯一手写实现）
+## 小程序码的二进制通道（本包手写通道之一）
 
 `getwxacode` / `getwxacodeunlimit` / `createwxaqrcode` 三端点**成功时返回图片字节流、失败时才返回 JSON**，无法进 `[HttpClientApi]` 生成管线（管线按 JSON 反序列化）。故：
 
@@ -63,10 +65,10 @@ using var code = await wxaCode.GetUnlimitedCodeAsync(request, ct);              
 
 ## 依赖
 
-`Mud.Wechat.Abstractions`（叶层）+ `Mud.Wechat.MiniProgram.Abstractions` + `Mud.Wechat.MiniProgram.DataModels` + `Mud.HttpUtils` 3.0.3（`.Generator` 3.0.3 仅分析器）。跨线只允许**一条边**——`Mud.Wechat.OfficialAccount.Abstractions`（取令牌 / 多应用基座）：**禁止**引用公众号主包 / DataModels / Callback（MP-X1 / MP-X5）。序列化上下文由 `MiniProgramJsonResolverExtensions` 合并进组件管线（20 个 `Generated/*JsonContext`）。
+`Mud.Wechat.Abstractions`（叶层）+ `Mud.Wechat.MiniProgram.Abstractions` + `Mud.Wechat.MiniProgram.DataModels` + `Mud.HttpUtils` 3.0.3（`.Generator` 3.0.3 仅分析器）。跨线只允许**一条边**——`Mud.Wechat.OfficialAccount.Abstractions`（取令牌 / 多应用基座）：**禁止**引用公众号主包 / DataModels / Callback（MP-X1 / MP-X5）。序列化上下文由 `MiniProgramJsonResolverExtensions` 合并进组件管线（22 个 `Generated/*JsonContext`）。
 
 目标框架继承根 `Directory.Build.props`（`netstandard2.0;net6.0;net8.0;net10.0`、Version `1.0.3`），可打包。
 
 ## 守卫
 
-`Tests/Mud.Wechat.MiniProgram.Tests/ContractGuards/`：`MiniProgramContractGuards`（MP-X1/X2/X3/X5/X6/X7/X8/X9 契约类断言）、`MiniProgramScaffoldContractGuards`（形态类断言：令牌复用 / 无父接口 / 重叠路由 / 依赖隔离 / 无回调包）、`MiniProgramP3RulingsContractGuards`（P3 长尾四条「不实现」裁决，含官方已下线的 `minishop`）。
+`Tests/Mud.Wechat.MiniProgram.Tests/ContractGuards/`：`MiniProgramContractGuards`（MP-X1/X2/X3/X5/X6/X7/X8/X9 契约类断言）、`MiniProgramScaffoldContractGuards`（形态类断言：令牌复用 / 无父接口 / 重叠路由 / 依赖隔离 / 无回调包）、`MiniProgramP3RulingsContractGuards`（P3 长尾四条「不实现」裁决，含官方已下线的 `minishop`）、`WxaVipContractGuards`（MPV 系列：Vip 域 6 端点路由 / 令牌绑定 / 空请求体端点规则 / DTO 登记计数与 JSON 上下文）。

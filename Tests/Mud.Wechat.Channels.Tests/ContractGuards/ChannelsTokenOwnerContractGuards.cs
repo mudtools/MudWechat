@@ -132,16 +132,24 @@ public class ChannelsTokenOwnerContractGuards
     }
 
     /// <summary>
-    /// CH-V1：<c>/wxa/vip/*</c> 路由未确认令牌归属（设计方案 v1 §4.1 风险门），<b>不得声明</b>。
+    /// CH-V1：<c>/wxa/vip/*</c> 路由归属已核定为<b>小程序令牌</b>（设计方案 §4.1 结论 A，2026-10-12 逐页核对），
+    /// 归 MiniProgram 线承载 —— 小店线<b>仍不得声明</b>。
     /// </summary>
     /// <remarks>
-    /// 该 6 个「小程序会员服务」端点（<c>wxa/vip/user/info/*</c>、<c>wxa/vip/user/list/get</c>、
-    /// <c>wxa/vip/shop/list/get</c>）出现在小店文档但路径在 wxa 小程序域，令牌归属未核实 ⇒
-    /// <b>默认暂缓落位</b>：核对结论三选一（A 小程序令牌 / B 小店令牌 / C 维持暂缓），
-    /// 确认归属前任何 <c>/wxa/</c> 路由不得进入小店线接口面。
+    /// <para>
+    /// <b>核对结论（A：小程序令牌，P0 未决事项收口）</b>：6 个「小程序会员服务」端点
+    /// （<c>wxa/vip/user/info/*</c> ×4、<c>wxa/vip/user/list/get</c>、<c>wxa/vip/shop/list/get</c>）
+    /// 官方文档逐页标注「小程序 API 请使用小程序身份，即小程序的 access_token 调用」+ 适用范围
+    /// 「小程序账号类型」+ 第三方平台以 authorizer_access_token 代调用（权限集 185）。
+    /// 按设计方案 §4.1 结论 A 归 <b>MiniProgram 线</b>（IWxaVipService，小程序线令牌基座）。
+    /// </para>
+    /// <para>
+    /// 本守卫据此改判：阻断面从「归属未确认」收窄为「小店线不得跨线声明小程序令牌端点」——
+    /// 三条小店线程序集出现任何 <c>/wxa/</c> 路由即变红。
+    /// </para>
     /// </remarks>
     [Fact]
-    public void WxaVipRoutes_ShouldNotBeDeclared_WhileOwnershipUnknown()
+    public void WxaVipRoutes_ShouldNotBeDeclared_ByChannelsLine()
     {
         foreach (var assemblyName in new[]
                  {
@@ -153,7 +161,7 @@ public class ChannelsTokenOwnerContractGuards
             var asm = LoadProductLine(assemblyName);
             var wxaRoutes = CollectRequestUris(asm).Where(static r => r.StartsWith("/wxa/", StringComparison.Ordinal)).ToArray();
             wxaRoutes.Should().BeEmpty(
-                $"{assemblyName} 不得声明 /wxa/vip/* 路由（CH-V1，设计方案 §4.1 未确认阻塞）：" +
+                $"{assemblyName} 不得声明 /wxa/vip/* 路由（CH-V1：已核定为小程序令牌，归 MiniProgram 线 IWxaVipService 承载）：" +
                 string.Join(", ", wxaRoutes));
         }
     }

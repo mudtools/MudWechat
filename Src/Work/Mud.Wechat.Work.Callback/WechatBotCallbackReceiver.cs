@@ -147,7 +147,8 @@ internal sealed class WechatBotCallbackReceiver : IWechatBotCallbackReceiver
                 WechatCallbackFailureKind.ReplaySuspected, "智能机器人回调验签失败：报文已处理过（疑似重放）。");
         }
 
-        return ParseEvent(botKey, decrypted);
+        return ParseEvent(botKey, decrypted, message => _logger?.LogWarning(
+            "智能机器人回调报文缺少 msgid（配置键 {BotKey}）：{Message}", botKey, message));
     }
 
     /// <summary>解析指定回调配置键的凭据（精确键优先，回退通配键）；未命中或凭据非法即抛出。</summary>
@@ -213,7 +214,14 @@ internal sealed class WechatBotCallbackReceiver : IWechatBotCallbackReceiver
     /// <summary>
     /// 把解密明文 JSON 解析为回调信封：顶层 <c>msgtype</c> 为判别子（<c>event</c> ⇒ 事件族，其余 ⇒ 消息族）。
     /// </summary>
-    private WechatBotCallbackEvent ParseEvent(string botKey, string decryptedJson)
+    /// <remarks>
+    /// <para>
+    /// <c>internal static</c> 供长连接侧复用（<see cref="LongConnection.WechatBotConnection"/> 收到
+    /// <c>aibot_msg_callback</c> / <c>aibot_event_callback</c> 帧后，帧体即本方法消费的<b>明文</b>回调报文，
+    /// 信封形态与回调模式完全一致 —— 官方 101463 原文）。诊断文本只带配置键，不回显报文。
+    /// </para>
+    /// </remarks>
+    internal static WechatBotCallbackEvent ParseEvent(string botKey, string decryptedJson, Action<string>? logWarning = null)
     {
         var isEvent = IsEventPayload(decryptedJson);
 
@@ -264,8 +272,7 @@ internal sealed class WechatBotCallbackReceiver : IWechatBotCallbackReceiver
         if (evt.MsgId == null || evt.MsgId.Length == 0)
         {
             // 官方以 msgid 作为排重唯一标志；缺失说明明文非官方报文结构，拒收而非放行。
-            _logger?.LogWarning(
-                "智能机器人回调报文缺少 msgid（配置键 {BotKey}），已拒绝（官方以 msgid 排重）。", botKey);
+            logWarning?.Invoke($"智能机器人报文缺少 msgid（配置键 {botKey}），已丢弃（官方以 msgid 排重）。");
             throw InvalidPayload();
         }
 

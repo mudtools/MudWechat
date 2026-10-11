@@ -23,6 +23,7 @@
 		<InternalsVisibleTo Include="Mud.Wechat.Work.Callback" />
 		<!-- 生成上下文为 internal（对齐 Mud.Feishu.DataModels 模式），契约守卫与反序列化测试需直读。 -->
 		<InternalsVisibleTo Include="Mud.Wechat.Work.Tests" />
+		<InternalsVisibleTo Include="Mud.Wechat.Work.Callback.Tests" />
 		<InternalsVisibleTo Include="Mud.Wechat.Work.Abstractions.Tests" />
 		<InternalsVisibleTo Include="Mud.Wechat.Work.DataModels.Tests" />
 	</ItemGroup>

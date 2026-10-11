@@ -35,4 +35,16 @@ public static class WechatBotReplyTypes
 
     /// <summary>更新模板卡片应答的 <c>response_type</c> 取值（模板卡片事件专用，<c>task_id</c> 须与回调一致）。</summary>
     public const string UpdateTemplateCard = "update_template_card";
+
+    /// <summary>文件消息（官方 101463 主动/回复侧媒体形态；<c>media_id</c> 须先经长连接素材上传获得）。</summary>
+    public const string File = "file";
+
+    /// <summary>图片消息（官方 101463；<c>media_id</c> 承载）。</summary>
+    public const string Image = "image";
+
+    /// <summary>语音消息（官方 101463；<c>media_id</c> 承载）。</summary>
+    public const string Voice = "voice";
+
+    /// <summary>视频消息（官方 101463；<c>media_id</c> + 可选 <c>title</c> / <c>description</c>）。</summary>
+    public const string Video = "video";
 }

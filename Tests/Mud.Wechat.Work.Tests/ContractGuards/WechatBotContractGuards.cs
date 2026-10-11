@@ -9,6 +9,7 @@ using System.IO;
 using System.Reflection;
 using Mud.Wechat.Work;
 using Mud.Wechat.Work.Abstractions.Callback.Bots;
+using Mud.Wechat.Work.Abstractions.Configuration;
 using Mud.Wechat.Work.Abstractions.Enums;
 using Mud.Wechat.Work.Callback;
 using Mud.Wechat.Work.DataModels.Aibot;
@@ -307,6 +308,192 @@ public class WechatBotContractGuards
         receiverSource.Should().NotContain("EchoAsync(",
             "智能机器人接收器只承载 POST；GET 验签复用 IWechatCallbackReceiver.EchoAsync（避免第二份 echo 实现）");
     }
+
+    /// <summary>
+    /// 契约守卫 BT8（P3）：长连接应答<b>支持面</b> —— 官方 101463 的允许集与<b>两处长连接特有拒绝</b>
+    /// （不支持「流式 + 模板卡片」组合、流式暂不支持 <c>msg_item</c>），与 HTTP 被动回复的支持面互为镜像差异。
+    /// </summary>
+    [Fact]
+    public void LongConnectionReplySupport_ShouldMatchOfficialSurface()
+    {
+        // 允许集：text / markdown / template_card / stream / 媒体四支 / update_template_card。
+        WechatBotReplySupport.ValidateLongConnectionReply(WechatBotReplies.Text("t"));
+        WechatBotReplySupport.ValidateLongConnectionReply(WechatBotReplies.Markdown("m"));
+        WechatBotReplySupport.ValidateLongConnectionReply(WechatBotReplies.Stream("s1", "c"));
+        WechatBotReplySupport.ValidateLongConnectionReply(WechatBotReplies.TemplateCard(new TemplateCardBody()));
+        WechatBotReplySupport.ValidateLongConnectionReply(WechatBotReplies.File("m1"));
+        WechatBotReplySupport.ValidateLongConnectionReply(WechatBotReplies.Image("m2"));
+        WechatBotReplySupport.ValidateLongConnectionReply(WechatBotReplies.Voice("m3"));
+        WechatBotReplySupport.ValidateLongConnectionReply(WechatBotReplies.Video("m4", "标题", "描述"));
+        WechatBotReplySupport.ValidateLongConnectionReply(WechatBotReplies.UpdateTemplateCard(new TemplateCardBody()));
+
+        // ① 拒绝「流式 + 模板卡片」组合（官方原文）。
+        var act1 = () => WechatBotReplySupport.ValidateLongConnectionReply(
+            WechatBotReplies.StreamWithTemplateCard("s2", "c", new TemplateCardBody()));
+        act1.Should().Throw<InvalidOperationException>().Which.Message.Should().Contain("流式 + 模板卡片");
+
+        // ② 拒绝 stream 带 msg_item（官方原文「暂不支持 msg_item 字段」）。
+        var withItem = WechatBotReplies.Stream("s3", "c", finish: true,
+            msgItem: new[] { new AibotStreamItem { MsgType = "image" } });
+        var act2 = () => WechatBotReplySupport.ValidateLongConnectionReply(withItem);
+        act2.Should().Throw<InvalidOperationException>().Which.Message.Should().Contain("msg_item");
+
+        // ③ 媒体缺 media_id 拒绝（官方必填；media_id 3 天内有效）。
+        var act3 = () => WechatBotReplySupport.ValidateLongConnectionReply(new AibotMessage
+        {
+            MsgType = WechatBotReplyTypes.File,
+            File = new AibotMediaReplyBody(),
+        });
+        act3.Should().Throw<InvalidOperationException>().Which.Message.Should().Contain("media_id");
+
+        // ④ HTTP 被动回复的既有拒绝保持（两传输面互为镜像差异，回归护栏）。
+        var act4 = () => WechatBotReplySupport.ValidateHttpPassiveReply(WechatBotReplies.Markdown("m"));
+        act4.Should().Throw<InvalidOperationException>().Which.Message.Should().Contain("markdown");
+
+        // ⑤ 媒体工厂的结构自洽（AOT 序列化面：源生成上下文必须可解析媒体分支与帧 DTO）。
+        foreach (var type in new[]
+                 {
+                     typeof(AibotMessage), typeof(AibotMediaReplyBody), typeof(AibotVideoReplyBody),
+                     typeof(AibotFrame), typeof(AibotFrameHeaders), typeof(AibotFrameAck),
+                     typeof(AibotSubscribeBody), typeof(AibotSendMessageBody),
+                     typeof(AibotUploadMediaInitBody), typeof(AibotUploadMediaInitAck),
+                     typeof(AibotUploadMediaChunkBody), typeof(AibotUploadMediaFinishBody),
+                     typeof(AibotUploadMediaFinishAck),
+                 })
+        {
+            AibotJsonContext.Default.GetTypeInfo(type).Should().NotBeNull(
+                $"{type.Name} 必须由源生成上下文登记（长连接帧反序列化禁反射，AOT 红线）");
+        }
+    }
+
+    /// <summary>
+    /// 契约守卫 BT9（P3）：长连接帧命令集与帧外壳<b>字段名</b>照官方原文（101463，2026-10-11 逐段核验）。
+    /// </summary>
+    [Fact]
+    public void LongConnectionFrameContract_ShouldLockOfficialCommandsAndFieldNames()
+    {
+        // ① cmd 常量集恰等（多一支 = 未核验入口，少一支 = 帧无法分派；集合相等而非包含，升序对照）。
+        EnumerateConstStrings(typeof(WechatBotFrameCommands)).Should().Equal(new[]
+        {
+            "aibot_event_callback", "aibot_msg_callback", "aibot_respond_msg", "aibot_respond_update_msg",
+            "aibot_respond_welcome_msg", "aibot_send_msg", "aibot_subscribe", "aibot_upload_media_chunk",
+            "aibot_upload_media_finish", "aibot_upload_media_init", "ping",
+        });
+
+        // ② 帧外壳与应答帧的官方字段名（驼峰即漂移）。
+        var frameNames = OfficialJsonNames(typeof(AibotFrame));
+        frameNames.Should().Equal(new[] { "body", "cmd", "headers" });
+        OfficialJsonNames(typeof(AibotFrameHeaders)).Should().Equal(new[] { "req_id" });
+        OfficialJsonNames(typeof(AibotFrameAck)).Should().Equal(new[] { "body", "errcode", "errmsg", "headers" });
+        OfficialJsonNames(typeof(AibotSubscribeBody)).Should().Equal(new[] { "bot_id", "secret" });
+        // 主动推送体自身只声明两个寻址键（msgtype 分支继承自 AibotMessage，键集由媒体登记断言覆盖）。
+        OfficialJsonNames(typeof(AibotSendMessageBody)).Should().Equal(new[] { "chat_type", "chatid" });
+        OfficialJsonNames(typeof(AibotUploadMediaChunkBody)).Should().Equal(new[] { "base64_data", "chunk_index", "upload_id" });
+        OfficialJsonNames(typeof(AibotUploadMediaFinishAck)).Should().Equal(new[] { "created_at", "media_id", "type" });
+
+        // ③ 主动推送的寻址键与回调帧的会话键<b>不同型</b>（chat_type integer vs chattype string）——
+        // 官方两处自相矛盾照录，收敛即契约漂移。
+        typeof(AibotSendMessageBody).GetProperty("ChatType")!.PropertyType.Should().Be<int?>(
+            "官方 aibot_send_msg 的 chat_type 为 integer（1/2/0）");
+        typeof(AibotMessageCallback).GetProperty("ChatType")!.PropertyType.Should().Be<string?>(
+            "官方回调帧的 chattype 为 string（single/group）");
+    }
+
+    /// <summary>
+    /// 契约守卫 BT10（P3）：长连接的<b>治理红线</b> —— net8+ 门控（依赖源生成上下文，同 ADR-12）、
+    /// <b>无指纹闸</b>（帧无签名，R10）、<b>重连先夺租约再建连</b>（防乒乓）。
+    /// </summary>
+    [Fact]
+    public void LongConnectionGovernance_ShouldGateByNet8_AndSkipReplayGuard()
+    {
+        var connectionSource = File.ReadAllText(SourcePath(
+            "Mud.Wechat.Work.Callback", "LongConnection", "WechatBotConnection.cs"));
+        var codecSource = File.ReadAllText(SourcePath(
+            "Mud.Wechat.Work.Callback", "LongConnection", "WechatBotFrameCodec.cs"));
+        var runnerSource = File.ReadAllText(SourcePath(
+            "Mud.Wechat.Work.Callback", "LongConnection", "WechatBotLongConnectionRunner.cs"));
+
+        // ① TFM 门控：连接/编解码/运行器三类必须整体在 #if NET8_0_OR_GREATER 内（反序列化走源生成上下文）。
+        foreach (var (name, source) in new[] { ("WechatBotConnection.cs", connectionSource), ("WechatBotFrameCodec.cs", codecSource) })
+        {
+            source.Should().StartWith(WechatBotContractGuardSourcePrefix,
+                $"{name} 必须整体门控在 NET8_0_OR_GREATER（长连接依赖 AibotJsonContext，低 TFM 无元数据）");
+        }
+
+        // ② 无指纹闸：长连接侧不得触碰回调模式的重放闸（帧无签名 ≠ 有签名；语义不同不可套用，R10）。
+        // 只扫代码行（剔除 /// 文档注释行）—— remarks 里提及「为什么不用」属说明性引用。
+        foreach (var source in new[] { connectionSource, codecSource, runnerSource })
+        {
+            var codeLines = source.Split('\n')
+                .Where(static l => !l.TrimStart().StartsWith("///", StringComparison.Ordinal));
+            string.Join('\n', codeLines).Should().NotContain("IWechatCallbackReplayGuard",
+                "长连接帧无 query 签名 ⇒ 无指纹闸；把回调模式的重放闸语义套到长连接是契约错误（msgid 去重归宿主）");
+        }
+
+        // ③ 失败顺序即契约：主循环内「夺租约」必须先于「建连」（防主备乒乓；先建连即与持有者互相踢）。
+        var acquireIndex = connectionSource.IndexOf("TryAcquireAsync", StringComparison.Ordinal);
+        var connectIndex = connectionSource.IndexOf("ConnectAsync", StringComparison.Ordinal);
+        acquireIndex.Should().BeGreaterThan(0, "主循环必须含夺租约步骤（多实例主备基座）");
+        connectIndex.Should().BeGreaterThan(acquireIndex,
+            "重连顺序必须为「退避 → 夺租约 → 建连」：先建连会与租约持有者互相踢下线（官方每机器人仅一条有效连接）");
+
+        // ④ 连接地址与订阅密钥面照官方原文（v1.1 曾误记地址，锁定防回归）。
+        connectionSource.Should().Contain("wss://openws.work.weixin.qq.com",
+            "官方 101463 连接地址（不含 /v3.0 之类路径后缀）");
+        connectionSource.Should().Contain("WechatBotFrameCommands.Subscribe",
+            "鉴权在建连后的 aibot_subscribe 帧内（bot_id + secret），不是 URL/Header");
+    }
+
+    /// <summary>
+    /// 契约守卫 BT11（P3）：长连接<b>配置面</b> —— 节名、校验、跨面互斥与 audit 登记（门禁盲区护栏）。
+    /// </summary>
+    [Fact]
+    public void LongConnectionOptions_ShouldBeValidatedAndAudited()
+    {
+        WechatBotOptions.DefaultSectionName.Should().Be("WechatBots");
+
+        var options = new WechatBotOptions();
+        var act = () => options.Validate();
+        act.Should().Throw<InvalidOperationException>().Which.Message.Should().Contain("Bots");
+
+        options.Bots["bot1"] = new WechatBotAppOptions { BotId = "BOTID", BotSecret = "secret-value" };
+        options.Validate();
+
+        // BotKey 形状沿用 WechatAppKeyValidator（含 : 即键别名）。
+        options.Bots["bad:key"] = new WechatBotAppOptions { BotId = "b", BotSecret = "s" };
+        var actBadKey = () => options.Validate();
+        actBadKey.Should().Throw<InvalidOperationException>().Which.Message.Should().NotBeEmpty();
+
+        // 配置审计登记（与建文件同批 —— AB-G6 同款双向不变式的文件侧半边；属性消费点由脚本运行期核）。
+        File.ReadAllText(Path.Combine(GetSolutionRoot(), "scripts", "audit-config-keys.ps1"))
+            .Should().Contain("Mud.Wechat.Work.Abstractions/Configuration/WechatBotOptions.cs",
+                "WechatBotOptions 必须登记进 audit-config-keys（BotId/BotSecret/EnableLongConnection/心跳与退避参数的消费点审计）");
+
+        // 跨面互斥的启动期校验存在（官方「API 模式二选一，切换即失效」）。
+        File.ReadAllText(SourcePath(
+                "Mud.Wechat.Work.Callback", "LongConnection", "WechatBotLongConnectionRunner.cs"))
+            .Should().Contain("Channel: WechatCallbackChannel.Bot",
+                "同 BotKey 同时配置长连接与回调凭据必须在启动期 fail-fast（官方 101463：切换即失效）");
+    }
+
+    private const string WechatBotContractGuardSourcePrefix = "// -----------------------------------------------------------------------";
+
+    /// <summary>类型自身声明的公共属性上的 <c>[JsonPropertyName]</c> 名（升序，供官方键名等值断言）。</summary>
+    private static string[] OfficialJsonNames(Type type)
+        => type.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
+            .Select(static p => p.GetCustomAttribute<System.Text.Json.Serialization.JsonPropertyNameAttribute>()?.Name)
+            .Where(static n => !string.IsNullOrEmpty(n))
+            .Select(static n => n!)
+            .OrderBy(static n => n, StringComparer.Ordinal)
+            .ToArray();
+
+    /// <summary>枚举常量类的全部 <c>public const string</c> 值（升序，供集合恰等断言）。</summary>
+    private static string[] EnumerateConstStrings(Type type)
+        => type.GetFields(BindingFlags.Public | BindingFlags.Static)
+            .Where(static f => f.IsLiteral && f.FieldType == typeof(string))
+            .Select(static f => (string)f.GetValue(null)!)
+            .OrderBy(static n => n, StringComparer.Ordinal)
+            .ToArray();
 
     private static string GetSolutionRoot()
     {

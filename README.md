@@ -54,7 +54,7 @@
 | `Mud.Wechat.Work` | 主包：35 个业务域声明式客户端、模块注册器、AOT JsonContext 合并、errcode 令牌失效判定器、**会话内容存档 C SDK 原生封装**（`ExtendedSDK/Finance/`，仓内唯一不经 HTTP 的能力面） |
 | `Mud.Wechat.Work.Abstractions` | 认证与多应用基座：令牌签发客户端与四管理器、多应用管理、配置面、回调事件信封与载荷契约、智能机器人信封 |
 | `Mud.Wechat.Work.DataModels` | 官方 DTO + 63 个域 AOT 源生成 JSON 上下文 |
-| `Mud.Wechat.Work.Callback` | 回调接收：验签、AES 解密、事件分发、HTTP 中间件、抗重放守卫、智能机器人 JSON 通道 |
+| `Mud.Wechat.Work.Callback` | 回调接收：验签、AES 解密、事件分发、HTTP 中间件、抗重放守卫、智能机器人 JSON 通道 + 长连接（101463：帧收发、心跳重连、流式状态机、素材三步上传、Redis 租约主备） |
 
 ### 其余六条线
 

@@ -170,8 +170,9 @@ public class WechatAibotContractGuards
                         && !typeof(JsonSerializerContext).IsAssignableFrom(t))
             .ToList();
 
-        domainTypes.Should().HaveCount(23,
-            "智能机器人域契约面类型数漂移须先核对官方文档（101031/101138/100719/101027）再同批调整本守卫");
+        domainTypes.Should().HaveCount(35,
+            "智能机器人域契约面类型数漂移须先核对官方文档（101031/101138/100719/101027/101463）再同批调整本守卫；" +
+            "35 = 回调与应答面 23 + 长连接帧面 12（外壳/头/ack、订阅、推送体、上传三步 body/ack、媒体回复两体，2026-10-11 P3）");
 
         foreach (var type in domainTypes)
         {

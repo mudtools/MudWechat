@@ -93,9 +93,42 @@ public class ChannelsRouteContractGuards
                 "/cgi-bin/openapi/quota/get",
                 "/cgi-bin/openapi/rid/get",
             },
-            ["Resource"] = Array.Empty<string>(),
-            ["Shop"] = Array.Empty<string>(),
-            ["HomePage"] = Array.Empty<string>(),
+            // Resource：7 端点（/shop/ec/basics/* 6 + /channels/ec/basics/media/get；img/upload 双形态同路由只计 1）。
+            ["Resource"] = new[]
+            {
+                "/channels/ec/basics/media/get",
+                "/shop/ec/basics/img/upload",
+                "/shop/ec/basics/qualification/upload",
+                "/shop/ec/basics/video/finishupload",
+                "/shop/ec/basics/video/getplayinfo",
+                "/shop/ec/basics/video/initupload",
+                "/shop/ec/basics/video/uploadpart",
+            },
+            // Shop：4 端点（店铺信息 + H5 短链 / 小程序码 / 微信口令）。
+            ["Shop"] = new[]
+            {
+                "/channels/ec/basics/info/get",
+                "/channels/ec/basics/shop/h5url/get",
+                "/channels/ec/basics/shop/qrcode/get",
+                "/channels/ec/basics/shop/taglink/get",
+            },
+            ["HomePage"] = new[]
+            {
+                "/channels/ec/basics/homepage/background/apply/cancel",
+                "/channels/ec/basics/homepage/background/apply/submit",
+                "/channels/ec/basics/homepage/background/get",
+                "/channels/ec/basics/homepage/background/remove",
+                "/channels/ec/basics/homepage/banner/apply/cancel",
+                "/channels/ec/basics/homepage/banner/apply/submit",
+                "/channels/ec/basics/homepage/banner/get",
+                "/channels/ec/basics/homepage/banner/remove",
+                "/channels/ec/store/classification/tree/get",
+                "/channels/ec/store/classification/tree/product/get",
+                "/channels/ec/store/window/product/hide",
+                "/channels/ec/store/window/product/list/get",
+                "/channels/ec/store/window/product/reorder",
+                "/channels/ec/store/window/product/settop",
+            },
             // Product：43 端点（商品主 25 + 库存 4 + 赠品 6 + 买赠活动 3 + 限时抢购 5）。
             // 与 SHIPINHAO 本地生活重叠的 5 个同路由（audit/cancel、delete、listing、delisting、stock/update）只计 1。
             ["Product"] = new[]
@@ -175,8 +208,23 @@ public class ChannelsRouteContractGuards
                 "/channels/ec/order/virtualnumber/applyagain",
                 "/channels/ec/order/virtualnumber/delay",
             },
-            ["Favorite"] = Array.Empty<string>(),
-            ["Category"] = Array.Empty<string>(),
+            ["Favorite"] = new[]
+            {
+                "/channels/ec/favorites/count/get",
+            },
+            ["Category"] = new[]
+            {
+                "/channels/ec/category/add",
+                "/shop/ec/category/all",
+                "/shop/ec/category/audit/cancel",
+                "/shop/ec/category/detail",
+                "/shop/ec/category/get_category_relation_detail",
+                "/shop/ec/category/get_category_relation_list",
+                "/shop/ec/category/getbizcatflowdetail",
+                "/shop/ec/category/getbizcatflowlist",
+                "/shop/ec/category/getcategoryproductrule",
+                "/shop/ec/category/getcategoryrule",
+            },
             ["Funds"] = new[]
             {
                 // /channels/ec/funds/*（9 端点：资金账户 + 提现 + 流水）
@@ -198,7 +246,16 @@ public class ChannelsRouteContractGuards
                 "/shop/funds/qrcode/get",
                 "/shop/funds/qrcode/check",
             },
-            ["Marketing"] = Array.Empty<string>(),
+            ["Marketing"] = new[]
+            {
+                "/channels/ec/coupon/create",
+                "/channels/ec/coupon/get",
+                "/channels/ec/coupon/get_list",
+                "/channels/ec/coupon/get_user_coupon",
+                "/channels/ec/coupon/get_user_coupon_list",
+                "/channels/ec/coupon/update",
+                "/channels/ec/coupon/update_status",
+            },
             // Aftersale：27 端点（售后单 16 + 纠纷单 4 + 保障单 6 + 全量售后原因 / 拒绝原因）。
             // 与 SHIPINHAO 本地生活重叠的 getaftersaleorder 只计 1。
             ["Aftersale"] = new[]
@@ -231,8 +288,19 @@ public class ChannelsRouteContractGuards
                 "/channels/ec/aftersale/syncworkorder",
                 "/channels/ec/aftersale/uploadrefundcertificate",
             },
-            ["Kf"] = Array.Empty<string>(),
-            ["Qic"] = Array.Empty<string>(),
+            ["Kf"] = new[]
+            {
+                "/channels/ec/commkf/cosupload",
+                "/channels/ec/commkf/sendmsg",
+            },
+            ["Qic"] = new[]
+            {
+                "/channels/ec/qic/inspect/code/print",
+                "/channels/ec/qic/inspect/config/get",
+                "/channels/ec/qic/inspect/register_logistics",
+                "/channels/ec/qic/inspect/submit",
+                "/channels/ec/qic/inspect/submitconfig/get",
+            },
             // Logistics：28 端点（地址 5 + 运费模板 4 + 电子面单 16 + 订单发货 3）。
             ["Logistics"] = new[]
             {
@@ -269,19 +337,156 @@ public class ChannelsRouteContractGuards
                 "/channels/ec/order/deliverycompanylist/new/get",
                 "/channels/ec/order/delivery/compensation",
             },
-            ["Warehouse"] = Array.Empty<string>(),
-            ["League"] = Array.Empty<string>(),
-            ["Brand"] = Array.Empty<string>(),
-            ["Delivery"] = Array.Empty<string>(),
-            ["Wecom"] = Array.Empty<string>(),
-            ["MiniStore"] = Array.Empty<string>(),
-            ["Compass"] = Array.Empty<string>(),
-            ["Vip"] = Array.Empty<string>(),
-            ["Live"] = Array.Empty<string>(),
-            ["Window"] = Array.Empty<string>(),
-            ["Locallife"] = Array.Empty<string>(),
-            ["Subsidy"] = Array.Empty<string>(),
-            ["PlatformKf"] = Array.Empty<string>(),
+            // Warehouse：11 端点（10 + 1：addresscode/get 官方归仓库族但走 basics 历史前缀，照抄）。
+            ["Warehouse"] = new[]
+            {
+                "/channels/ec/basics/addresscode/get",
+                "/channels/ec/warehouse/address/prioritysort/get",
+                "/channels/ec/warehouse/address/prioritysort/set",
+                "/channels/ec/warehouse/coverlocations/add",
+                "/channels/ec/warehouse/coverlocations/del",
+                "/channels/ec/warehouse/create",
+                "/channels/ec/warehouse/detail/update",
+                "/channels/ec/warehouse/get",
+                "/channels/ec/warehouse/list/get",
+                "/channels/ec/warehouse/stock/get",
+                "/channels/ec/warehouse/stock/update",
+            },
+            ["League"] = new[]
+            {
+                "/channels/ec/league/item/batchadd",
+                "/channels/ec/league/item/get",
+                "/channels/ec/league/item/headsupplier/batchadd",
+                "/channels/ec/league/item/list/get",
+                "/channels/ec/league/item/upd",
+                "/channels/ec/league/promoter/get",
+                "/channels/ec/league/promoter/list/get",
+                "/channels/ec/league/promotion/plan/list",
+                "/channels/ec/league/promotion/talent/list",
+                "/channels/ec/league/talent/getproductdatalist",
+                "/channels/ec/league/talent/update",
+            },
+            ["Brand"] = new[]
+            {
+                "/channels/ec/brand/delete",
+                "/channels/ec/brand/get",
+                "/channels/ec/brand/list/get",
+                "/channels/ec/brand/update",
+                "/channels/ec/brand/valid/list/get",
+                "/shop/ec/brand/add",
+                "/shop/ec/brand/all",
+                "/shop/ec/brand/audit/cancel",
+            },
+            ["Delivery"] = new[]
+            {
+                "/channels/ec/order/dropship/assign",
+                "/channels/ec/order/dropship/cancel",
+                "/channels/ec/order/dropship/get",
+                "/channels/ec/order/dropship/list",
+                "/channels/ec/order/dropship/search",
+                "/channels/ec/order/supplyorder/get",
+                "/channels/ec/order/supplyorder/list",
+                "/channels/ec/order/supplyorder/search",
+                "/channels/ec/supplier/relation/get_distribute",
+                "/channels/ec/supplier/relation/get_product_default_distribute",
+                "/channels/ec/supplier/relation/get_product_list",
+                "/channels/ec/supplier/relation/get_supplier_list",
+                "/channels/ec/supplier/relation/invite_supplier",
+                "/channels/ec/supplier/relation/set_all_distribution",
+                "/channels/ec/supplier/relation/set_manually_distribute",
+                "/channels/ec/supplier/relation/set_product_distribute",
+            },
+            ["Wecom"] = new[]
+            {
+                "/channels/ec/wecom/get_wecom_id",
+            },
+            ["MiniStore"] = new[]
+            {
+                "/channels/ec/b2c/activity/info/promoter/get",
+                "/channels/ec/b2c/activity/list/promoter/get",
+                "/channels/ec/open/get_download_url",
+                "/channels/ec/open/upload",
+                "/channels/ec/order/present/get",
+                "/channels/ec/order/presentlist/get",
+                "/channels/ec/order/presentorder/create",
+                "/channels/ec/order/presentorder/receiver/set",
+                "/channels/ec/order/presentorder/wishmessage/set",
+                "/channels/ec/order/receiverorderlist/get",
+            },
+            ["Compass"] = new[]
+            {
+                "/channels/ec/compass/finder/overall/get",
+                "/channels/ec/compass/finder/product/data/get",
+                "/channels/ec/compass/finder/product/list/get",
+                "/channels/ec/compass/finder/sale/profile/data/get",
+                "/channels/ec/compass/shop/finder/authorization/list/get",
+                "/channels/ec/compass/shop/finder/list/get",
+                "/channels/ec/compass/shop/finder/overall/get",
+                "/channels/ec/compass/shop/finder/product/list/get",
+                "/channels/ec/compass/shop/finder/product/overall/get",
+                "/channels/ec/compass/shop/live/list/get",
+                "/channels/ec/compass/shop/overall/get",
+                "/channels/ec/compass/shop/product/data/get",
+                "/channels/ec/compass/shop/product/list/get",
+                "/channels/ec/compass/shop/sale/profile/data/get",
+            },
+            ["Vip"] = new[]
+            {
+                "/channels/ec/vip/user/info/get",
+                "/channels/ec/vip/user/list/get",
+                "/channels/ec/vip/user/score/flowrecord/get",
+                "/channels/ec/vip/user/score/get",
+                "/channels/ec/vip/v3/wxa/info/get",
+            },
+            ["Live"] = new[]
+            {
+                "/channels/ec/finderlive/getfinderlivenoticerecordlist",
+                "/channels/ec/finderlive/getfinderliverecordlist",
+                "/channels/finderlive/get_finder_attr_by_appid",
+                "/channels/finderlive/get_finder_live_data_list",
+                "/channels/finderlive/get_finder_live_leads_data",
+                "/channels/leads/get_leads_component_id",
+                "/channels/leads/get_leads_component_promote_record",
+                "/channels/leads/get_leads_info_by_component_id",
+                "/channels/leads/get_leads_info_by_request_id",
+                "/channels/leads/get_leads_request_id",
+                "/channels/livedashboard/getlivedata",
+                "/channels/livedashboard/getlivelist",
+            },
+            ["Window"] = new[]
+            {
+                "/channels/ec/product/locallife/add",
+                "/channels/ec/product/locallife/auditfree",
+                "/channels/ec/product/locallife/get",
+                "/channels/ec/product/locallife/list/get",
+                "/channels/ec/product/locallife/update",
+                "/channels/ec/window/product/add",
+                "/channels/ec/window/product/get",
+                "/channels/ec/window/product/list/get",
+                "/channels/ec/window/product/off",
+            },
+            ["Locallife"] = new[]
+            {
+                "/channels/ec/voucher/codes/upload",
+                "/channels/ec/voucher/consume",
+                "/channels/ec/voucher/get",
+                "/channels/ec/voucher/get_bill_list",
+                "/channels/ec/voucher/get_list",
+                "/channels/ec/voucher/revoke",
+            },
+            ["Subsidy"] = new[]
+            {
+                "/channels/ec/subsidy/query_invoicing_info",
+                "/channels/ec/subsidy/upload_invoice_file",
+                "/channels/ec/subsidy/upload_invoice_info",
+            },
+            ["PlatformKf"] = new[]
+            {
+                "/channels/ec/platformkf/getmchticketdetail",
+                "/channels/ec/platformkf/getmchticketlist",
+                "/channels/ec/platformkf/getticketclassconfig",
+                "/channels/ec/platformkf/operatemchticket",
+            },
         };
 
     /// <summary>

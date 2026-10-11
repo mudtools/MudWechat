@@ -1,7 +1,9 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<Description>微信小店/视频号（channels 生态）SDK 回调接收包（P3 阶段收口中，当前为脚手架占位包）。规划形态：URL 验证（GET echostr 回显）、消息推送验签、AES 解密、抗重放指纹、事件分发（类型化处理器 + 拦截器）的 HTTP 中间件与多应用路由，回调体系与公众号同构（msg_signature + EncodingAESKey + receiveid）。</Description>
+		<!-- 载荷 DTO 与 CallbackJsonContext 已落地（P3 载荷批次）⇒ 启用类型化回调通道（net8+ 反序列化经源生成上下文）。 -->
+		<DefineConstants>$(DefineConstants);CHANNELS_CALLBACK_TYPED_PAYLOAD</DefineConstants>
+		<Description>微信小店/视频号（channels 生态）SDK 回调接收包：URL 验证（GET echostr 回显）、msg_signature 验签、AES 解密（官方强制 JSON + 安全模式）、AppId 校验、抗重放指纹、事件分发（信封级 + 类型化处理器与拦截器，net8+ 类型化通道）的 HTTP 中间件与多应用路由；42 个官方回调事件键经 [ChannelsCallbackContract] 声明式登记。</Description>
 		<PackageTags>Wechat;Channels;微信小店;视频号;Callback;Webhook;Middleware;MudWechat</PackageTags>
 	</PropertyGroup>
 
@@ -10,13 +12,8 @@
 		<ProjectReference Include="..\Mud.Wechat.Channels.DataModels\Mud.Wechat.Channels.DataModels.csproj" />
 	</ItemGroup>
 
-	<!-- 契约登记生成器（本仓侧）：依据 [WechatCallbackContract] 特性为本产品线发射
-	     ChannelsPayloadContracts.RegisterAll（不改工具本体；档位表驱动）。
-	     仅本工程消费（PrivateAssets 不流向主包）；<b>本工程是可打包的运行时包</b>。 -->
-	<ItemGroup>
-		<ProjectReference Include="..\..\Core\Mud.Wechat.Callback.Generator\Mud.Wechat.Callback.Generator.csproj"
-		                  OutputItemType="Analyzer" ReferenceOutputAssembly="false" PrivateAssets="all" />
-	</ItemGroup>
+	<!-- 契约登记生成器挂载于 DataModels（载荷 DTO 所在工程；对齐企微线「生成器只挂载荷工程」先例）。
+	     本工程消费其产物（ChannelsPayloadContracts.RegisterAll 已在 DataModels 编译期发射）。 -->
 
 	<!-- 回调处理器契约分析器（本仓侧，中立工具档位表驱动）：校验 SupportedEventType ↔ 载荷契约（MUDCB002~005）。
 	     仅诊断、不发射 ⇒ 允许随包下发（analyzers/dotnet/cs）；<b>本工程本身照常产出 nupkg</b>（内嵌该分析器）。 -->

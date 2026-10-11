@@ -7,9 +7,32 @@
 
 using Mud.Wechat.Channels.DataModels.Aftersale;
 using Mud.Wechat.Channels.DataModels.Basic;
+using Mud.Wechat.Channels.DataModels.Brand;
+using Mud.Wechat.Channels.DataModels.Callback;
+using Mud.Wechat.Channels.DataModels.Compass;
+using Mud.Wechat.Channels.DataModels.Delivery;
+using Mud.Wechat.Channels.DataModels.League;
+using Mud.Wechat.Channels.DataModels.League;
+using Mud.Wechat.Channels.DataModels.Locallife;
+using Mud.Wechat.Channels.DataModels.Marketing;
+using Mud.Wechat.Channels.DataModels.Subsidy;
+using Mud.Wechat.Channels.DataModels.Warehouse;
+using Mud.Wechat.Channels.DataModels.Category;
+using Mud.Wechat.Channels.DataModels.Favorite;
+using Mud.Wechat.Channels.DataModels.HomePage;
+using Mud.Wechat.Channels.DataModels.Qic;
+using Mud.Wechat.Channels.DataModels.Window;
 using Mud.Wechat.Channels.DataModels.Funds;
+using Mud.Wechat.Channels.DataModels.Kf;
+using Mud.Wechat.Channels.DataModels.Live;
 using Mud.Wechat.Channels.DataModels.Logistics;
+using Mud.Wechat.Channels.DataModels.MiniStore;
 using Mud.Wechat.Channels.DataModels.Order;
+using Mud.Wechat.Channels.DataModels.PlatformKf;
+using Mud.Wechat.Channels.DataModels.Resource;
+using Mud.Wechat.Channels.DataModels.Shop;
+using Mud.Wechat.Channels.DataModels.Vip;
+using Mud.Wechat.Channels.DataModels.Wecom;
 using System.Text.Json.Serialization.Metadata;
 
 namespace Mud.Wechat.Channels.Extensions;
@@ -51,7 +74,29 @@ public static class ChannelsJsonResolverExtensions
             ProductJsonContext.Default,
             OrderJsonContext.Default,
             AftersaleJsonContext.Default,
-            LogisticsJsonContext.Default);
+            LogisticsJsonContext.Default,
+            ResourceJsonContext.Default,
+            ShopJsonContext.Default,
+            FavoriteJsonContext.Default,
+            WecomJsonContext.Default,
+            KfJsonContext.Default,
+            PlatformKfJsonContext.Default,
+            VipJsonContext.Default,
+            MiniStoreJsonContext.Default,
+            CategoryJsonContext.Default,
+            BrandJsonContext.Default,
+            QicJsonContext.Default,
+            HomePageJsonContext.Default,
+            WindowJsonContext.Default,
+            MarketingJsonContext.Default,
+            LocallifeJsonContext.Default,
+            SubsidyJsonContext.Default,
+            WarehouseJsonContext.Default,
+            LeagueJsonContext.Default,
+            DeliveryJsonContext.Default,
+            LiveJsonContext.Default,
+            CompassJsonContext.Default,
+            CallbackJsonContext.Default);
 
         services.AddMudHttpClientJsonContext(resolver);
     }

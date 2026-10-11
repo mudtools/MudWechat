@@ -1,23 +1,31 @@
 # Mud.Wechat.Channels.Callback
 
-微信小店 / 视频号线**回调接收包**——**当前为 P3 收口前的脚手架占位包**（零运行时类型，仅装配工程形态：依赖方向、生成器挂接、分析器随包下发、ASP.NET 传输层按 TFM 分流）。本文件同时记录 P3 的**规划契约**，落地时以此为准、不得弱化。
+微信小店 / 视频号线**回调接收包**（P3 已收口）：官方**强制 JSON + 仅安全模式**回调的验签 / 解密 / AppId 校验 / 抗重放 / 事件分发全链路，HTTP 中间件与多应用路由。**42 个官方回调事件键**经 `[ChannelsCallbackContract]` 声明式登记（`ChannelsPayloadContracts.RegisterAll` 由生成器档位发射），net8.0+ 提供类型化处理器通道。
 
-## 当前形态（P0~P2 期，占位有意为之）
+## 公开面
 
-- 程序集**零手写类型**：`Tests/Mud.Wechat.Channels.Callback.Tests/ChannelsCallbackScaffoldGuards` 显式按名加载本程序集（防 slnx 漏配 / 空库不装载导致测试假红），并锁定「不引用既有线任何回调包」。
-- 已挂接 `Mud.Wechat.Callback.Generator`（发射 `ChannelsPayloadContracts.RegisterAll`）与 `Mud.Wechat.Callback.Analyzers`（MUDCB002~005，随包 `analyzers/dotnet/cs` 下发）——P3 落 `[WechatCallbackContract]` / `[PayloadContract]` 时即刻生效，无需再改工程。
-- 依赖方向：`→ {Channels.Abstractions, Channels.DataModels}`，**不引用主包**（硬边界，CH-X 守卫锁定）。
+| 面 | 入口 | 说明 |
+| --- | --- | --- |
+| 配置 | `AddWechatChannelsCallback`（节 `ChannelsCallback`） | `Apps` 字典为凭据唯一来源（PushToken / PushEncodingAESKey 43 位 / AppId），路由 `/{GlobalRoutePrefix}/{AppKey}`（默认前缀 `channels`）；`IConfiguration` 重载惰性绑定、请求期热更 |
+| 接入 | `app.UseWechatChannelsWebhook()` | 经典约定式 `RequestDelegate` 中间件（不进 DI 泛型派发） |
+| 接收 | `IWechatChannelsCallbackReceiver` | 验签（GET 三参 `signature` / POST 四参 `msg_signature`，双验签与公众号同构）→ 时效 ±300s → AES 解密 → AppId 校验（解密明文尾部 receiveid）→ 一次性指纹 → 明文 JSON 顶层字段解析 |
+| 分发 | `WechatChannelsCallbackDispatcher` | 组合根急切注册、无 Freeze；软超时默认 4000ms（< 官方 5s 契约）；匹配序 appKey 专属精确 → 全局精确 → 专属兜底 → 全局兜底；单处理器异常隔离 |
+| 处理器 | `IChannelsCallbackEventHandler`（信封级）/ `WechatChannelsCallbackPayloadHandler<TPayload>`（类型级，net8+） | 类型化载荷经事件键 → `ChannelsPayloadContract` → `CallbackJsonContext` 源生成反序列化（AOT 安全，无反射） |
+| 拦截器 | `IChannelsCallbackEventInterceptor` | Before（可中断 → 回 success 不触发重推）/ After（观测） |
+| 事件键 | `ChannelsCallbackEventTypes`（42 键常量，落 DataModels/Callback） | 与契约登记键集 1:1（CB-CH-7 守卫闭环断言） |
 
-## P3 规划契约（落地时同批补齐守卫，缺一即半成品）
+## 报文体系（官方实测口径）
 
-- **报文体系**：官方微信小店回调为 XML（`msg_signature` + `EncodingAESKey` + `receiveid`），与公众号回调同构——复用 Core `WechatCallbackCrypto`（32 字节块 PKCS7 手工补位，禁 .NET 内置 16 块 PKCS7）与 `IWechatCallbackReplayGuard`。
-- **抗重放两道闸 fail-closed**：时间戳 ±300s + 一次性 SHA1 指纹（指纹闸在「解密 + receiveid 校验成功」之后、事件返回之前；GET echo 只过时效闸不消费指纹）；分布式守卫异常必须上抛（→ 5xx → 官方重试），禁止吞异常放行。
-- **事件键与载荷族**：按官方报文结构族建 `Events/Payloads/`（订单 / 售后 / 物流 / 纠纷 / 优惠券 / 库存 / 会员等），声明式登记进生成器档位；**不得**新增「逐事件 DTO + 手写 ParseXxx」。
-- **分发语义**：组合根急切注册、无 Freeze；同步分发 + 软超时默认 4500ms（< 5s 契约）；指纹在分发前消费 ⇒ 处理器须幂等；单处理器异常隔离。
-- **配置面**：`ChannelsCallbackOptions`（节 `ChannelsCallback`），`Apps` 字典为凭据唯一来源，路由 `/{Prefix}/{AppKey}`；与建文件同批登记 `audit-config-keys.ps1`。
+- 官方回调**强制 JSON 报文 + 仅安全模式**（不可选明文/兼容；XML 为设计文档 v1 §3.5 的错误假设，2026-10 逐页核对官方 `doc/store/shop/dev_before/message_push` 修正）——包体 `{"ToUserName":"gh_*","Encrypt":"..."}`，解密明文为 JSON 事件。
+- 验签与 AES-256-CBC（PKCS#7 32 字节块）与公众号同算法，复用 Core `WechatCallbackCrypto` 与 `IWechatCallbackReplayGuard`；解密明文尾部 `appid` 必须与回调配置 `AppId` 一致。
+- 应答为明文 `success`/空串（无被动回复；ewaybill / 客诉工单 / 会员三事件官方要求结构化 JSON 应答，后续按需扩展回复写回）。
+- 官方重试策略：5 秒未响应即失败，0s/0s/10s/1min/5min/30min/60min… 至多 10 次（约 3.6 小时）——软超时出口为 200 + success（指纹已消费 ⇒ 重推同指纹被 403，**处理器须幂等**）。
 
 ## 已踩陷阱与边界（改动前必读）
 
-- **包元数据如实**：csproj `Description` 已注明占位状态——P3 落地时同步改回能力描述，勿在占位期宣称未实现的功能面。
-- **不改工具本体**：本线回调登记走生成器「档位」加挂（发射 `ChannelsPayloadContracts.RegisterAll`），`Mud.Wechat.Callback.Generator` / `Mud.Wechat.Callback.Analyzers` 为中立工具，不得为小店线改其源码。
-- **回调凭据不入主配置**：`WechatChannelsCallbackOptions`（P3 落地时）与 `ChannelsAppConfig` 是两个面——回调 AppKey / Token / EncodingAESKey 只在回调配置声明。
+- **事件键常量落 DataModels/Callback（勿「修正」回 Abstractions）**：载荷 DTO 是 JSON 模型必须落 DataModels 承接源生成上下文，而 DataModels 不引用 Abstractions（依赖方向 `Abstractions → DataModels`）⇒ 特性引用的常量类只能同域落位（与载荷契约特性同命名空间）。
+- **契约机制在 DataModels、信封与处理器契约在 Abstractions**：`[ChannelsCallbackContract]` / `ChannelsPayloadContract` / 注册表随载荷落 `DataModels.Callback`；`WechatChannelsCallbackEvent` / 处理器 / 拦截器接口落 `Abstractions.Callback`。
+- **生成器挂载在 DataModels 工程**（载荷所在地；对齐企微线「生成器只挂载荷工程」先例）：跨程序集发射 partial 实现会产出 CS0759。
+- **类型化通道以 `CHANNELS_CALLBACK_TYPED_PAYLOAD` 编译开关启用**（Callback csproj 已定义）：载荷 DTO + `CallbackJsonContext` 已落地；低目标框架（ns2.0/net6）类型化处理器在运行期被跳过（记 Error），信封级处理器不受影响。
+- **抗重放两道闸 fail-closed 不得为兼容降级**：时间戳 ±300s（缺失/非数字即拒）+ 一次性 SHA1 指纹（解密 + AppId 校验成功之后、事件返回之前消费；GET echo 只过时效闸不消费指纹）。
+- **MUDCB002~005 分析器只覆盖企微档位**（硬编码 metadata name）：小店线契约一致性由 CB-CH 系列测试守卫承担（`Tests/Mud.Wechat.Channels.Callback.Tests/`），与公众号线 CB-MP 系列同款分工。

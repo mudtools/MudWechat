@@ -78,7 +78,11 @@ $configFiles = @(
     'Mud.Wechat.Channels.Abstractions/Configuration/ChannelsAppConfig.cs',
     # 腾讯广告产品线配置面（2026-10-10 补登记）：应用凭据（ClientId/ClientSecret/RedirectUri），
     # 与 ChannelsAppConfig 同批纪律 —— 只建文件不登记即成门禁盲区（AB-G6 双向不变式锁定）。
-    'Mud.Wechat.Ads.Abstractions/Configuration/AdsAppConfig.cs'
+    'Mud.Wechat.Ads.Abstractions/Configuration/AdsAppConfig.cs',
+    # 微信开放平台产品线配置面（2026-10-11 B1 补登记）：平台凭据（ComponentAppId/ComponentAppSecret/
+    # Token/EncodingAesKey）。ComponentAppSecret 与回调 Token/EncodingAesKey 均为**凭据**，
+    # 不得进日志/遥测/异常消息（EnsureValid 只做必填与长度校验、不重写 ToString 防泄密）。
+    'Mud.Wechat.OpenPlatform.Abstractions/OpenPlatformAppConfig.cs'
 )
 
 foreach ($file in $configFiles) {
@@ -93,7 +97,9 @@ foreach ($file in $configFiles) {
     # 回调域新增 AppType/Channel 两个枚举配置属性（区分企业自建/第三方/代开发 × 回调通道），一并纳入扫描。
     # 注：公众号侧 SecurityMode 为**可空枚举**（未设置 = 回落配置级默认值），不匹配本正则——其消费点由
     # ResolveMode 承载，属有意不入扫描（可空语义无法用「必有消费点」表达）。
-    $propNames = [regex]::Matches($content, 'public\s+(?:string|int|bool|WechatAppType|WechatCallbackChannel)\s+(\w+)\s*\{\s*get;\s*set;') |
+    # 开放平台 OpenPlatformAppConfig（2026-10-11 B1 登记）的基元属性全部声明为可空（string?）——
+    # 注册期 EnsureValid 统一点名必填，故正则放宽「\??」以纳管可空基元（可空枚举仍不入）。
+    $propNames = [regex]::Matches($content, 'public\s+(?:string|int|bool|WechatAppType|WechatCallbackChannel)\??\s+(\w+)\s*\{\s*get;\s*set;') |
         ForEach-Object { $_.Groups[1].Value } | Sort-Object -Unique
 
     if ($propNames.Count -eq 0) {

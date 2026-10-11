@@ -51,20 +51,30 @@ public class MpDataCubeContractGuards
         (nameof(IMpDataCubeService.GetInterfaceSummaryHourAsync), "/datacube/getinterfacesummaryhour", typeof(MpInterfaceSummaryResponse)),
     };
 
-    /// <summary>契约守卫 DC1：21 端点路由与官方契约一致（全 POST /datacube/*）。</summary>
+    /// <summary>卡券统计官方路由表（B2a 4 端点，全 POST /datacube/*；请求体含 cond_source / card_id，非同构）。</summary>
+    private static readonly (string Method, string Route, Type Response)[] CardDataCubeRoutes =
+    {
+        (nameof(IMpDataCubeService.GetCardBizUinInfoAsync), "/datacube/getcardbizuininfo", typeof(MpCardBizUinInfoResponse)),
+        (nameof(IMpDataCubeService.GetCardCardInfoAsync), "/datacube/getcardcardinfo", typeof(MpCardCardInfoResponse)),
+        (nameof(IMpDataCubeService.GetCardMemberCardInfoAsync), "/datacube/getcardmembercardinfo", typeof(MpCardMemberCardInfoResponse)),
+        (nameof(IMpDataCubeService.GetCardMemberCardDetailAsync), "/datacube/getcardmembercarddetail", typeof(MpCardMemberCardDetailResponse)),
+    };
+
+    /// <summary>契约守卫 DC1：25 端点路由与官方契约一致（全 POST /datacube/*）。</summary>
     [Fact]
     public void DataCubeEndpoints_ShouldMatchOfficialRoutes()
     {
         DataCubeRoutes.Should().HaveCount(21, "用户 2 + 图文 10（旧 6 + 新 4）+ 消息 7 + 接口 2");
         DataCubeRoutes.Select(r => r.Route).Distinct().Should().HaveCount(21);
+        CardDataCubeRoutes.Should().HaveCount(4, "B2a：卡券统计 4（帐号级 / 券级 / 会员卡 / 会员卡明细）");
 
-        foreach (var (method, route, responseType) in DataCubeRoutes)
+        foreach (var (method, route, responseType) in DataCubeRoutes.Concat(CardDataCubeRoutes))
         {
             var target = typeof(IMpDataCubeService).GetMethod(method, BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
             target.Should().NotBeNull($"IMpDataCubeService.{method} 必须存在");
 
             var attr = target!.GetCustomAttribute<PostAttribute>();
-            attr.Should().NotBeNull("数据统计 21 端点官方均为 POST");
+            attr.Should().NotBeNull("数据统计 25 端点官方均为 POST");
             attr!.RequestUri.Should().Be(route, $"{method} 路由必须与官方契约一致");
 
             target.ReturnType.Should().Be(typeof(Task<>).MakeGenericType(responseType),
@@ -143,10 +153,11 @@ public class MpDataCubeContractGuards
                         && !typeof(JsonSerializerContext).IsAssignableFrom(t))
             .ToList();
 
-        const int expectedCount = 34;
+        const int expectedCount = 45;
         domainTypes.Should().HaveCount(expectedCount,
             "数据统计域契约面类型数漂移须先核对官方文档再同批调整本守卫" +
-            "（共用请求 1 + 用户 4 + 旧图文 8 + 新图文 12 + 消息 4 + 接口 2 + 场景/跳出辅助 3）");
+            "（共用请求 1 + 用户 4 + 旧图文 8 + 新图文 12 + 消息 4 + 接口 2 + 场景/跳出辅助 3 +" +
+            " B2a 卡券统计 11：请求 3（帐号级 / 券级 / 会员卡明细）+ 数据项 4（帐号级 / 券级 / 会员卡 / 明细）+ 响应 4，帐号级请求为会员卡 info 复用）");
 
         foreach (var type in domainTypes)
         {

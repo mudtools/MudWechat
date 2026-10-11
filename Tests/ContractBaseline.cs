@@ -73,16 +73,18 @@ public static class Baseline
         /// </summary>
         /// <remarks>
         /// 锁定于 `MpRouteCountGuard`（RC1）。
-        /// 现行推导：P4 已完成域（Store 12 + OneCode 6 + Invoice 17）与卡券域（14）之后，
-        /// 127 − 6 非特性路由 + 18 + 12 + 6 + 17 + 14 = 188。
+        /// 现行推导：B2a 前 188 + B2a 小域 15（媒体 2 + 短链 1 + 车牌 OCR 1（双形态各 2 方法）
+        /// + 卡券统计 4 + 门店 POI 3 + 语义 1 + 电子发票开具 3）= 203。
+        /// superresolution 官方已下架（既有守卫裁决）、客服管理员与微信客服绑定 5 条归小程序线
+        /// （跨线零交叠 MP-X1），均不计。
         /// </remarks>
-        public const int MainInterfaceRoutes = 188;
+        public const int MainInterfaceRoutes = 203;
 
         /// <summary>
         /// 全量去重路由数（主接口 + 认证/票据基座 + 非 JSON 下载通道）。
         /// </summary>
-        /// <remarks>锁定于 `MpRouteCountGuard`（RC2）。现行推导：188 + AbstractsAuth 3 + 下载通道 3 = 194。</remarks>
-        public const int TotalRoutes = 194;
+        /// <remarks>锁定于 `MpRouteCountGuard`（RC2）。现行推导：203 + AbstractsAuth 3 + 下载通道 3 = 209。</remarks>
+        public const int TotalRoutes = 209;
 
         /// <summary>
         /// 官方面唯一路由数（索引页表格取值并集口径）。
@@ -126,5 +128,30 @@ public static class Baseline
         /// </summary>
         /// <remarks>锁定于 `WechatPayDomainContractGuards`。现行推导：原 54 + 直连下单三族（Native / APP / H5）= 57。</remarks>
         public const int Endpoints = 57;
+    }
+
+    /// <summary>开放平台线（`Tests/Mud.Wechat.OpenPlatform.Tests`，B1 起）。</summary>
+    public static class OpenPlatform
+    {
+        /// <summary>
+        /// `[HttpClientApi]` 接口数。
+        /// </summary>
+        /// <remarks>
+        /// 锁定于 `OpenPlatformContractGuards`（OP-B 系列）。
+        /// 现行接口集：Component（管理面）/ ComponentTicketFree（推票引导，免令牌）/
+        /// OpenAccount / Account / Sns —— Component 域双接口形态（对齐公众号 OpenApi 域 I4 裁决）。
+        /// </remarks>
+        public const int HttpApiInterfaces = 5;
+
+        /// <summary>
+        /// 端点总数（各接口方法之和）。
+        /// </summary>
+        /// <remarks>
+        /// 锁定于 `OpenPlatformContractGuards`。现行推导：Component 13（clear_quota/v2 +
+        /// fastregisterweapp 双方法 + 域名 2 + 确认文件 1 + 隐私 3 + 授权方信息/列表/选项/设选项 4）
+        /// + ComponentTicketFree 1（start_push_ticket）+ OpenAccount 6 + Account 4 + Sns 2 = 26。
+        /// 令牌链 4 端点（api_component_token 等）由 Provider raw HTTP 承载，**不计**（T2 裁定）。
+        /// </remarks>
+        public const int Endpoints = 26;
     }
 }

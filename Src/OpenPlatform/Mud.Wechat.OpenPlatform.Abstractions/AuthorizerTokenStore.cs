@@ -163,4 +163,12 @@ public interface IAuthorizerTokenProvider
     Task<string> GetAuthorizerAccessTokenAsync(
         string authorizerAppId,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 使指定授权方的缓存令牌立即失效（下次取用将强制走刷新链；刷新令牌等长期凭据不受影响）。
+    /// </summary>
+    /// <param name="authorizerAppId">授权方 appid。</param>
+    /// <exception cref="ArgumentException"><paramref name="authorizerAppId"/> 为空白。</exception>
+    /// <remarks>供声明式 <c>[Token]</c> 客户端的令牌管理器在 errcode 恢复路径调用（仅清短期令牌，不删授权关系）。</remarks>
+    void Invalidate(string authorizerAppId);
 }

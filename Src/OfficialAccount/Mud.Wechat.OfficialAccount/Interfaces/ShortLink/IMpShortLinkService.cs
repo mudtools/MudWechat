@@ -81,4 +81,25 @@ public interface IMpShortLinkService
     Task<MpShortenFetchResponse> FetchShortKeyAsync(
         [Body] MpShortenFetchRequest request,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 长链接转短链接（<b>旧版，官方已停维</b>）。官方文档：<see href="https://developers.weixin.qq.com/doc/offiaccount/Account_Management/URL_Shortener.html"/>
+    /// （官方接口英文名 <c>shortUrl</c>）。
+    /// </summary>
+    /// <param name="request">转换请求（<c>action</c> 固定 <c>long2short</c>；<c>long_url</c> 必填）。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
+    /// <returns>短链接（<c>short_url</c>）。</returns>
+    /// <remarks>
+    /// <para>
+    /// <b>与 <see cref="GenerateShortKeyAsync"/> 的关系（官方两代接口，并存勿合并）</b>：本端点是旧版
+    /// <c>/cgi-bin/shorturl</c>——官方已公告停止维护，仅存量链接兼容场景使用；新接入一律用新版
+    /// <c>/cgi-bin/shorten/gen</c>。旧版转换的长链须已通过 ICP 备案。
+    /// </para>
+    /// <para>官方错误码：<c>40002</c> / <c>40005</c>（本页错误码表照录）。</para>
+    /// <para>MUD005：令牌强制走 Query 参数 <c>access_token</c>（官方契约，无法改用 Header）。</para>
+    /// </remarks>
+    [Post("/cgi-bin/shorturl")]
+    Task<MpShortUrlResponse> GetShortUrlAsync(
+        [Body] MpShortUrlRequest request,
+        CancellationToken cancellationToken = default);
 }

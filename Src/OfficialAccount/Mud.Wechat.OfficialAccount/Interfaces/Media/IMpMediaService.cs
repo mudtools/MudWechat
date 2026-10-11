@@ -218,6 +218,48 @@ public interface IMpMediaService
     Task<MpUploadImageResponse> UploadImageAsync(
         [MultipartForm] IFormContent formData,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 上传图文消息素材（高级群发/原创校验前置）。官方文档：<see href="https://developers.weixin.qq.com/doc/offiaccount/Message_Management/Batch_Sends_and_Originality_Checks.html#1"/>
+    /// （官方接口英文名 <c>uploadnews</c>）。
+    /// </summary>
+    /// <param name="request">图文消息请求（<c>articles</c> 1-8 条；单篇字段见 <see cref="MpUploadNewsArticle"/>）。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
+    /// <returns>群发用图文素材（<c>type</c>=news / <c>media_id</c> / <c>created_at</c>；<b>该 media_id 仅用于群发，3 天有效</b>）。</returns>
+    /// <remarks>
+    /// <para>
+    /// 官方契约：<b>POST 纯 JSON</b>（<b>非</b> multipart——与素材上传同路由族但请求形态不同），
+    /// Query 携带 <c>access_token</c>。正文 <c>content</c> 中的图片须先经
+    /// <see cref="UploadImageAsync"/> 上传取 URL（官方对正文图片域名有腾讯系限制）。
+    /// </para>
+    /// <para>官方错误码：<c>40007</c> / <c>40008</c>（invalid message_id，本页错误码表照录）。</para>
+    /// <para>MUD005：令牌强制走 Query 参数 <c>access_token</c>（官方契约，无法改用 Header）。</para>
+    /// </remarks>
+    [Post("/cgi-bin/media/uploadnews")]
+    Task<MpUploadTempMediaResponse> UploadNewsAsync(
+        [Body] MpUploadNewsRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 上传视频素材（高级群发前置）。官方文档：<see href="https://developers.weixin.qq.com/doc/offiaccount/Message_Management/Batch_Sends_and_Originality_Checks.html#3"/>
+    /// （官方接口英文名 <c>uploadvideo</c>）。
+    /// </summary>
+    /// <param name="formData">multipart 表单内容（官方表单字段 <c>media_id</c>（必填）/ <c>title</c>（必填）/
+    /// <c>description</c>（可选）由调用方经 <see cref="IFormContent"/> 构建——字段名与取值见 <see cref="MpUploadVideoRequest"/>）。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
+    /// <returns>群发用视频素材（<c>type</c>=video / <c>media_id</c> / <c>created_at</c>）。</returns>
+    /// <remarks>
+    /// <para>
+    /// 官方契约：<b>POST multipart/form-data</b>（<b>无文件</b>，仅三个表单字段），Query 携带 <c>access_token</c>；
+    /// <c>media_id</c> 须为已上传视频素材的 <c>media_id</c>（<c>type=video</c>）。本端点换取的
+    /// <c>media_id</c> 专用于群发视频消息。
+    /// </para>
+    /// <para>MUD005：令牌强制走 Query 参数 <c>access_token</c>（官方契约，无法改用 Header）。</para>
+    /// </remarks>
+    [Post("/cgi-bin/media/uploadvideo")]
+    Task<MpUploadTempMediaResponse> UploadVideoAsync(
+        [MultipartForm] IFormContent formData,
+        CancellationToken cancellationToken = default);
 }
 
 /// <summary>

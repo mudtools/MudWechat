@@ -13,8 +13,13 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<Compile Include="..\ContractBaseline.cs" Link="ContractBaseline.cs" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<ProjectReference Include="..\..\Src\OpenPlatform\Mud.Wechat.OpenPlatform\Mud.Wechat.OpenPlatform.csproj" />
 		<ProjectReference Include="..\..\Src\OpenPlatform\Mud.Wechat.OpenPlatform.Abstractions\Mud.Wechat.OpenPlatform.Abstractions.csproj" />
+		<ProjectReference Include="..\..\Src\OpenPlatform\Mud.Wechat.OpenPlatform.DataModels\Mud.Wechat.OpenPlatform.DataModels.csproj" />
 	</ItemGroup>
 
 </Project>

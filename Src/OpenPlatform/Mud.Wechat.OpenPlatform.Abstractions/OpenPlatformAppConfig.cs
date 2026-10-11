@@ -128,4 +128,10 @@ public interface IComponentTokenProvider
     /// <returns>可用的令牌。</returns>
     /// <exception cref="WechatOpenPlatformException">票据缺失、官方报错、或应答不含令牌。</exception>
     Task<string> GetComponentAccessTokenAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 使缓存的平台令牌立即失效（下次取用将强制重取）。
+    /// </summary>
+    /// <remarks>供声明式 <c>[Token]</c> 客户端的令牌管理器在 errcode 恢复路径调用（仅清缓存，不打官方接口）。</remarks>
+    void Invalidate();
 }

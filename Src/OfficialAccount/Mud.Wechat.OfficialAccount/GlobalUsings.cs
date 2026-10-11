@@ -26,6 +26,8 @@ global using Mud.Wechat.OfficialAccount.DataModels.Mass;
 global using Mud.Wechat.OfficialAccount.DataModels.Menu;
 global using Mud.Wechat.OfficialAccount.DataModels.OneCode;
 global using Mud.Wechat.OfficialAccount.DataModels.OpenApi;
+global using Mud.Wechat.OfficialAccount.DataModels.Poi;
+global using Mud.Wechat.OfficialAccount.DataModels.Semantic;
 global using Mud.Wechat.OfficialAccount.DataModels.ProductCard;
 global using Mud.Wechat.OfficialAccount.DataModels.Qrcode;
 global using Mud.Wechat.OfficialAccount.DataModels.QrcodeJump;

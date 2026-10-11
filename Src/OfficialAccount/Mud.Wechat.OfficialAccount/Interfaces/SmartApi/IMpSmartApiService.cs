@@ -458,6 +458,58 @@ public interface IMpSmartApiService
     Task<MpImageQrcodeResponse> QrcodeRecognitionByUrlAsync(
         [Query("img_url")] string imgUrl,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 图片高清化（超分辨率）——form-data 实时上传形态。官方文档：<see href="https://developers.weixin.qq.com/doc/offiaccount/Intelligent_Interface/Img_Proc.html"/>
+    /// （官方接口英文名 <c>imgSuperresolution</c>）。
+    /// </summary>
+    /// <param name="formData">multipart 表单内容（<b>文件字段名必须为 <c>img</c></b>；
+    /// 由调用方构建 <see cref="IFormContent"/> 实现，须标 <c>[MultipartForm]</c>；图片 ≤ 1MB）。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
+    /// <returns>高清化后图片的临时素材 <c>media_id</c>（经下载通道取回）。</returns>
+    /// <remarks>
+    /// <para>
+    /// 官方契约：<b>POST multipart/form-data</b>（form-data 实时上传 <c>img</c>），Query 携带 <c>access_token</c>；
+    /// 与 <see cref="PlateNumberOcrByUrlAsync"/> 互斥（URL 形态走 Query <c>img_url</c>）。
+    /// </para>
+    /// <para>MUD005：令牌强制走 Query 参数 <c>access_token</c>（官方契约，无法改用 Header）。</para>
+    /// </remarks>
+    /// <summary>
+    /// 车牌识别（OCR）——form-data 实时上传形态。官方文档：<see href="https://developers.weixin.qq.com/doc/offiaccount/Intelligent_Interface/OCR.html"/>
+    /// （官方接口英文名 <c>platenumOcr</c>）。
+    /// </summary>
+    /// <param name="formData">multipart 表单内容（<b>文件字段名必须为 <c>img</c></b>；
+    /// 由调用方构建 <see cref="IFormContent"/> 实现，须标 <c>[MultipartForm]</c>；图片 ≤ 1MB）。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
+    /// <returns>识别结果（<c>number</c> 车牌号）。</returns>
+    /// <remarks>
+    /// <para>
+    /// 官方契约：<b>POST multipart/form-data</b>（form-data 实时上传 <c>img</c>），Query 携带 <c>access_token</c>；
+    /// <b>无 <c>type</c> query 参数</b>（区别于 idcard / bankcard 等其余 OCR 端点）；
+    /// 与 <see cref="PlateNumberOcrByUrlAsync"/> 互斥。
+    /// </para>
+    /// <para>MUD005：令牌强制走 Query 参数 <c>access_token</c>（官方契约，无法改用 Header）。</para>
+    /// </remarks>
+    [Post("/cv/ocr/platenum")]
+    Task<MpOcrPlateNumberResponse> PlateNumberOcrByUploadAsync(
+        [MultipartForm] IFormContent formData,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 车牌识别（OCR）——URL 传送形态。官方文档：<see href="https://developers.weixin.qq.com/doc/offiaccount/Intelligent_Interface/OCR.html"/>
+    /// （官方接口英文名 <c>platenumOcr</c>）。
+    /// </summary>
+    /// <param name="imgUrl">图片 URL（官方 Query <c>img_url</c>；由微信后台下载识别）。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
+    /// <returns>识别结果（<c>number</c> 车牌号）。</returns>
+    /// <remarks>
+    /// <para>官方契约：<b>POST</b>（无请求体），Query 携带 <c>img_url</c> 与 <c>access_token</c>。</para>
+    /// <para>MUD005：令牌强制走 Query 参数 <c>access_token</c>（官方契约，无法改用 Header）。</para>
+    /// </remarks>
+    [Post("/cv/ocr/platenum")]
+    Task<MpOcrPlateNumberResponse> PlateNumberOcrByUrlAsync(
+        [Query("img_url")] string imgUrl,
+        CancellationToken cancellationToken = default);
 }
 
 /// <summary>

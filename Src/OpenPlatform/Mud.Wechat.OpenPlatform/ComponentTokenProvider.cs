@@ -133,6 +133,19 @@ public sealed class ComponentTokenProvider : IComponentTokenProvider
         }
     }
 
+    /// <summary>
+    /// 使缓存的平台令牌立即失效（下次取用将强制重取）。
+    /// </summary>
+    /// <remarks>
+    /// 供声明式 <c>[Token]</c> 客户端的令牌管理器在 errcode 恢复路径调用
+    /// （<see cref="Mud.Wechat.OpenPlatform.Authentication.ComponentTokenManager.InvalidateTokenAsync"/>）。
+    /// 仅清缓存、不打官方接口；票据缺失时下次刷新会按既有 fail-closed 语义上抛。
+    /// </remarks>
+    public void Invalidate()
+    {
+        Volatile.Write(ref _state, null);
+    }
+
     /// <summary>「既可用、又无需刷新」——只有这种状态才走缓存快车道。</summary>
     private bool IsFresh(ComponentAccessTokenState? state)
     {

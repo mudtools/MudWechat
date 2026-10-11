@@ -25,6 +25,7 @@
     <Project Path="Src/Pay/Mud.Wechat.Pay.Callback/Mud.Wechat.Pay.Callback.csproj" />
     <Project Path="Src/OpenPlatform/Mud.Wechat.OpenTelemetry/Mud.Wechat.OpenTelemetry.csproj" />
     <Project Path="Src/OpenPlatform/Mud.Wechat.OpenPlatform.Abstractions/Mud.Wechat.OpenPlatform.Abstractions.csproj" />
+    <Project Path="Src/OpenPlatform/Mud.Wechat.OpenPlatform.DataModels/Mud.Wechat.OpenPlatform.DataModels.csproj" />
     <Project Path="Src/OpenPlatform/Mud.Wechat.OpenPlatform/Mud.Wechat.OpenPlatform.csproj" />
     <!-- 微信小店/视频号（channels 生态）产品线（设计方案 v1）：4 源工程。 -->
     <Project Path="Src/Channels/Mud.Wechat.Channels.Abstractions/Mud.Wechat.Channels.Abstractions.csproj" />

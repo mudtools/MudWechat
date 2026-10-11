@@ -121,6 +121,16 @@ public class MpServiceBuilder
             [MpModule.Card] = new MpModuleRegistrar(
                 MpModule.Card,
                 s => s.AddCardWebApiHttpClient()),
+
+            // B2a：微信门店旧版（POI）查询与删除 3 端点——独立注册组（与 Store 新版店铺 API 不同族）。
+            [MpModule.Poi] = new MpModuleRegistrar(
+                MpModule.Poi,
+                s => s.AddPoiWebApiHttpClient()),
+
+            // B2a：语义理解（智能对话旧接口）1 端点——独立注册组。
+            [MpModule.Semantic] = new MpModuleRegistrar(
+                MpModule.Semantic,
+                s => s.AddSemanticWebApiHttpClient()),
         };
 
     /// <summary>

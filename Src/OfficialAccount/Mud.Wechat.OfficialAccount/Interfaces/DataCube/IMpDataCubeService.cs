@@ -334,4 +334,68 @@ public interface IMpDataCubeService
     Task<MpInterfaceSummaryResponse> GetInterfaceSummaryHourAsync(
         [Body] MpDateRangeRequest request,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 卡券帐号级统计。官方文档：<see href="https://developers.weixin.qq.com/doc/offiaccount/Cards_and_Offer/Managing_Coupons_Vouchers_and_Cards.html#10"/>
+    /// （官方接口英文名 <c>getCardBizUinInfo</c>）。
+    /// </summary>
+    /// <param name="request">统计请求（日期区间 + 卡券来源过滤）。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
+    /// <returns>按日的浏览 / 领取 / 核销 / 转赠 / 过弃数据（次数 + 人数双维度）。</returns>
+    /// <remarks>
+    /// <para>官方契约：<b>POST</b> + 请求体 <c>{begin_date, end_date, cond_source}</c>；日期区间 ≤ 1 天（与用户分析族一致）。</para>
+    /// <para>MUD005：令牌强制走 Query 参数 <c>access_token</c>（官方契约，无法改用 Header）。</para>
+    /// </remarks>
+    [Post("/datacube/getcardbizuininfo")]
+    Task<MpCardBizUinInfoResponse> GetCardBizUinInfoAsync(
+        [Body] MpCardBizUinInfoRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 卡券券级统计。官方文档：<see href="https://developers.weixin.qq.com/doc/offiaccount/Cards_and_Offer/Managing_Coupons_Vouchers_and_Cards.html#11"/>
+    /// （官方接口英文名 <c>getCardCardInfo</c>）。
+    /// </summary>
+    /// <param name="request">统计请求（日期区间 + 来源过滤 + 可选券 ID）。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
+    /// <returns>按券的统计数据（在帐号级字段上追加 card_id / card_type）。</returns>
+    /// <remarks>
+    /// <para>官方契约：<b>POST</b>；日期区间 ≤ 1 天。</para>
+    /// <para>MUD005：令牌强制走 Query 参数 <c>access_token</c>（官方契约，无法改用 Header）。</para>
+    /// </remarks>
+    [Post("/datacube/getcardcardinfo")]
+    Task<MpCardCardInfoResponse> GetCardCardInfoAsync(
+        [Body] MpCardCardInfoRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 会员卡统计。官方文档：<see href="https://developers.weixin.qq.com/doc/offiaccount/Cards_and_Offer/Managing_Coupons_Vouchers_and_Cards.html#12"/>
+    /// （官方接口英文名 <c>getCardMemberCardInfo</c>）。
+    /// </summary>
+    /// <param name="request">统计请求（与帐号级同形：<c>{begin_date, end_date, cond_source}</c>）。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
+    /// <returns>按日的会员卡激活 / 存量数据。</returns>
+    /// <remarks>
+    /// <para>官方契约：<b>POST</b>；日期区间 ≤ 1 天。</para>
+    /// <para>MUD005：令牌强制走 Query 参数 <c>access_token</c>（官方契约，无法改用 Header）。</para>
+    /// </remarks>
+    [Post("/datacube/getcardmembercardinfo")]
+    Task<MpCardMemberCardInfoResponse> GetCardMemberCardInfoAsync(
+        [Body] MpCardBizUinInfoRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 会员卡明细统计。官方文档：<see href="https://developers.weixin.qq.com/doc/offiaccount/Cards_and_Offer/Managing_Coupons_Vouchers_and_Cards.html#13"/>
+    /// （官方接口英文名 <c>getCardMemberCardDetail</c>）。
+    /// </summary>
+    /// <param name="request">统计请求（<c>{begin_date, end_date, card_id}</c>——<b>card_id 官方必填</b>）。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
+    /// <returns>按券明细（含新增会员 / 实收金额字段）。</returns>
+    /// <remarks>
+    /// <para>官方契约：<b>POST</b>；日期区间 ≤ 1 天。</para>
+    /// <para>MUD005：令牌强制走 Query 参数 <c>access_token</c>（官方契约，无法改用 Header）。</para>
+    /// </remarks>
+    [Post("/datacube/getcardmembercarddetail")]
+    Task<MpCardMemberCardDetailResponse> GetCardMemberCardDetailAsync(
+        [Body] MpCardMemberCardDetailRequest request,
+        CancellationToken cancellationToken = default);
 }

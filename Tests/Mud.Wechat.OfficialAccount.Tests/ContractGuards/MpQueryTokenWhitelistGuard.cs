@@ -44,7 +44,7 @@ public class MpQueryTokenWhitelistGuard
             nameof(IMpUserService),               // 用户管理·用户信息 + 转换 openid（8 端点）
             nameof(IMpMenuService),               // 自定义菜单（7 端点）
             nameof(IMpCustomerMessageService),    // 客服消息·客服消息（3 端点）
-            nameof(IMpKfAccountService),          // 客服消息·客服管理（7 端点）
+            nameof(IMpKfAccountService),          // 客服消息·客服管理（7 端点；管理员与微信客服绑定 5 条归小程序线，跨线零交叠）
             nameof(IMpKfSessionService),          // 客服消息·会话控制（5 端点）
             nameof(IMpMediaService),              // 素材管理·上传通道（下载通道 IMpMediaDownloadService 无 [Token]，手工注入）
             nameof(IMpTemplateService),           // 模板消息（7 端点，服务号专属）
@@ -57,15 +57,17 @@ public class MpQueryTokenWhitelistGuard
             nameof(IMpFreePublishService),        // 发布能力（5 端点，仅认证）
             nameof(IMpProductCardService),        // 商品卡片（1 端点；/channels/ec/ 前缀）
             nameof(IMpCommentService),            // 留言管理（8 端点，仅认证 + 留言权限）
-            nameof(IMpDataCubeService),           // 数据统计（21 端点单域承载，仅认证）
-            nameof(IMpSmartApiService),           // 智能接口（12 端点：AI 语音 3 + OCR 7 + 图像处理 2）
+            nameof(IMpDataCubeService),           // 数据统计（25 端点单域承载，仅认证）
+            nameof(IMpSmartApiService),           // 智能接口（13 端点：AI 语音 3 + OCR 8 + 图像处理 2；superresolution 已下架不建模）
             nameof(IMpQrcodeJumpService),         // 扫二维码打开小程序（4 端点，服务号专属）
-            nameof(IMpShortLinkService),          // 长信息与短链（2 端点）
+            nameof(IMpShortLinkService),          // 长信息与短链（3 端点：新版 2 + 旧版 shorturl 1）
             nameof(IMpStoreService),              // 微信门店·门店小程序（12 端点；开放面仅电商类目）
             nameof(IMpOneCodeService),            // 微信「一物一码」（6 端点；服务号需申请）
-            nameof(IMpInvoiceService),            // 微信发票（17 端点；全消费 access_token，不引入 api_ticket）
+            nameof(IMpInvoiceService),            // 微信发票（20 端点；全消费 access_token，不引入 api_ticket）
             nameof(IMpCardService),               // 卡券·主体与投放（11 端点；前端取卡 api_ticket 由 IMpTicketService 承载，不入本接口）
             nameof(IMpCardCodeService),           // 卡券·券码核销（3 端点；同注册组 Card，双接口先例照 openApi）
+            nameof(IMpPoiService),                // 微信门店旧版 POI（3 端点；与 Store 新版店铺 API 两代并存）
+            nameof(IMpSemanticService),           // 语义理解（1 端点；智能对话旧接口，官方已停维）
         }, "公众号官方契约强制 Query 注入（MUD005 已知接受风险）；新增 Query 注入接口须先评估再显式扩展本白名单");
 
         // 防静默空跑：白名单非空且每条均为 Query 注入（若发现机制失效，上面 BeEquivalentTo 会退化为真空断言）。

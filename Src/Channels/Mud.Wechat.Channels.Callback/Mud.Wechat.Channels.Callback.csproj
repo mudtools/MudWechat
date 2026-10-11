@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<Description>微信小店/视频号（channels 生态）SDK 回调接收包：URL 验证（GET echostr 回显）、消息推送验签、AES 解密、抗重放指纹、事件分发（类型化处理器 + 拦截器）的 HTTP 中间件与多应用路由。回调体系与公众号同构（msg_signature + EncodingAESKey + receiveid）。</Description>
+		<Description>微信小店/视频号（channels 生态）SDK 回调接收包（P3 阶段收口中，当前为脚手架占位包）。规划形态：URL 验证（GET echostr 回显）、消息推送验签、AES 解密、抗重放指纹、事件分发（类型化处理器 + 拦截器）的 HTTP 中间件与多应用路由，回调体系与公众号同构（msg_signature + EncodingAESKey + receiveid）。</Description>
 		<PackageTags>Wechat;Channels;微信小店;视频号;Callback;Webhook;Middleware;MudWechat</PackageTags>
 	</PropertyGroup>
 

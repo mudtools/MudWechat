@@ -1,6 +1,6 @@
 # Mud.Wechat.Abstractions
 
-Mud.Wechat 全仓的**跨产品线共享叶层**：五条产品线（企业微信 / 公众号 / 小程序 / 开放平台 / 微信支付）共同依赖的最底层包——响应契约、令牌存储端口与桥接编解码、回调密码学与信封契约、配置基座、异常判定、可观测性契约面。
+Mud.Wechat 全仓的**跨产品线共享叶层**：七条产品线（企业微信 / 公众号 / 小程序 / 开放平台 / 微信支付 / 微信小店·视频号 / 腾讯广告）共同依赖的最底层包——响应契约、令牌存储端口与桥接编解码、回调密码学与信封契约、配置基座、异常判定、可观测性契约面。
 
 **零 ProjectReference**（契约守卫 AB-G1 锁定），依赖单向向下收敛：任何包都可以引它，它不引任何本仓工程。
 
@@ -51,4 +51,4 @@ activity?.SetTag(WechatActivitySource.Tags.Product, WechatActivitySource.Product
 - **抗重放是 fail-closed 语义**：`IWechatCallbackReplayGuard` 实现遇到存储故障必须原样上抛（→ 5xx → 官方重试），禁止吞异常返回 `true`（放行重放）或 `false`（静默丢事件且官方不再重试）。
 - **Pay 线不使用本包的 XML 密码学**（其为 JSON + AEAD-GCM 体系），只复用响应契约、配置基座与可观测性契约面。
 - 本包的契约面由 `Tests/Mud.Wechat.Abstractions.Tests/ContractGuards/` 锁定：`WechatAbstractionsContractGuards`（AB-G1 叶子无工程引用 … AB-G7 回调宿主包必须产 nupkg 且内嵌 `analyzers/dotnet/cs`、两工具工程 `IsPackable=false`）与 `WechatCallbackKernelContractGuards`（CB-L1 系列，编号与企微侧 CB1~CB24 避让）。新增/改动共享面须同批更新守卫。
-- 五条产品线在同一宿主共存的能力边界由 `CrossProductLineCoexistenceTests`（X1~X7）锁定——尤其「同一进程内各线令牌互不串号」。
+- 七条产品线在同一宿主共存的能力边界由 `CrossProductLineCoexistenceTests`（X1~X7）锁定——尤其「同一进程内各线令牌互不串号」。

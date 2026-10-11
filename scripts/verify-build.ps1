@@ -37,11 +37,27 @@ function Assert-Zero {
     }
 }
 
+# 原生命令调用包装：Windows PowerShell 5.1 下 `2>&1` 会把原生命令的 stderr 行包装成 ErrorRecord，
+# 顶层 $ErrorActionPreference='Stop' 时首行 stderr 即抛 NativeCommandError 杀死脚本 —— 步骤 3 中断、
+# 无汇总、退出码不可靠（假绿）。此处局部降级为 Continue，让 stderr 以文本并入日志，失败判定仍由
+# 编译错误计数 / TRX counters 承担（两道断言不因此弱化）。真实 cmdlet 错误不受影响（finally 恢复）。
+function Invoke-Native {
+    param([scriptblock]$Command)
+    $previousEap = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    try {
+        & $Command 2>&1 | Out-String
+    }
+    finally {
+        $ErrorActionPreference = $previousEap
+    }
+}
+
 Write-Host '== Mud.Wechat verify-build ==' -ForegroundColor Cyan
 
 # ------------------------------------------------------------------ 步骤 1
 Write-Host "`n[步骤 1] Release 全量构建" -ForegroundColor Cyan
-$buildLog = dotnet build $solution -c Release --nologo 2>&1 | Out-String
+$buildLog = Invoke-Native { dotnet build $solution -c Release --nologo }
 $buildLog | Out-File -FilePath (Join-Path $env:TEMP 'mudwechat-verify-build.log') -Encoding utf8
 
 $errorCount = ([regex]::Matches($buildLog, ': error ')).Count
@@ -62,7 +78,7 @@ $sourceProjects = $sourceProjects | Where-Object { $_.Name -notmatch '\.(Generat
 
 foreach ($project in $sourceProjects) {
     Write-Host "  AOT strict 构建：$($project.Name)"
-    $aotLog = dotnet build $project.FullName -c Release -f net8.0 -p:AotStrictMode=true --no-incremental --nologo 2>&1 | Out-String
+    $aotLog = Invoke-Native { dotnet build $project.FullName -c Release -f net8.0 -p:AotStrictMode=true --no-incremental --nologo }
     $aotLog | Out-File -FilePath (Join-Path $env:TEMP "mudwechat-aot-$($project.BaseName).log") -Encoding utf8
 
     $aotErrors = ([regex]::Matches($aotLog, ': error ')).Count
@@ -87,9 +103,9 @@ if (-not $SkipTests) {
 
         foreach ($tfm in $tfms) {
             $trxFile = Join-Path $trxDir "$($testProject.BaseName)_$tfm.trx"
-            $testLog = dotnet test $testProject.FullName -f $tfm --no-build -c Release `
+            $testLog = Invoke-Native { dotnet test $testProject.FullName -f $tfm --no-build -c Release `
                 --logger "trx;LogFileName=$(Split-Path -Leaf $trxFile)" `
-                --results-directory $trxDir --nologo 2>&1 | Out-String
+                --results-directory $trxDir --nologo }
 
             if (-not (Test-Path $trxFile)) {
                 Add-Failure -Step '步骤3' -Message "$($testProject.BaseName)[$tfm] 未生成 TRX（测试未执行）"

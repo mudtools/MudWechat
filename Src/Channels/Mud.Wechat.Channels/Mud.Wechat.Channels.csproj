@@ -1,7 +1,7 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<Description>微信小店/视频号（channels 生态）SDK 主包：26 个业务域声明式客户端（商品/订单/售后/物流/资金/营销/联盟/会员/直播留资/橱窗/团购核销等）、模块注册器、AOT JsonContext 合并。</Description>
+		<Description>微信小店/视频号（channels 生态）SDK 主包：27 个业务域声明式客户端（商品/订单/售后/物流/资金/营销/联盟/会员/直播留资/橱窗/团购核销等）、模块注册器、AOT JsonContext 合并。</Description>
 		<PackageTags>Wechat;Channels;微信小店;视频号;SDK;MudWechat</PackageTags>
 		<!-- MUD005（Query 令牌注入存在 URL 泄露面）：微信小店官方契约强制令牌走 Query 参数
 		     （access_token 为 URL 查询参数，官方不支持 Header 注入），无法改用 Header。

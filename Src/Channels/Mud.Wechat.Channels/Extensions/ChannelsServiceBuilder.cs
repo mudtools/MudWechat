@@ -170,9 +170,20 @@ public class ChannelsServiceBuilder
 
     private ChannelsServiceBuilder AddModule(ChannelsModule module)
     {
-        if (_registrars.TryGetValue(module, out var register) && _registered.Add(module))
+        // 增量交付期 fail-fast：枚举成员已声明但该域尚未落地（无注册器）时必须显式报错，
+        // 不得静默跳过 —— 静默吞会让「AddModules(Vip) 只装了 Basic」之类的误装配在运行期才暴露，
+        // 且单装未落地域时 Build() 只抛「至少需要添加一个模块」，错误信息误导排障方向。
+        if (!_registrars.ContainsKey(module))
         {
-            register(_services);
+            throw new InvalidOperationException(
+                $"ChannelsModule.{module} 尚未落地（设计方案 v1 P2 阶段域），本版本未提供该域客户端。" +
+                "请改用已落地的域（Basic / Funds / Product / Order / Aftersale / Logistics），" +
+                "或关注后续版本的全量交付。");
+        }
+
+        if (_registered.Add(module))
+        {
+            _registrars[module](_services);
         }
 
         return this;

@@ -20,7 +20,7 @@ namespace Mud.Wechat.Ads;
 /// <c>IAdsAppManager</c> 已在服务集合中，缺失即抛出并点名修复方式，而不是等到首次调用才失败。
 /// </para>
 /// <para>
-/// <b>入口名为何带 <c>Wechat</c> 前缀</b>：与 <c>AddWechatPayApi</c> 同一理由 —— 保持五条产品线
+/// <b>入口名为何带 <c>Wechat</c> 前缀</b>：与 <c>AddWechatPayApi</c> 同一理由 —— 保持六条产品线
 /// 「<c>AddWechat{线}Api</c> + <c>Add{线}App</c>」的可读并列，避免 <c>AddAdsApi</c> 与
 /// 企微线 <c>WechatWorkServiceBuilder.AddPayApi()</c> 一类短名混列。
 /// </para>

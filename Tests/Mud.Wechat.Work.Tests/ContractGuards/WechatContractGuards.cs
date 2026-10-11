@@ -59,7 +59,10 @@ public class WechatContractGuards
         var root = GetSolutionRoot();
         var csprojFiles = Directory.EnumerateFiles(root, "*.csproj", SearchOption.AllDirectories)
             .Where(f => !f.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}")
-                        && !f.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}"))
+                        && !f.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}")
+                        // .codeartsdoer 为本机工具临时目录（gitignored，含评测 harness 生成的临时 csproj），
+                        // 契约面只约束仓库源码树 —— 与 verify-build.ps1 步骤 2 的排除口径一致，防本机假红。
+                        && !f.Contains($"{Path.DirectorySeparatorChar}.codeartsdoer{Path.DirectorySeparatorChar}"))
             .ToList();
 
         csprojFiles.Should().NotBeEmpty();

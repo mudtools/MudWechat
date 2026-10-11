@@ -70,7 +70,7 @@ public static class ChannelsMultiAppExtensions
         }
 
         NormalizeAndValidate(configs);
-        return services.AddChannelsTokenInfrastructure(configs);
+        return services.AddChannelsTokenInfrastructure(configs, configuration);
     }
 
     /// <summary>使用代码配置注册单个小店应用。</summary>
@@ -113,9 +113,16 @@ public static class ChannelsMultiAppExtensions
     /// 注册令牌与多小店底座：per-app 命名 HttpClient、令牌签发客户端、令牌仓储、
     /// AppManager（Singleton + IServiceScopeFactory）、令牌恢复设施（公用层单点登记）。
     /// </summary>
+    /// <param name="services">服务集合。</param>
+    /// <param name="configs">小店配置列表（注册表唯一来源）。</param>
+    /// <param name="configuration">
+    /// 宿主配置（仅 <see cref="AddChannelsApp(IServiceCollection, IConfiguration, string)"/> 重载传入）；
+    /// 非空时绑定令牌恢复选项配置节（对齐公众号 <c>AddMpTokenInfrastructure</c> 同款能力）。
+    /// </param>
     internal static IServiceCollection AddChannelsTokenInfrastructure(
         this IServiceCollection services,
-        List<ChannelsAppConfig> configs)
+        List<ChannelsAppConfig> configs,
+        IConfiguration? configuration = null)
     {
         if (services == null) throw new ArgumentNullException(nameof(services));
         if (configs == null) throw new ArgumentNullException(nameof(configs));
@@ -201,6 +208,16 @@ public static class ChannelsMultiAppExtensions
         services.TryAddEnumerable(
             ServiceDescriptor.Singleton<ITokenInvalidationDetector, ChannelsTokenInvalidationDetector>());
 
+        // 令牌恢复选项的宿主配置节绑定（选项本体与校验器由公用层统一登记）。
+        // 与公众号线对称：宿主经 WechatTokenRecovery 配置节调整恢复参数的能力在两线等价提供。
+        if (configuration != null)
+        {
+            var tokenRecoverySection = configuration.GetSection(TokenRecoveryOptions.SectionName);
+            services.Configure<TokenRecoveryOptions>(options => tokenRecoverySection.Bind(options));
+            services.AddSingleton<IOptionsChangeTokenSource<TokenRecoveryOptions>>(
+                new ConfigurationChangeTokenSource<TokenRecoveryOptions>(Options.DefaultName, tokenRecoverySection));
+        }
+
         // 令牌仓储（默认进程内实现；分布式场景由宿主预注册覆盖，TryAdd 语义）。
         // 与其它产品线共用同一端口与键约定（键前缀含产品线令牌类型，故互不覆盖）。
         services.TryAddSingleton<IWechatTokenStore, InMemoryWechatTokenStore>();
@@ -267,8 +284,7 @@ public static class ChannelsMultiAppExtensions
             }
         }
 
-        var deduped = configs.GroupBy(c => c.AppKey, StringComparer.Ordinal).Select(g => g.Last()).ToList();
-        var defaultCount = deduped.Count(c => c.IsDefault);
+        var defaultCount = configs.Count(c => c.IsDefault);
         if (defaultCount == 0)
         {
             configs[0].IsDefault = true;
@@ -277,7 +293,7 @@ public static class ChannelsMultiAppExtensions
         {
             throw new InvalidOperationException(
                 "检测到多个 IsDefault=true 的应用（" +
-                string.Join(", ", deduped.Where(c => c.IsDefault).Select(c => c.AppKey)) +
+                string.Join(", ", configs.Where(c => c.IsDefault).Select(c => c.AppKey)) +
                 "），仅允许一个默认应用。");
         }
     }

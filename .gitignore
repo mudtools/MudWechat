@@ -68,6 +68,12 @@
 /Src/Ads/Mud.Wechat.Ads.Abstractions/obj
 /Src/Ads/Mud.Wechat.Ads/bin
 /Src/Ads/Mud.Wechat.Ads/obj
+/Src/OpenPlatform/Mud.Wechat.OpenPlatform/bin
+/Src/OpenPlatform/Mud.Wechat.OpenPlatform/obj
+/Src/OpenPlatform/Mud.Wechat.OpenPlatform.Abstractions/bin
+/Src/OpenPlatform/Mud.Wechat.OpenPlatform.Abstractions/obj
+/Src/OpenPlatform/Mud.Wechat.OpenPlatform.DataModels/bin
+/Src/OpenPlatform/Mud.Wechat.OpenPlatform.DataModels/obj
 /Tests/Mud.Wechat.Work.Tests/bin
 /Tests/Mud.Wechat.Work.Tests/obj
 /Tests/Mud.Wechat.Work.Tests/TestResults
@@ -119,6 +125,9 @@
 /Tests/Mud.Wechat.Channels.Callback.Tests/bin
 /Tests/Mud.Wechat.Channels.Callback.Tests/obj
 /Tests/Mud.Wechat.Channels.Callback.Tests/TestResults
+/Tests/Mud.Wechat.OpenPlatform.Tests/bin
+/Tests/Mud.Wechat.OpenPlatform.Tests/obj
+/Tests/Mud.Wechat.OpenPlatform.Tests/TestResults
 /Demos/Mud.Wechat.Work.ContactCallbackDemo/bin
 /Demos/Mud.Wechat.Work.ContactCallbackDemo/obj
 /Demos/Mud.Wechat.Work.ContactDemo/bin

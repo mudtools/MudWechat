@@ -451,9 +451,10 @@ public class WechatAbstractionsContractGuards
                      // 可观测性适配包（1 源 + 1 测试）。
                      "Src/OpenPlatform/Mud.Wechat.OpenTelemetry/Mud.Wechat.OpenTelemetry.csproj",
                      "Tests/Mud.Wechat.OpenTelemetry.Tests/Mud.Wechat.OpenTelemetry.Tests.csproj",
-                     // 微信开放平台产品线（2026-10 新增，2 源 + 1 测试）。
+                     // 微信开放平台产品线（2026-10 新增，3 源 + 1 测试；B1 落地 DataModels）。
                      "Src/OpenPlatform/Mud.Wechat.OpenPlatform/Mud.Wechat.OpenPlatform.csproj",
                      "Src/OpenPlatform/Mud.Wechat.OpenPlatform.Abstractions/Mud.Wechat.OpenPlatform.Abstractions.csproj",
+                     "Src/OpenPlatform/Mud.Wechat.OpenPlatform.DataModels/Mud.Wechat.OpenPlatform.DataModels.csproj",
                      "Tests/Mud.Wechat.OpenPlatform.Tests/Mud.Wechat.OpenPlatform.Tests.csproj",
                      // 微信小店/视频号（channels 生态）产品线（4 源 + 2 测试，设计方案 v1 §5.2）。
                      "Src/Channels/Mud.Wechat.Channels/Mud.Wechat.Channels.csproj",

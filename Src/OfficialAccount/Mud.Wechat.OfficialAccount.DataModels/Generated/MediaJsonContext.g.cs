@@ -22,6 +22,9 @@ namespace Mud.Wechat.OfficialAccount.DataModels.Media;
 [JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.Media.MpMaterialDescription))]
 [JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.Media.MpPermanentMaterialResponse))]
 [JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.Media.MpMaterialNewsItem))]
+[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.Media.MpUploadNewsArticle))]
+[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.Media.MpUploadNewsRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.Media.MpUploadVideoRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.Media.MpUploadTempMediaResponse))]
 internal partial class MediaJsonContext : JsonSerializerContext
 {

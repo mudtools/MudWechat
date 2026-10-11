@@ -300,4 +300,24 @@ public enum MpModule
     /// 的取舍与理由由守卫 <c>MpCardContractGuards</c> CD8 留档。
     /// </remarks>
     Card,
+
+    /// <summary>
+    /// 微信门店旧版（POI）查询与删除（<c>/cgi-bin/poi/*</c> 3 端点：查询 / 列表 / 删除）。
+    /// </summary>
+    /// <remarks>
+    /// <b>与 <c>Store</c> 域的关系（官方两代接口，并存勿合并）</b>：本域是旧版微信门店接口（POI），
+    /// <c>Store</c> 是新版小程序店铺 API（<c>/wxa/*</c>）；门店 ID 体系不同。新建 / 更新官方未开放
+    /// HTTP 新建入口（走后台）。落位由守卫 <c>MpPoiContractGuards</c> 锁定。
+    /// </remarks>
+    Poi,
+
+    /// <summary>
+    /// 语义理解（智能对话旧接口，<c>/semantic/semproxy/search</c> 1 端点）。
+    /// </summary>
+    /// <remarks>
+    /// <b>停维警示</b>：官方长期未迭代，新项目应改用微信智能对话平台；SDK 按官方原样承载，
+    /// details 以原始 JSON 透出（裁决见 <see cref="DataModels.Semantic.MpSemanticResult"/>）。
+    /// 落位由守卫 <c>MpSemanticContractGuards</c> 锁定。
+    /// </remarks>
+    Semantic,
 }

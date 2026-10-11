@@ -18,7 +18,7 @@ namespace Mud.Wechat.OfficialAccount.Tests.ContractGuards;
 /// </summary>
 public class MpKfContractGuards
 {
-    /// <summary>客服管理官方路由表（7 端点）。</summary>
+    /// <summary>客服管理官方路由表（7 端点；setadmin/canceladmin 与 work/bind|get|unbind 五条已由小程序线建模——跨线零交叠 MP-X1，公众号线不重复声明）。</summary>
     private static readonly (string Method, Type HttpAttribute, string Route)[] KfAccountRoutes =
     {
         (nameof(IMpKfAccountService.GetKfListAsync), typeof(GetAttribute), "/cgi-bin/customservice/getkflist"),
@@ -44,7 +44,7 @@ public class MpKfContractGuards
     [Fact]
     public void KfAccountEndpoints_ShouldMatchOfficialRoutes()
     {
-        KfAccountRoutes.Should().HaveCount(7, "官方「客服消息 → 客服管理」恰 7 个端点");
+        KfAccountRoutes.Should().HaveCount(7, "官方「客服消息 → 客服管理」恰 7 个端点（管理员与微信客服绑定 5 条归小程序线，跨线零交叠）");
         KfAccountRoutes.Select(r => r.Route).Distinct().Should().HaveCount(7);
 
         foreach (var (method, httpAttribute, route) in KfAccountRoutes)
@@ -123,7 +123,7 @@ public class MpKfContractGuards
     public void KfDataModels_ShouldBeRegisteredInJsonContext()
     {
         AssertDomainRegistered<MpKfAccount>("KfAccount", KfAccountJsonContext.Default, 8,
-            "（2 列表响应 + 2 元素 + 4 请求：添加 / 修改 / 删除 / 邀请）");
+            "（2 列表响应 + 2 元素 + 4 请求：添加 / 修改 / 删除 / 邀请；微信客服绑定面归小程序线）");
         AssertDomainRegistered<MpKfSession>("KfSession", KfSessionJsonContext.Default, 6,
             "（1 共用请求 + 1 会话元素 + 1 状态响应 + 1 列表响应 + 1 未接入元素 + 1 未接入响应）");
     }

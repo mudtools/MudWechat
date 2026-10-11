@@ -24,14 +24,15 @@ public class MpShortLinkContractGuards
 {
     private const string RegistryGroupName = "ShortLink";
 
-    /// <summary>官方路由表（2 端点，全 POST）。</summary>
+    /// <summary>官方路由表（3 端点：新版 shorten 2 + 旧版 shorturl 1，全 POST）。</summary>
     private static readonly (string Method, string Route)[] Routes =
     {
         (nameof(IMpShortLinkService.GenerateShortKeyAsync), "/cgi-bin/shorten/gen"),
         (nameof(IMpShortLinkService.FetchShortKeyAsync), "/cgi-bin/shorten/fetch"),
+        (nameof(IMpShortLinkService.GetShortUrlAsync), "/cgi-bin/shorturl"),
     };
 
-    /// <summary>契约守卫 SL1：路由表与官方契约一致（2 端点全 POST）。</summary>
+    /// <summary>契约守卫 SL1：路由表与官方契约一致（3 端点全 POST；旧版 shorturl 并存勿合并）。</summary>
     [Fact]
     public void ShortLinkEndpoints_ShouldMatchOfficialRoutes()
     {
@@ -39,22 +40,26 @@ public class MpShortLinkContractGuards
 
         foreach (var (method, route) in Routes)
         {
-            route.Should().StartWith("/cgi-bin/shorten/", "本域两端点同前缀（官方路径安排）");
-
             var target = FindMethod(method);
             var attr = target.GetCustomAttribute<PostAttribute>();
             attr.Should().NotBeNull($"{method} 必须声明 POST 路由");
             attr!.RequestUri.Should().Be(route, $"{method} 路由必须与官方契约一致");
 
-            // 两端点均带 [Body] 请求体（官方为 JSON body；缺失即 44002 empty post data）。
+            // 三端点均带 [Body] 请求体（官方为 JSON body；缺失即 44002 empty post data）。
             target.GetParameters().Should().Contain(p => p.GetCustomAttribute<BodyAttribute>() != null,
                 $"{method} 官方契约要求 JSON 请求体");
         }
 
+        // 新版 shorten 两端点同前缀（官方路径安排）；旧版 shorturl 是独立一代接口（官方已停维）。
+        Routes.Where(r => r.Route.StartsWith("/cgi-bin/shorten/", StringComparison.Ordinal)).Should().HaveCount(2,
+            "新版 shorten 两端点同前缀");
+        Routes.Single(r => r.Route == "/cgi-bin/shorturl").Method
+            .Should().Be(nameof(IMpShortLinkService.GetShortUrlAsync), "旧版 shorturl 单端点（停维保留）");
+
         typeof(IMpShortLinkService).GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
             .Where(m => m.GetCustomAttribute<HttpMethodAttribute>() != null)
             .Select(m => m.GetCustomAttribute<HttpMethodAttribute>()!)
-            .Should().AllBeAssignableTo<PostAttribute>("2 端点官方全部为 POST");
+            .Should().AllBeAssignableTo<PostAttribute>("3 端点官方全部为 POST");
     }
 
     /// <summary>契约守卫 SL2：请求 / 响应 DTO 的官方字段名锁定。</summary>
@@ -83,7 +88,7 @@ public class MpShortLinkContractGuards
                         && !typeof(JsonSerializerContext).IsAssignableFrom(t))
             .ToList();
 
-        domainTypes.Should().HaveCount(4, "请求 2（gen/fetch）+ 响应 2（gen/fetch）");
+        domainTypes.Should().HaveCount(6, "请求 3（gen/fetch/旧版 shorturl）+ 响应 3（gen/fetch/旧版 shorturl）");
         foreach (var type in domainTypes)
         {
             ShortLinkJsonContext.Default.GetTypeInfo(type)

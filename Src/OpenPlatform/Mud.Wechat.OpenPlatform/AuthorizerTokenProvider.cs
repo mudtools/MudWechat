@@ -168,6 +168,39 @@ public sealed class AuthorizerTokenProvider : IAuthorizerTokenProvider
         }
     }
 
+    /// <summary>
+    /// 使指定授权方的缓存令牌立即失效（下次取用将强制走刷新链）。
+    /// </summary>
+    /// <param name="authorizerAppId">授权方应用 <c>appid</c>。</param>
+    /// <exception cref="ArgumentException"><paramref name="authorizerAppId"/> 为空白。</exception>
+    /// <remarks>
+    /// 供声明式 <c>[Token]</c> 客户端的令牌管理器在 errcode 恢复路径调用
+    /// （<see cref="Mud.Wechat.OpenPlatform.Authentication.AuthorizerTokenManager.InvalidateTokenAsync"/>）。
+    /// 仅清「快车道」判定依据——存储里仍是旧快照 ⇒ 下次 <see cref="GetAuthorizerAccessTokenAsync"/>
+    /// 会因 <c>ShouldRefresh</c> 命中而进刷新链；不删刷新令牌（长期凭据不因短期令牌失效而丢失）。
+    /// </remarks>
+    public void Invalidate(string authorizerAppId)
+    {
+        if (string.IsNullOrWhiteSpace(authorizerAppId))
+        {
+            throw new ArgumentException("授权方 appid 不能为空。", nameof(authorizerAppId));
+        }
+
+        var cached = Read(authorizerAppId);
+        if (cached == null)
+        {
+            return;
+        }
+
+        // 写回「已过期」快照：保留刷新令牌（长期凭据），仅让短期令牌失效。
+        _store.Set(new AuthorizerTokenSnapshot(
+            cached.AuthorizerAppId,
+            cached.AccessToken,
+            cached.RefreshToken,
+            DateTimeOffset.MinValue,
+            _clock.UtcNow));
+    }
+
     private AuthorizerTokenSnapshot? Read(string authorizerAppId)
         => _store.TryGet(authorizerAppId, out var snapshot) ? snapshot : null;
 

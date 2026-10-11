@@ -25,7 +25,7 @@ public class MpSmartApiContractGuards
 {
     private const string RegistryGroupName = "SmartApi";
 
-    /// <summary>双形态端点（9 个）：官方「form 上传 img」与「Query img_url」互斥 ⇒ 每端点两方法。</summary>
+    /// <summary>双形态端点（11 个）：官方「form 上传 img」与「Query img_url」互斥 ⇒ 每端点两方法。</summary>
     private static readonly (string UploadMethod, string UrlMethod, string Route)[] DualFormRoutes =
     {
         (nameof(IMpSmartApiService.IdCardOcrByUploadAsync), nameof(IMpSmartApiService.IdCardOcrByUrlAsync), "/cv/ocr/idcard"),
@@ -37,6 +37,7 @@ public class MpSmartApiContractGuards
         (nameof(IMpSmartApiService.MenuOcrByUploadAsync), nameof(IMpSmartApiService.MenuOcrByUrlAsync), "/cv/ocr/menu"),
         (nameof(IMpSmartApiService.AiCropByUploadAsync), nameof(IMpSmartApiService.AiCropByUrlAsync), "/cv/img/aicrop"),
         (nameof(IMpSmartApiService.QrcodeRecognitionByUploadAsync), nameof(IMpSmartApiService.QrcodeRecognitionByUrlAsync), "/cv/img/qrcode"),
+        (nameof(IMpSmartApiService.PlateNumberOcrByUploadAsync), nameof(IMpSmartApiService.PlateNumberOcrByUrlAsync), "/cv/ocr/platenum"),
     };
 
     /// <summary>AI 开放接口路由表（3 端点，全 POST）。</summary>
@@ -53,8 +54,8 @@ public class MpSmartApiContractGuards
     {
         // 12 条唯一路由（9 双形态 + 3 单形态），互不重复。
         var allRoutes = DualFormRoutes.Select(r => r.Route).Concat(VoiceRoutes.Select(r => r.Route)).ToList();
-        allRoutes.Should().HaveCount(12);
-        allRoutes.Distinct().Should().HaveCount(12, "各端点路由互不重复");
+        allRoutes.Should().HaveCount(13);
+        allRoutes.Distinct().Should().HaveCount(13, "各端点路由互不重复");
 
         // 9 端点 × 2 形态：上传方法带 [MultipartForm]，URL 方法带 Query img_url，且两方法路由一致。
         foreach (var (uploadMethod, urlMethod, route) in DualFormRoutes)
@@ -90,9 +91,9 @@ public class MpSmartApiContractGuards
             .GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
             .Where(m => m.GetCustomAttribute<HttpMethodAttribute>() != null)
             .ToList();
-        methods.Should().HaveCount(21, "9 端点双方法 + 3 单方法 = 21");
+        methods.Should().HaveCount(23, "10 端点双方法 + 3 单方法 = 23");
         methods.Select(m => m.GetCustomAttribute<HttpMethodAttribute>()!)
-            .Should().AllBeAssignableTo<PostAttribute>("智能接口 12 端点官方全部为 POST");
+            .Should().AllBeAssignableTo<PostAttribute>("智能接口 13 端点官方全部为 POST");
     }
 
     /// <summary>契约守卫 SM2：AI 语音三端点的参数位置（Query vs 请求体）与官方契约一致。</summary>
@@ -201,8 +202,8 @@ public class MpSmartApiContractGuards
                         && !typeof(JsonSerializerContext).IsAssignableFrom(t))
             .ToList();
 
-        domainTypes.Should().HaveCount(21,
-            "智能接口域 DTO：OCR 响应 7 + OCR 条目/嵌套 7 + 图像处理响应 2 + 图像条目 2 + 语音/翻译 3");
+        domainTypes.Should().HaveCount(22,
+            "智能接口域 DTO：OCR 响应 7 + OCR 条目/嵌套 7 + 图像处理响应 2 + 图像条目 2 + 语音/翻译 3 + B2a：车牌响应 1（superresolution 官方已下架不建模）");
 
         foreach (var type in domainTypes)
         {

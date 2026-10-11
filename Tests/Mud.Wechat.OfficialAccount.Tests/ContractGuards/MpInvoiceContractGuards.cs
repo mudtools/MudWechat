@@ -52,15 +52,18 @@ public class MpInvoiceContractGuards
         ("/card/invoice/biz/getusertitleurl", nameof(IMpInvoiceService.GetUserTitleUrlAsync), true),
         ("/card/invoice/biz/getselecttitleurl", nameof(IMpInvoiceService.GetSelectTitleUrlAsync), true),
         ("/card/invoice/scantitle", nameof(IMpInvoiceService.ScanInvoiceTitleAsync), true),
+        ("/card/invoice/makeoutinvoice", nameof(IMpInvoiceService.MakeOutInvoiceAsync), true),
+        ("/card/invoice/clearoutinvoice", nameof(IMpInvoiceService.ClearOutInvoiceAsync), true),
+        ("/card/invoice/queryinvoceinfo", nameof(IMpInvoiceService.QueryInvoiceInfoAsync), true),
     };
 
-    /// <summary>契约守卫 IT1：17 端点路由 / 方法 / 请求体形态与官方契约一致。</summary>
+    /// <summary>契约守卫 IT1：20 端点路由 / 方法 / 请求体形态与官方契约一致。</summary>
     [Fact]
     public void InvoiceEndpoints_ShouldMatchOfficialRoutes()
     {
         Routes.Select(r => r.Route).Distinct().Should().HaveCount(Routes.Length, "各端点路由互不重复");
         Routes.Should().OnlyContain(r => r.Route.StartsWith("/card/invoice/", StringComparison.Ordinal),
-            "本域 17 端点全在 /card/invoice/ 前缀下（官方路径安排）");
+            "本域 20 端点全在 /card/invoice/ 前缀下（官方路径安排）");
 
         foreach (var (route, method, hasBody) in Routes)
         {
@@ -75,7 +78,7 @@ public class MpInvoiceContractGuards
         typeof(IMpInvoiceService).GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
             .Where(m => m.GetCustomAttribute<HttpMethodAttribute>() != null)
             .Select(m => m.GetCustomAttribute<HttpMethodAttribute>()!)
-            .Should().AllBeAssignableTo<PostAttribute>("17 端点官方全部为 POST");
+            .Should().AllBeAssignableTo<PostAttribute>("20 端点官方全部为 POST");
 
         // setbizattr 的 action 为 Query（非请求体）——官方契约。
         FindMethod(nameof(IMpInvoiceService.SetInvoiceBizAttrAsync)).GetParameters()
@@ -249,8 +252,8 @@ public class MpInvoiceContractGuards
                         && !typeof(JsonSerializerContext).IsAssignableFrom(t))
             .ToList();
 
-        domainTypes.Should().HaveCount(41,
-            "商户开票 14 + 开票平台 14 + 报销与极速开发票 13");
+        domainTypes.Should().HaveCount(48,
+            "商户开票 14 + 开票平台 14 + 报销与极速开发票 13 + B2a 电子发票开具 7（明细项 / 票面信息 / 开票请求 / 冲红请求 / 查询请求 / 查询明细 / 查询响应）");
         foreach (var type in domainTypes)
         {
             InvoiceJsonContext.Default.GetTypeInfo(type)

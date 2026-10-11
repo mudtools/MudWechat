@@ -33,6 +33,8 @@ public class MpMediaContractGuards
         (typeof(IMpMediaService), nameof(IMpMediaService.BatchGetMaterialAsync), typeof(PostAttribute), "/cgi-bin/material/batchget_material"),
         (typeof(IMpMediaService), nameof(IMpMediaService.DelMaterialAsync), typeof(PostAttribute), "/cgi-bin/material/del_material"),
         (typeof(IMpMediaService), nameof(IMpMediaService.UploadImageAsync), typeof(PostAttribute), "/cgi-bin/media/uploadimg"),
+        (typeof(IMpMediaService), nameof(IMpMediaService.UploadNewsAsync), typeof(PostAttribute), "/cgi-bin/media/uploadnews"),
+        (typeof(IMpMediaService), nameof(IMpMediaService.UploadVideoAsync), typeof(PostAttribute), "/cgi-bin/media/uploadvideo"),
     };
 
     /// <summary>
@@ -41,8 +43,8 @@ public class MpMediaContractGuards
     [Fact]
     public void MediaEndpoints_ShouldMatchOfficialRoutes()
     {
-        MediaRoutes.Should().HaveCount(6, "临时上传 1 + 永久上传/计数/列表/删除 4 + uploadimg 1；get_material 在下载通道");
-        MediaRoutes.Select(r => r.Route).Distinct().Should().HaveCount(6, "各端点路由互不重复");
+        MediaRoutes.Should().HaveCount(8, "临时上传 1 + 永久上传/计数/列表/删除 4 + uploadimg 1 + 群发前置 uploadnews/uploadvideo 2；get_material 在下载通道");
+        MediaRoutes.Select(r => r.Route).Distinct().Should().HaveCount(8, "各端点路由互不重复");
 
         foreach (var (iface, method, httpAttribute, route) in MediaRoutes)
         {
@@ -54,7 +56,7 @@ public class MpMediaContractGuards
             attr!.RequestUri.Should().Be(route, $"{iface.Name}.{method} 路由必须与官方契约一致");
         }
 
-        // 官方反直觉点锁定：get_materialcount 为 GET（唯一无请求体的查询端点），其余 5 个为 POST。
+        // 官方反直觉点锁定：get_materialcount 为 GET（唯一无请求体的查询端点），其余 7 个为 POST。
         MediaRoutes.Count(r => r.HttpAttribute == typeof(GetAttribute)).Should().Be(1,
             "仅 get_materialcount 为 GET（官方原文）");
 
@@ -147,11 +149,12 @@ public class MpMediaContractGuards
                         && !typeof(JsonSerializerContext).IsAssignableFrom(t))
             .ToList();
 
-        const int expectedCount = 12;
+        const int expectedCount = 15;
         domainTypes.Should().HaveCount(expectedCount,
             "素材域契约面类型数漂移须先核对官方文档再同批调整本守卫" +
             "（1 上传临时 + 1 永久上传响应 + 1 视频描述 + 1 永久素材响应 + 1 图文条目 + 1 计数响应 +" +
-            " 2 列表请求/响应 + 1 列表条目 + 1 图文容器 + 1 media_id 共用请求 + 1 uploadimg 响应）");
+            " 2 列表请求/响应 + 1 列表条目 + 1 图文容器 + 1 media_id 共用请求 + 1 uploadimg 响应 +" +
+            " B2a：1 uploadnews 请求 + 1 群发图文条目 + 1 uploadvideo 请求；响应共用上传响应）");
 
         foreach (var type in domainTypes)
         {

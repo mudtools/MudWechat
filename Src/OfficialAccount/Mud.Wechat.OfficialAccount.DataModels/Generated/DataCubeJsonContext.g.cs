@@ -11,6 +11,17 @@ namespace Mud.Wechat.OfficialAccount.DataModels.DataCube;
     PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower,
     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     WriteIndented = false)]
+[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.DataCube.MpCardBizUinInfoRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.DataCube.MpCardCardInfoRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.DataCube.MpCardMemberCardDetailRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.DataCube.MpCardBizUinData))]
+[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.DataCube.MpCardCardData))]
+[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.DataCube.MpCardMemberCardData))]
+[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.DataCube.MpCardMemberCardDetailData))]
+[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.DataCube.MpCardBizUinInfoResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.DataCube.MpCardCardInfoResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.DataCube.MpCardMemberCardInfoResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.DataCube.MpCardMemberCardDetailResponse))]
 [JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.DataCube.MpDateRangeRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.DataCube.MpUserSummaryItem))]
 [JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.DataCube.MpUserSummaryResponse))]

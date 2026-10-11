@@ -430,6 +430,61 @@ public interface IMpInvoiceService
     Task<MpInvoiceScanTitleResponse> ScanInvoiceTitleAsync(
         [Body] MpInvoiceScanTitleRequest request,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 开具电子发票。官方文档：<see href="https://developers.weixin.qq.com/doc/offiaccount/WeChat_Invoice/E_Invoice/Vendor_API_List.html#14"/>
+    /// （官方接口英文名 <c>makeOutInvoice</c>）。
+    /// </summary>
+    /// <param name="request">开票请求（票面信息见 <see cref="MpInvoiceBillingBody"/>；官方契约顶层仅 <c>invoiceinfo</c> 一键）。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
+    /// <returns>仅 <c>errcode</c>/<c>errmsg</c>（开票结果查 <see cref="QueryInvoiceInfoAsync"/>）。</returns>
+    /// <remarks>
+    /// <para>
+    /// 官方契约：<b>POST</b> + 请求体 <c>{"invoiceinfo": {…}}</c>；
+    /// <c>fpqqlsh</c>（发票请求流水号）同一商户号下唯一；开票为<b>异步</b>——本端点受理成功不代表开票完成。
+    /// </para>
+    /// <para>官方错误码：<c>-1</c> / <c>40001</c> 等（本页错误码表照录）。</para>
+    /// <para>MUD005：令牌强制走 Query 参数 <c>access_token</c>（官方契约，无法改用 Header）。</para>
+    /// </remarks>
+    [Post("/card/invoice/makeoutinvoice")]
+    Task<MpResponse> MakeOutInvoiceAsync(
+        [Body] MpMakeOutInvoiceRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 冲红电子发票。官方文档：<see href="https://developers.weixin.qq.com/doc/offiaccount/WeChat_Invoice/E_Invoice/Vendor_API_List.html#15"/>
+    /// （官方接口英文名 <c>clearOutInvoice</c>）。
+    /// </summary>
+    /// <param name="request">冲红请求（<c>invoiceinfo</c> 内须填写原发票代码 <c>yfpdm</c> / 原发票号码 <c>yfphm</c>）。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
+    /// <returns>仅 <c>errcode</c>/<c>errmsg</c>。</returns>
+    /// <remarks>
+    /// <para>
+    /// 官方契约：<b>POST</b> + 请求体 <c>{"invoiceinfo": {…}}</c>。
+    /// <b>覆盖删除语义</b>：冲红后原发票作废、生成红字发票，不可逆。
+    /// </para>
+    /// <para>MUD005：令牌强制走 Query 参数 <c>access_token</c>（官方契约，无法改用 Header）。</para>
+    /// </remarks>
+    [Post("/card/invoice/clearoutinvoice")]
+    Task<MpResponse> ClearOutInvoiceAsync(
+        [Body] MpClearOutInvoiceRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 查询电子发票开具结果。官方文档：<see href="https://developers.weixin.qq.com/doc/offiaccount/WeChat_Invoice/E_Invoice/Vendor_API_List.html#16"/>
+    /// （官方接口英文名 <c>queryInvoiceInfo</c>；<b>官方路由拼写为 queryinvoceinfo（ce），照抄不修正</b>）。
+    /// </summary>
+    /// <param name="request">查询请求（<c>fpqqlsh</c> + <c>nsrsbh</c>，均必填）。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
+    /// <returns>票面详情（发票代码 / 号码 / 开票日期 / 校验码 / PDF 地址；开票处理中字段可能缺省）。</returns>
+    /// <remarks>
+    /// <para>官方契约：<b>POST</b> + 请求体 <c>{fpqqlsh, nsrsbh}</c>。</para>
+    /// <para>MUD005：令牌强制走 Query 参数 <c>access_token</c>（官方契约，无法改用 Header）。</para>
+    /// </remarks>
+    [Post("/card/invoice/queryinvoceinfo")]
+    Task<MpQueryInvoiceInfoResponse> QueryInvoiceInfoAsync(
+        [Body] MpQueryInvoiceInfoRequest request,
+        CancellationToken cancellationToken = default);
 }
 
 /// <summary>

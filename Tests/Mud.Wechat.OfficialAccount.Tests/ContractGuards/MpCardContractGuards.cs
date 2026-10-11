@@ -423,15 +423,15 @@ public class MpCardContractGuards
             "卡券双接口上的路由必须恰为本批 14 条（新增端点须同批进 CD1 与 MpRouteCountGuard）");
 
         // <b>前缀共用留档（本守卫实测发现）</b>：<c>/card/</c> 不是卡券域独占前缀 ——
-        // 微信发票域（IMpInvoiceService，17 端点）的路由全部落在 <c>/card/invoice/*</c> 之下。
+        // 微信发票域（IMpInvoiceService，20 端点）的路由全部落在 <c>/card/invoice/*</c> 之下。
         // ⇒ 任何按裸 "/card/" 前缀统计卡券端点的做法都会把发票域算进来，本域判定一律按接口归属。
-        AssemblyRoutesUnder("/card/invoice/").Should().HaveCount(17,
-            "发票域 17 端点共用 /card/ 前缀（明细见 MpInvoiceContractGuards）");
+        AssemblyRoutesUnder("/card/invoice/").Should().HaveCount(20,
+            "发票域 20 端点共用 /card/ 前缀（明细见 MpInvoiceContractGuards）");
         CardInterfaceRoutes().Should().NotContain(r => r.StartsWith("/card/invoice/", StringComparison.Ordinal),
             "卡券域不得声明发票路由");
         AssemblyRoutesUnder("/card/").Except(AssemblyRoutesUnder("/card/invoice/"))
             .Should().BeEquivalentTo(Routes.Select(r => r.Route),
-                "程序集内 /card/ 前缀路由 = 卡券 14 + 发票 17，无第三域混入");
+                "程序集内 /card/ 前缀路由 = 卡券 14 + 发票 20，无第三域混入");
 
         // 未建模族的零路由留档（对齐基准 SKIT 全族 53 端点，本批 14 ⇒ 未建模 39）。
         // 每族都需要独立的票据 / 支付 / 资质核验，刻意不在本批塞进同一注册组。

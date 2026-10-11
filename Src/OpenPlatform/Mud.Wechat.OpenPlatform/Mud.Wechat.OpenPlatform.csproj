@@ -24,6 +24,7 @@
 	<ItemGroup>
 		<ProjectReference Include="..\..\Core\Mud.Wechat.Abstractions\Mud.Wechat.Abstractions.csproj" />
 		<ProjectReference Include="..\Mud.Wechat.OpenPlatform.Abstractions\Mud.Wechat.OpenPlatform.Abstractions.csproj" />
+		<ProjectReference Include="..\Mud.Wechat.OpenPlatform.DataModels\Mud.Wechat.OpenPlatform.DataModels.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>

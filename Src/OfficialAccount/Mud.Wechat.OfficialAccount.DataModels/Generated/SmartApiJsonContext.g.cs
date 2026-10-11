@@ -29,6 +29,7 @@ namespace Mud.Wechat.OfficialAccount.DataModels.SmartApi;
 [JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.SmartApi.MpOcrMenuResponse))]
 [JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.SmartApi.MpOcrMenuContent))]
 [JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.SmartApi.MpOcrMenuItem))]
+[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.SmartApi.MpOcrPlateNumberResponse))]
 [JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.SmartApi.MpVoiceRecoResultResponse))]
 [JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.SmartApi.MpVoiceTranslateRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.SmartApi.MpVoiceTranslateResponse))]

@@ -30,7 +30,7 @@ public interface IWxaFeedbackMediaService
 {
     /// <summary>
     /// 获取用户反馈图片（<c>POST /cgi-bin/media/getfeedbackmedia</c>）。
-    /// 官方文档：<c>operation/api_getfeedbackmedia.html</c>。
+    /// 官方文档：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/operation/api_getfeedbackmedia"/>。
     /// </summary>
     /// <param name="request">反馈图片媒体 ID（<c>media_id</c> 必填），见 <see cref="WxaFeedbackMediaRequest"/>。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>

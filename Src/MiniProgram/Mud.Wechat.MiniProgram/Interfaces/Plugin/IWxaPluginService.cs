@@ -13,8 +13,8 @@ namespace Mud.Wechat.MiniProgram;
 /// <remarks>
 /// <para>
 /// <b>官方文档</b>（小程序服务端 API → 插件管理，2026-10-10 依据官方清单核验）：
-/// <c>plugin-management/api_managepluginapplication.html</c>（<c>/wxa/devplugin</c>，插件<b>开发者</b>视角）、
-/// <c>api_manageplugin.html</c>（<c>/wxa/plugin</c>，插件<b>使用方</b>视角）。
+/// <see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/plugin-management/api_managepluginapplication"/>（<c>/wxa/devplugin</c>，插件<b>开发者</b>视角）、
+/// <see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/plugin-management/api_manageplugin"/>（<c>/wxa/plugin</c>，插件<b>使用方</b>视角）。
 /// </para>
 /// <para>
 /// <b>action 驱动</b>：两端点均为单路由多操作（<c>action</c> 字段区分语义），DTO 按官方参数表
@@ -31,7 +31,7 @@ namespace Mud.Wechat.MiniProgram;
 public interface IWxaPluginService
 {
     /// <summary>
-    /// 插件申请管理（插件开发者视角）。官方文档：<c>plugin-management/api_managepluginapplication.html</c>。
+    /// 插件申请管理（插件开发者视角）。官方文档：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/plugin-management/api_managepluginapplication"/>。
     /// </summary>
     /// <param name="request"><c>action</c> 驱动的申请列表 / 同意 / 拒绝操作，见 <see cref="DataModels.Plugin.WxaDevPluginRequest"/>。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
@@ -46,7 +46,7 @@ public interface IWxaPluginService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// 插件管理（插件使用方视角）。官方文档：<c>plugin-management/api_manageplugin.html</c>。
+    /// 插件管理（插件使用方视角）。官方文档：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/plugin-management/api_manageplugin"/>。
     /// </summary>
     /// <param name="request"><c>action</c> 驱动的申请 / 查看 / 更新 / 删除操作，见 <see cref="DataModels.Plugin.WxaPluginRequest"/>。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>

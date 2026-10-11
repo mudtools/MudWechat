@@ -32,7 +32,7 @@ public interface IWxaCodeService
 {
     /// <summary>
     /// 获取<b>不限量</b>小程序码（<c>POST /wxa/getwxacodeunlimit</c>）。
-    /// 官方文档：<c>qrcode-link/qr-code/api_getunlimitedqrcode.html</c>。
+    /// 官方文档：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/qrcode-link/qr-code/api_getunlimitedqrcode"/>。
     /// </summary>
     /// <param name="request">生成请求（<c>scene</c> 必填，≤32 可见字符），见 <see cref="DataModels.QrCodeLink.WxaCodeUnlimitRequest"/>。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
@@ -48,7 +48,7 @@ public interface IWxaCodeService
 
     /// <summary>
     /// 获取<b>限量</b>小程序码（<c>POST /wxa/getwxacode</c>）。
-    /// 官方文档：<c>qrcode-link/qr-code/api_getqrcode.html</c>。
+    /// 官方文档：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/qrcode-link/qr-code/api_getqrcode"/>。
     /// </summary>
     /// <param name="request">生成请求（<c>path</c> 必填），见 <see cref="DataModels.QrCodeLink.WxaCodeRequest"/>。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
@@ -63,7 +63,7 @@ public interface IWxaCodeService
 
     /// <summary>
     /// 创建<b>二维码 C</b>（<c>POST /cgi-bin/wxaapp/createwxaqrcode</c>）。
-    /// 官方文档：<c>qrcode-link/qr-code/api_createqrcode.html</c>。
+    /// 官方文档：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/qrcode-link/qr-code/api_createqrcode"/>。
     /// </summary>
     /// <param name="request">生成请求（<c>path</c> 必填），见 <see cref="DataModels.QrCodeLink.WxaQrCodeRequest"/>。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>

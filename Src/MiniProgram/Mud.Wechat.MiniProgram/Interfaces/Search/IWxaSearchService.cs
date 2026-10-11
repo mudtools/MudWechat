@@ -13,7 +13,7 @@ namespace Mud.Wechat.MiniProgram;
 /// <remarks>
 /// <para>
 /// <b>官方文档</b>（小程序服务端 API → 微信搜一搜，2026-10-10 依据官方清单核验）：
-/// <c>wxsearch/api_submitpages.html</c>（搜一搜数据推送）。
+/// <see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/wxsearch/api_submitpages"/>（搜一搜数据推送）。
 /// </para>
 /// <para>
 /// <b>业务形态（官方原文）</b>：小程序通过本接口推送<b>优质内容的页面路径、参数和结构化数据</b>，
@@ -30,7 +30,7 @@ namespace Mud.Wechat.MiniProgram;
 public interface IWxaSearchService
 {
     /// <summary>
-    /// 搜一搜数据推送。官方文档：<c>wxsearch/api_submitpages.html</c>。
+    /// 搜一搜数据推送。官方文档：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/wxsearch/api_submitpages"/>。
     /// </summary>
     /// <param name="request">页面信息推送请求（<c>pages</c> 必填），见 <see cref="DataModels.Search.WxaSearchSubmitPagesRequest"/>。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>

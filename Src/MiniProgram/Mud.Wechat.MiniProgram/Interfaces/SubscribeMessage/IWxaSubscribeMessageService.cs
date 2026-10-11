@@ -13,10 +13,10 @@ namespace Mud.Wechat.MiniProgram;
 /// <remarks>
 /// <para>
 /// <b>官方文档</b>（小程序服务端 API → 消息管理 → 订阅消息，2026-10-10 依据官方清单核验）：
-/// 发送订阅消息 <c>mp-message-management/subscribe-message/api_sendmessage.html</c>、
-/// 激活与更新服务卡片 <c>api_setusernotify.html</c>、
-/// 更新服务卡片扩展信息 <c>api_setusernotifyext.html</c>、
-/// 查询服务卡片状态 <c>api_getusernotify.html</c>。
+/// 发送订阅消息 <see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/mp-message-management/subscribe-message/api_sendmessage"/>、
+/// 激活与更新服务卡片 <see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/mp-message-management/subscribe-message/api_setusernotify"/>、
+/// 更新服务卡片扩展信息 <see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/mp-message-management/subscribe-message/api_setusernotifyext"/>、
+/// 查询服务卡片状态 <see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/mp-message-management/subscribe-message/api_getusernotify"/>。
 /// </para>
 /// <para>
 /// <b>为何只补 4 端点（MP-X1）</b>：模板库六端点（<c>/wxaapi/newtmpl/deltemplate</c>、<c>getcategory</c>、
@@ -37,7 +37,7 @@ namespace Mud.Wechat.MiniProgram;
 public interface IWxaSubscribeMessageService
 {
     /// <summary>
-    /// 发送订阅消息。官方文档：<c>mp-message-management/subscribe-message/api_sendmessage.html</c>。
+    /// 发送订阅消息。官方文档：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/mp-message-management/subscribe-message/api_sendmessage"/>。
     /// </summary>
     /// <param name="request">接收者、模板与内容，见 <see cref="WxaSubscribeMessageSendRequest"/>。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
@@ -66,7 +66,7 @@ public interface IWxaSubscribeMessageService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// 激活与更新服务卡片。官方文档：<c>mp-message-management/subscribe-message/api_setusernotify.html</c>。
+    /// 激活与更新服务卡片。官方文档：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/mp-message-management/subscribe-message/api_setusernotify"/>。
     /// </summary>
     /// <param name="request">卡片定位与内容（<c>openid</c> / <c>template_id</c> 必填），见 <see cref="WxaSetUserNotifyRequest"/>。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
@@ -85,7 +85,7 @@ public interface IWxaSubscribeMessageService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// 更新服务卡片扩展信息。官方文档：<c>mp-message-management/subscribe-message/api_setusernotifyext.html</c>。
+    /// 更新服务卡片扩展信息。官方文档：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/mp-message-management/subscribe-message/api_setusernotifyext"/>。
     /// </summary>
     /// <param name="request">卡片定位与扩展内容，见 <see cref="WxaSetUserNotifyExtRequest"/>。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
@@ -103,7 +103,7 @@ public interface IWxaSubscribeMessageService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// 查询服务卡片状态。官方文档：<c>mp-message-management/subscribe-message/api_getusernotify.html</c>。
+    /// 查询服务卡片状态。官方文档：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/mp-message-management/subscribe-message/api_getusernotify"/>。
     /// </summary>
     /// <param name="request">卡片定位（<c>openid</c> / <c>template_id</c>），见 <see cref="WxaGetUserNotifyRequest"/>。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>

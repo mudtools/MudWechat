@@ -13,8 +13,8 @@ namespace Mud.Wechat.MiniProgram;
 /// <remarks>
 /// <para>
 /// <b>官方文档</b>（小程序服务端 API → 付费管理，2026-10-10 依据官方清单核验）：
-/// <c>charge/api_getusagedetail.html</c>（查询已购买资源包的用量情况）、
-/// <c>charge/api_getrecentaverageusage.html</c>（获取某个付费能力的最近三个月平均用量）。
+/// <see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/charge/api_getusagedetail"/>（查询已购买资源包的用量情况）、
+/// <see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/charge/api_getrecentaverageusage"/>（获取某个付费能力的最近三个月平均用量）。
 /// </para>
 /// <para>
 /// <b>能力口径（官方原文）</b>：付费能力是平台上的增值能力（如短信、OCR 等），按资源包购买；
@@ -31,7 +31,7 @@ namespace Mud.Wechat.MiniProgram;
 public interface IWxaChargeService
 {
     /// <summary>
-    /// 查询购买资源包的用量情况。官方文档：<c>charge/api_getusagedetail.html</c>。
+    /// 查询购买资源包的用量情况。官方文档：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/charge/api_getusagedetail"/>。
     /// </summary>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
     /// <returns>已购买资源包用量列表，见 <see cref="DataModels.Charge.WxaChargeUsageResponse"/>。</returns>
@@ -41,7 +41,7 @@ public interface IWxaChargeService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// 获取某个付费能力的最近用量数据。官方文档：<c>charge/api_getrecentaverageusage.html</c>。
+    /// 获取某个付费能力的最近用量数据。官方文档：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/charge/api_getrecentaverageusage"/>。
     /// </summary>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
     /// <returns>各付费能力最近三个月平均用量，见 <see cref="DataModels.Charge.WxaChargeRecentAverageResponse"/>。</returns>

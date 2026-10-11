@@ -13,7 +13,7 @@ namespace Mud.Wechat.MiniProgram;
 /// <remarks>
 /// <para>
 /// <b>官方文档</b>（小程序服务端 API → 微信人脸核身，2026-10-10 依据官方清单核验）：
-/// <c>face/api_getverifyid.html</c>、<c>face/api_queryverifyinfo.html</c>。
+/// <see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/face/api_getverifyid"/>、<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/face/api_queryverifyinfo"/>。
 /// </para>
 /// <para>
 /// <b>业务形态（官方原文）</b>：业务方后台根据「用户实名信息（姓名 + 证件号）」调用
@@ -36,7 +36,7 @@ namespace Mud.Wechat.MiniProgram;
 public interface IWxaFaceVerifyService
 {
     /// <summary>
-    /// 获取用户人脸核身会话唯一标识。官方文档：<c>face/api_getverifyid.html</c>。
+    /// 获取用户人脸核身会话唯一标识。官方文档：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/face/api_getverifyid"/>。
     /// </summary>
     /// <param name="request">获取请求（<c>out_seq_no</c> / <c>openid</c> / <c>cert_info</c> 必填），见 <see cref="DataModels.FaceVerify.WxaFaceGetVerifyIdRequest"/>。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
@@ -55,7 +55,7 @@ public interface IWxaFaceVerifyService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// 查询用户人脸核身真实验证结果。官方文档：<c>face/api_queryverifyinfo.html</c>。
+    /// 查询用户人脸核身真实验证结果。官方文档：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/face/api_queryverifyinfo"/>。
     /// </summary>
     /// <param name="request">查询请求（<c>out_seq_no</c> / <c>verify_id</c> / <c>openid</c> / <c>cert_hash</c> 必填），见 <see cref="DataModels.FaceVerify.WxaFaceQueryVerifyInfoRequest"/>。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>

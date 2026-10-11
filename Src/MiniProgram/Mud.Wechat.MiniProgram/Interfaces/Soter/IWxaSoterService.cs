@@ -13,7 +13,7 @@ namespace Mud.Wechat.MiniProgram;
 /// <remarks>
 /// <para>
 /// <b>官方文档</b>（小程序服务端 API → 生物认证，2026-10-10 依据官方清单核验）：
-/// <c>soter/api_verifysignature.html</c>。
+/// <see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/soter/api_verifysignature"/>。
 /// </para>
 /// <para>
 /// <b>业务形态（官方原文）</b>：本接口用于 SOTER 生物认证秘钥签名验证 —— 小程序前端经
@@ -30,7 +30,7 @@ namespace Mud.Wechat.MiniProgram;
 public interface IWxaSoterService
 {
     /// <summary>
-    /// 生物认证秘钥签名验证。官方文档：<c>soter/api_verifysignature.html</c>。
+    /// 生物认证秘钥签名验证。官方文档：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/soter/api_verifysignature"/>。
     /// </summary>
     /// <param name="request">验证请求（<c>openid</c> / <c>json_string</c> / <c>json_signature</c> 必填），见 <see cref="DataModels.Soter.WxaSoterVerifySignatureRequest"/>。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>

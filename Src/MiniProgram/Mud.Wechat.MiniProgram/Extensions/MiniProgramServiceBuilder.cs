@@ -69,6 +69,14 @@ public class MiniProgramServiceBuilder
             [MiniProgramModule.Student] = static s => s.AddStudentWebApiHttpClient(),
             [MiniProgramModule.FaceVerify] = static s => s.AddFaceVerifyWebApiHttpClient(),
             [MiniProgramModule.LaborUse] = static s => s.AddLaborUseWebApiHttpClient(),
+
+            // 物流助手：对账文件（single_waybill/get_bill）成功时返回**对账文件文本**（失败时才是 JSON），
+            // 走独立请求形态 IWxaExpressBillService（Content-Type 分支判错），其余 50 端点走生成管线。
+            [MiniProgramModule.Express] = static s =>
+            {
+                s.AddExpressWebApiHttpClient();
+                s.TryAddSingleton<IWxaExpressBillService, WxaExpressBillService>();
+            },
         };
 
     /// <summary>注册登录与用户（5 端点：4 带令牌 + 1 免令牌）。</summary>
@@ -146,6 +154,10 @@ public class MiniProgramServiceBuilder
     /// <summary>注册用工关系（2 端点：推送消息 + 解绑）。</summary>
     /// <returns>注册器（链式）。</returns>
     public MiniProgramServiceBuilder AddLaborUseApi() => AddModule(MiniProgramModule.LaborUse);
+
+    /// <summary>注册物流助手（51 端点：50 JSON + 1 对账文件文本）。</summary>
+    /// <returns>注册器（链式）。</returns>
+    public MiniProgramServiceBuilder AddExpressApi() => AddModule(MiniProgramModule.Express);
 
     /// <summary>注册全部模块。</summary>
     /// <returns>注册器（链式）。</returns>

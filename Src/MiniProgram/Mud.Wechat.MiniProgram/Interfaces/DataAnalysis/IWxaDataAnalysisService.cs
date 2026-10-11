@@ -13,10 +13,10 @@ namespace Mud.Wechat.MiniProgram;
 /// <remarks>
 /// <para>
 /// <b>官方文档</b>：小程序服务端 API → 数据分析（2026-10-09 逐页核验）：
-/// <c>data-analysis/visit-trend/api_getdailyvisittrend.html</c>、<c>visit-retain/api_getdailyretain.html</c>、
-/// <c>others/api_getuserportrait.html</c>、<c>others/api_getvisitdistribution.html</c>、
-/// <c>others/api_getvisitpage.html</c>（weekly / monthly 为同级页面，路径仅周期词不同）、
-/// <c>others/api_getdailysummary.html</c>、<c>others/api_getperformancedata.html</c>。
+/// <see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/data-analysis/visit-trend/api_getdailyvisittrend"/>、<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/data-analysis/visit-retain/api_getdailyretain"/>、
+/// <see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/data-analysis/others/api_getuserportrait"/>、<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/data-analysis/others/api_getvisitdistribution"/>、
+/// <see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/data-analysis/others/api_getvisitpage"/>（weekly / monthly 为同级页面，路径仅周期词不同）、
+/// <see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/data-analysis/others/api_getdailysummary"/>、<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/data-analysis/others/api_getperformancedata"/>。
 /// </para>
 /// <para>
 /// <b>域级约束（逐页核验，勿弱化）</b>：
@@ -41,7 +41,7 @@ namespace Mud.Wechat.MiniProgram;
        Name = "access_token")]
 public interface IWxaDataAnalysisService
 {
-    /// <summary>获取用户访问小程序数据<b>日</b>趋势。官方文档：<c>visit-trend/api_getdailyvisittrend.html</c>。</summary>
+    /// <summary>获取用户访问小程序数据<b>日</b>趋势。官方文档：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/data-analysis/visit-trend/api_getdailyvisittrend"/>。</summary>
     /// <param name="request">日期区间（<c>begin_date</c> / <c>end_date</c>），见 <see cref="WxaDateRangeRequest"/>。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
     /// <returns>日趋势列表（<c>list</c>），见 <see cref="WxaVisitTrendResponse"/>。</returns>
@@ -56,7 +56,7 @@ public interface IWxaDataAnalysisService
         [Body] WxaDateRangeRequest request,
         CancellationToken cancellationToken = default);
 
-    /// <summary>获取用户访问小程序数据<b>周</b>趋势。官方文档：<c>visit-trend/api_getweeklyvisittrend.html</c>。</summary>
+    /// <summary>获取用户访问小程序数据<b>周</b>趋势。官方文档：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/data-analysis/visit-trend/api_getweeklyvisittrend"/>。</summary>
     /// <param name="request">日期区间，见 <see cref="WxaDateRangeRequest"/>。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
     /// <returns>周趋势列表（<c>list</c>）。</returns>
@@ -66,7 +66,7 @@ public interface IWxaDataAnalysisService
         [Body] WxaDateRangeRequest request,
         CancellationToken cancellationToken = default);
 
-    /// <summary>获取用户访问小程序数据<b>月</b>趋势。官方文档：<c>visit-trend/api_getmonthlyvisittrend.html</c>。</summary>
+    /// <summary>获取用户访问小程序数据<b>月</b>趋势。官方文档：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/data-analysis/visit-trend/api_getmonthlyvisittrend"/>。</summary>
     /// <param name="request">日期区间，见 <see cref="WxaDateRangeRequest"/>。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
     /// <returns>月趋势列表（<c>list</c>）。</returns>
@@ -76,7 +76,7 @@ public interface IWxaDataAnalysisService
         [Body] WxaDateRangeRequest request,
         CancellationToken cancellationToken = default);
 
-    /// <summary>获取用户访问小程序<b>日</b>留存。官方文档：<c>visit-retain/api_getdailyretain.html</c>。</summary>
+    /// <summary>获取用户访问小程序<b>日</b>留存。官方文档：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/data-analysis/visit-retain/api_getdailyretain"/>。</summary>
     /// <param name="request">日期区间，见 <see cref="WxaDateRangeRequest"/>。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
     /// <returns>留存数据（<c>ref_date</c> + <c>visit_uv_new</c> / <c>visit_uv</c> 两个数组），见 <see cref="WxaRetainResponse"/>。</returns>
@@ -91,7 +91,7 @@ public interface IWxaDataAnalysisService
         [Body] WxaDateRangeRequest request,
         CancellationToken cancellationToken = default);
 
-    /// <summary>获取用户访问小程序<b>周</b>留存。官方文档：<c>visit-retain/api_getweeklyretain.html</c>。</summary>
+    /// <summary>获取用户访问小程序<b>周</b>留存。官方文档：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/data-analysis/visit-retain/api_getweeklyretain"/>。</summary>
     /// <param name="request">日期区间，见 <see cref="WxaDateRangeRequest"/>。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
     /// <returns>周留存数据。</returns>
@@ -101,7 +101,7 @@ public interface IWxaDataAnalysisService
         [Body] WxaDateRangeRequest request,
         CancellationToken cancellationToken = default);
 
-    /// <summary>获取用户访问小程序<b>月</b>留存。官方文档：<c>visit-retain/api_getmonthlyretain.html</c>。</summary>
+    /// <summary>获取用户访问小程序<b>月</b>留存。官方文档：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/data-analysis/visit-retain/api_getmonthlyretain"/>。</summary>
     /// <param name="request">日期区间，见 <see cref="WxaDateRangeRequest"/>。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
     /// <returns>月留存数据。</returns>
@@ -112,7 +112,7 @@ public interface IWxaDataAnalysisService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// 获取小程序用户画像分布。官方文档：<c>others/api_getuserportrait.html</c>。
+    /// 获取小程序用户画像分布。官方文档：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/data-analysis/others/api_getuserportrait"/>。
     /// </summary>
     /// <param name="request">日期区间，见 <see cref="WxaDateRangeRequest"/>。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
@@ -132,7 +132,7 @@ public interface IWxaDataAnalysisService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// 获取用户小程序访问分布数据。官方文档：<c>others/api_getvisitdistribution.html</c>。
+    /// 获取用户小程序访问分布数据。官方文档：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/data-analysis/others/api_getvisitdistribution"/>。
     /// </summary>
     /// <param name="request">日期区间，见 <see cref="WxaDateRangeRequest"/>。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
@@ -150,7 +150,7 @@ public interface IWxaDataAnalysisService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// 获取访问页面数据。官方文档：<c>others/api_getvisitpage.html</c>。
+    /// 获取访问页面数据。官方文档：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/data-analysis/others/api_getvisitpage"/>。
     /// </summary>
     /// <param name="request">日期区间，见 <see cref="WxaDateRangeRequest"/>。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
@@ -166,7 +166,7 @@ public interface IWxaDataAnalysisService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// 获取用户访问小程序数据概况。官方文档：<c>data-analysis/others/api_getdailysummary.html</c>。
+    /// 获取用户访问小程序数据概况。官方文档：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/data-analysis/others/api_getdailysummary"/>。
     /// </summary>
     /// <param name="request">日期区间（<c>begin_date</c> / <c>end_date</c>），见 <see cref="WxaDateRangeRequest"/>。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
@@ -182,7 +182,7 @@ public interface IWxaDataAnalysisService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// 获取小程序性能数据（启动 / 运行性能）。官方文档：<c>data-analysis/others/api_getperformancedata.html</c>。
+    /// 获取小程序性能数据（启动 / 运行性能）。官方文档：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/data-analysis/others/api_getperformancedata"/>。
     /// </summary>
     /// <param name="request">时间与模块，见 <see cref="WxaPerformanceBootRequest"/>。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>

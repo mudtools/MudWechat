@@ -14,7 +14,7 @@ namespace Mud.Wechat.MiniProgram;
 /// <remarks>
 /// <para>
 /// <b>官方文档</b>（小程序服务端 API → 运维中心，2026-10-10 依据官方清单核验）：
-/// <c>operation/api_*.html</c> 系列（域名配置 / 性能数据 / 访问来源 / 客户端版本 / 实时日志 / 用户反馈 / JS 错误 / 分阶段发布）。
+/// <see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/operation/"/> 系列（域名配置 / 性能数据 / 访问来源 / 客户端版本 / 实时日志 / 用户反馈 / JS 错误 / 分阶段发布）。
 /// </para>
 /// <para>
 /// <b>应答形态</b>：日志统计类（性能 / 来源 / 客户端版本 / JS 错误）的 <c>data</c> 字段随官方版本演进、
@@ -32,7 +32,7 @@ namespace Mud.Wechat.MiniProgram;
 public interface IWxaOperationService
 {
     /// <summary>
-    /// 查询域名配置。官方文档：<c>operation/api_getdomaininfo.html</c>。
+    /// 查询域名配置。官方文档：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/operation/api_getdomaininfo"/>。
     /// </summary>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
     /// <returns>request / ws / upload / download 四类合法域名，见 <see cref="DataModels.Operation.WxaDevInfoResponse"/>。</returns>
@@ -42,7 +42,7 @@ public interface IWxaOperationService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// 获取性能数据。官方文档：<c>operation/api_getperformance.html</c>。
+    /// 获取性能数据。官方文档：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/operation/api_getperformance"/>。
     /// </summary>
     /// <param name="request">日期与模块（<c>date</c> + <c>module</c> 必填），见 <see cref="DataModels.Operation.WxaLogDateModuleRequest"/>。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
@@ -57,7 +57,7 @@ public interface IWxaOperationService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// 获取访问来源。官方文档：<c>operation/api_getscenelist.html</c>。
+    /// 获取访问来源。官方文档：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/operation/api_getscenelist"/>。
     /// </summary>
     /// <param name="request">日期与模块（<c>date</c> + <c>module</c> 必填）。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
@@ -69,7 +69,7 @@ public interface IWxaOperationService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// 获取客户端版本。官方文档：<c>operation/api_getversionlist.html</c>。
+    /// 获取客户端版本。官方文档：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/operation/api_getversionlist"/>。
     /// </summary>
     /// <param name="request">日期与模块（<c>date</c> + <c>module</c> 必填）。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
@@ -81,7 +81,7 @@ public interface IWxaOperationService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// 查询实时日志。官方文档：<c>operation/api_realtimelogsearch.html</c>。
+    /// 查询实时日志。官方文档：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/operation/api_realtimelogsearch"/>。
     /// </summary>
     /// <param name="request">时间窗与分页（<c>date</c> / <c>begintime</c> / <c>endtime</c> / <c>start</c> / <c>limit</c> 必填），见 <see cref="DataModels.Operation.WxaUserLogSearchRequest"/>。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
@@ -93,7 +93,7 @@ public interface IWxaOperationService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// 获取用户反馈列表。官方文档：<c>operation/api_getfeedback.html</c>。
+    /// 获取用户反馈列表。官方文档：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/operation/api_getfeedback"/>。
     /// </summary>
     /// <param name="request">分页与类型过滤，见 <see cref="DataModels.Operation.WxaFeedbackListRequest"/>。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
@@ -105,7 +105,7 @@ public interface IWxaOperationService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// 查询 JS 错误详情。官方文档：<c>operation/api_getjserrdetail.html</c>。
+    /// 查询 JS 错误详情。官方文档：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/operation/api_getjserrdetail"/>。
     /// </summary>
     /// <param name="request">日期与错误关键字（<c>date</c> + <c>errmsg_key</c> 必填），见 <see cref="DataModels.Operation.WxaJsErrDetailRequest"/>。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
@@ -117,7 +117,7 @@ public interface IWxaOperationService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// 查询错误列表。官方文档：<c>operation/api_getjserrlist.html</c>。
+    /// 查询错误列表。官方文档：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/operation/api_getjserrlist"/>。
     /// </summary>
     /// <param name="request">日期（<c>date</c> 必填）+ 可选错误关键字，见 <see cref="DataModels.Operation.WxaJsErrListRequest"/>。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
@@ -129,7 +129,7 @@ public interface IWxaOperationService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// 获取分阶段发布详情。官方文档：<c>operation/api_getgrayreleaseplan.html</c>。
+    /// 获取分阶段发布详情。官方文档：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/operation/api_getgrayreleaseplan"/>。
     /// </summary>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
     /// <returns>分阶段发布计划（<c>gray_release_plan</c>，原始键值对透传），见 <see cref="DataModels.Operation.WxaGrayReleasePlanResponse"/>。</returns>

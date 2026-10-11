@@ -20,6 +20,7 @@ global using Mud.Wechat.MiniProgram.DataModels.Auth;
 global using Mud.Wechat.MiniProgram.DataModels.Charge;
 global using Mud.Wechat.MiniProgram.DataModels.DataAnalysis;
 global using Mud.Wechat.MiniProgram.DataModels.DynamicMessage;
+global using Mud.Wechat.MiniProgram.DataModels.Express;
 global using Mud.Wechat.MiniProgram.DataModels.FaceVerify;
 global using Mud.Wechat.MiniProgram.DataModels.HardwareDevice;
 global using Mud.Wechat.MiniProgram.DataModels.Kf;

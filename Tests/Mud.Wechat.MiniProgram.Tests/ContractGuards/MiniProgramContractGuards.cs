@@ -80,11 +80,11 @@ public class MiniProgramContractGuards
             .Where(static t => t.GetCustomAttributes(false).Any(static a => a.GetType().Name == "TokenAttribute"))
             .ToArray();
 
-        tokenInterfaces.Should().HaveCount(19,
+        tokenInterfaces.Should().HaveCount(22,
             "带令牌接口 = Auth / QrCodeLink / Security / DataAnalysis / SubscribeMessage / DynamicMessage / Kf / " +
             "HardwareDevice / Operation / Plugin / Charge / NearbyPoi / Search / Soter / ServiceMarket / " +
-            "RedPacketCover / Student / FaceVerify / LaborUse（登录 code2Session 为免令牌独立接口；" +
-            "图片通道 Code / FeedbackMedia 为手工服务不走 [Token]）");
+            "RedPacketCover / Student / FaceVerify / LaborUse / ExpressBusiness / ExpressDelivery / ExpressIntracity" +
+            "（登录 code2Session 为免令牌独立接口；图片通道 Code / FeedbackMedia 与对账文件通道 Bill 为手工服务不走 [Token]）");
 
         foreach (var iface in tokenInterfaces)
         {
@@ -242,19 +242,62 @@ public class MiniProgramContractGuards
             "/wxa/business/unbinduserb2cauthinfo",
         });
 
+        // 物流助手 · 商家寄件（12）
+        RoutesOf(asm, nameof(IWxaExpressBusinessService)).Should().BeEquivalentTo(new[]
+        {
+            "/cgi-bin/express/business/order/add", "/cgi-bin/express/business/order/get",
+            "/cgi-bin/express/business/order/batchget", "/cgi-bin/express/business/order/cancel",
+            "/cgi-bin/express/business/path/get", "/cgi-bin/express/business/delivery/getall",
+            "/cgi-bin/express/business/account/getall", "/cgi-bin/express/business/account/bind",
+            "/cgi-bin/express/business/printer/getall", "/cgi-bin/express/business/printer/update",
+            "/cgi-bin/express/business/quota/get", "/cgi-bin/express/business/test_update_order",
+        });
+
+        // 物流助手 · 服务商 / 物流消息 / 退货 / 散单寄件（25，get_bill 为手动通道不计特性路由）
+        RoutesOf(asm, nameof(IWxaExpressDeliveryService)).Should().BeEquivalentTo(new[]
+        {
+            "/cgi-bin/express/delivery/contact/get", "/cgi-bin/express/delivery/template/preview",
+            "/cgi-bin/express/delivery/service/business/update", "/cgi-bin/express/delivery/path/update",
+            "/cgi-bin/express/delivery/no_worry_return/add", "/cgi-bin/express/delivery/no_worry_return/get",
+            "/cgi-bin/express/delivery/no_worry_return/unbind", "/cgi-bin/express/delivery/open_msg/follow_waybill",
+            "/cgi-bin/express/delivery/open_msg/query_follow_trace", "/cgi-bin/express/delivery/open_msg/update_follow_waybill_goods",
+            "/cgi-bin/express/delivery/open_msg/open_openmsg", "/cgi-bin/express/delivery/open_msg/open_query_plugin",
+            "/cgi-bin/express/delivery/open_msg/trace_waybill", "/cgi-bin/express/delivery/open_msg/query_trace",
+            "/cgi-bin/express/delivery/open_msg/update_waybill_goods", "/cgi-bin/express/delivery/open_msg/get_delivery_list",
+            "/cgi-bin/express/delivery/return/open_return", "/cgi-bin/express/delivery/return/add",
+            "/cgi-bin/express/delivery/return/get", "/cgi-bin/express/delivery/return/unbind",
+            "/cgi-bin/express/delivery/single_waybill/update", "/cgi-bin/express/delivery/single_waybill/fee",
+            "/cgi-bin/express/delivery/single_waybill/cancel_order", "/cgi-bin/express/delivery/single_waybill/refund_order",
+            "/cgi-bin/express/delivery/single_waybill/evaluate_feedback",
+        });
+
+        // 物流助手 · 同城配送（13）
+        RoutesOf(asm, nameof(IWxaExpressIntracityService)).Should().BeEquivalentTo(new[]
+        {
+            "/cgi-bin/express/intracity/apply", "/cgi-bin/express/intracity/createstore",
+            "/cgi-bin/express/intracity/querystore", "/cgi-bin/express/intracity/updatestore",
+            "/cgi-bin/express/intracity/storecharge", "/cgi-bin/express/intracity/storerefund",
+            "/cgi-bin/express/intracity/queryflow", "/cgi-bin/express/intracity/balancequery",
+            "/cgi-bin/express/intracity/preaddorder", "/cgi-bin/express/intracity/addorder",
+            "/cgi-bin/express/intracity/queryorder", "/cgi-bin/express/intracity/cancelorder",
+            "/cgi-bin/express/intracity/mocknotify",
+        });
+
         ManualChannelRoutes().Should().BeEquivalentTo(new[]
         {
             WxaCodeService.UnlimitedCodePath, WxaCodeService.CodePath, WxaCodeService.QrCodePath,
             WxaFeedbackMediaService.FeedbackMediaPath,
+            WxaExpressBillService.BillPath,
         });
 
-        // 合计计数（MP-X5 的单一来源）：80 特性路由 + 4 手工通道路由 = 84（基线见 Tests/ContractBaseline.cs）。
+        // 合计计数（MP-X5 的单一来源）：130 特性路由 + 5 手工通道路由 = 135（基线见 Tests/ContractBaseline.cs）。
         (CollectAttributeRoutes(asm).Length + ManualChannelRoutes().Length)
             .Should().Be(Baseline.MiniProgram.Endpoints,
-                "小程序线合计 84 端点（Auth 8 + QrCodeLink 9 + Security 3 + DataAnalysis 11 + "
+                "小程序线合计 135 端点（Auth 8 + QrCodeLink 9 + Security 3 + DataAnalysis 11 + "
                 + "SubscribeMessage 4 + DynamicMessage 3 + Kf 9 + HardwareDevice 9 + Operation 10 + "
                 + "Plugin 2 + Charge 2 + NearbyPoi 4 + Search 1 + Soter 1 + ServiceMarket 2 + "
-                + "RedPacketCover 1 + Student 1 + FaceVerify 2 + LaborUse 2）；"
+                + "RedPacketCover 1 + Student 1 + FaceVerify 2 + LaborUse 2 + ExpressBusiness 12 + "
+                + "ExpressDelivery 25 + ExpressIntracity 13 + ExpressBill 1）；"
                 + "数量变化须同批调整 Tests/ContractBaseline.cs");
     }
 
@@ -464,6 +507,10 @@ public class MiniProgramContractGuards
         provider.GetRequiredService<IWxaLaborUseService>().Should().NotBeNull();
         provider.GetRequiredService<IWxaCodeService>().Should().NotBeNull("小程序码图片通道随 QrCodeLink 模块注册");
         provider.GetRequiredService<IWxaFeedbackMediaService>().Should().NotBeNull("反馈图片通道随 Operation 模块注册");
+        provider.GetRequiredService<IWxaExpressBusinessService>().Should().NotBeNull("物流助手商家寄件随 Express 模块注册");
+        provider.GetRequiredService<IWxaExpressDeliveryService>().Should().NotBeNull("物流助手服务商侧随 Express 模块注册");
+        provider.GetRequiredService<IWxaExpressIntracityService>().Should().NotBeNull("物流助手同城配送随 Express 模块注册");
+        provider.GetRequiredService<IWxaExpressBillService>().Should().NotBeNull("对账文件通道随 Express 模块注册");
     }
 
     // ---- helpers -------------------------------------------------------------
@@ -473,6 +520,7 @@ public class MiniProgramContractGuards
         {
             WxaCodeService.UnlimitedCodePath, WxaCodeService.CodePath, WxaCodeService.QrCodePath,
             WxaFeedbackMediaService.FeedbackMediaPath,
+            WxaExpressBillService.BillPath,
         };
 
     private static string[] RoutesOf(Assembly asm, string interfaceName)

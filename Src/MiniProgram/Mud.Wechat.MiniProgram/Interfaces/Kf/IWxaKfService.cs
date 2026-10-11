@@ -13,7 +13,7 @@ namespace Mud.Wechat.MiniProgram;
 /// <remarks>
 /// <para>
 /// <b>官方文档</b>（小程序服务端 API → 客服消息 / 客服子商户 / 微信客服，2026-10-10 依据官方清单核验）：
-/// 客服消息 <c>customer-service/</c>、客服子商户 <c>business/</c> 族、微信客服 <c>customservice/work/</c> 族。
+/// 客服消息 <see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/kf-mgnt/kf-message/"/>、客服子商户 <see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/kf-mgnt/kf-management/"/> 族、微信客服 <see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/kf-work/"/> 族。
 /// </para>
 /// <para>
 /// <b>为何只有 9 端点（MP-X1）</b>：客服账号的「增删改/头像/邀请绑定」（<c>/customservice/kfaccount/{add,update,del,uploadheadimg,inviteworker}</c>）、
@@ -34,6 +34,7 @@ public interface IWxaKfService
 {
     /// <summary>
     /// 设置客服账号角色（管理员）。官方路由：<c>POST /customservice/kfaccount/setadmin</c>。
+    /// 官方文档：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/kf-mgnt/kf-message/api_setkfadmin"/>。
     /// </summary>
     /// <param name="kfAccount">完整客服账号（<c>kfaccount</c>，必填；格式 <c>账号前缀@公众号微信号</c>）。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
@@ -50,6 +51,7 @@ public interface IWxaKfService
 
     /// <summary>
     /// 取消客服账号角色（管理员）。官方路由：<c>POST /customservice/kfaccount/canceladmin</c>。
+    /// 官方文档：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/kf-mgnt/kf-message/api_cancelkfadmin"/>。
     /// </summary>
     /// <param name="kfAccount">完整客服账号（<c>kfaccount</c>，必填）。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
@@ -62,6 +64,7 @@ public interface IWxaKfService
 
     /// <summary>
     /// 注册客服子商户。官方路由：<c>POST /cgi-bin/business/register</c>。
+    /// 官方文档：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/kf-mgnt/kf-management/api_registerbusiness"/>。
     /// </summary>
     /// <param name="request">商户号与品牌信息，见 <see cref="WxaBusinessRegisterRequest"/>。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
@@ -78,6 +81,7 @@ public interface IWxaKfService
 
     /// <summary>
     /// 更新客服子商户信息。官方路由：<c>POST /cgi-bin/business/update</c>。
+    /// 官方文档：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/kf-mgnt/kf-management/api_updatebusiness"/>。
     /// </summary>
     /// <param name="request">商户号与待更新品牌信息，见 <see cref="WxaBusinessUpdateRequest"/>。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
@@ -90,6 +94,7 @@ public interface IWxaKfService
 
     /// <summary>
     /// 获取客服子商户信息。官方路由：<c>POST /cgi-bin/business/get</c>。
+    /// 官方文档：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/kf-mgnt/kf-management/api_getbusiness"/>。
     /// </summary>
     /// <param name="request">商户号（<c>mch_id</c>），见 <see cref="WxaBusinessGetRequest"/>。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
@@ -102,6 +107,7 @@ public interface IWxaKfService
 
     /// <summary>
     /// 获取客服子商户列表。官方路由：<c>POST /cgi-bin/business/list</c>。
+    /// 官方文档：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/kf-mgnt/kf-management/api_listbusiness"/>。
     /// </summary>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
     /// <returns>子商户品牌列表，见 <see cref="WxaBusinessListResponse"/>。</returns>
@@ -112,6 +118,7 @@ public interface IWxaKfService
 
     /// <summary>
     /// 获取微信客服账号信息。官方路由：<c>POST /customservice/work/get</c>。
+    /// 官方文档：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/kf-work/api_getkfworkbound"/>。
     /// </summary>
     /// <param name="request">微信客服账号标识（<c>kf_openid</c>），见 <see cref="WxaKfWorkRequest"/>。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
@@ -124,6 +131,7 @@ public interface IWxaKfService
 
     /// <summary>
     /// 绑定微信客服。官方路由：<c>POST /customservice/work/bind</c>。
+    /// 官方文档：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/kf-work/api_bindkfwork"/>。
     /// </summary>
     /// <param name="request">微信客服账号标识，见 <see cref="WxaKfWorkRequest"/>。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
@@ -136,6 +144,7 @@ public interface IWxaKfService
 
     /// <summary>
     /// 解绑微信客服。官方路由：<c>POST /customservice/work/unbind</c>。
+    /// 官方文档：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/kf-work/api_unbindkfwork"/>。
     /// </summary>
     /// <param name="request">微信客服账号标识，见 <see cref="WxaKfWorkRequest"/>。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>

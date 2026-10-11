@@ -13,7 +13,7 @@ namespace Mud.Wechat.MiniProgram;
 /// <remarks>
 /// <para>
 /// <b>官方文档</b>（小程序服务端 API → 用工关系，2026-10-10 依据官方清单核验）：
-/// <c>laboruse/api_sendemployeerelationmsg.html</c>、<c>laboruse/api_unbinduserb2cauthinfo.html</c>。
+/// <see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/laboruse/api_sendemployeerelationmsg"/>、<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/laboruse/api_unbinduserb2cauthinfo"/>。
 /// </para>
 /// <para>
 /// <b>业务形态（官方原文）</b>：用工关系面向「用工单位 + 劳动者」的小程序用工协作场景；
@@ -30,7 +30,7 @@ namespace Mud.Wechat.MiniProgram;
 public interface IWxaLaborUseService
 {
     /// <summary>
-    /// 推送用工消息。官方文档：<c>laboruse/api_sendemployeerelationmsg.html</c>。
+    /// 推送用工消息。官方文档：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/laboruse/api_sendemployeerelationmsg"/>。
     /// </summary>
     /// <param name="request">推送请求（<c>template_id</c> / <c>touser</c> 必填），见 <see cref="DataModels.LaborUse.WxaSendEmployeeRelationMessageRequest"/>。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
@@ -46,7 +46,7 @@ public interface IWxaLaborUseService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// 解绑用工关系（批量解绑用户的 B2C 授权信息）。官方文档：<c>laboruse/api_unbinduserb2cauthinfo.html</c>。
+    /// 解绑用工关系（批量解绑用户的 B2C 授权信息）。官方文档：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/laboruse/api_unbinduserb2cauthinfo"/>。
     /// </summary>
     /// <param name="request">解绑请求（<c>openid_list</c> 必填），见 <see cref="DataModels.LaborUse.WxaUnbindUserB2CAuthInfoRequest"/>。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>

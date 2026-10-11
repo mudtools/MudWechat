@@ -13,7 +13,7 @@ namespace Mud.Wechat.MiniProgram;
 /// <remarks>
 /// <para>
 /// <b>官方文档</b>（小程序服务端 API → 微信红包封面，2026-10-10 依据官方清单核验）：
-/// <c>red-packet-cover/api_getredpacketcoverurl.html</c>。
+/// <see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/red-packet-cover/api_getredpacketcoverurl"/>。
 /// </para>
 /// <para>
 /// <b>业务形态（官方原文）</b>：本接口用于获得<b>指定用户</b>可以领取的红包封面链接；
@@ -30,7 +30,7 @@ namespace Mud.Wechat.MiniProgram;
 public interface IWxaRedPacketCoverService
 {
     /// <summary>
-    /// 获取微信红包封面（指定用户可领取的链接）。官方文档：<c>red-packet-cover/api_getredpacketcoverurl.html</c>。
+    /// 获取微信红包封面（指定用户可领取的链接）。官方文档：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/red-packet-cover/api_getredpacketcoverurl"/>。
     /// </summary>
     /// <param name="request">获取请求（<c>openid</c> / <c>ctoken</c> 必填），见 <see cref="DataModels.RedPacketCover.WxaRedPacketCoverRequest"/>。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>

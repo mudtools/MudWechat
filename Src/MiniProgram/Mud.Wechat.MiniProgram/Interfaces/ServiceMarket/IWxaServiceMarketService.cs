@@ -13,7 +13,7 @@ namespace Mud.Wechat.MiniProgram;
 /// <remarks>
 /// <para>
 /// <b>官方文档</b>（小程序服务端 API → 微信服务市场，2026-10-10 依据官方清单核验）：
-/// <c>wx-service-market/api_invokeservice.html</c>、<c>wx-service-market/api_servicemarketretrieve.html</c>。
+/// <see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/wx-service-market/api_invokeservice"/>、<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/wx-service-market/api_servicemarketretrieve"/>。
 /// </para>
 /// <para>
 /// <b>业务形态（官方原文）</b>：服务市场是面向开发者的增值服务（能力）交易/调用平台；
@@ -32,7 +32,7 @@ namespace Mud.Wechat.MiniProgram;
 public interface IWxaServiceMarketService
 {
     /// <summary>
-    /// 调用服务市场接口。官方文档：<c>wx-service-market/api_invokeservice.html</c>。
+    /// 调用服务市场接口。官方文档：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/wx-service-market/api_invokeservice"/>。
     /// </summary>
     /// <param name="request">调用请求（<c>service</c> / <c>api</c> 必填），见 <see cref="DataModels.ServiceMarket.WxaServiceMarketRequest"/>。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
@@ -51,7 +51,7 @@ public interface IWxaServiceMarketService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// 异步获取服务市场处理数据。官方文档：<c>wx-service-market/api_servicemarketretrieve.html</c>。
+    /// 异步获取服务市场处理数据。官方文档：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/wx-service-market/api_servicemarketretrieve"/>。
     /// </summary>
     /// <param name="request">拉取请求（<c>request_id</c> 必填），见 <see cref="DataModels.ServiceMarket.WxaServiceMarketRetrieveRequest"/>。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>

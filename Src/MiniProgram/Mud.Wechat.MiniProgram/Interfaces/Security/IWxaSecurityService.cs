@@ -13,9 +13,9 @@ namespace Mud.Wechat.MiniProgram;
 /// <remarks>
 /// <para>
 /// <b>官方文档</b>（小程序服务端 API → 内容安全，2026-10-09 核验）：
-/// 文本 <c>sec-center/sec-check/api_msgseccheck.html</c>、
-/// 音视频 <c>sec-center/sec-check/api_mediacheckasync.html</c>、
-/// 安全风控 <c>sec-center/safety-control-capability/api_getuserriskrank.html</c>。
+/// 文本 <see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/sec-center/sec-check/api_msgseccheck"/>、
+/// 音视频 <see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/sec-center/sec-check/api_mediacheckasync"/>、
+/// 安全风控 <see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/sec-center/safety-control-capability/api_getuserriskrank"/>。
 /// </para>
 /// <para>
 /// <b>图片内容安全 <c>/wxa/img_sec_check</c> 刻意不实现</b>：官方文档页
@@ -40,7 +40,7 @@ namespace Mud.Wechat.MiniProgram;
 public interface IWxaSecurityService
 {
     /// <summary>
-    /// 文本内容安全识别（同步）。官方文档：<c>sec-center/sec-check/api_msgseccheck.html</c>。
+    /// 文本内容安全识别（同步）。官方文档：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/sec-center/sec-check/api_msgseccheck"/>。
     /// </summary>
     /// <param name="request">待检文本与场景，见 <see cref="WxaMsgSecCheckRequest"/>。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
@@ -63,7 +63,7 @@ public interface IWxaSecurityService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// 音视频内容安全识别（<b>异步受理</b>）。官方文档：<c>sec-center/sec-check/api_mediacheckasync.html</c>。
+    /// 音视频内容安全识别（<b>异步受理</b>）。官方文档：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/sec-center/sec-check/api_mediacheckasync"/>。
     /// </summary>
     /// <param name="request">媒体地址与类型，见 <see cref="WxaMediaCheckAsyncRequest"/>。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
@@ -87,7 +87,7 @@ public interface IWxaSecurityService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// 获取用户安全等级（<c>risk_rank</c>）。官方文档：<c>sec-center/safety-control-capability/api_getuserriskrank.html</c>。
+    /// 获取用户安全等级（<c>risk_rank</c>）。官方文档：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/sec-center/safety-control-capability/api_getuserriskrank"/>。
     /// </summary>
     /// <param name="request">用户信息与场景，见 <see cref="WxaGetUserRiskRankRequest"/>。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>

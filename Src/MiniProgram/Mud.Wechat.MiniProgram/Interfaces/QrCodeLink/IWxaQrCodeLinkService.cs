@@ -13,12 +13,12 @@ namespace Mud.Wechat.MiniProgram;
 /// <remarks>
 /// <para>
 /// <b>官方文档</b>（小程序服务端 API，2026-10-09 逐页核验）：
-/// 生成 URL Link <c>qrcode-link/url-link/api_generateurllink.html</c>、
-/// 查询 URL Link <c>qrcode-link/url-link/api_queryurllink.html</c>、
-/// 生成 URL Scheme <c>qrcode-link/url-scheme/api_generatescheme.html</c>、
-/// 查询 URL Scheme <c>qrcode-link/url-scheme/api_queryscheme.html</c>、
-/// 生成 ShortLink <c>qrcode-link/short-link/api_generateshortlink.html</c>、
-/// 获取 NFC scheme <c>qrcode-link/url-scheme/api_generatenfcscheme.html</c>。
+/// 生成 URL Link <see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/qrcode-link/url-link/api_generateurllink"/>、
+/// 查询 URL Link <see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/qrcode-link/url-link/api_queryurllink"/>、
+/// 生成 URL Scheme <see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/qrcode-link/url-scheme/api_generatescheme"/>、
+/// 查询 URL Scheme <see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/qrcode-link/url-scheme/api_queryscheme"/>、
+/// 生成 ShortLink <see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/qrcode-link/short-link/api_generateshortlink"/>、
+/// 获取 NFC scheme <see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/qrcode-link/url-scheme/api_generatenfcscheme"/>。
 /// </para>
 /// <para>
 /// <b>双通道分工（对齐公众号线素材域先例，勿合并）</b>：本域 9 端点中，
@@ -39,7 +39,7 @@ namespace Mud.Wechat.MiniProgram;
 public interface IWxaQrCodeLinkService
 {
     /// <summary>
-    /// 生成 URL Link（小程序加密链接）。官方文档：<c>api_generateurllink.html</c>。
+    /// 生成 URL Link（小程序加密链接）。官方文档：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/qrcode-link/url-link/api_generateurllink"/>。
     /// </summary>
     /// <param name="request">生成请求（<c>path</c> 必填），见 <see cref="WxaUrlLinkRequest"/>。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
@@ -60,7 +60,7 @@ public interface IWxaQrCodeLinkService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// 查询 URL Link 信息。官方文档：<c>api_queryurllink.html</c>（2026-10-09 逐字段核验）。
+    /// 查询 URL Link 信息。官方文档：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/qrcode-link/url-link/api_queryurllink"/>（2026-10-09 逐字段核验）。
     /// </summary>
     /// <param name="request">查询请求（<c>url_link</c> 与 <c>query_type</c>），见 <see cref="WxaQueryUrlLinkRequest"/>。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
@@ -78,7 +78,7 @@ public interface IWxaQrCodeLinkService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// 生成 URL Scheme（小程序加密 scheme 码）。官方文档：<c>api_generatescheme.html</c>。
+    /// 生成 URL Scheme（小程序加密 scheme 码）。官方文档：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/qrcode-link/url-scheme/api_generatescheme"/>。
     /// </summary>
     /// <param name="request">生成请求（<c>jump_wxa</c>），见 <see cref="WxaSchemeRequest"/>。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
@@ -93,7 +93,7 @@ public interface IWxaQrCodeLinkService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// 查询 URL Scheme 信息。官方文档：<c>api_queryscheme.html</c>（2026-10-09 逐字段核验）。
+    /// 查询 URL Scheme 信息。官方文档：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/qrcode-link/url-scheme/api_queryscheme"/>（2026-10-09 逐字段核验）。
     /// </summary>
     /// <param name="request">查询请求（<c>scheme</c> / <c>query_type</c>），见 <see cref="WxaQuerySchemeRequest"/>。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
@@ -108,7 +108,7 @@ public interface IWxaQrCodeLinkService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// 生成 ShortLink（小程序短链）。官方文档：<c>api_generateshortlink.html</c>。
+    /// 生成 ShortLink（小程序短链）。官方文档：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/qrcode-link/short-link/api_generateshortlink"/>。
     /// </summary>
     /// <param name="request">生成请求（<c>page_url</c> 必填），见 <see cref="WxaShortLinkRequest"/>。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
@@ -128,7 +128,7 @@ public interface IWxaQrCodeLinkService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// 获取 NFC 的小程序 scheme。官方文档：<c>qrcode-link/url-scheme/api_generatenfcscheme.html</c>。
+    /// 获取 NFC 的小程序 scheme。官方文档：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/qrcode-link/url-scheme/api_generatenfcscheme"/>。
     /// </summary>
     /// <param name="request">NFC 场景生成请求（<c>sn</c> / <c>model_id</c> 必填），见 <see cref="WxaNfcSchemeRequest"/>。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>

@@ -10,6 +10,7 @@ using Mud.Wechat.MiniProgram.DataModels.Auth;
 using Mud.Wechat.MiniProgram.DataModels.Charge;
 using Mud.Wechat.MiniProgram.DataModels.DataAnalysis;
 using Mud.Wechat.MiniProgram.DataModels.DynamicMessage;
+using Mud.Wechat.MiniProgram.DataModels.Express;
 using Mud.Wechat.MiniProgram.DataModels.FaceVerify;
 using Mud.Wechat.MiniProgram.DataModels.HardwareDevice;
 using Mud.Wechat.MiniProgram.DataModels.Kf;
@@ -78,7 +79,8 @@ public static class MiniProgramJsonResolverExtensions
             RedPacketCoverJsonContext.Default,
             StudentJsonContext.Default,
             FaceVerifyJsonContext.Default,
-            LaborUseJsonContext.Default);
+            LaborUseJsonContext.Default,
+            ExpressJsonContext.Default);
 
         services.AddMudHttpClientJsonContext(resolver);
     }

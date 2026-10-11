@@ -12,12 +12,12 @@ namespace Mud.Wechat.MiniProgram;
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>官方文档</b>：小程序服务端 API（<c>https://developers.weixin.qq.com/miniprogram/dev/server/API/</c>），
+/// <b>官方文档</b>：小程序服务端 API（<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/"/>），
 /// 2026-10-09 逐页核验：
-/// 校验 SessionKey <c>user-login/api_checksessionkey.html</c>、
-/// 重置 SessionKey <c>user-login/api_resetusersessionkey.html</c>、
-/// 获取手机号 <c>user-info/phone-number/api_getphonenumber.html</c>、
-/// 支付后 UnionID <c>user-info/basic-info/api_getpaidunionid.html</c>。
+/// 校验 SessionKey <see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/user-login/api_checksessionkey"/>、
+/// 重置 SessionKey <see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/user-login/api_resetusersessionkey"/>、
+/// 获取手机号 <see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/user-info/phone-number/api_getphonenumber"/>、
+/// 支付后 UnionID <see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/user-info/basic-info/api_getpaidunionid"/>。
 /// </para>
 /// <para>
 /// <b>本域为何拆两个接口（对齐公众号线 <c>IMpOpenApiService</c> / <c>IMpOpenApiTokenFreeService</c> 先例）</b>：
@@ -39,7 +39,7 @@ namespace Mud.Wechat.MiniProgram;
 public interface IWxaAuthService
 {
     /// <summary>
-    /// 校验 <c>session_key</c> 是否有效。官方文档：<c>user-login/api_checksessionkey.html</c>。
+    /// 校验 <c>session_key</c> 是否有效。官方文档：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/user-login/api_checksessionkey"/>。
     /// </summary>
     /// <param name="signature">用户登录态签名（官方 <c>signature</c>，必填；对 <c>session_key</c> 做 HMAC-SHA256 所得）。</param>
     /// <param name="sigMethod">签名算法（官方 <c>sig_method</c>，必填；固定 <see cref="WxaSignatureMethods.HmacSha256"/>）。</param>
@@ -61,7 +61,7 @@ public interface IWxaAuthService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// 重置 <c>session_key</c>。官方文档：<c>user-login/api_resetusersessionkey.html</c>。
+    /// 重置 <c>session_key</c>。官方文档：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/user-login/api_resetusersessionkey"/>。
     /// </summary>
     /// <param name="signature">用户登录态签名（官方 <c>signature</c>，必填）。</param>
     /// <param name="sigMethod">签名算法（官方 <c>sig_method</c>，必填；固定 <see cref="WxaSignatureMethods.HmacSha256"/>）。</param>
@@ -82,7 +82,7 @@ public interface IWxaAuthService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// 获取手机号。官方文档：<c>user-info/phone-number/api_getphonenumber.html</c>。
+    /// 获取手机号。官方文档：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/user-info/phone-number/api_getphonenumber"/>。
     /// </summary>
     /// <param name="request">手机号请求体（<c>code</c>），见 <see cref="WxaGetPhoneNumberRequest"/>。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
@@ -109,7 +109,7 @@ public interface IWxaAuthService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// 支付后获取 UnionID。官方文档：<c>user-info/basic-info/api_getpaidunionid.html</c>。
+    /// 支付后获取 UnionID。官方文档：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/user-info/basic-info/api_getpaidunionid"/>。
     /// </summary>
     /// <param name="openId">用户标识（官方 <c>openid</c>，必填）。</param>
     /// <param name="transactionId">微信支付订单号（官方 <c>transaction_id</c>，与 <paramref name="outTradeNo"/> <b>二选一</b>）。</param>
@@ -135,7 +135,7 @@ public interface IWxaAuthService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// 获取插件用户 <c>openpid</c>。官方文档：<c>user-info/basic-info/api_getpluginopenpid.html</c>。
+    /// 获取插件用户 <c>openpid</c>。官方文档：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/user-info/basic-info/api_getpluginopenpid"/>。
     /// </summary>
     /// <param name="code">插件用户标志凭证（官方 <c>code</c>，必填；经 <c>wx.pluginLogin</c> 取得）。</param>
     /// <param name="pluginAppId">插件 AppID（官方 <c>plugin_appid</c>，必填）。</param>
@@ -156,7 +156,7 @@ public interface IWxaAuthService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// 检查加密信息是否由微信生成。官方文档：<c>user-info/basic-info/api_checkencrypteddata.html</c>。
+    /// 检查加密信息是否由微信生成。官方文档：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/user-info/basic-info/api_checkencrypteddata"/>。
     /// </summary>
     /// <param name="request">加密消息哈希与用户标识，见 <see cref="WxaCheckEncryptedMsgRequest"/>。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
@@ -175,7 +175,7 @@ public interface IWxaAuthService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// 获取用户 <c>encryptKey</c>（用于端侧对用户数据做对称加密 / 解密）。官方文档：<c>user-info/internet/api_getuserencryptkey.html</c>。
+    /// 获取用户 <c>encryptKey</c>（用于端侧对用户数据做对称加密 / 解密）。官方文档：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/user-info/internet/api_getuserencryptkey"/>。
     /// </summary>
     /// <param name="request">用户标识与会话签名，见 <see cref="WxaGetUserEncryptKeyRequest"/>。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>

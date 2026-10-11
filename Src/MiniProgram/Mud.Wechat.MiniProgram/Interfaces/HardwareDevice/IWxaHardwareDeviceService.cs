@@ -13,7 +13,7 @@ namespace Mud.Wechat.MiniProgram;
 /// <remarks>
 /// <para>
 /// <b>官方文档</b>（小程序服务端 API → 硬件设备，2026-10-10 依据官方清单核验）：
-/// <c>hardware-device/api_*.html</c> 系列（发送设备消息 / 获取设备票据 / 设备组 / license 资源包）。
+/// <see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/hardware-device/"/> 系列（发送设备消息 / 获取设备票据 / 设备组 / license 资源包）。
 /// </para>
 /// <para>
 /// <b>能力口径</b>：设备消息走「设备订阅」模板（接收者为 <c>tousers</c> 数组，区别于订阅消息的
@@ -31,7 +31,7 @@ namespace Mud.Wechat.MiniProgram;
 public interface IWxaHardwareDeviceService
 {
     /// <summary>
-    /// 发送设备消息。官方文档：<c>hardware-device/api_sendhardwaredevicemessage.html</c>。
+    /// 发送设备消息。官方文档：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/hardware-device/api_sendhardwaredevicemessage"/>。
     /// </summary>
     /// <param name="request">接收者列表与模板内容（<c>tousers</c> 必填），见 <see cref="DataModels.HardwareDevice.WxaDeviceMessageSendRequest"/>。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
@@ -46,7 +46,7 @@ public interface IWxaHardwareDeviceService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// 获取设备票据。官方文档：<c>hardware-device/api_getsnticket.html</c>。
+    /// 获取设备票据。官方文档：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/hardware-device/api_getsnticket"/>。
     /// </summary>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
     /// <returns>设备票据（<c>sn_ticket</c>，<b>5 分钟内有效</b>），见 <see cref="DataModels.HardwareDevice.WxaSnTicketResponse"/>。</returns>
@@ -59,7 +59,7 @@ public interface IWxaHardwareDeviceService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// 创建设备组。官方文档：<c>hardware-device/api_createiotgroupid.html</c>。
+    /// 创建设备组。官方文档：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/hardware-device/api_createiotgroupid"/>。
     /// </summary>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
     /// <returns>设备组 ID 与名称，见 <see cref="DataModels.HardwareDevice.WxaIoTGroupCreateResponse"/>。</returns>
@@ -72,7 +72,7 @@ public interface IWxaHardwareDeviceService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// 查询设备组信息。官方文档：<c>hardware-device/api_getiotgroupinfo.html</c>。
+    /// 查询设备组信息。官方文档：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/hardware-device/api_getiotgroupinfo"/>。
     /// </summary>
     /// <param name="request">设备组 ID（<c>group_id</c>），见 <see cref="DataModels.HardwareDevice.WxaIoTGroupInfoRequest"/>。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
@@ -84,7 +84,7 @@ public interface IWxaHardwareDeviceService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// 设备组添加设备。官方文档：<c>hardware-device/api_addiotgroupdevice.html</c>。
+    /// 设备组添加设备。官方文档：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/hardware-device/api_addiotgroupdevice"/>。
     /// </summary>
     /// <param name="request">设备组 ID 与待添加设备列表，见 <see cref="DataModels.HardwareDevice.WxaIoTGroupDevicesRequest"/>。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
@@ -96,7 +96,7 @@ public interface IWxaHardwareDeviceService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// 设备组删除设备。官方文档：<c>hardware-device/api_removeiotgroupdevice.html</c>。
+    /// 设备组删除设备。官方文档：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/hardware-device/api_removeiotgroupdevice"/>。
     /// </summary>
     /// <param name="request">设备组 ID 与待删除设备列表，见 <see cref="DataModels.HardwareDevice.WxaIoTGroupDevicesRequest"/>。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
@@ -108,7 +108,7 @@ public interface IWxaHardwareDeviceService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// 查询 license 资源包列表。官方文档：<c>hardware-device/api_getlicensepkglist.html</c>。
+    /// 查询 license 资源包列表。官方文档：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/hardware-device/api_getlicensepkglist"/>。
     /// </summary>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
     /// <returns>已购买的 license 资源包列表，见 <see cref="DataModels.HardwareDevice.WxaLicensePkgListResponse"/>。</returns>
@@ -118,7 +118,7 @@ public interface IWxaHardwareDeviceService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// 激活设备 license。官方文档：<c>hardware-device/api_activelicensedevice.html</c>。
+    /// 激活设备 license。官方文档：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/hardware-device/api_activelicensedevice"/>。
     /// </summary>
     /// <param name="request">资源包 ID 与待激活设备序列号列表，见 <see cref="DataModels.HardwareDevice.WxaLicenseActivateRequest"/>。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
@@ -133,7 +133,7 @@ public interface IWxaHardwareDeviceService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// 查询设备激活详情。官方文档：<c>hardware-device/api_getlicensedeviceinfo.html</c>。
+    /// 查询设备激活详情。官方文档：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/hardware-device/api_getlicensedeviceinfo"/>。
     /// </summary>
     /// <param name="request">设备序列号列表（<c>sn_list</c>），见 <see cref="DataModels.HardwareDevice.WxaLicenseDeviceInfoRequest"/>。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>

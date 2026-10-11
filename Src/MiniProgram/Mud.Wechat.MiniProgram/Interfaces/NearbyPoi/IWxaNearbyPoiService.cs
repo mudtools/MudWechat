@@ -13,8 +13,8 @@ namespace Mud.Wechat.MiniProgram;
 /// <remarks>
 /// <para>
 /// <b>官方文档</b>（小程序服务端 API → 附近小程序，2026-10-10 依据官方清单核验）：
-/// <c>nearby-poi/api_addnearbypoi.html</c>、<c>nearby-poi/api_deletenearbypoi.html</c>、
-/// <c>nearby-poi/api_getnearbypoilist.html</c>、<c>nearby-poi/api_setshowstatus.html</c>。
+/// <see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/nearby-poi/api_addnearbypoi"/>、<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/nearby-poi/api_deletenearbypoi"/>、
+/// <see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/nearby-poi/api_getnearbypoilist"/>、<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/nearby-poi/api_setshowstatus"/>。
 /// </para>
 /// <para>
 /// <b>业务形态（官方原文）</b>：附近小程序是面向「线下门店」的场景能力——将小程序地点挂到官方
@@ -34,7 +34,7 @@ namespace Mud.Wechat.MiniProgram;
 public interface IWxaNearbyPoiService
 {
     /// <summary>
-    /// 添加地点（附近小程序，提交审核）。官方文档：<c>nearby-poi/api_addnearbypoi.html</c>。
+    /// 添加地点（附近小程序，提交审核）。官方文档：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/nearby-poi/api_addnearbypoi"/>。
     /// </summary>
     /// <param name="request">添加请求（<c>is_show</c> / <c>categories</c> / <c>lat</c> / <c>lng</c> 等必填），见 <see cref="DataModels.NearbyPoi.WxaAddNearbyPoiRequest"/>。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
@@ -55,7 +55,7 @@ public interface IWxaNearbyPoiService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// 删除地点（附近小程序）。官方文档：<c>nearby-poi/api_deletenearbypoi.html</c>。
+    /// 删除地点（附近小程序）。官方文档：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/nearby-poi/api_deletenearbypoi"/>。
     /// </summary>
     /// <param name="request">删除请求（<c>poi_id</c> 必填），见 <see cref="DataModels.NearbyPoi.WxaDeleteNearbyPoiRequest"/>。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
@@ -73,7 +73,7 @@ public interface IWxaNearbyPoiService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// 查看地点列表（附近小程序，分页）。官方文档：<c>nearby-poi/api_getnearbypoilist.html</c>。
+    /// 查看地点列表（附近小程序，分页）。官方文档：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/nearby-poi/api_getnearbypoilist"/>。
     /// </summary>
     /// <param name="request">分页查询请求（<c>page</c> 从 <c>0</c> 开始），见 <see cref="DataModels.NearbyPoi.WxaNearbyPoiListRequest"/>。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
@@ -88,7 +88,7 @@ public interface IWxaNearbyPoiService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// 设置展示状态（附近小程序，展示 / 取消展示）。官方文档：<c>nearby-poi/api_setshowstatus.html</c>。
+    /// 设置展示状态（附近小程序，展示 / 取消展示）。官方文档：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/nearby-poi/api_setshowstatus"/>。
     /// </summary>
     /// <param name="request">状态请求（<c>poi_id</c> + <c>status</c> 必填），见 <see cref="DataModels.NearbyPoi.WxaSetNearbyPoiShowStatusRequest"/>。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>

@@ -147,4 +147,14 @@ public enum MiniProgramModule
     /// 用工关系（2 端点：推送用工消息 + 解绑用工关系）。
     /// </summary>
     LaborUse,
+
+    /// <summary>
+    /// 物流助手（51 端点：商家寄件 12 + 服务商/物流消息/退货/散单寄件 26 + 同城配送 12 + 对账文件 1）。
+    /// </summary>
+    /// <remarks>
+    /// <para><b>商家寄件</b> 12 端点：下单 / 查询 / 批量查询 / 取消 / 轨迹 / 快递公司列表 / 快递账号 / 绑定账号 / 打印员 / 绑定打印员 / 面单余额 / 模拟轨迹（<c>express/business</c>）。</para>
+    /// <para><b>服务商 / 物流消息 / 退货 / 散单寄件</b> 26 端点（<c>express/delivery</c>）：面单联系人 / 面单预览 / 审核回传 / 轨迹同步 / 无忧退 3 / 物流消息 9 / 查询插件 4 / 退货组件 4 / 散单寄件 6（其中 <c>single_waybill/get_bill</c> 返回<b>对账文件文本</b> ⇒ 走手动通道 <c>IWxaExpressBillService</c>）。</para>
+    /// <para><b>同城配送</b> 12 端点（<c>express/intracity</c>）：创建 / 查询 / 更新门店 + 运费充值 / 退款 / 流水 / 余额 + 询价 / 下单 / 查询 / 取消配送单 + 模拟回调（<c>mocknotify</c> 仅测试环境）。</para>
+    /// </remarks>
+    Express,
 }

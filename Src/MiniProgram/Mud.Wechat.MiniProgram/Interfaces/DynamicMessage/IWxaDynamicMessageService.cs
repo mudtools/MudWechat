@@ -13,9 +13,9 @@ namespace Mud.Wechat.MiniProgram;
 /// <remarks>
 /// <para>
 /// <b>官方文档</b>（小程序服务端 API → 消息管理 → 动态消息，2026-10-10 依据官方清单核验）：
-/// 创建 <c>activity_id</c> <c>mp-message-management/updatable-message/api_createactivityid.html</c>、
-/// 修改动态消息 <c>mp-message-management/updatable-message/api_setupdatablemsg.html</c>、
-/// 修改小程序聊天工具的动态卡片消息 <c>mp-message-management/updatable-message/api_setchattoolmsg.html</c>。
+/// 创建 <c>activity_id</c> <see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/mp-message-management/updatable-message/api_createactivityid"/>、
+/// 修改动态消息 <see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/mp-message-management/updatable-message/api_setupdatablemsg"/>、
+/// 修改小程序聊天工具的动态卡片消息 <see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/mp-message-management/updatable-message/api_setchattoolmsg"/>。
 /// </para>
 /// <para>
 /// <b>能力口径（官方原文）</b>：动态消息是<b>被分享后可实时更新内容</b>的消息形态（如活动进度 / 排行）；
@@ -35,7 +35,7 @@ namespace Mud.Wechat.MiniProgram;
 public interface IWxaDynamicMessageService
 {
     /// <summary>
-    /// 创建被分享动态消息 / 私密消息的 <c>activity_id</c>。官方文档：<c>api_createactivityid.html</c>。
+    /// 创建被分享动态消息 / 私密消息的 <c>activity_id</c>。官方文档：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/mp-message-management/updatable-message/api_createactivityid"/>。
     /// </summary>
     /// <param name="request">创建请求（官方无必填参数；<c>unionid</c> 为选填的开放平台用户标识），见 <see cref="WxaCreateActivityIdRequest"/>。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
@@ -55,7 +55,7 @@ public interface IWxaDynamicMessageService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// 修改被分享的动态消息。官方文档：<c>api_setupdatablemsg.html</c>。
+    /// 修改被分享的动态消息。官方文档：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/mp-message-management/updatable-message/api_setupdatablemsg"/>。
     /// </summary>
     /// <param name="request">动态消息活动与目标状态，见 <see cref="WxaUpdateDynamicMessageRequest"/>。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
@@ -74,7 +74,7 @@ public interface IWxaDynamicMessageService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// 修改小程序聊天工具的动态卡片消息。官方文档：<c>api_setchattoolmsg.html</c>。
+    /// 修改小程序聊天工具的动态卡片消息。官方文档：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/mp-message-management/updatable-message/api_setchattoolmsg"/>。
     /// </summary>
     /// <param name="request">聊天工具动态卡片的活动与内容，见 <see cref="WxaChatToolMsgRequest"/>。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>

@@ -12,7 +12,7 @@ namespace Mud.Wechat.MiniProgram;
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>官方文档</b>：<c>user-login/api_code2session.html</c>（小程序服务端 API，2026-10-09 核验）。
+/// <b>官方文档</b>：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/user-login/api_code2session"/>（小程序服务端 API，2026-10-09 核验）。
 /// </para>
 /// <para>
 /// <b>为何免令牌（I4 裁决同形）</b>：本端点以 <c>appid</c> + <c>secret</c> 入参换取用户级会话
@@ -36,7 +36,7 @@ public interface IWxaCode2SessionService
 {
     /// <summary>
     /// 登录凭证校验（<c>code2Session</c>）：用小程序端 <c>wx.login</c> 的 <c>code</c> 换取
-    /// <c>openid</c> + <c>session_key</c>。官方文档：<c>user-login/api_code2session.html</c>。
+    /// <c>openid</c> + <c>session_key</c>。官方文档：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/user-login/api_code2session"/>。
     /// </summary>
     /// <param name="appId">小程序 AppID（官方 <c>appid</c>，必填）。</param>
     /// <param name="secret">小程序 AppSecret（官方 <c>secret</c>，必填；官方契约 Query 传，脱敏词表已覆盖）。</param>

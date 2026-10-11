@@ -13,7 +13,7 @@ namespace Mud.Wechat.MiniProgram;
 /// <remarks>
 /// <para>
 /// <b>官方文档</b>（小程序服务端 API → 学生身份，2026-10-10 依据官方清单核验）：
-/// <c>student/api_quickcheckstudentidentity.html</c>。
+/// <see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/student/api_quickcheckstudentidentity"/>。
 /// </para>
 /// <para>
 /// <b>业务形态（官方原文）</b>：小程序接入<b>学生验证</b>能力后，用户在授权弹窗同意后即可快速获取
@@ -30,7 +30,7 @@ namespace Mud.Wechat.MiniProgram;
 public interface IWxaStudentService
 {
     /// <summary>
-    /// 快速获取学生身份。官方文档：<c>student/api_quickcheckstudentidentity.html</c>。
+    /// 快速获取学生身份。官方文档：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/student/api_quickcheckstudentidentity"/>。
     /// </summary>
     /// <param name="request">查询请求（<c>openid</c> / <c>wx_studentcheck_code</c> 必填），见 <see cref="DataModels.Student.WxaQuickCheckStudentIdentityRequest"/>。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>

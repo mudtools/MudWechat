@@ -12,7 +12,7 @@ Mud.Wechat 全仓的**跨产品线共享叶层**：七条产品线（企业微�
 - **令牌恢复注册**（`TokenManager/WechatTokenRecoveryRegistration.cs`）：
   - `AddWechatApiHosts(IServiceCollection)`——SSRF 白名单的唯一登记点（把 `WechatApiHosts.AllowedBaseUrlDomains` 交予组件侧）；
   - `AddWechatTokenRecovery(IServiceCollection)`——注册恢复选项、校验器与令牌提供者，内部先调 `AddWechatApiHosts`，并对后台刷新服务做 `Any(descriptor…)` 去重（防多线重复注册产生多个刷新宿主）。
-- **回调共享内核**（`Callback/`）：`WechatCallbackCrypto`（SHA1 排序验签 + AES-256-CBC + 官方 32 字节块手工 PKCS7 补位/剥离、`Encrypt`/`Decrypt(out receiveId)`/`ParseSignatureQuery`）、`IWechatCallbackEnvelope`、`IWechatCallbackReplayGuard` + `InMemoryWechatCallbackReplayGuard`（fail-closed 语义在端口层定义）、`WechatCallbackException` / `WechatCallbackFailureKind` / `WechatCallbackDispatchOutcome`、`WechatCallbackQuery`、`WechatCallbackRouteKeys.Wildcard`（`"*"`）、`XElementPayloadSource`（同名兄弟合并投影器）与 `WechatPayloadSourceCache`、`WechatCallbackTypeRegistry<T>`（「应用键 → 类型」注册表基座：专属桶先于通配桶的匹配序在此单点定义，各线以派生类承载自己的处理器标记接口）。
+- **回调共享内核**（`Callback/`）：`WechatCallbackCrypto`（SHA1 排序验签 + AES-256-CBC + 官方 32 字节块手工 PKCS7 补位/剥离、`Encrypt`/`Decrypt(out receiveId)`/`ParseSignatureQuery`）、`IWechatCallbackEnvelope`、`IWechatCallbackReplayGuard` + `InMemoryWechatCallbackReplayGuard`（fail-closed 语义在端口层定义）、`WechatCallbackException` / `WechatCallbackFailureKind` / `WechatCallbackInfrastructureException`（基础设施故障，宿主映射 503 触发 96238 重推）/ `WechatCallbackDispatchOutcome`、`WechatCallbackQuery`、`WechatCallbackRouteKeys.Wildcard`（`"*"`）、`XElementPayloadSource`（同名兄弟合并投影器）与 `WechatPayloadSourceCache`、`WechatCallbackTypeRegistry<T>`（「应用键 → 类型」注册表基座：专属桶先于通配桶的匹配序在此单点定义，各线以派生类承载自己的处理器标记接口）。
 - **配置基座**（`Configuration/WechatAppConfigBase`）：`AppKey` / `BaseUrl` / `AllowCustomBaseUrl` / `TimeoutSeconds` / `TokenRefreshThreshold` / `IsDefault` 等各线公共属性，子类只补本线凭据。
 - **主机与键形状护栏**（根目录）：`WechatApiHosts`（`WorkBaseUrl = https://qyapi.weixin.qq.com`、`OfficialAccountBaseUrl = https://api.weixin.qq.com`、`AllowedBaseUrlDomains`）、`WechatAppKeyValidator`（`[A-Za-z0-9]` 开头 + `[\w.\-_]` + ≤128，防令牌键别名）、`WechatCustomBaseUrlRegistry`（internal，自定义主机登记）。
 - **可观测性契约面**（`Observability/` `Metrics/`）：`WechatActivitySource`（源名恒 `Mud.Wechat`、`Tags.Product/AppKey/Outcome/ErrorType/CorrelationId`、`Products.{work,officialaccount,miniprogram,openplatform,pay}`）与 `MeterExtensions.RecordDuration(Histogram<double>[,TagList])`。**本包只定义契约，不引入 OpenTelemetry 依赖**——装配层在 `Mud.Wechat.OpenTelemetry`。
@@ -48,7 +48,7 @@ activity?.SetTag(WechatActivitySource.Tags.Product, WechatActivitySource.Product
 
 - **目标框架**：`netstandard2.0` / `net6.0` / `net8.0` / `net10.0`（继承根 `Directory.Build.props`）。`netstandard2.0` 无 `IsExternalInit` polyfill ⇒ 本包内 `init` / `record` 一律禁用。
 - **回调密码学的填充口径不可「修正」**：官方按 32 字节块手工 PKCS7，pad 取值范围 17..32，禁用 .NET 内置 `PaddingMode.PKCS7`（16 块）否则会误拒合法报文。
-- **抗重放是 fail-closed 语义**：`IWechatCallbackReplayGuard` 实现遇到存储故障必须原样上抛（→ 5xx → 官方重试），禁止吞异常返回 `true`（放行重放）或 `false`（静默丢事件且官方不再重试）。
+- **抗重放是 fail-closed 语义**：`IWechatCallbackReplayGuard` 实现遇到存储故障必须上抛（推荐 `WechatCallbackInfrastructureException`，企微中间件专用 catch 映射 503 触发官方 96238 重推），禁止吞异常返回 `true`（放行重放）或 `false`（静默丢事件且官方不再重试）。
 - **Pay 线不使用本包的 XML 密码学**（其为 JSON + AEAD-GCM 体系），只复用响应契约、配置基座与可观测性契约面。
 - 本包的契约面由 `Tests/Mud.Wechat.Abstractions.Tests/ContractGuards/` 锁定：`WechatAbstractionsContractGuards`（AB-G1 叶子无工程引用 … AB-G7 回调宿主包必须产 nupkg 且内嵌 `analyzers/dotnet/cs`、两工具工程 `IsPackable=false`）与 `WechatCallbackKernelContractGuards`（CB-L1 系列，编号与企微侧 CB1~CB24 避让）。新增/改动共享面须同批更新守卫。
 - 七条产品线在同一宿主共存的能力边界由 `CrossProductLineCoexistenceTests`（X1~X7）锁定——尤其「同一进程内各线令牌互不串号」。

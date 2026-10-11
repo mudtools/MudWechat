@@ -35,8 +35,10 @@ public interface IWechatCallbackReplayGuard
     /// <param name="cancellationToken">取消令牌。</param>
     /// <returns>首次消费返回 <c>true</c>；窗口内重复返回 <c>false</c>。</returns>
     /// <remarks>
-    /// <b>fail-closed</b>：实现方在存储故障时必须<b>上抛异常</b>（回调管线冒泡为 5xx，平台重试可重新进入管线），
-    /// <b>不得</b>吞异常返回 <c>true</c>（放行重放）或 <c>false</c>（静默丢事件且平台不再重试）。
+    /// <b>fail-closed</b>：实现方在存储故障时必须<b>上抛异常</b>，推荐抛
+    /// <see cref="WechatCallbackInfrastructureException"/>（企微回调管线专用 catch 映射 503，
+    /// 平台 96238 重试可重新进入管线），<b>不得</b>吞异常返回 <c>true</c>（放行重放）或
+    /// <c>false</c>（静默丢事件且平台不再重试）。
     /// </remarks>
     Task<bool> TryMarkAsync(string key, TimeSpan window, CancellationToken cancellationToken = default);
 }

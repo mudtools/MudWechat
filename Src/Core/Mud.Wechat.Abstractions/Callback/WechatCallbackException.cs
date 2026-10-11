@@ -61,9 +61,11 @@ public enum WechatCallbackFailureKind
 /// 继承 <see cref="InvalidOperationException"/>：既有 <c>catch (InvalidOperationException)</c> 块零破坏（决策 D7）。
 /// </para>
 /// <para>
-/// 异常消息不含密钥/密文材料。产品线应答映射：企微验签类 403、
-/// <see cref="WechatCallbackFailureKind.DecryptFailed"/>/<see cref="WechatCallbackFailureKind.ReceiveIdMismatch"/> 500 + 告警；
-/// 公众号验签类 403 + 空体、<see cref="WechatCallbackFailureKind.PlainTextRejected"/> 403（安全模式拒明文）。
+/// 异常消息不含密钥/密文材料。产品线应答映射：企微侧为 fail-closed 简化——全部
+/// <see cref="Kind"/> 统一 403、不重推（审查报告 v1 顺手项：与回调中间件实际行为一致；
+/// 若未来要按 Kind 区分应答映射，另立 ADR）；公众号验签类 403 + 空体、
+/// <see cref="WechatCallbackFailureKind.PlainTextRejected"/> 403（安全模式拒明文）。
+/// 基础设施故障不走本类型——见 <see cref="WechatCallbackInfrastructureException"/>（503 + 官方重推）。
 /// </para>
 /// </remarks>
 public class WechatCallbackException : InvalidOperationException

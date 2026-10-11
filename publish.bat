@@ -115,6 +115,17 @@ REM ------------------------------------------------------------- pack
 echo Packing packages ^(expected set derived from Src\**\*.csproj^) ...
 if not exist "%OUTPUT_DIR%" mkdir "%OUTPUT_DIR%"
 del /q "%OUTPUT_DIR%\*%VERSION%.nupkg" 2>nul
+
+REM Analyzer pre-build (idempotent): the four Callback host packages embed the analyzer DLL from its
+REM bin directory via a literal relative path. `dotnet pack` would build the reference anyway, but the
+REM explicit --no-incremental step makes the embed-freshness assumption visible instead of implicit
+REM (review v1 P2-2).
+dotnet build "Src\Core\Mud.Wechat.Callback.Analyzers\Mud.Wechat.Callback.Analyzers.csproj" -c Release --no-incremental --nologo || (
+    echo Error: analyzer pre-build failed.
+    set "EC=1"
+    goto :finish
+)
+
 dotnet pack "%SOLUTION%" -c Release --nologo -o "%OUTPUT_DIR%" -p:Version=%VERSION% || (
     echo Error: dotnet pack failed for %SOLUTION%.
     set "EC=1"

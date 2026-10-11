@@ -1526,6 +1526,41 @@ public class WechatCallbackContractGuards
     }
 
     /// <summary>
+    /// CB25：基础设施异常分流——中间件必须为 <see cref="WechatCallbackInfrastructureException"/>
+    /// 保留专用 catch 且映射 <c>503</c>（触发官方 96238 重推），严禁与验证类 <c>403</c> 混流（审查报告 v1 P1-1）。
+    /// </summary>
+    /// <remarks>
+    /// catch 顺序本身由编译器强制（更具体 catch 置于 <c>catch (InvalidOperationException)</c> 之后即
+    /// CS0160 编译错误），本守卫锁定的是「专用 catch 存在 + 503 映射 + LogError」不因重构而消失；
+    /// 顺序断言为双保险。分布式守卫实现（如 <c>RedisWechatCallbackReplayGuard</c>）存储故障抛该类型，
+    /// 移除专用 catch 即 Redis 故障期事件被 403 静默吞掉。
+    /// </remarks>
+    [Fact]
+    public void CallbackMiddleware_ShouldMapInfrastructureExceptionTo503()
+    {
+        var source = File.ReadAllText(SourcePath(
+            "Mud.Wechat.Work.Callback", "WechatCallbackMiddleware.cs"));
+
+        var infraIndex = source.IndexOf(
+            "catch (WechatCallbackInfrastructureException", StringComparison.Ordinal);
+        // 锚定真实验证类 catch 子句（带形参 ex）：文件内注释可能引用基类名，裸 "catch (InvalidOperationException"
+        // 会命中注释导致切片截断（v1.1 实施时实际踩过）。
+        var validationIndex = source.IndexOf(
+            "catch (InvalidOperationException ex)", StringComparison.Ordinal);
+
+        infraIndex.Should().BeGreaterThan(-1,
+            "CB25：基础设施异常专用 catch 不得被移除——移除即存储故障期事件被 403 静默吞掉");
+        validationIndex.Should().BeGreaterThan(infraIndex,
+            "CB25：专用 catch 必须位于验证类 catch 之前（编译器 CS0160 亦强制，此处为文本层双保险）");
+
+        var infraBlock = source.Substring(infraIndex, validationIndex - infraIndex);
+        infraBlock.Should().Contain("Status503ServiceUnavailable",
+            "CB25：基础设施故障映射 503（官方 96238 重推），不得与验证类 403 混流");
+        infraBlock.Should().Contain("LogError",
+            "CB25：服务器侧故障记 Error（区别于验证类的 Warning）");
+    }
+
+    /// <summary>
     /// 读取某个类型的源码文本（按「类型名 + .cs」在仓库内定位，排除 <c>obj</c>/<c>bin</c>）。
     /// </summary>
     /// <remarks>

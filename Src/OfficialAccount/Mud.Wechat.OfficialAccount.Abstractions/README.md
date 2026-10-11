@@ -81,7 +81,7 @@ public sealed class MpCredentialProbe(
 
 - `Mud.Wechat.Abstractions`（公用层：配置基座、令牌存储端口、响应契约与异常基底、回调密码学与重放端口、`WechatApiHosts`）
 - `Mud.Wechat.OfficialAccount.DataModels`
-- `Mud.HttpUtils` 3.0.3、`Mud.HttpUtils.Generator` 3.0.3（分析器）、`Mud.Wechat.Callback.Generator`（分析器，仅生成登记体，不产运行时引用）
+- `Mud.HttpUtils` 3.0.6、`Mud.HttpUtils.Generator` 3.0.6（分析器）、`Mud.Wechat.Callback.Generator`（分析器，仅生成登记体，不产运行时引用）
 - `Microsoft.Extensions.Http` / `Hosting.Abstractions`（net8.0/net10.0 → 10.0.9，netstandard2.0/net6.0 → 8.0.1）
 
 ## 说明

@@ -10,6 +10,7 @@ using System.Net;
 using System.Text;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 namespace Mud.Wechat.Work.Callback.Tests;
 
 /// <summary>
@@ -39,9 +40,16 @@ public class WechatCallbackMiddlewareTests
     }
 
     /// <summary>经真实 AddWechatCallback 装配（接收器 + 分发器 + 注册表），构造被测中间件。</summary>
+    /// <param name="configureOptions">回调配置定制（在默认通配应用之上追加/改写）。</param>
+    /// <param name="configure">AddWechatCallback 建造者定制（注册处理器/拦截器）。</param>
+    /// <param name="preRegister"><b>先于</b> AddWechatCallback 的服务预注册（TryAdd 语义：宿主预注册者按契约胜出，
+    /// 用于注入自定义 <c>IWechatCallbackReplayGuard</c> 桩或接收器桩）。</param>
+    /// <param name="logger">中间件日志器（默认 NullLogger；断言日志级别时传 <see cref="CapturingLogger{T}"/>）。</param>
     private static (WechatCallbackMiddleware Middleware, ServiceProvider Provider) CreateMiddleware(
         Action<WechatCallbackOptions>? configureOptions = null,
-        Action<WechatCallbackServiceBuilder>? configure = null)
+        Action<WechatCallbackServiceBuilder>? configure = null,
+        Action<ServiceCollection>? preRegister = null,
+        ILogger<WechatCallbackMiddleware>? logger = null)
     {
         var services = new ServiceCollection();
         services.AddLogging();
@@ -49,6 +57,7 @@ public class WechatCallbackMiddlewareTests
         services.AddSingleton<IWechatCorpAuthStore, InMemoryWechatCorpAuthStore>();
         services.AddSingleton<IOptionsMonitor<WechatCallbackOptions>>(
             new TestOptionsMonitor<WechatCallbackOptions>(CreateOptions(configureOptions)));
+        preRegister?.Invoke(services);
 
         var builder = services.AddWechatCallback(_ => { });
         configure?.Invoke(builder);
@@ -61,7 +70,7 @@ public class WechatCallbackMiddlewareTests
             provider.GetRequiredService<IWechatBotCallbackReceiver>(),
             provider.GetRequiredService<WechatBotEventDispatcher>(),
             provider.GetRequiredService<IOptionsMonitor<WechatCallbackOptions>>(),
-            NullLogger<WechatCallbackMiddleware>.Instance);
+            logger ?? NullLogger<WechatCallbackMiddleware>.Instance);
 
         return (middleware, provider);
     }
@@ -102,11 +111,11 @@ public class WechatCallbackMiddlewareTests
         return reader.ReadToEnd();
     }
 
-    private static string QueryFor(string encrypt, string? timestamp = null, string? nonce = null)
+    private static string QueryFor(string encrypt, string? timestamp = null, string? nonce = null, string? token = null)
     {
         var ts = timestamp ?? Now();
         var nc = nonce ?? Guid.NewGuid().ToString("N");
-        var signature = WechatCallbackCrypto.ComputeSignature(Token, ts, nc, encrypt);
+        var signature = WechatCallbackCrypto.ComputeSignature(token ?? Token, ts, nc, encrypt);
         return $"msg_signature={signature}&timestamp={ts}&nonce={nc}";
     }
 
@@ -408,7 +417,120 @@ public class WechatCallbackMiddlewareTests
         ResponseBody(context).Should().Be("success");
     }
 
+    // ------------------------------------------------- 基础设施异常分流（审查报告 v1 P1-1）
+
+    [Fact]
+    public async Task InvokeAsync_ShouldReturn503AndLogError_WhenReplayGuardStorageFails()
+    {
+        // 分布式指纹守卫存储故障 → 专用 catch → 503 触发官方 96238 重推；
+        // 严禁落入验证类 403（Redis 故障期事件会静默丢失）。日志级别对齐服务器侧故障（LogError）。
+        var logger = new CapturingLogger<WechatCallbackMiddleware>();
+        var (middleware, provider) = CreateMiddleware(
+            preRegister: s => s.AddSingleton<IWechatCallbackReplayGuard>(
+                new ThrowingReplayGuard(new WechatCallbackInfrastructureException("存储不可用",
+                    new InvalidOperationException("模拟 Redis 故障")))),
+            logger: logger);
+        using var _ = provider;
+        var context = CreatePostContext(UserCreatedPlain);
+
+        await middleware.InvokeAsync(context);
+
+        context.Response.StatusCode.Should().Be(503, "基础设施故障 → 503 触发企业微信重推");
+        logger.Entries.Should().Contain(e => e.Level == LogLevel.Error,
+            "服务器侧故障记 Error（区别于验证类的 Warning）");
+    }
+
+    [Fact]
+    public async Task InvokeAsync_ShouldReturn403_WhenReplayGuardThrowsValidationException()
+    {
+        // 防收窄回归：验证类失败（WechatCallbackException）仍必须走 403 分支，
+        // 不得被基础设施专用 catch 吞并（catch 顺序与类型过滤的双重保险）。
+        var (middleware, provider) = CreateMiddleware(
+            preRegister: s => s.AddSingleton<IWechatCallbackReplayGuard>(
+                new ThrowingReplayGuard(
+                    new WechatCallbackException(WechatCallbackFailureKind.ReplaySuspected, "指纹已消费"))));
+        using var _ = provider;
+        var context = CreatePostContext(UserCreatedPlain);
+
+        await middleware.InvokeAsync(context);
+
+        context.Response.StatusCode.Should().Be(403, "验证类失败（重放）恒 403、不重推");
+    }
+
+    [Fact]
+    public async Task InvokeAsync_ShouldReturn503_WhenEchoPathHitsInfrastructureFailure()
+    {
+        // echo 正常路径不触达指纹闸（只过时效闸），本用例以桩接收器验证 catch 链对 echo 同样生效：
+        // echo 期间的同类基础设施异常同样映射 503（共享同一异常映射面）。
+        var (middleware, provider) = CreateMiddleware(
+            preRegister: s => s.AddSingleton<IWechatCallbackReceiver>(new ThrowingEchoReceiver()));
+        using var _ = provider;
+        var context = CreateContext("GET", "/wechat/app1", query: "msg_signature=x&timestamp=0&nonce=n&echostr=e");
+
+        await middleware.InvokeAsync(context);
+
+        context.Response.StatusCode.Should().Be(503, "基础设施异常映射对 echo 路径同样生效");
+    }
+
+    [Fact]
+    public async Task InvokeAsync_ShouldReturn503_WhenBotChannelReplayGuardStorageFails()
+    {
+        // Bot JSON 通道与 XML 通道共用同一 catch 链与异常映射：指纹守卫存储故障 → 503。
+        // （Bot 官方只推一次且指纹已消费，503 不改变丢失结局，但保证语义正确与可观测归因。）
+        var botToken = "bot-push-token";
+        var (middleware, provider) = CreateMiddleware(
+            configureOptions: o => o.Apps["bot1"] = new WechatAppCallbackOptions
+            {
+                PushToken = botToken,
+                PushEncodingAESKey = AesKey,
+                AppType = WechatAppType.Internal,
+                Channel = WechatCallbackChannel.Bot,
+            },
+            preRegister: s => s.AddSingleton<IWechatCallbackReplayGuard>(
+                new ThrowingReplayGuard(new WechatCallbackInfrastructureException("存储不可用",
+                    new InvalidOperationException("模拟 Redis 故障")))));
+        using var _ = provider;
+        var encrypt = WechatCallbackCrypto.Encrypt(AesKey, BotTextMessageJson(), receiveId: string.Empty);
+        var body = "{\"encrypt\":\"" + encrypt + "\"}";
+        var context = CreateContext(
+            "POST", "/wechat/bot1",
+            query: QueryFor(encrypt, token: botToken),
+            body: body, contentType: "application/json");
+
+        await middleware.InvokeAsync(context);
+
+        context.Response.StatusCode.Should().Be(503, "Bot 通道与 XML 通道共用基础设施异常映射");
+    }
+
     // ---------------------------------------------------------------- 测试替身
+
+    /// <summary>Bot 通道官方形态的文本消息明文（与 WechatBotCallbackTests 同款最小报文）。</summary>
+    private static string BotTextMessageJson()
+        => "{\"msgid\":\"MSGID1\",\"aibotid\":\"BOTID\",\"chatid\":\"CHATID\",\"chattype\":\"single\"," +
+           "\"from\":{\"userid\":\"zhangsan\"},\"msgtype\":\"text\",\"text\":{\"content\":\"hi\"}}";
+
+    /// <summary>按设定抛出异常的重放守卫桩（TryAdd 语义下预注册即胜出，接管指纹闸）。</summary>
+    private sealed class ThrowingReplayGuard : IWechatCallbackReplayGuard
+    {
+        private readonly Exception _exception;
+
+        public ThrowingReplayGuard(Exception exception) => _exception = exception;
+
+        public Task<bool> TryMarkAsync(string key, TimeSpan window, CancellationToken cancellationToken = default)
+            => Task.FromException<bool>(_exception);
+    }
+
+    /// <summary>echo 抛基础设施异常的接收器桩（验证 catch 链对 echo 路径的覆盖）。</summary>
+    private sealed class ThrowingEchoReceiver : IWechatCallbackReceiver
+    {
+        public Task<string> EchoAsync(string appKey, string urlQuery, CancellationToken cancellationToken = default)
+            => Task.FromException<string>(new WechatCallbackInfrastructureException(
+                "echo 期间基础设施故障", new InvalidOperationException("模拟存储故障")));
+
+        public Task<WechatCallbackEvent> ReceiveAsync(
+            string appKey, string urlQuery, string body, CancellationToken cancellationToken = default)
+            => throw new NotSupportedException("本桩仅覆盖 echo 路径");
+    }
 
     /// <summary>收集 UserId 的类型化处理器（端到端验证分发链路）。</summary>
     private sealed class CollectingHandler : IWechatCallbackEventHandler

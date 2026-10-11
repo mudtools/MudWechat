@@ -30,7 +30,9 @@ namespace Mud.Wechat.Work.Callback;
 /// </para>
 /// <para>
 /// <b>应答契约（企业微信 90930）</b>：POST 成功/未匹配处理器均 200（body=<c>success</c>，官方推荐写法）；
-/// 验签/解密/receiveid 失败 403；分发中断（拦截器）或软超时 503（触发重推）；其余 500。
+/// 验签/解密/receiveid 失败 403；回调基础设施故障（分布式指纹守卫存储不可用等，
+/// <see cref="WechatCallbackInfrastructureException"/>）503（触发重推）；
+/// 分发中断（拦截器）或软超时 503（触发重推）；其余 500。
 /// 客户端断开（<see cref="HttpContext.RequestAborted"/> 已触发）记日志后不再写响应。
 /// </para>
 /// <para>
@@ -132,6 +134,18 @@ public sealed class WechatCallbackMiddleware(
             // 回调协议方法固定：GET = URL 验证、POST = 事件接收（v1.2 删除 AllowedHttpMethods 死面配置）。
             context.Response.StatusCode = StatusCodes.Status405MethodNotAllowed;
             WorkMetricsHelper.RecordCallbackOutcome(appKey, channel, "failure", "method_not_allowed");
+        }
+        catch (WechatCallbackInfrastructureException ex)
+        {
+            // 基础设施故障（分布式指纹守卫存储不可用等）：503 触发官方 96238 重推。
+            // 严禁与验证类失败共用 403——否则 Redis 故障期事件静默丢失（审查报告 v1 P1-1）。
+            // 本 catch 必须置于下方验证类 catch（更宽泛基类）之前：更具体 catch 置后即 CS0160
+            // 编译错误；守卫 CB25 锁定存在性与 503 映射。
+            // Bot 通道语义：官方只推一次且指纹已消费，503 不改变丢失结局（协议决定，非 SDK 可控），
+            // 但保证语义正确与可观测归因。echo 路径正常不触达指纹闸，本 catch 对其同样兜底。
+            _logger.LogError(ex, "回调基础设施故障，AppKey: {AppKey}", appKey);
+            context.Response.StatusCode = StatusCodes.Status503ServiceUnavailable;
+            WorkMetricsHelper.RecordCallbackOutcome(appKey, channel, "failure", ex.GetType().Name);
         }
         catch (InvalidOperationException ex)
         {

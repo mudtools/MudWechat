@@ -289,14 +289,18 @@ public class WechatAbstractionsContractGuards
         var root = GetSolutionRoot();
 
         // ① 宿主包：不得声明 IsPackable=false（否则包不再发布，诊断能力对消费者失效）。
-        foreach (var hostPackage in new[]
-                 {
-                     "Mud.Wechat.Work.Callback/Mud.Wechat.Work.Callback.csproj",
-                     "Mud.Wechat.OfficialAccount.Callback/Mud.Wechat.OfficialAccount.Callback.csproj",
-                     "Mud.Wechat.Pay.Callback/Mud.Wechat.Pay.Callback.csproj",
-                     // 微信小店/视频号（channels 生态）产品线（设计方案 v1 §3.5）：回调包随包下发分析器。
-                     "Mud.Wechat.Channels.Callback/Mud.Wechat.Channels.Callback.csproj",
-                 })
+        var hostPackages = new[]
+        {
+            "Mud.Wechat.Work.Callback/Mud.Wechat.Work.Callback.csproj",
+            "Mud.Wechat.OfficialAccount.Callback/Mud.Wechat.OfficialAccount.Callback.csproj",
+            "Mud.Wechat.Pay.Callback/Mud.Wechat.Pay.Callback.csproj",
+            // 微信小店/视频号（channels 生态）产品线（设计方案 v1 §3.5）：回调包随包下发分析器。
+            "Mud.Wechat.Channels.Callback/Mud.Wechat.Channels.Callback.csproj",
+        };
+        // 各包内嵌 Include 的完整字面量（P2-2 一致性断言用）。
+        var includeLiterals = new List<string>();
+
+        foreach (var hostPackage in hostPackages)
         {
             var projectPath = SourcePath(hostPackage.Split('/'));
             var source = File.ReadAllText(projectPath);
@@ -324,7 +328,16 @@ public class WechatAbstractionsContractGuards
             Directory.Exists(resolvedDir).Should().BeTrue(
                 $"{hostPackage} 内嵌分析器路径解析后必须存在：{relativeDir} ⇒ {resolvedDir}；" +
                 "源码目录归类移动时须同批改此相对路径");
+
+            includeLiterals.Add(includeMatch.Groups[0].Value);
         }
+
+        // ①-c 内嵌 Include 字面量四包逐字符一致（P2-2）：同一 $(Configuration)、同一 netstandard2.0 目录。
+        // 分叉即「同一批 pack 内嵌出不同版本/形态的分析器资产」——与单次全量 pack 必然同位取用的新鲜度前提冲突。
+        includeLiterals.Should().HaveCount(hostPackages.Length, "每个回调宿主包须解析到一处内嵌 Include");
+        includeLiterals.Distinct(StringComparer.Ordinal).Should().HaveCount(1,
+            "AB-G7：四包内嵌 Include 路径字面量必须逐字符一致（当前：" +
+            string.Join(" | ", includeLiterals.Distinct(StringComparer.Ordinal)) + "）——分叉即分析器资产分叉");
 
         // ② 工具链工程：生成器 / 分析器不得独立打包（否则多出无消费者的空包）。
         foreach (var toolProject in new[]
@@ -347,39 +360,59 @@ public class WechatAbstractionsContractGuards
     }
 
     /// <summary>
-    /// 受 AB-G4 / AB-G5 扫描覆盖的产品线源码根（**新增产品线必须同批登记**，否则其内的违规调用无人拦截）。
+    /// 从 slnx 现场推导 <c>/src/</c> 下全部工程目录（F1 接入口收敛：新增产品线只登记 slnx，
+    /// 守卫侧扫描根零手工维护）。slnx 为标准 XML，<c>XmlDocument</c> 直接可解。
+    /// </summary>
+    private static string[] SlnxSourceProjectDirs()
+    {
+        var root = GetSolutionRoot();
+        var doc = new System.Xml.XmlDocument();
+        doc.Load(Path.Combine(root, "Mud.Wechat.slnx"));
+
+        var dirs = new List<string>();
+        foreach (System.Xml.XmlNode folder in doc.SelectNodes("/Solution/Folder")!)
+        {
+            var name = folder.Attributes?["Name"]?.Value ?? string.Empty;
+            if (!name.StartsWith("/src/", StringComparison.Ordinal))
+            {
+                // 仅 /src/*：/tests/ 与 /Demos/ 的工程不得进入产品线扫描面
+                //（守卫源文件自身含被扫描字面量，纳入即让守卫扫到自己）。
+                continue;
+            }
+
+            foreach (System.Xml.XmlNode project in folder.SelectNodes("Project")!)
+            {
+                var path = project.Attributes?["Path"]?.Value;
+                if (string.IsNullOrEmpty(path))
+                {
+                    continue;
+                }
+
+                var dir = Path.GetDirectoryName(Path.Combine(root, path.Replace('/', Path.DirectorySeparatorChar)));
+                if (!string.IsNullOrEmpty(dir))
+                {
+                    dirs.Add(dir);
+                }
+            }
+        }
+
+        dirs.Should().NotBeEmpty("slnx /src/ 推导不得为空（解析失效即守卫扫描面失真）");
+        return dirs.Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(static p => p, StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+    }
+
+    /// <summary>
+    /// 受 AB-G4 / AB-G5 扫描覆盖的产品线源码根：<b>由 slnx /src/ 现场推导</b>（F1，新增产品线零手工登记），
+    /// 仅排除 <c>/src/Core/</c>——Core 是「公用层单点登记」的合法居所
+    /// （<c>WechatTokenRecoveryRegistration</c> 的 <c>AddAllowedDomain</c> / 判定器组合器写单槽），
+    /// 纳入扫描会让守卫扫到 SDK 自身的合法调用点。
     /// </summary>
     private static string[] ProductLineSourceRoots()
     {
-        return new[]
-        {
-            SourceProjectDir("Mud.Wechat.Work"),
-            SourceProjectDir("Mud.Wechat.Work.Abstractions"),
-            SourceProjectDir("Mud.Wechat.Work.Callback"),
-            SourceProjectDir("Mud.Wechat.OfficialAccount"),
-            SourceProjectDir("Mud.Wechat.OfficialAccount.Abstractions"),
-            // 微信小程序产品线（设计方案 v2 §3）：令牌复用公众号基座，但不得自行登记白名单/判定器单槽。
-            SourceProjectDir("Mud.Wechat.MiniProgram"),
-            SourceProjectDir("Mud.Wechat.MiniProgram.Abstractions"),
-            // 微信支付产品线（设计方案 v2 §2）：**不使用 [Token]**，白名单零改动（PAY-B8）。
-            SourceProjectDir("Mud.Wechat.Pay"),
-            SourceProjectDir("Mud.Wechat.Pay.Abstractions"),
-            SourceProjectDir("Mud.Wechat.Pay.Callback"),
-            // 微信开放平台产品线（2026-10 新增）：同受 AB-G4 / AB-G5 单点登记约束。
-            SourceProjectDir("Mud.Wechat.OpenPlatform"),
-            SourceProjectDir("Mud.Wechat.OpenPlatform.Abstractions"),
-            // 微信小店/视频号（channels 生态）产品线（设计方案 v1）：SSRF 白名单与判定器单槽同受
-            // 公用层单点登记约束（AddChannelsApp 只登记子判定器与自定义主机，不得直接写单槽）。
-            SourceProjectDir("Mud.Wechat.Channels"),
-            SourceProjectDir("Mud.Wechat.Channels.Abstractions"),
-            SourceProjectDir("Mud.Wechat.Channels.DataModels"),
-            SourceProjectDir("Mud.Wechat.Channels.Callback"),
-            // 腾讯广告产品线（2026-10 新增）：第一条非微信域线，白名单要它**追加**了一条后缀域，
-            // 于是「产品线不得自行登记」这条单点约束对它尤其要紧（自行登记 = 清空微信四线的放行）。
-            SourceProjectDir("Mud.Wechat.Ads"),
-            SourceProjectDir("Mud.Wechat.Ads.Abstractions"),
-            SourceProjectDir("Mud.Wechat.Ads.DataModels"),
-        };
+        return SlnxSourceProjectDirs()
+            .Where(static p => !p.Contains($"{Path.DirectorySeparatorChar}Core{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
+            .ToArray();
     }
 
     /// <summary>
@@ -399,11 +432,8 @@ public class WechatAbstractionsContractGuards
             "配置基座属性上移后必须仍在审计白名单内");
         audit.Should().Contain("Mud.Wechat.OfficialAccount.Abstractions/Configuration/MpAppConfig.cs",
             "公众号配置必须纳入审计");
-        audit.Should().Contain("Mud.Wechat.OfficialAccount'", "公众号工程必须纳入消费点搜索范围");
         audit.Should().Contain("Mud.Wechat.OfficialAccount.Callback/MpCallbackOptions.cs",
             "公众号回调配置面必须纳入审计白名单（否则配置属性无消费点也无人发现）");
-        audit.Should().Contain("Mud.Wechat.OfficialAccount.Callback'",
-            "公众号回调运行时包必须纳入消费点搜索范围（未纳入即门禁盲区）");
         // 微信支付：商户配置面与回调配置面（设计方案 v2 §5.3 耦合点表）。
         // **双向不变式**：配置 DTO 文件存在 ⇔ 已登记进 $configFiles。
         //   · 文件已建却未登记 ⇒ 审计脚本扫不到它 ⇒ 该 DTO 的配置属性完全无人核查（门禁盲区）；
@@ -421,29 +451,35 @@ public class WechatAbstractionsContractGuards
             registered.Should().Be(exists,
                 $"支付线配置 DTO「{payConfigDto}」的文件存在性与 $configFiles 登记必须同批（存在={exists}，登记={registered}）");
         }
-        audit.Should().Contain("Mud.Wechat.Pay.Callback'", "微信支付回调运行时包必须纳入消费点搜索范围");
-        // 微信小程序：三工程均须纳入搜索范围（消费点可能出现在主包 / 抽象包任一处）。
-        audit.Should().Contain("Mud.Wechat.MiniProgram.Abstractions'", "微信小程序抽象包必须纳入消费点搜索范围");
-        audit.Should().Contain("Mud.Wechat.MiniProgram'", "微信小程序主包必须纳入消费点搜索范围");
-        // 微信小店/视频号（channels 生态）产品线（设计方案 v1 §3.6）：配置 DTO 与四个搜索根必须纳入审计。
-        audit.Should().Contain("Mud.Wechat.Channels.Abstractions/Configuration/ChannelsAppConfig.cs", "小店配置面必须纳入审计（缺登记即属性无消费点无人发现）");
-        audit.Should().Contain("Mud.Wechat.Channels.Abstractions'", "小店抽象包必须纳入消费点搜索范围");
-        audit.Should().Contain("Mud.Wechat.Channels'", "小店主包必须纳入消费点搜索范围");
-        audit.Should().Contain("Mud.Wechat.Channels.DataModels'", "小店 DataModels 必须纳入消费点搜索范围");
-        audit.Should().Contain("Mud.Wechat.Channels.Callback'", "小店回调运行时包必须纳入消费点搜索范围");
-        // 腾讯广告：三条源包全部纳入消费点搜索范围（配置属性的消费点可能落在主包或抽象包）。
-        // 缺一即「该包的属性被整体绕过」= 门禁盲区，与本守卫存在的初衷直接冲突。
-        foreach (var adsProject in new[]
+        // F1：消费点搜索根由 slnx /src/ 现场推导（新增产品线手工注册点收敛到 slnx 一处，
+        // 字面根清单的逐线断言随之废除 —— OpenPlatform.DataModels 拆包后未补登记即为其漂移实证）。
+        // ① 推导逻辑存在：入口函数名锁定，字面根清单（$searchRoots = @(）不得复活。
+        audit.Should().Contain("function Get-SearchRootsFromSlnx",
+            "audit 的消费点搜索根必须由 slnx /src/ 推导（F1 接入口收敛）");
+        audit.Should().NotContain("$searchRoots = @(",
+            "字面搜索根清单不得复活 —— 清单与工程目录各自成文正是 F1 要消除的漂移源");
+        // ② 活性一致：按同款逻辑从 slnx 推导 /src/ 工程名，历史字面清单（26 根）覆盖的每个根
+        //    必须仍被推导覆盖（推导为超集：新增的 DataModels / 工具工程目录无配置消费引用，安全）。
+        var slnxSourceRootNames = SlnxSourceProjectDirs()
+            .Select(static p => Path.GetFileName(p))
+            .ToHashSet(StringComparer.Ordinal);
+        foreach (var heritageRoot in new[]
                  {
-                     "'Mud.Wechat.Ads'",
-                     "'Mud.Wechat.Ads.Abstractions'",
-                     "'Mud.Wechat.Ads.DataModels'",
+                     "Mud.Wechat.Abstractions", "Mud.Wechat.Redis", "Mud.Wechat.OpenTelemetry",
+                     "Mud.Wechat.Work", "Mud.Wechat.Work.Abstractions", "Mud.Wechat.Work.Callback",
+                     "Mud.Wechat.OfficialAccount", "Mud.Wechat.OfficialAccount.Abstractions",
+                     "Mud.Wechat.OfficialAccount.DataModels", "Mud.Wechat.OfficialAccount.Callback",
+                     "Mud.Wechat.MiniProgram", "Mud.Wechat.MiniProgram.Abstractions", "Mud.Wechat.MiniProgram.DataModels",
+                     "Mud.Wechat.Pay", "Mud.Wechat.Pay.Abstractions", "Mud.Wechat.Pay.DataModels", "Mud.Wechat.Pay.Callback",
+                     "Mud.Wechat.OpenPlatform", "Mud.Wechat.OpenPlatform.Abstractions",
+                     "Mud.Wechat.Channels", "Mud.Wechat.Channels.Abstractions",
+                     "Mud.Wechat.Channels.DataModels", "Mud.Wechat.Channels.Callback",
+                     "Mud.Wechat.Ads", "Mud.Wechat.Ads.Abstractions", "Mud.Wechat.Ads.DataModels",
                  })
         {
-            audit.Should().Contain(adsProject, $"广告线 {adsProject} 工程必须纳入配置消费点搜索范围");
-        }
-
-        // 腾讯广告配置 DTO 与支付线同一双向不变式：文件存在 ⇔ 已登记进 $configFiles
+            slnxSourceRootNames.Should().Contain(heritageRoot,
+                $"历史字面搜索根 {heritageRoot} 必须仍被 slnx /src/ 推导覆盖（活性一致；缺项即 slnx 漏项或推导失效）");
+        }        // 腾讯广告配置 DTO 与支付线同一双向不变式：文件存在 ⇔ 已登记进 $configFiles
         // （2026-10-10 补登记 —— 此前只断言了搜索根、漏了 DTO 本身，AdsAppConfig 曾整体绕过审计）。
         var adsConfigDto = "Mud.Wechat.Ads.Abstractions/Configuration/AdsAppConfig.cs";
         var adsDtoExists = File.Exists(SourcePath(adsConfigDto.Split('/')));
@@ -607,6 +643,46 @@ public class WechatAbstractionsContractGuards
                 $"{script} 不得硬编码期望包数（EXPECTED=<非零数字>）；期望值须现场推导");
             bat.Should().NotContain("PACKAGES=",
                 $"{script} 不得再持有 PACKAGES 硬编码清单 —— 清单漂移正是本守卫存在的初衷");
+        }
+    }
+
+    /// <summary>
+    /// AB-G6 布局不变式（审查报告 v1 P2-1 配套）：<c>Src</c> 下 csproj 保持
+    /// <c>{根}/{一级}/{二级}/{文件名}.csproj</c> 两层目录形态，<c>Tests</c> 下保持
+    /// <c>{根}/{工程}/{文件名}.csproj</c> 一层目录形态。
+    /// </summary>
+    /// <remarks>
+    /// verify-build.ps1 步骤 2/3 的工程枚举已改为有界深度（<c>-Recurse -Depth 2</c>；Windows PowerShell 5.1
+    /// 无长路径支持，仓库根无界递归会撞 MAX_PATH——AGENTS.md §1 记载的实际案例）。有界化引入新假设
+    /// 「工程必在既定层级内」：若未来出现更深嵌套工程，步骤 2 将静默漏掉（正是该设置要防的假绿形态）。
+    /// 本守卫活体枚举两根下全部 csproj（测试进程为 .NET Core，无 MAX_PATH 限制），把口头目录约定升级为
+    /// 守卫锁定——先有守卫后有假设。布局要变化时，本守卫与 verify-build 的枚举深度须同批调整。
+    /// </remarks>
+    [Fact]
+    public void SourceAndTestLayout_ShouldStayTwoLevelDeep()
+    {
+        var root = GetSolutionRoot();
+        // Src 工程为「{一级}/{二级}/{文件名}」两层目录形态（3 段）；测试工程直接位于 Tests/ 下一层（2 段）。
+        // 两者均在 verify-build 步骤 2/3 的有界深度 2 枚举范围内；更深嵌套会被静默漏掉（更浅形态同样破坏既有约定）。
+        foreach (var (relativeRoot, label, expectedSegments) in new[] { ("Src", "源工程", 3), ("Tests", "测试工程", 2) })
+        {
+            var rootDir = Path.Combine(root, relativeRoot);
+            var relativePaths = Directory
+                .EnumerateFiles(rootDir, "*.csproj", SearchOption.AllDirectories)
+                .Where(static f => !f.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.Ordinal)
+                                   && !f.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
+                .Select(f => Path.GetRelativePath(rootDir, f))
+                .ToArray();
+
+            relativePaths.Should().NotBeEmpty($"{relativeRoot} 下必须枚举到工程（空枚举 = verify-build 步骤静默空跑的前兆）");
+
+            foreach (var relative in relativePaths)
+            {
+                var segments = relative.Split(Path.DirectorySeparatorChar);
+                segments.Length.Should().Be(expectedSegments,
+                    $"{label} {relativeRoot}/{relative.Replace('\\', '/')} 必须保持既定目录形态：" +
+                    "verify-build 步骤枚举为有界深度，更深嵌套会被静默漏掉（布局变化须与枚举深度同批调整）");
+            }
         }
     }
 

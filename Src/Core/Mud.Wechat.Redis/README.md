@@ -1,10 +1,11 @@
 # Mud.Wechat.Redis
 
-**跨产品线的 Redis 分布式存储扩展包**：为多实例分布式部署提供四个存储端口的 Redis 实现，
-适用于多实例共享令牌、跨实例持久化企业授权（永久授权码）、多实例共享 suite_ticket 与回调抗重放。
+**跨产品线的 Redis 分布式存储扩展包**：为多实例分布式部署提供五个存储端口的 Redis 实现，
+适用于多实例共享令牌、跨实例持久化企业授权（永久授权码）、多实例共享 suite_ticket、回调抗重放
+与智能机器人长连接主备租约。
 
-四个端口中，令牌存储 / 企业授权 / 套件票据来自企业微信线（`Mud.Wechat.Work.Abstractions`，本包唯一的
-ProjectReference），回调抗重放端口 `IWechatCallbackReplayGuard` 已下沉到 `Mud.Wechat.Abstractions` 叶层，
+五个端口中，令牌存储 / 企业授权 / 套件票据 / 长连接租约来自企业微信线（`Mud.Wechat.Work.Abstractions`），
+回调抗重放端口 `IWechatCallbackReplayGuard` 已下沉到 `Mud.Wechat.Abstractions` 叶层，
 故**企微 / 公众号 / 支付三条产品线的回调接收面共用同一个 Redis 实现**。
 
 对应 `Mud.Feishu.Redis` 的同构模块（连接基座 / 键构造护栏 / DI 编排模式一致，存储层按微信契约重设计）。
@@ -17,19 +18,20 @@ ProjectReference），回调抗重放端口 `IWechatCallbackReplayGuard` 已下�
 | `IWechatCorpAuthStore` | `RedisWechatCorpAuthStore` | 企业授权（含**不可重取**的永久授权码）跨实例持久化，重启不再丢授权 |
 | `IWechatSuiteTicketStore` | `RedisWechatSuiteTicketStore` | suite_ticket 跨实例共享——不再只有收到推送的实例能签发套件令牌 |
 | `IWechatCallbackReplayGuard` | `RedisWechatCallbackReplayGuard` | 回调抗重放窗口跨实例生效（进程内实现多实例下重放窗口失效）；企微 / 公众号 / 支付三条回调接收面共用此端口 |
+| `IWechatBotConnectionLease` | `RedisWechatBotConnectionLease` | 智能机器人长连接（官方 101463）主备租约跨实例互斥——多实例部署必须注册本包，避免多实例同时订阅同一 Bot 的推送帧 |
 
 公众号线复用同一 `IWechatTokenStore` 端口承载 `access_token` 与 `jsapi_ticket` / `wx_card` 票据
 （键空间分别以 `Wechat.Mp.JsApiTicket:{AppKey}` / `Wechat.Mp.WxCardTicket:{AppKey}` 隔离），故装配本包后
 公众号令牌与票据同样跨实例共享，冷启动直接命中其它实例写入的票据——本包不引用公众号工程，跨线语义经端口接口达成。
 
-四个端口的默认实现均为进程内（`TryAddSingleton` 注册）——其中令牌 / 企业授权 / 套件票据三个端口由企业微信基座注册，
+五个端口的默认实现均为进程内（`TryAddSingleton` 注册）——其中令牌 / 企业授权 / 套件票据 / 长连接租约四个端口由企业微信基座注册，
 `IWechatCallbackReplayGuard` 现由各回调宿主包（Work.Callback / OfficialAccount.Callback / Pay.Callback）各自注册。
 本包**先注册即胜出**：
 
 ```csharp
 // Program.cs —— 完整装配：顺序即契约，Redis 必须最先
 builder.Services
-    .AddWechatRedis(builder.Configuration)                 // ① 连接基座 + 四个存储端口（默认注册健康检查）
+    .AddWechatRedis(builder.Configuration)                 // ① 连接基座 + 五个存储端口（默认注册健康检查）
     .AddWechatApp(builder.Configuration, "WechatApps")     // ② 令牌/授权/票据基座（Redis 实现已就位）
     .AddWechatCallback(o => { /* 回调凭据与处理器 */ });    // ③ 回调（抗重放窗口跨实例生效）
 
@@ -98,9 +100,11 @@ app.Run();
 
 ## 回调抗重放（fail-closed）
 
-Redis 实现的 `TryMarkAsync` 在存储故障时**原样包装上抛**（`WechatRedisException`）——接收器无捕获面，
-异常冒泡为回调 5xx，官方 96238 重试可重新进入管线。显式禁止吞异常返回 `true`（放行重放）或
-`false`（静默丢事件且官方不再重试）。
+Redis 实现的 `TryMarkAsync` 在存储故障时**分类包装上抛**：外层为叶层契约异常
+`WechatCallbackInfrastructureException`（回调中间件的专用 catch 映射 **503**，触发官方 96238 重推；
+严禁与验证类失败的 403 混流——Redis 故障期 403 会静默丢事件），`WechatRedisException`
+作为 `InnerException` 保留（`FailureKind` 分类语义与既有宿主捕获面零破坏）。接收器无捕获面，
+显式禁止吞异常返回 `true`（放行重放）或 `false`（静默丢事件且官方不再重试）。
 
 ## 健康 / 预热 / 生命周期
 

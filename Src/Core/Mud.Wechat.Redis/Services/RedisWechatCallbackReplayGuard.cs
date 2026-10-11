@@ -19,10 +19,16 @@ namespace Mud.Wechat.Redis.Services;
 /// 无附加段）。首次返回 <c>true</c>；窗口内重复返回 <c>false</c>。
 /// </para>
 /// <para>
-/// <b>RD3（fail-closed 失败语义）</b>：Redis 异常原样包装上抛——接收器对 <see cref="TryMarkAsync"/>
+/// <b>RD3（fail-closed 失败语义）</b>：Redis 异常分类包装后上抛——接收器对 <see cref="TryMarkAsync"/>
 /// 无捕获面，异常冒泡为回调 5xx，官方 96238 重试可重新进入管线（解密成功但指纹闸异常不构成消费，
 /// 与 P1-1「解密失败不消耗指纹」同方向）。两个反模式显式禁止：吞异常返回 <c>true</c>（放行重放）、
 /// 吞异常返回 <c>false</c>（静默丢事件且官方不再重试）。
+/// </para>
+/// <para>
+/// <b>审查报告 v1 P1-1</b>：外层包装为叶层契约异常 <see cref="WechatCallbackInfrastructureException"/>
+/// （管线宿主的专用 catch 映射 503，与验证类失败的 403 分流），<see cref="WechatRedisException"/>
+/// 作为 <see cref="Exception.InnerException"/> 保留——既有分类语义（<see cref="WechatRedisException.FailureKind"/>）
+/// 经 Inner 可达，宿主对 Redis 异常的既有捕获面零破坏。
 /// </para>
 /// </remarks>
 public class RedisWechatCallbackReplayGuard : IWechatCallbackReplayGuard
@@ -72,8 +78,13 @@ public class RedisWechatCallbackReplayGuard : IWechatCallbackReplayGuard
         catch (Exception ex) when (WechatRedisErrors.ShouldWrap(ex))
         {
             // RD3：fail-closed——异常上抛（不得吞成 true/false）。
+            // 审查报告 v1 P1-1：包装为契约层基础设施异常（中间件专用 catch 映射 503 → 官方 96238 重推；
+            // 严禁落入验证类 403——Redis 故障期事件会静默丢失）。WechatRedisException 作为
+            // InnerException 保留，既有分类语义与宿主捕获面零破坏。
             RedisMetricsHelper.RecordFailure(null, WorkMetrics.RedisCommands.ReplayTryMark, ex);
-            throw WechatRedisErrors.Map("回调重放指纹标记", redisKey, ex);
+            throw new WechatCallbackInfrastructureException(
+                $"回调重放指纹标记失败（分布式守卫存储不可用）：{redisKey}",
+                WechatRedisErrors.Map("回调重放指纹标记", redisKey, ex));
         }
         finally
         {

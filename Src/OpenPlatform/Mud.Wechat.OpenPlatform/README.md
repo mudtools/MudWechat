@@ -2,7 +2,7 @@
 
 微信开放平台**第三方平台（component）SDK 主包**：`component_access_token` 的按需刷新 + 缓存 + 并发单飞、授权流程三步（预授权码 / 换取授权信息 / 刷新授权方令牌）、以及「授权事件接收 URL」推送的接收器。
 
-**本线与企业微信的第三方应用（Suite，`Mud.Wechat.Work*`）是两条完全不同的线**：这里是微信公众平台开放平台的 component 凭证链（component / authorizer 两级令牌），由第三方平台**代运营公众号 / 小程序**（`Mud.Wechat.OfficialAccount*` / `Mud.Wechat.MiniProgram*` 所承载的那两类账号）；令牌与企微的 `access_token` 体系互不相通，混用即串号。另注意本线目前**只有两个工程**——没有独立的 Callback / DataModels 包：推送接收由本包内 `ComponentVerifyTicketReceiver` 承载，官方契约常量与全部模型都在 `Mud.Wechat.OpenPlatform.Abstractions`。
+**本线与企业微信的第三方应用（Suite，`Mud.Wechat.Work*`）是两条完全不同的线**：这里是微信公众平台开放平台的 component 凭证链（component / authorizer 两级令牌），由第三方平台**代运营公众号 / 小程序**（`Mud.Wechat.OfficialAccount*` / `Mud.Wechat.MiniProgram*` 所承载的那两类账号）；令牌与企微的 `access_token` 体系互不相通，混用即串号。本线为**三工程形态**（Abstractions / DataModels / 主包）：官方契约常量与配置在 `Mud.Wechat.OpenPlatform.Abstractions`，官方接口 DTO 在 `Mud.Wechat.OpenPlatform.DataModels`（2026-10 拆包；本包同时引两者，模型面经主包传递可见——**Abstractions 不直接引 DataModels** 是本线的有意形态差异）；**没有 Callback 包**——「授权事件接收 URL」推送由本包内 `ComponentVerifyTicketReceiver` 承载。
 
 ## 内容
 
@@ -44,8 +44,8 @@ app.MapPost("/wechat/component", async (HttpRequest request, ComponentVerifyTick
 
 ## 依赖
 
-- `Mud.Wechat.OpenPlatform.Abstractions`、`Mud.Wechat.Abstractions`（Core 共享内核：`WechatCallbackCrypto` 验签解密）
-- `Mud.HttpUtils` 3.0.3、`Mud.HttpUtils.Generator` 3.0.3（Analyzer）
+- `Mud.Wechat.OpenPlatform.Abstractions`、`Mud.Wechat.OpenPlatform.DataModels`、`Mud.Wechat.Abstractions`（Core 共享内核：`WechatCallbackCrypto` 验签解密）
+- `Mud.HttpUtils` 3.0.6、`Mud.HttpUtils.Generator` 3.0.6（Analyzer）
 - `Microsoft.Extensions.Http` 10.0.9（net8.0/net10.0）/ 8.0.1（net6.0）
 - TFM：`net6.0;net8.0;net10.0`——**不含 netstandard2.0**（与 Abstractions 同款收窄：组件 `AddMudHttpClient` / `HttpClientFactoryEnhancedClient` 的最小面，且开放平台凭证链是本仓最新一层，无历史兼容包袱，见 csproj 注释）。
 

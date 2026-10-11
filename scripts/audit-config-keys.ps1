@@ -42,6 +42,28 @@ function Get-SourceProjectDir([string]$projectName) {
     return $csproj.DirectoryName
 }
 
+# 消费点搜索根：由 slnx /src/ 现场推导（审查报告 v1 F1 接入口收敛 —— 新增产品线只登记 slnx，
+# 搜索根零手工维护；字面根清单已两次漂移，OpenPlatform.DataModels 拆包后未补登记即为实证）。
+# 仅取 /src/* Folder 下工程：**不得**纳入 /tests/ 与 /Demos/ —— 测试对配置属性名的引用会被算作
+# 「消费点」、守卫源文件自身含被扫描字面量，纳入即反向削弱审计；Demo 非交付物同理。
+# slnx 为标准 XML，PS 5.1 的 [xml] 直接可解；不用 Split-Path -LeafBase（PS 6.0 才有）。
+function Get-SearchRootsFromSlnx {
+    [xml]$doc = Get-Content (Join-Path $repoRoot 'Mud.Wechat.slnx') -Raw
+    $roots = @(
+        $doc.Solution.Folder |
+            Where-Object { $_.Name -like '/src/*' } |
+            ForEach-Object { $_.Project } |
+            Where-Object { $null -ne $_ } |
+            ForEach-Object { [IO.Path]::GetFileNameWithoutExtension($_.Path) }
+    ) | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | Sort-Object -Unique
+    # PS XML 适配器陷阱：自闭合空 Folder（<Folder Name="/src/" />）的 .Project 返回 $null 而非 $null 集合
+    # （@($null).Count = 1），须显式过滤空投影，否则空字符串根会让 Get-SourceProjectDir 抛「未找到工程」。
+    if ($roots.Count -lt 20) {
+        throw "slnx /src/ 推导出的搜索根仅 $($roots.Count) 个（应 ≥ 20）：slnx 解析失效或结构漂移，审计面不可信"
+    }
+    return $roots
+}
+
 $configFiles = @(
     # 公用层配置基座：公共形状（AppKey/BaseUrl/AllowCustomBaseUrl/TimeoutSeconds/TokenRefreshThreshold/IsDefault）
     # 已上移至本文件，若不同批纳入扫描即为门禁盲区。
@@ -88,6 +110,10 @@ $configFiles = @(
     'Mud.Wechat.OpenPlatform.Abstractions/OpenPlatformAppConfig.cs'
 )
 
+# 搜索根在循环外推导一次（字面清单已删除 —— 历史版本在此处维护 26 个根，新增产品线须手工补登，
+# 该负担即 F1 要消除的漂移源；现由 Get-SearchRootsFromSlnx 从 slnx 现场推导）。
+$searchRoots = Get-SearchRootsFromSlnx
+
 foreach ($file in $configFiles) {
     Write-Host "审计：$file" -ForegroundColor Cyan
     # 登记格式：<ProjectName>/<工程内相对路径>；首段为工程名，按 csproj 定位后拼接。
@@ -110,45 +136,8 @@ foreach ($file in $configFiles) {
         continue
     }
 
-    # 消费点搜索范围：全部源码（排除配置 DTO 自身与生成目录）。
-    # 新增产品线（公众号/服务号）的三个工程必须在内，否则其配置属性恒「无消费点」或被整体绕过。
-    $searchRoots = @(
-        'Mud.Wechat.Abstractions',
-        'Mud.Wechat.Work',
-        'Mud.Wechat.Work.Abstractions',
-        'Mud.Wechat.Work.Callback',
-        'Mud.Wechat.Redis',
-        'Mud.Wechat.OfficialAccount',
-        'Mud.Wechat.OfficialAccount.Abstractions',
-        'Mud.Wechat.OfficialAccount.DataModels',
-        # 公众号回调运行时包（配置消费点所在；未纳入即为门禁盲区）。
-        'Mud.Wechat.OfficialAccount.Callback',
-        # 微信小程序产品线：消费点可落在主包（客户端声明）或抽象包（配置基座派生类）。
-        'Mud.Wechat.MiniProgram',
-        'Mud.Wechat.MiniProgram.Abstractions',
-        'Mud.Wechat.MiniProgram.DataModels',
-        # 微信支付产品线：消费点可落在主包与抽象包。
-        'Mud.Wechat.Pay',
-        'Mud.Wechat.Pay.Abstractions',
-        'Mud.Wechat.Pay.DataModels',
-        'Mud.Wechat.Pay.Callback',
-        # 可观测性装配包：WechatOpenTelemetryOptions 的消费点位于映射器中。
-        'Mud.Wechat.OpenTelemetry',
-        # 开放平台产品线（2026-10 新增）：消费点可落在主包与抽象包。
-        'Mud.Wechat.OpenPlatform',
-        'Mud.Wechat.OpenPlatform.Abstractions',
-        # 微信小店/视频号（channels 生态）产品线（设计方案 v1 §3.6）：消费点可落在四包任一处。
-        'Mud.Wechat.Channels',
-        'Mud.Wechat.Channels.Abstractions',
-        'Mud.Wechat.Channels.DataModels',
-        'Mud.Wechat.Channels.Callback',
-        # 腾讯广告产品线（2026-10 新增）：三包全部纳入。本线是仓内第一条**非微信域**线
-        # （api.e.qq.com + 独立 OAuth2 双令牌），漏出搜索范围即「属性无消费点被整体绕过」= 门禁盲区，
-        # AB-G6 对本线三包逐一断言存在。
-        'Mud.Wechat.Ads',
-        'Mud.Wechat.Ads.Abstractions',
-        'Mud.Wechat.Ads.DataModels'
-    )
+    # 消费点搜索范围：由 slnx /src/ 推导（见 Get-SearchRootsFromSlnx），循环外已就绪。
+    # 历史字面清单（26 根，含逐线注释）已删除 —— 其覆盖语义由 AB-G6 的「活性一致」断言承接。
 
     foreach ($prop in $propNames) {
         $consumed = $false

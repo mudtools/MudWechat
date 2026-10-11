@@ -422,6 +422,13 @@ jobs:
       - name: Build
         run: dotnet build ${{ env.SOLUTION_FILE }} --configuration ${{ env.CONFIGURATION }} --no-restore
 
+      # 分析器前置构建（幂等、防假绿兜底）：四个 Callback 宿主包以字面相对路径从其 bin 目录内嵌
+      # Mud.Wechat.Callback.Analyzers.dll。上方全量 Build 已覆盖该产物新鲜度；显式 --no-incremental
+      # 重建把「内嵌产物是否新鲜」固化为独立步骤，防该 Build 步骤日后被裁剪/改动后 pack --no-build
+      # 静默内嵌陈旧分析器（审查报告 v1 P2-2）。
+      - name: Rebuild analyzer (embed freshness)
+        run: dotnet build Src/Core/Mud.Wechat.Callback.Analyzers/Mud.Wechat.Callback.Analyzers.csproj --configuration ${{ env.CONFIGURATION }} --no-incremental --no-restore
+
       # 打包：生成 .nupkg（Tests 工程均 <IsPackable>false</IsPackable>，不会混入产物）
       - name: Pack NuGet package
         run: dotnet pack ${{ env.SOLUTION_FILE }} --configuration ${{ env.CONFIGURATION }} --output ./nupkg --no-build

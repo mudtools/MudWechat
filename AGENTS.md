@@ -28,7 +28,7 @@ dotnet test Tests/Mud.Wechat.Work.Tests -c Release -f net8.0 --filter "FullyQual
 ```
 
 - `verify-build.ps1` 三步：Release 全量构建 → 逐源项目 AOT strict（排除 `Tests`/`Demos`/`.codeartsdoer`/`*.Generator.csproj`/`*.Analyzers.csproj`——`.codeartsdoer` 为工具临时目录，Roslyn 扩展工程为 netstandard2.0 单 TFM、无运行时 AOT 语义，其正确性由步骤 1 全量构建 + 步骤 3 守卫闭环承担）→ 逐测试工程测试（单 TFM `net8.0`，产物落 gitignored `test-reports/`）。
-- **改 `verify-build.ps1` 时三处设置删掉即假绿，不许优化掉**：① strict 步骤须**同时**断言「编译错误」与「IL 诊断」计数（构建本身失败时诊断计数仍为 0）；② `Get-ChildItem -Recurse`（否则找不到嵌套 `.csproj`，AOT 步骤静默空跑）；③ `--no-incremental`（`CoreCompile` 只比对时间戳、不比对 csc 命令行，紧跟步骤 1 的 strict 构建会被整体跳过）。
+- **改 `verify-build.ps1` 时三处设置删掉即假绿，不许优化掉**：① strict 步骤须**同时**断言「编译错误」与「IL 诊断」计数（构建本身失败时诊断计数仍为 0）；② `Get-ChildItem -Recurse`（否则找不到嵌套 `.csproj`，AOT 步骤静默空跑）——**可加有界 `-Depth`（现为步骤 2/3 的 `-Recurse -Depth 2`，锚定「工程两层形态」假设），但递归枚举本身不得删除或退化为按名单硬编码**，两层布局由 AB-G6 布局不变式守卫锁定；③ `--no-incremental`（`CoreCompile` 只比对时间戳、不比对 csc 命令行，紧跟步骤 1 的 strict 构建会被整体跳过）。
 - **门禁只统计编译错误与 AOT IL 诊断，不因 CS 警告失败** —— 不要为消警告大范围重构。
 - `scripts/*.ps1` 为 UTF-8 **含 BOM**（无 BOM 在 PowerShell 5.1 下按 ANSI 解码 ⇒ 语法解析失败）。
 - **Windows PowerShell 5.1 无长路径支持（MAX_PATH 260）**：脚本**不得**用 `Get-ChildItem -Path <仓库根> -Recurse` 去按名称找工程 —— `obj/generated-probe/` 下配置绑定源生成器留下的深路径（实测 223 字符）叠加长工程名（如 `Mud.Wechat.OfficialAccount.Abstractions.csproj`）即超过 260，5.1 抛 `DirectoryNotFoundException`；而 `pwsh`（.NET Core 有长路径支持）会侥幸通过，从而**掩盖该缺陷**（`audit-config-keys.ps1` 实际踩过）。按名称定位工程须**有界深度且不进入 `obj`**（如 `Get-ChildItem -Path <仓库根>/Src -Filter "<Project>.csproj" -Recurse -File -Depth 2`）。
@@ -89,11 +89,13 @@ scripts/                              # verify-build / audit-config-keys / Gener
 .docs/                                # 方案与设计文档（中文；已 gitignore，fresh clone 无此目录）
 ```
 
-依赖单向：`Work → {Abstractions, DataModels}`、`Callback → {Abstractions, DataModels}`、`Abstractions → DataModels`、`Redis → Abstractions`。硬边界：**`Callback` 不引用 `Work`**；**`Redis` 不引用 `Work`/`Callback`**；**广告线与其余六线双向零引用**（ADS-S1 两向都扫）。
+依赖单向：`Work → {Abstractions, DataModels}`、`Callback → {Abstractions, DataModels}`、`Abstractions → DataModels`、`Redis → {Abstractions（叶层）, Work.Abstractions}`。硬边界：**`Callback` 不引用 `Work`**；**`Redis` 不引用 Work 主包 / Work.Callback / 任何线主包**（唯一例外：Redis → `Work.Abstractions`，RD11 裁决——实现企微专属存储端口四接口 + 消费 `RedisMetricsHelper`/`WorkMetrics` 指标面）；**广告线与其余六线双向零引用**（ADS-S1 两向都扫）。
 
-**新增产品线的门禁接入口只有一个**：`AB-G6` 会同时校验解决方案工程清单（每个可打包工程须已在 `slnx` 内）、`audit-config-keys.ps1` 搜索根、DTO 标注脚本根命名空间、以及 CI / `pack.bat` / `publish.bat` 三处的**推导口径**（可打包集由 `Src/**/*.csproj` 现场推导，三处各自推导、不持有名单，也不硬编码包数 —— 唯一被维护的名单是「非可打包工程白名单」，仅两个构建期工具）。
+**新增产品线的门禁接入口只有一个**：`AB-G6` 会同时校验解决方案工程清单（每个可打包工程须已在 `slnx` 内）、`audit-config-keys.ps1` 的**配置 DTO 登记表 `$configFiles`**（逐文件登记，**不得推导**——它是「每个配置 DTO 必须被登记受检」的契约本身；消费点**搜索根**已由 `slnx /src/` 现场推导、零手工登记，F1）、DTO 标注脚本根命名空间、以及 CI / `pack.bat` / `publish.bat` 三处的**推导口径**（可打包集由 `Src/**/*.csproj` 现场推导，三处各自推导、不持有名单，也不硬编码包数 —— 唯一被维护的名单是「非可打包工程白名单」，仅两个构建期工具）。
 
 **其它产品线（公众号 / 小程序 / 支付 / 开放平台 / 小店）各持 `Src/{线}/` 包家族与 `Tests/Mud.Wechat.{线}.Tests/` 守卫，契约与落位以各自 `.docs/` 设计方案为准**（本文为企微线专属）。小店线关键决策锚点：独立令牌类型 `Wechat.Channels.AccessToken`（与 `Wechat.AccessToken`/`Wechat.Mp.AccessToken` 在共享注册表天然隔离）、平铺命名空间无 `IsAbstract` 父接口、与既有六线路由交叠零回潮（共享基础设施白名单仅 `token`/`stable_token` + 8 个 `/cgi-bin/` 基础端点）、`/wxa/vip/*` 已核定为小程序令牌、归 MiniProgram 线，小店线不得跨线声明、回调为**官方强制 JSON + 仅安全模式**（信封 `{"ToUserName","Encrypt"}`，事件键 42 个经 `[ChannelsCallbackContract]` 声明式登记、契约机制与事件键常量落 DataModels/Callback、类型化通道仅 net8+）—— 全部为 CH / CB-CH 系列守卫锁定，改动见 `Tests/Mud.Wechat.Channels.Tests/ContractGuards/` 与 `Tests/Mud.Wechat.Channels.Callback.Tests/`。
+
+**七线包形态差异注记（均为有意设计，勿「顺手对齐」）**：① OpenPlatform 三工程包形态与标准线一致，但 **Abstractions 不引本线 DataModels**（主包同时引 Abstractions + DataModels，模型面经主包传递可见；DataModels 为 2026-10 后拆包且已承载实际 DTO）；② OpenPlatform / MiniProgram / Ads **无 Callback 包**（开放平台推送接收由主包承载、小程序与广告官方无推送面）。
 
 **新文件落位三处一致（目录 / 命名空间 / 注册入口）**：
 
@@ -145,7 +147,7 @@ scripts/                              # verify-build / audit-config-keys / Gener
 
 - `IWechatCorpAuthStore` 复合键 `(AppKey, AuthCorpId)`；`IWechatSuiteTicketStore` 按 `suiteId` 分槽（多套件互不覆盖）。
 - 默认实现仅进程内 ⇒ 多实例部署引用 `Mud.Wechat.Redis`（`AddWechatRedis` **必须先于** `AddWechatApp`/`AddWechatCallback`，颠倒即注册期 fail-fast），或由宿主前置 `TryAdd` 分布式实现覆盖（宿主预注册者按契约胜出）。
-- 五个存储端口（含 `IWechatCallbackReplayGuard`：接口落 `Abstractions.TokenManager`，InMemory 实现留 `Callback` 包；`IWechatBotConnectionLease`：接口落 `Abstractions.Callback.Bots`，长连接主备基座）：接口落 `Abstractions.TokenManager`，InMemory 实现留 `Callback` 包）由 Redis 包单依赖 Abstractions 实现、共享连接基座。
+- 五个存储端口的落位（P3-2/P3-7 修订，与代码实测一致）：企微专属三端口（`IWechatTokenStore` / `IWechatCorpAuthStore` / `IWechatSuiteTicketStore`）接口落 `Work.Abstractions`（TokenManager）；`IWechatCallbackReplayGuard` 接口落叶层 `Core/Mud.Wechat.Abstractions/Callback/`（叶层中立 SPI，企微/公众号/支付三线复用，其 InMemory 默认实现同在叶层）；`IWechatBotConnectionLease` 接口落 `Work.Abstractions/Callback/Bots/`（长连接主备基座）。Redis 包**双依赖**（叶层 `Mud.Wechat.Abstractions` + `Work.Abstractions`，后者为 §4 的 RD11 例外）实现全部端口、共享连接基座。
 - 退役清库批量能力为**可选**接口 `IWechatTokenStoreBatchRemove`（管理器先 `is` 探测，命中批删、未实现回退逐键）。
 - **后台刷新停机语义（组件 ≥ 3.0.5 / M7-HC-04）**：刷新服务 `Dispose` 会取消在途刷新（实例级 CTS：置位 → Cancel → 停表 → Dispose CTS），在途刷新以 `OperationCanceledException` 结束且**不产生**刷新未处理异常 Error 日志（优雅关闭口径）；本仓各线 `*TokenRegistrationService` 的登记路径已有 `catch (OperationCanceledException) { throw; }` 先行于 `catch (Exception)`，取消不会被吞。
 - **SE.Redis 3.3.0 陷阱**：① `RedisTimeoutException` 继承 `TimeoutException` 而非 `RedisException`，捕获须走 `WechatRedisErrors.ShouldWrap`，裸 `catch (RedisException)` 会漏超时；② `StringSetAsync` 有四套重载，**生产调用一律用命名参数钉住形态**（`keepTtl: false` / `when: ...`）。
@@ -166,12 +168,12 @@ scripts/                              # verify-build / audit-config-keys / Gener
 
 | 面 | 约束 |
 |---|---|
-| 包形态 | `netstandard2.0` 用 `Microsoft.AspNetCore.Http 2.3.9`，`net6+` 用 `FrameworkReference`；中间件为经典约定式 `RequestDelegate`（不进 DI），宿主 `UseWechatWebhook()` 接入 |
+| 包形态 | `netstandard2.0` 用 `Microsoft.AspNetCore.Http 2.3.9`，`net6+` 用 `FrameworkReference`；中间件为经典约定式 `RequestDelegate`（不进 DI），宿主 `UseWechatWebhook()` 接入。**Callback 宿主包禁止单独 `dotnet pack`**——一律走 pack.bat / publish.bat / CI 全量推导路径（四个宿主包以字面相对路径内嵌分析器，单包绕过全量推导是内嵌一致性的唯一 uncovered 面，P2-2） |
 | 凭据来源 | `WechatCallbackOptions.Apps` 字典是**唯一来源**（`WechatAppConfig` 无 Push 属性、应用级配置无 `AppKey` 属性）；路由 `/{GlobalRoutePrefix}/{AppKey}` |
 | 注册 | `AddWechatCallback` 返回建造者（链式注册处理器/拦截器）；`IConfiguration` 重载为**惰性** `Configure(o => section.Bind(o))`；`IOptionsMonitor` 支持路由前缀与凭据**请求期热更** —— 勿改回注册期急切绑定。**不得引入「接收方 ID 统一注册表 / `IWechatCallbackUrlVerifier`」** |
 | 校验 | 请求期单应用（`ResolveApp` 命中后 `app.Validate(appKey)`，单应用配置错误不拖垮全部路由）+ `WechatCallbackOptions.Validate()` 启动期全量入口；失败统一抛 `WechatCallbackException : InvalidOperationException`（`Kind` 映射类别） |
 | 加解密 | 按官方 **32 字节块 PKCS7** 手工补位/剥离；**禁用 .NET 内置 16 块 `PaddingMode.PKCS7`**（会误拒官方 pad∈[17..32] 报文） |
-| 抗重放 | 两道 fail-closed 闸：① 时间戳窗口 ±300s（缺失/非数字即拒）② 一次性 SHA1 指纹（**不得落盘密文本身**）。**指纹闸在「解密 + receiveid 校验成功」之后、事件返回之前**（解密失败不消耗指纹，官方重试可重入）。**GET echo 只过时效闸、不消费指纹**（同 echostr 二次保存配置必须成功）。分布式守卫异常**必须上抛**（→ 5xx → 官方 96238 重试），**禁止**吞异常 `true` 放行或 `false` 静默丢事件；空键返回 `false` 且不触达存储 |
+| 抗重放 | 两道 fail-closed 闸：① 时间戳窗口 ±300s（缺失/非数字即拒）② 一次性 SHA1 指纹（**不得落盘密文本身**）。**指纹闸在「解密 + receiveid 校验成功」之后、事件返回之前**（解密失败不消耗指纹，官方重试可重入）。**GET echo 只过时效闸、不消费指纹**（同 echostr 二次保存配置必须成功）。分布式守卫异常**必须上抛**（→ 5xx → 官方 96238 重试），**禁止**吞异常 `true` 放行或 `false` 静默丢事件；空键返回 `false` 且不触达存储。守卫实现存储故障抛叶层 `WechatCallbackInfrastructureException`（对齐 D7 继承 `InvalidOperationException`），中间件专用 catch 映射 **503**（守卫 CB25；严禁与验证类 403 混流——故障期 403 即静默丢事件，审查报告 v1 P1-1） |
 | 事件信封 | `WechatCallbackEvent` / `IWechatCallbackEventHandler` / `IWechatCallbackEventInterceptor` / `WechatCallbackEventTypes` 落 `Abstractions.Callback`（该目录含子目录、不得出现 XML 类型）；XML→信封解析留 `Callback.WechatCallbackReceiver`。`EventTypeKey`：客户联系/获客族与邮箱族以**外层事件值**为键（`Event` 优先、套件信封回退 `InfoType`，两信封同键；邮箱族因 `receive_email` 在应用邮箱/公共邮箱两族同名），其余 = `InfoType` → `ChangeType` → `Event`；`SupportedEventType` 空串 = 兜底（内置处理器即此形态）。`AuthCorpId ← FromUserName` 兜底**仅限授权族**。信封的 `AppKey`/`AppType`/`Channel` 是只读快照，**配置权威仍是** `WechatAppManager`/`WechatCallbackOptions` |
 | 分发 | 组合根期急切注册、**无 Freeze**；通配键 `"*"` 双语义（通讯录同步助手路由 + 全局处理器/拦截器桶）；匹配序 appKey 专属精确 → 全局精确 → 专属兜底 → 全局兜底。同步分发 + 软超时（默认 4500ms，**必须 < 5s 契约**）；超时/中断 → 503 触发重推；**指纹在分发前消费** ⇒ 重推同指纹被 403（fail-closed 优先于 at-least-once，**处理器须幂等**）；单处理器异常隔离（LogError 后继续）；`MaxConcurrentEvents` 为构造期快照（热更不改容量） |
 | 配置面 | `WechatAppCallbackOptions`：`PushToken`/`PushEncodingAESKey`/`ReceiveId`/`AppType`/`Channel`，必须与主配置同类文件才纳入 audit 扫描。`ReceiveId` 是接收方 ID（自建填 `CorpId`、**套件填 `SuiteId`**）；非空时校验解密明文 `receiveid`，留空或明文未携带时跳过并一次性告警 |

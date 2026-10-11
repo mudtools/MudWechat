@@ -53,4 +53,41 @@ public enum AdsModule
     /// 不因合并模块而抹平。
     /// </remarks>
     Reports,
+
+    /// <summary>
+    /// 组件化创意（4 端点）：查询 / 创建 / 更新 / 删除（官方 <c>dynamic_creatives/*</c>，v3.0 创意核心）。
+    /// 官方文档 <see href="https://developers.e.qq.com/v3.0/docs/api/dynamic_creatives/get"/>。
+    /// </summary>
+    /// <remarks>
+    /// 三支写端点为受限接口（另列 <c>user_token</c>，模块注册期已登记强制掩码键，守卫 ADS-B5）。
+    /// 组件 <c>value</c> 为逐组件 union，以开放字典承载（裁剪决策见核验留档 §4-D1）。
+    /// </remarks>
+    DynamicCreatives,
+
+    /// <summary>
+    /// 创意组件（4 端点）：查询 / 创建 / 删除 + 组件详情（官方 <c>components/*</c> + <c>component_detail/get</c>）。
+    /// 官方文档 <see href="https://developers.e.qq.com/v3.0/docs/api/components/get"/>。
+    /// </summary>
+    Components,
+
+    /// <summary>
+    /// 图片素材（4 端点）：查询 / 修改描述 / 删除（声明式）+ 上传（<c>images/add</c> 为 multipart/form-data，
+    /// 走手写通道 <c>IWechatAdsImageUploadService</c>，随本模块装配）。
+    /// 官方文档 <see href="https://developers.e.qq.com/v3.0/docs/api/images/get"/>。
+    /// </summary>
+    Images,
+
+    /// <summary>
+    /// 视频素材（4 端点）：查询 / 修改描述 / 删除（声明式）+ 上传（<c>videos/add</c> 为 multipart/form-data，
+    /// 走手写通道 <c>IWechatAdsVideoUploadService</c>，随本模块装配）。
+    /// 官方文档 <see href="https://developers.e.qq.com/v3.0/docs/api/videos/get"/>。
+    /// </summary>
+    Videos,
+
+    /// <summary>
+    /// 异步任务（2 端点）：创建 + 查询（官方 <c>async_tasks/add|get</c>；双层判定 ——
+    /// 任务执行结果看 <c>result.code</c>）。
+    /// 官方文档 <see href="https://developers.e.qq.com/v3.0/docs/api/async_tasks/add"/>。
+    /// </summary>
+    AsyncTasks,
 }

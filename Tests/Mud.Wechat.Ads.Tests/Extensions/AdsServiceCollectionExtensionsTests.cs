@@ -56,12 +56,25 @@ public class AdsServiceCollectionExtensionsTests
             services.AddAdsApp(CreateApps()).AddWechatAdsApi(b => b.AddAllApis()));
 
         Enum.GetValues(typeof(AdsModule)).Cast<AdsModule>()
-            .Should().Equal(new[] { AdsModule.Advertiser, AdsModule.Adgroups, AdsModule.Reports },
+            .Should().Equal(new[]
+                {
+                    AdsModule.Advertiser, AdsModule.Adgroups, AdsModule.Reports,
+                    AdsModule.DynamicCreatives, AdsModule.Components, AdsModule.Images,
+                    AdsModule.Videos, AdsModule.AsyncTasks,
+                },
                 "新增 AdsModule 成员必须同批在本用例补该域接口的可解析断言");
 
         provider.GetRequiredService<IWechatAdsAdvertiserService>().Should().NotBeNull();
         provider.GetRequiredService<IWechatAdsAdgroupService>().Should().NotBeNull();
         provider.GetRequiredService<IWechatAdsReportService>().Should().NotBeNull();
+        provider.GetRequiredService<IWechatAdsDynamicCreativeService>().Should().NotBeNull();
+        provider.GetRequiredService<IWechatAdsComponentService>().Should().NotBeNull();
+        provider.GetRequiredService<IWechatAdsImageService>().Should().NotBeNull();
+        provider.GetRequiredService<IWechatAdsVideoService>().Should().NotBeNull();
+        provider.GetRequiredService<IWechatAdsAsyncTaskService>().Should().NotBeNull();
+        // 素材两域的 multipart 上传通道随模块装配（实现随 Images/Videos 的 Add{域}Api 挂载）。
+        provider.GetRequiredService<IWechatAdsImageUploadService>().Should().NotBeNull();
+        provider.GetRequiredService<IWechatAdsVideoUploadService>().Should().NotBeNull();
     }
 
     /// <summary>

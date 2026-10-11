@@ -1371,6 +1371,156 @@ public class AdsContractGuards
             "只调 AddAdsApp、不装业务模块的宿主也要能在 AOT 下换码");
     }
 
+    /// <summary>dynamic_creatives 域路由表断言（2026-10-11 L3 核验后建模）。</summary>
+    [Fact]
+    public void DynamicCreativesEndpoints_ShouldMatchOfficialRouteTable()
+    {
+        DynamicCreativesRoutes.Should().HaveCount(4, "官方 dynamic_creatives/* 恰 4 个端点（get/add/update/delete）");
+        DynamicCreativesRoutes.Select(static r => r.Route).Distinct().Should().HaveCount(4, "路由互不重复");
+        typeof(IWechatAdsDynamicCreativeService)
+            .GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
+            .Should().HaveCount(4, "接口端点数与守卫路由表条目数必须一致（新增端点未入表即红）");
+
+        foreach (var (iface, method, httpAttribute, route) in DynamicCreativesRoutes)
+        {
+            var target = iface.GetMethod(method, BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+            target.Should().NotBeNull($"{iface.Name}.{method} 必须存在");
+            var attr = target!.GetCustomAttribute(httpAttribute) as HttpMethodAttribute;
+            attr!.RequestUri.Should().Be(route, $"{iface.Name}.{method} 路由必须与官方契约逐字符一致");
+        }
+    }
+
+    /// <summary>components 域路由表断言（跨 components/* 与 component_detail/get 两支资源族）。</summary>
+    [Fact]
+    public void ComponentsEndpoints_ShouldMatchOfficialRouteTable()
+    {
+        ComponentsRoutes.Should().HaveCount(4, "官方 components/* 恰 3 个 + component_detail/get 1 个，共 4 端点");
+        ComponentsRoutes.Select(static r => r.Route).Distinct().Should().HaveCount(4, "路由互不重复");
+        typeof(IWechatAdsComponentService)
+            .GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
+            .Should().HaveCount(4, "接口端点数与守卫路由表条目数必须一致");
+
+        foreach (var (iface, method, httpAttribute, route) in ComponentsRoutes)
+        {
+            var target = iface.GetMethod(method, BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+            target.Should().NotBeNull($"{iface.Name}.{method} 必须存在");
+            var attr = target!.GetCustomAttribute(httpAttribute) as HttpMethodAttribute;
+            attr!.RequestUri.Should().Be(route, $"{iface.Name}.{method} 路由必须与官方契约逐字符一致");
+        }
+    }
+
+    /// <summary>
+    /// 素材两域路由表断言（images/videos 各声明式 3 端点）。
+    /// </summary>
+    /// <remarks>
+    /// <c>images/add</c> / <c>videos/add</c> 是 <c>multipart/form-data</c> 文件上传端点，
+    /// <b>不在</b>声明式路由表内（手写通道承载，路径由
+    /// <see cref="MaterialUploadChannels_ShouldMatchOfficialPaths"/> 锁定）——
+    /// 若有人把它们建成声明式 [Post] 路由，本域反射面计数即变红。
+    /// </remarks>
+    [Fact]
+    public void ImageAndVideoEndpoints_ShouldMatchOfficialRouteTable()
+    {
+        ImagesRoutes.Should().HaveCount(3, "images 的声明式面恰 3 端点（add 走手写 multipart 通道）");
+        VideosRoutes.Should().HaveCount(3, "videos 的声明式面恰 3 端点（add 走手写 multipart 通道）");
+
+        foreach (var (iface, method, httpAttribute, route) in ImagesRoutes.Concat(VideosRoutes))
+        {
+            var target = iface.GetMethod(method, BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+            target.Should().NotBeNull($"{iface.Name}.{method} 必须存在");
+            var attr = target!.GetCustomAttribute(httpAttribute) as HttpMethodAttribute;
+            attr!.RequestUri.Should().Be(route, $"{iface.Name}.{method} 路由必须与官方契约逐字符一致");
+        }
+    }
+
+    /// <summary>async_tasks 域路由表断言。</summary>
+    [Fact]
+    public void AsyncTasksEndpoints_ShouldMatchOfficialRouteTable()
+    {
+        AsyncTasksRoutes.Should().HaveCount(2, "官方 async_tasks/* 恰 2 个端点（add/get）");
+        typeof(IWechatAdsAsyncTaskService)
+            .GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
+            .Should().HaveCount(2, "接口端点数与守卫路由表条目数必须一致");
+
+        foreach (var (iface, method, httpAttribute, route) in AsyncTasksRoutes)
+        {
+            var target = iface.GetMethod(method, BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+            target.Should().NotBeNull($"{iface.Name}.{method} 必须存在");
+            var attr = target!.GetCustomAttribute(httpAttribute) as HttpMethodAttribute;
+            attr!.RequestUri.Should().Be(route, $"{iface.Name}.{method} 路由必须与官方契约逐字符一致");
+        }
+    }
+
+    /// <summary>
+    /// ADS-B2 / ADS-B5（新域受限面）：<c>user_token</c> 的逐页出现面 ——
+    /// dynamic_creatives 的 3 支 POST 带、<c>get</c> 不带；components 仅 <c>add</c> 带
+    /// （官方「特定请求参数」表逐页事实，2026-10-11 核验；其余四域各页均无）。
+    /// </summary>
+    [Fact]
+    public void RestrictedWriteSurfaces_ShouldCarryUserToken_WhenOfficialPageListsIt()
+    {
+        // dynamic_creatives：三支 POST 逐一点名在场；get 显式无。
+        var dcMethods = typeof(IWechatAdsDynamicCreativeService)
+            .GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly).ToArray();
+        dcMethods.Where(static m => QueryParameterNames(m).Contains("user_token"))
+            .Select(static m => m.Name).OrderBy(static n => n, StringComparer.Ordinal)
+            .Should().Equal(new[] { "AddAsync", "DeleteAsync", "UpdateAsync" },
+                "官方 add/update/delete 三页各列 user_token，get 页无该表");
+        typeof(IWechatAdsDynamicCreativeService)
+            .GetMethod(nameof(IWechatAdsDynamicCreativeService.GetAsync), BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)!
+            .GetParameters()
+            .Select(static p => p.GetCustomAttribute<QueryAttribute>()?.Name)
+            .Should().NotContain(static n => n == "user_token", "官方 get 页未列出 user_token");
+
+        // components：仅 add；delete 与两支 get 均无。
+        var compMethods = typeof(IWechatAdsComponentService)
+            .GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly).ToArray();
+        compMethods.Where(static m => QueryParameterNames(m).Contains("user_token"))
+            .Select(static m => m.Name)
+            .Should().Equal(new[] { "AddAsync" }, "官方仅 components/add 页列出 user_token");
+
+        // 素材两域与异步任务域：全部页面均未另列 user_token（反射面反证——出现即与官方不符）。
+        foreach (var iface in new[] { typeof(IWechatAdsImageService), typeof(IWechatAdsVideoService), typeof(IWechatAdsAsyncTaskService) })
+        {
+            iface.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
+                .SelectMany(static m => QueryParameterNames(m))
+                .Should().NotContain(static n => n == "user_token",
+                    $"{iface.Name} 各页官方均未列出 user_token");
+        }
+    }
+
+    /// <summary>
+    /// multipart 上传通道的路径与表单字段名断言（手写通道没有声明式路由，须在此锁路径）。
+    /// </summary>
+    /// <remarks>
+    /// <b>为什么锁在这里</b>：两支上传端点不经 <c>[HttpClientApi]</c>（无路由反射面），
+    /// 路径字面量在 <c>AdsMaterialUploadService</c> 私有常量里 —— 从实现类取常量断言，
+    /// 常量被改写即红。<b>官方形态</b>：<c>images/add</c> 文件字段名 <c>file</c>、
+    /// <c>videos/add</c> 文件字段名 <c>video_file</c>（2026-10-11 逐页核验）。
+    /// </remarks>
+    [Fact]
+    public void MaterialUploadChannels_ShouldMatchOfficialPaths()
+    {
+        typeof(AdsMaterialUploadService).Assembly.Should().BeSameAs(typeof(IWechatAdsImageService).Assembly,
+            "上传通道实现随主包分发（服务经 AddImagesApi/AddVideosApi 随模块装配）");
+
+        typeof(IWechatAdsImageUploadService).Should().NotBeNull();
+        typeof(IWechatAdsVideoUploadService).Should().NotBeNull();
+        typeof(AdsMaterialUploadService).Should().BeAssignableTo(typeof(IWechatAdsImageUploadService))
+            .And.BeAssignableTo(typeof(IWechatAdsVideoUploadService),
+                "图片与视频上传共用同一实现（两个 ServiceType 各持实例）");
+
+        // 路径常量逐字断言（私有常量经反射取值，改名即红）。
+        const string imagesAddPath = "/v3.0/images/add";
+        const string videosAddPath = "/v3.0/videos/add";
+        GetPrivateConst(typeof(AdsMaterialUploadService), "ImagesAddPath").Should().Be(imagesAddPath);
+        GetPrivateConst(typeof(AdsMaterialUploadService), "VideosAddPath").Should().Be(videosAddPath);
+    }
+
+    /// <summary>取类型私有常量的字符串值（守卫内部工具）。</summary>
+    private static string GetPrivateConst(Type type, string name)
+        => (string)type.GetField(name, BindingFlags.NonPublic | BindingFlags.Static)!.GetValue(null)!;
+
     /// <summary>advertiser 域官方路由表（3 端点，2026-10-10 逐页核验）。</summary>
     private static readonly (Type Interface, string Method, Type HttpAttribute, string Route)[] AdvertiserRoutes =
     {
@@ -1417,6 +1567,70 @@ public class AdsContractGuards
             typeof(PostAttribute), "/v3.0/async_reports/add"),
         (typeof(IWechatAdsReportService), nameof(IWechatAdsReportService.GetAsyncReportAsync),
             typeof(GetAttribute), "/v3.0/async_reports/get"),
+    };
+
+    /// <summary>dynamic_creatives 域官方路由表（4 端点，2026-10-11 L3 核验；仅 get 为 GET）。</summary>
+    private static readonly (Type Interface, string Method, Type HttpAttribute, string Route)[] DynamicCreativesRoutes =
+    {
+        (typeof(IWechatAdsDynamicCreativeService), nameof(IWechatAdsDynamicCreativeService.GetAsync),
+            typeof(GetAttribute), "/v3.0/dynamic_creatives/get"),
+        (typeof(IWechatAdsDynamicCreativeService), nameof(IWechatAdsDynamicCreativeService.AddAsync),
+            typeof(PostAttribute), "/v3.0/dynamic_creatives/add"),
+        (typeof(IWechatAdsDynamicCreativeService), nameof(IWechatAdsDynamicCreativeService.UpdateAsync),
+            typeof(PostAttribute), "/v3.0/dynamic_creatives/update"),
+        (typeof(IWechatAdsDynamicCreativeService), nameof(IWechatAdsDynamicCreativeService.DeleteAsync),
+            typeof(PostAttribute), "/v3.0/dynamic_creatives/delete"),
+    };
+
+    /// <summary>
+    /// components 域官方路由表（4 端点，2026-10-11 L3 核验；跨 <c>components/*</c> 与
+    /// <c>component_detail/get</c> 两支资源族——同一模块承载，理由见 <c>AdsModule.Components</c>）。
+    /// </summary>
+    private static readonly (Type Interface, string Method, Type HttpAttribute, string Route)[] ComponentsRoutes =
+    {
+        (typeof(IWechatAdsComponentService), nameof(IWechatAdsComponentService.GetAsync),
+            typeof(GetAttribute), "/v3.0/components/get"),
+        (typeof(IWechatAdsComponentService), nameof(IWechatAdsComponentService.AddAsync),
+            typeof(PostAttribute), "/v3.0/components/add"),
+        (typeof(IWechatAdsComponentService), nameof(IWechatAdsComponentService.DeleteAsync),
+            typeof(PostAttribute), "/v3.0/components/delete"),
+        (typeof(IWechatAdsComponentService), nameof(IWechatAdsComponentService.GetDetailAsync),
+            typeof(GetAttribute), "/v3.0/component_detail/get"),
+    };
+
+    /// <summary>
+    /// images 域官方路由表（声明式 3 端点，2026-10-11 L3 核验）。
+    /// <c>images/add</c> 为 <c>multipart/form-data</c> 文件上传、无声明式路由（手写通道
+    /// <c>IWechatAdsImageUploadService</c>），由 <see cref="MaterialUploadChannels_ShouldMatchOfficialPaths"/> 锁路径。
+    /// </summary>
+    private static readonly (Type Interface, string Method, Type HttpAttribute, string Route)[] ImagesRoutes =
+    {
+        (typeof(IWechatAdsImageService), nameof(IWechatAdsImageService.GetAsync),
+            typeof(GetAttribute), "/v3.0/images/get"),
+        (typeof(IWechatAdsImageService), nameof(IWechatAdsImageService.UpdateAsync),
+            typeof(PostAttribute), "/v3.0/images/update"),
+        (typeof(IWechatAdsImageService), nameof(IWechatAdsImageService.DeleteAsync),
+            typeof(PostAttribute), "/v3.0/images/delete"),
+    };
+
+    /// <summary>videos 域官方路由表（声明式 3 端点；<c>videos/add</c> 同 images/add 走手写通道）。</summary>
+    private static readonly (Type Interface, string Method, Type HttpAttribute, string Route)[] VideosRoutes =
+    {
+        (typeof(IWechatAdsVideoService), nameof(IWechatAdsVideoService.GetAsync),
+            typeof(GetAttribute), "/v3.0/videos/get"),
+        (typeof(IWechatAdsVideoService), nameof(IWechatAdsVideoService.UpdateAsync),
+            typeof(PostAttribute), "/v3.0/videos/update"),
+        (typeof(IWechatAdsVideoService), nameof(IWechatAdsVideoService.DeleteAsync),
+            typeof(PostAttribute), "/v3.0/videos/delete"),
+    };
+
+    /// <summary>async_tasks 域官方路由表（2 端点，2026-10-11 L3 核验；仅 get 为 GET）。</summary>
+    private static readonly (Type Interface, string Method, Type HttpAttribute, string Route)[] AsyncTasksRoutes =
+    {
+        (typeof(IWechatAdsAsyncTaskService), nameof(IWechatAdsAsyncTaskService.AddAsync),
+            typeof(PostAttribute), "/v3.0/async_tasks/add"),
+        (typeof(IWechatAdsAsyncTaskService), nameof(IWechatAdsAsyncTaskService.GetAsync),
+            typeof(GetAttribute), "/v3.0/async_tasks/get"),
     };
 
     /// <summary>
@@ -1466,7 +1680,9 @@ public class AdsContractGuards
     /// AdsRoutes_ShouldEqualGuardTablesAndNeverReviveRemovedResources 的双向相等断言打红）。
     /// </summary>
     private static (Type Interface, string Method, Type HttpAttribute, string Route)[] AdsGuardedRoutes()
-        => AdvertiserRoutes.Concat(AdgroupsRoutes).Concat(ReportsRoutes).ToArray();
+        => AdvertiserRoutes.Concat(AdgroupsRoutes).Concat(ReportsRoutes)
+            .Concat(DynamicCreativesRoutes).Concat(ComponentsRoutes)
+            .Concat(ImagesRoutes).Concat(VideosRoutes).Concat(AsyncTasksRoutes).ToArray();
 
     /// <summary>路由契约的规范化键（接口 × 方法 × 动词 × 路由），供反射面与守卫表逐条对照。</summary>
     private static string Key(string iface, string method, string verb, string route)

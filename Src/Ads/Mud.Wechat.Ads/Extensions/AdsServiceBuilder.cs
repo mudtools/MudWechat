@@ -6,6 +6,7 @@
 // -----------------------------------------------------------------------
 
 using Mud.Wechat.Ads.Abstractions.Auth;
+using Mud.Wechat.Ads.Material;
 
 namespace Mud.Wechat.Ads.Extensions;
 
@@ -54,6 +55,24 @@ public class AdsServiceBuilder
             [AdsModule.Adgroups] = static s => s.AddAdgroupsWebApiHttpClient(),
             // 报表域（4 端点，跨 daily_reports / hourly_reports / async_reports 三支资源族，见 AdsModule.Reports 理由）。
             [AdsModule.Reports] = static s => s.AddReportsWebApiHttpClient(),
+            // 组件化创意域（4 端点）——纯声明式域；三支写端点的 user_token 为显式 Query 参数（守卫 ADS-B5 已登记掩码）。
+            [AdsModule.DynamicCreatives] = static s => s.AddDynamicCreativesWebApiHttpClient(),
+            // 创意组件域（4 端点，跨 components/* 与 component_detail/get 两支资源族）。
+            [AdsModule.Components] = static s => s.AddComponentsWebApiHttpClient(),
+            // 图片素材域（3 支声明式 + multipart 上传通道，随模块装配）。
+            [AdsModule.Images] = static s =>
+            {
+                s.AddImagesWebApiHttpClient();
+                s.TryAddSingleton<IWechatAdsImageUploadService, AdsMaterialUploadService>();
+            },
+            // 视频素材域（3 支声明式 + multipart 上传通道，随模块装配；与图片通道同实现类型、各自实例 —— 实现无状态）。
+            [AdsModule.Videos] = static s =>
+            {
+                s.AddVideosWebApiHttpClient();
+                s.TryAddSingleton<IWechatAdsVideoUploadService, AdsMaterialUploadService>();
+            },
+            // 异步任务域（2 端点）——纯声明式域。
+            [AdsModule.AsyncTasks] = static s => s.AddAsyncTasksWebApiHttpClient(),
         };
 
     /// <summary>注册全部已落地模块。</summary>
@@ -106,6 +125,36 @@ public class AdsServiceBuilder
     /// 原因见 <c>IWechatAdsReportService.GetAsyncReportAsync</c> 的 remarks 与留档 §7.4。
     /// </remarks>
     public AdsServiceBuilder AddReportsApi() => AddModule(AdsModule.Reports);
+
+    /// <summary>
+    /// 注册组件化创意业务接口（<c>dynamic_creatives</c> 域 4 端点；三支写端点为受限接口，另列 <c>user_token</c>）。
+    /// </summary>
+    /// <returns>建造器（链式）。</returns>
+    public AdsServiceBuilder AddDynamicCreativesApi() => AddModule(AdsModule.DynamicCreatives);
+
+    /// <summary>
+    /// 注册创意组件业务接口（<c>components</c> + <c>component_detail</c> 共 4 端点）。
+    /// </summary>
+    /// <returns>建造器（链式）。</returns>
+    public AdsServiceBuilder AddComponentsApi() => AddModule(AdsModule.Components);
+
+    /// <summary>
+    /// 注册图片素材业务接口（<c>images/get|update|delete</c> 3 支声明式 + multipart 上传通道
+    /// <c>IWechatAdsImageUploadService</c>，承载 <c>images/add</c>）。
+    /// </summary>
+    /// <returns>建造器（链式）。</returns>
+    public AdsServiceBuilder AddImagesApi() => AddModule(AdsModule.Images);
+
+    /// <summary>
+    /// 注册视频素材业务接口（<c>videos/get|update|delete</c> 3 支声明式 + multipart 上传通道
+    /// <c>IWechatAdsVideoUploadService</c>，承载 <c>videos/add</c>）。
+    /// </summary>
+    /// <returns>建造器（链式）。</returns>
+    public AdsServiceBuilder AddVideosApi() => AddModule(AdsModule.Videos);
+
+    /// <summary>注册异步任务业务接口（<c>async_tasks</c> 域 2 端点）。</summary>
+    /// <returns>建造器（链式）。</returns>
+    public AdsServiceBuilder AddAsyncTasksApi() => AddModule(AdsModule.AsyncTasks);
 
     private AdsServiceBuilder AddModule(AdsModule module)
     {

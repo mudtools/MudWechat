@@ -1,6 +1,6 @@
 # Mud.Wechat
 
-微信生态的 .NET SDK：**企业微信、公众号、小程序、微信支付 APIv3、开放平台第三方平台、微信小店 / 视频号（channels 生态）**六条产品线装在一个解决方案里，共用同一套令牌基座、回调内核与质量门禁；另有一条**在建**的腾讯广告（Marketing API v3.0）线，治理骨架与门禁已接入、并落地 OAuth 与三个业务域。
+微信生态的 .NET SDK：**企业微信、公众号、小程序、微信支付 APIv3、开放平台第三方平台、微信小店 / 视频号（channels 生态）**六条产品线装在一个解决方案里，共用同一套令牌基座、回调内核与质量门禁；另有一条**在建**的腾讯广告（Marketing API v3.0）线，治理骨架与门禁已接入、并落地 OAuth 与八个业务域。
 
 **能干什么**
 
@@ -65,7 +65,7 @@
 | `Mud.Wechat.Pay` / `.Abstractions` / `.DataModels` / `.Callback` | 微信支付 APIv3：10 个业务域 57 端点；商户配置面与签名/验签端口；官方 DTO（snake_case 字段名照官方）；通知接收（平台证书验签 + AEAD-GCM 解密 + 三道 fail-closed 闸） |
 | `Mud.Wechat.OpenPlatform` / `.Abstractions` | 开放平台第三方平台：component 令牌与授权方令牌提供者、预授权码 / 换授权 / 刷新令牌、`component_verify_ticket` 与授权变更事件接收 |
 | `Mud.Wechat.Channels` / `.Abstractions` / `.DataModels` / `.Callback` | 微信小店 / 视频号（channels 生态）：27 个业务域声明式客户端（规划，P1 起逐域落地）；双通道令牌基座（`token` / `stable_token`，`UseStableToken` 切换）；官方 DTO；回调接收（msg_signature + EncodingAESKey + receiveid，与公众号同构，复用 Core 密码学与抗重放两道闸） |
-| `Mud.Wechat.Ads` / `.Abstractions` / `.DataModels` | **腾讯广告 Marketing API v3.0（在建）**：3 个业务域 **15** 个声明式端点（客户账号 3 + 营销单元 8（含 4 支批量）+ 报表 4）+ OAuth 两支（换码 / 刷新，手写传输不走声明式客户端）；`AddAdsApp` 装授权与传输底座，`AddWechatAdsApi` 装业务接口；官方 DTO + 5 个域 AOT 源生成上下文。**未落地**：`dynamic_creatives` / `components` / `images` / `videos` / `async_tasks`（层级证据仅平面级）、`async_report_files/get`（请求地址在 `dl.e.qq.com`，与业务客户端基址不同）—— 均在守卫内逐条点名而非写成空断言 |
+| `Mud.Wechat.Ads` / `.Abstractions` / `.DataModels` | **腾讯广告 Marketing API v3.0（在建）**：8 个业务域 **33** 支端点（客户账号 3 + 营销单元 8（含 4 支批量）+ 报表 4 + 组件化创意 4 + 创意组件 4 + 图片素材 4 + 视频素材 4 + 异步任务 2，其中 `images/add` / `videos/add` 为 `multipart/form-data` 文件上传、走手写通道）+ OAuth 两支（换码 / 刷新，手写传输不走声明式客户端）；`AddAdsApp` 装授权与传输底座，`AddWechatAdsApi` 装业务接口；官方 DTO + 10 个域 AOT 源生成上下文。**仍未落地**：`async_report_files/get`（请求地址在 `dl.e.qq.com`，与业务客户端基址不同）与 §11.1 清单的 331 条未核验路由 —— 均在守卫内逐条点名而非写成空断言 |
 | `Mud.Wechat.OpenTelemetry` | 可观测性一键装配（Tracing + Metrics + OTLP），委托叶层 `WechatActivitySource` 契约面 |
 
 **目标框架**：企业微信 / 公众号 / 小程序 / 微信小店 / 广告 / Core 线为 `netstandard2.0` / `net6.0` / `net8.0` / `net10.0`；**微信支付与开放平台线为 `net6.0` / `net8.0` / `net10.0`**（刻意不含 `netstandard2.0`——`AesGcm` 在 ns2.0 不存在，由守卫 PAY-B9 锁定）。广告线只做 HTTPS + JSON、无原生密码学依赖，**不得援引该例外**（ADS-S2 锁定四档继承）。全仓 `LangVersion 13.0`。
@@ -91,7 +91,7 @@ dotnet add package Mud.Wechat.Channels
 dotnet add package Mud.Wechat.Channels.Callback
 # 微信开放平台（第三方平台）
 dotnet add package Mud.Wechat.OpenPlatform
-# 腾讯广告 Marketing API v3.0（在建：OAuth + 3 域 15 端点）
+# 腾讯广告 Marketing API v3.0（在建：OAuth + 8 域 33 端点）
 dotnet add package Mud.Wechat.Ads
 # 可选：跨线通用
 dotnet add package Mud.Wechat.Redis           # Redis 分布式存储

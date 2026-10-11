@@ -10,3 +10,5 @@ global using System.Collections.Generic;
 global using System.Text.Json.Serialization;
 global using Mud.HttpUtils.Attributes;
 global using Mud.Wechat.Abstractions.Contracts;
+global using Mud.Wechat.Channels.DataModels.Aftersale;
+global using Mud.Wechat.Channels.DataModels.Logistics;

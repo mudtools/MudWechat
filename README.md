@@ -63,7 +63,7 @@
 | `Mud.Wechat.MiniProgram` / `.Abstractions` / `.DataModels` | 小程序：4 个业务域（登录、二维码与链接、内容安全、数据分析）；复用公众号令牌底座；官方 DTO。**无 Callback 工程**（消息接收走公众号线 XML 通道，由脚手架守卫锁定） |
 | `Mud.Wechat.Pay` / `.Abstractions` / `.DataModels` / `.Callback` | 微信支付 APIv3：10 个业务域 54 端点；商户配置面与签名/验签端口；官方 DTO（snake_case 字段名照官方）；通知接收（平台证书验签 + AEAD-GCM 解密 + 三道 fail-closed 闸） |
 | `Mud.Wechat.OpenPlatform` / `.Abstractions` | 开放平台第三方平台：component 令牌与授权方令牌提供者、预授权码 / 换授权 / 刷新令牌、`component_verify_ticket` 与授权变更事件接收 |
-| `Mud.Wechat.Channels` / `.Abstractions` / `.DataModels` / `.Callback` | 微信小店 / 视频号（channels 生态）：27 个业务域声明式客户端（规划，P1 起逐域落地）；双通道令牌基座（`token` / `stable_token`，`UseStableToken` 切换）；官方 DTO；回调接收（msg_signature + EncodingAESKey + receiveid，与公众号同构，复用 Core 密码学与抗重放两道闸） |
+| `Mud.Wechat.Channels` / `.Abstractions` / `.DataModels` / `.Callback` | 微信小店 / 视频号（channels 生态）：27 个业务域声明式客户端（P1 已落地 6 域 149 端点，余下 P2 补齐）；双通道令牌基座（`token` / `stable_token`，`UseStableToken` 切换）；官方 DTO；回调接收（msg_signature + EncodingAESKey + receiveid，与公众号同构，复用 Core 密码学与抗重放两道闸） |
 | `Mud.Wechat.OpenTelemetry` | 可观测性一键装配（Tracing + Metrics + OTLP），委托叶层 `WechatActivitySource` 契约面 |
 
 **目标框架**：企业微信 / 公众号 / 小程序 / 微信小店 / Core 线为 `netstandard2.0` / `net6.0` / `net8.0` / `net10.0`；**微信支付与开放平台线为 `net6.0` / `net8.0` / `net10.0`**（刻意不含 `netstandard2.0`——`AesGcm` 在 ns2.0 不存在，由守卫 PAY-B9 锁定）。全仓 `LangVersion 13.0`。
@@ -84,7 +84,7 @@ dotnet add package Mud.Wechat.MiniProgram
 # 微信支付 APIv3
 dotnet add package Mud.Wechat.Pay
 dotnet add package Mud.Wechat.Pay.Callback
-# 微信小店 / 视频号（channels 生态，P1 起逐域可用）
+# 微信小店 / 视频号（channels 生态，P1 已落地 6 域 149 端点）
 dotnet add package Mud.Wechat.Channels
 dotnet add package Mud.Wechat.Channels.Callback
 # 微信开放平台（第三方平台）
@@ -307,7 +307,22 @@ builder.Services.AddWechatOpenTelemetry(o =>
 | 微信小程序 | **4** | **24**（Auth 5 + QrCodeLink 8 + Security 2 + DataAnalysis 9） | **无 Callback 工程**——消息接收属公众号 XML 通道，由脚手架守卫锁定 | MP-X1~MP-X8 |
 | 微信支付 APIv3 | **10** | **54**（+ 账单 / 发票文件下载通道，非 JSON 生成管线） | 通知接收：平台证书验签 + `AEAD_AES_256_GCM` 解密 + 三道 fail-closed 闸 | PAY-B1~B11、PAY-CB1 |
 | 微信开放平台 | — | **4** 个 component 端点 + 双层令牌链 | `component_verify_ticket` + 授权变更事件接收 | 契约测试（`OpenPlatformContractTests` 等） |
-| 微信小店 / 视频号 | **27**（规划，P1 起逐域落地） | **318 端点**（规划口径：小店清单 287 + 视频号清单 49 − 精确重叠 18；`token`/`stable_token` 进令牌基座、其余 8 个 `/cgi-bin/` 基础端点落 Basic 域；`/wxa/` 6 个暂缓） | 自建 `Mud.Wechat.Channels.Callback` 包（P3 收口：订单 / 售后 / 物流 / 纠纷等事件键与载荷族登记） | CH-X1~X4、CH-T1~T3、CH-V1、CH-R1/R2 + 逐域（P1 起） |
+| 微信小店 / 视频号 | **27**（P1 已落地 6：Product / Order / Aftersale / Funds / Logistics / Basic） | **318 端点**（规划口径：小店清单 287 + 视频号清单 49 − 精确重叠 18；`token`/`stable_token` 进令牌基座、其余 8 个 `/cgi-bin/` 基础端点落 Basic 域；`/wxa/` 6 个暂缓）。**P1 已实现 149 端点**（Product 43 + Order 27 + Aftersale 27 + Funds 16 + Logistics 28 + Basic 8） | 自建 `Mud.Wechat.Channels.Callback` 包（P3 收口：订单 / 售后 / 物流 / 纠纷等事件键与载荷族登记） | CH-X1~X4、CH-T1~T3、CH-V1、CH-R1/R2 + 逐域（P1 已上线：Product / Order / Aftersale / Funds / Logistics / Basic） |
+
+### 微信小店 / 视频号：27 个业务域（P1 已落地 6 域 / 149 端点）
+
+`AddWechatChannelsApi(b => b.AddAllApis())` 一键装载；按域模块装配用 `AddModules(ChannelsModule.Product, ...)`。令牌恒为 `Wechat.Channels.AccessToken`（守卫 CH-T1~T3 锁定），`/wxa/` 6 个「小程序会员服务」端点令牌归属未确认、暂缓落位（守卫 CH-V1）。下述计数口径由 `ChannelsRouteContractGuards`（CH-R2）逐域锁定。
+
+| 注册方法 | 域 | 端点 | 能力概述 |
+| --- | --- | --- | --- |
+| `AddBasicApi()` | 基础接口 | 8 | `/cgi-bin/` 基础面（quota / clear_quota / callback check / 双 IP / rid）；token/stable_token 进令牌基座 |
+| `AddProductApi()` | 商品管理 | 43 | 商品主 25 + 库存 4 + 赠品 6 + 买赠活动 3 + 限时抢购 5 |
+| `AddOrderApi()` | 订单管理 | 27 | `/channels/ec/order/*` 24 + `/channels/ec/merchant/privatenumber/*` 3 |
+| `AddFundsApi()` | 资金结算 | 16 | `/channels/ec/funds/*` 9 + `/shop/funds/*` 7（官方历史前缀照抄原文） |
+| `AddAftersaleApi()` | 售后管理 | 27 | 售后单 16 + 纠纷单 4 + 保障单 6 + 全量售后原因 / 拒绝原因 |
+| `AddLogisticsApi()` | 物流发货 | 28 | 地址 5 + 运费模板 4 + 电子面单 16 + 订单发货 3 |
+
+其余 21 域（Resource / Shop / HomePage / Favorite / Category / Marketing / Kf / Qic / Warehouse / League / Brand / Delivery / Wecom / MiniStore / Compass / Vip / Live / Window / Locallife / Subsidy / PlatformKf）随 P2 补齐。
 
 ### 企业微信：35 个业务域 / 446 个契约接口
 

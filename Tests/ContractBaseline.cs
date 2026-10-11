@@ -102,16 +102,18 @@ public static class Baseline
         /// </summary>
         /// <remarks>
         /// 锁定于 `MiniProgramContractGuards`（MP-X5）。
-        /// 现行推导：142 特性路由 + 5 手工通道（小程序码 3 + 反馈媒体 1 + 对账文件 1）= 147；
+        /// 现行推导：168 特性路由 + 5 手工通道（小程序码 3 + 反馈媒体 1 + 对账文件 1）= 173；
         /// 按域拆分即 Auth 8 + QrCodeLink 9 + Security 3 + DataAnalysis 11 + SubscribeMessage 4 +
         /// DynamicMessage 3 + Kf 9 + HardwareDevice 9 + Operation 10 + Plugin 2 + Charge 2 +
         /// NearbyPoi 4 + Search 1 + Soter 1 + ServiceMarket 2 + RedPacketCover 1 + Student 1 +
         /// FaceVerify 2 + LaborUse 2 + ExpressBusiness 12 + ExpressDelivery 28 + ExpressIntracity 16 +
-        /// ExpressBill 1 + Vip 6 = 147（Vip 域为 2026-10 小店线设计方案 §4.1 结论 A 划入；
+        /// ExpressInsuranceFreight 11 + ExpressLocal 15 + ExpressBill 1 + Vip 6 = 173
+        /// （Vip 域为 2026-10 小店线设计方案 §4.1 结论 A 划入；
         /// ExpressDelivery 28 / ExpressIntracity 16 为 2026-10-12 依官方清单补齐
-        /// 消息推送 2 + 投诉处理 1 / 同城扣费主体与城市 3 后的口径）。
+        /// 「消息推送 2 + 投诉处理 1」「同城扣费主体与城市 3」，并新增
+        /// ExpressInsuranceFreight 11（无忧退货）与 ExpressLocal 15（即时配送）两族后的口径）。
         /// </remarks>
-        public const int Endpoints = 147;
+        public const int Endpoints = 173;
     }
 
     /// <summary>微信支付 APIv3 线（`Tests/Mud.Wechat.Pay.Tests`）。</summary>

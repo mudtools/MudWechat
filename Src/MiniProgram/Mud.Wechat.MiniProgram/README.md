@@ -1,10 +1,10 @@
 # Mud.Wechat.MiniProgram
 
-微信小程序 SDK **主包**：**21 个业务域 147 端点**（登录与身份 / 二维码与链接 / 内容安全 / 数据分析 / 订阅消息 / 动态消息 / 客服 / 硬件设备 / 运维中心 / 插件 / 付费 / 附近小程序 / 搜一搜 / 生物认证 / 服务市场 / 红包封面 / 学生身份 / 人脸核身 / 用工关系 / 物流助手 / 会员服务）的声明式 HTTP 客户端、模块注册器、AOT JsonContext 合并，以及小程序码 / 反馈图片（二进制流）与物流对账文件（文本）的**手工通道**。
+微信小程序 SDK **主包**：**21 个业务域 173 端点**（登录与身份 / 二维码与链接 / 内容安全 / 数据分析 / 订阅消息 / 动态消息 / 客服 / 硬件设备 / 运维中心 / 插件 / 付费 / 附近小程序 / 搜一搜 / 生物认证 / 服务市场 / 红包封面 / 学生身份 / 人脸核身 / 用工关系 / 物流助手 / 会员服务）的声明式 HTTP 客户端、模块注册器、AOT JsonContext 合并，以及小程序码 / 反馈图片（二进制流）与物流对账文件（文本）的**手工通道**。
 
 **小程序与公众号同属微信公众平台**：同一令牌域、同一批路由前缀（`/wxa/`、`/datacube/`、`/sns/`），因此本线**不重复实现令牌与多应用基座**，直接复用 `Mud.Wechat.OfficialAccount.Abstractions`（守卫 MP-X2 锁定）。装配入口也因此是两段式的——先 `AddMpApp` 建底座，再 `AddMiniProgramServices` 装本线模块。
 
-## 能力面（147 端点，计数与路由表由 MP-X5 锁定）
+## 能力面（173 端点，计数与路由表由 MP-X5 锁定）
 
 | 模块（`MiniProgramModule`） | 注册方法 | 端点 | 接口 |
 | --- | --- | --- | --- |
@@ -27,7 +27,7 @@
 | `Student` | `AddStudentApi()` | 1 | `IWxaStudentService`（快速获取学生身份） |
 | `FaceVerify` | `AddFaceVerifyApi()` | 2 | `IWxaFaceVerifyService`（获取 verifyid + 查询验证信息；`cert_info` 敏感） |
 | `LaborUse` | `AddLaborUseApi()` | 2 | `IWxaLaborUseService`（推送用工消息 + 解绑用工关系） |
-| `Express` | `AddExpressApi()` | 57 | `IWxaExpressBusinessService`（商家寄件 12）+ `IWxaExpressDeliveryService`（服务商 / 物流消息 / 退货 / 散单寄件 / 投诉处理 / 消息推送 28）+ `IWxaExpressIntracityService`（同城配送 16）+ `IWxaExpressBillService`（对账文件**文本**手工通道 1；`single_waybill/get_bill` 成功返回对账文件、失败才是 JSON ⇒ 按 Content-Type 分支判错） |
+| `Express` | `AddExpressApi()` | 68 | `IWxaExpressBusinessService`（商家寄件 12）+ `IWxaExpressDeliveryService`（服务商 / 物流消息 / 退货 / 散单寄件 / 投诉处理 / 消息推送 28）+ `IWxaExpressIntracityService`（同城配送 16）+ `IWxaExpressInsuranceFreightService`（无忧退货 11）+ `IWxaExpressLocalService`（即时配送 15）+ `IWxaExpressBillService`（对账文件**文本**手工通道 1；`single_waybill/get_bill` 成功返回对账文件、失败才是 JSON ⇒ 按 Content-Type 分支判错） |
 | `Vip` | `AddVipApi()` | 6 | `IWxaVipService`（会员信息增改查删 4 + 会员列表 1 + 已关联小店列表 1；2026-10 核对为小程序令牌、自小店线设计方案 §4.1 结论 A 划入） |
 
 三个模块级方法之外还有 `AddAllApis()`、`AddModules(params MiniProgramModule[])` 与 `Build()`（返回 `IServiceCollection`）。
@@ -61,6 +61,7 @@ using var code = await wxaCode.GetUnlimitedCodeAsync(request, ct);              
 - **平铺命名空间、无 `IsAbstract` 父接口**（MP-X4）：本线接口全部落 `Mud.Wechat.MiniProgram`，不复制企业微信线「父接口 / 子接口分面」形态——三模式差异在小程序侧不存在。
 - **字段名照官方原文**（MP-X5）：`session_key` / `js_code` / `trace_id` / `page_url` 等**不得驼峰化**。
 - **`[Token].Name` 恒为 `access_token`**（MP-X3），注入走 Query（微信公众平台契约）。
+- **即时配送返回体不是 `errcode`/`errmsg`**（2026-10-12 逐页核验）：`/cgi-bin/express/local/*` 全族官方用 **`resultcode`/`resultmsg`** 表达运力侧结果，故该族响应统一继承 `WxaExpressLocalResponse`（在 `WxaResponse` 之上补齐两字段），判错以 `resultcode == 0` 为准。另：该族官方字段名拼写在各页间不一致（下单页 `insurancfee` / 预下单页 `insurancefee`、下单页 `couponfee` / 预下单页 `couponFee`），**照各页原文承载，勿跨页统一**。
 - **SSRF 白名单零改动**（MP-X8）：沿用 `api.weixin.qq.com`，本线不得增删 `AllowedBaseUrlDomains`、不得自行调用 `ConfigureAllowedDomains`。
 
 ## 依赖

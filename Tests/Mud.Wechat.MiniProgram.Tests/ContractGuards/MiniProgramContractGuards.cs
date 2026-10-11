@@ -80,12 +80,13 @@ public class MiniProgramContractGuards
             .Where(static t => t.GetCustomAttributes(false).Any(static a => a.GetType().Name == "TokenAttribute"))
             .ToArray();
 
-        tokenInterfaces.Should().HaveCount(23,
+        tokenInterfaces.Should().HaveCount(25,
             "带令牌接口 = Auth / QrCodeLink / Security / DataAnalysis / SubscribeMessage / DynamicMessage / Kf / " +
             "HardwareDevice / Operation / Plugin / Charge / NearbyPoi / Search / Soter / ServiceMarket / " +
             "RedPacketCover / Student / FaceVerify / LaborUse / ExpressBusiness / ExpressDelivery / ExpressIntracity / " +
-            "Vip（登录 code2Session 为免令牌独立接口；图片通道 Code / FeedbackMedia 与对账文件通道 Bill 为手工服务不走 [Token]；" +
-            "Vip 域为 2026-10 小店线设计方案 §4.1 结论 A 划入）");
+            "ExpressInsuranceFreight / ExpressLocal / Vip（登录 code2Session 为免令牌独立接口；图片通道 Code / FeedbackMedia " +
+            "与对账文件通道 Bill 为手工服务不走 [Token]；Vip 域为 2026-10 小店线设计方案 §4.1 结论 A 划入；" +
+            "ExpressInsuranceFreight / ExpressLocal 为 2026-10-12 依官方清单补齐的无忧退货族与即时配送族）");
 
         foreach (var iface in tokenInterfaces)
         {
@@ -288,6 +289,31 @@ public class MiniProgramContractGuards
             "/cgi-bin/express/intracity/setpaymode",
         });
 
+        // 微信物流服务 · 无忧退货（11；open / query_open 官方为 GET 且无请求体，refund 为 POST 且无请求体）
+        RoutesOf(asm, nameof(IWxaExpressInsuranceFreightService)).Should().BeEquivalentTo(new[]
+        {
+            "/wxa/business/insurance_freight/open", "/wxa/business/insurance_freight/query_open",
+            "/wxa/business/insurance_freight/createorder", "/wxa/business/insurance_freight/claim",
+            "/wxa/business/insurance_freight/createchargeid", "/wxa/business/insurance_freight/applypay",
+            "/wxa/business/insurance_freight/getpayorderlist", "/wxa/business/insurance_freight/refund",
+            "/wxa/business/insurance_freight/getsummary", "/wxa/business/insurance_freight/getorderlist",
+            "/wxa/business/insurance_freight/update_notify_funds",
+        });
+
+        // 即时配送（15：小程序方 14 + 运力方 1；getall / open / shop/get 官方为无请求体的 POST）
+        RoutesOf(asm, nameof(IWxaExpressLocalService)).Should().BeEquivalentTo(new[]
+        {
+            "/cgi-bin/express/local/business/delivery/getall", "/cgi-bin/express/local/business/open",
+            "/cgi-bin/express/local/business/shop/add", "/cgi-bin/express/local/business/shop/get",
+            "/cgi-bin/express/local/business/order/pre_add", "/cgi-bin/express/local/business/order/add",
+            "/cgi-bin/express/local/business/order/readd", "/cgi-bin/express/local/business/order/get",
+            "/cgi-bin/express/local/business/order/cancel", "/cgi-bin/express/local/business/order/precancel",
+            "/cgi-bin/express/local/business/order/confirm_return", "/cgi-bin/express/local/business/order/addtips",
+            "/cgi-bin/express/local/business/test_update_order",
+            "/cgi-bin/express/local/business/realmock_update_order",
+            "/cgi-bin/express/local/delivery/update_order",
+        });
+
         ManualChannelRoutes().Should().BeEquivalentTo(new[]
         {
             WxaCodeService.UnlimitedCodePath, WxaCodeService.CodePath, WxaCodeService.QrCodePath,
@@ -295,14 +321,15 @@ public class MiniProgramContractGuards
             WxaExpressBillService.BillPath,
         });
 
-        // 合计计数（MP-X5 的单一来源）：142 特性路由 + 5 手工通道路由 = 147（基线见 Tests/ContractBaseline.cs）。
+        // 合计计数（MP-X5 的单一来源）：168 特性路由 + 5 手工通道路由 = 173（基线见 Tests/ContractBaseline.cs）。
         (CollectAttributeRoutes(asm).Length + ManualChannelRoutes().Length)
             .Should().Be(Baseline.MiniProgram.Endpoints,
-                "小程序线合计 147 端点（Auth 8 + QrCodeLink 9 + Security 3 + DataAnalysis 11 + "
+                "小程序线合计 173 端点（Auth 8 + QrCodeLink 9 + Security 3 + DataAnalysis 11 + "
                 + "SubscribeMessage 4 + DynamicMessage 3 + Kf 9 + HardwareDevice 9 + Operation 10 + "
                 + "Plugin 2 + Charge 2 + NearbyPoi 4 + Search 1 + Soter 1 + ServiceMarket 2 + "
                 + "RedPacketCover 1 + Student 1 + FaceVerify 2 + LaborUse 2 + ExpressBusiness 12 + "
-                + "ExpressDelivery 28 + ExpressIntracity 16 + ExpressBill 1 + Vip 6）；"
+                + "ExpressDelivery 28 + ExpressIntracity 16 + ExpressInsuranceFreight 11 + ExpressLocal 15 + "
+                + "ExpressBill 1 + Vip 6）；"
                 + "数量变化须同批调整 Tests/ContractBaseline.cs");
     }
 
@@ -515,6 +542,8 @@ public class MiniProgramContractGuards
         provider.GetRequiredService<IWxaExpressBusinessService>().Should().NotBeNull("物流助手商家寄件随 Express 模块注册");
         provider.GetRequiredService<IWxaExpressDeliveryService>().Should().NotBeNull("物流助手服务商侧随 Express 模块注册");
         provider.GetRequiredService<IWxaExpressIntracityService>().Should().NotBeNull("物流助手同城配送随 Express 模块注册");
+        provider.GetRequiredService<IWxaExpressInsuranceFreightService>().Should().NotBeNull("微信物流服务无忧退货随 Express 模块注册");
+        provider.GetRequiredService<IWxaExpressLocalService>().Should().NotBeNull("即时配送随 Express 模块注册");
         provider.GetRequiredService<IWxaExpressBillService>().Should().NotBeNull("对账文件通道随 Express 模块注册");
     }
 

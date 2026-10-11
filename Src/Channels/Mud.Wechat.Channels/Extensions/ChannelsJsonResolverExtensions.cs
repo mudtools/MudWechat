@@ -5,8 +5,11 @@
 //  不得利用本项目从事危害国家安全、扰乱社会秩序、侵犯他人合法权益等法律法规禁止的活动！任何基于本项目开发而产生的一切法律纠纷和责任，我们不承担任何责任！
 // -----------------------------------------------------------------------
 
+using Mud.Wechat.Channels.DataModels.Aftersale;
 using Mud.Wechat.Channels.DataModels.Basic;
 using Mud.Wechat.Channels.DataModels.Funds;
+using Mud.Wechat.Channels.DataModels.Logistics;
+using Mud.Wechat.Channels.DataModels.Order;
 using System.Text.Json.Serialization.Metadata;
 
 namespace Mud.Wechat.Channels.Extensions;
@@ -44,7 +47,11 @@ public static class ChannelsJsonResolverExtensions
         var resolver = JsonTypeInfoResolver.Combine(
             CommonJsonContext.Default,
             BasicJsonContext.Default,
-            FundsJsonContext.Default);
+            FundsJsonContext.Default,
+            ProductJsonContext.Default,
+            OrderJsonContext.Default,
+            AftersaleJsonContext.Default,
+            LogisticsJsonContext.Default);
 
         services.AddMudHttpClientJsonContext(resolver);
     }

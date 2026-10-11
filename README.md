@@ -64,7 +64,7 @@
 | `Mud.Wechat.MiniProgram` / `.Abstractions` / `.DataModels` | 小程序：19 个业务域 84 端点（登录 / 二维码与链接 / 内容安全 / 数据分析 / 订阅消息 / 动态消息 / 客服 / 硬件设备 / 运维 / 插件 / 付费 / 附近小程序 / 搜一搜 / 生物认证 / 服务市场 / 红包封面 / 学生身份 / 人脸核身 / 用工关系）；复用公众号令牌底座；官方 DTO。**无 Callback 工程**（消息接收走公众号线 XML 通道，由脚手架守卫锁定） |
 | `Mud.Wechat.Pay` / `.Abstractions` / `.DataModels` / `.Callback` | 微信支付 APIv3：10 个业务域 57 端点；商户配置面与签名/验签端口；官方 DTO（snake_case 字段名照官方）；通知接收（平台证书验签 + AEAD-GCM 解密 + 三道 fail-closed 闸） |
 | `Mud.Wechat.OpenPlatform` / `.Abstractions` | 开放平台第三方平台：component 令牌与授权方令牌提供者、预授权码 / 换授权 / 刷新令牌、`component_verify_ticket` 与授权变更事件接收 |
-| `Mud.Wechat.Channels` / `.Abstractions` / `.DataModels` / `.Callback` | 微信小店 / 视频号（channels 生态）：27 个业务域声明式客户端（规划，P1 起逐域落地）；双通道令牌基座（`token` / `stable_token`，`UseStableToken` 切换）；官方 DTO；回调接收（msg_signature + EncodingAESKey + receiveid，与公众号同构，复用 Core 密码学与抗重放两道闸） |
+| `Mud.Wechat.Channels` / `.Abstractions` / `.DataModels` / `.Callback` | 微信小店 / 视频号（channels 生态）：27 个业务域声明式客户端（P1 已落地 6 域 149 端点，余下 P2 补齐）；双通道令牌基座（`token` / `stable_token`，`UseStableToken` 切换）；官方 DTO；回调接收（msg_signature + EncodingAESKey + receiveid，与公众号同构，复用 Core 密码学与抗重放两道闸） |
 | `Mud.Wechat.Ads` / `.Abstractions` / `.DataModels` | **腾讯广告 Marketing API v3.0（在建）**：8 个业务域 **33** 支端点（客户账号 3 + 营销单元 8（含 4 支批量）+ 报表 4 + 组件化创意 4 + 创意组件 4 + 图片素材 4 + 视频素材 4 + 异步任务 2，其中 `images/add` / `videos/add` 为 `multipart/form-data` 文件上传、走手写通道）+ OAuth 两支（换码 / 刷新，手写传输不走声明式客户端）；`AddAdsApp` 装授权与传输底座，`AddWechatAdsApi` 装业务接口；官方 DTO + 10 个域 AOT 源生成上下文。**仍未落地**：`async_report_files/get`（请求地址在 `dl.e.qq.com`，与业务客户端基址不同）与 §11.1 清单的 331 条未核验路由 —— 均在守卫内逐条点名而非写成空断言 |
 | `Mud.Wechat.OpenTelemetry` | 可观测性一键装配（Tracing + Metrics + OTLP），委托叶层 `WechatActivitySource` 契约面 |
 
@@ -86,7 +86,7 @@ dotnet add package Mud.Wechat.MiniProgram
 # 微信支付 APIv3
 dotnet add package Mud.Wechat.Pay
 dotnet add package Mud.Wechat.Pay.Callback
-# 微信小店 / 视频号（channels 生态，P1 起逐域可用）
+# 微信小店 / 视频号（channels 生态，P1 已落地 6 域 149 端点）
 dotnet add package Mud.Wechat.Channels
 dotnet add package Mud.Wechat.Channels.Callback
 # 微信开放平台（第三方平台）
@@ -357,8 +357,23 @@ builder.Services.AddWechatOpenTelemetry(o =>
 | 微信小程序 | **19** | **84**（Auth 8 + QrCodeLink 9 + Security 3 + DataAnalysis 11 + SubscribeMessage 4 + DynamicMessage 3 + Kf 9 + HardwareDevice 9 + Operation 10 + Plugin 2 + Charge 2 + NearbyPoi 4 + Search 1 + Soter 1 + ServiceMarket 2 + RedPacketCover 1 + Student 1 + FaceVerify 2 + LaborUse 2） | **无 Callback 工程**——消息接收属公众号 XML 通道，由脚手架守卫锁定 | MP-X1~MP-X9 |
 | 微信支付 APIv3 | **10** | **57**（+ 账单 / 发票文件下载通道，非 JSON 生成管线） | 通知接收：平台证书验签 + `AEAD_AES_256_GCM` 解密 + 三道 fail-closed 闸 | PAY-B1~B11、PAY-CB1 |
 | 微信开放平台 | — | **4** 个 component 端点 + 双层令牌链 | `component_verify_ticket` + 授权变更事件接收 | 契约测试（`OpenPlatformContractTests` 等） |
-| 微信小店 / 视频号 | **27**（规划，P1 起逐域落地） | **318 端点**（规划口径：小店清单 287 + 视频号清单 49 − 精确重叠 18；`token`/`stable_token` 进令牌基座、其余 8 个 `/cgi-bin/` 基础端点落 Basic 域；`/wxa/` 6 个暂缓） | 自建 `Mud.Wechat.Channels.Callback` 包（P3 收口：订单 / 售后 / 物流 / 纠纷等事件键与载荷族登记） | CH-X1~X4、CH-T1~T3、CH-V1、CH-R1/R2 + 逐域（P1 起） |
-| 腾讯广告（在建） | **3** | **15** 个声明式端点（客户账号 3 + 营销单元 8（含 4 支批量）+ 报表 4）+ OAuth 两支手写传输（换码 / 刷新） | 无（v3.0 无推送回调，报表走 `async_reports` 拉取） | ADS-S1/S2（依赖边界·TFM）、ADS-B1/B4/B5/B6（凭据注入形态·SSRF 并集口径·Query 凭据脱敏·AOT 净零）、ADS-B2 逐路由 / 逐参数名 / 逐层级 / 逐字段名镜像官方原文、ADS-B3 刷新一次性语义；未落地域在守卫内**逐条点名**而非写成空断言 |
+| 微信小店 / 视频号 | **27**（P1 已落地 6：Product / Order / Aftersale / Funds / Logistics / Basic） | **318 端点**（规划口径：小店清单 287 + 视频号清单 49 − 精确重叠 18；`token`/`stable_token` 进令牌基座、其余 8 个 `/cgi-bin/` 基础端点落 Basic 域；`/wxa/` 6 个暂缓）。**P1 已实现 149 端点**（Product 43 + Order 27 + Aftersale 27 + Funds 16 + Logistics 28 + Basic 8） | 自建 `Mud.Wechat.Channels.Callback` 包（P3 收口：订单 / 售后 / 物流 / 纠纷等事件键与载荷族登记） | CH-X1~X4、CH-T1~T3、CH-V1、CH-R1/R2 + 逐域（P1 已上线：Product / Order / Aftersale / Funds / Logistics / Basic） |
+
+### 微信小店 / 视频号：27 个业务域（P1 已落地 6 域 / 149 端点）
+
+`AddWechatChannelsApi(b => b.AddAllApis())` 一键装载；按域模块装配用 `AddModules(ChannelsModule.Product, ...)`。令牌恒为 `Wechat.Channels.AccessToken`（守卫 CH-T1~T3 锁定），`/wxa/` 6 个「小程序会员服务」端点令牌归属未确认、暂缓落位（守卫 CH-V1）。下述计数口径由 `ChannelsRouteContractGuards`（CH-R2）逐域锁定。
+
+| 注册方法 | 域 | 端点 | 能力概述 |
+| --- | --- | --- | --- |
+| `AddBasicApi()` | 基础接口 | 8 | `/cgi-bin/` 基础面（quota / clear_quota / callback check / 双 IP / rid）；token/stable_token 进令牌基座 |
+| `AddProductApi()` | 商品管理 | 43 | 商品主 25 + 库存 4 + 赠品 6 + 买赠活动 3 + 限时抢购 5 |
+| `AddOrderApi()` | 订单管理 | 27 | `/channels/ec/order/*` 24 + `/channels/ec/merchant/privatenumber/*` 3 |
+| `AddFundsApi()` | 资金结算 | 16 | `/channels/ec/funds/*` 9 + `/shop/funds/*` 7（官方历史前缀照抄原文） |
+| `AddAftersaleApi()` | 售后管理 | 27 | 售后单 16 + 纠纷单 4 + 保障单 6 + 全量售后原因 / 拒绝原因 |
+| `AddLogisticsApi()` | 物流发货 | 28 | 地址 5 + 运费模板 4 + 电子面单 16 + 订单发货 3 |
+
+其余 21 域（Resource / Shop / HomePage / Favorite / Category / Marketing / Kf / Qic / Warehouse / League / Brand / Delivery / Wecom / MiniStore / Compass / Vip / Live / Window / Locallife / Subsidy / PlatformKf）随 P2 补齐。
+| 腾讯广告（在建） | **8** | **33** 支声明式端点（客户账号 3 + 营销单元 8（含 4 支批量）+ 报表 4 + 组件化创意 4 + 创意组件 4 + 图片素材 4 + 视频素材 4 + 异步任务 2，其中 `images/add` / `videos/add` 为文件上传手写通道）+ OAuth 两支手写传输（换码 / 刷新） | 无（v3.0 无推送回调，报表走 `async_reports` 拉取） | ADS-S1/S2（依赖边界·TFM）、ADS-B1/B4/B5/B6（凭据注入形态·SSRF 并集口径·Query 凭据脱敏·AOT 净零）、ADS-B2 逐路由 / 逐参数名 / 逐层级 / 逐字段名镜像官方原文、ADS-B3 刷新一次性语义；未落地域在守卫内**逐条点名**而非写成空断言 |
 
 ### 企业微信：35 个业务域 / 446 个契约接口
 
@@ -539,7 +554,7 @@ builder.Services.AddWechatOpenTelemetry(o =>
 
 小店线**平铺命名空间、无 `IsAbstract` 父接口**（守卫 CH-X2）；四包不引用既有六线任何工程（守卫 CH-X3）；与既有线路由交叠必须为空、仅共享基础设施路由白名单内可重复声明——`/cgi-bin/token`、`/cgi-bin/stable_token`（守卫 CH-R1）；回调不借公众号 / 企微既有通道（守卫 CH-X4）。**`ProductCard` 是公众号线既存先例**（`IMpProductCardService`，公众号令牌）——小店线不得重复声明（守卫 CH-R1）。
 
-### 腾讯广告：3 个业务域 / 15 个声明式端点（在建）
+### 腾讯广告：8 个业务域 / 33 支端点（在建）
 
 路由与逐参数名取自 2026-10-10 逐页核验的官方原文，权威口径在 `AdsContractGuards`（ADS-B2 系列）。层级断言只写经 DOM `level-*` 核验过的条目，其余照录平面证据并标未核验（留档见 `.docs/Ads-v3.0-官方页面核验留档.md`）。
 
@@ -548,11 +563,16 @@ builder.Services.AddWechatOpenTelemetry(o =>
 | `AddAdvertiserApi()` | 客户账号 | 3 | `advertiser/get`（GET，`fields` 自选返回列）+ `advertiser/update` + `advertiser/update_daily_budget`（后两支官方即 POST） |
 | `AddAdgroupsApi()` | 营销单元 | 8 | `adgroups/get`（GET，游标与页码两套分页并存）+ `add` / `update` / `delete`（官方**无批量删除**形态）+ 四支批量端点（`update_daily_budget` / `update_configured_status` / `update_bid_amount` / `update_datetime`）；仅 `add` 带 `X-Request-Id` 幂等头 |
 | `AddReportsApi()` | 报表 | 4 | `daily_reports/get` + `hourly_reports/get`（官方即 GET）+ `async_reports/add`（本族唯一 POST）+ `async_reports/get`（轮询任务态） |
+| `AddDynamicCreativesApi()` | 组件化创意 | 4 | `dynamic_creatives/get` / `add` / `update` / `delete`（三支 POST 带 `user_token`，`get` 不带） |
+| `AddComponentsApi()` | 创意组件 | 4 | `components/*` 3 支 + `component_detail/get` 1 支（仅 `add` 带 `user_token`） |
+| `AddImagesApi()` | 图片素材 | 4 | `images/get` / `update` / `delete` 声明式 3 支 + `images/add` 走 `multipart/form-data` 手写上传通道（字段名 `file`） |
+| `AddVideosApi()` | 视频素材 | 4 | `videos/get` / `update` / `delete` 声明式 3 支 + `videos/add` 走 `multipart/form-data` 手写上传通道（字段名 `video_file`） |
+| `AddAsyncTasksApi()` | 异步任务 | 2 | `async_tasks/add`（提交）+ `async_tasks/get`（轮询任务态） |
 | —— | OAuth（无注册模块） | 2 | `oauth/token`、`oauth/refresh_token`（**路径无 `/v3.0` 前缀**，均 GET、参数进 Query，独立命名客户端 `ads-oauth` 不挂凭据 Handler） |
 
 三条不可归并的官方差异，各由一支守卫锁定：报表 `level` 三支集合**互不相同且差异双向**（daily 17 / hourly 8 / `async_reports/add` 21，合并成公共枚举即红）；分页上限逐页不同（daily `page` 99999、hourly 100，`async_reports/get` 的 `page_size` 上限 10 而同步页 2000）；`account_id` 的代理商口径**逐页相反**（同步页「不支持代理商 id」、async 页「包括代理商和账户 id」）。异步报表是**双层判定**——外层 `code == 0` 只代表任务受理，`result.code` 才代表生成结果，且 `result` 层无 `message_cn`。
 
-**未落地（在守卫内点名可见，非空断言）**：`dynamic_creatives` / `components` / `images` / `videos` / `async_tasks`（官方文档层级只有平面证据，须先补 DOM 核验才能建模）；`async_report_files/get`（请求地址在**另一台主机** `dl.e.qq.com`，本线目前只有一条指向 `api.e.qq.com` 的业务客户端 ⇒ 报表域端点是恰 4 支而非 5 支，由守卫计数钉住）。
+**未落地（在守卫内点名可见，非空断言）**：`async_report_files/get`（请求地址在**另一台主机** `dl.e.qq.com`，本线目前只有一条指向 `api.e.qq.com` 的业务客户端 ⇒ 报表域端点是恰 4 支而非 5 支，由守卫计数钉住）；§11.1 清单的 331 条未核验路由（`dynamic_creatives` / `components` / `images` / `videos` / `async_tasks` 五域已于 2026-10-11 补 DOM 核验后落地，其余待逐页核验）。
 
 ## 质量门禁
 
@@ -588,7 +608,7 @@ Mud.Wechat/
 │   ├── Pay/                 # 微信支付 APIv3 线（4 包）
 │   ├── OpenPlatform/        # 开放平台线（2 包）+ OpenTelemetry 装配
 │   ├── Channels/            # 微信小店/视频号线（4 包）
-│   └── Ads/                 # 腾讯广告 Marketing API v3.0 线（3 包，在建：OAuth + 3 域 15 端点已落地）
+│   └── Ads/                 # 腾讯广告 Marketing API v3.0 线（3 包，在建：OAuth + 8 域 33 端点已落地）
 ├── Tests/                   # 16 个测试工程（单 TFM net8.0，含 ContractGuards/）
 ├── Demos/                   # 示例工程（联系人功能 + 联系人事件回调；不入主链、被 AOT 冒烟排除）
 ├── scripts/                 # verify-build / audit-config-keys / GenerateJsonContext / AddHttpJsonSerializable / ApplyTokenOwnerKeys

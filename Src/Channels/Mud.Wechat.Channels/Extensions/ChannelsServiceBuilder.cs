@@ -47,6 +47,19 @@ public class ChannelsServiceBuilder
 
             // 资金结算：16 端点（/channels/ec/funds/* 9 + /shop/funds/* 7 双前缀并存，设计方案 v1 §4.3）。
             [ChannelsModule.Funds] = static s => s.AddFundsWebApiHttpClient(),
+
+            // 商品管理：43 端点（/channels/ec/product/*，含库存 / 赠品 / 买赠活动 / 限时抢购子域）。
+            [ChannelsModule.Product] = static s => s.AddProductWebApiHttpClient(),
+
+            // 订单管理：27 端点（/channels/ec/order/* 24 + /channels/ec/merchant/privatenumber/* 3）。
+            [ChannelsModule.Order] = static s => s.AddOrderWebApiHttpClient(),
+
+            // 售后管理：27 端点（/channels/ec/aftersale/*，售后单 / 纠纷单 / 保障单）。
+            [ChannelsModule.Aftersale] = static s => s.AddAftersaleWebApiHttpClient(),
+
+            // 物流发货：28 端点（/channels/ec/merchant/address|freight* 9 + /channels/ec/logistics/ewaybill/* 16 +
+            // /channels/ec/order/delivery* 3，地址 / 运费模板 / 电子面单 / 发货）。
+            [ChannelsModule.Logistics] = static s => s.AddLogisticsWebApiHttpClient(),
         };
 
     /// <summary>
@@ -62,6 +75,35 @@ public class ChannelsServiceBuilder
     /// </summary>
     /// <returns>注册器（链式）。</returns>
     public ChannelsServiceBuilder AddFundsApi() => AddModule(ChannelsModule.Funds);
+
+    /// <summary>
+    /// 注册商品管理接口（43 端点：商品增改查 / 上下架 / 审核 / 库存 / 赠品 / 买赠活动 / 限时抢购 /
+    /// 类目辅助 / 第三方货源，<c>/channels/ec/product/*</c>）。
+    /// </summary>
+    /// <returns>注册器（链式）。</returns>
+    public ChannelsServiceBuilder AddProductApi() => AddModule(ChannelsModule.Product);
+
+    /// <summary>
+    /// 注册订单管理接口（27 端点：订单增查 / 搜索 / 改价 / 改地址 / 改备注 / 物流变更 / 发货协商 /
+    /// 生鲜质检 / 礼物单 / 发货前换款 / 盲盒拆盒 / 敏感信息解密 / 虚拟号与真实号 / 商家私密号实名认证 /
+    /// 用户预约发货，<c>/channels/ec/order/*</c> + <c>/channels/ec/merchant/privatenumber/*</c>）。
+    /// </summary>
+    /// <returns>注册器（链式）。</returns>
+    public ChannelsServiceBuilder AddOrderApi() => AddModule(ChannelsModule.Order);
+
+    /// <summary>
+    /// 注册售后管理接口（27 端点：售后单 16 / 纠纷单 4 / 保障单 6 +
+    /// 全量售后原因 / 拒绝原因，<c>/channels/ec/aftersale/*</c>）。
+    /// </summary>
+    /// <returns>注册器（链式）。</returns>
+    public ChannelsServiceBuilder AddAftersaleApi() => AddModule(ChannelsModule.Aftersale);
+
+    /// <summary>
+    /// 注册物流发货接口（28 端点：地址 5 / 运费模板 4 / 电子面单 16 / 订单发货 3，
+    /// <c>/channels/ec/merchant/address|freight*</c> + <c>/channels/ec/logistics/ewaybill/*</c> + <c>/channels/ec/order/delivery*</c>）。
+    /// </summary>
+    /// <returns>注册器（链式）。</returns>
+    public ChannelsServiceBuilder AddLogisticsApi() => AddModule(ChannelsModule.Logistics);
 
     /// <summary>注册全部已实现模块。</summary>
     /// <returns>注册器（链式）。</returns>

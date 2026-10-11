@@ -16,3 +16,4 @@ global using Mud.Wechat.Abstractions.Callback;
 global using Mud.Wechat.Abstractions.TokenManager;
 global using Mud.Wechat.Work.Abstractions;
 global using Mud.HttpUtils;
+global using Mud.Wechat.ContractBaseline;

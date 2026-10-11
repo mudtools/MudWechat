@@ -106,8 +106,24 @@ public class PayServiceCollectionExtensionsTests
             .Should().NotBeNull("下单请求体必须能被源生成上下文解析");
 
         options.TypeInfoResolver!
-            .GetTypeInfo(typeof(JsapiPrepayResponse), options)
+            .GetTypeInfo(typeof(PrepayIdResponse), options)
             .Should().NotBeNull("下单应答体必须能被源生成上下文解析");
+
+        // 直连下单三族（Native/APP/H5）的请求与应答同走 TransactionsJsonContext。
+        foreach (var dto in new[]
+                 {
+                     typeof(NativePrepayRequest),
+                     typeof(NativePrepayResponse),
+                     typeof(AppPrepayRequest),
+                     typeof(H5PrepayRequest),
+                     typeof(H5SceneInfo),
+                     typeof(H5PrepayResponse),
+                 })
+        {
+            options.TypeInfoResolver!
+                .GetTypeInfo(dto, options)
+                .Should().NotBeNull($"{dto.Name} 必须能被源生成上下文解析（Native AOT 无元数据即静默失败）");
+        }
 #else
         // net6.0：组件未提供 AddMudHttpClientJsonContext，Pay 与企微线同样以 NET8_0_OR_GREATER 裁剪。
         // 该 TFM 走 JIT 反射路径，不参与本仓 AOT 门禁（见 PayJsonResolverExtensions remarks）。

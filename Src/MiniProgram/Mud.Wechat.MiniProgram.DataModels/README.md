@@ -17,13 +17,13 @@
 ```powershell
 # 1) 补标注：SerializerClassName 取命名空间域段（根命名空间直属文件归 Common）
 ./scripts/AddHttpJsonSerializable.ps1 `
-    -RootPath Mud.Wechat.MiniProgram.DataModels `
+    -RootPath Src/MiniProgram/Mud.Wechat.MiniProgram.DataModels `
     -RootNamespace Mud.Wechat.MiniProgram.DataModels
 
 # 2) 重生成上下文：按分组发射 Generated/{组}JsonContext.g.cs
 ./scripts/GenerateJsonContext.ps1 `
-    -TargetProject Mud.Wechat.MiniProgram.DataModels/Mud.Wechat.MiniProgram.DataModels.csproj `
-    -OutputDir Mud.Wechat.MiniProgram.DataModels/Generated
+    -TargetProject Src/MiniProgram/Mud.Wechat.MiniProgram.DataModels/Mud.Wechat.MiniProgram.DataModels.csproj `
+    -OutputDir Src/MiniProgram/Mud.Wechat.MiniProgram.DataModels/Generated
 
 # 3) AOT 严格门禁复测
 dotnet build Src/MiniProgram/Mud.Wechat.MiniProgram.DataModels -c Release -f net8.0 -p:AotStrictMode=true

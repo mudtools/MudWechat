@@ -40,7 +40,7 @@ if ([string]::IsNullOrWhiteSpace($RepoRoot)) {
     $RepoRoot = Split-Path -Parent $PSScriptRoot
 }
 
-$interfacesRoot = Join-Path $RepoRoot 'Mud.Wechat.Work\Interfaces'
+$interfacesRoot = Join-Path $RepoRoot 'Src\Work\Mud.Wechat.Work\Interfaces'
 if (-not (Test-Path -LiteralPath $interfacesRoot)) {
     throw "接口目录不存在：$interfacesRoot"
 }

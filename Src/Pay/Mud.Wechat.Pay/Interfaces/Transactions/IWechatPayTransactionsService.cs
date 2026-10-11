@@ -8,7 +8,7 @@
 namespace Mud.Wechat.Pay;
 
 /// <summary>
-/// 微信支付「基础交易」域 SDK（APIv3 下单 / 查单 / 关单，4 端点）。
+/// 微信支付「基础交易」域 SDK（APIv3 下单 / 查单 / 关单，7 端点）。
 /// </summary>
 /// <remarks>
 /// <para><b>官方文档</b>（普通商户文档中心，2026-10-09 逐页核验）：
@@ -16,6 +16,10 @@ namespace Mud.Wechat.Pay;
 /// 微信支付订单号查询 <see href="https://pay.weixin.qq.com/doc/v3/merchant/4012791899"/>、
 /// 商户订单号查询 <see href="https://pay.weixin.qq.com/doc/v3/merchant/4012791900"/>、
 /// 关闭订单 <see href="https://pay.weixin.qq.com/doc/v3/merchant/4012791901"/>。</para>
+/// <para><b>下单四族</b>：JSAPI（<c>4012791897</c>，已核验）/ Native（<c>4012791877</c>）/
+/// APP（<c>4013070347</c>）/ H5（<c>4012791834</c>）—— 后三者的路由与字段表以本地 SKIT
+/// <c>TenpayV3</c> 为对齐基准（2026-10-10），<b>官方逐页核验待补</b>（文档中心为 SPA，正文不可达）。
+/// 四族<b>各自一个方法 + 各自请求 DTO</b>，差异见各族 DTO 的 remarks。</para>
 /// <para><b>与其它产品线的根本差异 —— 无 access_token</b>：APIv3 全程以商户 API 证书做
 /// RSA-SHA256 请求签名，故本接口<b>不声明 <c>[Token]</c></b>（守卫 PAY-B1 fail-closed 锁定，
 /// 违反即 MUD005 与 Query 白名单漂移）。签名在传输层
@@ -41,7 +45,7 @@ public interface IWechatPayTransactionsService
     /// </summary>
     /// <param name="request">下单请求体，字段见 <see cref="JsapiPrepayRequest"/>。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/> 取消操作令牌对象。</param>
-    /// <returns>仅含 <c>prepay_id</c>（2 小时有效）的应答，见 <see cref="JsapiPrepayResponse"/>。</returns>
+    /// <returns>仅含 <c>prepay_id</c>（2 小时有效）的应答，见 <see cref="PrepayIdResponse"/>。</returns>
     /// <remarks>
     /// <para><b>官方契约</b>：<b>POST</b> <c>/v3/pay/transactions/jsapi</c>；
     /// 必带 <c>Accept: application/json</c> 与 <c>Content-Type: application/json</c>。</para>
@@ -54,8 +58,81 @@ public interface IWechatPayTransactionsService
     /// <para><b>金额</b>：<c>amount.total</c> 单位为分、必须大于 0（1 元填 100）。</para>
     /// </remarks>
     [Post("/v3/pay/transactions/jsapi")]
-    Task<JsapiPrepayResponse> CreateJsapiOrderAsync(
+    Task<PrepayIdResponse> CreateJsapiOrderAsync(
         JsapiPrepayRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Native（扫码支付）下单，获取支付二维码链接 <c>code_url</c>。
+    /// 官方文档：<see href="https://pay.weixin.qq.com/doc/v3/merchant/4012791877"/>
+    /// （docId 由本地 SKIT <c>TenpayV3</c> 登记，2026-10-10 对齐；<b>官方逐页核验待补</b>）。
+    /// </summary>
+    /// <param name="request">下单请求体，字段见 <see cref="NativePrepayRequest"/>。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/> 取消操作令牌对象。</param>
+    /// <returns>仅含 <c>code_url</c>（<b>2 小时有效</b>）的应答，见 <see cref="NativePrepayResponse"/>。</returns>
+    /// <remarks>
+    /// <para><b>官方契约</b>：<b>POST</b> <c>/v3/pay/transactions/native</c>；无 path / query 参数；
+    /// 必带 <c>Accept: application/json</c> 与 <c>Content-Type: application/json</c>。</para>
+    /// <para><b>与 JSAPI 下单的两点根本差异</b>（勿混用 DTO）：① 请求<b>无支付者信息</b>（无 <c>payer</c>，
+    /// 下单时不存在支付者标识）；② 应答<b>只有 <c>code_url</c></b>（无 <c>prepay_id</c>）——
+    /// 支付由用户<b>扫码</b>发起，服务端须自行把 <c>code_url</c> 生成二维码展示。</para>
+    /// <para><b><c>code_url</c> 有效期 2 小时</b>：失效后须<b>重新调用本接口</b>取新链接，
+    /// 不得对旧链接做任何拼接或改写。</para>
+    /// <para>业务限制（<c>out_trade_no</c> 唯一性 / <c>appid</c>-<c>mchid</c> 绑定 / <c>time_expire</c> 窗口 /
+    /// 金额单位为分）与 <see cref="CreateJsapiOrderAsync"/> 同族口径；<b>这些限制是否逐条见诸 Native 页，
+    /// 待官方逐页核验</b>。</para>
+    /// </remarks>
+    [Post("/v3/pay/transactions/native")]
+    Task<NativePrepayResponse> CreateNativeOrderAsync(
+        NativePrepayRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// APP 下单，获取 <c>prepay_id</c>（供移动 SDK 调起）。
+    /// 官方文档：<see href="https://pay.weixin.qq.com/doc/v3/merchant/4013070347"/>
+    /// （docId 由本地 SKIT <c>TenpayV3</c> 登记，2026-10-10 对齐；<b>官方逐页核验待补</b>）。
+    /// </summary>
+    /// <param name="request">下单请求体，字段见 <see cref="AppPrepayRequest"/>。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/> 取消操作令牌对象。</param>
+    /// <returns>仅含 <c>prepay_id</c>（<b>2 小时有效</b>）的应答，见 <see cref="PrepayIdResponse"/>
+    /// （官方 APP 页应答表与 JSAPI 逐项一致 ⇒ <b>共用</b>同一类型，本线纪律「表相同则共用」）。</returns>
+    /// <remarks>
+    /// <para><b>官方契约</b>：<b>POST</b> <c>/v3/pay/transactions/app</c>；无 path / query 参数；
+    /// 必带 <c>Accept: application/json</c> 与 <c>Content-Type: application/json</c>。</para>
+    /// <para><b>与 JSAPI 下单的差异</b>：① 请求<b>无</b> <c>payer</c>（APP 由客户端 SDK 调起，
+    /// 服务端拿不到支付者标识）；② 请求<b>多</b> <c>subsidy_info</c>（补贴详情，Native / H5 无）；
+    /// ③ <c>appid</c> 须为<b>移动应用</b> AppID。</para>
+    /// <para><b>应答与 JSAPI 共用</b> <see cref="PrepayIdResponse"/>：官方两页应答表逐项一致
+    /// （均只有 <c>prepay_id</c>）⇒ 按「表相同则共用」不另建类型；Native / H5 的应答形态不同，各自独立。</para>
+    /// <para><b>调起支付在客户端侧</b>：<c>prepay_id</c> 回传 APP 后由移动 SDK 二次签名调起，
+    /// <b>服务端不得</b>替客户端组装该签名串。</para>
+    /// </remarks>
+    [Post("/v3/pay/transactions/app")]
+    Task<PrepayIdResponse> CreateAppOrderAsync(
+        AppPrepayRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// H5（移动端网页）下单，获取可直接跳转的支付链接 <c>h5_url</c>。
+    /// 官方文档：<see href="https://pay.weixin.qq.com/doc/v3/merchant/4012791834"/>
+    /// （docId 由本地 SKIT <c>TenpayV3</c> 登记，2026-10-10 对齐；<b>官方逐页核验待补</b>）。
+    /// </summary>
+    /// <param name="request">下单请求体，字段见 <see cref="H5PrepayRequest"/>。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/> 取消操作令牌对象。</param>
+    /// <returns>仅含 <c>h5_url</c> 的应答，见 <see cref="H5PrepayResponse"/>。</returns>
+    /// <remarks>
+    /// <para><b>官方契约</b>：<b>POST</b> <c>/v3/pay/transactions/h5</c>；无 path / query 参数；
+    /// 必带 <c>Accept: application/json</c> 与 <c>Content-Type: application/json</c>。</para>
+    /// <para><b>⚠️ 本族最容易漏的一处</b>：<see cref="H5SceneInfo"/> 比其它下单族的场景信息<b>多</b>
+    /// <c>h5_info</c> 一节 ⇒ 从 JSAPI / Native 复制请求体会<b>传不了</b>该字段（故 <c>scene_info</c>
+    /// 不复用 <see cref="JsapiSceneInfo"/>）。请求顶层另<b>无</b> <c>payer</c>。</para>
+    /// <para><b>拿到 <c>h5_url</c> 后</b>须按官方《H5 调起支付》指引跳转（含 <c>Referer</c> 等要求），
+    /// <b>严禁</b>自行改写或拼装该链接。</para>
+    /// <para><b>仅在微信外浏览器场景可用</b>：微信内置浏览器场景须走 JSAPI 下单。</para>
+    /// </remarks>
+    [Post("/v3/pay/transactions/h5")]
+    Task<H5PrepayResponse> CreateH5OrderAsync(
+        H5PrepayRequest request,
         CancellationToken cancellationToken = default);
 
     /// <summary>

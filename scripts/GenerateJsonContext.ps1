@@ -10,7 +10,7 @@
       2. Detects the tool (global `mud-jsonctx` or local `dotnet mud-jsonctx`), installing it
          globally when missing (unless -NoInstall).
       3. Runs the tool to scan [HttpJsonSerializable] and emit *_JsonContext.g.cs grouped by
-         SerializerClassName into Mud.Wechat.Work.DataModels/Generated.
+         SerializerClassName into Src/Work/Mud.Wechat.Work.DataModels/Generated.
     Generated files should be committed (re-run only when [HttpJsonSerializable] annotations
     are added/changed; run scripts/AddHttpJsonSerializable.ps1 first for new DTOs).
 
@@ -26,12 +26,12 @@ param(
     # NuGet package id (used only for auto-install)
     [string]$ToolPackageId = "Mud.HttpUtils.JsonContextScaffolder",
     # Version to install; pinned to the repo-wide locked Mud.HttpUtils version.
-    # Kept in lockstep with the repo-wide Mud.HttpUtils version (G1); 3.0.2 resolved via nuget.config sources.
-    [string]$ToolVersion = "3.0.2",
-    # Target project (relative to repo root or absolute)
-    [string]$TargetProject = "Mud.Wechat.Work.DataModels/Mud.Wechat.Work.DataModels.csproj",
+    # Kept in lockstep with the repo-wide Mud.HttpUtils version (G1); 3.0.3 resolved via nuget.config sources.
+    [string]$ToolVersion = "3.0.3",
+    # Target project (relative to repo root or absolute) —— 源码归类后源工程位于 Src/<Area>/<ProjectName>。
+    [string]$TargetProject = "Src/Work/Mud.Wechat.Work.DataModels/Mud.Wechat.Work.DataModels.csproj",
     # Output directory (relative to repo root or absolute)
-    [string]$OutputDir = "Mud.Wechat.Work.DataModels/Generated",
+    [string]$OutputDir = "Src/Work/Mud.Wechat.Work.DataModels/Generated",
     # Auto-complete polymorphic derived types within the same assembly.
     # Default OFF for this repo: every DTO is individually annotated, so derived roots would be
     # pure duplication; worse, the flag drags the OPEN generic WechatChatbotResponse<> (derived

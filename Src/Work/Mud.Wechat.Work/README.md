@@ -46,6 +46,7 @@
   - `Interfaces/Dial/` — 公费电话：获取公费电话拨打记录 93662（官方仅自建；与「紧急通知」域的 `pstncc` 路由族分属官方两棵章节树）
 - **模块注册器**（`Extensions/`）：`AddWechatWorkServices(...)` + `WechatModule` 枚举 35 个成员（`ExternalContact` / `Message` / `Contact` / `Approval` / `Media` / `Identity` / `JsSdk` / `Agent` / `Authentication` / `Basic` / `Checkin` / `Meeting` / `Schedule` / `Wedoc` / `Wedrive` / `AccountId` / `Kf` / `Mail` / `Pay` / `Security` / `CorpGroup` / `School` / `Living` / `DataZone` / `MsgAudit` / `Invoice` / `Gov` / `Emergency` / `PromotionQrCode` / `PayTool` / `Aibot` / `License` / `Webhook` / `Hr` / `Dial`）+ `AddAllApis()` / `AddModules()`，按需注册模块客户端。`Build()` 校验 `AddWechatApp` 已先行，否则抛；`AddAuthenticationApi()` 额外挂授权编排服务，`AddWebhookApi()` 在注册期把 `key` 登记为进程级强制掩码参数名。
 - **授权编排**（`Services/Authorization/`）：`IWechatWorkAuthorizationService`（换码/刷新/撤销/枚举，单飞门 + 结果记忆）与 `IWechatAuthorizationCoordinator`（回调驱动自动化），策略统一落 `WechatAuthorizationOptions`。
+- **会话内容存档原生封装**（`ExtendedSDK/Finance/`）：企业微信会话内容存档 **C SDK** 的进程内封装——`IWechatWorkFinanceClient`（拉密文记录 / 解密单条 / 逐片或聚合拉媒体）+ `IWechatWorkFinanceClientFactory`（按机器人键装配并缓存实例）+ 配置面 `WechatFinanceOptions`（节 `WechatFinance`）+ 注册入口 `AddWechatFinanceSdk()`。**仓内唯一不经 HTTP 的能力面**：没有端点、不进 `WechatModule`、不参与令牌链路（守卫 FIN-B6），与「会话内容存档」的 HTTP 管理域 `Interfaces/MsgAudit/` 是两件事（后者管成员开启/机器人信息/同意情况，前者取正文）。
 - **errcode 令牌失效判定器**（`TokenManagers/`）：识别令牌失效错误码并触发恢复，经 `TokenRecoveryOptions.TokenInvalidationDetector` 编程式注入。
 - **JSON 解析器合并**（`Extensions/WechatJsonResolverExtensions.cs`）：合并组件与领域 JSON 上下文进组件序列化管线。
 
@@ -124,6 +125,48 @@ WechatCorpAuthorization authorization = await auth.ExchangeAuthCodeAsync(authCod
 //           RevokeAuthorizationAsync（先失效该应用下企业令牌、后删库）、CreateSuiteAuthorizationUrlAsync（安装链接）
 ```
 
+### 会话内容存档（原生 C SDK）
+
+原生库**不随包分发**，需按平台部署 `WeWorkFinanceSdk.dll`（Windows）/ `libWeWorkFinanceSdk_C.so`（Linux，文件名带 `_C` 段）；配置只登记**密钥名**，真实值经组件 `ISecretProvider` 运行期取用（须先注册该端口，否则解析期点名抛错）。
+
+```jsonc
+// appsettings.json
+{
+  "WechatFinance": {
+    "NativeLibraryPath": "",            // 留空 = 按平台默认名探测；进程级唯一
+    "DefaultTimeoutSeconds": 10,
+    "MediaShardRetryCount": 3,          // 0 = 关闭同游标退避重试
+    "Robots": {
+      "archive-01": {
+        "CorpId": "ww1234567890abcdef",
+        "SecretSecretName": "finance:robot:archive-01:secret",   // 名字，不是 secret
+        "ProxyAddress": "http://127.0.0.1:8080",
+        "PrivateKeySecretNames": { "1": "finance:pk:archive-01:1", "2": "finance:pk:archive-01:2" }
+      }
+    }
+  }
+}
+```
+
+```csharp
+builder.Services.AddWechatFinanceSdk(builder.Configuration);   // 或 AddWechatFinanceSdk(o => o.Robots[...]=...)
+
+// 按机器人键取实例：工厂内部 NewSdk + Init，同键并发收敛为一次装配
+var client = await scope.ServiceProvider.GetRequiredService<IWechatWorkFinanceClientFactory>()
+    .GetClientAsync("archive-01", ct);
+
+// 拉密文 → 逐条解密。游标是「至少一次」语义：以「上次最大 seq」续拉，边界重复由宿主按 msgid 幂等去重
+var envelope = await client.GetChatDataAsync(lastSeq, limit: 200, ct);
+foreach (var row in envelope.ChatData ?? new List<FinanceChatDataRow>())
+{
+    var message = await client.DecryptChatRecordAsync(row, ct);   // 明文即敏感：不得整体写日志/遥测/异常消息
+    // 版本号决定用哪把私钥（WechatFinanceRobotOptions.PrivateKeySecretNames），查无该版本即抛、不回落
+}
+
+// 媒体：小文件用聚合，大文件逐片落盘（单片上限 512KB，聚合结果受 byte[] 极限约束）
+var bytes = await client.GetMediaDataAsync(message.Image!.SdkFileId!, ct);
+```
+
 ## 依赖
 
 - `Mud.Wechat.Work.Abstractions`、`Mud.Wechat.Work.DataModels`（后者与企业微信叶层 `Mud.Wechat.Abstractions` 的共享关系经 Abstractions 传递，本包不直接引用叶层）
@@ -136,4 +179,5 @@ WechatCorpAuthorization authorization = await auth.ExchangeAuthCodeAsync(authCod
 - 应用类型子接口必须声明凭据归属域 `[Token(TokenManagerKey = WechatTokenManagerKeys.InternalAccessToken | CorpAccessToken)]`，归属域错配在 `WechatAppContext.GetTokenManager` 单点 fail-fast。
 - 新增 `[HttpJsonSerializable]` DTO 后运行 `scripts/AddHttpJsonSerializable.ps1` + `scripts/GenerateJsonContext.ps1` 重新生成所在域的 JsonContext（生成物提交进版本控制，勿手改）；Abstractions 域手写登记进 `AuthenticationJsonContext`。未登记类型被组件分析器 `AOT006` 拦下。
 - 各域面向的应用类型差异（官方仅自建开放 / 三类应用公共面 / 差异端点在子接口 / 零端点父接口）以接口 XML 注释与 `Tests/**/ContractGuards/` 契约守卫为权威。
-- 契约守卫位于 `Tests/Mud.Wechat.Work.Tests/ContractGuards/`（60 个文件）：通用面 `WechatContractGuards`（G1 HttpUtils 单版本 … G10 路由单一所有者，其中 G5 = Query 令牌注入白名单、G7 = 脱敏词表与自过期豁免）、令牌归属域 `WechatTokenOwnerContractGuards`（TO1~TO3）、命名空间分区 `WechatInterfaceNamespaceContractGuards`（N1~N3）、回调面 `WechatCallbackContractGuards`（CB 系列）、群机器人 `WechatWebhookContractGuards`（WEB1~WEB4）+ 逐域端点/路由守卫。新增或迁移 `[HttpClientApi]` 接口必须先跑 N1~N3。
+- **会话存档域的已踩陷阱**：① 门面方法为 `...Async` **不代表存在真异步 I/O**——原生调用是阻塞的，异步只在「取密钥」与「退避重试等待」两处真实等待，单机器人不可高并发；② `CancellationToken` **不能中断已进入的原生调用**，只在分片边界与退避等待处生效；③ 经工厂取得的实例是**按机器人共享的长生命周期对象**，调用侧不得自行 `Dispose`（工厂释放时统一销毁），同一实例上的调用被串行化（`seq` 游标协议本身要求逐次推进）；④ 配置的热更对本域**无效**（`Init` 已把 `corpid`/`secret` 交给原生实例，改配置须重建工厂）；⑤ `netstandard2.0` 档无 `NativeLibrary` 与 `RSA.ImportFromPem` ⇒ 配 `NativeLibraryPath` 点名抛、`DecryptChatRecordAsync` 点名抛（拉取与媒体仍可用）；⑥ 本域**不登记 SSRF 白名单**（原生库自管出网，防线在宿主网络策略），也不进 `WechatModule` / `Add{域}Api()` 面。
+- 契约守卫位于 `Tests/Mud.Wechat.Work.Tests/ContractGuards/`（61 个文件）：通用面 `WechatContractGuards`（G1 HttpUtils 单版本 … G10 路由单一所有者，其中 G5 = Query 令牌注入白名单、G7 = 脱敏词表与自过期豁免）、令牌归属域 `WechatTokenOwnerContractGuards`（TO1~TO3）、命名空间分区 `WechatInterfaceNamespaceContractGuards`（N1~N3）、回调面 `WechatCallbackContractGuards`（CB 系列）、群机器人 `WechatWebhookContractGuards`（WEB1~WEB4）、会话存档原生封装 `WechatFinanceContractGuards`（FIN-B1 封面对象性与成对释放 / B2 凭据面边界 / B3 分片聚合 / B4 序列化纪律 / B5 明文与凭据不入诊断 / B6 与 HTTP 域面零交叉）+ 逐域端点/路由守卫。新增或迁移 `[HttpClientApi]` 接口必须先跑 N1~N3。

@@ -18,4 +18,10 @@
 		<ProjectReference Include="..\..\Src\Pay\Mud.Wechat.Pay.DataModels\Mud.Wechat.Pay.DataModels.csproj" />
 	</ItemGroup>
 
+
+	<ItemGroup>
+		<!-- 聚合契约基线（跨域 / 跨族的汇总数字，一处维护）。见 Src 侧同款说明。 -->
+		<Compile Include="..\ContractBaseline.cs" Link="ContractBaseline.cs" />
+	</ItemGroup>
+
 </Project>

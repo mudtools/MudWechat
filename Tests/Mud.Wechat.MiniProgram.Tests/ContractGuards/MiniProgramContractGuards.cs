@@ -248,12 +248,14 @@ public class MiniProgramContractGuards
             WxaFeedbackMediaService.FeedbackMediaPath,
         });
 
-        // 合计计数（MP-X5 的单一来源）：80 特性路由 + 4 手工通道路由 = 84。
+        // 合计计数（MP-X5 的单一来源）：80 特性路由 + 4 手工通道路由 = 84（基线见 Tests/ContractBaseline.cs）。
         (CollectAttributeRoutes(asm).Length + ManualChannelRoutes().Length)
-            .Should().Be(84, "小程序线合计 84 端点（Auth 8 + QrCodeLink 9 + Security 3 + DataAnalysis 11 + " +
-                              "SubscribeMessage 4 + DynamicMessage 3 + Kf 9 + HardwareDevice 9 + Operation 10 + " +
-                              "Plugin 2 + Charge 2 + NearbyPoi 4 + Search 1 + Soter 1 + ServiceMarket 2 + " +
-                              "RedPacketCover 1 + Student 1 + FaceVerify 2 + LaborUse 2）");
+            .Should().Be(Baseline.MiniProgram.Endpoints,
+                "小程序线合计 84 端点（Auth 8 + QrCodeLink 9 + Security 3 + DataAnalysis 11 + "
+                + "SubscribeMessage 4 + DynamicMessage 3 + Kf 9 + HardwareDevice 9 + Operation 10 + "
+                + "Plugin 2 + Charge 2 + NearbyPoi 4 + Search 1 + Soter 1 + ServiceMarket 2 + "
+                + "RedPacketCover 1 + Student 1 + FaceVerify 2 + LaborUse 2）；"
+                + "数量变化须同批调整 Tests/ContractBaseline.cs");
     }
 
     /// <summary>MP-X5（字段名照官方原文）。</summary>
@@ -315,15 +317,33 @@ public class MiniProgramContractGuards
     }
 
     /// <summary>
-    /// MP-X8：SSRF 白名单<b>零改动</b> —— 小程序沿用 <c>api.weixin.qq.com</c>，
-    /// 不得新增/修改 <c>AllowedBaseUrlDomains</c>，也不得自行调用 <c>ConfigureAllowedDomains</c>。
+    /// MP-X8：SSRF 白名单<b>小程序线零改动</b> —— 小程序沿用 <c>api.weixin.qq.com</c>，
+    /// 已被 <c>weixin.qq.com</c> 后缀覆盖 ⇒ 既不得新增/修改条目，也不得自行调用
+    /// <c>ConfigureAllowedDomains</c>。
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>断言形态已从「白名单数组恰等于两条」改为「后缀覆盖 + 无小程序专属条目」</b>（2026-10-10，
+    /// 广告线接入时同批调整）。原写法把<b>进程级全局</b>白名单的完整快照钉在一条<b>产品线</b>守卫里，
+    /// 于是任何其它产品线合法地追加后缀域（广告线 <c>e.qq.com</c>）都会把小程序守卫打红 ——
+    /// 那是<b>跨线耦合的假红</b>，不是小程序线的契约漂移。守卫要锁的是本线的不变式
+    /// （默认域名被覆盖、且本线未往全局数组里塞东西），而非全局数组的长度。
+    /// </para>
+    /// <para>全局白名单的变更评审面由公用层 AB-G9 与广告线 ADS-B4 承担（那才是它的单点归属）。</para>
+    /// </remarks>
     [Fact]
     public void SsrfWhitelist_ShouldRemainUnchanged()
     {
-        WechatApiHosts.AllowedBaseUrlDomains.Should().Equal(
-            new[] { "weixin.qq.com", "work.weixin.qq.com" },
-            "两条新线对白名单均零改动（方案 §5.2）；新增条目即意味着进程级白名单被改写");
+        var allowed = WechatApiHosts.AllowedBaseUrlDomains;
+
+        allowed.Should().Contain("weixin.qq.com",
+            "小程序默认域名 api.weixin.qq.com 的放行完全依赖该后缀项");
+
+        foreach (var own in new[] { "api.weixin.qq.com", "mp.weixin.qq.com" })
+        {
+            allowed.Should().NotContain(own,
+                $"{own} 已被 weixin.qq.com 后缀覆盖，小程序线不得为其新增独立条目（新增即扩大进程级放行面）");
+        }
 
         var root = SourcePath("Mud.Wechat.MiniProgram");
         Directory.GetFiles(root, "*.cs", SearchOption.AllDirectories)
@@ -331,6 +351,58 @@ public class MiniProgramContractGuards
                                && !f.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
             .Should().NotContain(f => File.ReadAllText(f).Contains("ConfigureAllowedDomains", StringComparison.Ordinal),
                 "产品线不得自行登记进程级白名单（整体替换语义会清空其它产品线）");
+    }
+
+    /// <summary>
+    /// MP-X9：<b>智能接口共享面留在公众号线承载</b> —— 小程序线<b>不得</b>克隆 <c>IMpSmartApiService</c>
+    /// 的 12 端点（OCR 7 + 图像处理 2 + AI 语音 3），同时公众号线<b>必须</b>继续声明全部 12 条路由。
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>判据（2026-10-10 定夺）</b>：智能接口的<b>请求路径与报文形态在公众号与小程序两侧逐字相同</b>
+    /// ——官方文档按产品线各出一份页面（<c>doc/offiaccount/Intelligent_Interface/OCR.html</c> ↔
+    /// <c>miniprogram/dev/api-backend/open-api/ocr/ocr.idcard.html</c>），但落到线上是同一个 URI，
+    /// 且令牌同域（小程序侧亦消费 <c> MpTokenTypes.AccessToken</c>）。既然路径<b>无任何前缀差异</b>，
+    /// 克隆进小程序线即同时踩 MP-X1（跨线路由零重复）与 MP-X6（不得回潮公众号已有路由），
+    /// 并制造「两份 DTO + 两个 JsonContext + 两套守卫」的纯重复维护。
+    /// </para>
+    /// <para>
+    /// <b>与补齐方案的关系</b>：方案曾把「小程序 SmartApi」列为小额残口之一（拟 <c>24 → 36</c> 端点）。
+    /// 本守卫即该拟议的<b>否决留档</b>：小程序侧调用智能接口请直接使用公众号线的
+    /// <c>IMpSmartApiService</c>（同一 <c>api.weixin.qq.com</c>、同一令牌底座，<c>AddMpApp</c> 已是本线硬前置）。
+    /// </para>
+    /// <para><b>反静默绿</b>：同时断言公众号线仍声明这 12 条 —— 若 OA 侧被删，本守卫必须报红而不是「MP 侧也确实没有」。</para>
+    /// </remarks>
+    [Fact]
+    public void SmartApiRoutes_ShouldStayOnOfficialAccountLine()
+    {
+        var sharedRoutes = new[]
+        {
+            "/cgi-bin/media/voice/addvoicetorecofortext",
+            "/cgi-bin/media/voice/queryrecoresultfortext",
+            "/cgi-bin/media/voice/translatecontent",
+            "/cv/ocr/idcard",
+            "/cv/ocr/bankcard",
+            "/cv/ocr/driving",
+            "/cv/ocr/drivinglicense",
+            "/cv/ocr/bizlicense",
+            "/cv/ocr/comm",
+            "/cv/ocr/menu",
+            "/cv/img/aicrop",
+            "/cv/img/qrcode",
+        };
+
+        var mpRoutes = CollectAttributeRoutes(typeof(MiniProgramServiceBuilder).Assembly)
+            .Concat(ManualChannelRoutes())
+            .ToArray();
+
+        mpRoutes.Should().NotIntersectWith(sharedRoutes,
+            "智能接口 12 端点两侧路径逐字相同，克隆即踩 MP-X1 / MP-X6（本守卫为该拟议的否决留档）");
+
+        var oaRoutes = CollectAttributeRoutes(
+            typeof(Mud.Wechat.OfficialAccount.Extensions.MpServiceCollectionExtensions).Assembly);
+        oaRoutes.Should().Contain(sharedRoutes,
+            "共享面由公众号线承载：OA 侧缺席即意味着小程序用户失去该能力，本守卫不得静默放行");
     }
 
     /// <summary>装配面：未先装令牌底座时必须在<b>注册期</b>点名 fail-fast。</summary>

@@ -8,7 +8,7 @@
 namespace Mud.Wechat.Abstractions;
 
 /// <summary>
-/// 微信系 API 域名常量与 SSRF 白名单（**单一事实来源**）。
+/// 微信系 + 腾讯广告 API 域名常量与 SSRF 白名单（**单一事实来源**）。
 /// </summary>
 /// <remarks>
 /// <para>
@@ -29,6 +29,14 @@ namespace Mud.Wechat.Abstractions;
 /// <c>api.weixin.qq.com</c>（公众号）、<c>qyapi.weixin.qq.com</c>（企业微信）、
 /// <c>api.mch.weixin.qq.com</c>（微信支付）；<c>work.weixin.qq.com</c> 为历史冗余项，保留以避免行为变更。
 /// </para>
+/// <para>
+/// <b>唯一的后缀级例外：腾讯广告 <c>e.qq.com</c></b>。广告线（Marketing API v3.0）是本仓第一条
+/// <b>非微信域</b>产品线，其 <c>api.e.qq.com</c> 不被任何既有条目覆盖 ⇒ 白名单必须<b>并集追加</b>一条后缀域，
+/// 而不是逐主机登记（逐主机会让放行面随端点增长失控）。
+/// 代价是<b>全局放行面被扩大</b>：任一产品线的 <c>BaseUrl</c> 现在都可指向 <c>*.e.qq.com</c> 而无需
+/// <see cref="Configuration.WechatAppConfigBase.AllowCustomBaseUrl"/>。已接受的判定理由与替代方案的取舍
+/// 见守卫 ADS-B4 与 AB-G9；<b>再新增非微信后缀域须走同等评审</b>，不得照抄本行「顺手加一条」。
+/// </para>
 /// </remarks>
 public static class WechatApiHosts
 {
@@ -37,6 +45,12 @@ public static class WechatApiHosts
 
     /// <summary>微信公众号 / 服务号 API 默认域名（订阅号与服务号同域名）。</summary>
     public const string OfficialAccountBaseUrl = "https://api.weixin.qq.com";
+
+    /// <summary>
+    /// 腾讯广告 Marketing API v3.0 默认域名（OAuth 与业务接口同主机，仅路径前缀不同：
+    /// <c>/oauth/*</c> 与 <c>/v3.0/{resource}/{action}</c>）。
+    /// </summary>
+    public const string AdsBaseUrl = "https://api.e.qq.com";
 
     /// <summary>
     /// <see cref="Configuration.WechatAppConfigBase.AllowCustomBaseUrl"/> 为 <c>false</c> 时的
@@ -51,5 +65,6 @@ public static class WechatApiHosts
     {
         "weixin.qq.com",
         "work.weixin.qq.com",
+        "e.qq.com",
     };
 }

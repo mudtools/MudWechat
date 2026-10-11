@@ -5,6 +5,14 @@
 //  不得利用本项目从事危害国家安全、扰乱社会秩序、侵犯他人合法权益等法律法规禁止的活动！任何基于本项目开发而产生的一切法律纠纷和责任，我们不承担任何责任！
 // -----------------------------------------------------------------------
 
+using Mud.Wechat.Ads.Extensions;
+using Mud.Wechat.Channels.Abstractions.Authentication;
+using Mud.Wechat.Channels.Extensions;
+using Mud.Wechat.MiniProgram.Extensions;
+using Mud.Wechat.OfficialAccount.Extensions;
+using Mud.Wechat.Pay.Extensions;
+using Mud.Wechat.Work.Extensions;
+
 namespace Mud.Wechat.Channels.Tests.ContractGuards;
 
 /// <summary>
@@ -13,7 +21,7 @@ namespace Mud.Wechat.Channels.Tests.ContractGuards;
 /// <remarks>
 /// <para>
 /// <b>CH-R1（重叠路由零回潮）</b>：小店线（<c>/channels/ec/*</c>、<c>/shop/*</c>、<c>/cgi-bin/*</c>、
-/// <c>/channels/finderlive|leads|livedashboard/*</c>）与既有四线（公众号 / 企微 / 小程序 / 支付）
+/// <c>/channels/finderlive|leads|livedashboard/*</c>）与既有五线（公众号 / 企微 / 小程序 / 支付 / 广告）
 /// 的路由<b>交叠必须为空</b>，公众号线「产品卡」先例（<c>IMpProductCardService</c>，
 /// <c>/channels/ec/service/product/getcardinfo</c>，公众号令牌）不得在小店线重复声明。
 /// 唯一豁免：基础面<b>同令牌族内</b>的同路由重复（token / stable_token，授权于设计方案 §4.5
@@ -31,7 +39,7 @@ public class ChannelsRouteContractGuards
     /// <summary>
     /// 官方基础面「同令牌族内允许重复声明」的共享基础设施路由白名单（对齐 §4.5）。
     /// 新增（P1：quota / rid / clear_quota / callback check / 双 IP）必须同批扩展并注明追踪理由；
-    /// 白名单之外任何与既有四线的路由交叠都是变红项。
+    /// 白名单之外任何与既有五线的路由交叠都是变红项。
     /// </summary>
     /// <remarks>
     /// <b>P1 落位（设计方案 v1 §4.5）</b>：8 个 Basic 端点与公众号线<b>云端同路由</b>，但令牌凭据
@@ -277,30 +285,34 @@ public class ChannelsRouteContractGuards
         };
 
     /// <summary>
-    /// CH-R1：重叠路由零回潮 —— 小店线路由 ⊆ 白名单 ∪ ∅，与既有四线路由的交叠必须为空。
+    /// CH-R1：重叠路由零回潮 —— 小店线路由 ⊆ 白名单 ∪ ∅，与既有五线路由的交叠必须为空。
     /// </summary>
     /// <remarks>
-    /// 参照集（公众号 / 企微 / 小程序 / 支付四线主包路由并集）强制<b>非空</b>：参照集为空说明
-    /// 反射口径失效，守卫会假绿（AGENTS §6「数量下限防枚举空跑」同款纪律）。
+    /// 参照集（公众号 / 企微 / 小程序 / 支付 / 广告五线主包路由并集）强制<b>非空</b>：参照集为空说明
+    /// 反射口径失效，守卫会假绿（AGENTS §6「数量下限防枚举空跑」同款纪律）。开放平台线用显式客户端、
+    /// 无声明式路由属性，故不入参照集。
     /// </remarks>
     [Fact]
     public void OverlappingRoutes_ShouldNotBeDeclared_WhenChannelsLineAddsEndpoints()
     {
         var existingRoutes = new HashSet<string>(StringComparer.Ordinal);
-        existingRoutes.UnionWith(CollectRequestUris(LoadProductLine("Mud.Wechat.OfficialAccount")));
-        existingRoutes.UnionWith(CollectRequestUris(LoadProductLine("Mud.Wechat.Work")));
-        existingRoutes.UnionWith(CollectRequestUris(LoadProductLine("Mud.Wechat.MiniProgram")));
-        existingRoutes.UnionWith(CollectRequestUris(LoadProductLine("Mud.Wechat.Pay")));
+        existingRoutes.UnionWith(CollectRequestUris(LoadProductLine(typeof(MpModule))));
+        existingRoutes.UnionWith(CollectRequestUris(LoadProductLine(typeof(WechatModule))));
+        existingRoutes.UnionWith(CollectRequestUris(LoadProductLine(typeof(MiniProgramModule))));
+        existingRoutes.UnionWith(CollectRequestUris(LoadProductLine(typeof(PayModule))));
+        // 广告线（2026-10 并入本仓）亦为声明式路由线，必须纳入参照集：漏掉它 = 小店线可静默回潮广告线路由。
+        existingRoutes.UnionWith(CollectRequestUris(LoadProductLine(typeof(AdsModule))));
 
-        existingRoutes.Should().NotBeEmpty("既有四线路由是本守卫的参照集，为空说明反射口径失效，守卫会假绿");
+        existingRoutes.Should().NotBeEmpty("既有五线路由是本守卫的参照集，为空说明反射口径失效，守卫会假绿");
 
         // 公众号「产品卡」先例路由必须存在于参照集（防参照集漏检该唯一例外）。
         existingRoutes.Should().Contain("/channels/ec/service/product/getcardinfo",
             "公众号线 IMpProductCardService 的产品卡路由是 CH-R1 的锚点（设计方案 §4.2），不得从参照集消失");
 
         var channelsRoutes = new HashSet<string>(StringComparer.Ordinal);
-        channelsRoutes.UnionWith(CollectRequestUris(LoadProductLine("Mud.Wechat.Channels")));
-        channelsRoutes.UnionWith(CollectRequestUris(LoadProductLine("Mud.Wechat.Channels.Abstractions")));
+        channelsRoutes.UnionWith(CollectRequestUris(LoadProductLine(typeof(ChannelsModule))));
+        channelsRoutes.UnionWith(CollectRequestUris(LoadProductLine(typeof(IChannelsAuthentication))));
+        // 本包为纯宿主包（零手写类型），无编译期锚点可用 ⇒ 名称加载（含探测失败兜底，见 LoadProductLine）。
         channelsRoutes.UnionWith(CollectRequestUris(LoadProductLine("Mud.Wechat.Channels.Callback")));
 
         var overlap = channelsRoutes
@@ -308,7 +320,7 @@ public class ChannelsRouteContractGuards
             .Intersect(existingRoutes, StringComparer.Ordinal)
             .ToArray();
         overlap.Should().BeEmpty(
-            "小店线不得重复声明既有四线路由（设计方案 CH-R1）；基础面同令牌族重复仅限白名单豁免：" +
+            "小店线不得重复声明既有五线路由（设计方案 CH-R1）；基础面同令牌族重复仅限白名单豁免：" +
             string.Join(", ", overlap));
     }
 
@@ -323,7 +335,7 @@ public class ChannelsRouteContractGuards
     [Fact]
     public void DomainRouteTables_ShouldMatchDeclaredEndpoints()
     {
-        var asm = LoadProductLine("Mud.Wechat.Channels");
+        var asm = LoadProductLine(typeof(ChannelsModule));
         var interfaces = asm.GetTypes()
             .Where(static t => t.IsInterface)
             .ToArray();
@@ -407,11 +419,40 @@ public class ChannelsRouteContractGuards
         }
     }
 
+    /// <summary>
+    /// 按编译期类型锚点取产品线程序集（<c>anchor.Assembly</c>）：引用在编译期即绑定，
+    /// 加载由 CLR 统一管理，<b>不经</b>运行时按名称探测 —— 字符串版 <see cref="LoadProductLine(string)"/>
+    /// 曾在 CI 上偶发 <c>FileNotFoundException</c>（deps.json 探测瞬态失败，trx 留档 2026-10-10）。
+    /// </summary>
+    private static Assembly LoadProductLine(Type anchor)
+    {
+        var asm = anchor.Assembly;
+        asm.GetName().Name.Should().NotBeNullOrEmpty();
+        return asm;
+    }
+
+    /// <summary>
+    /// 按名称取程序集（仅用于<b>零手写类型</b>的纯宿主包）：先查已加载表，再按名称加载；
+    /// 名称探测偶发失败而构建产物内文件确在（构建门禁保证）时，按文件路径兜底一次。
+    /// </summary>
     private static Assembly LoadProductLine(string name)
     {
         var asm = AppDomain.CurrentDomain.GetAssemblies()
-            .FirstOrDefault(a => a.GetName().Name == name)
-            ?? Assembly.Load(name);
+            .FirstOrDefault(a => a.GetName().Name == name);
+        if (asm is not null)
+        {
+            return asm;
+        }
+
+        try
+        {
+            asm = Assembly.Load(name);
+        }
+        catch (FileNotFoundException) when (File.Exists(Path.Combine(AppContext.BaseDirectory, name + ".dll")))
+        {
+            asm = Assembly.LoadFrom(Path.Combine(AppContext.BaseDirectory, name + ".dll"));
+        }
+
         asm.GetName().Name.Should().Be(name);
         return asm;
     }

@@ -31,6 +31,10 @@
     <Project Path="Src/Channels/Mud.Wechat.Channels.DataModels/Mud.Wechat.Channels.DataModels.csproj" />
     <Project Path="Src/Channels/Mud.Wechat.Channels/Mud.Wechat.Channels.csproj" />
     <Project Path="Src/Channels/Mud.Wechat.Channels.Callback/Mud.Wechat.Channels.Callback.csproj" />
+    <!-- 腾讯广告 Marketing API v3.0 产品线（2026-10 新增，在建）：3 源工程。 -->
+    <Project Path="Src/Ads/Mud.Wechat.Ads.Abstractions/Mud.Wechat.Ads.Abstractions.csproj" />
+    <Project Path="Src/Ads/Mud.Wechat.Ads.DataModels/Mud.Wechat.Ads.DataModels.csproj" />
+    <Project Path="Src/Ads/Mud.Wechat.Ads/Mud.Wechat.Ads.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="Tests/Mud.Wechat.Abstractions.Tests/Mud.Wechat.Abstractions.Tests.csproj" />
@@ -49,5 +53,6 @@
     <!-- 微信小店/视频号（channels 生态）产品线测试工程（设计方案 v1 §3.1：2 测试工程）。 -->
     <Project Path="Tests/Mud.Wechat.Channels.Tests/Mud.Wechat.Channels.Tests.csproj" />
     <Project Path="Tests/Mud.Wechat.Channels.Callback.Tests/Mud.Wechat.Channels.Callback.Tests.csproj" />
+    <Project Path="Tests/Mud.Wechat.Ads.Tests/Mud.Wechat.Ads.Tests.csproj" />
   </Folder>
 </Solution>

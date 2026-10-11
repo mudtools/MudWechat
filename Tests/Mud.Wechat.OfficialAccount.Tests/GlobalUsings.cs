@@ -25,3 +25,4 @@ global using Mud.Wechat.OfficialAccount.Abstractions.Enums;
 global using Mud.Wechat.OfficialAccount.Abstractions.Exceptions;
 global using Mud.Wechat.OfficialAccount.DataModels;
 global using Mud.Wechat.OfficialAccount.DataModels.Basic;
+global using Mud.Wechat.ContractBaseline;

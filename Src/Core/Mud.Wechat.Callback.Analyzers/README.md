@@ -2,7 +2,7 @@
 
 Mud.Wechat 回调处理器的**契约分析器**（Roslyn `DiagnosticAnalyzer`）：在编译期校验「处理器的 `SupportedEventType`」与「载荷类的契约声明」是否一致，把运行期的「键写错 → 事件被静默丢弃」提前变成编译错误。
 
-**只诊断、不发射**——运行期行为零变化；`IsPackable=false`，不新增独立 nupkg，而是**随三个回调宿主包内嵌下发**（`analyzers/dotnet/cs`）。
+**只诊断、不发射**——运行期行为零变化；`IsPackable=false`，不新增独立 nupkg，而是**随四个回调宿主包内嵌下发**（`analyzers/dotnet/cs`）。
 
 ## 内容
 

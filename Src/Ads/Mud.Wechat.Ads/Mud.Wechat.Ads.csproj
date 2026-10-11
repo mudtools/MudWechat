@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<Description>腾讯广告（Tencent Ads） Marketing API v3.0 SDK 主包：业务声明式客户端（OAuth 授权、客户账号、营销单元、创意、创意组件、素材、报表、异步任务）、模块注册器、AOT JsonContext 合并。</Description>
+		<PackageTags>Wechat;Ads;腾讯广告;TencentAds;MarketingAPI;SDK;MudWechat</PackageTags>
+		<!-- MUD005（Query 令牌注入存在 URL 泄露面）：Marketing API v3.0 官方契约把 access_token 作为
+		     Query 参数（见各接口 remarks 的「全局请求参数」表），无法改用 Header ⇒ 属已知接受风险，
+		     由项目级抑制并在 ADS-B3 / G6 词表守卫中钉住「新增 Query 凭据参数必须补词表或登记豁免」。 -->
+		<NoWarn>$(NoWarn);MUD005</NoWarn>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Mud.HttpUtils" Version="3.0.3" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Mud.HttpUtils.Generator" Version="3.0.3" PrivateAssets="all" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\..\Core\Mud.Wechat.Abstractions\Mud.Wechat.Abstractions.csproj" />
+		<ProjectReference Include="..\Mud.Wechat.Ads.Abstractions\Mud.Wechat.Ads.Abstractions.csproj" />
+		<ProjectReference Include="..\Mud.Wechat.Ads.DataModels\Mud.Wechat.Ads.DataModels.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<InternalsVisibleTo Include="Mud.Wechat.Ads.Tests" />
+	</ItemGroup>
+
+</Project>

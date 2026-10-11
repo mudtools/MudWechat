@@ -1,7 +1,31 @@
 <Project>
-	<!-- 遮蔽根 Directory.Build.props 的 TargetFrameworks（测试项目单 TFM，避免 TargetFramework/TargetFrameworks
-	双属性冲突导致 restore 进入跨目标模式、xunit.runner.visualstudio 资产错配到 netstandard2.0）。 -->
+
+	<!-- 显式导入仓库根的 Directory.Build.props。
+	     MSBuild 的 Directory.Build.props 发现规则在**第一个**命中处停止（不会自动上溯合并），
+	     故本文件若不导入根 props，14 个测试工程将整体继承不到根治理属性 —— 除 TFM 集与 Version 外，
+	     还包含 LangVersion / Nullable / ImplicitUsings，以及 net8.0+ 的 AOT / 裁剪分析器与 M.E.* 依赖。
+	     那正是 AGENTS §3 警告的隐性维护面：「新增任何治理属性必须同时写入本文件」，靠人记而无编译期强制。
+	     导入后测试工程与源工程同受一套治理，新增属性只需写在根 props 一处。
+	     注意：Import 必须在下方 PropertyGroup **之前**，否则本文件的单 TFM 覆盖会被根的
+	     <TargetFrameworks>（四档）反压回去。 -->
+	<Import Project="$(MSBuildThisFileDirectory)..\Directory.Build.props" />
+
+	<!-- 遮蔽根的 TargetFrameworks：测试项目单 TFM，避免 TargetFramework/TargetFrameworks
+	     双属性冲突导致 restore 进入跨目标模式、xunit.runner.visualstudio 资产错配到 netstandard2.0。 -->
 	<PropertyGroup>
 		<TargetFrameworks>net8.0</TargetFrameworks>
 	</PropertyGroup>
+
+	<!-- 但**不**继承裁剪 / AOT 分析器：测试宿主（xunit / FluentAssertions / Moq）本身就大量使用反射，
+	     开启后实测产生约 900 条 IL 噪声告警 —— 既掩盖真实信号，也与「测试工程不进 Native AOT 发布、
+	     其正确性由用例断言承担」这一分工不符（源工程的 AOT 净零由 verify-build 步骤 2 逐工程保证）。
+	     注意：此处只关分析器；TFM / LangVersion / Nullable / ImplicitUsings / Version 等治理属性照常继承，
+	     故「新增治理属性」仍只需写在根 props 一处（本文件不必随之更新）。 -->
+	<PropertyGroup>
+		<IsAotCompatible>false</IsAotCompatible>
+		<EnableTrimAnalyzer>false</EnableTrimAnalyzer>
+		<EnableAotAnalyzer>false</EnableAotAnalyzer>
+		<EnableSingleFileAnalyzer>false</EnableSingleFileAnalyzer>
+	</PropertyGroup>
+
 </Project>

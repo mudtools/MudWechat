@@ -165,17 +165,22 @@ public class WechatCallbackKernelContractGuards
         typeof(IWechatCallbackEnvelope).IsAssignableFrom(typeof(WechatCallbackEvent))
             .Should().BeTrue("WechatCallbackEvent 必须实现叶层 IWechatCallbackEnvelope");
 
-        // ② 处理器契约仍在 Work.Abstractions，且签名仍是企微信封（不得降级为基类/接口）。
-        typeof(IWechatCallbackEventHandler).Assembly.GetName().Name
-            .Should().Be("Mud.Wechat.Work.Abstractions");
+        // ② 处理器契约仍与**共享基座**（配置面 / 多应用面）同处一个程序集，且签名仍是企微信封（不得降级为基类/接口）。
+        //    断言「与基座同源」而非「程序集叫什么」：表达的是分层语义（契约在共享基座、不在业务运行时包），
+        //    程序集改名 / 合并不应让该语义变形。
+        typeof(IWechatCallbackEventHandler).Assembly.Should().BeSameAs(
+            typeof(Mud.Wechat.Work.Abstractions.Configuration.WechatAppConfig).Assembly,
+            "CB-L1h：回调处理器契约必须落在共享基座包（与配置面 / 多应用面同源），"
+            + "否则「只收回调」的宿主被迫依赖整个业务运行时包");
         var handle = typeof(IWechatCallbackEventHandler).GetMethod("HandleAsync");
         handle.Should().NotBeNull();
         handle!.GetParameters()[0].ParameterType.Should().Be<WechatCallbackEvent>(
             "处理器签名必须保持企微信封（否则宿主全部处理器需要改签名）");
 
-        // ③ 载荷处理器基类泛型元数保持 1（源码兼容的前置条件）。
-        typeof(WechatCallbackPayloadHandler<>).Assembly.GetName().Name
-            .Should().Be("Mud.Wechat.Work.Abstractions");
+        // ③ 载荷处理器基类与处理器契约**同源**，且泛型元数保持 1（源码兼容的前置条件）。
+        typeof(WechatCallbackPayloadHandler<>).Assembly.Should().BeSameAs(
+            typeof(IWechatCallbackEventHandler).Assembly,
+            "CB-L1h：载荷处理器基类必须与处理器契约同处共享基座包");
         typeof(WechatCallbackPayloadHandler<>).IsGenericTypeDefinition.Should().BeTrue();
         typeof(WechatCallbackPayloadHandler<>).GetGenericArguments().Length.Should().Be(1);
     }

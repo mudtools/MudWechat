@@ -50,6 +50,13 @@ public class WechatAbstractionsContractGuards
     }
 
     /// <summary>
+    /// 归一化路径分隔符：脚本内的字面量可能用 <c>\</c>（如 ApplyTokenOwnerKeys.ps1）或 <c>/</c>，
+    /// 而 CI 为 ubuntu + windows 双 OS 矩阵 —— 不归一化会让守卫在 Linux 上判定失败。
+    /// </summary>
+    private static string NormalizeSeparators(string path) =>
+        path.Replace('\\', Path.DirectorySeparatorChar).Replace('/', Path.DirectorySeparatorChar);
+
+    /// <summary>
     /// AB-G1：公用层零产品线依赖（依赖单向性：产品线 → 公用层，公用层为叶子）。
     /// </summary>
     /// <remarks>
@@ -190,8 +197,13 @@ public class WechatAbstractionsContractGuards
     /// 又使 <c>Mud.Wechat.Callback.Analyzers</c> 失去随包下发渠道（诊断能力对消费者失效）。
     /// </para>
     /// <para>
-    /// 实测口径（<c>dotnet pack Mud.Wechat.slnx -c Release</c>）：恰 <b>24</b> 个 nupkg，
-    /// 其中四个回调包内均含 <c>analyzers/dotnet/cs/Mud.Wechat.Callback.Analyzers.dll</c>。
+    /// 实测口径（<c>dotnet pack Mud.Wechat.slnx -c Release</c>）：恰 <b>27</b> 个 nupkg（与 CI 制品数量
+    /// 守卫、AB-G6 同一口径），其中四个回调包内均含 <c>analyzers/dotnet/cs/Mud.Wechat.Callback.Analyzers.dll</c>。
+    /// </para>
+    /// <para>
+    /// 2026-10 源码归类后曾实测只有 <b>17</b> 个：三个回调包 pack 失败（下述 ①-b 的相对路径仍指向旧的
+    /// <c>Src/</c>），而 CI 的 <c>-ne 18</c> 断言同时是错的（少列 OpenPlatform 两包）——
+    /// 双重失真使「构建全绿 + CI 口径」都掩盖了分析器已停止下发这一事实，故本守卫补 ①-b。
     /// </para>
     /// </remarks>
     [Fact]
@@ -209,7 +221,8 @@ public class WechatAbstractionsContractGuards
                      "Mud.Wechat.Channels.Callback/Mud.Wechat.Channels.Callback.csproj",
                  })
         {
-            var source = File.ReadAllText(SourcePath(hostPackage.Split('/')));
+            var projectPath = SourcePath(hostPackage.Split('/'));
+            var source = File.ReadAllText(projectPath);
             var withoutComments = StripXmlComments(source);
 
             withoutComments.Should().NotContain("<IsPackable>",
@@ -218,6 +231,22 @@ public class WechatAbstractionsContractGuards
 
             withoutComments.Should().Contain("analyzers/dotnet/cs",
                 $"{hostPackage} 必须把 Mud.Wechat.Callback.Analyzers 内嵌到 analyzers/dotnet/cs");
+
+            // ①-b 内嵌路径必须**当前可解析**。该 None Include 是字面相对路径而非 ProjectReference，
+            // 目录归类移动后不会有任何编译期提示，只在 `dotnet pack` 时报「Could not find a part of the path」
+            // ——2026-10 源码归类即把 Analyzers 从 Src/ 移到 Src/Core/ 而使三个回调包静默失去下发渠道。
+            var includeMatch = Regex.Match(withoutComments,
+                @"Include=""([^""\\]*(?:\\[^""\\]*)*?Mud\.Wechat\.Callback\.Analyzers)\\bin",
+                RegexOptions.IgnoreCase);
+            includeMatch.Success.Should().BeTrue(
+                $"{hostPackage} 的内嵌分析器 Include 路径必须指向 Mud.Wechat.Callback.Analyzers 目录（bin 之前）");
+
+            var relativeDir = includeMatch.Groups[1].Value
+                .Replace("$(MSBuildThisFileDirectory)", string.Empty, StringComparison.Ordinal);
+            var resolvedDir = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(projectPath)!, relativeDir));
+            Directory.Exists(resolvedDir).Should().BeTrue(
+                $"{hostPackage} 内嵌分析器路径解析后必须存在：{relativeDir} ⇒ {resolvedDir}；" +
+                "源码目录归类移动时须同批改此相对路径");
         }
 
         // ② 工具链工程：生成器 / 分析器不得独立打包（否则多出无消费者的空包）。
@@ -232,13 +261,12 @@ public class WechatAbstractionsContractGuards
                 $"{toolProject} 为随包下发的工具链，必须 IsPackable=false");
         }
 
-        // ③ CI 期望清单必须显式列出全部回调包（口径漂移会在打包步骤 fail-closed）。
-        // 注意：CI 的清单按**短名**列举（与既有写法一致），故此处按短名断言。
+        // ③ 制品数量守卫的口径：CI 不再持有包名清单，改为按 IsPackable 现场推导可打包集（与 AB-G6 同口径）。
+        //    「三个回调包仍在可打包集内」由 ①（宿主包不得声明 IsPackable=false，否则推导会同步少包 = 静默停发）保证，
+        //    故此处无须再断言 CI 文本含包名 —— 断言口径本身即可。
         var ci = File.ReadAllText(Path.Combine(root, ".github", "workflows", "dotnet-publish.yml"));
-        ci.Should().Contain("Work.Callback", "CI 制品清单必须含企微回调包");
-        ci.Should().Contain("OfficialAccount.Callback", "CI 制品清单必须含公众号回调包");
-        ci.Should().Contain("Pay.Callback", "CI 制品清单必须含微信支付回调包");
-        ci.Should().Contain("Channels.Callback", "CI 制品清单必须含小店回调包（设计方案 v1 §5.2）");
+        ci.Should().Contain("<IsPackable>false",
+            "CI 制品数量守卫必须按 IsPackable 现场推导可打包集，不得硬编码包名清单");
     }
 
     /// <summary>
@@ -269,6 +297,11 @@ public class WechatAbstractionsContractGuards
             SourceProjectDir("Mud.Wechat.Channels.Abstractions"),
             SourceProjectDir("Mud.Wechat.Channels.DataModels"),
             SourceProjectDir("Mud.Wechat.Channels.Callback"),
+            // 腾讯广告产品线（2026-10 新增）：第一条非微信域线，白名单要它**追加**了一条后缀域，
+            // 于是「产品线不得自行登记」这条单点约束对它尤其要紧（自行登记 = 清空微信四线的放行）。
+            SourceProjectDir("Mud.Wechat.Ads"),
+            SourceProjectDir("Mud.Wechat.Ads.Abstractions"),
+            SourceProjectDir("Mud.Wechat.Ads.DataModels"),
         };
     }
 
@@ -276,8 +309,8 @@ public class WechatAbstractionsContractGuards
     /// AB-G6：门禁脚本同批演进（防「新增产品线成为门禁盲区」）。
     /// </summary>
     /// <remarks>
-    /// 四项均为「缺一即 CI/门禁失效」的硬约束：审计脚本白名单与搜索范围、DTO 标注脚本根命名空间、
-    /// 解决方案工程清单、CI 制品数量。**新增产品线时本守卫是唯一会自动变红的门禁接入口。**
+    /// 五项均为「缺一即 CI/门禁失效」的硬约束：审计脚本白名单与搜索范围、DTO 标注脚本根命名空间、
+    /// 解决方案工程清单、CI 制品数量、本地打包脚本（pack.bat / publish.bat）的包清单与期望数。**新增产品线时本守卫是唯一会自动变红的门禁接入口。**
     /// </remarks>
     [Fact]
     public void GovernanceScripts_ShouldCoverAllProductLines()
@@ -321,9 +354,73 @@ public class WechatAbstractionsContractGuards
         audit.Should().Contain("Mud.Wechat.Channels'", "小店主包必须纳入消费点搜索范围");
         audit.Should().Contain("Mud.Wechat.Channels.DataModels'", "小店 DataModels 必须纳入消费点搜索范围");
         audit.Should().Contain("Mud.Wechat.Channels.Callback'", "小店回调运行时包必须纳入消费点搜索范围");
+        // 腾讯广告：三条源包全部纳入消费点搜索范围（配置属性的消费点可能落在主包或抽象包）。
+        // 缺一即「该包的属性被整体绕过」= 门禁盲区，与本守卫存在的初衷直接冲突。
+        foreach (var adsProject in new[]
+                 {
+                     "'Mud.Wechat.Ads'",
+                     "'Mud.Wechat.Ads.Abstractions'",
+                     "'Mud.Wechat.Ads.DataModels'",
+                 })
+        {
+            audit.Should().Contain(adsProject, $"广告线 {adsProject} 工程必须纳入配置消费点搜索范围");
+        }
+
+        // 腾讯广告配置 DTO 与支付线同一双向不变式：文件存在 ⇔ 已登记进 $configFiles
+        // （2026-10-10 补登记 —— 此前只断言了搜索根、漏了 DTO 本身，AdsAppConfig 曾整体绕过审计）。
+        var adsConfigDto = "Mud.Wechat.Ads.Abstractions/Configuration/AdsAppConfig.cs";
+        var adsDtoExists = File.Exists(SourcePath(adsConfigDto.Split('/')));
+        audit.Contains(adsConfigDto).Should().Be(adsDtoExists,
+            $"广告线配置 DTO「{adsConfigDto}」的文件存在性与 $configFiles 登记必须同批（存在={adsDtoExists}，登记={audit.Contains(adsConfigDto)}）");
 
         var annotate = File.ReadAllText(Path.Combine(root, "scripts", "AddHttpJsonSerializable.ps1"));
         annotate.Should().Contain("$RootNamespace", "根命名空间必须参数化，否则非默认产品线根级 DTO 分组错误");
+
+        // ① 脚本默认路径必须**当前可解析**：2026-10 源码归类后源工程迁入 Src/<Area>/<ProjectName>，
+        //    两个脚本的默认目标一度仍指向仓库根旧路径 ⇒ AGENTS §2 记载的标准 DTO 流程不带参数即失败
+        //    （GenerateJsonContext 被 Test-Path 挡下、AddHttpJsonSerializable 直接 throw）。本断言防其再漂移。
+        var gen = File.ReadAllText(Path.Combine(root, "scripts", "GenerateJsonContext.ps1"));
+
+        var defaultTarget = Regex.Match(gen, @"\[string\]\$TargetProject = ""([^""]+)""").Groups[1].Value;
+        defaultTarget.Should().NotBeNullOrEmpty("GenerateJsonContext.ps1 必须声明 $TargetProject 默认值");
+        File.Exists(Path.Combine(root, defaultTarget.Replace('/', Path.DirectorySeparatorChar)))
+            .Should().BeTrue($"$TargetProject 默认值必须可解析（源码归类后须指向 Src/<Area>/…）：{defaultTarget}");
+
+        var defaultOutputDir = Regex.Match(gen, @"\[string\]\$OutputDir = ""([^""]+)""").Groups[1].Value;
+        defaultOutputDir.Should().NotBeNullOrEmpty("GenerateJsonContext.ps1 必须声明 $OutputDir 默认值");
+        Directory.Exists(Path.Combine(root, defaultOutputDir.Replace('/', Path.DirectorySeparatorChar)))
+            .Should().BeTrue($"$OutputDir 默认值必须可解析：{defaultOutputDir}");
+
+        // 同一类漂移的其余落点：凡以 `Join-Path $RepoRoot '<相对路径>'` 声明默认目录的脚本，均须可解析。
+        // （ApplyTokenOwnerKeys.ps1 亦曾停留在仓库根旧路径 —— 2026-10 源码归类的同类残留。）
+        foreach (var scriptName in new[] { "AddHttpJsonSerializable.ps1", "ApplyTokenOwnerKeys.ps1" })
+        {
+            var scriptText = File.ReadAllText(Path.Combine(root, "scripts", scriptName));
+            var relativeDir = Regex.Match(scriptText, @"Join-Path \$RepoRoot '([^']+)'").Groups[1].Value;
+            relativeDir.Should().NotBeNullOrEmpty($"{scriptName} 必须声明默认目录（Join-Path $RepoRoot '…'）");
+            Directory.Exists(Path.Combine(root, NormalizeSeparators(relativeDir)))
+                .Should().BeTrue($"{scriptName} 的默认目录必须可解析（源码归类后须指向 Src/<Area>/…）：{relativeDir}");
+        }
+
+        // ② 脚手架工具版本须与全仓 Mud.HttpUtils 版本 lockstep（脚本注释即如此声称，G1 亦锁全仓单一版本）：
+        //    实际曾停留在 3.0.2 而全仓已 3.0.3 ⇒ 属静默漂移（脚本不与任何门禁比对版本），故在此断言。
+        var toolVersion = Regex.Match(gen, @"\[string\]\$ToolVersion = ""([^""]+)""").Groups[1].Value;
+        toolVersion.Should().NotBeNullOrEmpty("GenerateJsonContext.ps1 必须声明 $ToolVersion 默认值");
+
+        var componentVersions = Directory
+            .EnumerateFiles(Path.Combine(root, "Src"), "*.csproj", SearchOption.AllDirectories)
+            .Where(static f => !f.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.Ordinal)
+                               && !f.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
+            .SelectMany(static f => File.ReadAllLines(f))
+            .Where(static line => line.Contains("Include=\"Mud.HttpUtils\"", StringComparison.Ordinal))
+            .Select(static line => Regex.Match(line, @"Version=""([^""]+)""").Groups[1].Value)
+            .Where(static v => v.Length > 0)
+            .Distinct()
+            .ToArray();
+
+        componentVersions.Should().HaveCount(1, "全仓 Mud.HttpUtils 必须单一版本（与 G1 同口径）");
+        toolVersion.Should().Be(componentVersions[0],
+            "GenerateJsonContext.ps1 的 $ToolVersion 必须与全仓 Mud.HttpUtils 版本 lockstep（否则脚手架生成物与编译期 Generator 版本错配）");
 
         var slnx = File.ReadAllText(Path.Combine(root, "Mud.Wechat.slnx"));
         foreach (var project in new[]
@@ -365,24 +462,79 @@ public class WechatAbstractionsContractGuards
                      "Src/Channels/Mud.Wechat.Channels.Callback/Mud.Wechat.Channels.Callback.csproj",
                      "Tests/Mud.Wechat.Channels.Tests/Mud.Wechat.Channels.Tests.csproj",
                      "Tests/Mud.Wechat.Channels.Callback.Tests/Mud.Wechat.Channels.Callback.Tests.csproj",
+                     // 腾讯广告产品线（2026-10 新增，3 源 + 1 测试）。
+                     "Src/Ads/Mud.Wechat.Ads/Mud.Wechat.Ads.csproj",
+                     "Src/Ads/Mud.Wechat.Ads.Abstractions/Mud.Wechat.Ads.Abstractions.csproj",
+                     "Src/Ads/Mud.Wechat.Ads.DataModels/Mud.Wechat.Ads.DataModels.csproj",
+                     "Tests/Mud.Wechat.Ads.Tests/Mud.Wechat.Ads.Tests.csproj",
                  })
         {
             slnx.Should().Contain(project, "新增工程必须纳入解决方案（否则 verify-build 步骤 1 覆盖不到）");
         }
 
         var ci = File.ReadAllText(Path.Combine(root, ".github", "workflows", "dotnet-publish.yml"));
-        ci.Should().Contain("-ne 24", "制品数量守卫必须随新增产品线更新（否则打包步骤 fail-closed 必红）");
-        ci.Should().NotContain("-ne 18", "旧制品数量断言已随小店线扩展作废，残留即 CI 与守卫口径分裂");
-        ci.Should().NotContain("-ne 22", "回调包打包路径修复后计数为 24，残留 -ne 22 即 CI 与守卫口径分裂");
-        ci.Should().NotContain("-ne 10", "旧制品数量断言已随产品线扩展作废，残留即 CI 与守卫口径分裂");
-        ci.Should().NotContain("-ne 17", "OpenTelemetry 包并入后计数为 18，残留 -ne 17 即 CI 与守卫口径分裂");
-        ci.Should().NotContain("-ne 11", "旧制品数量断言已随产品线扩展作废，残留即 CI 与守卫口径分裂");
+        // 制品数量守卫必须与「现场推导值」比对，不得硬编码包数；下列历史硬编码值一律不得复活。
+        ci.Should().Contain("-ne \"$EXPECTED\"",
+            "CI 制品数量守卫必须与由 Src/**/*.csproj 推导出的可打包集比对，不得硬编码包数");
+        foreach (var staleCount in new[] { "-ne 10", "-ne 11", "-ne 17", "-ne 18", "-ne 21", "-ne 22", "-ne 23", "-ne 24" })
+        {
+            ci.Should().NotContain(staleCount,
+                $"旧制品数量断言 {staleCount} 已作废（口径改为现场推导），残留即 CI 与工程目录分裂");
+        }
+
+        // ⑤ 可打包集**单一来源**：由 Src/**/*.csproj 现场推导（未声明 IsPackable=false 者），
+        // CI / pack.bat / publish.bat 三处均须走推导，不得再各自持有名单 —— 2026-10 的两次漂移
+        // （CI 停在 18、bat 停在 11 且路径写死在仓库根）正是「清单与工程目录各自成文」所致。
+        var srcCsprojs = Directory
+            .EnumerateFiles(Path.Combine(root, "Src"), "*.csproj", SearchOption.AllDirectories)
+            .Where(static f => !f.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.Ordinal)
+                               && !f.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
+            .OrderBy(static f => f, StringComparer.Ordinal)
+            .ToArray();
+
+        static bool IsNonPackable(string csproj) =>
+            File.ReadAllText(csproj).Contains("<IsPackable>false", StringComparison.Ordinal);
+
+        // 「误设 IsPackable=false」不会体现在「推导值 vs 产物」的比对里（推导值会同降，比对恒成立）
+        // ⇒ 由本白名单兜住：非可打包工程只能是这两个构建期工具。
+        srcCsprojs
+            .Where(static f => IsNonPackable(f))
+            .Select(static f => Path.GetFileNameWithoutExtension(f))
+            .OrderBy(static n => n, StringComparer.Ordinal)
+            .Should().Equal(
+                new[] { "Mud.Wechat.Callback.Analyzers", "Mud.Wechat.Callback.Generator" },
+                "非可打包源工程是刻意白名单（仅两个构建期工具）；其它工程被误设 IsPackable=false 会静默少发一个包，"
+                + "而「期望值现场推导」无法察觉该变化");
+
+        // 每个可打包工程都必须已纳入解决方案（slnx 漏项 ⇒ 打包产物少于推导值）。
+        foreach (var csproj in srcCsprojs.Where(static f => !IsNonPackable(f)))
+        {
+            var relative = Path.GetRelativePath(root, csproj).Replace('\\', '/');
+            slnx.Should().Contain(relative,
+                $"可打包工程 {relative} 必须已纳入解决方案（否则 verify-build / dotnet pack 会静默漏掉它）");
+        }
+
+        foreach (var script in new[] { "pack.bat", "publish.bat" })
+        {
+            var bat = File.ReadAllText(Path.Combine(root, script));
+            bat.Should().Contain("<IsPackable>false",
+                $"{script} 的可打包集必须由源工程现场推导（IsPackable 判定），不得再硬编码名单");
+            bat.Should().Contain("dir /s /b \"Src\\*.csproj\"",
+                $"{script} 必须现场枚举 Src/**/*.csproj 得到可打包集");
+            // EXPECTED=0 是现场推导的初始化（合法）；任何非零字面量都是硬编码期望包数。
+            Regex.IsMatch(bat, @"EXPECTED=[1-9]").Should().BeFalse(
+                $"{script} 不得硬编码期望包数（EXPECTED=<非零数字>）；期望值须现场推导");
+            bat.Should().NotContain("PACKAGES=",
+                $"{script} 不得再持有 PACKAGES 硬编码清单 —— 清单漂移正是本守卫存在的初衷");
+        }
     }
 
     /// <summary>
     /// AB-G8：<b>受控 TFM 例外</b>守卫 —— 微信支付线因 <c>AesGcm</c> 在 netstandard2.0 不存在而
     /// 显式降为 <c>net6.0;net8.0;net10.0</c>；该例外必须被锁定，不得被静默「统一」回 4 档
     /// （静默统一会在 ns2.0 上编译失败或迫使引入第三方密码学包）。
+    /// 开放平台线同样降为 3 档，但理由是<b>刻意收窄</b>到组件 <c>AddMudHttpClient</c> 的最小面而非密码学缺口；
+    /// 两条线之外的任何工程覆盖 TFM 即例外外溢，本守卫的后半段逐工程锁死。
     /// </summary>
     [Fact]
     public void PayLine_ShouldKeepControlledTfmException()
@@ -410,20 +562,35 @@ public class WechatAbstractionsContractGuards
                      "Mud.Wechat.Work/Mud.Wechat.Work.csproj",
                      "Mud.Wechat.OfficialAccount/Mud.Wechat.OfficialAccount.csproj",
                      "Mud.Wechat.MiniProgram/Mud.Wechat.MiniProgram.csproj",
+                     // 腾讯广告线（2026-10 新增）：只做 HTTPS + JSON、无原生密码学依赖，不得援引例外。
+                     "Mud.Wechat.Ads/Mud.Wechat.Ads.csproj",
+                     "Mud.Wechat.Ads.Abstractions/Mud.Wechat.Ads.Abstractions.csproj",
+                     "Mud.Wechat.Ads.DataModels/Mud.Wechat.Ads.DataModels.csproj",
                  })
         {
             ReadCsproj(project).Should().NotContain("<TargetFrameworks>",
-                $"{project} 应继承 Directory.Build.props 的 4 档 TFM，不得自行覆盖（唯一例外为支付线）");
+                $"{project} 应继承 Directory.Build.props 的 4 档 TFM，不得自行覆盖" +
+                "（受控例外只有支付线与开放平台线，后者是刻意收窄到组件 AddMudHttpClient 的最小面）");
         }
     }
 
     /// <summary>
     /// AB-G9：SSRF 白名单并集数组的<b>变更评审面</b> —— 白名单是进程级全局静态 + 整体替换，
-    /// 新产品线的默认域名必须由「子域后缀覆盖」而非新增独立条目来满足（新增条目即扩大全局放行面）。
+    /// 新产品线的默认域名<b>优先</b>由「子域后缀覆盖」满足；覆盖不到时才允许追加一条后缀域，
+    /// 且<b>永不</b>逐主机登记（那会让放行面随端点增长失控）。
     /// </summary>
     /// <remarks>
-    /// 支付 `api.mch.weixin.qq.com` 与小程序 `api.weixin.qq.com` 均已被 `weixin.qq.com` 后缀覆盖，
-    /// 故两条新线对白名单**零改动**（PAY-B8 / MP-X8）。本守卫锁定该事实，防止有人「顺手」加重复条目。
+    /// <para>
+    /// 支付 <c>api.mch.weixin.qq.com</c> 与小程序 <c>api.weixin.qq.com</c> 均已被 <c>weixin.qq.com</c>
+    /// 后缀覆盖，故两条线对白名单<b>零改动</b>（PAY-B8 / MP-X8）。
+    /// </para>
+    /// <para>
+    /// <b>腾讯广告是第一条覆盖不到的线</b>（<c>api.e.qq.com</c>，非 <c>weixin.qq.com</c> 子域）⇒
+    /// 本批以 <c>e.qq.com</c> <b>一条后缀域</b>接入，这是「并集追加而非替换」的合法形态，
+    /// 代价是全局放行面被扩大（任一产品线的 <c>BaseUrl</c> 现可指向 <c>*.e.qq.com</c>）。
+    /// 本守卫因此从「数组恰为两条」升级为<b>形态断言</b>：只允许后缀级条目、禁止 FQDN 条目、禁止重复条目。
+    /// 产品线侧的「不得自行登记」仍由 AB-G4 逐线扫描（广告线侧另有 ADS-B4 定点强化）。
+    /// </para>
     /// </remarks>
     [Fact]
     public void AllowedBaseUrlDomains_ShouldCoverNewLinesWithoutDuplication()
@@ -442,6 +609,21 @@ public class WechatAbstractionsContractGuards
             allowed.Should().NotContain(host,
                 $"{host} 已被 weixin.qq.com 后缀覆盖，新增独立条目只会扩大全局放行面（判定语义见 WechatApiHosts 注释）");
         }
+
+        // 广告线：只允许一条后缀域，业务主机不得各自入表。
+        allowed.Should().Contain("e.qq.com",
+            "api.e.qq.com 不被任何微信系后缀覆盖，广告线必须以 e.qq.com 接入并集");
+        foreach (var host in new[] { "api.e.qq.com", "developers.e.qq.com" })
+        {
+            allowed.Should().NotContain(host,
+                $"{host} 已被 e.qq.com 后缀覆盖，逐主机登记即放行面失控（ADS-B4 同口径）");
+        }
+
+        allowed.Should().OnlyContain(static s => s.Length > 0,
+            "白名单条目不得为空串（空串在「以子域结尾即放行」的判定下会放行全部主机）");
+
+        allowed.Distinct(StringComparer.OrdinalIgnoreCase).Should().HaveCount(allowed.Length,
+            "白名单条目重复不会报错但会让并集语义不可审计");
 
         // 组件 UrlValidator 为全局静态 + 整体替换：**代码中**不得二次登记。
         // 注意：WechatApiHosts.cs 的 XML 注释会引用 `ConfigureAllowedDomains` 这一方法名来解释语义，

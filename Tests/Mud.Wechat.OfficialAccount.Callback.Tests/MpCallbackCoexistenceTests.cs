@@ -26,15 +26,16 @@ public class MpCallbackCoexistenceTests
     [Fact]
     public void SharedKernel_ShouldBeSingleSourceInAbstractions()
     {
-        var leaf = typeof(IWechatCallbackReplayGuard).Assembly.GetName().Name;
-        var leafCrypto = typeof(WechatCallbackCrypto).Assembly.GetName().Name;
-        var leafRegistry = typeof(WechatCallbackTypeRegistry<>).Assembly.GetName().Name;
-        var leafEnvelope = typeof(IWechatCallbackEnvelope).Assembly.GetName().Name;
+        // 「叶层单源」= 四个内核类型的**程序集同一**（并以两侧产品线运行时程序集反证其不属于任何产品线）。
+        // 断言「同一程序集」而非「程序集叫什么」：改名/合并不应让行为契约变形。
+        var leaf = typeof(IWechatCallbackReplayGuard).Assembly;
 
-        leaf.Should().Be("Mud.Wechat.Abstractions");
-        leafCrypto.Should().Be("Mud.Wechat.Abstractions");
-        leafRegistry.Should().Be("Mud.Wechat.Abstractions");
-        leafEnvelope.Should().Be("Mud.Wechat.Abstractions");
+        typeof(WechatCallbackCrypto).Assembly.Should().BeSameAs(leaf,
+            "加解密内核必须与重放守卫口同源（叶层单点）");
+        typeof(WechatCallbackTypeRegistry<>).Assembly.Should().BeSameAs(leaf,
+            "注册表基类必须与重放守卫口同源（叶层单点）");
+        typeof(IWechatCallbackEnvelope).Assembly.Should().BeSameAs(leaf,
+            "回调信封中立接口必须与重放守卫口同源（叶层单点）");
 
         // 两侧都**不再**各自持有重放守卫实现（下沉物唯一性）。
         typeof(Mud.Wechat.OfficialAccount.Callback.MpCallbackDispatcher).Assembly
@@ -82,7 +83,8 @@ public class MpCallbackCoexistenceTests
 
         // 两侧共享**同一**叶层重放守卫类型（默认为进程内实现；多实例部署由宿主替换为分布式实现）。
         var guard = provider.GetRequiredService<IWechatCallbackReplayGuard>();
-        guard.GetType().Assembly.GetName().Name.Should().Be("Mud.Wechat.Abstractions");
+        guard.GetType().Assembly.Should().BeSameAs(typeof(IWechatCallbackReplayGuard).Assembly,
+            "默认重放守卫实现必须与端口同处叶层（两侧共享同一实现，而非各留一份）");
     }
 
     /// <summary>② 键空间隔离：两侧的处理器注册表类型互不相通（同名键不会串到对方链路）。</summary>
@@ -93,8 +95,9 @@ public class MpCallbackCoexistenceTests
         var workRegistry = new WechatCallbackHandlerRegistry();
 
         mpRegistry.GetType().Should().NotBe(workRegistry.GetType());
-        typeof(MpCallbackHandlerRegistry).Assembly.GetName().Name.Should().Be("Mud.Wechat.OfficialAccount.Callback");
-        typeof(WechatCallbackHandlerRegistry).Assembly.GetName().Name.Should().Be("Mud.Wechat.Work.Callback");
+        typeof(MpCallbackHandlerRegistry).Assembly.Should().NotBeSameAs(
+            typeof(WechatCallbackHandlerRegistry).Assembly,
+            "两侧处理器注册表必须分处各自产品线的回调程序集 —— 这是「同名键不串链路」的前提");
 
         // 同名字符串键分落两表（互不覆盖）。
         mpRegistry.Register("shared-key", typeof(MpCallbackHandlerRegistry));

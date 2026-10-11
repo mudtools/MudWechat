@@ -23,24 +23,36 @@ namespace Mud.Wechat.Channels.Tests;
 /// </remarks>
 public class ChannelsServiceBuilderTests
 {
-    /// <summary>T1：注册未落地域（枚举成员存在但无注册器）必须抛出带域名的明确错误。</summary>
+    /// <summary>
+    /// T1：全部枚举成员均有注册器（P2 全量落地后的正向锁定）。
+    /// </summary>
+    /// <remarks>
+    /// <see cref="ChannelsServiceBuilder.AddModule(ChannelsModule)"/> 对「枚举成员存在但无注册器」的
+    /// fail-fast 分支是<b>增量交付期防御</b>：新增枚举值而未同步注册器时必须显式报错而非静默吞。
+    /// 本断言反向锁定「27 个枚举成员当前全部可注册」——未来新增枚举值而漏注册器时，
+    /// 下一行断言会以 fail-fast 异常形式暴露（错误消息带 <c>尚未落地</c> 指引）。
+    /// </remarks>
     [Fact]
-    public void AddModules_ShouldThrow_WhenModuleNotYetLanded()
+    public void AddModules_ShouldHaveRegistrar_ForEveryEnumMember()
     {
-        var act = () => new ServiceCollection().CreateChannelsServicesBuilder().AddModules(ChannelsModule.Vip);
-
-        act.Should().Throw<InvalidOperationException>()
-            .WithMessage("*ChannelsModule.Vip*尚未落地*");
+        foreach (ChannelsModule module in Enum.GetValues(typeof(ChannelsModule)))
+        {
+            var act = () => new ServiceCollection().CreateChannelsServicesBuilder().AddModules(module);
+            act.Should().NotThrow($"ChannelsModule.{module} 必须有注册器（P2 全量交付口径；漏注册即触发 fail-fast）");
+        }
     }
 
-    /// <summary>T2：枚举版入口同样 fail-fast（同根因不得有两种表象）。</summary>
+    /// <summary>T2：枚举版入口对全部模块的失败面只有「缺令牌底座」（Build 先决条件），不再有未落地域。</summary>
     [Fact]
-    public void AddWechatChannelsApi_ShouldThrow_WhenOnlyUnlandedModulePassed()
+    public void AddWechatChannelsApi_ShouldFailOnlyOnMissingTokenBase()
     {
-        var act = () => new ServiceCollection().AddWechatChannelsApi(ChannelsModule.PlatformKf);
-
-        act.Should().Throw<InvalidOperationException>()
-            .WithMessage("*ChannelsModule.PlatformKf*尚未落地*");
+        foreach (ChannelsModule module in Enum.GetValues(typeof(ChannelsModule)))
+        {
+            var act = () => new ServiceCollection().AddWechatChannelsApi(module);
+            act.Should().Throw<InvalidOperationException>()
+                .WithMessage("*IChannelsAppManager*",
+                    $"ChannelsModule.{module} 走枚举入口的失败面必须是 Build 的令牌底座先决条件（未落地域 fail-fast 已随 P2 全量交付而消失）");
+        }
     }
 
     /// <summary>T3：已落地域重复注册幂等（第二次 AddModule 不重复登记服务）。</summary>

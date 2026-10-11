@@ -3,9 +3,10 @@
 微信小店 / 视频号（channels 生态）SDK **主包**：**27 个业务域、规划 318 端点**（设计方案 v1 §2.2）的声明式 HTTP 客户端、模块注册器与 AOT JsonContext 合并。本线覆盖微信小店全部交易管理面（商品 / 订单 / 售后 / 物流 / 资金 / 营销 / 联盟 / 会员 / 代发 / 供货）与视频号内容运营面（直播 / 留资 / 橱窗 / 罗盘），按**分阶段交付**推进。
 
 > **交付状态（权威口径以 `Tests/Mud.Wechat.Channels.Tests/ContractGuards/` 守卫为准）**
-> - ✅ **P1 已落地 6 域 149 端点**：Basic(8) / Funds(16) / Product(43) / Order(27) / Aftersale(27) / Logistics(28)；
-> - ⏳ P2 待落地 21 域：Resource / Shop / HomePage / Favorite / Category / Marketing / Kf / Qic / Warehouse / League / Brand / Delivery / Wecom / MiniStore / Compass / Vip / Live / Window / Locallife / Subsidy / PlatformKf（`ChannelsModule` 枚举已全量声明，`Add{域}Api()` 随各域接口落地同批加入）；
-> - ⏳ P3 回调收口：`Mud.Wechat.Channels.Callback` 包为脚手架占位（见其 README）。
+> - ✅ **P1+P2 全量落地：27 域 309 端点**（P1 149：Basic 8 / Funds 16 / Product 43 / Order 27 / Aftersale 27 / Logistics 28；P2 160：Resource 7 / Shop 4 / HomePage 14 / Favorite 1 / Category 10 / Brand 8 / Qic 5 / Marketing 7 / Kf 2 / PlatformKf 4 / Vip 5 / MiniStore 10 / Warehouse 11 / League 11 / Delivery 16 / Wecom 1 / Window 9 / Locallife 6 / Subsidy 3 / Live 12 / Compass 14）；
+> - ✅ P3 回调收口：`Mud.Wechat.Channels.Callback` 承载官方强制 JSON 安全模式回调（见其 README）。
+>
+> 实际端点数与设计方案 v1 规划口径的差异（类目 10、橱窗+本地生活 9、券 6、会员 5、直播面 12 含 `/channels/ec/finderlive/*` 双前缀等）均已按官方文档逐页核验后以逐域守卫定版。
 
 ## 能力面（已落地 6 域 149 端点，计数与路由表由 CH-R2 / 逐域守卫锁定）
 

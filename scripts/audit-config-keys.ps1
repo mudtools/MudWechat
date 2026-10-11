@@ -76,6 +76,9 @@ $configFiles = @(
     # 微信小店/视频号（channels 生态）产品线配置面（P0-b 已落地）：小店应用配置（AppId/AppSecret/UseStableToken）。
     # 与【文件创建同批】登记 —— 若只建文件不登记，AB-G6 的双向不变式（存在 ⇔ 已登记）会失败。
     'Mud.Wechat.Channels.Abstractions/Configuration/ChannelsAppConfig.cs',
+    # 微信小店回调配置面（2026-10 P3 收口同批登记）：回调凭据 Apps 字典（Token/EncodingAESKey/AppId）。
+    # 与 ChannelsAppConfig 同批纪律 —— 只建文件不登记即成门禁盲区（AB-G6 双向不变式锁定）。
+    'Mud.Wechat.Channels.Callback/ChannelsCallbackOptions.cs',
     # 腾讯广告产品线配置面（2026-10-10 补登记）：应用凭据（ClientId/ClientSecret/RedirectUri），
     # 与 ChannelsAppConfig 同批纪律 —— 只建文件不登记即成门禁盲区（AB-G6 双向不变式锁定）。
     'Mud.Wechat.Ads.Abstractions/Configuration/AdsAppConfig.cs',

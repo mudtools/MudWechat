@@ -60,6 +60,69 @@ public class ChannelsServiceBuilder
             // 物流发货：28 端点（/channels/ec/merchant/address|freight* 9 + /channels/ec/logistics/ewaybill/* 16 +
             // /channels/ec/order/delivery* 3，地址 / 运费模板 / 电子面单 / 发货）。
             [ChannelsModule.Logistics] = static s => s.AddLogisticsWebApiHttpClient(),
+
+            // 资源管理：7 端点（图片 / 资质 / 视频分块上传 + mediaid 取数；img/upload 双形态同路由只计 1）。
+            [ChannelsModule.Resource] = static s => s.AddResourceWebApiHttpClient(),
+
+            // 店铺管理：4 端点（店铺信息 + H5 短链 / 小程序码 / 微信口令）。
+            [ChannelsModule.Shop] = static s => s.AddShopWebApiHttpClient(),
+
+            // 收藏管理：1 端点（店铺收藏数）。
+            [ChannelsModule.Favorite] = static s => s.AddFavoriteWebApiHttpClient(),
+
+            // 企业微信关联：1 端点（get_wecom_id）。
+            [ChannelsModule.Wecom] = static s => s.AddWecomWebApiHttpClient(),
+
+            // 商家客服：2 端点（客服消息发送 + 素材上传）。
+            [ChannelsModule.Kf] = static s => s.AddKfWebApiHttpClient(),
+
+            // 客诉工单：4 端点（工单类目配置 / 列表 / 详情 / 操作）。
+            [ChannelsModule.PlatformKf] = static s => s.AddPlatformKfWebApiHttpClient(),
+
+            // 会员营销：5 端点（积分 / 信息 / 列表 / 积分流水 + 小店相关会员信息 v3）。
+            [ChannelsModule.Vip] = static s => s.AddVipWebApiHttpClient(),
+
+            // 连接小程序：10 端点（基础 open/* 2 + 授权送礼 b2c/* 与 present* 8）。
+            [ChannelsModule.MiniStore] = static s => s.AddMiniStoreWebApiHttpClient(),
+
+            // 类目管理 + 类目规则：10 端点（/shop/ec/category/* 9 + /channels/ec/category/* 1；getcategoryrule 双语义同路由只计 1）。
+            [ChannelsModule.Category] = static s => s.AddCategoryWebApiHttpClient(),
+
+            // 品牌资质：8 端点（/shop/ec/brand/* 3 + /channels/ec/brand/* 5）。
+            [ChannelsModule.Brand] = static s => s.AddBrandWebApiHttpClient(),
+
+            // 质检管理：5 端点（/channels/ec/qic/inspect/*，GET 2 + POST 3）。
+            [ChannelsModule.Qic] = static s => s.AddQicWebApiHttpClient(),
+
+            // 主页管理：14 端点（主页商品排序 4 + 背景图 4 + 精选展示位 4 + 商品分类 2）。
+            [ChannelsModule.HomePage] = static s => s.AddHomePageWebApiHttpClient(),
+
+            // 橱窗 + 本地生活商品：9 端点（橱窗 4 + 本地生活团购优惠 5，同族不同前缀各自落位）。
+            [ChannelsModule.Window] = static s => s.AddWindowWebApiHttpClient(),
+
+            // 营销管理（优惠券）：7 端点（创建 / 查询 / 列表 / 用户券 / 更新 / 状态）。
+            [ChannelsModule.Marketing] = static s => s.AddMarketingWebApiHttpClient(),
+
+            // 本地生活（团购券）：6 端点（券码上传 / 核销 / 撤销 / 查询 / 券账单；撤销字段名 reovke_vouchers 为官方历史拼写照抄）。
+            [ChannelsModule.Locallife] = static s => s.AddLocallifeWebApiHttpClient(),
+
+            // 国补管理：3 端点（开票查询 / 发票信息 / 发票文件上传）。
+            [ChannelsModule.Subsidy] = static s => s.AddSubsidyWebApiHttpClient(),
+
+            // 区域仓库：11 端点（仓库 CRUD / 覆盖区域 / 库存 / 地址排序 / 地址行政编码）。
+            [ChannelsModule.Warehouse] = static s => s.AddWarehouseWebApiHttpClient(),
+
+            // 优选联盟：11 端点（带货者 4 + 商品操作 7）。
+            [ChannelsModule.League] = static s => s.AddLeagueWebApiHttpClient(),
+
+            // 代发与供货：16 端点（供货商关系 8 + 代发单 5 + 供货单 3）。
+            [ChannelsModule.Delivery] = static s => s.AddDeliveryWebApiHttpClient(),
+
+            // 直播 / 留资 / 直播大屏（视频号面）：12 端点（四前缀并存照抄官方）。
+            [ChannelsModule.Live] = static s => s.AddLiveWebApiHttpClient(),
+
+            // 罗盘：14 端点（商家版 10 + 达人版 4，同族不同前缀各自落位）。
+            [ChannelsModule.Compass] = static s => s.AddCompassWebApiHttpClient(),
         };
 
     /// <summary>
@@ -104,6 +167,111 @@ public class ChannelsServiceBuilder
     /// </summary>
     /// <returns>注册器（链式）。</returns>
     public ChannelsServiceBuilder AddLogisticsApi() => AddModule(ChannelsModule.Logistics);
+
+    /// <summary>
+    /// 注册资源管理接口（7 端点：图片 / 资质 / 视频分块上传 + mediaid 取数，<c>/shop/ec/basics/*</c> 与
+    /// <c>/channels/ec/basics/media/get</c>）。
+    /// </summary>
+    /// <returns>注册器（链式）。</returns>
+    public ChannelsServiceBuilder AddResourceApi() => AddModule(ChannelsModule.Resource);
+
+    /// <summary>
+    /// 注册店铺管理接口（4 端点：店铺信息 / H5 短链 / 小程序码 / 微信口令，<c>/channels/ec/basics/*</c>）。
+    /// </summary>
+    /// <returns>注册器（链式）。</returns>
+    public ChannelsServiceBuilder AddShopApi() => AddModule(ChannelsModule.Shop);
+
+    /// <summary>注册收藏管理接口（1 端点：店铺收藏数，<c>/channels/ec/favorites/*</c>）。</summary>
+    /// <returns>注册器（链式）。</returns>
+    public ChannelsServiceBuilder AddFavoriteApi() => AddModule(ChannelsModule.Favorite);
+
+    /// <summary>注册企业微信关联接口（1 端点：<c>get_wecom_id</c>）。</summary>
+    /// <returns>注册器（链式）。</returns>
+    public ChannelsServiceBuilder AddWecomApi() => AddModule(ChannelsModule.Wecom);
+
+    /// <summary>注册商家客服接口（2 端点：客服消息发送 + 素材上传，<c>/channels/ec/commkf/*</c>）。</summary>
+    /// <returns>注册器（链式）。</returns>
+    public ChannelsServiceBuilder AddKfApi() => AddModule(ChannelsModule.Kf);
+
+    /// <summary>注册客诉工单接口（4 端点：类目配置 / 列表 / 详情 / 操作，<c>/channels/ec/platformkf/*</c>）。</summary>
+    /// <returns>注册器（链式）。</returns>
+    public ChannelsServiceBuilder AddPlatformKfApi() => AddModule(ChannelsModule.PlatformKf);
+
+    /// <summary>注册会员营销接口（5 端点：积分 / 信息 / 列表 / 积分流水 + 小店相关会员信息，<c>/channels/ec/vip/*</c>）。</summary>
+    /// <returns>注册器（链式）。</returns>
+    public ChannelsServiceBuilder AddVipApi() => AddModule(ChannelsModule.Vip);
+
+    /// <summary>
+    /// 注册连接小程序接口（10 端点：基础 <c>open/*</c> 2 + 授权送礼 <c>b2c/*</c> 与 <c>present*</c> 8）。
+    /// </summary>
+    /// <returns>注册器（链式）。</returns>
+    public ChannelsServiceBuilder AddMiniStoreApi() => AddModule(ChannelsModule.MiniStore);
+
+    /// <summary>
+    /// 注册类目管理接口（10 端点：类目查询 / 申请 / 审核流 / 关系与发布规则，<c>/shop/ec/category/*</c> 与
+    /// <c>/channels/ec/category/*</c>；<c>getcategoryrule</c> 承载保证金 / 发货方式双语义）。
+    /// </summary>
+    /// <returns>注册器（链式）。</returns>
+    public ChannelsServiceBuilder AddCategoryApi() => AddModule(ChannelsModule.Category);
+
+    /// <summary>注册品牌资质接口（8 端点：品牌增改查 / 可用品牌 / 审核，<c>/shop/ec/brand/*</c> 与 <c>/channels/ec/brand/*</c>）。</summary>
+    /// <returns>注册器（链式）。</returns>
+    public ChannelsServiceBuilder AddBrandApi() => AddModule(ChannelsModule.Brand);
+
+    /// <summary>注册质检管理接口（5 端点：送检配置 / 提交 / 打码 / 物流登记，<c>/channels/ec/qic/*</c>）。</summary>
+    /// <returns>注册器（链式）。</returns>
+    public ChannelsServiceBuilder AddQicApi() => AddModule(ChannelsModule.Qic);
+
+    /// <summary>
+    /// 注册主页管理接口（14 端点：主页商品排序 4 / 背景图 4 / 精选展示位 4 / 商品分类 2，
+    /// <c>/channels/ec/store/window/product/*</c>、<c>/channels/ec/basics/homepage/*</c>、<c>/channels/ec/store/classification/*</c>）。
+    /// </summary>
+    /// <returns>注册器（链式）。</returns>
+    public ChannelsServiceBuilder AddHomePageApi() => AddModule(ChannelsModule.HomePage);
+
+    /// <summary>
+    /// 注册橱窗与本地生活商品接口（9 端点：视频号橱窗 <c>window/product/*</c> 4 + 本地生活团购优惠
+    /// <c>product/locallife/*</c> 5；同族不同前缀照官方原文落位）。
+    /// </summary>
+    /// <returns>注册器（链式）。</returns>
+    public ChannelsServiceBuilder AddWindowApi() => AddModule(ChannelsModule.Window);
+
+    /// <summary>注册营销管理（优惠券）接口（7 端点，<c>/channels/ec/coupon/*</c>）。</summary>
+    /// <returns>注册器（链式）。</returns>
+    public ChannelsServiceBuilder AddMarketingApi() => AddModule(ChannelsModule.Marketing);
+
+    /// <summary>注册本地生活（团购券）接口（6 端点：券码 / 核销 / 撤销 / 账单，<c>/channels/ec/voucher/*</c>）。</summary>
+    /// <returns>注册器（链式）。</returns>
+    public ChannelsServiceBuilder AddLocallifeApi() => AddModule(ChannelsModule.Locallife);
+
+    /// <summary>注册国补管理接口（3 端点：发票查询与上传，<c>/channels/ec/subsidy/*</c>）。</summary>
+    /// <returns>注册器（链式）。</returns>
+    public ChannelsServiceBuilder AddSubsidyApi() => AddModule(ChannelsModule.Subsidy);
+
+    /// <summary>注册区域仓库接口（11 端点：仓库 / 覆盖区域 / 库存 / 地址编码，<c>/channels/ec/warehouse/*</c> 等）。</summary>
+    /// <returns>注册器（链式）。</returns>
+    public ChannelsServiceBuilder AddWarehouseApi() => AddModule(ChannelsModule.Warehouse);
+
+    /// <summary>注册优选联盟接口（11 端点：带货者 4 + 商品操作 7，<c>/channels/ec/league/*</c>）。</summary>
+    /// <returns>注册器（链式）。</returns>
+    public ChannelsServiceBuilder AddLeagueApi() => AddModule(ChannelsModule.League);
+
+    /// <summary>注册代发与供货接口（16 端点：供货商关系 8 / 代发单 5 / 供货单 3，<c>/channels/ec/supplier/*</c> 等）。</summary>
+    /// <returns>注册器（链式）。</returns>
+    public ChannelsServiceBuilder AddDeliveryApi() => AddModule(ChannelsModule.Delivery);
+
+    /// <summary>
+    /// 注册直播 / 留资 / 直播大屏接口（12 端点：直播记录与预约 / 留资组件与数据 / 直播大屏，
+    /// <c>/channels/finderlive/*</c>、<c>/channels/ec/finderlive/*</c>、<c>/channels/leads/*</c>、<c>/channels/livedashboard/*</c>）。
+    /// </summary>
+    /// <returns>注册器（链式）。</returns>
+    public ChannelsServiceBuilder AddLiveApi() => AddModule(ChannelsModule.Live);
+
+    /// <summary>
+    /// 注册罗盘接口（14 端点：商家版 <c>compass/shop/*</c> 10 + 达人版 <c>compass/finder/*</c> 4，同族不同前缀各自落位）。
+    /// </summary>
+    /// <returns>注册器（链式）。</returns>
+    public ChannelsServiceBuilder AddCompassApi() => AddModule(ChannelsModule.Compass);
 
     /// <summary>注册全部已实现模块。</summary>
     /// <returns>注册器（链式）。</returns>

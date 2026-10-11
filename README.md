@@ -64,7 +64,7 @@
 | `Mud.Wechat.MiniProgram` / `.Abstractions` / `.DataModels` | 小程序：19 个业务域 84 端点（登录 / 二维码与链接 / 内容安全 / 数据分析 / 订阅消息 / 动态消息 / 客服 / 硬件设备 / 运维 / 插件 / 付费 / 附近小程序 / 搜一搜 / 生物认证 / 服务市场 / 红包封面 / 学生身份 / 人脸核身 / 用工关系）；复用公众号令牌底座；官方 DTO。**无 Callback 工程**（消息接收走公众号线 XML 通道，由脚手架守卫锁定） |
 | `Mud.Wechat.Pay` / `.Abstractions` / `.DataModels` / `.Callback` | 微信支付 APIv3：10 个业务域 57 端点；商户配置面与签名/验签端口；官方 DTO（snake_case 字段名照官方）；通知接收（平台证书验签 + AEAD-GCM 解密 + 三道 fail-closed 闸） |
 | `Mud.Wechat.OpenPlatform` / `.Abstractions` | 开放平台第三方平台：component 令牌与授权方令牌提供者、预授权码 / 换授权 / 刷新令牌、`component_verify_ticket` 与授权变更事件接收 |
-| `Mud.Wechat.Channels` / `.Abstractions` / `.DataModels` / `.Callback` | 微信小店 / 视频号（channels 生态）：27 个业务域声明式客户端（P1 已落地 6 域 149 端点，余下 P2 补齐）；双通道令牌基座（`token` / `stable_token`，`UseStableToken` 切换）；官方 DTO；回调接收（msg_signature + EncodingAESKey + receiveid，与公众号同构，复用 Core 密码学与抗重放两道闸） |
+| `Mud.Wechat.Channels` / `.Abstractions` / `.DataModels` / `.Callback` | 微信小店 / 视频号（channels 生态）：27 个业务域声明式客户端（**P1+P2 全量 309 端点**，逐域守卫锁定）；双通道令牌基座（`token` / `stable_token`，`UseStableToken` 切换）；官方 DTO；回调接收（官方强制 JSON + 安全模式：msg_signature 四参 SHA1 验签 + AES 解密 + appid 校验，复用 Core 密码学与抗重放两道闸） |
 | `Mud.Wechat.Ads` / `.Abstractions` / `.DataModels` | **腾讯广告 Marketing API v3.0（在建）**：8 个业务域 **33** 支端点（客户账号 3 + 营销单元 8（含 4 支批量）+ 报表 4 + 组件化创意 4 + 创意组件 4 + 图片素材 4 + 视频素材 4 + 异步任务 2，其中 `images/add` / `videos/add` 为 `multipart/form-data` 文件上传、走手写通道）+ OAuth 两支（换码 / 刷新，手写传输不走声明式客户端）；`AddAdsApp` 装授权与传输底座，`AddWechatAdsApi` 装业务接口；官方 DTO + 10 个域 AOT 源生成上下文。**仍未落地**：`async_report_files/get`（请求地址在 `dl.e.qq.com`，与业务客户端基址不同）与 §11.1 清单的 331 条未核验路由 —— 均在守卫内逐条点名而非写成空断言 |
 | `Mud.Wechat.OpenTelemetry` | 可观测性一键装配（Tracing + Metrics + OTLP），委托叶层 `WechatActivitySource` 契约面 |
 
@@ -357,9 +357,9 @@ builder.Services.AddWechatOpenTelemetry(o =>
 | 微信小程序 | **19** | **84**（Auth 8 + QrCodeLink 9 + Security 3 + DataAnalysis 11 + SubscribeMessage 4 + DynamicMessage 3 + Kf 9 + HardwareDevice 9 + Operation 10 + Plugin 2 + Charge 2 + NearbyPoi 4 + Search 1 + Soter 1 + ServiceMarket 2 + RedPacketCover 1 + Student 1 + FaceVerify 2 + LaborUse 2） | **无 Callback 工程**——消息接收属公众号 XML 通道，由脚手架守卫锁定 | MP-X1~MP-X9 |
 | 微信支付 APIv3 | **10** | **57**（+ 账单 / 发票文件下载通道，非 JSON 生成管线） | 通知接收：平台证书验签 + `AEAD_AES_256_GCM` 解密 + 三道 fail-closed 闸 | PAY-B1~B11、PAY-CB1 |
 | 微信开放平台 | — | **4** 个 component 端点 + 双层令牌链 | `component_verify_ticket` + 授权变更事件接收 | 契约测试（`OpenPlatformContractTests` 等） |
-| 微信小店 / 视频号 | **27**（P1 已落地 6：Product / Order / Aftersale / Funds / Logistics / Basic） | **318 端点**（规划口径：小店清单 287 + 视频号清单 49 − 精确重叠 18；`token`/`stable_token` 进令牌基座、其余 8 个 `/cgi-bin/` 基础端点落 Basic 域；`/wxa/` 6 个暂缓）。**P1 已实现 149 端点**（Product 43 + Order 27 + Aftersale 27 + Funds 16 + Logistics 28 + Basic 8） | 自建 `Mud.Wechat.Channels.Callback` 包（P3 收口：订单 / 售后 / 物流 / 纠纷等事件键与载荷族登记） | CH-X1~X4、CH-T1~T3、CH-V1、CH-R1/R2 + 逐域（P1 已上线：Product / Order / Aftersale / Funds / Logistics / Basic） |
+| 微信小店 / 视频号 | **27**（**P2 全量落地**） | **317 端点**（实际口径：小店清单 287（含 1 条同路由双语义重复行）+ 视频号清单 49 − 精确重叠 18；`token`/`stable_token` 进令牌基座、其余 8 个 `/cgi-bin/` 基础端点落 Basic 域；`/wxa/` 6 个暂缓）。**P1+P2 已实现 309 端点**（P1 149：Basic 8 + Funds 16 + Product 43 + Order 27 + Aftersale 27 + Logistics 28；P2 160：Resource 7 + Shop 4 + HomePage 14 + Favorite 1 + Category 10 + Brand 8 + Qic 5 + Marketing 7 + Kf 2 + PlatformKf 4 + Vip 5 + MiniStore 10 + Warehouse 11 + League 11 + Delivery 16 + Wecom 1 + Window 9 + Locallife 6 + Subsidy 3 + Live 12 + Compass 14） | 自建 `Mud.Wechat.Channels.Callback` 包：官方**强制 JSON + 安全模式**回调（msg_signature 验签 + AES 解密 + AppId 校验 + 抗重放两道闸），事件键与载荷族经 `[ChannelsCallbackContract]` 声明式登记（P3 收口） | CH-X1~X4、CH-T1~T3、CH-V1、CH-R1/R2 + 逐域 27 守卫（CA/CB/CC/CD/CF/CG…/CLV/CMS/CP/CPK/CQ/CR/CS/CSU/CV/CW/CWI/CWC/CCP/CLL/CM/CQ/CS/CLG 系列） |
 
-### 微信小店 / 视频号：27 个业务域（P1 已落地 6 域 / 149 端点）
+### 微信小店 / 视频号：27 个业务域（P1+P2 全量落地 / 309 端点）
 
 `AddWechatChannelsApi(b => b.AddAllApis())` 一键装载；按域模块装配用 `AddModules(ChannelsModule.Product, ...)`。令牌恒为 `Wechat.Channels.AccessToken`（守卫 CH-T1~T3 锁定），`/wxa/` 6 个「小程序会员服务」端点令牌归属未确认、暂缓落位（守卫 CH-V1）。下述计数口径由 `ChannelsRouteContractGuards`（CH-R2）逐域锁定。
 
@@ -372,7 +372,7 @@ builder.Services.AddWechatOpenTelemetry(o =>
 | `AddAftersaleApi()` | 售后管理 | 27 | 售后单 16 + 纠纷单 4 + 保障单 6 + 全量售后原因 / 拒绝原因 |
 | `AddLogisticsApi()` | 物流发货 | 28 | 地址 5 + 运费模板 4 + 电子面单 16 + 订单发货 3 |
 
-其余 21 域（Resource / Shop / HomePage / Favorite / Category / Marketing / Kf / Qic / Warehouse / League / Brand / Delivery / Wecom / MiniStore / Compass / Vip / Live / Window / Locallife / Subsidy / PlatformKf）随 P2 补齐。
+P2 21 域已全量落地（Resource 7 / Shop 4 / HomePage 14 / Favorite 1 / Category 10 / Brand 8 / Qic 5 / Marketing 7 / Kf 2 / PlatformKf 4 / Vip 5 / MiniStore 10 / Warehouse 11 / League 11 / Delivery 16 / Wecom 1 / Window 9 / Locallife 6 / Subsidy 3 / Live 12 / Compass 14）。实际端点数与设计方案规划口径的差异（类目 10、橱窗+本地生活 9、券 6、会员 5 等）均已在逐域守卫中按官方文档实测定版。
 | 腾讯广告（在建） | **8** | **33** 支声明式端点（客户账号 3 + 营销单元 8（含 4 支批量）+ 报表 4 + 组件化创意 4 + 创意组件 4 + 图片素材 4 + 视频素材 4 + 异步任务 2，其中 `images/add` / `videos/add` 为文件上传手写通道）+ OAuth 两支手写传输（换码 / 刷新） | 无（v3.0 无推送回调，报表走 `async_reports` 拉取） | ADS-S1/S2（依赖边界·TFM）、ADS-B1/B4/B5/B6（凭据注入形态·SSRF 并集口径·Query 凭据脱敏·AOT 净零）、ADS-B2 逐路由 / 逐参数名 / 逐层级 / 逐字段名镜像官方原文、ADS-B3 刷新一次性语义；未落地域在守卫内**逐条点名**而非写成空断言 |
 
 ### 企业微信：35 个业务域 / 446 个契约接口
@@ -518,9 +518,9 @@ builder.Services.AddWechatOpenTelemetry(o =>
 | `IComponentVerifyTicketStore` / `IWechatOpenPlatformHttpClient` / `IOpenPlatformClock` | 票据存储端口、命名客户端、可注入时钟（测试确定性） |
 | `ComponentVerifyTicketReceiver.Receive(...)` | `component_verify_ticket` 与授权变更事件**一处入口分流**，返回 `ComponentPushResult`（票据推送结论为 8 态枚举，区分「重复推送 / 校验失败 / 存储失败」等原因） |
 
-### 微信小店 / 视频号：27 个业务域 / 318 端点（规划口径）
+### 微信小店 / 视频号：27 个业务域 / 317 端点（实测定版口径）
 
-微信小店与视频号经路由比对确认为**同一产品**的两面（内容运营面 + 交易管理面 + 本地生活面），合并为一条产品线（`.docs/微信小店/微信小店×视频号产品线设计方案 v1.md`）。下表端点计数为**规划口径**：小店清单 287 + 视频号清单 49 − 精确重叠 18 = **318**，同一路由只计 1；`/wxa/` 6 个「小程序会员服务」端点令牌归属未确认、暂缓落位（守卫 CH-V1）；`token` / `stable_token` 进令牌基座不入域计数。**权威口径以 P1 起逐域守卫为准。**
+微信小店与视频号经路由比对确认为**同一产品**的两面（内容运营面 + 交易管理面 + 本地生活面），合并为一条产品线（`.docs/微信小店/微信小店×视频号产品线设计方案 v1.md`）。下表端点计数为**实测定版口径**（P2 逐页核验官方文档后以逐域守卫为准）：小店清单 287（含 1 条同路由双语义重复行）+ 视频号清单 49 − 精确重叠 18 = **317**，同一路由只计 1；`/wxa/` 6 个「小程序会员服务」端点令牌归属未确认、暂缓落位（守卫 CH-V1）；`token` / `stable_token` 进令牌基座不入域计数。**权威口径以 P1 起逐域守卫为准。**
 
 | 注册方法 | 域 | 端点 | 路由族与关键约束 |
 | --- | --- | --- | --- |
@@ -545,8 +545,8 @@ builder.Services.AddWechatOpenTelemetry(o =>
 | `AddWecomApi()` | 企业微信关联 | 1 | `/channels/ec/wecom/get_wecom_id` |
 | `AddMiniStoreApi()` | 连接小程序 | 10 | `/channels/ec/open/*`、`/channels/ec/b2c/*`、`/channels/ec/order/present*`（基础 + 授权送礼） |
 | `AddCompassApi()` | 罗盘 | 14 | `/channels/ec/compass/*`（商家版 10 + 达人版 4） |
-| `AddVipApi()` | 会员营销 | 4 | `/channels/ec/vip/user/*` |
-| `AddLiveApi()` | 直播与留资 | 12 | `/channels/finderlive/*`、`/channels/leads/*`、`/channels/livedashboard/*`（视频号内容面） |
+| `AddVipApi()` | 会员营销 | 5 | `/channels/ec/vip/user/*` 4 + `/channels/ec/vip/v3/wxa/info/get`（小店相关会员信息） |
+| `AddLiveApi()` | 直播与留资 | 12 | `/channels/finderlive/*`、`/channels/ec/finderlive/*`、`/channels/leads/*`、`/channels/livedashboard/*`（视频号内容面，四前缀并存照抄官方） |
 | `AddWindowApi()` | 橱窗与本地生活商品 | 13 | `/channels/ec/window/product/*`、`/channels/ec/product/locallife/*`（双前缀同族并组） |
 | `AddLocallifeApi()` | 本地生活 | 8 | `/channels/ec/voucher/*`（团购券 / 核销 / 售后 / 券账单） |
 | `AddSubsidyApi()` | 国补管理 | 3 | `/channels/ec/subsidy/*` |

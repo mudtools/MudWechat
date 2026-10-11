@@ -74,17 +74,18 @@ public static class Baseline
         /// <remarks>
         /// 锁定于 `MpRouteCountGuard`（RC1）。
         /// 现行推导：B2a 前 188 + B2a 小域 15（媒体 2 + 短链 1 + 车牌 OCR 1（双形态各 2 方法）
-        /// + 卡券统计 4 + 门店 POI 3 + 语义 1 + 电子发票开具 3）= 203。
+        /// + 卡券统计 4 + 门店 POI 3 + 语义 1 + 电子发票开具 3）+ B2b 非税 16（JSON 面；
+        /// downloadbill 走下载通道）+ B2c 卡券全族 39（53 - B2c 前存量 14）= 258。
         /// superresolution 官方已下架（既有守卫裁决）、客服管理员与微信客服绑定 5 条归小程序线
         /// （跨线零交叠 MP-X1），均不计。
         /// </remarks>
-        public const int MainInterfaceRoutes = 203;
+        public const int MainInterfaceRoutes = 258;
 
         /// <summary>
         /// 全量去重路由数（主接口 + 认证/票据基座 + 非 JSON 下载通道）。
         /// </summary>
-        /// <remarks>锁定于 `MpRouteCountGuard`（RC2）。现行推导：203 + AbstractsAuth 3 + 下载通道 3 = 209。</remarks>
-        public const int TotalRoutes = 209;
+        /// <remarks>锁定于 `MpRouteCountGuard`（RC2）。现行推导：258 + AbstractsAuth 3 + 下载通道 4（素材 3 + 非税账单 1）= 265。</remarks>
+        public const int TotalRoutes = 265;
 
         /// <summary>
         /// 官方面唯一路由数（索引页表格取值并集口径）。

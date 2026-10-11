@@ -18,6 +18,7 @@ using Mud.Wechat.OfficialAccount.DataModels.Invoice;
 using Mud.Wechat.OfficialAccount.DataModels.KfAccount;
 using Mud.Wechat.OfficialAccount.DataModels.Mass;
 using Mud.Wechat.OfficialAccount.DataModels.OneCode;
+using Mud.Wechat.OfficialAccount.DataModels.Poi;
 using Mud.Wechat.OfficialAccount.DataModels.QrcodeJump;
 using Mud.Wechat.OfficialAccount.DataModels.ShortLink;
 using Mud.Wechat.OfficialAccount.DataModels.SmartApi;
@@ -32,6 +33,8 @@ using Mud.Wechat.OfficialAccount.DataModels.OpenApi;
 using Mud.Wechat.OfficialAccount.DataModels.ProductCard;
 using Mud.Wechat.OfficialAccount.DataModels.SubscriptionNotice;
 using Mud.Wechat.OfficialAccount.DataModels.Sns;
+using Mud.Wechat.OfficialAccount.DataModels.Semantic;
+using Mud.Wechat.OfficialAccount.DataModels.Nontax;
 using Mud.Wechat.OfficialAccount.DataModels.Tag;
 using Mud.Wechat.OfficialAccount.DataModels.Template;
 using Mud.Wechat.OfficialAccount.DataModels.User;
@@ -85,6 +88,7 @@ public static class MpJsonResolverExtensions
             TemplateJsonContext.Default,
             SubscriptionNoticeJsonContext.Default,
             OpenApiJsonContext.Default,
+            PoiJsonContext.Default,
             SnsJsonContext.Default,
             WebDevJsonContext.Default,
             SmartApiJsonContext.Default,
@@ -92,7 +96,9 @@ public static class MpJsonResolverExtensions
             ShortLinkJsonContext.Default,
             StoreJsonContext.Default,
             OneCodeJsonContext.Default,
-            InvoiceJsonContext.Default);
+            InvoiceJsonContext.Default,
+            SemanticJsonContext.Default,
+            NontaxJsonContext.Default);
         services.AddMudHttpClientJsonContext(resolver);
     }
 }

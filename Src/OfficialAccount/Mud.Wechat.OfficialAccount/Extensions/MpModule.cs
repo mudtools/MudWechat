@@ -284,20 +284,23 @@ public enum MpModule
     Invoice,
 
     /// <summary>
-    /// 卡券 → 主体生命周期与投放 + 券码核销（<c>/card/*</c> 双接口同注册组共 14 端点：
-    /// <c>IMpCardService</c> 11 端点建卡/查卡/改卡/库存/删除/二维码/落地页/两个卡面组件开关/测试白名单 +
-    /// <c>IMpCardCodeService</c> 3 端点核销/查码状态/解密）。
+    /// 卡券 → 全族五接口同注册组共 53 端点（B2c 落地，<c>/card/*</c>）：
+    /// <c>IMpCardService</c> 19 端点（主体生命周期与投放 11 + 特殊票券 4 + 卡券图文 1 + 门店小程序 2 + 协议查询 1（GET））+
+    /// <c>IMpCardCodeService</c> 8 端点（核销/查码状态/解密 3 + 券码运维 5）+
+    /// <c>IMpCardMemberService</c> 7 端点（会员卡 6 + 用户卡包 1）+
+    /// <c>IMpCardGiftService</c> 15 端点（礼品卡 11 + 付款礼品卡 4）+
+    /// <c>IMpCardSubMerchantService</c> 4 端点（子商户进件/更新/查询）。
     /// </summary>
     /// <remarks>
     /// 域级约束（<b>本批以本地 SKIT 源码为对齐基准，官方正文待逐页核验</b>）：
-    /// 14 端点全为 POST + JSON、全部只消费应用级 <c>access_token</c>（Query 注入，MUD005 已知接受风险）；
+    /// 53 端点中唯一 GET 为协议查询 <c>getapplyprotocol</c>，其余全为 POST + JSON、
+    /// 全部只消费应用级 <c>access_token</c>（Query 注入，MUD005 已知接受风险）；
     /// <b>前端取卡用的 <c>api_ticket</c> 已由 Abstractions 票据接口承载</b>，本域不引入第二套票据面；
     /// 与支付体系仅<b>透传</b> <c>merchant_id</c>、不调用支付接口；
     /// 建卡方向（<c>card</c> 包装 + <c>card_type</c> 判别 + 11 分支）与修改方向（<c>card_id</c> + 分支平级、
     /// 无 <c>advanced_info</c>）<b>不同构</b>，库存调整走独立端点（键名 <c>increase_stock_value</c>）。
-    /// <b>未建模 10 族共 39 端点</b>（券码运维 5 / 会员卡与用户 7 / 礼品卡 11 / 付款礼品卡 4 /
-    /// 兑换卡用户 1 / 特殊票券 3 / 子商户 4 / 门店小程序 2 / 卡券图文 1 / 协议查询 1（GET））
-    /// 的取舍与理由由守卫 <c>MpCardContractGuards</c> CD8 留档。
+    /// 礼品卡订单退款有 <b>7 天有效期</b>；付款礼品卡规则<b>覆盖删除</b>（删除即失效）；
+    /// 子商户面仅第三方平台 / 代开发场景可用。<c>MpCardContractGuards</c> CD1/CD8 锁定 53 端点路由表与族级计数。
     /// </remarks>
     Card,
 
@@ -320,4 +323,15 @@ public enum MpModule
     /// 落位由守卫 <c>MpSemanticContractGuards</c> 锁定。
     /// </remarks>
     Semantic,
+
+    /// <summary>
+    /// 非税支付（<c>/nontax/*</c> 17 端点：JSON 面 16 + 对账单下载通道 1）。
+    /// </summary>
+    /// <remarks>
+    /// <b>双通道分工（对齐素材域 I3 裁决）</b>：<c>downloadbill</c> 成功响应为 CSV 文本，
+    /// 走 <c>MpNontaxBillDownloadService</c> 独立下载通道；其余 16 端点为 JSON 形态，
+    /// 走生成管线 <c>AddNontaxWebApiHttpClient()</c>。需与财政局签约开通专项服务。
+    /// 落位由守卫 <c>MpNontaxContractGuards</c> 锁定。
+    /// </remarks>
+    Nontax,
 }

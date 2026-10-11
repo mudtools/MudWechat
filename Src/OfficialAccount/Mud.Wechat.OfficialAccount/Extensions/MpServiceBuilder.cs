@@ -116,8 +116,8 @@ public class MpServiceBuilder
             [MpModule.Invoice] = new MpModuleRegistrar(
                 MpModule.Invoice,
                 s => s.AddInvoiceWebApiHttpClient()),
-            // 卡券域双接口同注册组（照 openApi 先例）：主体生命周期/投放 11 端点 + 券码核销 3 端点，
-            // 由同一条生成注册入口 AddCardWebApiHttpClient() 装载。
+            // 卡券域五接口同注册组（照 openApi 先例）：主体/投放 19 + 券码 8 + 会员卡 7 + 礼品卡 15 + 子商户 4
+            // = 53 端点，由同一条生成注册入口 AddCardWebApiHttpClient() 装载。
             [MpModule.Card] = new MpModuleRegistrar(
                 MpModule.Card,
                 s => s.AddCardWebApiHttpClient()),
@@ -131,6 +131,17 @@ public class MpServiceBuilder
             [MpModule.Semantic] = new MpModuleRegistrar(
                 MpModule.Semantic,
                 s => s.AddSemanticWebApiHttpClient()),
+
+            // B2b：非税支付——双通道（对齐素材域 I3 裁决）：JSON 面 16 端点走生成管线；
+            // downloadbill 成功响应为 CSV 文本，走独立下载通道 IMpNontaxBillDownloadService
+            // （TryAdd 语义：宿主预注册者胜出）。
+            [MpModule.Nontax] = new MpModuleRegistrar(
+                MpModule.Nontax,
+                s =>
+                {
+                    s.AddNontaxWebApiHttpClient();
+                    s.TryAddSingleton<IMpNontaxBillDownloadService, MpNontaxBillDownloadService>();
+                }),
         };
 
     /// <summary>
@@ -292,12 +303,35 @@ public class MpServiceBuilder
     public MpServiceBuilder AddInvoiceApi() => AddModule(MpModule.Invoice);
 
     /// <summary>
-    /// 注册卡券（mp 卡券）（14 端点双接口：<c>IMpCardService</c> 11 端点建卡/查卡/改卡/库存/删除/
-    /// 二维码/落地页/卡面组件开关/测试白名单 + <c>IMpCardCodeService</c> 3 端点核销/查码状态/解密；
-    /// 全部 POST、只消费 <c>access_token</c>，前端取卡用的 <c>api_ticket</c> 由 Abstractions 的票据服务承载）。
+    /// 注册卡券（mp 卡券）（53 端点五接口同注册组 <c>Card</c>：<c>IMpCardService</c> 19 端点
+    /// （主体生命周期/投放 11 + 特殊票券 4 + 卡券图文 1 + 门店小程序 2 + 协议查询 1（GET））+
+    /// <c>IMpCardCodeService</c> 8 端点（核销/查码状态/解密 3 + 券码运维 5）+
+    /// <c>IMpCardMemberService</c> 7 端点（会员卡 6 + 用户卡包 1）+
+    /// <c>IMpCardGiftService</c> 15 端点（礼品卡 11 + 付款礼品卡 4）+
+    /// <c>IMpCardSubMerchantService</c> 4 端点（子商户进件/更新/查询）；
+    /// 全部只消费 <c>access_token</c>，前端取卡用的 <c>api_ticket</c> 由 Abstractions 的票据服务承载）。
     /// </summary>
     /// <returns>注册器（链式）。</returns>
     public MpServiceBuilder AddCardApi() => AddModule(MpModule.Card);
+
+    /// <summary>
+    /// 注册微信门店旧版（POI）查询与删除（3 端点；与 <c>Store</c> 新版店铺 API 两代并存，勿合并）。
+    /// </summary>
+    /// <returns>注册器（链式）。</returns>
+    public MpServiceBuilder AddPoiApi() => AddModule(MpModule.Poi);
+
+    /// <summary>
+    /// 注册语义理解（智能对话旧接口，1 端点；官方已停维，details 以原始 JSON 透出）。
+    /// </summary>
+    /// <returns>注册器（链式）。</returns>
+    public MpServiceBuilder AddSemanticApi() => AddModule(MpModule.Semantic);
+
+    /// <summary>
+    /// 注册非税支付（JSON 面 16 端点走生成管线 + <c>downloadbill</c> 对账单下载通道
+    /// <c>IMpNontaxBillDownloadService</c>；需与财政局签约开通专项服务，金额单位一律为分）。
+    /// </summary>
+    /// <returns>注册器（链式）。</returns>
+    public MpServiceBuilder AddNontaxApi() => AddModule(MpModule.Nontax);
 
     /// <summary>注册全部模块。</summary>
     /// <returns>注册器（链式）。</returns>

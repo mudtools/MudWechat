@@ -64,10 +64,14 @@ public class MpQueryTokenWhitelistGuard
             nameof(IMpStoreService),              // 微信门店·门店小程序（12 端点；开放面仅电商类目）
             nameof(IMpOneCodeService),            // 微信「一物一码」（6 端点；服务号需申请）
             nameof(IMpInvoiceService),            // 微信发票（20 端点；全消费 access_token，不引入 api_ticket）
-            nameof(IMpCardService),               // 卡券·主体与投放（11 端点；前端取卡 api_ticket 由 IMpTicketService 承载，不入本接口）
-            nameof(IMpCardCodeService),           // 卡券·券码核销（3 端点；同注册组 Card，双接口先例照 openApi）
+            nameof(IMpCardService),               // 卡券·主体与投放（19 端点；B2c 后含特殊票券 4 + 图文 1 + 门店小程序 2 + 协议查询 1（GET））
+            nameof(IMpCardCodeService),           // 卡券·券码核销与运维（8 端点；同注册组 Card，双接口先例照 openApi）
+            nameof(IMpCardMemberService),         // 卡券·会员卡（7 端点；会员卡 6 + 用户卡包 1，B2c 落地）
+            nameof(IMpCardGiftService),           // 卡券·礼品卡/付款礼品卡（15 端点；礼品卡 11 + 付款礼品卡 4，B2c 落地）
+            nameof(IMpCardSubMerchantService),    // 卡券·子商户（4 端点；第三方/代开发场景，B2c 落地）
             nameof(IMpPoiService),                // 微信门店旧版 POI（3 端点；与 Store 新版店铺 API 两代并存）
             nameof(IMpSemanticService),           // 语义理解（1 端点；智能对话旧接口，官方已停维）
+            nameof(IMpNontaxService),             // 非税支付（16 端点 JSON 面；downloadbill 走独立下载通道无 [Token]，不入白名单）
         }, "公众号官方契约强制 Query 注入（MUD005 已知接受风险）；新增 Query 注入接口须先评估再显式扩展本白名单");
 
         // 防静默空跑：白名单非空且每条均为 Query 注入（若发现机制失效，上面 BeEquivalentTo 会退化为真空断言）。

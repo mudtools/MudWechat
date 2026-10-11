@@ -12,7 +12,7 @@ using Mud.Wechat.OfficialAccount.Extensions;
 namespace Mud.Wechat.OfficialAccount.Tests.ContractGuards;
 
 /// <summary>
-/// 公众号「卡券」域契约守卫（<c>/card/*</c> 双接口共 14 端点）。
+/// 公众号「卡券」域契约守卫（<c>/card/*</c> 五接口共 53 端点：主体/券码/会员卡/礼品卡/子商户，B2c 全族落地）。
 /// </summary>
 /// <remarks>
 /// <para>
@@ -25,7 +25,7 @@ namespace Mud.Wechat.OfficialAccount.Tests.ContractGuards;
 /// <b>守卫锁定的形态裁决</b>（勿「顺手修正」）：建卡 / 查询 / 修改三张 <c>base_info</c> 分建不合并（CD2）；
 /// 官方键名照原文不驼峰化（CD3）；建卡 <c>card</c> 包装 vs 修改平级不同构（CD4）；
 /// 查询方向无 <c>general_card</c>（CD5）；<c>need_verify_cod</c> 缺尾字母照录（CD6）；
-/// 未建模 10 族 39 端点以「零路由」负向断言留档（CD8）。
+/// B2c 落地后已建模全族以「路由计数 + 接口归属」正断言锁定（CD8），SKIT 卡券全族 53 端点对齐、无未建模族。
 /// </para>
 /// </remarks>
 public class MpCardContractGuards
@@ -33,9 +33,10 @@ public class MpCardContractGuards
     private const string RegistryGroupName = "Card";
     private const string CardNamespace = "Mud.Wechat.OfficialAccount.DataModels.Card";
 
-    /// <summary>官方路由表（14 端点，全 POST，前缀统一 <c>/card/</c>）。</summary>
+    /// <summary>官方路由表（53 端点五接口，前缀统一 <c>/card/</c>；唯一 GET 为协议查询 <c>getapplyprotocol</c>）。</summary>
     private static readonly (Type Interface, string Route, string Method)[] Routes =
     {
+        // 主体生命周期与投放 + 组件开关 + 测试白名单（IMpCardService 前 11 条）。
         (typeof(IMpCardService), "/card/create", nameof(IMpCardService.CreateCardAsync)),
         (typeof(IMpCardService), "/card/get", nameof(IMpCardService.GetCardAsync)),
         (typeof(IMpCardService), "/card/batchget", nameof(IMpCardService.BatchGetCardsAsync)),
@@ -47,9 +48,53 @@ public class MpCardContractGuards
         (typeof(IMpCardService), "/card/paycell/set", nameof(IMpCardService.SetPayCellAsync)),
         (typeof(IMpCardService), "/card/selfconsumecell/set", nameof(IMpCardService.SetSelfConsumeCellAsync)),
         (typeof(IMpCardService), "/card/testwhitelist/set", nameof(IMpCardService.SetTestWhiteListAsync)),
+        // 特殊票券 4 + 卡券图文 1 + 门店小程序 2 + 协议查询 1（GET）。
+        (typeof(IMpCardService), "/card/boardingpass/checkin", nameof(IMpCardService.BoardingPassCheckinAsync)),
+        (typeof(IMpCardService), "/card/meetingticket/updateuser", nameof(IMpCardService.UpdateMeetingTicketAsync)),
+        (typeof(IMpCardService), "/card/movieticket/updateuser", nameof(IMpCardService.UpdateMovieTicketAsync)),
+        (typeof(IMpCardService), "/card/generalcard/updateuser", nameof(IMpCardService.UpdateGeneralCardUserAsync)),
+        (typeof(IMpCardService), "/card/mpnews/gethtml", nameof(IMpCardService.GetCardMpNewsHtmlAsync)),
+        (typeof(IMpCardService), "/card/storewxa/get", nameof(IMpCardService.GetStoreWxaCardAsync)),
+        (typeof(IMpCardService), "/card/storewxa/set", nameof(IMpCardService.SetStoreWxaCardAsync)),
+        (typeof(IMpCardService), "/card/getapplyprotocol", nameof(IMpCardService.GetApplyProtocolAsync)),
+        // 券码核销 3 + 券码运维 5（IMpCardCodeService）。
         (typeof(IMpCardCodeService), "/card/code/consume", nameof(IMpCardCodeService.ConsumeCardCodeAsync)),
         (typeof(IMpCardCodeService), "/card/code/get", nameof(IMpCardCodeService.GetCardCodeAsync)),
         (typeof(IMpCardCodeService), "/card/code/decrypt", nameof(IMpCardCodeService.DecryptCardCodeAsync)),
+        (typeof(IMpCardCodeService), "/card/code/checkcode", nameof(IMpCardCodeService.CheckCardCodeAsync)),
+        (typeof(IMpCardCodeService), "/card/code/deposit", nameof(IMpCardCodeService.DepositCardCodeAsync)),
+        (typeof(IMpCardCodeService), "/card/code/getdepositcount", nameof(IMpCardCodeService.GetDepositCountAsync)),
+        (typeof(IMpCardCodeService), "/card/code/unavailable", nameof(IMpCardCodeService.SetCardCodeUnavailableAsync)),
+        (typeof(IMpCardCodeService), "/card/code/update", nameof(IMpCardCodeService.UpdateCardCodeAsync)),
+        // 会员卡 6 + 用户卡包 1（IMpCardMemberService）。
+        (typeof(IMpCardMemberService), "/card/membercard/userinfo/get", nameof(IMpCardMemberService.GetMemberCardUserInfoAsync)),
+        (typeof(IMpCardMemberService), "/card/membercard/activateuserform/set", nameof(IMpCardMemberService.SetMemberCardActivateUserFormAsync)),
+        (typeof(IMpCardMemberService), "/card/membercard/updateuser", nameof(IMpCardMemberService.UpdateMemberCardUserAsync)),
+        (typeof(IMpCardMemberService), "/card/membercard/activate", nameof(IMpCardMemberService.ActivateMemberCardAsync)),
+        (typeof(IMpCardMemberService), "/card/membercard/activate/geturl", nameof(IMpCardMemberService.GetMemberCardActivateUrlAsync)),
+        (typeof(IMpCardMemberService), "/card/membercard/activatetempinfo/get", nameof(IMpCardMemberService.GetMemberCardActivateTempInfoAsync)),
+        (typeof(IMpCardMemberService), "/card/user/getcardlist", nameof(IMpCardMemberService.GetUserCardListAsync)),
+        // 礼品卡 11 + 付款礼品卡 4（IMpCardGiftService）。
+        (typeof(IMpCardGiftService), "/card/giftcard/maintain/set", nameof(IMpCardGiftService.SetGiftCardMaintainAsync)),
+        (typeof(IMpCardGiftService), "/card/giftcard/order/batchget", nameof(IMpCardGiftService.BatchGetGiftCardOrdersAsync)),
+        (typeof(IMpCardGiftService), "/card/giftcard/order/get", nameof(IMpCardGiftService.GetGiftCardOrderAsync)),
+        (typeof(IMpCardGiftService), "/card/giftcard/order/refund", nameof(IMpCardGiftService.RefundGiftCardOrderAsync)),
+        (typeof(IMpCardGiftService), "/card/giftcard/page/add", nameof(IMpCardGiftService.AddGiftCardPageAsync)),
+        (typeof(IMpCardGiftService), "/card/giftcard/page/batchget", nameof(IMpCardGiftService.BatchGetGiftCardPagesAsync)),
+        (typeof(IMpCardGiftService), "/card/giftcard/page/get", nameof(IMpCardGiftService.GetGiftCardPageAsync)),
+        (typeof(IMpCardGiftService), "/card/giftcard/page/update", nameof(IMpCardGiftService.UpdateGiftCardPageAsync)),
+        (typeof(IMpCardGiftService), "/card/giftcard/pay/submch/bind", nameof(IMpCardGiftService.BindGiftCardPaySubMerchantAsync)),
+        (typeof(IMpCardGiftService), "/card/giftcard/pay/whitelist/add", nameof(IMpCardGiftService.AddGiftCardPayWhitelistAsync)),
+        (typeof(IMpCardGiftService), "/card/giftcard/wxa/set", nameof(IMpCardGiftService.SetGiftCardWxaAsync)),
+        (typeof(IMpCardGiftService), "/card/paygiftcard/add", nameof(IMpCardGiftService.AddPayGiftCardRuleAsync)),
+        (typeof(IMpCardGiftService), "/card/paygiftcard/batchget", nameof(IMpCardGiftService.BatchGetPayGiftCardRulesAsync)),
+        (typeof(IMpCardGiftService), "/card/paygiftcard/delete", nameof(IMpCardGiftService.DeletePayGiftCardRuleAsync)),
+        (typeof(IMpCardGiftService), "/card/paygiftcard/getbyid", nameof(IMpCardGiftService.GetPayGiftCardRuleAsync)),
+        // 子商户 4（IMpCardSubMerchantService）。
+        (typeof(IMpCardSubMerchantService), "/card/submerchant/submit", nameof(IMpCardSubMerchantService.SubmitSubMerchantAsync)),
+        (typeof(IMpCardSubMerchantService), "/card/submerchant/update", nameof(IMpCardSubMerchantService.UpdateSubMerchantAsync)),
+        (typeof(IMpCardSubMerchantService), "/card/submerchant/get", nameof(IMpCardSubMerchantService.GetSubMerchantAsync)),
+        (typeof(IMpCardSubMerchantService), "/card/submerchant/batchget", nameof(IMpCardSubMerchantService.BatchGetSubMerchantsAsync)),
     };
 
     /// <summary>建卡方向的 11 个券型分支官方键名（<c>card_type</c> 判别，分支互斥）。</summary>
@@ -60,19 +105,27 @@ public class MpCardContractGuards
     };
 
     /// <summary>
-    /// 契约守卫 CD1：14 端点路由与方法一致（全 POST、同前缀、请求体形态、令牌绑定）。
+    /// 契约守卫 CD1：53 端点路由与方法一致（全 POST，唯一例外 <c>getapplyprotocol</c> 为 GET、同前缀、请求体形态、令牌绑定）。
     /// </summary>
     [Fact]
     public void CardEndpoints_ShouldMatchAlignedOfficialRoutes()
     {
         Routes.Select(r => r.Route).Should().OnlyHaveUniqueItems("同一路由不得重复声明");
-        Routes.Should().HaveCount(14);
+        Routes.Should().HaveCount(53);
         Routes.Should().OnlyContain(r => r.Route.StartsWith("/card/", StringComparison.Ordinal),
-            "本域 14 端点同前缀 /card/（带参二维码域用 /cgi-bin/qrcode/create，两域路由不重叠）");
+            "本域 53 端点同前缀 /card/（带参二维码域用 /cgi-bin/qrcode/create，两域路由不重叠）");
 
         foreach (var (iface, route, method) in Routes)
         {
             var target = FindMethod(iface, method);
+            if (route == "/card/getapplyprotocol")
+            {
+                var get = target.GetCustomAttribute<GetAttribute>();
+                get.Should().NotBeNull($"{method} 为协议查询，本域唯一 GET（无请求体）");
+                get!.RequestUri.Should().Be(route, $"{method} 路由必须与对齐基准一致");
+                continue;
+            }
+
             var attr = target.GetCustomAttribute<PostAttribute>();
             attr.Should().NotBeNull($"{method} 必须声明 POST 路由");
             attr!.RequestUri.Should().Be(route, $"{method} 路由必须与对齐基准一致");
@@ -80,17 +133,26 @@ public class MpCardContractGuards
                 .Should().BeTrue($"{method} 为 POST + JSON 请求体");
         }
 
-        // 14 端点全部为 POST：本域无 GET 端点（协议查询 GET /card/getapplyprotocol 属未建模族）。
-        foreach (var iface in new[] { typeof(IMpCardService), typeof(IMpCardCodeService) })
+        // 全为 POST，唯一例外：/card/getapplyprotocol 为 GET（协议查询无请求体，非未建模族）。
+        foreach (var iface in new[]
+                 {
+                     typeof(IMpCardService), typeof(IMpCardCodeService),
+                     typeof(IMpCardMemberService), typeof(IMpCardGiftService), typeof(IMpCardSubMerchantService),
+                 })
         {
             iface.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
+                .Where(m => m.Name != nameof(IMpCardService.GetApplyProtocolAsync))
                 .Where(m => m.GetCustomAttribute<HttpMethodAttribute>() != null)
                 .Select(m => m.GetCustomAttribute<HttpMethodAttribute>()!)
-                .Should().AllBeAssignableTo<PostAttribute>($"{iface.Name} 官方全为 POST");
+                .Should().AllBeAssignableTo<PostAttribute>($"{iface.Name} 除协议查询外官方全为 POST");
         }
 
-        // 双接口同注册组（照 openApi 先例）+ 令牌绑定：Query 注入 access_token。
-        foreach (var iface in new[] { typeof(IMpCardService), typeof(IMpCardCodeService) })
+        // 五接口同注册组（照 openApi 先例）+ 令牌绑定：Query 注入 access_token。
+        foreach (var iface in new[]
+                 {
+                     typeof(IMpCardService), typeof(IMpCardCodeService),
+                     typeof(IMpCardMemberService), typeof(IMpCardGiftService), typeof(IMpCardSubMerchantService),
+                 })
         {
             var api = iface.GetCustomAttribute<HttpClientApiAttribute>();
             api.Should().NotBeNull();
@@ -380,13 +442,13 @@ public class MpCardContractGuards
     }
 
     /// <summary>
-    /// 契约守卫 CD8：注册三段式 + DTO 全量登记 + <b>未建模 10 族 39 端点的零路由留档</b>。
+    /// 契约守卫 CD8：注册三段式 + DTO 全量登记 + <b>已建模全族的路由计数与归属</b>（B2c 后无未建模族）。
     /// </summary>
     [Fact]
     public void CardRegistrationAndUnmodeledFamilies_ShouldBeDocumented()
     {
         // 域 DTO 全量登记进 CardJsonContext（AOT 源生成）。
-        const int expectedDomainTypes = 90;
+        const int expectedDomainTypes = 174;
         var domainTypes = typeof(MpCardCreateRequest).Assembly.GetTypes()
             .Where(t => t.IsClass && !t.IsNested
                         && t.Namespace == CardNamespace
@@ -394,7 +456,7 @@ public class MpCardContractGuards
             .ToList();
 
         domainTypes.Should().HaveCount(expectedDomainTypes,
-            "卡券域 DTO 共 90 型（三向 base_info + 11×3 券型分支 + 共用子表 + 投放/核销/开关面）");
+            "卡券域 DTO 共 174 型（B2c 全族落地：三向 base_info + 11×3 券型分支 + 共用子表 + 投放/核销/开关面 + 会员卡/礼品卡/付款礼品卡/子商户/特殊票券/图文/门店小程序/协议查询）");
         foreach (var type in domainTypes)
         {
             CardJsonContext.Default.GetTypeInfo(type)
@@ -408,7 +470,7 @@ public class MpCardContractGuards
         typeof(MpServiceBuilder).GetMethod("AddCardApi").Should().NotBeNull(
             "AddCardApi() 必须存在（与 MpModuleRegistrar 字典条目同批）");
 
-        // Query 令牌白名单「本域在内」（全量集合由 MpQueryTokenWhitelistGuard QT1 持有）。
+        // Query 令牌白名单「本域五接口在内」（全量集合由 MpQueryTokenWhitelistGuard QT1 持有）。
         var queryInterfaces = typeof(MpServiceCollectionExtensions).Assembly.GetTypes()
             .Where(t => t.IsInterface && t.IsPublic)
             .Where(i => i.GetCustomAttribute<TokenAttribute>() is { } attr
@@ -417,10 +479,13 @@ public class MpCardContractGuards
             .ToList();
         queryInterfaces.Should().Contain(nameof(IMpCardService));
         queryInterfaces.Should().Contain(nameof(IMpCardCodeService));
+        queryInterfaces.Should().Contain(nameof(IMpCardMemberService));
+        queryInterfaces.Should().Contain(nameof(IMpCardGiftService));
+        queryInterfaces.Should().Contain(nameof(IMpCardSubMerchantService));
 
-        // 本域路由集合 = CD1 的 14 条（按接口归属判定）。
+        // 本域路由集合 = CD1 的 53 条（按接口归属判定）。
         CardInterfaceRoutes().Should().BeEquivalentTo(Routes.Select(r => r.Route),
-            "卡券双接口上的路由必须恰为本批 14 条（新增端点须同批进 CD1 与 MpRouteCountGuard）");
+            "卡券五接口上的路由必须恰为 53 条（新增端点须同批进 CD1 与 MpRouteCountGuard）");
 
         // <b>前缀共用留档（本守卫实测发现）</b>：<c>/card/</c> 不是卡券域独占前缀 ——
         // 微信发票域（IMpInvoiceService，20 端点）的路由全部落在 <c>/card/invoice/*</c> 之下。
@@ -431,39 +496,39 @@ public class MpCardContractGuards
             "卡券域不得声明发票路由");
         AssemblyRoutesUnder("/card/").Except(AssemblyRoutesUnder("/card/invoice/"))
             .Should().BeEquivalentTo(Routes.Select(r => r.Route),
-                "程序集内 /card/ 前缀路由 = 卡券 14 + 发票 20，无第三域混入");
+                "程序集内 /card/ 前缀路由 = 卡券 53 + 发票 20，无第三域混入");
 
-        // 未建模族的零路由留档（对齐基准 SKIT 全族 53 端点，本批 14 ⇒ 未建模 39）。
-        // 每族都需要独立的票据 / 支付 / 资质核验，刻意不在本批塞进同一注册组。
-        foreach (var prefix in new[]
+        // B2c 已建模全族正断言（对齐基准 SKIT 卡券全族 53 端点，本域全建模无未建模族）。
+        // 从「未建模零路由负向留档」转为「已建模族级计数 + 归属」；总族计 41 + 主体面 12 = 53。
+        var cardRoutes = CardInterfaceRoutes();
+        foreach (var (prefix, count) in new[]
                  {
-                     "/card/membercard/",   // 会员卡 6（activate / activateuserform / updateuser / userinfo …）
-                     "/card/giftcard/",     // giftcard 族 11（page / order / pay / wxa，与支付强耦合）
-                     "/card/paygiftcard/",  // paygiftcard 族 4（需商户号与支付资质）
-                     "/card/submerchant/",  // 子商户 4（进件与资质核验面）
-                     "/card/storewxa/",     // 门店小程序 2
-                     "/card/mpnews/",       // 卡券图文 1
-                     "/card/generalcard/",  // generalcard/updateuser 1（券型语义与建卡键名的对应关系待官方逐页核验）
-                     "/card/boardingpass/", // 特殊票券 3（值机 / 会议 / 电影票改单）
-                     "/card/meetingticket/",
-                     "/card/movieticket/",
-                     "/card/user/",         // 用户卡包 1（getcardlist）
+                     ("/card/code/", 8),          // 券码核销 3 + 券码运维 5（checkcode/deposit/getdepositcount/update/unavailable 已建模）
+                     ("/card/membercard/", 6),    // 会员卡 6（activate / activateuserform / updateuser / userinfo / geturl / tempinfo）
+                     ("/card/user/", 1),          // 用户卡包 1（getcardlist）
+                     ("/card/giftcard/", 11),     // 礼品卡 11（page / order / pay / wxa）
+                     ("/card/paygiftcard/", 4),   // 付款礼品卡 4
+                     ("/card/submerchant/", 4),   // 子商户 4（进件 / 更新 / 查询）
+                     ("/card/storewxa/", 2),      // 门店小程序 2
+                     ("/card/mpnews/", 1),        // 卡券图文 1
+                     ("/card/generalcard/", 1),   // generalcard/updateuser 1
+                     ("/card/boardingpass/", 1),  // 特殊票券 4（值机 / 会议 / 电影 / 通用券用户）
+                     ("/card/meetingticket/", 1),
+                     ("/card/movieticket/", 1),
                  })
         {
-            AssemblyRoutesUnder(prefix).Should().BeEmpty(
-                $"{prefix} 族未建模 ⇒ 必须零端点（新增时同批扩展 CD1/CD8 与 MpRouteCountGuard）");
+            cardRoutes.Count(r => r.StartsWith(prefix, StringComparison.Ordinal)).Should().Be(count,
+                $"{prefix} 族已建模端点计数（B2c CD8 裁决：从「未建模留档」转为「已建模 + 计数」）");
         }
-
-        // 券码运维族：本域只建模 consume / get / decrypt 三条。
-        AssemblyRoutesUnder("/card/code/").Should().BeEquivalentTo(new[]
-        {
-            "/card/code/consume", "/card/code/get", "/card/code/decrypt",
-        }, "券码运维族未建模 checkcode / deposit / getdepositcount / update / unavailable 五条");
     }
 
-    /// <summary>卡券双接口自身声明的路由（按接口归属判定，不受 <c>/card/invoice/</c> 前缀共用影响）。</summary>
+    /// <summary>卡券五接口自身声明的路由（按接口归属判定，不受 <c>/card/invoice/</c> 前缀共用影响）。</summary>
     private static List<string> CardInterfaceRoutes()
-        => new[] { typeof(IMpCardService), typeof(IMpCardCodeService) }
+        => new[]
+           {
+               typeof(IMpCardService), typeof(IMpCardCodeService),
+               typeof(IMpCardMemberService), typeof(IMpCardGiftService), typeof(IMpCardSubMerchantService),
+           }
             .SelectMany(i => i.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly))
             .Select(m => m.GetCustomAttribute<HttpMethodAttribute>()?.RequestUri)
             .Where(u => u != null)

@@ -110,4 +110,72 @@ public interface IMpCardCodeService
     Task<MpCardCodeDecryptResponse> DecryptCardCodeAsync(
         [Body] MpCardCodeDecryptRequest request,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 查验卡券码。官方文档：<see href="https://developers.weixin.qq.com/doc/offiaccount/Cards_and_Offer/Distributing_Coupons_Vouchers_and_Cards.html#5"/>
+    /// （官方接口英文名 <c>checkCode</c>；B2c 落地券码运维族）。
+    /// </summary>
+    /// <param name="request">查验请求（<c>card_id</c> + 券码列表，均必填）。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
+    /// <returns>存在与不存在的券码列表。</returns>
+    /// <remarks><para>MUD005：令牌强制走 Query 参数 <c>access_token</c>（官方契约，无法改用 Header）。</para></remarks>
+    [Post("/card/code/checkcode")]
+    Task<MpCardCodeCheckResponse> CheckCardCodeAsync(
+        [Body] MpCardCodeCheckRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 导入新券码。官方文档：<see href="https://developers.weixin.qq.com/doc/offiaccount/Cards_and_Offer/Distributing_Coupons_Vouchers_and_Cards.html#5"/>
+    /// （官方接口英文名 <c>deposit</c>）。
+    /// </summary>
+    /// <param name="request">导入请求（<c>card_id</c> + 券码列表；单次上限 100）。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
+    /// <returns>仅 <c>errcode</c>/<c>errmsg</c>。</returns>
+    /// <remarks><para>MUD005：令牌强制走 Query 参数 <c>access_token</c>（官方契约，无法改用 Header）。</para></remarks>
+    [Post("/card/code/deposit")]
+    Task<MpResponse> DepositCardCodeAsync(
+        [Body] MpCardCodeDepositRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 查询导入券码数量。官方文档：<see href="https://developers.weixin.qq.com/doc/offiaccount/Cards_and_Offer/Distributing_Coupons_Vouchers_and_Cards.html#5"/>
+    /// （官方接口英文名 <c>getDepositCount</c>）。
+    /// </summary>
+    /// <param name="request">查询请求（<c>card_id</c> 必填）。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
+    /// <returns>已导入券码数量。</returns>
+    /// <remarks><para>MUD005：令牌强制走 Query 参数 <c>access_token</c>（官方契约，无法改用 Header）。</para></remarks>
+    [Post("/card/code/getdepositcount")]
+    Task<MpCardCodeGetDepositCountResponse> GetDepositCountAsync(
+        [Body] MpCardCodeGetDepositCountRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 设置券码不可用。官方文档：<see href="https://developers.weixin.qq.com/doc/offiaccount/Cards_and_Offer/Managing_Coupons_Vouchers_and_Cards.html#8"/>
+    /// （官方接口英文名 <c>unavailable</c>）。
+    /// </summary>
+    /// <param name="request">失效请求（<c>code</c> 必填；<c>card_id</c> 自定义 code 券必填）。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
+    /// <returns>仅 <c>errcode</c>/<c>errmsg</c>。</returns>
+    /// <remarks>
+    /// <para><b>覆盖删除语义</b>：置失效后该券码不可再核销（官方用于风控场景）。</para>
+    /// <para>MUD005：令牌强制走 Query 参数 <c>access_token</c>（官方契约，无法改用 Header）。</para>
+    /// </remarks>
+    [Post("/card/code/unavailable")]
+    Task<MpResponse> SetCardCodeUnavailableAsync(
+        [Body] MpCardCodeUnavailableRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 更新券码。官方文档：<see href="https://developers.weixin.qq.com/doc/offiaccount/Cards_and_Offer/Managing_Coupons_Vouchers_and_Cards.html#6"/>
+    /// （官方接口英文名 <c>update</c>；仅官方生成的 code 支持替换）。
+    /// </summary>
+    /// <param name="request">更新请求（<c>code</c> + <c>new_code</c> 必填）。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
+    /// <returns>仅 <c>errcode</c>/<c>errmsg</c>。</returns>
+    /// <remarks><para>MUD005：令牌强制走 Query 参数 <c>access_token</c>（官方契约，无法改用 Header）。</para></remarks>
+    [Post("/card/code/update")]
+    Task<MpResponse> UpdateCardCodeAsync(
+        [Body] MpCardCodeUpdateRequest request,
+        CancellationToken cancellationToken = default);
 }

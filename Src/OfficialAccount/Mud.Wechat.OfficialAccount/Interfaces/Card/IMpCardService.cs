@@ -269,4 +269,112 @@ public interface IMpCardService
     Task<MpResponse> SetTestWhiteListAsync(
         [Body] MpCardTestWhiteListSetRequest request,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 机票值机。官方文档：<see href="https://developers.weixin.qq.com/doc/offiaccount/Cards_and_Offer/Special_ticket.html#4"/>
+    /// （官方接口英文名 <c>boardingPassCheckin</c>；特殊票券族，B2c 落地）。
+    /// </summary>
+    /// <param name="request">值机请求（<c>code</c> 必填；其余选填按值机进度更新）。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
+    /// <returns>仅 <c>errcode</c>/<c>errmsg</c>。</returns>
+    /// <remarks><para>MUD005：令牌强制走 Query 参数 <c>access_token</c>（官方契约，无法改用 Header）。</para></remarks>
+    [Post("/card/boardingpass/checkin")]
+    Task<MpResponse> BoardingPassCheckinAsync(
+        [Body] MpCardBoardingPassCheckinRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 更新会议门票。官方文档：<see href="https://developers.weixin.qq.com/doc/offiaccount/Cards_and_Offer/Special_ticket.html#2"/>
+    /// （官方接口英文名 <c>meetingTicketUpdateUser</c>；特殊票券族）。
+    /// </summary>
+    /// <param name="request">更新请求（<c>code</c> 必填）。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
+    /// <returns>仅 <c>errcode</c>/<c>errmsg</c>。</returns>
+    /// <remarks><para>MUD005：令牌强制走 Query 参数 <c>access_token</c>（官方契约，无法改用 Header）。</para></remarks>
+    [Post("/card/meetingticket/updateuser")]
+    Task<MpResponse> UpdateMeetingTicketAsync(
+        [Body] MpCardMeetingTicketUpdateUserRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 更新电影票。官方文档：<see href="https://developers.weixin.qq.com/doc/offiaccount/Cards_and_Offer/Special_ticket.html#7"/>
+    /// （官方接口英文名 <c>movieTicketUpdateUser</c>；特殊票券族）。
+    /// </summary>
+    /// <param name="request">更新请求（<c>code</c> 必填）。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
+    /// <returns>仅 <c>errcode</c>/<c>errmsg</c>。</returns>
+    /// <remarks><para>MUD005：令牌强制走 Query 参数 <c>access_token</c>（官方契约，无法改用 Header）。</para></remarks>
+    [Post("/card/movieticket/updateuser")]
+    Task<MpResponse> UpdateMovieTicketAsync(
+        [Body] MpCardMovieTicketUpdateUserRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 更新通用券用户信息。官方文档：<see href="https://developers.weixin.qq.com/doc/offiaccount/Cards_and_Offer/gift_card.html"/>
+    /// （官方接口英文名 <c>generalCardUpdateUser</c>）。
+    /// </summary>
+    /// <param name="request">更新请求（<c>card_id</c> + <c>code</c> 必填）。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
+    /// <returns>变动后积分 / 余额。</returns>
+    /// <remarks>
+    /// <para><b>custom_field 覆盖语义</b>：传入即整字段覆盖（裁决与字段表见 <see cref="MpCardGeneralCardUpdateUserRequest"/>）。</para>
+    /// <para>MUD005：令牌强制走 Query 参数 <c>access_token</c>（官方契约，无法改用 Header）。</para>
+    /// </remarks>
+    [Post("/card/generalcard/updateuser")]
+    Task<MpCardGeneralCardUpdateUserResponse> UpdateGeneralCardUserAsync(
+        [Body] MpCardGeneralCardUpdateUserRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 获取卡券图文 HTML。官方文档：<see href="https://developers.weixin.qq.com/doc/offiaccount/Cards_and_Offer/Distributing_Coupons_Vouchers_and_Cards.html#6"/>
+    /// （官方接口英文名 <c>mpNewsGetHtml</c>）。
+    /// </summary>
+    /// <param name="request">查询请求（<c>card_id</c> 必填）。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
+    /// <returns>图文 HTML 内容。</returns>
+    /// <remarks><para>MUD005：令牌强制走 Query 参数 <c>access_token</c>（官方契约，无法改用 Header）。</para></remarks>
+    [Post("/card/mpnews/gethtml")]
+    Task<MpCardMpNewsGetHtmlResponse> GetCardMpNewsHtmlAsync(
+        [Body] MpCardMpNewsGetHtmlRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 查询门店小程序卡券。官方文档：<see href="https://developers.weixin.qq.com/doc/offiaccount/WeChat_Stores/WeChat_Shop_Miniprogram_Interface.html#18"/>
+    /// （官方接口英文名 <c>storeWxaGet</c>）。
+    /// </summary>
+    /// <param name="request">查询请求（<c>poi_id</c> 必填）。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
+    /// <returns>门店绑定的卡券 ID（未绑定时缺省）。</returns>
+    /// <remarks><para>MUD005：令牌强制走 Query 参数 <c>access_token</c>（官方契约，无法改用 Header）。</para></remarks>
+    [Post("/card/storewxa/get")]
+    Task<MpCardStoreWxaGetResponse> GetStoreWxaCardAsync(
+        [Body] MpCardStoreWxaGetRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 设置门店小程序卡券。官方文档：<see href="https://developers.weixin.qq.com/doc/offiaccount/WeChat_Stores/WeChat_Shop_Miniprogram_Interface.html#18"/>
+    /// （官方接口英文名 <c>storeWxaSet</c>）。
+    /// </summary>
+    /// <param name="request">设置请求（<c>poi_id</c> + <c>card_id</c> 必填）。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
+    /// <returns>仅 <c>errcode</c>/<c>errmsg</c>。</returns>
+    /// <remarks><para>MUD005：令牌强制走 Query 参数 <c>access_token</c>（官方契约，无法改用 Header）。</para></remarks>
+    [Post("/card/storewxa/set")]
+    Task<MpResponse> SetStoreWxaCardAsync(
+        [Body] MpCardStoreWxaSetRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 查询子商户接入协议与类目。官方文档：<see href="https://developers.weixin.qq.com/doc/offiaccount/Cards_and_Offer/Third-party_developer_mode.html#3"/>
+    /// （官方接口英文名 <c>getApplyProtocol</c>；<b>本域唯一 GET、无请求体</b>）。
+    /// </summary>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
+    /// <returns>类目树（一级 / 二级类目及资质要求）。</returns>
+    /// <remarks>
+    /// <para><b>仅第三方平台 / 代开发场景可用</b>（子商户进件的资质查询前置）。</para>
+    /// <para>MUD005：令牌强制走 Query 参数 <c>access_token</c>（官方契约，无法改用 Header）。</para>
+    /// </remarks>
+    [Get("/card/getapplyprotocol")]
+    Task<MpCardGetApplyProtocolResponse> GetApplyProtocolAsync(
+        CancellationToken cancellationToken = default);
 }

@@ -67,14 +67,17 @@ public class MpRouteCountGuard
             .Select(u => u!)
             .ToHashSet(StringComparer.Ordinal);
 
-        // 下载通道 3 条（MpMediaDownloadService 的路径常量，非 HTTP 特性；响应为文件流不走生成管线）。
+        // 下载通道 4 条（路径常量承载，非 HTTP 特性；响应为文件流/文本不走生成管线）：
+        // 素材 3 条（MpMediaDownloadService）+ 非税对账单 1 条（MpNontaxBillDownloadService，B2b）。
         var downloadRoutes = new HashSet<string>(StringComparer.Ordinal)
         {
             "/cgi-bin/media/get",
             "/cgi-bin/media/get/jssdk",
             "/cgi-bin/material/get_material",
+            MpNontaxBillDownloadService.DownloadBillPath,
         };
-        typeof(MpMediaDownloadService).Should().NotBeNull("下载通道服务必须存在（3 条路由承载体）");
+        typeof(MpMediaDownloadService).Should().NotBeNull("下载通道服务必须存在（素材 3 条路由承载体）");
+        typeof(MpNontaxBillDownloadService).Should().NotBeNull("非税账单下载通道服务必须存在（B2b）");
 
         var total = new HashSet<string>(main, StringComparer.Ordinal);
         total.UnionWith(authRoutes);

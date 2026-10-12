@@ -17,6 +17,8 @@
 
 P2 各域 DTO 随接口落地同批进入本包（命名空间 `Mud.Wechat.Channels.DataModels.{域}`）。
 
+- **文件布局**：一类型一文件（文件名 == 类型名）；域目录下的**功能族子目录仅作组织、不入命名空间**（命名空间恒为 `...DataModels.{域}`，`SerializerClassName` 仍取域段）。回调域按**事件族**建子目录（一份载荷族一目录，含 2 个类型也对称落位），其余域按**端点族**归组；不属于任何既有分组的类型留域根，不强行归族。
+
 ## 已踩陷阱与边界（改动前必读）
 
 - **生成物勿手改**：`Generated/*JsonContext.g.cs` 由 `scripts/GenerateJsonContext.ps1` 生成并提交版本控制；新增 / 修改 DTO 后必须重跑 `AddHttpJsonSerializable.ps1` + `GenerateJsonContext.ps1`，并同批更新逐域守卫的登记计数断言。

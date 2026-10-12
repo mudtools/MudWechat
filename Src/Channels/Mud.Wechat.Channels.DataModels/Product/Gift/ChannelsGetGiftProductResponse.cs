@@ -1,0 +1,32 @@
+// -----------------------------------------------------------------------
+//  作者：Mud Studio  版权所有 (c) Mud Studio 2026
+//  Mud.Wechat 项目的版权、商标、专利和其他相关权利均受相应法律法规的保护。
+//  本项目主要遵循 MIT 许可证进行分发和使用。许可证位于源代码树根目录中的 LICENSE-MIT 文件。
+//  不得利用本项目从事危害国家安全、扰乱社会秩序、侵犯他人合法权益等法律法规禁止的活动！任何基于本项目开发而产生的一切法律纠纷和责任，我们不承担任何责任！
+// -----------------------------------------------------------------------
+
+// 商品管理（Product）域「赠品子域」（6 端点：gift/add、gift/get、gift/list/get、gift/onsale/set、
+// gift/stock/update、gift/update）DTO。
+// 命名空间恒为 Mud.Wechat.Channels.DataModels.Product（功能族子目录仅作组织，不入命名空间）。
+// gift/list/get 请求/响应与商品列表字段集一致 ⇒ 分别复用 ChannelsProductListRequest / ChannelsProductIdListResponse；
+// gift/stock/update 与商品库存更新字段集一致 ⇒ 复用 ChannelsUpdateStockRequest。
+
+namespace Mud.Wechat.Channels.DataModels.Product;
+
+/// <summary>获取赠品（<c>product/gift/get</c>）响应。</summary>
+[HttpJsonSerializable(SerializerClassName = "Product")]
+public class ChannelsGetGiftProductResponse : ChannelsResponse
+{
+    /// <summary>
+    /// 获取或设置赠品线上数据（官方 <c>product</c>；入参 <c>data_type==2</c> 时返回该字段；
+    /// 入参 <c>data_type==3</c> 时赠品从未上线过，不返回该字段）。
+    /// </summary>
+    [JsonPropertyName("product")]
+    public ChannelsGiftProductDetail? Product { get; set; }
+
+    /// <summary>
+    /// 获取或设置赠品草稿数据（官方 <c>edit_product</c>；入参 <c>data_type==1</c> 时不返回该字段）。
+    /// </summary>
+    [JsonPropertyName("edit_product")]
+    public ChannelsGiftProductDetail? EditProduct { get; set; }
+}

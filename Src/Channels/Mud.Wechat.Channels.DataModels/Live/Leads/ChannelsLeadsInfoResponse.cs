@@ -1,0 +1,33 @@
+// -----------------------------------------------------------------------
+//  作者：Mud Studio  版权所有 (c) Mud Studio 2026
+//  Mud.Wechat 项目的版权、商标、专利和其他相关权利均受相应法律法规的保护。
+//  本项目主要遵循 MIT 许可证进行分发和使用。许可证位于源代码树根目录中的 LICENSE-MIT 文件。
+//  不得利用本项目从事危害国家安全、扰乱社会秩序、侵犯他人合法权益等法律法规禁止的活动！任何基于本项目开发而产生的一切法律纠纷和责任，我们不承担任何责任！
+// -----------------------------------------------------------------------
+
+namespace Mud.Wechat.Channels.DataModels.Live;
+
+/// <summary>
+/// 获取留资信息详情（<c>get_leads_info_by_request_id</c> / <c>get_leads_info_by_component_id</c>）响应。
+/// </summary>
+/// <remarks>
+/// 两端点响应字段集一致（<c>user_data</c> + <c>last_buffer</c> + <c>continue_flag</c>）⇒ 共用本 DTO；
+/// <c>get_leads_info_by_component_id</c> 官方参数表未逐项列出 <c>user_data</c> 元素字段，
+/// 按官方示例与「按直播场次获取」端点同构处理（含可选 <c>close_flag</c> 超集）。
+/// 权限集 id：143。
+/// </remarks>
+[HttpJsonSerializable(SerializerClassName = "Live")]
+public class ChannelsLeadsInfoResponse : ChannelsResponse
+{
+    /// <summary>获取或设置用户留资信息列表（官方 <c>user_data</c>）。</summary>
+    [JsonPropertyName("user_data")]
+    public List<ChannelsLeadsUserData>? UserData { get; set; }
+
+    /// <summary>获取或设置本次翻页的上下文（官方 <c>last_buffer</c>，用于顺序翻页请求）。</summary>
+    [JsonPropertyName("last_buffer")]
+    public string? LastBuffer { get; set; }
+
+    /// <summary>获取或设置是否还有留资信息（官方 <c>continue_flag</c>）。</summary>
+    [JsonPropertyName("continue_flag")]
+    public bool? ContinueFlag { get; set; }
+}

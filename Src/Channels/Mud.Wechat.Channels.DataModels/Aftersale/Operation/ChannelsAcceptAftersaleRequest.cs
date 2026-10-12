@@ -1,0 +1,35 @@
+// -----------------------------------------------------------------------
+//  作者：Mud Studio  版权所有 (c) Mud Studio 2026
+//  Mud.Wechat 项目的版权、商标、专利和其他相关权利均受相应法律法规的保护。
+//  本项目主要遵循 MIT 许可证进行分发和使用。许可证位于源代码树根目录中的 LICENSE-MIT 文件。
+//  不得利用本项目从事危害国家安全、扰乱社会秩序、侵犯他人合法权益等法律法规禁止的活动！任何基于本项目开发而产生的一切法律纠纷和责任，我们不承担任何责任！
+// -----------------------------------------------------------------------
+
+// 售后管理（Aftersale）域「售后操作类」DTO（aftersale/acceptapply、aftersale/rejectapply、
+// aftersale/acceptexchangereship、aftersale/rejectexchangereship、aftersale/merchantreship、
+// aftersale/merchantupdatereshipexpress、aftersale/merchantupdateaftersale、aftersale/genaftersaleorder、
+// aftersale/refundpricediff、aftersale/getexchangeableskulist、aftersale/applyvirtualtelnum、
+// aftersale/handlefastexchangereceipt、aftersale/uploadrefundcertificate）。
+// 命名空间恒为 Mud.Wechat.Channels.DataModels.Aftersale。
+
+namespace Mud.Wechat.Channels.DataModels.Aftersale;
+
+/// <summary>同意售后（<c>aftersale/acceptapply</c>）请求体。</summary>
+[HttpJsonSerializable(SerializerClassName = "Aftersale")]
+public class ChannelsAcceptAftersaleRequest
+{
+    /// <summary>获取或设置售后单号（官方 <c>after_sale_order_id</c>，必填）。</summary>
+    [JsonPropertyName("after_sale_order_id")]
+    public string AfterSaleOrderId { get; set; } = string.Empty;
+
+    /// <summary>获取或设置同意退货时传入地址 id（官方 <c>address_id</c>，否则后续接口处理缺地址请求将报错）。</summary>
+    [JsonPropertyName("address_id")]
+    public string? AddressId { get; set; }
+
+    /// <summary>
+    /// 获取或设置同意类型（官方 <c>accept_type</c>）：1 用于退货退款或换货场景表示同意退货（不能用于仅退款或收到货同意退款）；
+    /// 2 用于收到货或仅退款场景表示同意退款（不能用于换货或同意用户退货）；不填则按当前售后单状态及类型自动选择。
+    /// </summary>
+    [JsonPropertyName("accept_type")]
+    public int? AcceptType { get; set; }
+}

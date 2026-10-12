@@ -27,21 +27,3 @@ public class WxaRedPacketCoverRequest
     [JsonPropertyName("ctoken")]
     public string? CToken { get; set; }
 }
-
-/// <summary>获取微信红包封面应答（<c>data.url</c>）。</summary>
-[HttpJsonSerializable(SerializerClassName = "RedPacketCover")]
-public class WxaRedPacketCoverResponse : WxaResponse
-{
-    /// <summary>返回数据（<c>data</c>），见 <see cref="WxaRedPacketCoverData"/>。</summary>
-    [JsonPropertyName("data")]
-    public WxaRedPacketCoverData? Data { get; set; }
-}
-
-/// <summary>微信红包封面返回数据（<c>data</c>）。</summary>
-[HttpJsonSerializable(SerializerClassName = "RedPacketCover")]
-public class WxaRedPacketCoverData
-{
-    /// <summary>指定用户可领取的红包封面链接（<c>url</c>）。</summary>
-    [JsonPropertyName("url")]
-    public string? Url { get; set; }
-}

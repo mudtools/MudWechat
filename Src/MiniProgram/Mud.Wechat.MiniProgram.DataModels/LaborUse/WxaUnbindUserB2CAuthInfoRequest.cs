@@ -7,35 +7,6 @@
 
 namespace Mud.Wechat.MiniProgram.DataModels.LaborUse;
 
-/// <summary>推送用工消息请求体（<c>POST /cgi-bin/message/wxopen/employeerelationmsg/send</c>）。</summary>
-/// <remarks>
-/// <para>官方文档：<c>laboruse/api_sendemployeerelationmsg.html</c>。</para>
-/// <para>
-/// 用工关系场景下向<b>已建立用工关联</b>的用户推送模板消息；<c>template_id</c> 为
-/// 用工类目专属模板 ID。<c>data</c> 为推送数据 <b>JSON 字符串</b>（官方类型即 string，
-/// 由键值对 <c>"key": {"value": ...}</c> 组成）。
-/// </para>
-/// </remarks>
-[HttpJsonSerializable(SerializerClassName = "LaborUse")]
-public class WxaSendEmployeeRelationMessageRequest
-{
-    /// <summary>模板 ID（<c>template_id</c>，必填；用工类目专属模板）。</summary>
-    [JsonPropertyName("template_id")]
-    public string? TemplateId { get; set; }
-
-    /// <summary>接收消息的用户 OpenId（<c>touser</c>，必填）。</summary>
-    [JsonPropertyName("touser")]
-    public string? ToUserOpenId { get; set; }
-
-    /// <summary>小程序页面路径（<c>page</c>，跳转链接）。</summary>
-    [JsonPropertyName("page")]
-    public string? PagePath { get; set; }
-
-    /// <summary>推送数据 JSON 字符串（<c>data</c>）。</summary>
-    [JsonPropertyName("data")]
-    public string? Data { get; set; }
-}
-
 /// <summary>解绑用工关系请求体（<c>POST /wxa/business/unbinduserb2cauthinfo</c>）。</summary>
 /// <remarks>官方文档：<c>laboruse/api_unbinduserb2cauthinfo.html</c>。<c>openid_list</c> 为待解绑用户列表（必填，非空）。</remarks>
 [HttpJsonSerializable(SerializerClassName = "LaborUse")]

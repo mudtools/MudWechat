@@ -1,0 +1,22 @@
+// -----------------------------------------------------------------------
+//  作者：Mud Studio  版权所有 (c) Mud Studio 2026
+//  Mud.Wechat 项目的版权、商标、专利和其他相关权利均受相应法律法规的保护。
+//  本项目主要遵循 MIT 许可证进行分发和使用。许可证位于源代码树根目录中的 LICENSE-MIT 文件。
+//  不得利用本项目从事危害国家安全、扰乱社会秩序、侵犯他人合法权益等法律法规禁止的活动！任何基于本项目开发而产生的一切法律纠纷和责任，我们不承担任何责任！
+// -----------------------------------------------------------------------
+
+namespace Mud.Wechat.OfficialAccount.DataModels.OpenApi;
+
+/// <summary>查询 rid 信息（<c>openapi/rid/get</c>）响应。</summary>
+/// <remarks>
+/// 官方契约（逐页核验 2026-10-07）：rid 查询属开发者私密行为，<b>仅支持同账号查询</b>
+/// （账号 A 产生的 rid 须用账号 A 的 access_token 查询）；rid 有效期仅 <b>7 天</b>；
+/// <c>"/xxx/sns/xxx"</c> 类接口不支持本查询。
+/// </remarks>
+[HttpJsonSerializable(SerializerClassName = "OpenApi")]
+public class MpGetRidInfoResponse : MpResponse
+{
+    /// <summary>获取或设置该 rid 对应的请求详情（官方 <c>request</c>）。</summary>
+    [JsonPropertyName("request")]
+    public MpRidRequestInfo? Request { get; set; }
+}

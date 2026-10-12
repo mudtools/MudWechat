@@ -38,34 +38,3 @@ public class MpTag
     [JsonPropertyName("count")]
     public int? Count { get; set; }
 }
-
-/// <summary>标签的「名称」形态（创建标签请求体的 <c>tag</c> 对象）。</summary>
-[HttpJsonSerializable(SerializerClassName = "Tag")]
-public class MpTagName
-{
-    /// <summary>标签名（官方：30 个字符以内）。</summary>
-    [JsonPropertyName("name")]
-    public string Name { get; set; } = string.Empty;
-}
-
-/// <summary>标签的「标识 + 名称」形态（编辑标签请求体的 <c>tag</c> 对象）。</summary>
-[HttpJsonSerializable(SerializerClassName = "Tag")]
-public class MpTagIdName
-{
-    /// <summary>标签 id，由微信分配。</summary>
-    [JsonPropertyName("id")]
-    public int Id { get; set; }
-
-    /// <summary>修改后的标签名（UTF8 编码）。</summary>
-    [JsonPropertyName("name")]
-    public string Name { get; set; } = string.Empty;
-}
-
-/// <summary>标签的「标识」形态（删除标签请求体的 <c>tag</c> 对象）。</summary>
-[HttpJsonSerializable(SerializerClassName = "Tag")]
-public class MpTagId
-{
-    /// <summary>标签 id。</summary>
-    [JsonPropertyName("id")]
-    public int Id { get; set; }
-}

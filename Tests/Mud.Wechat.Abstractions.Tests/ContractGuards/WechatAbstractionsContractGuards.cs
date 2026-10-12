@@ -324,7 +324,9 @@ public class WechatAbstractionsContractGuards
 
             var relativeDir = includeMatch.Groups[1].Value
                 .Replace("$(MSBuildThisFileDirectory)", string.Empty, StringComparison.Ordinal);
-            var resolvedDir = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(projectPath)!, relativeDir));
+            // csproj 字面量用 `\`，MSBuild 在 unix 会归一为 `/`（构建/打包照常解析）；
+            // 守卫须按同一口径归一 —— 否则 Linux 上整段被当作单个目录名，恒不存在（CI ubuntu 失败）。
+            var resolvedDir = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(projectPath)!, NormalizeSeparators(relativeDir)));
             Directory.Exists(resolvedDir).Should().BeTrue(
                 $"{hostPackage} 内嵌分析器路径解析后必须存在：{relativeDir} ⇒ {resolvedDir}；" +
                 "源码目录归类移动时须同批改此相对路径");

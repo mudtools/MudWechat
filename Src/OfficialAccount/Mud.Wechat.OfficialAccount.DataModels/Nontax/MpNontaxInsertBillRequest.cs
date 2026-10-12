@@ -1,0 +1,31 @@
+// -----------------------------------------------------------------------
+//  作者：Mud Studio  版权所有 (c) Mud Studio 2026
+//  Mud.Wechat 项目的版权、商标、专利和其他相关权利均受相应法律法规的保护。
+//  本项目主要遵循 MIT 许可证进行分发和使用。许可证位于源代码树根目录中的 LICENSE-MIT 文件。
+//  不得利用本项目从事危害国家安全、扰乱社会秩序、侵犯他人合法权益等法律法规禁止的活动！任何基于本项目开发而产生的一切法律纠纷和责任，我们不承担任何责任！
+// -----------------------------------------------------------------------
+
+namespace Mud.Wechat.OfficialAccount.DataModels.Nontax;
+
+/// <summary>
+/// 「插入票据」请求（官方 <c>insertbill</c>）。
+/// </summary>
+[HttpJsonSerializable(SerializerClassName = "Nontax")]
+public class MpNontaxInsertBillRequest
+{
+    /// <summary>获取或设置非税订单号（官方 <c>order_id</c>，必填）。</summary>
+    [JsonPropertyName("order_id")]
+    public string OrderId { get; set; } = string.Empty;
+
+    /// <summary>获取或设置公众号 <c>appid</c>（官方 <c>appid</c>，可选）。</summary>
+    [JsonPropertyName("appid")]
+    public string? AppId { get; set; }
+
+    /// <summary>获取或设置票据卡券 ID（官方 <c>card_id</c>，必填；来自 createbillcard）。</summary>
+    [JsonPropertyName("card_id")]
+    public string CardId { get; set; } = string.Empty;
+
+    /// <summary>获取或设置卡券扩展信息（官方 <c>card_ext</c>，必填）。</summary>
+    [JsonPropertyName("card_ext")]
+    public MpNontaxBillCardExtra CardExt { get; set; } = new();
+}

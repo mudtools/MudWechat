@@ -8,15 +8,19 @@
 namespace Mud.Wechat.Work.Abstractions.Authentication.MultiApp;
 
 /// <summary>
-/// 应用上下文退役队列：被替换/移除的旧上下文与「待清库任务」在宽限期（默认 300s）后延迟执行。
+/// 应用上下文退役队列：被替换/移除的旧上下文在宽限期（默认 300s）后延迟 Dispose；
+/// 持久层清库任务则<b>恒即时</b>起飞（不享受宽限期）。
 /// </summary>
 /// <remarks>
 /// <list type="bullet">
 /// <item><b>TMA-07/TMA-24</b>：上下文内含 Timer/锁等根引用，GC 不会回收，必须确定性 Dispose；
 /// 宽限期保护仍在飞行中的请求（旧上下文短期内仍可用）。</item>
-/// <item><b>P1-9（R14）</b>：持久层清库（<c>PurgeAppTokensAsync</c>）以 <see cref="Func{TResult}"/> 载荷入队——
-/// <c>RemoveApp</c> 是同步 API，直接等待异步清库会引入 sync-over-async 死锁风险；本队列的
-/// <c>Timer</c> 回调天然脱离调用栈与注册表锁，是唯一不需要 sync-over-async 的既有执行点。</item>
+/// <item><b>P1-9 / P1-4</b>：持久层清库（<c>PurgeAppTokensAsync</c>）以 <see cref="Func{TResult}"/> 载荷
+/// fire-and-forget 起飞——<c>RemoveApp</c> 是同步 API，直接等待异步清库会引入 sync-over-async 死锁风险；
+/// 且清库<b>没有「飞行中的读者」</b>，旧令牌继续可读本身就是风险源（密钥轮换 = <c>RemoveApp</c> +
+/// <c>AddApp</c>，通常伴随重新发布；进程若在宽限期内退出，进程内队列随之销毁 ⇒ 清库永不执行 ⇒
+/// 新实例读穿透命中旧令牌，最长 2h 新密钥不生效），故不经宽限期。
+/// 飞行任务由 <see cref="_inFlightCleanups"/> 登记，停机时限时排空。</item>
 /// <item><b>P2-8</b>：<c>Timer</c> 回调可以重入（上一次未完成即触发下一次），故 <c>Pump</c> 以
 /// <see cref="Interlocked"/> 重入闸 + 全包裹 <c>try/catch</c> 保护（<c>async void</c> 的未观察异常会击穿进程）。</item>
 /// </list>
@@ -83,11 +87,15 @@ internal sealed class WechatAppContextRetirement : IDisposable
     }
 
     /// <summary>
-    /// 将异步清理任务入队（宽限期后执行；失败仅告警，不阻断后续条目）。
+    /// 起飞持久层清库任务（<b>立即执行</b>，不进入上下文宽限期）。
     /// </summary>
     /// <param name="appKey">应用键（仅用于诊断）。</param>
     /// <param name="cleanup">清理委托（如持久层令牌清库）。</param>
     /// <exception cref="ArgumentNullException"><paramref name="cleanup"/> 为 <c>null</c>。</exception>
+    /// <remarks>
+    /// <b>P1-4</b>：清库<b>恒即时</b>——脱泵 fire-and-forget + 飞行登记（停机限时排空），
+    /// 慢/悬挂存储不阻塞调用方，也不得被「进程在宽限期内退出」吞掉。
+    /// </remarks>
     public void EnqueueCleanup(string appKey, Func<CancellationToken, Task> cleanup)
     {
         if (cleanup == null) throw new ArgumentNullException(nameof(cleanup));
@@ -99,20 +107,12 @@ internal sealed class WechatAppContextRetirement : IDisposable
             return;
         }
 
-        if (_retireDelay <= TimeSpan.Zero || _pumpTimer == null)
-        {
-            // 无巡检泵（宽限期为 0 或计时器不可用）：脱泵 fire-and-forget + 异常观察，避免 sync-over-async。
-            // M5（F5）：改走 StartCleanup 纳入飞行登记，停机排空可见。
-            StartCleanup(appKey, cleanup);
-            return;
-        }
-
-        _queue.Enqueue(WechatRetirementEntry.ForCleanup(appKey, cleanup, DueAt()));
+        StartCleanup(appKey, cleanup);
     }
 
     private DateTimeOffset DueAt() => DateTimeOffset.UtcNow + _retireDelay;
 
-    // M5 后循环体内不再有 await（清库脱泵、上下文同步处置）：泵回调退化为纯同步分派，
+    // 泵回调为纯同步分派（清库已脱泵即时执行，队列仅承载上下文条目）：
     // try/catch 全包裹保留为兜底（P2-8：任何逃逸异常都会击穿进程）。
     private void Pump(object? state)
     {
@@ -138,29 +138,14 @@ internal sealed class WechatAppContextRetirement : IDisposable
                     break;
                 }
 
-                if (entry.Context != null)
-                {
-                    DisposeContext(entry);
-                    continue;
-                }
-
-                if (entry.Cleanup != null)
-                {
-                    // M5（F5）：清库脱泵 fire-and-forget——慢/悬挂存储不得阻塞同队列后续上下文的
-                    // 确定性 Dispose（上下文持 Timer 根引用）；RunCleanupAsync 自身全捕获异常，
-                    // fire-and-forget 无未观察异常面。清库 CancellationToken 维持 None（无取消源可接，
-                    // 停机放弃等待即事实取消）。
-                    StartCleanup(entry.AppKey, entry.Cleanup);
-                    continue;
-                }
+                DisposeContext(entry);
             }
         }
         catch (Exception ex)
         {
             // async void：任何逃逸异常都会击穿进程，必须全包裹兜底。
-            // M9（F9）：文案如实化——条目已出队、清库任务失败不重试（RunCleanupAsync 吞失败仅告警），
-            // 令牌随 TTL 过期；「下轮重试」仅对本轮剩余在队条目成立。
-            _logger.LogWarning(ex, "应用上下文退役巡检发生异常（本轮已中止；清库任务失败不重试，令牌随 TTL 过期）。");
+            // M9（F9）：文案如实化——条目已出队，本轮剩余在队条目待下轮巡检处理。
+            _logger.LogWarning(ex, "应用上下文退役巡检发生异常（本轮已中止；剩余在队条目待下轮巡检）。");
         }
         finally
         {
@@ -182,7 +167,7 @@ internal sealed class WechatAppContextRetirement : IDisposable
     {
         try
         {
-            entry.Context!.Dispose();
+            entry.Context.Dispose();
             _logger.LogDebug("应用上下文已退役释放（AppKey: {AppKey}）。", entry.AppKey);
         }
         catch (Exception ex)
@@ -215,20 +200,11 @@ internal sealed class WechatAppContextRetirement : IDisposable
         _pumpTimer?.Dispose();
 
         // 立即处置全部在队条目（管理器停机路径）：上下文确定性 Dispose；
-        // M5（F5/MR6）：清库条目先起飞（在队条目尚无 task 可等待），随后与飞行任务一并限时排空——
+        // M5（F5/MR6）：与已起飞的飞行清库任务一并限时排空——
         // 存储悬挂不再无限阻塞进程退出；被放弃的清库与「清库失败」同一兜底：令牌随 TTL 过期。
         while (_queue.TryDequeue(out var entry))
         {
-            if (entry.Context != null)
-            {
-                DisposeContext(entry);
-                continue;
-            }
-
-            if (entry.Cleanup != null)
-            {
-                StartCleanup(entry.AppKey, entry.Cleanup);
-            }
+            DisposeContext(entry);
         }
 
         foreach (var task in _inFlightCleanups.Keys.ToArray())
@@ -252,27 +228,20 @@ internal sealed class WechatAppContextRetirement : IDisposable
 
     private readonly struct WechatRetirementEntry
     {
-        private WechatRetirementEntry(
-            string appKey, IWechatAppContext? context, Func<CancellationToken, Task>? cleanup, DateTimeOffset retireAt)
+        public WechatRetirementEntry(string appKey, IWechatAppContext context, DateTimeOffset retireAt)
         {
             AppKey = appKey;
             Context = context;
-            Cleanup = cleanup;
             RetireAt = retireAt;
         }
 
         public string AppKey { get; }
 
-        public IWechatAppContext? Context { get; }
-
-        public Func<CancellationToken, Task>? Cleanup { get; }
+        public IWechatAppContext Context { get; }
 
         public DateTimeOffset RetireAt { get; }
 
         public static WechatRetirementEntry ForContext(string appKey, IWechatAppContext context, DateTimeOffset dueAt)
-            => new(appKey, context, null, dueAt);
-
-        public static WechatRetirementEntry ForCleanup(string appKey, Func<CancellationToken, Task> cleanup, DateTimeOffset dueAt)
-            => new(appKey, null, cleanup, dueAt);
+            => new(appKey, context, dueAt);
     }
 }

@@ -14,7 +14,8 @@ namespace Mud.Wechat.Work.Abstractions.Authentication;
 /// <para>提供在不同企业微信应用上下文之间切换的能力。</para>
 /// <para>当系统配置了多个企业微信应用时，可通过此接口快速切换当前使用的应用上下文；
 /// 第三方/服务商代开发场景使用 <see cref="UseCorpScope"/> 一次性建立「应用 + 授权企业」作用域
-/// （企业级 access_token 的 scope 来源），释放时自动归还，杜绝企业上下文残留。</para>
+/// （企业级 access_token 的<b>环境来源</b>：经 <c>CorpTokenManager</c> 解析后进入 scope 键），
+/// 释放时自动归还，杜绝企业上下文残留。</para>
 /// </remarks>
 /// <remarks>
 /// <para>
@@ -61,7 +62,8 @@ public interface IWechatAppContextSwitcher : IAppContextSwitcher, IAppScopeSwitc
     /// 建立「应用 + 授权企业」复合作用域（一次性 <c>using</c> 语义；第三方 / 服务商代开发调用的<b>推荐入口</b>）。
     /// </summary>
     /// <param name="appKey">应用标识（须为已注册应用；守卫与 <see cref="IAppScopeSwitcher.UseAppScope"/> 完全一致）。</param>
-    /// <param name="authCorpId">授权方（企业）CorpId（企业级 access_token 的 scope 唯一来源，必填）。</param>
+    /// <param name="authCorpId">授权方（企业）CorpId（必填；经 <c>CorpTokenManager</c> 解析后进入企业级 access_token 的 scope 键，
+    /// 与显式 <c>GetTokenAsync(new[]{ authCorpId })</c> <b>同键空间</b>）。</param>
     /// <param name="permanentCode">该企业的永久授权码（可选；缺省时由 <c>IWechatCorpAuthStore</c> 持久化仓储提供）。</param>
     /// <returns>释放时同时还原「应用上下文」与「企业上下文」两个快照的作用域对象（幂等）。</returns>
     /// <exception cref="ArgumentException"><paramref name="appKey"/> 格式非法（校验先于应用解析，失败不触碰 <c>IWechatAppManager</c>）。</exception>

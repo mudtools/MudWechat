@@ -30,12 +30,3 @@ public class WxaSoterVerifySignatureRequest
     [JsonPropertyName("json_signature")]
     public string? JsonSignature { get; set; }
 }
-
-/// <summary>生物认证秘钥签名验证应答（<c>is_ok</c>）。</summary>
-[HttpJsonSerializable(SerializerClassName = "Soter")]
-public class WxaSoterVerifySignatureResponse : WxaResponse
-{
-    /// <summary>生物认证秘钥签名验证是否通过（<c>is_ok</c>）。</summary>
-    [JsonPropertyName("is_ok")]
-    public bool? IsOk { get; set; }
-}

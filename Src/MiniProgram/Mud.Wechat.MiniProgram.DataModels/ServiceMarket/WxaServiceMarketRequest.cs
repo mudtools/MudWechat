@@ -43,39 +43,3 @@ public class WxaServiceMarketRequest
     [JsonPropertyName("client_msg_id")]
     public string? ClientMessageId { get; set; }
 }
-
-/// <summary>调用服务市场接口应答（<c>request_id</c> / <c>data</c>）。</summary>
-/// <remarks>
-/// <para>官方文档：<c>wx-service-market/api_invokeservice.html</c>。</para>
-/// <para><c>data</c> 为服务方返回的 <b>JSON 字符串</b>（官方类型即 string，非对象）；异步场景（请求 <c>async=true</c>）时填 <c>request_id</c>。</para>
-/// </remarks>
-[HttpJsonSerializable(SerializerClassName = "ServiceMarket")]
-public class WxaServiceMarketResponse : WxaResponse
-{
-    /// <summary>异步调用 ID（<c>request_id</c>，仅异步 API 返回；供 <see cref="IWxaServiceMarketService"/> 拉取结果）。</summary>
-    [JsonPropertyName("request_id")]
-    public string? RequestId { get; set; }
-
-    /// <summary>服务方回包 JSON 字符串（<c>data</c>）。</summary>
-    [JsonPropertyName("data")]
-    public string? Data { get; set; }
-}
-
-/// <summary>异步获取服务市场处理数据请求体（<c>POST /wxa/servicemarketretrieve</c>）。</summary>
-/// <remarks>官方文档：<c>wx-service-market/api_servicemarketretrieve.html</c>。<c>request_id</c> 取自 <c>serveicemarket</c> 的异步应答。</remarks>
-[HttpJsonSerializable(SerializerClassName = "ServiceMarket")]
-public class WxaServiceMarketRetrieveRequest
-{
-    /// <summary>异步调用 ID（<c>request_id</c>，必填；<c>调用服务市场接口</c> 异步应答返回）。</summary>
-    [JsonPropertyName("request_id")]
-    public string? RequestId { get; set; }
-}
-
-/// <summary>异步获取服务市场处理数据应答（<c>data</c>）。</summary>
-[HttpJsonSerializable(SerializerClassName = "ServiceMarket")]
-public class WxaServiceMarketRetrieveResponse : WxaResponse
-{
-    /// <summary>服务方回包 JSON 字符串（<c>data</c>）。</summary>
-    [JsonPropertyName("data")]
-    public string? Data { get; set; }
-}

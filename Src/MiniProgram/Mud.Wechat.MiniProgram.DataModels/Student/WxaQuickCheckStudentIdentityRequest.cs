@@ -27,16 +27,3 @@ public class WxaQuickCheckStudentIdentityRequest
     [JsonPropertyName("wx_studentcheck_code")]
     public string? CheckCode { get; set; }
 }
-
-/// <summary>快速获取学生身份应答（<c>bind_status</c> / <c>is_student</c>）。</summary>
-[HttpJsonSerializable(SerializerClassName = "Student")]
-public class WxaQuickCheckStudentIdentityResponse : WxaResponse
-{
-    /// <summary>绑定状态（<c>bind_status</c>）：<c>0</c> 未绑定 / <c>1</c> 已绑定（取值以官方页面为准）。</summary>
-    [JsonPropertyName("bind_status")]
-    public long? BindStatus { get; set; }
-
-    /// <summary>是否为在校学生（<c>is_student</c>）。</summary>
-    [JsonPropertyName("is_student")]
-    public bool? IsStudent { get; set; }
-}

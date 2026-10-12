@@ -87,4 +87,53 @@ public partial class WechatContractGuards
         source.Should().Contain("MatchAppKeysBySuiteId",
             "G9：清理范围必须恒为 SuiteId 命中集");
     }
+
+    /// <summary>
+    /// 契约守卫 G10（P1-2）：<c>AwaitSharedAsync</c> 的取消信号 <c>TaskCompletionSource</c> 必须携带
+    /// <c>RunContinuationsAsynchronously</c>——否则共享刷新完成时等待者续体同步内联到刷新线程。
+    /// 该行为**不可由运行时确定性观测**（调度策略非契约），故以源码文本断言为权威锁定。
+    /// </summary>
+    [Fact]
+    public void AwaitSharedAsync_CancellationSignal_ShouldRunContinuationsAsynchronously()
+    {
+        var source = ReadAuthorizationServiceSource();
+
+        source.Should().Contain(
+            "new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously)",
+            "G10：取消信号必须异步调度续体（防等待者续体内联刷新线程；此断言为该修复的权威锁定）");
+    }
+
+    /// <summary>
+    /// 契约守卫 G11（P1-3）：<c>ResolveAppKey</c> 必须「显式即有意、隐式即失败」——
+    /// 多应用且未配置 <c>DefaultAppKey</c> 时以 fail-fast 取代静默回退默认应用（防误路由）。
+    /// </summary>
+    [Fact]
+    public void ResolveAppKey_ShouldFailFast_WhenMultiAppWithoutConfiguredDefault()
+    {
+        var source = ReadAuthorizationServiceSource();
+
+        var start = source.IndexOf("private string ResolveAppKey(string? appKey)", StringComparison.Ordinal);
+        start.Should().BePositive("G11：ResolveAppKey 签名漂移须同步更新守卫");
+
+        var end = source.IndexOf("private static void ValidateCustomizedState", StringComparison.Ordinal);
+        end.Should().BeGreaterThan(start, "G11：ResolveAppKey 之后应紧跟 ValidateCustomizedState（定位锚点）");
+
+        var body = source.Substring(start, end - start);
+
+        body.Should().Contain("DefaultAppKey",
+            "G11：显式配置的 DefaultAppKey 仍为无歧义回退路径（配置属性消费点保留）");
+        var countGuardIndex = body.IndexOf("ConfiguredAppKeys.Count", StringComparison.Ordinal);
+        var throwIndex = body.IndexOf("throw new InvalidOperationException", StringComparison.Ordinal);
+
+        countGuardIndex.Should().BePositive("G11：必须按已注册应用数判定是否存在歧义");
+        throwIndex.Should().BeGreaterThan(countGuardIndex,
+            "G11：多应用且无 DefaultAppKey 时必须 fail-fast（不得静默落到默认应用）");
+    }
+
+    private static string ReadAuthorizationServiceSource()
+    {
+        var path = SourcePath("Mud.Wechat.Work", "Services", "Authorization", "WechatWorkAuthorizationService.cs");
+        File.Exists(path).Should().BeTrue($"未找到授权服务源码：{path}");
+        return File.ReadAllText(path);
+    }
 }

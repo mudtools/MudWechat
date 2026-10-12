@@ -28,6 +28,13 @@ namespace Mud.Wechat.Work.Abstractions.Authentication;
 /// 以无参 GetTokenAsync() 获取（由 <see cref="WechatCorpContext"/> 异步流解析 authCorpId）。</item>
 /// </list>
 /// <para>
+/// <b>两条路径收敛到同一键空间（P0-1）</b>：无 scope 入口（GetTokenAsync / GetOrRefreshTokenAsync 无参）
+/// 由本类覆写的 <see cref="GetOrRefreshTokenAsync(CancellationToken)"/> 统一把环境 <c>authCorpId</c>
+/// <b>升级为一等 scope</b> 后再委托基类带 scope 路径 —— 故「环境上下文路径」与「显式 scopes 路径」对
+/// 同一企业产生<b>同一持久层键</b>（<c>Wechat.AccessToken:{AppKey}:{authCorpId}</c>），
+/// 企业级令牌<b>永不</b>写入 <c>default</c> 段，多企业天然隔离。
+/// </para>
+/// <para>
 /// <b>令牌路径按 <see cref="WechatAppType"/> 分流（G3）</b>——两者产出物同为「企业 access_token」，
 /// 仅获取方式不同，故不新建令牌管理器（避免 scope 缓存重复）：
 /// </para>
@@ -172,4 +179,67 @@ internal sealed class CorpTokenManager : WechatAppTokenManagerBase, IWechatCorpT
     /// <summary>模板点不被本类使用（scope 感知刷新完全覆写）。</summary>
     protected override Task<(string? AccessToken, int ExpireSeconds)> RefreshTokenFromApiAsync(CancellationToken cancellationToken)
         => throw new NotSupportedException("CorpTokenManager 经 RefreshTokenWithScopesAsync 按 authCorpId scope 刷新。");
+
+    /// <summary>
+    /// 解析环境侧（<see cref="WechatCorpContext"/>）可用的 <c>authCorpId</c>，作为无 scope 入口的隐式 scope；
+    /// 无可用上下文（或归属不一致）时返回 <c>null</c>。
+    /// </summary>
+    /// <remarks>
+    /// R9 归属校验（与 <see cref="RefreshTokenWithScopesAsync"/> 同源、不弱化）：环境上下文的
+    /// <see cref="WechatCorpContext.AppKey"/> 与本应用不一致时<b>整体忽略</b>上下文；未声明归属（null/空）
+    /// 时视为可用，保持裸 <see cref="WechatCorpContext.SetCorp"/> 的既有语义。
+    /// 「上下文 corpId == 本次 scope」的同源校验仍留在 <see cref="RefreshTokenWithScopesAsync"/>（不重复实现）。
+    /// </remarks>
+    private string? ResolveAmbientScopeOrNull()
+    {
+        var contextAppKey = WechatCorpContext.AppKey;
+        var contextUsable = string.IsNullOrEmpty(contextAppKey)
+            || string.Equals(contextAppKey, Options.AppKey, StringComparison.Ordinal);
+        return contextUsable ? WechatCorpContext.AuthCorpId : null;
+    }
+
+    /// <summary>
+    /// 无 scope 入口的<b>唯一汇合点</b>（P0-1）：把环境 <c>authCorpId</c> 升级为一等 scope，
+    /// 使环境路径与显式 scopes 路径共用同一缓存/持久层键。
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// 基座 <see cref="WechatAppTokenManagerBase.GetTokenAsync"/> 已委托到本方法
+    /// （<c>GetTokenAsync(ct) =&gt; GetOrRefreshTokenAsync(ct)</c>），且组件 <c>DefaultTokenProvider</c>
+    /// 在请求未携带 scopes 时亦直调本方法 ⇒ <b>覆写本方法一处即完全闭合两条环境路径</b>。
+    /// 故本类<b>不得</b>再覆写 <c>GetTokenAsync</c>（双份方法体只会带来漂移风险，由 MA5c 守卫锁定）。
+    /// </para>
+    /// <para>
+    /// 无环境企业上下文时回退 <c>base.GetOrRefreshTokenAsync(ct)</c> ⇒ 经
+    /// <see cref="RefreshTokenCoreAsync"/> 进入 <see cref="RefreshTokenWithScopesAsync"/> 的既有两级校验，
+    /// fail-fast 引导语文案保持不变。
+    /// </para>
+    /// </remarks>
+    public override Task<string> GetOrRefreshTokenAsync(CancellationToken cancellationToken = default)
+    {
+        var authCorpId = ResolveAmbientScopeOrNull();
+        return string.IsNullOrEmpty(authCorpId)
+            ? base.GetOrRefreshTokenAsync(cancellationToken)
+            : base.GetOrRefreshTokenAsync(new[] { authCorpId! }, cancellationToken);
+    }
+
+    /// <summary>
+    /// 失效入口（闭合 P1-1）：无 scopes 时按环境解析补齐 scope，避免「写入 corpId 槽、失效打在
+    /// <c>default</c> 槽」的空转（40014 反复且无自愈）。
+    /// </summary>
+    /// <remarks>
+    /// 显式传 scopes 时行为不变；无 scopes 且无可用环境上下文时回退基类（既有语义）。
+    /// </remarks>
+    public override Task<TokenResult> InvalidateTokenAsync(string[]? scopes = null, CancellationToken cancellationToken = default)
+    {
+        if (scopes is { Length: > 0 })
+        {
+            return base.InvalidateTokenAsync(scopes, cancellationToken);
+        }
+
+        var authCorpId = ResolveAmbientScopeOrNull();
+        return string.IsNullOrEmpty(authCorpId)
+            ? base.InvalidateTokenAsync(scopes, cancellationToken)
+            : base.InvalidateTokenAsync(new[] { authCorpId! }, cancellationToken);
+    }
 }

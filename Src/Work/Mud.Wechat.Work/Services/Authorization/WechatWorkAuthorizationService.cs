@@ -45,8 +45,8 @@ internal sealed class WechatWorkAuthorizationService : IWechatWorkAuthorizationS
     private const int DefaultPreAuthCodeExpiresIn = 1200;
     private const int DefaultCustomizedUrlExpiresIn = 864000;
 
-    /// <summary>结果记忆清理间隔（每 N 次写入触发一次过期回收，消除批量导入下的 O(n²)）。</summary>
-    private const int MemoCleanupInterval = 64;
+    /// <summary>结果记忆容量上限（超限即先清过期项、再驱逐最旧项）。</summary>
+    private const int MemoCapacity = 4096;
 
     private readonly IWechatAppManager _appManager;
     private readonly IWechatAppContextSwitcher _switcher;
@@ -62,8 +62,8 @@ internal sealed class WechatWorkAuthorizationService : IWechatWorkAuthorizationS
     /// <summary>换码结果记忆（复合键 → authCorpId，短 TTL）。</summary>
     private readonly ConcurrentDictionary<string, AuthCodeMemo> _memo = new(StringComparer.Ordinal);
 
-    /// <summary>结果记忆写入计数（驱动阈值式过期回收）。</summary>
-    private int _memoWrites;
+    /// <summary>结果记忆插入序号（P2-7：超限驱逐的确定性「最旧」判据）。</summary>
+    private long _memoSeq;
 
     /// <summary>创建授权编排服务。</summary>
     public WechatWorkAuthorizationService(
@@ -473,7 +473,9 @@ internal sealed class WechatWorkAuthorizationService : IWechatWorkAuthorizationS
             return await shared.ConfigureAwait(false);
         }
 
-        var cancelSignal = new TaskCompletionSource<object?>();
+        // P1-2：续体必须异步调度 —— 否则共享刷新完成时，所有等待者的续体同步内联到完成线程
+        //（发起刷新的那一个）执行，等待者规模大时把该线程拖入长耗时/长栈（线程池饥饿放大）。
+        var cancelSignal = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
         using (cancellationToken.Register(
                    static state => ((TaskCompletionSource<object?>)state!).TrySetResult(null), cancelSignal))
         {
@@ -495,15 +497,21 @@ internal sealed class WechatWorkAuthorizationService : IWechatWorkAuthorizationS
             return;
         }
 
-        _memo[BuildFlightKey(appKey, authCode)] = new AuthCodeMemo(authCorpId, DateTimeOffset.UtcNow.AddSeconds(ttl));
-
-        // P2-6：阈值式过期回收（每 N 次写入一次），消除"每次写入全量遍历"在批量导入下的 O(n²)。
-        if (Interlocked.Increment(ref _memoWrites) % MemoCleanupInterval != 0)
-        {
-            return;
-        }
-
         var now = DateTimeOffset.UtcNow;
+        _memo[BuildFlightKey(appKey, authCode)] = new AuthCodeMemo(authCorpId, now.AddSeconds(ttl), NextMemoSeq());
+
+        // P2-7：容量上限 + 惰性驱逐——仅在<b>超限时</b>做一次回收（先清过期项、再按到期时间驱逐最旧），
+        // 避免"每次写入全量遍历"的 O(n²)。驱逐不影响正确性：memo 定位是并发去重记忆，命中后仍以
+        // `_authStore.GetAsync` 为权威（被驱逐只是退回一次真实换码）。
+        if (_memo.Count > MemoCapacity)
+        {
+            EvictMemo(now);
+        }
+    }
+
+    /// <summary>驱逐过期项；仍超上限时按插入序号升序驱逐最旧项（插入序号是确定性的「最旧」判据）。</summary>
+    private void EvictMemo(DateTimeOffset now)
+    {
         foreach (var pair in _memo)
         {
             if (pair.Value.ExpiresAt <= now)
@@ -511,29 +519,60 @@ internal sealed class WechatWorkAuthorizationService : IWechatWorkAuthorizationS
                 _memo.TryRemove(pair.Key, out _);
             }
         }
+
+        var overflow = _memo.Count - MemoCapacity;
+        if (overflow <= 0)
+        {
+            return;
+        }
+
+        var oldestKeys = _memo.OrderBy(static p => p.Value.Seq)
+            .Take(overflow)
+            .Select(static p => p.Key)
+            .ToList();
+        foreach (var key in oldestKeys)
+        {
+            _memo.TryRemove(key, out _);
+        }
     }
 
+    private long NextMemoSeq() => Interlocked.Increment(ref _memoSeq);
+
+    /// <summary>
+    /// 解析目标应用键（<b>显式即有意、隐式即失败</b>）。
+    /// </summary>
+    /// <remarks>
+    /// 空白 <paramref name="appKey"/> 时依次回退「显式配置的
+    /// <see cref="WechatAuthorizationOptions.DefaultAppKey"/>」→「仅注册一个应用时的该唯一应用」；
+    /// <b>多应用且未配置 DefaultAppKey 时 fail-fast</b>，消除「参数传空 ⇒ 静默落到默认应用」的误路由
+    ///（换码 / 撤销打到错误应用，且无任何告警）。
+    /// </remarks>
     private string ResolveAppKey(string? appKey)
     {
-        // `is { Length: > 0 }` 用于在 netstandard2.0 下把可空引用收窄为非空（该 TFM 无 NotNullWhen 标注）。
-        if (appKey is { Length: > 0 } && !string.IsNullOrWhiteSpace(appKey))
+        if (!string.IsNullOrWhiteSpace(appKey))
         {
-            return appKey;
+            return appKey!;
         }
 
         var configured = _options.Value.DefaultAppKey;
-        if (configured is { Length: > 0 } && !string.IsNullOrWhiteSpace(configured))
+        if (!string.IsNullOrWhiteSpace(configured))
         {
-            return configured;
+            return configured!;
         }
 
-        var defaultAppKey = _appManager.DefaultConfig.AppKey;
-        if (string.IsNullOrEmpty(defaultAppKey))
+        // 仅注册一个应用时无歧义，可安全回退；≥2 个应用必须有显式意图（appKey 或 DefaultAppKey）。
+        if (_appManager.ConfiguredAppKeys.Count <= 1)
         {
-            throw new InvalidOperationException("无法解析目标应用键：未显式传入 appKey、未配置 WechatAuthorizationOptions.DefaultAppKey，且默认应用键为空。");
+            var defaultAppKey = _appManager.DefaultConfig.AppKey;
+            if (!string.IsNullOrEmpty(defaultAppKey))
+            {
+                return defaultAppKey;
+            }
         }
 
-        return defaultAppKey;
+        throw new InvalidOperationException(
+            $"无法解析目标应用键：appKey 为空白且未配置 WechatAuthorizationOptions.DefaultAppKey，而当前已注册 " +
+            $"{_appManager.ConfiguredAppKeys.Count} 个应用（多应用下隐式回退默认应用会造成误路由）。请显式传入 appKey，或配置 WechatAuthorizationOptions.DefaultAppKey。");
     }
 
     private static void ValidateCustomizedState(string state)
@@ -562,14 +601,18 @@ internal sealed class WechatWorkAuthorizationService : IWechatWorkAuthorizationS
 
     private sealed class AuthCodeMemo
     {
-        public AuthCodeMemo(string authCorpId, DateTimeOffset expiresAt)
+        public AuthCodeMemo(string authCorpId, DateTimeOffset expiresAt, long seq)
         {
             AuthCorpId = authCorpId;
             ExpiresAt = expiresAt;
+            Seq = seq;
         }
 
         public string AuthCorpId { get; }
 
         public DateTimeOffset ExpiresAt { get; }
+
+        /// <summary>插入序号（确定性的「最旧」判据；<see cref="DateTimeOffset"/> 精度下同一毫秒会打平）。</summary>
+        public long Seq { get; }
     }
 }

@@ -16,7 +16,8 @@ namespace Mud.Wechat.Channels.Callback.Tests;
 /// <para>
 /// 本类在 P0 期只锁定<b>回调包的依赖隔离</b>与<b>程序集可加载</b>两项硬约束（对齐
 /// <c>ChannelsScaffoldContractGuards.CallbackPackage_ShouldBeDedicatedAndNotBridgeExistingChannels</c>
-/// 的运行时程序集侧复核）；P3 期随 <c>ChannelsCallbackContractGuards</c> 全量落地后被替换/扩充。
+/// 的运行时程序集侧复核）；P3 期的回调契约守卫（CB-CH 系列，首枚 CB-CH-SEAL 已落地）在
+/// <c>ChannelsCallbackContractGuards</c> 逐项扩充，本类保持依赖隔离职责不变。
 /// </para>
 /// <para>
 /// 至少 1 个有效测试是 verify-build.ps1 步骤 3 的门禁（total &gt; 0 才算执行），

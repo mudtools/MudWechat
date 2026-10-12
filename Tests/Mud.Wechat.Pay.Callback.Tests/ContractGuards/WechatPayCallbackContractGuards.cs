@@ -5,6 +5,8 @@
 //  不得利用本项目从事危害国家安全、扰乱社会秩序、侵犯他人合法权益等法律法规禁止的活动！任何基于本项目开发而产生的一切法律纠纷和责任，我们不承担任何责任！
 // -----------------------------------------------------------------------
 
+using System.Collections.Concurrent;
+
 namespace Mud.Wechat.Pay.Callback.Tests.ContractGuards;
 
 /// <summary>
@@ -152,6 +154,65 @@ public class WechatPayCallbackContractGuards
 
         act.Should().Throw<ArgumentException>();
     }
+
+    /// <summary>
+    /// PAY-CB-SEAL（v1 方案 F15①/D12）：支付处理器注册表必须在 <c>UseWechatPayCallback()</c>
+    /// （组合根末端）<c>Seal()</c> 封闭，且封闭先于管道挂载。
+    /// </summary>
+    /// <remarks>
+    /// 与企微 CB-SEAL / 公众号 CB-MP-SEAL / 小店 CB-CH-SEAL 四线同构：支付线的处理器在
+    /// <c>AddWechatPayCallback</c> 期一次性急切注册（无运行期注册路径），但「已实现 Seal 无接线」
+    /// 同样不产生编译期 / 运行期信号 ⇒ 源码断言锁定。漏封闭时运行期补注册不报错，
+    /// 与 F15「组装期 fail-fast」意图相悖。
+    /// </remarks>
+    [Fact]
+    public void CallbackRegistry_ShouldBeSealedAtCompositionRoot()
+    {
+        var source = File.ReadAllText(SourcePath(
+            "Mud.Wechat.Pay.Callback", "WechatPayApplicationBuilderExtensions.cs"));
+
+        // 断言取「注册表名 + >().Seal()」子串：对全限定（现状）与短名（未来加 using 后）两种形态均成立。
+        source.Should().Contain("WechatPayCallbackHandlerRegistry>().Seal()",
+            "UseWechatPayCallback() 必须封闭 WechatPayCallbackHandlerRegistry（F15①：组装期 fail-fast）");
+
+        // 顺序即契约：封闭先于管道挂载（取末次 Seal() 代码位与管道挂载比较；
+        // 管道挂载锚点取 "UseMiddleware<" —— 泛型实参仅存在于代码行，注释字样不得参与比较）。
+        var lastSealIndex = source.LastIndexOf("Seal()", StringComparison.Ordinal);
+        var middlewareIndex = source.IndexOf("UseMiddleware<", StringComparison.Ordinal);
+        lastSealIndex.Should().BeGreaterThan(-1, "UseWechatPayCallback() 必须存在 Seal() 封闭调用");
+        lastSealIndex.Should().BeLessThan(middlewareIndex,
+            "PAY-CB-SEAL：封闭必须先于 UseMiddleware —— 管道构建期即完成封闭，迟封闭等于漏封闭");
+    }
+
+    /// <summary>解决方案根目录定位（与其余各线守卫同款判据）。</summary>
+    private static string GetSolutionRoot()
+    {
+        var directory = new DirectoryInfo(AppContext.BaseDirectory);
+        while (directory != null && !File.Exists(Path.Combine(directory.FullName, "Mud.Wechat.slnx")))
+        {
+            directory = directory.Parent!;
+        }
+
+        return directory!.FullName;
+    }
+
+    /// <summary>
+    /// 解析源工程内路径。源码已归类至 <c>Src/&lt;Area&gt;/&lt;ProjectName&gt;</c>（2026-10 源码归类迁移），
+    /// 守卫按 csproj 名称定位工程目录（带缓存），不再硬编码层级 —— 目录再迁移时守卫不随之漂移。
+    /// </summary>
+    private static string SourcePath(params string[] segments) =>
+        Path.Combine(new[] { SourceProjectDir(segments[0]) }.Concat(segments.Skip(1)).ToArray());
+
+    private static string SourceProjectDir(string projectName) =>
+        SourceProjectDirs.GetOrAdd(projectName, static name =>
+            Directory.EnumerateFiles(GetSolutionRoot(), $"{name}.csproj", SearchOption.AllDirectories)
+                .Where(static f => !f.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.Ordinal)
+                                   && !f.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
+                .Select(static f => Path.GetDirectoryName(f)!)
+                .FirstOrDefault()
+            ?? throw new DirectoryNotFoundException($"未找到工程 {name}.csproj（源码归类目录漂移，守卫定位失效）"));
+
+    private static readonly ConcurrentDictionary<string, string> SourceProjectDirs = new();
 
     /// <summary>空实现处理器（仅用于注册表断言）。</summary>
     private sealed class RecordingHandler : IWechatPayNotificationHandler

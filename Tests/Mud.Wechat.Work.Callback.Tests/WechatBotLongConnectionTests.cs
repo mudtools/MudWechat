@@ -399,6 +399,29 @@ public class WechatBotLongConnectionTests
     }
 
     [Fact]
+    public async Task DrainAsync_ShouldNotAttributeTaskFault_AsDrainIncomplete()
+    {
+        // 归因分工（v1 方案 F5 可观测不变量）：快照内任务在收尾窗口内故障 ⇒ 只经故障回调记 Error，
+        // 不得再触发「收尾未完成」告警 —— 旧实现 catch (Exception) 一律送 onDrainIncomplete，
+        // 把已瞬间完成（只是故障）的任务说成「未在界内完成」，误导排障（双重归因）。
+        var faulted = new List<Exception>();
+        var drained = new List<Exception>();
+        var tracker = new WechatBotDispatchTracker(faulted.Add, drained.Add);
+
+        var pending = new TaskCompletionSource();
+        tracker.Track(pending.Task);
+
+        var drain = tracker.DrainAsync(TimeSpan.FromSeconds(5));   // 界远大于故障时刻
+        await Task.Delay(50);
+        pending.SetException(new InvalidOperationException("分派故障（测试替身）"));
+        await drain;                                              // 不得抛（收尾不抛）
+
+        faulted.Should().ContainSingle("窗口内故障必须经故障回调上报（Error 归因，续延职责）")
+            .Which.Should().BeOfType<AggregateException>();
+        drained.Should().BeEmpty("窗口内完成（哪怕是故障）不是收尾超界（TimeoutException 才是）");
+    }
+
+    [Fact]
     public async Task DispatchTracker_ShouldDrainEmpty_Immediately()
     {
         var tracker = new WechatBotDispatchTracker(_ => { }, _ => { });

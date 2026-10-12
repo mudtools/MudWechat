@@ -52,15 +52,36 @@ internal sealed class WechatBotDispatchTracker
         }, this, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
     }
 
-    /// <summary>有界等待全部在途分派完成（界满只告警不抛 —— 连接已关闭，应答帧将发送失败）。</summary>
+    /// <summary>
+    /// 有界等待全部在途分派完成（界满只告警不抛 —— 连接已关闭，应答帧将发送失败）。
+    /// </summary>
     /// <param name="bound">等待上界（停机收尾窗口）。</param>
+    /// <remarks>
+    /// <para>
+    /// <b>归因分工</b>（v1 方案 F5 可观测不变量）：只有 <see cref="TimeoutException"/>（界满）
+    /// 上报 <c>onDrainIncomplete</c>；快照内任务的故障 / 取消<b>不得</b>经本路径上报 ——
+    /// 故障已由 <see cref="Track"/> 的续延经 <c>onDispatchFaulted</c> 记 Error（取消按设计不报故障），
+    /// 此处再报「未在界内完成」属双重归因，且把已瞬间完成（只是故障）的任务说成挂起，误导排障。
+    /// </para>
+    /// <para>
+    /// 故非超时异常静默收尾（不抛、不告警）：收尾语义是「有界等待」，故障可见性由续延保证。
+    /// </para>
+    /// </remarks>
     public async Task DrainAsync(TimeSpan bound)
     {
         Task[] snapshot;
         lock (_inflight) { snapshot = _inflight.ToArray(); }
         if (snapshot.Length == 0) { return; }
         try { await Task.WhenAll(snapshot).WaitAsync(bound).ConfigureAwait(false); }
-        catch (Exception ex) { _onDrainIncomplete(ex); }
+        catch (TimeoutException ex)
+        {
+            _onDrainIncomplete(ex);   // 真·界满：告警不抛（应答帧将发送失败）
+        }
+        catch (Exception)
+        {
+            // 快照内任务故障 / 取消：故障已由 Track 续延经 _onDispatchFaulted 上报（Error），
+            // 取消不报故障 —— 此处不得双重归因（文案「未在界内完成」对已完成的故障任务是误导）。
+        }
     }
 }
 

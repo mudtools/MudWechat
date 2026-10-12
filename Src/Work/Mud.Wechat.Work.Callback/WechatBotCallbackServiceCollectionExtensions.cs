@@ -74,8 +74,18 @@ public static class WechatBotCallbackServiceCollectionExtensions
     /// <exception cref="ArgumentNullException"><paramref name="services"/> 为 <c>null</c>。</exception>
     /// <exception cref="InvalidOperationException">未先调用 <c>AddWechatCallback</c>（缺少智能机器人处理器注册表）。</exception>
     /// <remarks>
+    /// <para>
     /// 智能机器人回调的 URL 验证（GET echo）与 XML 侧共用 <c>UseWechatWebhook()</c> 中间件，
     /// 无需额外的管道扩展。
+    /// </para>
+    /// <para>
+    /// <b>前置校验的口径</b>（v1.1 澄清，F15-③ 核验为伪缺陷、不改行为）：本方法校验的是其
+    /// <b>文档化前置</b>「已调用 <c>AddWechatCallback</c>」—— <see cref="WechatBotHandlerRegistry"/>
+    /// 描述符仅由 <c>AddWechatCallbackCore</c> 无条件创建，未调用即抛。它<b>不是</b>「凭据存在性」
+    /// 校验：<c>IServiceCollection</c> 层的配置委托尚未绑定，扫描 <c>IConfigureOptions&lt;&gt;</c>
+    /// 是脆弱代理（会漏 <c>ConfigureFromConfiguration</c> 等形态）⇒ 凭据形态校验在
+    /// <c>WechatBotOptions.Validate()</c>（启动期）与长连接启动期承担。
+    /// </para>
     /// </remarks>
     public static WechatBotCallbackServiceBuilder AddWechatBotCallback(this IServiceCollection services)
     {

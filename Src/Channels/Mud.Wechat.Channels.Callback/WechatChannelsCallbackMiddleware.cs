@@ -176,12 +176,24 @@ public sealed class WechatChannelsCallbackMiddleware
                 return;
             }
 
-            var urlNonce = WechatCallbackQuery.Get(query, "nonce");
-            var payload = WechatChannelsCallbackReplyWriter.WriteReply(
-                app, result.Reply, urlNonce, DateTimeOffset.UtcNow);
-            context.Response.StatusCode = StatusCodes.Status200OK;
-            context.Response.ContentType = WechatChannelsCallbackReplyWriter.JsonContentType;
-            await context.Response.WriteAsync(payload, context.RequestAborted).ConfigureAwait(false);
+            try
+            {
+                var urlNonce = WechatCallbackQuery.Get(query, "nonce");
+                var payload = WechatChannelsCallbackReplyWriter.WriteReply(
+                    app, result.Reply, urlNonce, DateTimeOffset.UtcNow);
+                context.Response.StatusCode = StatusCodes.Status200OK;
+                context.Response.ContentType = WechatChannelsCallbackReplyWriter.JsonContentType;
+                await context.Response.WriteAsync(payload, context.RequestAborted).ConfigureAwait(false);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                // 应答组装失败（如 Encrypt 因密钥配置非法抛错）：事件已被全部处理器消费、指纹已消费 ——
+                // 丢回复比丢事件更糟，回落明文 success + 200（v1 方案 F3②；重推只会被 403）。
+                _logger.LogError(ex, "结构化应答回写失败（已回落明文 success 应答）。AppKey: {AppKey}", appKey);
+                await WriteTextAsync(context, StatusCodes.Status200OK, SuccessResponseBody, CancellationToken.None)
+                    .ConfigureAwait(false);
+            }
+
             return;
         }
 

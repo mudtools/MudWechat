@@ -271,8 +271,9 @@ internal sealed class WechatBotCallbackReceiver : IWechatBotCallbackReceiver
 
         if (evt.MsgId == null || evt.MsgId.Length == 0)
         {
-            // 官方以 msgid 作为排重唯一标志；缺失说明明文非官方报文结构，拒收而非放行。
-            logWarning?.Invoke($"智能机器人报文缺少 msgid（配置键 {botKey}），已丢弃（官方以 msgid 排重）。");
+            // 官方 101463 原文：msgid 是「本次回调的唯一性标志，用于事件排重」（含 disconnected_event，
+            // 排重机制与其他事件相同）⇒ msgid 硬必需：缺失说明明文非官方报文结构，拒收而非放行。
+            logWarning?.Invoke($"智能机器人报文缺少 msgid（配置键 {botKey}），已丢弃（官方 101463 以 msgid 排重）。");
             throw InvalidPayload();
         }
 

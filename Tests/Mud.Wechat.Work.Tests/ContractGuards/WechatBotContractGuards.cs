@@ -476,6 +476,107 @@ public class WechatBotContractGuards
                 "同 BotKey 同时配置长连接与回调凭据必须在启动期 fail-fast（官方 101463：切换即失效）");
     }
 
+    /// <summary>
+    /// 契约守卫 BT12①（v1 方案 F1，P0）：心跳与<b>流量正交</b> —— 读循环不得重置心跳 CTS，
+    /// 心跳循环必须落在可测的 <c>WechatBotHeartbeat.RunAsync</c> 调用点上（原地 HeartbeatAsync 已删除）。
+    /// </summary>
+    /// <remarks>
+    /// 一次性 <c>CancellationTokenSource</c> 的取消不可逆（<c>CancelAfter</c> 只改期不撤销）：
+    /// 旧实现读循环逐帧 <c>pingTimer.CancelAfter</c> ⇒ 末帧后 30s 心跳的 Task.Delay 必被取消、
+    /// 被当「正常取消」吞掉后永不再发 ping ⇒ 服务端断开 + 重连循环。该缺陷无编译期信号，只能守卫兜。
+    /// </remarks>
+    [Fact]
+    public void LongConnectionHeartbeat_ShouldBeOrthogonalToTraffic()
+    {
+        var connectionSource = File.ReadAllText(SourcePath(
+            "Mud.Wechat.Work.Callback", "LongConnection", "WechatBotConnection.cs"));
+
+        connectionSource.Should().NotContain("CancelAfter",
+            "读循环不得触碰心跳计时：CTS 取消不可逆，流量驱动改期会把心跳「暂停到永远」");
+        connectionSource.Should().Contain("WechatBotHeartbeat.RunAsync",
+            "心跳必须提取为纯逻辑类并存在调用点（P0 修复必须可行为验证，v1 方案 D2）");
+        connectionSource.Should().NotContain("HeartbeatAsync",
+            "原地 HeartbeatAsync 方法应删除，替换为 WechatBotHeartbeat.RunAsync 调用点");
+    }
+
+    /// <summary>
+    /// 契约守卫 BT12②（v1 方案 F4，P0）：<c>LongConnection/</c> 内必须出现 <c>RenewAsync</c> 调用 ——
+    /// 端口实现了无调用 = 租约空转（多实例部署两实例每 ~45s 乒乓一次、期间回调丢失）。
+    /// </summary>
+    /// <remarks>
+    /// 「端口有实现、无调用」不产生任何编译期 / 运行期信号（接口方法静默失联），只能以守卫兜底。
+    /// </remarks>
+    [Fact]
+    public void LongConnectionLease_ShouldBeRenewed()
+    {
+        var longConnectionDir = Path.Combine(
+            SourceProjectDir("Mud.Wechat.Work.Callback"), "LongConnection");
+        var sources = Directory.EnumerateFiles(longConnectionDir, "*.cs", SearchOption.AllDirectories)
+            .Select(File.ReadAllText)
+            .ToArray();
+
+        sources.Should().NotBeEmpty("LongConnection/ 目录必须存在源文件");
+        sources.Any(static s => s.Contains("RenewAsync", StringComparison.Ordinal)).Should().BeTrue(
+            "IWechatBotConnectionLease.RenewAsync 必须在 LongConnection/ 内有调用点（租约无续租 = 多实例乒乓）");
+    }
+
+    /// <summary>
+    /// 契约守卫 BT12④（v1 方案 F5/F6）：读循环不得内联 await 分派，且取消令牌必须贯通到分派与 respond 回写。
+    /// </summary>
+    /// <remarks>
+    /// 「并行分派」「停机令牌贯通」两项结构性质无法用行为用例直测（WebSocket 不可伪造，D13）——
+    /// 由本守卫锁定调用点形态；其行为性质（跟踪 / 摘除 / 有界收尾 / 取消分级）由
+    /// <c>WechatBotLongConnectionTests</c> 的 tracker 直测覆盖，二者合起来替代端到端时序。
+    /// </remarks>
+    [Fact]
+    public void LongConnectionReadLoop_ShouldNotSerializeDispatch()
+    {
+        var connectionSource = File.ReadAllText(SourcePath(
+            "Mud.Wechat.Work.Callback", "LongConnection", "WechatBotConnection.cs"));
+
+        connectionSource.Should().Contain("TrackDispatch(DispatchCallbackFrameAsync(frame, lifetime))",
+            "读循环必须把分派外抛为受追踪任务（内联 await ⇒ 并发回调串行排队，击穿官方 5s respond 窗口）");
+        connectionSource.Should().Contain("_dispatcher.DispatchAsync(_botKey, botEvent, lifetime)",
+            "分派必须贯通停机令牌（F6：停机即在途分派一并取消）");
+        connectionSource.Should().Contain("SendRespondCoreAsync(cmd, effectiveReqId, reply, lifetime, botEvent.EventTypeKey)",
+            "respond 回写必须贯通停机令牌（F6）并携带事件键（F10 事件维度校验）");
+    }
+
+    /// <summary>
+    /// 契约守卫 BT12③（v1 方案 F12）：读循环对 <c>ParseFrame</c>/<c>ParseAck</c> 的失败必须容错 ——
+    /// 单个畸形帧不得穿出读循环触发重连风暴（丢帧 + Warning，异常止步于读循环内）。
+    /// </summary>
+    /// <remarks>
+    /// 行为用例需要 WebSocket 注入缝（D13 明确不开），此处以「隔离日志消息存在性」锁定容错接线：
+    /// 两条 Warning 消息即两处隔离点的漂移哨兵。
+    /// </remarks>
+    [Fact]
+    public void LongConnectionReadLoop_ShouldTolerateMalformedFrames()
+    {
+        var connectionSource = File.ReadAllText(SourcePath(
+            "Mud.Wechat.Work.Callback", "LongConnection", "WechatBotConnection.cs"));
+
+        connectionSource.Should().Contain("长连接帧解析失败，已丢弃该帧",
+            "ParseFrame 失败必须记 Warning 并 continue（丢帧不重建连接）");
+        connectionSource.Should().Contain("应答帧解析失败，已丢弃",
+            "ParseAck 失败必须记 Warning 并丢弃（pending 不 SetResult，发送方按 10s 超时自行失败）");
+    }
+
+    /// <summary>
+    /// 契约守卫 BT12⑤（v1 方案 F16）：<c>msgid</c> 硬必需必须带官方出处（101463）——
+    /// 行为本身由 <c>WechatBotCallbackTests.Receiver_ShouldReject_WhenMsgIdMissing</c> 锁定，
+    /// 本守卫锚定「为什么硬必需」的官方依据不丢失（含 disconnected_event 携带 msgid 的核验结论）。
+    /// </summary>
+    [Fact]
+    public void BotReceiver_MsgIdRequirement_ShouldCiteOfficialSource()
+    {
+        var receiverSource = File.ReadAllText(SourcePath(
+            "Mud.Wechat.Work.Callback", "WechatBotCallbackReceiver.cs"));
+
+        receiverSource.Should().Contain("101463",
+            "msgid 硬必需的官方依据（101463：msgid 是本次回调的唯一性标志，用于事件排重）必须留在源码注释里");
+    }
+
     private const string WechatBotContractGuardSourcePrefix = "// -----------------------------------------------------------------------";
 
     /// <summary>类型自身声明的公共属性上的 <c>[JsonPropertyName]</c> 名（升序，供官方键名等值断言）。</summary>

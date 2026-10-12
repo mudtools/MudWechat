@@ -242,23 +242,85 @@ public class ComponentVerifyTicketReceiverTests
         act.Should().Throw<InvalidOperationException>().WithMessage("*EncodingAesKey*");
     }
 
+    // ---------------------------------------------------------------- 时效窗（v1 方案 F11，OP-T1/T2）
+
+    /// <summary>旧报文（时间戳越界过去）⇒ TimestampOutOfWindow：不写、不交付、不回 success。</summary>
+    [Fact]
+    public void Receive_ShouldRejectStaleTimestamp_WithoutWritingOrDelivering()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var store = new InMemoryComponentVerifyTicketStore(new SystemOpenPlatformClock());
+        var sut = CreateSut(store, () => now);
+
+        var push = BuildPush(TicketXml("ticket-abc"), timestampSeconds: now.ToUnixTimeSeconds() - 301);
+
+        var result = sut.Receive(push.Signature, push.Timestamp, push.Nonce, push.Body);
+
+        result.Outcome.Should().Be(ComponentTicketPushOutcome.TimestampOutOfWindow);
+        result.ShouldReturnSuccess.Should().BeFalse(
+            "时效拒绝若回 success，旧报文重放将在监控上静默消失（与验签失败同口径）");
+        result.AuthorizerEvent.Should().BeNull();
+        store.TryGet(out _).Should().BeFalse();
+    }
+
+    /// <summary>未来时间戳（时钟漂移或伪造）同样越界 ⇒ 拒绝（窗是双侧的）。</summary>
+    [Fact]
+    public void Receive_ShouldRejectFutureTimestamp()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var store = new InMemoryComponentVerifyTicketStore(new SystemOpenPlatformClock());
+        var sut = CreateSut(store, () => now);
+
+        var push = BuildPush(TicketXml("ticket-abc"), timestampSeconds: now.ToUnixTimeSeconds() + 301);
+
+        var result = sut.Receive(push.Signature, push.Timestamp, push.Nonce, push.Body);
+
+        result.Outcome.Should().Be(ComponentTicketPushOutcome.TimestampOutOfWindow);
+        store.TryGet(out _).Should().BeFalse();
+    }
+
+    /// <summary>窗内时间戳（含边界 ±299s）⇒ 正常受理，success 判定不变。</summary>
+    [Theory]
+    [InlineData(-299)]
+    [InlineData(299)]
+    public void Receive_ShouldAcceptWithinWindow_AndKeepSuccessSemantics(long skewSeconds)
+    {
+        var now = DateTimeOffset.UtcNow;
+        var store = new InMemoryComponentVerifyTicketStore(new SystemOpenPlatformClock());
+        var sut = CreateSut(store, () => now);
+
+        var push = BuildPush(TicketXml("ticket-in-window"), timestampSeconds: now.ToUnixTimeSeconds() + skewSeconds);
+
+        var result = sut.Receive(push.Signature, push.Timestamp, push.Nonce, push.Body);
+
+        result.Outcome.Should().Be(ComponentTicketPushOutcome.Accepted);
+        result.ShouldReturnSuccess.Should().BeTrue();
+        store.TryGet(out var snapshot).Should().BeTrue();
+        snapshot!.Ticket.Should().Be("ticket-in-window");
+    }
+
     // ---- helpers -------------------------------------------------------------
 
-    private static ComponentVerifyTicketReceiver CreateSut(IComponentVerifyTicketStore store)
+    private static ComponentVerifyTicketReceiver CreateSut(
+        IComponentVerifyTicketStore store, Func<DateTimeOffset>? utcNow = null)
         => new(store, new OpenPlatformAppConfig
         {
             ComponentAppId = AppId,
             ComponentAppSecret = "secret",
             Token = Token,
             EncodingAesKey = AesKey,
-        });
+        }, utcNow);
 
     private sealed record Push(string Body, string Encrypt, string Signature, string Timestamp, string Nonce);
 
-    private static Push BuildPush(string plainXml, string? token = null, string? receiveId = null)
+    private static Push BuildPush(
+        string plainXml, string? token = null, string? receiveId = null, long? timestampSeconds = null)
     {
         var encrypt = WechatCallbackCrypto.Encrypt(AesKey, plainXml, receiveId ?? AppId);
-        const string timestamp = "1730000000";
+
+        // 默认取当前时间（时效窗 ±300s，v1 方案 F11）；越界场景由调用方显式给时间戳。
+        var timestamp = (timestampSeconds ?? DateTimeOffset.UtcNow.ToUnixTimeSeconds())
+            .ToString(System.Globalization.CultureInfo.InvariantCulture);
         const string nonce = "nonce-1";
         var signature = WechatCallbackCrypto.ComputeSignature(token ?? Token, timestamp, nonce, encrypt);
 

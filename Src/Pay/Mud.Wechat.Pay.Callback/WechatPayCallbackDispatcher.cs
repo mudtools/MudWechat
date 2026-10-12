@@ -33,6 +33,11 @@ public enum WechatPayCallbackDispatchOutcome
 /// 避免一个订阅者的缺陷让整封通知变成 5xx。
 /// </para>
 /// <para>
+/// <b>并发闸</b>（v1 方案 F7）：突发通知的并行上限由 <c>MaxConcurrentEvents</c> 信号量承担
+/// （构造期快照，与其余三线同口径）—— 无闸时多个 scoped <c>DbContext</c> 同时解析会击穿线程安全假设，
+/// 且异常被隔离 ⇒ 静默丢业务。
+/// </para>
+/// <para>
 /// <b>软超时</b>：平台 5 秒断连契约不可协商，故在 <c>EventHandlingTimeoutMs</c>（&lt;5000ms）到点即收敛为
 /// <see cref="WechatPayCallbackDispatchOutcome.TimedOut"/>。注意此时<b>指纹已被消费</b>
 /// （闸③ 在分发前）：官方重试会被判重放而 403 —— 这是「fail-closed 优先于 at-least-once」的既知取舍，
@@ -46,6 +51,7 @@ public sealed class WechatPayCallbackDispatcher
     private readonly IServiceProvider _services;
     private readonly IOptionsMonitor<WechatPayCallbackOptions> _optionsMonitor;
     private readonly ILogger<WechatPayCallbackDispatcher>? _logger;
+    private readonly SemaphoreSlim _concurrencyGate;
 
     /// <summary>创建分发器。</summary>
     /// <param name="registry">处理器注册表。</param>
@@ -63,6 +69,11 @@ public sealed class WechatPayCallbackDispatcher
         _services = services ?? throw new ArgumentNullException(nameof(services));
         _optionsMonitor = optionsMonitor ?? throw new ArgumentNullException(nameof(optionsMonitor));
         _logger = logger;
+
+        // 并发闸（v1 方案 F7）：容量取构造期快照（与企微 / 公众号 / 小店三线同口径，D8 单一并发权威）。
+        // Math.Max(1, …) 兜住「热更把容量调到 0」的配置漂移 —— 信号量计数为 0 会令所有通知无限期等待。
+        var capacity = Math.Max(1, optionsMonitor.CurrentValue.MaxConcurrentEvents);
+        _concurrencyGate = new SemaphoreSlim(capacity, capacity);
     }
 
     /// <summary>分发一条通知。</summary>
@@ -88,43 +99,66 @@ public sealed class WechatPayCallbackDispatcher
             return WechatPayCallbackDispatchOutcome.Unhandled;
         }
 
-        using var timeoutCts = new CancellationTokenSource(_optionsMonitor.CurrentValue.EventHandlingTimeoutMs);
+        // Math.Max(1, …) 兜住「软超时被热更调到 0 / 负」的配置漂移（v1 方案 F8）——
+        // CancellationTokenSource(0) 立即取消、负数直接抛 ArgumentOutOfRangeException，都非预期出口。
+        using var timeoutCts = new CancellationTokenSource(
+            Math.Max(1, _optionsMonitor.CurrentValue.EventHandlingTimeoutMs));
         using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutCts.Token);
         var token = linkedCts.Token;
 
-        using var scope = _services.CreateScope();
-
-        foreach (var handlerType in handlers)
+        // 并发闸（F7）：突发通知并行涌入时并行上限由本信号量承担 —— 防止多个 scoped DbContext /
+        // DbConnection 同时解析击穿线程安全假设，且异常被单处理器隔离 ⇒ 静默丢业务。
+        await _concurrencyGate.WaitAsync(token).ConfigureAwait(false);
+        try
         {
-            try
-            {
-                var handler = (IWechatPayNotificationHandler)scope.ServiceProvider.GetRequiredService(handlerType);
-                await handler.HandleAsync(context, token).ConfigureAwait(false);
-            }
-            catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
-            {
-                // 软超时（请求未中止 ⇒ 取消只可能来自本方法的定时器）。
-                _logger?.LogWarning(WechatPayCallbackLogEvents.DispatchTimedOut,
-                    "通知分发软超时（{Timeout}ms），应答 5xx 触发官方重试。" +
-                    "注意：指纹已消费，重试将被判重放 —— 处理器须快速返回。MerchantKey: {MerchantKey}, EventType: {EventType}",
-                    _optionsMonitor.CurrentValue.EventHandlingTimeoutMs, context.MerchantKey, context.EventType);
+            using var scope = _services.CreateScope();
 
-                return WechatPayCallbackDispatchOutcome.TimedOut;
-            }
-            catch (OperationCanceledException)
+            foreach (var handlerType in handlers)
             {
-                // 请求中止：上抛交由中间件静默结束（不写应答）。
-                throw;
+                try
+                {
+                    // 未注册处理器显式跳过（v1 方案 F8）：GetRequiredService 抛 InvalidOperationException
+                    // 会被下面 catch 归因为「处理器执行失败」—— DI 漏注册是配置问题，不是业务故障。
+                    var handler = (IWechatPayNotificationHandler?)scope.ServiceProvider.GetService(handlerType);
+                    if (handler is null)
+                    {
+                        _logger?.LogWarning(
+                            "通知处理器 {Handler} 未在 DI 注册，已跳过（请确认 AddWechatPayCallback().AddHandler<> 已覆盖该事件类型）。MerchantKey: {MerchantKey}, EventType: {EventType}",
+                            handlerType.Name, context.MerchantKey, context.EventType);
+                        continue;
+                    }
+
+                    await handler.HandleAsync(context, token).ConfigureAwait(false);
+                }
+                catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+                {
+                    // 软超时（请求未中止 ⇒ 取消只可能来自本方法的定时器）。
+                    _logger?.LogWarning(WechatPayCallbackLogEvents.DispatchTimedOut,
+                        "通知分发软超时（{Timeout}ms），应答 5xx 触发官方重试。" +
+                        "注意：指纹已消费，重试将被判重放 —— 处理器须快速返回。MerchantKey: {MerchantKey}, EventType: {EventType}",
+                        _optionsMonitor.CurrentValue.EventHandlingTimeoutMs, context.MerchantKey, context.EventType);
+
+                    return WechatPayCallbackDispatchOutcome.TimedOut;
+                }
+                catch (OperationCanceledException)
+                {
+                    // 请求中止：上抛交由中间件静默结束（不写应答）。
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    // 单处理器异常隔离：记 Error 后继续后续处理器（对齐企微 / 公众号线）。
+                    _logger?.LogError(WechatPayCallbackLogEvents.HandlerFailed, ex,
+                        "通知处理器执行失败（已隔离，继续后续处理器）。Handler: {Handler}, MerchantKey: {MerchantKey}, EventType: {EventType}",
+                        handlerType.Name, context.MerchantKey, context.EventType);
+                }
             }
-            catch (Exception ex)
-            {
-                // 单处理器异常隔离：记 Error 后继续后续处理器（对齐企微 / 公众号线）。
-                _logger?.LogError(WechatPayCallbackLogEvents.HandlerFailed, ex,
-                    "通知处理器执行失败（已隔离，继续后续处理器）。Handler: {Handler}, MerchantKey: {MerchantKey}, EventType: {EventType}",
-                    handlerType.Name, context.MerchantKey, context.EventType);
-            }
+
+            return WechatPayCallbackDispatchOutcome.Handled;
         }
-
-        return WechatPayCallbackDispatchOutcome.Handled;
+        finally
+        {
+            _concurrencyGate.Release();
+        }
     }
 }

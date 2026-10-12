@@ -24,12 +24,18 @@ namespace Mud.Wechat.Work.Callback.LongConnection;
 /// <remarks>
 /// <para>
 /// <b>生命周期</b>（<see cref="RunAsync"/> 主循环）：夺租约（若注册了 <see cref="IWechatBotConnectionLease"/>）→
-/// 建连 → <c>aibot_subscribe</c>（<b>每条连接恰一次</b>，官方有频率保护）→ 读帧循环 →
+/// 建连 → <c>aibot_subscribe</c>（<b>每条连接恰一次</b>，官方有频率保护）→ 读帧循环（心跳按固定周期并行）→
 /// 断开（含被新连接踢下线的 <c>disconnected_event</c>）→ <b>指数退避</b> → 回到夺租约。
+/// 会话期间租约按 TTL/3 续租（v1 方案 F4）；续租被拒 ⇒ <see cref="LeaseLostException"/> ⇒ 退避重夺。
 /// </para>
 /// <para>
 /// <b>失败顺序即契约（对齐 ADS-B3 的先删后抛纪律）</b>：重连<b>不得</b>直接建连 —— 必须先退避、再夺租约、
 /// 夺到才建连（防主备乒乓）；失去租约（续租失败）时立即放弃当前连接并回到夺取流程。
+/// </para>
+/// <para>
+/// <b>释放路径唯一化</b>（v1 方案 F2/F13）：主循环全部出口（含夺约失败退避上的取消）汇入唯一
+/// <c>finally</c> 的 <c>ReleaseAsync</c> —— 取消不得穿出 <see cref="RunAsync"/>，优雅停机即让位；
+/// 退避 <c>attempt</c> 每轮至多一次自增。
 /// </para>
 /// <para>
 /// <b>无指纹闸</b>：长连接帧无 query 签名，<c>msgid</c> 去重与业务幂等归宿主（信封暴露 <see cref="WechatBotCallbackEvent.MsgId"/>，
@@ -54,6 +60,7 @@ internal sealed class WechatBotConnection
 
     private readonly SemaphoreSlim _sendLock = new(1, 1);
     private readonly ConcurrentDictionary<string, TaskCompletionSource<AibotFrameAck>> _pendingAcks = new(StringComparer.Ordinal);
+    private readonly WechatBotDispatchTracker _dispatchTracker;
 
     private ClientWebSocket? _socket;
     private volatile bool _disposed;
@@ -83,6 +90,7 @@ internal sealed class WechatBotConnection
         _instanceId = instanceId;
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _streams = new WechatBotStreamRegistry();
+        _dispatchTracker = new WechatBotDispatchTracker(LogDispatchFaulted, LogDrainIncomplete);
     }
 
     /// <summary>本连接的机器人键。</summary>
@@ -93,58 +101,61 @@ internal sealed class WechatBotConnection
     /// </summary>
     /// <remarks>
     /// 任何一轮失败都不抛出（长连接的语义是「尽力维持」）；取消令牌触发后<b>先释放租约再退出</b>
-    /// （优雅停机即让位，避免等 TTL 自然过期）。
+    /// （优雅停机即让位，避免等 TTL 自然过期）。释放路径唯一化（v1 方案 F2）：退避等待全部纳入
+    /// 取消感知，取消落在退避上也被 <c>when (lifetime.IsCancellationRequested)</c> 捕获 ⇒ break ⇒ finally 释放，
+    /// 取消不得穿出本方法；<c>attempt</c> 每轮至多一次自增（F13）。
     /// </remarks>
     public async Task RunAsync(CancellationToken lifetime)
     {
         var attempt = 0;
-        while (!lifetime.IsCancellationRequested && !_disposed)
+        try
         {
-            var connected = false;
-            try
+            while (!lifetime.IsCancellationRequested && !_disposed)
             {
-                if (_lease != null)
+                // 外层 try 兜住「取消落在任一退避上」：夺约失败退避与会话后退避都是取消感知的，
+                // OCE 一律 break 进 finally 释放（v1 方案 F2：取消不得穿出 RunAsync）。
+                try
                 {
-                    if (!await _lease.TryAcquireAsync(_botKey, _instanceId, LeaseTtl(), lifetime).ConfigureAwait(false))
+                    if (_lease != null && !await _lease.TryAcquireAsync(_botKey, _instanceId, LeaseTtl(), lifetime).ConfigureAwait(false))
                     {
                         // 未夺得租约（另一实例持有）：按退避节奏重试，不得建连（否则与持有者乒乓）。
                         await DelayBeforeRetry(attempt++, lifetime).ConfigureAwait(false);
                         continue;
                     }
-                }
 
-                await RunSessionAsync(lifetime).ConfigureAwait(false);
-                connected = true;
-            }
-            catch (OperationCanceledException) when (lifetime.IsCancellationRequested)
-            {
-                break;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "智能机器人 {BotKey} 长连接会话异常，将退避重连。", _botKey);
-            }
-            finally
-            {
-                if (!connected)
+                    try
+                    {
+                        await RunSessionWithRenewalAsync(lifetime).ConfigureAwait(false);
+                    }
+                    catch (OperationCanceledException) when (lifetime.IsCancellationRequested)
+                    {
+                        break;                               // 停机：进 finally 统一释放
+                    }
+                    catch (LeaseLostException ex)
+                    {
+                        // F4：续租被拒（租约易主）—— 预期控制流（官方主备切换机制），不是故障。
+                        _logger.LogInformation(ex, "智能机器人 {BotKey} 失去连接租约，退避后重走夺取流程。", _botKey);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "智能机器人 {BotKey} 长连接会话异常，将退避重连。", _botKey);
+                    }
+
+                    if (lifetime.IsCancellationRequested) { break; }
+                    await DelayBeforeRetry(attempt++, lifetime).ConfigureAwait(false);
+                }
+                catch (OperationCanceledException) when (lifetime.IsCancellationRequested)
                 {
-                    attempt++;
+                    break;                                   // 取消落在退避上：进 finally 统一释放
                 }
             }
-
-            // 会话结束（含被踢）：退避后重走夺租约（disconnected_event 语义 —— 不得立即抢占）。
-            await DelayBeforeRetry(attempt++, lifetime).ConfigureAwait(false);
         }
-
-        if (_lease != null)
+        finally
         {
-            try
+            if (_lease != null)
             {
-                await _lease.ReleaseAsync(_botKey, _instanceId).ConfigureAwait(false);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "智能机器人 {BotKey} 停机释放租约失败（等 TTL 自然过期即可）。", _botKey);
+                try { await _lease.ReleaseAsync(_botKey, _instanceId).ConfigureAwait(false); }
+                catch (Exception ex) { _logger.LogWarning(ex, "智能机器人 {BotKey} 停机释放租约失败（等 TTL 自然过期即可）。", _botKey); }
             }
         }
     }
@@ -360,6 +371,58 @@ internal sealed class WechatBotConnection
         }
     }
 
+    /// <summary>
+    /// 单次会话（建连 → 订阅 → 读帧）与<b>租约续租并联</b>（v1 方案 F4）。
+    /// </summary>
+    /// <remarks>
+    /// 续租周期 = TTL/3（45s 租约 ⇒ 15s 续租，容忍两次瞬时失败仍远小于租约寿命）。
+    /// 续租先结束（<see cref="LeaseLostException"/> 或续租异常）⇒ 先停会话再向上传播；会话先结束
+    /// ⇒ 停续租循环并传播会话结局（会话异常才是重连依据）。
+    /// </remarks>
+    private async Task RunSessionWithRenewalAsync(CancellationToken lifetime)
+    {
+        using var sessionCts = CancellationTokenSource.CreateLinkedTokenSource(lifetime);
+        var session = RunSessionAsync(sessionCts.Token);
+        if (_lease == null)
+        {
+            await session.ConfigureAwait(false);
+            return;
+        }
+
+        var renewal = WechatBotLeaseRenewer.RunAsync(_lease, _botKey, _instanceId, LeaseTtl(), sessionCts.Token);
+        var finished = await Task.WhenAny(session, renewal).ConfigureAwait(false);
+        if (finished == renewal)
+        {
+            // 续租先结束 = 失去租约（LeaseLostException）或续租自身异常：先停会话，再向上传播。
+            await sessionCts.CancelAsync().ConfigureAwait(false);
+            try
+            {
+                await session.ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
+            {
+                // 预期控制流：租约易主主动停会话，不是故障（不进异常告警路径）。
+            }
+
+            await renewal.ConfigureAwait(false);     // 传播 LeaseLostException / 续租异常
+        }
+        else
+        {
+            // 会话先结束（断开 / 取消 / 异常）：停续租循环，传播会话结果。
+            await sessionCts.CancelAsync().ConfigureAwait(false);
+            try
+            {
+                await renewal.ConfigureAwait(false);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                _logger.LogWarning(ex, "智能机器人 {BotKey} 会话结束后续租循环异常（已忽略，按会话结局重连）。", _botKey);
+            }
+
+            await session.ConfigureAwait(false);     // 传播会话异常 / 正常结束
+        }
+    }
+
     /// <summary>订阅帧（每条连接恰一次；官方有频率保护，成功后禁止反复订阅）。</summary>
     private async Task SubscribeAsync(CancellationToken lifetime)
     {
@@ -383,8 +446,12 @@ internal sealed class WechatBotConnection
     private async Task ReadLoopAsync(ClientWebSocket socket, CancellationToken lifetime)
     {
         var buffer = new byte[64 * 1024];
-        using var pingTimer = new CancellationTokenSource();
-        var heartbeat = HeartbeatAsync(socket, pingTimer.Token);
+        using var pingTimer = new CancellationTokenSource();   // 心跳停止信号（唯一取消源：本方法 finally）
+        var heartbeat = WechatBotHeartbeat.RunAsync(
+            TimeSpan.FromSeconds(EffectivePingIntervalSeconds),
+            ct => SendFrameAsync(WechatBotFrameCommands.Ping, WechatBotFrameCodec.NewReqId(), bodyJson: null, ct),
+            (ex, msg) => _logger.LogWarning(ex, "智能机器人 {BotKey} " + msg, _botKey),
+            pingTimer.Token);
 
         try
         {
@@ -396,18 +463,42 @@ internal sealed class WechatBotConnection
                     break;
                 }
 
-                pingTimer.CancelAfter(TimeSpan.FromSeconds(EffectivePingIntervalSeconds));
+                // 心跳与流量正交（v1 方案 F1）：读循环不得重置心跳计时 —— 一次性 CTS 的取消不可逆
+                //（改期 API 只推迟、不撤销），流量驱动改期会把心跳「暂停到永远」。
 
-                var frame = WechatBotFrameCodec.ParseFrame(message);
+                AibotFrame frame;
+                try
+                {
+                    frame = WechatBotFrameCodec.ParseFrame(message);
+                }
+                catch (Exception ex) when (ex is not OperationCanceledException)
+                {
+                    // 畸形帧容错（v1 方案 F12）：单个坏帧不得穿出读循环触发重连风暴（丢帧 + Warning）。
+                    // 帧体不回显（安全红线：明文可能含业务内容），只记异常类别。
+                    _logger.LogWarning(ex, "智能机器人 {BotKey} 长连接帧解析失败，已丢弃该帧（cmd/req_id 不回显帧体）。", _botKey);
+                    continue;
+                }
+
                 if (frame.Cmd == WechatBotFrameCommands.MsgCallback || frame.Cmd == WechatBotFrameCommands.EventCallback)
                 {
-                    await DispatchCallbackFrameAsync(frame).ConfigureAwait(false);
+                    // 并行分派（v1 方案 F5）：读循环只负责收帧/ack 关联，分派外抛为受追踪任务 ——
+                    // 内联 await 会让并发回调串行排队，第 N 帧 respond 时刻 ≈ Σ前序耗时，击穿官方 5s 窗口。
+                    // 并发上界由分发器既有 _concurrencyGate（MaxConcurrentEvents）承担（D8 单一权威）。
+                    TrackDispatch(DispatchCallbackFrameAsync(frame, lifetime));
                 }
                 else if (frame.Headers?.ReqId is { Length: > 0 } reqId
                          && _pendingAcks.TryRemove(reqId, out var pending))
                 {
-                    var ack = WechatBotFrameCodec.ParseAck(message);
-                    pending.TrySetResult(ack);
+                    try
+                    {
+                        var ack = WechatBotFrameCodec.ParseAck(message);
+                        pending.TrySetResult(ack);
+                    }
+                    catch (Exception ex) when (ex is not OperationCanceledException)
+                    {
+                        // ack 解析失败：不 SetResult（发送方按 10s 超时自行失败），丢帧 + Warning。
+                        _logger.LogWarning(ex, "智能机器人 {BotKey} 应答帧解析失败，已丢弃（req_id={ReqId}）。", _botKey, reqId);
+                    }
                 }
                 else
                 {
@@ -425,41 +516,14 @@ internal sealed class WechatBotConnection
             }
 
             _pendingAcks.Clear();
-        }
-    }
-
-    /// <summary>心跳：按配置周期发 <c>ping</c>（官方建议 30 秒；长时间未收到心跳服务端主动断开）。</summary>
-    private async Task HeartbeatAsync(ClientWebSocket socket, CancellationToken token)
-    {
-        try
-        {
-            while (!token.IsCancellationRequested && socket.State == WebSocketState.Open)
-            {
-                await Task.Delay(TimeSpan.FromSeconds(EffectivePingIntervalSeconds), token).ConfigureAwait(false);
-                if (socket.State != WebSocketState.Open)
-                {
-                    return;
-                }
-
-                await SendFrameAsync(
-                    WechatBotFrameCommands.Ping,
-                    WechatBotFrameCodec.NewReqId(),
-                    bodyJson: null,
-                    token).ConfigureAwait(false);
-            }
-        }
-        catch (OperationCanceledException)
-        {
-            // 正常取消（读循环退出）。
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "智能机器人 {BotKey} 心跳发送失败（连接将被服务端或读循环关闭）。", _botKey);
+            await DrainDispatchesAsync().ConfigureAwait(false);
         }
     }
 
     /// <summary>回调帧分派：两阶段解 body → 建信封 → 复用 HTTP 侧分发内核 → 应答帧回写。</summary>
-    private async Task DispatchCallbackFrameAsync(AibotFrame frame)
+    /// <param name="frame">回调帧（msg/event）。</param>
+    /// <param name="lifetime">停机令牌（v1 方案 F6：停机即在途分派与 respond 一并取消，不再各挂 4.5s）。</param>
+    private async Task DispatchCallbackFrameAsync(AibotFrame frame, CancellationToken lifetime)
     {
         var bodyJson = frame.Body?.GetRawText() ?? string.Empty;
         WechatBotCallbackEvent botEvent;
@@ -480,7 +544,13 @@ internal sealed class WechatBotConnection
         WechatBotDispatchResult result;
         try
         {
-            result = await _dispatcher.DispatchAsync(_botKey, botEvent).ConfigureAwait(false);
+            result = await _dispatcher.DispatchAsync(_botKey, botEvent, lifetime).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (lifetime.IsCancellationRequested)
+        {
+            // 停机取消（F6）：软超时之外的取消源 —— 按 Debug 记录，不制造 Error 噪声。
+            _logger.LogDebug("智能机器人 {BotKey} 帧分派随停机取消（req_id={ReqId}, msgid={MsgId}）。", _botKey, reqId, botEvent.MsgId);
+            return;
         }
         catch (OperationCanceledException)
         {
@@ -513,7 +583,12 @@ internal sealed class WechatBotConnection
 
         try
         {
-            await SendRespondCoreAsync(cmd, effectiveReqId, reply, CancellationToken.None).ConfigureAwait(false);
+            await SendRespondCoreAsync(cmd, effectiveReqId, reply, lifetime, botEvent.EventTypeKey).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (lifetime.IsCancellationRequested)
+        {
+            // 停机取消（F6）：应答帧发送随停机放弃 —— Debug 记录，不进 Error 告警。
+            _logger.LogDebug("智能机器人 {BotKey} 应答帧发送随停机取消（cmd={Cmd}, req_id={ReqId}）。", _botKey, cmd, effectiveReqId);
         }
         catch (Exception ex)
         {
@@ -521,6 +596,34 @@ internal sealed class WechatBotConnection
             _logger.LogError(ex, "智能机器人 {BotKey} 应答帧发送失败（cmd={Cmd}, req_id={ReqId}）。", _botKey, cmd, effectiveReqId);
         }
     }
+
+    /// <summary>登记在途分派（读循环外抛，见 F5）。</summary>
+    private void TrackDispatch(Task task) => _dispatchTracker.Track(task);
+
+    /// <summary>有界等待在途分派收尾（停机窗口 5s；界满只告警 —— 应答帧将发送失败）。</summary>
+    private async Task DrainDispatchesAsync()
+        => await _dispatchTracker.DrainAsync(TimeSpan.FromSeconds(5)).ConfigureAwait(false);
+
+    /// <summary>在途分派故障回调：纯取消（停机 / 软超时）走 Debug，真故障走 Error。</summary>
+    private void LogDispatchFaulted(Exception ex)
+    {
+        if (IsPureCancellation(ex))
+        {
+            _logger.LogDebug("智能机器人 {BotKey} 回调帧分派取消（停机 / 软超时）。", _botKey);
+            return;
+        }
+
+        _logger.LogError(ex, "智能机器人 {BotKey} 回调帧分派任务异常（已隔离，不影响连接）。", _botKey);
+    }
+
+    /// <summary>在途分派收尾超界回调。</summary>
+    private void LogDrainIncomplete(Exception ex)
+        => _logger.LogWarning(ex, "在途回调分派未在 5s 内完成（连接已关闭，应答帧将发送失败）。");
+
+    /// <summary>是否「纯取消」异常（单取消或全为取消的聚合）。</summary>
+    private static bool IsPureCancellation(Exception ex)
+        => ex is OperationCanceledException
+           || (ex is AggregateException agg && agg.InnerExceptions.Count > 0 && agg.InnerExceptions.All(static e => e is OperationCanceledException));
 
     /// <summary>按事件与应答形态映射 respond 帧命令（官方 101463 三支应答帧各有事件限定）。</summary>
     private static string? ResolveRespondCommand(WechatBotCallbackEvent botEvent, AibotMessage reply)
@@ -541,9 +644,11 @@ internal sealed class WechatBotConnection
         return WechatBotFrameCommands.RespondMsg;
     }
 
-    private async Task SendRespondCoreAsync(string cmd, string reqId, AibotMessage reply, CancellationToken cancellationToken)
+    private async Task SendRespondCoreAsync(
+        string cmd, string reqId, AibotMessage reply, CancellationToken cancellationToken, string? eventType = null)
     {
-        WechatBotReplySupport.ValidateLongConnectionReply(reply);
+        // 事件维度校验（v1 方案 F10）：feedback_event 仅空包（两传输通用规则）。
+        WechatBotReplySupport.ValidateLongConnectionReply(reply, eventType);
 
         var socket = _socket;
         if (socket == null || socket.State != WebSocketState.Open)

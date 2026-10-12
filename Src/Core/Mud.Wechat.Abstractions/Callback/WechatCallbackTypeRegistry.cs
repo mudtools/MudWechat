@@ -13,7 +13,13 @@ namespace Mud.Wechat.Abstractions.Callback;
 /// <remarks>
 /// <para>
 /// <b>生命周期</b>：注册表实例在组合根期（各产品线的 <c>AddXxxCallback</c>）创建并以单实例注入 DI，
-/// 注册只发生在宿主组装代码中（单线程、先于容器构建），<b>无 Freeze 冻结语义</b>。
+/// 注册只发生在宿主组装代码中（单线程、先于容器构建）。
+/// </para>
+/// <para>
+/// <b>冻结（<see cref="Seal"/>）</b>：宿主注册全部完成后由 <c>UseXxxCallback()</c>（组合根末端，
+/// 服务提供器构建之后）调用一次 —— 冻结后任何 <see cref="Register"/> 抛
+/// <see cref="InvalidOperationException"/>（v1 方案 F15/D12）：运行期才发现漏注册处理器是分布式故障，
+/// 必须在组装期 fail-fast。
 /// </para>
 /// <para>
 /// 通配键 <see cref="WechatCallbackRouteKeys.Wildcard"/>（<c>"*"</c>）内的条目对<b>所有</b>应用生效；
@@ -29,14 +35,22 @@ namespace Mud.Wechat.Abstractions.Callback;
 public class WechatCallbackTypeRegistry<T>
 {
     private readonly ConcurrentDictionary<string, List<Type>> _registry = new();
+    private volatile bool _sealed;
 
     /// <summary>
     /// 注册类型到指定应用键桶（重复注册幂等忽略）。
     /// </summary>
     /// <param name="appKey">应用键；<see cref="WechatCallbackRouteKeys.Wildcard"/> 表示全局生效。</param>
     /// <param name="type">注册的类型。</param>
+    /// <exception cref="InvalidOperationException">注册表已冻结（<see cref="Seal"/> 之后）。</exception>
     public virtual void Register(string appKey, Type type)
     {
+        if (_sealed)
+        {
+            throw new InvalidOperationException(
+                "回调注册表已冻结（宿主注册在 UseXxxCallback() 时封闭）：运行期不得再注册处理器 / 拦截器。");
+        }
+
         if (string.IsNullOrEmpty(appKey))
         {
             throw new ArgumentException("应用键不能为空", nameof(appKey));
@@ -55,6 +69,19 @@ public class WechatCallbackTypeRegistry<T>
                 list.Add(type);
             }
         }
+    }
+
+    /// <summary>
+    /// 冻结注册表（<see cref="Register"/> 此后抛 <see cref="InvalidOperationException"/>；幂等）。
+    /// </summary>
+    /// <remarks>
+    /// 唯一调用点是各产品线的 <c>UseXxxCallback()</c> 中间件扩展（组合根末端、服务提供器已构建）——
+    /// 与支付线回调分发器的「急切注册、无 Freeze」刻意不同：那条线的处理器在
+    /// <c>AddWechatPayCallback</c> 期一次性注册完毕，无运行期注册路径。
+    /// </remarks>
+    public virtual void Seal()
+    {
+        _sealed = true;
     }
 
     /// <summary>

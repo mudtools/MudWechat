@@ -1561,6 +1561,27 @@ public class WechatCallbackContractGuards
     }
 
     /// <summary>
+    /// 契约守卫 CB-CNT（v1 方案 F14）：契约键计数注释与权威基线（<c>ContractBaseline</c>）一致 ——
+    /// 注释是「变更时同批更新」的提示物，漂移即误导后来者。
+    /// </summary>
+    [Fact]
+    public void ContractKeyCountComments_ShouldMatchBaseline()
+    {
+        var expected = Baseline.Work.RegisteredCallbackEventKeys.ToString(
+            System.Globalization.CultureInfo.InvariantCulture);
+
+        var contractsSource = File.ReadAllText(SourcePath(
+            "Mud.Wechat.Work.Callback", "Events", "Payloads", "Contracts", "OfficialPayloadContracts.cs"));
+        contractsSource.Should().Contain("（" + expected + " 键）",
+            "OfficialPayloadContracts 的键计数注释必须与权威基线一致（F14：120 键是漂移值）");
+
+        var registrationSource = File.ReadAllText(SourcePath(
+            "Mud.Wechat.Work.Callback", "WechatCallbackServiceCollectionExtensions.cs"));
+        registrationSource.Should().Contain("官方 " + expected + " 键契约",
+            "登记入口的键计数注释必须与权威基线一致（F14：41 键是漂移值）");
+    }
+
+    /// <summary>
     /// 读取某个类型的源码文本（按「类型名 + .cs」在仓库内定位，排除 <c>obj</c>/<c>bin</c>）。
     /// </summary>
     /// <remarks>

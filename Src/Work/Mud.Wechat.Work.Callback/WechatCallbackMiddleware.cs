@@ -332,7 +332,7 @@ public sealed class WechatCallbackMiddleware(
             }
 
             var (_, _, nonce) = WechatCallbackCrypto.ParseSignatureQuery(query);
-            var payload = WechatBotReplyWriter.WriteReply(app, reply, nonce);
+            var payload = WechatBotReplyWriter.WriteReply(app, reply, nonce, botEvent.EventTypeKey);
 
             context.Response.StatusCode = StatusCodes.Status200OK;
             context.Response.ContentType = WechatBotReplyWriter.ResponseContentType;

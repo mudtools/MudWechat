@@ -61,6 +61,13 @@ public class WechatBotCallbackTests
            "\"response_url\":\"https://qyapi.weixin.qq.com/cgi-bin/aibot/response?response_code=RC\"," +
            "\"msgtype\":\"text\",\"text\":{\"content\":\"hi\"}}";
 
+    /// <summary>构造官方形态的进入会话回调明文（欢迎语事件；HTTP 被动回复的 text 仅此事件合法，101031）。</summary>
+    private static string EnterChatEventJson(string msgId = "MSGID-EC")
+        => "{\"msgid\":\"" + msgId + "\",\"aibotid\":\"BOTID\",\"chatid\":\"CHATID\",\"chattype\":\"single\"," +
+           "\"from\":{\"userid\":\"zhangsan\"}," +
+           "\"response_url\":\"https://qyapi.weixin.qq.com/cgi-bin/aibot/response?response_code=RC\"," +
+           "\"msgtype\":\"event\",\"event\":{\"eventtype\":\"enter_chat\",\"create_time\":1700000000}}";
+
     private static string EncryptedBody(string plainJson, string receiveId = "")
     {
         var encrypt = WechatCallbackCrypto.Encrypt(AesKey, plainJson, receiveId);
@@ -346,7 +353,8 @@ public class WechatBotCallbackTests
         var (middleware, provider) = CreateMiddleware("hi");
         using var providerDisposable = provider;
 
-        var body = EncryptedBody(TextMessageJson());
+        // 欢迎语事件（enter_chat）—— HTTP 被动回复的 text 仅此事件合法（官方 101031，v1 方案 F10）。
+        var body = EncryptedBody(EnterChatEventJson());
         var context = CreatePostContext(body, QueryFor(ExtractEncrypt(body)));
 
         await middleware.InvokeAsync(context);
@@ -359,6 +367,26 @@ public class WechatBotCallbackTests
         var envelope = JsonSerializer.Deserialize<AibotEncryptedEnvelope>(payload)!;
         var plain = WechatCallbackCrypto.Decrypt(AesKey, envelope.Encrypt!, out _);
         JsonSerializer.Deserialize<AibotMessage>(plain)!.Text!.Content.Should().Be("hi");
+    }
+
+    /// <summary>
+    /// F10 事件维度规则（中间件出口）：对<b>非进入会话事件</b>回 text ⇒ 组装期 fail-fast ⇒ 500
+    /// （企微 bot 线既有出口：宿主编程错误记 Error 后回 500，与验签失败 403 区分；v1 方案 §0.3-C）。
+    /// </summary>
+    [Fact]
+    public async Task Middleware_ShouldReturn500_WhenTextReplySentForNonEnterChatEvent()
+    {
+        var (middleware, provider) = CreateMiddleware(
+            null, includeTextForMessageHandler: true);
+        using var providerDisposable = provider;
+
+        var body = EncryptedBody(TextMessageJson());
+        var context = CreatePostContext(body, QueryFor(ExtractEncrypt(body)));
+
+        await middleware.InvokeAsync(context);
+
+        context.Response.StatusCode.Should().Be(500,
+            "text 应答对非 enter_chat 事件不被官方支持（101031）：fail-fast 暴露宿主错误，而非静默发出后被丢弃");
     }
 
     [Fact]
@@ -503,7 +531,8 @@ public class WechatBotCallbackTests
     private static (WechatCallbackMiddleware Middleware, ServiceProvider Provider) CreateMiddleware(
         string? replyText,
         Action<WechatCallbackOptions>? configureOptions = null,
-        bool includeXmlHandler = false)
+        bool includeXmlHandler = false,
+        bool includeTextForMessageHandler = false)
     {
         var services = new ServiceCollection();
         services.AddLogging();
@@ -521,6 +550,11 @@ public class WechatBotCallbackTests
         {
             services.AddSingleton(new ProbeReplyState { Text = replyText });
             botBuilder.AddHandler<ProbeBotHandler2>(BotKey);
+        }
+
+        if (includeTextForMessageHandler)
+        {
+            botBuilder.AddHandler<ProbeBotTextForMessageHandler>(BotKey);
         }
 
         var provider = services.BuildServiceProvider();
@@ -600,18 +634,28 @@ public class WechatBotCallbackTests
             => _handle(eventData, cancellationToken);
     }
 
-    /// <summary>经真实 DI 注册的 bot 处理器（中间件端到端用）。</summary>
+    /// <summary>经真实 DI 注册的 bot 处理器（中间件端到端用；欢迎语事件 —— text 被动回复唯一合法的事件，101031）。</summary>
     private sealed class ProbeBotHandler2 : IWechatBotCallbackEventHandler
     {
         private readonly ProbeReplyState _state;
 
         public ProbeBotHandler2(ProbeReplyState state) => _state = state;
 
-        public string SupportedEventType => WechatBotEventTypes.Text;
+        public string SupportedEventType => WechatBotEventTypes.EnterChat;
 
         public Task<AibotMessage?> HandleAsync(
             WechatBotCallbackEvent eventData, CancellationToken cancellationToken = default)
             => Task.FromResult<AibotMessage?>(WechatBotReplies.Text(_state.Text ?? string.Empty));
+    }
+
+    /// <summary>对<b>消息回调</b>（匹配键 = 顶层 msgtype = text）回 text 的处理器（F10 违规组合探针）。</summary>
+    private sealed class ProbeBotTextForMessageHandler : IWechatBotCallbackEventHandler
+    {
+        public string SupportedEventType => WechatBotEventTypes.Text;
+
+        public Task<AibotMessage?> HandleAsync(
+            WechatBotCallbackEvent eventData, CancellationToken cancellationToken = default)
+            => Task.FromResult<AibotMessage?>(WechatBotReplies.Text("should-be-rejected"));
     }
 
     /// <summary>XML 面处理器（验证 bot 注册不影响 XML 面分发）。</summary>

@@ -8,18 +8,28 @@
 namespace Mud.Wechat.MiniProgram;
 
 /// <summary>
-/// 微信小程序「客服」域 SDK（9 端点：客服角色 2 + 客服子商户 4 + 微信客服 3）。
+/// 微信小程序「客服」域 SDK（11 端点：客服角色 2 + 客服子商户 4 + 微信客服 3 + 客服输入状态 1 + 临时素材 1）。
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>官方文档</b>（小程序服务端 API → 客服消息 / 客服子商户 / 微信客服，2026-10-10 依据官方清单核验）：
+/// <b>官方文档</b>（小程序服务端 API → 客服消息 / 客服子商户 / 微信客服，2026-10-12 依据官方清单核验）：
 /// 客服消息 <see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/kf-mgnt/kf-message/"/>、客服子商户 <see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/kf-mgnt/kf-management/"/> 族、微信客服 <see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/kf-work/"/> 族。
 /// </para>
 /// <para>
-/// <b>为何只有 9 端点（MP-X1）</b>：客服账号的「增删改/头像/邀请绑定」（<c>/customservice/kfaccount/{add,update,del,uploadheadimg,inviteworker}</c>）、
+/// <b>为何长期只有 9 端点（MP-X1）</b>：客服账号的「增删改/头像/邀请绑定」（<c>/customservice/kfaccount/{add,update,del,uploadheadimg,inviteworker}</c>）、
 /// 客服列表（<c>/cgi-bin/customservice/getkflist</c>、<c>getonlinekflist</c>）、消息发送（<c>/cgi-bin/message/custom/send</c>）、
-/// 素材（<c>/cgi-bin/media/{upload,get}</c>）均已被公众号线占据；本域仅补公众号线<b>未覆盖</b>的
-/// 客服角色管理、客服子商户与微信客服（<c>work</c>）三族端点。
+/// 素材<b>上传</b>（<c>/cgi-bin/media/upload</c>）均已在公众号线建模；本域只补公众号线<b>未覆盖</b>的端点。
+/// </para>
+/// <para>
+/// <b>2026-10-12 核对补漏（订正既有说明）</b>：原注释称「素材 <c>/cgi-bin/media/{upload,get}</c> 均已被公众号线占据」
+/// 与实测<b>不符</b>——公众号线只有 <c>media/upload</c>，<b>没有</b> <c>media/get</c>。故本轮补入：
+/// <list type="bullet">
+/// <item><c>/cgi-bin/message/custom/business/typing</c>（客服输入状态）：官方按账号类型二分路由，
+/// 公众号/服务号走 <c>message/custom/typing</c>、<b>小程序/小游戏走 <c>message/custom/business/typing</c></b>，
+/// 公众号线承载的是前者，与本端点<b>不同路由、不构成重叠</b>。</item>
+/// <item><c>/cgi-bin/media/get</c>（获取临时素材）：成功返回<b>素材二进制流</b>、失败才返回 JSON，
+/// 与小程序码同形 ⇒ 走手工通道 <see cref="IWxaKfMediaService"/>（不在本接口）。</item>
+/// </list>
 /// </para>
 /// <para>
 /// <b>令牌与鉴权</b>：全部走应用级 <c>access_token</c>（Query）；客服账号格式为
@@ -153,5 +163,29 @@ public interface IWxaKfService
     [Post("/customservice/work/unbind")]
     Task<WxaResponse> UnbindWorkAccountAsync(
         [Body] WxaKfWorkRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 下发客服输入状态（<c>POST /cgi-bin/message/custom/business/typing</c>）。
+    /// 官方文档：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/kf-mgnt/kf-message/api_typing"/>。
+    /// </summary>
+    /// <param name="request">输入状态请求体（<c>touser</c> / <c>command</c> 必填），见 <see cref="WxaKfTypingRequest"/>。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
+    /// <returns>仅 <c>errcode</c>/<c>errmsg</c>（<c>0</c> 表示下发成功）。</returns>
+    /// <remarks>
+    /// <para>官方契约：<b>POST</b> ＋ 请求体 JSON；Query 携带 <c>access_token</c>。</para>
+    /// <para>
+    /// <b>小程序专用路由（官方原文）</b>：公众号 / 服务号用 <c>/cgi-bin/message/custom/typing</c>，
+    /// <b>小程序 / 小游戏用 <c>/cgi-bin/message/custom/business/typing</c></b>；
+    /// 公众号线承载的是前者，与本端点<b>不同路由</b>（MP-X1 无重叠）。
+    /// </para>
+    /// <para>
+    /// <b>时限约束（官方错误码）</b>：<c>45080</c> 下发前须与该用户 30 秒内有消息交互；
+    /// <c>45081</c> 已在输入状态不可重复下发；<c>45072</c> <c>command</c> 取值非法。
+    /// </para>
+    /// </remarks>
+    [Post("/cgi-bin/message/custom/business/typing")]
+    Task<WxaResponse> SendTypingStatusAsync(
+        [Body] WxaKfTypingRequest request,
         CancellationToken cancellationToken = default);
 }

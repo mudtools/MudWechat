@@ -72,10 +72,16 @@ public enum MiniProgramModule
     DynamicMessage,
 
     /// <summary>
-    /// 客服（9 端点：客服角色 2 + 客服子商户 4 + 微信客服绑定 3）。
+    /// 客服（11 端点：客服角色 2 + 客服子商户 4 + 微信客服绑定 3 + 客服输入状态 1 + 临时素材 1）。
     /// </summary>
-    /// <remarks>官方「小程序客服」目录跨三个子目录（客服消息 / 客服子商户 / 微信客服），
-    /// 公众号线已占据客服账号/消息/素材等端点，本域只补公众号线<b>未覆盖</b>的 9 端点（单注册组）。</remarks>
+    /// <remarks>
+    /// <para>官方「小程序客服」目录跨三个子目录（客服消息 / 客服子商户 / 微信客服），
+    /// 公众号线已占据客服账号 / 客服列表 / 发送客服消息 / 素材<b>上传</b>等端点，本域只补公众号线<b>未覆盖</b>的端点（单注册组）。</para>
+    /// <para><b>2026-10-12 补漏订正</b>：公众号线<b>无</b> <c>/cgi-bin/media/get</c>（只有 <c>media/upload</c>），
+    /// 且 <c>message/custom/business/typing</c> 与公众号线 <c>message/custom/typing</c> <b>路由不同</b>
+    /// （官方按小程序 / 公众号二分），故两者均属本域缺口，本轮补入。
+    /// 其中 <c>media/get</c> 成功返回<b>素材二进制流</b> ⇒ 走手工通道 <c>IWxaKfMediaService</c>。</para>
+    /// </remarks>
     Kf,
 
     /// <summary>
@@ -149,12 +155,14 @@ public enum MiniProgramModule
     LaborUse,
 
     /// <summary>
-    /// 物流助手（51 端点：商家寄件 12 + 服务商/物流消息/退货/散单寄件 26 + 同城配送 12 + 对账文件 1）。
+    /// 物流助手（68 端点：商家寄件 12 + 服务商/物流消息/退货/散单寄件/投诉处理/消息推送 28 + 同城配送 16 + 无忧退货 11 + 即时配送 15 + 对账文件 1）。
     /// </summary>
     /// <remarks>
     /// <para><b>商家寄件</b> 12 端点：下单 / 查询 / 批量查询 / 取消 / 轨迹 / 快递公司列表 / 快递账号 / 绑定账号 / 打印员 / 绑定打印员 / 面单余额 / 模拟轨迹（<c>express/business</c>）。</para>
-    /// <para><b>服务商 / 物流消息 / 退货 / 散单寄件</b> 26 端点（<c>express/delivery</c>）：面单联系人 / 面单预览 / 审核回传 / 轨迹同步 / 无忧退 3 / 物流消息 9 / 查询插件 4 / 退货组件 4 / 散单寄件 6（其中 <c>single_waybill/get_bill</c> 返回<b>对账文件文本</b> ⇒ 走手动通道 <c>IWxaExpressBillService</c>）。</para>
-    /// <para><b>同城配送</b> 12 端点（<c>express/intracity</c>）：创建 / 查询 / 更新门店 + 运费充值 / 退款 / 流水 / 余额 + 询价 / 下单 / 查询 / 取消配送单 + 模拟回调（<c>mocknotify</c> 仅测试环境）。</para>
+    /// <para><b>服务商 / 物流消息 / 退货 / 散单寄件 / 投诉处理 / 消息推送</b> 28 端点（<c>express/delivery</c>）：面单联系人 / 面单预览 / 审核回传 / 轨迹同步 / 无忧退 3 / 物流消息 9 / 查询插件 4 / 退货组件 4 / 散单寄件 6（其中 <c>single_waybill/get_bill</c> 返回<b>对账文件文本</b> ⇒ 走手动通道 <c>IWxaExpressBillService</c>）/ 投诉处理 1 / 消息推送 2。</para>
+    /// <para><b>同城配送</b> 16 端点（<c>express/intracity</c>）：开通 / 创建 / 查询 / 更新门店 + 运费充值 / 退款 / 流水 / 余额 + 询价 / 下单 / 查询 / 取消配送单 + 模拟回调（<c>mocknotify</c> 仅测试环境）+ 支持城市 / 查询扣费主体 / 设置扣费主体。</para>
+    /// <para><b>无忧退货</b> 11 端点（<c>wxa/business/insurance_freight</c>）：开通 / 查询开通状态 / 发货投保 / 理赔 / 充值订单号 / 申请支付 / 充值订单列表 / 保费退款 / 理赔摘要 / 保单列表 / 告警余额。注意 <c>open</c> 与 <c>query_open</c> 官方为 <b>GET 且无请求体</b>、<c>refund</c> 为 <b>POST 且无请求体</b>。</para>
+    /// <para><b>即时配送</b> 15 端点（<c>express/local</c>，小程序方 14 + 运力方 1）：该族返回体用 <c>resultcode</c>/<c>resultmsg</c> <b>而非</b> <c>errcode</c>/<c>errmsg</c> ⇒ 响应继承 <c>WxaExpressLocalResponse</c>。</para>
     /// </remarks>
     Express,
 

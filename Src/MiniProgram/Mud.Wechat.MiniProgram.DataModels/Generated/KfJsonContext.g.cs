@@ -20,6 +20,7 @@ namespace Mud.Wechat.MiniProgram.DataModels.Kf;
 [JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Kf.WxaBusinessListResponse))]
 [JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Kf.WxaKfWorkRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Kf.WxaKfWorkGetResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Kf.WxaKfTypingRequest))]
 internal partial class KfJsonContext : JsonSerializerContext
 {
 }

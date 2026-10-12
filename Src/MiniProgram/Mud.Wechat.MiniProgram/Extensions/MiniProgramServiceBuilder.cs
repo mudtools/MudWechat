@@ -48,7 +48,14 @@ public class MiniProgramServiceBuilder
             [MiniProgramModule.DataAnalysis] = static s => s.AddDataAnalysisWebApiHttpClient(),
             [MiniProgramModule.SubscribeMessage] = static s => s.AddSubscribeMessageWebApiHttpClient(),
             [MiniProgramModule.DynamicMessage] = static s => s.AddDynamicMessageWebApiHttpClient(),
-            [MiniProgramModule.Kf] = static s => s.AddKfWebApiHttpClient(),
+            // 客服：临时素材（/cgi-bin/media/get）成功时返回**素材二进制流**（失败时才是 JSON；视频素材
+            // 特例返回含 video_url 的 JSON），走独立请求形态 IWxaKfMediaService（Content-Type 分支判错）；
+            // 公众号线只有 media/upload、无 media/get，故本端点无跨线重叠（MP-X1）。
+            [MiniProgramModule.Kf] = static s =>
+            {
+                s.AddKfWebApiHttpClient();
+                s.TryAddSingleton<IWxaKfMediaService, WxaKfMediaService>();
+            },
             [MiniProgramModule.HardwareDevice] = static s => s.AddHardwareDeviceWebApiHttpClient(),
 
             // 运维中心：反馈图片（getfeedbackmedia）成功时返回**图片二进制流**（失败时才是 JSON），
@@ -104,7 +111,7 @@ public class MiniProgramServiceBuilder
     /// <returns>注册器（链式）。</returns>
     public MiniProgramServiceBuilder AddDynamicMessageApi() => AddModule(MiniProgramModule.DynamicMessage);
 
-    /// <summary>注册客服（9 端点：客服角色 + 客服子商户 + 微信客服绑定）。</summary>
+    /// <summary>注册客服（11 端点：客服角色 + 客服子商户 + 微信客服绑定 + 客服输入状态 + 临时素材二进制通道）。</summary>
     /// <returns>注册器（链式）。</returns>
     public MiniProgramServiceBuilder AddKfApi() => AddModule(MiniProgramModule.Kf);
 
@@ -156,7 +163,7 @@ public class MiniProgramServiceBuilder
     /// <returns>注册器（链式）。</returns>
     public MiniProgramServiceBuilder AddLaborUseApi() => AddModule(MiniProgramModule.LaborUse);
 
-    /// <summary>注册物流助手（51 端点：50 JSON + 1 对账文件文本）。</summary>
+    /// <summary>注册物流助手（68 端点：67 JSON + 1 对账文件文本）。</summary>
     /// <returns>注册器（链式）。</returns>
     public MiniProgramServiceBuilder AddExpressApi() => AddModule(MiniProgramModule.Express);
     /// <summary>

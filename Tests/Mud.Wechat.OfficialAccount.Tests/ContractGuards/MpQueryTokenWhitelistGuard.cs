@@ -118,7 +118,7 @@ public class MpQueryTokenWhitelistGuard
             nameof(Mud.Wechat.MiniProgram.IWxaExpressLocalService),      // 即时配送（15 端点：小程序方 14 + 运力方 1；2026-10-12 依官方清单补齐）
             nameof(Mud.Wechat.MiniProgram.IWxaFaceVerifyService),        // 微信人脸核身（2 端点）
             nameof(Mud.Wechat.MiniProgram.IWxaHardwareDeviceService),    // 硬件设备（9 端点）
-            nameof(Mud.Wechat.MiniProgram.IWxaKfService),                // 客服（9 端点）
+            nameof(Mud.Wechat.MiniProgram.IWxaKfService),                // 客服（10 端点 JSON 通道；临时素材 IWxaKfMediaService 手工通道不入白名单）
             nameof(Mud.Wechat.MiniProgram.IWxaLaborUseService),          // 用工关系（2 端点）
             nameof(Mud.Wechat.MiniProgram.IWxaNearbyPoiService),         // 附近小程序（4 端点）
             nameof(Mud.Wechat.MiniProgram.IWxaOperationService),         // 运维中心（9 端点；反馈图片 IWxaFeedbackMediaService 手工通道不入白名单）

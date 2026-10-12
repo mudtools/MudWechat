@@ -1,10 +1,10 @@
 # Mud.Wechat.MiniProgram
 
-微信小程序 SDK **主包**：**21 个业务域 173 端点**（登录与身份 / 二维码与链接 / 内容安全 / 数据分析 / 订阅消息 / 动态消息 / 客服 / 硬件设备 / 运维中心 / 插件 / 付费 / 附近小程序 / 搜一搜 / 生物认证 / 服务市场 / 红包封面 / 学生身份 / 人脸核身 / 用工关系 / 物流助手 / 会员服务）的声明式 HTTP 客户端、模块注册器、AOT JsonContext 合并，以及小程序码 / 反馈图片（二进制流）与物流对账文件（文本）的**手工通道**。
+微信小程序 SDK **主包**：**21 个业务域 175 端点**（登录与身份 / 二维码与链接 / 内容安全 / 数据分析 / 订阅消息 / 动态消息 / 客服 / 硬件设备 / 运维中心 / 插件 / 付费 / 附近小程序 / 搜一搜 / 生物认证 / 服务市场 / 红包封面 / 学生身份 / 人脸核身 / 用工关系 / 物流助手 / 会员服务）的声明式 HTTP 客户端、模块注册器、AOT JsonContext 合并，以及小程序码 / 反馈图片（二进制流）与物流对账文件（文本）的**手工通道**。
 
 **小程序与公众号同属微信公众平台**：同一令牌域、同一批路由前缀（`/wxa/`、`/datacube/`、`/sns/`），因此本线**不重复实现令牌与多应用基座**，直接复用 `Mud.Wechat.OfficialAccount.Abstractions`（守卫 MP-X2 锁定）。装配入口也因此是两段式的——先 `AddMpApp` 建底座，再 `AddMiniProgramServices` 装本线模块。
 
-## 能力面（173 端点，计数与路由表由 MP-X5 锁定）
+## 能力面（175 端点，计数与路由表由 MP-X5 锁定）
 
 | 模块（`MiniProgramModule`） | 注册方法 | 端点 | 接口 |
 | --- | --- | --- | --- |
@@ -14,7 +14,7 @@
 | `DataAnalysis` | `AddDataAnalysisApi()` | 11 | `IWxaDataAnalysisService`（`/datacube/getweanalysisappid*`：日/周/月访问趋势与留存 + 页面访问 + 访问分布 + 用户画像 + 数据概况 + `wxa/business/performance/boot`） |
 | `SubscribeMessage` | `AddSubscribeMessageApi()` | 4 | `IWxaSubscribeMessageService`（发送订阅消息 + 用户通知开关 / 扩展） |
 | `DynamicMessage` | `AddDynamicMessageApi()` | 3 | `IWxaDynamicMessageService`（`activityid/create` + 动态消息发送 + 聊天工具动态卡片消息） |
-| `Kf` | `AddKfApi()` | 9 | `IWxaKfService`（客服角色 2 + 客服子商户 4 + 微信客服绑定 3） |
+| `Kf` | `AddKfApi()` | 11 | `IWxaKfService`（客服角色 2 + 客服子商户 4 + 微信客服绑定 3 + 客服输入状态 1）+ `IWxaKfMediaService`（临时素材**二进制**手工通道 1；`media/get` 成功返回素材流、失败才是 JSON，视频素材特例返回含 `video_url` 的 JSON） |
 | `HardwareDevice` | `AddHardwareDeviceApi()` | 9 | `IWxaHardwareDeviceService`（设备消息发送 + `getsnticket` + 设备组 4 + License 3） |
 | `Operation` | `AddOperationApi()` | 10 | `IWxaOperationService`（9 端点：域名配置 / 性能·来源·客户端版本 / 实时与错误日志 / 反馈列表 / 灰度发布）+ `IWxaFeedbackMediaService`（反馈图片手工通道） |
 | `Plugin` | `AddPluginApi()` | 2 | `IWxaPluginService`（`/wxa/devplugin`、`/wxa/plugin`，`action` 驱动） |

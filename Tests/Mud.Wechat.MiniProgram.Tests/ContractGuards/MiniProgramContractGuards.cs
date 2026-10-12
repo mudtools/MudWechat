@@ -183,6 +183,7 @@ public class MiniProgramContractGuards
             "/cgi-bin/business/register", "/cgi-bin/business/update",
             "/cgi-bin/business/get", "/cgi-bin/business/list",
             "/customservice/work/get", "/customservice/work/bind", "/customservice/work/unbind",
+            "/cgi-bin/message/custom/business/typing",
         });
 
         RoutesOf(asm, nameof(IWxaHardwareDeviceService)).Should().BeEquivalentTo(new[]
@@ -319,13 +320,14 @@ public class MiniProgramContractGuards
             WxaCodeService.UnlimitedCodePath, WxaCodeService.CodePath, WxaCodeService.QrCodePath,
             WxaFeedbackMediaService.FeedbackMediaPath,
             WxaExpressBillService.BillPath,
+            WxaKfMediaService.MediaPath,
         });
 
-        // 合计计数（MP-X5 的单一来源）：168 特性路由 + 5 手工通道路由 = 173（基线见 Tests/ContractBaseline.cs）。
+        // 合计计数（MP-X5 的单一来源）：169 特性路由 + 6 手工通道路由 = 175（基线见 Tests/ContractBaseline.cs）。
         (CollectAttributeRoutes(asm).Length + ManualChannelRoutes().Length)
             .Should().Be(Baseline.MiniProgram.Endpoints,
-                "小程序线合计 173 端点（Auth 8 + QrCodeLink 9 + Security 3 + DataAnalysis 11 + "
-                + "SubscribeMessage 4 + DynamicMessage 3 + Kf 9 + HardwareDevice 9 + Operation 10 + "
+                "小程序线合计 175 端点（Auth 8 + QrCodeLink 9 + Security 3 + DataAnalysis 11 + "
+                + "SubscribeMessage 4 + DynamicMessage 3 + Kf 11 + HardwareDevice 9 + Operation 10 + "
                 + "Plugin 2 + Charge 2 + NearbyPoi 4 + Search 1 + Soter 1 + ServiceMarket 2 + "
                 + "RedPacketCover 1 + Student 1 + FaceVerify 2 + LaborUse 2 + ExpressBusiness 12 + "
                 + "ExpressDelivery 28 + ExpressIntracity 16 + ExpressInsuranceFreight 11 + ExpressLocal 15 + "
@@ -539,6 +541,7 @@ public class MiniProgramContractGuards
         provider.GetRequiredService<IWxaLaborUseService>().Should().NotBeNull();
         provider.GetRequiredService<IWxaCodeService>().Should().NotBeNull("小程序码图片通道随 QrCodeLink 模块注册");
         provider.GetRequiredService<IWxaFeedbackMediaService>().Should().NotBeNull("反馈图片通道随 Operation 模块注册");
+        provider.GetRequiredService<IWxaKfMediaService>().Should().NotBeNull("客服临时素材二进制通道随 Kf 模块注册");
         provider.GetRequiredService<IWxaExpressBusinessService>().Should().NotBeNull("物流助手商家寄件随 Express 模块注册");
         provider.GetRequiredService<IWxaExpressDeliveryService>().Should().NotBeNull("物流助手服务商侧随 Express 模块注册");
         provider.GetRequiredService<IWxaExpressIntracityService>().Should().NotBeNull("物流助手同城配送随 Express 模块注册");
@@ -555,6 +558,7 @@ public class MiniProgramContractGuards
             WxaCodeService.UnlimitedCodePath, WxaCodeService.CodePath, WxaCodeService.QrCodePath,
             WxaFeedbackMediaService.FeedbackMediaPath,
             WxaExpressBillService.BillPath,
+            WxaKfMediaService.MediaPath,
         };
 
     private static string[] RoutesOf(Assembly asm, string interfaceName)

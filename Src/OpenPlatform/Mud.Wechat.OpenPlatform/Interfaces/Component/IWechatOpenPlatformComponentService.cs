@@ -14,7 +14,7 @@ namespace Mud.Wechat.OpenPlatform;
 
 /// <summary>
 /// 微信开放平台（第三方平台）「平台管理」域 SDK
-/// （配额清零、快速注册小程序、服务器/跳转域名管理、用户隐私保护指引、授权方信息与选项——
+/// （配额清零、快速注册小程序、小程序管理员换绑、服务器/跳转域名管理、用户隐私保护指引、授权方信息与选项——
 /// 即官方「第三方平台管理」分组下消费 <c>component_access_token</c> 的管理面端点；
 /// 令牌链 4 端点（<c>api_component_token</c> / <c>api_create_preauthcode</c> / <c>api_query_auth</c> /
 /// <c>api_authorizer_token</c>）由 <see cref="IComponentTokenProvider"/> / <see cref="IComponentAuthorizationService"/>
@@ -93,6 +93,37 @@ public interface IWechatOpenPlatformComponentService
     Task<OpenPlatformResponse> SearchFastRegisterWeappAsync(
         [Body] OpenPlatformFastRegisterSearchRequest request,
         [Query("action")] string action = "search",
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 完成小程序管理员换绑（快速注册链路的可选步骤）。
+    /// </summary>
+    /// <param name="request">换绑请求（<c>taskid</c> = 公众平台回跳 <c>redirect_uri</c> 时携带的换绑任务序列号）。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
+    /// <returns>仅 <c>errcode</c>/<c>errmsg</c>（官方成功示例的 <c>errmsg</c> 为空字符串）。</returns>
+    /// <remarks>
+    /// <para>官方文档：<see href="https://developers.weixin.qq.com/doc/oplatform/Third-party_Platforms/2.0/product/Register_Mini_Programs/fast_registration_of_mini_program.html#_2-4-3-跳转至第三方平台，第三方平台调用快速注册-API-完成管理员换绑"/></para>
+    /// <para>
+    /// 官方流程：第三方平台带 <c>appid</c> / <c>component_appid</c> / <c>redirect_uri</c> 跳转公众平台换绑页
+    /// → 原管理员扫码并填身份证信息 → 填新管理员姓名/身份证/手机号并以其微信确认 → 提交后回跳
+    /// <c>redirect_uri</c> 并在其后拼接 <c>taskid</c> → 第三方平台调用本端点完成换绑。
+    /// </para>
+    /// <para>官方错误码：<c>85060</c>（无效的 taskid）/ <c>85027</c>（身份证绑定管理员名额达到上限）/
+    /// <c>85061</c>（手机号绑定管理员名额达到上限）/ <c>85026</c>（微信号绑定管理员名额达到上限）/
+    /// <c>85063</c>（身份证黑名单）/ <c>85062</c>（手机号黑名单）。</para>
+    /// <para>
+    /// <b>令牌类别为官方未标注项</b>（追踪号 OP-REBINDADMIN-TOKEN-01）：官方页面该节仅写
+    /// <c>access_token=TOKEN</c>，参数表无令牌说明，也未给出频率上限。本 SDK 据官方对该步骤的定性
+    /// ——「第三方平台回调对应 API 完成换绑流程」，调用发起方始终是第三方平台侧，且同族端点
+    /// <c>api_registerminiprogram</c> 官方明示「本接口仅支持第三方平台使用 component_access_token 自己调用」——
+    /// 承载于本接口的<b>平台令牌</b>面（Query 参数名 <c>access_token</c>）。
+    /// 该承载选择属推断而非官方断言；若宿主以平台令牌调用得到 <c>40001</c>/<c>40013</c>，
+    /// 说明官方口径与此推断不符，应以官方页面为准反馈修订本注释。
+    /// </para>
+    /// </remarks>
+    [Post("/cgi-bin/account/componentrebindadmin")]
+    Task<OpenPlatformResponse> RebindAdminAsync(
+        [Body] OpenPlatformRebindAdminRequest request,
         CancellationToken cancellationToken = default);
 
     /// <summary>

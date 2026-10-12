@@ -41,6 +41,9 @@ public class OpenPlatformContractGuards
             ("POST", "/cgi-bin/component/clear_quota/v2"),
             ("POST", "/cgi-bin/component/fastregisterweapp"),
             ("POST", "/cgi-bin/component/fastregisterweapp"),
+            // 管理员换绑：官方路由在 /cgi-bin/account/ 前缀下，但令牌面属平台侧（见 OP-B3 与接口 XML 注释
+            // 追踪号 OP-REBINDADMIN-TOKEN-01），故声明于 Component 接口而非 Account 接口。
+            ("POST", "/cgi-bin/account/componentrebindadmin"),
             ("POST", "/cgi-bin/component/modify_wxa_server_domain"),
             ("POST", "/cgi-bin/component/modify_wxa_jump_domain"),
             ("POST", "/cgi-bin/component/get_domain_confirmfile"),
@@ -80,7 +83,7 @@ public class OpenPlatformContractGuards
     };
 
     /// <summary>
-    /// OP-B1：接口集合与数量锁定（5 接口 / 26 端点，防漏防多）。
+    /// OP-B1：接口集合与数量锁定（5 接口 / 27 端点，防漏防多）。
     /// </summary>
     [Fact]
     public void Interfaces_ShouldMatchBaseline_WhenContractSurfaceEnumerated()

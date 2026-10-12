@@ -153,11 +153,12 @@ public static class Baseline
         /// 端点总数（各接口方法之和）。
         /// </summary>
         /// <remarks>
-        /// 锁定于 `OpenPlatformContractGuards`。现行推导：Component 13（clear_quota/v2 +
-        /// fastregisterweapp 双方法 + 域名 2 + 确认文件 1 + 隐私 3 + 授权方信息/列表/选项/设选项 4）
-        /// + ComponentTicketFree 1（start_push_ticket）+ OpenAccount 6 + Account 4 + Sns 2 = 26。
+        /// 锁定于 `OpenPlatformContractGuards`。现行推导：Component 14（clear_quota/v2 +
+        /// fastregisterweapp 双方法 + 管理员换绑 account/componentrebindadmin 1 + 域名 2 + 确认文件 1 +
+        /// 隐私 3 + 授权方信息/列表/选项/设选项 4）
+        /// + ComponentTicketFree 1（start_push_ticket）+ OpenAccount 6 + Account 4 + Sns 2 = 27。
         /// 令牌链 4 端点（api_component_token 等）由 Provider raw HTTP 承载，**不计**（T2 裁定）。
         /// </remarks>
-        public const int Endpoints = 26;
+        public const int Endpoints = 27;
     }
 }

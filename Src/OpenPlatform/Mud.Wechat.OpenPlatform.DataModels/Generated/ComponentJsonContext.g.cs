@@ -33,6 +33,7 @@ namespace Mud.Wechat.OpenPlatform.DataModels.Component;
 [JsonSerializable(typeof(global::Mud.Wechat.OpenPlatform.DataModels.Component.OpenPlatformClearQuotaRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.OpenPlatform.DataModels.Component.OpenPlatformFastRegisterCreateRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.OpenPlatform.DataModels.Component.OpenPlatformFastRegisterSearchRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.OpenPlatform.DataModels.Component.OpenPlatformRebindAdminRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.OpenPlatform.DataModels.Component.OpenPlatformModifyWxaServerDomainRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.OpenPlatform.DataModels.Component.OpenPlatformModifyWxaServerDomainResponse))]
 [JsonSerializable(typeof(global::Mud.Wechat.OpenPlatform.DataModels.Component.OpenPlatformModifyWxaJumpDomainRequest))]

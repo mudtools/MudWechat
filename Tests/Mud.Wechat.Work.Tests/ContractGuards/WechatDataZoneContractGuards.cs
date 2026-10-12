@@ -6,6 +6,7 @@
 // -----------------------------------------------------------------------
 
 using System.Reflection;
+using System.Text.RegularExpressions;
 using Mud.HttpUtils.Attributes;
 using Mud.Wechat.Work;
 using Mud.Wechat.Work.Abstractions;
@@ -39,6 +40,19 @@ namespace Mud.Wechat.Work.Tests.ContractGuards;
 /// 「获取消息统计」官方无任何文档页；两端点路由在官方网关 qyapi.weixin.qq.com 实测 404
 /// （同前缀负对照同签名、正对照均 200）。证据链与原方案字段面（对照基准 Senparc，其官方链接即同源讹传）
 /// 详见 .docs 定夺三 §6 核实记录。
+/// </para>
+/// <para>
+/// <b>「会话存档数据面」19 条 <c>/cgi-bin/chatdata/*</c> 路由同样零端点（DZ5，追踪号
+/// DZ-CHATDATA-SDK-FACE-VERIFY-02，2026-10-12）</b>：官方现行文档把这批能力整体落在「数据与智能专区 →
+/// 专区程序调用 SDK」分组（概述页 99864「企业微信在专区中以 SDK 的方式提供了一套涉及会话记录、会话搜索、
+/// 关键词命中记录、模型分析等接口，专区中的程序可以按需调用」；99829「请求方法通过 SDK 调用……请求接口名：
+/// create_rule」；99866 §3.1「专区程序通过 sdk 调用企微后台」），该组页面上<b>既无请求地址也无 HTTP 方法</b>。
+/// 曾被第三方 SDK 用作 HTTP 路径的官方页（97240 / 99495 / 99530 / 99527 / 99620 / 97237 / 97266 / 99496 /
+/// 97374）已从官方文档目录（4479 节点）移除，故应用类型开放面、频率上限、字段必填性<b>无官方来源可核</b>；
+/// 网关侧实测仍是「注册残留」形态（200 + 结构化 errcode，同前缀负对照 404），可达性不等于契约。
+/// 专区安全模型（仅脱敏结果 / 消息 ID 可出专区）与「应用侧 HTTP 拉取原始会话内容」架构上互斥，
+/// 因此本域<b>不落地</b>这 19 条端点，由 DZ5 断言其在 <c>Src/</c> 内零声明（含 <c>specapi</c> 两条，
+/// 官方 2024-06-06 已宣布下线）。证据链见 .docs 专区会话存档数据面路由核验留档。
 /// </para>
 /// </remarks>
 public class WechatDataZoneContractGuards
@@ -123,6 +137,41 @@ public class WechatDataZoneContractGuards
         // 获取专区程序任务结果（自建 99966、第三方 99812、代开发 100021）。
         (typeof(IWechatWorkDataZoneProgramService),
             nameof(IWechatWorkDataZoneProgramService.GetAsyncProgramResultAsync), "/cgi-bin/chatdata/async_program_result"),
+    };
+
+    /// <summary>
+    /// 「专区程序调用 SDK」数据面 17 条 + 官方已下线 <c>specapi</c> 2 条路由清单——
+    /// 本域<b>零声明</b>断言的对象（见类级 remarks 段与 DZ5）。
+    /// </summary>
+    private static readonly string[] DataZoneSdkFaceRoutes =
+    {
+        // 获取会话记录（第三方 SDK 侧路径形态，官方现仅以 SDK 接口名 sync_msg 承载）。
+        "/cgi-bin/chatdata/sync_msg",
+        // 获取群组会话记录。
+        "/cgi-bin/chatdata/groupchat/get",
+        // 获取会话存档成员同意状态（单聊 / 群聊）。
+        "/cgi-bin/chatdata/getagreestatus/single",
+        "/cgi-bin/chatdata/getagreestatus/room",
+        // 添加 / 提交 / 查询模型分析任务。
+        "/cgi-bin/chatdata/analyze_task_add",
+        "/cgi-bin/chatdata/analyze_task_submit",
+        "/cgi-bin/chatdata/analyze_task_result",
+        // 创建 / 查询会话记录导出任务。
+        "/cgi-bin/chatdata/export/create_job",
+        "/cgi-bin/chatdata/export/get_job_status",
+        // 关键词规则管理五支 + 命中消息拉取。
+        "/cgi-bin/chatdata/keyword/create_rule",
+        "/cgi-bin/chatdata/keyword/update_rule",
+        "/cgi-bin/chatdata/keyword/delete_rule",
+        "/cgi-bin/chatdata/keyword/get_rule_list",
+        "/cgi-bin/chatdata/keyword/get_rule_detail",
+        "/cgi-bin/chatdata/keyword/get_hit_msg_list",
+        // 会话搜索 / 消息搜索。
+        "/cgi-bin/chatdata/search_chat",
+        "/cgi-bin/chatdata/search_msg",
+        // 专区程序算法调用（官方 2024-06-06 宣布下线，网关仍可达）。
+        "/cgi-bin/chatdata/specapi/create_job",
+        "/cgi-bin/chatdata/specapi/get_job_result",
     };
 
     /// <summary>
@@ -317,6 +366,79 @@ public class WechatDataZoneContractGuards
             context.GetTypeInfo(type).Should().NotBeNull(
                 $"{type.Name} 是数据与智能专区模块契约面类型，必须登记进 DataZoneJsonContext（AOT 源生成）");
         }
+    }
+
+    /// <summary>
+    /// 契约守卫 DZ5：<b>「专区程序调用 SDK」数据面 17 条 + 官方已下线 <c>specapi</c> 2 条路由，
+    /// 在 <c>Src/</c> 全部源码内零声明</b>（防「网关还能打通」重新诱导加回）。
+    /// <para>
+    /// 判据是官方文档面而非网关可达性：这批能力的现行官方落位是「数据与智能专区 → 专区程序调用 SDK」分组
+    /// （99864 / 99829 / 99866 三页原文见类级 remarks 段），页面上无请求地址与 HTTP 方法；
+    /// 曾承载其 HTTP 路径的官方页（97240 等 9 页）已从官方文档目录移除，应用类型开放面与频率上限无源可核。
+    /// 零凭据探针实测这批路由在 qyapi 仍返回结构化 errcode（同前缀负对照 404），属<b>注册残留</b>，
+    /// 且专区安全模型（仅脱敏结果 / 消息 ID 可出专区）与「应用侧 HTTP 拉取原始会话内容」架构上互斥
+    /// ——与定夺三 3c（DZ-DATA-INTEL-VERIFY-01）对 <c>/cgi-bin/data/*</c> 的证伪同源。
+    /// </para>
+    /// </summary>
+    [Fact]
+    public void DataZoneSdkFaceEndpoints_ShouldHaveZeroDeclaredRoutes_WhenScannedAcrossSrc()
+    {
+        DataZoneSdkFaceRoutes.Should().HaveCount(19,
+            "数据面 17 条 + specapi 2 条：清单本身即契约，增删须先复核官方文档面");
+        DataZoneSdkFaceRoutes.Distinct().Should().HaveCount(19, "清单内路由不得重复");
+
+        var routeRegex = new Regex(@"\[(?:Get|Post|Put|Delete|Patch)\(""([^""]+)""\)\]",
+            RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        var forbidden = new HashSet<string>(DataZoneSdkFaceRoutes, StringComparer.Ordinal);
+
+        var declared = new HashSet<string>(StringComparer.Ordinal);
+        var offenders = new List<string>();
+        foreach (var file in Directory.EnumerateFiles(Path.Combine(GetSolutionRoot(), "Src"), "*.cs",
+                     SearchOption.AllDirectories))
+        {
+            var normalized = file.Replace('\\', '/');
+            if (normalized.Contains("/obj/", StringComparison.Ordinal)
+                || normalized.Contains("/bin/", StringComparison.Ordinal)
+                || normalized.Contains("/Generated/", StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            foreach (System.Text.RegularExpressions.Match match in routeRegex.Matches(File.ReadAllText(file)))
+            {
+                var route = match.Groups[1].Value;
+                declared.Add(route);
+                if (forbidden.Contains(route))
+                {
+                    offenders.Add($"{normalized}: {route}");
+                }
+            }
+        }
+
+        // 扫描非空跑正对照：本域已落位的 15 条专区路由必须被同一趟扫描捕获
+        // （否则正则/定位漂移会让「零声明」断言静默恒真）。
+        var landedRoutes = DataZoneRoutes.Select(r => r.Route)
+            .Concat(DataZoneDiffRoutes.Select(r => r.Route))
+            .Concat(DataZoneProgramRoutes.Select(r => r.Route))
+            .ToArray();
+        landedRoutes.Should().OnlyContain(route => declared.Contains(route),
+            "DZ5 的扫描必须能捕获本域已声明的专区路由（正对照，防扫描空跑）");
+
+        offenders.Should().BeEmpty(
+            "「专区程序调用 SDK」数据面与已下线 specapi 共 19 条路由不是应用侧 HTTP 契约，" +
+            "本仓不得在任何产品线接口上声明（追踪号 DZ-CHATDATA-SDK-FACE-VERIFY-02）");
+    }
+
+    /// <summary>解决方案根目录（向上查找 Mud.Wechat.slnx）。</summary>
+    private static string GetSolutionRoot()
+    {
+        var dir = new DirectoryInfo(AppContext.BaseDirectory);
+        while (dir != null && !File.Exists(Path.Combine(dir.FullName, "Mud.Wechat.slnx")))
+        {
+            dir = dir.Parent;
+        }
+
+        return dir?.FullName ?? throw new InvalidOperationException("未找到 Mud.Wechat.slnx");
     }
 
     /// <summary>路由表断言：方法必须存在、必须声明对应 HTTP 方法特性且路由与官方契约一致。</summary>

@@ -11,13 +11,13 @@ namespace Mud.Wechat.OpenPlatform.DataModels.OpenAccount;
     PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower,
     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     WriteIndented = false)]
-[JsonSerializable(typeof(global::Mud.Wechat.OpenPlatform.DataModels.OpenAccount.OpenPlatformOpenAccountCreateRequest))]
-[JsonSerializable(typeof(global::Mud.Wechat.OpenPlatform.DataModels.OpenAccount.OpenPlatformOpenAppIdResponse))]
-[JsonSerializable(typeof(global::Mud.Wechat.OpenPlatform.DataModels.OpenAccount.OpenPlatformOpenAccountGetRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.OpenPlatform.DataModels.OpenAccount.OpenPlatformOpenAccountBindRequest))]
-[JsonSerializable(typeof(global::Mud.Wechat.OpenPlatform.DataModels.OpenAccount.OpenPlatformOpenAccountUnbindRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.OpenPlatform.DataModels.OpenAccount.OpenPlatformOpenAccountCreateRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.OpenPlatform.DataModels.OpenAccount.OpenPlatformOpenAccountGetRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.OpenPlatform.DataModels.OpenAccount.OpenPlatformOpenAccountHaveResponse))]
 [JsonSerializable(typeof(global::Mud.Wechat.OpenPlatform.DataModels.OpenAccount.OpenPlatformOpenAccountSameEntityResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.OpenPlatform.DataModels.OpenAccount.OpenPlatformOpenAccountUnbindRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.OpenPlatform.DataModels.OpenAccount.OpenPlatformOpenAppIdResponse))]
 internal partial class OpenAccountJsonContext : JsonSerializerContext
 {
 }

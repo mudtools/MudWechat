@@ -1,6 +1,6 @@
 # Mud.Wechat.OpenPlatform.DataModels
 
-微信开放平台「第三方平台（component）」SDK **数据模型包**（纯 DTO）——官方接口出入参模型（**53** 个
+微信开放平台「第三方平台（component）」SDK **数据模型包**（纯 DTO）——官方接口出入参模型（**54** 个
 `[HttpJsonSerializable]` 类型），2026-10 由 `Mud.Wechat.OpenPlatform.Abstractions` 拆包独立交付。
 
 > 本线形态差异（有意设计，勿「顺手对齐」）：`Mud.Wechat.OpenPlatform.Abstractions` **不引用本包**——
@@ -9,7 +9,7 @@
 
 ## 内容
 
-- **域 DTO**（4 个域目录，共 **53** 个 `[HttpJsonSerializable]` 类型，均标注 `SerializerClassName`）：
+- **域 DTO**（4 个域目录，共 **54** 个 `[HttpJsonSerializable]` 类型，均标注 `SerializerClassName`）：
   - `Component/` —— component 凭证链核心（预授权码 / `api_query_auth` / `api_authorizer_token` 出入参、
     授权方账号与权限集、隐私接口配置等）
   - `Account/` —— 授权方账号信息模型

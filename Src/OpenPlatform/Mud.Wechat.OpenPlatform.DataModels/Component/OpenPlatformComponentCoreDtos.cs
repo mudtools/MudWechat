@@ -102,3 +102,20 @@ public class OpenPlatformFastRegisterSearchRequest
     [JsonPropertyName("legal_persona_wechat")]
     public string LegalPersonaWechat { get; set; } = string.Empty;
 }
+
+/// <summary>
+/// 「完成小程序管理员换绑」请求（官方 <c>account/componentrebindadmin</c>）。
+/// </summary>
+/// <remarks>
+/// <para>官方约束：<c>taskid</c> 由公众平台换绑流程完成后拼接到 <c>redirect_uri</c> 后回跳第三方平台
+/// （形如 <c>...?taskid=xxx</c>），官方原文称其为「换绑管理员任务序列号」。</para>
+/// <para>官方未说明该字段的类型列与必填列（参数表仅有「参数 / 说明」两列），类型仅由请求示例
+/// （字符串）可推知；亦未说明 taskid 的有效期，调用方不应假设可延时重用。</para>
+/// </remarks>
+[HttpJsonSerializable(SerializerClassName = "Component")]
+public class OpenPlatformRebindAdminRequest
+{
+    /// <summary>获取或设置换绑管理员任务序列号（官方 <c>taskid</c>）。</summary>
+    [JsonPropertyName("taskid")]
+    public string TaskId { get; set; } = string.Empty;
+}

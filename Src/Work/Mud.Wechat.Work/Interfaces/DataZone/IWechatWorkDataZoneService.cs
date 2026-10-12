@@ -33,6 +33,15 @@ namespace Mud.Wechat.Work.Interfaces;
 /// <para>
 /// MUD005 已知接受风险：企业微信官方契约强制令牌走 Query 参数（<c>access_token</c>），无法改用 Header。
 /// </para>
+/// <para>
+/// <b>本接口不承载「会话存档数据面」</b>：获取会话记录（<c>sync_msg</c>）、会话/消息搜索、关键词规则管理、
+/// 模型分析任务、会话记录导出、成员同意状态查询等能力，官方现行文档落位于「数据与智能专区 →
+/// <b>专区程序调用 SDK</b>」分组——页面无请求方式与请求地址，只有「请求接口名」，调用主体是<b>专区内的程序</b>；
+/// 专区安全模型亦只允许脱敏结果 / 消息 ID 出专区。其曾用 HTTP 文档页已从官方目录移除，
+/// 网关侧残留注册（可达）不构成应用侧契约 ⇒ 本域零端点，由守卫 DZ5 断言 <c>Src/</c> 内零声明，勿据
+/// 「路径还能打通」或第三方 SDK 的路径清单加回（追踪号 DZ-CHATDATA-SDK-FACE-VERIFY-02，
+/// 证据链见 .docs 专区会话存档数据面路由核验留档 §6）。
+/// </para>
 /// </remarks>
 [HttpClientApi(TokenManage = nameof(IWechatAppManager), IsAbstract = true)]
 [Token(TokenType = WechatTokenTypes.AccessToken,

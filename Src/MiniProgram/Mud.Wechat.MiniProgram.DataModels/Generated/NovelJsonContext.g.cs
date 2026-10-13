@@ -58,6 +58,12 @@ namespace Mud.Wechat.MiniProgram.DataModels.Novel;
 [JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Novel.WxaNovelGetPreviewSettingResponse))]
 [JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Novel.WxaNovelSetRecmdNovelRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Novel.WxaNovelSetRecmdNovelResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Novel.WxaNovelAccountAuthInfo))]
+[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Novel.WxaNovelAuthResult))]
+[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Novel.WxaNovelAuthResultItem))]
+[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Novel.WxaNovelAppIdResult))]
+[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Novel.WxaNovelPreviewSetting))]
+[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Novel.WxaNovelChapterSetting))]
 internal partial class NovelJsonContext : JsonSerializerContext
 {
 }

@@ -317,4 +317,13 @@ public enum MiniProgramModule
     /// </para>
     /// </remarks>
     Novel,
+
+    /// <summary>
+    /// 实名认证域（1 端点）：<c>/intp/realname/checkrealnameinfo</c>。
+    /// </summary>
+    /// <remarks>
+    /// <para>业务方页面获得 code 之后，通过该接口进行实名信息的校验。</para>
+    /// <para>不支持第三方平台代调用；官方未给出端点级频率数字。</para>
+    /// </remarks>
+    RealName,
 }

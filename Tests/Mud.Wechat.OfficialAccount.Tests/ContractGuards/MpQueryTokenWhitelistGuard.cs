@@ -130,6 +130,15 @@ public class MpQueryTokenWhitelistGuard
             nameof(Mud.Wechat.MiniProgram.IWxaLiveRoomService),          // 直播·直播间本体（11 端点）
             nameof(Mud.Wechat.MiniProgram.IWxaLiveSubscribeService),     // 直播·长期订阅群发（2 端点）
             nameof(Mud.Wechat.MiniProgram.IWxaNearbyPoiService),         // 附近小程序（4 端点）
+            // 小说作品管理域（23 端点，2026-10-13 依官方 novel 分区逐页取证落地）：官方同为 Query access_token
+            // 契约（权限集 169），五个接口共用注册组 Novel，无手工通道；官方未给出端点级频率数字（只有规模限制）。
+            nameof(Mud.Wechat.MiniProgram.IWxaNovelAccountAuthService),  // 小说·账号授权（3 端点）
+            nameof(Mud.Wechat.MiniProgram.IWxaNovelAuthService),         // 小说·作品授权（3 端点）
+            nameof(Mud.Wechat.MiniProgram.IWxaNovelBookService),         // 小说·作品管理（6 端点）
+            nameof(Mud.Wechat.MiniProgram.IWxaNovelChapterService),      // 小说·章节管理（8 端点）
+            nameof(Mud.Wechat.MiniProgram.IWxaNovelReaderService),       // 小说·阅读器设置（3 端点）
+            // 实名认证域（1 端点）：校验实名信息。
+            nameof(Mud.Wechat.MiniProgram.IWxaRealNameService),
             nameof(Mud.Wechat.MiniProgram.IWxaOperationService),         // 运维中心（9 端点；反馈图片 IWxaFeedbackMediaService 手工通道不入白名单）
             // 发货信息管理域（10 端点，2026-10-13 依官方 order_shipping 分区逐页取证落地）：官方同为 Query
             // access_token 契约（权限集 142，管理状态两支为 18、142），三个接口与品牌申请两支共用注册组 OrderShipping，

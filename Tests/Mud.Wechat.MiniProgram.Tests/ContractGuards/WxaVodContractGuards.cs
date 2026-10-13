@@ -13,19 +13,19 @@ using Mud.Wechat.OfficialAccount.Abstractions.Authentication;
 namespace Mud.Wechat.MiniProgram.Tests.ContractGuards;
 
 /// <summary>
-/// 小程序线「短剧媒资」域契约守卫（DV 系列：31 端点路由与动词 + 令牌绑定 + 参数形态 +
+/// 小程序线「短剧媒资」域契约守卫（DV 系列：32 端点路由与动词 + 令牌绑定 + 参数形态 +
 /// DTO 登记计数与 JSON 上下文登记 + 字段抽样与共用 DTO 裁决 + 官方反直觉点锁定）。
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>域构成（官方 2026-10-13 逐页取证，<c>OpenApiDoc/minidrama</c> 分区全集 31 端点）</b>：
+/// <b>域构成（官方 2026-10-13 逐页取证，<c>OpenApiDoc/minidrama</c> 分区全集 32 端点）</b>：
 /// 上传 6（<see cref="IWxaVodUploadService"/>）+ 媒资 4（<see cref="IWxaVodMediaService"/>）+
-/// 剧目 7（<see cref="IWxaVodDramaService"/>）+ CDN 与资源包 3（<see cref="IWxaVodCdnService"/>）+
+/// 剧目 8（<see cref="IWxaVodDramaService"/>）+ CDN 与资源包 3（<see cref="IWxaVodCdnService"/>）+
 /// 授权与版权 11（<see cref="IWxaVodAuthorizationService"/>）。
 /// </para>
 /// <para>
-/// <b>与「短剧 25 条」旧口径的关系</b>：缺口清单曾按第三方转述把本域记为 25 端点。逐页取证结果为 31
-/// （分片上传三支与版权授权五支在转述里缺失或合并）⇒ 以本守卫的路由表为准，清单侧数字已同批更正。
+/// <b>与「短剧 25 条」旧口径的关系</b>：缺口清单曾按第三方转述把本域记为 25 端点。逐页取证结果为 32
+/// （分片上传三支与版权授权五支在转述里缺失或合并；setplayerdramarecmdswitch 为 2026-10-13 新增落地）⇒ 以本守卫的路由表为准，清单侧数字已同批更正。
 /// </para>
 /// <para>
 /// <b>本域最需要防误读的一处</b>：<c>authorizedrama</c> 官方「调用方式」写作 <b>GET</b> 且请求示例是裸
@@ -51,8 +51,11 @@ public class WxaVodContractGuards
 
     private const string RoutePrefix = "/wxa/sec/vod/";
 
+    /// <summary>本域唯一非 /wxa/sec/vod/ 前缀的官方路由（播放器推荐开关独立族）。</summary>
+    private const string ExceptionRoute = "/wxadrama/setplayerdramarecmdswitch";
+
     /// <summary>
-    /// 短剧媒资域官方路由表（31 端点：上传 6 + 媒资 4 + 剧目 7 + CDN 3 + 授权 11；路由与动词照官方原文）。
+    /// 短剧媒资域官方路由表（32 端点：上传 6 + 媒资 4 + 剧目 8 + CDN 3 + 授权 11；路由与动词照官方原文）。
     /// </summary>
     private static readonly (Type Interface, string Method, Type HttpAttribute, string Route)[] Routes =
     {
@@ -75,6 +78,7 @@ public class WxaVodContractGuards
         (typeof(IWxaVodDramaService), nameof(IWxaVodDramaService.ReplaceDramaMediaAsync), typeof(PostAttribute), "/wxa/sec/vod/replacedramamedia"),
         (typeof(IWxaVodDramaService), nameof(IWxaVodDramaService.ModifyDramaBasicInfoAsync), typeof(PostAttribute), "/wxa/sec/vod/modifydramabasicinfo"),
         (typeof(IWxaVodDramaService), nameof(IWxaVodDramaService.GetDramaLatestAuditInfoAsync), typeof(PostAttribute), "/wxa/sec/vod/getdramalatestauditinfo"),
+        (typeof(IWxaVodDramaService), nameof(IWxaVodDramaService.SetPlayerDramaRecmdSwitchAsync), typeof(PostAttribute), "/wxadrama/setplayerdramarecmdswitch"),
 
         (typeof(IWxaVodCdnService), nameof(IWxaVodCdnService.GetCdnUsageDataAsync), typeof(PostAttribute), "/wxa/sec/vod/getcdnusagedata"),
         (typeof(IWxaVodCdnService), nameof(IWxaVodCdnService.GetCdnLogsAsync), typeof(PostAttribute), "/wxa/sec/vod/getcdnlogs"),
@@ -115,14 +119,14 @@ public class WxaVodContractGuards
         nameof(IWxaVodAuthorizationService.GetAuthorizeAppsAsync),
     };
 
-    /// <summary>契约守卫 DV1：31 端点路由与动词必须与官方契约一致（本域只有一个官方路由族）。</summary>
+    /// <summary>契约守卫 DV1：32 端点路由与动词必须与官方契约一致（本域只有一个官方路由族）。</summary>
     [Fact]
     public void VodEndpoints_ShouldMatchOfficialRoutes()
     {
-        // 31 端点 = 上传 6 + 媒资 4 + 剧目 7 + CDN 3 + 授权 11（官方 OpenApiDoc/minidrama 分区 2026-10-13 逐页取证全集）。
-        Routes.Should().HaveCount(31,
-            "短剧媒资域官方开放面为 31 端点（官方文档逐页核验：upload 6 + media 4 + drama 7 + cdn 3 + authorization 11）");
-        Routes.Select(static r => r.Route).Distinct().Should().HaveCount(31, "路由表不得出现重复条目");
+        // 32 端点 = 上传 6 + 媒资 4 + 剧目 8 + CDN 3 + 授权 11（官方 OpenApiDoc/minidrama 分区 2026-10-13 逐页取证全集）。
+        Routes.Should().HaveCount(32,
+            "短剧媒资域官方开放面为 32 端点（官方文档逐页核验：upload 6 + media 4 + drama 8 + cdn 3 + authorization 11）");
+        Routes.Select(static r => r.Route).Distinct().Should().HaveCount(32, "路由表不得出现重复条目");
 
         foreach (var (iface, method, httpAttribute, route) in Routes)
         {
@@ -132,7 +136,16 @@ public class WxaVodContractGuards
             var attr = target!.GetCustomAttribute(httpAttribute) as HttpMethodAttribute;
             attr.Should().NotBeNull($"{iface.Name}.{method} 必须声明对应 HTTP 方法路由");
             attr!.RequestUri.Should().Be(route, $"{iface.Name}.{method} 路由必须与官方契约一致（照官方原文拼写，禁止改写）");
-            route.Should().StartWith(RoutePrefix, "本域官方路由全部落在 /wxa/sec/vod/ 单一族内（无 business/api 前缀混入）");
+
+            // 32 端点里 31 支落在 /wxa/sec/vod/ 族内，仅 setplayerdramarecmdswitch 为例外（独立播放器族）。
+            if (route == ExceptionRoute)
+            {
+                route.Should().StartWith("/wxadrama/", "本域唯一非 /wxa/sec/vod/ 前缀的官方路由（播放器推荐开关）");
+            }
+            else
+            {
+                route.Should().StartWith(RoutePrefix, "本域官方路由全部落在 /wxa/sec/vod/ 单一族内（无 business/api 前缀混入）");
+            }
         }
 
         // 反直觉点锁定 1：全 31 条路由一律全小写连写（本域没有驼峰端点），且「单复数」逐页不同：
@@ -157,7 +170,7 @@ public class WxaVodContractGuards
         // 零声明面由 MiniProgramNonContractRouteContractGuards 兜住，此处正向钉住正确落位。
         Routes.Should().NotContain(static r => r.Route == "/wxa/sec/vod/getauthorizedapps");
 
-        // 动词分布：31 支里恰好 1 支 GET（authorizedrama），其余 30 支 POST。
+        // 动词分布：32 支里恰好 1 支 GET（authorizedrama），其余 31 支 POST。
         Routes.Count(static r => r.HttpAttribute == typeof(GetAttribute)).Should().Be(1,
             "本域官方动词为 GET 的端点只有 authorizedrama 一支（官方调用方式行照录，DV2 锁其 GET+Body 形态）");
     }
@@ -211,15 +224,15 @@ public class WxaVodContractGuards
         }
 
         Routes.Count(static r => !MultipartMethods.Contains(r.Method)
-                                 && !ZeroParamMethods.Contains(r.Method)).Should().Be(28,
-            "31 端点 = 28 支单 [Body] + 2 支 multipart + 1 支零业务参数");
+                                 && !ZeroParamMethods.Contains(r.Method)).Should().Be(29,
+            "32 端点 = 29 支单 [Body] + 2 支 multipart + 1 支零业务参数");
     }
 
     /// <summary>契约守卫 DV3：五接口令牌绑定与注册组（复用公众号 <c>MpTokenTypes.AccessToken</c>，MP-X2/X3 同口径）。</summary>
     [Fact]
     public void VodInterfaces_ShouldBindMpAccessToken_AndShareRegistryGroup()
     {
-        DomainInterfaces.Should().HaveCount(5, "短剧媒资域按官方子目录族分为五接口（合计 31 端点）");
+        DomainInterfaces.Should().HaveCount(5, "短剧媒资域按官方子目录族分为五接口（合计 32 端点）");
 
         foreach (var iface in DomainInterfaces)
         {
@@ -248,7 +261,7 @@ public class WxaVodContractGuards
         // 逐接口规模锁定（官方子目录族划分，防「把某一族的端点错挂到另一族」）。
         MethodCount(typeof(IWxaVodUploadService)).Should().Be(6, "上传族 6（单文件 / 拉取 / 查任务 / 申请分片 / 传分片 / 确认上传）");
         MethodCount(typeof(IWxaVodMediaService)).Should().Be(4, "媒资族 4（列表 / 详情 / 播放地址 / 删除）");
-        MethodCount(typeof(IWxaVodDramaService)).Should().Be(7, "剧目族 7（提审 / 列表 / 详情 / 提交替换 / 替换 / 改基础信息 / 查最新审核信息）");
+        MethodCount(typeof(IWxaVodDramaService)).Should().Be(8, "剧目族 8（提审 / 列表 / 详情 / 提交替换 / 替换 / 改基础信息 / 查最新审核信息 / 播放器推荐开关）");
         MethodCount(typeof(IWxaVodCdnService)).Should().Be(3, "CDN 族 3（用量 / 日志 / 资源包列表）");
         MethodCount(typeof(IWxaVodAuthorizationService)).Should().Be(11, "授权族 11（剧目与版权双向授权 6 + 查询 3 + 应用授权 2）");
 
@@ -434,11 +447,11 @@ public class WxaVodContractGuards
             .Where(static t => t.IsClass && !t.IsAbstract && t.GetCustomAttribute<HttpJsonSerializableAttribute>() != null)
             .ToList();
 
-        // 68 DTO = 上传 11 + 媒资 9 + 剧目 18 + CDN 9 + 授权 21
+        // 69 DTO = 上传 11 + 媒资 9 + 剧目 19（+1 setplayerdramarecmdswitch）+ CDN 9 + 授权 21
         //（按接口端点的请求体 / 应答 / 嵌套对象逐页官方表建模；子目录计数与文件计数由生成脚本自证）。
-        dtoTypes.Should().HaveCount(68,
-            "短剧媒资域 31 端点的请求/响应/嵌套对象 DTO 总数漂移须先核对官方文档再同批调整本守卫"
-            + "（upload 11 + media 9 + drama 18 + cdn 9 + authorization 21 = 68）");
+        dtoTypes.Should().HaveCount(69,
+            "短剧媒资域 32 端点的请求/响应/嵌套对象 DTO 总数漂移须先核对官方文档再同批调整本守卫"
+            + "（upload 11 + media 9 + drama 19 + cdn 9 + authorization 21 = 69）");
 
         foreach (var type in dtoTypes)
         {
@@ -518,9 +531,9 @@ public class WxaVodContractGuards
             "本域应答类型必须与端点返回类型一一对应（既不得留下无人返回的孤儿应答，也不得返回命名空间外的自建应答）");
 
         Routes.Count(static r => ResultTypeOf(r.Interface, r.Method) == typeof(WxaResponse))
-            .Should().Be(6,
-            "六支官方返回体只有 errcode/errmsg 的端点（deletemedia / submitreplacedramamedias / replacedramamedia / "
-            + "modifydramabasicinfo / authorizeapp / deauthorizeapp）直接用 WxaResponse，不建空壳应答");
+            .Should().Be(7,
+            "七支官方返回体只有 errcode/errmsg 的端点（deletemedia / submitreplacedramamedias / replacedramamedia / "
+            + "modifydramabasicinfo / authorizeapp / deauthorizeapp / setplayerdramarecmdswitch）直接用 WxaResponse，不建空壳应答");
 
         // 官方枚举取值锁定（逐页照官方取值表；官方未公布的枚举不得凭空建常量类）。
         AssertConstValues(typeof(WxaVodResourceTypes), ("Video", 1), ("Image", 2));

@@ -80,7 +80,7 @@ public class MiniProgramContractGuards
             .Where(static t => t.GetCustomAttributes(false).Any(static a => a.GetType().Name == "TokenAttribute"))
             .ToArray();
 
-        tokenInterfaces.Should().HaveCount(54,
+        tokenInterfaces.Should().HaveCount(55,
             "带令牌接口 = Auth / QrCodeLink / Security / DataAnalysis / SubscribeMessage / DynamicMessage / Kf / " +
             "HardwareDevice / Operation / Plugin / Charge / NearbyPoi / Search / Soter / ServiceMarket / " +
             "RedPacketCover / Student / FaceVerify / LaborUse / ExpressBusiness / ExpressDelivery / ExpressIntracity / " +
@@ -89,7 +89,7 @@ public class MiniProgramContractGuards
             "VodUpload / VodMedia / VodDrama / VodCdn / VodAuthorization / " +
             "XPayCurrency / XPayOrder / XPayGoods / XPaySubscribe / XPayFunds / XPayComplaint / " +
             "OrderShipping / OrderQuery / OrderSetting / FamousBrand / " +
-            "NovelBook / NovelChapter / NovelAuth / NovelAccountAuth / NovelReader" +
+            "NovelBook / NovelChapter / NovelAuth / NovelAccountAuth / NovelReader / RealName" +
             "（登录 code2Session 为免令牌独立接口；图片通道 Code / FeedbackMedia " +
             "与对账文件通道 Bill 为手工服务不走 [Token]；Vip 域为 2026-10 小店线设计方案 §4.1 结论 A 划入；" +
             "ExpressInsuranceFreight / ExpressLocal 为 2026-10-12 依官方清单补齐的无忧退货族与即时配送族；" +
@@ -596,6 +596,9 @@ public class MiniProgramContractGuards
         provider.GetRequiredService<IWxaNovelAuthService>().Should().NotBeNull("授权管理随 Novel 模块注册");
         provider.GetRequiredService<IWxaNovelAccountAuthService>().Should().NotBeNull("账号授权随 Novel 模块注册");
         provider.GetRequiredService<IWxaNovelReaderService>().Should().NotBeNull("读者运营随 Novel 模块注册");
+
+        // RealName 域（1 端点）
+        provider.GetRequiredService<IWxaRealNameService>().Should().NotBeNull("实名认证随 RealName 模块注册");
     }
 
     // ---- helpers -------------------------------------------------------------

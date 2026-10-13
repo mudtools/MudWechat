@@ -204,4 +204,20 @@ public interface IWxaVodDramaService
     Task<WxaVodGetDramaLatestAuditInfoResponse> GetDramaLatestAuditInfoAsync(
         [Body] WxaVodGetDramaLatestAuditInfoRequest request,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 设置播放原始视频推荐位开关（<c>POST /wxadrama/setplayerdramarecmdswitch</c>，不支持云调用）。
+    /// 官方文档：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/dramaOthersAPI/api_setplayerdramarecmdswitch.html"/>。
+    /// </summary>
+    /// <param name="request">请求体（<c>entry_type</c> + <c>switch_status</c>，均必填），见 <see cref="WxaVodSetPlayerDramaRecmdSwitchRequest"/>。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
+    /// <returns>仅 <c>errcode</c> / <c>errmsg</c>。</returns>
+    /// <remarks>
+    /// <para>官方契约：<b>POST</b> + JSON 请求体；权限集 157（与主域 153 不同，但同属短剧相关能力）。</para>
+    /// <para>支持第三方平台代商家调用；官方未给出端点级频率数字。</para>
+    /// </remarks>
+    [Post("/wxadrama/setplayerdramarecmdswitch")]
+    Task<WxaResponse> SetPlayerDramaRecmdSwitchAsync(
+        [Body] WxaVodSetPlayerDramaRecmdSwitchRequest request,
+        CancellationToken cancellationToken = default);
 }

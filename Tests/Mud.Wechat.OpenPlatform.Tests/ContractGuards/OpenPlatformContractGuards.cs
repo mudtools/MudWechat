@@ -10,6 +10,7 @@ using System.Text.RegularExpressions;
 using Mud.HttpUtils.Attributes;
 using Mud.Wechat.OpenPlatform.DataModels;
 using Mud.Wechat.OpenPlatform.DataModels.Account;
+using Mud.Wechat.OpenPlatform.DataModels.Category;
 using Mud.Wechat.OpenPlatform.DataModels.Component;
 using Mud.Wechat.OpenPlatform.DataModels.OpenAccount;
 using Mud.Wechat.OpenPlatform.DataModels.Sns;
@@ -80,10 +81,25 @@ public class OpenPlatformContractGuards
             ("GET", "/sns/oauth2/component/access_token"),
             ("GET", "/sns/oauth2/component/refresh_token"),
         },
+        [nameof(IWechatOpenPlatformCategoryService)] = new[]
+        {
+            ("GET", "/cgi-bin/wxopen/getallcategories"),
+            ("GET", "/cgi-bin/wxopen/getcategory"),
+            ("POST", "/cgi-bin/wxopen/getcategoriesbytype"),
+            ("POST", "/cgi-bin/wxopen/addcategory"),
+            ("POST", "/cgi-bin/wxopen/deletecategory"),
+            ("POST", "/cgi-bin/wxopen/modifycategory"),
+            ("POST", "/cgi-bin/wxopen/qrcodejumpdownload"),
+            ("GET", "/cgi-bin/wxopen/getweappsupportversion"),
+            ("POST", "/cgi-bin/wxopen/setweappsupportversion"),
+            ("POST", "/cgi-bin/wxopen/wxamplinkget"),
+            ("POST", "/cgi-bin/wxopen/wxamplink"),
+            ("POST", "/cgi-bin/wxopen/wxampunlink"),
+        },
     };
 
     /// <summary>
-    /// OP-B1：接口集合与数量锁定（5 接口 / 27 端点，防漏防多）。
+    /// OP-B1：接口集合与数量锁定（6 接口 / 39 端点，防漏防多）。
     /// </summary>
     [Fact]
     public void Interfaces_ShouldMatchBaseline_WhenContractSurfaceEnumerated()
@@ -105,6 +121,7 @@ public class OpenPlatformContractGuards
             nameof(IWechatOpenPlatformOpenAccountService),
             nameof(IWechatOpenPlatformAccountService),
             nameof(IWechatOpenPlatformSnsService),
+            nameof(IWechatOpenPlatformCategoryService),
         });
 
         var actualEndpoints = interfaces.Sum(GetEndpoints);

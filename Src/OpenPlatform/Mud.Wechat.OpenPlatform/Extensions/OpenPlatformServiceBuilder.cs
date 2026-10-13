@@ -42,6 +42,7 @@ public class OpenPlatformServiceBuilder
             [OpenPlatformModule.OpenAccount] = static s => s.AddOpenAccountWebApiHttpClient(),
             [OpenPlatformModule.Account] = static s => s.AddAccountWebApiHttpClient(),
             [OpenPlatformModule.Sns] = static s => s.AddSnsWebApiHttpClient(),
+            [OpenPlatformModule.Category] = static s => s.AddCategoryWebApiHttpClient(),
         };
 
     /// <summary>注册全部模块。</summary>

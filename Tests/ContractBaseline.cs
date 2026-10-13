@@ -108,8 +108,8 @@ public static class Baseline
         /// NearbyPoi 4 + Search 1 + Soter 1 + ServiceMarket 2 + RedPacketCover 1 + Student 1 +
         /// FaceVerify 2 + LaborUse 2 + ExpressBusiness 12 + ExpressDelivery 28 + ExpressIntracity 16 +
         /// ExpressInsuranceFreight 11 + ExpressLocal 15 + ExpressBill 1 + Vip 6 +
-        /// TradeGuarantee 2 + TradeComment 9 + TradeComplaint 5 + Live 38 + Vod 31 + XPay 37 +
-        /// OrderShipping 12 + Novel 23 = 332
+        /// TradeGuarantee 2 + TradeComment 9 + TradeComplaint 5 + Live 38 + Vod 32 + XPay 37 +
+        /// OrderShipping 12 + Novel 23 + RealName 1 = 334
         /// （Vip 域为 2026-10 小店线设计方案 §4.1 结论 A 划入；2026-10-12 依官方清单核对后：
         /// ExpressDelivery 28 / ExpressIntracity 16 补齐「消息推送 2 + 投诉处理 1」与「同城扣费主体与城市 3」，
         /// 新增 ExpressInsuranceFreight 11（无忧退货）与 ExpressLocal 15（即时配送）两族，
@@ -129,7 +129,7 @@ public static class Baseline
         /// 同日依官方 novelreadersetrecmdnovel 分区 23 页取证补齐小说作品管理域 23
         /// （作品本体 6 + 章节管理 8 + 授权管理 3 + 账号授权 3 + 读者运营 3），权限集 169）。
         /// </remarks>
-        public const int Endpoints = 332;
+        public const int Endpoints = 334;
     }
 
     /// <summary>微信支付 APIv3 线（`Tests/Mud.Wechat.Pay.Tests`）。</summary>
@@ -161,9 +161,9 @@ public static class Baseline
         /// <remarks>
         /// 锁定于 `OpenPlatformContractGuards`（OP-B 系列）。
         /// 现行接口集：Component（管理面）/ ComponentTicketFree（推票引导，免令牌）/
-        /// OpenAccount / Account / Sns —— Component 域双接口形态（对齐公众号 OpenApi 域 I4 裁决）。
+        /// OpenAccount / Account / Sns / Category（类目管理）—— Component 域双接口形态（对齐公众号 OpenApi 域 I4 裁决）。
         /// </remarks>
-        public const int HttpApiInterfaces = 5;
+        public const int HttpApiInterfaces = 6;
 
         /// <summary>
         /// 端点总数（各接口方法之和）。
@@ -172,9 +172,9 @@ public static class Baseline
         /// 锁定于 `OpenPlatformContractGuards`。现行推导：Component 14（clear_quota/v2 +
         /// fastregisterweapp 双方法 + 管理员换绑 account/componentrebindadmin 1 + 域名 2 + 确认文件 1 +
         /// 隐私 3 + 授权方信息/列表/选项/设选项 4）
-        /// + ComponentTicketFree 1（start_push_ticket）+ OpenAccount 6 + Account 4 + Sns 2 = 27。
+        /// + ComponentTicketFree 1（start_push_ticket）+ OpenAccount 6 + Account 4 + Sns 2 + Category 12 = 39。
         /// 令牌链 4 端点（api_component_token 等）由 Provider raw HTTP 承载，**不计**（T2 裁定）。
         /// </remarks>
-        public const int Endpoints = 27;
+        public const int Endpoints = 39;
     }
 }

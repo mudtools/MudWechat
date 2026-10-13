@@ -63,6 +63,7 @@ public class WxaNovelQueryBookAuthResponse : WxaResponse
 /// <summary>
 /// 授权结果项（querybookauth 版本）
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "Novel")]
 public class WxaNovelAuthResultItem
 {
     /// <summary>

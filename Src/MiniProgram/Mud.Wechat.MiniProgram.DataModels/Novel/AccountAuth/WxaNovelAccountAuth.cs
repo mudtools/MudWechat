@@ -17,11 +17,18 @@ namespace Mud.Wechat.MiniProgram.DataModels.Novel;
 public class WxaNovelAddBookAuthByAppIdRequest
 {
     /// <summary>
-    /// 作品id
+    /// 被授权账号列表。上限一次 20 条
     /// </summary>
-    [JsonPropertyName("book_id")]
-    public string? BookId { get; set; }
+    [JsonPropertyName("infos")]
+    public List<WxaNovelAccountAuthInfo>? Infos { get; set; }
+}
 
+/// <summary>
+/// 账号授权信息项
+/// </summary>
+[HttpJsonSerializable(SerializerClassName = "Novel")]
+public class WxaNovelAccountAuthInfo
+{
     /// <summary>
     /// 被授权账号appid
     /// </summary>
@@ -107,6 +114,7 @@ public class WxaNovelQueryBookAuthV2Response : WxaResponse
 /// <summary>
 /// 被授权方结果项
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "Novel")]
 public class WxaNovelAppIdResult
 {
     /// <summary>

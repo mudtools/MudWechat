@@ -30,4 +30,7 @@ public enum OpenPlatformModule
 
     /// <summary>代公众号网页授权域（<c>/sns/oauth2/component/*</c>；注册组 <c>Sns</c>）。</summary>
     Sns,
+
+    /// <summary>小程序类目管理域（<c>/cgi-bin/wxopen/*</c> 类目/扫码购/基础库版本/公众号关联小程序；注册组 <c>Category</c>）。</summary>
+    Category,
 }

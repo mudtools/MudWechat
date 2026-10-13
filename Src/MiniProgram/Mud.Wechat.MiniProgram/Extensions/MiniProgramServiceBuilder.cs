@@ -111,6 +111,9 @@ public class MiniProgramServiceBuilder
 
             // 小说作品管理：五接口同组（作品本体 6 + 章节管理 8 + 授权管理 3 + 账号授权 3 + 读者运营 3）。
             [MiniProgramModule.Novel] = static s => s.AddNovelWebApiHttpClient(),
+
+            // 实名认证：单接口（校验实名信息）。
+            [MiniProgramModule.RealName] = static s => s.AddRealNameWebApiHttpClient(),
         };
 
     /// <summary>注册登录与用户（5 端点：4 带令牌 + 1 免令牌）。</summary>
@@ -257,6 +260,10 @@ public class MiniProgramServiceBuilder
     /// 不得凭第三方 SDK 注释或记忆补数。
     /// </remarks>
     public MiniProgramServiceBuilder AddNovelApi() => AddModule(MiniProgramModule.Novel);
+
+    /// <summary>注册实名认证（1 端点：校验实名信息）。</summary>
+    /// <returns>注册器（链式）。</returns>
+    public MiniProgramServiceBuilder AddRealNameApi() => AddModule(MiniProgramModule.RealName);
 
     /// <summary>注册全部模块。</summary>
     /// <returns>注册器（链式）。</returns>

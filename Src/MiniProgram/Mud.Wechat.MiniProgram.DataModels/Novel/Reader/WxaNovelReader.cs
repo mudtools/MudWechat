@@ -78,6 +78,7 @@ public class WxaNovelGetPreviewSettingResponse : WxaResponse
 /// <summary>
 /// 预览配置
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "Novel")]
 public class WxaNovelPreviewSetting
 {
     /// <summary>
@@ -96,6 +97,7 @@ public class WxaNovelPreviewSetting
 /// <summary>
 /// 章节配置
 /// </summary>
+[HttpJsonSerializable(SerializerClassName = "Novel")]
 public class WxaNovelChapterSetting
 {
     /// <summary>

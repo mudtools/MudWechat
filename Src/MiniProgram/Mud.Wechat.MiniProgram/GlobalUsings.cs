@@ -28,6 +28,9 @@ global using Mud.Wechat.MiniProgram.DataModels.LaborUse;
 global using Mud.Wechat.MiniProgram.DataModels.Live;
 global using Mud.Wechat.MiniProgram.DataModels.NearbyPoi;
 global using Mud.Wechat.MiniProgram.DataModels.Operation;
+// 发货信息域的 DTO 命名空间为域段 OrderShipping（官方四族 Shipping/Query/Setting/FamousBrand
+// 仅作目录组织、不入命名空间，与短剧媒资、虚拟支付域同一口径）⇒ 此处只需一条。
+global using Mud.Wechat.MiniProgram.DataModels.OrderShipping;
 global using Mud.Wechat.MiniProgram.DataModels.Plugin;
 global using Mud.Wechat.MiniProgram.DataModels.QrCodeLink;
 global using Mud.Wechat.MiniProgram.DataModels.RedPacketCover;
@@ -38,5 +41,8 @@ global using Mud.Wechat.MiniProgram.DataModels.Soter;
 global using Mud.Wechat.MiniProgram.DataModels.Student;
 global using Mud.Wechat.MiniProgram.DataModels.SubscribeMessage;
 global using Mud.Wechat.MiniProgram.DataModels.Vod;
+// 虚拟支付域的 DTO 命名空间为域段 XPay（官方六族 Order/Goods/Currency/Funds/Subscribe/Complaint
+// 仅作目录组织、不入命名空间，与短剧媒资域同一口径）⇒ 此处只需一条。
+global using Mud.Wechat.MiniProgram.DataModels.XPay;
 global using Mud.Wechat.OfficialAccount.Abstractions;
 global using Mud.Wechat.OfficialAccount.Abstractions.Authentication;

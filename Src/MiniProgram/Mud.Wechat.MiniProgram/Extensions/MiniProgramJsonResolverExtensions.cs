@@ -86,7 +86,9 @@ public static class MiniProgramJsonResolverExtensions
             ExpressJsonContext.Default,
             TransactionGuaranteeJsonContext.Default,
             LiveJsonContext.Default,
-            VodJsonContext.Default);
+            VodJsonContext.Default,
+            XPayJsonContext.Default,
+            OrderShippingJsonContext.Default);
 
         services.AddMudHttpClientJsonContext(resolver);
     }

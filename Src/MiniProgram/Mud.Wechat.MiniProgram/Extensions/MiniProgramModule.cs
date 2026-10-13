@@ -231,4 +231,70 @@ public enum MiniProgramModule
     /// </para>
     /// </remarks>
     Vod,
+
+    /// <summary>
+    /// 虚拟支付（37 端点，六接口共用本注册组：代币操作 4 + 订单与账单 7 + 道具管理 5 + 会员订阅 4 +
+    /// 广告金与提现 10 + 支付投诉 7；路由族 <c>/xpay/*</c>，权限集 157）。
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>令牌形态（MP-X2 / MP-X3 同口径）</b>：复用 <c>MpTokenTypes.AccessToken</c> + Query 注入
+    /// <c>access_token</c>，不新增令牌类型常量；第三方代调用形态（<c>authorizer_access_token</c>）由宿主
+    /// 以小程序应用配置供给令牌（P3-R2）。全域 37 端点<b>全部 POST、全部不支持云调用</b>，
+    /// 除「商家解约」一页完全没有第三方调用段外，其余 36 页均声明代商家调用且权限集 id 为 157。
+    /// </para>
+    /// <para>
+    /// <b>本域在令牌之外还有第二把 Query 凭据</b>：官方 28 端点强制 <c>pay_sig</c>（支付签名）、其中 3 端点
+    /// 再叠加 <c>signature</c>（用户态签名）⇒ 签名值是<b>方法级显式参数</b>而非 <c>[Token]</c> 注入，
+    /// 算法依赖 <c>session_key</c>、属宿主职责，SDK 不代签。<c>pay_sig</c> 不在组件脱敏静态词表内，
+    /// 注册本模块时经 <c>XPaySensitiveQueryKeys.RegisterAll()</c> 登记为进程级强制掩码键（守卫 XP6）。
+    /// </para>
+    /// <para>
+    /// <b>适用范围字段异常（诚实留档，与直播/短剧域同一处置）</b>：37 页的「适用范围」段官方统一写
+    /// 「本接口暂未明确可调用账号类型，或在业务中根据调用传参自行确定是否可调用」——<b>无</b>「小程序」字样；
+    /// 本线归属判据取「令牌可用 <c>access_token</c> + 文档树位于
+    /// <c>miniprogram/dev/server/API/VirtualPayment</c>」两条。
+    /// </para>
+    /// <para>
+    /// <b>官方本域无端点级频率数字</b>：37 页均未给「次/分钟」类数字，只有错误码 <c>268490015</c>「频率限制」
+    /// 与订阅侧 <c>-15020</c>「操作过快，请稍候再试」证明确有限频 ⇒ 注释一律留档该空缺，
+    /// <b>不得</b>凭第三方 SDK 注释或记忆补数。
+    /// </para>
+    /// <para>
+    /// <b>与微信支付 APIv3（Pay 线）零交叠</b>：本域是<b>小程序虚拟支付</b>（米大师代币/道具，走
+    /// <c>api.weixin.qq.com/xpay/*</c> + 小程序令牌），Pay 线是<b>微信支付商户 APIv3</b>（走
+    /// <c>api.mch.weixin.qq.com</c> + 商户证书签名），两线的单号在订单模型里分列
+    /// （<c>wxpay_order_id</c> 与 <c>channel_order_id</c>）⇒ 不得互相替代，守卫 XP4 断言跨线路由交叠为零。
+    /// </para>
+    /// </remarks>
+    XPay,
+
+    /// <summary>
+    /// 发货信息管理与品牌申请（12 端点，四接口共用本注册组：发货录入与报备 4 + 订单与管理状态查询 4 +
+    /// 设置与交易类型变更 2 + 品牌申请 2；路由族 <c>/wxa/sec/order/*</c> 10 条 + <c>/wxa/sec/famousbrand/*</c> 2 条）。
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>官方本域无端点级频率数字</b>：12 页均未给「次/分钟」类数字 ⇒ 注释一律留档该空缺，
+    /// 不得凭第三方 SDK 注释或记忆补数；「<c>shipping_list</c> 多重性 [1,15]」「材料最多 10 个、视频最多 3 个」
+    /// 「<c>page_size</c> 默认 100」均为<b>规模</b>限制，与频率分列。
+    /// </para>
+    /// <para>
+    /// <b>第三方开放面在本域内三分</b>：10 端点支持 <c>authorizer_access_token</c>（权限集 142，其中
+    /// <c>is_trade_managed</c> 与 <c>is_trade_management_confirmation_completed</c> 为 18、142），
+    /// <c>get_order_list</c> 与 <c>set_msg_jump_path</c> 官方明写「本接口不支持第三方平台调用」。
+    /// 云调用面同样不统一（7 支给出 <c>wxa.sec.order.*</c> 方法名、5 支明写不支持，且不支持的 5 支里
+    /// 含第三方侧支持的 <c>is_trade_management_confirmation_completed</c> 与两支品牌申请）⇒ 逐端点看接口 XML 注释。
+    /// </para>
+    /// <para>
+    /// <b>「一次机会」语义</b>：录入两支每笔支付单仅一次重新发货机会、确认收货提醒每单仅可调用一次、
+    /// 交易类型变更一个账号只能申请一次 ⇒ 本域端点<b>一律非幂等</b>，不得放进自动重试管道。
+    /// </para>
+    /// <para>
+    /// <b>与虚拟支付域零重叠</b>：本域订单定位用 <c>transaction_id</c> / <c>merchant_id</c> / <c>merchant_trade_no</c>
+    /// （查询侧）与 <c>mchid</c> / <c>out_trade_no</c>（上传侧），与 <c>/xpay/query_order</c> 的单号面同名不同域，
+    /// 状态取值表亦各一套 ⇒ 守卫 OS1 / XP4 分别锁定路由不交叉。
+    /// </para>
+    /// </remarks>
+    OrderShipping,
 }

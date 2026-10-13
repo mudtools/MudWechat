@@ -96,6 +96,18 @@ public class MiniProgramServiceBuilder
             // 短剧媒资：五接口同组（上传 6 + 媒资管理 4 + 剧目提审 7 + 用量与流量包 3 + 授权 11），
             // 由同一条生成的注册入口一并装载。
             [MiniProgramModule.Vod] = static s => s.AddVodWebApiHttpClient(),
+
+            // 虚拟支付：六接口同组（代币 4 + 订单与账单 7 + 道具 5 + 会员订阅 4 + 广告金与提现 10 + 支付投诉 7）。
+            // 注册期先登记词表外凭据键 pay_sig（组件静态词表是精确匹配，sig/sign/signature 覆盖不到它），
+            // 副作用只在使用本模块时发生（守卫 XP6 锁定登记表与词表不交叉）。
+            [MiniProgramModule.XPay] = static s =>
+            {
+                XPaySensitiveQueryKeys.RegisterAll();
+                s.AddXPayWebApiHttpClient();
+            },
+
+            // 发货信息与品牌申请：四接口同组（发货录入与报备 4 + 订单与管理状态查询 4 + 设置与交易类型变更 2 + 品牌申请 2）。
+            [MiniProgramModule.OrderShipping] = static s => s.AddOrderShippingWebApiHttpClient(),
         };
 
     /// <summary>注册登录与用户（5 端点：4 带令牌 + 1 免令牌）。</summary>
@@ -205,6 +217,31 @@ public class MiniProgramServiceBuilder
     /// </summary>
     /// <returns>注册器（链式）。</returns>
     public MiniProgramServiceBuilder AddVodApi() => AddModule(MiniProgramModule.Vod);
+
+    /// <summary>
+    /// 注册小程序虚拟支付接口（37 端点：代币操作 4 + 订单与账单 7 + 道具管理 5 + 会员订阅 4 +
+    /// 广告金与提现 10 + 支付投诉 7；路由族 <c>/xpay/*</c>，权限集 157，官方 2026-10-13 逐页核验）。
+    /// </summary>
+    /// <returns>注册器（链式）。</returns>
+    /// <remarks>
+    /// <b>注册本模块会顺带把 <c>pay_sig</c> 登记为进程级强制掩码键</b>（官方 28 端点逐请求传入的支付签名，
+    /// 不在组件脱敏静态词表内）⇒ 该副作用只在宿主使用虚拟支付线时发生，且幂等。
+    /// </remarks>
+    public MiniProgramServiceBuilder AddXPayApi() => AddModule(MiniProgramModule.XPay);
+
+    /// <summary>
+    /// 注册小程序发货信息管理与品牌申请接口（12 端点：发货录入与报备 4 + 订单与管理状态查询 4 +
+    /// 设置与交易类型变更 2 + 品牌申请 2；路由族 <c>/wxa/sec/order/*</c> 与 <c>/wxa/sec/famousbrand/*</c>，
+    /// 权限集 142（其中 <c>is_trade_managed</c> / <c>is_trade_management_confirmation_completed</c> 为 18、142），
+    /// 官方 2026-10-13 逐页核验）。
+    /// </summary>
+    /// <returns>注册器（链式）。</returns>
+    /// <remarks>
+    /// <b>本域无新增 Query 凭据</b>：12 端点全部只带 <c>access_token</c>（故 <c>MpQueryTokenWhitelistGuard</c>
+    /// 只增接口名、不增词表豁免）；官方本域<b>未给任何端点级频率数字</b>，且「重新发货」「确认收货提醒」
+    /// 「交易类型变更」各有「仅一次」语义 ⇒ 端点一律非幂等，宿主不得放进自动重试管道。
+    /// </remarks>
+    public MiniProgramServiceBuilder AddOrderShippingApi() => AddModule(MiniProgramModule.OrderShipping);
 
     /// <summary>注册全部模块。</summary>
     /// <returns>注册器（链式）。</returns>

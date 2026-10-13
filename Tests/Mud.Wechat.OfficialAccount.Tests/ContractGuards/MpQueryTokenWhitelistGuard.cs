@@ -117,6 +117,7 @@ public class MpQueryTokenWhitelistGuard
             nameof(Mud.Wechat.MiniProgram.IWxaExpressIntracityService),  // 物流助手·同城配送（16 端点；对账文件 IWxaExpressBillService 手工通道不入白名单）
             nameof(Mud.Wechat.MiniProgram.IWxaExpressLocalService),      // 即时配送（15 端点：小程序方 14 + 运力方 1；2026-10-12 依官方清单补齐）
             nameof(Mud.Wechat.MiniProgram.IWxaFaceVerifyService),        // 微信人脸核身（2 端点）
+            nameof(Mud.Wechat.MiniProgram.IWxaFamousBrandService),       // 品牌申请（2 端点，与发货信息域共用注册组）
             nameof(Mud.Wechat.MiniProgram.IWxaHardwareDeviceService),    // 硬件设备（9 端点）
             nameof(Mud.Wechat.MiniProgram.IWxaKfService),                // 客服（10 端点 JSON 通道；临时素材 IWxaKfMediaService 手工通道不入白名单）
             nameof(Mud.Wechat.MiniProgram.IWxaLaborUseService),          // 用工关系（2 端点）
@@ -130,6 +131,12 @@ public class MpQueryTokenWhitelistGuard
             nameof(Mud.Wechat.MiniProgram.IWxaLiveSubscribeService),     // 直播·长期订阅群发（2 端点）
             nameof(Mud.Wechat.MiniProgram.IWxaNearbyPoiService),         // 附近小程序（4 端点）
             nameof(Mud.Wechat.MiniProgram.IWxaOperationService),         // 运维中心（9 端点；反馈图片 IWxaFeedbackMediaService 手工通道不入白名单）
+            // 发货信息管理域（10 端点，2026-10-13 依官方 order_shipping 分区逐页取证落地）：官方同为 Query
+            // access_token 契约（权限集 142，管理状态两支为 18、142），三个接口与品牌申请两支共用注册组 OrderShipping，
+            // 无手工通道，且本域无方法级 [Query] 业务凭据参数（对照虚拟支付域的 pay_sig / signature，守卫 OS3）。
+            nameof(Mud.Wechat.MiniProgram.IWxaOrderQueryService),        // 订单与管理状态查询（4 端点）
+            nameof(Mud.Wechat.MiniProgram.IWxaOrderSettingService),      // 消息跳转路径与交易类型变更申请（2 端点）
+            nameof(Mud.Wechat.MiniProgram.IWxaOrderShippingService),     // 发货录入与报备（4 端点）
             nameof(Mud.Wechat.MiniProgram.IWxaPluginService),            // 插件管理（2 端点）
             nameof(Mud.Wechat.MiniProgram.IWxaQrCodeLinkService),        // 二维码 / 链接 JSON 通道（6 端点；图片通道 IWxaCodeService 手工注入）
             nameof(Mud.Wechat.MiniProgram.IWxaRedPacketCoverService),    // 微信红包封面（1 端点）
@@ -144,8 +151,24 @@ public class MpQueryTokenWhitelistGuard
             nameof(Mud.Wechat.MiniProgram.IWxaTradeCommentService),      // 评价管理（9 端点）
             nameof(Mud.Wechat.MiniProgram.IWxaTradeComplaintService),    // 投诉管理（5 端点）
             nameof(Mud.Wechat.MiniProgram.IWxaTradeGuaranteeService),    // 交易保障基础（2 端点）
+            // 短剧媒资域（31 端点，2026-10-13 依官方 minidrama 分区逐页取证落地）：官方同为 Query access_token
+            // 契约（权限集 153），五个接口共用注册组 Vod；分片上传两支是 multipart/form-data 但仍走声明式管线（非手工通道）。
+            nameof(Mud.Wechat.MiniProgram.IWxaVodAuthorizationService),   // 短剧媒资·剧目 / 账号 / 版权授权（11 端点）
+            nameof(Mud.Wechat.MiniProgram.IWxaVodCdnService),             // 短剧媒资·CDN 用量与流量包（3 端点）
+            nameof(Mud.Wechat.MiniProgram.IWxaVodDramaService),           // 短剧媒资·剧目管理与审核（7 端点）
+            nameof(Mud.Wechat.MiniProgram.IWxaVodMediaService),           // 短剧媒资·媒资管理（4 端点）
+            nameof(Mud.Wechat.MiniProgram.IWxaVodUploadService),          // 短剧媒资·分片与拉取上传（6 端点）
             // Vip 域（6 端点）2026-10 自小店线设计方案 §4.1 结论 A 划入：官方同为 Query access_token 契约。
             nameof(Mud.Wechat.MiniProgram.IWxaVipService),
+            // 虚拟支付域（37 端点，2026-10-13 依官方 VirtualPayment 分区逐页取证落地）：官方同为 Query access_token
+            // 契约，六个接口共用注册组 XPay，无手工通道。官方在 access_token 之外另要求宿主计算的 pay_sig
+            // （28 支）与 signature（5 支），两者是方法级 [Query] 业务参数、不属令牌注入面 ⇒ 不改变本白名单语义。
+            nameof(Mud.Wechat.MiniProgram.IWxaXPayComplaintService),   // 虚拟支付·投诉与管控（7 端点）
+            nameof(Mud.Wechat.MiniProgram.IWxaXPayCurrencyService),    // 虚拟支付·代币（4 端点）
+            nameof(Mud.Wechat.MiniProgram.IWxaXPayFundsService),       // 虚拟支付·资金与提现（10 端点）
+            nameof(Mud.Wechat.MiniProgram.IWxaXPayGoodsService),       // 虚拟支付·道具管理（5 端点）
+            nameof(Mud.Wechat.MiniProgram.IWxaXPayOrderService),       // 虚拟支付·订单与账单（7 端点）
+            nameof(Mud.Wechat.MiniProgram.IWxaXPaySubscribeService),   // 虚拟支付·会员订阅（4 端点）
         }, "小程序官方契约同样强制 Query 注入；新增 Query 注入接口须先评估再显式扩展本白名单");
 
         actual.Should().NotBeEmpty();

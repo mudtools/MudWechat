@@ -102,13 +102,14 @@ public static class Baseline
         /// </summary>
         /// <remarks>
         /// 锁定于 `MiniProgramContractGuards`（MP-X5）。
-        /// 现行推导：254 特性路由 + 6 手工通道（小程序码 3 + 反馈媒体 1 + 对账文件 1 + 客服临时素材 1）= 260；
+        /// 现行推导：303 特性路由 + 6 手工通道（小程序码 3 + 反馈媒体 1 + 对账文件 1 + 客服临时素材 1）= 309；
         /// 按域拆分即 Auth 8 + QrCodeLink 9 + Security 3 + DataAnalysis 11 + SubscribeMessage 4 +
         /// DynamicMessage 3 + Kf 11 + HardwareDevice 9 + Operation 10 + Plugin 2 + Charge 2 +
         /// NearbyPoi 4 + Search 1 + Soter 1 + ServiceMarket 2 + RedPacketCover 1 + Student 1 +
         /// FaceVerify 2 + LaborUse 2 + ExpressBusiness 12 + ExpressDelivery 28 + ExpressIntracity 16 +
         /// ExpressInsuranceFreight 11 + ExpressLocal 15 + ExpressBill 1 + Vip 6 +
-        /// TradeGuarantee 2 + TradeComment 9 + TradeComplaint 5 + Live 38 + Vod 31 = 260
+        /// TradeGuarantee 2 + TradeComment 9 + TradeComplaint 5 + Live 38 + Vod 31 + XPay 37 +
+        /// OrderShipping 12 = 309
         /// （Vip 域为 2026-10 小店线设计方案 §4.1 结论 A 划入；2026-10-12 依官方清单核对后：
         /// ExpressDelivery 28 / ExpressIntracity 16 补齐「消息推送 2 + 投诉处理 1」与「同城扣费主体与城市 3」，
         /// 新增 ExpressInsuranceFreight 11（无忧退货）与 ExpressLocal 15（即时配送）两族，
@@ -118,9 +119,15 @@ public static class Baseline
         /// 同日依官方 livebroadcast 分区 38 页取证补齐直播域 38（直播间本体 11 + 小助手与主播副号 8 +
         /// 房间内商品 7 + 商品库管理 7 + 成员角色 3 + 长期订阅群发 2），同批解除 P3-R1 第 2 项「不实现」裁决；
         /// 同日依官方 minidrama 分区 31 页取证补齐短剧媒资域 31（上传 6 + 媒资 4 + 剧目 7 + CDN 3 + 授权 11），
-        /// 缺口清单原记「短剧 25」系第三方转述漏项，已按逐页取证更正为 31）。
+        /// 缺口清单原记「短剧 25」系第三方转述漏项，已按逐页取证更正为 31；
+        /// 同日依官方 VirtualPayment 分区 37 页取证补齐虚拟支付域 37（代币 4 + 订单 7 + 道具 5 + 会员订阅 4 +
+        /// 资金与提现 10 + 投诉与管控 7），该域另有 28 端点逐请求强制宿主计算的 pay_sig（守卫 XP2 / XP6）；
+        /// 同日依官方 order_shipping 分区 10 页 + famousbrand 分区 2 页取证补齐发货信息管理与品牌申请域 12
+        /// （发货录入与报备 4 + 订单与管理状态查询 4 + 设置与交易类型变更 2 + 品牌申请 2），
+        /// 缺口清单原记「10 条」系漏项，特殊发货报备 <c>opspecialorder</c> 与交易类型变更申请
+        /// <c>setwxatradetypecgi</c> 两支为逐页取证补回）。
         /// </remarks>
-        public const int Endpoints = 260;
+        public const int Endpoints = 309;
     }
 
     /// <summary>微信支付 APIv3 线（`Tests/Mud.Wechat.Pay.Tests`）。</summary>

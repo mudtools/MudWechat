@@ -39,7 +39,7 @@ public class MiniProgramContractGuards
             .Concat(ManualChannelRoutes())
             .ToArray();
 
-        mpRoutes.Should().NotBeEmpty("小程序线路由非空（254 特性路由 + 6 手工通道路由）");
+        mpRoutes.Should().NotBeEmpty("小程序线路由非空（303 特性路由 + 6 手工通道路由）");
 
         var overlap = mpRoutes.Intersect(oaRoutes, StringComparer.Ordinal).ToArray();
         overlap.Should().BeEmpty(
@@ -80,19 +80,25 @@ public class MiniProgramContractGuards
             .Where(static t => t.GetCustomAttributes(false).Any(static a => a.GetType().Name == "TokenAttribute"))
             .ToArray();
 
-        tokenInterfaces.Should().HaveCount(39,
+        tokenInterfaces.Should().HaveCount(49,
             "带令牌接口 = Auth / QrCodeLink / Security / DataAnalysis / SubscribeMessage / DynamicMessage / Kf / " +
             "HardwareDevice / Operation / Plugin / Charge / NearbyPoi / Search / Soter / ServiceMarket / " +
             "RedPacketCover / Student / FaceVerify / LaborUse / ExpressBusiness / ExpressDelivery / ExpressIntracity / " +
             "ExpressInsuranceFreight / ExpressLocal / Vip / TradeGuarantee / TradeComment / TradeComplaint / " +
             "LiveRoom / LiveAssistant / LiveRoomGoods / LiveGoods / LiveRole / LiveSubscribe / " +
-            "VodUpload / VodMedia / VodDrama / VodCdn / VodAuthorization" +
+            "VodUpload / VodMedia / VodDrama / VodCdn / VodAuthorization / " +
+            "XPayCurrency / XPayOrder / XPayGoods / XPaySubscribe / XPayFunds / XPayComplaint / " +
+            "OrderShipping / OrderQuery / OrderSetting / FamousBrand" +
             "（登录 code2Session 为免令牌独立接口；图片通道 Code / FeedbackMedia " +
             "与对账文件通道 Bill 为手工服务不走 [Token]；Vip 域为 2026-10 小店线设计方案 §4.1 结论 A 划入；" +
             "ExpressInsuranceFreight / ExpressLocal 为 2026-10-12 依官方清单补齐的无忧退货族与即时配送族；" +
             "TradeGuarantee / TradeComment / TradeComplaint 为 2026-10-13 依官方 transaction-guarantee 分区补齐的交易保障域三接口；" +
             "Live 族六接口为 2026-10-13 依官方 livebroadcast 分区 38 页取证补齐，同批解除 P3-R1 第 2 项「不实现」裁决；" +
-            "Vod 族五接口为 2026-10-13 依官方 minidrama 分区 31 页取证补齐的短剧媒资域）");
+            "Vod 族五接口为 2026-10-13 依官方 minidrama 分区 31 页取证补齐的短剧媒资域；" +
+            "XPay 族六接口为 2026-10-13 依官方 VirtualPayment 分区 37 页取证补齐的虚拟支付域" +
+            "（pay_sig / signature 属宿主计算的支付签名，落方法级 [Query] 参数而非 [Token]，见守卫 XP2 / XP6）；" +
+            "OrderShipping 族四接口为 2026-10-13 依官方 order_shipping 10 页 + famousbrand 2 页取证补齐的" +
+            "发货信息管理与品牌申请域，本域凭据面只有 access_token 一支、无方法级 [Query] 参数（见守卫 OS3））");
 
         foreach (var iface in tokenInterfaces)
         {
@@ -125,7 +131,7 @@ public class MiniProgramContractGuards
     }
 
     /// <summary>
-    /// MP-X5：<b>端点计数 260</b> + 逐域路由表 + 字段名照官方原文（<c>session_key</c> / <c>js_code</c> /
+    /// MP-X5：<b>端点计数 309</b> + 逐域路由表 + 字段名照官方原文（<c>session_key</c> / <c>js_code</c> /
     /// <c>trace_id</c> / <c>page_url</c> 等<b>不得驼峰化</b>）。
     /// </summary>
     [Fact]
@@ -329,16 +335,16 @@ public class MiniProgramContractGuards
             WxaKfMediaService.MediaPath,
         });
 
-        // 合计计数（MP-X5 的单一来源）：254 特性路由 + 6 手工通道路由 = 260（基线见 Tests/ContractBaseline.cs）。
+        // 合计计数（MP-X5 的单一来源）：303 特性路由 + 6 手工通道路由 = 309（基线见 Tests/ContractBaseline.cs）。
         (CollectAttributeRoutes(asm).Length + ManualChannelRoutes().Length)
             .Should().Be(Baseline.MiniProgram.Endpoints,
-                "小程序线合计 260 端点（Auth 8 + QrCodeLink 9 + Security 3 + DataAnalysis 11 + "
+                "小程序线合计 309 端点（Auth 8 + QrCodeLink 9 + Security 3 + DataAnalysis 11 + "
                 + "SubscribeMessage 4 + DynamicMessage 3 + Kf 11 + HardwareDevice 9 + Operation 10 + "
                 + "Plugin 2 + Charge 2 + NearbyPoi 4 + Search 1 + Soter 1 + ServiceMarket 2 + "
                 + "RedPacketCover 1 + Student 1 + FaceVerify 2 + LaborUse 2 + ExpressBusiness 12 + "
                 + "ExpressDelivery 28 + ExpressIntracity 16 + ExpressInsuranceFreight 11 + ExpressLocal 15 + "
                 + "ExpressBill 1 + Vip 6 + TradeGuarantee 2 + TradeComment 9 + TradeComplaint 5 + "
-                + "Live 38 + Vod 31）；"
+                + "Live 38 + Vod 31 + XPay 37 + OrderShipping 12）；"
                 + "数量变化须同批调整 Tests/ContractBaseline.cs");
     }
 
@@ -567,6 +573,20 @@ public class MiniProgramContractGuards
         provider.GetRequiredService<IWxaLiveGoodsService>().Should().NotBeNull("商品库管理随 Live 模块注册");
         provider.GetRequiredService<IWxaLiveRoleService>().Should().NotBeNull("成员角色随 Live 模块注册");
         provider.GetRequiredService<IWxaLiveSubscribeService>().Should().NotBeNull("长期订阅群发随 Live 模块注册");
+
+        // 虚拟支付域六接口共用 XPay 注册组 ⇒ 一条生成入口装载全部 37 端点（注册委托同时完成 pay_sig 登记，见守卫 XP6）。
+        provider.GetRequiredService<IWxaXPayCurrencyService>().Should().NotBeNull("代币扣减与余额随 XPay 模块注册");
+        provider.GetRequiredService<IWxaXPayOrderService>().Should().NotBeNull("订单与账单下载随 XPay 模块注册");
+        provider.GetRequiredService<IWxaXPayGoodsService>().Should().NotBeNull("道具管理随 XPay 模块注册");
+        provider.GetRequiredService<IWxaXPaySubscribeService>().Should().NotBeNull("会员订阅随 XPay 模块注册");
+        provider.GetRequiredService<IWxaXPayFundsService>().Should().NotBeNull("资金与提现随 XPay 模块注册");
+        provider.GetRequiredService<IWxaXPayComplaintService>().Should().NotBeNull("投诉与管控随 XPay 模块注册");
+
+        // 发货信息与品牌申请域四接口共用 OrderShipping 注册组 ⇒ 一条生成入口装载全部 12 端点（守卫 OS2）。
+        provider.GetRequiredService<IWxaOrderShippingService>().Should().NotBeNull("发货录入与报备随 OrderShipping 模块注册");
+        provider.GetRequiredService<IWxaOrderQueryService>().Should().NotBeNull("订单与管理状态查询随 OrderShipping 模块注册");
+        provider.GetRequiredService<IWxaOrderSettingService>().Should().NotBeNull("消息跳转路径与交易类型变更随 OrderShipping 模块注册");
+        provider.GetRequiredService<IWxaFamousBrandService>().Should().NotBeNull("品牌申请随 OrderShipping 模块注册");
     }
 
     // ---- helpers -------------------------------------------------------------

@@ -108,6 +108,9 @@ public class MiniProgramServiceBuilder
 
             // 发货信息与品牌申请：四接口同组（发货录入与报备 4 + 订单与管理状态查询 4 + 设置与交易类型变更 2 + 品牌申请 2）。
             [MiniProgramModule.OrderShipping] = static s => s.AddOrderShippingWebApiHttpClient(),
+
+            // 小说作品管理：五接口同组（作品本体 6 + 章节管理 8 + 授权管理 3 + 账号授权 3 + 读者运营 3）。
+            [MiniProgramModule.Novel] = static s => s.AddNovelWebApiHttpClient(),
         };
 
     /// <summary>注册登录与用户（5 端点：4 带令牌 + 1 免令牌）。</summary>
@@ -242,6 +245,18 @@ public class MiniProgramServiceBuilder
     /// 「交易类型变更」各有「仅一次」语义 ⇒ 端点一律非幂等，宿主不得放进自动重试管道。
     /// </remarks>
     public MiniProgramServiceBuilder AddOrderShippingApi() => AddModule(MiniProgramModule.OrderShipping);
+
+    /// <summary>
+    /// 注册小说作品管理接口（23 端点：作品本体 6 + 章节管理 8 + 授权管理 3 + 账号授权 3 + 读者运营 3；
+    /// 路由族 <c>/wxa/book/*</c> 17 条 + <c>/wxa/business/novelreader/*</c> 3 条 + <c>/wxaapi/broadcast/*</c> 3 条，
+    /// 权限集 169，官方 2026-10-13 逐页核验）。
+    /// </summary>
+    /// <returns>注册器（链式）。</returns>
+    /// <remarks>
+    /// <b>官方本域无端点级频率数字</b>：23 页均未给「次/分钟」类数字 ⇒ 注释一律留档该空缺，
+    /// 不得凭第三方 SDK 注释或记忆补数。
+    /// </remarks>
+    public MiniProgramServiceBuilder AddNovelApi() => AddModule(MiniProgramModule.Novel);
 
     /// <summary>注册全部模块。</summary>
     /// <returns>注册器（链式）。</returns>

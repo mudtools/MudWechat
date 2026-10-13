@@ -80,7 +80,7 @@ public class MiniProgramContractGuards
             .Where(static t => t.GetCustomAttributes(false).Any(static a => a.GetType().Name == "TokenAttribute"))
             .ToArray();
 
-        tokenInterfaces.Should().HaveCount(49,
+        tokenInterfaces.Should().HaveCount(54,
             "带令牌接口 = Auth / QrCodeLink / Security / DataAnalysis / SubscribeMessage / DynamicMessage / Kf / " +
             "HardwareDevice / Operation / Plugin / Charge / NearbyPoi / Search / Soter / ServiceMarket / " +
             "RedPacketCover / Student / FaceVerify / LaborUse / ExpressBusiness / ExpressDelivery / ExpressIntracity / " +
@@ -88,7 +88,8 @@ public class MiniProgramContractGuards
             "LiveRoom / LiveAssistant / LiveRoomGoods / LiveGoods / LiveRole / LiveSubscribe / " +
             "VodUpload / VodMedia / VodDrama / VodCdn / VodAuthorization / " +
             "XPayCurrency / XPayOrder / XPayGoods / XPaySubscribe / XPayFunds / XPayComplaint / " +
-            "OrderShipping / OrderQuery / OrderSetting / FamousBrand" +
+            "OrderShipping / OrderQuery / OrderSetting / FamousBrand / " +
+            "NovelBook / NovelChapter / NovelAuth / NovelAccountAuth / NovelReader" +
             "（登录 code2Session 为免令牌独立接口；图片通道 Code / FeedbackMedia " +
             "与对账文件通道 Bill 为手工服务不走 [Token]；Vip 域为 2026-10 小店线设计方案 §4.1 结论 A 划入；" +
             "ExpressInsuranceFreight / ExpressLocal 为 2026-10-12 依官方清单补齐的无忧退货族与即时配送族；" +
@@ -98,7 +99,8 @@ public class MiniProgramContractGuards
             "XPay 族六接口为 2026-10-13 依官方 VirtualPayment 分区 37 页取证补齐的虚拟支付域" +
             "（pay_sig / signature 属宿主计算的支付签名，落方法级 [Query] 参数而非 [Token]，见守卫 XP2 / XP6）；" +
             "OrderShipping 族四接口为 2026-10-13 依官方 order_shipping 10 页 + famousbrand 2 页取证补齐的" +
-            "发货信息管理与品牌申请域，本域凭据面只有 access_token 一支、无方法级 [Query] 参数（见守卫 OS3））");
+            "发货信息管理与品牌申请域，本域凭据面只有 access_token 一支、无方法级 [Query] 参数（见守卫 OS3）；" +
+            "Novel 族五接口为 2026-10-13 依官方 novelreadersetrecmdnovel 分区 23 页取证补齐的小说作品管理域，权限集 169）");
 
         foreach (var iface in tokenInterfaces)
         {
@@ -587,6 +589,13 @@ public class MiniProgramContractGuards
         provider.GetRequiredService<IWxaOrderQueryService>().Should().NotBeNull("订单与管理状态查询随 OrderShipping 模块注册");
         provider.GetRequiredService<IWxaOrderSettingService>().Should().NotBeNull("消息跳转路径与交易类型变更随 OrderShipping 模块注册");
         provider.GetRequiredService<IWxaFamousBrandService>().Should().NotBeNull("品牌申请随 OrderShipping 模块注册");
+
+        // 小说作品管理域五接口共用 Novel 注册组 ⇒ 一条生成入口装载全部 23 端点。
+        provider.GetRequiredService<IWxaNovelBookService>().Should().NotBeNull("作品本体随 Novel 模块注册");
+        provider.GetRequiredService<IWxaNovelChapterService>().Should().NotBeNull("章节管理随 Novel 模块注册");
+        provider.GetRequiredService<IWxaNovelAuthService>().Should().NotBeNull("授权管理随 Novel 模块注册");
+        provider.GetRequiredService<IWxaNovelAccountAuthService>().Should().NotBeNull("账号授权随 Novel 模块注册");
+        provider.GetRequiredService<IWxaNovelReaderService>().Should().NotBeNull("读者运营随 Novel 模块注册");
     }
 
     // ---- helpers -------------------------------------------------------------

@@ -28,6 +28,11 @@ using Mud.Wechat.MiniProgram.DataModels.Soter;
 using Mud.Wechat.MiniProgram.DataModels.Student;
 using Mud.Wechat.MiniProgram.DataModels.SubscribeMessage;
 using Mud.Wechat.MiniProgram.DataModels.TransactionGuarantee;
+using Mud.Wechat.MiniProgram.DataModels.Live;
+using Mud.Wechat.MiniProgram.DataModels.Vod;
+using Mud.Wechat.MiniProgram.DataModels.XPay;
+using Mud.Wechat.MiniProgram.DataModels.OrderShipping;
+using Mud.Wechat.MiniProgram.DataModels.Novel;
 using System.Text.Json.Serialization.Metadata;
 
 namespace Mud.Wechat.MiniProgram.Extensions;
@@ -88,7 +93,8 @@ public static class MiniProgramJsonResolverExtensions
             LiveJsonContext.Default,
             VodJsonContext.Default,
             XPayJsonContext.Default,
-            OrderShippingJsonContext.Default);
+            OrderShippingJsonContext.Default,
+            NovelJsonContext.Default);
 
         services.AddMudHttpClientJsonContext(resolver);
     }

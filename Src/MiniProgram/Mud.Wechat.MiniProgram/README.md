@@ -1,10 +1,10 @@
 # Mud.Wechat.MiniProgram
 
-微信小程序 SDK **主包**：**26 个业务域 309 端点**（登录与身份 / 二维码与链接 / 内容安全 / 数据分析 / 订阅消息 / 动态消息 / 客服 / 硬件设备 / 运维中心 / 插件 / 付费 / 附近小程序 / 搜一搜 / 生物认证 / 服务市场 / 红包封面 / 学生身份 / 人脸核身 / 用工关系 / 物流助手 / 会员服务 / 交易保障 / 直播 / 短剧媒资 / 虚拟支付 / 发货信息管理与品牌申请）的声明式 HTTP 客户端、模块注册器、AOT JsonContext 合并，以及小程序码 / 反馈图片（二进制流）与物流对账文件（文本）的**手工通道**。
+微信小程序 SDK **主包**：**27 个业务域 332 端点**（登录与身份 / 二维码与链接 / 内容安全 / 数据分析 / 订阅消息 / 动态消息 / 客服 / 硬件设备 / 运维中心 / 插件 / 付费 / 附近小程序 / 搜一搜 / 生物认证 / 服务市场 / 红包封面 / 学生身份 / 人脸核身 / 用工关系 / 物流助手 / 会员服务 / 交易保障 / 直播 / 短剧媒资 / 虚拟支付 / 发货信息管理与品牌申请 / 小说作品管理）的声明式 HTTP 客户端、模块注册器、AOT JsonContext 合并，以及小程序码 / 反馈图片（二进制流）与物流对账文件（文本）的**手工通道**。
 
 **小程序与公众号同属微信公众平台**：同一令牌域、同一批路由前缀（`/wxa/`、`/datacube/`、`/sns/`），因此本线**不重复实现令牌与多应用基座**，直接复用 `Mud.Wechat.OfficialAccount.Abstractions`（守卫 MP-X2 锁定）。装配入口也因此是两段式的——先 `AddMpApp` 建底座，再 `AddMiniProgramServices` 装本线模块。
 
-## 能力面（309 端点 = 303 特性路由 + 6 手工通道，计数与路由表由 MP-X5 锁定）
+## 能力面（332 端点 = 326 特性路由 + 6 手工通道，计数与路由表由 MP-X5 锁定）
 
 | 模块（`MiniProgramModule`） | 注册方法 | 端点 | 接口 |
 | --- | --- | --- | --- |
@@ -34,6 +34,7 @@
 | `Vod` | `AddVodApi()` | 31 | `IWxaVodUploadService`（上传 6：单文件与分片两条通路 + 拉取上传 + `gettask` 轮询，权限集 153）+ `IWxaVodMediaService`（媒资 4：列表 / 详情 / 播放地址 / 删除）+ `IWxaVodDramaService`（剧目 7：提审 / 列表 / 详情 / 提交替换 / 替换 / 改基础信息 / 查最新审核信息）+ `IWxaVodCdnService`（CDN 与资源包 3：用量 / 日志 / 资源包列表）+ `IWxaVodAuthorizationService`（授权与版权 11：剧目与版权双向授权 6 + 三视角查询 + 应用授权 2）。路由单一族 `/wxa/sec/vod/`，31 条全小写连写；**`authorizedrama` 是全域唯一一支 GET 且带 JSON 请求体**（官方调用方式与示例如此，同页错误码 `43002` 与之矛盾 ⇒ 裁决留档由 DV2 锁定动词） |
 | `XPay` | `AddXPayApi()` | 37 | `IWxaXPayCurrencyService`（代币 4：`currency_pay` / `cancel_currency_pay` / `present_currency` / `query_user_balance`，其中扣减与退款扣减与查余额三支官方要求 `pay_sig`+`signature` **双签**）+ `IWxaXPayOrderService`（订单 7：查单 / 退款 / 发货通知 / 下载单任务两支 + 账单与 iOS 月结账单下载）+ `IWxaXPayGoodsService`（道具 5：上传与发布各 start/query + `upload_vp_file`）+ `IWxaXPaySubscribeService`（会员订阅 4：预扣款 / 扣款 / 查签约 / 解约）+ `IWxaXPayFundsService`（资金与提现 10：转账账户绑定与查询 + 资金账单创建与查询 + 追缴账单 + 广告资金与广告资金下载 + 商户可提现余额 + 提现单创建与查询）+ `IWxaXPayComplaintService`（投诉与管控 7：列表 / 详情 / 协商历史 / 回应 / 完结 / 上传凭证签名 + `query_punishment_reasons`）。路由单一族 `/xpay/`，37 条全 POST 全小写下划线；注册委托在装载 HTTP 客户端**之前**先 `XPaySensitiveQueryKeys.RegisterAll()` 登记 `pay_sig`（守卫 XP6） |
 | `OrderShipping` | `AddOrderShippingApi()` | 12 | `IWxaOrderShippingService`（发货录入与报备 4：`upload_shipping_info` / `upload_combined_shipping_info` / `notify_confirm_receive` / `opspecialorder`）+ `IWxaOrderQueryService`（订单与管理状态查询 4：`get_order` / `get_order_list` / `is_trade_managed` / `is_trade_management_confirmation_completed`）+ `IWxaOrderSettingService`（设置 2：`set_msg_jump_path` / `setwxatradetypecgi`）+ `IWxaFamousBrandService`（品牌申请 2：`apply` / `get_status`，权限集 142）。两族前缀 `/wxa/sec/order/`（10）与 `/wxa/sec/famousbrand/`（2），12 条全 POST；本域**无方法级 `[Query]` 业务凭据**（对照 XPay 的 `pay_sig`），且官方 12 页**均无端点级频率数字** ⇒ 只有规模限制（守卫 OS1~OS6） |
+| `Novel` | `AddNovelApi()` | 23 | `IWxaNovelBookService`（作品本体 6：创建 / 编辑 / 删除 / 列表 / 详情 / 审核）+ `IWxaNovelChapterService`（章节管理 8：上传 / 批量上传 / 删除 / 替换 / 列表 / 详情 / 重排序 / 更新 seq）+ `IWxaNovelAuthService`（授权管理 3：添加 / 查询 / 删除）+ `IWxaNovelAccountAuthService`（账号授权 3：按 appid 添加 / 查询 V2 / 删除）+ `IWxaNovelReaderService`（读者运营 3：设置预览配置 / 获取预览配置 / 设置推荐小说）。路由族 `/wxa/book/*`（17）+ `/wxa/business/novelreader/*`（3）+ `/wxaapi/broadcast/*`（3），23 条全 POST，权限集 169；官方本域**无端点级频率数字** ⇒ 注释留档该空缺（守卫 NV1~NV5） |
 
 三个模块级方法之外还有 `AddAllApis()`、`AddModules(params MiniProgramModule[])` 与 `Build()`（返回 `IServiceCollection`）。
 

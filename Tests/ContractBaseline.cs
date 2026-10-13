@@ -109,7 +109,7 @@ public static class Baseline
         /// FaceVerify 2 + LaborUse 2 + ExpressBusiness 12 + ExpressDelivery 28 + ExpressIntracity 16 +
         /// ExpressInsuranceFreight 11 + ExpressLocal 15 + ExpressBill 1 + Vip 6 +
         /// TradeGuarantee 2 + TradeComment 9 + TradeComplaint 5 + Live 38 + Vod 31 + XPay 37 +
-        /// OrderShipping 12 = 309
+        /// OrderShipping 12 + Novel 23 = 332
         /// （Vip 域为 2026-10 小店线设计方案 §4.1 结论 A 划入；2026-10-12 依官方清单核对后：
         /// ExpressDelivery 28 / ExpressIntracity 16 补齐「消息推送 2 + 投诉处理 1」与「同城扣费主体与城市 3」，
         /// 新增 ExpressInsuranceFreight 11（无忧退货）与 ExpressLocal 15（即时配送）两族，
@@ -125,9 +125,11 @@ public static class Baseline
         /// 同日依官方 order_shipping 分区 10 页 + famousbrand 分区 2 页取证补齐发货信息管理与品牌申请域 12
         /// （发货录入与报备 4 + 订单与管理状态查询 4 + 设置与交易类型变更 2 + 品牌申请 2），
         /// 缺口清单原记「10 条」系漏项，特殊发货报备 <c>opspecialorder</c> 与交易类型变更申请
-        /// <c>setwxatradetypecgi</c> 两支为逐页取证补回）。
+        /// <c>setwxatradetypecgi</c> 两支为逐页取证补回；
+        /// 同日依官方 novelreadersetrecmdnovel 分区 23 页取证补齐小说作品管理域 23
+        /// （作品本体 6 + 章节管理 8 + 授权管理 3 + 账号授权 3 + 读者运营 3），权限集 169）。
         /// </remarks>
-        public const int Endpoints = 309;
+        public const int Endpoints = 332;
     }
 
     /// <summary>微信支付 APIv3 线（`Tests/Mud.Wechat.Pay.Tests`）。</summary>

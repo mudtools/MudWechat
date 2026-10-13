@@ -297,4 +297,24 @@ public enum MiniProgramModule
     /// </para>
     /// </remarks>
     OrderShipping,
+
+    /// <summary>
+    /// 小说作品管理（23 端点，五接口共用本注册组：作品本体 6 + 章节管理 8 + 授权管理 3 + 账号授权 3 + 读者运营 3；
+    /// 路由族 <c>/wxa/book/*</c> 17 条 + <c>/wxa/business/novelreader/*</c> 3 条 + <c>/wxaapi/broadcast/*</c> 3 条）。
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>适用范围字段异常（诚实留档）</b>：23 页的「适用范围」段官方统一写「本接口暂未明确可调用账号类型」——
+    /// <b>无</b>「小程序」字样；本线归属判据取「令牌可用 <c>access_token</c> + 文档树位于
+    /// <c>miniprogram/dev/server/API/novelreadersetrecmdnovel</c>」两条。
+    /// </para>
+    /// <para>
+    /// <b>权限集统一</b>：全域 23 端点均标注权限集 169，全部 POST，不支持云调用，支持第三方代调用。
+    /// </para>
+    /// <para>
+    /// <b>官方本域无端点级频率数字</b>：23 页均未给「次/分钟」类数字 ⇒ 注释一律留档该空缺，
+    /// 不得凭第三方 SDK 注释或记忆补数。
+    /// </para>
+    /// </remarks>
+    Novel,
 }

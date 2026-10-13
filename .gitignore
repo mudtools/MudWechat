@@ -5,6 +5,7 @@
 /.vs
 /.docs
 /.doc
+/.bin-smoke
 /.tmp-docs
 /.tmp-p2
 /.codeartsdoer
@@ -12,6 +13,7 @@
 /tmp-express-docs
 /_packtest
 /artifacts
+/.bin
 /Src/Work/Mud.Wechat.Work/bin
 /Src/Work/Mud.Wechat.Work/obj
 /Src/Work/Mud.Wechat.Work.Abstractions/bin

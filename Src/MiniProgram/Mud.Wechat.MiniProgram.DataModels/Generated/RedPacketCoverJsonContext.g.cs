@@ -11,9 +11,9 @@ namespace Mud.Wechat.MiniProgram.DataModels.RedPacketCover;
     PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase,
     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     WriteIndented = false)]
+[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.RedPacketCover.WxaRedPacketCoverData))]
 [JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.RedPacketCover.WxaRedPacketCoverRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.RedPacketCover.WxaRedPacketCoverResponse))]
-[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.RedPacketCover.WxaRedPacketCoverData))]
 internal partial class RedPacketCoverJsonContext : JsonSerializerContext
 {
 }

@@ -11,14 +11,14 @@ namespace Mud.Wechat.MiniProgram.DataModels.Security;
     PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase,
     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     WriteIndented = false)]
-[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Security.WxaMsgSecCheckRequest))]
-[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Security.WxaMsgSecCheckResponse))]
-[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Security.WxaSecCheckResult))]
-[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Security.WxaSecCheckDetail))]
-[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Security.WxaMediaCheckAsyncRequest))]
-[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Security.WxaMediaCheckAsyncResponse))]
 [JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Security.WxaGetUserRiskRankRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Security.WxaGetUserRiskRankResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Security.WxaMediaCheckAsyncRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Security.WxaMediaCheckAsyncResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Security.WxaMsgSecCheckRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Security.WxaMsgSecCheckResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Security.WxaSecCheckDetail))]
+[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Security.WxaSecCheckResult))]
 internal partial class SecurityJsonContext : JsonSerializerContext
 {
 }

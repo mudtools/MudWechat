@@ -18,15 +18,16 @@ namespace Mud.Wechat.Work.Tests.ContractGuards;
 /// <summary>
 /// 微信客服模块（Kf 模块）契约守卫：路由表、接口层级与令牌绑定锁定
 /// （客服账号管理域 + 接待人员管理域 + 会话分配与消息收发域 + 客户基础信息域 +
-/// 统计管理域 + 机器人管理域（仅自建） + 微信客服组件域（仅第三方））。
+/// 统计管理域 + 机器人管理域（仅自建） + 微信客服组件域（仅第三方） + 「升级服务」配置域）。
 /// </summary>
 /// <remarks>
 /// <para>
-/// 形态：客服账号管理 / 接待人员管理 / 会话分配与消息收发 / 客户基础信息 / 统计管理五域为
+/// 形态：客服账号管理 / 接待人员管理 / 会话分配与消息收发 / 客户基础信息 / 统计管理 / 「升级服务」配置六域为
 /// 三类应用公共面收敛父接口（自建 / 第三方 / 代开发子接口均为零差异端点空标记）；
 /// 机器人管理域官方仅自建开放（零端点父接口 + 仅自建子接口承载 8 端点）；
 /// 微信客服组件域官方仅微信客服组件应用（套件形态）消费（零端点父接口 + 仅第三方子接口承载 3 端点，
-/// 其中 2 条与客服账号管理域共用路由）。
+/// 其中 2 条与客服账号管理域共用路由）；
+/// 「其他基础信息获取」域已<b>整体撤回</b>（官方页面仅剩概述，见 <see cref="WithdrawnCorpQualificationRoutes"/> 与 KF1i）。
 /// </para>
 /// </remarks>
 public class WechatKfContractGuards
@@ -96,8 +97,8 @@ public class WechatKfContractGuards
     };
 
     /// <summary>
-    /// 会话分配与消息收发域官方路由表（父接口 4 条路由 / 14 个端点方法：
-    /// service_state 2 条 + send_msg 10 个 msgtype 方法 + send_msg_on_event 2 个 msgtype 方法；
+    /// 会话分配与消息收发域官方路由表（父接口 5 条路由 / 15 个端点方法：
+    /// service_state 2 条 + sync_msg 1 条 + send_msg 10 个 msgtype 方法 + send_msg_on_event 2 个 msgtype 方法；
     /// 发送类路由按 msgtype 一方法一请求体收敛，形态对齐 message/send 先例）。
     /// </summary>
     private static readonly (Type Interface, string Method, Type HttpAttribute, string Route)[] SessionRoutes =
@@ -109,6 +110,10 @@ public class WechatKfContractGuards
         (typeof(IWechatWorkKfSessionService),
             nameof(IWechatWorkKfSessionService.TransitServiceStateAsync),
             typeof(PostAttribute), "/cgi-bin/kf/service_state/trans"),
+        // 同步消息与事件（自建 94670、第三方 94699、代开发 96426）。
+        (typeof(IWechatWorkKfSessionService),
+            nameof(IWechatWorkKfSessionService.SyncMessageAsync),
+            typeof(PostAttribute), "/cgi-bin/kf/sync_msg"),
         // 发送消息族（自建/第三方 94677、代开发 96427），10 种 msgtype 同路由多方法。
         (typeof(IWechatWorkKfSessionService),
             nameof(IWechatWorkKfSessionService.SendTextMessageAsync),
@@ -151,7 +156,7 @@ public class WechatKfContractGuards
 
     /// <summary>
     /// 客户基础信息域官方路由表（父接口 1 条公共端点；第三方「获取企业状态信息」95153
-    /// 为概述页无独立 API，不入接口面）。
+    /// 的官方页面已不含端点规范，该域整体撤回，见 <see cref="WithdrawnCorpQualificationRoutes"/> 与 KF1i）。
     /// </summary>
     private static readonly (Type Interface, string Method, Type HttpAttribute, string Route)[] CustomerRoutes =
     {
@@ -245,6 +250,26 @@ public class WechatKfContractGuards
     };
 
     /// <summary>
+    /// 「其他基础信息获取」域的非契约路由清单（官方文档面已撤回该端点，SDK 须零声明）。
+    /// <para>
+    /// 核验留档（2026-10-13）：官方两棵文档树的「微信客服 / 其他基础信息获取 / 获取企业状态信息」页面
+    /// 正文均<b>只剩概述</b>——「微信客服可接待的客户数，和企业是否已完成主体验证相关……
+    /// 开发者可获取状态后，在应用等地方提示企业去完成主体验证」，其「获取企业验证状态」小节的唯一指引是
+    /// 「可通过<b>获取企业授权信息</b>接口获取」（服务商侧 <c>service/get_corp_auth_info</c>，本仓已承载），
+    /// 页面<b>不含请求方式 / 请求地址 / 参数表 / 返回结果</b>。
+    /// </para>
+    /// <para>
+    /// 判据是官方文档面而非网关可达性（AGENTS.md 定夺三）：第三方 SDK 与旧版文档里的
+    /// <c>kf/get_corp_qualification</c> + <c>wechat_channels_binding</c> 属已下架页面遗留，
+    /// 不得据此在本仓声明端点，故本域整体撤回（零端点父接口与子接口一并移除），并转由 KF1i 零声明守卫锁定。
+    /// </para>
+    /// </summary>
+    private static readonly string[] WithdrawnCorpQualificationRoutes =
+    {
+        "/cgi-bin/kf/get_corp_qualification",
+    };
+
+    /// <summary>
     /// 契约守卫 KF1a：客服账号管理域全部端点路由必须与官方契约一致（新增/改名端点须同批更新本表）。
     /// 注意 <c>kf/account/list</c>（列表）官方即 POST（勿改 GET）；
     /// <c>kf/add_contact_way</c>（获取客服账号链接）直接挂在 <c>/cgi-bin/kf/</c> 根下，
@@ -309,16 +334,18 @@ public class WechatKfContractGuards
     /// 契约守卫 KF1c：会话分配与消息收发域全部端点路由必须与官方契约一致。
     /// <c>kf/send_msg</c> 官方开放 10 种 msgtype、<c>kf/send_msg_on_event</c> 开放 2 种 msgtype，
     /// 与 message/send 先例一致按「同路由多方法、每 msgtype 一请求体」收敛；
-    /// 官方未在本批开放「读取消息」（sync_msg），不得擅自添加。
+    /// <c>kf/sync_msg</c>（接收消息和事件）为三类应用公共面单一路由单方法，
+    /// 入参 <c>token</c> 是事件通知下发的同步令牌，与 Query 注入的 <c>access_token</c> 无关，
+    /// 须以请求体字段承载而非 <c>[Token]</c> 声明。
     /// </summary>
     [Fact]
     public void KfSessionEndpoints_ShouldMatchOfficialRoutes()
     {
-        SessionRoutes.Should().HaveCount(14,
-            "会话分配与消息收发域为 4 条路由 / 14 个端点方法（service_state 2 + send_msg 10 + send_msg_on_event 2）");
+        SessionRoutes.Should().HaveCount(15,
+            "会话分配与消息收发域为 5 条路由 / 15 个端点方法（service_state 2 + sync_msg 1 + send_msg 10 + send_msg_on_event 2）");
 
         var distinctRoutes = SessionRoutes.Select(r => r.Route).Distinct().ToList();
-        distinctRoutes.Should().HaveCount(4, "发送类路由按 msgtype 一方法一请求体收敛，实际路由仅 4 条");
+        distinctRoutes.Should().HaveCount(5, "发送类路由按 msgtype 一方法一请求体收敛，实际路由仅 5 条");
 
         foreach (var (iface, method, httpAttribute, route) in SessionRoutes)
         {
@@ -329,6 +356,14 @@ public class WechatKfContractGuards
             attr.Should().NotBeNull($"{iface.Name}.{method} 必须声明 [{httpAttribute.Name.Replace("Attribute", string.Empty)}] 路由");
             attr!.RequestUri.Should().Be(route, $"{iface.Name}.{method} 路由必须与官方契约一致");
         }
+
+        // sync_msg 的同步令牌为请求体字段（token），不得被 [Token] 的 access_token 注入替换。
+        var syncBodyParam = typeof(IWechatWorkKfSessionService)
+            .GetMethod(nameof(IWechatWorkKfSessionService.SyncMessageAsync),
+                BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)!
+            .GetParameters().Single(p => p.GetCustomAttribute<BodyAttribute>() != null);
+        syncBodyParam.ParameterType.Should().Be<SyncKfMessageRequest>(
+            "sync_msg 必须以 SyncKfMessageRequest 承载官方请求体（token/cursor/limit/voice_format/open_kfid）");
     }
 
     /// <summary>
@@ -339,7 +374,7 @@ public class WechatKfContractGuards
     public void KfCustomerEndpoints_ShouldMatchOfficialRoutes()
     {
         CustomerRoutes.Should().HaveCount(1,
-            "客户基础信息域仅 1 个端点（第三方 95153「获取企业状态信息」为概述页无独立 API，不入接口面）");
+            "客户基础信息域仅 1 个公共端点（「获取企业状态信息」官方页面已无端点规范，该域整体撤回，见 KF1i）");
 
         foreach (var (iface, method, httpAttribute, route) in CustomerRoutes)
         {
@@ -475,8 +510,125 @@ public class WechatKfContractGuards
     }
 
     /// <summary>
-    /// 契约守卫 KF2：六类应用公共面域的接口层级与生成器注册形态——公共端点收敛于 IsAbstract 父接口，
-    /// 自建 / 第三方 / 代开发子接口均为零差异端点空标记（能力漂移守卫）。
+    /// 契约守卫 KF1i：「其他基础信息获取」域已<b>整体撤回</b>（官方页面只剩概述，正文指向
+    /// 「获取企业授权信息接口」，无请求方式/地址/参数表）——本域不得残留任何接口类型或响应 DTO，
+    /// 路由 <c>kf/get_corp_qualification</c> 的零声明由 RD1 非契约路由守卫锁定。
+    /// 正对照：客服账号管理域与批次客户信息域接口必须仍可解析（否则本守卫空跑恒真）。
+    /// </summary>
+    [Fact]
+    public void KfCorpQualificationDomain_ShouldStayWithdrawn()
+    {
+        WithdrawnCorpQualificationRoutes.Should().HaveCount(1,
+            "「其他基础信息获取」域撤回清单本身即契约：增删须先复核官方页面正文（追踪号 P2-QY-KF-CORPQUALIFICATION-11）");
+
+        var workAssembly = typeof(IWechatWorkKfAccountService).Assembly;
+        var dataModelsAssembly = typeof(SyncKfMessageRequest).Assembly;
+
+        var leftoverInterfaces = workAssembly.GetTypes()
+            .Where(t => t.IsInterface && t.Name.Contains("KfCorpQualification", StringComparison.Ordinal))
+            .Select(t => t.Name)
+            .ToList();
+        leftoverInterfaces.Should().BeEmpty(
+            "「获取企业状态信息」官方页面已不含端点规范（追踪号 P2-QY-KF-CORPQUALIFICATION-11），" +
+            "本域零端点父接口与第三方子接口必须一并撤回，不得以「网关仍可达」为由加回");
+
+        dataModelsAssembly
+            .GetType("Mud.Wechat.Work.DataModels.Kf.GetKfCorpQualificationResponse", throwOnError: false)
+            .Should().BeNull("无端点即无响应契约，wechat_channels_binding 属已下架页面遗留字段");
+
+        // 正对照：同模块的在架接口仍可解析，证明上面的枚举不是空扫描。
+        workAssembly.GetType("Mud.Wechat.Work.IWechatWorkThirdPartyKfCustomerService", throwOnError: false)
+            .Should().NotBeNull("客户基础信息域（batchget 95159）仍在架，须作为本守卫的活体对照");
+        workAssembly.GetType("Mud.Wechat.Work.IWechatWorkThirdPartyKfAccountService", throwOnError: false)
+            .Should().NotBeNull("客服账号管理域仍在架，须作为本守卫的活体对照");
+    }
+
+    /// <summary>
+    /// 契约守卫 KF1j：<c>kf/sync_msg</c> 响应消息体的官方判别字段名与按 msgtype 的载体字段名必须逐字保留
+    /// （msg_list / has_more / next_cursor 与 msgmenu / business_card / channels_shop_product /
+    /// channels_shop_order / merged_msg，勿写成 menu / card / 驼峰）。
+    /// </summary>
+    [Fact]
+    public void KfSyncMessageOfficialFieldNames_ShouldBePreservedVerbatim()
+    {
+        var envelopeNames = new (PropertyInfo Property, string JsonName)[]
+        {
+            (typeof(SyncKfMessageResponse).GetProperty(nameof(SyncKfMessageResponse.MessageList))!, "msg_list"),
+            (typeof(SyncKfMessageResponse).GetProperty(nameof(SyncKfMessageResponse.HasMore))!, "has_more"),
+            (typeof(SyncKfMessageResponse).GetProperty(nameof(SyncKfMessageResponse.NextCursor))!, "next_cursor"),
+        };
+
+        foreach (var (property, jsonName) in envelopeNames)
+        {
+            property.Should().NotBeNull($"{nameof(SyncKfMessageResponse)}.{jsonName} 对应属性必须存在");
+            property.GetCustomAttribute<JsonPropertyNameAttribute>()!.Name.Should().Be(jsonName,
+                $"同步消息响应字段名照官方原文 {jsonName}");
+        }
+
+        // has_more 官方线格式为数字 0/1（本仓 Kf 知识族分页响应亦以 int? 承载），改成 bool? 即在反序列化期失败。
+        typeof(SyncKfMessageResponse).GetProperty(nameof(SyncKfMessageResponse.HasMore))!
+            .PropertyType.Should().Be(typeof(int?),
+                "同步消息响应的 has_more 官方以数字承载布尔语义，须以 int? 原样承载");
+
+        var carrierNames = new (PropertyInfo Property, string JsonName)[]
+        {
+            (typeof(KfSyncMessage).GetProperty(nameof(KfSyncMessage.Menu))!, "msgmenu"),
+            (typeof(KfSyncMessage).GetProperty(nameof(KfSyncMessage.BusinessCard))!, "business_card"),
+            (typeof(KfSyncMessage).GetProperty(nameof(KfSyncMessage.ChannelsShopProduct))!, "channels_shop_product"),
+            (typeof(KfSyncMessage).GetProperty(nameof(KfSyncMessage.ChannelsShopOrder))!, "channels_shop_order"),
+            (typeof(KfSyncMessage).GetProperty(nameof(KfSyncMessage.MergedMessage))!, "merged_msg"),
+            (typeof(KfSyncMessage).GetProperty(nameof(KfSyncMessage.OpenKfId))!, "open_kfid"),
+            (typeof(KfSyncMessage).GetProperty(nameof(KfSyncMessage.SendTime))!, "send_time"),
+        };
+
+        foreach (var (property, jsonName) in carrierNames)
+        {
+            property.Should().NotBeNull($"{nameof(KfSyncMessage)}.{jsonName} 对应属性必须存在");
+            property.GetCustomAttribute<JsonPropertyNameAttribute>()!.Name.Should().Be(jsonName,
+                $"消息体载体字段名照官方原文 {jsonName}");
+        }
+    }
+
+    /// <summary>
+    /// 契约守卫 KF1k：<c>kf/sync_msg</c> 请求体的必填/选填形态必须与官方 94670 参数表一致
+    /// （追踪号 P2-QY-B8-KF-REQUIREDFACE-10）。历史缺陷：<c>open_kfid</c> 曾被写成「官方选填」、
+    /// <c>token</c> 曾被写成「官方必填」——参数表口径恰好相反，故本守卫双向锁定。
+    /// </summary>
+    [Fact]
+    public void KfSyncMessageRequestRequiredFace_ShouldMatchOfficialParameterTable()
+    {
+        var required = new (Type Owner, string Property, string JsonName)[]
+        {
+            (typeof(SyncKfMessageRequest), nameof(SyncKfMessageRequest.OpenKfId), "open_kfid"),
+        };
+
+        var optional = new (Type Owner, string Property, string JsonName)[]
+        {
+            (typeof(SyncKfMessageRequest), nameof(SyncKfMessageRequest.Token), "token"),
+            (typeof(SyncKfMessageRequest), nameof(SyncKfMessageRequest.Cursor), "cursor"),
+            (typeof(SyncKfMessageRequest), nameof(SyncKfMessageRequest.Limit), "limit"),
+            (typeof(SyncKfMessageRequest), nameof(SyncKfMessageRequest.VoiceFormat), "voice_format"),
+        };
+
+        foreach (var (owner, property, jsonName) in required)
+        {
+            var prop = owner.GetProperty(property);
+            prop.Should().NotBeNull($"{owner.Name}.{property} 必须存在");
+            IsNullableMember(prop!).Should().BeFalse(
+                $"{jsonName} 官方参数表标为必填，不得声明为可空（可空即允许请求体省略必填参数 ⇒ 官方回参数错误）");
+        }
+
+        foreach (var (owner, property, jsonName) in optional)
+        {
+            var prop = owner.GetProperty(property);
+            prop.Should().NotBeNull($"{owner.Name}.{property} 必须存在");
+            IsNullableMember(prop!).Should().BeTrue(
+                $"{jsonName} 官方参数表标为选填，收敛为非可空会强制每个请求都带该参数（首次拉取无法省略 cursor）");
+        }
+    }
+
+    /// <summary>
+    /// 契约守卫 KF2：六类应用公共面域的接口层级与生成器注册形态——公共端点收敛于 IsAbstract 父接口，    /// 自建 / 第三方 / 代开发子接口均为零差异端点空标记（能力漂移守卫）。
     /// </summary>
     [Fact]
     public void KfInterfaceHierarchy_ShouldConvergeOnAbstractParentsWithKfRegistry()
@@ -552,8 +704,8 @@ public class WechatKfContractGuards
 
     /// <summary>
     /// 契约守卫 KF2b：仅单类应用开放域的接口层级——机器人管理域（仅自建）与微信客服组件域（仅第三方）
-    /// 均为零端点父接口 + 仅一个子接口承载端点，且继承链上不得出现其它应用类型子接口
-    /// （形态对齐获客助手组件 / 已服务的外部联系人守卫）。
+    /// 均为零端点父接口 + 仅一个子接口承载端点，
+    /// 且继承链上不得出现其它应用类型子接口（形态对齐获客助手组件 / 已服务的外部联系人守卫）。
     /// </summary>
     [Fact]
     public void KfSingleAppTypeFamilies_ShouldHaveExactlyOneChildAndAbstractParent()
@@ -647,7 +799,7 @@ public class WechatKfContractGuards
     }
 
     /// <summary>
-    /// 契约守卫 KF4：微信客服模块的请求/响应 DTO 必须登记进 AOT JSON 上下文（全量 94 个契约面类型）。
+    /// 契约守卫 KF4：微信客服模块的请求/响应 DTO 必须登记进 AOT JSON 上下文（全量 107 个契约面类型）。
     /// </summary>
     [Fact]
     public void KfDataModels_ShouldBeRegisteredInJsonContext()
@@ -679,6 +831,12 @@ public class WechatKfContractGuards
             typeof(KfMenuMsgBody), typeof(KfMenuMsgListItem), typeof(KfMenuClickItem), typeof(KfMenuViewItem),
             typeof(KfMenuMiniProgramItem), typeof(KfMenuTextItem),
             typeof(KfLocationMsgBody), typeof(KfCaLinkMsgBody),
+            // 会话分配与消息收发域 · 同步消息与事件（信封 + 消息体 + 各 msgtype 载体）。
+            typeof(SyncKfMessageRequest), typeof(SyncKfMessageResponse), typeof(KfSyncMessage),
+            typeof(KfSyncTextMsgBody), typeof(KfSyncLinkMsgBody), typeof(KfSyncBusinessCardMsgBody),
+            typeof(KfSyncEventMsgBody), typeof(KfSyncEventWechatChannels), typeof(KfSyncChannelsMsgBody),
+            typeof(KfSyncChannelsShopProductMsgBody), typeof(KfSyncChannelsShopOrderMsgBody),
+            typeof(KfSyncMergedMsgBody), typeof(KfSyncMergedMsgItem),
             // 客户基础信息域。
             typeof(BatchGetKfCustomerInfoRequest), typeof(BatchGetKfCustomerInfoResponse),
             typeof(KfCustomerInfo), typeof(KfEnterSessionContext), typeof(KfWechatChannelsInfo),
@@ -712,5 +870,19 @@ public class WechatKfContractGuards
             context.GetTypeInfo(type).Should().NotBeNull(
                 $"{type.Name} 是微信客服模块契约面类型，必须登记进 KfJsonContext（AOT 源生成）");
         }
+    }
+
+    /// <summary>
+    /// 属性是否可空：值类型的 <see cref="Nullable{T}"/>，或引用类型的可空标注
+    /// （<c>PropertyType</c> 不含引用可空性信息，须走 Nullable Context API）。
+    /// </summary>
+    private static bool IsNullableMember(PropertyInfo property)
+    {
+        if (Nullable.GetUnderlyingType(property.PropertyType) != null)
+        {
+            return true;
+        }
+
+        return new NullabilityInfoContext().Create(property).WriteState == NullabilityState.Nullable;
     }
 }

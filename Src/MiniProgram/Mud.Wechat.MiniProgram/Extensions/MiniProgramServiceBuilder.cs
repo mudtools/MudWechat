@@ -85,6 +85,17 @@ public class MiniProgramServiceBuilder
                 s.TryAddSingleton<IWxaExpressBillService, WxaExpressBillService>();
             },
             [MiniProgramModule.Vip] = static s => s.AddVipWebApiHttpClient(),
+
+            // 交易保障：三接口同组（基础 2 + 评价管理 9 + 投诉管理 5），由同一条生成的注册入口一并装载。
+            [MiniProgramModule.TransactionGuarantee] = static s => s.AddTransactionGuaranteeWebApiHttpClient(),
+
+            // 直播：六接口同组（直播间本体 11 + 小助手与副号 8 + 房间内商品 7 + 商品库 7 + 成员角色 3 + 长期订阅 2），
+            // 由同一条生成的注册入口一并装载。
+            [MiniProgramModule.Live] = static s => s.AddLiveWebApiHttpClient(),
+
+            // 短剧媒资：五接口同组（上传 6 + 媒资管理 4 + 剧目提审 7 + 用量与流量包 3 + 授权 11），
+            // 由同一条生成的注册入口一并装载。
+            [MiniProgramModule.Vod] = static s => s.AddVodWebApiHttpClient(),
         };
 
     /// <summary>注册登录与用户（5 端点：4 带令牌 + 1 免令牌）。</summary>
@@ -172,6 +183,28 @@ public class MiniProgramServiceBuilder
     /// </summary>
     /// <returns>注册器（链式）。</returns>
     public MiniProgramServiceBuilder AddVipApi() => AddModule(MiniProgramModule.Vip);
+
+    /// <summary>
+    /// 注册交易保障接口（16 端点：基础 2 <c>/wxaapi/wxamptrade/*</c> + 评价管理 9 <c>/wxaapi/comment/*</c>
+    /// + 投诉管理 5 <c>/wxaapi/minishop/*</c>；官方 2026-10-13 逐页核验，适用范围均为「小程序」账号类型）。
+    /// </summary>
+    /// <returns>注册器（链式）。</returns>
+    public MiniProgramServiceBuilder AddTransactionGuaranteeApi() => AddModule(MiniProgramModule.TransactionGuarantee);
+
+    /// <summary>
+    /// 注册小程序直播接口（38 端点：直播间本体 11 + 小助手与主播副号 8 + 房间内商品 7 + 商品库管理 7 +
+    /// 成员角色 3 + 长期订阅群发 2；路由族 <c>/wxaapi/broadcast/*</c> 与四支 <c>/wxa/business/*</c>，
+    /// 权限集 52，官方 2026-10-13 逐页核验）。
+    /// </summary>
+    /// <returns>注册器（链式）。</returns>
+    public MiniProgramServiceBuilder AddLiveApi() => AddModule(MiniProgramModule.Live);
+
+    /// <summary>
+    /// 注册小程序短剧媒资接口（31 端点：上传 6 + 媒资管理 4 + 剧目提审 7 + 用量与流量包 3 + 授权 11；
+    /// 路由族 <c>/wxa/sec/vod/*</c>，权限集 153，官方 2026-10-13 逐页核验）。
+    /// </summary>
+    /// <returns>注册器（链式）。</returns>
+    public MiniProgramServiceBuilder AddVodApi() => AddModule(MiniProgramModule.Vod);
 
     /// <summary>注册全部模块。</summary>
     /// <returns>注册器（链式）。</returns>

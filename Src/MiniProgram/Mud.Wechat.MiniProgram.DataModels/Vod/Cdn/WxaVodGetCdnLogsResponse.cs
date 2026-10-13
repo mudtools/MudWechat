@@ -1,0 +1,27 @@
+// -----------------------------------------------------------------------
+//  作者：Mud Studio  版权所有 (c) Mud Studio 2026
+//  Mud.Wechat 项目的版权、商标、专利和其他相关权利均受相应法律法规的保护。
+//  本项目主要遵循 MIT 许可证进行分发和使用。许可证位于源代码树根目录中的 LICENSE-MIT 文件。
+//  不得利用本项目从事危害国家安全、扰乱社会秩序、侵犯他人合法权益等法律法规禁止的活动！任何基于本项目开发而产生的一切法律纠纷和责任，我们不承担任何责任！
+// -----------------------------------------------------------------------
+
+namespace Mud.Wechat.MiniProgram.DataModels.Vod;
+
+/// <summary>
+/// 「查询 CDN 日志下载链接列表」响应。
+/// </summary>
+/// <remarks>
+/// <para><b>官方根表把 <c>domestic_cdn_logs</c> 列作 <c>object</c>，返回示例证明是数组</b> ⇒ 落 <c>List</c>（示例优先于表格）。</para>
+/// <para>官方文档：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/minidrama/usagedata/api_getcdnlogs.html"/></para>
+/// </remarks>
+[HttpJsonSerializable(SerializerClassName = "Vod")]
+public class WxaVodGetCdnLogsResponse : WxaResponse
+{
+    /// <summary>total_count（官方类型 <c>number</c>）：日志下载链接总数量。</summary>
+    [JsonPropertyName("total_count")]
+    public long? TotalCount { get; set; }
+
+    /// <summary>domestic_cdn_logs（官方类型 <c>object</c>）：国内CDN节点的日志下载列表。</summary>
+    [JsonPropertyName("domestic_cdn_logs")]
+    public List<WxaVodCdnLogInfo>? DomesticCdnLogs { get; set; }
+}

@@ -19,6 +19,9 @@ namespace Mud.Wechat.Work.Tests.ContractGuards;
 /// 文档模块（Wedoc 模块）契约守卫：路由表、接口层级、开放面与令牌绑定锁定
 /// （管理文档族 / 管理文档内容族 / 管理表格内容族 / 管理智能表格内容族 / 管理智能文档内容族 /
 /// 设置文档权限族 / 管理收集表族七族均为三类应用公共面收敛父接口 + 空标记子接口；
+/// 素材管理族同为三类应用公共面收敛父接口 + 空标记子接口（3 个官方文档页承载 5 端点，
+/// 其中「文件分块上传」一页承载 init/part/finish 三路由）；
+/// 高级功能账号管理族官方文档面仅出现在自建应用开发树，为零端点父接口 + 唯一自建子接口承载 3 端点；
 /// 编辑文档内容与编辑表格内容为批量更新形态，单次操作数量官方分别限制 30 与 5；
 /// 管理智能表格内容族为 20 个端点（子表 4 / 视图 4 / 字段 4 / 记录 4 / 编组 4），单表上限与批量建议官方另有约束；
 /// 管理智能文档内容族为 17 个端点（发布与可见范围 3 / 页面 4 / 内容块 4 / 导出 2 / 数据表 4），发布耗时、分栏数量、分批大小与数据表 after_id 官方另有约束；
@@ -47,6 +50,10 @@ public class WechatWedocContractGuards
     private const string WedocDocPermissionParentImplementationClassName = "WechatWorkWedocDocPermissionService";
 
     private const string WedocFormParentImplementationClassName = "WechatWorkWedocFormService";
+
+    private const string WedocMaterialParentImplementationClassName = "WechatWorkWedocMaterialService";
+
+    private const string WedocVipParentImplementationClassName = "WechatWorkWedocVipService";
 
     private const string WedocRegistryGroupName = "Wedoc";
 
@@ -301,6 +308,48 @@ public class WechatWedocContractGuards
     };
 
     /// <summary>
+    /// 素材管理族官方路由表（父接口 5 条端点，官方即 POST，勿改 GET）。
+    /// 官方三个文档页承载 5 个路由：「上传图片」image_upload、「上传文件」file_upload、
+    /// 「文件分块上传」一页承载 file_upload_init / file_upload_part / file_upload_finish 三路由。
+    /// </summary>
+    private static readonly (Type Interface, string Method, string Route)[] WedocMaterialRoutes =
+    {
+        // 上传图片（自建 99933、第三方 101875、代开发 101879）：响应字段官方为 url（非 image_url）。
+        (typeof(IWechatWorkWedocMaterialService),
+            nameof(IWechatWorkWedocMaterialService.UploadImageAsync), "/cgi-bin/wedoc/image_upload"),
+        // 上传文件（自建 101870、第三方 101876、代开发 101880）：小文件一次性 Base64 上传，与分块上传并存。
+        (typeof(IWechatWorkWedocMaterialService),
+            nameof(IWechatWorkWedocMaterialService.UploadFileAsync), "/cgi-bin/wedoc/file_upload"),
+        // 初始化分块上传（自建 101871、第三方 101877、代开发 101881）：命中秒传时直接返回 file_url。
+        (typeof(IWechatWorkWedocMaterialService),
+            nameof(IWechatWorkWedocMaterialService.InitFileUploadAsync), "/cgi-bin/wedoc/file_upload_init"),
+        // 上传分片（自建 101871、第三方 101877、代开发 101881）：与 init/finish 同一官方文档页；分片响应无业务字段。
+        (typeof(IWechatWorkWedocMaterialService),
+            nameof(IWechatWorkWedocMaterialService.UploadFilePartAsync), "/cgi-bin/wedoc/file_upload_part"),
+        // 完成分块上传（自建 101871、第三方 101877、代开发 101881）：请求仅 upload_key，响应返回 file_url。
+        (typeof(IWechatWorkWedocMaterialService),
+            nameof(IWechatWorkWedocMaterialService.FinishFileUploadAsync), "/cgi-bin/wedoc/file_upload_finish"),
+    };
+
+    /// <summary>
+    /// 高级功能账号管理族官方路由表（3 条端点全部由唯一自建子接口承载，父接口零端点，官方即 POST，勿改 GET）。
+    /// 官方文档面仅出现在「自建应用开发」树，第三方/代开发树无镜像页 ⇒ 不声明对应子接口。
+    /// 路由前缀 wedoc/vip/，与云文档（Wedrive）域 wedrive/vip/ 是两套官方契约，勿混用。
+    /// </summary>
+    private static readonly (Type Interface, string Method, string Route)[] WedocVipRoutes =
+    {
+        // 分配高级功能账号（自建 99516）：响应作 succ_userid_list / fail_userid_list（succ 非 success）。
+        (typeof(IWechatWorkInternalWedocVipService),
+            nameof(IWechatWorkInternalWedocVipService.BatchAddVipAsync), "/cgi-bin/wedoc/vip/batch_add"),
+        // 取消高级功能账号（自建 99517）：请求与分配同为 userid_list。
+        (typeof(IWechatWorkInternalWedocVipService),
+            nameof(IWechatWorkInternalWedocVipService.BatchDelVipAsync), "/cgi-bin/wedoc/vip/batch_del"),
+        // 获取高级功能账号列表（自建 99518）：路由为 list（非 get），cursor + limit 分页。
+        (typeof(IWechatWorkInternalWedocVipService),
+            nameof(IWechatWorkInternalWedocVipService.ListVipAsync), "/cgi-bin/wedoc/vip/list"),
+    };
+
+    /// <summary>
     /// 契约守卫 WD1：管理文档族全部端点路由必须与官方契约一致——
     /// 5 个端点为三类应用公共面，全部收敛父接口；del_doc / doc_share 为官方原文路由，勿「顺手改名」。
     /// </summary>
@@ -518,8 +567,177 @@ public class WechatWedocContractGuards
     }
 
     /// <summary>
-    /// 契约守卫 WD4：文档模块接口层级与生成器注册形态——五族公共端点收敛于 IsAbstract 父接口、
-    /// 三个应用类型子接口均为空标记（能力漂移守卫：子接口自身声明端点数必须为 0）。
+    /// 契约守卫 WD14：素材管理族全部端点路由必须与官方契约一致——
+    /// 5 个端点为三类应用公共面，全部收敛父接口；官方 3 个文档页承载 5 个路由
+    /// （「文件分块上传」一页对应 file_upload_init / file_upload_part / file_upload_finish 三路由）。
+    /// 官方契约陷阱：整文件上传 <c>file_upload</c> 与分块上传 <c>file_upload_*</c> 并存于同一域，
+    /// 三条分块路由不得被「顺手合并」为一条。
+    /// </summary>
+    [Fact]
+    public void WedocMaterialEndpoints_ShouldMatchOfficialRoutes()
+    {
+        WedocMaterialRoutes.Should().HaveCount(5,
+            "素材管理族 5 个端点（上传图片 / 上传文件 / 分块上传初始化 + 分片 + 完成）为三类应用公共面，全部收敛父接口");
+        WedocMaterialRoutes.Select(r => r.Route).Distinct().Should().HaveCount(5, "各端点路由互不重复");
+        WedocMaterialRoutes.Select(r => r.Route)
+            .Should().OnlyContain(r => r.StartsWith("/cgi-bin/wedoc/image_upload") || r.StartsWith("/cgi-bin/wedoc/file_upload"),
+                "素材管理族路由必须落在 wedoc/ 直下的 image_upload / file_upload* 词根，"
+                + "不得与云文档（Wedrive）域 wedrive/ 的素材上传路由混用");
+
+        // 分块三步为独立路由，官方一页三路由，不得被归一。
+        WedocMaterialRoutes.Select(r => r.Route)
+            .Should().Contain("/cgi-bin/wedoc/file_upload",
+                "整文件上传与分块上传并存（官方两形态），不得删除整文件上传路由");
+
+        AssertRoutes(WedocMaterialRoutes);
+    }
+
+    /// <summary>
+    /// 契约守卫 WD15：高级功能账号管理族全部端点路由必须与官方契约一致——
+    /// 3 个端点官方文档面仅出现在自建应用开发树，故全部由 <see cref="IWechatWorkInternalWedocVipService"/> 承载、
+    /// 父接口零端点；路由前缀 <c>wedoc/vip/</c> 与云文档域 <c>wedrive/vip/</c> 是两套官方契约，不得跨线复用；
+    /// 列表端点官方路由为 <c>list</c>（非 get），照抄官方原文。
+    /// </summary>
+    [Fact]
+    public void WedocVipEndpoints_ShouldMatchOfficialRoutes()
+    {
+        WedocVipRoutes.Should().HaveCount(3,
+            "高级功能账号管理族 3 个端点（分配 / 取消 / 列表）官方仅对自建应用开放，全部收敛唯一自建子接口");
+        WedocVipRoutes.Select(r => r.Route).Distinct().Should().HaveCount(3, "各端点路由互不重复");
+        WedocVipRoutes.Select(r => r.Interface).Distinct().Should().HaveCount(1,
+            "本族官方文档面仅出现在自建应用树，3 个端点必须全部由自建子接口承载");
+        WedocVipRoutes.Select(r => r.Route)
+            .Should().OnlyContain(r => r.StartsWith("/cgi-bin/wedoc/vip/"),
+                "高级功能账号管理族路由必须落在 wedoc/vip/ 下，不得与云文档域 wedrive/vip/ 混用");
+        WedocVipRoutes.Select(r => r.Route)
+            .Should().Contain("/cgi-bin/wedoc/vip/list",
+                "官方列表端点路由为 list（非 get），照抄官方原文");
+
+        AssertRoutes(WedocVipRoutes);
+    }
+
+    /// <summary>
+    /// 契约守卫 WD16：素材管理与高级功能账号管理族的官方字段名陷阱锁定——
+    /// <list type="bullet">
+    /// <item><c>base64_content</c> / <c>file_base64_content</c>：上传图片的 Base64 字段名为 <c>base64_content</c>，
+    /// 上传文件与上传分片为 <c>file_base64_content</c>，两种命名同时承载，不得统一。</item>
+    /// <item><c>url</c>：上传图片响应字段官方为 <c>url</c>（非 <c>image_url</c>），上传类响应为 <c>file_url</c>。</item>
+    /// <item><c>succ_userid_list</c>：分配/取消高级功能账号响应官方作 <c>succ</c>（非 <c>success</c>）。</item>
+    /// </list>
+    /// </summary>
+    [Fact]
+    public void WedocMaterialAndVipOfficialFieldNames_ShouldBePreservedVerbatim()
+    {
+        var imageBase64 = typeof(UploadWedocImageRequest).GetProperty(
+            nameof(UploadWedocImageRequest.Base64Content), BindingFlags.Public | BindingFlags.Instance);
+        imageBase64!.GetCustomAttribute<JsonPropertyNameAttribute>()!.Name.Should().Be("base64_content",
+            "上传图片的 Base64 字段官方原文为 base64_content（无 file_ 前缀）");
+
+        var fileBase64 = typeof(UploadWedocFileRequest).GetProperty(
+            nameof(UploadWedocFileRequest.FileBase64Content), BindingFlags.Public | BindingFlags.Instance);
+        fileBase64!.GetCustomAttribute<JsonPropertyNameAttribute>()!.Name.Should().Be("file_base64_content",
+            "上传文件的 Base64 字段官方原文为 file_base64_content，与上传图片的 base64_content 并存，不得统一");
+
+        var partBase64 = typeof(UploadWedocFilePartRequest).GetProperty(
+            nameof(UploadWedocFilePartRequest.FileBase64Content), BindingFlags.Public | BindingFlags.Instance);
+        partBase64!.GetCustomAttribute<JsonPropertyNameAttribute>()!.Name.Should().Be("file_base64_content",
+            "上传分片沿用整文件上传的 file_base64_content 命名");
+
+        var imageUrl = typeof(UploadWedocImageResponse).GetProperty(
+            nameof(UploadWedocImageResponse.Url), BindingFlags.Public | BindingFlags.Instance);
+        imageUrl!.GetCustomAttribute<JsonPropertyNameAttribute>()!.Name.Should().Be("url",
+            "上传图片响应官方字段名为 url（非 image_url），不得「顺手补前缀」");
+
+        var fileUrl = typeof(UploadWedocFileResponse).GetProperty(
+            nameof(UploadWedocFileResponse.FileUrl), BindingFlags.Public | BindingFlags.Instance);
+        fileUrl!.GetCustomAttribute<JsonPropertyNameAttribute>()!.Name.Should().Be("file_url",
+            "上传文件响应官方字段名为 file_url，与图片响应的 url 不同名，不得统一");
+
+        var succList = typeof(BatchAddWedocVipResponse).GetProperty(
+            nameof(BatchAddWedocVipResponse.SuccUseridList), BindingFlags.Public | BindingFlags.Instance);
+        succList!.GetCustomAttribute<JsonPropertyNameAttribute>()!.Name.Should().Be("succ_userid_list",
+            "官方原文为 succ_userid_list（succ 非 success），照抄官方原文");
+
+        var useridList = typeof(BatchAddWedocVipRequest).GetProperty(
+            nameof(BatchAddWedocVipRequest.UseridList), BindingFlags.Public | BindingFlags.Instance);
+        useridList!.GetCustomAttribute<JsonPropertyNameAttribute>()!.Name.Should().Be("userid_list",
+            "分配/取消高级功能账号请求官方字段名为 userid_list（无 succ/fail 前缀）");
+    }
+
+    /// <summary>
+    /// 契约守卫 WD17：素材管理与高级功能账号管理族（B2）请求侧「必填」以类型系统表达
+    /// （B8 官方正文复核结论，2026-10-13：99933 / 101870 / 101871 / 99516 / 99517 的参数表逐列核对）。
+    /// <para>
+    /// 官方把 <c>docid</c> / <c>file_name</c> / <c>base64_content</c> / <c>file_base64_content</c> /
+    /// <c>size</c> / <c>block_sha</c> / <c>upload_key</c> / <c>index</c> / <c>userid_list</c> 全列为「必须=是」，
+    /// 声明为可空即允许请求体省略必填参数；对照侧是官方唯一真正的可选参数组 <c>vip/list</c> 的 cursor 与 limit
+    /// （官方口径「第一次请求传入空」「不填取默认 100」），必须保持可空。
+    /// </para>
+    /// <para>
+    /// 同批锁定的官方规模数字（写在接口与 DTO 文档，不做本地硬拦）：整文件上传 10M、分块上传 20G、
+    /// 分块大小固定 2M、分块号从 1 开始、并发建议不超过 10、file_name 最多 255 字符（英文 1 / 汉字 2）、
+    /// 批量分配与撤销单次上限 100 个成员、vip/list 的 limit 取值 1~1000。
+    /// </para>
+    /// </summary>
+    [Fact]
+    public void WedocMaterialAndVipOfficiallyRequiredFields_ShouldNotBeDeclaredNullable()
+    {
+        var required = new (Type Owner, string Property, string JsonName)[]
+        {
+            (typeof(UploadWedocImageRequest), nameof(UploadWedocImageRequest.Docid), "docid"),
+            (typeof(UploadWedocImageRequest), nameof(UploadWedocImageRequest.Base64Content), "base64_content"),
+            (typeof(UploadWedocFileRequest), nameof(UploadWedocFileRequest.Docid), "docid"),
+            (typeof(UploadWedocFileRequest), nameof(UploadWedocFileRequest.FileName), "file_name"),
+            (typeof(UploadWedocFileRequest), nameof(UploadWedocFileRequest.FileBase64Content), "file_base64_content"),
+            (typeof(InitWedocFileUploadRequest), nameof(InitWedocFileUploadRequest.Docid), "docid"),
+            (typeof(InitWedocFileUploadRequest), nameof(InitWedocFileUploadRequest.FileName), "file_name"),
+            (typeof(InitWedocFileUploadRequest), nameof(InitWedocFileUploadRequest.Size), "size"),
+            (typeof(InitWedocFileUploadRequest), nameof(InitWedocFileUploadRequest.BlockSha), "block_sha"),
+            (typeof(UploadWedocFilePartRequest), nameof(UploadWedocFilePartRequest.UploadKey), "upload_key"),
+            (typeof(UploadWedocFilePartRequest), nameof(UploadWedocFilePartRequest.Index), "index"),
+            (typeof(UploadWedocFilePartRequest), nameof(UploadWedocFilePartRequest.FileBase64Content), "file_base64_content"),
+            (typeof(FinishWedocFileUploadRequest), nameof(FinishWedocFileUploadRequest.UploadKey), "upload_key"),
+            (typeof(BatchAddWedocVipRequest), nameof(BatchAddWedocVipRequest.UseridList), "userid_list"),
+            (typeof(BatchDelWedocVipRequest), nameof(BatchDelWedocVipRequest.UseridList), "userid_list"),
+        };
+
+        foreach (var (owner, property, jsonName) in required)
+        {
+            var prop = owner.GetProperty(property, BindingFlags.Public | BindingFlags.Instance);
+            prop.Should().NotBeNull($"{owner.Name}.{property} 必须存在");
+            IsNullableMember(prop!).Should().BeFalse(
+                $"{jsonName} 在官方参数表标为必填，不得声明为可空（B8 复核：追踪号 P2-QY-B8-WEDOC-REQUIRED-09）");
+        }
+
+        // 可选参数对照侧：vip/list 的 cursor / limit 官方均为「否」，须保持可空。
+        var optional = new (Type Owner, string Property, string JsonName)[]
+        {
+            (typeof(ListWedocVipRequest), nameof(ListWedocVipRequest.Cursor), "cursor"),
+            (typeof(ListWedocVipRequest), nameof(ListWedocVipRequest.Limit), "limit"),
+        };
+        foreach (var (owner, property, jsonName) in optional)
+        {
+            var prop = owner.GetProperty(property, BindingFlags.Public | BindingFlags.Instance);
+            IsNullableMember(prop!).Should().BeTrue(
+                $"{jsonName} 官方为可选参数（首次请求传空 / 不填取默认 100），收敛为非可空即丢失官方语义");
+        }
+    }
+
+    /// <summary>属性是否可空：值类型的 <see cref="Nullable{T}"/>，或引用类型的可空标注。</summary>
+    private static bool IsNullableMember(PropertyInfo property)
+    {
+        if (Nullable.GetUnderlyingType(property.PropertyType) != null)
+        {
+            return true;
+        }
+
+        return new NullabilityInfoContext().Create(property).WriteState == NullabilityState.Nullable;
+    }
+
+    /// <summary>
+    /// 契约守卫 WD4：文档模块接口层级与生成器注册形态——八族公共端点收敛于 IsAbstract 父接口、
+    /// 三个应用类型子接口均为空标记（能力漂移守卫：子接口自身声明端点数必须为 0）；
+    /// 高级功能账号管理族为「仅自建」形态：父接口零端点、唯一自建子接口承载 3 端点。
     /// </summary>
     [Fact]
     public void WedocInterfaceHierarchy_ShouldConvergeOnAbstractParentWithWedocRegistry()
@@ -677,10 +895,51 @@ public class WechatWedocContractGuards
             new[] { (typeof(IWechatWorkInternalWedocFormService), 0),
                     (typeof(IWechatWorkThirdPartyWedocFormService), 0),
                     (typeof(IWechatWorkProviderWedocFormService), 0) });
+
+        // —— 素材管理族 ——
+        var materialChildren = new[]
+        {
+            typeof(IWechatWorkInternalWedocMaterialService),
+            typeof(IWechatWorkThirdPartyWedocMaterialService),
+            typeof(IWechatWorkProviderWedocMaterialService),
+        };
+
+        foreach (var child in materialChildren)
+        {
+            child.Should().BeAssignableTo(typeof(IWechatWorkWedocMaterialService),
+                $"{child.Name} 必须继承公共父接口 IWechatWorkWedocMaterialService");
+        }
+
+        AssertFamilyHierarchy(
+            typeof(IWechatWorkWedocMaterialService),
+            WedocMaterialParentImplementationClassName,
+            expectedDeclaredMethods: 5,
+            new[] { (typeof(IWechatWorkInternalWedocMaterialService), 0),
+                    (typeof(IWechatWorkThirdPartyWedocMaterialService), 0),
+                    (typeof(IWechatWorkProviderWedocMaterialService), 0) });
+
+        // —— 高级功能账号管理族（仅自建：父接口零端点 + 唯一自建子接口承载 3 端点）——
+        typeof(IWechatWorkInternalWedocVipService)
+            .Should().BeAssignableTo(typeof(IWechatWorkWedocVipService),
+                "IWechatWorkInternalWedocVipService 必须继承公共父接口 IWechatWorkWedocVipService");
+
+        // 官方第三方/代开发文档树无本族镜像页 ⇒ 不得存在对应子接口（能力漂移守卫）。
+        typeof(IWechatWorkWedocVipService).Assembly.GetTypes()
+            .Where(t => t.IsInterface && t.Name.Contains("WedocVipService")
+                     && !t.Name.Contains("Internal") && t != typeof(IWechatWorkWedocVipService))
+            .Select(t => t.FullName)
+            .Should().BeEmpty(
+                "高级功能账号管理族官方仅对自建应用开放，出现第三方/代开发子接口即为能力越界");
+
+        AssertFamilyHierarchy(
+            typeof(IWechatWorkWedocVipService),
+            WedocVipParentImplementationClassName,
+            expectedDeclaredMethods: 0,
+            new[] { (typeof(IWechatWorkInternalWedocVipService), 3) });
     }
 
     /// <summary>
-    /// 契约守卫 WD5：令牌绑定——文档模块全部 28 个接口统一消费 AccessToken 路由键并以 Query 注入
+    /// 契约守卫 WD5：令牌绑定——文档模块全部 34 个接口统一消费 AccessToken 路由键并以 Query 注入
     /// （官方契约 access_token；第三方/代开发消费授权企业级令牌，scope = authCorpId）。
     /// </summary>
     [Fact]
@@ -716,6 +975,12 @@ public class WechatWedocContractGuards
             typeof(IWechatWorkInternalWedocFormService),
             typeof(IWechatWorkThirdPartyWedocFormService),
             typeof(IWechatWorkProviderWedocFormService),
+            typeof(IWechatWorkWedocMaterialService),
+            typeof(IWechatWorkInternalWedocMaterialService),
+            typeof(IWechatWorkThirdPartyWedocMaterialService),
+            typeof(IWechatWorkProviderWedocMaterialService),
+            typeof(IWechatWorkWedocVipService),
+            typeof(IWechatWorkInternalWedocVipService),
         };
 
         interfaces.Should().OnlyHaveUniqueItems("令牌守卫覆盖的接口清单不得重复");
@@ -859,7 +1124,7 @@ public class WechatWedocContractGuards
     }
 
     /// <summary>
-    /// 契约守卫 WD7：文档模块的请求/响应 DTO 必须登记进 AOT JSON 上下文（全量 209 个契约面类型）。
+    /// 契约守卫 WD7：文档模块的请求/响应 DTO 必须登记进 AOT JSON 上下文（全量 292 个契约面类型）。
     /// </summary>
     [Fact]
     public void WedocDataModels_ShouldBeRegisteredInJsonContext()
@@ -1034,12 +1299,24 @@ public class WechatWedocContractGuards
             typeof(WedocFormReplyItem), typeof(WedocFormOptionExtendReply), typeof(WedocFormFileReply),
             typeof(WedocFormDepartmentReply), typeof(WedocFormDepartmentReplyItem),
             typeof(WedocFormMemberReply), typeof(WedocFormMemberReplyItem), typeof(WedocFormDurationReply),
+            // 素材管理族——上传图片。
+            typeof(UploadWedocImageRequest), typeof(UploadWedocImageResponse),
+            // 素材管理族——整文件上传。
+            typeof(UploadWedocFileRequest), typeof(UploadWedocFileResponse),
+            // 素材管理族——文件分块上传（初始化 / 分片 / 完成；分片端点无业务响应负载）。
+            typeof(InitWedocFileUploadRequest), typeof(InitWedocFileUploadResponse),
+            typeof(UploadWedocFilePartRequest),
+            typeof(FinishWedocFileUploadRequest), typeof(FinishWedocFileUploadResponse),
+            // 高级功能账号管理族——分配 / 取消 / 列表。
+            typeof(BatchAddWedocVipRequest), typeof(BatchAddWedocVipResponse),
+            typeof(BatchDelWedocVipRequest), typeof(BatchDelWedocVipResponse),
+            typeof(ListWedocVipRequest), typeof(ListWedocVipResponse),
         };
 
-        requiredTypes.Should().HaveCount(277,
+        requiredTypes.Should().HaveCount(292,
             "文档模块契约面类型总数漂移须先核对 DTO 落位再同批调整本守卫"
             + "（管理文档族 10 + 管理文档内容族 34 + 管理表格内容族 37 + 管理智能表格内容族 81 + 管理智能文档内容族 47"
-            + " + 设置文档权限族 25 + 管理收集表族 43）");
+            + " + 设置文档权限族 25 + 管理收集表族 43 + 素材管理族 9 + 高级功能账号管理族 6）");
         requiredTypes.Should().OnlyHaveUniqueItems("契约面类型不得重复断言");
 
         foreach (var type in requiredTypes)

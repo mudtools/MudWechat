@@ -546,7 +546,8 @@ public class WechatServiceCollectionExtensionsTests
     /// <summary>
     /// Kf 模块（微信客服域：客服账号管理域 + 接待人员管理域 + 会话分配与消息收发域 +
     /// 客户基础信息域 + 「升级服务」配置域 + 统计管理域 + 机器人管理域（仅自建） +
-    /// 微信客服组件域（仅第三方））：AddKfApi 注册的应用类型子接口客户端必须可解析
+    /// 微信客服组件域（仅第三方））：
+    /// AddKfApi 注册的应用类型子接口客户端必须可解析
     /// （六域公共父接口 IsAbstract 不参与 DI 注册；机器人管理域仅自建子接口、
     /// 微信客服组件域仅第三方子接口承载端点）。
     /// </summary>
@@ -967,9 +968,10 @@ public class WechatServiceCollectionExtensionsTests
     }
 
     /// <summary>
-    /// Wedoc 模块（文档域：管理文档族 + 管理文档内容族 + 管理表格内容族 + 管理智能表格内容族 + 管理智能文档内容族五族，
-    /// 均为三类应用公共面）：AddWedocApi 注册的 15 个应用类型子接口客户端必须可解析
-    /// （五族公共父接口 IsAbstract 不参与 DI 注册，调用方须按应用类型选择子接口）。
+    /// Wedoc 模块（文档域：管理文档族 + 管理文档内容族 + 管理表格内容族 + 管理智能表格内容族 + 管理智能文档内容族
+    /// + 素材管理族，均为三类应用公共面；高级功能账号管理族官方仅自建应用开放）：
+    /// AddWedocApi 注册的 19 个应用类型子接口客户端必须可解析
+    /// （各族公共父接口 IsAbstract 不参与 DI 注册，调用方须按应用类型选择子接口）。
     /// </summary>
     [Fact]
     public void AddWedocApi_ShouldRegisterWedocDomainClients_ResolvableInRootAndScope()
@@ -1002,6 +1004,14 @@ public class WechatServiceCollectionExtensionsTests
             "管理智能文档内容族注册代开发子接口");
         provider.GetRequiredService<IWechatWorkThirdPartyWedocSmartDocService>().Should().NotBeNull(
             "管理智能文档内容族注册第三方子接口");
+        provider.GetRequiredService<IWechatWorkInternalWedocMaterialService>().Should().NotBeNull(
+            "素材管理族注册自建子接口（承载 5 个图片/文件上传端点）");
+        provider.GetRequiredService<IWechatWorkThirdPartyWedocMaterialService>().Should().NotBeNull(
+            "素材管理族注册第三方子接口");
+        provider.GetRequiredService<IWechatWorkProviderWedocMaterialService>().Should().NotBeNull(
+            "素材管理族注册代开发子接口");
+        provider.GetRequiredService<IWechatWorkInternalWedocVipService>().Should().NotBeNull(
+            "高级功能账号管理族官方仅对自建应用开放，注册唯一自建子接口（承载 3 端点）");
 
         provider.GetService<IWechatWorkWedocService>().Should().BeNull(
             "公共父接口 IsAbstract = true，不得注册进 DI（调用方须按应用类型选择子接口）");
@@ -1013,6 +1023,10 @@ public class WechatServiceCollectionExtensionsTests
             "公共父接口 IsAbstract = true，不得注册进 DI（调用方须按应用类型选择子接口）");
         provider.GetService<IWechatWorkWedocSmartDocService>().Should().BeNull(
             "公共父接口 IsAbstract = true，不得注册进 DI（调用方须按应用类型选择子接口）");
+        provider.GetService<IWechatWorkWedocMaterialService>().Should().BeNull(
+            "素材管理族公共父接口 IsAbstract = true，不得注册进 DI");
+        provider.GetService<IWechatWorkWedocVipService>().Should().BeNull(
+            "高级功能账号管理族零端点父接口 IsAbstract = true，不得注册进 DI");
 
         using var scope = provider.CreateScope();
         scope.ServiceProvider.GetRequiredService<IWechatWorkInternalWedocService>().Should().NotBeNull(
@@ -1149,6 +1163,92 @@ public class WechatServiceCollectionExtensionsTests
         scope.ServiceProvider.GetRequiredService<IWechatWorkThirdPartyLicenseAppService>().Should().NotBeNull(
             "ValidateScopes = true 变体下子 scope 内同样可解析");
         scope.ServiceProvider.GetRequiredService<IWechatWorkThirdPartyLicenseAutoActiveService>().Should().NotBeNull(
+            "ValidateScopes = true 变体下子 scope 内同样可解析");
+    }
+
+    /// <summary>
+    /// 会议室模块（MeetingRoom 模块，两族：会议室管理 93619 + 会议室预定管理 93620）：
+    /// AddMeetingRoomApi 注册的自建子接口客户端必须可解析——
+    /// 回归锁定：注册器字典漏配 [WechatModule.MeetingRoom] 条目时 AddMeetingRoomApi 会静默空转（不注册、不报错）；
+    /// 官方「会议室」文档树只在企业自建应用开发根下存在页面，两族各为零端点父接口 + 仅自建子接口，父接口 IsAbstract 不进 DI。
+    /// </summary>
+    [Fact]
+    public void AddMeetingRoomApi_ShouldRegisterMeetingRoomDomainClients_ResolvableInRootAndScope()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddWechatApp(new List<WechatAppConfig> { InternalConfig() });
+        services.AddWechatWorkServices(builder => builder.AddMeetingRoomApi());
+
+        using var provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true });
+
+        provider.GetRequiredService<IWechatWorkInternalMeetingRoomService>().Should().NotBeNull(
+            "会议室管理族官方仅自建开放，本族注册自建子接口");
+        provider.GetRequiredService<IWechatWorkInternalMeetingRoomBookingService>().Should().NotBeNull(
+            "会议室预定管理族官方仅自建开放，本族注册自建子接口");
+        provider.GetService<IWechatWorkMeetingRoomService>().Should().BeNull(
+            "零端点父接口 IsAbstract = true，不得注册进 DI（调用方须按应用类型选择子接口）");
+        provider.GetService<IWechatWorkMeetingRoomBookingService>().Should().BeNull(
+            "零端点父接口 IsAbstract = true，不得注册进 DI（调用方须按应用类型选择子接口）");
+
+        using var scope = provider.CreateScope();
+        scope.ServiceProvider.GetRequiredService<IWechatWorkInternalMeetingRoomService>().Should().NotBeNull(
+            "ValidateScopes = true 变体下子 scope 内同样可解析");
+        scope.ServiceProvider.GetRequiredService<IWechatWorkInternalMeetingRoomBookingService>().Should().NotBeNull(
+            "ValidateScopes = true 变体下子 scope 内同样可解析");
+    }
+
+    /// <summary>
+    /// 汇报模块（Journal 模块，官方「汇报」文档树 93392）：
+    /// AddJournalApi 注册的自建子接口客户端必须可解析——
+    /// 回归锁定：注册器字典漏配 [WechatModule.Journal] 条目时 AddJournalApi 会静默空转（不注册、不报错）；
+    /// 官方「汇报」文档树只在企业自建应用开发根下存在页面（93393 / 93394 / 93395），
+    /// 零端点父接口 + 仅自建子接口承载端点，父接口 IsAbstract 不进 DI。
+    /// </summary>
+    [Fact]
+    public void AddJournalApi_ShouldRegisterJournalDomainClients_ResolvableInRootAndScope()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddWechatApp(new List<WechatAppConfig> { InternalConfig() });
+        services.AddWechatWorkServices(builder => builder.AddJournalApi());
+
+        using var provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true });
+
+        provider.GetRequiredService<IWechatWorkInternalJournalService>().Should().NotBeNull(
+            "汇报域官方仅自建开放，本域注册自建子接口");
+        provider.GetService<IWechatWorkJournalService>().Should().BeNull(
+            "零端点父接口 IsAbstract = true，不得注册进 DI（调用方须按应用类型选择子接口）");
+
+        using var scope = provider.CreateScope();
+        scope.ServiceProvider.GetRequiredService<IWechatWorkInternalJournalService>().Should().NotBeNull(
+            "ValidateScopes = true 变体下子 scope 内同样可解析");
+    }
+
+    /// <summary>
+    /// 智能设备数据模块（DeviceData 模块，官方「智慧硬件服务端」文档树 96107）：
+    /// AddDeviceDataApi 注册的第三方子接口客户端必须可解析——
+    /// 回归锁定：注册器字典漏配 [WechatModule.DeviceData] 条目时 AddDeviceDataApi 会静默空转（不注册、不报错）；
+    /// 官方「智慧硬件服务端」文档树只在第三方应用开发根下存在页面（数据获取族 96097/96027/96028/96029 +
+    /// 门禁规则管理族 96030/96031/96221/96227），零端点父接口 + 唯一第三方子接口承载端点，父接口 IsAbstract 不进 DI。
+    /// </summary>
+    [Fact]
+    public void AddDeviceDataApi_ShouldRegisterDeviceDataDomainClients_ResolvableInRootAndScope()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddWechatApp(new List<WechatAppConfig> { InternalConfig() });
+        services.AddWechatWorkServices(builder => builder.AddDeviceDataApi());
+
+        using var provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true });
+
+        provider.GetRequiredService<IWechatWorkThirdPartyDeviceDataService>().Should().NotBeNull(
+            "智能设备数据域官方仅第三方开放，本域注册第三方子接口");
+        provider.GetService<IWechatWorkDeviceDataService>().Should().BeNull(
+            "零端点父接口 IsAbstract = true，不得注册进 DI（调用方须按应用类型选择子接口）");
+
+        using var scope = provider.CreateScope();
+        scope.ServiceProvider.GetRequiredService<IWechatWorkThirdPartyDeviceDataService>().Should().NotBeNull(
             "ValidateScopes = true 变体下子 scope 内同样可解析");
     }
 }

@@ -11,10 +11,10 @@ namespace Mud.Wechat.MiniProgram.DataModels.Charge;
     PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase,
     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     WriteIndented = false)]
+[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Charge.WxaChargeRecentAverageResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Charge.WxaChargeResourceAverage))]
 [JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Charge.WxaChargeResourceUsage))]
 [JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Charge.WxaChargeUsageResponse))]
-[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Charge.WxaChargeResourceAverage))]
-[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Charge.WxaChargeRecentAverageResponse))]
 internal partial class ChargeJsonContext : JsonSerializerContext
 {
 }

@@ -27,6 +27,7 @@ using Mud.Wechat.MiniProgram.DataModels.ServiceMarket;
 using Mud.Wechat.MiniProgram.DataModels.Soter;
 using Mud.Wechat.MiniProgram.DataModels.Student;
 using Mud.Wechat.MiniProgram.DataModels.SubscribeMessage;
+using Mud.Wechat.MiniProgram.DataModels.TransactionGuarantee;
 using System.Text.Json.Serialization.Metadata;
 
 namespace Mud.Wechat.MiniProgram.Extensions;
@@ -82,7 +83,10 @@ public static class MiniProgramJsonResolverExtensions
             StudentJsonContext.Default,
             FaceVerifyJsonContext.Default,
             LaborUseJsonContext.Default,
-            ExpressJsonContext.Default);
+            ExpressJsonContext.Default,
+            TransactionGuaranteeJsonContext.Default,
+            LiveJsonContext.Default,
+            VodJsonContext.Default);
 
         services.AddMudHttpClientJsonContext(resolver);
     }

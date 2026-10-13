@@ -12,10 +12,10 @@ namespace Mud.Wechat.MiniProgram.DataModels.Plugin;
     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     WriteIndented = false)]
 [JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Plugin.WxaDevPluginRequest))]
-[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Plugin.WxaPluginApplyItem))]
 [JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Plugin.WxaDevPluginResponse))]
-[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Plugin.WxaPluginRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Plugin.WxaPluginApplyItem))]
 [JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Plugin.WxaPluginItem))]
+[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Plugin.WxaPluginRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Plugin.WxaPluginResponse))]
 internal partial class PluginJsonContext : JsonSerializerContext
 {

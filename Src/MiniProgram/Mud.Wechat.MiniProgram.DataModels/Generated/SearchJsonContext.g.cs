@@ -11,10 +11,10 @@ namespace Mud.Wechat.MiniProgram.DataModels.Search;
     PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower,
     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     WriteIndented = false)]
-[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Search.WxaSearchSubmitPagesRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Search.WxaSearchAuthor))]
 [JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Search.WxaSearchPage))]
 [JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Search.WxaSearchPageData))]
-[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Search.WxaSearchAuthor))]
+[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Search.WxaSearchSubmitPagesRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Search.WxaSearchVideo))]
 internal partial class SearchJsonContext : JsonSerializerContext
 {

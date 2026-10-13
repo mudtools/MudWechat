@@ -593,6 +593,19 @@ public partial class WechatContractGuards
                 nameof(IWechatWorkInternalWedocFormService),
                 nameof(IWechatWorkThirdPartyWedocFormService),
                 nameof(IWechatWorkProviderWedocFormService),
+                // 文档·素材管理族（Wedoc 模块）：5 个端点为三类应用公共面
+                //（上传图片 99933/101875/101879、上传文件 101870/101876/101880、
+                //  文件分块上传 101871/101877/101881（同一文档页三路由：init / part / finish）；
+                // 父接口 + 三个应用类型空标记子接口）。
+                nameof(IWechatWorkWedocMaterialService),
+                nameof(IWechatWorkInternalWedocMaterialService),
+                nameof(IWechatWorkThirdPartyWedocMaterialService),
+                nameof(IWechatWorkProviderWedocMaterialService),
+                // 文档·高级功能账号管理族（Wedoc 模块）：3 个端点官方仅自建应用开放
+                //（分配 99516、取消 99517、获取列表 99518；第三方/代开发文档树无镜像页；
+                // 零端点父接口 + 仅自建子接口承载）。
+                nameof(IWechatWorkWedocVipService),
+                nameof(IWechatWorkInternalWedocVipService),
                 // 打卡·打卡规则族（Checkin 模块）：获取员工打卡规则三类公共收敛父接口；
                 // 获取企业所有打卡规则 + 管理打卡规则 4 写端点为自建/代开发差异端点，第三方暂不支持零端点空标记。
                 nameof(IWechatWorkCheckinRuleService),
@@ -749,8 +762,11 @@ public partial class WechatContractGuards
                 nameof(IWechatWorkThirdPartyLivingService),
                 // 应用管理·获取应用族（Agent 模块）：agent/get + agent/list 两端点为三类应用公共面收敛父接口
                 //（自建 90227 / 第三方 90363 / 代开发 96448，官方即 GET、agentid 走 Query）；
-                // 设置应用 90228 官方仅企业可调用——第三方以及代开发自建应用不可调用，落自建差异端点。
+                // 设置应用 90228 官方仅企业可调用——第三方以及代开发自建应用不可调用，落自建差异端点；
+                // 获取应用权限（99052 / 99108）与获取应用管理员列表（100073 / 100072）官方只在第三方与
+                // 服务商代开发两棵树存在，落「第三方 + 代开发」中间层父接口 IWechatWorkAgentThirdPartyProviderService。
                 nameof(IWechatWorkAgentService),
+                nameof(IWechatWorkAgentThirdPartyProviderService),
                 nameof(IWechatWorkInternalAgentService),
                 nameof(IWechatWorkProviderAgentService),
                 nameof(IWechatWorkThirdPartyAgentService),
@@ -824,6 +840,23 @@ public partial class WechatContractGuards
                 //（拨打记录 93662；零端点父接口 + 仅自建子接口）。
                 nameof(IWechatWorkDialService),
                 nameof(IWechatWorkInternalDialService),
+                // 会议室域（MeetingRoom 模块）：11 个端点官方仅自建应用开放
+                //（会议室管理 93619 四端点 + 会议室预定管理 93620 七端点；
+                // 两族各为零端点父接口 + 仅自建子接口承载端点）。
+                nameof(IWechatWorkMeetingRoomService),
+                nameof(IWechatWorkInternalMeetingRoomService),
+                nameof(IWechatWorkMeetingRoomBookingService),
+                nameof(IWechatWorkInternalMeetingRoomBookingService),
+                // 汇报域（Journal 模块）：3 个端点官方仅自建应用开放
+                //（获取汇报记录号列表 93393 / 详情 93394 / 统计 93395；
+                // 零端点父接口 + 仅自建子接口承载端点）。
+                nameof(IWechatWorkJournalService),
+                nameof(IWechatWorkInternalJournalService),
+                // 智能设备数据域（DeviceData 模块）：8 个端点官方仅第三方应用开放
+                //（数据获取族 96097 / 96027 / 96028 / 96029 + 门禁规则管理族
+                // 96030 / 96031 / 96221 / 96227；零端点父接口 + 唯一第三方子接口承载端点）。
+                nameof(IWechatWorkDeviceDataService),
+                nameof(IWechatWorkThirdPartyDeviceDataService),
             },
             "企业微信官方契约强制 Query 注入（MUD005 已知接受风险），新增 Query 注入接口须评估后扩展本守卫");
     }

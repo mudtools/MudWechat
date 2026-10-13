@@ -12,16 +12,16 @@ namespace Mud.Wechat.MiniProgram.DataModels.Vip;
     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     WriteIndented = false)]
 [JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Vip.WxaVipAddUserRequest))]
-[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Vip.WxaVipMemberInfo))]
-[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Vip.WxaVipUpdateUserRequest))]
-[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Vip.WxaVipOpenidRequest))]
-[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Vip.WxaVipUserInfoResponse))]
-[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Vip.WxaVipUserInfo))]
+[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Vip.WxaVipGetShopListResponse))]
 [JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Vip.WxaVipGetUserListRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Vip.WxaVipGetUserListResponse))]
-[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Vip.WxaVipUserListItem))]
-[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Vip.WxaVipGetShopListResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Vip.WxaVipMemberInfo))]
+[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Vip.WxaVipOpenidRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Vip.WxaVipShopListItem))]
+[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Vip.WxaVipUpdateUserRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Vip.WxaVipUserInfo))]
+[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Vip.WxaVipUserInfoResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Vip.WxaVipUserListItem))]
 internal partial class VipJsonContext : JsonSerializerContext
 {
 }

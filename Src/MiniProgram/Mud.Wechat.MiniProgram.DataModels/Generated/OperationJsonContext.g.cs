@@ -11,20 +11,20 @@ namespace Mud.Wechat.MiniProgram.DataModels.Operation;
     PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase,
     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     WriteIndented = false)]
+[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Operation.WxaDevInfoResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Operation.WxaDomainGroup))]
 [JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Operation.WxaFeedbackItem))]
 [JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Operation.WxaFeedbackListRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Operation.WxaFeedbackListResponse))]
-[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Operation.WxaUserLogSearchRequest))]
-[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Operation.WxaUserLogSearchResponse))]
-[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Operation.WxaLogDateModuleRequest))]
-[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Operation.WxaLogDataListResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Operation.WxaFeedbackMediaRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Operation.WxaGrayReleasePlanResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Operation.WxaJsErrDataResponse))]
 [JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Operation.WxaJsErrDetailRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Operation.WxaJsErrListRequest))]
-[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Operation.WxaJsErrDataResponse))]
-[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Operation.WxaGrayReleasePlanResponse))]
-[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Operation.WxaDevInfoResponse))]
-[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Operation.WxaDomainGroup))]
-[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Operation.WxaFeedbackMediaRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Operation.WxaLogDataListResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Operation.WxaLogDateModuleRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Operation.WxaUserLogSearchRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Operation.WxaUserLogSearchResponse))]
 internal partial class OperationJsonContext : JsonSerializerContext
 {
 }

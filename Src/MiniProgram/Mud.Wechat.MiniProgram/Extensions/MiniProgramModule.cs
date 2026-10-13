@@ -177,4 +177,58 @@ public enum MiniProgramModule
     /// CH-V1 锁定小店线不得跨线声明）。
     /// </remarks>
     Vip,
+
+    /// <summary>
+    /// 交易保障（16 端点：基础 2 + 评价管理 9 + 投诉管理 5）。
+    /// </summary>
+    /// <remarks>
+    /// <para><b>基础</b> 2 端点（<c>/wxaapi/wxamptrade/*</c>）：交易保障标状态（权限集 30、151）+ 交易体验分违规记录（权限集 151），均为 GET。</para>
+    /// <para><b>评价管理</b> 9 端点（<c>/wxaapi/comment/*</c>，权限集 151）：评价列表 / 详情 / 评论回复列表 3 查（官方动词 GET）+ 评论增删 2 + 回复增删 2 + 确认和解 + 重置 API 客服 quota；官方对象分「评价 <c>commentId</c> → 评论 <c>replyId</c> → 回复 <c>commentReplyId</c>」三层，错误码为负数族（<c>-10403</c> 等）。</para>
+    /// <para><b>投诉管理</b> 5 端点（<c>/wxaapi/minishop/*</c> 前缀为历史遗留命名，权限集 76）：查询投诉单详情（GET）+ 商家回应 / 补充凭证 / 提交退款凭证 / 申诉（POST）。路由拼写照官方原文：三个动作为 <c>bussi*</c>、申诉为 <c>busiAppeal</c>。<b>P3-R1 已据此收窄</b>：minishop 前缀由整族禁令改为「店铺 / 商品管理面零声明，官方仍在册的投诉处理 5 条在册」。</para>
+    /// </remarks>
+    TransactionGuarantee,
+
+    /// <summary>
+    /// 小程序直播（38 端点，六接口共用本注册组：直播间本体 11 + 小助手与主播副号 8 + 房间内商品 7 +
+    /// 商品库管理 7 + 成员角色 3 + 长期订阅群发 2；路由族 <c>/wxaapi/broadcast/*</c> 与四支
+    /// <c>/wxa/business/*</c>）。
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>P3-R1 第 2 项裁决的解除（2026-10-13 逐页取证）</b>：本域曾因「小程序直播插件已停止接入」被整族
+    /// 零声明；取证推翻该前提 —— 38 个服务端 API 页面全部完整在册（各页声明权限集 52、服务器端调用、
+    /// 云调用 <c>liveBroadcast.*</c>），现行目录树与旧 <c>miniprogram/dev/server/API/livebroadcast</c> 树
+    /// 逐条相同；停止接入的是<b>直播插件</b>（前端组件），不是服务端 API。守卫
+    /// <c>MiniProgramP3RulingsContractGuards</c> 的 broadcast 条款已随之收窄为清单式在册。
+    /// </para>
+    /// <para>
+    /// <b>适用范围字段异常（诚实留档）</b>：38 页的「适用范围」段官方统一写「本接口暂未明确可调用账号类型」
+    /// ——<b>无</b>「小程序」字样；本线归属判据取「令牌可用 <c>access_token</c> + 文档树位于
+    /// <c>miniprogram/dev/server/API/</c>」两条。
+    /// </para>
+    /// </remarks>
+    Live,
+
+    /// <summary>
+    /// 短剧媒资（31 端点，五接口共用本注册组：上传 6 + 媒资管理 4 + 剧目提审 7 + 用量与流量包 3 +
+    /// 授权 11；路由族 <c>/wxa/sec/vod/*</c>，权限集 153）。
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>令牌形态（MP-X2 / MP-X3 同口径）</b>：复用 <c>MpTokenTypes.AccessToken</c> + Query 注入
+    /// <c>access_token</c>，不新增令牌类型常量；第三方代调用形态（<c>authorizer_access_token</c>）由宿主
+    /// 以小程序应用配置供给令牌（P3-R2）。
+    /// </para>
+    /// <para>
+    /// <b>适用范围字段异常（诚实留档，与直播域同一处置）</b>：31 页的「适用范围」段官方统一写
+    /// 「本接口暂未明确可调用账号类型」——<b>无</b>「小程序」字样；本线归属判据取「令牌可用
+    /// <c>access_token</c> + 文档树位于 <c>miniprogram/dev/server/API/minidrama</c>」两条。
+    /// </para>
+    /// <para>
+    /// <b>与视频号（Channels）线零交叠</b>：本域全部路由在 <c>/wxa/sec/vod/</c> 前缀下，与 <c>/channels/ec/*</c>
+    /// 无任何交叠；「短剧」在两线是不同对象（本域是媒资剧目的提审与授权，视频号侧是内容合作带货达人），
+    /// 守卫 DV1 断言跨线路由交叠为零。
+    /// </para>
+    /// </remarks>
+    Vod,
 }

@@ -18,7 +18,7 @@
   - `Interfaces/Media/` — 素材管理：临时素材上传·获取 / 上传图片 / 高清语音 / 异步上传 / 服务商上传
   - `Interfaces/Identity/` — 身份验证：网页授权登录 / Web 登录身份获取 / 二次验证
   - `Interfaces/JsSdk/` — JS-SDK：企业 / 应用 `jsapi_ticket` 获取
-  - `Interfaces/Agent/` — 应用管理：获取应用 / 工作台自定义展示 / 自定义菜单 / 自建应用迁移代开发
+  - `Interfaces/Agent/` — 应用管理：获取应用（三类公共）+ 获取应用权限 / 获取应用管理员列表（第三方 + 代开发中间层）/ 设置应用 / 工作台自定义展示 / 自定义菜单 / 自建应用迁移代开发
   - `Interfaces/Basic/` — 基础接口：企业微信接口 IP 段 / 回调 IP 段
   - `Interfaces/Checkin/` — 打卡：规则 / 记录 / 报表 / 排班 / 设备打卡数据
   - `Interfaces/Meeting/` — 会议：预约会议基础管理 / 会议统计
@@ -26,7 +26,7 @@
   - `Interfaces/Wedoc/` — 文档：管理文档 / 文档内容 / 表格内容 / 智能表格内容（子表 / 视图 / 字段 / 记录 / 编组）
   - `Interfaces/Wedrive/` — 微盘：空间 / 空间权限 / 文件 / 文件权限 / 版本容量 / 高级功能账号
   - `Interfaces/AccountId/` — 账号 ID：ID 与 `tmp_external_userid` / `corpid` 转换、ID 迁移、智能机器人 userid 转换、群 ID 升级七接口族
-  - `Interfaces/KF/` — 微信客服：客服账号管理 + 接待人员管理
+  - `Interfaces/KF/` — 微信客服：客服账号管理 / 接待人员管理 / 会话分配与消息收发 / 客户基础信息 / 统计管理 / 「升级服务」配置（六域三类应用公共面）+ 机器人管理（仅自建）+ 微信客服组件（仅第三方）。「接收消息和事件」（`kf/sync_msg`，94670/94699/96426）权限口径：自建应用须「配置到「微信客服 - 可调用接口的应用」中」，第三方与代开发应用须具有「微信客服->管理账号、分配会话和收发消息」权限，且从 2023-12-01 0 点起不再支持通过系统应用 secret 调用（存量企业暂不受影响）；`open_kfid` 为**必填**、`token` 为选填（官方原文「可不填，如果不填接口有严格的频率限制」，令牌 10 分钟有效）、`limit` 默认与最大均为 1000；翻页终点只以 `has_more`（官方数字 0/1）判定，官方明令不得以 `msg_list` 是否空判定，`next_cursor` 官方强烈建议入库；消息只能拉取 3 天内的，媒体大小上限 2MB/2MB/10MB/20MB。「获取企业状态信息」（95153 / kf.weixin.qq.com 95168）两棵树现行正文<b>只剩概述</b>、无请求方式与参数表 ⇒ 该域整体撤回，`kf/get_corp_qualification` 入 RD1 非契约路由零声明清单（守卫 KF1i + RD1）
   - `Interfaces/Mail/` — 邮件：应用邮箱发送·接收·账号管理 + 管理端邮件群组 / 公共邮箱 / 高级功能账号 / 成员邮箱操作
   - `Interfaces/Pay/` — 企业支付：对外收款 / 商户号管理 / 资金流水 / 退款 / 交易账单
   - `Interfaces/PayTool/` — 收银台：收款工具 / 发票管理 / 应用版本付费（官方仅第三方开放）
@@ -44,7 +44,10 @@
   - `Interfaces/Webhook/` — 群机器人 Webhook 推送：发送消息 8 种 msgtype 逐类型一方法（同路由 `/cgi-bin/webhook/send`）+ 上传媒体文件，共 9 端点；凭据为 URL Query 上的 `key`（官方文档 91770，每个机器人 20 条/分钟）
   - `Interfaces/Hr/` — 人事助手（花名册）：获取员工字段配置 99131 / 获取花名册信息 99132 / 更新花名册信息 99133，官方仅自建开放
   - `Interfaces/Dial/` — 公费电话：获取公费电话拨打记录 93662（官方仅自建；与「紧急通知」域的 `pstncc` 路由族分属官方两棵章节树）
-- **模块注册器**（`Extensions/`）：`AddWechatWorkServices(...)` + `WechatModule` 枚举 35 个成员（`ExternalContact` / `Message` / `Contact` / `Approval` / `Media` / `Identity` / `JsSdk` / `Agent` / `Authentication` / `Basic` / `Checkin` / `Meeting` / `Schedule` / `Wedoc` / `Wedrive` / `AccountId` / `Kf` / `Mail` / `Pay` / `Security` / `CorpGroup` / `School` / `Living` / `DataZone` / `MsgAudit` / `Invoice` / `Gov` / `Emergency` / `PromotionQrCode` / `PayTool` / `Aibot` / `License` / `Webhook` / `Hr` / `Dial`）+ `AddAllApis()` / `AddModules()`，按需注册模块客户端。`Build()` 校验 `AddWechatApp` 已先行，否则抛；`AddAuthenticationApi()` 额外挂授权编排服务，`AddWebhookApi()` 在注册期把 `key` 登记为进程级强制掩码参数名。
+  - `Interfaces/MeetingRoom/` — 会议室（官方「会议室」文档树 93617 只在自建应用树下有页面，两族各为零端点父接口 + 仅自建子接口）：`Room/` 会议室管理 93619（`oa/meetingroom/{add,list,edit,del}`）+ `Booking/` 会议室预定管理 93620（`{get_booking_info,book,book_by_schedule,book_by_meeting,cancel_book,bookinfo/get}`），共 10 端点全为 POST；93620 现行正文（2024-06-24）锚点仅六节，第三方 SDK 转述的 `get_booking_info_by_meeting_id` 不在树内任何页面 ⇒ 移入 RD1 零声明清单；与「视频会议」域的硬件会议室（`/cgi-bin/meeting/rooms/*`）分属官方两棵章节树
+  - `Interfaces/Journal/` — 汇报（日志，官方「汇报」文档树 93392 只在自建应用树下有页面，零端点父接口 + 仅自建子接口）：`oa/journal/{get_record_list,get_record_detail,get_stat_list}`（93393/93394/93395）共 3 端点全为 POST；权限口径「配置到「汇报 - 可调用接口的应用」中」，代开发与第三方官方均标「暂不支持」；93393 官方独立给出「单页最多 100 条」与「600 次/分」，且 `cursor`/`limit` 必填（首次 cursor 传 0 而非不传）、93395 的 `template_id` 必填 ⇒ 该端点无可选参数；「汇报」模板为特殊模板，其表单落 `info.sys_journal_data` 而非 `apply_data`；与「审批」域分属官方 OA 两棵子树，汇报导出两页（96108）不在应用开发目录树内 ⇒ 零声明
+  - `Interfaces/DeviceData/` — 智能设备数据（官方「智慧硬件服务端」文档树 96107 只在第三方应用树下有页面，零端点父接口 + 唯一第三方子接口）：`devicedata/{get_auth_info,get_checkin_data,get_temperature_data,get_accesscontrol_data,get_accesscontrol_rule,add_accesscontrol_rule,mod_accesscontrol_rule,del_accesscontrol_rule}`（96097/96027/96028/96029/96030/96031/96221/96227）共 8 端点全为 POST；成员标识全线 `open_userid`，与「智能硬件开发」根树的 `openhw/*`（凭据链 model_token / device_token）分属官方两棵章节树 ⇒ 后者不在本域承载
+- **模块注册器**（`Extensions/`）：`AddWechatWorkServices(...)` + `WechatModule` 枚举 38 个成员（`ExternalContact` / `Message` / `Contact` / `Approval` / `Media` / `Identity` / `JsSdk` / `Agent` / `Authentication` / `Basic` / `Checkin` / `Meeting` / `Schedule` / `Wedoc` / `Wedrive` / `AccountId` / `Kf` / `Mail` / `Pay` / `Security` / `CorpGroup` / `School` / `Living` / `DataZone` / `MsgAudit` / `Invoice` / `Gov` / `Emergency` / `PromotionQrCode` / `PayTool` / `Aibot` / `License` / `Webhook` / `Hr` / `Dial` / `MeetingRoom` / `Journal` / `DeviceData`）+ `AddAllApis()` / `AddModules()`，按需注册模块客户端。`Build()` 校验 `AddWechatApp` 已先行，否则抛；`AddAuthenticationApi()` 额外挂授权编排服务，`AddWebhookApi()` 在注册期把 `key` 登记为进程级强制掩码参数名。
 - **授权编排**（`Services/Authorization/`）：`IWechatWorkAuthorizationService`（换码/刷新/撤销/枚举，单飞门 + 结果记忆）与 `IWechatAuthorizationCoordinator`（回调驱动自动化），策略统一落 `WechatAuthorizationOptions`。
 - **会话内容存档原生封装**（`ExtendedSDK/Finance/`）：企业微信会话内容存档 **C SDK** 的进程内封装——`IWechatWorkFinanceClient`（拉密文记录 / 解密单条 / 逐片或聚合拉媒体）+ `IWechatWorkFinanceClientFactory`（按机器人键装配并缓存实例）+ 配置面 `WechatFinanceOptions`（节 `WechatFinance`）+ 注册入口 `AddWechatFinanceSdk()`。**仓内唯一不经 HTTP 的能力面**：没有端点、不进 `WechatModule`、不参与令牌链路（守卫 FIN-B6），与「会话内容存档」的 HTTP 管理域 `Interfaces/MsgAudit/` 是两件事（后者管成员开启/机器人信息/同意情况，前者取正文）。
 - **errcode 令牌失效判定器**（`TokenManagers/`）：识别令牌失效错误码并触发恢复，经 `TokenRecoveryOptions.TokenInvalidationDetector` 编程式注入。

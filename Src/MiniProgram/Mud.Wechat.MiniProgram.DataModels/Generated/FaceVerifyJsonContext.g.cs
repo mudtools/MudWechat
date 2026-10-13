@@ -11,8 +11,8 @@ namespace Mud.Wechat.MiniProgram.DataModels.FaceVerify;
     PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower,
     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     WriteIndented = false)]
-[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.FaceVerify.WxaFaceGetVerifyIdRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.FaceVerify.WxaFaceCertInfo))]
+[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.FaceVerify.WxaFaceGetVerifyIdRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.FaceVerify.WxaFaceGetVerifyIdResponse))]
 [JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.FaceVerify.WxaFaceQueryVerifyInfoRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.FaceVerify.WxaFaceQueryVerifyInfoResponse))]

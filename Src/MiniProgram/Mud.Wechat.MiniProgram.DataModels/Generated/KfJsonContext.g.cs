@@ -11,16 +11,16 @@ namespace Mud.Wechat.MiniProgram.DataModels.Kf;
     PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower,
     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     WriteIndented = false)]
-[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Kf.WxaKfAccountRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Kf.WxaBusinessGetRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Kf.WxaBusinessGetResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Kf.WxaBusinessInfo))]
+[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Kf.WxaBusinessListResponse))]
 [JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Kf.WxaBusinessRegisterRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Kf.WxaBusinessUpdateRequest))]
-[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Kf.WxaBusinessGetRequest))]
-[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Kf.WxaBusinessInfo))]
-[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Kf.WxaBusinessGetResponse))]
-[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Kf.WxaBusinessListResponse))]
-[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Kf.WxaKfWorkRequest))]
-[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Kf.WxaKfWorkGetResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Kf.WxaKfAccountRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Kf.WxaKfTypingRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Kf.WxaKfWorkGetResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Kf.WxaKfWorkRequest))]
 internal partial class KfJsonContext : JsonSerializerContext
 {
 }

@@ -11,12 +11,12 @@ namespace Mud.Wechat.MiniProgram.DataModels.DynamicMessage;
     PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower,
     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     WriteIndented = false)]
+[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.DynamicMessage.WxaChatToolMsgRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.DynamicMessage.WxaCreateActivityIdRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.DynamicMessage.WxaCreateActivityIdResponse))]
-[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.DynamicMessage.WxaUpdateDynamicMessageRequest))]
-[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.DynamicMessage.WxaChatToolMsgRequest))]
-[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.DynamicMessage.WxaDynamicMessageTemplateInfo))]
 [JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.DynamicMessage.WxaDynamicMessageParameter))]
+[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.DynamicMessage.WxaDynamicMessageTemplateInfo))]
+[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.DynamicMessage.WxaUpdateDynamicMessageRequest))]
 internal partial class DynamicMessageJsonContext : JsonSerializerContext
 {
 }

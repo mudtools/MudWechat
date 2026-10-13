@@ -18,6 +18,10 @@ namespace Mud.Wechat.Work.Interfaces;
 /// 第三方应用见 <see cref="IWechatWorkThirdPartyAgentService"/>，
 /// 服务商代开发见 <see cref="IWechatWorkProviderAgentService"/>（均为零差异端点空标记）。
 /// </para>
+/// <para>
+/// 官方仅向第三方与代开发开放的 2 个端点（获取应用权限 / 获取应用管理员列表）不在本公共面，
+/// 由中间层 <see cref="IWechatWorkAgentThirdPartyProviderService"/> 承载 —— 自建应用子接口不继承该中间层。
+/// </para>
 /// </summary>
 /// <remarks>
 /// <para>

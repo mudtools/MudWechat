@@ -12,12 +12,12 @@ namespace Mud.Wechat.MiniProgram.DataModels.NearbyPoi;
     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     WriteIndented = false)]
 [JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.NearbyPoi.WxaAddNearbyPoiRequest))]
-[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.NearbyPoi.WxaNearbyPoiKfInfo))]
-[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.NearbyPoi.WxaNearbyPoiStoreInfo))]
 [JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.NearbyPoi.WxaDeleteNearbyPoiRequest))]
-[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.NearbyPoi.WxaNearbyPoiListRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.NearbyPoi.WxaNearbyPoiItem))]
+[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.NearbyPoi.WxaNearbyPoiKfInfo))]
+[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.NearbyPoi.WxaNearbyPoiListRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.NearbyPoi.WxaNearbyPoiListResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.NearbyPoi.WxaNearbyPoiStoreInfo))]
 [JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.NearbyPoi.WxaSetNearbyPoiShowStatusRequest))]
 internal partial class NearbyPoiJsonContext : JsonSerializerContext
 {

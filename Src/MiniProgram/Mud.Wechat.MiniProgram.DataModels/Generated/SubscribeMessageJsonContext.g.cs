@@ -11,13 +11,13 @@ namespace Mud.Wechat.MiniProgram.DataModels.SubscribeMessage;
     PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase,
     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     WriteIndented = false)]
-[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.SubscribeMessage.WxaSubscribeMessageSendRequest))]
-[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.SubscribeMessage.WxaSubscribeMessageDataValue))]
-[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.SubscribeMessage.WxaSetUserNotifyRequest))]
-[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.SubscribeMessage.WxaSetUserNotifyExtRequest))]
-[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.SubscribeMessage.WxaServiceCardDataValue))]
 [JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.SubscribeMessage.WxaGetUserNotifyRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.SubscribeMessage.WxaGetUserNotifyResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.SubscribeMessage.WxaServiceCardDataValue))]
+[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.SubscribeMessage.WxaSetUserNotifyExtRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.SubscribeMessage.WxaSetUserNotifyRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.SubscribeMessage.WxaSubscribeMessageDataValue))]
+[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.SubscribeMessage.WxaSubscribeMessageSendRequest))]
 internal partial class SubscribeMessageJsonContext : JsonSerializerContext
 {
 }

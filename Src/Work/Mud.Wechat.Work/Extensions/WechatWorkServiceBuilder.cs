@@ -152,6 +152,15 @@ public class WechatWorkServiceBuilder
             [WechatModule.Dial] = new WechatModuleRegistrar(
                 WechatModule.Dial,
                 s => s.AddDialWebApiHttpClient()),
+            [WechatModule.MeetingRoom] = new WechatModuleRegistrar(
+                WechatModule.MeetingRoom,
+                s => s.AddMeetingRoomWebApiHttpClient()),
+            [WechatModule.Journal] = new WechatModuleRegistrar(
+                WechatModule.Journal,
+                s => s.AddJournalWebApiHttpClient()),
+            [WechatModule.DeviceData] = new WechatModuleRegistrar(
+                WechatModule.DeviceData,
+                s => s.AddDeviceDataWebApiHttpClient()),
         };
 
     /// <summary>注册授权流业务接口与授权编排服务（get_pre_auth_code / set_session_info / get_permanent_code / get_auth_info / get_customized_auth_url + 编排）。</summary>
@@ -258,6 +267,15 @@ public class WechatWorkServiceBuilder
 
     /// <summary>注册公费电话业务接口（获取公费电话拨打记录 1 端点官方仅自建开放，零端点父接口 + 仅自建子接口承载；查询范围双闭区间、最大跨度 30 天；与紧急通知域 pstncc 路由族分属官方两棵章节树；健康上报已由家校 School 模块承载，不在本模块）。</summary>
     public WechatWorkServiceBuilder AddDialApi() => AddModule(WechatModule.Dial);
+
+    /// <summary>注册会议室业务接口（官方「会议室」文档树只在企业自建应用开发根下存在页面，两族各为零端点父接口 + 仅自建子接口承载：会议室管理 4 端点（add / list / edit / del）+ 会议室预定管理 7 端点（两条查询 + 三种预定 + 取消预定 + 预定详情），共 11 端点官方全部为 POST；与视频会议域的硬件会议室（/cgi-bin/meeting/rooms/*）分属官方两棵章节树）。</summary>
+    public WechatWorkServiceBuilder AddMeetingRoomApi() => AddModule(WechatModule.MeetingRoom);
+
+    /// <summary>注册汇报（日志）业务接口（官方「汇报」文档树只在企业自建应用开发根下存在页面，零端点父接口 + 仅自建子接口承载 3 端点：获取汇报记录号列表 / 获取汇报记录详情 / 获取汇报统计数据，官方全部为 POST；翻页标识 endflag 与迟交标识 flag 官方以数字 0/1 承载，评论 ID 官方线格式为数字；汇报导出两页不在应用开发目录树内、本模块零声明）。</summary>
+    public WechatWorkServiceBuilder AddJournalApi() => AddModule(WechatModule.Journal);
+
+    /// <summary>注册智能设备数据业务接口（官方「智慧硬件服务端」文档树 96107 只在第三方应用开发根下存在页面，零端点父接口 + 唯一第三方子接口承载 8 端点且全部为 POST：数据获取族 get_auth_info / get_checkin_data / get_temperature_data / get_accesscontrol_data + 门禁规则管理族 get / add / mod / del_accesscontrol_rule；成员标识全线为 open_userid，设备定位键查询侧为单值 device_sn 而写侧为 device_sn_list；与「智能硬件开发」根树的 /cgi-bin/openhw/*（凭据链 model_token / device_token，不属三类应用令牌面）分属官方两棵章节树）。</summary>
+    public WechatWorkServiceBuilder AddDeviceDataApi() => AddModule(WechatModule.DeviceData);
 
     /// <summary>注册全部模块。</summary>
     public WechatWorkServiceBuilder AddAllApis()

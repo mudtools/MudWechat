@@ -120,6 +120,14 @@ public class MpQueryTokenWhitelistGuard
             nameof(Mud.Wechat.MiniProgram.IWxaHardwareDeviceService),    // 硬件设备（9 端点）
             nameof(Mud.Wechat.MiniProgram.IWxaKfService),                // 客服（10 端点 JSON 通道；临时素材 IWxaKfMediaService 手工通道不入白名单）
             nameof(Mud.Wechat.MiniProgram.IWxaLaborUseService),          // 用工关系（2 端点）
+            // 直播域（38 端点，2026-10-13 依官方 livebroadcast 分区 38 页取证落地）：官方同为 Query access_token
+            // 契约（权限集 52），六个接口共用注册组 Live，无手工通道；同批解除 P3-R1 第 2 项「不实现」裁决。
+            nameof(Mud.Wechat.MiniProgram.IWxaLiveAssistantService),     // 直播·小助手与主播副号（8 端点）
+            nameof(Mud.Wechat.MiniProgram.IWxaLiveGoodsService),         // 直播·商品库管理（7 端点）
+            nameof(Mud.Wechat.MiniProgram.IWxaLiveRoleService),          // 直播·成员角色（3 端点）
+            nameof(Mud.Wechat.MiniProgram.IWxaLiveRoomGoodsService),     // 直播·房间内商品（7 端点）
+            nameof(Mud.Wechat.MiniProgram.IWxaLiveRoomService),          // 直播·直播间本体（11 端点）
+            nameof(Mud.Wechat.MiniProgram.IWxaLiveSubscribeService),     // 直播·长期订阅群发（2 端点）
             nameof(Mud.Wechat.MiniProgram.IWxaNearbyPoiService),         // 附近小程序（4 端点）
             nameof(Mud.Wechat.MiniProgram.IWxaOperationService),         // 运维中心（9 端点；反馈图片 IWxaFeedbackMediaService 手工通道不入白名单）
             nameof(Mud.Wechat.MiniProgram.IWxaPluginService),            // 插件管理（2 端点）
@@ -131,6 +139,11 @@ public class MpQueryTokenWhitelistGuard
             nameof(Mud.Wechat.MiniProgram.IWxaSoterService),             // 生物认证（1 端点）
             nameof(Mud.Wechat.MiniProgram.IWxaStudentService),           // 学生身份（1 端点）
             nameof(Mud.Wechat.MiniProgram.IWxaSubscribeMessageService),  // 订阅消息 / 服务卡片（4 端点）
+            // 交易保障域（16 端点，2026-10-13 落地）：官方同为 Query access_token 契约（权限集 30/151/76），
+            // 三个接口共用注册组 TransactionGuarantee，无手工通道。
+            nameof(Mud.Wechat.MiniProgram.IWxaTradeCommentService),      // 评价管理（9 端点）
+            nameof(Mud.Wechat.MiniProgram.IWxaTradeComplaintService),    // 投诉管理（5 端点）
+            nameof(Mud.Wechat.MiniProgram.IWxaTradeGuaranteeService),    // 交易保障基础（2 端点）
             // Vip 域（6 端点）2026-10 自小店线设计方案 §4.1 结论 A 划入：官方同为 Query access_token 契约。
             nameof(Mud.Wechat.MiniProgram.IWxaVipService),
         }, "小程序官方契约同样强制 Query 注入；新增 Query 注入接口须先评估再显式扩展本白名单");

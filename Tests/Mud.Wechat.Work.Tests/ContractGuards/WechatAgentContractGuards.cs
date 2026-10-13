@@ -21,7 +21,9 @@ namespace Mud.Wechat.Work.Tests.ContractGuards;
 /// <para>
 /// 四功能族形态：
 /// 获取应用族（agent/get + agent/list 两端点官方对三类应用开放一致，收敛声明于公共父接口；
-/// 设置应用官方仅企业可调用——第三方以及代开发自建应用不可调用，落自建差异端点）；
+/// 设置应用官方仅企业可调用——第三方以及代开发自建应用不可调用，落自建差异端点；
+/// 获取应用权限与获取应用管理员列表官方只在第三方/服务商代开发文档树存在，落「第三方 + 代开发」中间层父接口，
+/// 自建子接口不继承该中间层）；
 /// 工作台自定义展示族（5 端点官方对三类应用开放一致，收敛声明于公共父接口 + 空标记子接口）；
 /// 自定义菜单族（创建/获取/删除菜单 3 端点官方权限均为「仅企业可调用；第三方不可调用」，
 /// 服务商代开发章节无对应 API，零端点父接口 + 唯一自建子接口承载端点）；
@@ -67,6 +69,21 @@ public class WechatAgentContractGuards
             (typeof(IWechatWorkAgentService),
                 nameof(IWechatWorkAgentService.GetAgentListAsync),
                 typeof(GetAttribute), "/cgi-bin/agent/list"),
+        };
+
+    private static readonly (Type Interface, string Method, Type HttpAttribute, string Route)[]
+        AgentThirdPartyProviderRoutes =
+        {
+            // 获取应用权限（第三方 99052 / 代开发 99108；自建应用文档树无对应页面；
+            // 官方即 POST 且请求体不含业务字段）。
+            (typeof(IWechatWorkAgentThirdPartyProviderService),
+                nameof(IWechatWorkAgentThirdPartyProviderService.GetAgentPermissionsAsync),
+                typeof(PostAttribute), "/cgi-bin/agent/get_permissions"),
+            // 获取应用管理员列表（第三方 100073 / 代开发 100072；自建应用文档树无对应页面；
+            // 官方即 POST 且请求体不含业务字段）。
+            (typeof(IWechatWorkAgentThirdPartyProviderService),
+                nameof(IWechatWorkAgentThirdPartyProviderService.GetAgentAdminListAsync),
+                typeof(PostAttribute), "/cgi-bin/agent/get_admin_list"),
         };
 
     private static readonly (Type Interface, string Method, Type HttpAttribute, string Route)[]
@@ -133,7 +150,7 @@ public class WechatAgentContractGuards
         };
 
     // ------------------------------------------------------------------
-    // AG1：全部端点路由与官方契约一致（12 条路由表项 = 12 条官方路由）。
+    // AG1：全部端点路由与官方契约一致（14 条路由表项 = 14 条官方路由）。
     // ------------------------------------------------------------------
 
     [Fact]
@@ -148,6 +165,12 @@ public class WechatAgentContractGuards
         AgentSetRoutes.Should().HaveCount(1, "设置应用为自建应用差异端点");
         AgentSetRoutes.Single().Interface.Should().Be(typeof(IWechatWorkInternalAgentService),
             "设置应用官方仅企业可调用（第三方以及代开发自建应用不可调用）");
+
+        // 第三方 + 代开发公共面：2 端点官方只挂第三方与代开发两棵树，落中间层父接口。
+        AgentThirdPartyProviderRoutes.Should().HaveCount(2,
+            "第三方 + 代开发公共面 = 获取应用权限 + 获取应用管理员列表");
+        AgentThirdPartyProviderRoutes.Select(r => r.HttpAttribute).Should().OnlyContain(
+            a => a == typeof(PostAttribute), "第三方 + 代开发公共面 2 端点官方即 POST（勿「顺手统一」为 GET）");
 
         // 工作台自定义展示族：5 端点全部官方即 POST（含仅查询语义的获取端点）。
         AgentWorkbenchRoutes.Should().HaveCount(5, "工作台自定义展示族 = 设置/获取模版 2 + 设置/批量设置/获取用户数据 3 端点");
@@ -170,13 +193,14 @@ public class WechatAgentContractGuards
 
         AssertRoutes(AgentBaseRoutes);
         AssertRoutes(AgentSetRoutes);
+        AssertRoutes(AgentThirdPartyProviderRoutes);
         AssertRoutes(AgentWorkbenchRoutes);
         AssertRoutes(AgentMenuRoutes);
         AssertRoutes(AgentMigrationRoutes);
 
-        // 全部官方路由清单锁定（一端点一路由，共 12 条）。
-        var allRoutes = AgentBaseRoutes.Concat(AgentSetRoutes).Concat(AgentWorkbenchRoutes)
-            .Concat(AgentMenuRoutes).Concat(AgentMigrationRoutes)
+        // 全部官方路由清单锁定（一端点一路由，共 14 条）。
+        var allRoutes = AgentBaseRoutes.Concat(AgentSetRoutes).Concat(AgentThirdPartyProviderRoutes)
+            .Concat(AgentWorkbenchRoutes).Concat(AgentMenuRoutes).Concat(AgentMigrationRoutes)
             .Select(r => r.Route).Distinct().ToList();
         allRoutes.Should().BeEquivalentTo(new[]
         {
@@ -196,15 +220,31 @@ public class WechatAgentContractGuards
             "/cgi-bin/menu/delete",
             // 自建应用迁移成代开发应用族（1 条）。
             "/cgi-bin/agent/claim_customized_app",
+            // 第三方 + 代开发公共面（2 条）。
+            "/cgi-bin/agent/get_permissions",
+            "/cgi-bin/agent/get_admin_list",
         }, "应用管理域全部官方路由须与官方文档一一对应");
-        allRoutes.Should().HaveCount(12, "应用管理域共 12 条官方路由（一端点一路由）");
+        allRoutes.Should().HaveCount(14, "应用管理域共 14 条官方路由（一端点一路由）");
 
         // 官方无请求体/无业务参数端点的参数形态锁定。
-        typeof(IWechatWorkAgentService)
-            .GetMethod(nameof(IWechatWorkAgentService.GetAgentListAsync), BindingFlags.Public | BindingFlags.Instance)!
-            .GetParameters().Should().ContainSingle("获取应用列表官方无业务参数，方法仅承载 CancellationToken")
-            .Which.ParameterType.Should().Be(typeof(CancellationToken),
-                "获取应用列表无业务参数，唯一参数必须是 CancellationToken");
+        foreach (var ifaceAndMethod in new[]
+        {
+            (typeof(IWechatWorkAgentService), nameof(IWechatWorkAgentService.GetAgentListAsync)),
+            (typeof(IWechatWorkAgentThirdPartyProviderService),
+                nameof(IWechatWorkAgentThirdPartyProviderService.GetAgentPermissionsAsync)),
+            (typeof(IWechatWorkAgentThirdPartyProviderService),
+                nameof(IWechatWorkAgentThirdPartyProviderService.GetAgentAdminListAsync)),
+        })
+        {
+            ifaceAndMethod.Item1
+                .GetMethod(ifaceAndMethod.Item2, BindingFlags.Public | BindingFlags.Instance)!
+                .GetParameters().Should().ContainSingle(
+                    $"{ifaceAndMethod.Item1.Name}.{ifaceAndMethod.Item2} 官方请求体不含业务字段，方法仅承载 CancellationToken");
+            ifaceAndMethod.Item1
+                .GetMethod(ifaceAndMethod.Item2, BindingFlags.Public | BindingFlags.Instance)!
+                .GetParameters().Single().ParameterType.Should().Be(typeof(CancellationToken),
+                    $"{ifaceAndMethod.Item1.Name}.{ifaceAndMethod.Item2} 唯一参数必须是 CancellationToken");
+        }
 
         // 自定义菜单三端点与获取应用详情的 agentid 均为 Query 参数（官方契约），不得移入请求体。
         AssertAgentidQueryParameter(typeof(IWechatWorkAgentService), nameof(IWechatWorkAgentService.GetAgentAsync));
@@ -237,14 +277,92 @@ public class WechatAgentContractGuards
     [Fact]
     public void AgentInterfaceHierarchy_ShouldMatchOfficialOpenSurfaces()
     {
-        // 获取应用族：公共父 2 端点 + 自建 1 差异端点（设置应用）+ 第三方/代开发零端点空标记。
+        // 获取应用族：公共父 2 端点（三类应用一致开放）+ 自建 1 差异端点（设置应用）
+        // +「第三方 + 代开发」中间层父接口 2 端点（自建应用文档树无对应页面，故自建子接口不继承该中间层）。
+        // 两级继承链分别锁定集合，新增应用类型须先核对官方文档。
+        var agentParent = typeof(IWechatWorkAgentService);
+        var agentThirdPartyProviderParent = typeof(IWechatWorkAgentThirdPartyProviderService);
+
+        // 公共父接口自身形态：IsAbstract + 无注册组 + 2 条三类公共面端点。
+        // （本族的注册面子接口分两级，故不用 AssertFamily 的传递性集合断言，改由下面两段集合锁定。）
+        var agentParentApi = agentParent.GetCustomAttribute<HttpClientApiAttribute>();
+        agentParentApi.Should().NotBeNull($"{agentParent.Name} 必须声明 [HttpClientApi]");
+        agentParentApi!.IsAbstract.Should().BeTrue("公共父接口不参与 DI 注册，必须 IsAbstract = true");
+        agentParentApi.RegistryGroupName.Should().BeNullOrEmpty("父接口不进入注册组（注册面由子接口承载）");
+        agentParent.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
+            .Should().HaveCount(2, $"{agentParent.Name} 承载官方对三类应用一致开放的 2 个端点");
+
+        // 自建子接口：直接挂公共父接口 + 1 条差异端点（设置应用）。
+        var internalAgentChild = typeof(IWechatWorkInternalAgentService);
+        internalAgentChild.Should().BeAssignableTo(agentParent,
+            $"{internalAgentChild.Name} 必须继承公共父接口 {agentParent.Name}");
+        var internalAgentApi = internalAgentChild.GetCustomAttribute<HttpClientApiAttribute>();
+        internalAgentApi.Should().NotBeNull($"{internalAgentChild.Name} 必须声明 [HttpClientApi]");
+        internalAgentApi!.RegistryGroupName.Should().Be(AgentRegistryGroupName,
+            $"{internalAgentChild.Name} 必须挂 {AgentRegistryGroupName} 注册组（Agent 模块共用 Add{AgentRegistryGroupName}WebApiHttpClient()）");
+        internalAgentApi.InheritedFrom.Should().Be("WechatWorkAgentService",
+            $"{internalAgentChild.Name} 必须继承父接口生成实现类 WechatWorkAgentService");
+        internalAgentChild.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
+            .Should().HaveCount(1, $"{internalAgentChild.Name} 承载官方自建差异端点「设置应用」");
+
+        // 中间层为公共父接口的直接子接口（IsAbstract，不承载注册面），故不入 AssertFamily 的注册子接口集合，
+        // 由下面的两级集合断言单独锁定。
+        agentParent.Assembly.GetTypes()
+            .Where(t => t.IsInterface && agentParent.IsAssignableFrom(t)
+                        && t != agentParent && t != agentThirdPartyProviderParent)
+            .Select(t => t.Name)
+            .OrderBy(n => n, StringComparer.Ordinal)
+            .ToList()
+            .Should().BeEquivalentTo(
+                new[]
+                {
+                    nameof(IWechatWorkInternalAgentService),
+                    nameof(IWechatWorkProviderAgentService),
+                    nameof(IWechatWorkThirdPartyAgentService),
+                },
+                "公共父接口的类型化子接口恰为自建/第三方/代开发三个应用类型（含经由中间层的两个）；" +
+                "新增应用类型须先核对官方文档并同批调整 AG2 与 G5");
+
+        agentThirdPartyProviderParent.Should().BeAssignableTo(agentParent,
+            $"{agentThirdPartyProviderParent.Name} 必须继承公共父接口 {agentParent.Name}（继承 2 条三类公共面）");
+        var thirdPartyProviderApi = agentThirdPartyProviderParent.GetCustomAttribute<HttpClientApiAttribute>();
+        thirdPartyProviderApi.Should().NotBeNull($"{agentThirdPartyProviderParent.Name} 必须声明 [HttpClientApi]");
+        thirdPartyProviderApi!.IsAbstract.Should().BeTrue(
+            $"{agentThirdPartyProviderParent.Name} 为第三方/代开发公共父接口，不参与 DI 注册，必须 IsAbstract = true");
+        thirdPartyProviderApi.RegistryGroupName.Should().BeNullOrEmpty(
+            "中间父接口不进入注册组（注册面由应用类型子接口承载）");
+        thirdPartyProviderApi.InheritedFrom.Should().Be("WechatWorkAgentService",
+            $"{agentThirdPartyProviderParent.Name} 的实现类必须继承公共父接口实现类 WechatWorkAgentService");
+        agentThirdPartyProviderParent.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
+            .Should().HaveCount(2, "中间层承载官方仅向第三方与代开发开放的 2 个端点");
+
+        agentThirdPartyProviderParent.Assembly.GetTypes()
+            .Where(t => t.IsInterface && agentThirdPartyProviderParent.IsAssignableFrom(t)
+                        && t != agentThirdPartyProviderParent)
+            .Select(t => t.Name)
+            .OrderBy(n => n, StringComparer.Ordinal)
+            .ToList()
+            .Should().BeEquivalentTo(
+                new[]
+                {
+                    nameof(IWechatWorkProviderAgentService),
+                    nameof(IWechatWorkThirdPartyAgentService),
+                },
+                "中间层的子接口恰为第三方与代开发两个应用类型；自建子接口不得继承中间层" +
+                "（否则自建类型化面会重新暴露官方未开放的 2 个端点）");
+
+        // 自建子接口必须直接挂公共父接口：官方自建树无获取应用权限 / 获取应用管理员列表页面。
+        agentThirdPartyProviderParent.IsAssignableFrom(typeof(IWechatWorkInternalAgentService))
+            .Should().BeFalse(
+                $"{nameof(IWechatWorkInternalAgentService)} 不得继承 {agentThirdPartyProviderParent.Name}");
+
+        // 中间层的两个注册面子接口：均为零差异端点空标记，挂 Agent 注册组。
         AssertFamily(
-            parent: typeof(IWechatWorkAgentService),
-            parentImplementation: "WechatWorkAgentService",
+            parent: agentThirdPartyProviderParent,
+            parentImplementation: "WechatWorkAgentThirdPartyProviderService",
             parentDeclaredEndpointCount: 2,
             new[]
             {
-                (typeof(IWechatWorkInternalAgentService), 1),
                 (typeof(IWechatWorkProviderAgentService), 0),
                 (typeof(IWechatWorkThirdPartyAgentService), 0),
             });
@@ -320,7 +438,7 @@ public class WechatAgentContractGuards
     }
 
     // ------------------------------------------------------------------
-    // AG3：令牌绑定——应用管理域 12 个接口统一 AccessToken 路由键 + Query 注入
+    // AG3：令牌绑定——应用管理域 13 个接口统一 AccessToken 路由键 + Query 注入
     //（归属域键由 WechatTokenOwnerContractGuards 全局锁定，此处不重复）。
     // ------------------------------------------------------------------
 
@@ -330,6 +448,7 @@ public class WechatAgentContractGuards
         var accessTokenInterfaces = new[]
         {
             typeof(IWechatWorkAgentService),
+            typeof(IWechatWorkAgentThirdPartyProviderService),
             typeof(IWechatWorkInternalAgentService),
             typeof(IWechatWorkProviderAgentService),
             typeof(IWechatWorkThirdPartyAgentService),
@@ -343,7 +462,7 @@ public class WechatAgentContractGuards
             typeof(IWechatWorkInternalAgentMigrationService),
         };
 
-        accessTokenInterfaces.Should().HaveCount(12, "应用管理域四族 = 获取应用族 4 接口 + 工作台自定义展示族 4 接口 + 自定义菜单族 2 接口 + 自建应用迁移成代开发应用族 2 接口");
+        accessTokenInterfaces.Should().HaveCount(13, "应用管理域四族 = 获取应用族 5 接口（公共父 + 第三方/代开发中间层 + 三个应用类型子接口）+ 工作台自定义展示族 4 接口 + 自定义菜单族 2 接口 + 自建应用迁移成代开发应用族 2 接口");
 
         foreach (var iface in accessTokenInterfaces)
         {
@@ -373,8 +492,8 @@ public class WechatAgentContractGuards
 
         // 全量守卫：命名空间下所有顶层 DTO 均须登记进 AgentJsonContext 且 SerializerClassName 统一为 Agent
         //（生成物 AgentJsonContext 自身亦落同命名空间，按 JsonSerializerContext 派生类型排除）。
-        domainTypes.Should().HaveCount(26,
-            "应用管理模块契约面类型数漂移须先核对官方文档再同批调整本守卫（获取应用族 8：获取详情响应 1 + 可见范围嵌套 3 + 应用列表响应 1 + 列表项 1 + 设置应用请求 1 + WechatWorkResponse 复用不计；工作台自定义展示族 14：端点级请求/响应 7 + 模版数据结构 7；自定义菜单族 3：创建请求 1 + 获取响应 1 + 菜单按钮 1；自建应用迁移成代开发应用族 1：请求 1）");
+        domainTypes.Should().HaveCount(30,
+            "应用管理模块契约面类型数漂移须先核对官方文档再同批调整本守卫（获取应用族 8：获取详情响应 1 + 可见范围嵌套 3 + 应用列表响应 1 + 列表项 1 + 设置应用请求 1 + WechatWorkResponse 复用不计；第三方 + 代开发公共面 4：获取应用权限响应 1 + 权限二次授权时效项 1 + 获取管理员列表响应 1 + 管理员列表项 1；工作台自定义展示族 14：端点级请求/响应 7 + 模版数据结构 7；自定义菜单族 3：创建请求 1 + 获取响应 1 + 菜单按钮 1；自建应用迁移成代开发应用族 1：请求 1）");
 
         foreach (var type in domainTypes)
         {
@@ -395,6 +514,9 @@ public class WechatAgentContractGuards
             typeof(AgentAllowPartys), typeof(AgentAllowTags),
             typeof(GetAgentListResponse), typeof(AgentItem),
             typeof(SetAgentRequest),
+            // 第三方 + 代开发公共面（获取应用权限 / 获取应用管理员列表）。
+            typeof(GetAgentPermissionsResponse), typeof(GetAgentAdminListResponse), typeof(AgentAdminItem),
+            typeof(AgentPermissionExtItem),
             // 工作台自定义展示族（端点级请求/响应 + 模版数据结构全清单）。
             typeof(SetAgentWorkbenchTemplateRequest), typeof(GetAgentWorkbenchTemplateRequest),
             typeof(GetAgentWorkbenchTemplateResponse),
@@ -461,6 +583,36 @@ public class WechatAgentContractGuards
             .GetProperties(BindingFlags.Public | BindingFlags.Instance).Should().ContainSingle(
                 "待迁移自建应用的 access_token 走 Query 注入，请求体仅承载 suite_access_token 一个包体参数")
             .Which.Name.Should().Be(nameof(ClaimAgentCustomizedAppRequest.SuiteAccessToken));
+
+        // 第三方 + 代开发公共面：权限列表字段名为 app_permissions（数组）；管理员列表字段名为 admin
+        //（不带 _list 后缀，与服务商侧 /cgi-bin/service/get_admin_list 同名但元素多回传 open_userid，故元素类型不共用）。
+        JsonNameShouldBe(typeof(GetAgentPermissionsResponse), "AppPermissionList", "app_permissions");
+        typeof(GetAgentPermissionsResponse).GetProperty(nameof(GetAgentPermissionsResponse.AppPermissionList))!
+            .PropertyType.Should().Be(typeof(List<string>), "官方 app_permissions 为字符串数组");
+        JsonNameShouldBe(typeof(GetAgentAdminListResponse), "AdministratorList", "admin");
+        typeof(GetAgentAdminListResponse).GetProperty(nameof(GetAgentAdminListResponse.AdministratorList))!
+            .PropertyType.Should().Be(typeof(List<AgentAdminItem>),
+                "官方 admin 为对象数组，元素结构见 AgentAdminItem");
+        JsonNameShouldBe(typeof(AgentAdminItem), "UserId", "userid");
+        JsonNameShouldBe(typeof(AgentAdminItem), "AuthType", "auth_type");
+        typeof(AgentAdminItem).GetProperty(nameof(AgentAdminItem.UserId))!
+            .PropertyType.Should().Be(typeof(string), "成员账号官方为字符串（本仓声明为 string?）");
+        typeof(AgentAdminItem).GetProperty(nameof(AgentAdminItem.AuthType))!
+            .PropertyType.Should().Be(typeof(int?), "管理权限类型官方为数字枚举（本仓声明为 int?）");
+
+        // 获取应用权限详情的二次授权时效扩展面（官方 99052/99108 于 2026-10-09 增列 app_permissions_ext）：
+        // 字段名照官方原文，元素为对象数组；expire_time 为秒级时间戳且「若权限不会过期则值为 0」，
+        // 故不得建模为 bool 失效位，也不得以「非空」判定列表存在（官方为条件返回）。
+        JsonNameShouldBe(typeof(GetAgentPermissionsResponse), "AppPermissionExtList", "app_permissions_ext");
+        typeof(GetAgentPermissionsResponse)
+            .GetProperty(nameof(GetAgentPermissionsResponse.AppPermissionExtList))!
+            .PropertyType.Should().Be(typeof(List<AgentPermissionExtItem>),
+                "官方 app_permissions_ext 为对象数组，元素结构见 AgentPermissionExtItem");
+        JsonNameShouldBe(typeof(AgentPermissionExtItem), "PermissionName", "permission_name");
+        JsonNameShouldBe(typeof(AgentPermissionExtItem), "ExpireTime", "expire_time");
+        typeof(AgentPermissionExtItem).GetProperty(nameof(AgentPermissionExtItem.ExpireTime))!
+            .PropertyType.Should().Be(typeof(long?),
+                "expire_time 为秒级时间戳，与全仓时间戳字段（send_time 等）统一以 long 承载");
     }
 
     /// <summary>断言指定方法的 agentid 参数为官方 Query 参数（int 类型）。</summary>

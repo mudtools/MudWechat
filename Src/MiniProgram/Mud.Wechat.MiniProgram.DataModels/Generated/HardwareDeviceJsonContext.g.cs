@@ -11,20 +11,20 @@ namespace Mud.Wechat.MiniProgram.DataModels.HardwareDevice;
     PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower,
     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     WriteIndented = false)]
-[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.HardwareDevice.WxaDeviceMessageSendRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.HardwareDevice.WxaDeviceMessageDataValue))]
-[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.HardwareDevice.WxaSnTicketResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.HardwareDevice.WxaDeviceMessageSendRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.HardwareDevice.WxaIoTDeviceInfo))]
 [JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.HardwareDevice.WxaIoTGroupCreateResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.HardwareDevice.WxaIoTGroupDevicesRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.HardwareDevice.WxaIoTGroupInfoRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.HardwareDevice.WxaIoTGroupInfoResponse))]
-[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.HardwareDevice.WxaIoTDeviceInfo))]
-[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.HardwareDevice.WxaIoTGroupDevicesRequest))]
-[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.HardwareDevice.WxaLicensePkgListResponse))]
-[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.HardwareDevice.WxaLicensePkg))]
 [JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.HardwareDevice.WxaLicenseActivateRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.HardwareDevice.WxaLicenseDevice))]
 [JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.HardwareDevice.WxaLicenseDeviceInfoRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.HardwareDevice.WxaLicenseDeviceInfoResponse))]
-[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.HardwareDevice.WxaLicenseDevice))]
+[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.HardwareDevice.WxaLicensePkg))]
+[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.HardwareDevice.WxaLicensePkgListResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.HardwareDevice.WxaSnTicketResponse))]
 internal partial class HardwareDeviceJsonContext : JsonSerializerContext
 {
 }

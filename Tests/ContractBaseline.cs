@@ -42,16 +42,16 @@ public static class Baseline
         /// 公共父接口数：`[HttpClientApi]` 且 `IsAbstract = true`（不注册 DI，仅作继承基座）。
         /// </summary>
         /// <remarks>锁定于 `WechatInterfaceNamespaceContractGuards`（N1）。改此值须先核对官方开放面。</remarks>
-        public const int AbstractParentInterfaces = 147;
+        public const int AbstractParentInterfaces = 154;
 
         /// <summary>
         /// 可注入接口数：`[HttpClientApi]` 且非抽象（应用类型子接口 + 独立端点接口）。
         /// </summary>
         /// <remarks>
         /// 锁定于 `WechatInterfaceNamespaceContractGuards`（N1）。
-        /// 与 <see cref="AbstractParentInterfaces"/> 合计即契约面接口总数（当前 446）。
+        /// 与 <see cref="AbstractParentInterfaces"/> 合计即契约面接口总数（当前 461）。
         /// </remarks>
-        public const int InjectableInterfaces = 299;
+        public const int InjectableInterfaces = 307;
 
         /// <summary>
         /// 已登记 `[WechatCallbackContract]` 的事件键总数（常量声明与特性声明的**并集**）。
@@ -102,18 +102,25 @@ public static class Baseline
         /// </summary>
         /// <remarks>
         /// 锁定于 `MiniProgramContractGuards`（MP-X5）。
-        /// 现行推导：169 特性路由 + 6 手工通道（小程序码 3 + 反馈媒体 1 + 对账文件 1 + 客服临时素材 1）= 175；
+        /// 现行推导：254 特性路由 + 6 手工通道（小程序码 3 + 反馈媒体 1 + 对账文件 1 + 客服临时素材 1）= 260；
         /// 按域拆分即 Auth 8 + QrCodeLink 9 + Security 3 + DataAnalysis 11 + SubscribeMessage 4 +
         /// DynamicMessage 3 + Kf 11 + HardwareDevice 9 + Operation 10 + Plugin 2 + Charge 2 +
         /// NearbyPoi 4 + Search 1 + Soter 1 + ServiceMarket 2 + RedPacketCover 1 + Student 1 +
         /// FaceVerify 2 + LaborUse 2 + ExpressBusiness 12 + ExpressDelivery 28 + ExpressIntracity 16 +
-        /// ExpressInsuranceFreight 11 + ExpressLocal 15 + ExpressBill 1 + Vip 6 = 175
+        /// ExpressInsuranceFreight 11 + ExpressLocal 15 + ExpressBill 1 + Vip 6 +
+        /// TradeGuarantee 2 + TradeComment 9 + TradeComplaint 5 + Live 38 + Vod 31 = 260
         /// （Vip 域为 2026-10 小店线设计方案 §4.1 结论 A 划入；2026-10-12 依官方清单核对后：
         /// ExpressDelivery 28 / ExpressIntracity 16 补齐「消息推送 2 + 投诉处理 1」与「同城扣费主体与城市 3」，
         /// 新增 ExpressInsuranceFreight 11（无忧退货）与 ExpressLocal 15（即时配送）两族，
-        /// Kf 11 = 原 9 + 客服输入状态 1 + 临时素材二进制通道 1）。
+        /// Kf 11 = 原 9 + 客服输入状态 1 + 临时素材二进制通道 1；
+        /// 2026-10-13 依官方 transaction-guarantee 分区补齐交易保障域 16 = 基础 2 + 评价管理 9 + 投诉管理 5，
+        /// 其中投诉管理 5 条沿用历史 <c>minishop</c> 前缀，由 P3-R1 收窄后按清单在册；
+        /// 同日依官方 livebroadcast 分区 38 页取证补齐直播域 38（直播间本体 11 + 小助手与主播副号 8 +
+        /// 房间内商品 7 + 商品库管理 7 + 成员角色 3 + 长期订阅群发 2），同批解除 P3-R1 第 2 项「不实现」裁决；
+        /// 同日依官方 minidrama 分区 31 页取证补齐短剧媒资域 31（上传 6 + 媒资 4 + 剧目 7 + CDN 3 + 授权 11），
+        /// 缺口清单原记「短剧 25」系第三方转述漏项，已按逐页取证更正为 31）。
         /// </remarks>
-        public const int Endpoints = 175;
+        public const int Endpoints = 260;
     }
 
     /// <summary>微信支付 APIv3 线（`Tests/Mud.Wechat.Pay.Tests`）。</summary>

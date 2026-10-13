@@ -11,18 +11,18 @@ namespace Mud.Wechat.MiniProgram.DataModels.Auth;
     PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase,
     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     WriteIndented = false)]
-[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Auth.WxaCode2SessionResponse))]
-[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Auth.WxaGetPhoneNumberRequest))]
-[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Auth.WxaGetPhoneNumberResponse))]
-[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Auth.WxaPhoneInfo))]
-[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Auth.WxaWatermark))]
-[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Auth.WxaGetPaidUnionIdResponse))]
-[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Auth.WxaGetPluginOpenPidResponse))]
 [JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Auth.WxaCheckEncryptedMsgRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Auth.WxaCheckEncryptedMsgResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Auth.WxaCode2SessionResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Auth.WxaGetPaidUnionIdResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Auth.WxaGetPhoneNumberRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Auth.WxaGetPhoneNumberResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Auth.WxaGetPluginOpenPidResponse))]
 [JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Auth.WxaGetUserEncryptKeyRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Auth.WxaGetUserEncryptKeyResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Auth.WxaPhoneInfo))]
 [JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Auth.WxaUserEncryptKeyInfo))]
+[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Auth.WxaWatermark))]
 internal partial class AuthJsonContext : JsonSerializerContext
 {
 }

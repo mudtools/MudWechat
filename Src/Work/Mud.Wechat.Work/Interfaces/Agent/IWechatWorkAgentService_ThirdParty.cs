@@ -12,8 +12,10 @@ namespace Mud.Wechat.Work;
 /// <summary>
 /// 企业微信「应用管理」模块基础管理域第三方应用 SDK。
 /// <para>
-/// 官方对第三方应用开放与三类应用公共面一致的 2 端点（继承自
-/// <see cref="IWechatWorkAgentService"/>），零差异端点空标记。
+/// 官方对第三方应用开放 4 个端点：三类应用公共面 2 端点（继承自
+/// <see cref="IWechatWorkAgentService"/>）+ 第三方与代开发公共面 2 端点（获取应用权限、
+/// 获取应用管理员列表，继承自 <see cref="IWechatWorkAgentThirdPartyProviderService"/>），
+/// 本接口为零差异端点空标记。
 /// 「设置应用」官方仅企业可调用（第三方以及代开发自建应用不可调用），不在本接口开放面内；
 /// 企业自建应用见 <see cref="IWechatWorkInternalAgentService"/>，
 /// 服务商代开发见 <see cref="IWechatWorkProviderAgentService"/>。
@@ -30,10 +32,10 @@ namespace Mud.Wechat.Work;
 /// </para>
 /// </remarks>
 [HttpClientApi(RegistryGroupName = "Agent",
-    TokenManage = nameof(IWechatAppManager), InheritedFrom = nameof(WechatWorkAgentService))]
+    TokenManage = nameof(IWechatAppManager), InheritedFrom = nameof(WechatWorkAgentThirdPartyProviderService))]
 [Token(TokenType = WechatTokenTypes.AccessToken,
       TokenManagerKey = WechatTokenManagerKeys.CorpAccessToken,
       InjectionMode = TokenInjectionMode.Query, Name = "access_token")]
-public interface IWechatWorkThirdPartyAgentService : IWechatWorkAgentService
+public interface IWechatWorkThirdPartyAgentService : IWechatWorkAgentThirdPartyProviderService
 {
 }

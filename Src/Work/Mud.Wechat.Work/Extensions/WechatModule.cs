@@ -121,4 +121,13 @@ public enum WechatModule
 
     /// <summary>公费电话（获取公费电话拨打记录 93662 单端点，官方仅自建开放——代开发与第三方权限表均标注暂不支持，零端点父接口 + 仅自建子接口承载端点；查询范围为 [start_time, end_time] 双闭区间、最大跨度 30 天，越界回 600018；与「紧急通知应用」域的 pstncc 路由族分属官方两棵章节树。健康上报 4 端点官方章节即「家校应用 → 健康上报」，已由 School 模块 HealthReport 族承载，勿在此重复声明）。</summary>
     Dial,
+
+    /// <summary>会议室（官方「会议室」文档树只在企业自建应用开发根下存在页面（分类 93617：93619 会议室管理 / 93620 会议室预定管理），第三方与代开发两棵树均无对应页面 ⇒ 两族各为零端点父接口 + 仅自建子接口承载端点：会议室管理族 4 端点（add / list / edit / del）+ 会议室预定管理族 6 端点（get_booking_info / book / book_by_schedule / book_by_meeting / cancel_book / bookinfo/get），共 10 端点且官方全部为 POST；93620 现行正文锚点仅六节，第三方 SDK 转述的 get_booking_info_by_meeting_id 无官方出处 ⇒ 零声明；官方契约陷阱：book_by_meeting 的会议 ID 字段官方拼写为 meetingid（无下划线）、排期容器名 schedule 在 get_booking_info 是数组而在 bookinfo/get 是对象、cancel_book 的定位键官方为 booking_id 而非会议 ID、edit / del / cancel_book 三端点成功响应无业务字段；与「视频会议」域的硬件会议室（/cgi-bin/meeting/rooms/*）分属官方两棵章节树，勿混淆）。</summary>
+    MeetingRoom,
+
+    /// <summary>汇报（日志）（官方「汇报」文档树只在企业自建应用开发根下存在页面（分类 93392：93393 获取汇报记录号列表 / 93394 获取汇报记录详情 / 93395 获取汇报统计数据）⇒ 零端点父接口 + 仅自建子接口承载 3 端点，官方全部为 POST 且权限口径为「配置到『汇报 - 可调用接口的应用』中」、代开发与第三方官方均标「暂不支持」；官方频率：93393 独立给出「一次最多拉取 100 个汇报记录」与「调用频率不可超过 600 次/分」，另两页无独立数字阈值走官方附录默认值；官方契约陷阱：93393 的 cursor / limit 与 93395 的 template_id 官方参数表均为必填（template_id 必填即本接口按单一表单取统计、无可选参数），endflag 与迟交标识 flag 官方以数字 0/1 承载、评论 commentid / tocommentid 官方线格式为数字，本仓无数值转换器故分别以 int / long 原样承载；统计侧部门与标签字段名为 open_partyid / open_tagid（非 partyid / tagid）；「汇报」模板是特殊模板，其表单不在 apply_data 中返回而落 info.sys_journal_data（富文本）；汇报内容 apply_data 与审批的 apply_data 同为一棵「控件 + 控件值」树，本域按汇报详情的 value 附录建模（不含审批侧 new_tips / bank_account，另含 students / classes / docs / wedrive_files）；与「审批」域分属官方 OA 的两棵子树，汇报导出两页（96108）不在应用开发目录树内、本域零声明）。</summary>
+    Journal,
+
+    /// <summary>智能设备数据（官方「智慧硬件服务端」文档树只在第三方应用开发根下存在页面（分类 96107 → 接口调用）⇒ 零端点父接口 + 唯一第三方子接口承载 8 端点，官方全部为 POST：数据获取族 4 端点（get_auth_info 96097 / get_checkin_data 96027 / get_temperature_data 96028 / get_accesscontrol_data 96029）+ 门禁规则管理族 4 端点（get_accesscontrol_rule 96030 / add_accesscontrol_rule 96031 / mod_accesscontrol_rule 96221 / del_accesscontrol_rule 96227）；官方契约陷阱：设备定位键 get_accesscontrol_rule 用单值 device_sn 而添加 / 修改用 device_sn_list、pass_rule 在查询响应是「容器 + items」而在添加 / 修改请求是单对象、规则名请求侧 rule_name 响应侧 name、设备列表容器内层元素名 item（单数）而三条数据面容器内层元素名 items、三条数据面请求字段面同构而响应容器名分别为 checkindata（连写）/ temperature_data / accesscontrol_data、条目时间字段名 checkin_time 与 timestamp、温度值官方以字符串承载；成员标识全线为 open_userid；与「智能硬件开发」根树的 /cgi-bin/openhw/*（凭据链 model_token / device_token，不属三类应用令牌面）分属两棵章节树）。</summary>
+    DeviceData,
 }

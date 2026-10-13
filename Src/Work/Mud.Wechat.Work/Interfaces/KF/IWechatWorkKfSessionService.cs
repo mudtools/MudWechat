@@ -11,9 +11,9 @@ namespace Mud.Wechat.Work.Interfaces;
 
 /// <summary>
 /// 企业微信「微信客服」模块会话分配与消息收发域公共 SDK
-/// （会话状态获取与变更 + 发送消息 10 种 msgtype + 发送欢迎语等事件响应消息 2 种 msgtype）。
+/// （会话状态获取与变更 + 同步消息和事件 + 发送消息 10 种 msgtype + 发送欢迎语等事件响应消息 2 种 msgtype）。
 /// <para>
-/// 官方对三类应用开放完全一致的 4 条路由（14 个端点方法，发送类路由按 msgtype 一方法一请求体收敛），
+/// 官方对三类应用开放完全一致的 5 条路由（15 个端点方法，发送类路由按 msgtype 一方法一请求体收敛），
 /// 全部声明于本接口；应用类型子接口均为零差异端点空标记：
 /// 自建应用见 <see cref="IWechatWorkInternalKfSessionService"/>，
 /// 第三方应用见 <see cref="IWechatWorkThirdPartyKfSessionService"/>，
@@ -84,6 +84,49 @@ public interface IWechatWorkKfSessionService
     [Post("/cgi-bin/kf/service_state/trans")]
     Task<TransitKfServiceStateResponse> TransitServiceStateAsync(
         [Body] TransitKfServiceStateRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 同步消息和事件
+    /// <para>拉取客户发送的消息、企业发送的消息以及会话相关事件（按发生顺序返回）。
+    /// 入参 <c>token</c> 由「微信客服事件通知」回调下发，与调用本接口所用的 <c>access_token</c>
+    /// 是两个不同概念的令牌，不可互相代替；首次请求不传 <c>cursor</c>，
+    /// 其后逐页以上一次响应的 <c>next_cursor</c> 继续请求，直到 <c>has_more</c> 为 0
+    /// （官方以数字 0/1 承载该开关，DTO 原样以 <c>int</c> 承载）。</para>
+    /// <para>响应消息体按 <c>msgtype</c> 判别载体（text / image / voice / video / file / link /
+    /// miniprogram / msgmenu / location / business_card / event / channels /
+    /// channels_shop_product / channels_shop_order / merged_msg），
+    /// <c>origin</c> 判别消息来源（客户发送、系统自动发送、机器人发送、人工发送等）。</para>
+    /// </summary>
+    /// <param name="request">同步请求体（<see cref="SyncKfMessageRequest"/>：open_kfid 官方<b>必填</b>，token / cursor / limit / voice_format 官方均为可选）。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
+    /// <returns>消息列表（msg_list）与翻页标记（has_more / next_cursor）。</returns>
+    /// <remarks>
+    /// <para><b>企业自建应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/94670"/></para>
+    /// <para><b>第三方应用</b>开发SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/94699"/></para>
+    /// <para><b>服务商代开发</b>SDK文档：<see href="https://developer.work.weixin.qq.com/document/path/96426"/></para>
+    /// <para>官方权限（三页同口径的权限表原文）：自建应用「配置到「微信客服 - 可调用接口的应用」中」；
+    /// 第三方应用与代开发自建应用「具有“微信客服-&gt;管理账号、分配会话和收发消息”权限」。
+    /// 注：从 2023 年 12 月 1 日 0 点起，不再支持通过系统应用 secret 调用接口，存量企业暂不受影响。
+    /// 另两条官方硬约束：只能通过 API 管理企业指定的客服账号（企业需在管理后台「微信客服 - 通过API管理微信客服账号」处开启），
+    /// 且操作的客服账号对应的接待人员应在应用的可见范围内。</para>
+    /// <para>官方限制（本页正文口径）：本接口为 POST，可获取<b>最近 3 天内</b>的具体消息内容和事件，
+    /// <b>不支持</b>读取通过发送消息接口发送的消息；图片/语音/视频/文件的媒体大小限制为
+    /// <b>2MB / 2MB / 10MB / 20MB</b>，超出时官方改为返回文本提示消息；
+    /// <c>cursor</c> 官方不多于 64 字节，不填则从 3 天内最早的消息开始返回；
+    /// <c>token</c> 官方不多于 128 字节、「回调事件返回的 token 字段，10 分钟内有效；<b>可不填，如果不填接口有严格的频率限制</b>」；
+    /// <c>limit</c> 的<b>默认值和最大值都为 1000</b>，且官方明确「可能会出现返回条数少于 limit 的情况」；
+    /// <c>voice_format</c> 取 0-Amr、1-Silk，默认 0。</para>
+    /// <para>官方翻页判据：<c>has_more</c> 为 uint32 的 0-否 / 1-是（本仓原样以 <c>int</c> 承载），
+    /// 官方明令「<b>不能通过判断 msg_list 是否空来停止拉取</b>，可能会出现 has_more 为 1 而 msg_list 为空的情况」；
+    /// <c>next_cursor</c> 官方强烈建议入库保存（每次请求带上、请求结束后更新，意外丢失会导致从头拉取而延迟消息）。</para>
+    /// <para>本页未给出独立的数值型频率限制（唯一与频率相关的官方口径是「不传 token 时有严格的频率限制」），
+    /// 默认阈值走官方「附录 - 访问频率限制」<see href="https://developer.work.weixin.qq.com/document/path/90312"/>；
+    /// 本端点<b>不</b>写「接口调用频率限制为 N 次/分钟」——不得凭第三方 SDK 注释或记忆补数。</para>
+    /// </remarks>
+    [Post("/cgi-bin/kf/sync_msg")]
+    Task<SyncKfMessageResponse> SyncMessageAsync(
+        [Body] SyncKfMessageRequest request,
         CancellationToken cancellationToken = default);
 
     /// <summary>

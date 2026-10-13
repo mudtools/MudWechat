@@ -90,7 +90,10 @@ public class WechatWorkAuthorizationServiceTests
     private delegate bool TryGetAppCallback(string appKey, out IWechatAppContext? appContext);
 
     private static Host CreateHost(
-        Action<WechatAuthorizationOptions>? configureOptions = null, bool validateScopes = false)
+        Action<WechatAuthorizationOptions>? configureOptions = null,
+        bool validateScopes = false,
+        string? defaultAppKey = SuiteAppKey,
+        IReadOnlyCollection<string>? configuredAppKeys = null)
     {
         var services = new ServiceCollection();
         services.AddLogging();
@@ -130,7 +133,7 @@ public class WechatWorkAuthorizationServiceTests
                 return false;
             }));
         appManager.SetupGet(m => m.DefaultConfig).Returns(SuiteConfig());
-        appManager.SetupGet(m => m.ConfiguredAppKeys).Returns(new[] { SuiteAppKey, ProviderAppKey });
+        appManager.SetupGet(m => m.ConfiguredAppKeys).Returns(configuredAppKeys ?? new[] { SuiteAppKey, ProviderAppKey });
         // P1-6：协调器改读配置快照（非物化），不再依赖 TryGetApp。
         appManager.SetupGet(m => m.ConfiguredConfigs).Returns(new[] { SuiteConfig(), ProviderConfig() });
         appManager
@@ -147,6 +150,9 @@ public class WechatWorkAuthorizationServiceTests
         services.AddSingleton(appManager.Object);
         services.AddSingleton(providerAuth.Object);
         services.AddSingleton(providerUrl.Object);
+        // P1-3 基线：显式配置唯一默认应用 —— 与修复前「经 DefaultConfig 静默回退」行为等价，
+        // 既有多处「不传 appKey」的用例语义不变（不再依赖隐式回退）。
+        services.Configure<WechatAuthorizationOptions>(o => o.DefaultAppKey = defaultAppKey);
         if (configureOptions != null)
         {
             services.Configure(configureOptions);
@@ -731,6 +737,92 @@ public class WechatWorkAuthorizationServiceTests
         // P1-3：共享任务以 CancellationToken.None 承载，首个调用者取消不得连带取消其它等待者。
         var auth = await second;
         auth.AuthCorpId.Should().Be(AuthCorpId);
+    }
+
+    // ── P1-3：ResolveAppKey 决策矩阵（应用数 1 / ≥2 × DefaultAppKey 有/无） ──
+
+    [Fact]
+    public async Task ExchangeAuthCodeAsync_ShouldFailFast_WhenMultiAppWithoutConfiguredDefault()
+    {
+        // 矩阵：≥2 应用 + 无 DefaultAppKey ⇒ 空白 appKey 存在歧义，必须 fail-fast（不得静默回退默认应用）。
+        var host = CreateHost(defaultAppKey: null);
+        using var provider = host.Provider;
+
+        var act = () => host.Service.ExchangeAuthCodeAsync("auth-code-ambiguous");
+
+        await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("*DefaultAppKey*");
+        host.ProviderAuth.Verify(m => m.GetPermanentCodeV2Async(
+            It.IsAny<GetPermanentCodeRequest>(), It.IsAny<CancellationToken>()), Times.Never,
+            "解析失败必须在发起换码之前发生");
+    }
+
+    [Fact]
+    public async Task ExchangeAuthCodeAsync_ShouldUseOnlyApp_WhenSingleAppWithoutConfiguredDefault()
+    {
+        // 矩阵：仅 1 个应用 + 无 DefaultAppKey ⇒ 唯一应用无歧义，直接解析。
+        var host = CreateHost(defaultAppKey: null, configuredAppKeys: new[] { SuiteAppKey });
+        using var provider = host.Provider;
+
+        host.ProviderAuth
+            .Setup(m => m.GetPermanentCodeV2Async(It.IsAny<GetPermanentCodeRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(PermanentCodeResponse());
+
+        var result = await host.Service.ExchangeAuthCodeAsync("auth-code-single");
+
+        result.AppKey.Should().Be(SuiteAppKey, "单应用下无歧义回退唯一应用");
+    }
+
+    [Fact]
+    public async Task ExchangeAuthCodeAsync_ShouldResolveConfiguredDefault_WhenSingleAppWithConfiguredDefault()
+    {
+        // 矩阵：1 应用 + 已配置 DefaultAppKey ⇒ 走显式配置（配置属性消费点保留）。
+        var host = CreateHost(configuredAppKeys: new[] { SuiteAppKey });
+        using var provider = host.Provider;
+
+        host.ProviderAuth
+            .Setup(m => m.GetPermanentCodeV2Async(It.IsAny<GetPermanentCodeRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(PermanentCodeResponse());
+
+        var result = await host.Service.ExchangeAuthCodeAsync("auth-code-config-default");
+
+        result.AppKey.Should().Be(SuiteAppKey);
+    }
+
+    // 矩阵第 4 格（≥2 应用 + 已配置 DefaultAppKey）由
+    // CreateCustomizedAuthorizationUrl_ShouldUseOptionsDefaultAppKey_WhenAppKeyOmitted 覆盖（显式配置优先）。
+
+    // ── P2-7：结果记忆容量上限 + 惰性驱逐 ───────────────────────
+
+    [Fact]
+    public async Task ExchangeAuthCodeAsync_ShouldEvictOldestMemo_WhenCapacityExceeded()
+    {
+        var host = CreateHost();
+        using var provider = host.Provider;
+
+        var calls = 0;
+        host.ProviderAuth
+            .Setup(m => m.GetPermanentCodeV2Async(It.IsAny<GetPermanentCodeRequest>(), It.IsAny<CancellationToken>()))
+            .Returns<GetPermanentCodeRequest, CancellationToken>((_, _) =>
+            {
+                Interlocked.Increment(ref calls);
+                return Task.FromResult(PermanentCodeResponse());
+            });
+
+        // 写入条数超过 MemoCapacity（4096）。
+        const int writes = 4200;
+        for (var i = 0; i < writes; i++)
+        {
+            await host.Service.ExchangeAuthCodeAsync($"memo-{i}");
+        }
+
+        calls.Should().Be(writes, "每条 authCode 的首次换码都真实发起");
+
+        await host.Service.ExchangeAuthCodeAsync($"memo-{writes - 1}");
+        calls.Should().Be(writes, "最新条目仍在记忆内（命中记忆，不重复换码）");
+
+        await host.Service.ExchangeAuthCodeAsync("memo-0");
+        calls.Should().Be(writes + 1,
+            "P2-7：超限后按插入序号驱逐最旧项 ⇒ 最旧 authCode 退回一次真实换码（记忆不得无界增长）");
     }
 
     // ── P1-5：撤销的「先失效、后删库」顺序 ──────────────────────

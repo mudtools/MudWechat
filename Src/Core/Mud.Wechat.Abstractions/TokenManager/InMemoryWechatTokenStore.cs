@@ -21,6 +21,9 @@ public sealed class InMemoryWechatTokenStore : IWechatTokenStoreBatchRemove
 
     private readonly ConcurrentDictionary<string, StoreEntry> _entries = new(StringComparer.Ordinal);
 
+    /// <summary>进程内槽位容量上限（超限即先清过期项、再驱逐最早到期项；驱逐有效令牌仅损失一次缓存命中）。</summary>
+    private const int Capacity = 8192;
+
     /// <inheritdoc />
     /// <remarks>
     /// <b>P1-9</b>：过期条目在<b>读路径</b>即回收（O(1)）—— 若只在「读取时判过期返回 null」，
@@ -43,6 +46,11 @@ public sealed class InMemoryWechatTokenStore : IWechatTokenStoreBatchRemove
     }
 
     /// <inheritdoc />
+    /// <remarks>
+    /// <b>P2-7</b>：写入即做容量回收（读路径只回收被访问键，<b>写入后不再被读取</b>的键——如企业卸载后的
+    /// scope 槽位——会永久驻留 <c>_entries</c>）。回收仅在超限时触发（先清过期项、再驱逐最早到期项），
+    /// 摊销成本可忽略；驱逐有效令牌等价于一次缓存未命中，不改变对外语义。
+    /// </remarks>
     public Task SetAccessTokenAsync(string tokenType, string accessToken, long expiresInSeconds, CancellationToken cancellationToken = default)
     {
         _entries[tokenType ?? string.Empty] = new StoreEntry
@@ -50,7 +58,41 @@ public sealed class InMemoryWechatTokenStore : IWechatTokenStoreBatchRemove
             AccessToken = accessToken,
             ExpiresAtMs = NowMs() + Math.Max(0, expiresInSeconds) * 1000L,
         };
+
+        if (_entries.Count > Capacity)
+        {
+            Evict();
+        }
+
         return Task.CompletedTask;
+    }
+
+    /// <summary>先清已过期项；仍超上限时按到期时间升序驱逐最早到期项。</summary>
+    private void Evict()
+    {
+        var now = NowMs();
+        foreach (var pair in _entries)
+        {
+            if (pair.Value.ExpiresAtMs <= now)
+            {
+                _entries.TryRemove(pair.Key, out _);
+            }
+        }
+
+        var overflow = _entries.Count - Capacity;
+        if (overflow <= 0)
+        {
+            return;
+        }
+
+        var oldestKeys = _entries.OrderBy(static p => p.Value.ExpiresAtMs)
+            .Take(overflow)
+            .Select(static p => p.Key)
+            .ToList();
+        foreach (var key in oldestKeys)
+        {
+            _entries.TryRemove(key, out _);
+        }
     }
 
     /// <inheritdoc />

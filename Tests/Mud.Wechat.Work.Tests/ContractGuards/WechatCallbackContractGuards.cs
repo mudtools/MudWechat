@@ -1561,6 +1561,64 @@ public class WechatCallbackContractGuards
     }
 
     /// <summary>
+    /// 契约守卫 CB-CNT（v1 方案 F14）：契约键计数注释与权威基线（<c>ContractBaseline</c>）一致 ——
+    /// 注释是「变更时同批更新」的提示物，漂移即误导后来者。
+    /// </summary>
+    [Fact]
+    public void ContractKeyCountComments_ShouldMatchBaseline()
+    {
+        var expected = Baseline.Work.RegisteredCallbackEventKeys.ToString(
+            System.Globalization.CultureInfo.InvariantCulture);
+
+        var contractsSource = File.ReadAllText(SourcePath(
+            "Mud.Wechat.Work.Callback", "Events", "Payloads", "Contracts", "OfficialPayloadContracts.cs"));
+        contractsSource.Should().Contain("（" + expected + " 键）",
+            "OfficialPayloadContracts 的键计数注释必须与权威基线一致（F14：120 键是漂移值）");
+
+        var registrationSource = File.ReadAllText(SourcePath(
+            "Mud.Wechat.Work.Callback", "WechatCallbackServiceCollectionExtensions.cs"));
+        registrationSource.Should().Contain("官方 " + expected + " 键契约",
+            "登记入口的键计数注释必须与权威基线一致（F14：41 键是漂移值）");
+    }
+
+    /// <summary>
+    /// 契约守卫 CB-SEAL（v1 方案 F15①/D12）：处理器 / 拦截器 / bot 处理器三张注册表必须在
+    /// <c>UseWechatWebhook()</c>（组合根末端）<c>Seal()</c> 封闭，且封闭先于管道挂载。
+    /// </summary>
+    /// <remarks>
+    /// 「注册表已实现 Seal 但宿主接线漏调」不产生任何编译期 / 运行期信号（注册只发生在
+    /// UseXxxCallback 内，无调用即空转）⇒ 只能以源码断言锁定。漏封闭的后果是运行期漏注册
+    /// 处理器到线上首个回调才静默 unhandled（分布式故障），违背 F15「组装期 fail-fast」意图。
+    /// 公众号 / 小店 / 支付三线各持同构守卫（CB-MP-SEAL / CB-CH-SEAL / PAY-CB-SEAL）。
+    /// </remarks>
+    [Fact]
+    public void CallbackRegistries_ShouldBeSealedAtCompositionRoot()
+    {
+        var source = File.ReadAllText(SourcePath(
+            "Mud.Wechat.Work.Callback", "WechatApplicationBuilderExtensions.cs"));
+
+        foreach (var registry in new[]
+                 {
+                     "WechatCallbackHandlerRegistry",
+                     "WechatCallbackInterceptorRegistry",
+                     "WechatBotHandlerRegistry",
+                 })
+        {
+            // 断言取「注册表名 + >().Seal()」子串：对全限定与短名两种形态均成立（与其余三线同口径）。
+            source.Should().Contain($"{registry}>().Seal()",
+                $"UseWechatWebhook() 必须封闭 {registry}（F15①：运行期漏注册处理器须在组装期暴露，不得静默 unhandled）");
+        }
+
+        // 顺序即契约：封闭先于管道挂载（组合根末端语义）—— 取末次 Seal() 代码位与管道挂载比较。
+        // 管道挂载锚点取 "UseMiddleware<"（泛型实参仅存在于代码行；注释里的 "UseMiddleware" 字样不得参与比较）。
+        var lastSealIndex = source.LastIndexOf("Seal()", StringComparison.Ordinal);
+        var middlewareIndex = source.IndexOf("UseMiddleware<", StringComparison.Ordinal);
+        lastSealIndex.Should().BeGreaterThan(-1, "UseWechatWebhook() 必须存在 Seal() 封闭调用");
+        lastSealIndex.Should().BeLessThan(middlewareIndex,
+            "CB-SEAL：封闭必须先于 UseMiddleware —— 管道构建期即完成封闭，迟封闭等于漏封闭");
+    }
+
+    /// <summary>
     /// 读取某个类型的源码文本（按「类型名 + .cs」在仓库内定位，排除 <c>obj</c>/<c>bin</c>）。
     /// </summary>
     /// <remarks>

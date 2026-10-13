@@ -35,11 +35,36 @@ public static class WechatBotReplySupport
     /// <c>markdown</c> 与媒体消息（<c>file</c>/<c>image</c>/<c>voice</c>/<c>video</c>）为长连接专用，此处拒绝。
     /// </remarks>
     public static void ValidateHttpPassiveReply(AibotMessage message)
+        => ValidateHttpPassiveReply(message, eventType: null);
+
+    /// <summary>
+    /// 校验应答可用于<b>HTTP 被动回复</b>（含事件维度规则），不合法即抛 <see cref="InvalidOperationException"/>。
+    /// </summary>
+    /// <param name="message">处理器返回的应答消息。</param>
+    /// <param name="eventType">事件键（= <c>WechatBotCallbackEvent.EventTypeKey</c>：事件取 <c>event.eventtype</c>，消息取顶层 <c>msgtype</c>；<c>null</c>/空 = 事件键未知，只做 msgtype 维度校验）。</param>
+    /// <exception cref="ArgumentNullException"><paramref name="message"/> 为 <c>null</c>。</exception>
+    /// <exception cref="InvalidOperationException">应答形态不被 HTTP 被动回复支持，或与事件维度规则冲突。</exception>
+    /// <remarks>
+    /// <para>
+    /// 官方 101031 支持：<c>text</c>（仅进入会话回调事件）/ <c>template_card</c> / <c>stream</c> /
+    /// <c>stream_with_template_card</c> / <c>response_type=update_template_card</c>。
+    /// <c>markdown</c> 与媒体消息为长连接专用，此处拒绝。
+    /// </para>
+    /// <para>
+    /// <b>事件维度规则</b>（v1 方案 F10，只固化官方明文规则、不臆造矩阵，D10）：
+    /// ① <c>feedback_event</c> 仅空包（官方 101027/101031）—— 非 <c>null</c> 应答一律拒绝；
+    /// ② <c>text</c> ⇒ 事件必须是 <c>enter_chat</c>（官方 101031「text 仅支持进入会话回调事件」，
+    /// <b>单向</b>蕴含；不得反向拒绝 <c>enter_chat</c> 携带 <c>template_card</c> / <c>stream</c>）。
+    /// </para>
+    /// </remarks>
+    public static void ValidateHttpPassiveReply(AibotMessage message, string? eventType)
     {
         if (message == null)
         {
             throw new ArgumentNullException(nameof(message));
         }
+
+        ValidateEventDimension(message, eventType, httpPassive: true);
 
         // 更新模板卡片应答：以 response_type 表达，不得同时声明 msgtype。
         if (message.ResponseType != null && message.ResponseType.Length > 0)
@@ -121,11 +146,29 @@ public static class WechatBotReplySupport
     /// </para>
     /// </remarks>
     public static void ValidateLongConnectionReply(AibotMessage message)
+        => ValidateLongConnectionReply(message, eventType: null);
+
+    /// <summary>
+    /// 校验应答可用于<b>长连接回复</b>（含事件维度规则），不合法即抛 <see cref="InvalidOperationException"/>。
+    /// </summary>
+    /// <param name="message">处理器返回的应答消息。</param>
+    /// <param name="eventType">事件键（= <c>WechatBotCallbackEvent.EventTypeKey</c>；<c>null</c>/空 = 事件键未知，只做 msgtype 维度校验）。</param>
+    /// <exception cref="ArgumentNullException"><paramref name="message"/> 为 <c>null</c>。</exception>
+    /// <exception cref="InvalidOperationException">应答形态不被长连接支持，或与事件维度规则冲突。</exception>
+    /// <remarks>
+    /// 事件维度规则（v1 方案 F10）：<c>feedback_event</c> 仅空包（官方 101027/101031）——
+    /// 长连接侧同样不得对反馈事件回非 <c>null</c> 应答。<c>text</c> ⇒ <c>enter_chat</c> 的限定是
+    /// <b>HTTP 被动回复面</b>的规则（101031），长连接 <c>ResolveRespondCommand</c> 已按事件映射帧型，
+    /// 不在此重复。
+    /// </remarks>
+    public static void ValidateLongConnectionReply(AibotMessage message, string? eventType)
     {
         if (message == null)
         {
             throw new ArgumentNullException(nameof(message));
         }
+
+        ValidateEventDimension(message, eventType, httpPassive: false);
 
         // 更新模板卡片应答（aibot_respond_update_msg）：以 response_type 表达。
         if (message.ResponseType != null && message.ResponseType.Length > 0)
@@ -204,6 +247,43 @@ public static class WechatBotReplySupport
                 throw new InvalidOperationException(
                     "智能机器人长连接不支持的 msgtype：" + message.MsgType +
                     "（官方 101463 支持 text / markdown / template_card / stream / file / image / voice / video）。");
+        }
+    }
+
+    /// <summary>
+    /// 事件维度校验（v1 方案 F10）：<c>feedback_event</c> 仅空包；HTTP 被动回复的 <c>text</c> 仅限 <c>enter_chat</c>。
+    /// </summary>
+    /// <param name="message">应答消息（本方法被调用时恒非 <c>null</c>）。</param>
+    /// <param name="eventType">事件键；<c>null</c>/空 = 未知（旧重载路径），只做 msgtype 维度校验。</param>
+    /// <param name="httpPassive">是否 HTTP 被动回复面（<c>text</c> ⇒ <c>enter_chat</c> 是该面专属规则）。</param>
+    private static void ValidateEventDimension(AibotMessage message, string? eventType, bool httpPassive)
+    {
+        if (string.IsNullOrEmpty(eventType))
+        {
+            return;
+        }
+
+        // 规则一（两传输通用）：feedback_event 仅支持回复空包 —— 官方 101027/101031。
+        // 非 null 应答（含 update_template_card）一律拒绝；空包由「处理器返回 null」表达。
+        if (string.Equals(eventType, WechatBotEventTypes.FeedbackEvent, StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException(
+                "智能机器人 feedback_event 仅支持回复空包（官方 101027/101031；请让处理器返回 null，由分发器统一回空包）。");
+        }
+
+        if (!httpPassive)
+        {
+            return;
+        }
+
+        // 规则二（仅 HTTP 被动回复面）：text ⇒ 事件必须是 enter_chat（官方 101031 单向蕴含）。
+        // 不得反向臆造「enter_chat ⇒ 仅 text」—— 欢迎语携带 template_card / stream 均合法（D10 不臆造矩阵）。
+        if (string.Equals(message.MsgType, WechatBotReplyTypes.Text, StringComparison.Ordinal)
+            && !string.Equals(eventType, WechatBotEventTypes.EnterChat, StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException(
+                "HTTP 被动回复的 text 应答仅支持进入会话回调事件（官方 101031：text 仅支持 enter_chat；当前事件="
+                + eventType + "）。其他事件请改用 template_card / stream，或走主动回复（response_url）与长连接。");
         }
     }
 

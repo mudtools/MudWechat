@@ -16,17 +16,21 @@ using Mud.Wechat.Work.Callback;
 using Mud.Wechat.Work.Callback.LongConnection;
 using Mud.Wechat.Work.DataModels.Aibot;
 using Mud.Wechat.Work.Callback.Tests;
+using System.Net.WebSockets;
 
 namespace Mud.Wechat.Work.Tests.LongConnection;
 
 /// <summary>
-/// 长连接 P3 的<b>无网络</b>行为测试：帧编解码往返、流式状态机（req_id 复用 / finish 终结 / 10 分钟窗口）、
-/// 运行器启动期校验（配置形状 + <b>跨面互斥</b>）。
+/// 长连接的<b>无网络</b>行为测试：帧编解码往返、流式状态机（req_id 复用 / finish 终结 / 10 分钟窗口）、
+/// 运行器启动期校验（配置形状 + <b>跨面互斥</b>）、心跳循环（F1）、停机租约释放与退避计数（F2/F13）、
+/// 租约续租（F4）。
 /// </summary>
 /// <remarks>
 /// WebSocket 真连接属集成场景（官方 openws 需真实凭据），本文件全部停在编解码与纯逻辑层 ——
 /// 与 Finance 批次「不触原生库」的测试分工同源；治理红线（TFM 门控 / 无指纹闸 / 先夺租约）由
-/// <c>WechatBotContractGuards</c> 的 BT10 源码断言承担。
+/// <c>WechatBotContractGuards</c> 的 BT10 源码断言承担。P0 修复（F1/F2/F4）按 v1 方案 D2 提取为
+/// <c>WechatBotHeartbeat</c> / <c>WechatBotLeaseRenewer</c> 纯逻辑类后在本文件直测；
+/// 停机释放用例经 <c>FakeLease</c> + 失败 socket 工厂驱动 <c>WechatBotConnection.RunAsync</c> 真实主循环（不触网）。
 /// </remarks>
 public class WechatBotLongConnectionTests
 {
@@ -177,6 +181,302 @@ public class WechatBotLongConnectionTests
 
         (await act.Should().ThrowAsync<InvalidOperationException>())
             .Which.Message.Should().Contain("Bots");
+    }
+
+    // ---------------------------------------------------------------- 心跳（F1）
+
+    [Fact]
+    public async Task Heartbeat_ShouldKeepPinging_WhenNoTrafficArrives()
+    {
+        var pings = 0;
+        using var cts = new CancellationTokenSource();
+        var heartbeat = WechatBotHeartbeat.RunAsync(
+            TimeSpan.FromMilliseconds(50),
+            _ => { Interlocked.Increment(ref pings); return Task.CompletedTask; },
+            (_, _) => Assert.Fail("心跳发送不应失败"),
+            cts.Token);
+
+        await Task.Delay(250);
+        await cts.CancelAsync();
+        await heartbeat;
+
+        pings.Should().BeGreaterThanOrEqualTo(3,
+            "心跳与流量正交：无帧到达也必须按固定周期发 ping（旧实现被流量 CancelAfter 杀死，v1 方案 F1）");
+    }
+
+    [Fact]
+    public async Task Heartbeat_ShouldStop_WhenTokenCancelled()
+    {
+        var pings = 0;
+        using var cts = new CancellationTokenSource();
+        var heartbeat = WechatBotHeartbeat.RunAsync(
+            TimeSpan.FromMilliseconds(20),
+            _ => { Interlocked.Increment(ref pings); return Task.CompletedTask; },
+            (_, _) => { },
+            cts.Token);
+
+        await Task.Delay(60);
+        await cts.CancelAsync();
+        await heartbeat;   // 取消即静默退出，不抛
+
+        var afterCancel = pings;
+        await Task.Delay(100);
+        pings.Should().Be(afterCancel, "取消后不得再有 ping（心跳循环必须可停）");
+    }
+
+    // ---------------------------------------------------------------- 停机释放与退避计数（F2 / F13）
+
+    [Fact]
+    public async Task RunAsync_ShouldReleaseLease_WhenCancelledDuringAcquireBackoff()
+    {
+        var lease = new FakeLease { AcquireResult = false };
+        var connection = NewConnection(lease, static () => throw new InvalidOperationException("未夺得租约不得建连"));
+
+        using var cts = new CancellationTokenSource();
+        var run = connection.RunAsync(cts.Token);
+        await Task.Delay(150);            // 进入夺约失败退避（60s）
+        await cts.CancelAsync();
+        await run;                        // 取消不得穿出 RunAsync
+
+        lease.ReleaseCalls.Should().Be(1, "取消落在夺约退避上也必须走 finally 释放租约");
+    }
+
+    [Fact]
+    public async Task RunAsync_ShouldReleaseLease_WhenCancelledDuringSessionBackoff()
+    {
+        // F2 回归（先红后绿）：取消落在「会话失败后的退避」上 —— 旧实现该退避在 try/finally 外，
+        // OCE 穿出 RunAsync ⇒ ReleaseAsync 被跳过（优雅停机不让位）。
+        var lease = new FakeLease { AcquireResult = true };
+        var connection = NewConnection(lease, () => throw new InvalidOperationException("会话失败（测试替身）"));
+
+        using var cts = new CancellationTokenSource();
+        var run = connection.RunAsync(cts.Token);
+        await Task.Delay(150);            // 会话已失败，处于 60s 退避中
+        await cts.CancelAsync();
+        await run;                        // 不抛
+
+        lease.ReleaseCalls.Should().Be(1, "停机必须释放租约（释放路径唯一化：全部出口汇入唯一 finally）");
+    }
+
+    [Fact]
+    public async Task RunAsync_ShouldCountBackoffOncePerRound_WhenSessionKeepsFailing()
+    {
+        // F13 回归：attempt 每轮至多一次自增 —— 旧实现 finally + 底部双自增，日志跳号（第 1 次 ⇒ 第 3 次）。
+        var lease = new FakeLease { AcquireResult = true };
+        var logger = new CapturingLogger<WechatBotConnection>();
+        var connection = new WechatBotConnection(
+            "bot1",
+            new WechatBotAppOptions
+            {
+                BotId = "BOT-ID",
+                BotSecret = "secret-value",
+                ReconnectBaseDelayMs = 30,
+                ReconnectMaxDelayMs = 60,
+            },
+            CreateDispatcher(),
+            lease,
+            () => throw new InvalidOperationException("会话失败（测试替身）"),
+            "inst1",
+            logger);
+
+        using var cts = new CancellationTokenSource();
+        var run = connection.RunAsync(cts.Token);
+        await Task.Delay(400);            // 多轮快速失败
+        await cts.CancelAsync();
+        await run;
+
+        var attempts = logger.Entries
+            .Select(static e => System.Text.RegularExpressions.Regex.Match(e.Message, @"第 (\d+) 次退避"))
+            .Where(static m => m.Success)
+            .Select(static m => int.Parse(m.Groups[1].Value))
+            .ToArray();
+
+        attempts.Should().NotBeEmpty("每轮会话失败都应记一次退避");
+        attempts.Should().BeEquivalentTo(
+            Enumerable.Range(1, attempts.Length),
+            "退避计数严格递增无跳号（每轮至多一次自增）");
+    }
+
+    // ---------------------------------------------------------------- 租约续租（F4）
+
+    [Fact]
+    public async Task LeaseRenewer_ShouldRenewPeriodically_UntilCancelled()
+    {
+        var lease = new FakeLease { RenewResult = true };
+        using var cts = new CancellationTokenSource();
+
+        var renewal = WechatBotLeaseRenewer.RunAsync(
+            lease, "bot1", "inst1", TimeSpan.FromMilliseconds(150), cts.Token);
+        await Task.Delay(400);
+        await cts.CancelAsync();
+        await renewal;   // 取消静默退出不抛
+
+        lease.RenewCalls.Should().BeGreaterThanOrEqualTo(2, "续租周期 = TTL/3（150ms TTL ⇒ 50ms 周期）");
+    }
+
+    [Fact]
+    public async Task LeaseRenewer_ShouldThrowLeaseLost_WhenRenewRejected()
+    {
+        var lease = new FakeLease { RenewResult = false };
+        using var cts = new CancellationTokenSource();
+
+        Func<Task> act = () => WechatBotLeaseRenewer.RunAsync(
+            lease, "bot1", "inst1", TimeSpan.FromMilliseconds(50), cts.Token);
+
+        await act.Should().ThrowAsync<LeaseLostException>("续租被拒 = 租约已易主，必须快速失败（不挂起）");
+    }
+
+    [Fact]
+    public async Task LeaseRenewer_ShouldExitSilently_WhenTokenCancelled()
+    {
+        var lease = new FakeLease { RenewResult = true };
+        using var cts = new CancellationTokenSource();
+
+        var renewal = WechatBotLeaseRenewer.RunAsync(
+            lease, "bot1", "inst1", TimeSpan.FromSeconds(10), cts.Token);
+        await cts.CancelAsync();
+        await renewal;
+
+        lease.RenewCalls.Should().Be(0, "取消即静默退出，不发续租");
+    }
+
+    // ---------------------------------------------------------------- 在途分派跟踪（F5 / LC-7）
+
+    [Fact]
+    public async Task DispatchTracker_ShouldObserveFaultedTask_AndRemoveIt()
+    {
+        var faulted = new List<Exception>();
+        var drained = new List<Exception>();
+        var tracker = new WechatBotDispatchTracker(faulted.Add, drained.Add);
+
+        var ok = Task.CompletedTask;
+        var boom = Task.FromException(new InvalidOperationException("分派故障（测试替身）"));
+        tracker.Track(ok);
+        tracker.Track(boom);
+
+        await tracker.DrainAsync(TimeSpan.FromSeconds(2));
+
+        // 回调收到的是 Task.Exception（AggregateException 包装）—— 连接侧 IsPureCancellation 据此分级。
+        faulted.Should().ContainSingle().Which.Should().BeOfType<AggregateException>()
+            .Which.InnerException.Should().BeOfType<InvalidOperationException>();
+        drained.Should().BeEmpty("正常完成不得触发收尾超界告警");
+    }
+
+    [Fact]
+    public async Task DispatchTracker_ShouldReturnOnBound_WhenTaskStillRunning()
+    {
+        var faulted = new List<Exception>();
+        var drained = new List<Exception>();
+        var tracker = new WechatBotDispatchTracker(faulted.Add, drained.Add);
+
+        var never = new TaskCompletionSource();
+        tracker.Track(never.Task);
+
+        await tracker.DrainAsync(TimeSpan.FromMilliseconds(200));
+
+        drained.Should().ContainSingle("界满只告警不抛（连接已关闭，应答帧将发送失败）");
+        faulted.Should().BeEmpty("挂起不是故障");
+    }
+
+    [Fact]
+    public async Task DispatchTracker_ShouldNotReportCancelledTask_AsFault()
+    {
+        // 取消任务（IsCanceled）不报故障；仅包装形态的 OCE 故障会被上报 ——
+        // 连接侧 LogDispatchFaulted 据 IsPureCancellation 将其降级为 Debug（F6：停机不制造 Error 噪声）。
+        var faulted = new List<Exception>();
+        var drained = new List<Exception>();
+        var tracker = new WechatBotDispatchTracker(faulted.Add, drained.Add);
+
+        using var cts = new CancellationTokenSource();
+        await cts.CancelAsync();
+        tracker.Track(Task.FromCanceled(cts.Token));
+        tracker.Track(Task.FromException(new AggregateException(new OperationCanceledException())));
+
+        await tracker.DrainAsync(TimeSpan.FromSeconds(2));
+
+        faulted.Should().ContainSingle("纯取消任务不上报；包装形态 OCE 上报后由连接侧降级为 Debug");
+        drained.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task DrainAsync_ShouldNotAttributeTaskFault_AsDrainIncomplete()
+    {
+        // 归因分工（v1 方案 F5 可观测不变量）：快照内任务在收尾窗口内故障 ⇒ 只经故障回调记 Error，
+        // 不得再触发「收尾未完成」告警 —— 旧实现 catch (Exception) 一律送 onDrainIncomplete，
+        // 把已瞬间完成（只是故障）的任务说成「未在界内完成」，误导排障（双重归因）。
+        var faulted = new List<Exception>();
+        var drained = new List<Exception>();
+        var tracker = new WechatBotDispatchTracker(faulted.Add, drained.Add);
+
+        var pending = new TaskCompletionSource();
+        tracker.Track(pending.Task);
+
+        var drain = tracker.DrainAsync(TimeSpan.FromSeconds(5));   // 界远大于故障时刻
+        await Task.Delay(50);
+        pending.SetException(new InvalidOperationException("分派故障（测试替身）"));
+        await drain;                                              // 不得抛（收尾不抛）
+
+        faulted.Should().ContainSingle("窗口内故障必须经故障回调上报（Error 归因，续延职责）")
+            .Which.Should().BeOfType<AggregateException>();
+        drained.Should().BeEmpty("窗口内完成（哪怕是故障）不是收尾超界（TimeoutException 才是）");
+    }
+
+    [Fact]
+    public async Task DispatchTracker_ShouldDrainEmpty_Immediately()
+    {
+        var tracker = new WechatBotDispatchTracker(_ => { }, _ => { });
+
+        await tracker.DrainAsync(TimeSpan.FromMilliseconds(50));   // 空在途立即返回，不抛
+    }
+
+    // ---------------------------------------------------------------- 测试基建
+
+    private static WechatBotConnection NewConnection(FakeLease lease, Func<ClientWebSocket> webSocketFactory)
+        => new(
+            "bot1",
+            new WechatBotAppOptions
+            {
+                BotId = "BOT-ID",
+                BotSecret = "secret-value",
+                ReconnectBaseDelayMs = 60_000,
+                ReconnectMaxDelayMs = 60_000,
+            },
+            CreateDispatcher(),
+            lease,
+            webSocketFactory,
+            "inst1",
+            NullLogger<WechatBotConnection>.Instance);
+
+    /// <summary>租约测试替身（内存计数，无网络）。</summary>
+    private sealed class FakeLease : IWechatBotConnectionLease
+    {
+        public int AcquireCalls { get; private set; }
+
+        public int RenewCalls { get; private set; }
+
+        public int ReleaseCalls { get; private set; }
+
+        public bool AcquireResult { get; set; } = true;
+
+        public bool RenewResult { get; set; } = true;
+
+        public Task<bool> TryAcquireAsync(string botKey, string instanceId, TimeSpan ttl, CancellationToken cancellationToken = default)
+        {
+            AcquireCalls++;
+            return Task.FromResult(AcquireResult);
+        }
+
+        public Task<bool> RenewAsync(string botKey, string instanceId, TimeSpan ttl, CancellationToken cancellationToken = default)
+        {
+            RenewCalls++;
+            return Task.FromResult(RenewResult);
+        }
+
+        public Task<bool> ReleaseAsync(string botKey, string instanceId, CancellationToken cancellationToken = default)
+        {
+            ReleaseCalls++;
+            return Task.FromResult(true);
+        }
     }
 
     private static ServiceProvider BuildProvider(

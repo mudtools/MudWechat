@@ -76,4 +76,25 @@ public class InMemoryWechatTokenStoreTests
         removed.Should().Be(0);
         (await store.GetTokenTypesAsync()).Should().BeEquivalentTo("k1");
     }
+
+    // ---------------------------------------------------------------- P2-7：容量上限 + 惰性驱逐
+
+    [Fact]
+    public async Task SetAccessTokenAsync_ShouldEvictOldest_WhenCapacityExceeded()
+    {
+        var store = new InMemoryWechatTokenStore();
+
+        // P2-7：读路径只回收被访问键 ⇒「写入后不再被读取」的键（如企业卸载后的 scope 槽位）会永久驻留。
+        // 容量上限 8192；此处写入 8300 条，且 expiresIn 递增使「最早到期」为确定性的最旧项。
+        const int writes = 8300;
+        for (var i = 0; i < writes; i++)
+        {
+            await store.SetAccessTokenAsync($"k-{i}", $"t-{i}", 7200 + i);
+        }
+
+        (await store.GetAccessTokenAsync("k-0")).Should().BeNull(
+            "P2-7：超限时必须驱逐最早到期项（防写入后不再被读取的槽位无界驻留）");
+        (await store.GetAccessTokenAsync($"k-{writes - 1}")).Should().Be($"t-{writes - 1}",
+            "最新写入的槽位必须保留");
+    }
 }

@@ -41,9 +41,11 @@ public class WechatAppContextRetirementTests
     }
 
     [Fact]
-    public async Task EnqueueCleanup_ShouldRun_WhenNoGracePeriod()
+    public async Task EnqueueCleanup_ShouldRunImmediately_RegardlessOfGracePeriod()
     {
-        using var retirement = new WechatAppContextRetirement(0, NullLogger.Instance);
+        // P1-4：清库恒即时、不进入上下文宽限期——旧实现在 300s 宽限期内入队，进程一旦在宽限期内退出
+        // 即永久丢失清库（新实例读穿透命中旧令牌，最长 2h 新密钥不生效）。
+        using var retirement = new WechatAppContextRetirement(300, NullLogger.Instance);
         var ran = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
 
         retirement.EnqueueCleanup("a", _ =>
@@ -52,7 +54,7 @@ public class WechatAppContextRetirementTests
             return Task.CompletedTask;
         });
 
-        (await WaitAsync(ran.Task)).Should().BeTrue("无巡检泵路径须以 fire-and-forget + 异常观察执行清理");
+        (await WaitAsync(ran.Task)).Should().BeTrue("清库不受宽限期约束（脱泵 fire-and-forget 立即起飞）");
     }
 
     [Fact]
@@ -70,24 +72,6 @@ public class WechatAppContextRetirementTests
         });
 
         (await WaitAsync(second.Task)).Should().BeTrue();
-    }
-
-    [Fact]
-    public async Task Dispose_ShouldRunPendingCleanup_Deterministically()
-    {
-        var retirement = new WechatAppContextRetirement(300, NullLogger.Instance);
-        var ran = false;
-
-        retirement.EnqueueCleanup("a", _ =>
-        {
-            ran = true;
-            return Task.CompletedTask;
-        });
-
-        retirement.Dispose();
-
-        ran.Should().BeTrue("停机路径必须确定性执行在队清理任务（不等待宽限期）");
-        await Task.CompletedTask;
     }
 
     // ---------------------------------------------------------------- M3（F3）：停机竞态闸
@@ -145,7 +129,7 @@ public class WechatAppContextRetirementTests
         var retirement = new WechatAppContextRetirement(300, NullLogger.Instance, TimeSpan.FromMilliseconds(200));
         var cleanupGate = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
 
-        // 宽限期 300s ⇒ 清库在队（未起飞）；停机排空先起飞再限时等待（MR6）。
+        // P1-4：清库已即时起飞（飞行登记），停机排空对飞行任务限时等待（MR6）。
         retirement.EnqueueCleanup("hang", _ => cleanupGate.Task);
 
         var sw = System.Diagnostics.Stopwatch.StartNew();

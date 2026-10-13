@@ -18,6 +18,8 @@ public static class WechatChannelsApplicationBuilderExtensions
     /// <remarks>
     /// 经典约定式 <c>RequestDelegate</c> 中间件（不进 DI 泛型派发）；须在
     /// <c>AddWechatChannelsCallback</c> 之后调用（依赖接收器与分发器单例）。
+    /// <b>组合根末端封闭注册表</b>（v1 方案 F15①/D12）：处理器 / 拦截器 / 结构化应答三张注册表
+    /// <c>Seal()</c> 冻结，运行期再注册即抛。
     /// </remarks>
     public static IApplicationBuilder UseWechatChannelsWebhook(this IApplicationBuilder app)
     {
@@ -25,6 +27,10 @@ public static class WechatChannelsApplicationBuilderExtensions
         {
             throw new ArgumentNullException(nameof(app));
         }
+
+        app.ApplicationServices.GetRequiredService<ChannelsCallbackHandlerRegistry>().Seal();
+        app.ApplicationServices.GetRequiredService<ChannelsCallbackInterceptorRegistry>().Seal();
+        app.ApplicationServices.GetRequiredService<ChannelsCallbackReplyRegistry>().Seal();
 
         return app.UseMiddleware<WechatChannelsCallbackMiddleware>();
     }

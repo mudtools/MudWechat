@@ -416,6 +416,28 @@ public class WechatAppManagerTests : IDisposable
     }
 
     [Fact]
+    public async Task RemoveApp_ShouldPurgeStoreImmediately_WhenRetireDelayIsConfigured()
+    {
+        // P1-4：清库恒即时（不享受默认 300s 上下文宽限期）。旧实现把清库入队待宽限期执行，
+        // 进程若在此期间退出 ⇒ 清库永久丢失 ⇒ 新实例读穿透命中旧令牌（最长 2h 新密钥不生效）。
+        using var manager = CreateManager(InternalConfig("a", isDefault: true), InternalConfig("b"));
+        var store = _provider!.GetRequiredService<IWechatTokenStore>();
+        await store.SetAccessTokenAsync("Wechat.AccessToken:a:default", "token-a", 7200);
+
+        manager.RemoveApp("a").Should().BeTrue();
+
+        // 清库为 fire-and-forget，须在远小于宽限期的时限内完成（旧代码需等 30s 巡检周期）。
+        var deadline = DateTime.UtcNow.AddSeconds(3);
+        while (DateTime.UtcNow < deadline && (await store.GetTokenTypesAsync()).Any())
+        {
+            await Task.Delay(20);
+        }
+
+        (await store.GetTokenTypesAsync()).Should().BeEmpty(
+            "P1-4：下线清库不得等待上下文宽限期（进程在宽限期内退出 ⇒ 旧令牌持续可读）");
+    }
+
+    [Fact]
     public async Task InvalidateTokenAsync_ShouldNotMaterialize_WhenContextNotCreated()
     {
         using var manager = CreateManager(InternalConfig("a"));

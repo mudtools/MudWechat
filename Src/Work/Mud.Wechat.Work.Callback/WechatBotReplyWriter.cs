@@ -46,11 +46,12 @@ internal static class WechatBotReplyWriter
     /// <param name="app">命中的回调凭据（提供 PushToken 与 PushEncodingAESKey）。</param>
     /// <param name="reply">处理器应答；<c>null</c> = 空包。</param>
     /// <param name="nonce">回调 URL 中的 nonce（官方要求应答 nonce 必须使用回调 URL 的 nonce）。</param>
+    /// <param name="eventType">事件键（v1 方案 F10：事件维度校验用，见 <see cref="Mud.Wechat.Work.Abstractions.Callback.Bots.WechatBotReplySupport.ValidateHttpPassiveReply(AibotMessage, string)"/>）。</param>
     /// <returns>应答 JSON 字符串。</returns>
     /// <exception cref="InvalidOperationException">应答形态不被 HTTP 被动回复支持（见 <see cref="Mud.Wechat.Work.Abstractions.Callback.Bots.WechatBotReplySupport"/>）。</exception>
-    internal static string WriteReply(WechatAppCallbackOptions app, AibotMessage? reply, string? nonce)
+    internal static string WriteReply(WechatAppCallbackOptions app, AibotMessage? reply, string? nonce, string? eventType = null)
     {
-        var plainJson = SerializeReply(reply);
+        var plainJson = SerializeReply(reply, eventType);
         var encrypted = WechatCallbackCrypto.Encrypt(app.PushEncodingAESKey, plainJson, string.Empty);
 
         var timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
@@ -71,8 +72,8 @@ internal static class WechatBotReplyWriter
         return JsonSerializer.Serialize(envelope, AibotJsonContext.Default.AibotEncryptedEnvelope);
     }
 
-    /// <summary>序列化应答明文（并执行 HTTP 被动回复支持面校验）。</summary>
-    private static string SerializeReply(AibotMessage? reply)
+    /// <summary>序列化应答明文（并执行 HTTP 被动回复支持面校验，含事件维度规则）。</summary>
+    private static string SerializeReply(AibotMessage? reply, string? eventType)
     {
         if (reply == null)
         {
@@ -81,7 +82,7 @@ internal static class WechatBotReplyWriter
 
         // 支持面校验：非法形态在此 fail-fast，避免静默发给企微后被丢弃
         //（官方模板卡片事件与欢迎语只推一次，静默失败无法补救）。
-        Mud.Wechat.Work.Abstractions.Callback.Bots.WechatBotReplySupport.ValidateHttpPassiveReply(reply);
+        Mud.Wechat.Work.Abstractions.Callback.Bots.WechatBotReplySupport.ValidateHttpPassiveReply(reply, eventType);
         return JsonSerializer.Serialize(reply, AibotJsonContext.Default.AibotMessage);
     }
 }

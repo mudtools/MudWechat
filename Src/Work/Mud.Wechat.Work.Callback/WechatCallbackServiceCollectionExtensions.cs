@@ -57,7 +57,20 @@ public static class WechatCallbackServiceCollectionExtensions
 
     private static WechatCallbackServiceBuilder AddWechatCallbackCore(this IServiceCollection services)
     {
-        // 注册表在组合根期创建为单例实例（急切注册模型，v1.2 §5.6；无 Freeze）。
+        // 幂等（v1 方案 F15①）：二次 AddWechatCallback 必须复用既有注册表与 bot 注册表实例 ——
+        // 每次新建会让后注册的单例在解析时胜出，先建 builder 上登记的处理器 / 拦截器全部丢失
+        // （且官方 122 键契约被重复登记会触发 fail-fast）。
+        var existingHandlers = FindSingletonInstance<WechatCallbackHandlerRegistry>(services);
+        if (existingHandlers != null)
+        {
+            return new WechatCallbackServiceBuilder(
+                services,
+                existingHandlers,
+                FindSingletonInstance<WechatCallbackInterceptorRegistry>(services)!,
+                (IWechatPayloadContractRegistry)FindSingletonInstance(services, typeof(IWechatPayloadContractRegistry))!);
+        }
+
+        // 注册表在组合根期创建为单例实例（急切注册模型，v1.2 §5.6；组合根末端由 UseXxxCallback() Seal 封闭，F15①）。
         var handlerRegistry = new WechatCallbackHandlerRegistry();
         var interceptorRegistry = new WechatCallbackInterceptorRegistry();
 
@@ -90,7 +103,7 @@ public static class WechatCallbackServiceCollectionExtensions
                 provider.GetRequiredService<IWechatPayloadContractRegistry>(),
                 WechatPayloadSourceCache.Shared));
 
-        // 官方 41 键契约（组合根期一次性登记；重复登记即 fail-fast）。
+        // 官方 122 键契约（组合根期一次性登记；重复登记即 fail-fast）。
         OfficialPayloadContracts.RegisterAll(payloadRegistry);
 
         // D6/D11：内置授权族兜底处理器默认注册到通配键（全局生效；宿主可用精确键处理器前置接管授权族键）。
@@ -98,4 +111,13 @@ public static class WechatCallbackServiceCollectionExtensions
 
         return new WechatCallbackServiceBuilder(services, handlerRegistry, interceptorRegistry, payloadRegistry);
     }
+
+    /// <summary>取服务集合中已登记的单例实例（幂等复用判定用）。</summary>
+    private static T? FindSingletonInstance<T>(IServiceCollection services)
+        => (T?)FindSingletonInstance(services, typeof(T));
+
+    /// <summary>取服务集合中已登记的单例实例（按服务类型；无则 <c>null</c>）。</summary>
+    private static object? FindSingletonInstance(IServiceCollection services, Type serviceType)
+        => services.LastOrDefault(d => d.ServiceType == serviceType && d.ImplementationInstance != null)
+            ?.ImplementationInstance;
 }

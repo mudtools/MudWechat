@@ -22,12 +22,18 @@ public static class WechatPayApplicationBuilderExtensions
     /// </summary>
     /// <param name="app">应用建造者。</param>
     /// <returns>应用建造者（链式）。</returns>
+    /// <remarks>
+    /// <b>组合根末端封闭注册表</b>（v1 方案 F15①/D12）：支付处理器注册表在 <c>AddWechatPayCallback</c>
+    /// 期一次性急切注册，<c>UseWechatPayCallback()</c> 时 <c>Seal()</c> 冻结，运行期再注册即抛。
+    /// </remarks>
     public static IApplicationBuilder UseWechatPayCallback(this IApplicationBuilder app)
     {
         if (app == null)
         {
             throw new ArgumentNullException(nameof(app));
         }
+
+        app.ApplicationServices.GetRequiredService<Mud.Wechat.Pay.Callback.WechatPayCallbackHandlerRegistry>().Seal();
 
         return app.UseMiddleware<Mud.Wechat.Pay.Callback.WechatPayCallbackMiddleware>();
     }

@@ -323,7 +323,12 @@ public class WechatAppManager : IWechatAppManager, IDisposable
             }
         }
 
-        // P1-9（R14）：下线即清库——同步 API 不做 sync-over-async，改为入队异步清理（退役队列 Timer 回调执行）。
+        // P2-1：移除应用的瞬时重建节流记账——防 `_lastRebuildMs` 无界增长；应用键可被复用，
+        // 残留记账会抑制新应用在节流窗口内的合法重建。
+        _lastRebuildMs.TryRemove(appKey, out _);
+
+        // P1-9/P1-4（R14）：下线即清库——同步 API 不做 sync-over-async，改为 fire-and-forget 异步清理
+        //（退役队列立即起飞，不享受上下文宽限期，避免进程在宽限期内退出致清库永不执行）。
         retirement?.EnqueueCleanup(appKey, ct => PurgeAppTokensAsync(appKey, ct));
 
         OnConfigurationChanged(new AppConfigurationChangedEventArgs(appKey, AppConfigurationChangeType.Removed));
@@ -374,6 +379,11 @@ public class WechatAppManager : IWechatAppManager, IDisposable
     /// <remarks>
     /// 用途：应用下线（<see cref="RemoveApp"/>）、凭据轮换（改了 AgentSecret / SuiteSecret 后旧令牌会被
     /// 读穿透恢复 ⇒ 持续 401）。
+    /// <para>
+    /// <b>密钥轮换的标准动作</b>：<c>RemoveApp(appKey)</c> → <c>AddApp(新配置)</c>。<c>RemoveApp</c> 已自动
+    /// 触发本方法（<b>立即执行</b>，不经退役宽限期）；本方法为清理动作的<b>权威同步入口</b>——轮换后若需
+    /// 确定性完成清库（如轮换与停机紧邻），可由宿主显式 <c>await</c> 调用一次。
+    /// </para>
     /// <para>
     /// <b>多实例语义</b>：本方法能清理其它实例写入的持久层条目，但<b>不能</b>清理其它实例的进程内镜像
     /// ⇒ 失效为「最终一致」；本地镜像由管理器自身失效/TTL 负责。
@@ -666,6 +676,11 @@ public class WechatAppManager : IWechatAppManager, IDisposable
     /// M4（F4）白名单收敛：装配路径的 IO 型异常组为纵深防御（当前装配链不发起网络 IO，
     /// 纯 DI 解析 + 纯构造）；DI 解析失败抛出的常见确定性异常类型已在 <see cref="GetApp(string)"/>
     /// 的重建路径外直抛（含停机边缘的 ODE——其本就是 IOE 子类，随本次收敛一并直抛）。
+    /// <para>
+    /// <b>P2-3</b>：只展开 <see cref="AggregateException.InnerExceptions"/>（DI/装配可能聚合多内因），
+    /// <b>不再对单 <c>InnerException</c> 做通用递归</b>——通用递归会让「确定性外因包裹瞬时内因」
+    /// 被误判为瞬时（如包装后的 DI 配置错误被当作可重试，掩盖配置错误并驱动 5s 节流重建）。
+    /// </para>
     /// </remarks>
     private static bool IsTransientInitFailure(Exception ex)
     {
@@ -683,7 +698,19 @@ public class WechatAppManager : IWechatAppManager, IDisposable
             return true;
         }
 
-        return ex.InnerException != null && IsTransientInitFailure(ex.InnerException);
+        // P2-3：聚合形态（多内因）逐项判定；单层包装不再递归穿透。
+        if (ex is AggregateException aggregate)
+        {
+            foreach (var inner in aggregate.InnerExceptions)
+            {
+                if (IsTransientInitFailure(inner))
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     /// <summary>重置失败的 Lazy（带节流；失败返回 <c>false</c>）。</summary>
@@ -696,8 +723,6 @@ public class WechatAppManager : IWechatAppManager, IDisposable
             // 节流：瞬时故障可能持续，避免"每次调用都重建"的热循环。
             return false;
         }
-
-        _lastRebuildMs[appKey] = nowMs;
 
         WechatAppConfig? config;
         lock (_registryLock)
@@ -715,8 +740,12 @@ public class WechatAppManager : IWechatAppManager, IDisposable
 
         if (!_lazyContexts.TryUpdate(appKey, fresh, failed))
         {
+            // P2-1：只有真正换上新 Lazy 才消耗节流窗口——「配置缺失」「CAS 竞争失败」等未生效的
+            // 重建不得记账（否则窗口被无效消耗，且 `_lastRebuildMs` 随应用数无界增长）。
             return false;
         }
+
+        _lastRebuildMs[appKey] = nowMs;
 
         _logger.LogWarning(cause, "应用 {AppKey} 上下文装配遇瞬时故障，已重置 Lazy（下次调用重建）。", appKey);
         return true;

@@ -32,10 +32,17 @@ public sealed class WechatBotDispatchResult
     /// <summary>创建分发结果。</summary>
     /// <param name="outcome">分发结果类别。</param>
     /// <param name="reply">应答消息；<c>null</c> = 无应答（适配层回加密空包）。</param>
-    public WechatBotDispatchResult(WechatBotDispatchOutcome outcome, AibotMessage? reply)
+    /// <param name="succeeded">
+    /// 是否有处理器<b>无异常跑完</b>（v1 方案 F9）。与 <see cref="Outcome"/> 正交：
+    /// <see cref="WechatBotDispatchOutcome.Handled"/> 只说明「处理器被执行」，其可能全部抛异常被隔离；
+    /// 调用方（长连接 / HTTP 适配层）可据此区分「业务已处理」与「已执行但全失败」，
+    /// 不必依赖 <c>Reply == null</c> 这一间接信号。
+    /// </param>
+    public WechatBotDispatchResult(WechatBotDispatchOutcome outcome, AibotMessage? reply, bool succeeded = false)
     {
         Outcome = outcome;
         Reply = reply;
+        Succeeded = succeeded;
     }
 
     /// <summary>分发结果类别。</summary>
@@ -43,6 +50,15 @@ public sealed class WechatBotDispatchResult
 
     /// <summary>应答消息（首个返回非 <c>null</c> 的处理器胜出）；<c>null</c> = 无应答。</summary>
     public AibotMessage? Reply { get; }
+
+    /// <summary>
+    /// 是否有处理器无异常跑完（<c>true</c> = 至少一个处理器成功返回，含返回 <c>null</c> 应答）。
+    /// </summary>
+    /// <remarks>
+    /// <see cref="WechatBotDispatchOutcome.Unhandled"/>（无匹配处理器）时为 <c>false</c>；
+    /// 全部处理器抛异常被隔离时为 <c>false</c>（异常已按 Error 记录，可观测不变量不变）。
+    /// </remarks>
+    public bool Succeeded { get; }
 }
 
 /// <summary>
@@ -137,11 +153,13 @@ public sealed class WechatBotEventDispatcher
             // 依次执行全部命中处理器（与 XML 侧一致的「全量执行 + 异常隔离」语义）；
             // 应答取【首个非 null】——避免后注册的处理器覆盖先命中的确定性应答。
             AibotMessage? reply = null;
+            var succeeded = false;
             foreach (var handler in handlers)
             {
                 try
                 {
                     var current = await handler.HandleAsync(botEvent, dispatchToken).ConfigureAwait(false);
+                    succeeded = true;
                     if (reply == null && current != null)
                     {
                         reply = current;
@@ -160,7 +178,7 @@ public sealed class WechatBotEventDispatcher
                 }
             }
 
-            return new WechatBotDispatchResult(WechatBotDispatchOutcome.Handled, reply);
+            return new WechatBotDispatchResult(WechatBotDispatchOutcome.Handled, reply, succeeded);
         }
         finally
         {

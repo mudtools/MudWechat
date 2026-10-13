@@ -178,6 +178,50 @@ public class WechatCallbackServiceCollectionExtensionsTests
             .Should().Contain(typeof(FallbackBotEventHandler), "未传 botKey 时注册到通配键（全局生效）");
     }
 
+    // ---------------------------------------------------------------- DI 卫生（v1 方案 F15，DI-SEAL）
+
+    /// <summary>F15①：注册表 Seal 后 Register 抛（运行期注册处理器必须在组装期暴露）。</summary>
+    [Fact]
+    public void Registry_ShouldRejectRegistration_AfterSealed()
+    {
+        var registry = new WechatCallbackHandlerRegistry();
+        registry.Register(WechatCallbackOptions.WildcardAppKey, typeof(StubEventHandler));
+
+        registry.Seal();
+
+        var act = () => registry.Register(WechatCallbackOptions.WildcardAppKey, typeof(AppScopedEventHandler));
+
+        act.Should().Throw<InvalidOperationException>().WithMessage("*已冻结*");
+        registry.GetAll(WechatCallbackOptions.WildcardAppKey)
+            .Should().Contain(typeof(StubEventHandler), "Seal 前的注册不受影响");
+    }
+
+    /// <summary>F15①：AddWechatCallback 二次调用不得丢键（复用既有注册表实例）。</summary>
+    [Fact]
+    public void AddWechatCallback_ShouldNotLoseHandlers_WhenCalledTwice()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+
+        // 典型宿主形态：多处装配点各自 AddWechatCallback（或重复调用），处理器挂在第一个 builder 上。
+        services.AddWechatCallback(options =>
+        {
+            options.Apps[WechatCallbackOptions.WildcardAppKey] = new WechatAppCallbackOptions
+            {
+                PushToken = "push-token",
+                PushEncodingAESKey = AesKey,
+            };
+        }).AddHandler<StubEventHandler>();
+        services.AddWechatCallback(_ => { });
+
+        using var provider = services.BuildServiceProvider();
+        var registry = provider.GetRequiredService<WechatCallbackHandlerRegistry>();
+
+        registry.GetAll(WechatCallbackOptions.WildcardAppKey)
+            .Should().Contain(typeof(StubEventHandler),
+                "二次 AddWechatCallback 必须复用既有注册表实例（新建实例会让后注册单例胜出，先挂的处理器全部丢失）");
+    }
+
     /// <summary>测试用精确键处理器（create_user）。</summary>
     private sealed class StubEventHandler : IWechatCallbackEventHandler    {
         public string SupportedEventType => WechatCallbackEventTypes.CreateUser;

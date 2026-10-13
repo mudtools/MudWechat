@@ -288,4 +288,38 @@ public class MpCallbackContractGuards
         messageKeys.Should().OnlyHaveUniqueItems();
         eventKeys.Should().OnlyHaveUniqueItems();
     }
+
+    /// <summary>
+    /// CB-MP-SEAL（v1 方案 F15①/D12）：处理器 / 拦截器 / 被动回复三张注册表必须在
+    /// <c>UseMpCallback()</c>（组合根末端）<c>Seal()</c> 封闭，且封闭先于管道挂载。
+    /// </summary>
+    /// <remarks>
+    /// 与企微侧 CB-SEAL 同构（四线各持一枚，防单线漂移）：注册表已实现 Seal 但接线漏调
+    /// 无任何编译期 / 运行期信号（注册只发生在 UseXxxCallback 内）⇒ 源码断言锁定。
+    /// </remarks>
+    [Fact]
+    public void CallbackRegistries_ShouldBeSealedAtCompositionRoot()
+    {
+        var source = ReadSource("Mud.Wechat.OfficialAccount.Callback/MpApplicationBuilderExtensions.cs");
+
+        foreach (var registry in new[]
+                 {
+                     "MpCallbackHandlerRegistry",
+                     "MpCallbackInterceptorRegistry",
+                     "MpCallbackReplyHandlerRegistry",
+                 })
+        {
+            // 断言取「注册表名 + >().Seal()」子串：对全限定（现状）与短名（未来加 using 后）两种形态均成立。
+            source.Should().Contain($"{registry}>().Seal()",
+                $"UseMpCallback() 必须封闭 {registry}（F15①：运行期漏注册处理器须在组装期暴露，不得静默 unhandled）");
+        }
+
+        // 顺序即契约：封闭先于管道挂载（取末次 Seal() 代码位与管道挂载比较；
+        // 管道挂载锚点取 "UseMiddleware<" —— 泛型实参仅存在于代码行，注释字样不得参与比较）。
+        var lastSealIndex = source.LastIndexOf("Seal()", StringComparison.Ordinal);
+        var middlewareIndex = source.IndexOf("UseMiddleware<", StringComparison.Ordinal);
+        lastSealIndex.Should().BeGreaterThan(-1, "UseMpCallback() 必须存在 Seal() 封闭调用");
+        lastSealIndex.Should().BeLessThan(middlewareIndex,
+            "CB-MP-SEAL：封闭必须先于 UseMiddleware —— 管道构建期即完成封闭，迟封闭等于漏封闭");
+    }
 }

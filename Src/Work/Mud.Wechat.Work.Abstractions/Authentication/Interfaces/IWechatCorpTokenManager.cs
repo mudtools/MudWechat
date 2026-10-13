@@ -13,10 +13,12 @@ namespace Mud.Wechat.Work.Abstractions.Authentication;
 /// <remarks>
 /// <para>
 /// 「一企一份」令牌：以 <b>scope（authCorpId）</b>隔离缓存条目（框架 scope 机制），
-/// 多企业令牌互不串扰。获取方式二选一：
-/// ① 业务侧经 <see cref="IWechatAppContextSwitcher.SetCorp"/> 切换代开发企业上下文后
-/// 以无参 <c>GetTokenAsync()</c> 获取（由环境上下文解析 authCorpId）；
+/// 多企业令牌互不串扰。获取方式二选一（<b>二者收敛到同一缓存/持久层键</b>）：
+/// ① 业务侧经 <see cref="IWechatAppContextSwitcher.UseCorpScope"/> 切换「应用 + 企业」上下文后
+/// 以无参 <c>GetTokenAsync()</c> 获取（由环境上下文经 <c>CorpTokenManager</c> 解析 authCorpId 并升级为 scope）；
 /// ② 显式以 scopes 传入 <c>GetTokenAsync(new[] { authCorpId })</c>。
+/// 两条路径对同一企业产生<b>同一持久层键</b> <c>Wechat.AccessToken:{AppKey}:{authCorpId}</c>，
+/// 企业级令牌<b>永不</b>写入 <c>default</c> 段。
 /// </para>
 /// <para>
 /// 与自建应用管理器在注册表中以不同的 TokenManagerKey 键位区分

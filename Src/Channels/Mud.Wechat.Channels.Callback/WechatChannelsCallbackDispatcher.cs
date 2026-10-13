@@ -254,7 +254,24 @@ public sealed class WechatChannelsCallbackDispatcher
                 continue;
             }
 
-            var reply = await handler.TryReplyAsync(envelope, cancellationToken).ConfigureAwait(false);
+            // 回复链隔离（v1 方案 F3①）：TryReplyAsync 异常不得穿出 DispatchAsync ——
+            // 异常会令中间件回 500，而事件已被前置处理器消费、指纹已消费 ⇒ 官方重推必被 403，
+            // 回复永久丢失。与同管线普通处理器的隔离纪律对齐。
+            ChannelsCallbackReply? reply;
+            try
+            {
+                reply = await handler.TryReplyAsync(envelope, cancellationToken).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
+            {
+                throw;   // 软超时 / 请求中止：上抛由中间件按线语义处置
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "被动回复处理器 {Type} 执行失败（已隔离，回落明文 success 应答）。", type.FullName);
+                continue;
+            }
+
             if (reply != null)
             {
                 return reply;

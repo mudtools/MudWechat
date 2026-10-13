@@ -37,6 +37,8 @@ public interface IWechatPayNotificationHandler
 /// <remarks>
 /// 组合根期<b>急切注册</b>、无 Freeze —— 与企微 / 公众号两条线的注册表同形态。
 /// 解析顺序：事件精确桶 → 通配桶（两者可叠加，先精确后通配）。
+/// <b>冻结</b>（v1 方案 F15①）：<c>UseWechatPayCallback()</c>（组合根末端）调用一次
+/// <see cref="Seal"/> —— 之后 <see cref="Register"/> 抛 <see cref="InvalidOperationException"/>。
 /// </remarks>
 public sealed class WechatPayCallbackHandlerRegistry
 {
@@ -44,14 +46,22 @@ public sealed class WechatPayCallbackHandlerRegistry
     public const string WildcardEventType = "*";
 
     private readonly Dictionary<string, List<Type>> _byEventType = new(StringComparer.OrdinalIgnoreCase);
+    private volatile bool _sealed;
 
     /// <summary>登记处理器类型。</summary>
     /// <param name="eventType">事件类型（<c>TRANSACTION.SUCCESS</c> 等；通配用 <see cref="WildcardEventType"/>）。</param>
     /// <param name="handlerType">处理器类型（须实现 <see cref="IWechatPayNotificationHandler"/>）。</param>
     /// <exception cref="ArgumentException"><paramref name="eventType"/> 为空白。</exception>
     /// <exception cref="ArgumentNullException"><paramref name="handlerType"/> 为 <c>null</c>。</exception>
+    /// <exception cref="InvalidOperationException">注册表已冻结（<see cref="Seal"/> 之后）。</exception>
     public void Register(string eventType, Type handlerType)
     {
+        if (_sealed)
+        {
+            throw new InvalidOperationException(
+                "支付回调处理器注册表已冻结（宿主注册在 UseWechatPayCallback() 时封闭）：运行期不得再注册处理器。");
+        }
+
         if (string.IsNullOrWhiteSpace(eventType))
         {
             throw new ArgumentException("事件类型不可为空白（通配请用 \"*\")。", nameof(eventType));
@@ -69,6 +79,13 @@ public sealed class WechatPayCallbackHandlerRegistry
         }
 
         list.Add(handlerType);
+    }
+
+    /// <summary>冻结注册表（<see cref="Register"/> 此后抛 <see cref="InvalidOperationException"/>；幂等）。</summary>
+    /// <remarks>唯一调用点：<c>UseWechatPayCallback()</c>（组合根末端）。</remarks>
+    public void Seal()
+    {
+        _sealed = true;
     }
 
     /// <summary>解析某事件类型应执行的处理器（精确桶在前、通配桶在后）。</summary>

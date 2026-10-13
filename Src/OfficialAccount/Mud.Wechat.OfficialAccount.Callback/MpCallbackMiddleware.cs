@@ -191,12 +191,23 @@ public sealed class MpCallbackMiddleware
             return;
         }
 
-        var payload = MpCallbackReplyWriter.WriteReply(
-            app, app.ResolveMode(options.DefaultSecurityMode), envelope, result.Reply, DateTimeOffset.UtcNow);
+        try
+        {
+            var payload = MpCallbackReplyWriter.WriteReply(
+                app, app.ResolveMode(options.DefaultSecurityMode), envelope, result.Reply, DateTimeOffset.UtcNow);
 
-        context.Response.StatusCode = StatusCodes.Status200OK;
-        context.Response.ContentType = MpCallbackReplyWriter.XmlContentType;
-        await context.Response.WriteAsync(payload, context.RequestAborted).ConfigureAwait(false);
+            context.Response.StatusCode = StatusCodes.Status200OK;
+            context.Response.ContentType = MpCallbackReplyWriter.XmlContentType;
+            await context.Response.WriteAsync(payload, context.RequestAborted).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            // 应答组装失败（如 Encrypt 因密钥配置非法抛错）：事件已被全部处理器消费、指纹已消费 ——
+            // 丢回复比丢事件更糟，回落官方许可的明文 success + 200（v1 方案 F3②；重推只会被 403）。
+            _logger.LogError(ex, "被动回复回写失败（已回落明文 success 应答）。AppKey: {AppKey}", appKey);
+            await WriteTextAsync(context, StatusCodes.Status200OK, MpCallbackReplyWriter.SuccessResponseBody,
+                CancellationToken.None).ConfigureAwait(false);
+        }
     }
 
     /// <summary>匹配路由前缀并提取应用键（仅前缀路径归一为通配键）。</summary>

@@ -39,6 +39,11 @@ public enum ComponentTicketPushOutcome
 
     /// <summary>类型为票据推送但 <c>ComponentVerifyTicket</c> 为空。</summary>
     MissingTicket,
+
+    /// <summary>
+    /// 时间戳超出时效窗（<c>|now - timestamp| &gt; 300s</c>，v1 方案 F11）—— 拒绝旧报文重放。
+    /// </summary>
+    TimestampOutOfWindow,
 }
 
 /// <summary>一次推送的处置结果。</summary>
@@ -98,17 +103,26 @@ public sealed class ComponentVerifyTicketReceiver
 
     private readonly IComponentVerifyTicketStore _ticketStore;
     private readonly OpenPlatformAppConfig _config;
+    private readonly Func<DateTimeOffset> _utcNow;
+
+    /// <summary>时间戳时效窗容差（秒；与其余四线同一形态的 ±300s，内部常量不新增配置面，v1 方案 F11）。</summary>
+    internal const int TimestampWindowSeconds = 300;
 
     /// <summary>创建接收器。</summary>
     /// <param name="ticketStore">票据存储（本类只负责<b>写入</b>；读取由令牌提供者负责）。</param>
     /// <param name="config">平台配置（须含 Token 与 43 位 EncodingAesKey）。</param>
+    /// <param name="utcNow">当前时间源（可选，默认 <see cref="DateTimeOffset.UtcNow"/>；测试注入以覆盖未来/过去时间戳）。</param>
     /// <exception cref="ArgumentNullException">任一参数为 <c>null</c>。</exception>
     /// <exception cref="InvalidOperationException">配置缺少推送凭据。</exception>
-    public ComponentVerifyTicketReceiver(IComponentVerifyTicketStore ticketStore, OpenPlatformAppConfig config)
+    public ComponentVerifyTicketReceiver(
+        IComponentVerifyTicketStore ticketStore,
+        OpenPlatformAppConfig config,
+        Func<DateTimeOffset>? utcNow = null)
     {
         _ticketStore = ticketStore ?? throw new ArgumentNullException(nameof(ticketStore));
         _config = config ?? throw new ArgumentNullException(nameof(config));
         _config.EnsureValid();
+        _utcNow = utcNow ?? (static () => DateTimeOffset.UtcNow);
     }
 
     /// <summary>
@@ -120,7 +134,7 @@ public sealed class ComponentVerifyTicketReceiver
     /// <param name="body">请求体（加密信封 XML）。</param>
     /// <returns>处置结果；票据推送成功时票据已写入存储，授权变更事件随结果返回。</returns>
     /// <remarks>
-    /// <b>判定顺序是安全相关的</b>：先验签、再解密、再比对 appid，最后才看类型并<b>分流</b> ——
+    /// <b>判定顺序是安全相关的</b>：先验签、再时效窗、再解密、再比对 appid，最后才看类型并<b>分流</b> ——
     /// 任何一步失败都<b>不写</b>存储、也<b>不</b>返回事件。若把写入/返回提前到验签之前，
     /// 一个伪造报文就能覆盖真票据或伪造一次「授权成功」（等于让攻击者拿到授权码）。
     /// </remarks>
@@ -149,6 +163,20 @@ public sealed class ComponentVerifyTicketReceiver
         if (!WechatCallbackCrypto.VerifySignature(_config.Token!, timestamp!, nonce!, encrypt!, msgSignature!))
         {
             return new ComponentPushResult(ComponentTicketPushOutcome.InvalidSignature);
+        }
+
+        // ①.5 时效窗（v1 方案 F11）：拒绝旧报文重放（对齐其余四线的 ±300s 口径）。
+        // 位置在验签之后、解密之前 —— 与其余四线同序（时效拒绝不消耗任何资源，也让
+        // 「验签通过但时间戳越界」与「验签失败」在监控上可区分）。
+        if (!long.TryParse(timestamp!, out var epochSeconds))
+        {
+            return new ComponentPushResult(ComponentTicketPushOutcome.MalformedEnvelope);
+        }
+
+        var skew = Math.Abs(_utcNow().ToUnixTimeSeconds() - epochSeconds);
+        if (skew > TimestampWindowSeconds)
+        {
+            return new ComponentPushResult(ComponentTicketPushOutcome.TimestampOutOfWindow);
         }
 
         // ② 解密。捕获面刻意收窄，但**必须**含共享内核的领域异常（见类注释）。

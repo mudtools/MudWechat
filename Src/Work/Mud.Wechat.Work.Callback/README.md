@@ -378,6 +378,33 @@ public sealed class MyBotReplyHandler : IWechatBotCallbackEventHandler
   低目标框架经 `IsSupported` 显式上报不可用、中间件对 JSON 请求回 415（不静默降级）。
 - **媒体解密**：机器人回调携带的媒体素材经 `WechatBotMediaDecryptor` 解密。
 
+## 智能机器人长连接（`LongConnection/`，net8+）
+
+`WechatBotLongConnectionRunner`（BackgroundService）为每个 `EnableLongConnection=true` 的机器人建一条
+`WechatBotConnection` 主循环。生命周期（v1 方案 F1~F4 修复后）：
+
+```
+夺租约（注册了 IWechatBotConnectionLease 时；未夺得 ⇒ 退避后重夺，不得建连）
+   │  夺得
+   ▼
+建连 wss://openws.work.weixin.qq.com → aibot_subscribe（每条连接恰一次）
+   │
+   ▼
+会话 = 读帧循环 ∥ 心跳（固定周期 ping，与流量正交） ∥ 租约续租（周期 = TTL/3 = 15s）
+   │
+   ├─ 续租被拒（LeaseLostException，预期控制流）──► 停会话 ⇒ 退避 ⇒ 重夺
+   ├─ 断开 / 会话异常（含被新连接踢下线的 disconnected_event）──► 退避 ⇒ 重夺
+   └─ 停机（lifetime 取消，含取消落在任一退避上）──► finally 统一 ReleaseAsync（优雅让位）
+```
+
+- **心跳与流量正交**（F1）：读循环不重置心跳计时（一次性 CTS 取消不可逆）；心跳循环提取为
+  `WechatBotHeartbeat`（纯逻辑，行为用例直测）。
+- **停机必释约**（F2/F13）：退避全部纳入取消感知，取消不得穿出 `RunAsync`；`attempt` 每轮至多一次自增。
+- **租约必须续租**（F4）：`RenewAsync` 的唯一调用点在 `WechatBotLeaseRenewer`；端口「有实现无调用」
+  不产生编译期信号，由守卫 BT12② 兜底。多实例部署未注册租约时启动期告警一次（单实例是合法形态）。
+- 结构性质（读循环不串行 await 分派、令牌贯通）由守卫 BT12①③④ 锁定；纯逻辑行为由
+  `WechatBotLongConnectionTests` 覆盖（无网络）。
+
 ## 依赖
 
 - `Mud.Wechat.Work.Abstractions`、`Mud.Wechat.Work.DataModels`（**不引用主包 `Work`**，硬边界由守卫 CB1 锁定）

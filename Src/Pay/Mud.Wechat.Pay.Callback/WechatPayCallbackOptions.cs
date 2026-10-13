@@ -50,6 +50,17 @@ public sealed class WechatPayCallbackOptions
     /// <summary>事件处理软超时（毫秒；默认 4000，<b>必须 &lt; 5000</b> —— 平台 5 秒断连契约）。</summary>
     public int EventHandlingTimeoutMs { get; set; } = 4_000;
 
+    /// <summary>
+    /// 并发处理上限（构造期快照；默认 10，与企微 / 公众号 / 小店三线同口径）。
+    /// </summary>
+    /// <remarks>
+    /// 消费点：<c>WechatPayCallbackDispatcher</c> 的信号量（v1 方案 F7）。支付线此前<b>无</b>并发闸：
+    /// 突发通知并行涌入时，多个 scoped <see cref="System.Data.Common.DbConnection"/> / <c>DbContext</c>
+    /// 同时解析会击穿线程安全假设，且异常被单处理器隔离吞掉 ⇒ 静默丢业务。容量语义与其余三线一致
+    /// （同一 <c>MaxConcurrentEvents</c> 名，构造期快照，热更不改容量）。
+    /// </remarks>
+    public int MaxConcurrentEvents { get; set; } = 10;
+
     /// <summary>是否启用一次性指纹闸（默认开启；<b>生产不得关闭</b>，仅排障用）。</summary>
     public bool RequireReplayGuard { get; set; } = true;
 
@@ -85,6 +96,13 @@ public sealed class WechatPayCallbackOptions
             throw new InvalidOperationException(
                 $"EventHandlingTimeoutMs 必须落在 (0, 5000) 区间（当前 {EventHandlingTimeoutMs}）：" +
                 "微信支付在 5 秒内收不到 HTTP 200 会判定通知失败并按策略重试。");
+        }
+
+        // 并发闸容量必须为正（v1 方案 F7；其余三线同口径）。
+        if (MaxConcurrentEvents <= 0)
+        {
+            throw new InvalidOperationException(
+                $"MaxConcurrentEvents 必须为正数（当前 {MaxConcurrentEvents}）：并发闸容量为 0 会令所有通知无限期等待。");
         }
     }
 }

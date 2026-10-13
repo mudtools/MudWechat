@@ -26,6 +26,11 @@ public static class WechatApplicationBuilderExtensions
     /// <see cref="WechatCallbackOptions.GlobalRoutePrefix"/> 配置（支持热更新）。
     /// </para>
     /// <para>
+    /// <b>组合根末端封闭注册表</b>（v1 方案 F15①/D12）：宿主注册在此全部完成 ⇒ 处理器 / 拦截器 /
+    /// bot 处理器三张注册表 <c>Seal()</c> 冻结，运行期再注册即抛（漏注册必须在组装期暴露，
+    /// 而非线上首个回调才静默 unhandled）。
+    /// </para>
+    /// <para>
     /// 宿主需保证 ASP.NET Core 运行环境（本扩展仅在 ASP.NET Core 应用管道可用）。
     /// </para>
     /// </remarks>
@@ -35,6 +40,11 @@ public static class WechatApplicationBuilderExtensions
         {
             throw new ArgumentNullException(nameof(app));
         }
+
+        // 冻结注册表（幂等）：先于 UseMiddleware —— 管道构建期即完成封闭。
+        app.ApplicationServices.GetRequiredService<WechatCallbackHandlerRegistry>().Seal();
+        app.ApplicationServices.GetRequiredService<WechatCallbackInterceptorRegistry>().Seal();
+        app.ApplicationServices.GetRequiredService<WechatBotHandlerRegistry>().Seal();
 
         return app.UseMiddleware<WechatCallbackMiddleware>();
     }

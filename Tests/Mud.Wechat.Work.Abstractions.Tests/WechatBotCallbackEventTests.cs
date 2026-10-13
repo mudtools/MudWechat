@@ -79,4 +79,88 @@ public class WechatBotCallbackEventTests
         FluentActions.Invoking(() => WechatBotReplySupport.ValidateHttpPassiveReply(new AibotMessage()))
             .Should().Throw<InvalidOperationException>("空应答应返回 null 由分发器统一回空包，而非声明空 msgtype");
     }
+
+    // ---------------------------------------------------------------- 事件维度规则（v1 方案 F10，BT13）
+
+    [Fact]
+    public void ReplySupport_ShouldRejectNonEmptyReply_ForFeedbackEvent_OnBothTransports()
+    {
+        var card = new TemplateCardBody { CardType = "button_interaction" };
+
+        // 官方 101027/101031：feedback_event 仅支持回复空包（处理器返回 null）—— 非 null 一律拒绝。
+        foreach (var reply in new AibotMessage?[]
+                 {
+                     WechatBotReplies.Text("x"),
+                     WechatBotReplies.Markdown("x"),
+                     WechatBotReplies.Stream("sid", "acc"),
+                     WechatBotReplies.TemplateCard(card),
+                     WechatBotReplies.UpdateTemplateCard(card),
+                 })
+        {
+            FluentActions.Invoking(() => WechatBotReplySupport.ValidateHttpPassiveReply(reply!, WechatBotEventTypes.FeedbackEvent))
+                .Should().Throw<InvalidOperationException>("HTTP 被动回复：feedback_event 仅空包");
+            FluentActions.Invoking(() => WechatBotReplySupport.ValidateLongConnectionReply(reply!, WechatBotEventTypes.FeedbackEvent))
+                .Should().Throw<InvalidOperationException>("长连接：feedback_event 同样仅空包");
+        }
+    }
+
+    [Fact]
+    public void ReplySupport_ShouldAllowText_OnlyForEnterChatEvent_OnHttpPassive()
+    {
+        // 官方 101031 单向规则：text ⇒ enter_chat。
+        FluentActions.Invoking(() =>
+                WechatBotReplySupport.ValidateHttpPassiveReply(WechatBotReplies.Text("欢迎语"), WechatBotEventTypes.EnterChat))
+            .Should().NotThrow("进入会话回调事件的 text 欢迎语合法");
+
+        foreach (var eventType in new[]
+                 {
+                     WechatBotEventTypes.TemplateCardEvent,
+                     "text",   // 消息回调（匹配键为顶层 msgtype）
+                 })
+        {
+            FluentActions.Invoking(() =>
+                    WechatBotReplySupport.ValidateHttpPassiveReply(WechatBotReplies.Text("x"), eventType))
+                .Should().Throw<InvalidOperationException>("HTTP 被动回复的 text 仅支持 enter_chat（101031）");
+        }
+    }
+
+    [Fact]
+    public void ReplySupport_ShouldNotInventReverseMatrix_ForEnterChat()
+    {
+        // D10 不臆造矩阵：官方只约束「text ⇒ enter_chat」，不得反向拒绝 enter_chat 携带其它合法形态。
+        var card = new TemplateCardBody { CardType = "text_notice" };
+
+        FluentActions.Invoking(() =>
+                WechatBotReplySupport.ValidateHttpPassiveReply(WechatBotReplies.TemplateCard(card), WechatBotEventTypes.EnterChat))
+            .Should().NotThrow("欢迎语携带 template_card 合法（反向矩阵是臆造）");
+        FluentActions.Invoking(() =>
+                WechatBotReplySupport.ValidateHttpPassiveReply(WechatBotReplies.Stream("sid", "acc"), WechatBotEventTypes.EnterChat))
+            .Should().NotThrow("欢迎语携带 stream 合法（反向矩阵是臆造）");
+    }
+
+    [Fact]
+    public void ReplySupport_ShouldAllowLongConnectionSurface_ForMessageEvents()
+    {
+        // 长连接面的事件维度只多一条 feedback_event 规则；消息事件的 markdown 仍合法（回归防误伤）。
+        FluentActions.Invoking(() =>
+                WechatBotReplySupport.ValidateLongConnectionReply(WechatBotReplies.Markdown("x"), WechatBotEventTypes.Stream))
+            .Should().NotThrow("长连接 markdown 对消息事件合法（101463）");
+        FluentActions.Invoking(() =>
+                WechatBotReplySupport.ValidateLongConnectionReply(WechatBotReplies.Text("x"), WechatBotEventTypes.TemplateCardEvent))
+            .Should().NotThrow("长连接 text 不受「text ⇒ enter_chat」约束（该规则属 HTTP 被动回复面）");
+    }
+
+    [Fact]
+    public void ReplySupport_ShouldKeepLegacyOverloadBehavior_WhenEventTypeUnknown()
+    {
+        // 回归：旧重载（无事件键）行为不变 —— 只做 msgtype 维度校验，两条事件维度规则均不触发。
+        var card = new TemplateCardBody { CardType = "button_interaction" };
+
+        FluentActions.Invoking(() => WechatBotReplySupport.ValidateHttpPassiveReply(WechatBotReplies.Text("x")))
+            .Should().NotThrow("事件键未知时 text 不触发 enter_chat 限定");
+        FluentActions.Invoking(() => WechatBotReplySupport.ValidateLongConnectionReply(WechatBotReplies.Markdown("x")))
+            .Should().NotThrow("事件键未知时 markdown 在长连接面合法");
+        FluentActions.Invoking(() => WechatBotReplySupport.ValidateHttpPassiveReply(WechatBotReplies.TemplateCard(card)))
+            .Should().NotThrow();
+    }
 }

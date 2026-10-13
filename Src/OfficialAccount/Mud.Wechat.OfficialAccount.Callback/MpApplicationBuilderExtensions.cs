@@ -21,12 +21,20 @@ public static class MpApplicationBuilderExtensions
     /// </summary>
     /// <param name="app">应用建造者。</param>
     /// <returns>应用建造者（链式）。</returns>
+    /// <remarks>
+    /// <b>组合根末端封闭注册表</b>（v1 方案 F15①/D12）：处理器 / 拦截器 / 被动回复三张注册表
+    /// <c>Seal()</c> 冻结，运行期再注册即抛。
+    /// </remarks>
     public static IApplicationBuilder UseMpCallback(this IApplicationBuilder app)
     {
         if (app == null)
         {
             throw new ArgumentNullException(nameof(app));
         }
+
+        app.ApplicationServices.GetRequiredService<Mud.Wechat.OfficialAccount.Callback.MpCallbackHandlerRegistry>().Seal();
+        app.ApplicationServices.GetRequiredService<Mud.Wechat.OfficialAccount.Callback.MpCallbackInterceptorRegistry>().Seal();
+        app.ApplicationServices.GetRequiredService<Mud.Wechat.OfficialAccount.Callback.MpCallbackReplyHandlerRegistry>().Seal();
 
         return app.UseMiddleware<Mud.Wechat.OfficialAccount.Callback.MpCallbackMiddleware>();
     }

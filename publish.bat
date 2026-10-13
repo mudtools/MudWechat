@@ -20,6 +20,14 @@ REM     Src\**\*.csproj** (a project with <IsPackable>false</IsPackable> is a bu
 REM     tool and produces no package): moving a csproj between Src/<Area> folders
 REM     therefore cannot silently drop it from the release (that is exactly how the
 REM     hard-coded 11-package list went stale).
+REM   * After the packages are verified, the **same derived packable set** is
+REM     `dotnet publish`-ed (Release) into .\.bin - one folder per target
+REM     framework (.bin\netstandard2.0 / net6.0 / net8.0 / net10.0) holding the
+REM     SDK assemblies plus their dependency assemblies, so the bits can be
+REM     consumed without a feed. The per-project TFM list is read from MSBuild
+REM     instead of hard-coded: Pay / OpenPlatform deliberately narrow theirs
+REM     (AB-G8) and `-f <absent tfm>` would be a hard error. .bin is regenerated
+REM     from scratch on every run (stale TFM folders would otherwise linger).
 REM   * Version is passed as -p:Version=... so assembly and package
 REM     versions cannot drift apart (Directory.Build.props pins <Version>,
 REM     which makes --version-suffix silently ignored).
@@ -30,6 +38,7 @@ setlocal EnableExtensions EnableDelayedExpansion
 cd /d "%~dp0"
 
 set "OUTPUT_DIR=artifacts"
+set "BIN_DIR=.bin"
 set "SOLUTION=Mud.Wechat.slnx"
 REM No hard-coded package checklist: the expected set is derived from Src\**\*.csproj
 REM in the VERIFY section below. Single source of truth shared with the CI package-count
@@ -41,6 +50,7 @@ set "SKIP_CHECK=0"
 set "DO_PUSH=0"
 set "NO_PAUSE=0"
 set "EC=0"
+set "ASSEMBLIES=0"
 
 REM ------------------------------------------------------------- args
 :parse_args
@@ -136,10 +146,14 @@ REM ---- VERIFY: derive the packable set from the source tree, then check each p
 set "COUNT=0"
 set "EXPECTED=0"
 set "MISSING="
+REM PACKABLE collects the very same derived set (quoted paths) for the publish step below -
+REM deriving twice would be a second drift surface.
+set "PACKABLE="
 for /f "delims=" %%F in ('dir /s /b "Src\*.csproj" 2^>nul') do (
     findstr /m /c:"<IsPackable>false" "%%F" >nul 2>nul
     if errorlevel 1 (
         set /a EXPECTED+=1
+        set "PACKABLE=!PACKABLE! "%%F""
         if exist "%OUTPUT_DIR%\%%~nF.%VERSION%.nupkg" ( set /a COUNT+=1 ) else set "MISSING=!MISSING! %%~nF"
     )
 )
@@ -153,6 +167,62 @@ if defined MISSING (
 )
 echo Produced !COUNT! of !EXPECTED! derived packages:
 dir /b "%OUTPUT_DIR%\*%VERSION%.nupkg"
+
+REM ------------------------------------------------- publish assemblies to %BIN_DIR%
+REM Same derived set as the VERIFY loop above (!PACKABLE!) so a project cannot be packaged yet
+REM silently skipped here. One folder per target framework; the TFM list is read from MSBuild
+REM (not hard-coded) because Pay / OpenPlatform deliberately narrow theirs and `-f <absent tfm>`
+REM is a hard error rather than a skip.
+echo.
+echo Publishing assemblies to %BIN_DIR% ^(one folder per target framework^) ...
+if exist "%BIN_DIR%" rmdir /s /q "%BIN_DIR%"
+mkdir "%BIN_DIR%" 2>nul
+set "PUB_FAILED="
+for %%P in (!PACKABLE!) do (
+    set "TFMS="
+    for /f "usebackq delims=" %%T in (`dotnet msbuild "%%~P" -getProperty:TargetFrameworks -nologo`) do set "TFMS=%%T"
+    if not defined TFMS (
+        REM single-TFM projects (TargetFramework instead of TargetFrameworks).
+        for /f "usebackq delims=" %%T in (`dotnet msbuild "%%~P" -getProperty:TargetFramework -nologo`) do set "TFMS=%%T"
+    )
+    if not defined TFMS (
+        set "PUB_FAILED=!PUB_FAILED! %%~nP(no-tfm)"
+    ) else (
+        REM `for %%T in (!TFMS:;= !)` does NOT work: the IN clause is split at `=`/`;` when the
+        REM block is parsed, i.e. before delayed expansion, so %%T received the literal "TFMS:".
+        REM The substitution therefore has to land in its own variable first.
+        set "TFM_LIST=!TFMS:;= !"
+        for %%T in (!TFM_LIST!) do (
+            REM --no-restore: the pack step above already restored the whole solution for every TFM,
+            REM and per-TFM publish would otherwise re-restore the project graph ~70 times.
+            dotnet publish "%%~P" -c Release -f %%T -o "%BIN_DIR%\%%T" --nologo --no-restore -p:Version=%VERSION% || set "PUB_FAILED=!PUB_FAILED! %%~nP(%%T)"
+        )
+    )
+)
+if defined PUB_FAILED (
+    echo Error: dotnet publish failed for:!PUB_FAILED!
+    set "EC=1"
+    goto :finish
+)
+REM Per-TFM assembly tally: dotnet publish exiting 0 while emitting nothing (a TFM folder that
+REM stays empty) is the silent-failure form of this step, so an empty folder is fail-closed.
+set "EMPTY_TFM="
+for /d %%D in ("%BIN_DIR%\*") do (
+    set "DLLS=0"
+    for /f %%C in ('dir /b /a-d "%%~D\*.dll" 2^>nul ^| find /c /v ""') do set "DLLS=%%C"
+    if "!DLLS!"=="0" (
+        set "EMPTY_TFM=!EMPTY_TFM! %%~nxD"
+    ) else (
+        set /a ASSEMBLIES+=!DLLS!
+        echo   %%~nxD : !DLLS! dll
+    )
+)
+if defined EMPTY_TFM (
+    echo Error: publish produced no assembly in:!EMPTY_TFM!
+    set "EC=1"
+    goto :finish
+)
+echo Published !ASSEMBLIES! assemblies in %cd%\%BIN_DIR%.
 
 REM ------------------------------------------------------------- push
 if "%DO_PUSH%"=="1" (
@@ -173,7 +243,7 @@ REM ----------------------------------------------------------- finish
 :finish
 echo.
 if "%EC%"=="0" (
-    echo PUBLISH SUCCEEDED  ^(version %VERSION%, output %cd%\%OUTPUT_DIR%^)
+    echo PUBLISH SUCCEEDED  ^(version %VERSION%, packages %cd%\%OUTPUT_DIR%, assemblies %cd%\%BIN_DIR%^)
 ) else (
     echo PUBLISH FAILED
 )
@@ -188,6 +258,8 @@ echo   /preview    Append -preview.<timestamp> to the version.
 echo   /skipcheck  Skip the verify-build.ps1 quality gate.
 echo   /push       Push to nuget.org after packing ^(needs NUGET_API_KEY^).
 echo   /nopause    Do not pause at the end.
+echo.
+echo Output: packages in .\artifacts, assemblies in .\.bin (one folder per target framework).
 echo.
 set "EC=1"
 goto :finish

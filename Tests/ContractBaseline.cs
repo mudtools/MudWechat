@@ -136,15 +136,17 @@ public static class Baseline
     public static class Pay
     {
         /// <summary>
-        /// `[HttpClientApi]` 接口数（十四个业务域各一）。
+        /// `[HttpClientApi]` 接口数（二十四个业务域各一）。
         /// </summary>
         /// <remarks>
         /// 锁定于 `WechatPayDomainContractGuards`（PAY-B 系列）。
         /// 现行域集：Transactions / Refund / Bill / Certificates / ProfitSharing / PayScore /
         /// CombineTransactions / Transfer / NewTaxControlFapiao / MarketingFavor / Apply4SubMerchant /
-        /// Apply4Subject / PartnerTransactions / PartnerPayScore。
+        /// Apply4Subject / PartnerTransactions / PartnerPayScore / BankPayScore / PartnerTransfer /
+        /// BankTransfer / Repayment / MerchantRiskManage / MerchantStore / MerchantAlterApply /
+        /// MerchantFund / MerchantSettlement / MerchantService。
         /// </remarks>
-        public const int HttpApiInterfaces = 14;
+        public const int HttpApiInterfaces = 24;
 
         /// <summary>
         /// 端点总数（各域端点之和；账单 / 发票的**文件下载通道**不计入生成式接口）。
@@ -157,9 +159,32 @@ public static class Baseline
         /// SKIT 清单 12 行中 codepay / reverse 属 APIv2、transactions-exposure 页面已下架）= 77
         /// + P0-4 服务商支付分 23（授权 7 + 服务订单 8 + 服务额度 1 + 支付分计划 3 + 计划型服务订单 1 +
         /// 用户签约计划 3，守卫 PS-B1；SKIT 清单 28 行中「商户收款」现行目录无该端点、
-        /// 三支端点在授权记录 / 计划应答多页重复声明已归并）= 100。
+        /// 三支端点在授权记录 / 计划应答多页重复声明已归并）= 100
+        /// + P0-5 银行/从业机构支付分 11（授权 3 + 服务订单 6 + 扣款信息 2，守卫 BS-B1；
+        /// SKIT 清单 15 行中「收单曝光」出处页已下架（现跳 50x）⇒ 零端点、两支 GET 与查询订单
+        /// 在多行重复声明已归并）= 111
+        /// + P0-6 服务商批量转账 5（发起 1 + 批次查 2 + 明细查 2，守卫 PTF-B1）= 116
+        /// + P0-6 从业机构（银行）批量转账与电子回单 9（转账 5 + 回单 4；回单的汇总 / 明细两条路径
+        /// 各有 POST 受理与 GET 查询 ⇒ 按 (方法, 路由) 计数，守卫 BT-B1）= 125
+        /// + P0-6 平台商户还款 3（预下单 + 查单 + 关单，关单为 204，守卫 RP-B1；
+        /// 端上调起四支与支付成功回调不属本 HTTP 面 ⇒ 零声明，守卫 RP-B2）= 128
+        /// + P0-7 商户风险管理 11（风险订单同步 4：query-risk-trades 与 recv-dispose-result 各有
+        /// 「服务商面 / 普通商户面」两支同方法同路由、字段表不同 ⇒ 端点按方法计而 (方法, 路由) 去重后为 9，
+        /// 守卫 MRB-B1 两个数都锁 + 风险共建 3 + 违规通知回调地址四件套 4，守卫 MRB-B1）= 139
+        /// + P0-7 商户门店管理 5（创建 + 更新 + 查询 + 绑定收款号 + 解绑收款号；官方十页因
+        /// 「商户面与服务商面字段表只差一个 sub_mchid、应答表零差异」而归并为五端点，守卫 MST-B6；
+        /// 分页查门店与删除门店官方无 HTTP 面 ⇒ 零声明，守卫 MST-B2）= 144
+        /// + P0-7 商户资料变更 12（主体族 4 + 超级管理员族 4 + 商家简称族 4；官方 4013 系转述页与现行
+        /// 页路由不同形，八行核得两族各独立页面 ⇒ 三族各四支，守卫 MAA-B1/B2；
+        /// 撤销是 POST 动词段而非 DELETE、本域零 204）= 156
+        /// + P0-7 商户账户余额 2（实时余额 + 日终余额；同前缀 /v3/merchant/fund/ 下的提现族四支
+        /// 属【平台商户】面 ⇒ 零端点，守卫 MF-B2 与裁决守卫 C1 互为正对照）= 158
+        /// + P0-7 商户结算规则申请 2（创建 + 按 application_id 查；从业机构面，官方无「按商户号查最新
+        /// 申请单」与规则列表/删除面 ⇒ 零声明，守卫 MSET-B2）= 160
+        /// + P0-7 消费者投诉 11（通知地址 CRUD 4 + 投诉列表 / 详情 / 协商历史 3 + 回复 / 完成 / 退款审批 / 即时服务 4；
+        /// 图片上传 / 拉取两支走手工通道，不计入生成式接口，守卫 MC-B1）= 171。
         /// </remarks>
-        public const int Endpoints = 100;
+        public const int Endpoints = 171;
     }
 
     /// <summary>开放平台线（`Tests/Mud.Wechat.OpenPlatform.Tests`，B1 起）。</summary>

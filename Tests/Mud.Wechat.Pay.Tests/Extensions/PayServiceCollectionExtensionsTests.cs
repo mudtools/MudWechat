@@ -132,7 +132,8 @@ public class PayServiceCollectionExtensionsTests
     }
 
     /// <summary>
-    /// 四域三段式齐备：<see cref="PayServiceBuilder.AddAllApis"/> 后四域接口与账单下载通道全部可解析。
+    /// 二十三域三段式齐备：<see cref="PayServiceBuilder.AddAllApis"/> 后全部业务接口与两条文件通道、
+    /// 本地签名器均可解析。
     /// </summary>
     /// <remarks>
     /// 锁定「枚举成员 ↔ 注册器 ↔ 源生成 <c>Add{域}WebApiHttpClient()</c>」三者同批成立
@@ -182,6 +183,33 @@ public class PayServiceCollectionExtensionsTests
         // P0-4 服务商支付分（**服务商面**；源生成 AddPartnerPayScoreWebApiHttpClient）。
         provider.GetRequiredService<IWechatPayPartnerPayScoreService>().Should().NotBeNull();
 
+        // P0-5 银行 / 从业机构支付分（**从业机构面**；源生成 AddBankPayScoreWebApiHttpClient）。
+        provider.GetRequiredService<IWechatPayBankPayScoreService>().Should().NotBeNull();
+
+        // P0-6 服务商批量转账到零钱（**普通服务商面**；源生成 AddPartnerTransferWebApiHttpClient）。
+        provider.GetRequiredService<IWechatPayPartnerTransferService>().Should().NotBeNull();
+
+        // P0-6 从业机构（银行）批量转账与电子回单（**从业机构面**；源生成 AddBankTransferWebApiHttpClient）。
+        provider.GetRequiredService<IWechatPayBankTransferService>().Should().NotBeNull();
+
+        // P0-6 平台收付通·还款支付（**平台商户面**；源生成 AddRepaymentWebApiHttpClient）。
+        provider.GetRequiredService<IWechatPayRepaymentService>().Should().NotBeNull();
+
+        // P0-7 商户风险管理（**四套商户标识并存 + 本线首支 PUT / DELETE**；源生成 AddMerchantRiskManageWebApiHttpClient）。
+        provider.GetRequiredService<IWechatPayMerchantRiskManageService>().Should().NotBeNull();
+
+        // P0-7 商户门店管理（**本线首支 PATCH**；源生成 AddMerchantStoreWebApiHttpClient）。
+        provider.GetRequiredService<IWechatPayMerchantStoreService>().Should().NotBeNull();
+
+        // P0-7 商户资料变更（**三族各四支、十页归并而来**；源生成 AddMerchantAlterApplyWebApiHttpClient）。
+        provider.GetRequiredService<IWechatPayMerchantAlterApplyService>().Should().NotBeNull();
+
+        // P0-7 商户账户余额（**裁决守卫 C1 收窄后落地的两支**；源生成 AddMerchantFundWebApiHttpClient）。
+        provider.GetRequiredService<IWechatPayMerchantFundService>().Should().NotBeNull();
+
+        // P0-7 商户结算规则申请（**从业机构面**；源生成 AddMerchantSettlementWebApiHttpClient）。
+        provider.GetRequiredService<IWechatPayMerchantSettlementService>().Should().NotBeNull();
+
         // 账单下载通道随账单模块注册（无 [HttpClientApi]，故无对应的源生成注册方法）。
         provider.GetRequiredService<IWechatPayBillDownloadService>().Should().NotBeNull();
 
@@ -191,7 +219,8 @@ public class PayServiceCollectionExtensionsTests
     }
 
     /// <summary>
-    /// 新增域 DTO 必须并入 AOT resolver：退款 / 账单 / 平台证书三域与 Common 基底均须可解析。
+    /// 新增域 DTO 必须并入 AOT resolver：Common 基底与各业务域（覆盖到 P0-7 批次的门店 / 变更 /
+    /// 账户余额 / 结算规则五域）的请求与应答均须可解析。
     /// </summary>
     [Fact]
     public void AddWechatPayApi_ShouldRegisterAllDomainJsonContexts_WhenBuiltOnNet8OrGreater()
@@ -269,6 +298,65 @@ public class PayServiceCollectionExtensionsTests
                      typeof(PartnerPayScorePlanResponse),
                      typeof(PartnerPayScoreSyncOrderRequest),
                      typeof(PartnerPayScoreTerminateByOpenIdRequest),
+                     typeof(BankPayScoreApplyPermissionsRequest),
+                     typeof(BankPayScoreCreateOrderRequest),
+                     typeof(BankPayScoreQueryOrderResponse),
+                     typeof(BankPayScoreRegisterDeductRequest),
+                     typeof(BankPayScoreDeductionQueryResponse),
+                     typeof(BankPayScoreTimeRange),
+                     typeof(PartnerTransferBatchCreateRequest),
+                     typeof(PartnerTransferBatchCreateResponse),
+                     typeof(PartnerTransferBatchQueryResponse),
+                     typeof(PartnerTransferDetailQueryResponse),
+                     typeof(PartnerTransferBatchDetailItem),
+                     typeof(PartnerTransferDetailInput),
+                     typeof(BankTransferBatchCreateRequest),
+                     typeof(BankTransferBatchQueryResponse),
+                     typeof(BankTransferDetailQueryResponse),
+                     typeof(BankTransferSummaryReceiptRequest),
+                     typeof(BankTransferSummaryReceiptResponse),
+                     typeof(BankTransferDetailReceiptResponse),
+                     typeof(BankTransferDetailInput),
+                     typeof(RepaymentPrepayRequest),
+                     typeof(RepaymentPrepayResponse),
+                     typeof(RepaymentSubOrder),
+                     typeof(RepaymentH5Info),
+                     typeof(RepaymentQueryResponse),
+                     typeof(RepaymentQuerySubOrder),
+                     typeof(RepaymentCloseRequest),
+                     typeof(MerchantRiskManagePartnerRiskTradeQueryRequest),
+                     typeof(MerchantRiskManageMchRiskTradeQueryRequest),
+                     typeof(MerchantRiskManagePartnerRiskTradeItem),
+                     typeof(MerchantRiskManageMchRiskTradeItem),
+                     typeof(MerchantRiskManageDisposeResultResponse),
+                     typeof(MerchantRiskManageTradeUnionReportRequest),
+                     typeof(MerchantRiskManageTradeUnionSubOrder),
+                     typeof(MerchantRiskManageLivingExpensesFields),
+                     typeof(MerchantRiskManageTradeRiskResultRequest),
+                     typeof(MerchantRiskManageViolationNotificationResponse),
+                     typeof(MerchantStoreCreateRequest),
+                     typeof(MerchantStoreBasics),
+                     typeof(MerchantStoreAddress),
+                     typeof(MerchantStoreRecipientInfo),
+                     typeof(MerchantStoreState),
+                     typeof(MerchantStoreUpdateRequest),
+                     typeof(MerchantStoreQueryResponse),
+                     typeof(MerchantStoreRecipientBindRequest),
+                     typeof(MerchantStoreFailedRecipient),
+                     typeof(MerchantAlterApplySubjectSubmitRequest),
+                     typeof(MerchantAlterApplySubjectBusinessLicenseInfo),
+                     typeof(MerchantAlterApplySubjectLegalPersonInfo),
+                     typeof(MerchantAlterApplySubjectUboInfo),
+                     typeof(MerchantAlterApplySubjectQueryResponse),
+                     typeof(MerchantAlterApplyContactSubmitRequest),
+                     typeof(MerchantAlterApplyContactInfo),
+                     typeof(MerchantAlterApplyAuditRejectDetail),
+                     typeof(MerchantAlterApplyMerchantNameSubmitRequest),
+                     typeof(MerchantAlterApplyMerchantNameQueryResponse),
+                     typeof(MerchantAlterApplySubmitResponse),
+                     typeof(MerchantFundBalanceResponse),
+                     typeof(MerchantSettlementRuleApplicationCreateRequest),
+                     typeof(MerchantSettlementRuleApplicationResponse),
                  })
         {
             resolver!.GetTypeInfo(dto, options).Should().NotBeNull(

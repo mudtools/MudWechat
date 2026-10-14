@@ -9,6 +9,7 @@ using Mud.Wechat.Pay.Abstractions.Credential;
 using Mud.Wechat.Pay.Certificates;
 using Mud.Wechat.Pay.Download;
 using Mud.Wechat.Pay.Fapiao;
+using Mud.Wechat.Pay.MerchantService;
 using Mud.Wechat.Pay.Transactions;
 
 namespace Mud.Wechat.Pay.Extensions;
@@ -114,6 +115,68 @@ public class PayServiceBuilder
             // ——纯声明式域。**服务商形态**：报文用 appid/mchid + sub_mchid/sub_appid（无 sp_ 前缀），
             // 签名主体为服务商商户号；八支端点官方成功应答为 204（无包体）。
             [PayModule.PartnerPayScore] = static s => s.AddPartnerPayScoreWebApiHttpClient(),
+
+            // P0-5 银行/从业机构支付分（授权 3 + 服务订单 6 + 扣款信息 2）——纯声明式域。
+            // **从业机构形态**（官方「开发文档(银行/机构)」树）：签名主体为从业机构商户号，
+            // 比服务商支付分多一层必填 channel_id（渠道商商户号）；只开放免确认模式；
+            // 五支端点官方成功应答为 204（无包体）。
+            [PayModule.BankPayScore] = static s => s.AddBankPayScoreWebApiHttpClient(),
+
+            // P0-6 服务商批量转账到零钱（发起 1 + 批次查 2 + 明细查 2）——纯声明式域。
+            // **普通服务商形态**：签名主体为服务商商户号，sub_mchid / sub_appid / sp_appid 均为报文字段；
+            // 与直连商家转账（/v3/transfer/batches）不互通。批次一经发起不可撤销、报错不得换单重提。
+            [PayModule.PartnerTransfer] = static s => s.AddPartnerTransferWebApiHttpClient(),
+
+            // P0-6 从业机构（银行）批量转账 + 电子回单（转账 5 + 回单 4）——纯声明式域。
+            // **从业机构形态**：包体六层商户标识；两套前缀（/v3/bank-transfer/ 与
+            // /v3/bank-batch-transfer/）；回单族 POST 与 GET 共用同一路径。
+            // download_url 的文件下载不进生成式接口（动态路由 + 非 JSON）。
+            [PayModule.BankTransfer] = static s => s.AddBankTransferWebApiHttpClient(),
+
+            // P0-6 平台商户统一收单·还款（预下单 + 查单 + 关单）——纯声明式域。
+            // **平台商户形态**：/v3/repayment/combine-transactions/partner/，子单 mchid 填
+            // combine_mchid（与合单支付面相反）；预下单需 Wechatpay-Serial（实名密文）；关单为 204。
+            [PayModule.Repayment] = static s => s.AddRepaymentWebApiHttpClient(),
+
+            // P0-7 商户风险管理（风险订单同步 4 + 风险共建 3 + 违规通知 URL 四件套 4）——纯声明式域。
+            // 11 个方法只有 9 条 (方法, 路由)：查询风险订单与处置结果回传各自「服务商面/普通商户面」
+            // 同方法同路由、字段表不同 ⇒ 分建两套 DTO。本域是支付线首次出现 PUT 与 DELETE：
+            // violation-notifications 上 PUT 回 200 + JSON、只有 DELETE 是 204。
+            // report-trade-union-information 的 phone / certificates_number 须密文（Wechatpay-Serial 是参数表行）。
+            [PayModule.MerchantRiskManage] = static s => s.AddMerchantRiskManageWebApiHttpClient(),
+
+            // P0-7 商户门店管理（创建 + 更新 + 查询 + 绑定收款号 + 解绑收款号）——纯声明式域。
+            // 十个文档页（商户面/服务商面各五）归并为五端点：两侧路由与字段表只差一个 sub_mchid、
+            // 应答表零差异 ⇒ 共用方法与 DTO，本域无 Partner 前缀分身。
+            // 支付线第一支 PATCH，且更新支成功应答是 204 无包体；写支成功不代表生效（超管确认 + 地址核实），
+            // 状态闭环只在查询支的 store_state 里。
+            [PayModule.MerchantStore] = static s => s.AddMerchantStoreWebApiHttpClient(),
+
+            // P0-7 商户资料变更（主体 4 + 超级管理员 4 + 商家简称 4）——纯声明式域。
+            // 三条独立路由族；提交应答三族共用、撤销应答两族共用而主体族回 {result}、查询应答三族三型
+            // （state 值清单与 audit_reject_detail 有无是判据）。主体/超管两支提交有 Wechatpay-Serial 表行
+            // （姓名/证件号/住址/手机号须密文），简称族全明文——两支有、一支没有，不得按同域一刀切。
+            [PayModule.MerchantAlterApply] = static s => s.AddMerchantAlterApplyWebApiHttpClient(),
+
+            // P0-7 商户账户资金管理（实时余额 + 日终余额）——纯声明式域。
+            // 两支都是【普通服务商】页面 ⇒ 本域的存在即「资金面裁决从「零 /v3/merchant/fund」收窄为
+            // 「零 /v3/merchant/fund/withdraw」」的落点；提现族十一页只标【平台商户】保持零端点。
+            // account_type 在 path、date 在 query；金额单位是分且以 long 承载（int32 会溢出）。
+            [PayModule.MerchantFund] = static s => s.AddMerchantFundWebApiHttpClient(),
+
+            // P0-7 商户结算规则申请（创建 + 查询状态）——纯声明式域。
+            // 从业机构面：acquiring_bank_id + channel_id + sub_mchid 三层标识，无 sp_/sub_appid 体系。
+            // 两支同前缀、应答表逐字段相同 ⇒ 共用一型；只有 application_id 一条定位路径 ⇒ 必须落库。
+            [PayModule.MerchantSettlement] = static s => s.AddMerchantSettlementWebApiHttpClient(),
+
+            // P0-7 消费者投诉（11 端点 + 2 手工通道）——通知地址 CRUD + 投诉列表 / 详情 / 协商历史 +
+            // 回复 / 完成 / 退款审批 + 即时服务 + 图片上传 / 拉取。
+            // 图片通道走手工通道（multipart 上传 + 二进制流下载），依赖 AddPayApp 注册的 IWechatPayHttpClient。
+            [PayModule.MerchantService] = static s =>
+            {
+                s.AddMerchantServiceWebApiHttpClient();
+                s.TryAddSingleton<IWechatPayComplaintMediaService, WechatPayComplaintMediaService>();
+            },
 
             // 账单模块额外注册**账单下载通道**：它没有 [HttpClientApi] 声明（路由由 download_url 动态给出、
             // 返回非 JSON），故无对应的 AddBillDownloadWebApiHttpClient()。它依赖 AddPayApp 注册的

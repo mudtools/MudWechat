@@ -44,12 +44,14 @@ public class WechatPayDomainContractGuards
             .OrderBy(static t => t.Name, StringComparer.Ordinal)
             .ToArray();
 
-        // 聚合计数（防枚举空跑，AGENTS §6）：十四域接口 = Transactions / Refund / Bill / Certificates / ProfitSharing /
+        // 聚合计数（防枚举空跑，AGENTS §6）：二十四域接口 = Transactions / Refund / Bill / Certificates / ProfitSharing /
         // PayScore / CombineTransactions / Transfer / NewTaxControlFapiao / MarketingFavor / Apply4SubMerchant /
-        // Apply4Subject / PartnerTransactions / PartnerPayScore。
+        // Apply4Subject / PartnerTransactions / PartnerPayScore / BankPayScore / PartnerTransfer / BankTransfer /
+        // Repayment / MerchantRiskManage / MerchantStore / MerchantAlterApply / MerchantFund / MerchantSettlement /
+        // MerchantService。
         // 数字集中维护在 Tests/ContractBaseline.cs；数量变化须同批更新 PayModule 与该基线。
         interfaces.Should().HaveCount(Baseline.Pay.HttpApiInterfaces,
-            "支付线十四域接口——数量变化须同批更新 PayModule 与 Tests/ContractBaseline.cs");
+            "支付线二十四域接口——数量变化须同批更新 PayModule 与 Tests/ContractBaseline.cs");
 
         interfaces.Select(static t => t.Name).Should().BeEquivalentTo(new[]
         {
@@ -67,6 +69,16 @@ public class WechatPayDomainContractGuards
             "IWechatPayApply4SubjectService",
             "IWechatPayPartnerTransactionsService",
             "IWechatPayPartnerPayScoreService",
+            "IWechatPayBankPayScoreService",
+            "IWechatPayPartnerTransferService",
+            "IWechatPayBankTransferService",
+            "IWechatPayRepaymentService",
+            "IWechatPayMerchantRiskManageService",
+            "IWechatPayMerchantStoreService",
+            "IWechatPayMerchantAlterApplyService",
+            "IWechatPayMerchantFundService",
+            "IWechatPayMerchantSettlementService",
+            "IWechatPayMerchantService",
         });
 
         var offenders = interfaces
@@ -80,7 +92,7 @@ public class WechatPayDomainContractGuards
     }
 
     /// <summary>
-    /// PAY-B5：端点计数（<b>100</b>）+ 官方路由表逐条比对（照官方原文，<b>不得「纠正」</b>）。
+    /// PAY-B5：端点计数（<b>160</b>）+ 官方路由表逐条比对（照官方原文，<b>不得「纠正」</b>）。
     /// </summary>
     /// <remarks>
     /// <para>
@@ -130,6 +142,58 @@ public class WechatPayDomainContractGuards
     /// <c>4012463534</c> 停止签约计划（23 页逐页取证，页内 URL 已落在接口 XML 注释）。
     /// <b>SKIT 清单 28 行 ⇒ 23 端点</b>：「商户收款」<c>/v3/payscore/serviceorder/{out_order_no}/pay</c>
     /// 服务商侧现行目录无该端点 ⇒ 零声明（守卫 PS-B2），授权记录查询与计划应答的重复行按同端点归并。
+    /// </para>
+    /// <para>
+    /// <b>P0-5 银行/从业机构支付分</b>（2026-10-14 逐页核验合作伙伴文档中心「开发文档(银行/机构)」树 ·
+    /// 「从业机构-微信支付分（免确认模式）」，各页「支持商户」栏恒为【从业机构（支付机构）】）：
+    /// <c>4012691489</c> 从业机构预授权 / <c>4012461004</c> 查询用户授权记录（授权协议号）/
+    /// <c>4012461012</c> 解除用户授权关系（授权协议号）/ <c>4012691326</c> 创建支付分订单 /
+    /// <c>4012691343</c> 查询支付分订单 / <c>4012458146</c> 取消 / <c>4012460791</c> 完结 /
+    /// <c>4012691363</c> 修改订单金额 / <c>4012691378</c> 同步订单状态 /
+    /// <c>4012458414</c> 登记扣款信息 / <c>4012458665</c> 查询扣款信息
+    /// （11 页逐页取证，页内 URL 已落在接口 XML 注释）。
+    /// <b>SKIT 清单 15 行 ⇒ 11 端点</b>：「收单曝光」<c>/pay/acquiring-bank/transactions/exposure</c>
+    /// 出处页 <c>4014326541</c> 现跳 50x（公益 404）⇒ 零声明、<c>Interfaces/BankAcquiring/</c> 不建目录
+    ///（守卫 BS-B2）；查询授权记录与查询订单两行在清单里重复声明同一端点，已按同端点归并。
+    /// </para>
+    /// <para>
+    /// <b>P0-6 三域转账 / 回单 / 还款</b>（2026-10-14 逐页核验合作伙伴文档中心，
+    /// 各页「支持商户」栏：服务商转账【普通服务商】、银行转账与回单【从业机构（银行）】、
+    /// 还款【平台商户】）：服务商批量转账 <c>4012465738</c> 发起 / <c>4012465772</c>、
+    /// <c>4012465790</c> 批次两路 / <c>4012465781</c>、<c>4012465795</c> 明细两路（5 端点）；
+    /// 银行批量转账 <c>4012465889</c> 发起 / <c>4012465891</c>、<c>4012465903</c> 批次两路 /
+    /// <c>4012465897</c>、<c>4012465915</c> 明细两路，电子回单 <c>4012470746</c>、<c>4012470761</c>
+    /// 汇总（POST 与 GET <b>同一路径</b>）、<c>4012470770</c>、<c>4012470775</c> 明细
+    /// （9 端点，<b>按 (方法, 路由) 计数</b>）；还款 <c>4015124463</c> 预下单 /
+    /// <c>4015124483</c> 查单 / <c>4015124497</c> 关单（3 端点，关单为 204）。
+    /// <b>SKIT 清单 17 行 ⇒ 17 端点、零归并</b>；三域各自的下架 / 非本面裁决见守卫 PTF-B2、BT-B2、RP-B2。
+    /// </para>
+    /// <para>
+    /// <b>P0-7 首批商户经营两域</b>（2026-10-14 逐页核验，两轮共覆盖该批 71 行清单）：商户风险管理
+    /// <c>4013894221</c>/<c>4013894247</c> 查询风险订单（同路由两形态）、<c>4013894227</c>/<c>4013894250</c>
+    /// 回传处置结果（同路由两形态）、<c>4012692160</c> 上报订单关联信息、<c>4012467535</c> 查询风险信息、
+    /// <c>4012467540</c> 处理结果回传、<c>4012471333</c>/<c>4012471330</c>/<c>4012471327</c>/<c>4012471334</c>
+    /// 违规通知回调地址四件套 ⇒ <b>11 个方法 / 9 条 (方法, 路由)</b>（守卫 MRB-B1 两个数都锁）；
+    /// 商户门店管理十页（创建 / 更新 / 查询 / 绑定 / 解绑 各成对）⇒ <b>归并为 5 端点</b>（守卫 MST-B6）。
+    /// <b>本批是支付线动词面的破例</b>：此前 <c>Src/Pay</c> 的生成式接口只有 GET/POST，本批出现
+    /// PUT / PATCH / DELETE，且「成功应答是 204 还是 JSON」逐支相反（风险域只有 DELETE 是 204、
+    /// 门店域只有 PATCH 是 204）⇒ 由 MRB-B1 / MST-B1 逐支断言返回类型，
+    /// 并断言「按 <c>HttpMethodAttribute</c> 基类枚举」与「按五个具体动词属性枚举」得到同一集合。
+    /// </para>
+    /// <para>
+    /// <b>P0-7 7-B 商户经营三域</b>（2026-10-14 十六页逐字段核验，各页「支持商户」栏是本轮形态归属的判据）：
+    /// 商户资料变更 12 端点 —— 主体族 <c>4014090649</c>/<c>4014090655</c>/<c>4014090667</c>/<c>4014090672</c>、
+    /// 超级管理员族 <c>4015617906</c>/<c>4015617911</c>/<c>4015617915</c>/<c>4015617919</c>、
+    /// 商家简称族 <c>4016166071</c>/<c>4016166074</c>/<c>4016166085</c>/<c>4016166090</c>
+    /// （<b>清单把主体族四个 docId 同时挂在联系人族四行上</b>，逐页核得两族各有独立页面 ⇒ 八行是八个页面，
+    /// 守卫 MAA-B2 锁转述形态零声明）；
+    /// 商户账户余额 2 端点 <c>4012721477</c> 实时 / <c>4012721446</c> 日终（【普通服务商】），
+    /// 同前缀的提现族四支（<c>4012476670</c> 等）标注【平台商户】⇒ 零端点，裁决守卫 C1 因此
+    /// 由「零 <c>/v3/merchant/fund</c>」<b>收窄为</b>「零 <c>/v3/merchant/fund/withdraw</c>」；
+    /// 商户结算规则申请 2 端点 <c>4012697924</c> 创建 / <c>4012698574</c> 查状态（【从业机构（银行）】
+    /// 【从业机构（支付机构）】，标识体系是 acquiring_bank_id + channel_id + sub_mchid 三层）。
+    /// <b>三域三种归并结果并置</b>：变更域 12 页 ⇒ 12 支（三族字段表各异）、门店域 10 页 ⇒ 5 支（字段表只差
+    /// 一个 sub_mchid）、风险域 9 路由 ⇒ 11 方法（同路由两形态）——判据始终是「官方字段表是否相同」。
     /// </para>
     /// </remarks>
     [Fact]
@@ -319,6 +383,123 @@ public class WechatPayDomainContractGuards
             "/v3/payscore/sign-plan/partner/user-sign-plans/merchant-sign-plan-no/{merchantSignPlanNo}/stop",
         });
 
+        // P0-5 银行/从业机构支付分 11 端点：**单一前缀** /v3/payscore/acquiringbank/（授权 3 + 服务订单 6 +
+        // 扣款信息 2），与服务商面 /v3/payscore/partner/ 和直连面 /v3/payscore/ 两两互斥（正对照：那两域的路由
+        // 已各自在上方成块）；SKIT 清单的「收单曝光」/pay/acquiring-bank/transactions/exposure 出处页已下架
+        //（现跳 50x）⇒ 本仓零声明 —— 逐条锁定见 BS-B1 / BS-B2。
+        RoutesOf(asm, "IWechatPayBankPayScoreService").Should().BeEquivalentTo(new[]
+        {
+            "/v3/payscore/acquiringbank/permissions",
+            "/v3/payscore/acquiringbank/permissions/authorization-code/{authorizationCode}",
+            "/v3/payscore/acquiringbank/permissions/authorization-code/{authorizationCode}/terminate",
+            "/v3/payscore/acquiringbank/serviceorder",
+            "/v3/payscore/acquiringbank/serviceorder",
+            "/v3/payscore/acquiringbank/serviceorder/{outOrderNo}/cancel",
+            "/v3/payscore/acquiringbank/serviceorder/{outOrderNo}/complete",
+            "/v3/payscore/acquiringbank/serviceorder/{outOrderNo}/modify",
+            "/v3/payscore/acquiringbank/serviceorder/{outOrderNo}/sync",
+            "/v3/payscore/acquiringbank/serviceorder/{outOrderNo}/registerdeductinfo",
+            "/v3/payscore/acquiringbank/serviceorder/deduction",
+        });
+
+        RoutesOf(asm, "IWechatPayPartnerTransferService").Should().BeEquivalentTo(new[]
+        {
+            "/v3/partner-transfer/batches",
+            "/v3/partner-transfer/batches/batch-id/{batchId}",
+            "/v3/partner-transfer/batches/batch-id/{batchId}/details/detail-id/{detailId}",
+            "/v3/partner-transfer/batches/out-batch-no/{outBatchNo}",
+            "/v3/partner-transfer/batches/out-batch-no/{outBatchNo}/details/out-detail-no/{outDetailNo}",
+        });
+
+        // 银行面：转账五支在 /v3/bank-transfer/、回单四支在 /v3/bank-batch-transfer/，
+        // 且回单的汇总 / 明细两条路径各有 POST 与 GET ⇒ 期望集里**同名路由出现两次**（计数按方法+路由）。
+        RoutesOf(asm, "IWechatPayBankTransferService").Should().BeEquivalentTo(new[]
+        {
+            "/v3/bank-transfer/batches",
+            "/v3/bank-transfer/batches/batch-id/{batchId}",
+            "/v3/bank-transfer/batches/batch-id/{batchId}/details/detail-id/{detailId}",
+            "/v3/bank-transfer/batches/out-batch-no/{outBatchNo}",
+            "/v3/bank-transfer/batches/out-batch-no/{outBatchNo}/details/out-detail-no/{outDetailNo}",
+            "/v3/bank-batch-transfer/receipt/summary-receipts",
+            "/v3/bank-batch-transfer/receipt/summary-receipts",
+            "/v3/bank-batch-transfer/receipt/detail-receipts",
+            "/v3/bank-batch-transfer/receipt/detail-receipts",
+        });
+
+        RoutesOf(asm, "IWechatPayRepaymentService").Should().BeEquivalentTo(new[]
+        {
+            "/v3/repayment/combine-transactions/partner/prepay",
+            "/v3/repayment/combine-transactions/partner/out-trade-no/{combineOutTradeNo}",
+            "/v3/repayment/combine-transactions/partner/out-trade-no/{combineOutTradeNo}/close",
+        });
+
+        // P0-7 商户风险管理 11 端点（**按方法计**）：单一前缀 /v3/merchant-risk-manage/，
+        // 但去重后只有 9 条 (方法, 路由) —— query-risk-trades 与 recv-dispose-result 各有
+        // 「服务商面 / 普通商户面」两支同方法同路由、字段表不同的方法；violation-notifications
+        // 一条路径上并置 POST / PUT / GET / DELETE 四面（只有 DELETE 是 204）。
+        // 本批是支付线**首次出现非 GET/POST 动词**——逐条锁定见 MRB-B1 / MRB-B2。
+        RoutesOf(asm, "IWechatPayMerchantRiskManageService").Should().BeEquivalentTo(new[]
+        {
+            "/v3/merchant-risk-manage/ec-trade-risk/query-risk-trades",
+            "/v3/merchant-risk-manage/ec-trade-risk/query-risk-trades",
+            "/v3/merchant-risk-manage/ec-trade-risk/recv-dispose-result",
+            "/v3/merchant-risk-manage/ec-trade-risk/recv-dispose-result",
+            "/v3/merchant-risk-manage/report-trade-union-information",
+            "/v3/merchant-risk-manage/trade-risk-information",
+            "/v3/merchant-risk-manage/trade-risk-result",
+            "/v3/merchant-risk-manage/violation-notifications",
+            "/v3/merchant-risk-manage/violation-notifications",
+            "/v3/merchant-risk-manage/violation-notifications",
+            "/v3/merchant-risk-manage/violation-notifications",
+        });
+
+        // P0-7 商户门店管理 5 端点：单一前缀 /v3/merchant-store/，官方十页（商户面与服务商面成对）
+        // 因「字段表只差一个 sub_mchid、应答表零差异」而归并为五支 —— 与上一域的「同路由分建两形态」相反，
+        // 判据同为「官方字段表是否相同」。更新支是支付线第一支 PATCH 且 204 无包体。
+        // 逐条锁定见 MST-B1 / MST-B6。
+        RoutesOf(asm, "IWechatPayMerchantStoreService").Should().BeEquivalentTo(new[]
+        {
+            "/v3/merchant-store/stores",
+            "/v3/merchant-store/stores/{storeId}",
+            "/v3/merchant-store/stores/{storeId}",
+            "/v3/merchant-store/stores/{storeId}/recipients/bind",
+            "/v3/merchant-store/stores/{storeId}/recipients/unbind",
+        });
+
+        // P0-7 商户资料变更 12 端点：三族各四支（提交 / 按申请单号查 / 按业务单号查 / 撤销），
+        // 单一前缀 /v3/mchalterapply/。撤销是 POST 动词段而非 DELETE；本域零 204。
+        // 「八行核得两族独立页面」的出处错配见 MAA-B2；三族的共用/分建裁决见 MAA-B6。
+        RoutesOf(asm, "IWechatPayMerchantAlterApplyService").Should().BeEquivalentTo(new[]
+        {
+            "/v3/mchalterapply/mchsubjectalterapplyment",
+            "/v3/mchalterapply/mchsubjectalterapplyment/{applyId}",
+            "/v3/mchalterapply/mchsubjectalterapplyment/merchant/{merchantCode}/out-request-no/{outRequestNo}",
+            "/v3/mchalterapply/mchsubjectalterapplyment/{applyId}/revoke",
+            "/v3/mchalterapply/mchcontactalterapplyment",
+            "/v3/mchalterapply/mchcontactalterapplyment/{applyId}",
+            "/v3/mchalterapply/mchcontactalterapplyment/merchant/{merchantCode}/out-request-no/{outRequestNo}",
+            "/v3/mchalterapply/mchcontactalterapplyment/{applyId}/revoke",
+            "/v3/mchalterapply/merchantnamealterapplyment",
+            "/v3/mchalterapply/merchantnamealterapplyment/{applyId}",
+            "/v3/mchalterapply/merchantnamealterapplyment/merchant/{subMchId}/out-request-no/{outRequestNo}",
+            "/v3/mchalterapply/merchantnamealterapplyment/{applyId}/revoke",
+        });
+
+        // P0-7 商户账户余额 2 端点：裁决守卫 C1 由「零 /v3/merchant/fund」收窄为
+        // 「零 /v3/merchant/fund/withdraw」后落地的两支（官方标注支持商户【普通服务商】）。
+        RoutesOf(asm, "IWechatPayMerchantFundService").Should().BeEquivalentTo(new[]
+        {
+            "/v3/merchant/fund/balance/{accountType}",
+            "/v3/merchant/fund/dayendbalance/{accountType}",
+        });
+
+        // P0-7 商户结算规则申请 2 端点：从业机构面（创建 + 按 application_id 查），两支应答表相同 ⇒ 共用应答。
+        RoutesOf(asm, "IWechatPayMerchantSettlementService").Should().BeEquivalentTo(new[]
+        {
+            "/v3/merchant-settlement/merchant-settle-rule-applications",
+            "/v3/merchant-settlement/merchant-settle-rule-applications/{applicationId}",
+        });
+
         // 合计计数（PAY-B5 断言的单一来源）。
         asm.GetTypes()
             .Where(static t => t.IsInterface && t.IsPublic)
@@ -327,7 +508,7 @@ public class WechatPayDomainContractGuards
             .Select(static a => a.GetType().GetProperty("RequestUri")?.GetValue(a) as string)
             .Count(static uri => !string.IsNullOrWhiteSpace(uri))
             .Should().Be(Baseline.Pay.Endpoints,
-                "支付线端点总数须与 Tests/ContractBaseline.cs 一致（当前 = 原 57 + 特约商户进件 6 + 主体进件 5 + 服务商基础支付 9 + 服务商支付分 23）");
+                "支付线端点总数须与 Tests/ContractBaseline.cs 一致（当前 = 原 57 + 特约商户进件 6 + 主体进件 5 + 服务商基础支付 9 + 服务商支付分 23 + 从业机构支付分 11 + P0-6 三域 17 + P0-7 风险 11 + 门店 5 + 变更 12 + 余额 2 + 结算规则 2）");
     }
 
     /// <summary>

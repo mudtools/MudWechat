@@ -44,17 +44,32 @@ namespace Mud.Wechat.Pay.Tests.ContractGuards;
 /// </item>
 /// </list>
 /// <para>
+/// <b>2026-10-14 的同批修订（C1 由「零前缀」收窄为「零提现族」）</b>：本轮逐页复核 <c>/v3/merchant/fund/</c>
+/// 全族时发现，同前缀下的「查询账户实时余额 / 日终余额」两支官方标注<b>支持商户：【普通服务商】</b>
+/// （<c>4012721477</c> / <c>4012721446</c>），与提现族的【平台商户】归属<b>不是同一形态</b>。
+/// 原裁决把整个前缀一锅端，会让后来者在余额面「查无此接口」—— 它拦的是「照域表补一个调不动的接口」，
+/// 却同时拦掉了两支调得动的。<b>正确口径是按页面标注的商户形态逐族裁决，而不是按 URL 前缀裁决</b>
+/// ⇒ C1 现只锁 <c>/v3/merchant/fund/withdraw</c> 零声明，并以余额两支作该前缀下的正对照。
+/// </para>
+/// <para>
 /// <b>解除条件</b>：若将来确定要做平台收付通，须先引入「平台商户」形态（配置 + 分槽 + 守卫），
 /// 再按域增量落地，并<b>同批</b>解除本裁决。
 /// </para>
 /// </remarks>
 public class WechatPayCapitalRulingContractGuards
 {
-    /// <summary>Capital 族的路径前缀（官方原文：<c>/v3/merchant/fund/…</c>）。</summary>
+    /// <summary>资金面的公共前缀（官方原文：<c>/v3/merchant/fund/…</c>）—— 余额两支在此前缀下<b>已落地</b>。</summary>
     private const string CapitalRoutePrefix = "/v3/merchant/fund";
 
+    /// <summary>提现族前缀（<c>/v3/merchant/fund/withdraw…</c>）—— C1 的零声明对象。</summary>
+    private const string WithdrawRoutePrefix = "/v3/merchant/fund/withdraw";
+
     /// <summary>
-    /// C1：支付线<b>全部</b>声明式接口都<b>不得</b>出现 Capital 族路由（防「照域表补一个调不动的接口」）。
+    /// C1：支付线<b>全部</b>声明式接口都<b>不得</b>出现 Capital <b>提现族</b>路由
+    /// （防「照域表补一个调不动的接口」）。<b>2026-10-14 由「零 <c>/v3/merchant/fund</c>」收窄而来</b>：
+    /// 同前缀下的<b>余额两支</b>逐页核得支持商户是【普通服务商】（<c>4012721477</c> / <c>4012721446</c>），
+    /// 已作为 <c>MerchantFund</c> 域落地 ⇒ 本裁决的对象只能是<b>提现族</b>。
+    /// 正对照即取刚落地的余额两支，证明扫描口径仍有效、零声明是真裁决而不是漏扫。
     /// </summary>
     [Fact]
     public void CapitalEndpoints_ShouldStayUnmodeled()
@@ -70,9 +85,17 @@ public class WechatPayCapitalRulingContractGuards
         // 防「发现机制失效导致白名单真空」的静默空跑。
         routes.Should().NotBeEmpty("支付线声明式路由的收集口径必须有效");
 
-        routes.Where(r => r!.StartsWith(CapitalRoutePrefix, StringComparison.Ordinal))
+        // 正对照：同前缀的余额两支确已落位 ⇒ 下面的 WithdrawRoutePrefix 零命中不是「前缀写错/扫描失效」。
+        routes.Count(r => r!.StartsWith(CapitalRoutePrefix, StringComparison.Ordinal))
+            .Should().Be(2, "余额两支（实时 + 日终）属【普通服务商】面且已落地，本前缀下只有它两支");
+        routes.Should().Contain("/v3/merchant/fund/balance/{accountType}",
+            "正对照①：查询账户实时余额（4012721477，支持商户【普通服务商】）");
+        routes.Should().Contain("/v3/merchant/fund/dayendbalance/{accountType}",
+            "正对照②：查询账户日终余额（4012721446，支持商户【普通服务商】）");
+
+        routes.Where(r => r!.StartsWith(WithdrawRoutePrefix, StringComparison.Ordinal))
             .Should().BeEmpty(
-                "Capital（资金应用/提现）的调用方是**平台商户**（平台收付通体系），"
+                "提现族的调用方是**平台商户**（平台收付通体系），"
                 + "本仓商户基座只覆盖普通商户/服务商 ⇒ 不得在本支付线内建模；"
                 + "若将来引入平台收付通，须先落「平台商户」形态再同批解除本裁决");
     }

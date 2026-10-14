@@ -58,13 +58,13 @@ namespace Mud.Wechat.Pay;
 /// （<c>PARAM_ERROR</c>/<c>INVALID_REQUEST</c>/<c>INVALID_ORDER_STATE</c>/<c>ORDER_NOT_EXIST</c>/<c>NOAUTH</c>或<c>NO_AUTH</c>/<c>RULE_LIMIT</c>/<c>FREQUENCY_LIMITED</c>/<c>SYSTEM_ERROR</c>），
 /// 且「无授权资格」一支<b>同域两套拼写并存</b>（2026-10-14 逐页核验）：授权族五页与服务额度页写
 /// <c>NO_AUTH</c>（有下划线），计划族与用户签约族 7 页写 <c>NOAUTH</c>（无下划线），而服务订单族多数页面只有公共四码 ⇒ 任何「统一拼写」的常量表都会在一半端点上失真，
-/// 错误面统一由 <see cref="WechatPayResponse.Code"/> 原样透传与既有 <c>WechatPayErrorCodes</c> 承载。</para>
+/// 错误面统一由 <see cref="Mud.Wechat.Pay.DataModels.Common.WechatPayResponse.Code"/> 原样透传与既有 <c>WechatPayErrorCodes</c> 承载。</para>
 /// <para><b>无 <c>[Token]</c>、走商户签名</b>（守卫 <c>PAY-B1</c> fail-closed）：APIv3 全程以商户 API 证书做
 /// RSA-SHA256 请求签名，签名主体是<b>服务商商户号</b>，子商户号只出现在报文里 —— 服务商<b>不得</b>用子商户证书调本域。</para>
 /// <para><b>客户端</b>：走支付专用命名客户端 <c>wechat-pay</c>（BaseAddress 恒为
 /// <c>https://api.mch.weixin.qq.com</c>），不复用默认实例，否则与企微线撞 BaseUrl。</para>
 /// <para><b><c>[AllowAnyStatusCode]</c> 的必要性</b>：APIv3 业务失败是 HTTP 4xx/5xx + <c>{"code","message"}</c>，
-/// 加上后错误体原样落到 <see cref="WechatPayResponse.Code"/>/<see cref="WechatPayResponse.Message"/>，
+/// 加上后错误体原样落到 <see cref="Mud.Wechat.Pay.DataModels.Common.WechatPayResponse.Code"/>/<see cref="Mud.Wechat.Pay.DataModels.Common.WechatPayResponse.Message"/>，
 /// 由 <c>WechatPayException.ThrowIfFailed</c> 判错；否则组件抛 <c>ApiException</c> 把官方业务码丢掉。</para>
 /// <para><b>不做运行时多态</b>：每端点一个方法 + 各自请求 DTO；八支 <b>204 无包体</b>端点返回裸
 /// <see cref="Task"/>（守卫 PS-B1 计数锁定），不为其伪造响应类型。</para>

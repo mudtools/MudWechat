@@ -7,6 +7,8 @@
 
 using Mud.Wechat.Pay.DataModels.Apply4Subject;
 using Mud.Wechat.Pay.DataModels.Apply4SubMerchant;
+using Mud.Wechat.Pay.DataModels.BankPayScore;
+using Mud.Wechat.Pay.DataModels.BankTransfer;
 using Mud.Wechat.Pay.DataModels.Bill;
 using Mud.Wechat.Pay.DataModels.Callback;
 using Mud.Wechat.Pay.DataModels.Certificates;
@@ -14,10 +16,18 @@ using Mud.Wechat.Pay.DataModels.Combine;
 using Mud.Wechat.Pay.DataModels.Common;
 using Mud.Wechat.Pay.DataModels.Fapiao;
 using Mud.Wechat.Pay.DataModels.MarketingFavor;
+using Mud.Wechat.Pay.DataModels.MerchantAlterApply;
+using Mud.Wechat.Pay.DataModels.MerchantFund;
+using Mud.Wechat.Pay.DataModels.MerchantRiskManage;
+using Mud.Wechat.Pay.DataModels.MerchantService;
+using Mud.Wechat.Pay.DataModels.MerchantSettlement;
+using Mud.Wechat.Pay.DataModels.MerchantStore;
 using Mud.Wechat.Pay.DataModels.PayScore;
 using Mud.Wechat.Pay.DataModels.PartnerPayScore;
 using Mud.Wechat.Pay.DataModels.PartnerTransactions;
+using Mud.Wechat.Pay.DataModels.PartnerTransfer;
 using Mud.Wechat.Pay.DataModels.ProfitSharing;
+using Mud.Wechat.Pay.DataModels.Repayment;
 using Mud.Wechat.Pay.DataModels.Refund;
 using Mud.Wechat.Pay.DataModels.Transactions;
 using Mud.Wechat.Pay.DataModels.Transfer;
@@ -72,6 +82,16 @@ public static class PayJsonResolverExtensions
             Apply4SubMerchantJsonContext.Default,
             Apply4SubjectJsonContext.Default,
             PartnerTransactionsJsonContext.Default,
+            BankPayScoreJsonContext.Default,
+            PartnerTransferJsonContext.Default,
+            BankTransferJsonContext.Default,
+            RepaymentJsonContext.Default,
+            MerchantRiskManageJsonContext.Default,
+            MerchantStoreJsonContext.Default,
+            MerchantAlterApplyJsonContext.Default,
+            MerchantFundJsonContext.Default,
+            MerchantSettlementJsonContext.Default,
+            MerchantServiceJsonContext.Default,
             CallbackJsonContext.Default);
 
         services.AddMudHttpClientJsonContext(resolver);

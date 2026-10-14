@@ -34,6 +34,7 @@ using Mud.Wechat.MiniProgram.DataModels.XPay;
 using Mud.Wechat.MiniProgram.DataModels.OrderShipping;
 using Mud.Wechat.MiniProgram.DataModels.Novel;
 using Mud.Wechat.MiniProgram.DataModels.RealName;
+using Mud.Wechat.MiniProgram.DataModels.Game;
 using System.Text.Json.Serialization.Metadata;
 
 namespace Mud.Wechat.MiniProgram.Extensions;
@@ -96,7 +97,8 @@ public static class MiniProgramJsonResolverExtensions
             XPayJsonContext.Default,
             OrderShippingJsonContext.Default,
             NovelJsonContext.Default,
-            RealNameJsonContext.Default);
+            RealNameJsonContext.Default,
+            GameJsonContext.Default);
 
         services.AddMudHttpClientJsonContext(resolver);
     }

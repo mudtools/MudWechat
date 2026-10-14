@@ -109,7 +109,7 @@ public static class Baseline
         /// FaceVerify 2 + LaborUse 2 + ExpressBusiness 12 + ExpressDelivery 28 + ExpressIntracity 16 +
         /// ExpressInsuranceFreight 11 + ExpressLocal 15 + ExpressBill 1 + Vip 6 +
         /// TradeGuarantee 2 + TradeComment 9 + TradeComplaint 5 + Live 38 + Vod 32 + XPay 37 +
-        /// OrderShipping 12 + Novel 23 + RealName 1 = 334
+        /// OrderShipping 12 + Novel 23 + RealName 1 + Game 20 = 354
         /// （Vip 域为 2026-10 小店线设计方案 §4.1 结论 A 划入；2026-10-12 依官方清单核对后：
         /// ExpressDelivery 28 / ExpressIntracity 16 补齐「消息推送 2 + 投诉处理 1」与「同城扣费主体与城市 3」，
         /// 新增 ExpressInsuranceFreight 11（无忧退货）与 ExpressLocal 15（即时配送）两族，
@@ -127,9 +127,11 @@ public static class Baseline
         /// 缺口清单原记「10 条」系漏项，特殊发货报备 <c>opspecialorder</c> 与交易类型变更申请
         /// <c>setwxatradetypecgi</c> 两支为逐页取证补回；
         /// 同日依官方 novelreadersetrecmdnovel 分区 23 页取证补齐小说作品管理域 23
-        /// （作品本体 6 + 章节管理 8 + 授权管理 3 + 账号授权 3 + 读者运营 3），权限集 169）。
+        /// （作品本体 6 + 章节管理 8 + 授权管理 3 + 账号授权 3 + 读者运营 3），权限集 169；
+        /// 同日依官方 minigame 树 20 页取证补齐小游戏域 20（帧同步房间 4 + 用户数据存储 3 + 对局匹配 5 +
+        /// 米大师支付 1 + 内容安全 2 + 米大师 V2 支付 5））。
         /// </remarks>
-        public const int Endpoints = 334;
+        public const int Endpoints = 354;
     }
 
     /// <summary>微信支付 APIv3 线（`Tests/Mud.Wechat.Pay.Tests`）。</summary>

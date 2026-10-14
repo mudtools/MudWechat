@@ -114,6 +114,9 @@ public class MiniProgramServiceBuilder
 
             // 实名认证：单接口（校验实名信息）。
             [MiniProgramModule.RealName] = static s => s.AddRealNameWebApiHttpClient(),
+
+            // 小游戏：20 端点（帧同步房间 4 + 用户数据存储 3 + 对局匹配 5 + 米大师支付 1 + 内容安全 2 + 米大师 V2 支付 5）。
+            [MiniProgramModule.Game] = static s => s.AddGameWebApiHttpClient(),
         };
 
     /// <summary>注册登录与用户（5 端点：4 带令牌 + 1 免令牌）。</summary>
@@ -264,6 +267,14 @@ public class MiniProgramServiceBuilder
     /// <summary>注册实名认证（1 端点：校验实名信息）。</summary>
     /// <returns>注册器（链式）。</returns>
     public MiniProgramServiceBuilder AddRealNameApi() => AddModule(MiniProgramModule.RealName);
+
+    /// <summary>注册小游戏接口（20 端点：帧同步房间 4 + 用户数据存储 3 + 对局匹配 5 + 米大师支付 1 + 内容安全 2 + 米大师 V2 支付 5）。</summary>
+    /// <returns>注册器（链式）。</returns>
+    /// <remarks>
+    /// <b>官方本域无端点级频率数字</b>：20 页均未给「次/分钟」类数字 ⇒ 注释一律留档该空缺，
+    /// 不得凭第三方 SDK 注释或记忆补数。
+    /// </remarks>
+    public MiniProgramServiceBuilder AddGameApi() => AddModule(MiniProgramModule.Game);
 
     /// <summary>注册全部模块。</summary>
     /// <returns>注册器（链式）。</returns>

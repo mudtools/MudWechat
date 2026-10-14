@@ -546,8 +546,11 @@ public class ChannelsRouteContractGuards
             .ToArray();
 
         // 每个域：存在对应接口则断言其路由表；不存在接口则断言「表中该域仍为空」（P0 全空）。
-        // 双接口同域形态（对齐公众号 OpenApi 域先例）：主接口 IChannels{Domain}Service +
+        // 双接口同域形态的历史背景（对齐公众号 OpenApi 域先例）：主接口 IChannels{Domain}Service +
         // 免令牌变体 IChannels{Domain}TokenFreeService（clear_quota/v2 等应急逃生端点）。
+        // A-7 合并（2026-10-14 裁决）后免令牌方法已迁回主接口（方法级 [Token(Disabled = true)]，
+        // 上游 3.0.7/F-1），拆接口 [Obsolete] 仅保留一个版本 ⇒ 过渡期内同一路由在主接口与拆接口上
+        // 各声明一次，按 Distinct 去重后与路由表比对（缺端点 / 多端点仍变红）。
         var actualByDomain = new Dictionary<string, List<string>>(StringComparer.Ordinal);
         foreach (var domain in Domains)
         {
@@ -559,6 +562,7 @@ public class ChannelsRouteContractGuards
                 .ToArray();
             actualByDomain[domain] = ifaces
                 .SelectMany(static i => CollectRequestUrisOfType(i))
+                .Distinct(StringComparer.Ordinal)
                 .OrderBy(static r => r, StringComparer.Ordinal)
                 .ToList();
         }

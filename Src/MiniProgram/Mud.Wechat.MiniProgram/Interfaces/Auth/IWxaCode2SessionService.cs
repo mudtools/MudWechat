@@ -12,6 +12,13 @@ namespace Mud.Wechat.MiniProgram;
 /// </summary>
 /// <remarks>
 /// <para>
+/// <b>已废弃（A-7 合并，2026-10-14 裁决）</b>：上游 Mud.HttpUtils 3.0.7（F-1）起
+/// <c>[Token(Disabled = true)]</c> 支持<b>方法级覆盖接口级</b>，免令牌端点无需再拆独立接口 ——
+/// <c>Code2SessionAsync</c> 已合并回 <see cref="IWxaAuthService"/>（同注册组、同客户端）。
+/// 本接口保留一个版本以维持二进制兼容（既有宿主按类型注入的注册/解析不变），
+/// <b>Mud.Wechat 4.0 移除</b>；新代码请改用 <see cref="IWxaAuthService.Code2SessionAsync"/>。
+/// </para>
+/// <para>
 /// <b>官方文档</b>：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/user-login/api_code2session"/>（小程序服务端 API，2026-10-09 核验）。
 /// </para>
 /// <para>
@@ -30,6 +37,10 @@ namespace Mud.Wechat.MiniProgram;
 /// </remarks>
 // HTTPCLIENT018：生成器要求显式声明 TokenManagerKey/TokenType。本接口是**免令牌端点**
 // —— 换会话走 appid + secret，刻意不声明 [Token]；声明之反而会把应用级令牌注入本请求（错误语义）。
+// A-7 合并后该方法已迁回 IWxaAuthService（方法级 [Token(Disabled = true)]）；
+// 本接口仅为二进制兼容保留一个版本，守卫锁定该迁移（见 MiniProgramContractGuards MP-X2）。
+[Obsolete("A-7 合并（2026-10-14 裁决）：免令牌登录端点已合并回 IWxaAuthService（方法级 [Token(Disabled = true)]，上游 3.0.7/F-1）。"
+          + "请改用 IWxaAuthService.Code2SessionAsync；Mud.Wechat 4.0 移除本接口。")]
 [HttpClientApi(RegistryGroupName = "Auth", TokenManage = nameof(IMpAppManager))]
 public interface IWxaCode2SessionService
 {

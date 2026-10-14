@@ -32,8 +32,9 @@ public class MiniProgramServiceBuilder
     private static Dictionary<MiniProgramModule, Action<IServiceCollection>> InitializeRegistrars()
         => new()
         {
-            // 登录与用户：双接口同组（IWxaAuthService 带令牌 + IWxaCode2SessionService 免令牌），
-            // 由同一条生成的注册入口一并装载。
+            // 登录与用户：8 端点同接口（IWxaAuthService 7 带令牌 + jscode2session 方法级
+            // [Token(Disabled = true)] 免令牌，A-7 合并后同接口承载；[Obsolete] 的
+            // IWxaCode2SessionService 过渡保留一个版本），由同一条生成的注册入口一并装载。
             [MiniProgramModule.Auth] = static s => s.AddAuthWebApiHttpClient(),
 
             // 二维码 / 链接：JSON 五端点走生成管线；小程序码三端点为**图片二进制流**（失败时才是 JSON），
@@ -116,7 +117,7 @@ public class MiniProgramServiceBuilder
             [MiniProgramModule.RealName] = static s => s.AddRealNameWebApiHttpClient(),
         };
 
-    /// <summary>注册登录与用户（5 端点：4 带令牌 + 1 免令牌）。</summary>
+    /// <summary>注册登录与用户（8 端点：7 带令牌 + 1 方法级免令牌）。</summary>
     /// <returns>注册器（链式）。</returns>
     public MiniProgramServiceBuilder AddAuthApi() => AddModule(MiniProgramModule.Auth);
 

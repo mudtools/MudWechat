@@ -130,7 +130,7 @@ var sign = await jsApi.SignAsync("https://example.com/page");   // URL 中的 # 
 
 - 目标框架继承根 `Directory.Build.props`（`netstandard2.0;net6.0;net8.0;net10.0`、Version `1.0.3`），可打包。
 - `MUD005`（Query 传令牌的 URL 泄露面）项目级抑制：微信公众平台官方契约强制 `access_token` 走 Query、不支持 Header 注入，属已知接受风险；库内遥测由 `SensitiveUrlRedactor` 脱敏。
-- **免令牌端点必须独立成接口**（`[Token]` 是接口级特性）：`IMpSnsService`（sns 四端点）、`IMpOpenApiTokenFreeService`（`clear_quota/v2` 应急逃生端点）与带令牌接口同注册组，由同一条生成注册入口装载。
+- **免令牌端点走方法级 opt-out**（上游 3.0.7 / F-1 起）：`clear_quota/v2` 应急逃生端点以 `[Token(Disabled = true)]` 随 `IMpOpenApiService` 同接口承载（A-7 合并，2026-10-14 裁决；原独立接口 `IMpOpenApiTokenFreeService` 已 `[Obsolete]`，一版后移除）；`IMpSnsService`（sns 四端点）为整域免令牌，仍独立成接口（无同域带令牌宿主接口可合并）。
 - 下载通道不计入接口特性路由，但计入守卫 RC2 的全量 194 条（188 接口 + 3 令牌/票据 + 3 下载路径常量）；官方面索引页唯一路由 196 条（RC4，`.docs/` 缺失时自动跳过）。
 - `netstandard2.0` 下禁 `init`/`record`/`with`、无 `ArgumentNullException.ThrowIfNull`；新增代码沿用既有 TFM 条件编译形态。
 - 契约守卫位于 `Tests/Mud.Wechat.OfficialAccount.Tests/ContractGuards/`（24 个文件，按域前缀 BS/TG/US/MG/CM/KF/TP/SN/OA/MS/CT/DC/MD/SM/QJ/SL/ST/OT/IT/TK/CD + QT Query 令牌注入白名单 + RC 路由计数纪律）。**端点 / 路由 / DTO / 注册面变更须同批更新守卫**。

@@ -13,9 +13,13 @@ namespace Mud.Wechat.Redis.Services;
 /// Redis 存储层异常分类映射（统一出口：Redis 异常家族 → <see cref="WechatRedisException"/>）。
 /// </summary>
 /// <remarks>
-/// <b>3.3.0 层次注意</b>：<see cref="RedisTimeoutException"/> 直接继承 <see cref="TimeoutException"/>
-/// 而非 <see cref="RedisException"/>（与 2.x 不同），故包装面须显式并入；否则超时将裸抛、绕过分类。
-/// 编程错误（ArgumentNullException 等）与取消（OperationCanceledException）不在包装面内，原样上抛。
+/// <b>超时异常层次（B-8 勘误，2026-10-14）</b>：SE.Redis <b>2.x</b> 中 <see cref="RedisTimeoutException"/>
+/// 继承 <see cref="TimeoutException"/>；<b>3.x 起不再继承</b> <see cref="TimeoutException"/>
+/// （上游对账清单 B-8 裁决）⇒ <c>catch (TimeoutException)</c> 兜 SE.Redis 超时的 2.x 习惯在 3.x 下
+/// <b>失配漏接</b>，宿主 catch 口径须为 <see cref="RedisTimeoutException"/> 或 <see cref="RedisException"/> 基类。
+/// 本类判定不依赖继承链（<c>is RedisException or RedisTimeoutException</c> 显式双类型），
+/// 两个大版本下均正确。编程错误（ArgumentNullException 等）与取消（OperationCanceledException）
+/// 不在包装面内，原样上抛。
 /// </remarks>
 internal static class WechatRedisErrors
 {

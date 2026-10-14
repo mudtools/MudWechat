@@ -12,7 +12,7 @@ namespace Mud.Wechat.Redis.Configuration;
 /// </summary>
 /// <remarks>
 /// <para>
-/// 嵌套 <see cref="Connection"/> / <see cref="Advanced"/>，无扁平旧键回填（WeChat 无历史包袱）。
+/// 嵌套 <see cref="Connection"/> / <see cref="Advanced"/> / <see cref="TokenStore"/>，无扁平旧键回填（WeChat 无历史包袱）。
 /// 配置 DTO 禁用 <c>required</c>（配置绑定源生成器以 <c>new T()</c> 构造），校验收敛于 <see cref="Validate()"/>。
 /// </para>
 /// <para>
@@ -33,6 +33,12 @@ public class WechatRedisOptions
 
     /// <summary>高级连接配置（AllowAdmin、客户端名称）。</summary>
     public WechatRedisAdvancedOptions Advanced { get; set; } = new();
+
+    /// <summary>
+    /// 官方分布式令牌存储配置（A-5 分层共存：通用 <c>ITokenStore</c> 面由
+    /// <c>Mud.HttpUtils.Redis</c> 的 <c>RedisTokenStore</c> 承载，键前缀与本院四类键互不干扰）。
+    /// </summary>
+    public WechatRedisTokenStoreOptions TokenStore { get; set; } = new();
 
     /// <summary>
     /// 统一键前缀（RD1：四类键 token/corpa/ticket/replay 共享的唯一前缀旋钮）。
@@ -100,6 +106,30 @@ public class WechatRedisOptions
         {
             throw new InvalidOperationException("WechatRedis:SuiteTicketTtl 不得为负数（Zero 表示不过期）。");
         }
+
+        var tokenStore = TokenStore ?? new WechatRedisTokenStoreOptions();
+        if (string.IsNullOrWhiteSpace(tokenStore.KeyPrefix))
+        {
+            throw new InvalidOperationException(
+                $"WechatRedis:TokenStore:KeyPrefix 不能为空（缺省值 {WechatRedisTokenStoreOptions.DefaultKeyPrefix}）。");
+        }
+
+        if (tokenStore.KeyPrefix.StartsWith("*"))
+        {
+            throw new InvalidOperationException(
+                "WechatRedis:TokenStore:KeyPrefix 不能以 '*' 开头（通配符前缀会使官方存储的 SCAN 匹配所有键）。");
+        }
+
+        if (tokenStore.Database < -1)
+        {
+            throw new InvalidOperationException("WechatRedis:TokenStore:Database 不得小于 -1（-1 表示连接默认库）。");
+        }
+
+        if (tokenStore.DefaultTtl is { } ttl && ttl <= TimeSpan.Zero)
+        {
+            throw new InvalidOperationException(
+                "WechatRedis:TokenStore:DefaultTtl 必须为正数（null 表示不设 TTL，行为由宿主自担）。");
+        }
     }
 
     /// <summary>
@@ -114,7 +144,9 @@ public class WechatRedisOptions
     public override string ToString()
     {
         var connection = Connection ?? new WechatRedisConnectionOptions();
+        var tokenStore = TokenStore ?? new WechatRedisTokenStoreOptions();
         return $"WechatRedis {{ ServerAddress = {connection.ServerAddress}, KeyPrefix = {KeyPrefix}, "
-               + $"SuiteTicketTtl = {SuiteTicketTtl}, AbortOnConnectFail = {connection.AbortOnConnectFail}, Password = *** }}";
+               + $"SuiteTicketTtl = {SuiteTicketTtl}, TokenStoreKeyPrefix = {tokenStore.KeyPrefix}, "
+               + $"AbortOnConnectFail = {connection.AbortOnConnectFail}, Password = *** }}";
     }
 }

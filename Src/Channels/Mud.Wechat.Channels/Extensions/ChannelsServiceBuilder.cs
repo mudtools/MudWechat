@@ -41,8 +41,10 @@ public class ChannelsServiceBuilder
     private static Dictionary<ChannelsModule, Action<IServiceCollection>> InitializeRegistrars()
         => new()
         {
-            // 基础接口：8 端点双接口（IChannelsBasicService 7 带令牌 + IChannelsBasicTokenFreeService
-            // clear_quota/v2 免令牌应急逃生端点；同注册组由同一条生成的注册入口装载）。
+            // 基础接口：8 端点（IChannelsBasicService 7 带令牌 + clear_quota/v2 方法级
+            // [Token(Disabled = true)] 免令牌应急逃生端点，A-7 合并后同接口承载；
+            // 同注册组由同一条生成的注册入口装载，[Obsolete] 的 IChannelsBasicTokenFreeService
+            // 过渡保留一个版本由同一入口一并装载）。
             [ChannelsModule.Basic] = static s => s.AddBasicWebApiHttpClient(),
 
             // 资金结算：16 端点（/channels/ec/funds/* 9 + /shop/funds/* 7 双前缀并存，设计方案 v1 §4.3）。

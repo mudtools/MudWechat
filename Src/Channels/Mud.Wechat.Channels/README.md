@@ -12,7 +12,7 @@
 
 | 模块（`ChannelsModule`） | 注册方法 | 端点 | 接口 |
 | --- | --- | --- | --- |
-| `Basic` | `AddBasicApi()` | 8 | `IChannelsBasicService`（7 端点：域名 IP / callback IP / callback check / clear_quota / openapi quota get·clear / rid get）+ `IChannelsBasicTokenFreeService`（`clear_quota/v2` 免令牌应急逃生端点） |
+| `Basic` | `AddBasicApi()` | 8 | `IChannelsBasicService`（8 端点：域名 IP / callback IP / callback check / clear_quota / clear_quota/v2（方法级 `[Token(Disabled = true)]` 免令牌应急逃生端点，A-7 合并）/ openapi quota get·clear / rid get；`IChannelsBasicTokenFreeService` 已 `[Obsolete]` 过渡保留一版） |
 | `Funds` | `AddFundsApi()` | 16 | `IChannelsFundsService`（余额 / 结算账户 / 提现 3 + 流水 4 + 订单流水 + 银行·省市·支行 5 + 资金二维码 2；`/shop/funds/*` 历史前缀照抄官方原文） |
 | `Product` | `AddProductApi()` | 43 | `IChannelsProductService`（商品增改查 / 上下架 / 审核策略与配额 25 + 库存 4 + 赠品 6 + 买赠活动 3 + 限时抢购 5） |
 | `Order` | `AddOrderApi()` | 27 | `IChannelsOrderService`（订单查询 / 改价 / 改地址 / 改备注 / 换款 / 盲盒 / 生鲜质检 / 敏感信息解密 / 虚拟号·真实号 / 发货协商 / 用户预约 24 + 商家私密号实名认证 3） |

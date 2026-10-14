@@ -107,11 +107,12 @@ public enum MpModule
 
     /// <summary>
     /// openApi 管理（重置 API 调用次数 / AppSecret 重置 / 额度查询 / 指定 API 清零 / rid 查询共 5 端点，
-    /// 双接口同注册组：IMpOpenApiService 4 端点带令牌 + IMpOpenApiTokenFreeService 1 端点免令牌）。
+    /// 同接口承载：IMpOpenApiService 4 端点带令牌 + clear_quota/v2 方法级 [Token(Disabled = true)] 免令牌）。
     /// </summary>
     /// <remarks>
     /// 域级约束：clear_quota 与 clear_quota/v2 合计每月 10 次清零；openapi/quota/clear 每月 50 次；
-    /// rid 查询仅同账号且有效期 7 天；clear_quota/v2 为「access_token 耗尽」应急逃生端点（I4 裁决独立接口）。
+    /// rid 查询仅同账号且有效期 7 天；clear_quota/v2 为「access_token 耗尽」应急逃生端点
+    /// （A-7 合并 2026-10-14：方法级免令牌，原独立接口 IMpOpenApiTokenFreeService 已 Obsolete）。
     /// </remarks>
     OpenApi,
 

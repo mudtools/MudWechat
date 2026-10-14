@@ -49,7 +49,7 @@ public class MpQueryTokenWhitelistGuard
             nameof(IMpMediaService),              // 素材管理·上传通道（下载通道 IMpMediaDownloadService 无 [Token]，手工注入）
             nameof(IMpTemplateService),           // 模板消息（7 端点，服务号专属）
             nameof(IMpSubscriptionNoticeService), // 订阅通知（7 端点，服务号专属；bizsend + /wxaapi/newtmpl/*）
-            nameof(IMpOpenApiService),            // openApi 管理（4 端点；clear_quota/v2 免令牌接口 IMpOpenApiTokenFreeService 无 [Token]，不入白名单）
+            nameof(IMpOpenApiService),            // openApi 管理（5 端点；clear_quota/v2 为方法级 [Token(Disabled = true)] 免令牌逃生端点，A-7 合并后同接口承载，无接口级 [Token] 变体）
             nameof(IMpMassMessageService),        // 群发消息（7 端点；uploadnews 废弃不建模、uploadimg 归素材域）
             nameof(IMpQrcodeService),             // 带参二维码（1 端点，服务号专属）
             nameof(IMpAutoReplyService),          // 自动回复（1 端点只读查询）

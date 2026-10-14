@@ -90,7 +90,8 @@ public class MiniProgramContractGuards
             "XPayCurrency / XPayOrder / XPayGoods / XPaySubscribe / XPayFunds / XPayComplaint / " +
             "OrderShipping / OrderQuery / OrderSetting / FamousBrand / " +
             "NovelBook / NovelChapter / NovelAuth / NovelAccountAuth / NovelReader / RealName" +
-            "（登录 code2Session 为免令牌独立接口；图片通道 Code / FeedbackMedia " +
+            "（登录 code2Session 为方法级 [Token(Disabled = true)] 免令牌端点，A-7 合并后随 IWxaAuthService " +
+            "承载、不算独立接口；图片通道 Code / FeedbackMedia " +
             "与对账文件通道 Bill 为手工服务不走 [Token]；Vip 域为 2026-10 小店线设计方案 §4.1 结论 A 划入；" +
             "ExpressInsuranceFreight / ExpressLocal 为 2026-10-12 依官方清单补齐的无忧退货族与即时配送族；" +
             "TradeGuarantee / TradeComment / TradeComplaint 为 2026-10-13 依官方 transaction-guarantee 分区补齐的交易保障域三接口；" +
@@ -119,6 +120,49 @@ public class MiniProgramContractGuards
             .Should().BeEmpty("小程序线不得自建令牌类型常量");
     }
 
+    /// <summary>
+    /// MP-X2b（A-7 合并，2026-10-14 裁决）：登录 <c>jscode2session</c> 免令牌端点以<b>方法级</b>
+    /// <c>[Token(Disabled = true)]</c> 留在 <see cref="IWxaAuthService"/> 内（上游 3.0.7 / F-1
+    /// 方法级覆盖接口级），不再拆独立接口；原拆接口 <c>IWxaCode2SessionService</c> <c>[Obsolete]</c> 过渡保留。
+    /// </summary>
+    /// <remarks>
+    /// 双向断言（方案修订 #3）：① 同接口常规方法仍走接口级 <c>[Token]</c> 管线；② 登录方法零令牌代码
+    /// （方法级 Disabled；声明之反而会把应用级令牌注入换会话请求，属语义错误）。
+    /// </remarks>
+    [Fact]
+    public void TokenFreeLogin_ShouldStayOutOfTokenPipeline_ViaMethodLevelOptOut()
+    {
+        // 接口级 [Token] 保持（7 个常规端点复用公众号 access_token）。
+        var token = typeof(IWxaAuthService).GetCustomAttributes(false)
+            .Single(static a => a.GetType().Name == "TokenAttribute");
+        token.GetType().GetProperty("Disabled")!.GetValue(token).Should().Be(false,
+            "接口级不得整体免令牌（仅方法级 opt-out）");
+
+        // 登录方法：方法级 [Token(Disabled = true)] 覆盖接口级。
+        var login = typeof(IWxaAuthService).GetMethod(nameof(IWxaAuthService.Code2SessionAsync),
+            BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)!;
+        login.Should().NotBeNull("A-7 合并后 jscode2session 必须落在 IWxaAuthService 上");
+        var methodToken = login.GetCustomAttributes(false)
+            .SingleOrDefault(static a => a.GetType().Name == "TokenAttribute");
+        methodToken.Should().NotBeNull("登录方法必须显式声明 [Token(Disabled = true)]（依赖默认继承即注入应用级令牌，语义错误）");
+        methodToken!.GetType().GetProperty("Disabled")!.GetValue(methodToken).Should().Be(true,
+            "方法级 Disabled 覆盖接口级 [Token]：不取令牌、不注入、不参与令牌恢复");
+
+        // 旧拆接口：过渡保留（二进制兼容）+ 语义不变（无 [Token]）+ 已 Obsolete + 仍声明原路由。
+        typeof(IWxaCode2SessionService).GetCustomAttribute<ObsoleteAttribute>().Should().NotBeNull(
+            "A-7 裁决：拆接口走 Obsolete 一版，Mud.Wechat 4.0 移除");
+        typeof(IWxaCode2SessionService).GetCustomAttributes(false)
+            .Any(static a => a.GetType().Name == "TokenAttribute").Should().BeFalse(
+            "旧拆接口无 [Token] 的语义不变（迁移不改变既有持久行为）");
+        var legacy = typeof(IWxaCode2SessionService)
+            .GetMethod(nameof(IWxaCode2SessionService.Code2SessionAsync),
+                BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)!;
+        legacy.Should().NotBeNull("旧拆接口成员保留一个版本（二进制兼容）");
+        legacy.GetCustomAttributes(false)
+            .Select(static a => a.GetType().GetProperty("RequestUri")?.GetValue(a) as string)
+            .Should().Contain("/sns/jscode2session", "旧拆接口路由不变（宿主按类型注入的解析路径不变）");
+    }
+
     /// <summary>MP-X3：<c>[Token].Name</c> 恒为官方契约的 <c>access_token</c>。</summary>
     [Fact]
     public void TokenInterfaces_ShouldDeclareOfficialParameterName()
@@ -143,12 +187,15 @@ public class MiniProgramContractGuards
 
         RoutesOf(asm, nameof(IWxaAuthService)).Should().BeEquivalentTo(new[]
         {
+            "/sns/jscode2session",
             "/wxa/checksession", "/wxa/resetusersessionkey",
             "/wxa/business/getuserphonenumber", "/wxa/getpaidunionid",
             "/wxa/getpluginopenpid", "/wxa/business/checkencryptedmsg",
             "/wxa/business/getuserencryptkey",
         });
 
+        // A-7 合并（2026-10-14 裁决）过渡保留：旧拆接口 [Obsolete] 仍声明原路由（二进制兼容），
+        // 4.0 移除后本断言同步删除。去重后的合计计数不受影响（CollectAttributeRoutes 走 Distinct）。
         RoutesOf(asm, nameof(IWxaCode2SessionService)).Should().BeEquivalentTo(new[] { "/sns/jscode2session" });
 
         RoutesOf(asm, nameof(IWxaQrCodeLinkService)).Should().BeEquivalentTo(new[]
@@ -373,8 +420,9 @@ public class MiniProgramContractGuards
         JsonNameShouldBe<WxaCodeUnlimitRequest>(nameof(WxaCodeUnlimitRequest.Scene), "scene");
 
         // 登录端点的 Query 参数名是官方契约（js_code），不得驼峰化。
-        var jsCodeParameter = typeof(IWxaCode2SessionService)
-            .GetMethod(nameof(IWxaCode2SessionService.Code2SessionAsync))!
+        // A-7 合并（2026-10-14 裁决）后 blessed 路径在 IWxaAuthService（方法级 [Token(Disabled = true)]）。
+        var jsCodeParameter = typeof(IWxaAuthService)
+            .GetMethod(nameof(IWxaAuthService.Code2SessionAsync))!
             .GetParameters()
             .Single(static p => p.Name == "jsCode");
         QueryNameOf(jsCodeParameter).Should().Be("js_code");
@@ -535,6 +583,7 @@ public class MiniProgramContractGuards
         });
 
         provider.GetRequiredService<IWxaAuthService>().Should().NotBeNull();
+        // A-7 合并（2026-10-14 裁决）过渡保留：旧拆接口 [Obsolete] 但仍可解析（二进制兼容），4.0 移除后同步删除本行。
         provider.GetRequiredService<IWxaCode2SessionService>().Should().NotBeNull();
         provider.GetRequiredService<IWxaQrCodeLinkService>().Should().NotBeNull();
         provider.GetRequiredService<IWxaSecurityService>().Should().NotBeNull();

@@ -199,8 +199,9 @@ public class MpServiceBuilder
     public MpServiceBuilder AddSubscriptionNoticeApi() => AddModule(MpModule.SubscriptionNotice);
 
     /// <summary>
-    /// 注册 openApi 管理（5 端点双接口：IMpOpenApiService 4 端点带令牌 + IMpOpenApiTokenFreeService
-    /// clear_quota/v2 免令牌应急逃生端点；同注册组由同一条生成注册入口装载）。
+    /// 注册 openApi 管理（5 端点：IMpOpenApiService 4 端点带令牌 + clear_quota/v2 方法级
+    /// [Token(Disabled = true)] 免令牌应急逃生端点，A-7 合并后同接口承载；
+    /// [Obsolete] 的 IMpOpenApiTokenFreeService 过渡保留一个版本，同注册组由同一条生成注册入口装载）。
     /// </summary>
     /// <returns>注册器（链式）。</returns>
     public MpServiceBuilder AddOpenApiApi() => AddModule(MpModule.OpenApi);

@@ -27,7 +27,7 @@ param(
     [string]$ToolPackageId = "Mud.HttpUtils.JsonContextScaffolder",
     # Version to install; pinned to the repo-wide locked Mud.HttpUtils version.
     # Kept in lockstep with the repo-wide Mud.HttpUtils version (G1); 3.0.3 resolved via nuget.config sources.
-    [string]$ToolVersion = "3.0.6",
+    [string]$ToolVersion = "3.0.7",
     # Target project (relative to repo root or absolute) —— 源码归类后源工程位于 Src/<Area>/<ProjectName>。
     [string]$TargetProject = "Src/Work/Mud.Wechat.Work.DataModels/Mud.Wechat.Work.DataModels.csproj",
     # Output directory (relative to repo root or absolute)

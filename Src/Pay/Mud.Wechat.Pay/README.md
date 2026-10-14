@@ -1,13 +1,13 @@
 # Mud.Wechat.Pay
 
-微信支付 **APIv3** SDK **主包**：11 个业务域 63 端点的声明式客户端、模块注册器（`PayModule`）、四类非声明式服务（小程序调起签名 / 账单下载 / 发票文件上传 / 平台证书刷新）、AOT JsonContext 合并。
+微信支付 **APIv3** SDK **主包**：14 个业务域 100 端点的声明式客户端、模块注册器（`PayModule`）、四类非声明式服务（小程序调起签名 / 账单下载 / 发票文件上传 / 平台证书刷新）、AOT JsonContext 合并。
 
 > **与企业微信线是两条不同产品线**：本包凭据是**商户 API 证书 RSA 私钥的请求签名**（`Authorization: WECHATPAY2-SHA256-RSA2048 …`），**没有 `access_token`**、四个 `Mud.Wechat.Pay*` 包**零 `[Token]` 声明**（守卫 `PAY-B1` fail-closed），BaseAddress 恒为 `https://api.mch.weixin.qq.com`。
 > 企业微信的「企业支付」`AddPayApi()` 与「收银台」`AddPayToolApi()`（`Src/Work/`，走企微 `access_token`）与本包**无关**；本包入口名为 `AddPayApp()`（凭据底座）与 `AddWechatPayApi()`（业务接口）。
 
 ## 内容
 
-- **声明式业务客户端**（`Interfaces/`，11 个接口 / 63 端点，全部落 `namespace Mud.Wechat.Pay`，实现类由 `Mud.HttpUtils.Generator` 产出到 `Mud.Wechat.Pay.Internal`）：
+- **声明式业务客户端**（`Interfaces/`，14 个接口 / 100 端点，全部落 `namespace Mud.Wechat.Pay`，实现类由 `Mud.HttpUtils.Generator` 产出到 `Mud.Wechat.Pay.Internal`）：
   - `Interfaces/Transactions/` `IWechatPayTransactionsService` — 基础交易 7 端点：JSAPI/小程序、Native、APP、H5 四族下单 + 微信订单号查单 + 商户订单号查单 + 关闭订单
   - `Interfaces/Refund/` `IWechatPayRefundService` — 退款 3 端点：申请退款、查询单笔退款、发起异常退款
   - `Interfaces/Bill/` `IWechatPayBillService` — 账单 2 端点：申请交易账单、申请资金账单（文件另走下载通道）
@@ -19,13 +19,16 @@
   - `Interfaces/Fapiao/` `IWechatPayFapiaoService` — 电子发票 5 端点：开具、查询、冲红、获取下载信息、插卡
   - `Interfaces/MarketingFavor/` `IWechatPayMarketingFavorService` — 代金券 7 端点：批次创建/启动/暂停/续期/查询 + 发券 + 券详情（**创建成功 ≠ 可发放**，须先启动批次）
   - `Interfaces/Apply4SubMerchant/` `IWechatPayApply4SubMerchantService` — 特约商户进件（**服务商面**）6 端点：提交申请单 + 申请单号/业务编号两路查状态 + 结算账户修改/查询/修改申请状态查询（**提交 ≠ 通过**，两族前缀互为镜像 `applyment4sub` / `apply4sub`）
-- **模块注册器**（`Extensions/`）：`AddWechatPayApi(...)` + `PayServiceBuilder`（`AddAllApis()` / `AddModules(params PayModule[])` / `Build()`）。`PayModule` 11 个成员即各接口 `[HttpClientApi(RegistryGroupName = …)]` 的组名，**叫 `Transactions` 等而非 `Pay`**——本仓「企业支付」已占用 `WechatModule.Pay` 与生成的 `AddPayWebApiHttpClient()`，同名会跨程序集歧义。
+  - `Interfaces/Apply4Subject/` `IWechatPayApply4SubjectService` — 主体进件 / 商户开户意愿确认（**渠道商 + 从业机构面**）5 端点：提交申请单（POST 带尾斜杠）+ 查询审核结果（**同路径 GET 无尾斜杠、定位键走 query**）+ 业务编号/申请单号两个撤销变体（204 无包体）+ 按 `sub_mchid` 查授权状态（**与 `apply4sub` 是两套契约：状态与主体类型取值不重合、`licence` 为英式拼写、应答无 `sign_url` 而是 base64 `qrcode_data`**）
+  - `Interfaces/PartnerTransactions/` `IWechatPayPartnerTransactionsService` — 服务商基础支付 + 分期（**服务商面**）9 端点：JSAPI/小程序、Native、APP、H5、扫码支付五族下单 + 微信订单号/商户订单号双路查单（**`sp_mchid` + `sub_mchid` 走 query**）+ 关闭订单（204 无包体）+ 分期曝光咨询（**唯一不在 `/v3/pay/partner/transactions/` 前缀内**，走 `/v3/pay/instal/partner/exposure`，200 次/秒）。**与直连 `Transactions` 是两套契约**：商户标识四分（`sp_`/`sub_` 前缀）、`payer` 只有 JSAPI 与扫码支付两族有且双 openid 二选一、`support_fapiao` 唯扫码支付在顶层而其余四族在 `settle_info` 内、三套 `scene_info` 与两套 `store_info` 各自成类型；官方 `codepay`/`reverse` 两页现行正文是 APIv2 指引（无 V3 字段表）、`transactions/exposure` 页面已下架 ⇒ **SKIT 清单 12 行实落 9 端点**
+  - `Interfaces/PartnerPayScore/` `IWechatPayPartnerPayScoreService` — 服务商支付分（**服务商面**）23 端点：用户授权 7（商户预授权、开启场景服务权限、评估用户分层、按协议号/OpenID 查授权记录、按协议号/OpenID 解除授权）+ 服务订单 8（创建/查询/取消/完结/修改 + 待处理消息/预扣费消息/状态同步）+ 服务额度 1 + 支付分计划 3 + 计划型服务订单 1 + 用户签约计划 3。**与本线其余服务商域形态相反**：商户标识是 `appid`（服务商）+ `sub_appid` + `mchid`/`sub_mchid`，**全域无 `sp_appid`/`sp_mchid`**，照抄 `PartnerJsapiPrepayRequest` 会静默错参；同一业务域内三套路由前缀并存（`/v3/payscore/partner/` 16、`/v3/payscore/plan/partner/` 3、`/v3/payscore/sign-plan/partner/` 4）；`sub_mchid` 位置逐端点分列 query（6 支 GET + 评估用户分层）与 body，不能一套模板套全族；两套时间格式并存（紧凑 `yyyyMMddHHmmss` 与 rfc3339）⇒ 时间字段一律 `string`；官方无「商户收款」端点（SKIT 清单 28 行实落 23）
+- **模块注册器**（`Extensions/`）：`AddWechatPayApi(...)` + `PayServiceBuilder`（`AddAllApis()` / `AddModules(params PayModule[])` / `Build()`）。`PayModule` 14 个成员即各接口 `[HttpClientApi(RegistryGroupName = …)]` 的组名，**叫 `Transactions` 等而非 `Pay`**——本仓「企业支付」已占用 `WechatModule.Pay` 与生成的 `AddPayWebApiHttpClient()`，同名会跨程序集歧义。
 - **非声明式服务**（官方列在 TOC 内但无 HTTP 形态，或路由/应答非 JSON）：
   - `Transactions/` `IWechatPayMiniProgramPaySignService` — 小程序调起支付五参数（**本地 RSA 签名、无请求路由**）
   - `Download/` `IWechatPayBillDownloadService` — 账单文件下载通道（`download_url` 动态给出、应答非 JSON）
   - `Fapiao/` `IWechatPayFapiaoFileService` — 发票文件上传（`multipart/form-data` + SM3 摘要）
   - `Certificates/` `WechatPayPlatformCertificateRefresher` — 未知序列号时的按需刷新（三道防放大闸 + fail-closed）
-- **AOT JsonContext 合并**（`Extensions/PayJsonResolverExtensions.cs`）：`Build()` 把 DataModels 的 13 个生成上下文经 `JsonTypeInfoResolver.Combine` 注进 `wechat-pay` 命名客户端管线。
+- **AOT JsonContext 合并**（`Extensions/PayJsonResolverExtensions.cs`）：`Build()` 把 DataModels 的 16 个生成上下文经 `JsonTypeInfoResolver.Combine` 注进 `wechat-pay` 命名客户端管线。
 
 ## 用法
 
@@ -112,6 +115,6 @@ catch (WechatPayException ex) when (ex.PayErrorCode == WechatPayErrorCodes.Order
 - **目标框架为受控例外**：`net6.0;net8.0;net10.0`，无 `netstandard2.0`——回调 `resource` 解密强制 `AEAD_AES_256_GCM`，而 `AesGcm` 在 ns2.0 不存在；手写 GCM 与引入第三方密码学包均被否（守卫 `PAY-B9` / `AB-G8` 锁定，签名与加解密全走 BCL、AOT 安全）。
 - **无 `[Token]`**：签名在传输层 `WechatPayAuthorizationHandler` 完成，端点方法只管路由与报文。主包 csproj 仍带 `<NoWarn>MUD005</NoWarn>` 只是「防未来误加时误读」，真正的禁令由 `PAY-B1` 断言。
 - **不用默认 `IEnhancedHttpClient` 实例**：走命名客户端 `wechat-pay`（`WechatPayHttpClientNames`），否则会与企微线 `qyapi.weixin.qq.com` 撞 BaseUrl 并给企微请求套上商户签名头。SSRF 白名单由 `AddPayApp` 经公用层窄入口登记，**数组零改动**（`PAY-B8`）。
-- **端点/路由/字段名的权威是契约守卫**，不是本文与 `PayModule` 的 XML 注释（后者仍留有早期「首批 N 端点」口径）：`Tests/Mud.Wechat.Pay.Tests/ContractGuards/` 13 个文件——`PAY-B1`（零 `[Token]`）、`PAY-B2`（签名/验签串黄金向量）、`PAY-B3`（验签与时间窗 fail-closed）、`PAY-B4`（GCM 参数与黄金向量）、`PAY-B5`（63 端点计数 + 官方路由 + snake_case 字段照抄原文）、`PAY-B6`（无反射、无第三方密码学）、`PAY-B7`（凭据不入日志）、`PAY-B9`（TFM）、`PAY-B11`（引用隔离）+ 逐域守卫（**基础交易 TX1~TX3** / 分账 / 支付分 / 合单 / 转账 / 发票 / 代金券 / **特约商户进件 A4S-B1~B7**）与 `WechatPayCapitalRulingContractGuards`（未建模域裁决，如 `/v3/merchant/fund`）。
+- **端点/路由/字段名的权威是契约守卫**，不是本文与 `PayModule` 的 XML 注释（后者仍留有早期「首批 N 端点」口径）：`Tests/Mud.Wechat.Pay.Tests/ContractGuards/` 16 个文件——`PAY-B1`（零 `[Token]`）、`PAY-B2`（签名/验签串黄金向量）、`PAY-B3`（验签与时间窗 fail-closed）、`PAY-B4`（GCM 参数与黄金向量）、`PAY-B5`（100 端点计数 + 官方路由 + snake_case 字段照抄原文）、`PAY-B6`（无反射、无第三方密码学）、`PAY-B7`（凭据不入日志）、`PAY-B9`（TFM）、`PAY-B11`（引用隔离）+ 逐域守卫（**基础交易 TX1~TX3** / 分账 / 支付分 / 合单 / 转账 / 发票 / 代金券 / **特约商户进件 A4S-B1~B7** / **主体进件 A4SJ-B1~B7** / **服务商基础支付 PT-B1~B7** / **服务商支付分 PS-B1~B7**）与 `WechatPayCapitalRulingContractGuards`（未建模域裁决，如 `/v3/merchant/fund`）。
 - **发票文件下载有意不实现**：官方文件域名 `pay.wechatpay.cn` 不在进程级白名单内，白名单零改动优先级高于该便利（`PAY-B8`）。账单 `download_url` 5 分钟有效且一次性，取到即下载。
 - 新增 `[HttpJsonSerializable]` DTO 后运行 `scripts/AddHttpJsonSerializable.ps1` + `scripts/GenerateJsonContext.ps1`（`mud-jsonctx`）重新生成，并把新上下文登记进 `PayJsonResolverExtensions`；未登记类型在 Native AOT 下会因无元数据失败（JIT 下靠反射侥幸可用）。

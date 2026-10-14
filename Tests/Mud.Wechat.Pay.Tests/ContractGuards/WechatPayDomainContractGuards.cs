@@ -44,11 +44,12 @@ public class WechatPayDomainContractGuards
             .OrderBy(static t => t.Name, StringComparer.Ordinal)
             .ToArray();
 
-        // 聚合计数（防枚举空跑，AGENTS §6）：十一域接口 = Transactions / Refund / Bill / Certificates / ProfitSharing /
-        // PayScore / CombineTransactions / Transfer / NewTaxControlFapiao / MarketingFavor / Apply4SubMerchant。
+        // 聚合计数（防枚举空跑，AGENTS §6）：十四域接口 = Transactions / Refund / Bill / Certificates / ProfitSharing /
+        // PayScore / CombineTransactions / Transfer / NewTaxControlFapiao / MarketingFavor / Apply4SubMerchant /
+        // Apply4Subject / PartnerTransactions / PartnerPayScore。
         // 数字集中维护在 Tests/ContractBaseline.cs；数量变化须同批更新 PayModule 与该基线。
         interfaces.Should().HaveCount(Baseline.Pay.HttpApiInterfaces,
-            "支付线十一域接口——数量变化须同批更新 PayModule 与 Tests/ContractBaseline.cs");
+            "支付线十四域接口——数量变化须同批更新 PayModule 与 Tests/ContractBaseline.cs");
 
         interfaces.Select(static t => t.Name).Should().BeEquivalentTo(new[]
         {
@@ -63,6 +64,9 @@ public class WechatPayDomainContractGuards
             "IWechatPayFapiaoService",
             "IWechatPayMarketingFavorService",
             "IWechatPayApply4SubMerchantService",
+            "IWechatPayApply4SubjectService",
+            "IWechatPayPartnerTransactionsService",
+            "IWechatPayPartnerPayScoreService",
         });
 
         var offenders = interfaces
@@ -76,7 +80,7 @@ public class WechatPayDomainContractGuards
     }
 
     /// <summary>
-    /// PAY-B5：端点计数（<b>63</b>）+ 官方路由表逐条比对（照官方原文，<b>不得「纠正」</b>）。
+    /// PAY-B5：端点计数（<b>100</b>）+ 官方路由表逐条比对（照官方原文，<b>不得「纠正」</b>）。
     /// </summary>
     /// <remarks>
     /// <para>
@@ -100,6 +104,32 @@ public class WechatPayDomainContractGuards
     /// <b>P0-1 特约商户进件</b>（2026-10-14 逐页核验服务商文档中心）：<c>4012719997</c> 提交申请单 /
     /// <c>4012697052</c> 与 <c>4012697168</c> 两路查询申请状态 / <c>4012761102</c> 修改结算账户 /
     /// <c>4012761113</c> 查询结算账户 / <c>4012761169</c> 查询结算账户修改申请状态。
+    /// </para>
+    /// <para>
+    /// <b>P0-2 主体进件 / 商户开户意愿确认</b>（2026-10-14 逐页核验服务商文档中心）：
+    /// <c>4012722388</c> 提交申请单 / <c>4012697715</c> 查询申请单审核结果 /
+    /// <c>4012697627</c> 撤销申请单（同页两个 path 变体）/ <c>4012467549</c> 获取商户开户意愿确认状态。
+    /// </para>
+    /// <para>
+    /// <b>P0-3 服务商基础支付 + 分期</b>（2026-10-14 逐页核验服务商文档中心）：<c>4012714911</c> JSAPI/小程序下单 /
+    /// <c>4012714902</c> Native / <c>4012714669</c> APP / <c>4012714759</c> H5 / <c>4012492476</c> 扫码支付 /
+    /// <c>4012738964</c> 订单号查单 / <c>4012739008</c> 商户订单号查单 / <c>4012739019</c> 关单 /
+    /// <c>4016196820</c> 分期曝光咨询。<b>SKIT 清单 12 行 ⇒ 9 端点</b>：
+    /// <c>codepay</c> 与 <c>reverse</c> 的现行正文是付款码支付（V2）指引页（无 APIv3 字段表，归 APIv2 批次）、
+    /// <c>transactions/exposure</c> 已下架（302→50x）⇒ 三支零端点；查单与关单的其余 docId 是同一端点的产品族分身页。
+    /// </para>
+    /// <para>
+    /// <b>P0-4 服务商支付分</b>（2026-10-14 逐页核验服务商文档中心）：<c>4012382030</c> 商户预授权 /
+    /// <c>4012778802</c> 场景预授权 / <c>4012783585</c> 评估用户分层 / <c>4012692687</c> 与
+    /// <c>4012692798</c> 授权记录两路查询 / <c>4012382049</c> 与 <c>4012461154</c> 解除授权两变体 /
+    /// <c>4012692136</c> 创建订单 / <c>4012692256</c> 查询订单 / <c>4012458758</c> 取消 /
+    /// <c>4012692408</c> 完结 / <c>4012692360</c> 修改 / <c>4013394914</c> 未完结提醒 /
+    /// <c>4013394929</c> 确认付款提醒 / <c>4012458816</c> 同步支付结果 / <c>4013394486</c> 服务额度 /
+    /// <c>4012463290</c> 创建计划 / <c>4012463318</c> 查询计划 / <c>4012463322</c> 停止计划 /
+    /// <c>4012463469</c> 计划型服务订单 / <c>4012463521</c> 创建用户签约计划 / <c>4012463526</c> 查询 /
+    /// <c>4012463534</c> 停止签约计划（23 页逐页取证，页内 URL 已落在接口 XML 注释）。
+    /// <b>SKIT 清单 28 行 ⇒ 23 端点</b>：「商户收款」<c>/v3/payscore/serviceorder/{out_order_no}/pay</c>
+    /// 服务商侧现行目录无该端点 ⇒ 零声明（守卫 PS-B2），授权记录查询与计划应答的重复行按同端点归并。
     /// </para>
     /// </remarks>
     [Fact]
@@ -229,6 +259,66 @@ public class WechatPayDomainContractGuards
             "/v3/apply4sub/sub_merchants/{subMchId}/application/{applicationNo}",
         });
 
+        // P0-2 主体进件 / 商户开户意愿确认 5 端点：单前缀 /v3/apply4subject/，
+        // ⚠️ 提交 POST 带尾斜杠而查询 GET 不带（同资源异形），撤销是两个 path 变体，
+        //    与特约商户进件的 applyment4sub / apply4sub 两族前缀均不同 —— 逐条锁定见 A4SJ-B1 / A4SJ-B2。
+        RoutesOf(asm, "IWechatPayApply4SubjectService").Should().BeEquivalentTo(new[]
+        {
+            "/v3/apply4subject/applyment/",
+            "/v3/apply4subject/applyment",
+            "/v3/apply4subject/applyment/{businessCode}/cancel",
+            "/v3/apply4subject/applyment/{applymentId}/cancel",
+            "/v3/apply4subject/applyment/merchants/{subMchId}/state",
+        });
+
+        // P0-3 服务商基础支付 + 分期 9 端点：8 条在 /v3/pay/partner/transactions/ 下、
+        // 分期曝光咨询在 /v3/pay/instal/partner/exposure（唯一前缀例外）；
+        // 与直连域 /v3/pay/transactions/ 前缀互斥，SKIT 清单的 codepay / reverse（V2 面）
+        // 与 transactions/exposure（页面已下架）三支零端点 —— 逐条锁定见 PT-B1 / PT-B2。
+        RoutesOf(asm, "IWechatPayPartnerTransactionsService").Should().BeEquivalentTo(new[]
+        {
+            "/v3/pay/partner/transactions/jsapi",
+            "/v3/pay/partner/transactions/native",
+            "/v3/pay/partner/transactions/app",
+            "/v3/pay/partner/transactions/h5",
+            "/v3/pay/partner/transactions/scannedpos",
+            "/v3/pay/partner/transactions/id/{transactionId}",
+            "/v3/pay/partner/transactions/out-trade-no/{outTradeNo}",
+            "/v3/pay/partner/transactions/out-trade-no/{outTradeNo}/close",
+            "/v3/pay/instal/partner/exposure",
+        });
+
+        // P0-4 服务商支付分 23 端点：三套前缀（/v3/payscore/partner/ 16 + /v3/payscore/plan/partner/ 3 +
+        // /v3/payscore/sign-plan/partner/ 4），与直连支付分域 /v3/payscore/ 前缀互斥；
+        // SKIT 清单的「商户收款」/v3/payscore/serviceorder/{out_order_no}/pay 本域零声明
+        //（正对照：直连域确有该端点）—— 逐条锁定见 PS-B1 / PS-B2。
+        RoutesOf(asm, "IWechatPayPartnerPayScoreService").Should().BeEquivalentTo(new[]
+        {
+            "/v3/payscore/partner/permissions",
+            "/v3/payscore/partner/permissions/apply-for-scene",
+            "/v3/payscore/partner/permissions/assess-user-risk-level",
+            "/v3/payscore/partner/permissions/authorization-code/{authorizationCode}",
+            "/v3/payscore/partner/permissions/search",
+            "/v3/payscore/partner/permissions/authorization-code/{authorizationCode}/terminate",
+            "/v3/payscore/partner/permissions/terminate",
+            "/v3/payscore/partner/serviceorder",
+            "/v3/payscore/partner/serviceorder",
+            "/v3/payscore/partner/serviceorder/{outOrderNo}/cancel",
+            "/v3/payscore/partner/serviceorder/{outOrderNo}/complete",
+            "/v3/payscore/partner/serviceorder/{outOrderNo}/modify",
+            "/v3/payscore/partner/serviceorder/{outOrderNo}/send-pendingmessage",
+            "/v3/payscore/partner/serviceorder/{outOrderNo}/send-prepaidmessage",
+            "/v3/payscore/partner/serviceorder/{outOrderNo}/sync",
+            "/v3/payscore/partner/servicequotas/service-id/{serviceId}",
+            "/v3/payscore/plan/partner/payscore-plans",
+            "/v3/payscore/plan/partner/payscore-plans/merchant-plan-no/{merchantPlanNo}",
+            "/v3/payscore/plan/partner/payscore-plans/merchant-plan-no/{merchantPlanNo}/stop",
+            "/v3/payscore/sign-plan/partner/serviceorder",
+            "/v3/payscore/sign-plan/partner/user-sign-plans",
+            "/v3/payscore/sign-plan/partner/user-sign-plans/merchant-sign-plan-no/{merchantSignPlanNo}",
+            "/v3/payscore/sign-plan/partner/user-sign-plans/merchant-sign-plan-no/{merchantSignPlanNo}/stop",
+        });
+
         // 合计计数（PAY-B5 断言的单一来源）。
         asm.GetTypes()
             .Where(static t => t.IsInterface && t.IsPublic)
@@ -237,7 +327,7 @@ public class WechatPayDomainContractGuards
             .Select(static a => a.GetType().GetProperty("RequestUri")?.GetValue(a) as string)
             .Count(static uri => !string.IsNullOrWhiteSpace(uri))
             .Should().Be(Baseline.Pay.Endpoints,
-                "支付线端点总数为 63（原 57 + P0-1 特约商户进件 6）；数量变化须同批调整 Tests/ContractBaseline.cs");
+                "支付线端点总数须与 Tests/ContractBaseline.cs 一致（当前 = 原 57 + 特约商户进件 6 + 主体进件 5 + 服务商基础支付 9 + 服务商支付分 23）");
     }
 
     /// <summary>
@@ -329,6 +419,9 @@ public class WechatPayDomainContractGuards
                      typeof(Apply4SubModifySettlementResponse),
                      typeof(Apply4SubSettlementResponse),
                      typeof(Apply4SubSettlementModifyApplicationResponse),
+                     typeof(Apply4SubjectApplymentResponse),
+                     typeof(Apply4SubjectApplymentStateResponse),
+                     typeof(Apply4SubjectMerchantStateResponse),
                  })
         {
             typeof(WechatPayResponse).IsAssignableFrom(responseType).Should().BeTrue(

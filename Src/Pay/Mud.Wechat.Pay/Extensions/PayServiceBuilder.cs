@@ -102,6 +102,19 @@ public class PayServiceBuilder
             // 纯声明式域。**服务商形态**：签名主体为服务商商户号，sub_mchid 只在 path/body 出现。
             [PayModule.Apply4SubMerchant] = static s => s.AddApply4SubMerchantWebApiHttpClient(),
 
+            // P0-2 主体进件 / 商户开户意愿确认（提交 + 查询审核结果 + 两种撤销变体 + 商户授权状态）——
+            // 纯声明式域。签名主体为服务商 / 从业机构自有商户号，sub_mchid 与 channel_id 均为调用期参数。
+            [PayModule.Apply4Subject] = static s => s.AddApply4SubjectWebApiHttpClient(),
+
+            // P0-3 服务商基础支付 + 分期（下单五族 + 双路查单 + 关单 + 分期曝光咨询）——纯声明式域。
+            // **服务商形态**：签名主体为服务商商户号，sub_mchid 只出现在报文/Query，不得用子商户证书调用。
+            [PayModule.PartnerTransactions] = static s => s.AddPartnerTransactionsWebApiHttpClient(),
+
+            // P0-4 服务商支付分（授权 7 + 服务订单 8 + 服务额度 1 + 计划 3 + 计划型订单 1 + 用户签约计划 3）
+            // ——纯声明式域。**服务商形态**：报文用 appid/mchid + sub_mchid/sub_appid（无 sp_ 前缀），
+            // 签名主体为服务商商户号；八支端点官方成功应答为 204（无包体）。
+            [PayModule.PartnerPayScore] = static s => s.AddPartnerPayScoreWebApiHttpClient(),
+
             // 账单模块额外注册**账单下载通道**：它没有 [HttpClientApi] 声明（路由由 download_url 动态给出、
             // 返回非 JSON），故无对应的 AddBillDownloadWebApiHttpClient()。它依赖 AddPayApp 注册的
             // IWechatPayHttpClient，宿主若只用 AddPayApp 而不加任何模块则不会被注册 —— 这正是

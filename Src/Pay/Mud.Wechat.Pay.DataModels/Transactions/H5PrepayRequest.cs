@@ -156,7 +156,7 @@ public class H5Info
 /// H5 下单应答（<b>仅 <c>h5_url</c> 一个业务字段</b>）。
 /// </summary>
 /// <remarks>
-/// <para><b>为何不与 <see cref="AppPrepayResponse"/> 共用</b>：APP / JSAPI 给的是 <c>prepay_id</c>（需客户端二次签名调起），
+/// <para><b>为何不与 <see cref="PrepayIdResponse"/>（JSAPI / APP 共用）同型</b>：APP / JSAPI 给的是 <c>prepay_id</c>（需客户端二次签名调起），
 /// H5 给的是<b>可直接跳转的支付链接 <c>h5_url</c></b> —— 形态与用法都不同，不可互换。</para>
 /// <para><b>严禁改写该链接</b>：须按官方《H5 调起支付》指引原样跳转（含 <c>Referer</c> 等要求），
 /// 自行拼装或改写会导致官方侧校验失败且症状表现为「跳转后报参数错」，最难定位。</para>

@@ -112,4 +112,51 @@ public enum PayModule
     /// 提交申请单与修改结算账户<b>均为异步审核</b>，受理成功不等于入驻 / 改卡生效。
     /// </remarks>
     Apply4SubMerchant,
+
+    /// <summary>
+    /// 主体进件 / 商户开户意愿确认（<b>P0-2，5 端点</b>）：提交申请单 + 查询申请单审核结果 +
+    /// 按业务编号 / 申请单号撤销（两个变体）+ 获取商户开户意愿确认状态。
+    /// 官方文档 <see href="https://pay.weixin.qq.com/doc/v3/partner/4012722388"/>。
+    /// </summary>
+    /// <remarks>
+    /// <b>支持商户类型为渠道商 / 从业机构（银行、支付机构）</b>，不含普通服务商 ⇒
+    /// 与 <see cref="PayModule.Apply4SubMerchant"/> 是两套契约（前缀、查询定位方式、状态取值、
+    /// 主体类型枚举全部不同，<b>无状态映射表可写</b>）。签名主体是服务商 / 从业机构自有商户号，
+    /// <c>sub_mchid</c> 与 <c>channel_id</c> 均为<b>调用期参数 / 请求体字段</b>而非商户作用域。
+    /// </remarks>
+    Apply4Subject,
+
+    /// <summary>
+    /// 服务商基础支付 / 分期（<b>P0-3，9 端点</b>）：下单五族（JSAPI/小程序、Native、APP、H5、扫码支付）+
+    /// 双路查单 + 关单 + 分期曝光咨询。
+    /// 官方文档 <see href="https://pay.weixin.qq.com/doc/v3/partner/4012714911"/>。
+    /// </summary>
+    /// <remarks>
+    /// <b>服务商形态</b>：签名主体是<b>服务商商户号</b>（<c>sp_mchid</c>），<c>sub_mchid</c> 是
+    /// <b>报文 / Query 参数</b>而非商户作用域 ⇒ 宿主应以服务商自有商户配置进入调用作用域，
+    /// <b>不得</b>用子商户证书调本域。与 <see cref="PayModule.Transactions"/>（直连）是两套契约：
+    /// 商户标识四分、<c>payer</c> 双 openid <b>二选一</b>、<c>support_fapiao</c> 位置按族分列。
+    /// 官方 SKIT 清单里的 <c>codepay</c> / <c>reverse</c> 是 <b>APIv2</b> 面（现行正文无 V3 字段表）、
+    /// <c>transactions/exposure</c> 页面<b>已下架</b> ⇒ 本域零端点，前两者归 APIv2 批次。
+    /// </remarks>
+    PartnerTransactions,
+
+    /// <summary>
+    /// 服务商支付分（<b>P0-4，23 端点</b>）：用户授权 7（预授权 ×2 + 风险评估 + 授权记录查 ×2 + 解除授权 ×2）+
+    /// 服务订单 8（创建 / 查询 / 取消 / 完结 / 修改 / 未完结提醒 / 确认付款提醒 / 不同步支付结果）+
+    /// 服务额度 1 + 支付分计划 3 + 计划型服务订单 1 + 用户签约计划 3。
+    /// 官方文档 <see href="https://pay.weixin.qq.com/doc/v3/partner/4012692136"/>。
+    /// </summary>
+    /// <remarks>
+    /// <b>本域商户标识形态与 <see cref="PayModule.PartnerTransactions"/> 相反</b>：服务商支付分全部报文用
+    /// <c>appid</c> / <c>mchid</c>（服务商侧）+ <c>sub_mchid</c> / <c>sub_appid</c>（子商户侧），
+    /// <b>没有</b> <c>sp_</c> 前缀字段 ⇒ 照抄基础支付字段名会静默丢字段。
+    /// 签名主体是<b>服务商商户号</b>，<c>sub_mchid</c> 按端点分列 query / body 两处。
+    /// 与 <see cref="PayModule.PayScore"/>（直连）是两套契约：三套路由前缀
+    /// （<c>/v3/payscore/partner/</c>、<c>/v3/payscore/plan/partner/</c>、<c>/v3/payscore/sign-plan/partner/</c>）、
+    /// 两套时间格式并存、状态取值集合并非直连超集。
+    /// 官方 SKIT 清单里的「商户收款」<c>POST /v3/payscore/serviceorder/{out_order_no}/pay</c>
+    /// 现行目录<b>无该端点</b> ⇒ 本域零端点（守卫 PS-B2）。
+    /// </remarks>
+    PartnerPayScore,
 }

@@ -136,23 +136,30 @@ public static class Baseline
     public static class Pay
     {
         /// <summary>
-        /// `[HttpClientApi]` 接口数（十一个业务域各一）。
+        /// `[HttpClientApi]` 接口数（十四个业务域各一）。
         /// </summary>
         /// <remarks>
         /// 锁定于 `WechatPayDomainContractGuards`（PAY-B 系列）。
         /// 现行域集：Transactions / Refund / Bill / Certificates / ProfitSharing / PayScore /
-        /// CombineTransactions / Transfer / NewTaxControlFapiao / MarketingFavor / Apply4SubMerchant。
+        /// CombineTransactions / Transfer / NewTaxControlFapiao / MarketingFavor / Apply4SubMerchant /
+        /// Apply4Subject / PartnerTransactions / PartnerPayScore。
         /// </remarks>
-        public const int HttpApiInterfaces = 11;
+        public const int HttpApiInterfaces = 14;
 
         /// <summary>
         /// 端点总数（各域端点之和；账单 / 发票的**文件下载通道**不计入生成式接口）。
         /// </summary>
         /// <remarks>
         /// 锁定于 `WechatPayDomainContractGuards`。现行推导：原 54 + 直连下单三族（Native / APP / H5）= 57
-        /// + P0-1 特约商户进件 6（申请单族 3 + 结算账户族 3，守卫 A4S-B1）= 63。
+        /// + P0-1 特约商户进件 6（申请单族 3 + 结算账户族 3，守卫 A4S-B1）= 63
+        /// + P0-2 主体进件 5（提交 / 查询 / 两个撤销变体 / 商户授权状态，守卫 A4SJ-B1）= 68
+        /// + P0-3 服务商基础支付与分期 9（下单五族 + 双路查单 + 关单 + 分期曝光，守卫 PT-B1；
+        /// SKIT 清单 12 行中 codepay / reverse 属 APIv2、transactions-exposure 页面已下架）= 77
+        /// + P0-4 服务商支付分 23（授权 7 + 服务订单 8 + 服务额度 1 + 支付分计划 3 + 计划型服务订单 1 +
+        /// 用户签约计划 3，守卫 PS-B1；SKIT 清单 28 行中「商户收款」现行目录无该端点、
+        /// 三支端点在授权记录 / 计划应答多页重复声明已归并）= 100。
         /// </remarks>
-        public const int Endpoints = 63;
+        public const int Endpoints = 100;
     }
 
     /// <summary>开放平台线（`Tests/Mud.Wechat.OpenPlatform.Tests`，B1 起）。</summary>

@@ -173,6 +173,15 @@ public class PayServiceCollectionExtensionsTests
         // P0-1 特约商户进件（**服务商面**；源生成 AddApply4SubMerchantWebApiHttpClient）。
         provider.GetRequiredService<IWechatPayApply4SubMerchantService>().Should().NotBeNull();
 
+        // P0-2 主体进件 / 商户开户意愿确认（**渠道商 / 从业机构面**；源生成 AddApply4SubjectWebApiHttpClient）。
+        provider.GetRequiredService<IWechatPayApply4SubjectService>().Should().NotBeNull();
+
+        // P0-3 服务商基础支付 + 分期（**服务商面**；源生成 AddPartnerTransactionsWebApiHttpClient）。
+        provider.GetRequiredService<IWechatPayPartnerTransactionsService>().Should().NotBeNull();
+
+        // P0-4 服务商支付分（**服务商面**；源生成 AddPartnerPayScoreWebApiHttpClient）。
+        provider.GetRequiredService<IWechatPayPartnerPayScoreService>().Should().NotBeNull();
+
         // 账单下载通道随账单模块注册（无 [HttpClientApi]，故无对应的源生成注册方法）。
         provider.GetRequiredService<IWechatPayBillDownloadService>().Should().NotBeNull();
 
@@ -241,6 +250,25 @@ public class PayServiceCollectionExtensionsTests
                      typeof(Apply4SubApplymentStateResponse),
                      typeof(Apply4SubModifySettlementRequest),
                      typeof(Apply4SubSettlementResponse),
+                     typeof(Apply4SubjectApplymentRequest),
+                     typeof(Apply4SubjectSubjectInfo),
+                     typeof(Apply4SubjectIdentificationInfo),
+                     typeof(Apply4SubjectApplymentStateResponse),
+                     typeof(Apply4SubjectMerchantStateResponse),
+                     typeof(Apply4SubjectContactInfo),
+                     typeof(PartnerJsapiPrepayRequest),
+                     typeof(PartnerScannedPosPrepayRequest),
+                     typeof(PartnerH5SceneInfo),
+                     typeof(PartnerPrepayIdResponse),
+                     typeof(PartnerTransactionQueryResponse),
+                     typeof(PartnerCloseOrderRequest),
+                     typeof(PartnerInstalExposureResponse),
+                     typeof(PartnerPayScorePermissionsRequest),
+                     typeof(PartnerPayScoreCreateOrderRequest),
+                     typeof(PartnerPayScoreSignPlan),
+                     typeof(PartnerPayScorePlanResponse),
+                     typeof(PartnerPayScoreSyncOrderRequest),
+                     typeof(PartnerPayScoreTerminateByOpenIdRequest),
                  })
         {
             resolver!.GetTypeInfo(dto, options).Should().NotBeNull(

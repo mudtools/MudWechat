@@ -338,4 +338,40 @@ public enum PayModule
     /// 十一页零端点级频率数字、零加密字段。
     /// </remarks>
     MerchantService,
+
+    /// <summary>
+    /// 商户管理记录（<b>P0-7，3 端点 + 1 multipart</b>）：查询单条管理记录 + 提交资料（204）+
+    /// 按 sub_mchid 查询列表 + 上传管理记录文件（手工通道）。
+    /// 官方文档 <see href="https://pay.weixin.qq.com/doc/v3/partner/4014940383"/>。
+    /// </summary>
+    /// <remarks>
+    /// <b>关键字段形态</b>：<c>submit_data</c> 官方类型 <c>string(4000000)</c>（JSON 序列化后的字符串，非对象）；
+    /// 分页查询支的 <c>limit</c> 为<b>必填</b>参数（上限 10，本批唯一）；multipart 表单字段名为
+    /// <c>submission_file</c> + <c>meta{file_name, file_digest, item_id, manage_record_id, sub_mchid}</c>
+    /// （与媒体上传的 <c>file</c> + <c>meta</c> 不同命名空间）。
+    /// </remarks>
+    MerchantManage,
+
+    /// <summary>
+    /// 商户运营管控情况查询（<b>P0-7，1 端点</b>）：查询子商户管控情况。
+    /// 官方文档 <see href="https://pay.weixin.qq.com/doc/v3/partner/4012803072"/>。
+    /// </summary>
+    /// <remarks>
+    /// <b>支持商户【普通服务商】</b>，路由前缀 <c>/v3/mch-operation-manage/</c>；
+    /// 同前缀另有尽调族三支（<c>enhanced-due-diligence</c>）为【平台商户】专属 ⇒ 零端点（守卫 MOM-B2）。
+    /// 本端点 GET、应答含 <c>limitation_list</c> 数组（管控措施列表）及 <c>total_count</c>。
+    /// </remarks>
+    MerchantOperationManage,
+
+    /// <summary>
+    /// 商户媒体上传（<b>P0-7，2 手工通道</b>）：图片上传 + 视频上传（均为 multipart/form-data）。
+    /// 官方文档 <see href="https://pay.weixin.qq.com/doc/v3/merchant/4012551765"/>。
+    /// </summary>
+    /// <remarks>
+    /// <b>两个端点共用同一路由的不同参数</b>：图片上传 <c>POST /v3/merchant/media/upload</c>、
+    /// 视频上传 <c>POST /v3/merchant/media/video_upload</c>；表单字段均为 file + meta{filename, sha256}。
+    /// 因 multipart/form-data 无法用声明式表达，走手工通道 <see cref="Media.IWechatPayMerchantMediaService"/>。
+    /// 返回值为 media_id（string），用于后续业务接口引用（如消费者投诉回复、商家券等场景）。
+    /// </remarks>
+    MerchantMedia,
 }

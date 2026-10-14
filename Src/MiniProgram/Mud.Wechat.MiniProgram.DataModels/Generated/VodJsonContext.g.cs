@@ -58,6 +58,7 @@ namespace Mud.Wechat.MiniProgram.DataModels.Vod;
 [JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Vod.WxaVodModifyDramaBasicInfoRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Vod.WxaVodReplaceDramaMediaRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Vod.WxaVodReplaceMediaItem))]
+[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Vod.WxaVodSetPlayerDramaRecmdSwitchRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Vod.WxaVodSubmitReplaceDramaMediasRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Vod.WxaVodGetMediaLinkRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Vod.WxaVodGetMediaLinkResponse))]
@@ -77,7 +78,6 @@ namespace Mud.Wechat.MiniProgram.DataModels.Vod;
 [JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Vod.WxaVodPartInfo))]
 [JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Vod.WxaVodPullUploadRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Vod.WxaVodPullUploadResponse))]
-[JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Vod.WxaVodSetPlayerDramaRecmdSwitchRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Vod.WxaVodTaskInfo))]
 [JsonSerializable(typeof(global::Mud.Wechat.MiniProgram.DataModels.Vod.WxaVodUploadPartResponse))]
 internal partial class VodJsonContext : JsonSerializerContext

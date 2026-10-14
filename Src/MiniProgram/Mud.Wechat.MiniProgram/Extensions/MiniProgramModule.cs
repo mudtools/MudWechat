@@ -326,4 +326,17 @@ public enum MiniProgramModule
     /// <para>不支持第三方平台代调用；官方未给出端点级频率数字。</para>
     /// </remarks>
     RealName,
+
+    /// <summary>
+    /// 小游戏域（20 端点：帧同步房间 4 + 用户数据存储 3 + 对局匹配 5 + 米大师支付 1 + 内容安全 2 + 米大师 V2 支付 5）。
+    /// </summary>
+    /// <remarks>
+    /// <para><b>官方文档族</b>（minigame 树，2026-10-14 逐页核验）：帧同步房间 / 用户数据存储 / 对局匹配 / 米大师支付 / 内容安全 / 米大师 V2 支付。</para>
+    /// <para><b>令牌面</b>：本域全部端点使用<b>小程序 access_token</b>（Query 注入，<c>MpTokenTypes.AccessToken</c>），
+    /// 与小程序基础线同构；非第三方平台代调用形态（component_access_token 归开放平台线）。</para>
+    /// <para><b>适用范围字段异常（诚实留档）</b>：20 页的「适用范围」段官方统一写「本接口暂未明确可调用账号类型」——
+    /// <b>无</b>「小程序」字样；本线归属判据取「令牌可用 <c>access_token</c> + 文档树位于
+    /// <c>minigame/dev/api-backend/</c>」两条。</para>
+    /// </remarks>
+    Game,
 }

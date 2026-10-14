@@ -109,7 +109,7 @@ public static class Baseline
         /// FaceVerify 2 + LaborUse 2 + ExpressBusiness 12 + ExpressDelivery 28 + ExpressIntracity 16 +
         /// ExpressInsuranceFreight 11 + ExpressLocal 15 + ExpressBill 1 + Vip 6 +
         /// TradeGuarantee 2 + TradeComment 9 + TradeComplaint 5 + Live 38 + Vod 32 + XPay 37 +
-        /// OrderShipping 12 + Novel 23 + RealName 1 = 334
+        /// OrderShipping 12 + Novel 23 + RealName 1 + Game 20 = 354
         /// （Vip 域为 2026-10 小店线设计方案 §4.1 结论 A 划入；2026-10-12 依官方清单核对后：
         /// ExpressDelivery 28 / ExpressIntracity 16 补齐「消息推送 2 + 投诉处理 1」与「同城扣费主体与城市 3」，
         /// 新增 ExpressInsuranceFreight 11（无忧退货）与 ExpressLocal 15（即时配送）两族，
@@ -127,16 +127,18 @@ public static class Baseline
         /// 缺口清单原记「10 条」系漏项，特殊发货报备 <c>opspecialorder</c> 与交易类型变更申请
         /// <c>setwxatradetypecgi</c> 两支为逐页取证补回；
         /// 同日依官方 novelreadersetrecmdnovel 分区 23 页取证补齐小说作品管理域 23
-        /// （作品本体 6 + 章节管理 8 + 授权管理 3 + 账号授权 3 + 读者运营 3），权限集 169）。
+        /// （作品本体 6 + 章节管理 8 + 授权管理 3 + 账号授权 3 + 读者运营 3），权限集 169；
+        /// 同日依官方 minigame 树 20 页取证补齐小游戏域 20（帧同步房间 4 + 用户数据存储 3 + 对局匹配 5 +
+        /// 米大师支付 1 + 内容安全 2 + 米大师 V2 支付 5））。
         /// </remarks>
-        public const int Endpoints = 334;
+        public const int Endpoints = 354;
     }
 
     /// <summary>微信支付 APIv3 线（`Tests/Mud.Wechat.Pay.Tests`）。</summary>
     public static class Pay
     {
         /// <summary>
-        /// `[HttpClientApi]` 接口数（二十四个业务域各一）。
+        /// `[HttpClientApi]` 接口数（二十六个业务域各一）。
         /// </summary>
         /// <remarks>
         /// 锁定于 `WechatPayDomainContractGuards`（PAY-B 系列）。
@@ -144,12 +146,12 @@ public static class Baseline
         /// CombineTransactions / Transfer / NewTaxControlFapiao / MarketingFavor / Apply4SubMerchant /
         /// Apply4Subject / PartnerTransactions / PartnerPayScore / BankPayScore / PartnerTransfer /
         /// BankTransfer / Repayment / MerchantRiskManage / MerchantStore / MerchantAlterApply /
-        /// MerchantFund / MerchantSettlement / MerchantService。
+        /// MerchantFund / MerchantSettlement / MerchantService / MerchantManage / MerchantOperationManage。
         /// </remarks>
-        public const int HttpApiInterfaces = 24;
+        public const int HttpApiInterfaces = 26;
 
         /// <summary>
-        /// 端点总数（各域端点之和；账单 / 发票的**文件下载通道**不计入生成式接口）。
+        /// 端点总数（各域端点之和；账单 / 发票的**文件下载通道**与媒体上传等**手工通道**不计入生成式接口）。
         /// </summary>
         /// <remarks>
         /// 锁定于 `WechatPayDomainContractGuards`。现行推导：原 54 + 直连下单三族（Native / APP / H5）= 57
@@ -182,9 +184,12 @@ public static class Baseline
         /// + P0-7 商户结算规则申请 2（创建 + 按 application_id 查；从业机构面，官方无「按商户号查最新
         /// 申请单」与规则列表/删除面 ⇒ 零声明，守卫 MSET-B2）= 160
         /// + P0-7 消费者投诉 11（通知地址 CRUD 4 + 投诉列表 / 详情 / 协商历史 3 + 回复 / 完成 / 退款审批 / 即时服务 4；
-        /// 图片上传 / 拉取两支走手工通道，不计入生成式接口，守卫 MC-B1）= 171。
+        /// 图片上传 / 拉取两支走手工通道，不计入生成式接口，守卫 MC-B1）= 171
+        /// + P0-7 商户管理记录 3（查询单条管理记录 + 提交资料（204）+ 按 sub_mchid 查询列表；
+        /// 上传管理记录文件走手工通道，不计入生成式接口）= 174
+        /// + P0-7 商户运营管控情况查询 1（查询子商户管控情况；同前缀尽调族三支属【平台商户】面 ⇒ 零端点，守卫 MOM-B2）= 175。
         /// </remarks>
-        public const int Endpoints = 171;
+        public const int Endpoints = 175;
     }
 
     /// <summary>开放平台线（`Tests/Mud.Wechat.OpenPlatform.Tests`，B1 起）。</summary>

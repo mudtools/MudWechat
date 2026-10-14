@@ -150,27 +150,6 @@ public class MiniProgramNonContractRouteContractGuards
     /// </summary>
     private static readonly string[] OutOfLineRoutes =
     {
-        // 小游戏（minigame 文档树，页面实测全部存活；本仓无小游戏线 ⇒ 可解除裁决，落地须先立产品域决策）。
-        "/wxa/createwxagameroom",
-        "/wxa/getwxagameframe",
-        "/wxa/getwxagameidentityinfo",
-        "/wxa/getwxagameroominfo",
-        "/wxa/remove_user_storage",
-        "/wxa/setuserinteractivedata",
-        "/wxa/set_user_storage",
-        "/wxa/business/gamematch/creatematchrule",
-        "/wxa/business/gamematch/deletematchrule",
-        "/wxa/business/gamematch/getallmatchrule",
-        "/wxa/business/gamematch/setmatchopenstate",
-        "/wxa/business/gamematch/updatematchrule",
-        "/wxa/business/getpayfororder",
-        "/wxa/game/content_spam/msg_sec_check",
-        "/wxa/game/content_spam/media_check_sync",
-        "/wxa/game/getbalance",
-        "/wxa/game/pay",
-        "/wxa/game/cancelpay",
-        "/wxa/game/present",
-        "/wxa/game/queryorderinfo",
         // 多端应用框架（Donut）5 条：端点域名是 dev.weixin.qq.com，非 api.weixin.qq.com ⇒ 不同 SSRF 白名单（MP-X8）。
         "/donut/code2verifyinfo",
         "/donut/unbindphone",
@@ -253,8 +232,8 @@ public class MiniProgramNonContractRouteContractGuards
     [Fact]
     public void OutOfLineRoutes_ShouldStayUndeclared_InMiniProgramLine()
     {
-        OutOfLineRoutes.Should().HaveCount(26,
-            "小游戏 20 + 多端应用框架(Donut) 5 + 公众号门店 1：三档「线外」理由各不相同，见类型 remarks 第 3 项");
+        OutOfLineRoutes.Should().HaveCount(6,
+            "多端应用框架(Donut) 5 + 公众号门店 1：两档「线外」理由各不相同，见类型 remarks 第 3 项");
 
         var declared = DeclaredRoutes(Path.Combine("Src", "MiniProgram"));
         var offenders = declared.Intersect(OutOfLineRoutes, StringComparer.Ordinal).ToList();
@@ -270,7 +249,7 @@ public class MiniProgramNonContractRouteContractGuards
         }
 
         offenders.Should().BeEmpty(
-            "26 条路由不属小程序服务端 API 面：小游戏另有 minigame 文档树（本仓暂无小游戏线，裁决可解除）、"
+            "6 条路由不属小程序服务端 API 面："
             + "Donut 端点在 dev.weixin.qq.com（MP-X8 SSRF 白名单不同域）、门店面本仓已落位于公众号线");
     }
 

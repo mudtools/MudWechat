@@ -384,16 +384,16 @@ public class MiniProgramContractGuards
             WxaKfMediaService.MediaPath,
         });
 
-        // 合计计数（MP-X5 的单一来源）：303 特性路由 + 6 手工通道路由 = 309（基线见 Tests/ContractBaseline.cs）。
+        // 合计计数（MP-X5 的单一来源）：323 特性路由 + 6 手工通道路由 = 329（基线见 Tests/ContractBaseline.cs）。
         (CollectAttributeRoutes(asm).Length + ManualChannelRoutes().Length)
             .Should().Be(Baseline.MiniProgram.Endpoints,
-                "小程序线合计 309 端点（Auth 8 + QrCodeLink 9 + Security 3 + DataAnalysis 11 + "
+                "小程序线合计 329 端点（Auth 8 + QrCodeLink 9 + Security 3 + DataAnalysis 11 + "
                 + "SubscribeMessage 4 + DynamicMessage 3 + Kf 11 + HardwareDevice 9 + Operation 10 + "
                 + "Plugin 2 + Charge 2 + NearbyPoi 4 + Search 1 + Soter 1 + ServiceMarket 2 + "
                 + "RedPacketCover 1 + Student 1 + FaceVerify 2 + LaborUse 2 + ExpressBusiness 12 + "
                 + "ExpressDelivery 28 + ExpressIntracity 16 + ExpressInsuranceFreight 11 + ExpressLocal 15 + "
                 + "ExpressBill 1 + Vip 6 + TradeGuarantee 2 + TradeComment 9 + TradeComplaint 5 + "
-                + "Live 38 + Vod 31 + XPay 37 + OrderShipping 12）；"
+                + "Live 38 + Vod 31 + XPay 37 + OrderShipping 12 + Novel 23 + RealName 1 + Game 20）；"
                 + "数量变化须同批调整 Tests/ContractBaseline.cs");
     }
 

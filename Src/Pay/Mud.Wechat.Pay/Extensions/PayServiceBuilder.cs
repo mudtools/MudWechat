@@ -9,6 +9,8 @@ using Mud.Wechat.Pay.Abstractions.Credential;
 using Mud.Wechat.Pay.Certificates;
 using Mud.Wechat.Pay.Download;
 using Mud.Wechat.Pay.Fapiao;
+using Mud.Wechat.Pay.MerchantManage;
+using Mud.Wechat.Pay.Media;
 using Mud.Wechat.Pay.MerchantService;
 using Mud.Wechat.Pay.Transactions;
 
@@ -176,6 +178,25 @@ public class PayServiceBuilder
             {
                 s.AddMerchantServiceWebApiHttpClient();
                 s.TryAddSingleton<IWechatPayComplaintMediaService, WechatPayComplaintMediaService>();
+            },
+
+            // 商户管理记录模块：3 声明式端点 + 1 multipart 手工通道
+            [PayModule.MerchantManage] = static s =>
+            {
+                s.AddMerchantManageWebApiHttpClient();
+                s.TryAddSingleton<IWechatPayMerchantManageFileService, WechatPayMerchantManageFileService>();
+            },
+
+            // 商户运营管控情况查询模块：1 端点
+            [PayModule.MerchantOperationManage] = static s =>
+            {
+                s.AddMerchantOperationManageWebApiHttpClient();
+            },
+
+            // 商户媒体上传模块：2 手工通道（图片 + 视频，multipart/form-data）
+            [PayModule.MerchantMedia] = static s =>
+            {
+                s.TryAddSingleton<IWechatPayMerchantMediaService, WechatPayMerchantMediaService>();
             },
 
             // 账单模块额外注册**账单下载通道**：它没有 [HttpClientApi] 声明（路由由 download_url 动态给出、

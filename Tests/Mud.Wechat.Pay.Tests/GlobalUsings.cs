@@ -22,6 +22,7 @@ global using Mud.Wechat.Pay.Abstractions.Credential;
 global using Mud.Wechat.Pay.Abstractions.Configuration;
 global using Mud.Wechat.Pay.Abstractions.Exceptions;
 global using Mud.Wechat.Pay.Abstractions.Extensions;
+global using Mud.Wechat.Pay.DataModels.Apply4SubMerchant;
 global using Mud.Wechat.Pay.DataModels.Bill;
 global using Mud.Wechat.Pay.DataModels.Certificates;
 global using Mud.Wechat.Pay.DataModels.Combine;

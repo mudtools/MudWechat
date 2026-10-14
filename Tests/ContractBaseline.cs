@@ -136,20 +136,23 @@ public static class Baseline
     public static class Pay
     {
         /// <summary>
-        /// `[HttpClientApi]` 接口数（十个业务域各一）。
+        /// `[HttpClientApi]` 接口数（十一个业务域各一）。
         /// </summary>
         /// <remarks>
         /// 锁定于 `WechatPayDomainContractGuards`（PAY-B 系列）。
         /// 现行域集：Transactions / Refund / Bill / Certificates / ProfitSharing / PayScore /
-        /// CombineTransactions / Transfer / NewTaxControlFapiao / MarketingFavor。
+        /// CombineTransactions / Transfer / NewTaxControlFapiao / MarketingFavor / Apply4SubMerchant。
         /// </remarks>
-        public const int HttpApiInterfaces = 10;
+        public const int HttpApiInterfaces = 11;
 
         /// <summary>
-        /// 端点总数（十域端点之和；账单 / 发票的**文件下载通道**不计入生成式接口）。
+        /// 端点总数（各域端点之和；账单 / 发票的**文件下载通道**不计入生成式接口）。
         /// </summary>
-        /// <remarks>锁定于 `WechatPayDomainContractGuards`。现行推导：原 54 + 直连下单三族（Native / APP / H5）= 57。</remarks>
-        public const int Endpoints = 57;
+        /// <remarks>
+        /// 锁定于 `WechatPayDomainContractGuards`。现行推导：原 54 + 直连下单三族（Native / APP / H5）= 57
+        /// + P0-1 特约商户进件 6（申请单族 3 + 结算账户族 3，守卫 A4S-B1）= 63。
+        /// </remarks>
+        public const int Endpoints = 63;
     }
 
     /// <summary>开放平台线（`Tests/Mud.Wechat.OpenPlatform.Tests`，B1 起）。</summary>

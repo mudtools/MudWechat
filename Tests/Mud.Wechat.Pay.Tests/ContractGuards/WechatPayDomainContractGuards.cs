@@ -44,11 +44,11 @@ public class WechatPayDomainContractGuards
             .OrderBy(static t => t.Name, StringComparer.Ordinal)
             .ToArray();
 
-        // 聚合计数（防枚举空跑，AGENTS §6）：十域接口 = Transactions / Refund / Bill / Certificates / ProfitSharing /
-        // PayScore / CombineTransactions / Transfer / NewTaxControlFapiao / MarketingFavor。
+        // 聚合计数（防枚举空跑，AGENTS §6）：十一域接口 = Transactions / Refund / Bill / Certificates / ProfitSharing /
+        // PayScore / CombineTransactions / Transfer / NewTaxControlFapiao / MarketingFavor / Apply4SubMerchant。
         // 数字集中维护在 Tests/ContractBaseline.cs；数量变化须同批更新 PayModule 与该基线。
         interfaces.Should().HaveCount(Baseline.Pay.HttpApiInterfaces,
-            "支付线十域接口——数量变化须同批更新 PayModule 与 Tests/ContractBaseline.cs");
+            "支付线十一域接口——数量变化须同批更新 PayModule 与 Tests/ContractBaseline.cs");
 
         interfaces.Select(static t => t.Name).Should().BeEquivalentTo(new[]
         {
@@ -62,6 +62,7 @@ public class WechatPayDomainContractGuards
             "IWechatPayTransferService",
             "IWechatPayFapiaoService",
             "IWechatPayMarketingFavorService",
+            "IWechatPayApply4SubMerchantService",
         });
 
         var offenders = interfaces
@@ -75,7 +76,7 @@ public class WechatPayDomainContractGuards
     }
 
     /// <summary>
-    /// PAY-B5：端点计数（<b>57</b>）+ 官方路由表逐条比对（照官方原文，<b>不得「纠正」</b>）。
+    /// PAY-B5：端点计数（<b>63</b>）+ 官方路由表逐条比对（照官方原文，<b>不得「纠正」</b>）。
     /// </summary>
     /// <remarks>
     /// <para>
@@ -94,6 +95,11 @@ public class WechatPayDomainContractGuards
     /// <para>
     /// <b>P2 分账首批</b>（同日核验）：<c>4012524936</c> 请求分账 / <c>4012528995</c> 添加分账接收方 /
     /// <c>chapter8_1_2</c> 查询分账结果。
+    /// </para>
+    /// <para>
+    /// <b>P0-1 特约商户进件</b>（2026-10-14 逐页核验服务商文档中心）：<c>4012719997</c> 提交申请单 /
+    /// <c>4012697052</c> 与 <c>4012697168</c> 两路查询申请状态 / <c>4012761102</c> 修改结算账户 /
+    /// <c>4012761113</c> 查询结算账户 / <c>4012761169</c> 查询结算账户修改申请状态。
     /// </para>
     /// </remarks>
     [Fact]
@@ -210,6 +216,19 @@ public class WechatPayDomainContractGuards
             "/v3/marketing/favor/users/{openId}/coupons",
         });
 
+        // P0-1 特约商户进件 6 端点：申请单族 3（提交 + 两路状态查询，无 sub_mchid path）+
+        // 结算账户族 3（修改 / 查当前账户 / 查修改申请，恒以 sub_mchid 定位）。
+        // ⚠️ 两族前缀互为镜像（applyment4sub vs apply4sub），逐条锁定见守卫 A4S-B1 / A4S-B2。
+        RoutesOf(asm, "IWechatPayApply4SubMerchantService").Should().BeEquivalentTo(new[]
+        {
+            "/v3/applyment4sub/applyment/",
+            "/v3/applyment4sub/applyment/applyment_id/{applymentId}",
+            "/v3/applyment4sub/applyment/business_code/{businessCode}",
+            "/v3/apply4sub/sub_merchants/{subMchId}/modify-settlement",
+            "/v3/apply4sub/sub_merchants/{subMchId}/settlement",
+            "/v3/apply4sub/sub_merchants/{subMchId}/application/{applicationNo}",
+        });
+
         // 合计计数（PAY-B5 断言的单一来源）。
         asm.GetTypes()
             .Where(static t => t.IsInterface && t.IsPublic)
@@ -218,7 +237,7 @@ public class WechatPayDomainContractGuards
             .Select(static a => a.GetType().GetProperty("RequestUri")?.GetValue(a) as string)
             .Count(static uri => !string.IsNullOrWhiteSpace(uri))
             .Should().Be(Baseline.Pay.Endpoints,
-                "支付线端点总数为 57（原 54 + 直连下单三族：Native/APP/H5）；数量变化须同批调整 Tests/ContractBaseline.cs");
+                "支付线端点总数为 63（原 57 + P0-1 特约商户进件 6）；数量变化须同批调整 Tests/ContractBaseline.cs");
     }
 
     /// <summary>
@@ -305,6 +324,11 @@ public class WechatPayDomainContractGuards
                      typeof(FapiaoQueryResponse),
                      typeof(CouponStockCreateResponse),
                      typeof(CouponQueryResponse),
+                     typeof(Apply4SubApplymentResponse),
+                     typeof(Apply4SubApplymentStateResponse),
+                     typeof(Apply4SubModifySettlementResponse),
+                     typeof(Apply4SubSettlementResponse),
+                     typeof(Apply4SubSettlementModifyApplicationResponse),
                  })
         {
             typeof(WechatPayResponse).IsAssignableFrom(responseType).Should().BeTrue(

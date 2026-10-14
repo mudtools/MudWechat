@@ -170,6 +170,9 @@ public class PayServiceCollectionExtensionsTests
         // P2 代金券首批（P2 表内最后一项；源生成 AddMarketingFavorWebApiHttpClient）。
         provider.GetRequiredService<IWechatPayMarketingFavorService>().Should().NotBeNull();
 
+        // P0-1 特约商户进件（**服务商面**；源生成 AddApply4SubMerchantWebApiHttpClient）。
+        provider.GetRequiredService<IWechatPayApply4SubMerchantService>().Should().NotBeNull();
+
         // 账单下载通道随账单模块注册（无 [HttpClientApi]，故无对应的源生成注册方法）。
         provider.GetRequiredService<IWechatPayBillDownloadService>().Should().NotBeNull();
 
@@ -232,6 +235,12 @@ public class PayServiceCollectionExtensionsTests
                      typeof(CouponQueryResponse),
                      typeof(CouponStockQueryResponse),
                      typeof(CouponIssueResponse),
+                     typeof(Apply4SubApplymentRequest),
+                     typeof(Apply4SubSubjectInfo),
+                     typeof(Apply4SubBankAccountInfo),
+                     typeof(Apply4SubApplymentStateResponse),
+                     typeof(Apply4SubModifySettlementRequest),
+                     typeof(Apply4SubSettlementResponse),
                  })
         {
             resolver!.GetTypeInfo(dto, options).Should().NotBeNull(

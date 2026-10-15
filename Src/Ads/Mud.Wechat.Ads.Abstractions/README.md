@@ -45,7 +45,7 @@ v3.0 要求每个业务请求**成组**携带 `access_token` + `timestamp` + `no
 ## 依赖
 
 - `Mud.Wechat.Abstractions`（Core 共享叶层）、`Mud.Wechat.Ads.DataModels`
-- `Mud.HttpUtils` 3.0.3、`Mud.HttpUtils.Generator` 3.0.3（Analyzer）
+- `Mud.HttpUtils` 3.0.7、`Mud.HttpUtils.Generator` 3.0.7（Analyzer）
 - `Microsoft.Extensions.Http` / `Hosting.Abstractions` 10.0.9（net8.0/net10.0）/ 8.0.1（netstandard2.0/net6.0）
 
 `InternalsVisibleTo` 开放给 `Mud.Wechat.Ads` 与 `Mud.Wechat.Ads.Tests`（另有 `DynamicProxyGenAssembly2` 供 Moq）。

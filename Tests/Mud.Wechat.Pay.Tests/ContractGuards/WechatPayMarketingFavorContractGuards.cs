@@ -14,7 +14,7 @@ using Mud.Wechat.Pay.DataModels.MarketingFavor;
 namespace Mud.Wechat.Pay.Tests.ContractGuards;
 
 /// <summary>
-/// P2 代金券域契约守卫（<b>P2 表内最后一项</b>，首批 2 端点：创建批次 + 查询券详情）。
+/// 代金券域契约守卫（首批 2 端点 → P1-3 增量后 <b>15 端点 / 15 方法</b>：批次生命周期 6 + 券读写 3 + 批次明细 4 + 回调地址 2）。
 /// </summary>
 /// <remarks>
 /// <para>
@@ -54,7 +54,17 @@ namespace Mud.Wechat.Pay.Tests.ContractGuards;
 /// <c>POST /v3/marketing/favor/<b>coupon-stocks</b></c>，而批次管理四动作都在
 /// <c>/v3/marketing/favor/<b>stocks</b>/…</c> 下 —— <b>不得</b>为「统一」而改动任一侧。
 /// </para>
-/// </remarks>
+/// <para>
+/// <b>P1-3 增量八支（MF5 / MF6）</b>：回调地址两支（POST 设置 + GET 查询，<c>merchant/4012464198</c> + <c>partner/4012464176</c> 等四页）、
+/// 批次列表与批次明细四支（可用单品 / 可用商户 / 退款明细 / 核销明细）、条件查询用户券一支。
+/// <b>「双面同表 ⇒ 一面一方法」</b>：八支全部同时有【普通商户】与【普通服务商】两页，逐页字段表指纹比对完全同形
+/// ⇒ 一支方法 + 双页文档引用，<b>不得</b>按服务商/商户分身建两套方法（分身即造出 16 条官方不存在的契约）。
+/// </para>
+/// <para>
+/// <b>本批踩到的两个官方坑</b>：① 退款与核销明细两支应答表<b>逐字相同</b>（<c>url</c> / <c>hash_value</c> / <c>hash_type</c>），
+/// 但两页是<b>两条独立路由</b> ⇒ 共用 DTO、分建方法；② 批次列表支的 <c>offset</c>/<c>limit</c>/<c>stock_creator_mchid</c> 是<b>必填</b> query，
+/// 而同域的<b>券详情</b>支把 <c>stock_creator_mchid</c> 也写成必填 ⇒ 「分页参数一律选填」在本域不成立。
+/// </para>/// </remarks>
 public class WechatPayMarketingFavorContractGuards
 {
     private const string RegistryGroupName = "MarketingFavor";
@@ -265,8 +275,8 @@ public class WechatPayMarketingFavorContractGuards
             .Where(static t => !typeof(JsonSerializerContext).IsAssignableFrom(t))
             .ToList();
 
-        domainTypes.Should().HaveCount(22,
-            "代金券域 DTO：创建族 9（请求/发放规则/详情页/核销规则/生效时间/固定时段/满减券/卡BIN/应答）" +
+        domainTypes.Should().HaveCount(41,
+            "代金券域 DTO（P1-3 增量后）：原 22 + 回调 3 + 批次明细 11 + 用户券 5：创建族 9（请求/发放规则/详情页/核销规则/生效时间/固定时段/满减券/卡BIN/应答）" +
             " + 查询族 4（应答/立减信息/普通券信息/折扣信息）" +
             " + 批次管理族 7（操作请求/激活应答/暂停应答/重启应答/批次应答/批次规则/地域）" +
             " + 发放族 2（请求/应答）");
@@ -280,8 +290,108 @@ public class WechatPayMarketingFavorContractGuards
         }
     }
 
+    /// <summary>
+    /// MF5：P1-3 增量八支的路由、path 键与 query 名册（含官方必填口径）。
+    /// </summary>
+    [Fact]
+    public void MarketingFavorIncrementEndpoints_ShouldMatchOfficialRoutes()
+    {
+        // 设置代金券回调通知 url｜官方页 merchant/4012464198 + partner/4012464176
+        AssertRoute<PostAttribute>(nameof(IWechatPayMarketingFavorService.SetCouponCallbackAsync), "/v3/marketing/favor/callbacks");
+
+        // 查询代金券回调通知 url｜官方页 merchant/4012464070 + partner/4012464155
+        AssertRoute<GetAttribute>(nameof(IWechatPayMarketingFavorService.QueryCouponCallbackAsync), "/v3/marketing/favor/callbacks");
+        QueryNamesOf(nameof(IWechatPayMarketingFavorService.QueryCouponCallbackAsync)).Should().BeEquivalentTo(new[] { "mchid" });
+        RequiredQueryOf(nameof(IWechatPayMarketingFavorService.QueryCouponCallbackAsync)).Should().BeEquivalentTo(new[] { "mchid" }, "查询代金券回调通知 url的 mchid 官方必填");
+
+        // 条件查询代金券批次列表｜官方页 merchant/4012460489 + partner/4012460518
+        AssertRoute<GetAttribute>(nameof(IWechatPayMarketingFavorService.QueryCouponStocksAsync), "/v3/marketing/favor/stocks");
+        QueryNamesOf(nameof(IWechatPayMarketingFavorService.QueryCouponStocksAsync)).Should().BeEquivalentTo(new[] { "offset", "limit", "stock_creator_mchid", "create_start_time", "create_end_time", "status" });
+        RequiredQueryOf(nameof(IWechatPayMarketingFavorService.QueryCouponStocksAsync)).Should().BeEquivalentTo(new[] { "offset", "limit", "stock_creator_mchid" }, "条件查询代金券批次列表的 offset / limit / stock_creator_mchid 官方必填");
+
+        // 查询代金券可用单品｜官方页 merchant/4012463442 + partner/4012463475
+        AssertRoute<GetAttribute>(nameof(IWechatPayMarketingFavorService.QueryCouponStockItemsAsync), "/v3/marketing/favor/stocks/{stockId}/items");
+        PathKeysOf(nameof(IWechatPayMarketingFavorService.QueryCouponStockItemsAsync)).Should().BeEquivalentTo(new[] { "stockId" });
+        QueryNamesOf(nameof(IWechatPayMarketingFavorService.QueryCouponStockItemsAsync)).Should().BeEquivalentTo(new[] { "offset", "limit", "stock_creator_mchid" });
+        RequiredQueryOf(nameof(IWechatPayMarketingFavorService.QueryCouponStockItemsAsync)).Should().BeEquivalentTo(new[] { "offset", "limit", "stock_creator_mchid" }, "查询代金券可用单品的 offset / limit / stock_creator_mchid 官方必填");
+
+        // 查询代金券可用商户｜官方页 merchant/4012463358 + partner/4012463409
+        AssertRoute<GetAttribute>(nameof(IWechatPayMarketingFavorService.QueryCouponStockMerchantsAsync), "/v3/marketing/favor/stocks/{stockId}/merchants");
+        PathKeysOf(nameof(IWechatPayMarketingFavorService.QueryCouponStockMerchantsAsync)).Should().BeEquivalentTo(new[] { "stockId" });
+        QueryNamesOf(nameof(IWechatPayMarketingFavorService.QueryCouponStockMerchantsAsync)).Should().BeEquivalentTo(new[] { "offset", "limit", "stock_creator_mchid" });
+        RequiredQueryOf(nameof(IWechatPayMarketingFavorService.QueryCouponStockMerchantsAsync)).Should().BeEquivalentTo(new[] { "offset", "limit", "stock_creator_mchid" }, "查询代金券可用商户的 offset / limit / stock_creator_mchid 官方必填");
+
+        // 下载批次退款明细｜官方页 merchant/4012463523 + partner/4012463548
+        AssertRoute<GetAttribute>(nameof(IWechatPayMarketingFavorService.QueryCouponStockRefundFlowAsync), "/v3/marketing/favor/stocks/{stockId}/refund-flow");
+        PathKeysOf(nameof(IWechatPayMarketingFavorService.QueryCouponStockRefundFlowAsync)).Should().BeEquivalentTo(new[] { "stockId" });
+
+        // 下载批次核销明细｜官方页 merchant/4012463585 + partner/4012463698
+        AssertRoute<GetAttribute>(nameof(IWechatPayMarketingFavorService.QueryCouponStockUseFlowAsync), "/v3/marketing/favor/stocks/{stockId}/use-flow");
+        PathKeysOf(nameof(IWechatPayMarketingFavorService.QueryCouponStockUseFlowAsync)).Should().BeEquivalentTo(new[] { "stockId" });
+
+        // 条件查询用户代金券列表｜官方页 merchant/4012534690 + partner/4012494237
+        AssertRoute<GetAttribute>(nameof(IWechatPayMarketingFavorService.QueryCouponUserCouponsAsync), "/v3/marketing/favor/users/{openid}/coupons");
+        PathKeysOf(nameof(IWechatPayMarketingFavorService.QueryCouponUserCouponsAsync)).Should().BeEquivalentTo(new[] { "openid" });
+        QueryNamesOf(nameof(IWechatPayMarketingFavorService.QueryCouponUserCouponsAsync)).Should().BeEquivalentTo(new[] { "appid", "stock_id", "status", "business_type", "creator_mchid", "available_mchid", "offset", "limit" });
+        RequiredQueryOf(nameof(IWechatPayMarketingFavorService.QueryCouponUserCouponsAsync)).Should().BeEquivalentTo(new[] { "appid" }, "条件查询用户代金券列表的 appid 官方必填");
+    }
+
+    /// <summary>MF6：增量八支的官方字段表名册（请求体与应答顶层逐字照页）。</summary>
+    [Fact]
+    public void MarketingFavorIncrementDtos_ShouldExposeOfficialFieldRosters()
+    {
+
+        DeclaredJsonNamesOf<CouponCallbackSetRequest>().Should().BeEquivalentTo(new[] { "mchid", "notify_url", "switch", "appid" }, "设置代金券回调通知 url请求体顶层名册");
+
+        DeclaredJsonNamesOf<CouponCallbackSetResponse>().Should().BeEquivalentTo(new[] { "update_time", "notify_url", "appid" }, "设置代金券回调通知 url应答顶层名册");
+
+        DeclaredJsonNamesOf<CouponCallbackQueryResponse>().Should().BeEquivalentTo(new[] { "notify_url", "appid", "mchid" }, "查询代金券回调通知 url应答顶层名册");
+
+        DeclaredJsonNamesOf<CouponStockListResponse>().Should().BeEquivalentTo(new[] { "total_count", "data", "limit", "offset" }, "条件查询代金券批次列表应答顶层名册");
+
+        DeclaredJsonNamesOf<CouponStockItemsResponse>().Should().BeEquivalentTo(new[] { "total_count", "data", "offset", "limit", "stock_id" }, "查询代金券可用单品应答顶层名册");
+
+        DeclaredJsonNamesOf<CouponStockMerchantsResponse>().Should().BeEquivalentTo(new[] { "total_count", "data", "offset", "limit", "stock_id" }, "查询代金券可用商户应答顶层名册");
+
+        DeclaredJsonNamesOf<CouponStockRefundFlowResponse>().Should().BeEquivalentTo(new[] { "url", "hash_value", "hash_type" }, "下载批次退款明细应答顶层名册");
+
+        DeclaredJsonNamesOf<CouponStockUseFlowResponse>().Should().BeEquivalentTo(new[] { "url", "hash_value", "hash_type" }, "下载批次核销明细应答顶层名册");
+
+        DeclaredJsonNamesOf<CouponUserCouponListResponse>().Should().BeEquivalentTo(new[] { "data", "total_count", "limit", "offset" }, "条件查询用户代金券列表应答顶层名册");
+    }
+
     // ---- helpers -------------------------------------------------------------
 
+    private static MethodInfo FindMethodAny(string methodName)
+        => typeof(IWechatPayMarketingFavorService)
+            .GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
+            .First(m => m.Name == methodName);
+
+    private static string[] PathKeysOf(string methodName)
+        => FindMethodAny(methodName).GetParameters()
+            .Where(p => p.GetCustomAttribute<PathAttribute>() != null)
+            .Select(p => p.Name!).ToArray();
+
+    private static string[] QueryNamesOf(string methodName)
+        => FindMethodAny(methodName).GetParameters()
+            .SelectMany(p => p.GetCustomAttributes<QueryAttribute>())
+            .Select(a => a.Name!).ToArray();
+
+    private static string[] RequiredQueryOf(string methodName)
+        => FindMethodAny(methodName).GetParameters()
+            .Where(p => p.GetCustomAttribute<QueryAttribute>() != null && !p.HasDefaultValue)
+            .Select(p => p.GetCustomAttribute<QueryAttribute>()!.Name!).ToArray();
+
+    private static Type ReturnTypeOf(string methodName)
+    {
+        var task = FindMethodAny(methodName).ReturnType;
+        return task.IsGenericType ? task.GetGenericArguments()[0] : task;
+    }
+
+    private static string[] DeclaredJsonNamesOf<T>()
+        => typeof(T).GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
+            .Select(p => p.GetCustomAttribute<JsonPropertyNameAttribute>()?.Name)
+            .Where(n => n != null).Select(n => n!).ToArray();
     private static void AssertRoute<TAttribute>(string methodName, string route)
         where TAttribute : HttpMethodAttribute
     {

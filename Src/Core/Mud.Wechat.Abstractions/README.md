@@ -40,7 +40,7 @@ activity?.SetTag(WechatActivitySource.Tags.Product, WechatActivitySource.Product
 
 ## 依赖
 
-- `Mud.HttpUtils` 3.0.3（唯一外部依赖）
+- `Mud.HttpUtils` 3.0.7（唯一外部依赖）
 - 被引而不引：`Work.Abstractions` / `OfficialAccount.Abstractions` / `MiniProgram.Abstractions` / `Pay.Abstractions` / `OpenPlatform.Abstractions` / `Redis` / `OpenTelemetry` 等下游包均依赖本包。
 - `InternalsVisibleTo` 授予各线主包与测试工程（含 `DynamicProxyGenAssembly2` 供 Moq）。
 

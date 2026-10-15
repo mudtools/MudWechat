@@ -44,14 +44,21 @@ public class WechatPayDomainContractGuards
             .OrderBy(static t => t.Name, StringComparer.Ordinal)
             .ToArray();
 
-        // 聚合计数（防枚举空跑，AGENTS §6）：二十七域共三十四个接口 = Transactions / Refund / Bill / Certificates / ProfitSharing /
+        // 聚合计数（防枚举空跑，AGENTS §6）：四十八域共五十五个接口 = Transactions / Refund / Bill / Certificates / ProfitSharing /
         // PayScore / CombineTransactions / Transfer / NewTaxControlFapiao / MarketingFavor / Apply4SubMerchant /
         // Apply4Subject / PartnerTransactions / PartnerPayScore / BankPayScore / PartnerTransfer / BankTransfer /
         // Repayment / MerchantRiskManage / MerchantStore / MerchantAlterApply / MerchantFund / MerchantSettlement /
-        // MerchantService / MerchantManage / MerchantOperationManage + Ecommerce（八个子域接口共享一个注册组）。
+        // MerchantService / MerchantManage / MerchantOperationManage + Ecommerce（八个子域接口共享一个注册组）
+        // + P1-3 商家券与营销十域各一（MarketingBusifavor / MarketingPartnerProductCoupon /
+        // MarketingPartnerDeliveryPlan / MarketingGoodsSubsidyActivity / MarketingPayGiftActivity /
+        // MarketingShoppingReceipt / MarketingPartnerships / IndustryCoupon / MarketingBank / MarketingBankFavor）
+        // + P1-4 品牌七域各一（BrandApplyment / BrandCardConfig / BrandCardLink / BrandCardMember /
+        // BrandProfitSharing / BrandStore / PasswordExemptContract）
+        // + P1-2-A FundApp 族四域各一（AbnormalFundProcessing / BrandRedpacket / TransferToQqWallet / UserConfirmAuthorization）；
+        // MarketingMedia 只有 multipart 手工通道，无 [HttpClientApi] 接口 ⇒ 不计入本数。
         // 数字集中维护在 Tests/ContractBaseline.cs；数量变化须同批更新 PayModule 与该基线。
         interfaces.Should().HaveCount(Baseline.Pay.HttpApiInterfaces,
-            "支付线二十七域三十四接口——数量变化须同批更新 PayModule 与 Tests/ContractBaseline.cs");
+            "支付线四十八域五十五接口——数量变化须同批更新 PayModule 与 Tests/ContractBaseline.cs");
 
         interfaces.Select(static t => t.Name).Should().BeEquivalentTo(new[]
         {
@@ -89,6 +96,27 @@ public class WechatPayDomainContractGuards
             "IWechatPayEcommerceMchTransferService",
             "IWechatPayEcommerceApplymentService",
             "IWechatPayEcommercePapayService",
+            "IWechatPayMarketingBusifavorService",
+            "IWechatPayMarketingPartnerProductCouponService",
+            "IWechatPayMarketingPartnerDeliveryPlanService",
+            "IWechatPayMarketingGoodsSubsidyActivityService",
+            "IWechatPayMarketingPayGiftActivityService",
+            "IWechatPayMarketingShoppingReceiptService",
+            "IWechatPayMarketingPartnershipsService",
+            "IWechatPayIndustryCouponService",
+            "IWechatPayMarketingBankService",
+            "IWechatPayMarketingBankFavorService",
+            "IWechatPayBrandApplymentService",
+            "IWechatPayBrandCardConfigService",
+            "IWechatPayBrandCardLinkService",
+            "IWechatPayBrandCardMemberService",
+            "IWechatPayBrandProfitSharingService",
+            "IWechatPayBrandStoreService",
+            "IWechatPayPasswordExemptContractService",
+            "IWechatPayAbnormalFundProcessingService",
+            "IWechatPayBrandRedpacketService",
+            "IWechatPayTransferToQqWalletService",
+            "IWechatPayUserConfirmAuthorizationService",
         });
 
         var offenders = interfaces
@@ -102,7 +130,7 @@ public class WechatPayDomainContractGuards
     }
 
     /// <summary>
-    /// PAY-B5：端点计数（<b>160</b>）+ 官方路由表逐条比对（照官方原文，<b>不得「纠正」</b>）。
+    /// PAY-B5：端点计数（<b>372</b>，基线单一来源 <c>Baseline.Pay.Endpoints</c>）+ 官方路由表逐条比对（照官方原文，<b>不得「纠正」</b>）。
     /// </summary>
     /// <remarks>
     /// <para>
@@ -283,16 +311,21 @@ public class WechatPayDomainContractGuards
             "/v3/combine-transactions/out-trade-no/{combineOutTradeNo}",
         });
 
-        // P2 商家转账 6 端点：发起 + 两查询 + 撤销 + 两电子回单查询（两组各自共用应答 DTO）。
+        // P2 商家转账 10 端点：发起 + 两查询 + 撤销 + 两电子回单查询（两组各自共用应答 DTO）
+        // + P1-2-A 增量 4（elecsign 申请两支 / pre-transfer-with-authorization / transfer）。
         // ⚠️ 撤销走的是**普通商户**面路由；服务商侧的 /partner/ 变体属另一套文档，不得混入。
         RoutesOf(asm, "IWechatPayTransferService").Should().BeEquivalentTo(new[]
         {
             "/v3/fund-app/mch-transfer/transfer-bills",
             "/v3/fund-app/mch-transfer/transfer-bills/out-bill-no/{outBillNo}",
             "/v3/fund-app/mch-transfer/transfer-bills/transfer-bill-no/{transferBillNo}",
-            "/v3/fund-app/mch-transfer/transfer-bills/out-bill-no/{outBillNo}/cancel",
             "/v3/fund-app/mch-transfer/elecsign/out-bill-no/{outBillNo}",
             "/v3/fund-app/mch-transfer/elecsign/transfer-bill-no/{transferBillNo}",
+            "/v3/fund-app/mch-transfer/transfer-bills/out-bill-no/{outBillNo}/cancel",
+            "/v3/fund-app/mch-transfer/elecsign/out-bill-no",
+            "/v3/fund-app/mch-transfer/elecsign/transfer-bill-no",
+            "/v3/fund-app/mch-transfer/transfer-bills/pre-transfer-with-authorization",
+            "/v3/fund-app/mch-transfer/transfer-bills/transfer",
         });
 
         // P2 电子发票首批 2 端点（普通商户侧）：开具 + 查询。
@@ -307,8 +340,12 @@ public class WechatPayDomainContractGuards
             "/v3/new-tax-control-fapiao/fapiao-applications/{fapiaoApplyId}/insert-cards",
         });
 
-        // P2 代金券 7 端点：创建批次 + 查询券详情 + 激活/暂停/重启批次 + 查询批次详情 + 发放。
-        // ⚠️ 两族路径前缀**不一致**：创建走 /coupon-stocks，批次管理四个动作走 /stocks/…（官方原文如此）。
+        // P2 代金券首批 7 端点 + P1-3 增量 8 端点 = 15：创建批次 + 查询券详情 + 激活/暂停/重启批次 +
+        // 查询批次详情 + 发放 + 回调地址两支（POST 设置 / GET 查询）+ 批次列表 + 可用单品 / 可用商户 /
+        // 退款明细 / 核销明细 + 条件查询用户券（逐支路由与参数名册见守卫 MF1 / MF5）。
+        // ⚠️ 两族路径前缀**不一致**：创建走 /coupon-stocks，批次管理四个动作走 /stocks/…（官方原文如此）；
+        // ⚠️ 用户券两支的 path 占位符一个写 {openId}（首批单券查询）一个写 {openid}（P1-3 列表查询），
+        //    官方原文即如此，**不得「顺手统一」**。
         RoutesOf(asm, "IWechatPayMarketingFavorService").Should().BeEquivalentTo(new[]
         {
             "/v3/marketing/favor/coupon-stocks",
@@ -318,6 +355,14 @@ public class WechatPayDomainContractGuards
             "/v3/marketing/favor/stocks/{stockId}/restart",
             "/v3/marketing/favor/stocks/{stockId}",
             "/v3/marketing/favor/users/{openId}/coupons",
+            "/v3/marketing/favor/callbacks",
+            "/v3/marketing/favor/callbacks",
+            "/v3/marketing/favor/stocks",
+            "/v3/marketing/favor/stocks/{stockId}/items",
+            "/v3/marketing/favor/stocks/{stockId}/merchants",
+            "/v3/marketing/favor/stocks/{stockId}/refund-flow",
+            "/v3/marketing/favor/stocks/{stockId}/use-flow",
+            "/v3/marketing/favor/users/{openid}/coupons",
         });
 
         // P0-1 特约商户进件 6 端点：申请单族 3（提交 + 两路状态查询，无 sub_mchid path）+
@@ -518,7 +563,7 @@ public class WechatPayDomainContractGuards
             .Select(static a => a.GetType().GetProperty("RequestUri")?.GetValue(a) as string)
             .Count(static uri => !string.IsNullOrWhiteSpace(uri))
             .Should().Be(Baseline.Pay.Endpoints,
-                "支付线端点总数须与 Tests/ContractBaseline.cs 一致（当前 = 原 57 + 特约商户进件 6 + 主体进件 5 + 服务商基础支付 9 + 服务商支付分 23 + 从业机构支付分 11 + P0-6 三域 17 + P0-7 风险 11 + 门店 5 + 变更 12 + 余额 2 + 结算规则 2）");
+                "支付线端点总数须与 Tests/ContractBaseline.cs 一致（当前 = 原 57 + 特约商户进件 6 + 主体进件 5 + 服务商基础支付 9 + 服务商支付分 23 + 从业机构支付分 11 + P0-6 三域 17 + P0-7 风险 11 + 门店 5 + 变更 12 + 余额 2 + 结算规则 2 + Transfer 增量 4 + 新域 14）");
     }
 
     /// <summary>

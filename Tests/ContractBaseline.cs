@@ -144,7 +144,8 @@ public static class Baseline
     public static class Pay
     {
         /// <summary>
-        /// `[HttpClientApi]` 接口数（二十七个业务域：其余二十六域各一 + 平台收付通域<b>八分身</b>）。
+        /// `[HttpClientApi]` 接口数（四十八业务域中的五十五个声明式接口：其余三十域各一 + 平台收付通域<b>八分身</b>
+        /// + P1-3 营销十域各一 + P1-4 品牌七域各一 + P1-2 平台/服务商四域各一）。
         /// </summary>
         /// <remarks>
         /// 锁定于 `WechatPayDomainContractGuards`（PAY-B 系列）。
@@ -155,9 +156,22 @@ public static class Baseline
         /// MerchantFund / MerchantSettlement / MerchantService / MerchantManage / MerchantOperationManage /
         /// Ecommerce（按子域拆为 Fund / Bill / Account / ProfitSharing / Refund / MchTransfer / Applyment /
         /// Papay 八个接口，共享 <c>RegistryGroupName = "Ecommerce"</c> ⇒ 一支注册器，守卫 EC-X1；
-        /// 这是全仓唯一「一组多接口」的域，勿按「一域一接口」的默认形态拆分）。
+        /// 这是全仓唯一「一组多接口」的域，勿按「一域一接口」的默认形态拆分）
+        /// + P1-3 商家券与营销十域（MarketingBusifavor / MarketingPartnerProductCoupon /
+        /// MarketingPartnerDeliveryPlan / MarketingGoodsSubsidyActivity / MarketingPayGiftActivity /
+        /// MarketingShoppingReceipt / MarketingPartnerships / IndustryCoupon / MarketingBank /
+        /// MarketingBankFavor，各一接口）
+        /// + P1-4 品牌七域（BrandApplyment / BrandCardConfig / BrandCardLink / BrandCardMember /
+        /// BrandProfitSharing / BrandStore / PasswordExemptContract，各一接口）
+        /// + P1-2 平台/服务商四域（AbnormalFundProcessing / BrandRedpacket / TransferToQqWallet /
+        /// UserConfirmAuthorization，各一接口）
+        /// + P1-2-B 平台服务商解决方案八域（PlatsolutionEcommerceInsuranceContract / Compensate / Deposit /
+        /// InsuranceClaim / MchTransfer / RechargeEmployee / Recharge / Settle，各一接口）。
+        /// <b>不计入本数</b>：<c>MerchantMedia</c>、<c>MarketingMedia</c> 两个成员只有 multipart 手工通道、
+        /// 无 <c>[HttpClientApi]</c> 接口（守卫 MC-B1 / EC-X2 口径），故 <c>PayModule</c> 成员数 =
+        /// 本数 - 8（收付通八合一）+ 3（收付通成员 + 两个手工通道成员）。
         /// </remarks>
-        public const int HttpApiInterfaces = 34;
+        public const int HttpApiInterfaces = 63;
 
         /// <summary>
         /// 端点总数（各域端点之和；账单 / 发票的**文件下载通道**与媒体上传等**手工通道**不计入生成式接口）。
@@ -200,9 +214,24 @@ public static class Baseline
         /// + P1-1 平台收付通 55（账户 10 + 进件 7 + 分账与补差 11 + 退款 9 + 商家转账 6 + 代扣合单 6 + 资金 5 + 账单 1，
         /// 八个声明式接口共用注册组 Ecommerce；退款族三支「同方法同路由两契约」⇒ 55 方法归并 52 条 (方法, 路由)，
         /// 端点计数按 HTTP 方法特性实例计，守卫 EC-X1；注销资料图片上传走 multipart 手工通道，不计入生成式接口，
-        /// 守卫 EC-X2；after-sales-orders 两支官方现行目录无契约页 ⇒ 零声明，守卫 EC-R7）= 230。
+        /// 守卫 EC-X2；after-sales-orders 两支官方现行目录无契约页 ⇒ 零声明，守卫 EC-R7）= 230
+        /// + P1-3 商家券与营销 89（MarketingFavor 增量 8：回调地址两支 + 批次列表 + 可用单品 / 可用商户 /
+        /// 退款明细 / 核销明细 + 条件查询用户券，守卫 MF5 / MF6；MarketingBusifavor 15、
+        /// MarketingPartnerProductCoupon 33（同路由两契约 ⇒ 33 方法 / 32 条 (方法, 路由)，守卫 MPPC-B1）、
+        /// MarketingPartnerDeliveryPlan 5、MarketingGoodsSubsidyActivity 8、MarketingPayGiftActivity 8、
+        /// MarketingShoppingReceipt 5、MarketingPartnerships 2、IndustryCoupon 1、MarketingBank 2、
+        /// MarketingBankFavor 2；营销图片上传两支为 multipart 手工通道 ⇒ 不计入，守卫 MMK-B1）= 319
+        /// + P1-4 品牌七域 53（品牌入驻 4：受理两支共用 2 行应答、查询两支共用 7 行应答；名片配置 5；交易连接名片 5；
+        /// 会员卡与会员 15（模板四支共用 49 行应答、用户卡五支共用 28 行应答，两族列表支各独立形态；请求侧因必填口径不同一律分建）；
+        /// 品牌分账 9（回退两支共用、接收方增删共用，发起 15 行与查询 16 行分建）；品牌门店 9（创建 / 查询 / 更新共用 21 行，
+        /// close / resume 共用 3 行，<b>删除支官方未印发应表 ⇒ 裸 Task</b>，绑定 5 行与解绑 1 行分建）；
+        /// 免密支付契约 6（qs 面与 sp 面、小程序场景与支付后场景<b>四支各建一型</b>：字段名 appid/openid(128) 与
+        /// sp_appid/sp_openid(64) 不可互换）——<b>共用只发生在应答侧</b>，逐表签名（含 req 标记）比对见各域守卫）= 372
+        /// + P1-2-A Transfer 增量 4（elecsign 申请两支 POST + pre-transfer-with-authorization + transfer）= 376
+        /// + P1-2-A 新域 14（AbnormalFundProcessing 3 + BrandRedpacket 5 + TransferToQqWallet 3 + UserConfirmAuthorization 3）= 390
+        /// + P1-2-B 平台服务商解决方案 31（InsuranceContract 2 + Compensate 5 + Deposit 7 + InsuranceClaim 5 + MchTransfer 3 + RechargeEmployee 3 + Recharge 3 + Settle 3）= 421。
         /// </remarks>
-        public const int Endpoints = 230;
+        public const int Endpoints = 421;
     }
 
     /// <summary>开放平台线（`Tests/Mud.Wechat.OpenPlatform.Tests`，B1 起）。</summary>

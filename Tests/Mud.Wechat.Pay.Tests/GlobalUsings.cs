@@ -48,6 +48,7 @@ global using Mud.Wechat.Pay.DataModels.Transactions;
 global using Mud.Wechat.Pay.DataModels.Transfer;
 global using Mud.Wechat.Pay.Download;
 global using Mud.Wechat.Pay.Fapiao;
+global using Mud.Wechat.Pay.MarketingMedia;
 global using Mud.Wechat.Pay.Extensions;
 global using Mud.Wechat.Pay.Transactions;
 global using System.Security.Cryptography;

@@ -190,9 +190,10 @@ public class WechatPayEcommerceContractGuards
             "TryAddSingleton<IWechatPayEcommerceCancelMediaService, WechatPayEcommerceCancelMediaService>",
             "手工通道随模块注册（TryAdd：宿主预注册者胜出）");
 
-        // 模块成员数与注册器条目数同步（本域八个接口合一 ⇔ 1 个成员；另加无声明式接口的媒体上传成员 ⇔ +1）。
-        Enum.GetNames(typeof(PayModule)).Should().HaveCount(Baseline.Pay.HttpApiInterfaces - 8 + 2,
-            "PayModule 成员 = 接口数 - 本域八合一 + 本域成员 1 + 媒体上传成员 1（无声明式接口的成员）");
+        // 模块成员数与注册器条目数同步（本域八个接口合一 ⇔ 1 个成员；另加无声明式接口的媒体上传成员 ⇔ +1，
+        // P1-3 的营销图片上传 MarketingMedia 同为无声明式接口的 multipart 手工通道成员 ⇔ 再 +1）。
+        Enum.GetNames(typeof(PayModule)).Should().HaveCount(Baseline.Pay.HttpApiInterfaces - 8 + 3,
+            "PayModule 成员 = 接口数 - 本域八合一 + 本域成员 1 + 媒体上传成员 1 + 营销图片上传成员 1（后两者无声明式接口）");
     }
 
     /// <summary>

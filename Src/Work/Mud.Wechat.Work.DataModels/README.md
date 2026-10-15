@@ -24,4 +24,4 @@
 
 ## 依赖
 
-`Mud.Wechat.Abstractions`（叶层，仅取 `IWechatApiResponse` 响应契约）+ `Mud.HttpUtils.Attributes` 3.0.3（含传递的 `Mud.HttpUtils.Abstractions`）+ `Mud.HttpUtils.Generator` 3.0.3（仅分析器）。
+`Mud.Wechat.Abstractions`（叶层，仅取 `IWechatApiResponse` 响应契约）+ `Mud.HttpUtils.Attributes` 3.0.7（含传递的 `Mud.HttpUtils.Abstractions`）+ `Mud.HttpUtils.Generator` 3.0.7（仅分析器）。

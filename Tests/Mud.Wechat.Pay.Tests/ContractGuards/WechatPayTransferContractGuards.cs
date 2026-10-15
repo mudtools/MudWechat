@@ -276,8 +276,9 @@ public class WechatPayTransferContractGuards
             .Where(static t => !typeof(JsonSerializerContext).IsAssignableFrom(t))
             .ToList();
 
-        domainTypes.Should().HaveCount(7,
-            "商家转账域 DTO：发起族 4（请求/场景报备/收款样式/应答） + 查询应答 1 + 电子回单应答 1 + 撤销应答 1");
+        domainTypes.Should().HaveCount(15,
+            "商家转账域 DTO：发起族 4（请求/场景报备/收款样式/应答） + 查询应答 1 + 电子回单应答 1 + 撤销应答 1" +
+            " + P1-2-A 增量 8（elecsign 申请两支请求/应答各 2 + pre-transfer-with-authorization 请求含嵌套 AuthorizationInfo/应答 + transfer 请求/应答）");
 
         foreach (var type in domainTypes)
         {

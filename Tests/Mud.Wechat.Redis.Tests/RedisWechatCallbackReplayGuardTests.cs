@@ -80,7 +80,8 @@ public class RedisWechatCallbackReplayGuardTests
         // （中间件专用 catch 映射 503 → 官方 96238 重推，严禁与验证类 403 混流），
         // WechatRedisException 作为 InnerException 保留（分类语义与既有宿主捕获面零破坏）。
         var backend = new FakeRedisBackend();
-        backend.ThrowOn(() => new RedisConnectionException(ConnectionFailureType.SocketFailure, "redis down"));
+        backend.ThrowOn(() => new RedisConnectionException(
+            ConnectionFailureType.SocketFailure, CommandFlags.None, "redis down", null!, CommandStatus.Unknown));
         var guard = CreateGuard(backend);
 
         var act = async () => await guard.TryMarkAsync(Fingerprint, TimeSpan.FromSeconds(300));
@@ -98,7 +99,7 @@ public class RedisWechatCallbackReplayGuardTests
         // SE.Redis 3.3.0 陷阱：RedisTimeoutException 继承 TimeoutException 而非 RedisException，
         // 包装面经 WechatRedisErrors.ShouldWrap 显式并入——超时同样映射为基础设施异常（Kind=Timeout）。
         var backend = new FakeRedisBackend();
-        backend.ThrowOn(() => new RedisTimeoutException("redis timeout", CommandStatus.Unknown));
+        backend.ThrowOn(() => new RedisTimeoutException(CommandFlags.None, "redis timeout", CommandStatus.Unknown));
         var guard = CreateGuard(backend);
 
         var act = async () => await guard.TryMarkAsync(Fingerprint, TimeSpan.FromSeconds(300));

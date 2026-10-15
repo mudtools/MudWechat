@@ -83,7 +83,8 @@ public class RedisWechatSuiteTicketStoreTests
     public async Task Operations_ShouldThrowClassifiedException_WhenConnectionFails()
     {
         var backend = new FakeRedisBackend();
-        backend.ThrowOn(() => new RedisConnectionException(ConnectionFailureType.SocketFailure, "boom"));
+        backend.ThrowOn(() => new RedisConnectionException(
+            ConnectionFailureType.SocketFailure, CommandFlags.None, "boom", null!, CommandStatus.Unknown));
         var store = CreateStore(backend);
 
         (await ((Func<Task>)(async () => await store.GetAsync(SuiteId))).Should().ThrowAsync<WechatRedisException>())

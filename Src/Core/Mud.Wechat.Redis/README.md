@@ -177,12 +177,15 @@ WECHAT_REDIS_TESTS_CONNECTION=localhost:6379 dotnet test Tests/Mud.Wechat.Redis.
 
 ## SE.Redis 分档已知陷阱
 
-- **超时异常继承关系（B-8 勘误，2026-10-14）**：SE.Redis **2.x** 中 `RedisTimeoutException` 继承
-  `TimeoutException`；**3.x 起不再继承** `TimeoutException`。⇒ `catch (TimeoutException)` 兜 SE.Redis
-  超时的 2.x 习惯在 3.x 下**失配漏接**，宿主 catch 口径须为 `RedisTimeoutException` 或 `RedisException`
-  基类（本包 `WechatRedisErrors.ShouldWrap` 为 `is RedisException or RedisTimeoutException` 显式双类型，
-  两个大版本下均正确）。官方 `Mud.HttpUtils.Redis` 3.0.7 重打包起逐档引用 SE.Redis、不再固定 2.8.24，
-  异常类型随最终宿主解析的运行时版本漂移（上游 B-8 口径：组件侧无需防御）。
+- **超时异常继承关系（B-8 复核，2026-10-15 反射实测）**：上游 B-8 称「3.x 中 `RedisTimeoutException`
+  不再继承 `TimeoutException`」，但本仓对全部在盘版本（2.8.24 / 2.13.17 / 3.1.31 / 3.3.0 / 3.4.5）实测
+  结论一致：`RedisTimeoutException` **恒继承 `System.TimeoutException`、恒不派生 `RedisException`**
+  （派生 `RedisException` 的是 `RedisConnectionException` / `RedisServerException`）⇒ **无「翻转」**，
+  2.x 的 `catch (TimeoutException)` 习惯在 3.4.5 下依然有效。操作口径不变（更稳）：宿主 catch 用
+  `RedisTimeoutException` 或 `RedisException` 基类；本包 `WechatRedisErrors.ShouldWrap` 的
+  `is RedisException or RedisTimeoutException` 显式双类型因「超时异常不派生 `RedisException`」而
+  **必需**。分歧待经 F-6 通道回写上游对账清单。官方 `Mud.HttpUtils.Redis` 3.0.7 重打包起逐档引用
+  SE.Redis（net8+ ≥3.4.5 / 低 TFM ≥2.13.17）、不再固定 2.8.24。
 - `StringSetAsync` 有多套重载形态：生产调用一律用**命名参数**钉住（`keepTtl: false` / `when: …`），
   否则参数位置漂移会静默改变「是否覆盖 TTL」的语义。
 

@@ -161,7 +161,8 @@ public class RedisWechatTokenStoreTests
     public async Task Operations_ShouldThrowClassifiedException_WhenConnectionFails()
     {
         var backend = new FakeRedisBackend();
-        backend.ThrowOn(() => new RedisConnectionException(ConnectionFailureType.SocketFailure, "boom"));
+        backend.ThrowOn(() => new RedisConnectionException(
+            ConnectionFailureType.SocketFailure, CommandFlags.None, "boom", null!, CommandStatus.Unknown));
         var store = CreateStore(backend);
 
         await AssertKind(() => store.GetAccessTokenAsync(StoreKey), WechatRedisFailureKind.Connection);
@@ -176,7 +177,7 @@ public class RedisWechatTokenStoreTests
     public async Task Operations_ShouldMapTimeoutKind_WhenTimeoutFails()
     {
         var backend = new FakeRedisBackend();
-        backend.ThrowOn(() => new RedisTimeoutException("timeout", CommandStatus.Unknown));
+        backend.ThrowOn(() => new RedisTimeoutException(CommandFlags.None, "timeout", CommandStatus.Unknown));
         var store = CreateStore(backend);
 
         await AssertKind(() => store.GetAccessTokenAsync(StoreKey), WechatRedisFailureKind.Timeout);
@@ -186,7 +187,7 @@ public class RedisWechatTokenStoreTests
     public async Task Operations_ShouldMapServerKind_WhenServerFails()
     {
         var backend = new FakeRedisBackend();
-        backend.ThrowOn(() => new RedisServerException("server error"));
+        backend.ThrowOn(() => new RedisServerException(RedisErrorKind.Unknown, CommandFlags.None, "server error"));
         var store = CreateStore(backend);
 
         await AssertKind(() => store.GetAccessTokenAsync(StoreKey), WechatRedisFailureKind.Server);
@@ -196,7 +197,7 @@ public class RedisWechatTokenStoreTests
     public async Task Exceptions_ShouldCarryKeyName_AndNotTokenValue()
     {
         var backend = new FakeRedisBackend();
-        backend.ThrowOn(() => new RedisServerException("server error"));
+        backend.ThrowOn(() => new RedisServerException(RedisErrorKind.Unknown, CommandFlags.None, "server error"));
         var store = CreateStore(backend);
 
         var act = async () => await store.SetAccessTokenAsync(StoreKey, "secret-token-value", 60);

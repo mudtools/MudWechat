@@ -102,14 +102,14 @@ public static class Baseline
         /// </summary>
         /// <remarks>
         /// 锁定于 `MiniProgramContractGuards`（MP-X5）。
-        /// 现行推导：303 特性路由 + 6 手工通道（小程序码 3 + 反馈媒体 1 + 对账文件 1 + 客服临时素材 1）= 309；
+        /// 现行推导：392 特性路由 + 6 手工通道（小程序码 3 + 反馈媒体 1 + 对账文件 1 + 客服临时素材 1）= 398；
         /// 按域拆分即 Auth 8 + QrCodeLink 9 + Security 3 + DataAnalysis 11 + SubscribeMessage 4 +
         /// DynamicMessage 3 + Kf 11 + HardwareDevice 9 + Operation 10 + Plugin 2 + Charge 2 +
         /// NearbyPoi 4 + Search 1 + Soter 1 + ServiceMarket 2 + RedPacketCover 1 + Student 1 +
         /// FaceVerify 2 + LaborUse 2 + ExpressBusiness 12 + ExpressDelivery 28 + ExpressIntracity 16 +
         /// ExpressInsuranceFreight 11 + ExpressLocal 15 + ExpressBill 1 + Vip 6 +
         /// TradeGuarantee 2 + TradeComment 9 + TradeComplaint 5 + Live 38 + Vod 32 + XPay 37 +
-        /// OrderShipping 12 + Novel 23 + RealName 1 + Game 20 = 354
+        /// OrderShipping 12 + Novel 23 + RealName 1 + Game 20 + CloudBase 44 = 398
         /// （Vip 域为 2026-10 小店线设计方案 §4.1 结论 A 划入；2026-10-12 依官方清单核对后：
         /// ExpressDelivery 28 / ExpressIntracity 16 补齐「消息推送 2 + 投诉处理 1」与「同城扣费主体与城市 3」，
         /// 新增 ExpressInsuranceFreight 11（无忧退货）与 ExpressLocal 15（即时配送）两族，
@@ -129,16 +129,22 @@ public static class Baseline
         /// 同日依官方 novelreadersetrecmdnovel 分区 23 页取证补齐小说作品管理域 23
         /// （作品本体 6 + 章节管理 8 + 授权管理 3 + 账号授权 3 + 读者运营 3），权限集 169；
         /// 同日依官方 minigame 树 20 页取证补齐小游戏域 20（帧同步房间 4 + 用户数据存储 3 + 对局匹配 5 +
-        /// 米大师支付 1 + 内容安全 2 + 米大师 V2 支付 5））。
+        /// 米大师支付 1 + 内容安全 2 + 米大师 V2 支付 5）；
+        /// 同日依官方 cloudbase 两棵文档树（<c>miniprogram/dev/server/API/cloudbase/*</c> 与
+        /// <c>doc/oplatform/openApi/cloudbase-common/*</c> + <c>cloudbase-batch/*</c>）96 条路由逐页取证补齐
+        /// 云开发域 44（环境与账号 8 + 数据库与云存储 16 + 云函数 9 + 其它能力 11；<c>/tcb/*</c> 42 +
+        /// <c>/wxa/getopendata</c> + <c>/wxa/getvoipsign</c>，后两支为清单路由错配的纠正）。
+        /// 同语料的 <c>/componenttcb/*</c> 面（仅 <c>component_access_token</c>）归开放平台线，
+        /// 两线不交叉由守卫 CBZ1 / CBZ2 与开放平台线 CBT 系列双向锁定）。
         /// </remarks>
-        public const int Endpoints = 354;
+        public const int Endpoints = 398;
     }
 
     /// <summary>微信支付 APIv3 线（`Tests/Mud.Wechat.Pay.Tests`）。</summary>
     public static class Pay
     {
         /// <summary>
-        /// `[HttpClientApi]` 接口数（二十六个业务域各一）。
+        /// `[HttpClientApi]` 接口数（二十七个业务域：其余二十六域各一 + 平台收付通域<b>八分身</b>）。
         /// </summary>
         /// <remarks>
         /// 锁定于 `WechatPayDomainContractGuards`（PAY-B 系列）。
@@ -146,9 +152,12 @@ public static class Baseline
         /// CombineTransactions / Transfer / NewTaxControlFapiao / MarketingFavor / Apply4SubMerchant /
         /// Apply4Subject / PartnerTransactions / PartnerPayScore / BankPayScore / PartnerTransfer /
         /// BankTransfer / Repayment / MerchantRiskManage / MerchantStore / MerchantAlterApply /
-        /// MerchantFund / MerchantSettlement / MerchantService / MerchantManage / MerchantOperationManage。
+        /// MerchantFund / MerchantSettlement / MerchantService / MerchantManage / MerchantOperationManage /
+        /// Ecommerce（按子域拆为 Fund / Bill / Account / ProfitSharing / Refund / MchTransfer / Applyment /
+        /// Papay 八个接口，共享 <c>RegistryGroupName = "Ecommerce"</c> ⇒ 一支注册器，守卫 EC-X1；
+        /// 这是全仓唯一「一组多接口」的域，勿按「一域一接口」的默认形态拆分）。
         /// </remarks>
-        public const int HttpApiInterfaces = 26;
+        public const int HttpApiInterfaces = 34;
 
         /// <summary>
         /// 端点总数（各域端点之和；账单 / 发票的**文件下载通道**与媒体上传等**手工通道**不计入生成式接口）。
@@ -187,9 +196,13 @@ public static class Baseline
         /// 图片上传 / 拉取两支走手工通道，不计入生成式接口，守卫 MC-B1）= 171
         /// + P0-7 商户管理记录 3（查询单条管理记录 + 提交资料（204）+ 按 sub_mchid 查询列表；
         /// 上传管理记录文件走手工通道，不计入生成式接口）= 174
-        /// + P0-7 商户运营管控情况查询 1（查询子商户管控情况；同前缀尽调族三支属【平台商户】面 ⇒ 零端点，守卫 MOM-B2）= 175。
+        /// + P0-7 商户运营管控情况查询 1（查询子商户管控情况；同前缀尽调族三支属【平台商户】面 ⇒ 零端点，守卫 MOM-B2）= 175
+        /// + P1-1 平台收付通 55（账户 10 + 进件 7 + 分账与补差 11 + 退款 9 + 商家转账 6 + 代扣合单 6 + 资金 5 + 账单 1，
+        /// 八个声明式接口共用注册组 Ecommerce；退款族三支「同方法同路由两契约」⇒ 55 方法归并 52 条 (方法, 路由)，
+        /// 端点计数按 HTTP 方法特性实例计，守卫 EC-X1；注销资料图片上传走 multipart 手工通道，不计入生成式接口，
+        /// 守卫 EC-X2；after-sales-orders 两支官方现行目录无契约页 ⇒ 零声明，守卫 EC-R7）= 230。
         /// </remarks>
-        public const int Endpoints = 175;
+        public const int Endpoints = 230;
     }
 
     /// <summary>开放平台线（`Tests/Mud.Wechat.OpenPlatform.Tests`，B1 起）。</summary>
@@ -201,9 +214,11 @@ public static class Baseline
         /// <remarks>
         /// 锁定于 `OpenPlatformContractGuards`（OP-B 系列）。
         /// 现行接口集：Component（管理面）/ ComponentTicketFree（推票引导，免令牌）/
-        /// OpenAccount / Account / Sns / Category（类目管理）—— Component 域双接口形态（对齐公众号 OpenApi 域 I4 裁决）。
+        /// OpenAccount / Account / Sns / Category（类目管理）—— Component 域双接口形态（对齐公众号 OpenApi 域 I4 裁决）；
+        /// 另有 ComponentTcb（批量代云开发）<b>六支</b>接口共用注册组 <c>ComponentTcb</c>
+        /// （Env 7 + Database 9 + File 4 + Scf 7 + CloudRun 19 + StaticStore 4），逐接口表由 CBT 系列守卫持有。
         /// </remarks>
-        public const int HttpApiInterfaces = 6;
+        public const int HttpApiInterfaces = 12;
 
         /// <summary>
         /// 端点总数（各接口方法之和）。
@@ -212,9 +227,10 @@ public static class Baseline
         /// 锁定于 `OpenPlatformContractGuards`。现行推导：Component 14（clear_quota/v2 +
         /// fastregisterweapp 双方法 + 管理员换绑 account/componentrebindadmin 1 + 域名 2 + 确认文件 1 +
         /// 隐私 3 + 授权方信息/列表/选项/设选项 4）
-        /// + ComponentTicketFree 1（start_push_ticket）+ OpenAccount 6 + Account 4 + Sns 2 + Category 12 = 39。
+        /// + ComponentTicketFree 1（start_push_ticket）+ OpenAccount 6 + Account 4 + Sns 2 + Category 12 = 39
+        /// + ComponentTcb 50（/componenttcb/* 全域，恒 POST，2026-10-15 逐页核验零路由错配）= 89。
         /// 令牌链 4 端点（api_component_token 等）由 Provider raw HTTP 承载，**不计**（T2 裁定）。
         /// </remarks>
-        public const int Endpoints = 39;
+        public const int Endpoints = 89;
     }
 }

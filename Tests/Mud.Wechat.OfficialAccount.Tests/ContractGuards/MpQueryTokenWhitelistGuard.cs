@@ -109,6 +109,13 @@ public class MpQueryTokenWhitelistGuard
         {
             nameof(Mud.Wechat.MiniProgram.IWxaAuthService),              // 登录与用户（7 端点；code2Session 免令牌独立接口）
             nameof(Mud.Wechat.MiniProgram.IWxaChargeService),            // 付费管理（2 端点）
+            // 云开发域（44 端点，2026-10-15 依官方 cloudbase 两棵文档树 96 条路由逐页取证落地）：官方各页令牌说明给
+            // access_token / authorizer_access_token（或仅后者），两者是同一条令牌链的代调用形态 ⇒ 仍是小程序 Query
+            // access_token，不新增令牌类型；仅 component_access_token 的 /componenttcb/* 面归开放平台线（守卫 CBZ2）。
+            nameof(Mud.Wechat.MiniProgram.IWxaCloudBaseDataService),     // 云开发·数据库与云存储（16 端点）
+            nameof(Mud.Wechat.MiniProgram.IWxaCloudBaseEnvService),      // 云开发·环境与账号（8 端点）
+            nameof(Mud.Wechat.MiniProgram.IWxaCloudBaseMiscService),     // 云开发·其它能力（11 端点）
+            nameof(Mud.Wechat.MiniProgram.IWxaCloudBaseScfService),      // 云开发·云函数（9 端点）
             nameof(Mud.Wechat.MiniProgram.IWxaDataAnalysisService),      // 数据分析（11 端点）
             nameof(Mud.Wechat.MiniProgram.IWxaDynamicMessageService),    // 动态消息（3 端点）
             nameof(Mud.Wechat.MiniProgram.IWxaExpressBusinessService),   // 物流助手·商家寄件（12 端点）
@@ -118,6 +125,10 @@ public class MpQueryTokenWhitelistGuard
             nameof(Mud.Wechat.MiniProgram.IWxaExpressLocalService),      // 即时配送（15 端点：小程序方 14 + 运力方 1；2026-10-12 依官方清单补齐）
             nameof(Mud.Wechat.MiniProgram.IWxaFaceVerifyService),        // 微信人脸核身（2 端点）
             nameof(Mud.Wechat.MiniProgram.IWxaFamousBrandService),       // 品牌申请（2 端点，与发货信息域共用注册组）
+            // 小游戏域（20 端点，2026-10-15 P1-8 收口批补上接口级 [Token]）：官方 20 页「第三方调用」逐页写明
+            // 不支持第三方平台调用 ⇒ 令牌面只有小程序 Query access_token 一支；8 支端点另带宿主计算的签名
+            // （openid / signature / sig_method / pay_sig）落方法级 [Query]，不属令牌注入面（守卫 GM3 / GM6）。
+            nameof(Mud.Wechat.MiniProgram.IWxaGameService),              // 小游戏·帧同步 / 存储 / 匹配 / 米大师 / 内容安全（20 端点）
             nameof(Mud.Wechat.MiniProgram.IWxaHardwareDeviceService),    // 硬件设备（9 端点）
             nameof(Mud.Wechat.MiniProgram.IWxaKfService),                // 客服（10 端点 JSON 通道；临时素材 IWxaKfMediaService 手工通道不入白名单）
             nameof(Mud.Wechat.MiniProgram.IWxaLaborUseService),          // 用工关系（2 端点）

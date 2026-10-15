@@ -182,7 +182,7 @@ public static class OpenPlatformServiceCollectionExtensions
     /// </summary>
     /// <param name="services">服务集合。</param>
     /// <param name="configure">平台配置（同 <see cref="AddOpenPlatform(IServiceCollection, Action{OpenPlatformAppConfig})"/>）。</param>
-    /// <param name="modules">要注册的模块集合（缺省 = 全部四个模块）。</param>
+    /// <param name="modules">要注册的模块集合（缺省 = 全部模块）。</param>
     /// <returns>服务集合（链式）。</returns>
     public static IServiceCollection AddOpenPlatform(
         this IServiceCollection services,

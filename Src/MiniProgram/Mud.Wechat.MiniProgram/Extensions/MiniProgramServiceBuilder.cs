@@ -117,7 +117,17 @@ public class MiniProgramServiceBuilder
             [MiniProgramModule.RealName] = static s => s.AddRealNameWebApiHttpClient(),
 
             // 小游戏：20 端点（帧同步房间 4 + 用户数据存储 3 + 对局匹配 5 + 米大师支付 1 + 内容安全 2 + 米大师 V2 支付 5）。
-            [MiniProgramModule.Game] = static s => s.AddGameWebApiHttpClient(),
+            // 米大师 V2 支付五支与 XPay 同用词表外凭据键 pay_sig ⇒ 复用同一登记表（键集单一来源，
+            // 不新增第二张表；守卫 GM6 断言本委托体真的先登记再装载，且以 XPay 委托作正对照）。
+            [MiniProgramModule.Game] = static s =>
+            {
+                XPaySensitiveQueryKeys.RegisterAll();
+                s.AddGameWebApiHttpClient();
+            },
+
+            // 云开发（TCB）：44 端点四接口同组（环境与账号 8 + 数据库与云存储 16 + 云函数 9 + 其它能力 11）。
+            // 令牌面全域复用小程序 access_token；/componenttcb/* 的批量代云开发面属开放平台线，本组不得声明。
+            [MiniProgramModule.CloudBase] = static s => s.AddCloudBaseWebApiHttpClient(),
         };
 
     /// <summary>注册登录与用户（8 端点：7 带令牌 + 1 方法级免令牌）。</summary>
@@ -276,6 +286,41 @@ public class MiniProgramServiceBuilder
     /// 不得凭第三方 SDK 注释或记忆补数。
     /// </remarks>
     public MiniProgramServiceBuilder AddGameApi() => AddModule(MiniProgramModule.Game);
+
+    /// <summary>
+    /// 注册小程序云开发（TCB）接口（44 端点：环境与账号 8 + 数据库与云存储 16 + 云函数 9 + 其它能力 11；
+    /// 路由族 <c>/tcb/*</c> 42 条 + <c>/wxa/getopendata</c> + <c>/wxa/getvoipsign</c>，
+    /// 权限集 49（<c>/tcb/wxpay*</c> 另含 102、<c>/wxa/getopendata</c> 含 18、<c>/wxa/getvoipsign</c> 为 18），
+    /// 官方 2026-10-15 逐页核验）。
+    /// </summary>
+    /// <returns>注册器（链式）。</returns>
+    /// <remarks>
+    /// <para>
+    /// <b>令牌面不扩</b>：44 端点全部以小程序 <c>access_token</c>（Query）调用（与 MP-X2 / Vip 域同口径）。
+    /// 官方各页另给 <c>authorizer_access_token</c>（代商家调用）与 <c>component_access_token</c>
+    /// （批量代云开发）两种令牌，但同一 <c>/tcb/*</c> 路由<b>不因此改挂开放平台令牌链</b>；
+    /// 仅 <c>component_access_token</c> 独占的 <c>/componenttcb/*</c> 面归开放平台线。
+    /// </para>
+    /// <para>
+    /// <b>官方端点级频率数字只有一处</b>：<c>/tcb/getqcloudtoken</c> 为「10 次每小时」（超限可由
+    /// <c>clear_quota</c> 恢复额度）⇒ 宿主必须缓存复用腾讯云临时凭证，不得每次云调用换凭证；
+    /// 其余 43 端点官方<b>未给数字</b>，注释留档该空缺、不凭记忆补数。
+    /// </para>
+    /// <para>
+    /// <b>敏感应答面</b>：<c>secretid</c>/<c>secretkey</c>/<c>token</c>（getqcloudtoken）、
+    /// <c>codesecret</c>（getcodesecret）、已签名 <c>headers</c>（getuploadsignature）、
+    /// COS 直传 <c>authorization</c>/<c>token</c>（uploadfile）、含环境变量的 <c>config</c>
+    /// （{set,get}callbackconfig 与 {get,upload}funcconfig）、用户开放数据明文（getopendata）
+    /// ⇒ 一律禁入日志、遥测与异常消息。
+    /// </para>
+    /// <para>
+    /// <b>覆盖与不可逆操作集中在本域</b>：<c>setcallbackconfig</c>/<c>uploadfuncconfig</c>/<c>updateindex</c>
+    /// 为整体覆盖，<c>databasedelete</c>/<c>databasecollectiondelete</c>/<c>batchdeletefile</c> 为不可逆删除，
+    /// <c>modifyenv</c>/<c>shareenv</c>/<c>usecloudaccesstoken</c> 为环境与权限级变更 ⇒ 端点一律非幂等，
+    /// 不得放进自动重试管道。
+    /// </para>
+    /// </remarks>
+    public MiniProgramServiceBuilder AddCloudBaseApi() => AddModule(MiniProgramModule.CloudBase);
 
     /// <summary>注册全部模块。</summary>
     /// <returns>注册器（链式）。</returns>

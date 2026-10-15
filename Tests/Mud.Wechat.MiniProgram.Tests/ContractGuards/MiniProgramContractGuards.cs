@@ -39,7 +39,7 @@ public class MiniProgramContractGuards
             .Concat(ManualChannelRoutes())
             .ToArray();
 
-        mpRoutes.Should().NotBeEmpty("小程序线路由非空（303 特性路由 + 6 手工通道路由）");
+        mpRoutes.Should().NotBeEmpty("小程序线路由非空（392 特性路由 + 6 手工通道路由）");
 
         var overlap = mpRoutes.Intersect(oaRoutes, StringComparer.Ordinal).ToArray();
         overlap.Should().BeEmpty(
@@ -80,7 +80,7 @@ public class MiniProgramContractGuards
             .Where(static t => t.GetCustomAttributes(false).Any(static a => a.GetType().Name == "TokenAttribute"))
             .ToArray();
 
-        tokenInterfaces.Should().HaveCount(55,
+        tokenInterfaces.Should().HaveCount(60,
             "带令牌接口 = Auth / QrCodeLink / Security / DataAnalysis / SubscribeMessage / DynamicMessage / Kf / " +
             "HardwareDevice / Operation / Plugin / Charge / NearbyPoi / Search / Soter / ServiceMarket / " +
             "RedPacketCover / Student / FaceVerify / LaborUse / ExpressBusiness / ExpressDelivery / ExpressIntracity / " +
@@ -89,7 +89,8 @@ public class MiniProgramContractGuards
             "VodUpload / VodMedia / VodDrama / VodCdn / VodAuthorization / " +
             "XPayCurrency / XPayOrder / XPayGoods / XPaySubscribe / XPayFunds / XPayComplaint / " +
             "OrderShipping / OrderQuery / OrderSetting / FamousBrand / " +
-            "NovelBook / NovelChapter / NovelAuth / NovelAccountAuth / NovelReader / RealName" +
+            "NovelBook / NovelChapter / NovelAuth / NovelAccountAuth / NovelReader / RealName / Game / " +
+            "CloudBaseEnv / CloudBaseData / CloudBaseScf / CloudBaseMisc" +
             "（登录 code2Session 为方法级 [Token(Disabled = true)] 免令牌端点，A-7 合并后随 IWxaAuthService " +
             "承载、不算独立接口；图片通道 Code / FeedbackMedia " +
             "与对账文件通道 Bill 为手工服务不走 [Token]；Vip 域为 2026-10 小店线设计方案 §4.1 结论 A 划入；" +
@@ -101,7 +102,12 @@ public class MiniProgramContractGuards
             "（pay_sig / signature 属宿主计算的支付签名，落方法级 [Query] 参数而非 [Token]，见守卫 XP2 / XP6）；" +
             "OrderShipping 族四接口为 2026-10-13 依官方 order_shipping 10 页 + famousbrand 2 页取证补齐的" +
             "发货信息管理与品牌申请域，本域凭据面只有 access_token 一支、无方法级 [Query] 参数（见守卫 OS3）；" +
-            "Novel 族五接口为 2026-10-13 依官方 novelreadersetrecmdnovel 分区 23 页取证补齐的小说作品管理域，权限集 169）");
+            "Novel 族五接口为 2026-10-13 依官方 novelreadersetrecmdnovel 分区 23 页取证补齐的小说作品管理域，权限集 169；" +
+            "CloudBase 族四接口为 2026-10-15 依官方 cloudbase 两棵文档树 96 条路由取证补齐的云开发域 44 端点，" +
+            "权限集 49（wxpay 两支 49、102；/wxa/* 两支 18），全域仍是 Query access_token（见守卫 TCB3 / CBZ2）；" +
+            "Game 为 2026-10-15 P1-8 收口批补上接口级 [Token] 的第 60 支 —— 首批落地时本域接口<b>没有</b>令牌声明" +
+            "（20 端点全部无 access_token 即官方 40001），同批补齐的还有 8 支端点的宿主计算签名 [Query] 参数面" +
+            "（signature / sig_method / pay_sig 落方法级 [Query] 而非 [Token]，见守卫 GM3 / GM6））");
 
         foreach (var iface in tokenInterfaces)
         {
@@ -177,7 +183,7 @@ public class MiniProgramContractGuards
     }
 
     /// <summary>
-    /// MP-X5：<b>端点计数 309</b> + 逐域路由表 + 字段名照官方原文（<c>session_key</c> / <c>js_code</c> /
+    /// MP-X5：<b>端点计数 398</b> + 逐域路由表 + 字段名照官方原文（<c>session_key</c> / <c>js_code</c> /
     /// <c>trace_id</c> / <c>page_url</c> 等<b>不得驼峰化</b>）。
     /// </summary>
     [Fact]
@@ -384,16 +390,17 @@ public class MiniProgramContractGuards
             WxaKfMediaService.MediaPath,
         });
 
-        // 合计计数（MP-X5 的单一来源）：323 特性路由 + 6 手工通道路由 = 329（基线见 Tests/ContractBaseline.cs）。
+        // 合计计数（MP-X5 的单一来源）：392 特性路由 + 6 手工通道路由 = 398（基线见 Tests/ContractBaseline.cs）。
         (CollectAttributeRoutes(asm).Length + ManualChannelRoutes().Length)
             .Should().Be(Baseline.MiniProgram.Endpoints,
-                "小程序线合计 329 端点（Auth 8 + QrCodeLink 9 + Security 3 + DataAnalysis 11 + "
+                "小程序线合计 398 端点（Auth 8 + QrCodeLink 9 + Security 3 + DataAnalysis 11 + "
                 + "SubscribeMessage 4 + DynamicMessage 3 + Kf 11 + HardwareDevice 9 + Operation 10 + "
                 + "Plugin 2 + Charge 2 + NearbyPoi 4 + Search 1 + Soter 1 + ServiceMarket 2 + "
                 + "RedPacketCover 1 + Student 1 + FaceVerify 2 + LaborUse 2 + ExpressBusiness 12 + "
                 + "ExpressDelivery 28 + ExpressIntracity 16 + ExpressInsuranceFreight 11 + ExpressLocal 15 + "
                 + "ExpressBill 1 + Vip 6 + TradeGuarantee 2 + TradeComment 9 + TradeComplaint 5 + "
-                + "Live 38 + Vod 31 + XPay 37 + OrderShipping 12 + Novel 23 + RealName 1 + Game 20）；"
+                + "Live 38 + Vod 32 + XPay 37 + OrderShipping 12 + Novel 23 + RealName 1 + Game 20 + "
+                + "CloudBase 44）；"
                 + "数量变化须同批调整 Tests/ContractBaseline.cs");
     }
 
@@ -648,6 +655,15 @@ public class MiniProgramContractGuards
 
         // RealName 域（1 端点）
         provider.GetRequiredService<IWxaRealNameService>().Should().NotBeNull("实名认证随 RealName 模块注册");
+
+        // 小游戏域单接口承载 20 端点 ⇒ 一条生成入口装载（注册委托同时完成 pay_sig 登记，见守卫 GM6）。
+        provider.GetRequiredService<IWxaGameService>().Should().NotBeNull("小游戏（帧同步 / 存储 / 匹配 / 米大师 / 内容安全）随 Game 模块注册");
+
+        // 云开发域四接口共用 CloudBase 注册组 ⇒ 一条生成入口装载全部 44 端点（守卫 TCB3）。
+        provider.GetRequiredService<IWxaCloudBaseEnvService>().Should().NotBeNull("云开发环境与账号随 CloudBase 模块注册");
+        provider.GetRequiredService<IWxaCloudBaseDataService>().Should().NotBeNull("云开发数据库与云存储随 CloudBase 模块注册");
+        provider.GetRequiredService<IWxaCloudBaseScfService>().Should().NotBeNull("云函数管理随 CloudBase 模块注册");
+        provider.GetRequiredService<IWxaCloudBaseMiscService>().Should().NotBeNull("消息推送配置 / 短信 / 统计 / cloudID 随 CloudBase 模块注册");
     }
 
     // ---- helpers -------------------------------------------------------------

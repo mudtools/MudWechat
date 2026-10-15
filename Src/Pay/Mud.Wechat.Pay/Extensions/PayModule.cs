@@ -374,4 +374,36 @@ public enum PayModule
     /// 返回值为 media_id（string），用于后续业务接口引用（如消费者投诉回复、商家券等场景）。
     /// </remarks>
     MerchantMedia,
+
+    /// <summary>
+    /// 平台收付通（<b>P1-1，55 个方法 / 52 条 (方法, 路由) + 1 手工通道</b>）：
+    /// 8 个声明式接口按子域分文件（资金 5 + 账单 1 + 账户与注销 10 + 分账补差 11 + 退款 9 +
+    /// 商家转账 6 + 进件 7 + 代扣合单 6）+ 注销凭证图片上传（multipart，见
+    /// <see cref="Ecommerce.IWechatPayEcommerceCancelMediaService"/>）。
+    /// 官方文档 <see href="https://pay.weixin.qq.com/doc/v3/partner/4012713017"/>。
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>本模块是支付线唯一「身份分裂」的域</b>：同一个 <c>/v3/ecommerce/</c> 前缀下，55 个方法里
+    /// <b>只有 5 支标【普通服务商】</b>（补差三支 <c>/subsidies/*</c> + 注销资格前置校验
+    /// <c>/account/apply-cancel-withdraw/validate-cancel/{sub_mchid}</c> + 注销申请单查询
+    /// <c>/account/cancel-applications/out-apply-no/{out_apply_no}</c>），其余五十支标【平台商户】，
+    /// 而注销资料图片上传（multipart 手工通道）一页<b>同时标两身份</b> ⇒ 签名主体口径按<b>支</b>
+    /// 而非按域，不得按「同域一刀切」（守卫 EC-P7 锁补差三支、EC-X2 锁全域五支 + 双身份通道）。
+    /// </para>
+    /// <para>
+    /// <b>8 个接口共用一个 <c>RegistryGroupName = "Ecommerce"</c></b> ⇒ 只有
+    /// <c>AddEcommerceWebApiHttpClient()</c> 一支注册器（组名 → 接口是全仓既有的多对一形态）。
+    /// </para>
+    /// <para>
+    /// <b>加密面只覆盖 7 页</b>（普通进件、代理签约核身进件、请求分账、商家转账发起、异常退款、
+    /// 注销申请、主体子商户列表），其余各支<b>不得</b>支配 <c>Wechatpay-Serial</c>（守卫 EC-A3/EC-P6/EC-M3/EC-R6/EC-S3）。
+    /// </para>
+    /// <para>
+    /// <b>「受理 ≠ 结果」是本域主线</b>：进件、分账、分账完结、商家转账授权与发起转账全部异步，
+    /// 应答只回受理态 ⇒ 闭环路径各归其查询支（守卫 EC-A2/EC-P1/EC-M1）。
+    /// 官方 <c>after-sales-orders</c>（售后能力）目录内<b>无该端点正文</b> ⇒ 保持零端点（守卫 EC-R7）。
+    /// </para>
+    /// </remarks>
+    Ecommerce,
 }

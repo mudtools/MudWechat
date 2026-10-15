@@ -14,6 +14,7 @@ using Mud.Wechat.Pay.DataModels.Callback;
 using Mud.Wechat.Pay.DataModels.Certificates;
 using Mud.Wechat.Pay.DataModels.Combine;
 using Mud.Wechat.Pay.DataModels.Common;
+using Mud.Wechat.Pay.DataModels.Ecommerce;
 using Mud.Wechat.Pay.DataModels.Fapiao;
 using Mud.Wechat.Pay.DataModels.MarketingFavor;
 using Mud.Wechat.Pay.DataModels.MerchantAlterApply;
@@ -98,6 +99,7 @@ public static class PayJsonResolverExtensions
             MerchantManageJsonContext.Default,
             MerchantOperationManageJsonContext.Default,
             MerchantMediaJsonContext.Default,
+            EcommerceJsonContext.Default,
             CallbackJsonContext.Default);
 
         services.AddMudHttpClientJsonContext(resolver);

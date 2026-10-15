@@ -41,13 +41,14 @@ namespace Mud.Wechat.MiniProgram.Tests.ContractGuards;
 /// 判据不是「网关可达性」而是<b>文档面归属</b>：这 35 条只在 <c>doc/oplatform/…/miniprogram-management/</c>
 /// 树内在册（实测正文含请求方式与请求地址），走 <c>component_access_token</c> / 授权方令牌链
 /// ⇒ 属开放平台线（P3-R2 明文禁止把该令牌链塞进小程序基础线）。小程序线声明之＝令牌串号。</item>
-/// <item><b>线外 26 条</b>（NC3，<b>小程序线零声明</b>）：小游戏专属 20（帧同步 4 + 用户数据存储 3 +
-/// 对局匹配 5 + 米大师 8；出处为 <c>/minigame/dev/api-backend/</c> 独立文档树，实测<b>页面全部存活</b>
-/// ⇒「在册但属另一产品形态」，本仓无小游戏线，落地须先立产品域决策，<b>本项裁决可解除</b>）、
-/// 多端应用框架 Donut 5（端点在 <c>dev.weixin.qq.com</c> 而非 <c>api.weixin.qq.com</c>，
+/// <item><b>线外 6 条</b>（NC3，<b>小程序线零声明</b>）：多端应用框架 Donut 5（端点在 <c>dev.weixin.qq.com</c> 而非 <c>api.weixin.qq.com</c>，
 /// 与本仓 SSRF 白名单不同域，MP-X8）、服务号门店小程序 <c>/wxa/get_merchant_audit_info</c> 1
 /// （官方正文在<b>公众号</b>「微信门店」树，同页另有「门店管理插件 2024-07-05 起下线新增门店」公告；
-/// <b>本仓已落位于公众号线</b> <c>IMpStoreService</c>，小程序线不得重复声明）。</item>
+/// <b>本仓已落位于公众号线</b> <c>IMpStoreService</c>，小程序线不得重复声明）。
+/// <b>本档原含「小游戏专属 20 条」</b>：出处为 <c>/minigame/dev/api-backend/</c> 独立文档树、页面全部存活，
+/// 当时判为「在册但属另一产品形态」⇒ 留档「本项裁决可解除」。<b>2026-10-15 P1-8 收口批已解除该裁决</b>，
+/// 20 端点按逐页取证落位于小程序线 <c>Mud.Wechat.MiniProgram</c> 的 Game 域（<see cref="IWxaGameService"/>，
+/// 守卫 GM1~GM7）⇒ 从本档移除，同批把 NC3 的规模断言由 26 改为 6。</item>
 /// </list>
 /// <para>
 /// <b>正对照（防空跑恒真）</b>：三档都跑同一趟「声明扫描」（剥离注释后取 HTTP 特性字面量与引号路径常量），
@@ -146,7 +147,8 @@ public class MiniProgramNonContractRouteContractGuards
     };
 
     /// <summary>
-    /// NC3：线外 26 条 = 小游戏 20 + 多端应用框架(Donut) 5 + 公众号门店 1 ⇒ 小程序线零声明。
+    /// NC3：线外 6 条 = 多端应用框架(Donut) 5 + 公众号门店 1 ⇒ 小程序线零声明
+    ///（原含小游戏 20 条，2026-10-15 P1-8 收口批解除裁决、落位 Game 域）。
     /// </summary>
     private static readonly string[] OutOfLineRoutes =
     {
@@ -225,10 +227,10 @@ public class MiniProgramNonContractRouteContractGuards
     }
 
     // ------------------------------------------------------------------
-    // NC3：26 条线外路由在小程序线零声明。
+    // NC3：6 条线外路由在小程序线零声明（小游戏 20 条已解除裁决、落位 Game 域）。
     // ------------------------------------------------------------------
 
-    /// <summary>契约守卫 NC3：小游戏 / Donut / 公众号门店路由在 <c>Src/MiniProgram</c> 零声明。</summary>
+    /// <summary>契约守卫 NC3：Donut / 公众号门店路由在 <c>Src/MiniProgram</c> 零声明。</summary>
     [Fact]
     public void OutOfLineRoutes_ShouldStayUndeclared_InMiniProgramLine()
     {
@@ -240,7 +242,7 @@ public class MiniProgramNonContractRouteContractGuards
 
         foreach (var control in new[]
                  {
-                     "/wxa/getwxacodeunlimit",      // /wxa/ 前缀的活体证明（与小游戏 /wxa/xxx 同前缀）
+                     "/wxa/getwxacodeunlimit",      // /wxa/ 前缀的活体证明（与 Donut / 门店那 6 条同为 /wxa/* 形态）
                      "/cgi-bin/soter/verify_signature", // /wxa/soter/ 能力的现行落位（同域活体证明）
                  })
         {

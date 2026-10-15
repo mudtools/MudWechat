@@ -19,12 +19,18 @@ internal sealed class InternalAppTokenManager : WechatAppTokenManagerBase, IWech
     private readonly IWechatWorkInternalAppAuthentication _auth;
 
     /// <summary>创建自建应用令牌管理器。</summary>
+    /// <param name="auth">自建应用令牌客户端（per-app）。</param>
+    /// <param name="options">本应用配置。</param>
+    /// <param name="logger">日志器。</param>
+    /// <param name="tokenStore">令牌持久化仓储（可选）。</param>
+    /// <param name="refreshLease">跨进程刷新去重租约（U-3；可选）。</param>
     public InternalAppTokenManager(
         IWechatWorkInternalAppAuthentication auth,
         IOptions<WechatAppConfig> options,
         ILogger<InternalAppTokenManager> logger,
-        IWechatTokenStore? tokenStore = null)
-        : base(options, logger, tokenStore, WechatTokenTypes.AccessToken)
+        IWechatTokenStore? tokenStore = null,
+        ITokenRefreshLease? refreshLease = null)
+        : base(options, logger, tokenStore, WechatTokenTypes.AccessToken, refreshLease)
     {
         _auth = auth ?? throw new ArgumentNullException(nameof(auth));
     }

@@ -8,7 +8,7 @@
 
 - **配置面** `Configuration/AdsAppConfig : WechatAppConfigBase`（节名 `WechatAds`）：复用公用层的 `BaseUrl` HTTPS + 主机白名单校验与 `AppKey` 形状校验，不重复实现。**刻意不提供 `AccountId`** —— `account_id` 是授权结果（来自 `oauth/token` 应答的 `data.authorizer_info.account_id`）而非配置输入，做成配置项会允许「配置说 A 账号、令牌其实属于 B 账号」这种非法状态；业务请求里的 `account_id` 由调用方显式传入。
 - **授权编排** `Auth/AdsAuthorizationService`（`IAdsAuthorizationService : IAdsAccessTokenProvider`）：`ExchangeAuthorizationCodeAsync` 以 `(appKey, authorizationCode)` 为粒度做**单飞门 + 结果记忆**（授权码是一次性凭据，并发换取第二个请求必然被官方拒）；`RefreshAsync` 只用 `oauth/refresh_token`，失败路径**先删存储后抛** `WechatAdsReauthorizationRequiredException`（ADS-B3）。
-- **授权状态** `Auth/AdsAuthorizationState` + `IWechatAdsAuthorizationStore`：落 `IWechatTokenStore`（否则重启即失联），**不复用**公用层 `WechatTokenBridgeCodec`——该编码只写 `{expireMs}|{token}`，装不下 refresh_token，故本线自有编码与自有键命名空间。有效期字段是**剩余秒数**，须本地换算为「取得时刻 + 剩余秒」再判定。
+- **授权状态** `Auth/AdsAuthorizationState` + `IWechatAdsAuthorizationStore`：落 `IWechatTokenStore`（否则重启即失联），**不复用**公用层令牌桥接编码（`WechatTokenStoreBridge` 经官方 `MigrationTokenStoreCodec` 的单令牌槽位形态，装不下 refresh_token），故本线自有编码与自有键命名空间。有效期字段是**剩余秒数**，须本地换算为「取得时刻 + 剩余秒」再判定。
 - **多应用基座** `Auth/AdsAppManager`（`IAdsAppManager`）与 `IAdsAppContextSwitcher`；`Transport/AdsHttpClients` 定义两条命名客户端（业务客户端 + `ads-oauth`，后者**不挂**凭据 Handler），`Transport/AdsAuthorizationHandler` 是凭据注入的唯一咽喉点。
 - **异常** `Exceptions/WechatAdsException`（承载 `message` / `message_cn` 双语支，构造期剥离 URL 的 query 与 userinfo）。
 - **解析器合并** `Extensions/AdsJsonResolverExtensions`：把 `.DataModels` 的五个域 `JsonContext` 合并进组件解析器（ADS-B6 逐生成文件断言覆盖面）。
@@ -39,7 +39,7 @@ v3.0 要求每个业务请求**成组**携带 `access_token` + `timestamp` + `no
 ## 已否决
 
 - **不做声明式 `[Token]` 注入**（理由见上）。
-- **不复用 `WechatTokenBridgeCodec`** 持久化授权状态（编码容量不足，会静默丢弃 refresh_token）。
+- **不复用公用层令牌桥接编码**持久化授权状态（单令牌槽位，容量不足，会静默丢弃 refresh_token）。
 - **不援引支付线 / 开放平台线的 TFM 例外**：本线继承根 props 的 `netstandard2.0;net6.0;net8.0;net10.0` 四档（守卫 ADS-S2 / AB-G8）——只做 HTTPS + JSON，没有密码学缺口。
 
 ## 依赖

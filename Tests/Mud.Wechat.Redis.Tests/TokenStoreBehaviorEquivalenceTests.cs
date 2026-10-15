@@ -5,6 +5,8 @@
 //  不得利用本项目从事危害国家安全、扰乱社会秩序、侵犯他人合法权益等法律法规禁止的活动！任何基于本项目开发而产生的一切法律纠纷和责任，我们不承担任何责任！
 // -----------------------------------------------------------------------
 
+using Mud.HttpUtils;
+
 namespace Mud.Wechat.Redis.Tests;
 
 /// <summary>
@@ -16,6 +18,13 @@ public class TokenStoreBehaviorEquivalenceTests
     {
         yield return new object[] { "InMemory", new Func<IWechatTokenStoreBatchRemove>(() => new InMemoryWechatTokenStore()) };
         yield return new object[] { "RedisFake", new Func<IWechatTokenStoreBatchRemove>(() =>
+            new RedisWechatTokenStore(new FakeRedisBackend().Multiplexer.Object, new WechatRedisOptions())) };
+    }
+
+    public static IEnumerable<object[]> PurgeCapableStores()
+    {
+        yield return new object[] { "InMemory", new Func<IWechatTokenStore>(() => new InMemoryWechatTokenStore()) };
+        yield return new object[] { "RedisFake", new Func<IWechatTokenStore>(() =>
             new RedisWechatTokenStore(new FakeRedisBackend().Multiplexer.Object, new WechatRedisOptions())) };
     }
 
@@ -133,5 +142,60 @@ public class TokenStoreBehaviorEquivalenceTests
         await store.ClearAsync();
 
         (await store.GetAccessTokenAsync("Wechat.AccessToken:app2:corp1")).Should().BeNull();
+    }
+
+    // ---------------------------------------------------------------- U-4：按应用清库（官方 ITokenStoreAppPurge 双实现契约）
+
+    [Theory]
+    [MemberData(nameof(PurgeCapableStores))]
+    public async Task EnumerateKeys_ShouldFilterByAppKeySegment(string _, Func<IWechatTokenStore> factory)
+    {
+        var store = factory();
+        store.Should().BeAssignableTo<ITokenStoreAppPurge>("U-4：两个存储实现都须承担官方按应用清库接口");
+        var purge = (ITokenStoreAppPurge)store;
+        await store.SetAccessTokenAsync("Wechat.AccessToken:a:default", "t1", 7200);
+        await store.SetAccessTokenAsync("Wechat.AccessToken:a:corp:123", "t2", 7200);
+        await store.SetAccessTokenAsync("Wechat.AccessToken:ab:default", "t3", 7200);
+        await store.SetAccessTokenAsync("Wechat.AccessToken:b:default", "t4", 7200);
+
+        var keys = await purge.EnumerateKeysAsync("a");
+
+        keys.Should().BeEquivalentTo(new[]
+        {
+            "Wechat.AccessToken:a:default",
+            "Wechat.AccessToken:a:corp:123",
+        }, "前缀兄弟应用（ab）与其它应用（b）不得混入；scope 含 ':' 的键须按第二段边界完整返回");
+    }
+
+    [Theory]
+    [MemberData(nameof(PurgeCapableStores))]
+    public async Task PurgeApp_ShouldRemoveOnlyTargetAppKeys_AndReturnCount(string _, Func<IWechatTokenStore> factory)
+    {
+        var store = factory();
+        var purge = (ITokenStoreAppPurge)store;
+        await store.SetAccessTokenAsync("Wechat.AccessToken:a:default", "t1", 7200);
+        await store.SetAccessTokenAsync("Wechat.AccessToken:a:corp:123", "t2", 7200);
+        await store.SetAccessTokenAsync("Wechat.AccessToken:b:default", "t3", 7200);
+
+        var removed = await purge.PurgeAppAsync("a");
+
+        removed.Should().Be(2, "返回实际删除键数");
+        (await store.GetAccessTokenAsync("Wechat.AccessToken:b:default")).Should().Be("t3",
+            "其它应用的键不得被误删（按第二段精确比对）");
+    }
+
+    [Theory]
+    [MemberData(nameof(PurgeCapableStores))]
+    public async Task PurgeApp_ShouldReturnZeroAndKeepStore_WhenAppKeyBlank(string _, Func<IWechatTokenStore> factory)
+    {
+        var store = factory();
+        var purge = (ITokenStoreAppPurge)store;
+        await store.SetAccessTokenAsync("Wechat.AccessToken:a:default", "t1", 7200);
+
+        var removed = await purge.PurgeAppAsync("   ");
+
+        removed.Should().Be(0, "空白 appKey 返回 0（本院键空间无共享段约定）");
+        (await store.GetAccessTokenAsync("Wechat.AccessToken:a:default")).Should().Be("t1",
+            "空白 appKey 不得清空整库");
     }
 }

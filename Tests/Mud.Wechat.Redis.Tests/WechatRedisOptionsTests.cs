@@ -111,6 +111,29 @@ public class WechatRedisOptionsTests
         options.TokenStore.KeyPrefix.Should().Be(WechatRedisTokenStoreOptions.DefaultKeyPrefix);
         options.TokenStore.Database.Should().Be(-1);
         options.TokenStore.DefaultTtl.Should().BeNull();
+        options.TokenStore.UseVersionedEnvelope.Should().BeFalse("U-2 默认关闭写入侧 v2（形态逐位零变化）");
+        options.TokenStore.AcknowledgeVersionedEnvelopeReadersUpgraded.Should().BeFalse();
+        var act = () => options.Validate();
+        act.Should().NotThrow();
+    }
+
+    [Fact]
+    public void Validate_ShouldThrow_WhenVersionedEnvelopeEnabledWithoutAcknowledgement()
+    {
+        // U-2 两阶段切换纪律：开启写入侧 v2 而未确认「全部读取实例已升级」= 明确误配置 ⇒ fail-fast
+        // （旧读取方读 v2 值必然 miss——方向安全但会持续重复刷新）。
+        var options = new WechatRedisOptions { TokenStore = { UseVersionedEnvelope = true } };
+        var act = () => options.Validate();
+        act.Should().Throw<InvalidOperationException>().WithMessage("*UseVersionedEnvelope*");
+    }
+
+    [Fact]
+    public void Validate_ShouldPass_WhenVersionedEnvelopeEnabledAndAcknowledged()
+    {
+        var options = new WechatRedisOptions
+        {
+            TokenStore = { UseVersionedEnvelope = true, AcknowledgeVersionedEnvelopeReadersUpgraded = true },
+        };
         var act = () => options.Validate();
         act.Should().NotThrow();
     }

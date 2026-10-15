@@ -24,14 +24,16 @@ internal sealed class MpJsApiTicketManager : MpTicketManagerBase, IMpJsApiTicket
     /// <param name="options">应用配置。</param>
     /// <param name="logger">日志器。</param>
     /// <param name="tokenStore">可选持久化仓储。</param>
+    /// <param name="refreshLease">跨进程刷新去重租约（U-3；可选）。</param>
     public MpJsApiTicketManager(
         IMpTicketService ticketService,
         IMpAccessTokenManager accessTokenManager,
         IOptions<MpAppConfig> options,
         ILogger<MpJsApiTicketManager> logger,
-        IWechatTokenStore? tokenStore = null)
+        IWechatTokenStore? tokenStore = null,
+        ITokenRefreshLease? refreshLease = null)
         : base(ticketService, accessTokenManager, options, logger,
-               MpTicketTypes.JsApi, MpTicketTypes.JsApiChannelKeyPrefix, tokenStore)
+               MpTicketTypes.JsApi, MpTicketTypes.JsApiChannelKeyPrefix, tokenStore, refreshLease)
     {
     }
 }

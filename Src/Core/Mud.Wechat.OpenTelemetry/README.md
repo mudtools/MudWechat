@@ -50,7 +50,7 @@ builder.Services.AddWechatOpenTelemetry(o =>
 ## 依赖
 
 - ProjectReference 仅 `Mud.Wechat.Abstractions`（Core：`WechatActivitySource` / `MeterExtensions`）
-- `Mud.HttpUtils.OpenTelemetry` 3.0.6（共享装配内核；本包**不直接引用** `Mud.HttpUtils`，`MudHttpActivitySource` / `MudHttpMeter` 由内核内部注册；全仓 `Mud.HttpUtils*` 同版本，守卫 G1 锁定）
+- `Mud.HttpUtils.OpenTelemetry` 3.0.7（共享装配内核；本包**不直接引用** `Mud.HttpUtils`，`MudHttpActivitySource` / `MudHttpMeter` 由内核内部注册；全仓 `Mud.HttpUtils*` 同版本，守卫 G1 锁定）
 - `OpenTelemetry` / `.Extensions.Hosting` / `.Exporter.OpenTelemetryProtocol` / `.Instrumentation.Http` / `.Instrumentation.AspNetCore` 均 1.16.0
 - `FrameworkReference Microsoft.AspNetCore.App`（net6.0+；netstandard2.0 不引用）
 - TFM：**不覆写，继承根 `Directory.Build.props` 四档** `netstandard2.0;net6.0;net8.0;net10.0`。

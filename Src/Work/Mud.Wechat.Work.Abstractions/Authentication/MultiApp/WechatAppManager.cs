@@ -399,6 +399,21 @@ public class WechatAppManager : IWechatAppManager, IDisposable
             return 0;
         }
 
+        // U-4 三层探测：① 官方按应用清库接口（键解析内聚到实现方，枚举 + 删除由 store 承担）；
+        // ② 本院批量能力（逐键收敛为一次提交）；③ 逐键回退（行为等价）。
+        // 红线：不得改调官方 TokenStorePurgeExtensions.PurgeAppTokensAsync 扩展——其对未实现
+        // 官方接口的 store 回退路径忽略 appKey（枚举全部 tokenType 逐个删除），会误清其它应用。
+        if (store is ITokenStoreAppPurge appPurge)
+        {
+            var purged = await appPurge.PurgeAppAsync(appKey, cancellationToken).ConfigureAwait(false);
+            if (purged > 0)
+            {
+                _logger.LogInformation("已清理应用 {AppKey} 的持久化令牌槽位 {Count} 条。", appKey, purged);
+            }
+
+            return purged;
+        }
+
         // W1（M10）：先收集匹配键（键布局按中间段 appKey 匹配，前缀扫描不适用），再批量/逐键删除。
         var keys = await store.GetTokenTypesAsync(cancellationToken).ConfigureAwait(false);
         var matched = new List<string>();
@@ -447,6 +462,8 @@ public class WechatAppManager : IWechatAppManager, IDisposable
                 ?? new PerAppWechatAuthenticationFactory(scopedSp, httpClientFactory, scopedSp.GetService<ILogger<PerAppWechatAuthenticationFactory>>());
 
             var tokenStore = scopedSp.GetService<IWechatTokenStore>();
+            // U-3：跨进程刷新去重租约（AddWechatRedis 注册后存在；未接分布式存储时为 null = 不启用）。
+            var refreshLease = scopedSp.GetService<ITokenRefreshLease>();
             var options = Microsoft.Extensions.Options.Options.Create(config);
 
             IWechatInternalAppTokenManager? internalAppTokenManager = null;
@@ -459,25 +476,25 @@ public class WechatAppManager : IWechatAppManager, IDisposable
             {
                 internalAppTokenManager = owned.Track(new InternalAppTokenManager(
                     authFactory.CreateInternalAppAuthentication(config.AppKey), options,
-                    scopedSp.GetRequiredService<ILogger<InternalAppTokenManager>>(), tokenStore));
+                    scopedSp.GetRequiredService<ILogger<InternalAppTokenManager>>(), tokenStore, refreshLease));
                 primaryTokenManager = internalAppTokenManager;
             }
             else
             {
                 providerTokenManager = owned.Track(new ProviderTokenManager(
                     authFactory.CreateProviderAuthentication(config.AppKey), options,
-                    scopedSp.GetRequiredService<ILogger<ProviderTokenManager>>(), tokenStore));
+                    scopedSp.GetRequiredService<ILogger<ProviderTokenManager>>(), tokenStore, refreshLease));
                 suiteTokenManager = owned.Track(new SuiteTokenManager(
                     authFactory.CreateProviderAuthentication(config.AppKey),
                     scopedSp.GetRequiredService<IWechatSuiteTicketProvider>(), options,
-                    scopedSp.GetRequiredService<ILogger<SuiteTokenManager>>(), tokenStore));
+                    scopedSp.GetRequiredService<ILogger<SuiteTokenManager>>(), tokenStore, refreshLease));
                 corpTokenManager = owned.Track(new CorpTokenManager(
                     authFactory.CreateCorpTokenAuthentication(config.AppKey),
                     suiteTokenManager,
                     // §4.8：代开发路径走 gettoken，必须注入 per-app 自建应用认证客户端（不可取 DI 默认实例）。
                     authFactory.CreateInternalAppAuthentication(config.AppKey),
                     scopedSp.GetRequiredService<IWechatCorpAuthStore>(), options,
-                    scopedSp.GetRequiredService<ILogger<CorpTokenManager>>(), tokenStore));
+                    scopedSp.GetRequiredService<ILogger<CorpTokenManager>>(), tokenStore, refreshLease));
                 primaryTokenManager = corpTokenManager;
             }
 

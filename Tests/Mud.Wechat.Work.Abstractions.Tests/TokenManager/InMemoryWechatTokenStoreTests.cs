@@ -5,6 +5,7 @@
 //  不得利用本项目从事危害国家安全、扰乱社会秩序、侵犯他人合法权益等法律法规禁止的活动！任何基于本项目开发而产生的一切法律纠纷和责任，我们不承担任何责任！
 // -----------------------------------------------------------------------
 
+using Mud.HttpUtils;
 using Mud.Wechat.Work.Abstractions.Authentication.TokenManager;
 
 namespace Mud.Wechat.Work.Abstractions.Tests.TokenManager;
@@ -75,6 +76,99 @@ public class InMemoryWechatTokenStoreTests
 
         removed.Should().Be(0);
         (await store.GetTokenTypesAsync()).Should().BeEquivalentTo("k1");
+    }
+
+    // ---------------------------------------------------------------- U-4：按应用清库（官方 ITokenStoreAppPurge）
+
+    [Fact]
+    public void InMemoryStore_ShouldImplementOfficialAppPurgeInterface()
+    {
+        var store = new InMemoryWechatTokenStore();
+
+        store.Should().BeAssignableTo<ITokenStoreAppPurge>(
+            "U-4：按应用清库能力须由存储实现承担（管理器三层探测的 tier-1；InMemory 与 Redis 两实现同批）");
+    }
+
+    [Fact]
+    public async Task EnumerateKeysAsync_ShouldReturnOnlyTargetAppKeys()
+    {
+        var store = new InMemoryWechatTokenStore();
+        await store.SetAccessTokenAsync("Wechat.AccessToken:a:default", "t1", 7200);
+        await store.SetAccessTokenAsync("Wechat.AccessToken:a:corp:123", "t2", 7200);
+        await store.SetAccessTokenAsync("Wechat.AccessToken:ab:default", "t3", 7200);
+        await store.SetAccessTokenAsync("Wechat.AccessToken:b:default", "t4", 7200);
+
+        var keys = await store.EnumerateKeysAsync("a");
+
+        keys.Should().BeEquivalentTo(new[]
+        {
+            "Wechat.AccessToken:a:default",
+            "Wechat.AccessToken:a:corp:123",
+        }, "前缀兄弟应用（ab）与其它应用（b）不得混入；scope 含 ':' 的键须按第二段边界完整返回");
+    }
+
+    [Fact]
+    public async Task EnumerateKeysAsync_ShouldIgnoreMalformedKeys()
+    {
+        var store = new InMemoryWechatTokenStore();
+        await store.SetAccessTokenAsync("Wechat.AccessToken:a", "t1", 7200);
+        await store.SetAccessTokenAsync("no-colon", "t2", 7200);
+        await store.SetAccessTokenAsync("Wechat.AccessToken::default", "t3", 7200);
+        await store.SetAccessTokenAsync("Wechat.AccessToken:a:default", "t4", 7200);
+
+        var keys = await store.EnumerateKeysAsync("a");
+
+        keys.Should().Equal(new[] { "Wechat.AccessToken:a:default" },
+            "缺第二段分隔符 / 无 tokenType 段 / appKey 段为空的畸形键不参与按应用匹配（与管理器 TryParseStoreKey 语义一致）");
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("  ")]
+    public async Task EnumerateKeysAsync_ShouldReturnEmpty_WhenAppKeyBlank(string? appKey)
+    {
+        var store = new InMemoryWechatTokenStore();
+        await store.SetAccessTokenAsync("Wechat.AccessToken:a:default", "t1", 7200);
+
+        var keys = await store.EnumerateKeysAsync(appKey!);
+
+        keys.Should().BeEmpty("本院键空间无官方 shared 式共享段约定 ⇒ 空白 appKey 返回空集");
+    }
+
+    [Fact]
+    public async Task PurgeAppAsync_ShouldRemoveOnlyTargetAppKeys_AndReturnCount()
+    {
+        var store = new InMemoryWechatTokenStore();
+        await store.SetAccessTokenAsync("Wechat.AccessToken:a:default", "t1", 7200);
+        await store.SetAccessTokenAsync("Wechat.AccessToken:a:corp:123", "t2", 7200);
+        await store.SetAccessTokenAsync("Wechat.AccessToken:ab:default", "t3", 7200);
+        await store.SetAccessTokenAsync("Wechat.AccessToken:b:default", "t4", 7200);
+
+        var removed = await store.PurgeAppAsync("a");
+
+        removed.Should().Be(2, "返回实际删除键数（快照内全部命中键）");
+        (await store.GetTokenTypesAsync()).Should().BeEquivalentTo(new[]
+        {
+            "Wechat.AccessToken:ab:default",
+            "Wechat.AccessToken:b:default",
+        }, "前缀兄弟应用（ab）与其它应用（b）的键不得被误删（按第二段精确比对）");
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("  ")]
+    public async Task PurgeAppAsync_ShouldReturnZeroAndKeepStore_WhenAppKeyBlank(string? appKey)
+    {
+        var store = new InMemoryWechatTokenStore();
+        await store.SetAccessTokenAsync("Wechat.AccessToken:a:default", "t1", 7200);
+
+        var removed = await store.PurgeAppAsync(appKey!);
+
+        removed.Should().Be(0);
+        (await store.GetTokenTypesAsync()).Should().Equal(new[] { "Wechat.AccessToken:a:default" },
+            "空白 appKey 不得清空整库（本院无共享段，按「无命中」处置）");
     }
 
     // ---------------------------------------------------------------- P2-7：容量上限 + 惰性驱逐

@@ -100,7 +100,7 @@ public static class WechatRedisServiceCollectionExtensions
     /// <summary>
     /// 核心注册：IValidateOptions + ValidateOnStart(net6+) → IConnectionMultiplexer（幂等）→ 健康检查 →
     /// 预热 HostedService → 配置实例 → 本院五端口（具体类型恒注册 + 接口 TryAdd）→
-    /// 通用 ITokenStore 面（官方 RedisTokenStore，A-5 分层共存，TryAdd）。
+    /// U-3 刷新租约（官方 RedisRefreshLease，TryAdd）→ 通用 ITokenStore 面（官方 RedisTokenStore，A-5 分层共存，TryAdd）。
     /// </summary>
     private static IServiceCollection AddWechatRedisCore(this IServiceCollection services, bool registerHealthCheck)
     {
@@ -166,6 +166,21 @@ public static class WechatRedisServiceCollectionExtensions
         services.AddSingleton<RedisWechatBotConnectionLease>();
         services.TryAddSingleton<IWechatBotConnectionLease>(sp => sp.GetRequiredService<RedisWechatBotConnectionLease>());
 
+        // U-3 跨进程刷新去重租约（A-5 分层同款 TryAdd：宿主预注册的自定义实现按契约胜出；
+        // 注册即启用——各线应用管理器装配时 GetService<ITokenRefreshLease>() 探测并透传）。键前缀
+        // 由本院统一前缀派生（默认 wechat:lease），与官方存储键、本院四类键命名空间并列、可 SCAN；
+        // TTL/等待/轮询取上游默认（30s / 10s / 250ms），后续如需调节再考虑暴露配置。
+        services.TryAddSingleton<ITokenRefreshLease>(sp =>
+        {
+            var wechatOptions = sp.GetRequiredService<IOptions<WechatRedisOptions>>().Value;
+            return new RedisRefreshLease(
+                sp.GetRequiredService<IConnectionMultiplexer>(),
+                new RedisRefreshLeaseOptions
+                {
+                    KeyPrefix = WechatRedisOptions.NormalizeKeyPrefix(wechatOptions.KeyPrefix) + ":lease",
+                });
+        });
+
         // 通用 ITokenStore 面（A-5 分层共存裁决，2026-10-14）：官方 Mud.HttpUtils.Redis 的
         // RedisTokenStore，与本院 IWechatTokenStore（RedisWechatTokenStore）分层共存——
         // ① 键命名空间互不干扰：官方 {TokenStore:KeyPrefix}:{tokenType}:{appKey}:access|refresh
@@ -175,6 +190,8 @@ public static class WechatRedisServiceCollectionExtensions
         // ③ TryAdd 语义同四端口：宿主预注册的自定义 ITokenStore 按契约胜出。
         // 注意：IWechatTokenStore : ITokenStore（薄标记，二进制兼容），两者解析为不同实例属分层设计而非缺陷；
         // 既有令牌管理器（构造注入 IWechatTokenStore）行为零变化，新增代码按 A-5 直接依赖 ITokenStore。
+        // ④ U-2 两阶段开关镜像原样透传（默认 false；开启未确认时本院 Validate 与官方构造期双闸 fail-fast）——
+        //    本侧书面结论=暂缓启用写入侧，读取面 v2 前缀兼容随库升级免费获得（桥接读路径零改动）。
         services.TryAddSingleton<ITokenStore>(sp =>
         {
             var wechatOptions = sp.GetRequiredService<IOptions<WechatRedisOptions>>().Value;
@@ -189,6 +206,8 @@ public static class WechatRedisServiceCollectionExtensions
                     AppKey = tokenStore.AppKey,
                     DefaultTtl = tokenStore.DefaultTtl,
                     Database = tokenStore.Database,
+                    UseVersionedEnvelope = tokenStore.UseVersionedEnvelope,
+                    AcknowledgeVersionedEnvelopeReadersUpgraded = tokenStore.AcknowledgeVersionedEnvelopeReadersUpgraded,
                 });
         });
 

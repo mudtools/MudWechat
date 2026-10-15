@@ -26,13 +26,20 @@ internal sealed class SuiteTokenManager : WechatAppTokenManagerBase, IWechatSuit
     private readonly IWechatSuiteTicketProvider _ticketProvider;
 
     /// <summary>创建套件令牌管理器。</summary>
+    /// <param name="auth">套件令牌客户端（per-app）。</param>
+    /// <param name="ticketProvider">共享套件票据提供器。</param>
+    /// <param name="options">本应用配置。</param>
+    /// <param name="logger">日志器。</param>
+    /// <param name="tokenStore">令牌持久化仓储（可选）。</param>
+    /// <param name="refreshLease">跨进程刷新去重租约（U-3；可选）。</param>
     public SuiteTokenManager(
         IWechatWorkProviderAuthentication auth,
         IWechatSuiteTicketProvider ticketProvider,
         IOptions<WechatAppConfig> options,
         ILogger<SuiteTokenManager> logger,
-        IWechatTokenStore? tokenStore = null)
-        : base(options, logger, tokenStore, WechatTokenTypes.SuiteAccessToken)
+        IWechatTokenStore? tokenStore = null,
+        ITokenRefreshLease? refreshLease = null)
+        : base(options, logger, tokenStore, WechatTokenTypes.SuiteAccessToken, refreshLease)
     {
         _auth = auth ?? throw new ArgumentNullException(nameof(auth));
         _ticketProvider = ticketProvider ?? throw new ArgumentNullException(nameof(ticketProvider));

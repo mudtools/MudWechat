@@ -446,20 +446,24 @@ public sealed class MpAppManager : IMpAppManager, IDisposable
             var ticketFactory = provider.GetRequiredService<IMpTicketFactory>();
             var ticketService = ticketFactory.Create(config.AppKey);
             var ticketStore = provider.GetService<IWechatTokenStore>();
+            // U-3：跨进程刷新去重租约（AddWechatRedis 注册后存在；未接分布式存储时为 null = 不启用）。
+            var refreshLease = provider.GetService<ITokenRefreshLease>();
 
             var jsApiTicketManager = new MpJsApiTicketManager(
                 ticketService,
                 tokenManager,
                 Options.Create(config),
                 provider.GetRequiredService<ILogger<MpJsApiTicketManager>>(),
-                ticketStore);
+                ticketStore,
+                refreshLease);
 
             var wxCardTicketManager = new MpWxCardTicketManager(
                 ticketService,
                 tokenManager,
                 Options.Create(config),
                 provider.GetRequiredService<ILogger<MpWxCardTicketManager>>(),
-                ticketStore);
+                ticketStore,
+                refreshLease);
 
             return new MpAppContext(
                 config, httpClient, tokenManager, provider, scope, jsApiTicketManager, wxCardTicketManager);
@@ -479,6 +483,8 @@ public sealed class MpAppManager : IMpAppManager, IDisposable
         var auth = authFactory.Create(config.AppKey);
         var options = Options.Create(config);
         var tokenStore = provider.GetService<IWechatTokenStore>();
+        // U-3：跨进程刷新去重租约（AddWechatRedis 注册后存在；未接分布式存储时为 null = 不启用）。
+        var refreshLease = provider.GetService<ITokenRefreshLease>();
 
         if (config.UseStableToken)
         {
@@ -486,14 +492,16 @@ public sealed class MpAppManager : IMpAppManager, IDisposable
                 auth,
                 options,
                 provider.GetRequiredService<ILogger<MpStableAccessTokenManager>>(),
-                tokenStore);
+                tokenStore,
+                refreshLease);
         }
 
         return new MpStandardAccessTokenManager(
             auth,
             options,
             provider.GetRequiredService<ILogger<MpStandardAccessTokenManager>>(),
-            tokenStore);
+            tokenStore,
+            refreshLease);
     }
 
     private void OnConfigurationChanged(AppConfigurationChangedEventArgs args)

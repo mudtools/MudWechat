@@ -35,12 +35,14 @@ internal sealed class MpStandardAccessTokenManager : MpAccessTokenManagerBase, I
     /// <param name="options">应用配置。</param>
     /// <param name="logger">日志器。</param>
     /// <param name="tokenStore">可选持久化仓储。</param>
+    /// <param name="refreshLease">跨进程刷新去重租约（U-3；可选）。</param>
     public MpStandardAccessTokenManager(
         IMpAuthentication auth,
         IOptions<MpAppConfig> options,
         ILogger<MpStandardAccessTokenManager> logger,
-        IWechatTokenStore? tokenStore = null)
-        : base(options, logger, tokenStore, ChannelKeyPrefix)
+        IWechatTokenStore? tokenStore = null,
+        ITokenRefreshLease? refreshLease = null)
+        : base(options, logger, tokenStore, ChannelKeyPrefix, refreshLease)
     {
         _auth = auth ?? throw new ArgumentNullException(nameof(auth));
     }

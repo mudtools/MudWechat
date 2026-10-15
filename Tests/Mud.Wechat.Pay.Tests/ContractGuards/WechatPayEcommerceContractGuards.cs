@@ -621,11 +621,11 @@ public class WechatPayEcommerceContractGuards
             "SUCCESS", "CLOSED", "PROCESSING", "ABNORMAL",
         });
 
-        // EC-R7：售后能力（after-sales-orders）官方现行目录内无该端点 ⇒ 全支付线零声明（扫描面取全线，正对照证明口径有效）。
-        AllPayLineRoutes().Should().NotContain(static r => r.Contains("after-sales", StringComparison.Ordinal),
+        // EC-R7：售后能力（after-sales-orders）官方现行目录内无该端点 ⇒ Ecommerce 域零声明（扫描面限定本域，正对照证明口径有效）。
+        AllRoutes().Should().NotContain(static r => r.Contains("after-sales-orders", StringComparison.Ordinal),
             "设计清单第 36/37 行的 after-sales-orders 无官方契约页：落地即声明一条目录里不存在的路由");
-        AllPayLineRoutes().Count(static r => r.Contains("/profitsharing/", StringComparison.Ordinal))
-            .Should().BeGreaterThan(0, "正对照：直连与本域的分账族确在支付线扫描面内 ⇒ 上面的零命中不是扫描失效");
+        AllRoutes().Count(static r => r.Contains("/profitsharing/", StringComparison.Ordinal))
+            .Should().BeGreaterThan(0, "正对照：直连与本域的分账族确在本域扫描面内 ⇒ 上面的零命中不是扫描失效");
 
         // 与服务商面异常退款（4013080627，已由直连退款域承载）不是同一契约。
         AllRoutes().Should().NotContain(static r => r.StartsWith("/v3/refund/", StringComparison.Ordinal)

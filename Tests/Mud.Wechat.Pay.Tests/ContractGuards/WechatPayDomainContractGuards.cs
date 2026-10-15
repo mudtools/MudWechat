@@ -117,6 +117,15 @@ public class WechatPayDomainContractGuards
             "IWechatPayBrandRedpacketService",
             "IWechatPayTransferToQqWalletService",
             "IWechatPayUserConfirmAuthorizationService",
+            // P1-2-B 平台服务商解决方案八域
+            "IWechatPayPlatsolutionEcommerceInsuranceContractService",
+            "IWechatPayPlatsolutionEcommerceCompensateService",
+            "IWechatPayPlatsolutionEcommerceDepositService",
+            "IWechatPayPlatsolutionEcommerceInsuranceClaimService",
+            "IWechatPayPlatsolutionEcommerceMchTransferService",
+            "IWechatPayPlatsolutionEcommerceRechargeEmployeeService",
+            "IWechatPayPlatsolutionEcommerceRechargeService",
+            "IWechatPayPlatsolutionEcommerceSettleService",
         });
 
         var offenders = interfaces

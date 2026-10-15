@@ -459,6 +459,8 @@ public sealed class ChannelsAppManager : IChannelsAppManager, IDisposable
         var auth = authFactory.Create(config.AppKey);
         var options = Options.Create(config);
         var tokenStore = provider.GetService<IWechatTokenStore>();
+        // U-3：AddWechatRedis 注册官方 RedisRefreshLease 后存在；未接分布式存储时为 null = 不启用。
+        var refreshLease = provider.GetService<ITokenRefreshLease>();
 
         if (config.UseStableToken)
         {
@@ -466,14 +468,16 @@ public sealed class ChannelsAppManager : IChannelsAppManager, IDisposable
                 auth,
                 options,
                 provider.GetRequiredService<ILogger<ChannelsStableAccessTokenManager>>(),
-                tokenStore);
+                tokenStore,
+                refreshLease);
         }
 
         return new ChannelsStandardAccessTokenManager(
             auth,
             options,
             provider.GetRequiredService<ILogger<ChannelsStandardAccessTokenManager>>(),
-            tokenStore);
+            tokenStore,
+            refreshLease);
     }
 
     private void OnConfigurationChanged(AppConfigurationChangedEventArgs args)

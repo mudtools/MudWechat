@@ -136,6 +136,8 @@ public class OfficialTokenStoreLayeringTests
         var wechat = provider.GetRequiredService<IWechatTokenStore>();
 
         wechat.Should().BeAssignableTo<IWechatTokenStoreBatchRemove>();
+        wechat.Should().BeAssignableTo<ITokenStoreAppPurge>(
+            "U-4：本院 Redis 实现同批承担官方按应用清库接口（管理器三层探测的 tier-1）");
         await wechat.SetAccessTokenAsync(TokenType, "wechat-tok", 7200);
 
         backend.Store.Should().ContainKey("wechat:token:" + TokenType);

@@ -215,6 +215,73 @@ public class WechatRedisServiceCollectionExtensionsTests
     }
 
     [Fact]
+    public void AddWechatRedis_ShouldRegisterRefreshLease_AsSingletonRedisRefreshLease()
+    {
+        // U-3：注册即启用——跨进程刷新去重租约（官方 RedisRefreshLease）；Singleton 跨 scope 同一实例。
+        var services = CreateServices();
+
+        using var provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true });
+        using var scope = provider.CreateScope();
+
+        var lease = provider.GetRequiredService<ITokenRefreshLease>();
+        lease.Should().BeOfType<RedisRefreshLease>();
+        scope.ServiceProvider.GetRequiredService<ITokenRefreshLease>().Should().BeSameAs(lease);
+    }
+
+    [Fact]
+    public void AddWechatRedis_ShouldLetPreRegisteredCustomRefreshLeaseWin()
+    {
+        // TryAdd 同款契约：宿主预注册的自定义租约实现胜出，官方 RedisRefreshLease 不抢位。
+        var custom = new StubRefreshLease();
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddSingleton<ITokenRefreshLease>(custom);
+        services.AddWechatRedis(o => { });
+        services.AddSingleton(new FakeRedisBackend().Multiplexer.Object);
+
+        using var provider = services.BuildServiceProvider();
+
+        provider.GetRequiredService<ITokenRefreshLease>().Should().BeSameAs(custom);
+    }
+
+    [Fact]
+    public async Task AddWechatRedis_RefreshLease_ShouldDeriveKeyPrefixFromWechatPrefix()
+    {
+        // 键前缀由本院统一前缀派生（默认 wechat:lease）——与官方存储键、本院四类键命名空间并列、可 SCAN。
+        var backend = new FakeRedisBackend();
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddWechatRedis(o => { });
+        services.AddSingleton(backend.Multiplexer.Object);
+
+        using var provider = services.BuildServiceProvider();
+        var handle = await provider.GetRequiredService<ITokenRefreshLease>()
+            .TryAcquireAsync("Manager:scope", TimeSpan.FromSeconds(30));
+
+        handle.Should().NotBeNull();
+        backend.Store.Should().ContainKey("wechat:lease:Manager:scope");
+        backend.LastWhen.Should().Be(When.NotExists, "租约获取必须是 SET NX 原子语义");
+        backend.LastExpiry.Should().Be(TimeSpan.FromSeconds(30));
+    }
+
+    [Fact]
+    public async Task AddWechatRedis_RefreshLease_ShouldFollowCustomKeyPrefix()
+    {
+        // 自定义 KeyPrefix 时租约空间随之迁移（wechat → {prefix}:lease），不与默认键空间串扰。
+        var backend = new FakeRedisBackend();
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddWechatRedis(o => o.KeyPrefix = "mywit");
+        services.AddSingleton(backend.Multiplexer.Object);
+
+        using var provider = services.BuildServiceProvider();
+        await provider.GetRequiredService<ITokenRefreshLease>()
+            .TryAcquireAsync("k", TimeSpan.FromSeconds(30));
+
+        backend.Store.Should().ContainKey("mywit:lease:k");
+    }
+
+    [Fact]
     public void AddWechatRedis_ShouldSkipHealthCheckPipelineRegistration_WhenDisabled()
     {
         // registerHealthCheck=false：不向宿主健康检查管线注册（§7.5——避免向未使用健康检查的宿主
@@ -241,5 +308,14 @@ public class WechatRedisServiceCollectionExtensionsTests
         using var provider = services.BuildServiceProvider();
         provider.GetService<Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckService>()
             .Should().NotBeNull();
+    }
+
+    /// <summary>自定义租约桩（TryAdd 覆盖语义用例用；恒不抢到）。</summary>
+    private sealed class StubRefreshLease : ITokenRefreshLease
+    {
+        /// <inheritdoc />
+        public Task<ITokenRefreshLeaseHandle?> TryAcquireAsync(
+            string leaseKey, TimeSpan leaseTime, CancellationToken cancellationToken = default)
+            => Task.FromResult<ITokenRefreshLeaseHandle?>(null);
     }
 }

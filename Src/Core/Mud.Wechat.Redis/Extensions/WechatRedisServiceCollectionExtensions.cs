@@ -100,7 +100,7 @@ public static class WechatRedisServiceCollectionExtensions
     /// <summary>
     /// 核心注册：IValidateOptions + ValidateOnStart(net6+) → IConnectionMultiplexer（幂等）→ 健康检查 →
     /// 预热 HostedService → 配置实例 → 本院五端口（具体类型恒注册 + 接口 TryAdd）→
-    /// 通用 ITokenStore 面（官方 RedisTokenStore，A-5 分层共存，TryAdd）。
+    /// U-3 刷新租约（官方 RedisRefreshLease，TryAdd）→ 通用 ITokenStore 面（官方 RedisTokenStore，A-5 分层共存，TryAdd）。
     /// </summary>
     private static IServiceCollection AddWechatRedisCore(this IServiceCollection services, bool registerHealthCheck)
     {
@@ -165,6 +165,21 @@ public static class WechatRedisServiceCollectionExtensions
         // 第五端口（P3 长连接租约，多实例主备切换基座；R-3 同款「恒注册具体类型 + 接口 TryAdd」）。
         services.AddSingleton<RedisWechatBotConnectionLease>();
         services.TryAddSingleton<IWechatBotConnectionLease>(sp => sp.GetRequiredService<RedisWechatBotConnectionLease>());
+
+        // U-3 跨进程刷新去重租约（A-5 分层同款 TryAdd：宿主预注册的自定义实现按契约胜出；
+        // 注册即启用——各线应用管理器装配时 GetService<ITokenRefreshLease>() 探测并透传）。键前缀
+        // 由本院统一前缀派生（默认 wechat:lease），与官方存储键、本院四类键命名空间并列、可 SCAN；
+        // TTL/等待/轮询取上游默认（30s / 10s / 250ms），后续如需调节再考虑暴露配置。
+        services.TryAddSingleton<ITokenRefreshLease>(sp =>
+        {
+            var wechatOptions = sp.GetRequiredService<IOptions<WechatRedisOptions>>().Value;
+            return new RedisRefreshLease(
+                sp.GetRequiredService<IConnectionMultiplexer>(),
+                new RedisRefreshLeaseOptions
+                {
+                    KeyPrefix = WechatRedisOptions.NormalizeKeyPrefix(wechatOptions.KeyPrefix) + ":lease",
+                });
+        });
 
         // 通用 ITokenStore 面（A-5 分层共存裁决，2026-10-14）：官方 Mud.HttpUtils.Redis 的
         // RedisTokenStore，与本院 IWechatTokenStore（RedisWechatTokenStore）分层共存——

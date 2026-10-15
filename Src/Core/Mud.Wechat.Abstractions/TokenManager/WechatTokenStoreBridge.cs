@@ -74,6 +74,42 @@ internal static class WechatTokenStoreBridge
     public static string BuildStoreKey(string tokenTypeKey, string cacheKey)
         => tokenTypeKey + ":" + cacheKey;
 
+    /// <summary>
+    /// 判断持久层键是否属于指定应用（U-4 按应用清库的键归属判定，两个存储实现共用）。
+    /// </summary>
+    /// <param name="storeKey">持久层键（<c>{tokenType}:{appKey}:{scopeKey}</c>）。</param>
+    /// <param name="appKey">应用键；null/空白恒 <c>false</c>（本院键空间无官方 <c>shared</c> 式共享段约定）。</param>
+    /// <returns>属于该应用时为 <c>true</c>。</returns>
+    /// <remarks>
+    /// 键解析规则与 <c>WechatAppManager.TryParseStoreKey</c> 一致（两处须同步修改）：
+    /// <c>tokenType</c> 为 <see cref="WechatTokenTypes"/> 常量（不含 <c>:</c>），以<b>首个</b> <c>:</c> 分隔；
+    /// <b>第二个</b> <c>:</c> 分隔 <c>appKey</c>（AppKey 形状校验保证该段不含 <c>:</c>）；
+    /// <c>scopeKey</c> 可能含 <c>:</c>，取剩余全部；两段分隔符缺失 / 空 appKey 段视为非目标键。
+    /// </remarks>
+    public static bool IsStoreKeyForApp(string? storeKey, string? appKey)
+    {
+        if (string.IsNullOrEmpty(storeKey) || string.IsNullOrEmpty(appKey))
+        {
+            return false;
+        }
+
+        var firstColon = storeKey!.IndexOf(':');
+        if (firstColon <= 0)
+        {
+            return false;
+        }
+
+        var secondColon = storeKey.IndexOf(':', firstColon + 1);
+        if (secondColon < firstColon)
+        {
+            return false;
+        }
+
+        var segmentLength = secondColon - firstColon - 1;
+        return segmentLength == appKey!.Length
+               && string.CompareOrdinal(storeKey, firstColon + 1, appKey, 0, segmentLength) == 0;
+    }
+
     private static TokenStoreValue? AdaptCredentialToken(CredentialToken? token)
         => token is null
             ? null

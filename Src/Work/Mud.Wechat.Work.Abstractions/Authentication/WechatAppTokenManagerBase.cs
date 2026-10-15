@@ -36,6 +36,7 @@ internal abstract class WechatAppTokenManagerBase : TokenManagerBase
     private readonly WechatAppConfig _options;
     private readonly ILogger _logger;
     private readonly string _tokenTypeKey;
+    private readonly ITokenRefreshLease? _refreshLease;
 
     /// <summary>应用配置快照。</summary>
     protected WechatAppConfig Options => _options;
@@ -50,18 +51,27 @@ internal abstract class WechatAppTokenManagerBase : TokenManagerBase
     /// <param name="logger">日志器。</param>
     /// <param name="tokenStore">可选持久化仓储（默认 null → 纯进程内缓存；多实例部署时接 Redis 等）。</param>
     /// <param name="tokenTypeKeyPrefix">令牌类型键前缀（<see cref="WechatTokenTypes"/> 常量）。</param>
+    /// <param name="refreshLease">可选跨进程刷新去重租约（U-3；默认 null = 不启用，行为与既有逐位一致）。</param>
     protected WechatAppTokenManagerBase(
         IOptions<WechatAppConfig> options,
         ILogger logger,
         IWechatTokenStore? tokenStore,
-        string tokenTypeKeyPrefix)
+        string tokenTypeKeyPrefix,
+        ITokenRefreshLease? refreshLease = null)
         : base(BuildCache(tokenStore, options, logger, tokenTypeKeyPrefix))
     {
         _options = (options ?? throw new ArgumentNullException(nameof(options))).Value
             ?? throw new ArgumentNullException(nameof(options));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _tokenTypeKey = BuildTokenTypeKey(options, tokenTypeKeyPrefix);
+        _refreshLease = refreshLease;
     }
+
+    /// <summary>
+    /// U-3：跨进程刷新去重租约（构造注入；null = 未启用）。多实例部署经 <c>AddWechatRedis</c>
+    /// 注册官方 <c>RedisRefreshLease</c> 后由应用装配自动透传生效。
+    /// </summary>
+    protected override ITokenRefreshLease? RefreshLease => _refreshLease;
 
     /// <summary>D9 阈值同源：恢复阈值 = 缓存有效性阈值 = <see cref="WechatAppConfig.TokenRefreshThreshold"/>。</summary>
     protected override int ExpireThresholdSeconds => _options.TokenRefreshThreshold;

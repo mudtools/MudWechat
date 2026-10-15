@@ -8,7 +8,7 @@ Mud.Wechat 全仓的**跨产品线共享叶层**：七条产品线（企业微�
 
 - **响应契约**（`Contracts/`）：`IWechatApiResponse`（`ErrorCode` / `ErrorMessage` / `IsSuccess`）——各产品线响应 DTO 的统一基底，Work.DataModels 等据此实现。
 - **异常判定**（`Exceptions/`）：`WechatApiException` 与 `WechatApiResponseGuard.ThrowIfFailed<TResponse>(...)`——把「官方 `errcode != 0`」的判定收敛为单点，各线不再各写一份。
-- **令牌存储端口**（`TokenManager/`）：`IWechatTokenStore`（继承组件 `ITokenStore`）与可选批量端口 `IWechatTokenStoreBatchRemove`；`InMemoryWechatTokenStore` 为默认进程内实现；`WechatTokenBridgeCodec`（internal）负责 `令牌 + 过期毫秒` 的单键存储编码；`WechatCompositeTokenInvalidationDetector` 组合各线失效码判定器。
+- **令牌存储端口**（`TokenManager/`）：`IWechatTokenStore`（继承组件 `ITokenStore`）与可选批量端口 `IWechatTokenStoreBatchRemove`；`InMemoryWechatTokenStore` 为默认进程内实现（并实现官方 `ITokenStoreAppPurge` 按应用清库面，U-4）；`WechatTokenBridgeCodec`（internal）负责 `令牌 + 过期毫秒` 的单键存储编码；`WechatCompositeTokenInvalidationDetector` 组合各线失效码判定器。
 - **令牌恢复注册**（`TokenManager/WechatTokenRecoveryRegistration.cs`）：
   - `AddWechatApiHosts(IServiceCollection)`——SSRF 白名单的唯一登记点（把 `WechatApiHosts.AllowedBaseUrlDomains` 交予组件侧）；
   - `AddWechatTokenRecovery(IServiceCollection)`——注册恢复选项、校验器与令牌提供者，内部先调 `AddWechatApiHosts`，并对后台刷新服务做 `Any(descriptor…)` 去重（防多线重复注册产生多个刷新宿主）。

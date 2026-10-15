@@ -6,14 +6,15 @@
 // -----------------------------------------------------------------------
 
 using StackExchange.Redis;
+using Mud.HttpUtils;
 using Mud.Wechat.Work.Abstractions.Metrics;
 
 namespace Mud.Wechat.Redis.Services;
 
 /// <summary>
 /// <see cref="IWechatTokenStore"/> 的 Redis 实现（多实例共享令牌持久层），
-/// 并实现 <see cref="IWechatTokenStoreBatchRemove"/>——W1/M10 批量删除能力接口的首个 Redis 落地。
-/// </summary>
+/// 并实现 <see cref="IWechatTokenStoreBatchRemove"/>——W1/M10 批量删除能力接口的首个 Redis 落地，
+/// 以及官方 U-4 按应用清库接口 <see cref="ITokenStoreAppPurge"/>。</summary>
 /// <remarks>
 /// <para>
 /// 键布局 <c>{KeyPrefix}:token:{storeKey}</c>（RD2：<c>storeKey</c> 为不透明叶子原样拼接，
@@ -31,7 +32,7 @@ namespace Mud.Wechat.Redis.Services;
 /// 异常映射：<see cref="RedisException"/> 家族 → <see cref="WechatRedisException"/> 上抛，不吞异常。
 /// </para>
 /// </remarks>
-public class RedisWechatTokenStore : IWechatTokenStoreBatchRemove
+public class RedisWechatTokenStore : IWechatTokenStoreBatchRemove, ITokenStoreAppPurge
 {
     /// <summary>SCAN 每页键数（对齐飞书模块）。</summary>
     private const int ScanPageSize = 250;
@@ -148,8 +149,58 @@ public class RedisWechatTokenStore : IWechatTokenStoreBatchRemove
     /// </remarks>
     public async Task<IEnumerable<string>> GetTokenTypesAsync(CancellationToken cancellationToken = default)
     {
-        var pattern = WechatRedisKeyBuilder.Pattern(_prefix, "token");
         var result = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var storeKey in await ScanStoreKeysAsync(cancellationToken).ConfigureAwait(false))
+        {
+            result.Add(storeKey);
+        }
+
+        return result;
+    }
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// 与 <see cref="GetTokenTypesAsync"/> 同一 SCAN 面（Cluster 下聚合全部主节点、副本跳过），
+    /// 按 storeKey 第二段 appKey 过滤（<see cref="WechatTokenStoreBridge.IsStoreKeyForApp"/> 共享判定）；
+    /// 返回完整 storeKey 快照（口径与 <see cref="GetTokenTypesAsync"/> 一致，可直接回传
+    /// <see cref="RemoveRangeAsync"/>）。空白 <paramref name="appKey"/> 返回空集（本院键空间无官方
+    /// <c>shared</c> 式共享段约定）。
+    /// </remarks>
+    public async Task<IReadOnlyCollection<string>> EnumerateKeysAsync(string appKey, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrEmpty(appKey))
+        {
+            return Array.Empty<string>();
+        }
+
+        var result = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var storeKey in await ScanStoreKeysAsync(cancellationToken).ConfigureAwait(false))
+        {
+            if (WechatTokenStoreBridge.IsStoreKeyForApp(storeKey, appKey))
+            {
+                result.Add(storeKey);
+            }
+        }
+
+        return result.ToArray();
+    }
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// 枚举（同上 SCAN 面）→ <see cref="RemoveRangeAsync"/> 批量删除；中途失败经
+    /// <see cref="WechatRedisErrors.Map"/> 上抛，不静默半删（U-4 契约）。
+    /// </remarks>
+    public async Task<int> PurgeAppAsync(string appKey, CancellationToken cancellationToken = default)
+    {
+        var keys = await EnumerateKeysAsync(appKey, cancellationToken).ConfigureAwait(false);
+        return await RemoveRangeAsync(keys, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>SCAN 全量 storeKey（映射前缀剥离还原；<see cref="GetTokenTypesAsync"/> / <see cref="EnumerateKeysAsync"/> 共用面）。</summary>
+    private async Task<List<string>> ScanStoreKeysAsync(CancellationToken cancellationToken)
+    {
+        var pattern = WechatRedisKeyBuilder.Pattern(_prefix, "token");
+        var result = new List<string>();
         try
         {
             var databaseId = _redis.GetDatabase().Database;

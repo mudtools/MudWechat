@@ -43,6 +43,7 @@ internal abstract class MpTicketManagerBase : TokenManagerBase, IMpTicketManager
     private readonly MpAppConfig _options;
     private readonly ILogger _logger;
     private readonly string _ticketTypeKey;
+    private readonly ITokenRefreshLease? _refreshLease;
     private int _effectiveRefreshThreshold;
 
     /// <summary>创建票据管理器基座。</summary>
@@ -53,6 +54,7 @@ internal abstract class MpTicketManagerBase : TokenManagerBase, IMpTicketManager
     /// <param name="ticketType">票据类型（<see cref="MpTicketTypes"/>）。</param>
     /// <param name="channelKeyPrefix">持久化键前缀（两类票据互相隔离）。</param>
     /// <param name="tokenStore">可选持久化仓储（默认 null → 纯进程内缓存）。</param>
+    /// <param name="refreshLease">可选跨进程刷新去重租约（U-3；默认 null = 不启用，行为与既有逐位一致）。</param>
     protected MpTicketManagerBase(
         IMpTicketService ticketService,
         IMpAccessTokenManager accessTokenManager,
@@ -60,7 +62,8 @@ internal abstract class MpTicketManagerBase : TokenManagerBase, IMpTicketManager
         ILogger logger,
         string ticketType,
         string channelKeyPrefix,
-        IWechatTokenStore? tokenStore)
+        IWechatTokenStore? tokenStore,
+        ITokenRefreshLease? refreshLease = null)
         : base(WechatTokenStoreBridge.CreateCache(
             tokenStore,
             WechatTokenStoreBridge.BuildTokenTypeKey(channelKeyPrefix, options?.Value?.AppKey),
@@ -74,7 +77,14 @@ internal abstract class MpTicketManagerBase : TokenManagerBase, IMpTicketManager
         TicketType = ticketType ?? throw new ArgumentNullException(nameof(ticketType));
         _ticketTypeKey = WechatTokenStoreBridge.BuildTokenTypeKey(channelKeyPrefix, _options.AppKey);
         _effectiveRefreshThreshold = _options.TokenRefreshThreshold;
+        _refreshLease = refreshLease;
     }
+
+    /// <summary>
+    /// U-3：跨进程刷新去重租约（构造注入；null = 未启用）。多实例部署经 <c>AddWechatRedis</c>
+    /// 注册官方 <c>RedisRefreshLease</c> 后由应用装配自动透传生效（票据刷新同样受官方频次限制，租约去重收益同源）。
+    /// </summary>
+    protected override ITokenRefreshLease? RefreshLease => _refreshLease;
 
     /// <inheritdoc />
     public string TicketType { get; }

@@ -40,6 +40,7 @@ internal abstract class ChannelsAccessTokenManagerBase : TokenManagerBase
     private readonly ChannelsAppConfig _options;
     private readonly ILogger _logger;
     private readonly string _tokenTypeKey;
+    private readonly ITokenRefreshLease? _refreshLease;
     private int _effectiveRefreshThreshold;
 
     /// <summary>
@@ -50,11 +51,13 @@ internal abstract class ChannelsAccessTokenManagerBase : TokenManagerBase
     /// <param name="tokenStore">可选持久化仓储（默认 null → 纯进程内缓存；多实例部署时接 Redis 等）。</param>
     /// <param name="channelKeyPrefix">通道标识前缀（<c>Wechat.Channels.StableAccessToken</c> /
     /// <c>Wechat.Channels.StandardAccessToken</c>），用于隔离两通道的持久化键空间。</param>
+    /// <param name="refreshLease">可选跨进程刷新去重租约（U-3；默认 null = 不启用，行为与既有逐位一致）。</param>
     protected ChannelsAccessTokenManagerBase(
         IOptions<ChannelsAppConfig> options,
         ILogger logger,
         IWechatTokenStore? tokenStore,
-        string channelKeyPrefix)
+        string channelKeyPrefix,
+        ITokenRefreshLease? refreshLease = null)
         : base(BuildCache(tokenStore, options, logger, channelKeyPrefix))
     {
         _options = (options ?? throw new ArgumentNullException(nameof(options))).Value
@@ -62,7 +65,14 @@ internal abstract class ChannelsAccessTokenManagerBase : TokenManagerBase
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _tokenTypeKey = WechatTokenStoreBridge.BuildTokenTypeKey(channelKeyPrefix, _options.AppKey);
         _effectiveRefreshThreshold = _options.TokenRefreshThreshold;
+        _refreshLease = refreshLease;
     }
+
+    /// <summary>
+    /// U-3：跨进程刷新去重租约（构造注入；null = 未启用）。多实例部署经 <c>AddWechatRedis</c>
+    /// 注册官方 <c>RedisRefreshLease</c> 后由应用装配自动透传生效。
+    /// </summary>
+    protected override ITokenRefreshLease? RefreshLease => _refreshLease;
 
     /// <summary>应用配置快照。</summary>
     protected ChannelsAppConfig Options => _options;

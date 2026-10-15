@@ -23,12 +23,18 @@ internal sealed class ProviderTokenManager : WechatAppTokenManagerBase, IWechatP
     private readonly IWechatWorkProviderAuthentication _auth;
 
     /// <summary>创建服务商令牌管理器。</summary>
+    /// <param name="auth">服务商令牌客户端（per-app）。</param>
+    /// <param name="options">本应用配置。</param>
+    /// <param name="logger">日志器。</param>
+    /// <param name="tokenStore">令牌持久化仓储（可选）。</param>
+    /// <param name="refreshLease">跨进程刷新去重租约（U-3；可选）。</param>
     public ProviderTokenManager(
         IWechatWorkProviderAuthentication auth,
         IOptions<WechatAppConfig> options,
         ILogger<ProviderTokenManager> logger,
-        IWechatTokenStore? tokenStore = null)
-        : base(options, logger, tokenStore, WechatTokenTypes.ProviderAccessToken)
+        IWechatTokenStore? tokenStore = null,
+        ITokenRefreshLease? refreshLease = null)
+        : base(options, logger, tokenStore, WechatTokenTypes.ProviderAccessToken, refreshLease)
     {
         _auth = auth ?? throw new ArgumentNullException(nameof(auth));
     }

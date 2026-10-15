@@ -3,7 +3,9 @@
 **跨产品线的 Redis 分布式存储扩展包**：为多实例分布式部署提供五个存储端口的 Redis 实现，
 适用于多实例共享令牌、跨实例持久化企业授权（永久授权码）、多实例共享 suite_ticket、回调抗重放
 与智能机器人长连接主备租约；另按 **A-5 分层共存裁决**（上游对账清单，2026-10-14）承载
-**通用 `ITokenStore` 面**（官方 `Mud.HttpUtils.Redis` 的 `RedisTokenStore`，随本包一并注册）。
+**通用 `ITokenStore` 面**（官方 `Mud.HttpUtils.Redis` 的 `RedisTokenStore`，随本包一并注册），
+并注册 **U-3 跨进程刷新租约**（官方 `RedisRefreshLease`，`AddWechatRedis` 注册即启用——
+各线令牌 / 票据刷新在多实例间去重，未抢到租约的实例限时轮询读穿透、超时 fail-open）。
 
 五个端口中，令牌存储 / 企业授权 / 套件票据 / 长连接租约来自企业微信线（`Mud.Wechat.Work.Abstractions`），
 回调抗重放端口 `IWechatCallbackReplayGuard` 已下沉到 `Mud.Wechat.Abstractions` 叶层，
@@ -15,22 +17,29 @@
 
 | 端口 | Redis 实现 | 多实例语义 |
 |---|---|---|
-| `IWechatTokenStore` | `RedisWechatTokenStore` | 令牌跨实例共享；实现 `IWechatTokenStoreBatchRemove`（W1/M10 批量删除，N 次往返收敛为 ⌈N/500⌉ 次） |
+| `IWechatTokenStore` | `RedisWechatTokenStore` | 令牌跨实例共享；实现 `IWechatTokenStoreBatchRemove`（W1/M10 批量删除，N 次往返收敛为 ⌈N/500⌉ 次）与官方 `ITokenStoreAppPurge`（U-4 按应用清库） |
 | `IWechatCorpAuthStore` | `RedisWechatCorpAuthStore` | 企业授权（含**不可重取**的永久授权码）跨实例持久化，重启不再丢授权 |
 | `IWechatSuiteTicketStore` | `RedisWechatSuiteTicketStore` | suite_ticket 跨实例共享——不再只有收到推送的实例能签发套件令牌 |
 | `IWechatCallbackReplayGuard` | `RedisWechatCallbackReplayGuard` | 回调抗重放窗口跨实例生效（进程内实现多实例下重放窗口失效）；企微 / 公众号 / 支付三条回调接收面共用此端口 |
 | `IWechatBotConnectionLease` | `RedisWechatBotConnectionLease` | 智能机器人长连接（官方 101463）主备租约跨实例互斥——多实例部署必须注册本包，避免多实例同时订阅同一 Bot 的推送帧 |
 | `ITokenStore`（通用面） | `RedisTokenStore`（官方 `Mud.HttpUtils.Redis`，F-3） | 通用令牌持久化 SPI 的官方落地；随 `AddWechatRedis` 以 `TryAddSingleton` 注册（宿主预注册者胜） |
+| `ITokenRefreshLease`（通用面） | `RedisRefreshLease`（官方 `Mud.HttpUtils.Redis`，U-3） | 跨进程令牌刷新去重租约（SET NX PX 获取 + compare-and-del 释放，fail-open）；随 `AddWechatRedis` 以 `TryAddSingleton` 注册，各线管理器装配自动透传 |
 
 ### 分层共存（A-5）：两个令牌面为何同时存在
 
 - **本院令牌面**（`IWechatTokenStore` → `RedisWechatTokenStore`）：键 `{本院前缀}:token:{storeKey}`
   （三段式，与 `InMemoryWechatTokenStore` 键空间逐字节一致），值由组件桥接器写 `{expireMs}|{token}`
-  自描述绝对过期戳；实现 `IWechatTokenStoreBatchRemove` 批删扩展（W1/M10）。
+  自描述绝对过期戳；实现 `IWechatTokenStoreBatchRemove` 批删扩展（W1/M10）与官方 `ITokenStoreAppPurge`
+  （U-4 按应用清库，见下）。
 - **通用令牌面**（`ITokenStore` → 官方 `RedisTokenStore`）：键 `{官方前缀}:{tokenType}:{appKey}:access|refresh`
   （默认前缀 `mud:httputils`，配置节 `WechatRedis:TokenStore`），值经官方 `ITokenStoreCodec`
-  （`{expiresInSeconds}|{token}` 相对秒）；官方 `ITokenStore` 维持最小 SPI，**不实现**微信类型与批删扩展
-  （A-5 明令）⇒ 退役清库走逐键回退（B-3，行为正确、无批量优化）。
+  （`{expiresInSeconds}|{token}` 相对秒）；官方 `ITokenStore` 维持最小 SPI，**不实现**微信类型与任意键批删
+  （A-5 明令）——**U-4 起官方另有按应用清库面** `ITokenStoreAppPurge`（3.0.7 重打包新增，官方
+  `RedisTokenStore` 与本包 `RedisWechatTokenStore` / `InMemoryWechatTokenStore` 均已实现）；企微侧
+  `PurgeAppTokensAsync` 按「官方 `ITokenStoreAppPurge`（键解析内聚到实现方）→ 本院
+  `IWechatTokenStoreBatchRemove` 批删 → 逐键」三层探测。**红线**：本院管理器**绝不**对未实现官方接口的
+  store 调官方 `TokenStorePurgeExtensions.PurgeAppTokensAsync` 扩展——其回退路径忽略 `appKey`，
+  会误清**全部应用**（任意键批删仍无官方面，B-3 逐键回退语义仅剩此扩展一处）。
 - **键命名空间互不干扰**（前缀不同）⇒ 共库无需数据迁移；`IWechatTokenStore : ITokenStore` 为薄标记
   （二进制兼容保留），新增代码按 A-5 直接依赖 `ITokenStore`。两个面解析为不同实例属分层设计而非缺陷。
 
@@ -45,7 +54,7 @@
 ```csharp
 // Program.cs —— 完整装配：顺序即契约，Redis 必须最先
 builder.Services
-    .AddWechatRedis(builder.Configuration)                 // ① 连接基座 + 五个存储端口 + 官方 ITokenStore 层（默认注册健康检查）
+    .AddWechatRedis(builder.Configuration)                 // ① 连接基座 + 五个存储端口 + 官方 ITokenStore / ITokenRefreshLease 层（默认注册健康检查）
     .AddWechatApp(builder.Configuration, "WechatApps")     // ② 令牌/授权/票据基座（Redis 实现已就位）
     .AddWechatCallback(o => { /* 回调凭据与处理器 */ });    // ③ 回调（抗重放窗口跨实例生效）
 
@@ -81,7 +90,7 @@ app.Run();
       "AllowAdmin": false,
       "ClientName": null                    // 兜底 Wechat-Redis-{MachineName}
     },
-    "KeyPrefix": "wechat",                  // 四类键共享的唯一前缀旋钮；多环境隔离改此值
+    "KeyPrefix": "wechat",                  // 本院各类键共享的唯一前缀旋钮（含 U-3 租约派生前缀 {KeyPrefix}:lease）；多环境隔离改此值
     "SuiteTicketTtl": "00:00:00",           // 默认不过期（覆盖写保新鲜）；正值建议 ≥ 20 分钟
     "TokenStore": {                         // 官方 Mud.HttpUtils.Redis 令牌存储映射（A-5 分层共存）
       "KeyPrefix": "mud:httputils",         //   官方键前缀（与本院 wechat 前缀互不干扰）
@@ -114,8 +123,9 @@ app.Run();
 | 企业授权 | `{KeyPrefix}:corpa:{appKey}:{authCorpId}` | 不过期（轮换/撤销显式删） |
 | 套件票据 | `{KeyPrefix}:ticket:{suiteId}` | `SuiteTicketTtl`（默认不过期） |
 | 回调重放 | `{KeyPrefix}:replay:{fingerprint}` | 调用方传入的窗口（±300s） |
+| 刷新租约（U-3） | `{KeyPrefix}:lease:{leaseKey}` | 租约 TTL（默认 30s；`leaseKey` = 管理器 `{MetricsKey}:{scopeKey}`） |
 
-键名仅含 appKey / authCorpId / suiteId / SHA1 指纹——**均非凭据**，可安全入日志。
+键名仅含 appKey / authCorpId / suiteId / SHA1 指纹 / 租约 `scopeKey`——**均非凭据**，可安全入日志。
 令牌 `storeKey` 为三段式 `{tokenType}:{appKey}:{scopeKey}`（与 `InMemoryWechatTokenStore` 键空间逐字节一致，
 `PurgeAppTokensAsync` 三段解析依赖此不变量）。
 官方面 `tokenType` 段允许含 `:`（官方 `RedisTokenStoreKeyBuilder` 从右侧剥除固定段，天然单射）。
@@ -139,7 +149,7 @@ Redis 实现的 `TryMarkAsync` 在存储故障时**分类包装上抛**：外层
 
 ## AOT / Trim
 
-- net8.0+ 支持 Native AOT 发布（`AotStrictMode=true` 门禁全绿；`StackExchange.Redis` 3.3.0 已实测）。
+- net8.0+ 支持 Native AOT 发布（`AotStrictMode=true` 门禁全绿；`StackExchange.Redis` 3.4.5 已实测）。
 - 企业授权聚合序列化：net8+ 走 `AuthenticationJsonContext`（`JsonTypeInfo`，零反射）；
   ns2.0/net6 为反射 STJ（AOT 门禁仅对 net8.0 构建，低 TFM 做 AOT 非受支持场景）。
 - 配置绑定走源生成器形状（`Configure<T>(o => section.Bind(o))`）；`IConfiguration` 入口标注
@@ -153,19 +163,21 @@ Redis 实现的 `TryMarkAsync` 在存储故障时**分类包装上抛**：外层
 WECHAT_REDIS_TESTS_CONNECTION=localhost:6379 dotnet test Tests/Mud.Wechat.Redis.Tests
 ```
 
-## 目标框架
+## 目标框架与 SE.Redis 分档锚定
 
-`netstandard2.0` / `net6.0` / `net8.0` / `net10.0`（继承根 `Directory.Build.props`）。`net6.0` 下
-`StackExchange.Redis` 会回落到 netstandard 资产并产生兼容告警，故本工程对该 TFM 设
-`SuppressTfmSupportBuildWarnings`（不是功能缺失）。
+`netstandard2.0` / `net6.0` / `net8.0` / `net10.0`（继承根 `Directory.Build.props`）。官方
+`Mud.HttpUtils.Redis` 3.0.7 重打包起**逐档要求** SE.Redis ≥3.4.5（net8+）/ ≥2.13.17（低 TFM），
+本包随之**分档锚定**（T1，2026-10-15）：`net8.0`/`net10.0` → **3.4.5**、`netstandard2.0`/`net6.0` →
+**2.13.17**（含原生 net6.0 资产）。`net6.0` 下 `System.IO.Hashing` 9.0.12 经 SE.Redis 2.13.17 传递
+产生「未测试 TFM」**咨询性提示**（非功能缺失），故仅该 TFM 设 `SuppressTfmSupportBuildWarnings`。
 
-## SE.Redis 3.3.0 已踩陷阱
+## SE.Redis 分档已知陷阱
 
 - **超时异常继承关系（B-8 勘误，2026-10-14）**：SE.Redis **2.x** 中 `RedisTimeoutException` 继承
   `TimeoutException`；**3.x 起不再继承** `TimeoutException`。⇒ `catch (TimeoutException)` 兜 SE.Redis
   超时的 2.x 习惯在 3.x 下**失配漏接**，宿主 catch 口径须为 `RedisTimeoutException` 或 `RedisException`
   基类（本包 `WechatRedisErrors.ShouldWrap` 为 `is RedisException or RedisTimeoutException` 显式双类型，
-  两个大版本下均正确）。官方 `Mud.HttpUtils.Redis` 按 SE.Redis 2.8.24 编译、不捕获 `TimeoutException`，
+  两个大版本下均正确）。官方 `Mud.HttpUtils.Redis` 3.0.7 重打包起逐档引用 SE.Redis、不再固定 2.8.24，
   异常类型随最终宿主解析的运行时版本漂移（上游 B-8 口径：组件侧无需防御）。
 - `StringSetAsync` 有多套重载形态：生产调用一律用**命名参数**钉住（`keepTtl: false` / `when: …`），
   否则参数位置漂移会静默改变「是否覆盖 TTL」的语义。
@@ -173,7 +185,10 @@ WECHAT_REDIS_TESTS_CONNECTION=localhost:6379 dotnet test Tests/Mud.Wechat.Redis.
 ## 键构造与批量
 
 `WechatRedisKeyBuilder`（internal）是唯一键名出口：段上限 256、`:` 转义为 `\:`、模式串以 `:*` 结尾、
-`TryStripTokenKeyPrefix` 负责三段式令牌键反解析。批量清库走可选端口 `IWechatTokenStoreBatchRemove`
+`TryStripTokenKeyPrefix` 负责三段式令牌键反解析。按应用清库（U-4）走官方 `ITokenStoreAppPurge`：
+`EnumerateKeysAsync` 返回**完整快照**（SCAN 全量遍历、Cluster 聚合全部主节点、`ScanPageSize = 250` 分页，
+口径与 `GetTokenTypesAsync` 一致）+ `PurgeAppAsync` 复用 `RemoveRangeAsync` 批删并返回实际删除数
+（中途失败分类上抛、**不得静默半删**），空白 `appKey` 返回空集 / 0。任意键批删走可选端口 `IWechatTokenStoreBatchRemove`
 （`ScanPageSize = 250` 游标分页 + `DeleteBatchSize = 500` 每批删除，N 次往返收敛为 ⌈N/500⌉ 次），
 未实现该端口的存储回退逐键删除；企业授权读批 `ReadBatchSize = 500`（MGET 批读，避免 SCAN 后逐键 GET 的 N+1）。
 
@@ -183,6 +198,11 @@ WECHAT_REDIS_TESTS_CONNECTION=localhost:6379 dotnet test Tests/Mud.Wechat.Redis.
 产出（G1）、配置 DTO 禁 `required`（G2）、重放守卫 fail-closed（G3，存储故障必须上抛）、敏感凭据不得进入日志调用点（G4）、
 顺序守卫的两处**探测全名**与被探测类型 `FullName` 一致（G5 回调 InMemory 实现 / G7 公众号 `IMpAppManager`，反射断言——顺序守卫的生命线）、
 本包单依赖形态（G6：不得引用 Callback / 各线主包）。功能用例为 **T-R1 ~ T-R10**（T-R10 = 官方面分层共存：
-键布局 / 配置映射 / 两层互不干扰 / 官方面不实现批删），
-真实 Redis 端到端由 `RedisIntegrationTests` 环境变量门控（假后端在 `Support/FakeRedisBackend.cs`）。
+键布局 / 配置映射 / 两层互不干扰 / 官方面不实现本院任意键批删接口 `IWechatTokenStoreBatchRemove`——
+U-4 官方另实现按应用清库面），T2 起另有 U-4 按应用清库等价用例
+（`TokenStoreBehaviorEquivalenceTests.PurgeApp_*`：目标应用命中集 + 返回真实删除数 + 空白 appKey 空转）、
+U-3 注册与派生前缀用例（`WechatRedisServiceCollectionExtensionsTests`：单例形态 / 预注册者胜 /
+`{KeyPrefix}:lease` 派生 / 自定义前缀跟随）；三层探测与红线守卫在 Work.Abstractions 侧
+（`WechatAppManagerTests.PurgeAppTokensAsync_*`：官方 purge 优先 → 本院批删 → 逐键，且未命中能力层时
+不得调官方扩展）。真实 Redis 端到端由 `RedisIntegrationTests` 环境变量门控（假后端在 `Support/FakeRedisBackend.cs`）。
 改动端口实现、键空间或注册顺序守卫时须**同批**更新这些守卫。

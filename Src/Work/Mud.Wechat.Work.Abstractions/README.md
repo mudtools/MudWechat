@@ -43,7 +43,7 @@ public sealed class AuthCorpCaller(IWechatAppContextSwitcher switcher)
 
 - `Mud.Wechat.Abstractions`（跨产品线共享叶层：配置基座、令牌存储端口、响应契约与异常基底、回调密码学与重放端口、可观测性契约面）
 - `Mud.Wechat.Work.DataModels`
-- `Mud.HttpUtils` 3.0.3、`Mud.HttpUtils.Generator` 3.0.3（分析器）、`Microsoft.Extensions.Http` / `Hosting.Abstractions`
+- `Mud.HttpUtils` 3.0.7、`Mud.HttpUtils.Generator` 3.0.7（分析器）、`Microsoft.Extensions.Http` / `Hosting.Abstractions`
 
 ## 说明
 

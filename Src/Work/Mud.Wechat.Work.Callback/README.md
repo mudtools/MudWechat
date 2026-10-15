@@ -408,7 +408,7 @@ public sealed class MyBotReplyHandler : IWechatBotCallbackEventHandler
 ## 依赖
 
 - `Mud.Wechat.Work.Abstractions`、`Mud.Wechat.Work.DataModels`（**不引用主包 `Work`**，硬边界由守卫 CB1 锁定）
-- `Mud.HttpUtils.Generator` 3.0.3（分析器，产 `[PayloadContract]` 载荷的 `PayloadFieldMap`；Abstractions 侧的 `PrivateAssets` 不流向本工程，故此处显式引用）
+- `Mud.HttpUtils.Generator` 3.0.7（分析器，产 `[PayloadContract]` 载荷的 `PayloadFieldMap`；Abstractions 侧的 `PrivateAssets` 不流向本工程，故此处显式引用）
 - `Mud.Wechat.Callback.Generator`（构建期分析器，发射 `RegisterAll`，`IsPackable=false` 不进发布链）
 - `Mud.Wechat.Callback.Analyzers`（构建期分析器 + 随本包内嵌 `analyzers/dotnet/cs` 下发给宿主，使 MUDCB002~005 在宿主侧生效）
 - ASP.NET 接入面：`netstandard2.0` 用 `Microsoft.AspNetCore.Http` / `.Abstractions` 2.3.9，`net6.0+` 用 `FrameworkReference Microsoft.AspNetCore.App`

@@ -123,7 +123,7 @@ var sign = await jsApi.SignAsync("https://example.com/page");   // URL 中的 # 
 ## 依赖
 
 - `Mud.Wechat.Abstractions`（公用层）、`Mud.Wechat.OfficialAccount.Abstractions`、`Mud.Wechat.OfficialAccount.DataModels`
-- `Mud.HttpUtils` 3.0.3、`Mud.HttpUtils.Generator` 3.0.3（分析器）
+- `Mud.HttpUtils` 3.0.7、`Mud.HttpUtils.Generator` 3.0.7（分析器）
 - **不引用 `Mud.Wechat.OfficialAccount.Callback`**（回调包只依赖 Abstractions，本包只实现其配置侧端口）
 
 ## 说明

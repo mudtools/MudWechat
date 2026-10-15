@@ -47,7 +47,7 @@ public class OfficialTokenStoreLayeringTests
 
         // 键布局 {prefix}:{tokenType}:{appKey}:access（默认前缀 mud:httputils、appKey 空 ⇒ shared）。
         backend.Store.Should().ContainKey("mud:httputils:" + TokenType + ":shared:access");
-        // 值经官方 DefaultTokenStoreCodec：{expiresInSeconds}|{token}（相对秒，非本院 {expireMs}|{token}）。
+        // 值经官方 DefaultTokenStoreCodec：{expiresInSeconds}|{token}（相对秒；本院桥接器 U-1 起单写同形态）。
         backend.Store["mud:httputils:" + TokenType + ":shared:access"].ToString().Should().Be("7200|tok-123");
         backend.LastExpiry.Should().Be(TimeSpan.FromSeconds(7200), "访问令牌 TTL 宁缺勿滥：跟随写入方剩余秒数");
         (await store.GetAccessTokenAsync(TokenType)).Should().Be("tok-123");
@@ -142,6 +142,6 @@ public class OfficialTokenStoreLayeringTests
 
         backend.Store.Should().ContainKey("wechat:token:" + TokenType);
         backend.Store["wechat:token:" + TokenType].ToString().Should().Be("wechat-tok",
-            "本院存储原样存取（{expireMs}|{token} 编码由组件桥接器在更外层完成）");
+            "本院存储原样存取（值编码 {expiresInSeconds}|{token} 由组件桥接器在更外层完成，U-1 迁移期双读）");
     }
 }

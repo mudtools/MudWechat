@@ -173,7 +173,7 @@ var bytes = await client.GetMediaDataAsync(message.Image!.SdkFileId!, ct);
 ## 依赖
 
 - `Mud.Wechat.Work.Abstractions`、`Mud.Wechat.Work.DataModels`（后者与企业微信叶层 `Mud.Wechat.Abstractions` 的共享关系经 Abstractions 传递，本包不直接引用叶层）
-- `Mud.HttpUtils` 3.0.3 + `Mud.HttpUtils.Generator` 3.0.3（分析器，`PrivateAssets=all`）
+- `Mud.HttpUtils` 3.0.7 + `Mud.HttpUtils.Generator` 3.0.7（分析器，`PrivateAssets=all`）
 
 ## 说明
 

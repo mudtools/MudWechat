@@ -12,8 +12,8 @@ namespace Mud.Wechat.Ads.Abstractions.Auth;
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>为什么不是公用层 <c>IWechatTokenStore</c> 的条目</b>：那条端口的持久化编码是
-/// <c>{expireMs}|{token}</c>（<c>WechatTokenBridgeCodec</c>），<b>只有一个令牌槽位</b>，
+/// <b>为什么不是公用层 <c>IWechatTokenStore</c> 的条目</b>：经桥接层的持久化编码是
+/// <c>{expiresInSeconds}|{token}</c>（<b>只有一个令牌槽位</b>），
 /// 装不下 refresh_token 及其有效期，更装不下 <c>authorizer_info</c>。
 /// 而 v3.0 的 refresh_token 是<b>一次性</b>凭据（刷新即换新的、旧的立即失效），
 /// 「access 与 refresh 必须原子地一起换」是这条线的核心不变式 ⇒ 必须自建能承载整对状态的端口

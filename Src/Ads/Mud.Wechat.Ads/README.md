@@ -31,7 +31,7 @@
 ## 依赖
 
 - `Mud.Wechat.Ads.Abstractions`、`Mud.Wechat.Ads.DataModels`、`Mud.Wechat.Abstractions`
-- `Mud.HttpUtils` 3.0.3、`Mud.HttpUtils.Generator` 3.0.3（Analyzer）
+- `Mud.HttpUtils` 3.0.7、`Mud.HttpUtils.Generator` 3.0.7（Analyzer）
 - TFM：继承根 props 四档（`netstandard2.0` / `net6.0` / `net8.0` / `net10.0`）
 
 `InternalsVisibleTo` 开放给 `Mud.Wechat.Ads.Tests`。

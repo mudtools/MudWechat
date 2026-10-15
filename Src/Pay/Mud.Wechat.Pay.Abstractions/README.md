@@ -78,7 +78,7 @@ bool ok = WechatPayAesGcmCodec.TryDecryptOfficialPayload(
 
 - `Mud.Wechat.Abstractions`（跨产品线共享叶层：SSRF 主机登记窄入口、回调异常与抗重放端口、响应判错契约）
 - `Mud.Wechat.Pay.DataModels`
-- `Mud.HttpUtils` 3.0.3 + `Mud.HttpUtils.Generator` 3.0.3（分析器，`PrivateAssets=all`）
+- `Mud.HttpUtils` 3.0.7 + `Mud.HttpUtils.Generator` 3.0.7（分析器，`PrivateAssets=all`）
 - `Microsoft.Extensions.Http` / `Microsoft.Extensions.Hosting.Abstractions`：net8.0/net10.0 为 10.0.9，net6.0 为 8.0.1
 - `InternalsVisibleTo`：`Mud.Wechat.Pay`、`Mud.Wechat.Pay.Callback`、`Mud.Wechat.Pay.Tests`、`Mud.Wechat.Pay.Callback.Tests`、`DynamicProxyGenAssembly2`
 

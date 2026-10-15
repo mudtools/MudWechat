@@ -18,6 +18,14 @@ namespace Mud.Wechat.Abstractions.TokenManager;
 /// 互不覆盖，故同一份存储实例可安全服务全部产品线。
 /// </para>
 /// <para>
+/// <b>值编解码（U-1 迁移期，2026-10-15）</b>：写侧经官方 <c>MigrationTokenStoreCodec.Instance</c>
+/// 单写<b>相对秒</b>形态 <c>{expiresInSeconds}|{token}</c>（与官方 <c>DefaultTokenStoreCodec</c> 逐字节一致）；
+/// 读侧双读——存量旧值 <c>{expireMs}|{token}</c>（绝对毫秒戳 ≥ 10^10 启发式阈值）重投影为剩余秒，
+/// 故升级后旧存储条目继续命中。旧数据按条目自然过期收敛后（最长一个令牌 TTL 周期），
+/// 可切回 <c>DefaultTokenStoreCodec.Instance</c>（迁回动作择期执行，切换前旧值将因前导段量级
+/// 被误读为「超长有效秒数」⇒ 不得提前切换）。
+/// </para>
+/// <para>
 /// <b>读穿透与写穿均由组件桥接器承担，SDK <u>不得</u>自建叠层</b>：
 /// </para>
 /// <list type="bullet">
@@ -111,17 +119,34 @@ internal static class WechatTokenStoreBridge
     }
 
     private static TokenStoreValue? AdaptCredentialToken(CredentialToken? token)
-        => token is null
-            ? null
-            : new TokenStoreValue(
-                accessToken: WechatTokenBridgeCodec.EncodeToken(token.AccessToken, token.Expire),
-                refreshToken: null,
-                expiresInSeconds: WechatTokenBridgeCodec.RemainingSeconds(token.Expire));
+    {
+        if (token is null)
+        {
+            return null;
+        }
+
+        // U-1：写侧单写相对秒形态 {expiresInSeconds}|{token}（官方 MigrationTokenStoreCodec.Encode
+        // 与 DefaultTokenStoreCodec 逐字节一致，C-2 裁决）；存量旧值 {expireMs}|{token} 由读侧双读兼容，
+        // 按条目自然过期收敛（最长一个令牌 TTL 周期）后可切回 DefaultTokenStoreCodec.Instance。
+        var remainingSeconds = RemainingSeconds(token.Expire);
+        return new TokenStoreValue(
+            accessToken: MigrationTokenStoreCodec.Instance.Encode(token.AccessToken, remainingSeconds),
+            refreshToken: null,
+            expiresInSeconds: remainingSeconds);
+    }
 
     private static CredentialToken? CreateCredentialToken(TokenStoreValue value)
     {
-        var (accessToken, expireTimestampMs) = WechatTokenBridgeCodec.DecodeToken(value.AccessToken);
-        if (string.IsNullOrEmpty(accessToken) || expireTimestampMs <= 0)
+        // U-1 读侧双读：新相对秒直读；旧绝对毫秒戳（≥ 10^10 阈值）启发式重投影为剩余秒；
+        // 不可解析 / 已过期投影 ≤ 0 ⇒ miss（不入镜像，管线走重新取令牌）。
+        var decoded = MigrationTokenStoreCodec.Instance.Decode(value.AccessToken);
+        if (decoded == null)
+        {
+            return null;
+        }
+
+        var (accessToken, expiresInSeconds) = decoded.Value;
+        if (string.IsNullOrEmpty(accessToken) || expiresInSeconds <= 0)
         {
             return null;
         }
@@ -129,8 +154,22 @@ internal static class WechatTokenStoreBridge
         return new CredentialToken
         {
             AccessToken = accessToken,
-            Expire = expireTimestampMs,
+            Expire = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() + (expiresInSeconds * 1000L),
             IssuedAt = 0,
         };
+    }
+
+    /// <summary>由绝对过期毫秒推导剩余秒数（&lt;= 0 表示无 TTL 信息）。</summary>
+    /// <param name="expireMs">绝对过期毫秒时间戳。</param>
+    /// <returns>剩余秒数（已过期返回 0）。</returns>
+    private static long RemainingSeconds(long expireMs)
+    {
+        if (expireMs <= 0)
+        {
+            return 0;
+        }
+
+        var remaining = (expireMs - DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()) / 1000;
+        return remaining > 0 ? remaining : 0;
     }
 }

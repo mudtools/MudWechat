@@ -3,8 +3,11 @@
 		<TargetFrameworks>netstandard2.0;net6.0;net8.0;net10.0</TargetFrameworks>
 		<!-- 1.3.0（2026-10-15）：上游 Mud.HttpUtils 3.0.7 重打包适配（批次 A+B，全 A 案）——T1 SE.Redis 分档锚定（net8+ 3.4.5、低 TFM 2.13.17）；
 		     T2 U-4 按应用清库（ITokenStoreAppPurge + Work 三层探测）；T3 U-3 跨进程刷新租约（AddWechatRedis 注册即启用）；
-		     T4 U-1 令牌值编解码迁移（MigrationTokenStoreCodec 双读，私有 WechatTokenBridgeCodec 退役）。 -->
-		<Version>1.3.0</Version>
+		     T4 U-1 令牌值编解码迁移（MigrationTokenStoreCodec 双读，私有 WechatTokenBridgeCodec 退役）。
+		     1.3.1（2026-10-15）：上游 3.0.7 第二次重打包（版本号不变）批次 C——U-2 v2 信封读取面无条件兼容（零代码改动）；
+		     配置面镜像官方两阶段开关（UseVersionedEnvelope / AcknowledgeVersionedEnvelopeReadersUpgraded，默认关闭，
+		     本院 Validate 与官方构造期双闸 fail-fast）；写入面暂不启用（书面结论备案）；U-5~U-8 处置：无接线点/不替换/零消费点/备案。 -->
+		<Version>1.3.1</Version>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 		<TreatWarningsAsErrors>false</TreatWarningsAsErrors>

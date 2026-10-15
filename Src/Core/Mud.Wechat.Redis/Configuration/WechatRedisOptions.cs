@@ -130,6 +130,14 @@ public class WechatRedisOptions
             throw new InvalidOperationException(
                 "WechatRedis:TokenStore:DefaultTtl 必须为正数（null 表示不设 TTL，行为由宿主自担）。");
         }
+
+        if (tokenStore.UseVersionedEnvelope && !tokenStore.AcknowledgeVersionedEnvelopeReadersUpgraded)
+        {
+            throw new InvalidOperationException(
+                "WechatRedis:TokenStore:UseVersionedEnvelope 开启前必须完成两阶段切换：先升级并发布全部读取实例（含 v2 前缀识别），"
+                + "确认后置 WechatRedis:TokenStore:AcknowledgeVersionedEnvelopeReadersUpgraded = true——"
+                + "旧读取实例读到 v2 值必然 miss（方向安全但会持续重复刷新），禁止「写入方先升级」的逆序切换。");
+        }
     }
 
     /// <summary>

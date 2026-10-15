@@ -190,6 +190,8 @@ public static class WechatRedisServiceCollectionExtensions
         // ③ TryAdd 语义同四端口：宿主预注册的自定义 ITokenStore 按契约胜出。
         // 注意：IWechatTokenStore : ITokenStore（薄标记，二进制兼容），两者解析为不同实例属分层设计而非缺陷；
         // 既有令牌管理器（构造注入 IWechatTokenStore）行为零变化，新增代码按 A-5 直接依赖 ITokenStore。
+        // ④ U-2 两阶段开关镜像原样透传（默认 false；开启未确认时本院 Validate 与官方构造期双闸 fail-fast）——
+        //    本侧书面结论=暂缓启用写入侧，读取面 v2 前缀兼容随库升级免费获得（桥接读路径零改动）。
         services.TryAddSingleton<ITokenStore>(sp =>
         {
             var wechatOptions = sp.GetRequiredService<IOptions<WechatRedisOptions>>().Value;
@@ -204,6 +206,8 @@ public static class WechatRedisServiceCollectionExtensions
                     AppKey = tokenStore.AppKey,
                     DefaultTtl = tokenStore.DefaultTtl,
                     Database = tokenStore.Database,
+                    UseVersionedEnvelope = tokenStore.UseVersionedEnvelope,
+                    AcknowledgeVersionedEnvelopeReadersUpgraded = tokenStore.AcknowledgeVersionedEnvelopeReadersUpgraded,
                 });
         });
 

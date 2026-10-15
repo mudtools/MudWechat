@@ -95,7 +95,9 @@ $configFiles = @(
     'Mud.Wechat.Redis/Configuration/WechatRedisOptions.cs',
     'Mud.Wechat.Redis/Configuration/WechatRedisConnectionOptions.cs',
     # 官方分布式令牌存储（Mud.HttpUtils.Redis，A-5 分层共存）在下游的配置映射面：
-    # KeyPrefix/AppKey/Database 均有真实消费点（AddWechatRedisCore 的 RedisTokenStoreOptions 映射）；
+    # KeyPrefix/AppKey/Database 与 U-2 两开关（UseVersionedEnvelope / AcknowledgeVersionedEnvelopeReadersUpgraded）
+    # 均有真实消费点（AddWechatRedisCore 的 RedisTokenStoreOptions 映射；两开关另经 WechatRedisOptions.Validate
+    # 两阶段确认闸，映射为权威消费点）；
     # DefaultTtl 为 TimeSpan? 不入本脚本基元正则（可空非基元语义），消费点同处。
     'Mud.Wechat.Redis/Configuration/WechatRedisTokenStoreOptions.cs',
     'Mud.Wechat.OpenTelemetry/WechatOpenTelemetryOptions.cs',

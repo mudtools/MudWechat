@@ -6,6 +6,7 @@
 // -----------------------------------------------------------------------
 
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Mud.HttpUtils;
 using Mud.HttpUtils.Redis;
 
@@ -93,6 +94,37 @@ public class OfficialTokenStoreLayeringTests
 
         (await store.GetAccessTokenAsync(TokenType)).Should().BeNull();
         (await store.GetRefreshTokenAsync(TokenType)).Should().BeNull();
+    }
+
+    [Fact]
+    public async Task OfficialStore_ShouldWriteV2Envelope_WhenVersionedEnvelopeEnabledAndAcknowledged()
+    {
+        // U-2 镜像透传：本院两开关原样进官方 RedisTokenStoreOptions ⇒ 写入侧切 VersionedTokenStoreCodec
+        // （v2:{秒}|{token}）；读取面本就兼容 v1，双闸均过时形态才变化。
+        var (provider, backend) = BuildProvider(o =>
+        {
+            o.TokenStore.UseVersionedEnvelope = true;
+            o.TokenStore.AcknowledgeVersionedEnvelopeReadersUpgraded = true;
+        });
+        var store = provider.GetRequiredService<ITokenStore>();
+
+        await store.SetAccessTokenAsync(TokenType, "tok-v2", 7200);
+
+        backend.Store["mud:httputils:" + TokenType + ":shared:access"].ToString().Should().Be("v2:7200|tok-v2");
+        backend.LastExpiry.Should().Be(TimeSpan.FromSeconds(7200), "v2 信封不改变 TTL 策略（宁缺勿滥跟随写入方）");
+        (await store.GetAccessTokenAsync(TokenType)).Should().Be("tok-v2");
+    }
+
+    [Fact]
+    public void OfficialStore_ShouldFailFast_WhenVersionedEnvelopeEnabledWithoutAcknowledgement()
+    {
+        // U-2 前置闸：本院 Validate（IValidateOptions 管线）在配置解析期即拒绝——无需等官方存储
+        // 构造期的第二道闸（双闸形态；错误经 OptionsFactory 包装为 OptionsValidationException）。
+        var (provider, _) = BuildProvider(o => o.TokenStore.UseVersionedEnvelope = true);
+
+        var act = () => provider.GetRequiredService<ITokenStore>();
+
+        act.Should().Throw<OptionsValidationException>().WithMessage("*UseVersionedEnvelope*");
     }
 
     [Fact]

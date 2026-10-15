@@ -19,7 +19,8 @@ namespace Mud.Wechat.Redis.Services;
 /// <para>
 /// 键布局 <c>{KeyPrefix}:token:{storeKey}</c>（RD2：<c>storeKey</c> 为不透明叶子原样拼接，
 /// 与 <c>InMemoryWechatTokenStore</c> 键空间逐字节一致）。值为调用方传入的不透明令牌字符串
-/// （组件桥接器写入 <c>{expireMs}|{token}</c> 编码形态），本存储原样存取、不编解码。
+/// （组件桥接器写入官方相对秒形态 <c>{expiresInSeconds}|{token}</c>；读取方兼容存量旧绝对戳
+/// 与官方 v2 信封），本存储原样存取、不编解码。
 /// </para>
 /// <para>
 /// TTL 语义：TTL 完全跟随调用方 <c>expiresInSeconds</c>（RD12 无封顶旋钮）；

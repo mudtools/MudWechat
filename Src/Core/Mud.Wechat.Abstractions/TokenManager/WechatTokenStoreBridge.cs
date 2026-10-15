@@ -21,7 +21,9 @@ namespace Mud.Wechat.Abstractions.TokenManager;
 /// <b>值编解码（U-1 迁移期，2026-10-15）</b>：写侧经官方 <c>MigrationTokenStoreCodec.Instance</c>
 /// 单写<b>相对秒</b>形态 <c>{expiresInSeconds}|{token}</c>（与官方 <c>DefaultTokenStoreCodec</c> 逐字节一致）；
 /// 读侧双读——存量旧值 <c>{expireMs}|{token}</c>（绝对毫秒戳 ≥ 10^10 启发式阈值）重投影为剩余秒，
-/// 故升级后旧存储条目继续命中。旧数据按条目自然过期收敛后（最长一个令牌 TTL 周期），
+/// 故升级后旧存储条目继续命中；并兼容官方 v2 信封（U-2：<c>v2:</c> 前缀自描述值由迁移 codec
+/// 直通新格式 codec 解析——读取面升级库即得，写入侧本桥维持相对秒单写）。
+/// 旧数据按条目自然过期收敛后（最长一个令牌 TTL 周期），
 /// 可切回 <c>DefaultTokenStoreCodec.Instance</c>（迁回动作择期执行，切换前旧值将因前导段量级
 /// 被误读为「超长有效秒数」⇒ 不得提前切换）。
 /// </para>

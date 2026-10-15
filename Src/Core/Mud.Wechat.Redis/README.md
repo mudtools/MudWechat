@@ -28,12 +28,14 @@
 ### 分层共存（A-5）：两个令牌面为何同时存在
 
 - **本院令牌面**（`IWechatTokenStore` → `RedisWechatTokenStore`）：键 `{本院前缀}:token:{storeKey}`
-  （三段式，与 `InMemoryWechatTokenStore` 键空间逐字节一致），值由组件桥接器写 `{expireMs}|{token}`
-  自描述绝对过期戳；实现 `IWechatTokenStoreBatchRemove` 批删扩展（W1/M10）与官方 `ITokenStoreAppPurge`
+  （三段式，与 `InMemoryWechatTokenStore` 键空间逐字节一致），值由组件桥接器写官方相对秒形态
+  `{expiresInSeconds}|{token}`（U-1 起；读取方兼容存量旧绝对戳与官方 v2 信封）；实现
+  `IWechatTokenStoreBatchRemove` 批删扩展（W1/M10）与官方 `ITokenStoreAppPurge`
   （U-4 按应用清库，见下）。
 - **通用令牌面**（`ITokenStore` → 官方 `RedisTokenStore`）：键 `{官方前缀}:{tokenType}:{appKey}:access|refresh`
   （默认前缀 `mud:httputils`，配置节 `WechatRedis:TokenStore`），值经官方 `ITokenStoreCodec`
-  （`{expiresInSeconds}|{token}` 相对秒）；官方 `ITokenStore` 维持最小 SPI，**不实现**微信类型与任意键批删
+  （`{expiresInSeconds}|{token}` 相对秒；U-2 起可选 v2 版本化信封 `v2:{秒}|{token}`——读取面无条件兼容、
+  写入面经 `TokenStore.UseVersionedEnvelope` 两阶段选开，默认关闭）；官方 `ITokenStore` 维持最小 SPI，**不实现**微信类型与任意键批删
   （A-5 明令）——**U-4 起官方另有按应用清库面** `ITokenStoreAppPurge`（3.0.7 重打包新增，官方
   `RedisTokenStore` 与本包 `RedisWechatTokenStore` / `InMemoryWechatTokenStore` 均已实现）；企微侧
   `PurgeAppTokensAsync` 按「官方 `ITokenStoreAppPurge`（键解析内聚到实现方）→ 本院
@@ -96,7 +98,9 @@ app.Run();
       "KeyPrefix": "mud:httputils",         //   官方键前缀（与本院 wechat 前缀互不干扰）
       "AppKey": null,                       //   官方命名空间段；空 ⇒ shared（单应用场景）
       "DefaultTtl": null,                   //   兜底 TTL；生产建议显式配置（如 30 天）防无界滞留
-      "Database": -1                        //   官方存储库编号；-1 = 连接默认库
+      "Database": -1,                       //   官方存储库编号；-1 = 连接默认库
+      "UseVersionedEnvelope": false,        //   U-2：写入侧 v2 信封（两阶段：先升级全部读取实例；默认关闭）
+      "AcknowledgeVersionedEnvelopeReadersUpgraded": false  // U-2：开启上项时的显式确认，未确认双闸 fail-fast
     }
   }
 }

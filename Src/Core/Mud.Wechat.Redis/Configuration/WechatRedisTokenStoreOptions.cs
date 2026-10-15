@@ -49,4 +49,29 @@ public class WechatRedisTokenStoreOptions
 
     /// <summary>Redis 数据库编号；<c>-1</c> 表示连接默认库。</summary>
     public int Database { get; set; } = -1;
+
+    /// <summary>
+    /// U-2：写入侧启用官方 <b>v2 版本化信封</b>（<c>v2:{expiresInSeconds}|{token}</c> + 显式过期态）。
+    /// 默认 <c>false</c> = 维持官方默认形态 <c>{expiresInSeconds}|{token}</c>（逐位零变化）。
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>两阶段切换纪律</b>：开启前必须先把<b>全部读取实例</b>升级到含 v2 前缀识别的本库版本
+    /// （升级即得、无需改配置）；旧读取方读 v2 值必然 miss（方向安全、走刷新路径，但会持续重复刷新）。
+    /// <b>禁止「写入方先升级」的逆序切换</b>。
+    /// </para>
+    /// <para>
+    /// 开启时必须同时置 <see cref="AcknowledgeVersionedEnvelopeReadersUpgraded"/>——未确认时
+    /// <c>WechatRedisOptions.Validate()</c>（IValidateOptions 管线）与官方存储构造期<b>双重 fail-fast</b>。
+    /// 本侧书面结论为<b>暂缓启用写入侧</b>（令牌管理器无「显式过期 vs 缺失」区分需求），
+    /// 本开关镜像官方形态、供宿主按自身运维纪律选开。
+    /// </para>
+    /// </remarks>
+    public bool UseVersionedEnvelope { get; set; }
+
+    /// <summary>
+    /// U-2：两阶段切换的<b>显式确认</b>——声明「全部读取实例已升级至含 v2 解码的本库版本」。
+    /// 仅在 <see cref="UseVersionedEnvelope"/> 为 <c>true</c> 时被要求为 <c>true</c>；默认 <c>false</c>。
+    /// </summary>
+    public bool AcknowledgeVersionedEnvelopeReadersUpgraded { get; set; }
 }

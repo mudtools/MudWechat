@@ -99,8 +99,13 @@ public class OpenPlatformContractGuards
     };
 
     /// <summary>
-    /// OP-B1：接口集合与数量锁定（6 接口 / 39 端点，防漏防多）。
+    /// OP-B1：接口集合与数量锁定（12 接口 / 89 端点，防漏防多）。
     /// </summary>
+    /// <remarks>
+    /// 2026-10-15 起本线另有 <c>ComponentTcb</c> 六支接口（50 端点，注册组共用一个），
+    /// 其 (方法, 路由) 表与令牌语义由 <c>OpenPlatformComponentTcbContractGuards</c>（CBT 系列）逐条锁定，
+    /// 本守卫只负责「接口全集不漂移 + 端点总数与基线一致」。
+    /// </remarks>
     [Fact]
     public void Interfaces_ShouldMatchBaseline_WhenContractSurfaceEnumerated()
     {
@@ -122,6 +127,12 @@ public class OpenPlatformContractGuards
             nameof(IWechatOpenPlatformAccountService),
             nameof(IWechatOpenPlatformSnsService),
             nameof(IWechatOpenPlatformCategoryService),
+            nameof(IWechatOpenPlatformComponentTcbEnvService),
+            nameof(IWechatOpenPlatformComponentTcbDatabaseService),
+            nameof(IWechatOpenPlatformComponentTcbFileService),
+            nameof(IWechatOpenPlatformComponentTcbScfService),
+            nameof(IWechatOpenPlatformComponentTcbCloudRunService),
+            nameof(IWechatOpenPlatformComponentTcbStaticStoreService),
         });
 
         var actualEndpoints = interfaces.Sum(GetEndpoints);
@@ -292,8 +303,11 @@ public class OpenPlatformContractGuards
     }
 
     /// <summary>
-    /// OP-B7：四个域 + Common 的 DTO 全量登记进对应 JsonContext（AOT 源生成完整性）。
+    /// OP-B7：五个域 + Common 的 DTO 全量登记进对应 JsonContext（AOT 源生成完整性）。
     /// </summary>
+    /// <remarks>
+    /// <c>ComponentTcb</c>（166 DTO）不在本表内——它由域守卫 CBT4 逐条锁定并附类型数，本表覆盖其余各域。
+    /// </remarks>
     [Fact]
     public void DataModels_ShouldBeRegisteredInDomainJsonContexts_WhenContractSurfaceEnumerated()
     {
@@ -304,6 +318,7 @@ public class OpenPlatformContractGuards
             (typeof(ComponentJsonContext), "Mud.Wechat.OpenPlatform.DataModels.Component", "Component"),
             (typeof(OpenAccountJsonContext), "Mud.Wechat.OpenPlatform.DataModels.OpenAccount", "OpenAccount"),
             (typeof(AccountJsonContext), "Mud.Wechat.OpenPlatform.DataModels.Account", "Account"),
+            (typeof(CategoryJsonContext), "Mud.Wechat.OpenPlatform.DataModels.Category", "Category"),
             (typeof(SnsJsonContext), "Mud.Wechat.OpenPlatform.DataModels.Sns", "Sns"),
         };
 

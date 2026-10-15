@@ -59,7 +59,7 @@ public static class MerchantServiceMediaTypes
 /// <remarks>
 /// 官方文档：<see href="https://pay.weixin.qq.com/doc/v3/merchant/4012533431"/>（2026-10-14 核验）。
 /// 官方原文：「<b>类型为申请退款的单据是需要最高优先处理的单据</b>」⇒ <see cref="Refund"/> 不只是分类，
-/// 而是处置优先级；且 <see cref="ApplyRefundAmount"/> 仅在该类型下出现。
+/// 而是处置优先级；且 <c>apply_refund_amount</c> 仅在该类型下出现。
 /// </remarks>
 public static class MerchantServiceProblemTypes
 {

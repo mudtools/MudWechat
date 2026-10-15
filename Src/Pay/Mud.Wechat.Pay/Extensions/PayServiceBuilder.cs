@@ -8,6 +8,7 @@
 using Mud.Wechat.Pay.Abstractions.Credential;
 using Mud.Wechat.Pay.Certificates;
 using Mud.Wechat.Pay.Download;
+using Mud.Wechat.Pay.Ecommerce;
 using Mud.Wechat.Pay.Fapiao;
 using Mud.Wechat.Pay.MerchantManage;
 using Mud.Wechat.Pay.Media;
@@ -197,6 +198,16 @@ public class PayServiceBuilder
             [PayModule.MerchantMedia] = static s =>
             {
                 s.TryAddSingleton<IWechatPayMerchantMediaService, WechatPayMerchantMediaService>();
+            },
+
+            // P1-1 平台收付通（8 个声明式接口共用 RegistryGroupName="Ecommerce" ⇒ 一支注册器）
+            // + 注销资料图片上传（multipart，官方页 4012691710 同时标【普通服务商】【平台商户】）。
+            // 本域身份按「支」分裂：55 支里只有 5 支是【普通服务商】⇒ 签名主体由宿主作用域决定，
+            // SDK 不做身份断言（守卫 EC-X2 钉住该集合）。
+            [PayModule.Ecommerce] = static s =>
+            {
+                s.AddEcommerceWebApiHttpClient();
+                s.TryAddSingleton<IWechatPayEcommerceCancelMediaService, WechatPayEcommerceCancelMediaService>();
             },
 
             // 账单模块额外注册**账单下载通道**：它没有 [HttpClientApi] 声明（路由由 download_url 动态给出、

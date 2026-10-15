@@ -43,6 +43,8 @@ public class OpenPlatformServiceBuilder
             [OpenPlatformModule.Account] = static s => s.AddAccountWebApiHttpClient(),
             [OpenPlatformModule.Sns] = static s => s.AddSnsWebApiHttpClient(),
             [OpenPlatformModule.Category] = static s => s.AddCategoryWebApiHttpClient(),
+            // ComponentTcb 组含「环境/数据库/存储/云函数/云托管/静态网站」六支接口，一次注册覆盖六个接口。
+            [OpenPlatformModule.ComponentTcb] = static s => s.AddComponentTcbWebApiHttpClient(),
         };
 
     /// <summary>注册全部模块。</summary>

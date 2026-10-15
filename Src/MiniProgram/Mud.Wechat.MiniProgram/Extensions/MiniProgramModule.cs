@@ -339,4 +339,32 @@ public enum MiniProgramModule
     /// <c>minigame/dev/api-backend/</c>」两条。</para>
     /// </remarks>
     Game,
+
+    /// <summary>
+    /// 云开发（TCB）域（44 端点，四接口共用本注册组：环境与账号 8 + 数据库与云存储 16 + 云函数 9 + 其它能力 11；
+    /// 路由族 <c>/tcb/*</c> 42 条 + <c>/wxa/getopendata</c> + <c>/wxa/getvoipsign</c>）。
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>官方文档树两处、路由一套</b>：小程序自研面位于
+    /// <c>miniprogram/dev/server/API/cloudbase/{functions,database,storage,others}/*</c>，
+    /// 公众平台通用面位于 <c>doc/oplatform/openApi/cloudbase-common/*</c> 与 <c>cloudbase-batch/*</c>；
+    /// 同一 <c>/tcb/*</c> 路由在两处各有正文（2026-10-15 逐页核验）⇒ 本域端点不重复登记。
+    /// </para>
+    /// <para>
+    /// <b>令牌面</b>：全域使用小程序 <c>access_token</c>（Query）。官方另给的 <c>authorizer_access_token</c>
+    /// 与 <c>component_access_token</c> 只是代调用形态、不改令牌链；<b>仅</b>
+    /// <c>component_access_token</c> 独占的 <c>/componenttcb/*</c> 面（50 端点）归开放平台线，
+    /// 本域不得声明（守卫 CBZ 锁定两线不交叉）。
+    /// </para>
+    /// <para>
+    /// <b>官方本域只给一处端点级频率数字</b>：<c>/tcb/getqcloudtoken</c> 为「10 次每小时」，
+    /// 其余 43 端点未给数字 ⇒ 注释留档该空缺，不得凭第三方 SDK 注释或记忆补数。
+    /// </para>
+    /// <para>
+    /// <b>被官方下线的两支不落地</b>：<c>/tcb/getappconfig</c> 与 <c>/tcb/uploadappconfig</c>
+    /// （官方页面标题即标「即将下架」）⇒ 由零声明守卫登记，避免后续按旧清单回填。
+    /// </para>
+    /// </remarks>
+    CloudBase,
 }

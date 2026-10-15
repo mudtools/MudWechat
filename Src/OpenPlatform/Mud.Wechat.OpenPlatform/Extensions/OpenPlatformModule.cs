@@ -33,4 +33,14 @@ public enum OpenPlatformModule
 
     /// <summary>小程序类目管理域（<c>/cgi-bin/wxopen/*</c> 类目/扫码购/基础库版本/公众号关联小程序；注册组 <c>Category</c>）。</summary>
     Category,
+
+    /// <summary>
+    /// 批量代云开发域（<c>/componenttcb/*</c> 全 50 端点：环境 7 + 数据库 9 + 存储 4 + 云函数 7 + 云托管 19 + 静态网站 4；注册组 <c>ComponentTcb</c>）。
+    /// </summary>
+    /// <remarks>
+    /// 六支接口共用一个注册组 ⇒ 一次 <c>AddComponentTcbWebApiHttpClient()</c> 覆盖全部接口；
+    /// 令牌恒为 <c>component_access_token</c>（Query 参数名仍是 <c>access_token</c>），
+    /// 与小程序线 <c>/tcb/*</c>（<c>MpTokenTypes.AccessToken</c>）为两套路由、两套令牌，交叉声明由守卫 CBZ2 拒绝。
+    /// </remarks>
+    ComponentTcb,
 }

@@ -44,14 +44,14 @@ public class WechatPayDomainContractGuards
             .OrderBy(static t => t.Name, StringComparer.Ordinal)
             .ToArray();
 
-        // 聚合计数（防枚举空跑，AGENTS §6）：二十六域接口 = Transactions / Refund / Bill / Certificates / ProfitSharing /
+        // 聚合计数（防枚举空跑，AGENTS §6）：二十七域共三十四个接口 = Transactions / Refund / Bill / Certificates / ProfitSharing /
         // PayScore / CombineTransactions / Transfer / NewTaxControlFapiao / MarketingFavor / Apply4SubMerchant /
         // Apply4Subject / PartnerTransactions / PartnerPayScore / BankPayScore / PartnerTransfer / BankTransfer /
         // Repayment / MerchantRiskManage / MerchantStore / MerchantAlterApply / MerchantFund / MerchantSettlement /
-        // MerchantService / MerchantManage / MerchantOperationManage。
+        // MerchantService / MerchantManage / MerchantOperationManage + Ecommerce（八个子域接口共享一个注册组）。
         // 数字集中维护在 Tests/ContractBaseline.cs；数量变化须同批更新 PayModule 与该基线。
         interfaces.Should().HaveCount(Baseline.Pay.HttpApiInterfaces,
-            "支付线二十六域接口——数量变化须同批更新 PayModule 与 Tests/ContractBaseline.cs");
+            "支付线二十七域三十四接口——数量变化须同批更新 PayModule 与 Tests/ContractBaseline.cs");
 
         interfaces.Select(static t => t.Name).Should().BeEquivalentTo(new[]
         {
@@ -81,6 +81,14 @@ public class WechatPayDomainContractGuards
             "IWechatPayMerchantService",
             "IWechatPayMerchantManageService",
             "IWechatPayMerchantOperationManageService",
+            "IWechatPayEcommerceFundService",
+            "IWechatPayEcommerceBillService",
+            "IWechatPayEcommerceAccountService",
+            "IWechatPayEcommerceProfitSharingService",
+            "IWechatPayEcommerceRefundService",
+            "IWechatPayEcommerceMchTransferService",
+            "IWechatPayEcommerceApplymentService",
+            "IWechatPayEcommercePapayService",
         });
 
         var offenders = interfaces

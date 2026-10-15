@@ -1,0 +1,40 @@
+// -----------------------------------------------------------------------
+//  作者：Mud Studio  版权所有 (c) Mud Studio 2026
+//  Mud.Wechat 项目的版权、商标、专利和其他相关权利均受相应法律法规的保护。
+//  本项目主要遵循 MIT 许可证进行分发和使用。许可证位于源代码树根目录中的 LICENSE-MIT 文件。
+//  不得利用本项目从事危害国家安全、扰乱社会秩序、侵犯他人合法权益等法律法规禁止的活动！任何基于本项目开发而产生的一切法律纠纷和责任，我们不承担任何责任！
+// -----------------------------------------------------------------------
+
+using System.Text.Json.Serialization;
+using Mud.HttpUtils.Attributes;
+
+namespace Mud.Wechat.MiniProgram.DataModels.CloudBase;
+
+/// <summary>获取授权绑定的商户号列表·list(Array)。官方页：<see href="https://developers.weixin.qq.com/doc/oplatform/openApi/cloudbase-common/wechatpay/api_getwechatpaylist.html"/></summary>
+[HttpJsonSerializable(SerializerClassName = "CloudBase")]
+public class WxaCloudBaseGetWechatPayListResponseListItem
+{
+    /// <summary>商户id</summary>
+    [JsonPropertyName("merchant_code")]
+    public string? MerchantCode { get; set; }
+
+    /// <summary>商户名称</summary>
+    [JsonPropertyName("merchant_name")]
+    public string? MerchantName { get; set; }
+
+    /// <summary>主体名称</summary>
+    [JsonPropertyName("company_name")]
+    public string? CompanyName { get; set; }
+
+    /// <summary>绑定关系</summary>
+    [JsonPropertyName("mch_relation_state")]
+    public long? MchRelationState { get; set; }
+
+    /// <summary>jsapi授权状态</summary>
+    [JsonPropertyName("jsapi_auth_state")]
+    public long? JsapiAuthState { get; set; }
+
+    /// <summary>退款授权状态</summary>
+    [JsonPropertyName("refund_auth_state")]
+    public long? RefundAuthState { get; set; }
+}

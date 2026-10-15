@@ -9,6 +9,7 @@ using System.Text.Json.Serialization.Metadata;
 using Mud.Wechat.OpenPlatform.DataModels.Account;
 using Mud.Wechat.OpenPlatform.DataModels.Category;
 using Mud.Wechat.OpenPlatform.DataModels.Component;
+using Mud.Wechat.OpenPlatform.DataModels.ComponentTcb;
 using Mud.Wechat.OpenPlatform.DataModels.OpenAccount;
 using Mud.Wechat.OpenPlatform.DataModels.Sns;
 
@@ -51,7 +52,8 @@ public static class OpenPlatformJsonResolverExtensions
             OpenAccountJsonContext.Default,
             AccountJsonContext.Default,
             SnsJsonContext.Default,
-            CategoryJsonContext.Default);
+            CategoryJsonContext.Default,
+            ComponentTcbJsonContext.Default);
 
         services.AddMudHttpClientJsonContext(resolver);
     }

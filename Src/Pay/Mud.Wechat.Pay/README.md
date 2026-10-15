@@ -1,13 +1,13 @@
 # Mud.Wechat.Pay
 
-微信支付 **APIv3** SDK **主包**：23 个业务域 160 端点的声明式客户端、模块注册器（`PayModule`）、四类非声明式服务（小程序调起签名 / 账单下载 / 发票文件上传 / 平台证书刷新）、AOT JsonContext 合并。
+微信支付 **APIv3** SDK **主包**：27 个业务域 34 个接口 230 端点的声明式客户端、模块注册器（`PayModule`，28 个成员）、八类非声明式服务（小程序调起签名 / 账单下载 / 发票文件上传 / 平台证书刷新 / 商户媒体上传 / 管理记录文件上传 / 投诉图片上传与拉取 / 注销资料图片上传）、AOT JsonContext 合并。
 
 > **与企业微信线是两条不同产品线**：本包凭据是**商户 API 证书 RSA 私钥的请求签名**（`Authorization: WECHATPAY2-SHA256-RSA2048 …`），**没有 `access_token`**、四个 `Mud.Wechat.Pay*` 包**零 `[Token]` 声明**（守卫 `PAY-B1` fail-closed），BaseAddress 恒为 `https://api.mch.weixin.qq.com`。
 > 企业微信的「企业支付」`AddPayApi()` 与「收银台」`AddPayToolApi()`（`Src/Work/`，走企微 `access_token`）与本包**无关**；本包入口名为 `AddPayApp()`（凭据底座）与 `AddWechatPayApi()`（业务接口）。
 
 ## 内容
 
-- **声明式业务客户端**（`Interfaces/`，23 个接口 / 160 端点，全部落 `namespace Mud.Wechat.Pay`，实现类由 `Mud.HttpUtils.Generator` 产出到 `Mud.Wechat.Pay.Internal`）：
+- **声明式业务客户端**（`Interfaces/`，34 个接口 / 230 端点，全部落 `namespace Mud.Wechat.Pay`，实现类由 `Mud.HttpUtils.Generator` 产出到 `Mud.Wechat.Pay.Internal`）：
   - `Interfaces/Transactions/` `IWechatPayTransactionsService` — 基础交易 7 端点：JSAPI/小程序、Native、APP、H5 四族下单 + 微信订单号查单 + 商户订单号查单 + 关闭订单
   - `Interfaces/Refund/` `IWechatPayRefundService` — 退款 3 端点：申请退款、查询单笔退款、发起异常退款
   - `Interfaces/Bill/` `IWechatPayBillService` — 账单 2 端点：申请交易账单、申请资金账单（文件另走下载通道）
@@ -31,13 +31,21 @@
   - `Interfaces/MerchantAlterApply/` `IWechatPayMerchantAlterApplyService` — 商户资料变更（**服务商面**）12 端点：主体 / 超级管理员 / 商家简称三族各「提交申请单 + 按 `apply_id` 查 + 按「商户号 + `out_request_no`」查 + 撤销」。全部落 `/v3/mchalterapply/` 单一前缀；**撤销是 POST 动词段 `/{applyId}/revoke` 而非 DELETE**，且官方无「按业务单号撤销」⇒ 撤销支恰三支；本域**零 204**。三族**定位键参数名不同形**（主体/超管族用 `merchant/{merchantCode}`，简称族用 `merchant/{subMchId}`）、状态值集不同族（主体族 6 值含 `EDITTING`、超管族 5 值**无**该值），故三族应答各建一型；加密要求三支相异——主体族与超管族提交把 `Wechatpay-Serial` 列为请求头表行必填，简称族**无该表行且全明文**；官方拼写 `APPLYMENT_STATE_EDITTING`（三 T）/ `MODIFING`（单 F）照页保留。**清单原始错配已收口**：联系人族四行在清单里挂的是主体族四页 docId（那四页正文只文档 `mchsubjectalterapplyment`）⇒ 守卫逐对钉住「方法 ↔ docId」（MAA-B2）
   - `Interfaces/MerchantFund/` `IWechatPayMerchantFundService` — 商户账户余额 2 端点：实时余额 + 日终余额（`/v3/merchant/fund/balance/{accountType}`、`/v3/merchant/fund/dayendbalance/{accountType}`，均 GET、`date` 走 query、两支**共用同一应答类型**且只有 `available_amount`/`pending_amount` 两字段）。`accountType` 值域只有 `BASIC`/`OPERATION`/`FEES`（**无 `MERCHANT`**）。**同前缀下的提现族四支与所得记录两支属【平台商户】面 ⇒ 本域零端点**，由守卫 MF-B2 与裁决守卫 C1 互为正对照（C1 现记该前缀在册两支）
   - `Interfaces/MerchantSettlement/` `IWechatPayMerchantSettlementService` — 商户结算规则申请（**从业机构面**）2 端点：创建结算规则申请单 + 按 `application_id` 查询。商户标识是 `acquiring_bank_id` + `channel_id` + `sub_mchid` **三层**（本域**无** `sp_mchid`/`sp_appid`/`sub_appid`）；`settle_rule_id` 官方 `integer`（两侧皆 `long?`）；状态三值 `PROCESSING`/`PASSED`/`FAILED`；`application_process_info` 官方是**非结构化 string**（不是数组）⇒ 不得解析成列表。官方无「按商户号查最新申请单」、无规则列表/删除面 ⇒ 零声明
-- **模块注册器**（`Extensions/`）：`AddWechatPayApi(...)` + `PayServiceBuilder`（`AddAllApis()` / `AddModules(params PayModule[])` / `Build()`）。`PayModule` 23 个成员即各接口 `[HttpClientApi(RegistryGroupName = …)]` 的组名，**叫 `Transactions` 等而非 `Pay`**——本仓「企业支付」已占用 `WechatModule.Pay` 与生成的 `AddPayWebApiHttpClient()`，同名会跨程序集歧义。
-- **非声明式服务**（官方列在 TOC 内但无 HTTP 形态，或路由/应答非 JSON）：
+  - `Interfaces/MerchantService/` `IWechatPayMerchantService` — 商户消费者投诉（**普通商户 / 服务商两面并存**）11 端点：通知地址 CRUD 4（四支**共用同一条** `/v3/merchant-service/complaint-notifications`，POST 与 PUT 请求体相同、POST/PUT/GET 应答相同而 **DELETE 回 204** ⇒ 本域是支付线唯一同时含 POST/PUT/GET/DELETE 四动词的域）+ 投诉列表 / 详情 / 协商历史 3 + 回复 / 完成处理 / 退款审批 3（三支 **204 无包体** ⇒ 裸 `Task`，状态闭环只能回查 `complaint_state`）+ 即时服务 1（200 + `log_id`）。图片上传与拉取两支走手工通道（multipart + 二进制流，见 `IWechatPayComplaintMediaService`）⇒ **不计入生成式接口**
+  - `Interfaces/MerchantManage/` `IWechatPayMerchantManageService` — 商户管理记录（**普通服务商面**）3 端点：查询单条管理记录 + 提交资料（POST **204**）+ 按 `sub_mchid` 分页查询列表（`limit` 必填、上限 10）。`submit_data` 官方类型是 `string(4000000)`（**JSON 序列化后的字符串、不是对象**）⇒ 建成子树即与官方字段类型冲突；上传管理记录文件走 multipart 手工通道，其表单字段名是 `submission_file` + `meta`（**与媒体上传通道的 `file` + `meta` 不同名**）
+  - `Interfaces/MerchantOperationManage/` `IWechatPayMerchantOperationManageService` — 商户运营管控情况查询（**普通服务商面**）1 端点：按 `sub_mchid` 查子商户管控情况（`GET /v3/mch-operation-manage/merchant-limitations/sub-mchid/{sub_mchid}`）。**同前缀的尽调族三支标【平台商户】** ⇒ 本包零声明（守卫 MOM-B2，正对照取本端点）
+  - `Interfaces/Ecommerce/` **八个接口一个注册组**（`RegistryGroupName = "Ecommerce"` ⇒ 只产出一支 `AddEcommerceWebApiHttpClient()`，全仓唯一「一组多接口」形态）`IWechatPayEcommerce{Fund,Bill,Account,ProfitSharing,Refund,MchTransfer,Applyment,Papay}Service` — 平台收付通 / 电商收付通（**【平台商户】为主，五支【普通服务商】按支分裂**）55 端点 / 52 条 `(方法, 路由)`：账户 10 + 分账与补差 11 + 退款 9 + 进件 7 + 商家转账 6 + 代扣合单 6 + 资金 5 + 账单 1。**八处照抄即错**：① 前缀 `/v3/ecommerce/` 与直连分账 `/v3/profitsharing/`、退款 `/v3/refund/`、商家转账 `/v3/fund-app/mch-transfer/` **零交集**（守卫 EC-X5）；② 退款族三支「同方法同路由两契约」（二级商户面 / 个人收款方面）⇒ 9 方法归并 6 条路由、按方法计端点；③ 进件提交支路由**带尾斜杠** `/v3/ecommerce/applyments/`（全域唯一，守卫 EC-A1）；④ 身份按**支**不按域：补差三支（守卫 EC-P7）+ 注销资格校验 + 注销申请单查询（守卫 EC-X2）签名主体是服务商；⑤ 加密面恰七页，且 `cert_number` 是**密文走 Query**（全线唯一）⇒ 请求 URI 严禁进日志（`WechatPayException.RequestUri` 已剥离 query）；⑥ 「受理 ≠ 结果」在本域是七处而非一处；⑦ 注销并提现（`/account/apply-cancel-withdraw`）与普通注销（`/account/cancel-applications`）是**两套契约**（单据定位键、状态枚举九值 vs 三值、应答表全不同）；⑧ 官方目录内**无** `after-sales-orders` ⇒ 零声明（守卫 EC-R7 带正对照）。注销资料图片上传（multipart，官方页同时标两身份）走手工通道，其 `meta` 键名 `file_name`/`file_digest` 与商户媒体通道的 `filename`/`sha256` **不通用**
+- **模块注册器**（`Extensions/`）：`AddWechatPayApi(...)` + `PayServiceBuilder`（`AddAllApis()` / `AddModules(params PayModule[])` / `Build()`）。`PayModule` 28 个成员即各接口 `[HttpClientApi(RegistryGroupName = …)]` 的组名，**叫 `Transactions` 等而非 `Pay`**——本仓「企业支付」已占用 `WechatModule.Pay` 与生成的 `AddPayWebApiHttpClient()`，同名会跨程序集歧义。**成员数 ≠ 接口数**（两处例外）：`Ecommerce` 一个组名由八个接口共享 ⇒ 一支注册器；`MerchantMedia` 是纯手工通道、无声明式接口 ⇒ 有成员无接口。
+- **非声明式服务**（官方列在 TOC 内但无 HTTP 形态，或路由/应答非 JSON；一律 `TryAddSingleton`，宿主预注册者胜出）：
   - `Transactions/` `IWechatPayMiniProgramPaySignService` — 小程序调起支付五参数（**本地 RSA 签名、无请求路由**）
   - `Download/` `IWechatPayBillDownloadService` — 账单文件下载通道（`download_url` 动态给出、应答非 JSON）
   - `Fapiao/` `IWechatPayFapiaoFileService` — 发票文件上传（`multipart/form-data` + SM3 摘要）
   - `Certificates/` `WechatPayPlatformCertificateRefresher` — 未知序列号时的按需刷新（三道防放大闸 + fail-closed）
-- **AOT JsonContext 合并**（`Extensions/PayJsonResolverExtensions.cs`）：`Build()` 把 DataModels 的 25 个生成上下文经 `JsonTypeInfoResolver.Combine` 注进 `wechat-pay` 命名客户端管线。
+  - `Media/` `IWechatPayMerchantMediaService` — 商户媒体上传与图片下载（`file` + `meta{filename, sha256}`，2 支通道）
+  - `MerchantManage/` `IWechatPayMerchantManageFileService` — 管理记录文件上传（表单字段名是 `submission_file` + `meta`，**与媒体通道的 `file` 不同名**）
+  - `MerchantService/` `IWechatPayComplaintMediaService` — 投诉图片上传（multipart）与拉取（二进制流，2 支通道）
+  - `Ecommerce/` `IWechatPayEcommerceCancelMediaService` — 注销资料图片上传（`file` + `meta{file_name, file_digest}`，**键名与商户媒体通道不通用**，守卫 EC-X2 逐字锁在通道源码里；官方页同时标【普通服务商】【平台商户】）
+- **AOT JsonContext 合并**（`Extensions/PayJsonResolverExtensions.cs`）：`Build()` 把 DataModels 的 30 个生成上下文经 `JsonTypeInfoResolver.Combine` 注进 `wechat-pay` 命名客户端管线。
 
 ## 用法
 

@@ -38,7 +38,7 @@ namespace Mud.Wechat.Pay.Tests.ContractGuards;
 /// <para>
 /// 五、<b>商家周周减 MerchantWeeklyDiscount（3 端点）</b>：官方页面「创建代金券批次 /
 /// 激活代金券批次 / 查询代金券批次详情」的支持商户类型为【平台商户】，
-/// 与本线已落位的代金券域 <see cref="MarketingFavor"/>（【普通服务商】面）是两套契约 ⇒ 零端点。
+/// 与本线已落位的代金券域 <see cref="Mud.Wechat.Pay.IWechatPayMarketingFavorService"/>（【普通服务商】面）是两套契约 ⇒ 零端点。
 /// </para>
 /// </summary>
 /// <remarks>
@@ -81,6 +81,7 @@ public class WechatPayNonContractRouteZeroDeclarationContractGuards
     private static readonly DirectoryInfo PaySrcRoot = new(
         Path.GetFullPath(Path.Combine(typeof(WechatPayNonContractRouteZeroDeclarationContractGuards).Assembly.Location, "..", "..", "..", "..", "..", "..", "Src", "Pay")));
 
+    /// <summary>零声明主断言：清单内每条非契约路由在 <c>Src/Pay/</c> 全源码里以「引号字面量」形态零命中。</summary>
     [Fact]
     public void NonContractRoutes_ShouldHaveZeroDeclarationsInPaySource()
     {
@@ -104,6 +105,7 @@ public class WechatPayNonContractRouteZeroDeclarationContractGuards
         }
     }
 
+    /// <summary>正对照：已落位路由必须被同一扫描口径命中，证明上面的零命中是真裁决而不是扫描失效。</summary>
     [Fact]
     public void PositiveControl_AlreadyDeclaredRoutes_ShouldBeFound()
     {

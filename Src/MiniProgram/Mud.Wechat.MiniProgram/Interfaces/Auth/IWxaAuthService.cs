@@ -8,7 +8,7 @@
 namespace Mud.Wechat.MiniProgram;
 
 /// <summary>
-/// 微信小程序「登录与用户」域 SDK —— <b>带令牌</b>通道（4 端点）。
+/// 微信小程序「登录与用户」域 SDK —— 带令牌通道（7 端点）+ 免令牌登录端点（1 端点，方法级 opt-out）。
 /// </summary>
 /// <remarks>
 /// <para>
@@ -20,11 +20,10 @@ namespace Mud.Wechat.MiniProgram;
 /// 支付后 UnionID <see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/user-info/basic-info/api_getpaidunionid"/>。
 /// </para>
 /// <para>
-/// <b>本域为何拆两个接口（对齐公众号线 <c>IMpOpenApiService</c> / <c>IMpOpenApiTokenFreeService</c> 先例）</b>：
-/// 登录 <c>jscode2session</c> 以 <c>appid</c> + <c>secret</c> 换会话、<b>不消费应用级 access_token</b>，
-/// 而 <c>[Token]</c> 是<b>接口级</b>特性（作用于该接口全部方法）⇒ 把它与带令牌端点数混写会让登录端点
-/// 被错误注入应用级令牌。故免令牌端点独立成
-/// <c>IWxaCode2SessionService</c>，两者同挂 <c>Auth</c> 注册组。
+/// <b>免令牌登录端点（A-7 合并，2026-10-14 裁决）</b>：<c>jscode2session</c> 以 <c>appid</c> + <c>secret</c>
+/// 换会话、<b>不消费应用级 access_token</b>，以<b>方法级</b> <c>[Token(Disabled = true)]</c> 显式免令牌
+/// （上游 3.0.7 / F-1 起支持方法级覆盖接口级）——不再需要拆独立接口；原拆接口
+/// <c>IWxaCode2SessionService</c> 已 <c>[Obsolete]</c>，一版后移除。
 /// </para>
 /// <para>
 /// <b>令牌形态（MP-X2 / MP-X3）</b>：复用 <c>MpTokenTypes.AccessToken</c> + Query 注入 <c>access_token</c>
@@ -38,6 +37,48 @@ namespace Mud.Wechat.MiniProgram;
        Name = "access_token")]
 public interface IWxaAuthService
 {
+    /// <summary>
+    /// 登录凭证校验（<c>code2Session</c>）：用小程序端 <c>wx.login</c> 的 <c>code</c> 换取
+    /// <c>openid</c> + <c>session_key</c>。官方文档：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/user-login/api_code2session"/>。
+    /// </summary>
+    /// <param name="appId">小程序 AppID（官方 <c>appid</c>，必填）。</param>
+    /// <param name="secret">小程序 AppSecret（官方 <c>secret</c>，必填；官方契约 Query 传，脱敏词表已覆盖）。</param>
+    /// <param name="jsCode">小程序端 <c>wx.login</c> 返回的登录凭证（官方 <c>js_code</c>，必填）。</param>
+    /// <param name="grantType">授权类型（官方 <c>grant_type</c>，必填；固定 <see cref="WxaGrantTypes.AuthorizationCode"/>）。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
+    /// <returns>会话信息（<c>openid</c> / <c>session_key</c> / <c>unionid</c>），见 <see cref="WxaCode2SessionResponse"/>。</returns>
+    /// <remarks>
+    /// <para>
+    /// 官方契约：<b>GET</b>，无请求体；Query <c>appid</c> / <c>secret</c> / <c>js_code</c> / <c>grant_type</c> 均必填。
+    /// </para>
+    /// <para>
+    /// <b>时序与一次性（官方原文要点）</b>：<c>js_code</c> 仅能使用一次、有效期 5 分钟；
+    /// <c>session_key</c> 是<b>会话密钥</b>（用于解密用户数据、校验用户登录态），
+    /// <b>不得下发到前端</b>、不得入日志（MP-X7）。
+    /// </para>
+    /// <para>
+    /// <b><c>unionid</c> 返回条件（官方原文）</b>：仅当小程序已绑定微信开放平台账号<b>且</b>用户已关注
+    /// 该开放平台账号下的公众号时返回；否则缺省（非空串）。
+    /// </para>
+    /// <para>官方错误码：<c>40029</c>（invalid code，code 无效或已使用）/ <c>45011</c>（频率限制）/ <c>40226</c>（高风险用户，官方建议拦截）。</para>
+    /// <para><b>MUD005 不适用</b>：本接口无 <c>access_token</c>；但 <c>secret</c> 走 Query 属官方强制（脱敏词表已覆盖）。</para>
+    /// <para>
+    /// <b>A-7 合并（2026-10-14 裁决）</b>：本端点以 <c>appid</c> + <c>secret</c> 换会话、
+    /// <b>不消费应用级 <c>access_token</c></b>——若随接口级 <c>[Token]</c> 注入应用级令牌属语义错误。
+    /// 上游 3.0.7（F-1）起 <c>[Token(Disabled = true)]</c> 支持<b>方法级覆盖接口级</b>，
+    /// 故免拆独立接口：方法级显式免令牌（不取令牌、不注入、不参与令牌恢复），
+    /// 与同接口 7 个常规端点共存。原拆接口 <c>IWxaCode2SessionService</c> 已 <c>[Obsolete]</c>（一版后移除）。
+    /// </para>
+    /// </remarks>
+    [Token(Disabled = true)]
+    [Get("/sns/jscode2session")]
+    Task<WxaCode2SessionResponse> Code2SessionAsync(
+        [Query("appid")] string appId,
+        [Query("secret")] string secret,
+        [Query("js_code")] string jsCode,
+        [Query("grant_type")] string grantType,
+        CancellationToken cancellationToken = default);
+
     /// <summary>
     /// 校验 <c>session_key</c> 是否有效。官方文档：<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/user-login/api_checksessionkey"/>。
     /// </summary>

@@ -8,7 +8,7 @@
 
 | 模块（`MiniProgramModule`） | 注册方法 | 端点 | 接口 |
 | --- | --- | --- | --- |
-| `Auth` | `AddAuthApi()` | 8 | `IWxaAuthService`（7 端点：`checksession` / `resetusersessionkey` / `getuserphonenumber` / `getpaidunionid` / openpid / 检查加密信息 / encryptKey）+ `IWxaCode2SessionService`（`sns/jscode2session`，免应用级令牌） |
+| `Auth` | `AddAuthApi()` | 8 | `IWxaAuthService`（8 端点：`checksession` / `resetusersessionkey` / `getuserphonenumber` / `getpaidunionid` / openpid / 检查加密信息 / encryptKey / `sns/jscode2session`（方法级 `[Token(Disabled = true)]` 免应用级令牌，A-7 合并）；`IWxaCode2SessionService` 已 `[Obsolete]` 过渡保留一版） |
 | `QrCodeLink` | `AddQrCodeLinkApi()` | 9 | `IWxaQrCodeLinkService`（URL Link / Scheme / NFC Scheme / 短链 的生成与查询，6 端点走生成管线）+ `IWxaCodeService`（小程序码 3 端点走手工通道，见下） |
 | `Security` | `AddSecurityApi()` | 3 | `IWxaSecurityService`（`msg_sec_check` 同步文本 + `media_check_async` 异步媒体 + `getuserriskrank`） |
 | `DataAnalysis` | `AddDataAnalysisApi()` | 11 | `IWxaDataAnalysisService`（`/datacube/getweanalysisappid*`：日/周/月访问趋势与留存 + 页面访问 + 访问分布 + 用户画像 + 数据概况 + `wxa/business/performance/boot`） |
@@ -45,8 +45,9 @@
 builder.Services.AddMpApp(builder.Configuration, "MpApps")
                .AddMiniProgramServices(b => b.AddAllApis());
 
-// 换会话走 appid + js_code，**刻意不声明 [Token]**（声明了反而会把应用级令牌注入免令牌端点，语义错误）
-var session = await code2Session.Code2SessionAsync(appId, appSecret, jsCode, ct);   // session_key 不入日志（MP-X7）
+// 换会话走 appid + js_code，**方法级 [Token(Disabled = true)] 免令牌**（A-7 合并后随 IWxaAuthService 承载；
+// 声明接口级 [Token] 反而会把应用级令牌注入免令牌端点，语义错误）
+var session = await auth.Code2SessionAsync(appId, appSecret, jsCode, ct);   // session_key 不入日志（MP-X7）
 var trend   = await dataAnalysis.GetDailyVisitTrendAsync(request, ct);
 using var code = await wxaCode.GetUnlimitedCodeAsync(request, ct);                  // 图片流，须释放
 ```

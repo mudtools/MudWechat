@@ -93,11 +93,18 @@ public class MpRouteCountGuard
     }
 
     /// <summary>核验守卫 RC3：同一路由不得落在两个不同接口上（防路由冲突 / 误复制）。</summary>
+    /// <remarks>
+    /// <b>A-7 过渡期豁免</b>（2026-10-14 裁决）：免令牌逃生端点由「拆独立接口」合并回主接口后，
+    /// <c>[Obsolete]</c> 的旧拆接口（如 <c>IMpOpenApiTokenFreeService</c>）按二进制兼容保留一个版本，
+    /// 其路由与主接口<b>有意重复</b>（4.0 移除旧接口后自然消失）。故 [Obsolete] 接口不计入
+    /// 「跨接口冲突」判定——活契约面（非 Obsolete 接口）的冲突仍零容忍。
+    /// </remarks>
     [Fact]
     public void Routes_ShouldNotBeSharedAcrossInterfaces()
     {
         var byRoute = typeof(MpServiceCollectionExtensions).Assembly.GetTypes()
             .Where(t => t.IsInterface && t.IsPublic)
+            .Where(t => t.GetCustomAttribute<ObsoleteAttribute>() == null)
             .SelectMany(t => t.GetMethods()
                 .Select(m => m.GetCustomAttribute<HttpMethodAttribute>()?.RequestUri)
                 .Where(u => u != null)

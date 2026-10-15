@@ -94,6 +94,10 @@ $configFiles = @(
     # 否则 AB-G6 的双向不变式（文件存在 ⇔ 已登记）会失败。本脚本对不存在的文件是 fail-closed 硬错误 ⇒ 不得预登记。
     'Mud.Wechat.Redis/Configuration/WechatRedisOptions.cs',
     'Mud.Wechat.Redis/Configuration/WechatRedisConnectionOptions.cs',
+    # 官方分布式令牌存储（Mud.HttpUtils.Redis，A-5 分层共存）在下游的配置映射面：
+    # KeyPrefix/AppKey/Database 均有真实消费点（AddWechatRedisCore 的 RedisTokenStoreOptions 映射）；
+    # DefaultTtl 为 TimeSpan? 不入本脚本基元正则（可空非基元语义），消费点同处。
+    'Mud.Wechat.Redis/Configuration/WechatRedisTokenStoreOptions.cs',
     'Mud.Wechat.OpenTelemetry/WechatOpenTelemetryOptions.cs',
     # 微信小店/视频号（channels 生态）产品线配置面（P0-b 已落地）：小店应用配置（AppId/AppSecret/UseStableToken）。
     # 与【文件创建同批】登记 —— 若只建文件不登记，AB-G6 的双向不变式（存在 ⇔ 已登记）会失败。

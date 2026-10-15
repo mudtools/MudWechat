@@ -21,12 +21,11 @@ namespace Mud.Wechat.Channels;
 /// （CH-R1）白名单锁定该交叠。
 /// </para>
 /// <para>
-/// <b>双接口分工（对齐公众号 OpenApi 域先例）</b>：<c>clear_quota/v2</c> 是官方为「access_token 耗尽
-/// 无法调用重置接口」设计的<b>应急逃生端点</b>（免 access_token，appid + appsecret 入请求体）。
-/// 若并入带 [Token] 的接口，SDK 会在调用前强制取令牌——恰好复刻 v2 要解救的故障场景。
-/// <b>拆为双接口、同注册组</b>：本接口（7 端点带令牌）消费 <see cref="ChannelsTokenTypes.AccessToken"/>
-/// 并以 Query 注入 <c>access_token</c>；<see cref="IChannelsBasicTokenFreeService"/>（1 端点）
-/// <b>无 [Token] 特性</b>（不进令牌注入管线）。
+/// <b>免令牌逃生端点（A-7 合并，2026-10-14 裁决）</b>：<c>clear_quota/v2</c> 是官方为「access_token 耗尽
+/// 无法调用重置接口」设计的<b>应急逃生端点</b>（免 access_token，appid + appsecret 入请求体），
+/// 以<b>方法级</b> <c>[Token(Disabled = true)]</c> 显式免令牌（上游 3.0.7 / F-1 起支持方法级覆盖接口级），
+/// 与同接口 7 个带令牌端点共存于同一客户端；原「拆独立接口」workaround
+/// （<see cref="IChannelsBasicTokenFreeService"/>）已 <c>[Obsolete]</c>，一版后移除。
 /// </para>
 /// <para>
 /// <b>令牌路由键</b> <see cref="ChannelsTokenTypes.AccessToken"/>（Query 注入 <c>access_token</c>），
@@ -126,6 +125,41 @@ public interface IChannelsBasicService
         CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// 使用 AppSecret 重置 API 调用次数（免 access_token）。
+    /// </summary>
+    /// <param name="request">清零请求（<c>appid</c> + <c>appsecret</c>，均必填；走请求体，不进 URL）。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
+    /// <returns>仅 <c>errcode</c>/<c>errmsg</c>（故返回 <see cref="ChannelsResponse"/>）。</returns>
+    /// <remarks>
+    /// <para>官方文档：<see href="https://developers.weixin.qq.com/doc/store/shop/API/apimgnt/common/api_clearquotabyappsecret"/></para>
+    /// <para>
+    /// 官方契约：<b>POST</b>；请求体 <c>{"appid":…,"appsecret":…}</c>
+    /// （参数位置裁决见类型 remarks——官方文档矛盾照录）。
+    /// </para>
+    /// <para>
+    /// 官方错误码：<c>-1</c> / <c>40013</c> / <c>41002</c>（appid missing）/
+    /// <c>41004</c>（appsecret missing）/ <c>48006</c>（清零次数达到上限）。
+    /// </para>
+    /// <para>
+    /// <b>安全边界</b>：<c>appsecret</c> 经请求体提交、绝不进 URL/日志（AGENTS §8；
+    /// 宿主侧亦不得将其写入自己的日志/遥测）。
+    /// </para>
+    /// <para>
+    /// <b>A-7 合并（2026-10-14 裁决）</b>：本方法是官方为「access_token 耗尽无法调用 clear_quota」设计的
+    /// <b>应急逃生端点</b>——若随接口级 <c>[Token]</c> 取令牌，恰好复刻它要解救的故障场景。
+    /// 上游 3.0.7（F-1）起 <c>[Token(Disabled = true)]</c> 支持<b>方法级覆盖接口级</b>，
+    /// 故免拆独立接口：方法级显式免令牌（不取令牌、不注入、不参与令牌恢复，MUD005 同步豁免），
+    /// 与同接口 7 个常规端点共存。原拆接口 <see cref="IChannelsBasicTokenFreeService"/> 已
+    /// <c>[Obsolete]</c>（一版后移除）。
+    /// </para>
+    /// </remarks>
+    [Token(Disabled = true)]
+    [Post("/cgi-bin/clear_quota/v2")]
+    Task<ChannelsResponse> ClearQuotaV2Async(
+        [Body] ChannelsClearQuotaV2Request request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// 查询 API 调用额度（<c>quota/get</c>）。
     /// </summary>
     /// <param name="request">查询请求（<c>cgi_path</c> 以 / 开头、不带 https://api.weixin.qq.com 前缀）。</param>
@@ -204,11 +238,18 @@ public interface IChannelsBasicService
 /// </summary>
 /// <remarks>
 /// <para>
+/// <b>已废弃（A-7 合并，2026-10-14 裁决）</b>：上游 Mud.HttpUtils 3.0.7（F-1）起
+/// <c>[Token(Disabled = true)]</c> 支持<b>方法级覆盖接口级</b>，免令牌逃生端点无需再拆独立接口 ——
+/// <c>ClearQuotaV2Async</c> 已合并回 <see cref="IChannelsBasicService"/>（同注册组、同客户端）。
+/// 本接口保留一个版本以维持二进制兼容（既有宿主按类型注入的注册/解析不变），
+/// <b>Mud.Wechat 4.0 移除</b>；新代码请改用 <see cref="IChannelsBasicService.ClearQuotaV2Async"/>。
+/// </para>
+/// <para>
 /// 官方文档：<see href="https://developers.weixin.qq.com/doc/store/shop/API/apimgnt/common/api_clearquotabyappsecret"/>
 /// （官方接口英文名 <c>clearQuotaByAppSecret</c>；路径 <c>/cgi-bin/clear_quota/v2</c>）。
 /// </para>
 /// <para>
-/// <b>为何独立接口（I4 裁决，对齐公众号 OpenApi 域先例）</b>：官方注意事项原文「该接口通过 appsecret
+/// <b>为何曾经独立接口（I4 裁决，已被 A-7 取代）</b>：官方注意事项原文「该接口通过 appsecret
 /// 调用，解决了 access_token 耗尽无法调用『重置 API 调用次数』的问题」——它是令牌耗尽时的
 /// <b>应急逃生端点</b>。若声明 [Token]，SDK 会在调用前强制取令牌，恰好复刻它要解救的故障场景 ⇒
 /// 本接口<b>不带 [Token]</b>、不进令牌注入管线；appid/appsecret 走<b>请求体</b>（官方参数表权威；
@@ -222,7 +263,10 @@ public interface IChannelsBasicService
 // HTTPCLIENT018：生成器要求显式声明 TokenManagerKey/TokenType。本接口是 I4 裁决的**免令牌端点**
 // ——clear_quota/v2 官方设计为「access_token 耗尽无法调用 clear_quota」的应急逃生通道
 //（appid + appsecret 入请求体），刻意不声明 [Token]；声明之恰好复刻它要解救的故障场景。
-// 守卫锁定该裁决（带令牌的 IChannelsBasicService 7 端点仍显式声明 [Token]）。
+// A-7 合并后该方法已迁回 IChannelsBasicService（方法级 [Token(Disabled = true)]）；
+// 本接口仅为二进制兼容保留一个版本，守卫锁定该迁移（见 ChannelsBasicContractGuards CB2）。
+[Obsolete("A-7 合并（2026-10-14 裁决）：免令牌逃生端点已合并回 IChannelsBasicService（方法级 [Token(Disabled = true)]，上游 3.0.7/F-1）。"
+          + "请改用 IChannelsBasicService.ClearQuotaV2Async；Mud.Wechat 4.0 移除本接口。")]
 [HttpClientApi(RegistryGroupName = "Basic", TokenManage = nameof(IChannelsAppManager))]
 public interface IChannelsBasicTokenFreeService
 {

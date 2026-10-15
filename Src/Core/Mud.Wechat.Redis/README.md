@@ -2,7 +2,8 @@
 
 **跨产品线的 Redis 分布式存储扩展包**：为多实例分布式部署提供五个存储端口的 Redis 实现，
 适用于多实例共享令牌、跨实例持久化企业授权（永久授权码）、多实例共享 suite_ticket、回调抗重放
-与智能机器人长连接主备租约。
+与智能机器人长连接主备租约；另按 **A-5 分层共存裁决**（上游对账清单，2026-10-14）承载
+**通用 `ITokenStore` 面**（官方 `Mud.HttpUtils.Redis` 的 `RedisTokenStore`，随本包一并注册）。
 
 五个端口中，令牌存储 / 企业授权 / 套件票据 / 长连接租约来自企业微信线（`Mud.Wechat.Work.Abstractions`），
 回调抗重放端口 `IWechatCallbackReplayGuard` 已下沉到 `Mud.Wechat.Abstractions` 叶层，
@@ -19,19 +20,32 @@
 | `IWechatSuiteTicketStore` | `RedisWechatSuiteTicketStore` | suite_ticket 跨实例共享——不再只有收到推送的实例能签发套件令牌 |
 | `IWechatCallbackReplayGuard` | `RedisWechatCallbackReplayGuard` | 回调抗重放窗口跨实例生效（进程内实现多实例下重放窗口失效）；企微 / 公众号 / 支付三条回调接收面共用此端口 |
 | `IWechatBotConnectionLease` | `RedisWechatBotConnectionLease` | 智能机器人长连接（官方 101463）主备租约跨实例互斥——多实例部署必须注册本包，避免多实例同时订阅同一 Bot 的推送帧 |
+| `ITokenStore`（通用面） | `RedisTokenStore`（官方 `Mud.HttpUtils.Redis`，F-3） | 通用令牌持久化 SPI 的官方落地；随 `AddWechatRedis` 以 `TryAddSingleton` 注册（宿主预注册者胜） |
+
+### 分层共存（A-5）：两个令牌面为何同时存在
+
+- **本院令牌面**（`IWechatTokenStore` → `RedisWechatTokenStore`）：键 `{本院前缀}:token:{storeKey}`
+  （三段式，与 `InMemoryWechatTokenStore` 键空间逐字节一致），值由组件桥接器写 `{expireMs}|{token}`
+  自描述绝对过期戳；实现 `IWechatTokenStoreBatchRemove` 批删扩展（W1/M10）。
+- **通用令牌面**（`ITokenStore` → 官方 `RedisTokenStore`）：键 `{官方前缀}:{tokenType}:{appKey}:access|refresh`
+  （默认前缀 `mud:httputils`，配置节 `WechatRedis:TokenStore`），值经官方 `ITokenStoreCodec`
+  （`{expiresInSeconds}|{token}` 相对秒）；官方 `ITokenStore` 维持最小 SPI，**不实现**微信类型与批删扩展
+  （A-5 明令）⇒ 退役清库走逐键回退（B-3，行为正确、无批量优化）。
+- **键命名空间互不干扰**（前缀不同）⇒ 共库无需数据迁移；`IWechatTokenStore : ITokenStore` 为薄标记
+  （二进制兼容保留），新增代码按 A-5 直接依赖 `ITokenStore`。两个面解析为不同实例属分层设计而非缺陷。
 
 公众号线复用同一 `IWechatTokenStore` 端口承载 `access_token` 与 `jsapi_ticket` / `wx_card` 票据
 （键空间分别以 `Wechat.Mp.JsApiTicket:{AppKey}` / `Wechat.Mp.WxCardTicket:{AppKey}` 隔离），故装配本包后
 公众号令牌与票据同样跨实例共享，冷启动直接命中其它实例写入的票据——本包不引用公众号工程，跨线语义经端口接口达成。
 
-五个端口的默认实现均为进程内（`TryAddSingleton` 注册）——其中令牌 / 企业授权 / 套件票据 / 长连接租约四个端口由企业微信基座注册，
+五个本院端口的默认实现均为进程内（`TryAddSingleton` 注册）——其中令牌 / 企业授权 / 套件票据 / 长连接租约四个端口由企业微信基座注册，
 `IWechatCallbackReplayGuard` 现由各回调宿主包（Work.Callback / OfficialAccount.Callback / Pay.Callback）各自注册。
 本包**先注册即胜出**：
 
 ```csharp
 // Program.cs —— 完整装配：顺序即契约，Redis 必须最先
 builder.Services
-    .AddWechatRedis(builder.Configuration)                 // ① 连接基座 + 五个存储端口（默认注册健康检查）
+    .AddWechatRedis(builder.Configuration)                 // ① 连接基座 + 五个存储端口 + 官方 ITokenStore 层（默认注册健康检查）
     .AddWechatApp(builder.Configuration, "WechatApps")     // ② 令牌/授权/票据基座（Redis 实现已就位）
     .AddWechatCallback(o => { /* 回调凭据与处理器 */ });    // ③ 回调（抗重放窗口跨实例生效）
 
@@ -68,7 +82,13 @@ app.Run();
       "ClientName": null                    // 兜底 Wechat-Redis-{MachineName}
     },
     "KeyPrefix": "wechat",                  // 四类键共享的唯一前缀旋钮；多环境隔离改此值
-    "SuiteTicketTtl": "00:00:00"            // 默认不过期（覆盖写保新鲜）；正值建议 ≥ 20 分钟
+    "SuiteTicketTtl": "00:00:00",           // 默认不过期（覆盖写保新鲜）；正值建议 ≥ 20 分钟
+    "TokenStore": {                         // 官方 Mud.HttpUtils.Redis 令牌存储映射（A-5 分层共存）
+      "KeyPrefix": "mud:httputils",         //   官方键前缀（与本院 wechat 前缀互不干扰）
+      "AppKey": null,                       //   官方命名空间段；空 ⇒ shared（单应用场景）
+      "DefaultTtl": null,                   //   兜底 TTL；生产建议显式配置（如 30 天）防无界滞留
+      "Database": -1                        //   官方存储库编号；-1 = 连接默认库
+    }
   }
 }
 ```
@@ -89,7 +109,8 @@ app.Run();
 
 | 存储 | Redis 键 | TTL |
 |---|---|---|
-| 令牌 | `{KeyPrefix}:token:{storeKey}` | 跟随调用方 `expiresInSeconds`；`<= 0` 时**删键** |
+| 令牌（本院面） | `{KeyPrefix}:token:{storeKey}` | 跟随调用方 `expiresInSeconds`；`<= 0` 时**删键** |
+| 令牌（官方面） | `{TokenStore:KeyPrefix}:{tokenType}:{TokenStore:AppKey}:access\|refresh` | 访问令牌跟随 `expiresInSeconds`（缺省回落 `TokenStore:DefaultTtl`）；刷新令牌走 `DefaultTtl` |
 | 企业授权 | `{KeyPrefix}:corpa:{appKey}:{authCorpId}` | 不过期（轮换/撤销显式删） |
 | 套件票据 | `{KeyPrefix}:ticket:{suiteId}` | `SuiteTicketTtl`（默认不过期） |
 | 回调重放 | `{KeyPrefix}:replay:{fingerprint}` | 调用方传入的窗口（±300s） |
@@ -97,6 +118,7 @@ app.Run();
 键名仅含 appKey / authCorpId / suiteId / SHA1 指纹——**均非凭据**，可安全入日志。
 令牌 `storeKey` 为三段式 `{tokenType}:{appKey}:{scopeKey}`（与 `InMemoryWechatTokenStore` 键空间逐字节一致，
 `PurgeAppTokensAsync` 三段解析依赖此不变量）。
+官方面 `tokenType` 段允许含 `:`（官方 `RedisTokenStoreKeyBuilder` 从右侧剥除固定段，天然单射）。
 
 ## 回调抗重放（fail-closed）
 
@@ -139,9 +161,13 @@ WECHAT_REDIS_TESTS_CONNECTION=localhost:6379 dotnet test Tests/Mud.Wechat.Redis.
 
 ## SE.Redis 3.3.0 已踩陷阱
 
-- `RedisTimeoutException` 继承 `TimeoutException` 而非 `RedisException`：裸 `catch (RedisException)` 会漏掉超时，
-  本包统一经 `WechatRedisErrors.ShouldWrap` 判定后包装。
-- `StringSetAsync` 有四套重载形态：生产调用一律用**命名参数**钉住（`keepTtl: false` / `when: …`），
+- **超时异常继承关系（B-8 勘误，2026-10-14）**：SE.Redis **2.x** 中 `RedisTimeoutException` 继承
+  `TimeoutException`；**3.x 起不再继承** `TimeoutException`。⇒ `catch (TimeoutException)` 兜 SE.Redis
+  超时的 2.x 习惯在 3.x 下**失配漏接**，宿主 catch 口径须为 `RedisTimeoutException` 或 `RedisException`
+  基类（本包 `WechatRedisErrors.ShouldWrap` 为 `is RedisException or RedisTimeoutException` 显式双类型，
+  两个大版本下均正确）。官方 `Mud.HttpUtils.Redis` 按 SE.Redis 2.8.24 编译、不捕获 `TimeoutException`，
+  异常类型随最终宿主解析的运行时版本漂移（上游 B-8 口径：组件侧无需防御）。
+- `StringSetAsync` 有多套重载形态：生产调用一律用**命名参数**钉住（`keepTtl: false` / `when: …`），
   否则参数位置漂移会静默改变「是否覆盖 TTL」的语义。
 
 ## 键构造与批量
@@ -156,6 +182,7 @@ WECHAT_REDIS_TESTS_CONNECTION=localhost:6379 dotnet test Tests/Mud.Wechat.Redis.
 `Tests/Mud.Wechat.Redis.Tests/ContractGuards/` 的 **RD-G1 ~ RD-G7** 锁定：SCAN 模式仅经 `WechatRedisKeyBuilder.Pattern`
 产出（G1）、配置 DTO 禁 `required`（G2）、重放守卫 fail-closed（G3，存储故障必须上抛）、敏感凭据不得进入日志调用点（G4）、
 顺序守卫的两处**探测全名**与被探测类型 `FullName` 一致（G5 回调 InMemory 实现 / G7 公众号 `IMpAppManager`，反射断言——顺序守卫的生命线）、
-本包单依赖形态（G6：不得引用 Callback / 各线主包）。功能用例为 **T-R1 ~ T-R7**，
+本包单依赖形态（G6：不得引用 Callback / 各线主包）。功能用例为 **T-R1 ~ T-R10**（T-R10 = 官方面分层共存：
+键布局 / 配置映射 / 两层互不干扰 / 官方面不实现批删），
 真实 Redis 端到端由 `RedisIntegrationTests` 环境变量门控（假后端在 `Support/FakeRedisBackend.cs`）。
 改动端口实现、键空间或注册顺序守卫时须**同批**更新这些守卫。

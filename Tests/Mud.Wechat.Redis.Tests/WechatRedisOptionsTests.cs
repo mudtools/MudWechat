@@ -85,6 +85,54 @@ public class WechatRedisOptionsTests
         act.Should().Throw<InvalidOperationException>().WithMessage("*SuiteTicketTtl*");
     }
 
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void Validate_ShouldThrow_WhenTokenStoreKeyPrefixEmpty(string keyPrefix)
+    {
+        // A-5 分层共存：官方存储键前缀空值会使 SCAN 清库退化为全库匹配，与本院 KeyPrefix 同口径拒绝。
+        var options = new WechatRedisOptions { TokenStore = { KeyPrefix = keyPrefix } };
+        var act = () => options.Validate();
+        act.Should().Throw<InvalidOperationException>().WithMessage("*TokenStore:KeyPrefix*");
+    }
+
+    [Fact]
+    public void Validate_ShouldThrow_WhenTokenStoreKeyPrefixStartsWithWildcard()
+    {
+        var options = new WechatRedisOptions { TokenStore = { KeyPrefix = "*mud" } };
+        var act = () => options.Validate();
+        act.Should().Throw<InvalidOperationException>().WithMessage("*TokenStore:KeyPrefix*");
+    }
+
+    [Fact]
+    public void Validate_ShouldPass_WhenTokenStoreDefaults()
+    {
+        var options = new WechatRedisOptions();
+        options.TokenStore.KeyPrefix.Should().Be(WechatRedisTokenStoreOptions.DefaultKeyPrefix);
+        options.TokenStore.Database.Should().Be(-1);
+        options.TokenStore.DefaultTtl.Should().BeNull();
+        var act = () => options.Validate();
+        act.Should().NotThrow();
+    }
+
+    [Theory]
+    [InlineData(-2)]
+    [InlineData(-100)]
+    public void Validate_ShouldThrow_WhenTokenStoreDatabaseBelowFloor(int database)
+    {
+        var options = new WechatRedisOptions { TokenStore = { Database = database } };
+        var act = () => options.Validate();
+        act.Should().Throw<InvalidOperationException>().WithMessage("*TokenStore:Database*");
+    }
+
+    [Fact]
+    public void Validate_ShouldThrow_WhenTokenStoreDefaultTtlNotPositive()
+    {
+        var options = new WechatRedisOptions { TokenStore = { DefaultTtl = TimeSpan.Zero } };
+        var act = () => options.Validate();
+        act.Should().Throw<InvalidOperationException>().WithMessage("*TokenStore:DefaultTtl*");
+    }
+
     [Fact]
     public void ToString_ShouldMaskPassword()
     {
@@ -93,6 +141,15 @@ public class WechatRedisOptionsTests
 
         text.Should().Contain("***");
         text.Should().NotContain("super-secret");
+    }
+
+    [Fact]
+    public void ToString_ShouldIncludeTokenStoreKeyPrefix()
+    {
+        // 分层共存可观测：诊断面须同时给出本院前缀与官方存储前缀（排障时区分两个键命名空间）。
+        var options = new WechatRedisOptions { TokenStore = { KeyPrefix = "mud:httputils-dev" } };
+
+        options.ToString().Should().Contain("mud:httputils-dev");
     }
 
     [Theory]

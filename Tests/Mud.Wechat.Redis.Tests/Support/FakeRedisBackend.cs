@@ -12,8 +12,10 @@ namespace Mud.Wechat.Redis.Tests;
 /// <c>IConnectionMultiplexer</c> / <c>IDatabase</c> / <c>IServer</c> 三件套。
 /// </summary>
 /// <remarks>
-/// 匹配语义为最小 glob（<c>pattern*</c> 前缀匹配 / 全等）——仅服务 SCAN 前缀模式的测试诉求，
-/// 不复刻 stringmatchlen 全量语义（全量语义在 T-R9 真实 Redis 集成用例覆盖）。
+/// 匹配语义为最小 glob（<c>pattern*</c> 尾部前缀匹配 / <c>*</c> 中段通配 / 全等）——仅服务
+/// SCAN 模式的测试诉求，不复刻 stringmatchlen 全量语义（全量语义在 T-R9 真实 Redis 集成用例覆盖）。
+/// 中段通配为官方 <c>RedisTokenStore</c> 的 <c>{prefix}:*:{appKey}:access</c> 模式而补
+/// （A-5 分层共存用例驱动）。
 /// </remarks>
 internal sealed class FakeRedisBackend
 {
@@ -98,6 +100,14 @@ internal sealed class FakeRedisBackend
                 It.IsAny<long>(), It.IsAny<int>(), It.IsAny<CommandFlags>()))
             .Returns((int _, RedisValue pattern, int _, long _, int _, CommandFlags _) =>
                 ToAsyncKeys(MatchKeys(pattern.ToString())));
+        // 同步 Keys 重载（可选参数全缺省形态）：官方 Mud.HttpUtils.Redis 的 RedisTokenStore
+        // 枚举/清库走同步 IServer.Keys（非 KeysAsync），同款最小 glob 语义补齐，
+        // 使分层共存用例可在同一 Fake 后端上驱动两个存储实现。
+        Server.Setup(s => s.Keys(
+                It.IsAny<int>(), It.IsAny<RedisValue>(), It.IsAny<int>(),
+                It.IsAny<long>(), It.IsAny<int>(), It.IsAny<CommandFlags>()))
+            .Returns((int _, RedisValue pattern, int _, long _, int _, CommandFlags _) =>
+                MatchKeys(pattern.ToString()).ToArray());
 
         Multiplexer.Setup(m => m.GetDatabase(It.IsAny<int>(), It.IsAny<object>())).Returns(Database.Object);
         Multiplexer.Setup(m => m.GetEndPoints(It.IsAny<bool>()))
@@ -147,6 +157,19 @@ internal sealed class FakeRedisBackend
             var prefix = pattern[..^1];
             return _store.Keys
                 .Where(key => key.StartsWith(prefix, StringComparison.Ordinal))
+                .Select(key => (RedisKey)key);
+        }
+
+        // 中间通配（{prefix}:*:{appKey}:access 形态）：官方 RedisTokenStore 的 SCAN 模式
+        // 把 * 放在中段（本院 SCAN 模式均为尾部通配）。按 glob→正则 转换支持中段通配，
+        // 语义仍是「最小可用」——不复刻 stringmatchlen 全量字符类/转义规则。
+        if (pattern.Contains("*"))
+        {
+            var regex = new System.Text.RegularExpressions.Regex(
+                "^" + System.Text.RegularExpressions.Regex.Escape(pattern).Replace("\\*", ".*") + "$",
+                System.Text.RegularExpressions.RegexOptions.CultureInvariant);
+            return _store.Keys
+                .Where(key => regex.IsMatch(key))
                 .Select(key => (RedisKey)key);
         }
 

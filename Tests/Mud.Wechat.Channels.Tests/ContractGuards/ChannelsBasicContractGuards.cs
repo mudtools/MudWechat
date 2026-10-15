@@ -12,29 +12,31 @@ using Mud.Wechat.Channels.Extensions;
 namespace Mud.Wechat.Channels.Tests.ContractGuards;
 
 /// <summary>
-/// 小店「基础接口」域契约守卫（设计方案 v1 P1 / CH-B 系列：Basic 域 8 端点路由 + 双接口分工 +
-/// 令牌绑定 + DTO 字段与共用裁决 + JSON 上下文登记 + 错误码常量）。
+/// 小店「基础接口」域契约守卫（设计方案 v1 P1 / CH-B 系列：Basic 域 8 端点路由 + A-7 免令牌方法级
+/// opt-out + 令牌绑定 + DTO 字段与共用裁决 + JSON 上下文登记 + 错误码常量）。
 /// </summary>
 /// <remarks>
 /// 官方事实来源（设计方案 v1 §4.5）：Basic 域 8 端点与公众号线<b>云端同路由</b>，但令牌凭据
 /// 体系不同（小店 AppID vs 公众号 AppID）→ 本线自建 <c>AddBasicApi</c>，不抽共享、不并入公众号线。
 /// 路由交叠已由 <c>ChannelsRouteContractGuards.SharedInfrastructureRoutes</c> 白名单放行。
+/// <b>A-7 合并（2026-10-14 裁决）</b>：clear_quota/v2 免令牌逃生端点由「拆独立接口」改为
+/// 方法级 <c>[Token(Disabled = true)]</c>（上游 3.0.7 / F-1），8 端点同接口承载。
 /// </remarks>
 public class ChannelsBasicContractGuards
 {
     private const string BasicRegistryGroupName = "Basic";
 
-    /// <summary>Basic 域官方路由表（8 端点：带令牌 7 + 免令牌 1）。</summary>
+    /// <summary>Basic 域官方路由表（8 端点：带令牌 7 + 方法级免令牌 1，A-7 合并后同接口承载）。</summary>
     private static readonly (Type Interface, string Method, Type HttpAttribute, string Route)[] BasicRoutes =
     {
         (typeof(IChannelsBasicService), nameof(IChannelsBasicService.GetApiDomainIpAsync), typeof(GetAttribute), "/cgi-bin/get_api_domain_ip"),
         (typeof(IChannelsBasicService), nameof(IChannelsBasicService.GetCallbackIpAsync), typeof(GetAttribute), "/cgi-bin/getcallbackip"),
         (typeof(IChannelsBasicService), nameof(IChannelsBasicService.CheckCallbackAsync), typeof(PostAttribute), "/cgi-bin/callback/check"),
         (typeof(IChannelsBasicService), nameof(IChannelsBasicService.ClearQuotaAsync), typeof(PostAttribute), "/cgi-bin/clear_quota"),
+        (typeof(IChannelsBasicService), nameof(IChannelsBasicService.ClearQuotaV2Async), typeof(PostAttribute), "/cgi-bin/clear_quota/v2"),
         (typeof(IChannelsBasicService), nameof(IChannelsBasicService.GetApiQuotaAsync), typeof(PostAttribute), "/cgi-bin/openapi/quota/get"),
         (typeof(IChannelsBasicService), nameof(IChannelsBasicService.ClearApiQuotaAsync), typeof(PostAttribute), "/cgi-bin/openapi/quota/clear"),
         (typeof(IChannelsBasicService), nameof(IChannelsBasicService.GetRidInfoAsync), typeof(PostAttribute), "/cgi-bin/openapi/rid/get"),
-        (typeof(IChannelsBasicTokenFreeService), nameof(IChannelsBasicTokenFreeService.ClearQuotaV2Async), typeof(PostAttribute), "/cgi-bin/clear_quota/v2"),
     };
 
     /// <summary>契约守卫 CB1：Basic 域 8 端点路由必须与官方契约一致（2 双 IP 为 GET，其余 6 为 POST）。</summary>
@@ -44,6 +46,8 @@ public class ChannelsBasicContractGuards
         BasicRoutes.Should().HaveCount(8,
             "quota/get 1 + rid/get 1 + clear_quota 1 + quota/clear 1 + clear_quota/v2 1 + callback/check 1 + 双 IP 2 = 8 端点");
         BasicRoutes.Select(r => r.Route).Distinct().Should().HaveCount(8);
+        BasicRoutes.Should().OnlyContain(r => r.Interface == typeof(IChannelsBasicService),
+            "A-7 合并（2026-10-14 裁决）后 8 端点同接口承载；拆接口仅 [Obsolete] 过渡保留");
 
         // 双 IP 为 GET，其余 6 端点为 POST（官方契约）。
         var getRoutes = BasicRoutes.Where(r => r.HttpAttribute == typeof(GetAttribute)).ToArray();
@@ -63,26 +67,37 @@ public class ChannelsBasicContractGuards
     }
 
     /// <summary>
-    /// 契约守卫 CB2：双接口分工——clear_quota/v2 免令牌应急逃生端点不得进 [Token] 管线（I4 裁决）。
+    /// 契约守卫 CB2（A-7 合并，2026-10-14 裁决）：clear_quota/v2 免令牌应急逃生端点以
+    /// <b>方法级</b> <c>[Token(Disabled = true)]</c> 留在 <see cref="IChannelsBasicService"/> 内
+    /// （上游 3.0.7 / F-1 方法级覆盖接口级），不再拆独立接口；原拆接口 <c>[Obsolete]</c> 过渡保留。
     /// </summary>
+    /// <remarks>
+    /// 双向断言（方案修订 #3）：① 同接口常规方法仍走接口级 <c>[Token]</c> 管线
+    /// （生成 <c>GetTokenAsync</c> 调用 + Query 注入 access_token，生成代码形态已经探针核对）；
+    /// ② 逃生方法零令牌代码（方法级 Disabled，MUD005 同步豁免）。
+    /// </remarks>
     [Fact]
-    public void TokenFreeInterface_ShouldStayOutOfTokenPipeline()
+    public void TokenFreeEndpoint_ShouldStayOutOfTokenPipeline_ViaMethodLevelOptOut()
     {
-        // v2 接口不得声明 [Token]：官方为「access_token 耗尽」设计的逃生端点。
-        typeof(IChannelsBasicTokenFreeService).GetCustomAttribute<TokenAttribute>().Should().BeNull(
-            "clear_quota/v2 免 access_token（官方原文），不得进令牌注入管线");
-
-        // 主接口（7 端点）仍为标准 Query 令牌形态。
+        // 主接口仍为标准 Query 令牌形态（7 个常规端点）。
         var token = typeof(IChannelsBasicService).GetCustomAttribute<TokenAttribute>();
         token.Should().NotBeNull("其余 7 端点消费 access_token（官方契约）");
         token!.TokenType.Should().Be(ChannelsTokenTypes.AccessToken);
         token.InjectionMode.Should().Be(TokenInjectionMode.Query, "官方契约强制 Query 注入（MUD005）");
         token.Name.Should().Be("access_token");
+        token.Disabled.Should().BeFalse("接口级不得整体免令牌（仅方法级 opt-out）");
+
+        // 逃生方法：方法级 [Token(Disabled = true)] 覆盖接口级（F-1 三态回退的显式阻断档）。
+        var v2 = typeof(IChannelsBasicService).GetMethod(nameof(IChannelsBasicService.ClearQuotaV2Async),
+            BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)!;
+        v2.Should().NotBeNull("A-7 合并后 clear_quota/v2 必须落在主接口上");
+        var methodToken = v2.GetCustomAttribute<TokenAttribute>();
+        methodToken.Should().NotBeNull("逃生方法必须显式声明 [Token(Disabled = true)]（依赖默认继承即进管线，恰是它要解救的故障场景）");
+        methodToken!.Disabled.Should().BeTrue("方法级 Disabled 覆盖接口级 [Token]：不取令牌、不注入、不参与令牌恢复");
 
         // v2 请求体必须承载 appsecret（请求体形态，不进 URL——I4 裁决）。
         AssertJsonProperty<ChannelsClearQuotaV2Request>("appid", "要被清空的账号的 appid");
         AssertJsonProperty<ChannelsClearQuotaV2Request>("appsecret", "唯一凭证密钥（走请求体）");
-        var v2 = typeof(IChannelsBasicTokenFreeService).GetMethod(nameof(IChannelsBasicTokenFreeService.ClearQuotaV2Async))!;
         v2.GetParameters().Should().Contain(p => p.ParameterType == typeof(ChannelsClearQuotaV2Request));
         v2.GetParameters().SelectMany(p => p.GetCustomAttributes<QueryAttribute>())
             .Should().BeEmpty("官方文档矛盾（示例把 appid/appsecret 放 Query）已裁决为请求体形态——不得出现 Query 参数");
@@ -90,9 +105,21 @@ public class ChannelsBasicContractGuards
         // appsecret 的 JSON 字段名锁定。
         typeof(ChannelsClearQuotaV2Request).GetProperty(nameof(ChannelsClearQuotaV2Request.AppSecret))!
             .GetCustomAttribute<JsonPropertyNameAttribute>()!.Name.Should().Be("appsecret");
+
+        // 旧拆接口：过渡保留（二进制兼容）+ 语义不变（无 [Token]）+ 已 Obsolete + 仍声明原路由。
+        typeof(IChannelsBasicTokenFreeService).GetCustomAttribute<ObsoleteAttribute>().Should().NotBeNull(
+            "A-7 裁决：拆接口走 Obsolete 一版，Mud.Wechat 4.0 移除");
+        typeof(IChannelsBasicTokenFreeService).GetCustomAttribute<TokenAttribute>().Should().BeNull(
+            "旧拆接口无 [Token] 的语义不变（迁移不改变既有持久行为）");
+        var legacy = typeof(IChannelsBasicTokenFreeService)
+            .GetMethod(nameof(IChannelsBasicTokenFreeService.ClearQuotaV2Async),
+                BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)!;
+        legacy.Should().NotBeNull("旧拆接口成员保留一个版本（二进制兼容）");
+        (legacy.GetCustomAttribute<PostAttribute>() as HttpMethodAttribute)!.RequestUri
+            .Should().Be("/cgi-bin/clear_quota/v2", "旧拆接口路由不变（宿主按类型注入的解析路径不变）");
     }
 
-    /// <summary>契约守卫 CB3：注册形态——双接口同注册组（Basic）。</summary>
+    /// <summary>契约守卫 CB3：注册形态——双接口同注册组（Basic；旧拆接口 Obsolete 过渡保留）。</summary>
     [Fact]
     public void BasicInterfaces_ShouldShareRegistryGroup()
     {

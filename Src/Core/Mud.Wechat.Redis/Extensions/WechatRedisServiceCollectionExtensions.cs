@@ -9,6 +9,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
+using Mud.HttpUtils;
+using Mud.HttpUtils.Redis;
 using Mud.Wechat.Redis.HealthChecks;
 using Mud.Wechat.Work.Abstractions;
 using Mud.Wechat.Work.Abstractions.Authentication;
@@ -32,8 +34,11 @@ namespace Mud.Wechat.Redis.Extensions;
 /// （永不生效且无任何错误）。本扩展在注册期检测颠倒顺序并 fail-fast。
 /// </para>
 /// <para>
-/// 四端口注册形态（R-3）：端口接口 <c>TryAddSingleton</c>（宿主预注册的自定义实现按契约胜出）+
-/// Redis 具体类型 <c>AddSingleton</c> 恒注册（可自省、可被直接解析）。
+/// 注册面（R-3）：本院端口（令牌 / 企业授权 / 套件票据 / 回调重放 / 长连接租约）以
+/// 「端口接口 <c>TryAddSingleton</c>（宿主预注册的自定义实现按契约胜出）+ Redis 具体类型
+/// <c>AddSingleton</c> 恒注册（可自省、可被直接解析）」落地；另按 A-5 分层共存裁决注册
+/// <b>通用 <c>ITokenStore</c> 面</b>（官方 <c>Mud.HttpUtils.Redis</c> 的 <c>RedisTokenStore</c>，
+/// 键前缀默认 <c>mud:httputils</c>，与本院 <c>wechat</c> 前缀互不干扰）。
 /// </para>
 /// <para>
 /// 重复调用幂等：以 <c>IConnectionMultiplexer</c> 是否已注册为判据跳过连接基座
@@ -94,7 +99,8 @@ public static class WechatRedisServiceCollectionExtensions
 
     /// <summary>
     /// 核心注册：IValidateOptions + ValidateOnStart(net6+) → IConnectionMultiplexer（幂等）→ 健康检查 →
-    /// 预热 HostedService → 配置实例 → 四端口（具体类型恒注册 + 接口 TryAdd）。
+    /// 预热 HostedService → 配置实例 → 本院五端口（具体类型恒注册 + 接口 TryAdd）→
+    /// 通用 ITokenStore 面（官方 RedisTokenStore，A-5 分层共存，TryAdd）。
     /// </summary>
     private static IServiceCollection AddWechatRedisCore(this IServiceCollection services, bool registerHealthCheck)
     {
@@ -159,6 +165,32 @@ public static class WechatRedisServiceCollectionExtensions
         // 第五端口（P3 长连接租约，多实例主备切换基座；R-3 同款「恒注册具体类型 + 接口 TryAdd」）。
         services.AddSingleton<RedisWechatBotConnectionLease>();
         services.TryAddSingleton<IWechatBotConnectionLease>(sp => sp.GetRequiredService<RedisWechatBotConnectionLease>());
+
+        // 通用 ITokenStore 面（A-5 分层共存裁决，2026-10-14）：官方 Mud.HttpUtils.Redis 的
+        // RedisTokenStore，与本院 IWechatTokenStore（RedisWechatTokenStore）分层共存——
+        // ① 键命名空间互不干扰：官方 {TokenStore:KeyPrefix}:{tokenType}:{appKey}:access|refresh
+        //    （默认 mud:httputils）vs 本院 {KeyPrefix}:token:{storeKey}（默认 wechat），共库无需数据迁移；
+        // ② 企微专属端口与 IWechatTokenStoreBatchRemove 批删扩展留下游包（官方 ITokenStore 维持
+        //    最小 SPI 且不实现微信类型，A-5 明令）；官方存储不实现批删 ⇒ 退役清库走逐键回退（B-3，行为正确）；
+        // ③ TryAdd 语义同四端口：宿主预注册的自定义 ITokenStore 按契约胜出。
+        // 注意：IWechatTokenStore : ITokenStore（薄标记，二进制兼容），两者解析为不同实例属分层设计而非缺陷；
+        // 既有令牌管理器（构造注入 IWechatTokenStore）行为零变化，新增代码按 A-5 直接依赖 ITokenStore。
+        services.TryAddSingleton<ITokenStore>(sp =>
+        {
+            var wechatOptions = sp.GetRequiredService<IOptions<WechatRedisOptions>>().Value;
+            var tokenStore = wechatOptions.TokenStore ?? new WechatRedisTokenStoreOptions();
+            return new RedisTokenStore(
+                sp.GetRequiredService<IConnectionMultiplexer>(),
+                new RedisTokenStoreOptions
+                {
+                    KeyPrefix = string.IsNullOrWhiteSpace(tokenStore.KeyPrefix)
+                        ? WechatRedisTokenStoreOptions.DefaultKeyPrefix
+                        : tokenStore.KeyPrefix.Trim(),
+                    AppKey = tokenStore.AppKey,
+                    DefaultTtl = tokenStore.DefaultTtl,
+                    Database = tokenStore.Database,
+                });
+        });
 
         return services;
     }

@@ -1,7 +1,10 @@
 <Project>
 	<PropertyGroup>
 		<TargetFrameworks>netstandard2.0;net6.0;net8.0;net10.0</TargetFrameworks>
-		<Version>1.1.0</Version>
+		<!-- 1.2.0（2026-10-14）：上游 Mud.HttpUtils 3.0.7 升级（G1 全仓同版）；
+		     A-5 分层共存（Mud.Wechat.Redis 接入官方 Mud.HttpUtils.Redis 通用 ITokenStore 面）；
+		     A-7 拆接口合并（三处免令牌端点改方法级 [Token(Disabled = true)]，旧接口 Obsolete 一版后移除）。 -->
+		<Version>1.2.0</Version>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 		<TreatWarningsAsErrors>false</TreatWarningsAsErrors>

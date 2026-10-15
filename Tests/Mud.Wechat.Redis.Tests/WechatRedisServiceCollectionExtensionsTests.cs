@@ -6,11 +6,14 @@
 // -----------------------------------------------------------------------
 
 using Microsoft.Extensions.DependencyInjection;
+using Mud.HttpUtils;
+using Mud.HttpUtils.Redis;
 
 namespace Mud.Wechat.Redis.Tests;
 
 /// <summary>
-/// T-R7：DI 编排（顺序守卫 fail-fast / 四端口解析 / TryAdd 覆盖语义 / 幂等 / Scope 同实例）。
+/// T-R7：DI 编排（顺序守卫 fail-fast / 端口解析 / TryAdd 覆盖语义 / 幂等 / Scope 同实例 /
+/// 官方 ITokenStore 分层注册，A-5）。
 /// </summary>
 public class WechatRedisServiceCollectionExtensionsTests
 {
@@ -156,6 +159,49 @@ public class WechatRedisServiceCollectionExtensionsTests
 
         provider.GetRequiredService<IWechatTokenStore>().Should().BeSameAs(custom);
         provider.GetRequiredService<RedisWechatTokenStore>().Should().NotBeNull();
+    }
+
+    [Fact]
+    public void AddWechatRedis_ShouldRegisterOfficialTokenStore_AsGenericITokenStore()
+    {
+        // A-5 分层共存：通用 ITokenStore 面由官方 Mud.HttpUtils.Redis 的 RedisTokenStore 承载，
+        // 与本院 IWechatTokenStore（RedisWechatTokenStore）为不同实例、不同键命名空间。
+        var services = CreateServices();
+
+        using var provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true });
+
+        provider.GetRequiredService<ITokenStore>().Should().BeOfType<RedisTokenStore>();
+        provider.GetRequiredService<IWechatTokenStore>().Should().BeOfType<RedisWechatTokenStore>();
+        provider.GetRequiredService<ITokenStore>().Should().NotBeSameAs(provider.GetRequiredService<IWechatTokenStore>(),
+            "分层设计：通用面与本院标记接口面解析为不同实例（键前缀不同，互不干扰）");
+    }
+
+    [Fact]
+    public void AddWechatRedis_ShouldLetPreRegisteredCustomITokenStoreWin()
+    {
+        // R-3 同款 TryAdd 语义：宿主预注册的通用 ITokenStore 实现按契约胜出，官方存储不抢位。
+        var custom = new MemoryTokenStore();
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddSingleton<ITokenStore>(custom);
+        services.AddWechatRedis(o => { });
+        services.AddSingleton(new FakeRedisBackend().Multiplexer.Object);
+
+        using var provider = services.BuildServiceProvider();
+
+        provider.GetRequiredService<ITokenStore>().Should().BeSameAs(custom);
+    }
+
+    [Fact]
+    public void AddWechatRedis_ShouldRegisterOfficialTokenStoreOnce_WhenCalledTwice()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddWechatRedis(o => { });
+        services.AddWechatRedis(o => { });
+
+        services.Count(s => s.ServiceType == typeof(ITokenStore)).Should().Be(1,
+            "重复调用幂等：官方 ITokenStore 只注册一次（TryAdd）");
     }
 
     [Fact]

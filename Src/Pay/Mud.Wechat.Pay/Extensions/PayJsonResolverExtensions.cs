@@ -10,13 +10,29 @@ using Mud.Wechat.Pay.DataModels.Apply4SubMerchant;
 using Mud.Wechat.Pay.DataModels.BankPayScore;
 using Mud.Wechat.Pay.DataModels.BankTransfer;
 using Mud.Wechat.Pay.DataModels.Bill;
+using Mud.Wechat.Pay.DataModels.BrandApplyment;
+using Mud.Wechat.Pay.DataModels.BrandCardConfig;
+using Mud.Wechat.Pay.DataModels.BrandCardLink;
+using Mud.Wechat.Pay.DataModels.BrandCardMember;
+using Mud.Wechat.Pay.DataModels.BrandProfitSharing;
+using Mud.Wechat.Pay.DataModels.BrandStore;
 using Mud.Wechat.Pay.DataModels.Callback;
 using Mud.Wechat.Pay.DataModels.Certificates;
 using Mud.Wechat.Pay.DataModels.Combine;
 using Mud.Wechat.Pay.DataModels.Common;
 using Mud.Wechat.Pay.DataModels.Ecommerce;
 using Mud.Wechat.Pay.DataModels.Fapiao;
+using Mud.Wechat.Pay.DataModels.IndustryCoupon;
+using Mud.Wechat.Pay.DataModels.MarketingBank;
+using Mud.Wechat.Pay.DataModels.MarketingBankFavor;
+using Mud.Wechat.Pay.DataModels.MarketingBusifavor;
 using Mud.Wechat.Pay.DataModels.MarketingFavor;
+using Mud.Wechat.Pay.DataModels.MarketingGoodsSubsidyActivity;
+using Mud.Wechat.Pay.DataModels.MarketingPartnerDeliveryPlan;
+using Mud.Wechat.Pay.DataModels.MarketingPartnerProductCoupon;
+using Mud.Wechat.Pay.DataModels.MarketingPartnerships;
+using Mud.Wechat.Pay.DataModels.MarketingPayGiftActivity;
+using Mud.Wechat.Pay.DataModels.MarketingShoppingReceipt;
 using Mud.Wechat.Pay.DataModels.MerchantAlterApply;
 using Mud.Wechat.Pay.DataModels.MerchantFund;
 using Mud.Wechat.Pay.DataModels.MerchantManage;
@@ -26,6 +42,7 @@ using Mud.Wechat.Pay.DataModels.MerchantRiskManage;
 using Mud.Wechat.Pay.DataModels.MerchantService;
 using Mud.Wechat.Pay.DataModels.MerchantSettlement;
 using Mud.Wechat.Pay.DataModels.MerchantStore;
+using Mud.Wechat.Pay.DataModels.PasswordExemptContract;
 using Mud.Wechat.Pay.DataModels.PayScore;
 using Mud.Wechat.Pay.DataModels.PartnerPayScore;
 using Mud.Wechat.Pay.DataModels.PartnerTransactions;
@@ -35,6 +52,18 @@ using Mud.Wechat.Pay.DataModels.Repayment;
 using Mud.Wechat.Pay.DataModels.Refund;
 using Mud.Wechat.Pay.DataModels.Transactions;
 using Mud.Wechat.Pay.DataModels.Transfer;
+using Mud.Wechat.Pay.DataModels.AbnormalFundProcessing;
+using Mud.Wechat.Pay.DataModels.BrandRedpacket;
+using Mud.Wechat.Pay.DataModels.TransferToQqWallet;
+using Mud.Wechat.Pay.DataModels.UserConfirmAuthorization;
+using Mud.Wechat.Pay.DataModels.PlatsolutionEcommerceInsuranceContract;
+using Mud.Wechat.Pay.DataModels.PlatsolutionEcommerceCompensate;
+using Mud.Wechat.Pay.DataModels.PlatsolutionEcommerceDeposit;
+using Mud.Wechat.Pay.DataModels.PlatsolutionEcommerceInsuranceClaim;
+using Mud.Wechat.Pay.DataModels.PlatsolutionEcommerceMchTransfer;
+using Mud.Wechat.Pay.DataModels.PlatsolutionEcommerceRechargeEmployee;
+using Mud.Wechat.Pay.DataModels.PlatsolutionEcommerceRecharge;
+using Mud.Wechat.Pay.DataModels.PlatsolutionEcommerceSettle;
 using System.Text.Json.Serialization.Metadata;
 
 namespace Mud.Wechat.Pay.Extensions;
@@ -100,6 +129,35 @@ public static class PayJsonResolverExtensions
             MerchantOperationManageJsonContext.Default,
             MerchantMediaJsonContext.Default,
             EcommerceJsonContext.Default,
+            IndustryCouponJsonContext.Default,
+            MarketingBusifavorJsonContext.Default,
+            MarketingGoodsSubsidyActivityJsonContext.Default,
+            MarketingPartnerDeliveryPlanJsonContext.Default,
+            MarketingPartnerProductCouponJsonContext.Default,
+            MarketingPartnershipsJsonContext.Default,
+            MarketingPayGiftActivityJsonContext.Default,
+            MarketingShoppingReceiptJsonContext.Default,
+            MarketingBankJsonContext.Default,
+            MarketingBankFavorJsonContext.Default,
+            BrandApplymentJsonContext.Default,
+            BrandCardConfigJsonContext.Default,
+            BrandCardLinkJsonContext.Default,
+            BrandCardMemberJsonContext.Default,
+            BrandProfitSharingJsonContext.Default,
+            BrandStoreJsonContext.Default,
+            PasswordExemptContractJsonContext.Default,
+            AbnormalFundProcessingJsonContext.Default,
+            BrandRedpacketJsonContext.Default,
+            TransferToQqWalletJsonContext.Default,
+            UserConfirmAuthorizationJsonContext.Default,
+            PlatsolutionEcommerceInsuranceContractJsonContext.Default,
+            PlatsolutionEcommerceCompensateJsonContext.Default,
+            PlatsolutionEcommerceDepositJsonContext.Default,
+            PlatsolutionEcommerceInsuranceClaimJsonContext.Default,
+            PlatsolutionEcommerceMchTransferJsonContext.Default,
+            PlatsolutionEcommerceRechargeEmployeeJsonContext.Default,
+            PlatsolutionEcommerceRechargeJsonContext.Default,
+            PlatsolutionEcommerceSettleJsonContext.Default,
             CallbackJsonContext.Default);
 
         services.AddMudHttpClientJsonContext(resolver);

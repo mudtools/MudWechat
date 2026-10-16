@@ -186,4 +186,67 @@ public interface IWechatPayTransferService
     Task<TransferRevokeResponse> RevokeTransferAsync(
         [Path] string outBillNo,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 商户单号申请电子回单。官方文档：<see href="https://pay.weixin.qq.com/doc/v3/merchant/4012716452"/>。
+    /// </summary>
+    /// <param name="request">申请请求体，见 <see cref="TransferElecsignApplyRequest"/>。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/> 取消操作令牌对象。</param>
+    /// <returns>回单申请单（含状态与创建时间），见 <see cref="TransferElecsignApplyResponse"/>。</returns>
+    /// <remarks>
+    /// <para><b>官方契约</b>：<b>POST</b> <c>/v3/fund-app/mch-transfer/elecsign/out-bill-no</c>；无 path / query 参数。</para>
+    /// <para><b>两段式</b>：回单是<b>异步生成</b>的 —— 首次调用常返回 <c>state = GENERATING</c>，<b>必须轮询</b>到 <c>FINISHED</c> 才有下载地址。</para>
+    /// </remarks>
+    [Post("/v3/fund-app/mch-transfer/elecsign/out-bill-no")]
+    Task<TransferElecsignApplyResponse> ApplyElecsignByOutBillNoAsync(
+        [Body] TransferElecsignApplyRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 微信单号申请电子回单。官方文档：<see href="https://pay.weixin.qq.com/doc/v3/merchant/4012716456"/>。
+    /// </summary>
+    /// <param name="request">申请请求体，见 <see cref="TransferElecsignApplyByWxNoRequest"/>。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/> 取消操作令牌对象。</param>
+    /// <returns>回单申请单，见 <see cref="TransferElecsignApplyResponse"/>。</returns>
+    /// <remarks>
+    /// <para><b>官方契约</b>：<b>POST</b> <c>/v3/fund-app/mch-transfer/elecsign/transfer-bill-no</c>；无 path / query 参数。</para>
+    /// <para><b>返回类型为何与「商户单号申请电子回单」共用</b>：官方两页的应答字段表<b>逐项完全一致</b>（<c>state</c> / <c>create_time</c>）⇒ 复用同一 DTO。</para>
+    /// <para><b>两段式同商户单号版</b>：须轮询到 <c>state = FINISHED</c>。</para>
+    /// </remarks>
+    [Post("/v3/fund-app/mch-transfer/elecsign/transfer-bill-no")]
+    Task<TransferElecsignApplyResponse> ApplyElecsignByTransferBillNoAsync(
+        [Body] TransferElecsignApplyByWxNoRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 发起转账并完成免确认收款授权。官方文档：<see href="https://pay.weixin.qq.com/doc/v3/merchant/4014399293"/>。
+    /// </summary>
+    /// <param name="request">请求体，见 <see cref="TransferPreTransferWithAuthorizationRequest"/>。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/> 取消操作令牌对象。</param>
+    /// <returns>转账单 + 授权包信息，见 <see cref="TransferPreTransferWithAuthorizationResponse"/>。</returns>
+    /// <remarks>
+    /// <para><b>官方契约</b>：<b>POST</b> <c>/v3/fund-app/mch-transfer/transfer-bills/pre-transfer-with-authorization</c>；无 path / query 参数。</para>
+    /// <para><b>支持商户：【普通商户】</b>。频率限制：官方页<b>未印</b>端点级数字。</para>
+    /// <para><b>异步语义</b>：应答中的 <c>package_info</c> 只是调起用户确认收款的凭据，<b>不等于</b>转账成功；终态须经查询端点确认。</para>
+    /// </remarks>
+    [Post("/v3/fund-app/mch-transfer/transfer-bills/pre-transfer-with-authorization")]
+    Task<TransferPreTransferWithAuthorizationResponse> CreateTransferBillWithAuthorizationAsync(
+        [Body] TransferPreTransferWithAuthorizationRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 用户授权后转账。官方文档：<see href="https://pay.weixin.qq.com/doc/v3/merchant/4014399371"/>。
+    /// </summary>
+    /// <param name="request">请求体，见 <see cref="TransferAuthorizedTransferRequest"/>。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/> 取消操作令牌对象。</param>
+    /// <returns>转账单结果，见 <see cref="TransferAuthorizedTransferResponse"/>。</returns>
+    /// <remarks>
+    /// <para><b>官方契约</b>：<b>POST</b> <c>/v3/fund-app/mch-transfer/transfer-bills/transfer</c>；无 path / query 参数。</para>
+    /// <para><b>支持商户：【普通商户】</b>。频率限制：官方页<b>未印</b>端点级数字。</para>
+    /// <para><b>前置条件</b>：必须先经免确认收款授权接口获取 <c>authorization_id</c> 或 <c>out_authorization_no</c>（二选一必填）。</para>
+    /// </remarks>
+    [Post("/v3/fund-app/mch-transfer/transfer-bills/transfer")]
+    Task<TransferAuthorizedTransferResponse> TransferByAuthorizationAsync(
+        [Body] TransferAuthorizedTransferRequest request,
+        CancellationToken cancellationToken = default);
 }

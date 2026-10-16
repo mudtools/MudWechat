@@ -406,4 +406,303 @@ public enum PayModule
     /// </para>
     /// </remarks>
     Ecommerce,
+
+    /// <summary>
+    /// 商家券（<b>P1-3，15 端点</b>）：批次 CRUD 与预算 + 券核销/退货/关联补贴 + 自定义 code 上传 +
+    /// 用户券查询 + 回调地址 + 商品券发券。
+    /// 官方文档 <see href="https://pay.weixin.qq.com/doc/v3/merchant/4012465431"/>。
+    /// </summary>
+    /// <remarks>
+    /// <b>批次三写支的动词不统一</b>：创建是 POST、改批次与<b>改预算都是 PATCH</b>（不是 PUT）；
+    /// <b>上传自定义 code 是 POST 到 <c>/stocks/{stock_id}/couponcodes</c></b>。
+    /// <b>双面同表 ⇒ 一面一方法</b>：15 支里 13 支同时有【普通商户】与【普通服务商】两页，
+    /// 逐页字段表指纹比对完全同形 ⇒ 单方法 + 双页文档引用（守卫 MBF-B1）。
+    /// <b>用户券两支把 <c>openid</c> 放在 path</b>（且查询单支还要 path 上的 <c>coupon_code</c> + <c>appid</c>）
+    /// ⇒ 三元组定位一张券，少任一即 404。
+    /// </remarks>
+    MarketingBusifavor,
+
+    /// <summary>
+    /// 商品券（服务商，<b>P1-3，33 端点 + 1 手工通道</b>）：商品券 CRUD + 券批次 + 券包 + 门店关联 +
+    /// 预算 + 用户券 + 图片生成任务 + 发券与通知回调。
+    /// 官方文档 <see href="https://pay.weixin.qq.com/doc/v3/partner/4015781266"/>。
+    /// </summary>
+    /// <remarks>
+    /// <b>本域是本批次最大面且全部是【普通服务商】</b>；<b>改支统一是 PATCH</b>（不是 PUT）。
+    /// <b>同路由两契约</b>：<c>POST /v3/marketing/partner/product-coupon/product-coupons</c> 官方拆成
+    /// 「单品形态」与「券包形态」两页 ⇒ 两个方法同 (方法, 路由)，端点计数按方法、路由计数按 (方法,路由) 去重。
+    /// <b>图片上传走 multipart 手工通道</b>（<see cref="MarketingMedia.IWechatPayMarketingMediaService"/>），
+    /// 不计入生成式接口。
+    /// </remarks>
+    MarketingPartnerProductCoupon,
+
+    /// <summary>
+    /// 品牌投放计划（<b>P1-3，5 端点</b>）：投放计划创建 / 更新 / 查询 / 列表 / 终止。
+    /// 官方文档 <see href="https://pay.weixin.qq.com/doc/v3/partner/4016184554"/>。
+    /// </summary>
+    /// <remarks>
+    /// <b>全部【普通服务商】且路由带品牌标识 path 段</b>；<b>终止支官方零 Body 零应答字段</b>
+    /// ⇒ 返回裸 <see cref="Task"/>，结果只以 HTTP 码判定（守卫 MDP-B1）。
+    /// </remarks>
+    MarketingPartnerDeliveryPlan,
+
+    /// <summary>
+    /// 商品补贴活动（<b>P1-3，8 端点</b>）：补贴活动 CRUD + 零售门店活动 + 业代与门店绑定。
+    /// 官方文档 <see href="https://pay.weixin.qq.com/doc/v3/partner/4012384399"/>。
+    /// </summary>
+    /// <remarks>
+    /// <b>两支 DELETE 带 JSON 请求体</b>（<c>retail-store-act/{activity_id}/representative</c> 与
+    /// <c>retail-store-act/{brand_id}/stores</c>：删除须提交 <c>out_request_no</c> + <c>delete_time</c> + 明细数组）
+    /// ⇒ 「DELETE 一定无包体」在本域不成立（守卫 MGSA-B1）。
+    /// </remarks>
+    MarketingGoodsSubsidyActivity,
+
+    /// <summary>
+    /// 支付有礼活动（<b>P1-3，8 端点</b>）：门槛活动创建 / 活动列表 / 详情 / 终止 + 商品与商户池维护。
+    /// 官方文档 <see href="https://pay.weixin.qq.com/doc/v3/merchant/4012487898"/>。
+    /// </summary>
+    /// <remarks>
+    /// <b>商户池三支（列表 / 新增 / 删除）与商品池一支各自独立路由</b>；<c>terminate</c> 是 POST 动词段。
+    /// <b>列表支的 <c>offset</c>/<c>limit</c> 官方必填</b>（本域唯一）⇒ 缺省即 400（守卫 MPGA-B1）。
+    /// </remarks>
+    MarketingPayGiftActivity,
+
+    /// <summary>
+    /// 小票营销（<b>P1-3，5 端点</b>）：自定义入口创建 / 查询 / 修改 + 小票跳转信息上传 + 发送购物小票。
+    /// 官方文档 <see href="https://pay.weixin.qq.com/doc/v3/partner/4012697703"/>。
+    /// </summary>
+    /// <remarks>
+    /// <b>本域无 DELETE</b>：入口三支是 <c>POST</c>（创建，无 path 段）+ <c>GET</c>/<c>PATCH</c>
+    /// （查询与修改，按 path 上的 <c>brand_id</c> 定位）⇒ 「CRUD」里的 D 在本域不存在（守卫 MSRA-B1）。
+    /// <b>发送购物小票支官方零 Body</b> ⇒ 只有 <c>CancellationToken</c>，跳转信息走上一支的上传面，
+    /// 两支的口径不同，<b>不得互相套用</b>。
+    /// </remarks>
+    MarketingShoppingReceipt,
+
+    /// <summary>
+    /// 商户合作关系（<b>P1-3，2 端点</b>）：建立合作关系 + 查询合作关系列表。
+    /// 官方文档 <see href="https://pay.weixin.qq.com/doc/v3/merchant/4012380498"/>。
+    /// </summary>
+    /// <remarks>
+    /// <b>查询支的两个 query 是对象</b>（<c>partner</c> / <c>authorized_data</c>），官方 curl 示例逐字显示
+    /// 线格式是 <b>URL 编码后的 JSON 串</b> ⇒ 声明式签名以 <c>string</c> 承载，宿主负责序列化（守卫 MKP-B1）。
+    /// </remarks>
+    MarketingPartnerships,
+
+    /// <summary>
+    /// 行业券（<b>P1-3，1 端点</b>）：出行优惠券 token 申领。
+    /// 官方文档 <see href="https://pay.weixin.qq.com/doc/v3/merchant/4012553563"/>。
+    /// </summary>
+    /// <remarks>
+    /// <b>本域是「官方目录有章节、契约面只有一支」的最小营销域</b>：行业券其余能力全部在
+    /// 小程序/公众号侧，支付文档中心无 HTTP 面 ⇒ 不得按第三方 SDK 补路由（守卫 MIC-B1）。
+    /// </remarks>
+    IndustryCoupon,
+
+    /// <summary>
+    /// 银行营销任务（<b>P1-3，2 端点</b>）：银行营销包（package）任务的创建与查询。
+    /// 官方文档 <see href="https://pay.weixin.qq.com/doc/v3/merchant/4012466703"/>。
+    /// </summary>
+    /// <remarks>
+    /// <b>路由以 <c>package_id</c> 定位</b>（path 段），查询支的 <c>offset</c>/<c>limit</c> 官方选填、
+    /// 单次最多 20 条（写在描述里而非类型上限）⇒ 不得当成硬约束本地拦截（守卫 MBT-B1）。
+    /// </remarks>
+    MarketingBank,
+
+    /// <summary>
+    /// 银行代金券（<b>P1-3，2 端点</b>）：银行多活动发券 + 按 <c>coupon_id</c> 查询银行券。
+    /// 官方文档 <see href="https://pay.weixin.qq.com/doc/v3/merchant/4014569793"/>。
+    /// </summary>
+    /// <remarks>
+    /// <b>两支都以 <c>openid</c> / <c>coupon_id</c> 走 path</b>；本域与 <see cref="BankPayScore"/>、
+    /// 银行转账（<see cref="BankTransfer"/>）路由前缀同为 <c>/v3/marketing/bank-favor/</c> 之外的银行面，互不交叠。
+    /// </remarks>
+    MarketingBankFavor,
+
+    /// <summary>
+    /// 营销图片上传（<b>P1-3，2 手工通道</b>）：代金券/商家券侧图片上传（回 <c>media_url</c>）+
+    /// 商品券侧图片上传（回 <c>image_url</c>），均为 multipart/form-data。
+    /// 官方文档 <see href="https://pay.weixin.qq.com/doc/v3/merchant/4012557233"/>。
+    /// </summary>
+    /// <remarks>
+    /// 因 <c>multipart/form-data</c> 无法用声明式表达，走手工通道
+    /// <see cref="MarketingMedia.IWechatPayMarketingMediaService"/>；<b>两支应答字段名不同</b>，
+    /// <c>meta.filename</c> 上限也不同（128 / 150）。不计入生成式接口端点计数。
+    /// </remarks>
+    MarketingMedia,
+
+    /// <summary>
+    /// 品牌入驻申请（<b>P1-4，4 端点</b>）：提交入驻申请 + 撤销申请 + 按申请单号 / 按业务申请编号查询状态。
+    /// 官方文档 <see href="https://pay.weixin.qq.com/doc/v3/partner/4016249989"/>。
+    /// </summary>
+    /// <remarks>
+    /// <b>两套申请编号并存</b>：受理支（提交 / 撤销）应答 <b>2 行</b>、状态查询两支应答 <b>7 行</b>，
+    /// 各组内<b>逐字段同形且必填口径一致</b> ⇒ 两两共用一型；<c>business_code</c>（商户侧）与
+    /// <c>applyment_id</c>（微信侧）是<b>两个不同的定位键、两支独立路由</b>，不得合并成「可选参数的一支」。
+    /// </remarks>
+    BrandApplyment,
+
+    /// <summary>
+    /// 品牌商家名片配置（<b>P1-4，5 端点</b>）：配置申请提交 / 撤销 / 状态查询 + 预览二维码 + 发布。
+    /// 官方文档 <see href="https://pay.weixin.qq.com/doc/v3/partner/4016475174"/>。
+    /// </summary>
+    /// <remarks>
+    /// <b>「申请 → 发布」两段式</b>：提交支只是进入审核态，生效须另调发布支 ⇒ 与撤销支三者语义互斥，不得折叠。
+    /// <b>预览支与发布支应答同为 5 行但字段名不同</b>（<c>card_preview_url</c>/<c>url_expired_time</c> vs
+    /// <c>publish_type</c>/<c>scheduled_publish_time</c>）⇒ 「行数相同」不等于「同形」（守卫 BCC-B1）。
+    /// </remarks>
+    BrandCardConfig,
+
+    /// <summary>
+    /// 品牌交易连接名片（<b>P1-4，5 端点</b>）：规则申请 / 撤销 / 按业务编号查状态 + 生效规则列表 + 场景解除。
+    /// 官方文档 <see href="https://pay.weixin.qq.com/doc/v3/partner/4016366785"/>。
+    /// </summary>
+    /// <remarks>
+    /// <b>本域列表支分页是 <c>page_index</c>/<c>page_size</c></b>（P1-4 七域内唯一），与会员卡 / 门店列表支的
+    /// <c>offset</c>/<c>limit</c> <b>不得互套</b>。<b><c>unbind-card-link</c> 是「场景解除」不是删除规则</b>，
+    /// 与 <c>cancel-applyment</c>（撤销未生效申请）分属两支（守卫 BCL-B1）。
+    /// </remarks>
+    BrandCardLink,
+
+    /// <summary>
+    /// 品牌会员卡与会员（<b>P1-4，15 端点</b>）：会员卡模板 CRUD + 用户会员卡七支 + 预授权令牌 +
+    /// 用户动态 + 积分同步与兑券。
+    /// 官方文档 <see href="https://pay.weixin.qq.com/doc/v3/partner/4015336970"/>。
+    /// </summary>
+    /// <remarks>
+    /// <b>模板族与用户卡族是两套生命周期</b>（<c>card_id</c> ↔ <c>user_card_code</c>）：模板四支（创建 / 查询 / 修改 / 作废）
+    /// 应答 49 行同形 ⇒ 共用一型，列表支 53 行 ⇒ 单建；用户卡五支 28 行同形 ⇒ 共用一型，列表支 32 行 ⇒ 单建。
+    /// <b>共用只发生在应答侧</b>：创建（45 行）与 PATCH 修改的<b>必填口径不同</b> ⇒ 请求类型各建（守卫 BCM-B1）。
+    /// </remarks>
+    BrandCardMember,
+
+    /// <summary>
+    /// 品牌分账（<b>P1-4，9 端点</b>）：最大分账比例 + 分账请求与结果查询 + 解冻剩余资金 + 待分金额 +
+    /// 接收方增删 + 回退请求与查询。
+    /// 官方文档 <see href="https://pay.weixin.qq.com/doc/v3/partner/4012467022"/>。
+    /// </summary>
+    /// <remarks>
+    /// <b>与 <see cref="ProfitSharing"/> 同族不同路由</b>：本域走 <c>/v3/brand/profitsharing/*</c>，
+    /// 口径是 <c>brand_mchid</c>（品牌主商户号）+ <c>sub_mchid</c>（收款方）两级 ⇒ DTO 与接收方类型<b>不得</b>互套。
+    /// <b>发起（15 行）与结果查询（16 行，多 <c>finish_amount</c>/<c>finish_description</c>）不同形 ⇒ 分建</b>，
+    /// 而回退两支（10 行）与接收方增删（3 行）各自共用（守卫 BPS-B1）。
+    /// </remarks>
+    BrandProfitSharing,
+
+    /// <summary>
+    /// 品牌门店（<b>P1-4，9 端点</b>）：门店创建 / 列表 / 查询 / 更新 / 删除 + 收款商户号绑定与解绑 +
+    /// 暂停与恢复营业。
+    /// 官方文档 <see href="https://pay.weixin.qq.com/doc/v3/partner/4015783183"/>。
+    /// </summary>
+    /// <remarks>
+    /// <b>支付线首个出现 <c>DELETE</c> 动词的域族</b>：删除支<b>官方未印发应表</b> ⇒ 返回裸 <see cref="Task"/>，
+    /// 且仍带 <c>brand_id</c> 请求体（守卫 BST-B1）。五种变更（PATCH 改信息 / DELETE 删记录 / close / resume /
+    /// bind·unbind）语义互斥；创建·查询·更新三支应答 21 行同形 ⇒ 共用，绑定（5 行）与解绑（1 行）⇒ 分建。
+    /// </remarks>
+    BrandStore,
+
+    /// <summary>
+    /// 免密支付契约（<b>P1-4，6 端点</b>）：清算机构面与服务商面各有小程序 / 支付后两支预签约 +
+    /// 协议查询 + 协议解约。
+    /// 官方文档 <see href="https://pay.weixin.qq.com/doc/v3/partner/4012471282"/>。
+    /// </summary>
+    /// <remarks>
+    /// <b>两套标识体系不得互换</b>（本域红线）：<c>/contracts/qs/*</c> 是【从业机构（支付机构）】面，用
+    /// <c>appid</c> / <c>openid</c>（<c>string(128)</c>）；<c>/contracts/service-provider/*</c> 是【普通服务商】面，
+    /// 用 <c>sp_appid</c> / <c>sp_openid</c>（<c>string(64)</c>）⇒ 四支预签约<b>各建一型</b>（请求 9/9/10/10 行、
+    /// 应答 6/7/3/4 行，两两不同形）。查询与解约以 <c>service_id</c>（<c>integer</c>）+
+    /// <c>out_contract_code</c> <b>同为 path 段</b>定位，官方无按 <c>contract_id</c> 的支（守卫 PEC-B1）。
+    /// </remarks>
+    PasswordExemptContract,
+
+    /// <summary>
+    /// 在途异常资金处理（<b>P1-2，3 端点</b>）：付款单查询 + 付款指令发起 + 指令执行结果查询。
+    /// 官方文档 <see href="https://pay.weixin.qq.com/doc/v3/partner/4015408031"/>。
+    /// </summary>
+    /// <remarks>
+    /// <b>官方只开放查询与指令两支</b>：第三支是指令执行结果查询 ⇒ 三支应答<b>不同形</b>，各建一型。
+    /// 指令发起支官方未印业务错误码表，只在通用错误码里给出 <c>429 RATELIMIT_EXCEEDED</c>。
+    /// </remarks>
+    AbnormalFundProcessing,
+
+    /// <summary>
+    /// 品牌商户红包批次（<b>P1-2，5 端点</b>）：发放批次 + 批次查询两支（微信 / 商家批次号）+ 明细查询两支（微信 / 商家明细号）。
+    /// 官方文档 <see href="https://pay.weixin.qq.com/doc/v3/merchant/4014310358"/>。
+    /// </summary>
+    /// <remarks>
+    /// <b>两套定位键</b>：批次查询与明细查询各自「微信号 / 商家号」两支，官方应答表<b>逐字段同形</b> ⇒ 共用响应类型。
+    /// 发放支请求体庞大（17 行），与查询支的纯 query 形态<b>不得互套</b>。
+    /// </remarks>
+    BrandRedpacket,
+
+    /// <summary>
+    /// 转账到QQ钱包（<b>P1-2，3 端点</b>）：发起转账 + 结果查询 + 撤销转账。
+    /// 官方文档 <see href="https://pay.weixin.qq.com/doc/v3/merchant/4014297386"/>。
+    /// </summary>
+    /// <remarks>
+    /// <b>与普通转账域隔离</b>：本域全部走 <c>/fund-app/mch-transfer/transfer-to-qq-wallet-bills/*</c>，
+    /// 请求/应答多 <c>qq_wallet_openid</c>（收款方 QQ 钱包 OpenID）⇒ DTO 不得与 <see cref="Transfer"/> 互相套用。
+    /// 撤销支官方未印应表 ⇒ 返回裸 <see cref="Task"/>，以 HTTP 码 + <c>code</c>/<c>message</c> 判定。
+    /// </remarks>
+    TransferToQqWallet,
+
+    /// <summary>
+    /// 免确认收款授权（<b>P1-2，3 端点</b>）：创建授权 + 授权结果查询 + 解除授权。
+    /// 官方文档 <see href="https://pay.weixin.qq.com/doc/v3/merchant/4015901167"/>。
+    /// </summary>
+    /// <remarks>
+    /// <b>三段式生命周期</b>：三支语义不可折叠，应答<b>不同形</b>（创建 6 行、查询 8 行、解除无应表）。
+    /// 创建支请求体含敏感字段 <c>user_name</c> 需 RSA-OAEP 加密 ⇒ 宿主须在调用前完成加密。
+    /// </remarks>
+    UserConfirmAuthorization,
+
+    // ---- P1-2-B PlatsolutionEcommerce 平台服务商解决方案（8 域 / 31 端点）----
+
+    /// <summary>
+    /// 平台服务商保险合约（<b>P1-2-B，2 端点</b>）：开通保险理赔功能 + 查询开通状态。
+    /// 官方文档 <see href="https://pay.weixin.qq.com/doc/v3/partner/4012781476"/>。
+    /// </summary>
+    PlatsolutionEcommerceInsuranceContract,
+
+    /// <summary>
+    /// 平台服务商赔付账单（<b>P1-2-B，5 端点</b>）：发起赔付 + 两路查询（微信/商家单号）+ 撤销 + 预转账。
+    /// 官方文档 <see href="https://pay.weixin.qq.com/doc/v3/partner/4013504175"/>。
+    /// </summary>
+    PlatsolutionEcommerceCompensate,
+
+    /// <summary>
+    /// 平台服务商保证金/保费/运费补偿（<b>P1-2-B，7 端点</b>）：售后补偿查询两支 + 保费补偿发起/查询 + 运费补偿发起/查询 + 售后补偿发起。
+    /// 官方文档 <see href="https://pay.weixin.qq.com/doc/v3/partner/4013504194"/>。
+    /// </summary>
+    PlatsolutionEcommerceDeposit,
+
+    /// <summary>
+    /// 平台服务商保险理赔账单（<b>P1-2-B，5 端点</b>）：发起理赔 + 两路查询 + 撤销 + 预转账。
+    /// 官方文档 <see href="https://pay.weixin.qq.com/doc/v3/partner/4013504184"/>。
+    /// </summary>
+    PlatsolutionEcommerceInsuranceClaim,
+
+    /// <summary>
+    /// 平台服务商商户转账（<b>P1-2-B，3 端点</b>）：发起转账 + 两路查询（微信/商家单号）。
+    /// 官方文档 <see href="https://pay.weixin.qq.com/doc/v3/partner/4013521743"/>。
+    /// </summary>
+    PlatsolutionEcommerceMchTransfer,
+
+    /// <summary>
+    /// 平台服务商员工充值（<b>P1-2-B，3 端点</b>）：充值申请 + 查询 + 删除 openid。
+    /// 官方文档 <see href="https://pay.weixin.qq.com/doc/v3/partner/4014010905"/>。
+    /// </summary>
+    PlatsolutionEcommerceRechargeEmployee,
+
+    /// <summary>
+    /// 平台服务商充值（<b>P1-2-B，3 端点</b>）：充值申请 + 查询 + 关闭。
+    /// 官方文档 <see href="https://pay.weixin.qq.com/doc/v3/partner/4013521753"/>。
+    /// </summary>
+    PlatsolutionEcommerceRecharge,
+
+    /// <summary>
+    /// 平台服务商结算（<b>P1-2-B，3 端点</b>）：预结算订单创建 + 查询 + 异常结算申请。
+    /// 官方文档 <see href="https://pay.weixin.qq.com/doc/v3/partner/4015198012"/>。
+    /// </summary>
+    PlatsolutionEcommerceSettle,
 }

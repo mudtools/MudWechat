@@ -10,6 +10,7 @@ using Mud.Wechat.Pay.Certificates;
 using Mud.Wechat.Pay.Download;
 using Mud.Wechat.Pay.Ecommerce;
 using Mud.Wechat.Pay.Fapiao;
+using Mud.Wechat.Pay.MarketingMedia;
 using Mud.Wechat.Pay.MerchantManage;
 using Mud.Wechat.Pay.Media;
 using Mud.Wechat.Pay.MerchantService;
@@ -209,6 +210,57 @@ public class PayServiceBuilder
                 s.AddEcommerceWebApiHttpClient();
                 s.TryAddSingleton<IWechatPayEcommerceCancelMediaService, WechatPayEcommerceCancelMediaService>();
             },
+
+            // P1-3 营销线十域（商家券 15 + 商品券 33 + 投放计划 5 + 补贴活动 8 + 支付有礼 8 +
+            // 小票营销 5 + 合作关系 2 + 行业券 1 + 银行营销任务 2 + 银行代金券 2）：
+            // 全部纯声明式域，零 [Token]（支付线以商户私钥签名），组名与域同名。
+            // 双面同表归并 ⇒ 「一面一方法 + 双页文档引用」，只有商品券创建支因官方拆两页字段表而
+            // 呈「同路由两方法」（守卫 MBF-B1 / MPPC-B1）。
+            [PayModule.MarketingBusifavor] = static s => s.AddMarketingBusifavorWebApiHttpClient(),
+            [PayModule.MarketingPartnerProductCoupon] = static s => s.AddMarketingPartnerProductCouponWebApiHttpClient(),
+            [PayModule.MarketingPartnerDeliveryPlan] = static s => s.AddMarketingPartnerDeliveryPlanWebApiHttpClient(),
+            [PayModule.MarketingGoodsSubsidyActivity] = static s => s.AddMarketingGoodsSubsidyActivityWebApiHttpClient(),
+            [PayModule.MarketingPayGiftActivity] = static s => s.AddMarketingPayGiftActivityWebApiHttpClient(),
+            [PayModule.MarketingShoppingReceipt] = static s => s.AddMarketingShoppingReceiptWebApiHttpClient(),
+            [PayModule.MarketingPartnerships] = static s => s.AddMarketingPartnershipsWebApiHttpClient(),
+            [PayModule.IndustryCoupon] = static s => s.AddIndustryCouponWebApiHttpClient(),
+            [PayModule.MarketingBank] = static s => s.AddMarketingBankWebApiHttpClient(),
+            [PayModule.MarketingBankFavor] = static s => s.AddMarketingBankFavorWebApiHttpClient(),
+
+            // 营销图片上传：两支均为 multipart/form-data ⇒ 无 [HttpClientApi] 声明、无生成式注册器，
+            // 只挂手工通道（代金券/商家券侧回 media_url、商品券侧回 image_url）。
+            // 不计入 Baseline.Pay.Endpoints（与 MerchantMedia / ComplaintMedia / EcommerceCancelMedia 同口径）。
+            [PayModule.MarketingMedia] = static s =>
+            {
+                s.TryAddSingleton<IWechatPayMarketingMediaService, WechatPayMarketingMediaService>();
+            },
+
+            // P1-4 品牌线与免密契约面七域（品牌入驻 4 + 名片配置 5 + 交易连接名片 5 + 会员卡与会员 15 +
+            // 品牌分账 9 + 品牌门店 9 + 免密契约 6 = 53 端点）：全部纯声明式域，零 [Token]（商户私钥签名），
+            // 组名与域同名。本域每支路由官方只印一页 ⇒ 无「同路由多方法」形态。
+            // 「共用只发生在应答侧」：模板四支 / 用户卡五支 / 门店三支等应答同形 ⇒ 共用响应类型，
+            // 请求侧因必填口径不同一律各建（守卫 BRAP/BCC/BCL/BCM/BPS/BST/PEC-B1）。
+            [PayModule.BrandApplyment] = static s => s.AddBrandApplymentWebApiHttpClient(),
+            [PayModule.BrandCardConfig] = static s => s.AddBrandCardConfigWebApiHttpClient(),
+            [PayModule.BrandCardLink] = static s => s.AddBrandCardLinkWebApiHttpClient(),
+            [PayModule.BrandCardMember] = static s => s.AddBrandCardMemberWebApiHttpClient(),
+            [PayModule.BrandProfitSharing] = static s => s.AddBrandProfitSharingWebApiHttpClient(),
+            [PayModule.BrandStore] = static s => s.AddBrandStoreWebApiHttpClient(),
+            [PayModule.PasswordExemptContract] = static s => s.AddPasswordExemptContractWebApiHttpClient(),
+            [PayModule.AbnormalFundProcessing] = static s => s.AddAbnormalFundProcessingWebApiHttpClient(),
+            [PayModule.BrandRedpacket] = static s => s.AddBrandRedpacketWebApiHttpClient(),
+            [PayModule.TransferToQqWallet] = static s => s.AddTransferToQqWalletWebApiHttpClient(),
+            [PayModule.UserConfirmAuthorization] = static s => s.AddUserConfirmAuthorizationWebApiHttpClient(),
+
+            // P1-2-B 平台服务商解决方案（8 域 / 31 端点）——纯声明式域。
+            [PayModule.PlatsolutionEcommerceInsuranceContract] = static s => s.AddPlatsolutionEcommerceInsuranceContractWebApiHttpClient(),
+            [PayModule.PlatsolutionEcommerceCompensate] = static s => s.AddPlatsolutionEcommerceCompensateWebApiHttpClient(),
+            [PayModule.PlatsolutionEcommerceDeposit] = static s => s.AddPlatsolutionEcommerceDepositWebApiHttpClient(),
+            [PayModule.PlatsolutionEcommerceInsuranceClaim] = static s => s.AddPlatsolutionEcommerceInsuranceClaimWebApiHttpClient(),
+            [PayModule.PlatsolutionEcommerceMchTransfer] = static s => s.AddPlatsolutionEcommerceMchTransferWebApiHttpClient(),
+            [PayModule.PlatsolutionEcommerceRechargeEmployee] = static s => s.AddPlatsolutionEcommerceRechargeEmployeeWebApiHttpClient(),
+            [PayModule.PlatsolutionEcommerceRecharge] = static s => s.AddPlatsolutionEcommerceRechargeWebApiHttpClient(),
+            [PayModule.PlatsolutionEcommerceSettle] = static s => s.AddPlatsolutionEcommerceSettleWebApiHttpClient(),
 
             // 账单模块额外注册**账单下载通道**：它没有 [HttpClientApi] 声明（路由由 download_url 动态给出、
             // 返回非 JSON），故无对应的 AddBillDownloadWebApiHttpClient()。它依赖 AddPayApp 注册的

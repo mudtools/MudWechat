@@ -253,7 +253,7 @@ public class PayServiceBuilder
             [PayModule.UserConfirmAuthorization] = static s => s.AddUserConfirmAuthorizationWebApiHttpClient(),
 
             // P1-2-B 平台服务商解决方案（8 域 / 31 端点）——纯声明式域。
-            [PayModule.PlatsolutionEcommerceInsuranceContract] = static s => s.AddPlatsolutionEcommerceInsuranceContractWebApiHttpClient(),
+            [PayModule.PlatsolutionEcommerceInsuranceContract] = static s => s.AddPlatsolutionEcommerceWebApiHttpClient(),
             [PayModule.PlatsolutionEcommerceCompensate] = static s => s.AddPlatsolutionEcommerceCompensateWebApiHttpClient(),
             [PayModule.PlatsolutionEcommerceDeposit] = static s => s.AddPlatsolutionEcommerceDepositWebApiHttpClient(),
             [PayModule.PlatsolutionEcommerceInsuranceClaim] = static s => s.AddPlatsolutionEcommerceInsuranceClaimWebApiHttpClient(),

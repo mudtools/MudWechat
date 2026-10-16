@@ -335,4 +335,25 @@ public interface IWechatPayMarketingBusifavorService
         [Path] string couponCode,
         [Path] string appid,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 发放消费卡。
+    /// 官方文档：<see href="https://pay.weixin.qq.com/doc/v3/merchant/4017164666"/>（【直连商户】）。
+    /// </summary>
+    /// <param name="cardId">【消费卡ID】 card_id，即创建消费卡后获得的唯一标识（官方 path <c>card_id</c>，<b>必填</b>，类型 <c>string[1,28]</c>）。</param>
+    /// <param name="request">发放消费卡请求体，字段见 <see cref="BusifavorConsumeCardSendRequest"/>。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/> 取消操作令牌对象。</param>
+    /// <returns>发放消费卡，见 <see cref="BusifavorConsumeCardSendResponse"/>。</returns>
+    /// <remarks>
+    /// <para><b>官方契约</b>：<b>POST</b> <c>/v3/marketing/busifavor/coupons/{card_id}/send</c>；path <c>card_id</c>，body 4 键（<c>appid</c>/<c>openid</c>/<c>out_request_no</c>/<c>send_time</c>），resp 1 键（<c>card_code</c>）。</para>
+    /// <para><b>支持商户</b>【直连商户】。</para>
+    /// <para><b>频率限制</b>：官方页<b>未印</b>端点级数字 ⇒ 不得凭第三方 SDK 补数。</para>
+    /// <para><b>前置警示</b>：此功能仅向指定邀约商户开放，如有需要请联系微信支付运营经理。</para>
+    /// <para><b>业务错误码</b>：400 INVALID_REQUEST 请求参数符合参数格式，但不符合业务规则 / 401 SIGN_ERROR 签名错误或签名信息不完整 / 403 NO_AUTH 商户未被授权 / 404 RESOURCE_NOT_EXISTS 资源不存在或无可用 / 429 FREQUENCY_LIMITED 频率超限。</para>
+    /// </remarks>
+    [Post("/v3/marketing/busifavor/coupons/{cardId}/send")]
+    Task<BusifavorConsumeCardSendResponse> SendBusifavorConsumeCardAsync(
+        [Path] string cardId,
+        [Body] BusifavorConsumeCardSendRequest request,
+        CancellationToken cancellationToken = default);
 }

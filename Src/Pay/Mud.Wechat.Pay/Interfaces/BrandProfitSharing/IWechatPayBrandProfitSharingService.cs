@@ -20,15 +20,11 @@ namespace Mud.Wechat.Pay;
 /// 商户作用域经 <c>IWechatPayMerchantContext.UseMerchant(...)</c> 选择，本域与公众平台令牌面无关。</para>
 /// <para><b><c>[AllowAnyStatusCode]</c> 的必要性</b>：APIv3 业务失败是 HTTP 4xx/5xx + <c>{&quot;code&quot;,&quot;message&quot;}</c>，
 /// 加上后错误体原样落到 <c>WechatPayResponse.Code</c> / <c>Message</c>，由 <c>WechatPayException.ThrowIfFailed</c> 判错。</para>
-/// <para><b>频率限制口径</b>：本域 7 个官方页树<b>全部未印</b>端点级 QPS 数字，只在错误码表给出 <c>429 RATELIMIT_EXCEEDED</c> /
-/// <c>FREQUENCY_LIMITED</c> ⇒ 不得凭第三方 SDK 补数，各方法 remarks 内的「未印」结论即取证结果。</para>
-/// <para><b>分页口径不统一（照页，不得互套）</b>：本域列表支存在<b>两种</b>整型分页形态
-/// —— <c>offset</c>/<c>limit</c>（会员卡模板列表、用户会员卡列表、品牌门店列表）与
-/// <c>page_index</c>/<c>page_size</c>（交易连接名片规则列表）；且同为 <c>offset</c>/<c>limit</c>，
-/// 会员卡两支官方<b>必填</b>、门店列表支官方<b>选填</b> ⇒ 必填口径也须照页。应答总数字段官方为选填。</para>
-/// <para><b><c>brand_id</c> 是本域的「商户作用域参数」</b>：除品牌入驻面（<c>/brand/applyments/*</c>）与免密契约面外，
-/// 本域其余每支都把 <c>brand_id</c> 印为<b>必填 query</b> ⇒ 它不是可选过滤条件，缺省即 400；
-/// 长度上限官方<b>不统一</b>（名片配置/连接/门店面为 <c>string(20)</c>，会员卡面为 <c>string(32)</c>），照页不做本地归一。</para>
+/// <para><b>频率限制口径</b>：本域九支官方页<b>全部未印</b>端点级 QPS 数字，只在错误码表给出 <c>429 FREQUENCY_LIMITED</c>
+/// （分账频率过高 / 查询频率过高两种措辞）⇒ 不得凭第三方 SDK 补数。</para>
+/// <para><b>本域零 <c>brand_id</c>、零列表支</b>：query 全部是单据定位键（<c>sub_mchid</c> + <c>transaction_id</c> +
+/// <c>out_order_no</c>，回退单再加 <c>out_return_no</c> / <c>order_id</c>）⇒ 品牌作用域走签名主体与 <c>sub_mchid</c>，
+/// 不存在可补的分页参数。</para>
 /// <para><b>与 <see cref="IWechatPayProfitSharingService"/> 是同族不同路由</b>：本域全部走 <c>/v3/brand/profitsharing/*</c>， 请求/应答多 <c>brand_mchid</c>（品牌主商户号）与 <c>sub_mchid</c>（收款方）两级商户口径 ⇒ DTO 与接收方类型<b>不得</b>与普通服务商分账互相套用。</para>
 /// <para><b>分账与回退各两支</b>：发起 <c>POST /orders</c>（15 行应答）与结果查询 <c>GET /orders</c>（16 行， 多 <c>finish_amount</c> / <c>finish_description</c>，仅查询分账完结结果时存在）⇒ <b>不同形</b>、分建； 回退 <c>POST /returnorders</c> 与回退查询 <c>GET /returnorders</c> 应答<b>同形</b>（10 行）⇒ 共用。</para>
 /// <para><b>结果查询支的三个 query 全必填</b>：<c>sub_mchid</c> / <c>transaction_id</c> / <c>out_order_no</c>； 回退查询支只 <c>sub_mchid</c> 与 <c>out_return_no</c> 必填 ⇒ 两支定位口径不同，照页不得互套。</para>

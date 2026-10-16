@@ -21,6 +21,10 @@ namespace Mud.Wechat.Pay.DataModels.MarketingPartnerships;
 [JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.MarketingPartnerships.PartnershipPartnershipListResponseDataItemDataauthorizedData))]
 [JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.MarketingPartnerships.PartnershipPartnershipListResponseDataItem))]
 [JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.MarketingPartnerships.PartnershipPartnershipListResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.MarketingPartnerships.PartnershipTerminateRequestPartner))]
+[JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.MarketingPartnerships.PartnershipTerminateRequestAuthorizedData))]
+[JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.MarketingPartnerships.PartnershipTerminateRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.MarketingPartnerships.PartnershipTerminateResponse))]
 internal partial class MarketingPartnershipsJsonContext : JsonSerializerContext
 {
 }

@@ -14,6 +14,7 @@ using Mud.Wechat.Pay.MarketingMedia;
 using Mud.Wechat.Pay.MerchantManage;
 using Mud.Wechat.Pay.Media;
 using Mud.Wechat.Pay.MerchantService;
+using Mud.Wechat.Pay.TaxiInvoice;
 using Mud.Wechat.Pay.Transactions;
 
 namespace Mud.Wechat.Pay.Extensions;
@@ -223,6 +224,8 @@ public class PayServiceBuilder
             [PayModule.MarketingPayGiftActivity] = static s => s.AddMarketingPayGiftActivityWebApiHttpClient(),
             [PayModule.MarketingShoppingReceipt] = static s => s.AddMarketingShoppingReceiptWebApiHttpClient(),
             [PayModule.MarketingPartnerships] = static s => s.AddMarketingPartnershipsWebApiHttpClient(),
+            [PayModule.MarketingMemberCardOpen] = static s => s.AddMarketingMemberCardOpenWebApiHttpClient(),
+            [PayModule.MarketingMemberCardActivity] = static s => s.AddMarketingMemberCardActivityWebApiHttpClient(),
             [PayModule.IndustryCoupon] = static s => s.AddIndustryCouponWebApiHttpClient(),
             [PayModule.MarketingBank] = static s => s.AddMarketingBankWebApiHttpClient(),
             [PayModule.MarketingBankFavor] = static s => s.AddMarketingBankFavorWebApiHttpClient(),
@@ -253,7 +256,7 @@ public class PayServiceBuilder
             [PayModule.UserConfirmAuthorization] = static s => s.AddUserConfirmAuthorizationWebApiHttpClient(),
 
             // P1-2-B 平台服务商解决方案（8 域 / 31 端点）——纯声明式域。
-            [PayModule.PlatsolutionEcommerceInsuranceContract] = static s => s.AddPlatsolutionEcommerceWebApiHttpClient(),
+            [PayModule.PlatsolutionEcommerceInsuranceContract] = static s => s.AddPlatsolutionEcommerceInsuranceContractWebApiHttpClient(),
             [PayModule.PlatsolutionEcommerceCompensate] = static s => s.AddPlatsolutionEcommerceCompensateWebApiHttpClient(),
             [PayModule.PlatsolutionEcommerceDeposit] = static s => s.AddPlatsolutionEcommerceDepositWebApiHttpClient(),
             [PayModule.PlatsolutionEcommerceInsuranceClaim] = static s => s.AddPlatsolutionEcommerceInsuranceClaimWebApiHttpClient(),
@@ -261,6 +264,67 @@ public class PayServiceBuilder
             [PayModule.PlatsolutionEcommerceRechargeEmployee] = static s => s.AddPlatsolutionEcommerceRechargeEmployeeWebApiHttpClient(),
             [PayModule.PlatsolutionEcommerceRecharge] = static s => s.AddPlatsolutionEcommerceRechargeWebApiHttpClient(),
             [PayModule.PlatsolutionEcommerceSettle] = static s => s.AddPlatsolutionEcommerceSettleWebApiHttpClient(),
+
+            // P1-2-C 平台商户保险理赔商家转账（3 域 / 13 端点）——纯声明式域。
+            // 同为「一支路由只印一页」⇒ 无同路由多方法；应答共用只发生在应答侧且须官方应答表逐字段同形
+            // （预约 4 支建 3 型、批次 5 支建 4 型，守卫 PSI-RS/PSI-BT/PSI-RC）。
+            [PayModule.PlatsolutionInsuranceReservation] = static s => s.AddPlatsolutionInsuranceReservationWebApiHttpClient(),
+            [PayModule.PlatsolutionInsuranceBatch] = static s => s.AddPlatsolutionInsuranceBatchWebApiHttpClient(),
+            [PayModule.PlatsolutionInsuranceReceipt] = static s => s.AddPlatsolutionInsuranceReceiptWebApiHttpClient(),
+
+            // P1-2-D 微企付企业支付（4 域 / 12 端点）——纯声明式域。
+            // 「一支路由只印一页」同样成立 ⇒ 无同路由多方法；应答共用只发生在应答侧且须官方应答表逐字段同形
+            // （额度卡两支查询共用一型，守卫 WEB-EP）。本族 12 页「支持商户」栏恒为【普通服务商】，
+            // 请求以 sp_mchid + sub_mchid 双层定位（门店主体匹配两支例外，只印 sp_mchid）。
+            [PayModule.WebizpayBill] = static s => s.AddWebizpayBillWebApiHttpClient(),
+            [PayModule.WebizpayEmployee] = static s => s.AddWebizpayEmployeeWebApiHttpClient(),
+            [PayModule.WebizpayStore] = static s => s.AddWebizpayStoreWebApiHttpClient(),
+            [PayModule.WebizpayUser] = static s => s.AddWebizpayUserWebApiHttpClient(),
+
+            // P1-5-A 委托代扣 PAPay 3.0（直连面 20 + 服务商面 1 = 21 端点）——纯声明式域，零 [Token]（商户私钥签名）。
+            // 两支接口共用同一数据域命名空间 Mud.Wechat.Pay.DataModels.Papay（服务商面官方只印预扣费通知一支，
+            // 其包体字段名为 sp_mchid/sp_appid/sub_mchid/sub_appid ⇒ 请求类型独立，不做超集，守卫 PPY-NT）。
+            // 本族每支路由官方只印一页 ⇒ 无「同路由多方法」；应答共用只发生在应答侧且须官方应答表逐字段同形
+            // （签约查询/解除、预约扣费查询/受理、保险协议查询/解除、保险周期查询/受理各共用一型）。
+            [PayModule.Papay] = static s => s.AddPapayWebApiHttpClient(),
+            [PayModule.PartnerPapay] = static s => s.AddPartnerPapayWebApiHttpClient(),
+
+            // P1-5-C 车主出行（10 端点）+ 出租车电子发票（9 端点）——纯声明式域，零 [Token]（商户私钥签名）。
+            // ETC 族六支官方【只印服务商页】⇒ 请求以 sp_mchid + sub_mchid 定位；停车族三支是「商户页 + 服务商页」
+            // 双页同路由 ⇒ 字段取并集、必填只取交集（守卫 VEH-B3）。出租车发票族十页全部只印服务商页，
+            // 且第十支「上传出租车电子发票文件」是 multipart/form-data + SM3 ⇒ 不入声明面，走下方手工通道。
+            [PayModule.Vehicle] = static s => s.AddVehicleWebApiHttpClient(),
+            [PayModule.TaxiInvoice] = static s =>
+            {
+                s.AddTaxiInvoiceWebApiHttpClient();
+                s.TryAddSingleton<IWechatPayTaxiInvoiceFileService, WechatPayTaxiInvoiceFileService>();
+            },
+
+            // P1-5-D 教育代扣（8 端点）+ 校园缴费（8 端点）+ 代发薪（6 端点）——纯声明式域，零 [Token]。
+            // 教育代扣七支是「商户页 + 服务商页」双页同路由 ⇒ 并集建模、必填取交集；其 DELETE 解除支只印商户页，
+            // 不得按服务商面镜像（守卫 EDP-B1/B2）。校园缴费八支与代发薪六支官方全部只印服务商页。
+            // 涉密面是**逐页**结论：校园缴费只有预签约支、代发薪只有三支的官方请求头表印 Wechatpay-Serial 必填
+            // ⇒ 声明式签名不承载该头（同 Apply4SubMerchant / Ecommerce / BankTransfer 口径，由传输层注入）。
+            [PayModule.EducationPapay] = static s => s.AddEducationPapayWebApiHttpClient(),
+            [PayModule.EducationSchoolPay] = static s => s.AddEducationSchoolPayWebApiHttpClient(),
+            [PayModule.PayrollCard] = static s => s.AddPayrollCardWebApiHttpClient(),
+
+            // P1-5-E 行业方案剩余十域（34 端点）：商圈会员 / 点餐 / 资金出境 / 点金计划 / 多次扣费券 ·
+            // 分付曝光 / 费率活动 / 银行转账充值 / 智慧导购 / 交易拦截。
+            // 涉密仍是**逐页**结论（智慧导购三支、多次扣费发券一支印 Wechatpay-Serial 必填；商圈会员正文有加密提示
+            // 但请求头表未列 ⇒ 不判涉密），声明式签名一律不承载该头。
+            [PayModule.BusinessCircle] = static s => s.AddBusinessCircleWebApiHttpClient(),
+            [PayModule.Catering] = static s => s.AddCateringWebApiHttpClient(),
+            [PayModule.FundsToOversea] = static s => s.AddFundsToOverseaWebApiHttpClient(),
+            [PayModule.GoldPlan] = static s => s.AddGoldPlanWebApiHttpClient(),
+            [PayModule.Multiuse] = static s => s.AddMultiuseWebApiHttpClient(),
+            [PayModule.PayInstallment] = static s => s.AddPayInstallmentWebApiHttpClient(),
+            [PayModule.RateActivity] = static s => s.AddRateActivityWebApiHttpClient(),
+            [PayModule.Recharge] = static s => s.AddRechargeWebApiHttpClient(),
+            [PayModule.SmartGuide] = static s => s.AddSmartGuideWebApiHttpClient(),
+            [PayModule.TransactionBlock] = static s => s.AddTransactionBlockWebApiHttpClient(),
+            [PayModule.Capital] = static s => s.AddCapitalWebApiHttpClient(),
+            [PayModule.Lovefeast] = static s => s.AddLovefeastWebApiHttpClient(),
 
             // 账单模块额外注册**账单下载通道**：它没有 [HttpClientApi] 声明（路由由 download_url 动态给出、
             // 返回非 JSON），故无对应的 AddBillDownloadWebApiHttpClient()。它依赖 AddPayApp 注册的

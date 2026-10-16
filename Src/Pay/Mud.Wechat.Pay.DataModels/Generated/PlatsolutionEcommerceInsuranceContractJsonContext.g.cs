@@ -11,8 +11,9 @@ namespace Mud.Wechat.Pay.DataModels.PlatsolutionEcommerceInsuranceContract;
     PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower,
     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     WriteIndented = false)]
-[JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.PlatsolutionEcommerceInsuranceContract.InsuranceContractRequest))]
-[JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.PlatsolutionEcommerceInsuranceContract.InsuranceContractResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.PlatsolutionEcommerceInsuranceContract.InsuranceContractOpenRequestAgreementListItem))]
+[JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.PlatsolutionEcommerceInsuranceContract.InsuranceContractOpenRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.PlatsolutionEcommerceInsuranceContract.InsuranceContractOpenResponse))]
 internal partial class PlatsolutionEcommerceInsuranceContractJsonContext : JsonSerializerContext
 {
 }

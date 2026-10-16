@@ -20,15 +20,9 @@ namespace Mud.Wechat.Pay;
 /// 商户作用域经 <c>IWechatPayMerchantContext.UseMerchant(...)</c> 选择，本域与公众平台令牌面无关。</para>
 /// <para><b><c>[AllowAnyStatusCode]</c> 的必要性</b>：APIv3 业务失败是 HTTP 4xx/5xx + <c>{&quot;code&quot;,&quot;message&quot;}</c>，
 /// 加上后错误体原样落到 <c>WechatPayResponse.Code</c> / <c>Message</c>，由 <c>WechatPayException.ThrowIfFailed</c> 判错。</para>
-/// <para><b>频率限制口径</b>：本域 7 个官方页树<b>全部未印</b>端点级 QPS 数字，只在错误码表给出 <c>429 RATELIMIT_EXCEEDED</c> /
-/// <c>FREQUENCY_LIMITED</c> ⇒ 不得凭第三方 SDK 补数，各方法 remarks 内的「未印」结论即取证结果。</para>
-/// <para><b>分页口径不统一（照页，不得互套）</b>：本域列表支存在<b>两种</b>整型分页形态
-/// —— <c>offset</c>/<c>limit</c>（会员卡模板列表、用户会员卡列表、品牌门店列表）与
-/// <c>page_index</c>/<c>page_size</c>（交易连接名片规则列表）；且同为 <c>offset</c>/<c>limit</c>，
-/// 会员卡两支官方<b>必填</b>、门店列表支官方<b>选填</b> ⇒ 必填口径也须照页。应答总数字段官方为选填。</para>
-/// <para><b><c>brand_id</c> 是本域的「商户作用域参数」</b>：除品牌入驻面（<c>/brand/applyments/*</c>）与免密契约面外，
-/// 本域其余每支都把 <c>brand_id</c> 印为<b>必填 query</b> ⇒ 它不是可选过滤条件，缺省即 400；
-/// 长度上限官方<b>不统一</b>（名片配置/连接/门店面为 <c>string(20)</c>，会员卡面为 <c>string(32)</c>），照页不做本地归一。</para>
+/// <para><b>频率限制口径</b>：本域六支官方页<b>全部未印</b>端点级 QPS 数字 ⇒ 不得凭第三方 SDK 补数。</para>
+/// <para><b>本域零 query、零 <c>brand_id</c>、零列表支</b>：预签约四支走资源段（qs 面与服务商面各两场景），
+/// 协议查询与解约按 path 上的 <c>service_id</c> + <c>out_contract_code</c> 两段定位 ⇒ 官方无「按协议号查询」支。</para>
 /// <para><b>两套标识体系不得互换</b>（本域红线）：<c>/contracts/qs/*</c> 是<b>从业机构（支付机构）</b>面，用 <c>appid</c> / <c>openid</c>（<c>string(128)</c>）；<c>/contracts/service-provider/*</c> 是<b>普通服务商</b>面，用 <c>sp_appid</c> / <c>sp_openid</c>（<c>string(64)</c>）⇒ 官方字段名、长度上限与应答字段集均不同，四个预签约支<b>各建一型</b>。</para>
 /// <para><b>应答差异</b>：服务商面比清算机构面多 <c>sub_mchid</c>；<b>小程序</b>场景应答比<b>支付后</b>场景多 <c>sign_mp_appid</c> / <c>sign_mp_path</c>（拉起签约小程序用）⇒ 两场景不得共用应答。</para>
 /// <para><b>协议查询与解约定位键</b>：<c>service_id</c>（<c>integer</c>）与 <c>out_contract_code</c>（<c>string(32)</c>）<b>同为 path 段</b>； 官方<b>无</b>按 <c>contract_id</c> 查询的支，解约后同一 <c>out_contract_code</c> <b>不可复用</b>。 两支应答亦不同形（查询 15 行、解约 3 行）⇒ 各建一型。</para>

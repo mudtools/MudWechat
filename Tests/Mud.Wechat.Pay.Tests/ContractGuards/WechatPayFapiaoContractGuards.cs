@@ -14,7 +14,9 @@ using Mud.Wechat.Pay.DataModels.Fapiao;
 namespace Mud.Wechat.Pay.Tests.ContractGuards;
 
 /// <summary>
-/// P2 电子发票域契约守卫（<b>首批 2 端点</b>：开具 + 查询）。
+/// P2 电子发票域契约守卫（普通商户面 5 端点：开具 + 查询 + 冲红 + 获取下载信息 + 插入卡包）。
+/// <b>P1-5-B 服务商 / 数电发票面 13 支的逐支断言在 <c>WechatPayFapiaoExtensionContractGuards</c>（FPX-B1~B6）</b>，
+/// 本守卫只锁商户面形态与命名空间全量 DTO 计数。
 /// </summary>
 /// <remarks>
 /// <para>
@@ -26,7 +28,11 @@ namespace Mud.Wechat.Pay.Tests.ContractGuards;
 /// <para>
 /// <b>✅ 本守卫同时锁定一条「方案记录更正」</b>：设计方案 §2.5 记「普通商户文档中心<b>无</b>独立入口」，
 /// 实测<b>不成立</b> —— 普通商户侧有完整文档；服务商侧的「开具通用行业电子发票」走
-/// <c>/fapiao-applications/<b>issue-general</b></c>（<b>不同路由</b>），本域<b>不得</b>混用该路由。
+/// <c>/fapiao-applications/<b>issue-general</b></c>（<b>不同路由</b>）。
+/// <b>P1-5-B 更正</b>：原「本域<b>不得</b>覆盖服务商面」的裁定已作废 —— 服务商 / 数电发票面 13 支<b>已纳入本接口</b>，
+/// 但「不得混用」的实质约束仍然成立：两支开具各有<b>独立方法与独立路由</b>，
+/// <see cref="IWechatPayFapiaoService.IssueFapiaoAsync"/> 恒走商户面 <c>/fapiao-applications</c>，
+/// 服务商面 <c>issue-general</c> 由 <c>IssueGeneralFapiaoAsync</c> 承载（逐支取证见守卫 <c>FPX-B1~B6</c>）。
 /// </para>
 /// </remarks>
 public class WechatPayFapiaoContractGuards
@@ -35,7 +41,8 @@ public class WechatPayFapiaoContractGuards
     private const string DomainNamespace = "Mud.Wechat.Pay.DataModels.Fapiao";
 
     /// <summary>
-    /// FP1：5 端点路由与方法照官方原文；三个动作型端点（开具 / 冲红 / 插卡）均为 202 无应答体。
+    /// FP1：商户面 5 端点路由与方法照官方原文；三个动作型端点（开具 / 冲红 / 插卡）均为 202 无应答体。
+    /// P1-5-B 后另锁定「本接口 18 支 = 商户面 5 + 服务商面 13、两支开具各走各路由」。
     /// </summary>
     /// <remarks>
     /// <b>另有两个非 JSON 端点不在本接口内</b>（裁决，非遗漏）：
@@ -72,14 +79,22 @@ public class WechatPayFapiaoContractGuards
             .Select(static a => a.Name)
             .Should().BeEquivalentTo(new[] { "fapiao_id" });
 
-        // ⚠️ 不得混用服务商侧的 issue-general 路由。
+        // ⚠️ 商户面开具与服务商面开具**不得共用方法**（P1-5-B 把服务商面 13 支纳入本接口后，
+        // 该约束的实质不变：一支路由一方法，issue-general 由 IssueGeneralFapiaoAsync 独立承载）。
         var routes = typeof(IWechatPayFapiaoService)
             .GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
             .SelectMany(static m => m.GetCustomAttributes<HttpMethodAttribute>())
             .Select(static a => a.RequestUri)
             .ToList();
-        routes.Should().NotContain("/v3/new-tax-control-fapiao/fapiao-applications/issue-general",
-            "issue-general 是**服务商**侧『开具通用行业电子发票』的路由，与普通商户侧不是同一接口");
+        routes.Should().Contain("/v3/new-tax-control-fapiao/fapiao-applications/issue-general",
+            "P1-5-B 已纳入服务商面『开具通用行业电子发票』（原「本域不覆盖」裁定作废）");
+        AssertRoute<PostAttribute>(
+            nameof(IWechatPayFapiaoService.IssueGeneralFapiaoAsync),
+            "/v3/new-tax-control-fapiao/fapiao-applications/issue-general");
+        AssertRoute<PostAttribute>(
+            nameof(IWechatPayFapiaoService.IssueFapiaoAsync),
+            "/v3/new-tax-control-fapiao/fapiao-applications");
+        routes.Should().HaveCount(18, "本接口 = 商户面 5 支 + P1-5-B 服务商 / 数电面 13 支（逐支断言见守卫 FPX-B2）");
 
         // 冲红：动作式路径 /reverse（不是对 {fapiao_apply_id} 发 DELETE）；202 无应答体。
         AssertRoute<PostAttribute>(
@@ -218,9 +233,11 @@ public class WechatPayFapiaoContractGuards
             .Where(static t => !typeof(JsonSerializerContext).IsAssignableFrom(t))
             .ToList();
 
-        domainTypes.Should().HaveCount(18,
+        domainTypes.Should().HaveCount(53,
             "电子发票域 DTO：开具族 4（请求/受票方/发票信息/明细） + 查询族 7（应答/发票信息/蓝红票/卡包/销售方/附加/明细）" +
-            " + 冲红族 2（请求/目标发票） + 下载族 2（应答/下载信息） + 插卡族 2（请求/卡券要素）");
+            " + 冲红族 2（请求/目标发票） + 下载族 2（应答/下载信息） + 插卡族 2（请求/卡券要素）" +
+            " + <b>P1-5-B 服务商面 35</b>（卡券模板 4 / 两支开具 11 / 能力邀请 4 / 商户校验 5 / 商户信息与开发选项 9 / 用户抬头 2）。" +
+            "本数字是<b>命名空间全量</b>（既存 18 + P1-5-B 35）；新补 35 类的逐类形态由 FPX-B5 按本批源文件点名校验");
 
         foreach (var type in domainTypes)
         {

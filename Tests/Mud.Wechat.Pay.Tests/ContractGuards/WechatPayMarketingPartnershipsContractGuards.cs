@@ -14,7 +14,7 @@ using Mud.Wechat.Pay.DataModels.MarketingPartnerships;
 namespace Mud.Wechat.Pay.Tests.ContractGuards;
 
 /// <summary>
-/// P1-3 营销批次「商户合作关系」域契约守卫 —— <b>2 端点</b>（建立合作关系 + 查询合作关系列表）。
+/// P1-3 营销批次「商户合作关系」域契约守卫 —— <b>3 端点</b>（建立合作关系 + 查询合作关系列表 + 终止合作关系）。
 /// </summary>
 /// <remarks>
 /// <para><b>查询支的两个 query 在官方类型表里是 object</b>（<c>partner</c> / <c>authorized_data</c>），而官方 curl 子页逐字给出线格式是 <b>URL 编码后的 JSON 串</b>（<c>%7B%22business_type%22…</c>）⇒ 声明式签名以 <c>string</c> 承载、由宿主序列化，SDK <b>不得</b>把它建成对象 DTO（否则组件按 <c>ToString()</c> 上送即成 <c>{…}</c> 乱码）（MKP-B1）。</para>
@@ -30,7 +30,7 @@ public class WechatPayMarketingPartnershipsContractGuards
 
     private static readonly Type Service = typeof(IWechatPayMarketingPartnershipsService);
 
-    /// <summary>MKP-B1：拓扑 —— 一个注册组一个接口、2 个方法、2 条 (方法, 路由)、动词集 POST / GET；路由前缀 /v3/marketing/partnerships。</summary>
+    /// <summary>MKP-B1：拓扑 —— 一个注册组一个接口、3 个方法、3 条 (方法, 路由)、动词集 POST / GET；路由前缀 /v3/marketing/partnerships。</summary>
     [Fact]
     public void PartnershipTopology_ShouldBeOneInterfaceOnOneGroup()
     {
@@ -49,8 +49,8 @@ public class WechatPayMarketingPartnershipsContractGuards
                 "支付线无 access_token（红线 PAY-B1）");
         Service.Namespace.Should().Be("Mud.Wechat.Pay", "支付线接口一律扁平命名空间");
 
-        Methods().Should().HaveCount(2, "商户合作关系声明式方法数");
-        DistinctVerbRoutes().Should().HaveCount(2, "本域无同路由多方法分身");
+        Methods().Should().HaveCount(3, "商户合作关系声明式方法数（含新增终止合作关系端点）");
+        DistinctVerbRoutes().Should().HaveCount(3, "本域无同路由多方法分身");
         Verbs().Should().BeEquivalentTo(new[] { "PostAttribute", "GetAttribute" },
             "动词集照官方页面逐支登记：本域写操作动词不统一，合并即造出官方没有的端点");
         Routes().Should().OnlyContain(static r => r.StartsWith("/v3/marketing/partnerships", StringComparison.Ordinal),
@@ -92,7 +92,7 @@ public class WechatPayMarketingPartnershipsContractGuards
     [Fact]
     public void PartnershipDataModels_ShouldBeRegisteredInJsonContextAndWiredIntoDi()
     {
-        DtoTypes().Should().HaveCount(10, "本域 DTO 数（官方字段表的名册规模，含嵌套子树类型）");
+        DtoTypes().Should().HaveCount(14, "本域 DTO 数（官方字段表的名册规模，含嵌套子树类型；含新增终止合作关系四支）");
 
         foreach (var type in DtoTypes())
         {

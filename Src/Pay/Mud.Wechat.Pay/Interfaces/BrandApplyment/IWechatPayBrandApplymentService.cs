@@ -20,15 +20,10 @@ namespace Mud.Wechat.Pay;
 /// 商户作用域经 <c>IWechatPayMerchantContext.UseMerchant(...)</c> 选择，本域与公众平台令牌面无关。</para>
 /// <para><b><c>[AllowAnyStatusCode]</c> 的必要性</b>：APIv3 业务失败是 HTTP 4xx/5xx + <c>{&quot;code&quot;,&quot;message&quot;}</c>，
 /// 加上后错误体原样落到 <c>WechatPayResponse.Code</c> / <c>Message</c>，由 <c>WechatPayException.ThrowIfFailed</c> 判错。</para>
-/// <para><b>频率限制口径</b>：本域 7 个官方页树<b>全部未印</b>端点级 QPS 数字，只在错误码表给出 <c>429 RATELIMIT_EXCEEDED</c> /
-/// <c>FREQUENCY_LIMITED</c> ⇒ 不得凭第三方 SDK 补数，各方法 remarks 内的「未印」结论即取证结果。</para>
-/// <para><b>分页口径不统一（照页，不得互套）</b>：本域列表支存在<b>两种</b>整型分页形态
-/// —— <c>offset</c>/<c>limit</c>（会员卡模板列表、用户会员卡列表、品牌门店列表）与
-/// <c>page_index</c>/<c>page_size</c>（交易连接名片规则列表）；且同为 <c>offset</c>/<c>limit</c>，
-/// 会员卡两支官方<b>必填</b>、门店列表支官方<b>选填</b> ⇒ 必填口径也须照页。应答总数字段官方为选填。</para>
-/// <para><b><c>brand_id</c> 是本域的「商户作用域参数」</b>：除品牌入驻面（<c>/brand/applyments/*</c>）与免密契约面外，
-/// 本域其余每支都把 <c>brand_id</c> 印为<b>必填 query</b> ⇒ 它不是可选过滤条件，缺省即 400；
-/// 长度上限官方<b>不统一</b>（名片配置/连接/门店面为 <c>string(20)</c>，会员卡面为 <c>string(32)</c>），照页不做本地归一。</para>
+/// <para><b>频率限制口径</b>：本域四支官方页<b>全部未印</b>端点级 QPS 数字，只在错误码表给出 <c>429 RATELIMIT_EXCEEDED</c> /
+/// <c>FREQUENCY_LIMITED</c> ⇒ 不得凭第三方 SDK 补数。</para>
+/// <para><b>本域零 query、零 <c>brand_id</c></b>：申请作用域全在包体内（品牌入驻面尚无品牌 ID 可填），两支查询按
+/// <c>applyment_id</c> / <c>business_code</c> 分列 ⇒ 分页与品牌作用域口径都无从套用。</para>
 /// <para><b>两套申请编号</b>：提交时商户侧自带 <c>business_code</c>，受理成功后微信分配 <c>applyment_id</c> ⇒ 状态查询有「按申请单号」与「按业务申请编号」<b>两支</b>，官方两页应答表<b>逐字段同形</b> ⇒ 共用一个响应类型。</para>
 /// <para><b>提交与撤销共用应答</b>：<c>POST /brand/applyments</c> 与 <c>POST /brand/applyments/cancel-applyment</c> 的官方应答表同为 <c>applyment_id</c> / <c>business_code</c>，故共用 <see cref="BrandApplymentAcceptResponse"/>。</para>
 /// </remarks>

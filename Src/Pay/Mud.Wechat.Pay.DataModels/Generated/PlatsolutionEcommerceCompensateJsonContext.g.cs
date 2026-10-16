@@ -11,8 +11,23 @@ namespace Mud.Wechat.Pay.DataModels.PlatsolutionEcommerceCompensate;
     PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower,
     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     WriteIndented = false)]
-[JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.PlatsolutionEcommerceCompensate.CompensateRequest))]
-[JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.PlatsolutionEcommerceCompensate.CompensateResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.PlatsolutionEcommerceCompensate.CompensateCreateRequestReceiverTransactionInfo))]
+[JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.PlatsolutionEcommerceCompensate.CompensateCreateRequestReceiver))]
+[JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.PlatsolutionEcommerceCompensate.CompensateCreateRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.PlatsolutionEcommerceCompensate.CompensateCreateResponseReceiverDetailReceiverTransactionInfo))]
+[JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.PlatsolutionEcommerceCompensate.CompensateCreateResponseReceiverDetailReceiver))]
+[JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.PlatsolutionEcommerceCompensate.CompensateCreateResponseReceiverDetail))]
+[JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.PlatsolutionEcommerceCompensate.CompensateCreateResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.PlatsolutionEcommerceCompensate.CompensatePreTransferRequestReceiverTransactionInfo))]
+[JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.PlatsolutionEcommerceCompensate.CompensatePreTransferRequestReceiver))]
+[JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.PlatsolutionEcommerceCompensate.CompensatePreTransferRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.PlatsolutionEcommerceCompensate.CompensatePreTransferResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.PlatsolutionEcommerceCompensate.CompensateCancelResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.PlatsolutionEcommerceCompensate.CompensateQueryResponseReceiverDetailReceiverTransactionInfo))]
+[JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.PlatsolutionEcommerceCompensate.CompensateQueryResponseReceiverDetailReceiver))]
+[JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.PlatsolutionEcommerceCompensate.CompensateQueryResponseReceiverDetail))]
+[JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.PlatsolutionEcommerceCompensate.CompensateQueryResponseCloseInfo))]
+[JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.PlatsolutionEcommerceCompensate.CompensateQueryResponse))]
 internal partial class PlatsolutionEcommerceCompensateJsonContext : JsonSerializerContext
 {
 }

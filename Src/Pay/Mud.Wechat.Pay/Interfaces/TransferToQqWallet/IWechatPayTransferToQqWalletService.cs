@@ -20,17 +20,13 @@ namespace Mud.Wechat.Pay;
 /// 商户作用域经 <c>IWechatPayMerchantContext.UseMerchant(...)</c> 选择，本域与公众平台令牌面无关。</para>
 /// <para><b><c>[AllowAnyStatusCode]</c> 的必要性</b>：APIv3 业务失败是 HTTP 4xx/5xx + <c>{&quot;code&quot;,&quot;message&quot;}</c>，
 /// 加上后错误体原样落到 <c>WechatPayResponse.Code</c> / <c>Message</c>，由 <c>WechatPayException.ThrowIfFailed</c> 判错。</para>
-/// <para><b>频率限制口径</b>：本域 7 个官方页树<b>全部未印</b>端点级 QPS 数字，只在错误码表给出 <c>429 RATELIMIT_EXCEEDED</c> /
-/// <c>FREQUENCY_LIMITED</c> ⇒ 不得凭第三方 SDK 补数，各方法 remarks 内的「未印」结论即取证结果。</para>
-/// <para><b>分页口径不统一（照页，不得互套）</b>：本域列表支存在<b>两种</b>整型分页形态
-/// —— <c>offset</c>/<c>limit</c>（会员卡模板列表、用户会员卡列表、品牌门店列表）与
-/// <c>page_index</c>/<c>page_size</c>（交易连接名片规则列表）；且同为 <c>offset</c>/<c>limit</c>，
-/// 会员卡两支官方<b>必填</b>、门店列表支官方<b>选填</b> ⇒ 必填口径也须照页。应答总数字段官方为选填。</para>
-/// <para><b><c>brand_id</c> 是本域的「商户作用域参数」</b>：除品牌入驻面（<c>/brand/applyments/*</c>）与免密契约面外，
-/// 本域其余每支都把 <c>brand_id</c> 印为<b>必填 query</b> ⇒ 它不是可选过滤条件，缺省即 400；
-/// 长度上限官方<b>不统一</b>（名片配置/连接/门店面为 <c>string(20)</c>，会员卡面为 <c>string(32)</c>），照页不做本地归一。</para>
+/// <para><b>频率限制口径</b>：本域三支官方页<b>明印</b>端点级 QPS，且<b>三档不同</b>（100 / 200 / 20 次/s，逐支见各方法 remarks）
+/// ⇒ 与相邻免确认授权域的两档也不同形，不得跨域套用限频数字。</para>
+/// <para><b>本域零 query、零列表支</b>：发起走资源段，查询与撤销走 path 上的 <c>out_bill_no</c>（商户单号定位，微信侧单号
+/// 在应答里返回）⇒ 撤销支的定位键只有商户单号一种，不存在「按微信单号撤销」的官方面。</para>
 /// <para><b>与普通转账域隔离</b>：本域全部走 <c>/fund-app/mch-transfer/transfer-to-qq-wallet-bills/*</c>， 请求/应答多 <c>qq_wallet_openid</c>（收款方 QQ 钱包 OpenID）⇒ DTO 不得与 <see cref="IWechatPayTransferService"/> 互相套用。</para>
-/// <para><b>撤销支官方未印应表</b>：返回裸 <see cref="Task"/>，以 HTTP 码 + <c>code</c>/<c>message</c> 判定。</para>
+/// <para><b>三支应答各异</b>：下单 5 行含 <c>create_time</c>、撤销 5 行含 <c>update_time</c>、查询 13 行 ⇒ 三支<b>不同形</b>、各建一型；
+/// 撤销支官方<b>印有</b>应答表且零请求体（定位键 <c>out_bill_no</c> 全在 path）⇒ 既不得返回裸 <c>Task</c>，也不得凭空造请求 DTO。</para>
 /// </remarks>
 [AllowAnyStatusCode]
 [HttpClientApi(RegistryGroupName = "TransferToQqWallet", HttpClient = WechatPayHttpClientNames.TypeName)]

@@ -10,8 +10,10 @@ using Mud.Wechat.Pay.DataModels.Fapiao;
 namespace Mud.Wechat.Pay;
 
 /// <summary>
-/// 微信支付「电子发票」域 SDK（APIv3 区块链电子发票，<b>5 端点</b>：开具 + 查询 + 冲红 +
-/// 获取发票下载信息 + 插入用户卡包）。
+/// 微信支付「电子发票」域 SDK（APIv3 区块链电子发票，<b>18 端点</b>：开具 + 查询 + 冲红 +
+/// 获取发票下载信息 + 插入用户卡包（直连商户面 5 支），
+/// 以及 P1-5-B 补入的<b>服务商 / 数电发票面 13 支</b>（卡券模板、通用行业与不动产租赁开具、
+/// 能力邀请、商户开票信息与开发选项、税收分类编码、用户抬头）。
 /// </summary>
 /// <remarks>
 /// <para>
@@ -24,10 +26,26 @@ namespace Mud.Wechat.Pay;
 /// 各页均标注<b>支持商户：【普通商户】</b>。
 /// </para>
 /// <para>
-/// <b>✅ 更正设计方案 §2.5 的一条记录</b>：该处记「电子发票 · 普通商户文档中心<b>无独立入口</b>；
-/// 服务商侧 <c>partner/4015792574</c>」—— <b>实测不成立</b>：普通商户侧有完整电子发票文档（本域各页均在其内）。
-/// 服务商侧另有「开具<b>通用行业</b>电子发票」（<c>/fapiao-applications/<b>issue-general</b></c>，与商户侧不同路由）
-/// 及其 22 项 API 清单，属另一套面，本域不覆盖。
+/// <b>✅ 更正设计方案 §2.5 的一条记录（并二次更正其「不覆盖」裁定）</b>：该处记「电子发票 · 普通商户文档中心
+/// <b>无独立入口</b>；服务商侧 <c>partner/4015792574</c>」—— <b>实测不成立</b>：普通商户侧有完整电子发票文档
+/// （本域各页均在其内）。服务商侧另有一套「数电发票 / 服务商电子发票」开放面
+/// （开具<b>通用行业</b>电子发票 <c>/fapiao-applications/<b>issue-general</b></c>、能力邀请、受邀商户查询等，
+/// 与商户侧路由不同）—— <b>P1-5-B 已按官方逐页取证纳入本接口</b>（13 支，守卫
+/// <c>WechatPayFapiaoExtensionContractGuards</c> FPX-B1~B6），原「属另一套面，本域不覆盖」的裁定已作废。
+/// </para>
+/// <para>
+/// <b>服务商面与商户面的三处形态差异</b>（取证结论，逐支写在方法 remarks 里）：
+/// ① 同一支路由官方常印<b>商户页 + 服务商页</b>两页，字段名册取<b>并集</b>建模、必填口径不一致只在注释标注，
+/// <b>一面一方法</b>（不因身份拆建）；② 服务商面的子商户定位键<b>不统一</b>——
+/// 多数支用 query/path <c>sub_mchid</c>，但「查询/配置开发选项」两支用 <c>sub_mch_code</c>，
+/// 照页不套，不得凭同名语义互换；③ 服务商面新支的应答节多为<b>「无应答包体」</b>（含两支开具与一支校验）
+/// ⇒ 返回裸 <see cref="Task"/>，业务结果由异步通知或查询支取得。
+/// </para>
+/// <para>
+/// <b>两支开具接口只是「受理」</b>：<c>issue-general</c> 与 <c>real-estate-leasing</c> 的官方应答节原文均为
+/// <b>「无应答包体」</b>（正常示例状态码 <b>202</b>）⇒ 返回裸 <see cref="Task"/>；
+/// 开票结果须经【查询电子发票】或开票回调取得，<b>不得</b>据 HTTP 2xx 判定开票成功。
+/// 「检查子商户电子发票功能状态」同款（原文「无应答包体」，正常示例 <b>204</b>）。
 /// </para>
 /// <para>
 /// <b>⚠️ 两个非 JSON 端点<b>刻意不在本生成式接口内</b></b>（它们不是「漏实现」）：
@@ -196,4 +214,305 @@ public interface IWechatPayFapiaoService
         [Path] string fapiaoApplyId,
         [Body] FapiaoInsertCardsRequest request,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 创建电子发票卡券模板。
+    /// 官方文档：<see href="https://pay.weixin.qq.com/doc/v3/merchant/4012529382"/>（【普通商户】）、<see href="https://pay.weixin.qq.com/doc/v3/partner/4012474026"/>（【普通服务商】）、<see href="https://pay.weixin.qq.com/doc/v3/partner/4015792562"/>（【普通服务商】）。
+    /// </summary>
+    /// <param name="request">创建电子发票卡券模板请求体，字段见 <see cref="FapiaoCardTemplateRequest"/>。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/> 取消操作令牌对象。</param>
+    /// <returns>创建电子发票卡券模板，见 <see cref="FapiaoCardTemplateResponse"/>。</returns>
+    /// <remarks>
+    /// <para><b>官方契约</b>：<b>POST</b> <c>/v3/new-tax-control-fapiao/card-template</c>；无 path / query 参数。</para>
+    /// <para><b>支持商户</b>【普通商户】【普通服务商】。</para>
+    /// <para><b>频率限制</b>：官方页<b>未印</b>端点级数字（只在错误码表里给出 <c>429 FREQUENCY_LIMITED</c> 一类限频码）⇒ 不得凭第三方 SDK 补数。</para>
+    /// <para><b>双页并集</b>：本支路由官方印 3 页（商户页、服务商页、服务商页），Path/Query 与应答均按<b>并集</b>建模，仅某页印出的字段与必填口径差异已在参数注释内逐字段标注 ⇒ 一面一方法，不因身份拆建。</para>
+    /// <para><b>应答</b>见 <see cref="FapiaoCardTemplateResponse"/>（官方应答表逐字段建模）。</para>
+    /// <para><b>业务错误码</b>：400 APPID_MCHID_NOT_MATCH：AppID和mch_id不匹配 / 400 INVALID_REQUEST：请求参数符合参数格式，但不符合业务规则 / 401 SIGN_ERROR：签名错误或签名信息不完整 / 403 NO_AUTH：商户无权限 / 429 FREQUENCY_LIMITED：频率超限 / 400 PARAM_ERROR：参数错误 / 400 INVALID_REQUEST：HTTP 请求不符合微信支付 APIv3 接口规则 / 401 SIGN_ERROR：验证不通过 / 500 SYSTEM_ERROR：系统异常，请稍后重试 / 400 APPID_MCHID_NOT_MATCH：appid与mchid不匹配。</para>
+    /// </remarks>
+    [Post("/v3/new-tax-control-fapiao/card-template")]
+    Task<FapiaoCardTemplateResponse> SetFapiaoCardTemplateAsync(
+        [Body] FapiaoCardTemplateRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 开具通用行业电子发票。
+    /// 官方文档：<see href="https://pay.weixin.qq.com/doc/v3/partner/4015792574"/>（【普通服务商】）。
+    /// </summary>
+    /// <param name="request">开具通用行业电子发票请求体，字段见 <see cref="FapiaoGeneralIssueRequest"/>。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/> 取消操作令牌对象。</param>
+    /// <returns>官方应答体无业务字段（官方应答节原文「无应答包体」/「无参数返回」，正常示例状态码 <b>202 Accepted</b>） ⇒ 返回裸 <see cref="Task"/>，结果以 HTTP 码 + <c>code</c>/<c>message</c> 判定。</returns>
+    /// <remarks>
+    /// <para><b>官方契约</b>：<b>POST</b> <c>/v3/new-tax-control-fapiao/fapiao-applications/issue-general</c>；无 path / query 参数。</para>
+    /// <para><b>支持商户</b>【普通服务商】。</para>
+    /// <para><b>频率限制</b>：官方页<b>未印</b>端点级数字（只在错误码表里给出 <c>429 FREQUENCY_LIMITED</c> 一类限频码）⇒ 不得凭第三方 SDK 补数。</para>
+    /// <para><b>业务错误码</b>：400 PARAM_ERROR：参数错误 / 400 INVALID_REQUEST：HTTP 请求不符合微信支付 APIv3 接口规则 / 401 SIGN_ERROR：验证不通过 / 500 SYSTEM_ERROR：系统异常，请稍后重试 / 400 INVALID_REQUEST：请求参数符合参数格式，但不符合业务规则 / 400 RESOURCE_ALREADY_EXISTS：发票申请单已存在 / 400 INVALID_REQUEST：当前发票开具中，不可申请重开发票 / 400 INVALID_REQUEST：当前发票冲红中，不可申请重开发票 / 400 INVALID_REQUEST：申请开票次数，超过最大限制 / 400 INVALID_REQUEST：开票请求已被受理，请调用【查询电子发票】接口获取开票结果 / 400 INVALID_REQUEST：交易单已申请开票，两次申请的交易金额不相同 / 400 INVALID_REQUEST：交易可剩余开票金额不足 / 403 NO_AUTH：商户乐企不动产租赁发票能力未授权 / 403 NO_AUTH：商户无权限 / 403 RULE_LIMIT：商户尚未配置电子发票卡券模板信息 / 403 RULE_LIMIT：商户不可对该货物或应税劳务、服务编码开具发票 / 403 RULE_LIMIT：商户提交的购买方信息与用户填写的发票抬头不一致 / 403 RULE_LIMIT：微信支付订单所属商户与当前商户不一致（仅微信支付场景） / 404 RESOURCE_NOT_EXISTS：用户尚未完成发票抬头填写（仅非微信支付场景） / 429 FREQUENCY_LIMITED：频率超限。</para>
+    /// </remarks>
+    [Post("/v3/new-tax-control-fapiao/fapiao-applications/issue-general")]
+    Task IssueGeneralFapiaoAsync(
+        [Body] FapiaoGeneralIssueRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 开具不动产租赁行业电子发票。
+    /// 官方文档：<see href="https://pay.weixin.qq.com/doc/v3/partner/4015941740"/>（【普通服务商】）。
+    /// </summary>
+    /// <param name="request">开具不动产租赁行业电子发票请求体，字段见 <see cref="FapiaoRealEstateLeasingIssueRequest"/>。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/> 取消操作令牌对象。</param>
+    /// <returns>官方应答体无业务字段（官方应答节原文「无应答包体」/「无参数返回」，正常示例状态码 <b>202 Accepted</b>） ⇒ 返回裸 <see cref="Task"/>，结果以 HTTP 码 + <c>code</c>/<c>message</c> 判定。</returns>
+    /// <remarks>
+    /// <para><b>官方契约</b>：<b>POST</b> <c>/v3/new-tax-control-fapiao/fapiao-applications/real-estate-leasing</c>；无 path / query 参数。</para>
+    /// <para><b>支持商户</b>【普通服务商】。</para>
+    /// <para><b>频率限制</b>：官方页<b>未印</b>端点级数字（只在错误码表里给出 <c>429 FREQUENCY_LIMITED</c> 一类限频码）⇒ 不得凭第三方 SDK 补数。</para>
+    /// <para><b>业务错误码</b>：400 PARAM_ERROR：参数错误 / 400 INVALID_REQUEST：HTTP 请求不符合微信支付 APIv3 接口规则 / 401 SIGN_ERROR：验证不通过 / 500 SYSTEM_ERROR：系统异常，请稍后重试 / 400 INVALID_REQUEST：请求参数符合参数格式，但不符合业务规则 / 400 RESOURCE_ALREADY_EXISTS：发票申请单已存在 / 400 INVALID_REQUEST：交易单已申请开票，两次申请的交易金额不相同 / 400 INVALID_REQUEST：当前发票开具中，不可申请重开发票 / 400 INVALID_REQUEST：当前发票冲红中，不可申请重开发票 / 400 INVALID_REQUEST：申请开票次数，超过最大限制 / 400 INVALID_REQUEST：开票请求已被受理，请调用【查询电子发票】接口获取开票结果 / 400 INVALID_REQUEST：交易可剩余开票金额不足 / 403 NO_AUTH：商户乐企不动产租赁发票能力未授权 / 403 NO_AUTH：商户无权限 / 403 RULE_LIMIT：商户尚未配置电子发票卡券模板信息 / 403 RULE_LIMIT：商户不可对该货物或应税劳务、服务编码开具发票 / 403 RULE_LIMIT：商户提交的购买方信息与用户填写的发票抬头不一致 / 403 RULE_LIMIT：微信支付订单所属商户与当前商户不一致（仅微信支付场景） / 404 RESOURCE_NOT_EXISTS：用户尚未完成发票抬头填写（仅非微信支付场景） / 429 FREQUENCY_LIMITED：频率超限。</para>
+    /// </remarks>
+    [Post("/v3/new-tax-control-fapiao/fapiao-applications/real-estate-leasing")]
+    Task IssueRealEstateLeasingFapiaoAsync(
+        [Body] FapiaoRealEstateLeasingIssueRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 获取服务商电子发票能力邀请链接。
+    /// 官方文档：<see href="https://pay.weixin.qq.com/doc/v3/partner/4015941495"/>（【普通服务商】）。
+    /// </summary>
+    /// <param name="operationType">【操作类型】 商户接受请求后的操作类型。可选取值：`AUTH_BINDING` 授权绑定（官方 query <c>operation_type</c>，<b>必填</b>，类型 <c>string</c>）。</param>
+    /// <param name="fapiaoMode">【开票模式】 邀请商户开通服务商电子发票的可选开票模式。可选取值：`THIRD_OR_SELF_FAPIAO` 第三方/自建发票，即使用自有或其他第三方发票系统生成发票 / `TENCENT_DIGITAL_TAX` 腾讯数电发票，即使用腾讯数电发票系统生成发票（官方 query <c>fapiao_mode</c>，<b>必填</b>，类型 <c>array[string]</c>，官方线格式为 URL 编码 JSON ⇒ 以 <c>string</c> 承载）。</param>
+    /// <param name="inviteCode">【服务商邀请code】 服务商邀请的唯一标识，由服务商生成，可根据邀请code查询邀请开通情况（官方 query <c>invite_code</c>，<b>必填</b>，类型 <c>string(64)</c>）。</param>
+    /// <param name="fapiaoAbilityTypeList">【发票能力类型】 邀请商户开通的腾讯数电发票能力类型，可以选择多个。当开票模式为TENCENT_DIGITAL_TAX时必填。可选取值：`BASE_ABILITY` 基础开票能力（适合餐饮、酒店等） / `REAL_ESTATE_ABILITY` 不动产租赁能力（适合停车场等） / `PASSENGER_TRANSPORT_ABILITY` 旅客运输能力（适合公共交通等行业） / `REFINED_OIL_ABILITY` 成品油能力（适合石油石化等行业）（官方 query <c>fapiao_ability_type_list</c>，选填，类型 <c>array[string]</c>，官方线格式为 URL 编码 JSON ⇒ 以 <c>string</c> 承载）。</param>
+    /// <param name="inviteChannel">【服务商邀请渠道】 服务商自定义的渠道信息，用于标识该邀请从哪个渠道发起（官方 query <c>invite_channel</c>，选填，类型 <c>string(128)</c>）。</param>
+    /// <param name="operateUser">【操作人员】 服务商邀请操作人员信息，用于标识该邀请是哪个人员发起。 注意：该字段为密文字段，需要使用微信支付公钥加密（推荐），参考获取微信支付公钥ID说明以及微信支付公钥加密敏感信息指引；也可以使用微信支付平台证书公钥加密，参考获取平台证书序列号、平台证书加密敏感信息指引（官方 query <c>operate_user</c>，选填，类型 <c>string</c>）。</param>
+    /// <param name="subMchid">【受邀请商户号】 受服务商邀请开通电子发票能力的商户号，受邀商户号和受邀税号不能同时填（官方 query <c>sub_mchid</c>，选填，类型 <c>string(32)</c>）。</param>
+    /// <param name="taxpayerId">【受邀请商户税号】 受服务商邀请开通电子发票能力的税号，保证受邀请商户提交的商户信息与提交邀请的税号保持一致，受邀商户号和受邀税号不能同时填（官方 query <c>taxpayer_id</c>，选填，类型 <c>string(20)</c>）。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/> 取消操作令牌对象。</param>
+    /// <returns>获取服务商电子发票能力邀请链接，见 <see cref="FapiaoSpInviteUrlResponse"/>。</returns>
+    /// <remarks>
+    /// <para><b>官方契约</b>：<b>GET</b> <c>/v3/new-tax-control-fapiao/fapiaomerchant/getspinviteurl</c>；query <c>operation_type</c> / <c>fapiao_mode</c> / <c>invite_code</c> / <c>fapiao_ability_type_list</c> / <c>invite_channel</c> / <c>operate_user</c> / <c>sub_mchid</c> / <c>taxpayer_id</c>。</para>
+    /// <para><b>支持商户</b>【普通服务商】。</para>
+    /// <para><b>频率限制</b>：官方页<b>未印</b>端点级数字（只在错误码表里给出 <c>429 FREQUENCY_LIMITED</c> 一类限频码）⇒ 不得凭第三方 SDK 补数。</para>
+    /// <para><b><c>operation_type</c> 与 <c>fapiao_mode</c> 与 <c>invite_code</c> 是这支官方必填 query</b> ⇒ 声明式签名须显式给出，缺省即 400。</para>
+    /// <para><b>业务错误码</b>：400 PARAM_ERROR：参数错误 / 400 INVALID_REQUEST：HTTP 请求不符合微信支付 APIv3 接口规则 / 401 SIGN_ERROR：验证不通过 / 500 SYSTEM_ERROR：系统异常，请稍后重试 / 400 INVALID_REQUEST：请求参数符合参数格式，但不符合业务规则 / 403 NO_AUTH：商户无权限 / 429 FREQUENCY_LIMITED：频率超限。</para>
+    /// </remarks>
+    [Get("/v3/new-tax-control-fapiao/fapiaomerchant/getspinviteurl")]
+    Task<FapiaoSpInviteUrlResponse> GetFapiaoSpInviteUrlAsync(
+        [Query("operation_type")] string operationType,
+        [Query("fapiao_mode")] string fapiaoMode,
+        [Query("invite_code")] string inviteCode,
+        [Query("fapiao_ability_type_list")] string? fapiaoAbilityTypeList = null,
+        [Query("invite_channel")] string? inviteChannel = null,
+        [Query("operate_user")] string? operateUser = null,
+        [Query("sub_mchid")] string? subMchid = null,
+        [Query("taxpayer_id")] string? taxpayerId = null,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 获取邀请开通的商户信息。
+    /// 官方文档：<see href="https://pay.weixin.qq.com/doc/v3/partner/4015941524"/>（【普通服务商】）。
+    /// </summary>
+    /// <param name="queryTimeStart">【查询时间起】 查询邀请商户的起始时间，遵循 RFC3339 标准格式：yyyy-MM-DDTHH:mm:ss+TIMEZONE（官方 query <c>query_time_start</c>，<b>必填</b>，类型 <c>string</c>）。</param>
+    /// <param name="queryTimeEnd">【查询时间止】 查询商户邀请的结束时间，与query_time_start的间隔时间不能大于7天。遵循 RFC3339 标准格式：yyyy-MM-DDTHH:mm:ss+TIMEZONE（官方 query <c>query_time_end</c>，<b>必填</b>，类型 <c>string</c>）。</param>
+    /// <param name="offset">【本次查询的起始位置】 当前查询的分页页数。从0开始计数，如offset=10，表示从第11条记录开始返回（官方 query <c>offset</c>，<b>必填</b>，类型 <c>integer</c>）。</param>
+    /// <param name="limit">【本次查询的最大数量】 每页所查询的商户信息数量（官方 query <c>limit</c>，<b>必填</b>，类型 <c>integer</c>）。</param>
+    /// <param name="mchInviteStatus">【商户邀请状态】 商户邀请状态。可选取值：`MCH_INVITE_SUCC` 商户已接受邀请，通过 [【检查子商户开票功能状态】](https://pay.weixin.qq.com/doc/v3/partner/4015792561.md) 接口查询具体状态 / `MCH_INVITE_FAILED` 商户邀请开通失败，具体失败原因查看invite_failed_reason字段（官方 query <c>mch_invite_status</c>，<b>必填</b>，类型 <c>string</c>）。</param>
+    /// <param name="inviteCode">【服务商邀请code】 邀请链接唯一标识（官方 query <c>invite_code</c>，选填，类型 <c>string</c>）。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/> 取消操作令牌对象。</param>
+    /// <returns>获取邀请开通的商户信息，见 <see cref="FapiaoSpInviteMerchantListResponse"/>。</returns>
+    /// <remarks>
+    /// <para><b>官方契约</b>：<b>GET</b> <c>/v3/new-tax-control-fapiao/fapiaomerchant/listspinvitemchinfo</c>；query <c>query_time_start</c> / <c>query_time_end</c> / <c>offset</c> / <c>limit</c> / <c>mch_invite_status</c> / <c>invite_code</c>。</para>
+    /// <para><b>支持商户</b>【普通服务商】。</para>
+    /// <para><b>频率限制</b>：官方页<b>未印</b>端点级数字（只在错误码表里给出 <c>429 FREQUENCY_LIMITED</c> 一类限频码）⇒ 不得凭第三方 SDK 补数。</para>
+    /// <para><b><c>query_time_start</c> 与 <c>query_time_end</c> 与 <c>offset</c> 与 <c>limit</c> 与 <c>mch_invite_status</c> 是这支官方必填 query</b> ⇒ 声明式签名须显式给出，缺省即 400。</para>
+    /// <para><b>业务错误码</b>：400 PARAM_ERROR：参数错误 / 400 INVALID_REQUEST：HTTP 请求不符合微信支付 APIv3 接口规则 / 401 SIGN_ERROR：验证不通过 / 500 SYSTEM_ERROR：系统异常，请稍后重试 / 400 INVALID_REQUEST：请求参数符合参数格式，但不符合业务规则 / 403 NO_AUTH：商户无权限 / 429 FREQUENCY_LIMITED：频率超限。</para>
+    /// </remarks>
+    [Get("/v3/new-tax-control-fapiao/fapiaomerchant/listspinvitemchinfo")]
+    Task<FapiaoSpInviteMerchantListResponse> ListFapiaoSpInviteMerchantInfoAsync(
+        [Query("query_time_start")] string queryTimeStart,
+        [Query("query_time_end")] string queryTimeEnd,
+        [Query("offset")] int offset,
+        [Query("limit")] int limit,
+        [Query("mch_invite_status")] string mchInviteStatus,
+        [Query("invite_code")] string? inviteCode = null,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 检查子商户电子发票功能状态。
+    /// 官方文档：<see href="https://pay.weixin.qq.com/doc/v3/partner/4012474022"/>（【普通服务商】）。
+    /// </summary>
+    /// <param name="subMchid">【子商户号】 微信支付分配的子商户号（官方 path <c>sub_mchid</c>，<b>必填</b>，类型 <c>string(32)</c>）。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/> 取消操作令牌对象。</param>
+    /// <returns>官方应答体无业务字段（官方应答节原文「无应答包体」/「无参数返回」，正常示例状态码 <b>204 No Content</b>） ⇒ 返回裸 <see cref="Task"/>，结果以 HTTP 码 + <c>code</c>/<c>message</c> 判定。</returns>
+    /// <remarks>
+    /// <para><b>官方契约</b>：<b>POST</b> <c>/v3/new-tax-control-fapiao/merchant/{sub_mchid}/check</c>；path <c>sub_mchid</c>。</para>
+    /// <para><b>支持商户</b>【普通服务商】。</para>
+    /// <para><b>频率限制</b>：官方页<b>未印</b>端点级数字（只在错误码表里给出 <c>429 FREQUENCY_LIMITED</c> 一类限频码）⇒ 不得凭第三方 SDK 补数。</para>
+    /// <para><b>业务错误码</b>：400 INVALID_REQUEST：请求参数符合参数格式，但不符合业务规则 / 401 SIGN_ERROR：签名错误或签名信息不完整 / 403 NO_AUTH：服务商与子商户之间无受理关系，请确认子商户是否对服务商进行相关授权 / 403 NO_AUTH：商户未完成服务商电子发票的开通设置 / 429 FREQUENCY_LIMITED：频率超限。</para>
+    /// </remarks>
+    [Post("/v3/new-tax-control-fapiao/merchant/{subMchid}/check")]
+    Task CheckFapiaoMerchantAsync(
+        [Path] string subMchid,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 查询受邀商户开票能力开通状态。
+    /// 官方文档：<see href="https://pay.weixin.qq.com/doc/v3/partner/4015792561"/>（【普通服务商】）。
+    /// </summary>
+    /// <param name="subMchid">【子商户号】 微信支付分配的子商户号，具体请参考 服务商模式开发必要参数说明（官方 path <c>sub_mchid</c>，<b>必填</b>，类型 <c>string(32)</c>）。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/> 取消操作令牌对象。</param>
+    /// <returns>查询受邀商户开票能力开通状态，见 <see cref="FapiaoMerchantCheckStatusResponse"/>。</returns>
+    /// <remarks>
+    /// <para><b>官方契约</b>：<b>GET</b> <c>/v3/new-tax-control-fapiao/merchant/{sub_mchid}/check-status</c>；path <c>sub_mchid</c>。</para>
+    /// <para><b>支持商户</b>【普通服务商】。</para>
+    /// <para><b>频率限制</b>：官方页<b>未印</b>端点级数字（只在错误码表里给出 <c>429 FREQUENCY_LIMITED</c> 一类限频码）⇒ 不得凭第三方 SDK 补数。</para>
+    /// <para><b>业务错误码</b>：400 PARAM_ERROR：参数错误 / 400 INVALID_REQUEST：HTTP 请求不符合微信支付 APIv3 接口规则 / 401 SIGN_ERROR：验证不通过 / 500 SYSTEM_ERROR：系统异常，请稍后重试 / 400 INVALID_REQUEST：请求参数符合参数格式，但不符合业务规则 / 403 NO_AUTH：商户无权限 / 429 FREQUENCY_LIMITED：频率超限。</para>
+    /// </remarks>
+    [Get("/v3/new-tax-control-fapiao/merchant/{subMchid}/check-status")]
+    Task<FapiaoMerchantCheckStatusResponse> QueryFapiaoMerchantCheckStatusAsync(
+        [Path] string subMchid,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 查询商户开票基础信息。
+    /// 官方文档：<see href="https://pay.weixin.qq.com/doc/v3/merchant/4012538180"/>（【普通商户】）、<see href="https://pay.weixin.qq.com/doc/v3/partner/4012474053"/>（【普通服务商】）。
+    /// </summary>
+    /// <param name="subMchid">【子商户号】 微信支付分配的子商户号，服务商模式下必传（官方 query <c>sub_mchid</c>，选填，类型 <c>string(32)</c>，<b>仅服务商页</b>印发）。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/> 取消操作令牌对象。</param>
+    /// <returns>查询商户开票基础信息，见 <see cref="FapiaoMerchantBaseInformationResponse"/>。</returns>
+    /// <remarks>
+    /// <para><b>官方契约</b>：<b>GET</b> <c>/v3/new-tax-control-fapiao/merchant/base-information</c>；query <c>sub_mchid</c>。</para>
+    /// <para><b>支持商户</b>【普通商户】【普通服务商】。</para>
+    /// <para><b>频率限制</b>：官方页<b>未印</b>端点级数字（只在错误码表里给出 <c>429 FREQUENCY_LIMITED</c> 一类限频码）⇒ 不得凭第三方 SDK 补数。</para>
+    /// <para><b>双页并集</b>：本支路由官方印 2 页（商户页、服务商页），Path/Query 与应答均按<b>并集</b>建模，仅某页印出的字段与必填口径差异已在参数注释内逐字段标注 ⇒ 一面一方法，不因身份拆建。</para>
+    /// <para><b>业务错误码</b>：400 INVALID_REQUEST：请求参数符合参数格式，但不符合业务规则 / 401 SIGN_ERROR：签名错误或签名信息不完整 / 403 NO_AUTH：商户无权限 / 429 FREQUENCY_LIMITED：频率超限。</para>
+    /// </remarks>
+    [Get("/v3/new-tax-control-fapiao/merchant/base-information")]
+    Task<FapiaoMerchantBaseInformationResponse> QueryFapiaoMerchantBaseInformationAsync(
+        [Query("sub_mchid")] string? subMchid = null,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 查询商户开发选项。
+    /// 官方文档：<see href="https://pay.weixin.qq.com/doc/v3/merchant/4012529526"/>（【普通商户】）、<see href="https://pay.weixin.qq.com/doc/v3/partner/4012474033"/>（【普通服务商】）。
+    /// </summary>
+    /// <param name="subMchCode">【子商户号】 微信支付分配的子商户号，服务商为子商户设置开发配置信息时必填（官方 query <c>sub_mch_code</c>，选填，类型 <c>string(32)</c>，<b>仅服务商页</b>印发）。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/> 取消操作令牌对象。</param>
+    /// <returns>查询商户开发选项，见 <see cref="FapiaoMerchantDevelopmentConfigResponse"/>。</returns>
+    /// <remarks>
+    /// <para><b>官方契约</b>：<b>GET</b> <c>/v3/new-tax-control-fapiao/merchant/development-config</c>；query <c>sub_mch_code</c>。</para>
+    /// <para><b>支持商户</b>【普通商户】【普通服务商】。</para>
+    /// <para><b>频率限制</b>：官方页<b>未印</b>端点级数字（只在错误码表里给出 <c>429 FREQUENCY_LIMITED</c> 一类限频码）⇒ 不得凭第三方 SDK 补数。</para>
+    /// <para><b>双页并集</b>：本支路由官方印 2 页（商户页、服务商页），Path/Query 与应答均按<b>并集</b>建模，仅某页印出的字段与必填口径差异已在参数注释内逐字段标注 ⇒ 一面一方法，不因身份拆建。</para>
+    /// <para><b>业务错误码</b>：400 INVALID_REQUEST：请求参数符合参数格式，但不符合业务规则 / 401 SIGN_ERROR：签名错误或签名信息不完整 / 403 NO_AUTH：商户无权限 / 429 FREQUENCY_LIMITED：频率超限。</para>
+    /// </remarks>
+    [Get("/v3/new-tax-control-fapiao/merchant/development-config")]
+    Task<FapiaoMerchantDevelopmentConfigResponse> QueryFapiaoMerchantDevelopmentConfigAsync(
+        [Query("sub_mch_code")] string? subMchCode = null,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 配置商户开发选项。
+    /// 官方文档：<see href="https://pay.weixin.qq.com/doc/v3/merchant/4012529457"/>（【普通商户】）、<see href="https://pay.weixin.qq.com/doc/v3/partner/4012474031"/>（【普通服务商】）、<see href="https://pay.weixin.qq.com/doc/v3/partner/4015792563"/>（【普通服务商】）。
+    /// </summary>
+    /// <param name="request">配置商户开发选项请求体，字段见 <see cref="FapiaoMerchantDevelopmentConfigUpdateRequest"/>。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/> 取消操作令牌对象。</param>
+    /// <returns>配置商户开发选项，见 <see cref="FapiaoMerchantDevelopmentConfigUpdateResponse"/>。</returns>
+    /// <remarks>
+    /// <para><b>官方契约</b>：<b>PATCH</b> <c>/v3/new-tax-control-fapiao/merchant/development-config</c>；无 path / query 参数。</para>
+    /// <para><b>支持商户</b>【普通商户】【普通服务商】。</para>
+    /// <para><b>频率限制</b>：官方页<b>未印</b>端点级数字（只在错误码表里给出 <c>429 FREQUENCY_LIMITED</c> 一类限频码）⇒ 不得凭第三方 SDK 补数。</para>
+    /// <para><b>双页并集</b>：本支路由官方印 3 页（商户页、服务商页、服务商页），Path/Query 与应答均按<b>并集</b>建模，仅某页印出的字段与必填口径差异已在参数注释内逐字段标注 ⇒ 一面一方法，不因身份拆建。</para>
+    /// <para><b>应答</b>见 <see cref="FapiaoMerchantDevelopmentConfigUpdateResponse"/>（官方应答表逐字段建模）。</para>
+    /// <para><b>业务错误码</b>：400 INVALID_REQUEST：请求参数符合参数格式，但不符合业务规则 / 401 SIGN_ERROR：签名错误或签名信息不完整 / 403 NO_AUTH：商户无权限 / 429 FREQUENCY_LIMITED：频率超限 / 400 PARAM_ERROR：参数错误 / 400 INVALID_REQUEST：HTTP 请求不符合微信支付 APIv3 接口规则 / 401 SIGN_ERROR：验证不通过 / 500 SYSTEM_ERROR：系统异常，请稍后重试。</para>
+    /// </remarks>
+    [Patch("/v3/new-tax-control-fapiao/merchant/development-config")]
+    Task<FapiaoMerchantDevelopmentConfigUpdateResponse> UpdateFapiaoMerchantDevelopmentConfigAsync(
+        [Body] FapiaoMerchantDevelopmentConfigUpdateRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 查询商户税收分类编码对照表。
+    /// 官方文档：<see href="https://pay.weixin.qq.com/doc/v3/merchant/4012538236"/>（【普通商户】）、<see href="https://pay.weixin.qq.com/doc/v3/partner/4012474057"/>（【普通服务商】）。
+    /// </summary>
+    /// <param name="offset">【本次查询的起始位置】 本次查询的起始位置（官方 query <c>offset</c>，<b>必填</b>，类型 <c>integer</c>）。</param>
+    /// <param name="limit">【本次查询的最大数量】 本次查询的最大数量（官方 query <c>limit</c>，<b>必填</b>，类型 <c>integer</c>）。</param>
+    /// <param name="subMchid">【子商户号】 微信支付分配的子商户号，服务商模式下必传（官方 query <c>sub_mchid</c>，选填，类型 <c>string(32)</c>，<b>仅服务商页</b>印发）。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/> 取消操作令牌对象。</param>
+    /// <returns>查询商户税收分类编码对照表，见 <see cref="FapiaoTaxCodeListResponse"/>。</returns>
+    /// <remarks>
+    /// <para><b>官方契约</b>：<b>GET</b> <c>/v3/new-tax-control-fapiao/merchant/tax-codes</c>；query <c>offset</c> / <c>limit</c> / <c>sub_mchid</c>。</para>
+    /// <para><b>支持商户</b>【普通商户】【普通服务商】。</para>
+    /// <para><b>频率限制</b>：官方页<b>未印</b>端点级数字（只在错误码表里给出 <c>429 FREQUENCY_LIMITED</c> 一类限频码）⇒ 不得凭第三方 SDK 补数。</para>
+    /// <para><b>双页并集</b>：本支路由官方印 2 页（商户页、服务商页），Path/Query 与应答均按<b>并集</b>建模，仅某页印出的字段与必填口径差异已在参数注释内逐字段标注 ⇒ 一面一方法，不因身份拆建。</para>
+    /// <para><b><c>offset</c> 与 <c>limit</c> 是这支官方必填 query</b> ⇒ 声明式签名须显式给出，缺省即 400。</para>
+    /// <para><b>业务错误码</b>：400 INVALID_REQUEST：请求参数符合参数格式，但不符合业务规则 / 401 SIGN_ERROR：签名错误或签名信息不完整 / 403 NO_AUTH：商户无权限 / 429 FREQUENCY_LIMITED：频率超限。</para>
+    /// </remarks>
+    [Get("/v3/new-tax-control-fapiao/merchant/tax-codes")]
+    Task<FapiaoTaxCodeListResponse> QueryFapiaoTaxCodesAsync(
+        [Query("offset")] int offset,
+        [Query("limit")] int limit,
+        [Query("sub_mchid")] string? subMchid = null,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 获取用户填写抬头信息。
+    /// 官方文档：<see href="https://pay.weixin.qq.com/doc/v3/merchant/4012538112"/>（【普通商户】）、<see href="https://pay.weixin.qq.com/doc/v3/partner/4012474048"/>（【普通服务商】）、<see href="https://pay.weixin.qq.com/doc/v3/partner/4015784260"/>（【普通服务商】）。
+    /// </summary>
+    /// <param name="fapiaoApplyId">【发票申请单号】 发票申请单号，唯一标识一次开票行为。当开票场景为WITHOUT_WECHATPAY时，为调用【获取抬头填写链接】接口时指定的发票申请单号；当开票场景为WITH_WECHATPAY时，为与本次开票关联的微信支付订单号，且必须是属于相应商户的订单（官方 query <c>fapiao_apply_id</c>，<b>必填</b>，类型 <c>string(32)</c>）。</param>
+    /// <param name="scene">【开票场景】 开票场景。可选取值：`WITH_WECHATPAY` 微信支付场景 / `WITHOUT_WECHATPAY` 非微信支付场景（官方 query <c>scene</c>，<b>必填</b>，类型 <c>string</c>）。</param>
+    /// <param name="subMchid">【子商户号】 微信支付分配的子商户号，服务商模式下必传（官方 query <c>sub_mchid</c>，选填，类型 <c>string(32)</c>，<b>仅服务商页</b>印发，服务商页页标选填、服务商页页标必填）。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/> 取消操作令牌对象。</param>
+    /// <returns>获取用户填写抬头信息，见 <see cref="FapiaoUserTitleResponse"/>。</returns>
+    /// <remarks>
+    /// <para><b>官方契约</b>：<b>GET</b> <c>/v3/new-tax-control-fapiao/user-title</c>；query <c>fapiao_apply_id</c> / <c>scene</c> / <c>sub_mchid</c>。</para>
+    /// <para><b>支持商户</b>【普通商户】【普通服务商】。</para>
+    /// <para><b>频率限制</b>：官方页<b>未印</b>端点级数字（只在错误码表里给出 <c>429 FREQUENCY_LIMITED</c> 一类限频码）⇒ 不得凭第三方 SDK 补数。</para>
+    /// <para><b>双页并集</b>：本支路由官方印 3 页（商户页、服务商页、服务商页），Path/Query 与应答均按<b>并集</b>建模，仅某页印出的字段与必填口径差异已在参数注释内逐字段标注 ⇒ 一面一方法，不因身份拆建。</para>
+    /// <para><b><c>fapiao_apply_id</c> 与 <c>scene</c> 是这支官方必填 query</b> ⇒ 声明式签名须显式给出，缺省即 400。</para>
+    /// <para><b>业务错误码</b>：400 INVALID_REQUEST：请求参数符合参数格式，但不符合业务规则 / 401 SIGN_ERROR：签名错误或签名信息不完整 / 403 NO_AUTH：商户无权限 / 404 RESOURCE_NOT_EXISTS：用户尚未完成发票抬头的填写 / 429 FREQUENCY_LIMITED：频率超限 / 400 PARAM_ERROR：参数错误 / 400 INVALID_REQUEST：HTTP 请求不符合微信支付 APIv3 接口规则 / 401 SIGN_ERROR：验证不通过 / 500 SYSTEM_ERROR：系统异常，请稍后重试。</para>
+    /// </remarks>
+    [Get("/v3/new-tax-control-fapiao/user-title")]
+    Task<FapiaoUserTitleResponse> QueryFapiaoUserTitleAsync(
+        [Query("fapiao_apply_id")] string fapiaoApplyId,
+        [Query("scene")] string scene,
+        [Query("sub_mchid")] string? subMchid = null,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 获取用户抬头填写链接。
+    /// 官方文档：<see href="https://pay.weixin.qq.com/doc/v3/merchant/4012538106"/>（【普通商户】）、<see href="https://pay.weixin.qq.com/doc/v3/partner/4012474040"/>（【普通服务商】）、<see href="https://pay.weixin.qq.com/doc/v3/partner/4015770776"/>（【普通服务商】）。
+    /// </summary>
+    /// <param name="fapiaoApplyId">【发票申请单号】 发票申请单号，唯一标识一次开票行为。只能是字母、数字、中划线-、下划线_、竖线&amp;#124;、星号*这些英文半角字符，且该单号在每个商户下必须唯一。当用户完成抬头填写后，微信支付会以该单号回调商户，商户可通过【获取用户填写的抬头】接口查询用户填写的抬头信息（官方 query <c>fapiao_apply_id</c>，<b>必填</b>，类型 <c>string(32)</c>）。</param>
+    /// <param name="appid">【商户AppID】 若开票来源是WEB，则为商户的公众号AppID；若开票来源是MINIPROGRAM，则为商户的小程序AppID（官方 query <c>appid</c>，<b>必填</b>，类型 <c>string(32)</c>）。</param>
+    /// <param name="openid">【用户OpenID】 需要填写发票抬头的用户在商户AppID下的OpenID（官方 query <c>openid</c>，<b>必填</b>，类型 <c>string(32)</c>）。</param>
+    /// <param name="totalAmount">【总金额】 展示在抬头填写页面的开票金额，对该发票申请单开票时所有发票的总价税合计之和不能超过此金额，单位：分（官方 query <c>total_amount</c>，<b>必填</b>，类型 <c>integer</c>）。</param>
+    /// <param name="source">【开票来源】 开票来源。可选取值：`WEB` 微信H5 / `MINIPROGRAM` 微信小程序（官方 query <c>source</c>，<b>必填</b>，类型 <c>string</c>）。</param>
+    /// <param name="sellerName">【销售方名称】 展示在抬头填写页的销售方名称，若不传则默认取商户名称（官方 query <c>seller_name</c>，选填，类型 <c>string(32)</c>）。</param>
+    /// <param name="showPhoneCell">【是否需要展示手机号填写栏】 是否需要展示手机号填写栏（官方 query <c>show_phone_cell</c>，选填，类型 <c>boolean</c>）。</param>
+    /// <param name="mustInputPhone">【用户是否必须填写手机号】 用户是否必须填写手机号，仅当需要展示手机号填写栏时生效（官方 query <c>must_input_phone</c>，选填，类型 <c>boolean</c>）。</param>
+    /// <param name="showEmailCell">【是否需要展示邮箱地址填写栏】 是否需要展示邮箱地址填写栏（官方 query <c>show_email_cell</c>，选填，类型 <c>boolean</c>）。</param>
+    /// <param name="mustInputEmail">【用户是否必须填写邮箱地址】 用户是否必须填写邮箱地址，仅当需要展示邮箱地址填写栏时生效（官方 query <c>must_input_email</c>，选填，类型 <c>boolean</c>）。</param>
+    /// <param name="subMchid">【子商户号】 微信支付分配的子商户号，服务商模式下必传（官方 query <c>sub_mchid</c>，选填，类型 <c>string(32)</c>，<b>仅服务商页</b>印发，服务商页页标选填、服务商页页标必填）。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/> 取消操作令牌对象。</param>
+    /// <returns>获取用户抬头填写链接，见 <see cref="FapiaoUserTitleUrlResponse"/>。</returns>
+    /// <remarks>
+    /// <para><b>官方契约</b>：<b>GET</b> <c>/v3/new-tax-control-fapiao/user-title/title-url</c>；query <c>fapiao_apply_id</c> / <c>appid</c> / <c>openid</c> / <c>total_amount</c> / <c>source</c> / <c>seller_name</c> / <c>show_phone_cell</c> / <c>must_input_phone</c> / <c>show_email_cell</c> / <c>must_input_email</c> / <c>sub_mchid</c>。</para>
+    /// <para><b>支持商户</b>【普通商户】【普通服务商】。</para>
+    /// <para><b>频率限制</b>：官方页<b>未印</b>端点级数字（只在错误码表里给出 <c>429 FREQUENCY_LIMITED</c> 一类限频码）⇒ 不得凭第三方 SDK 补数。</para>
+    /// <para><b>双页并集</b>：本支路由官方印 3 页（商户页、服务商页、服务商页），Path/Query 与应答均按<b>并集</b>建模，仅某页印出的字段与必填口径差异已在参数注释内逐字段标注 ⇒ 一面一方法，不因身份拆建。</para>
+    /// <para><b><c>fapiao_apply_id</c> 与 <c>appid</c> 与 <c>openid</c> 与 <c>total_amount</c> 与 <c>source</c> 是这支官方必填 query</b> ⇒ 声明式签名须显式给出，缺省即 400。</para>
+    /// <para><b>业务错误码</b>：400 INVALID_REQUEST：请求参数符合参数格式，但不符合业务规则 / 401 SIGN_ERROR：签名错误或签名信息不完整 / 403 NO_AUTH：商户无权限 / 403 RULE_LIMIT：商户获取抬头链接指定的用户与已提交抬头的用户不一致 / 429 FREQUENCY_LIMITED：频率超限 / 403 NO_AUTH：RULE_LIMIT / 400 PARAM_ERROR：参数错误 / 400 INVALID_REQUEST：HTTP 请求不符合微信支付 APIv3 接口规则 / 401 SIGN_ERROR：验证不通过 / 500 SYSTEM_ERROR：系统异常，请稍后重试。</para>
+    /// </remarks>
+    [Get("/v3/new-tax-control-fapiao/user-title/title-url")]
+    Task<FapiaoUserTitleUrlResponse> GetFapiaoUserTitleUrlAsync(
+        [Query("fapiao_apply_id")] string fapiaoApplyId,
+        [Query("appid")] string appid,
+        [Query("openid")] string openid,
+        [Query("total_amount")] int totalAmount,
+        [Query("source")] string source,
+        [Query("seller_name")] string? sellerName = null,
+        [Query("show_phone_cell")] bool? showPhoneCell = null,
+        [Query("must_input_phone")] bool? mustInputPhone = null,
+        [Query("show_email_cell")] bool? showEmailCell = null,
+        [Query("must_input_email")] bool? mustInputEmail = null,
+        [Query("sub_mchid")] string? subMchid = null,
+        CancellationToken cancellationToken = default);
+
 }

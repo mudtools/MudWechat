@@ -1,0 +1,92 @@
+// -----------------------------------------------------------------------
+//  作者：Mud Studio  版权所有 (c) Mud Studio 2026
+//  Mud.Wechat 项目的版权、商标、专利和其他相关权利均受相应法律法规的保护。
+//  本项目主要遵循 MIT 许可证进行分发和使用。许可证位于源代码树根目录中的 LICENSE-MIT 文件。
+//  不得利用本项目从事危害国家安全、扰乱社会秩序、侵犯他人合法权益等法律法规禁止的活动！任何基于本项目开发而产生的一切法律纠纷和责任，我们不承担任何责任！
+// -----------------------------------------------------------------------
+
+using Mud.Wechat.Pay.DataModels.Common;
+using System.Text.Json.Serialization;
+using Mud.HttpUtils.Attributes;
+
+namespace Mud.Wechat.Pay.DataModels.Vehicle;
+
+/// <summary>创建停车入场信息请求。官方页：<see href="https://pay.weixin.qq.com/doc/v3/merchant/4012533937"/>、<see href="https://pay.weixin.qq.com/doc/v3/partner/4012533994"/></summary>
+[HttpJsonSerializable(SerializerClassName = "Vehicle")]
+public class VehicleParkingEntryRequest
+{
+    /// <summary>【商户入场ID】商户侧入场标识ID，在同一个商户号下唯一（官方字段路径 <c>out_parking_no</c>，<b>必填</b>，类型 <c>string(64)</c>）。</summary>
+    [JsonPropertyName("out_parking_no")]
+    public string? OutParkingNo { get; set; }
+
+    /// <summary>【车牌号】车牌号，仅包括省份+车牌，不包括特殊字符（官方字段路径 <c>plate_number</c>，<b>必填</b>，类型 <c>string(32)</c>）。</summary>
+    [JsonPropertyName("plate_number")]
+    public string? PlateNumber { get; set; }
+
+    /// <summary>【车牌颜色】车牌颜色。可选取值：`BLUE` 蓝色 / `GREEN` 绿色 / `YELLOW` 黄色 / `BLACK` 黑色 / `WHITE` 白色 / `LIMEGREEN` 黄绿色（官方字段路径 <c>plate_color</c>，<b>必填</b>，类型 <c>string</c>）。</summary>
+    [JsonPropertyName("plate_color")]
+    public string? PlateColor { get; set; }
+
+    /// <summary>【回调通知URL】接受入场状态变更回调通知的URL，注意回调url只接受HTTPS（官方字段路径 <c>notify_url</c>，<b>必填</b>，类型 <c>string(256)</c>）。</summary>
+    [JsonPropertyName("notify_url")]
+    public string? NotifyUrl { get; set; }
+
+    /// <summary>【入场时间】入场时间，遵循rfc3339标准格式，格式为yyyy-MM-DDTHH:mm:ss+TIMEZONE，yyyy-MM-DD表示年月日，T出现在字符串中，表示time元素的开头，HH:mm:ss表示时分秒，TIMEZONE表示时区（+08:00表示东八区时间，领先UTC 8小时，即北京时间）。例如：2015-05-20T13:29:35+08:00表示，北京时间2015年5月20日 13点29分35秒（官方字段路径 <c>start_time</c>，<b>必填</b>，类型 <c>string(32)</c>）。</summary>
+    [JsonPropertyName("start_time")]
+    public string? StartTime { get; set; }
+
+    /// <summary>【停车场名称】所在停车位车场的名称（官方字段路径 <c>parking_name</c>，<b>必填</b>，类型 <c>string(128)</c>）。</summary>
+    [JsonPropertyName("parking_name")]
+    public string? ParkingName { get; set; }
+
+    /// <summary>【免费时长】停车场的免费停车时长，单位为秒（官方字段路径 <c>free_duration</c>，<b>必填</b>，类型 <c>integer</c>）。</summary>
+    [JsonPropertyName("free_duration")]
+    public long? FreeDuration { get; set; }
+
+    /// <summary>【子商户号】 微信支付分配的子商户号，服务商模式下必传（官方字段路径 <c>sub_mchid</c>，<b>必填</b>，仅<b>服务商面</b>官方页印发，类型 <c>string(32)</c>）。</summary>
+    [JsonPropertyName("sub_mchid")]
+    public string? SubMchid { get; set; }
+
+}
+
+/// <summary>创建停车入场信息响应。官方页：<see href="https://pay.weixin.qq.com/doc/v3/merchant/4012533937"/>、<see href="https://pay.weixin.qq.com/doc/v3/partner/4012533994"/></summary>
+[HttpJsonSerializable(SerializerClassName = "Vehicle")]
+public class VehicleParkingEntryResponse : WechatPayResponse
+{
+    /// <summary>【停车入场ID】车主服务为商户分配的入场ID（官方字段路径 <c>id</c>，<b>必填</b>，类型 <c>string(32)</c>）。</summary>
+    [JsonPropertyName("id")]
+    public string? Id { get; set; }
+
+    /// <summary>【商户入场ID】商户侧入场标识ID，在同一个商户号下唯一（官方字段路径 <c>out_parking_no</c>，<b>必填</b>，类型 <c>string(64)</c>）。</summary>
+    [JsonPropertyName("out_parking_no")]
+    public string? OutParkingNo { get; set; }
+
+    /// <summary>【车牌号】车牌号，仅包括省份+车牌，不包括特殊字符（官方字段路径 <c>plate_number</c>，<b>必填</b>，类型 <c>string(32)</c>）。</summary>
+    [JsonPropertyName("plate_number")]
+    public string? PlateNumber { get; set; }
+
+    /// <summary>【车牌颜色】车牌颜色。可选取值：`BLUE` 蓝色 / `GREEN` 绿色 / `YELLOW` 黄色 / `BLACK` 黑色 / `WHITE` 白色 / `LIMEGREEN` 黄绿色（官方字段路径 <c>plate_color</c>，<b>必填</b>，类型 <c>string</c>）。</summary>
+    [JsonPropertyName("plate_color")]
+    public string? PlateColor { get; set; }
+
+    /// <summary>【入场时间】入场时间，按照使用rfc3339所定义的格式，格式为YYYY-MM-DDThh:mm:ss+TIMEZONE（官方字段路径 <c>start_time</c>，<b>必填</b>，类型 <c>string(32)</c>）。</summary>
+    [JsonPropertyName("start_time")]
+    public string? StartTime { get; set; }
+
+    /// <summary>【停车场名称】所在停车位车场的名称（官方字段路径 <c>parking_name</c>，<b>必填</b>，类型 <c>string(128)</c>）。</summary>
+    [JsonPropertyName("parking_name")]
+    public string? ParkingName { get; set; }
+
+    /// <summary>【免费时长】停车场的免费停车时长，单位为秒（官方字段路径 <c>free_duration</c>，<b>必填</b>，类型 <c>integer</c>）。</summary>
+    [JsonPropertyName("free_duration")]
+    public long? FreeDuration { get; set; }
+
+    /// <summary>【停车入场状态】本次入场车牌的服务状态， NORMAL:正常状态，可以使用微信支付分停车服务， BLOCKED 不可用状态，暂时不可以使用微信支付分停车服务（官方字段路径 <c>state</c>，<b>必填</b>，类型 <c>string(32)</c>）。</summary>
+    [JsonPropertyName("state")]
+    public string? State { get; set; }
+
+    /// <summary>【不可用状态描述】block服务状态描述，返回车牌状态为BLOCKED，会返回该字段，描述具体BLOCKED的原因， PAUSE：已暂停微信支付分停车服务； OVERDUE：已授权签约但欠费，不能提供服务, OUT_SERVICE : 车牌未开通微信支付分停车服务， EVALUATION_FAILED 综合评估未通过，用户支付分不可用的情况，会返回该状态（官方字段路径 <c>block_reason</c>，选填，类型 <c>string(32)</c>）。</summary>
+    [JsonPropertyName("block_reason")]
+    public string? BlockReason { get; set; }
+
+}

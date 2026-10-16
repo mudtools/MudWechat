@@ -28,6 +28,8 @@ using Mud.Wechat.Pay.DataModels.MarketingBankFavor;
 using Mud.Wechat.Pay.DataModels.MarketingBusifavor;
 using Mud.Wechat.Pay.DataModels.MarketingFavor;
 using Mud.Wechat.Pay.DataModels.MarketingGoodsSubsidyActivity;
+using Mud.Wechat.Pay.DataModels.MarketingMemberCardActivity;
+using Mud.Wechat.Pay.DataModels.MarketingMemberCardOpen;
 using Mud.Wechat.Pay.DataModels.MarketingPartnerDeliveryPlan;
 using Mud.Wechat.Pay.DataModels.MarketingPartnerProductCoupon;
 using Mud.Wechat.Pay.DataModels.MarketingPartnerships;
@@ -42,6 +44,7 @@ using Mud.Wechat.Pay.DataModels.MerchantRiskManage;
 using Mud.Wechat.Pay.DataModels.MerchantService;
 using Mud.Wechat.Pay.DataModels.MerchantSettlement;
 using Mud.Wechat.Pay.DataModels.MerchantStore;
+using Mud.Wechat.Pay.DataModels.Papay;
 using Mud.Wechat.Pay.DataModels.PasswordExemptContract;
 using Mud.Wechat.Pay.DataModels.PayScore;
 using Mud.Wechat.Pay.DataModels.PartnerPayScore;
@@ -64,6 +67,30 @@ using Mud.Wechat.Pay.DataModels.PlatsolutionEcommerceMchTransfer;
 using Mud.Wechat.Pay.DataModels.PlatsolutionEcommerceRechargeEmployee;
 using Mud.Wechat.Pay.DataModels.PlatsolutionEcommerceRecharge;
 using Mud.Wechat.Pay.DataModels.PlatsolutionEcommerceSettle;
+using Mud.Wechat.Pay.DataModels.PlatsolutionInsuranceReservation;
+using Mud.Wechat.Pay.DataModels.PlatsolutionInsuranceBatch;
+using Mud.Wechat.Pay.DataModels.PlatsolutionInsuranceReceipt;
+using Mud.Wechat.Pay.DataModels.WebizpayBill;
+using Mud.Wechat.Pay.DataModels.WebizpayEmployee;
+using Mud.Wechat.Pay.DataModels.WebizpayStore;
+using Mud.Wechat.Pay.DataModels.WebizpayUser;
+using Mud.Wechat.Pay.DataModels.Vehicle;
+using Mud.Wechat.Pay.DataModels.TaxiInvoice;
+using Mud.Wechat.Pay.DataModels.EducationPapay;
+using Mud.Wechat.Pay.DataModels.EducationSchoolPay;
+using Mud.Wechat.Pay.DataModels.PayrollCard;
+using Mud.Wechat.Pay.DataModels.BusinessCircle;
+using Mud.Wechat.Pay.DataModels.Catering;
+using Mud.Wechat.Pay.DataModels.FundsToOversea;
+using Mud.Wechat.Pay.DataModels.GoldPlan;
+using Mud.Wechat.Pay.DataModels.Multiuse;
+using Mud.Wechat.Pay.DataModels.PayInstallment;
+using Mud.Wechat.Pay.DataModels.RateActivity;
+using Mud.Wechat.Pay.DataModels.Recharge;
+using Mud.Wechat.Pay.DataModels.SmartGuide;
+using Mud.Wechat.Pay.DataModels.TransactionBlock;
+using Mud.Wechat.Pay.DataModels.Capital;
+using Mud.Wechat.Pay.DataModels.Lovefeast;
 using System.Text.Json.Serialization.Metadata;
 
 namespace Mud.Wechat.Pay.Extensions;
@@ -132,6 +159,8 @@ public static class PayJsonResolverExtensions
             IndustryCouponJsonContext.Default,
             MarketingBusifavorJsonContext.Default,
             MarketingGoodsSubsidyActivityJsonContext.Default,
+            MarketingMemberCardOpenJsonContext.Default,
+            MarketingMemberCardActivityJsonContext.Default,
             MarketingPartnerDeliveryPlanJsonContext.Default,
             MarketingPartnerProductCouponJsonContext.Default,
             MarketingPartnershipsJsonContext.Default,
@@ -158,6 +187,31 @@ public static class PayJsonResolverExtensions
             PlatsolutionEcommerceRechargeEmployeeJsonContext.Default,
             PlatsolutionEcommerceRechargeJsonContext.Default,
             PlatsolutionEcommerceSettleJsonContext.Default,
+            PlatsolutionInsuranceReservationJsonContext.Default,
+            PlatsolutionInsuranceBatchJsonContext.Default,
+            PlatsolutionInsuranceReceiptJsonContext.Default,
+            WebizpayBillJsonContext.Default,
+            WebizpayEmployeeJsonContext.Default,
+            WebizpayStoreJsonContext.Default,
+            WebizpayUserJsonContext.Default,
+            PapayJsonContext.Default,
+            VehicleJsonContext.Default,
+            TaxiInvoiceJsonContext.Default,
+            EducationPapayJsonContext.Default,
+            EducationSchoolPayJsonContext.Default,
+            PayrollCardJsonContext.Default,
+            BusinessCircleJsonContext.Default,
+            CateringJsonContext.Default,
+            FundsToOverseaJsonContext.Default,
+            GoldPlanJsonContext.Default,
+            MultiuseJsonContext.Default,
+            PayInstallmentJsonContext.Default,
+            RateActivityJsonContext.Default,
+            RechargeJsonContext.Default,
+            SmartGuideJsonContext.Default,
+            TransactionBlockJsonContext.Default,
+            CapitalJsonContext.Default,
+            LovefeastJsonContext.Default,
             CallbackJsonContext.Default);
 
         services.AddMudHttpClientJsonContext(resolver);

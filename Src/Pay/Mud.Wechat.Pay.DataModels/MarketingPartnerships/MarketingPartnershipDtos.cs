@@ -202,3 +202,59 @@ public class PartnershipPartnershipListResponse : WechatPayResponse
     public long? TotalCount { get; set; }
 
 }
+
+/// <summary>终止合作关系（直连商户）请求·合作方相关的信息。官方页：<see href="https://pay.weixin.qq.com/doc/v3/merchant/4017164460"/></summary>
+[HttpJsonSerializable(SerializerClassName = "MarketingPartnerships")]
+public class PartnershipTerminateRequestPartner
+{
+    /// <summary>合作方类别，枚举值： APPID：合作方为APPID MERCHANT：合作方为商户 示例值：APPID。可选取值：`APPID` 合作方为（官方字段路径 <c>partner.type</c>，<b>必填</b>，类型 <c>string[1,32]</c>）。</summary>
+    [JsonPropertyName("type")]
+    public string? TypeValue { get; set; }
+
+    /// <summary>合作方APPID，合作方类别为APPID时必填。 示例值：wx4e1916a585d1f4e9（官方字段路径 <c>partner.appid</c>，选填，类型 <c>string[1,32]</c>）。</summary>
+    [JsonPropertyName("appid")]
+    public string? Appid { get; set; }
+
+    /// <summary>合作方商户ID，合作方类别为MERCHANT时必填。 示例值：2480029552（官方字段路径 <c>partner.merchant_id</c>，选填，类型 <c>string[8,15]</c>）。</summary>
+    [JsonPropertyName("merchant_id")]
+    public string? MerchantId { get; set; }
+
+}
+
+/// <summary>终止合作关系（直连商户）请求·body被授权的数据。官方页：<see href="https://pay.weixin.qq.com/doc/v3/merchant/4017164460"/></summary>
+[HttpJsonSerializable(SerializerClassName = "MarketingPartnerships")]
+public class PartnershipTerminateRequestAuthorizedData
+{
+    /// <summary>授权业务类别，枚举值： FAVOR_STOCK：代金券批次 （暂不支持合作方为商户的场景） BUSIFAVOR_STOCK：商家券批次 示例值：FAVOR_STOCK。可选取值：`FAVOR_STOCK` 代金券批次 （暂不支持合作方为商户的场景）（官方字段路径 <c>authorized_data.business_type</c>，<b>必填</b>，类型 <c>string[1,32]</c>）。</summary>
+    [JsonPropertyName("business_type")]
+    public string? BusinessType { get; set; }
+
+    /// <summary>授权批次ID，授权业务类别为商家券批次或代金券批次时，此参数必填 示例值：2433405（官方字段路径 <c>authorized_data.stock_id</c>，选填，类型 <c>string[1,20]</c>）。</summary>
+    [JsonPropertyName("stock_id")]
+    public string? StockId { get; set; }
+
+}
+
+/// <summary>终止合作关系（直连商户）请求。官方页：<see href="https://pay.weixin.qq.com/doc/v3/merchant/4017164460"/></summary>
+[HttpJsonSerializable(SerializerClassName = "MarketingPartnerships")]
+public class PartnershipTerminateRequest
+{
+    /// <summary>合作方相关的信息（官方字段路径 <c>partner</c>，<b>必填</b>，类型 <c>object</c>）。</summary>
+    [JsonPropertyName("partner")]
+    public PartnershipTerminateRequestPartner? Partner { get; set; }
+
+    /// <summary>body被授权的数据（官方字段路径 <c>authorized_data</c>，<b>必填</b>，类型 <c>object</c>）。</summary>
+    [JsonPropertyName("authorized_data")]
+    public PartnershipTerminateRequestAuthorizedData? AuthorizedData { get; set; }
+
+}
+
+/// <summary>终止合作关系（直连商户）响应。官方页：<see href="https://pay.weixin.qq.com/doc/v3/merchant/4017164460"/></summary>
+[HttpJsonSerializable(SerializerClassName = "MarketingPartnerships")]
+public class PartnershipTerminateResponse : WechatPayResponse
+{
+    /// <summary>终止合作关系时间，遵循rfc3339标准格式，格式为yyyy-MM-DDTHH:mm:ss.sss+TIMEZONE，yyyy-MM-DD表示年月日， T出现在字符串中，表示time元素的开头，HH:mm:ss.sss表示时分秒毫秒，TIMEZONE表示时区（+08:00表示东八区时间，领先UTC 8小时，即北京时间）。 例如：2015-05-20T13:29:35.120+08:00表示，北京时间2015年5月20日13点29分35秒。 示例值：2015…（官方字段路径 <c>terminate_time</c>，<b>必填</b>，类型 <c>string[1,32]</c>）。</summary>
+    [JsonPropertyName("terminate_time")]
+    public string? TerminateTime { get; set; }
+
+}

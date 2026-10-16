@@ -17,36 +17,10 @@ namespace Mud.Wechat.MiniProgram.DataModels.Novel;
 public class WxaNovelSetPreviewSettingRequest
 {
     /// <summary>
-    /// 作品id
+    /// 预览配置（官方请求体是 setting 包装的单对象，非扁平字段）
     /// </summary>
-    [JsonPropertyName("book_id")]
-    public string? BookId { get; set; }
-
-    /// <summary>
-    /// 默认预览字数
-    /// </summary>
-    [JsonPropertyName("default_words")]
-    public long? DefaultWords { get; set; }
-
-    /// <summary>
-    /// 章节索引，从 0 开始，未设置的章节将使用 default_words 作为预览字数
-    /// </summary>
-    [JsonPropertyName("chapter_index")]
-    public long? ChapterIndex { get; set; }
-
-    /// <summary>
-    /// 章节字数
-    /// </summary>
-    [JsonPropertyName("words")]
-    public long? Words { get; set; }
-}
-
-/// <summary>
-/// 设置预览配置响应
-/// </summary>
-[HttpJsonSerializable(SerializerClassName = "Novel")]
-public class WxaNovelSetPreviewSettingResponse : WxaResponse
-{
+    [JsonPropertyName("setting")]
+    public WxaNovelPreviewSetting? Setting { get; set; }
 }
 
 /// <summary>
@@ -81,6 +55,12 @@ public class WxaNovelGetPreviewSettingResponse : WxaResponse
 [HttpJsonSerializable(SerializerClassName = "Novel")]
 public class WxaNovelPreviewSetting
 {
+    /// <summary>
+    /// 作品id
+    /// </summary>
+    [JsonPropertyName("book_id")]
+    public string? BookId { get; set; }
+
     /// <summary>
     /// 默认预览字数
     /// </summary>
@@ -130,12 +110,4 @@ public class WxaNovelSetRecmdNovelRequest
     /// </summary>
     [JsonPropertyName("book_id_list")]
     public List<string>? BookIdList { get; set; }
-}
-
-/// <summary>
-/// 设置推荐小说响应
-/// </summary>
-[HttpJsonSerializable(SerializerClassName = "Novel")]
-public class WxaNovelSetRecmdNovelResponse : WxaResponse
-{
 }

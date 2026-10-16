@@ -72,4 +72,25 @@ public interface IWechatPayMarketingPartnershipsService
         [Query("offset")] int? offset = null,
         [Query("partner")] string? partner = null,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 终止合作关系（直连商户）。
+    /// 官方文档：<see href="https://pay.weixin.qq.com/doc/v3/merchant/4017164460"/>（【直连商户】）。
+    /// </summary>
+    /// <param name="request">终止合作关系请求体，字段见 <see cref="PartnershipTerminateRequest"/>。</param>
+    /// <param name="idempotencyKey">【业务请求幂等值】 请求包头 Idempotency-Key：传递；商户侧需保持唯一性，可包含英文字母、数字、｜、_、*、- 等内容（官方 header <c>Idempotency-Key</c>，<b>必填</b>，类型 <c>string[1,48]</c>）。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/> 取消操作令牌对象。</param>
+    /// <returns>终止合作关系，见 <see cref="PartnershipTerminateResponse"/>。</returns>
+    /// <remarks>
+    /// <para><b>官方契约</b>：<b>POST</b> <c>/v3/marketing/partnerships/terminate</c>；body 7 键（含嵌套 <c>partner</c>/<c>authorized_data</c>），resp 1 键（<c>terminate_time</c>）。</para>
+    /// <para><b>支持商户</b>【直连商户】。</para>
+    /// <para><b>频率限制</b>：官方页<b>未印</b>端点级数字 ⇒ 不得凭第三方 SDK 补数。</para>
+    /// <para><b>必须带 <c>Idempotency-Key</c></b>：官方请求头表把该头列为<b>必填</b>，商户侧需保持唯一性。</para>
+    /// <para><b>业务错误码</b>：400 INVALID_REQUEST 请求参数符合参数格式，但不符合业务规则 / 401 SIGN_ERROR 签名错误或签名信息不完整 / 403 NO_AUTH 商户未被授权 / 429 FREQUENCY_LIMITED 频率超限。</para>
+    /// </remarks>
+    [Post("/v3/marketing/partnerships/terminate")]
+    Task<PartnershipTerminateResponse> TerminatePartnershipAsync(
+        [Body] PartnershipTerminateRequest request,
+        [Header("Idempotency-Key")] string idempotencyKey,
+        CancellationToken cancellationToken = default);
 }

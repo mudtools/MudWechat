@@ -28,11 +28,3 @@ public class WxaNovelDelBookAuthRequest
     [JsonPropertyName("grantee_appid")]
     public string? GranteeAppId { get; set; }
 }
-
-/// <summary>
-/// 删除作品授权响应
-/// </summary>
-[HttpJsonSerializable(SerializerClassName = "Novel")]
-public class WxaNovelDelBookAuthResponse : WxaResponse
-{
-}

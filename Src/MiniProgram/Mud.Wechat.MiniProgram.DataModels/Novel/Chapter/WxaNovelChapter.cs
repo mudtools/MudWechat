@@ -74,9 +74,9 @@ public class WxaNovelBatchCreateChapterRequest
 [HttpJsonSerializable(SerializerClassName = "Novel")]
 public class WxaNovelBatchCreateChapterResponse : WxaResponse
 {
-    /// <summary>章节 ID 列表。</summary>
-    [JsonPropertyName("chapter_id")]
-    public List<string>? ChapterId { get; set; }
+    /// <summary>章节 ID 列表（官方键名 chapter_id_list，非定长、单值不超过 64 字节）。</summary>
+    [JsonPropertyName("chapter_id_list")]
+    public List<string>? ChapterIdList { get; set; }
 
     /// <summary>冲突的提供方主键列表。</summary>
     [JsonPropertyName("conflict_original_id_list")]

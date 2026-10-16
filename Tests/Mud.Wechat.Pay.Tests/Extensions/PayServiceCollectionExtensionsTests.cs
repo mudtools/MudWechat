@@ -6,6 +6,7 @@
 // -----------------------------------------------------------------------
 
 using Mud.Wechat.Pay.Tests.Credential;
+using Mud.Wechat.Pay.TaxiInvoice;
 using System.Text.Json.Serialization.Metadata;
 
 namespace Mud.Wechat.Pay.Tests.Extensions;
@@ -132,8 +133,8 @@ public class PayServiceCollectionExtensionsTests
     }
 
     /// <summary>
-    /// 二十三域三段式齐备：<see cref="PayServiceBuilder.AddAllApis"/> 后全部业务接口与两条文件通道、
-    /// 本地签名器均可解析。
+    /// 各域三段式齐备：<see cref="PayServiceBuilder.AddAllApis"/> 后全部业务接口与文件通道、
+    /// 本地签名器均可解析（历批逐域点名，新增域须同批补一行 —— 本用例是「注册器真的挂上」的出口证据）。
     /// </summary>
     /// <remarks>
     /// 锁定「枚举成员 ↔ 注册器 ↔ 源生成 <c>Add{域}WebApiHttpClient()</c>」三者同批成立
@@ -216,6 +217,14 @@ public class PayServiceCollectionExtensionsTests
         // 小程序调起支付签名是**本地密码学运算**（官方 TOC 内但无 HTTP 路由），同样随交易域注册 ——
         // 它是 P1-a 清单里最后一个非 HTTP 端点，缺它则小程序端无法调起支付。
         provider.GetRequiredService<IWechatPayMiniProgramPaySignService>().Should().NotBeNull();
+
+        // P1-5-C 车主出行 + 出租车电子发票（源生成 AddVehicleWebApiHttpClient / AddTaxiInvoiceWebApiHttpClient）。
+        provider.GetRequiredService<IWechatPayVehicleService>().Should().NotBeNull();
+        provider.GetRequiredService<IWechatPayTaxiInvoiceService>().Should().NotBeNull();
+
+        // 出租车电子发票**文件通道**随本域注册：该支官方是 multipart + 国密 SM3 ⇒ 无 [HttpClientApi]，
+        // 域守卫 TXI-B6 只比对建造者源文本，本用例证明 TryAddSingleton 真的挂上且可解析。
+        provider.GetRequiredService<IWechatPayTaxiInvoiceFileService>().Should().NotBeNull();
     }
 
     /// <summary>

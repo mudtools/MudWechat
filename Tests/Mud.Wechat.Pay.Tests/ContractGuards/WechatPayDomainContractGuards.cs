@@ -44,21 +44,30 @@ public class WechatPayDomainContractGuards
             .OrderBy(static t => t.Name, StringComparer.Ordinal)
             .ToArray();
 
-        // 聚合计数（防枚举空跑，AGENTS §6）：四十八域共五十五个接口 = Transactions / Refund / Bill / Certificates / ProfitSharing /
-        // PayScore / CombineTransactions / Transfer / NewTaxControlFapiao / MarketingFavor / Apply4SubMerchant /
-        // Apply4Subject / PartnerTransactions / PartnerPayScore / BankPayScore / PartnerTransfer / BankTransfer /
-        // Repayment / MerchantRiskManage / MerchantStore / MerchantAlterApply / MerchantFund / MerchantSettlement /
-        // MerchantService / MerchantManage / MerchantOperationManage + Ecommerce（八个子域接口共享一个注册组）
+        // 聚合计数（防枚举空跑，AGENTS §6）：支付线各声明式域接口总账 = 基线 <c>Baseline.Pay.HttpApiInterfaces</c>，
+        // 逐批增量登记如下。
+        // 原 26 域 + Ecommerce（八个子域接口共享一个注册组）
         // + P1-3 商家券与营销十域各一（MarketingBusifavor / MarketingPartnerProductCoupon /
         // MarketingPartnerDeliveryPlan / MarketingGoodsSubsidyActivity / MarketingPayGiftActivity /
         // MarketingShoppingReceipt / MarketingPartnerships / IndustryCoupon / MarketingBank / MarketingBankFavor）
         // + P1-4 品牌七域各一（BrandApplyment / BrandCardConfig / BrandCardLink / BrandCardMember /
         // BrandProfitSharing / BrandStore / PasswordExemptContract）
-        // + P1-2-A FundApp 族四域各一（AbnormalFundProcessing / BrandRedpacket / TransferToQqWallet / UserConfirmAuthorization）；
+        // + P1-2-A FundApp 族四域各一（AbnormalFundProcessing / BrandRedpacket / TransferToQqWallet / UserConfirmAuthorization）
+        // + P1-2-B 平台服务商解决方案八域各一（PlatsolutionEcommerce{InsuranceContract,Compensate,Deposit,InsuranceClaim,MchTransfer,RechargeEmployee,Recharge,Settle}）
+        // + P1-2-C 平台商户保险理赔商家转账三域各一（PlatsolutionInsurance{Reservation,Batch,Receipt}）
+        // + P1-2-D 微企付企业支付四域各一（Webizpay{Bill,Employee,Store,User}）
+        // + P1-5-A 委托代扣 PAPay 3.0 两域各一（Papay / PartnerPapay）
+        // + P1-5-B 电子发票服务商 / 数电面 <b>零新接口</b>（13 支追加进既存 IWechatPayFapiaoService，同注册组）
+        // + P1-5-C 车主出行 + 出租车电子发票两域各一（Vehicle / TaxiInvoice）
+        // + P1-5-D 教育与代发薪三域各一（EducationPapay / EducationSchoolPay / PayrollCard）
+        // + P1-5-E 行业方案剩余十域各一（BusinessCircle / Catering / FundsToOversea / GoldPlan / Multiuse /
+        // PayInstallment / RateActivity / Recharge / SmartGuide / TransactionBlock）
+        // + P1-5-G 取证勘误补回两域各一（Capital 银行组件 / Lovefeast 爱心餐）——二者原列 P1-5 判非契约清单，
+        // 按「现行文档中心树内检索」重检后证得在册 ⇒ 转真缺口，不得退回零声明名册；
         // MarketingMedia 只有 multipart 手工通道，无 [HttpClientApi] 接口 ⇒ 不计入本数。
         // 数字集中维护在 Tests/ContractBaseline.cs；数量变化须同批更新 PayModule 与该基线。
         interfaces.Should().HaveCount(Baseline.Pay.HttpApiInterfaces,
-            "支付线四十八域五十五接口——数量变化须同批更新 PayModule 与 Tests/ContractBaseline.cs");
+            "支付线接口数量变化须同批更新 PayModule 与 Tests/ContractBaseline.cs");
 
         interfaces.Select(static t => t.Name).Should().BeEquivalentTo(new[]
         {
@@ -126,6 +135,43 @@ public class WechatPayDomainContractGuards
             "IWechatPayPlatsolutionEcommerceRechargeEmployeeService",
             "IWechatPayPlatsolutionEcommerceRechargeService",
             "IWechatPayPlatsolutionEcommerceSettleService",
+            // P1-2-C 平台商户保险理赔商家转账三域
+            "IWechatPayPlatsolutionInsuranceReservationService",
+            "IWechatPayPlatsolutionInsuranceBatchService",
+            "IWechatPayPlatsolutionInsuranceReceiptService",
+            // P1-2-D 微企付企业支付四域
+            "IWechatPayWebizpayBillService",
+            "IWechatPayWebizpayEmployeeService",
+            "IWechatPayWebizpayStoreService",
+            "IWechatPayWebizpayUserService",
+            // P1-5-A 委托代扣 PAPay 3.0 两域（服务商面官方只印预扣费通知一支）
+            "IWechatPayPapayService",
+            "IWechatPayPartnerPapayService",
+            // P1-5-C 车主出行 + 出租车电子发票两域（后者的 multipart 上传支属手工通道，不入本接口）
+            "IWechatPayVehicleService",
+            "IWechatPayTaxiInvoiceService",
+            // P1-5-D 教育委托代扣 + 校园缴费 + 代发薪三域（后两域官方只印服务商页）
+            "IWechatPayEducationPapayService",
+            "IWechatPayEducationSchoolPayService",
+            "IWechatPayPayrollCardService",
+            // P1-5-E 行业方案剩余十域（商圈会员 / 点餐 / 资金出境 / 点金计划 / 多次扣费券 / 分付曝光 /
+            // 费率活动 / 银行转账充值 / 智慧导购 / 交易拦截）
+            "IWechatPayBusinessCircleService",
+            "IWechatPayCateringService",
+            "IWechatPayFundsToOverseaService",
+            "IWechatPayGoldPlanService",
+            "IWechatPayMultiuseService",
+            "IWechatPayPayInstallmentService",
+            "IWechatPayRateActivityService",
+            "IWechatPayRechargeService",
+            "IWechatPaySmartGuideService",
+            "IWechatPayTransactionBlockService",
+            // P1-5-G 取证勘误补回两域（原判非契约、按现行文档树重检证实在册）
+            "IWechatPayCapitalService",
+            "IWechatPayLovefeastService",
+            // P1-6 旧版会员卡两族（25 + 4 端点）
+            "IWechatPayMarketingMemberCardOpenService",
+            "IWechatPayMarketingMemberCardActivityService",
         });
 
         var offenders = interfaces
@@ -139,7 +185,7 @@ public class WechatPayDomainContractGuards
     }
 
     /// <summary>
-    /// PAY-B5：端点计数（<b>372</b>，基线单一来源 <c>Baseline.Pay.Endpoints</c>）+ 官方路由表逐条比对（照官方原文，<b>不得「纠正」</b>）。
+    /// PAY-B5：端点计数（基线单一来源 <c>Baseline.Pay.Endpoints</c>）+ 官方路由表逐条比对（照官方原文，<b>不得「纠正」</b>）。
     /// </summary>
     /// <remarks>
     /// <para>
@@ -337,9 +383,12 @@ public class WechatPayDomainContractGuards
             "/v3/fund-app/mch-transfer/transfer-bills/transfer",
         });
 
-        // P2 电子发票首批 2 端点（普通商户侧）：开具 + 查询。
-        // P2 电子发票 5 端点：开具 + 查询 + 冲红 + 获取下载信息 + 插入卡包。
+        // P2 电子发票 5 端点（普通商户面）：开具 + 查询 + 冲红 + 获取下载信息 + 插入卡包。
         // （《上传电子发票文件》是 multipart、非 JSON 端点；《下载发票文件》按 30s 有效 URL 直取且不签名验签 ⇒ 均不在本生成式接口内。）
+        // + P1-5-B 服务商 / 数电发票面 13 端点 ⇒ 本接口实测 18 支（逐支取证与形态差异见守卫 FPX-B1~B6）。
+        // ⚠️ 「服务商面属另一套开放面、本域不覆盖」的原裁定已在 P1-5-B 作废：两支开具（issue-general /
+        //    real-estate-leasing）与普通商户面开具**路由不同、各成一方法**，不是同一端点的分身。
+        // ⚠️ development-config 出现两次属有意：官方 GET 查询与 PATCH 配置各一支，同路由不同动词。
         RoutesOf(asm, "IWechatPayFapiaoService").Should().BeEquivalentTo(new[]
         {
             "/v3/new-tax-control-fapiao/fapiao-applications",
@@ -347,6 +396,19 @@ public class WechatPayDomainContractGuards
             "/v3/new-tax-control-fapiao/fapiao-applications/{fapiaoApplyId}/reverse",
             "/v3/new-tax-control-fapiao/fapiao-applications/{fapiaoApplyId}/fapiao-files",
             "/v3/new-tax-control-fapiao/fapiao-applications/{fapiaoApplyId}/insert-cards",
+            "/v3/new-tax-control-fapiao/card-template",
+            "/v3/new-tax-control-fapiao/fapiao-applications/issue-general",
+            "/v3/new-tax-control-fapiao/fapiao-applications/real-estate-leasing",
+            "/v3/new-tax-control-fapiao/fapiaomerchant/getspinviteurl",
+            "/v3/new-tax-control-fapiao/fapiaomerchant/listspinvitemchinfo",
+            "/v3/new-tax-control-fapiao/merchant/{subMchid}/check",
+            "/v3/new-tax-control-fapiao/merchant/{subMchid}/check-status",
+            "/v3/new-tax-control-fapiao/merchant/base-information",
+            "/v3/new-tax-control-fapiao/merchant/development-config",
+            "/v3/new-tax-control-fapiao/merchant/development-config",
+            "/v3/new-tax-control-fapiao/merchant/tax-codes",
+            "/v3/new-tax-control-fapiao/user-title",
+            "/v3/new-tax-control-fapiao/user-title/title-url",
         });
 
         // P2 代金券首批 7 端点 + P1-3 增量 8 端点 = 15：创建批次 + 查询券详情 + 激活/暂停/重启批次 +
@@ -572,7 +634,7 @@ public class WechatPayDomainContractGuards
             .Select(static a => a.GetType().GetProperty("RequestUri")?.GetValue(a) as string)
             .Count(static uri => !string.IsNullOrWhiteSpace(uri))
             .Should().Be(Baseline.Pay.Endpoints,
-                "支付线端点总数须与 Tests/ContractBaseline.cs 一致（当前 = 原 57 + 特约商户进件 6 + 主体进件 5 + 服务商基础支付 9 + 服务商支付分 23 + 从业机构支付分 11 + P0-6 三域 17 + P0-7 风险 11 + 门店 5 + 变更 12 + 余额 2 + 结算规则 2 + Transfer 增量 4 + 新域 14）");
+                "支付线端点总数须与 Tests/ContractBaseline.cs 一致（推导链见 Baseline.Pay.Endpoints 的 remarks，逐批增量登记）");
     }
 
     /// <summary>

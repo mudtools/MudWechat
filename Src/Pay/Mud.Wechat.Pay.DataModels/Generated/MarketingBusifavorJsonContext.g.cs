@@ -14,6 +14,8 @@ namespace Mud.Wechat.Pay.DataModels.MarketingBusifavor;
 [JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.MarketingBusifavor.BusifavorCallbackQueryResponse))]
 [JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.MarketingBusifavor.BusifavorCallbackSetRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.MarketingBusifavor.BusifavorCallbackSetResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.MarketingBusifavor.BusifavorConsumeCardSendRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.MarketingBusifavor.BusifavorConsumeCardSendResponse))]
 [JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.MarketingBusifavor.BusifavorCouponAssociateRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.MarketingBusifavor.BusifavorCouponAssociateResponse))]
 [JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.MarketingBusifavor.BusifavorCouponDisassociateRequest))]

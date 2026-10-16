@@ -18,7 +18,7 @@ namespace Mud.Wechat.Pay.Tests.ContractGuards;
 /// </summary>
 /// <remarks>
 /// <para><b>批次三写支动词不统一</b>：创建 POST、<b>改批次与改预算都是 PATCH</b>（不是 PUT）、自定义券码上传是 <c>POST /stocks/{stock_id}/couponcodes</c> ⇒ 动词集合含 PATCH 是本域特征（MBF-B1）。</para>
-/// <para><b>「双面同表 ⇒ 一面一方法」在本域是 13/15</b>：15 支里 13 支同时有【普通商户】与【普通服务商】两页且字段表逐字段同形，只有商品券发券与用户券详情两支单面 ⇒ 守卫锁方法数 15 与 (方法, 路由) 数 15 相等（无同路由分身）。</para>
+/// <para><b>「双面同表 ⇒ 一面一方法」在本域是 14/16</b>：16 支里 14 支同时有【普通商户】与【普通服务商】两页且字段表逐字段同形，只有商品券发券与用户券详情两支单面 ⇒ 守卫锁方法数 16 与 (方法, 路由) 数 16 相等（无同路由分身）。</para>
 /// <para><b>用户券两支把 <c>openid</c> 放在 path</b>，单券查询还要 path 上的 <c>coupon_code</c> 与 <c>appid</c> ⇒ 三元组定位一张券，少任一即 404。</para>
 /// <para><b>券状态机五支（核销 / 退货 / 作废 / 关联补贴 / 取消关联）都是 POST 动词段且互不覆盖</b>：「退款自动退券」与「主动退券」是两条路径，不得合并（MBF-B2）。</para>
 /// <para><b>红线口径</b>：本域全部端点零 <c>[Token]</c>（支付线凭据是商户 RSA 私钥签名，不存在 access_token）、
@@ -51,8 +51,8 @@ public class WechatPayMarketingBusifavorContractGuards
                 "支付线无 access_token（红线 PAY-B1）");
         Service.Namespace.Should().Be("Mud.Wechat.Pay", "支付线接口一律扁平命名空间");
 
-        Methods().Should().HaveCount(15, "商家券声明式方法数");
-        DistinctVerbRoutes().Should().HaveCount(15, "本域无同路由多方法分身");
+        Methods().Should().HaveCount(16, "商家券声明式方法数（含新增发送核销券端点）");
+        DistinctVerbRoutes().Should().HaveCount(16, "本域无同路由多方法分身");
         Verbs().Should().BeEquivalentTo(new[] { "GetAttribute", "PostAttribute", "PatchAttribute" },
             "动词集照官方页面逐支登记：本域写操作动词不统一，合并即造出官方没有的端点");
         Routes().Should().OnlyContain(static r => r.StartsWith("/v3/marketing/busifavor/", StringComparison.Ordinal),
@@ -209,7 +209,7 @@ public class WechatPayMarketingBusifavorContractGuards
     [Fact]
     public void BusifavorDataModels_ShouldBeRegisteredInJsonContextAndWiredIntoDi()
     {
-        DtoTypes().Should().HaveCount(89, "本域 DTO 数（官方字段表的名册规模，含嵌套子树类型）");
+        DtoTypes().Should().HaveCount(91, "本域 DTO 数（官方字段表的名册规模，含嵌套子树类型；含新增发送核销券两支）");
 
         foreach (var type in DtoTypes())
         {

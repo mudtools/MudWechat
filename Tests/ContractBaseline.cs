@@ -126,7 +126,7 @@ public static class Baseline
         /// （发货录入与报备 4 + 订单与管理状态查询 4 + 设置与交易类型变更 2 + 品牌申请 2），
         /// 缺口清单原记「10 条」系漏项，特殊发货报备 <c>opspecialorder</c> 与交易类型变更申请
         /// <c>setwxatradetypecgi</c> 两支为逐页取证补回；
-        /// 同日依官方 novelreadersetrecmdnovel 分区 23 页取证补齐小说作品管理域 23
+        /// 同日依官方小说 API 索引页（<c>platform-capabilities/industry/novel-api</c>）树下的 23 个端点页取证补齐小说作品管理域 23
         /// （作品本体 6 + 章节管理 8 + 授权管理 3 + 账号授权 3 + 读者运营 3），权限集 169；
         /// 同日依官方 minigame 树 20 页取证补齐小游戏域 20（帧同步房间 4 + 用户数据存储 3 + 对局匹配 5 +
         /// 米大师支付 1 + 内容安全 2 + 米大师 V2 支付 5）；
@@ -144,8 +144,9 @@ public static class Baseline
     public static class Pay
     {
         /// <summary>
-        /// `[HttpClientApi]` 接口数（四十八业务域中的五十五个声明式接口：其余三十域各一 + 平台收付通域<b>八分身</b>
-        /// + P1-3 营销十域各一 + P1-4 品牌七域各一 + P1-2 平台/服务商四域各一）。
+        /// `[HttpClientApi]` 接口数（八十二注册组中的八十九个声明式接口：除平台收付通组外的八十一组各一 +
+        /// 平台收付通组<b>八分身</b>；P1-2 四批（FundApp / PlatsolutionEcommerce / PlatsolutionInsurance /
+        /// Webizpay）共十四组各一，逐批清单见 remarks）。
         /// </summary>
         /// <remarks>
         /// 锁定于 `WechatPayDomainContractGuards`（PAY-B 系列）。
@@ -166,12 +167,27 @@ public static class Baseline
         /// + P1-2 平台/服务商四域（AbnormalFundProcessing / BrandRedpacket / TransferToQqWallet /
         /// UserConfirmAuthorization，各一接口）
         /// + P1-2-B 平台服务商解决方案八域（PlatsolutionEcommerceInsuranceContract / Compensate / Deposit /
-        /// InsuranceClaim / MchTransfer / RechargeEmployee / Recharge / Settle，各一接口）。
-        /// <b>不计入本数</b>：<c>MerchantMedia</c>、<c>MarketingMedia</c> 两个成员只有 multipart 手工通道、
+        /// InsuranceClaim / MchTransfer / RechargeEmployee / Recharge / Settle，各一接口）
+        /// + P1-2-C 平台商户保险理赔商家转账三域（PlatsolutionInsuranceReservation /
+        /// PlatsolutionInsuranceBatch / PlatsolutionInsuranceReceipt，各一接口）
+        /// + P1-2-D 微企付企业支付四域（WebizpayBill / WebizpayEmployee / WebizpayStore / WebizpayUser，各一接口）
+        /// + P1-5-A 委托代扣 PAPay 3.0 两域（Papay 直连面 20 端点 / PartnerPapay 服务商面 1 端点，各一接口；
+        /// 服务商面官方只印预扣费通知一支，不得按直连面镜像补齐）
+        /// + P1-5-C 车主出行两域（Vehicle 10 端点 / TaxiInvoice 9 端点，各一接口；出租车发票族的
+        /// 「上传发票文件」是 multipart 手工通道 ⇒ 不入本数，其成员随 <c>TaxiInvoice</c> 组一并注册）
+        /// + P1-5-D 教育与代发薪三域（EducationPapay 8 端点 / EducationSchoolPay 8 端点 / PayrollCard 6 端点，各一接口）
+        /// + P1-5-E 行业方案剩余十域（BusinessCircle 4 / Catering 1 / FundsToOversea 6 / GoldPlan 5 / Multiuse 4 /
+        /// PayInstallment 1 / RateActivity 3 / Recharge 2 / SmartGuide 4 / TransactionBlock 4，各一接口）
+        /// + P1-5-G 取证勘误补回两域（Capital 6 / Lovefeast 1，各一接口；二者原列 P1-5 判非契约清单，
+        /// 按「现行文档中心树内检索」重检后证得在册 ⇒ 转真缺口，<b>不得</b>退回零声明名册）
+        /// + P1-6 旧版会员卡与会员有礼活动两域（MarketingMemberCardOpen 25 端点 / MarketingMemberCardActivity 4 端点，各一接口；
+        /// 两套并存契约：品牌会员卡 <c>/v3/brand/partner/card-member/*</c> 与本域是<b>并存非替代</b>关系，
+        /// 四支 204 无应答包体 ⇒ 裸 Task，守卫 MCO-B1~B6 / MCA-B1~B5）
+        /// 。<b>不计入本数</b>：<c>MerchantMedia</c>、<c>MarketingMedia</c> 两个成员只有 multipart 手工通道、
         /// 无 <c>[HttpClientApi]</c> 接口（守卫 MC-B1 / EC-X2 口径），故 <c>PayModule</c> 成员数 =
         /// 本数 - 8（收付通八合一）+ 3（收付通成员 + 两个手工通道成员）。
         /// </remarks>
-        public const int HttpApiInterfaces = 63;
+        public const int HttpApiInterfaces = 91;
 
         /// <summary>
         /// 端点总数（各域端点之和；账单 / 发票的**文件下载通道**与媒体上传等**手工通道**不计入生成式接口）。
@@ -229,9 +245,49 @@ public static class Baseline
         /// sp_appid/sp_openid(64) 不可互换）——<b>共用只发生在应答侧</b>，逐表签名（含 req 标记）比对见各域守卫）= 372
         /// + P1-2-A Transfer 增量 4（elecsign 申请两支 POST + pre-transfer-with-authorization + transfer）= 376
         /// + P1-2-A 新域 14（AbnormalFundProcessing 3 + BrandRedpacket 5 + TransferToQqWallet 3 + UserConfirmAuthorization 3）= 390
-        /// + P1-2-B 平台服务商解决方案 31（InsuranceContract 2 + Compensate 5 + Deposit 7 + InsuranceClaim 5 + MchTransfer 3 + RechargeEmployee 3 + Recharge 3 + Settle 3）= 421。
+        /// + P1-2-B 平台服务商解决方案 31（InsuranceContract 2 + Compensate 5 + Deposit 7 + InsuranceClaim 5 + MchTransfer 3 + RechargeEmployee 3 + Recharge 3 + Settle 3）= 421
+        /// + P1-2-C 平台商户保险理赔商家转账 13（Reservation 4 + Batch 5 + Receipt 4）= 434
+        /// + P1-2-D 微企付企业支付 12（Bill 2 + Employee 6 + Store 2 + User 2；官方目录树内另有 5 支「通知」页
+        /// 与 1 支小程序 JSAPI <c>wx.openBusinessView</c>，均非商户侧 HTTP 契约面 ⇒ 零端点）= 446
+        /// + P1-5-A 委托代扣 PAPay 3.0 21（直连面 20：签约四端预签约各建一型 + 通用/保险两条协议线 + 预约扣费 + 扣费周期；
+        /// 服务商面 1（官方只印预扣费通知一支）；两支 notify 与续期支官方「无应答包体」⇒ 裸 Task 但仍按方法计端点）= 467
+        /// + P1-5-B 电子发票服务商 / 数电面 13（<b>追加</b>进既存 IWechatPayFapiaoService，无新接口无新注册组：
+        /// 卡券模板 1 + 两支开具（issue-general / real-estate-leasing，各建一方法，官方 202「受理」语义）+
+        /// 能力邀请 2 + 子商户功能状态 2 + 商户开票信息与开发选项 4（GET/PATCH development-config <b>同路由两动词各计一支</b>）+
+        /// 税收分类编码 1 + 用户抬头 2；三支「无应答包体」为裸 Task 仍按方法计 ⇒ 守卫 FPX-B1~B6）= 480
+        /// + P1-5-C 车主出行 + 出租车电子发票 19（Vehicle 10：ETC 六支（官方只印服务商页）+ 停车四支（商户页 + 服务商页并集）；
+        /// TaxiInvoice 9：签到签退与插卡两支官方「无应答包体」⇒ 裸 Task 仍按方法计，而第十支「上传出租车电子发票文件」是
+        /// <c>multipart/form-data</c> + 国密 SM3 ⇒ 不入声明式基线，由 <c>WechatPayTaxiInvoiceFileService</c> 手工通道承载
+        /// （守卫 VEH-B1~B6 / TXI-B1~B6，TXI-B1 同时锁定该路由在声明名册中零出现）= 499
+        /// + P1-5-D 教育与代发薪三域 22（EducationPapay 8：七支印商户页 + 服务商页双页、解除协议支官方<b>只印商户页</b>，
+        /// 三支「无应答包体」⇒ 裸 Task 仍按方法计，两支查单应答同形共用一型；EducationSchoolPay 8：八支全部只印服务商页，
+        /// 解除协议支 204 ⇒ 裸 Task，下单与两支查单<b>写读共用同一应答型</b>；PayrollCard 6：六支全部只印服务商页，
+        /// 三支官方请求头表印 <c>Wechatpay-Serial</c> 必填 ⇒ 涉密是逐页结论，令牌申领与预下单应答不同形各建一型；
+        /// 守卫 EDP-B1~B6 / ESP-B1~B6 / PRC-B1~B6，清单行 85 与 103~104 共三支判非契约 ⇒ 零声明见非契约路由守卫第九条）= 521
+        /// + P1-5-E 行业方案剩余十域 34（BusinessCircle 4：四支双页并集、两支 204，正文有加密提示但请求头表未列 ⇒ <b>判无涉密必填头</b>；
+        /// Catering 1：只印服务商页、状态变化须上传全量明细、204；FundsToOversea 6：六支只印服务商页且身份【平台商户】、
+        /// 下单与按 out_order_id 查单<b>写读共用同一应答型</b>；GoldPlan 5：只印服务商页且双身份【普通服务商】+【渠道商】，
+        /// close 是 POST、open 是 <b>PATCH</b>、set-filter 是 POST，三支 204、两支状态切换共用一型；Multiuse 4：只印商户页，
+        /// 三支流水应答同形共用一型，<b>发券一支</b>官方请求头表印 <c>Wechatpay-Serial</c> 必填；PayInstallment 1：只印商户页且
+        /// <b>查询走 POST</b>、路由段是 <c>instal</c> 不是 <c>installment</c>；RateActivity 3：只印服务商页、双从业机构身份，
+        /// POST 受理与 PATCH 修改应答同形共用；Recharge 2：只印商户页，申请支 6 键与查询支 17 键各建一型；
+        /// SmartGuide 4：四支双页并集（服务商页多选填 <c>sub_mchid</c>），查询与注册<b>同一 URL</b> 仅方法不同，
+        /// 两支 204，查询/注册/更新<b>三支</b>印 <c>Wechatpay-Serial</c> 必填而分配支未列 ⇒ 涉密逐页结论；
+        /// TransactionBlock 4：四支只印服务商页且仅白名单开放，申诉两支五行同形共用、记录两支各建）= 555
+        /// + P1-5-G 取证勘误补回 7（Capital 银行组件 6：六支全 GET、只印服务商页、逐支印「单商户单接口 300TPS」，
+        /// 省份与城市两支官方<b>零请求参数</b>、银行/支行三支 <c>limit</c> 必填、卡号开户行支是<b>唯一</b>印
+        /// <c>Wechatpay-Serial</c> 必填的涉密支；对公/对私应答同形共用一型，支行支与卡号支各建一型；
+        /// Lovefeast 1：只印商户页、官方爱心餐章节 API 列表恰此一支、<b>频率官方未印</b>，「爱心餐查券」官方指向既存
+        /// <c>MarketingFavor</c> 域 ⇒ 不重复建；守卫 CAP-B1~B6 / LVF-B1~B6）= 562
+        /// + P1-6 旧版会员卡与会员有礼活动两域 29（MarketingMemberCardOpen 25：创建模板 / 查询列表 / 查询详情 / 修改模板 /
+        /// 删除模板（204）/ 升级模板（204）/ code预存 / 查询用户卡 / 修改用户卡 / 作废code（204）/ 确认入会 / 导入用户（OpenID）/
+        /// 导入用户（手机号）/ 创建二维码 / 解密code / 查询激活信息 / 激活（204）/ 授权令牌 / 设置权益（用户级 PATCH）/
+        /// 设置权益（模板级 PATCH）/ 提交积分（204）/ 预下单积分（204）/ 设置回调（PATCH）/ 查询回调 / 查询用户所有卡；
+        /// MarketingMemberCardActivity 4：创建活动 / 查询列表 / 查询详情 / 终止活动；四支 204 无应答包体 ⇒ 裸 Task，
+        /// 两套并存契约：品牌会员卡与本域是<b>并存非替代</b>关系，守卫 MCO-B1~B6 / MCA-B1~B5）
+        /// + P1-6 既有域增量 2（MarketingPartnerships 终止合作关系 / MarketingBusifavor 发送核销券，各一方法）= 593。
         /// </remarks>
-        public const int Endpoints = 421;
+        public const int Endpoints = 593;
     }
 
     /// <summary>开放平台线（`Tests/Mud.Wechat.OpenPlatform.Tests`，B1 起）。</summary>

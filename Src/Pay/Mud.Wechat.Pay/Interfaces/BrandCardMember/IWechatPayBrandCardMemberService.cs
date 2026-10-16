@@ -20,15 +20,13 @@ namespace Mud.Wechat.Pay;
 /// 商户作用域经 <c>IWechatPayMerchantContext.UseMerchant(...)</c> 选择，本域与公众平台令牌面无关。</para>
 /// <para><b><c>[AllowAnyStatusCode]</c> 的必要性</b>：APIv3 业务失败是 HTTP 4xx/5xx + <c>{&quot;code&quot;,&quot;message&quot;}</c>，
 /// 加上后错误体原样落到 <c>WechatPayResponse.Code</c> / <c>Message</c>，由 <c>WechatPayException.ThrowIfFailed</c> 判错。</para>
-/// <para><b>频率限制口径</b>：本域 7 个官方页树<b>全部未印</b>端点级 QPS 数字，只在错误码表给出 <c>429 RATELIMIT_EXCEEDED</c> /
-/// <c>FREQUENCY_LIMITED</c> ⇒ 不得凭第三方 SDK 补数，各方法 remarks 内的「未印」结论即取证结果。</para>
-/// <para><b>分页口径不统一（照页，不得互套）</b>：本域列表支存在<b>两种</b>整型分页形态
-/// —— <c>offset</c>/<c>limit</c>（会员卡模板列表、用户会员卡列表、品牌门店列表）与
-/// <c>page_index</c>/<c>page_size</c>（交易连接名片规则列表）；且同为 <c>offset</c>/<c>limit</c>，
-/// 会员卡两支官方<b>必填</b>、门店列表支官方<b>选填</b> ⇒ 必填口径也须照页。应答总数字段官方为选填。</para>
-/// <para><b><c>brand_id</c> 是本域的「商户作用域参数」</b>：除品牌入驻面（<c>/brand/applyments/*</c>）与免密契约面外，
-/// 本域其余每支都把 <c>brand_id</c> 印为<b>必填 query</b> ⇒ 它不是可选过滤条件，缺省即 400；
-/// 长度上限官方<b>不统一</b>（名片配置/连接/门店面为 <c>string(20)</c>，会员卡面为 <c>string(32)</c>），照页不做本地归一。</para>
+/// <para><b>频率限制口径</b>：本域 15 支官方页<b>全部未印</b>端点级 QPS 数字（个别页只提示「频率不足请联系技术支持评估」）
+/// ⇒ 不得凭第三方 SDK 补数，各方法 remarks 内的「未印」结论即取证结果。</para>
+/// <para><b>两支列表的分页官方必填</b>：模板列表与用户卡列表都是 <c>offset</c>/<c>limit</c>，官方标<b>必填</b>
+/// （与门店列表的<b>选填</b>、连接名片列表的 <c>page_index</c>/<c>page_size</c> 三形态并存 ⇒ 照页不得互套）；
+/// 过滤项 <c>state</c> / <c>user_card_state</c> 选填。应答总数字段官方为选填。</para>
+/// <para><b><c>brand_id</c> 是本域的「商户作用域参数」</b>：本域凡官方印 <c>brand_id</c> 的支一律<b>必填 query</b>
+/// ⇒ 它不是可选过滤条件，缺省即 400；长度上限照页不做本地归一。</para>
 /// <para><b>模板与用户卡是两套生命周期</b>：<c>.../cards</c> 族管的是<b>会员卡模板</b>（创建 / 列表 / 查询 / PATCH 修改 / 作废）， <c>.../user-cards</c> 族管<b>用户持有的卡</b>（查询 / 列表 / PATCH 修改 / 开通结果确认 / 作废 / 按 OPENID 导入） ⇒ 两族的 ID 体系（<c>card_id</c> ↔ <c>user_card_code</c>）与应答字段<b>不同形</b>，不得互相套用类型。</para>
 /// <para><b>写动词不统一</b>：修改走 <b>PATCH</b>，作废与确认走 <b>POST .../invalidate</b>、<b>POST .../confirm</b> ⇒ 照页不得合并。</para>
 /// <para><b>应答同形族的共用裁定</b>（含 req 标记的签名比对）：模板四支（创建 / 查询 / 修改 / 作废）应答<b>逐字段同形</b>（49 行） ⇒ 共用 <see cref="BrandMemberCardResponse"/>，而<b>列表支是 53 行</b> ⇒ 单建； 用户卡五支（查询 / 修改 / 确认 / 作废 / 导入）同形（28 行）⇒ 共用 <see cref="BrandMemberUserCardResponse"/>， 而<b>列表支 32 行</b> ⇒ 单建。</para>

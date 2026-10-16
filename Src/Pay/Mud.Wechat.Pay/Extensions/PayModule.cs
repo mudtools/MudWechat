@@ -490,6 +490,26 @@ public enum PayModule
     MarketingPartnerships,
 
     /// <summary>
+    /// 旧版会员卡（membercard-open，<b>P1-6，25 端点</b>）：创建/查询/修改/删除模板、卡code预存、导入用户、激活、权益设置、积分提交、回调URL管理、解密code等。
+    /// 官方文档 <see href="https://pay.weixin.qq.com/doc/v3/merchant/4012545584"/> 等（merchant 中心【普通商户】）。
+    /// </summary>
+    /// <remarks>
+    /// <b>两套并存契约</b>：品牌会员卡 <c>/v3/brand/partner/card-member/*</c>（已落位 15 端点）与本域是<b>并存非替代</b>关系，
+    /// 不得以「已有替代品」为由并回零声明名册（守卫 MCO-B6 锁定）。
+    /// <b>四支 204 无应答包体</b>：删除模板 / 升级模板 / 作废卡code / 激活卡code 返回裸 <see cref="Task"/>。
+    /// </remarks>
+    MarketingMemberCardOpen,
+
+    /// <summary>
+    /// 会员有礼活动（membercard-activity，<b>P1-6，4 端点</b>）：创建活动、列表查询、详情查询、终止活动。
+    /// 官方文档 <see href="https://pay.weixin.qq.com/doc/v3/merchant/4012553030"/> 等（merchant 中心【普通商户】）。
+    /// </summary>
+    /// <remarks>
+    /// <b>终止活动走 POST .../terminate</b>：写操作动词在本域不统一，照页不得合并。
+    /// </remarks>
+    MarketingMemberCardActivity,
+
+    /// <summary>
     /// 行业券（<b>P1-3，1 端点</b>）：出行优惠券 token 申领。
     /// 官方文档 <see href="https://pay.weixin.qq.com/doc/v3/merchant/4012553563"/>。
     /// </summary>
@@ -705,4 +725,192 @@ public enum PayModule
     /// 官方文档 <see href="https://pay.weixin.qq.com/doc/v3/partner/4015198012"/>。
     /// </summary>
     PlatsolutionEcommerceSettle,
+
+    /// <summary>
+    /// 平台商户预约商家转账（保险理赔）（<b>P1-2-C，4 端点</b>）：受理预约 + 两路查询（商户/微信预约单号）+ 关闭。
+    /// 官方文档 <see href="https://pay.weixin.qq.com/doc/v3/partner/4013504216"/>。
+    /// </summary>
+    PlatsolutionInsuranceReservation,
+
+    /// <summary>
+    /// 平台商户商家转账批次与明细（保险理赔）（<b>P1-2-C，5 端点</b>）：受理转账 + 两路查批次 + 两路查明细。
+    /// 官方文档 <see href="https://pay.weixin.qq.com/doc/v3/partner/4013504220"/>。
+    /// </summary>
+    PlatsolutionInsuranceBatch,
+
+    /// <summary>
+    /// 平台商户电子回单（保险理赔商家转账）（<b>P1-2-C，4 端点</b>）：批次汇总回单申请 + 查询、明细回单申请 + 查询。
+    /// 官方文档 <see href="https://pay.weixin.qq.com/doc/v3/partner/4013504226"/>。
+    /// </summary>
+    PlatsolutionInsuranceReceipt,
+
+    /// <summary>
+    /// 微企付企业支付账单与出资凭证（<b>P1-2-D，2 端点</b>）：申请出资凭证 + 申请业务账单（下载地址均 5 分钟内有效）。
+    /// 官方文档 <see href="https://pay.weixin.qq.com/doc/v3/partner/4014507157"/>。
+    /// </summary>
+    WebizpayBill,
+
+    /// <summary>
+    /// 微企付额度卡与员工授权（<b>P1-2-D，6 端点</b>）：下发额度卡 + 两路查询（微信卡号 / 商户卡号）+ 作废 + 取支付链接 + 解除员工授权。
+    /// 官方文档 <see href="https://pay.weixin.qq.com/doc/v3/partner/4014507148"/>。
+    /// </summary>
+    WebizpayEmployee,
+
+    /// <summary>
+    /// 微企付门店主体匹配（<b>P1-2-D，2 端点</b>）：发起匹配（受理制）+ 按微信支付批次单号查询匹配结果。
+    /// 官方文档 <see href="https://pay.weixin.qq.com/doc/v3/partner/4014507136"/>。
+    /// </summary>
+    WebizpayStore,
+
+    /// <summary>
+    /// 微企付员工开通授权（<b>P1-2-D，2 端点</b>）：按商户企业员工 ID 取授权跳转链接 + 查询该员工的微信授权关系列表。
+    /// 官方文档 <see href="https://pay.weixin.qq.com/doc/v3/partner/4014507153"/>。
+    /// </summary>
+    WebizpayUser,
+
+    /// <summary>
+    /// 委托代扣 PAPay 3.0 直连商户面（<b>P1-5-A，20 端点</b>）：预扣费通知 + 签约查询/解除 + 预约扣费与扣款受理 +
+    /// 四端预约扣费预签约 + 保险自动续费（预签约三支 / 协议查询解除续期 / 扣费周期与扣款）。
+    /// 官方文档 <see href="https://pay.weixin.qq.com/doc/v3/merchant/4012489245"/>。
+    /// </summary>
+    Papay,
+
+    /// <summary>
+    /// 委托代扣 PAPay 服务商面（<b>P1-5-A，1 端点</b>）：预扣费通知（<c>POST /v3/partner-papay/contracts/{contract_id}/notify</c>）。
+    /// 官方<b>只印这一支</b>服务商页 ⇒ 签约/扣款各支无服务商开放面，本成员不得按直连面镜像补齐。
+    /// 官方文档 <see href="https://pay.weixin.qq.com/doc/v2/partner/4011988373"/>。
+    /// </summary>
+    PartnerPapay,
+
+    /// <summary>
+    /// 车主出行（<b>P1-5-C，10 端点</b>）：ETC 族六支（签约查询两支 + 预开通 + 高速扣款下单 + 两套单号查单）+
+    /// 停车族四支（创建停车入场 + 车牌服务开通查询 + 停车扣费受理 + 停车订单查询）。
+    /// ETC 族官方<b>只印服务商页</b>，停车族各印商户页与服务商页 ⇒ 守卫 VEH-B1~B6。
+    /// 官方文档 <see href="https://pay.weixin.qq.com/doc/v3/partner/4012715331"/>。
+    /// </summary>
+    Vehicle,
+
+    /// <summary>
+    /// 出租车电子发票（<b>P1-5-C，9 端点</b>）：签到签退 + 插卡 + 司机与出租车信息更新/查询 +
+    /// 出租车公司新增与查询 + 凭凭证查乘客行程单。
+    /// 十支官方<b>全部只印服务商页</b>；第十支「上传出租车电子发票文件」是 <c>multipart/form-data</c> + SM3 摘要
+    /// ⇒ 不属本声明式组，由手写通道承载。官方文档 <see href="https://pay.weixin.qq.com/doc/v3/partner/4012460154"/>。
+    /// </summary>
+    TaxiInvoice,
+
+    /// <summary>
+    /// 教育委托代扣（<b>P1-5-D，8 端点</b>）：解除签约 + 按协议号查签约 + 按用户查签约列表 + 预签约 +
+    /// 下单受理 + 两套单号查单 + 发送扣费前用户通知。
+    /// 七支官方同印商户页与服务商页 ⇒ 按并集建模；<c>DELETE /edu-papay/contracts/{contract_id}</c> <b>只印商户页</b> ⇒ 无服务商镜像。
+    /// 三支成功应答是 204 ⇒ 返回裸 <see cref="Task"/>。官方文档 <see href="https://pay.weixin.qq.com/doc/v3/merchant/4012522951"/>。
+    /// </summary>
+    EducationPapay,
+
+    /// <summary>
+    /// 教育学费缴纳（<b>P1-5-D，8 端点</b>）：预签约 + 查询/解除签约 + 按用户查签约列表 +
+    /// 下单 + 两套单号查单 + 查询用户欠费状态。
+    /// 八支官方<b>全部只印服务商页</b>；预签约支四枚密文字段须带 <c>Wechatpay-Serial</c>；解除支 204 ⇒ 裸 <see cref="Task"/>。
+    /// 守卫 ESP-B1~B6。官方文档 <see href="https://pay.weixin.qq.com/doc/v3/partner/4012468952"/>。
+    /// </summary>
+    EducationSchoolPay,
+
+    /// <summary>
+    /// 代发薪（<b>P1-5-D，6 端点</b>）：授权令牌申领 + 用户授权关系查询 + 凭核身单号预下单 +
+    /// 认证单单查与分页列表 + 发起批量转账。
+    /// 六支官方<b>全部只印服务商页</b>且<b>无 <c>sp_mchid</c></b>；三支涉密须带 <c>Wechatpay-Serial</c>；
+    /// 发起批次支是本域唯一印端点级 QPS（50QPS）的一支。清单两条 <c>/payroll-card/wesure/*</c> 判非契约零声明。
+    /// 守卫 PRC-B1~B6。官方文档 <see href="https://pay.weixin.qq.com/doc/v3/partner/4012461589"/>。
+    /// </summary>
+    PayrollCard,
+
+    /// <summary>
+    /// 商圈会员支付即积分（<b>P1-5-E，4 端点</b>）：停车状态同步 + 会员积分同步 + 授权状态查询 + 待积分状态查询。
+    /// 四支官方各印商户页与服务商页 ⇒ 按并集建模；两支写侧 204 ⇒ 裸 <see cref="Task"/>；积分同步支是场内退款通知的硬前置。
+    /// 正文有加密提示但请求头表<b>未列</b> <c>Wechatpay-Serial</c> ⇒ 本域无涉密必填头。守卫 BSC-B1~B6。
+    /// 官方文档 <see href="https://pay.weixin.qq.com/doc/v3/merchant/4012535502"/>。
+    /// </summary>
+    BusinessCircle,
+
+    /// <summary>
+    /// 点餐订单同步（<b>P1-5-E，1 端点</b>）：官方原文要求状态变化即上传<b>全量</b>订单明细（<c>CREATE_DEAL</c> / <c>PAY_SUCCESS</c>）。
+    /// 一支<b>只印服务商页</b>、应答是 204 无包体 ⇒ 裸 <see cref="Task"/>；请求表 31 行是「订单 + 菜品」两层摊平。
+    /// 守卫 CTR-B1~B6。官方文档 <see href="https://pay.weixin.qq.com/doc/v3/partner/4015863180"/>。
+    /// </summary>
+    Catering,
+
+    /// <summary>
+    /// 资金出境（<b>P1-5-E，6 端点</b>）：账单下载链接 + 出境下单 + 出境单查询 + 退回下单 + 退回单查询 + 在途可出境额度。
+    /// 六支官方<b>全部只印服务商页</b>且身份是【平台商户】；写读两支各共用一型应答；「受理成功 ≠ 出境成功」是官方原文。
+    /// 账单下载链接有效期 30s、金额单位是<b>元</b>、出账日 T+1。守卫 FTO-B1~B6。
+    /// 官方文档 <see href="https://pay.weixin.qq.com/doc/v3/partner/4012476113"/>。
+    /// </summary>
+    FundsToOversea,
+
+    /// <summary>
+    /// 点金计划（<b>P1-5-E，5 端点</b>）：商家小票开关 + 点金计划开关 + 广告关闭 + 广告开通 + 同业过滤标签管理。
+    /// 五支官方<b>全部只印服务商页</b>，身份是【普通服务商】+【渠道商】双标签；开通广告是 <b>PATCH</b>（官方原文）、余下四支 POST；
+    /// 三支 204 ⇒ 裸 <see cref="Task"/>；同业标签是<b>覆盖</b>语义、值域 35 项以 <c>List&lt;string&gt;</c> 承载。守卫 GLD-B1~B6。
+    /// 官方文档 <see href="https://pay.weixin.qq.com/doc/v3/partner/4012473796"/>。
+    /// </summary>
+    GoldPlan,
+
+    /// <summary>
+    /// 多次扣费券/消费金（<b>P1-5-E，4 端点</b>）：发放、核销、退款三支流水下载 + 向指定用户发券。
+    /// 四支官方<b>全部只印商户页</b>；三支流水应答同形 ⇒ 共用一型；四支均印「不区分来源 1000/min」与「支持幂等重入」；
+    /// 发券支是本域唯一涉密支（须带 <c>Wechatpay-Serial</c>，姓名与证件号以密文 <c>string</c> 承载）。守卫 MUS-B1~B6。
+    /// 官方文档 <see href="https://pay.weixin.qq.com/doc/v3/merchant/4012539756"/>。
+    /// </summary>
+    Multiuse,
+
+    /// <summary>
+    /// 微信分付曝光建议（<b>P1-5-E，1 端点</b>）：官方<b>只印商户页</b>且查询语义走 <b>POST</b>；
+    /// 限速原文「每个商户限流200/s，上线前必须与微信支付运营确认」+「接口耗时：200ms」。守卫 PIN-B1~B6。
+    /// 官方文档 <see href="https://pay.weixin.qq.com/doc/v3/merchant/4016196762"/>。
+    /// </summary>
+    PayInstallment,
+
+    /// <summary>
+    /// 优惠费率活动报名（<b>P1-5-E，3 端点</b>）：报名 POST + 修改 PATCH + 查状态 GET。
+    /// 三支官方<b>全部只印服务商页</b>，身份是【从业机构（银行）】+【从业机构（支付机构）】双标签；
+    /// 报名与修改应答同形 ⇒ 共用一型；<c>sub_mchid</c> 请求侧 string、应答侧 integer ⇒ 照页分建。守卫 RTA-B1~B6。
+    /// 官方文档 <see href="https://pay.weixin.qq.com/doc/v3/partner/4012698774"/>。
+    /// </summary>
+    RateActivity,
+
+    /// <summary>
+    /// 银行转账充值（<b>P1-5-E，2 端点</b>）：申领银行转账账号 POST + 按商户充值单号查询 GET。
+    /// 两支官方<b>全部只印商户页</b>；申领是充值流程前置闸（拿到账号后走<b>线下</b>银行转账）；两支应答 6 键 vs 17 键不同形 ⇒ 各建一型。
+    /// 守卫 RCH-B1~B6。官方文档 <see href="https://pay.weixin.qq.com/doc/v3/merchant/4012585425"/>。
+    /// </summary>
+    Recharge,
+
+    /// <summary>
+    /// 智慧导购服务人员（<b>P1-5-E，4 端点</b>）：查询 GET + 注册 POST + 更新 PATCH + 分配 POST。
+    /// 四支官方各印商户页与服务商页（服务商页多选填 <c>sub_mchid</c>）；查询与注册<b>共用同一 URL</b>、靠动词区分；
+    /// 查询/注册/更新三支须带 <c>Wechatpay-Serial</c> 而分配支未列 ⇒ 涉密是逐页结论；更新与分配两支 204 ⇒ 裸 <see cref="Task"/>。
+    /// 守卫 SMG-B1~B6。官方文档 <see href="https://pay.weixin.qq.com/doc/v3/merchant/4012535123"/>。
+    /// </summary>
+    SmartGuide,
+
+    /// <summary>
+    /// 交易拦截记录与申诉（<b>P1-5-E，4 端点</b>）：拦截记录单查与分页列表 + 申诉单查询 + 发起申诉。
+    /// 四支官方<b>全部只印服务商页</b>且属<b>白名单开放面</b>（「此接口仅对部分合作伙伴开放」）；申诉两支应答同形 ⇒ 共用一型；
+    /// <c>submit_data</c> / <c>requested_item_info</c> 官方上限 <c>string(4000000)</c>（约 4MB）⇒ 以 <c>string</c> 承载不解析。
+    /// 守卫 TRB-B1~B6。官方文档 <see href="https://pay.weixin.qq.com/doc/v3/partner/4014940435"/>。
+    /// </summary>
+    TransactionBlock,
+
+    /// <summary>
+    /// 银行组件省市与银行字典（<b>P1-5-G，6 端点</b>）：省份 / 城市 / 对公银行 / 对私银行 / 支行 / 卡号查开户行，全部 GET。
+    /// 六支官方<b>全部只印服务商页</b>【普通服务商】；对公与对私两支应答同形 ⇒ 共用一型；只有卡号支的官方请求头表列 <c>Wechatpay-Serial</c> 必填 ⇒ 涉密是逐页结论。
+    /// 守卫 CAP-B1~B6。官方文档 <see href="https://pay.weixin.qq.com/doc/v3/partner/4012698641"/>。
+    /// </summary>
+    Capital,
+
+    /// <summary>
+    /// 爱心餐品牌信息（<b>P1-5-G，1 端点</b>）：按品牌 ID 查询捐赠总量与供餐总量。
+    /// 官方爱心餐章节 API 列表<b>恰此一支</b>且只印商户页；「爱心餐查券」官方指向既存商家券按用户查券支 ⇒ 本域不重复建。
+    /// 守卫 LVF-B1~B6。官方文档 <see href="https://pay.weixin.qq.com/doc/v3/merchant/4012472863"/>。
+    /// </summary>
+    Lovefeast,
 }

@@ -149,22 +149,8 @@ public class WxaNovelAppIdResult
 public class WxaNovelDelBookAuthByAppIdRequest
 {
     /// <summary>
-    /// 作品id
-    /// </summary>
-    [JsonPropertyName("book_id")]
-    public string? BookId { get; set; }
-
-    /// <summary>
     /// 被授权账号appid
     /// </summary>
     [JsonPropertyName("grantee_appid")]
     public string? GranteeAppId { get; set; }
-}
-
-/// <summary>
-/// 删除作品授权（按appid）响应
-/// </summary>
-[HttpJsonSerializable(SerializerClassName = "Novel")]
-public class WxaNovelDelBookAuthByAppIdResponse : WxaResponse
-{
 }

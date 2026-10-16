@@ -153,10 +153,12 @@ public class MpAppManagerTests
         await manager.Invoking(m => m.RegisterAppAsync("x", context)).Should().ThrowAsync<NotSupportedException>();
         manager.Invoking(m => m.UpdateApp("x", context)).Should().Throw<NotSupportedException>();
         await manager.Invoking(m => m.UpdateAppAsync("x", context)).Should().ThrowAsync<NotSupportedException>();
+#pragma warning disable CS0618 // 类型或成员已过时：本用例正是在钉死「BC-30 弃用成员经接口类型调用仍 fail-fast」（4.0 移除前语义不得改变）
         manager.Invoking(m => m.GetWebApi<IAppContextSwitcher>("mp-default")).Should().Throw<NotSupportedException>();
         manager.Invoking(m => m.GetDefaultWebApi<IAppContextSwitcher>()).Should().Throw<NotSupportedException>();
         manager.Invoking(m => m.RegisterSwitcherFactory<IAppContextSwitcher>(_ => null!))
             .Should().Throw<NotSupportedException>();
+#pragma warning restore CS0618
     }
 
     /// <summary>A9：默认应用设置（未知键抛异常 / Try 版本返回 false）。</summary>

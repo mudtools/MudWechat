@@ -107,6 +107,7 @@ public class ChannelsBasicContractGuards
             .GetCustomAttribute<JsonPropertyNameAttribute>()!.Name.Should().Be("appsecret");
 
         // 旧拆接口：过渡保留（二进制兼容）+ 语义不变（无 [Token]）+ 已 Obsolete + 仍声明原路由。
+#pragma warning disable CS0618 // 类型或成员已过时：守卫故意引用 A-7 弃用接口以钉死过渡契约（4.0 移除前形态不得漂移）
         typeof(IChannelsBasicTokenFreeService).GetCustomAttribute<ObsoleteAttribute>().Should().NotBeNull(
             "A-7 裁决：拆接口走 Obsolete 一版，Mud.Wechat 4.0 移除");
         typeof(IChannelsBasicTokenFreeService).GetCustomAttribute<TokenAttribute>().Should().BeNull(
@@ -117,12 +118,14 @@ public class ChannelsBasicContractGuards
         legacy.Should().NotBeNull("旧拆接口成员保留一个版本（二进制兼容）");
         (legacy.GetCustomAttribute<PostAttribute>() as HttpMethodAttribute)!.RequestUri
             .Should().Be("/cgi-bin/clear_quota/v2", "旧拆接口路由不变（宿主按类型注入的解析路径不变）");
+#pragma warning restore CS0618
     }
 
     /// <summary>契约守卫 CB3：注册形态——双接口同注册组（Basic；旧拆接口 Obsolete 过渡保留）。</summary>
     [Fact]
     public void BasicInterfaces_ShouldShareRegistryGroup()
     {
+#pragma warning disable CS0618 // 类型或成员已过时：同上述守卫——故意引用 A-7 弃用接口以钉死「双接口同注册组」过渡契约
         foreach (var iface in new[] { typeof(IChannelsBasicService), typeof(IChannelsBasicTokenFreeService) })
         {
             var api = iface.GetCustomAttribute<HttpClientApiAttribute>();
@@ -131,6 +134,7 @@ public class ChannelsBasicContractGuards
                 $"{iface.Name} 必须挂 Basic 注册组（同注册组由同一条生成注册入口装载）");
             api.TokenManage.Should().Be(nameof(IChannelsAppManager));
         }
+#pragma warning restore CS0618
 
         Enum.GetNames(typeof(ChannelsModule)).Should().Contain("Basic");
         typeof(ChannelsServiceBuilder).GetMethod("AddBasicApi").Should().NotBeNull();

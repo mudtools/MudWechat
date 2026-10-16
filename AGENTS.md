@@ -155,7 +155,7 @@ scripts/                              # verify-build / audit-config-keys / Gener
 - **U-1 令牌值编解码迁移（组件 3.0.7 重打包，2026-10-15）**：桥接器（`WechatTokenStoreBridge`）写侧改走官方 `MigrationTokenStoreCodec.Instance`（单写相对秒 `{expiresInSeconds}\|{token}`，与官方 `DefaultTokenStoreCodec` 逐字节一致），读侧双读——存量旧值 `{expireMs}\|{token}`（前导 ≥ 10^10 判旧绝对毫秒戳）重投影为剩余秒，**升级后旧存储条目继续命中、无需数据迁移**；待旧值按条目自然过期收敛（最长一个令牌 TTL 周期）后切回 `DefaultTokenStoreCodec.Instance`——**不得提前切**（13 位毫秒戳会被误读为「超长有效秒数」）。私有 `WechatTokenBridgeCodec` 已删除（D1=A）。
 - **U-2 存储值 v2 版本化信封（组件 3.0.7 重打包第二批，2026-10-15）**：读取面**无条件兼容**（`DefaultTokenStoreCodec` / `MigrationTokenStoreCodec` 均识别 `v2:` 前缀；升级库即得、无需改配置与数据迁移）；写入面**暂不启用**（本侧书面结论：令牌管理器无「显式过期 vs 缺失」区分需求，维持 v1 相对秒单写、逐位零变化）。配置面**镜像官方两开关**（`WechatRedisTokenStoreOptions.UseVersionedEnvelope` / `AcknowledgeVersionedEnvelopeReadersUpgraded`，默认均 `false`、原样透传官方存储）：开启未确认时本院 `Validate()`（IValidateOptions 管线）与官方存储构造期**双闸 fail-fast**。**两阶段纪律**：先升级全部读取实例、再开写；**禁止「写入方先升级」的逆序切换**（旧读取方读 v2 值必然 miss——方向安全但会持续重复刷新）。再评估触发条件 = 出现需区分「显式过期」与「缺失」的消费方（书面结论见 .docs 十八）。
 - **后台刷新停机语义（组件 ≥ 3.0.5 / M7-HC-04）**：刷新服务 `Dispose` 会取消在途刷新（实例级 CTS：置位 → Cancel → 停表 → Dispose CTS），在途刷新以 `OperationCanceledException` 结束且**不产生**刷新未处理异常 Error 日志（优雅关闭口径）；本仓各线 `*TokenRegistrationService` 的登记路径已有 `catch (OperationCanceledException) { throw; }` 先行于 `catch (Exception)`，取消不会被吞。
-- **SE.Redis 分档锚定与已知陷阱（T1，2026-10-15）**：本包对 SE.Redis 的引用按 TFM 分档（对齐官方 `Mud.HttpUtils.Redis` 3.0.7 重打包的逐档下限）——net8/net10 → **3.4.5**；netstandard2.0/net6.0 → **2.13.17**（含原生 net6.0 资产；`System.IO.Hashing 9.0.12` 传递的「未测试 TFM」咨询提示由 `SuppressTfmSupportBuildWarnings` 保持原处置）。① **超时异常继承关系随大版本翻转（B-8 勘误，2026-10-14）**——2.x 中 `RedisTimeoutException` 继承 `TimeoutException`，**3.x 起不再继承** ⇒ `catch (TimeoutException)` 兜 SE.Redis 超时的 2.x 习惯在 3.x 下**失配漏接**，宿主 catch 口径须为 `RedisTimeoutException` 或 `RedisException` 基类（本院 `WechatRedisErrors.ShouldWrap` 为 `is RedisException or RedisTimeoutException` 显式双类型，两档均正确；官方 `Mud.HttpUtils.Redis` 3.0.7 重打包起逐档要求 SE.Redis ≥3.4.5 / ≥2.13.17，不再固定 2.8.24）；② `StringSetAsync` 有多套重载，**生产调用一律用命名参数钉住形态**（`keepTtl: false` / `when: ...`）。
+- **SE.Redis 分档锚定与已知陷阱（T1，2026-10-15）**：本包对 SE.Redis 的引用按 TFM 分档（对齐官方 `Mud.HttpUtils.Redis` 3.0.7 重打包的逐档下限）——net8/net10 → **3.4.5**；netstandard2.0/net6.0 → **2.13.17**（含原生 net6.0 资产；`System.IO.Hashing 9.0.12` 传递的「未测试 TFM」咨询提示由 `SuppressTfmSupportBuildWarnings` 保持原处置）。① **超时异常继承关系（B-8 复核，2026-10-15 反射实测）**——上游 B-8 称「3.x 中 `RedisTimeoutException` 不再继承 `TimeoutException`」，但本仓对全部在盘版本（2.8.24 / 2.13.17 / 3.1.31 / 3.3.0 / 3.4.5；net472 全档 + net8.0 抽验）实测结论一致：**`RedisTimeoutException` 恒继承 `System.TimeoutException`、恒不派生 `RedisException`**（派生 `RedisException` 的是 `RedisConnectionException` / `RedisServerException`）⇒ 2.x 的 `catch (TimeoutException)` 习惯在 3.4.5 下依然有效、**无「翻转」**；分歧待经 F-6 通道回写上游对账清单。操作口径不变（更稳）：宿主 catch 用 `RedisTimeoutException` 或 `RedisException` 基类；本院 `WechatRedisErrors.ShouldWrap` 的 `is RedisException or RedisTimeoutException` 显式双类型因「超时异常不派生 `RedisException`」而**必需**（两档均正确）。官方 `Mud.HttpUtils.Redis` 3.0.7 重打包起逐档要求 SE.Redis ≥3.4.5 / ≥2.13.17，不再固定 2.8.24；② `StringSetAsync` 有多套重载，**生产调用一律用命名参数钉住形态**（`keepTtl: false` / `when: ...`）。
 
 ### 5.3 多应用基座与 DI 装配
 
@@ -209,7 +209,7 @@ scripts/                              # verify-build / audit-config-keys / Gener
 
 **约定变更传导通道**（防约束漂移）：上游 `MudHttpUtils` 仓的 `.docs/下游约束对账清单.md`（A/B/C 三系列逐条标注本仓 workaround 的**已失效 / 仍有效 / 待裁决**）与 `CHANGELOG.md`「契约变更（Contract Changes，F-6 专章）」是**上游侧契约变更的权威对账面**——升级 `Mud.HttpUtils*` 版本前后必须对照该两份文档逐条核对，本文 §5 的约束与其对账结果冲突时以对账清单的状态标注为准（并同批修订本文）。
 
-截至 **2026-10-15**（上游 3.0.7 两次重打包，增记 U 系列全量：首批 U-1/U-3/U-4 + 第二批 U-2 全落地与 U-5~U-8）的对账状态与落地情况：
+截至 **2026-10-15**（上游 3.0.7 两次重打包，增记 U 系列全量：首批 U-1/U-3/U-4 + 第二批 U-2 全落地与 U-5~U-8；2026-10-15 恰与 MudFeishu 逐项对账，补记 F-4/F-9 与 U-9~U-14）的对账状态与落地情况：
 
 | 项 | 上游变更 | 对本仓约束的影响 | 落地状态 |
 |---|---|---|---|
@@ -217,19 +217,27 @@ scripts/                              # verify-build / audit-config-keys / Gener
 | A-3 | G7 委托式 `DelegatingAppContextHolder` | 「切换器须后注册抢占」的顺序要求失效；**三接口同实例 + `AddSingleton` 最后注册者胜仍有效** | 注册形态早已就位（§5.3），顺序依赖注释已清 |
 | A-4 | B-2 `ITokenStore` 自动桥接（DI 回退） | 「管理器外自建 cache + store 写穿叠层」失效 | 本仓早已走组件桥接器（`WechatTokenStoreBridge`，不自建叠层）；私有 codec 已于 U-1 退役（见 U-1 行） |
 | A-5 | F-3 官方 `Mud.HttpUtils.Redis` 独立包 | 与 `Mud.Wechat.Redis` 能力重复 | **分层共存已落地**（§5.2）：通用 `ITokenStore` 面迁官方包、专属端口与批删留下游包 |
-| A-6 | BC-30 三成员 `[Obsolete]`（4.0 移除） | 仅调用点告警，实现类不受影响 | 本仓零调用点；无动作 |
+| A-6 | BC-30 三成员 `[Obsolete]`（4.0 移除） | 仅调用点告警，实现类不受影响 | 生产零调用点；测试守卫性调用（`MpAppManagerTests` 经接口钉死「弃用成员仍 fail-fast」3 处）已 CS0618 pragma 豁免；实现类直接实现接口故无 CS0672（A-7 旧拆接口守卫引用同批豁免） |
 | A-7 | F-1 `[Token(Disabled = true)]` 方法级 opt-out | 拆接口 workaround 可合并弃用 | **已落地**：`IChannelsBasicTokenFreeService` / `IMpOpenApiTokenFreeService` / `IWxaCode2SessionService` 合并回主接口（方法级 Disabled），旧接口 `[Obsolete]` 一版后（4.0）移除 |
 | B-1/B-2 | `TokenScopeKey` 三段式官方化 / 自动桥接单缓存互通 | 键语义不变，增量替换 | 仍有效；无强制迁移 |
 | B-3 | 官方 `ITokenStore` 无批量面（U-4 仅补按应用清库 `ITokenStoreAppPurge`，任意键批删仍无） | 批删探测回退逐键（行为正确） | 仍有效；官方存储作通用面时走回退路径（清库面已另行适配，见 U-4 行） |
-| B-5/B-8 | SE.Redis 版本差与 3.x 超时语义翻转 | 升级 SE.Redis 3.x 须改 catch 口径 | **已勘误**（§5.2 B-8 条）；本仓 SE.Redis 按 TFM 分档锚定 3.4.5 / 2.13.17（T1），`WechatRedisErrors.ShouldWrap` 双类型 catch 口径两档均正确 |
+| B-5/B-8 | SE.Redis 版本差与 3.x 超时语义翻转（上游称） | 升级 SE.Redis 3.x 须改 catch 口径 | **已勘误 + 实测复核**（§5.2 B-8 条）：全部在盘版本反射实测无「翻转」（`RedisTimeoutException` 恒继承 `TimeoutException`、恒不派生 `RedisException`）——升级仍建议 catch 具体类型（最稳）；本仓 SE.Redis 按 TFM 分档锚定 3.4.5 / 2.13.17（T1），`WechatRedisErrors.ShouldWrap` 双类型 catch 口径两档均正确且必需 |
 | U-1 | 官方 `MigrationTokenStoreCodec`（绝对毫秒戳 → 相对秒双读迁移） | 本仓私有 `WechatTokenBridgeCodec`（`{expireMs}\|{token}`）可退役 | **已落地**（2026-10-15，D1=A）：桥接改走 `MigrationTokenStoreCodec.Instance`（写侧单写相对秒、读侧双读旧值）；旧值按条目自然过期收敛后可切回 `DefaultTokenStoreCodec`——**不得提前切**（13 位 ms 会被误读为超长有效秒数） |
 | U-2 | `VersionedTokenStoreCodec` v2 版本化信封全落地（读取面无条件兼容 + 写入侧两阶段开关） | 写入侧可选采纳 | **写入面暂不启用（复审维持 D5=A）**（2026-10-15）：读取面升级即得；配置面**镜像官方两开关**（默认 `false`；开启未确认时本院 + 官方双闸 fail-fast）——原「配置不增开关」子句已修订为「镜像透传、默认关闭」；书面结论已备可转交上游（.docs 十八），触发条件＝需「显式过期 vs 缺失」区分的消费方 |
 | U-3 | Redis 刷新租约（`ITokenRefreshLease` / `RedisRefreshLease`） | 下游自建「跨进程刷新去重」可退役 | **已落地**（2026-10-15，D2/D3）：`AddWechatRedis` 注册即启用（TryAdd）；键前缀 `{KeyPrefix}:lease`；各线装配透传（§5.2/§5.3） |
 | U-4 | 官方 `ITokenStoreAppPurge` 按应用清库 | 退役清库不再只能逐键 | **已落地**（2026-10-15，D4）：本院两 store 实现 + Work 三层探测；**红线＝不得对未实现方调官方 `PurgeAppTokensAsync` 扩展**（回退忽略 `appKey`，§5.2） |
+| F-4 | 外部标识反查 `IAppLookupProvider.TryResolveAppKey`（单结果；U-5 多命中面为其扩展） | 下游「外部 id → appKey」反查面 | **无接线点**（2026-10-15）：本侧不消费反查面——回调路由自带 AppKey，`SuiteId → appKey` 走 `ConfiguredConfigs` 非物化扫描（多命中 + 告警已具备，`WechatAuthorizationCoordinator.ResolveAppKeys`）；A-2 迁移时随 `IAppRegistry` 一并评估 |
 | U-5 | `IMultiAppLookupProvider` 应用查找 SPI | 组件域应用查找面 | **无接线点**（2026-10-15）：本侧应用查找走 `WechatAppManager` 自有配置表；A-2 迁移时随 `IAppRegistry` 一并评估 |
 | U-6 | `TokenScopeKey.ToDelimitedKey` / `TryParseDelimited` | 官方键构建辅助可替换本院 | **不替换**（2026-10-15）：官方版仅 ≤3 段，本院 `{tokenType}:{appKey}:{scope}` 含 `Wechat.` 前缀族四段语义，替换即收窄 |
 | U-7 | `ITokenStoreCompareExchange`（Lua 原子 CAS）+ 用户维度 CAS 面 | 下游自建 CAS 可退役 | **零消费点**（2026-10-15）：本侧无 CAS 场景；用户维度面向用户令牌（本侧无该令牌类型），N/A |
 | U-8 | `AppInstantiated` 事件 +《AppManager 事件面迁移指引》 | A-2 迁移动机（`ConfigurationChanged` 遮蔽点） | **备案**（2026-10-15）：现读零订阅/零 `new`/零 `override`；随 A-2 三步门槛执行（§5.3） |
+| U-9 | 轻量多应用面（`AddMudHttpAppScopeOnly` 装配门面） | Ads 线自建 `IAdsAppContextSwitcher` 可退役 | **上游 ⏸ 未实施**（上游 §11.3-3）：门面未落地；上游落地后重新对账 |
+| U-10 | 机器可读契约清单（`contract-manifest.json` 生成器） | 人工对账清单可机读化 | **上游 ⏸ 未实施**（上游 §11.3-4）；上游落地后重新对账 |
+| U-11 | BC-30 自声明豁免失配显式诊断（分析器级） | 与 A-6 治理同面 | **上游 ⏸ 未实施**（上游 §11.3-5）；上游落地后重新对账 |
+| F-9 | `Mud.HttpUtils.Resilience` 元包解耦为可选包（下游须显式引包） | 缺程序集时运行期 `TypeLoadException`（动态加载场景） | **无需动作**（2026-10-15）：本仓装配链零引用 Resilience 程序集（6 处 `GetService<IResiliencePolicyResolver>()` 的类型在 core `Mud.HttpUtils.Abstractions`；零包引用 / 零 `AddMudHttpResilienceDecorator` 调用），上游矩阵 U-12 行「零引用 Resilience」实证 |
+| U-12 | F-9 元包解耦缺程序集预警（装配链启动期探测） | 与 F-9 行配套（本仓零引用属低风险） | **上游 ⏸ 未实施**（上游 §11.3-6）；上游落地后重新对账 |
+| U-13 | pack.ps1 版本递增强制校验 | 打包流程治理（同版本重打包污染缓存） | **上游 ✅ 已落地**；本侧同款风险已由 §8「同版本重打包不失效缓存」手工流程处置，无代码动作 |
+| U-14 | 下游能力反哺评估（Retirement / OwnedResourceTracker） | 本仓 `WechatAppContextRetirement`（宽限退役）/ `WechatOwnedResourceTracker`（逆序回收）或可组件化 | **上游 ⏸ 未实施**（评估报告待回写，上游 §11.3-7）；上游落地后重新对账 |
 | C-1~C-7 | 飞书侧约束（级联清 store / codec 双读 / 键构建等） | 不适用本仓 | 仅备案；勿按飞书形态改本仓键与 codec |
 
 ## 6 契约守卫（`Tests/**/ContractGuards/`）

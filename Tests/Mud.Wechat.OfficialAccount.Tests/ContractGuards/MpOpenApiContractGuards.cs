@@ -98,6 +98,7 @@ public class MpOpenApiContractGuards
             .GetCustomAttribute<JsonPropertyNameAttribute>()!.Name.Should().Be("appsecret");
 
         // 旧拆接口：过渡保留（二进制兼容）+ 语义不变（无 [Token]）+ 已 Obsolete + 仍声明原路由。
+#pragma warning disable CS0618 // 类型或成员已过时：守卫故意引用 A-7 弃用接口以钉死过渡契约（4.0 移除前形态不得漂移）
         typeof(IMpOpenApiTokenFreeService).GetCustomAttribute<ObsoleteAttribute>().Should().NotBeNull(
             "A-7 裁决：拆接口走 Obsolete 一版，Mud.Wechat 4.0 移除");
         typeof(IMpOpenApiTokenFreeService).GetCustomAttribute<TokenAttribute>().Should().BeNull(
@@ -108,12 +109,14 @@ public class MpOpenApiContractGuards
         legacy.Should().NotBeNull("旧拆接口成员保留一个版本（二进制兼容）");
         (legacy.GetCustomAttribute<PostAttribute>() as HttpMethodAttribute)!.RequestUri
             .Should().Be("/cgi-bin/clear_quota/v2", "旧拆接口路由不变（宿主按类型注入的解析路径不变）");
+#pragma warning restore CS0618
     }
 
     /// <summary>契约守卫 OA3：注册形态——双接口同注册组（一条 AddOpenApiWebApiHttpClient 装载两个客户端）。</summary>
     [Fact]
     public void OpenApiInterfaces_ShouldShareRegistryGroup()
     {
+#pragma warning disable CS0618 // 类型或成员已过时：同上述守卫——故意引用 A-7 弃用接口以钉死「双接口同注册组」过渡契约
         foreach (var iface in new[] { typeof(IMpOpenApiService), typeof(IMpOpenApiTokenFreeService) })
         {
             var api = iface.GetCustomAttribute<HttpClientApiAttribute>();
@@ -122,6 +125,7 @@ public class MpOpenApiContractGuards
                 $"{iface.Name} 必须挂 OpenApi 注册组（同注册组由同一条生成注册入口装载）");
             api.TokenManage.Should().Be(nameof(IMpAppManager));
         }
+#pragma warning restore CS0618
 
         Enum.GetNames(typeof(MpModule)).Should().Contain("OpenApi");
         typeof(MpServiceBuilder).GetMethod("AddOpenApiApi").Should().NotBeNull();

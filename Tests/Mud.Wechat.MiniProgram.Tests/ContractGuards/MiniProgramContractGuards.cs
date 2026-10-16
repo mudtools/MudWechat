@@ -155,6 +155,7 @@ public class MiniProgramContractGuards
             "方法级 Disabled 覆盖接口级 [Token]：不取令牌、不注入、不参与令牌恢复");
 
         // 旧拆接口：过渡保留（二进制兼容）+ 语义不变（无 [Token]）+ 已 Obsolete + 仍声明原路由。
+#pragma warning disable CS0618 // 类型或成员已过时：守卫故意引用 A-7 弃用接口以钉死过渡契约（4.0 移除前形态不得漂移）
         typeof(IWxaCode2SessionService).GetCustomAttribute<ObsoleteAttribute>().Should().NotBeNull(
             "A-7 裁决：拆接口走 Obsolete 一版，Mud.Wechat 4.0 移除");
         typeof(IWxaCode2SessionService).GetCustomAttributes(false)
@@ -167,6 +168,7 @@ public class MiniProgramContractGuards
         legacy.GetCustomAttributes(false)
             .Select(static a => a.GetType().GetProperty("RequestUri")?.GetValue(a) as string)
             .Should().Contain("/sns/jscode2session", "旧拆接口路由不变（宿主按类型注入的解析路径不变）");
+#pragma warning restore CS0618
     }
 
     /// <summary>MP-X3：<c>[Token].Name</c> 恒为官方契约的 <c>access_token</c>。</summary>
@@ -202,7 +204,9 @@ public class MiniProgramContractGuards
 
         // A-7 合并（2026-10-14 裁决）过渡保留：旧拆接口 [Obsolete] 仍声明原路由（二进制兼容），
         // 4.0 移除后本断言同步删除。去重后的合计计数不受影响（CollectAttributeRoutes 走 Distinct）。
+#pragma warning disable CS0618 // 类型或成员已过时：同上述守卫——故意引用 A-7 弃用接口钉死原路由
         RoutesOf(asm, nameof(IWxaCode2SessionService)).Should().BeEquivalentTo(new[] { "/sns/jscode2session" });
+#pragma warning restore CS0618
 
         RoutesOf(asm, nameof(IWxaQrCodeLinkService)).Should().BeEquivalentTo(new[]
         {
@@ -591,7 +595,9 @@ public class MiniProgramContractGuards
 
         provider.GetRequiredService<IWxaAuthService>().Should().NotBeNull();
         // A-7 合并（2026-10-14 裁决）过渡保留：旧拆接口 [Obsolete] 但仍可解析（二进制兼容），4.0 移除后同步删除本行。
+#pragma warning disable CS0618 // 类型或成员已过时：同上述守卫——故意经弃用接口解析钉死「过渡期 DI 仍可解析」
         provider.GetRequiredService<IWxaCode2SessionService>().Should().NotBeNull();
+#pragma warning restore CS0618
         provider.GetRequiredService<IWxaQrCodeLinkService>().Should().NotBeNull();
         provider.GetRequiredService<IWxaSecurityService>().Should().NotBeNull();
         provider.GetRequiredService<IWxaDataAnalysisService>().Should().NotBeNull();

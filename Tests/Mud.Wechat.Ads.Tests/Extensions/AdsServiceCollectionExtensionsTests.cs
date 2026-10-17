@@ -60,7 +60,7 @@ public class AdsServiceCollectionExtensionsTests
                 {
                     AdsModule.Advertiser, AdsModule.Adgroups, AdsModule.Reports,
                     AdsModule.DynamicCreatives, AdsModule.Components, AdsModule.Images,
-                    AdsModule.Videos, AdsModule.AsyncTasks,
+                    AdsModule.Videos, AdsModule.AsyncTasks, AdsModule.SpEntrustment,
                 },
                 "新增 AdsModule 成员必须同批在本用例补该域接口的可解析断言");
 
@@ -72,6 +72,7 @@ public class AdsServiceCollectionExtensionsTests
         provider.GetRequiredService<IWechatAdsImageService>().Should().NotBeNull();
         provider.GetRequiredService<IWechatAdsVideoService>().Should().NotBeNull();
         provider.GetRequiredService<IWechatAdsAsyncTaskService>().Should().NotBeNull();
+        provider.GetRequiredService<IWechatAdsSpEntrustmentService>().Should().NotBeNull();
         // 素材两域的 multipart 上传通道随模块装配（实现随 Images/Videos 的 Add{域}Api 挂载）。
         provider.GetRequiredService<IWechatAdsImageUploadService>().Should().NotBeNull();
         provider.GetRequiredService<IWechatAdsVideoUploadService>().Should().NotBeNull();

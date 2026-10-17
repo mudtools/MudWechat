@@ -73,6 +73,8 @@ public class AdsServiceBuilder
             },
             // 异步任务域（2 端点）——纯声明式域。
             [AdsModule.AsyncTasks] = static s => s.AddAsyncTasksWebApiHttpClient(),
+            // 服务商受托域（2 端点）——纯声明式域（sp_entrustment/add|get）。
+            [AdsModule.SpEntrustment] = static s => s.AddSpEntrustmentWebApiHttpClient(),
         };
 
     /// <summary>注册全部已落地模块。</summary>
@@ -155,6 +157,10 @@ public class AdsServiceBuilder
     /// <summary>注册异步任务业务接口（<c>async_tasks</c> 域 2 端点）。</summary>
     /// <returns>建造器（链式）。</returns>
     public AdsServiceBuilder AddAsyncTasksApi() => AddModule(AdsModule.AsyncTasks);
+
+    /// <summary>注册服务商受托业务接口（<c>sp_entrustment</c> 域 2 端点：添加受托关系 + 查询受托状态）。</summary>
+    /// <returns>建造器（链式）。</returns>
+    public AdsServiceBuilder AddSpEntrustmentApi() => AddModule(AdsModule.SpEntrustment);
 
     private AdsServiceBuilder AddModule(AdsModule module)
     {

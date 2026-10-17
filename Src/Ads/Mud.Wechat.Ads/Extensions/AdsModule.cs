@@ -90,4 +90,10 @@ public enum AdsModule
     /// 官方文档 <see href="https://developers.e.qq.com/v3.0/docs/api/async_tasks/add"/>。
     /// </summary>
     AsyncTasks,
+
+    /// <summary>
+    /// 服务商授权（2 端点）：添加授权 + 查询授权（官方 <c>sp_entrustment/*</c>）。
+    /// 官方文档 <see href="https://developers.e.qq.com/v3.0/docs/api/sp_entrustment/add"/>。
+    /// </summary>
+    SpEntrustment,
 }

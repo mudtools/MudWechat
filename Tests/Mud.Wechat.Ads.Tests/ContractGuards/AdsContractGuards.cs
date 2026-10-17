@@ -1451,6 +1451,24 @@ public class AdsContractGuards
         }
     }
 
+    /// <summary>sp_entrustment 域路由表断言。</summary>
+    [Fact]
+    public void SpEntrustmentEndpoints_ShouldMatchOfficialRouteTable()
+    {
+        SpEntrustmentRoutes.Should().HaveCount(2, "官方 sp_entrustment/* 恰 2 个端点（add/get）");
+        typeof(IWechatAdsSpEntrustmentService)
+            .GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
+            .Should().HaveCount(2, "接口端点数与守卫路由表条目数必须一致");
+
+        foreach (var (iface, method, httpAttribute, route) in SpEntrustmentRoutes)
+        {
+            var target = iface.GetMethod(method, BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+            target.Should().NotBeNull($"{iface.Name}.{method} 必须存在");
+            var attr = target!.GetCustomAttribute(httpAttribute) as HttpMethodAttribute;
+            attr!.RequestUri.Should().Be(route, $"{iface.Name}.{method} 路由必须与官方契约逐字符一致");
+        }
+    }
+
     /// <summary>
     /// ADS-B2 / ADS-B5（新域受限面）：<c>user_token</c> 的逐页出现面 ——
     /// dynamic_creatives 的 3 支 POST 带、<c>get</c> 不带；components 仅 <c>add</c> 带
@@ -1633,6 +1651,15 @@ public class AdsContractGuards
             typeof(GetAttribute), "/v3.0/async_tasks/get"),
     };
 
+    /// <summary>sp_entrustment 域官方路由表（2 端点，2026-10-16 核验；add 为 POST、get 为 GET）。</summary>
+    private static readonly (Type Interface, string Method, Type HttpAttribute, string Route)[] SpEntrustmentRoutes =
+    {
+        (typeof(IWechatAdsSpEntrustmentService), nameof(IWechatAdsSpEntrustmentService.AddSpEntrustmentAsync),
+            typeof(PostAttribute), "/v3.0/sp_entrustment/add"),
+        (typeof(IWechatAdsSpEntrustmentService), nameof(IWechatAdsSpEntrustmentService.GetSpEntrustmentAsync),
+            typeof(GetAttribute), "/v3.0/sp_entrustment/get"),
+    };
+
     /// <summary>
     /// 官方 <c>daily_reports/get</c> 页 <c>level</c> 的 17 支可选值（逐字核验，写在接口 XML 上）。
     /// 三支集合<b>互不相同且差异双向</b> ⇒ 各自单列一支常量，不做公共枚举（见
@@ -1682,7 +1709,8 @@ public class AdsContractGuards
     private static (Type Interface, string Method, Type HttpAttribute, string Route)[] AdsGuardedRoutes()
         => AdvertiserRoutes.Concat(AdgroupsRoutes).Concat(ReportsRoutes)
             .Concat(DynamicCreativesRoutes).Concat(ComponentsRoutes)
-            .Concat(ImagesRoutes).Concat(VideosRoutes).Concat(AsyncTasksRoutes).ToArray();
+            .Concat(ImagesRoutes).Concat(VideosRoutes).Concat(AsyncTasksRoutes)
+            .Concat(SpEntrustmentRoutes).ToArray();
 
     /// <summary>路由契约的规范化键（接口 × 方法 × 动词 × 路由），供反射面与守卫表逐条对照。</summary>
     private static string Key(string iface, string method, string verb, string route)

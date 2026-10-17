@@ -1,12 +1,12 @@
 # Mud.Wechat.Pay.DataModels
 
-微信支付 **APIv3** SDK **数据模型包**——官方接口出入参与回调载荷模型（2188 个 `[HttpJsonSerializable]` 类型），独立交付以避免宿主引入不必要的运行时依赖。
+微信支付 **APIv3** SDK **数据模型包**——官方接口出入参与回调载荷模型（2339 个 `[HttpJsonSerializable]` 类型），独立交付以避免宿主引入不必要的运行时依赖。
 
 > 与**企业微信**线的 `Mud.Wechat.Work.DataModels`（其中 `Pay` / `PayTool` 子域是企微「企业支付」「收银台」，走 `access_token`）分属两条产品线；本包模型对应 `https://api.mch.weixin.qq.com` 的 APIv3 报文，无令牌概念。
 
 ## 内容
 
-- **域 DTO**（**84 个域目录** = 接口侧 82 个业务域 − `PartnerPapay`（服务商面单支，DTO 与 `Papay/` 同域共目录）+ `Common` + `Callback` + `MerchantMedia`（手工通道域，无 `[HttpClientApi]` 接口），共 **2188** 个 `[HttpJsonSerializable]` 类型，均标注 `SerializerClassName`；**下列每目录数字为序列化型数**，官方枚举常量集不进该计数、在括注里另计）：
+- **域 DTO**（**86 个域目录** = 接口侧 84 个业务域 − `PartnerPapay`（服务商面单支，DTO 与 `Papay/` 同域共目录）+ `Common` + `Callback` + `MerchantMedia`（手工通道域，无 `[HttpClientApi]` 接口），共 **2339** 个 `[HttpJsonSerializable]` 类型，均标注 `SerializerClassName`；**下列每目录数字为序列化型数**，官方枚举常量集不进该计数、在括注里另计）：
   - `Common/` 1 —— 响应基底 `WechatPayResponse`
   - `Transactions/` 27 —— 直连下单四族（JSAPI/小程序、Native、APP、H5）请求与应答（JSAPI 与 APP 共用 `PrepayIdResponse`；含 `JsapiAmountInfo` / `JsapiPayerInfo` / 商品明细 / 场景 / 门店 / 结算信息、`H5SceneInfo`+`H5Info`、`AppSubsidyInfo` 补贴族）、查单应答、关单请求、小程序调起支付五参数
   - `Refund/` 8、`Bill/` 1、`Certificates/` 3、`Transfer/` 15（7 原有 + P1-2-A 电子回单授权族增量 8）
@@ -40,6 +40,8 @@
   - `IndustryCoupon/` 3 —— 行业券（出行优惠券）切卡 token 申领：`coupon_list` 官方点号路径 ⇒ 子树独立成类型、落叶子名
   - `MarketingBank/` 3 —— 银行营销任务（包任务创建 / 查询）：**两支官方 Body 表为空** ⇒ 无请求类型，仅应答与其嵌套构件
   - `MarketingBankFavor/` 4 —— 银行代金券（多活动发券 + 按 `coupon_id` 查询）：`openid` / `coupon_id` 走 path ⇒ 请求类型只承载业务参数，不含定位键
+  - `MarketingMemberCardOpen/` **151** —— 旧版会员卡模板与用户卡管理（本批最大目录之一）：模板族 5（创建 / 列表 / 查询 / PATCH 修改 / DELETE 删除）+ 模板升级 1 + code 预存 1 + 用户卡族 8（查询 / PATCH 修改 / 作废 / 确认入会 / OpenID 导入 / 手机号导入 / 二维码创建 / code 解密）+ 关联小程序 1 + 设置管理页入口 1 + 激活码 1。**四支 204 无应答包体**（删除模板 / 升级模板 / 作废卡 code / 激活卡 code）⇒ 零 DTO；**响应侧 Code 字段遮蔽基类**（业务字段 `code` = 会员卡 code，与 `WechatPayResponse.Code` 冲突）⇒ 5 个响应类型加 `[new]` 显式声明隐藏意图。嵌套子树包括 `brand` / `date_information` / `balance_information` / `user_information_form` / `additional_statement` / `favor_*` / `bonus_information` / `custom_field_list[]` / `rights_info` 等，按「端点 + 请求/应答 + 路径段」机械拼装独立成类型。**两套并存契约**：本域 `/v3/marketing/membercard-open/*` 与品牌会员卡 `/v3/brand/partner/card-member/*` 是并存非替代关系
+  - `MarketingMemberCardActivity/` **58** —— 会员有礼活动（创建活动 + 列表查询 + 详情查询 + 终止活动）：全部路由落 `/v3/marketing/membercard-activity/activities`，终止支走 POST 动词段 `…/{activity_id}/terminate`。嵌套子树包括 `base_info` / `member_card_activity_info` / `benefit_info` / `available_time` / `use_condition` / `stock_info` 等，按端点分建独立类型
   - `BrandApplyment/` 10 —— 品牌入驻（提交请求 + 其 `subject_info` / `brand_basic_info` / `admin_info` / `trademark`（含两支 `*_trademark_registration_certificate`）四族构件 + 受理应答 + 撤销请求 + 状态应答。**四支路由两两共用应答**：两支受理（提交 / 撤销）同表 ⇒ 共用 `BrandApplymentAcceptResponse`，两支查询（按 `applyment_id` / 按 `out_request_no`）同表 ⇒ 共用 `BrandApplymentStateResponse`；**共用只发生在应答侧**，请求侧因必填口径不同一律分建。本域**两套编号并存**：`applyment_id`（官方受理号）与 `out_request_no`（商户业务号），撤销请求只认前者）
   - `BrandCardConfig/` 11 —— 品牌名片配置（查询 / 申请 / 撤销 / 预览 / 发布五支各一应答 + 申请请求的 `brand_mini_program_info` / `brand_customer_service` / `service_list[]` 三棵构件 + 撤销与发布各自请求）：**申请 → 预览 → 发布是两段式**，查询支回的是「当前生效配置」、预览支回的是「待发布草稿」⇒ 两应答分建（守卫 BCC-B3）
   - `BrandCardLink/` 9 —— 交易连接名片（列表 / 申请 / 状态 / 撤销 / 解绑五支）：列表应答的 `active_link_list[]` 独立成构件；**申请（6 行）与状态（8 行）两支应答不同形 ⇒ 各建一型**，撤销与解绑亦各建一型。分页口径是 `page_index` / `page_size`，与本批会员卡两支的 `offset` / `limit` **不同形**，不得互相套用

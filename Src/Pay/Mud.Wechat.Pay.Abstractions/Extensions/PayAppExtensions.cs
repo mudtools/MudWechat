@@ -182,10 +182,15 @@ public static class PayAppExtensions
             // 「No service for type ... has been registered」—— 已由 WechatPayTransportPipelineTests 锁定。
             services.TryAddSingleton<WechatPayAuthorizationHandler>();
 
+            // 应答验签 Handler：只在 2xx 且 Content-Type 含 json 的应答上验签（非 2xx / 非 JSON 放行，
+            // 见处理器类注释）。它经 IServiceProvider 可选解析刷新端口与日志器，故这里无需额外注册。
+            services.TryAddSingleton<WechatPayResponseVerificationHandler>();
+
             services.AddMudHttpClient(
                 WechatPayHttpClientNames.ClientName,
                 static client => client.BaseAddress = new Uri(WechatPayHttpClientNames.BaseAddress))
-                .AddHttpMessageHandler<WechatPayAuthorizationHandler>();
+                .AddHttpMessageHandler<WechatPayAuthorizationHandler>()
+                .AddHttpMessageHandler<WechatPayResponseVerificationHandler>();
         }
 
         services.TryAddSingleton<IWechatPayHttpClient, WechatPayHttpClient>();

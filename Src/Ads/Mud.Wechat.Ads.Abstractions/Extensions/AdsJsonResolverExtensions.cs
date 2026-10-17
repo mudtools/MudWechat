@@ -15,6 +15,7 @@ using Mud.Wechat.Ads.DataModels.DynamicCreatives;
 using Mud.Wechat.Ads.DataModels.Images;
 using Mud.Wechat.Ads.DataModels.OAuth;
 using Mud.Wechat.Ads.DataModels.Reports;
+using Mud.Wechat.Ads.DataModels.SpEntrustment;
 using Mud.Wechat.Ads.DataModels.Videos;
 
 namespace Mud.Wechat.Ads.Abstractions.Extensions;
@@ -65,7 +66,8 @@ internal static class AdsJsonResolverExtensions
             ComponentsJsonContext.Default,
             ImagesJsonContext.Default,
             VideosJsonContext.Default,
-            AsyncTasksJsonContext.Default);
+            AsyncTasksJsonContext.Default,
+            SpEntrustmentJsonContext.Default);
 
         services.AddMudHttpClientJsonContext(resolver);
     }

@@ -174,10 +174,11 @@ public class WechatPayTransactionsContractGuards
             .Where(static t => !typeof(JsonSerializerContext).IsAssignableFrom(t))
             .ToList();
 
-        domainTypes.Should().HaveCount(27,
+        domainTypes.Should().HaveCount(38,
             "基础交易域 DTO：JSAPI 族 8（请求/金额/支付者/商品详情/单品/场景/门店/结算） + 下单共用应答 1（prepay_id）" +
             " + Native 族 2（请求/应答） + APP 族 4（请求/补贴/明细/方案） + H5 族 4（请求/场景/H5信息/应答）" +
-            " + 查单 6（应答/支付者/金额/场景/优惠/优惠单品） + 关单 1 + 小程序调起签名 1");
+            " + 查单 6（应答/支付者/金额/场景/优惠/优惠单品） + 关单 1 + 小程序调起签名 1" +
+            " + 付款码支付 7（请求/详情/单品/场景/应答/支付者/金额） + 订单曝光 2（请求/应答） + 撤销订单 2（请求/应答）");
 
         foreach (var type in domainTypes)
         {

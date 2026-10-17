@@ -10,7 +10,7 @@ using Mud.Wechat.OpenPlatform.DataModels.MiniProgramManage;
 namespace Mud.Wechat.OpenPlatform;
 
 /// <summary>
-/// 微信开放平台「代小程序管理 · 名称与搜索」子域 SDK（<b>5 端点</b>：修改名字 / 查名称审核状态 / 改可被搜索 / 查可被搜索 / 数据预拉取配置）。
+/// 微信开放平台「代小程序管理 · 名称与搜索」子域 SDK（<b>6 端点</b>：修改名字 / 查名称审核状态 / 改可被搜索 / 查可被搜索 / 数据预拉取配置 / 微信认证名称检测）。
 /// </summary>
 /// <remarks>
 /// <para><b>令牌面</b>：全域以 <c>authorizer_access_token</c> 承载，Query 参数名 <c>access_token</c>（2026-10-17 逐页核验）。</para>
@@ -64,5 +64,21 @@ public interface IWechatOpenPlatformMpBasicInfoService
     [Post("/wxa/fetchdatasetting")]
     Task<OpenPlatformMpFetchDataSettingResponse> FetchDataSettingAsync(
         [Body] OpenPlatformMpFetchDataSettingRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 微信认证名称检测（<c>checkwxverifynickname</c>，恒 POST）。
+    /// 官方文档：<see href="https://developers.weixin.qq.com/doc/oplatform/openApi/OpenApiDoc/miniprogram-management/basic-info-management/checkNickName.html"/>。
+    /// </summary>
+    /// <param name="request">名称检测请求（<c>nick_name</c> 必填）。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
+    /// <returns>是否命中关键字策略及说明描述。</returns>
+    /// <remarks>
+    /// <para>官方约束：该接口只允许通过 API 创建的小程序使用；令牌面为 <c>authorizer_access_token</c>，权限集 id 3 或 31。</para>
+    /// <para>官方错误码：<c>-1</c>（系统繁忙）/ <c>40001</c>（access_token 无效）/ <c>41033</c>（非 API 创建小程序）/ <c>53010~53022</c>（名称规则违规）。</para>
+    /// </remarks>
+    [Post("/cgi-bin/wxverify/checkwxverifynickname")]
+    Task<OpenPlatformMpCheckNicknameResponse> CheckWxVerifyNicknameAsync(
+        [Body] OpenPlatformMpCheckNicknameRequest request,
         CancellationToken cancellationToken = default);
 }

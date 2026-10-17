@@ -14,7 +14,8 @@ namespace Mud.Wechat.OpenPlatform;
 /// <summary>
 /// 微信开放平台（第三方平台）「代公众号网页授权」域 SDK
 /// （<c>sns/oauth2/component/access_token</c> 与 <c>sns/oauth2/component/refresh_token</c>——
-/// 第三方平台<b>代公众号</b>完成网页授权换码 / 续期的两个端点）。
+/// 第三方平台<b>代公众号</b>完成网页授权换码 / 续期的两个端点；
+/// <c>sns/component/jscode2session</c> —— 第三方平台<b>代小程序</b>登录凭证校验，1 端点）。
 /// </summary>
 /// <remarks>
 /// <para>
@@ -77,6 +78,28 @@ public interface IWechatOpenPlatformSnsService
         [Query("appid")] string appId,
         [Query("refresh_token")] string refreshToken,
         [Query("grant_type")] string grantType = "refresh_token",
+        [Query("component_appid")] string? componentAppId = null,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 第三方平台代小程序登录凭证校验（<c>GET /sns/component/jscode2session</c>）。
+    /// </summary>
+    /// <param name="appId">小程序的 AppID（官方 <c>appid</c>，必填）。</param>
+    /// <param name="jsCode"><c>wx.login</c> 获取的 code（官方 <c>js_code</c>，必填；一次性）。</param>
+    /// <param name="grantType">授权类型（官方 <c>grant_type</c>，固定 <c>authorization_code</c>；SDK 级默认值）。</param>
+    /// <param name="componentAppId">第三方平台 appid（官方 <c>component_appid</c>，必填）。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
+    /// <returns>会话密钥、openid、unionid（若小程序已绑定到开放平台账号下会返回）。</returns>
+    /// <remarks>
+    /// <para>官方文档：<see href="https://developers.weixin.qq.com/doc/oplatform/openApi/OpenApiDoc/miniprogram-management/login/thirdpartyCode2Session.html"/></para>
+    /// <para>官方约束：该接口仅支持服务商获取已有授权关系的小程序信息；若小程序尚未授权给第三方平台，则报 <c>61003</c>。</para>
+    /// <para>官方错误码：<c>40029</c>（code 无效）/ <c>41021</c>（missing component_access_token）/ <c>45011</c>（频率超限）/ <c>61003</c>（未授权）。</para>
+    /// </remarks>
+    [Get("/sns/component/jscode2session")]
+    Task<OpenPlatformSnsCode2SessionResponse> JsCode2SessionAsync(
+        [Query("appid")] string appId,
+        [Query("js_code")] string jsCode,
+        [Query("grant_type")] string grantType = "authorization_code",
         [Query("component_appid")] string? componentAppId = null,
         CancellationToken cancellationToken = default);
 }

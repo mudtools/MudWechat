@@ -11,6 +11,7 @@ namespace Mud.Wechat.OpenPlatform.DataModels.Sns;
     PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase,
     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     WriteIndented = false)]
+[JsonSerializable(typeof(global::Mud.Wechat.OpenPlatform.DataModels.Sns.OpenPlatformSnsCode2SessionResponse))]
 [JsonSerializable(typeof(global::Mud.Wechat.OpenPlatform.DataModels.Sns.OpenPlatformSnsComponentTokenResponse))]
 internal partial class SnsJsonContext : JsonSerializerContext
 {

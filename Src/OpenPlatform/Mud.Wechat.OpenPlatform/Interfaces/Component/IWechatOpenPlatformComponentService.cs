@@ -275,6 +275,41 @@ public interface IWechatOpenPlatformComponentService
     Task<OpenPlatformResponse> SetAuthorizerOptionAsync(
         [Body] OpenPlatformSetAuthorizerOptionRequest request,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 快速创建试用小程序（<c>fastregisterbetaweapp</c>）。
+    /// </summary>
+    /// <param name="request">注册请求（<c>name</c> / <c>openid</c>，均官方必填）。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
+    /// <returns>唯一标识符与授权 URL（注册为异步任务，结果经 <c>notify_third_fastregisterbetaapp</c> 事件推送）。</returns>
+    /// <remarks>
+    /// <para>官方文档：<see href="https://developers.weixin.qq.com/doc/oplatform/openApi/OpenApiDoc/register-management/fast-regist-beta/registerBetaMiniprogram.html"/></para>
+    /// <para>官方约束：令牌面为 <c>component_access_token</c>；名称强制后缀"的体验小程序"且需关键字检查；注册为异步流程。</para>
+    /// <para>官方错误码：<c>-1</c>（系统繁忙）/ <c>40001</c>（access_token 无效）/ <c>750001~750004</c>（授权/身份异常）。</para>
+    /// </remarks>
+    [Post("/wxa/component/fastregisterbetaweapp")]
+    Task<OpenPlatformFastRegisterBetaWeappResponse> FastRegisterBetaWeappAsync(
+        [Body] OpenPlatformFastRegisterBetaWeappRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 快速注册个人小程序（<c>fastregisterpersonalweapp</c>，双 action：create / query）。
+    /// </summary>
+    /// <param name="request">注册请求（<c>idname</c> / <c>wxuser</c> 必填；<c>component_phone</c> / <c>new_version</c> 可选）。</param>
+    /// <param name="action">官方 <c>action</c> query 参数，固定 <c>create</c>（SDK 级默认值，无需显式传入）。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
+    /// <returns>任务 ID、授权 URL 与状态（注册为异步流程，结果经 <c>notify_third_fasteregister</c> 事件推送）。</returns>
+    /// <remarks>
+    /// <para>官方文档：<see href="https://developers.weixin.qq.com/doc/oplatform/openApi/OpenApiDoc/register-management/fast-registration-ind/fastRegisterPersonalMp.html"/></para>
+    /// <para>官方约束：令牌面为 <c>component_access_token</c>；频率限制 5 次/分钟、100 次/天；<c>new_version</c> 必须填 true。</para>
+    /// <para><b>查询形态</b>：同路由以 <c>action=query</c> + 请求体 <c>{ "taskid": "..." }</c> 查询任务状态（本接口未提供专用查询方法，宿主可直接复用此端点并传 <c>action = "query"</c>）。</para>
+    /// <para>官方错误码：<c>-1</c>（系统繁忙）/ <c>40001</c>（access_token 无效）/ <c>1001~1008</c>（主体/管理员违规或超限）。</para>
+    /// </remarks>
+    [Post("/wxa/component/fastregisterpersonalweapp")]
+    Task<OpenPlatformFastRegisterPersonalResponse> FastRegisterPersonalWeappAsync(
+        [Body] OpenPlatformFastRegisterPersonalRequest request,
+        [Query("action")] string action = "create",
+        CancellationToken cancellationToken = default);
 }
 
 /// <summary>

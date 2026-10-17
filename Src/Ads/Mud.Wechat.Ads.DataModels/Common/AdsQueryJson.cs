@@ -229,6 +229,81 @@ public static class AdsQueryJson
         });
     }
 
+    /// <summary>
+    /// 编码 <c>tag_spec</c>（官方 <c>struct</c>，定向标签查询条件，<c>targeting_tags/get</c> 专用）。
+    /// </summary>
+    /// <param name="tagSpec">条件对象；<c>null</c> 属性按「不写该键」处理。</param>
+    /// <returns>JSON 对象字符串，如 <c>{"interest_spec":{"query_spec":{}}}</c>。</returns>
+    /// <remarks>
+    /// 官方 curl（2026-10-17 核验）：<c>-d 'tag_spec={"interest_spec":{"query_spec":{}}}'</c> ——
+    /// 与 <see cref="DateRange"/> 同形态：<b>一个</b>键、值是<b>整个</b> JSON 对象。
+    /// 键名与 <c>TargetingTags</c> 三支 DTO 的 <c>[JsonPropertyName]</c> 同源（守卫 ADS-B2「字段名单源」恰等断言）。
+    /// </remarks>
+    public static string TagSpec(global::Mud.Wechat.Ads.DataModels.TargetingTags.AdsTagSpec? tagSpec)
+    {
+        return Write(writer =>
+        {
+            writer.WriteStartObject();
+            if (tagSpec?.BehaviorSpec is not null)
+            {
+                writer.WritePropertyName("behavior_spec");
+                WriteQuerySpec(writer, tagSpec.BehaviorSpec);
+            }
+
+            if (tagSpec?.InterestSpec is not null)
+            {
+                writer.WritePropertyName("interest_spec");
+                WriteQuerySpec(writer, tagSpec.InterestSpec);
+            }
+
+            writer.WriteEndObject();
+        });
+    }
+
+    /// <summary>写 <c>behavior_spec</c> / <c>interest_spec</c> 的共用展开形态（两支同构，见 <c>AdsTagSpec</c> remarks）。</summary>
+    private static void WriteQuerySpec(
+        Utf8JsonWriter writer,
+        global::Mud.Wechat.Ads.DataModels.TargetingTags.AdsTagQuerySpec spec)
+    {
+        writer.WriteStartObject();
+        if (spec.QueryMode is not null)
+            writer.WriteString("query_mode", spec.QueryMode);
+        if (spec.QuerySpec is not null)
+        {
+            writer.WritePropertyName("query_spec");
+            writer.WriteStartObject();
+            if (spec.QuerySpec.Query is not null)
+                writer.WriteString("query", spec.QuerySpec.Query);
+            WriteStringArray(writer, "query_list", spec.QuerySpec.QueryList);
+            if (spec.QuerySpec.MaxResultNumber is not null)
+                writer.WriteNumber("max_result_number", spec.QuerySpec.MaxResultNumber.Value);
+            WriteStringArray(writer, "excluding_targeting_tags", spec.QuerySpec.ExcludingTargetingTags);
+            writer.WriteEndObject();
+        }
+
+        if (spec.AdvancedRecommendType is not null)
+            writer.WriteString("advanced_recommend_type", spec.AdvancedRecommendType);
+
+        writer.WriteEndObject();
+    }
+
+    /// <summary>写官方 <c>string[]</c> 键（属性为 <c>null</c> 时写空数组，与 <c>fields</c> 的官方示例形态一致）。</summary>
+    private static void WriteStringArray(Utf8JsonWriter writer, string name, List<string>? values)
+    {
+        writer.WritePropertyName(name);
+        writer.WriteStartArray();
+        if (values is not null)
+        {
+            foreach (var value in values)
+            {
+                if (value is not null)
+                    writer.WriteStringValue(value);
+            }
+        }
+
+        writer.WriteEndArray();
+    }
+
     /// <summary>写出紧凑 JSON 字符串（转义由 <see cref="Utf8JsonWriter"/> 负责，不做手工拼接）。</summary>
     private static string Write(Action<Utf8JsonWriter> writeBody)
     {

@@ -11,16 +11,16 @@ namespace Mud.Wechat.OfficialAccount.DataModels.OneCode;
     PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower,
     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     WriteIndented = false)]
+[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.OneCode.MpApplyCodeQueryRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.OneCode.MpApplyCodeRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.OneCode.MpApplyCodeResponse))]
-[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.OneCode.MpApplyCodeQueryRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.OneCode.MpCodeActiveQueryRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.OneCode.MpCodeActiveRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.OneCode.MpCodeApplyQueryResponse))]
-[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.OneCode.MpCodeRange))]
 [JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.OneCode.MpCodeDownloadRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.OneCode.MpCodeDownloadResponse))]
-[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.OneCode.MpCodeActiveRequest))]
-[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.OneCode.MpCodeActiveQueryRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.OneCode.MpCodeInfoResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.OneCode.MpCodeRange))]
 [JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.OneCode.MpTicketToCodeRequest))]
 internal partial class OneCodeJsonContext : JsonSerializerContext
 {

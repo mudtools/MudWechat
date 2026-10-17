@@ -11,13 +11,13 @@ namespace Mud.Wechat.OfficialAccount.DataModels.Comment;
     PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase,
     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     WriteIndented = false)]
-[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.Comment.MpCommentOpenRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.Comment.MpComment))]
 [JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.Comment.MpCommentListRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.Comment.MpCommentListResponse))]
-[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.Comment.MpComment))]
-[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.Comment.MpCommentReplyInfo))]
+[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.Comment.MpCommentOpenRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.Comment.MpCommentRefRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.Comment.MpCommentReplyAddRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.Comment.MpCommentReplyInfo))]
 internal partial class CommentJsonContext : JsonSerializerContext
 {
 }

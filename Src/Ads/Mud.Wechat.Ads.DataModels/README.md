@@ -1,22 +1,31 @@
 # Mud.Wechat.Ads.DataModels
 
-腾讯广告 **Marketing API v3.0** 产品线的**官方 DTO 包**（**在建**：已随三域端点落地 5 个源生成 JSON 上下文）。
+腾讯广告 **Marketing API v3.0** 产品线的**官方 DTO 包**（已随 13 业务域 + OAuth 端点落地 15 个源生成 JSON 上下文）。
 
 ## 已承载
 
 | 上下文 | 域 | 内容 |
 | --- | --- | --- |
-| `AdvertiserJsonContext` | 客户账号 | `advertiser/get`（含 `individual_qualification` / `websites[]` / `operators[]` 子树）+ `update` + `update_daily_budget` |
+| `AdvertiserJsonContext` | 客户账号 | `advertiser/get`（含 `individual_qualification` / `websites[]` / `operators[]` 子树）+ `add` + `update` + `update_daily_budget` |
 | `AdgroupsJsonContext` | 营销单元 | `adgroups/get` 应答全树 + `add` / `update` 请求 + 四支批量端点的 `spec[]` 与逐条结果元素 |
 | `ReportsJsonContext` | 报表 | daily / hourly 共用 `AdsReportListData`、`async_reports/add` 请求与应答、`async_reports/get` 的三层链路（`result.data.file_info_list`） |
+| `DynamicCreativesJsonContext` | 组件化创意 | `dynamic_creatives/*` 四端点；组件 `value` 以 `Dictionary<string, JsonElement>` 开放承载 |
+| `ComponentsJsonContext` | 创意组件 | `components/*` 与 `component_detail/get`（44 种组件键集、`ad_context` 复合参数） |
+| `ImagesJsonContext` / `VideosJsonContext` | 素材 | 各自 `get` / 元数据族应答 + multipart `add` 的应答 DTO |
+| `AsyncTasksJsonContext` | 异步任务 | `async_tasks/get` / `add` 请求应答 |
+| `CustomAudiencesJsonContext` | 人群包 | `custom_audiences/*` 四端点 + `custom_audience_files/add` 应答 |
+| `FundsJsonContext` | 资金账户 | `funds` / `fund_transfer` / `fund_statements_detailed` / `realtime_cost` 四族（level 三值页内局部、不带 `REPORT_LEVEL_` 前缀） |
+| `QualificationsJsonContext` | 客户资质 | `qualifications/get` / `add` / `update` |
+| `EstimationJsonContext` | 出价预估 | `estimation/get` 请求（17 字段）与应答；`targeting` / `scene_spec` 等子树**复用** Adgroups 类型（守卫断言属性类型同一，防分叉） |
+| `TargetingTagsJsonContext` | 定向标签 | `targeting_tags/get` 应答树 + `tag_spec` 子树（`AdsTagSpec` / `AdsTagQuerySpec` / `AdsTagQueryCondition`） |
 | `OAuthJsonContext` | OAuth | `oauth/token` 与 `oauth/refresh_token` 的请求 / 应答（`authorizer_info` 一层子字段） |
 | `CommonJsonContext` | 跨域 | 信封基类 `AdsResponse`（判错门面属性显式 `[JsonIgnore]`）、`AdsPageInfo`、`AdsBatchResultItem`、复合查询参数 struct（`AdsDateRange` / `AdsOrderBy` / `AdsFiltering`） |
 
-`AdsQueryJson`（`Common/`）是复合查询参数的**唯一**编码器：官方线格式要求 `date_range` / `fields` / `group_by` / `order_by` / `filtering` 各以单个紧凑 JSON 字面量上送，编码器写出的键名与 struct 声明的 `[JsonPropertyName]` 由守卫 ADS-B2 断言**双向恰等**（编码器不得有 struct 之外的键）。
+`AdsQueryJson`（`Common/`）是复合查询参数的**唯一**编码器：官方线格式要求 `date_range` / `fields` / `group_by` / `order_by` / `filtering` / `tag_spec` 各以单个紧凑 JSON 字面量上送，编码器写出的键名与 struct 声明的 `[JsonPropertyName]` 由守卫 ADS-B2 断言**双向恰等**（编码器不得有 struct 之外的键）。
 
 三个易踩的形态事实（各有用例或守卫钉住，勿「顺手统一」）：
 
-- **每个公共属性都必须显式 `[JsonPropertyName]`（或 `[JsonIgnore]`）**，不靠命名策略兜底。当前五个上下文都取 `SnakeCaseLower`，漏标看似无伤；但策略是脚手架产出、逐上下文独立，一旦某上下文漂移或 DTO 换目录，「是否合官方契约」就变成「文件放在哪」的偶然事实，且**两种错位都不报错**（上送被官方静默忽略、应答属性恒 `null`）。守卫 ADS-B2 因此做「覆盖面 + 形状 + 关键名」三面判定。
+- **每个公共属性都必须显式 `[JsonPropertyName]`（或 `[JsonIgnore]`）**，不靠命名策略兜底。当前十五个上下文都取 `SnakeCaseLower`，漏标看似无伤；但策略是脚手架产出、逐上下文独立，一旦某上下文漂移或 DTO 换目录，「是否合官方契约」就变成「文件放在哪」的偶然事实，且**两种错位都不报错**（上送被官方静默忽略、应答属性恒 `null`）。守卫 ADS-B2 因此做「覆盖面 + 形状 + 关键名」三面判定。
 - **字典键不受命名策略影响**：报表行是 `Dictionary<string, JsonElement>`，而 `DictionaryKeyPolicy` 未设 ⇒ 官方返回的 `view_count` 等键**原名入袋**（`AdsReportJsonTests` 用驼峰键样例反证：若策略命中键名即刻变红）。
 - **开放泛型 `AdsResponse<TData>` 刻意不登记**（标了会产 `SYSLIB1030` 死登记）⇒ 每支端点必须声明**闭合**应答类型，不能靠开放泛型取 `JsonTypeInfo`。
 

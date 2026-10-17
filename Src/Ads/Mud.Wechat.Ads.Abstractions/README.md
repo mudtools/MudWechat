@@ -11,7 +11,7 @@
 - **授权状态** `Auth/AdsAuthorizationState` + `IWechatAdsAuthorizationStore`：落 `IWechatTokenStore`（否则重启即失联），**不复用**公用层令牌桥接编码（`WechatTokenStoreBridge` 经官方 `MigrationTokenStoreCodec` 的单令牌槽位形态，装不下 refresh_token），故本线自有编码与自有键命名空间。有效期字段是**剩余秒数**，须本地换算为「取得时刻 + 剩余秒」再判定。
 - **多应用基座** `Auth/AdsAppManager`（`IAdsAppManager`）与 `IAdsAppContextSwitcher`；`Transport/AdsHttpClients` 定义两条命名客户端（业务客户端 + `ads-oauth`，后者**不挂**凭据 Handler），`Transport/AdsAuthorizationHandler` 是凭据注入的唯一咽喉点。
 - **异常** `Exceptions/WechatAdsException`（承载 `message` / `message_cn` 双语支，构造期剥离 URL 的 query 与 userinfo）。
-- **解析器合并** `Extensions/AdsJsonResolverExtensions`：把 `.DataModels` 的五个域 `JsonContext` 合并进组件解析器（ADS-B6 逐生成文件断言覆盖面）。
+- **解析器合并** `Extensions/AdsJsonResolverExtensions`：把 `.DataModels` 的全部十五个 `JsonContext`（13 业务域 + OAuth + Common）合并进组件解析器（ADS-B6 逐生成文件断言覆盖面）。
 - **响应信封**在 `.DataModels`：`AdsResponse` 为 `{code, message, message_cn, data}` 两级信封，**不是** `errcode/errmsg`；实现公用层 `IWechatApiResponse`，判错走 `WechatApiResponseGuard` 同一咽喉点。
 
 

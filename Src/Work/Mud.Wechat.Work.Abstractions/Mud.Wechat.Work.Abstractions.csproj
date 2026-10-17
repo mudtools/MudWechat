@@ -43,6 +43,8 @@
 		<InternalsVisibleTo Include="Mud.Wechat.Work.Callback" />
 		<InternalsVisibleTo Include="Mud.Wechat.Work.Abstractions.Tests" />
 		<InternalsVisibleTo Include="Mud.Wechat.Work.Tests" />
+		<!-- AI 底座测试需要构造回调信封（AppKey 为 internal set —— 生产上由接收器写入）。 -->
+		<InternalsVisibleTo Include="Mud.Wechat.Work.AI.Tests" />
 		<InternalsVisibleTo Include="DynamicProxyGenAssembly2" />
 	</ItemGroup>
 

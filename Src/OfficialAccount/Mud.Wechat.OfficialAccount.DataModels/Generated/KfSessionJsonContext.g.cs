@@ -11,12 +11,12 @@ namespace Mud.Wechat.OfficialAccount.DataModels.KfSession;
     PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase,
     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     WriteIndented = false)]
-[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.KfSession.MpKfSessionRequest))]
-[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.KfSession.MpKfSession))]
-[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.KfSession.MpGetKfSessionResponse))]
 [JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.KfSession.MpGetKfSessionListResponse))]
-[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.KfSession.MpWaitCase))]
+[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.KfSession.MpGetKfSessionResponse))]
 [JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.KfSession.MpGetWaitCaseResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.KfSession.MpKfSession))]
+[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.KfSession.MpKfSessionRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.KfSession.MpWaitCase))]
 internal partial class KfSessionJsonContext : JsonSerializerContext
 {
 }

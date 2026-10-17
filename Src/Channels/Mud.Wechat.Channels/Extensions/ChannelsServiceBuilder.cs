@@ -17,7 +17,7 @@ namespace Mud.Wechat.Channels.Extensions;
 /// <c>Add{RegistryGroupName}WebApiHttpClient()</c>（无签入源文件）。
 /// </para>
 /// <para>
-/// <b>增量落位</b>：设计文档 v1 §6 P1/P2 分阶段补齐 27 个业务域。已实现域（Basic 等）在
+/// <b>增量落位</b>：设计文档 v1 §6 P1/P2 分阶段补齐业务域（原规划 27 域，缺失 API 域完善方案新增 Promoter、Talent 域后为 29 域）。已实现域（Basic 等）在
 /// <see cref="ChannelsModule"/> 有枚举成员且本类有对应 <c>Add{域}Api()</c> 方法；未实现域的
 /// <c>Add{域}Api()</c> 方法随该域接口落地时同批加入（守卫 <c>ChannelsScaffoldContractGuards</c>
 /// 要求接口平铺无 IsAbstract，且逐域路由表由 <c>ChannelsRouteContractGuards</c> 锁定）。
@@ -59,7 +59,7 @@ public class ChannelsServiceBuilder
             // 售后管理：27 端点（/channels/ec/aftersale/*，售后单 / 纠纷单 / 保障单）。
             [ChannelsModule.Aftersale] = static s => s.AddAftersaleWebApiHttpClient(),
 
-            // 物流发货：28 端点（/channels/ec/merchant/address|freight* 9 + /channels/ec/logistics/ewaybill/* 16 +
+            // 物流发货：29 端点（/channels/ec/merchant/address|freight* 9 + /channels/ec/logistics/ewaybill/* 17 +
             // /channels/ec/order/delivery* 3，地址 / 运费模板 / 电子面单 / 发货）。
             [ChannelsModule.Logistics] = static s => s.AddLogisticsWebApiHttpClient(),
 
@@ -114,8 +114,14 @@ public class ChannelsServiceBuilder
             // 区域仓库：11 端点（仓库 CRUD / 覆盖区域 / 库存 / 地址排序 / 地址行政编码）。
             [ChannelsModule.Warehouse] = static s => s.AddWarehouseWebApiHttpClient(),
 
-            // 优选联盟：11 端点（带货者 4 + 商品操作 7）。
+            // 优选联盟：41 端点（商家侧带货者 4 + 商品操作 7 + 机构资金 3 + 机构商品 6 + 商家合作 3 + 佣金单 2 + 橱窗与授权 6 + 商品订阅 3 + 达人佣金计划 2 + 帮卖供货 2 + 线索订单 2 + 直播保护 1）。
             [ChannelsModule.League] = static s => s.AddLeagueWebApiHttpClient(),
+
+            // 联盟带货机构推客：41 端点（推客账号与分佣 7 + 机构优惠券 8 + 短视频 4 + 直播 13 + 文章 2 + 商品与商品分佣 7）。
+            [ChannelsModule.Promoter] = static s => s.AddPromoterWebApiHttpClient(),
+
+            // 带货助手（达人）：4 端点（佣金单 2 + 达人橱窗商品 2；橱窗面与 Window 域为两套官方契约，不合并）。
+            [ChannelsModule.Talent] = static s => s.AddTalentWebApiHttpClient(),
 
             // 代发与供货：16 端点（供货商关系 8 + 代发单 5 + 供货单 3）。
             [ChannelsModule.Delivery] = static s => s.AddDeliveryWebApiHttpClient(),
@@ -164,7 +170,7 @@ public class ChannelsServiceBuilder
     public ChannelsServiceBuilder AddAftersaleApi() => AddModule(ChannelsModule.Aftersale);
 
     /// <summary>
-    /// 注册物流发货接口（28 端点：地址 5 / 运费模板 4 / 电子面单 16 / 订单发货 3，
+    /// 注册物流发货接口（29 端点：地址 5 / 运费模板 4 / 电子面单 17 / 订单发货 3，
     /// <c>/channels/ec/merchant/address|freight*</c> + <c>/channels/ec/logistics/ewaybill/*</c> + <c>/channels/ec/order/delivery*</c>）。
     /// </summary>
     /// <returns>注册器（链式）。</returns>
@@ -254,9 +260,17 @@ public class ChannelsServiceBuilder
     /// <returns>注册器（链式）。</returns>
     public ChannelsServiceBuilder AddWarehouseApi() => AddModule(ChannelsModule.Warehouse);
 
-    /// <summary>注册优选联盟接口（11 端点：带货者 4 + 商品操作 7，<c>/channels/ec/league/*</c>）。</summary>
+    /// <summary>注册优选联盟接口（41 端点：商家侧带货者 4 + 商品操作 7 + 机构资金 3 + 机构商品 6 + 商家合作 3 + 佣金单 2 + 橱窗与授权 6 + 商品订阅 3 + 达人佣金计划 2 + 帮卖供货 2 + 线索订单 2 + 直播保护 1，<c>/channels/ec/league/*</c>）。</summary>
     /// <returns>注册器（链式）。</returns>
     public ChannelsServiceBuilder AddLeagueApi() => AddModule(ChannelsModule.League);
+
+    /// <summary>注册联盟带货机构推客接口（41 端点：推客账号与分佣 7 + 机构优惠券 8 + 短视频 4 + 直播 13 + 文章 2 + 商品与商品分佣 7，<c>/channels/ec/promoter/*</c>，机构自身令牌且官方不支持第三方平台代调用）。</summary>
+    /// <returns>注册器（链式）。</returns>
+    public ChannelsServiceBuilder AddPromoterApi() => AddModule(ChannelsModule.Promoter);
+
+    /// <summary>注册带货助手（达人）接口（4 端点：佣金单 2 + 达人橱窗商品 2，<c>/channels/ec/talent/*</c>，凭据为带货助手 access_token 或服务商代调用的 authorizer_access_token，权限集 189/190）。</summary>
+    /// <returns>注册器（链式）。</returns>
+    public ChannelsServiceBuilder AddTalentApi() => AddModule(ChannelsModule.Talent);
 
     /// <summary>注册代发与供货接口（16 端点：供货商关系 8 / 代发单 5 / 供货单 3，<c>/channels/ec/supplier/*</c> 等）。</summary>
     /// <returns>注册器（链式）。</returns>

@@ -4,6 +4,16 @@
     <Project Path="Demos/Mud.Wechat.Work.ContactDemo/Mud.Wechat.Work.ContactDemo.csproj" />
   </Folder>
   <Folder Name="/src/" />
+  <!-- AI 能力域（2026-10 新增，设计见 .docs/AI/MudWechat-AI功能解决方案-v1.md）：
+       层 1 = 跨七线共享（AI.Abstractions / AI.Agent），层 2 = 企微线专属（Work.AI*）。
+       布局纪律：五包一律平铺 Src/AI/<Project>/（三段形态）——不得建于 Src/AI/{线}/ 子目录
+       （AB-G6 布局不变式 + verify-build/audit-config-keys 的 -Depth 2 枚举，见方案 §3.2.3）。 -->
+  <Folder Name="/src/AI/">
+    <Project Path="Src/AI/Mud.Wechat.AI.Abstractions/Mud.Wechat.AI.Abstractions.csproj" />
+    <Project Path="Src/AI/Mud.Wechat.AI.Agent/Mud.Wechat.AI.Agent.csproj" />
+    <Project Path="Src/AI/Mud.Wechat.Work.AI/Mud.Wechat.Work.AI.csproj" />
+    <Project Path="Src/AI/Mud.Wechat.Work.AI.Tools/Mud.Wechat.Work.AI.Tools.csproj" />
+  </Folder>
   <!-- 腾讯广告 Marketing API v3.0 产品线（2026-10 新增，在建）：3 源工程。 -->
   <Folder Name="/src/Ads/">
     <Project Path="Src/Ads/Mud.Wechat.Ads.Abstractions/Mud.Wechat.Ads.Abstractions.csproj" />
@@ -71,5 +81,9 @@
     <Project Path="Tests/Mud.Wechat.Channels.Tests/Mud.Wechat.Channels.Tests.csproj" />
     <Project Path="Tests/Mud.Wechat.Channels.Callback.Tests/Mud.Wechat.Channels.Callback.Tests.csproj" />
     <Project Path="Tests/Mud.Wechat.Ads.Tests/Mud.Wechat.Ads.Tests.csproj" />
+    <!-- AI 能力域测试工程：层 1 共享层 / 层 2 企微 Agent / 工具面。 -->
+    <Project Path="Tests/Mud.Wechat.AI.Tests/Mud.Wechat.AI.Tests.csproj" />
+    <Project Path="Tests/Mud.Wechat.Work.AI.Tests/Mud.Wechat.Work.AI.Tests.csproj" />
+    <Project Path="Tests/Mud.Wechat.Work.AI.Tools.Tests/Mud.Wechat.Work.AI.Tools.Tests.csproj" />
   </Folder>
 </Solution>

@@ -36,11 +36,18 @@
 		<WarningsAsErrors>$(WarningsAsErrors);IL2026;IL2046;IL2050;IL2057;IL2067;IL2070;IL2072;IL2075;IL2080;IL3050</WarningsAsErrors>
 	</PropertyGroup>
 
+	<!-- AI 域版本对齐（2026-10-17，AI 功能解决方案 v1.4 S0）：Mud.AI.* 1.0.1（nuget.org，钉版消费）
+	     传递要求 M.E.* / System.Text.Json 10.0.12 + Microsoft.Extensions.AI.Abstractions 10.10.1
+	     + Microsoft.Agents.AI 1.25.0 —— 直钉版本低于传递要求即触发 NU1603（verify-build 步骤 1 断言 0）。
+	     ⚠ 对齐范围刻意<b>只到 net8.0+ 组</b>：M.E.* 10.x 官方支持面为 net8.0+（net6.0 上 NuGet 会发
+	     「doesn't support net6.0」告警），故 AI 域三包以受控 TFM 例外钉 net8.0;net10.0（AB-G8 锁定），
+	     低 TFM 组（net6.0 / netstandard2.0）维持 8.0.x 不变 —— 避免为一条新线把 30 个既有工程的低 TFM 构建
+	     整体拖到「官方未测试」的组合上。 -->
 	<ItemGroup Condition="'$(TargetFramework)' == 'net10.0' or '$(TargetFramework)' == 'net9.0' or '$(TargetFramework)' == 'net8.0'">
-		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.9" />
-		<PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="10.0.9" />
-		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.9" />
-		<PackageReference Include="Microsoft.Extensions.Options" Version="10.0.9" />
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.12" />
+		<PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="10.0.12" />
+		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.12" />
+		<PackageReference Include="Microsoft.Extensions.Options" Version="10.0.12" />
 	</ItemGroup>
 	<ItemGroup Condition="'$(TargetFramework)' == 'net6.0'or '$(TargetFramework)' == 'netstandard2.0'">
 		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.2" />

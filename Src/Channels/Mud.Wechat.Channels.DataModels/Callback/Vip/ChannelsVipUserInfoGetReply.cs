@@ -15,7 +15,7 @@ namespace Mud.Wechat.Channels.DataModels.Callback;
 /// <remarks>
 /// <para>
 /// 官方（notify/wxa_callback/channels_ec_vip_user_info_get）：用户尝试关联会员时推送，
-/// 商家<b>同步应答</b>是否为会员——<see cref="Info.IsVip"/> 为 true 时本次关联<b>静默完成</b>
+/// 商家<b>同步应答</b>是否为会员——<c>IsVip</c> 为 true 时本次关联<b>静默完成</b>
 /// （无需用户跳转小程序确认），并回传商家自定义会员身份与会员 id。
 /// </para>
 /// </remarks>

@@ -11,21 +11,21 @@ namespace Mud.Wechat.OfficialAccount.DataModels.Template;
     PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower,
     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     WriteIndented = false)]
-[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.Template.MpSendTemplateMessageRequest))]
-[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.Template.MpTemplateMiniProgram))]
-[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.Template.MpTemplateDataValue))]
-[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.Template.MpSendTemplateMessageResponse))]
-[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.Template.MpSetIndustryRequest))]
-[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.Template.MpGetIndustryResponse))]
-[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.Template.MpIndustry))]
 [JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.Template.MpAddTemplateRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.Template.MpAddTemplateResponse))]
-[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.Template.MpGetAllPrivateTemplateResponse))]
-[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.Template.MpPrivateTemplate))]
+[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.Template.MpBlockedTmplMsgInfo))]
 [JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.Template.MpDeleteTemplateRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.Template.MpGetAllPrivateTemplateResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.Template.MpGetIndustryResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.Template.MpIndustry))]
+[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.Template.MpPrivateTemplate))]
 [JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.Template.MpQueryBlockTmplMsgRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.Template.MpQueryBlockTmplMsgResponse))]
-[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.Template.MpBlockedTmplMsgInfo))]
+[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.Template.MpSendTemplateMessageRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.Template.MpSendTemplateMessageResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.Template.MpSetIndustryRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.Template.MpTemplateDataValue))]
+[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.Template.MpTemplateMiniProgram))]
 internal partial class TemplateJsonContext : JsonSerializerContext
 {
 }

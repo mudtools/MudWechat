@@ -92,8 +92,59 @@ public enum AdsModule
     AsyncTasks,
 
     /// <summary>
-    /// 服务商授权（2 端点）：添加授权 + 查询授权（官方 <c>sp_entrustment/*</c>）。
-    /// 官方文档 <see href="https://developers.e.qq.com/v3.0/docs/api/sp_entrustment/add"/>。
+    /// 人群管理（5 端点）：创建 / 查询 / 修改客户人群（<c>custom_audiences/*</c>）+ 人群数据文件
+    /// 查询（<c>custom_audience_files/get</c>，声明式）与上传（<c>custom_audience_files/add</c> 为
+    /// multipart/form-data，走手写通道 <c>IWechatAdsCustomAudienceFileUploadService</c>，随本模块装配）。
+    /// 官方文档 <see href="https://developers.e.qq.com/v3.0/docs/api/custom_audiences/add"/>。
     /// </summary>
-    SpEntrustment,
+    /// <remarks>
+    /// 一族一模块的口径同 <see cref="Reports"/>：audiences 与 files 两支资源族权限同一
+    /// （<c>audience_management,ads_management,user_actions</c>）、链路语义一体（创建人群 → 上传号码包 → 查询）。
+    /// 官方另有 <c>custom_audiences/delete</c>，本 SDK 暂未消费。
+    /// </remarks>
+    CustomAudiences,
+
+    /// <summary>
+    /// 资金账户（4 端点，跨 <c>funds</c> / <c>fund_transfer</c> / <c>fund_statements_detailed</c>
+    /// / <c>realtime_cost</c> 四支官方资源族）：查询资金信息 + 发起转账 + 查询资金流水明细 + 获取账号实时消耗。
+    /// 官方文档 <see href="https://developers.e.qq.com/v3.0/docs/api/funds/get"/>。
+    /// </summary>
+    /// <remarks>
+    /// 一族一模块的口径同 <see cref="Reports"/>：四族权限同一（<c>account_management</c>）、链路语义一体
+    /// （查资金 → 转账 → 拉流水 → 查实时消耗）⇒ 拆成四个模块只会得到四个空注册面。<b>逐页差异留在端点面</b>
+    /// （<c>fund_type</c> 转账页 9 支、流水页 36 支互不相同；<c>realtime_cost</c> 页 <c>level</c> 三值
+    /// 无 <c>REPORT_LEVEL_</c> 前缀，由守卫 ADS-B2 与接口 XML 锁定）。
+    /// </remarks>
+    Funds,
+
+    /// <summary>
+    /// 客户资质（3 端点）：获取 / 创建 / 更新客户资质（官方 <c>qualifications/*</c>）。
+    /// 官方文档 <see href="https://developers.e.qq.com/v3.0/docs/api/qualifications/get"/>。
+    /// </summary>
+    /// <remarks>
+    /// 三页权限同一 <c>account_management</c>、<c>account_id</c> 口径「不支持代理商 id」三页一致。
+    /// 官方另有 <c>qualifications/delete</c>，本 SDK 暂未消费（同 <see cref="CustomAudiences"/> 处置）。
+    /// </remarks>
+    Qualifications,
+
+    /// <summary>
+    /// 广告预估（1 端点）：预估覆盖人数（官方 <c>estimation/get</c>）。
+    /// 官方文档 <see href="https://developers.e.qq.com/v3.0/docs/api/estimation/get"/>。
+    /// </summary>
+    /// <remarks>
+    /// 权限 <c>ads_management</c>（与 <see cref="Funds"/> / <see cref="Qualifications"/> 的
+    /// <c>account_management</c> 不同权限族 ⇒ 独立成域）。请求体的定向/场景/载体子树复用
+    /// <c>Adgroups</c> 域类型（2026-10-17 逐字段比对同构），应答为单结构体的区间与建议值。
+    /// </remarks>
+    Estimation,
+
+    /// <summary>
+    /// 定向标签（1 端点）：获取定向标签（官方 <c>targeting_tags/get</c>）。
+    /// 官方文档 <see href="https://developers.e.qq.com/v3.0/docs/api/targeting_tags/get"/>。
+    /// </summary>
+    /// <remarks>
+    /// 权限 <c>ads_management</c>。本域是投放定向取值（<c>regions</c> / <c>business_districts</c> /
+    /// 设备品牌型号等）的供给侧，应答 <c>id</c> 回填 <c>adgroups</c> 定向参数。
+    /// </remarks>
+    TargetingTags,
 }

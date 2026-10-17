@@ -11,20 +11,20 @@ namespace Mud.Wechat.OfficialAccount.DataModels.FreePublish;
     PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower,
     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     WriteIndented = false)]
-[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.FreePublish.MpFreePublishSubmitRequest))]
-[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.FreePublish.MpFreePublishSubmitResponse))]
-[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.FreePublish.MpFreePublishGetRequest))]
-[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.FreePublish.MpFreePublishGetResponse))]
 [JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.FreePublish.MpFreePublishArticleDetail))]
 [JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.FreePublish.MpFreePublishArticleUrlItem))]
-[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.FreePublish.MpFreePublishDeleteRequest))]
-[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.FreePublish.MpFreePublishGetArticleRequest))]
-[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.FreePublish.MpFreePublishNewsItem))]
-[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.FreePublish.MpFreePublishGetArticleResponse))]
 [JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.FreePublish.MpFreePublishBatchGetRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.FreePublish.MpFreePublishBatchGetResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.FreePublish.MpFreePublishDeleteRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.FreePublish.MpFreePublishGetArticleRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.FreePublish.MpFreePublishGetArticleResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.FreePublish.MpFreePublishGetRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.FreePublish.MpFreePublishGetResponse))]
 [JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.FreePublish.MpFreePublishListItem))]
 [JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.FreePublish.MpFreePublishNewsContent))]
+[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.FreePublish.MpFreePublishNewsItem))]
+[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.FreePublish.MpFreePublishSubmitRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.FreePublish.MpFreePublishSubmitResponse))]
 internal partial class FreePublishJsonContext : JsonSerializerContext
 {
 }

@@ -1,0 +1,24 @@
+// -----------------------------------------------------------------------
+//  作者：Mud Studio  版权所有 (c) Mud Studio 2026
+//  Mud.Wechat 项目的版权、商标、专利和其他相关权利均受相应法律法规的保护。
+//  本项目主要遵循 MIT 许可证进行分发和使用。许可证位于源代码树根目录中的 LICENSE-MIT 文件。
+//  不得利用本项目从事危害国家安全、扰乱社会秩序、侵犯他人合法权益等法律法规禁止的活动！任何基于本项目开发而产生的一切法律纠纷和责任，我们不承担任何责任！
+// -----------------------------------------------------------------------
+namespace Mud.Wechat.Channels.DataModels.Talent;
+
+/// <summary>获取橱窗商品列表请求（官方 <c>talent/window/product/list/get</c> 请求体）。</summary>
+[HttpJsonSerializable(SerializerClassName = "Talent")]
+public class ChannelsTalentGetWindowProductListRequest
+{
+    /// <summary>获取或设置单页商品数（官方 <c>page_size</c>，必填，不超过 500，超限报 10200003）。</summary>
+    [JsonPropertyName("page_size")]
+    public int PageSize { get; set; }
+
+    /// <summary>获取或设置页面下标（官方 <c>page_index</c>，从 1 开始，不可与 <c>last_buffer</c> 同时填写，约束 page_size × page_index ≤ 10000）。</summary>
+    [JsonPropertyName("page_index")]
+    public int? PageIndex { get; set; }
+
+    /// <summary>获取或设置顺序翻页上下文（官方 <c>last_buffer</c>，由上次请求返回，不可与 <c>page_index</c> 同时填写，无数量限制）。</summary>
+    [JsonPropertyName("last_buffer")]
+    public string? LastBuffer { get; set; }
+}

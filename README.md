@@ -284,7 +284,7 @@ app.UseWechatPayCallback();
 
 ```csharp
 builder.Services.AddChannelsApp(builder.Configuration);
-builder.Services.AddWechatChannelsApi(b => b.AddAllApis());  // 27 域 309 端点
+builder.Services.AddWechatChannelsApi(b => b.AddAllApis());  // 29 个业务域 394 端点
 builder.Services.AddWechatChannelsCallback(/* ... */).AddHandler<T>(...);
 app.UseWechatChannelsWebhook();
 ```

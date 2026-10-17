@@ -1,0 +1,136 @@
+using System.Text.RegularExpressions;
+using FluentAssertions;
+using Xunit;
+
+namespace Mud.Wechat.AI.Tests.ContractGuards;
+
+/// <summary>
+/// AI 域契约守卫（权威描述，改动契约面须同批更新本文件）。
+/// </summary>
+/// <remarks>
+/// <para>AI-G1：<b>业务域零 AI 依赖</b> —— 任何非 AI 源工程不得引用 <c>Mud.AI.*</c> 或 <c>Mud.Wechat.*.AI</c>
+/// （AI 是业务域的<b>消费者</b>，反向依赖会让「关掉 AI」变成不可能）。</para>
+/// <para>AI-G2：<b>层 1 跨线中立</b> —— <c>Mud.Wechat.AI.Abstractions</c> / <c>Mud.Wechat.AI.Agent</c> 不得引用任何
+/// 线专属包（七线 + Core 叶层除外）。</para>
+/// <para>AI-G3：<b>布局三段</b> —— AI 工程必须位于 <c>Src/AI/&lt;Project&gt;/</c>：四段形态会被
+/// <c>verify-build.ps1</c> 步骤 2 与 <c>audit-config-keys.ps1</c> 的 <c>-Depth 2</c> 枚举静默漏掉（AOT 假绿）。</para>
+/// <para>AI-G4：<b><c>Mud.AI.*</c> 单一版本 + 钉版</b> —— 全仓版本集合大小 = 1 且不含浮动区间
+/// （上游纪律：产品侧显式钉版、禁浮动；NU1603 在门禁升级为错误）。</para>
+/// </remarks>
+public class WechatAiContractGuards
+{
+    private static readonly string[] LineSpecificPrefixes =
+    {
+        "Mud.Wechat.Work",
+        "Mud.Wechat.OfficialAccount",
+        "Mud.Wechat.MiniProgram",
+        "Mud.Wechat.Pay",
+        "Mud.Wechat.OpenPlatform",
+        "Mud.Wechat.Channels",
+        "Mud.Wechat.Ads",
+    };
+
+    /// <summary>AI-G1：业务域不得引用 AI 域（两个方向：Mud.AI 包 + WeChat AI 包）。</summary>
+    [Fact]
+    public void BusinessProjects_ShouldNotDependOnAiDomain()
+    {
+        foreach (var csproj in EnumerateSourceProjects().Where(p => !IsAiProject(p)))
+        {
+            var content = File.ReadAllText(csproj);
+            var name = Path.GetFileName(csproj);
+
+            content.Should().NotContain("Mud.AI.", $"{name} 属业务域，不得引用 Mud.AI.*（AI 是业务的消费者，反向依赖会让关掉 AI 变成不可能）");
+            content.Should().NotContain("Mud.Wechat.AI.", $"{name} 属业务域，不得引用 Mud.Wechat.AI.*");
+        }
+    }
+
+    /// <summary>AI-G2：层 1（跨七线共享）不得引用任何线专属包。</summary>
+    [Fact]
+    public void SharedAiLayer_ShouldNotReferenceAnyProductLine()
+    {
+        foreach (var name in new[] { "Mud.Wechat.AI.Abstractions", "Mud.Wechat.AI.Agent" })
+        {
+            var csproj = EnumerateSourceProjects().Single(p => Path.GetFileName(p) == $"{name}.csproj");
+            var content = File.ReadAllText(csproj);
+
+            foreach (var prefix in LineSpecificPrefixes)
+            {
+                // 「Mud.Wechat.AI.Agent」自身以 Mud.Wechat.AI 开头，故按「线前缀 + 非 A」判定，避免自匹配。
+                var forbidden = new Regex($"{Regex.Escape(prefix)}(?![A-Za-z])", RegexOptions.CultureInvariant);
+                forbidden.IsMatch(content).Should().BeFalse(
+                    $"{name} 是层 1 跨线共享包，不得引用线专属包 {prefix}*（企微实现须下沉 Mud.Wechat.Work.AI）");
+            }
+        }
+    }
+
+    /// <summary>AI-G3：AI 工程必须平铺三段（<c>Src/AI/&lt;Project&gt;/&lt;Project&gt;.csproj</c>）。</summary>
+    [Fact]
+    public void AiProjects_ShouldStayTwoLevelInsideSrcAi()
+    {
+        var aiProjects = EnumerateSourceProjects().Where(IsAiProject).ToList();
+
+        aiProjects.Should().HaveCountGreaterThanOrEqualTo(3, "AI 域当前至少三包（AI.Abstractions / AI.Agent / Work.AI）");
+
+        foreach (var csproj in aiProjects)
+        {
+            var relative = Path.GetRelativePath(GetSolutionRoot(), csproj).Replace('\\', '/');
+            var segments = relative.Split('/');
+
+            segments.Should().HaveCount(4,
+                $"{relative} 必须为 Src/AI/<Project>/<Project>.csproj 三段形态；更深嵌套会被 -Depth 2 枚举静默漏掉（AOT 假绿）");
+            segments[0].Should().Be("Src");
+            segments[1].Should().Be("AI");
+            segments[2].Should().Be(Path.GetFileNameWithoutExtension(csproj),
+                $"{relative} 的目录名必须与工程同名（门禁按工程名定位）");
+        }
+    }
+
+    /// <summary>AI-G4：<c>Mud.AI.*</c> 全仓单一版本且为钉版（禁浮动）。</summary>
+    [Fact]
+    public void MudAiPackages_ShouldBePinnedToSingleVersion()
+    {
+        var pattern = new Regex(
+            "PackageReference\\s+Include=\"(?<id>Mud\\.AI\\.[A-Za-z.]+)\"\\s+Version=\"(?<version>[^\"]+)\"",
+            RegexOptions.CultureInvariant);
+
+        var references = EnumerateSourceProjects()
+            .SelectMany(path => pattern.Matches(File.ReadAllText(path)).Select(m => new
+            {
+                Project = Path.GetFileName(path),
+                Id = m.Groups["id"].Value,
+                Version = m.Groups["version"].Value,
+            }))
+            .ToList();
+
+        references.Should().NotBeEmpty("AI 域三包必须显式钉版消费 Mud.AI.*（当前期望 Mud.AI.Agent 1.0.1）");
+
+        var versions = references.Select(r => r.Version).Distinct().ToList();
+        versions.Should().HaveCount(1,
+            "Mud.AI.* 三包必须同版本（Agent 经 NuGet 传递其 Abstractions 依赖，混版会产生程序集重定向歧义）");
+
+        foreach (var reference in references)
+        {
+            Regex.IsMatch(reference.Version, @"^\d+\.\d+\.\d+$").Should().BeTrue(
+                $"{reference.Project} 的 {reference.Id} 必须是精确版本（禁 * / 区间 / 浮动），实际值: {reference.Version}");
+        }
+    }
+
+    private static bool IsAiProject(string csprojPath)
+        => csprojPath.Replace('\\', '/').Contains("/Src/AI/", StringComparison.Ordinal);
+
+    private static IEnumerable<string> EnumerateSourceProjects()
+        => Directory.EnumerateFiles(Path.Combine(GetSolutionRoot(), "Src"), "*.csproj", SearchOption.AllDirectories)
+            .Where(static p => !p.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.Ordinal)
+                               && !p.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.Ordinal));
+
+    private static string GetSolutionRoot()
+    {
+        var dir = new DirectoryInfo(AppContext.BaseDirectory);
+        while (dir != null && !File.Exists(Path.Combine(dir.FullName, "Mud.Wechat.slnx")))
+        {
+            dir = dir.Parent;
+        }
+
+        return dir?.FullName ?? throw new InvalidOperationException("未找到 Mud.Wechat.slnx");
+    }
+}

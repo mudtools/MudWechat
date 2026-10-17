@@ -10,10 +10,11 @@ using Mud.Wechat.Ads.DataModels.Advertiser;
 namespace Mud.Wechat.Ads;
 
 /// <summary>
-/// 腾讯广告（Marketing API v3.0）「客户账号」域 SDK（<c>advertiser</c>，3 端点）。
+/// 腾讯广告（Marketing API v3.0）「客户账号」域 SDK（<c>advertiser</c>，4 端点）。
 /// </summary>
 /// <remarks>
-/// <para><b>官方文档</b>（逐页核验 2026-10-10）：
+/// <para><b>官方文档</b>（<c>advertiser/add</c> 逐页核验 2026-10-17，其余三页逐页核验 2026-10-10）：
+/// 创建客户账号 <see href="https://developers.e.qq.com/v3.0/docs/api/advertiser/add"/>、
 /// 查询客户信息 <see href="https://developers.e.qq.com/v3.0/docs/api/advertiser/get"/>、
 /// 更新客户信息 <see href="https://developers.e.qq.com/v3.0/docs/api/advertiser/update"/>、
 /// 批量修改账户日预算 <see href="https://developers.e.qq.com/v3.0/docs/api/advertiser/update_daily_budget"/>。
@@ -77,8 +78,8 @@ public interface IWechatAdsAdvertiserService
     /// <paramref name="pageSize"/> 并返回 <c>page_info</c>；<c>PAGINATION_MODE_CURSOR</c> 用
     /// <paramref name="cursor"/> + <paramref name="pageSize"/> 并返回 <c>cursor_page_info</c>，
     /// 其 <c>has_more</c> 官方原文「返回 false 表示已无下一页，此时务必停止拉取」。</para>
-    /// <para><b>本域端点计数</b>：官方清单 <c>advertiser/*</c> 恰有
-    /// <c>get</c> / <c>update</c> / <c>update_daily_budget</c> 三个端点，本接口三端点全覆盖（守卫 ADS-B2）。</para>
+    /// <para><b>本域端点计数</b>：官方清单 <c>advertiser/*</c> 有 <c>add</c> / <c>get</c> /
+    /// <c>update</c> / <c>update_daily_budget</c> 四个端点，本接口四端点全覆盖（守卫 ADS-B2）。</para>
     /// </remarks>
     [Get("/v3.0/advertiser/get")]
     Task<AdsAdvertiserGetResponse> GetAsync(
@@ -141,5 +142,31 @@ public interface IWechatAdsAdvertiserService
     Task<AdsAdvertiserUpdateDailyBudgetResponse> UpdateDailyBudgetAsync(
         AdsAdvertiserUpdateDailyBudgetRequest request,
         [Query("user_token")] string? userToken = null,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 创建客户账号。
+    /// 官方文档：<see href="https://developers.e.qq.com/v3.0/docs/api/advertiser/add"/>。
+    /// </summary>
+    /// <param name="request">请求体（表内硬必填仅 <c>system_industry_id</c> / <c>introduction_url</c>，
+    /// 其余按 <c>registration_type</c> 企业/个人两套条件必填口径，见 <see cref="AdsAdvertiserAddRequest"/>）。</param>
+    /// <param name="requestId">请求唯一 id（请求头 <c>X-Request-Id</c>，选填）。官方原文：「资源请求的唯一 id，
+    /// 该请求头参数用于保证接口重试的幂等性…如果在创建时重复传入相同的请求参数和 X-Request-Id，
+    /// 那么会返回该 X-Request-Id 对应的唯一的投放资源」⇒ <b>本域唯一有官方幂等面的写端点</b>
+    /// （<c>update</c> / <c>update_daily_budget</c> 页均无该请求头表），网络重试必须复用同一值。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/> 取消操作令牌对象。</param>
+    /// <returns>创建结果（官方 <c>data</c> 只回新建的 <c>account_id</c>），见 <see cref="AdsAdvertiserAddResponse"/>。</returns>
+    /// <remarks>
+    /// <para><b>官方契约</b>：<b>POST</b> <c>/v3.0/advertiser/add</c>，<c>Content-Type: application/json</c>。</para>
+    /// <para><b>本页没有「特定请求参数」表</b>（2026-10-17 核验）⇒ 与 <c>update</c> /
+    /// <c>update_daily_budget</c> 两页不同，本端点<b>不带</b> <c>user_token</c>。</para>
+    /// <para><b>企业/个人两套必填条件本地不可判</b>（企业必填企业名称/执照号/资质图/所在地，
+    /// 个人仅用身份证明结构）：官方以「【企业账号】必填」标注而非独立必填表 ⇒ SDK 不拦截，
+    /// 错配由应答 <c>code</c> 表达。</para>
+    /// </remarks>
+    [Post("/v3.0/advertiser/add")]
+    Task<AdsAdvertiserAddResponse> AddAsync(
+        AdsAdvertiserAddRequest request,
+        [Header("X-Request-Id")] string? requestId = null,
         CancellationToken cancellationToken = default);
 }

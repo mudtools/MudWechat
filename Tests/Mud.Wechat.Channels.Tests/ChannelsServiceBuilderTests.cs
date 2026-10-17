@@ -15,7 +15,7 @@ namespace Mud.Wechat.Channels.Tests;
 /// </summary>
 /// <remarks>
 /// <para>
-/// 小店线按设计方案 v1 P1/P2 分阶段交付 27 个业务域，<see cref="ChannelsModule"/> 枚举**先于**实现全量声明，
+/// 小店线按设计方案 v1 P1/P2 分阶段交付业务域（原规划 27 域，缺失 API 域完善方案新增 Promoter 域与 Talent 域后为 29 域），<see cref="ChannelsModule"/> 枚举**先于**实现全量声明，
 /// 故「枚举成员存在但域未落地」是现实路径 —— <c>AddModules</c> 必须对该形态 fail-fast，
 /// 不得静默跳过（静默吞会让误装配在首次业务调用时才暴露，且单装未落地域时
 /// <c>Build()</c> 的「至少需要添加一个模块」错误信息误导排障方向）。
@@ -29,7 +29,7 @@ public class ChannelsServiceBuilderTests
     /// <remarks>
     /// <see cref="ChannelsServiceBuilder.AddModule(ChannelsModule)"/> 对「枚举成员存在但无注册器」的
     /// fail-fast 分支是<b>增量交付期防御</b>：新增枚举值而未同步注册器时必须显式报错而非静默吞。
-    /// 本断言反向锁定「27 个枚举成员当前全部可注册」——未来新增枚举值而漏注册器时，
+    /// 本断言反向锁定「29 个枚举成员当前全部可注册」——未来新增枚举值而漏注册器时，
     /// 下一行断言会以 fail-fast 异常形式暴露（错误消息带 <c>尚未落地</c> 指引）。
     /// </remarks>
     [Fact]

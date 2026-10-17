@@ -153,11 +153,12 @@ public class MpDataCubeContractGuards
                         && !typeof(JsonSerializerContext).IsAssignableFrom(t))
             .ToList();
 
-        const int expectedCount = 45;
+        const int expectedCount = 55;
         domainTypes.Should().HaveCount(expectedCount,
             "数据统计域契约面类型数漂移须先核对官方文档再同批调整本守卫" +
             "（共用请求 1 + 用户 4 + 旧图文 8 + 新图文 12 + 消息 4 + 接口 2 + 场景/跳出辅助 3 +" +
-            " B2a 卡券统计 11：请求 3（帐号级 / 券级 / 会员卡明细）+ 数据项 4（帐号级 / 券级 / 会员卡 / 明细）+ 响应 4，帐号级请求为会员卡 info 复用）");
+            " B2a 卡券统计 11：请求 3（帐号级 / 券级 / 会员卡明细）+ 数据项 4（帐号级 / 券级 / 会员卡 / 明细）+ 响应 4，帐号级请求为会员卡 info 复用 +" +
+            " 流量主广告分析 10：base_resp 1 + adpos 3（item/summary/response）+ cps 3（item/summary/response）+ settlement 3（slotrevenue/item/response））");
 
         foreach (var type in domainTypes)
         {
@@ -194,6 +195,41 @@ public class MpDataCubeContractGuards
         MpErrorCodes.DataCubeDateFormatError.Should().Be(61500);
         MpErrorCodes.DataCubeDateRangeError.Should().Be(61501);
         MpErrorCodes.DataCubeDataNotReady.Should().Be(61503);
+    }
+
+    /// <summary>流量主广告数据分析路由表（3 端点，全 GET /publisher/stat，action 以带默认值的 Query 参数固定）。</summary>
+    private static readonly (string Method, string Action, Type Response)[] PublisherRoutes =
+    {
+        (nameof(IMpDataCubeService.GetPublisherAdSlotGeneralAsync), "publisher_adpos_general", typeof(MpPublisherAdSlotResponse)),
+        (nameof(IMpDataCubeService.GetPublisherCpsGeneralAsync), "publisher_cps_general", typeof(MpPublisherCpsResponse)),
+        (nameof(IMpDataCubeService.GetPublisherSettlementAsync), "publisher_settlement", typeof(MpPublisherSettlementResponse)),
+    };
+
+    /// <summary>契约守卫 DC7：流量主广告分析 3 端点为 GET /publisher/stat + 固定 action 默认值（一 action 一端点，非运行时多态）。</summary>
+    [Fact]
+    public void PublisherEndpoints_ShouldBeGetWithFixedAction()
+    {
+        PublisherRoutes.Should().HaveCount(3, "publisher_adpos_general / publisher_cps_general / publisher_settlement");
+
+        foreach (var (method, action, responseType) in PublisherRoutes)
+        {
+            var target = typeof(IMpDataCubeService).GetMethod(method, BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+            target.Should().NotBeNull($"IMpDataCubeService.{method} 必须存在");
+
+            var attr = target!.GetCustomAttribute<GetAttribute>();
+            attr.Should().NotBeNull("流量主统计官方为 GET /publisher/stat");
+            attr!.RequestUri.Should().Be("/publisher/stat", $"{method} 路由必须与官方契约一致");
+
+            target.ReturnType.Should().Be(typeof(Task<>).MakeGenericType(responseType),
+                $"{method} 响应类型必须与官方回包形态对应");
+
+            // action 必须是带固定默认值的 Query 参数（一 action 一端点 ⇒ 调用方无需传，且不得漂移为无默认值）。
+            var actionParam = target.GetParameters()
+                .SingleOrDefault(p => p.GetCustomAttribute<QueryAttribute>()?.Name == "action");
+            actionParam.Should().NotBeNull($"{method} 必须以 Query(\"action\") 承载官方 action 判别参数");
+            actionParam!.HasDefaultValue.Should().BeTrue($"{method} 的 action 应内置固定默认值（非运行时多态）");
+            actionParam.DefaultValue.Should().Be(action, $"{method} 的 action 默认值必须为 {action}");
+        }
     }
 
     private static List<string> JsonNamesOf<T>()

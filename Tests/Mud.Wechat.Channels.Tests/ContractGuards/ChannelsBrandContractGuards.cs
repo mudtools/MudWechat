@@ -245,6 +245,53 @@ public class ChannelsBrandContractGuards
         ChannelsBrandListFilterStatuses.Withdrawn.Should().Be(4);
     }
 
+    /// <summary>
+    /// 契约守卫 CB7：缺失端点清单转述的 <c>/channels/ec/brand/{add,all,audit/cancel}</c> 三支路由在全线零声明。
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// 2026-10-17 核验：清单（DotNetCore.SKIT.FlurlHttpClient.Wechat 转述）把「新增品牌资质 / 获取品牌库列表 /
+    /// 撤回品牌资质审核」三支写成 <c>/channels/ec/brand/*</c>；官方 <c>doc/channels/API/brand/{add,all_get,audit_cancel}.html</c>
+    /// 三页均已重定向到 <c>doc/store/shop/API/brand/</c> 目录页，而该目录页的「品牌资质 接口列表」逐支给出的请求路径是
+    /// <c>/shop/ec/brand/add</c>、<c>/shop/ec/brand/all</c>、<c>/shop/ec/brand/audit/cancel</c>——
+    /// 同页其余五支（delete / get / list/get / update / valid/list/get）才是 <c>/channels/ec/brand/*</c>。
+    /// ⇒ 三支 <c>/channels/ec/*</c> 形态属转述前缀错误、<b>非官方契约</b>；本线已按官方原文落 <c>/shop/ec/brand/*</c>（守卫 CB1）。
+    /// </para>
+    /// <para>
+    /// 本守卫钉死「不是漏做，是清单前缀不成立」，并防后续按清单回填造成同端点双声明。
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void StaleChannelsBrandPrefix_ShouldHaveZeroDeclaration()
+    {
+        var allRoutes = typeof(IChannelsBrandService).Assembly.GetTypes()
+            .Where(static t => t.IsInterface && t.Namespace != null && t.Namespace.StartsWith("Mud.Wechat.Channels", StringComparison.Ordinal))
+            .SelectMany(static t => t.GetMethods(BindingFlags.Public | BindingFlags.Instance))
+            .SelectMany(static m => m.GetCustomAttributes().OfType<HttpMethodAttribute>())
+            .Select(static a => a.RequestUri ?? string.Empty)
+            .ToList();
+
+        allRoutes.Should().NotBeEmpty("反射枚举不得空跑（正对照）");
+
+        foreach (var stale in new[]
+                 {
+                     "/channels/ec/brand/add",
+                     "/channels/ec/brand/all",
+                     "/channels/ec/brand/audit/cancel",
+                 })
+        {
+            allRoutes.Count(r => r.Equals(stale, StringComparison.Ordinal))
+                .Should().Be(0,
+                    $"{stale} 是清单转述的前缀：官方品牌资质目录页该端点现行请求路径为 {stale.Replace("/channels/ec/", "/shop/ec/")}（2026-10-17 核验）⇒ 非契约路由零声明");
+        }
+
+        // 正对照 1：/channels/ec/brand/ 前缀本身合法在用（同页五支现行端点），故不能靠「整段前缀禁用」恒真；
+        // 正对照 2：三支现行 /shop/ec/brand/ 路由在场，证明扫描面覆盖本域接口。
+        allRoutes.Should().Contain("/channels/ec/brand/get",
+            "正对照：/channels/ec/brand/ 前缀确有现行端点，零声明只针对三支转述路由");
+        allRoutes.Should().Contain("/shop/ec/brand/add", "正对照：现行路由必须被扫描面覆盖，否则上方零声明断言恒真");
+    }
+
     private static void AssertJsonProperty<T>(string jsonName, string because)
     {
         typeof(T).GetProperties()

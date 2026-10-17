@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<!-- 受控 TFM 例外（AB-G8 锁定）：AI 域三包钉 net8.0;net10.0 —— Mud.AI 1.0.1 传递要求
+		     M.E.* / System.Text.Json 10.0.12，而 M.E.* 10.x 官方支持面为 net8.0+（net6.0 上 NuGet 发
+		     「doesn't support net6.0」告警）。不为一条新线把 30 个既有工程的低 TFM 构建拖到未测试组合。 -->
+		<TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+		<Description>微信生态 AI 共享契约层（跨七线）：工具身份轴 WechatToolPrincipal / 风险词表 WechatToolRiskVocabulary / 会话事实 WechatConversationFacts。零生态细节、零 Mud.AI 依赖（首个消费 Mud.AI 契约的类型随 S2/S3 落地，如 IWechatKnowledgeBase）。</Description>
+		<PackageTags>Wechat;AI;Abstractions;Agent;Tools;MudWechat</PackageTags>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<!-- 契约守卫与单测直读 internal（若有）；对外公开面即上列三个类型。 -->
+		<InternalsVisibleTo Include="Mud.Wechat.AI.Tests" />
+	</ItemGroup>
+
+</Project>

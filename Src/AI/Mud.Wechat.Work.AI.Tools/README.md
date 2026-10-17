@@ -24,10 +24,11 @@
 | `ToolArgs`（internal） | 生成物 Args 解包器消费的 helper 集（六个参数形态各一对 Require/Optional） |
 | `Extensions.AddWechatWorkTools(binding[, configurePolicy])` | 装配入口：绑定 + 逐执行器工厂 + 注册表 + 策略 + 执行链 + `IReadOnlyList<AIFunction>` 投影（软缺席：业务域未注册 ⇒ 该域工具不入表） |
 
-当前策展面（14 个：9 只读 + 4 受控写 + 1 高危写）：
+当前策展面（15 个：10 只读 + 4 受控写 + 1 高危写）：
 
 | 域 | 工具 | SDK 源 |
 |---|---|---|
+| 审批 | `approval.get` | `IWechatWorkApprovalService.GetApprovalDetailAsync` |
 | 部门 | `contacts.department.get` / `.list` / `.child_ids` | `IWechatWorkDepartmentsService` |
 | 成员 | `contacts.user.get` / `.list` / `.simple_list` | `IWechatWorkUsersService` |
 | 标签 | `contacts.tag.list`（零参）/ `.members` | `IWechatWorkTagsService` |
@@ -52,6 +53,8 @@
 
 成员域执行器只投影 `userid/姓名/别名/职务/部门/主部门/状态/直属上级`，**不外发**手机号、邮箱、头像、地址、二维码
 （个人信息一旦进入提示词与日志即不可撤回；需要时由宿主经 oauth2 授权专线提供）。
+审批域执行器同理只投影结构与流转事实（状态、模板、申请人、各节点审批人与操作时间、抄送、备注**条数**、表单**字段名**），
+**不外发** `apply_data.contents[].value`（金额/收款账户/证件号等）与 `comments[].commentcontent` / `sp_record.details[].speech`（意见正文）。
 契约由 `Tests/Mud.Wechat.Work.AI.Tools.Tests/ContractGuards/WechatToolSurfaceContractGuards.cs` 冻结。
 
 ## 生成物（`obj/…/generated`，勿手改）
@@ -87,6 +90,14 @@
    解包后无载荷 ⇒ `ResolveOutputSchema` 返回 `{}`，Schema 里不会出现 `output_schema`（WT-G3 守卫直接红）。
    返回信封的写工具须用 `[AgentTool(OutputSchema = "…")]` 显式声明执行器**实际投影**（如 `wedoc.doc.delete` 的
    `ok`/`docid`/`formid`），并同批重固化 golden。
+9. **新增一个域必须在 `AddWechatWorkTools` 补一行 `AddWechat{Domain}ToolHandlersCore()`**：生成物只提供逐域的
+   `Add*Core` 方法，汇总调用是**手写的**（不在生成物里）。漏写不会编译报错——该域工具在注册表里**静默缺席**，
+   只表现为「模型看不到 / 调用返回未注册」；`WechatToolRegistryTests` 的全集断言是唯一兜底。
+10. **危险词表按「方法名」匹配，`BatchGet*` 类只读端点会被判成 `high-risk-write`**：剖面 `WriteVerbKeywords` 含
+   `batch`，`IWechatWorkApprovalService.BatchGetApprovalNumbersAsync`（`/cgi-bin/oa/getapprovalinfo`，实为只读）
+   因此被引擎升级为 `high-risk-write`，声明为只读会触发 `MUDWT017`（构建失败），标成写工具又会让每次查询都要求人工
+   审批。引擎当前无「显式风险覆盖」槽，故 `approval.list` **未落地**（只承接 `approval.get`）；新增工具前先看
+   SDK 方法名是否含危险词（`delete|remove|recall|kick|transfer|export|import|batch|clear|revoke|disable|destroy|dismiss`）。
 
 ## 门禁
 
@@ -126,5 +137,9 @@ dotnet test Tests/Mud.Wechat.Work.AI.Tools.Tests -c Release
   `PendingReplyTurnState` 之类的持久化 + 重投递通道（可复用回合 outbox），届时不得把挂起态塞进现有两态返回值。
 - **高危写（L3）已落地首个样本** `wedoc.doc.delete`：策略校验 + 派发分支 + 三条用例（策略 fail-fast /
   无门 fail-closed / 放行执行）均已就位；新增删除、撤回、继承、批量导出类工具沿用同一形态即可。
-- 工具面继续铺开（消息 / 日程 / 会议 / 其余文档域），逐域沿用 `Curation + Executors + 守卫` 三段形态。
+- **`approval.list` 待引擎支持显式风险覆盖**：`BatchGetApprovalNumbersAsync` 被方法名危险词（`batch`）误判为
+  `high-risk-write`，声明为只读即 `MUDWT017`。需向上游提「`[AgentTool(Risk = ...)]` 覆盖槽」或「危险词表按动词位
+  而非子串匹配」；落地后 `approval.get` + `approval.list` 才是完整的两段式读面。
+- 工具面继续铺开（消息 / 日程 / 会议 / 其余文档域），逐域沿用 `Curation + Executors + 守卫` 三段形态，并在
+  `AddWechatWorkTools` 补该域的 `Add*Core()`（陷阱 9）。
 - golden 快照随工具面扩张同批重固化（生成器不落盘，须手工/脚本重写）。

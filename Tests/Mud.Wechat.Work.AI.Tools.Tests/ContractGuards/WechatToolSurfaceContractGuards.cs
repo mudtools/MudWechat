@@ -23,6 +23,7 @@ public class WechatToolSurfaceContractGuards
     {
         WechatToolNames.ReadonlyAll.Should().Equal(
             [
+                "approval.get",
                 "contacts.department.child_ids",
                 "contacts.department.get",
                 "contacts.department.list",
@@ -68,6 +69,7 @@ public class WechatToolSurfaceContractGuards
     /// <param name="risk">风险档（由 <c>IsWrite</c> 与写动词表派生）。</param>
     /// <param name="scope">工具声明的权限点。</param>
     [Theory]
+    [InlineData("approval.get", "IWechatWorkApprovalService.GetApprovalDetailAsync", "/cgi-bin/oa/getapprovaldetail", "POST", WechatToolRisk.Read, "approval.read")]
     [InlineData("contacts.department.child_ids", "IWechatWorkDepartmentsService.GetChildDepartmentIdListAsync", "/cgi-bin/department/simplelist", "GET", WechatToolRisk.Read, "contacts.department.read")]
     [InlineData("contacts.department.get", "IWechatWorkDepartmentsService.GetDepartmentAsync", "/cgi-bin/department/get", "GET", WechatToolRisk.Read, "contacts.department.read")]
     [InlineData("contacts.department.list", "IWechatWorkDepartmentsService.GetDepartmentListAsync", "/cgi-bin/department/list", "GET", WechatToolRisk.Read, "contacts.department.read")]

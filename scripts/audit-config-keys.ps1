@@ -113,7 +113,12 @@ $configFiles = @(
     # 微信开放平台产品线配置面（2026-10-11 B1 补登记）：平台凭据（ComponentAppId/ComponentAppSecret/
     # Token/EncodingAesKey）。ComponentAppSecret 与回调 Token/EncodingAesKey 均为**凭据**，
     # 不得进日志/遥测/异常消息（EnsureValid 只做必填与长度校验、不重写 ToString 防泄密）。
-    'Mud.Wechat.OpenPlatform.Abstractions/OpenPlatformAppConfig.cs'
+    'Mud.Wechat.OpenPlatform.Abstractions/OpenPlatformAppConfig.cs',
+    # 企微 AI Agent 配置面（2026-10-17 S1 落地，同批登记）：系统指令 / 会话 TTL / 历史裁剪与摘要阈值 /
+    # 单轮工具预算 / 两个**产品事实状态键**（history、outbox 补发）。全部属性均有真实消费点
+    # （WechatAgent 投影构造 AgentRuntimeOptions 与会话门面、DI 的会话 TTL 工厂），无消费点则本脚本 fail-closed。
+    # 与【文件创建同批】登记 —— AB-G6 的双向不变式（存在 ⇔ 已登记）会拦下另一方向。
+    'Mud.Wechat.Work.AI/Configuration/WechatAgentOptions.cs'
 )
 
 # 搜索根在循环外推导一次（字面清单已删除 —— 历史版本在此处维护 26 个根，新增产品线须手工补登，

@@ -73,6 +73,7 @@ public static class WechatWorkToolServiceCollectionExtensions
         services.AddWechatContactsDepartmentToolHandlersCore();
         services.AddWechatContactsUserToolHandlersCore();
         services.AddWechatContactsTagToolHandlersCore();
+        services.AddWechatWedocToolHandlersCore();
 
         services.TryAddSingleton(static provider => WechatToolDomainRegistrars.Build(provider));
 

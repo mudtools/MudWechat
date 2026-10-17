@@ -7,8 +7,10 @@ using Mud.Wechat.Work.AI.Tools;
 using Mud.Wechat.Work.AI.Tools.Extensions;
 using Mud.Wechat.Work.AI.Tools.Registration;
 using Mud.Wechat.Work.AI.Tools.Security;
+using Mud.Wechat.Work.DataModels;
 using Mud.Wechat.Work.DataModels.Contacts.Department;
 using Mud.Wechat.Work.DataModels.Contacts.Tags;
+using Mud.Wechat.Work.DataModels.Wedoc;
 using Mud.Wechat.Work.Interfaces;
 using Xunit;
 
@@ -290,6 +292,61 @@ public class WechatToolDispatcherTests
         tags.Verify(t => t.CreateTagAsync(It.IsAny<CreateTagRequest>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
+    [Fact]
+    public void Policy_EnablingHighRiskWriteWithApprovalDisabled_ShouldFailFast()
+    {
+        var policy = new WechatToolPolicy { RequireApprovalForWrites = false }
+            .Enable(WechatToolNames.WedocDocDelete);
+
+        var act = policy.Validate;
+
+        act.Should().Throw<InvalidOperationException>("高危写恒需审批，不得靠开关关闭");
+    }
+
+    [Fact]
+    public async Task Invoke_HighRiskWriteWithoutApprovalGate_ShouldFailClosed()
+    {
+        var wedoc = Wedoc();
+        using var provider = BuildProvider(
+            Departments().Object,
+            policy: p => p.Enable(WechatToolNames.WedocDocDelete),
+            authorizer: AllowAll().Object,
+            approval: null,
+            wedoc: wedoc.Object);
+
+        var result = await Dispatcher(provider).InvokeAsync(
+            WechatToolNames.WedocDocDelete,
+            new Dictionary<string, object?>(StringComparer.Ordinal) { ["docid"] = "doc-1" });
+
+        result.Text.Should().Contain("拒绝");
+        wedoc.Verify(w => w.DeleteDocumentAsync(It.IsAny<DeleteWedocDocumentRequest>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Invoke_HighRiskWriteWithApproval_ShouldExecute()
+    {
+        var wedoc = Wedoc();
+        var approval = new Mock<IWechatToolApprovalGate>(MockBehavior.Strict);
+        approval
+            .Setup(a => a.RequestApprovalAsync(It.IsAny<WechatToolAuthorizationContext>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(WechatToolApprovalDecision.Approve("管理员确认删除"));
+
+        using var provider = BuildProvider(
+            Departments().Object,
+            policy: p => p.Enable(WechatToolNames.WedocDocDelete),
+            authorizer: AllowAll().Object,
+            approval: approval.Object,
+            wedoc: wedoc.Object);
+
+        var result = await Dispatcher(provider).InvokeAsync(
+            WechatToolNames.WedocDocDelete,
+            new Dictionary<string, object?>(StringComparer.Ordinal) { ["docid"] = "doc-1" });
+
+        result.Text.Should().Contain("\"ok\":true");
+        wedoc.Verify(w => w.DeleteDocumentAsync(
+            It.Is<DeleteWedocDocumentRequest>(r => r.Docid == "doc-1"),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
     private static WechatToolDispatcher Dispatcher(IServiceProvider provider)
         => provider.GetRequiredService<WechatToolDispatcher>();
 
@@ -306,6 +363,14 @@ public class WechatToolDispatcherTests
         return departments;
     }
 
+    private static Mock<IWechatWorkWedocService> Wedoc()
+    {
+        var wedoc = new Mock<IWechatWorkWedocService>(MockBehavior.Loose);
+        wedoc
+            .Setup(w => w.DeleteDocumentAsync(It.IsAny<DeleteWedocDocumentRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new WechatWorkResponse { ErrorCode = 0 });
+        return wedoc;
+    }
     private static Mock<IWechatWorkTagsService> Tags()
     {
         var tags = new Mock<IWechatWorkTagsService>(MockBehavior.Loose);
@@ -329,7 +394,8 @@ public class WechatToolDispatcherTests
         Action<WechatToolPolicy>? policy,
         IWechatToolAuthorizer? authorizer = null,
         IWechatToolApprovalGate? approval = null,
-        IWechatWorkTagsService? tags = null)
+        IWechatWorkTagsService? tags = null,
+        IWechatWorkWedocService? wedoc = null)
     {
         var services = new ServiceCollection().AddSingleton(departments);
         if (authorizer is not null)
@@ -345,6 +411,11 @@ public class WechatToolDispatcherTests
         if (tags is not null)
         {
             services.AddSingleton(tags);
+        }
+
+        if (wedoc is not null)
+        {
+            services.AddSingleton(wedoc);
         }
 
         return services

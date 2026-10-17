@@ -17,29 +17,37 @@ namespace Mud.Wechat.Work.AI.Tools.Tests.ContractGuards;
 /// </remarks>
 public class WechatToolSurfaceContractGuards
 {
-    /// <summary>WT-G1：工具名集合 = 冻结清单（顺序即生成序，按名字排序）。</summary>
+    /// <summary>WT-G1：工具名集合 = 冻结清单（只读段在前、写段在后，各自按名排序）。</summary>
     [Fact]
     public void GeneratedToolNames_ShouldMatchFrozenSet()
     {
-        // 生成序 = 只读面（按名排序）在前、写面（按名排序）在后——白名单直接消费这两段分类。
         WechatToolNames.ReadonlyAll.Should().Equal(
-            "contacts.department.child_ids",
-            "contacts.department.get",
-            "contacts.department.list",
-            "contacts.tag.list",
-            "contacts.tag.members",
-            "contacts.user.get",
-            "contacts.user.list",
-            "contacts.user.simple_list");
+            [
+                "contacts.department.child_ids",
+                "contacts.department.get",
+                "contacts.department.list",
+                "contacts.tag.list",
+                "contacts.tag.members",
+                "contacts.user.get",
+                "contacts.user.list",
+                "contacts.user.simple_list",
+                "wedoc.doc.base_info",
+            ]);
 
+        // 期望值必须是集合：`.Equal("a", "b", ..., "理由")` 会绑定到 params 重载，把理由当成第 6 个元素。
         WechatToolNames.WriteAll.Should().Equal(
-            ["contacts.tag.create"],
-            "S3 首个受控写工具；新增写工具必须在本守卫里逐个登记（白名单默认封闭依赖这份分类）");
+            [
+                "contacts.tag.create",
+                "wedoc.doc.create",
+                "wedoc.doc.delete",
+                "wedoc.doc.rename",
+                "wedoc.doc.share",
+            ],
+            "写面逐个登记：白名单默认封闭与「高危写恒需审批」都依赖这份分类");
 
-        WechatToolNames.All.Should().Equal(
-            [.. WechatToolNames.ReadonlyAll, .. WechatToolNames.WriteAll]);
-        WechatToolNames.IsWriteTool("contacts.tag.create").Should().BeTrue();
-        WechatToolNames.IsWriteTool("contacts.tag.list").Should().BeFalse();
+        WechatToolNames.All.Should().Equal([.. WechatToolNames.ReadonlyAll, .. WechatToolNames.WriteAll]);
+        WechatToolNames.IsWriteTool("wedoc.doc.delete").Should().BeTrue();
+        WechatToolNames.IsWriteTool("wedoc.doc.base_info").Should().BeFalse("POST 方法不等于写操作（微文档读端点也是 POST）");
     }
 
     /// <summary>WT-G1：名字契约表 / 契约表 / Schema 表三处同源同序。</summary>
@@ -69,6 +77,11 @@ public class WechatToolSurfaceContractGuards
     [InlineData("contacts.user.get", "IWechatWorkUsersService.GetUserAsync", "/cgi-bin/user/get", "GET", WechatToolRisk.Read, "contacts.user.read")]
     [InlineData("contacts.user.list", "IWechatWorkUsersService.GetUserDetailListAsync", "/cgi-bin/user/list", "GET", WechatToolRisk.Read, "contacts.user.read")]
     [InlineData("contacts.user.simple_list", "IWechatWorkUsersService.GetUserSimpleListAsync", "/cgi-bin/user/simplelist", "GET", WechatToolRisk.Read, "contacts.user.read")]
+    [InlineData("wedoc.doc.base_info", "IWechatWorkWedocService.GetDocumentBaseInfoAsync", "/cgi-bin/wedoc/get_doc_base_info", "POST", WechatToolRisk.Read, "wedoc.doc.read")]
+    [InlineData("wedoc.doc.create", "IWechatWorkWedocService.CreateDocumentAsync", "/cgi-bin/wedoc/create_doc", "POST", WechatToolRisk.Write, "wedoc.doc.write")]
+    [InlineData("wedoc.doc.delete", "IWechatWorkWedocService.DeleteDocumentAsync", "/cgi-bin/wedoc/del_doc", "POST", WechatToolRisk.HighRiskWrite, "wedoc.doc.write")]
+    [InlineData("wedoc.doc.rename", "IWechatWorkWedocService.RenameDocumentAsync", "/cgi-bin/wedoc/rename_doc", "POST", WechatToolRisk.Write, "wedoc.doc.write")]
+    [InlineData("wedoc.doc.share", "IWechatWorkWedocService.ShareDocumentAsync", "/cgi-bin/wedoc/doc_share", "POST", WechatToolRisk.Write, "wedoc.doc.share")]
     public void Contracts_ShouldDeriveFromSdkFacts(
         string toolName,
         string source,

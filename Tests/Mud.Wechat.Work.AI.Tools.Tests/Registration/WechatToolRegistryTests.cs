@@ -1,4 +1,4 @@
-using FluentAssertions;
+﻿using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using Mud.AI.Agent.Tools;
@@ -60,7 +60,8 @@ public class WechatToolRegistryTests
         using var provider = BuildProvider(
             departments.Object,
             new Mock<IWechatWorkUsersService>(MockBehavior.Loose).Object,
-            new Mock<IWechatWorkTagsService>(MockBehavior.Loose).Object);
+            new Mock<IWechatWorkTagsService>(MockBehavior.Loose).Object,
+            new Mock<IWechatWorkWedocService>(MockBehavior.Loose).Object);
         var registry = provider.GetRequiredService<WechatToolRegistry>();
 
         registry.ToolNames.Should().BeEquivalentTo(WechatToolNames.All);
@@ -89,7 +90,8 @@ public class WechatToolRegistryTests
     private static ServiceProvider BuildProvider(
         IWechatWorkDepartmentsService departments,
         IWechatWorkUsersService? users = null,
-        IWechatWorkTagsService? tags = null)
+        IWechatWorkTagsService? tags = null,
+        IWechatWorkWedocService? wedoc = null)
     {
         var services = new ServiceCollection().AddSingleton(departments);
         if (users is not null)
@@ -100,6 +102,11 @@ public class WechatToolRegistryTests
         if (tags is not null)
         {
             services.AddSingleton(tags);
+        }
+
+        if (wedoc is not null)
+        {
+            services.AddSingleton(wedoc);
         }
 
         return services

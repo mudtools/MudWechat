@@ -21,7 +21,8 @@ public class WechatToolSurfaceContractGuards
     [Fact]
     public void GeneratedToolNames_ShouldMatchFrozenSet()
     {
-        WechatToolNames.All.Should().Equal(
+        // 生成序 = 只读面（按名排序）在前、写面（按名排序）在后——白名单直接消费这两段分类。
+        WechatToolNames.ReadonlyAll.Should().Equal(
             "contacts.department.child_ids",
             "contacts.department.get",
             "contacts.department.list",
@@ -31,15 +32,22 @@ public class WechatToolSurfaceContractGuards
             "contacts.user.list",
             "contacts.user.simple_list");
 
-        WechatToolNames.ReadonlyAll.Should().Equal(WechatToolNames.All, "当前策展面只有只读工具");
-        WechatToolNames.WriteAll.Should().BeEmpty("写工具须在 S3 显式开放（白名单默认封闭）");
+        WechatToolNames.WriteAll.Should().Equal(
+            ["contacts.tag.create"],
+            "S3 首个受控写工具；新增写工具必须在本守卫里逐个登记（白名单默认封闭依赖这份分类）");
+
+        WechatToolNames.All.Should().Equal(
+            [.. WechatToolNames.ReadonlyAll, .. WechatToolNames.WriteAll]);
+        WechatToolNames.IsWriteTool("contacts.tag.create").Should().BeTrue();
+        WechatToolNames.IsWriteTool("contacts.tag.list").Should().BeFalse();
     }
 
     /// <summary>WT-G1：名字契约表 / 契约表 / Schema 表三处同源同序。</summary>
     [Fact]
     public void GeneratedSurfaces_ShouldStayInSync()
     {
-        WechatToolContracts.AllNames.Should().Equal(WechatToolNames.All);
+        // 契约表的顺序是按名排序（与 Names 的「只读段 + 写段」不同），故按集合比对。
+        WechatToolContracts.AllNames.Should().BeEquivalentTo(WechatToolNames.All);
         WechatToolContracts.ByToolName.Keys.Should().BeEquivalentTo(WechatToolNames.All);
         WechatToolSchemas.SchemaByToolName.Keys.Should().BeEquivalentTo(WechatToolNames.All);
     }
@@ -48,33 +56,37 @@ public class WechatToolSurfaceContractGuards
     /// <param name="toolName">工具名。</param>
     /// <param name="source">SDK 源。</param>
     /// <param name="route">由 SDK 特性派生的路由。</param>
+    /// <param name="httpMethod">HTTP 方法（由 SDK 上的 <c>[Get]</c>/<c>[Post]</c> 派生）。</param>
+    /// <param name="risk">风险档（由 <c>IsWrite</c> 与写动词表派生）。</param>
+    /// <param name="scope">工具声明的权限点。</param>
     [Theory]
-    [InlineData("contacts.department.child_ids", "IWechatWorkDepartmentsService.GetChildDepartmentIdListAsync", "/cgi-bin/department/simplelist")]
-    [InlineData("contacts.department.get", "IWechatWorkDepartmentsService.GetDepartmentAsync", "/cgi-bin/department/get")]
-    [InlineData("contacts.department.list", "IWechatWorkDepartmentsService.GetDepartmentListAsync", "/cgi-bin/department/list")]
-    [InlineData("contacts.tag.list", "IWechatWorkTagsService.GetTagListAsync", "/cgi-bin/tag/list")]
-    [InlineData("contacts.tag.members", "IWechatWorkTagsService.GetTagMembersAsync", "/cgi-bin/tag/get")]
-    [InlineData("contacts.user.get", "IWechatWorkUsersService.GetUserAsync", "/cgi-bin/user/get")]
-    [InlineData("contacts.user.list", "IWechatWorkUsersService.GetUserDetailListAsync", "/cgi-bin/user/list")]
-    [InlineData("contacts.user.simple_list", "IWechatWorkUsersService.GetUserSimpleListAsync", "/cgi-bin/user/simplelist")]
-    public void Contracts_ShouldDeriveFromSdkFacts(string toolName, string source, string route)
+    [InlineData("contacts.department.child_ids", "IWechatWorkDepartmentsService.GetChildDepartmentIdListAsync", "/cgi-bin/department/simplelist", "GET", WechatToolRisk.Read, "contacts.department.read")]
+    [InlineData("contacts.department.get", "IWechatWorkDepartmentsService.GetDepartmentAsync", "/cgi-bin/department/get", "GET", WechatToolRisk.Read, "contacts.department.read")]
+    [InlineData("contacts.department.list", "IWechatWorkDepartmentsService.GetDepartmentListAsync", "/cgi-bin/department/list", "GET", WechatToolRisk.Read, "contacts.department.read")]
+    [InlineData("contacts.tag.create", "IWechatWorkTagsService.CreateTagAsync", "/cgi-bin/tag/create", "POST", WechatToolRisk.Write, "contacts.tag.write")]
+    [InlineData("contacts.tag.list", "IWechatWorkTagsService.GetTagListAsync", "/cgi-bin/tag/list", "GET", WechatToolRisk.Read, "contacts.tag.read")]
+    [InlineData("contacts.tag.members", "IWechatWorkTagsService.GetTagMembersAsync", "/cgi-bin/tag/get", "GET", WechatToolRisk.Read, "contacts.tag.read")]
+    [InlineData("contacts.user.get", "IWechatWorkUsersService.GetUserAsync", "/cgi-bin/user/get", "GET", WechatToolRisk.Read, "contacts.user.read")]
+    [InlineData("contacts.user.list", "IWechatWorkUsersService.GetUserDetailListAsync", "/cgi-bin/user/list", "GET", WechatToolRisk.Read, "contacts.user.read")]
+    [InlineData("contacts.user.simple_list", "IWechatWorkUsersService.GetUserSimpleListAsync", "/cgi-bin/user/simplelist", "GET", WechatToolRisk.Read, "contacts.user.read")]
+    public void Contracts_ShouldDeriveFromSdkFacts(
+        string toolName,
+        string source,
+        string route,
+        string httpMethod,
+        WechatToolRisk risk,
+        string scope)
     {
         var contract = WechatToolContracts.ByToolName[toolName];
 
         contract.Name.Should().Be(toolName);
         contract.SdkSource.Should().Be(source);
         contract.Route.Should().Be(route);
-        contract.HttpMethod.Should().Be("GET");
-        contract.Risk.Should().Be(WechatToolRisk.Read);
-        contract.IsWrite.Should().BeFalse();
+        contract.HttpMethod.Should().Be(httpMethod);
+        contract.Risk.Should().Be(risk);
+        contract.IsWrite.Should().Be(risk != WechatToolRisk.Read);
         contract.Identity.Should().Be("tenant", "企微工具统一走企业级 access_token（身份轴由剖面标记表推导）");
-        var expectedScope = toolName switch
-        {
-            var name when name.StartsWith("contacts.user", StringComparison.Ordinal) => "contacts.user.read",
-            var name when name.StartsWith("contacts.tag", StringComparison.Ordinal) => "contacts.tag.read",
-            _ => "contacts.department.read",
-        };
-        contract.RequiredScopes.Should().Contain(expectedScope);
+        contract.RequiredScopes.Should().Contain(scope);
         contract.Description.Should().NotBeNullOrWhiteSpace();
     }
 

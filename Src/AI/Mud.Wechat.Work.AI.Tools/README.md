@@ -18,18 +18,25 @@
 | `Registration.WechatToolRegistration` / `IWechatToolDomainRegistrar` / `WechatToolDomainRegistrars` | 生成物写入注册表的接缝 |
 | `Security.WechatToolPolicy` | 白名单（默认只读全开、写类全关、强制授权）；`Validate()` 后冻结，未知名/写工具未开授权即 fail-fast |
 | `Security.IWechatToolAuthorizer` / `WechatToolAuthorizationContext` / `WechatToolAuthorizationResult` | 授权门禁端口：入参只给「应用 + 企业 + 风险 + 权限点 + 入参摘要」（不含原文与令牌） |
-| `Security.WechatToolDispatcher` | 调用唯一入口：白名单 → 授权 → 执行 → 异常归一（租户切换由回合作用域承担，此处不重复进入） |
+| `Security.IWechatToolApprovalGate` / `WechatToolApprovalDecision` | 写工具 HITL 审批门（同步两态：放行/拒绝；「挂起→批准→续跑」属审批状态机，未在本端口开语义） |
+| `Security.WechatToolDispatcher` | 调用唯一入口：白名单 → 授权 → 审批（写）→ 执行 → 异常归一（租户切换由回合作用域承担，此处不重复进入） |
 | `AIFunctions.WechatToolFunction`（internal）/ `WechatToolFunctions` | 白名单 → MAF `AIFunction` 投影（自建子类，零反射；`JsonSchema` 只取生成物的 `parameters` 子块） |
 | `ToolArgs`（internal） | 生成物 Args 解包器消费的 helper 集（六个参数形态各一对 Require/Optional） |
 | `Extensions.AddWechatWorkTools(binding[, configurePolicy])` | 装配入口：绑定 + 逐执行器工厂 + 注册表 + 策略 + 执行链 + `IReadOnlyList<AIFunction>` 投影（软缺席：业务域未注册 ⇒ 该域工具不入表） |
 
-当前策展面（8 个，全部只读）：
+当前策展面（9 个：8 只读 + 1 受控写）：
 
 | 域 | 工具 | SDK 源 |
 |---|---|---|
 | 部门 | `contacts.department.get` / `.list` / `.child_ids` | `IWechatWorkDepartmentsService` |
 | 成员 | `contacts.user.get` / `.list` / `.simple_list` | `IWechatWorkUsersService` |
 | 标签 | `contacts.tag.list`（零参）/ `.members` | `IWechatWorkTagsService` |
+| 标签（**L2 受控写**） | `contacts.tag.create` | `IWechatWorkTagsService.CreateTagAsync` |
+
+写工具的默认姿态：**注册但不可达**——`IsWrite = true` 使它进入 `WechatToolNames.WriteAll`，而 `WechatToolPolicy` 默认只装只读面，
+故模型看不到它（投影按白名单）、调用被拒；宿主须显式 `Enable(...)` + 提供授权器 + 提供
+`IWechatToolApprovalGate`（缺任一即拒绝，fail-closed）才可执行。首次写工具选「建标签」是为了先跑通写路径：
+可逆、无外部副作用；消息发送、成员增删等外部可见/不可逆动作应在审批状态机就绪后再开放。
 
 成员域执行器只投影 `userid/姓名/别名/职务/部门/主部门/状态/直属上级`，**不外发**手机号、邮箱、头像、地址、二维码
 （个人信息一旦进入提示词与日志即不可撤回；需要时由宿主经 oauth2 授权专线提供）。
@@ -95,6 +102,9 @@ dotnet test Tests/Mud.Wechat.Work.AI.Tools.Tests -c Release
 
 ## 待办（S3）
 
-- 写工具（L2 受控写 / L3 高危写）与 HITL 审批闭环。
-- 工具面批量铺开（通讯录 users / 消息 / 日程 / 文档等域），逐域沿用 `Curation + Executors + 守卫` 三段形态。
+- **审批状态机**：`IWechatToolApprovalGate` 目前只支持「调用当下判定」；「挂起 → 人工批准 → 续跑」需要
+  `PendingReplyTurnState` 之类的持久化 + 重投递通道（可复用回合 outbox），届时不得把挂起态塞进现有两态返回值。
+- **高危写（L3）**：`WechatToolRisk.HighRiskWrite` 的恒需审批规则已实现（策略校验 + 派发分支），
+  但当前无高危工具落地，故该分支尚无端到端用例；新增删除/撤回/继承/批量导出类工具时须补齐。
+- 工具面继续铺开（消息 / 日程 / 会议 / 文档），逐域沿用 `Curation + Executors + 守卫` 三段形态。
 - golden 快照随工具面扩张同批重固化。

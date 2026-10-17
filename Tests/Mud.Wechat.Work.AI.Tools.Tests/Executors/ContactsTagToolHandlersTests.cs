@@ -73,6 +73,37 @@ public class ContactsTagToolHandlersTests
         await act.Should().ThrowAsync<ArgumentException>();
     }
 
+    [Fact]
+    public async Task CreateTag_ShouldPassTypedRequestAndProjectNewId()
+    {
+        _tags
+            .Setup(t => t.CreateTagAsync(It.IsAny<CreateTagRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new CreateTagResponse { ErrorCode = 0, TagId = 42 });
+
+        var result = await Handler().CreateTagAsync(
+            Args(("tag_name", "临时标签"), ("tag_id", 42)),
+            CancellationToken.None);
+
+        result.Text.Should().Contain("\"tag_id\":42");
+        result.Text.Should().Contain("临时标签");
+        _tags.Verify(t => t.CreateTagAsync(
+            It.Is<CreateTagRequest>(r => r.TagName == "临时标签" && r.TagId == 42),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task CreateTag_WhenErrcodeNonZero_ShouldReturnReadableError()
+    {
+        _tags
+            .Setup(t => t.CreateTagAsync(It.IsAny<CreateTagRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new CreateTagResponse { ErrorCode = 40058, ErrorMessage = "tag name exist" });
+
+        var result = await Handler().CreateTagAsync(Args(("tag_name", "重名标签")), CancellationToken.None);
+
+        result.Text.Should().Contain("40058");
+        result.Text.Should().Contain("tag name exist");
+    }
+
     private ContactsTagToolHandlers Handler() => new(_tags.Object);
 
     private static Dictionary<string, object?> Args(params (string Key, object? Value)[] pairs)

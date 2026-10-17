@@ -63,7 +63,7 @@ public class WechatToolRegistryTests
             new Mock<IWechatWorkTagsService>(MockBehavior.Loose).Object);
         var registry = provider.GetRequiredService<WechatToolRegistry>();
 
-        registry.ToolNames.Should().Equal(WechatToolNames.All);
+        registry.ToolNames.Should().BeEquivalentTo(WechatToolNames.All);
         registry.TryGet(WechatToolNames.ContactsDepartmentGet, out var execution).Should().BeTrue();
 
         var result = await execution.ExecuteAsync(

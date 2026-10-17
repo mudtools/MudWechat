@@ -10,13 +10,14 @@ using Mud.AI.Abstractions.Tools.Handlers;
 using Mud.AI.Agent.Tools;
 using Mud.Wechat.AI.Agent.Results;
 using Mud.Wechat.Work.AI.Tools.Curation;
+using Mud.Wechat.Work.DataModels.Contacts.Tags;
 using Mud.Wechat.Work.Interfaces;
 
 namespace Mud.Wechat.Work.AI.Tools.Executors;
 
 /// <summary>
-/// 通讯录「标签」域执行器：<c>contacts.tag.*</c> 两个只读工具落到
-/// <see cref="IWechatWorkTagsService"/> 的标签读取端点上。
+/// 通讯录「标签」域执行器：<c>contacts.tag.*</c>（两个只读 + 一个受控写）落到
+/// <see cref="IWechatWorkTagsService"/> 的标签端点上。
 /// </summary>
 /// <remarks>
 /// <b>标签是「人群定义」而非「成员快照」</b>：标签成员随时会变，工具结果只代表调用时刻；
@@ -100,6 +101,37 @@ public sealed class ContactsTagToolHandlers(IWechatWorkTagsService tags)
             ["partylist"] = departments,
             ["user_count"] = users.Count,
             ["department_count"] = departments.Count,
+        }));
+    }
+
+    /// <summary>执行 <c>contacts.tag.create</c>（L2 受控写）。</summary>
+    /// <param name="args">模型侧入参（<c>tag_name</c> 必填、<c>tag_id</c> 可选）。</param>
+    /// <param name="cancellationToken">取消令牌。</param>
+    /// <returns>工具结果（新建标签的 id 与名称）。</returns>
+    /// <remarks>
+    /// <b>入参不拼 URL</b>：写操作一律走 SDK 的类型化请求体，模型给的字符串不会被拼进路由或查询串
+    /// （注入面在执行链之外就被消除）。
+    /// </remarks>
+    [ToolHandler(typeof(IWechatWorkContactsTagCreateTool))]
+    public async Task<ToolResult> CreateTagAsync(
+        IReadOnlyDictionary<string, object?> args,
+        CancellationToken cancellationToken)
+    {
+        var request = ContactsTagCreateArgs.Unpack(args);
+
+        var response = await _tags.CreateTagAsync(
+            new CreateTagRequest { TagName = request.TagName, TagId = request.TagId },
+            cancellationToken).ConfigureAwait(false);
+        var outcome = WechatApiResultReader.Read(response);
+        if (!outcome.Ok || outcome.Data is not { } created)
+        {
+            return ToolResult.FromError(outcome.ErrorText ?? "标签创建失败：上游未返回标签 ID。");
+        }
+
+        return ToolResult.FromText(ToolResultJson.ToText(new JsonObject
+        {
+            ["tag_id"] = created.TagId,
+            ["name"] = request.TagName,
         }));
     }
 }

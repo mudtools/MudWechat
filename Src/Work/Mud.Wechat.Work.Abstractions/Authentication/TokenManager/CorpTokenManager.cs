@@ -68,7 +68,6 @@ internal sealed class CorpTokenManager : WechatAppTokenManagerBase, IWechatCorpT
     /// <param name="options">本应用配置。</param>
     /// <param name="logger">日志器。</param>
     /// <param name="tokenStore">令牌持久化仓储（可选）。</param>
-    /// <param name="refreshLease">跨进程刷新去重租约（U-3；可选）。</param>
     public CorpTokenManager(
         IWechatWorkCorpTokenAuthentication corpAuth,
         IWechatSuiteTokenManager suiteTokenManager,
@@ -76,9 +75,8 @@ internal sealed class CorpTokenManager : WechatAppTokenManagerBase, IWechatCorpT
         IWechatCorpAuthStore corpAuthStore,
         IOptions<WechatAppConfig> options,
         ILogger<CorpTokenManager> logger,
-        IWechatTokenStore? tokenStore = null,
-        ITokenRefreshLease? refreshLease = null)
-        : base(options, logger, tokenStore, WechatTokenTypes.AccessToken, refreshLease)
+        IWechatTokenStore? tokenStore = null)
+        : base(options, logger, tokenStore, WechatTokenTypes.AccessToken)
     {
         _corpAuth = corpAuth ?? throw new ArgumentNullException(nameof(corpAuth));
         _suiteTokenManager = suiteTokenManager ?? throw new ArgumentNullException(nameof(suiteTokenManager));

@@ -24,11 +24,18 @@
 | `ToolArgs`（internal） | 生成物 Args 解包器消费的 helper 集（六个参数形态各一对 Require/Optional） |
 | `Extensions.AddWechatWorkTools(binding[, configurePolicy])` | 装配入口：绑定 + 逐执行器工厂 + 注册表 + 策略 + 执行链 + `IReadOnlyList<AIFunction>` 投影（软缺席：业务域未注册 ⇒ 该域工具不入表） |
 
-当前策展面（15 个：10 只读 + 4 受控写 + 1 高危写）：
+当前策展面（33 个：26 只读 + 6 受控写 + 1 高危写）：
 
 | 域 | 工具 | SDK 源 |
 |---|---|---|
 | 审批 | `approval.get` | `IWechatWorkApprovalService.GetApprovalDetailAsync` |
+| 打卡 | `checkin.record.list` | `IWechatWorkInternalCheckinRecordService.GetCheckinDataAsync`（自建口径） |
+| 客户联系 | `externalcontact.follow_user.list` / `.contact.list` / `.contact.get` / `.tag.list` | `IWechatWorkExternalContact{FollowUser,Customer,Tag}Service` |
+| 会议 | `meeting.list`（三类公共面）/ `.get` / `.attendees`（自建口径） | `IWechatWorkMeetingService` / `IWechatWorkInternalMeeting{,Advanced}Service` |
+| 汇报 | `journal.record.list` / `.get` | `IWechatWorkInternalJournalService`（自建口径） |
+| 直播 | `living.list` / `.get` / `.watch_stat` | `IWechatWorkLivingService` |
+| 微信客服 | `kf.account.list` / `kf.servicer.list` / `kf.session.get` | `IWechatWorkKf{Account,Servicer,Session}Service` |
+| 微信客服（**L2 受控写**） | `kf.message.send` | `IWechatWorkKfSessionService.SendTextMessageAsync` |
 | 部门 | `contacts.department.get` / `.list` / `.child_ids` | `IWechatWorkDepartmentsService` |
 | 成员 | `contacts.user.get` / `.list` / `.simple_list` | `IWechatWorkUsersService` |
 | 标签 | `contacts.tag.list`（零参）/ `.members` | `IWechatWorkTagsService` |
@@ -36,6 +43,10 @@
 | 微文档 | `wedoc.doc.base_info` | `IWechatWorkWedocService.GetDocumentBaseInfoAsync` |
 | 微文档（**L2 受控写**） | `wedoc.doc.create` / `.rename` / `.share` | `CreateDocumentAsync` / `RenameDocumentAsync` / `ShareDocumentAsync` |
 | 微文档（**L3 高危写**） | `wedoc.doc.delete` | `DeleteDocumentAsync` |
+| 应用消息（**L2 受控写**） | `message.send` | `IWechatWorkMessageService.SendTextMessageAsync` |
+
+打卡域父接口是**零端点收敛面**（三种应用类型的响应结构不同构，第三方为旧字段结构），端点只存在于应用类型子接口，
+故该域工具消费自建口径 `IWechatWorkInternalCheckinRecordService`；代开发/第三方部署下该域软缺席（工具不入表）。
 
 写工具的默认姿态：**注册但不可达**——`IsWrite = true` 使它进入 `WechatToolNames.WriteAll`，而 `WechatToolPolicy` 默认只装只读面，
 故模型看不到它（投影按白名单）、调用被拒；宿主须显式 `Enable(...)` + 提供授权器 + 提供
@@ -55,6 +66,29 @@
 （个人信息一旦进入提示词与日志即不可撤回；需要时由宿主经 oauth2 授权专线提供）。
 审批域执行器同理只投影结构与流转事实（状态、模板、申请人、各节点审批人与操作时间、抄送、备注**条数**、表单**字段名**），
 **不外发** `apply_data.contents[].value`（金额/收款账户/证件号等）与 `comments[].commentcontent` / `sp_record.details[].speech`（意见正文）。
+打卡域只投影考勤事实（userid / checkin_type / exception_type / checkin_time / sch_checkin_time / 规则名与规则、班次 ID），
+**不外发** `lat`/`lng`/`location_*`/`wifiname`/`wifimac`/`notes`/`mediaids`/`deviceid`（行踪与设备指纹）。
+客户联系域只投影业务事实（客户昵称/类型/公司/职位 + 跟进成员的备注名/添加时间/方式/状态/标签名），
+**不外发** 客户头像、`unionid`、备注手机号、视频号昵称，以及跟进成员的 `description`（自由文本，可能含个人情况）。
+
+**三跳自举**：客户联系没有「一把拉全企业客户」的公共读端点，工具面按 `follow_user.list → contact.list(userid)
+→ contact.get(external_userid)` 逐跳收敛，既不越权聚合，也不让模型猜不存在的能力。
+会议域同理（`meeting.list(userid + 时间范围) → meeting.get → meeting.attendees`），且**不外发** `meeting_link`
+（入会凭证）与参会人的 `tmp_openid` / 网络质量 / 音视频状态 / `customer_data`（外部自然人行为指纹）。
+
+**暂不策展的域（有明确理由，不是漏做）**：日程（`schedule.*`）——官方无「列出我的日历」公共端点，`cal_id` /
+日程 ID 无自举入口，单独成工具只会得到「需要用户报 ID」；会议室（`meetingroom.*`）——仅 `_Internal` 且需
+city/equipment 等冷参数，价值低于会议本体；微盘（`wedrive.*`）——无「空间列表」端点（只有按 `spaceid` 取详情/列文件），
+模型拿不到 `spaceid`；身份（`identity.*`）——`code → userid` 是宿主登录流程的原语，不是助手能力；
+素材（`media.*`）——上传/下载是二进制面，模型无法产出入参，且 media_id 属宿主资产；群机器人（`webhook.*`）——
+webhook key 本身就是发送凭证，若作为工具参数暴露，模型可向任意群推消息，故不策展（宿主可在装配层提供「固定群通知」
+专用工具，把 key 封在配置里）。以上均在出现「列入口」或「明确的产品用法」后再评估。
+
+**明确不策展（合规红线 / 平台运营面）**：`Security`（安全审计）、`MsgAudit`（会话内容存档）、`DeviceData`（设备）、
+`License`（许可）、`Gov`（政务）、`School`（家校）、`Pay` / `PayTool` / `Invoice`（资金与票据）、`DataZone`（数据专区）、
+`AccountId`（账号 ID 映射）、`Authentication`（令牌签发）、`JsSdk`（签名）、`Agent` / `Aibot`（应用与机器人配置）、
+`Basic` / `Hr` / `PromotionQrCode` / `Emergency` / `Dial` / `CorpGroup` / `Wedoc`（剩余管理面）——它们要么是审计/合规面，
+要么是宿主系统内部能力，要么是运营配置面，不进模型工具面。
 契约由 `Tests/Mud.Wechat.Work.AI.Tools.Tests/ContractGuards/WechatToolSurfaceContractGuards.cs` 冻结。
 
 ## 生成物（`obj/…/generated`，勿手改）
@@ -111,10 +145,19 @@ dotnet test Tests/Mud.Wechat.Work.AI.Tools.Tests -c Release
 
 ### golden 快照
 
-`Generated/WechatToolSchemas.golden.txt` 已固化（`<工具名>\t<SchemaJson>\n`，按工具名排序、LF 行尾）。
-任何 Schema/描述/路由/风险的漂移都会在<b>构建期</b>以 `MUDWT014` 失败并列出增删项；
-重新固化 = 改完策展面后按提示重新生成该文件（`-p:WechatToolGoldenUpdate=true` 仅出现在提示文案里，
-实际由手工/脚本重写快照，仓库不自动改写版本控制内的文件）。
+`Generated/WechatToolSchemas.golden.txt` 已固化（`<工具名>\t<SchemaJson>\n`，按工具名 Ordinal 升序、LF 行尾）。
+任何 Schema/描述/路由/风险的漂移都会在<b>构建期</b>以 `MUDWT014` 失败并列出增删项。
+
+重新固化 = 跑一次脚本，**不要手工拼**：
+
+```bash
+powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/Update-WechatToolGolden.ps1
+```
+
+脚本用 `-p:WechatToolGoldenUpdate=true`（csproj 据此跳过 `AdditionalFiles` 比对）+ `EmitCompilerGeneratedFiles`
+跑一次构建，再从 `obj/…/generated/WechatToolSchemas.g.cs` 的 `*SchemaJson` 常量重建快照。
+之所以必须这样绕：golden 漂移时构建**失败**，而失败构建不写 `obj/…/generated`，于是「想看新描述符」和
+「比对必须先过」互为死锁。跑完务必 `git diff` 逐行复核（快照是契约，不是构建副产物）。
 
 ## 模型侧接线（已通）
 

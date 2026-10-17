@@ -26,8 +26,10 @@
 
 	<ItemGroup>
 		<!-- 已固化的 golden 快照（缺失即首轮不比对；固化后随源码入库）。 -->
+		<!-- `-p:WechatToolGoldenUpdate=true` 供 scripts/Update-WechatToolGolden.ps1 一次性重固化时跳过比对；
+		     正常构建必须参与比对，否则 golden 漂移守卫失效。 -->
 		<AdditionalFiles Include="Generated/WechatToolSchemas.golden.txt"
-		                 Condition="Exists('Generated/WechatToolSchemas.golden.txt')" />
+		                 Condition="'$(WechatToolGoldenUpdate)' != 'true' AND Exists('Generated/WechatToolSchemas.golden.txt')" />
 	</ItemGroup>
 
 	<ItemGroup>

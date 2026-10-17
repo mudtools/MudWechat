@@ -25,6 +25,8 @@ public class WechatToolSurfaceContractGuards
             "contacts.department.child_ids",
             "contacts.department.get",
             "contacts.department.list",
+            "contacts.tag.list",
+            "contacts.tag.members",
             "contacts.user.get",
             "contacts.user.list",
             "contacts.user.simple_list");
@@ -50,6 +52,8 @@ public class WechatToolSurfaceContractGuards
     [InlineData("contacts.department.child_ids", "IWechatWorkDepartmentsService.GetChildDepartmentIdListAsync", "/cgi-bin/department/simplelist")]
     [InlineData("contacts.department.get", "IWechatWorkDepartmentsService.GetDepartmentAsync", "/cgi-bin/department/get")]
     [InlineData("contacts.department.list", "IWechatWorkDepartmentsService.GetDepartmentListAsync", "/cgi-bin/department/list")]
+    [InlineData("contacts.tag.list", "IWechatWorkTagsService.GetTagListAsync", "/cgi-bin/tag/list")]
+    [InlineData("contacts.tag.members", "IWechatWorkTagsService.GetTagMembersAsync", "/cgi-bin/tag/get")]
     [InlineData("contacts.user.get", "IWechatWorkUsersService.GetUserAsync", "/cgi-bin/user/get")]
     [InlineData("contacts.user.list", "IWechatWorkUsersService.GetUserDetailListAsync", "/cgi-bin/user/list")]
     [InlineData("contacts.user.simple_list", "IWechatWorkUsersService.GetUserSimpleListAsync", "/cgi-bin/user/simplelist")]
@@ -64,7 +68,13 @@ public class WechatToolSurfaceContractGuards
         contract.Risk.Should().Be(WechatToolRisk.Read);
         contract.IsWrite.Should().BeFalse();
         contract.Identity.Should().Be("tenant", "企微工具统一走企业级 access_token（身份轴由剖面标记表推导）");
-        contract.RequiredScopes.Should().Contain(toolName.StartsWith("contacts.user", StringComparison.Ordinal) ? "contacts.user.read" : "contacts.department.read");
+        var expectedScope = toolName switch
+        {
+            var name when name.StartsWith("contacts.user", StringComparison.Ordinal) => "contacts.user.read",
+            var name when name.StartsWith("contacts.tag", StringComparison.Ordinal) => "contacts.tag.read",
+            _ => "contacts.department.read",
+        };
+        contract.RequiredScopes.Should().Contain(expectedScope);
         contract.Description.Should().NotBeNullOrWhiteSpace();
     }
 

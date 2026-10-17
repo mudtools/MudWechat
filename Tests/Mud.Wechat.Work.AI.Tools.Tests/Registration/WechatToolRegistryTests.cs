@@ -57,7 +57,10 @@ public class WechatToolRegistryTests
                 Department = new DepartmentInfo { Id = 2, Name = "研发部", ParentId = 1 },
             });
 
-        using var provider = BuildProvider(departments.Object, new Mock<IWechatWorkUsersService>(MockBehavior.Loose).Object);
+        using var provider = BuildProvider(
+            departments.Object,
+            new Mock<IWechatWorkUsersService>(MockBehavior.Loose).Object,
+            new Mock<IWechatWorkTagsService>(MockBehavior.Loose).Object);
         var registry = provider.GetRequiredService<WechatToolRegistry>();
 
         registry.ToolNames.Should().Equal(WechatToolNames.All);
@@ -85,12 +88,18 @@ public class WechatToolRegistryTests
 
     private static ServiceProvider BuildProvider(
         IWechatWorkDepartmentsService departments,
-        IWechatWorkUsersService? users = null)
+        IWechatWorkUsersService? users = null,
+        IWechatWorkTagsService? tags = null)
     {
         var services = new ServiceCollection().AddSingleton(departments);
         if (users is not null)
         {
             services.AddSingleton(users);
+        }
+
+        if (tags is not null)
+        {
+            services.AddSingleton(tags);
         }
 
         return services

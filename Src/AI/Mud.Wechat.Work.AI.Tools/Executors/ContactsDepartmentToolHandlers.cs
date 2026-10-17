@@ -1,0 +1,144 @@
+// -----------------------------------------------------------------------
+//  作者：Mud Studio  版权所有 (c) Mud Studio 2026
+//  Mud.Wechat 项目的版权、商标、专利和其他相关权利均受相应法律法规的保护。
+//  本项目主要遵循 MIT 许可证进行分发和使用。许可证位于源代码树根目录中的 LICENSE-MIT 文件。
+//  不得利用本项目从事危害国家安全、扰乱社会秩序、侵犯他人合法权益等法律法规禁止的活动！任何基于本项目开发而产生的一切法律纠纷和责任，我们不承担任何责任！
+// -----------------------------------------------------------------------
+
+using System.Text.Json.Nodes;
+using Mud.AI.Abstractions.Tools.Handlers;
+using Mud.AI.Agent.Tools;
+using Mud.Wechat.AI.Agent.Results;
+using Mud.Wechat.Work.AI.Tools.Curation;
+using Mud.Wechat.Work.DataModels.Contacts.Department;
+using Mud.Wechat.Work.Interfaces;
+
+namespace Mud.Wechat.Work.AI.Tools.Executors;
+
+/// <summary>
+/// 通讯录「部门」域执行器：把 <c>contacts.department.*</c> 三个只读工具的调用落到
+/// <see cref="IWechatWorkDepartmentsService"/> 的强类型端点上。
+/// </summary>
+/// <remarks>
+/// <para>
+/// <b>为什么执行器只认 <c>IReadOnlyDictionary&lt;string, object?&gt;</c></b>：模型侧入参是 JSON，落到执行链时
+/// 由生成的 Args 解包器完成「snake_case 键 → 强类型实参」的映射；执行器若也吃强类型，就要在两条路径上各维护一份
+/// 参数契约（编译期 Schema 与运行期签名会漂移）。
+/// </para>
+/// <para>
+/// <b>失败唯一出口</b>：业务失败一律经 <see cref="WechatApiResultReader"/> 转可读文本后用
+/// <see cref="ToolResult.FromError(string)"/> 回填模型 —— 不抛异常（异常在工具链里等价于「模型什么都看不到」）。
+/// </para>
+/// </remarks>
+/// <param name="departments">部门域 SDK（应用上下文由回合作用域给定，执行器不自建令牌上下文）。</param>
+public sealed class ContactsDepartmentToolHandlers(IWechatWorkDepartmentsService departments)
+{
+    private readonly IWechatWorkDepartmentsService _departments =
+        departments ?? throw new ArgumentNullException(nameof(departments));
+
+    /// <summary>执行 <c>contacts.department.get</c>。</summary>
+    /// <param name="args">模型侧入参（<c>department_id</c>）。</param>
+    /// <param name="cancellationToken">取消令牌。</param>
+    /// <returns>工具结果。</returns>
+    [ToolHandler(typeof(IWechatWorkContactsDepartmentGetTool))]
+    public async Task<ToolResult> GetDepartmentAsync(
+        IReadOnlyDictionary<string, object?> args,
+        CancellationToken cancellationToken)
+    {
+        // 生成的解包器承担「必填校验 + 类型转换」；缺参抛 ArgumentException（执行链归类 Validation/invalid_args）。
+        var request = ContactsDepartmentGetArgs.Unpack(args);
+
+        var response = await _departments.GetDepartmentAsync(request.DepartmentId, cancellationToken).ConfigureAwait(false);
+        var outcome = WechatApiResultReader.Read(response);
+        if (!outcome.Ok || outcome.Data?.Department is not { } department)
+        {
+            return ToolResult.FromError(outcome.ErrorText ?? "部门不存在或不可见（department 为空）。");
+        }
+
+        return ToolResult.FromText(ToolResultJson.ToText(new JsonObject
+        {
+            ["id"] = department.Id,
+            ["name"] = department.Name,
+            ["name_en"] = department.NameEn,
+            ["parentid"] = department.ParentId,
+            ["department_leader"] = ToJsonArray(department.DepartmentLeader),
+        }));
+    }
+
+    /// <summary>执行 <c>contacts.department.list</c>。</summary>
+    /// <param name="args">模型侧入参（可选 <c>department_id</c>）。</param>
+    /// <param name="cancellationToken">取消令牌。</param>
+    /// <returns>工具结果。</returns>
+    [ToolHandler(typeof(IWechatWorkContactsDepartmentListTool))]
+    public async Task<ToolResult> ListDepartmentsAsync(
+        IReadOnlyDictionary<string, object?> args,
+        CancellationToken cancellationToken)
+    {
+        var rootId = ContactsDepartmentListArgs.Unpack(args).DepartmentId;
+
+        var response = await _departments.GetDepartmentListAsync(rootId, cancellationToken).ConfigureAwait(false);
+        var outcome = WechatApiResultReader.Read(response);
+        if (!outcome.Ok || outcome.Data?.Department is not { } list)
+        {
+            return ToolResult.FromError(outcome.ErrorText ?? "未返回任何部门（department 为空）。");
+        }
+
+        var items = new JsonArray();
+        foreach (var department in list)
+        {
+            // 显式转 JsonNode：走集合 Add(JsonNode?) 重载，避免 JsonArray.Add<T> 的 AOT 动态代码路径（IL3050）。
+            items.Add((JsonNode)new JsonObject
+            {
+                ["id"] = department.Id,
+                ["name"] = department.Name,
+                ["parentid"] = department.ParentId,
+            });
+        }
+
+        return ToolResult.FromText(ToolResultJson.ToText(new JsonObject { ["department"] = items, ["count"] = items.Count }));
+    }
+
+    /// <summary>执行 <c>contacts.department.child_ids</c>。</summary>
+    /// <param name="args">模型侧入参（可选 <c>department_id</c>）。</param>
+    /// <param name="cancellationToken">取消令牌。</param>
+    /// <returns>工具结果。</returns>
+    [ToolHandler(typeof(IWechatWorkContactsDepartmentChildIdsTool))]
+    public async Task<ToolResult> ListChildDepartmentIdsAsync(
+        IReadOnlyDictionary<string, object?> args,
+        CancellationToken cancellationToken)
+    {
+        var rootId = ContactsDepartmentChildIdsArgs.Unpack(args).DepartmentId;
+
+        var response = await _departments.GetChildDepartmentIdListAsync(rootId, cancellationToken).ConfigureAwait(false);
+        var outcome = WechatApiResultReader.Read(response);
+        if (!outcome.Ok || outcome.Data?.DepartmentIds is not { } ids)
+        {
+            return ToolResult.FromError(outcome.ErrorText ?? "未返回任何部门 ID（department_id 为空）。");
+        }
+
+        var items = new JsonArray();
+        foreach (var item in ids)
+        {
+            items.Add((JsonNode)new JsonObject { ["id"] = item.Id, ["parentid"] = item.ParentId });
+        }
+
+        return ToolResult.FromText(ToolResultJson.ToText(new JsonObject { ["department_id"] = items, ["count"] = items.Count }));
+    }
+
+    private static JsonArray ToJsonArray(IEnumerable<string>? values)
+    {
+        var array = new JsonArray();
+        if (values is null)
+        {
+            return array;
+        }
+
+        foreach (var value in values)
+        {
+            // 同上：显式走 JsonNode 重载（string 经 JsonValue 装箱为节点）。
+            array.Add((JsonNode?)JsonValue.Create(value));
+        }
+
+        return array;
+    }
+}

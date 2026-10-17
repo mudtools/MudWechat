@@ -543,41 +543,21 @@ public class WechatAppManagerTests : IDisposable
         }
     }
 
-    // ---------------------------------------------------------------- W1（M10）/ U-4：清库三层探测与回退
+    // ---------------------------------------------------------------- W1（M10）：批量删除能力探测与回退
 
     [Fact]
-    public async Task PurgeAppTokensAsync_ShouldPreferOfficialAppPurge_WhenStoreImplementsIt()
+    public async Task PurgeAppTokensAsync_ShouldUseBatchRemove_WhenStoreSupportsCapability()
     {
-        var spy = new AppPurgeStoreSpy();
-        _services.AddSingleton<IWechatTokenStore>(spy);
         using var manager = CreateManager(InternalConfig("a"), InternalConfig("b"));
-        await spy.Inner.SetAccessTokenAsync("Wechat.AccessToken:a:default", "token-a", 7200);
-        await spy.Inner.SetAccessTokenAsync("Wechat.AccessToken:b:default", "token-b", 7200);
+        var store = _provider!.GetRequiredService<IWechatTokenStore>();
+        store.Should().BeAssignableTo<IWechatTokenStoreBatchRemove>(
+            "W1：默认内存仓储必须实现批量能力接口");
+        await store.SetAccessTokenAsync("Wechat.AccessToken:a:default", "token-a", 7200);
 
         var removed = await manager.PurgeAppTokensAsync("a");
 
-        removed.Should().Be(1);
-        spy.PurgeCalls.Should().Be(1,
-            "U-4 tier-1：实现官方 ITokenStoreAppPurge 的 store 须直调 PurgeAppAsync（键解析内聚实现方）");
-        (await spy.Inner.GetTokenTypesAsync()).Should().Equal(new[] { "Wechat.AccessToken:b:default" });
-    }
-
-    [Fact]
-    public async Task PurgeAppTokensAsync_ShouldUseBatchRemove_WhenStoreOnlySupportsBatchCapability()
-    {
-        var spy = new BatchOnlyStoreSpy();
-        _services.AddSingleton<IWechatTokenStore>(spy);
-        using var manager = CreateManager(InternalConfig("a"), InternalConfig("b"));
-        await spy.Inner.SetAccessTokenAsync("Wechat.AccessToken:a:default", "token-a", 7200);
-        await spy.Inner.SetAccessTokenAsync("Wechat.AccessToken:b:default", "token-b", 7200);
-
-        var removed = await manager.PurgeAppTokensAsync("a");
-
-        removed.Should().Be(1);
-        spy.RemoveRangeCalls.Should().Be(1,
-            "U-4 tier-2：未实现官方接口但实现本院批删能力的 store 须一次批量提交");
-        spy.RemoveCalls.Should().Be(0, "批删命中后逐键 RemoveAsync 不得被触及");
-        (await spy.Inner.GetTokenTypesAsync()).Should().Equal(new[] { "Wechat.AccessToken:b:default" });
+        removed.Should().Be(1, "能力探测命中批量路径（InMemory 逐键即等价批量）");
+        (await store.GetTokenTypesAsync()).Should().BeEmpty();
     }
 
     [Fact]
@@ -591,91 +571,11 @@ public class WechatAppManagerTests : IDisposable
 
         var removed = await manager.PurgeAppTokensAsync("a");
 
-        removed.Should().Be(1, "U-4 tier-3：两个能力接口均未实现的仓储必须回退逐键删除（行为等价）");
-        (await legacyStore.GetTokenTypesAsync()).Should().Equal(new[] { "Wechat.AccessToken:b:default" },
-            "红线守卫：b 键保留 ⇒ 未命中任何能力层时也不得调官方 PurgeAppTokensAsync 扩展"
-            + "（其回退路径忽略 appKey、会误清全部应用）");
+        removed.Should().Be(1, "W1：未实现批量能力的仓储必须回退逐键删除（行为等价）");
+        (await legacyStore.GetTokenTypesAsync()).Should().Equal(new[] { "Wechat.AccessToken:b:default" });
     }
 
-    /// <summary>实现官方按应用清库接口的替身（记录 tier-1 调用次数，实际语义落 InMemory）。</summary>
-    private sealed class AppPurgeStoreSpy : IWechatTokenStore, ITokenStoreAppPurge
-    {
-        public InMemoryWechatTokenStore Inner { get; } = new();
-
-        public int PurgeCalls { get; private set; }
-
-        public Task<IReadOnlyCollection<string>> EnumerateKeysAsync(string appKey, CancellationToken cancellationToken = default)
-            => Inner.EnumerateKeysAsync(appKey, cancellationToken);
-
-        public Task<int> PurgeAppAsync(string appKey, CancellationToken cancellationToken = default)
-        {
-            PurgeCalls++;
-            return Inner.PurgeAppAsync(appKey, cancellationToken);
-        }
-
-        public Task<string?> GetAccessTokenAsync(string tokenType, CancellationToken cancellationToken = default)
-            => Inner.GetAccessTokenAsync(tokenType, cancellationToken);
-
-        public Task SetAccessTokenAsync(string tokenType, string accessToken, long expiresInSeconds, CancellationToken cancellationToken = default)
-            => Inner.SetAccessTokenAsync(tokenType, accessToken, expiresInSeconds, cancellationToken);
-
-        public Task<string?> GetRefreshTokenAsync(string tokenType, CancellationToken cancellationToken = default)
-            => Inner.GetRefreshTokenAsync(tokenType, cancellationToken);
-
-        public Task SetRefreshTokenAsync(string tokenType, string refreshToken, CancellationToken cancellationToken = default)
-            => Inner.SetRefreshTokenAsync(tokenType, refreshToken, cancellationToken);
-
-        public Task RemoveAsync(string tokenType, CancellationToken cancellationToken = default)
-            => Inner.RemoveAsync(tokenType, cancellationToken);
-
-        public Task<IEnumerable<string>> GetTokenTypesAsync(CancellationToken cancellationToken = default)
-            => Inner.GetTokenTypesAsync(cancellationToken);
-
-        public Task ClearAsync(CancellationToken cancellationToken = default)
-            => Inner.ClearAsync(cancellationToken);
-    }
-
-    /// <summary>仅实现本院批删能力的替身（未实现官方接口；记录 tier-2 调用分布）。</summary>
-    private sealed class BatchOnlyStoreSpy : IWechatTokenStoreBatchRemove
-    {
-        public InMemoryWechatTokenStore Inner { get; } = new();
-
-        public int RemoveRangeCalls { get; private set; }
-
-        public int RemoveCalls { get; private set; }
-
-        public Task<int> RemoveRangeAsync(IReadOnlyCollection<string> keys, CancellationToken cancellationToken = default)
-        {
-            RemoveRangeCalls++;
-            return Inner.RemoveRangeAsync(keys, cancellationToken);
-        }
-
-        public Task RemoveAsync(string tokenType, CancellationToken cancellationToken = default)
-        {
-            RemoveCalls++;
-            return Inner.RemoveAsync(tokenType, cancellationToken);
-        }
-
-        public Task<string?> GetAccessTokenAsync(string tokenType, CancellationToken cancellationToken = default)
-            => Inner.GetAccessTokenAsync(tokenType, cancellationToken);
-
-        public Task SetAccessTokenAsync(string tokenType, string accessToken, long expiresInSeconds, CancellationToken cancellationToken = default)
-            => Inner.SetAccessTokenAsync(tokenType, accessToken, expiresInSeconds, cancellationToken);
-
-        public Task<string?> GetRefreshTokenAsync(string tokenType, CancellationToken cancellationToken = default)
-            => Inner.GetRefreshTokenAsync(tokenType, cancellationToken);
-
-        public Task SetRefreshTokenAsync(string tokenType, string refreshToken, CancellationToken cancellationToken = default)
-            => Inner.SetRefreshTokenAsync(tokenType, refreshToken, cancellationToken);
-
-        public Task<IEnumerable<string>> GetTokenTypesAsync(CancellationToken cancellationToken = default)
-            => Inner.GetTokenTypesAsync(cancellationToken);
-
-        public Task ClearAsync(CancellationToken cancellationToken = default)
-            => Inner.ClearAsync(cancellationToken);
-    }
-
-    /// <summary>两个能力接口均未实现的遗留仓储替身（验证 tier-3 逐键回退路径）。</summary>
+    /// <summary>不实现批量能力接口的遗留仓储替身（验证能力探测回退路径）。</summary>
     private sealed class LegacyTokenStoreWithoutBatch : IWechatTokenStore
     {
         private readonly InMemoryWechatTokenStore _inner = new();

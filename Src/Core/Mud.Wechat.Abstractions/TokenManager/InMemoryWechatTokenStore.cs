@@ -10,12 +10,8 @@ namespace Mud.Wechat.Abstractions.TokenManager;
 /// <summary>
 /// <see cref="IWechatTokenStore"/> 的进程内默认实现（并发字典 + 绝对过期判定），各产品线共用。
 /// </summary>
-/// <remarks>
-/// 进程内逐键删除即等价批量，直接实现批量能力接口（调用方探测后走一次提交）；
-/// 并实现官方 U-4 按应用清库接口 <see cref="ITokenStoreAppPurge"/>（键归属判定走
-/// <see cref="WechatTokenStoreBridge.IsStoreKeyForApp"/> 共享实现，与 Redis 实现同源）。
-/// </remarks>
-public sealed class InMemoryWechatTokenStore : IWechatTokenStoreBatchRemove, ITokenStoreAppPurge
+/// <remarks>进程内逐键删除即等价批量，直接实现批量能力接口（调用方探测后走一次提交）。</remarks>
+public sealed class InMemoryWechatTokenStore : IWechatTokenStoreBatchRemove
 {
     private sealed class StoreEntry
     {
@@ -138,33 +134,6 @@ public sealed class InMemoryWechatTokenStore : IWechatTokenStoreBatchRemove, ITo
         }
 
         return Task.FromResult(removed);
-    }
-
-    /// <inheritdoc />
-    /// <remarks>
-    /// 快照语义：先物化匹配键数组再返回。返回口径与 <see cref="GetTokenTypesAsync"/> 一致
-    /// （完整持久层键 <c>{tokenType}:{appKey}:{scopeKey}</c>，可直接回传 <see cref="RemoveRangeAsync"/>）。
-    /// 空白 <paramref name="appKey"/> 返回空集（本院键空间无官方 <c>shared</c> 式共享段约定）。
-    /// </remarks>
-    public Task<IReadOnlyCollection<string>> EnumerateKeysAsync(string appKey, CancellationToken cancellationToken = default)
-    {
-        if (string.IsNullOrEmpty(appKey))
-        {
-            return Task.FromResult<IReadOnlyCollection<string>>(Array.Empty<string>());
-        }
-
-        IReadOnlyCollection<string> keys = _entries.Keys
-            .Where(key => WechatTokenStoreBridge.IsStoreKeyForApp(key, appKey))
-            .ToArray();
-        return Task.FromResult(keys);
-    }
-
-    /// <inheritdoc />
-    /// <remarks>枚举 → <see cref="RemoveRangeAsync"/>（计数为实际删除键数，无静默半删）。</remarks>
-    public async Task<int> PurgeAppAsync(string appKey, CancellationToken cancellationToken = default)
-    {
-        var keys = await EnumerateKeysAsync(appKey, cancellationToken).ConfigureAwait(false);
-        return await RemoveRangeAsync(keys, cancellationToken).ConfigureAwait(false);
     }
 
     private static long NowMs() => DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();

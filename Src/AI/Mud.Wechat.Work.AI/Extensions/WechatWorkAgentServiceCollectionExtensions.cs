@@ -146,12 +146,14 @@ public static class WechatWorkAgentServiceCollectionExtensions
                 + "注册顺序无关，但容器内必须存在一个 IChatClient 实现。");
         }
 
+        // 工具面由 AddWechatWorkTools() 注册（可选）：未装配工具面时该解析为 null，Agent 照常工作。
         return new WechatAgent(
             chatClient,
             services.GetRequiredService<IOptions<WechatAgentOptions>>(),
             services.GetRequiredService<ISessionStore>(),
             services.GetService<IAgentTelemetry>(),
             services.GetService<ITurnScopeFactory>(),
+            services.GetService<IReadOnlyList<AIFunction>>(),
             services.GetService<ILogger<WechatAgent>>());
     }
 }

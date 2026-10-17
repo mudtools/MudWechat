@@ -1,3 +1,4 @@
+using System.Text.Json;
 using FluentAssertions;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Options;
@@ -83,6 +84,41 @@ public class WechatAgentTurnTests
         outcome.ResponseText.Should().Be("pong");
     }
 
+    [Fact]
+    public async Task RunTurnAsync_WithTools_ShouldExposeThemToModel()
+    {
+        var captured = new List<ChatOptions?>();
+        var chatClient = new Mock<IChatClient>(MockBehavior.Loose);
+        chatClient
+            .Setup(c => c.GetResponseAsync(
+                It.IsAny<IEnumerable<ChatMessage>>(),
+                It.IsAny<ChatOptions?>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync((IEnumerable<ChatMessage> _, ChatOptions? options, CancellationToken _) =>
+            {
+                captured.Add(options);
+                return new ChatResponse(new ChatMessage(ChatRole.Assistant, "pong"));
+            });
+
+        var switcher = new Mock<IWechatAppContextSwitcher>(MockBehavior.Loose);
+        switcher.Setup(s => s.UseAppScope(It.IsAny<string>())).Returns(new FakeScope());
+        switcher.Setup(s => s.UseDefaultAppScope()).Returns(new FakeScope());
+
+        var agent = new WechatAgent(
+            chatClient.Object,
+            Options.Create(new WechatAgentOptions()),
+            new MemorySessionStore(),
+            telemetry: null,
+            scopeFactory: new WechatWorkAiScopeFactory(switcher.Object, new WechatAiCorpContextAccessor()),
+            tools: [new ProbeFunction()]);
+
+        await agent.RunTurnAsync(Request(), new Mock<IConversationReplySink>(MockBehavior.Loose).Object);
+
+        captured.Should().ContainSingle();
+        captured[0]!.Tools.Should().NotBeNullOrEmpty("工具面投影必须在装配期进入内层 Agent 的 ChatOptions.Tools");
+        captured[0]!.Tools!.Should().Contain(tool => tool.Name == ProbeFunction.ProbeName);
+    }
+
     private static WechatAgent CreateAgent(WechatAgentOptions options, ISessionStore store)
     {
         var chatClient = new Mock<IChatClient>(MockBehavior.Loose);
@@ -107,6 +143,24 @@ public class WechatAgentTurnTests
 
     private static ConversationRequest Request()
         => new("corp-app", ConversationScope.Group(), "chat-1", "u1", "m1", "hi", "chat-1");
+
+    /// <summary>探针工具：只验证「工具是否进入模型视野」，不参与执行链。</summary>
+    private sealed class ProbeFunction : AIFunction
+    {
+        public const string ProbeName = "probe.echo";
+
+        public override string Name => ProbeName;
+
+        public override string Description => "测试用探针工具（不执行任何真实调用）";
+
+        public override JsonElement JsonSchema { get; } =
+            JsonDocument.Parse("""{"type":"object","properties":{}}""").RootElement.Clone();
+
+        protected override ValueTask<object?> InvokeCoreAsync(
+            AIFunctionArguments arguments,
+            CancellationToken cancellationToken)
+            => ValueTask.FromResult<object?>("ok");
+    }
 
     private sealed class FakeScope : IDisposable
     {

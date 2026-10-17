@@ -75,6 +75,12 @@ public static class WechatWorkToolServiceCollectionExtensions
         services.AddWechatContactsDepartmentToolHandlersCore();
         services.AddWechatContactsUserToolHandlersCore();
         services.AddWechatContactsTagToolHandlersCore();
+        services.AddWechatExternalContactToolHandlersCore();
+        services.AddWechatJournalToolHandlersCore();
+        services.AddWechatKfToolHandlersCore();
+        services.AddWechatLivingToolHandlersCore();
+        services.AddWechatMeetingToolHandlersCore();
+        services.AddWechatMessageToolHandlersCore();
         services.AddWechatWedocToolHandlersCore();
 
         services.TryAddSingleton(static provider => WechatToolDomainRegistrars.Build(provider));

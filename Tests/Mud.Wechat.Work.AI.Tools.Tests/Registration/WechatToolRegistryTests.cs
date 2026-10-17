@@ -63,7 +63,13 @@ public class WechatToolRegistryTests
             new Mock<IWechatWorkTagsService>(MockBehavior.Loose).Object,
             new Mock<IWechatWorkWedocService>(MockBehavior.Loose).Object,
             new Mock<IWechatWorkApprovalService>(MockBehavior.Loose).Object,
-            new Mock<IWechatWorkInternalCheckinRecordService>(MockBehavior.Loose).Object);
+            new Mock<IWechatWorkInternalCheckinRecordService>(MockBehavior.Loose).Object,
+            externalContact: true,
+            meeting: true,
+            kf: true,
+            journal: true,
+            living: true,
+            message: true);
         var registry = provider.GetRequiredService<WechatToolRegistry>();
 
         registry.ToolNames.Should().BeEquivalentTo(WechatToolNames.All);
@@ -95,7 +101,13 @@ public class WechatToolRegistryTests
         IWechatWorkTagsService? tags = null,
         IWechatWorkWedocService? wedoc = null,
         IWechatWorkApprovalService? approval = null,
-        IWechatWorkInternalCheckinRecordService? checkin = null)
+        IWechatWorkInternalCheckinRecordService? checkin = null,
+        bool externalContact = false,
+        bool meeting = false,
+        bool kf = false,
+        bool journal = false,
+        bool living = false,
+        bool message = false)
     {
         var services = new ServiceCollection().AddSingleton(departments);
         if (users is not null)
@@ -121,6 +133,42 @@ public class WechatToolRegistryTests
         if (checkin is not null)
         {
             services.AddSingleton(checkin);
+        }
+
+        if (externalContact)
+        {
+            services.AddSingleton(new Mock<IWechatWorkExternalContactFollowUserService>(MockBehavior.Loose).Object);
+            services.AddSingleton(new Mock<IWechatWorkExternalContactCustomerService>(MockBehavior.Loose).Object);
+            services.AddSingleton(new Mock<IWechatWorkExternalContactTagService>(MockBehavior.Loose).Object);
+        }
+
+        if (meeting)
+        {
+            services.AddSingleton(new Mock<IWechatWorkMeetingService>(MockBehavior.Loose).Object);
+            services.AddSingleton(new Mock<IWechatWorkInternalMeetingService>(MockBehavior.Loose).Object);
+            services.AddSingleton(new Mock<IWechatWorkInternalMeetingAdvancedService>(MockBehavior.Loose).Object);
+        }
+
+        if (journal)
+        {
+            services.AddSingleton(new Mock<IWechatWorkInternalJournalService>(MockBehavior.Loose).Object);
+        }
+
+        if (living)
+        {
+            services.AddSingleton(new Mock<IWechatWorkLivingService>(MockBehavior.Loose).Object);
+        }
+
+        if (message)
+        {
+            services.AddSingleton(new Mock<IWechatWorkMessageService>(MockBehavior.Loose).Object);
+        }
+
+        if (kf)
+        {
+            services.AddSingleton(new Mock<IWechatWorkKfAccountService>(MockBehavior.Loose).Object);
+            services.AddSingleton(new Mock<IWechatWorkKfServicerService>(MockBehavior.Loose).Object);
+            services.AddSingleton(new Mock<IWechatWorkKfSessionService>(MockBehavior.Loose).Object);
         }
 
         return services

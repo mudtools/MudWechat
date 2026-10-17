@@ -33,6 +33,21 @@ public class WechatToolSurfaceContractGuards
                 "contacts.user.get",
                 "contacts.user.list",
                 "contacts.user.simple_list",
+                "externalcontact.contact.get",
+                "externalcontact.contact.list",
+                "externalcontact.follow_user.list",
+                "externalcontact.tag.list",
+                "journal.record.get",
+                "journal.record.list",
+                "kf.account.list",
+                "kf.servicer.list",
+                "kf.session.get",
+                "living.get",
+                "living.list",
+                "living.watch_stat",
+                "meeting.attendees",
+                "meeting.get",
+                "meeting.list",
                 "wedoc.doc.base_info",
             ]);
 
@@ -40,6 +55,8 @@ public class WechatToolSurfaceContractGuards
         WechatToolNames.WriteAll.Should().Equal(
             [
                 "contacts.tag.create",
+                "kf.message.send",
+                "message.send",
                 "wedoc.doc.create",
                 "wedoc.doc.delete",
                 "wedoc.doc.rename",
@@ -81,6 +98,23 @@ public class WechatToolSurfaceContractGuards
     [InlineData("contacts.user.get", "IWechatWorkUsersService.GetUserAsync", "/cgi-bin/user/get", "GET", WechatToolRisk.Read, "contacts.user.read")]
     [InlineData("contacts.user.list", "IWechatWorkUsersService.GetUserDetailListAsync", "/cgi-bin/user/list", "GET", WechatToolRisk.Read, "contacts.user.read")]
     [InlineData("contacts.user.simple_list", "IWechatWorkUsersService.GetUserSimpleListAsync", "/cgi-bin/user/simplelist", "GET", WechatToolRisk.Read, "contacts.user.read")]
+    [InlineData("externalcontact.contact.get", "IWechatWorkExternalContactCustomerService.GetCustomerDetailAsync", "/cgi-bin/externalcontact/get", "GET", WechatToolRisk.Read, "externalcontact.contact.read")]
+    [InlineData("externalcontact.contact.list", "IWechatWorkExternalContactCustomerService.GetCustomerListAsync", "/cgi-bin/externalcontact/list", "GET", WechatToolRisk.Read, "externalcontact.contact.read")]
+    [InlineData("externalcontact.follow_user.list", "IWechatWorkExternalContactFollowUserService.GetFollowUserListAsync", "/cgi-bin/externalcontact/get_follow_user_list", "GET", WechatToolRisk.Read, "externalcontact.follow_user.read")]
+    [InlineData("externalcontact.tag.list", "IWechatWorkExternalContactTagService.GetCorpTagListAsync", "/cgi-bin/externalcontact/get_corp_tag_list", "POST", WechatToolRisk.Read, "externalcontact.tag.read")]
+    [InlineData("journal.record.get", "IWechatWorkInternalJournalService.GetJournalRecordDetailAsync", "/cgi-bin/oa/journal/get_record_detail", "POST", WechatToolRisk.Read, "journal.record.read")]
+    [InlineData("journal.record.list", "IWechatWorkInternalJournalService.GetJournalRecordListAsync", "/cgi-bin/oa/journal/get_record_list", "POST", WechatToolRisk.Read, "journal.record.read")]
+    [InlineData("kf.account.list", "IWechatWorkKfAccountService.GetAccountListAsync", "/cgi-bin/kf/account/list", "POST", WechatToolRisk.Read, "kf.account.read")]
+    [InlineData("kf.message.send", "IWechatWorkKfSessionService.SendTextMessageAsync", "/cgi-bin/kf/send_msg", "POST", WechatToolRisk.Write, "kf.message.write")]
+    [InlineData("kf.servicer.list", "IWechatWorkKfServicerService.GetServicerListAsync", "/cgi-bin/kf/servicer/list", "GET", WechatToolRisk.Read, "kf.servicer.read")]
+    [InlineData("kf.session.get", "IWechatWorkKfSessionService.GetServiceStateAsync", "/cgi-bin/kf/service_state/get", "POST", WechatToolRisk.Read, "kf.session.read")]
+    [InlineData("living.get", "IWechatWorkLivingService.GetLivingInfoAsync", "/cgi-bin/living/get_living_info", "GET", WechatToolRisk.Read, "living.read")]
+    [InlineData("living.list", "IWechatWorkLivingService.GetUserAllLivingIdAsync", "/cgi-bin/living/get_user_all_livingid", "POST", WechatToolRisk.Read, "living.read")]
+    [InlineData("living.watch_stat", "IWechatWorkLivingService.GetWatchStatAsync", "/cgi-bin/living/get_watch_stat", "POST", WechatToolRisk.Read, "living.read")]
+    [InlineData("meeting.attendees", "IWechatWorkInternalMeetingAdvancedService.GetAttendeeListAsync", "/cgi-bin/meeting/get_attendee_list", "POST", WechatToolRisk.Read, "meeting.read")]
+    [InlineData("message.send", "IWechatWorkMessageService.SendTextMessageAsync", "/cgi-bin/message/send", "POST", WechatToolRisk.Write, "message.send.write")]
+    [InlineData("meeting.get", "IWechatWorkInternalMeetingService.GetMeetingInfoAsync", "/cgi-bin/meeting/get_info", "POST", WechatToolRisk.Read, "meeting.read")]
+    [InlineData("meeting.list", "IWechatWorkMeetingService.GetUserMeetingIdListAsync", "/cgi-bin/meeting/get_user_meetingid", "POST", WechatToolRisk.Read, "meeting.read")]
     [InlineData("wedoc.doc.base_info", "IWechatWorkWedocService.GetDocumentBaseInfoAsync", "/cgi-bin/wedoc/get_doc_base_info", "POST", WechatToolRisk.Read, "wedoc.doc.read")]
     [InlineData("wedoc.doc.create", "IWechatWorkWedocService.CreateDocumentAsync", "/cgi-bin/wedoc/create_doc", "POST", WechatToolRisk.Write, "wedoc.doc.write")]
     [InlineData("wedoc.doc.delete", "IWechatWorkWedocService.DeleteDocumentAsync", "/cgi-bin/wedoc/del_doc", "POST", WechatToolRisk.HighRiskWrite, "wedoc.doc.write")]

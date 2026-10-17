@@ -5,7 +5,6 @@
 //  不得利用本项目从事危害国家安全、扰乱社会秩序、侵犯他人合法权益等法律法规禁止的活动！任何基于本项目开发而产生的一切法律纠纷和责任，我们不承担任何责任！
 // -----------------------------------------------------------------------
 
-using System.Globalization;
 using System.Text.Json.Nodes;
 using Mud.AI.Abstractions.Tools.Handlers;
 using Mud.AI.Agent.Tools;
@@ -65,12 +64,12 @@ public sealed class CheckinToolHandlers(IWechatWorkInternalCheckinRecordService 
             return ToolResult.FromError($"参数非法：userid_list 一次最多 {MaxUserCount} 个，请分批查询。");
         }
 
-        if (!TryParseTime(request.StartTime, out var start))
+        if (!ToolTimeText.TryParseUnixSeconds(request.StartTime, out var start))
         {
             return ToolResult.FromError(TimeFormatHint);
         }
 
-        if (!TryParseTime(request.EndTime, out var end))
+        if (!ToolTimeText.TryParseUnixSeconds(request.EndTime, out var end))
         {
             return ToolResult.FromError(TimeFormatHint);
         }
@@ -130,38 +129,4 @@ public sealed class CheckinToolHandlers(IWechatWorkInternalCheckinRecordService 
         }));
     }
 
-    /// <summary>解析时间入参：Unix 秒，或<b>带时区</b>的 ISO 8601（无时区不猜，直接判非法以免跨主机语义漂移）。</summary>
-    private static bool TryParseTime(string? raw, out long seconds)
-    {
-        seconds = 0;
-        if (string.IsNullOrWhiteSpace(raw))
-        {
-            return false;
-        }
-
-        var text = raw.Trim();
-        if (long.TryParse(text, NumberStyles.None, CultureInfo.InvariantCulture, out var numeric))
-        {
-            if (numeric <= 0)
-            {
-                return false;
-            }
-
-            seconds = numeric;
-            return true;
-        }
-
-        // 日期段的 '-' 在 'T' 之前；'T' 之后出现的 '+/-' 或末尾的 'Z' 才是时区偏移。
-        var tIndex = text.IndexOf('T');
-        var hasOffset = text.EndsWith("Z", StringComparison.OrdinalIgnoreCase)
-            || (tIndex >= 0 && (text.IndexOf('+', tIndex) >= 0 || text.LastIndexOf('-') > tIndex));
-        if (!hasOffset
-            || !DateTimeOffset.TryParse(text, CultureInfo.InvariantCulture, DateTimeStyles.None, out var when))
-        {
-            return false;
-        }
-
-        seconds = when.ToUnixTimeSeconds();
-        return true;
-    }
 }

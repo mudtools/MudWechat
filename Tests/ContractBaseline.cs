@@ -313,8 +313,18 @@ public static class Baseline
         /// Ams 恒 POST <c>/wxa/operationams</c>、以 <c>action</c> 分派、令牌面 <c>authorizer_access_token</c>、注册组 <c>Ams</c>；
         /// AmsShare 恒 POST <c>/wxa/getdefaultamsinfo</c>·<c>/wxa/setdefaultamsinfo</c>、令牌面 <c>component_access_token</c>、注册组 <c>AmsShare</c>
         /// （两面令牌归属不同故拆两支接口/注册组）。逐接口表由 AM 系列守卫持有。
+        /// MiniProgramManage（代小程序管理 · 授权方令牌面）为 2026-10-17 依官方 miniprogram-management/* 逐页取证分批落地（30-1 起）：
+        /// 30-1 落「代码管理 15 + 名称与搜索 5 + 类目 1」三支、30-2 落「域名与 DNS 9 + 体验成员 3 + 违规申诉 2 + 订阅组件 3」四支、
+        /// 30-3 落「ICP 备案 JSON 面 12 + 隐私接口 3 + 订单路径查询 1」三支、30-4 落「试用小程序核验 2」（转正 / 改名，逐页取证为 <c>authorizer_access_token</c>、权限集 81）一支，
+        /// 十一支子接口共用注册组 <c>MiniProgramManage</c>、令牌面 <c>authorizer_access_token</c>，逐接口表由 MPG 系列守卫持有。<c>applysetorderpathinfo</c>（订单路径申请）经逐页复核为 <b>component_access_token</b> 面，
+        /// 与授权方 <c>getorderpathinfo</c>（authorizer）令牌归属相反，故不入本授权方组。
+        /// MiniProgramTemplate（代码模板库 / 下单路径申请 · <c>component_access_token</c> 面）为 30-4 新注册组：模板库管理 4（草稿列表 / 模板列表 / 添加模板 / 删除模板）+ 下单页 path 批量申请 1（<c>applysetorderpathinfo</c>），
+        /// 两支子接口共用注册组 <c>MiniProgramTemplate</c>（对齐 Ams/AmsShare 按令牌拆组先例），逐接口表由 TPL 系列守卫持有。
+        /// 30-5 落三支特殊形态：<c>uploadmedia</c>（代码管理接口内，表单仅 <c>media</c>）与 <c>upload_icp_media</c>（备案接口内，表单四支字段）为 multipart、零 JSON 请求 DTO，并入授权方 <c>MiniProgramManage</c> 组；
+        /// <c>get_qrcode</c> 成功应答为 image/jpeg 二进制流 ⇒ 不走声明式管线，由手写通道 <c>IOpenPlatformMpTrialQrCodeService</c>（非 <c>[HttpClientApi]</c>，随 MiniProgramManage 模块装配）承载，守卫 QRC 系列锁定。
+        /// 30-6 判非契约：试用小程序转正族的 2.0 旧版 <c>/wxa/getmpadminauth</c> 与 <c>/wxa/mpverifybetaweapp</c> 不建接口、不声明路由，由守卫 OP-NC 系列（<c>OpenPlatformNonContractRouteZeroDeclarationContractGuards</c>）锁定零声明。
         /// </remarks>
-        public const int HttpApiInterfaces = 16;
+        public const int HttpApiInterfaces = 29;
 
         /// <summary>
         /// 端点总数（各接口方法之和）。
@@ -328,9 +338,19 @@ public static class Baseline
         /// + Embedded 6（/wxaapi/wxaembedded/* 半屏小程序，4 POST + 2 GET，2026-10-17 逐页取证）
         /// + Auth 5（/wxa/sec/* 微信认证：身份树 1 GET + 提审/重审/进度查询 3 POST + 补充材料 multipart 1 POST，2026-10-17 逐页取证）
         /// + Ams 19（/wxa/operationams 单路由 action 分派，恒 POST，2026-10-17 逐页取证）
-        /// + AmsShare 3（/wxa/getdefaultamsinfo ×2 + /wxa/setdefaultamsinfo ×1，恒 POST，2026-10-17 逐页取证）= 122。
-        /// 令牌链 4 端点（api_component_token 等）由 Provider raw HTTP 承载，**不计**（T2 裁定）。
+        /// + AmsShare 3（/wxa/getdefaultamsinfo ×2 + /wxa/setdefaultamsinfo ×1，恒 POST，2026-10-17 逐页取证）= 122
+        /// + MiniProgramManage 21（30-1：代码管理 15 + 名称与搜索 5 + 类目 1，2026-10-17 逐页取证）
+        /// + MiniProgramManage 17（30-2：域名与 DNS 9 + 体验成员 3 + 违规申诉 2 + 订阅组件 3，2026-10-17 逐页取证）
+        /// + MiniProgramManage 16（30-3：ICP 备案 JSON 面 12 + 隐私接口 3 + 订单路径查询 1，2026-10-17 逐页取证）
+        /// + MiniProgramManage 2（30-4：试用小程序核验 2，转正 / 改名，authorizer_access_token，2026-10-17 逐页取证）
+        /// + MiniProgramTemplate 5（30-4 新注册组：模板库 4 + 下单路径申请 1，component_access_token，2026-10-17 逐页取证）
+        /// + MiniProgramManage 2（30-5：multipart 上传 2，代码管理 uploadmedia 1 + 备案 upload_icp_media 1，authorizer_access_token，2026-10-17 逐页取证）= 185。
+        /// 令牌链 4 端点（api_component_token 等）由 Provider raw HTTP 承载，**不计**（T2 裁定）；
+        /// 体验版二维码 /wxa/get_qrcode 由**非声明式图片流通道** IOpenPlatformMpTrialQrCodeService 承载（成功应答是 image/jpeg 二进制），
+        /// 同口径**不计**入声明式端点总数，由 QRC 系列守卫单独锁定；
+        /// 试用小程序转正族 2.0 旧版两支 /wxa/getmpadminauth + /wxa/mpverifybetaweapp 经逐页核验（旧页正文仅剩「优化后重新上线」、无 301、不在现行 openApi/OpenApiDoc 目录树内）判为**非契约**，
+        /// 由 OP-NC 系列守卫锁定 Src/ 零声明，**恒不计**入端点总数（追踪号 P1-OP-LEGACY20-BETAVERIFY-01）。
         /// </remarks>
-        public const int Endpoints = 122;
+        public const int Endpoints = 185;
     }
 }

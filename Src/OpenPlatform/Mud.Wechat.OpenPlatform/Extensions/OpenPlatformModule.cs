@@ -81,4 +81,27 @@ public enum OpenPlatformModule
     /// 故拆独立注册组；两支同路由多端点各以 <c>action</c> query 分派。
     /// </remarks>
     AmsShare,
+
+    /// <summary>
+    /// 代小程序管理域 · 授权方令牌面（<c>/wxa/*</c>：代码管理 / 名称与搜索 / 类目 / 域名与 DNS / 体验成员 / 违规申诉 / 订阅组件 / ICP 备案 / 隐私接口；注册组 <c>MiniProgramManage</c>）。
+    /// </summary>
+    /// <remarks>
+    /// 令牌恒为 <c>authorizer_access_token</c>（Query 参数名 <c>access_token</c>）⇒ 第三方平台代授权方小程序管理。
+    /// 多支子接口共用注册组 <c>MiniProgramManage</c>，一次 <c>AddMiniProgramManageWebApiHttpClient()</c> 覆盖全部接口。
+    /// 这些 <c>/wxa/*</c> 代码/域名/ICP 路由与小程序线自有 <c>/wxa/business|sec|book|*</c> 面零交叠，逐条加入 OP-B5 独占清单。
+    /// 30-4 增补「试用小程序核验」子接口（转正 / 改名，2 端点，<c>authorizer_access_token</c>，权限集 81）并入本注册组。
+    /// 30-5 增补两支 multipart 端点（代码管理 <c>uploadmedia</c>、备案 <c>upload_icp_media</c>）与一支<b>非声明式</b>图片流通道
+    /// （<c>get_qrcode</c> 成功应答为 JPEG 二进制，声明式 JSON 管线无法承载 ⇒ <c>IOpenPlatformMpTrialQrCodeService</c>，随本模块装配）。
+    /// </remarks>
+    MiniProgramManage,
+
+    /// <summary>
+    /// 代码模板库与下单路径申请域 · <c>component_access_token</c> 面（<c>/wxa/*</c>：模板库管理 4 + 下单页 path 批量申请 1，共 5 端点；注册组 <c>MiniProgramTemplate</c>）。
+    /// </summary>
+    /// <remarks>
+    /// 令牌恒为 <c>component_access_token</c>（Query 参数名 <c>access_token</c>）⇒ 服务商以自身令牌操作代码模板库、批量申请下单页 path，
+    /// 与 <see cref="MiniProgramManage"/>（授权方令牌）令牌归属不同，故拆独立注册组（对齐 <see cref="Ams"/>/<see cref="AmsShare"/> 按令牌拆组先例）。
+    /// <c>applysetorderpathinfo</c> 为 <c>MiniProgramManage</c> 内 <c>getorderpathinfo</c>（授权方）的 component 面孪生端点。
+    /// </remarks>
+    MiniProgramTemplate,
 }

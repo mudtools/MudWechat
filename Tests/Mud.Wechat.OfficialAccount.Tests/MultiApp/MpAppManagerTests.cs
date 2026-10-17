@@ -9,6 +9,7 @@ using Mud.HttpUtils;
 using Mud.Wechat.OfficialAccount.Abstractions.Authentication;
 using Mud.Wechat.OfficialAccount.Abstractions.Authentication.MultiApp;
 using Mud.Wechat.OfficialAccount.Extensions;
+using Mud.Wechat.OfficialAccount.Web;
 
 namespace Mud.Wechat.OfficialAccount.Tests.MultiApp;
 
@@ -287,5 +288,47 @@ public class MpAppManagerTests
         MpTokenTypes.AccessToken.Should().Be("Wechat.Mp.AccessToken");
         MpTokenTypes.AccessToken.Should().NotBe("Wechat.AccessToken",
             "公众号与企微不得共用同一令牌路由键（共享 ITokenManagerRegistry 会串号）");
+    }
+
+    /// <summary>
+    /// A17：JS-SDK 签名链路可从<b>根容器</b>解析（票据管理器与未命名 <c>IOptions&lt;MpAppConfig&gt;</c> 均桥到默认应用）。
+    /// </summary>
+    /// <remarks>
+    /// 缺陷回归（DM-04 Demo 首个踩到）：票据管理器按应用装配在 <see cref="IMpAppContext"/> 内、
+    /// 未命名 <c>MpAppConfig</c> 选项从未登记，而 <c>AddMpJsApiSignature()</c> 把签名服务注册进根容器 ⇒
+    /// 宿主只要开 <c>ValidateOnBuild</c>（ASP.NET Core Development 默认开）就在建容器阶段炸掉，
+    /// 关掉则推迟到注入签名的那次请求。此前所有用例以 Mock 直接构造签名服务，故该装配面一直无人看守。
+    /// </remarks>
+    [Fact]
+    public void JsApiSignatureService_ShouldResolveFromRootProvider()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddMpApp(config =>
+        {
+            config.AppKey = "default";
+            config.AppId = "wx-jsapi";
+            config.AppSecret = "s-jsapi";
+        });
+        services.AddMpServices(builder => builder.AddBasicApi());
+        services.AddMpJsApiSignature();
+
+        using var provider = services.BuildServiceProvider(new ServiceProviderOptions
+        {
+            ValidateOnBuild = true,
+            ValidateScopes = true,
+        });
+
+        provider.GetRequiredService<IMpJsApiSignatureService>().Should().NotBeNull();
+
+        var first = provider.GetRequiredService<IMpJsApiTicketManager>();
+        var second = provider.GetRequiredService<IMpJsApiTicketManager>();
+        first.Should().BeSameAs(second, "根容器桥接为 Singleton：跨解析必须同一实例（票据缓存不得分裂）");
+        first.Should().BeSameAs(
+            provider.GetRequiredService<IMpAppContext>().GetService<IMpJsApiTicketManager>(),
+            "桥接取的是默认应用上下文里的那份票据管理器，不得另起一份缓存");
+
+        provider.GetRequiredService<IOptions<MpAppConfig>>().Value.AppId.Should().Be("wx-jsapi",
+            "签名服务以未命名选项取 AppId 回包给前端 wx.config");
     }
 }

@@ -5,6 +5,8 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+		<!-- Demo 基座：环境变量校验、写操作闸、健康检查端点。 -->
+		<ProjectReference Include="..\Mud.Wechat.Demo.Shared\Mud.Wechat.Demo.Shared.csproj" />
 		<!-- Callback 包传递引用 Abstractions（含 AddWechatApp）+ DataModels，无需额外引用主包 Work。 -->
 		<ProjectReference Include="..\..\Src\Work\Mud.Wechat.Work.Callback\Mud.Wechat.Work.Callback.csproj" />
 		<!-- 回调处理器契约分析器（狗粮）：Demo 的 7 个 handler 接入编译期校验，0 诊断为预期。 -->

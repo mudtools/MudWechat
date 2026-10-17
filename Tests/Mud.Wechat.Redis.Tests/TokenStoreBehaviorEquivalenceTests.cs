@@ -21,9 +21,13 @@ public class TokenStoreBehaviorEquivalenceTests
             new RedisWechatTokenStore(new FakeRedisBackend().Multiplexer.Object, new WechatRedisOptions())) };
     }
 
+    /// <remarks>
+    /// U-4 接口现只由 Redis 实现承担：叶层 <see cref="InMemoryWechatTokenStore"/> 已撤下该接口，
+    /// 进程内清理走 <c>WechatAppManager.PurgeAppTokensAsync</c>（<c>GetTokenTypesAsync</c> + 批删），
+    /// 故本表**不得**再列 InMemory —— 列了就是一次 <c>InvalidCastException</c> 假红。
+    /// </remarks>
     public static IEnumerable<object[]> PurgeCapableStores()
     {
-        yield return new object[] { "InMemory", new Func<IWechatTokenStore>(() => new InMemoryWechatTokenStore()) };
         yield return new object[] { "RedisFake", new Func<IWechatTokenStore>(() =>
             new RedisWechatTokenStore(new FakeRedisBackend().Multiplexer.Object, new WechatRedisOptions())) };
     }
@@ -151,7 +155,7 @@ public class TokenStoreBehaviorEquivalenceTests
     public async Task EnumerateKeys_ShouldFilterByAppKeySegment(string _, Func<IWechatTokenStore> factory)
     {
         var store = factory();
-        store.Should().BeAssignableTo<ITokenStoreAppPurge>("U-4：两个存储实现都须承担官方按应用清库接口");
+        store.Should().BeAssignableTo<ITokenStoreAppPurge>("U-4：Redis 存储实现须承担官方按应用清库接口");
         var purge = (ITokenStoreAppPurge)store;
         await store.SetAccessTokenAsync("Wechat.AccessToken:a:default", "t1", 7200);
         await store.SetAccessTokenAsync("Wechat.AccessToken:a:corp:123", "t2", 7200);

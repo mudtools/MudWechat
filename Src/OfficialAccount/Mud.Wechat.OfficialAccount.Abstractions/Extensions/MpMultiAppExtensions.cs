@@ -221,6 +221,24 @@ public static class MpMultiAppExtensions
         // 默认应用上下文（首次解析时物化默认应用）。
         services.AddSingleton<IMpAppContext>(sp => sp.GetRequiredService<IMpAppManager>().GetDefaultApp());
 
+        // JS-SDK 票据管理器的根容器桥接。
+        // 票据管理器是「按应用」装配在上下文内的（MpAppManager.CreateAppContext ⇒ MpAppContext.GetService 转发），
+        // 根容器本身没有该项；而签名服务 IMpJsApiSignatureService 与宿主的构造注入面都从根容器解析它
+        // —— 缺此桥接时 ValidateOnBuild 直接把宿主打在建容器阶段。
+        // TryAdd ⇒ 多公众号宿主可先注册「按当前上下文取票据」的实现覆盖本默认桥（先注册者胜）。
+        services.TryAddSingleton<IMpJsApiTicketManager>(static sp =>
+            sp.GetRequiredService<IMpAppContext>().GetService<IMpJsApiTicketManager>()
+            ?? throw new InvalidOperationException(
+                "默认公众号上下文未装配 jsapi 票据管理器，无法生成 JS-SDK 签名（请确认 AddMpApp 已完成应用注册）。"));
+
+        // 未命名 IOptions<MpAppConfig> = 默认应用配置的快照（与上面的 IMpAppContext / 票据桥同义，均为「默认应用」）。
+        // 本方法只登记 List<MpAppConfig> 快照与逐应用命名客户端，未命名项此前恒为空 ⇒ 以 IOptions<MpAppConfig>
+        // 取 AppId 的组件（IMpJsApiSignatureService）在解析期被 MpAppConfigValidator 打回「AppKey 不能为空」，
+        // 宿主按 README 注入签名服务即在建容器阶段失败。配置本体已在 ValidateAndSetDefaultApp 逐份 Validate()，
+        // 故此处直接包裹默认应用实例（不再二次物化），多公众号宿主改取 IMpAppContext.Config。
+        services.TryAddSingleton<IOptions<MpAppConfig>>(
+            static sp => new OptionsWrapper<MpAppConfig>(sp.GetRequiredService<IMpAppContext>().Config));
+
         // 配置快照 + 校验器（IValidateOptions 管线）。
         services.Configure<List<MpAppConfig>>(options =>
         {

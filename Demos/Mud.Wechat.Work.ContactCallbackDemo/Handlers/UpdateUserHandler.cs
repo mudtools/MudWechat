@@ -7,15 +7,21 @@
 
 using Mud.Wechat.Work.Abstractions.Callback;
 using Mud.Wechat.Work.Callback.Events.Payloads;
+using Mud.Wechat.Work.ContactCallbackDemo.Services;
 
 namespace Mud.Wechat.Work.ContactCallbackDemo.Handlers;
 
 /// <summary>更新成员事件处理器（<c>update_user</c>）。</summary>
-public sealed class UpdateUserHandler : WechatCallbackPayloadHandler<ContactUserChangedPayload>
+/// <remarks>
+/// UserId 自身变更时官方另带 <c>NewUserID</c>，两者都要落幂等键的下游业务须显式处理，
+/// 仅以旧 UserId 作键会漏掉改名后的关联关系。
+/// </remarks>
+public sealed class UpdateUserHandler(
+    ILogger<UpdateUserHandler> logger,
+    DemoIdempotencyTracker idempotency) : WechatCallbackPayloadHandler<ContactUserChangedPayload>
 {
-    private readonly ILogger<UpdateUserHandler> _logger;
-
-    public UpdateUserHandler(ILogger<UpdateUserHandler> logger) => _logger = logger;
+    private readonly ILogger<UpdateUserHandler> _logger = logger;
+    private readonly DemoIdempotencyTracker _idempotency = idempotency;
 
     public override string SupportedEventType => WechatCallbackEventTypes.UpdateUser;
 
@@ -24,7 +30,16 @@ public sealed class UpdateUserHandler : WechatCallbackPayloadHandler<ContactUser
         ContactUserChangedPayload payload,
         CancellationToken cancellationToken = default)
     {
-        _logger.LogInformation("更新成员：UserId={UserId}, NewUserId={NewUserId}", payload.UserId, payload.NewUserId);
+        var key = DemoIdempotencyTracker.BuildKey(eventData, payload.NewUserId ?? payload.UserId);
+        if (!_idempotency.TryBegin(key))
+        {
+            _logger.LogInformation("重复投递已忽略（业务幂等）：{Key}", key);
+            return Task.CompletedTask;
+        }
+
+        _logger.LogInformation(
+            "更新成员：UserId={UserId}, NewUserId={NewUserId}, DepartmentIds={DepartmentIds}",
+            payload.UserId, payload.NewUserId, payload.DepartmentIds);
         return Task.CompletedTask;
     }
 }

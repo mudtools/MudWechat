@@ -91,12 +91,14 @@ public class WechatPayScaffoldContractGuards
     public void PayProjects_ShouldNotTargetNetStandard20_WhenScaffold()
     {
         // 注：csproj 落在各自的**子目录**内，必须递归找（TopDirectoryOnly 会漏掉全部四个 ⇒ 守卫假红）。
-        // 但递归从仓库根出发会把 `Tests/Mud.Wechat.Pay*.Tests/*.csproj` 一并捞进来 ⇒ 须排除 Tests/（测试工程
-        // 故意不继承支付线 TFM 例外，Tests/Directory.Build.props 单 TFM net8.0）。
-        var payProjects = Directory.GetFiles(Root, "Mud.Wechat.Pay*.csproj", SearchOption.AllDirectories)
+        // 搜索根取 Src/ 而非仓库根：本守卫守护的是**可打包 SDK 工程**的 TFM 例外，而
+        // `Mud.Wechat.Pay*.csproj` 通配同样命中 `Tests/Mud.Wechat.Pay*.Tests`（单 TFM net8.0 由
+        // Tests/Directory.Build.props 给）与 `Demos/Mud.Wechat.Pay.Demo`（IsPackable=false、单 TFM 由
+        // Demos/Directory.Build.props 给）—— 两类都不是例外外溢，却会让守卫假红（DM-06 实测踩到）。
+        // 新的**支付线 SDK 工程**只可能落 Src/，故按 Src/ 收口既不漏也无需按名单排除。
+        var payProjects = Directory.GetFiles(Path.Combine(Root, "Src"), "Mud.Wechat.Pay*.csproj", SearchOption.AllDirectories)
             .Where(p => !p.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.Ordinal)
-                        && !p.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.Ordinal)
-                        && !p.StartsWith(Path.Combine(Root, "Tests") + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
+                        && !p.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
             .OrderBy(p => p, StringComparer.Ordinal)
             .ToArray();
 

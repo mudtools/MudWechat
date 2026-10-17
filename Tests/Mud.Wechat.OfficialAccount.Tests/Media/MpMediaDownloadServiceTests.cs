@@ -149,7 +149,7 @@ public class MpMediaDownloadServiceTests
         harness.SentRequests.Should().BeEmpty();
     }
 
-    /// <summary>D9：当前无应用上下文 → 明确错误（与生成客户端的上下文语义一致）。</summary>
+    /// <summary>D9：无环境上下文<b>且</b>无默认应用注册表 → 明确错误（不得静默取到别的应用令牌）。</summary>
     [Fact]
     public async Task DownloadAsync_ShouldThrow_WhenAppContextMissing()
     {
@@ -161,6 +161,33 @@ public class MpMediaDownloadServiceTests
 
         await FluentActions.Awaiting(() => service.DownloadTemporaryMediaAsync("MEDIA_ID"))
             .Should().ThrowAsync<InvalidOperationException>();
+    }
+
+    /// <summary>
+    /// D9b：无环境上下文、但有默认应用注册表 → 回退 <c>GetDefaultApp()</c> 并正常出流。
+    /// </summary>
+    /// <remarks>
+    /// 缺陷回归（DM-05 小程序码 Demo 首个踩到）：手工通道此前只认 <c>IAppContextHolder.Current</c>，
+    /// 而生成客户端的口径是 <c>Current ?? GetDefaultApp()</c> ⇒
+    /// 「只配了一个默认应用、从不进入作用域」这一最常见宿主形态在素材/账单/小程序码通道恒报错，
+    /// 与其自身提示语「或配置默认应用」自相矛盾。六条手工通道（公众号素材下载 / 非税账单 +
+    /// 小程序码 / 反馈图片 / 客服素材 / 物流对账）同批修正，契约由 MD11 与 MP-X10 守卫锁定。
+    /// </remarks>
+    [Fact]
+    public async Task DownloadAsync_ShouldUseDefaultApp_WhenAmbientContextMissing()
+    {
+        var response = new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new ByteArrayContent(new byte[] { 0x89, 0x50, 0x4E, 0x47 }),
+        };
+        response.Content.Headers.TryAddWithoutValidation("Content-Type", "image/png");
+
+        using var harness = new Harness(null, false, response);
+        using var result = await harness.Service.DownloadTemporaryMediaAsync("MEDIA_ID");
+
+        result.ContentType.Should().Be("image/png");
+        harness.TokenGetCalls.Should().Be(1, "回退路径取的是默认应用的令牌管理器，恰一次");
+        harness.SentRequests.Should().Contain(r => r.Contains("/cgi-bin/media/get"));
     }
 
     /// <summary>D11：get_material 图文形态（news_item JSON）→ NewsItems 信封。</summary>
@@ -296,11 +323,20 @@ public class MpMediaDownloadServiceTests
         private static readonly string[] Tokens = { "TOKEN-1", "TOKEN-2", "TOKEN-3", "TOKEN-4" };
 
         public Harness(params HttpResponseMessage[] responses)
-            : this(null, responses)
+            : this(null, true, responses)
         {
         }
 
         public Harness(IHttpContentSerializer? contentSerializer, params HttpResponseMessage[] responses)
+            : this(contentSerializer, true, responses)
+        {
+        }
+
+        /// <remarks>
+        /// <c>ambientContext</c>=true 表示环境上下文持有当前应用（宿主已进入作用域）；
+        /// false 表示环境上下文为空、只配默认应用注册表（单应用宿主形态，走 <c>GetDefaultApp()</c> 回退）。
+        /// </remarks>
+        public Harness(IHttpContentSerializer? contentSerializer, bool ambientContext, params HttpResponseMessage[] responses)
         {
             var queue = new Queue<HttpResponseMessage>(responses);
             var httpClient = new Mock<IEnhancedHttpClient>();
@@ -328,12 +364,19 @@ public class MpMediaDownloadServiceTests
             appContext.SetupGet(a => a.HttpClient).Returns(httpClient.Object);
 
             var holder = new Mock<IAppContextHolder>();
-            holder.SetupGet(h => h.Current).Returns(appContext.Object);
+            holder.SetupGet(h => h.Current)
+                .Returns(ambientContext ? (IMudAppContext?)appContext.Object : null);
+
+            // 环境上下文为空时，服务须回退到注册表的默认应用（与生成客户端同一口径）⇒ 两种形态都注入注册表，
+            // 使「回退是否生效」由 ambientContext 单一开关决定，而不是由「有没有注册表」决定。
+            var appManager = new Mock<IMpAppManager>();
+            appManager.Setup(m => m.GetDefaultApp()).Returns(appContext.Object);
 
             Service = new MpMediaDownloadService(
                 holder.Object,
                 NullLogger<MpMediaDownloadService>.Instance,
-                contentSerializer);
+                contentSerializer,
+                appManager.Object);
         }
 
         public MpMediaDownloadService Service { get; }

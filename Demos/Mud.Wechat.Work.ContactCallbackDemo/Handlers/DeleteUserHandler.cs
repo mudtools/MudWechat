@@ -7,15 +7,17 @@
 
 using Mud.Wechat.Work.Abstractions.Callback;
 using Mud.Wechat.Work.Callback.Events.Payloads;
+using Mud.Wechat.Work.ContactCallbackDemo.Services;
 
 namespace Mud.Wechat.Work.ContactCallbackDemo.Handlers;
 
 /// <summary>删除成员事件处理器（<c>delete_user</c>）。</summary>
-public sealed class DeleteUserHandler : WechatCallbackPayloadHandler<ContactUserChangedPayload>
+public sealed class DeleteUserHandler(
+    ILogger<DeleteUserHandler> logger,
+    DemoIdempotencyTracker idempotency) : WechatCallbackPayloadHandler<ContactUserChangedPayload>
 {
-    private readonly ILogger<DeleteUserHandler> _logger;
-
-    public DeleteUserHandler(ILogger<DeleteUserHandler> logger) => _logger = logger;
+    private readonly ILogger<DeleteUserHandler> _logger = logger;
+    private readonly DemoIdempotencyTracker _idempotency = idempotency;
 
     public override string SupportedEventType => WechatCallbackEventTypes.DeleteUser;
 
@@ -24,6 +26,13 @@ public sealed class DeleteUserHandler : WechatCallbackPayloadHandler<ContactUser
         ContactUserChangedPayload payload,
         CancellationToken cancellationToken = default)
     {
+        var key = DemoIdempotencyTracker.BuildKey(eventData, payload.UserId);
+        if (!_idempotency.TryBegin(key))
+        {
+            _logger.LogInformation("重复投递已忽略（业务幂等）：{Key}", key);
+            return Task.CompletedTask;
+        }
+
         _logger.LogInformation("删除成员：UserId={UserId}", payload.UserId);
         return Task.CompletedTask;
     }

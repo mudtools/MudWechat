@@ -310,6 +310,62 @@ public class MpMediaContractGuards
             "组件默认序列化器须实现 IAotJsonContentSerializer，否则下载通道永远退回 options 解析路径");
     }
 
+    /// <summary>
+    /// 契约守卫 MD11：公众号线两条<b>手工下载通道</b>（素材下载 / 非税账单）的应用上下文解析
+    /// 口径必须 = <c>环境上下文 ?? 默认应用</c>（与生成客户端同一口径，对齐小程序线 MP-X10）。
+    /// </summary>
+    /// <remarks>
+    /// 手工通道不走生成管线，「只配一个默认应用、从不进入作用域」这一最常见宿主形态此前在
+    /// <c>ResolveAppContext</c> 直接报错（DM-05 Demo 实测踩到，错误提示语还写着「或配置默认应用」）。
+    /// <c>IMpAppManager? appManager = null</c> 是<b>可选尾参</b>（宿主与既有测试手工构造不受影响，
+    /// DI 自动注入），类型层面看不出有无回退 ⇒ 判定钉源文本两处锚点。
+    /// 素材通道的<b>行为</b>另由 <c>MpMediaDownloadServiceTests.D9b</c> 运行时用例锁定。
+    /// </remarks>
+    [Fact]
+    public void ManualDownloadChannels_ShouldFallBackToDefaultApp()
+    {
+        foreach (var relative in new[]
+                 {
+                     Path.Combine("Media", "MpMediaDownloadService.cs"),
+                     Path.Combine("Nontax", "MpNontaxBillDownloadService.cs"),
+                 })
+        {
+            var file = SourcePath("Mud.Wechat.OfficialAccount", relative);
+            File.Exists(file).Should().BeTrue($"手工下载通道源文件缺失：{relative}");
+
+            var text = File.ReadAllText(file);
+            text.Should().Contain("IMpAppManager? appManager = null",
+                $"{relative} 须以可选尾参接收应用注册表");
+            text.Should().Contain("_appManager?.GetDefaultApp()",
+                $"{relative} 的上下文解析须在环境上下文缺失时回退默认应用（MD11）");
+        }
+    }
+
+    private static string SourcePath(params string[] segments) =>
+        Path.Combine(new[] { SourceProjectDir(segments[0]) }.Concat(segments.Skip(1)).ToArray());
+
+    private static string SourceProjectDir(string projectName) =>
+        SourceProjectDirs.GetOrAdd(projectName, static name =>
+            Directory.EnumerateFiles(GetRepositoryRoot(), $"{name}.csproj", SearchOption.AllDirectories)
+                .Where(static f => !f.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.Ordinal)
+                                   && !f.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
+                .Select(static f => Path.GetDirectoryName(f))!
+                .FirstOrDefault()
+            ?? throw new DirectoryNotFoundException($"未找到工程 {name}.csproj（源码归类目录漂移，守卫定位失效）"));
+
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, string> SourceProjectDirs = new();
+
+    private static string GetRepositoryRoot()
+    {
+        var dir = new DirectoryInfo(AppContext.BaseDirectory);
+        while (dir != null && !File.Exists(Path.Combine(dir.FullName, "Mud.Wechat.slnx")))
+        {
+            dir = dir.Parent;
+        }
+
+        return dir?.FullName ?? throw new DirectoryNotFoundException("未定位到仓库根（缺少 Mud.Wechat.slnx）");
+    }
+
     private static void AssertJsonProperty<T>(string jsonName, string because)
     {
         typeof(T).GetProperties()

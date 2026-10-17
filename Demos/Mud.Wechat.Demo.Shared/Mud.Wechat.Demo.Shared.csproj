@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<RootNamespace>Mud.Wechat.Demo.Shared</RootNamespace>
+		<!-- Demo 基座是类库：覆盖 Demos/Directory.Build.props 的 OutputType=Exe。 -->
+		<OutputType>Library</OutputType>
+		<IsPackable>false</IsPackable>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<!-- 仅使用 ASP.NET Core 基础类型（端点映射与应答构造），不引用任何产品线包。 -->
+		<FrameworkReference Include="Microsoft.AspNetCore.App" />
+		<!-- 跨线叶层（零工程引用、非产品线包）：异常映射闸按 WechatApiException 基类捕获各线业务异常。 -->
+		<ProjectReference Include="..\..\Src\Core\Mud.Wechat.Abstractions\Mud.Wechat.Abstractions.csproj" />
+	</ItemGroup>
+
+</Project>

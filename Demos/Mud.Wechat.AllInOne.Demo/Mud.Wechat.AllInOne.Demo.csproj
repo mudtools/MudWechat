@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+	<PropertyGroup>
+		<RootNamespace>Mud.Wechat.AllInOne.Demo</RootNamespace>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<!-- Demo 基座：环境变量校验、写操作闸、健康检查端点、公用业务异常映射闸。 -->
+		<ProjectReference Include="..\Mud.Wechat.Demo.Shared\Mud.Wechat.Demo.Shared.csproj" />
+		<!-- 企业微信线：回调接收（XML 应用通道 + 智能机器人 JSON 通道）。
+		     AddWechatApp 经 Work.Abstractions 传递可见，故不直引 Work 主包（本 Demo 不挂业务端点）。 -->
+		<ProjectReference Include="..\..\Src\Work\Mud.Wechat.Work.Callback\Mud.Wechat.Work.Callback.csproj" />
+		<!-- 公众号线：AddMpApp + AddMpCallback（小程序与公众号同令牌域，本线即小程序的底座）。 -->
+		<ProjectReference Include="..\..\Src\OfficialAccount\Mud.Wechat.OfficialAccount.Callback\Mud.Wechat.OfficialAccount.Callback.csproj" />
+		<!-- 支付线：AddPayApp 在 Pay.Abstractions，经 Callback 包传递可见 ⇒ 无需引主包即可只装「凭据底座 + 通知接收」。 -->
+		<ProjectReference Include="..\..\Src\Pay\Mud.Wechat.Pay.Callback\Mud.Wechat.Pay.Callback.csproj" />
+		<!-- 小店线：强制 JSON 安全模式的回调通道。 -->
+		<ProjectReference Include="..\..\Src\Channels\Mud.Wechat.Channels.Callback\Mud.Wechat.Channels.Callback.csproj" />
+		<!-- 开放平台线：本线**没有 Callback 包**，推送接收器 ComponentVerifyTicketReceiver 就在主包里 ⇒ 必须引主包。 -->
+		<ProjectReference Include="..\..\Src\OpenPlatform\Mud.Wechat.OpenPlatform\Mud.Wechat.OpenPlatform.csproj" />
+		<!-- 跨线基建（可选激活）：分布式存储与可观测性装配。 -->
+		<ProjectReference Include="..\..\Src\Core\Mud.Wechat.Redis\Mud.Wechat.Redis.csproj" />
+		<ProjectReference Include="..\..\Src\Core\Mud.Wechat.OpenTelemetry\Mud.Wechat.OpenTelemetry.csproj" />
+		<!-- 回调处理器契约分析器（狗粮）：本 Demo 同时挂企微与公众号两线处理器，
+		     而分析器档位表（WechatCallbackHandlerAnalyzer.Profiles）**只有这两档** ⇒ 在这里是真校验，
+		     不是小店/机器人那两档的静默空跑。 -->
+		<ProjectReference Include="..\..\Src\Core\Mud.Wechat.Callback.Analyzers\Mud.Wechat.Callback.Analyzers.csproj"
+		                  OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+	</ItemGroup>
+
+</Project>

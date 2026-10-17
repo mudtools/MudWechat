@@ -7,13 +7,17 @@
 
 using Mud.Wechat.Work.Abstractions.Callback;
 using Mud.Wechat.Work.Callback.Events.Payloads;
+using Mud.Wechat.Work.ContactCallbackDemo.Services;
 
 namespace Mud.Wechat.Work.ContactCallbackDemo.Handlers;
 
 /// <summary>新增部门事件处理器（<c>create_party</c>）。</summary>
-public sealed class CreatePartyHandler(ILogger<CreatePartyHandler> logger) : WechatCallbackPayloadHandler<ContactPartyChangedPayload>
+public sealed class CreatePartyHandler(
+    ILogger<CreatePartyHandler> logger,
+    DemoIdempotencyTracker idempotency) : WechatCallbackPayloadHandler<ContactPartyChangedPayload>
 {
     private readonly ILogger<CreatePartyHandler> _logger = logger;
+    private readonly DemoIdempotencyTracker _idempotency = idempotency;
 
     public override string SupportedEventType => WechatCallbackEventTypes.CreateParty;
 
@@ -22,8 +26,15 @@ public sealed class CreatePartyHandler(ILogger<CreatePartyHandler> logger) : Wec
         ContactPartyChangedPayload payload,
         CancellationToken cancellationToken = default)
     {
-        _logger.LogInformation("新增部门：PartyId={PartyId}, Name={Name}, ParentId={ParentId}",
-            payload.PartyId, payload.Name, payload.ParentId);
+        var key = DemoIdempotencyTracker.BuildKey(eventData, payload.PartyId);
+        if (!_idempotency.TryBegin(key))
+        {
+            _logger.LogInformation("重复投递已忽略（业务幂等）：{Key}", key);
+            return Task.CompletedTask;
+        }
+
+        _logger.LogInformation("新增部门：PartyId={PartyId}, Name={Name}, ParentId={ParentId}, Order={Order}",
+            payload.PartyId, payload.Name, payload.ParentId, payload.Order);
         return Task.CompletedTask;
     }
 }

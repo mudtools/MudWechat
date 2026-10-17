@@ -7,15 +7,17 @@
 
 using Mud.Wechat.Work.Abstractions.Callback;
 using Mud.Wechat.Work.Callback.Events.Payloads;
+using Mud.Wechat.Work.ContactCallbackDemo.Services;
 
 namespace Mud.Wechat.Work.ContactCallbackDemo.Handlers;
 
 /// <summary>更新部门事件处理器（<c>update_party</c>，官方仅 ParentId 变更时触发）。</summary>
-public sealed class UpdatePartyHandler : WechatCallbackPayloadHandler<ContactPartyChangedPayload>
+public sealed class UpdatePartyHandler(
+    ILogger<UpdatePartyHandler> logger,
+    DemoIdempotencyTracker idempotency) : WechatCallbackPayloadHandler<ContactPartyChangedPayload>
 {
-    private readonly ILogger<UpdatePartyHandler> _logger;
-
-    public UpdatePartyHandler(ILogger<UpdatePartyHandler> logger) => _logger = logger;
+    private readonly ILogger<UpdatePartyHandler> _logger = logger;
+    private readonly DemoIdempotencyTracker _idempotency = idempotency;
 
     public override string SupportedEventType => WechatCallbackEventTypes.UpdateParty;
 
@@ -24,6 +26,13 @@ public sealed class UpdatePartyHandler : WechatCallbackPayloadHandler<ContactPar
         ContactPartyChangedPayload payload,
         CancellationToken cancellationToken = default)
     {
+        var key = DemoIdempotencyTracker.BuildKey(eventData, payload.PartyId);
+        if (!_idempotency.TryBegin(key))
+        {
+            _logger.LogInformation("重复投递已忽略（业务幂等）：{Key}", key);
+            return Task.CompletedTask;
+        }
+
         _logger.LogInformation("更新部门：PartyId={PartyId}, ParentId={ParentId}",
             payload.PartyId, payload.ParentId);
         return Task.CompletedTask;

@@ -7,15 +7,17 @@
 
 using Mud.Wechat.Work.Abstractions.Callback;
 using Mud.Wechat.Work.Callback.Events.Payloads;
+using Mud.Wechat.Work.ContactCallbackDemo.Services;
 
 namespace Mud.Wechat.Work.ContactCallbackDemo.Handlers;
 
 /// <summary>删除部门事件处理器（<c>delete_party</c>）。</summary>
-public sealed class DeletePartyHandler : WechatCallbackPayloadHandler<ContactPartyChangedPayload>
+public sealed class DeletePartyHandler(
+    ILogger<DeletePartyHandler> logger,
+    DemoIdempotencyTracker idempotency) : WechatCallbackPayloadHandler<ContactPartyChangedPayload>
 {
-    private readonly ILogger<DeletePartyHandler> _logger;
-
-    public DeletePartyHandler(ILogger<DeletePartyHandler> logger) => _logger = logger;
+    private readonly ILogger<DeletePartyHandler> _logger = logger;
+    private readonly DemoIdempotencyTracker _idempotency = idempotency;
 
     public override string SupportedEventType => WechatCallbackEventTypes.DeleteParty;
 
@@ -24,6 +26,13 @@ public sealed class DeletePartyHandler : WechatCallbackPayloadHandler<ContactPar
         ContactPartyChangedPayload payload,
         CancellationToken cancellationToken = default)
     {
+        var key = DemoIdempotencyTracker.BuildKey(eventData, payload.PartyId);
+        if (!_idempotency.TryBegin(key))
+        {
+            _logger.LogInformation("重复投递已忽略（业务幂等）：{Key}", key);
+            return Task.CompletedTask;
+        }
+
         _logger.LogInformation("删除部门：PartyId={PartyId}", payload.PartyId);
         return Task.CompletedTask;
     }

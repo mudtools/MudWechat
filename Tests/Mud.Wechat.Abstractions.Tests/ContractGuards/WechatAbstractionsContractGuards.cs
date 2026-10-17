@@ -693,7 +693,10 @@ public class WechatAbstractionsContractGuards
     /// 显式降为 <c>net6.0;net8.0;net10.0</c>；该例外必须被锁定，不得被静默「统一」回 4 档
     /// （静默统一会在 ns2.0 上编译失败或迫使引入第三方密码学包）。
     /// 开放平台线同样降为 3 档，但理由是<b>刻意收窄</b>到组件 <c>AddMudHttpClient</c> 的最小面而非密码学缺口；
-    /// 两条线之外的任何工程覆盖 TFM 即例外外溢，本守卫的后半段逐工程锁死。
+    /// <b>AI 域</b>（2026-10 新增，第四个受控例外）降为 2 档 <c>net8.0;net10.0</c>：消费 <c>Mud.AI.*</c> 1.0.1 传递要求的
+    /// <c>M.E.*</c> 10.0.12，而 M.E.* 10.x 官方支持面为 net8.0+（net6.0 上 NuGet 发「doesn't support net6.0」告警），
+    /// 且不为一条新线把 30 个既有工程的低 TFM 构建拖进未测试组合；三条既有线之外的任何工程覆盖 TFM 即例外外溢，
+    /// 本守卫的后半段逐工程锁死。
     /// </summary>
     [Fact]
     public void PayLine_ShouldKeepControlledTfmException()
@@ -714,7 +717,23 @@ public class WechatAbstractionsContractGuards
                 $"{project} 必须在 csproj 注释中记录该例外的理由（AesGcm / AEAD_AES_256_GCM 为 APIv3 官方强制）");
         }
 
-        // 其余产品线仍须是 4 档，支付线的例外不得外溢。
+        // AI 域（第四个受控例外）：只认 net8.0;net10.0 两档，且必须记录理由（Mud.AI 1.0.1 → M.E.* 10.x 支持面）。
+        foreach (var project in new[]
+                 {
+                     "Mud.Wechat.AI.Abstractions/Mud.Wechat.AI.Abstractions.csproj",
+                     "Mud.Wechat.AI.Agent/Mud.Wechat.AI.Agent.csproj",
+                     "Mud.Wechat.Work.AI/Mud.Wechat.Work.AI.csproj",
+                 })
+        {
+            var content = ReadCsproj(project);
+
+            content.Should().Contain("<TargetFrameworks>net8.0;net10.0</TargetFrameworks>",
+                $"{project} 必须保持 AI 域受控 TFM 例外（Mud.AI 1.0.1 → M.E.* 10.x 官方支持面为 net8.0+）");
+            content.Should().Contain("AB-G8",
+                $"{project} 必须在 csproj 注释中记录该例外由 AB-G8 锁定");
+        }
+
+        // 其余产品线仍须是 4 档，各例外的不得外溢。
         foreach (var project in new[]
                  {
                      "Mud.Wechat.Abstractions/Mud.Wechat.Abstractions.csproj",
@@ -729,7 +748,7 @@ public class WechatAbstractionsContractGuards
         {
             ReadCsproj(project).Should().NotContain("<TargetFrameworks>",
                 $"{project} 应继承 Directory.Build.props 的 4 档 TFM，不得自行覆盖" +
-                "（受控例外只有支付线与开放平台线，后者是刻意收窄到组件 AddMudHttpClient 的最小面）");
+                "（受控例外只有支付线、开放平台线与 AI 域，后者是 Mud.AI 1.0.1 的 M.E.* 10.x 支持面约束）");
         }
     }
 

@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<!-- 受控 TFM 例外（AB-G8 锁定）：理由见 Mud.Wechat.AI.Abstractions.csproj 同名属性组。 -->
+		<TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+		<Description>微信生态 AI 共享运行时（跨七线）：统一信封读取器 WechatApiResultReader（IWechatApiResponse → 中立 ToolApiOutcome&lt;T&gt;）与会话请求投影工厂 WechatConversationRequestFactory。中立端口（ITurnScopeFactory / IConversationReplySink / IAgentSessionFacade）由各线产品侧直接实现，本包不另建端口。</Description>
+		<PackageTags>Wechat;AI;Agent;Tools;MudWechat</PackageTags>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<!-- Mud.AI 1.0.1（nuget.org 钉版）：Abstractions 经 Agent 传递可见；本包只消费中立的 ToolApiOutcome/ConversationRequest 面。 -->
+		<PackageReference Include="Mud.AI.Agent" Version="1.0.1" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\Mud.Wechat.AI.Abstractions\Mud.Wechat.AI.Abstractions.csproj" />
+		<ProjectReference Include="..\..\Core\Mud.Wechat.Abstractions\Mud.Wechat.Abstractions.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<InternalsVisibleTo Include="Mud.Wechat.AI.Tests" />
+	</ItemGroup>
+
+</Project>

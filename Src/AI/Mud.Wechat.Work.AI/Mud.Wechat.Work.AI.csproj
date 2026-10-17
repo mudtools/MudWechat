@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<!-- 受控 TFM 例外（AB-G8 锁定）：理由见 Mud.Wechat.AI.Abstractions.csproj 同名属性组。 -->
+		<TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+		<Description>企业微信线 AI Agent 底座：WechatAgent（ObservedDelegatingAgent 承载 ChatClientAgent、实现 IAgentSessionFacade）、WechatAgentOptions + Validator、WechatWorkAiScopeFactory（ITurnScopeFactory → UseCorpScope 桥接）、Aibot 主动回复通道、Bot 回调处理器与 AddWechatWorkAgent 装配。</Description>
+		<PackageTags>Wechat;Work;AI;Agent;Bot;MudWechat</PackageTags>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\Mud.Wechat.AI.Agent\Mud.Wechat.AI.Agent.csproj" />
+		<!-- 主包直引的唯一理由：Aibot 主动回复端点契约 IWechatWorkInternalAibotService（回复通道，非业务工具面）。
+		     业务域强类型直连（工具实现）仍留在 Mud.Wechat.Work.AI.Tools（S2）。 -->
+		<ProjectReference Include="..\..\Work\Mud.Wechat.Work\Mud.Wechat.Work.csproj" />
+		<ProjectReference Include="..\..\Work\Mud.Wechat.Work.Abstractions\Mud.Wechat.Work.Abstractions.csproj" />
+		<ProjectReference Include="..\..\Work\Mud.Wechat.Work.DataModels\Mud.Wechat.Work.DataModels.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<InternalsVisibleTo Include="Mud.Wechat.Work.AI.Tests" />
+	</ItemGroup>
+
+</Project>

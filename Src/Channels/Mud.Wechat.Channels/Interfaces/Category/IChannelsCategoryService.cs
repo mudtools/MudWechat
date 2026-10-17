@@ -10,12 +10,12 @@ using Mud.Wechat.Channels.DataModels.Category;
 namespace Mud.Wechat.Channels;
 
 /// <summary>
-/// 微信小店 / 视频号（channels 生态）「类目管理」域 SDK（10 端点：类目 8 + 类目规则 2）。
+/// 微信小店 / 视频号（channels 生态）「类目管理」域 SDK（11 端点：类目 8 + 类目规则 2 + 联盟类目 1）。
 /// </summary>
 /// <remarks>
 /// <para>
 /// <b>路由前缀并存（官方历史前缀，照抄原文不得改写）</b>：本域同时使用 <c>/shop/ec/category/*</c>（9 端点）
-/// 与 <c>/channels/ec/category/*</c>（1 端点：申请类目 <c>category/add</c>）。
+/// 与 <c>/channels/ec/category/*</c>（2 端点：申请类目 <c>category/add</c> + 联盟类目 <c>category/league/all</c>）。
 /// </para>
 /// <para>
 /// <b><c>getcategoryrule</c> 双语义同路由</b>：官方清单中该路由出现两次——「获取保证金类目规则」
@@ -63,6 +63,27 @@ public interface IChannelsCategoryService
     /// </remarks>
     [Post("/shop/ec/category/all")]
     Task<ChannelsGetAllCategoryResponse> GetAllCategoriesAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 获取所有类目（联盟带货机构，<c>getallcategoryfromleague</c>，全部类目 + 类目资质 + 商品资质信息）。
+    /// </summary>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
+    /// <returns>类目树（<c>cats</c> 旧三级树 / <c>cats_v2</c> 新多级树，元素与小店侧 <see cref="ChannelsCategoryAndQua"/> 共用）。</returns>
+    /// <remarks>
+    /// <para>官方文档：<see href="https://developers.weixin.qq.com/doc/store/leagueheadsupplier/API/basic/category/getallcategory.html"/>（2026-10-17 逐页核验）</para>
+    /// <para>官方契约：<b>GET</b> 且无请求体——与小店侧 <c>getallcategory</c>（POST，2026-09-15 由 GET 改 POST）动词形态<b>不同</b>，
+    /// 两端点各自照录官方原文、不得互相「对齐」；<b>不支持云调用</b>、<b>不支持第三方平台调用</b>。</para>
+    /// <para>
+    /// 官方业务限制：①接口应在服务器端调用，不可在前端直接调用；②官方警示「数据较多，接口耗时较高」⇒
+    /// 调用方应放宽超时预期；③新旧类目树过渡期兼容并用，<c>cats_v2</c> 为官方建议尽快切换的新多级树
+    /// （差异见官方「新旧类目树差异」）。
+    /// </para>
+    /// <para>官方适用范围：本接口仅支持「联盟带货机构」账号类型调用，其他账号类型不可调用。</para>
+    /// <para>官方错误码：<c>9401020</c>（参数有误）；其余走通用错误码。</para>
+    /// <para>MUD005：令牌强制走 Query 参数 <c>access_token</c>（官方契约，无法改用 Header）。</para>
+    /// </remarks>
+    [Get("/channels/ec/category/league/all")]
+    Task<ChannelsLeagueAllCategoryResponse> GetLeagueAllCategoriesAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 获取类目信息（<c>getcategorydetail</c>，按叶子类目 id 查类目属性 / 交易费 / 折扣规则等）。

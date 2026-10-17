@@ -8,13 +8,13 @@
 namespace Mud.Wechat.Channels;
 
 /// <summary>
-/// 微信小店 / 视频号（channels 生态）「物流发货」域 SDK（28 端点：地址 5 / 运费模板 4 / 电子面单 16 / 订单发货 3）。
+/// 微信小店 / 视频号（channels 生态）「物流发货」域 SDK（29 端点：地址 5 / 运费模板 4 / 电子面单 17 / 订单发货 3）。
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>路由形态（设计方案 v1 §2.2）</b>：本域 28 端点全部 POST，走三组前缀 ——
+/// <b>路由形态（设计方案 v1 §2.2）</b>：本域 29 端点全部 POST，走三组前缀 ——
 /// <c>/channels/ec/merchant/address|freight*</c>（地址 5 + 运费模板 4）、
-/// <c>/channels/ec/logistics/ewaybill/*</c>（电子面单 16）、<c>/channels/ec/order/delivery*</c>（订单发货 3）。
+/// <c>/channels/ec/logistics/ewaybill/*</c>（电子面单 17）、<c>/channels/ec/order/delivery*</c>（订单发货 3）。
 /// </para>
 /// <para>
 /// <b>地址（5）</b>：添加 / 获取 / 列表 / 删除 / 更新地址（<c>merchant/address/*</c>）。
@@ -23,8 +23,8 @@ namespace Mud.Wechat.Channels;
 /// <b>运费模板（4）</b>：增加 / 查询详情 / 列表 / 更新（<c>merchant/add|get|updatefreighttemplate</c>）。
 /// </para>
 /// <para>
-/// <b>电子面单（16）</b>：取号 create / 预取号 precreate / 查询详情 get / 取消 cancel / 打印成功通知 print /
-/// 批量打印通知 batchprint / 子件追加 addsuborder / 开通快递公司列表 delivery/get / 获取打印报文 print/get /
+/// <b>电子面单（17）</b>：取号 create / 预取号 precreate / 查询详情 get / 取消 cancel / 打印成功通知 print /
+/// 批量打印通知 batchprint / 子件追加 addsuborder / 开通快递公司列表 delivery/get / 获取打印报文 print/get（商家）与 order/getprintinfo（供货商）/
 /// 面单标准模板 template/config / 模板 getbyid / 模板信息 get / 新增模板 create / 更新模板 update / 删除模板 delete /
 /// 开通网点账号 account/get。
 /// </para>
@@ -313,10 +313,40 @@ public interface IChannelsLogisticsService
     /// <remarks>
     /// <para>官方文档：<see href="https://developers.weixin.qq.com/doc/store/shop/API/channels-shop-logistics/ewaybill/api_ewaybill_get_print_content_supplier"/></para>
     /// <para>官方业务限制：<c>sub_waybill_id</c> 不传则返回整单的打印报文。</para>
+    /// <para><b>路径视角</b>：本接口是商家侧路径；供货商侧同能力走 <c>ewaybill/biz/order/getprintinfo</c>（见 <see cref="GetSupplierEwaybillPrintContentAsync"/>），两侧报文同形、请求与响应 DTO 共用。</para>
     /// <para>MUD005：令牌强制走 Query 参数 <c>access_token</c>（官方契约，无法改用 Header）。</para>
     /// </remarks>
     [Post("/channels/ec/logistics/ewaybill/biz/print/get")]
     Task<ChannelsLogisticsEwaybillGetPrintContentResponse> GetEwaybillPrintContentAsync(
+        [Body] ChannelsLogisticsEwaybillGetPrintContentRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 获取打印报文（供货商视角，<c>ewaybill/biz/order/getprintinfo</c>）。
+    /// </summary>
+    /// <param name="request">获取请求（<c>ewaybill_order_id</c>/<c>template_id</c> 必填；<c>sub_waybill_id</c> 选填）。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
+    /// <returns>电子面单打印报文（<c>print_info</c>，打单时传给打印机使用）。</returns>
+    /// <remarks>
+    /// <para>官方文档：<see href="https://developers.weixin.qq.com/doc/store/supplier/api/delivery/electronic/api_get_print_content.html"/>（2026-10-17 逐页核验）</para>
+    /// <para>
+    /// <b>供货商路径差异</b>：官方本页明示「供货商的 HTTPS 调用路径与商家存在差异，请注意识别」——
+    /// 商家侧为 <c>/channels/ec/logistics/ewaybill/biz/print/get</c>，供货商侧为
+    /// <c>/channels/ec/logistics/ewaybill/biz/order/getprintinfo</c>；两支路径都是官方原文，不得互相对齐或合并。
+    /// </para>
+    /// <para>
+    /// <b>报文同形 ⇒ 复用 DTO</b>：两侧请求参数表（<c>ewaybill_order_id</c>/<c>template_id</c>/<c>sub_waybill_id</c>）
+    /// 与返回参数表（<c>print_info</c>）逐字段一致 ⇒ 复用 <see cref="ChannelsLogisticsEwaybillGetPrintContentRequest"/> 与
+    /// <see cref="ChannelsLogisticsEwaybillGetPrintContentResponse"/>，不分建（守卫 CL5 锁类型同一）。
+    /// </para>
+    /// <para>官方业务限制：①<b>不支持云调用</b>；②支持第三方平台代供货商调用，权限集 id 为 <c>130</c>、<c>159</c>、<c>192</c>；
+    /// ③适用范围为「微信小店」与「小店供货商」两种账号类型（官方表格均标 ✔），其余账号类型不可调用；
+    /// ④<c>template_id</c> 如无需使用后台模板，可直接传 <c>template_type</c>（如 <c>single</c>）作默认模板（官方原文，值不做本地枚举拦截）。</para>
+    /// <para>官方错误码：<c>1000003</c>（订单不存在）/ <c>10025106</c>（模板 ID 不存在）。</para>
+    /// <para>MUD005：令牌强制走 Query 参数 <c>access_token</c>（官方契约，无法改用 Header）。</para>
+    /// </remarks>
+    [Post("/channels/ec/logistics/ewaybill/biz/order/getprintinfo")]
+    Task<ChannelsLogisticsEwaybillGetPrintContentResponse> GetSupplierEwaybillPrintContentAsync(
         [Body] ChannelsLogisticsEwaybillGetPrintContentRequest request,
         CancellationToken cancellationToken = default);
 
@@ -450,6 +480,11 @@ public interface IChannelsLogisticsService
     /// <returns>快递公司列表（<c>company_list</c>）。</returns>
     /// <remarks>
     /// <para>官方文档：<see href="https://developers.weixin.qq.com/doc/store/shop/API/channels-shop-logistics/api_getdeliverycompanylistnew"/></para>
+    /// <para>
+    /// <b>旧版路由不声明（守卫 CL6）</b>：官方曾另有 <c>order/deliverycompanylist/get</c>（第三方 SDK 清单仍转述该路径），
+    /// 其文档页现已重定向到「订单管理」目录页、正文脱树 ⇒ 按「脱树即非契约」判据不予声明，本端点是唯一现行面；
+    /// 路径中的 <c>new/</c> 段属官方原文，禁止「对齐规范」删除。
+    /// </para>
     /// <para>MUD005：令牌强制走 Query 参数 <c>access_token</c>（官方契约，无法改用 Header）。</para>
     /// </remarks>
     [Post("/channels/ec/order/deliverycompanylist/new/get")]

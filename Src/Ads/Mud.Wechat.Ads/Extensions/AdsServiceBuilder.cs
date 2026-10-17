@@ -6,6 +6,7 @@
 // -----------------------------------------------------------------------
 
 using Mud.Wechat.Ads.Abstractions.Auth;
+using Mud.Wechat.Ads.CustomAudiences;
 using Mud.Wechat.Ads.Material;
 
 namespace Mud.Wechat.Ads.Extensions;
@@ -73,8 +74,18 @@ public class AdsServiceBuilder
             },
             // 异步任务域（2 端点）——纯声明式域。
             [AdsModule.AsyncTasks] = static s => s.AddAsyncTasksWebApiHttpClient(),
-            // 服务商受托域（2 端点）——纯声明式域（sp_entrustment/add|get）。
-            [AdsModule.SpEntrustment] = static s => s.AddSpEntrustmentWebApiHttpClient(),
+            // 人群管理域（4 支声明式 + multipart 上传通道，随模块装配）。
+            [AdsModule.CustomAudiences] = static s =>
+            {
+                s.AddCustomAudiencesWebApiHttpClient();
+                s.TryAddSingleton<IWechatAdsCustomAudienceFileUploadService, AdsCustomAudienceFileUploadService>();
+            },
+            // 资金账户域（3 端点，跨 funds / fund_transfer / fund_statements_detailed 三支资源族，见 AdsModule.Funds 理由）。
+            [AdsModule.Funds] = static s => s.AddFundsWebApiHttpClient(),
+            // 客户资质域（3 端点）——纯声明式域。
+            [AdsModule.Qualifications] = static s => s.AddQualificationsWebApiHttpClient(),
+            [AdsModule.Estimation] = static s => s.AddEstimationWebApiHttpClient(),
+            [AdsModule.TargetingTags] = static s => s.AddTargetingTagsWebApiHttpClient(),
         };
 
     /// <summary>注册全部已落地模块。</summary>
@@ -158,9 +169,31 @@ public class AdsServiceBuilder
     /// <returns>建造器（链式）。</returns>
     public AdsServiceBuilder AddAsyncTasksApi() => AddModule(AdsModule.AsyncTasks);
 
-    /// <summary>注册服务商受托业务接口（<c>sp_entrustment</c> 域 2 端点：添加受托关系 + 查询受托状态）。</summary>
+    /// <summary>
+    /// 注册人群管理业务接口（<c>custom_audiences</c> + <c>custom_audience_files</c> 共 4 支声明式端点 +
+    /// multipart 上传通道 <c>IWechatAdsCustomAudienceFileUploadService</c>，承载 <c>custom_audience_files/add</c>）。
+    /// </summary>
     /// <returns>建造器（链式）。</returns>
-    public AdsServiceBuilder AddSpEntrustmentApi() => AddModule(AdsModule.SpEntrustment);
+    public AdsServiceBuilder AddCustomAudiencesApi() => AddModule(AdsModule.CustomAudiences);
+
+    /// <summary>
+    /// 注册资金账户业务接口（<c>funds</c> + <c>fund_transfer</c> + <c>fund_statements_detailed</c>
+    /// + <c>realtime_cost</c> 四支资源族共 4 端点）。
+    /// </summary>
+    /// <returns>建造器（链式）。</returns>
+    public AdsServiceBuilder AddFundsApi() => AddModule(AdsModule.Funds);
+
+    /// <summary>注册客户资质业务接口（<c>qualifications</c> 域 3 端点：获取 / 创建 / 更新）。</summary>
+    /// <returns>建造器（链式）。</returns>
+    public AdsServiceBuilder AddQualificationsApi() => AddModule(AdsModule.Qualifications);
+
+    /// <summary>注册广告预估业务接口（<c>estimation</c> 域 1 端点：预估覆盖人数）。</summary>
+    /// <returns>建造器（链式）。</returns>
+    public AdsServiceBuilder AddEstimationApi() => AddModule(AdsModule.Estimation);
+
+    /// <summary>注册定向标签业务接口（<c>targeting_tags</c> 域 1 端点：获取定向标签）。</summary>
+    /// <returns>建造器（链式）。</returns>
+    public AdsServiceBuilder AddTargetingTagsApi() => AddModule(AdsModule.TargetingTags);
 
     private AdsServiceBuilder AddModule(AdsModule module)
     {

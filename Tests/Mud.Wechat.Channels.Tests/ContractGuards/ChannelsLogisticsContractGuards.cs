@@ -13,25 +13,30 @@ using Mud.Wechat.Channels.Extensions;
 namespace Mud.Wechat.Channels.Tests.ContractGuards;
 
 /// <summary>
-/// 小店「物流发货」域契约守卫（设计方案 v1 P1 / CL 系列：Logistics 域 28 端点路由 + 令牌绑定 +
-/// DTO 字段与共用裁决 + JSON 上下文登记）。
+/// 小店「物流发货」域契约守卫（设计方案 v1 P1 / CL 系列：Logistics 域 29 端点路由 + 令牌绑定 +
+/// DTO 字段与共用裁决 + JSON 上下文登记 + 已下架路由零声明）。
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>域边界（设计方案 v1 §2.2）</b>：物流发货 = 地址 5 + 运费模板 4 + 电子面单 16 + 订单发货 3 = 28 端点
+/// <b>域边界（设计方案 v1 §2.2）</b>：物流发货 = 地址 5 + 运费模板 4 + 电子面单 17 + 订单发货 3 = 29 端点
 /// （全部 POST）。与 SHIPINHAO 本地生活重叠的 <c>merchant/address/*</c>、<c>ewaybill/biz/*</c> 只计 1；
 /// <c>order/delivery/*</c> 3 端点归本域（订单域不落发货端点）。
 /// </para>
 /// <para>
 /// <b>三组前缀并存</b>：<c>/channels/ec/merchant/address|freight*</c>（9）、
-/// <c>/channels/ec/logistics/ewaybill/biz/*</c>（16）、<c>/channels/ec/order/delivery*</c>（3）。
+/// <c>/channels/ec/logistics/ewaybill/biz/*</c>（17）、<c>/channels/ec/order/delivery*</c>（3）。
+/// </para>
+/// <para>
+/// <b>商家 / 供货商双路径（电子面单打印报文）</b>：官方明示「供货商的 HTTPS 调用路径与商家存在差异」——
+/// 商家侧 <c>ewaybill/biz/print/get</c>、供货商侧 <c>ewaybill/biz/order/getprintinfo</c>，两支路径皆为官方原文，
+/// <b>不得互相对齐或合并</b>；两侧参数表逐字段一致 ⇒ 请求 / 响应 DTO 复用（CL5 锁类型同一，不得分建）。
 /// </para>
 /// </remarks>
 public class ChannelsLogisticsContractGuards
 {
     private const string LogisticsRegistryGroupName = "Logistics";
 
-    /// <summary>Logistics 域官方路由表（28 端点，全部 POST）。</summary>
+    /// <summary>Logistics 域官方路由表（29 端点，全部 POST）。</summary>
     private static readonly (Type Interface, string Method, Type HttpAttribute, string Route)[] LogisticsRoutes =
     {
         // 地址（5）
@@ -54,10 +59,11 @@ public class ChannelsLogisticsContractGuards
         // 电子面单 - 批量 / 子件（2）
         (typeof(IChannelsLogisticsService), nameof(IChannelsLogisticsService.BatchPrintEwaybillOrderAsync), typeof(PostAttribute), "/channels/ec/logistics/ewaybill/biz/order/batchprint"),
         (typeof(IChannelsLogisticsService), nameof(IChannelsLogisticsService.AddEwaybillSubOrderAsync), typeof(PostAttribute), "/channels/ec/logistics/ewaybill/biz/order/addsuborder"),
-        // 电子面单 - 快递公司 / 打印报文（2）
+        // 电子面单 - 快递公司 / 打印报文（3：打印报文商家侧与供货商侧双路径）
         (typeof(IChannelsLogisticsService), nameof(IChannelsLogisticsService.GetEwaybillDeliveryListAsync), typeof(PostAttribute), "/channels/ec/logistics/ewaybill/biz/delivery/get"),
         (typeof(IChannelsLogisticsService), nameof(IChannelsLogisticsService.GetEwaybillPrintContentAsync), typeof(PostAttribute), "/channels/ec/logistics/ewaybill/biz/print/get"),
-        // 电子面单 - 模板（7）
+        (typeof(IChannelsLogisticsService), nameof(IChannelsLogisticsService.GetSupplierEwaybillPrintContentAsync), typeof(PostAttribute), "/channels/ec/logistics/ewaybill/biz/order/getprintinfo"),
+        // 电子面单 - 模板（6）
         (typeof(IChannelsLogisticsService), nameof(IChannelsLogisticsService.GetEwaybillTemplateConfigAsync), typeof(PostAttribute), "/channels/ec/logistics/ewaybill/biz/template/config"),
         (typeof(IChannelsLogisticsService), nameof(IChannelsLogisticsService.GetEwaybillTemplateByIdAsync), typeof(PostAttribute), "/channels/ec/logistics/ewaybill/biz/template/getbyid"),
         (typeof(IChannelsLogisticsService), nameof(IChannelsLogisticsService.GetEwaybillTemplateAsync), typeof(PostAttribute), "/channels/ec/logistics/ewaybill/biz/template/get"),
@@ -72,12 +78,12 @@ public class ChannelsLogisticsContractGuards
         (typeof(IChannelsLogisticsService), nameof(IChannelsLogisticsService.DeliveryCompensationAsync), typeof(PostAttribute), "/channels/ec/order/delivery/compensation"),
     };
 
-    /// <summary>契约守卫 CL1：Logistics 域 28 端点路由必须与官方契约一致（全部 POST）。</summary>
+    /// <summary>契约守卫 CL1：Logistics 域 29 端点路由必须与官方契约一致（全部 POST）。</summary>
     [Fact]
     public void LogisticsEndpoints_ShouldMatchOfficialRoutes()
     {
-        LogisticsRoutes.Should().HaveCount(28, "Logistics 域恰 28 端点（地址 5 + 运费模板 4 + 电子面单 16 + 订单发货 3）");
-        LogisticsRoutes.Select(r => r.Route).Distinct().Should().HaveCount(28);
+        LogisticsRoutes.Should().HaveCount(29, "Logistics 域恰 29 端点（地址 5 + 运费模板 4 + 电子面单 17 + 订单发货 3）");
+        LogisticsRoutes.Select(r => r.Route).Distinct().Should().HaveCount(29);
 
         // 三组前缀并存。
         LogisticsRoutes.Select(r => r.Route)
@@ -88,10 +94,16 @@ public class ChannelsLogisticsContractGuards
             .Should().Be(4, "运费模板 4 条走 /channels/ec/merchant/*freight* 前缀");
         LogisticsRoutes.Select(r => r.Route)
             .Count(static r => r.StartsWith("/channels/ec/logistics/ewaybill/biz/", StringComparison.Ordinal))
-            .Should().Be(16, "电子面单 16 条走 /channels/ec/logistics/ewaybill/biz/* 前缀");
+            .Should().Be(17, "电子面单 17 条走 /channels/ec/logistics/ewaybill/biz/* 前缀（含打印报文商家 / 供货商双路径）");
         LogisticsRoutes.Select(r => r.Route)
             .Count(static r => r.StartsWith("/channels/ec/order/delivery", StringComparison.Ordinal))
             .Should().Be(3, "订单发货 3 条走 /channels/ec/order/delivery* 前缀");
+
+        // 双路径不得互相对齐：商家侧 print/get 与供货商侧 order/getprintinfo 同时在场。
+        LogisticsRoutes.Select(r => r.Route).Should().Contain("/channels/ec/logistics/ewaybill/biz/print/get",
+            "商家侧打印报文路径为官方原文");
+        LogisticsRoutes.Select(r => r.Route).Should().Contain("/channels/ec/logistics/ewaybill/biz/order/getprintinfo",
+            "供货商侧打印报文路径为官方原文（官方明示路径与商家存在差异，不得合并或对齐）");
 
         foreach (var (iface, method, httpAttribute, route) in LogisticsRoutes)
         {
@@ -104,7 +116,7 @@ public class ChannelsLogisticsContractGuards
         }
     }
 
-    /// <summary>契约守卫 CL2：Logistics 域 28 端点全部为 POST；除 get_template_config 外均带 [Body]。</summary>
+    /// <summary>契约守卫 CL2：Logistics 域 29 端点全部为 POST；除 get_template_config 外均带 [Body]。</summary>
     [Fact]
     public void LogisticsEndpoints_ShouldAllBePost()
     {
@@ -115,7 +127,7 @@ public class ChannelsLogisticsContractGuards
                 $"{iface.Name}.{method} 官方契约均为 POST（物流发货无 GET 端点）");
         }
 
-        // 27 个端点有请求体；get_template_config 官方无请求体（请求体 Request Payload：无）。
+        // 28 个端点有请求体；get_template_config 官方无请求体（请求体 Request Payload：无）。
         var bodyless = LogisticsRoutes.Where(static r => r.Route.EndsWith("/template/config", StringComparison.Ordinal)).ToArray();
         bodyless.Should().HaveCount(1, "get_template_config 是本域唯一无请求体的端点");
 
@@ -132,7 +144,7 @@ public class ChannelsLogisticsContractGuards
     public void LogisticsInterface_ShouldBindChannelsToken_AndRegisterUnderLogisticsGroup()
     {
         var token = typeof(IChannelsLogisticsService).GetCustomAttribute<TokenAttribute>();
-        token.Should().NotBeNull("Logistics 域 28 端点消费小店 access_token（官方契约）");
+        token.Should().NotBeNull("Logistics 域 29 端点消费小店 access_token（官方契约）");
         token!.TokenType.Should().Be(ChannelsTokenTypes.AccessToken);
         token.InjectionMode.Should().Be(TokenInjectionMode.Query, "官方契约强制 Query 注入（MUD005）");
         token.Name.Should().Be("access_token");
@@ -163,8 +175,9 @@ public class ChannelsLogisticsContractGuards
             .ToList();
 
         dtoTypes.Should().HaveCount(89,
-            "Logistics 域 28 端点的请求/响应/嵌套对象 DTO 总数漂移须先核对官方文档再同批调整本守卫" +
-            "（地址 10 + 运费模板 14 + 电子面单 55 + 订单发货 10 = 89，口径以 LogisticsJsonContext.g.cs 登记为准）");
+            "Logistics 域 29 端点的请求/响应/嵌套对象 DTO 总数漂移须先核对官方文档再同批调整本守卫" +
+            "（地址 10 + 运费模板 14 + 电子面单 55 + 订单发货 10 = 89，口径以 LogisticsJsonContext.g.cs 登记为准；" +
+            "供货商侧打印报文与商家侧报文同形 ⇒ 复用既有 DTO，本数不增）");
 
         foreach (var type in dtoTypes)
         {
@@ -238,7 +251,95 @@ public class ChannelsLogisticsContractGuards
         // (4) 订单发货 send / compensation 共用 ChannelsLogisticsDeliveryItem 物流项形态。
         typeof(ChannelsLogisticsEwaybillPrecreateOrderResponse).BaseType
             .Should().Be(typeof(ChannelsResponse), "precreate 响应在 ChannelsResponse 上扩展");
+
+        // (5) 打印报文商家侧（print/get）与供货商侧（order/getprintinfo）参数表逐字段一致 ⇒ 请求 / 响应 DTO 双向共用，
+        //     路径双份但模型单份；若官方后续在供货商侧增列字段，须先分建再放宽本断言。
+        var merchantPrint = typeof(IChannelsLogisticsService).GetMethod(nameof(IChannelsLogisticsService.GetEwaybillPrintContentAsync))!;
+        var supplierPrint = typeof(IChannelsLogisticsService).GetMethod(nameof(IChannelsLogisticsService.GetSupplierEwaybillPrintContentAsync))!;
+        merchantPrint.GetParameters()[0].ParameterType
+            .Should().Be(supplierPrint.GetParameters()[0].ParameterType,
+                "打印报文两侧请求 DTO 必须同一类型（官方参数表逐字段一致 ⇒ 不得分建）");
+        merchantPrint.ReturnType
+            .Should().Be(supplierPrint.ReturnType,
+                "打印报文两侧响应 DTO 必须同一类型（都只返回 print_info ⇒ 不得分建）");
     }
+
+    /// <summary>
+    /// 契约守卫 CL6：已下架路由 <c>order/deliverycompanylist/get</c>（旧版，无 <c>new/</c> 段）在全线零声明。
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// 2026-10-17 核验：<c>doc/channels/API/order/deliverycompanylist_get.html</c> 已被重定向到
+    /// 「订单管理」目录页（<c>doc/store/shop/API/channels-shop-order/</c>），正文不在任何订单章节内
+    /// ⇒ 按「脱树即非契约」判据该端点<b>非契约</b>，现行面是 <c>order/deliverycompanylist/new/get</c>（本域已声明）。
+    /// 缺失端点清单（DotNetCore.SKIT.FlurlHttpClient.Wechat 转述）把它列为缺口，故须以零声明守卫钉死「不是漏做，是官方已下架」。
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void RemovedDeliveryCompanyListLegacyRoute_ShouldHaveZeroDeclaration()
+    {
+        var allRoutes = AllChannelsRoutes();
+
+        allRoutes.Should().NotBeEmpty("反射枚举不得空跑（正对照）");
+        allRoutes.Count(static r => r.Equals("/channels/ec/order/deliverycompanylist/get", StringComparison.Ordinal))
+            .Should().Be(0,
+                "doc/channels/API/order/deliverycompanylist_get.html 已重定向到订单管理目录页（2026-10-17 核验）⇒ 非契约路由零声明；"
+                + "现行面为 /channels/ec/order/deliverycompanylist/new/get");
+
+        // 正对照：现行同族路由在场（扫描根与词表确实覆盖本线接口面）。
+        allRoutes.Should().Contain("/channels/ec/order/deliverycompanylist/new/get",
+            "正对照：现行路由必须被扫描面覆盖，否则本断言恒真");
+    }
+
+    /// <summary>
+    /// 契约守卫 CL7：已下架的「物流虚拟号」三支路由（<c>logistics/phonenumber/get</c>、
+    /// <c>logistics/phonenumberpool/get</c>、<c>logistics/virtualnumber/get</c>）在全线零声明。
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// 2026-10-17 核验：三支路由对应的官方文档页（缺失端点清单转述的 <c>/channels/ec/logistics/*</c> 虚拟号面）
+    /// 全部被重定向到 <c>doc/store/shop/API/channels-shop-delivery/phonenumber/</c>，该目录页正文不渲染、
+    /// 且「物流发货」目录树内已无虚拟号章节 ⇒ 按「脱树即非契约」判据<b>非契约</b>。
+    /// 虚拟号现行面不在物流域，而在订单域（<c>order/virtualnumber/applyagain</c>、<c>order/virtualnumber/delay</c>、
+    /// <c>order/realnumber/apply</c>）与「商户隐私号」面（<c>merchant/privatenumber/*</c>），本仓已声明；
+    /// 故本守卫以零声明钉死「不是漏做，是官方已下架」，并防后续按 SKIT 清单回填。
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void RemovedLogisticsVirtualNumberRoutes_ShouldHaveZeroDeclaration()
+    {
+        var allRoutes = AllChannelsRoutes();
+
+        allRoutes.Should().NotBeEmpty("反射枚举不得空跑（正对照）");
+
+        foreach (var removed in new[]
+        {
+            "/channels/ec/logistics/phonenumber/get",
+            "/channels/ec/logistics/phonenumberpool/get",
+            "/channels/ec/logistics/virtualnumber/get",
+        })
+        {
+            allRoutes.Count(r => r.Equals(removed, StringComparison.Ordinal))
+                .Should().Be(0,
+                    $"{removed} 的官方文档页已重定向到物流发货目录页且目录树内无虚拟号章节（2026-10-17 核验）⇒ 非契约路由零声明；"
+                    + "虚拟号现行面在订单域 order/virtualnumber/* 与 order/realnumber/apply");
+        }
+
+        // 正对照：现行虚拟号面与现行物流面均在场，证明扫描根覆盖两支接口族。
+        allRoutes.Should().Contain("/channels/ec/logistics/ewaybill/biz/order/create",
+            "正对照：物流发货域现行路由必须被扫描面覆盖，否则本断言恒真");
+        allRoutes.Should().Contain("/channels/ec/order/virtualnumber/applyagain",
+            "正对照：订单域现行虚拟号路由必须被扫描面覆盖");
+    }
+
+    /// <summary>枚举小店线主包全部 HTTP 路由（供零声明守卫使用）。</summary>
+    private static List<string> AllChannelsRoutes()
+        => typeof(IChannelsLogisticsService).Assembly.GetTypes()
+            .Where(static t => t.IsInterface && t.Namespace != null && t.Namespace.StartsWith("Mud.Wechat.Channels", StringComparison.Ordinal))
+            .SelectMany(static t => t.GetMethods(BindingFlags.Public | BindingFlags.Instance))
+            .SelectMany(static m => m.GetCustomAttributes().OfType<HttpMethodAttribute>())
+            .Select(static a => a.RequestUri ?? string.Empty)
+            .ToList();
 
     /// <summary>断言类型的 JSON 字段名（官方参数名照抄）。</summary>
     private static void AssertJsonProperty<T>(string expected, string description)

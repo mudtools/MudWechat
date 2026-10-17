@@ -12,8 +12,8 @@ namespace Mud.Wechat.OfficialAccount.DataModels.Sns;
     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     WriteIndented = false)]
 [JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.Sns.MpSnsAccessTokenResponse))]
-[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.Sns.MpSnsRefreshTokenResponse))]
 [JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.Sns.MpSnsAuthResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.Sns.MpSnsRefreshTokenResponse))]
 [JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.Sns.MpSnsUserInfoResponse))]
 internal partial class SnsJsonContext : JsonSerializerContext
 {

@@ -11,14 +11,14 @@ namespace Mud.Wechat.OfficialAccount.DataModels.KfAccount;
     PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower,
     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     WriteIndented = false)]
-[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.KfAccount.MpKfAccount))]
-[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.KfAccount.MpGetKfListResponse))]
-[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.KfAccount.MpKfOnlineAccount))]
-[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.KfAccount.MpGetOnlineKfListResponse))]
 [JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.KfAccount.MpAddKfAccountRequest))]
-[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.KfAccount.MpUpdateKfAccountRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.KfAccount.MpDelKfAccountRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.KfAccount.MpGetKfListResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.KfAccount.MpGetOnlineKfListResponse))]
 [JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.KfAccount.MpInviteKfWorkerRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.KfAccount.MpKfAccount))]
+[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.KfAccount.MpKfOnlineAccount))]
+[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.KfAccount.MpUpdateKfAccountRequest))]
 internal partial class KfAccountJsonContext : JsonSerializerContext
 {
 }

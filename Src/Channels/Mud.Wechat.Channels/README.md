@@ -1,14 +1,14 @@
 # Mud.Wechat.Channels
 
-微信小店 / 视频号（channels 生态）SDK **主包**：**27 个业务域、规划 318 端点**（设计方案 v1 §2.2）的声明式 HTTP 客户端、模块注册器与 AOT JsonContext 合并。本线覆盖微信小店全部交易管理面（商品 / 订单 / 售后 / 物流 / 资金 / 营销 / 联盟 / 会员 / 代发 / 供货）与视频号内容运营面（直播 / 留资 / 橱窗 / 罗盘），按**分阶段交付**推进。
+微信小店 / 视频号（channels 生态）SDK **主包**：**29 个业务域、394 端点**（设计方案 v1 §2.2 原规划 27 域 318 端点；缺失 API 域完善方案在同线新增 Promoter 域与 Talent 域并对既有域逐页补端点）的声明式 HTTP 客户端、模块注册器与 AOT JsonContext 合并。本线覆盖微信小店全部交易管理面（商品 / 订单 / 售后 / 物流 / 资金 / 营销 / 联盟 / 会员 / 代发 / 供货）与视频号内容运营面（直播 / 留资 / 橱窗 / 罗盘 / 带货助手），按**分阶段交付**推进。
 
 > **交付状态（权威口径以 `Tests/Mud.Wechat.Channels.Tests/ContractGuards/` 守卫为准）**
-> - ✅ **P1+P2 全量落地：27 域 309 端点**（P1 149：Basic 8 / Funds 16 / Product 43 / Order 27 / Aftersale 27 / Logistics 28；P2 160：Resource 7 / Shop 4 / HomePage 14 / Favorite 1 / Category 10 / Brand 8 / Qic 5 / Marketing 7 / Kf 2 / PlatformKf 4 / Vip 5 / MiniStore 10 / Warehouse 11 / League 11 / Delivery 16 / Wecom 1 / Window 9 / Locallife 6 / Subsidy 3 / Live 12 / Compass 14）；
+> - ✅ **全量落地：29 域 394 端点**（P1 150：Basic 8 / Funds 16 / Product 43 / Order 27 / Aftersale 27 / Logistics 29；P2 199：Resource 8 / Shop 4 / HomePage 14 / Favorite 1 / Category 11 / Brand 8 / Qic 5 / Marketing 7 / Kf 2 / PlatformKf 4 / Vip 5 / MiniStore 10 / Warehouse 11 / League 41 / Delivery 23 / Wecom 1 / Window 9 / Locallife 6 / Subsidy 3 / Live 12 / Compass 14；缺失 API 域完善方案新增 45：Promoter 41 + Talent 4）；
 > - ✅ P3 回调收口：`Mud.Wechat.Channels.Callback` 承载官方强制 JSON 安全模式回调（见其 README）。
 >
-> 实际端点数与设计方案 v1 规划口径的差异（类目 10、橱窗+本地生活 9、券 6、会员 5、直播面 12 含 `/channels/ec/finderlive/*` 双前缀等）均已按官方文档逐页核验后以逐域守卫定版。
+> 实际端点数与设计方案 v1 规划口径的差异（类目 11、橱窗+本地生活 9、券 6、会员 5、直播面 12 含 `/channels/ec/finderlive/*` 双前缀、League 由规划 11 收敛为逐页核验后的 41、带货助手面另立 Talent 域 4（佣金单 2 + 达人橱窗 2，与 Window 域橱窗面是两套官方契约）等）均已按官方文档逐页核验后以逐域守卫定版。
 
-## 能力面（已落地 6 域 149 端点，计数与路由表由 CH-R2 / 逐域守卫锁定）
+## 能力面（P1 主干 6 域 150 端点，其余 23 域计数与路由表由 CH-R2 / 逐域守卫锁定）
 
 | 模块（`ChannelsModule`） | 注册方法 | 端点 | 接口 |
 | --- | --- | --- | --- |
@@ -17,7 +17,7 @@
 | `Product` | `AddProductApi()` | 43 | `IChannelsProductService`（商品增改查 / 上下架 / 审核策略与配额 25 + 库存 4 + 赠品 6 + 买赠活动 3 + 限时抢购 5） |
 | `Order` | `AddOrderApi()` | 27 | `IChannelsOrderService`（订单查询 / 改价 / 改地址 / 改备注 / 换款 / 盲盒 / 生鲜质检 / 敏感信息解密 / 虚拟号·真实号 / 发货协商 / 用户预约 24 + 商家私密号实名认证 3） |
 | `Aftersale` | `AddAftersaleApi()` | 27 | `IChannelsAftersaleService`（售后单 15（含原因 / 拒绝原因字典）+ 纠纷单 4 + 保障单 6 + 拒绝原因） |
-| `Logistics` | `AddLogisticsApi()` | 28 | `IChannelsLogisticsService`（地址 5 + 运费模板 4 + 电子面单 16 + 订单发货 3） |
+| `Logistics` | `AddLogisticsApi()` | 29 | `IChannelsLogisticsService`（地址 5 + 运费模板 4 + 电子面单 17（含打印报文商家 / 供货商双路径）+ 订单发货 3） |
 
 三个模块级入口之外还有 `AddAllApis()`（只注册**已落地**域）、`AddModules(params ChannelsModule[])` 与 `Build()`（返回 `IServiceCollection`）。
 
@@ -39,7 +39,7 @@ var product = await productService.GetProductAsync(new ChannelsGetProductRequest
 ## 已踩陷阱与边界（改动前必读）
 
 - **MUD005 已知接受**：官方契约强制令牌走 Query 参数 `access_token`，无法改用 Header；URL 遥测已由组件 `SensitiveUrlRedactor` 与 `WechatChannelsException` 构造期脱敏。
-- **AddModules 对未落地域 fail-fast**：27 个枚举成员先于实现全量声明，注册未落地域（如 `ChannelsModule.Vip`）即抛 `InvalidOperationException`（增量交付期防误装配静默吞）。
+- **AddModules 对未落地域 fail-fast**：`ChannelsModule` 枚举成员先于实现全量声明，注册「有枚举值但无注册器」的域即抛 `InvalidOperationException`（增量交付期防误装配静默吞）。当前 29 个成员均已配注册器（`ChannelsServiceBuilderTests` T1 锁定），该分支只在未来新增枚举值而漏注册器时触发。
 - **双前缀并存照抄官方原文**：`/channels/ec/funds/*` 与 `/shop/funds/*` 同为官方在线前缀，禁止「对齐规范」改写（CH-R2 照录锁定）。
 - **草稿 / 线上双份数据语义**：`product/add|update` 只影响草稿，需上架 + 审核通过才覆盖线上数据（`data_type` 区分读取面）。
 - **同一路由只计 1**：与视频号老清单重叠的 5 条商品路由与 `aftersale/getaftersaleorder` 在域内只声明一次；`order/get` 等与 SHIPINHAO 本地生活重叠路由同口径。

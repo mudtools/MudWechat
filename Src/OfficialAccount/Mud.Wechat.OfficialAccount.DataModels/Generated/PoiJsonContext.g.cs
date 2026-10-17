@@ -11,13 +11,13 @@ namespace Mud.Wechat.OfficialAccount.DataModels.Poi;
     PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase,
     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     WriteIndented = false)]
-[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.Poi.MpPoiGetRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.Poi.MpPoiBaseInfo))]
-[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.Poi.MpPoiPhoto))]
+[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.Poi.MpPoiDeleteRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.Poi.MpPoiGetRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.Poi.MpPoiGetResponse))]
 [JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.Poi.MpPoiListRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.Poi.MpPoiListResponse))]
-[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.Poi.MpPoiDeleteRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.Poi.MpPoiPhoto))]
 internal partial class PoiJsonContext : JsonSerializerContext
 {
 }

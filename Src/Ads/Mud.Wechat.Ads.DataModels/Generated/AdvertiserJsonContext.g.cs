@@ -26,6 +26,9 @@ namespace Mud.Wechat.Ads.DataModels.Advertiser;
 [JsonSerializable(typeof(global::Mud.Wechat.Ads.DataModels.Advertiser.AdsAdvertiserDailyBudgetData))]
 [JsonSerializable(typeof(global::Mud.Wechat.Ads.DataModels.Advertiser.AdsAdvertiserUpdateDailyBudgetRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.Ads.DataModels.Advertiser.AdsAdvertiserUpdateDailyBudgetResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.Ads.DataModels.Advertiser.AdsAdvertiserAddRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.Ads.DataModels.Advertiser.AdsAdvertiserAddData))]
+[JsonSerializable(typeof(global::Mud.Wechat.Ads.DataModels.Advertiser.AdsAdvertiserAddResponse))]
 internal partial class AdvertiserJsonContext : JsonSerializerContext
 {
 }

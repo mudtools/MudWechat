@@ -11,13 +11,13 @@ namespace Mud.Wechat.Channels.DataModels.Subsidy;
     PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower,
     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     WriteIndented = false)]
+[JsonSerializable(typeof(global::Mud.Wechat.Channels.DataModels.Subsidy.ChannelsSubsidyInvoiceMediaData))]
+[JsonSerializable(typeof(global::Mud.Wechat.Channels.DataModels.Subsidy.ChannelsSubsidyInvoicingInfo))]
 [JsonSerializable(typeof(global::Mud.Wechat.Channels.DataModels.Subsidy.ChannelsSubsidyQueryInvoicingRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.Channels.DataModels.Subsidy.ChannelsSubsidyQueryInvoicingResponse))]
-[JsonSerializable(typeof(global::Mud.Wechat.Channels.DataModels.Subsidy.ChannelsSubsidyInvoicingInfo))]
-[JsonSerializable(typeof(global::Mud.Wechat.Channels.DataModels.Subsidy.ChannelsSubsidyUploadInvoiceInfoRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.Channels.DataModels.Subsidy.ChannelsSubsidyUploadInvoiceFileRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.Channels.DataModels.Subsidy.ChannelsSubsidyUploadInvoiceFileResponse))]
-[JsonSerializable(typeof(global::Mud.Wechat.Channels.DataModels.Subsidy.ChannelsSubsidyInvoiceMediaData))]
+[JsonSerializable(typeof(global::Mud.Wechat.Channels.DataModels.Subsidy.ChannelsSubsidyUploadInvoiceInfoRequest))]
 internal partial class SubsidyJsonContext : JsonSerializerContext
 {
 }

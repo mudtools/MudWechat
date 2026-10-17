@@ -11,10 +11,10 @@ namespace Mud.Wechat.OfficialAccount.DataModels.Qrcode;
     PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower,
     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     WriteIndented = false)]
-[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.Qrcode.MpQrcodeCreateRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.Qrcode.MpQrcodeActionInfo))]
-[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.Qrcode.MpQrcodeScene))]
+[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.Qrcode.MpQrcodeCreateRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.Qrcode.MpQrcodeCreateResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.Qrcode.MpQrcodeScene))]
 internal partial class QrcodeJsonContext : JsonSerializerContext
 {
 }

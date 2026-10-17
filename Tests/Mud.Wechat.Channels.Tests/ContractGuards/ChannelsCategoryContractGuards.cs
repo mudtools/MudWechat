@@ -12,13 +12,13 @@ using Mud.Wechat.Channels.Extensions;
 namespace Mud.Wechat.Channels.Tests.ContractGuards;
 
 /// <summary>
-/// 小店「类目管理」域契约守卫（CC 系列：Category 域 10 端点路由 + 双前缀并存 +
-/// getcategoryrule 双语义同路由 + 令牌绑定 + DTO 字段与共用裁决 + JSON 上下文登记 + 枚举常量）。
+/// 小店「类目管理」域契约守卫（CC 系列：Category 域 11 端点路由 + 双前缀并存 +
+/// getcategoryrule 双语义同路由 + 联盟类目 GET 形态 + 令牌绑定 + DTO 字段与共用裁决 + JSON 上下文登记 + 枚举常量）。
 /// </summary>
 /// <remarks>
 /// <para>
 /// <b>路由前缀并存（官方历史前缀，照抄原文不得改写）</b>：本域同时使用 <c>/shop/ec/category/*</c>（9 端点）
-/// 与 <c>/channels/ec/category/*</c>（1 端点：申请类目），由 CH-R2 锁定与其它线路由无交叠。
+/// 与 <c>/channels/ec/category/*</c>（2 端点：申请类目 + 联盟类目），由 CH-R2 锁定与其它线路由无交叠。
 /// </para>
 /// <para>
 /// <b><c>getcategoryrule</c> 双语义同路由</b>：官方清单中该路由出现两次（保证金类目规则 / 发货方式类目规则），
@@ -34,10 +34,11 @@ public class ChannelsCategoryContractGuards
 {
     private const string CategoryRegistryGroupName = "Category";
 
-    /// <summary>Category 域官方路由表（10 端点：/shop/ec/category/* 9 + /channels/ec/category/* 1，全部 POST）。</summary>
+    /// <summary>Category 域官方路由表（11 端点：/shop/ec/category/* 9 + /channels/ec/category/* 2；10 POST + 1 GET）。</summary>
     private static readonly (Type Interface, string Method, Type HttpAttribute, string Route)[] CategoryRoutes =
     {
         (typeof(IChannelsCategoryService), nameof(IChannelsCategoryService.GetAllCategoriesAsync), typeof(PostAttribute), "/shop/ec/category/all"),
+        (typeof(IChannelsCategoryService), nameof(IChannelsCategoryService.GetLeagueAllCategoriesAsync), typeof(GetAttribute), "/channels/ec/category/league/all"),
         (typeof(IChannelsCategoryService), nameof(IChannelsCategoryService.GetCategoryDetailAsync), typeof(PostAttribute), "/shop/ec/category/detail"),
         (typeof(IChannelsCategoryService), nameof(IChannelsCategoryService.AddCategoryAsync), typeof(PostAttribute), "/channels/ec/category/add"),
         (typeof(IChannelsCategoryService), nameof(IChannelsCategoryService.GetBizCatFlowListAsync), typeof(PostAttribute), "/shop/ec/category/getbizcatflowlist"),
@@ -49,21 +50,22 @@ public class ChannelsCategoryContractGuards
         (typeof(IChannelsCategoryService), nameof(IChannelsCategoryService.GetCategoryProductRuleAsync), typeof(PostAttribute), "/shop/ec/category/getcategoryproductrule"),
     };
 
-    /// <summary>契约守卫 CC1：Category 域 10 端点路由必须与官方契约一致（全部 POST）。</summary>
+    /// <summary>契约守卫 CC1：Category 域 11 端点路由必须与官方契约一致（10 POST + 联盟类目 1 GET）。</summary>
     [Fact]
     public void CategoryEndpoints_ShouldMatchOfficialRoutes()
     {
-        // 10 端点 = 类目管理 8 + 类目规则 2（getcategoryrule 官方双语义同路由只计 1；ChannelsModule 注释的
-        // 「11 端点」为官方清单原始计数 = 类目 8 + 类目规则 3，其中 getcategoryrule 计两次，去重后为 10）。
-        CategoryRoutes.Should().HaveCount(10, "类目 8 + 类目规则 2（getcategoryrule 双语义同路由去重）= 10 端点");
-        CategoryRoutes.Select(r => r.Route).Distinct().Should().HaveCount(10);
+        // 11 端点 = 类目管理 8 + 类目规则 2 + 联盟类目 1（getcategoryrule 官方双语义同路由只计 1；ChannelsModule 注释的
+        // 「11 端点」为官方清单原始计数 = 类目 8 + 类目规则 3，其中 getcategoryrule 计两次，去重后为 10；
+        // 2026-10-17 补联盟带货机构侧 category/league/all 后为 11）。
+        CategoryRoutes.Should().HaveCount(11, "类目 8 + 类目规则 2（getcategoryrule 双语义同路由去重）+ 联盟类目 1 = 11 端点");
+        CategoryRoutes.Select(r => r.Route).Distinct().Should().HaveCount(11);
 
         CategoryRoutes.Select(r => r.Route)
             .Count(static r => r.StartsWith("/shop/ec/category/", StringComparison.Ordinal))
             .Should().Be(9, "9 端点走 /shop/ec/category/* 官方历史前缀");
         CategoryRoutes.Select(r => r.Route)
             .Count(static r => r.StartsWith("/channels/ec/category/", StringComparison.Ordinal))
-            .Should().Be(1, "仅「申请类目 category/add」1 端点走 /channels/ec/category/* 主干前缀");
+            .Should().Be(2, "申请类目 category/add 与联盟类目 category/league/all 2 端点走 /channels/ec/category/* 主干前缀");
 
         foreach (var (iface, method, httpAttribute, route) in CategoryRoutes)
         {
@@ -76,21 +78,28 @@ public class ChannelsCategoryContractGuards
         }
     }
 
-    /// <summary>契约守卫 CC2：Category 域 10 端点全部为 POST；空请求体端点不得携带 [Body]；getcategoryrule 须带 rule_id URL 参数。</summary>
+    /// <summary>契约守卫 CC2：Category 域动词形态（10 POST + 联盟类目 1 GET）；空请求体端点不得携带 [Body]；getcategoryrule 须带 rule_id URL 参数。</summary>
     [Fact]
-    public void CategoryEndpoints_ShouldAllBePost_WithBodyRules()
+    public void CategoryEndpoints_ShouldMatchOfficialVerbs_WithBodyRules()
     {
-        foreach (var (iface, method, _, _) in CategoryRoutes)
+        foreach (var (iface, method, httpAttribute, _) in CategoryRoutes)
         {
             var target = iface.GetMethod(method, BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)!;
-            target!.GetCustomAttribute<PostAttribute>().Should().NotBeNull(
-                $"{iface.Name}.{method} 官方契约均为 POST（getallcategory 官方变更日志 2026-09-15 由 GET 改为 POST）");
+            target.GetCustomAttribute(httpAttribute).Should().NotBeNull(
+                $"{iface.Name}.{method} 动词必须逐页照官方原文（小店侧 getallcategory 官方变更日志 2026-09-15 由 GET 改 POST；"
+                + "联盟侧 category/league/all 官方仍为 GET，两端点形态不同、不得互相对齐）");
         }
 
-        // 官方请求体为空的端点（getallcategory）不得人为造请求体 DTO。
+        CategoryRoutes.Count(static r => r.HttpAttribute == typeof(GetAttribute))
+            .Should().Be(1, "本域唯一 GET 端点是联盟类目 category/league/all（逐页核验 2026-10-17）");
+
+        // 官方请求体为空的端点（小店 getallcategory / 联盟 category/league/all）不得人为造请求体 DTO。
         var emptyBodyEndpoint = typeof(IChannelsCategoryService).GetMethod(nameof(IChannelsCategoryService.GetAllCategoriesAsync))!;
         emptyBodyEndpoint.GetParameters().SelectMany(static p => p.GetCustomAttributes<BodyAttribute>())
             .Should().BeEmpty("getallcategory 官方规定空请求体——不得声明 [Body]");
+        var leagueEmptyBodyEndpoint = typeof(IChannelsCategoryService).GetMethod(nameof(IChannelsCategoryService.GetLeagueAllCategoriesAsync))!;
+        leagueEmptyBodyEndpoint.GetParameters().SelectMany(static p => p.GetCustomAttributes<BodyAttribute>())
+            .Should().BeEmpty("category/league/all 官方规定无请求体（Query 仅 access_token）——不得声明 [Body]");
 
         // getcategoryrule 的 rule_id 官方规定走 URL 参数（保证金填 1 / 发货方式填 2），不得塞进请求体。
         var ruleEndpoint = typeof(IChannelsCategoryService).GetMethod(nameof(IChannelsCategoryService.GetCategoryRuleAsync))!;
@@ -104,7 +113,7 @@ public class ChannelsCategoryContractGuards
     public void CategoryInterface_ShouldBindChannelsToken_AndRegisterUnderCategoryGroup()
     {
         var token = typeof(IChannelsCategoryService).GetCustomAttribute<TokenAttribute>();
-        token.Should().NotBeNull("Category 域 10 端点消费小店 access_token（官方契约）");
+        token.Should().NotBeNull("Category 域 11 端点消费小店 access_token（官方契约）");
         token!.TokenType.Should().Be(ChannelsTokenTypes.AccessToken);
         token.InjectionMode.Should().Be(TokenInjectionMode.Query, "官方契约强制 Query 注入（MUD005）");
         token.Name.Should().Be("access_token");
@@ -135,11 +144,11 @@ public class ChannelsCategoryContractGuards
             .Where(t => t.GetCustomAttribute<HttpJsonSerializableAttribute>() != null)
             .ToList();
 
-        dtoTypes.Should().HaveCount(55,
-            "Category 域 10 端点的请求/响应/嵌套对象 DTO 总数漂移须先核对官方文档再同批调整本守卫" +
-            "（getallcategory 独有 7 + getcategorydetail 独有 6 + addcategory 独有 4 + 审核单 6 + 类目权限 5 + 撤销审核 1 + " +
+        dtoTypes.Should().HaveCount(56,
+            "Category 域 11 端点的请求/响应/嵌套对象 DTO 总数漂移须先核对官方文档再同批调整本守卫" +
+            "（getallcategory 独有 7 + 联盟类目独有 1 + getcategorydetail 独有 6 + addcategory 独有 4 + 审核单 6 + 类目权限 5 + 撤销审核 1 + " +
             "getcategoryrule 3 + getcategoryproductrule 独有 14 + 跨端点共用 9" +
-            "（类目信息 / 尺码表·编辑要求 / 品牌引用 / 资质条目 / 证照组三件套）= 55）");
+            "（类目信息 / 尺码表·编辑要求 / 品牌引用 / 资质条目 / 证照组三件套）= 56）");
 
         foreach (var type in dtoTypes)
         {
@@ -158,6 +167,13 @@ public class ChannelsCategoryContractGuards
         // 获取所有类目。
         AssertJsonProperty<ChannelsGetAllCategoryResponse>("cats", "旧类目信息");
         AssertJsonProperty<ChannelsGetAllCategoryResponse>("cats_v2", "新类目信息");
+
+        // 联盟类目（category/league/all）：应答树与小店侧逐字段同形 ⇒ 元素类型必须复用（防分叉复制一份漂移）。
+        AssertJsonProperty<ChannelsLeagueAllCategoryResponse>("cats", "旧类目信息（联盟侧）");
+        AssertJsonProperty<ChannelsLeagueAllCategoryResponse>("cats_v2", "新类目信息（联盟侧）");
+        typeof(ChannelsLeagueAllCategoryResponse).GetProperty("Cats")!.PropertyType
+            .Should().Be(typeof(List<ChannelsCategoryAndQua>),
+                "联盟侧 cats 元素类型必须复用小店侧 ChannelsCategoryAndQua（官方两页表逐字段一致，单类型裁决）");
         AssertJsonProperty<ChannelsCategoryAndQua>("cat", "类目详情");
         AssertJsonProperty<ChannelsCategoryAndQua>("qua", "资质详情");
         AssertJsonProperty<ChannelsCategoryAndQua>("product_qua", "商品资质信息（将废弃）");

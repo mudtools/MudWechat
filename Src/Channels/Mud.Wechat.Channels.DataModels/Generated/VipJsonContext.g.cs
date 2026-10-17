@@ -11,21 +11,21 @@ namespace Mud.Wechat.Channels.DataModels.Vip;
     PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase,
     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     WriteIndented = false)]
-[JsonSerializable(typeof(global::Mud.Wechat.Channels.DataModels.Vip.ChannelsVipOpenidRequest))]
-[JsonSerializable(typeof(global::Mud.Wechat.Channels.DataModels.Vip.ChannelsVipGetUserScoreResponse))]
-[JsonSerializable(typeof(global::Mud.Wechat.Channels.DataModels.Vip.ChannelsVipUserScoreInfo))]
 [JsonSerializable(typeof(global::Mud.Wechat.Channels.DataModels.Vip.ChannelsVipGetUserInfoResponse))]
-[JsonSerializable(typeof(global::Mud.Wechat.Channels.DataModels.Vip.ChannelsVipUserInfo))]
-[JsonSerializable(typeof(global::Mud.Wechat.Channels.DataModels.Vip.ChannelsVipUserGradeInfo))]
 [JsonSerializable(typeof(global::Mud.Wechat.Channels.DataModels.Vip.ChannelsVipGetUserListRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.Channels.DataModels.Vip.ChannelsVipGetUserListResponse))]
 [JsonSerializable(typeof(global::Mud.Wechat.Channels.DataModels.Vip.ChannelsVipGetUserScoreFlowRecordRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.Channels.DataModels.Vip.ChannelsVipGetUserScoreFlowRecordResponse))]
-[JsonSerializable(typeof(global::Mud.Wechat.Channels.DataModels.Vip.ChannelsVipScoreFlowRecord))]
+[JsonSerializable(typeof(global::Mud.Wechat.Channels.DataModels.Vip.ChannelsVipGetUserScoreResponse))]
 [JsonSerializable(typeof(global::Mud.Wechat.Channels.DataModels.Vip.ChannelsVipGetWxaInfoResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.Channels.DataModels.Vip.ChannelsVipOpenidRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.Channels.DataModels.Vip.ChannelsVipScoreFlowRecord))]
+[JsonSerializable(typeof(global::Mud.Wechat.Channels.DataModels.Vip.ChannelsVipUserGradeInfo))]
+[JsonSerializable(typeof(global::Mud.Wechat.Channels.DataModels.Vip.ChannelsVipUserInfo))]
+[JsonSerializable(typeof(global::Mud.Wechat.Channels.DataModels.Vip.ChannelsVipUserScoreInfo))]
+[JsonSerializable(typeof(global::Mud.Wechat.Channels.DataModels.Vip.ChannelsVipWxaDisplayInfo))]
 [JsonSerializable(typeof(global::Mud.Wechat.Channels.DataModels.Vip.ChannelsVipWxaInfo))]
 [JsonSerializable(typeof(global::Mud.Wechat.Channels.DataModels.Vip.ChannelsVipWxaPaths))]
-[JsonSerializable(typeof(global::Mud.Wechat.Channels.DataModels.Vip.ChannelsVipWxaDisplayInfo))]
 internal partial class VipJsonContext : JsonSerializerContext
 {
 }

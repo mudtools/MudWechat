@@ -12,19 +12,19 @@ namespace Mud.Wechat.OfficialAccount.DataModels.User;
     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     WriteIndented = false)]
 [JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.User.MpBatchGetUserInfoRequest))]
-[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.User.MpBatchUserInfoItem))]
 [JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.User.MpBatchGetUserInfoResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.User.MpBatchUserInfoItem))]
+[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.User.MpBlacklistRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.User.MpChangeOpenIdRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.User.MpChangeOpenIdResponse))]
 [JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.User.MpChangeOpenIdResult))]
+[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.User.MpGetBlacklistRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.User.MpGetBlacklistResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.User.MpGetFansResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.User.MpOpenIdPageData))]
 [JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.User.MpUpdateRemarkRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.User.MpUserInfo))]
 [JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.User.MpUserInfoResponse))]
-[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.User.MpOpenIdPageData))]
-[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.User.MpGetFansResponse))]
-[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.User.MpGetBlacklistRequest))]
-[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.User.MpGetBlacklistResponse))]
-[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.User.MpBlacklistRequest))]
 internal partial class UserJsonContext : JsonSerializerContext
 {
 }

@@ -12,13 +12,13 @@ namespace Mud.Wechat.OfficialAccount.DataModels.AutoReply;
     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     WriteIndented = false)]
 [JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.AutoReply.MpAutoReplyInfoResponse))]
-[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.AutoReply.MpSimpleAutoReplyInfo))]
-[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.AutoReply.MpKeywordAutoReplyInfo))]
-[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.AutoReply.MpKeywordAutoReplyRule))]
 [JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.AutoReply.MpAutoReplyKeyword))]
-[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.AutoReply.MpAutoReplyReply))]
 [JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.AutoReply.MpAutoReplyNewsInfo))]
 [JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.AutoReply.MpAutoReplyNewsItem))]
+[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.AutoReply.MpAutoReplyReply))]
+[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.AutoReply.MpKeywordAutoReplyInfo))]
+[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.AutoReply.MpKeywordAutoReplyRule))]
+[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.AutoReply.MpSimpleAutoReplyInfo))]
 internal partial class AutoReplyJsonContext : JsonSerializerContext
 {
 }

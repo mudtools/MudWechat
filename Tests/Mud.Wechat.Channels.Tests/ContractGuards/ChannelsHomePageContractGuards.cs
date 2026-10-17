@@ -26,6 +26,12 @@ namespace Mud.Wechat.Channels.Tests.ContractGuards;
 /// <b>审核流语义</b>：背景图与精选展示位为「提交申请 → 审核 → 生效」模型——「撤销申请」不影响已生效内容，
 /// 「清空」接口才同时移除生效内容；查询接口同时返回生效内容与流程中的申请。
 /// </para>
+/// <para>
+/// <b>商品分类族只有读侧（CHP7 锁定）</b>：官方「主页管理」目录内商品分类仅 <c>tree/get</c> 与
+/// <c>tree/product/get</c> 两支只读端点；分类树设置与分类商品增删（<c>tree/set</c>、
+/// <c>tree/product/add|del</c>）在官方文档面<b>不存在</b>（页面 404、目录无页），故本域 14 端点即官方 14 端点，
+/// 不得按第三方 SDK 清单回填写侧端点。分类的维护由商家在小店后台完成。
+/// </para>
 /// </remarks>
 public class ChannelsHomePageContractGuards
 {
@@ -250,6 +256,55 @@ public class ChannelsHomePageContractGuards
         ChannelsBannerTypes.Product.Should().Be(1);
         ChannelsBannerTypes.Finder.Should().Be(3);
         ChannelsBannerTypes.OfficialAccount.Should().Be(4);
+    }
+
+    /// <summary>
+    /// 契约守卫 CHP7：官方目录已下架的「商品分类写侧」三支路由（<c>store/classification/tree/set</c>、
+    /// <c>store/classification/tree/product/add</c>、<c>store/classification/tree/product/del</c>）在全线零声明。
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// 2026-10-17 核验：缺失端点清单（DotNetCore.SKIT.FlurlHttpClient.Wechat 转述）把三支写侧端点列为缺口，
+    /// 但其文档 URL <c>doc/store/shop/API/homepage/classification/{add,del}classificationproduct</c>、
+    /// <c>setclassificationtree</c> 全部返回 <b>HTTP 404</b>（非软 200），且官方「主页管理」接口目录页
+    /// （<c>API/homepage/shoptype/</c>）与全站小店 API 导航（494 条链接）内<b>均无</b>商品分类写侧页面 ——
+    /// 商品分类族现行面只有 <c>tree/get</c> 与 <c>tree/product/get</c> 两支只读端点。
+    /// 按「判据是官方文档面而非网关可达性」⇒ 三支<b>非契约</b>，本域 <b>14 端点与官方目录 14 端点逐一对齐</b>，
+    /// 不得据 SKIT 清单回填。
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void RemovedClassificationWriteRoutes_ShouldHaveZeroDeclaration()
+    {
+        var allRoutes = typeof(IChannelsHomePageService).Assembly.GetTypes()
+            .Where(static t => t.IsInterface && t.Namespace != null && t.Namespace.StartsWith("Mud.Wechat.Channels", StringComparison.Ordinal))
+            .SelectMany(static t => t.GetMethods(BindingFlags.Public | BindingFlags.Instance))
+            .SelectMany(static m => m.GetCustomAttributes().OfType<HttpMethodAttribute>())
+            .Select(static a => a.RequestUri ?? string.Empty)
+            .ToList();
+
+        allRoutes.Should().NotBeEmpty("反射枚举不得空跑（正对照）");
+
+        foreach (var removed in new[]
+        {
+            "/channels/ec/store/classification/tree/set",
+            "/channels/ec/store/classification/tree/product/add",
+            "/channels/ec/store/classification/tree/product/del",
+        })
+        {
+            allRoutes.Count(r => r.Equals(removed, StringComparison.Ordinal))
+                .Should().Be(0,
+                    $"{removed} 的官方文档页返回 404 且不在「主页管理」接口目录内（2026-10-17 核验）⇒ 非契约路由零声明；"
+                    + "商品分类族官方只读面仅 tree/get 与 tree/product/get 两支");
+        }
+
+        // 正对照：本域现行分类只读两支与官方目录 14 端点计数在场（扫描根确实覆盖 HomePage 域接口）。
+        allRoutes.Should().Contain("/channels/ec/store/classification/tree/get",
+            "正对照：现行分类树查询路由必须被扫描面覆盖，否则本断言恒真");
+        allRoutes.Should().Contain("/channels/ec/store/classification/tree/product/get",
+            "正对照：现行分类商品查询路由必须被扫描面覆盖");
+        HomePageRoutes.Should().HaveCount(14,
+            "本域端点计数须与官方「主页管理」目录页 14 支逐一对齐（4 排序 + 4 背景图 + 4 展示位 + 2 分类只读）");
     }
 
     private static void AssertJsonProperty<T>(string jsonName, string because)

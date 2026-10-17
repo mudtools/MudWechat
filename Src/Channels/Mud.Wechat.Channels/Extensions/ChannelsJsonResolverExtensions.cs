@@ -12,7 +12,8 @@ using Mud.Wechat.Channels.DataModels.Callback;
 using Mud.Wechat.Channels.DataModels.Compass;
 using Mud.Wechat.Channels.DataModels.Delivery;
 using Mud.Wechat.Channels.DataModels.League;
-using Mud.Wechat.Channels.DataModels.League;
+using Mud.Wechat.Channels.DataModels.Promoter;
+using Mud.Wechat.Channels.DataModels.Talent;
 using Mud.Wechat.Channels.DataModels.Locallife;
 using Mud.Wechat.Channels.DataModels.Marketing;
 using Mud.Wechat.Channels.DataModels.Subsidy;
@@ -93,6 +94,8 @@ public static class ChannelsJsonResolverExtensions
             SubsidyJsonContext.Default,
             WarehouseJsonContext.Default,
             LeagueJsonContext.Default,
+            PromoterJsonContext.Default,
+            TalentJsonContext.Default,
             DeliveryJsonContext.Default,
             LiveJsonContext.Default,
             CompassJsonContext.Default,

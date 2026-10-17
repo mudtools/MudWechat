@@ -9,6 +9,7 @@ using System.Reflection;
 using System.Text.RegularExpressions;
 using Mud.HttpUtils.Attributes;
 using Mud.Wechat.OpenPlatform.DataModels;
+using Mud.Wechat.OpenPlatform.DataModels.Ams;
 using Mud.Wechat.OpenPlatform.DataModels.Account;
 using Mud.Wechat.OpenPlatform.DataModels.Auth;
 using Mud.Wechat.OpenPlatform.DataModels.Category;
@@ -101,13 +102,14 @@ public class OpenPlatformContractGuards
     };
 
     /// <summary>
-    /// OP-B1：接口集合与数量锁定（14 接口 / 100 端点，防漏防多）。
+    /// OP-B1：接口集合与数量锁定（16 接口 / 122 端点，防漏防多）。
     /// </summary>
     /// <remarks>
     /// 2026-10-15 起本线另有 <c>ComponentTcb</c> 六支接口（50 端点，注册组共用一个），
     /// 其 (方法, 路由) 表与令牌语义由 <c>OpenPlatformComponentTcbContractGuards</c>（CBT 系列）逐条锁定，
     /// <c>Embedded</c>（6 端点）由 <c>OpenPlatformEmbeddedContractGuards</c>（EMB 系列）、
-    /// <c>Auth</c>（5 端点）由 <c>OpenPlatformAuthContractGuards</c>（AUTH 系列）逐条锁定；
+    /// <c>Auth</c>（5 端点）由 <c>OpenPlatformAuthContractGuards</c>（AUTH 系列）、
+    /// <c>Ams</c>（19 端点）+ <c>AmsShare</c>（3 端点）由 <c>OpenPlatformAmsContractGuards</c>（AM 系列）逐条锁定；
     /// 本守卫只负责「接口全集不漂移 + 端点总数与基线一致」。
     /// </remarks>
     [Fact]
@@ -139,6 +141,8 @@ public class OpenPlatformContractGuards
             nameof(IWechatOpenPlatformComponentTcbStaticStoreService),
             nameof(IWechatOpenPlatformEmbeddedService),
             nameof(IWechatOpenPlatformAuthService),
+            nameof(IWechatOpenPlatformAmsService),
+            nameof(IWechatOpenPlatformAmsShareService),
         });
 
         var actualEndpoints = interfaces.Sum(GetEndpoints);
@@ -257,6 +261,11 @@ public class OpenPlatformContractGuards
             "/wxa/sec/reauth",
             "/wxa/sec/queryauth",
             "/wxa/sec/uploadauthmaterial",
+            // 流量主代运营（AMS）族独占（逐条全路径）：Ams 单路由 action 分派 + AmsShare 两支查询/设置路由，
+            // 均为开放平台第三方面，其它线不得声明（零交叠由 AM 系列守卫与本条双向锁定）。
+            "/wxa/operationams",
+            "/wxa/getdefaultamsinfo",
+            "/wxa/setdefaultamsinfo",
         };
 
         var offenders = new List<string>();
@@ -337,6 +346,7 @@ public class OpenPlatformContractGuards
             (typeof(SnsJsonContext), "Mud.Wechat.OpenPlatform.DataModels.Sns", "Sns"),
             (typeof(EmbeddedJsonContext), "Mud.Wechat.OpenPlatform.DataModels.Embedded", "Embedded"),
             (typeof(AuthJsonContext), "Mud.Wechat.OpenPlatform.DataModels.Auth", "Auth"),
+            (typeof(AmsJsonContext), "Mud.Wechat.OpenPlatform.DataModels.Ams", "Ams"),
         };
 
         foreach (var (contextType, ns, segment) in expectations)

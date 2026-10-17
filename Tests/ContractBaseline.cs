@@ -309,8 +309,12 @@ public static class Baseline
         /// Auth（微信认证）单接口 5 端点为 2026-10-17 依官方 weapp-wxverify 5 页取证落地，
         /// 令牌面 <c>authorizer_access_token</c>，注册组 <c>Auth</c>，逐接口表由 AUTH 系列守卫持有
         /// （同按 MP-D-BUCKET-RULING-01 归开放平台线，小程序线 NC2 锁定零声明）。
+        /// Ams（流量主代运营管理面）单接口 19 端点 + AmsShare（分账面）单接口 3 端点为 2026-10-17 依官方 ams/* 22 页取证落地：
+        /// Ams 恒 POST <c>/wxa/operationams</c>、以 <c>action</c> 分派、令牌面 <c>authorizer_access_token</c>、注册组 <c>Ams</c>；
+        /// AmsShare 恒 POST <c>/wxa/getdefaultamsinfo</c>·<c>/wxa/setdefaultamsinfo</c>、令牌面 <c>component_access_token</c>、注册组 <c>AmsShare</c>
+        /// （两面令牌归属不同故拆两支接口/注册组）。逐接口表由 AM 系列守卫持有。
         /// </remarks>
-        public const int HttpApiInterfaces = 14;
+        public const int HttpApiInterfaces = 16;
 
         /// <summary>
         /// 端点总数（各接口方法之和）。
@@ -322,9 +326,11 @@ public static class Baseline
         /// + ComponentTicketFree 1（start_push_ticket）+ OpenAccount 6 + Account 4 + Sns 2 + Category 12 = 39
         /// + ComponentTcb 50（/componenttcb/* 全域，恒 POST，2026-10-15 逐页核验零路由错配）
         /// + Embedded 6（/wxaapi/wxaembedded/* 半屏小程序，4 POST + 2 GET，2026-10-17 逐页取证）
-        /// + Auth 5（/wxa/sec/* 微信认证：身份树 1 GET + 提审/重审/进度查询 3 POST + 补充材料 multipart 1 POST，2026-10-17 逐页取证）= 100。
+        /// + Auth 5（/wxa/sec/* 微信认证：身份树 1 GET + 提审/重审/进度查询 3 POST + 补充材料 multipart 1 POST，2026-10-17 逐页取证）
+        /// + Ams 19（/wxa/operationams 单路由 action 分派，恒 POST，2026-10-17 逐页取证）
+        /// + AmsShare 3（/wxa/getdefaultamsinfo ×2 + /wxa/setdefaultamsinfo ×1，恒 POST，2026-10-17 逐页取证）= 122。
         /// 令牌链 4 端点（api_component_token 等）由 Provider raw HTTP 承载，**不计**（T2 裁定）。
         /// </remarks>
-        public const int Endpoints = 100;
+        public const int Endpoints = 122;
     }
 }

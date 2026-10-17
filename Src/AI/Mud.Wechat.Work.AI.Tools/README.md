@@ -24,7 +24,7 @@
 | `ToolArgs`（internal） | 生成物 Args 解包器消费的 helper 集（六个参数形态各一对 Require/Optional） |
 | `Extensions.AddWechatWorkTools(binding[, configurePolicy])` | 装配入口：绑定 + 逐执行器工厂 + 注册表 + 策略 + 执行链 + `IReadOnlyList<AIFunction>` 投影（软缺席：业务域未注册 ⇒ 该域工具不入表） |
 
-当前策展面（9 个：8 只读 + 1 受控写）：
+当前策展面（14 个：9 只读 + 4 受控写 + 1 高危写）：
 
 | 域 | 工具 | SDK 源 |
 |---|---|---|
@@ -32,11 +32,23 @@
 | 成员 | `contacts.user.get` / `.list` / `.simple_list` | `IWechatWorkUsersService` |
 | 标签 | `contacts.tag.list`（零参）/ `.members` | `IWechatWorkTagsService` |
 | 标签（**L2 受控写**） | `contacts.tag.create` | `IWechatWorkTagsService.CreateTagAsync` |
+| 微文档 | `wedoc.doc.base_info` | `IWechatWorkWedocService.GetDocumentBaseInfoAsync` |
+| 微文档（**L2 受控写**） | `wedoc.doc.create` / `.rename` / `.share` | `CreateDocumentAsync` / `RenameDocumentAsync` / `ShareDocumentAsync` |
+| 微文档（**L3 高危写**） | `wedoc.doc.delete` | `DeleteDocumentAsync` |
 
 写工具的默认姿态：**注册但不可达**——`IsWrite = true` 使它进入 `WechatToolNames.WriteAll`，而 `WechatToolPolicy` 默认只装只读面，
 故模型看不到它（投影按白名单）、调用被拒；宿主须显式 `Enable(...)` + 提供授权器 + 提供
-`IWechatToolApprovalGate`（缺任一即拒绝，fail-closed）才可执行。首次写工具选「建标签」是为了先跑通写路径：
+`IWechatToolApprovalGate`（缺任一即拒绝，fail-closed）才可执行。首个写工具选「建标签」是为了先跑通写路径：
 可逆、无外部副作用；消息发送、成员增删等外部可见/不可逆动作应在审批状态机就绪后再开放。
+
+**L3 高危写恒需审批，不可用开关关闭**（`wedoc.doc.delete` 为样本）：`WechatToolPolicy.Validate()` 在
+「启用了 `HighRiskWrite` 工具但 `RequireApprovalForWrites = false`」时 fail-fast（`InvalidOperationException`），
+派发层再兜一层——未注入 `IWechatToolApprovalGate` 时按 fail-closed 拒绝且**不触达** SDK 写方法。
+两条不变式各由用例锁定：`Policy_EnablingHighRiskWriteWithApprovalDisabled_ShouldFailFast`、
+`Invoke_HighRiskWriteWithoutApprovalGate_ShouldFailClosed`，放行路径见 `Invoke_HighRiskWriteWithApproval_ShouldExecute`。
+顺序与上下文同样被锁：**先授权后审批**（`Invoke_HighRiskWriteWhenAuthorizationDenied_ShouldNotAskApproval`——未获授权时
+审批门一次都不会被调用），审批输入携带 `Risk = HighRiskWrite` 与 scope、但只含入参摘要不含原文
+（`Invoke_HighRiskWrite_ApprovalShouldSeeHighRiskContext`）。
 
 成员域执行器只投影 `userid/姓名/别名/职务/部门/主部门/状态/直属上级`，**不外发**手机号、邮箱、头像、地址、二维码
 （个人信息一旦进入提示词与日志即不可撤回；需要时由宿主经 oauth2 授权专线提供）。
@@ -67,6 +79,14 @@
    引擎在深度上限处截断（`contacts.user.get` ×6 / `.list` ×4）。这是**告警不是错误**：执行器已把出站形状投影成
    扁平 `userid/name/…`，模型按描述读文本即可；若日后要求「输出契约完整」，应让执行器换用扁平的专用响应类型，
    而不是调高深度上限（会放大提示词并重新引入环）。
+7. **`JsonValue.Create(value)` 的泛型实参必须是具体类型**：形参写成 `object?` 会实例化 `JsonValueCustomized<object>`，
+   其 `WriteTo` 在默认 `JsonSerializerOptions` 上调用 `MakeReadOnly()` ⇒ `ToolResultJson.ToText` 运行期抛
+   `InvalidOperationException: ... must specify a TypeInfoResolver`（编译期与门禁全绿，只在调用时爆）。
+   执行器里「通用附加字段」签名（如 `params (string Key, object? Value)[]`）就是踩点，收窄到 `string?` 等具体类型即可。
+8. **信封返回类型推导不出 `output_schema`**：剖面把 `WechatWorkResponse` 登记进 `OutputWrapperTypeNames`，
+   解包后无载荷 ⇒ `ResolveOutputSchema` 返回 `{}`，Schema 里不会出现 `output_schema`（WT-G3 守卫直接红）。
+   返回信封的写工具须用 `[AgentTool(OutputSchema = "…")]` 显式声明执行器**实际投影**（如 `wedoc.doc.delete` 的
+   `ok`/`docid`/`formid`），并同批重固化 golden。
 
 ## 门禁
 
@@ -91,7 +111,7 @@ dotnet test Tests/Mud.Wechat.Work.AI.Tools.Tests -c Release
 `WechatAgent` 把它交给内层 `ChatClientAgent` 的 `ChatOptions.Tools`（`WechatAgent` 只依赖
 `Microsoft.Extensions.AI.AIFunction`，**不引用**本工程——层 2 不引 `.AI.Tools` 的边界由此保持）。
 模型 `tool_call` → `WechatToolFunction.InvokeCoreAsync` → `WechatToolDispatcher.InvokeAsync`
-（白名单 → 授权 → 执行 → 异常归一）→ `ToolResult.Text` 回填模型。
+（白名单 → 授权 → 审批（写/高危写）→ 执行 → 异常归一）→ `ToolResult.Text` 回填模型。
 
 ## 端到端闭环（已通）
 
@@ -104,7 +124,7 @@ dotnet test Tests/Mud.Wechat.Work.AI.Tools.Tests -c Release
 
 - **审批状态机**：`IWechatToolApprovalGate` 目前只支持「调用当下判定」；「挂起 → 人工批准 → 续跑」需要
   `PendingReplyTurnState` 之类的持久化 + 重投递通道（可复用回合 outbox），届时不得把挂起态塞进现有两态返回值。
-- **高危写（L3）**：`WechatToolRisk.HighRiskWrite` 的恒需审批规则已实现（策略校验 + 派发分支），
-  但当前无高危工具落地，故该分支尚无端到端用例；新增删除/撤回/继承/批量导出类工具时须补齐。
-- 工具面继续铺开（消息 / 日程 / 会议 / 文档），逐域沿用 `Curation + Executors + 守卫` 三段形态。
-- golden 快照随工具面扩张同批重固化。
+- **高危写（L3）已落地首个样本** `wedoc.doc.delete`：策略校验 + 派发分支 + 三条用例（策略 fail-fast /
+  无门 fail-closed / 放行执行）均已就位；新增删除、撤回、继承、批量导出类工具沿用同一形态即可。
+- 工具面继续铺开（消息 / 日程 / 会议 / 其余文档域），逐域沿用 `Curation + Executors + 守卫` 三段形态。
+- golden 快照随工具面扩张同批重固化（生成器不落盘，须手工/脚本重写）。

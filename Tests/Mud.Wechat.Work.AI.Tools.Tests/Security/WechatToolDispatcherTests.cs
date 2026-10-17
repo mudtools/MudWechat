@@ -293,6 +293,69 @@ public class WechatToolDispatcherTests
     }
 
     [Fact]
+    public async Task Invoke_HighRiskWriteWhenAuthorizationDenied_ShouldNotAskApproval()
+    {
+        var wedoc = Wedoc();
+        var authorizer = new Mock<IWechatToolAuthorizer>(MockBehavior.Strict);
+        authorizer
+            .Setup(a => a.AuthorizeAsync(It.IsAny<WechatToolAuthorizationContext>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(WechatToolAuthorizationResult.Deny("缺少 wedoc.doc.write 权限点"));
+        var approval = new Mock<IWechatToolApprovalGate>(MockBehavior.Strict);
+
+        using var provider = BuildProvider(
+            Departments().Object,
+            policy: p => p.Enable(WechatToolNames.WedocDocDelete),
+            authorizer: authorizer.Object,
+            approval: approval.Object,
+            wedoc: wedoc.Object);
+
+        var result = await Dispatcher(provider).InvokeAsync(
+            WechatToolNames.WedocDocDelete,
+            new Dictionary<string, object?>(StringComparer.Ordinal) { ["docid"] = "doc-1" });
+
+        result.Text.Should().Contain("拒绝");
+        approval.Verify(
+            a => a.RequestApprovalAsync(It.IsAny<WechatToolAuthorizationContext>(), It.IsAny<CancellationToken>()),
+            Times.Never,
+            "先授权后审批：未获授权的动作不得进入人工审批（否则审批就成了绕开授权的通道）");
+        wedoc.Verify(w => w.DeleteDocumentAsync(It.IsAny<DeleteWedocDocumentRequest>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Invoke_HighRiskWrite_ApprovalShouldSeeHighRiskContext()
+    {
+        var wedoc = Wedoc();
+        WechatToolAuthorizationContext? captured = null;
+        var approval = new Mock<IWechatToolApprovalGate>(MockBehavior.Strict);
+        approval
+            .Setup(a => a.RequestApprovalAsync(It.IsAny<WechatToolAuthorizationContext>(), It.IsAny<CancellationToken>()))
+            .Returns((WechatToolAuthorizationContext context, CancellationToken _) =>
+            {
+                captured = context;
+                return ValueTask.FromResult(WechatToolApprovalDecision.Approve("管理员确认删除"));
+            });
+
+        using var provider = BuildProvider(
+            Departments().Object,
+            policy: p => p.Enable(WechatToolNames.WedocDocDelete),
+            authorizer: AllowAll().Object,
+            approval: approval.Object,
+            wedoc: wedoc.Object);
+
+        await Dispatcher(provider).InvokeAsync(
+            WechatToolNames.WedocDocDelete,
+            new Dictionary<string, object?>(StringComparer.Ordinal) { ["docid"] = "doc-1" });
+
+        captured.Should().NotBeNull();
+        captured!.ToolName.Should().Be(WechatToolNames.WedocDocDelete);
+        captured.Risk.Should().Be(WechatToolRisk.HighRiskWrite, "审批人必须看到「不可逆」这一事实，否则无从判断该不该放行");
+        captured.RequiredScopes.Should().Contain("wedoc.doc.write");
+        captured.AppKey.Should().Be("corp-app");
+        captured.AuthCorpId.Should().Be("corp-1");
+        captured.ArgumentsDigest.Should().Contain("docid=str").And.NotContain("doc-1", "审批输入只给可读摘要，不给原始载荷");
+    }
+
+    [Fact]
     public void Policy_EnablingHighRiskWriteWithApprovalDisabled_ShouldFailFast()
     {
         var policy = new WechatToolPolicy { RequireApprovalForWrites = false }

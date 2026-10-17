@@ -10,8 +10,9 @@ using Mud.Wechat.OfficialAccount.DataModels.DataCube;
 namespace Mud.Wechat.OfficialAccount;
 
 /// <summary>
-/// 微信公众号 / 服务号「数据统计」域 SDK（21 端点单域承载——全部 POST /datacube/*、请求体同构
-/// <see cref="MpDateRangeRequest"/>，N3 裁决：不拆 4 个域）。
+/// 微信公众号 / 服务号「数据统计」域 SDK（24 端点单域承载：21 端点 POST /datacube/* 请求体同构
+/// <see cref="MpDateRangeRequest"/> + 卡券统计 4（POST /datacube/getcard*）另计入下，N3 裁决：不拆 4 个域；
+/// 流量主广告数据分析 3 端点 GET /publisher/stat?action=*，按 DataCube 风格一 action 一端点 + 独立 DTO）。
 /// </summary>
 /// <remarks>
 /// <para>
@@ -397,5 +398,81 @@ public interface IMpDataCubeService
     [Post("/datacube/getcardmembercarddetail")]
     Task<MpCardMemberCardDetailResponse> GetCardMemberCardDetailAsync(
         [Body] MpCardMemberCardDetailRequest request,
+        CancellationToken cancellationToken = default);
+
+    // ---------------------------------------------------------------- 流量主广告数据分析（publisher/stat，GET + Query action）
+
+    /// <summary>
+    /// 获取服务号分广告位数据。官方文档：<see href="https://developers.weixin.qq.com/doc/service/guide/product/analysis_data/ad/Ad_Analysis.html"/>
+    /// （官方接口英文名 <c>publisher_adpos_general</c>；最大时间跨度 <b>90 天</b>）。
+    /// </summary>
+    /// <param name="page">返回第几页数据（官方 Query <c>page</c>，必填）。</param>
+    /// <param name="pageSize">当页返回数据条数（官方 Query <c>page_size</c>，必填；每页最大 90）。</param>
+    /// <param name="startDate">获取数据的开始时间（官方 Query <c>start_date</c>，格式 yyyy-MM-dd，必填）。</param>
+    /// <param name="endDate">获取数据的结束时间（官方 Query <c>end_date</c>，格式 yyyy-MM-dd，必填）。</param>
+    /// <param name="adSlot">广告位类型名称（官方 Query <c>ad_slot</c>，选填；不传则返回全部类型广告位（除返佣商品）的数据）。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
+    /// <returns>分广告位数据（<c>base_resp</c> + <c>list</c> + <c>summary</c> + <c>total_num</c>）。</returns>
+    /// <remarks>
+    /// <para>官方契约：<b>GET</b> <c>/publisher/stat?action=publisher_adpos_general</c>；action 固定为 <c>publisher_adpos_general</c>（本方法以带默认值的 Query 参数表达，调用方无需显式传入）。</para>
+    /// <para>数据存储始于 2016-01-01；官方错误码：<c>45009</c>（请求过于频繁）/ <c>45010</c>（无效的接口名）/ <c>1701</c>（参数错误）/ <c>2009</c>（无效的流量主）。</para>
+    /// <para>MUD005：令牌强制走 Query 参数 <c>access_token</c>（官方契约，无法改用 Header）。</para>
+    /// </remarks>
+    [Get("/publisher/stat")]
+    Task<MpPublisherAdSlotResponse> GetPublisherAdSlotGeneralAsync(
+        [Query("action")] string action = "publisher_adpos_general",
+        [Query("page")] int page = 1,
+        [Query("page_size")] int pageSize = 90,
+        [Query("start_date")] string? startDate = null,
+        [Query("end_date")] string? endDate = null,
+        [Query("ad_slot")] string? adSlot = null,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 获取服务号返佣商品数据。官方文档：<see href="https://developers.weixin.qq.com/doc/service/guide/product/analysis_data/ad/Ad_Analysis.html"/>
+    /// （官方接口英文名 <c>publisher_cps_general</c>；最大时间跨度 <b>60 天</b>）。
+    /// </summary>
+    /// <param name="page">返回第几页数据（官方 Query <c>page</c>，必填）。</param>
+    /// <param name="pageSize">当页返回数据条数（官方 Query <c>page_size</c>，必填；每页最大 90）。</param>
+    /// <param name="startDate">获取数据的开始时间（官方 Query <c>start_date</c>，格式 yyyy-MM-dd，必填）。</param>
+    /// <param name="endDate">获取数据的结束时间（官方 Query <c>end_date</c>，格式 yyyy-MM-dd，必填）。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
+    /// <returns>返佣商品数据（<c>base_resp</c> + <c>list</c> + <c>summary</c> + <c>total_num</c>）。</returns>
+    /// <remarks>
+    /// <para>官方契约：<b>GET</b> <c>/publisher/stat?action=publisher_cps_general</c>；<b>返佣商品广告不需要传递广告位参数</b>（故本方法无 <c>ad_slot</c>）。</para>
+    /// <para>数据存储始于 2016-01-01；官方错误码同 <c>publisher_adpos_general</c>（<c>45009</c>/<c>45010</c>/<c>1701</c>/<c>2009</c>）。</para>
+    /// <para>MUD005：令牌强制走 Query 参数 <c>access_token</c>（官方契约，无法改用 Header）。</para>
+    /// </remarks>
+    [Get("/publisher/stat")]
+    Task<MpPublisherCpsResponse> GetPublisherCpsGeneralAsync(
+        [Query("action")] string action = "publisher_cps_general",
+        [Query("page")] int page = 1,
+        [Query("page_size")] int pageSize = 90,
+        [Query("start_date")] string? startDate = null,
+        [Query("end_date")] string? endDate = null,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 获取服务号结算收入数据及结算主体信息。官方文档：<see href="https://developers.weixin.qq.com/doc/service/guide/product/analysis_data/ad/Ad_Analysis.html"/>
+    /// （官方接口英文名 <c>publisher_settlement</c>；无最大时间跨度限制）。
+    /// </summary>
+    /// <param name="page">数据返回页数（官方 Query <c>page</c>，必填）。</param>
+    /// <param name="pageSize">每页返回数据条数（官方 Query <c>page_size</c>，必填；每页最大 90）。</param>
+    /// <param name="startDate">获取数据的开始时间（官方 Query <c>start_date</c>，格式 yyyy-MM-dd，必填）。</param>
+    /// <param name="endDate">获取数据的结束时间（官方 Query <c>end_date</c>，格式 yyyy-MM-dd，必填）。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
+    /// <returns>结算收入与结算主体信息（<c>base_resp</c> + <c>body</c>/<c>revenue_all</c>/<c>penalty_all</c>/<c>settled_revenue_all</c> + <c>settlement_list</c> + <c>total_num</c>）。</returns>
+    /// <remarks>
+    /// <para>官方契约：<b>GET</b> <c>/publisher/stat?action=publisher_settlement</c>；只要与起止时间有重合，对应结算区间数据都将返回（如请求跨月返回多个上/下半月区间）。</para>
+    /// <para>数据存储始于 2016-01-01；官方错误码同 <c>publisher_adpos_general</c>（<c>45009</c>/<c>45010</c>/<c>1701</c>/<c>2009</c>）。</para>
+    /// <para>MUD005：令牌强制走 Query 参数 <c>access_token</c>（官方契约，无法改用 Header）。</para>
+    /// </remarks>
+    [Get("/publisher/stat")]
+    Task<MpPublisherSettlementResponse> GetPublisherSettlementAsync(
+        [Query("action")] string action = "publisher_settlement",
+        [Query("page")] int page = 1,
+        [Query("page_size")] int pageSize = 90,
+        [Query("start_date")] string? startDate = null,
+        [Query("end_date")] string? endDate = null,
         CancellationToken cancellationToken = default);
 }

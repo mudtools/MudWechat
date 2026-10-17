@@ -29,7 +29,8 @@ namespace Mud.Wechat.Channels.Tests.ContractGuards;
 /// 必须同批扩展 <see cref="SharedInfrastructureRoutes"/> 并注明追踪理由）。
 /// </para>
 /// <para>
-/// <b>CH-R2（逐域路由表）</b>：27 个业务域（对齐设计方案 §2.2 注册方法表）+ 令牌基座的路由表
+/// <b>CH-R2（逐域路由表）</b>：29 个业务域（设计方案 §2.2 原规划 27 域，缺失 API 域完善方案在同线新增
+/// Promoter 域与 Talent 域后为 29 域；对齐 §2.2 注册方法表）+ 令牌基座的路由表
 /// 精确断言；<c>/shop/</c> 历史前缀照抄官方原文，禁止「对齐规范」改写（设计方案 §4.3）。
 /// 脚手架期业务域<b>零端点</b>，P1 起逐域落端点时<b>同批</b>更新本表（守卫是权威描述，不是收尾项）。
 /// </para>
@@ -65,13 +66,13 @@ public class ChannelsRouteContractGuards
             "/cgi-bin/openapi/rid/get",
         };
 
-    /// <summary>设计方案 §2.2：27 个业务域 → 注册方法名（守卫按域枚举接口，命名即契约）。</summary>
+    /// <summary>设计方案 §2.2 + 缺失 API 域完善方案：29 个业务域 → 注册方法名（守卫按域枚举接口，命名即契约）。</summary>
     private static readonly string[] Domains =
     {
         "Basic", "Resource", "Shop", "HomePage", "Product", "Favorite", "Category", "Order",
         "Funds", "Marketing", "Aftersale", "Kf", "Qic", "Logistics", "Warehouse", "League",
-        "Brand", "Delivery", "Wecom", "MiniStore", "Compass", "Vip", "Live", "Window",
-        "Locallife", "Subsidy", "PlatformKf",
+        "Promoter", "Brand", "Delivery", "Wecom", "MiniStore", "Compass", "Vip", "Live",
+        "Window", "Locallife", "Subsidy", "PlatformKf", "Talent",
     };
 
     /// <summary>
@@ -93,11 +94,13 @@ public class ChannelsRouteContractGuards
                 "/cgi-bin/openapi/quota/get",
                 "/cgi-bin/openapi/rid/get",
             },
-            // Resource：7 端点（/shop/ec/basics/* 6 + /channels/ec/basics/media/get；img/upload 双形态同路由只计 1）。
+            // Resource：8 端点（/shop/ec/basics/* 7 + /channels/ec/basics/media/get；img/upload 与 img/uploadv2
+            // 各按 upload_type 双传输形态同路由，各只计 1）。
             ["Resource"] = new[]
             {
                 "/channels/ec/basics/media/get",
                 "/shop/ec/basics/img/upload",
+                "/shop/ec/basics/img/uploadv2",
                 "/shop/ec/basics/qualification/upload",
                 "/shop/ec/basics/video/finishupload",
                 "/shop/ec/basics/video/getplayinfo",
@@ -215,6 +218,7 @@ public class ChannelsRouteContractGuards
             ["Category"] = new[]
             {
                 "/channels/ec/category/add",
+                "/channels/ec/category/league/all",
                 "/shop/ec/category/all",
                 "/shop/ec/category/audit/cancel",
                 "/shop/ec/category/detail",
@@ -301,7 +305,7 @@ public class ChannelsRouteContractGuards
                 "/channels/ec/qic/inspect/submit",
                 "/channels/ec/qic/inspect/submitconfig/get",
             },
-            // Logistics：28 端点（地址 5 + 运费模板 4 + 电子面单 16 + 订单发货 3）。
+            // Logistics：29 端点（地址 5 + 运费模板 4 + 电子面单 17 + 订单发货 3）。
             ["Logistics"] = new[]
             {
                 // 地址（5）：/channels/ec/merchant/address/*
@@ -315,7 +319,7 @@ public class ChannelsRouteContractGuards
                 "/channels/ec/merchant/getfreighttemplatedetail",
                 "/channels/ec/merchant/getfreighttemplatelist",
                 "/channels/ec/merchant/updatefreighttemplate",
-                // 电子面单（16）：/channels/ec/logistics/ewaybill/biz/*
+                // 电子面单（17，含打印报文商家 / 供货商双路径）：/channels/ec/logistics/ewaybill/biz/*
                 "/channels/ec/logistics/ewaybill/biz/order/create",
                 "/channels/ec/logistics/ewaybill/biz/order/precreate",
                 "/channels/ec/logistics/ewaybill/biz/order/get",
@@ -325,6 +329,7 @@ public class ChannelsRouteContractGuards
                 "/channels/ec/logistics/ewaybill/biz/order/addsuborder",
                 "/channels/ec/logistics/ewaybill/biz/delivery/get",
                 "/channels/ec/logistics/ewaybill/biz/print/get",
+                "/channels/ec/logistics/ewaybill/biz/order/getprintinfo",
                 "/channels/ec/logistics/ewaybill/biz/template/config",
                 "/channels/ec/logistics/ewaybill/biz/template/getbyid",
                 "/channels/ec/logistics/ewaybill/biz/template/get",
@@ -365,6 +370,92 @@ public class ChannelsRouteContractGuards
                 "/channels/ec/league/promotion/talent/list",
                 "/channels/ec/league/talent/getproductdatalist",
                 "/channels/ec/league/talent/update",
+                "/channels/ec/league/headsupplier/funds/balance/get",
+                "/channels/ec/league/headsupplier/funds/flowlist/get",
+                "/channels/ec/league/headsupplier/funds/flowdetail/get",
+                "/channels/ec/league/headsupplier/cooperativeitem/add",
+                "/channels/ec/league/headsupplier/cooperativeitem/list/get",
+                "/channels/ec/league/headsupplier/item/promotiondetail/get",
+                "/channels/ec/league/headsupplier/selectionproducts/list/get",
+                "/channels/ec/league/headsupplier/productdetail/get",
+                "/channels/ec/league/headsupplier/product/getactivity",
+                "/channels/ec/league/headsupplier/shop/get",
+                "/channels/ec/league/headsupplier/shop/list/get",
+                "/channels/ec/league/headsupplier/headsupplierrelation/update",
+                "/channels/ec/league/headsupplier/order/list/get",
+                "/channels/ec/league/headsupplier/order/get",
+                "/channels/ec/league/headsupplier/window/add",
+                "/channels/ec/league/headsupplier/window/getall",
+                "/channels/ec/league/headsupplier/window/getdetail",
+                "/channels/ec/league/headsupplier/window/remove",
+                "/channels/ec/league/headsupplier/windowauth/get",
+                "/channels/ec/league/headsupplier/windowauth/status/get",
+                "/channels/ec/league/headsupplier/subscription/getsubscribe",
+                "/channels/ec/league/headsupplier/subscription/subscribe",
+                "/channels/ec/league/headsupplier/subscription/unsubscribe",
+                "/channels/ec/league/headsupplier/subitem/add",
+                "/channels/ec/league/headsupplier/subitem/list/get",
+                "/channels/ec/league/headsupplier/secondheadsupplieritem/add",
+                "/channels/ec/league/headsupplier/secondheadsupplieritem/update",
+                "/channels/ec/league/headsupplier/clue/get",
+                "/channels/ec/league/headsupplier/clue/list/get",
+                "/channels/ec/league/headsupplier/liveprotection/getqrcode",
+            },
+            // Promoter：41 端点（推客账号与分佣 7 + 机构优惠券 8 + 短视频 4 + 直播 13 + 文章 2 + 商品与商品分佣 7）。
+            // 全部为联盟带货机构侧路由，前缀 /channels/ec/promoter/ 与 League 域 /channels/ec/league/* 不得合并。
+            ["Promoter"] = new[]
+            {
+                "/channels/ec/promoter/get_bind_sharer_list",
+                "/channels/ec/promoter/get_bind_shop_list",
+                "/channels/ec/promoter/get_bind_shop_promoter_list",
+                "/channels/ec/promoter/get_bind_talent_list",
+                "/channels/ec/promoter/get_cooperative_coupon_list",
+                "/channels/ec/promoter/get_coupon_detail",
+                "/channels/ec/promoter/get_coupon_promoter_share_link",
+                "/channels/ec/promoter/get_coupon_qr_code",
+                "/channels/ec/promoter/get_coupon_short_link",
+                "/channels/ec/promoter/get_coupon_to_headsupplier",
+                "/channels/ec/promoter/get_feed_list",
+                "/channels/ec/promoter/get_feed_promotion_info",
+                "/channels/ec/promoter/get_live_commission_product_list",
+                "/channels/ec/promoter/get_live_notice_promoter_share_link",
+                "/channels/ec/promoter/get_live_notice_record_list",
+                "/channels/ec/promoter/get_live_notice_record_qr_code",
+                "/channels/ec/promoter/get_live_notice_reservation_info",
+                "/channels/ec/promoter/get_live_record_list",
+                "/channels/ec/promoter/get_live_record_qr_code",
+                "/channels/ec/promoter/get_product_promotion_link_info",
+                "/channels/ec/promoter/get_product_promotion_qrcode_info",
+                "/channels/ec/promoter/get_promote_product_detail",
+                "/channels/ec/promoter/get_promote_product_list",
+                "/channels/ec/promoter/get_promoter_register_and_bind_status",
+                "/channels/ec/promoter/get_promoter_single_product_promotion_info",
+                "/channels/ec/promoter/get_public_coupon_list",
+                "/channels/ec/promoter/get_sharer_product_commission_info",
+                "/channels/ec/promoter/get_shop_feed_list",
+                "/channels/ec/promoter/get_shop_feed_promotion_info",
+                "/channels/ec/promoter/get_shop_live_commission_product_list",
+                "/channels/ec/promoter/get_shop_live_notice_promoter_share_link",
+                "/channels/ec/promoter/get_shop_live_notice_record_list",
+                "/channels/ec/promoter/get_shop_live_notice_record_qr_code",
+                "/channels/ec/promoter/get_shop_live_record_list",
+                "/channels/ec/promoter/get_shop_live_record_qr_code",
+                "/channels/ec/promoter/get_shop_mp_article_list",
+                "/channels/ec/promoter/get_talent_biz_article_list",
+                "/channels/ec/promoter/headsupplier_unbind_promoter",
+                "/channels/ec/promoter/set_coupon_to_headsupplier",
+                "/channels/ec/promoter/set_sharer_commission_info",
+                "/channels/ec/promoter/set_sharer_product_commission_info",
+            },
+            // Talent：4 端点（带货助手佣金单 2 + 达人橱窗商品 2）。
+            // 橱窗面 /channels/ec/talent/window/product/* 与 Window 域 /channels/ec/window/product/* 是两套官方契约
+            // （请求体、响应体、错误码、权限集 189 对 133/177 全不同），不得合并；佣金单面与 League 域机构侧同理分立。
+            ["Talent"] = new[]
+            {
+                "/channels/ec/talent/get_order_detail",
+                "/channels/ec/talent/get_order_list",
+                "/channels/ec/talent/window/product/get",
+                "/channels/ec/talent/window/product/list/get",
             },
             ["Brand"] = new[]
             {
@@ -384,10 +475,17 @@ public class ChannelsRouteContractGuards
                 "/channels/ec/order/dropship/get",
                 "/channels/ec/order/dropship/list",
                 "/channels/ec/order/dropship/search",
+                "/channels/ec/order/dropship/supplier/delivery/send",
+                "/channels/ec/order/dropship/supplier/delivery/update",
+                "/channels/ec/order/dropship/supplier/get",
+                "/channels/ec/order/dropship/supplier/list",
+                "/channels/ec/order/dropship/supplier/search",
                 "/channels/ec/order/supplyorder/get",
                 "/channels/ec/order/supplyorder/list",
                 "/channels/ec/order/supplyorder/search",
+                "/channels/ec/supplier/base/get_supplier_base_info",
                 "/channels/ec/supplier/relation/get_distribute",
+                "/channels/ec/supplier/relation/get_ec_list",
                 "/channels/ec/supplier/relation/get_product_default_distribute",
                 "/channels/ec/supplier/relation/get_product_list",
                 "/channels/ec/supplier/relation/get_supplier_list",
@@ -577,7 +675,7 @@ public class ChannelsRouteContractGuards
             .ToArray();
 
         actualFlattened.Should().Equal(expectedFlattened,
-            "主包路由并集必须与 27 域路由表完全一致（缺端点 / 多端点均变红；P0 应为空）");
+            "主包路由并集必须与 29 域路由表完全一致（缺端点 / 多端点均变红）");
 
         // 逐域计数断言（防「路由进了并集但域归属漂移」）。
         foreach (var domain in Domains)

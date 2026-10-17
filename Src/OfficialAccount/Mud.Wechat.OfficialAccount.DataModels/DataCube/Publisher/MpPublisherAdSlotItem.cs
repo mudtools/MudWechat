@@ -1,0 +1,55 @@
+// -----------------------------------------------------------------------
+//  作者：Mud Studio  版权所有 (c) Mud Studio 2026
+//  Mud.Wechat 项目的版权、商标、专利和其他相关权利均受相应法律法规的保护。
+//  本项目主要遵循 MIT 许可证进行分发和使用。许可证位于源代码树根目录中的 LICENSE-MIT 文件。
+//  不得利用本项目从事危害国家安全、扰乱社会秩序、侵犯他人合法权益等法律法规禁止的活动！任何基于本项目开发而产生的一切法律纠纷和责任，我们不承担任何责任！
+// -----------------------------------------------------------------------
+
+namespace Mud.Wechat.OfficialAccount.DataModels.DataCube;
+
+/// <summary>
+/// 「分广告位数据」(<c>publisher_adpos_general</c>) 的 <c>list</c> 元素（按广告位 × 日期粒度）。
+/// </summary>
+[HttpJsonSerializable(SerializerClassName = "DataCube")]
+public class MpPublisherAdSlotItem
+{
+    /// <summary>广告位类型 id（官方 <c>slot_id</c>，示例为 16 位整数）。</summary>
+    [JsonPropertyName("slot_id")]
+    public long SlotId { get; set; }
+
+    /// <summary>广告位类型名称（官方 <c>ad_slot</c>，如 <c>SLOT_ID_WEAPP_INTERSTITIAL</c>）。</summary>
+    [JsonPropertyName("ad_slot")]
+    public string? AdSlot { get; set; }
+
+    /// <summary>日期（官方 <c>date</c>，格式 yyyy-MM-dd）。</summary>
+    [JsonPropertyName("date")]
+    public string? Date { get; set; }
+
+    /// <summary>拉取量（官方 <c>req_succ_count</c>）。</summary>
+    [JsonPropertyName("req_succ_count")]
+    public long ReqSuccCount { get; set; }
+
+    /// <summary>曝光量（官方 <c>exposure_count</c>）。</summary>
+    [JsonPropertyName("exposure_count")]
+    public long ExposureCount { get; set; }
+
+    /// <summary>曝光率（官方 <c>exposure_rate</c>，小数比率）。</summary>
+    [JsonPropertyName("exposure_rate")]
+    public double ExposureRate { get; set; }
+
+    /// <summary>点击量（官方 <c>click_count</c>）。</summary>
+    [JsonPropertyName("click_count")]
+    public long ClickCount { get; set; }
+
+    /// <summary>点击率（官方 <c>click_rate</c>，小数比率）。</summary>
+    [JsonPropertyName("click_rate")]
+    public double ClickRate { get; set; }
+
+    /// <summary>收入(分)（官方 <c>income</c>）。</summary>
+    [JsonPropertyName("income")]
+    public long Income { get; set; }
+
+    /// <summary>广告千次曝光收益(分)（官方 <c>ecpm</c>，小数）。</summary>
+    [JsonPropertyName("ecpm")]
+    public double Ecpm { get; set; }
+}

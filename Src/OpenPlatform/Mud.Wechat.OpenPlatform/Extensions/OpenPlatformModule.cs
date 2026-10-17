@@ -43,4 +43,24 @@ public enum OpenPlatformModule
     /// 与小程序线 <c>/tcb/*</c>（<c>MpTokenTypes.AccessToken</c>）为两套路由、两套令牌，交叉声明由守卫 CBZ2 拒绝。
     /// </remarks>
     ComponentTcb,
+
+    /// <summary>
+    /// 半屏小程序 / 嵌入式小程序管理域（<c>/wxaapi/wxaembedded/*</c> 全 6 端点：添加 / 删除 / 取消授权 / 设置授权方式 4 POST + 调用列表 / 授权列表 2 GET；注册组 <c>Embedded</c>）。
+    /// </summary>
+    /// <remarks>
+    /// 令牌恒为 <c>authorizer_access_token</c>（Query 参数名仍是 <c>access_token</c>）⇒ 属开放平台线（第三方代授权方小程序调用）。
+    /// 该域页面只在 <c>doc/oplatform/…/miniprogram-management/embedded-management/</c> 树在册，小程序线不得声明之
+    /// （留档 MP-D-BUCKET-RULING-01 + 小程序守卫 NC2 锁定；令牌值与小程序线 <c>MpTokenTypes.AccessToken</c> 不同源）。
+    /// </remarks>
+    Embedded,
+
+    /// <summary>
+    /// 小程序微信认证 / 安全认证域（<c>/wxa/sec/*</c> 全 5 端点：身份选项树 1 GET + 提审 / 重新提审 / 进度查询 3 POST + 补充材料上传 1 multipart POST；注册组 <c>Auth</c>）。
+    /// </summary>
+    /// <remarks>
+    /// 令牌恒为 <c>authorizer_access_token</c>（Query 参数名仍是 <c>access_token</c>）⇒ 属开放平台线（第三方代授权方小程序发起认证）。
+    /// 该域页面只在 <c>doc/oplatform/…/miniprogram-management/weapp-wxverify/</c> 树在册，小程序线不得声明之
+    /// （留档 MP-D-BUCKET-RULING-01 + 小程序守卫 NC2 锁定）。<c>/wxa/sec/authidentitytree</c> 官方动词为 GET。
+    /// </remarks>
+    Auth,
 }

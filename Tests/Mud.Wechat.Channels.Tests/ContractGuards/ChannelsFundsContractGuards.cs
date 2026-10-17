@@ -25,6 +25,14 @@ namespace Mud.Wechat.Channels.Tests.ContractGuards;
 /// <para>
 /// <b>双前缀并存（设计方案 v1 §4.3）</b>：《shop/funds/*》为官方历史前缀，照抄原文，禁止「对齐规范」改写。
 /// </para>
+/// <para>
+/// <b>SKIT 转述的 <c>/channels/ec/league/funds/getfundsflowlist|getfundsflowdetail</c> 两条不落地（2026-10-17 逐页核验）</b>：
+/// 缺口方案 7.2 清单 #11/#12 取自 SKIT 转述，其官方出处 <c>doc/channels/API/league/ecleague_getfundsflow*.html</c>
+/// 现已被重定向到「优选联盟」目录页（<c>/doc/store/shop/API/league/</c>，该目录现行清单只有带货者 / 商品操作两组、
+/// 无任何资金端点）⇒ 按「判据是官方文档面而非网关可达性」处置为<b>非契约、零端点</b>；商家侧资金流水由本域
+/// <c>/channels/ec/funds/getfundsflow*</c> 承载，机构（头部供应商）侧由 League 域 <c>/channels/ec/league/headsupplier/funds/flow*</c>
+/// 承载。守卫 CF7 钉住本线对该前缀零声明，防「清单驱动」回潮。
+/// </para>
 /// </remarks>
 public class ChannelsFundsContractGuards
 {
@@ -287,6 +295,27 @@ public class ChannelsFundsContractGuards
         ChannelsFundsQrcodeStatuses.Confirmed.Should().Be(1);
         ChannelsFundsQrcodeStatuses.Expired.Should().Be(3);
         ChannelsFundsScanUserTypes.Admin.Should().Be(1);
+    }
+
+    /// <summary>契约守卫 CF7：SKIT 转述、官方目录已下架的 <c>/channels/ec/league/funds/*</c> 前缀在本线全接口零声明（正对照：本域自有 funds 路由在场）。</summary>
+    [Fact]
+    public void LeagueFundsPrefix_ShouldHaveZeroDeclaration_WhenPageRemovedFromOfficialCatalog()
+    {
+        var allRoutes = typeof(IChannelsFundsService).Assembly.GetTypes()
+            .Where(static t => t.IsInterface && t.Namespace != null && t.Namespace.StartsWith("Mud.Wechat.Channels", StringComparison.Ordinal))
+            .SelectMany(static t => t.GetMethods(BindingFlags.Public | BindingFlags.Instance))
+            .SelectMany(static m => m.GetCustomAttributes().OfType<HttpMethodAttribute>())
+            .Select(static a => a.RequestUri ?? string.Empty)
+            .ToList();
+
+        allRoutes.Should().NotBeEmpty("反射枚举不得空跑（正对照）");
+        allRoutes.Count(static r => r.StartsWith("/channels/ec/league/funds/", StringComparison.Ordinal))
+            .Should().Be(0,
+                "doc/channels/API/league/ecleague_getfundsflow*.html 已被重定向到优选联盟目录页（2026-10-17 核验）⇒ 非契约路由零声明；"
+                + "商家侧走 /channels/ec/funds/getfundsflow*、机构侧走 /channels/ec/league/headsupplier/funds/flow*");
+
+        // 正对照：本域自有路由在场（扫描根与词表确实覆盖本线接口面）。
+        allRoutes.Should().Contain("/channels/ec/funds/getfundsflowlist", "正对照：同族现行路由必须被扫描面覆盖，否则本断言恒真");
     }
 
     private static void AssertJsonProperty<T>(string jsonName, string because)

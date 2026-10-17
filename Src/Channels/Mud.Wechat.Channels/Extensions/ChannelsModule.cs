@@ -20,7 +20,8 @@ namespace Mud.Wechat.Channels.Extensions;
 /// （<c>AddChannelsApp</c> 自动注册），故本枚举只列业务域（设计方案 v1 §2.2）。
 /// </para>
 /// <para>
-/// <b>27 个业务域的计数口径</b>：逐域端点计数为<b>规划口径</b>（对应 318 端点规划总数），
+/// <b>29 个业务域的计数口径</b>：逐域端点计数为<b>规划口径</b>（设计方案 v1 §2.2 原规划 27 域 318 端点，
+/// 缺失 API 域完善方案在同线新增 Promoter 域 41 端点、Talent 域 4 端点后为 29 域），
 /// 权威口径以 <c>ChannelsRouteContractGuards</c>（CH-R2）与 P1 起逐域守卫为准；
 /// <c>/wxa/</c> 6 个「小程序会员服务」端点暂缓落位（守卫 CH-V1），不计入任何域。
 /// </para>
@@ -49,7 +50,7 @@ public enum ChannelsModule
     /// <summary>收藏管理（1 端点：收藏数统计）。</summary>
     Favorite,
 
-    /// <summary>类目管理（11 端点：类目 8 + 类目规则 3）。</summary>
+    /// <summary>类目管理（去重后 11 端点：类目 8 + 类目规则 2 + 联盟类目 1；getcategoryrule 双语义同路由只计 1）。</summary>
     Category,
 
     /// <summary>订单管理（27 端点）。</summary>
@@ -70,19 +71,22 @@ public enum ChannelsModule
     /// <summary>质检管理（5 端点：质检仓 / 送检 / 质检码 / 自寄送检）。</summary>
     Qic,
 
-    /// <summary>物流发货（28 端点：地址 / 运费模板 / 电子面单 / 发货）。</summary>
+    /// <summary>物流发货（29 端点：地址 / 运费模板 / 电子面单 / 发货）。</summary>
     Logistics,
 
     /// <summary>区域仓库（11 端点）。</summary>
     Warehouse,
 
-    /// <summary>优选联盟（11 端点：带货者 / 商品）。</summary>
+    /// <summary>优选联盟（41 端点：商家侧带货者 / 商品 + 机构资金 + 机构商品 + 机构商家合作 + 机构佣金单 + 机构橱窗与授权 + 机构商品订阅 + 机构达人佣金计划 + 机构帮卖供货 + 机构线索订单 + 机构直播保护）。</summary>
     League,
+
+    /// <summary>联盟带货机构推客（41 端点：推客账号与分佣 7 + 机构优惠券 8 + 短视频 4 + 直播 13 + 文章 2 + 商品与商品分佣 7，<c>/channels/ec/promoter/*</c>）。</summary>
+    Promoter,
 
     /// <summary>品牌资质（8 端点）。</summary>
     Brand,
 
-    /// <summary>代发与供货（16 端点：代发管理 13 + 供货管理 3）。</summary>
+    /// <summary>代发与供货（23 端点：代发管理 13 + 供货管理 3 + 供货商账户 2 + 供货商侧代发履约 5）。</summary>
     Delivery,
 
     /// <summary>企业微信关联（1 端点：获取关联账号企微 id）。</summary>
@@ -111,4 +115,7 @@ public enum ChannelsModule
 
     /// <summary>客诉工单（4 端点）。</summary>
     PlatformKf,
+
+    /// <summary>带货助手（达人）（4 端点：佣金单 2 + 达人橱窗商品 2，<c>/channels/ec/talent/*</c>）。</summary>
+    Talent,
 }

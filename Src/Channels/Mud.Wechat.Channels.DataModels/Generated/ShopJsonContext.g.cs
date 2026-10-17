@@ -11,13 +11,13 @@ namespace Mud.Wechat.Channels.DataModels.Shop;
     PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower,
     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     WriteIndented = false)]
-[JsonSerializable(typeof(global::Mud.Wechat.Channels.DataModels.Shop.ChannelsShopBasicInfoResponse))]
 [JsonSerializable(typeof(global::Mud.Wechat.Channels.DataModels.Shop.ChannelsShopBasicInfo))]
-[JsonSerializable(typeof(global::Mud.Wechat.Channels.DataModels.Shop.ChannelsShopWecomLinkRequest))]
-[JsonSerializable(typeof(global::Mud.Wechat.Channels.DataModels.Shop.ChannelsShopQrcodeRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.Channels.DataModels.Shop.ChannelsShopBasicInfoResponse))]
 [JsonSerializable(typeof(global::Mud.Wechat.Channels.DataModels.Shop.ChannelsShopH5UrlResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.Channels.DataModels.Shop.ChannelsShopQrcodeRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.Channels.DataModels.Shop.ChannelsShopQrcodeResponse))]
 [JsonSerializable(typeof(global::Mud.Wechat.Channels.DataModels.Shop.ChannelsShopTagLinkResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.Channels.DataModels.Shop.ChannelsShopWecomLinkRequest))]
 internal partial class ShopJsonContext : JsonSerializerContext
 {
 }

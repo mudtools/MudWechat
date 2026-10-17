@@ -11,9 +11,9 @@ namespace Mud.Wechat.OfficialAccount.DataModels.Semantic;
     PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase,
     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     WriteIndented = false)]
+[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.Semantic.MpSemanticResult))]
 [JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.Semantic.MpSemanticSearchRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.Semantic.MpSemanticSearchResponse))]
-[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.Semantic.MpSemanticResult))]
 internal partial class SemanticJsonContext : JsonSerializerContext
 {
 }

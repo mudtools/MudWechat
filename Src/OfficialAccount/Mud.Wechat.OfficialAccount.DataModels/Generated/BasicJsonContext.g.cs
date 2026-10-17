@@ -11,10 +11,10 @@ namespace Mud.Wechat.OfficialAccount.DataModels.Basic;
     PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower,
     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     WriteIndented = false)]
-[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.Basic.MpCallbackCheckRequest))]
-[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.Basic.MpCallbackCheckResponse))]
 [JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.Basic.MpCallbackCheckDns))]
 [JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.Basic.MpCallbackCheckPing))]
+[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.Basic.MpCallbackCheckRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.Basic.MpCallbackCheckResponse))]
 [JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.Basic.MpGetApiDomainIpResponse))]
 [JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.Basic.MpGetCallbackIpResponse))]
 [JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.Basic.MpGetTokenResponse))]

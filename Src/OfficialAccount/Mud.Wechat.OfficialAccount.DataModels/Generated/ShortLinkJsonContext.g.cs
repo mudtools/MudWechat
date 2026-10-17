@@ -11,10 +11,10 @@ namespace Mud.Wechat.OfficialAccount.DataModels.ShortLink;
     PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower,
     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     WriteIndented = false)]
-[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.ShortLink.MpShortenGenRequest))]
-[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.ShortLink.MpShortenGenResponse))]
 [JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.ShortLink.MpShortenFetchRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.ShortLink.MpShortenFetchResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.ShortLink.MpShortenGenRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.ShortLink.MpShortenGenResponse))]
 [JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.ShortLink.MpShortUrlRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.ShortLink.MpShortUrlResponse))]
 internal partial class ShortLinkJsonContext : JsonSerializerContext

@@ -12,37 +12,50 @@ using Mud.Wechat.Channels.Extensions;
 namespace Mud.Wechat.Channels.Tests.ContractGuards;
 
 /// <summary>
-/// 小店「代发与供货」域契约守卫（CD 系列：Delivery 域 16 端点（代发管理 13 + 供货管理 3）路由 +
-/// 三前缀分布 + 令牌绑定 + DTO 字段与共用裁决 + JSON 上下文登记 + 枚举常量字面量）。
+/// 小店「代发与供货」域契约守卫（CD 系列：Delivery 域 23 端点（代发管理 13 + 供货管理 3 + 供货商账户 2 + 供货商侧代发履约 5）路由 +
+/// 四前缀分布 + 令牌绑定 + DTO 字段与共用裁决 + JSON 上下文登记 + 枚举常量字面量）。
 /// </summary>
 /// <remarks>
 /// <para>
 /// <b>与 Order 域的边界（路由互斥，守卫措辞锁定）</b>：本域的 <c>/channels/ec/order/dropship/*</c> 与
-/// <c>/channels/ec/order/supplyorder/*</c> 是<b>代发链路</b>端点（分配 / 取消 / 查代发单 / 查供货单）；
+/// <c>/channels/ec/order/supplyorder/*</c> 是<b>代发链路</b>端点（分配 / 取消 / 查代发单 / 查供货单 / 供货商侧发货履约）；
 /// Order 域的 <c>order/deliveryinfo</c> / <c>order/deliverynegotiation</c> 是<b>发货履约</b>端点。
 /// 两域在 <c>/channels/ec/order/*</c> 下无路由交叠，改动任一侧须核对另一侧路由表。
 /// </para>
 /// <para>
-/// <b>三前缀并存（官方目录形态，照抄原文禁止改写）</b>：供货商关联与自动分配 8 端点走
-/// <c>/channels/ec/supplier/relation/*</c>，代发单 5 端点走 <c>/channels/ec/order/dropship/*</c>，
+/// <b>四前缀并存（官方目录形态，照抄原文禁止改写）</b>：供货商关联与自动分配 9 端点走
+/// <c>/channels/ec/supplier/relation/*</c>、供货商基础信息 1 端点走 <c>/channels/ec/supplier/base/*</c>，
+/// 代发单（商家视角）5 端点走 <c>/channels/ec/order/dropship/*</c>，
+/// 代发单（供货商视角）5 端点走 <c>/channels/ec/order/dropship/supplier/*</c>（含 <c>delivery/send</c> / <c>delivery/update</c>），
 /// 供货单 3 端点走 <c>/channels/ec/order/supplyorder/*</c>。
+/// </para>
+/// <para>
+/// <b>两视角参数表差异（各建 DTO，禁止互相对齐）</b>：供货商视角 <c>dropship/supplier/get</c> 以
+/// <c>shop_appid</c>/<c>shop_name</c> 标识商家、<c>ds_order_id</c>/<c>order_id</c> 为 string、商品明细含 <c>sku_attrs</c>，
+/// 与商家视角 <c>dropship/get</c> 的 <c>supplier_appid</c>/<c>supplier_name</c> + number 口径不同；
+/// <c>supplier/list</c> / <c>supplier/search</c> 的过滤字段为 <c>shop_appid</c>/<c>shop_appname</c>（商家侧为
+/// <c>supplier_appid</c>/<c>supplier_appname</c>），且 <c>supplier/list</c> 的 <c>order_id</c> 官方为 string。
+/// 两支发货端点（<c>delivery/send</c> / <c>delivery/update</c>）的包裹元素<b>无</b> <c>deliver_type</c>/
+/// <c>course_info</c>/<c>sn_info</c>（商家侧 <c>order/delivery/send</c> 有）⇒ 分建 <see cref="ChannelsSupplierDeliveryPackage"/>。
 /// </para>
 /// <para>
 /// <b>官方文档矛盾照录（SDK 一律按参数表建模）</b>：dropship/list 参数表 <c>order_id</c> 为 number
 /// 而示例为字符串；dropship/cancel 示例含表外 <c>supplier_appid</c>；get_product_list 示例含表外
 /// <c>is_filter_product_status</c>/<c>product_status</c>；supplyorder/search 示例含表外
 /// <c>tel_last4</c>/<c>user_name</c>；supplyorder/list 变更日志声明 <c>shop_appid</c> 已删除改
-/// <c>supplier_appid</c>。
+/// <c>supplier_appid</c>；<c>delivery/send</c> 与 <c>delivery/update</c> 的 <c>ds_order_id</c> 与
+/// <c>supply_order_id</c> 同标「必填=是」而说明为「选传其一」⇒ 两字段均可空、不做本地拦截。
 /// </para>
 /// </remarks>
 public class ChannelsDeliveryContractGuards
 {
     private const string DeliveryRegistryGroupName = "Delivery";
 
-    /// <summary>Delivery 域官方路由表（16 端点：supplier/relation 8 + order/dropship 5 + order/supplyorder 3，全部 POST）。</summary>
+    /// <summary>Delivery 域官方路由表（23 端点：supplier/relation 9 + supplier/base 1 + order/dropship 5 + order/dropship/supplier 5 + order/supplyorder 3，全部 POST）。</summary>
     private static readonly (Type Interface, string Method, Type HttpAttribute, string Route)[] DeliveryRoutes =
     {
         (typeof(IChannelsDeliveryService), nameof(IChannelsDeliveryService.GetSupplierListAsync), typeof(PostAttribute), "/channels/ec/supplier/relation/get_supplier_list"),
+        (typeof(IChannelsDeliveryService), nameof(IChannelsDeliveryService.GetEcListAsync), typeof(PostAttribute), "/channels/ec/supplier/relation/get_ec_list"),
         (typeof(IChannelsDeliveryService), nameof(IChannelsDeliveryService.InviteSupplierAsync), typeof(PostAttribute), "/channels/ec/supplier/relation/invite_supplier"),
         (typeof(IChannelsDeliveryService), nameof(IChannelsDeliveryService.GetDistributeAsync), typeof(PostAttribute), "/channels/ec/supplier/relation/get_distribute"),
         (typeof(IChannelsDeliveryService), nameof(IChannelsDeliveryService.SetManuallyDistributeAsync), typeof(PostAttribute), "/channels/ec/supplier/relation/set_manually_distribute"),
@@ -50,30 +63,44 @@ public class ChannelsDeliveryContractGuards
         (typeof(IChannelsDeliveryService), nameof(IChannelsDeliveryService.SetProductDistributeAsync), typeof(PostAttribute), "/channels/ec/supplier/relation/set_product_distribute"),
         (typeof(IChannelsDeliveryService), nameof(IChannelsDeliveryService.GetProductDefaultDistributeAsync), typeof(PostAttribute), "/channels/ec/supplier/relation/get_product_default_distribute"),
         (typeof(IChannelsDeliveryService), nameof(IChannelsDeliveryService.GetProductListAsync), typeof(PostAttribute), "/channels/ec/supplier/relation/get_product_list"),
+        (typeof(IChannelsDeliveryService), nameof(IChannelsDeliveryService.GetSupplierBaseInfoAsync), typeof(PostAttribute), "/channels/ec/supplier/base/get_supplier_base_info"),
         (typeof(IChannelsDeliveryService), nameof(IChannelsDeliveryService.AssignDropshipAsync), typeof(PostAttribute), "/channels/ec/order/dropship/assign"),
         (typeof(IChannelsDeliveryService), nameof(IChannelsDeliveryService.CancelDropshipAsync), typeof(PostAttribute), "/channels/ec/order/dropship/cancel"),
         (typeof(IChannelsDeliveryService), nameof(IChannelsDeliveryService.GetDropshipOrderAsync), typeof(PostAttribute), "/channels/ec/order/dropship/get"),
         (typeof(IChannelsDeliveryService), nameof(IChannelsDeliveryService.GetDropshipOrderListAsync), typeof(PostAttribute), "/channels/ec/order/dropship/list"),
         (typeof(IChannelsDeliveryService), nameof(IChannelsDeliveryService.SearchDropshipOrdersAsync), typeof(PostAttribute), "/channels/ec/order/dropship/search"),
+        (typeof(IChannelsDeliveryService), nameof(IChannelsDeliveryService.GetSupplierDropshipOrderAsync), typeof(PostAttribute), "/channels/ec/order/dropship/supplier/get"),
+        (typeof(IChannelsDeliveryService), nameof(IChannelsDeliveryService.GetSupplierDropshipOrderListAsync), typeof(PostAttribute), "/channels/ec/order/dropship/supplier/list"),
+        (typeof(IChannelsDeliveryService), nameof(IChannelsDeliveryService.SearchSupplierDropshipOrdersAsync), typeof(PostAttribute), "/channels/ec/order/dropship/supplier/search"),
+        (typeof(IChannelsDeliveryService), nameof(IChannelsDeliveryService.SendSupplierDeliveryAsync), typeof(PostAttribute), "/channels/ec/order/dropship/supplier/delivery/send"),
+        (typeof(IChannelsDeliveryService), nameof(IChannelsDeliveryService.UpdateSupplierDeliveryAsync), typeof(PostAttribute), "/channels/ec/order/dropship/supplier/delivery/update"),
         (typeof(IChannelsDeliveryService), nameof(IChannelsDeliveryService.GetSupplyOrderListAsync), typeof(PostAttribute), "/channels/ec/order/supplyorder/list"),
         (typeof(IChannelsDeliveryService), nameof(IChannelsDeliveryService.GetSupplyOrderAsync), typeof(PostAttribute), "/channels/ec/order/supplyorder/get"),
         (typeof(IChannelsDeliveryService), nameof(IChannelsDeliveryService.SearchSupplyOrdersAsync), typeof(PostAttribute), "/channels/ec/order/supplyorder/search"),
     };
 
-    /// <summary>契约守卫 CD1：Delivery 域 16 端点路由必须与官方契约一致（全部 POST）。</summary>
+    /// <summary>契约守卫 CD1：Delivery 域 23 端点路由必须与官方契约一致（全部 POST）。</summary>
     [Fact]
     public void DeliveryEndpoints_ShouldMatchOfficialRoutes()
     {
-        // 16 端点 = 供货商关系 2 + 自动分配 6 + 代发单 5 + 供货单 3（设计方案 v1 计数口径：代发管理 13 + 供货管理 3）。
-        DeliveryRoutes.Should().HaveCount(16, "代发管理 13 + 供货管理 3 = 16 端点");
-        DeliveryRoutes.Select(r => r.Route).Distinct().Should().HaveCount(16);
+        // 23 端点 = 供货商关系 3 + 自动分配 6 + 供货商基础信息 1 + 代发单（商家视角）5 + 代发单（供货商视角）5
+        // + 供货单 3（2026-10-17 补供货商视角 get_ec_list / get_supplier_base_info 与 dropship/supplier/* 五支；
+        // 设计方案 v1 原口径：代发管理 13 + 供货管理 3 = 16）。
+        DeliveryRoutes.Should().HaveCount(23, "代发管理 13 + 供货管理 3 + 供货商账户 2 + 供货商侧代发履约 5 = 23 端点");
+        DeliveryRoutes.Select(r => r.Route).Distinct().Should().HaveCount(23);
 
         DeliveryRoutes.Select(r => r.Route)
             .Count(static r => r.StartsWith("/channels/ec/supplier/relation/", StringComparison.Ordinal))
-            .Should().Be(8, "供货商关联 2 + 自动分配 6 端点走 /channels/ec/supplier/relation/* 前缀");
+            .Should().Be(9, "供货商关联 3 + 自动分配 6 端点走 /channels/ec/supplier/relation/* 前缀");
+        DeliveryRoutes.Select(r => r.Route)
+            .Count(static r => r.StartsWith("/channels/ec/supplier/base/", StringComparison.Ordinal))
+            .Should().Be(1, "供货商基础信息 1 端点走 /channels/ec/supplier/base/* 前缀（官方「账号管理」目录）");
+        DeliveryRoutes.Select(r => r.Route)
+            .Count(static r => r.StartsWith("/channels/ec/order/dropship/supplier/", StringComparison.Ordinal))
+            .Should().Be(5, "供货商视角 5 端点走 /channels/ec/order/dropship/supplier/* 前缀（官方「代发管理 / 代发单管理」供货商树）");
         DeliveryRoutes.Select(r => r.Route)
             .Count(static r => r.StartsWith("/channels/ec/order/dropship/", StringComparison.Ordinal))
-            .Should().Be(5, "代发单管理 5 端点走 /channels/ec/order/dropship/* 前缀");
+            .Should().Be(10, "代发单 10 端点走 /channels/ec/order/dropship/*（商家视角 5 + 供货商视角 5）");
         DeliveryRoutes.Select(r => r.Route)
             .Count(static r => r.StartsWith("/channels/ec/order/supplyorder/", StringComparison.Ordinal))
             .Should().Be(3, "供货单管理 3 端点走 /channels/ec/order/supplyorder/* 前缀");
@@ -94,7 +121,7 @@ public class ChannelsDeliveryContractGuards
         }
     }
 
-    /// <summary>契约守卫 CD2：Delivery 域 16 端点全部为 POST；空请求体端点不得携带 [Body]，其余端点必须携带。</summary>
+    /// <summary>契约守卫 CD2：Delivery 域 23 端点全部为 POST；空请求体端点不得携带 [Body]，其余端点必须携带。</summary>
     [Fact]
     public void DeliveryEndpoints_ShouldAllBePost_WithBodyRules()
     {
@@ -105,11 +132,13 @@ public class ChannelsDeliveryContractGuards
                 $"{iface.Name}.{method} 官方契约均为 POST（代发与供货域无 GET 端点）");
         }
 
-        // 官方参数表无 Body 参数的两端点（get_distribute / set_manually_distribute）不得人为造请求体 DTO。
+        // 官方参数表无 Body 参数的三端点（get_distribute / set_manually_distribute / get_supplier_base_info）
+        // 不得人为造请求体 DTO。
         var emptyBodyMethods = new[]
         {
             nameof(IChannelsDeliveryService.GetDistributeAsync),
             nameof(IChannelsDeliveryService.SetManuallyDistributeAsync),
+            nameof(IChannelsDeliveryService.GetSupplierBaseInfoAsync),
         };
 
         foreach (var (iface, method, _, _) in DeliveryRoutes)
@@ -133,7 +162,7 @@ public class ChannelsDeliveryContractGuards
     public void DeliveryInterface_ShouldBindChannelsToken_AndRegisterUnderDeliveryGroup()
     {
         var token = typeof(IChannelsDeliveryService).GetCustomAttribute<TokenAttribute>();
-        token.Should().NotBeNull("Delivery 域 16 端点消费小店 access_token（官方契约）");
+        token.Should().NotBeNull("Delivery 域 23 端点消费小店 access_token（官方契约）");
         token!.TokenType.Should().Be(ChannelsTokenTypes.AccessToken);
         token.InjectionMode.Should().Be(TokenInjectionMode.Query, "官方契约强制 Query 注入（MUD005）");
         token.Name.Should().Be("access_token");
@@ -167,12 +196,16 @@ public class ChannelsDeliveryContractGuards
             .Where(t => !t.IsAbstract && t.GetCustomAttribute<HttpJsonSerializableAttribute>() != null)
             .ToList();
 
-        dtoTypes.Should().HaveCount(50,
-            "Delivery 域 16 端点的请求/响应/嵌套对象 DTO 总数漂移须先核对官方文档再同批调整本守卫" +
+        dtoTypes.Should().HaveCount(68,
+            "Delivery 域 23 端点的请求/响应/嵌套对象 DTO 总数漂移须先核对官方文档再同批调整本守卫" +
             "（供货商关系 13：get_supplier_list 3 + invite_supplier 1 + get_distribute 1 + set_all_distribution 1 + " +
             "set_product_distribute 2 + get_product_default_distribute 2 + get_product_list 3；" +
+            "供货商账户 5：get_supplier_base_info 2（应答 + business_mode 嵌套）+ get_ec_list 3（请求 + 应答 + 条目）；" +
             "代发单 24：assign 2 + cancel 1 + get 6 + 代发/供货共用发货嵌套 9 + 分页时间共用 2 + list 1 + search 2 + 列表响应 1；" +
-            "供货单 13：list 1 + search 2 + 列表响应 1 + get 9）");
+            "供货单 13：list 1 + search 2 + 列表响应 1 + get 9；" +
+            "供货商视角 13：supplier/get 5（应答 + 单据 + 详情 + 商品明细 + dropship_info）+ supplier/list 1 + " +
+            "supplier/search 2 + delivery/send 2（请求 + 包裹）+ delivery/update 2（请求 + change_infos 元素）+ " +
+            "发货商品明细共用 1（包裹与 product_infos 两支复用））");
 
         foreach (var type in dtoTypes)
         {
@@ -214,6 +247,25 @@ public class ChannelsDeliveryContractGuards
         AssertJsonProperty<ChannelsInviteSupplierRequest>("supplier_appid", "申请关联的供货商的appid");
         AssertJsonProperty<ChannelsInviteSupplierRequest>("service_id", "第三方服务商ServiceID");
         AssertJsonProperty<ChannelsInviteSupplierRequest>("remark", "第三方服务商备注信息");
+
+        // 供货商账户（2026-10-17 逐页核验：get_supplier_base_info / get_ec_list，官方目录「账号管理」「代发合作商家」）。
+        AssertJsonProperty<ChannelsGetSupplierBaseInfoResponse>("name", "供货商名称");
+        AssertJsonProperty<ChannelsGetSupplierBaseInfoResponse>("head_img", "供货商头像（个人主体无）");
+        AssertJsonProperty<ChannelsGetSupplierBaseInfoResponse>("subject_type", "主体类型（2 企业 / 2500 个人）");
+        AssertJsonProperty<ChannelsGetSupplierBaseInfoResponse>("business_mode", "可用经营模式");
+        AssertJsonProperty<ChannelsSupplierBusinessMode>("is_dropshipping", "可用代发模式");
+        AssertJsonProperty<ChannelsSupplierBusinessMode>("is_supply", "可用供货模式（仅企业主体）");
+        AssertJsonProperty<ChannelsGetEcListRequest>("offset", "分页游标（必填）");
+        AssertJsonProperty<ChannelsGetEcListRequest>("limit", "分页数量（必填）");
+        AssertJsonProperty<ChannelsGetEcListRequest>("is_filter_type", "是否开启状态筛选（true 时 type 必填）");
+        AssertJsonProperty<ChannelsGetEcListRequest>("type", "筛选类型 1 已关联 / 2 待审核 / 3 已取消");
+        AssertJsonProperty<ChannelsGetEcListResponse>("list", "商家列表（官方表例矛盾见 DTO remarks）");
+        AssertJsonProperty<ChannelsGetEcListResponse>("total_count", "总数");
+        AssertJsonProperty<ChannelsEcRelationItem>("appid", "小店商家appid");
+        AssertJsonProperty<ChannelsEcRelationItem>("status", "关联状态");
+        AssertJsonProperty<ChannelsEcRelationItem>("bind_audit_status", "关联状态详情（官方枚举无 4，照录）");
+        AssertJsonProperty<ChannelsEcRelationItem>("update_time", "更新时间");
+        AssertJsonProperty<ChannelsEcRelationItem>("head_img", "商家店铺头图");
 
         // 自动分配。
         AssertJsonProperty<ChannelsGetDistributeResponse>("distribute_type", "分配类型");
@@ -366,6 +418,74 @@ public class ChannelsDeliveryContractGuards
             .PropertyType.Should().Be(typeof(ChannelsSupplyOrderSearchCondition));
         typeof(ChannelsDropshipSearchRequest).GetProperty(nameof(ChannelsDropshipSearchRequest.SearchCondition))!
             .PropertyType.Should().NotBe(typeof(ChannelsSupplyOrderSearchCondition), "搜索条件按端点分建（供货侧示例已出现表外字段预告演化）");
+
+        // ===== 供货商视角（dropship/supplier/*，2026-10-17 逐页核验）=====
+
+        // 官方字段名锁定：商家标识与 string 口径的单据号。
+        AssertJsonProperty<ChannelsSupplierDropshipGetResponse>("dropship_order", "代发单结构");
+        AssertJsonProperty<ChannelsSupplierDropshipOrder>("shop_appid", "商家 appid（本视角标识商家）");
+        AssertJsonProperty<ChannelsSupplierDropshipOrder>("shop_name", "商家名称");
+        AssertJsonProperty<ChannelsSupplierDropshipOrder>("dropship_order_detail", "代发单详情");
+        AssertJsonProperty<ChannelsSupplierDropshipProductInfo>("sku_attrs", "sku 属性/款式信息（本视角参数表返回）");
+        AssertJsonProperty<ChannelsSupplierDropshipProductInfo>("product_unique_id", "商品常量编号");
+        AssertJsonProperty<ChannelsSupplierDropshipInfo>("preshipment_change_sku_state", "换货申请状态");
+        AssertJsonProperty<ChannelsSupplierDropshipListRequest>("shop_appid", "商家 appid 过滤");
+        AssertJsonProperty<ChannelsSupplierDropshipSearchCondition>("shop_appname", "商家名称过滤");
+        AssertJsonProperty<ChannelsSupplierDropshipSearchCondition>("merchant_notes", "商家备注过滤");
+        AssertJsonProperty<ChannelsSupplierDropshipSearchCondition>("waybill_id", "运单号（只可独立查询）");
+        AssertJsonProperty<ChannelsSupplierDropshipSearchRequest>("search_condition", "搜索条件");
+        AssertJsonProperty<ChannelsSupplierDeliverySendRequest>("supply_order_id", "供货单号（与代发单号选传其一）");
+        AssertJsonProperty<ChannelsSupplierDeliverySendRequest>("delivery_list", "物流信息");
+        AssertJsonProperty<ChannelsSupplierDeliveryUpdateRequest>("change_infos", "物流修改信息");
+        AssertJsonProperty<ChannelsSupplierDeliveryChangeInfo>("old", "旧物流信息");
+        AssertJsonProperty<ChannelsSupplierDeliveryChangeInfo>("new", "新物流信息");
+        AssertJsonProperty<ChannelsSupplierDeliveryProductInfo>("product_cnt", "商品/货品数量");
+
+        // 视角分建（负向）：两视角响应字段集不同（商家标识 vs 供货商标识、number vs string 单据号）⇒ 不得共用。
+        typeof(ChannelsSupplierDropshipOrder).GetProperty(nameof(ChannelsSupplierDropshipOrder.DropshipOrderDetail))!
+            .PropertyType.Should().Be(typeof(ChannelsSupplierDropshipOrderDetail), "本视角商品明细含 sku_attrs，详情形态独立建模");
+        typeof(ChannelsSupplierDropshipOrderDetail).GetProperty(nameof(ChannelsSupplierDropshipOrderDetail.ProductInfos))!
+            .PropertyType.Should().Be(typeof(List<ChannelsSupplierDropshipProductInfo>), "本视角商品明细的 id 为 string ⇒ 分建元素类型");
+        typeof(ChannelsSupplierDropshipProductInfo).GetProperty(nameof(ChannelsSupplierDropshipProductInfo.DropshipInfo))!
+            .PropertyType.Should().Be(typeof(ChannelsSupplierDropshipInfo), "本视角 dropship_info.ds_order_id 为 string ⇒ 分建");
+        typeof(ChannelsSupplierDropshipSearchRequest).GetProperty(nameof(ChannelsSupplierDropshipSearchRequest.SearchCondition))!
+            .PropertyType.Should().NotBe(typeof(ChannelsDropshipSearchCondition), "搜索条件按视角分建（shop_* vs supplier_*）");
+        typeof(IChannelsDeliveryService).GetMethod(nameof(IChannelsDeliveryService.GetSupplierDropshipOrderAsync))!
+            .ReturnType.Should().NotBe(typeof(Task<ChannelsDropshipGetResponse>), "两视角应答分建，不得共用商家侧应答");
+
+        // 复用裁决（正向）：子树字段集官方逐字段一致 ⇒ 与商家侧共用同一批类型，禁止复制粘贴分叉。
+        typeof(ChannelsSupplierDropshipOrderDetail).GetProperty(nameof(ChannelsSupplierDropshipOrderDetail.DeliveryInfo))!
+            .PropertyType.Should().Be(typeof(ChannelsDeliveryInfo), "发货信息子树两视角一致 ⇒ 共用");
+        typeof(ChannelsSupplierDropshipOrderDetail).GetProperty(nameof(ChannelsSupplierDropshipOrderDetail.ExtInfo))!
+            .PropertyType.Should().Be(typeof(ChannelsOrderExtInfo), "扩展信息子树两视角一致 ⇒ 共用");
+        typeof(ChannelsSupplierDropshipOrderDetail).GetProperty(nameof(ChannelsSupplierDropshipOrderDetail.GreetingCardInfo))!
+            .PropertyType.Should().Be(typeof(ChannelsGreetingCardInfo), "贺卡子树两视角一致 ⇒ 共用");
+        typeof(ChannelsSupplierDropshipOrderDetail).GetProperty(nameof(ChannelsSupplierDropshipOrderDetail.CustomInfo))!
+            .PropertyType.Should().Be(typeof(ChannelsCustomInfo), "定制子树两视角一致 ⇒ 共用");
+        typeof(ChannelsSupplierDropshipProductInfo).GetProperty(nameof(ChannelsSupplierDropshipProductInfo.SkuDeliverInfo))!
+            .PropertyType.Should().Be(typeof(ChannelsSkuDeliverInfo), "商品发货信息子树一致 ⇒ 共用");
+        typeof(ChannelsSupplierDropshipProductInfo).GetProperty(nameof(ChannelsSupplierDropshipProductInfo.SkuAttrs))!
+            .PropertyType.Should().Be(typeof(List<ChannelsSkuAttr>), "sku 属性元素与供货侧同形 ⇒ 共用 ChannelsSkuAttr");
+        typeof(ChannelsSupplierDropshipListRequest).GetProperty(nameof(ChannelsSupplierDropshipListRequest.PageInfo))!
+            .PropertyType.Should().Be(typeof(ChannelsDeliveryPageInfo), "分页对象字段集一致 ⇒ 共用");
+        typeof(ChannelsSupplierDropshipListRequest).GetProperty(nameof(ChannelsSupplierDropshipListRequest.UpdateTimeRange))!
+            .PropertyType.Should().Be(typeof(ChannelsDeliveryTimeRange), "时间范围对象字段集一致 ⇒ 共用");
+        typeof(IChannelsDeliveryService).GetMethod(nameof(IChannelsDeliveryService.GetSupplierDropshipOrderAsync))!
+            .GetParameters()[0].ParameterType.Should().Be(typeof(ChannelsDropshipGetRequest), "请求侧官方参数表同形（ds_order_id string 必填）⇒ 共用商家侧请求 DTO");
+        typeof(IChannelsDeliveryService).GetMethod(nameof(IChannelsDeliveryService.GetSupplierDropshipOrderListAsync))!
+            .ReturnType.Should().Be(typeof(Task<ChannelsDropshipOrderListResponse>), "列表应答同形 ⇒ 共用");
+        typeof(IChannelsDeliveryService).GetMethod(nameof(IChannelsDeliveryService.SearchSupplierDropshipOrdersAsync))!
+            .ReturnType.Should().Be(typeof(Task<ChannelsDropshipOrderListResponse>), "搜索应答同形 ⇒ 共用");
+
+        // 发货包裹分建（负向）+ old/new 复用（正向）：本视角包裹无 deliver_type/course_info/sn_info。
+        typeof(ChannelsSupplierDeliverySendRequest).GetProperty(nameof(ChannelsSupplierDeliverySendRequest.DeliveryList))!
+            .PropertyType.Should().Be(typeof(List<ChannelsSupplierDeliveryPackage>), "本视角包裹字段集少于商家侧 ⇒ 分建");
+        typeof(ChannelsSupplierDeliveryPackage).GetProperty(nameof(ChannelsSupplierDeliveryPackage.ProductInfos))!
+            .PropertyType.Should().Be(typeof(List<ChannelsSupplierDeliveryProductInfo>), "发货商品明细 id 为 string ⇒ 分建元素类型");
+        typeof(ChannelsSupplierDeliveryChangeInfo).GetProperty(nameof(ChannelsSupplierDeliveryChangeInfo.Old))!
+            .PropertyType.Should().Be(typeof(ChannelsSupplierDeliveryPackage), "old/new 官方结构逐字段一致 ⇒ 同一包裹类型");
+        typeof(ChannelsSupplierDeliveryChangeInfo).GetProperty(nameof(ChannelsSupplierDeliveryChangeInfo.New))!
+            .PropertyType.Should().Be(typeof(ChannelsSupplierDeliveryPackage), "old/new 官方结构逐字段一致 ⇒ 同一包裹类型");
     }
 
     /// <summary>契约守卫 CD6：枚举常量字面量锁定（覆盖「同值不同义防串线」——代发/供货 cancel_scene 语义相反）。</summary>

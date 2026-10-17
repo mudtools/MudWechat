@@ -10,8 +10,10 @@ using System.Text.RegularExpressions;
 using Mud.HttpUtils.Attributes;
 using Mud.Wechat.OpenPlatform.DataModels;
 using Mud.Wechat.OpenPlatform.DataModels.Account;
+using Mud.Wechat.OpenPlatform.DataModels.Auth;
 using Mud.Wechat.OpenPlatform.DataModels.Category;
 using Mud.Wechat.OpenPlatform.DataModels.Component;
+using Mud.Wechat.OpenPlatform.DataModels.Embedded;
 using Mud.Wechat.OpenPlatform.DataModels.OpenAccount;
 using Mud.Wechat.OpenPlatform.DataModels.Sns;
 
@@ -99,11 +101,13 @@ public class OpenPlatformContractGuards
     };
 
     /// <summary>
-    /// OP-B1：接口集合与数量锁定（12 接口 / 89 端点，防漏防多）。
+    /// OP-B1：接口集合与数量锁定（14 接口 / 100 端点，防漏防多）。
     /// </summary>
     /// <remarks>
     /// 2026-10-15 起本线另有 <c>ComponentTcb</c> 六支接口（50 端点，注册组共用一个），
     /// 其 (方法, 路由) 表与令牌语义由 <c>OpenPlatformComponentTcbContractGuards</c>（CBT 系列）逐条锁定，
+    /// <c>Embedded</c>（6 端点）由 <c>OpenPlatformEmbeddedContractGuards</c>（EMB 系列）、
+    /// <c>Auth</c>（5 端点）由 <c>OpenPlatformAuthContractGuards</c>（AUTH 系列）逐条锁定；
     /// 本守卫只负责「接口全集不漂移 + 端点总数与基线一致」。
     /// </remarks>
     [Fact]
@@ -133,6 +137,8 @@ public class OpenPlatformContractGuards
             nameof(IWechatOpenPlatformComponentTcbScfService),
             nameof(IWechatOpenPlatformComponentTcbCloudRunService),
             nameof(IWechatOpenPlatformComponentTcbStaticStoreService),
+            nameof(IWechatOpenPlatformEmbeddedService),
+            nameof(IWechatOpenPlatformAuthService),
         });
 
         var actualEndpoints = interfaces.Sum(GetEndpoints);
@@ -226,7 +232,7 @@ public class OpenPlatformContractGuards
     }
 
     /// <summary>
-    /// OP-B5：跨线路由零交叠——本线四个路由前缀在全仓唯一（扫描全部源码接口声明）。
+    /// OP-B5：跨线路由零交叠——本线路由前缀在全仓唯一（扫描全部源码接口声明）。
     /// </summary>
     [Fact]
     public void RoutePrefixes_ShouldBeOwnedExclusively_WhenScannedAcrossAllLines()
@@ -242,6 +248,15 @@ public class OpenPlatformContractGuards
             "/cgi-bin/open/",
             "/cgi-bin/account/",
             "/sns/oauth2/component/",
+            // 半屏小程序族独占：小程序线由守卫 NC2 锁定零声明，本线声明者唯一 ⇒ 其它线不得重复声明。
+            "/wxaapi/wxaembedded/",
+            // 微信认证族独占（逐条全路径，不用宽前缀 /wxa/sec/ —— 小程序线合法持有 /wxa/sec/vod/* 短剧媒资面）：
+            // 同样由 NC2 锁定小程序线零声明，本线以 authorizer_access_token 承载。
+            "/wxa/sec/authidentitytree",
+            "/wxa/sec/wxaauth",
+            "/wxa/sec/reauth",
+            "/wxa/sec/queryauth",
+            "/wxa/sec/uploadauthmaterial",
         };
 
         var offenders = new List<string>();
@@ -270,7 +285,7 @@ public class OpenPlatformContractGuards
         }
 
         offenders.Should().BeEmpty(
-            "开放平台的四个路由前缀必须全仓唯一归属（官方同前缀跨线同名是真实风险——" +
+            "开放平台的路由前缀必须全仓唯一归属（官方同前缀跨线同名是真实风险——" +
             "公众号线 /cgi-bin/account/* 若被误建即双实现撞车）");
     }
 
@@ -320,6 +335,8 @@ public class OpenPlatformContractGuards
             (typeof(AccountJsonContext), "Mud.Wechat.OpenPlatform.DataModels.Account", "Account"),
             (typeof(CategoryJsonContext), "Mud.Wechat.OpenPlatform.DataModels.Category", "Category"),
             (typeof(SnsJsonContext), "Mud.Wechat.OpenPlatform.DataModels.Sns", "Sns"),
+            (typeof(EmbeddedJsonContext), "Mud.Wechat.OpenPlatform.DataModels.Embedded", "Embedded"),
+            (typeof(AuthJsonContext), "Mud.Wechat.OpenPlatform.DataModels.Auth", "Auth"),
         };
 
         foreach (var (contextType, ns, segment) in expectations)

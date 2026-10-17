@@ -5,6 +5,8 @@
 //  不得利用本项目从事危害国家安全、扰乱社会秩序、侵犯他人合法权益等法律法规禁止的活动！任何基于本项目开发而产生的一切法律纠纷和责任，我们不承担任何责任！
 // -----------------------------------------------------------------------
 
+using System.Text.Json.Serialization;
+
 namespace Mud.Wechat.Channels.Tests.ContractGuards;
 
 /// <summary>
@@ -54,7 +56,7 @@ public class ChannelsScaffoldContractGuards
     /// <remarks>
     /// <b>判据是「特性属性」而非 <c>Type.IsAbstract</c></b>：反射里 <c>Type.IsAbstract</c> 对<b>接口恒为
     /// <c>true</c></b>，照它判定会让守卫永远变红；反向的脚手架期空程序集又让它恒绿，属双向失效的写法
-    /// （小程序线 P1-c 落地时实测踩到，判据已修正为 ≤c>HttpClientApiAttribute.IsAbstract</c> 特性属性）。
+    /// （小程序线 P1-c 落地时实测踩到，判据已修正为 <c>HttpClientApiAttribute.IsAbstract</c> 特性属性）。
     /// </remarks>
     [Fact]
     public void Interfaces_ShouldNotUseAbstractParents_WhenContractLanded()
@@ -159,6 +161,45 @@ public class ChannelsScaffoldContractGuards
             .Should().NotContain(
                 new[] { "Mud.Wechat.OfficialAccount.Callback", "Mud.Wechat.Work.Callback", "Mud.Wechat.Pay.Callback" },
                 "小店回调运行时程序集不得引用任何既有线的回调程序集");
+    }
+
+    /// <summary>
+    /// CH-X5：DataModels 程序集内<b>每一个</b>生成的 <c>*JsonContext</c> 都必须出现在主包
+    /// <c>ChannelsJsonResolverExtensions.ConfigureDataModelsResolver</c> 的合并列表里。
+    /// </summary>
+    /// <remarks>
+    /// <b>为什么必须是守卫</b>：合并列表是「按域手工追加的一行 <c>XxxJsonContext.Default</c>」，
+    /// 而上下文本身是 <c>internal</c> 且新域只需重跑脚手架脚本即可编译通过 ——
+    /// <b>漏登记不会编译报错、不会触发任何 IL 诊断</b>，失败推迟到 Native AOT 下该域 DTO 的
+    /// 第一次真实序列化（JIT 有反射兜底，测试环境一路正常）。
+    /// 本域实际踩过：Promoter 域 41 端点落地时上下文生成齐备、注册器与守卫全绿，
+    /// 唯独合并列表漏了一行。故此处以「反射枚举的上下文集合 ⊆ 源文件文本断言」锁死同批纪律。
+    /// </remarks>
+    [Fact]
+    public void EveryGeneratedJsonContext_ShouldBeRegisteredInResolver()
+    {
+        var dataModels = LoadProductLine("Mud.Wechat.Channels.DataModels");
+
+        var contexts = dataModels.GetTypes()
+            .Where(static t => t.Name.EndsWith("JsonContext", StringComparison.Ordinal)
+                               && typeof(JsonSerializerContext).IsAssignableFrom(t))
+            .Select(static t => t.Name)
+            .ToArray();
+
+        contexts.Should().NotBeEmpty("反射枚举为空说明 DataModels 程序集未加载或上下文命名约定漂移（守卫恒真）");
+
+        var resolverSource = File.ReadAllText(
+            SourcePath("Mud.Wechat.Channels", "Extensions", "ChannelsJsonResolverExtensions.cs"));
+
+        // 正对照：合并列表本身必须存在，否则下面的 AllSatisfy 会因文本缺失而恒假——先证「能匹配到」。
+        resolverSource.Should().Contain("JsonTypeInfoResolver.Combine",
+            "合并入口方法名漂移时本守卫会退化为逐行找不到，须先证文本锚点存在");
+
+        var missing = contexts.Where(name => !resolverSource.Contains($"{name}.Default", StringComparison.Ordinal)).ToArray();
+
+        missing.Should().BeEmpty(
+            $"新增/重命名域 JsonContext 必须同批登记进 ConfigureDataModelsResolver（漏登记在 JIT 下无症状、" +
+            $"AOT 下该域 DTO 首次序列化即失败）：未登记 {string.Join(", ", missing)}");
     }
 
     // ---- helpers（对齐 MiniProgramScaffoldContractGuards）---------------------------

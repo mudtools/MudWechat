@@ -304,12 +304,12 @@ public class AdsContractGuards
     [Fact]
     public void AdvertiserEndpoints_ShouldMatchOfficialRouteTable()
     {
-        AdvertiserRoutes.Should().HaveCount(3, "官方 advertiser/* 恰 3 个端点，本域全覆盖且不多做");
-        AdvertiserRoutes.Select(static r => r.Route).Distinct().Should().HaveCount(3, "路由互不重复");
+        AdvertiserRoutes.Should().HaveCount(4, "官方 advertiser/* 恰 4 个端点，本域全覆盖且不多做");
+        AdvertiserRoutes.Select(static r => r.Route).Distinct().Should().HaveCount(4, "路由互不重复");
 
         typeof(IWechatAdsAdvertiserService)
             .GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
-            .Should().HaveCount(3, "接口端点数与守卫路由表条目数必须一致（新增端点未入表即红，防「实现了但没锁」）");
+            .Should().HaveCount(4, "接口端点数与守卫路由表条目数必须一致（新增端点未入表即红，防「实现了但没锁」）");
 
         foreach (var (iface, method, httpAttribute, route) in AdvertiserRoutes)
         {
@@ -485,11 +485,12 @@ public class AdsContractGuards
         var headerNames = AdsHeaderParameterNames();
         headerNames.Select(static h => h.Name).Distinct().OrderBy(static n => n, StringComparer.Ordinal).Should()
             .Equal(new[] { "X-Request-Id" },
-                "v3.0 已核验页面里只有 adgroups/add 有请求头参数表 ⇒ 出现第二个头名即官方未定义");
+                "v3.0 已核验页面里只有 adgroups/add 与 advertiser/add 有请求头参数表 ⇒ 出现第二个头名即官方未定义");
 
-        headerNames.Select(static h => h.Owner).Distinct().Should()
-            .Equal(new[] { "IWechatAdsAdgroupService.AddAsync" },
-                "幂等头只属于 add 一支：update / delete / 批量页均无该表，套到全部写端点会给出虚假的重试安全性");
+        headerNames.Select(static h => h.Owner).Distinct().OrderBy(static n => n, StringComparer.Ordinal).Should()
+            .Equal(new[] { "IWechatAdsAdgroupService.AddAsync", "IWechatAdsAdvertiserService.AddAsync" },
+                "幂等头只属于两支有官方请求头参数表的 add：update / delete / 批量页均无该表，" +
+                "套到全部写端点会给出虚假的重试安全性");
 
         // user_token 走 Query 而非 Header —— 头名集合不含它即证明承载形态未漂。
         headerNames.Should().NotContain(static h => h.Name == "user_token",
@@ -1022,7 +1023,8 @@ public class AdsContractGuards
     /// <see cref="AdsResponse.ErrorCode"/> / <see cref="AdsResponse.IsSuccess"/>；两者都不写即默认按
     /// 所在上下文的策略输出，等于凭空多出官方未知字段）。生成上下文（<c>*JsonContext</c>）不参与：
     /// 生成物随脚本重跑而变，其内部命名不属官方契约面；② <b>形状</b> —— 显式名必须匹配
-    /// <c>^[a-z][a-z0-9_]*$</c>（驼峰 / 大写 / 空格都会被官方静默忽略）；
+    /// <c>^[a-z][a-z0-9_]*$</c>（驼峰 / 大写 / 空格都会被官方静默忽略；唯一例外是逐页核验、集中登记的
+    /// <see cref="OfficialCamelCaseFieldNames"/> 官方 camelCase 原名校验）；
     /// ③ <b>关键名</b> —— 逐条锁定最容易被「顺手改规范」的名字（<c>message_cn</c> / <c>cursor_page_info</c> /
     /// <c>fail_id_list</c> / <c>update_daily_budget_spec</c> / <c>next_cursor</c> 等，
     /// 后几支不是常规命名，凭直觉改必错）。
@@ -1059,13 +1061,20 @@ public class AdsContractGuards
             + "ErrorCode / IsSuccess）必须显式 [JsonIgnore]，否则会成为官方未知字段");
 
         var malformed = declared
-            .Where(static n => !OfficialNamePattern.IsMatch(n))
+            .Where(static n => !OfficialNamePattern.IsMatch(n) && !OfficialCamelCaseFieldNames.Contains(n))
             .OrderBy(static n => n, StringComparer.Ordinal)
             .ToArray();
 
         malformed.Should().BeEmpty(
             "以下官方字段名被写成非 snake_case（驼峰 / 大写 / 空格都会让官方静默忽略该字段）：" +
             string.Join(", ", malformed));
+
+        // 例外面本身也要被钉住：出现第二支未登记的驼峰名 ⇒ 上面打红；把已核验的例外名「改规范」
+        // ⇒ 下面打红（形态同关键名逐条锁定）。
+        declared.Where(static n => OfficialCamelCaseFieldNames.Contains(n))
+            .Distinct().OrderBy(static n => n, StringComparer.Ordinal)
+            .Should().Equal(OfficialCamelCaseFieldNames.OrderBy(static n => n, StringComparer.Ordinal),
+                "官方 camelCase 例外字段名必须原样在场（改成 snake_case 会被官方静默忽略）");
 
         declared.Should().Contain(new[]
             {
@@ -1120,6 +1129,12 @@ public class AdsContractGuards
                      (typeof(AdsFiltering), new[] { "field", "operator", "values" }),
                      (typeof(AdsDateRange), new[] { "end_date", "start_date" }),
                      (typeof(AdsOrderBy), new[] { "sort_field", "sort_type" }),
+                     (typeof(global::Mud.Wechat.Ads.DataModels.TargetingTags.AdsTagSpec),
+                         new[] { "behavior_spec", "interest_spec" }),
+                     (typeof(global::Mud.Wechat.Ads.DataModels.TargetingTags.AdsTagQuerySpec),
+                         new[] { "advanced_recommend_type", "query_mode", "query_spec" }),
+                     (typeof(global::Mud.Wechat.Ads.DataModels.TargetingTags.AdsTagQueryCondition),
+                         new[] { "excluding_targeting_tags", "max_result_number", "query", "query_list" }),
                  })
         {
             OfficialJsonNames(dto).Should().Equal(expected,
@@ -1134,7 +1149,13 @@ public class AdsContractGuards
             .OrderBy(static n => n, StringComparer.Ordinal)
             .ToArray();
 
-        var dtoKeys = new[] { typeof(AdsFiltering), typeof(AdsDateRange), typeof(AdsOrderBy) }
+        var dtoKeys = new[]
+            {
+                typeof(AdsFiltering), typeof(AdsDateRange), typeof(AdsOrderBy),
+                typeof(global::Mud.Wechat.Ads.DataModels.TargetingTags.AdsTagSpec),
+                typeof(global::Mud.Wechat.Ads.DataModels.TargetingTags.AdsTagQuerySpec),
+                typeof(global::Mud.Wechat.Ads.DataModels.TargetingTags.AdsTagQueryCondition),
+            }
             .SelectMany(t => OfficialJsonNames(t))
             .Distinct(StringComparer.Ordinal)
             .OrderBy(static n => n, StringComparer.Ordinal)
@@ -1451,22 +1472,227 @@ public class AdsContractGuards
         }
     }
 
-    /// <summary>sp_entrustment 域路由表断言。</summary>
+    /// <summary>人群管理域声明式面路由表断言（4 端点 + multipart 通道另锁路径）。</summary>
     [Fact]
-    public void SpEntrustmentEndpoints_ShouldMatchOfficialRouteTable()
+    public void CustomAudiencesEndpoints_ShouldMatchOfficialRouteTable()
     {
-        SpEntrustmentRoutes.Should().HaveCount(2, "官方 sp_entrustment/* 恰 2 个端点（add/get）");
-        typeof(IWechatAdsSpEntrustmentService)
+        CustomAudiencesRoutes.Should().HaveCount(4,
+            "声明式面恰 4 端点（custom_audiences add/get/update + custom_audience_files/get；files/add 走手写通道）");
+        typeof(IWechatAdsCustomAudienceService)
             .GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
-            .Should().HaveCount(2, "接口端点数与守卫路由表条目数必须一致");
+            .Should().HaveCount(4, "接口端点数与守卫路由表条目数必须一致");
 
-        foreach (var (iface, method, httpAttribute, route) in SpEntrustmentRoutes)
+        foreach (var (iface, method, httpAttribute, route) in CustomAudiencesRoutes)
         {
             var target = iface.GetMethod(method, BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
             target.Should().NotBeNull($"{iface.Name}.{method} 必须存在");
             var attr = target!.GetCustomAttribute(httpAttribute) as HttpMethodAttribute;
             attr!.RequestUri.Should().Be(route, $"{iface.Name}.{method} 路由必须与官方契约逐字符一致");
         }
+
+        // multipart 通道不经 [HttpClientApi]，路径常量从实现类取（同素材两通道的锁定形态）。
+        typeof(AdsCustomAudienceFileUploadService)
+            .Should().BeAssignableTo(typeof(IWechatAdsCustomAudienceFileUploadService));
+        GetPrivateConst(typeof(AdsCustomAudienceFileUploadService), "FilesAddPath")
+            .Should().Be("/v3.0/custom_audience_files/add",
+                "官方 custom_audience_files/add 为 multipart/form-data（文件字段 file），2026-10-17 逐页核验");
+    }
+
+    /// <summary>资金账户域官方路由表断言（4 端点，跨 funds / fund_transfer / fund_statements_detailed / realtime_cost 四族）。</summary>
+    [Fact]
+    public void FundsEndpoints_ShouldMatchOfficialRouteTable()
+    {
+        FundsRoutes.Should().HaveCount(4,
+            "声明式面恰 4 端点（funds/get + fund_transfer/add + fund_statements_detailed/get + realtime_cost/get，2026-10-17 逐页核验）");
+        typeof(IWechatAdsFundsService)
+            .GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
+            .Should().HaveCount(4, "接口端点数与守卫路由表条目数必须一致");
+
+        foreach (var (iface, method, httpAttribute, route) in FundsRoutes)
+        {
+            var target = iface.GetMethod(method, BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+            target.Should().NotBeNull($"{iface.Name}.{method} 必须存在");
+            var attr = target!.GetCustomAttribute(httpAttribute) as HttpMethodAttribute;
+            attr!.RequestUri.Should().Be(route, $"{iface.Name}.{method} 路由必须与官方契约逐字符一致");
+        }
+
+        // 四页均无「特定请求参数」表 ⇒ 一个 user_token 都不带（反射面反证，出现即与官方不符）。
+        typeof(IWechatAdsFundsService)
+            .GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
+            .SelectMany(static m => QueryParameterNames(m))
+            .Should().NotContain(static n => n == "user_token",
+                "funds 四页官方均未列出 user_token");
+    }
+
+    /// <summary>
+    /// ADS-B2（<b>逐页枚举集合不得跨页套用</b>）：<c>realtime_cost/get</c> 页 <c>level</c> 的三值
+    /// 与 <c>daily_reports/get</c> 页的 <c>REPORT_LEVEL_*</c> 拼写<b>零交集</b>。
+    /// </summary>
+    /// <remarks>
+    /// 官方本页写 <c>{ ADVERTISER, ADGROUP, ADTOTAL }</c>（无前缀），报表页写 <c>REPORT_LEVEL_ADVERTISER</c> 等
+    /// （带前缀且集合更大）⇒ 把报表拼写套到本页会被官方拒绝。断言形态与 <c>ReportLevelSets</c> /
+    /// <c>FundTypeSets</c> 同口径：源文本锚点唯一命中 + 反证 + 正对照。
+    /// </remarks>
+    [Fact]
+    public void RealtimeCostLevelValues_ShouldStayPageLocal()
+    {
+        var fundsText = File.ReadAllText(AdsFundsInterfaceFile);
+        CountOf(fundsText, "可选值 <c>{ ADVERTISER, ADGROUP, ADTOTAL }</c>").Should().Be(1,
+            "realtime_cost/get 页 level 三值必须逐字登记在接口 XML 且只出现一处（改拼写或复制到其他页即红）");
+        CountOf(fundsText, "REPORT_LEVEL_").Should().Be(1,
+            "funds 域四页没有任何 REPORT_LEVEL_ 枚举，全文唯一一处命中必须是「与报表页拼写不同」的警示句本身" +
+            "（出现第二处即把报表页拼写套到了本域）");
+
+        // 正对照：报表页确实带前缀（否则上一条 NotContain 可能因 Reports 侧改名而假绿）。
+        File.ReadAllText(AdsReportInterfaceFile).Should().Contain("REPORT_LEVEL_ADVERTISER",
+            "报表页 level 集合在场，作为本页零前缀断言的正对照");
+    }
+
+    /// <summary>客户资质域官方路由表断言（3 端点；官方另有 delete，本 SDK 未消费故不入表）。</summary>
+    [Fact]
+    public void QualificationsEndpoints_ShouldMatchOfficialRouteTable()
+    {
+        QualificationsRoutes.Should().HaveCount(3,
+            "声明式面恰 3 端点（qualifications/get|add|update；官方 delete 页本 SDK 未消费，2026-10-17 逐页核验）");
+        typeof(IWechatAdsQualificationService)
+            .GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
+            .Should().HaveCount(3, "接口端点数与守卫路由表条目数必须一致");
+
+        foreach (var (iface, method, httpAttribute, route) in QualificationsRoutes)
+        {
+            var target = iface.GetMethod(method, BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+            target.Should().NotBeNull($"{iface.Name}.{method} 必须存在");
+            var attr = target!.GetCustomAttribute(httpAttribute) as HttpMethodAttribute;
+            attr!.RequestUri.Should().Be(route, $"{iface.Name}.{method} 路由必须与官方契约逐字符一致");
+        }
+
+        // 三页均无「特定请求参数」表 ⇒ 一个 user_token 都不带（反射面反证）。
+        typeof(IWechatAdsQualificationService)
+            .GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
+            .SelectMany(static m => QueryParameterNames(m))
+            .Should().NotContain(static n => n == "user_token",
+                "qualifications 三页官方均未列出 user_token");
+    }
+
+    /// <summary>广告预估域官方路由表断言（1 端点，2026-10-17 逐页核验）。</summary>
+    [Fact]
+    public void EstimationEndpoints_ShouldMatchOfficialRouteTable()
+    {
+        EstimationRoutes.Should().HaveCount(1,
+            "声明式面恰 1 端点（estimation/get，官方页 2026-10-17 核验）");
+        typeof(IWechatAdsEstimationService)
+            .GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
+            .Should().HaveCount(1, "接口端点数与守卫路由表条目数必须一致");
+
+        foreach (var (iface, method, httpAttribute, route) in EstimationRoutes)
+        {
+            var target = iface.GetMethod(method, BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+            target.Should().NotBeNull($"{iface.Name}.{method} 必须存在");
+            var attr = target!.GetCustomAttribute(httpAttribute) as HttpMethodAttribute;
+            attr!.RequestUri.Should().Be(route, $"{iface.Name}.{method} 路由必须与官方契约逐字符一致");
+            attr.Should().BeOfType<PostAttribute>(
+                "官方页请求方法为 POST（查询型 POST：动词与语义相反，照官方不「顺手改成 GET」）");
+        }
+
+        // 本页无「特定请求参数」表、无请求头参数表 ⇒ 不带 user_token、不带 X-Request-Id（反射面反证）。
+        var estimationMethod = typeof(IWechatAdsEstimationService)
+            .GetMethod(nameof(IWechatAdsEstimationService.GetEstimationAsync),
+                BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)!;
+        QueryParameterNames(estimationMethod).Should().NotContain("user_token",
+            "estimation/get 页官方未列出 user_token");
+
+        // 定向/场景/载体/营销对象四支子树必须<b>复用</b> Adgroups 域类型而非复制第二套
+        // （2026-10-17 逐字段比对同构；复制后官方改名必然只改到其中一份）。
+        var requestType = typeof(Mud.Wechat.Ads.DataModels.Estimation.AdsEstimationGetRequest);
+        requestType.GetProperty(nameof(Mud.Wechat.Ads.DataModels.Estimation.AdsEstimationGetRequest.Targeting))!
+            .PropertyType.Should().Be(typeof(Mud.Wechat.Ads.DataModels.Adgroups.AdsAdgroupTargeting),
+                "targeting 子树与 adgroups 逐字段同构 ⇒ 共用同一类型");
+        requestType.GetProperty(nameof(Mud.Wechat.Ads.DataModels.Estimation.AdsEstimationGetRequest.SceneSpec))!
+            .PropertyType.Should().Be(typeof(Mud.Wechat.Ads.DataModels.Adgroups.AdsAdgroupSceneSpec),
+                "scene_spec 子树同上");
+    }
+
+    /// <summary>定向标签域官方路由表断言（1 端点，2026-10-17 逐页核验）。</summary>
+    [Fact]
+    public void TargetingTagsEndpoints_ShouldMatchOfficialRouteTable()
+    {
+        TargetingTagsRoutes.Should().HaveCount(1,
+            "声明式面恰 1 端点（targeting_tags/get，官方页 2026-10-17 核验）");
+        typeof(IWechatAdsTargetingTagService)
+            .GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
+            .Should().HaveCount(1, "接口端点数与守卫路由表条目数必须一致");
+
+        foreach (var (iface, method, httpAttribute, route) in TargetingTagsRoutes)
+        {
+            var target = iface.GetMethod(method, BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+            target.Should().NotBeNull($"{iface.Name}.{method} 必须存在");
+            var attr = target!.GetCustomAttribute(httpAttribute) as HttpMethodAttribute;
+            attr!.RequestUri.Should().Be(route, $"{iface.Name}.{method} 路由必须与官方契约逐字符一致");
+        }
+
+        // 本页无「特定请求参数」表 ⇒ 不带 user_token；tag_spec 官方是 struct ⇒ 只能以 JSON 字符串承载
+        //（形态同 fields/filtering/date_range，构造入口唯一 AdsQueryJson.TagSpec，守卫键集恰等断言锁键名）。
+        var parameters = typeof(IWechatAdsTargetingTagService)
+            .GetMethod(nameof(IWechatAdsTargetingTagService.GetAsync),
+                BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)!
+            .GetParameters()
+            .Where(static p => p.GetCustomAttribute<QueryAttribute>() is not null)
+            .ToArray();
+
+        parameters.Select(static p => p.GetCustomAttribute<QueryAttribute>()!.Name)
+            .Should().Equal(new[] { "account_id", "type", "tag_spec" },
+                "官方请求参数表逐字：account_id* / type* / tag_spec（顺序即签名顺序）");
+        parameters.Single(static p => p.GetCustomAttribute<QueryAttribute>()!.Name == "tag_spec")
+            .ParameterType.Should().Be(typeof(string),
+                "GET 上的 struct 参数必须是单键 JSON 字符串（数组/复杂类型绑定形态官方都不认）");
+    }
+
+    /// <summary>
+    /// ADS-B2（Funds 域）：<c>fund_type</c> 的逐页集合差异 —— 转账页 9 支、流水页 36 支
+    /// （2026-10-17 逐字核验，含完整 <c>FUND_TYPE_</c> 前缀）。9 支集是 36 支集的<b>真子集</b>，
+    /// 两支集合各只写在所属端点的文档面上 ⇒ 合并成公共枚举即抹平官方差异（本域不建枚举，
+    /// 接口/DTO 文档是唯一可机械检出的载体，形态同 <see cref="ReportLevelSets_ShouldStayThreeDistinctPerPageCollections"/>）。
+    /// </summary>
+    [Fact]
+    public void FundTypeSets_ShouldStayTwoDistinctPerPageCollections()
+    {
+        var transferText = File.ReadAllText(AdsFundTransferDtoFile);
+        var statementsText = File.ReadAllText(AdsFundsInterfaceFile);
+
+        var transfer = ExtractFundTypes(transferText, "<c>fund_type</c>，必填，<c>enum</c>；可选值");
+        var statements = ExtractFundTypes(statementsText, "本页可选值 <b>36</b> 支");
+
+        transfer.Should().Equal(TransferFundTypes.OrderBy(static n => n, StringComparer.Ordinal),
+            "官方 fund_transfer/add 的 fund_type 集合（9 支，逐字核验）");
+        statements.Should().Equal(StatementFundTypes.OrderBy(static n => n, StringComparer.Ordinal),
+            "官方 fund_statements_detailed/get 的 fund_type 集合（36 支，逐字核验）");
+
+        transfer.Should().HaveCount(9);
+        statements.Should().HaveCount(36);
+        transfer.Should().BeSubsetOf(statements, "转账页 9 支是流水页 36 支的真子集（官方页面事实）");
+        statements.Except(TransferFundTypes).Should().HaveCount(27,
+            "流水页独有 27 支 —— 用转账页集合调本页会被官方拒绝，不得收敛成公共枚举");
+    }
+
+    /// <summary>从文档文本的锚点后 <c>{ … }</c> 区间抽取 <c>FUND_*</c> 枚举值（去重、排序）。</summary>
+    private static string[] ExtractFundTypes(string text, string anchor)
+    {
+        var anchorIndex = text.IndexOf(anchor, StringComparison.Ordinal);
+        anchorIndex.Should().BeGreaterThanOrEqualTo(0,
+            $"文档必须保留逐页 fund_type 集合的锚点「{anchor}」（锚点被改写或删除即本域文档失守）");
+
+        var open = text.IndexOf('{', anchorIndex);
+        var close = text.IndexOf('}', open + 1);
+        (open >= 0 && close > open).Should().BeTrue(
+            $"锚点「{anchor}」之后必须紧跟 <c>{{ … }}</c> 形态的官方可选值列表（找不到即列表被改成散文）");
+
+        return Regex
+            .Matches(text.Substring(open, close - open + 1), "FUND_TYPE_[A-Z0-9_]+")
+            .Cast<System.Text.RegularExpressions.Match>()
+            .Select(static m => m.Value)
+            .Distinct(StringComparer.Ordinal)
+            .OrderBy(static n => n, StringComparer.Ordinal)
+            .ToArray();
     }
 
     /// <summary>
@@ -1539,11 +1765,13 @@ public class AdsContractGuards
     private static string GetPrivateConst(Type type, string name)
         => (string)type.GetField(name, BindingFlags.NonPublic | BindingFlags.Static)!.GetValue(null)!;
 
-    /// <summary>advertiser 域官方路由表（3 端点，2026-10-10 逐页核验）。</summary>
+    /// <summary>advertiser 域官方路由表（4 端点；add 于 2026-10-17 逐页核验，其余三页 2026-10-10）。</summary>
     private static readonly (Type Interface, string Method, Type HttpAttribute, string Route)[] AdvertiserRoutes =
     {
         (typeof(IWechatAdsAdvertiserService), nameof(IWechatAdsAdvertiserService.GetAsync),
             typeof(GetAttribute), "/v3.0/advertiser/get"),
+        (typeof(IWechatAdsAdvertiserService), nameof(IWechatAdsAdvertiserService.AddAsync),
+            typeof(PostAttribute), "/v3.0/advertiser/add"),
         (typeof(IWechatAdsAdvertiserService), nameof(IWechatAdsAdvertiserService.UpdateAsync),
             typeof(PostAttribute), "/v3.0/advertiser/update"),
         (typeof(IWechatAdsAdvertiserService), nameof(IWechatAdsAdvertiserService.UpdateDailyBudgetAsync),
@@ -1651,13 +1879,101 @@ public class AdsContractGuards
             typeof(GetAttribute), "/v3.0/async_tasks/get"),
     };
 
-    /// <summary>sp_entrustment 域官方路由表（2 端点，2026-10-16 核验；add 为 POST、get 为 GET）。</summary>
-    private static readonly (Type Interface, string Method, Type HttpAttribute, string Route)[] SpEntrustmentRoutes =
+    /// <summary>
+    /// 人群管理域声明式面官方路由表（4 端点，2026-10-17 逐页核验；跨
+    /// <c>custom_audiences/*</c> 与 <c>custom_audience_files/get</c> 两支资源族，
+    /// <c>custom_audience_files/add</c> 为 multipart 走手写通道、不入本表）。
+    /// </summary>
+    private static readonly (Type Interface, string Method, Type HttpAttribute, string Route)[] CustomAudiencesRoutes =
     {
-        (typeof(IWechatAdsSpEntrustmentService), nameof(IWechatAdsSpEntrustmentService.AddSpEntrustmentAsync),
-            typeof(PostAttribute), "/v3.0/sp_entrustment/add"),
-        (typeof(IWechatAdsSpEntrustmentService), nameof(IWechatAdsSpEntrustmentService.GetSpEntrustmentAsync),
-            typeof(GetAttribute), "/v3.0/sp_entrustment/get"),
+        (typeof(IWechatAdsCustomAudienceService), nameof(IWechatAdsCustomAudienceService.AddAsync),
+            typeof(PostAttribute), "/v3.0/custom_audiences/add"),
+        (typeof(IWechatAdsCustomAudienceService), nameof(IWechatAdsCustomAudienceService.GetAsync),
+            typeof(GetAttribute), "/v3.0/custom_audiences/get"),
+        (typeof(IWechatAdsCustomAudienceService), nameof(IWechatAdsCustomAudienceService.UpdateAsync),
+            typeof(PostAttribute), "/v3.0/custom_audiences/update"),
+        (typeof(IWechatAdsCustomAudienceService), nameof(IWechatAdsCustomAudienceService.GetFilesAsync),
+            typeof(GetAttribute), "/v3.0/custom_audience_files/get"),
+    };
+
+    /// <summary>
+    /// 资金账户域官方路由表（4 端点，2026-10-17 逐页核验；跨 <c>funds</c> / <c>fund_transfer</c> /
+    /// <c>fund_statements_detailed</c> / <c>realtime_cost</c> 四支资源族，权限同一 <c>account_management</c>）。
+    /// </summary>
+    private static readonly (Type Interface, string Method, Type HttpAttribute, string Route)[] FundsRoutes =
+    {
+        (typeof(IWechatAdsFundsService), nameof(IWechatAdsFundsService.GetFundsAsync),
+            typeof(GetAttribute), "/v3.0/funds/get"),
+        (typeof(IWechatAdsFundsService), nameof(IWechatAdsFundsService.AddTransferAsync),
+            typeof(PostAttribute), "/v3.0/fund_transfer/add"),
+        (typeof(IWechatAdsFundsService), nameof(IWechatAdsFundsService.GetFundStatementsDetailedAsync),
+            typeof(GetAttribute), "/v3.0/fund_statements_detailed/get"),
+        (typeof(IWechatAdsFundsService), nameof(IWechatAdsFundsService.GetRealtimeCostAsync),
+            typeof(GetAttribute), "/v3.0/realtime_cost/get"),
+    };
+
+    /// <summary>
+    /// 客户资质域官方路由表（3 端点，2026-10-17 逐页核验；官方目录树另有 <c>qualifications/delete</c>，
+    /// 本 SDK 未消费 ⇒ 不入表、不注册）。
+    /// </summary>
+    private static readonly (Type Interface, string Method, Type HttpAttribute, string Route)[] QualificationsRoutes =
+    {
+        (typeof(IWechatAdsQualificationService), nameof(IWechatAdsQualificationService.GetAsync),
+            typeof(GetAttribute), "/v3.0/qualifications/get"),
+        (typeof(IWechatAdsQualificationService), nameof(IWechatAdsQualificationService.AddAsync),
+            typeof(PostAttribute), "/v3.0/qualifications/add"),
+        (typeof(IWechatAdsQualificationService), nameof(IWechatAdsQualificationService.UpdateAsync),
+            typeof(PostAttribute), "/v3.0/qualifications/update"),
+    };
+
+    /// <summary>
+    /// 广告预估域官方路由表（1 端点，2026-10-17 逐页核验；权限 <c>ads_management</c>，
+    /// 官方动词 POST 但语义为只读预估）。
+    /// </summary>
+    private static readonly (Type Interface, string Method, Type HttpAttribute, string Route)[] EstimationRoutes =
+    {
+        (typeof(IWechatAdsEstimationService), nameof(IWechatAdsEstimationService.GetEstimationAsync),
+            typeof(PostAttribute), "/v3.0/estimation/get"),
+    };
+
+    /// <summary>
+    /// 定向标签域官方路由表（1 端点，2026-10-17 逐页核验；权限 <c>ads_management</c>）。
+    /// </summary>
+    private static readonly (Type Interface, string Method, Type HttpAttribute, string Route)[] TargetingTagsRoutes =
+    {
+        (typeof(IWechatAdsTargetingTagService), nameof(IWechatAdsTargetingTagService.GetAsync),
+            typeof(GetAttribute), "/v3.0/targeting_tags/get"),
+    };
+
+    /// <summary>官方 <c>fund_transfer/add</c> 页 <c>fund_type</c> 的 9 支可选值（逐字核验，写在请求 DTO 文档上）。</summary>
+    private static readonly string[] TransferFundTypes =
+    {
+        "FUND_TYPE_CASH", "FUND_TYPE_GIFT", "FUND_TYPE_SHARED", "FUND_TYPE_BANK",
+        "FUND_TYPE_CREDIT_ROLL", "FUND_TYPE_CREDIT_TEMPORARY", "FUND_TYPE_COMPENSATE_VIRTUAL",
+        "FUND_TYPE_INTERNAL_QUOTA", "FUND_TYPE_TEST_VIRTUAL",
+    };
+
+    /// <summary>
+    /// 官方 <c>fund_statements_detailed/get</c> 页 <c>fund_type</c> 的 36 支可选值（逐字核验，
+    /// 写在接口参数文档上）：<b>转账页 9 支的全部 + 27 支本页独有</b>（赠金细分 / 负债 / 游戏与短剧专项等）。
+    /// </summary>
+    private static readonly string[] StatementFundTypes =
+    {
+        "FUND_TYPE_CASH", "FUND_TYPE_GIFT", "FUND_TYPE_SHARED", "FUND_TYPE_BANK",
+        "FUND_TYPE_CREDIT_ROLL", "FUND_TYPE_CREDIT_TEMPORARY", "FUND_TYPE_COMPENSATE_VIRTUAL",
+        "FUND_TYPE_INTERNAL_QUOTA", "FUND_TYPE_TEST_VIRTUAL", "FUND_TYPE_TCC_GIFT",
+        "FUND_TYPE_UNSUPPORTED", "FUND_TYPE_CONTRACT_CREDIT", "FUND_TYPE_SPECIAL_GIFT",
+        "FUND_TYPE_MP_GAME_DEVELOPER_WORKING_FUND", "FUND_TYPE_MP_GAME_DEVELOPER_GIFT",
+        "FUND_TYPE_FLOW_SOURCE_AD_FUND", "FUND_TYPE_ANDROID_ORIENTED_GIFT",
+        "FUND_TYPE_LOCATION_PROMOTION_REWARDS", "FUND_TYPE_GIFT_RESTRICT", "FUND_TYPE_DEBT_FIXED",
+        "FUND_TYPE_DEBT_TEMP", "FUND_TYPE_SHORT_PLAY_GIFT",
+        "FUND_TYPE_GAME_CHARGE_INDIRECT_REWARDS_GIFT", "FUND_TYPE_GAME_CHARGE_DIRECT_REWARDS_GIFT",
+        "FUND_TYPE_SHORT_PLAY_PUBLISHER_GIFT", "FUND_TYPE_MP_GAME_SPECIAL_REWARDS_GIFT",
+        "FUND_TYPE_MINIGAME_CREDIT", "FUND_TYPE_MP_GAME_PC_TARGET_GIFT",
+        "FUND_TYPE_INNER_RESOURCE_EXCHANGE", "FUND_TYPE_MP_NEW_GAME_SUBSIDY",
+        "FUND_TYPE_INTEGRATED_MARKETING", "FUND_TYPE_CASH_COST", "FUND_TYPE_IAA_SHARED_INCOME_COST",
+        "FUND_TYPE_IAP_SHARED_INCOME_COST", "FUND_TYPE_UTILITY_PUBLISHER_GIFT",
+        "FUND_TYPE_MUTUAL_SELECTION_CREDIT_ROLL",
     };
 
     /// <summary>
@@ -1699,8 +2015,15 @@ public class AdsContractGuards
         "REPORT_LEVEL_LANDING_PAGE", "REPORT_LEVEL_AD_UNION", "REPORT_LEVEL_OS",
     };
 
-    /// <summary>v3.0 已移除、本 SDK 刻意不建模的资源族名（按路径段判别，见 AdsRoutes_... 守卫 remarks）。</summary>
-    private static readonly HashSet<string> RemovedV3Resources = new(StringComparer.Ordinal) { "campaign", "campaigns", "ads" };
+    /// <summary>
+    /// v3.0 已移除、本 SDK 刻意不建模的资源族名（按路径段判别，见 AdsRoutes_... 守卫 remarks）。
+    /// 2026-10-17 逐页核验（官方 v3.0 文档目录树 + 404 探测）：
+    /// <c>adcreatives</c>（老版创意，v3.0 由 dynamic_creatives 承载）、<c>sp_entrustment</c>（老版服务商授权，v3.0 无此族）、
+    /// <c>credit_bills</c>（v3.0 无此族）与 <c>async_task_files</c>（真实族名为 async_report_files，见留档 §7.4）
+    /// 均不在 v3.0 目录树内 —— SKIT 差集里的这四处为旧 API 面，对齐即对接已下线接口。
+    /// </summary>
+    private static readonly HashSet<string> RemovedV3Resources =
+        new(StringComparer.Ordinal) { "campaign", "campaigns", "ads", "adcreatives", "sp_entrustment", "credit_bills", "async_task_files" };
 
     /// <summary>
     /// 守卫各域路由表的<b>汇总面</b>：新增资源域必须同批并入（不并入即被
@@ -1710,7 +2033,9 @@ public class AdsContractGuards
         => AdvertiserRoutes.Concat(AdgroupsRoutes).Concat(ReportsRoutes)
             .Concat(DynamicCreativesRoutes).Concat(ComponentsRoutes)
             .Concat(ImagesRoutes).Concat(VideosRoutes).Concat(AsyncTasksRoutes)
-            .Concat(SpEntrustmentRoutes).ToArray();
+            .Concat(CustomAudiencesRoutes).Concat(FundsRoutes)
+            .Concat(QualificationsRoutes).Concat(EstimationRoutes)
+            .Concat(TargetingTagsRoutes).ToArray();
 
     /// <summary>路由契约的规范化键（接口 × 方法 × 动词 × 路由），供反射面与守卫表逐条对照。</summary>
     private static string Key(string iface, string method, string verb, string route)
@@ -1761,6 +2086,14 @@ public class AdsContractGuards
 
     /// <summary>官方字段名的合法形状：小写字母开头，仅小写字母 / 数字 / 下划线。</summary>
     private static readonly Regex OfficialNamePattern = new("^[a-z][a-z0-9_]*$", RegexOptions.Compiled);
+
+    /// <summary>
+    /// 官方页逐字核验<b>确实</b>是 camelCase 的例外字段名全集（本线其余官方名皆 snake_case）。
+    /// 2026-10-17 逐页核验：<c>fund_transfer/add</c> 页 <c>check_result.errors[]</c> 的错误描述键官方写为
+    /// <c>messageCn</c> —— 与外层信封 <c>message_cn</c>（snake_case）<b>不同构</b>，属官方自身的不一致，
+    /// 「改规范」成 snake_case 会被官方静默忽略。新增例外名必须附页面与核验日期。
+    /// </summary>
+    private static readonly string[] OfficialCamelCaseFieldNames = { "messageCn" };
 
     private static Type TypeOf(List<(string? Name, Type Type)> declared, string name)
         => declared.Single(p => p.Name == name).Type;
@@ -1957,6 +2290,12 @@ public class AdsContractGuards
     /// 守卫 ADS-B2）。按工程 + 文件名定位，目录再迁移时守卫不随之漂移。
     /// </summary>
     private static string AdsReportInterfaceFile => SourceSourceFile("Mud.Wechat.Ads", "IWechatAdsReportService.cs");
+
+    /// <summary>资金域接口源文件（流水页 36 支 <c>fund_type</c> 集合只存在于参数文档 ⇒ 文本抽取入口，守卫 ADS-B2）。</summary>
+    private static string AdsFundsInterfaceFile => SourceSourceFile("Mud.Wechat.Ads", "IWechatAdsFundsService.cs");
+
+    /// <summary>转账请求体 DTO 源文件（转账页 9 支 <c>fund_type</c> 集合的载体）。</summary>
+    private static string AdsFundTransferDtoFile => SourceSourceFile("Mud.Wechat.Ads.DataModels", "AdsFundTransfer.cs");
 
     /// <summary><c>async_reports/add</c> 请求体 DTO 的源文件（本页 account_id 的代理商口径写在请求体字段上）。</summary>
     private static string AdsAsyncReportAddFile => SourceSourceFile("Mud.Wechat.Ads.DataModels", "AdsAsyncReportAdd.cs");

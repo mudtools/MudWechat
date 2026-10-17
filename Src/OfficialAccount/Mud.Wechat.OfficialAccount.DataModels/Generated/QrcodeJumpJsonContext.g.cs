@@ -11,12 +11,12 @@ namespace Mud.Wechat.OfficialAccount.DataModels.QrcodeJump;
     PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower,
     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     WriteIndented = false)]
+[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.QrcodeJump.MpQrcodeJumpAddRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.QrcodeJump.MpQrcodeJumpDeleteRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.QrcodeJump.MpQrcodeJumpGetRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.QrcodeJump.MpQrcodeJumpGetResponse))]
-[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.QrcodeJump.MpQrcodeJumpRule))]
-[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.QrcodeJump.MpQrcodeJumpAddRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.QrcodeJump.MpQrcodeJumpPublishRequest))]
-[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.QrcodeJump.MpQrcodeJumpDeleteRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.QrcodeJump.MpQrcodeJumpRule))]
 internal partial class QrcodeJumpJsonContext : JsonSerializerContext
 {
 }

@@ -10,8 +10,8 @@ using Mud.Wechat.Channels.DataModels.Resource;
 namespace Mud.Wechat.Channels;
 
 /// <summary>
-/// 微信小店 / 视频号（channels 生态）「资源管理」域 SDK（7 端点：图片上传（URL / 二进制双传输形态） +
-/// media_id 取数 + 资质图片上传 + 视频分块上传四步流程）。
+/// 微信小店 / 视频号（channels 生态）「资源管理」域 SDK（8 端点：图片上传（URL / 二进制双传输形态） +
+/// 图片上传 V2（同双传输形态） + media_id 取数 + 资质图片上传 + 视频分块上传四步流程）。
 /// </summary>
 /// <remarks>
 /// <para>
@@ -22,6 +22,13 @@ namespace Mud.Wechat.Channels;
 /// <see cref="IChannelsResourceService.UploadImageByBinaryAsync"/>（multipart 通道）两个方法承载
 /// （对齐 Work 线 message/send「同路由多方法」与公众号线素材域 <c>[MultipartForm]</c> 先例），
 /// 共用同一响应 DTO（裁决理由见守卫 <c>ChannelsResourceContractGuards</c> CR5）。
+/// </para>
+/// <para>
+/// <b>图片上传 V2（<c>img_uploadv2</c>，官方 2026-10-10 新增）与 V1 的契约差异</b>：V2 以 URL 参数
+/// <c>scene_type</c>（场景类型，必填）替代 V1 的 <c>resp_type</c>；响应只有 <c>img_info.img_url</c>
+/// 一种形态（不返回 <c>media_id</c>/<c>pay_media_id</c>）；二进制流模式 V2 <b>不要求</b> V1 的
+/// <c>height</c>/<c>width</c> URL 参数。图片大小与格式限制随 <c>scene_type</c> 变化（170 售后相关
+/// ≤ 10MB，支持 JPEG/PNG/BMP/GIF、不支持 WEBP/SVG）。SDK 同样以「同路由双方法」承载两种传输形态。
 /// </para>
 /// <para>
 /// <b>media_id 与图片链接双返回形态（官方 <c>resp_type</c>）</b>：<c>resp_type=0</c> 返回
@@ -106,6 +113,73 @@ public interface IChannelsResourceService
         [Query("resp_type")] int respType,
         [Query("height")] int height,
         [Query("width")] int width,
+        [MultipartForm] IFormContent formData,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 上传图片 V2——图片 URL 模式（<c>img_uploadv2</c>，<c>upload_type=1</c>，POST JSON 包 <c>img_url</c>）。
+    /// </summary>
+    /// <param name="sceneType">场景类型（官方 <c>scene_type</c>，URL 参数，必填），取值见 <see cref="ChannelsResourceImgUploadV2SceneTypes"/>；不同场景的图片大小与格式限制不同。</param>
+    /// <param name="uploadType">上传类型（官方 <c>upload_type</c>，URL 参数，必填）：本方法为图片 URL 模式，传 <see cref="ChannelsResourceImgUploadTypes.Url"/>（1）。</param>
+    /// <param name="request">上传请求（<c>img_url</c> 图片 URL，官方 <c>upload_type=1</c> 时必填；不支持 301/302 跳转）。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
+    /// <returns>图片信息（<c>img_info.img_url</c> 图片链接，支持图片处理参数拼接）。</returns>
+    /// <remarks>
+    /// <para>官方文档：<see href="https://developers.weixin.qq.com/doc/store/shop/API/apimgnt/resource/api_img_uploadv2"/></para>
+    /// <para>
+    /// 官方业务限制：①接口频率限制 <b>5000/min</b>；②<b>本接口上传的图片不适用于所有场景</b>——仅当其他接口
+    /// 明确要求使用本接口上传图片时方可使用（官方原文）；③接口返回的图片链接支持图片处理
+    /// （缩放 / 裁剪 / 压缩 / 水印等），「图片处理」文档内的 <c>download_url</c> 即为该链接；
+    /// ④大小与格式限制按 <c>scene_type</c>：170（售后相关）≤ 10MB，支持 JPEG/PNG/BMP/GIF、不支持 WEBP/SVG
+    /// （官方 2026-10-12 变更日志：170 的 size 限制由 5MB 调整为 10MB）。
+    /// </para>
+    /// <para>与 V1（<see cref="IChannelsResourceService.UploadImageAsync"/>）的差异：V2 无 <c>resp_type</c>
+    /// （响应只有图片链接、不返回 <c>media_id</c>），须显式传 <c>scene_type</c>。</para>
+    /// <para>官方错误码：<c>10020055</c>（参数有误）/ <c>10020056</c>（图片格式不合法）/ <c>10020057</c>（获取原图超过 2s 超时）/
+    /// <c>10020058</c>（上传图片失败，请重试）/ <c>10020060</c>（文件大小超出限制）/ <c>10020193</c>（不支持拉取原图 301/302 跳转）/
+    /// <c>10020253</c>（原图 url 打开返回 404）/ <c>10020254</c>（原图 url 带了 <c>//</c>，无法支持该格式 url）/
+    /// <c>10020331</c>（获取原图时返回的 header 没有 Content-Length）等。</para>
+    /// <para>官方适用范围：微信小店 ✔、小店供货商 ✔；其他账号类型不可调用。本接口不支持云调用；
+    /// 第三方平台代调用所属权限集 id 为 <c>129</c>、<c>131</c>、<c>192</c>。</para>
+    /// <para>MUD005：令牌强制走 Query 参数 <c>access_token</c>（官方契约，无法改用 Header）。</para>
+    /// </remarks>
+    [Post("/shop/ec/basics/img/uploadv2")]
+    Task<ChannelsResourceImgUploadV2Response> UploadImageV2Async(
+        [Query("scene_type")] int sceneType,
+        [Query("upload_type")] int uploadType,
+        [Body] ChannelsResourceImgUploadV2Request request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 上传图片 V2——二进制流模式（<c>img_uploadv2</c>，<c>upload_type=0</c>，multipart/form-data 文件字段 <c>media</c>）。
+    /// </summary>
+    /// <param name="sceneType">场景类型（官方 <c>scene_type</c>，URL 参数，必填），取值见 <see cref="ChannelsResourceImgUploadV2SceneTypes"/>。</param>
+    /// <param name="uploadType">上传类型（官方 <c>upload_type</c>，URL 参数，必填）：本方法为二进制流模式，传 <see cref="ChannelsResourceImgUploadTypes.BinaryStream"/>（0）。</param>
+    /// <param name="formData">multipart 表单内容（官方表单字段名必须为 <c>media</c>，图片文件 buffer；
+    /// 由调用方构建 <see cref="IFormContent"/> 实现并标 <c>[MultipartForm]</c>；大小限制按 <c>scene_type</c>：170 为 10MB）。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
+    /// <returns>图片信息（<c>img_info.img_url</c> 图片链接，支持图片处理参数拼接）。</returns>
+    /// <remarks>
+    /// <para>官方文档：<see href="https://developers.weixin.qq.com/doc/store/shop/API/apimgnt/resource/api_img_uploadv2"/></para>
+    /// <para>
+    /// 官方业务限制：①接口频率限制 <b>5000/min</b>；②<b>本接口上传的图片不适用于所有场景</b>——仅当其他接口
+    /// 明确要求使用本接口上传图片时方可使用（官方原文）；③须带 HTTP 头 <c>Content-Type: multipart/form-data</c>。
+    /// </para>
+    /// <para>
+    /// <b>与 V1 二进制模式的差异（照录官方，勿「对齐」补参）</b>：V1 <c>img_upload</c> 在 <c>upload_type=0</c>
+    /// 时要求 URL 参数 <c>height</c>/<c>width</c>，而 V2 参数表<b>无</b>该两项——本方法签名因此不声明高度与宽度。
+    /// 官方示例把 <c>scene_type</c> 写成 <c>0</c>，与枚举表（仅 170）及参数表「必填」矛盾，属示例笔误，
+    /// SDK 按参数表与枚举表建模（裁决见守卫 CR5）。
+    /// </para>
+    /// <para>官方错误码：<c>10020056</c>（图片格式不合法）/ <c>10020058</c>（上传图片失败，请重试）/ <c>10020059</c>（图片为空）/ <c>10020060</c>（文件大小超出限制）。</para>
+    /// <para>官方适用范围：微信小店 ✔、小店供货商 ✔；其他账号类型不可调用。本接口不支持云调用；
+    /// 第三方平台代调用所属权限集 id 为 <c>129</c>、<c>131</c>、<c>192</c>。</para>
+    /// <para>MUD005：令牌强制走 Query 参数 <c>access_token</c>（官方契约，无法改用 Header）。</para>
+    /// </remarks>
+    [Post("/shop/ec/basics/img/uploadv2")]
+    Task<ChannelsResourceImgUploadV2Response> UploadImageV2ByBinaryAsync(
+        [Query("scene_type")] int sceneType,
+        [Query("upload_type")] int uploadType,
         [MultipartForm] IFormContent formData,
         CancellationToken cancellationToken = default);
 

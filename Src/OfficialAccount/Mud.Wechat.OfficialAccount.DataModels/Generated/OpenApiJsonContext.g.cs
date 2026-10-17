@@ -11,12 +11,12 @@ namespace Mud.Wechat.OfficialAccount.DataModels.OpenApi;
     PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower,
     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     WriteIndented = false)]
-[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.OpenApi.MpClearQuotaRequest))]
-[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.OpenApi.MpClearQuotaV2Request))]
-[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.OpenApi.MpCgiPathRequest))]
-[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.OpenApi.MpGetApiQuotaResponse))]
 [JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.OpenApi.MpApiQuota))]
 [JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.OpenApi.MpApiRateLimit))]
+[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.OpenApi.MpCgiPathRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.OpenApi.MpClearQuotaRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.OpenApi.MpClearQuotaV2Request))]
+[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.OpenApi.MpGetApiQuotaResponse))]
 [JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.OpenApi.MpGetRidInfoRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.OpenApi.MpGetRidInfoResponse))]
 [JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.OpenApi.MpRidRequestInfo))]

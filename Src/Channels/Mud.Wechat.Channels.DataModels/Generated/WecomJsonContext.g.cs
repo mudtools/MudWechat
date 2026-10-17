@@ -11,9 +11,9 @@ namespace Mud.Wechat.Channels.DataModels.Wecom;
     PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower,
     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     WriteIndented = false)]
+[JsonSerializable(typeof(global::Mud.Wechat.Channels.DataModels.Wecom.ChannelsWecomId))]
 [JsonSerializable(typeof(global::Mud.Wechat.Channels.DataModels.Wecom.ChannelsWecomIdRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.Channels.DataModels.Wecom.ChannelsWecomIdResponse))]
-[JsonSerializable(typeof(global::Mud.Wechat.Channels.DataModels.Wecom.ChannelsWecomId))]
 internal partial class WecomJsonContext : JsonSerializerContext
 {
 }

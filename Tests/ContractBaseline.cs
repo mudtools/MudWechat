@@ -75,17 +75,18 @@ public static class Baseline
         /// 锁定于 `MpRouteCountGuard`（RC1）。
         /// 现行推导：B2a 前 188 + B2a 小域 15（媒体 2 + 短链 1 + 车牌 OCR 1（双形态各 2 方法）
         /// + 卡券统计 4 + 门店 POI 3 + 语义 1 + 电子发票开具 3）+ B2b 非税 16（JSON 面；
-        /// downloadbill 走下载通道）+ B2c 卡券全族 39（53 - B2c 前存量 14）= 258。
+        /// downloadbill 走下载通道）+ B2c 卡券全族 39（53 - B2c 前存量 14）+ 流量主广告分析 1
+        /// （publisher_adpos_general / cps_general / settlement 三方法共享 GET /publisher/stat 一路由，按去重口径计 1）= 259。
         /// superresolution 官方已下架（既有守卫裁决）、客服管理员与微信客服绑定 5 条归小程序线
         /// （跨线零交叠 MP-X1），均不计。
         /// </remarks>
-        public const int MainInterfaceRoutes = 258;
+        public const int MainInterfaceRoutes = 259;
 
         /// <summary>
         /// 全量去重路由数（主接口 + 认证/票据基座 + 非 JSON 下载通道）。
         /// </summary>
-        /// <remarks>锁定于 `MpRouteCountGuard`（RC2）。现行推导：258 + AbstractsAuth 3 + 下载通道 4（素材 3 + 非税账单 1）= 265。</remarks>
-        public const int TotalRoutes = 265;
+        /// <remarks>锁定于 `MpRouteCountGuard`（RC2）。现行推导：259 + AbstractsAuth 3 + 下载通道 4（素材 3 + 非税账单 1）= 266。</remarks>
+        public const int TotalRoutes = 266;
 
         /// <summary>
         /// 官方面唯一路由数（索引页表格取值并集口径）。
@@ -302,8 +303,14 @@ public static class Baseline
         /// OpenAccount / Account / Sns / Category（类目管理）—— Component 域双接口形态（对齐公众号 OpenApi 域 I4 裁决）；
         /// 另有 ComponentTcb（批量代云开发）<b>六支</b>接口共用注册组 <c>ComponentTcb</c>
         /// （Env 7 + Database 9 + File 4 + Scf 7 + CloudRun 19 + StaticStore 4），逐接口表由 CBT 系列守卫持有。
+        /// Embedded（半屏小程序）单接口 6 端点为 2026-10-17 依官方 embedded-management 6 页取证落地，
+        /// 令牌面 <c>authorizer_access_token</c>，注册组 <c>Embedded</c>，逐接口表由 EMB 系列守卫持有
+        /// （该域按留档 MP-D-BUCKET-RULING-01 归开放平台线，小程序线由守卫 NC2 锁定零声明）。
+        /// Auth（微信认证）单接口 5 端点为 2026-10-17 依官方 weapp-wxverify 5 页取证落地，
+        /// 令牌面 <c>authorizer_access_token</c>，注册组 <c>Auth</c>，逐接口表由 AUTH 系列守卫持有
+        /// （同按 MP-D-BUCKET-RULING-01 归开放平台线，小程序线 NC2 锁定零声明）。
         /// </remarks>
-        public const int HttpApiInterfaces = 12;
+        public const int HttpApiInterfaces = 14;
 
         /// <summary>
         /// 端点总数（各接口方法之和）。
@@ -313,9 +320,11 @@ public static class Baseline
         /// fastregisterweapp 双方法 + 管理员换绑 account/componentrebindadmin 1 + 域名 2 + 确认文件 1 +
         /// 隐私 3 + 授权方信息/列表/选项/设选项 4）
         /// + ComponentTicketFree 1（start_push_ticket）+ OpenAccount 6 + Account 4 + Sns 2 + Category 12 = 39
-        /// + ComponentTcb 50（/componenttcb/* 全域，恒 POST，2026-10-15 逐页核验零路由错配）= 89。
+        /// + ComponentTcb 50（/componenttcb/* 全域，恒 POST，2026-10-15 逐页核验零路由错配）
+        /// + Embedded 6（/wxaapi/wxaembedded/* 半屏小程序，4 POST + 2 GET，2026-10-17 逐页取证）
+        /// + Auth 5（/wxa/sec/* 微信认证：身份树 1 GET + 提审/重审/进度查询 3 POST + 补充材料 multipart 1 POST，2026-10-17 逐页取证）= 100。
         /// 令牌链 4 端点（api_component_token 等）由 Provider raw HTTP 承载，**不计**（T2 裁定）。
         /// </remarks>
-        public const int Endpoints = 89;
+        public const int Endpoints = 100;
     }
 }

@@ -11,21 +11,21 @@ namespace Mud.Wechat.OfficialAccount.DataModels.Media;
     PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase,
     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     WriteIndented = false)]
-[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.Media.MpGetMaterialCountResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.Media.MpAddMaterialResponse))]
 [JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.Media.MpBatchGetMaterialRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.Media.MpBatchGetMaterialResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.Media.MpGetMaterialCountResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.Media.MpMaterialDescription))]
 [JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.Media.MpMaterialListItem))]
 [JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.Media.MpMaterialNewsContent))]
-[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.Media.MpMediaIdRequest))]
-[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.Media.MpUploadImageResponse))]
-[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.Media.MpAddMaterialResponse))]
-[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.Media.MpMaterialDescription))]
-[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.Media.MpPermanentMaterialResponse))]
 [JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.Media.MpMaterialNewsItem))]
+[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.Media.MpMediaIdRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.Media.MpPermanentMaterialResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.Media.MpUploadImageResponse))]
 [JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.Media.MpUploadNewsArticle))]
 [JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.Media.MpUploadNewsRequest))]
-[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.Media.MpUploadVideoRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.Media.MpUploadTempMediaResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.OfficialAccount.DataModels.Media.MpUploadVideoRequest))]
 internal partial class MediaJsonContext : JsonSerializerContext
 {
 }

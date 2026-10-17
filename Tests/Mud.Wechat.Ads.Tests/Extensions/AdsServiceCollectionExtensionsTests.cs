@@ -60,7 +60,8 @@ public class AdsServiceCollectionExtensionsTests
                 {
                     AdsModule.Advertiser, AdsModule.Adgroups, AdsModule.Reports,
                     AdsModule.DynamicCreatives, AdsModule.Components, AdsModule.Images,
-                    AdsModule.Videos, AdsModule.AsyncTasks, AdsModule.SpEntrustment,
+                    AdsModule.Videos, AdsModule.AsyncTasks, AdsModule.CustomAudiences,
+                    AdsModule.Funds, AdsModule.Qualifications, AdsModule.Estimation, AdsModule.TargetingTags,
                 },
                 "新增 AdsModule 成员必须同批在本用例补该域接口的可解析断言");
 
@@ -72,10 +73,16 @@ public class AdsServiceCollectionExtensionsTests
         provider.GetRequiredService<IWechatAdsImageService>().Should().NotBeNull();
         provider.GetRequiredService<IWechatAdsVideoService>().Should().NotBeNull();
         provider.GetRequiredService<IWechatAdsAsyncTaskService>().Should().NotBeNull();
-        provider.GetRequiredService<IWechatAdsSpEntrustmentService>().Should().NotBeNull();
+        provider.GetRequiredService<IWechatAdsCustomAudienceService>().Should().NotBeNull();
         // 素材两域的 multipart 上传通道随模块装配（实现随 Images/Videos 的 Add{域}Api 挂载）。
         provider.GetRequiredService<IWechatAdsImageUploadService>().Should().NotBeNull();
         provider.GetRequiredService<IWechatAdsVideoUploadService>().Should().NotBeNull();
+        // 人群数据文件上传通道随 CustomAudiences 模块装配（multipart 手写通道，同形态）。
+        provider.GetRequiredService<IWechatAdsCustomAudienceFileUploadService>().Should().NotBeNull();
+        provider.GetRequiredService<IWechatAdsFundsService>().Should().NotBeNull();
+        provider.GetRequiredService<IWechatAdsQualificationService>().Should().NotBeNull();
+        provider.GetRequiredService<IWechatAdsEstimationService>().Should().NotBeNull();
+        provider.GetRequiredService<IWechatAdsTargetingTagService>().Should().NotBeNull();
     }
 
     /// <summary>

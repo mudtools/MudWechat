@@ -11,13 +11,13 @@ namespace Mud.Wechat.Channels.DataModels.Kf;
     PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower,
     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     WriteIndented = false)]
-[JsonSerializable(typeof(global::Mud.Wechat.Channels.DataModels.Kf.ChannelsKfSendMsgRequest))]
-[JsonSerializable(typeof(global::Mud.Wechat.Channels.DataModels.Kf.ChannelsKfTextContent))]
-[JsonSerializable(typeof(global::Mud.Wechat.Channels.DataModels.Kf.ChannelsKfMediaContent))]
-[JsonSerializable(typeof(global::Mud.Wechat.Channels.DataModels.Kf.ChannelsKfProductShareContent))]
-[JsonSerializable(typeof(global::Mud.Wechat.Channels.DataModels.Kf.ChannelsKfOrderShareContent))]
-[JsonSerializable(typeof(global::Mud.Wechat.Channels.DataModels.Kf.ChannelsKfSendMsgResponse))]
 [JsonSerializable(typeof(global::Mud.Wechat.Channels.DataModels.Kf.ChannelsKfCosUploadResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.Channels.DataModels.Kf.ChannelsKfMediaContent))]
+[JsonSerializable(typeof(global::Mud.Wechat.Channels.DataModels.Kf.ChannelsKfOrderShareContent))]
+[JsonSerializable(typeof(global::Mud.Wechat.Channels.DataModels.Kf.ChannelsKfProductShareContent))]
+[JsonSerializable(typeof(global::Mud.Wechat.Channels.DataModels.Kf.ChannelsKfSendMsgRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.Channels.DataModels.Kf.ChannelsKfSendMsgResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.Channels.DataModels.Kf.ChannelsKfTextContent))]
 internal partial class KfJsonContext : JsonSerializerContext
 {
 }

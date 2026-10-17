@@ -57,7 +57,7 @@ public class WechatToolRegistryTests
                 Department = new DepartmentInfo { Id = 2, Name = "研发部", ParentId = 1 },
             });
 
-        using var provider = BuildProvider(departments.Object);
+        using var provider = BuildProvider(departments.Object, new Mock<IWechatWorkUsersService>(MockBehavior.Loose).Object);
         var registry = provider.GetRequiredService<WechatToolRegistry>();
 
         registry.ToolNames.Should().Equal(WechatToolNames.All);
@@ -83,9 +83,18 @@ public class WechatToolRegistryTests
             "业务域未注册 ⇒ 该域工具软缺席（不得让装配期空引用炸掉整个宿主）");
     }
 
-    private static ServiceProvider BuildProvider(IWechatWorkDepartmentsService departments)
-        => new ServiceCollection()
-            .AddSingleton(departments)
+    private static ServiceProvider BuildProvider(
+        IWechatWorkDepartmentsService departments,
+        IWechatWorkUsersService? users = null)
+    {
+        var services = new ServiceCollection().AddSingleton(departments);
+        if (users is not null)
+        {
+            services.AddSingleton(users);
+        }
+
+        return services
             .AddWechatWorkTools(new WechatToolBinding("corp-app", "corp-1", permanentCode: null))
             .BuildServiceProvider();
+    }
 }

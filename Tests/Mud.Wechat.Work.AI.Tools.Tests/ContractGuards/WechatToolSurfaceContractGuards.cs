@@ -1,4 +1,4 @@
-using FluentAssertions;
+﻿using FluentAssertions;
 using Mud.Wechat.Work.AI.AgentTools;
 using Mud.Wechat.Work.AI.Tools;
 using Mud.Wechat.Work.AI.Tools.Generated;
@@ -24,7 +24,10 @@ public class WechatToolSurfaceContractGuards
         WechatToolNames.All.Should().Equal(
             "contacts.department.child_ids",
             "contacts.department.get",
-            "contacts.department.list");
+            "contacts.department.list",
+            "contacts.user.get",
+            "contacts.user.list",
+            "contacts.user.simple_list");
 
         WechatToolNames.ReadonlyAll.Should().Equal(WechatToolNames.All, "当前策展面只有只读工具");
         WechatToolNames.WriteAll.Should().BeEmpty("写工具须在 S3 显式开放（白名单默认封闭）");
@@ -47,6 +50,9 @@ public class WechatToolSurfaceContractGuards
     [InlineData("contacts.department.child_ids", "IWechatWorkDepartmentsService.GetChildDepartmentIdListAsync", "/cgi-bin/department/simplelist")]
     [InlineData("contacts.department.get", "IWechatWorkDepartmentsService.GetDepartmentAsync", "/cgi-bin/department/get")]
     [InlineData("contacts.department.list", "IWechatWorkDepartmentsService.GetDepartmentListAsync", "/cgi-bin/department/list")]
+    [InlineData("contacts.user.get", "IWechatWorkUsersService.GetUserAsync", "/cgi-bin/user/get")]
+    [InlineData("contacts.user.list", "IWechatWorkUsersService.GetUserDetailListAsync", "/cgi-bin/user/list")]
+    [InlineData("contacts.user.simple_list", "IWechatWorkUsersService.GetUserSimpleListAsync", "/cgi-bin/user/simplelist")]
     public void Contracts_ShouldDeriveFromSdkFacts(string toolName, string source, string route)
     {
         var contract = WechatToolContracts.ByToolName[toolName];
@@ -58,7 +64,7 @@ public class WechatToolSurfaceContractGuards
         contract.Risk.Should().Be(WechatToolRisk.Read);
         contract.IsWrite.Should().BeFalse();
         contract.Identity.Should().Be("tenant", "企微工具统一走企业级 access_token（身份轴由剖面标记表推导）");
-        contract.RequiredScopes.Should().Contain("contacts.department.read");
+        contract.RequiredScopes.Should().Contain(toolName.StartsWith("contacts.user", StringComparison.Ordinal) ? "contacts.user.read" : "contacts.department.read");
         contract.Description.Should().NotBeNullOrWhiteSpace();
     }
 

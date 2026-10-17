@@ -23,7 +23,15 @@
 | `ToolArgs`（internal） | 生成物 Args 解包器消费的 helper 集（六个参数形态各一对 Require/Optional） |
 | `Extensions.AddWechatWorkTools(binding[, configurePolicy])` | 装配入口：绑定 + 逐执行器工厂 + 注册表 + 策略 + 执行链 + `IReadOnlyList<AIFunction>` 投影（软缺席：业务域未注册 ⇒ 该域工具不入表） |
 
-当前策展面：`contacts.department.get` / `contacts.department.list` / `contacts.department.child_ids`（全部只读）。
+当前策展面（6 个，全部只读）：
+
+| 域 | 工具 | SDK 源 |
+|---|---|---|
+| 部门 | `contacts.department.get` / `.list` / `.child_ids` | `IWechatWorkDepartmentsService` |
+| 成员 | `contacts.user.get` / `.list` / `.simple_list` | `IWechatWorkUsersService` |
+
+成员域执行器只投影 `userid/姓名/别名/职务/部门/主部门/状态/直属上级`，**不外发**手机号、邮箱、头像、地址、二维码
+（个人信息一旦进入提示词与日志即不可撤回；需要时由宿主经 oauth2 授权专线提供）。
 契约由 `Tests/Mud.Wechat.Work.AI.Tools.Tests/ContractGuards/WechatToolSurfaceContractGuards.cs` 冻结。
 
 ## 生成物（`obj/…/generated`，勿手改）
@@ -47,6 +55,10 @@
    `JsonObject`/`JsonValue` 时显式转 `(JsonNode)`，走集合重载——否则 AOT strict 步骤直接失败。
 5. **`Mud.AI.Generator` 与 `Mud.HttpUtils.Generator` 同一编译单元禁兼引**；本工程只挂前者
    （主包的组件生成器 `PrivateAssets="all"`，不随 `ProjectReference` 传播）。
+6. **`MUDWT009`（输出 Schema 截断）在成员域会出现**：`UserInfo` 含 `ExtAttr` / `ExternalProfile` 等深引用，
+   引擎在深度上限处截断（`contacts.user.get` ×6 / `.list` ×4）。这是**告警不是错误**：执行器已把出站形状投影成
+   扁平 `userid/name/…`，模型按描述读文本即可；若日后要求「输出契约完整」，应让执行器换用扁平的专用响应类型，
+   而不是调高深度上限（会放大提示词并重新引入环）。
 
 ## 门禁
 

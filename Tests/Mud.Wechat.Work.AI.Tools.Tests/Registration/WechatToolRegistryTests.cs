@@ -1,4 +1,4 @@
-using FluentAssertions;
+﻿using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using Mud.AI.Agent.Tools;
@@ -57,10 +57,15 @@ public class WechatToolRegistryTests
                 Department = new DepartmentInfo { Id = 2, Name = "研发部", ParentId = 1 },
             });
 
-        using var provider = BuildProvider(departments.Object);
+        using var provider = BuildProvider(
+            departments.Object,
+            new Mock<IWechatWorkUsersService>(MockBehavior.Loose).Object,
+            new Mock<IWechatWorkTagsService>(MockBehavior.Loose).Object,
+            new Mock<IWechatWorkWedocService>(MockBehavior.Loose).Object,
+            new Mock<IWechatWorkApprovalService>(MockBehavior.Loose).Object);
         var registry = provider.GetRequiredService<WechatToolRegistry>();
 
-        registry.ToolNames.Should().Equal(WechatToolNames.All);
+        registry.ToolNames.Should().BeEquivalentTo(WechatToolNames.All);
         registry.TryGet(WechatToolNames.ContactsDepartmentGet, out var execution).Should().BeTrue();
 
         var result = await execution.ExecuteAsync(
@@ -83,9 +88,36 @@ public class WechatToolRegistryTests
             "业务域未注册 ⇒ 该域工具软缺席（不得让装配期空引用炸掉整个宿主）");
     }
 
-    private static ServiceProvider BuildProvider(IWechatWorkDepartmentsService departments)
-        => new ServiceCollection()
-            .AddSingleton(departments)
+    private static ServiceProvider BuildProvider(
+        IWechatWorkDepartmentsService departments,
+        IWechatWorkUsersService? users = null,
+        IWechatWorkTagsService? tags = null,
+        IWechatWorkWedocService? wedoc = null,
+        IWechatWorkApprovalService? approval = null)
+    {
+        var services = new ServiceCollection().AddSingleton(departments);
+        if (users is not null)
+        {
+            services.AddSingleton(users);
+        }
+
+        if (tags is not null)
+        {
+            services.AddSingleton(tags);
+        }
+
+        if (wedoc is not null)
+        {
+            services.AddSingleton(wedoc);
+        }
+
+        if (approval is not null)
+        {
+            services.AddSingleton(approval);
+        }
+
+        return services
             .AddWechatWorkTools(new WechatToolBinding("corp-app", "corp-1", permanentCode: null))
             .BuildServiceProvider();
+    }
 }

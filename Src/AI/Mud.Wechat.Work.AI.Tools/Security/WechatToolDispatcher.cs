@@ -7,6 +7,7 @@
 
 using Microsoft.Extensions.Logging;
 using Mud.AI.Agent.Tools;
+using Mud.Wechat.Work.AI.AgentTools;
 using Mud.AI.Agent.Tools.Args;
 using Mud.Wechat.Work.AI.Tools.Generated;
 using Mud.Wechat.Work.AI.Tools.Registration;
@@ -40,23 +41,27 @@ public sealed class WechatToolDispatcher
 
     private readonly WechatToolRegistry _registry;
     private readonly IWechatToolAuthorizer? _authorizer;
+    private readonly IWechatToolApprovalGate? _approvalGate;
     private readonly ILogger<WechatToolDispatcher>? _logger;
 
     /// <summary>初始化执行链。</summary>
     /// <param name="registry">工具注册表（不得为 <see langword="null"/>）。</param>
     /// <param name="policy">白名单策略（不得为 <see langword="null"/>）。</param>
     /// <param name="authorizer">授权器（可空 ⇒ 强制授权时一律拒绝）。</param>
+    /// <param name="approvalGate">审批门（可空 ⇒ 需审批的写工具一律拒绝）。</param>
     /// <param name="logger">日志（可空）。</param>
     /// <exception cref="ArgumentNullException"><paramref name="registry"/> 或 <paramref name="policy"/> 为 <see langword="null"/>。</exception>
     public WechatToolDispatcher(
         WechatToolRegistry registry,
         WechatToolPolicy policy,
         IWechatToolAuthorizer? authorizer = null,
+        IWechatToolApprovalGate? approvalGate = null,
         ILogger<WechatToolDispatcher>? logger = null)
     {
         _registry = registry ?? throw new ArgumentNullException(nameof(registry));
         Policy = policy ?? throw new ArgumentNullException(nameof(policy));
         _authorizer = authorizer;
+        _approvalGate = approvalGate;
         _logger = logger;
     }
 
@@ -89,12 +94,29 @@ public sealed class WechatToolDispatcher
             return Deny(toolName, "contract-missing");
         }
 
+        var context = new WechatToolAuthorizationContext(
+            contract.Name,
+            execution.Binding.AppKey,
+            execution.Binding.AuthCorpId,
+            contract.Risk,
+            contract.RequiredScopes,
+            ToolArgsDigester.Digest(arguments));
+
         if (Policy.EnforceAuthorization)
         {
-            var decision = await AuthorizeAsync(execution, contract, arguments, cancellationToken).ConfigureAwait(false);
+            var decision = await AuthorizeAsync(context, cancellationToken).ConfigureAwait(false);
             if (!decision.IsAllowed)
             {
                 return Deny(toolName, decision.DenialReason ?? "denied");
+            }
+        }
+
+        if (RequiresApproval(contract.Risk))
+        {
+            var approval = await ApproveAsync(context, cancellationToken).ConfigureAwait(false);
+            if (!approval.IsApproved)
+            {
+                return Deny(toolName, approval.Reason ?? "approval-rejected");
             }
         }
 
@@ -114,9 +136,7 @@ public sealed class WechatToolDispatcher
     }
 
     private async ValueTask<WechatToolAuthorizationResult> AuthorizeAsync(
-        WechatToolExecution execution,
-        WechatToolContract contract,
-        IReadOnlyDictionary<string, object?> arguments,
+        WechatToolAuthorizationContext context,
         CancellationToken cancellationToken)
     {
         if (_authorizer is null)
@@ -124,15 +144,28 @@ public sealed class WechatToolDispatcher
             return WechatToolAuthorizationResult.Deny("未注册 IWechatToolAuthorizer（fail-closed 默认拒绝）");
         }
 
-        var context = new WechatToolAuthorizationContext(
-            contract.Name,
-            execution.Binding.AppKey,
-            execution.Binding.AuthCorpId,
-            contract.Risk,
-            contract.RequiredScopes,
-            ToolArgsDigester.Digest(arguments));
-
         return await _authorizer.AuthorizeAsync(context, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>该风险档是否需过审批门（高危写恒需；受控写由策略开关控制；只读永不需要）。</summary>
+    private bool RequiresApproval(WechatToolRisk risk) => risk switch
+    {
+        WechatToolRisk.Read => false,
+        WechatToolRisk.Write => Policy.RequireApprovalForWrites,
+        _ => true,
+    };
+
+    private async ValueTask<WechatToolApprovalDecision> ApproveAsync(
+        WechatToolAuthorizationContext context,
+        CancellationToken cancellationToken)
+    {
+        if (_approvalGate is null)
+        {
+            return WechatToolApprovalDecision.Reject(
+                "未注册 IWechatToolApprovalGate（写工具按 fail-closed 拒绝）");
+        }
+
+        return await _approvalGate.RequestApprovalAsync(context, cancellationToken).ConfigureAwait(false);
     }
 
     private ToolResult Deny(string toolName, string reason)

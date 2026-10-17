@@ -5,6 +5,7 @@
 //  不得利用本项目从事危害国家安全、扰乱社会秩序、侵犯他人合法权益等法律法规禁止的活动！任何基于本项目开发而产生的一切法律纠纷和责任，我们不承担任何责任！
 // -----------------------------------------------------------------------
 
+using Mud.Wechat.Work.AI.AgentTools;
 using Mud.Wechat.Work.AI.Tools.Generated;
 
 namespace Mud.Wechat.Work.AI.Tools.Security;
@@ -34,6 +35,15 @@ public sealed class WechatToolPolicy
 
     /// <summary>是否强制授权（默认 <see langword="true"/>；关闭即「白名单命中即可调」，仅限只读面）。</summary>
     public bool EnforceAuthorization { get; set; } = true;
+
+    /// <summary>
+    /// 写工具（<see cref="WechatToolRisk.Write"/>）是否要求 HITL 审批（默认 <see langword="true"/>）。
+    /// </summary>
+    /// <remarks>
+    /// <see cref="WechatToolRisk.HighRiskWrite"/> <b>不受本开关影响</b>：高危写恒需审批
+    /// （关闭即装配期失败），因为它是「不可逆 / 外部可见」动作的唯一护栏。
+    /// </remarks>
+    public bool RequireApprovalForWrites { get; set; } = true;
 
     /// <summary>已启用的工具名（按名字排序）。</summary>
     public IReadOnlyList<string> EnabledTools
@@ -99,6 +109,16 @@ public sealed class WechatToolPolicy
             throw new InvalidOperationException(
                 $"WechatToolPolicy 启用了写工具（{string.Join(", ", writes)}）却关闭了授权——"
                 + "写面必须同时受白名单与授权器两段管控。");
+        }
+
+        var highRisk = writes
+            .Where(static name => WechatToolContracts.ByToolName[name].Risk == WechatToolRisk.HighRiskWrite)
+            .ToArray();
+        if (highRisk.Length > 0 && !RequireApprovalForWrites)
+        {
+            throw new InvalidOperationException(
+                $"WechatToolPolicy 启用了高危写工具（{string.Join(", ", highRisk)}）却关闭了审批——"
+                + "高危写恒需 HITL 确认门（不可逆动作不得只靠授权器放行）。");
         }
 
         _frozen = true;

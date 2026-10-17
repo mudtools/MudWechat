@@ -85,6 +85,43 @@ public class WechatAiContractGuards
         }
     }
 
+    /// <summary>
+    /// AI-G5：<b>工具面/协议面单向依赖</b> —— <c>Mud.Wechat.Work.AI</c>（Agent）不得引用 <c>.AI.Tools</c> /
+    /// <c>.AI.Mcp</c>，两者之间也互不引用；宿主侧只通过 DI 的 <c>IReadOnlyList&lt;AIFunction&gt;</c> 相遇。
+    /// </summary>
+    /// <remarks>
+    /// 反向引用会让「关掉工具面」变成不可能（Agent 包一装上就拖着 HTTP 执行器与业务域），
+    /// 也会把工具面的候选集变成 Agent 的编译期事实——白名单投影因此失去意义。
+    /// </remarks>
+    [Fact]
+    public void AgentPackage_ShouldNotReferenceToolOrMcpPackages()
+    {
+        var projects = EnumerateSourceProjects().ToList();
+        var agent = projects.Single(p => Path.GetFileName(p) == "Mud.Wechat.Work.AI.csproj");
+
+        ReferencedProjects(agent).Should().NotContain(
+            name => name.StartsWith("Mud.Wechat.Work.AI.Tools", StringComparison.Ordinal)
+                    || name.StartsWith("Mud.Wechat.Work.AI.Mcp", StringComparison.Ordinal),
+            "Agent 包不得引用工具面/协议面（DI 的 AIFunction 列表是唯一接缝）");
+
+        foreach (var forbidden in new[] { "Mud.Wechat.Work.AI.Tools", "Mud.Wechat.Work.AI.Mcp" })
+        {
+            var peer = projects.SingleOrDefault(p => Path.GetFileName(p) == $"{forbidden}.csproj");
+            if (peer is null)
+            {
+                continue;
+            }
+
+            var other = forbidden.EndsWith("Tools", StringComparison.Ordinal)
+                ? "Mud.Wechat.Work.AI.Mcp"
+                : "Mud.Wechat.Work.AI.Tools";
+
+            ReferencedProjects(peer).Should().NotContain(
+                name => name.Equals(other, StringComparison.Ordinal),
+                $"{forbidden} 与 {other} 互不引用（工具面与协议面各自演进）");
+        }
+    }
+
     /// <summary>AI-G4：<c>Mud.AI.*</c> 全仓单一版本且为钉版（禁浮动）。</summary>
     [Fact]
     public void MudAiPackages_ShouldBePinnedToSingleVersion()
@@ -113,6 +150,17 @@ public class WechatAiContractGuards
             Regex.IsMatch(reference.Version, @"^\d+\.\d+\.\d+$").Should().BeTrue(
                 $"{reference.Project} 的 {reference.Id} 必须是精确版本（禁 * / 区间 / 浮动），实际值: {reference.Version}");
         }
+    }
+
+    /// <summary>读出工程文件里的 ProjectReference 目标名（只看 Include 属性，注释与描述文本不参与判定）。</summary>
+    private static IEnumerable<string> ReferencedProjects(string csprojPath)
+    {
+        var pattern = new Regex(
+            "<ProjectReference\\s+Include=\"(?<path>[^\"]+)\"",
+            RegexOptions.CultureInvariant);
+
+        return pattern.Matches(File.ReadAllText(csprojPath))
+            .Select(m => Path.GetFileNameWithoutExtension(m.Groups["path"].Value.Replace('\\', '/')));
     }
 
     private static bool IsAiProject(string csprojPath)

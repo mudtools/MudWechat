@@ -70,7 +70,11 @@ public static class WechatWorkToolServiceCollectionExtensions
         services.TryAddSingleton(binding);
 
         // 生成物：逐执行器的「依赖缺席 ⇒ null 执行器」工厂 + 域注册器工厂。
+        services.AddWechatApprovalToolHandlersCore();
         services.AddWechatContactsDepartmentToolHandlersCore();
+        services.AddWechatContactsUserToolHandlersCore();
+        services.AddWechatContactsTagToolHandlersCore();
+        services.AddWechatWedocToolHandlersCore();
 
         services.TryAddSingleton(static provider => WechatToolDomainRegistrars.Build(provider));
 

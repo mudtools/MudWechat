@@ -47,6 +47,8 @@ public class OpenPlatformServiceBuilder
             [OpenPlatformModule.ComponentTcb] = static s => s.AddComponentTcbWebApiHttpClient(),
             [OpenPlatformModule.Embedded] = static s => s.AddEmbeddedWebApiHttpClient(),
             [OpenPlatformModule.Auth] = static s => s.AddAuthWebApiHttpClient(),
+            [OpenPlatformModule.Ams] = static s => s.AddAmsWebApiHttpClient(),
+            [OpenPlatformModule.AmsShare] = static s => s.AddAmsShareWebApiHttpClient(),
         };
 
     /// <summary>注册全部模块。</summary>

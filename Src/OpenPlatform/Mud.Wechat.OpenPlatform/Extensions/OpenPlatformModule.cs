@@ -63,4 +63,22 @@ public enum OpenPlatformModule
     /// （留档 MP-D-BUCKET-RULING-01 + 小程序守卫 NC2 锁定）。<c>/wxa/sec/authidentitytree</c> 官方动词为 GET。
     /// </remarks>
     Auth,
+
+    /// <summary>
+    /// 流量主代运营（AMS）管理面域（<c>/wxa/operationams</c> 单路由 <c>action</c> 分派全 19 端点；注册组 <c>Ams</c>）。
+    /// </summary>
+    /// <remarks>
+    /// 令牌恒为 <c>authorizer_access_token</c>（Query 参数名 <c>access_token</c>）⇒ 第三方平台代授权方小程序管理广告位。
+    /// 应答信封为 <c>{ret, err_msg}</c>（非本线其它域的 <c>{errcode, errmsg}</c>），判错基底另立 <c>OpenPlatformAmsResponse</c>。
+    /// </remarks>
+    Ams,
+
+    /// <summary>
+    /// 流量主代运营（AMS）分账面域（<c>/wxa/getdefaultamsinfo</c> + <c>/wxa/setdefaultamsinfo</c> 全 3 端点；注册组 <c>AmsShare</c>）。
+    /// </summary>
+    /// <remarks>
+    /// 令牌恒为 <c>component_access_token</c>（Query 参数名 <c>access_token</c>）⇒ 服务商平台自身面，与 <see cref="Ams"/>（授权方令牌）令牌归属不同，
+    /// 故拆独立注册组；两支同路由多端点各以 <c>action</c> query 分派。
+    /// </remarks>
+    AmsShare,
 }

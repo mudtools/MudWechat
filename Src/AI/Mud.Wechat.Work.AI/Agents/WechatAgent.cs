@@ -56,6 +56,7 @@ public sealed class WechatAgent : ObservedDelegatingAgent, IAgentSessionFacade
     /// <param name="sessionStore">会话持久化端口（默认进程内；分布式部署由宿主先注册 Redis 实现）。</param>
     /// <param name="telemetry">遥测端口（可空 ⇒ 空实现，零采集）。</param>
     /// <param name="scopeFactory">工具作用域端口（可空 ⇒ 不建立任何工具执行上下文）。</param>
+    /// <param name="tools">暴露给模型的工具（可空/空集 ⇒ 内层 Agent 不设置 <c>ChatOptions.Tools</c>）。</param>
     /// <param name="logger">日志（可空）。</param>
     /// <exception cref="ArgumentNullException"><paramref name="chatClient"/> / <paramref name="options"/> / <paramref name="sessionStore"/> 为 <see langword="null"/>。</exception>
     public WechatAgent(
@@ -64,9 +65,10 @@ public sealed class WechatAgent : ObservedDelegatingAgent, IAgentSessionFacade
         ISessionStore sessionStore,
         IAgentTelemetry? telemetry = null,
         ITurnScopeFactory? scopeFactory = null,
+        IReadOnlyList<AIFunction>? tools = null,
         ILogger<WechatAgent>? logger = null)
         : base(
-            BuildInnerAgent(chatClient, options),
+            BuildInnerAgent(chatClient, options, tools),
             AgentName,
             telemetry,
             BuildSummarizer(chatClient, options, telemetry, logger))
@@ -140,8 +142,16 @@ public sealed class WechatAgent : ObservedDelegatingAgent, IAgentSessionFacade
             request.Scope.IsGroup ? ":g:" : ":p:",
             request.SubjectId);
 
-    /// <summary>构造内层 MAF Agent（指令 / 历史裁剪窗 / 历史状态键三件产品事实）。</summary>
-    private static AIAgent BuildInnerAgent(IChatClient chatClient, IOptions<WechatAgentOptions> options)
+    /// <summary>构造内层 MAF Agent（指令 / 工具 / 历史裁剪窗 / 历史状态键四件产品事实）。</summary>
+    /// <remarks>
+    /// <b>工具集是装配期常量</b>：MAF 的工具列表在构造 <c>ChatClientAgent</c> 时固化，运行期不可增删——
+    /// 与「白名单在装配期冻结」同源（<c>WechatToolPolicy.Validate</c>）。故工具面投影（<c>IReadOnlyList&lt;AIFunction&gt;</c>）
+    /// 由宿主在 <c>AddWechatWorkTools</c> 里注册，经 DI 在此注入，本类型不自建第二个工具槽位。
+    /// </remarks>
+    private static AIAgent BuildInnerAgent(
+        IChatClient chatClient,
+        IOptions<WechatAgentOptions> options,
+        IReadOnlyList<AIFunction>? tools)
     {
         if (chatClient is null)
         {
@@ -153,7 +163,7 @@ public sealed class WechatAgent : ObservedDelegatingAgent, IAgentSessionFacade
             chatClient,
             name: AgentName,
             instructions: settings.Instructions,
-            tools: null,
+            tools: tools,
             historyStateKey: settings.HistoryStateKey,
             maxHistoryMessages: settings.MaxHistoryMessages);
     }

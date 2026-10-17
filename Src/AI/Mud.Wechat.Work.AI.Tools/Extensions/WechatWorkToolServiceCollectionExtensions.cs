@@ -8,7 +8,9 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Mud.Wechat.Work.AI.Tools;
+using Mud.Wechat.Work.AI.Tools.AIFunctions;
 using Mud.Wechat.Work.AI.Tools.Registration;
+using Mud.Wechat.Work.AI.Tools.Security;
 
 namespace Mud.Wechat.Work.AI.Tools.Extensions;
 
@@ -41,6 +43,19 @@ public static class WechatWorkToolServiceCollectionExtensions
     /// <returns>服务集合（可串联）。</returns>
     /// <exception cref="ArgumentNullException"><paramref name="services"/> 或 <paramref name="binding"/> 为 <see langword="null"/>。</exception>
     public static IServiceCollection AddWechatWorkTools(this IServiceCollection services, WechatToolBinding binding)
+        => AddWechatWorkTools(services, binding, configurePolicy: null);
+
+    /// <summary>注册企微工具面（可配置白名单策略）。</summary>
+    /// <param name="services">服务集合。</param>
+    /// <param name="binding">执行绑定（不得为 <see langword="null"/>）。</param>
+    /// <param name="configurePolicy">白名单策略配置（可空 = 默认只读全开、写类全关、强制授权）。</param>
+    /// <returns>服务集合（可串联）。</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="services"/> 或 <paramref name="binding"/> 为 <see langword="null"/>。</exception>
+    /// <exception cref="InvalidOperationException">策略非法（未知工具名 / 写工具未开授权）。</exception>
+    public static IServiceCollection AddWechatWorkTools(
+        this IServiceCollection services,
+        WechatToolBinding binding,
+        Action<WechatToolPolicy>? configurePolicy)
     {
         if (services is null)
         {
@@ -58,6 +73,16 @@ public static class WechatWorkToolServiceCollectionExtensions
         services.AddWechatContactsDepartmentToolHandlersCore();
 
         services.TryAddSingleton(static provider => WechatToolDomainRegistrars.Build(provider));
+
+        // 白名单在装配期冻结（运行期不可改），授权器由宿主前置注册（缺失 ⇒ 强制授权时一律拒绝）。
+        var policy = new WechatToolPolicy();
+        configurePolicy?.Invoke(policy);
+        policy.Validate();
+        services.TryAddSingleton(policy);
+        services.TryAddSingleton<WechatToolDispatcher>();
+
+        // 模型可见面 = 白名单投影（看不见即不可试）；Agent 侧按 IReadOnlyList<AIFunction> 注入。
+        services.TryAddSingleton(static provider => WechatToolFunctions.Create(provider.GetRequiredService<WechatToolDispatcher>()));
 
         return services;
     }

@@ -16,8 +16,12 @@
 | `Executors.*ToolHandlers` | 执行器：`[ToolHandler(typeof(接口))] public Task<ToolResult> X(IReadOnlyDictionary<string,object?> args, CancellationToken ct)` |
 | `Registration.WechatToolRegistry` / `WechatToolExecution` | 工具注册表（契约名 → 绑定 + 执行委托） |
 | `Registration.WechatToolRegistration` / `IWechatToolDomainRegistrar` / `WechatToolDomainRegistrars` | 生成物写入注册表的接缝 |
+| `Security.WechatToolPolicy` | 白名单（默认只读全开、写类全关、强制授权）；`Validate()` 后冻结，未知名/写工具未开授权即 fail-fast |
+| `Security.IWechatToolAuthorizer` / `WechatToolAuthorizationContext` / `WechatToolAuthorizationResult` | 授权门禁端口：入参只给「应用 + 企业 + 风险 + 权限点 + 入参摘要」（不含原文与令牌） |
+| `Security.WechatToolDispatcher` | 调用唯一入口：白名单 → 授权 → 执行 → 异常归一（租户切换由回合作用域承担，此处不重复进入） |
+| `AIFunctions.WechatToolFunction`（internal）/ `WechatToolFunctions` | 白名单 → MAF `AIFunction` 投影（自建子类，零反射；`JsonSchema` 只取生成物的 `parameters` 子块） |
 | `ToolArgs`（internal） | 生成物 Args 解包器消费的 helper 集（六个参数形态各一对 Require/Optional） |
-| `Extensions.AddWechatWorkTools(binding)` | 装配入口：绑定 + 逐执行器工厂 + 注册表（软缺席：业务域未注册 ⇒ 该域工具不入表） |
+| `Extensions.AddWechatWorkTools(binding[, configurePolicy])` | 装配入口：绑定 + 逐执行器工厂 + 注册表 + 策略 + 执行链 + `IReadOnlyList<AIFunction>` 投影（软缺席：业务域未注册 ⇒ 该域工具不入表） |
 
 当前策展面：`contacts.department.get` / `contacts.department.list` / `contacts.department.child_ids`（全部只读）。
 契约由 `Tests/Mud.Wechat.Work.AI.Tools.Tests/ContractGuards/WechatToolSurfaceContractGuards.cs` 冻结。
@@ -54,9 +58,23 @@ dotnet test Tests/Mud.Wechat.Work.AI.Tools.Tests -c Release
 - 布局：`Src/AI/<Project>/` 三段平铺（AB-G6 / AI-G3 锁定；四段会被 `-Depth 2` 枚举静默漏掉 = AOT 假绿）。
 - 门禁只统计编译错误与 IL 诊断；测试工程沿用仓库体例（CS1591 注释告警不阻断）。
 
-## 待办（S2 后续 / S3）
+### golden 快照
 
-- golden 快照 `Generated/WechatToolSchemas.golden.txt` 尚未固化（剖面 `GoldenFileName` 已声明，
-  `AdditionalFiles` 缺省即跳过比对）——工具面首批形态稳定后同批固化。
-- `WechatToolRegistry` 尚未接入会话管线的工具白名单（`MapTool` 语义）与授权门禁，属 S2 收尾项。
+`Generated/WechatToolSchemas.golden.txt` 已固化（`<工具名>\t<SchemaJson>\n`，按工具名排序、LF 行尾）。
+任何 Schema/描述/路由/风险的漂移都会在<b>构建期</b>以 `MUDWT014` 失败并列出增删项；
+重新固化 = 改完策展面后按提示重新生成该文件（`-p:WechatToolGoldenUpdate=true` 仅出现在提示文案里，
+实际由手工/脚本重写快照，仓库不自动改写版本控制内的文件）。
+
+## 模型侧接线（已通）
+
+`AddWechatWorkTools` 注册 `IReadOnlyList<AIFunction>`（白名单投影），`AddWechatWorkAgent` 装配的
+`WechatAgent` 把它交给内层 `ChatClientAgent` 的 `ChatOptions.Tools`（`WechatAgent` 只依赖
+`Microsoft.Extensions.AI.AIFunction`，**不引用**本工程——层 2 不引 `.AI.Tools` 的边界由此保持）。
+模型 `tool_call` → `WechatToolFunction.InvokeCoreAsync` → `WechatToolDispatcher.InvokeAsync`
+（白名单 → 授权 → 执行 → 异常归一）→ `ToolResult.Text` 回填模型。
+
+## 待办（S3 前）
+
+- 端到端 tool_call 断言：伪 `IChatClient` 返回带 `FunctionCallContent` 的响应 → 断言工具被调用且结果回填、
+  第二轮请求携带 `FunctionResultContent`（MAF 自动循环）。当前仅验证到「工具进入 `ChatOptions.Tools`」。
 - 写工具（L2 受控写 / L3 高危写）与 HITL 审批闭环属 S3。

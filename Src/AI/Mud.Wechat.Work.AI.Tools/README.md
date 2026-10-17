@@ -73,8 +73,15 @@ dotnet test Tests/Mud.Wechat.Work.AI.Tools.Tests -c Release
 模型 `tool_call` → `WechatToolFunction.InvokeCoreAsync` → `WechatToolDispatcher.InvokeAsync`
 （白名单 → 授权 → 执行 → 异常归一）→ `ToolResult.Text` 回填模型。
 
-## 待办（S3 前）
+## 端到端闭环（已通）
 
-- 端到端 tool_call 断言：伪 `IChatClient` 返回带 `FunctionCallContent` 的响应 → 断言工具被调用且结果回填、
-  第二轮请求携带 `FunctionResultContent`（MAF 自动循环）。当前仅验证到「工具进入 `ChatOptions.Tools`」。
-- 写工具（L2 受控写 / L3 高危写）与 HITL 审批闭环属 S3。
+`Tests/.../EndToEnd/WechatToolCallLoopTests.cs` 用伪模型验证完整链路：
+第一轮返回 `FunctionCallContent(contacts.department.get)` → MAF `FunctionInvokingChatClient` 调用投影函数 →
+执行链（白名单 + 授权）→ 强类型 SDK → 第二轮请求携带 `FunctionResultContent` 且内容含工具输出 →
+模型给出最终回复。该用例同时充当「工具面 + Agent 两处 DI 装配未断链」的守卫。
+
+## 待办（S3）
+
+- 写工具（L2 受控写 / L3 高危写）与 HITL 审批闭环。
+- 工具面批量铺开（通讯录 users / 消息 / 日程 / 文档等域），逐域沿用 `Curation + Executors + 守卫` 三段形态。
+- golden 快照随工具面扩张同批重固化。

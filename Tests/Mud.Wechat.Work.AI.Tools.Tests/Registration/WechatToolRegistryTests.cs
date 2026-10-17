@@ -62,7 +62,8 @@ public class WechatToolRegistryTests
             new Mock<IWechatWorkUsersService>(MockBehavior.Loose).Object,
             new Mock<IWechatWorkTagsService>(MockBehavior.Loose).Object,
             new Mock<IWechatWorkWedocService>(MockBehavior.Loose).Object,
-            new Mock<IWechatWorkApprovalService>(MockBehavior.Loose).Object);
+            new Mock<IWechatWorkApprovalService>(MockBehavior.Loose).Object,
+            new Mock<IWechatWorkInternalCheckinRecordService>(MockBehavior.Loose).Object);
         var registry = provider.GetRequiredService<WechatToolRegistry>();
 
         registry.ToolNames.Should().BeEquivalentTo(WechatToolNames.All);
@@ -93,7 +94,8 @@ public class WechatToolRegistryTests
         IWechatWorkUsersService? users = null,
         IWechatWorkTagsService? tags = null,
         IWechatWorkWedocService? wedoc = null,
-        IWechatWorkApprovalService? approval = null)
+        IWechatWorkApprovalService? approval = null,
+        IWechatWorkInternalCheckinRecordService? checkin = null)
     {
         var services = new ServiceCollection().AddSingleton(departments);
         if (users is not null)
@@ -114,6 +116,11 @@ public class WechatToolRegistryTests
         if (approval is not null)
         {
             services.AddSingleton(approval);
+        }
+
+        if (checkin is not null)
+        {
+            services.AddSingleton(checkin);
         }
 
         return services

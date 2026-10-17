@@ -24,6 +24,7 @@ public class WechatToolSurfaceContractGuards
         WechatToolNames.ReadonlyAll.Should().Equal(
             [
                 "approval.get",
+                "checkin.record.list",
                 "contacts.department.child_ids",
                 "contacts.department.get",
                 "contacts.department.list",
@@ -70,6 +71,7 @@ public class WechatToolSurfaceContractGuards
     /// <param name="scope">工具声明的权限点。</param>
     [Theory]
     [InlineData("approval.get", "IWechatWorkApprovalService.GetApprovalDetailAsync", "/cgi-bin/oa/getapprovaldetail", "POST", WechatToolRisk.Read, "approval.read")]
+    [InlineData("checkin.record.list", "IWechatWorkInternalCheckinRecordService.GetCheckinDataAsync", "/cgi-bin/checkin/getcheckindata", "POST", WechatToolRisk.Read, "checkin.record.read")]
     [InlineData("contacts.department.child_ids", "IWechatWorkDepartmentsService.GetChildDepartmentIdListAsync", "/cgi-bin/department/simplelist", "GET", WechatToolRisk.Read, "contacts.department.read")]
     [InlineData("contacts.department.get", "IWechatWorkDepartmentsService.GetDepartmentAsync", "/cgi-bin/department/get", "GET", WechatToolRisk.Read, "contacts.department.read")]
     [InlineData("contacts.department.list", "IWechatWorkDepartmentsService.GetDepartmentListAsync", "/cgi-bin/department/list", "GET", WechatToolRisk.Read, "contacts.department.read")]

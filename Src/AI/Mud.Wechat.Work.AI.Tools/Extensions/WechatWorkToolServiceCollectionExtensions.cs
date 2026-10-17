@@ -71,6 +71,7 @@ public static class WechatWorkToolServiceCollectionExtensions
 
         // 生成物：逐执行器的「依赖缺席 ⇒ null 执行器」工厂 + 域注册器工厂。
         services.AddWechatApprovalToolHandlersCore();
+        services.AddWechatCheckinToolHandlersCore();
         services.AddWechatContactsDepartmentToolHandlersCore();
         services.AddWechatContactsUserToolHandlersCore();
         services.AddWechatContactsTagToolHandlersCore();

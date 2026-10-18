@@ -88,7 +88,8 @@ if (info.IsAutoReplyOpen == 1 && info.MessageDefaultAutoReplyInfo is { } def)
 }
 
 // 关键词规则：rule_name / reply_mode / keyword_list_info / reply_list_info
-foreach (var rule in info.KeywordAutoReplyInfo?.List ?? [])
+if (info.KeywordAutoReplyInfo?.List is { } rules)               // 勿写 `?? []`：foreach 处无目标类型
+foreach (var rule in rules)
 {
     var keywords = rule.KeywordListInfo;                          // List<MpAutoReplyKeyword>?
     var replies = rule.ReplyListInfo;                             // List<MpAutoReplyReply>?

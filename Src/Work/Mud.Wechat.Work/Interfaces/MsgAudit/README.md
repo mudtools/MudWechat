@@ -143,7 +143,7 @@ public sealed class ArchiveComplianceProbe(
         }, ct);
         WechatWorkException.ThrowIfFailed(resp, "/cgi-bin/msgaudit/check_single_agree");
 
-        foreach (var item in resp.AgreeInfo ?? [])
+        foreach (MsgAuditAgreeInfo item in resp.AgreeInfo ?? new List<MsgAuditAgreeInfo>())
         {
             // item.ExteranalOpenid / item.AgreeStatus（Agree / Disagree）/ item.StatusChangeTime（Unix 秒）
             // item.UserId 仅单聊应答有值

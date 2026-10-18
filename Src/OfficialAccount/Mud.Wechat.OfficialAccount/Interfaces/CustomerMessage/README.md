@@ -154,7 +154,7 @@ var records = await customer.GetMsgListAsync(new MpGetMsgListRequest
     MsgId = 0,
     Number = 1000,
 }, ct);
-foreach (var r in records.RecordList ?? [])
+foreach (MpMsgRecord r in records.RecordList ?? new List<MpMsgRecord>())
 {
     var kind = r.OperCode switch
     {

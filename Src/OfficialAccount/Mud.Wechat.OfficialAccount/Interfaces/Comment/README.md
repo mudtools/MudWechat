@@ -120,7 +120,7 @@ var page = await comment.ListCommentsAsync(new MpCommentListRequest
 }, ct);
 MpException.ThrowIfFailed(page, "/cgi-bin/comment/list");
 
-foreach (var item in page.Comments ?? [])      // 官方键名是单数 comment
+foreach (MpComment item in page.Comments ?? new List<MpComment>())      // 官方键名是单数 comment
 {
     Console.WriteLine($"#{item.UserCommentId} type={item.CommentType} replied={item.Reply is not null}");
     // item.OpenId 属用户标识：不得写日志、遥测或异常消息

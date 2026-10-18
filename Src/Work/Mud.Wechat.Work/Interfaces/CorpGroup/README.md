@@ -180,7 +180,7 @@ public sealed class UpstreamSync(
             }, ct);
             WechatWorkException.ThrowIfFailed(resp, "/cgi-bin/corpgroup/corp/list_app_share_info");
 
-            foreach (var corp in resp.CorpList ?? [])
+            foreach (AppShareCorpInfo corp in resp.CorpList ?? new List<AppShareCorpInfo>())
             {
                 // corp.CorpId / corp.CorpName / corp.AgentId（int?）
             }

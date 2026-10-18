@@ -171,7 +171,7 @@ var users = await dataCube.GetUserSummaryAsync(new MpDateRangeRequest
     EndDate = "2026-10-07",
 }, ct);
 MpException.ThrowIfFailed(users, "/datacube/getusersummary");
-foreach (var item in users.List ?? [])
+foreach (MpUserSummaryItem item in users.List ?? new List<MpUserSummaryItem>())
 {
     // user_source：0/1/17/30/57/100/161/149/200/201（渠道维度，cumulate 族没有这一维）
     Console.WriteLine($"{item.RefDate} source={item.UserSource} +{item.NewUser} -{item.CancelUser}");

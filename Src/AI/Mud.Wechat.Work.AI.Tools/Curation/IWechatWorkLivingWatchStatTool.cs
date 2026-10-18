@@ -18,20 +18,21 @@ namespace Mud.Wechat.Work.AI.Tools.Curation;
 /// <c>external_userid</c> 与邀请关系），属企业外部自然人行为数据；执行器只回填成员明细与外部观看<b>人数</b>。
 /// </para>
 /// <para>
-/// <b>分页靠 next_key</b>：官方以 <c>ending</c>（0 还有 / 1 已无）与 <c>next_key</c> 翻页，与其他域用 cursor 不同。
+/// <b>分页靠 page_token</b>：官方以 <c>ending</c>（0 还有 / 1 已无）与 <c>next_key</c> 翻页，投影时归一为
+/// <c>has_more</c>（false 还有 / true 已无）与 <c>page_token</c>，与其他域同形。
 /// </para>
 /// </remarks>
 [AgentTool(
     name: "living.watch_stat",
-    Description = "获取企业微信直播的企业内成员观看统计。参数 livingid 为直播 ID（先用 living.list 获取）；next_key 为分页键（首页省略，续页传上一页的 next_key）。返回 users（成员 userid、watch_time 观看秒数、is_comment 是否评论、is_mic 是否连麦）、count、external_user_count（外部联系人观看人数，仅计数）以及 ending（0 还有数据 / 1 已无数据）与 next_key。不含外部联系人的 ID 与邀请关系（外部自然人数据不外发）。",
+    Description = "获取企业微信直播的企业内成员观看统计。参数 livingid 为直播 ID（先用 living.list 获取）；page_token 为分页键（首页省略，续页**原样回传上一页返回的 page_token**）。返回 items（成员 userid、watch_time 观看秒数、is_comment 是否评论、is_mic 是否连麦）、count、external_user_count（外部联系人观看人数，仅计数）以及 has_more（false 还有数据 / true 已无数据）与 page_token（有下一页时才出现）。不含外部联系人的 ID 与邀请关系（外部自然人数据不外发）。",
     Source = "IWechatWorkLivingService.GetWatchStatAsync",
     RequiredScopes = ["living.read"])]
 public interface IWechatWorkLivingWatchStatTool
 {
     /// <summary>读取直播观看统计。</summary>
-    /// <returns>白名单投影后的 JSON 文本（users、userid、watch_time、is_comment、is_mic、count、external_user_count、ending、next_key）。</returns>
+    /// <returns>白名单投影后的 JSON 文本（items、userid、watch_time、is_comment、is_mic、count、external_user_count、has_more、page_token）。</returns>
     Task<string> GetWatchStatAsync(
         [ToolParameter("livingid", "直播 ID。", Required = true)] string livingid,
-        [ToolParameter("next_key", "分页键（可空 ⇒ 首页）。")] string? next_key,
+        [ToolParameter("page_token", "分页键（可空 ⇒ 首页；续页原样回传上一页返回的 page_token）。")] string? page_token,
         CancellationToken cancellationToken = default);
 }

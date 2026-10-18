@@ -21,13 +21,13 @@ namespace Mud.Wechat.Work.AI.Tools.Curation;
 /// </remarks>
 [AgentTool(
     name: "externalcontact.contact.list",
-    Description = "列出指定成员添加的企业微信客户。参数 userid 为成员 UserID（先用 externalcontact.follow_user.list 获取）。返回 external_userid_list（客户 ID 数组）与 count；此端点只返回客户 ID，客户的昵称、标签与跟进关系需再用 externalcontact.contact.get 按单个 ID 获取。仅覆盖应用可见范围内该成员添加的客户，超出可见范围时官方返回空列表。",
+    Description = "列出指定成员添加的企业微信客户。参数 userid 为成员 UserID（先用 externalcontact.follow_user.list 获取）。返回 items（客户 ID 数组）与 count；此端点只返回客户 ID，客户的昵称、标签与跟进关系需再用 externalcontact.contact.get 按单个 ID 获取。仅覆盖应用可见范围内该成员添加的客户，超出可见范围时官方返回空列表。",
     Source = "IWechatWorkExternalContactCustomerService.GetCustomerListAsync",
     RequiredScopes = ["externalcontact.contact.read"])]
 public interface IWechatWorkExternalContactContactListTool
 {
     /// <summary>列出某成员添加的客户 ID。</summary>
-    /// <returns>白名单投影后的 JSON 文本（external_userid_list、count）。</returns>
+    /// <returns>白名单投影后的 JSON 文本（items、count）。</returns>
     Task<string> GetCustomerListAsync(
         [ToolParameter("userid", "成员 UserID。", Required = true)] string userid,
         CancellationToken cancellationToken = default);

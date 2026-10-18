@@ -17,13 +17,13 @@ namespace Mud.Wechat.Work.AI.Tools.Curation;
 /// </remarks>
 [AgentTool(
     name: "living.list",
-    Description = "拉取指定成员创建的微信直播 ID 列表。参数 userid 为成员 UserID（先用 contacts.user.simple_list 获取）；cursor 为分页游标（首页省略）；limit 为单页条数（1~100，可空 ⇒ 100）。返回 livingid_list、count 与 next_cursor（为空表示已取完）。拿到 livingid 后用 living.get 取详情、living.watch_stat 取观看统计。只能拉取本应用创建的直播。",
+    Description = "拉取指定成员创建的微信直播 ID 列表。参数 userid 为成员 UserID（先用 contacts.user.simple_list 获取）；cursor 为分页游标（首页省略）；limit 为单页条数（1~100，可空 ⇒ 100）。返回 items、count 与 page_token（为空表示已取完）。拿到 livingid 后用 living.get 取详情、living.watch_stat 取观看统计。只能拉取本应用创建的直播。",
     Source = "IWechatWorkLivingService.GetUserAllLivingIdAsync",
     RequiredScopes = ["living.read"])]
 public interface IWechatWorkLivingListTool
 {
     /// <summary>拉取成员直播 ID 列表。</summary>
-    /// <returns>白名单投影后的 JSON 文本（livingid_list、count、next_cursor）。</returns>
+    /// <returns>白名单投影后的 JSON 文本（items、count、page_token）。</returns>
     Task<string> GetUserAllLivingIdAsync(
         [ToolParameter("userid", "成员 UserID。", Required = true)] string userid,
         [ToolParameter("cursor", "分页游标（可空 ⇒ 首页）。")] string? cursor,

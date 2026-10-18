@@ -1,4 +1,4 @@
-﻿<#
+<#
 .SYNOPSIS
     Runs Mud.HttpUtils.JsonContextScaffolder to generate JsonSerializerContext source files
     for the Mud.Wechat.Work.DataModels project.
@@ -26,8 +26,8 @@ param(
     # NuGet package id (used only for auto-install)
     [string]$ToolPackageId = "Mud.HttpUtils.JsonContextScaffolder",
     # Version to install; pinned to the repo-wide locked Mud.HttpUtils version.
-    # Kept in lockstep with the repo-wide Mud.HttpUtils version (G1); 3.0.7 resolved via nuget.config sources.
-    [string]$ToolVersion = "3.0.7",
+    # Kept in lockstep with the repo-wide Mud.HttpUtils version (G1); 3.0.8 resolved via nuget.config sources.
+    [string]$ToolVersion = "3.0.8",
     # Target project (relative to repo root or absolute) —— 源码归类后源工程位于 Src/<Area>/<ProjectName>。
     [string]$TargetProject = "Src/Work/Mud.Wechat.Work.DataModels/Mud.Wechat.Work.DataModels.csproj",
     # Output directory (relative to repo root or absolute)

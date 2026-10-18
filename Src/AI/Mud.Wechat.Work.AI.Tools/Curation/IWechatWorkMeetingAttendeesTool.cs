@@ -23,13 +23,13 @@ namespace Mud.Wechat.Work.AI.Tools.Curation;
 /// </remarks>
 [AgentTool(
     name: "meeting.attendees",
-    Description = "获取企业微信会议（含网络研讨会）的已参会成员列表。参数 meetingid 为会议 ID（先用 meeting.list 获取）；start_time / end_time 可选（Unix 秒或带时区的 ISO 8601，两者都传时跨度不得超过 31 天，都不传时默认前推 31 天）；cursor 为上一页 next_cursor；limit 为单页条数（1~100，默认 100，且续页必须与首次一致）。返回 attendees（userid、role 角色、join_time、quit_time、join_type 入会方式）、count、has_more 与 next_cursor。会议未开始时返回空列表。仅返回本应用创建的会议、且在应用可见范围内的成员；不含临时 openid、网络质量、音视频状态与客户数据。",
+    Description = "获取企业微信会议（含网络研讨会）的已参会成员列表。参数 meetingid 为会议 ID（先用 meeting.list 获取）；start_time / end_time 可选（Unix 秒或带时区的 ISO 8601，两者都传时跨度不得超过 31 天，都不传时默认前推 31 天）；cursor 为上一页 page_token；limit 为单页条数（1~100，默认 100，且续页必须与首次一致）。返回 attendees（userid、role 角色、join_time、quit_time、join_type 入会方式）、count、has_more 与 page_token。会议未开始时返回空列表。仅返回本应用创建的会议、且在应用可见范围内的成员；不含临时 openid、网络质量、音视频状态与客户数据。",
     Source = "IWechatWorkInternalMeetingAdvancedService.GetAttendeeListAsync",
     RequiredScopes = ["meeting.read"])]
 public interface IWechatWorkMeetingAttendeesTool
 {
     /// <summary>读取已参会成员列表。</summary>
-    /// <returns>白名单投影后的 JSON 文本（attendees、count、has_more、next_cursor）。</returns>
+    /// <returns>白名单投影后的 JSON 文本（attendees、count、has_more、page_token）。</returns>
     Task<string> GetAttendeeListAsync(
         [ToolParameter("meetingid", "会议 ID。", Required = true)] string meetingid,
         [ToolParameter("start_time", "起始时间（可空；Unix 秒或带时区的 ISO 8601）。")] string? start_time,

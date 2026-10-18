@@ -24,7 +24,7 @@ namespace Mud.Wechat.Work.AI.Tools.Curation;
 /// </remarks>
 [AgentTool(
     name: "dial.record.list",
-    Description = "按时间范围读取企业微信公费电话拨打记录。参数 start_time / end_time 为时间范围（Unix 秒，如 \"1700000000\"；也接受带时区的 ISO 8601），双闭区间、跨度不得超过 30 天，两者需同时给出或同时省略（都省略时官方默认查最近 30 天）；offset 为分页偏移（默认 0）；limit 为单页条数（1~1000，默认 100）。返回 record（每项 call_time 拨打时间戳、total_duration 总时长（秒）、call_type 通话类型、caller 主叫 userid 与时长、callee 被叫 userid 与时长）、count 与 has_more（是否还有下一页）。不含被叫电话号码（外部号码不外发）；应用可见范围外的记录官方已过滤。仅自建应用可用（代开发与第三方官方暂不支持）。",
+    Description = "按时间范围读取企业微信公费电话拨打记录。参数 start_time / end_time 为时间范围（Unix 秒，如 \"1700000000\"；也接受带时区的 ISO 8601），双闭区间、跨度不得超过 30 天，两者需同时给出或同时省略（都省略时官方默认查最近 30 天）；offset 为分页偏移（默认 0）；limit 为单页条数（1~1000，默认 100）。返回 items（每项 call_time 拨打时间戳、total_duration 总时长（秒）、call_type 通话类型、caller 主叫 userid 与时长、callee 被叫 userid 与时长）、count 与 has_more（是否还有下一页）。不含被叫电话号码（外部号码不外发）；应用可见范围外的记录官方已过滤。仅自建应用可用（代开发与第三方官方暂不支持）。",
     Source = "IWechatWorkInternalDialService.GetDialRecordAsync",
     RequiredScopes = ["dial.record.read"])]
 public interface IWechatWorkDialRecordListTool

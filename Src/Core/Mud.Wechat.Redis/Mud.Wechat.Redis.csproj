@@ -34,7 +34,7 @@
 		     官方包键前缀 mud:httputils 与本院 wechat 前缀互不干扰 ⇒ 无需数据迁移；
 		     企微专属端口（CorpAuth/SuiteTicket/ReplayGuard/BotLease）与 IWechatTokenStoreBatchRemove
 		     批删扩展仍留下游包（官方 ITokenStore 维持最小 SPI、不实现微信接口）。 -->
-		<PackageReference Include="Mud.HttpUtils.Redis" Version="3.0.7" />
+		<PackageReference Include="Mud.HttpUtils.Redis" Version="3.0.8" />
 	</ItemGroup>
 
 	<ItemGroup>

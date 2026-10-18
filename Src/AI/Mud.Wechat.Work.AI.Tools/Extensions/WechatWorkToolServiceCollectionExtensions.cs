@@ -69,6 +69,11 @@ public static class WechatWorkToolServiceCollectionExtensions
 
         services.TryAddSingleton(binding);
 
+        // 挂起式审批的工单存储（默认进程内；多实例部署由宿主前置注册分布式实现，预注册者按契约胜出）。
+        // 注意：状态机本身不在此处默认注册——注册了它，写工具就从「同步门」切换为「挂起等批准」，
+        // 这是宿主的有意选择（见 Security/WechatToolApprovalStateMachine 的 remarks）。
+        services.TryAddSingleton<IWechatToolApprovalStore, InMemoryWechatToolApprovalStore>();
+
         // 生成物：逐执行器的「依赖缺席 ⇒ null 执行器」工厂 + 域注册器工厂。
         services.AddWechatApprovalToolHandlersCore();
         services.AddWechatCheckinToolHandlersCore();

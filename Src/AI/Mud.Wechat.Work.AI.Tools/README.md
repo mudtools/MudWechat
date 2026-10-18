@@ -18,7 +18,9 @@
 | `Registration.WechatToolRegistration` / `IWechatToolDomainRegistrar` / `WechatToolDomainRegistrars` | 生成物写入注册表的接缝 |
 | `Security.WechatToolPolicy` | 白名单（默认只读全开、写类全关、强制授权）；`Validate()` 后冻结，未知名/写工具未开授权即 fail-fast |
 | `Security.IWechatToolAuthorizer` / `WechatToolAuthorizationContext` / `WechatToolAuthorizationResult` | 授权门禁端口：入参只给「应用 + 企业 + 风险 + 权限点 + 入参摘要」（不含原文与令牌） |
-| `Security.IWechatToolApprovalGate` / `WechatToolApprovalDecision` | 写工具 HITL 审批门（同步两态：放行/拒绝；「挂起→批准→续跑」属审批状态机，未在本端口开语义） |
+| `Security.IWechatToolApprovalGate` / `WechatToolApprovalDecision` | 写工具 HITL 审批门（同步两态：放行/拒绝；「挂起→批准→续跑」走状态机，见下一行） |
+| `Security.WechatToolApprovalStateMachine` / `WechatToolApprovalState` / `WechatToolApprovalTicket` | 挂起式审批状态机（五态：Pending → Approved/Rejected/Expired → Consumed；一次性兑现 + 入参摘要绑定 + 惰性过期） |
+| `Security.IWechatToolApprovalStore` / `InMemoryWechatToolApprovalStore` | 审批工单存储端口（默认进程内；多实例由宿主前置注册分布式实现，预注册者胜出） |
 | `Security.WechatToolDispatcher` | 调用唯一入口：白名单 → 授权 → 审批（写）→ 执行 → 异常归一（租户切换由回合作用域承担，此处不重复进入） |
 | `AIFunctions.WechatToolFunction`（internal）/ `WechatToolFunctions` | 白名单 → MAF `AIFunction` 投影（自建子类，零反射；`JsonSchema` 只取生成物的 `parameters` 子块） |
 | `ToolArgs`（internal） | 生成物 Args 解包器消费的 helper 集（六个参数形态各一对 Require/Optional） |
@@ -79,18 +81,30 @@
 故该域工具消费自建口径 `IWechatWorkInternalCheckinRecordService`；代开发/第三方部署下该域软缺席（工具不入表）。
 
 写工具的默认姿态：**注册但不可达**——`IsWrite = true` 使它进入 `WechatToolNames.WriteAll`，而 `WechatToolPolicy` 默认只装只读面，
-故模型看不到它（投影按白名单）、调用被拒；宿主须显式 `Enable(...)` + 提供授权器 + 提供
-`IWechatToolApprovalGate`（缺任一即拒绝，fail-closed）才可执行。首个写工具选「建标签」是为了先跑通写路径：
-可逆、无外部副作用；消息发送、成员增删等外部可见/不可逆动作应在审批状态机就绪后再开放。
+故模型看不到它（投影按白名单）、调用被拒；宿主须显式 `Enable(...)` + 提供授权器 + 提供审批通道（缺任一即拒绝，fail-closed）
+才可执行。审批通道有两条，**二选一**：
+
+| 通道 | 形态 | 适用 |
+|---|---|---|
+| 同步门 `IWechatToolApprovalGate` | 调用当下返回放行/拒绝 | 规则自动放行、宿主已有人机通道 |
+| 挂起式 `WechatToolApprovalStateMachine` | 调用当下返回**审批单号**，人工批准后宿主调 `ResumeAsync(ticketId, toolName, args)` 续跑 | 判定要等一会儿（消息通知管理员、工单系统） |
+
+挂起式的三条硬约束各由用例锁定：**一次性兑现**（`Consumed` 终态，重复续跑被拒）、**批准与执行内容绑定**
+（入参摘要校验，「批准 A、执行 B」不可能）、**惰性过期**（超时工单首次读取即转 `Expired`，不再可执行）。
+工单只存摘要不存原始入参、不含令牌；多实例部署由宿主前置注册分布式 `IWechatToolApprovalStore`（默认进程内实现仅覆盖单实例）。
+启用方式：宿主先注册 `WechatToolApprovalStateMachine`（可带自己的 store 与 TTL），再调 `AddWechatWorkTools`——
+**不自动注册**是有意的：注册了它，写工具就从同步门切换为挂起等批准，这是宿主的选择而不是装配默认值。
+首个写工具选「建标签」是为了先跑通写路径：可逆、无外部副作用；消息发送、群发等外部可见动作在挂起式审批就绪后即可开放。
 
 **L3 高危写恒需审批，不可用开关关闭**（`wedoc.doc.delete` 为样本）：`WechatToolPolicy.Validate()` 在
 「启用了 `HighRiskWrite` 工具但 `RequireApprovalForWrites = false`」时 fail-fast（`InvalidOperationException`），
-派发层再兜一层——未注入 `IWechatToolApprovalGate` 时按 fail-closed 拒绝且**不触达** SDK 写方法。
+派发层再兜一层——未注入审批通道时按 fail-closed 拒绝且**不触达** SDK 写方法。
 两条不变式各由用例锁定：`Policy_EnablingHighRiskWriteWithApprovalDisabled_ShouldFailFast`、
 `Invoke_HighRiskWriteWithoutApprovalGate_ShouldFailClosed`，放行路径见 `Invoke_HighRiskWriteWithApproval_ShouldExecute`。
 顺序与上下文同样被锁：**先授权后审批**（`Invoke_HighRiskWriteWhenAuthorizationDenied_ShouldNotAskApproval`——未获授权时
 审批门一次都不会被调用），审批输入携带 `Risk = HighRiskWrite` 与 scope、但只含入参摘要不含原文
-（`Invoke_HighRiskWrite_ApprovalShouldSeeHighRiskContext`）。
+（`Invoke_HighRiskWrite_ApprovalShouldSeeHighRiskContext`）。挂起式同样先授权后挂起，续跑时再复核一次白名单与授权点
+（批准是「这一次」的事实，策略可能已随装配变化）。
 
 成员域执行器只投影 `userid/姓名/别名/职务/部门/主部门/状态/直属上级`，**不外发**手机号、邮箱、头像、地址、二维码
 （个人信息一旦进入提示词与日志即不可撤回；需要时由宿主经 oauth2 授权专线提供）。
@@ -245,8 +259,6 @@ powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/Update-WechatToolG
 
 ## 待办（S3）
 
-- **审批状态机**：`IWechatToolApprovalGate` 目前只支持「调用当下判定」；「挂起 → 人工批准 → 续跑」需要
-  `PendingReplyTurnState` 之类的持久化 + 重投递通道（可复用回合 outbox），届时不得把挂起态塞进现有两态返回值。
 - **高危写（L3）已落地首个样本** `wedoc.doc.delete`：策略校验 + 派发分支 + 三条用例（策略 fail-fast /
   无门 fail-closed / 放行执行）均已就位；新增删除、撤回、继承、批量导出类工具沿用同一形态即可。
 - **`approval.list` 待引擎支持显式风险覆盖**：`BatchGetApprovalNumbersAsync` 被方法名危险词（`batch`）误判为

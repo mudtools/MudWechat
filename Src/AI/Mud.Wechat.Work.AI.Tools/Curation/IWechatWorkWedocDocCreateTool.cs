@@ -23,17 +23,19 @@ namespace Mud.Wechat.Work.AI.Tools.Curation;
 /// </remarks>
 [AgentTool(
     name: "wedoc.doc.create",
-    Description = "新建企业微信微文档。参数 doc_name 为文档名（≤255 字符，必填）；doc_type 为整数类型（3 文档 / 4 表格 / 10 智能表格 / 11 智能文档，必填）；spaceid 与 fatherid 可选（指定空间时两者须同时给出）；admin_users 可选（管理员 userid 列表）。返回新建文档的 docid 与访问 url——docid 仅创建时返回，请妥善保存。该操作为受控写：需宿主启用 + 授权通过 + 审批放行。",
+    Description = "新建企业微信微文档。参数 doc_name 为文档名（≤255 字符，必填）；doc_type 为文档类型（Document 文档 / Spreadsheet 表格 / SmartSheet 智能表格 / SmartDoc 智能文档，必填）；spaceid 与 fatherid 可选（指定空间时两者须同时给出）；admin_users 可选（管理员 userid 列表）。返回新建文档的 docid 与访问 url——docid 仅创建时返回，请妥善保存。该操作为受控写：需宿主启用 + 授权通过 + 审批放行。",
     Source = "IWechatWorkWedocService.CreateDocumentAsync",
     RequiredScopes = ["wedoc.doc.write"],
     IsWrite = true)]
 public interface IWechatWorkWedocDocCreateTool
 {
     /// <summary>新建文档。</summary>
-    /// <param name="doc_name">文档名（≤255 字符）。</param>
-    /// <param name="doc_type">文档类型（3/4/10/11）。</param>
-    /// <param name="spaceid">空间 ID（可空）。</param>
-    /// <param name="fatherid">父目录 ID（可空；指定 spaceid 时必填）。</param>
-    /// <param name="admin_users">管理员 userid 列表（可空）。</param>
-    void Create(string doc_name, int doc_type, string? spaceid, string? fatherid, string[]? admin_users);
+    /// <returns>白名单投影后的 JSON 文本（docid、url）。</returns>
+    Task<string> CreateDocumentAsync(
+        [ToolParameter("doc_name", "文档名（≤255 字符）。", Required = true)] string doc_name,
+        [ToolParameter("doc_type", "文档类型（Document 文档 / Spreadsheet 表格 / SmartSheet 智能表格 / SmartDoc 智能文档）。", EnumType = typeof(WechatWedocDocTypes))] int doc_type,
+        [ToolParameter("spaceid", "空间 ID（可空）。")] string? spaceid,
+        [ToolParameter("fatherid", "父目录 ID（可空；指定 spaceid 时必填）。")] string? fatherid,
+        [ToolParameter("admin_users", "管理员 userid 列表（可空）。")] string[]? admin_users,
+        CancellationToken cancellationToken = default);
 }

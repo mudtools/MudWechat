@@ -114,6 +114,42 @@ public class ContactsUserToolHandlersTests
         result.Text.Should().Contain("userid not found");
     }
 
+    [Fact]
+    public async Task ListIds_ShouldProjectUseridAndDepartmentOnly()
+    {
+        _users
+            .Setup(u => u.ListUserIdsAsync(It.IsAny<ListUserIdsRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ListUserIdsResponse
+            {
+                ErrorCode = 0,
+                DeptUser =
+                [
+                    new UserDepartmentInfo { UserId = "zhangsan", Department = 2 },
+                    new UserDepartmentInfo { OpenUserId = "wo-open-1", Department = 2 },
+                ],
+                NextCursor = "c2",
+            });
+
+        var result = await Handler().ListIdsAsync(Args(), CancellationToken.None);
+
+        result.Text.Should().Contain("\"userid\":\"zhangsan\"");
+        result.Text.Should().Contain("\"open_userid\":\"wo-open-1\"");
+        result.Text.Should().Contain("\"department\":2");
+        result.Text.Should().Contain("\"count\":2");
+        result.Text.Should().Contain("\"next_cursor\":\"c2\"");
+    }
+
+    [Fact]
+    public async Task ListIds_LimitOverOfficialMax_ShouldReturnErrorWithoutCallingSdk()
+    {
+        var result = await Handler().ListIdsAsync(Args(("limit", 50000)), CancellationToken.None);
+
+        result.Text.Should().Contain("1~10000");
+        _users.Verify(
+            u => u.ListUserIdsAsync(It.IsAny<ListUserIdsRequest>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
     private ContactsUserToolHandlers Handler() => new(_users.Object);
 
     private static Dictionary<string, object?> Args(params (string Key, object? Value)[] pairs)

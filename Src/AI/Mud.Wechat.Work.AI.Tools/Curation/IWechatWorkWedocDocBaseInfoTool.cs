@@ -25,6 +25,8 @@ namespace Mud.Wechat.Work.AI.Tools.Curation;
 public interface IWechatWorkWedocDocBaseInfoTool
 {
     /// <summary>读取文档基础信息。</summary>
-    /// <param name="docid">文档 ID。</param>
-    void Doc(string docid);
+    /// <returns>白名单投影后的 JSON 文本（docid、doc_name、doc_type、create_time、modify_time）。</returns>
+    Task<string> GetDocumentBaseInfoAsync(
+        [ToolParameter("docid", "文档 ID。", Required = true)] string docid,
+        CancellationToken cancellationToken = default);
 }

@@ -27,6 +27,8 @@ namespace Mud.Wechat.Work.AI.Tools.Curation;
 public interface IWechatWorkExternalContactContactListTool
 {
     /// <summary>列出某成员添加的客户 ID。</summary>
-    /// <param name="userid">成员 UserID。</param>
-    void List(string userid);
+    /// <returns>白名单投影后的 JSON 文本（external_userid_list、count）。</returns>
+    Task<string> GetCustomerListAsync(
+        [ToolParameter("userid", "成员 UserID。", Required = true)] string userid,
+        CancellationToken cancellationToken = default);
 }

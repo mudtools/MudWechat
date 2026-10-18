@@ -25,6 +25,8 @@ namespace Mud.Wechat.Work.AI.Tools.Curation;
 public interface IWechatWorkContactsTagMembersTool
 {
     /// <summary>读取标签成员。</summary>
-    /// <param name="tag_id">标签 ID（整数）。</param>
-    void Members(int tag_id);
+    /// <returns>白名单投影后的 JSON 文本（tagname、userlist、partylist、user_count、department_count）。</returns>
+    Task<string> GetTagMembersAsync(
+        [ToolParameter("tag_id", "标签 ID（整数）。")] int tag_id,
+        CancellationToken cancellationToken = default);
 }

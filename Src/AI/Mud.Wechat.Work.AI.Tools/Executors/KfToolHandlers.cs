@@ -31,12 +31,20 @@ namespace Mud.Wechat.Work.AI.Tools.Executors;
 /// <param name="accounts">客服账号 SDK。</param>
 /// <param name="servicers">接待人员 SDK。</param>
 /// <param name="sessions">会话与消息 SDK。</param>
+/// <param name="statistics">客服数据统计 SDK。</param>
 public sealed class KfToolHandlers(
     IWechatWorkKfAccountService accounts,
     IWechatWorkKfServicerService servicers,
-    IWechatWorkKfSessionService sessions)
+    IWechatWorkKfSessionService sessions,
+    IWechatWorkKfStatisticsService statistics)
 {
     private const int MaxPageSize = 100;
+
+    /// <summary>客服统计的官方时间跨度上限（闭区间，31 天）。</summary>
+    private const long MaxStatSpanSeconds = 31L * 24 * 60 * 60;
+
+    private const string StatTimeFormatHint =
+        "时间格式非法：start_time / end_time 应为 Unix 秒（如 \"1700000000\"）或带时区的 ISO 8601（如 \"2026-10-10T09:00:00+08:00\"），且不接受无时区文本。";
 
     private readonly IWechatWorkKfAccountService _accounts = accounts ?? throw new ArgumentNullException(nameof(accounts));
 
@@ -45,6 +53,9 @@ public sealed class KfToolHandlers(
 
     private readonly IWechatWorkKfSessionService _sessions =
         sessions ?? throw new ArgumentNullException(nameof(sessions));
+
+    private readonly IWechatWorkKfStatisticsService _statistics =
+        statistics ?? throw new ArgumentNullException(nameof(statistics));
 
     /// <summary>执行 <c>kf.account.list</c>。</summary>
     /// <param name="args">模型侧入参。</param>
@@ -170,11 +181,7 @@ public sealed class KfToolHandlers(
     {
         var request = KfMessageSendArgs.Unpack(args);
 
-        if (string.IsNullOrWhiteSpace(request.Content))
-        {
-            return ToolResult.FromError("参数非法：content 不能为空。");
-        }
-
+        // content / touser / open_kfid 的「必填且非空白」由声明面 Required 与生成的解包器收口。
         var response = await _sessions.SendTextMessageAsync(
             new SendKfTextMsgRequest
             {
@@ -208,4 +215,178 @@ public sealed class KfToolHandlers(
         5 => "待接入",
         _ => "未知状态",
     };
+
+    /// <summary>执行 <c>kf.corp_statistic</c>。</summary>
+    /// <param name="args">模型侧入参（<c>open_kfid</c> / 时间范围必填）。</param>
+    /// <param name="cancellationToken">取消令牌。</param>
+    /// <returns>工具结果。</returns>
+    [ToolHandler(typeof(IWechatWorkKfCorpStatisticTool))]
+    public async Task<ToolResult> GetCorpStatisticAsync(
+        IReadOnlyDictionary<string, object?> args,
+        CancellationToken cancellationToken)
+    {
+        var request = KfCorpStatisticArgs.Unpack(args);
+
+        if (!TryResolveStatRange(request.StartTime, request.EndTime, out var start, out var end, out var error))
+        {
+            return ToolResult.FromError(error!);
+        }
+
+        var response = await _statistics.GetCorpStatisticAsync(
+            new GetKfCorpStatisticRequest
+            {
+                OpenKfId = request.OpenKfid,
+                StartTime = start,
+                EndTime = end,
+            },
+            cancellationToken).ConfigureAwait(false);
+        var outcome = WechatApiResultReader.Read(response);
+        if (!outcome.Ok)
+        {
+            return ToolResult.FromError(outcome.ErrorText ?? "拉取客服统计数据失败。");
+        }
+
+        var days = new JsonArray();
+        foreach (var item in outcome.Data?.StatisticList ?? [])
+        {
+            days.Add((JsonNode?)new JsonObject
+            {
+                ["stat_time"] = JsonValue.Create(item.StatTime),
+                ["statistic"] = ToCorpStatisticNode(item.Statistic),
+            });
+        }
+
+        // 空列表是合法答案（该区间内无统计数据），不转错误。
+        return ToolResult.FromText(ToolResultJson.ToText(new JsonObject
+        {
+            ["statistic_list"] = days,
+            ["count"] = days.Count,
+        }));
+    }
+
+    /// <summary>执行 <c>kf.servicer_statistic</c>。</summary>
+    /// <param name="args">模型侧入参（<c>open_kfid</c> / 时间范围必填，<c>servicer_userid</c> 可选）。</param>
+    /// <param name="cancellationToken">取消令牌。</param>
+    /// <returns>工具结果。</returns>
+    [ToolHandler(typeof(IWechatWorkKfServicerStatisticTool))]
+    public async Task<ToolResult> GetServicerStatisticAsync(
+        IReadOnlyDictionary<string, object?> args,
+        CancellationToken cancellationToken)
+    {
+        var request = KfServicerStatisticArgs.Unpack(args);
+
+        if (!TryResolveStatRange(request.StartTime, request.EndTime, out var start, out var end, out var error))
+        {
+            return ToolResult.FromError(error!);
+        }
+
+        var response = await _statistics.GetServicerStatisticAsync(
+            new GetKfServicerStatisticRequest
+            {
+                OpenKfId = request.OpenKfid,
+                ServicerUserId = request.ServicerUserid,
+                StartTime = start,
+                EndTime = end,
+            },
+            cancellationToken).ConfigureAwait(false);
+        var outcome = WechatApiResultReader.Read(response);
+        if (!outcome.Ok)
+        {
+            return ToolResult.FromError(outcome.ErrorText ?? "拉取接待人员统计数据失败。");
+        }
+
+        var days = new JsonArray();
+        foreach (var item in outcome.Data?.StatisticList ?? [])
+        {
+            days.Add((JsonNode?)new JsonObject
+            {
+                ["stat_time"] = JsonValue.Create(item.StatTime),
+                ["statistic"] = ToServicerStatisticNode(item.Statistic),
+            });
+        }
+
+        return ToolResult.FromText(ToolResultJson.ToText(new JsonObject
+        {
+            ["statistic_list"] = days,
+            ["count"] = days.Count,
+        }));
+    }
+
+    /// <summary>解析并按官方跨度上限（31 天闭区间）校验统计时间范围。</summary>
+    private static bool TryResolveStatRange(
+        string? startText,
+        string? endText,
+        out long start,
+        out long end,
+        out string? error)
+    {
+        end = 0;
+        error = null;
+
+        if (!ToolTimeText.TryParseUnixSeconds(startText, out start))
+        {
+            error = StatTimeFormatHint;
+            return false;
+        }
+
+        if (!ToolTimeText.TryParseUnixSeconds(endText, out end))
+        {
+            error = StatTimeFormatHint;
+            return false;
+        }
+
+        if (end <= start)
+        {
+            error = "参数非法：end_time 必须大于 start_time。";
+            return false;
+        }
+
+        if (end - start > MaxStatSpanSeconds)
+        {
+            error = "参数非法：起止时间间隔不得超过 31 天（官方上限），请缩小范围后分批查询。";
+            return false;
+        }
+
+        return true;
+    }
+
+    /// <summary>企业汇总指标投影（无数据的指标官方缺省，此处按 null 投影）。</summary>
+    private static JsonNode? ToCorpStatisticNode(KfCorpStatisticData? data)
+        => data is null
+            ? null
+            : new JsonObject
+            {
+                ["session_cnt"] = JsonValue.Create(data.SessionCount),
+                ["customer_cnt"] = JsonValue.Create(data.CustomerCount),
+                ["customer_msg_cnt"] = JsonValue.Create(data.CustomerMsgCount),
+                ["upgrade_service_customer_cnt"] = JsonValue.Create(data.UpgradeServiceCustomerCount),
+                ["ai_session_reply_cnt"] = JsonValue.Create(data.AiSessionReplyCount),
+                ["ai_transfer_rate"] = JsonValue.Create(data.AiTransferRate),
+                ["ai_knowledge_hit_rate"] = JsonValue.Create(data.AiKnowledgeHitRate),
+                ["msg_rejected_customer_cnt"] = JsonValue.Create(data.MsgRejectedCustomerCount),
+            };
+
+    /// <summary>接待人员指标投影（含回复率、首次响应时长与满意度三项）。</summary>
+    private static JsonNode? ToServicerStatisticNode(KfServicerStatisticData? data)
+        => data is null
+            ? null
+            : new JsonObject
+            {
+                ["session_cnt"] = JsonValue.Create(data.SessionCount),
+                ["customer_cnt"] = JsonValue.Create(data.CustomerCount),
+                ["customer_msg_cnt"] = JsonValue.Create(data.CustomerMsgCount),
+                ["reply_rate"] = JsonValue.Create(data.ReplyRate),
+                ["first_reply_average_sec"] = JsonValue.Create(data.FirstReplyAverageSec),
+                ["satisfaction_investgate_count"] = JsonValue.Create(data.SatisfactionInvestgateCount),
+                ["satisfaction_participation_rate"] = JsonValue.Create(data.SatisfactionParticipationRate),
+                ["satisfied_rate"] = JsonValue.Create(data.SatisfiedRate),
+                ["middling_rate"] = JsonValue.Create(data.MiddlingRate),
+                ["dissatisfied_rate"] = JsonValue.Create(data.DissatisfiedRate),
+                ["upgrade_service_customer_cnt"] = JsonValue.Create(data.UpgradeServiceCustomerCount),
+                ["upgrade_service_member_invite_count"] = JsonValue.Create(data.UpgradeServiceMemberInviteCount),
+                ["upgrade_service_member_customer_count"] = JsonValue.Create(data.UpgradeServiceMemberCustomerCount),
+                ["upgrade_service_groupchat_invite_count"] = JsonValue.Create(data.UpgradeServiceGroupchatInviteCount),
+                ["upgrade_service_groupchat_customer_count"] = JsonValue.Create(data.UpgradeServiceGroupchatCustomerCount),
+                ["msg_rejected_customer_cnt"] = JsonValue.Create(data.MsgRejectedCustomerCount),
+            };
 }

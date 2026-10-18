@@ -84,11 +84,8 @@ public sealed class CheckinToolHandlers(IWechatWorkInternalCheckinRecordService 
             return ToolResult.FromError("参数非法：时间跨度不得超过 30 天，请缩小范围后分批查询。");
         }
 
+        // data_type 的取值闭集（1/2/3）由声明面 EnumType 与生成的解包器收口——越界值到不了这里；此处只补官方默认值。
         var dataType = request.DataType ?? AllCheckinTypes;
-        if (dataType is < 1 or > 3)
-        {
-            return ToolResult.FromError("参数非法：data_type 只能是 1（上下班打卡）、2（外出打卡）或 3（全部打卡）。");
-        }
 
         var response = await _checkin.GetCheckinDataAsync(
             new GetCheckinDataRequest

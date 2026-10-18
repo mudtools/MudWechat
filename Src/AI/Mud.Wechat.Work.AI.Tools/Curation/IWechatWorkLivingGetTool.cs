@@ -24,6 +24,8 @@ namespace Mud.Wechat.Work.AI.Tools.Curation;
 public interface IWechatWorkLivingGetTool
 {
     /// <summary>读取直播详情。</summary>
-    /// <param name="livingid">直播 ID。</param>
-    void Get(string livingid);
+    /// <returns>白名单投影后的 JSON 文本（theme、living_start、living_duration、status、anchor_userid、description、viewer_num、comment_num、mic_num、online_count、subscribe_count、replay_status、type）。</returns>
+    Task<string> GetLivingInfoAsync(
+        [ToolParameter("livingid", "直播 ID。", Required = true)] string livingid,
+        CancellationToken cancellationToken = default);
 }

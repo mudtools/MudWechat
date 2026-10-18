@@ -29,5 +29,6 @@ namespace Mud.Wechat.Work.AI.Tools.Curation;
 public interface IWechatWorkExternalContactFollowUserListTool
 {
     /// <summary>拉取配置了客户联系功能的成员列表。</summary>
-    void List();
+    /// <returns>白名单投影后的 JSON 文本（follow_user、count）。</returns>
+    Task<string> GetFollowUserListAsync(CancellationToken cancellationToken = default);
 }

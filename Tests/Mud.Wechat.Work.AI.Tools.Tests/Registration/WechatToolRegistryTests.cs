@@ -128,6 +128,7 @@ public class WechatToolRegistryTests
         if (approval is not null)
         {
             services.AddSingleton(approval);
+            services.AddSingleton(new Mock<IWechatWorkApprovalTemplateService>(MockBehavior.Loose).Object);
         }
 
         if (checkin is not null)
@@ -140,6 +141,12 @@ public class WechatToolRegistryTests
             services.AddSingleton(new Mock<IWechatWorkExternalContactFollowUserService>(MockBehavior.Loose).Object);
             services.AddSingleton(new Mock<IWechatWorkExternalContactCustomerService>(MockBehavior.Loose).Object);
             services.AddSingleton(new Mock<IWechatWorkExternalContactTagService>(MockBehavior.Loose).Object);
+            services.AddSingleton(new Mock<IWechatWorkExternalContactGroupChatService>(MockBehavior.Loose).Object);
+            services.AddSingleton(new Mock<IWechatWorkExternalContactMomentService>(MockBehavior.Loose).Object);
+            services.AddSingleton(new Mock<IWechatWorkExternalContactStatisticsService>(MockBehavior.Loose).Object);
+            services.AddSingleton(new Mock<IWechatWorkExternalContactGroupMsgService>(MockBehavior.Loose).Object);
+            services.AddSingleton(new Mock<IWechatWorkExternalContactProductAlbumService>(MockBehavior.Loose).Object);
+            services.AddSingleton(new Mock<IWechatWorkExternalContactResignedInheritanceService>(MockBehavior.Loose).Object);
         }
 
         if (meeting)
@@ -169,6 +176,7 @@ public class WechatToolRegistryTests
             services.AddSingleton(new Mock<IWechatWorkKfAccountService>(MockBehavior.Loose).Object);
             services.AddSingleton(new Mock<IWechatWorkKfServicerService>(MockBehavior.Loose).Object);
             services.AddSingleton(new Mock<IWechatWorkKfSessionService>(MockBehavior.Loose).Object);
+            services.AddSingleton(new Mock<IWechatWorkKfStatisticsService>(MockBehavior.Loose).Object);
         }
 
         return services

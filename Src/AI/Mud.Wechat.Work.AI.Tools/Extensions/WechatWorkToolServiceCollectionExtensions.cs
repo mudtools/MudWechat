@@ -76,6 +76,12 @@ public static class WechatWorkToolServiceCollectionExtensions
         services.AddWechatContactsUserToolHandlersCore();
         services.AddWechatContactsTagToolHandlersCore();
         services.AddWechatExternalContactToolHandlersCore();
+        services.AddWechatExternalContactGroupChatToolHandlersCore();
+        services.AddWechatExternalContactMomentToolHandlersCore();
+        services.AddWechatExternalContactStatisticsToolHandlersCore();
+        services.AddWechatExternalContactGroupMsgToolHandlersCore();
+        services.AddWechatExternalContactProductAlbumToolHandlersCore();
+        services.AddWechatExternalContactInheritanceToolHandlersCore();
         services.AddWechatJournalToolHandlersCore();
         services.AddWechatKfToolHandlersCore();
         services.AddWechatLivingToolHandlersCore();

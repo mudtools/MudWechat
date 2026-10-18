@@ -24,7 +24,9 @@ namespace Mud.Wechat.Work.AI.Tools.Curation;
 public interface IWechatWorkKfSessionGetTool
 {
     /// <summary>查询会话状态。</summary>
-    /// <param name="open_kfid">客服账号 ID。</param>
-    /// <param name="external_userid">客户 ID。</param>
-    void Get(string open_kfid, string external_userid);
+    /// <returns>白名单投影后的 JSON 文本（service_state、service_state_desc、servicer_userid）。</returns>
+    Task<string> GetServiceStateAsync(
+        [ToolParameter("open_kfid", "客服账号 ID。", Required = true)] string open_kfid,
+        [ToolParameter("external_userid", "客户 ID。", Required = true)] string external_userid,
+        CancellationToken cancellationToken = default);
 }

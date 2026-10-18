@@ -30,5 +30,6 @@ namespace Mud.Wechat.Work.AI.Tools.Curation;
 public interface IWechatWorkExternalContactTagListTool
 {
     /// <summary>读取企业客户标签库。</summary>
-    void List();
+    /// <returns>白名单投影后的 JSON 文本（tag_group、group_id、group_name、tags）。</returns>
+    Task<string> GetCorpTagListAsync(CancellationToken cancellationToken = default);
 }

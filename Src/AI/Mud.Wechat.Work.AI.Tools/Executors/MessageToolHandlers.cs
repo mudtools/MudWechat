@@ -46,21 +46,12 @@ public sealed class MessageToolHandlers(IWechatWorkMessageService message)
     {
         var request = MessageSendArgs.Unpack(args);
 
-        if (string.IsNullOrWhiteSpace(request.Content))
-        {
-            return ToolResult.FromError("参数非法：content 不能为空。");
-        }
-
+        // content / touser 的「必填且非空白」由声明面 Required 与生成的解包器收口（缺失/空白抛参数类错误）。
         // 官方按 UTF-8 字节计，20 字符的中文就可能超过 60 字节，必须按字节而不是按字符校验。
         var byteCount = System.Text.Encoding.UTF8.GetByteCount(request.Content);
         if (byteCount > MaxContentBytes)
         {
             return ToolResult.FromError($"参数非法：content 超过官方上限（{byteCount} > {MaxContentBytes} 字节），请精简后重发。");
-        }
-
-        if (string.IsNullOrWhiteSpace(request.Touser))
-        {
-            return ToolResult.FromError("参数非法：touser 不能为空。");
         }
 
         var response = await _message.SendTextMessageAsync(

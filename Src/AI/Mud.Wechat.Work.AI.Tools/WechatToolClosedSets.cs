@@ -84,6 +84,39 @@ internal static class WechatMessageSafeModes
     public const int Confidential = 1;
 }
 
+/// <summary>消息发送 <c>msg_type</c> 取值闭集（表达形态）。</summary>
+/// <remarks>
+/// 三个形态共用同一端点 <c>/cgi-bin/message/send</c>，只是消息体不同。合成一个工具而不是三个，
+/// 因为模型对「发消息」只有一个心智：拆开会让它在 text/markdown/textcard 之间随机选，且描述长度 ×3。
+/// </remarks>
+internal static class WechatMessageTypes
+{
+    /// <summary>纯文本（官方值 1，默认）。</summary>
+    public const int Text = 1;
+
+    /// <summary>markdown（标题/加粗/链接/行内代码/引用；不支持 id 转译，微工作台不展示）。</summary>
+    public const int Markdown = 2;
+
+    /// <summary>文本卡片（标题 + 描述 + 跳转链接 + 按钮；适合「一条可点开的通知」）。</summary>
+    public const int TextCard = 3;
+}
+
+/// <summary>审批 <c>sp_status</c> 取值闭集（审批单状态，官方值）。</summary>
+internal static class WechatApprovalStatuses
+{
+    /// <summary>待审批（官方值 1）。</summary>
+    public const int Pending = 1;
+
+    /// <summary>已通过（官方值 2）。</summary>
+    public const int Approved = 2;
+
+    /// <summary>已驳回（官方值 3）。</summary>
+    public const int Rejected = 3;
+
+    /// <summary>已撤销（官方值 4）。</summary>
+    public const int Canceled = 4;
+}
+
 /// <summary>客户群统计 <c>order_by</c> 取值闭集（排行维度）。</summary>
 internal static class WechatStatisticsOrderBy
 {

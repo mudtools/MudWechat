@@ -181,6 +181,88 @@ public class ApprovalToolHandlersTests
         result.Text.Should().Contain("template_content");
     }
 
+    [Fact]
+    public async Task List_ShouldPassFiltersAndProjectSpNoOnly()
+    {
+        _approval
+            .Setup(a => a.BatchGetApprovalNumbersAsync(It.IsAny<BatchGetApprovalNumbersRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new BatchGetApprovalNumbersResponse
+            {
+                ErrorCode = 0,
+                SpNoList = ["202310100001", "202310100002"],
+                NewNextCursor = "c2",
+            });
+
+        var result = await Handler().ListAsync(
+            Args(("start_time", "1700000000"), ("end_time", "1700086400"), ("sp_status", 1)),
+            CancellationToken.None);
+
+        result.Text.Should().Contain("\"count\":2");
+        result.Text.Should().Contain("\"sp_no_list\":[\"202310100001\",\"202310100002\"]");
+        result.Text.Should().Contain("\"next_cursor\":\"c2\"");
+        _approval.Verify(
+            a => a.BatchGetApprovalNumbersAsync(
+                It.Is<BatchGetApprovalNumbersRequest>(r =>
+                    r.Starttime == "1700000000"
+                    && r.Endtime == "1700086400"
+                    && r.Size == 100
+                    && r.Filters != null
+                    && r.Filters.Count == 1
+                    && r.Filters[0].Key == "sp_status"
+                    && r.Filters[0].Value == "1"),
+                It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task List_WhenSpanExceedsThirtyOneDays_ShouldRejectBeforeCallingSdk()
+    {
+        var result = await Handler().ListAsync(
+            Args(("start_time", "1700000000"), ("end_time", "1703000000")),
+            CancellationToken.None);
+
+        result.Text.Should().Contain("31 天");
+        _approval.Verify(
+            a => a.BatchGetApprovalNumbersAsync(It.IsAny<BatchGetApprovalNumbersRequest>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task List_WhenEndNotAfterStart_ShouldReject()
+    {
+        var result = await Handler().ListAsync(
+            Args(("start_time", "1700086400"), ("end_time", "1700000000")),
+            CancellationToken.None);
+
+        result.Text.Should().Contain("end_time");
+    }
+
+    [Fact]
+    public async Task List_WhenTimesAreNotUnixSeconds_ShouldExplainFormat()
+    {
+        var result = await Handler().ListAsync(
+            Args(("start_time", "2026-10-18"), ("end_time", "2026-10-19")),
+            CancellationToken.None);
+
+        result.Text.Should().Contain("Unix");
+    }
+
+    [Fact]
+    public async Task List_WhenEmpty_ShouldReturnHintWithoutError()
+    {
+        _approval
+            .Setup(a => a.BatchGetApprovalNumbersAsync(It.IsAny<BatchGetApprovalNumbersRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new BatchGetApprovalNumbersResponse { ErrorCode = 0, SpNoList = [] });
+
+        var result = await Handler().ListAsync(
+            Args(("start_time", "1700000000"), ("end_time", "1700086400")),
+            CancellationToken.None);
+
+        result.Text.Should().Contain("\"count\":0");
+        result.Text.Should().Contain("hint");
+        result.Text.Should().NotContain("errcode", "空页是合法答案，转错误会让模型改参数重试");
+    }
+
     private ApprovalToolHandlers Handler() => new(_approval.Object, _template.Object);
 
     private static Dictionary<string, object?> Args(params (string Key, object? Value)[] pairs)

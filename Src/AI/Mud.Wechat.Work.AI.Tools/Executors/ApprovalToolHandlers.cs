@@ -5,6 +5,7 @@
 //  不得利用本项目从事危害国家安全、扰乱社会秩序、侵犯他人合法权益等法律法规禁止的活动！任何基于本项目开发而产生的一切法律纠纷和责任，我们不承担任何责任！
 // -----------------------------------------------------------------------
 
+using System.Globalization;
 using System.Text.Json.Nodes;
 using Mud.AI.Abstractions.Tools.Handlers;
 using Mud.AI.Agent.Tools;
@@ -16,14 +17,17 @@ using Mud.Wechat.Work.Interfaces;
 namespace Mud.Wechat.Work.AI.Tools.Executors;
 
 /// <summary>
-/// 审批域执行器：<c>approval.get</c> 落到 <see cref="IWechatWorkApprovalService.GetApprovalDetailAsync"/>。
+/// 审批域执行器：<c>approval.list</c>（拉单号）与 <c>approval.get</c>（按单号取详情）、
+/// <c>approval.template.get</c>（取模板字段）。
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>为什么只有详情、没有「按时间范围列单号」</b>：批量取单号的 SDK 方法名 <c>BatchGetApprovalNumbersAsync</c>
-/// 命中剖面的危险词表（<c>batch</c>），引擎据此把工具判为 <c>high-risk-write</c> 并以 <c>MUDWT017</c> 拒绝
-/// 「声明为只读」——把它标成写工具又会让每次查询都要求人工审批。该端点实为只读，属于「按方法名猜风险」的误判；
-/// 在引擎提供显式风险覆盖之前，工具面只承接详情（单号由用户在审批应用/通知里给出）。
+/// <b>两段式读面</b>：列表端点只回 <c>sp_no_list</c>，详情端点才回结构与流转事实。合成一个工具会让
+/// 「列出我这周提交的单子」被迫拉 100 份详情；拆开则模型按需二次调用，且列表本身不含任何表单内容（更安全）。
+/// </para>
+/// <para>
+/// <b>官方限制前置</b>：单次 ≤ 100 条、<c>end_time &gt; start_time</c>、跨度 ≤ 31 天、频率 ≤ 600 次/分。
+/// 前三条在执行器里收口（越界即参数类错误，模型可自我纠错）；频率交给令牌与审计观测。
 /// </para>
 /// <para>
 /// <b>详情只投影结构与流转事实</b>：<c>apply_data.contents[].value</c>（金额、收款账户、证件号等）与
@@ -77,6 +81,86 @@ public sealed class ApprovalToolHandlers(
             ["notifyer"] = ToUserIdArray(info.Notifyer),
             ["comment_count"] = info.Comments?.Count ?? 0,
             ["form_fields"] = ToFieldTitleArray(info.ApplyData),
+        }));
+    }
+
+    /// <summary>官方单次拉取上限（条）。</summary>
+    private const int MaxListSize = 100;
+
+    /// <summary>官方时间跨度上限（天）。</summary>
+    private const int MaxSpanDays = 31;
+
+    /// <summary>执行 <c>approval.list</c>（拉审批单号）。</summary>
+    /// <param name="args">模型侧入参（<c>start_time</c> / <c>end_time</c> 必填）。</param>
+    /// <param name="cancellationToken">取消令牌。</param>
+    /// <returns>工具结果（sp_no_list、count、next_cursor、hint）。</returns>
+    [ToolHandler(typeof(IWechatWorkApprovalListTool))]
+    public async Task<ToolResult> ListAsync(
+        IReadOnlyDictionary<string, object?> args,
+        CancellationToken cancellationToken)
+    {
+        var request = ApprovalListArgs.Unpack(args);
+
+        if (!long.TryParse(request.StartTime, out var start) || !long.TryParse(request.EndTime, out var end))
+        {
+            return ToolResult.FromError(
+                "参数非法：start_time / end_time 必须是 Unix 秒的字符串形式（如 \"1792308600\"），不接受 ISO 时间。");
+        }
+
+        if (end <= start)
+        {
+            return ToolResult.FromError("参数非法：end_time 必须大于 start_time（官方要求，且跨度不超过 31 天）。");
+        }
+
+        if (end - start > MaxSpanDays * 86400L)
+        {
+            return ToolResult.FromError(
+                $"参数非法：时间跨度超过官方上限 31 天（当前 {((end - start) / 86400d):0.#} 天），请缩小范围后分段拉取。");
+        }
+
+        var size = request.Size ?? MaxListSize;
+        if (size is < 1 or > MaxListSize)
+        {
+            return ToolResult.FromError($"参数非法：size 须在 1..{MaxListSize} 之间，实际值: {size}。");
+        }
+
+        List<ApprovalInfoFilter>? filters = null;
+        if (request.SpStatus is { } status)
+        {
+            filters = [new ApprovalInfoFilter { Key = "sp_status", Value = status.ToString(CultureInfo.InvariantCulture) }];
+        }
+
+        var response = await _approval.BatchGetApprovalNumbersAsync(
+            new BatchGetApprovalNumbersRequest
+            {
+                Starttime = start.ToString(CultureInfo.InvariantCulture),
+                Endtime = end.ToString(CultureInfo.InvariantCulture),
+                NewCursor = request.Cursor,
+                Size = size,
+                Filters = filters,
+            },
+            cancellationToken).ConfigureAwait(false);
+        var outcome = WechatApiResultReader.Read(response);
+        if (!outcome.Ok)
+        {
+            return ToolResult.FromError(outcome.ErrorText ?? "拉取审批单号失败。");
+        }
+
+        var items = new JsonArray();
+        foreach (var spNo in outcome.Data?.SpNoList ?? [])
+        {
+            items.Add((JsonNode?)JsonValue.Create(spNo));
+        }
+
+        // 空页是合法答案（该范围内没有单据 / 已翻完），不转错误：模型据此换条件或停止翻页。
+        return ToolResult.FromText(ToolResultJson.ToText(new JsonObject
+        {
+            ["sp_no_list"] = items,
+            ["count"] = items.Count,
+            ["next_cursor"] = outcome.Data?.NewNextCursor,
+            ["hint"] = items.Count == 0
+                ? "该时间范围内没有符合条件的审批单；可放宽 sp_status 或扩大时间范围（跨度 ≤ 31 天）。"
+                : null,
         }));
     }
 

@@ -38,6 +38,8 @@
 | 取值闭集 | `EnumType = typeof(常量类)`；常量类落 `WechatToolClosedSets.cs`（`internal static class` + `public const int`，成员名即模型可见字面量，可访问性不被生成代码引用故可不 public） |
 
 **声明面签名形态（与飞书侧 AI 工具面一致）**：方法名镜像 `Source` 的 SDK 方法名
+（**唯一例外**：一个工具承载多个同路由端点时，方法名表达「动作」而非某个端点——如 `message.send` 的 `msg_type`
+分派 Text/Markdown/TextCard，三者同属 `POST /cgi-bin/message/send`，`Source` 取默认形态的端点以派生路由与响应信封）
 （`IWechatWorkApprovalService.GetApprovalDetailAsync` → `GetApprovalDetailAsync`），返回类型固定 `Task<string>`
 （投影后的 JSON 文本；引擎不消费方法返回类型，输出 Schema 由 `Source` 端点派生）；模型可见参数一行一个，
 末尾恒为 `CancellationToken cancellationToken = default`（引擎自动排除，不入 Schema）；XML 文档只留
@@ -49,12 +51,12 @@
 不再重复声明面已表达的校验。改声明面后必须重固化 golden 快照：
 `scripts/Update-WechatToolGolden.ps1`（`Generated/WechatToolSchemas.golden.txt` 漂移即 `MUDWT014` 构建失败）。
 
-当前策展面（**54 个 = 46 只读 + 8 写（7 受控写 + 1 高危写）**；只读/写分类的权威表是
+当前策展面（**56 个 = 47 只读 + 9 写（8 受控写 + 1 高危写）**；只读/写分类的权威表是
 `Tests/.../ContractGuards/WechatToolSurfaceContractGuards.cs`，本表与之同批维护）：
 
 | 域 | 工具 | SDK 源 |
 |---|---|---|
-| 审批 | `approval.get` / `approval.template.get` | `IWechatWorkApprovalService.{GetApprovalDetailAsync,GetApprovalTemplateAsync}` |
+| 审批 | `approval.get` / `.list` / `.template.get` | `IWechatWorkApprovalService.{GetApprovalDetailAsync,BatchGetApprovalNumbersAsync}` / `IWechatWorkApprovalTemplateService.GetTemplateDetailAsync` |
 | 打卡 | `checkin.record.list` | `IWechatWorkInternalCheckinRecordService.GetCheckinDataAsync`（自建口径） |
 | 通话 | `dial.record.list` | `IWechatWorkDialService`（自建口径） |
 | 客户联系 | `externalcontact.follow_user.list` / `.contact.list` / `.contact.get` / `.tag.list` / `.product_album.list` / `.product_album.get` / `.resigned.unassigned_list` | `IWechatWorkExternalContact{FollowUser,Customer,Tag,ProductAlbum,Resigned}Service` |
@@ -76,7 +78,8 @@
 | 微文档 | `wedoc.doc.base_info` | `IWechatWorkWedocService.GetDocumentBaseInfoAsync` |
 | 微文档（**L2 受控写**） | `wedoc.doc.create` / `.rename` / `.share` | `CreateDocumentAsync` / `RenameDocumentAsync` / `ShareDocumentAsync` |
 | 微文档（**L3 高危写**） | `wedoc.doc.delete` | `DeleteDocumentAsync` |
-| 应用消息（**L2 受控写**） | `message.send` | `IWechatWorkMessageService.SendTextMessageAsync` |
+| 应用消息（**L2 受控写**） | `message.send`（`msg_type` 闭集：Text / Markdown / TextCard） | `IWechatWorkMessageService.{SendTextMessageAsync,Markdown,TextCard}`（同一路由 `POST /cgi-bin/message/send`） |
+| 应用消息（**L2 纠错配对**） | `message.recall` | `IWechatWorkMessageService.RecallMessageAsync` |
 
 打卡域父接口是**零端点收敛面**（三种应用类型的响应结构不同构，第三方为旧字段结构），端点只存在于应用类型子接口，
 故该域工具消费自建口径 `IWechatWorkInternalCheckinRecordService`；代开发/第三方部署下该域软缺席（工具不入表）。
@@ -195,14 +198,15 @@ Deferred / Forbidden 必须一个工具都没有**——「暂不策展」因此
 9. **新增一个域必须在 `AddWechatWorkTools` 补一行 `AddWechat{Domain}ToolHandlersCore()`**：生成物只提供逐域的
    `Add*Core` 方法，汇总调用是**手写的**（不在生成物里）。漏写不会编译报错——该域工具在注册表里**静默缺席**，
    只表现为「模型看不到 / 调用返回未注册」；`WechatToolRegistryTests` 的全集断言是唯一兜底。
-10. **危险词表按「方法名子串」匹配，`BatchGet*` 类只读端点会被判成 `high-risk-write`**：剖面 `WriteVerbKeywords` 含
-   `batch`，`IWechatWorkApprovalService.BatchGetApprovalNumbersAsync`（`/cgi-bin/oa/getapprovalinfo`，实为只读）
-   因此被引擎升级为 `high-risk-write`，声明为只读会触发 `MUDWT017`（构建失败），标成写工具又会让每次查询都要求人工
-   审批。**这不是必须等上游**：`WriteVerbKeywords` 是本仓剖面槽位，`batch` 是量词不是动词——把它从表里去掉后，
-   `BatchDelete*`/`BatchUpdate*` 仍由 `delete`/`remove` 等真实动词判高危，`BatchGet*` 则回落 `IsWrite` 派生的 read。
-   改表后必须重固化 golden 并复核风险档（`grep -E "batch|export|import" Interfaces/**/*.cs` 确认没有「只有 batch 而无
-   危险动词」的写端点）。新增工具前先看 SDK 方法名是否命中危险词
-   （`delete|remove|recall|kick|transfer|export|import|batch|clear|revoke|disable|destroy|dismiss`）。
+10. **危险词表按「方法名子串」匹配，只收破坏性动词**：剖面 `WriteVerbKeywords` =
+   `delete|remove|kick|transfer|export|import|clear|revoke|disable|destroy|dismiss`。
+   两个曾经收录、现已移除的词是**有意的**：
+   - `batch` 是量词（`BatchGetApprovalNumbersAsync` 是只读查询 `/cgi-bin/oa/getapprovalinfo`），收录它会让审批读面
+     永久被判 `high-risk-write`（声明只读即 `MUDWT017`，标成写又会让每次查询都弹审批）；
+   - `recall` 是补救动作（撤回自己刚发的消息，`message.recall`），破坏性为 0，收录它会让每次纠错都要人工审批。
+   破坏性仍由 `delete`/`remove`/`clear` 等覆盖：`BatchDelete*`/`BatchUpdate*` 命中真实动词，风险档不降。
+   **改这张表 = 改风险档**：必须重固化 golden，并复核受影响工具的 `x-wechat.risk`（`grep` 一次 golden 里的 `"risk":"`）。
+   新增工具前先看 SDK 方法名是否命中上表；**量词与补救词不得入表**。
 
 ## 门禁
 
@@ -236,7 +240,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/Update-WechatToolG
 `WechatAgent` 把它交给内层 `ChatClientAgent` 的 `ChatOptions.Tools`（`WechatAgent` 只依赖
 `Microsoft.Extensions.AI.AIFunction`，**不引用**本工程——层 2 不引 `.AI.Tools` 的边界由此保持）。
 模型 `tool_call` → `WechatToolFunction.InvokeCoreAsync` → `WechatToolDispatcher.InvokeAsync`
-（白名单 → 授权 → 审批（写/高危写）→ 执行 → 异常归一）→ `ToolResult.Text` 回填模型。
+（白名单 → 授权 → 审批（写/高危写）→ 执行 → 出站纪律 → 审计 → 异常归一）→ `ToolResult.Text` 回填模型。
 
 ## 端到端闭环（已通）
 
@@ -274,8 +278,9 @@ powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/Update-WechatToolG
 - **审批续跑（框架侧）**：`ApprovalRequiredAIFunction` 的接线已由框架能力就绪，宿主需提供
   `IPendingApprovalStore`（多实例须分布式）与 `IToolApprovalChannel`（把待确认项送到审批人界面）；
   本包只提供预览与同步门，不持有工单状态。
-- **`approval.list`**：按陷阱 10 收缩 `WriteVerbKeywords`（去掉 `batch`）即可解锁，无需等引擎。
-- **任务面扩张**：消息富文本/撤回、日程（`schedule.add`/`get`）、审批提交与假期配额；逐域沿用
+- **`message.template_card.send/update`**（暂缓）：`template_card` 是一棵深结构 JSON（卡片类型 × 子元素 × 动作），
+  模型产出的成本高于收益；正确形态是宿主预置卡片模板 ID、模型只填少量字段——等宿主有明确卡片场景再做。
+- **任务面扩张**：日程（`schedule.add`/`get`/`cancel`）、审批提交与假期配额、客户标签改名；逐域沿用
   `Curation + Executors + 守卫` 三段形态，并在 `AddWechatWorkTools` 补该域的 `Add*Core()`（陷阱 9）。
 - **工具级观测**：`Meter`/`ActivitySource` 尚未埋点（审计只覆盖「发生了什么」，不覆盖「P95 / 失败率」）。
 - **评测集**：「给定请求 → 期望工具序列」的用例尚未建立，工具选择质量目前无法度量。

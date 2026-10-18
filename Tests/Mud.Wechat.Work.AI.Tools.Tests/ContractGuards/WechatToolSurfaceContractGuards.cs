@@ -24,6 +24,7 @@ public class WechatToolSurfaceContractGuards
         WechatToolNames.ReadonlyAll.Should().Equal(
             [
                 "approval.get",
+                "approval.list",
                 "approval.template.get",
                 "checkin.record.list",
                 "contacts.department.child_ids",
@@ -77,6 +78,7 @@ public class WechatToolSurfaceContractGuards
                 "contacts.tag.create",
                 "externalcontact.groupmsg.send",
                 "kf.message.send",
+                "message.recall",
                 "message.send",
                 "wedoc.doc.create",
                 "wedoc.doc.delete",

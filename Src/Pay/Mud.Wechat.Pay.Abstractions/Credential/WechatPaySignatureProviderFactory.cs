@@ -6,6 +6,7 @@
 // -----------------------------------------------------------------------
 
 using System.Collections.Concurrent;
+using Mud.Wechat.Abstractions.Crypto;
 using Mud.Wechat.Pay.Abstractions.Configuration;
 
 namespace Mud.Wechat.Pay.Abstractions.Credential;
@@ -21,6 +22,7 @@ public sealed class WechatPaySignatureProviderFactory : IWechatPaySignatureProvi
 {
     private readonly IWechatPayMerchantCredentialProvider _credentials;
     private readonly IWechatPayPlatformCertificateStore _platformCertificates;
+    private readonly IWechatSmCryptoProvider? _smProvider;
     private readonly ConcurrentDictionary<string, Task<IWechatPaySignatureProvider>> _byMerchantKey =
         new(StringComparer.Ordinal);
 
@@ -29,13 +31,15 @@ public sealed class WechatPaySignatureProviderFactory : IWechatPaySignatureProvi
     /// </summary>
     /// <param name="credentials">商户凭据取用器（经 <c>ISecretProvider</c> 取私钥）。</param>
     /// <param name="platformCertificates">平台证书存取端口（验签用；请求签名本身不用）。</param>
-    /// <exception cref="ArgumentNullException">任一参数为 <c>null</c>。</exception>
+    /// <param name="smProvider">国密算法提供者（可选；未注册时 SM2 分支 fail-fast）。</param>
     public WechatPaySignatureProviderFactory(
         IWechatPayMerchantCredentialProvider credentials,
-        IWechatPayPlatformCertificateStore platformCertificates)
+        IWechatPayPlatformCertificateStore platformCertificates,
+        IWechatSmCryptoProvider? smProvider = null)
     {
         _credentials = credentials ?? throw new ArgumentNullException(nameof(credentials));
         _platformCertificates = platformCertificates ?? throw new ArgumentNullException(nameof(platformCertificates));
+        _smProvider = smProvider;
     }
 
     /// <inheritdoc />
@@ -79,10 +83,40 @@ public sealed class WechatPaySignatureProviderFactory : IWechatPaySignatureProvi
     private async Task<IWechatPaySignatureProvider> LoadAsync(WechatPayMerchantConfig merchant)
     {
         // 不传调用者的 ct：见上「共享任务用 None 承载」。
-        var privateKey = await _credentials
+        var merchantKey = await _credentials
             .LoadPrivateKeyAsync(merchant)
             .ConfigureAwait(false);
 
-        return new WechatPaySignatureProvider(merchant.SerialNumber, privateKey, _platformCertificates);
+        // 按算法分派 provider（#23 国密前置条件）
+        if (merchant.SignatureAlgorithm == "SM2-WITH-SM3" || merchant.UseShangmi)
+        {
+            // SM2 分支
+            if (_smProvider == null)
+            {
+                throw new NotSupportedException(
+                    $"{merchant.MerchantKey}：国密签名算法 {merchant.SignatureAlgorithm} 需要注册 IWechatSmCryptoProvider。" +
+                    "请引用 Mud.Wechat.Sm.BouncyCastle 包并调用 builder.AddWechatSmCryptoProvider()。");
+            }
+
+            if (merchantKey.Sm2PrivateKey == null || merchantKey.Sm2PrivateKey.Length == 0)
+            {
+                throw new InvalidOperationException(
+                    $"{merchant.MerchantKey}：期望 SM2 密钥但获取到 {merchantKey.Algorithm}。" +
+                    "请确认商户配置 SignatureAlgorithm = SM2-WITH-SM3 且私钥为 SM2 格式。");
+            }
+
+            return new WechatPaySm2SignatureProvider(
+                merchant.SerialNumber, merchantKey.Sm2PrivateKey, _platformCertificates, _smProvider);
+        }
+
+        // RSA 分支：默认路径
+        if (merchantKey.RsaKey == null)
+        {
+            throw new InvalidOperationException(
+                $"{merchant.MerchantKey}：期望 RSA 密钥但获取到 {merchantKey.Algorithm}。" +
+                "请确认商户配置 SignatureAlgorithm = SHA256-RSA2048。");
+        }
+
+        return new WechatPaySignatureProvider(merchant.SerialNumber, merchantKey.RsaKey, _platformCertificates);
     }
 }

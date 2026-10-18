@@ -613,4 +613,154 @@ public class WechatPayCryptoContractGuards
         cache.Set(WechatPayGoldenVectors.PlatformSerialNumber, certificate);
         return cache;
     }
+
+    // ==================== PAY-SM：国密算法链路 ====================
+
+    /// <summary>
+    /// PAY-SM1：国密签名算法常量存在且值正确。
+    /// </summary>
+    [Fact]
+    public void SmAlgorithms_ShouldHaveCorrectConstants_WhenDefined()
+    {
+        WechatPaySignatureAlgorithms.Sha256Rsa2048.Should().Be("WECHATPAY2-SHA256-RSA2048");
+        WechatPaySignatureAlgorithms.Sm2WithSm3.Should().Be("WECHATPAY2-SM2-WITH-SM3");
+    }
+
+    /// <summary>
+    /// PAY-SM2：WechatPayMerchantKey支持RSA和SM2两种算法类型。
+    /// </summary>
+    [Fact]
+    public void MerchantKey_ShouldSupportBothRsaAndSm2_WhenCreated()
+    {
+        using var rsa = RSA.Create(2048);
+        var rsaKey = WechatPayMerchantKey.FromRsa(rsa, "SHA256-RSA2048");
+        rsaKey.Algorithm.Should().Be("SHA256-RSA2048");
+        rsaKey.RsaKey.Should().NotBeNull();
+        rsaKey.Sm2PrivateKey.Should().BeNull();
+
+        var sm2KeyBytes = new byte[32];
+        Array.Fill(sm2KeyBytes, (byte)0xFF);
+        using var sm2Key = WechatPayMerchantKey.FromSm2(sm2KeyBytes, "SM2-WITH-SM3");
+        sm2Key.Algorithm.Should().Be("SM2-WITH-SM3");
+        sm2Key.RsaKey.Should().BeNull();
+        sm2Key.Sm2PrivateKey.Should().NotBeNull();
+    }
+
+    /// <summary>
+    /// PAY-SM3：IWechatSmCryptoProvider默认实现为fail-fast形态。
+    /// </summary>
+    [Fact]
+    public void NullSmCryptoProvider_ShouldThrowNotSupportedException_WhenCalled()
+    {
+        var provider = new NullWechatSmCryptoProvider();
+        
+        Action act = () => provider.Sm3Digest(Array.Empty<byte>());
+        act.Should().Throw<NotSupportedException>().WithMessage("*未实现*");
+
+        act = () => provider.SignSm2WithSm3(Array.Empty<byte>(), "test");
+        act.Should().Throw<NotSupportedException>().WithMessage("*未实现*");
+    }
+
+    /// <summary>
+    /// PAY-SM4：载荷编解码分派器能正确分派AES-GCM。
+    /// </summary>
+    [Fact]
+    public void PayloadCodecResolver_ShouldDispatchAesGcm_WhenAlgorithmIsAes()
+    {
+        var aesCodec = new AesGcmPayloadCodec();
+        var resolver = new WechatPayPayloadCodecResolver(aesCodec);
+
+        var key = Convert.FromBase64String(WechatPayGoldenVectors.AesKeyB64);
+        var nonce = Convert.FromBase64String(WechatPayGoldenVectors.AesNonceB64);
+        var aad = Convert.FromBase64String(WechatPayGoldenVectors.AesAssociatedDataB64);
+        var ciphertext = Convert.FromBase64String(WechatPayGoldenVectors.AesCiphertextB64);
+        var tag = Convert.FromBase64String(WechatPayGoldenVectors.AesTagB64);
+        var expected = Convert.FromBase64String(WechatPayGoldenVectors.AesPlaintextB64);
+
+        var result = resolver.TryDecrypt("AEAD_AES_256_GCM", key, nonce, ciphertext, aad, tag);
+        
+        result.Should().NotBeNull();
+        Convert.ToBase64String(result).Should().Be(WechatPayGoldenVectors.AesPlaintextB64);
+    }
+
+    /// <summary>
+    /// PAY-SM5：载荷编解码分派器对SM4_GCM在未注册时抛出明确指引。
+    /// </summary>
+    [Fact]
+    public void PayloadCodecResolver_ShouldThrowWithGuidance_WhenSm4NotRegistered()
+    {
+        var aesCodec = new AesGcmPayloadCodec();
+        var resolver = new WechatPayPayloadCodecResolver(aesCodec);
+
+        Action act = () => resolver.TryDecrypt("SM4_GCM", Array.Empty<byte>(), Array.Empty<byte>(), Array.Empty<byte>(), Array.Empty<byte>(), Array.Empty<byte>());
+        
+        act.Should().Throw<NotSupportedException>()
+            .WithMessage("*IWechatSmCryptoProvider*")
+            .WithMessage("*https://pay.weixin.qq.com/docs/merchant/development/shangmi/guide.html*");
+    }
+
+    /// <summary>
+    /// PAY-SM6：WechatPaySignatureProviderFactory能按配置创建国密provider。
+    /// </summary>
+    [Fact]
+    public async Task SignatureProviderFactory_ShouldCreateSm2Provider_WhenConfigured()
+    {
+        var credentials = new Mock<IWechatPayMerchantCredentialProvider>();
+        var store = new Mock<IWechatPayPlatformCertificateStore>();
+        var smProvider = new Mock<IWechatSmCryptoProvider>();
+        
+        var merchant = new WechatPayMerchantConfig
+        {
+            MchId = "test_mchid",
+            SerialNumber = "test_serial",
+            PrivateKeySecretName = "test_key",
+            SignatureAlgorithm = "SM2-WITH-SM3"
+        };
+
+        var sm2KeyBytes = new byte[32];
+        Array.Fill(sm2KeyBytes, (byte)0xAA);
+        credentials.Setup(c => c.LoadPrivateKeyAsync(It.IsAny<WechatPayMerchantConfig>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(WechatPayMerchantKey.FromSm2(sm2KeyBytes, "SM2-WITH-SM3"));
+
+        var factory = new WechatPaySignatureProviderFactory(credentials.Object, store.Object, smProvider.Object);
+        var provider = await factory.GetOrCreateAsync(merchant);
+
+        provider.Should().BeOfType<WechatPaySm2SignatureProvider>();
+    }
+
+    /// <summary>
+    /// PAY-SM7：WechatPayMerchantConfig有SignatureAlgorithm和UseShangmi属性。
+    /// </summary>
+    [Fact]
+    public void MerchantConfig_ShouldHaveSignatureAlgorithmProperties_WhenDefined()
+    {
+        var config = new WechatPayMerchantConfig { MchId = "test" };
+        
+        config.SignatureAlgorithm.Should().Be("SHA256-RSA2048", "默认应为RSA");
+        config.UseShangmi.Should().BeFalse("默认应关闭国密");
+
+        config.SignatureAlgorithm = "SM2-WITH-SM3";
+        config.UseShangmi = true;
+        
+        config.SignatureAlgorithm.Should().Be("SM2-WITH-SM3");
+        config.UseShangmi.Should().BeTrue();
+    }
+
+    /// <summary>
+    /// PAY-SM8：Authorization头包含签名算法类型字段。
+    /// </summary>
+    [Fact]
+    public void AuthorizationHeader_ShouldIncludeAlgorithmType_WhenBuilt()
+    {
+        var auth = WechatPaySignatureMessages.BuildAuthorization(
+            "test_mchid",
+            "WECHATPAY2-SHA256-RSA2048",
+            "serial123",
+            1729040000,
+            "nonce123",
+            "signature123");
+
+        auth.Should().StartWith("WECHATPAY2-SHA256-RSA2048 mchid=");
+        auth.Should().Contain("serial_no=\"serial123\"");
+    }
 }

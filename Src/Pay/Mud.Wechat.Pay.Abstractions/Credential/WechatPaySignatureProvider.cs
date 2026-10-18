@@ -32,6 +32,9 @@ public sealed class WechatPaySignatureProvider : IWechatPaySignatureProvider
     private readonly string _merchantSerialNumber;
     private readonly IWechatPayPlatformCertificateStore _platformCertificates;
 
+    /// <inheritdoc />
+    public string Algorithm => "WECHATPAY2-SHA256-RSA2048";
+
     /// <summary>初始化签名提供器。</summary>
     /// <param name="merchantSerialNumber">商户 API 证书序列号。</param>
     /// <param name="merchantPrivateKey">商户 RSA 私钥（<b>所有权仍归调用方</b>，本类不释放）。</param>
@@ -73,6 +76,11 @@ public sealed class WechatPaySignatureProvider : IWechatPaySignatureProvider
     /// <remarks>
     /// 返回 <c>false</c> 的分支是**安全语义**而非「异常处理」：任何解析失败都代表报文不可信，
     /// 一律拒绝并由调用方记录**不含报文内容**的原因（PAY-B7）。
+    /// 
+    /// <b>#23 国密分派</b>：当前实现仅支持 RSA-SHA256。SM2 证书会因 <c>GetRSAPublicKey()</c> 返回 <c>null</c> 而静默返回 <c>false</c>
+    ///（fail-closed 安全语义正确，但会导致国密报文恒验签失败）。完整分派逻辑应由上层
+    /// <c>WechatPayResponseVerificationHandler</c> 按 <c>Wechatpay-Signature-Type</c> 头选择 provider 实例承担，
+    /// 本类保持单一 RSA 职责。
     /// </remarks>
     public bool Verify(string? serialNumber, string? message, string? signature)
     {
@@ -91,6 +99,13 @@ public sealed class WechatPaySignatureProvider : IWechatPaySignatureProvider
             return false;
         }
 
+        // SM2 证书 GetRSAPublicKey() 返回 null ⇒ 静默拒绝（fail-closed）
+        // 完整国密分派由 WechatPaySm2SignatureProvider 承担
+        if (platformCertificate.GetRSAPublicKey() is not RSA publicKey)
+        {
+            return false;
+        }
+
         byte[] signatureBytes;
         try
         {
@@ -99,11 +114,6 @@ public sealed class WechatPaySignatureProvider : IWechatPaySignatureProvider
         catch (FormatException)
         {
             // 非法 Base64 ⇒ 拒绝，且不回显原文。
-            return false;
-        }
-
-        if (platformCertificate.GetRSAPublicKey() is not RSA publicKey)
-        {
             return false;
         }
 

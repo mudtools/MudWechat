@@ -8,6 +8,8 @@
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using Mud.Wechat.Abstractions.Crypto;
+using Mud.Wechat.Pay.Abstractions.Credential;
 
 namespace Mud.Wechat.Pay.Callback;
 
@@ -56,6 +58,7 @@ public sealed class WechatPayCallbackReceiver
     private readonly IWechatPayMerchantManager _merchants;
     private readonly IWechatPaySignatureProviderFactory _signatureProviders;
     private readonly IWechatPayMerchantCredentialProvider _credentials;
+    private readonly WechatPayPayloadCodecResolver? _payloadCodecResolver;
     private readonly IWechatCallbackReplayGuard _replayGuard;
     private readonly IOptionsMonitor<WechatPayCallbackOptions> _optionsMonitor;
     private readonly IWechatPayCallbackClock _clock;
@@ -66,6 +69,7 @@ public sealed class WechatPayCallbackReceiver
     /// <param name="merchants">多商户基座（商户键 → 配置）。</param>
     /// <param name="signatureProviders">签名提供器工厂（验签）。</param>
     /// <param name="credentials">凭据取用端口（取 APIv3 密钥解密 <c>resource</c>）。</param>
+    /// <param name="payloadCodecResolver">载荷编解码分派器（AES-GCM / SM4-GCM，可选）。</param>
     /// <param name="replayGuard">抗重放端口（一次性指纹）。</param>
     /// <param name="optionsMonitor">回调配置监视器。</param>
     /// <param name="refresher">
@@ -78,11 +82,12 @@ public sealed class WechatPayCallbackReceiver
         IWechatPayMerchantManager merchants,
         IWechatPaySignatureProviderFactory signatureProviders,
         IWechatPayMerchantCredentialProvider credentials,
+        WechatPayPayloadCodecResolver? payloadCodecResolver,
         IWechatCallbackReplayGuard replayGuard,
         IOptionsMonitor<WechatPayCallbackOptions> optionsMonitor,
         IWechatPayPlatformCertificateRefresher? refresher = null,
         ILogger<WechatPayCallbackReceiver>? logger = null)
-        : this(merchants, signatureProviders, credentials, replayGuard, optionsMonitor,
+        : this(merchants, signatureProviders, credentials, payloadCodecResolver, replayGuard, optionsMonitor,
             new SystemWechatPayCallbackClock(), refresher, logger)
     {
     }
@@ -92,6 +97,7 @@ public sealed class WechatPayCallbackReceiver
         IWechatPayMerchantManager merchants,
         IWechatPaySignatureProviderFactory signatureProviders,
         IWechatPayMerchantCredentialProvider credentials,
+        WechatPayPayloadCodecResolver? payloadCodecResolver,
         IWechatCallbackReplayGuard replayGuard,
         IOptionsMonitor<WechatPayCallbackOptions> optionsMonitor,
         IWechatPayCallbackClock clock,
@@ -101,6 +107,7 @@ public sealed class WechatPayCallbackReceiver
         _merchants = merchants ?? throw new ArgumentNullException(nameof(merchants));
         _signatureProviders = signatureProviders ?? throw new ArgumentNullException(nameof(signatureProviders));
         _credentials = credentials ?? throw new ArgumentNullException(nameof(credentials));
+        _payloadCodecResolver = payloadCodecResolver;
         _replayGuard = replayGuard ?? throw new ArgumentNullException(nameof(replayGuard));
         _optionsMonitor = optionsMonitor ?? throw new ArgumentNullException(nameof(optionsMonitor));
         _clock = clock ?? throw new ArgumentNullException(nameof(clock));
@@ -301,22 +308,70 @@ public sealed class WechatPayCallbackReceiver
     }
 
     /// <summary>
-    /// 解密 <c>resource</c>：<c>nonce</c> 为 12 个 ASCII 字符、<c>ciphertext</c> 为 Base64（<b>末 16 字节为 GCM tag</b>）。
+    /// 解密 <c>resource</c>：按 <c>resource.algorithm</c> 分派 AES-GCM / SM4-GCM。
     /// </summary>
     /// <param name="apiKey">32 字节 APIv3 密钥。</param>
     /// <param name="resource">通知资源节点。</param>
     /// <param name="plaintext">成功时为解密后的 JSON 明文。</param>
     /// <returns>是否成功。</returns>
     /// <remarks>
-    /// <b>线格式解析统一收在 <see cref="WechatPayAesGcmCodec.TryDecryptOfficialPayload"/></b>：
-    /// 「nonce 为字符串、tag 拼接在密文尾部」是官方对<b>所有</b> <c>AEAD_AES_256_GCM</c> 载荷的统一约定
+    /// <b>线格式解析统一收在 <see cref="IWechatPayPayloadCodec"/></b>：
+    /// 「nonce 为字符串、tag 拼接在密文尾部」是官方对<b>所有</b>载荷的统一约定
     /// （回调 <c>resource</c> 与平台证书 <c>encrypt_certificate</c> 完全同形）。曾各自实现一份 ⇒
     /// 任一处漏切 tag 都是「编译期无感、运行期 100% 认证失败」的错位缺陷，故收敛为单一实现。
     /// </remarks>
-    private static bool TryDecryptResource(
+    private bool TryDecryptResource(
         byte[] apiKey, WechatPayNotificationResource resource, out string? plaintext)
-        => WechatPayAesGcmCodec.TryDecryptOfficialPayload(
+    {
+        // 优先走 resolver 分派（支持 AES-GCM / SM4-GCM）。
+        if (_payloadCodecResolver != null)
+        {
+            var algorithm = resource.Algorithm ?? "AEAD_AES_256_GCM";
+            try
+            {
+                // 官方线格式：ciphertext 为 Base64(密文‖tag)，需先分离出纯密文和tag。
+                var cipherWithTag = Convert.FromBase64String(resource.CipherText!);
+                if (cipherWithTag.Length <= 16)
+                {
+                    // 长度非法：至少要有密文 + 16字节tag。
+                    plaintext = null;
+                    return false;
+                }
+                
+                var ciphertextLen = cipherWithTag.Length - 16;
+                var ciphertext = new byte[ciphertextLen];
+                var tag = new byte[16];
+                Array.Copy(cipherWithTag, 0, ciphertext, 0, ciphertextLen);
+                Array.Copy(cipherWithTag, ciphertextLen, tag, 0, 16);
+                
+                var nonce = Convert.FromBase64String(resource.Nonce!);
+                var associatedData = resource.AssociatedData is null 
+                    ? Array.Empty<byte>() 
+                    : Encoding.UTF8.GetBytes(resource.AssociatedData);
+                
+                var plainBytes = _payloadCodecResolver.TryDecrypt(
+                    algorithm,
+                    apiKey,
+                    nonce,
+                    ciphertext,
+                    associatedData,
+                    tag);
+                
+                plaintext = Encoding.UTF8.GetString(plainBytes);
+                return true;
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                // 分派失败 / 长度非法 / 认证失败一律返回 false（fail-closed，不泄漏密文）。
+                plaintext = null;
+                return false;
+            }
+        }
+        
+        // 回退到硬编码 AES-GCM（向后兼容，未注册 resolver 时保持既有行为）。
+        return WechatPayAesGcmCodec.TryDecryptOfficialPayload(
             apiKey, resource.Nonce, resource.CipherText, resource.AssociatedData, out plaintext);
+    }
 
     /// <summary>
     /// 组装指纹：<c>{商户键}:{SHA1(ciphertext) 小写十六进制}</c>。

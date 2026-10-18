@@ -30,6 +30,9 @@ namespace Mud.Wechat.Pay.Abstractions.Credential;
 /// </remarks>
 public interface IWechatPaySignatureProvider
 {
+    /// <summary>获取当前provider使用的签名算法（WECHATPAY2-SHA256-RSA2048 / WECHATPAY2-SM2-WITH-SM3）。</summary>
+    string Algorithm { get; }
+
     /// <summary>用商户私钥对 <paramref name="message"/> 做 RSA-SHA256 签名。</summary>
     /// <param name="message">由 <see cref="WechatPaySignatureMessages.BuildRequestMessage"/> 产出的签名串。</param>
     /// <returns>Base64 签名与商户证书序列号。</returns>

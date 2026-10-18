@@ -196,6 +196,7 @@ public static class WechatPaySignatureMessages
     /// </remarks>
     public static string BuildAuthorization(
         string mchid,
+        string authorizationType,
         string serialNo,
         long timestamp,
         string nonce,
@@ -204,6 +205,11 @@ public static class WechatPaySignatureMessages
         if (mchid is null)
         {
             throw new ArgumentNullException(nameof(mchid));
+        }
+
+        if (authorizationType is null)
+        {
+            throw new ArgumentNullException(nameof(authorizationType));
         }
 
         if (serialNo is null)
@@ -222,7 +228,7 @@ public static class WechatPaySignatureMessages
         }
 
         return string.Concat(
-            AuthorizationSchema,
+            authorizationType,
             " mchid=\"", mchid,
             "\",nonce_str=\"", nonce,
             "\",timestamp=\"", timestamp.ToString(CultureInfo.InvariantCulture),

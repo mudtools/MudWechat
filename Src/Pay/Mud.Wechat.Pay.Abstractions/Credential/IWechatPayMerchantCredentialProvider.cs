@@ -20,24 +20,28 @@ namespace Mud.Wechat.Pay.Abstractions.Credential;
 /// DTO 源生成与 DI 装配拖进回调包（与 P0-b 把密码学下沉到 Abstractions 是同一理由）。
 /// </para>
 /// <para>
-/// <b>返回值所有权</b>：<see cref="LoadPrivateKeyAsync"/> 返回的 <c>RSA</c> 实例<b>归调用方所有</b>，
+/// <b>返回值所有权</b>：<see cref="LoadPrivateKeyAsync"/> 返回的 <see cref="WechatPayMerchantKey"/> 实例<b>归调用方所有</b>，
 /// 用完必须 <c>Dispose</c>（私钥材料驻留内存的时间窗由此收敛）。
 /// </para>
 /// <para>
 /// <b>失败语义</b>：查无密钥名 / PEM 不可解析 / 密钥长度不符，一律抛 <see cref="InvalidOperationException"/>，
 /// 且<b>异常消息绝不回显密钥内容</b>（PAY-B7；否则私钥头会随日志平台与 APM 二次扩散）。
 /// </para>
+/// <para>
+/// <b>#21 泛化（国密前置条件）</b>：返回类型从 <c>RSA</c> 泛化为 <see cref="WechatPayMerchantKey"/>，
+/// 以同时承载 RSA-2048 与 SM2 两种签名算法的私钥材料。调用方通过 <see cref="WechatPayMerchantKey.Algorithm"/> 判断分支。
+/// </para>
 /// </remarks>
 public interface IWechatPayMerchantCredentialProvider
 {
     /// <summary>
-    /// 取用并解析商户 RSA-2048 私钥。
+    /// 取用并解析商户私钥（RSA-2048 或 SM2）。
     /// </summary>
     /// <param name="config">商户配置（提供 <c>PrivateKeySecretName</c> 与商户键）。</param>
     /// <param name="cancellationToken">取消令牌。</param>
-    /// <returns>已导入私钥的 <c>RSA</c> 实例（<b>调用方负责释放</b>）。</returns>
+    /// <returns>已导入私钥的 <see cref="WechatPayMerchantKey"/> 实例（<b>调用方负责释放</b>）。</returns>
     /// <exception cref="InvalidOperationException">密钥查无、PEM 不可解析时抛出。</exception>
-    Task<RSA> LoadPrivateKeyAsync(WechatPayMerchantConfig config, CancellationToken cancellationToken = default);
+    Task<WechatPayMerchantKey> LoadPrivateKeyAsync(WechatPayMerchantConfig config, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 取用 APIv3 密钥（<b>AEAD_AES_256_GCM</b> 与请求侧敏感字段加密所用，32 字节）。

@@ -34,7 +34,8 @@ namespace Mud.Wechat.MiniProgram.Tests.ContractGuards;
 /// 且<b>本仓已落位</b>；直播商品库实为 <c>/wxa/business/getgoodswarehouse</c>；短剧查授权实为
 /// <c>/wxa/sec/vod/getauthorizeapps</c> 且官方动词是 POST）。错误拼写一旦照清单落地，就是「网关打不通的死路由」。</item>
 /// <item><b>归属开放平台线 33 条</b>（NC2，<b>小程序线零声明</b>）：购物订单 <c>/user-order/*</c> 7、
-/// We 分析 <c>/wedata/*</c> 7、第三方服务市场 <c>/wxa/servicemarket/*</c> 4、半屏小程序
+/// We 分析 <c>/wedata/*</c> 7、第三方服务市场 <c>/wxa/servicemarket/*</c> 4（其中 3 条已由开放平台线落地，
+/// <c>login_auth</c> 官方明写不支持第三方平台调用 ⇒ 全仓非契约零声明）、半屏小程序
 /// <c>/wxaapi/wxaembedded/*</c> 6、微信认证 <c>/wxa/sec/{wxaauth,reauth,queryauth,uploadauthmaterial,authidentitytree}</c> 5、
 /// 第三方登录态 <c>/sns/component/jscode2session</c> 与 <c>/sns/oauth2/component/{access_token,refresh_token}</c> 3、
 /// <c>/wxa/business/applyliveinfo</c> 1。
@@ -128,6 +129,8 @@ public class MiniProgramNonContractRouteContractGuards
         "/wedata/wedata_unbind_user",
         "/wedata/wedata_login",
         // 第三方服务市场（增值类）4 条：doc/oplatform/service_market/interface/value_added/ 树在册；
+        // 其中 3 条已由开放平台线 ServiceMarket 注册组落地；login_auth 官方明写「不支持第三方平台调用」
+        // （服务商自有 access_token 面）⇒ 本仓判非契约，七线均零声明（追踪号 SM-LOGINAUTH-NONCONTRACT-01）；
         // 与本线自建面 /wxa/servicemarket 与 /wxa/servicemarketretrieve 是不同令牌面的两组接口。
         "/wxa/servicemarket/service/get_service_buyer_list",
         "/wxa/servicemarket/service/get_service_buyer",
@@ -214,7 +217,7 @@ public class MiniProgramNonContractRouteContractGuards
     public void OpenPlatformOwnedRoutes_ShouldStayUndeclared_InMiniProgramLine()
     {
         OpenPlatformOwnedRoutes.Should().HaveCount(33,
-            "购物订单 7 + We 分析 7 + 第三方服务市场 4 + 半屏小程序 6 + 微信认证 5 + 第三方登录态 3 + 开放平台侧小程序能力 1");
+            "购物订单 7 + We 分析 7 + 第三方服务市场 4（3 契约 + 1 非契约）+ 半屏小程序 6 + 微信认证 5 + 第三方登录态 3 + 开放平台侧小程序能力 1");
 
         var declared = DeclaredRoutes(Path.Combine("Src", "MiniProgram"));
         var offenders = declared.Intersect(OpenPlatformOwnedRoutes, StringComparer.Ordinal).ToList();

@@ -16,7 +16,10 @@ using Mud.Wechat.OpenPlatform.DataModels.Embedded;
 using Mud.Wechat.OpenPlatform.DataModels.MiniProgramManage;
 using Mud.Wechat.OpenPlatform.DataModels.MiniProgramTemplate;
 using Mud.Wechat.OpenPlatform.DataModels.OpenAccount;
+using Mud.Wechat.OpenPlatform.DataModels.ServiceMarket;
 using Mud.Wechat.OpenPlatform.DataModels.Sns;
+using Mud.Wechat.OpenPlatform.DataModels.UserOrder;
+using Mud.Wechat.OpenPlatform.DataModels.WeData;
 
 namespace Mud.Wechat.OpenPlatform.Extensions;
 
@@ -63,7 +66,10 @@ public static class OpenPlatformJsonResolverExtensions
             AuthJsonContext.Default,
             AmsJsonContext.Default,
             MiniProgramManageJsonContext.Default,
-            MiniProgramTemplateJsonContext.Default);
+            MiniProgramTemplateJsonContext.Default,
+            UserOrderJsonContext.Default,
+            WeDataJsonContext.Default,
+            ServiceMarketJsonContext.Default);
 
         services.AddMudHttpClientJsonContext(resolver);
     }

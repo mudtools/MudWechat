@@ -34,7 +34,8 @@ public class OpenPlatformAuthenticationTests
     // ------------------------------------------------------------------ DI 桥接
 
     /// <summary>
-    /// DI-1：AddOpenPlatform + 全模块注册后，五个声明式客户端与上下文基座全部可解析。
+    /// DI-1：AddOpenPlatform + 全模块注册后，声明式客户端与上下文基座全部可解析
+    /// （含共享注册组 <c>WeData</c> 的两支接口，证明同组多接口均被装配）。
     /// </summary>
     [Fact]
     public void AddOpenPlatform_ShouldResolveAllClients_WhenAllModulesRegistered()
@@ -51,6 +52,10 @@ public class OpenPlatformAuthenticationTests
         provider.GetRequiredService<IWechatOpenPlatformOpenAccountService>().Should().NotBeNull();
         provider.GetRequiredService<IWechatOpenPlatformAccountService>().Should().NotBeNull();
         provider.GetRequiredService<IWechatOpenPlatformSnsService>().Should().NotBeNull();
+        provider.GetRequiredService<IWechatOpenPlatformUserOrderService>().Should().NotBeNull();
+        provider.GetRequiredService<IWechatOpenPlatformWeDataService>().Should().NotBeNull();
+        provider.GetRequiredService<IWechatOpenPlatformWeDataUserService>().Should().NotBeNull();
+        provider.GetRequiredService<IWechatOpenPlatformServiceMarketService>().Should().NotBeNull();
         provider.GetRequiredService<IOpenPlatformAppManager>().Should().NotBeNull();
         provider.GetRequiredService<IComponentAppContextSwitcher>().Should().NotBeNull();
         provider.GetRequiredService<Mud.HttpUtils.ITokenProvider>().Should().NotBeNull();

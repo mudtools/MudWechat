@@ -18,7 +18,10 @@ using Mud.Wechat.OpenPlatform.DataModels.Embedded;
 using Mud.Wechat.OpenPlatform.DataModels.MiniProgramManage;
 using Mud.Wechat.OpenPlatform.DataModels.MiniProgramTemplate;
 using Mud.Wechat.OpenPlatform.DataModels.OpenAccount;
+using Mud.Wechat.OpenPlatform.DataModels.ServiceMarket;
 using Mud.Wechat.OpenPlatform.DataModels.Sns;
+using Mud.Wechat.OpenPlatform.DataModels.UserOrder;
+using Mud.Wechat.OpenPlatform.DataModels.WeData;
 
 namespace Mud.Wechat.OpenPlatform.Tests.ContractGuards;
 
@@ -32,7 +35,7 @@ namespace Mud.Wechat.OpenPlatform.Tests.ContractGuards;
 /// （<c>Wechat.OpenPlatform.*</c>，不与企微 / 公众号 / 小店串号）；③ 逐接口令牌语义
 /// （平台管理面 = component 值入 <c>access_token</c>；网页授权 = component 值入
 /// <c>component_access_token</c>；授权方域 = authorizer 值入 <c>access_token</c>；推票引导免令牌）；
-/// ④ 跨线路由零交叠；⑤ <c>fastregisterweapp</c> 同路由双方法以 <c>action</c> 分派。
+/// ④ 跨线路由零交叠；⑤ <c>fastregisterweapp</c> / <c>fastregisterpersonalweapp</c> 同路由双方法以 <c>action</c> 分派。
 /// </para>
 /// </remarks>
 public class OpenPlatformContractGuards
@@ -61,6 +64,7 @@ public class OpenPlatformContractGuards
             ("POST", "/cgi-bin/component/api_get_authorizer_option"),
             ("POST", "/cgi-bin/component/api_set_authorizer_option"),
             ("POST", "/wxa/component/fastregisterbetaweapp"),
+            ("POST", "/wxa/component/fastregisterpersonalweapp"),
             ("POST", "/wxa/component/fastregisterpersonalweapp"),
         },
         [nameof(IWechatOpenPlatformComponentTicketFreeService)] = new[]
@@ -107,7 +111,7 @@ public class OpenPlatformContractGuards
     };
 
     /// <summary>
-    /// OP-B1：接口集合与数量锁定（30 接口 / 190 端点，防漏防多）。
+    /// OP-B1：接口集合与数量锁定（30 接口 / 191 端点，防漏防多）。
     /// </summary>
     /// <remarks>
     /// 2026-10-15 起本线另有 <c>ComponentTcb</c> 六支接口（50 端点，注册组共用一个），
@@ -172,6 +176,10 @@ public class OpenPlatformContractGuards
             nameof(IWechatOpenPlatformMpLiveService),
             nameof(IWechatOpenPlatformTemplateService),
             nameof(IWechatOpenPlatformMpOrderPathSetService),
+            nameof(IWechatOpenPlatformUserOrderService),
+            nameof(IWechatOpenPlatformWeDataService),
+            nameof(IWechatOpenPlatformWeDataUserService),
+            nameof(IWechatOpenPlatformServiceMarketService),
         });
 
         var actualEndpoints = interfaces.Sum(GetEndpoints);
@@ -371,6 +379,15 @@ public class OpenPlatformContractGuards
             // 30-7 直播能力开通（applyliveinfo）：官方页面明写仅支持「第三方平台」账号类型代调用、
             // 以 authorizer_access_token 承载 ⇒ 本线独占，小程序线由 NC2 锁定零声明。
             "/wxa/business/applyliveinfo",
+            // 小程序购物订单域（UserOrder）独占：全 /user-order/* 前缀，小程序线由 NC2 锁定零声明。
+            "/user-order/",
+            // We 分析（WeData）独占：全 /wedata/* 前缀，小程序线由 NC2 锁定零声明。
+            "/wedata/",
+            // 第三方服务市场（ServiceMarket）独占：逐条全路径（服务商 component 令牌子集）。
+            // 小程序线合法持有 /wxa/servicemarket（自建面）与 /wxa/servicemarketretrieve，故不用宽前缀。
+            "/wxa/servicemarket/service/get_service_buyer_list",
+            "/wxa/servicemarket/service/get_service_buyer",
+            "/wxa/servicemarket/get_paid_order_list",
         };
 
         var offenders = new List<string>();
@@ -432,6 +449,33 @@ public class OpenPlatformContractGuards
     }
 
     /// <summary>
+    /// OP-B6b：<c>fastregisterpersonalweapp</c> 同路由双方法（create / query）的 <c>action</c> 分派锁定。
+    /// </summary>
+    [Fact]
+    public void FastRegisterPersonalWeappMethods_ShouldDispatchByAction_WhenSameRouteDeclaredTwice()
+    {
+        var type = typeof(IWechatOpenPlatformComponentService);
+        var methods = type.GetMethods(BindingFlags.Public | BindingFlags.Instance)
+            .Where(m => m.DeclaringType == type)
+            .Where(static m => m.GetCustomAttributes<HttpMethodAttribute>(false)
+                .Any(static a => a.RequestUri == "/wxa/component/fastregisterpersonalweapp"))
+            .ToArray();
+
+        methods.Should().HaveCount(2, "同路由双方法（create / query）——少一个即缺口，多一个即漂移");
+
+        var actions = methods
+            .Select(static m => m.GetParameters()
+                .Where(static p => p.GetCustomAttributes<QueryAttribute>(false)
+                    .Any(static q => q.Name == "action"))
+                .Select(static p => p.DefaultValue as string)
+                .FirstOrDefault())
+            .ToArray();
+
+        actions.Should().BeEquivalentTo(new[] { "create", "query" },
+            "action query 参数的默认值即官方分派语义（缺省时请求落到错误分支）");
+    }
+
+    /// <summary>
     /// OP-B7：五个域 + Common 的 DTO 全量登记进对应 JsonContext（AOT 源生成完整性）。
     /// </summary>
     /// <remarks>
@@ -454,6 +498,9 @@ public class OpenPlatformContractGuards
             (typeof(AmsJsonContext), "Mud.Wechat.OpenPlatform.DataModels.Ams", "Ams"),
             (typeof(MiniProgramManageJsonContext), "Mud.Wechat.OpenPlatform.DataModels.MiniProgramManage", "MiniProgramManage"),
             (typeof(MiniProgramTemplateJsonContext), "Mud.Wechat.OpenPlatform.DataModels.MiniProgramTemplate", "MiniProgramTemplate"),
+            (typeof(UserOrderJsonContext), "Mud.Wechat.OpenPlatform.DataModels.UserOrder", "UserOrder"),
+            (typeof(WeDataJsonContext), "Mud.Wechat.OpenPlatform.DataModels.WeData", "WeData"),
+            (typeof(ServiceMarketJsonContext), "Mud.Wechat.OpenPlatform.DataModels.ServiceMarket", "ServiceMarket"),
         };
 
         foreach (var (contextType, ns, segment) in expectations)

@@ -293,7 +293,7 @@ public interface IWechatOpenPlatformComponentService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// 快速注册个人小程序（<c>fastregisterpersonalweapp</c>，双 action：create / query）。
+    /// 快速注册个人小程序（<c>fastregisterpersonalweapp</c>，<c>action=create</c>）。
     /// </summary>
     /// <param name="request">注册请求（<c>idname</c> / <c>wxuser</c> 必填；<c>component_phone</c> / <c>new_version</c> 可选）。</param>
     /// <param name="action">官方 <c>action</c> query 参数，固定 <c>create</c>（SDK 级默认值，无需显式传入）。</param>
@@ -302,13 +302,31 @@ public interface IWechatOpenPlatformComponentService
     /// <remarks>
     /// <para>官方文档：<see href="https://developers.weixin.qq.com/doc/oplatform/openApi/OpenApiDoc/register-management/fast-registration-ind/fastRegisterPersonalMp.html"/></para>
     /// <para>官方约束：令牌面为 <c>component_access_token</c>；频率限制 5 次/分钟、100 次/天；<c>new_version</c> 必须填 true。</para>
-    /// <para><b>查询形态</b>：同路由以 <c>action=query</c> + 请求体 <c>{ "taskid": "..." }</c> 查询任务状态（本接口未提供专用查询方法，宿主可直接复用此端点并传 <c>action = "query"</c>）。</para>
+    /// <para><b>同路由双方法</b>：查询任务状态见 <see cref="SearchFastRegisterPersonalWeappAsync"/>（<c>action=query</c>）。</para>
     /// <para>官方错误码：<c>-1</c>（系统繁忙）/ <c>40001</c>（access_token 无效）/ <c>1001~1008</c>（主体/管理员违规或超限）。</para>
     /// </remarks>
     [Post("/wxa/component/fastregisterpersonalweapp")]
     Task<OpenPlatformFastRegisterPersonalResponse> FastRegisterPersonalWeappAsync(
         [Body] OpenPlatformFastRegisterPersonalRequest request,
         [Query("action")] string action = "create",
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 查询快速注册个人小程序任务状态（<c>fastregisterpersonalweapp</c>，<c>action=query</c>）。
+    /// </summary>
+    /// <param name="request">查询请求（<c>taskid</c> 必填，来自创建应答）。</param>
+    /// <param name="action">官方 <c>action</c> query 参数，固定 <c>query</c>（SDK 级默认值，无需显式传入）。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
+    /// <returns>任务状态（<see cref="OpenPlatformFastRegisterPersonalResponse.Status"/>）；注册结果仍以 <c>notify_third_fasteregister</c> 事件推送为准。</returns>
+    /// <remarks>
+    /// <para>官方文档：<see href="https://developers.weixin.qq.com/doc/oplatform/openApi/OpenApiDoc/register-management/fast-registration-ind/fastRegisterPersonalMp.html"/></para>
+    /// <para><b>同路由双方法</b>：与 <see cref="FastRegisterPersonalWeappAsync"/> 共享 <c>/wxa/component/fastregisterpersonalweapp</c>，以 <c>action</c> query 分派（守卫 OP-B6b 登记）。</para>
+    /// <para>官方约束：令牌面为 <c>component_access_token</c>；频率限制 5 次/分钟、100 次/天。</para>
+    /// </remarks>
+    [Post("/wxa/component/fastregisterpersonalweapp")]
+    Task<OpenPlatformFastRegisterPersonalResponse> SearchFastRegisterPersonalWeappAsync(
+        [Body] OpenPlatformFastRegisterPersonalQueryRequest request,
+        [Query("action")] string action = "query",
         CancellationToken cancellationToken = default);
 }
 

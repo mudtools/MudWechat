@@ -104,4 +104,34 @@ public enum OpenPlatformModule
     /// <c>applysetorderpathinfo</c> 为 <c>MiniProgramManage</c> 内 <c>getorderpathinfo</c>（授权方）的 component 面孪生端点。
     /// </remarks>
     MiniProgramTemplate,
+
+    /// <summary>
+    /// 小程序购物订单域（<c>/user-order/*</c> 全 7 端点：购物详情 2 + 合单购物详情 2 + 验证 1 + 产品权限 2；注册组 <c>UserOrder</c>）。
+    /// </summary>
+    /// <remarks>
+    /// 令牌恒为 <c>authorizer_access_token</c>（Query 参数名 <c>access_token</c>）⇒ 第三方平台代授权方小程序上传订单与物流。
+    /// 官方 <c>OpenApiDoc/miniprogram-management/shopping-orders/</c> 树在册；小程序线守卫 NC2 对 <c>/user-order/*</c> 锁定零声明。
+    /// </remarks>
+    UserOrder,
+
+    /// <summary>
+    /// We 分析（WeData）域（<c>/wedata/*</c> 全 7 端点：登录配置 2 + 用户权限 / 绑定 / 登录 5；注册组 <c>WeData</c>）。
+    /// </summary>
+    /// <remarks>
+    /// 令牌面<b>按端点二分</b>：登录配置两端口（<c>wedata_get_login_config</c> / <c>wedata_set_login_config</c>）消费
+    /// <c>component_access_token</c>；用户权限五端口（权限列表 / 设置权限 / 绑定列表 / 解绑 / 登录）消费
+    /// <c>authorizer_access_token</c>。故拆两支接口（<c>IWechatOpenPlatformWeDataService</c> /
+    /// <c>IWechatOpenPlatformWeDataUserService</c>）共用一个注册组。
+    /// </remarks>
+    WeData,
+
+    /// <summary>
+    /// 第三方服务市场域（<c>/wxa/servicemarket/*</c> 全 3 端点：服务用户有效期列表 / 服务用户有效期 / 已支付订单列表；注册组 <c>ServiceMarket</c>）。
+    /// </summary>
+    /// <remarks>
+    /// 令牌恒为 <c>component_access_token</c>（Query 参数名 <c>access_token</c>）⇒ 服务商以自身令牌查询购买方与订单。
+    /// 同树的 <c>login_auth</c> 官方明写「不支持第三方平台调用」（令牌面为服务商自有 <c>access_token</c>）⇒
+    /// 本仓判非契约、零声明（追踪号 SM-LOGINAUTH-NONCONTRACT-01），不并入本模块。
+    /// </remarks>
+    ServiceMarket,
 }

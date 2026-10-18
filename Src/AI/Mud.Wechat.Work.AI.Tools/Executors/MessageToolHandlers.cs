@@ -130,7 +130,7 @@ public sealed class MessageToolHandlers(IWechatWorkMessageService message)
         var outcome = WechatApiResultReader.Read(response);
         if (!outcome.Ok)
         {
-            return ToolResult.FromError(outcome.ErrorText ?? "发送应用消息失败。");
+            return WechatToolOutcomeErrors.From(outcome, WechatToolNames.MessageSend);
         }
 
         return ToolResult.FromText(ToolResultJson.ToText(new JsonObject
@@ -162,7 +162,7 @@ public sealed class MessageToolHandlers(IWechatWorkMessageService message)
         var outcome = WechatApiResultReader.Read(response);
         if (!outcome.Ok)
         {
-            return ToolResult.FromError(outcome.ErrorText ?? "撤回应用消息失败。");
+            return WechatToolOutcomeErrors.From(outcome, WechatToolNames.MessageRecall);
         }
 
         return ToolResult.FromText(ToolResultJson.ToText(new JsonObject

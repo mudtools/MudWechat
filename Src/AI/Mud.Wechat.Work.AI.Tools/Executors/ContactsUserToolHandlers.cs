@@ -54,9 +54,14 @@ public sealed class ContactsUserToolHandlers(IWechatWorkUsersService users)
 
         var response = await _users.GetUserAsync(request.Userid, cancellationToken).ConfigureAwait(false);
         var outcome = WechatApiResultReader.Read(response);
-        if (!outcome.Ok || outcome.Data is not { } user)
+        if (!outcome.Ok)
         {
-            return ToolResult.FromError(outcome.ErrorText ?? "成员不存在或不在应用可见范围内。");
+            return WechatToolOutcomeErrors.From(outcome, WechatToolNames.ContactsUserGet);
+        }
+
+        if (outcome.Data is not { } user)
+        {
+            return WechatToolResults.NotFound(WechatToolNames.ContactsUserGet);
         }
 
         return ToolResult.FromText(ToolResultJson.ToText(ProjectUser(user)));
@@ -77,9 +82,14 @@ public sealed class ContactsUserToolHandlers(IWechatWorkUsersService users)
             .GetUserSimpleListAsync(request.DepartmentId, ToFetchChild(request.FetchChild), cancellationToken)
             .ConfigureAwait(false);
         var outcome = WechatApiResultReader.Read(response);
-        if (!outcome.Ok || outcome.Data?.UserList is not { } list)
+        if (!outcome.Ok)
         {
-            return ToolResult.FromError(outcome.ErrorText ?? "该部门下没有可见成员（userlist 为空）。");
+            return WechatToolOutcomeErrors.From(outcome, WechatToolNames.ContactsUserSimpleList);
+        }
+
+        if (outcome.Data?.UserList is not { } list)
+        {
+            return WechatToolResults.EmptyList(WechatToolNames.ContactsUserSimpleList);
         }
 
         var items = new JsonArray();
@@ -111,9 +121,14 @@ public sealed class ContactsUserToolHandlers(IWechatWorkUsersService users)
             .GetUserDetailListAsync(request.DepartmentId, ToFetchChild(request.FetchChild), cancellationToken)
             .ConfigureAwait(false);
         var outcome = WechatApiResultReader.Read(response);
-        if (!outcome.Ok || outcome.Data?.UserList is not { } list)
+        if (!outcome.Ok)
         {
-            return ToolResult.FromError(outcome.ErrorText ?? "该部门下没有可见成员（userlist 为空）。");
+            return WechatToolOutcomeErrors.From(outcome, WechatToolNames.ContactsUserList);
+        }
+
+        if (outcome.Data?.UserList is not { } list)
+        {
+            return WechatToolResults.EmptyList(WechatToolNames.ContactsUserList);
         }
 
         var items = new JsonArray();
@@ -148,7 +163,7 @@ public sealed class ContactsUserToolHandlers(IWechatWorkUsersService users)
         var outcome = WechatApiResultReader.Read(response);
         if (!outcome.Ok)
         {
-            return ToolResult.FromError(outcome.ErrorText ?? "拉取成员 ID 列表失败。");
+            return WechatToolOutcomeErrors.From(outcome, WechatToolNames.ContactsUserIdList);
         }
 
         var items = new JsonArray();
@@ -206,7 +221,7 @@ public sealed class ContactsUserToolHandlers(IWechatWorkUsersService users)
             var outcome = WechatApiResultReader.Read(response);
             if (!outcome.Ok)
             {
-                return ToolResult.FromError(outcome.ErrorText ?? "手机号解析失败。");
+                return WechatToolOutcomeErrors.From(outcome, WechatToolNames.ContactsUserResolve);
             }
 
             return SingleMatch(outcome.Data?.UserId, "该手机号未匹配到应用可见范围内的成员");
@@ -220,7 +235,7 @@ public sealed class ContactsUserToolHandlers(IWechatWorkUsersService users)
             var outcome = WechatApiResultReader.Read(response);
             if (!outcome.Ok)
             {
-                return ToolResult.FromError(outcome.ErrorText ?? "邮箱解析失败。");
+                return WechatToolOutcomeErrors.From(outcome, WechatToolNames.ContactsUserResolve);
             }
 
             return SingleMatch(outcome.Data?.UserId, "该邮箱未匹配到应用可见范围内的成员");
@@ -237,7 +252,7 @@ public sealed class ContactsUserToolHandlers(IWechatWorkUsersService users)
         var listOutcome = WechatApiResultReader.Read(listResponse);
         if (!listOutcome.Ok)
         {
-            return ToolResult.FromError(listOutcome.ErrorText ?? "拉取部门成员失败。");
+            return WechatToolOutcomeErrors.From(listOutcome, WechatToolNames.ContactsUserResolve);
         }
 
         var candidates = listOutcome.Data?.UserList ?? [];

@@ -73,11 +73,21 @@ public sealed class WechatToolAuditRecord
     /// <summary>上游业务码（有则记录；用于「哪些码最常出现」的运营分析）。</summary>
     public int? ErrorCode { get; init; }
 
+    /// <summary>错误分类（闭集字符串，如 <c>validation</c> / <c>retryable</c> / <c>api</c>；成功时为空）。</summary>
+    /// <remarks>
+    /// 与 <see cref="ErrorCode"/> 成对使用：码回答「上游说了什么」，分类回答「这类失败是什么性质」。
+    /// 只记分类不记原因文本，避免把上游正文（可能回显用户输入）写进长期留存的审计表。
+    /// </remarks>
+    public string? ErrorCategory { get; init; }
+
+    /// <summary>错误子类（闭集字符串，如 <c>invalid_args</c> / <c>rate_limited</c> / <c>timeout</c>）。</summary>
+    public string? ErrorSubtype { get; init; }
+
     /// <summary>结果是否被出站预算截断。</summary>
     public bool Truncated { get; init; }
 
-    /// <summary>结果字节数（截断后；用于预算与成本的长期观测）。</summary>
-    public int ResultBytes { get; init; }
+    /// <summary>结果字符数（截断后；与策略预算同一单位，便于对账）。</summary>
+    public int ResultChars { get; init; }
 
     /// <summary>耗时（毫秒；拒绝路径为 0）。</summary>
     public long DurationMs { get; init; }

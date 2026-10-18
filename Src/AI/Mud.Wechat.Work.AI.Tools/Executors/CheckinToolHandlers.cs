@@ -99,7 +99,7 @@ public sealed class CheckinToolHandlers(IWechatWorkInternalCheckinRecordService 
         var outcome = WechatApiResultReader.Read(response);
         if (!outcome.Ok)
         {
-            return ToolResult.FromError(outcome.ErrorText ?? "拉取打卡记录失败。");
+            return WechatToolOutcomeErrors.From(outcome, WechatToolNames.CheckinRecordList);
         }
 
         var records = new JsonArray();

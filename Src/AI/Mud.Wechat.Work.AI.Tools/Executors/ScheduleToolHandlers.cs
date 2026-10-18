@@ -123,9 +123,14 @@ public sealed class ScheduleToolHandlers(IWechatWorkScheduleService schedule)
             },
             cancellationToken).ConfigureAwait(false);
         var outcome = WechatApiResultReader.Read(response);
-        if (!outcome.Ok || string.IsNullOrWhiteSpace(outcome.Data?.ScheduleId))
+        if (!outcome.Ok)
         {
-            return ToolResult.FromError(outcome.ErrorText ?? "创建日程失败（未返回 schedule_id）。");
+            return WechatToolOutcomeErrors.From(outcome, WechatToolNames.ScheduleAdd);
+        }
+
+        if (string.IsNullOrWhiteSpace(outcome.Data?.ScheduleId))
+        {
+            return WechatToolResults.NotFound(WechatToolNames.ScheduleAdd);
         }
 
         return ToolResult.FromText(ToolResultJson.ToText(new JsonObject
@@ -157,7 +162,7 @@ public sealed class ScheduleToolHandlers(IWechatWorkScheduleService schedule)
         var outcome = WechatApiResultReader.Read(response);
         if (!outcome.Ok)
         {
-            return ToolResult.FromError(outcome.ErrorText ?? "获取日程详情失败。");
+            return WechatToolOutcomeErrors.From(outcome, WechatToolNames.ScheduleGet);
         }
 
         var items = new JsonArray();
@@ -228,7 +233,7 @@ public sealed class ScheduleToolHandlers(IWechatWorkScheduleService schedule)
         var outcome = WechatApiResultReader.Read(response);
         if (!outcome.Ok)
         {
-            return ToolResult.FromError(outcome.ErrorText ?? "取消日程失败。");
+            return WechatToolOutcomeErrors.From(outcome, WechatToolNames.ScheduleCancel);
         }
 
         return ToolResult.FromText(ToolResultJson.ToText(new JsonObject

@@ -129,7 +129,7 @@ public sealed class ExternalContactGroupMsgToolHandlers(IWechatWorkExternalConta
         var outcome = WechatApiResultReader.Read(response);
         if (!outcome.Ok)
         {
-            return ToolResult.FromError(outcome.ErrorText ?? "拉取群发记录失败。");
+            return WechatToolOutcomeErrors.From(outcome, WechatToolNames.ExternalcontactGroupmsgList);
         }
 
         var records = new JsonArray();
@@ -183,7 +183,7 @@ public sealed class ExternalContactGroupMsgToolHandlers(IWechatWorkExternalConta
         var outcome = WechatApiResultReader.Read(response);
         if (!outcome.Ok)
         {
-            return ToolResult.FromError(outcome.ErrorText ?? "拉取群发执行任务失败。");
+            return WechatToolOutcomeErrors.From(outcome, WechatToolNames.ExternalcontactGroupmsgTaskList);
         }
 
         var tasks = new JsonArray();
@@ -234,7 +234,7 @@ public sealed class ExternalContactGroupMsgToolHandlers(IWechatWorkExternalConta
         var outcome = WechatApiResultReader.Read(response);
         if (!outcome.Ok)
         {
-            return ToolResult.FromError(outcome.ErrorText ?? "拉取群发送达结果失败。");
+            return WechatToolOutcomeErrors.From(outcome, WechatToolNames.ExternalcontactGroupmsgSendResult);
         }
 
         var results = new JsonArray();
@@ -321,7 +321,7 @@ public sealed class ExternalContactGroupMsgToolHandlers(IWechatWorkExternalConta
         var outcome = WechatApiResultReader.Read(response);
         if (!outcome.Ok)
         {
-            return ToolResult.FromError(outcome.ErrorText ?? "创建群发任务失败。");
+            return WechatToolOutcomeErrors.From(outcome, WechatToolNames.ExternalcontactGroupmsgSend);
         }
 
         var failList = new JsonArray();

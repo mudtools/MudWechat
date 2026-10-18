@@ -16,6 +16,7 @@ using Mud.AI.Agent.Agents;
 using Mud.AI.Agent.Conversations;
 using Mud.AI.Agent.Events;
 using Mud.AI.Agent.Sessions;
+using Mud.AI.Agent.Tools;
 using Mud.Wechat.Work.AI.Configuration;
 
 namespace Mud.Wechat.Work.AI.Agents;
@@ -49,6 +50,7 @@ public sealed class WechatAgent : ObservedDelegatingAgent, IAgentSessionFacade
     private readonly Mud.AI.Agent.Sessions.AgentSessionStore _sessions;
     private readonly ConversationalTurnPipeline _pipeline;
     private readonly string _historyStateKey;
+    private readonly int _maxToolCallsPerTurn;
 
     /// <summary>初始化企微 Agent。</summary>
     /// <param name="chatClient">模型客户端（宿主注册；如 <c>Microsoft.Extensions.AI</c> 的 OpenAI 兼容客户端）。</param>
@@ -85,6 +87,7 @@ public sealed class WechatAgent : ObservedDelegatingAgent, IAgentSessionFacade
 
         var settings = ResolveOptions(options);
         _historyStateKey = settings.HistoryStateKey;
+        _maxToolCallsPerTurn = settings.MaxToolCallsPerTurn;
 
         // 会话门面的 codec 是「持有 AgentSession 的那个 Agent」——即本类型（经 DelegatingAIAgent 委托内层 ChatClientAgent），
         // 序列化/反序列化能力因此与内层逐字节一致。
@@ -138,7 +141,16 @@ public sealed class WechatAgent : ObservedDelegatingAgent, IAgentSessionFacade
         ConversationRequest request,
         IConversationReplySink reply,
         CancellationToken cancellationToken = default)
-        => _pipeline.RunTurnAsync(request, reply, cancellationToken);
+    {
+        // 回合工具预算的<b>唯一开启点</b>：这里是「一轮 RunAsync」的产品边界（事件层、宿主直调、测试同此一入口）。
+        // 中立层不消费 WechatAi:MaxToolCallsPerTurn（它只提供 ToolCallBudget 这件工具），不在此开启该配置就没有消费点。
+        // 预算经 AsyncLocal 随 ExecutionContext 流入工具链（执行链在白名单之前 TryConsume）。
+        using IDisposable? budget = _maxToolCallsPerTurn > 0
+            ? new ToolCallBudget(_maxToolCallsPerTurn).Begin()
+            : null;
+
+        return _pipeline.RunTurnAsync(request, reply, cancellationToken);
+    }
 
     /// <summary>会话键命名空间（产品策略）：<c>wechat:{appKey}:g|p:{subjectId}</c>。</summary>
     private static string BuildSessionKey(ConversationRequest request)

@@ -65,9 +65,9 @@ internal static class WechatToolMetrics
     /// <summary>结束一次调用的 span：写结局、体积、截断与错误状态。</summary>
     /// <param name="activity">span（可空）。</param>
     /// <param name="outcome">结局标签。</param>
-    /// <param name="bytes">结果字节数。</param>
+    /// <param name="chars">结果字符数。</param>
     /// <param name="truncated">是否被预算截断。</param>
-    public static void CompleteActivity(Activity? activity, string outcome, long bytes, bool truncated)
+    public static void CompleteActivity(Activity? activity, string outcome, long chars, bool truncated)
     {
         if (activity is null)
         {
@@ -75,7 +75,7 @@ internal static class WechatToolMetrics
         }
 
         activity.SetTag("wechat.ai.tool.outcome", outcome);
-        activity.SetTag("wechat.ai.tool.result_bytes", bytes);
+        activity.SetTag("wechat.ai.tool.result_chars", chars);
         activity.SetTag("wechat.ai.tool.truncated", truncated);
 
         if (!string.Equals(outcome, "succeeded", StringComparison.Ordinal))
@@ -96,10 +96,10 @@ internal static class WechatToolMetrics
         unit: "ms",
         description: "工具调用耗时（含授权、审批、执行与出站）。");
 
-    private static readonly Histogram<long> ResultBytes = Meter.CreateHistogram<long>(
-        "wechat.ai.tool.result_bytes",
-        unit: "By",
-        description: "出站结果体积（UTF-8 字节；截断后的实际体积）。");
+    private static readonly Histogram<long> ResultChars = Meter.CreateHistogram<long>(
+        "wechat.ai.tool.result_chars",
+        unit: "{char}",
+        description: "出站结果体积（字符数；与策略预算同一单位，截断后的实际体积）。");
 
     private static readonly Counter<long> Truncations = Meter.CreateCounter<long>(
         "wechat.ai.tool.truncations",
@@ -123,11 +123,11 @@ internal static class WechatToolMetrics
 
     /// <summary>记录出站结果体积与是否截断。</summary>
     /// <param name="tool">工具名。</param>
-    /// <param name="bytes">结果字节数。</param>
+    /// <param name="chars">结果字符数。</param>
     /// <param name="truncated">是否被预算截断。</param>
-    public static void RecordResult(string tool, long bytes, bool truncated)
+    public static void RecordResult(string tool, long chars, bool truncated)
     {
-        ResultBytes.Record(bytes, new TagList { { "tool", tool } });
+        ResultChars.Record(chars, new TagList { { "tool", tool } });
         if (truncated)
         {
             Truncations.Add(1, new TagList { { "tool", tool } });

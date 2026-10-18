@@ -113,7 +113,7 @@ public sealed class DialToolHandlers(IWechatWorkInternalDialService dial)
         var outcome = WechatApiResultReader.Read(response);
         if (!outcome.Ok)
         {
-            return ToolResult.FromError(outcome.ErrorText ?? "拉取公费电话拨打记录失败。");
+            return WechatToolOutcomeErrors.From(outcome, WechatToolNames.DialRecordList);
         }
 
         var records = new JsonArray();

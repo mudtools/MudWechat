@@ -103,7 +103,7 @@ public sealed class JournalToolHandlers(IWechatWorkInternalJournalService journa
         var outcome = WechatApiResultReader.Read(response);
         if (!outcome.Ok)
         {
-            return ToolResult.FromError(outcome.ErrorText ?? "拉取汇报记录列表失败。");
+            return WechatToolOutcomeErrors.From(outcome, WechatToolNames.JournalRecordList);
         }
 
         var uuids = new JsonArray();
@@ -137,9 +137,14 @@ public sealed class JournalToolHandlers(IWechatWorkInternalJournalService journa
             new JournalRecordDetailRequest { JournalId = request.Journaluuid },
             cancellationToken).ConfigureAwait(false);
         var outcome = WechatApiResultReader.Read(response);
-        if (!outcome.Ok || outcome.Data?.Info is not { } info)
+        if (!outcome.Ok)
         {
-            return ToolResult.FromError(outcome.ErrorText ?? "汇报记录不存在或无权访问（info 为空）。");
+            return WechatToolOutcomeErrors.From(outcome, WechatToolNames.JournalRecordGet);
+        }
+
+        if (outcome.Data?.Info is not { } info)
+        {
+            return WechatToolResults.NotFound(WechatToolNames.JournalRecordGet);
         }
 
         return ToolResult.FromText(ToolResultJson.ToText(new JsonObject

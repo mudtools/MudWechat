@@ -16,8 +16,11 @@ namespace Mud.Wechat.Work.AI.Mcp.Tests;
 /// <summary>
 /// MCP 协议层行为锚：握手、工具投影（白名单口径）、调用落点、协议级错误与 stdio 行帧。
 /// </summary>
-public class WechatMcpServerTests
+public class WechatMcpServerTests : IDisposable
 {
+    /// <summary>用例期间保活的容器：执行链实现 <see cref="IDisposable"/>，容器提前释放会让 tools/call 抛 ObjectDisposedException。</summary>
+    private ServiceProvider? _provider;
+
     [Fact]
     public async Task Initialize_ShouldReturnProtocolCapabilitiesAndServerInfo()
     {
@@ -172,10 +175,10 @@ public class WechatMcpServerTests
         output.ToString().Should().BeEmpty();
     }
 
-    private static WechatMcpServer Server()
+    private WechatMcpServer Server()
         => Server(out _);
 
-    private static WechatMcpServer Server(out Mock<IWechatWorkDepartmentsService> departments)
+    private WechatMcpServer Server(out Mock<IWechatWorkDepartmentsService> departments)
     {
         var mock = new Mock<IWechatWorkDepartmentsService>(MockBehavior.Loose);
         mock.Setup(d => d.GetDepartmentAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
@@ -185,14 +188,35 @@ public class WechatMcpServerTests
                 Department = new DepartmentInfo { Id = 2, Name = "研发部", ParentId = 1 },
             });
 
-        using var provider = new ServiceCollection()
+        // 容器必须活到用例结束：执行链持有并发闸门（SemaphoreSlim）并实现 IDisposable，
+        // 在 Server() 里 `using` 掉容器等于把单例执行链就地释放，下一次 tools/call 直接 ObjectDisposedException。
+        var provider = new ServiceCollection()
             .AddSingleton(mock.Object)
             .AddSingleton(AllowAll())
             .AddWechatWorkTools(new WechatToolBinding("corp-app", "corp-1"))
             .BuildServiceProvider();
 
+        _provider = provider;
         departments = mock;
         return new WechatMcpServer(provider.GetRequiredService<IWechatToolSurface>());
+    }
+
+    /// <inheritdoc />
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
+    /// <summary>释放用例期间创建的容器。</summary>
+    /// <param name="disposing">是否由托管释放触发。</param>
+    protected virtual void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            _provider?.Dispose();
+            _provider = null;
+        }
     }
 
     /// <summary>放行一切的授权器（协议层测试只关心「调用是否落到执行链」，授权语义由工具面自己的用例覆盖）。</summary>

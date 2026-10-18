@@ -55,7 +55,7 @@ public class ContactsDepartmentToolHandlersTests
     }
 
     [Fact]
-    public async Task GetDepartment_WhenPayloadMissing_ShouldReturnReadableError()
+    public async Task GetDepartment_WhenPayloadMissing_ShouldReturnNotFoundAsSuccess()
     {
         _departments
             .Setup(d => d.GetDepartmentAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
@@ -63,7 +63,8 @@ public class ContactsDepartmentToolHandlersTests
 
         var result = await Handler().GetDepartmentAsync(Args(("department_id", 2)), CancellationToken.None);
 
-        result.Text.Should().Contain("department");
+        result.Error.Should().BeNull("权限内确实没有这个部门 ⇒ 成功语义，模型据实回答「没有」");
+        result.Text.Should().Contain("\"found\":false");
     }
 
     [Fact]

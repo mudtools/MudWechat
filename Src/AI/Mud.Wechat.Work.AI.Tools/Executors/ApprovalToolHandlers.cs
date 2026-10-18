@@ -62,9 +62,14 @@ public sealed class ApprovalToolHandlers(
             new GetApprovalDetailRequest { SpNo = request.SpNo },
             cancellationToken).ConfigureAwait(false);
         var outcome = WechatApiResultReader.Read(response);
-        if (!outcome.Ok || outcome.Data?.Info is not { } info)
+        if (!outcome.Ok)
         {
-            return ToolResult.FromError(outcome.ErrorText ?? "审批单不存在或无权访问（info 为空）。");
+            return WechatToolOutcomeErrors.From(outcome, WechatToolNames.ApprovalGet);
+        }
+
+        if (outcome.Data?.Info is not { } info)
+        {
+            return WechatToolResults.NotFound(WechatToolNames.ApprovalGet);
         }
 
         return ToolResult.FromText(ToolResultJson.ToText(new JsonObject
@@ -144,7 +149,7 @@ public sealed class ApprovalToolHandlers(
         var outcome = WechatApiResultReader.Read(response);
         if (!outcome.Ok)
         {
-            return ToolResult.FromError(outcome.ErrorText ?? "拉取审批单号失败。");
+            return WechatToolOutcomeErrors.From(outcome, WechatToolNames.ApprovalList);
         }
 
         var items = new JsonArray();
@@ -220,9 +225,14 @@ public sealed class ApprovalToolHandlers(
             new GetApprovalTemplateDetailRequest { TemplateId = request.TemplateId },
             cancellationToken).ConfigureAwait(false);
         var outcome = WechatApiResultReader.Read(response);
-        if (!outcome.Ok || outcome.Data?.TemplateContent is not { } content)
+        if (!outcome.Ok)
         {
-            return ToolResult.FromError(outcome.ErrorText ?? "审批模板不存在或无权访问（template_content 为空）。");
+            return WechatToolOutcomeErrors.From(outcome, WechatToolNames.ApprovalTemplateGet);
+        }
+
+        if (outcome.Data?.TemplateContent is not { } content)
+        {
+            return WechatToolResults.NotFound(WechatToolNames.ApprovalTemplateGet);
         }
 
         var names = new JsonArray();
@@ -293,9 +303,14 @@ public sealed class ApprovalToolHandlers(
             new GetApprovalTemplateDetailRequest { TemplateId = request.TemplateId },
             cancellationToken).ConfigureAwait(false);
         var templateOutcome = WechatApiResultReader.Read(templateResponse);
-        if (!templateOutcome.Ok || templateOutcome.Data?.TemplateContent is not { } content)
+        if (!templateOutcome.Ok)
         {
-            return ToolResult.FromError(templateOutcome.ErrorText ?? "审批模板不存在或无权访问（无法校验控件）。");
+            return WechatToolOutcomeErrors.From(templateOutcome, WechatToolNames.ApprovalApply);
+        }
+
+        if (templateOutcome.Data?.TemplateContent is not { } content)
+        {
+            return WechatToolResults.NotFound(WechatToolNames.ApprovalApply);
         }
 
         var controls = new Dictionary<string, ApprovalTemplateControlProperty>(StringComparer.Ordinal);
@@ -364,7 +379,7 @@ public sealed class ApprovalToolHandlers(
         var outcome = WechatApiResultReader.Read(response);
         if (!outcome.Ok)
         {
-            return ToolResult.FromError(outcome.ErrorText ?? "提交审批失败。");
+            return WechatToolOutcomeErrors.From(outcome, WechatToolNames.ApprovalApply);
         }
 
         return ToolResult.FromText(ToolResultJson.ToText(new JsonObject

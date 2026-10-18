@@ -12,7 +12,7 @@
 
 ## 端点速览
 
-本域端点计数：按 HTTP 特性实计 **17** 支。
+本域端点计数：按 HTTP 特性实计 **18** 支。
 
 | # | 接口 | 方法 | HTTP 动词 | 路由 | 令牌 / 签名 | 备注 |
 |---|---|---|---|---|---|---|
@@ -31,8 +31,9 @@
 | 13 | `IWechatOpenPlatformComponentService` | `GetAuthorizerOptionAsync` | POST | `/cgi-bin/component/api_get_authorizer_option` | `ComponentAccessToken`（Query），Query `access_token` | 获取授权方选项设置信息。 |
 | 14 | `IWechatOpenPlatformComponentService` | `SetAuthorizerOptionAsync` | POST | `/cgi-bin/component/api_set_authorizer_option` | `ComponentAccessToken`（Query），Query `access_token` | 设置授权方选项信息。 |
 | 15 | `IWechatOpenPlatformComponentService` | `FastRegisterBetaWeappAsync` | POST | `/wxa/component/fastregisterbetaweapp` | `ComponentAccessToken`（Query），Query `access_token` | 快速创建试用小程序（`fastregisterbetaweapp`）。 |
-| 16 | `IWechatOpenPlatformComponentService` | `FastRegisterPersonalWeappAsync` | POST | `/wxa/component/fastregisterpersonalweapp` | `ComponentAccessToken`（Query），Query `access_token` | 快速注册个人小程序（`fastregisterpersonalweapp`，双 action：create / query）。 |
-| 17 | `IWechatOpenPlatformComponentTicketFreeService` | `StartPushTicketAsync` | POST | `/cgi-bin/component/api_start_push_ticket` | 无 `[Token]`（见域级说明） | 开始推送票据（免令牌；凭证走请求体）。 |
+| 16 | `IWechatOpenPlatformComponentService` | `FastRegisterPersonalWeappAsync` | POST | `/wxa/component/fastregisterpersonalweapp` | `ComponentAccessToken`（Query），Query `access_token` | 快速注册个人小程序（`fastregisterpersonalweapp?action=create`）。 |
+| 17 | `IWechatOpenPlatformComponentService` | `SearchFastRegisterPersonalWeappAsync` | POST | `/wxa/component/fastregisterpersonalweapp` | `ComponentAccessToken`（Query），Query `access_token` | 查询快速注册个人小程序任务状态（`fastregisterpersonalweapp?action=query`）。 |
+| 18 | `IWechatOpenPlatformComponentTicketFreeService` | `StartPushTicketAsync` | POST | `/cgi-bin/component/api_start_push_ticket` | 无 `[Token]`（见域级说明） | 开始推送票据（免令牌；凭证走请求体）。 |
 
 ## 令牌与认证
 
@@ -275,7 +276,7 @@ URL 遥测已由组件 `SensitiveUrlRedactor` 与 `WechatOpenPlatformException` 
 - 官方约束：令牌面为 `component_access_token`；名称强制后缀"的体验小程序"且需关键字检查；注册为异步流程。
 - 官方错误码：`-1`（系统繁忙）/ `40001`（access_token 无效）/ `750001~750004`（授权/身份异常）。
 
-### 16. `FastRegisterPersonalWeappAsync` — 快速注册个人小程序（`fastregisterpersonalweapp`，双 action：create / query）。
+### 16. `FastRegisterPersonalWeappAsync` — 快速注册个人小程序（`fastregisterpersonalweapp?action=create`）。
 
 - **声明接口**：[IWechatOpenPlatformComponentService](./IWechatOpenPlatformComponentService.cs)
 - **官方契约**：`POST /wxa/component/fastregisterpersonalweapp`
@@ -291,10 +292,28 @@ URL 遥测已由组件 `SensitiveUrlRedactor` 与 `WechatOpenPlatformException` 
 
 - 官方文档：https://developers.weixin.qq.com/doc/oplatform/openApi/OpenApiDoc/register-management/fast-registration-ind/fastRegisterPersonalMp.html
 - 官方约束：令牌面为 `component_access_token`；频率限制 5 次/分钟、100 次/天；`new_version` 必须填 true。
-- **查询形态**：同路由以 `action=query` + 请求体 `{ "taskid": "..." }` 查询任务状态（本接口未提供专用查询方法，宿主可直接复用此端点并传 `action = "query"`）。
+- **同路由双方法**：查询任务状态见 `SearchFastRegisterPersonalWeappAsync`（`action=query`）。
 - 官方错误码：`-1`（系统繁忙）/ `40001`（access_token 无效）/ `1001~1008`（主体/管理员违规或超限）。
 
-### 17. `StartPushTicketAsync` — 开始推送票据（免令牌；凭证走请求体）。
+### 17. `SearchFastRegisterPersonalWeappAsync` — 查询快速注册个人小程序任务状态（`fastregisterpersonalweapp?action=query`）。
+
+- **声明接口**：[IWechatOpenPlatformComponentService](./IWechatOpenPlatformComponentService.cs)
+- **官方契约**：`POST /wxa/component/fastregisterpersonalweapp`
+
+| 参数 | 位置 | 类型 | 官方说明 |
+|---|---|---|---|
+| `action` | Query `action` | `string` | 官方 `action` query 参数，固定 `query`（SDK 级默认值，无需显式传入）。 |
+
+- **请求体**：`OpenPlatformFastRegisterPersonalQueryRequest` — 查询请求（`taskid` 必填，来自创建应答）。
+- **返回**：`OpenPlatformFastRegisterPersonalResponse` — 任务状态（`status`）；注册结果仍以 `notify_third_fasteregister` 事件推送为准。
+
+**备注（原文）**
+
+- 官方文档：https://developers.weixin.qq.com/doc/oplatform/openApi/OpenApiDoc/register-management/fast-registration-ind/fastRegisterPersonalMp.html
+- **同路由双方法**：与 `FastRegisterPersonalWeappAsync` 共享 `/wxa/component/fastregisterpersonalweapp`，以 `action` query 分派（守卫 OP-B6b 登记）。
+- 官方约束：令牌面为 `component_access_token`；频率限制 5 次/分钟、100 次/天。
+
+### 18. `StartPushTicketAsync` — 开始推送票据（免令牌；凭证走请求体）。
 
 - **声明接口**：[IWechatOpenPlatformComponentTicketFreeService](./IWechatOpenPlatformComponentService.cs)
 - **官方契约**：`POST /cgi-bin/component/api_start_push_ticket`
@@ -309,7 +328,7 @@ URL 遥测已由组件 `SensitiveUrlRedactor` 与 `WechatOpenPlatformException` 
 
 ## DTO 与序列化面
 
-本域 DTO 目录 [`Mud.Wechat.OpenPlatform.DataModels/Component`](../../../Mud.Wechat.OpenPlatform.DataModels/Component/) 内共 **40** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **40** 个，`SerializerClassName` = `Component`。
+本域 DTO 目录 [`Mud.Wechat.OpenPlatform.DataModels/Component`](../../../Mud.Wechat.OpenPlatform.DataModels/Component/) 内共 **41** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **41** 个，`SerializerClassName` = `Component`。
 
 AOT 源生成上下文：[`ComponentJsonContext.g.cs`](./../../../Mud.Wechat.OpenPlatform.DataModels/Generated/ComponentJsonContext.g.cs)（生成物，勿手改）。
 
@@ -340,6 +359,7 @@ AOT 源生成上下文：[`ComponentJsonContext.g.cs`](./../../../Mud.Wechat.Ope
 | `OpenPlatformFastRegisterBetaWeappRequest` | 请求体 | [Component/OpenPlatformFastRegisterBetaWeappRequest.cs](../../../Mud.Wechat.OpenPlatform.DataModels/Component/OpenPlatformFastRegisterBetaWeappRequest.cs) | `name`, `openid` |
 | `OpenPlatformFastRegisterPersonalResponse` | 应答 | [Component/OpenPlatformFastRegisterPersonalResponse.cs](../../../Mud.Wechat.OpenPlatform.DataModels/Component/OpenPlatformFastRegisterPersonalResponse.cs) | `taskid`, `authorize_url`, `status` |
 | `OpenPlatformFastRegisterPersonalRequest` | 请求体 | [Component/OpenPlatformFastRegisterPersonalRequest.cs](../../../Mud.Wechat.OpenPlatform.DataModels/Component/OpenPlatformFastRegisterPersonalRequest.cs) | `idname`, `wxuser`, `component_phone`, `new_version` |
+| `OpenPlatformFastRegisterPersonalQueryRequest` | 请求体 | [Component/OpenPlatformFastRegisterPersonalQueryRequest.cs](../../../Mud.Wechat.OpenPlatform.DataModels/Component/OpenPlatformFastRegisterPersonalQueryRequest.cs) | `taskid` |
 | `OpenPlatformStartPushTicketRequest` | 请求体 | [Component/OpenPlatformComponentCoreDtos.cs](../../../Mud.Wechat.OpenPlatform.DataModels/Component/OpenPlatformComponentCoreDtos.cs) | `component_appid`, `component_secret`, `appid`, `appsecret`, `name`, `code`, `code_type`, `legal_persona_name`, `legal_persona_wechat`, `component_phone`, `taskid` |
 
 > DTO 一律以源文件为准；本表只列端点签名**直接引用**的一层类型，嵌套类型不再递归展开。所有 DTO 不使用 `required`（仓内约束），必填性由接口注释与官方页表达，SDK 不做本地必填校验。

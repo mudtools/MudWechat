@@ -59,6 +59,12 @@ public class OpenPlatformServiceBuilder
             },
             // MiniProgramTemplate 组含「代码模板库管理 / 下单路径申请」两支 component 令牌子接口，一次注册覆盖两个接口。
             [OpenPlatformModule.MiniProgramTemplate] = static s => s.AddMiniProgramTemplateWebApiHttpClient(),
+            // UserOrder 组为 7 端点的单一授权方令牌子接口。
+            [OpenPlatformModule.UserOrder] = static s => s.AddUserOrderWebApiHttpClient(),
+            // WeData 组含「登录配置（component）/ 用户权限（authorizer）」两支接口，一次注册覆盖两个接口。
+            [OpenPlatformModule.WeData] = static s => s.AddWeDataWebApiHttpClient(),
+            // ServiceMarket 组为 3 端点的单一 component 令牌子接口（login_auth 判非契约、不入组）。
+            [OpenPlatformModule.ServiceMarket] = static s => s.AddServiceMarketWebApiHttpClient(),
         };
 
     /// <summary>注册全部模块。</summary>

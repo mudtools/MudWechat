@@ -14,7 +14,7 @@ namespace Mud.Wechat.OpenPlatform.DataModels.MiniProgramManage;
 [HttpJsonSerializable(SerializerClassName = "MiniProgramManage")]
 public class OpenPlatformMpMemberAuthRequest
 {
-    /// <summary>操作类型（官方必填 <c>action</c>，本域恒 <c>get_experiencer</c>）。</summary>
+    /// <summary>操作类型（官方必填 <c>action</c>，本域恒 <c>get_experiencer</c>；SDK 级默认值，无需显式传入）。</summary>
     [JsonPropertyName("action")]
-    public string? Action { get; set; }
+    public string? Action { get; set; } = "get_experiencer";
 }

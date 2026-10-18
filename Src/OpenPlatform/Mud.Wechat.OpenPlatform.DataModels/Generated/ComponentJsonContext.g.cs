@@ -41,6 +41,7 @@ namespace Mud.Wechat.OpenPlatform.DataModels.Component;
 [JsonSerializable(typeof(global::Mud.Wechat.OpenPlatform.DataModels.Component.OpenPlatformGetDomainConfirmFileResponse))]
 [JsonSerializable(typeof(global::Mud.Wechat.OpenPlatform.DataModels.Component.OpenPlatformFastRegisterBetaWeappRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.OpenPlatform.DataModels.Component.OpenPlatformFastRegisterBetaWeappResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.OpenPlatform.DataModels.Component.OpenPlatformFastRegisterPersonalQueryRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.OpenPlatform.DataModels.Component.OpenPlatformFastRegisterPersonalRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.OpenPlatform.DataModels.Component.OpenPlatformFastRegisterPersonalResponse))]
 [JsonSerializable(typeof(global::Mud.Wechat.OpenPlatform.DataModels.Component.OpenPlatformGetPrivacySettingRequest))]

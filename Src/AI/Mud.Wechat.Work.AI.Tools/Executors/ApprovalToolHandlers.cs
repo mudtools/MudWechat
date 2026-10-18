@@ -6,6 +6,7 @@
 // -----------------------------------------------------------------------
 
 using System.Globalization;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using Mud.AI.Abstractions.Tools.Handlers;
 using Mud.AI.Agent.Tools;
@@ -253,6 +254,257 @@ public sealed class ApprovalToolHandlers(
             ["controls"] = controls,
             ["control_count"] = controls.Count,
         }));
+    }
+
+    /// <summary>执行 <c>approval.apply</c>（按模板控件 ID 填值提交）。</summary>
+    /// <param name="args">模型侧入参（<c>template_id</c> / <c>creator_userid</c> / <c>fields_json</c> 必填）。</param>
+    /// <param name="cancellationToken">取消令牌。</param>
+    /// <returns>工具结果（ok、sp_no、filled_controls）。</returns>
+    /// <remarks>
+    /// <b>提交前按模板回校</b>：未知控件 ID、必填缺失、控件类型不支持，全部在调用官方接口之前拒绝。
+    /// 静默丢弃一个字段（例如附件）比提交失败更糟——用户会以为附件已经带上了。
+    /// </remarks>
+    [ToolHandler(typeof(IWechatWorkApprovalApplyTool))]
+    public async Task<ToolResult> ApplyAsync(
+        IReadOnlyDictionary<string, object?> args,
+        CancellationToken cancellationToken)
+    {
+        var request = ApprovalApplyArgs.Unpack(args);
+
+        JsonObject? fields;
+        try
+        {
+            fields = JsonNode.Parse(request.FieldsJson) as JsonObject;
+        }
+        catch (JsonException ex)
+        {
+            return ToolResult.FromError(
+                $"参数非法：fields_json 不是合法 JSON（{ex.Message}）。应为对象，键是控件 ID、值是取值。");
+        }
+
+        if (fields is null || fields.Count == 0)
+        {
+            return ToolResult.FromError(
+                "参数非法：fields_json 必须是非空 JSON 对象（键 = 控件 ID，值 = 取值）；空表单不能提交。");
+        }
+
+        // 模板是控件 ID / 类型 / 必填的权威来源：先取模板再校验，而不是相信模型自报的控件结构。
+        var templateResponse = await _template.GetTemplateDetailAsync(
+            new GetApprovalTemplateDetailRequest { TemplateId = request.TemplateId },
+            cancellationToken).ConfigureAwait(false);
+        var templateOutcome = WechatApiResultReader.Read(templateResponse);
+        if (!templateOutcome.Ok || templateOutcome.Data?.TemplateContent is not { } content)
+        {
+            return ToolResult.FromError(templateOutcome.ErrorText ?? "审批模板不存在或无权访问（无法校验控件）。");
+        }
+
+        var controls = new Dictionary<string, ApprovalTemplateControlProperty>(StringComparer.Ordinal);
+        foreach (var control in content.Controls ?? [])
+        {
+            if (control.Property is { } property && !string.IsNullOrWhiteSpace(property.Id))
+            {
+                controls[property.Id] = property;
+            }
+        }
+
+        if (controls.Count == 0)
+        {
+            return ToolResult.FromError("该模板没有可填控件（可能是系统模板或权限不足），无法自动提交。");
+        }
+
+        var contents = new List<ApprovalControlItem>(fields.Count);
+        foreach (var (id, node) in fields)
+        {
+            if (!controls.TryGetValue(id, out var property))
+            {
+                return ToolResult.FromError(
+                    $"参数非法：控件 ID \"{id}\" 不在模板中。可用控件：{string.Join(", ", controls.Keys)}（先调 approval.template.get 核对）。");
+            }
+
+            var (value, error) = MapControlValue(property.Control, node);
+            if (error is not null)
+            {
+                return ToolResult.FromError($"参数非法：控件 {id}（{property.Control}）{error}");
+            }
+
+            contents.Add(new ApprovalControlItem { Id = id, Value = value });
+        }
+
+        var missing = controls
+            .Where(pair => pair.Value.Require == 1 && !fields.ContainsKey(pair.Key))
+            .Select(pair => $"{pair.Key}({FirstText(pair.Value.Title)})")
+            .ToArray();
+        if (missing.Length > 0)
+        {
+            return ToolResult.FromError(
+                $"参数非法：必填控件缺失 {string.Join("、", missing)}。请补齐后重新提交（不要让用户承担漏填的后果）。");
+        }
+
+        List<ApprovalSummaryLine>? summary = null;
+        if (!string.IsNullOrWhiteSpace(request.Summary))
+        {
+            summary = [.. request.Summary
+                .Split('|', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Select(text => new ApprovalSummaryLine
+                {
+                    SummaryInfo = [new ApprovalLangTextItem { Text = text }],
+                })];
+        }
+
+        var response = await _approval.ApplyApprovalAsync(
+            new ApplyApprovalRequest
+            {
+                CreatorUserid = request.CreatorUserid,
+                TemplateId = request.TemplateId,
+                UseTemplateApprover = request.UseTemplateApprover is false ? 0 : 1,
+                ApplyData = new ApprovalApplyData { Contents = contents },
+                SummaryList = summary,
+            },
+            cancellationToken).ConfigureAwait(false);
+        var outcome = WechatApiResultReader.Read(response);
+        if (!outcome.Ok)
+        {
+            return ToolResult.FromError(outcome.ErrorText ?? "提交审批失败。");
+        }
+
+        return ToolResult.FromText(ToolResultJson.ToText(new JsonObject
+        {
+            ["ok"] = true,
+            ["sp_no"] = outcome.Data?.SpNo,
+            ["filled_controls"] = contents.Count,
+        }));
+    }
+
+    /// <summary>
+    /// 控件取值映射：按<b>模板声明的控件类型</b>（而不是模型自报的类型）决定值的形状。
+    /// </summary>
+    /// <remarks>
+    /// 只覆盖能安全映射的 7 种控件；其余（附件、明细表、假期、位置、关联审批…）明确拒绝并让用户去审批应用填写——
+    /// 静默丢字段比提交失败更危险。日期/选择器同时接受「简写」（字符串/数组）与「完整对象」两种形态，
+    /// 因为模型对「日期是一个时间戳」和「单选是一个 key」的心智更自然。
+    /// </remarks>
+    private static (ApprovalControlValue? Value, string? Error) MapControlValue(string? control, JsonNode? node)
+    {
+        switch (control)
+        {
+            case "Text":
+            case "Textarea":
+                return TryGetScalar(node, out var text)
+                    ? (new ApprovalControlValue { Text = text }, null)
+                    : (null, "需要字符串值。");
+
+            case "Number":
+                return TryGetScalar(node, out var number)
+                    ? (new ApprovalControlValue { NewNumber = number }, null)
+                    : (null, "需要数字（以字符串形式给出）。");
+
+            case "Money":
+                return TryGetScalar(node, out var money)
+                    ? (new ApprovalControlValue { NewMoney = money }, null)
+                    : (null, "需要金额（以字符串形式给出）。");
+
+            case "Date":
+                if (node is JsonObject dateObject)
+                {
+                    var stamp = dateObject["timestamp"]?.ToString();
+                    if (string.IsNullOrWhiteSpace(stamp))
+                    {
+                        return (null, "需要 timestamp（Unix 秒）。");
+                    }
+
+                    return (new ApprovalControlValue
+                    {
+                        Date = new ApprovalDateValue
+                        {
+                            Type = dateObject["type"]?.ToString() ?? "day",
+                            Timestamp = stamp,
+                        },
+                    }, null);
+                }
+
+                return TryGetScalar(node, out var timestamp)
+                    ? (new ApprovalControlValue { Date = new ApprovalDateValue { Type = "day", Timestamp = timestamp } }, null)
+                    : (null, "需要 Unix 秒字符串，或 {\"type\":\"day\",\"timestamp\":\"...\"}。");
+
+            case "Selector":
+                if (node is JsonArray multi)
+                {
+                    var options = new List<ApprovalSelectorOption>(multi.Count);
+                    foreach (var item in multi)
+                    {
+                        if (!TryGetScalar(item, out var key))
+                        {
+                            return (null, "多选需要字符串 key 数组。");
+                        }
+
+                        options.Add(new ApprovalSelectorOption { Key = key });
+                    }
+
+                    return (new ApprovalControlValue
+                    {
+                        Selector = new ApprovalSelectorValue { Type = "multi", Options = options },
+                    }, null);
+                }
+
+                return TryGetScalar(node, out var singleKey)
+                    ? (new ApprovalControlValue
+                    {
+                        Selector = new ApprovalSelectorValue
+                        {
+                            Type = "single",
+                            Options = [new ApprovalSelectorOption { Key = singleKey }],
+                        },
+                    }, null)
+                    : (null, "需要选项 key（单选）或 key 数组（多选）；key 由模板 config 给出。");
+
+            case "Members":
+                if (node is not JsonArray members)
+                {
+                    return (null, "需要 userid 数组。");
+                }
+
+                var userids = new List<ApprovalMemberItem>(members.Count);
+                foreach (var item in members)
+                {
+                    if (!TryGetScalar(item, out var userid))
+                    {
+                        return (null, "需要 userid 字符串数组。");
+                    }
+
+                    userids.Add(new ApprovalMemberItem { Userid = userid });
+                }
+
+                return (new ApprovalControlValue { Members = userids }, null);
+
+            default:
+                return (null,
+                    "属于暂不支持自动提交的控件类型（附件 / 明细表 / 假期 / 位置 / 关联审批等）；"
+                    + "请在审批应用中填写该字段，或改用模板中只含文本/数字/金额/日期/选择/成员的消息提交。");
+        }
+    }
+
+    /// <summary>取标量值的字符串形态（字符串 / 数字 / 布尔都接受；对象与数组不接受）。</summary>
+    private static bool TryGetScalar(JsonNode? node, out string value)
+    {
+        value = string.Empty;
+        if (node is not JsonValue scalar)
+        {
+            return false;
+        }
+
+        if (scalar.TryGetValue<string>(out var text))
+        {
+            value = text;
+            return true;
+        }
+
+        if (scalar.TryGetValue<decimal>(out var number))
+        {
+            value = number.ToString(CultureInfo.InvariantCulture);
+            return true;
+        }
+
+        return false;
     }
 
     /// <summary>多语言文本列表投影：取首个非空文本（模板名 / 控件标题的模型可读形态）。</summary>

@@ -77,6 +77,7 @@ public class WechatToolSurfaceContractGuards
         // 期望值必须是集合：`.Equal("a", "b", ..., "理由")` 会绑定到 params 重载，把理由当成第 6 个元素。
         WechatToolNames.WriteAll.Should().Equal(
             [
+                "approval.apply",
                 "contacts.tag.create",
                 "contacts.tag.update_name",
                 "externalcontact.groupmsg.send",

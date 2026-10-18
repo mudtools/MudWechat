@@ -51,12 +51,13 @@
 不再重复声明面已表达的校验。改声明面后必须重固化 golden 快照：
 `scripts/Update-WechatToolGolden.ps1`（`Generated/WechatToolSchemas.golden.txt` 漂移即 `MUDWT014` 构建失败）。
 
-当前策展面（**61 个 = 49 只读 + 12 写（11 受控写 + 1 高危写）**；只读/写分类的权威表是
+当前策展面（**62 个 = 49 只读 + 13 写（12 受控写 + 1 高危写）**；只读/写分类的权威表是
 `Tests/.../ContractGuards/WechatToolSurfaceContractGuards.cs`，本表与之同批维护）：
 
 | 域 | 工具 | SDK 源 |
 |---|---|---|
 | 审批 | `approval.get` / `.list` / `.template.get` / `.vacation.quota` | `IWechatWorkApprovalService.{GetApprovalDetailAsync,BatchGetApprovalNumbersAsync}` / `IWechatWorkApprovalTemplateService.GetTemplateDetailAsync` / `IWechatWorkVacationService.GetUserVacationQuotaAsync` |
+| 审批（**L2 受控写**） | `approval.apply` | `IWechatWorkApprovalService.ApplyApprovalAsync`（`fields_json` 键=控件 ID；提交前按模板回校：未知 ID / 必填缺失 / 不支持控件一律拒绝） |
 | 日程（**L2 受控写 = 外部可见**） | `schedule.add` / `schedule.cancel` | `IWechatWorkScheduleService.{AddScheduleAsync,DelScheduleAsync}` |
 | 日程（读） | `schedule.get` | `IWechatWorkScheduleService.GetScheduleAsync` |
 | 打卡 | `checkin.record.list` | `IWechatWorkInternalCheckinRecordService.GetCheckinDataAsync`（自建口径） |
@@ -294,8 +295,9 @@ powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/Update-WechatToolG
   本包只提供预览与同步门，不持有工单状态。
 - **`message.template_card.send/update`**（暂缓）：`template_card` 是一棵深结构 JSON（卡片类型 × 子元素 × 动作），
   模型产出的成本高于收益；正确形态是宿主预置卡片模板 ID、模型只填少量字段——等宿主有明确卡片场景再做。
-- **任务面扩张**：日程（`schedule.add`/`get`/`cancel`）、审批提交与假期配额、客户标签改名；逐域沿用
-  `Curation + Executors + 守卫` 三段形态，并在 `AddWechatWorkTools` 补该域的 `Add*Core()`（陷阱 9）。
+- **任务面扩张**：邮件（先只读）、会议室（先验证城市/建筑入口）、微盘；逐域沿用
+  `Curation + Executors + 守卫` 三段形态，并在 `AddWechatWorkTools` 补该域的 `Add*Core()`（陷阱 9），
+  同时把 `WechatToolDomainDecisionGuards` 的状态从 Deferred 改为 Curated。
 - **Trace（ActivitySource）**：指标已埋（Meter 四项），但还没有 span——跨「模型 → 工具 → 企微接口」的链路追踪仍缺。
 - **评测集**：「给定请求 → 期望工具序列」的用例尚未建立，工具选择质量目前无法度量。
 - golden 快照随工具面扩张同批重固化（`scripts/Update-WechatToolGolden.ps1`）。

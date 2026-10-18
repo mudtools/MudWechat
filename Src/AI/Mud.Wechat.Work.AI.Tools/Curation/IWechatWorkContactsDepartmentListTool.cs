@@ -25,5 +25,5 @@ public interface IWechatWorkContactsDepartmentListTool
 {
     /// <summary>列出部门树。</summary>
     /// <param name="department_id">根部门 ID（可选；省略即全量）。</param>
-    void Departments(int? department_id);
+    void Departments([ToolParameter("department_id", "根部门 ID（可选；省略即全量）。")] int? department_id);
 }

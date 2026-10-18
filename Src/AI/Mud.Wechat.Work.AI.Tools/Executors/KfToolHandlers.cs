@@ -170,11 +170,7 @@ public sealed class KfToolHandlers(
     {
         var request = KfMessageSendArgs.Unpack(args);
 
-        if (string.IsNullOrWhiteSpace(request.Content))
-        {
-            return ToolResult.FromError("参数非法：content 不能为空。");
-        }
-
+        // content / touser / open_kfid 的「必填且非空白」由声明面 Required 与生成的解包器收口。
         var response = await _sessions.SendTextMessageAsync(
             new SendKfTextMsgRequest
             {

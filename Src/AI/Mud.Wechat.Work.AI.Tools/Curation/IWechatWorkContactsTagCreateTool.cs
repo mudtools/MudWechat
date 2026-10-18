@@ -34,5 +34,5 @@ public interface IWechatWorkContactsTagCreateTool
     /// <summary>创建标签。</summary>
     /// <param name="tag_name">标签名（≤32 字，不可重名）。</param>
     /// <param name="tag_id">指定标签 ID（可空，非负整数）。</param>
-    void Create(string tag_name, int? tag_id);
+    void Create([ToolParameter("tag_name", "标签名（≤32 字，不可重名）。", Required = true)] string tag_name, [ToolParameter("tag_id", "指定标签 ID（可空，非负整数）。")] int? tag_id);
 }

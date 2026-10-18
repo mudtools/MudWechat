@@ -35,5 +35,11 @@ public interface IWechatWorkJournalRecordListTool
     /// <param name="cursor">分页游标（可空 ⇒ 0）。</param>
     /// <param name="creator">提交人 userid（可空）。</param>
     /// <param name="template_id">汇报表单 ID（可空）。</param>
-    void List(string start_time, string end_time, int? limit, int? cursor, string? creator, string? template_id);
+    void List(
+        [ToolParameter("start_time", "起始时间（Unix 秒或带时区的 ISO 8601）。", Required = true)] string start_time,
+        [ToolParameter("end_time", "结束时间（Unix 秒或带时区的 ISO 8601；与起始间隔 ≤ 31 天）。", Required = true)] string end_time,
+        [ToolParameter("limit", "单次条数（1~100，可空 ⇒ 100）。")] int? limit,
+        [ToolParameter("cursor", "分页游标（可空 ⇒ 0）。")] int? cursor,
+        [ToolParameter("creator", "提交人 userid（可空）。")] string? creator,
+        [ToolParameter("template_id", "汇报表单 ID（可空）。")] string? template_id);
 }

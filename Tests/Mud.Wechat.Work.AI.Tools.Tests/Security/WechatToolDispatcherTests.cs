@@ -1,4 +1,4 @@
-﻿using FluentAssertions;
+using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using Mud.AI.Agent.Tools;
@@ -135,6 +135,29 @@ public class WechatToolDispatcherTests
 
         result.Text.Should().Contain("执行失败");
         result.Text.Should().NotContain("upstream down", "内部异常文案不入模型可见面");
+    }
+
+    [Fact]
+    public async Task Invoke_WhenExecutionThrowsArgumentException_ShouldSurfaceParameterError()
+    {
+        var binding = new WechatToolBinding("corp-app");
+        var registry = new WechatToolRegistry();
+        registry.Register(new WechatToolExecution(
+            WechatToolNames.ContactsDepartmentGet,
+            binding,
+            (_, _) => throw new ToolArgumentException(
+                "参数 status_filter 的取值非法（合法取值：All/PendingInherit/Inheriting/Inherited）。",
+                ["All", "PendingInherit", "Inheriting", "Inherited"])));
+        var policy = new WechatToolPolicy { EnforceAuthorization = false };
+        policy.Validate();
+
+        var result = await new WechatToolDispatcher(registry, policy)
+            .InvokeAsync(WechatToolNames.ContactsDepartmentGet, GetArgs);
+
+        result.Text.Should().Contain(
+            "status_filter",
+            "参数类错误（Validation/invalid_args）的文案含参数名与合法取值清单，原样回填模型才能自我纠错");
+        result.Text.Should().Contain("All");
     }
 
     [Fact]

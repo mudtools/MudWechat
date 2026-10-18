@@ -26,5 +26,7 @@ public interface IWechatWorkKfSessionGetTool
     /// <summary>查询会话状态。</summary>
     /// <param name="open_kfid">客服账号 ID。</param>
     /// <param name="external_userid">客户 ID。</param>
-    void Get(string open_kfid, string external_userid);
+    void Get(
+        [ToolParameter("open_kfid", "客服账号 ID。", Required = true)] string open_kfid,
+        [ToolParameter("external_userid", "客户 ID。", Required = true)] string external_userid);
 }

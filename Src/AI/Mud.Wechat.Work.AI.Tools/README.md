@@ -24,13 +24,34 @@
 | `ToolArgs`（internal） | 生成物 Args 解包器消费的 helper 集（六个参数形态各一对 Require/Optional） |
 | `Extensions.AddWechatWorkTools(binding[, configurePolicy])` | 装配入口：绑定 + 逐执行器工厂 + 注册表 + 策略 + 执行链 + `IReadOnlyList<AIFunction>` 投影（软缺席：业务域未注册 ⇒ 该域工具不入表） |
 
-当前策展面（33 个：26 只读 + 6 受控写 + 1 高危写）：
+## 参数约束的声明方式（必填 / 闭集）
+
+引擎只读**声明面**（Curation 接口），执行器不参与参数 Schema——三个槽各自的来源：
+
+| 槽 | 来源 |
+|---|---|
+| 名 / 描述 | 每个模型可见参数都显式带 `[ToolParameter("名", "详细描述")]`：第一实参 = C# 参数名，第二实参 = 同文件 `<param>` 文档注释原文（引擎不再需要空串回退）|
+| 必填 | `[ToolParameter("x", "<描述>", Required = true)]`；值类型必填由类型（非可空）推导，`string` 必填必须显式标注 |
+| 取值闭集 | `EnumType = typeof(常量类)`；常量类落 `WechatToolClosedSets.cs`（`internal static class` + `public const int`，成员名即模型可见字面量，可访问性不被生成代码引用故可不 public） |
+
+闭集与必填在**生成的解包器**里收口：越界/缺失值在调用 SDK 之前即被拒（闭集非法值抛
+`ToolArgumentException`，其 `Suggestions` 携带合法取值清单，执行链按 `Validation/invalid_args` 原样回填模型）。
+故执行器只保留声明面表达不了的约束（跨参数关系、时间跨度、字节上限、数值区间、二选一），
+不再重复声明面已表达的校验。改声明面后必须重固化 golden 快照：
+`scripts/Update-WechatToolGolden.ps1`（`Generated/WechatToolSchemas.golden.txt` 漂移即 `MUDWT014` 构建失败）。
+
+当前策展面（45 个：37 只读 + 7 受控写 + 1 高危写）：
 
 | 域 | 工具 | SDK 源 |
 |---|---|---|
 | 审批 | `approval.get` | `IWechatWorkApprovalService.GetApprovalDetailAsync` |
 | 打卡 | `checkin.record.list` | `IWechatWorkInternalCheckinRecordService.GetCheckinDataAsync`（自建口径） |
 | 客户联系 | `externalcontact.follow_user.list` / `.contact.list` / `.contact.get` / `.tag.list` | `IWechatWorkExternalContact{FollowUser,Customer,Tag}Service` |
+| 客户群 | `externalcontact.groupchat.list` / `.groupchat.get` | `IWechatWorkExternalContactGroupChatService` |
+| 客户朋友圈 | `externalcontact.moment.list` / `.moment.publish_list` / `.moment.comments` | `IWechatWorkExternalContactMomentService` |
+| 客户统计 | `externalcontact.statistics.user_behavior` / `.statistics.groupchat` / `.statistics.groupchat_by_day` | `IWechatWorkExternalContactStatisticsService` |
+| 客户群发 | `externalcontact.groupmsg.list` / `.task_list` / `.send_result` | `IWechatWorkExternalContactGroupMsgService` |
+| 客户群发（**L2 受控写**） | `externalcontact.groupmsg.send` | `IWechatWorkExternalContactGroupMsgService.AddGroupMsgTemplateAsync` |
 | 会议 | `meeting.list`（三类公共面）/ `.get` / `.attendees`（自建口径） | `IWechatWorkMeetingService` / `IWechatWorkInternalMeeting{,Advanced}Service` |
 | 汇报 | `journal.record.list` / `.get` | `IWechatWorkInternalJournalService`（自建口径） |
 | 直播 | `living.list` / `.get` / `.watch_stat` | `IWechatWorkLivingService` |
@@ -70,11 +91,38 @@
 **不外发** `lat`/`lng`/`location_*`/`wifiname`/`wifimac`/`notes`/`mediaids`/`deviceid`（行踪与设备指纹）。
 客户联系域只投影业务事实（客户昵称/类型/公司/职位 + 跟进成员的备注名/添加时间/方式/状态/标签名），
 **不外发** 客户头像、`unionid`、备注手机号、视频号昵称，以及跟进成员的 `description`（自由文本，可能含个人情况）。
+客户群域同理：成员只投影 `userid`/类型/入群时间与方式/邀请人/群昵称（姓名需模型显式 `need_name` 才向官方索取），
+**不外发** 群成员的 `unionid`；朋友圈域只投影文本、图片张数、有无视频、图文标题与链接、地点名，
+**不外发** `media_id`（宿主素材资产）与经纬度（行踪），互动数据只给互动者身份与时间（官方此端点不返回评论正文）。
 
 **三跳自举**：客户联系没有「一把拉全企业客户」的公共读端点，工具面按 `follow_user.list → contact.list(userid)
 → contact.get(external_userid)` 逐跳收敛，既不越权聚合，也不让模型猜不存在的能力。
 会议域同理（`meeting.list(userid + 时间范围) → meeting.get → meeting.attendees`），且**不外发** `meeting_link`
 （入会凭证）与参会人的 `tmp_openid` / 网络质量 / 音视频状态 / `customer_data`（外部自然人行为指纹）。
+客户群（`groupchat.list → groupchat.get`）与朋友圈（`moment.list → moment.publish_list → moment.comments`）
+沿用同一形态：官方列表端点只回 ID，详情/互动必须按单个 ID 二次调用，工具面不拼装批量详情；
+朋友圈互动的钥匙是「朋友圈 + 发表成员」两段，企业发表的朋友圈须先经 `publish_list` 取到执行成员。
+
+**客户统计域投影边界**：官方这一域只回聚合计数与比率（新增客户/聊天/消息/回复占比、群规模与活跃度），
+不含任何客户或成员身份——「统计」本身即是脱敏形态，故执行器整块投影；官方约束（闭区间、跨度 ≤ 30 天、
+只留最近 180 天、非零点取整到当日 0 点、`order_by` 四值闭集）在执行器调用前收口。
+
+**客户群发域投影边界**：读面按官方三段式收敛（`groupmsg.list` 给 msgid 与内容 → `task_list` 给成员执行状态 →
+`send_result` 给逐客户/逐群送达，钥匙都是 msgid，送达结果再加 userid）；附件只投影 `msgtype`
+（`media_id` / `pic_url` 是宿主素材资产），送达结果给 `external_userid` / `chat_id`（与 `contact.list` /
+`groupchat.list` 同级自有数据）但不含消息内容。写面 `groupmsg.send` 与 `message.send` 同一路径（默认关闭 +
+授权 + 审批），且**目标集必须显式**：客户模式给 `external_userid`、群模式给 `chat_id_list`——官方支持的
+「只给 sender = 该成员全部客户/群」不开放（全量发送让模型先用只读面枚举，可核对、可分批）；附件同样不开放
+（模型产不出 `media_id`，官方「文本与附件不可同时为空」在此等价于 `content` 必填）。
+
+**客户联系本波次未策展（有明确理由）**：`moment_strategy.*`（朋友圈规则组）——运营配置面且含串行写操作，
+不进模型工具面；`get_moment_customer_list` / `get_moment_send_result`——名单级外发（可见/已送达客户 ID 清单），
+信息量低于 `publish_list` 的执行状态且更敏感；`groupchat/opengid_to_chatid`——只在小程序端拿到 `opengid` 后才有意义，
+模型产不出该入参；`contact_way.*`（联系方式）、获客助手、商品图册、离职/在职继承、拦截规则
+——分别是写面、外发面或运营配置面，留待有明确产品用法再评估。
+群发域内的 `remind_groupmsg_send` / `cancel_groupmsg_send`（操作面极小、管理端可完成）、
+`send_welcome_msg`（须在「添加外部联系人」事件回调后 20 秒内调用，模型产不出 `welcome_code` 且赶不上窗口）、
+入群欢迎语素材增改删查（运营素材库，且删除被引擎判为高危写）同样不策展。
 
 **暂不策展的域（有明确理由，不是漏做）**：日程（`schedule.*`）——官方无「列出我的日历」公共端点，`cal_id` /
 日程 ID 无自举入口，单独成工具只会得到「需要用户报 ID」；会议室（`meetingroom.*`）——仅 `_Internal` 且需

@@ -26,5 +26,5 @@ public interface IWechatWorkContactsTagMembersTool
 {
     /// <summary>读取标签成员。</summary>
     /// <param name="tag_id">标签 ID（整数）。</param>
-    void Members(int tag_id);
+    void Members([ToolParameter("tag_id", "标签 ID（整数）。")] int tag_id);
 }

@@ -32,5 +32,5 @@ public interface IWechatWorkExternalContactContactGetTool
 {
     /// <summary>读取客户详情。</summary>
     /// <param name="external_userid">客户 ID。</param>
-    void Get(string external_userid);
+    void Get([ToolParameter("external_userid", "客户 ID。", Required = true)] string external_userid);
 }

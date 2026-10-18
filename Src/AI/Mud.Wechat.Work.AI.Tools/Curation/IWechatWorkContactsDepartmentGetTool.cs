@@ -32,5 +32,5 @@ public interface IWechatWorkContactsDepartmentGetTool
 {
     /// <summary>读取部门详情。</summary>
     /// <param name="department_id">部门 ID（整数；根部门为 1）。</param>
-    void Department(int department_id);
+    void Department([ToolParameter("department_id", "部门 ID（整数；根部门为 1）。")] int department_id);
 }

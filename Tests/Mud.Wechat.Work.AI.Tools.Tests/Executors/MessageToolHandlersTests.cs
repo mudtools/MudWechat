@@ -65,11 +65,13 @@ public class MessageToolHandlersTests
     [Fact]
     public async Task Send_WhenContentBlank_ShouldRejectBeforeCallingSdk()
     {
-        var result = await Handler().SendAsync(
+        var act = async () => await Handler().SendAsync(
             Args(("touser", "zhangsan"), ("content", " "), ("agentid", 1000002)),
             CancellationToken.None);
 
-        result.Text.Should().Contain("content");
+        await act.Should()
+            .ThrowAsync<ArgumentException>("content 在声明面是必填（Required），空白值在解包期即被拒")
+            .WithMessage("*content*", "失败文案必须点出参数名，模型才能据此改参");
         _message.Verify(
             s => s.SendTextMessageAsync(It.IsAny<MessageSendTextRequest>(), It.IsAny<CancellationToken>()),
             Times.Never);

@@ -28,5 +28,5 @@ public interface IWechatWorkExternalContactContactListTool
 {
     /// <summary>列出某成员添加的客户 ID。</summary>
     /// <param name="userid">成员 UserID。</param>
-    void List(string userid);
+    void List([ToolParameter("userid", "成员 UserID。", Required = true)] string userid);
 }

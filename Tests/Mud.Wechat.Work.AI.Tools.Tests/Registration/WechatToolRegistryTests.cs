@@ -140,6 +140,10 @@ public class WechatToolRegistryTests
             services.AddSingleton(new Mock<IWechatWorkExternalContactFollowUserService>(MockBehavior.Loose).Object);
             services.AddSingleton(new Mock<IWechatWorkExternalContactCustomerService>(MockBehavior.Loose).Object);
             services.AddSingleton(new Mock<IWechatWorkExternalContactTagService>(MockBehavior.Loose).Object);
+            services.AddSingleton(new Mock<IWechatWorkExternalContactGroupChatService>(MockBehavior.Loose).Object);
+            services.AddSingleton(new Mock<IWechatWorkExternalContactMomentService>(MockBehavior.Loose).Object);
+            services.AddSingleton(new Mock<IWechatWorkExternalContactStatisticsService>(MockBehavior.Loose).Object);
+            services.AddSingleton(new Mock<IWechatWorkExternalContactGroupMsgService>(MockBehavior.Loose).Object);
         }
 
         if (meeting)

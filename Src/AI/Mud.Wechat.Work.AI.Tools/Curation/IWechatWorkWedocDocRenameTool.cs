@@ -31,5 +31,8 @@ public interface IWechatWorkWedocDocRenameTool
     /// <param name="new_name">新名称。</param>
     /// <param name="docid">文档 ID（与 formid 二选一）。</param>
     /// <param name="formid">收集表 ID（与 docid 二选一）。</param>
-    void Rename(string new_name, string? docid, string? formid);
+    void Rename(
+        [ToolParameter("new_name", "新名称。", Required = true)] string new_name,
+        [ToolParameter("docid", "文档 ID（与 formid 二选一）。")] string? docid,
+        [ToolParameter("formid", "收集表 ID（与 docid 二选一）。")] string? formid);
 }

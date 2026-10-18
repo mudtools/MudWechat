@@ -25,5 +25,5 @@ public interface IWechatWorkLivingGetTool
 {
     /// <summary>读取直播详情。</summary>
     /// <param name="livingid">直播 ID。</param>
-    void Get(string livingid);
+    void Get([ToolParameter("livingid", "直播 ID。", Required = true)] string livingid);
 }

@@ -36,5 +36,5 @@ public interface IWechatWorkWedocDocDeleteTool
     /// <summary>删除文档。</summary>
     /// <param name="docid">文档 ID（与 formid 二选一）。</param>
     /// <param name="formid">收集表 ID（与 docid 二选一）。</param>
-    void Delete(string? docid, string? formid);
+    void Delete([ToolParameter("docid", "文档 ID（与 formid 二选一）。")] string? docid, [ToolParameter("formid", "收集表 ID（与 docid 二选一）。")] string? formid);
 }

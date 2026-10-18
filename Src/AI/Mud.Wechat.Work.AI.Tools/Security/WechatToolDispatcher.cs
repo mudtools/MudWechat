@@ -128,6 +128,14 @@ public sealed class WechatToolDispatcher
         {
             throw;
         }
+        catch (ArgumentException ex)
+        {
+            // 参数类错误（执行链分类 Validation/invalid_args）：文案由产品侧写就——含参数名，闭集非法值还含
+            // 合法取值清单（ToolArgumentException.Suggestions）——原样回填模型才能自我纠错；
+            // 通用分支的文案不含参数名，模型据此无法修正。其余异常一律不透文案（见下）。
+            _logger?.LogWarning(ex, "工具 {Tool} 入参校验失败（已回填可读错误）。", toolName);
+            return ToolResult.FromError(ex.Message);
+        }
         catch (Exception ex)
         {
             _logger?.LogWarning(ex, "工具 {Tool} 执行失败（已归一为可读错误回填模型）。", toolName);

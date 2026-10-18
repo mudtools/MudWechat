@@ -26,5 +26,5 @@ public interface IWechatWorkKfAccountListTool
     /// <summary>列出微信客服账号。</summary>
     /// <param name="offset">分页偏移（可空）。</param>
     /// <param name="limit">单页条数（1~100，可空 ⇒ 100）。</param>
-    void List(int? offset, int? limit);
+    void List([ToolParameter("offset", "分页偏移（可空）。")] int? offset, [ToolParameter("limit", "单页条数（1~100，可空 ⇒ 100）。")] int? limit);
 }

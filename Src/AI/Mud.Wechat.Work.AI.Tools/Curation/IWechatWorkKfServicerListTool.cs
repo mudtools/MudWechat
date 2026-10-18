@@ -25,5 +25,5 @@ public interface IWechatWorkKfServicerListTool
 {
     /// <summary>列出客服账号的接待人员。</summary>
     /// <param name="open_kfid">客服账号 ID。</param>
-    void List(string open_kfid);
+    void List([ToolParameter("open_kfid", "客服账号 ID。", Required = true)] string open_kfid);
 }

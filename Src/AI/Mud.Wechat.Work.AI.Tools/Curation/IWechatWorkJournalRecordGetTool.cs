@@ -32,5 +32,5 @@ public interface IWechatWorkJournalRecordGetTool
 {
     /// <summary>读取汇报详情。</summary>
     /// <param name="journaluuid">汇报记录 UUID。</param>
-    void Get(string journaluuid);
+    void Get([ToolParameter("journaluuid", "汇报记录 UUID。", Required = true)] string journaluuid);
 }

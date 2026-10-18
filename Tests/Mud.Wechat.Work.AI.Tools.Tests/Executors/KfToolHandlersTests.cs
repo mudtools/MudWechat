@@ -103,11 +103,13 @@ public class KfToolHandlersTests
     [Fact]
     public async Task Send_WhenContentBlank_ShouldRejectBeforeCallingSdk()
     {
-        var result = await Handler().SendMessageAsync(
+        var act = async () => await Handler().SendMessageAsync(
             Args(("open_kfid", "kf-1"), ("touser", "wm-1"), ("content", "   ")),
             CancellationToken.None);
 
-        result.Text.Should().Contain("content");
+        await act.Should()
+            .ThrowAsync<ArgumentException>("content 在声明面是必填（Required），空白值在解包期即被拒")
+            .WithMessage("*content*", "失败文案必须点出参数名，模型才能据此改参");
         _sessions.Verify(
             s => s.SendTextMessageAsync(It.IsAny<SendKfTextMsgRequest>(), It.IsAny<CancellationToken>()),
             Times.Never);

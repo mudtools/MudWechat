@@ -32,5 +32,5 @@ public interface IWechatWorkApprovalGetTool
 {
     /// <summary>获取审批申请详情。</summary>
     /// <param name="sp_no">审批单号（由用户从审批应用/通知中提供）。</param>
-    void Get(string sp_no);
+    void Get([ToolParameter("sp_no", "审批单号（由用户从审批应用/通知中提供）。", Required = true)] string sp_no);
 }

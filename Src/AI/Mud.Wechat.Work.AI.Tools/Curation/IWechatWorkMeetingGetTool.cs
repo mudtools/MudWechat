@@ -1,4 +1,4 @@
-﻿// -----------------------------------------------------------------------
+// -----------------------------------------------------------------------
 //  作者：Mud Studio  版权所有 (c) Mud Studio 2026
 //  Mud.Wechat 项目的版权、商标、专利和其他相关权利均受相应法律法规的保护。
 //  本项目主要遵循 MIT 许可证进行分发和使用。许可证位于源代码树根目录中的 LICENSE-MIT 文件。
@@ -31,5 +31,5 @@ public interface IWechatWorkMeetingGetTool
 {
     /// <summary>读取会议详情。</summary>
     /// <param name="meetingid">会议 ID。</param>
-    void Get(string meetingid);
+    void Get([ToolParameter("meetingid", "会议 ID。", Required = true)] string meetingid);
 }

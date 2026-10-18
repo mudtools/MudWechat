@@ -22,5 +22,5 @@ public interface IWechatWorkContactsDepartmentChildIdsTool
 {
     /// <summary>读取子部门 ID 列表。</summary>
     /// <param name="department_id">根部门 ID（可选；省略即全量）。</param>
-    void ChildIds(int? department_id);
+    void ChildIds([ToolParameter("department_id", "根部门 ID（可选；省略即全量）。")] int? department_id);
 }

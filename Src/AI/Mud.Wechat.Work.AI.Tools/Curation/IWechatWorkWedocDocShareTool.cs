@@ -32,5 +32,5 @@ public interface IWechatWorkWedocDocShareTool
     /// <summary>获取分享链接。</summary>
     /// <param name="docid">文档 ID（与 formid 二选一）。</param>
     /// <param name="formid">收集表 ID（与 docid 二选一）。</param>
-    void Share(string? docid, string? formid);
+    void Share([ToolParameter("docid", "文档 ID（与 formid 二选一）。")] string? docid, [ToolParameter("formid", "收集表 ID（与 docid 二选一）。")] string? formid);
 }

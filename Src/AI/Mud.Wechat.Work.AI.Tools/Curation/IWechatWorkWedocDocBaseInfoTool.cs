@@ -26,5 +26,5 @@ public interface IWechatWorkWedocDocBaseInfoTool
 {
     /// <summary>读取文档基础信息。</summary>
     /// <param name="docid">文档 ID。</param>
-    void Doc(string docid);
+    void Doc([ToolParameter("docid", "文档 ID。", Required = true)] string docid);
 }

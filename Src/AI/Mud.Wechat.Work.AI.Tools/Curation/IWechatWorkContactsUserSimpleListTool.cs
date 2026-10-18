@@ -26,5 +26,5 @@ public interface IWechatWorkContactsUserSimpleListTool
     /// <summary>列出部门成员摘要。</summary>
     /// <param name="department_id">部门 ID（整数）。</param>
     /// <param name="fetch_child">是否递归子部门（true 递归）。</param>
-    void Users(int department_id, bool? fetch_child);
+    void Users([ToolParameter("department_id", "部门 ID（整数）。")] int department_id, [ToolParameter("fetch_child", "是否递归子部门（true 递归）。")] bool? fetch_child);
 }

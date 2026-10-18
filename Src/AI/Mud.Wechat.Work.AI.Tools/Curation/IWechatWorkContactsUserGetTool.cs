@@ -26,5 +26,5 @@ public interface IWechatWorkContactsUserGetTool
 {
     /// <summary>读取成员。</summary>
     /// <param name="userid">成员 UserID（企业内唯一）。</param>
-    void User(string userid);
+    void User([ToolParameter("userid", "成员 UserID（企业内唯一）。", Required = true)] string userid);
 }

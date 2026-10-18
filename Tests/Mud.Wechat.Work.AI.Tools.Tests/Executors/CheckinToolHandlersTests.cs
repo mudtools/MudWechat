@@ -1,5 +1,6 @@
 using FluentAssertions;
 using Moq;
+using Mud.AI.Agent.Tools;
 using Mud.Wechat.Work.AI.Tools.Executors;
 using Mud.Wechat.Work.DataModels.Checkin;
 using Mud.Wechat.Work.Interfaces;
@@ -83,7 +84,7 @@ public class CheckinToolHandlersTests
     [Fact]
     public async Task List_WhenDataTypeOutOfRange_ShouldRejectBeforeCallingSdk()
     {
-        var result = await Handler().ListAsync(
+        var act = async () => await Handler().ListAsync(
             Args(
                 ("userid_list", new[] { "zhangsan" }),
                 ("start_time", "1699900000"),
@@ -91,7 +92,9 @@ public class CheckinToolHandlersTests
                 ("data_type", 9)),
             CancellationToken.None);
 
-        result.Text.Should().Contain("data_type");
+        await act.Should()
+            .ThrowAsync<ToolArgumentException>("data_type 在声明面是闭集（EnumType），越界值在解包期即被拒")
+            .WithMessage("*data_type*", "文案必须点出参数名并附合法取值清单，模型才能据此改参");
         _checkin.Verify(
             c => c.GetCheckinDataAsync(It.IsAny<GetCheckinDataRequest>(), It.IsAny<CancellationToken>()),
             Times.Never);

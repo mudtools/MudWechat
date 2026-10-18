@@ -271,7 +271,18 @@ powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/Update-WechatToolG
 ② 写入失败**不得**阻断执行（记 Warning），执行失败**必须**留痕；
 ③ 默认 `NullWechatToolAuditSink`（零成本），宿主 `AddSingleton<IWechatToolAuditSink, …>()` 即生效。
 
-**错误读数**：企微 `errcode` → 中立 `ToolApiFailure`（Category/Subtype/Suggestions）的码表是
+**运行期治理**（同一出口，装配期冻结）：
+
+| 旋钮 | 默认 | 为什么 |
+|---|---|---|
+| `CallTimeout` | 30 秒（`0` = 不限，合法区间 1..600） | 慢接口（部门全量成员、审批详情）会把整个回合挂住；超时用**链接令牌**真正中止，不是只返回一句文案 |
+| `MaxConcurrentCalls` | 8（`0` = 不限，合法区间 1..64） | 模型可并行发多个 tool_call；不限并发等于让一批工具同时撞 45009，再逐个重试放大 |
+| 指标四项 | 常开 | `wechat.ai.tool.{invocations,duration,result_bytes,truncations}`，Meter 名 `Mud.Wechat`（与 OpenTelemetry 通配一致）。标签只有 `tool`/`risk`/`outcome` 三个低基数维度——**租户与 userid 一律不进标签** |
+
+超时的区分很关键：只有「本次调用的超时令牌真的触发」才归一为超时错误；执行器自己抛的
+`OperationCanceledException` 仍按取消上抛（既有契约），调用方取消也必须上抛。
+
+**错误读数**：企微 `errcode` → `ToolApiFailure`（Category/Subtype/Suggestions）的码表是
 `Mud.Wechat.AI.Agent/Results/WechatApiErrorCatalog.cs`（跨线单表：`errcode` 是微信生态共享码空间）。码表只收
 有实证的 10 个码，未收录回落 `api/upstream_error`；已收录的码会在错误正文追加一行「建议：…」——
 因此<b>全部既有执行器无需改动</b>即获得可纠错文案。
@@ -285,6 +296,6 @@ powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/Update-WechatToolG
   模型产出的成本高于收益；正确形态是宿主预置卡片模板 ID、模型只填少量字段——等宿主有明确卡片场景再做。
 - **任务面扩张**：日程（`schedule.add`/`get`/`cancel`）、审批提交与假期配额、客户标签改名；逐域沿用
   `Curation + Executors + 守卫` 三段形态，并在 `AddWechatWorkTools` 补该域的 `Add*Core()`（陷阱 9）。
-- **工具级观测**：`Meter`/`ActivitySource` 尚未埋点（审计只覆盖「发生了什么」，不覆盖「P95 / 失败率」）。
+- **Trace（ActivitySource）**：指标已埋（Meter 四项），但还没有 span——跨「模型 → 工具 → 企微接口」的链路追踪仍缺。
 - **评测集**：「给定请求 → 期望工具序列」的用例尚未建立，工具选择质量目前无法度量。
 - golden 快照随工具面扩张同批重固化（`scripts/Update-WechatToolGolden.ps1`）。

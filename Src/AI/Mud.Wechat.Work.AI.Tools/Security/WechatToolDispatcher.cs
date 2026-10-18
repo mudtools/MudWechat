@@ -12,6 +12,7 @@ using Mud.AI.Agent.Tools.Args;
 using Mud.Wechat.AI.Abstractions.Tools;
 using Mud.Wechat.Work.AI.Agents;
 using Mud.Wechat.Work.AI.AgentTools;
+using Mud.Wechat.Work.AI.Tools.Diagnostics;
 using Mud.Wechat.Work.AI.Tools.Generated;
 using Mud.Wechat.Work.AI.Tools.Registration;
 
@@ -64,6 +65,7 @@ public sealed class WechatToolDispatcher
     private readonly IWechatToolAuditSink _auditSink;
     private readonly WechatToolOutboundGuard _outbound;
     private readonly ILogger<WechatToolDispatcher>? _logger;
+    private readonly SemaphoreSlim? _concurrency;
 
     /// <summary>初始化执行链。</summary>
     /// <param name="registry">工具注册表（不得为 <see langword="null"/>）。</param>
@@ -91,6 +93,9 @@ public sealed class WechatToolDispatcher
         _auditSink = auditSink ?? NullWechatToolAuditSink.Instance;
         _corpContext = corpContext;
         _outbound = new WechatToolOutboundGuard(policy.MaxResultLength, policy.ContentSafetyMode);
+        // 限并发让过载变成「排队」而不是「一起触发限流」：模型一个回合可以并行发多个 tool_call，
+        // 而企微多数接口有频率上限（审批查询 600 次/分），不限并发时表现为一批工具同时返回 45009。
+        _concurrency = policy.MaxConcurrentCalls > 0 ? new SemaphoreSlim(policy.MaxConcurrentCalls) : null;
     }
 
     /// <summary>本执行链使用的白名单策略。</summary>
@@ -114,6 +119,7 @@ public sealed class WechatToolDispatcher
         if (!_registry.TryGet(toolName, out var execution))
         {
             _logger?.LogWarning("工具 {Tool} 在白名单内但未注册：装配不完整（契约表与注册表漂移）。", toolName);
+            RecordWithoutTiming(toolName, null, WechatToolAuditOutcome.Denied);
             await AuditAsync(toolName, arguments, WechatToolAuditOutcome.Denied, 0, null).ConfigureAwait(false);
             return ToolResult.FromError(UnavailableText);
         }
@@ -141,6 +147,7 @@ public sealed class WechatToolDispatcher
             if (!approval.IsApproved)
             {
                 _logger?.LogInformation("工具 {Tool} 的人工确认被拒绝：{Reason}", toolName, approval.Reason);
+                RecordWithoutTiming(toolName, contract.Risk, WechatToolAuditOutcome.ApprovalRejected);
                 await AuditAsync(context, WechatToolAuditOutcome.ApprovalRejected, 0, null).ConfigureAwait(false);
                 return ToolResult.FromError(DeniedText);
             }
@@ -149,7 +156,7 @@ public sealed class WechatToolDispatcher
         return await ExecuteAsync(execution, toolName, context, arguments, cancellationToken).ConfigureAwait(false);
     }
 
-    /// <summary>强类型执行 + 出站纪律 + 审计 + 异常归一（取消例外向上传播）。</summary>
+    /// <summary>强类型执行 + 超时/并发治理 + 出站纪律 + 审计 + 指标 + 异常归一（取消例外向上传播）。</summary>
     private async Task<ToolResult> ExecuteAsync(
         WechatToolExecution execution,
         string toolName,
@@ -157,17 +164,59 @@ public sealed class WechatToolDispatcher
         IReadOnlyDictionary<string, object?> arguments,
         CancellationToken cancellationToken)
     {
+        // 超时用「链接令牌」而不是 when 表达式：执行器内部的 Task.Delay/HttpClient 都会响应取消，
+        // 中止是真正的中止（而不是仅返回一句超时文案、后台请求继续跑）。
+        using var timeoutCts = Policy.CallTimeout > TimeSpan.Zero
+            ? new CancellationTokenSource(Policy.CallTimeout)
+            : null;
+        using var linkedCts = timeoutCts is null
+            ? null
+            : CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutCts.Token);
+        var executionToken = linkedCts?.Token ?? cancellationToken;
+
         var stopwatch = Stopwatch.StartNew();
         var failed = false;
         ToolResult result;
         try
         {
-            result = await execution.ExecuteAsync(arguments, cancellationToken).ConfigureAwait(false);
+            var acquired = false;
+            if (_concurrency is not null)
+            {
+                await _concurrency.WaitAsync(cancellationToken).ConfigureAwait(false);
+                acquired = true;
+            }
+
+            try
+            {
+                result = await execution.ExecuteAsync(arguments, executionToken).ConfigureAwait(false);
+            }
+            finally
+            {
+                if (acquired)
+                {
+                    _concurrency!.Release();
+                }
+            }
+        }
+        catch (OperationCanceledException) when (
+            timeoutCts?.IsCancellationRequested == true && !cancellationToken.IsCancellationRequested)
+        {
+            // 只有「本次调用的超时令牌真的触发」才算超时；执行器自己抛的 OCE 仍按取消上抛（既有契约）。
+            _logger?.LogWarning(
+                "工具 {Tool} 超时（{Seconds}s）已中止。", toolName, (int)Policy.CallTimeout.TotalSeconds);
+            failed = true;
+            result = ToolResult.FromError(
+                $"工具 {toolName} 超时（{(int)Policy.CallTimeout.TotalSeconds} 秒未返回），本次调用已中止；"
+                + "请缩小查询范围（更小的时间区间 / 更少的条数 / 更精确的条件）后重试，不要原样重复调用。");
+            stopwatch.Stop();
+            await CompleteAsync(context, WechatToolAuditOutcome.Failed, stopwatch, null).ConfigureAwait(false);
+            return _outbound.Normalize(result);
         }
         catch (OperationCanceledException)
         {
+            // 调用方取消 = 控制流，必须上抛；但「已发生的事实」仍要留痕。
             stopwatch.Stop();
-            await AuditAsync(context, WechatToolAuditOutcome.Failed, stopwatch.ElapsedMilliseconds, null).ConfigureAwait(false);
+            await CompleteAsync(context, WechatToolAuditOutcome.Failed, stopwatch, null).ConfigureAwait(false);
             throw;
         }
         catch (ArgumentException ex)
@@ -189,14 +238,56 @@ public sealed class WechatToolDispatcher
         stopwatch.Stop();
 
         var normalized = _outbound.Normalize(result);
-        await AuditAsync(
-            context,
-            failed || normalized.Error is not null ? WechatToolAuditOutcome.Failed : WechatToolAuditOutcome.Succeeded,
-            stopwatch.ElapsedMilliseconds,
-            normalized).ConfigureAwait(false);
+        var outcome = failed || normalized.Error is not null
+            ? WechatToolAuditOutcome.Failed
+            : WechatToolAuditOutcome.Succeeded;
+        await CompleteAsync(context, outcome, stopwatch, normalized).ConfigureAwait(false);
 
         return normalized;
     }
+
+    /// <summary>一次调用的收尾：审计 + 指标（两者都不影响返回结果）。</summary>
+    private async ValueTask CompleteAsync(
+        WechatToolAuthorizationContext context,
+        WechatToolAuditOutcome outcome,
+        Stopwatch stopwatch,
+        ToolResult? result)
+    {
+        var risk = RiskLabel(context.Risk);
+        var outcomeLabel = OutcomeLabel(outcome);
+        WechatToolMetrics.RecordInvocation(context.ToolName, risk, outcomeLabel);
+        WechatToolMetrics.RecordDuration(context.ToolName, risk, outcomeLabel, stopwatch.Elapsed.TotalMilliseconds);
+        WechatToolMetrics.RecordResult(
+            context.ToolName,
+            WechatToolOutboundGuard.BytesOf(result?.Text),
+            result?.Truncated ?? false);
+
+        await AuditAsync(context, outcome, stopwatch.ElapsedMilliseconds, result).ConfigureAwait(false);
+    }
+
+    /// <summary>只记调用次数（拒绝/不可用等未进入执行的路径：没有耗时与结果体积）。</summary>
+    private static void RecordWithoutTiming(string toolName, WechatToolRisk? risk, WechatToolAuditOutcome outcome)
+        => WechatToolMetrics.RecordInvocation(
+            toolName,
+            risk is null ? "unknown" : RiskLabel(risk.Value),
+            OutcomeLabel(outcome));
+
+    /// <summary>风险档的指标标签（低基数：三档固定值）。</summary>
+    private static string RiskLabel(WechatToolRisk risk) => risk switch
+    {
+        WechatToolRisk.Read => "read",
+        WechatToolRisk.Write => "write",
+        _ => "high-risk-write",
+    };
+
+    /// <summary>审计结局的指标标签（低基数：四类固定值）。</summary>
+    private static string OutcomeLabel(WechatToolAuditOutcome outcome) => outcome switch
+    {
+        WechatToolAuditOutcome.Succeeded => "succeeded",
+        WechatToolAuditOutcome.Denied => "denied",
+        WechatToolAuditOutcome.ApprovalRejected => "approval_rejected",
+        _ => "failed",
+    };
 
     /// <summary>构造授权上下文：租户与发起人取回合事实，装配期绑定只作兜底。</summary>
     private WechatToolAuthorizationContext BuildContext(
@@ -260,8 +351,9 @@ public sealed class WechatToolDispatcher
         WechatToolAuthorizationContext? context)
     {
         _logger?.LogInformation("工具 {Tool} 被拒绝：{Reason}", toolName, reason);
-        await AuditAsync(context ?? BuildAuditOnlyContext(toolName, arguments), WechatToolAuditOutcome.Denied, 0, null)
-            .ConfigureAwait(false);
+        var auditContext = context ?? BuildAuditOnlyContext(toolName, arguments);
+        RecordWithoutTiming(toolName, auditContext.Risk, WechatToolAuditOutcome.Denied);
+        await AuditAsync(auditContext, WechatToolAuditOutcome.Denied, 0, null).ConfigureAwait(false);
         return ToolResult.FromError(DeniedText);
     }
 

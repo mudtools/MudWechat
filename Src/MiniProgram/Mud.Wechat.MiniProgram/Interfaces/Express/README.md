@@ -14,7 +14,10 @@
 `12 + 28 + 16 + 11 + 15 + 1 = 83`，与守卫 MP-X5 的计数注释逐子族一致
 （`ExpressBusiness 12 + ExpressDelivery 28 + ExpressIntracity 16 + ExpressInsuranceFreight 11 +
 ExpressLocal 15 + ExpressBill 1`）。DI 组方法 [`AddExpressApi()`](../../Extensions/MiniProgramServiceBuilder.cs)
-（`MiniProgramModule.Express`），注册委托见同文件（`Express` 一个模块装载六个接口）。
+（`MiniProgramModule.Express`）。该模块的注册委托做**两件事**：
+`s.AddExpressWebApiHttpClient()`（**五个声明式接口 82 支**随生成管线一并装载）
++ `s.TryAddSingleton<IWxaExpressBillService, WxaExpressBillService>()`
+（手工通道**不进生成管线**，故单独注册）⇒ 一个模块、六个接口、两种装载路径。
 接口 XML 记本域核验日为 **2026-10-11 / 2026-10-12 逐页核验**；本 README 的复核日为 **2026-10-18**。
 
 > **事实来源限定**：本文所有断言只来自本仓的接口文件、契约守卫与 DTO 声明，
@@ -80,7 +83,7 @@ ExpressLocal 15 + ExpressBill 1`）。DI 组方法 [`AddExpressApi()`](../../Ext
 | 18 | `GetNoWorryReturnAsync` | POST | `/cgi-bin/express/delivery/no_worry_return/get` | **路由段是 `gett`（双 t）** |
 | 19 | `UnbindNoWorryReturnAsync` | POST | `/cgi-bin/express/delivery/no_worry_return/unbind` | — |
 
-物流消息（`open_msg/*`）8 支：
+物流消息（`open_msg/*`）9 支：
 
 | # | 方法 | 动词 | 路由 | 备注 |
 |---|---|---|---|---|
@@ -94,8 +97,7 @@ ExpressLocal 15 + ExpressBill 1`）。DI 组方法 [`AddExpressApi()`](../../Ext
 | 27 | `UpdateWaybillGoodsAsync` | POST | `/cgi-bin/express/delivery/open_msg/update_waybill_goods` | — |
 | 28 | `GetDeliveryListAsync` | POST | `/cgi-bin/express/delivery/open_msg/get_delivery_list` | **空体** |
 
-（上表列出 9 行编号 20–28，实际 `open_msg/*` 子族为 **8 支**：#28 `get_delivery_list` 计入本子族、
-与 #23/#24 的「开通类空体」同批；编号 13–28 连续即本子接口 16 支的尾巴。）
+（本子族编号 20–28 共 **9 支**，与守卫 MP-X5 的 `open_msg/*` 集合逐字对应。）
 
 退货组件（`return/*`）4 支：
 
@@ -136,7 +138,7 @@ ExpressLocal 15 + ExpressBill 1`）。DI 组方法 [`AddExpressApi()`](../../Ext
 | 44 | `UpdateStoreAsync` | `/cgi-bin/express/intracity/updatestore` | — |
 | 45 | `StoreChargeAsync` | `/cgi-bin/express/intracity/storecharge` | **`amount` 单位：分**；应答 `payurl` 拉起微信支付 |
 | 46 | `StoreRefundAsync` | `/cgi-bin/express/intracity/storerefund` | — |
-| 47 | `QueryFlowAsync` | `/cgi-bin/express/intracity/queryflow` | `flow_type`：**1 充值 / 2 扣款 / 3 退款 / 4 扣款退回** |
+| 47 | `QueryFlowAsync` | `/cgi-bin/express/intracity/queryflow` | `flow_type`：**1 充值 / 2 扣款 / 3 退款 / 4 扣款退回**（DTO 上是**非空 `int`**，是全域唯一无 `?` 的枚举位） |
 | 48 | `BalanceQueryAsync` | `/cgi-bin/express/intracity/balancequery` | 余额查询 |
 | 49 | `PreAddOrderAsync` | `/cgi-bin/express/intracity/preaddorder` | 体 `WxaExpressIntracityOrderBaseRequest`（与正式下单共用基类） |
 | 50 | `AddIntracityOrderAsync` | `/cgi-bin/express/intracity/addorder` | — |
@@ -167,6 +169,10 @@ ExpressLocal 15 + ExpressBill 1`）。DI 组方法 [`AddExpressApi()`](../../Ext
 
 - 权限集 **139**；官方声明支持第三方代商家调用（可 `authorizer_access_token`），
   **本线按 P3-R2 只承载自建形态**。
+- **`claim` 的时间约束**：`pay_time` 与微信支付时间误差须在 **3 天内**；常见错误码 `41009`（missing openid）。
+- **`createchargeid` 的 `order_id` 是 64 位整数**，接口 XML 明写「JS 等语言须按 `string` 传递以防精度丢失」
+  ⇒ C# 侧按 DTO 声明承载，与前端联调时须自行核对传输形态。
+- **`getorderlist` 全字段可选**，`limit` 默认 **100**、最大 **100**（无请求必填项，不等于无上限）。
 - **调用链**：`open` 开通 → `createorder` 投保 → `claim` 理赔；保费侧 `createchargeid` → `applypay`。
 
 ### 5) 即时配送（`IWxaExpressLocalService`，15 支）
@@ -231,8 +237,8 @@ ExpressLocal 15 + ExpressBill 1`）。DI 组方法 [`AddExpressApi()`](../../Ext
 
 ## 「官方查询端点其实是 POST」——本域最集中
 
-- 本域 83 支里 **76 支是 POST**，仅 7 支 GET：`business/{delivery,account,printer}/getall` 3 支
-  + `insurance_freight/{open,query_open}` 2 支 + 无（其余全 POST）。
+- 本域 83 支里 **78 支是 POST、仅 5 支 GET**：`business/{delivery,account,printer}/getall` **3 支**
+  + `insurance_freight/{open,query_open}` **2 支**；其余（含手工通道 `get_bill`）全为 POST。
 - 反例同样重要：即时配送的 `delivery/getall`、`business/open`、`shop/get` 名字像查询、
   语义像 GET，官方却是 **POST 且无请求体**；无忧退货的 `refund` 是 **POST 且无请求体**。
   ⇒ **「无请求体」不等于「GET」**，本域两种组合都存在，逐字以接口上的 `[Get]` / `[Post]` 为准。
@@ -268,6 +274,9 @@ ExpressLocal 15 + ExpressBill 1`）。DI 组方法 [`AddExpressApi()`](../../Ext
 - 因此本域**两层判错口径并存**：五个子族的普通 `WxaResponse`（`errcode`/`errmsg`）
   与即时配送的 `WxaExpressLocalResponse`（`resultcode`/`resultmsg`）⇒
   **不能**用一句 `ThrowIfFailed` 覆盖全运输族。
+- 该类**属性名与 JSON 键不同名**（易踩）：`ResultCode`（**非空 `int`** ⇔ `resultcode`）与
+  **`ResultMessage`**（⇔ `resultmsg`，属性名拼全）；且它**继承 `WxaResponse`**
+  ⇒ 同一对象上 `errcode`/`errmsg` 也在，**判错只看 `ResultCode == 0`**，外层 `ErrorCode` 兜不住运力侧结果。
 - 该族官方字段名**页间不一致，照各页原文承载、勿跨页统一**：
   `insurancfee`（下单页）vs `insurancefee`（预下单页）、`couponfee`（下单页）vs `couponFee`（预下单页）。
 
@@ -279,7 +288,7 @@ ExpressLocal 15 + ExpressBill 1`）。DI 组方法 [`AddExpressApi()`](../../Ext
 | 绑定异步 | `account/bind`（`type=bind/unbind`）**是异步流程**，返回仅表示受理，最终状态须经回调 / 查询确认 |
 | 面单余额 | `quota/get` 的 `quota_num == -1` 表示**不限制**（不是「查询失败」） |
 | 频率数字（本仓已登记的） | `follow_waybill` 10 万次/日（appid）· 50 次/日（用户）· 同时绑 100 运单；`query_trace` 10 万次/日 · 100 次/日（用户）；`open_return` 500 次/天 |
-| 分页 | `insurance_freight/getorderlist` 的 `limit` 默认与上限 **100**；`intracity/queryflow` 用 `page`/`limit` 形态（照 DTO）|
+| 分页 | `insurance_freight/getorderlist` 的 `limit` 默认与上限 **100**；`intracity/queryflow` **不分页**，用 `begin_time` / `end_time` 时间窗（`WxaExpressQueryFlowRequest`：`wx_store_id` `string?`、**`flow_type` 为非空 `int`**、`service_trans_id` `string?`、`begin_time`/`end_time` `long?`）⇒ **本域没有统一分页助手可用** |
 | 金额单位 | `intracity/storecharge` 的 `amount` 单位 **分** |
 | 未登记频率 | 除上述三支外，本域其余端点的官方频率数字**未逐项核验** ⇒ 见缺口 |
 
@@ -347,7 +356,7 @@ var opened = await insurance.QueryInsuranceFreightOpenAsync(ct);
 
 // 6) 即时配送：判错看 resultcode，不是 errcode
 var localDelivery = await local.GetAllDeliveryAsync(ct);   // POST 且无体
-// if (localDelivery.ResultCode != 0) { /* 运力侧失败：ResultMsg */ }
+// if (localDelivery.ResultCode != 0) { /* 运力侧失败：ResultMessage（JSON 键 resultmsg） */ }
 // 该族含 delivery_sign / phone / rider_phone ⇒ 禁入日志 / 遥测 / 异常消息
 // /delivery/update_order 的 wx_token 是下单事件推来的 token，绝非 access_token
 
@@ -369,6 +378,7 @@ var billText = await bill.GetBillAsync(
 | 缺口 | 现状 | 处置 |
 |---|---|---|
 | **`IWxaExpressDeliveryService` 文档注释与事实不符** | 接口 `<summary>` 写「**29 端点**」，实际方法 **28** 支，MP-X5 与包 README 也都是 **28**（含 `get_bill` 也不到 29）⇒ 本文按守卫口径取 **28**；**本域合计 83 = 12+28+16+11+15+1** | 修 XML 注释属改 `.cs`，**本 README 任务不触碰**；由后续代码任务同批改为 28 |
+| **注册器注释与事实不符** | [MiniProgramServiceBuilder.cs](../../Extensions/MiniProgramServiceBuilder.cs) 的 `MiniProgramModule.Express` 注释写「其余 **50** 端点走生成管线」，实际声明式端点是 **82** 支（83 − 1 支手工通道）⇒ 同域第二处文档数字失焦 | 同上：本文按 MP-X5 的 **82 + 1** 口径书写，注释由后续代码任务修正 |
 | **本域无独立守卫文件** | 六个接口的断言全部落在 `MiniProgramContractGuards.cs`：MP-X5 的**四段 Express 路由数组**（12/28/16/11/15）+ `ManualChannelRoutes()` 的 `BillPath`（1）+ 合计 398；MP-X10 扫 `Express/WxaExpressBillService.cs`；令牌面 MP-X2/X3；跨线路由 MP-X1/X6；代调用面 P3-R2；`phone` 等敏感字段的日志面沿用 MP-X7 通用扫描 | 若要收拢需新建 `WxaExpressContractGuards.cs` 并同批更新本文「事实来源」 |
 | 商家寄件 / 同城配送 / 对账文件三支子族的权限集 ID | 接口 XML **未登记** ⇒ **未逐项核验** | 不得写入本文 |
 | 除 `follow_waybill` / `query_trace` / `open_return` 外其余各端的官方频率 | **未逐项核验** | 不得凭记忆补数 |

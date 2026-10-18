@@ -68,7 +68,8 @@ builder.Services.AddMpApp(builder.Configuration, "MpApps")
 // 1) 查已购资源包用量（POST、空体；无请求体参数可传）
 var usage = await charge.GetUsageAsync(ct);
 WxaException.ThrowIfFailed(usage, "/wxa/charge/usage/get");
-foreach (WxaChargeResourceUsage r in usage.Resources ?? [])
+List<WxaChargeResourceUsage> resources = usage.Resources ?? new List<WxaChargeResourceUsage>();
+foreach (WxaChargeResourceUsage r in resources)
 {
     // 只打印资源名与余量口径，本域应答不含任何凭据
     Console.WriteLine($"{r.ResourceId} {r.ResourceName}: {r.Used}/{r.Total}");
@@ -77,7 +78,7 @@ foreach (WxaChargeResourceUsage r in usage.Resources ?? [])
 // 2) 查最近三个月平均用量（同一资源的元素类型不同，字段更少）
 var average = await charge.GetRecentAverageUsageAsync(ct);
 WxaException.ThrowIfFailed(average, "/wxa/charge/usage/get_recent_average");
-var list = average.Resources ?? [];
+List<WxaChargeResourceAverage> list = average.Resources ?? new List<WxaChargeResourceAverage>();
 ```
 
 本域两支都返回普通 JSON 信封，**没有**流式或 `IDisposable` 应答，无需 `using`。

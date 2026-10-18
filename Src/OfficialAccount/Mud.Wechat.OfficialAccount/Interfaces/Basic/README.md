@@ -106,9 +106,9 @@ var check = await basic.CheckCallbackAsync(new MpCallbackCheckRequest
 }, ct);
 MpException.ThrowIfFailed(check, "/cgi-bin/callback/check");
 
-foreach (var dns in check.Dns ?? [])                            // 未请求的一支为 null
+foreach (MpCallbackCheckDns dns in check.Dns ?? new List<MpCallbackCheckDns>())          // 未请求的一支为 null
     Console.WriteLine($"解析到 {dns.Ip}，实际线路 {dns.RealOperator}");
-foreach (var ping in check.Ping ?? [])
+foreach (MpCallbackCheckPing ping in check.Ping ?? new List<MpCallbackCheckPing>())
     Console.WriteLine($"丢包 {ping.PackageLoss} 耗时 {ping.Time}");
 // PackageLoss 只有 "0%" / "100%"（单包 ping）；Time 形如 "23.079ms" ⇒ 两者都是 string，不要当数字解析
 ```

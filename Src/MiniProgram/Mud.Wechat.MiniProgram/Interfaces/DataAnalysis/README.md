@@ -135,7 +135,8 @@ var trend = await dataAnalysis.GetDailyVisitTrendAsync(
     new WxaDateRangeRequest { BeginDate = "20261015", EndDate = "20261015" }, ct);
 WxaException.ThrowIfFailed(trend, "/datacube/getweanalysisappiddailyvisittrend");
 // 注意：ref_date 在条目里，顶层没有
-foreach (WxaVisitTrendItem i in trend.List ?? [])
+List<WxaVisitTrendItem> items = trend.List ?? new List<WxaVisitTrendItem>();
+foreach (WxaVisitTrendItem i in items)
 {
     Console.WriteLine($"{i.RefDate} pv={i.VisitPv} uv={i.VisitUv} stay={i.StayTimeSession}");
 }
@@ -161,7 +162,7 @@ var pages = await dataAnalysis.GetVisitPageAsync(
 var perf = await dataAnalysis.GetPerformanceBootDataAsync(
     new WxaPerformanceBootRequest { Time = "2026101510", Module = 1 }, ct);
 WxaException.ThrowIfFailed(perf, "/wxa/business/performance/boot");
-var metrics = perf.Data ?? [];   // { key, value }，value 为 double?
+List<WxaPerformanceDataItem> metrics = perf.Data ?? new List<WxaPerformanceDataItem>();   // { key, value }，value 为 double?
 ```
 
 本域 11 支都返回普通 JSON 信封，无流式应答、无需 `using` / `Dispose`。

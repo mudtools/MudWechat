@@ -291,7 +291,8 @@ var links = await data.GetDownloadTcbFileLinkAsync(
         FileList = [],   // 元素为 WxaCloudBaseGetDownloadTcbFileLinkRequestFileListItem：fileid / max_age
     }, ct);
 WxaException.ThrowIfFailed(links, "/tcb/batchdownloadfile");
-// foreach (var f in links.FileList ?? []) { f.Status / f.Errmsg / f.DownloadUrl }
+// FileList 可能为 null（官方未返回该支）：遍历前先兜底，勿写 `?? []`（foreach 处无目标类型不可编译）
+// if (links.FileList is { } fs) { foreach (var f in fs) { f.Status / f.Errmsg / f.DownloadUrl } }
 
 // 5) 触发云函数：5s 超时；函数内取不到 OpenID
 var invoked = await scf.InvokeCloudFunctionAsync(

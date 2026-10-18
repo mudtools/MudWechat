@@ -48,12 +48,13 @@
 不再重复声明面已表达的校验。改声明面后必须重固化 golden 快照：
 `scripts/Update-WechatToolGolden.ps1`（`Generated/WechatToolSchemas.golden.txt` 漂移即 `MUDWT014` 构建失败）。
 
-当前策展面（52 个：44 只读 + 7 受控写 + 1 高危写）：
+当前策展面（53 个：45 只读 + 7 受控写 + 1 高危写）：
 
 | 域 | 工具 | SDK 源 |
 |---|---|---|
 | 审批 | `approval.get` / `approval.template.get` | `IWechatWorkApprovalService.GetApprovalDetailAsync` / `IWechatWorkApprovalTemplateService.GetTemplateDetailAsync` |
 | 打卡 | `checkin.record.list` | `IWechatWorkInternalCheckinRecordService.GetCheckinDataAsync`（自建口径） |
+| 公费电话 | `dial.record.list` | `IWechatWorkInternalDialService.GetDialRecordAsync`（自建口径） |
 | 客户联系 | `externalcontact.follow_user.list` / `.contact.list` / `.contact.get` / `.tag.list` | `IWechatWorkExternalContact{FollowUser,Customer,Tag}Service` |
 | 客户群 | `externalcontact.groupchat.list` / `.groupchat.get` | `IWechatWorkExternalContactGroupChatService` |
 | 客户朋友圈 | `externalcontact.moment.list` / `.moment.publish_list` / `.moment.comments` | `IWechatWorkExternalContactMomentService` |
@@ -112,6 +113,8 @@
 **不外发** `apply_data.contents[].value`（金额/收款账户/证件号等）与 `comments[].commentcontent` / `sp_record.details[].speech`（意见正文）。
 打卡域只投影考勤事实（userid / checkin_type / exception_type / checkin_time / sch_checkin_time / 规则名与规则、班次 ID），
 **不外发** `lat`/`lng`/`location_*`/`wifiname`/`wifimac`/`notes`/`mediaids`/`deviceid`（行踪与设备指纹）。
+公费电话域只投影通话事实（拨打时间、总时长、通话类型、主被叫 userid 与各自时长），**不外发**被叫的
+`phone`（外部号码是个人数据，与成员域手机号/邮箱同一条边界）；起止时间须同时给出或同时省略（半份窗口比没有窗口更易误判）。
 客户联系域只投影业务事实（客户昵称/类型/公司/职位 + 跟进成员的备注名/添加时间/方式/状态/标签名），
 **不外发** 客户头像、`unionid`、备注手机号、视频号昵称，以及跟进成员的 `description`（自由文本，可能含个人情况）。
 客户群域同理：成员只投影 `userid`/类型/入群时间与方式/邀请人/群昵称（姓名需模型显式 `need_name` 才向官方索取），
@@ -264,6 +267,16 @@ powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/Update-WechatToolG
 - **`approval.list` 待引擎支持显式风险覆盖**：`BatchGetApprovalNumbersAsync` 被方法名危险词（`batch`）误判为
   `high-risk-write`，声明为只读即 `MUDWT017`。需向上游提「`[AgentTool(Risk = ...)]` 覆盖槽」或「危险词表按动词位
   而非子串匹配」；落地后 `approval.get` + `approval.list` 才是完整的两段式读面。
+  同类被挡的还有 `externalcontact.{resigned,job}.transfer_result`（方法名含 `transfer`）、`kf/customer/batchget`（含 `batch`）。
+- **L4 元工具（`capability_lookup` 类）待引擎支持**：方案 §3.7 把它列为「无 `Source`、手写逃逸
+  （`Executor = Handwritten`）」的一级，但 **Mud.AI 1.0.1 的 `[AgentTool]` 没有 Executor/Handwritten 槽**
+  （实测程序集元数据无该属性），且 `WechatToolPolicy.Validate()` 要求白名单只能引用生成物契约名——
+  绕过生成物手工注册的工具既进不了白名单也进不了模型视野。需上游补槽位（或允许「产品侧扩展契约表」的登记口），
+  届时才能做「模型自问有哪些能力」的元工具；**不要**为此在本仓 hack 平行名单。
+- **企微线只读面已收口**（2026-10-18 全量盘点 456 个端点）：剩余端点全部属于①写/配置面（见上方「未策展」清单）、
+  ②敏感数据面（邮箱正文、HR 档案、会话存档、设备/定位、资金票据、许可）、③无入口面（微盘需 spaceid、日程需 cal_id）、
+  ④政务/家校等专用面。下一波工具增量应转向**其他产品线**（§3.8 五步手册）或本仓 AI 层的其他 S3 项
+  （消息通道模板卡片、事件装配、知识库、MCP 协议层）。
 - 工具面继续铺开（消息 / 日程 / 会议 / 其余文档域），逐域沿用 `Curation + Executors + 守卫` 三段形态，并在
   `AddWechatWorkTools` 补该域的 `Add*Core()`（陷阱 9）。
 - golden 快照随工具面扩张同批重固化（生成器不落盘，须手工/脚本重写）。

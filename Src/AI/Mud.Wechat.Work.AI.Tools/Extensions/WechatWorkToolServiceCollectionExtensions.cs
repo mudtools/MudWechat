@@ -78,6 +78,7 @@ public static class WechatWorkToolServiceCollectionExtensions
         services.AddWechatApprovalToolHandlersCore();
         services.AddWechatCheckinToolHandlersCore();
         services.AddWechatContactsDepartmentToolHandlersCore();
+        services.AddWechatDialToolHandlersCore();
         services.AddWechatContactsUserToolHandlersCore();
         services.AddWechatContactsTagToolHandlersCore();
         services.AddWechatExternalContactToolHandlersCore();

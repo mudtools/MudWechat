@@ -110,6 +110,7 @@ public class WechatToolRegistryTests
         bool message = false)
     {
         var services = new ServiceCollection().AddSingleton(departments);
+        services.AddSingleton(new Mock<IWechatWorkInternalDialService>(MockBehavior.Loose).Object);
         if (users is not null)
         {
             services.AddSingleton(users);

@@ -35,6 +35,7 @@ public class WechatToolSurfaceContractGuards
                 "contacts.user.id_list",
                 "contacts.user.list",
                 "contacts.user.simple_list",
+                "dial.record.list",
                 "externalcontact.contact.get",
                 "externalcontact.contact.list",
                 "externalcontact.follow_user.list",
@@ -119,6 +120,7 @@ public class WechatToolSurfaceContractGuards
     [InlineData("contacts.user.simple_list", "IWechatWorkUsersService.GetUserSimpleListAsync", "/cgi-bin/user/simplelist", "GET", WechatToolRisk.Read, "contacts.user.read")]
     [InlineData("approval.template.get", "IWechatWorkApprovalTemplateService.GetTemplateDetailAsync", "/cgi-bin/oa/gettemplatedetail", "POST", WechatToolRisk.Read, "approval.read")]
     [InlineData("contacts.user.id_list", "IWechatWorkUsersService.ListUserIdsAsync", "/cgi-bin/user/list_id", "POST", WechatToolRisk.Read, "contacts.user.read")]
+    [InlineData("dial.record.list", "IWechatWorkInternalDialService.GetDialRecordAsync", "/cgi-bin/dial/get_dial_record", "POST", WechatToolRisk.Read, "dial.record.read")]
     [InlineData("externalcontact.contact.get", "IWechatWorkExternalContactCustomerService.GetCustomerDetailAsync", "/cgi-bin/externalcontact/get", "GET", WechatToolRisk.Read, "externalcontact.contact.read")]
     [InlineData("externalcontact.contact.list", "IWechatWorkExternalContactCustomerService.GetCustomerListAsync", "/cgi-bin/externalcontact/list", "GET", WechatToolRisk.Read, "externalcontact.contact.read")]
     [InlineData("externalcontact.follow_user.list", "IWechatWorkExternalContactFollowUserService.GetFollowUserListAsync", "/cgi-bin/externalcontact/get_follow_user_list", "GET", WechatToolRisk.Read, "externalcontact.follow_user.read")]

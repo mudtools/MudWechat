@@ -31,9 +31,9 @@ namespace Mud.Wechat.Work.AI.Tools.Curation;
 public interface IWechatWorkExternalContactMomentCommentsTool
 {
     /// <summary>读取朋友圈互动名单。</summary>
-    /// <param name="moment_id">朋友圈 ID（先用 externalcontact.moment.list 获取）。</param>
-    /// <param name="userid">发表该朋友圈的成员 userid（企业发表的先经 externalcontact.moment.publish_list 取得）。</param>
-    void Get(
+    /// <returns>白名单投影后的 JSON 文本（comment_list、like_list、comment_count、like_count）。</returns>
+    Task<string> GetMomentCommentsAsync(
         [ToolParameter("moment_id", "朋友圈 ID（先用 externalcontact.moment.list 获取）。", Required = true)] string moment_id,
-        [ToolParameter("userid", "发表该朋友圈的成员 userid（企业发表的先经 externalcontact.moment.publish_list 取得）。", Required = true)] string userid);
+        [ToolParameter("userid", "发表该朋友圈的成员 userid（企业发表的先经 externalcontact.moment.publish_list 取得）。", Required = true)] string userid,
+        CancellationToken cancellationToken = default);
 }

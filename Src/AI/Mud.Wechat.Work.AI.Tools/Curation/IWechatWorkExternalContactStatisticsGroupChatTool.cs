@@ -30,19 +30,14 @@ namespace Mud.Wechat.Work.AI.Tools.Curation;
 public interface IWechatWorkExternalContactStatisticsGroupChatTool
 {
     /// <summary>按群主查询客户群统计。</summary>
-    /// <param name="day_begin_time">起始日期（Unix 秒或带时区的 ISO 8601）。</param>
-    /// <param name="day_end_time">结束日期（可空 ⇒ 同起始日期）。</param>
-    /// <param name="owner_userid">群主 userid 列表（可空 ⇒ 应用可见范围内全部群主）。</param>
-    /// <param name="order_by">排序维度（NewChatCount 新增群数 / ChatTotal 群总数 / NewMemberCount 新增群人数 / MemberTotal 群总人数；可空 ⇒ NewChatCount）。</param>
-    /// <param name="ascending">是否升序（true 升序；可空 ⇒ false 降序）。</param>
-    /// <param name="offset">分页偏移（可空 ⇒ 0）。</param>
-    /// <param name="limit">单页条数（1~1000，可空 ⇒ 500）。</param>
-    void Query(
+    /// <returns>白名单投影后的 JSON 文本（total、next_offset、items）。</returns>
+    Task<string> GetGroupChatStatisticAsync(
         [ToolParameter("day_begin_time", "起始日期（Unix 秒或带时区的 ISO 8601）。", Required = true)] string day_begin_time,
         [ToolParameter("day_end_time", "结束日期（可空 ⇒ 同起始日期）。")] string? day_end_time,
         [ToolParameter("owner_userid", "群主 userid 列表（可空 ⇒ 应用可见范围内全部群主）。")] string[]? owner_userid,
         [ToolParameter("order_by", "排序维度（NewChatCount 新增群数 / ChatTotal 群总数 / NewMemberCount 新增群人数 / MemberTotal 群总人数；可空 ⇒ NewChatCount）。", EnumType = typeof(WechatStatisticsOrderBy))] int? order_by,
         [ToolParameter("ascending", "是否升序（true 升序；可空 ⇒ false 降序）。")] bool? ascending,
         [ToolParameter("offset", "分页偏移（可空 ⇒ 0）。")] int? offset,
-        [ToolParameter("limit", "单页条数（1~1000，可空 ⇒ 500）。")] int? limit);
+        [ToolParameter("limit", "单页条数（1~1000，可空 ⇒ 500）。")] int? limit,
+        CancellationToken cancellationToken = default);
 }

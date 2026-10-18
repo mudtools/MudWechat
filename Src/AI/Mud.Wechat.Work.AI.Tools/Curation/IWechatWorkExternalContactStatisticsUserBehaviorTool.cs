@@ -30,13 +30,11 @@ namespace Mud.Wechat.Work.AI.Tools.Curation;
 public interface IWechatWorkExternalContactStatisticsUserBehaviorTool
 {
     /// <summary>查询成员联系客户的行为统计。</summary>
-    /// <param name="userid">成员 userid 列表（最多 100 个；与 department_id 至少给一个）。</param>
-    /// <param name="department_id">部门 ID（单部门，含子部门；与 userid 至少给一个）。</param>
-    /// <param name="start_time">起始时间（Unix 秒或带时区的 ISO 8601）。</param>
-    /// <param name="end_time">结束时间（Unix 秒或带时区的 ISO 8601；与起始间隔 ≤ 30 天）。</param>
-    void Query(
+    /// <returns>白名单投影后的 JSON 文本（behavior_data、count）。</returns>
+    Task<string> GetUserBehaviorDataAsync(
         [ToolParameter("userid", "成员 userid 列表（最多 100 个；与 department_id 至少给一个）。")] string[]? userid,
         [ToolParameter("department_id", "部门 ID（单部门，含子部门；与 userid 至少给一个）。")] int? department_id,
         [ToolParameter("start_time", "起始时间（Unix 秒或带时区的 ISO 8601）。", Required = true)] string start_time,
-        [ToolParameter("end_time", "结束时间（Unix 秒或带时区的 ISO 8601；与起始间隔 ≤ 30 天）。", Required = true)] string end_time);
+        [ToolParameter("end_time", "结束时间（Unix 秒或带时区的 ISO 8601；与起始间隔 ≤ 30 天）。", Required = true)] string end_time,
+        CancellationToken cancellationToken = default);
 }

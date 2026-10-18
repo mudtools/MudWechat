@@ -29,8 +29,10 @@ namespace Mud.Wechat.Work.AI.Tools.Curation;
 public interface IWechatWorkExternalContactMomentPublishListTool
 {
     /// <summary>列出企业发表朋友圈的执行成员与发表状态。</summary>
-    /// <param name="moment_id">企业发表的朋友圈 ID（先用 externalcontact.moment.list 获取）。</param>
-    /// <param name="cursor">分页游标（可空 ⇒ 首页）。</param>
-    /// <param name="limit">单页条数（1~1000，可空 ⇒ 500）。</param>
-    void List([ToolParameter("moment_id", "企业发表的朋友圈 ID（先用 externalcontact.moment.list 获取）。", Required = true)] string moment_id, [ToolParameter("cursor", "分页游标（可空 ⇒ 首页）。")] string? cursor, [ToolParameter("limit", "单页条数（1~1000，可空 ⇒ 500）。")] int? limit);
+    /// <returns>白名单投影后的 JSON 文本（task_list、count、next_cursor）。</returns>
+    Task<string> GetMomentPublishListAsync(
+        [ToolParameter("moment_id", "企业发表的朋友圈 ID（先用 externalcontact.moment.list 获取）。", Required = true)] string moment_id,
+        [ToolParameter("cursor", "分页游标（可空 ⇒ 首页）。")] string? cursor,
+        [ToolParameter("limit", "单页条数（1~1000，可空 ⇒ 500）。")] int? limit,
+        CancellationToken cancellationToken = default);
 }

@@ -32,7 +32,9 @@ namespace Mud.Wechat.Work.AI.Tools.Curation;
 public interface IWechatWorkContactsTagCreateTool
 {
     /// <summary>创建标签。</summary>
-    /// <param name="tag_name">标签名（≤32 字，不可重名）。</param>
-    /// <param name="tag_id">指定标签 ID（可空，非负整数）。</param>
-    void Create([ToolParameter("tag_name", "标签名（≤32 字，不可重名）。", Required = true)] string tag_name, [ToolParameter("tag_id", "指定标签 ID（可空，非负整数）。")] int? tag_id);
+    /// <returns>白名单投影后的 JSON 文本（tag_id、name）。</returns>
+    Task<string> CreateTagAsync(
+        [ToolParameter("tag_name", "标签名（≤32 字，不可重名）。", Required = true)] string tag_name,
+        [ToolParameter("tag_id", "指定标签 ID（可空，非负整数）。")] int? tag_id,
+        CancellationToken cancellationToken = default);
 }

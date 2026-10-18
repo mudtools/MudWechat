@@ -30,9 +30,15 @@
 
 | 槽 | 来源 |
 |---|---|
-| 名 / 描述 | 每个模型可见参数都显式带 `[ToolParameter("名", "详细描述")]`：第一实参 = C# 参数名，第二实参 = 同文件 `<param>` 文档注释原文（引擎不再需要空串回退）|
+| 名 / 描述 | 每个模型可见参数都必须显式带 `[ToolParameter("名", "详细描述")]`：第一实参 = C# 参数名，第二实参 = 该参数描述的唯一来源（与飞书侧一致；声明面不写 `<param>` 文档注释，缺特性即描述退化为空、Schema 失真）|
 | 必填 | `[ToolParameter("x", "<描述>", Required = true)]`；值类型必填由类型（非可空）推导，`string` 必填必须显式标注 |
 | 取值闭集 | `EnumType = typeof(常量类)`；常量类落 `WechatToolClosedSets.cs`（`internal static class` + `public const int`，成员名即模型可见字面量，可访问性不被生成代码引用故可不 public） |
+
+**声明面签名形态（与飞书侧 AI 工具面一致）**：方法名镜像 `Source` 的 SDK 方法名
+（`IWechatWorkApprovalService.GetApprovalDetailAsync` → `GetApprovalDetailAsync`），返回类型固定 `Task<string>`
+（投影后的 JSON 文本；引擎不消费方法返回类型，输出 Schema 由 `Source` 端点派生）；模型可见参数一行一个，
+末尾恒为 `CancellationToken cancellationToken = default`（引擎自动排除，不入 Schema）；XML 文档只留
+`<summary>` 与单行 `<returns>`（写明白名单投影后的 JSON 字段清单），不写 `<param>`。
 
 闭集与必填在**生成的解包器**里收口：越界/缺失值在调用 SDK 之前即被拒（闭集非法值抛
 `ToolArgumentException`，其 `Suggestions` 携带合法取值清单，执行链按 `Validation/invalid_args` 原样回填模型）。

@@ -30,17 +30,13 @@ namespace Mud.Wechat.Work.AI.Tools.Curation;
 public interface IWechatWorkExternalContactMomentListTool
 {
     /// <summary>拉取朋友圈发表记录。</summary>
-    /// <param name="start_time">起始时间（Unix 秒或带时区的 ISO 8601）。</param>
-    /// <param name="end_time">结束时间（Unix 秒或带时区的 ISO 8601；与起始间隔 ≤ 30 天）。</param>
-    /// <param name="creator">发表人 userid（可空 ⇒ 全部）。</param>
-    /// <param name="filter_type">类型过滤（CorpPublish 企业发表 / PersonalPublish 个人发表 / All 全部；可空 ⇒ All）。</param>
-    /// <param name="cursor">分页游标（可空 ⇒ 首页）。</param>
-    /// <param name="limit">单页条数（1~20，可空 ⇒ 20）。</param>
-    void List(
+    /// <returns>白名单投影后的 JSON 文本（moment_list、count、next_cursor）。</returns>
+    Task<string> GetMomentListAsync(
         [ToolParameter("start_time", "起始时间（Unix 秒或带时区的 ISO 8601）。", Required = true)] string start_time,
         [ToolParameter("end_time", "结束时间（Unix 秒或带时区的 ISO 8601；与起始间隔 ≤ 30 天）。", Required = true)] string end_time,
         [ToolParameter("creator", "发表人 userid（可空 ⇒ 全部）。")] string? creator,
         [ToolParameter("filter_type", "类型过滤（CorpPublish 企业发表 / PersonalPublish 个人发表 / All 全部；可空 ⇒ All）。", EnumType = typeof(WechatMomentFilterTypes))] int? filter_type,
         [ToolParameter("cursor", "分页游标（可空 ⇒ 首页）。")] string? cursor,
-        [ToolParameter("limit", "单页条数（1~20，可空 ⇒ 20）。")] int? limit);
+        [ToolParameter("limit", "单页条数（1~20，可空 ⇒ 20）。")] int? limit,
+        CancellationToken cancellationToken = default);
 }

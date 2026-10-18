@@ -31,6 +31,8 @@ namespace Mud.Wechat.Work.AI.Tools.Curation;
 public interface IWechatWorkApprovalGetTool
 {
     /// <summary>获取审批申请详情。</summary>
-    /// <param name="sp_no">审批单号（由用户从审批应用/通知中提供）。</param>
-    void Get([ToolParameter("sp_no", "审批单号（由用户从审批应用/通知中提供）。", Required = true)] string sp_no);
+    /// <returns>白名单投影后的 JSON 文本（sp_no、sp_name、sp_status、template_id、apply_time、applyer、batch_applyer、records、notifyer、comment_count、form_fields）。</returns>
+    Task<string> GetApprovalDetailAsync(
+        [ToolParameter("sp_no", "审批单号（由用户从审批应用/通知中提供）。", Required = true)] string sp_no,
+        CancellationToken cancellationToken = default);
 }

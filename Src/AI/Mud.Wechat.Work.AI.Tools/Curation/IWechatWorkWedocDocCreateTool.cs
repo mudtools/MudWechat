@@ -30,15 +30,12 @@ namespace Mud.Wechat.Work.AI.Tools.Curation;
 public interface IWechatWorkWedocDocCreateTool
 {
     /// <summary>新建文档。</summary>
-    /// <param name="doc_name">文档名（≤255 字符）。</param>
-    /// <param name="doc_type">文档类型（Document 文档 / Spreadsheet 表格 / SmartSheet 智能表格 / SmartDoc 智能文档）。</param>
-    /// <param name="spaceid">空间 ID（可空）。</param>
-    /// <param name="fatherid">父目录 ID（可空；指定 spaceid 时必填）。</param>
-    /// <param name="admin_users">管理员 userid 列表（可空）。</param>
-    void Create(
+    /// <returns>白名单投影后的 JSON 文本（docid、url）。</returns>
+    Task<string> CreateDocumentAsync(
         [ToolParameter("doc_name", "文档名（≤255 字符）。", Required = true)] string doc_name,
         [ToolParameter("doc_type", "文档类型（Document 文档 / Spreadsheet 表格 / SmartSheet 智能表格 / SmartDoc 智能文档）。", EnumType = typeof(WechatWedocDocTypes))] int doc_type,
         [ToolParameter("spaceid", "空间 ID（可空）。")] string? spaceid,
         [ToolParameter("fatherid", "父目录 ID（可空；指定 spaceid 时必填）。")] string? fatherid,
-        [ToolParameter("admin_users", "管理员 userid 列表（可空）。")] string[]? admin_users);
+        [ToolParameter("admin_users", "管理员 userid 列表（可空）。")] string[]? admin_users,
+        CancellationToken cancellationToken = default);
 }

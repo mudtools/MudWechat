@@ -31,15 +31,12 @@ namespace Mud.Wechat.Work.AI.Tools.Curation;
 public interface IWechatWorkExternalContactGroupChatListTool
 {
     /// <summary>列出客户群。</summary>
-    /// <param name="status_filter">跟进状态过滤（All 全部 / PendingInherit 离职待继承 / Inheriting 离职继承中 / Inherited 离职继承完成；可空 ⇒ All）。</param>
-    /// <param name="owner_userid">群主 userid 列表（可空；省略即拉应用可见范围内全部群主）。</param>
-    /// <param name="owner_partyid">群主所属部门 ID（可空；单个部门，含其子部门）。</param>
-    /// <param name="cursor">分页游标（可空 ⇒ 首页）。</param>
-    /// <param name="limit">单页条数（1~1000，可空 ⇒ 500）。</param>
-    void List(
+    /// <returns>白名单投影后的 JSON 文本（group_chat_list、count、next_cursor）。</returns>
+    Task<string> GetGroupChatListAsync(
         [ToolParameter("status_filter", "跟进状态过滤（All 全部 / PendingInherit 离职待继承 / Inheriting 离职继承中 / Inherited 离职继承完成；可空 ⇒ All）。", EnumType = typeof(WechatGroupChatStatusFilters))] int? status_filter,
         [ToolParameter("owner_userid", "群主 userid 列表（可空；省略即拉应用可见范围内全部群主）。")] string[]? owner_userid,
         [ToolParameter("owner_partyid", "群主所属部门 ID（可空；单个部门，含其子部门）。")] int? owner_partyid,
         [ToolParameter("cursor", "分页游标（可空 ⇒ 首页）。")] string? cursor,
-        [ToolParameter("limit", "单页条数（1~1000，可空 ⇒ 500）。")] int? limit);
+        [ToolParameter("limit", "单页条数（1~1000，可空 ⇒ 500）。")] int? limit,
+        CancellationToken cancellationToken = default);
 }

@@ -29,11 +29,10 @@ namespace Mud.Wechat.Work.AI.Tools.Curation;
 public interface IWechatWorkExternalContactStatisticsGroupChatByDayTool
 {
     /// <summary>按自然日查询客户群统计。</summary>
-    /// <param name="day_begin_time">起始日期（Unix 秒或带时区的 ISO 8601）。</param>
-    /// <param name="day_end_time">结束日期（可空 ⇒ 同起始日期）。</param>
-    /// <param name="owner_userid">群主 userid 列表（可空 ⇒ 应用可见范围内全部群主）。</param>
-    void Query(
+    /// <returns>白名单投影后的 JSON 文本（items、count）。</returns>
+    Task<string> GetGroupChatStatisticGroupByDayAsync(
         [ToolParameter("day_begin_time", "起始日期（Unix 秒或带时区的 ISO 8601）。", Required = true)] string day_begin_time,
         [ToolParameter("day_end_time", "结束日期（可空 ⇒ 同起始日期）。")] string? day_end_time,
-        [ToolParameter("owner_userid", "群主 userid 列表（可空 ⇒ 应用可见范围内全部群主）。")] string[]? owner_userid);
+        [ToolParameter("owner_userid", "群主 userid 列表（可空 ⇒ 应用可见范围内全部群主）。")] string[]? owner_userid,
+        CancellationToken cancellationToken = default);
 }

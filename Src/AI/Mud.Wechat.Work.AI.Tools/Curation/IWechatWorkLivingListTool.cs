@@ -23,8 +23,10 @@ namespace Mud.Wechat.Work.AI.Tools.Curation;
 public interface IWechatWorkLivingListTool
 {
     /// <summary>拉取成员直播 ID 列表。</summary>
-    /// <param name="userid">成员 UserID。</param>
-    /// <param name="cursor">分页游标（可空 ⇒ 首页）。</param>
-    /// <param name="limit">单页条数（1~100，可空 ⇒ 100）。</param>
-    void List([ToolParameter("userid", "成员 UserID。", Required = true)] string userid, [ToolParameter("cursor", "分页游标（可空 ⇒ 首页）。")] string? cursor, [ToolParameter("limit", "单页条数（1~100，可空 ⇒ 100）。")] int? limit);
+    /// <returns>白名单投影后的 JSON 文本（livingid_list、count、next_cursor）。</returns>
+    Task<string> GetUserAllLivingIdAsync(
+        [ToolParameter("userid", "成员 UserID。", Required = true)] string userid,
+        [ToolParameter("cursor", "分页游标（可空 ⇒ 首页）。")] string? cursor,
+        [ToolParameter("limit", "单页条数（1~100，可空 ⇒ 100）。")] int? limit,
+        CancellationToken cancellationToken = default);
 }

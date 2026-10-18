@@ -24,7 +24,9 @@ namespace Mud.Wechat.Work.AI.Tools.Curation;
 public interface IWechatWorkKfAccountListTool
 {
     /// <summary>列出微信客服账号。</summary>
-    /// <param name="offset">分页偏移（可空）。</param>
-    /// <param name="limit">单页条数（1~100，可空 ⇒ 100）。</param>
-    void List([ToolParameter("offset", "分页偏移（可空）。")] int? offset, [ToolParameter("limit", "单页条数（1~100，可空 ⇒ 100）。")] int? limit);
+    /// <returns>白名单投影后的 JSON 文本（account_list、open_kfid、name、manage_privilege、count）。</returns>
+    Task<string> GetAccountListAsync(
+        [ToolParameter("offset", "分页偏移（可空）。")] int? offset,
+        [ToolParameter("limit", "单页条数（1~100，可空 ⇒ 100）。")] int? limit,
+        CancellationToken cancellationToken = default);
 }

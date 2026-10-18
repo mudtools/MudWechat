@@ -29,17 +29,13 @@ namespace Mud.Wechat.Work.AI.Tools.Curation;
 public interface IWechatWorkJournalRecordListTool
 {
     /// <summary>拉取汇报记录 ID 列表。</summary>
-    /// <param name="start_time">起始时间（Unix 秒或带时区的 ISO 8601）。</param>
-    /// <param name="end_time">结束时间（Unix 秒或带时区的 ISO 8601；与起始间隔 ≤ 31 天）。</param>
-    /// <param name="limit">单次条数（1~100，可空 ⇒ 100）。</param>
-    /// <param name="cursor">分页游标（可空 ⇒ 0）。</param>
-    /// <param name="creator">提交人 userid（可空）。</param>
-    /// <param name="template_id">汇报表单 ID（可空）。</param>
-    void List(
+    /// <returns>白名单投影后的 JSON 文本（journaluuid_list、count、ending、next_cursor）。</returns>
+    Task<string> GetJournalRecordListAsync(
         [ToolParameter("start_time", "起始时间（Unix 秒或带时区的 ISO 8601）。", Required = true)] string start_time,
         [ToolParameter("end_time", "结束时间（Unix 秒或带时区的 ISO 8601；与起始间隔 ≤ 31 天）。", Required = true)] string end_time,
         [ToolParameter("limit", "单次条数（1~100，可空 ⇒ 100）。")] int? limit,
         [ToolParameter("cursor", "分页游标（可空 ⇒ 0）。")] int? cursor,
         [ToolParameter("creator", "提交人 userid（可空）。")] string? creator,
-        [ToolParameter("template_id", "汇报表单 ID（可空）。")] string? template_id);
+        [ToolParameter("template_id", "汇报表单 ID（可空）。")] string? template_id,
+        CancellationToken cancellationToken = default);
 }

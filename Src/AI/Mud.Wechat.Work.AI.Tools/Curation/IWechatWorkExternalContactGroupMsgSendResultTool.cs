@@ -30,13 +30,11 @@ namespace Mud.Wechat.Work.AI.Tools.Curation;
 public interface IWechatWorkExternalContactGroupMsgSendResultTool
 {
     /// <summary>读取逐客户送达结果。</summary>
-    /// <param name="msgid">群发消息 ID（先用 externalcontact.groupmsg.list 获取）。</param>
-    /// <param name="userid">发送该群发的成员 userid（先用 externalcontact.groupmsg.task_list 取到执行成员）。</param>
-    /// <param name="limit">单页条数（1~1000，可空 ⇒ 500）。</param>
-    /// <param name="cursor">分页游标（可空 ⇒ 首页）。</param>
-    void List(
+    /// <returns>白名单投影后的 JSON 文本（send_list、count、next_cursor）。</returns>
+    Task<string> GetGroupMsgSendResultAsync(
         [ToolParameter("msgid", "群发消息 ID（先用 externalcontact.groupmsg.list 获取）。", Required = true)] string msgid,
         [ToolParameter("userid", "发送该群发的成员 userid（先用 externalcontact.groupmsg.task_list 取到执行成员）。", Required = true)] string userid,
-        int? limit,
-        string? cursor);
+        [ToolParameter("limit", "单页条数（1~1000，可空 ⇒ 500）。")] int? limit,
+        [ToolParameter("cursor", "分页游标（可空 ⇒ 首页）。")] string? cursor,
+        CancellationToken cancellationToken = default);
 }

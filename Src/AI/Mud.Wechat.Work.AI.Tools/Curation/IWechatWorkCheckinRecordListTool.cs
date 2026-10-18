@@ -32,13 +32,11 @@ namespace Mud.Wechat.Work.AI.Tools.Curation;
 public interface IWechatWorkCheckinRecordListTool
 {
     /// <summary>获取打卡记录。</summary>
-    /// <param name="userid_list">成员 userid 列表（1~100 个）。</param>
-    /// <param name="start_time">起始时间（Unix 秒，或带时区的 ISO 8601）。</param>
-    /// <param name="end_time">结束时间（Unix 秒，或带时区的 ISO 8601；须大于 start_time 且跨度 ≤ 30 天）。</param>
-    /// <param name="data_type">打卡类型（Commute 上下班 / Field 外出 / All 全部；可空 ⇒ All）。</param>
-    void List(
+    /// <returns>白名单投影后的 JSON 文本（checkindata、count；每项 userid、checkin_type、exception_type、checkin_time、sch_checkin_time、groupname、groupid、schedule_id）。</returns>
+    Task<string> GetCheckinDataAsync(
         [ToolParameter("userid_list", "成员 userid 列表（1~100 个）。", Required = true)] string[] userid_list,
         [ToolParameter("start_time", "起始时间（Unix 秒，或带时区的 ISO 8601）。", Required = true)] string start_time,
         [ToolParameter("end_time", "结束时间（Unix 秒，或带时区的 ISO 8601；须大于 start_time 且跨度 ≤ 30 天）。", Required = true)] string end_time,
-        [ToolParameter("data_type", "打卡类型（Commute 上下班 / Field 外出 / All 全部；可空 ⇒ All）。", EnumType = typeof(WechatCheckinDataTypes))] int? data_type);
+        [ToolParameter("data_type", "打卡类型（Commute 上下班 / Field 外出 / All 全部；可空 ⇒ All）。", EnumType = typeof(WechatCheckinDataTypes))] int? data_type,
+        CancellationToken cancellationToken = default);
 }

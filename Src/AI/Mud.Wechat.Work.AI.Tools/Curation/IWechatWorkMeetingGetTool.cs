@@ -30,6 +30,8 @@ namespace Mud.Wechat.Work.AI.Tools.Curation;
 public interface IWechatWorkMeetingGetTool
 {
     /// <summary>读取会议详情。</summary>
-    /// <param name="meetingid">会议 ID。</param>
-    void Get([ToolParameter("meetingid", "会议 ID。", Required = true)] string meetingid);
+    /// <returns>白名单投影后的 JSON 文本（title、meeting_start、meeting_duration、status、meeting_type、location、description、admin_userid、meeting_code、cal_id、attendees、guest_count、has_vote）。</returns>
+    Task<string> GetMeetingInfoAsync(
+        [ToolParameter("meetingid", "会议 ID。", Required = true)] string meetingid,
+        CancellationToken cancellationToken = default);
 }

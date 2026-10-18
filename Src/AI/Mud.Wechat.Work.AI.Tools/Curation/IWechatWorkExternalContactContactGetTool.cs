@@ -31,6 +31,8 @@ namespace Mud.Wechat.Work.AI.Tools.Curation;
 public interface IWechatWorkExternalContactContactGetTool
 {
     /// <summary>读取客户详情。</summary>
-    /// <param name="external_userid">客户 ID。</param>
-    void Get([ToolParameter("external_userid", "客户 ID。", Required = true)] string external_userid);
+    /// <returns>白名单投影后的 JSON 文本（external_userid、name、type、gender、corp_name、position、follow_users、follow_user_count）。</returns>
+    Task<string> GetCustomerDetailAsync(
+        [ToolParameter("external_userid", "客户 ID。", Required = true)] string external_userid,
+        CancellationToken cancellationToken = default);
 }

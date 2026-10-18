@@ -29,7 +29,9 @@ namespace Mud.Wechat.Work.AI.Tools.Curation;
 public interface IWechatWorkExternalContactGroupChatGetTool
 {
     /// <summary>读取客户群详情。</summary>
-    /// <param name="chat_id">客户群 ID（先用 externalcontact.groupchat.list 获取）。</param>
-    /// <param name="need_name">是否返回群成员姓名（true 返回；可空 ⇒ false）。</param>
-    void Get([ToolParameter("chat_id", "客户群 ID（先用 externalcontact.groupchat.list 获取）。", Required = true)] string chat_id, [ToolParameter("need_name", "是否返回群成员姓名（true 返回；可空 ⇒ false）。")] bool? need_name);
+    /// <returns>白名单投影后的 JSON 文本（chat_id、name、owner、create_time、notice、member_count、members、admin_list、member_version）。</returns>
+    Task<string> GetGroupChatDetailAsync(
+        [ToolParameter("chat_id", "客户群 ID（先用 externalcontact.groupchat.list 获取）。", Required = true)] string chat_id,
+        [ToolParameter("need_name", "是否返回群成员姓名（true 返回；可空 ⇒ false）。")] bool? need_name,
+        CancellationToken cancellationToken = default);
 }

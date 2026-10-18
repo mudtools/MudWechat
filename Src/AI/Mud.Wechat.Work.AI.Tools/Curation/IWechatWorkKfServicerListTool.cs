@@ -24,6 +24,8 @@ namespace Mud.Wechat.Work.AI.Tools.Curation;
 public interface IWechatWorkKfServicerListTool
 {
     /// <summary>列出客服账号的接待人员。</summary>
-    /// <param name="open_kfid">客服账号 ID。</param>
-    void List([ToolParameter("open_kfid", "客服账号 ID。", Required = true)] string open_kfid);
+    /// <returns>白名单投影后的 JSON 文本（servicer_list、userid、status、stop_type、department_id）。</returns>
+    Task<string> GetServicerListAsync(
+        [ToolParameter("open_kfid", "客服账号 ID。", Required = true)] string open_kfid,
+        CancellationToken cancellationToken = default);
 }

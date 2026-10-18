@@ -24,7 +24,9 @@ namespace Mud.Wechat.Work.AI.Tools.Curation;
 public interface IWechatWorkContactsUserListTool
 {
     /// <summary>列出部门成员详情。</summary>
-    /// <param name="department_id">部门 ID（整数）。</param>
-    /// <param name="fetch_child">是否递归子部门（true 递归）。</param>
-    void Users([ToolParameter("department_id", "部门 ID（整数）。")] int department_id, [ToolParameter("fetch_child", "是否递归子部门（true 递归）。")] bool? fetch_child);
+    /// <returns>白名单投影后的 JSON 文本（userlist、userid、name、position、department、status）。</returns>
+    Task<string> GetUserDetailListAsync(
+        [ToolParameter("department_id", "部门 ID（整数）。")] int department_id,
+        [ToolParameter("fetch_child", "是否递归子部门（true 递归）。")] bool? fetch_child,
+        CancellationToken cancellationToken = default);
 }

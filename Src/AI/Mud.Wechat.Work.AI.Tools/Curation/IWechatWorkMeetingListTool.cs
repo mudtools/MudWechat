@@ -30,15 +30,12 @@ namespace Mud.Wechat.Work.AI.Tools.Curation;
 public interface IWechatWorkMeetingListTool
 {
     /// <summary>拉取成员会议 ID 列表。</summary>
-    /// <param name="userid">成员 UserID。</param>
-    /// <param name="begin_time">起始时间（Unix 秒或带时区的 ISO 8601）。</param>
-    /// <param name="end_time">结束时间（Unix 秒或带时区的 ISO 8601；须大于 begin_time 且跨度 ≤ 180 天）。</param>
-    /// <param name="cursor">分页游标（可空 ⇒ 首页）。</param>
-    /// <param name="limit">单页条数（1~100，可空 ⇒ 官方默认 100）。</param>
-    void List(
+    /// <returns>白名单投影后的 JSON 文本（meetingid_list、next_cursor）。</returns>
+    Task<string> GetUserMeetingIdListAsync(
         [ToolParameter("userid", "成员 UserID。", Required = true)] string userid,
         [ToolParameter("begin_time", "起始时间（Unix 秒或带时区的 ISO 8601）。", Required = true)] string begin_time,
         [ToolParameter("end_time", "结束时间（Unix 秒或带时区的 ISO 8601；须大于 begin_time 且跨度 ≤ 180 天）。", Required = true)] string end_time,
         [ToolParameter("cursor", "分页游标（可空 ⇒ 首页）。")] string? cursor,
-        [ToolParameter("limit", "单页条数（1~100，可空 ⇒ 官方默认 100）。")] int? limit);
+        [ToolParameter("limit", "单页条数（1~100，可空 ⇒ 官方默认 100）。")] int? limit,
+        CancellationToken cancellationToken = default);
 }

@@ -31,13 +31,11 @@ namespace Mud.Wechat.Work.AI.Tools.Curation;
 public interface IWechatWorkMessageSendTool
 {
     /// <summary>发送应用文本消息。</summary>
-    /// <param name="touser">成员 UserID（多个用 | 分隔）。</param>
-    /// <param name="content">文本内容（≤ 2048 字节）。</param>
-    /// <param name="agentid">应用 AgentId。</param>
-    /// <param name="safe">保密模式（Public 可对外 / Confidential 保密；可空 ⇒ Public）。</param>
-    void Send(
+    /// <returns>白名单投影后的 JSON 文本（msgid、invalid_user、invalid_party、invalid_tag、unlicensed_user）。</returns>
+    Task<string> SendTextMessageAsync(
         [ToolParameter("touser", "成员 UserID（多个用 | 分隔）。", Required = true)] string touser,
         [ToolParameter("content", "文本内容（≤ 2048 字节）。", Required = true)] string content,
         [ToolParameter("agentid", "应用 AgentId。")] int agentid,
-        [ToolParameter("safe", "保密模式（Public 可对外 / Confidential 保密；可空 ⇒ Public）。", EnumType = typeof(WechatMessageSafeModes))] int? safe);
+        [ToolParameter("safe", "保密模式（Public 可对外 / Confidential 保密；可空 ⇒ Public）。", EnumType = typeof(WechatMessageSafeModes))] int? safe,
+        CancellationToken cancellationToken = default);
 }

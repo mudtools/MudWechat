@@ -30,19 +30,14 @@ namespace Mud.Wechat.Work.AI.Tools.Curation;
 public interface IWechatWorkExternalContactGroupMsgListTool
 {
     /// <summary>拉取群发记录。</summary>
-    /// <param name="chat_type">群发任务类型（single 发给客户 / group 发给客户群）。</param>
-    /// <param name="start_time">起始时间（Unix 秒或带时区的 ISO 8601）。</param>
-    /// <param name="end_time">结束时间（Unix 秒或带时区的 ISO 8601；与起始间隔 ≤ 1 个月）。</param>
-    /// <param name="creator">创建人 userid（可空 ⇒ 全部）。</param>
-    /// <param name="filter_type">创建人类型过滤（0 企业创建 / 1 个人创建 / 2 全部；可空 ⇒ 2）。</param>
-    /// <param name="limit">单页条数（1~100，可空 ⇒ 50）。</param>
-    /// <param name="cursor">分页游标（可空 ⇒ 首页）。</param>
-    void List(
+    /// <returns>白名单投影后的 JSON 文本（group_msg_list、count、next_cursor）。</returns>
+    Task<string> GetGroupMsgListAsync(
         [ToolParameter("chat_type", "群发任务类型（single 发给客户 / group 发给客户群）。", Required = true)] string chat_type,
         [ToolParameter("start_time", "起始时间（Unix 秒或带时区的 ISO 8601）。", Required = true)] string start_time,
         [ToolParameter("end_time", "结束时间（Unix 秒或带时区的 ISO 8601；与起始间隔 ≤ 1 个月）。", Required = true)] string end_time,
-        string? creator,
-        int? filter_type,
-        int? limit,
-        string? cursor);
+        [ToolParameter("creator", "创建人 userid（可空 ⇒ 全部）。")] string? creator,
+        [ToolParameter("filter_type", "创建人类型过滤（0 企业创建 / 1 个人创建 / 2 全部；可空 ⇒ 2）。")] int? filter_type,
+        [ToolParameter("limit", "单页条数（1~100，可空 ⇒ 50）。")] int? limit,
+        [ToolParameter("cursor", "分页游标（可空 ⇒ 首页）。")] string? cursor,
+        CancellationToken cancellationToken = default);
 }

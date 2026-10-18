@@ -29,7 +29,9 @@ namespace Mud.Wechat.Work.AI.Tools.Curation;
 public interface IWechatWorkLivingWatchStatTool
 {
     /// <summary>读取直播观看统计。</summary>
-    /// <param name="livingid">直播 ID。</param>
-    /// <param name="next_key">分页键（可空 ⇒ 首页）。</param>
-    void Get([ToolParameter("livingid", "直播 ID。", Required = true)] string livingid, [ToolParameter("next_key", "分页键（可空 ⇒ 首页）。")] string? next_key);
+    /// <returns>白名单投影后的 JSON 文本（users、userid、watch_time、is_comment、is_mic、count、external_user_count、ending、next_key）。</returns>
+    Task<string> GetWatchStatAsync(
+        [ToolParameter("livingid", "直播 ID。", Required = true)] string livingid,
+        [ToolParameter("next_key", "分页键（可空 ⇒ 首页）。")] string? next_key,
+        CancellationToken cancellationToken = default);
 }

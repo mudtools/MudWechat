@@ -36,17 +36,13 @@ namespace Mud.Wechat.Work.AI.Tools.Curation;
 public interface IWechatWorkExternalContactGroupMsgSendTool
 {
     /// <summary>创建企业群发任务。</summary>
-    /// <param name="chat_type">群发任务类型（single 发给客户 / group 发给客户群）。</param>
-    /// <param name="sender">发送成员 userid（客户群发时官方强制）。</param>
-    /// <param name="content">文本内容（≤ 4000 字节；本工具只发文本）。</param>
-    /// <param name="external_userid">客户 ID 列表（chat_type = single 时必填；单次最多 1 万个）。</param>
-    /// <param name="chat_id_list">客户群 ID 列表（chat_type = group 时必填；单次最多 2000 个）。</param>
-    /// <param name="allow_select">是否允许成员发送前重新勾选客户（仅客户群发生效）。</param>
-    void Send(
+    /// <returns>白名单投影后的 JSON 文本（msgid、fail_list）。</returns>
+    Task<string> AddGroupMsgTemplateAsync(
         [ToolParameter("chat_type", "群发任务类型（single 发给客户 / group 发给客户群）。", Required = true)] string chat_type,
         [ToolParameter("sender", "发送成员 userid（客户群发时官方强制）。", Required = true)] string sender,
         [ToolParameter("content", "文本内容（≤ 4000 字节；本工具只发文本）。", Required = true)] string content,
-        string[]? external_userid,
-        string[]? chat_id_list,
-        bool? allow_select);
+        [ToolParameter("external_userid", "客户 ID 列表（chat_type = single 时必填；单次最多 1 万个）。")] string[]? external_userid,
+        [ToolParameter("chat_id_list", "客户群 ID 列表（chat_type = group 时必填；单次最多 2000 个）。")] string[]? chat_id_list,
+        [ToolParameter("allow_select", "是否允许成员发送前重新勾选客户（仅客户群发生效）。")] bool? allow_select,
+        CancellationToken cancellationToken = default);
 }

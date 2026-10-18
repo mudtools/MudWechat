@@ -31,6 +31,8 @@ namespace Mud.Wechat.Work.AI.Tools.Curation;
 public interface IWechatWorkContactsDepartmentGetTool
 {
     /// <summary>读取部门详情。</summary>
-    /// <param name="department_id">部门 ID（整数；根部门为 1）。</param>
-    void Department([ToolParameter("department_id", "部门 ID（整数；根部门为 1）。")] int department_id);
+    /// <returns>白名单投影后的 JSON 文本（id、name、name_en、parentid、department_leader）。</returns>
+    Task<string> GetDepartmentAsync(
+        [ToolParameter("department_id", "部门 ID（整数；根部门为 1）。")] int department_id,
+        CancellationToken cancellationToken = default);
 }

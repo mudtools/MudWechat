@@ -32,6 +32,9 @@ public sealed class WechatPaySignatureProvider : IWechatPaySignatureProvider
     private readonly string _merchantSerialNumber;
     private readonly IWechatPayPlatformCertificateStore _platformCertificates;
 
+    /// <inheritdoc />
+    public string Algorithm => "WECHATPAY2-SHA256-RSA2048";
+
     /// <summary>初始化签名提供器。</summary>
     /// <param name="merchantSerialNumber">商户 API 证书序列号。</param>
     /// <param name="merchantPrivateKey">商户 RSA 私钥（<b>所有权仍归调用方</b>，本类不释放）。</param>

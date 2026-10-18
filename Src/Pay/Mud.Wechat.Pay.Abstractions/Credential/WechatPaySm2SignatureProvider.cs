@@ -23,6 +23,9 @@ public sealed class WechatPaySm2SignatureProvider : IWechatPaySignatureProvider
     private readonly IWechatPayPlatformCertificateStore _platformCertificates;
     private readonly IWechatSmCryptoProvider _smProvider;
 
+    /// <inheritdoc />
+    public string Algorithm => "WECHATPAY2-SM2-WITH-SM3";
+
     /// <summary>初始化国密签名提供者。</summary>
     /// <param name="merchantSerialNumber">商户 API 证书序列号。</param>
     /// <param name="merchantPrivateKey">商户 SM2 私钥字节（由 <see cref="WechatPayMerchantKey.Sm2PrivateKey"/> 提供）。</param>

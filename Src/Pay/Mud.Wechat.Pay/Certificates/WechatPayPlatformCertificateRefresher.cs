@@ -56,6 +56,7 @@ public sealed class WechatPayPlatformCertificateRefresher : IWechatPayPlatformCe
     private readonly IWechatPayMerchantCredentialProvider _credentials;
     private readonly IWechatPayPlatformCertificateStore _store;
     private readonly IWechatPayPlatformCertificateWriter? _writer;
+    private readonly WechatPayPayloadCodecResolver? _payloadCodecResolver;
     private readonly ILogger<WechatPayPlatformCertificateRefresher>? _logger;
 
     private readonly ConcurrentDictionary<string, SemaphoreSlim> _gates = new(StringComparer.Ordinal);
@@ -65,6 +66,7 @@ public sealed class WechatPayPlatformCertificateRefresher : IWechatPayPlatformCe
     /// <param name="certificates">平台证书客户端（<c>GET /v3/certificates</c>）。</param>
     /// <param name="credentials">商户凭据取用端口（取 APIv3 密钥解密证书密文）。</param>
     /// <param name="store">平台证书读端口（复查用）。</param>
+    /// <param name="payloadCodecResolver">载荷编解码分派器（AES-GCM / SM4-GCM，可选）。</param>
     /// <param name="writer">平台证书写端口（默认缓存实现；宿主只提供读端口时为 <c>null</c>）。</param>
     /// <param name="logger">日志器（可选）。</param>
     /// <exception cref="ArgumentNullException">任一必填参数为 <c>null</c>。</exception>
@@ -72,12 +74,14 @@ public sealed class WechatPayPlatformCertificateRefresher : IWechatPayPlatformCe
         IWechatPayCertificatesService certificates,
         IWechatPayMerchantCredentialProvider credentials,
         IWechatPayPlatformCertificateStore store,
+        WechatPayPayloadCodecResolver? payloadCodecResolver = null,
         IWechatPayPlatformCertificateWriter? writer = null,
         ILogger<WechatPayPlatformCertificateRefresher>? logger = null)
     {
         _certificates = certificates ?? throw new ArgumentNullException(nameof(certificates));
         _credentials = credentials ?? throw new ArgumentNullException(nameof(credentials));
         _store = store ?? throw new ArgumentNullException(nameof(store));
+        _payloadCodecResolver = payloadCodecResolver;
         _writer = writer;
         _logger = logger;
     }
@@ -174,8 +178,10 @@ public sealed class WechatPayPlatformCertificateRefresher : IWechatPayPlatformCe
             return false;
         }
 
+        // 按商户配置的签名算法下载对应类型的平台证书（RSA / SM2）。
+        var algorithmType = merchant.SignatureAlgorithm == "SM2-WITH-SM3" ? "SM2" : null;
         var response = await _certificates
-            .GetPlatformCertificatesAsync(cancellationToken)
+            .GetPlatformCertificatesAsync(algorithmType, cancellationToken)
             .ConfigureAwait(false);
 
         var items = response?.Data;
@@ -208,16 +214,67 @@ public sealed class WechatPayPlatformCertificateRefresher : IWechatPayPlatformCe
                 }
 
                 var cipher = item.EncryptCertificate;
-                if (cipher is null
-                    || !string.Equals(cipher.Algorithm, WechatPayAesGcmCodec.Algorithm, StringComparison.Ordinal))
+                if (cipher is null || string.IsNullOrWhiteSpace(cipher.Algorithm))
                 {
                     continue;
                 }
 
-                // 官方线格式：nonce 为 12 个 ASCII 字符、ciphertext 为 Base64(密文‖tag)。
-                if (!WechatPayAesGcmCodec.TryDecryptOfficialPayload(
-                        apiKey, cipher.Nonce, cipher.Ciphertext, cipher.AssociatedData, out var pem)
-                    || string.IsNullOrWhiteSpace(pem))
+                // 按算法分派解密（AES-GCM / SM4-GCM）。
+                string? pem;
+                if (_payloadCodecResolver != null)
+                {
+                    try
+                    {
+                        // 官方线格式：ciphertext 为 Base64(密文‖tag)，需先分离。
+                        var cipherWithTag = Convert.FromBase64String(cipher.Ciphertext!);
+                        if (cipherWithTag.Length <= 16)
+                        {
+                            continue;
+                        }
+                        
+                        var ciphertextLen = cipherWithTag.Length - 16;
+                        var ciphertext = new byte[ciphertextLen];
+                        var tag = new byte[16];
+                        Array.Copy(cipherWithTag, 0, ciphertext, 0, ciphertextLen);
+                        Array.Copy(cipherWithTag, ciphertextLen, tag, 0, 16);
+                        
+                        var nonce = Convert.FromBase64String(cipher.Nonce!);
+                        var associatedData = cipher.AssociatedData is null 
+                            ? Array.Empty<byte>() 
+                            : System.Text.Encoding.UTF8.GetBytes(cipher.AssociatedData);
+                        
+                        var plainBytes = _payloadCodecResolver.TryDecrypt(
+                            cipher.Algorithm,
+                            apiKey,
+                            nonce,
+                            ciphertext,
+                            associatedData,
+                            tag);
+                        
+                        pem = System.Text.Encoding.UTF8.GetString(plainBytes);
+                    }
+                    catch
+                    {
+                        // 解密失败 ⇒ 单条跳过。
+                        pem = null;
+                    }
+                }
+                else
+                {
+                    // 回退到硬编码 AES-GCM（向后兼容）。
+                    if (!string.Equals(cipher.Algorithm, WechatPayAesGcmCodec.Algorithm, StringComparison.Ordinal))
+                    {
+                        continue;
+                    }
+                    
+                    if (!WechatPayAesGcmCodec.TryDecryptOfficialPayload(
+                            apiKey, cipher.Nonce, cipher.Ciphertext, cipher.AssociatedData, out pem))
+                    {
+                        continue;
+                    }
+                }
+
+                if (string.IsNullOrWhiteSpace(pem))
                 {
                     continue;
                 }

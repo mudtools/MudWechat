@@ -8,6 +8,7 @@
 #if NET6_0_OR_GREATER
 using System.Diagnostics.CodeAnalysis;
 #endif
+using Mud.Wechat.Pay.Abstractions.Credential;
 
 namespace Mud.Wechat.Pay.Callback;
 
@@ -147,6 +148,7 @@ public static class WechatPayCallbackServiceCollectionExtensions
             sp.GetRequiredService<IWechatPayMerchantManager>(),
             sp.GetRequiredService<IWechatPaySignatureProviderFactory>(),
             sp.GetRequiredService<IWechatPayMerchantCredentialProvider>(),
+            sp.GetService<WechatPayPayloadCodecResolver>(),
             sp.GetRequiredService<IWechatCallbackReplayGuard>(),
             sp.GetRequiredService<IOptionsMonitor<WechatPayCallbackOptions>>(),
             // 可选：仅装 AddPayApp（未装证书域）的宿主拿不到刷新器 ⇒ 未知序列号仍 fail-closed 拒绝。

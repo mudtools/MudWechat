@@ -5,6 +5,7 @@
 //  不得利用本项目从事危害国家安全、扰乱社会秩序、侵犯他人合法权益等法律法规禁止的活动！任何基于本项目开发而产生的一切法律纠纷和责任，我们不承担任何责任！
 // -----------------------------------------------------------------------
 
+using Mud.Wechat.Abstractions.Crypto;
 using Mud.Wechat.Pay.Abstractions.Credential;
 using Mud.Wechat.Pay.Certificates;
 using Mud.Wechat.Pay.Download;
@@ -75,6 +76,7 @@ public class PayServiceBuilder
                         sp.GetRequiredService<IWechatPayCertificatesService>(),
                         sp.GetRequiredService<IWechatPayMerchantCredentialProvider>(),
                         sp.GetRequiredService<IWechatPayPlatformCertificateStore>(),
+                        sp.GetService<WechatPayPayloadCodecResolver>(),
                         sp.GetService<IWechatPayPlatformCertificateWriter>(),
                         sp.GetService<ILogger<WechatPayPlatformCertificateRefresher>>()));
             },
@@ -414,6 +416,16 @@ public class PayServiceBuilder
 #if NET8_0_OR_GREATER
         PayJsonResolverExtensions.ConfigureDataModelsResolver(_services);
 #endif
+
+        // 注册载荷编解码分派器（AES-GCM / SM4-GCM，供回调与证书刷新使用）。
+        _services.TryAddSingleton<WechatPayPayloadCodecResolver>(sp =>
+        {
+            var aesCodec = new AesGcmPayloadCodec();
+            var sm4Codec = sp.GetService<IWechatSmCryptoProvider>() != null
+                ? new Sm4GcmPayloadCodec(sp.GetRequiredService<IWechatSmCryptoProvider>())
+                : null;
+            return new WechatPayPayloadCodecResolver(aesCodec, sm4Codec);
+        });
 
         return _services;
     }

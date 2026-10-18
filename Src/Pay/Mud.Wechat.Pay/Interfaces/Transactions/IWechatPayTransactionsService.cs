@@ -8,7 +8,7 @@
 namespace Mud.Wechat.Pay;
 
 /// <summary>
-/// 微信支付「基础交易」域 SDK（APIv3 下单 / 查单 / 关单，7 端点）。
+/// 微信支付「基础交易」域 SDK（APIv3 下单 / 查单 / 关单 / 付款码支付 / 撤销，10 端点）。
 /// </summary>
 /// <remarks>
 /// <para><b>官方文档</b>（普通商户文档中心，2026-10-09 逐页核验）：
@@ -203,5 +203,66 @@ public interface IWechatPayTransactionsService
     Task CloseOrderAsync(
         [Path] string outTradeNo,
         CloseOrderRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 付款码支付（实时扣款）。
+    /// 官方文档：<see href="https://pay.weixin.qq.com/doc/v3/merchant/4012382150"/>。
+    /// </summary>
+    /// <param name="request">付款码支付请求体，见 <see cref="CodepayRequest"/>。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/> 取消操作令牌对象。</param>
+    /// <returns>交易结果，含 <c>transaction_id</c> / <c>trade_state</c> 等，见 <see cref="CodepayResponse"/>。</returns>
+    /// <remarks>
+    /// <para><b>官方契约</b>：<b>POST</b> <c>/v3/pay/transactions/codepay</c>；
+    /// 必带 <c>Accept: application/json</c> 与 <c>Content-Type: application/json</c>。</para>
+    /// <para><b>业务特征</b>：用户出示微信付款码（条码/二维码），商户扫描后调用本接口<b>实时扣款</b>，
+    /// 成功即返回 <c>transaction_id</c>。与 JSAPI/Native/H5/APP 下单不同，无需预支付 ID，
+    /// 也无需用户二次确认。</para>
+    /// <para><b>频率限制</b>：同一 <c>auth_code</c> 短时间内的重复请求会被拦截，
+    /// 官方建议做好幂等控制（使用相同的 <c>out_trade_no</c>）。</para>
+    /// </remarks>
+    [Post("/v3/pay/transactions/codepay")]
+    Task<CodepayResponse> CodepayAsync(
+        CodepayRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 订单曝光（上报订单展示事件）。
+    /// 官方文档：<see href="https://pay.weixin.qq.com/doc/v3/merchant/4014326314"/>。
+    /// </summary>
+    /// <param name="request">订单曝光请求体，见 <see cref="OrderExposureRequest"/>。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/> 取消操作令牌对象。</param>
+    /// <returns>成功时返回空 JSON 对象 <c>{}</c>，见 <see cref="OrderExposureResponse"/>。</returns>
+    /// <remarks>
+    /// <para><b>官方契约</b>：<b>POST</b> <c>/v3/pay/transactions/exposure</c>；
+    /// 必带 <c>Accept: application/json</c> 与 <c>Content-Type: application/json</c>。</para>
+    /// <para><b>业务场景</b>：当商户在用户端展示订单信息时（如收银台页面），调用本接口上报订单曝光事件，
+    /// 用于微信支付的风控与数据分析。<b>仅供内部使用</b>，不影响支付流程。</para>
+    /// </remarks>
+    [Post("/v3/pay/transactions/exposure")]
+    Task<OrderExposureResponse> OrderExposureAsync(
+        OrderExposureRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 撤销订单（尝试退款或关闭未支付订单）。
+    /// 官方文档：<see href="https://pay.weixin.qq.com/doc/v3/merchant/4012382161"/>。
+    /// </summary>
+    /// <param name="outTradeNo">商户订单号（路径参数，string(32)）。</param>
+    /// <param name="request">撤销请求体（预留扩展），见 <see cref="ReverseOrderRequest"/>。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/> 取消操作令牌对象。</param>
+    /// <returns>成功时返回空 JSON 对象 <c>{}</c>，表示撤销请求已受理，见 <see cref="ReverseOrderResponse"/>。</returns>
+    /// <remarks>
+    /// <para><b>官方契约</b>：<b>POST</b> <c>/v3/pay/transactions/out-trade-no/{out_trade_no}/reverse</c>；
+    /// 必带 <c>Accept: application/json</c> 与 <c>Content-Type: application/json</c>。</para>
+    /// <para><b>业务场景</b>：支付交易返回失败或支付系统超时时，调用本接口撤销交易。
+    /// 若交易已成功，则<b>触发退款流程</b>；若交易未成功，则直接关闭订单。
+    /// <b>注意</b>：撤销订单与关闭订单不同，撤销会触发退款。</para>
+    /// <para><b>频率限制</b>：同一订单号频繁调用会被限流，官方建议做好重试控制。</para>
+    /// </remarks>
+    [Post("/v3/pay/transactions/out-trade-no/{outTradeNo}/reverse")]
+    Task<ReverseOrderResponse> ReverseOrderAsync(
+        [Path] string outTradeNo,
+        ReverseOrderRequest request,
         CancellationToken cancellationToken = default);
 }

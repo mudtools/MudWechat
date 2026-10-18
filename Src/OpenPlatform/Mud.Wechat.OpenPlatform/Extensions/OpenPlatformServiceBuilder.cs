@@ -13,8 +13,9 @@ namespace Mud.Wechat.OpenPlatform.Extensions;
 /// <remarks>
 /// <para>
 /// 每个模块的注册委托指向源生成器按 <c>[HttpClientApi]</c> 自动产出的
-/// <c>Add{RegistryGroupName}WebApiHttpClient()</c>。全部为纯声明式域，无额外服务注册
-/// （凭证链服务由 <c>AddOpenPlatform</c> 统一装配，与模块选择解耦）。
+/// <c>Add{RegistryGroupName}WebApiHttpClient()</c>。除 <c>MiniProgramManage</c> 模块另装配一支
+/// <b>非声明式图片流通道</b>（体验版二维码，成功应答为二进制流、声明式 JSON 管线无法承载）外，
+/// 全部为纯声明式域、无额外服务注册（凭证链服务由 <c>AddOpenPlatform</c> 统一装配，与模块选择解耦）。
 /// </para>
 /// </remarks>
 public class OpenPlatformServiceBuilder
@@ -47,6 +48,17 @@ public class OpenPlatformServiceBuilder
             [OpenPlatformModule.ComponentTcb] = static s => s.AddComponentTcbWebApiHttpClient(),
             [OpenPlatformModule.Embedded] = static s => s.AddEmbeddedWebApiHttpClient(),
             [OpenPlatformModule.Auth] = static s => s.AddAuthWebApiHttpClient(),
+            [OpenPlatformModule.Ams] = static s => s.AddAmsWebApiHttpClient(),
+            [OpenPlatformModule.AmsShare] = static s => s.AddAmsShareWebApiHttpClient(),
+            // MiniProgramManage 组含「代码管理 / 名称与搜索 / 类目 / … / 试用小程序核验」等多支授权方令牌子接口，一次注册覆盖全部接口。
+            // 本模块另含一支**非声明式**通道（体验版二维码图片流），随模块一同装配。
+            [OpenPlatformModule.MiniProgramManage] = static s =>
+            {
+                s.AddMiniProgramManageWebApiHttpClient();
+                s.AddSingleton<IOpenPlatformMpTrialQrCodeService, OpenPlatformMpTrialQrCodeService>();
+            },
+            // MiniProgramTemplate 组含「代码模板库管理 / 下单路径申请」两支 component 令牌子接口，一次注册覆盖两个接口。
+            [OpenPlatformModule.MiniProgramTemplate] = static s => s.AddMiniProgramTemplateWebApiHttpClient(),
         };
 
     /// <summary>注册全部模块。</summary>

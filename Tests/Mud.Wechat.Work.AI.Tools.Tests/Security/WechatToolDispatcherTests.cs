@@ -1,4 +1,4 @@
-using FluentAssertions;
+﻿using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using Mud.AI.Agent.Tools;
@@ -7,7 +7,10 @@ using Mud.Wechat.Work.AI.Tools;
 using Mud.Wechat.Work.AI.Tools.Extensions;
 using Mud.Wechat.Work.AI.Tools.Registration;
 using Mud.Wechat.Work.AI.Tools.Security;
+using Mud.Wechat.Work.DataModels;
 using Mud.Wechat.Work.DataModels.Contacts.Department;
+using Mud.Wechat.Work.DataModels.Contacts.Tags;
+using Mud.Wechat.Work.DataModels.Wedoc;
 using Mud.Wechat.Work.Interfaces;
 using Xunit;
 
@@ -179,11 +182,234 @@ public class WechatToolDispatcherTests
         var policy = new WechatToolPolicy();
 
         policy.EnabledTools.Should().Equal(WechatToolNames.ReadonlyAll);
-        WechatToolNames.WriteAll.Should().BeEmpty("S2 阶段尚无写工具；一旦新增写工具，默认白名单必须仍为空");
-        policy.EnabledTools.Should().BeSubsetOf(WechatToolNames.ReadonlyAll, "默认只启用只读面，写面须宿主显式开放");
+        WechatToolNames.WriteAll.Should().NotBeEmpty("S3 起已有受控写工具；它们不得随默认策略自动生效");
+        policy.EnabledTools.Should().NotIntersectWith(WechatToolNames.WriteAll, "写面须宿主显式开放");
         policy.EnforceAuthorization.Should().BeTrue("默认强制授权（写面与未知场景一律 fail-closed）");
+        policy.RequireApprovalForWrites.Should().BeTrue("写工具默认要求 HITL 审批");
     }
 
+    [Fact]
+    public void Policy_EnablingWriteWithoutAuthorization_ShouldFailFast()
+    {
+        var policy = new WechatToolPolicy { EnforceAuthorization = false }
+            .Enable(WechatToolNames.ContactsTagCreate);
+
+        var act = policy.Validate;
+
+        act.Should().Throw<InvalidOperationException>("写面必须同时受白名单与授权器两段管控");
+    }
+
+    [Fact]
+    public async Task Invoke_WriteToolByDefault_ShouldBeInvisibleAndDenied()
+    {
+        var tags = Tags();
+        using var provider = BuildProvider(
+            Departments().Object,
+            policy: null,
+            authorizer: AllowAll().Object,
+            approval: null,
+            tags: tags.Object);
+
+        provider.GetRequiredService<IReadOnlyList<Microsoft.Extensions.AI.AIFunction>>()
+            .Select(f => f.Name)
+            .Should().NotContain(WechatToolNames.ContactsTagCreate, "未启用的写工具不进模型视野");
+
+        var result = await Dispatcher(provider).InvokeAsync(
+            WechatToolNames.ContactsTagCreate,
+            new Dictionary<string, object?>(StringComparer.Ordinal) { ["tag_name"] = "临时标签" });
+
+        result.Text.Should().Contain("拒绝");
+        tags.Verify(t => t.CreateTagAsync(It.IsAny<CreateTagRequest>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Invoke_WriteToolWithoutApprovalGate_ShouldFailClosed()
+    {
+        var tags = Tags();
+        using var provider = BuildProvider(
+            Departments().Object,
+            policy: p => p.Enable(WechatToolNames.ContactsTagCreate),
+            authorizer: AllowAll().Object,
+            approval: null,
+            tags: tags.Object);
+
+        var result = await Dispatcher(provider).InvokeAsync(
+            WechatToolNames.ContactsTagCreate,
+            new Dictionary<string, object?>(StringComparer.Ordinal) { ["tag_name"] = "临时标签" });
+
+        result.Text.Should().Contain("拒绝");
+        tags.Verify(t => t.CreateTagAsync(It.IsAny<CreateTagRequest>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Invoke_WriteToolWithApproval_ShouldExecute()
+    {
+        var tags = Tags();
+        var approval = new Mock<IWechatToolApprovalGate>(MockBehavior.Strict);
+        approval
+            .Setup(a => a.RequestApprovalAsync(It.IsAny<WechatToolAuthorizationContext>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(WechatToolApprovalDecision.Approve("管理员在工单 #1 中批准"));
+
+        using var provider = BuildProvider(
+            Departments().Object,
+            policy: p => p.Enable(WechatToolNames.ContactsTagCreate),
+            authorizer: AllowAll().Object,
+            approval: approval.Object,
+            tags: tags.Object);
+
+        var result = await Dispatcher(provider).InvokeAsync(
+            WechatToolNames.ContactsTagCreate,
+            new Dictionary<string, object?>(StringComparer.Ordinal) { ["tag_name"] = "临时标签" });
+
+        result.Text.Should().Contain("tag_id");
+        tags.Verify(t => t.CreateTagAsync(
+            It.Is<CreateTagRequest>(r => r.TagName == "临时标签"),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Invoke_WriteToolWhenApprovalRejected_ShouldReturnNeutralText()
+    {
+        var tags = Tags();
+        var approval = new Mock<IWechatToolApprovalGate>(MockBehavior.Strict);
+        approval
+            .Setup(a => a.RequestApprovalAsync(It.IsAny<WechatToolAuthorizationContext>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(WechatToolApprovalDecision.Reject("批量写超过阈值"));
+
+        using var provider = BuildProvider(
+            Departments().Object,
+            policy: p => p.Enable(WechatToolNames.ContactsTagCreate),
+            authorizer: AllowAll().Object,
+            approval: approval.Object,
+            tags: tags.Object);
+
+        var result = await Dispatcher(provider).InvokeAsync(
+            WechatToolNames.ContactsTagCreate,
+            new Dictionary<string, object?>(StringComparer.Ordinal) { ["tag_name"] = "临时标签" });
+
+        result.Text.Should().Contain("拒绝");
+        result.Text.Should().NotContain("阈值", "审批理由只进宿主日志");
+        tags.Verify(t => t.CreateTagAsync(It.IsAny<CreateTagRequest>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Invoke_HighRiskWriteWhenAuthorizationDenied_ShouldNotAskApproval()
+    {
+        var wedoc = Wedoc();
+        var authorizer = new Mock<IWechatToolAuthorizer>(MockBehavior.Strict);
+        authorizer
+            .Setup(a => a.AuthorizeAsync(It.IsAny<WechatToolAuthorizationContext>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(WechatToolAuthorizationResult.Deny("缺少 wedoc.doc.write 权限点"));
+        var approval = new Mock<IWechatToolApprovalGate>(MockBehavior.Strict);
+
+        using var provider = BuildProvider(
+            Departments().Object,
+            policy: p => p.Enable(WechatToolNames.WedocDocDelete),
+            authorizer: authorizer.Object,
+            approval: approval.Object,
+            wedoc: wedoc.Object);
+
+        var result = await Dispatcher(provider).InvokeAsync(
+            WechatToolNames.WedocDocDelete,
+            new Dictionary<string, object?>(StringComparer.Ordinal) { ["docid"] = "doc-1" });
+
+        result.Text.Should().Contain("拒绝");
+        approval.Verify(
+            a => a.RequestApprovalAsync(It.IsAny<WechatToolAuthorizationContext>(), It.IsAny<CancellationToken>()),
+            Times.Never,
+            "先授权后审批：未获授权的动作不得进入人工审批（否则审批就成了绕开授权的通道）");
+        wedoc.Verify(w => w.DeleteDocumentAsync(It.IsAny<DeleteWedocDocumentRequest>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Invoke_HighRiskWrite_ApprovalShouldSeeHighRiskContext()
+    {
+        var wedoc = Wedoc();
+        WechatToolAuthorizationContext? captured = null;
+        var approval = new Mock<IWechatToolApprovalGate>(MockBehavior.Strict);
+        approval
+            .Setup(a => a.RequestApprovalAsync(It.IsAny<WechatToolAuthorizationContext>(), It.IsAny<CancellationToken>()))
+            .Returns((WechatToolAuthorizationContext context, CancellationToken _) =>
+            {
+                captured = context;
+                return ValueTask.FromResult(WechatToolApprovalDecision.Approve("管理员确认删除"));
+            });
+
+        using var provider = BuildProvider(
+            Departments().Object,
+            policy: p => p.Enable(WechatToolNames.WedocDocDelete),
+            authorizer: AllowAll().Object,
+            approval: approval.Object,
+            wedoc: wedoc.Object);
+
+        await Dispatcher(provider).InvokeAsync(
+            WechatToolNames.WedocDocDelete,
+            new Dictionary<string, object?>(StringComparer.Ordinal) { ["docid"] = "doc-1" });
+
+        captured.Should().NotBeNull();
+        captured!.ToolName.Should().Be(WechatToolNames.WedocDocDelete);
+        captured.Risk.Should().Be(WechatToolRisk.HighRiskWrite, "审批人必须看到「不可逆」这一事实，否则无从判断该不该放行");
+        captured.RequiredScopes.Should().Contain("wedoc.doc.write");
+        captured.AppKey.Should().Be("corp-app");
+        captured.AuthCorpId.Should().Be("corp-1");
+        captured.ArgumentsDigest.Should().Contain("docid=str").And.NotContain("doc-1", "审批输入只给可读摘要，不给原始载荷");
+    }
+
+    [Fact]
+    public void Policy_EnablingHighRiskWriteWithApprovalDisabled_ShouldFailFast()
+    {
+        var policy = new WechatToolPolicy { RequireApprovalForWrites = false }
+            .Enable(WechatToolNames.WedocDocDelete);
+
+        var act = policy.Validate;
+
+        act.Should().Throw<InvalidOperationException>("高危写恒需审批，不得靠开关关闭");
+    }
+
+    [Fact]
+    public async Task Invoke_HighRiskWriteWithoutApprovalGate_ShouldFailClosed()
+    {
+        var wedoc = Wedoc();
+        using var provider = BuildProvider(
+            Departments().Object,
+            policy: p => p.Enable(WechatToolNames.WedocDocDelete),
+            authorizer: AllowAll().Object,
+            approval: null,
+            wedoc: wedoc.Object);
+
+        var result = await Dispatcher(provider).InvokeAsync(
+            WechatToolNames.WedocDocDelete,
+            new Dictionary<string, object?>(StringComparer.Ordinal) { ["docid"] = "doc-1" });
+
+        result.Text.Should().Contain("拒绝");
+        wedoc.Verify(w => w.DeleteDocumentAsync(It.IsAny<DeleteWedocDocumentRequest>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Invoke_HighRiskWriteWithApproval_ShouldExecute()
+    {
+        var wedoc = Wedoc();
+        var approval = new Mock<IWechatToolApprovalGate>(MockBehavior.Strict);
+        approval
+            .Setup(a => a.RequestApprovalAsync(It.IsAny<WechatToolAuthorizationContext>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(WechatToolApprovalDecision.Approve("管理员确认删除"));
+
+        using var provider = BuildProvider(
+            Departments().Object,
+            policy: p => p.Enable(WechatToolNames.WedocDocDelete),
+            authorizer: AllowAll().Object,
+            approval: approval.Object,
+            wedoc: wedoc.Object);
+
+        var result = await Dispatcher(provider).InvokeAsync(
+            WechatToolNames.WedocDocDelete,
+            new Dictionary<string, object?>(StringComparer.Ordinal) { ["docid"] = "doc-1" });
+
+        result.Text.Should().Contain("\"ok\":true");
+        wedoc.Verify(w => w.DeleteDocumentAsync(
+            It.Is<DeleteWedocDocumentRequest>(r => r.Docid == "doc-1"),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
     private static WechatToolDispatcher Dispatcher(IServiceProvider provider)
         => provider.GetRequiredService<WechatToolDispatcher>();
 
@@ -200,15 +426,59 @@ public class WechatToolDispatcherTests
         return departments;
     }
 
+    private static Mock<IWechatWorkWedocService> Wedoc()
+    {
+        var wedoc = new Mock<IWechatWorkWedocService>(MockBehavior.Loose);
+        wedoc
+            .Setup(w => w.DeleteDocumentAsync(It.IsAny<DeleteWedocDocumentRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new WechatWorkResponse { ErrorCode = 0 });
+        return wedoc;
+    }
+    private static Mock<IWechatWorkTagsService> Tags()
+    {
+        var tags = new Mock<IWechatWorkTagsService>(MockBehavior.Loose);
+        tags
+            .Setup(t => t.CreateTagAsync(It.IsAny<CreateTagRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new CreateTagResponse { ErrorCode = 0, TagId = 42 });
+        return tags;
+    }
+
+    private static Mock<IWechatToolAuthorizer> AllowAll()
+    {
+        var authorizer = new Mock<IWechatToolAuthorizer>(MockBehavior.Strict);
+        authorizer
+            .Setup(a => a.AuthorizeAsync(It.IsAny<WechatToolAuthorizationContext>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(WechatToolAuthorizationResult.Allow());
+        return authorizer;
+    }
+
     private static ServiceProvider BuildProvider(
         IWechatWorkDepartmentsService departments,
         Action<WechatToolPolicy>? policy,
-        IWechatToolAuthorizer? authorizer)
+        IWechatToolAuthorizer? authorizer = null,
+        IWechatToolApprovalGate? approval = null,
+        IWechatWorkTagsService? tags = null,
+        IWechatWorkWedocService? wedoc = null)
     {
         var services = new ServiceCollection().AddSingleton(departments);
         if (authorizer is not null)
         {
             services.AddSingleton(authorizer);
+        }
+
+        if (approval is not null)
+        {
+            services.AddSingleton(approval);
+        }
+
+        if (tags is not null)
+        {
+            services.AddSingleton(tags);
+        }
+
+        if (wedoc is not null)
+        {
+            services.AddSingleton(wedoc);
         }
 
         return services

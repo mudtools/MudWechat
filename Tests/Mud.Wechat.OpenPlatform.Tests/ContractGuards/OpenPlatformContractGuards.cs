@@ -9,11 +9,14 @@ using System.Reflection;
 using System.Text.RegularExpressions;
 using Mud.HttpUtils.Attributes;
 using Mud.Wechat.OpenPlatform.DataModels;
+using Mud.Wechat.OpenPlatform.DataModels.Ams;
 using Mud.Wechat.OpenPlatform.DataModels.Account;
 using Mud.Wechat.OpenPlatform.DataModels.Auth;
 using Mud.Wechat.OpenPlatform.DataModels.Category;
 using Mud.Wechat.OpenPlatform.DataModels.Component;
 using Mud.Wechat.OpenPlatform.DataModels.Embedded;
+using Mud.Wechat.OpenPlatform.DataModels.MiniProgramManage;
+using Mud.Wechat.OpenPlatform.DataModels.MiniProgramTemplate;
 using Mud.Wechat.OpenPlatform.DataModels.OpenAccount;
 using Mud.Wechat.OpenPlatform.DataModels.Sns;
 
@@ -57,6 +60,8 @@ public class OpenPlatformContractGuards
             ("POST", "/cgi-bin/component/api_get_authorizer_list"),
             ("POST", "/cgi-bin/component/api_get_authorizer_option"),
             ("POST", "/cgi-bin/component/api_set_authorizer_option"),
+            ("POST", "/wxa/component/fastregisterbetaweapp"),
+            ("POST", "/wxa/component/fastregisterpersonalweapp"),
         },
         [nameof(IWechatOpenPlatformComponentTicketFreeService)] = new[]
         {
@@ -82,6 +87,7 @@ public class OpenPlatformContractGuards
         {
             ("GET", "/sns/oauth2/component/access_token"),
             ("GET", "/sns/oauth2/component/refresh_token"),
+            ("GET", "/sns/component/jscode2session"),
         },
         [nameof(IWechatOpenPlatformCategoryService)] = new[]
         {
@@ -101,13 +107,24 @@ public class OpenPlatformContractGuards
     };
 
     /// <summary>
-    /// OP-B1：接口集合与数量锁定（14 接口 / 100 端点，防漏防多）。
+    /// OP-B1：接口集合与数量锁定（29 接口 / 185 端点，防漏防多）。
     /// </summary>
     /// <remarks>
     /// 2026-10-15 起本线另有 <c>ComponentTcb</c> 六支接口（50 端点，注册组共用一个），
     /// 其 (方法, 路由) 表与令牌语义由 <c>OpenPlatformComponentTcbContractGuards</c>（CBT 系列）逐条锁定，
     /// <c>Embedded</c>（6 端点）由 <c>OpenPlatformEmbeddedContractGuards</c>（EMB 系列）、
-    /// <c>Auth</c>（5 端点）由 <c>OpenPlatformAuthContractGuards</c>（AUTH 系列）逐条锁定；
+    /// <c>Auth</c>（5 端点）由 <c>OpenPlatformAuthContractGuards</c>（AUTH 系列）、
+    /// <c>Ams</c>（19 端点）+ <c>AmsShare</c>（3 端点）由 <c>OpenPlatformAmsContractGuards</c>（AM 系列）、
+    /// <c>MiniProgramManage</c>（授权方令牌面）十一支接口（30-1 代码管理 15 + 名称与搜索 5 + 类目 1；30-2 域名与 DNS 9 + 体验成员 3 + 违规申诉 2 + 订阅组件 3；30-3 ICP 备案 12 + 隐私接口 3 + 订单路径查询 1；30-4 试用小程序核验 2；30-5 multipart 上传 2（代码管理 1 + 备案 1），共 58 端点，注册组共用一个）
+    /// 由 <c>OpenPlatformMiniProgramManageContractGuards</c>（MPG 系列）逐条锁定；
+    /// <c>MiniProgramTemplate</c>（<c>component_access_token</c> 面）两支接口（模板库 4 + 下单路径申请 1，共 5 端点，注册组共用一个）
+    /// 由 <c>OpenPlatformTemplateContractGuards</c>（TPL 系列）逐条锁定；
+    /// 体验版二维码 <c>/wxa/get_qrcode</c> 为<b>非声明式</b>图片流通道（成功应答是 image/jpeg 二进制），
+    /// 不进本反射枚举、<b>不计</b>入端点总数，由 <c>OpenPlatformTrialQrCodeContractGuards</c>（QRC 系列）单独锁定
+    /// （同「令牌链 4 端点由 Provider 承载、不计入声明面」口径）。
+    /// 试用小程序转正族的两支 <b>2.0 旧版路由</b>（<c>/wxa/getmpadminauth</c>、<c>/wxa/mpverifybetaweapp</c>）
+    /// 经逐页核验判为<b>非契约</b>（官方旧页正文仅剩「优化后重新上线」、且不在现行 <c>openApi/OpenApiDoc</c> 目录树内），
+    /// 由 <c>OpenPlatformNonContractRouteZeroDeclarationContractGuards</c>（OP-NC 系列）锁定零声明，<b>恒不计</b>入端点总数。
     /// 本守卫只负责「接口全集不漂移 + 端点总数与基线一致」。
     /// </remarks>
     [Fact]
@@ -139,6 +156,21 @@ public class OpenPlatformContractGuards
             nameof(IWechatOpenPlatformComponentTcbStaticStoreService),
             nameof(IWechatOpenPlatformEmbeddedService),
             nameof(IWechatOpenPlatformAuthService),
+            nameof(IWechatOpenPlatformAmsService),
+            nameof(IWechatOpenPlatformAmsShareService),
+            nameof(IWechatOpenPlatformMpCodeService),
+            nameof(IWechatOpenPlatformMpBasicInfoService),
+            nameof(IWechatOpenPlatformMpCategoryService),
+            nameof(IWechatOpenPlatformMpDomainService),
+            nameof(IWechatOpenPlatformMpMemberService),
+            nameof(IWechatOpenPlatformMpRecordService),
+            nameof(IWechatOpenPlatformMpSubscribeService),
+            nameof(IWechatOpenPlatformMpIcpService),
+            nameof(IWechatOpenPlatformMpPrivacyService),
+            nameof(IWechatOpenPlatformMpOrderPathService),
+            nameof(IWechatOpenPlatformMpBetaVerifyService),
+            nameof(IWechatOpenPlatformTemplateService),
+            nameof(IWechatOpenPlatformMpOrderPathSetService),
         });
 
         var actualEndpoints = interfaces.Sum(GetEndpoints);
@@ -257,6 +289,84 @@ public class OpenPlatformContractGuards
             "/wxa/sec/reauth",
             "/wxa/sec/queryauth",
             "/wxa/sec/uploadauthmaterial",
+            // 流量主代运营（AMS）族独占（逐条全路径）：Ams 单路由 action 分派 + AmsShare 两支查询/设置路由，
+            // 均为开放平台第三方面，其它线不得声明（零交叠由 AM 系列守卫与本条双向锁定）。
+            "/wxa/operationams",
+            "/wxa/getdefaultamsinfo",
+            "/wxa/setdefaultamsinfo",
+            // 代小程序管理（MiniProgramManage）族独占（逐条全路径，30-1 落地 21 端点）：本线以 authorizer_access_token
+            // 代授权方小程序调用同一批官方 /wxa/* 路由，小程序线自管面未声明这些路由（现状零交叠，逐条锁定防后续撞车）。
+            "/wxa/commit",
+            "/wxa/submit_audit",
+            "/wxa/get_auditstatus",
+            "/wxa/get_latest_auditstatus",
+            "/wxa/speedupaudit",
+            "/wxa/undocodeaudit",
+            "/wxa/queryquota",
+            "/wxa/release",
+            "/wxa/grayrelease",
+            "/wxa/revertgrayrelease",
+            "/wxa/revertcoderelease",
+            "/wxa/get_page",
+            "/wxa/getversioninfo",
+            "/wxa/getvisitstatus",
+            "/wxa/change_visitstatus",
+            "/wxa/setnickname",
+            "/wxa/api_wxa_querynickname",
+            "/wxa/changewxasearchstatus",
+            "/wxa/getwxasearchstatus",
+            "/wxa/fetchdatasetting",
+            "/wxa/get_category",
+            // 30-2 并入本注册组四族（域名与 DNS 9 + 体验成员 3 + 违规申诉 2 + 订阅组件 3），同样逐条全路径独占。
+            "/wxa/get_effective_domain",
+            "/wxa/get_effective_webviewdomain",
+            "/wxa/get_prefetchdnsdomain",
+            "/wxa/get_webviewdomain_confirmfile",
+            "/wxa/modify_domain",
+            "/wxa/modify_domain_directly",
+            "/wxa/set_prefetchdnsdomain",
+            "/wxa/setwebviewdomain",
+            "/wxa/setwebviewdomain_directly",
+            "/wxa/bind_tester",
+            "/wxa/unbind_tester",
+            "/wxa/memberauth",
+            "/wxa/getappealrecords",
+            "/wxa/getillegalrecords",
+            "/wxa/getshowwxaitem",
+            "/wxa/getwxamplinkforshow",
+            "/wxa/updateshowwxaitem",
+            // 30-3 并入本注册组三支（ICP 备案 JSON 面 12 + 隐私接口 3 + 订单路径查询 1）。
+            "/wxa/icp/apply_icp_filing",
+            "/wxa/icp/cancel_apply_icp_filing",
+            "/wxa/icp/cancel_icp_filing",
+            "/wxa/icp/create_icp_verifytask",
+            "/wxa/icp/query_icp_verifytask",
+            "/wxa/icp/get_icp_entrance_info",
+            "/wxa/icp/get_online_icp_order",
+            "/wxa/icp/query_icp_certificate_types",
+            "/wxa/icp/query_icp_nrlx_types",
+            "/wxa/icp/query_icp_subject_types",
+            "/wxa/icp/query_icp_service_content_types",
+            "/wxa/icp/query_icp_district_code",
+            "/wxa/security/apply_privacy_interface",
+            "/wxa/security/get_privacy_interface",
+            "/wxa/security/get_code_privacy_info",
+            "/wxa/security/getorderpathinfo",
+            // 30-4 试用小程序核验 2 支并入本授权方组（verifybetaweapp / setbetaweappnickname，权限集 81、authorizer_access_token）。
+            "/wxa/verifybetaweapp",
+            "/wxa/setbetaweappnickname",
+            // 30-4 新注册组 MiniProgramTemplate（component_access_token 面）逐条全路径独占：模板库 4 + 下单路径申请 1。
+            // 令牌归属与授权方 MiniProgramManage 相反 ⇒ 独立成组，路由前缀仍本线唯一。
+            "/wxa/gettemplatedraftlist",
+            "/wxa/gettemplatelist",
+            "/wxa/addtotemplate",
+            "/wxa/deletetemplate",
+            "/wxa/security/applysetorderpathinfo",
+            // 30-5 特殊形态三支：两支 multipart（表单由宿主拼装、零 JSON 请求 DTO）+ 一支**非声明式**图片流通道路由
+            // （get_qrcode 成功应答为 image/jpeg 二进制，由 QRC 系列守卫锁定「全仓仅此一处承载」）。
+            "/wxa/uploadmedia",
+            "/wxa/icp/upload_icp_media",
+            "/wxa/get_qrcode",
         };
 
         var offenders = new List<string>();
@@ -337,6 +447,9 @@ public class OpenPlatformContractGuards
             (typeof(SnsJsonContext), "Mud.Wechat.OpenPlatform.DataModels.Sns", "Sns"),
             (typeof(EmbeddedJsonContext), "Mud.Wechat.OpenPlatform.DataModels.Embedded", "Embedded"),
             (typeof(AuthJsonContext), "Mud.Wechat.OpenPlatform.DataModels.Auth", "Auth"),
+            (typeof(AmsJsonContext), "Mud.Wechat.OpenPlatform.DataModels.Ams", "Ams"),
+            (typeof(MiniProgramManageJsonContext), "Mud.Wechat.OpenPlatform.DataModels.MiniProgramManage", "MiniProgramManage"),
+            (typeof(MiniProgramTemplateJsonContext), "Mud.Wechat.OpenPlatform.DataModels.MiniProgramTemplate", "MiniProgramTemplate"),
         };
 
         foreach (var (contextType, ns, segment) in expectations)

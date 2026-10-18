@@ -51,7 +51,7 @@ public class WechatToolFunctionsTests
         var names = provider.GetRequiredService<IReadOnlyList<AIFunction>>().Select(f => f.Name);
 
         names.Should().NotContain(WechatToolNames.ContactsDepartmentGet);
-        names.Should().HaveCount(2);
+        names.Should().HaveCount(WechatToolNames.ReadonlyAll.Length - 1);
     }
 
     [Fact]

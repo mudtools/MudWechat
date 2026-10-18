@@ -1,0 +1,137 @@
+// -----------------------------------------------------------------------
+//  作者：Mud Studio  版权所有 (c) Mud Studio 2026
+//  Mud.Wechat 项目的版权、商标、专利和其他相关权利均受相应法律法规的保护。
+//  本项目主要遵循 MIT 许可证进行分发和使用。许可证位于源代码树根目录中的 LICENSE-MIT 文件。
+//  不得利用本项目从事危害国家安全、扰乱社会秩序、侵犯他人合法权益等法律法规禁止的活动！任何基于本项目开发而产生的一切法律纠纷和责任，我们不承担任何责任！
+// -----------------------------------------------------------------------
+
+using System.Text.Json.Nodes;
+using Mud.AI.Abstractions.Tools.Handlers;
+using Mud.AI.Agent.Tools;
+using Mud.Wechat.AI.Agent.Results;
+using Mud.Wechat.Work.AI.Tools.Curation;
+using Mud.Wechat.Work.DataModels.Approval;
+using Mud.Wechat.Work.Interfaces;
+
+namespace Mud.Wechat.Work.AI.Tools.Executors;
+
+/// <summary>
+/// 审批域执行器：<c>approval.get</c> 落到 <see cref="IWechatWorkApprovalService.GetApprovalDetailAsync"/>。
+/// </summary>
+/// <remarks>
+/// <para>
+/// <b>为什么只有详情、没有「按时间范围列单号」</b>：批量取单号的 SDK 方法名 <c>BatchGetApprovalNumbersAsync</c>
+/// 命中剖面的危险词表（<c>batch</c>），引擎据此把工具判为 <c>high-risk-write</c> 并以 <c>MUDWT017</c> 拒绝
+/// 「声明为只读」——把它标成写工具又会让每次查询都要求人工审批。该端点实为只读，属于「按方法名猜风险」的误判；
+/// 在引擎提供显式风险覆盖之前，工具面只承接详情（单号由用户在审批应用/通知里给出）。
+/// </para>
+/// <para>
+/// <b>详情只投影结构与流转事实</b>：<c>apply_data.contents[].value</c>（金额、收款账户、证件号等）与
+/// <c>comments[].commentcontent</c> / <c>sp_record.details[].speech</c>（意见正文）一律不外发——它们一旦进入
+/// 提示词与日志即不可撤回。需要具体表单值时由宿主在自己的授权面内取，不走工具面。
+/// </para>
+/// </remarks>
+/// <param name="approval">审批域 SDK（应用上下文由回合作用域给定）。</param>
+public sealed class ApprovalToolHandlers(IWechatWorkApprovalService approval)
+{
+    private readonly IWechatWorkApprovalService _approval = approval ?? throw new ArgumentNullException(nameof(approval));
+
+    /// <summary>执行 <c>approval.get</c>。</summary>
+    /// <param name="args">模型侧入参（<c>sp_no</c> 必填）。</param>
+    /// <param name="cancellationToken">取消令牌。</param>
+    /// <returns>工具结果。</returns>
+    [ToolHandler(typeof(IWechatWorkApprovalGetTool))]
+    public async Task<ToolResult> GetAsync(
+        IReadOnlyDictionary<string, object?> args,
+        CancellationToken cancellationToken)
+    {
+        var request = ApprovalGetArgs.Unpack(args);
+
+        var response = await _approval.GetApprovalDetailAsync(
+            new GetApprovalDetailRequest { SpNo = request.SpNo },
+            cancellationToken).ConfigureAwait(false);
+        var outcome = WechatApiResultReader.Read(response);
+        if (!outcome.Ok || outcome.Data?.Info is not { } info)
+        {
+            return ToolResult.FromError(outcome.ErrorText ?? "审批单不存在或无权访问（info 为空）。");
+        }
+
+        return ToolResult.FromText(ToolResultJson.ToText(new JsonObject
+        {
+            ["sp_no"] = info.SpNo,
+            ["sp_name"] = info.SpName,
+            ["sp_status"] = JsonValue.Create(info.SpStatus),
+            ["template_id"] = info.TemplateId,
+            ["apply_time"] = JsonValue.Create(info.ApplyTime),
+            ["applyer"] = info.Applyer is { } applyer
+                ? new JsonObject { ["userid"] = applyer.Userid, ["partyid"] = applyer.Partyid }
+                : null,
+            ["batch_applyer"] = ToUserIdArray(info.BatchApplyer),
+            ["records"] = ToRecordArray(info.SpRecord),
+            ["notifyer"] = ToUserIdArray(info.Notifyer),
+            ["comment_count"] = info.Comments?.Count ?? 0,
+            ["form_fields"] = ToFieldTitleArray(info.ApplyData),
+        }));
+    }
+
+    /// <summary>审批节点投影：只保留状态与「谁在什么时候操作」，不含审批意见正文。</summary>
+    private static JsonArray ToRecordArray(List<ApprovalSpRecord>? records)
+    {
+        var nodes = new JsonArray();
+        foreach (var node in records ?? [])
+        {
+            var approvers = new JsonArray();
+            foreach (var detail in node.Details ?? [])
+            {
+                approvers.Add((JsonNode?)new JsonObject
+                {
+                    ["userid"] = detail.Approver?.Userid,
+                    ["sp_status"] = JsonValue.Create(detail.SpStatus),
+                    ["sptime"] = JsonValue.Create(detail.Sptime),
+                });
+            }
+
+            nodes.Add((JsonNode?)new JsonObject
+            {
+                ["sp_status"] = JsonValue.Create(node.SpStatus),
+                ["approverattr"] = JsonValue.Create(node.Approverattr),
+                ["approvers"] = approvers,
+            });
+        }
+
+        return nodes;
+    }
+
+    /// <summary>userid 引用列表投影。</summary>
+    private static JsonArray ToUserIdArray(List<ApprovalUserRef>? users)
+    {
+        var items = new JsonArray();
+        foreach (var user in users ?? [])
+        {
+            items.Add((JsonNode?)JsonValue.Create(user.Userid));
+        }
+
+        return items;
+    }
+
+    /// <summary>表单字段名投影：只给控件标题（结构线索），不给控件取值。</summary>
+    private static JsonArray ToFieldTitleArray(ApprovalApplyData? applyData)
+    {
+        var fields = new JsonArray();
+        foreach (var item in applyData?.Contents ?? [])
+        {
+            if (item.Hidden == 1)
+            {
+                continue;
+            }
+
+            var title = item.Title?.FirstOrDefault()?.Text;
+            if (!string.IsNullOrWhiteSpace(title))
+            {
+                fields.Add((JsonNode?)JsonValue.Create(title));
+            }
+        }
+
+        return fields;
+    }
+}

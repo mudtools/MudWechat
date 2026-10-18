@@ -36,10 +36,10 @@
   （默认前缀 `mud:httputils`，配置节 `WechatRedis:TokenStore`），值经官方 `ITokenStoreCodec`
   （`{expiresInSeconds}|{token}` 相对秒；U-2 起可选 v2 版本化信封 `v2:{秒}|{token}`——读取面无条件兼容、
   写入面经 `TokenStore.UseVersionedEnvelope` 两阶段选开，默认关闭）；官方 `ITokenStore` 维持最小 SPI，**不实现**微信类型与任意键批删
-  （A-5 明令）——**U-4 起官方另有按应用清库面** `ITokenStoreAppPurge`（3.0.7 重打包新增，官方
-  `RedisTokenStore` 与本包 `RedisWechatTokenStore` / `InMemoryWechatTokenStore` 均已实现）；企微侧
-  `PurgeAppTokensAsync` 按「官方 `ITokenStoreAppPurge`（键解析内聚到实现方）→ 本院
-  `IWechatTokenStoreBatchRemove` 批删 → 逐键」三层探测。**红线**：本院管理器**绝不**对未实现官方接口的
+  （A-5 明令）——**U-4 起官方另有按应用清库面** `ITokenStoreAppPurge`（3.0.7 重打包新增；官方
+  `RedisTokenStore` 与本包 `RedisWechatTokenStore` 实现之，**`InMemoryWechatTokenStore` 不再实现**——
+  9c16ff8 起管理器清库走 `GetTokenTypesAsync` 匹配 + `IWechatTokenStoreBatchRemove` 批删，该接口不再是管理器依赖）；
+  企微侧 `PurgeAppTokensAsync` 因此**只依赖** `GetTokenTypesAsync` + 批删，不再做接口探测。**红线**：本院管理器**绝不**对未实现官方接口的
   store 调官方 `TokenStorePurgeExtensions.PurgeAppTokensAsync` 扩展——其回退路径忽略 `appKey`，
   会误清**全部应用**（任意键批删仍无官方面，B-3 逐键回退语义仅剩此扩展一处）。
 - **键命名空间互不干扰**（前缀不同）⇒ 共库无需数据迁移；`IWechatTokenStore : ITokenStore` 为薄标记

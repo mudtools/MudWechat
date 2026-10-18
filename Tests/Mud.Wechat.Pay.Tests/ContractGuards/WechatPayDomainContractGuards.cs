@@ -303,6 +303,9 @@ public class WechatPayDomainContractGuards
             "/v3/pay/transactions/id/{transactionId}",
             "/v3/pay/transactions/out-trade-no/{outTradeNo}",
             "/v3/pay/transactions/out-trade-no/{outTradeNo}/close",
+            "/v3/pay/transactions/codepay",
+            "/v3/pay/transactions/exposure",
+            "/v3/pay/transactions/out-trade-no/{outTradeNo}/reverse",
         });
 
         RoutesOf(asm, "IWechatPayRefundService").Should().BeEquivalentTo(new[]

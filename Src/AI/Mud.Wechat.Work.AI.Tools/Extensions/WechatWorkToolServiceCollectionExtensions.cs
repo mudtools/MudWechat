@@ -7,10 +7,12 @@
 
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Mud.Wechat.AI.Abstractions.Tools;
 using Mud.Wechat.Work.AI.Tools;
 using Mud.Wechat.Work.AI.Tools.AIFunctions;
 using Mud.Wechat.Work.AI.Tools.Registration;
 using Mud.Wechat.Work.AI.Tools.Security;
+using Mud.Wechat.Work.AI.Tools.Surface;
 
 namespace Mud.Wechat.Work.AI.Tools.Extensions;
 
@@ -69,10 +71,20 @@ public static class WechatWorkToolServiceCollectionExtensions
 
         services.TryAddSingleton(binding);
 
+        // 挂起式审批的工单存储（默认进程内；多实例部署由宿主前置注册分布式实现，预注册者按契约胜出）。
+        // 注意：状态机本身不在此处默认注册——注册了它，写工具就从「同步门」切换为「挂起等批准」，
+        // 这是宿主的有意选择（见 Security/WechatToolApprovalStateMachine 的 remarks）。
+        services.TryAddSingleton<IWechatToolApprovalStore, InMemoryWechatToolApprovalStore>();
+
+        // 工具面端口（AI-G5 的接缝）：协议层（MCP 等）经此消费「列工具 + 调工具」，
+        // 与工具面零编译期引用；实现落在本包（只有这里看得见执行链与生成物契约表）。
+        services.TryAddSingleton<IWechatToolSurface, WechatToolSurfaceAdapter>();
+
         // 生成物：逐执行器的「依赖缺席 ⇒ null 执行器」工厂 + 域注册器工厂。
         services.AddWechatApprovalToolHandlersCore();
         services.AddWechatCheckinToolHandlersCore();
         services.AddWechatContactsDepartmentToolHandlersCore();
+        services.AddWechatDialToolHandlersCore();
         services.AddWechatContactsUserToolHandlersCore();
         services.AddWechatContactsTagToolHandlersCore();
         services.AddWechatExternalContactToolHandlersCore();

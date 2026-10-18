@@ -18,8 +18,11 @@
 | `Registration.WechatToolRegistration` / `IWechatToolDomainRegistrar` / `WechatToolDomainRegistrars` | 生成物写入注册表的接缝 |
 | `Security.WechatToolPolicy` | 白名单（默认只读全开、写类全关、强制授权）；`Validate()` 后冻结，未知名/写工具未开授权即 fail-fast |
 | `Security.IWechatToolAuthorizer` / `WechatToolAuthorizationContext` / `WechatToolAuthorizationResult` | 授权门禁端口：入参只给「应用 + 企业 + 风险 + 权限点 + 入参摘要」（不含原文与令牌） |
-| `Security.IWechatToolApprovalGate` / `WechatToolApprovalDecision` | 写工具 HITL 审批门（同步两态：放行/拒绝；「挂起→批准→续跑」属审批状态机，未在本端口开语义） |
+| `Security.IWechatToolApprovalGate` / `WechatToolApprovalDecision` | 写工具 HITL 审批门（同步两态：放行/拒绝；「挂起→批准→续跑」走状态机，见下一行） |
+| `Security.WechatToolApprovalStateMachine` / `WechatToolApprovalState` / `WechatToolApprovalTicket` | 挂起式审批状态机（五态：Pending → Approved/Rejected/Expired → Consumed；一次性兑现 + 入参摘要绑定 + 惰性过期） |
+| `Security.IWechatToolApprovalStore` / `InMemoryWechatToolApprovalStore` | 审批工单存储端口（默认进程内；多实例由宿主前置注册分布式实现，预注册者胜出） |
 | `Security.WechatToolDispatcher` | 调用唯一入口：白名单 → 授权 → 审批（写）→ 执行 → 异常归一（租户切换由回合作用域承担，此处不重复进入） |
+| `Surface.IWechatToolSurface` / `WechatToolSurfaceAdapter` | 工具面端口（层 1 中立 `IWechatToolSurface` 的企微实现）：协议层（MCP 等）经此消费「列工具 + 调工具」，与工具面零编译期引用（AI-G5） |
 | `AIFunctions.WechatToolFunction`（internal）/ `WechatToolFunctions` | 白名单 → MAF `AIFunction` 投影（自建子类，零反射；`JsonSchema` 只取生成物的 `parameters` 子块） |
 | `ToolArgs`（internal） | 生成物 Args 解包器消费的 helper 集（六个参数形态各一对 Require/Optional） |
 | `Extensions.AddWechatWorkTools(binding[, configurePolicy])` | 装配入口：绑定 + 逐执行器工厂 + 注册表 + 策略 + 执行链 + `IReadOnlyList<AIFunction>` 投影（软缺席：业务域未注册 ⇒ 该域工具不入表） |
@@ -46,12 +49,13 @@
 不再重复声明面已表达的校验。改声明面后必须重固化 golden 快照：
 `scripts/Update-WechatToolGolden.ps1`（`Generated/WechatToolSchemas.golden.txt` 漂移即 `MUDWT014` 构建失败）。
 
-当前策展面（52 个：44 只读 + 7 受控写 + 1 高危写）：
+当前策展面（53 个：45 只读 + 7 受控写 + 1 高危写）：
 
 | 域 | 工具 | SDK 源 |
 |---|---|---|
 | 审批 | `approval.get` / `approval.template.get` | `IWechatWorkApprovalService.GetApprovalDetailAsync` / `IWechatWorkApprovalTemplateService.GetTemplateDetailAsync` |
 | 打卡 | `checkin.record.list` | `IWechatWorkInternalCheckinRecordService.GetCheckinDataAsync`（自建口径） |
+| 公费电话 | `dial.record.list` | `IWechatWorkInternalDialService.GetDialRecordAsync`（自建口径） |
 | 客户联系 | `externalcontact.follow_user.list` / `.contact.list` / `.contact.get` / `.tag.list` | `IWechatWorkExternalContact{FollowUser,Customer,Tag}Service` |
 | 客户群 | `externalcontact.groupchat.list` / `.groupchat.get` | `IWechatWorkExternalContactGroupChatService` |
 | 客户朋友圈 | `externalcontact.moment.list` / `.moment.publish_list` / `.moment.comments` | `IWechatWorkExternalContactMomentService` |
@@ -79,18 +83,30 @@
 故该域工具消费自建口径 `IWechatWorkInternalCheckinRecordService`；代开发/第三方部署下该域软缺席（工具不入表）。
 
 写工具的默认姿态：**注册但不可达**——`IsWrite = true` 使它进入 `WechatToolNames.WriteAll`，而 `WechatToolPolicy` 默认只装只读面，
-故模型看不到它（投影按白名单）、调用被拒；宿主须显式 `Enable(...)` + 提供授权器 + 提供
-`IWechatToolApprovalGate`（缺任一即拒绝，fail-closed）才可执行。首个写工具选「建标签」是为了先跑通写路径：
-可逆、无外部副作用；消息发送、成员增删等外部可见/不可逆动作应在审批状态机就绪后再开放。
+故模型看不到它（投影按白名单）、调用被拒；宿主须显式 `Enable(...)` + 提供授权器 + 提供审批通道（缺任一即拒绝，fail-closed）
+才可执行。审批通道有两条，**二选一**：
+
+| 通道 | 形态 | 适用 |
+|---|---|---|
+| 同步门 `IWechatToolApprovalGate` | 调用当下返回放行/拒绝 | 规则自动放行、宿主已有人机通道 |
+| 挂起式 `WechatToolApprovalStateMachine` | 调用当下返回**审批单号**，人工批准后宿主调 `ResumeAsync(ticketId, toolName, args)` 续跑 | 判定要等一会儿（消息通知管理员、工单系统） |
+
+挂起式的三条硬约束各由用例锁定：**一次性兑现**（`Consumed` 终态，重复续跑被拒）、**批准与执行内容绑定**
+（入参摘要校验，「批准 A、执行 B」不可能）、**惰性过期**（超时工单首次读取即转 `Expired`，不再可执行）。
+工单只存摘要不存原始入参、不含令牌；多实例部署由宿主前置注册分布式 `IWechatToolApprovalStore`（默认进程内实现仅覆盖单实例）。
+启用方式：宿主先注册 `WechatToolApprovalStateMachine`（可带自己的 store 与 TTL），再调 `AddWechatWorkTools`——
+**不自动注册**是有意的：注册了它，写工具就从同步门切换为挂起等批准，这是宿主的选择而不是装配默认值。
+首个写工具选「建标签」是为了先跑通写路径：可逆、无外部副作用；消息发送、群发等外部可见动作在挂起式审批就绪后即可开放。
 
 **L3 高危写恒需审批，不可用开关关闭**（`wedoc.doc.delete` 为样本）：`WechatToolPolicy.Validate()` 在
 「启用了 `HighRiskWrite` 工具但 `RequireApprovalForWrites = false`」时 fail-fast（`InvalidOperationException`），
-派发层再兜一层——未注入 `IWechatToolApprovalGate` 时按 fail-closed 拒绝且**不触达** SDK 写方法。
+派发层再兜一层——未注入审批通道时按 fail-closed 拒绝且**不触达** SDK 写方法。
 两条不变式各由用例锁定：`Policy_EnablingHighRiskWriteWithApprovalDisabled_ShouldFailFast`、
 `Invoke_HighRiskWriteWithoutApprovalGate_ShouldFailClosed`，放行路径见 `Invoke_HighRiskWriteWithApproval_ShouldExecute`。
 顺序与上下文同样被锁：**先授权后审批**（`Invoke_HighRiskWriteWhenAuthorizationDenied_ShouldNotAskApproval`——未获授权时
 审批门一次都不会被调用），审批输入携带 `Risk = HighRiskWrite` 与 scope、但只含入参摘要不含原文
-（`Invoke_HighRiskWrite_ApprovalShouldSeeHighRiskContext`）。
+（`Invoke_HighRiskWrite_ApprovalShouldSeeHighRiskContext`）。挂起式同样先授权后挂起，续跑时再复核一次白名单与授权点
+（批准是「这一次」的事实，策略可能已随装配变化）。
 
 成员域执行器只投影 `userid/姓名/别名/职务/部门/主部门/状态/直属上级`，**不外发**手机号、邮箱、头像、地址、二维码
 （个人信息一旦进入提示词与日志即不可撤回；需要时由宿主经 oauth2 授权专线提供）。
@@ -98,6 +114,8 @@
 **不外发** `apply_data.contents[].value`（金额/收款账户/证件号等）与 `comments[].commentcontent` / `sp_record.details[].speech`（意见正文）。
 打卡域只投影考勤事实（userid / checkin_type / exception_type / checkin_time / sch_checkin_time / 规则名与规则、班次 ID），
 **不外发** `lat`/`lng`/`location_*`/`wifiname`/`wifimac`/`notes`/`mediaids`/`deviceid`（行踪与设备指纹）。
+公费电话域只投影通话事实（拨打时间、总时长、通话类型、主被叫 userid 与各自时长），**不外发**被叫的
+`phone`（外部号码是个人数据，与成员域手机号/邮箱同一条边界）；起止时间须同时给出或同时省略（半份窗口比没有窗口更易误判）。
 客户联系域只投影业务事实（客户昵称/类型/公司/职位 + 跟进成员的备注名/添加时间/方式/状态/标签名），
 **不外发** 客户头像、`unionid`、备注手机号、视频号昵称，以及跟进成员的 `description`（自由文本，可能含个人情况）。
 客户群域同理：成员只投影 `userid`/类型/入群时间与方式/邀请人/群昵称（姓名需模型显式 `need_name` 才向官方索取），
@@ -245,13 +263,21 @@ powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/Update-WechatToolG
 
 ## 待办（S3）
 
-- **审批状态机**：`IWechatToolApprovalGate` 目前只支持「调用当下判定」；「挂起 → 人工批准 → 续跑」需要
-  `PendingReplyTurnState` 之类的持久化 + 重投递通道（可复用回合 outbox），届时不得把挂起态塞进现有两态返回值。
 - **高危写（L3）已落地首个样本** `wedoc.doc.delete`：策略校验 + 派发分支 + 三条用例（策略 fail-fast /
   无门 fail-closed / 放行执行）均已就位；新增删除、撤回、继承、批量导出类工具沿用同一形态即可。
 - **`approval.list` 待引擎支持显式风险覆盖**：`BatchGetApprovalNumbersAsync` 被方法名危险词（`batch`）误判为
   `high-risk-write`，声明为只读即 `MUDWT017`。需向上游提「`[AgentTool(Risk = ...)]` 覆盖槽」或「危险词表按动词位
   而非子串匹配」；落地后 `approval.get` + `approval.list` 才是完整的两段式读面。
+  同类被挡的还有 `externalcontact.{resigned,job}.transfer_result`（方法名含 `transfer`）、`kf/customer/batchget`（含 `batch`）。
+- **L4 元工具（`capability_lookup` 类）待引擎支持**：方案 §3.7 把它列为「无 `Source`、手写逃逸
+  （`Executor = Handwritten`）」的一级，但 **Mud.AI 1.0.1 的 `[AgentTool]` 没有 Executor/Handwritten 槽**
+  （实测程序集元数据无该属性），且 `WechatToolPolicy.Validate()` 要求白名单只能引用生成物契约名——
+  绕过生成物手工注册的工具既进不了白名单也进不了模型视野。需上游补槽位（或允许「产品侧扩展契约表」的登记口），
+  届时才能做「模型自问有哪些能力」的元工具；**不要**为此在本仓 hack 平行名单。
+- **企微线只读面已收口**（2026-10-18 全量盘点 456 个端点）：剩余端点全部属于①写/配置面（见上方「未策展」清单）、
+  ②敏感数据面（邮箱正文、HR 档案、会话存档、设备/定位、资金票据、许可）、③无入口面（微盘需 spaceid、日程需 cal_id）、
+  ④政务/家校等专用面。下一波工具增量应转向**其他产品线**（§3.8 五步手册）或本仓 AI 层的其他 S3 项
+  （消息通道模板卡片、事件装配、知识库、MCP 协议层）。
 - 工具面继续铺开（消息 / 日程 / 会议 / 其余文档域），逐域沿用 `Curation + Executors + 守卫` 三段形态，并在
   `AddWechatWorkTools` 补该域的 `Add*Core()`（陷阱 9）。
 - golden 快照随工具面扩张同批重固化（生成器不落盘，须手工/脚本重写）。

@@ -103,7 +103,7 @@ public class WechatToolGovernanceTests
             {
                 Interlocked.Add(ref invocations, value);
             }
-            else if (string.Equals(instrument.Name, "wechat.ai.tool.result_bytes", StringComparison.Ordinal))
+            else if (string.Equals(instrument.Name, "wechat.ai.tool.result_chars", StringComparison.Ordinal))
             {
                 Interlocked.Add(ref bytes, value);
             }

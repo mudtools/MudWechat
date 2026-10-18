@@ -50,9 +50,14 @@ public sealed class ContactsDepartmentToolHandlers(IWechatWorkDepartmentsService
 
         var response = await _departments.GetDepartmentAsync(request.DepartmentId, cancellationToken).ConfigureAwait(false);
         var outcome = WechatApiResultReader.Read(response);
-        if (!outcome.Ok || outcome.Data?.Department is not { } department)
+        if (!outcome.Ok)
         {
-            return ToolResult.FromError(outcome.ErrorText ?? "部门不存在或不可见（department 为空）。");
+            return WechatToolOutcomeErrors.From(outcome, WechatToolNames.ContactsDepartmentGet);
+        }
+
+        if (outcome.Data?.Department is not { } department)
+        {
+            return WechatToolResults.NotFound(WechatToolNames.ContactsDepartmentGet);
         }
 
         return ToolResult.FromText(ToolResultJson.ToText(new JsonObject
@@ -78,9 +83,14 @@ public sealed class ContactsDepartmentToolHandlers(IWechatWorkDepartmentsService
 
         var response = await _departments.GetDepartmentListAsync(rootId, cancellationToken).ConfigureAwait(false);
         var outcome = WechatApiResultReader.Read(response);
-        if (!outcome.Ok || outcome.Data?.Department is not { } list)
+        if (!outcome.Ok)
         {
-            return ToolResult.FromError(outcome.ErrorText ?? "未返回任何部门（department 为空）。");
+            return WechatToolOutcomeErrors.From(outcome, WechatToolNames.ContactsDepartmentList);
+        }
+
+        if (outcome.Data?.Department is not { } list)
+        {
+            return WechatToolResults.EmptyList(WechatToolNames.ContactsDepartmentList);
         }
 
         var items = new JsonArray();
@@ -111,9 +121,14 @@ public sealed class ContactsDepartmentToolHandlers(IWechatWorkDepartmentsService
 
         var response = await _departments.GetChildDepartmentIdListAsync(rootId, cancellationToken).ConfigureAwait(false);
         var outcome = WechatApiResultReader.Read(response);
-        if (!outcome.Ok || outcome.Data?.DepartmentIds is not { } ids)
+        if (!outcome.Ok)
         {
-            return ToolResult.FromError(outcome.ErrorText ?? "未返回任何部门 ID（department_id 为空）。");
+            return WechatToolOutcomeErrors.From(outcome, WechatToolNames.ContactsDepartmentChildIds);
+        }
+
+        if (outcome.Data?.DepartmentIds is not { } ids)
+        {
+            return WechatToolResults.EmptyList(WechatToolNames.ContactsDepartmentChildIds);
         }
 
         var items = new JsonArray();

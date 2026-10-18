@@ -42,9 +42,14 @@ public sealed class ContactsTagToolHandlers(IWechatWorkTagsService tags)
 
         var response = await _tags.GetTagListAsync(cancellationToken).ConfigureAwait(false);
         var outcome = WechatApiResultReader.Read(response);
-        if (!outcome.Ok || outcome.Data?.TagList is not { } list)
+        if (!outcome.Ok)
         {
-            return ToolResult.FromError(outcome.ErrorText ?? "未返回任何标签（taglist 为空）。");
+            return WechatToolOutcomeErrors.From(outcome, WechatToolNames.ContactsTagList);
+        }
+
+        if (outcome.Data?.TagList is not { } list)
+        {
+            return WechatToolResults.EmptyList(WechatToolNames.ContactsTagList);
         }
 
         var items = new JsonArray();
@@ -73,9 +78,14 @@ public sealed class ContactsTagToolHandlers(IWechatWorkTagsService tags)
 
         var response = await _tags.GetTagMembersAsync(request.TagId, cancellationToken).ConfigureAwait(false);
         var outcome = WechatApiResultReader.Read(response);
-        if (!outcome.Ok || outcome.Data is not { } tag)
+        if (!outcome.Ok)
         {
-            return ToolResult.FromError(outcome.ErrorText ?? "标签不存在或不可见。");
+            return WechatToolOutcomeErrors.From(outcome, WechatToolNames.ContactsTagMembers);
+        }
+
+        if (outcome.Data is not { } tag)
+        {
+            return WechatToolResults.NotFound(WechatToolNames.ContactsTagMembers);
         }
 
         var users = new JsonArray();
@@ -123,9 +133,14 @@ public sealed class ContactsTagToolHandlers(IWechatWorkTagsService tags)
             new CreateTagRequest { TagName = request.TagName, TagId = request.TagId },
             cancellationToken).ConfigureAwait(false);
         var outcome = WechatApiResultReader.Read(response);
-        if (!outcome.Ok || outcome.Data is not { } created)
+        if (!outcome.Ok)
         {
-            return ToolResult.FromError(outcome.ErrorText ?? "标签创建失败：上游未返回标签 ID。");
+            return WechatToolOutcomeErrors.From(outcome, WechatToolNames.ContactsTagCreate);
+        }
+
+        if (outcome.Data is not { } created)
+        {
+            return WechatToolResults.NotFound(WechatToolNames.ContactsTagCreate);
         }
 
         return ToolResult.FromText(ToolResultJson.ToText(new JsonObject
@@ -157,7 +172,7 @@ public sealed class ContactsTagToolHandlers(IWechatWorkTagsService tags)
         var outcome = WechatApiResultReader.Read(response);
         if (!outcome.Ok)
         {
-            return ToolResult.FromError(outcome.ErrorText ?? "标签改名失败。");
+            return WechatToolOutcomeErrors.From(outcome, WechatToolNames.ContactsTagUpdateName);
         }
 
         return ToolResult.FromText(ToolResultJson.ToText(new JsonObject

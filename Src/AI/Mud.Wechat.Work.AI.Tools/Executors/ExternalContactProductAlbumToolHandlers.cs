@@ -59,7 +59,7 @@ public sealed class ExternalContactProductAlbumToolHandlers(IWechatWorkExternalC
         var outcome = WechatApiResultReader.Read(response);
         if (!outcome.Ok)
         {
-            return ToolResult.FromError(outcome.ErrorText ?? "拉取商品图册失败。");
+            return WechatToolOutcomeErrors.From(outcome, WechatToolNames.ExternalcontactProductAlbumList);
         }
 
         var products = new JsonArray();
@@ -92,9 +92,14 @@ public sealed class ExternalContactProductAlbumToolHandlers(IWechatWorkExternalC
             new GetProductAlbumRequest { ProductId = request.ProductId },
             cancellationToken).ConfigureAwait(false);
         var outcome = WechatApiResultReader.Read(response);
-        if (!outcome.Ok || outcome.Data?.Product is not { } product)
+        if (!outcome.Ok)
         {
-            return ToolResult.FromError(outcome.ErrorText ?? "商品不存在或无权访问（product 为空）。");
+            return WechatToolOutcomeErrors.From(outcome, WechatToolNames.ExternalcontactProductAlbumGet);
+        }
+
+        if (outcome.Data?.Product is not { } product)
+        {
+            return WechatToolResults.NotFound(WechatToolNames.ExternalcontactProductAlbumGet);
         }
 
         return ToolResult.FromText(ToolResultJson.ToText(ToProductNode(product)));

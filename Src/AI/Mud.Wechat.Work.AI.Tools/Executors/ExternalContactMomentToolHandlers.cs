@@ -106,7 +106,7 @@ public sealed class ExternalContactMomentToolHandlers(IWechatWorkExternalContact
         var outcome = WechatApiResultReader.Read(response);
         if (!outcome.Ok)
         {
-            return ToolResult.FromError(outcome.ErrorText ?? "拉取朋友圈发表记录失败。");
+            return WechatToolOutcomeErrors.From(outcome, WechatToolNames.ExternalcontactMomentList);
         }
 
         var moments = new JsonArray();
@@ -207,7 +207,7 @@ public sealed class ExternalContactMomentToolHandlers(IWechatWorkExternalContact
         var outcome = WechatApiResultReader.Read(response);
         if (!outcome.Ok)
         {
-            return ToolResult.FromError(outcome.ErrorText ?? "拉取朋友圈互动数据失败。");
+            return WechatToolOutcomeErrors.From(outcome, WechatToolNames.ExternalcontactMomentPublishList);
         }
 
         var comments = ToActorArray(outcome.Data?.CommentList);

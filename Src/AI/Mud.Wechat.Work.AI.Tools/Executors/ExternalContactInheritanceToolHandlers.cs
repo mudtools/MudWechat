@@ -66,7 +66,7 @@ public sealed class ExternalContactInheritanceToolHandlers(IWechatWorkExternalCo
         var outcome = WechatApiResultReader.Read(response);
         if (!outcome.Ok)
         {
-            return ToolResult.FromError(outcome.ErrorText ?? "拉取待分配的离职成员客户失败。");
+            return WechatToolOutcomeErrors.From(outcome, WechatToolNames.ExternalcontactResignedUnassignedList);
         }
 
         var info = new JsonArray();

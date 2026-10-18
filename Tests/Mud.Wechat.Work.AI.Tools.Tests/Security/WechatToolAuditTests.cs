@@ -71,7 +71,7 @@ public class WechatToolAuditTests
         sink.Records.Should().ContainSingle();
         var record = sink.Records[0];
         record.Outcome.Should().Be(WechatToolAuditOutcome.Succeeded);
-        record.ResultBytes.Should().BeGreaterThan(0);
+        record.ResultChars.Should().BeGreaterThan(0);
         record.Truncated.Should().BeFalse();
         record.DurationMs.Should().BeGreaterThanOrEqualTo(0);
         record.SenderId.Should().Be("zhangsan", "发起人是行级鉴权与合规问询的第一维");

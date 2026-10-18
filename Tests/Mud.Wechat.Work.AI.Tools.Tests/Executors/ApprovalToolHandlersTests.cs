@@ -116,7 +116,7 @@ public class ApprovalToolHandlersTests
     }
 
     [Fact]
-    public async Task Get_WhenInfoMissing_ShouldReturnReadableError()
+    public async Task Get_WhenInfoMissing_ShouldReturnNotFoundAsSuccess()
     {
         _approval
             .Setup(a => a.GetApprovalDetailAsync(It.IsAny<GetApprovalDetailRequest>(), It.IsAny<CancellationToken>()))
@@ -124,7 +124,9 @@ public class ApprovalToolHandlersTests
 
         var result = await Handler().GetAsync(Args(("sp_no", "202310100001")), CancellationToken.None);
 
-        result.Text.Should().Contain("info", "空载荷要给出可读原因，而不是一张空 JSON");
+        result.Error.Should().BeNull("业务空是成功答案，不是调用失败（否则模型会重试或换工具乱试）");
+        result.Text.Should().Contain("\"found\":false");
+        result.Text.Should().Contain("hint");
     }
 
     [Fact]
@@ -170,7 +172,7 @@ public class ApprovalToolHandlersTests
     }
 
     [Fact]
-    public async Task GetTemplate_WhenContentMissing_ShouldReturnReadableError()
+    public async Task GetTemplate_WhenContentMissing_ShouldReturnNotFoundAsSuccess()
     {
         _template
             .Setup(t => t.GetTemplateDetailAsync(It.IsAny<GetApprovalTemplateDetailRequest>(), It.IsAny<CancellationToken>()))
@@ -178,7 +180,8 @@ public class ApprovalToolHandlersTests
 
         var result = await Handler().GetTemplateAsync(Args(("template_id", "tpl-1")), CancellationToken.None);
 
-        result.Text.Should().Contain("template_content");
+        result.Error.Should().BeNull();
+        result.Text.Should().Contain("\"found\":false");
     }
 
     [Fact]

@@ -72,7 +72,7 @@ public sealed class ExternalContactGroupChatToolHandlers(IWechatWorkExternalCont
         var outcome = WechatApiResultReader.Read(response);
         if (!outcome.Ok)
         {
-            return ToolResult.FromError(outcome.ErrorText ?? "拉取客户群列表失败。");
+            return WechatToolOutcomeErrors.From(outcome, WechatToolNames.ExternalcontactGroupchatList);
         }
 
         var chats = new JsonArray();
@@ -113,9 +113,14 @@ public sealed class ExternalContactGroupChatToolHandlers(IWechatWorkExternalCont
             },
             cancellationToken).ConfigureAwait(false);
         var outcome = WechatApiResultReader.Read(response);
-        if (!outcome.Ok || outcome.Data?.GroupChat is not { } chat)
+        if (!outcome.Ok)
         {
-            return ToolResult.FromError(outcome.ErrorText ?? "客户群不存在或无权访问（group_chat 为空）。");
+            return WechatToolOutcomeErrors.From(outcome, WechatToolNames.ExternalcontactGroupchatGet);
+        }
+
+        if (outcome.Data?.GroupChat is not { } chat)
+        {
+            return WechatToolResults.NotFound(WechatToolNames.ExternalcontactGroupchatGet);
         }
 
         return ToolResult.FromText(ToolResultJson.ToText(new JsonObject

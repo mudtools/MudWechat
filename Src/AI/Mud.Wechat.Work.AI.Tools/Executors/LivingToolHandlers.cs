@@ -57,7 +57,7 @@ public sealed class LivingToolHandlers(IWechatWorkLivingService living)
         var outcome = WechatApiResultReader.Read(response);
         if (!outcome.Ok)
         {
-            return ToolResult.FromError(outcome.ErrorText ?? "拉取直播列表失败。");
+            return WechatToolOutcomeErrors.From(outcome, WechatToolNames.LivingList);
         }
 
         var ids = new JsonArray();
@@ -87,9 +87,14 @@ public sealed class LivingToolHandlers(IWechatWorkLivingService living)
 
         var response = await _living.GetLivingInfoAsync(request.Livingid, cancellationToken).ConfigureAwait(false);
         var outcome = WechatApiResultReader.Read(response);
-        if (!outcome.Ok || outcome.Data?.LivingInfo is not { } info)
+        if (!outcome.Ok)
         {
-            return ToolResult.FromError(outcome.ErrorText ?? "直播不存在或无权访问（living_info 为空）。");
+            return WechatToolOutcomeErrors.From(outcome, WechatToolNames.LivingGet);
+        }
+
+        if (outcome.Data?.LivingInfo is not { } info)
+        {
+            return WechatToolResults.NotFound(WechatToolNames.LivingGet);
         }
 
         return ToolResult.FromText(ToolResultJson.ToText(new JsonObject
@@ -128,7 +133,7 @@ public sealed class LivingToolHandlers(IWechatWorkLivingService living)
         var outcome = WechatApiResultReader.Read(response);
         if (!outcome.Ok)
         {
-            return ToolResult.FromError(outcome.ErrorText ?? "拉取观看统计失败。");
+            return WechatToolOutcomeErrors.From(outcome, WechatToolNames.LivingWatchStat);
         }
 
         var users = new JsonArray();

@@ -60,7 +60,7 @@ public sealed class ExternalContactToolHandlers(
         var outcome = WechatApiResultReader.Read(response);
         if (!outcome.Ok)
         {
-            return ToolResult.FromError(outcome.ErrorText ?? "拉取客户联系成员失败。");
+            return WechatToolOutcomeErrors.From(outcome, WechatToolNames.ExternalcontactFollowUserList);
         }
 
         var users = new JsonArray();
@@ -92,7 +92,7 @@ public sealed class ExternalContactToolHandlers(
         var outcome = WechatApiResultReader.Read(response);
         if (!outcome.Ok)
         {
-            return ToolResult.FromError(outcome.ErrorText ?? "拉取客户列表失败。");
+            return WechatToolOutcomeErrors.From(outcome, WechatToolNames.ExternalcontactContactList);
         }
 
         var customers = new JsonArray();
@@ -122,9 +122,14 @@ public sealed class ExternalContactToolHandlers(
         var response = await _customer.GetCustomerDetailAsync(request.ExternalUserid, null, cancellationToken)
             .ConfigureAwait(false);
         var outcome = WechatApiResultReader.Read(response);
-        if (!outcome.Ok || outcome.Data?.ExternalContact is not { } contact)
+        if (!outcome.Ok)
         {
-            return ToolResult.FromError(outcome.ErrorText ?? "客户不存在或无权访问（external_contact 为空）。");
+            return WechatToolOutcomeErrors.From(outcome, WechatToolNames.ExternalcontactContactGet);
+        }
+
+        if (outcome.Data?.ExternalContact is not { } contact)
+        {
+            return WechatToolResults.NotFound(WechatToolNames.ExternalcontactContactGet);
         }
 
         return ToolResult.FromText(ToolResultJson.ToText(new JsonObject
@@ -157,7 +162,7 @@ public sealed class ExternalContactToolHandlers(
         var outcome = WechatApiResultReader.Read(response);
         if (!outcome.Ok)
         {
-            return ToolResult.FromError(outcome.ErrorText ?? "拉取客户标签库失败。");
+            return WechatToolOutcomeErrors.From(outcome, WechatToolNames.ExternalcontactTagList);
         }
 
         var groups = new JsonArray();

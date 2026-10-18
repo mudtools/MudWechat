@@ -106,7 +106,7 @@ public sealed class MeetingToolHandlers(
         var outcome = WechatApiResultReader.Read(response);
         if (!outcome.Ok)
         {
-            return ToolResult.FromError(outcome.ErrorText ?? "拉取会议列表失败。");
+            return WechatToolOutcomeErrors.From(outcome, WechatToolNames.MeetingList);
         }
 
         var ids = new JsonArray();
@@ -139,9 +139,14 @@ public sealed class MeetingToolHandlers(
             new GetMeetingInfoRequest { Meetingid = request.Meetingid },
             cancellationToken).ConfigureAwait(false);
         var outcome = WechatApiResultReader.Read(response);
-        if (!outcome.Ok || outcome.Data is not { } info)
+        if (!outcome.Ok)
         {
-            return ToolResult.FromError(outcome.ErrorText ?? "会议不存在或无权访问。");
+            return WechatToolOutcomeErrors.From(outcome, WechatToolNames.MeetingGet);
+        }
+
+        if (outcome.Data is not { } info)
+        {
+            return WechatToolResults.NotFound(WechatToolNames.MeetingGet);
         }
 
         var members = new JsonArray();
@@ -241,7 +246,7 @@ public sealed class MeetingToolHandlers(
         var outcome = WechatApiResultReader.Read(response);
         if (!outcome.Ok)
         {
-            return ToolResult.FromError(outcome.ErrorText ?? "拉取参会成员失败。");
+            return WechatToolOutcomeErrors.From(outcome, WechatToolNames.MeetingAttendees);
         }
 
         var attendees = new JsonArray();

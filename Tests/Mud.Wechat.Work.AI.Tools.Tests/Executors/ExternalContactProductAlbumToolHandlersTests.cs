@@ -48,7 +48,7 @@ public class ExternalContactProductAlbumToolHandlersTests
     }
 
     [Fact]
-    public async Task Get_WithoutProductPayload_ShouldReturnError()
+    public async Task Get_WithoutProductPayload_ShouldReturnNotFoundAsSuccess()
     {
         _productAlbum
             .Setup(s => s.GetProductAlbumAsync(It.IsAny<GetProductAlbumRequest>(), It.IsAny<CancellationToken>()))
@@ -56,7 +56,8 @@ public class ExternalContactProductAlbumToolHandlersTests
 
         var result = await Handler().GetAsync(Args(("product_id", "p-1")), CancellationToken.None);
 
-        result.Text.Should().Contain("product");
+        result.Error.Should().BeNull();
+        result.Text.Should().Contain("\"found\":false");
     }
 
     [Fact]

@@ -80,7 +80,7 @@ public sealed class KfToolHandlers(
         var outcome = WechatApiResultReader.Read(response);
         if (!outcome.Ok)
         {
-            return ToolResult.FromError(outcome.ErrorText ?? "拉取客服账号失败。");
+            return WechatToolOutcomeErrors.From(outcome, WechatToolNames.KfAccountList);
         }
 
         var list = new JsonArray();
@@ -116,7 +116,7 @@ public sealed class KfToolHandlers(
         var outcome = WechatApiResultReader.Read(response);
         if (!outcome.Ok)
         {
-            return ToolResult.FromError(outcome.ErrorText ?? "拉取接待人员失败。");
+            return WechatToolOutcomeErrors.From(outcome, WechatToolNames.KfServicerList);
         }
 
         var list = new JsonArray();
@@ -157,9 +157,14 @@ public sealed class KfToolHandlers(
             },
             cancellationToken).ConfigureAwait(false);
         var outcome = WechatApiResultReader.Read(response);
-        if (!outcome.Ok || outcome.Data is not { } state)
+        if (!outcome.Ok)
         {
-            return ToolResult.FromError(outcome.ErrorText ?? "查询会话状态失败。");
+            return WechatToolOutcomeErrors.From(outcome, WechatToolNames.KfSessionGet);
+        }
+
+        if (outcome.Data is not { } state)
+        {
+            return WechatToolResults.NotFound(WechatToolNames.KfSessionGet);
         }
 
         return ToolResult.FromText(ToolResultJson.ToText(new JsonObject
@@ -194,7 +199,7 @@ public sealed class KfToolHandlers(
         var outcome = WechatApiResultReader.Read(response);
         if (!outcome.Ok)
         {
-            return ToolResult.FromError(outcome.ErrorText ?? "发送客服消息失败。");
+            return WechatToolOutcomeErrors.From(outcome, WechatToolNames.KfMessageSend);
         }
 
         return ToolResult.FromText(ToolResultJson.ToText(new JsonObject
@@ -243,7 +248,7 @@ public sealed class KfToolHandlers(
         var outcome = WechatApiResultReader.Read(response);
         if (!outcome.Ok)
         {
-            return ToolResult.FromError(outcome.ErrorText ?? "拉取客服统计数据失败。");
+            return WechatToolOutcomeErrors.From(outcome, WechatToolNames.KfCorpStatistic);
         }
 
         var days = new JsonArray();
@@ -292,7 +297,7 @@ public sealed class KfToolHandlers(
         var outcome = WechatApiResultReader.Read(response);
         if (!outcome.Ok)
         {
-            return ToolResult.FromError(outcome.ErrorText ?? "拉取接待人员统计数据失败。");
+            return WechatToolOutcomeErrors.From(outcome, WechatToolNames.KfServicerStatistic);
         }
 
         var days = new JsonArray();

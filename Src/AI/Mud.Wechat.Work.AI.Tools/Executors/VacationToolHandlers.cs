@@ -58,7 +58,7 @@ public sealed class VacationToolHandlers(IWechatWorkVacationService vacation)
         var outcome = WechatApiResultReader.Read(response);
         if (!outcome.Ok)
         {
-            return ToolResult.FromError(outcome.ErrorText ?? "查询假期余额失败。");
+            return WechatToolOutcomeErrors.From(outcome, WechatToolNames.ApprovalVacationQuota);
         }
 
         var items = new JsonArray();

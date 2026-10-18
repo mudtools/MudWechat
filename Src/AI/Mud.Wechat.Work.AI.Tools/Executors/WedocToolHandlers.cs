@@ -50,9 +50,14 @@ public sealed class WedocToolHandlers(IWechatWorkWedocService wedoc)
             .GetDocumentBaseInfoAsync(new GetWedocDocumentBaseInfoRequest { Docid = request.Docid }, cancellationToken)
             .ConfigureAwait(false);
         var outcome = WechatApiResultReader.Read(response);
-        if (!outcome.Ok || outcome.Data?.DocBaseInfo is not { } info)
+        if (!outcome.Ok)
         {
-            return ToolResult.FromError(outcome.ErrorText ?? "文档不存在或无权访问（doc_base_info 为空）。");
+            return WechatToolOutcomeErrors.From(outcome, WechatToolNames.WedocDocBaseInfo);
+        }
+
+        if (outcome.Data?.DocBaseInfo is not { } info)
+        {
+            return WechatToolResults.NotFound(WechatToolNames.WedocDocBaseInfo);
         }
 
         return ToolResult.FromText(ToolResultJson.ToText(new JsonObject
@@ -92,9 +97,14 @@ public sealed class WedocToolHandlers(IWechatWorkWedocService wedoc)
             },
             cancellationToken).ConfigureAwait(false);
         var outcome = WechatApiResultReader.Read(response);
-        if (!outcome.Ok || outcome.Data is not { } created)
+        if (!outcome.Ok)
         {
-            return ToolResult.FromError(outcome.ErrorText ?? "文档创建失败：上游未返回 docid。");
+            return WechatToolOutcomeErrors.From(outcome, WechatToolNames.WedocDocCreate);
+        }
+
+        if (outcome.Data is not { } created)
+        {
+            return WechatToolResults.NotFound(WechatToolNames.WedocDocCreate);
         }
 
         return ToolResult.FromText(ToolResultJson.ToText(new JsonObject
@@ -127,7 +137,7 @@ public sealed class WedocToolHandlers(IWechatWorkWedocService wedoc)
         var outcome = WechatApiResultReader.Read(response);
         if (!outcome.Ok)
         {
-            return ToolResult.FromError(outcome.ErrorText ?? "重命名失败。");
+            return WechatToolOutcomeErrors.From(outcome, WechatToolNames.WedocDocRename);
         }
 
         return Ok(docid, formid, ("new_name", request.NewName));
@@ -154,7 +164,7 @@ public sealed class WedocToolHandlers(IWechatWorkWedocService wedoc)
         var outcome = WechatApiResultReader.Read(response);
         if (!outcome.Ok)
         {
-            return ToolResult.FromError(outcome.ErrorText ?? "删除失败。");
+            return WechatToolOutcomeErrors.From(outcome, WechatToolNames.WedocDocDelete);
         }
 
         return Ok(docid, formid);
@@ -179,9 +189,14 @@ public sealed class WedocToolHandlers(IWechatWorkWedocService wedoc)
             new ShareWedocDocumentRequest { Docid = docid, Formid = formid },
             cancellationToken).ConfigureAwait(false);
         var outcome = WechatApiResultReader.Read(response);
-        if (!outcome.Ok || outcome.Data is not { } shared)
+        if (!outcome.Ok)
         {
-            return ToolResult.FromError(outcome.ErrorText ?? "分享链接获取失败（share_url 为空）。");
+            return WechatToolOutcomeErrors.From(outcome, WechatToolNames.WedocDocShare);
+        }
+
+        if (outcome.Data is not { } shared)
+        {
+            return WechatToolResults.NotFound(WechatToolNames.WedocDocShare);
         }
 
         return ToolResult.FromText(ToolResultJson.ToText(new JsonObject

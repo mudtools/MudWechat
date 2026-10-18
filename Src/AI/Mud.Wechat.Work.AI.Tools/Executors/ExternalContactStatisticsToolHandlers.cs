@@ -102,7 +102,7 @@ public sealed class ExternalContactStatisticsToolHandlers(IWechatWorkExternalCon
         var outcome = WechatApiResultReader.Read(response);
         if (!outcome.Ok)
         {
-            return ToolResult.FromError(outcome.ErrorText ?? "拉取联系客户统计数据失败。");
+            return WechatToolOutcomeErrors.From(outcome, WechatToolNames.ExternalcontactStatisticsUserBehavior);
         }
 
         var days = new JsonArray();
@@ -173,7 +173,7 @@ public sealed class ExternalContactStatisticsToolHandlers(IWechatWorkExternalCon
         var outcome = WechatApiResultReader.Read(response);
         if (!outcome.Ok)
         {
-            return ToolResult.FromError(outcome.ErrorText ?? "拉取客户群统计数据失败。");
+            return WechatToolOutcomeErrors.From(outcome, WechatToolNames.ExternalcontactStatisticsGroupchat);
         }
 
         var items = new JsonArray();
@@ -222,7 +222,7 @@ public sealed class ExternalContactStatisticsToolHandlers(IWechatWorkExternalCon
         var outcome = WechatApiResultReader.Read(response);
         if (!outcome.Ok)
         {
-            return ToolResult.FromError(outcome.ErrorText ?? "拉取客户群按日统计数据失败。");
+            return WechatToolOutcomeErrors.From(outcome, WechatToolNames.ExternalcontactStatisticsGroupchatByDay);
         }
 
         var items = new JsonArray();

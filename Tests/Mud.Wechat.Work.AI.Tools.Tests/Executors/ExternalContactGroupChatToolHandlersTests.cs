@@ -137,7 +137,7 @@ public class ExternalContactGroupChatToolHandlersTests
     }
 
     [Fact]
-    public async Task Get_WithoutGroupChatPayload_ShouldReturnError()
+    public async Task Get_WithoutGroupChatPayload_ShouldReturnNotFoundAsSuccess()
     {
         _groupChat
             .Setup(s => s.GetGroupChatDetailAsync(It.IsAny<GetGroupChatDetailRequest>(), It.IsAny<CancellationToken>()))
@@ -145,7 +145,8 @@ public class ExternalContactGroupChatToolHandlersTests
 
         var result = await Handler().GetAsync(Args(("chat_id", "wr-1")), CancellationToken.None);
 
-        result.Text.Should().Contain("group_chat");
+        result.Error.Should().BeNull();
+        result.Text.Should().Contain("\"found\":false");
     }
 
     private ExternalContactGroupChatToolHandlers Handler() => new(_groupChat.Object);

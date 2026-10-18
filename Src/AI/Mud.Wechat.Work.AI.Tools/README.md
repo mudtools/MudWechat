@@ -46,7 +46,7 @@
 不再重复声明面已表达的校验。改声明面后必须重固化 golden 快照：
 `scripts/Update-WechatToolGolden.ps1`（`Generated/WechatToolSchemas.golden.txt` 漂移即 `MUDWT014` 构建失败）。
 
-当前策展面（45 个：37 只读 + 7 受控写 + 1 高危写）：
+当前策展面（48 个：40 只读 + 7 受控写 + 1 高危写）：
 
 | 域 | 工具 | SDK 源 |
 |---|---|---|
@@ -58,6 +58,8 @@
 | 客户统计 | `externalcontact.statistics.user_behavior` / `.statistics.groupchat` / `.statistics.groupchat_by_day` | `IWechatWorkExternalContactStatisticsService` |
 | 客户群发 | `externalcontact.groupmsg.list` / `.task_list` / `.send_result` | `IWechatWorkExternalContactGroupMsgService` |
 | 客户群发（**L2 受控写**） | `externalcontact.groupmsg.send` | `IWechatWorkExternalContactGroupMsgService.AddGroupMsgTemplateAsync` |
+| 商品图册 | `externalcontact.product_album.list` / `.product_album.get` | `IWechatWorkExternalContactProductAlbumService` |
+| 客户继承（离职） | `externalcontact.resigned.unassigned_list` | `IWechatWorkExternalContactResignedInheritanceService` |
 | 会议 | `meeting.list`（三类公共面）/ `.get` / `.attendees`（自建口径） | `IWechatWorkMeetingService` / `IWechatWorkInternalMeeting{,Advanced}Service` |
 | 汇报 | `journal.record.list` / `.get` | `IWechatWorkInternalJournalService`（自建口径） |
 | 直播 | `living.list` / `.get` / `.watch_stat` | `IWechatWorkLivingService` |
@@ -121,11 +123,18 @@
 「只给 sender = 该成员全部客户/群」不开放（全量发送让模型先用只读面枚举，可核对、可分批）；附件同样不开放
 （模型产不出 `media_id`，官方「文本与附件不可同时为空」在此等价于 `content` 必填）。
 
+**商品图册 / 继承域投影边界**：商品图册只投影商品编码、描述、价格（**单位为分**）、创建时间与图片张数——
+`media_id`（商品图片，宿主素材资产）不外发。继承域只读到底：三个写端点（分配离职客户 / 分配离职群 / 在职继承）
+都是高影响不可撤回动作且官方有离职年限、实名、可见范围等前置条件，应交由宿主审批流，工具面只回答
+「谁的客户还没人接手」；离职与在职的接替状态查询（`transfer_result`）本波**未落地**——两个 SDK 方法名含引擎
+危险词表里的 `transfer` ⇒ 被判 `high-risk-write`，标只读即 `MUDWT017` 构建失败，标写面又会让每次查询都要
+人工审批（同 `approval.list` 因 `batch` 被误判的处置，见陷阱 10），待上游支持显式风险覆盖槽后再补。
+
 **客户联系本波次未策展（有明确理由）**：`moment_strategy.*`（朋友圈规则组）——运营配置面且含串行写操作，
 不进模型工具面；`get_moment_customer_list` / `get_moment_send_result`——名单级外发（可见/已送达客户 ID 清单），
 信息量低于 `publish_list` 的执行状态且更敏感；`groupchat/opengid_to_chatid`——只在小程序端拿到 `opengid` 后才有意义，
-模型产不出该入参；`contact_way.*`（联系方式）、获客助手、商品图册、离职/在职继承、拦截规则
-——分别是写面、外发面或运营配置面，留待有明确产品用法再评估。
+模型产不出该入参；`contact_way.*`（联系方式）、获客助手、商品图册的增改删（附件需 `media_id`，删除被引擎判为高危写）、
+离职/在职继承的分配动作、拦截规则——分别是写面、外发面或运营配置面，留待有明确产品用法再评估。
 群发域内的 `remind_groupmsg_send` / `cancel_groupmsg_send`（操作面极小、管理端可完成）、
 `send_welcome_msg`（须在「添加外部联系人」事件回调后 20 秒内调用，模型产不出 `welcome_code` 且赶不上窗口）、
 入群欢迎语素材增改删查（运营素材库，且删除被引擎判为高危写）同样不策展。

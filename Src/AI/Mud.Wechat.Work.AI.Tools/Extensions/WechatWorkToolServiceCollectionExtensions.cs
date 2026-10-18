@@ -80,6 +80,8 @@ public static class WechatWorkToolServiceCollectionExtensions
         services.AddWechatExternalContactMomentToolHandlersCore();
         services.AddWechatExternalContactStatisticsToolHandlersCore();
         services.AddWechatExternalContactGroupMsgToolHandlersCore();
+        services.AddWechatExternalContactProductAlbumToolHandlersCore();
+        services.AddWechatExternalContactInheritanceToolHandlersCore();
         services.AddWechatJournalToolHandlersCore();
         services.AddWechatKfToolHandlersCore();
         services.AddWechatLivingToolHandlersCore();

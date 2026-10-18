@@ -44,6 +44,9 @@ public class WechatToolSurfaceContractGuards
                 "externalcontact.moment.comments",
                 "externalcontact.moment.list",
                 "externalcontact.moment.publish_list",
+                "externalcontact.product_album.get",
+                "externalcontact.product_album.list",
+                "externalcontact.resigned.unassigned_list",
                 "externalcontact.statistics.groupchat",
                 "externalcontact.statistics.groupchat_by_day",
                 "externalcontact.statistics.user_behavior",
@@ -122,6 +125,9 @@ public class WechatToolSurfaceContractGuards
     [InlineData("externalcontact.groupmsg.send", "IWechatWorkExternalContactGroupMsgService.AddGroupMsgTemplateAsync", "/cgi-bin/externalcontact/add_msg_template", "POST", WechatToolRisk.Write, "externalcontact.groupmsg.write")]
     [InlineData("externalcontact.groupmsg.send_result", "IWechatWorkExternalContactGroupMsgService.GetGroupMsgSendResultAsync", "/cgi-bin/externalcontact/get_groupmsg_send_result", "POST", WechatToolRisk.Read, "externalcontact.groupmsg.read")]
     [InlineData("externalcontact.groupmsg.task_list", "IWechatWorkExternalContactGroupMsgService.GetGroupMsgTaskListAsync", "/cgi-bin/externalcontact/get_groupmsg_task", "POST", WechatToolRisk.Read, "externalcontact.groupmsg.read")]
+    [InlineData("externalcontact.product_album.get", "IWechatWorkExternalContactProductAlbumService.GetProductAlbumAsync", "/cgi-bin/externalcontact/get_product_album", "POST", WechatToolRisk.Read, "externalcontact.product_album.read")]
+    [InlineData("externalcontact.product_album.list", "IWechatWorkExternalContactProductAlbumService.GetProductAlbumListAsync", "/cgi-bin/externalcontact/get_product_album_list", "POST", WechatToolRisk.Read, "externalcontact.product_album.read")]
+    [InlineData("externalcontact.resigned.unassigned_list", "IWechatWorkExternalContactResignedInheritanceService.GetUnassignedListAsync", "/cgi-bin/externalcontact/get_unassigned_list", "POST", WechatToolRisk.Read, "externalcontact.inheritance.read")]
     [InlineData("externalcontact.statistics.groupchat", "IWechatWorkExternalContactStatisticsService.GetGroupChatStatisticAsync", "/cgi-bin/externalcontact/groupchat/statistic", "POST", WechatToolRisk.Read, "externalcontact.statistics.read")]
     [InlineData("externalcontact.statistics.groupchat_by_day", "IWechatWorkExternalContactStatisticsService.GetGroupChatStatisticGroupByDayAsync", "/cgi-bin/externalcontact/groupchat/statistic_group_by_day", "POST", WechatToolRisk.Read, "externalcontact.statistics.read")]
     [InlineData("externalcontact.statistics.user_behavior", "IWechatWorkExternalContactStatisticsService.GetUserBehaviorDataAsync", "/cgi-bin/externalcontact/get_user_behavior_data", "POST", WechatToolRisk.Read, "externalcontact.statistics.read")]

@@ -5,6 +5,9 @@
 //  不得利用本项目从事危害国家安全、扰乱社会秩序、侵犯他人合法权益等法律法规禁止的活动！任何基于本项目开发而产生的一切法律纠纷和责任，我们不承担任何责任！
 // -----------------------------------------------------------------------
 
+using Mud.Wechat.Abstractions.Crypto;
+using Mud.Wechat.Pay.Abstractions.Credential;
+
 namespace Mud.Wechat.Pay.Tests.ContractGuards;
 
 /// <summary>
@@ -105,7 +108,7 @@ public class WechatPayCryptoContractGuards
     public void Authorization_ShouldFollowOfficialFieldOrder_WhenBuilt()
     {
         var header = WechatPaySignatureMessages.BuildAuthorization(
-            "1900000000", "4946B705E468CEC8", 1729040000,
+            "1900000000", "WECHATPAY2-SHA256-RSA2048", "4946B705E468CEC8", 1729040000,
             "MUDWECHATPAYNONCE0123456789ABCDEF", "SIGNATURE");
 
         header.Should().Be(
@@ -529,9 +532,14 @@ public class WechatPayCryptoContractGuards
         properties.Should().Equal(new[] { "SerialNumber", "Signature" },
             "because 签名结果若多暴露任何字段，都可能是把私钥/密钥外带的口子");
 
-        typeof(WechatPaySignatureProvider)
+        var providerProps = typeof(WechatPaySignatureProvider)
             .GetProperties(BindingFlags.Public | BindingFlags.Instance)
-            .Should().BeEmpty("签名提供器不得以可读属性暴露私钥（私钥只在构造期注入，不落属性）");
+            .Select(p => p.Name)
+            .OrderBy(n => n, StringComparer.Ordinal)
+            .ToArray();
+
+        providerProps.Should().Equal(new[] { "Algorithm" },
+            "because 签名提供器只允许暴露算法标识（Algorithm），不得以可读属性暴露私钥（私钥只在构造期注入，不落属性）");
     }
 
     // ---- helpers -------------------------------------------------------------

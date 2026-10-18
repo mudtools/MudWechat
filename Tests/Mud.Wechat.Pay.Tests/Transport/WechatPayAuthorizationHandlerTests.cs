@@ -301,14 +301,14 @@ public class WechatPayAuthorizationHandlerTests
             _keysByMerchantKey = keysByMerchantKey;
         }
 
-        public Task<RSA> LoadPrivateKeyAsync(WechatPayMerchantConfig config, CancellationToken cancellationToken = default)
+        public Task<WechatPayMerchantKey> LoadPrivateKeyAsync(WechatPayMerchantConfig config, CancellationToken cancellationToken = default)
         {
             if (!_keysByMerchantKey.TryGetValue(config.MerchantKey, out var key))
             {
                 throw new InvalidOperationException("桩未配置商户 " + config.MerchantKey);
             }
 
-            return Task.FromResult(key);
+            return Task.FromResult(WechatPayMerchantKey.FromRsa(key, "SHA256-RSA2048"));
         }
 
         public Task<byte[]> LoadApiKeyAsync(WechatPayMerchantConfig config, CancellationToken cancellationToken = default)

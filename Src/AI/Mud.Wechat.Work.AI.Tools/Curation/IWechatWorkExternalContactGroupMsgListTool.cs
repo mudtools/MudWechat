@@ -24,13 +24,13 @@ namespace Mud.Wechat.Work.AI.Tools.Curation;
 /// </remarks>
 [AgentTool(
     name: "externalcontact.groupmsg.list",
-    Description = "分页获取企业微信客户群发记录。参数 chat_type 必填（single 发给客户 / group 发给客户群）；start_time / end_time 必填（Unix 秒，如 \"1700000000\"；也接受带时区的 ISO 8601），跨度不得超过 1 个月且 end_time 必须大于 start_time；creator 可选（限定创建人 userid，不填为全部）；filter_type 可选（0 企业创建 / 1 个人创建 / 2 全部，默认 2）；limit 为单页条数（1~100，默认 50）；cursor 为分页游标（首页省略，续页传上一页的 next_cursor）。返回 group_msg_list（每项 msgid、creator、create_time、create_type 0 企业 / 1 个人、text 文本内容、attachment_types 附件类型列表）与 count、next_cursor；拿到 msgid 后用 externalcontact.groupmsg.task_list 看成员执行情况、externalcontact.groupmsg.send_result 看逐客户送达结果。",
+    Description = "分页获取企业微信客户群发记录。参数 chat_type 必填（single 发给客户 / group 发给客户群）；start_time / end_time 必填（Unix 秒，如 \"1700000000\"；也接受带时区的 ISO 8601），跨度不得超过 1 个月且 end_time 必须大于 start_time；creator 可选（限定创建人 userid，不填为全部）；filter_type 可选（0 企业创建 / 1 个人创建 / 2 全部，默认 2）；limit 为单页条数（1~100，默认 50）；cursor 为分页游标（首页省略，续页传上一页的 page_token）。返回 items（每项 msgid、creator、create_time、create_type 0 企业 / 1 个人、text 文本内容、attachment_types 附件类型列表）与 count、page_token；拿到 msgid 后用 externalcontact.groupmsg.task_list 看成员执行情况、externalcontact.groupmsg.send_result 看逐客户送达结果。",
     Source = "IWechatWorkExternalContactGroupMsgService.GetGroupMsgListAsync",
     RequiredScopes = ["externalcontact.groupmsg.read"])]
 public interface IWechatWorkExternalContactGroupMsgListTool
 {
     /// <summary>拉取群发记录。</summary>
-    /// <returns>白名单投影后的 JSON 文本（group_msg_list、count、next_cursor）。</returns>
+    /// <returns>白名单投影后的 JSON 文本（items、count、page_token）。</returns>
     Task<string> GetGroupMsgListAsync(
         [ToolParameter("chat_type", "群发任务类型（single 发给客户 / group 发给客户群）。", Required = true)] string chat_type,
         [ToolParameter("start_time", "起始时间（Unix 秒或带时区的 ISO 8601）。", Required = true)] string start_time,

@@ -24,13 +24,13 @@ namespace Mud.Wechat.Work.AI.Tools.Curation;
 /// </remarks>
 [AgentTool(
     name: "meeting.list",
-    Description = "拉取指定成员指定时间段内的企业微信会议 ID 列表。参数 userid 为成员 UserID（先用 contacts.user.simple_list 或 contacts.user.list 获取）；begin_time / end_time 为时间范围（Unix 秒，如 \"1700000000\"；也接受带时区的 ISO 8601，如 \"2026-10-10T09:00:00+08:00\"），跨度不得超过 180 天且 end_time 必须大于 start_time；cursor 为上一页的 next_cursor；limit 为单页条数（1~100，默认 100）。返回 meetingid_list 与 next_cursor（为空表示已取完）。注意：只能拉取本应用创建的会议，且仅返回应用可见范围内的成员数据。",
+    Description = "拉取指定成员指定时间段内的企业微信会议 ID 列表。参数 userid 为成员 UserID（先用 contacts.user.simple_list 或 contacts.user.list 获取）；begin_time / end_time 为时间范围（Unix 秒，如 \"1700000000\"；也接受带时区的 ISO 8601，如 \"2026-10-10T09:00:00+08:00\"），跨度不得超过 180 天且 end_time 必须大于 start_time；cursor 为上一页的 page_token；limit 为单页条数（1~100，默认 100）。返回 items 与 page_token（为空表示已取完）。注意：只能拉取本应用创建的会议，且仅返回应用可见范围内的成员数据。",
     Source = "IWechatWorkMeetingService.GetUserMeetingIdListAsync",
     RequiredScopes = ["meeting.read"])]
 public interface IWechatWorkMeetingListTool
 {
     /// <summary>拉取成员会议 ID 列表。</summary>
-    /// <returns>白名单投影后的 JSON 文本（meetingid_list、next_cursor）。</returns>
+    /// <returns>白名单投影后的 JSON 文本（items、page_token）。</returns>
     Task<string> GetUserMeetingIdListAsync(
         [ToolParameter("userid", "成员 UserID。", Required = true)] string userid,
         [ToolParameter("begin_time", "起始时间（Unix 秒或带时区的 ISO 8601）。", Required = true)] string begin_time,

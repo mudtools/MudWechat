@@ -24,13 +24,13 @@ namespace Mud.Wechat.Work.AI.Tools.Curation;
 /// </remarks>
 [AgentTool(
     name: "contacts.user.id_list",
-    Description = "以游标分页获取企业成员 ID 与所属部门的关系列表（全量枚举，无需指定部门）。参数 limit 为单页条数（1~10000，默认 1000）；cursor 为分页游标（首页省略，续页传上一页的 next_cursor）。返回 dept_user（每项 userid 或 open_userid——自建应用（通讯录同步 secret）返回 userid，第三方返回 open_userid——以及 department 所属部门 ID 数组）、count 与 next_cursor。这是最轻的成员枚举入口：需要姓名/职务等详情时再用 contacts.user.get / contacts.user.simple_list 按 ID 取。",
+    Description = "以游标分页获取企业成员 ID 与所属部门的关系列表（全量枚举，无需指定部门）。参数 limit 为单页条数（1~10000，默认 1000）；cursor 为分页游标（首页省略，续页传上一页的 page_token）。返回 items（每项 userid 或 open_userid——自建应用（通讯录同步 secret）返回 userid，第三方返回 open_userid——以及 department 所属部门 ID 数组）、count 与 page_token。这是最轻的成员枚举入口：需要姓名/职务等详情时再用 contacts.user.get / contacts.user.simple_list 按 ID 取。",
     Source = "IWechatWorkUsersService.ListUserIdsAsync",
     RequiredScopes = ["contacts.user.read"])]
 public interface IWechatWorkContactsUserIdListTool
 {
     /// <summary>游标分页读取成员 ID 与部门关系。</summary>
-    /// <returns>白名单投影后的 JSON 文本（dept_user、count、next_cursor）。</returns>
+    /// <returns>白名单投影后的 JSON 文本（items、count、page_token）。</returns>
     Task<string> ListUserIdsAsync(
         [ToolParameter("limit", "单页条数（1~10000，可空 ⇒ 1000）。")] int? limit,
         [ToolParameter("cursor", "分页游标（可空 ⇒ 首页）。")] string? cursor,

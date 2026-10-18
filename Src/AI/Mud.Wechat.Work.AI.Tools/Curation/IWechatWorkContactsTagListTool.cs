@@ -18,13 +18,13 @@ namespace Mud.Wechat.Work.AI.Tools.Curation;
 /// </remarks>
 [AgentTool(
     name: "contacts.tag.list",
-    Description = "列出企业微信通讯录标签。无参数。返回 taglist（tag_id/name）。自建应用与通讯录同步助手可见全部标签；第三方应用与代开发自建应用仅可见自己创建的标签。",
+    Description = "列出企业微信通讯录标签。无参数。返回 items（tag_id/name）。自建应用与通讯录同步助手可见全部标签；第三方应用与代开发自建应用仅可见自己创建的标签。",
     Source = "IWechatWorkTagsService.GetTagListAsync",
     RequiredScopes = ["contacts.tag.read"],
     IsWrite = false)]
 public interface IWechatWorkContactsTagListTool
 {
     /// <summary>列出标签（无参数）。</summary>
-    /// <returns>白名单投影后的 JSON 文本（taglist、tag_id、name）。</returns>
+    /// <returns>白名单投影后的 JSON 文本（items、tag_id、name）。</returns>
     Task<string> GetTagListAsync(CancellationToken cancellationToken = default);
 }

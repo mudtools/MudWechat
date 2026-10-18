@@ -24,13 +24,13 @@ namespace Mud.Wechat.Work.AI.Tools.Curation;
 /// </remarks>
 [AgentTool(
     name: "externalcontact.moment.list",
-    Description = "按时间范围拉取企业微信客户朋友圈发表记录。参数 start_time / end_time 为时间范围（Unix 秒，如 \"1700000000\"；也接受带时区的 ISO 8601，如 \"2026-10-10T09:00:00+08:00\"），跨度不得超过 30 天且 end_time 必须大于 start_time；creator 可选（限定发表人 userid，不填为全部）；filter_type 可选（CorpPublish 企业发表 / PersonalPublish 个人发表 / All 全部，默认 All）；cursor 为分页游标（首页省略，续页传上一页的 next_cursor）；limit 为单页条数（1~20，默认 20）。返回 moment_list（每项 moment_id、creator、create_time、create_type 0 企业 / 1 个人、visible_type 0 部分可见 / 1 公开、text 文本内容、image_count 图片张数、has_video 是否含视频、link 图文标题与链接、location 地点名）、count 与 next_cursor。已删除的朋友圈官方不返回；不含图片/视频的 media_id（宿主素材资产）与经纬度（行踪不外发）。",
+    Description = "按时间范围拉取企业微信客户朋友圈发表记录。参数 start_time / end_time 为时间范围（Unix 秒，如 \"1700000000\"；也接受带时区的 ISO 8601，如 \"2026-10-10T09:00:00+08:00\"），跨度不得超过 30 天且 end_time 必须大于 start_time；creator 可选（限定发表人 userid，不填为全部）；filter_type 可选（CorpPublish 企业发表 / PersonalPublish 个人发表 / All 全部，默认 All）；cursor 为分页游标（首页省略，续页传上一页的 page_token）；limit 为单页条数（1~20，默认 20）。返回 items（每项 moment_id、creator、create_time、create_type 0 企业 / 1 个人、visible_type 0 部分可见 / 1 公开、text 文本内容、image_count 图片张数、has_video 是否含视频、link 图文标题与链接、location 地点名）、count 与 page_token。已删除的朋友圈官方不返回；不含图片/视频的 media_id（宿主素材资产）与经纬度（行踪不外发）。",
     Source = "IWechatWorkExternalContactMomentService.GetMomentListAsync",
     RequiredScopes = ["externalcontact.moment.read"])]
 public interface IWechatWorkExternalContactMomentListTool
 {
     /// <summary>拉取朋友圈发表记录。</summary>
-    /// <returns>白名单投影后的 JSON 文本（moment_list、count、next_cursor）。</returns>
+    /// <returns>白名单投影后的 JSON 文本（items、count、page_token）。</returns>
     Task<string> GetMomentListAsync(
         [ToolParameter("start_time", "起始时间（Unix 秒或带时区的 ISO 8601）。", Required = true)] string start_time,
         [ToolParameter("end_time", "结束时间（Unix 秒或带时区的 ISO 8601；与起始间隔 ≤ 30 天）。", Required = true)] string end_time,

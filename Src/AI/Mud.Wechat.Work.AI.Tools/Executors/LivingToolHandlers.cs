@@ -127,7 +127,7 @@ public sealed class LivingToolHandlers(IWechatWorkLivingService living)
         var request = LivingWatchStatArgs.Unpack(args);
 
         var response = await _living.GetWatchStatAsync(
-            new GetLivingWatchStatRequest { Livingid = request.Livingid, NextKey = request.NextKey },
+            new GetLivingWatchStatRequest { Livingid = request.Livingid, NextKey = request.PageToken },
             cancellationToken).ConfigureAwait(false);
         var outcome = WechatApiResultReader.Read(response);
         if (!outcome.Ok)

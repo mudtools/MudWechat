@@ -23,13 +23,13 @@ namespace Mud.Wechat.Work.AI.Tools.Curation;
 /// </remarks>
 [AgentTool(
     name: "externalcontact.moment.publish_list",
-    Description = "获取企业发表的朋友圈在各成员处的执行列表。参数 moment_id 为企业发表的朋友圈 ID（先用 externalcontact.moment.list 取 create_type=0 的记录）；cursor 为分页游标（首页省略，续页传上一页的 next_cursor）；limit 为单页条数（1~1000，可空 ⇒ 500）。返回 task_list（每项 userid 与 publish_status 0 未发表 / 1 已发表）、count 与 next_cursor。仅支持企业发表的朋友圈（个人朋友圈会报错）；某成员的 userid 可作为 externalcontact.moment.comments 的入参查其互动。",
+    Description = "获取企业发表的朋友圈在各成员处的执行列表。参数 moment_id 为企业发表的朋友圈 ID（先用 externalcontact.moment.list 取 create_type=0 的记录）；cursor 为分页游标（首页省略，续页传上一页的 page_token）；limit 为单页条数（1~1000，可空 ⇒ 500）。返回 items（每项 userid 与 publish_status 0 未发表 / 1 已发表）、count 与 page_token。仅支持企业发表的朋友圈（个人朋友圈会报错）；某成员的 userid 可作为 externalcontact.moment.comments 的入参查其互动。",
     Source = "IWechatWorkExternalContactMomentService.GetMomentPublishListAsync",
     RequiredScopes = ["externalcontact.moment.read"])]
 public interface IWechatWorkExternalContactMomentPublishListTool
 {
     /// <summary>列出企业发表朋友圈的执行成员与发表状态。</summary>
-    /// <returns>白名单投影后的 JSON 文本（task_list、count、next_cursor）。</returns>
+    /// <returns>白名单投影后的 JSON 文本（items、count、page_token）。</returns>
     Task<string> GetMomentPublishListAsync(
         [ToolParameter("moment_id", "企业发表的朋友圈 ID（先用 externalcontact.moment.list 获取）。", Required = true)] string moment_id,
         [ToolParameter("cursor", "分页游标（可空 ⇒ 首页）。")] string? cursor,

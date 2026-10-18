@@ -91,7 +91,7 @@ internal sealed class WechatPayCallbackTestFixture : IDisposable
     /// <summary>构造接收器（注入测试时钟；可选注入平台证书刷新端口）。</summary>
     /// <param name="refresher">平台证书刷新替身；<c>null</c> = 未注册（宿主只装回调的形态）。</param>
     public WechatPayCallbackReceiver CreateReceiver(IWechatPayPlatformCertificateRefresher? refresher = null)
-        => new(MerchantManager, SignatureProviders, Credentials, ReplayGuard, OptionsMonitor, Clock, refresher);
+        => new(MerchantManager, SignatureProviders, Credentials, null, ReplayGuard, OptionsMonitor, Clock, refresher);
 
     /// <summary>
     /// 模拟官方<b>轮换平台证书</b>：换一把新私钥 + 自签新证书并切换到它签名，
@@ -344,7 +344,7 @@ internal sealed class WechatPayCallbackTestFixture : IDisposable
 
         /// <inheritdoc />
         /// <remarks>回调侧不取私钥（验签用平台证书公钥），故恒抛以暴露误用。</remarks>
-        public Task<RSA> LoadPrivateKeyAsync(WechatPayMerchantConfig config, CancellationToken cancellationToken = default)
+        public Task<WechatPayMerchantKey> LoadPrivateKeyAsync(WechatPayMerchantConfig config, CancellationToken cancellationToken = default)
             => throw new NotSupportedException("回调链路不取商户私钥。");
     }
 
@@ -420,6 +420,21 @@ internal sealed class WechatPayCallbackTestFixture : IDisposable
             }
 
             certificate = null;
+            return false;
+        }
+
+        /// <inheritdoc />
+        public bool TryGetPublicKey(string? serialNumber, out byte[]? publicKey, out string? algorithm)
+        {
+            if (TryGetCertificate(serialNumber, out var cert) && cert != null)
+            {
+                publicKey = cert.GetRSAPublicKey()?.ExportSubjectPublicKeyInfo();
+                algorithm = "SHA256-RSA2048";
+                return publicKey != null;
+            }
+
+            publicKey = null;
+            algorithm = null;
             return false;
         }
     }

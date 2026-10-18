@@ -758,5 +758,19 @@ public class WechatPayV2MerchantProfileContractGuards
             certificate = match ? _certificate : null;
             return match;
         }
+
+        public bool TryGetPublicKey(string? serialNumber, out byte[]? publicKey, out string? algorithm)
+        {
+            if (TryGetCertificate(serialNumber, out var cert) && cert != null)
+            {
+                publicKey = cert.GetRSAPublicKey()?.ExportSubjectPublicKeyInfo();
+                algorithm = "SHA256-RSA2048";
+                return publicKey != null;
+            }
+
+            publicKey = null;
+            algorithm = null;
+            return false;
+        }
     }
 }

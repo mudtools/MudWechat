@@ -279,6 +279,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/Update-WechatToolG
 | `CallTimeout` | 30 秒（`0` = 不限，合法区间 1..600） | 慢接口（部门全量成员、审批详情）会把整个回合挂住；超时用**链接令牌**真正中止，不是只返回一句文案 |
 | `MaxConcurrentCalls` | 8（`0` = 不限，合法区间 1..64） | 模型可并行发多个 tool_call；不限并发等于让一批工具同时撞 45009，再逐个重试放大 |
 | 指标四项 | 常开 | `wechat.ai.tool.{invocations,duration,result_bytes,truncations}`，Meter 名 `Mud.Wechat`（与 OpenTelemetry 通配一致）。标签只有 `tool`/`risk`/`outcome` 三个低基数维度——**租户与 userid 一律不进标签** |
+| 追踪 span | 常开（无监听者时零成本） | span 名固定 `wechat.ai.tool`，工具名进标签 `wechat.ai.tool.name`（62 个工具各占一个 span 名会让追踪后端分组失去意义）；失败/超时置 `Error` 状态 |
 
 超时的区分很关键：只有「本次调用的超时令牌真的触发」才归一为超时错误；执行器自己抛的
 `OperationCanceledException` 仍按取消上抛（既有契约），调用方取消也必须上抛。
@@ -298,6 +299,6 @@ powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/Update-WechatToolG
 - **任务面扩张**：邮件（先只读）、会议室（先验证城市/建筑入口）、微盘；逐域沿用
   `Curation + Executors + 守卫` 三段形态，并在 `AddWechatWorkTools` 补该域的 `Add*Core()`（陷阱 9），
   同时把 `WechatToolDomainDecisionGuards` 的状态从 Deferred 改为 Curated。
-- **Trace（ActivitySource）**：指标已埋（Meter 四项），但还没有 span——跨「模型 → 工具 → 企微接口」的链路追踪仍缺。
-- **评测集**：「给定请求 → 期望工具序列」的用例尚未建立，工具选择质量目前无法度量。
+- **只读退避重试**：中立 `ToolRetryPolicy` 语义待核对；写工具**永不**自动重试（当前已是硬约束）。
+- **`Guidance/` 资产**：已确认是编译期 `AdditionalFiles`，但「按文件名匹配 vs 按目录聚合」未证实，不做资产。
 - golden 快照随工具面扩张同批重固化（`scripts/Update-WechatToolGolden.ps1`）。

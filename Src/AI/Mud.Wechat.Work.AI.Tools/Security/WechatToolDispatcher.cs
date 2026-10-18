@@ -164,6 +164,8 @@ public sealed class WechatToolDispatcher
         IReadOnlyDictionary<string, object?> arguments,
         CancellationToken cancellationToken)
     {
+        using var activity = WechatToolMetrics.StartActivity(toolName, RiskLabel(context.Risk));
+
         // 超时用「链接令牌」而不是 when 表达式：执行器内部的 Task.Delay/HttpClient 都会响应取消，
         // 中止是真正的中止（而不是仅返回一句超时文案、后台请求继续跑）。
         using var timeoutCts = Policy.CallTimeout > TimeSpan.Zero
@@ -209,6 +211,7 @@ public sealed class WechatToolDispatcher
                 $"工具 {toolName} 超时（{(int)Policy.CallTimeout.TotalSeconds} 秒未返回），本次调用已中止；"
                 + "请缩小查询范围（更小的时间区间 / 更少的条数 / 更精确的条件）后重试，不要原样重复调用。");
             stopwatch.Stop();
+            WechatToolMetrics.CompleteActivity(activity, "failed", 0, false);
             await CompleteAsync(context, WechatToolAuditOutcome.Failed, stopwatch, null).ConfigureAwait(false);
             return _outbound.Normalize(result);
         }
@@ -216,6 +219,7 @@ public sealed class WechatToolDispatcher
         {
             // 调用方取消 = 控制流，必须上抛；但「已发生的事实」仍要留痕。
             stopwatch.Stop();
+            WechatToolMetrics.CompleteActivity(activity, "cancelled", 0, false);
             await CompleteAsync(context, WechatToolAuditOutcome.Failed, stopwatch, null).ConfigureAwait(false);
             throw;
         }
@@ -241,6 +245,11 @@ public sealed class WechatToolDispatcher
         var outcome = failed || normalized.Error is not null
             ? WechatToolAuditOutcome.Failed
             : WechatToolAuditOutcome.Succeeded;
+        WechatToolMetrics.CompleteActivity(
+            activity,
+            OutcomeLabel(outcome),
+            WechatToolOutboundGuard.BytesOf(normalized.Text),
+            normalized.Truncated);
         await CompleteAsync(context, outcome, stopwatch, normalized).ConfigureAwait(false);
 
         return normalized;

@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Diagnostics.Metrics;
 using FluentAssertions;
 using Mud.AI.Agent.Tools;
@@ -114,6 +115,34 @@ public class WechatToolGovernanceTests
 
         invocations.Should().BeGreaterThan(0, "没有调用量指标时，工具面可用性无法被观测");
         bytes.Should().BeGreaterThan(0, "结果体积分布是预算调优的唯一依据");
+    }
+
+    [Fact]
+    public async Task Invoke_ShouldEmitToolSpanWithOutcomeTags()
+    {
+        var stopped = new List<Activity>();
+        using var listener = new ActivityListener
+        {
+            ShouldListenTo = source => string.Equals(source.Name, "Mud.Wechat", StringComparison.Ordinal),
+            Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
+            ActivityStopped = activity =>
+            {
+                lock (stopped)
+                {
+                    stopped.Add(activity);
+                }
+            },
+        };
+        ActivitySource.AddActivityListener(listener);
+
+        var dispatcher = Dispatcher(_ => { }, (_, _) => Task.FromResult(ToolResult.FromText("{\"ok\":true}")));
+        await dispatcher.InvokeAsync(WechatToolNames.ContactsDepartmentGet, Args);
+
+        var span = stopped.Should().ContainSingle(a => a.OperationName == "wechat.ai.tool").Subject;
+        span.GetTagItem("wechat.ai.tool.name").Should().Be(WechatToolNames.ContactsDepartmentGet);
+        span.GetTagItem("wechat.ai.tool.outcome").Should().Be("succeeded");
+        span.GetTagItem("wechat.ai.tool.risk").Should().Be("read");
+        ((bool)span.GetTagItem("wechat.ai.tool.truncated")!).Should().BeFalse();
     }
 
     private static WechatToolDispatcher Dispatcher(

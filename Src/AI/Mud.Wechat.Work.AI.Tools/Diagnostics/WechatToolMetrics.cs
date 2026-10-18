@@ -8,6 +8,7 @@
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
 
+
 namespace Mud.Wechat.Work.AI.Tools.Diagnostics;
 
 /// <summary>
@@ -34,8 +35,54 @@ namespace Mud.Wechat.Work.AI.Tools.Diagnostics;
 /// </remarks>
 internal static class WechatToolMetrics
 {
-    /// <summary>指标根源（与 OpenTelemetry 装配包的通配订阅一致）。</summary>
+    /// <summary>指标与追踪的根源名（与 OpenTelemetry 装配包的通配订阅一致）。</summary>
     public const string MeterName = "Mud.Wechat";
+
+    /// <summary>追踪源（span 名固定为 <c>wechat.ai.tool</c>，工具名进标签而不是进 span 名）。</summary>
+    /// <remarks>
+    /// <b>为什么工具名进标签不进 span 名</b>：span 名是聚合维度，62 个工具各占一个名字会让追踪后端的分组失去意义；
+    /// 工具名作为 <c>wechat.ai.tool.name</c> 标签既能聚合也能筛选。
+    /// </remarks>
+    private static readonly ActivitySource Source = new(MeterName, "1.0.0");
+
+    /// <summary>开启一次工具调用的 span（无监听者时返回 <see langword="null"/>，零成本）。</summary>
+    /// <param name="tool">工具名。</param>
+    /// <param name="risk">风险档标签。</param>
+    /// <returns>活动的 span（可空）。</returns>
+    public static Activity? StartActivity(string tool, string risk)
+    {
+        var activity = Source.StartActivity("wechat.ai.tool", ActivityKind.Client);
+        if (activity is null)
+        {
+            return null;
+        }
+
+        activity.SetTag("wechat.ai.tool.name", tool);
+        activity.SetTag("wechat.ai.tool.risk", risk);
+        return activity;
+    }
+
+    /// <summary>结束一次调用的 span：写结局、体积、截断与错误状态。</summary>
+    /// <param name="activity">span（可空）。</param>
+    /// <param name="outcome">结局标签。</param>
+    /// <param name="bytes">结果字节数。</param>
+    /// <param name="truncated">是否被预算截断。</param>
+    public static void CompleteActivity(Activity? activity, string outcome, long bytes, bool truncated)
+    {
+        if (activity is null)
+        {
+            return;
+        }
+
+        activity.SetTag("wechat.ai.tool.outcome", outcome);
+        activity.SetTag("wechat.ai.tool.result_bytes", bytes);
+        activity.SetTag("wechat.ai.tool.truncated", truncated);
+
+        if (!string.Equals(outcome, "succeeded", StringComparison.Ordinal))
+        {
+            activity.SetStatus(ActivityStatusCode.Error, outcome);
+        }
+    }
 
     private static readonly Meter Meter = new(MeterName, "1.0.0");
 

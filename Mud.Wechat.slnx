@@ -1,7 +1,18 @@
 <Solution>
   <Folder Name="/Demos/">
+    <Project Path="Demos/Mud.Wechat.AI.AgentDemo/Mud.Wechat.AI.AgentDemo.csproj" />
+    <Project Path="Demos/Mud.Wechat.Ads.Demo/Mud.Wechat.Ads.Demo.csproj" />
+    <Project Path="Demos/Mud.Wechat.AllInOne.Demo/Mud.Wechat.AllInOne.Demo.csproj" />
+    <Project Path="Demos/Mud.Wechat.Channels.Demo/Mud.Wechat.Channels.Demo.csproj" />
+    <Project Path="Demos/Mud.Wechat.Demo.SelfTest/Mud.Wechat.Demo.SelfTest.csproj" />
+    <Project Path="Demos/Mud.Wechat.Demo.Shared/Mud.Wechat.Demo.Shared.csproj" />
+    <Project Path="Demos/Mud.Wechat.MiniProgram.Demo/Mud.Wechat.MiniProgram.Demo.csproj" />
+    <Project Path="Demos/Mud.Wechat.OfficialAccount.Demo/Mud.Wechat.OfficialAccount.Demo.csproj" />
+    <Project Path="Demos/Mud.Wechat.OpenPlatform.Demo/Mud.Wechat.OpenPlatform.Demo.csproj" />
+    <Project Path="Demos/Mud.Wechat.Pay.Demo/Mud.Wechat.Pay.Demo.csproj" />
     <Project Path="Demos/Mud.Wechat.Work.ContactCallbackDemo/Mud.Wechat.Work.ContactCallbackDemo.csproj" />
     <Project Path="Demos/Mud.Wechat.Work.ContactDemo/Mud.Wechat.Work.ContactDemo.csproj" />
+    <Project Path="Demos/Mud.Wechat.Work.WebDemo/Mud.Wechat.Work.WebDemo.csproj" />
   </Folder>
   <Folder Name="/src/" />
   <!-- AI 能力域（2026-10 新增，设计见 .docs/AI/MudWechat-AI功能解决方案-v1.md）：
@@ -13,6 +24,7 @@
     <Project Path="Src/AI/Mud.Wechat.AI.Agent/Mud.Wechat.AI.Agent.csproj" />
     <Project Path="Src/AI/Mud.Wechat.Work.AI/Mud.Wechat.Work.AI.csproj" />
     <Project Path="Src/AI/Mud.Wechat.Work.AI.Tools/Mud.Wechat.Work.AI.Tools.csproj" />
+    <Project Path="Src/AI/Mud.Wechat.Work.AI.Mcp/Mud.Wechat.Work.AI.Mcp.csproj" />
   </Folder>
   <!-- 腾讯广告 Marketing API v3.0 产品线（2026-10 新增，在建）：3 源工程。 -->
   <Folder Name="/src/Ads/">
@@ -88,5 +100,6 @@
     <Project Path="Tests/Mud.Wechat.AI.Tests/Mud.Wechat.AI.Tests.csproj" />
     <Project Path="Tests/Mud.Wechat.Work.AI.Tests/Mud.Wechat.Work.AI.Tests.csproj" />
     <Project Path="Tests/Mud.Wechat.Work.AI.Tools.Tests/Mud.Wechat.Work.AI.Tools.Tests.csproj" />
+    <Project Path="Tests/Mud.Wechat.Work.AI.Mcp.Tests/Mud.Wechat.Work.AI.Mcp.Tests.csproj" />
   </Folder>
 </Solution>

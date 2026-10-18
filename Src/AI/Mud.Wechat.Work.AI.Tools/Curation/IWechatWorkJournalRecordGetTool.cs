@@ -31,6 +31,8 @@ namespace Mud.Wechat.Work.AI.Tools.Curation;
 public interface IWechatWorkJournalRecordGetTool
 {
     /// <summary>读取汇报详情。</summary>
-    /// <param name="journaluuid">汇报记录 UUID。</param>
-    void Get(string journaluuid);
+    /// <returns>白名单投影后的 JSON 文本（journal_uuid、template_name、template_id、submitter、report_time、receiver_count、readed_count、comment_count、journal_text、fields）。</returns>
+    Task<string> GetJournalRecordDetailAsync(
+        [ToolParameter("journaluuid", "汇报记录 UUID。", Required = true)] string journaluuid,
+        CancellationToken cancellationToken = default);
 }

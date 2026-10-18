@@ -7,6 +7,7 @@
 
 using Mud.Wechat.Work.Abstractions.Callback;
 using Mud.Wechat.Work.Callback.Events.Payloads;
+using Mud.Wechat.Work.ContactCallbackDemo.Services;
 
 namespace Mud.Wechat.Work.ContactCallbackDemo.Handlers;
 
@@ -15,11 +16,12 @@ namespace Mud.Wechat.Work.ContactCallbackDemo.Handlers;
 /// 官方明示标签成员变更与成员/部门自身变更事件<b>时序不保证</b>，处理器不得依赖相对顺序，
 /// 必要时用「获取标签成员」拉取接口对齐。
 /// </remarks>
-public sealed class UpdateTagHandler : WechatCallbackPayloadHandler<ContactTagChangedPayload>
+public sealed class UpdateTagHandler(
+    ILogger<UpdateTagHandler> logger,
+    DemoIdempotencyTracker idempotency) : WechatCallbackPayloadHandler<ContactTagChangedPayload>
 {
-    private readonly ILogger<UpdateTagHandler> _logger;
-
-    public UpdateTagHandler(ILogger<UpdateTagHandler> logger) => _logger = logger;
+    private readonly ILogger<UpdateTagHandler> _logger = logger;
+    private readonly DemoIdempotencyTracker _idempotency = idempotency;
 
     public override string SupportedEventType => WechatCallbackEventTypes.UpdateTag;
 
@@ -28,9 +30,17 @@ public sealed class UpdateTagHandler : WechatCallbackPayloadHandler<ContactTagCh
         ContactTagChangedPayload payload,
         CancellationToken cancellationToken = default)
     {
+        var key = DemoIdempotencyTracker.BuildKey(eventData, payload.TagId);
+        if (!_idempotency.TryBegin(key))
+        {
+            _logger.LogInformation("重复投递已忽略（业务幂等）：{Key}", key);
+            return Task.CompletedTask;
+        }
+
         _logger.LogInformation(
-            "标签成员变更：TagId={TagId}, 新增成员={AddedUserIds}, 移除成员={RemovedUserIds}",
-            payload.TagId, payload.AddedUserIds, payload.RemovedUserIds);
+            "标签成员变更：TagId={TagId}, 新增成员={AddedUserIds}, 移除成员={RemovedUserIds}, 新增部门={AddedPartyIds}, 移除部门={RemovedPartyIds}",
+            payload.TagId, payload.AddedUserIds, payload.RemovedUserIds,
+            payload.AddedPartyIds, payload.RemovedPartyIds);
         return Task.CompletedTask;
     }
 }

@@ -65,14 +65,132 @@ public class MessageToolHandlersTests
     [Fact]
     public async Task Send_WhenContentBlank_ShouldRejectBeforeCallingSdk()
     {
-        var result = await Handler().SendAsync(
+        var act = async () => await Handler().SendAsync(
             Args(("touser", "zhangsan"), ("content", " "), ("agentid", 1000002)),
             CancellationToken.None);
 
-        result.Text.Should().Contain("content");
+        await act.Should()
+            .ThrowAsync<ArgumentException>("content 在声明面是必填（Required），空白值在解包期即被拒")
+            .WithMessage("*content*", "失败文案必须点出参数名，模型才能据此改参");
         _message.Verify(
             s => s.SendTextMessageAsync(It.IsAny<MessageSendTextRequest>(), It.IsAny<CancellationToken>()),
             Times.Never);
+    }
+
+    [Fact]
+    public async Task Send_WithMarkdownType_ShouldDispatchToMarkdownEndpoint()
+    {
+        _message
+            .Setup(s => s.SendMarkdownMessageAsync(It.IsAny<MessageSendMarkdownRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new MessageSendResponse { ErrorCode = 0, MsgId = "msg-2" });
+
+        var result = await Handler().SendAsync(
+            Args(("touser", "zhangsan"), ("content", "**评审**：明天 10 点"), ("agentid", 1000002), ("msg_type", 2)),
+            CancellationToken.None);
+
+        result.Text.Should().Contain("\"msg_type\":2");
+        result.Text.Should().Contain("\"msgid\":\"msg-2\"");
+        _message.Verify(
+            s => s.SendMarkdownMessageAsync(
+                It.Is<MessageSendMarkdownRequest>(r =>
+                    r.MsgType == "markdown" && r.Markdown != null && r.Markdown.Content == "**评审**：明天 10 点"),
+                It.IsAny<CancellationToken>()),
+            Times.Once);
+        _message.Verify(
+            s => s.SendTextMessageAsync(It.IsAny<MessageSendTextRequest>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task Send_WithTextCardMissingTitle_ShouldRejectBeforeCallingSdk()
+    {
+        var result = await Handler().SendAsync(
+            Args(("touser", "zhangsan"), ("content", "点开查看"), ("agentid", 1000002), ("msg_type", 3), ("url", "https://example.com/a")),
+            CancellationToken.None);
+
+        result.Text.Should().Contain("title");
+        _message.Verify(
+            s => s.SendTextCardMessageAsync(It.IsAny<MessageSendTextCardRequest>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task Send_WithTextCardUrlWithoutScheme_ShouldReject()
+    {
+        var result = await Handler().SendAsync(
+            Args(
+                ("touser", "zhangsan"),
+                ("content", "点开查看"),
+                ("agentid", 1000002),
+                ("msg_type", 3),
+                ("title", "评审通知"),
+                ("url", "example.com/a")),
+            CancellationToken.None);
+
+        result.Text.Should().Contain("http");
+    }
+
+    [Fact]
+    public async Task Send_WithValidTextCard_ShouldDispatchToTextCardEndpoint()
+    {
+        _message
+            .Setup(s => s.SendTextCardMessageAsync(It.IsAny<MessageSendTextCardRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new MessageSendResponse { ErrorCode = 0, MsgId = "msg-3" });
+
+        var result = await Handler().SendAsync(
+            Args(
+                ("touser", "zhangsan"),
+                ("content", "明天 10 点评审，请确认"),
+                ("agentid", 1000002),
+                ("msg_type", 3),
+                ("title", "评审通知"),
+                ("url", "https://example.com/a"),
+                ("btn_txt", "查看")),
+            CancellationToken.None);
+
+        result.Text.Should().Contain("\"msgid\":\"msg-3\"");
+        _message.Verify(
+            s => s.SendTextCardMessageAsync(
+                It.Is<MessageSendTextCardRequest>(r =>
+                    r.MsgType == "textcard"
+                    && r.TextCard != null
+                    && r.TextCard.Title == "评审通知"
+                    && r.TextCard.Description == "明天 10 点评审，请确认"
+                    && r.TextCard.Url == "https://example.com/a"
+                    && r.TextCard.BtnTxt == "查看"),
+                It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task Recall_ShouldReturnOkAndPassMsgId()
+    {
+        _message
+            .Setup(s => s.RecallMessageAsync(It.IsAny<RecallMessageRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new RecallMessageResponse { ErrorCode = 0 });
+
+        var result = await Handler().RecallAsync(Args(("msgid", "msg-1")), CancellationToken.None);
+
+        result.Text.Should().Contain("\"ok\":true");
+        result.Text.Should().Contain("\"msgid\":\"msg-1\"");
+        _message.Verify(
+            s => s.RecallMessageAsync(
+                It.Is<RecallMessageRequest>(r => r.MsgId == "msg-1"),
+                It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task Recall_WhenApiFails_ShouldReturnReadableError()
+    {
+        _message
+            .Setup(s => s.RecallMessageAsync(It.IsAny<RecallMessageRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new RecallMessageResponse { ErrorCode = 40056, ErrorMessage = "invalid msgid" });
+
+        var result = await Handler().RecallAsync(Args(("msgid", "nope")), CancellationToken.None);
+
+        result.Text.Should().Contain("40056");
+        result.Text.Should().Contain("invalid msgid");
     }
 
     private MessageToolHandlers Handler() => new(_message.Object);

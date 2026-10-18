@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <title>Mud.Wechat Work WebDemo</title>
+</head>
+<body>
+  <h1>企业微信 浏览器侧 Demo</h1>
+  <ul>
+    <li><a href="/oauth/start">① 网页授权（scope=snsapi_base，静默授权）</a></li>
+    <li><a href="/oauth/start?scope=snsapi_privateinfo">② 网页授权（snsapi_privateinfo，需用户确认，返回 user_ticket）</a></li>
+    <li><a href="/jssdk-demo.html">③ JS-SDK 签名自检页（wx.config + wx.agentConfig）</a></li>
+    <li><a href="/healthz">④ 配置摘要（不含凭据）</a></li>
+  </ul>
+  <p>发消息端点 <code>POST /api/messages/text</code> 默认不映射，需 <code>MUDWECHAT_DEMO_ALLOW_WRITE=1</code>。</p>
+  <p>注意：①②③必须在企业微信客户端内打开，且当前域名已配置为该应用的可信域名与 JS 接口安全域名，
+     否则官方返回 50001 / 53006 / invalid signature。</p>
+</body>
+</html>

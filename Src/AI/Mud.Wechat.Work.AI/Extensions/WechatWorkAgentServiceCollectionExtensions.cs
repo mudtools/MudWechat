@@ -19,6 +19,8 @@ using Mud.Wechat.Work.AI.Agents;
 using Mud.Wechat.Work.AI.Configuration;
 using Mud.Wechat.Work.AI.Events;
 using Mud.AI.Abstractions.Conversations;
+using Mud.Wechat.AI.Abstractions.Conversations;
+using Mud.Wechat.AI.Agent.Conversations;
 
 namespace Mud.Wechat.Work.AI.Extensions;
 
@@ -128,8 +130,19 @@ public static class WechatWorkAgentServiceCollectionExtensions
         // ⑤ Agent 单例（延迟解析 IChatClient ⇒ 缺失时错误可操作）。
         services.TryAddSingleton(CreateAgent);
 
-        // ⑥ 回调处理器（宿主负责挂到机器人路由）。
+        // ⑥ 回调处理器（宿主负责挂到机器人路由）：按事件族显式注册，共用 WechatAgentTurnRunner。
+        //    新增族 = 加一行 TryAddTransient + 继承 WechatBotEventHandlerBase（不触碰既有族）。
         services.TryAddTransient<WechatBotAgentHandler>();
+        services.TryAddTransient<WechatBotMixedMessageHandler>();
+        services.TryAddTransient<WechatBotVoiceMessageHandler>();
+
+        // ⑦ 事件装配器（中立兜底；宿主可前置注册自己的 IContextAssembler 覆写某族的装配策略）。
+        services.TryAddSingleton<IContextAssembler, DefaultContextAssembler>();
+
+        // ⑧ 回合事实装配器（对齐中立 Mud.AI.Abstractions.Context.IContextAssembler 槽位）：
+        //    时间锚点 + 运行身份。它不占工具预算、不经白名单，也不是「元工具」——事实恒定注入，能力才需模型调用。
+        services.TryAddEnumerable(
+            ServiceDescriptor.Singleton<Mud.AI.Abstractions.Context.IContextAssembler, WechatTurnContextAssembler>());
 
         return services;
     }
@@ -154,6 +167,7 @@ public static class WechatWorkAgentServiceCollectionExtensions
             services.GetService<IAgentTelemetry>(),
             services.GetService<ITurnScopeFactory>(),
             services.GetService<IReadOnlyList<AIFunction>>(),
-            services.GetService<ILogger<WechatAgent>>());
+            services.GetService<ILogger<WechatAgent>>(),
+            services.GetServices<Mud.AI.Abstractions.Context.IContextAssembler>());
     }
 }

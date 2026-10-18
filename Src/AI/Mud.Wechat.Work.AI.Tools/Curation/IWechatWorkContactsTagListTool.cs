@@ -25,5 +25,6 @@ namespace Mud.Wechat.Work.AI.Tools.Curation;
 public interface IWechatWorkContactsTagListTool
 {
     /// <summary>列出标签（无参数）。</summary>
-    void Tags();
+    /// <returns>白名单投影后的 JSON 文本（taglist、tag_id、name）。</returns>
+    Task<string> GetTagListAsync(CancellationToken cancellationToken = default);
 }

@@ -43,6 +43,7 @@ public sealed class MpMediaDownloadService : IMpMediaDownloadService
     public const string PermanentMaterialPath = "/cgi-bin/material/get_material";
 
     private readonly IAppContextHolder _appContextHolder;
+    private readonly IMpAppManager? _appManager;
     private readonly IHttpContentSerializer _contentSerializer;
 #if NET8_0_OR_GREATER
     /// <summary>源生成快车道（<c>IAotJsonContentSerializer</c> 仅在 net8.0+ 形态提供）。</summary>
@@ -54,14 +55,17 @@ public sealed class MpMediaDownloadService : IMpMediaDownloadService
     /// <param name="appContextHolder">应用上下文持有器（与声明式客户端同源）。</param>
     /// <param name="logger">日志器。</param>
     /// <param name="contentSerializer">HTTP 内容序列化器（可选，未注入时使用组件默认——与生成客户端同源）。</param>
+    /// <param name="appManager">应用注册表（可选；用于「无环境上下文时回退默认应用」，与生成客户端同一口径）。</param>
     public MpMediaDownloadService(
         IAppContextHolder appContextHolder,
         ILogger<MpMediaDownloadService> logger,
-        IHttpContentSerializer? contentSerializer = null)
+        IHttpContentSerializer? contentSerializer = null,
+        IMpAppManager? appManager = null)
     {
         _appContextHolder = appContextHolder ?? throw new ArgumentNullException(nameof(appContextHolder));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _contentSerializer = contentSerializer ?? HttpContentSerializerFactory.CreateDefault();
+        _appManager = appManager;
 #if NET8_0_OR_GREATER
         // AOT 快车道：宿主注入的序列化器实现 IAotJsonContentSerializer 时，直接用源生成上下文的
         // JsonTypeInfo 走「零反射」通道（AGENTS §3 红线：不使用反射版 Serialize/Deserialize<T>）。
@@ -276,11 +280,14 @@ public sealed class MpMediaDownloadService : IMpMediaDownloadService
         return body.Length <= 120 ? body : body.Substring(0, 120) + "…";
     }
 
+    // 与生成客户端同一口径：环境上下文缺失时回退默认应用（单应用宿主是最常见形态，
+    // 只认 ambient 会让「已配置默认应用」的宿主在本通道恒报错，与本方法原先的提示语自相矛盾）。
     private IMpAppContext ResolveAppContext()
         => _appContextHolder.Current as IMpAppContext
+           ?? _appManager?.GetDefaultApp()
            ?? throw new InvalidOperationException(
                "无法找到当前公众号应用上下文（IMpAppContext）。" +
-               "请先进入应用作用域（SwitchTo / UseAppScope）或配置默认应用。");
+               "请先进入应用作用域（SwitchTo / UseAppScope），或经 AddMpApp 配置默认应用。");
 
     private static string BuildRequestUri(string path, string token, string mediaId)
         => $"{path}?access_token={Uri.EscapeDataString(token)}&media_id={Uri.EscapeDataString(mediaId)}";

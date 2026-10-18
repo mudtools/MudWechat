@@ -32,8 +32,10 @@ namespace Mud.Wechat.Work.AI.Tools.Curation;
 public interface IWechatWorkKfMessageSendTool
 {
     /// <summary>发送客服文本消息。</summary>
-    /// <param name="open_kfid">客服账号 ID。</param>
-    /// <param name="touser">客户 external_userid。</param>
-    /// <param name="content">文本内容。</param>
-    void Send(string open_kfid, string touser, string content);
+    /// <returns>白名单投影后的 JSON 文本（msgid）。</returns>
+    Task<string> SendTextMessageAsync(
+        [ToolParameter("open_kfid", "客服账号 ID。", Required = true)] string open_kfid,
+        [ToolParameter("touser", "客户 external_userid。", Required = true)] string touser,
+        [ToolParameter("content", "文本内容。", Required = true)] string content,
+        CancellationToken cancellationToken = default);
 }

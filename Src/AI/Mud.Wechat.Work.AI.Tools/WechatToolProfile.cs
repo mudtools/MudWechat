@@ -48,7 +48,11 @@ namespace Mud.Wechat.Work.AI.Tools;
     DiagnosticPrefix = "MUDWT",
     DiagnosticCategory = "MudWechat.AI",
     ToolingDiagnosticCategory = "MudWechat.Tooling",
-    WriteVerbKeywords = "delete|remove|recall|kick|transfer|export|import|batch|clear|revoke|disable|destroy|dismiss",
+    // 危险词表：只收「破坏性动作」的动词。两个刻意不收录的量词/补救词——
+    //   · batch：量词，BatchGetApprovalNumbersAsync 是只读查询，收录它会让审批读面永久被判 high-risk-write；
+    //   · recall：补救动作（撤回自己刚发的消息），破坏性为 0，收录它会让每次纠错都要求人工审批。
+    // 破坏性由 delete/remove/clear/destroy/dismiss/revoke 覆盖：BatchDelete*/BatchUpdate* 仍命中真实动词。
+    WriteVerbKeywords = "delete|remove|kick|transfer|export|import|clear|revoke|disable|destroy|dismiss",
     SchemaExtensionKey = "x-wechat",
     OwnerAssembly = "Mud.Wechat.Work.AI.Tools",
     GeneratedNamespace = "Mud.Wechat.Work.AI.Tools.Generated",

@@ -42,4 +42,19 @@ public static class WechatPayHttpClientNames
     /// 支付客户端类型的<b>全限定</b> metadata name，供 <c>[HttpClientApi(HttpClient = ...)]</c> 使用。
     /// </summary>
     public const string TypeName = "Mud.Wechat.Pay.Abstractions.Transport.IWechatPayHttpClient";
+
+    /// <summary>
+    /// 命名客户端默认 <c>Accept</c> 头值。
+    /// </summary>
+    /// <remarks>
+    /// <b>为什么由 SDK 兜</b>：官方退款域（<c>/v3/refund/domestic/*</c>）在验签<b>之前</b>就校验这两个头，
+    /// 缺失即 <c>400 INVALID_REQUEST</c>「Http头缺少Accept或User-Agent」；而 .NET 的 <c>HttpClient</c>
+    /// 既不默认发 <c>Accept</c> 也不默认发 <c>User-Agent</c>。登记点见 <c>AddPayApp</c> 的命名客户端配置。
+    /// </remarks>
+    public const string AcceptHeaderValue = "application/json";
+
+    /// <summary>
+    /// 命名客户端默认 <c>User-Agent</c> 头的产品标识（实际发出值为 <c>{产品名}/{程序集版本}</c>）。
+    /// </summary>
+    public const string UserAgentProductName = "Mud.Wechat.Pay";
 }

@@ -58,6 +58,10 @@ public sealed class WechatAgent : ObservedDelegatingAgent, IAgentSessionFacade
     /// <param name="scopeFactory">工具作用域端口（可空 ⇒ 不建立任何工具执行上下文）。</param>
     /// <param name="tools">暴露给模型的工具（可空/空集 ⇒ 内层 Agent 不设置 <c>ChatOptions.Tools</c>）。</param>
     /// <param name="logger">日志（可空）。</param>
+    /// <param name="contextAssemblers">
+    /// 回合事实装配器（可空 ⇒ 不注入任何片段）。用于「模型无法自行获得、且每回合都可能变」的事实
+    /// （时间锚点、运行身份）——这条通道不占工具预算，也不经白名单/授权面。
+    /// </param>
     /// <exception cref="ArgumentNullException"><paramref name="chatClient"/> / <paramref name="options"/> / <paramref name="sessionStore"/> 为 <see langword="null"/>。</exception>
     public WechatAgent(
         IChatClient chatClient,
@@ -66,7 +70,8 @@ public sealed class WechatAgent : ObservedDelegatingAgent, IAgentSessionFacade
         IAgentTelemetry? telemetry = null,
         ITurnScopeFactory? scopeFactory = null,
         IReadOnlyList<AIFunction>? tools = null,
-        ILogger<WechatAgent>? logger = null)
+        ILogger<WechatAgent>? logger = null,
+        IEnumerable<Mud.AI.Abstractions.Context.IContextAssembler>? contextAssemblers = null)
         : base(
             BuildInnerAgent(chatClient, options, tools),
             AgentName,
@@ -97,7 +102,8 @@ public sealed class WechatAgent : ObservedDelegatingAgent, IAgentSessionFacade
             keyBuilder: BuildSessionKey,
             telemetry: telemetry,
             logger: logger,
-            assemblers: null,
+            // 装配器按 Order 升序（中立管线自行排序）：身份与时间锚点先于用户问题进入上下文。
+            assemblers: contextAssemblers?.ToArray() ?? [],
             acquireGate: null,
             channel: null,
             approvalChannel: null,

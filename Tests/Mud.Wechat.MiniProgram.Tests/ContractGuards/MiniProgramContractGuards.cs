@@ -8,7 +8,7 @@
 namespace Mud.Wechat.MiniProgram.Tests.ContractGuards;
 
 /// <summary>
-/// 小程序线 P1-c 契约守卫（方案 §3.6 MP-X1 / X2 / X3 / X5 / X6 / X7 / X8 的机械化落地）。
+/// 小程序线 P1-c 契约守卫（方案 §3.6 MP-X1 / X2 / X3 / X5 / X6 / X7 / X8 / X9 / X10 的机械化落地）。
 /// </summary>
 /// <remarks>
 /// <para>
@@ -513,6 +513,47 @@ public class MiniProgramContractGuards
                                && !f.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
             .Should().NotContain(f => File.ReadAllText(f).Contains("ConfigureAllowedDomains", StringComparison.Ordinal),
                 "产品线不得自行登记进程级白名单（整体替换语义会清空其它产品线）");
+    }
+
+    /// <summary>
+    /// MP-X10：四条<b>手工二进制通道</b>的应用上下文解析口径 = <c>环境上下文 ?? 默认应用</c>。
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// 小程序码 / 反馈图片 / 客服临时素材 / 物流对账四条通道不走生成管线，令牌注入与请求发送全在手写路径里，
+    /// 于是它们也是唯一会「比生成客户端更严格」的地方。生成客户端的口径是
+    /// <c>_appContextHolder.Current ?? GetDefaultApp()</c>；手工通道若只认 <c>Current</c>，
+    /// 则「<b>只配一个默认应用、从不进入作用域</b>」这一最常见宿主形态会在这些通道恒报错
+    /// （DM-05 Demo 实测踩到：<c>/api/qrcode</c> 抛「无法找到当前小程序（公众号）应用上下文」，
+    /// 而同一句提示语又写着「或配置默认应用」——自相矛盾）。
+    /// </para>
+    /// <para>
+    /// <b>机械判定取源文本而非反射</b>：回退发生在私有方法体内，反射看不到；
+    /// 构造参数 <c>IMpAppManager? appManager = null</c> 是<b>可选尾参</b>（既有测试与宿主手工构造不受影响），
+    /// 类型层面无法区分「有回退」与「无回退」，故钉死两处文本锚点。
+    /// 公众号线两条同形态通道由 <c>MpMediaContractGuards</c> / <c>MpNontaxContractGuards</c> 同批锁定。
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void ManualChannels_ShouldFallBackToDefaultApp()
+    {
+        foreach (var relative in new[]
+                 {
+                     Path.Combine("QrCodeLink", "WxaCodeService.cs"),
+                     Path.Combine("Kf", "WxaKfMediaService.cs"),
+                     Path.Combine("Operation", "WxaFeedbackMediaService.cs"),
+                     Path.Combine("Express", "WxaExpressBillService.cs"),
+                 })
+        {
+            var file = SourcePath("Mud.Wechat.MiniProgram", relative);
+            File.Exists(file).Should().BeTrue($"手工通道源文件缺失：{relative}");
+
+            var text = File.ReadAllText(file);
+            text.Should().Contain("IMpAppManager? appManager = null",
+                $"{relative} 须以可选尾参接收应用注册表（DI 自动注入，宿主手工构造不受影响）");
+            text.Should().Contain("_appManager?.GetDefaultApp()",
+                $"{relative} 的上下文解析须在环境上下文缺失时回退默认应用，与生成客户端同一口径（MP-X10）");
+        }
     }
 
     /// <summary>

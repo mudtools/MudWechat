@@ -1,4 +1,4 @@
-﻿// -----------------------------------------------------------------------
+// -----------------------------------------------------------------------
 //  作者：Mud Studio  版权所有 (c) Mud Studio 2026
 //  Mud.Wechat 项目的版权、商标、专利和其他相关权利均受相应法律法规的保护。
 //  本项目主要遵循 MIT 许可证进行分发和使用。许可证位于源代码树根目录中的 LICENSE-MIT 文件。
@@ -29,10 +29,12 @@ namespace Mud.Wechat.Work.AI.Tools.Curation;
 public interface IWechatWorkMeetingAttendeesTool
 {
     /// <summary>读取已参会成员列表。</summary>
-    /// <param name="meetingid">会议 ID。</param>
-    /// <param name="start_time">起始时间（可空；Unix 秒或带时区的 ISO 8601）。</param>
-    /// <param name="end_time">结束时间（可空；与 start_time 同时出现时跨度 ≤ 31 天）。</param>
-    /// <param name="cursor">分页游标（可空 ⇒ 首页）。</param>
-    /// <param name="limit">单页条数（1~100，可空 ⇒ 100；续页须与首次一致）。</param>
-    void List(string meetingid, string? start_time, string? end_time, string? cursor, int? limit);
+    /// <returns>白名单投影后的 JSON 文本（attendees、count、has_more、next_cursor）。</returns>
+    Task<string> GetAttendeeListAsync(
+        [ToolParameter("meetingid", "会议 ID。", Required = true)] string meetingid,
+        [ToolParameter("start_time", "起始时间（可空；Unix 秒或带时区的 ISO 8601）。")] string? start_time,
+        [ToolParameter("end_time", "结束时间（可空；与 start_time 同时出现时跨度 ≤ 31 天）。")] string? end_time,
+        [ToolParameter("cursor", "分页游标（可空 ⇒ 首页）。")] string? cursor,
+        [ToolParameter("limit", "单页条数（1~100，可空 ⇒ 100；续页须与首次一致）。")] int? limit,
+        CancellationToken cancellationToken = default);
 }

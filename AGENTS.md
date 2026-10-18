@@ -85,7 +85,7 @@ Src/{OfficialAccount,MiniProgram,Pay,OpenPlatform,Channels,Ads}/   # 其余五�
                                       # 公众号 4 包 / 小程序 3 包（**无 Callback**）/ 支付 4 包 / 开放平台 3 包 / 小店 4 包 / 广告 3 包（在建）
                                       # 每包的公开面与已踩陷阱见其目录下的 README.md
 Tests/                                # 16 个工程（七线 + Core 叶层 + Redis + OpenTelemetry），镜像源结构，单 TFM net8.0
-scripts/                              # verify-build / audit-config-keys / GenerateJsonContext / AddHttpJsonSerializable / ApplyTokenOwnerKeys
+scripts/                              # verify-build / audit-config-keys / GenerateJsonContext / AddHttpJsonSerializable / ApplyTokenOwnerKeys / Update-WechatToolGolden
 .docs/                                # 方案与设计文档（中文；已 gitignore，fresh clone 无此目录）
 ```
 

@@ -24,6 +24,8 @@ namespace Mud.Wechat.Work.AI.Tools.Curation;
 public interface IWechatWorkContactsDepartmentListTool
 {
     /// <summary>列出部门树。</summary>
-    /// <param name="department_id">根部门 ID（可选；省略即全量）。</param>
-    void Departments(int? department_id);
+    /// <returns>白名单投影后的 JSON 文本（department、count；每项 id、name、parentid）。</returns>
+    Task<string> GetDepartmentListAsync(
+        [ToolParameter("department_id", "根部门 ID（可选；省略即全量）。")] int? department_id,
+        CancellationToken cancellationToken = default);
 }

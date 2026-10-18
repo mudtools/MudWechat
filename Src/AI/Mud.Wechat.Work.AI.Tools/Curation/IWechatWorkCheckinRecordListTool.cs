@@ -26,15 +26,17 @@ namespace Mud.Wechat.Work.AI.Tools.Curation;
 /// </remarks>
 [AgentTool(
     name: "checkin.record.list",
-    Description = "获取企业微信成员的打卡记录。参数 userid_list 为成员 userid 列表（1~100 个，超过请分批；可先用 contacts.user.list 取 userid）；start_time / end_time 为时间范围（Unix 秒，如 \"1700000000\"；也接受带时区的 ISO 8601，如 \"2026-10-10T09:00:00+08:00\"），跨度不得超过 30 天且 end_time 必须大于 start_time；data_type 为打卡类型（1 上下班打卡 / 2 外出打卡 / 3 全部，默认 3）。返回每条记录的 userid、checkin_type（中文字符串，如「上班打卡」）、exception_type（中文字符串，多个以分号间隔，如「时间异常」）、checkin_time、sch_checkin_time（标准打卡时间）、规则名与规则/班次 ID。不含打卡地点、经纬度、WiFi、设备号与备注（行踪与设备指纹不外发）。",
+    Description = "获取企业微信成员的打卡记录。参数 userid_list 为成员 userid 列表（1~100 个，超过请分批；可先用 contacts.user.list 取 userid）；start_time / end_time 为时间范围（Unix 秒，如 \"1700000000\"；也接受带时区的 ISO 8601，如 \"2026-10-10T09:00:00+08:00\"），跨度不得超过 30 天且 end_time 必须大于 start_time；data_type 为打卡类型（Commute 上下班打卡 / Field 外出打卡 / All 全部，默认 All）。返回每条记录的 userid、checkin_type（中文字符串，如「上班打卡」）、exception_type（中文字符串，多个以分号间隔，如「时间异常」）、checkin_time、sch_checkin_time（标准打卡时间）、规则名与规则/班次 ID。不含打卡地点、经纬度、WiFi、设备号与备注（行踪与设备指纹不外发）。",
     Source = "IWechatWorkInternalCheckinRecordService.GetCheckinDataAsync",
     RequiredScopes = ["checkin.record.read"])]
 public interface IWechatWorkCheckinRecordListTool
 {
     /// <summary>获取打卡记录。</summary>
-    /// <param name="userid_list">成员 userid 列表（1~100 个）。</param>
-    /// <param name="start_time">起始时间（Unix 秒，或带时区的 ISO 8601）。</param>
-    /// <param name="end_time">结束时间（Unix 秒，或带时区的 ISO 8601；须大于 start_time 且跨度 ≤ 30 天）。</param>
-    /// <param name="data_type">打卡类型（1 上下班 / 2 外出 / 3 全部；可空 ⇒ 3）。</param>
-    void List(string[] userid_list, string start_time, string end_time, int? data_type);
+    /// <returns>白名单投影后的 JSON 文本（checkindata、count；每项 userid、checkin_type、exception_type、checkin_time、sch_checkin_time、groupname、groupid、schedule_id）。</returns>
+    Task<string> GetCheckinDataAsync(
+        [ToolParameter("userid_list", "成员 userid 列表（1~100 个）。", Required = true)] string[] userid_list,
+        [ToolParameter("start_time", "起始时间（Unix 秒，或带时区的 ISO 8601）。", Required = true)] string start_time,
+        [ToolParameter("end_time", "结束时间（Unix 秒，或带时区的 ISO 8601；须大于 start_time 且跨度 ≤ 30 天）。", Required = true)] string end_time,
+        [ToolParameter("data_type", "打卡类型（Commute 上下班 / Field 外出 / All 全部；可空 ⇒ All）。", EnumType = typeof(WechatCheckinDataTypes))] int? data_type,
+        CancellationToken cancellationToken = default);
 }

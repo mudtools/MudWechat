@@ -25,6 +25,8 @@ namespace Mud.Wechat.Work.AI.Tools.Curation;
 public interface IWechatWorkContactsUserGetTool
 {
     /// <summary>读取成员。</summary>
-    /// <param name="userid">成员 UserID（企业内唯一）。</param>
-    void User(string userid);
+    /// <returns>白名单投影后的 JSON 文本（userid、name、alias、position、department、main_department、status、enable、direct_leader）。</returns>
+    Task<string> GetUserAsync(
+        [ToolParameter("userid", "成员 UserID（企业内唯一）。", Required = true)] string userid,
+        CancellationToken cancellationToken = default);
 }

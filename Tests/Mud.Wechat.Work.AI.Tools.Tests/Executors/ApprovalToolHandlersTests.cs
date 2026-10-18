@@ -13,6 +13,7 @@ namespace Mud.Wechat.Work.AI.Tools.Tests.Executors;
 public class ApprovalToolHandlersTests
 {
     private readonly Mock<IWechatWorkApprovalService> _approval = new(MockBehavior.Loose);
+    private readonly Mock<IWechatWorkApprovalTemplateService> _template = new(MockBehavior.Loose);
 
     [Fact]
     public async Task Get_ShouldProjectStatusAndFlowWithoutFormValues()
@@ -126,7 +127,266 @@ public class ApprovalToolHandlersTests
         result.Text.Should().Contain("info", "空载荷要给出可读原因，而不是一张空 JSON");
     }
 
-    private ApprovalToolHandlers Handler() => new(_approval.Object);
+    [Fact]
+    public async Task GetTemplate_ShouldProjectControlStructureWithoutConfig()
+    {
+        _template
+            .Setup(t => t.GetTemplateDetailAsync(It.IsAny<GetApprovalTemplateDetailRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new GetApprovalTemplateDetailResponse
+            {
+                ErrorCode = 0,
+                TemplateNames = [new ApprovalLangTextItem { Text = "报销申请", Lang = "zh_CN" }],
+                TemplateContent = new ApprovalTemplateContent
+                {
+                    Controls =
+                    [
+                        new ApprovalTemplateControl
+                        {
+                            Property = new ApprovalTemplateControlProperty
+                            {
+                                Control = "Money",
+                                Id = "money-1",
+                                Title = [new ApprovalLangTextItem { Text = "报销金额" }],
+                                Require = 1,
+                            },
+                            Config = new ApprovalTemplateControlConfig
+                            {
+                                Tips = new ApprovalTipsContent { TipsContent = [] },
+                            },
+                        },
+                    ],
+                },
+            });
+
+        var result = await Handler().GetTemplateAsync(Args(("template_id", "tpl-1")), CancellationToken.None);
+
+        result.Text.Should().Contain("\"template_id\":\"tpl-1\"");
+        result.Text.Should().Contain("\"报销申请\"");
+        result.Text.Should().Contain("\"control\":\"Money\"");
+        result.Text.Should().Contain("\"title\":\"报销金额\"");
+        result.Text.Should().Contain("\"require\":1");
+        result.Text.Should().Contain("\"control_count\":1");
+        result.Text.Should().NotContain("元", "模板 config（选项值/单位等）不外发，只给控件结构");
+    }
+
+    [Fact]
+    public async Task GetTemplate_WhenContentMissing_ShouldReturnReadableError()
+    {
+        _template
+            .Setup(t => t.GetTemplateDetailAsync(It.IsAny<GetApprovalTemplateDetailRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new GetApprovalTemplateDetailResponse { ErrorCode = 0, TemplateContent = null });
+
+        var result = await Handler().GetTemplateAsync(Args(("template_id", "tpl-1")), CancellationToken.None);
+
+        result.Text.Should().Contain("template_content");
+    }
+
+    [Fact]
+    public async Task List_ShouldPassFiltersAndProjectSpNoOnly()
+    {
+        _approval
+            .Setup(a => a.BatchGetApprovalNumbersAsync(It.IsAny<BatchGetApprovalNumbersRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new BatchGetApprovalNumbersResponse
+            {
+                ErrorCode = 0,
+                SpNoList = ["202310100001", "202310100002"],
+                NewNextCursor = "c2",
+            });
+
+        var result = await Handler().ListAsync(
+            Args(("start_time", "1700000000"), ("end_time", "1700086400"), ("sp_status", 1)),
+            CancellationToken.None);
+
+        result.Text.Should().Contain("\"count\":2");
+        result.Text.Should().Contain("\"sp_no_list\":[\"202310100001\",\"202310100002\"]");
+        result.Text.Should().Contain("\"next_cursor\":\"c2\"");
+        _approval.Verify(
+            a => a.BatchGetApprovalNumbersAsync(
+                It.Is<BatchGetApprovalNumbersRequest>(r =>
+                    r.Starttime == "1700000000"
+                    && r.Endtime == "1700086400"
+                    && r.Size == 100
+                    && r.Filters != null
+                    && r.Filters.Count == 1
+                    && r.Filters[0].Key == "sp_status"
+                    && r.Filters[0].Value == "1"),
+                It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task List_WhenSpanExceedsThirtyOneDays_ShouldRejectBeforeCallingSdk()
+    {
+        var result = await Handler().ListAsync(
+            Args(("start_time", "1700000000"), ("end_time", "1703000000")),
+            CancellationToken.None);
+
+        result.Text.Should().Contain("31 天");
+        _approval.Verify(
+            a => a.BatchGetApprovalNumbersAsync(It.IsAny<BatchGetApprovalNumbersRequest>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task List_WhenEndNotAfterStart_ShouldReject()
+    {
+        var result = await Handler().ListAsync(
+            Args(("start_time", "1700086400"), ("end_time", "1700000000")),
+            CancellationToken.None);
+
+        result.Text.Should().Contain("end_time");
+    }
+
+    [Fact]
+    public async Task List_WhenTimesAreNotUnixSeconds_ShouldExplainFormat()
+    {
+        var result = await Handler().ListAsync(
+            Args(("start_time", "2026-10-18"), ("end_time", "2026-10-19")),
+            CancellationToken.None);
+
+        result.Text.Should().Contain("Unix");
+    }
+
+    [Fact]
+    public async Task List_WhenEmpty_ShouldReturnHintWithoutError()
+    {
+        _approval
+            .Setup(a => a.BatchGetApprovalNumbersAsync(It.IsAny<BatchGetApprovalNumbersRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new BatchGetApprovalNumbersResponse { ErrorCode = 0, SpNoList = [] });
+
+        var result = await Handler().ListAsync(
+            Args(("start_time", "1700000000"), ("end_time", "1700086400")),
+            CancellationToken.None);
+
+        result.Text.Should().Contain("\"count\":0");
+        result.Text.Should().Contain("hint");
+        result.Text.Should().NotContain("errcode", "空页是合法答案，转错误会让模型改参数重试");
+    }
+
+    [Fact]
+    public async Task Apply_ShouldMapValuesByTemplateControlType()
+    {
+        SetupTemplate(
+            ("Text-1", "Text", 1),
+            ("Number-2", "Number", 1),
+            ("Date-3", "Date", 0),
+            ("Selector-4", "Selector", 0),
+            ("Members-5", "Members", 0));
+        _approval
+            .Setup(a => a.ApplyApprovalAsync(It.IsAny<ApplyApprovalRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ApplyApprovalResponse { ErrorCode = 0, SpNo = "202310100001" });
+
+        var result = await Handler().ApplyAsync(
+            Args(
+                ("template_id", "tpl-1"),
+                ("creator_userid", "zhangsan"),
+                ("fields_json", """{"Text-1":"张三","Number-2":"3","Date-3":"1792308600","Selector-4":["o1","o2"],"Members-5":["lisi"]}"""),
+                ("summary", "请假申请|3 天")),
+            CancellationToken.None);
+
+        result.Text.Should().Contain("\"sp_no\":\"202310100001\"");
+        result.Text.Should().Contain("\"filled_controls\":5");
+        _approval.Verify(
+            a => a.ApplyApprovalAsync(
+                It.Is<ApplyApprovalRequest>(r =>
+                    r.CreatorUserid == "zhangsan"
+                    && r.TemplateId == "tpl-1"
+                    && r.UseTemplateApprover == 1
+                    && r.ApplyData != null
+                    && r.ApplyData.Contents != null
+                    && r.ApplyData.Contents.Count == 5
+                    && r.SummaryList != null
+                    && r.SummaryList.Count == 2),
+                It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task Apply_WithUnknownControlId_ShouldRejectAndListAvailableIds()
+    {
+        SetupTemplate(("Text-1", "Text", 0));
+
+        var result = await Handler().ApplyAsync(
+            Args(("template_id", "tpl-1"), ("creator_userid", "zhangsan"), ("fields_json", """{"Nope-9":"x"}""")),
+            CancellationToken.None);
+
+        result.Text.Should().Contain("Nope-9");
+        result.Text.Should().Contain("Text-1");
+        _approval.Verify(
+            a => a.ApplyApprovalAsync(It.IsAny<ApplyApprovalRequest>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task Apply_WhenRequiredControlMissing_ShouldReject()
+    {
+        SetupTemplate(("Text-1", "Text", 1), ("Money-2", "Money", 1));
+
+        var result = await Handler().ApplyAsync(
+            Args(("template_id", "tpl-1"), ("creator_userid", "zhangsan"), ("fields_json", """{"Text-1":"张三"}""")),
+            CancellationToken.None);
+
+        result.Text.Should().Contain("必填");
+        result.Text.Should().Contain("Money-2");
+        _approval.Verify(
+            a => a.ApplyApprovalAsync(It.IsAny<ApplyApprovalRequest>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task Apply_WithUnsupportedControlType_ShouldRejectInsteadOfDroppingField()
+    {
+        SetupTemplate(("File-1", "File", 0));
+
+        var result = await Handler().ApplyAsync(
+            Args(("template_id", "tpl-1"), ("creator_userid", "zhangsan"), ("fields_json", """{"File-1":["f_1"]}""")),
+            CancellationToken.None);
+
+        result.Text.Should().Contain("暂不支持");
+        _approval.Verify(
+            a => a.ApplyApprovalAsync(It.IsAny<ApplyApprovalRequest>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task Apply_WithMalformedJson_ShouldExplainFormat()
+    {
+        var result = await Handler().ApplyAsync(
+            Args(("template_id", "tpl-1"), ("creator_userid", "zhangsan"), ("fields_json", "not json")),
+            CancellationToken.None);
+
+        result.Text.Should().Contain("fields_json");
+        _template.Verify(
+            t => t.GetTemplateDetailAsync(It.IsAny<GetApprovalTemplateDetailRequest>(), It.IsAny<CancellationToken>()),
+            Times.Never,
+            "JSON 不合法时不必先去取模板");
+    }
+
+    private void SetupTemplate(params (string Id, string Control, int Require)[] controls)
+    {
+        var contentControls = controls
+            .Select(c => new ApprovalTemplateControl
+            {
+                Property = new ApprovalTemplateControlProperty
+                {
+                    Id = c.Id,
+                    Control = c.Control,
+                    Require = c.Require,
+                    Title = [new ApprovalLangTextItem { Text = c.Id }],
+                },
+            })
+            .ToList();
+
+        _template
+            .Setup(t => t.GetTemplateDetailAsync(It.IsAny<GetApprovalTemplateDetailRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new GetApprovalTemplateDetailResponse
+            {
+                ErrorCode = 0,
+                TemplateContent = new ApprovalTemplateContent { Controls = contentControls },
+            });
+    }
+
+    private ApprovalToolHandlers Handler() => new(_approval.Object, _template.Object);
 
     private static Dictionary<string, object?> Args(params (string Key, object? Value)[] pairs)
     {

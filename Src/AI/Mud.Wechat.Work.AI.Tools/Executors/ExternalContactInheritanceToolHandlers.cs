@@ -57,7 +57,7 @@ public sealed class ExternalContactInheritanceToolHandlers(IWechatWorkExternalCo
         var pageSize = request.PageSize ?? DefaultUnassignedPageSize;
         if (pageSize is < 1 or > MaxUnassignedPageSize)
         {
-            return ToolResult.FromError($"参数非法：page_size 必须在 1~{MaxUnassignedPageSize} 之间。");
+            throw WechatToolArgumentErrors.Invalid($"参数非法：page_size 必须在 1~{MaxUnassignedPageSize} 之间。");
         }
 
         var response = await _resigned.GetUnassignedListAsync(

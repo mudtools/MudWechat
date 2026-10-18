@@ -142,7 +142,7 @@ public class ContactsUserToolHandlersTests
     [Fact]
     public async Task ListIds_LimitOverOfficialMax_ShouldReturnErrorWithoutCallingSdk()
     {
-        var result = await Handler().ListIdsAsync(Args(("limit", 50000)), CancellationToken.None);
+        var result = await ToolInvoker.InvokeAsync(() => Handler().ListIdsAsync(Args(("limit", 50000)), CancellationToken.None));
 
         result.Text.Should().Contain("1~10000");
         _users.Verify(
@@ -197,7 +197,7 @@ public class ContactsUserToolHandlersTests
     [Fact]
     public async Task ResolveByName_WithoutDepartment_ShouldExplainWhyItNeedsDepartment()
     {
-        var result = await Handler().ResolveUserAsync(Args(("name", "张三")), CancellationToken.None);
+        var result = await ToolInvoker.InvokeAsync(() => Handler().ResolveUserAsync(Args(("name", "张三")), CancellationToken.None));
 
         result.Text.Should().Contain("department_id");
         _users.Verify(
@@ -230,9 +230,9 @@ public class ContactsUserToolHandlersTests
     [Fact]
     public async Task Resolve_WithMultipleIdentifiers_ShouldReject()
     {
-        var result = await Handler().ResolveUserAsync(
+        var result = await ToolInvoker.InvokeAsync(() => Handler().ResolveUserAsync(
             Args(("mobile", "13800000000"), ("email", "a@b.com")),
-            CancellationToken.None);
+            CancellationToken.None));
 
         result.Text.Should().Contain("三选一");
         _users.Verify(
@@ -243,7 +243,7 @@ public class ContactsUserToolHandlersTests
     [Fact]
     public async Task Resolve_WithoutAnyIdentifier_ShouldReject()
     {
-        var result = await Handler().ResolveUserAsync(Args(), CancellationToken.None);
+        var result = await ToolInvoker.InvokeAsync(() => Handler().ResolveUserAsync(Args(), CancellationToken.None));
 
         result.Text.Should().Contain("mobile");
     }

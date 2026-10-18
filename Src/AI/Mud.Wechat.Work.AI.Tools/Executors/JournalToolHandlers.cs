@@ -55,28 +55,28 @@ public sealed class JournalToolHandlers(IWechatWorkInternalJournalService journa
 
         if (!ToolTimeText.TryParseUnixSeconds(request.StartTime, out var start))
         {
-            return ToolResult.FromError(TimeFormatHint);
+            throw WechatToolArgumentErrors.Invalid(TimeFormatHint);
         }
 
         if (!ToolTimeText.TryParseUnixSeconds(request.EndTime, out var end))
         {
-            return ToolResult.FromError(TimeFormatHint);
+            throw WechatToolArgumentErrors.Invalid(TimeFormatHint);
         }
 
         if (end <= start)
         {
-            return ToolResult.FromError("参数非法：end_time 必须大于 start_time。");
+            throw WechatToolArgumentErrors.Invalid("参数非法：end_time 必须大于 start_time。");
         }
 
         if (end - start > MaxSpanSeconds)
         {
-            return ToolResult.FromError("参数非法：起止时间间隔不得超过 31 天（官方口径为一个月），请缩小范围后分批拉取。");
+            throw WechatToolArgumentErrors.Invalid("参数非法：起止时间间隔不得超过 31 天（官方口径为一个月），请缩小范围后分批拉取。");
         }
 
         var limit = request.Limit ?? MaxPageSize;
         if (limit is < 1 or > MaxPageSize)
         {
-            return ToolResult.FromError($"参数非法：limit 必须在 1~{MaxPageSize} 之间。");
+            throw WechatToolArgumentErrors.Invalid($"参数非法：limit 必须在 1~{MaxPageSize} 之间。");
         }
 
         var filters = new List<JournalRecordFilter>();

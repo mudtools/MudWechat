@@ -66,9 +66,9 @@ public class ExternalContactMomentToolHandlersTests
     [Fact]
     public async Task MomentList_SpanOverThirtyDays_ShouldReturnErrorWithoutCallingSdk()
     {
-        var result = await Handler().ListAsync(
+        var result = await ToolInvoker.InvokeAsync(() => Handler().ListAsync(
             Args(("start_time", "1700000000"), ("end_time", "1702764800")),
-            CancellationToken.None);
+            CancellationToken.None));
 
         result.Text.Should().Contain("30 天");
         VerifyNoCall();
@@ -77,9 +77,9 @@ public class ExternalContactMomentToolHandlersTests
     [Fact]
     public async Task MomentList_TimeWithoutOffset_ShouldReturnFormatHint()
     {
-        var result = await Handler().ListAsync(
+        var result = await ToolInvoker.InvokeAsync(() => Handler().ListAsync(
             Args(("start_time", "2026-10-10 09:00:00"), ("end_time", "2026-10-11T09:00:00+08:00")),
-            CancellationToken.None);
+            CancellationToken.None));
 
         result.Text.Should().Contain("时间格式非法");
         VerifyNoCall();
@@ -88,9 +88,9 @@ public class ExternalContactMomentToolHandlersTests
     [Fact]
     public async Task MomentList_LimitOverOfficialMax_ShouldReturnError()
     {
-        var result = await Handler().ListAsync(
+        var result = await ToolInvoker.InvokeAsync(() => Handler().ListAsync(
             Args(("start_time", "1700000000"), ("end_time", "1700086400"), ("limit", 50)),
-            CancellationToken.None);
+            CancellationToken.None));
 
         result.Text.Should().Contain("1~20");
         VerifyNoCall();

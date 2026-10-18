@@ -47,7 +47,7 @@ public class ExternalContactInheritanceToolHandlersTests
     [Fact]
     public async Task UnassignedList_PageSizeOverOfficialMax_ShouldReturnErrorWithoutCallingSdk()
     {
-        var result = await Handler().ListUnassignedAsync(Args(("page_size", 5000)), CancellationToken.None);
+        var result = await ToolInvoker.InvokeAsync(() => Handler().ListUnassignedAsync(Args(("page_size", 5000)), CancellationToken.None));
 
         result.Text.Should().Contain("page_size");
         _resigned.Verify(

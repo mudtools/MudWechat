@@ -59,9 +59,9 @@ public class ScheduleToolHandlersTests
     [Fact]
     public async Task Add_WhenEndNotAfterStart_ShouldRejectBeforeCallingSdk()
     {
-        var result = await Handler().AddAsync(
+        var result = await ToolInvoker.InvokeAsync(() => Handler().AddAsync(
             Args(("summary", "周会"), ("start_time", "1792312200"), ("end_time", "1792308600")),
-            CancellationToken.None);
+            CancellationToken.None));
 
         result.Text.Should().Contain("end_time");
         _schedule.Verify(
@@ -72,9 +72,9 @@ public class ScheduleToolHandlersTests
     [Fact]
     public async Task Add_WhenTimesAreNotUnixSeconds_ShouldExplainFormat()
     {
-        var result = await Handler().AddAsync(
+        var result = await ToolInvoker.InvokeAsync(() => Handler().AddAsync(
             Args(("summary", "周会"), ("start_time", "2026-10-18T10:00:00"), ("end_time", "1792312200")),
-            CancellationToken.None);
+            CancellationToken.None));
 
         result.Text.Should().Contain("Unix");
     }
@@ -96,12 +96,12 @@ public class ScheduleToolHandlersTests
     [Fact]
     public async Task Add_WhenTitleTooLong_ShouldReject()
     {
-        var result = await Handler().AddAsync(
+        var result = await ToolInvoker.InvokeAsync(() => Handler().AddAsync(
             Args(
                 ("summary", new string('会', 129)),
                 ("start_time", "1792308600"),
                 ("end_time", "1792312200")),
-            CancellationToken.None);
+            CancellationToken.None));
 
         result.Text.Should().Contain("128");
     }
@@ -149,9 +149,9 @@ public class ScheduleToolHandlersTests
     [Fact]
     public async Task Cancel_WhenOpModeGivenWithoutOpStartTime_ShouldReject()
     {
-        var result = await Handler().CancelAsync(
+        var result = await ToolInvoker.InvokeAsync(() => Handler().CancelAsync(
             Args(("schedule_id", "sch-1"), ("op_mode", 1)),
-            CancellationToken.None);
+            CancellationToken.None));
 
         result.Text.Should().Contain("op_start_time");
         _schedule.Verify(

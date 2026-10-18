@@ -80,38 +80,38 @@ public sealed class ExternalContactGroupMsgToolHandlers(IWechatWorkExternalConta
 
         if (!IsChatType(request.ChatType))
         {
-            return ToolResult.FromError("参数非法：chat_type 只能取 single（发给客户）或 group（发给客户群）。");
+            throw WechatToolArgumentErrors.Invalid("参数非法：chat_type 只能取 single（发给客户）或 group（发给客户群）。");
         }
 
         if (!ToolTimeText.TryParseUnixSeconds(request.StartTime, out var start))
         {
-            return ToolResult.FromError(TimeFormatHint);
+            throw WechatToolArgumentErrors.Invalid(TimeFormatHint);
         }
 
         if (!ToolTimeText.TryParseUnixSeconds(request.EndTime, out var end))
         {
-            return ToolResult.FromError(TimeFormatHint);
+            throw WechatToolArgumentErrors.Invalid(TimeFormatHint);
         }
 
         if (end <= start)
         {
-            return ToolResult.FromError("参数非法：end_time 必须大于 start_time。");
+            throw WechatToolArgumentErrors.Invalid("参数非法：end_time 必须大于 start_time。");
         }
 
         if (end - start > MaxSpanSeconds)
         {
-            return ToolResult.FromError("参数非法：起止时间间隔不得超过 1 个月（官方口径），请缩小范围后分批拉取。");
+            throw WechatToolArgumentErrors.Invalid("参数非法：起止时间间隔不得超过 1 个月（官方口径），请缩小范围后分批拉取。");
         }
 
         if (request.FilterType is { } filterType && filterType is < 0 or > 2)
         {
-            return ToolResult.FromError("参数非法：filter_type 只能取 0（企业创建）/ 1（个人创建）/ 2（全部）。");
+            throw WechatToolArgumentErrors.Invalid("参数非法：filter_type 只能取 0（企业创建）/ 1（个人创建）/ 2（全部）。");
         }
 
         var limit = request.Limit ?? DefaultListPageSize;
         if (limit is < 1 or > MaxListPageSize)
         {
-            return ToolResult.FromError($"参数非法：limit 必须在 1~{MaxListPageSize} 之间。");
+            throw WechatToolArgumentErrors.Invalid($"参数非法：limit 必须在 1~{MaxListPageSize} 之间。");
         }
 
         var response = await _groupMsg.GetGroupMsgListAsync(
@@ -169,7 +169,7 @@ public sealed class ExternalContactGroupMsgToolHandlers(IWechatWorkExternalConta
         var limit = request.Limit ?? DefaultTaskPageSize;
         if (limit is < 1 or > MaxTaskPageSize)
         {
-            return ToolResult.FromError($"参数非法：limit 必须在 1~{MaxTaskPageSize} 之间。");
+            throw WechatToolArgumentErrors.Invalid($"参数非法：limit 必须在 1~{MaxTaskPageSize} 之间。");
         }
 
         var response = await _groupMsg.GetGroupMsgTaskListAsync(
@@ -219,7 +219,7 @@ public sealed class ExternalContactGroupMsgToolHandlers(IWechatWorkExternalConta
         var limit = request.Limit ?? DefaultTaskPageSize;
         if (limit is < 1 or > MaxTaskPageSize)
         {
-            return ToolResult.FromError($"参数非法：limit 必须在 1~{MaxTaskPageSize} 之间。");
+            throw WechatToolArgumentErrors.Invalid($"参数非法：limit 必须在 1~{MaxTaskPageSize} 之间。");
         }
 
         var response = await _groupMsg.GetGroupMsgSendResultAsync(
@@ -271,7 +271,7 @@ public sealed class ExternalContactGroupMsgToolHandlers(IWechatWorkExternalConta
 
         if (!IsChatType(request.ChatType))
         {
-            return ToolResult.FromError("参数非法：chat_type 只能取 single（发给客户）或 group（发给客户群）。");
+            throw WechatToolArgumentErrors.Invalid("参数非法：chat_type 只能取 single（发给客户）或 group（发给客户群）。");
         }
 
         var isGroup = string.Equals(request.ChatType, "group", StringComparison.OrdinalIgnoreCase);
@@ -280,31 +280,31 @@ public sealed class ExternalContactGroupMsgToolHandlers(IWechatWorkExternalConta
         {
             if (request.ChatIdList is not { Length: > 0 })
             {
-                return ToolResult.FromError("参数非法：chat_type = group 时必须显式给出 chat_id_list（客户群 ID 数组）。");
+                throw WechatToolArgumentErrors.Invalid("参数非法：chat_type = group 时必须显式给出 chat_id_list（客户群 ID 数组）。");
             }
 
             if (request.ChatIdList.Length > MaxChatPerTask)
             {
-                return ToolResult.FromError($"参数非法：chat_id_list 单次最多 {MaxChatPerTask} 个群，请分批创建群发。");
+                throw WechatToolArgumentErrors.Invalid($"参数非法：chat_id_list 单次最多 {MaxChatPerTask} 个群，请分批创建群发。");
             }
         }
         else
         {
             if (request.ExternalUserid is not { Length: > 0 })
             {
-                return ToolResult.FromError("参数非法：chat_type = single 时必须显式给出 external_userid（客户 ID 数组）。");
+                throw WechatToolArgumentErrors.Invalid("参数非法：chat_type = single 时必须显式给出 external_userid（客户 ID 数组）。");
             }
 
             if (request.ExternalUserid.Length > MaxCustomerPerTask)
             {
-                return ToolResult.FromError($"参数非法：external_userid 单次最多 {MaxCustomerPerTask} 个客户，请分批创建群发。");
+                throw WechatToolArgumentErrors.Invalid($"参数非法：external_userid 单次最多 {MaxCustomerPerTask} 个客户，请分批创建群发。");
             }
         }
 
         var byteCount = Encoding.UTF8.GetByteCount(request.Content);
         if (byteCount > MaxContentBytes)
         {
-            return ToolResult.FromError($"参数非法：content 超过官方上限（{byteCount} > {MaxContentBytes} 字节），请精简后重试。");
+            throw WechatToolArgumentErrors.Invalid($"参数非法：content 超过官方上限（{byteCount} > {MaxContentBytes} 字节），请精简后重试。");
         }
 
         var response = await _groupMsg.AddGroupMsgTemplateAsync(

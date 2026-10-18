@@ -67,29 +67,29 @@ public sealed class ExternalContactMomentToolHandlers(IWechatWorkExternalContact
 
         if (!ToolTimeText.TryParseUnixSeconds(request.StartTime, out var start))
         {
-            return ToolResult.FromError(TimeFormatHint);
+            throw WechatToolArgumentErrors.Invalid(TimeFormatHint);
         }
 
         if (!ToolTimeText.TryParseUnixSeconds(request.EndTime, out var end))
         {
-            return ToolResult.FromError(TimeFormatHint);
+            throw WechatToolArgumentErrors.Invalid(TimeFormatHint);
         }
 
         if (end <= start)
         {
-            return ToolResult.FromError("参数非法：end_time 必须大于 start_time。");
+            throw WechatToolArgumentErrors.Invalid("参数非法：end_time 必须大于 start_time。");
         }
 
         if (end - start > MaxSpanSeconds)
         {
-            return ToolResult.FromError("参数非法：起止时间间隔不得超过 30 天（官方口径），请缩小范围后分批拉取。");
+            throw WechatToolArgumentErrors.Invalid("参数非法：起止时间间隔不得超过 30 天（官方口径），请缩小范围后分批拉取。");
         }
 
         // filter_type 的取值闭集（0~2）由声明面 EnumType 与生成的解包器收口——越界值到不了这里。
         var limit = request.Limit ?? DefaultListPageSize;
         if (limit is < 1 or > MaxListPageSize)
         {
-            return ToolResult.FromError($"参数非法：limit 必须在 1~{MaxListPageSize} 之间。");
+            throw WechatToolArgumentErrors.Invalid($"参数非法：limit 必须在 1~{MaxListPageSize} 之间。");
         }
 
         var response = await _moment.GetMomentListAsync(
@@ -150,7 +150,7 @@ public sealed class ExternalContactMomentToolHandlers(IWechatWorkExternalContact
         var limit = request.Limit ?? DefaultTaskPageSize;
         if (limit is < 1 or > MaxTaskPageSize)
         {
-            return ToolResult.FromError($"参数非法：limit 必须在 1~{MaxTaskPageSize} 之间。");
+            throw WechatToolArgumentErrors.Invalid($"参数非法：limit 必须在 1~{MaxTaskPageSize} 之间。");
         }
 
         var response = await _moment.GetMomentPublishListAsync(
@@ -164,7 +164,7 @@ public sealed class ExternalContactMomentToolHandlers(IWechatWorkExternalContact
         var outcome = WechatApiResultReader.Read(response);
         if (!outcome.Ok)
         {
-            return ToolResult.FromError(
+            throw WechatToolArgumentErrors.Invalid(
                 outcome.ErrorText ?? "拉取朋友圈执行列表失败（该 moment_id 可能不是企业发表的朋友圈）。");
         }
 

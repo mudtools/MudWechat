@@ -62,32 +62,32 @@ public sealed class ExternalContactStatisticsToolHandlers(IWechatWorkExternalCon
 
         if (!ToolTimeText.TryParseUnixSeconds(request.StartTime, out var start))
         {
-            return ToolResult.FromError(TimeFormatHint);
+            throw WechatToolArgumentErrors.Invalid(TimeFormatHint);
         }
 
         if (!ToolTimeText.TryParseUnixSeconds(request.EndTime, out var end))
         {
-            return ToolResult.FromError(TimeFormatHint);
+            throw WechatToolArgumentErrors.Invalid(TimeFormatHint);
         }
 
         if (end <= start)
         {
-            return ToolResult.FromError("参数非法：end_time 必须大于 start_time。");
+            throw WechatToolArgumentErrors.Invalid("参数非法：end_time 必须大于 start_time。");
         }
 
         if (end - start > MaxSpanSeconds)
         {
-            return ToolResult.FromError("参数非法：起止时间间隔不得超过 30 天（官方按天聚合的上限），请缩小范围后分批查询。");
+            throw WechatToolArgumentErrors.Invalid("参数非法：起止时间间隔不得超过 30 天（官方按天聚合的上限），请缩小范围后分批查询。");
         }
 
         if (request.Userid is not { Length: > 0 } && request.DepartmentId is null)
         {
-            return ToolResult.FromError("参数非法：userid 与 department_id 至少要给一个（官方要求二者不可同时为空）。");
+            throw WechatToolArgumentErrors.Invalid("参数非法：userid 与 department_id 至少要给一个（官方要求二者不可同时为空）。");
         }
 
         if (request.Userid is { Length: > MaxUserCount })
         {
-            return ToolResult.FromError($"参数非法：userid 一次最多 {MaxUserCount} 个，请分批查询。");
+            throw WechatToolArgumentErrors.Invalid($"参数非法：userid 一次最多 {MaxUserCount} 个，请分批查询。");
         }
 
         var response = await _statistics.GetUserBehaviorDataAsync(
@@ -142,20 +142,20 @@ public sealed class ExternalContactStatisticsToolHandlers(IWechatWorkExternalCon
 
         if (!TryResolveDayRange(request.DayBeginTime, request.DayEndTime, out var begin, out var end, out var error))
         {
-            return ToolResult.FromError(error!);
+            throw WechatToolArgumentErrors.Invalid(error!);
         }
 
         // order_by 的取值闭集（1~4）由声明面 EnumType 与生成的解包器收口——越界值到不了这里。
         var offset = request.Offset ?? 0;
         if (offset < 0)
         {
-            return ToolResult.FromError("参数非法：offset 不能为负数。");
+            throw WechatToolArgumentErrors.Invalid("参数非法：offset 不能为负数。");
         }
 
         var limit = request.Limit ?? DefaultPageSize;
         if (limit is < 1 or > MaxPageSize)
         {
-            return ToolResult.FromError($"参数非法：limit 必须在 1~{MaxPageSize} 之间。");
+            throw WechatToolArgumentErrors.Invalid($"参数非法：limit 必须在 1~{MaxPageSize} 之间。");
         }
 
         var response = await _statistics.GetGroupChatStatisticAsync(
@@ -208,7 +208,7 @@ public sealed class ExternalContactStatisticsToolHandlers(IWechatWorkExternalCon
 
         if (!TryResolveDayRange(request.DayBeginTime, request.DayEndTime, out var begin, out var end, out var error))
         {
-            return ToolResult.FromError(error!);
+            throw WechatToolArgumentErrors.Invalid(error!);
         }
 
         var response = await _statistics.GetGroupChatStatisticGroupByDayAsync(

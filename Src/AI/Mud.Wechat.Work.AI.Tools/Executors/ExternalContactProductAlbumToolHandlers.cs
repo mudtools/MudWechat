@@ -50,7 +50,7 @@ public sealed class ExternalContactProductAlbumToolHandlers(IWechatWorkExternalC
         var limit = request.Limit ?? DefaultPageSize;
         if (limit is < 1 or > MaxPageSize)
         {
-            return ToolResult.FromError($"参数非法：limit 必须在 1~{MaxPageSize} 之间。");
+            throw WechatToolArgumentErrors.Invalid($"参数非法：limit 必须在 1~{MaxPageSize} 之间。");
         }
 
         var response = await _productAlbum.GetProductAlbumListAsync(

@@ -154,7 +154,7 @@ public sealed class ContactsUserToolHandlers(IWechatWorkUsersService users)
         var limit = request.Limit ?? DefaultIdPageSize;
         if (limit is < 1 or > MaxIdPageSize)
         {
-            return ToolResult.FromError($"参数非法：limit 必须在 1~{MaxIdPageSize} 之间。");
+            throw WechatToolArgumentErrors.Invalid($"参数非法：limit 必须在 1~{MaxIdPageSize} 之间。");
         }
 
         var response = await _users.ListUserIdsAsync(
@@ -203,13 +203,13 @@ public sealed class ContactsUserToolHandlers(IWechatWorkUsersService users)
 
         if (given == 0)
         {
-            return ToolResult.FromError(
+            throw WechatToolArgumentErrors.Invalid(
                 "请提供 mobile、email 或 name 之一（按姓名解析还需 department_id）；三者都是空值，无法定位成员。");
         }
 
         if (given > 1)
         {
-            return ToolResult.FromError(
+            throw WechatToolArgumentErrors.Invalid(
                 "一次只按一种标识解析（mobile / email / name 三选一）：多种标识可能指向不同成员，混用会让结果不可判定。");
         }
 
@@ -243,7 +243,7 @@ public sealed class ContactsUserToolHandlers(IWechatWorkUsersService users)
 
         if (request.DepartmentId is not { } departmentId)
         {
-            return ToolResult.FromError(
+            throw WechatToolArgumentErrors.Invalid(
                 "按姓名解析需要 department_id：企微没有「按姓名搜全企业」的端点。"
                 + "先用 contacts.department.list 找到部门 ID，或让用户提供手机号 / 邮箱（更快且唯一）。");
         }

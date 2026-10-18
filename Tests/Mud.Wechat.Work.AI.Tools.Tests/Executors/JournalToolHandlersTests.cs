@@ -41,9 +41,9 @@ public class JournalToolHandlersTests
     [Fact]
     public async Task List_WhenSpanExceeds31Days_ShouldRejectBeforeCallingSdk()
     {
-        var result = await Handler().ListAsync(
+        var result = await ToolInvoker.InvokeAsync(() => Handler().ListAsync(
             Args(("start_time", "1690000000"), ("end_time", "1700000000")),
-            CancellationToken.None);
+            CancellationToken.None));
 
         result.Text.Should().Contain("31 天");
         _journal.Verify(

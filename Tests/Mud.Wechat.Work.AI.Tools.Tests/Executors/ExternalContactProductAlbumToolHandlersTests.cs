@@ -63,7 +63,7 @@ public class ExternalContactProductAlbumToolHandlersTests
     [Fact]
     public async Task List_LimitOverOfficialMax_ShouldReturnErrorWithoutCallingSdk()
     {
-        var result = await Handler().ListAsync(Args(("limit", 500)), CancellationToken.None);
+        var result = await ToolInvoker.InvokeAsync(() => Handler().ListAsync(Args(("limit", 500)), CancellationToken.None));
 
         result.Text.Should().Contain("1~100");
         _productAlbum.Verify(

@@ -65,41 +65,41 @@ public sealed class ScheduleToolHandlers(IWechatWorkScheduleService schedule)
 
         if (request.Summary.Length > MaxSummaryChars)
         {
-            return ToolResult.FromError($"参数非法：summary 超过官方上限（{request.Summary.Length} > {MaxSummaryChars} 字符）。");
+            throw WechatToolArgumentErrors.Invalid($"参数非法：summary 超过官方上限（{request.Summary.Length} > {MaxSummaryChars} 字符）。");
         }
 
         if (!long.TryParse(request.StartTime, out var startUnix) || !long.TryParse(request.EndTime, out var endUnix))
         {
-            return ToolResult.FromError(
+            throw WechatToolArgumentErrors.Invalid(
                 "参数非法：start_time / end_time 必须是 Unix 秒的字符串形式（如 \"1792308600\"），不接受 ISO 时间。");
         }
 
         if (endUnix <= startUnix)
         {
-            return ToolResult.FromError("参数非法：end_time 必须大于 start_time（Unix 秒）。");
+            throw WechatToolArgumentErrors.Invalid("参数非法：end_time 必须大于 start_time（Unix 秒）。");
         }
 
         if (request.Description is { Length: > MaxDescriptionChars })
         {
-            return ToolResult.FromError(
+            throw WechatToolArgumentErrors.Invalid(
                 $"参数非法：description 超过官方上限（{request.Description.Length} > {MaxDescriptionChars} 字符）。");
         }
 
         if (request.Location is { Length: > MaxLocationChars })
         {
-            return ToolResult.FromError($"参数非法：location 超过官方上限（{request.Location.Length} > {MaxLocationChars} 字符）。");
+            throw WechatToolArgumentErrors.Invalid($"参数非法：location 超过官方上限（{request.Location.Length} > {MaxLocationChars} 字符）。");
         }
 
         var attendees = SplitUsers(request.Attendees);
         if (attendees.Count > MaxAttendees)
         {
-            return ToolResult.FromError($"参数非法：参与者超过官方上限（{attendees.Count} > {MaxAttendees} 人）。");
+            throw WechatToolArgumentErrors.Invalid($"参数非法：参与者超过官方上限（{attendees.Count} > {MaxAttendees} 人）。");
         }
 
         var tooLong = attendees.FirstOrDefault(user => Encoding.UTF8.GetByteCount(user) > MaxAttendeeIdBytes);
         if (tooLong is not null)
         {
-            return ToolResult.FromError($"参数非法：参与者 ID 超过官方上限（{MaxAttendeeIdBytes} 字节）：{tooLong}");
+            throw WechatToolArgumentErrors.Invalid($"参数非法：参与者 ID 超过官方上限（{MaxAttendeeIdBytes} 字节）：{tooLong}");
         }
 
         // remind_before_secs 的合法档位由闭集（WechatScheduleRemindSecs）在参数层拦下，此处不再重复校验。
@@ -153,7 +153,7 @@ public sealed class ScheduleToolHandlers(IWechatWorkScheduleService schedule)
         var ids = SplitUsers(request.ScheduleId);
         if (ids.Count > MaxAttendees)
         {
-            return ToolResult.FromError($"参数非法：schedule_id 一次最多 {MaxAttendees} 个（官方约束）。");
+            throw WechatToolArgumentErrors.Invalid($"参数非法：schedule_id 一次最多 {MaxAttendees} 个（官方约束）。");
         }
 
         var response = await _schedule.GetScheduleAsync(
@@ -204,7 +204,7 @@ public sealed class ScheduleToolHandlers(IWechatWorkScheduleService schedule)
 
         if (request.OpMode is { } mode && mode is not (WechatScheduleOpModes.ThisSchedule or WechatScheduleOpModes.ThisAndFuture))
         {
-            return ToolResult.FromError(
+            throw WechatToolArgumentErrors.Invalid(
                 $"参数非法：op_mode 只能是 ThisSchedule({WechatScheduleOpModes.ThisSchedule}) / ThisAndFuture({WechatScheduleOpModes.ThisAndFuture})，省略表示取消全部周期。");
         }
 
@@ -215,7 +215,7 @@ public sealed class ScheduleToolHandlers(IWechatWorkScheduleService schedule)
             if (string.IsNullOrWhiteSpace(request.OpStartTime)
                 || !long.TryParse(request.OpStartTime, out var parsed))
             {
-                return ToolResult.FromError(
+                throw WechatToolArgumentErrors.Invalid(
                     "参数非法：op_mode 为 ThisSchedule / ThisAndFuture 时必须同时给 op_start_time（该次周期的开始时间，Unix 秒字符串）。");
             }
 

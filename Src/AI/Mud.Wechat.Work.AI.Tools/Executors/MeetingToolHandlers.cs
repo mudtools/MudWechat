@@ -1,4 +1,4 @@
-﻿// -----------------------------------------------------------------------
+// -----------------------------------------------------------------------
 //  作者：Mud Studio  版权所有 (c) Mud Studio 2026
 //  Mud.Wechat 项目的版权、商标、专利和其他相关权利均受相应法律法规的保护。
 //  本项目主要遵循 MIT 许可证进行分发和使用。许可证位于源代码树根目录中的 LICENSE-MIT 文件。
@@ -69,28 +69,28 @@ public sealed class MeetingToolHandlers(
 
         if (!ToolTimeText.TryParseUnixSeconds(request.BeginTime, out var begin))
         {
-            return ToolResult.FromError(TimeFormatHint);
+            throw WechatToolArgumentErrors.Invalid(TimeFormatHint);
         }
 
         if (!ToolTimeText.TryParseUnixSeconds(request.EndTime, out var end))
         {
-            return ToolResult.FromError(TimeFormatHint);
+            throw WechatToolArgumentErrors.Invalid(TimeFormatHint);
         }
 
         if (end <= begin)
         {
-            return ToolResult.FromError("参数非法：end_time 必须大于 begin_time。");
+            throw WechatToolArgumentErrors.Invalid("参数非法：end_time 必须大于 begin_time。");
         }
 
         if (end - begin > MaxListSpanSeconds)
         {
-            return ToolResult.FromError("参数非法：时间跨度不得超过 180 天，请缩小范围后分批拉取。");
+            throw WechatToolArgumentErrors.Invalid("参数非法：时间跨度不得超过 180 天，请缩小范围后分批拉取。");
         }
 
         var limit = request.Limit ?? MaxPageSize;
         if (limit is < 1 or > MaxPageSize)
         {
-            return ToolResult.FromError($"参数非法：limit 必须在 1~{MaxPageSize} 之间。");
+            throw WechatToolArgumentErrors.Invalid($"参数非法：limit 必须在 1~{MaxPageSize} 之间。");
         }
 
         var response = await _meeting.GetUserMeetingIdListAsync(
@@ -198,7 +198,7 @@ public sealed class MeetingToolHandlers(
         {
             if (!ToolTimeText.TryParseUnixSeconds(request.StartTime, out var parsedStart))
             {
-                return ToolResult.FromError(TimeFormatHint);
+                throw WechatToolArgumentErrors.Invalid(TimeFormatHint);
             }
 
             start = parsedStart;
@@ -208,7 +208,7 @@ public sealed class MeetingToolHandlers(
         {
             if (!ToolTimeText.TryParseUnixSeconds(request.EndTime, out var parsedEnd))
             {
-                return ToolResult.FromError(TimeFormatHint);
+                throw WechatToolArgumentErrors.Invalid(TimeFormatHint);
             }
 
             end = parsedEnd;
@@ -218,19 +218,19 @@ public sealed class MeetingToolHandlers(
         {
             if (end.Value <= start.Value)
             {
-                return ToolResult.FromError("参数非法：end_time 必须大于 start_time。");
+                throw WechatToolArgumentErrors.Invalid("参数非法：end_time 必须大于 start_time。");
             }
 
             if (end.Value - start.Value > MaxAttendeeSpanSeconds)
             {
-                return ToolResult.FromError("参数非法：参会人查询的时间跨度不得超过 31 天。");
+                throw WechatToolArgumentErrors.Invalid("参数非法：参会人查询的时间跨度不得超过 31 天。");
             }
         }
 
         var limit = request.Limit ?? MaxPageSize;
         if (limit is < 1 or > MaxPageSize)
         {
-            return ToolResult.FromError($"参数非法：limit 必须在 1~{MaxPageSize} 之间，且续页须与首次一致。");
+            throw WechatToolArgumentErrors.Invalid($"参数非法：limit 必须在 1~{MaxPageSize} 之间，且续页须与首次一致。");
         }
 
         var response = await _advanced.GetAttendeeListAsync(

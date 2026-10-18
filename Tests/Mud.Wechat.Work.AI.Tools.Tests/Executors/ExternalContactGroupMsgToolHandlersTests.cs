@@ -62,9 +62,9 @@ public class ExternalContactGroupMsgToolHandlersTests
     [Fact]
     public async Task List_ChatTypeOutsideClosedSet_ShouldReturnErrorWithoutCallingSdk()
     {
-        var result = await Handler().ListAsync(
+        var result = await ToolInvoker.InvokeAsync(() => Handler().ListAsync(
             Args(("chat_type", "all"), ("start_time", "1700000000"), ("end_time", "1700086400")),
-            CancellationToken.None);
+            CancellationToken.None));
 
         result.Text.Should().Contain("chat_type");
         VerifyNoCall();
@@ -73,9 +73,9 @@ public class ExternalContactGroupMsgToolHandlersTests
     [Fact]
     public async Task List_SpanOverOneMonth_ShouldReturnErrorWithoutCallingSdk()
     {
-        var result = await Handler().ListAsync(
+        var result = await ToolInvoker.InvokeAsync(() => Handler().ListAsync(
             Args(("chat_type", "group"), ("start_time", "1700000000"), ("end_time", "1702764800")),
-            CancellationToken.None);
+            CancellationToken.None));
 
         result.Text.Should().Contain("1 个月");
         VerifyNoCall();
@@ -144,9 +144,9 @@ public class ExternalContactGroupMsgToolHandlersTests
     [Fact]
     public async Task Send_GroupModeWithoutChatIdList_ShouldReturnErrorWithoutCallingSdk()
     {
-        var result = await Handler().SendAsync(
+        var result = await ToolInvoker.InvokeAsync(() => Handler().SendAsync(
             Args(("chat_type", "group"), ("sender", "zhangsan"), ("content", "本周新品")),
-            CancellationToken.None);
+            CancellationToken.None));
 
         result.Text.Should().Contain("chat_id_list");
         _groupMsg.Verify(
@@ -189,13 +189,13 @@ public class ExternalContactGroupMsgToolHandlersTests
     [Fact]
     public async Task Send_ContentOverOfficialByteLimit_ShouldReturnErrorWithoutCallingSdk()
     {
-        var result = await Handler().SendAsync(
+        var result = await ToolInvoker.InvokeAsync(() => Handler().SendAsync(
             Args(
                 ("chat_type", "single"),
                 ("sender", "zhangsan"),
                 ("content", new string('新', 2000)),
                 ("external_userid", new[] { "wm-1" })),
-            CancellationToken.None);
+            CancellationToken.None));
 
         result.Text.Should().Contain("4000 字节");
         _groupMsg.Verify(

@@ -62,27 +62,27 @@ public sealed class DialToolHandlers(IWechatWorkInternalDialService dial)
         {
             if (string.IsNullOrWhiteSpace(request.StartTime) || string.IsNullOrWhiteSpace(request.EndTime))
             {
-                return ToolResult.FromError("参数非法：start_time 与 end_time 需同时给出（都省略时官方默认查最近 30 天）。");
+                throw WechatToolArgumentErrors.Invalid("参数非法：start_time 与 end_time 需同时给出（都省略时官方默认查最近 30 天）。");
             }
 
             if (!ToolTimeText.TryParseUnixSeconds(request.StartTime, out var parsedStart))
             {
-                return ToolResult.FromError(TimeFormatHint);
+                throw WechatToolArgumentErrors.Invalid(TimeFormatHint);
             }
 
             if (!ToolTimeText.TryParseUnixSeconds(request.EndTime, out var parsedEnd))
             {
-                return ToolResult.FromError(TimeFormatHint);
+                throw WechatToolArgumentErrors.Invalid(TimeFormatHint);
             }
 
             if (parsedEnd < parsedStart)
             {
-                return ToolResult.FromError("参数非法：end_time 不得小于 start_time（官方双闭区间）。");
+                throw WechatToolArgumentErrors.Invalid("参数非法：end_time 不得小于 start_time（官方双闭区间）。");
             }
 
             if (parsedEnd - parsedStart > MaxSpanSeconds)
             {
-                return ToolResult.FromError("参数非法：起止时间间隔不得超过 30 天（官方上限），请缩小范围后分批查询。");
+                throw WechatToolArgumentErrors.Invalid("参数非法：起止时间间隔不得超过 30 天（官方上限），请缩小范围后分批查询。");
             }
 
             start = parsedStart;
@@ -92,13 +92,13 @@ public sealed class DialToolHandlers(IWechatWorkInternalDialService dial)
         var offset = request.Offset ?? 0;
         if (offset < 0)
         {
-            return ToolResult.FromError("参数非法：offset 不能为负数。");
+            throw WechatToolArgumentErrors.Invalid("参数非法：offset 不能为负数。");
         }
 
         var limit = request.Limit ?? DefaultPageSize;
         if (limit is < 1 or > MaxPageSize)
         {
-            return ToolResult.FromError($"参数非法：limit 必须在 1~{MaxPageSize} 之间。");
+            throw WechatToolArgumentErrors.Invalid($"参数非法：limit 必须在 1~{MaxPageSize} 之间。");
         }
 
         var response = await _dial.GetDialRecordAsync(

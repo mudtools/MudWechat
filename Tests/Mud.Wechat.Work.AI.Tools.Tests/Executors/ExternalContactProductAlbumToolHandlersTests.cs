@@ -43,7 +43,7 @@ public class ExternalContactProductAlbumToolHandlersTests
         result.Text.Should().Contain("\"product_sn\":\"SKU-001\"");
         result.Text.Should().Contain("\"price\":19900", "官方价格单位为分，执行器原样投影");
         result.Text.Should().Contain("\"image_count\":1");
-        result.Text.Should().Contain("\"next_cursor\":\"c2\"");
+        result.Text.Should().Contain("\"page_token\":\"c2\"");
         result.Text.Should().NotContain("media-1", "商品图片 media_id 是宿主素材资产，不外发");
     }
 

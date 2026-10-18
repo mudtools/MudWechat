@@ -40,8 +40,8 @@ public class ExternalContactInheritanceToolHandlersTests
         result.Text.Should().Contain("\"handover_userid\":\"zhangsan\"");
         result.Text.Should().Contain("\"external_userid\":\"wm-1\"");
         result.Text.Should().Contain("\"dimission_time\":1699000000");
-        result.Text.Should().Contain("\"is_last\":false");
-        result.Text.Should().Contain("\"next_cursor\":\"c2\"");
+        result.Text.Should().Contain("\"has_more\":true", "is_last=false 等价于还有下一页");
+        result.Text.Should().Contain("\"page_token\":\"c2\"");
     }
 
     [Fact]

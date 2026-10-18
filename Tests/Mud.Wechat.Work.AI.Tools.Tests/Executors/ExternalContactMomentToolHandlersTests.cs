@@ -56,7 +56,7 @@ public class ExternalContactMomentToolHandlersTests
         result.Text.Should().Contain("\"has_video\":true");
         result.Text.Should().Contain("\"title\":\"活动详情\"");
         result.Text.Should().Contain("\"location\":\"广州塔\"");
-        result.Text.Should().Contain("\"next_cursor\":\"c2\"");
+        result.Text.Should().Contain("\"page_token\":\"c2\"");
         result.Text.Should().NotContain("media-1", "media_id 是宿主素材资产，模型无法消费二进制");
         result.Text.Should().NotContain("thumb-v");
         result.Text.Should().NotContain("23.1234", "经纬度是行踪，不外发");

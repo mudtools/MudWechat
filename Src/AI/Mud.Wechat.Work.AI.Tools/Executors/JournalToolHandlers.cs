@@ -5,6 +5,7 @@
 //  不得利用本项目从事危害国家安全、扰乱社会秩序、侵犯他人合法权益等法律法规禁止的活动！任何基于本项目开发而产生的一切法律纠纷和责任，我们不承担任何责任！
 // -----------------------------------------------------------------------
 
+using System.Globalization;
 using System.Text.Json.Nodes;
 using Mud.AI.Abstractions.Tools.Handlers;
 using Mud.AI.Agent.Tools;
@@ -106,20 +107,20 @@ public sealed class JournalToolHandlers(IWechatWorkInternalJournalService journa
             return WechatToolOutcomeErrors.From(outcome, WechatToolNames.JournalRecordList);
         }
 
-        var uuids = new JsonArray();
+        // 空列表是合法答案（该时间段内没有汇报），不转错误。
+        // ending=1 表示「已到最后一页」⇒ has_more=false 且不写 page_token（官方结束标记优先于游标）。
+        var ending = outcome.Data?.Ending == 1;
+        var envelope = ToolResultJsons.PageEnvelope(
+            hasMore: !ending && outcome.Data?.NextCursor is not null,
+            pageToken: ending ? null : outcome.Data?.NextCursor?.ToString(CultureInfo.InvariantCulture));
+        var items = envelope["items"]!.AsArray();
         foreach (var uuid in outcome.Data?.JournalIdList ?? [])
         {
-            uuids.Add((JsonNode?)JsonValue.Create(uuid));
+            items.Add((JsonNode?)JsonValue.Create(uuid));
         }
 
-        // 空列表是合法答案（该时间段内没有汇报），不转错误。
-        return ToolResult.FromText(ToolResultJson.ToText(new JsonObject
-        {
-            ["journaluuid_list"] = uuids,
-            ["count"] = uuids.Count,
-            ["ending"] = JsonValue.Create(outcome.Data?.Ending),
-            ["next_cursor"] = JsonValue.Create(outcome.Data?.NextCursor),
-        }));
+        envelope["count"] = items.Count;
+        return ToolResultPipeline.OkJson(envelope, 0);
     }
 
     /// <summary>执行 <c>journal.record.get</c>。</summary>

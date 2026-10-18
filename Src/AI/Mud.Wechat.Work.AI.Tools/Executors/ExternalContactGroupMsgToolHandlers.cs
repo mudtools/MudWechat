@@ -132,7 +132,11 @@ public sealed class ExternalContactGroupMsgToolHandlers(IWechatWorkExternalConta
             return WechatToolOutcomeErrors.From(outcome, WechatToolNames.ExternalcontactGroupmsgList);
         }
 
-        var records = new JsonArray();
+        // 空列表是合法答案（该区间内没有群发记录），不转错误。
+        var envelope = ToolResultJsons.PageEnvelope(
+            hasMore: !string.IsNullOrEmpty(outcome.Data?.NextCursor),
+            pageToken: outcome.Data?.NextCursor);
+        var records = envelope["items"]!.AsArray();
         foreach (var item in outcome.Data?.GroupMsgList ?? [])
         {
             records.Add((JsonNode?)new JsonObject
@@ -146,13 +150,8 @@ public sealed class ExternalContactGroupMsgToolHandlers(IWechatWorkExternalConta
             });
         }
 
-        // 空列表是合法答案（该区间内没有群发记录），不转错误。
-        return ToolResult.FromText(ToolResultJson.ToText(new JsonObject
-        {
-            ["group_msg_list"] = records,
-            ["count"] = records.Count,
-            ["next_cursor"] = outcome.Data?.NextCursor,
-        }));
+        envelope["count"] = records.Count;
+        return ToolResultPipeline.OkJson(envelope, 0);
     }
 
     /// <summary>执行 <c>externalcontact.groupmsg.task_list</c>。</summary>
@@ -186,7 +185,10 @@ public sealed class ExternalContactGroupMsgToolHandlers(IWechatWorkExternalConta
             return WechatToolOutcomeErrors.From(outcome, WechatToolNames.ExternalcontactGroupmsgTaskList);
         }
 
-        var tasks = new JsonArray();
+        var envelope = ToolResultJsons.PageEnvelope(
+            hasMore: !string.IsNullOrEmpty(outcome.Data?.NextCursor),
+            pageToken: outcome.Data?.NextCursor);
+        var tasks = envelope["items"]!.AsArray();
         foreach (var item in outcome.Data?.TaskList ?? [])
         {
             tasks.Add((JsonNode?)new JsonObject
@@ -197,12 +199,8 @@ public sealed class ExternalContactGroupMsgToolHandlers(IWechatWorkExternalConta
             });
         }
 
-        return ToolResult.FromText(ToolResultJson.ToText(new JsonObject
-        {
-            ["task_list"] = tasks,
-            ["count"] = tasks.Count,
-            ["next_cursor"] = outcome.Data?.NextCursor,
-        }));
+        envelope["count"] = tasks.Count;
+        return ToolResultPipeline.OkJson(envelope, 0);
     }
 
     /// <summary>执行 <c>externalcontact.groupmsg.send_result</c>。</summary>
@@ -237,7 +235,10 @@ public sealed class ExternalContactGroupMsgToolHandlers(IWechatWorkExternalConta
             return WechatToolOutcomeErrors.From(outcome, WechatToolNames.ExternalcontactGroupmsgSendResult);
         }
 
-        var results = new JsonArray();
+        var envelope = ToolResultJsons.PageEnvelope(
+            hasMore: !string.IsNullOrEmpty(outcome.Data?.NextCursor),
+            pageToken: outcome.Data?.NextCursor);
+        var results = envelope["items"]!.AsArray();
         foreach (var item in outcome.Data?.SendList ?? [])
         {
             results.Add((JsonNode?)new JsonObject
@@ -250,12 +251,8 @@ public sealed class ExternalContactGroupMsgToolHandlers(IWechatWorkExternalConta
             });
         }
 
-        return ToolResult.FromText(ToolResultJson.ToText(new JsonObject
-        {
-            ["send_list"] = results,
-            ["count"] = results.Count,
-            ["next_cursor"] = outcome.Data?.NextCursor,
-        }));
+        envelope["count"] = results.Count;
+        return ToolResultPipeline.OkJson(envelope, 0);
     }
 
     /// <summary>执行 <c>externalcontact.groupmsg.send</c>（受控写）。</summary>

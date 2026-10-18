@@ -152,22 +152,23 @@ public sealed class ApprovalToolHandlers(
             return WechatToolOutcomeErrors.From(outcome, WechatToolNames.ApprovalList);
         }
 
-        var items = new JsonArray();
+        // 空页是合法答案（该范围内没有单据 / 已翻完），不转错误：模型据此换条件或停止翻页。
+        var envelope = ToolResultJsons.PageEnvelope(
+            hasMore: !string.IsNullOrEmpty(outcome.Data?.NewNextCursor),
+            pageToken: outcome.Data?.NewNextCursor);
+        var items = envelope["items"]!.AsArray();
         foreach (var spNo in outcome.Data?.SpNoList ?? [])
         {
             items.Add((JsonNode?)JsonValue.Create(spNo));
         }
 
-        // 空页是合法答案（该范围内没有单据 / 已翻完），不转错误：模型据此换条件或停止翻页。
-        return ToolResult.FromText(ToolResultJson.ToText(new JsonObject
+        envelope["count"] = items.Count;
+        if (items.Count == 0)
         {
-            ["sp_no_list"] = items,
-            ["count"] = items.Count,
-            ["next_cursor"] = outcome.Data?.NewNextCursor,
-            ["hint"] = items.Count == 0
-                ? "该时间范围内没有符合条件的审批单；可放宽 sp_status 或扩大时间范围（跨度 ≤ 31 天）。"
-                : null,
-        }));
+            envelope["hint"] = "该时间范围内没有符合条件的审批单；可放宽 sp_status 或扩大时间范围（跨度 ≤ 31 天）。";
+        }
+
+        return ToolResultPipeline.OkJson(envelope, 0);
     }
 
     /// <summary>审批节点投影：只保留状态与「谁在什么时候操作」，不含审批意见正文。</summary>

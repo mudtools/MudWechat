@@ -75,7 +75,11 @@ public sealed class ExternalContactGroupChatToolHandlers(IWechatWorkExternalCont
             return WechatToolOutcomeErrors.From(outcome, WechatToolNames.ExternalcontactGroupchatList);
         }
 
-        var chats = new JsonArray();
+        // 空列表是合法答案（该过滤条件下没有客户群），不转错误。
+        var envelope = ToolResultJsons.PageEnvelope(
+            hasMore: !string.IsNullOrEmpty(outcome.Data?.NextCursor),
+            pageToken: outcome.Data?.NextCursor);
+        var chats = envelope["items"]!.AsArray();
         foreach (var item in outcome.Data?.GroupChatList ?? [])
         {
             chats.Add((JsonNode?)new JsonObject
@@ -85,13 +89,8 @@ public sealed class ExternalContactGroupChatToolHandlers(IWechatWorkExternalCont
             });
         }
 
-        // 空列表是合法答案（该过滤条件下没有客户群），不转错误。
-        return ToolResult.FromText(ToolResultJson.ToText(new JsonObject
-        {
-            ["group_chat_list"] = chats,
-            ["count"] = chats.Count,
-            ["next_cursor"] = outcome.Data?.NextCursor,
-        }));
+        envelope["count"] = chats.Count;
+        return ToolResultPipeline.OkJson(envelope, 0);
     }
 
     /// <summary>执行 <c>externalcontact.groupchat.get</c>。</summary>

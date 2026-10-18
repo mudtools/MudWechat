@@ -55,7 +55,7 @@ public class ExternalContactGroupMsgToolHandlersTests
         result.Text.Should().Contain("\"image\"");
         result.Text.Should().Contain("\"link\"");
         result.Text.Should().Contain("\"count\":1");
-        result.Text.Should().Contain("\"next_cursor\":\"c2\"");
+        result.Text.Should().Contain("\"page_token\":\"c2\"");
         result.Text.Should().NotContain("media-1", "media_id 是宿主素材资产，不外发");
     }
 

@@ -69,10 +69,14 @@ public sealed class ExternalContactInheritanceToolHandlers(IWechatWorkExternalCo
             return WechatToolOutcomeErrors.From(outcome, WechatToolNames.ExternalcontactResignedUnassignedList);
         }
 
-        var info = new JsonArray();
+        // 空列表是合法答案（当前没有待分配的离职客户），不转错误。
+        var envelope = ToolResultJsons.PageEnvelope(
+            hasMore: outcome.Data?.IsLast is false,
+            pageToken: outcome.Data?.NextCursor);
+        var items = envelope["items"]!.AsArray();
         foreach (var item in outcome.Data?.Info ?? [])
         {
-            info.Add((JsonNode?)new JsonObject
+            items.Add((JsonNode?)new JsonObject
             {
                 ["handover_userid"] = item.HandoverUserid,
                 ["external_userid"] = item.ExternalUserid,
@@ -80,13 +84,7 @@ public sealed class ExternalContactInheritanceToolHandlers(IWechatWorkExternalCo
             });
         }
 
-        // 空列表是合法答案（当前没有待分配的离职客户），不转错误。
-        return ToolResult.FromText(ToolResultJson.ToText(new JsonObject
-        {
-            ["info"] = info,
-            ["count"] = info.Count,
-            ["is_last"] = JsonValue.Create(outcome.Data?.IsLast),
-            ["next_cursor"] = outcome.Data?.NextCursor,
-        }));
+        envelope["count"] = items.Count;
+        return ToolResultPipeline.OkJson(envelope, 0);
     }
 }

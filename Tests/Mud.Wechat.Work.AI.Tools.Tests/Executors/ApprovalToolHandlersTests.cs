@@ -201,8 +201,9 @@ public class ApprovalToolHandlersTests
             CancellationToken.None);
 
         result.Text.Should().Contain("\"count\":2");
-        result.Text.Should().Contain("\"sp_no_list\":[\"202310100001\",\"202310100002\"]");
-        result.Text.Should().Contain("\"next_cursor\":\"c2\"");
+        result.Text.Should().Contain("\"items\":[\"202310100001\",\"202310100002\"]");
+        result.Text.Should().Contain("\"has_more\":true");
+        result.Text.Should().Contain("\"page_token\":\"c2\"");
         _approval.Verify(
             a => a.BatchGetApprovalNumbersAsync(
                 It.Is<BatchGetApprovalNumbersRequest>(r =>

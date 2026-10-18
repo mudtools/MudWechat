@@ -34,8 +34,8 @@ public class JournalToolHandlersTests
 
         result.Text.Should().Contain("\"j-1\"");
         result.Text.Should().Contain("\"count\":2");
-        result.Text.Should().Contain("\"ending\":0");
-        result.Text.Should().Contain("\"next_cursor\":2");
+        result.Text.Should().Contain("\"has_more\":true", "ending=0 表示还有数据");
+        result.Text.Should().Contain("\"page_token\":\"2\"");
     }
 
     [Fact]

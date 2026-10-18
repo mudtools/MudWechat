@@ -109,7 +109,11 @@ public sealed class ExternalContactMomentToolHandlers(IWechatWorkExternalContact
             return WechatToolOutcomeErrors.From(outcome, WechatToolNames.ExternalcontactMomentList);
         }
 
-        var moments = new JsonArray();
+        // 空列表是合法答案（该时间段内没有发表记录），不转错误。
+        var envelope = ToolResultJsons.PageEnvelope(
+            hasMore: !string.IsNullOrEmpty(outcome.Data?.NextCursor),
+            pageToken: outcome.Data?.NextCursor);
+        var moments = envelope["items"]!.AsArray();
         foreach (var item in outcome.Data?.MomentList ?? [])
         {
             moments.Add((JsonNode?)new JsonObject
@@ -127,13 +131,8 @@ public sealed class ExternalContactMomentToolHandlers(IWechatWorkExternalContact
             });
         }
 
-        // 空列表是合法答案（该时间段内没有发表记录），不转错误。
-        return ToolResult.FromText(ToolResultJson.ToText(new JsonObject
-        {
-            ["moment_list"] = moments,
-            ["count"] = moments.Count,
-            ["next_cursor"] = outcome.Data?.NextCursor,
-        }));
+        envelope["count"] = moments.Count;
+        return ToolResultPipeline.OkJson(envelope, 0);
     }
 
     /// <summary>执行 <c>externalcontact.moment.publish_list</c>。</summary>
@@ -168,7 +167,10 @@ public sealed class ExternalContactMomentToolHandlers(IWechatWorkExternalContact
                 outcome.ErrorText ?? "拉取朋友圈执行列表失败（该 moment_id 可能不是企业发表的朋友圈）。");
         }
 
-        var tasks = new JsonArray();
+        var envelope = ToolResultJsons.PageEnvelope(
+            hasMore: !string.IsNullOrEmpty(outcome.Data?.NextCursor),
+            pageToken: outcome.Data?.NextCursor);
+        var tasks = envelope["items"]!.AsArray();
         foreach (var item in outcome.Data?.TaskList ?? [])
         {
             tasks.Add((JsonNode?)new JsonObject
@@ -178,12 +180,8 @@ public sealed class ExternalContactMomentToolHandlers(IWechatWorkExternalContact
             });
         }
 
-        return ToolResult.FromText(ToolResultJson.ToText(new JsonObject
-        {
-            ["task_list"] = tasks,
-            ["count"] = tasks.Count,
-            ["next_cursor"] = outcome.Data?.NextCursor,
-        }));
+        envelope["count"] = tasks.Count;
+        return ToolResultPipeline.OkJson(envelope, 0);
     }
 
     /// <summary>执行 <c>externalcontact.moment.comments</c>。</summary>

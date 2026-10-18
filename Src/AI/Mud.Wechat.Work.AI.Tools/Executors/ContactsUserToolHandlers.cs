@@ -166,7 +166,11 @@ public sealed class ContactsUserToolHandlers(IWechatWorkUsersService users)
             return WechatToolOutcomeErrors.From(outcome, WechatToolNames.ContactsUserIdList);
         }
 
-        var items = new JsonArray();
+        // 空列表是合法答案（该页没有成员或已翻完），不转错误。
+        var envelope = ToolResultJsons.PageEnvelope(
+            hasMore: !string.IsNullOrEmpty(outcome.Data?.NextCursor),
+            pageToken: outcome.Data?.NextCursor);
+        var items = envelope["items"]!.AsArray();
         foreach (var item in outcome.Data?.DeptUser ?? [])
         {
             items.Add((JsonNode?)new JsonObject
@@ -177,13 +181,8 @@ public sealed class ContactsUserToolHandlers(IWechatWorkUsersService users)
             });
         }
 
-        // 空列表是合法答案（该页没有成员或已翻完），不转错误。
-        return ToolResult.FromText(ToolResultJson.ToText(new JsonObject
-        {
-            ["dept_user"] = items,
-            ["count"] = items.Count,
-            ["next_cursor"] = outcome.Data?.NextCursor,
-        }));
+        envelope["count"] = items.Count;
+        return ToolResultPipeline.OkJson(envelope, 0);
     }
 
     /// <summary>执行 <c>contacts.user.resolve</c>（手机号 / 邮箱唯一索引，或部门内姓名匹配）。</summary>

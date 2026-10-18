@@ -109,19 +109,18 @@ public sealed class MeetingToolHandlers(
             return WechatToolOutcomeErrors.From(outcome, WechatToolNames.MeetingList);
         }
 
-        var ids = new JsonArray();
+        // 空列表是合法答案（该时间段内该成员没有会议或会议不属于本应用），不转错误。
+        var envelope = ToolResultJsons.PageEnvelope(
+            hasMore: !string.IsNullOrEmpty(outcome.Data?.NextCursor),
+            pageToken: outcome.Data?.NextCursor);
+        var ids = envelope["items"]!.AsArray();
         foreach (var meetingid in outcome.Data?.MeetingidList ?? [])
         {
             ids.Add((JsonNode?)JsonValue.Create(meetingid));
         }
 
-        // 空列表是合法答案（该时间段内该成员没有会议或会议不属于本应用），不转错误。
-        return ToolResult.FromText(ToolResultJson.ToText(new JsonObject
-        {
-            ["meetingid_list"] = ids,
-            ["count"] = ids.Count,
-            ["next_cursor"] = outcome.Data?.NextCursor,
-        }));
+        envelope["count"] = ids.Count;
+        return ToolResultPipeline.OkJson(envelope, 0);
     }
 
     /// <summary>执行 <c>meeting.get</c>。</summary>
@@ -249,7 +248,11 @@ public sealed class MeetingToolHandlers(
             return WechatToolOutcomeErrors.From(outcome, WechatToolNames.MeetingAttendees);
         }
 
-        var attendees = new JsonArray();
+        // 官方同时给 has_more 与 next_cursor：以 has_more 为准，游标仅在确有待翻页时下发。
+        var envelope = ToolResultJsons.PageEnvelope(
+            hasMore: outcome.Data?.HasMore is true,
+            pageToken: outcome.Data?.HasMore is true ? outcome.Data?.NextCursor : null);
+        var attendees = envelope["items"]!.AsArray();
         foreach (var attendee in outcome.Data?.Attendees ?? [])
         {
             attendees.Add((JsonNode?)new JsonObject
@@ -262,12 +265,7 @@ public sealed class MeetingToolHandlers(
             });
         }
 
-        return ToolResult.FromText(ToolResultJson.ToText(new JsonObject
-        {
-            ["attendees"] = attendees,
-            ["count"] = attendees.Count,
-            ["has_more"] = JsonValue.Create(outcome.Data?.HasMore),
-            ["next_cursor"] = outcome.Data?.NextCursor,
-        }));
+        envelope["count"] = attendees.Count;
+        return ToolResultPipeline.OkJson(envelope, 0);
     }
 }

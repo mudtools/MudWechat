@@ -112,7 +112,8 @@ public class ExternalContactStatisticsToolHandlersTests
         result.Text.Should().Contain("\"chat_total\":12");
         result.Text.Should().Contain("\"member_total\":340");
         result.Text.Should().Contain("\"total\":1");
-        result.Text.Should().Contain("\"next_offset\":1");
+        result.Text.Should().Contain("\"has_more\":true");
+        result.Text.Should().Contain("\"page_token\":\"1\"");
     }
 
     [Fact]

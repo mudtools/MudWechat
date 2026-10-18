@@ -136,7 +136,7 @@ public class ContactsUserToolHandlersTests
         result.Text.Should().Contain("\"open_userid\":\"wo-open-1\"");
         result.Text.Should().Contain("\"department\":2");
         result.Text.Should().Contain("\"count\":2");
-        result.Text.Should().Contain("\"next_cursor\":\"c2\"");
+        result.Text.Should().Contain("\"page_token\":\"c2\"");
     }
 
     [Fact]

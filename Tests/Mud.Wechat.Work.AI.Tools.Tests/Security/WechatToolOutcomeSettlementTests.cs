@@ -123,6 +123,78 @@ public class WechatToolOutcomeSettlementTests
     }
 
     [Fact]
+    public async Task Invoke_WhenQueueWaitExceedsCallTimeout_ShouldReturnTimeoutWithoutTouchingExecutor()
+    {
+        var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var executed = 0;
+
+        var registry = new WechatToolRegistry();
+        registry.Register(new WechatToolExecution(
+            WechatToolNames.ContactsDepartmentGet,
+            new WechatToolBinding("corp-app"),
+            async (_, _) =>
+            {
+                Interlocked.Increment(ref executed);
+                entered.TrySetResult();
+                await release.Task.ConfigureAwait(false);
+                return ToolResultPipeline.Ok("{}", 0);
+            }));
+
+        // 闸门只有 1 个位：第二个调用必然停在排队段，而超时预算从「进入执行链」起算（FIX-17）。
+        var policy = new WechatToolPolicy
+        {
+            EnforceAuthorization = false,
+            CallTimeout = TimeSpan.FromSeconds(1),
+            MaxConcurrentCalls = 1,
+        };
+        policy.Validate();
+        using var dispatcher = new WechatToolDispatcher(registry, policy);
+
+        var holding = dispatcher.InvokeAsync(WechatToolNames.ContactsDepartmentGet, Args);
+        await entered.Task.WaitAsync(TimeSpan.FromSeconds(5));
+
+        var queued = await dispatcher.InvokeAsync(WechatToolNames.ContactsDepartmentGet, Args);
+
+        queued.Error!.Subtype.Should().Be(
+            ToolErrorSubtype.Timeout,
+            "满载排队属于超时预算覆盖的四段之一；只给执行段设超时会让队尾调用挂到调用方超时");
+        executed.Should().Be(1, "排队超时不得触达执行器（否则超时的调用还在真实消耗上游频率额度）");
+
+        release.SetResult();
+        (await holding).Text.Should().Contain("{}");
+    }
+
+    [Fact]
+    public async Task Invoke_WhenOutboundNormalizeThrows_ShouldReturnStructuredErrorInsteadOfThrowing()
+    {
+        var sink = new RecordingSink();
+        var policy = new WechatToolPolicy { EnforceAuthorization = false };
+        policy.Validate();
+
+        var dispatcher = new WechatToolDispatcher(
+            Registry(_ => Task.FromResult(ToolResultPipeline.Ok("{\"raw\":\"未净化原文\"}", 0))),
+            policy,
+            new ThrowingOutboundGuard(),
+            authorizer: null,
+            approvalGate: null,
+            logger: null,
+            auditSink: sink,
+            corpContext: null);
+
+        var result = await dispatcher.InvokeAsync(WechatToolNames.ContactsDepartmentGet, Args);
+
+        result.Error.Should().NotBeNull("出站失败必须是结构化失败，而不是把异常穿到模型");
+        result.Error!.Category.Should().Be("internal");
+        result.Text.Should().NotContain("未净化原文", "未经净化的原文一旦进提示词就不可撤回");
+        result.Text.Should().Contain("出站净化");
+
+        sink.Records.Should().ContainSingle().Which.Outcome.Should().Be(
+            WechatToolAuditOutcome.Failed,
+            "归一失败必须结算为失败（谎报成功会让失败率失真）");
+    }
+
+    [Fact]
     public async Task Invoke_AfterDispose_ShouldThrowObjectDisposed()
     {
         var dispatcher = Dispatcher(sink: null, _ => Task.FromResult(ToolResultPipeline.Ok("{}", 0)));
@@ -189,8 +261,7 @@ public class WechatToolOutcomeSettlementTests
         }
     }
 
-    private sealed class SlowAuthorizer : IWechatToolAuthorizer
-    {
+    private sealed class SlowAuthorizer : IWechatToolAuthorizer    {
         public async ValueTask<WechatToolAuthorizationResult> AuthorizeAsync(
             WechatToolAuthorizationContext context,
             CancellationToken cancellationToken)
@@ -198,5 +269,17 @@ public class WechatToolOutcomeSettlementTests
             await Task.Delay(TimeSpan.FromSeconds(30), cancellationToken).ConfigureAwait(false);
             return WechatToolAuthorizationResult.Allow();
         }
+    }
+
+    /// <summary>出站出口的失败注入（真实失败形态不可稳定复现，见 <see cref="WechatToolOutboundGuard.Normalize"/> 的 remarks）。</summary>
+    private sealed class ThrowingOutboundGuard : WechatToolOutboundGuard
+    {
+        public ThrowingOutboundGuard()
+            : base(8192, contentSafetyMode: null)
+        {
+        }
+
+        public override ToolResult Normalize(ToolResult result)
+            => throw new InvalidOperationException("sanitizer crashed");
     }
 }

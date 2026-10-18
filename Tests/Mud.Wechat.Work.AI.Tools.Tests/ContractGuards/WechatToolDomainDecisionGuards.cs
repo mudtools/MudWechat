@@ -79,6 +79,53 @@ public class WechatToolDomainDecisionGuards
         ["Webhook"] = (Decision.Forbidden, "webhook"),
     };
 
+    /// <summary>
+    /// 逐域工具数（与 README 域表同批维护）：<b>合计必须等于名字表总数</b>，且逐域必须与真实前缀计数一致。
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>为什么需要</b>：README 上一轮把 <c>ExternalContact</c> 记为 20（实 19），而总数仍写 62 —— 散文层面的
+    /// 「逐域计数」没有机械校验就必然漂移，且漂移后<b>看不出</b>（合计没变，只是分配错了）。
+    /// </para>
+    /// <para>
+    /// <b>维护方式</b>：新增/删除工具时本表与 <see cref="WechatToolSurfaceContractGuards"/> 的冻结清单<b>同批</b>改；
+    /// 两处都改反而说明「工具面变了」，而不是单点疏漏。
+    /// </para>
+    /// </remarks>
+    private static readonly Dictionary<string, int> CuratedCounts = new(StringComparer.Ordinal)
+    {
+        ["approval"] = 5,
+        ["checkin"] = 1,
+        ["contacts"] = 12,
+        ["dial"] = 1,
+        ["externalcontact"] = 19,
+        ["journal"] = 2,
+        ["kf"] = 6,
+        ["living"] = 3,
+        ["meeting"] = 3,
+        ["message"] = 2,
+        ["schedule"] = 3,
+        ["wedoc"] = 5,
+    };
+
+    [Fact]
+    public void CuratedDomainCounts_ShouldMatchRegisteredToolsAndSumToTotal()
+    {
+        CuratedCounts.Values.Sum().Should().Be(
+            WechatToolNames.All.Length,
+            "逐域计数合计必须等于名字表总数（5+1+12+1+19+2+6+3+3+2+3+5 = 62）");
+
+        CuratedCounts.Keys.Should().BeEquivalentTo(
+            Table.Where(kv => kv.Value.Status == Decision.Curated).Select(kv => kv.Value.Prefix!),
+            "逐域计数表与决策表的 Curated 前缀必须一一对应");
+
+        foreach (var (prefix, expected) in CuratedCounts)
+        {
+            var actual = WechatToolNames.All.Count(name => name.StartsWith(prefix + ".", StringComparison.Ordinal));
+            actual.Should().Be(expected, $"{prefix} 的实际工具数与逐域计数表不符（README 域表同批维护）");
+        }
+    }
+
     [Fact]
     public void DecisionTable_ShouldCoverAllThirtyEightDomains()
     {

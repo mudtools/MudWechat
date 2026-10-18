@@ -42,7 +42,7 @@ namespace Mud.Wechat.Work.AI.Tools.Security;
 /// 削减，同一策略值在中英文结果上表现为两个不同预算，审计与指标也无法对账。
 /// </para>
 /// </remarks>
-internal sealed class WechatToolOutboundGuard
+internal class WechatToolOutboundGuard
 {
     /// <summary>注入标注在 JSON 信封中的键（固定首键，便于模型与宿主识别）。</summary>
     public const string AnnotationKey = "_untrusted";
@@ -61,7 +61,12 @@ internal sealed class WechatToolOutboundGuard
     /// <summary>对一次执行结果施加出站纪律。</summary>
     /// <param name="result">执行器原始结果。</param>
     /// <returns>可回填模型的结果（截断标记已回填）。</returns>
-    public ToolResult Normalize(ToolResult result)
+    /// <remarks>
+    /// <b><see langword="virtual"/> 的理由是「失败可注入」</b>：本类的失败形态（净化/标注/截断任一步抛）在真实
+    /// 输入下不可稳定复现，而执行链接口承诺「永不因出站失败而抛」——该承诺只能靠可注入的失败来锁定
+    /// （见 <c>WechatToolDispatcher</c> 的归一兜底与用例 <c>Invoke_WhenOutboundNormalizeThrows_…</c>）。
+    /// </remarks>
+    public virtual ToolResult Normalize(ToolResult result)
     {
         var text = ToolResultSanitizer.Sanitize(result.Text);
         var hits = Scan(text);

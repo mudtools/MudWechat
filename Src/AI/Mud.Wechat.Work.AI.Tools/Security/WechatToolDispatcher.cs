@@ -94,6 +94,25 @@ public sealed class WechatToolDispatcher : IDisposable
         ILogger<WechatToolDispatcher>? logger = null,
         IWechatToolAuditSink? auditSink = null,
         IWechatAiCorpContextAccessor? corpContext = null)
+        : this(registry, policy, outbound: null, authorizer, approvalGate, logger, auditSink, corpContext)
+    {
+    }
+
+    /// <summary>测试接缝：<paramref name="outbound"/> 非空时替换出站出口（用于锁定「归一失败不得穿透」）。</summary>
+    /// <remarks>
+    /// 出站失败的<b>真实触发条件</b>（净化/标注/截断任一步抛）在正常输入下不可稳定构造，而「永不因出站失败而抛」
+    /// 是本类型的公开承诺。把出口做成可注入而不是把兜底逻辑放进 <see cref="WechatToolOutboundGuard"/> 内部，
+    /// 是为了让<b>契约的守门人</b>（执行链）与<b>实现</b>（三步出口）各自可验证：前者证明兜底生效，后者保持纯函数。
+    /// </remarks>
+    internal WechatToolDispatcher(
+        WechatToolRegistry registry,
+        WechatToolPolicy policy,
+        WechatToolOutboundGuard? outbound,
+        IWechatToolAuthorizer? authorizer,
+        IWechatToolApprovalGate? approvalGate,
+        ILogger<WechatToolDispatcher>? logger,
+        IWechatToolAuditSink? auditSink,
+        IWechatAiCorpContextAccessor? corpContext)
     {
         _registry = registry ?? throw new ArgumentNullException(nameof(registry));
         Policy = policy ?? throw new ArgumentNullException(nameof(policy));
@@ -102,7 +121,7 @@ public sealed class WechatToolDispatcher : IDisposable
         _logger = logger;
         _auditSink = auditSink ?? NullWechatToolAuditSink.Instance;
         _corpContext = corpContext;
-        _outbound = new WechatToolOutboundGuard(policy.MaxResultLength, policy.ContentSafetyMode);
+        _outbound = outbound ?? new WechatToolOutboundGuard(policy.MaxResultLength, policy.ContentSafetyMode);
         // 只读限流退避：写工具在 ShouldRetry 内部恒为 false（isWrite ⇒ 零重试），此处不重复判断。
         _retry = new ToolRetryPolicy(policy.Retry, () => DateTimeOffset.UtcNow.Ticks);
         // 限并发让过载变成「排队」而不是「一起触发限流」：模型一个回合可以并行发多个 tool_call，
@@ -381,8 +400,8 @@ public sealed class WechatToolDispatcher : IDisposable
 
         stopwatch.Stop();
 
-        var normalized = _outbound.Normalize(result);
-        var outcome = failed || normalized.Error is not null
+        var normalized = Normalize(result, toolName, out var normalizeFailed);
+        var outcome = failed || normalizeFailed || normalized.Error is not null
             ? WechatToolAuditOutcome.Failed
             : WechatToolAuditOutcome.Succeeded;
         WechatToolMetrics.CompleteActivity(
@@ -402,7 +421,7 @@ public sealed class WechatToolDispatcher : IDisposable
         WechatToolAuthorizationContext? context,
         Stopwatch stopwatch)
     {
-        var normalized = _outbound.Normalize(TimeoutError(toolName));
+        var normalized = Normalize(TimeoutError(toolName), toolName, out _);
         var risk = context is null ? "unknown" : RiskLabel(context.Risk);
         var outcome = OutcomeLabel(WechatToolAuditOutcome.Failed);
         WechatToolMetrics.RecordInvocation(toolName, risk, outcome);
@@ -565,13 +584,47 @@ public sealed class WechatToolDispatcher : IDisposable
         var auditContext = context ?? BuildAuditOnlyContext(toolName, arguments);
         RecordWithoutTiming(toolName, auditContext.Risk, WechatToolAuditOutcome.Denied);
         await AuditAsync(auditContext, WechatToolAuditOutcome.Denied, 0, null).ConfigureAwait(false);
-        return _outbound.Normalize(ToolResultPipeline.Error(
+        return Normalize(
+            ToolResultPipeline.Error(
+                toolName,
+                ToolErrorCategory.Authorization,
+                subtype,
+                text,
+                maxLength: 0,
+                attempts: 0),
             toolName,
-            ToolErrorCategory.Authorization,
-            subtype,
-            text,
-            maxLength: 0,
-            attempts: 0));
+            out _);
+    }
+
+    /// <summary>出站归一（<b>不得穿透</b>）：净化/标注/截断任一步抛异常时回填固定错误文案。</summary>
+    /// <param name="result">执行器原始结果。</param>
+    /// <param name="toolName">工具名（回填文案与日志用）。</param>
+    /// <param name="failed">归一是否失败（失败即结算为 <c>Failed</c>，不谎报成功）。</param>
+    /// <returns>可回填模型的结果。</returns>
+    /// <remarks>
+    /// <b>为什么兜底而不是上抛</b>：出站失败意味着结果<b>未经净化</b>——原文（控制字符、手机号、凭据、注入载荷）
+    /// 一旦进提示词就不可撤回。故既不原样送出，也不让异常穿到模型（模型拿到异常等于「什么都没看见」）：
+    /// 只回填一句固定失败文案，并让审计把这次调用记为失败。
+    /// </remarks>
+    private ToolResult Normalize(ToolResult result, string toolName, out bool failed)
+    {
+        try
+        {
+            failed = false;
+            return _outbound.Normalize(result);
+        }
+        catch (Exception ex)
+        {
+            failed = true;
+            _logger?.LogError(ex, "工具 {Tool} 出站归一失败（已回填固定文案，原文不外发）。", toolName);
+            return ToolResultPipeline.Error(
+                toolName,
+                ToolErrorCategory.Internal,
+                ToolErrorSubtype.Unexpected,
+                $"工具 {toolName} 的结果未能通过出站净化，本次调用按失败处理；请勿原样重试，改用其他方式获取信息。",
+                maxLength: 0,
+                attempts: 1);
+        }
     }
 
     /// <summary>白名单/契约阶段没有授权上下文时，用装配期绑定构造审计事实（不含发起人）。</summary>

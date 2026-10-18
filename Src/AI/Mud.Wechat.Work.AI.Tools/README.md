@@ -3,7 +3,7 @@
 企业微信线 **AI 工具面**（S2 底座）：把企微业务接口策展为「模型可调用工具」，由编译期引擎
 （`Mud.AI.Generator` 1.0.1）产出 Schema / 名称契约 / Args 解包器 / 域注册器 / DI 装配，运行期零反射。
 
-设计见 `.docs/AI/MudWechat-AI功能解决方案-v1.md` §3.4（剖面 32 槽）、§3.7（策展分级）、§四 S2。
+设计见 `.docs/AI/MudWechat-AI功能解决方案-v1.md` §3.4（剖面 33 槽）、§3.7（策展分级）、§四 S2。
 
 ## 公开面
 
@@ -13,7 +13,7 @@
 | `WechatToolRisk`（`Mud.Wechat.Work.AI.AgentTools`） | 三档风险枚举（`Read`/`Write`/`HighRiskWrite`），剖面 `RiskEnumFullName` 的消费方 |
 | `WechatToolBinding` | 执行绑定（`AppKey`/`AuthCorpId`/`PermanentCode`）：身份是环境而非模型可见参数 |
 | `Curation.IWechatWork{域}{动作}Tool` | 策展声明面：`[AgentTool]`（工具名/描述/scope/`Source`）+ 参数为「模型可见 Schema」 |
-| `Executors.*ToolHandlers` | 执行器：`[ToolHandler(typeof(接口))] public Task<ToolResult> X(IReadOnlyDictionary<string,object?> args, CancellationToken ct)` |
+| `Executors.*ToolHandlers` | 执行器（**21 个文件**，按域聚合；`Executors/` 下另有 4 个共享 helper：`ToolTimeText`/`WechatToolArgumentErrors`/`WechatToolOutcomeErrors`/`WechatToolResults`）：`[ToolHandler(typeof(接口))] public Task<ToolResult> X(IReadOnlyDictionary<string,object?> args, CancellationToken ct)` |
 | `Registration.WechatToolRegistry` / `WechatToolExecution` | 工具注册表（契约名 → 绑定 + 执行委托） |
 | `Registration.WechatToolRegistration` / `IWechatToolDomainRegistrar` / `WechatToolDomainRegistrars` | 生成物写入注册表的接缝 |
 | `Security.WechatToolPolicy` | 白名单（默认只读全开、写类全关、强制授权）；`Validate()` 后冻结，未知名/写工具未开授权即 fail-fast |
@@ -53,6 +53,10 @@
 
 当前策展面（**62 个 = 49 只读 + 13 写（12 受控写 + 1 高危写）**；只读/写分类的权威表是
 `Tests/.../ContractGuards/WechatToolSurfaceContractGuards.cs`，本表与之同批维护）：
+
+口径（三处都由守卫机械校验，改一处漏一处即红）：**62 个工具 ↔ 62 个 `Curation/*.cs` 声明**（声明与工具一对一）、
+**62 个 `[ToolHandler]` 落 21 个 `Executors/*ToolHandlers.cs`**、**逐域计数 5+1+12+1+19+2+6+3+3+2+3+5 = 62**。
+逐域计数的权威表是 `WechatToolDomainDecisionGuards.CuratedCounts`（合计必须等于 `WechatToolNames.All.Length`）。
 
 | 域 | 工具 | SDK 源 |
 |---|---|---|
@@ -143,8 +147,10 @@
 **客户联系本波次未策展（有明确理由）**：`moment_strategy.*`（朋友圈规则组）——运营配置面且含串行写操作，
 不进模型工具面；`get_moment_customer_list` / `get_moment_send_result`——名单级外发（可见/已送达客户 ID 清单），
 信息量低于 `publish_list` 的执行状态且更敏感；`groupchat/opengid_to_chatid`——只在小程序端拿到 `opengid` 后才有意义，
-模型产不出该入参；`contact_way.*`（联系方式）、获客助手、商品图册、离职/在职继承、拦截规则
+模型产不出该入参；`contact_way.*`（联系方式）、获客助手、拦截规则
 ——分别是写面、外发面或运营配置面，留待有明确产品用法再评估。
+（商品图册 `product_album.list/get` 与离职继承 `resigned.unassigned_list` **已策展**，故不在未策展清单内：
+把它们并列进来会与本表及 `WechatToolNames.All` 直接矛盾。）
 群发域内的 `remind_groupmsg_send` / `cancel_groupmsg_send`（操作面极小、管理端可完成）、
 `send_welcome_msg`（须在「添加外部联系人」事件回调后 20 秒内调用，模型产不出 `welcome_code` 且赶不上窗口）、
 入群欢迎语素材增改删查（运营素材库，且删除被引擎判为高危写）同样不策展。

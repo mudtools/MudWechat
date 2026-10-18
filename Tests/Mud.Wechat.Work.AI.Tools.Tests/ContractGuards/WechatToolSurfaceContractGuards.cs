@@ -1,4 +1,5 @@
-﻿using FluentAssertions;
+﻿using System.Reflection;
+using FluentAssertions;
 using Mud.Wechat.Work.AI.AgentTools;
 using Mud.Wechat.Work.AI.Tools;
 using Mud.Wechat.Work.AI.Tools.Generated;
@@ -122,13 +123,18 @@ public class WechatToolSurfaceContractGuards
     [InlineData("contacts.department.get", "IWechatWorkDepartmentsService.GetDepartmentAsync", "/cgi-bin/department/get", "GET", WechatToolRisk.Read, "contacts.department.read")]
     [InlineData("contacts.department.list", "IWechatWorkDepartmentsService.GetDepartmentListAsync", "/cgi-bin/department/list", "GET", WechatToolRisk.Read, "contacts.department.read")]
     [InlineData("contacts.tag.create", "IWechatWorkTagsService.CreateTagAsync", "/cgi-bin/tag/create", "POST", WechatToolRisk.Write, "contacts.tag.write")]
+    [InlineData("contacts.tag.update_name", "IWechatWorkTagsService.UpdateTagNameAsync", "/cgi-bin/tag/update", "POST", WechatToolRisk.Write, "contacts.tag.write")]
     [InlineData("contacts.tag.list", "IWechatWorkTagsService.GetTagListAsync", "/cgi-bin/tag/list", "GET", WechatToolRisk.Read, "contacts.tag.read")]
     [InlineData("contacts.tag.members", "IWechatWorkTagsService.GetTagMembersAsync", "/cgi-bin/tag/get", "GET", WechatToolRisk.Read, "contacts.tag.read")]
     [InlineData("contacts.user.get", "IWechatWorkUsersService.GetUserAsync", "/cgi-bin/user/get", "GET", WechatToolRisk.Read, "contacts.user.read")]
     [InlineData("contacts.user.list", "IWechatWorkUsersService.GetUserDetailListAsync", "/cgi-bin/user/list", "GET", WechatToolRisk.Read, "contacts.user.read")]
     [InlineData("contacts.user.simple_list", "IWechatWorkUsersService.GetUserSimpleListAsync", "/cgi-bin/user/simplelist", "GET", WechatToolRisk.Read, "contacts.user.read")]
     [InlineData("approval.template.get", "IWechatWorkApprovalTemplateService.GetTemplateDetailAsync", "/cgi-bin/oa/gettemplatedetail", "POST", WechatToolRisk.Read, "approval.read")]
+    [InlineData("approval.list", "IWechatWorkApprovalService.BatchGetApprovalNumbersAsync", "/cgi-bin/oa/getapprovalinfo", "POST", WechatToolRisk.Read, "approval.read")]
+    [InlineData("approval.vacation.quota", "IWechatWorkVacationService.GetUserVacationQuotaAsync", "/cgi-bin/oa/vacation/getuservacationquota", "POST", WechatToolRisk.Read, "approval.read")]
+    [InlineData("approval.apply", "IWechatWorkApprovalService.ApplyApprovalAsync", "/cgi-bin/oa/applyevent", "POST", WechatToolRisk.Write, "approval.write")]
     [InlineData("contacts.user.id_list", "IWechatWorkUsersService.ListUserIdsAsync", "/cgi-bin/user/list_id", "POST", WechatToolRisk.Read, "contacts.user.read")]
+    [InlineData("contacts.user.resolve", "IWechatWorkUsersService.GetUserIdByMobileAsync", "/cgi-bin/user/getuserid", "POST", WechatToolRisk.Read, "contacts.user.read")]
     [InlineData("dial.record.list", "IWechatWorkInternalDialService.GetDialRecordAsync", "/cgi-bin/dial/get_dial_record", "POST", WechatToolRisk.Read, "dial.record.read")]
     [InlineData("externalcontact.contact.get", "IWechatWorkExternalContactCustomerService.GetCustomerDetailAsync", "/cgi-bin/externalcontact/get", "GET", WechatToolRisk.Read, "externalcontact.contact.read")]
     [InlineData("externalcontact.contact.list", "IWechatWorkExternalContactCustomerService.GetCustomerListAsync", "/cgi-bin/externalcontact/list", "GET", WechatToolRisk.Read, "externalcontact.contact.read")]
@@ -162,8 +168,12 @@ public class WechatToolSurfaceContractGuards
     [InlineData("living.watch_stat", "IWechatWorkLivingService.GetWatchStatAsync", "/cgi-bin/living/get_watch_stat", "POST", WechatToolRisk.Read, "living.read")]
     [InlineData("meeting.attendees", "IWechatWorkInternalMeetingAdvancedService.GetAttendeeListAsync", "/cgi-bin/meeting/get_attendee_list", "POST", WechatToolRisk.Read, "meeting.read")]
     [InlineData("message.send", "IWechatWorkMessageService.SendTextMessageAsync", "/cgi-bin/message/send", "POST", WechatToolRisk.Write, "message.send.write")]
+    [InlineData("message.recall", "IWechatWorkMessageService.RecallMessageAsync", "/cgi-bin/message/recall", "POST", WechatToolRisk.Write, "message.send.write")]
     [InlineData("meeting.get", "IWechatWorkInternalMeetingService.GetMeetingInfoAsync", "/cgi-bin/meeting/get_info", "POST", WechatToolRisk.Read, "meeting.read")]
     [InlineData("meeting.list", "IWechatWorkMeetingService.GetUserMeetingIdListAsync", "/cgi-bin/meeting/get_user_meetingid", "POST", WechatToolRisk.Read, "meeting.read")]
+    [InlineData("schedule.get", "IWechatWorkScheduleService.GetScheduleAsync", "/cgi-bin/oa/schedule/get", "POST", WechatToolRisk.Read, "schedule.read")]
+    [InlineData("schedule.add", "IWechatWorkScheduleService.AddScheduleAsync", "/cgi-bin/oa/schedule/add", "POST", WechatToolRisk.Write, "schedule.write")]
+    [InlineData("schedule.cancel", "IWechatWorkScheduleService.DelScheduleAsync", "/cgi-bin/oa/schedule/del", "POST", WechatToolRisk.Write, "schedule.write")]
     [InlineData("wedoc.doc.base_info", "IWechatWorkWedocService.GetDocumentBaseInfoAsync", "/cgi-bin/wedoc/get_doc_base_info", "POST", WechatToolRisk.Read, "wedoc.doc.read")]
     [InlineData("wedoc.doc.create", "IWechatWorkWedocService.CreateDocumentAsync", "/cgi-bin/wedoc/create_doc", "POST", WechatToolRisk.Write, "wedoc.doc.write")]
     [InlineData("wedoc.doc.delete", "IWechatWorkWedocService.DeleteDocumentAsync", "/cgi-bin/wedoc/del_doc", "POST", WechatToolRisk.HighRiskWrite, "wedoc.doc.write")]
@@ -190,6 +200,44 @@ public class WechatToolSurfaceContractGuards
         contract.Description.Should().NotBeNullOrWhiteSpace();
     }
 
+    /// <summary>WT-G2：路由/风险断言<b>覆盖全部工具</b>（62/62）——断言行漏一条 = 该工具的路由漂移无人拦。</summary>
+    /// <remarks>
+    /// 覆盖面靠反射读 <see cref="InlineDataAttribute"/> 行，而不是另抄一份名单：抄一份名单只会得到两个会各自漂移的真相源。
+    /// </remarks>
+    [Fact]
+    public void ContractsTheory_ShouldCoverEveryTool()
+    {
+        var method = typeof(WechatToolSurfaceContractGuards)
+            .GetMethod(nameof(Contracts_ShouldDeriveFromSdkFacts))!;
+        var covered = method
+            .GetCustomAttributes<InlineDataAttribute>()
+            .Select(attribute => attribute.GetData(method).Single()[0] as string)
+            .Where(name => name is not null)
+            .ToArray();
+
+        covered.Should().OnlyHaveUniqueItems("同一工具写两行断言会掩盖另一行缺失");
+        covered.Should().BeEquivalentTo(
+            WechatToolNames.All,
+            "62 行 InlineData = 62 个工具的路由/风险断言；少一行即有一个工具的路由漂移检测落空");
+    }
+
+    /// <summary>WT-G1：声明面文件数 = 工具数（声明与工具一对一），执行器按域聚合。</summary>
+    [Fact]
+    public void CurationAndExecutorFileCounts_ShouldMatchCuratedSurface()
+    {
+        var project = Path.Combine(RepoRoot(), "Src", "AI", "Mud.Wechat.Work.AI.Tools");
+
+        var curation = Directory.GetFiles(Path.Combine(project, "Curation"), "*.cs", SearchOption.TopDirectoryOnly);
+        curation.Should().HaveCount(
+            WechatToolNames.All.Length,
+            "Curation 一个文件承载一个声明面接口（一个工具），文件数与工具数必须相等");
+
+        var executors = Directory.GetFiles(Path.Combine(project, "Executors"), "*ToolHandlers.cs", SearchOption.TopDirectoryOnly);
+        executors.Should().HaveCount(
+            21,
+            "执行器按域聚合（21 个 *ToolHandlers.cs）；Executors/ 下另有 4 个共享 helper，不计入本数");
+    }
+
     /// <summary>WT-G3：每个 Schema 都带 <c>x-wechat</c> 与 <c>output_schema</c>（后者由 SDK 返回类型派生）。</summary>
     [Fact]
     public void Schemas_ShouldCarryWechatExtensionAndOutputSchema()
@@ -207,5 +255,22 @@ public class WechatToolSurfaceContractGuards
     public void RiskEnum_ShouldMatchPlatformVocabulary()
     {
         Enum.GetNames<WechatToolRisk>().Should().Equal("Read", "Write", "HighRiskWrite");
+    }
+
+    /// <summary>从测试输出目录向上定位仓库根（以 <c>Mud.Wechat.slnx</c> 为锚）。</summary>
+    private static string RepoRoot()
+    {
+        var dir = new DirectoryInfo(AppContext.BaseDirectory);
+        while (dir is not null)
+        {
+            if (File.Exists(Path.Combine(dir.FullName, "Mud.Wechat.slnx")))
+            {
+                return dir.FullName;
+            }
+
+            dir = dir.Parent;
+        }
+
+        throw new InvalidOperationException($"未能从 {AppContext.BaseDirectory} 向上定位仓库根（缺少 Mud.Wechat.slnx）。");
     }
 }

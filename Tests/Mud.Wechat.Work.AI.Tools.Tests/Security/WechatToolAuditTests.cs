@@ -152,6 +152,20 @@ public class WechatToolAuditTests
     }
 
     [Fact]
+    public async Task Invoke_WhenAuditSinkThrowsOnDeniedPath_ShouldStillReturnNeutralDenial()
+    {
+        using var provider = BuildProvider(
+            sink: new ThrowingSink(),
+            policy: p => p.Disable(WechatToolNames.ContactsDepartmentGet));
+
+        var result = await Dispatcher(provider).InvokeAsync(WechatToolNames.ContactsDepartmentGet, GetArgs);
+
+        result.Error.Should().NotBeNull("拒绝路径同样要先结算，再尝试留痕");
+        result.Error!.Category.Should().Be("authorization");
+        result.Text.Should().Contain("被拒绝", "审计抖动不得把中性拒绝文案替换成异常或成功");
+    }
+
+    [Fact]
     public void AddWechatWorkTools_WithoutSink_ShouldRegisterNullSink()
     {
         using var provider = new ServiceCollection()

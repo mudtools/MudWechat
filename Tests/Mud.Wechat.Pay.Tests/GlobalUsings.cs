@@ -55,3 +55,6 @@ global using System.Security.Cryptography;
 global using System.Security.Cryptography.X509Certificates;
 global using System.Text;
 global using Mud.Wechat.ContractBaseline;
+// APIv2 线命名空间
+global using Mud.Wechat.Pay.V2;
+global using Mud.Wechat.Pay.V2.DataModels.PayV2;

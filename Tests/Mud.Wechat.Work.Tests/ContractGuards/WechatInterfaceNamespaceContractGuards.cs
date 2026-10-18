@@ -77,7 +77,7 @@ public class WechatInterfaceNamespaceContractGuards
                 + $"可注入接口落 {RuntimeNamespace}；写错将静默失去「父接口不出现在用户自动完成列表」的隔离");
         }
 
-        // 分区计数锁定：父接口 155 + 可注入接口 308。
+        // 分区计数锁定：父接口数 + 可注入接口数。
         // 两个数字是**聚合报警**，集中维护在 Tests/ContractBaseline.cs（改数字只改那一处）。
         interfaces.Count(t => t.GetCustomAttribute<HttpClientApiAttribute>()!.IsAbstract)
             .Should().Be(Baseline.Work.AbstractParentInterfaces,

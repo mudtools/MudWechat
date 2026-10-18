@@ -162,3 +162,51 @@ public class AdsQualificationAddResponse : AdsResponse<AdsQualificationIdData>
 public class AdsQualificationUpdateResponse : AdsResponse<AdsQualificationIdData>
 {
 }
+
+/// <summary>
+/// <c>POST /v3.0/qualifications/delete</c> 的请求体（2026-10-18 官方页逐表核验，4 键）。
+/// </summary>
+/// <remarks>
+/// 必填：<c>account_id</c> / <c>qualification_type</c>。
+/// <c>qualification_id</c> 与 <c>qualification_id_list</c> 官方均标<b>选填</b>，两者语义分别是
+/// 「删除单个」与「批量删除」；官方未在参数表印二者互斥或必填其一，SDK 按原文建模、不本地拦截。
+/// </remarks>
+[HttpJsonSerializable(SerializerClassName = "Qualifications")]
+public class AdsQualificationDeleteRequest
+{
+    /// <summary>账户 id（官方 <c>account_id</c>，必填，<c>integer</c>；<b>不支持代理商 id</b>）。</summary>
+    [JsonPropertyName("account_id")]
+    public long? AccountId { get; set; }
+
+    /// <summary>资质类型（官方 <c>qualification_type</c>，必填，<c>enum</c>；可选值同
+    /// <see cref="AdsQualificationAddRequest.QualificationType"/>）。</summary>
+    [JsonPropertyName("qualification_type")]
+    public string? QualificationType { get; set; }
+
+    /// <summary>资质 id（官方 <c>qualification_id</c>，选填，<c>integer</c>；删除单个资质时使用）。</summary>
+    [JsonPropertyName("qualification_id")]
+    public long? QualificationId { get; set; }
+
+    /// <summary>资质 id 列表（官方 <c>qualification_id_list</c>，选填，<c>integer[]</c>；批量删除时使用）。</summary>
+    [JsonPropertyName("qualification_id_list")]
+    public List<long>? QualificationIdList { get; set; }
+}
+
+/// <summary><c>POST /v3.0/qualifications/delete</c> 的 <c>data</c> 载荷（2026-10-18 逐表核验：两个 id 键）。</summary>
+[HttpJsonSerializable(SerializerClassName = "Qualifications")]
+public class AdsQualificationDeleteData
+{
+    /// <summary>被删除的资质 id（官方 <c>qualification_id</c>，<c>integer</c>）。</summary>
+    [JsonPropertyName("qualification_id")]
+    public long? QualificationId { get; set; }
+
+    /// <summary>被批量删除的资质 id 列表（官方 <c>qualification_id_list</c>，<c>integer[]</c>）。</summary>
+    [JsonPropertyName("qualification_id_list")]
+    public List<long>? QualificationIdList { get; set; }
+}
+
+/// <summary><c>POST /v3.0/qualifications/delete</c> 的闭合应答。</summary>
+[HttpJsonSerializable(SerializerClassName = "Qualifications")]
+public class AdsQualificationDeleteResponse : AdsResponse<AdsQualificationDeleteData>
+{
+}

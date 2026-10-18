@@ -14,13 +14,16 @@ using Mud.Wechat.Pay.DataModels.Transfer;
 namespace Mud.Wechat.Pay.Tests.ContractGuards;
 
 /// <summary>
-/// P2 商家转账域契约守卫（<b>首批 1 端点</b>：发起转账）。
+/// P2 商家转账域契约守卫（<b>现 19 端点</b>：新版商家转账 10 + 旧版批次转账 9）。
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>官方事实来源（2026-10-09 核验）</b>：发起转账
+/// <b>官方事实来源（2026-10-09 / 2026-10-18 逐页核验）</b>：新版发起转账
 /// <c>pay.weixin.qq.com/doc/v3/merchant/4012716434</c>
-/// （<b>POST</b> <c>/v3/fund-app/mch-transfer/transfer-bills</c>，更新 2025.03.21，支持商户：普通商户）。
+/// （<b>POST</b> <c>/v3/fund-app/mch-transfer/transfer-bills</c>，更新 2025.03.21，支持商户：普通商户）；
+/// 旧版批次转账九支为 <c>4012458841</c>（创建批次）/ <c>4012458868</c>（按微信批次单号查）/
+/// <c>4012458877</c>（按商户批次单号查）/ <c>4012458886</c> / <c>4012458902</c>（明细两维）/
+/// <c>4012458946</c> / <c>4012458950</c>（回单申请/查询）/ <c>4012458967</c> / <c>4012458972</c>（明细回单申请/查询）。
 /// </para>
 /// <para>
 /// <b>🔴 官方资金安全原文（本域第一原则，须长期留档）</b>：「如果发起转账接口遇到新的错误码，
@@ -28,9 +31,10 @@ namespace Mud.Wechat.Pay.Tests.ContractGuards;
 /// <b>当查询原订单结果明确为「失败」时，再更换商户订单号进行重试。否则会有重复转账的资金风险。</b>」
 /// </para>
 /// <para>
-/// <b>✅ 本域现已 6 端点、具备生产可用性</b>（原先留档的「仅落发起转账 ⇒ 尚不可生产」已随增量关闭）：
+/// <b>✅ 新版商家转账 10 端点具备生产可用性</b>：
 /// 发起转账 + <b>两个查询</b>（商户单号 / 微信单号）+ <b>撤销转账</b> +
-/// <b>两个电子回单</b>（商户单号 / 微信单号）⇒ 官方要求的「遇错必须先查原单」流程可执行。
+/// <b>两个电子回单查询</b> + <b>两个电子回单申请</b> + <b>两个授权转账</b>
+/// ⇒ 官方要求的「遇错必须先查原单」流程可执行。
 /// </para>
 /// <para>
 /// <b>✅ 值表已补齐（原「值域未核验」留档已关闭）</b>：
@@ -38,6 +42,7 @@ namespace Mud.Wechat.Pay.Tests.ContractGuards;
 /// <c>user_recv_style.type</c>（2 值）→ <c>TransferRecvStyleTypes</c>；
 /// <c>user_recv_perception</c>（14 个<b>中文</b>取值）→ <c>TransferUserRecvPerceptions</c>；
 /// <c>info_type</c>（13 个中文取值）→ <c>TransferSceneReportInfoTypes</c>。
+/// 旧版另有批次状态 4 值、回单状态 2 值、回单受理类型 3 值 → 三张独立值表（见 TR8）。
 /// </para>
 /// <para>
 /// <b>⚠️ 唯一未成表的是 <c>transfer_scene_id</c>，且这是官方事实而非本仓遗漏</b>：
@@ -125,6 +130,92 @@ public class WechatPayTransferContractGuards
             .Select(static p => p.Name)
             .Should().BeEquivalentTo(new[] { "outBillNo" });
         revoke.ReturnType.Should().NotBe(typeof(Task), "撤销有应答体（4 字段），不是 204 无包体");
+    }
+
+    /// <summary>
+    /// TR8：旧版批次转账九支的路由 / 定位参数 / 共用应答裁决（2026-10-18 核验）。
+    /// </summary>
+    /// <remarks>
+    /// <para><b>官方事实</b>：旧版产品面 <c>/v3/transfer/**</c> 与新版 <c>/v3/fund-app/mch-transfer/**</c>
+    /// 是<b>两套不同接口</b>，批次状态只有 <c>ACCEPTED/PROCESSING/FINISHED/CLOSED</c> 4 值，
+    /// <b>不得</b>与新版转账单 8 值状态混用（<c>TransferBillStates</c> 含 <c>SUCCESS</c>/<c>FAIL</c> 等，旧版没有）。</para>
+    /// <para><b>共用裁决</b>：批次查询两页、明细查询两页、回单申请/查询两页、明细回单申请/查询两页
+    /// 的应答字段表<b>分别逐项一致</b> ⇒ 各自共用一型；若拆开建型，字段会在两处独立漂移。</para>
+    /// </remarks>
+    [Fact]
+    public void LegacyBatchTransferEndpoints_ShouldMatchOfficialRoutesAndShareResponses()
+    {
+        // 创建批次。
+        AssertRoute<PostAttribute>(
+            nameof(IWechatPayTransferService.CreateBatchTransferAsync), "/v3/transfer/batches");
+        FindMethod(nameof(IWechatPayTransferService.CreateBatchTransferAsync)).GetParameters()
+            .Should().Contain(static p => p.GetCustomAttribute<BodyAttribute>() != null,
+                "旧版创建批次要求 transfer_detail_list 请求体");
+
+        // 批次查询两维：batch_id / out_batch_no；need_query_detail 是必填 query。
+        AssertRoute<GetAttribute>(
+            nameof(IWechatPayTransferService.QueryBatchByBatchIdAsync),
+            "/v3/transfer/batches/batch-id/{batchId}");
+        AssertRoute<GetAttribute>(
+            nameof(IWechatPayTransferService.QueryBatchByOutBatchNoAsync),
+            "/v3/transfer/batches/out-batch-no/{outBatchNo}");
+        foreach (var methodName in new[]
+                 {
+                     nameof(IWechatPayTransferService.QueryBatchByBatchIdAsync),
+                     nameof(IWechatPayTransferService.QueryBatchByOutBatchNoAsync),
+                 })
+        {
+            QueryNamesOf(methodName).Should().BeEquivalentTo(
+                new[] { "need_query_detail", "offset", "limit", "detail_status" },
+                $"{methodName}：need_query_detail 必填，offset/limit/detail_status 选填");
+        }
+        FindMethod(nameof(IWechatPayTransferService.QueryBatchByOutBatchNoAsync)).ReturnType
+            .Should().Be(FindMethod(nameof(IWechatPayTransferService.QueryBatchByBatchIdAsync)).ReturnType,
+                "两页应答字段表逐项一致 ⇒ 共用 TransferBatchQueryResponse");
+
+        // 明细查询两维：两段 path 缺一不可；应答共用。
+        AssertRoute<GetAttribute>(
+            nameof(IWechatPayTransferService.QueryBatchDetailByDetailIdAsync),
+            "/v3/transfer/batches/batch-id/{batchId}/details/detail-id/{detailId}");
+        AssertRoute<GetAttribute>(
+            nameof(IWechatPayTransferService.QueryBatchDetailByOutDetailNoAsync),
+            "/v3/transfer/batches/out-batch-no/{outBatchNo}/details/out-detail-no/{outDetailNo}");
+        PathKeysOf(nameof(IWechatPayTransferService.QueryBatchDetailByDetailIdAsync))
+            .Should().BeEquivalentTo(new[] { "batchId", "detailId" });
+        PathKeysOf(nameof(IWechatPayTransferService.QueryBatchDetailByOutDetailNoAsync))
+            .Should().BeEquivalentTo(new[] { "outBatchNo", "outDetailNo" });
+        FindMethod(nameof(IWechatPayTransferService.QueryBatchDetailByOutDetailNoAsync)).ReturnType
+            .Should().Be(FindMethod(nameof(IWechatPayTransferService.QueryBatchDetailByDetailIdAsync)).ReturnType,
+                "两页应答字段表逐项一致 ⇒ 共用 TransferBatchDetailResponse");
+
+        // 批次回单：申请 POST / 查询 GET，应答共用。
+        AssertRoute<PostAttribute>(
+            nameof(IWechatPayTransferService.ApplyBillReceiptAsync), "/v3/transfer/bill-receipt");
+        AssertRoute<GetAttribute>(
+            nameof(IWechatPayTransferService.QueryBillReceiptAsync), "/v3/transfer/bill-receipt/{outBatchNo}");
+        FindMethod(nameof(IWechatPayTransferService.QueryBillReceiptAsync)).ReturnType
+            .Should().Be(FindMethod(nameof(IWechatPayTransferService.ApplyBillReceiptAsync)).ReturnType,
+                "申请与查询两页应答字段表逐项一致 ⇒ 共用 TransferBillReceiptResponse");
+
+        // 明细回单：申请 POST 集合 / 查询 GET 集合 + query 定位。
+        AssertRoute<PostAttribute>(
+            nameof(IWechatPayTransferService.ApplyElectronicReceiptAsync), "/v3/transfer-detail/electronic-receipts");
+        AssertRoute<GetAttribute>(
+            nameof(IWechatPayTransferService.QueryElectronicReceiptAsync), "/v3/transfer-detail/electronic-receipts");
+        QueryNamesOf(nameof(IWechatPayTransferService.QueryElectronicReceiptAsync))
+            .Should().BeEquivalentTo(new[] { "accept_type", "out_batch_no", "out_detail_no" },
+                "明细回单查询按 accept_type + out_detail_no（out_batch_no 条件必填）定位");
+        FindMethod(nameof(IWechatPayTransferService.QueryElectronicReceiptAsync)).ReturnType
+            .Should().Be(FindMethod(nameof(IWechatPayTransferService.ApplyElectronicReceiptAsync)).ReturnType,
+                "申请与查询两页应答字段表逐项一致 ⇒ 共用 TransferElectronicReceiptResponse");
+
+        // 旧版批次状态与新/旧回单状态是两套独立值表（不得与 TransferBillStates 混用）。
+        LiteralValues(typeof(TransferBatchStatuses)).Should().BeEquivalentTo(
+            new[] { "ACCEPTED", "PROCESSING", "FINISHED", "CLOSED" });
+        LiteralValues(typeof(TransferSignatureStatuses)).Should().BeEquivalentTo(
+            new[] { "ACCEPTED", "FINISHED" });
+        LiteralValues(typeof(TransferReceiptAcceptTypes)).Should().BeEquivalentTo(
+            new[] { "BATCH_TRANSFER", "TRANSFER_TO_POCKET", "TRANSFER_TO_BANK" });
     }
 
     /// <summary>
@@ -276,9 +367,11 @@ public class WechatPayTransferContractGuards
             .Where(static t => !typeof(JsonSerializerContext).IsAssignableFrom(t))
             .ToList();
 
-        domainTypes.Should().HaveCount(15,
+        domainTypes.Should().HaveCount(26,
             "商家转账域 DTO：发起族 4（请求/场景报备/收款样式/应答） + 查询应答 1 + 电子回单应答 1 + 撤销应答 1" +
-            " + P1-2-A 增量 8（elecsign 申请两支请求/应答各 2 + pre-transfer-with-authorization 请求含嵌套 AuthorizationInfo/应答 + transfer 请求/应答）");
+            " + P1-2-A 增量 8（elecsign 申请两支请求/应答各 2 + pre-transfer-with-authorization 请求含嵌套 AuthorizationInfo/应答 + transfer 请求/应答）" +
+            " + 2026-10-18 旧版批次增量 11（创建请求/明细入参/创建应答/批次查询应答/批次信息/批次明细索引" +
+            " + 明细应答/批次回单请求/批次回单应答/明细回单请求/明细回单应答）");
 
         foreach (var type in domainTypes)
         {
@@ -358,6 +451,18 @@ public class WechatPayTransferContractGuards
         => typeof(IWechatPayTransferService)
                .GetMethod(methodName, BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
            ?? throw new InvalidOperationException($"IWechatPayTransferService.{methodName} 必须存在");
+
+    private static string[] QueryNamesOf(string methodName)
+        => FindMethod(methodName).GetParameters()
+            .SelectMany(static p => p.GetCustomAttributes<QueryAttribute>())
+            .Select(static a => a.Name!)
+            .ToArray();
+
+    private static string[] PathKeysOf(string methodName)
+        => FindMethod(methodName).GetParameters()
+            .Where(static p => p.GetCustomAttribute<PathAttribute>() != null)
+            .Select(static p => p.Name!)
+            .ToArray();
 
     private static void JsonNameShouldBe<T>(string propertyName, string expectedJsonName)
     {

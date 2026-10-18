@@ -25,7 +25,7 @@ namespace Mud.Wechat.MiniProgram.Tests.ContractGuards;
 /// <b>三档处置（86 条全覆盖，留档见 <c>.docs/MudWechat-小程序D桶归属终判留档-2026-10-13.md</c>）</b>：
 /// </para>
 /// <list type="number">
-/// <item><b>非契约 25 条</b>（NC1，<b>全仓 Src/ 零声明</b>）：小程序推广员 14（官方 5 个 API 页正文均为
+/// <item><b>非契约 27 条</b>（NC1，<b>全仓 Src/ 零声明</b>）：小程序推广员 14（官方 5 个 API 页正文均为
 /// 「此文档已下架」，2026-10-13 浏览器取证）、搜一搜图片/站点搜索 2 与 <c>img_sec_check</c> 1（旧
 /// <c>/miniprogram/dev/api-backend/</c> 树整树 <b>404</b>，现行目录无同名路径）、扫码购 4（清单出处是
 /// <c>mp.weixin.qq.com/cgi-bin/announce</c> 公告页，无任何接口文档页）、非税实名 <c>getauthurl</c> 1
@@ -33,14 +33,17 @@ namespace Mud.Wechat.MiniProgram.Tests.ContractGuards;
 /// （官方真名另有其路：即时配送更新配送单实为 <c>/cgi-bin/express/local/delivery/update_order</c>
 /// 且<b>本仓已落位</b>；直播商品库实为 <c>/wxa/business/getgoodswarehouse</c>；短剧查授权实为
 /// <c>/wxa/sec/vod/getauthorizeapps</c> 且官方动词是 POST）。错误拼写一旦照清单落地，就是「网关打不通的死路由」。</item>
-/// <item><b>归属开放平台线 35 条</b>（NC2，<b>小程序线零声明</b>）：购物订单 <c>/user-order/*</c> 7、
+/// <item><b>归属开放平台线 33 条</b>（NC2，<b>小程序线零声明</b>）：购物订单 <c>/user-order/*</c> 7、
 /// We 分析 <c>/wedata/*</c> 7、第三方服务市场 <c>/wxa/servicemarket/*</c> 4、半屏小程序
 /// <c>/wxaapi/wxaembedded/*</c> 6、微信认证 <c>/wxa/sec/{wxaauth,reauth,queryauth,uploadauthmaterial,authidentitytree}</c> 5、
 /// 第三方登录态 <c>/sns/component/jscode2session</c> 与 <c>/sns/oauth2/component/{access_token,refresh_token}</c> 3、
-/// <c>/wxa/business/{applyliveinfo,runtime/adddevice,runtime/pushappmsg}</c> 3。
-/// 判据不是「网关可达性」而是<b>文档面归属</b>：这 35 条只在 <c>doc/oplatform/…/miniprogram-management/</c>
+/// <c>/wxa/business/applyliveinfo</c> 1。
+/// 判据不是「网关可达性」而是<b>文档面归属</b>：这 33 条只在 <c>doc/oplatform/…/miniprogram-management/</c>
 /// 树内在册（实测正文含请求方式与请求地址），走 <c>component_access_token</c> / 授权方令牌链
-/// ⇒ 属开放平台线（P3-R2 明文禁止把该令牌链塞进小程序基础线）。小程序线声明之＝令牌串号。</item>
+/// ⇒ 属开放平台线（P3-R2 明文禁止把该令牌链塞进小程序基础线）。小程序线声明之＝令牌串号。
+/// <b>2026-10-18 收窄 2 条</b>：<c>/wxa/business/runtime/{adddevice,pushappmsg}</c> 官方 WMPF 两页逐字
+/// 「本接口不支持第三方平台调用」且令牌取移动应用（LauncherAPP）/ 小程序身份 ⇒ 不属开放平台令牌面，
+/// 已落位本线 <c>BusinessCapability</c> 域（守卫 <c>MiniProgramBusinessCapabilityContractGuards</c>）。</item>
 /// <item><b>线外 6 条</b>（NC3，<b>小程序线零声明</b>）：多端应用框架 Donut 5（端点在 <c>dev.weixin.qq.com</c> 而非 <c>api.weixin.qq.com</c>，
 /// 与本仓 SSRF 白名单不同域，MP-X8）、服务号门店小程序 <c>/wxa/get_merchant_audit_info</c> 1
 /// （官方正文在<b>公众号</b>「微信门店」树，同页另有「门店管理插件 2024-07-05 起下线新增门店」公告；
@@ -58,8 +61,9 @@ namespace Mud.Wechat.MiniProgram.Tests.ContractGuards;
 public class MiniProgramNonContractRouteContractGuards
 {
     /// <summary>
-    /// NC1：非契约路由 25 条 = 推广员 14 + 搜一搜 2 + <c>img_sec_check</c> 1 + 扫码购 4 + 非税实名 1
-    /// + 清单拼写错误 3。扫描根为<b>整个 <c>Src/</c></b>（已下架能力不属于任何产品线）。
+    /// NC1：非契约路由 27 条 = 推广员 14 + 搜一搜 2 + <c>img_sec_check</c> 1 + 扫码购 4 + 非税实名 1
+    /// + 清单拼写错误 3 + 统一服务消息 1 + 企业微信客服子商户 1。扫描根为<b>整个 <c>Src/</c></b>
+    /// （已下架能力不属于任何产品线）。
     /// </summary>
     private static readonly string[] NonContractRoutes =
     {
@@ -94,10 +98,16 @@ public class MiniProgramNonContractRouteContractGuards
         "/cgi-bin/express/local/business/update_order",   // 真名 /cgi-bin/express/local/delivery/update_order
         "/wxaapi/broadcast/getgoodswarehouse",            // 真名 /wxa/business/getgoodswarehouse
         "/wxa/sec/vod/getauthorizedapps",                 // 真名 /wxa/sec/vod/getauthorizeapps（官方动词 POST）
+        // 统一服务消息（原 uniform-message 页）：现行小程序服务端 API 目录已无该接口，仅存订阅消息
+        // /cgi-bin/message/subscribe/send（已落位）；2026-10-18 复核页内无该路径。
+        "/cgi-bin/message/wxopen/template/uniform_send",
+        // 「下发企业微信客服消息」：出处是产品介绍页（非契约页），该能力属微信客服（企业微信）子商户线；
+        // 小程序服务端 API 目录无此路径，本仓亦无对应令牌面 ⇒ 全仓零声明。
+        "/cgi-bin/message/custom/business/send",
     };
 
     /// <summary>
-    /// NC2：归属开放平台线 35 条（令牌面为 <c>component_access_token</c> / 授权方令牌链）⇒ 小程序线零声明。
+    /// NC2：归属开放平台线 33 条（令牌面为 <c>component_access_token</c> / 授权方令牌链）⇒ 小程序线零声明。
     /// </summary>
     private static readonly string[] OpenPlatformOwnedRoutes =
     {
@@ -140,10 +150,10 @@ public class MiniProgramNonContractRouteContractGuards
         "/sns/component/jscode2session",
         "/sns/oauth2/component/access_token",
         "/sns/oauth2/component/refresh_token",
-        // 开放平台侧小程序能力 3 条：申请开通直播 + 多端框架(WMPF)后端 2 条。
+        // 开放平台侧小程序能力 1 条：申请开通直播（仅第三方平台以 authorizer_access_token 代调用）。
+        // WMPF runtime/{adddevice,pushappmsg} 两支自 2026-10-18 起不在此列——官方明写不支持第三方平台调用，
+        // 令牌取移动应用 / 小程序身份，已落位本线 BusinessCapability 域。
         "/wxa/business/applyliveinfo",
-        "/wxa/business/runtime/adddevice",
-        "/wxa/business/runtime/pushappmsg",
     };
 
     /// <summary>
@@ -163,17 +173,17 @@ public class MiniProgramNonContractRouteContractGuards
     };
 
     // ------------------------------------------------------------------
-    // NC1：25 条非契约路由在全仓 Src/ 零声明（扫描根与正则由已落位路由作正对照）。
+    // NC1：27 条非契约路由在全仓 Src/ 零声明（扫描根与正则由已落位路由作正对照）。
     // ------------------------------------------------------------------
 
     /// <summary>契约守卫 NC1：非契约路由清单锁定 + <c>Src/</c> 全量零声明 + 已落位路由正对照。</summary>
     [Fact]
     public void NonContractRoutes_ShouldStayUndeclared_WhenScanningWholeSrc()
     {
-        NonContractRoutes.Should().HaveCount(25,
-            "推广员 14 + 搜一搜 2 + img_sec_check 1 + 扫码购 4 + 非税实名 1 + 清单拼写错误 3："
-            + "清单本身不是契约，增删须先复核四棵官方文档树与出处页存活状态");
-        NonContractRoutes.Distinct(StringComparer.Ordinal).Should().HaveCount(25, "清单内路由不得重复");
+        NonContractRoutes.Should().HaveCount(27,
+            "推广员 14 + 搜一搜 2 + img_sec_check 1 + 扫码购 4 + 非税实名 1 + 清单拼写错误 3"
+            + " + 统一服务消息 1 + 企业微信客服子商户 1：清单本身不是契约，增删须先复核四棵官方文档树与出处页存活状态");
+        NonContractRoutes.Distinct(StringComparer.Ordinal).Should().HaveCount(27, "清单内路由不得重复");
 
         var declared = DeclaredRoutes("Src");
         var offenders = declared.Intersect(NonContractRoutes, StringComparer.Ordinal).ToList();
@@ -191,20 +201,20 @@ public class MiniProgramNonContractRouteContractGuards
         }
 
         offenders.Should().BeEmpty(
-            "25 条路由不构成应用侧 HTTP 契约（官方页正文「此文档已下架」/ 出处页 404 / 无接口文档页 / 清单拼写错误），"
+            "27 条路由不构成应用侧 HTTP 契约（官方页正文「此文档已下架」/ 出处页 404 / 无接口文档页 / 清单拼写错误），"
             + "本仓任何产品线都不得声明（追踪号 MP-D-BUCKET-RULING-01）");
     }
 
     // ------------------------------------------------------------------
-    // NC2：35 条开放平台归属路由在小程序线零声明（防令牌串号，形态同 MP-X1 / P3-R2）。
+    // NC2：33 条开放平台归属路由在小程序线零声明（防令牌串号，形态同 MP-X1 / P3-R2）。
     // ------------------------------------------------------------------
 
     /// <summary>契约守卫 NC2：开放平台令牌面路由在 <c>Src/MiniProgram</c> 零声明 + 小程序线自身路由正对照。</summary>
     [Fact]
     public void OpenPlatformOwnedRoutes_ShouldStayUndeclared_InMiniProgramLine()
     {
-        OpenPlatformOwnedRoutes.Should().HaveCount(35,
-            "购物订单 7 + We 分析 7 + 第三方服务市场 4 + 半屏小程序 6 + 微信认证 5 + 第三方登录态 3 + 开放平台侧小程序能力 3");
+        OpenPlatformOwnedRoutes.Should().HaveCount(33,
+            "购物订单 7 + We 分析 7 + 第三方服务市场 4 + 半屏小程序 6 + 微信认证 5 + 第三方登录态 3 + 开放平台侧小程序能力 1");
 
         var declared = DeclaredRoutes(Path.Combine("Src", "MiniProgram"));
         var offenders = declared.Intersect(OpenPlatformOwnedRoutes, StringComparer.Ordinal).ToList();
@@ -222,7 +232,7 @@ public class MiniProgramNonContractRouteContractGuards
         }
 
         offenders.Should().BeEmpty(
-            "35 条路由只在 doc/oplatform/…/miniprogram-management/ 树内在册，令牌面是 component_access_token / "
+            "33 条路由只在 doc/oplatform/…/miniprogram-management/ 树内在册，令牌面是 component_access_token / "
             + "授权方令牌链 ⇒ 属开放平台线；小程序线声明之即令牌串号（P3-R2）");
     }
 

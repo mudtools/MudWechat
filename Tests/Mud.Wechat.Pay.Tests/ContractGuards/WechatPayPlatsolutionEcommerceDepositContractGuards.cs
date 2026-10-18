@@ -59,7 +59,7 @@ public class WechatPayPlatsolutionEcommerceDepositContractGuards
 
         // 正对照：动词与路由扫描按接口真实推导（商户余额域确实只有两支 GET），故上面的集合断言不是恒真。
         VerbsOf(typeof(IWechatPayMerchantFundService)).Should().BeEquivalentTo(new[] { "GetAttribute" });
-        RoutesOf(typeof(IWechatPayMerchantFundService)).Should().HaveCount(2);
+        RoutesOf(typeof(IWechatPayMerchantFundService)).Should().HaveCount(4);
     }
 
     /// <summary>PEC-DP-B2：7 支端点的路由、path 键、query 名册与请求体有无（含官方必填口径）逐支锁定。</summary>

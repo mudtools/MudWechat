@@ -11,8 +11,9 @@ namespace Mud.Wechat.Pay.Tests.ContractGuards;
 
 /// <summary>
 /// 微信支付非契约路由零声明守卫（追踪号 P0-7-PAY-ZERO-DECLARATION-2026-10-14，P1-3 / P1-4 增补 2026-10-15，
-/// P1-2-B 增补 2026-10-16，P1-5 增补 2026-10-16，两次取证勘误复核 2026-10-16）：
-/// 断言 36 条路由（非契约清单 38 行，同路由多方法各归并 1 条）
+/// P1-2-B 增补 2026-10-16，P1-5 增补 2026-10-16，两次取证勘误复核 2026-10-16，
+/// 总账收口增补 2026-10-18）：
+/// 断言 57 条路由（非契约清单 60 行，同路由多方法各归并 1 条）
 /// 在 <c>Src/Pay/</c> 全部源码内<b>零声明</b>，防「网关还能打通」重新诱导加回。
 /// <para>
 /// <b>判据均为官方文档面</b>：支持商户类型不是本线目标商户、官方文档树内<b>无该端点契约页</b>，
@@ -149,10 +150,29 @@ namespace Mud.Wechat.Pay.Tests.ContractGuards;
 /// （<c>merchant/4012538335</c>）<b>应答里的文件下载地址字段</b>，不是商户侧可声明的端点 ⇒ 不入本名册，
 /// 由 <c>NewTaxControlFapiao</c> 域守卫（FPX 系列）按字段建模。
 /// </para>
+/// <para>
+/// 十一、<b>总账收口增补（2026-10-18，21 条 / 24 清单行）</b>：本轮对 §8 残余名册逐条重检，形态三类：
+/// ① <b>平台商户专属面</b>（15 条）—— 提现申请三联（<c>/v3/mch_operate/risk/withdrawl-apply</c>，
+/// 官方页 <c>4012488950</c> / <c>4012778400</c> / <c>4012476164</c> 均印【平台商户】）、
+/// 不活跃商户身份核实两支（<c>/v3/compliance/inactive-merchant-identity-verification/*</c>）、
+/// 实名认证 <c>GET /v3/realname/verify</c>（<c>partner/4013735179</c> 印【平台商户】）、
+/// 平台商户提现族三支（<c>/v3/merchant/fund/withdraw/*</c>，与 C1 裁决 / MF-B2 同源）、
+/// 尽调族官方现行两支（<c>{due_diligence_id}</c> 定位，<c>4015631033</c> / <c>4015631042</c> 印【平台商户】）、
+/// 合单支付平台商户面两支（<c>4012602242</c> 查单 / <c>4012602225</c> 小程序下单，均印【平台商户】，
+/// 与已落位的普通服务商面 <c>/jsapi</c> 是<b>两套契约</b>）—— 本仓目标商户不含【平台商户】⇒ 零端点；
+/// ② <b>官方现行只到 APIv2</b>（2 条）—— 服务商付款码 <c>codepay</c> 与 <c>reverse</c> 两页
+/// （<c>partner/4012382179</c> / <c>4012382181</c>）正文明确「付款码支付目前仍为V2接口」⇒ 不构成 v3 契约
+/// （v2 面由 APIv2 线承载，与本名册无关）；
+/// ③ <b>现行文档树无契约页</b>（4 条）—— 电商分账售后单两支（EC-R7 已裁）、
+/// 商家周周减三支（旧 wiki <c>…/Offline/…</c> 落产品介绍页，非契约页）、
+/// 收单曝光 <c>/v3/pay/acquiring-bank/transactions/exposure</c>（出处页 <c>4014326541</c> 现行 302→404，
+/// 且该「订单曝光」仅供内部使用）—— 均零端点。
+/// 商户侧 <c>/v3/pay/transactions/exposure</c> 与分期曝光三支已按现行页落位，见正对照。
+/// </para>
 /// </summary>
 /// <remarks>
 /// <para>
-/// 本守卫为「清单即契约」型断言：36 条路由（38 清单行）的增减都必须先按条首的<b>合格取证口径</b>复核
+/// 本守卫为「清单即契约」型断言：57 条路由（60 清单行）的增减都必须先按条首的<b>合格取证口径</b>复核
 /// 现行官方文档中心（path + 中文名两路检索 + 章节树逐页枚举），不得因网关可达、第三方 SDK 在册
 /// 或「旧 wiki / 旧 docs 路径已失效」而放宽或收紧。
 /// </para>
@@ -160,8 +180,9 @@ namespace Mud.Wechat.Pay.Tests.ContractGuards;
 public class WechatPayNonContractRouteZeroDeclarationContractGuards
 {
     /// <summary>
-    /// 非契约路由清单（36 条 = Compliance 2 + MerchantOperate 3 + 尽调族 3 + RealName 1 + 周周减 3
-    /// + P1-3 商家券与营销 9 + P1-2-B 银行转账充值 2 + P1-5 行业方案 3 + P1-5-F 行业方案余十支 10；
+    /// 非契约路由清单（57 条 = Compliance 2 + MerchantOperate 3 + 尽调族 3 + RealName 1 + 周周减 3
+    /// + P1-3 商家券与营销 9 + P1-2-B 银行转账充值 2 + P1-5 行业方案 3 + P1-5-F 行业方案余十支 10
+    /// + 总账收口增补 21；
     /// P1-3 的 11 清单行里「补贴凭证 pay-receipts 的 POST 与 GET」同路由 ⇒ 2 行折成 1 条，
     /// 余下各款一律一行一条。
     /// <b>已整体移出的两批</b>：P1-4 会员卡（旧版）两族 28 行 / 22 条 + P1-3 的「发放消费卡」「终止合作关系」
@@ -251,6 +272,59 @@ public class WechatPayNonContractRouteZeroDeclarationContractGuards
         // …/contracts/{contract_id}/notify 两支（已落位，见正对照）。
         "/v3/papay/contracts/{contract_id}/fail-notify",
         "/v3/partner-papay/contracts/{contract_id}/fail-notify",
+
+        // —— 总账收口增补（2026-10-18，21 条 / 24 清单行，见类注释第十一款）——
+
+        // 平台商户提现族三支：官方页 4012476670 / 4012476674 / 4012476678 / 4012476672 全印【平台商户】
+        // （与 C1 裁决 / MF-B2 同源；本仓余额面只落 4012721477 / 4012721446 两支【普通服务商】）。
+        "/v3/merchant/fund/withdraw/{withdraw_id}",
+        "/v3/merchant/fund/withdraw/bill-type/{bill_type}",
+        "/v3/merchant/fund/withdraw/out-request-no/{out_request_no}",
+
+        // 电商分账售后单（POST/GET 同路由，EC-R7）：官方 after-sales-orders 目录内无该端点正文 ⇒ 两行归一。
+        "/v3/ecommerce/profitsharing/after-sales-orders",
+
+        // 服务商付款码与撤销（2 条）：官方页正文明确「付款码支付目前仍为V2接口」⇒ v3 面无契约，
+        // v2 面由 APIv2 线承载；不得照 SKIT 的 v3 形状落地。
+        "/v3/pay/partner/transactions/codepay",
+        "/v3/pay/partner/transactions/out-trade-no/{out_trade_no}/reverse",
+
+        // 合单支付平台商户面两支：4012602242 查单 / 4012602225 小程序下单均印【平台商户】，
+        // 与已落位的普通服务商面（/jsapi 等）是两套契约 ⇒ 不混入 IWechatPayCombineService。
+        "/v3/combine-transactions/id/{combine_transaction_id}",
+        "/v3/combine-transactions/miniprogram",
+
+        // 服务商支付分「商户收款」（POST/GET 两清单行同路由）：官方无此端点，
+        // PartnerPayScore 接口 remarks 已裁定（partner 面只有创单/查单/取消/完结/改单/同步/消息提醒）。
+        "/v3/payscore/partner/serviceorder/{out_order_no}/pay",
+
+        // 不活跃商户身份核实两支：官方页 4012471357 / 4012471359 印【平台商户】⇒ 零端点。
+        "/v3/compliance/inactive-merchant-identity-verification/merchants",
+        "/v3/compliance/inactive-merchant-identity-verification/merchants/{sub_mchid}/verifications/{verification_id}",
+
+        // 实名认证查询：现行页 partner/4013735179 印【平台商户】⇒ 零端点（名册的 verify-result 已在上方）。
+        "/v3/realname/verify",
+
+        // 提现申请单三支：4012488950（提交）/ 4012778400（按申请单号查）/ 4012476164（按商户单号查）
+        // 均印【平台商户】⇒ 零端点。
+        "/v3/mch_operate/risk/withdrawl-apply",
+        "/v3/mch_operate/risk/withdrawl-apply/applyment-id/{applyment_id}",
+        "/v3/mch_operate/risk/withdrawl-apply/out-request-no/{out_request_no}",
+
+        // 商户运营管控尽调官方现行两支：4015631033（提交）/ 4015631042（上传）印【平台商户】
+        // （与上方名册里的三条「另形」路由同族不同形，均零端点）。
+        "/v3/mch-operation-manage/enhanced-due-diligence/{due_diligence_id}/submit",
+        "/v3/mch-operation-manage/enhanced-due-diligence/{due_diligence_id}/upload",
+
+        // 商家周周减三支：SKIT 出处为旧 wiki …/Offline/… （落产品介绍页，非契约页），
+        // 按 path 与中文名两路检索现行文档树零契约页（与上方 favor/platform/media 三支同族裁决）。
+        "/v3/marketing/weekly-discount/activities",
+        "/v3/marketing/weekly-discount/activities/{activity_id}",
+        "/v3/marketing/weekly-discount/activities/{activity_id}/apply",
+
+        // 收单曝光：出处页 4014326541 现行 302→404，且「订单曝光」仅供内部使用；
+        // 现行可落位的是商户侧 /v3/pay/transactions/exposure 与分期两支（见正对照）。
+        "/v3/pay/acquiring-bank/transactions/exposure",
     };
 
     /// <summary>扫描根：支付线 Src/Pay/ 下全部 .cs 文件。</summary>
@@ -283,9 +357,9 @@ public class WechatPayNonContractRouteZeroDeclarationContractGuards
     {
         var allSource = ReadPaySource();
 
-        // 名册规模（36 条）与文档注释同批：清单行增减须先按条首合格口径复核现行官方文档中心，不能只改注释不改数组。
-        NonContractRoutes.Should().HaveCount(36, "非契约路由名册规模须与类注释一致（38 清单行按同路由归并）");
-        NonContractRoutes.Distinct().Should().HaveCount(36, "同一路径不得在名册里出现两次（归并口径由注释逐族写明）");
+        // 名册规模（57 条）与文档注释同批：清单行增减须先按条首合格口径复核现行官方文档中心，不能只改注释不改数组。
+        NonContractRoutes.Should().HaveCount(57, "非契约路由名册规模须与类注释一致（60 清单行按同路由归并）");
+        NonContractRoutes.Distinct().Should().HaveCount(57, "同一路径不得在名册里出现两次（归并口径由注释逐族写明）");
 
         foreach (var route in NonContractRoutes)
         {

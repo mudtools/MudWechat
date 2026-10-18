@@ -857,6 +857,22 @@ public partial class WechatContractGuards
                 // 96030 / 96031 / 96221 / 96227；零端点父接口 + 唯一第三方子接口承载端点）。
                 nameof(IWechatWorkDeviceDataService),
                 nameof(IWechatWorkThirdPartyDeviceDataService),
+                // 代开发授权企业数据域（Service 模块）：5 个端点全部走服务商主体级 provider_access_token
+                //（通讯录检索族 97362 系列四端点 + 异步任务结果 getresult 一端点；
+                // 各为零端点子接口形态的「父接口承载端点 + 唯一服务商子接口」）。
+                nameof(IWechatWorkServiceContactService),
+                nameof(IWechatWorkProviderServiceContactService),
+                nameof(IWechatWorkServiceBatchService),
+                nameof(IWechatWorkProviderServiceBatchService),
+                // 高级接口订单域（AdvancedApi 模块）：6 个端点统一走 provider_access_token
+                //（预订单 / 取消订单 / 提交支付 + 订单列表 / 详情 / 企业购买信息，官方全部 POST）。
+                nameof(IWechatWorkAdvancedApiService),
+                nameof(IWechatWorkProviderAdvancedApiService),
+                // 高级功能成员申请单域（AdvancedFeature 模块）：3 个端点官方仅自建应用开放
+                //（设置审批流程 99880 / 申请单 id 列表 99883 / 申请单详情 99885；
+                // 父接口承载端点 + 仅自建子接口，代开发与第三方官方标「暂不支持」）。
+                nameof(IWechatWorkAdvancedFeatureService),
+                nameof(IWechatWorkInternalAdvancedFeatureService),
             },
             "企业微信官方契约强制 Query 注入（MUD005 已知接受风险），新增 Query 注入接口须评估后扩展本守卫");
     }

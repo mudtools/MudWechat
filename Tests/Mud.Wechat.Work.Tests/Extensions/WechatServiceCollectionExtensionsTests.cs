@@ -1251,4 +1251,115 @@ public class WechatServiceCollectionExtensionsTests
         scope.ServiceProvider.GetRequiredService<IWechatWorkThirdPartyDeviceDataService>().Should().NotBeNull(
             "ValidateScopes = true 变体下子 scope 内同样可解析");
     }
+
+    /// <summary>
+    /// 开放硬件模块（OpenHardware 模块，官方「智能硬件开发 &gt; 硬件云端接入」根树 <c>/cgi-bin/openhw/*</c> 17 端点）：
+    /// AddOpenHardwareApi 注册的独立端点接口客户端必须可解析——
+    /// 回归锁定：注册器字典漏配 [WechatModule.OpenHardware] 条目时 AddOpenHardwareApi 会静默空转（不注册、不报错）；
+    /// 本域自成两级外部凭证（model_access_token / device_access_token），不属三类应用令牌面，
+    /// 故无 IsAbstract 父接口与应用类型子接口，以「显式 Query 传凭证、不带 [Token]」的独立可注入接口形态落位。
+    /// </summary>
+    [Fact]
+    public void AddOpenHardwareApi_ShouldRegisterOpenHardwareDomainClients_ResolvableInRootAndScope()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddWechatApp(new List<WechatAppConfig> { InternalConfig() });
+        services.AddWechatWorkServices(builder => builder.AddOpenHardwareApi());
+
+        using var provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true });
+
+        provider.GetRequiredService<IWechatWorkOpenHardwareService>().Should().NotBeNull(
+            "开放硬件域凭证由宿主自行换取并显式传参，接口本身即可注入、无父子分层");
+
+        using var scope = provider.CreateScope();
+        scope.ServiceProvider.GetRequiredService<IWechatWorkOpenHardwareService>().Should().NotBeNull(
+            "ValidateScopes = true 变体下子 scope 内同样可解析");
+    }
+
+    /// <summary>
+    /// 服务商通讯录与批量查询模块（Service 模块，两族：通讯录搜索族 4 端点 + 批量查询任务族 1 端点）：
+    /// AddServiceApi 注册的第三方子接口客户端必须可解析——
+    /// 回归锁定：注册器字典漏配 [WechatModule.Service] 条目时 AddServiceApi 会静默空转（不注册、不报错）；
+    /// 本域 5 端点统一走 provider_access_token（服务商主体级令牌），与 Contact 域的应用级 access_token 令牌类型不同，
+    /// 故独立注册组 "Service"（注册组令牌类型须同质）；两族各为零端点父接口 + 唯一第三方子接口承载端点。
+    /// </summary>
+    [Fact]
+    public void AddServiceApi_ShouldRegisterServiceDomainClients_ResolvableInRootAndScope()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddWechatApp(new List<WechatAppConfig> { InternalConfig() });
+        services.AddWechatWorkServices(builder => builder.AddServiceApi());
+
+        using var provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true });
+
+        provider.GetRequiredService<IWechatWorkProviderServiceContactService>().Should().NotBeNull(
+            "通讯录搜索族官方仅服务商（第三方）开放，本族注册第三方子接口");
+        provider.GetRequiredService<IWechatWorkProviderServiceBatchService>().Should().NotBeNull(
+            "批量查询任务族官方仅服务商（第三方）开放，本族注册第三方子接口");
+        provider.GetService<IWechatWorkServiceContactService>().Should().BeNull(
+            "零端点父接口 IsAbstract = true，不得注册进 DI（调用方须按应用类型选择子接口）");
+        provider.GetService<IWechatWorkServiceBatchService>().Should().BeNull(
+            "零端点父接口 IsAbstract = true，不得注册进 DI（调用方须按应用类型选择子接口）");
+
+        using var scope = provider.CreateScope();
+        scope.ServiceProvider.GetRequiredService<IWechatWorkProviderServiceContactService>().Should().NotBeNull(
+            "ValidateScopes = true 变体下子 scope 内同样可解析");
+        scope.ServiceProvider.GetRequiredService<IWechatWorkProviderServiceBatchService>().Should().NotBeNull(
+            "ValidateScopes = true 变体下子 scope 内同样可解析");
+    }
+
+    /// <summary>
+    /// 接口高级能力订购模块（AdvancedApi 模块，官方 97820 族 6 端点）：
+    /// AddAdvancedApiApi 注册的第三方子接口客户端必须可解析——
+    /// 回归锁定：注册器字典漏配 [WechatModule.AdvancedApi] 条目时 AddAdvancedApiApi 会静默空转（不注册、不报错）；
+    /// 本域 6 端点统一走 provider_access_token（服务商主体级令牌），零端点父接口 + 唯一第三方子接口承载端点；
+    /// 创建订单 / 提交支付两支持有不可逆写面，注册期无自动重试语义。
+    /// </summary>
+    [Fact]
+    public void AddAdvancedApiApi_ShouldRegisterAdvancedApiDomainClients_ResolvableInRootAndScope()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddWechatApp(new List<WechatAppConfig> { InternalConfig() });
+        services.AddWechatWorkServices(builder => builder.AddAdvancedApiApi());
+
+        using var provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true });
+
+        provider.GetRequiredService<IWechatWorkProviderAdvancedApiService>().Should().NotBeNull(
+            "接口高级能力订购域官方仅服务商（第三方）开放，本域注册第三方子接口");
+        provider.GetService<IWechatWorkAdvancedApiService>().Should().BeNull(
+            "零端点父接口 IsAbstract = true，不得注册进 DI（调用方须按应用类型选择子接口）");
+
+        using var scope = provider.CreateScope();
+        scope.ServiceProvider.GetRequiredService<IWechatWorkProviderAdvancedApiService>().Should().NotBeNull(
+            "ValidateScopes = true 变体下子 scope 内同样可解析");
+    }
+
+    /// <summary>
+    /// 高级功能模块（AdvancedFeature 模块，官方 99880 / 99883 / 99885 共 3 端点）：
+    /// AddAdvancedFeatureApi 注册的自建子接口客户端必须可解析——
+    /// 回归锁定：注册器字典漏配 [WechatModule.AdvancedFeature] 条目时 AddAdvancedFeatureApi 会静默空转（不注册、不报错）；
+    /// 官方三页均标注代开发 / 第三方「暂不支持」⇒ 零端点父接口 + 仅自建子接口承载端点，父接口 IsAbstract 不进 DI。
+    /// </summary>
+    [Fact]
+    public void AddAdvancedFeatureApi_ShouldRegisterAdvancedFeatureDomainClients_ResolvableInRootAndScope()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddWechatApp(new List<WechatAppConfig> { InternalConfig() });
+        services.AddWechatWorkServices(builder => builder.AddAdvancedFeatureApi());
+
+        using var provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true });
+
+        provider.GetRequiredService<IWechatWorkInternalAdvancedFeatureService>().Should().NotBeNull(
+            "高级功能域官方仅自建开放，本域注册自建子接口");
+        provider.GetService<IWechatWorkAdvancedFeatureService>().Should().BeNull(
+            "零端点父接口 IsAbstract = true，不得注册进 DI（调用方须按应用类型选择子接口）");
+
+        using var scope = provider.CreateScope();
+        scope.ServiceProvider.GetRequiredService<IWechatWorkInternalAdvancedFeatureService>().Should().NotBeNull(
+            "ValidateScopes = true 变体下子 scope 内同样可解析");
+    }
 }

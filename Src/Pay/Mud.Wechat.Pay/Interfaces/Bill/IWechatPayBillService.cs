@@ -10,13 +10,14 @@ using Mud.Wechat.Pay.DataModels.Bill;
 namespace Mud.Wechat.Pay;
 
 /// <summary>
-/// 微信支付「账单」域 SDK（APIv3 申请交易账单 / 申请资金账单，2 端点）。
+/// 微信支付「账单」域 SDK（APIv3 申请交易账单 / 申请资金账单 / 服务商查询子商户资金账单，3 端点）。
 /// </summary>
 /// <remarks>
 /// <para><b>官方文档</b>（普通商户文档中心，2026-10-09 逐页核验）：
 /// 申请交易账单 <see href="https://pay.weixin.qq.com/doc/v3/merchant/4012791907"/>（同内容另有 <c>4013071227</c>）、
-/// 申请资金账单 <see href="https://pay.weixin.qq.com/doc/v3/merchant/4012791908"/>（同内容另有 <c>4013071235</c>）。</para>
-/// <para><b>申请 ≠ 下载</b>：本域两个端点只返回<b>下载地址</b>（<c>download_url</c>，5 分钟内有效、只可下载一次）；
+/// 申请资金账单 <see href="https://pay.weixin.qq.com/doc/v3/merchant/4012791908"/>（同内容另有 <c>4013071235</c>）、
+/// 服务商查询子商户资金账单 <see href="https://pay.weixin.qq.com/doc/v3/partner/4012760249"/>。</para>
+/// <para><b>申请 ≠ 下载</b>：本域三个端点只返回<b>下载地址</b>（<c>download_url</c>，5 分钟内有效、只可下载一次；
 /// 账单文件本身须经 <c>IWechatPayBillDownloadService</c> 拉取（见设计方案 §2.7）——
 /// 该通道返回<b>不是 JSON</b>（先申请再下载文件流），故与声明式端点分家。</para>
 /// <para><b>无 <c>[Token]</c>、走商户签名</b>（守卫 PAY-B1）：形态与
@@ -67,6 +68,37 @@ public interface IWechatPayBillService
     Task<BillDownloadInfoResponse> GetFundFlowBillAsync(
         [Query("bill_date")] string billDate,
         [Query("account_type")] string? accountType = null,
+        [Query("tar_type")] string? tarType = null,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 服务商查询子商户资金账单。
+    /// 官方文档：<see href="https://pay.weixin.qq.com/doc/v3/partner/4012760249"/>
+    /// （2026-10-18 逐字段核验；支持商户：【服务商】/【平台商户】）。
+    /// </summary>
+    /// <param name="subMchid">子商户号（Query <c>sub_mchid</c>，必填 string(32)）。</param>
+    /// <param name="billDate">账单日期（Query <c>bill_date</c>，必填 string(10)，格式 <c>yyyy-MM-DD</c>，仅支持三个月内）。</param>
+    /// <param name="accountType">资金账户类型（Query <c>account_type</c>，必填 string(32)）：<c>BASIC</c> / <c>OPERATION</c> / <c>FEES</c>。</param>
+    /// <param name="algorithm">加密算法（Query <c>algorithm</c>，必填 string(32)）：固定 <c>AEAD_AES_256_GCM</c>。</param>
+    /// <param name="tarType">压缩类型（Query <c>tar_type</c>，选填 string(32)）：仅 <c>GZIP</c>。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/> 取消操作令牌对象。</param>
+    /// <returns><b>分片列表</b>（<c>download_bill_count</c> + <c>download_bill_list[]</c>），见 <see cref="BillDownloadInfoListResponse"/>。</returns>
+    /// <remarks>
+    /// <para><b>官方契约</b>：<b>GET</b> <c>/v3/bill/sub-merchant-fundflowbill</c>；必带 <c>Accept: application/json</c>。</para>
+    /// <para><b>⚠️ 与直连资金账单不同形</b>：<c>/v3/bill/fundflowbill</c> 回单文件三字段；本端点回
+    /// <b>多分片</b>（每片含 <c>bill_sequence</c> / <c>encrypt_key</c> / <c>nonce</c>）⇒ 须<b>按序号逐片解密后合并</b>，
+    /// 把直连逻辑照搬过来只会拿到第一片（数据不完整）。</para>
+    /// <para><b>业务限制（官方原文要点）</b>：① <c>bill_date</c> 仅支持<b>三个月内</b>账单、且当日账单次日 10:00 后才可申请；
+    /// ② <c>account_type</c> 与 <c>algorithm</c> 均为<b>必填</b>（直连资金账单的 <c>account_type</c> 是选填、且无 <c>algorithm</c>）；
+    /// ③ 每个 <c>download_url</c> <b>5 分钟</b>内有效且<b>只可下载一次</b>；④ 下载后须用 <c>hash_value</c>（SHA1）校验完整性。</para>
+    /// <para><b>解密材料不外泄</b>：<c>encrypt_key</c> / <c>nonce</c> 属凭据类材料，不得写入日志、遥测或异常消息。</para>
+    /// </remarks>
+    [Get("/v3/bill/sub-merchant-fundflowbill")]
+    Task<BillDownloadInfoListResponse> GetSubMerchantFundFlowBillAsync(
+        [Query("sub_mchid")] string subMchid,
+        [Query("bill_date")] string billDate,
+        [Query("account_type")] string accountType,
+        [Query("algorithm")] string algorithm,
         [Query("tar_type")] string? tarType = null,
         CancellationToken cancellationToken = default);
 }

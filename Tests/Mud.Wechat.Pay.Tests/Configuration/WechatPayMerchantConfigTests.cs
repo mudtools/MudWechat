@@ -184,10 +184,12 @@ public class WechatPayMerchantConfigTests
         writable.Should().Equal(
             new[]
             {
-                "ApiKeySecretName", "MchId", "PrivateKeySecretName",
-                "SerialNumber", "SpMchId", "SubMchId",
+                "ApiKeySecretName",
+                "ApiV2CertificatePasswordSecretName", "ApiV2CertificateSecretName", "ApiV2KeySecretName",
+                "MchId", "PrivateKeySecretName", "SerialNumber", "SpMchId", "SubMchId",
             },
-            "because 可写属性恰为这 6 个；多出任何一项都可能是把密钥值引进配置面");
+            "because 可写属性恰为这 9 个（APIv3 三件套 + APIv2 三把密钥名 + 商户号与序列号）；" +
+            "多出任何一项都可能是把密钥值引进配置面 —— APIv2 的三个 *SecretName 只存密钥名，值一律走 ISecretProvider");
 
         writable.Should().NotContain(n =>
             n.Contains("PrivateKey", StringComparison.OrdinalIgnoreCase) &&

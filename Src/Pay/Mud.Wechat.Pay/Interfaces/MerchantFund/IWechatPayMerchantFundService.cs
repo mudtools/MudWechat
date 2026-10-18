@@ -10,7 +10,7 @@ using Mud.Wechat.Pay.DataModels.MerchantFund;
 namespace Mud.Wechat.Pay;
 
 /// <summary>
-/// 微信支付「商户账户资金管理」域 SDK（<b>2 端点</b>：查询账户实时余额 + 查询账户日终余额）。
+/// 微信支付「商户账户资金管理」域 SDK（<b>4 端点</b>：查询账户实时余额 + 查询账户日终余额 + 商户号维度收入记录 + 服务商维度收入记录）。
 /// </summary>
 /// <remarks>
 /// <para><b>官方文档</b>（2026-10-14 逐字段核验）：实时余额
@@ -90,5 +90,59 @@ public interface IWechatPayMerchantFundService
     Task<MerchantFundBalanceResponse> QueryDayEndBalanceAsync(
         [Path] string accountType,
         [Query("date")] string date,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 「查询商户账户资金收入记录」（<b>商户号维度</b>）：按账户类型与日期分页拉取入账记录。
+    /// 官方文档：<see href="https://pay.weixin.qq.com/doc/v3/partner/4012718647"/>。
+    /// </summary>
+    /// <param name="accountType">账户类型（官方 query <c>account_type</c>，必填 string(32)）：取值见 <see cref="MerchantFundAccountTypes"/>。</param>
+    /// <param name="date">入账日期（官方 query <c>date</c>，<b>必填</b> string(10)）：格式 <c>YYYY-MM-DD</c>，按成功时间归日。</param>
+    /// <param name="limit">本页条数（官方 query <c>limit</c>，<b>必填</b> integer）：官方页未印上限，按服务端回 400 处理越界。</param>
+    /// <param name="offset">偏移量（官方 query <c>offset</c>，选填 integer）：首页传 0 或不传。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/> 取消操作令牌对象。</param>
+    /// <returns>收入记录分页结果，见 <see cref="MerchantFundIncomeRecordQueryResponse"/>。</returns>
+    /// <remarks>
+    /// <para><b>官方契约</b>：<b>GET</b> <c>/v3/merchantfund/merchant/income-records</c>；
+    /// query 参数 <c>account_type</c> / <c>date</c> / <c>offset</c> / <c>limit</c>，无包体。</para>
+    /// <para><b>支持商户【普通服务商】</b>：与余额面同属商户账户资金管理域，客户端的商户作用域同上。</para>
+    /// <para><b>应答含银行账号/户名</b>（<c>bank_account_number</c> / <c>bank_account_name</c>）⇒
+    /// 属个人金融信息，宿主<b>不得</b>写入日志、遥测或异常消息。</para>
+    /// <para><b>分页语义</b>：<c>total_count</c> 是筛选条件下总数，<c>data</c> 只含本页；
+    /// <c>links.next</c> 非空才可继续翻页，勿以「本页条数 = limit」自行推断。</para>
+    /// </remarks>
+    [Get("/v3/merchantfund/merchant/income-records")]
+    Task<MerchantFundIncomeRecordQueryResponse> QueryMerchantIncomeRecordsAsync(
+        [Query("account_type")] string accountType,
+        [Query("date")] string date,
+        [Query("limit")] int limit,
+        [Query("offset")] int? offset = null,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 「查询服务商账户资金收入记录」（<b>子商户维度</b>）：与商户号维度同表，仅 <c>data[].sub_mchid</c> 差异。
+    /// 官方文档：<see href="https://pay.weixin.qq.com/doc/v3/partner/4012718620"/>。
+    /// </summary>
+    /// <param name="subMchId">子商户号（官方 query <c>sub_mchid</c>，<b>必填</b> string(32)）。</param>
+    /// <param name="accountType">账户类型（官方 query <c>account_type</c>，必填 string(32)）：取值见 <see cref="MerchantFundAccountTypes"/>。</param>
+    /// <param name="date">入账日期（官方 query <c>date</c>，<b>必填</b> string(10)）：格式 <c>YYYY-MM-DD</c>。</param>
+    /// <param name="limit">本页条数（官方 query <c>limit</c>，<b>必填</b> integer）。</param>
+    /// <param name="offset">偏移量（官方 query <c>offset</c>，选填 integer）。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/> 取消操作令牌对象。</param>
+    /// <returns>子商户维度的收入记录分页结果，见 <see cref="PartnerIncomeRecordQueryResponse"/>。</returns>
+    /// <remarks>
+    /// <para><b>官方契约</b>：<b>GET</b> <c>/v3/merchantfund/partner/income-records</c>；
+    /// query 参数 <c>sub_mchid</c> / <c>account_type</c> / <c>date</c> / <c>offset</c> / <c>limit</c>，无包体。</para>
+    /// <para><b>返回类型为何与商户号维度分开</b>：两页应答<b>唯一差异</b>是 <c>data[]</c> 首字段
+    /// （本页 <c>sub_mchid</c> vs 商户页 <c>mchid</c>）⇒ 按「表不同则分建」独立建模，防字段串用。</para>
+    /// <para><b>应答含银行账号/户名</b> ⇒ 属个人金融信息，不得写入日志、遥测或异常消息。</para>
+    /// </remarks>
+    [Get("/v3/merchantfund/partner/income-records")]
+    Task<PartnerIncomeRecordQueryResponse> QueryPartnerIncomeRecordsAsync(
+        [Query("sub_mchid")] string subMchId,
+        [Query("account_type")] string accountType,
+        [Query("date")] string date,
+        [Query("limit")] int limit,
+        [Query("offset")] int? offset = null,
         CancellationToken cancellationToken = default);
 }

@@ -17,6 +17,7 @@ namespace Mud.Wechat.Pay.DataModels.ProfitSharing;
 [JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.ProfitSharing.ProfitSharingOrderReceiver))]
 [JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.ProfitSharing.ProfitSharingOrderResponse))]
 [JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.ProfitSharing.ProfitSharingReceiverResult))]
+[JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.ProfitSharing.ProfitSharingMerchantConfigResponse))]
 [JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.ProfitSharing.ProfitSharingDeleteReceiverRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.ProfitSharing.ProfitSharingDeleteReceiverResponse))]
 [JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.ProfitSharing.ProfitSharingReturnOrderRequest))]

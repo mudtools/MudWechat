@@ -189,6 +189,54 @@ public class MpQueryTokenWhitelistGuard
             nameof(Mud.Wechat.MiniProgram.IWxaXPayGoodsService),       // 虚拟支付·道具管理（5 端点）
             nameof(Mud.Wechat.MiniProgram.IWxaXPayOrderService),       // 虚拟支付·订单与账单（7 端点）
             nameof(Mud.Wechat.MiniProgram.IWxaXPaySubscribeService),   // 虚拟支付·会员订阅（4 端点）
+            // 2026-10-18 交易组件波次（224 条工作单）：V2 `/shop/*`（74 端点）+ V1 `/product/*`（74 端点）
+            // + 米大师 / 城市服务 / 行业能力（18 端点），全部为小程序 Query access_token 契约
+            // （与公众号/小程序同域令牌同构）；联盟两族 /union/* 判非契约、接口不声明 ⇒ 不入白名单。
+            nameof(Mud.Wechat.MiniProgram.IWxaShopAccountService),       // 交易组件 V2·商店账号（4 端点）
+            nameof(Mud.Wechat.MiniProgram.IWxaShopAuditService),         // 交易组件 V2·审核（4 端点）
+            nameof(Mud.Wechat.MiniProgram.IWxaShopCategoryService),      // 交易组件 V2·类目（1 端点）
+            nameof(Mud.Wechat.MiniProgram.IWxaShopImageService),         // 交易组件 V2·图片上传（1 端点）
+            nameof(Mud.Wechat.MiniProgram.IWxaShopPromoterService),      // 交易组件 V2·推客列表（1 端点）
+            nameof(Mud.Wechat.MiniProgram.IWxaShopRegisterService),      // 交易组件 V2·入驻准入（4 端点）
+            nameof(Mud.Wechat.MiniProgram.IWxaShopSceneService),         // 交易组件 V2·场景校验（1 端点）
+            nameof(Mud.Wechat.MiniProgram.IWxaShopFundsAccountService),  // 交易组件 V2·余额与银行账户（3 端点）
+            nameof(Mud.Wechat.MiniProgram.IWxaShopFundsFlowService),     // 交易组件 V2·订单流水（3 端点）
+            nameof(Mud.Wechat.MiniProgram.IWxaShopFundsWithdrawService), // 交易组件 V2·提现（3 端点）
+            nameof(Mud.Wechat.MiniProgram.IWxaShopSharerService),        // 交易组件 V2·分享员（8 端点）
+            nameof(Mud.Wechat.MiniProgram.IWxaShopSpuService),           // 交易组件 V2·商品（9 端点）
+            nameof(Mud.Wechat.MiniProgram.IWxaShopCouponService),        // 交易组件 V2·商家券（8 端点）
+            nameof(Mud.Wechat.MiniProgram.IWxaShopUserCouponService),    // 交易组件 V2·用户券（3 端点）
+            nameof(Mud.Wechat.MiniProgram.IWxaProductCatalogService),    // 基础交易工具 V1·商品本体与分类（5 端点）
+            nameof(Mud.Wechat.MiniProgram.IWxaProductDeliveryService),   // 基础交易工具 V1·配送（2 端点）
+            nameof(Mud.Wechat.MiniProgram.IWxaProductFreightService),    // 基础交易工具 V1·运费（2 端点）
+            nameof(Mud.Wechat.MiniProgram.IWxaProductOfflineService),    // 基础交易工具 V1·线下（2 端点）
+            nameof(Mud.Wechat.MiniProgram.IWxaProductRegisterService),   // 基础交易工具 V1·售后与保障（3 端点）
+            nameof(Mud.Wechat.MiniProgram.IWxaProductServiceMarketService), // 基础交易工具 V1·服务市场（1 端点）
+            nameof(Mud.Wechat.MiniProgram.IWxaProductShipMethodService), // 基础交易工具 V1·物流方式（2 端点）
+            nameof(Mud.Wechat.MiniProgram.IWxaProductStoreService),      // 基础交易工具 V1·门店（1 端点）
+            nameof(Mud.Wechat.MiniProgram.IWxaProductFundsService),      // 基础交易工具 V1·资金（7 端点）
+            nameof(Mud.Wechat.MiniProgram.IWxaShopOrderService),         // 交易组件 V2·订单（8 端点）
+            nameof(Mud.Wechat.MiniProgram.IWxaShopDeliveryService),      // 交易组件 V2·发货（3 端点）
+            nameof(Mud.Wechat.MiniProgram.IWxaShopPayService),           // 交易组件 V2·支付（6 端点）
+            nameof(Mud.Wechat.MiniProgram.IWxaShopWxPayService),         // 交易组件 V2·微信支付进件（3 端点）
+            nameof(Mud.Wechat.MiniProgram.IWxaProductSkuService),        // 基础交易工具 V1·SKU（7 端点）
+            nameof(Mud.Wechat.MiniProgram.IWxaProductSpuService),        // 基础交易工具 V1·SPU（8 端点）
+            nameof(Mud.Wechat.MiniProgram.IWxaProductStockService),      // 基础交易工具 V1·库存（2 端点）
+            nameof(Mud.Wechat.MiniProgram.IWxaShopAftersaleService),     // 售后·V1 售后（4 端点）
+            nameof(Mud.Wechat.MiniProgram.IWxaShopComplaintService),     // 售后·交易纠纷（3 端点）
+            nameof(Mud.Wechat.MiniProgram.IWxaEcAftersaleService),       // 售后·V2 售后（11 端点）
+            nameof(Mud.Wechat.MiniProgram.IWxaProductAddressService),    // 基础交易工具 V1·地址（4 端点）
+            nameof(Mud.Wechat.MiniProgram.IWxaProductOrderService),      // 基础交易工具 V1·订单（10 端点）
+            nameof(Mud.Wechat.MiniProgram.IWxaProductCouponService),     // 基础交易工具 V1·优惠券（7 端点）
+            nameof(Mud.Wechat.MiniProgram.IWxaProductLimitedDiscountService), // 基础交易工具 V1·限时抢购（3 端点）
+            nameof(Mud.Wechat.MiniProgram.IWxaProductDecorationService), // 基础交易工具 V1·装修（6 端点）
+            nameof(Mud.Wechat.MiniProgram.IWxaProductImageService),      // 基础交易工具 V1·图片上传（1 端点，双请求形态）
+            nameof(Mud.Wechat.MiniProgram.IWxaProductQrCodeService),     // 基础交易工具 V1·管理二维码（3 端点）
+            nameof(Mud.Wechat.MiniProgram.IWxaMidasService),             // 小游戏米大师虚拟支付（8 端点；sig 为宿主签名，方法级 Query）
+            nameof(Mud.Wechat.MiniProgram.IWxaCityServiceElderMedicalService), // 城市服务·适老化医疗（2 端点）
+            nameof(Mud.Wechat.MiniProgram.IWxaCityServiceBasicService),  // 城市服务·基础能力（3 端点）
+            nameof(Mud.Wechat.MiniProgram.IWxaBusinessRetailService),    // 行业能力·B2b 门店助手（3 端点）
+            nameof(Mud.Wechat.MiniProgram.IWxaBusinessRuntimeService),   // 行业能力·WMPF 硬件框架（2 端点）
         }, "小程序官方契约同样强制 Query 注入；新增 Query 注入接口须先评估再显式扩展本白名单");
 
         actual.Should().NotBeEmpty();

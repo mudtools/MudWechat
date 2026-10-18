@@ -11,6 +11,17 @@ namespace Mud.Wechat.Pay.DataModels.Transfer;
     PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower,
     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     WriteIndented = false)]
+[JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.Transfer.TransferBatchCreateRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.Transfer.TransferBatchDetailInput))]
+[JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.Transfer.TransferBatchCreateResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.Transfer.TransferBatchQueryResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.Transfer.TransferBatchInfo))]
+[JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.Transfer.TransferBatchDetailItem))]
+[JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.Transfer.TransferBatchDetailResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.Transfer.TransferBillReceiptRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.Transfer.TransferBillReceiptResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.Transfer.TransferElectronicReceiptRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.Transfer.TransferElectronicReceiptResponse))]
 [JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.Transfer.TransferBillRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.Transfer.TransferSceneReportInfo))]
 [JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.Transfer.TransferUserRecvStyle))]

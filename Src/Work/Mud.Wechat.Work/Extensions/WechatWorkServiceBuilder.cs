@@ -161,6 +161,18 @@ public class WechatWorkServiceBuilder
             [WechatModule.DeviceData] = new WechatModuleRegistrar(
                 WechatModule.DeviceData,
                 s => s.AddDeviceDataWebApiHttpClient()),
+            [WechatModule.OpenHardware] = new WechatModuleRegistrar(
+                WechatModule.OpenHardware,
+                s => s.AddOpenHardwareWebApiHttpClient()),
+            [WechatModule.Service] = new WechatModuleRegistrar(
+                WechatModule.Service,
+                s => s.AddServiceWebApiHttpClient()),
+            [WechatModule.AdvancedApi] = new WechatModuleRegistrar(
+                WechatModule.AdvancedApi,
+                s => s.AddAdvancedApiWebApiHttpClient()),
+            [WechatModule.AdvancedFeature] = new WechatModuleRegistrar(
+                WechatModule.AdvancedFeature,
+                s => s.AddAdvancedFeatureWebApiHttpClient()),
         };
 
     /// <summary>注册授权流业务接口与授权编排服务（get_pre_auth_code / set_session_info / get_permanent_code / get_auth_info / get_customized_auth_url + 编排）。</summary>
@@ -276,6 +288,18 @@ public class WechatWorkServiceBuilder
 
     /// <summary>注册智能设备数据业务接口（官方「智慧硬件服务端」文档树 96107 只在第三方应用开发根下存在页面，零端点父接口 + 唯一第三方子接口承载 8 端点且全部为 POST：数据获取族 get_auth_info / get_checkin_data / get_temperature_data / get_accesscontrol_data + 门禁规则管理族 get / add / mod / del_accesscontrol_rule；成员标识全线为 open_userid，设备定位键查询侧为单值 device_sn 而写侧为 device_sn_list；与「智能硬件开发」根树的 /cgi-bin/openhw/*（凭据链 model_token / device_token，不属三类应用令牌面）分属官方两棵章节树）。</summary>
     public WechatWorkServiceBuilder AddDeviceDataApi() => AddModule(WechatModule.DeviceData);
+
+    /// <summary>注册开放硬件业务接口（官方「智能硬件开发 → 硬件云端接入」根树 /cgi-bin/openhw/* 17 端点且全部为 POST；本域不属三类应用令牌面而是自成两级外部凭证——型号面 6 支走 model_access_token（95992 换取）、设备面 10 支走 device_access_token（96022 换取）、get_model_token 自身无凭证参数，故以显式 Query 传凭证、不带 [Token]、无父接口与子接口形态落位，凭证获取与缓存由宿主负责；model_ticket 经官方推送事件到达属接收面；旧 service/* 硬件族与 hardware/get_device_feature 已脱树或正文清空 ⇒ 零声明）。</summary>
+    public WechatWorkServiceBuilder AddOpenHardwareApi() => AddModule(WechatModule.OpenHardware);
+
+    /// <summary>注册代开发应用授权企业数据接口（官方「服务商代开发 → 应用接口调用」根树 /cgi-bin/service/* 共 5 端点：授权企业通讯录检索 4 端点（search / batchsearch / id_translate / sort，POST）+ 异步任务结果查询 1 端点（service/batch/getresult，GET）；全部走 provider_access_token 且请求体首字段恒为 auth_corpid ⇒ 仅服务商形态子接口、零自建子接口，注册组名统一为 Service；batchsearch 单次 ≤50 条子请求且逐条返回 errcode/errmsg；SKIT 清单内其余 10 条 service/* 行已核定非契约，由 RD1 零声明守卫锁定）。</summary>
+    public WechatWorkServiceBuilder AddServiceApi() => AddModule(WechatModule.Service);
+
+    /// <summary>注册高级接口订单与代付业务接口（官方「服务商代开发 → 高级接口」根树 /cgi-bin/advanced_api/* 6 端点且全部为 POST，统一走 provider_access_token：预订单 / 取消订单 / 提交支付 + 订单列表 / 订单详情 / 企业购买信息；本域 has_more 为整型 0/1、订单详情的 custom_corpid 官方返回加密后 corpid；CreateOrder 产生真实订单、SubmitOrderPay 提交后官方明确无法再变更支付方式，两支高危写端点无自动重试）。</summary>
+    public WechatWorkServiceBuilder AddAdvancedApiApi() => AddModule(WechatModule.AdvancedApi);
+
+    /// <summary>注册高级功能成员申请单业务接口（官方「高级功能 → 成员申请管理」根树 /cgi-bin/advanced_feature/* 3 端点且全部为 POST；三页应用类型表均为「自建应用：配置到『高级功能 - 成员申请管理 - 通过 api 设置申请流程』中；代开发与第三方：暂不支持」⇒ 仅唯一自建子接口承载；设置面 approval_status 值域 1/2/3/101 与查询面 0/1/2/3/4/5 不同名同义、本域 has_more 为布尔；set_approval_detail 为覆盖式全量写入，只传部分节点等于删除其余节点）。</summary>
+    public WechatWorkServiceBuilder AddAdvancedFeatureApi() => AddModule(WechatModule.AdvancedFeature);
 
     /// <summary>注册全部模块。</summary>
     public WechatWorkServiceBuilder AddAllApis()

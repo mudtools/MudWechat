@@ -17,6 +17,8 @@ namespace Mud.Wechat.OpenPlatform.DataModels.MiniProgramManage;
 [JsonSerializable(typeof(global::Mud.Wechat.OpenPlatform.DataModels.MiniProgramManage.OpenPlatformMpAppealRecord))]
 [JsonSerializable(typeof(global::Mud.Wechat.OpenPlatform.DataModels.MiniProgramManage.OpenPlatformMpAppealRecordsRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.OpenPlatform.DataModels.MiniProgramManage.OpenPlatformMpAppealRecordsResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.OpenPlatform.DataModels.MiniProgramManage.OpenPlatformMpApplyLiveInfoRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.OpenPlatform.DataModels.MiniProgramManage.OpenPlatformMpApplyLiveInfoResponse))]
 [JsonSerializable(typeof(global::Mud.Wechat.OpenPlatform.DataModels.MiniProgramManage.OpenPlatformMpAuditIdRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.OpenPlatform.DataModels.MiniProgramManage.OpenPlatformMpAuditItem))]
 [JsonSerializable(typeof(global::Mud.Wechat.OpenPlatform.DataModels.MiniProgramManage.OpenPlatformMpAuditPreviewInfo))]

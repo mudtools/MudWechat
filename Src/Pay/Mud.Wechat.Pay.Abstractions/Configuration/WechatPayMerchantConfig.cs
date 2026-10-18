@@ -56,6 +56,44 @@ public class WechatPayMerchantConfig
     /// <remarks>用于回调 <c>resource</c> 的 AES-256-GCM 解密与请求侧敏感字段加密。</remarks>
     public string ApiKeySecretName { get; set; } = string.Empty;
 
+    /// <summary>
+    /// APIv2 签名密钥（<c>api_key</c>，32 位）在 <c>ISecretProvider</c> 中的<b>名称</b>（不是密钥本身）。
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>与 <see cref="ApiKeySecretName"/> 是两把不同的密钥，不得合并</b>：前者是 APIv3 的
+    /// <c>AEAD_AES_256_GCM</c> 密钥（回调 <c>resource</c> 解密 + 敏感字段加密），本字段是 APIv2 的
+    /// MD5/HMAC-SHA256 签名密钥；两者在商户平台<b>分别设置、互不相同</b>，且轮换节奏独立。
+    /// 若压成同一个密钥名，只配置 APIv3 的商户会被静默拿去签 APIv2 请求，症状是官方恒返回
+    /// <c>SIGNERROR</c> 而配置面看不出任何异常。
+    /// </para>
+    /// <para>留空表示该商户不使用 APIv2 线（APIv3-only 形态），<see cref="Validate"/> 不强制。</para>
+    /// </remarks>
+    public string ApiV2KeySecretName { get; set; } = string.Empty;
+
+    /// <summary>
+    /// APIv2 商户 API 证书（PKCS#12）在 <c>ISecretProvider</c> 中的<b>名称</b>（不是证书本身）。
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// 仅 <c>/secapi/pay/*</c>（退款 / 退款查询 v2 / 撤销 / 企业付款 / 现金红包）需要，这些端点走
+    /// <b>双向 TLS</b>（域名 <c>api2.mch.weixin.qq.com</c>，已在 <c>WechatApiHosts</c> 白名单内）。
+    /// 证书口令<b>不</b>在本配置里出现（AGENTS §8「凭据不落配置」同一口径），
+    /// 与证书材料一并作为 <c>ISecretProvider</c> 的一条记录登记。
+    /// </para>
+    /// <para>留空表示该商户不调用 secapi 支；调用时由 V2 凭据端口 fail-fast。</para>
+    /// </remarks>
+    public string ApiV2CertificateSecretName { get; set; } = string.Empty;
+
+    /// <summary>
+    /// APIv2 双向证书<b>口令</b>在 <c>ISecretProvider</c> 中的<b>名称</b>（不是口令本身）。
+    /// </summary>
+    /// <remarks>
+    /// 留空时按官方约定回退为<b>商户号</b>（微信下载的 <c>apiclient_cert.p12</c> 默认口令即商户号）。
+    /// 商户改过口令才需要配置本项；口令属凭据，<b>绝不</b>直接落配置（AGENTS §8）。
+    /// </remarks>
+    public string ApiV2CertificatePasswordSecretName { get; set; } = string.Empty;
+
     /// <summary>服务商商户号（与 <see cref="SubMchId"/> 成对出现；普通商户形态必须留空）。</summary>
     public string SpMchId { get; set; } = string.Empty;
 
@@ -135,6 +173,30 @@ public class WechatPayMerchantConfig
 
         ValidateSecretName(PrivateKeySecretName, nameof(PrivateKeySecretName), MerchantKey);
         ValidateSecretName(ApiKeySecretName, nameof(ApiKeySecretName), MerchantKey);
+
+        // APIv2 三项一律**可选**（APIv3-only 商户留空即合法），但一旦填写就必须是「名字」而非密钥本身；
+        // 口令名脱离证书名单独出现是配置错误（没人会用它），故要求成对。
+        if (!string.IsNullOrWhiteSpace(ApiV2KeySecretName))
+        {
+            ValidateSecretName(ApiV2KeySecretName, nameof(ApiV2KeySecretName), MerchantKey);
+        }
+
+        if (!string.IsNullOrWhiteSpace(ApiV2CertificateSecretName))
+        {
+            ValidateSecretName(ApiV2CertificateSecretName, nameof(ApiV2CertificateSecretName), MerchantKey);
+        }
+
+        if (!string.IsNullOrWhiteSpace(ApiV2CertificatePasswordSecretName))
+        {
+            ValidateSecretName(ApiV2CertificatePasswordSecretName, nameof(ApiV2CertificatePasswordSecretName), MerchantKey);
+
+            if (string.IsNullOrWhiteSpace(ApiV2CertificateSecretName))
+            {
+                throw new InvalidOperationException(
+                    $"{MerchantKey}：配置了 {nameof(ApiV2CertificatePasswordSecretName)} 却没配 " +
+                    $"{nameof(ApiV2CertificateSecretName)}：口令没有对应的证书材料可解，属配置残缺。");
+            }
+        }
     }
 
     /// <summary>

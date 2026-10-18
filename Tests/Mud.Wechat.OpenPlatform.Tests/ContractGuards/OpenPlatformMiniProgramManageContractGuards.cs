@@ -16,15 +16,16 @@ using Mud.Wechat.OpenPlatform.DataModels.MiniProgramManage;
 namespace Mud.Wechat.OpenPlatform.Tests.ContractGuards;
 
 /// <summary>
-/// 开放平台线「代小程序管理」（MiniProgramManage）域 30-1 子批（<c>/wxa/*</c> 三支接口共 22 端点：
-/// 代码管理 15 + 名称与搜索 6 + 类目 1）契约守卫（MPG 系列，2026-10-17 逐页取证）。
+/// 开放平台线「代小程序管理」（MiniProgramManage）域分批复核后<b>十二支接口共 60 端点</b>（30-1 代码管理 15 + 名称与搜索 6 + 类目 1；
+/// 30-2 域名与 DNS 9 + 体验成员 3 + 违规申诉 2 + 订阅组件 3；30-3 ICP 备案 JSON 12 + 隐私接口 3 + 订单路径查询 1；
+/// 30-4 试用小程序核验 2；30-5 multipart 上传 2；30-7 直播能力开通 1）契约守卫（MPG 系列，2026-10-17/18 逐页取证）。
 /// </summary>
 /// <remarks>
 /// <para><b>本守卫锁定的裁决</b>：① 逐接口（方法, 动词, 路由）表——本族查询类端点动词不统一
 /// （<c>get_auditstatus</c>/<c>fetchdatasetting</c> 为 POST、<c>get_latest_auditstatus</c>/<c>get_page</c>/<c>queryquota</c>
 /// /<c>undocodeaudit</c>/<c>revertgrayrelease</c>/<c>revertcoderelease</c>/<c>getwxasearchstatus</c>/<c>get_category</c> 为 GET），逐页照抄官方；
-/// ② <b>令牌面统一</b>——21 端点全部消费 <c>authorizer_access_token</c>（代授权方小程序调用），Query 参数名恒 <c>access_token</c>、
-/// 三支接口共用注册组 <c>MiniProgramManage</c>（一次 <c>AddMiniProgramManageWebApiHttpClient()</c> 覆盖三支）；
+/// ② <b>令牌面统一</b>——60 端点全部消费 <c>authorizer_access_token</c>（代授权方小程序调用），Query 参数名恒 <c>access_token</c>、
+/// 十二支接口共用注册组 <c>MiniProgramManage</c>（一次 <c>AddMiniProgramManageWebApiHttpClient()</c> 覆盖十二支）；
 /// ③ <b>审核单号字段名差异</b>——代码审核用 <c>auditid</c>（无下划线，<see cref="OpenPlatformMpAuditIdRequest"/>）、
 /// 名称审核用 <c>audit_id</c>（带下划线，<see cref="OpenPlatformMpQueryNicknameRequest"/>），照官方原文不「对齐」；
 /// ④ <c>revertcoderelease</c> 单路由以 Query <c>action</c> 分派（<c>get_history_version</c> / <c>set_specific_version</c> + 可选 <c>app_version</c>），计为 1 端点；
@@ -153,6 +154,12 @@ public class OpenPlatformMiniProgramManageContractGuards
         ("SetBetaWeappNicknameAsync", "POST", "/wxa/setbetaweappnickname"),
     };
 
+    /// <summary>直播能力开通 <see cref="IWechatOpenPlatformMpLiveService"/> 的 1 条期望表（只有第三方平台可代调用，权限集 52）。</summary>
+    private static readonly (string Method, string Verb, string Route)[] LiveEndpoints =
+    {
+        ("ApplyLiveInfoAsync", "POST", "/wxa/business/applyliveinfo"),
+    };
+
     /// <summary>
     /// MPG1：代码管理 16 端点（方法名, 动词, 路由）逐条锁定——查询类动词不统一即官方原文，误改动词即请求落错分支。
     /// </summary>
@@ -236,6 +243,14 @@ public class OpenPlatformMiniProgramManageContractGuards
         => AssertEndpoints(typeof(IWechatOpenPlatformMpBetaVerifyService), BetaVerifyEndpoints, 2);
 
     /// <summary>
+    /// MPG3j：直播能力开通 1 端点锁定——官方明写仅支持「第三方平台」账号类型代调用、其他账号类型不可调用，
+    /// 以 <c>authorizer_access_token</c> 承载（权限集 52）⇒ 归本授权方组；小程序线由 NC2 锁定零声明。
+    /// </summary>
+    [Fact]
+    public void LiveServiceEndpoints_ShouldMatchOfficialVerbRoutes_WhenEnumerated()
+        => AssertEndpoints(typeof(IWechatOpenPlatformMpLiveService), LiveEndpoints, 1);
+
+    /// <summary>
     /// MPG11：30-5 两支 multipart 端点形态锁定——<c>uploadmedia</c>（表单仅 <c>media</c>）与
     /// <c>upload_icp_media</c>（表单 <c>type</c>/<c>certificate_type</c>/<c>icp_order_field</c>/<c>media</c> 四支，由宿主拼装）
     /// 必须走 <c>[MultipartForm] IFormContent</c> 通路且<b>不得</b>带 JSON 请求体 DTO；
@@ -285,7 +300,7 @@ public class OpenPlatformMiniProgramManageContractGuards
     }
 
     /// <summary>
-    /// MPG4：令牌面统一——十一支接口全部 <c>authorizer_access_token</c> + Query 参数名 <c>access_token</c> + 注册组 <c>MiniProgramManage</c>。
+    /// MPG4：令牌面统一——十二支接口全部 <c>authorizer_access_token</c> + Query 参数名 <c>access_token</c> + 注册组 <c>MiniProgramManage</c>。
     /// </summary>
     [Fact]
     public void TokenSemantics_ShouldBeAuthorizerSharedGroup_WhenInterfacesDeclared()
@@ -303,6 +318,7 @@ public class OpenPlatformMiniProgramManageContractGuards
                      typeof(IWechatOpenPlatformMpPrivacyService),
                      typeof(IWechatOpenPlatformMpOrderPathService),
                      typeof(IWechatOpenPlatformMpBetaVerifyService),
+                     typeof(IWechatOpenPlatformMpLiveService),
                  })
         {
             var token = type.GetCustomAttributes<TokenAttribute>(false).Single();
@@ -314,7 +330,7 @@ public class OpenPlatformMiniProgramManageContractGuards
 
             type.GetCustomAttributes<HttpClientApiAttribute>(false).Single()
                 .RegistryGroupName.Should().Be("MiniProgramManage",
-                    "三支接口共用一个注册组 ⇒ 一次 AddMiniProgramManageWebApiHttpClient() 覆盖全部接口");
+                    "十二支接口共用一个注册组 ⇒ 一次 AddMiniProgramManageWebApiHttpClient() 覆盖全部接口");
         }
     }
 
@@ -352,15 +368,15 @@ public class OpenPlatformMiniProgramManageContractGuards
     }
 
     /// <summary>
-    /// MPG6：本域 106 个 DTO 全量登记进 <see cref="MiniProgramManageJsonContext"/>，且 <c>SerializerClassName</c> 恒为域段 <c>MiniProgramManage</c>。
+    /// MPG6：本域 108 个 DTO 全量登记进 <see cref="MiniProgramManageJsonContext"/>，且 <c>SerializerClassName</c> 恒为域段 <c>MiniProgramManage</c>。
     /// </summary>
     [Fact]
     public void DataModels_ShouldBeRegisteredInDomainJsonContext_WhenSurfaceEnumerated()
     {
         var domainTypes = DomainDtoTypes();
 
-        domainTypes.Should().HaveCount(106,
-            "本域 DTO 数漂移须先核对官方参数表，再同批重跑生成脚本（30-1 落 31 + 30-2 落 30 + 30-3 落 39 + 30-4 试用核验 4 + 30-5 上传应答 2）");
+        domainTypes.Should().HaveCount(108,
+            "本域 DTO 数漂移须先核对官方参数表，再同批重跑生成脚本（30-1 落 31 + 30-2 落 30 + 30-3 落 39 + 30-4 试用核验 4 + 30-5 上传应答 2 + 30-7 直播开通 2）");
 
         var context = (JsonSerializerContext)typeof(MiniProgramManageJsonContext)
             .GetProperty("Default", BindingFlags.Public | BindingFlags.Static)!

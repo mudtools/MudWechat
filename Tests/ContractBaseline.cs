@@ -42,16 +42,16 @@ public static class Baseline
         /// 公共父接口数：`[HttpClientApi]` 且 `IsAbstract = true`（不注册 DI，仅作继承基座）。
         /// </summary>
         /// <remarks>锁定于 `WechatInterfaceNamespaceContractGuards`（N1）。改此值须先核对官方开放面。</remarks>
-        public const int AbstractParentInterfaces = 154;
+        public const int AbstractParentInterfaces = 158;
 
         /// <summary>
         /// 可注入接口数：`[HttpClientApi]` 且非抽象（应用类型子接口 + 独立端点接口）。
         /// </summary>
         /// <remarks>
         /// 锁定于 `WechatInterfaceNamespaceContractGuards`（N1）。
-        /// 与 <see cref="AbstractParentInterfaces"/> 合计即契约面接口总数（当前 461）。
+        /// 与 <see cref="AbstractParentInterfaces"/> 合计即契约面接口总数（当前 470）。
         /// </remarks>
-        public const int InjectableInterfaces = 307;
+        public const int InjectableInterfaces = 312;
 
         /// <summary>
         /// 已登记 `[WechatCallbackContract]` 的事件键总数（常量声明与特性声明的**并集**）。
@@ -103,14 +103,19 @@ public static class Baseline
         /// </summary>
         /// <remarks>
         /// 锁定于 `MiniProgramContractGuards`（MP-X5）。
-        /// 现行推导：392 特性路由 + 6 手工通道（小程序码 3 + 反馈媒体 1 + 对账文件 1 + 客服临时素材 1）= 398；
+        /// 现行推导：581 特性路由 + 6 手工通道（小程序码 3 + 反馈媒体 1 + 对账文件 1 + 客服临时素材 1）= 587；
         /// 按域拆分即 Auth 8 + QrCodeLink 9 + Security 3 + DataAnalysis 11 + SubscribeMessage 4 +
         /// DynamicMessage 3 + Kf 11 + HardwareDevice 9 + Operation 10 + Plugin 2 + Charge 2 +
         /// NearbyPoi 4 + Search 1 + Soter 1 + ServiceMarket 2 + RedPacketCover 1 + Student 1 +
         /// FaceVerify 2 + LaborUse 2 + ExpressBusiness 12 + ExpressDelivery 28 + ExpressIntracity 16 +
         /// ExpressInsuranceFreight 11 + ExpressLocal 15 + ExpressBill 1 + Vip 6 +
         /// TradeGuarantee 2 + TradeComment 9 + TradeComplaint 5 + Live 38 + Vod 32 + XPay 37 +
-        /// OrderShipping 12 + Novel 23 + RealName 1 + Game 20 + CloudBase 44 = 398
+        /// OrderShipping 12 + Novel 23 + RealName 1 + Game 20 + CloudBase 44 = 398；
+        /// 2026-10-18 依官方交易组件 / 联盟工作单取证补齐 189 端点：ShopSpu 9 + ShopFunds 9 + ShopSharer 8 +
+        /// ShopOrder 20 + ShopAfterSale 18 + ShopAccount 16 + ShopCoupon 11 + ProductCatalog 22 + ProductSku 17 +
+        /// ProductOrder 14 + ProductCoupon 10 + ProductFunds 7 + ProductMedia 10 + Midas 8 + CityService 5 +
+        /// BusinessCapability 5（ProductMedia 的 /product/img/upload 二进制流与图片 URL 双形态共路由、按 1 条计；
+        /// /wxa/business/applyliveinfo 经令牌面复核归开放平台线，本线零声明）⇒ 398 + 189 = 587
         /// （Vip 域为 2026-10 小店线设计方案 §4.1 结论 A 划入；2026-10-12 依官方清单核对后：
         /// ExpressDelivery 28 / ExpressIntracity 16 补齐「消息推送 2 + 投诉处理 1」与「同城扣费主体与城市 3」，
         /// 新增 ExpressInsuranceFreight 11（无忧退货）与 ExpressLocal 15（即时配送）两族，
@@ -137,8 +142,10 @@ public static class Baseline
         /// <c>/wxa/getopendata</c> + <c>/wxa/getvoipsign</c>，后两支为清单路由错配的纠正）。
         /// 同语料的 <c>/componenttcb/*</c> 面（仅 <c>component_access_token</c>）归开放平台线，
         /// 两线不交叉由守卫 CBZ1 / CBZ2 与开放平台线 CBT 系列双向锁定）。
+        /// 2026-10-18 总账残余收口：补小游戏数据 <c>POST /datacube/getgameanalysisdata</c>（minigame 独立文档树，
+        /// 小程序侧不开放）⇒ DataAnalysis 11 → 12。
         /// </remarks>
-        public const int Endpoints = 398;
+        public const int Endpoints = 588;
     }
 
     /// <summary>微信支付 APIv3 线（`Tests/Mud.Wechat.Pay.Tests`）。</summary>
@@ -287,9 +294,81 @@ public static class Baseline
         /// MarketingMemberCardActivity 4：创建活动 / 查询列表 / 查询详情 / 终止活动；四支 204 无应答包体 ⇒ 裸 Task，
         /// 两套并存契约：品牌会员卡与本域是<b>并存非替代</b>关系，守卫 MCO-B1~B6 / MCA-B1~B5）
         /// + P1-6 既有域增量 2（MarketingPartnerships 终止合作关系 / MarketingBusifavor 发送核销券，各一方法）= 593
-        /// + P0 基础支付主动作 3（付款码支付 / 订单曝光 / 撤销订单，守卫 TX-B1）= 596。
+        /// + P0 基础支付主动作 3（付款码支付 / 订单曝光 / 撤销订单，守卫 TX-B1）= 596
+        /// + 2026-10-18 总账残余收口 2（服务商子商户资金账单流 <c>GET /v3/bill/sub-merchant-fundflowbill</c>
+        /// 落 <c>Bill</c> 域 2 → 3；支付分商户账单 <c>GET /v3/payscore/merchant-bill</c> 落 <c>PayScore</c> 域
+        /// 11 → 12；两支应答同为「加密分片账单下载信息列表」⇒ 共用 Bill 域 DTO）= 598
+        /// + 2026-10-18 直连支付分 / 旧版批次转账 / 分账商户配置 / 账户资金收入记录 23
+        /// （PayScore 12 → 23：计划 3 + 签约计划 4 + 消息 2 + 风险评估 1 + 按 OPENID 解除授权 1；
+        /// Transfer 10 → 19：旧版批次 9；ProfitSharing 10 → 11：商户配置 1；
+        /// MerchantFund 2 → 4：收入记录 2）= 621。
         /// </remarks>
-        public const int Endpoints = 596;
+        public const int Endpoints = 621;
+    }
+
+    /// <summary>
+    /// 微信支付 APIv2 线（<c>Tests/Mud.Wechat.Pay.Tests</c>，程序集 <c>Mud.Wechat.Pay.V2</c>）。
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>与 <see cref="Pay"/> 分列的理由</b>：APIv3 是 JSON 嵌套体 + 单商户命名客户端，APIv2 是 XML 扁平
+    /// 字段表 + 按商户绑定的双向证书通道，两线的「接口」与「端点」计数口径不可共用一个数（并成一个数后，
+    /// 任何一侧的漂移都会被另一侧的存量掩盖）。故本类只锁 APIv2 程序集，反射枚举范围即该程序集的公开类型。
+    /// </para>
+    /// <para>
+    /// <b>两种形态并列是本线的固有事实</b>：免证书族走 <c>[HttpClientApi]</c> 源生成，需证书族<b>有意不带</b>
+    /// 特性、由 <c>Secure/</c> 手写实现（证书按商户绑定，与命名客户端「一名一连接池」的复用模型冲突）。
+    /// 故除 <see cref="HttpApiInterfaces"/> 外另锁 <see cref="HandWrittenInterfaces"/>，两数之和即注入面总数。
+    /// </para>
+    /// </remarks>
+    public static class PayV2
+    {
+        /// <summary>
+        /// 声明式接口数：<c>Mud.Wechat.Pay.V2</c> 程序集内带 <c>[HttpClientApi]</c> 的可注入接口。
+        /// </summary>
+        /// <remarks>
+        /// 锁定于 <c>WechatPayV2BaselineContractGuards</c>（V2-B1）。现行族集（注册组名 = 模块成员名）：
+        /// BasePayV2 8 + DepositV2 5 + PapayV2 6 + PartnerPapayV2 5 + CustomsV2 3 + ToolsV2 2
+        /// + VehicleV2 3 + PartnerVehicleV2 3 + TransitV2 1 + PartnerTransitV2 1 + PayItilV2 1 + XdcV2 1 = 12 支。
+        /// </remarks>
+        public const int HttpApiInterfaces = 12;
+
+        /// <summary>
+        /// 手写接口数：<c>Mud.Wechat.Pay.V2</c> 命名空间下<b>不带</b> <c>[HttpClientApi]</c> 的公开接口
+        /// （需商户证书的族 + 应答为二进制/文本的族）。
+        /// </summary>
+        /// <remarks>
+        /// 锁定于 <c>WechatPayV2BaselineContractGuards</c>（V2-B1）。现行 13 支：基础支付证书五支
+        /// <c>SecureV2</c>（<c>IWechatPayV2SecureService</c>）+ 押金需证书三支 <c>DepositSecureV2</c> +
+        /// 红包 5 / 企业付款 4 / 付款到银行卡 2 + 违规记录查询 1 + 子商户配置 3 + 小微商户 2 +
+        /// 机构子商户 3 + 商户媒体 1 + 账单评论 1 + 反欺诈公钥 1 + 自动提现查询 1。
+        /// </remarks>
+        public const int HandWrittenInterfaces = 13;
+
+        /// <summary>
+        /// 端点总数（声明式方法 + 手写实现方法之和，按 HTTP 方法计）。
+        /// </summary>
+        /// <remarks>
+        /// 锁定于 <c>WechatPayV2BaselineContractGuards</c>（V2-B2）。与 <see cref="DistinctRoutes"/>
+        /// 相差 1 是官方事实：<c>/papay/deletecontract</c> 在「按协议号解约」与「按用户标识解约」两页
+        /// 各有独立请求表 ⇒ 同一路由两支方法，<b>不得</b>为此合并方法或补 <c>#region</c> 去重。
+        /// </remarks>
+        public const int Endpoints = 71;
+
+        /// <summary>去重后的路由数（端点计数按方法、路由数按路径，两个口径都要锁）。</summary>
+        /// <remarks>锁定于 <c>WechatPayV2BaselineContractGuards</c>（V2-B2）。</remarks>
+        public const int DistinctRoutes = 70;
+
+        /// <summary>
+        /// <c>PayV2Module</c> 成员数 = 生成注册组（<see cref="HttpApiInterfaces"/> 支接口对应的族）
+        /// ∪ 手写族白名单（<c>WechatPayV2CertFamilyContractGuards.HandWrittenModules</c>）。
+        /// </summary>
+        /// <remarks>
+        /// 锁定于 <c>WechatPayV2BaselineContractGuards</c>（V2-B3）。现行 12 + 11 = 23。
+        /// <b>注意</b>：手写族 13 支接口只对应 11 个成员 —— 押金需证书三支复用 <c>DepositV2</c>、
+        /// 基础支付证书五支复用 <c>BasePayV2</c>（一域两形态），故成员数<b>不等于</b>接口数。
+        /// </remarks>
+        public const int Modules = 23;
     }
 
     /// <summary>开放平台线（`Tests/Mud.Wechat.OpenPlatform.Tests`，B1 起）。</summary>
@@ -317,15 +396,17 @@ public static class Baseline
         /// MiniProgramManage（代小程序管理 · 授权方令牌面）为 2026-10-17 依官方 miniprogram-management/* 逐页取证分批落地（30-1 起）：
         /// 30-1 落「代码管理 15 + 名称与搜索 5 + 类目 1」三支、30-2 落「域名与 DNS 9 + 体验成员 3 + 违规申诉 2 + 订阅组件 3」四支、
         /// 30-3 落「ICP 备案 JSON 面 12 + 隐私接口 3 + 订单路径查询 1」三支、30-4 落「试用小程序核验 2」（转正 / 改名，逐页取证为 <c>authorizer_access_token</c>、权限集 81）一支，
-        /// 十一支子接口共用注册组 <c>MiniProgramManage</c>、令牌面 <c>authorizer_access_token</c>，逐接口表由 MPG 系列守卫持有。<c>applysetorderpathinfo</c>（订单路径申请）经逐页复核为 <b>component_access_token</b> 面，
+        /// 十二支子接口共用注册组 <c>MiniProgramManage</c>、令牌面 <c>authorizer_access_token</c>，逐接口表由 MPG 系列守卫持有。<c>applysetorderpathinfo</c>（订单路径申请）经逐页复核为 <b>component_access_token</b> 面，
         /// 与授权方 <c>getorderpathinfo</c>（authorizer）令牌归属相反，故不入本授权方组。
+        /// 30-7 补入直播能力开通 1 端点（<c>/wxa/business/applyliveinfo</c>）：官方明写仅支持第三方平台以 <c>authorizer_access_token</c> 代调用、
+        /// 其他账号类型不可调用 ⇒ 并入本授权方组（小程序线由守卫 NC2 锁定零声明，2026-10-18 逐页取证）。
         /// MiniProgramTemplate（代码模板库 / 下单路径申请 · <c>component_access_token</c> 面）为 30-4 新注册组：模板库管理 4（草稿列表 / 模板列表 / 添加模板 / 删除模板）+ 下单页 path 批量申请 1（<c>applysetorderpathinfo</c>），
         /// 两支子接口共用注册组 <c>MiniProgramTemplate</c>（对齐 Ams/AmsShare 按令牌拆组先例），逐接口表由 TPL 系列守卫持有。
         /// 30-5 落三支特殊形态：<c>uploadmedia</c>（代码管理接口内，表单仅 <c>media</c>）与 <c>upload_icp_media</c>（备案接口内，表单四支字段）为 multipart、零 JSON 请求 DTO，并入授权方 <c>MiniProgramManage</c> 组；
         /// <c>get_qrcode</c> 成功应答为 image/jpeg 二进制流 ⇒ 不走声明式管线，由手写通道 <c>IOpenPlatformMpTrialQrCodeService</c>（非 <c>[HttpClientApi]</c>，随 MiniProgramManage 模块装配）承载，守卫 QRC 系列锁定。
         /// 30-6 判非契约：试用小程序转正族的 2.0 旧版 <c>/wxa/getmpadminauth</c> 与 <c>/wxa/mpverifybetaweapp</c> 不建接口、不声明路由，由守卫 OP-NC 系列（<c>OpenPlatformNonContractRouteZeroDeclarationContractGuards</c>）锁定零声明。
         /// </remarks>
-        public const int HttpApiInterfaces = 29;
+        public const int HttpApiInterfaces = 30;
 
         /// <summary>
         /// 端点总数（各接口方法之和）。
@@ -345,13 +426,14 @@ public static class Baseline
         /// + MiniProgramManage 16（30-3：ICP 备案 JSON 面 12 + 隐私接口 3 + 订单路径查询 1，2026-10-17 逐页取证）
         /// + MiniProgramManage 2（30-4：试用小程序核验 2，转正 / 改名，authorizer_access_token，2026-10-17 逐页取证）
         /// + MiniProgramTemplate 5（30-4 新注册组：模板库 4 + 下单路径申请 1，component_access_token，2026-10-17 逐页取证）
-        /// + MiniProgramManage 2（30-5：multipart 上传 2，代码管理 uploadmedia 1 + 备案 upload_icp_media 1，authorizer_access_token，2026-10-17 逐页取证）= 189。
+        /// + MiniProgramManage 2（30-5：multipart 上传 2，代码管理 uploadmedia 1 + 备案 upload_icp_media 1，authorizer_access_token，2026-10-17 逐页取证）
+        /// + MiniProgramManage 1（30-7：直播能力开通 applyliveinfo，authorizer_access_token、权限集 52，2026-10-18 逐页取证）= 190。
         /// 令牌链 4 端点（api_component_token 等）由 Provider raw HTTP 承载，**不计**（T2 裁定）；
         /// 体验版二维码 /wxa/get_qrcode 由**非声明式图片流通道** IOpenPlatformMpTrialQrCodeService 承载（成功应答是 image/jpeg 二进制），
         /// 同口径**不计**入声明式端点总数，由 QRC 系列守卫单独锁定；
         /// 试用小程序转正族 2.0 旧版两支 /wxa/getmpadminauth + /wxa/mpverifybetaweapp 经逐页核验（旧页正文仅剩「优化后重新上线」、无 301、不在现行 openApi/OpenApiDoc 目录树内）判为**非契约**，
         /// 由 OP-NC 系列守卫锁定 Src/ 零声明，**恒不计**入端点总数（追踪号 P1-OP-LEGACY20-BETAVERIFY-01）。
         /// </remarks>
-        public const int Endpoints = 189;
+        public const int Endpoints = 190;
     }
 }

@@ -24,6 +24,9 @@ namespace Mud.Wechat.Ads.DataModels.Qualifications;
 [JsonSerializable(typeof(global::Mud.Wechat.Ads.DataModels.Qualifications.AdsQualificationIdData))]
 [JsonSerializable(typeof(global::Mud.Wechat.Ads.DataModels.Qualifications.AdsQualificationAddResponse))]
 [JsonSerializable(typeof(global::Mud.Wechat.Ads.DataModels.Qualifications.AdsQualificationUpdateResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.Ads.DataModels.Qualifications.AdsQualificationDeleteRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.Ads.DataModels.Qualifications.AdsQualificationDeleteData))]
+[JsonSerializable(typeof(global::Mud.Wechat.Ads.DataModels.Qualifications.AdsQualificationDeleteResponse))]
 internal partial class QualificationsJsonContext : JsonSerializerContext
 {
 }

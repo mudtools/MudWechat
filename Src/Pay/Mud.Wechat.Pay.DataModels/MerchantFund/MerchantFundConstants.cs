@@ -30,3 +30,21 @@ public static class MerchantFundAccountTypes
     /// <summary>手续费账户（官方 <c>FEES</c>）。</summary>
     public const string Fees = "FEES";
 }
+
+/// <summary>
+/// 账户资金收入记录类型（官方 <c>income_record_type</c>，2 值 string）。
+/// </summary>
+/// <remarks>
+/// <para>官方文档：<see href="https://pay.weixin.qq.com/doc/v3/partner/4012718647"/>（商户号维度）、
+/// <see href="https://pay.weixin.qq.com/doc/v3/partner/4012718620"/>（服务商维度），2026-10-18 逐字核验。</para>
+/// <para><b>两值对应两种资金来源</b>：<c>OFFLINERECHARGE</c> 线下充值、<c>ENTERPRISEDIRECTREVENUE</c>
+/// 企业直连收入 ⇒ 汇总时须按类型分组，混为一个口径会掩盖资金来源差异。</para>
+/// </remarks>
+public static class MerchantFundIncomeRecordTypes
+{
+    /// <summary>线下充值（官方 <c>OFFLINERECHARGE</c>）。</summary>
+    public const string OfflineRecharge = "OFFLINERECHARGE";
+
+    /// <summary>企业直连收入（官方 <c>ENTERPRISEDIRECTREVENUE</c>）。</summary>
+    public const string EnterpriseDirectRevenue = "ENTERPRISEDIRECTREVENUE";
+}

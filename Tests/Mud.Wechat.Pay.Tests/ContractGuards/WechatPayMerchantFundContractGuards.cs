@@ -16,32 +16,38 @@ using Mud.Wechat.Pay.DataModels.MerchantFund;
 namespace Mud.Wechat.Pay.Tests.ContractGuards;
 
 /// <summary>
-/// P0-7 商户账户余额域契约守卫（<b>2 端点</b>：实时余额 + 日终余额）。
+/// 商户账户资金域契约守卫（<b>4 端点</b>：实时余额 + 日终余额 + 商户号维度收入记录 + 服务商维度收入记录）。
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>官方事实来源</b>（2026-10-14 两页逐字段核验）：<c>4012721477</c> 查询账户实时余额、
-/// <c>4012721446</c> 查询账户日终余额。逐端点 URL 落在接口 XML 文档注释（本守卫不复述）。
+/// <b>官方事实来源</b>（2026-10-14 余额两页、2026-10-18 收入记录两页逐字段核验）：<c>4012721477</c> 查询账户实时余额、
+/// <c>4012721446</c> 查询账户日终余额、<c>4012718647</c> 商户号维度收入记录、<c>4012718620</c> 服务商维度收入记录。
+/// 逐端点 URL 落在接口 XML 文档注释（本守卫不复述）。
 /// </para>
 /// <para>
 /// <b>本域的存在本身就是 <see cref="WechatPayCapitalRulingContractGuards"/> C1 收窄的产物</b>：
 /// 该前缀 <c>/v3/merchant/fund/</c> 下同时住着两种商户形态的面 —— 余额两支官方标注
 /// <b>支持商户：【普通服务商】</b>，提现族四支标注<b>【平台商户】</b>。原裁决按 URL 前缀一锅端
 /// （零 <c>/v3/merchant/fund</c>）会把调得动的两支一起拦掉 ⇒ 正解是<b>按页面标注的商户形态逐族裁决</b>。
-/// MF-B2 因此锁「本域只有余额两支、提现族零声明」，而 C1 用本域两支作它的<b>正对照</b>
+/// MF-B2 因此锁「余额面只有两支、提现族零声明」，而 C1 用本域两支作它的<b>正对照</b>
 /// ——两条守卫互为对方存在性的证明，任一被删都会让另一条退化为空集恒真。
 /// </para>
 /// <para>
+/// <b>⚠️ 收入记录前缀是 <c>/v3/merchantfund/</c>（merchant 与 fund 之间<b>无斜杠</b>）</b>，
+/// 与余额面 <c>/v3/merchant/fund/</c> 是<b>两个不同前缀</b> —— 照余额前缀拼收入记录即 404；反之亦然。
+/// </para>
+/// <para>
 /// <b>本守卫要守住的三处「顺手就会写错」</b>：
-/// ① <c>account_type</c> 是 <b>path 段</b>而非 query（两支都是）⇒ 改成 query 即 404；
+/// ① 余额面的 <c>account_type</c> 是 <b>path 段</b>而非 query（两支都是）⇒ 改成 query 即 404；
 /// ② 日终支额外要求<b>必填 query</b> <c>date</c>（string(10)、<c>YYYY-MM-DD</c>），实时支<b>没有</b>该参数
 /// ——「同族两支参数相同」的直觉在此错一半；
 /// ③ 金额官方是 integer（单位<b>分</b>）⇒ 本包以 <c>long</c> 承载，建成 <c>int</c> 会在余额越出
 /// int32（约 2147 万元）时静默溢出。
 /// </para>
 /// <para>
-/// <b>两支应答表逐字段相同</b>（<c>available_amount</c> 必填 + <c>pending_amount</c> 选填）⇒ 按
-/// 「表相同则共用」归并为<b>一个</b>应答类型；本域没有商户面/服务商面分身，也没有 <c>Partner</c> 前缀型。
+/// <b>余额两支应答表逐字段相同</b>（<c>available_amount</c> 必填 + <c>pending_amount</c> 选填）⇒ 按
+/// 「表相同则共用」归并为<b>一个</b>应答类型；收入记录两页<b>唯 <c>data[]</c> 首字段不同</b>
+/// （<c>mchid</c> vs <c>sub_mchid</c>）⇒ 按「表不同则分建」各自建模，仅分页链接类型共用。
 /// </para>
 /// </remarks>
 public class WechatPayMerchantFundContractGuards
@@ -57,46 +63,64 @@ public class WechatPayMerchantFundContractGuards
     private const string DayEndBalanceRoute = Prefix + "dayendbalance/{accountType}";
 
     /// <summary>
-    /// MF-B1：两支的方法与路由照官方原文；<c>account_type</c> 恒在 path、<c>date</c> 只在日终支出现且是 query；
-    /// 两支各有类型化应答（<b>本域零 204</b>）。
+    /// MF-B1：四支的方法与路由照官方原文；余额面 <c>account_type</c> 恒在 path、<c>date</c> 只在日终支出现且是 query；
+    /// 收入记录两支走 <c>/v3/merchantfund/</c> 前缀且分页参数在 query；四支各有类型化应答（<b>本域零 204</b>）。
     /// </summary>
     [Fact]
     public void MerchantFundEndpoints_ShouldMatchOfficialRoutesAndPutAccountTypeOnPath()
     {
         AssertRoute<GetAttribute>(nameof(IWechatPayMerchantFundService.QueryBalanceAsync), BalanceRoute);
         AssertRoute<GetAttribute>(nameof(IWechatPayMerchantFundService.QueryDayEndBalanceAsync), DayEndBalanceRoute);
+        AssertRoute<GetAttribute>(
+            nameof(IWechatPayMerchantFundService.QueryMerchantIncomeRecordsAsync),
+            "/v3/merchantfund/merchant/income-records");
+        AssertRoute<GetAttribute>(
+            nameof(IWechatPayMerchantFundService.QueryPartnerIncomeRecordsAsync),
+            "/v3/merchantfund/partner/income-records");
 
         var routes = Routes();
-        routes.Should().HaveCount(2, "本域只有余额两支（提现族属【平台商户】面，见 MF-B2 与 C1）");
-        DistinctVerbRoutes().Should().HaveCount(2, "两条 (方法, 路由) 各不相同");
-        routes.Distinct().Should().HaveCount(2, "两支路由字面不同（dayend 段），去重后仍是 2");
+        routes.Should().HaveCount(4, "本域 = 余额两支 + 收入记录两支（提现族属【平台商户】面，见 MF-B2 与 C1）");
+        DistinctVerbRoutes().Should().HaveCount(4, "四条 (方法, 路由) 各不相同");
+        routes.Distinct().Should().HaveCount(4, "四支路由字面不同，去重后仍是 4");
 
-        // 动词面：本域只有 GET，且两支都是 GET（余额是纯读面）。
+        // 动词面：本域只有 GET，且四支都是 GET（余额与收入记录都是纯读面）。
         Verbs().Should().BeEquivalentTo(new[] { nameof(GetAttribute) },
-            "余额面无任何写操作：出现 POST/PUT 即造出官方不存在的账户变更端点");
+            "本域无任何写操作：出现 POST/PUT 即造出官方不存在的账户变更端点");
 
-        // 本域零 204：两支都回 JSON 应答（余额查询的成功形态只有 200 + 包体）。
+        // 本域零 204：四支都回 JSON 应答（成功形态只有 200 + 包体）。
         NoContentMethods().Should().BeEmpty(
-            "两支成功应答同为 200 + {available_amount, pending_amount}：写成裸 Task 即永远拿不到余额");
+            "四支成功应答均有包体：写成裸 Task 即永远拿不到余额或收入记录");
 
-        // path 形态：两支都以 account_type 定位，且只有这一个 path 参数。
+        // path 形态：余额两支都以 account_type 定位，且只有这一个 path 参数；收入记录两支零 path。
         PathKeysOf(nameof(IWechatPayMerchantFundService.QueryBalanceAsync))
             .Should().BeEquivalentTo(new[] { "accountType" });
         PathKeysOf(nameof(IWechatPayMerchantFundService.QueryDayEndBalanceAsync))
             .Should().BeEquivalentTo(new[] { "accountType" });
+        PathKeysOf(nameof(IWechatPayMerchantFundService.QueryMerchantIncomeRecordsAsync)).Should().BeEmpty(
+            "商户号维度收入记录无 path 参数（前缀即维度）");
+        PathKeysOf(nameof(IWechatPayMerchantFundService.QueryPartnerIncomeRecordsAsync)).Should().BeEmpty(
+            "服务商维度收入记录的子商户号走 query（sub_mchid），不是 path");
 
-        // query 形态：实时支零 query，日终支恰一个 date —— 两支参数集的差异就是本域的全部差异。
+        // query 形态：实时支零 query，日终支恰一个 date；收入记录两支为 account_type/date/offset/limit（服务商面多 sub_mchid）。
         QueryNamesOf(nameof(IWechatPayMerchantFundService.QueryBalanceAsync)).Should().BeEmpty(
             "实时余额页无 QUERY 参数表行：给它补 date 即与官方参数表冲突");
         QueryNamesOf(nameof(IWechatPayMerchantFundService.QueryDayEndBalanceAsync))
             .Should().BeEquivalentTo(new[] { "date" },
                 "日终余额按 date 定位（必填 string(10) YYYY-MM-DD）");
+        QueryNamesOf(nameof(IWechatPayMerchantFundService.QueryMerchantIncomeRecordsAsync))
+            .Should().BeEquivalentTo(new[] { "account_type", "date", "limit", "offset" },
+                "商户号维度收入记录按 account_type + date 筛选、offset/limit 分页");
+        QueryNamesOf(nameof(IWechatPayMerchantFundService.QueryPartnerIncomeRecordsAsync))
+            .Should().BeEquivalentTo(new[] { "sub_mchid", "account_type", "date", "limit", "offset" },
+                "服务商维度收入记录多一个必填 sub_mchid");
 
-        // 包体形态：GET 两支均无请求体。
+        // 包体形态：GET 四支均无请求体。
         foreach (var methodName in new[]
                  {
                      nameof(IWechatPayMerchantFundService.QueryBalanceAsync),
                      nameof(IWechatPayMerchantFundService.QueryDayEndBalanceAsync),
+                     nameof(IWechatPayMerchantFundService.QueryMerchantIncomeRecordsAsync),
+                     nameof(IWechatPayMerchantFundService.QueryPartnerIncomeRecordsAsync),
                  })
         {
             FindMethod(methodName).GetParameters()
@@ -104,12 +128,20 @@ public class WechatPayMerchantFundContractGuards
                     $"{methodName}：GET 不得带请求体");
         }
 
-        // 应答形态：两支共用同一应答类型（官方两页应答表逐字段相同）。
+        // 应答形态：余额两支共用同一应答类型（官方两页应答表逐字段相同）；
+        // 收入记录两页 data[] 首字段不同 ⇒ 不得共用（分页链接类型可共用）。
         FindMethod(nameof(IWechatPayMerchantFundService.QueryBalanceAsync)).ReturnType
             .Should().Be(typeof(Task<MerchantFundBalanceResponse>));
         FindMethod(nameof(IWechatPayMerchantFundService.QueryBalanceAsync)).ReturnType
             .Should().Be(FindMethod(nameof(IWechatPayMerchantFundService.QueryDayEndBalanceAsync)).ReturnType,
                 "两页应答表同为 {available_amount, pending_amount} ⇒ 共用一个应答类型");
+        FindMethod(nameof(IWechatPayMerchantFundService.QueryMerchantIncomeRecordsAsync)).ReturnType
+            .Should().Be(typeof(Task<MerchantFundIncomeRecordQueryResponse>));
+        FindMethod(nameof(IWechatPayMerchantFundService.QueryPartnerIncomeRecordsAsync)).ReturnType
+            .Should().Be(typeof(Task<PartnerIncomeRecordQueryResponse>));
+        FindMethod(nameof(IWechatPayMerchantFundService.QueryMerchantIncomeRecordsAsync)).ReturnType
+            .Should().NotBe(FindMethod(nameof(IWechatPayMerchantFundService.QueryPartnerIncomeRecordsAsync)).ReturnType,
+                "两页 data[] 首字段（mchid vs sub_mchid）不同 ⇒ 按「表不同则分建」，不得合并");
     }
 
     /// <summary>
@@ -121,9 +153,9 @@ public class WechatPayMerchantFundContractGuards
     {
         var routes = Routes();
 
-        routes.Should().HaveCount(2);
+        routes.Should().HaveCount(4);
         routes.Count(static r => r.StartsWith(Prefix, StringComparison.Ordinal))
-            .Should().Be(2, "本域两支全在 /v3/merchant/fund/ 下，无第二前缀");
+            .Should().Be(2, "余额两支在 /v3/merchant/fund/ 下；收入记录两支在 /v3/merchantfund/ 下（无斜杠，不同前缀）");
 
         // 零声明①：提现族四支（申请提现 + 按提现单号查 + 按商户单号查 + 提现异常单据文件下载）官方标注
         // 【平台商户】⇒ 本仓商户基座无该形态，一支都不许建模。
@@ -137,20 +169,23 @@ public class WechatPayMerchantFundContractGuards
         routes.Should().NotContain(static r => r.Contains("ecommerce", StringComparison.Ordinal),
             "电商资金提现是平台收付通体系的另一套契约：跨形态抄路由即把端点挂错域");
 
-        // 零声明④：清单行 21–22 的「查商户/服务商收入业务单」两支出处是旧版 wiki 章节页
-        // （transfer/chapter3_7 等），非现行 APIv3 契约页 ⇒ 连同 /v3/merchantfund/ 前缀一起零声明。
+        // 正声明：收入记录两支现行契约页（2026-10-18 核验）⇒ 必须落地，且只在 /v3/merchantfund/ 前缀下。
         var payLineRoutes = AllPayLineRoutes();
-        payLineRoutes.Should().NotContain(static r => r.Contains("income-records", StringComparison.Ordinal),
-            "收入业务单两支的出处页已非契约面：落地即声明一条官方现行目录里不存在的路由");
+        payLineRoutes.Should().Contain("/v3/merchantfund/merchant/income-records",
+            "商户号维度收入记录官方页 4012718647 现行有效");
+        payLineRoutes.Should().Contain("/v3/merchantfund/partner/income-records",
+            "服务商维度收入记录官方页 4012718620 现行有效");
         payLineRoutes.Count(static r => r.StartsWith("/v3/merchantfund/", StringComparison.Ordinal))
-            .Should().Be(0, "全支付线不在 /v3/merchantfund/ 前缀下挂任何端点");
+            .Should().Be(2, "全支付线 /v3/merchantfund/ 前缀恰两支收入记录");
         payLineRoutes.Count(static r => r.StartsWith(Prefix, StringComparison.Ordinal))
-            .Should().Be(2, "正对照：/v3/merchant/fund/ 前缀全仓只被本域两支占用（扫描面非空集）");
+            .Should().Be(2, "正对照：/v3/merchant/fund/ 前缀全仓只被余额两支占用（扫描面非空集）");
 
         // 跨守卫一致性：C1 的零声明对象与本域的正对照是同一批路由。扫描面只取**动词属性实参**
         // （`("/v3/…` 形态）——接口注释正文会合法地提到提现族路由，全文比对会让这条恒假。
         var source = PayInterfaceSources();
         source.Should().Contain("(\"/v3/merchant/fund/balance/", "正对照：属性级扫描根有效（余额支路由确在其中）");
+        source.Should().Contain("(\"/v3/merchantfund/merchant/income-records\"",
+            "正对照：收入记录路由确以动词属性实参形态存在");
         source.Should().NotContain("(\"/v3/merchant/fund/withdraw",
             "与 C1 同源：全支付线源码内提现族**路由声明**零出现");
 
@@ -180,6 +215,21 @@ public class WechatPayMerchantFundContractGuards
         // 选填键必须是可空值类型：null（官方未返回）与 0（官方返回零）是两种事实。
         PropertyTypeOf<MerchantFundBalanceResponse>(nameof(MerchantFundBalanceResponse.PendingAmount))
             .Should().NotBe(typeof(long), "pending_amount 官方标选填：不可空即把缺失读成 0");
+
+        // 收入记录两页：唯一差异是 data[] 首字段（mchid vs sub_mchid）—— 两侧都钉死。
+        JsonNameShouldBe<MerchantFundIncomeRecord>(nameof(MerchantFundIncomeRecord.MchId), "mchid");
+        JsonNameShouldBe<PartnerIncomeRecord>(nameof(PartnerIncomeRecord.SubMchId), "sub_mchid");
+        JsonNameShouldBe<MerchantFundIncomeRecord>(nameof(MerchantFundIncomeRecord.IncomeRecordType), "income_record_type");
+        JsonNameShouldBe<MerchantFundIncomeRecord>(nameof(MerchantFundIncomeRecord.BankAccountNumber), "bank_account_number");
+        JsonNameShouldBe<MerchantFundIncomeRecordQueryResponse>(nameof(MerchantFundIncomeRecordQueryResponse.TotalCount), "total_count");
+        JsonNameShouldBe<PartnerIncomeRecordQueryResponse>(nameof(PartnerIncomeRecordQueryResponse.Data), "data");
+        JsonNameShouldBe<MerchantFundIncomeRecordLinks>(nameof(MerchantFundIncomeRecordLinks.Next), "next");
+
+        // 金额宽度同余额：官方 integer 单位分 ⇒ long（int 在大额入账上静默溢出）。
+        PropertyTypeOf<MerchantFundIncomeRecord>(nameof(MerchantFundIncomeRecord.Amount))
+            .Should().Be(typeof(long?));
+        PropertyTypeOf<PartnerIncomeRecord>(nameof(PartnerIncomeRecord.Amount))
+            .Should().Be(typeof(long?));
 
         var allNames = DomainTypes().SelectMany(static t => JsonNamesOf(t)).ToArray();
         allNames.Should().NotBeEmpty("参照集为空会让下面的形态断言静默恒真");
@@ -213,11 +263,19 @@ public class WechatPayMerchantFundContractGuards
         ValuesOf(typeof(MerchantFundAccountTypes)).Should().NotContain("MERCHANT",
             "官方无第四账户类型：伪造即把「未开通」的 400 INVALID_REQUEST 当路由错误");
 
-        ConstantClassNames().Should().BeEquivalentTo(new[] { nameof(MerchantFundAccountTypes) },
-            "本域常量类恰 1 个：金额与日期官方无取值字典");
+        ConstantClassNames().Should().BeEquivalentTo(
+            new[] { nameof(MerchantFundAccountTypes), nameof(MerchantFundIncomeRecordTypes) },
+            "本域常量类恰 2 个：账户类型 3 值 + 收入记录类型 2 值（金额与日期官方无取值字典）");
 
-        // 三值全大写形态（本域唯一取值字典就是它）：驼峰化或改小写即与官方取值不符。
+        // 收入记录类型 2 值（两页取值字典一致）。
+        ValuesOf(typeof(MerchantFundIncomeRecordTypes)).Should().BeEquivalentTo(new[]
+        {
+            "OFFLINERECHARGE", "ENTERPRISEDIRECTREVENUE",
+        }, "官方 income_record_type 两值：线下充值 / 企业直连收入");
+
+        // 三值全大写形态（本域取值字典均全大写）：驼峰化或改小写即与官方取值不符。
         ValuesOf(typeof(MerchantFundAccountTypes)).Should().OnlyContain(static v => v == v.ToUpperInvariant());
+        ValuesOf(typeof(MerchantFundIncomeRecordTypes)).Should().OnlyContain(static v => v == v.ToUpperInvariant());
     }
 
     /// <summary>
@@ -242,10 +300,10 @@ public class WechatPayMerchantFundContractGuards
                                                  || n == "unwithdrawable_amount",
             "官方应答表无可提现字段：由余额推算可提金额即给出一个会超发的数");
 
-        // 无分页：本域两支的定位键只有 account_type（与可选 date）。
+        // 余额两面无分页：定位键只有 account_type（与可选 date）；分页仅存在于收入记录面（offset/limit）。
         QueryNamesOf(nameof(IWechatPayMerchantFundService.QueryDayEndBalanceAsync))
             .Should().NotContain(new[] { "offset", "limit", "page", "page_size" },
-            "官方余额面无分页参数：从别域照抄游标即造出官方忽略的查询条件");
+            "官方余额面无分页参数：从收入记录或别域照抄游标即造出官方忽略的查询条件");
 
         // 日期保持 string 承载（收窄为 DateTimeOffset 会撞上官方两种时间格式并存的口径）。
         FindMethod(nameof(IWechatPayMerchantFundService.QueryDayEndBalanceAsync)).GetParameters()
@@ -269,17 +327,24 @@ public class WechatPayMerchantFundContractGuards
             .Should().Be(typeof(WechatPayResponse),
                 "余额应答必须直接继承 WechatPayResponse，否则 4xx 的 code/message 无落点");
 
-        // 本域无请求 DTO（两支都是 GET + path/query）⇒ 域内类型只能是「应答 1 + 常量类 1」。
-        DomainTypeNames().Should().HaveCount(2, "本域类型 = 1 应答 DTO + 1 常量类");
+        // 本域请求 DTO 零个（四支都是 GET + path/query）⇒ 域内类型只能由应答 DTO 与常量类构成。
+        DomainTypeNames().Should().HaveCount(8,
+            "本域类型 = 应答 DTO 6（余额 1 + 收入记录 4 + 分页链接 1） + 常量类 2（账户类型 / 收入记录类型）");
 
-        // 无分身：本域不存在 Partner / Sub 前缀的余额型（两页支持商户同为【普通服务商】⇒ 一支共用）。
-        DomainTypeNames().Should().NotContain(static n => n.StartsWith("Partner", StringComparison.Ordinal)
-                                                         || n.Contains("SubMch", StringComparison.Ordinal),
-            "余额两支本就是服务商面：再拆分身即凭空造出官方没有的第二形态");
+        // 无余额分身：本域不存在 Partner / Sub 前缀的余额型（两页支持商户同为【普通服务商】⇒ 一支共用）。
+        // 收入记录的 PartnerIncomeRecord* 是官方服务商维度的独立表（data[] 首字段 sub_mchid），不是余额分身。
+        DomainTypeNames().Should().NotContain(static n => n.Contains("Balance", StringComparison.Ordinal)
+                                                         && n.StartsWith("Partner", StringComparison.Ordinal),
+            "余额两支本就是服务商面：再拆 PartnerBalance 分身即凭空造出官方没有的第二形态");
+        DomainTypeNames().Should().NotContain(static n => n.Contains("SubMch", StringComparison.Ordinal),
+            "子商户只作为字段出现，不得升格为类型名");
 
         FindMethod(nameof(IWechatPayMerchantFundService.QueryBalanceAsync)).ReturnType
             .Should().Be(FindMethod(nameof(IWechatPayMerchantFundService.QueryDayEndBalanceAsync)).ReturnType,
-            "共用裁决的可执行形式：两支返回同一 CLR 类型");
+            "共用裁决的可执行形式：余额两支返回同一 CLR 类型");
+        FindMethod(nameof(IWechatPayMerchantFundService.QueryMerchantIncomeRecordsAsync)).ReturnType
+            .Should().NotBe(FindMethod(nameof(IWechatPayMerchantFundService.QueryPartnerIncomeRecordsAsync)).ReturnType,
+            "收入记录两页 data[] 首字段不同 ⇒ 分建裁决的可执行形式：两类型不相等");
     }
 
     /// <summary>
@@ -290,8 +355,9 @@ public class WechatPayMerchantFundContractGuards
     {
         var domainTypes = DomainTypes().ToList();
 
-        domainTypes.Should().HaveCount(1,
-            "余额两支应答表逐字段相同 ⇒ 归并为一个 MerchantFundBalanceResponse");
+        domainTypes.Should().HaveCount(6,
+            "本域应答 DTO 6：余额 1（两支共用） + 收入记录 1（商户维度） + 收入记录 1（服务商维度）" +
+            " + 收入记录条目 2（mchid / sub_mchid 分建） + 分页链接 1（两页共用）");
 
         foreach (var type in domainTypes)
         {

@@ -1548,15 +1548,15 @@ public class AdsContractGuards
             "报表页 level 集合在场，作为本页零前缀断言的正对照");
     }
 
-    /// <summary>客户资质域官方路由表断言（3 端点；官方另有 delete，本 SDK 未消费故不入表）。</summary>
+    /// <summary>客户资质域官方路由表断言（4 端点：get / add / update / delete）。</summary>
     [Fact]
     public void QualificationsEndpoints_ShouldMatchOfficialRouteTable()
     {
-        QualificationsRoutes.Should().HaveCount(3,
-            "声明式面恰 3 端点（qualifications/get|add|update；官方 delete 页本 SDK 未消费，2026-10-17 逐页核验）");
+        QualificationsRoutes.Should().HaveCount(4,
+            "声明式面恰 4 端点（qualifications/get|add|update|delete；2026-10-17 逐页核验，delete 于 2026-10-18 收口）");
         typeof(IWechatAdsQualificationService)
             .GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
-            .Should().HaveCount(3, "接口端点数与守卫路由表条目数必须一致");
+            .Should().HaveCount(4, "接口端点数与守卫路由表条目数必须一致");
 
         foreach (var (iface, method, httpAttribute, route) in QualificationsRoutes)
         {
@@ -1566,12 +1566,12 @@ public class AdsContractGuards
             attr!.RequestUri.Should().Be(route, $"{iface.Name}.{method} 路由必须与官方契约逐字符一致");
         }
 
-        // 三页均无「特定请求参数」表 ⇒ 一个 user_token 都不带（反射面反证）。
+        // 四页均无「特定请求参数」表 ⇒ 一个 user_token 都不带（反射面反证）。
         typeof(IWechatAdsQualificationService)
             .GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
             .SelectMany(static m => QueryParameterNames(m))
             .Should().NotContain(static n => n == "user_token",
-                "qualifications 三页官方均未列出 user_token");
+                "qualifications 四页官方均未列出 user_token");
     }
 
     /// <summary>广告预估域官方路由表断言（1 端点，2026-10-17 逐页核验）。</summary>
@@ -1913,8 +1913,8 @@ public class AdsContractGuards
     };
 
     /// <summary>
-    /// 客户资质域官方路由表（3 端点，2026-10-17 逐页核验；官方目录树另有 <c>qualifications/delete</c>，
-    /// 本 SDK 未消费 ⇒ 不入表、不注册）。
+    /// 客户资质域官方路由表（4 端点，2026-10-17 逐页核验，delete 页 2026-10-18 收口；
+    /// 官方动词是 POST 而非 DELETE）。
     /// </summary>
     private static readonly (Type Interface, string Method, Type HttpAttribute, string Route)[] QualificationsRoutes =
     {
@@ -1924,6 +1924,8 @@ public class AdsContractGuards
             typeof(PostAttribute), "/v3.0/qualifications/add"),
         (typeof(IWechatAdsQualificationService), nameof(IWechatAdsQualificationService.UpdateAsync),
             typeof(PostAttribute), "/v3.0/qualifications/update"),
+        (typeof(IWechatAdsQualificationService), nameof(IWechatAdsQualificationService.DeleteAsync),
+            typeof(PostAttribute), "/v3.0/qualifications/delete"),
     };
 
     /// <summary>
@@ -2024,6 +2026,41 @@ public class AdsContractGuards
     /// </summary>
     private static readonly HashSet<string> RemovedV3Resources =
         new(StringComparer.Ordinal) { "campaign", "campaigns", "ads", "adcreatives", "sp_entrustment", "credit_bills", "async_task_files" };
+
+    /// <summary>
+    /// SKIT 差集里 14 条旧 API 面的完整路由（§10 的 30 行中未落地部分）：v3.0 目录树零命中，
+    /// 资源族见 <see cref="RemovedV3Resources"/>。本数组用于零声明断言与总账口径留档。
+    /// </summary>
+    private static readonly string[] RemovedLegacyRoutes =
+    {
+        "/v3.0/ads/add", "/v3.0/ads/delete", "/v3.0/ads/get", "/v3.0/ads/update",
+        "/v3.0/adcreatives/add", "/v3.0/adcreatives/get", "/v3.0/adcreatives/update",
+        "/v3.0/campaigns/add", "/v3.0/campaigns/get", "/v3.0/campaigns/update",
+        "/v3.0/sp_entrustment/add", "/v3.0/sp_entrustment/get",
+        "/v3.0/async_task_files/get", "/v3.0/credit_bills/get",
+    };
+
+    /// <summary>
+    /// 上述 14 条旧 API 面在 <c>Src/Ads/</c> 全源码内零声明（正对照证明扫描口径有效）。
+    /// </summary>
+    [Fact]
+    public void RemovedLegacyRoutes_ShouldHaveZeroDeclarationsInAdsSource()
+    {
+        var source = string.Join("\n", Directory
+            .EnumerateFiles(Path.Combine(Root, "Src", "Ads"), "*.cs", SearchOption.AllDirectories)
+            .Where(static f => !f.Contains(Path.DirectorySeparatorChar + "obj" + Path.DirectorySeparatorChar, StringComparison.Ordinal)
+                            && !f.Contains(Path.DirectorySeparatorChar + "bin" + Path.DirectorySeparatorChar, StringComparison.Ordinal))
+            .Select(static f => StripComments(File.ReadAllText(f))));
+
+        source.Should().Contain("/v3.0/advertiser/get",
+            "正对照：v3.0 已落位路由必须被扫描命中，否则下面的零声明断言静默恒真");
+
+        foreach (var route in RemovedLegacyRoutes)
+        {
+            source.Should().NotContain(route,
+                $"旧 API 面 {route} 在 Src/Ads/ 出现声明：v3.0 目录树对该资源族零命中（见 RemovedV3Resources）");
+        }
+    }
 
     /// <summary>
     /// 守卫各域路由表的<b>汇总面</b>：新增资源域必须同批并入（不并入即被

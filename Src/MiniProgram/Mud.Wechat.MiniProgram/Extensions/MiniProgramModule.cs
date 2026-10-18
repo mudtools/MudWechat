@@ -367,4 +367,231 @@ public enum MiniProgramModule
     /// </para>
     /// </remarks>
     CloudBase,
+
+    /// <summary>
+    /// 自定义交易组件 V2·商店账号域（16 端点，七接口共用本注册组：账号与信息 4 + 审核 4 + 类目 1 +
+    /// 图片上传 1 + 推客列表 1 + 入驻准入 4 + 场景校验 1；路由族 <c>/shop/account/*</c>、<c>/shop/audit/*</c>、
+    /// <c>/shop/cat/get</c>、<c>/shop/img/upload</c>、<c>/shop/promoter/list</c>、<c>/shop/register/*</c>、<c>/shop/scene/check</c>）。
+    /// </summary>
+    /// <remarks>
+    /// <para><b>令牌面</b>：全域小程序 <c>access_token</c>（Query），与小程序基础线同构；与小店线
+    /// <c>/channels/ec/*</c> 的独立令牌天然隔离，本域不得声明含 <c>/channels/</c> 的路由。</para>
+    /// <para><b>准入族两支共用同一官方页</b>：<c>/shop/register/apply</c> 与 <c>/shop/register/apply_scene</c>
+    /// 官方同一文档（<c>enter/scene_apply.html</c>），差异只在请求体字段集 ⇒ 两个端点各自建模，不得合并。</para>
+    /// <para><b>审核类端点「返回成功 ≠ 生效」</b>：品牌/类目审核与 <c>/shop/audit/result</c> 为异步终态口径，
+    /// 逐端点注释留档；类目端点官方页面文件名即拼作 <c>get_children_cateogry.html</c>（官方原文拼写，照抄勿改）。</para>
+    /// </remarks>
+    ShopAccount,
+
+    /// <summary>
+    /// 自定义交易组件 V2·资金域（9 端点，三接口共用本注册组：余额与银行账户 3 + 订单流水 3 + 提现 3；
+    /// 路由族 <c>/shop/funds/*</c>）。
+    /// </summary>
+    /// <remarks>
+    /// <para><b>官方文档树两处、路由一套</b>：<c>/shop/funds/*</c> 的提现三支与扫码两支位于
+    /// <c>ministore/wxafunds/API/funds/*</c> 分区，其余位于 <c>ministore/minishopopencomponent2/API/funds/*</c>
+    /// 分区（逐页核验）⇒ 同一域承载，不重复登记。</para>
+    /// <para><b>个人金融信息红线</b>：银行卡号、开户名、账户类型、提现金额、结算流水属个人金融信息，
+    /// 一律不得写入日志、遥测或异常消息；金额单位口径逐端点钉住并守卫负锁。</para>
+    /// </remarks>
+    ShopFunds,
+
+    /// <summary>
+    /// 自定义交易组件 V2·分享员域（8 端点，路由族 <c>/shop/sharer/*</c>，全部 POST）。
+    /// </summary>
+    /// <remarks>
+    /// <para><b>绑定/解绑为异步终态</b>：<c>bind</c> 与 <c>unbind</c> 返回成功不代表生效，终态由回调推送；
+    /// 邀请上限 10000、频控「一天三次 / 十分钟一次」。</para>
+    /// <para><b>官方表与示例键冲突（诚实留档）</b>：<c>/shop/sharer/set_share_mode</c> 官方参数表写作
+    /// <c>sharer_mode</c>、请求示例写作 <c>share_mode</c> ⇒ 本仓取示例键，并由守卫负锁锁定该取舍；
+    /// 切换为模式 2 后停止全族分享统计，30 天冷却（错误码 1310005）。</para>
+    /// <para><b>同名不同型不得共用类型</b>：<c>live_start_time</c> 在订单支为 <c>string</c>、汇总支为 <c>long</c>。</para>
+    /// </remarks>
+    ShopSharer,
+
+    /// <summary>
+    /// 自定义交易组件 V2·商品域（9 端点，路由族 <c>/shop/spu/*</c>，全部 POST）。
+    /// </summary>
+    /// <remarks>
+    /// <para><b>与 V1 商品域是两代契约</b>：本域为 <c>/shop/spu/*</c>（V2），
+    /// <see cref="ProductCatalog"/> 与 <see cref="ProductSku"/> 为 <c>/product/*</c>（V1），
+    /// 两代接口不得互相引用类型或路由。</para>
+    /// <para><b>审核类端点返回成功 ≠ 生效</b>：<c>add</c> / <c>del</c> / <c>update</c> 走异步审核，
+    /// 终态以 <c>get</c> 的 <c>status</c> 为准；<c>update_without_audit</c> 仅对已上架商品的部分字段免审，
+    /// 适用范围受官方限制。删除与上下架均为非幂等状态迁移，不得自动重试。</para>
+    /// </remarks>
+    ShopSpu,
+
+    /// <summary>
+    /// 自定义交易组件 V2·优惠券域（11 端点，两接口共用本注册组：商家券 8 + 用户券 3；
+    /// 路由族 <c>/shop/coupon/*</c>、<c>/shop/user_coupon/*</c>）。
+    /// </summary>
+    /// <remarks>
+    /// <para><b>金额与门槛单位</b>：券面额与使用门槛一律为分；<c>discount_num</c> 为折扣千分比（官方口径照原文）。</para>
+    /// <para><b>库存与状态机</b>：发券库存增减与券状态流转由官方异步结算，返回成功不代表终态；
+    /// 商户侧须以 <c>get</c> / <c>list</c> 复核。</para>
+    /// </remarks>
+    ShopCoupon,
+
+    /// <summary>
+    /// 微信小程序「基础交易工具（原标准版交易组件 V1）」·商品域（22 端点，八接口共用本注册组：
+    /// 商品本体与分类 5 + 配送与运费 4 + 线下与门店 3 + 售后与保障 3 + 服务市场与物流方式等 7；
+    /// 路由族 <c>/product/*</c>，即官方 <c>minishopopencomponent/API</c> 分区）。
+    /// </summary>
+    /// <remarks>
+    /// <para><b>与 V2（<c>/shop/*</c>）是两代契约</b>：本域为原「标准版交易组件」V1 面，V2 面在
+    /// <see cref="ShopAccount"/> / <see cref="ShopFunds"/> / <see cref="ShopSharer"/> / <see cref="ShopCoupon"/> /
+    /// <see cref="ShopOrder"/> 等注册组；两代接口<b>不得</b>互相引用类型或路由。</para>
+    /// <para><b>令牌面</b>：全域小程序 <c>access_token</c>（Query），与 V2 同构。</para>
+    /// </remarks>
+    ProductCatalog,
+
+    /// <summary>
+    /// 微信小程序「基础交易工具（原标准版交易组件 V1）」·资金域（7 端点，路由族 <c>/product/funds/*</c>）。
+    /// </summary>
+    /// <remarks>
+    /// <para><b>个人金融信息红线</b>：结算账户、提现与流水数据不得写入日志、遥测或异常消息；金额单位分。</para>
+    /// </remarks>
+    ProductFunds,
+
+    /// <summary>
+    /// 自定义交易组件 V2·订单域（20 端点，四接口共用本注册组：订单 8 + 发货 3 + 支付 6 + 微信支付进件 3；
+    /// 路由族 <c>/shop/order/*</c>、<c>/shop/delivery/*</c>、<c>/shop/pay/*</c>、<c>/shop/wxpay/*</c>）。
+    /// </summary>
+    /// <remarks>
+    /// <para><b>订单状态机</b>：10 待付款 / 11 收银台支付完成 / 20 待发货 / 21 部分发货 / 30 待收货 /
+    /// 100 完成 / 181 超时未支付取消 / 200 售后取消 / 250 用户或商家取消（<c>WxaShopOrderStatuses</c>）。</para>
+    /// <para><b>资金面</b>：<c>fund_type = 1</c>（二级商户单）才允许取支付参数（否则 1010047）；
+    /// 支付与退款幂等口径逐端点注释留档。</para>
+    /// </remarks>
+    ShopOrder,
+
+    /// <summary>
+    /// 微信小程序「基础交易工具（原标准版交易组件 V1）」·SKU 域（17 端点，三接口共用本注册组：
+    /// SKU 7 + SPU 8 + 库存 2；路由族 <c>/product/sku/*</c>、<c>/product/spu/*</c>、<c>/product/stock/*</c>）。
+    /// </summary>
+    /// <remarks>
+    /// <para><b>金额单位</b>一律为分；<c>market_price</c> 必须严格大于 <c>sale_price</c>（9401055）。</para>
+    /// <para><b>库存更新二选一</b>：全量覆盖幂等、增量更新不幂等；增量失败重试须先 <c>stock/get</c> 对账。</para>
+    /// </remarks>
+    ProductSku,
+
+    /// <summary>
+    /// 售后域（18 端点，三接口共用本注册组：V1 售后 4 + 交易纠纷 3 + V2 售后 11；
+    /// 路由族 <c>/shop/aftersale/*</c>、<c>/shop/complaint/*</c>、<c>/shop/ecaftersale/*</c>）。
+    /// </summary>
+    /// <remarks>
+    /// <para><b>V1 与 V2 两代并存</b>：<c>/shop/aftersale/*</c> 只认商家侧 <c>out_aftersale_id</c>、金额字段
+    /// <c>refund</c>、状态 0~19；<c>/shop/ecaftersale/*</c> 有微信侧 <c>aftersale_id</c>、单商品
+    /// <c>product_info</c>、金额字段 <c>orderamt</c>、状态 1~25 ⇒ 不得互抄字段与枚举。</para>
+    /// <para><b>纠纷单只读 + 补材料</b>：<c>/shop/complaint/*</c> 无状态推进端点；官方未发布
+    /// <c>state</c> / <c>type</c> / <c>judge_result</c> 枚举值，SDK 只建模 <c>int</c>。</para>
+    /// <para><b>敏感面</b>：<c>openid</c> / <c>phone_number</c> / 退货地址 / 运单号 / 退款 ID
+    /// 一律禁入日志、遥测与异常消息。</para>
+    /// </remarks>
+    ShopAfterSale,
+
+    /// <summary>
+    /// 微信小程序「基础交易工具（原标准版交易组件 V1）」·订单与地址域（14 端点，两接口共用本注册组：
+    /// 地址 4 + 订单 10；路由族 <c>/product/address/*</c>、<c>/product/order/*</c>）。
+    /// </summary>
+    /// <remarks>
+    /// <para><b>与 <see cref="ShopOrder"/>（V2 <c>/shop/order/*</c>）是两代契约</b>：本域订单状态值域
+    /// 10/15/16/17/20/21/30/100/181/190/200/250、时间为 <c>yyyy-MM-dd HH:mm:ss</c>；
+    /// V2 面状态值域 10/11/20/21/30/100/181/200/250、时间为毫秒字符串 ⇒ 不得互抄。</para>
+    /// <para><b>售后三支的 <c>order_id</c> 是售后单号</b>（官方反直觉点）：<c>acceptapply</c> /
+    /// <c>rejectrefund</c> / <c>upload_refund_certificate</c> 三页均只给示例、无参数表。</para>
+    /// <para><b>两页 URL 互换（诚实留档）</b>：单条与批量售后单查询的官方页正文请求地址互为对方，
+    /// 以路由语义为准。</para>
+    /// <para><b>敏感面</b>：<c>openid</c> / 收件人姓名 / 手机号 / 详细地址一律禁入日志、
+    /// 遥测与异常消息。</para>
+    /// </remarks>
+    ProductOrder,
+
+    /// <summary>
+    /// 微信小程序「基础交易工具（原标准版交易组件 V1）」·优惠券与限时抢购域（10 端点，两接口共用本注册组：
+    /// 优惠券 7 + 限时抢购 3；路由族 <c>/product/coupon/*</c>、<c>/product/limiteddiscount/*</c>）。
+    /// </summary>
+    /// <remarks>
+    /// <para><b>读写两侧不同型</b>：请求侧时间戳 / 数值枚举，响应侧字符串时间与
+    /// <c>PROMOTE_TYPE_*</c> / <c>COUPON_VALID_TYPE_*</c> 符号串 ⇒ 两侧 DTO 分开。</para>
+    /// <para><b>官方两页 <c>valid_type</c> 冲突</b>：create 页 1/2、update 页 0/1；
+    /// update 页参数表与示例均未列 <c>coupon_id</c>，SDK 补齐定位键并留档。</para>
+    /// <para><b>限时抢购归档在 <c>API/spu/</c> 但路由独立</b>；任务状态完整值域官方未发布，
+    /// 只有 update_status 明示 1 结束 / 9 删除。</para>
+    /// <para><b>敏感面</b>：<c>openid</c> 与用户券明细一律禁入日志、遥测与异常消息。</para>
+    /// </remarks>
+    ProductCoupon,
+
+    /// <summary>
+    /// 微信小程序「基础交易工具（原标准版交易组件 V1）」·装修与素材域（10 端点，三接口共用本注册组：
+    /// 装修服务 6 + 图片上传 1（双请求形态）+ 管理二维码 3；路由族 <c>/product/decoration/*</c>、
+    /// <c>/product/img/*</c>、<c>/product/qrcode/*</c>）。
+    /// </summary>
+    /// <remarks>
+    /// <para><b>装修启停两段式</b>：<c>decoration_service</c> 返回成功仅表示已向管理员下发确认，
+    /// 生效须轮询 <c>check_status</c>；压测每小商店每月 4 次配额。</para>
+    /// <para><b>图片上传同路由双形态</b>：<c>upload_type=0</c> multipart、<c>=1</c> JSON；
+    /// <c>resp_type</c> 决定返回类型与大小上限（2MB / 10MB）。</para>
+    /// <para><b>二维码图片为 base64</b>；官方 check 页枚举表头重复、三页回包示例含中文弯引号，
+    /// 均按参数表建模并留档。</para>
+    /// </remarks>
+    ProductMedia,
+
+    /// <summary>
+    /// 微信小游戏·米大师虚拟支付域（8 端点，单接口：正式环境 4 + 沙箱环境 4；
+    /// 路由族 <c>/cgi-bin/midas/*</c>、<c>/cgi-bin/midas/sandbox/*</c>）。
+    /// </summary>
+    /// <remarks>
+    /// <para><b>只承载 HTTPS 调用面</b>：官方同页另有云调用 <c>openapi.midas.*</c>，不在 SDK 范围。</para>
+    /// <para><b><c>sig</c> 不代算</b>：HMAC-SHA256（全部参数 + uri + 米大师密钥）由调用方完成，
+    /// SDK 只透传；密钥与签名原文一律禁入日志。</para>
+    /// <para><b>幂等依赖 <c>bill_no</c></b>：扣币系统失败须用相同订单号重试；沙箱与正式环境数据隔离。</para>
+    /// </remarks>
+    Midas,
+
+    /// <summary>
+    /// 城市服务域（5 端点，两接口共用本注册组：适老化医疗 2 + 基础能力 3；
+    /// 路由族 <c>/cityservice/*</c>）。
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>人脸核身三端点不落地</b>：<c>/cityservice/face/identify/{getimage,getinfo,getuseridkey}</c>
+    /// 官方文档无现行页（旧页已下架），由零声明守卫登记；现役人脸核身面在
+    /// <see cref="FaceVerify"/>（<c>getverifyid</c> / <c>queryverifyinfo</c>）。
+    /// </para>
+    /// <para><b>业务准入</b>：面向公立医院与卫健委等城市服务合作方，须完成行业资质报备。</para>
+    /// <para>
+    /// <b>敏感面</b>：<c>open_id</c>、医保授权码、密文姓名、就诊人信息与订单标识
+    /// 一律禁入日志、遥测与异常消息。
+    /// </para>
+    /// </remarks>
+    CityService,
+
+    /// <summary>
+    /// 行业能力域（5 端点，两接口共用本注册组：B2b 门店助手 3 + WMPF 硬件框架 2；
+    /// 路由族 <c>/wxa/business/{batchcreateretail,getretailinfo,retailnotifybusiness}</c>、
+    /// <c>/wxa/business/runtime/{adddevice,pushappmsg}</c>）。
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>令牌归属不统一</b>：B2b 族使用小程序 <c>access_token</c>；
+    /// WMPF <c>adddevice</c> 必须使用移动应用（LauncherAPP）令牌，<c>pushappmsg</c> 两者皆可
+    /// （官方原文）⇒ 由宿主应用配置保证，SDK 不校验归属。
+    /// </para>
+    /// <para>
+    /// <b><c>/wxa/business/applyliveinfo</c> 不在本域</b>：该页官方明写仅支持「第三方平台」以
+    /// <c>authorizer_access_token</c> 代调用、其他账号类型不可调用 ⇒ 属开放平台线
+    /// <c>MiniProgramManage</c> 注册组（守卫 NC2 锁定本线零声明）。
+    /// </para>
+    /// <para>
+    /// <b>官方文档树两处</b>：B2b 页在 <c>miniprogram/dev/server/API/B2b/</c>、
+    /// WMPF 页在 <c>doc/oplatform/Miniprogram_Frame/</c>。
+    /// </para>
+    /// <para>
+    /// <b>敏感面</b>：手机号、统一社会信用代码、法人 / 负责人姓名、<c>openid</c>、<c>push_token</c>
+    /// 与推送消息体一律禁入日志、遥测与异常消息。
+    /// </para>
+    /// </remarks>
+    BusinessCapability,
 }

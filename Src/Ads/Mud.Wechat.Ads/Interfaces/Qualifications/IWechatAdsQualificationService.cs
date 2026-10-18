@@ -11,14 +11,14 @@ using Mud.Wechat.Ads.DataModels.Qualifications;
 namespace Mud.Wechat.Ads;
 
 /// <summary>
-/// 腾讯广告（Marketing API v3.0）「客户资质」域 SDK（<c>qualifications</c>，3 端点）。
+/// 腾讯广告（Marketing API v3.0）「客户资质」域 SDK（<c>qualifications</c>，4 端点）。
 /// </summary>
 /// <remarks>
-/// <para><b>官方文档</b>（逐页核验 2026-10-17）：获取客户资质
+/// <para><b>官方文档</b>（逐页核验 2026-10-17 / 2026-10-18）：获取客户资质
 /// <see href="https://developers.e.qq.com/v3.0/docs/api/qualifications/get"/>、创建客户资质
 /// <see href="https://developers.e.qq.com/v3.0/docs/api/qualifications/add"/>、更新客户资质
-/// <see href="https://developers.e.qq.com/v3.0/docs/api/qualifications/update"/>。
-/// 官方 v3.0 目录树另有 <c>qualifications/delete</c>（删除客户资质，本 SDK 暂未消费，随需求增补）。</para>
+/// <see href="https://developers.e.qq.com/v3.0/docs/api/qualifications/update"/>、删除客户资质
+/// <see href="https://developers.e.qq.com/v3.0/docs/api/qualifications/delete"/>。</para>
 /// <para><b>所属权限</b>（三页「所属权限」均为官方原文 <c>account_management</c>）。
 /// 权限不足由应答 <c>code</c> 表达，SDK 不做本地权限预判。</para>
 /// <para><b>无 <c>[Token]</c>、无 <c>user_token</c></b>（守卫 ADS-B1 / ADS-B5）：全局参数
@@ -98,5 +98,28 @@ public interface IWechatAdsQualificationService
     [Post("/v3.0/qualifications/update")]
     Task<AdsQualificationUpdateResponse> UpdateAsync(
         AdsQualificationUpdateRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 删除客户资质。
+    /// 官方文档：<see href="https://developers.e.qq.com/v3.0/docs/api/qualifications/delete"/>。
+    /// </summary>
+    /// <param name="request">请求体（必填 <c>account_id</c> / <c>qualification_type</c>；
+    /// <c>qualification_id</c> 删单个、<c>qualification_id_list</c> 批量删，两者官方均标选填），
+    /// 见 <see cref="AdsQualificationDeleteRequest"/>。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/> 取消操作令牌对象。</param>
+    /// <returns>被删除的资质 id / id 列表，见 <see cref="AdsQualificationDeleteResponse"/>。</returns>
+    /// <remarks>
+    /// <para><b>官方契约</b>：<b>POST</b> <c>/v3.0/qualifications/delete</c>，<c>Content-Type: application/json</c>；
+    /// 所属权限 <c>account_management</c>（与 get / add / update 同权限）。</para>
+    /// <para><b>动词是 POST 而非 DELETE</b>：资源段 <c>qualifications</c> + 动作段 <c>delete</c> ⇒
+    /// 不要按 REST 直觉改成 <c>DELETE /v3.0/qualifications</c>。</para>
+    /// <para><b>两个删除入口</b>：<c>qualification_id</c>（单个）与 <c>qualification_id_list</c>（批量）
+    /// 官方参数表均标选填、未印互斥约束 ⇒ SDK 不本地拦截，错误组合由应答 <c>code</c> 表达。</para>
+    /// <para><b>无 <c>user_token</c></b>：本页与 get / add / update 三页一致，没有「特定请求参数」表。</para>
+    /// </remarks>
+    [Post("/v3.0/qualifications/delete")]
+    Task<AdsQualificationDeleteResponse> DeleteAsync(
+        AdsQualificationDeleteRequest request,
         CancellationToken cancellationToken = default);
 }

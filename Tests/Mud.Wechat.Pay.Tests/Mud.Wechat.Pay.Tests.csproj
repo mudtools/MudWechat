@@ -16,6 +16,9 @@
 		<ProjectReference Include="..\..\Src\Pay\Mud.Wechat.Pay\Mud.Wechat.Pay.csproj" />
 		<ProjectReference Include="..\..\Src\Pay\Mud.Wechat.Pay.Abstractions\Mud.Wechat.Pay.Abstractions.csproj" />
 		<ProjectReference Include="..\..\Src\Pay\Mud.Wechat.Pay.DataModels\Mud.Wechat.Pay.DataModels.csproj" />
+		<!-- APIv2 线（XML + MD5/HMAC-SHA256 + mutual TLS）：基础支付域守卫。 -->
+		<ProjectReference Include="..\..\Src\Pay\Mud.Wechat.Pay.V2\Mud.Wechat.Pay.V2.csproj" />
+		<ProjectReference Include="..\..\Src\Pay\Mud.Wechat.Pay.V2.DataModels\Mud.Wechat.Pay.V2.DataModels.csproj" />
 	</ItemGroup>
 
 

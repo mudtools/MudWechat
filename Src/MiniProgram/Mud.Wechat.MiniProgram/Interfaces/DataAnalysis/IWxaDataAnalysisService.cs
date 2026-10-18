@@ -8,7 +8,7 @@
 namespace Mud.Wechat.MiniProgram;
 
 /// <summary>
-/// 微信小程序「数据分析」域 SDK（11 端点：访问趋势 3 + 访问留存 3 + 用户画像 1 + 访问分布 1 + 访问页面 1 + 概况 1 + 性能 1）。
+/// 微信小程序「数据分析」域 SDK（12 端点：访问趋势 3 + 访问留存 3 + 用户画像 1 + 访问分布 1 + 访问页面 1 + 概况 1 + 性能 1 + 小游戏数据 1）。
 /// </summary>
 /// <remarks>
 /// <para>
@@ -16,7 +16,8 @@ namespace Mud.Wechat.MiniProgram;
 /// <see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/data-analysis/visit-trend/api_getdailyvisittrend"/>、<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/data-analysis/visit-retain/api_getdailyretain"/>、
 /// <see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/data-analysis/others/api_getuserportrait"/>、<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/data-analysis/others/api_getvisitdistribution"/>、
 /// <see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/data-analysis/others/api_getvisitpage"/>（weekly / monthly 为同级页面，路径仅周期词不同）、
-/// <see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/data-analysis/others/api_getdailysummary"/>、<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/data-analysis/others/api_getperformancedata"/>。
+/// <see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/data-analysis/others/api_getdailysummary"/>、<see href="https://developers.weixin.qq.com/miniprogram/dev/server/API/data-analysis/others/api_getperformancedata"/>；
+/// 小游戏数据 <see href="https://developers.weixin.qq.com/minigame/dev/api-backend/data-analysis/api_analysis.getgameanalysisdata.html"/>（独立 minigame 文档树，2026-10-18 核验）。
 /// </para>
 /// <para>
 /// <b>域级约束（逐页核验，勿弱化）</b>：
@@ -123,7 +124,7 @@ public interface IWxaDataAnalysisService
     /// <b>限定为 0 / 6 / 29</b>（对应最近 <b>1 / 7 / 30</b> 天），最大值为昨日。</para>
     /// <para><b><c>ref_date</c> 为区间串</b>（如 <c>"20170611-20170617"</c>），非单日。</para>
     /// <para><b>官方文档不一致（照录）</b>：字段表对六类数组统一列出 <c>id</c>/<c>name</c>/<c>value</c>，
-    /// 但返回示例中 <c>devices</c> 元素<b>仅有</c> <c>name</c>/<c>value</c> ⇒ 本线把 <see cref="WxaPortraitItem.Id"/> 建模为可空，
+    /// 但返回示例中 <c>devices</c> 元素<b>仅有</b> <c>name</c>/<c>value</c> ⇒ 本线把 <c>WxaPortraitItem.Id</c> 建模为可空，
     /// <b>不以示例覆盖字段表</b>，也不做本地补齐。</para>
     /// </remarks>
     [Post("/datacube/getweanalysisappiduserportrait")]
@@ -195,5 +196,24 @@ public interface IWxaDataAnalysisService
     [Post("/wxa/business/performance/boot")]
     Task<WxaPerformanceBootResponse> GetPerformanceBootDataAsync(
         [Body] WxaPerformanceBootRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 获取小游戏数据分析数据。官方文档：<see href="https://developers.weixin.qq.com/minigame/dev/api-backend/data-analysis/api_analysis.getgameanalysisdata.html"/>。
+    /// </summary>
+    /// <param name="request">指标、粒度、时间范围与维度，见 <see cref="WxaGameAnalysisRequest"/>。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/>取消操作令牌对象。</param>
+    /// <returns>指标数据列表（<c>data_list</c>），见 <see cref="WxaGameAnalysisResponse"/>。</returns>
+    /// <remarks>
+    /// <para>官方契约：<b>POST</b> <c>/datacube/getgameanalysisdata</c> ＋ JSON 请求体；Query 携带 <c>access_token</c>。</para>
+    /// <para><b>适用范围</b>：<b>小游戏 ✔ / 小程序 ✘</b>（本域唯一只面向小游戏的端点；其余端点两者通用）。
+    /// 官方文档位于 <c>/minigame/dev/api-backend/</c> 文档树。</para>
+    /// <para><b>指标与维度不可本地枚举</b>：<c>metric</c> / <c>filter_list[].dimension</c> / <c>group_list[]</c>
+    /// 的合法取值由官方「小游戏数据指标」表定义且随官方扩展 ⇒ SDK 不校验、不拦截，非法值由官方错误码表达。</para>
+    /// <para><b>时间戳是秒级 Unix 时间</b>（官方示例为 10 位），与本域日期字符串端点（<c>yyyymmdd</c>）不同形，勿混用。</para>
+    /// </remarks>
+    [Post("/datacube/getgameanalysisdata")]
+    Task<WxaGameAnalysisResponse> GetGameAnalysisDataAsync(
+        [Body] WxaGameAnalysisRequest request,
         CancellationToken cancellationToken = default);
 }

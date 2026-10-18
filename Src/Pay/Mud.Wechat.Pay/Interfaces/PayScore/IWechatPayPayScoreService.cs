@@ -5,6 +5,7 @@
 //  不得利用本项目从事危害国家安全、扰乱社会秩序、侵犯他人合法权益等法律法规禁止的活动！任何基于本项目开发而产生的一切法律纠纷和责任，我们不承担任何责任！
 // -----------------------------------------------------------------------
 
+using Mud.Wechat.Pay.DataModels.Bill;
 using Mud.Wechat.Pay.DataModels.PayScore;
 
 namespace Mud.Wechat.Pay;
@@ -21,9 +22,14 @@ namespace Mud.Wechat.Pay;
 /// 三页均标注支持商户：<b>普通商户</b>。
 /// </para>
 /// <para>
-/// <b>✅ 本域现已 11 端点</b>（原「尚未覆盖」清单已随增量关闭）：创建订单 · 查询订单 · 取消订单 ·
-/// <b>完结服务订单</b> · <b>修改订单金额</b> · <b>订单收款</b> · <b>同步订单</b> ·
-/// <b>商户预授权</b> · <b>查询用户授权记录</b> · <b>查询用户授权状态</b> · <b>解除授权</b>。
+/// <b>✅ 本域现已 23 端点</b>，按功能族分组：
+/// <b>服务订单 7</b>（创建 · 查询 · 取消 · 完结 · 修改金额 · 发起催收扣款 · 同步状态）、
+/// <b>授权面 6</b>（商户预授权 · 查询授权记录（协议号）· 查询授权记录（OPENID）· 评估用户风险等级 ·
+/// 解除授权（协议号）· 解除授权（OPENID）），
+/// <b>消息提醒 2</b>（下发待处理消息 · 下发预扣费消息）、
+/// <b>支付分计划 3</b>（创建 · 查询 · 终止）、
+/// <b>签约计划 4</b>（创建用户签约计划 · 查询用户签约计划 · 解除用户签约计划 ·
+/// 基于签约计划创建服务订单）、<b>商户账单 1</b>。
 /// </para>
 /// <para>
 /// <b>⚠️ 唯一刻意不建模的是「创单结单合并」</b>
@@ -279,5 +285,237 @@ public interface IWechatPayPayScoreService
         [Path] string openId,
         [Query("service_id")] string serviceId,
         [Query("appid")] string appId,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 获取支付分商户账单。
+    /// 官方文档：<see href="https://pay.weixin.qq.com/wiki/doc/apiv3/apis/chapter6_1_29.shtml"/>
+    /// （2026-10-18 逐字段核验；支持商户：【普通商户】）。
+    /// </summary>
+    /// <param name="billDate">账单日期（Query <c>bill_date</c>，必填 string(10)，格式 <c>YYYYMMDDHH</c>，仅支持三个月内）。</param>
+    /// <param name="serviceId">支付分服务 ID（Query <c>service_id</c>，必填 string(32)）。</param>
+    /// <param name="tarType">压缩类型（Query <c>tar_type</c>，必填 string）：仅 <c>GZIP</c>。</param>
+    /// <param name="encryptionAlgorithm">加密算法（Query <c>encryption_algorithm</c>，必填 string）：固定 <c>AEAD_AES_256_GCM</c>。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/> 取消操作令牌对象。</param>
+    /// <returns><b>分片列表</b>（<c>download_bill_count</c> + <c>download_bill_list[]</c>），见 <see cref="BillDownloadInfoListResponse"/>。</returns>
+    /// <remarks>
+    /// <para><b>官方契约</b>：<b>GET</b> <c>/v3/payscore/merchant-bill</c>；必带 <c>Accept: application/json</c>。</para>
+    /// <para><b>⚠️ 账单日期是小时粒度</b>：<c>bill_date</c> 格式为 <c>YYYYMMDDHH</c>（10 位，含小时），
+    /// 与本线账单域的 <c>yyyy-MM-DD</c> 不同形，勿照搬。</para>
+    /// <para><b>四个 query 全部必填</b>（<c>tar_type</c> 与 <c>encryption_algorithm</c> 也不例外）——
+    /// 这是官方参数表的原文口径，与「压缩 / 算法通常选填」的直觉相反。</para>
+    /// <para><b>应答是加密的分片列表</b>：每个 <c>download_url</c> 5 分钟内有效且只可下载一次；
+    /// 分片须按 <c>bill_sequence</c> 升序、用 <c>encrypt_key</c> + <c>nonce</c> 逐片解密后合并，
+    /// 并用 <c>hash_value</c>（SHA1）校验完整性。<c>encrypt_key</c> / <c>nonce</c> 不得写入日志、遥测或异常消息。</para>
+    /// <para><b>应答 DTO 与账单域共用</b>：官方本页与「服务商查询子商户资金账单」的应答字段表逐项一致
+    /// ⇒ 复用 <see cref="BillDownloadInfoListResponse"/>（同表共用、表不同才分建）。</para>
+    /// </remarks>
+    [Get("/v3/payscore/merchant-bill")]
+    Task<BillDownloadInfoListResponse> GetMerchantBillAsync(
+        [Query("bill_date")] string billDate,
+        [Query("service_id")] string serviceId,
+        [Query("tar_type")] string tarType,
+        [Query("encryption_algorithm")] string encryptionAlgorithm,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 评估用户风险等级。
+    /// 官方文档：<see href="https://pay.weixin.qq.com/doc/v3/merchant/4012856611"/>
+    /// （2026-10-18 逐字段核验；支持商户：【普通商户】）。
+    /// </summary>
+    /// <param name="request">评估请求体，见 <see cref="PayScoreRiskAssessRequest"/>。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/> 取消操作令牌对象。</param>
+    /// <returns>授权记录 + 用户风险分层，见 <see cref="PayScoreRiskAssessResponse"/>。</returns>
+    /// <remarks>
+    /// <para><b>官方契约</b>：<b>POST</b> <c>/v3/payscore/permissions/assess-user-risk-level</c>；无 path / query 参数。</para>
+    /// <para><b>定位用户的两个入参至少传一个</b>：<c>authorization_code</c> 或 <c>openid</c>
+    /// （官方两者均标选填，但都缺失时无法评估）。</para>
+    /// <para><b>风控结果跨版本不可比</b>：<c>user_risk_level</c> 须与同一 <c>risk_level_version</c> 下的服务额度配合使用。</para>
+    /// </remarks>
+    [Post("/v3/payscore/permissions/assess-user-risk-level")]
+    Task<PayScoreRiskAssessResponse> AssessUserRiskLevelAsync(
+        [Body] PayScoreRiskAssessRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 解除用户授权（OPENID）。
+    /// 官方文档：<see href="https://pay.weixin.qq.com/doc/v3/merchant/4012647413"/>
+    /// （2026-10-18 逐字段核验；支持商户：【普通商户】）。
+    /// </summary>
+    /// <param name="openId">用户标识（官方 path <c>openid</c>，必填 string(128)）。</param>
+    /// <param name="request">解除请求体（<c>service_id</c> / <c>appid</c> / <c>reason</c> 均必填），见 <see cref="PayScoreTerminateByOpenIdRequest"/>。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/> 取消操作令牌对象。</param>
+    /// <remarks>
+    /// <para><b>官方契约</b>：<b>POST</b> <c>/v3/payscore/permissions/openid/{openid}/terminate</c>；<b>无应答包体</b>（204）⇒ 返回 <see cref="Task"/>。</para>
+    /// <para><b>与「按协议号解除」不同</b>：本支请求体<b>必填 <c>appid</c></b>，而协议号版没有 <c>appid</c> 字段。</para>
+    /// </remarks>
+    [Post("/v3/payscore/permissions/openid/{openId}/terminate")]
+    Task TerminateAuthorizationByOpenIdAsync(
+        [Path] string openId,
+        [Body] PayScoreTerminateByOpenIdRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 创建支付分计划。
+    /// 官方文档：<see href="https://pay.weixin.qq.com/doc/v3/merchant/4012467232"/>
+    /// （2026-10-18 逐字段核验；支持商户：【普通商户】）。
+    /// </summary>
+    /// <param name="request">创计划请求体，见 <see cref="PayScoreCreatePlanRequest"/>。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/> 取消操作令牌对象。</param>
+    /// <returns>创建后的计划（与查询/终止同一张计划表），见 <see cref="PayScorePlanResponse"/>。</returns>
+    /// <remarks>
+    /// <para><b>官方契约</b>：<b>POST</b> <c>/v3/payscore/plan/payscore-plans</c>；无 path / query 参数。</para>
+    /// <para><b>四条一致性校验</b>：扣费次数 = 明细条数；明细实付依序不递增；每条原价 ≥ 实付；
+    /// 总原价/总实付 = 明细之和且总实付 ≠ 0。任一条不满足即 400。</para>
+    /// <para><b>明细序号由微信侧生成</b>：不能自报 <c>plan_detail_no</c>，后续使用须按从 1 开始的顺序。</para>
+    /// </remarks>
+    [Post("/v3/payscore/plan/payscore-plans")]
+    Task<PayScorePlanResponse> CreatePlanAsync(
+        [Body] PayScoreCreatePlanRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 查询支付分计划。
+    /// 官方文档：<see href="https://pay.weixin.qq.com/doc/v3/merchant/4012470804"/>
+    /// （2026-10-18 逐字段核验；支持商户：【普通商户】）。
+    /// </summary>
+    /// <param name="merchantPlanNo">商户侧计划号（官方 path <c>merchant_plan_no</c>，必填 string(32)）。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/> 取消操作令牌对象。</param>
+    /// <returns>计划详情，见 <see cref="PayScorePlanResponse"/>。</returns>
+    /// <remarks>
+    /// <b>官方契约</b>：<b>GET</b> <c>/v3/payscore/plan/payscore-plans/merchant-plan-no/{merchant_plan_no}</c>；
+    /// 定位键是<b>商户侧计划号</b>而非 <c>plan_id</c>，且无 query 参数。
+    /// </remarks>
+    [Get("/v3/payscore/plan/payscore-plans/merchant-plan-no/{merchantPlanNo}")]
+    Task<PayScorePlanResponse> QueryPlanAsync(
+        [Path] string merchantPlanNo,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 终止支付分计划。
+    /// 官方文档：<see href="https://pay.weixin.qq.com/doc/v3/merchant/4012470851"/>
+    /// （2026-10-18 逐字段核验；支持商户：【普通商户】）。
+    /// </summary>
+    /// <param name="merchantPlanNo">商户侧计划号（官方 path <c>merchant_plan_no</c>，必填 string(32)）。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/> 取消操作令牌对象。</param>
+    /// <returns>终止后的计划（<c>plan_state = STOP</c>），见 <see cref="PayScorePlanResponse"/>。</returns>
+    /// <remarks>
+    /// <para><b>官方契约</b>：<b>POST</b> <c>/v3/payscore/plan/payscore-plans/merchant-plan-no/{merchant_plan_no}/stop</c>；
+    /// <b>无请求体</b>、无 query ⇒ 方法只有 path 参数（刻意不造空请求体 DTO）。</para>
+    /// <para><b>终态语义</b>：<c>STOP</c> 只表示停止新签约，<b>已签约</b>的用户仍可继续履约。</para>
+    /// </remarks>
+    [Post("/v3/payscore/plan/payscore-plans/merchant-plan-no/{merchantPlanNo}/stop")]
+    Task<PayScorePlanResponse> StopPlanAsync(
+        [Path] string merchantPlanNo,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 下发服务费用待处理消息。
+    /// 官方文档：<see href="https://pay.weixin.qq.com/doc/v3/merchant/4013394606"/>
+    /// （2026-10-18 逐字段核验；支持商户：【普通商户】）。
+    /// </summary>
+    /// <param name="outOrderNo">商户服务订单号（官方 path <c>out_order_no</c>，必填 string(32)）。</param>
+    /// <param name="request">消息请求体，见 <see cref="PayScoreMessageRequest"/>。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/> 取消操作令牌对象。</param>
+    /// <remarks>
+    /// <para><b>官方契约</b>：<b>POST</b> <c>/v3/payscore/serviceorder/{out_order_no}/send-pendingmessage</c>；
+    /// <b>无应答包体</b>（204）⇒ 返回 <see cref="Task"/>。</para>
+    /// <para><b><c>prepaid_time</c> 是 8 位 <c>YYYYMMDD</c></b> 且须 ≥ 调接口时间 + 7 天 —— 与 <c>time_range</c> 的 14 位格式不同。</para>
+    /// </remarks>
+    [Post("/v3/payscore/serviceorder/{outOrderNo}/send-pendingmessage")]
+    Task SendPendingMessageAsync(
+        [Path] string outOrderNo,
+        [Body] PayScoreMessageRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 下发服务预扣费消息。
+    /// 官方文档：<see href="https://pay.weixin.qq.com/doc/v3/merchant/4013394615"/>
+    /// （2026-10-18 逐字段核验；支持商户：【普通商户】）。
+    /// </summary>
+    /// <param name="outOrderNo">商户服务订单号（官方 path <c>out_order_no</c>，必填 string(32)）。</param>
+    /// <param name="request">消息请求体，见 <see cref="PayScoreMessageRequest"/>。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/> 取消操作令牌对象。</param>
+    /// <remarks>
+    /// <para><b>官方契约</b>：<b>POST</b> <c>/v3/payscore/serviceorder/{out_order_no}/send-prepaidmessage</c>；
+    /// <b>无应答包体</b>（204）⇒ 返回 <see cref="Task"/>。</para>
+    /// <para><b>与待处理消息共用请求类型</b>：官方两页 path + body 参数表逐项一致 ⇒ 同一 DTO。</para>
+    /// </remarks>
+    [Post("/v3/payscore/serviceorder/{outOrderNo}/send-prepaidmessage")]
+    Task SendPrepaidMessageAsync(
+        [Path] string outOrderNo,
+        [Body] PayScoreMessageRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 基于签约计划创建支付分服务订单。
+    /// 官方文档：<see href="https://pay.weixin.qq.com/doc/v3/merchant/4012489351"/>
+    /// （2026-10-18 逐字段核验；支持商户：【普通商户】）。
+    /// </summary>
+    /// <param name="request">创单请求体，见 <see cref="PayScoreSignPlanServiceOrderRequest"/>。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/> 取消操作令牌对象。</param>
+    /// <returns>订单表子集（金额字段由签约计划详情派生），见 <see cref="PayScoreSignPlanServiceOrderResponse"/>。</returns>
+    /// <remarks>
+    /// <para><b>官方契约</b>：<b>POST</b> <c>/v3/payscore/sign-plan/serviceorder</c>；无 path / query 参数。</para>
+    /// <para><b><c>out_trade_no</c> = 创建签约计划时的 <c>merchant_plan_detail_no</c></b>：传新单号会被拒；
+    /// 且不允许跳明细序号、同一时刻只允许一个在途订单。</para>
+    /// </remarks>
+    [Post("/v3/payscore/sign-plan/serviceorder")]
+    Task<PayScoreSignPlanServiceOrderResponse> CreateSignPlanServiceOrderAsync(
+        [Body] PayScoreSignPlanServiceOrderRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 创建用户签约计划。
+    /// 官方文档：<see href="https://pay.weixin.qq.com/doc/v3/merchant/4012489420"/>
+    /// （2026-10-18 逐字段核验；支持商户：【普通商户】）。
+    /// </summary>
+    /// <param name="request">签约请求体，见 <see cref="PayScoreCreateUserSignPlanRequest"/>。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/> 取消操作令牌对象。</param>
+    /// <returns>包装形态 <c>{sign_plan, package}</c>，见 <see cref="PayScoreCreateUserSignPlanResponse"/>。</returns>
+    /// <remarks>
+    /// <para><b>官方契约</b>：<b>POST</b> <c>/v3/payscore/sign-plan/user-sign-plans</c>；无 path / query 参数。</para>
+    /// <para><b>本支是签约计划族唯一的包装应答</b>：查询与解除都把签约计划字段平铺在应答根。</para>
+    /// </remarks>
+    [Post("/v3/payscore/sign-plan/user-sign-plans")]
+    Task<PayScoreCreateUserSignPlanResponse> CreateUserSignPlanAsync(
+        [Body] PayScoreCreateUserSignPlanRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 查询用户签约计划。
+    /// 官方文档：<see href="https://pay.weixin.qq.com/doc/v3/merchant/4012470990"/>
+    /// （2026-10-18 逐字段核验；支持商户：【普通商户】）。
+    /// </summary>
+    /// <param name="merchantSignPlanNo">商户侧签约计划号（官方 path <c>merchant_sign_plan_no</c>，必填 string(32)）。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/> 取消操作令牌对象。</param>
+    /// <returns>平铺的签约计划表，见 <see cref="PayScoreSignPlan"/>。</returns>
+    /// <remarks>
+    /// <b>官方契约</b>：<b>GET</b> <c>/v3/payscore/sign-plan/user-sign-plans/merchant-sign-plan-no/{merchant_sign_plan_no}</c>；
+    /// 定位键是商户侧签约计划号而非 <c>sign_plan_id</c>。
+    /// </remarks>
+    [Get("/v3/payscore/sign-plan/user-sign-plans/merchant-sign-plan-no/{merchantSignPlanNo}")]
+    Task<PayScoreSignPlan> QueryUserSignPlanAsync(
+        [Path] string merchantSignPlanNo,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 解除用户签约计划。
+    /// 官方文档：<see href="https://pay.weixin.qq.com/doc/v3/merchant/4012471050"/>
+    /// （2026-10-18 逐字段核验；支持商户：【普通商户】）。
+    /// </summary>
+    /// <param name="merchantSignPlanNo">商户侧签约计划号（官方 path <c>merchant_sign_plan_no</c>，必填 string(32)）。</param>
+    /// <param name="request">解除请求体（必填 <c>stop_reason</c>），见 <see cref="PayScoreStopUserSignPlanRequest"/>。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/> 取消操作令牌对象。</param>
+    /// <returns>解除后的签约计划（平铺表），见 <see cref="PayScoreSignPlan"/>。</returns>
+    /// <remarks>
+    /// <para><b>官方契约</b>：<b>POST</b> <c>/v3/payscore/sign-plan/user-sign-plans/merchant-sign-plan-no/{merchant_sign_plan_no}/stop</c>；
+    /// 本页应答 <b>200 + 签约计划表</b>（不是 204，也不是空包体）。</para>
+    /// <para><b>与「终止支付分计划」的差异</b>：本端点必填 <c>stop_reason</c>；计划终止无请求体。</para>
+    /// </remarks>
+    [Post("/v3/payscore/sign-plan/user-sign-plans/merchant-sign-plan-no/{merchantSignPlanNo}/stop")]
+    Task<PayScoreSignPlan> StopUserSignPlanAsync(
+        [Path] string merchantSignPlanNo,
+        [Body] PayScoreStopUserSignPlanRequest request,
         CancellationToken cancellationToken = default);
 }

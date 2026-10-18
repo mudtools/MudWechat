@@ -319,6 +319,8 @@ public class WechatPayDomainContractGuards
         {
             "/v3/bill/tradebill",
             "/v3/bill/fundflowbill",
+            // 服务商/平台商户面：资金账单流按子商户号申请，应答为加密分片列表（与直连账单不同形）。
+            "/v3/bill/sub-merchant-fundflowbill",
         });
 
         RoutesOf(asm, "IWechatPayCertificatesService").Should().BeEquivalentTo(new[]
@@ -326,7 +328,8 @@ public class WechatPayDomainContractGuards
             "/v3/certificates",
         });
 
-        // P2 分账 7 端点：接收方入库 + 请求分账 + 查询 + 回退请求 + 回退查询 + 解冻剩余资金 + 查剩余待分金额。
+        // P2 分账 10 端点：接收方入库 + 请求分账 + 查询 + 回退请求 + 回退查询 + 解冻剩余资金 + 查剩余待分金额
+        // + 账单 + 删除接收方 + 商户配置（最大分账比例）。
         // ⚠️ 「回退单」是独立资源族（/v3/profitsharing/return-orders…），不是分账单的子资源（官方实测）。
         RoutesOf(asm, "IWechatPayProfitSharingService").Should().BeEquivalentTo(new[]
         {
@@ -339,9 +342,13 @@ public class WechatPayDomainContractGuards
             "/v3/profitsharing/transactions/{transactionId}/amounts",
             "/v3/profitsharing/bills",
             "/v3/profitsharing/receivers/delete",
+            // 服务商面商户配置（最大分账比例），sub_mchid 走 path。
+            "/v3/profitsharing/merchant-configs/{subMchId}",
         });
 
-        // P2 支付分 8 端点：服务订单 6（创建/查询/取消/完结/修改/催收扣款）+ 授权面 2（预授权/查授权记录）。
+        // 支付分 23 端点：服务订单 6（创建/查询/取消/完结/修改/催收扣款）+ 同步 1 + 授权面 4
+        //（预授权/查授权记录/按 OPENID 查/解除授权）+ 商户账单 1 + 2026-10-18 增量 11
+        //（风险评估 1 + 按 OPENID 解除授权 1 + 支付分计划 3 + 消息提醒 2 + 签约计划 4）。
         RoutesOf(asm, "IWechatPayPayScoreService").Should().BeEquivalentTo(new[]
         {
             "/v3/payscore/serviceorder",
@@ -355,6 +362,20 @@ public class WechatPayDomainContractGuards
             "/v3/payscore/serviceorder/{outOrderNo}/sync",
             "/v3/payscore/permissions/authorization-code/{authorizationCode}/terminate",
             "/v3/payscore/permissions/openid/{openId}",
+            // 支付分商户账单：普通商户面，bill_date 精确到小时（与账单域的日粒度不同形）。
+            "/v3/payscore/merchant-bill",
+            // 2026-10-18 增量。
+            "/v3/payscore/permissions/assess-user-risk-level",
+            "/v3/payscore/permissions/openid/{openId}/terminate",
+            "/v3/payscore/plan/payscore-plans",
+            "/v3/payscore/plan/payscore-plans/merchant-plan-no/{merchantPlanNo}",
+            "/v3/payscore/plan/payscore-plans/merchant-plan-no/{merchantPlanNo}/stop",
+            "/v3/payscore/serviceorder/{outOrderNo}/send-pendingmessage",
+            "/v3/payscore/serviceorder/{outOrderNo}/send-prepaidmessage",
+            "/v3/payscore/sign-plan/serviceorder",
+            "/v3/payscore/sign-plan/user-sign-plans",
+            "/v3/payscore/sign-plan/user-sign-plans/merchant-sign-plan-no/{merchantSignPlanNo}",
+            "/v3/payscore/sign-plan/user-sign-plans/merchant-sign-plan-no/{merchantSignPlanNo}/stop",
         });
 
         // P2 合单支付 6 端点（本域按**服务商面**建模）：四个下单场景 + 关单 + 查询。
@@ -369,8 +390,9 @@ public class WechatPayDomainContractGuards
             "/v3/combine-transactions/out-trade-no/{combineOutTradeNo}",
         });
 
-        // P2 商家转账 10 端点：发起 + 两查询 + 撤销 + 两电子回单查询（两组各自共用应答 DTO）
-        // + P1-2-A 增量 4（elecsign 申请两支 / pre-transfer-with-authorization / transfer）。
+        // P2 商家转账 19 端点：新版 10（发起 + 两查询 + 撤销 + 两电子回单查询
+        // + P1-2-A 增量 4：elecsign 申请两支 / pre-transfer-with-authorization / transfer）
+        // + 旧版批次 9（创建 / 两维批次查询 / 两维明细查询 / 批次回单申请+查询 / 明细回单申请+查询）。
         // ⚠️ 撤销走的是**普通商户**面路由；服务商侧的 /partner/ 变体属另一套文档，不得混入。
         RoutesOf(asm, "IWechatPayTransferService").Should().BeEquivalentTo(new[]
         {
@@ -384,6 +406,16 @@ public class WechatPayDomainContractGuards
             "/v3/fund-app/mch-transfer/elecsign/transfer-bill-no",
             "/v3/fund-app/mch-transfer/transfer-bills/pre-transfer-with-authorization",
             "/v3/fund-app/mch-transfer/transfer-bills/transfer",
+            // 旧版批次转账 9 端点（另一套 /v3/transfer/** 产品面，批次状态 4 值，与新版状态枚举不混用）。
+            "/v3/transfer/batches",
+            "/v3/transfer/batches/batch-id/{batchId}",
+            "/v3/transfer/batches/out-batch-no/{outBatchNo}",
+            "/v3/transfer/batches/batch-id/{batchId}/details/detail-id/{detailId}",
+            "/v3/transfer/batches/out-batch-no/{outBatchNo}/details/out-detail-no/{outDetailNo}",
+            "/v3/transfer/bill-receipt",
+            "/v3/transfer/bill-receipt/{outBatchNo}",
+            "/v3/transfer-detail/electronic-receipts",
+            "/v3/transfer-detail/electronic-receipts",
         });
 
         // P2 电子发票 5 端点（普通商户面）：开具 + 查询 + 冲红 + 获取下载信息 + 插入卡包。
@@ -616,10 +648,14 @@ public class WechatPayDomainContractGuards
 
         // P0-7 商户账户余额 2 端点：裁决守卫 C1 由「零 /v3/merchant/fund」收窄为
         // 「零 /v3/merchant/fund/withdraw」后落地的两支（官方标注支持商户【普通服务商】）。
+        // + 2026-10-18 收入业务单 2 端点：⚠️ 前缀是 /v3/merchantfund/（merchant 与 fund **无斜杠**），
+        //   与余额面 /v3/merchant/fund/ 是两个前缀；商户维度与服商维度应答表首字段不同（mchid vs sub_mchid）⇒ 两型。
         RoutesOf(asm, "IWechatPayMerchantFundService").Should().BeEquivalentTo(new[]
         {
             "/v3/merchant/fund/balance/{accountType}",
             "/v3/merchant/fund/dayendbalance/{accountType}",
+            "/v3/merchantfund/merchant/income-records",
+            "/v3/merchantfund/partner/income-records",
         });
 
         // P0-7 商户结算规则申请 2 端点：从业机构面（创建 + 按 application_id 查），两支应答表相同 ⇒ 共用应答。

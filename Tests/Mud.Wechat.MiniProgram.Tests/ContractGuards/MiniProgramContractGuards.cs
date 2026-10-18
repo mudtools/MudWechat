@@ -39,7 +39,7 @@ public class MiniProgramContractGuards
             .Concat(ManualChannelRoutes())
             .ToArray();
 
-        mpRoutes.Should().NotBeEmpty("小程序线路由非空（392 特性路由 + 6 手工通道路由）");
+        mpRoutes.Should().NotBeEmpty("小程序线路由非空（582 特性路由 + 6 手工通道路由）");
 
         var overlap = mpRoutes.Intersect(oaRoutes, StringComparer.Ordinal).ToArray();
         overlap.Should().BeEmpty(
@@ -80,7 +80,7 @@ public class MiniProgramContractGuards
             .Where(static t => t.GetCustomAttributes(false).Any(static a => a.GetType().Name == "TokenAttribute"))
             .ToArray();
 
-        tokenInterfaces.Should().HaveCount(60,
+        tokenInterfaces.Should().HaveCount(105,
             "带令牌接口 = Auth / QrCodeLink / Security / DataAnalysis / SubscribeMessage / DynamicMessage / Kf / " +
             "HardwareDevice / Operation / Plugin / Charge / NearbyPoi / Search / Soter / ServiceMarket / " +
             "RedPacketCover / Student / FaceVerify / LaborUse / ExpressBusiness / ExpressDelivery / ExpressIntracity / " +
@@ -107,7 +107,12 @@ public class MiniProgramContractGuards
             "权限集 49（wxpay 两支 49、102；/wxa/* 两支 18），全域仍是 Query access_token（见守卫 TCB3 / CBZ2）；" +
             "Game 为 2026-10-15 P1-8 收口批补上接口级 [Token] 的第 60 支 —— 首批落地时本域接口<b>没有</b>令牌声明" +
             "（20 端点全部无 access_token 即官方 40001），同批补齐的还有 8 支端点的宿主计算签名 [Query] 参数面" +
-            "（signature / sig_method / pay_sig 落方法级 [Query] 而非 [Token]，见守卫 GM3 / GM6））");
+            "（signature / sig_method / pay_sig 落方法级 [Query] 而非 [Token]，见守卫 GM3 / GM6）；" +
+            "2026-10-18 交易组件 / 联盟 / 城市服务 / 米大师批次新增 45 支带令牌接口：" +
+            "ProductCatalog 8 / ShopAccount 7 / ShopOrder 4 / ShopFunds 3 / ShopAfterSale 3 / ProductSku 3 / " +
+            "ProductMedia 3 / ShopCoupon 2 / ProductOrder 2 / ProductCoupon 2 / CityService 2 / BusinessCapability 2 / " +
+            "ShopSpu 1 / ShopSharer 1 / ProductFunds 1 / Midas 1，全域 Query access_token（权限集空缺留档）；" +
+            "联盟推广者 LeaguePromoter 22 支为第三方推广者面、判非契约零声明（见 WxaLeaguePromoterContractGuards））");
 
         foreach (var iface in tokenInterfaces)
         {
@@ -185,7 +190,7 @@ public class MiniProgramContractGuards
     }
 
     /// <summary>
-    /// MP-X5：<b>端点计数 398</b> + 逐域路由表 + 字段名照官方原文（<c>session_key</c> / <c>js_code</c> /
+    /// MP-X5：<b>端点计数 588</b> + 逐域路由表 + 字段名照官方原文（<c>session_key</c> / <c>js_code</c> /
     /// <c>trace_id</c> / <c>page_url</c> 等<b>不得驼峰化</b>）。
     /// </summary>
     [Fact]
@@ -233,6 +238,8 @@ public class MiniProgramContractGuards
             "/datacube/getweanalysisappidvisitpage",
             "/datacube/getweanalysisappiddailysummarytrend",
             "/wxa/business/performance/boot",
+            // 小游戏数据（minigame 独立文档树，2026-10-18 逐页核验；小程序侧不开放该接口）。
+            "/datacube/getgameanalysisdata",
         });
 
         RoutesOf(asm, nameof(IWxaSubscribeMessageService)).Should().BeEquivalentTo(new[]
@@ -394,17 +401,21 @@ public class MiniProgramContractGuards
             WxaKfMediaService.MediaPath,
         });
 
-        // 合计计数（MP-X5 的单一来源）：392 特性路由 + 6 手工通道路由 = 398（基线见 Tests/ContractBaseline.cs）。
+        // 合计计数（MP-X5 的单一来源）：582 特性路由 + 6 手工通道路由 = 588（基线见 Tests/ContractBaseline.cs）。
         (CollectAttributeRoutes(asm).Length + ManualChannelRoutes().Length)
             .Should().Be(Baseline.MiniProgram.Endpoints,
-                "小程序线合计 398 端点（Auth 8 + QrCodeLink 9 + Security 3 + DataAnalysis 11 + "
+                "小程序线合计 588 端点（Auth 8 + QrCodeLink 9 + Security 3 + DataAnalysis 12 + "
                 + "SubscribeMessage 4 + DynamicMessage 3 + Kf 11 + HardwareDevice 9 + Operation 10 + "
                 + "Plugin 2 + Charge 2 + NearbyPoi 4 + Search 1 + Soter 1 + ServiceMarket 2 + "
                 + "RedPacketCover 1 + Student 1 + FaceVerify 2 + LaborUse 2 + ExpressBusiness 12 + "
                 + "ExpressDelivery 28 + ExpressIntracity 16 + ExpressInsuranceFreight 11 + ExpressLocal 15 + "
                 + "ExpressBill 1 + Vip 6 + TradeGuarantee 2 + TradeComment 9 + TradeComplaint 5 + "
                 + "Live 38 + Vod 32 + XPay 37 + OrderShipping 12 + Novel 23 + RealName 1 + Game 20 + "
-                + "CloudBase 44）；"
+                + "CloudBase 44 + 2026-10-18 交易组件 / 联盟族：ShopSpu 9 + ShopFunds 9 + ShopSharer 8 + "
+                + "ShopOrder 20 + ShopAfterSale 18 + ShopAccount 16 + ShopCoupon 11 + ProductCatalog 22 + "
+                + "ProductSku 17 + ProductOrder 14 + ProductCoupon 10 + ProductFunds 7 + ProductMedia 10 + "
+                + "Midas 8 + CityService 5 + BusinessCapability 5 = 588；ProductMedia 的 "
+                + "/product/img/upload 二进制流与图片 URL 双形态共路由、按 1 条计）；"
                 + "数量变化须同批调整 Tests/ContractBaseline.cs");
     }
 

@@ -56,6 +56,9 @@
     <Project Path="Src/Pay/Mud.Wechat.Pay.Callback/Mud.Wechat.Pay.Callback.csproj" />
     <Project Path="Src/Pay/Mud.Wechat.Pay.DataModels/Mud.Wechat.Pay.DataModels.csproj" />
     <Project Path="Src/Pay/Mud.Wechat.Pay/Mud.Wechat.Pay.csproj" />
+    <!-- APIv2 线（XML + MD5/HMAC-SHA256 + mutual TLS）：2 源工程。 -->
+    <Project Path="Src/Pay/Mud.Wechat.Pay.V2.DataModels/Mud.Wechat.Pay.V2.DataModels.csproj" />
+    <Project Path="Src/Pay/Mud.Wechat.Pay.V2/Mud.Wechat.Pay.V2.csproj" />
   </Folder>
   <Folder Name="/src/Work/">
     <Project Path="Src/Work/Mud.Wechat.Work.Abstractions/Mud.Wechat.Work.Abstractions.csproj" />

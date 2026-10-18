@@ -107,7 +107,7 @@ public class OpenPlatformContractGuards
     };
 
     /// <summary>
-    /// OP-B1：接口集合与数量锁定（29 接口 / 185 端点，防漏防多）。
+    /// OP-B1：接口集合与数量锁定（30 接口 / 190 端点，防漏防多）。
     /// </summary>
     /// <remarks>
     /// 2026-10-15 起本线另有 <c>ComponentTcb</c> 六支接口（50 端点，注册组共用一个），
@@ -115,7 +115,7 @@ public class OpenPlatformContractGuards
     /// <c>Embedded</c>（6 端点）由 <c>OpenPlatformEmbeddedContractGuards</c>（EMB 系列）、
     /// <c>Auth</c>（5 端点）由 <c>OpenPlatformAuthContractGuards</c>（AUTH 系列）、
     /// <c>Ams</c>（19 端点）+ <c>AmsShare</c>（3 端点）由 <c>OpenPlatformAmsContractGuards</c>（AM 系列）、
-    /// <c>MiniProgramManage</c>（授权方令牌面）十一支接口（30-1 代码管理 15 + 名称与搜索 5 + 类目 1；30-2 域名与 DNS 9 + 体验成员 3 + 违规申诉 2 + 订阅组件 3；30-3 ICP 备案 12 + 隐私接口 3 + 订单路径查询 1；30-4 试用小程序核验 2；30-5 multipart 上传 2（代码管理 1 + 备案 1），共 58 端点，注册组共用一个）
+    /// <c>MiniProgramManage</c>（授权方令牌面）十二支接口（30-1 代码管理 15 + 名称与搜索 6 + 类目 1；30-2 域名与 DNS 9 + 体验成员 3 + 违规申诉 2 + 订阅组件 3；30-3 ICP 备案 JSON 12 + 隐私接口 3 + 订单路径查询 1；30-4 试用小程序核验 2；30-5 multipart 上传 2；30-7 直播能力开通 1，共 60 端点，注册组共用一个）
     /// 由 <c>OpenPlatformMiniProgramManageContractGuards</c>（MPG 系列）逐条锁定；
     /// <c>MiniProgramTemplate</c>（<c>component_access_token</c> 面）两支接口（模板库 4 + 下单路径申请 1，共 5 端点，注册组共用一个）
     /// 由 <c>OpenPlatformTemplateContractGuards</c>（TPL 系列）逐条锁定；
@@ -169,6 +169,7 @@ public class OpenPlatformContractGuards
             nameof(IWechatOpenPlatformMpPrivacyService),
             nameof(IWechatOpenPlatformMpOrderPathService),
             nameof(IWechatOpenPlatformMpBetaVerifyService),
+            nameof(IWechatOpenPlatformMpLiveService),
             nameof(IWechatOpenPlatformTemplateService),
             nameof(IWechatOpenPlatformMpOrderPathSetService),
         });
@@ -367,6 +368,9 @@ public class OpenPlatformContractGuards
             "/wxa/uploadmedia",
             "/wxa/icp/upload_icp_media",
             "/wxa/get_qrcode",
+            // 30-7 直播能力开通（applyliveinfo）：官方页面明写仅支持「第三方平台」账号类型代调用、
+            // 以 authorizer_access_token 承载 ⇒ 本线独占，小程序线由 NC2 锁定零声明。
+            "/wxa/business/applyliveinfo",
         };
 
         var offenders = new List<string>();

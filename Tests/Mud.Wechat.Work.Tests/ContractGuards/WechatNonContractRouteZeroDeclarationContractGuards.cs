@@ -11,12 +11,12 @@ namespace Mud.Wechat.Work.Tests.ContractGuards;
 
 /// <summary>
 /// 非契约路由零声明守卫（追踪号 P2-QY-SKIT-CATALOG-VERIFY-03，2026-10-12 二期企微缺口核验）：
-/// 断言 29 条路由在 <c>Src/</c> 全部源码内<b>零声明</b>，防「网关还能打通」重新诱导加回。
+/// 断言 35 条路由在 <c>Src/</c> 全部源码内<b>零声明</b>，防「网关还能打通」重新诱导加回。
 /// <para>
 /// 两类理由（判据均为官方文档面，与 <c>WechatDataZoneContractGuards</c> 的 DZ5 同源）：
 /// </para>
 /// <para>
-/// 一、<b>官方文档目录树已无对应页面</b>（26 条）：互联企业（linkedcorp）6 条——现行「上下游通讯录管理」
+/// 一、<b>官方文档目录树已无对应页面</b>（32 条）：互联企业（linkedcorp）6 条——现行「上下游通讯录管理」
 /// 树为 corpgroup 面（95819/96607），全树无「互联企业」服务端页面，且 <c>linkedcorp/message/send</c>
 /// 引用的 90250 现指向 <c>/cgi-bin/message/send</c>；任务卡片 2 条（91579/91585 均不在目录树内，
 /// 全树标题无「任务卡片」）；汇报导出 2 条（96108 不在目录树内，同族 get_record_list / detail / stat
@@ -48,6 +48,21 @@ namespace Mud.Wechat.Work.Tests.ContractGuards;
 /// 三棵树 95900 / 97108 / 101134）。硬件面的现行章节树是「智能硬件开发」，其凭证为
 /// <c>model_access_token</c> / <c>device_access_token</c>，与三类应用令牌面不同构（见留档 §3.1 的待裁定项）
 /// ——追踪号 P2-QY-SERVICE-PLACEMENT-05）。
+/// 家校健康码 3 条（2026-10-18 复核：现行目录树全量锚点 1017 条——覆盖自建 / 第三方 / 代开发三棵应用类型树——
+/// 检索「健康码」「健康」「qrcode」仅命中健康上报三支 93676~93678（已落位于 <c>/cgi-bin/health/*</c>）与
+/// 「获取加入企业二维码」「获取『学校通知』二维码」「会议健康度」，无任何健康码或自定义健康信息页面；
+/// 同前缀的学生族 92325~92338 在册且正文可解出请求地址（<c>update_student</c> 已作正对照）
+/// ——追踪号 P2-QY-SCHOOL-HEALTHQRCODE-01）。
+/// 收款商户号增删 2 条（2026-10-18 复核：现行 93666「收款商户号管理」在树内（上篇 93665 / 下篇 93667，
+/// 最后更新 2024-07-18），正文请求地址仅 <c>getmerchant</c> 与 <c>set_mch_use_scope</c> 两支，
+/// <c>addmerchant</c> / <c>delmerchant</c> 小节已消失；同页现存两支本仓均已落位 ⇒ 非「整页未渲染」的假阴性
+/// ——追踪号 P2-QY-EXTERNALPAY-MERCHANTCRUD-01）。
+/// 硬件旧面 1 条（2026-10-18 复核：清单出处 92739「获取设备自定义参数」标题仍在，但 SSR 正文已无
+/// 「请求方式 / 请求地址」小节、无参数表、无上下篇导航、不在现行目录树内；同一取法在正对照页 95982
+/// 可完整解出 <c>/cgi-bin/openhw/device/get_device_detail</c> 与六行参数表 ⇒ 非「整页未渲染」的假阴性。
+/// 硬件面现行契约树为「智能硬件开发 &gt; 硬件云端接入」，凭证为 <c>model_access_token</c> /
+/// <c>device_access_token</c>，已整域落位于 <c>IWechatWorkOpenHardwareService</c>
+/// ——追踪号 P2-QY-HARDWARE-DEVICEFEATURE-01）。
 /// 第三方 SDK 仍携带这些扩展方法只是历史镜像，不构成契约。
 /// </para>
 /// <para>
@@ -64,7 +79,7 @@ namespace Mud.Wechat.Work.Tests.ContractGuards;
 /// </summary>
 /// <remarks>
 /// <para>
-/// 本守卫为「清单即契约」型断言：29 条路由的增减都必须先复核官方文档目录树，不得因网关可达而放宽。
+/// 本守卫为「清单即契约」型断言：35 条路由的增减都必须先复核官方文档目录树，不得因网关可达而放宽。
 /// <para>
 /// 「页面在树内但该端点小节已消失」与「整页下架」同判非契约——官方正文的章节锚点即该页端点全集。
 /// </para>
@@ -73,7 +88,7 @@ namespace Mud.Wechat.Work.Tests.ContractGuards;
 public class WechatNonContractRouteZeroDeclarationContractGuards
 {
     /// <summary>
-    /// 非契约路由清单（29 条 = 官方目录已下架 26 + 本仓已有等价现行路由 3）。
+    // 非契约路由清单（35 条 = 官方目录已下架 32 + 本仓已有等价现行路由 3）。
     /// </summary>
     private static readonly string[] NonContractRoutes =
     {
@@ -130,6 +145,28 @@ public class WechatNonContractRouteZeroDeclarationContractGuards
         // 「企业自建应用开发 > 概述」，页内无该路由；官方现行落位为 ID 转换三棵树 95900 / 97108 / 101134，
         // 本仓已声明于 /cgi-bin/idconvert/unionid_to_external_userid。
         "/cgi-bin/service/externalcontact/unionid_to_external_userid_3rd",
+        // 家校健康码 3 条（2026-10-18 复核，追踪号 P2-QY-SCHOOL-HEALTHQRCODE-01）：现行目录树全量锚点
+        // （1017 条，覆盖自建 / 第三方 / 代开发三棵应用类型树）内检索「健康码」「健康」「qrcode」，
+        // 命中的仅有健康上报三支（93676/93677/93678，已落位于 /cgi-bin/health/*）与「获取加入企业二维码」
+        // 「获取『学校通知』二维码」——无任何健康码或自定义健康信息页面。
+        // 同前缀的 student 族页面（92325~92338）在册且正文可取到请求地址（见本守卫正对照 update_student），
+        // ⇒ 树本身可解析、路由抽取可用，缺页即官方下架，非「未渲染」误判。
+        "/cgi-bin/school/user/get_health_qrcode",
+        "/cgi-bin/school/user/get_student_customize_health_info",
+        "/cgi-bin/school/user/get_teacher_customize_health_info",
+        // 收款商户号增删 2 条（2026-10-18 复核，追踪号 P2-QY-EXTERNALPAY-MERCHANTCRUD-01）：现行 93666
+        // 「收款商户号管理」（最后更新 2024-07-18，上篇 93665 / 下篇 93667，在树内）正文的请求地址
+        // 仅 /cgi-bin/externalpay/getmerchant 与 /cgi-bin/externalpay/set_mch_use_scope 两支，
+        // addmerchant / delmerchant 小节已消失 ⇒ 按「页面在树内但该端点小节已消失」同判非契约；
+        // 页内现存两支本仓均已落位（见正对照），故本条不是「整页未渲染」的假阴性。
+        "/cgi-bin/externalpay/addmerchant",
+        "/cgi-bin/externalpay/delmerchant",
+        // 硬件旧面 1 条（2026-10-18 复核，追踪号 P2-QY-HARDWARE-DEVICEFEATURE-01）：清单出处 92739
+        // 「获取设备自定义参数」标题仍在、但 SSR 正文已无任何「请求方式 / 请求地址」小节与参数表
+        //（同页取法在正对照 95982 可完整取到路由 + 六行参数表 + 上下篇导航 ⇒ 非渲染假阴性），
+        // 且无上下篇链接、不在现行目录树内；硬件面现行契约是 /cgi-bin/openhw/*（凭证为
+        // model_access_token / device_access_token，已整域落位于 IWechatWorkOpenHardwareService）。
+        "/cgi-bin/hardware/get_device_feature",
         // 等价现行路由 3 条：旧路由名 / 旧落位，本仓只声明现行路由。
         "/cgi-bin/user/getuserinfo",
         "/cgi-bin/externalcontact/unionid_to_external_userid",
@@ -171,19 +208,28 @@ public class WechatNonContractRouteZeroDeclarationContractGuards
         "/cgi-bin/service/externalcontact/finish_external_userid_migration",
         // 第三方敏感信息的现行路由（service/getuserdetail3rd 旧形态的替代者，同前缀活体证明）。
         "/cgi-bin/service/auth/getuserdetail3rd",
+        // 家校通讯录学生族的现行落位（健康码三支的同前缀活体证明：同一 school/user/ 前缀、同一文档树，
+        // 既证扫描根覆盖该目录，也证「健康码页面缺失」不是路由抽取失败的假象）。
+        "/cgi-bin/school/user/update_student",
+        // 收款商户号管理的现行两支（addmerchant / delmerchant 小节消失后同页仅有的路由，同前缀活体证明）。
+        "/cgi-bin/externalpay/getmerchant",
+        "/cgi-bin/externalpay/set_mch_use_scope",
+        // 智能硬件开发·硬件云端接入的现行落位（hardware/get_device_feature 旧面的替代族，
+        // 同能力正对照：设备详情端点即 92739 复核时用于自证「取法可用」的对照页）。
+        "/cgi-bin/openhw/device/get_device_detail",
     };
 
     // ------------------------------------------------------------------
-    // RD1：29 条非契约路由在 Src/ 全部源码内零声明（扫描以已落位路由作正对照）。
+    // RD1：35 条非契约路由在 Src/ 全部源码内零声明（扫描以已落位路由作正对照）。
     // ------------------------------------------------------------------
 
     /// <summary>契约守卫 RD1：非契约路由清单锁定 + <c>Src/</c> 全量扫描零命中 + 已落位路由正对照。</summary>
     [Fact]
     public void NonContractRoutes_ShouldHaveZeroDeclaredRoutes_WhenScannedAcrossSrc()
     {
-        NonContractRoutes.Should().HaveCount(29,
-            "官方目录已下架 26 + 本仓已有等价现行路由 3：清单本身即契约，增删须先复核官方文档目录树");
-        NonContractRoutes.Distinct(StringComparer.Ordinal).Should().HaveCount(29, "清单内路由不得重复");
+        NonContractRoutes.Should().HaveCount(35,
+            "官方目录已下架 31 + 本仓已有等价现行路由 3：清单本身即契约，增删须先复核官方文档目录树");
+        NonContractRoutes.Distinct(StringComparer.Ordinal).Should().HaveCount(35, "清单内路由不得重复");
 
         var routeRegex = new Regex(@"\[(?:Get|Post|Put|Delete|Patch)\(""([^""]+)""\)\]",
             RegexOptions.Compiled | RegexOptions.CultureInvariant);
@@ -219,7 +265,7 @@ public class WechatNonContractRouteZeroDeclarationContractGuards
             "RD1 的扫描必须能捕获本仓已声明的相邻路由（否则正则/扫描根漂移会让零声明断言静默恒真）");
 
         offenders.Should().BeEmpty(
-            "29 条路由不构成应用侧 HTTP 契约（官方文档目录已移除或本仓已有等价现行路由），" +
+            "35 条路由不构成应用侧 HTTP 契约（官方文档目录已移除或本仓已有等价现行路由），" +
             "本仓不得在任何产品线接口上声明（追踪号 P2-QY-SKIT-CATALOG-VERIFY-03）");
     }
 

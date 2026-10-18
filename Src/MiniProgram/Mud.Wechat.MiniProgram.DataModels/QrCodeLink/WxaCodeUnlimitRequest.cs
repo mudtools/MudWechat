@@ -50,7 +50,7 @@ public class WxaCodeUnlimitRequest
     [JsonPropertyName("auto_color")]
     public bool? AutoColor { get; set; }
 
-    /// <summary>线条颜色（<c>line_color</c>，选填；<c>{"r":…,"g":…,"b":…}），见 <see cref="WxaRgbColor"/>。</summary>
+    /// <summary>线条颜色（<c>line_color</c>，选填；<c>{"r":…,"g":…,"b":…}</c>），见 <see cref="WxaRgbColor"/>。</summary>
     [JsonPropertyName("line_color")]
     public WxaRgbColor? LineColor { get; set; }
 

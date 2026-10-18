@@ -289,3 +289,63 @@ public static class TransferSceneReportInfoTypes
     /// <summary>保险操作单号（保险理赔）。</summary>
     public const string InsuranceOperationNo = "保险操作单号";
 }
+
+/// <summary>
+/// 旧版商家转账·批次状态（官方 <c>batch_status</c>，<b>4 值</b>）。
+/// </summary>
+/// <remarks>
+/// <b>与新版转账单的 8 值状态表（<see cref="TransferBillStates"/>）不是同一枚举</b>：
+/// 本表是 <c>/v3/transfer/batches</c> 旧版批量面的值，两者<b>不可互相套用</b>。
+/// 官方文档：<see href="https://pay.weixin.qq.com/doc/v3/merchant/4012458841"/>，2026-10-18 核验。
+/// </remarks>
+public static class TransferBatchStatuses
+{
+    /// <summary>已受理（官方 <c>ACCEPTED</c>）：批次已受理，尚未开始处理。</summary>
+    public const string Accepted = "ACCEPTED";
+
+    /// <summary>处理中（官方 <c>PROCESSING</c>）。</summary>
+    public const string Processing = "PROCESSING";
+
+    /// <summary>已完成（官方 <c>FINISHED</c>）：批次处理结束，须再核对成功/失败条数。</summary>
+    public const string Finished = "FINISHED";
+
+    /// <summary>已关闭（官方 <c>CLOSED</c>）：批次被关闭。</summary>
+    public const string Closed = "CLOSED";
+}
+
+/// <summary>
+/// 电子回单状态（官方 <c>signature_status</c>，2 值）。
+/// </summary>
+/// <remarks>
+/// 批次回单与明细回单两族共用同一值表；均须轮询到 <c>FINISHED</c> 才有下载地址。
+/// 官方文档：<see href="https://pay.weixin.qq.com/doc/v3/merchant/4012458967"/>，2026-10-18 核验。
+/// </remarks>
+public static class TransferSignatureStatuses
+{
+    /// <summary>已受理（官方 <c>ACCEPTED</c>）：回单异步生成中。</summary>
+    public const string Accepted = "ACCEPTED";
+
+    /// <summary>已完成（官方 <c>FINISHED</c>）：可下载回单并校验摘要。</summary>
+    public const string Finished = "FINISHED";
+}
+
+/// <summary>
+/// 转账明细电子回单类型（官方 <c>accept_type</c>，3 值）。
+/// </summary>
+/// <remarks>
+/// <b>取值决定回单业务面</b>：<c>BATCH_TRANSFER</c> 属批次转账；
+/// <c>TRANSFER_TO_POCKET</c> / <c>TRANSFER_TO_BANK</c> 属另一类转账面 —— 不同取值的
+/// <c>out_batch_no</c> 必填性不同，勿统一处理。
+/// 官方文档：<see href="https://pay.weixin.qq.com/doc/v3/merchant/4012458967"/>，2026-10-18 核验。
+/// </remarks>
+public static class TransferReceiptAcceptTypes
+{
+    /// <summary>批次转账（官方 <c>BATCH_TRANSFER</c>）。</summary>
+    public const string BatchTransfer = "BATCH_TRANSFER";
+
+    /// <summary>转账到零钱（官方 <c>TRANSFER_TO_POCKET</c>）。</summary>
+    public const string TransferToPocket = "TRANSFER_TO_POCKET";
+
+    /// <summary>转账到银行卡（官方 <c>TRANSFER_TO_BANK</c>）。</summary>
+    public const string TransferToBank = "TRANSFER_TO_BANK";
+}

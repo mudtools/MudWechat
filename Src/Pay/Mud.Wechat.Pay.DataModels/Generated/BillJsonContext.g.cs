@@ -11,6 +11,8 @@ namespace Mud.Wechat.Pay.DataModels.Bill;
     PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower,
     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     WriteIndented = false)]
+[JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.Bill.BillDownloadInfoListResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.Bill.BillDownloadInfoItem))]
 [JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.Bill.BillDownloadInfoResponse))]
 internal partial class BillJsonContext : JsonSerializerContext
 {

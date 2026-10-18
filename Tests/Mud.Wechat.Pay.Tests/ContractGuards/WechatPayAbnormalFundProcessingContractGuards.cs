@@ -57,7 +57,7 @@ public class WechatPayAbnormalFundProcessingContractGuards
 
         // 正对照：动词与路由扫描按接口真实推导
         VerbsOf(typeof(IWechatPayMerchantFundService)).Should().BeEquivalentTo(new[] { "GetAttribute" });
-        RoutesOf(typeof(IWechatPayMerchantFundService)).Should().HaveCount(2);
+        RoutesOf(typeof(IWechatPayMerchantFundService)).Should().HaveCount(4);
     }
 
     /// <summary>AFP-B2：3 支端点的路由、path 键与 query 名册（含官方必填口径）逐支锁定。</summary>

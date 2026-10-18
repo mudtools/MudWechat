@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- APIv2 线 TFM 与支付 v3 线保持一致（net6/8/10，不含 netstandard2.0）——见 Mud.Wechat.Pay.DataModels.csproj 注释。 -->
+    <TargetFrameworks>net6.0;net8.0;net10.0</TargetFrameworks>
+    <LangVersion>13.0</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <IsAotCompatible Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))">true</IsAotCompatible>
+    <EnableTrimAnalyzer Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))">true</EnableTrimAnalyzer>
+    <EnableAotAnalyzer Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))">true</EnableAotAnalyzer>
+    <EnableSingleFileAnalyzer Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))">true</EnableSingleFileAnalyzer>
+    <EnableConfigurationBindingGenerator>true</EnableConfigurationBindingGenerator>
+    <RootNamespace>Mud.Wechat.Pay.V2.DataModels</RootNamespace>
+    <AssemblyName>Mud.Wechat.Pay.V2.DataModels</AssemblyName>
+    <Description>Mud.Wechat Pay APIv2 Data Models - DTOs for WeChat Pay APIv2 endpoints</Description>
+    <PackageTags>wechat;pay;apiv2;dto</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Mud.HttpUtils.Attributes" Version="3.0.7" />
+    <PackageReference Include="Mud.HttpUtils.Generator" Version="3.0.7" PrivateAssets="all" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Core\Mud.Wechat.Abstractions\Mud.Wechat.Abstractions.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Mud.Wechat.Pay.V2" />
+    <InternalsVisibleTo Include="Mud.Wechat.Pay.V2.Tests" />
+  </ItemGroup>
+
+</Project>

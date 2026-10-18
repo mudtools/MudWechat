@@ -12,6 +12,11 @@ namespace Mud.Wechat.Pay.DataModels.MerchantFund;
     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     WriteIndented = false)]
 [JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.MerchantFund.MerchantFundBalanceResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.MerchantFund.MerchantFundIncomeRecordQueryResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.MerchantFund.MerchantFundIncomeRecord))]
+[JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.MerchantFund.PartnerIncomeRecordQueryResponse))]
+[JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.MerchantFund.PartnerIncomeRecord))]
+[JsonSerializable(typeof(global::Mud.Wechat.Pay.DataModels.MerchantFund.MerchantFundIncomeRecordLinks))]
 internal partial class MerchantFundJsonContext : JsonSerializerContext
 {
 }

@@ -14,7 +14,7 @@ using Mud.Wechat.Pay.DataModels.ProfitSharing;
 namespace Mud.Wechat.Pay.Tests.ContractGuards;
 
 /// <summary>
-/// P2 分账域契约守卫（<b>首批 3 端点</b>：添加接收方 / 请求分账 / 查询分账结果）。
+/// P2 分账域契约守卫（<b>现 11 端点</b>：接收方 2 / 分账单 4 / 回退单 2 / 解冻 1 / 账单 1 / 商户配置 1）。
 /// </summary>
 /// <remarks>
 /// <para>
@@ -53,6 +53,15 @@ public class WechatPayProfitSharingContractGuards
         AssertRoute<GetAttribute>(nameof(IWechatPayProfitSharingService.QueryUnsplitAmountAsync), "/v3/profitsharing/transactions/{transactionId}/amounts");
         AssertRoute<GetAttribute>(nameof(IWechatPayProfitSharingService.GetBillAsync), "/v3/profitsharing/bills");
         AssertRoute<PostAttribute>(nameof(IWechatPayProfitSharingService.DeleteReceiverAsync), "/v3/profitsharing/receivers/delete");
+
+        // 商户配置查询（最大分账比例）：服务商面，sub_mchid 走 path。
+        AssertRoute<GetAttribute>(
+            nameof(IWechatPayProfitSharingService.QueryMerchantConfigAsync),
+            "/v3/profitsharing/merchant-configs/{subMchId}");
+        FindMethod(nameof(IWechatPayProfitSharingService.QueryMerchantConfigAsync)).GetParameters()
+            .Where(static p => p.GetCustomAttribute<PathAttribute>() != null)
+            .Select(static p => p.Name)
+            .Should().BeEquivalentTo(new[] { "subMchId" }, "官方 path 参数 sub_mchid 必须走路径替换");
 
         // 查询分账结果：out_order_no 走 path、transaction_id 走 query（官方两参数均必填）。
         // 占位符名用 C# 参数名（生成器 HTTPCLIENT013 强制占位符 ↔ [Path] 参数名对应），不影响线上报文。
@@ -95,6 +104,8 @@ public class WechatPayProfitSharingContractGuards
 
         JsonNameShouldBe<ProfitSharingDeleteReceiverRequest>(nameof(ProfitSharingDeleteReceiverRequest.Account), "account");
         JsonNameShouldBe<ProfitSharingDeleteReceiverResponse>(nameof(ProfitSharingDeleteReceiverResponse.Type), "type");
+        JsonNameShouldBe<ProfitSharingMerchantConfigResponse>(nameof(ProfitSharingMerchantConfigResponse.SubMchId), "sub_mchid");
+        JsonNameShouldBe<ProfitSharingMerchantConfigResponse>(nameof(ProfitSharingMerchantConfigResponse.MaxRatio), "max_ratio");
     }
 
     /// <summary>PS-B3：判错面 —— 分账单应答须继承 <see cref="WechatPayResponse"/>（承载官方 <c>code</c>/<c>message</c>）。</summary>
@@ -171,9 +182,10 @@ public class WechatPayProfitSharingContractGuards
             .Where(static t => !typeof(JsonSerializerContext).IsAssignableFrom(t))
             .ToList();
 
-        domainTypes.Should().HaveCount(12,
+        domainTypes.Should().HaveCount(13,
             "分账域 DTO：分账单族 6（接收方请求/接收方/分账请求/请求接收方/分账单应答/接收方结果）" +
-            " + 回退单族 2（请求/应答） + 解冻请求 1 + 待分金额应答 1 + 删除接收方 2（请求/应答）");
+            " + 回退单族 2（请求/应答） + 解冻请求 1 + 待分金额应答 1 + 删除接收方 2（请求/应答）" +
+            " + 商户配置应答 1（max_ratio）");
 
         foreach (var type in domainTypes)
         {

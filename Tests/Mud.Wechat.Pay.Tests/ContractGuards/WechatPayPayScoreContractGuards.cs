@@ -14,7 +14,7 @@ using Mud.Wechat.Pay.DataModels.PayScore;
 namespace Mud.Wechat.Pay.Tests.ContractGuards;
 
 /// <summary>
-/// P2 支付分域契约守卫（<b>首批 3 端点</b>：创建 / 查询 / 取消服务订单）。
+/// P2 支付分域契约守卫（<b>现 23 端点</b>：服务订单 7 / 授权面 6 / 消息提醒 2 / 支付分计划 3 / 签约计划 4 / 商户账单 1）。
 /// </summary>
 /// <remarks>
 /// <para>
@@ -39,7 +39,7 @@ public class WechatPayPayScoreContractGuards
     private const string RegistryGroupName = "PayScore";
     private const string DomainNamespace = "Mud.Wechat.Pay.DataModels.PayScore";
 
-    /// <summary>PY-B1：3 端点的方法与路由照官方原文；查询的 4 个 query 参数与取消的 path 参数位置不可改动。</summary>
+    /// <summary>PY-B1：各端点的方法与路由照官方原文；查询的 4 个 query 参数与取消的 path 参数位置不可改动。</summary>
     [Fact]
     public void PayScoreEndpoints_ShouldMatchOfficialRoutes()
     {
@@ -59,6 +59,10 @@ public class WechatPayPayScoreContractGuards
             "/v3/payscore/permissions/authorization-code/{authorizationCode}");
 
         AssertRoute<PostAttribute>(nameof(IWechatPayPayScoreService.SyncServiceOrderAsync), "/v3/payscore/serviceorder/{outOrderNo}/sync");
+
+        // 商户账单：普通商户面；4 个 query 全必填，bill_date 精确到小时（账单域是日粒度 ⇒ 两域不同形）；
+        // 应答复用 Bill 域的加密分片列表 DTO（两页字段表逐项一致）。
+        AssertRoute<GetAttribute>(nameof(IWechatPayPayScoreService.GetMerchantBillAsync), "/v3/payscore/merchant-bill");
 
         // 解除授权是**动作式**路径（/terminate），不是对 permissions/{code} 发 DELETE。
         AssertRoute<PostAttribute>(
@@ -87,6 +91,64 @@ public class WechatPayPayScoreContractGuards
         FindMethod(nameof(IWechatPayPayScoreService.QueryAuthorizationRecordByOpenIdAsync))
             .ReturnType.Should().Be(typeof(Task<PayScoreAuthorizationRecordResponse>),
                 "官方两页应答字段表逐项一致 ⇒ 复用同一 DTO");
+
+        // ---- 计划面 / 签约计划面 / 消息面（2026-10-18 增量）------------------------------------
+        // 风险评估与按 OPENID 解除授权：动作式路由，均无 path（openid 解除走 path）。
+        AssertRoute<PostAttribute>(
+            nameof(IWechatPayPayScoreService.AssessUserRiskLevelAsync),
+            "/v3/payscore/permissions/assess-user-risk-level");
+        AssertRoute<PostAttribute>(
+            nameof(IWechatPayPayScoreService.TerminateAuthorizationByOpenIdAsync),
+            "/v3/payscore/permissions/openid/{openId}/terminate");
+
+        // 支付分计划：创建 POST 集合、查询 GET 按商户计划号、终止 POST 动作式。
+        AssertRoute<PostAttribute>(
+            nameof(IWechatPayPayScoreService.CreatePlanAsync), "/v3/payscore/plan/payscore-plans");
+        AssertRoute<GetAttribute>(
+            nameof(IWechatPayPayScoreService.QueryPlanAsync),
+            "/v3/payscore/plan/payscore-plans/merchant-plan-no/{merchantPlanNo}");
+        AssertRoute<PostAttribute>(
+            nameof(IWechatPayPayScoreService.StopPlanAsync),
+            "/v3/payscore/plan/payscore-plans/merchant-plan-no/{merchantPlanNo}/stop");
+
+        // 创建 / 查询 / 终止三页应答表逐项一致 ⇒ 必须共用同一 DTO。
+        FindMethod(nameof(IWechatPayPayScoreService.QueryPlanAsync)).ReturnType
+            .Should().Be(typeof(Task<PayScorePlanResponse>));
+        FindMethod(nameof(IWechatPayPayScoreService.StopPlanAsync)).ReturnType
+            .Should().Be(FindMethod(nameof(IWechatPayPayScoreService.CreatePlanAsync)).ReturnType,
+                "官方创建 / 查询 / 终止三页应答表逐项一致 ⇒ 复用同一 DTO");
+
+        // 消息提醒两支：同请求体（官方两页字段表一致）+ send-* 动作式路由。
+        AssertRoute<PostAttribute>(
+            nameof(IWechatPayPayScoreService.SendPendingMessageAsync),
+            "/v3/payscore/serviceorder/{outOrderNo}/send-pendingmessage");
+        AssertRoute<PostAttribute>(
+            nameof(IWechatPayPayScoreService.SendPrepaidMessageAsync),
+            "/v3/payscore/serviceorder/{outOrderNo}/send-prepaidmessage");
+        FindMethod(nameof(IWechatPayPayScoreService.SendPendingMessageAsync)).GetParameters()
+            .Single(static p => p.GetCustomAttribute<BodyAttribute>() != null).ParameterType
+            .Should().Be(FindMethod(nameof(IWechatPayPayScoreService.SendPrepaidMessageAsync)).GetParameters()
+                    .Single(static p => p.GetCustomAttribute<BodyAttribute>() != null).ParameterType,
+                "官方两页请求体字段表一致（service_id/post_payments/post_discounts/total_amount/prepaid_time）⇒ 共用一型");
+
+        // 签约计划：创建服务订单、创建用户签约计划、按商户签约计划号查询 / 终止。
+        AssertRoute<PostAttribute>(
+            nameof(IWechatPayPayScoreService.CreateSignPlanServiceOrderAsync),
+            "/v3/payscore/sign-plan/serviceorder");
+        AssertRoute<PostAttribute>(
+            nameof(IWechatPayPayScoreService.CreateUserSignPlanAsync),
+            "/v3/payscore/sign-plan/user-sign-plans");
+        AssertRoute<GetAttribute>(
+            nameof(IWechatPayPayScoreService.QueryUserSignPlanAsync),
+            "/v3/payscore/sign-plan/user-sign-plans/merchant-sign-plan-no/{merchantSignPlanNo}");
+        AssertRoute<PostAttribute>(
+            nameof(IWechatPayPayScoreService.StopUserSignPlanAsync),
+            "/v3/payscore/sign-plan/user-sign-plans/merchant-sign-plan-no/{merchantSignPlanNo}/stop");
+
+        // 终止用户签约计划官方要求 stop_reason 请求体（与服务商面同形），不得退化为裸 path 调用。
+        FindMethod(nameof(IWechatPayPayScoreService.StopUserSignPlanAsync)).GetParameters()
+            .Should().Contain(static p => p.GetCustomAttribute<BodyAttribute>() != null,
+                "官方终止用户签约计划要求 stop_reason 请求体");
     }
 
     /// <summary>
@@ -208,6 +270,30 @@ public class WechatPayPayScoreContractGuards
         JsonNameShouldBe<PayScoreSyncOrderRequest>(nameof(PayScoreSyncOrderRequest.Detail), "detail");
         JsonNameShouldBe<PayScoreSyncOrderDetail>(nameof(PayScoreSyncOrderDetail.PaidTime), "paid_time");
         JsonNameShouldBe<PayScoreSyncOrderResponse>(nameof(PayScoreSyncOrderResponse.OpenId), "openid");
+
+        // 2026-10-18 增量：计划 / 签约计划 / 风险评估 / 消息面字段名（含两处官方拼写陷阱）。
+        JsonNameShouldBe<PayScoreCreatePlanRequest>(nameof(PayScoreCreatePlanRequest.MerchantPlanNo), "merchant_plan_no");
+        JsonNameShouldBe<PayScorePlanDetailInput>(nameof(PayScorePlanDetailInput.PlanDiscountDescription), "plan_discount_description");
+        JsonNameShouldBe<PayScorePlanResponse>(nameof(PayScorePlanResponse.PlanState), "plan_state");
+        JsonNameShouldBe<PayScorePlanDetailItem>(nameof(PayScorePlanDetailItem.PlanDetailNo), "plan_detail_no");
+
+        // 服务订单创建侧的字段名是 out_trade_no（不是 out_order_no），且官方要求与计划明细的 merchant_plan_detail_no 一致。
+        JsonNameShouldBe<PayScoreSignPlanServiceOrderRequest>(nameof(PayScoreSignPlanServiceOrderRequest.OutTradeNo), "out_trade_no");
+        JsonNameShouldBe<PayScoreSignPlanServiceOrderRequest>(nameof(PayScoreSignPlanServiceOrderRequest.PlanDetailNo), "plan_detail_no");
+        JsonNameShouldBe<PayScoreSignPlanTimeRange>(nameof(PayScoreSignPlanTimeRange.Notes), "notes");
+        JsonNameShouldBe<PayScoreSignPlanServiceOrderResponse>(nameof(PayScoreSignPlanServiceOrderResponse.OutOrderNo), "out_order_no");
+
+        JsonNameShouldBe<PayScoreCreateUserSignPlanRequest>(nameof(PayScoreCreateUserSignPlanRequest.MerchantSignPlanNo), "merchant_sign_plan_no");
+        JsonNameShouldBe<PayScoreUserSignPlanDetail>(nameof(PayScoreUserSignPlanDetail.MerchantPlanDetailNo), "merchant_plan_detail_no");
+        JsonNameShouldBe<PayScoreSignPlan>(nameof(PayScoreSignPlan.MerchantCallbackUrl), "merchant_callback_url");
+        JsonNameShouldBe<PayScoreSignedDetailItem>(nameof(PayScoreSignedDetailItem.ActualPayPrice), "actual_pay_price");
+
+        JsonNameShouldBe<PayScoreRiskAssessRequest>(nameof(PayScoreRiskAssessRequest.AuthorizationCode), "authorization_code");
+        JsonNameShouldBe<PayScoreRiskAssessResponse>(nameof(PayScoreRiskAssessResponse.UserRiskLevel), "user_risk_level");
+        JsonNameShouldBe<PayScoreTerminateByOpenIdRequest>(nameof(PayScoreTerminateByOpenIdRequest.Reason), "reason");
+
+        JsonNameShouldBe<PayScoreMessageRequest>(nameof(PayScoreMessageRequest.PrepaidTime), "prepaid_time");
+        JsonNameShouldBe<PayScoreMessageRequest>(nameof(PayScoreMessageRequest.PostPayments), "post_payments");
     }
 
     /// <summary>PY-B8：同步应答<b>不得</b>并入查询应答（官方本页无 <c>promotion_detail</c>）。</summary>
@@ -334,12 +420,16 @@ public class WechatPayPayScoreContractGuards
             .Where(static t => !typeof(JsonSerializerContext).IsAssignableFrom(t))
             .ToList();
 
-        domainTypes.Should().HaveCount(29,
+        domainTypes.Should().HaveCount(51,
             "支付分域 DTO：创单族 7（请求/后付费/优惠/时间段/位置/风险金/设备）" +
             " + 创建应答 1 + 查询应答 1 + 查询嵌套 4（收款/收款明细/优惠/优惠单品）" +
             " + 取消族 2（请求/应答） + 完结族 2（请求/应答）" +
             " + 修改族 3（请求/收款/应答） + 催收扣款族 2（请求/应答）" +
-            " + 授权面 3（预授权请求/预授权应答/授权记录应答）");
+            " + 授权面 3（预授权请求/预授权应答/授权记录应答）" +
+            " + 2026-10-18 增量 22：风险评估 5（请求/购物信息/商品/应答/按 OPENID 解除请求）" +
+            " + 消息提醒 1 + 支付分计划 4（创建请求/明细入参/计划应答/明细应答）" +
+            " + 签约计划 12（创建服务订单请求/时间段/应答/后付费/优惠/风险金" +
+            " + 创建用户签约计划请求/明细/应答/签约计划/已签约明细/终止请求）");
 
         foreach (var type in domainTypes)
         {

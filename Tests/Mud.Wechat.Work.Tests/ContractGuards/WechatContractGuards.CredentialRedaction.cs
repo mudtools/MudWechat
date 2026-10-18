@@ -46,7 +46,15 @@ public partial class WechatContractGuards
         // 豁免清单：每条 MUST 带追踪号与理由。
         // 【已清空】Mud.HttpUtils 3.0.0（含 C-01 词表补齐）已消费 ⇒ corpsecret / suite_access_token /
         // provider_access_token 均被组件词表覆盖，按本守卫的「自过期」机制清空（并由下方 stale 断言防止回归）。
-        var exemptions = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        // 【登记】开放硬件域两支外部凭证：组件（独立仓库、NuGet 单一版本锁定）静态词表按「官方令牌链路」
+        // 收词，model_access_token / device_access_token 为 2026-10-18 新取证到的硬件厂商凭证面，
+        // 词表补齐属跨仓交付（同 C-01 通道）；跨仓期间以豁免登记保持门禁可全绿且新增缺口可审计。
+        // 追踪号 P2-QY-OPENHW-CRED-REDACT-01：组件词表一旦收录，下方 stale 断言即转红并要求清理本豁免。
+        var exemptions = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["model_access_token"] = "P2-QY-OPENHW-CRED-REDACT-01 开放硬件型号凭证（官方 95992），Query 传参为官方契约，待组件词表收录（C-01 通道）",
+            ["device_access_token"] = "P2-QY-OPENHW-CRED-REDACT-01 开放硬件设备凭证（官方 95993/96022），Query 传参为官方契约，待组件词表收录（C-01 通道）",
+        };
 
         var vocabulary = ReadComponentSensitiveVocabulary();
         vocabulary.Should().NotBeEmpty("未能读取组件脱敏词表（组件版本或字段名变更，请同步本守卫）");

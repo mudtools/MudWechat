@@ -238,4 +238,23 @@ public interface IWechatPayProfitSharingService
     Task<ProfitSharingDeleteReceiverResponse> DeleteReceiverAsync(
         [Body] ProfitSharingDeleteReceiverRequest request,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 查询商户分账配置（最大分账比例）。
+    /// 官方文档：<see href="https://pay.weixin.qq.com/doc/v3/partner/4012466864"/>
+    /// （2026-10-18 逐字段核验；支持商户：【普通服务商】）。
+    /// </summary>
+    /// <param name="subMchId">子商户号（官方 path <c>sub_mchid</c>，必填 string(32)）。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/> 取消操作令牌对象。</param>
+    /// <returns>子商户号 + 最大分账比例，见 <see cref="ProfitSharingMerchantConfigResponse"/>。</returns>
+    /// <remarks>
+    /// <para><b>官方契约</b>：<b>GET</b> <c>/v3/profitsharing/merchant-configs/{sub_mchid}</c>；
+    /// 无 query、无包体。</para>
+    /// <para><b>用途</b>：分账请求中的<b>分出方分账比例不得超过本接口返回的 <c>max_ratio</c></b>；
+    /// 上限由子商户侧的配置决定，服务商不得假定为固定值。</para>
+    /// </remarks>
+    [Get("/v3/profitsharing/merchant-configs/{subMchId}")]
+    Task<ProfitSharingMerchantConfigResponse> QueryMerchantConfigAsync(
+        [Path] string subMchId,
+        CancellationToken cancellationToken = default);
 }

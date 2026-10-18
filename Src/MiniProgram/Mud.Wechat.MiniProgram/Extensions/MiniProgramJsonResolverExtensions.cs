@@ -36,6 +36,22 @@ using Mud.Wechat.MiniProgram.DataModels.Novel;
 using Mud.Wechat.MiniProgram.DataModels.RealName;
 using Mud.Wechat.MiniProgram.DataModels.Game;
 using Mud.Wechat.MiniProgram.DataModels.CloudBase;
+using Mud.Wechat.MiniProgram.DataModels.ShopAccount;
+using Mud.Wechat.MiniProgram.DataModels.ShopFunds;
+using Mud.Wechat.MiniProgram.DataModels.ShopSharer;
+using Mud.Wechat.MiniProgram.DataModels.ShopCoupon;
+using Mud.Wechat.MiniProgram.DataModels.ShopOrder;
+using Mud.Wechat.MiniProgram.DataModels.ShopSpu;
+using Mud.Wechat.MiniProgram.DataModels.ShopAfterSale;
+using Mud.Wechat.MiniProgram.DataModels.ProductCatalog;
+using Mud.Wechat.MiniProgram.DataModels.ProductFunds;
+using Mud.Wechat.MiniProgram.DataModels.ProductSku;
+using Mud.Wechat.MiniProgram.DataModels.ProductOrder;
+using Mud.Wechat.MiniProgram.DataModels.ProductCoupon;
+using Mud.Wechat.MiniProgram.DataModels.ProductMedia;
+using Mud.Wechat.MiniProgram.DataModels.Midas;
+using Mud.Wechat.MiniProgram.DataModels.CityService;
+using Mud.Wechat.MiniProgram.DataModels.BusinessCapability;
 using System.Text.Json.Serialization.Metadata;
 
 namespace Mud.Wechat.MiniProgram.Extensions;
@@ -100,7 +116,23 @@ public static class MiniProgramJsonResolverExtensions
             NovelJsonContext.Default,
             RealNameJsonContext.Default,
             GameJsonContext.Default,
-            CloudBaseJsonContext.Default);
+            CloudBaseJsonContext.Default,
+            ShopAccountJsonContext.Default,
+            ShopFundsJsonContext.Default,
+            ShopSharerJsonContext.Default,
+            ShopCouponJsonContext.Default,
+            ShopOrderJsonContext.Default,
+            ShopSpuJsonContext.Default,
+            ShopAfterSaleJsonContext.Default,
+            ProductCatalogJsonContext.Default,
+            ProductFundsJsonContext.Default,
+            ProductSkuJsonContext.Default,
+            ProductOrderJsonContext.Default,
+            ProductCouponJsonContext.Default,
+            ProductMediaJsonContext.Default,
+            MidasJsonContext.Default,
+            CityServiceJsonContext.Default,
+            BusinessCapabilityJsonContext.Default);
 
         services.AddMudHttpClientJsonContext(resolver);
     }

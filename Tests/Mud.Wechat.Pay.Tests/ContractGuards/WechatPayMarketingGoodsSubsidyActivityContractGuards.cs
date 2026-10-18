@@ -59,7 +59,7 @@ public class WechatPayMarketingGoodsSubsidyActivityContractGuards
 
         // 正对照：动词与路由扫描按接口真实推导（商户余额域确实只有两支 GET），故上面的集合断言不是恒真。
         VerbsOf(typeof(IWechatPayMerchantFundService)).Should().BeEquivalentTo(new[] { "GetAttribute" });
-        RoutesOf(typeof(IWechatPayMerchantFundService)).Should().HaveCount(2);
+        RoutesOf(typeof(IWechatPayMerchantFundService)).Should().HaveCount(4);
     }
 
     /// <summary>MGSA-B2：8 支端点的路由、path 键与 query 名册（含官方必填口径）逐支锁定。</summary>

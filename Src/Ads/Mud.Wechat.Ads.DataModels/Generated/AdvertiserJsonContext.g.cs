@@ -11,6 +11,9 @@ namespace Mud.Wechat.Ads.DataModels.Advertiser;
     PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower,
     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     WriteIndented = false)]
+[JsonSerializable(typeof(global::Mud.Wechat.Ads.DataModels.Advertiser.AdsAdvertiserAddRequest))]
+[JsonSerializable(typeof(global::Mud.Wechat.Ads.DataModels.Advertiser.AdsAdvertiserAddData))]
+[JsonSerializable(typeof(global::Mud.Wechat.Ads.DataModels.Advertiser.AdsAdvertiserAddResponse))]
 [JsonSerializable(typeof(global::Mud.Wechat.Ads.DataModels.Advertiser.AdsAdvertiserListData))]
 [JsonSerializable(typeof(global::Mud.Wechat.Ads.DataModels.Advertiser.AdsAdvertiserGetResponse))]
 [JsonSerializable(typeof(global::Mud.Wechat.Ads.DataModels.Advertiser.AdsAdvertiserInfo))]
@@ -26,9 +29,6 @@ namespace Mud.Wechat.Ads.DataModels.Advertiser;
 [JsonSerializable(typeof(global::Mud.Wechat.Ads.DataModels.Advertiser.AdsAdvertiserDailyBudgetData))]
 [JsonSerializable(typeof(global::Mud.Wechat.Ads.DataModels.Advertiser.AdsAdvertiserUpdateDailyBudgetRequest))]
 [JsonSerializable(typeof(global::Mud.Wechat.Ads.DataModels.Advertiser.AdsAdvertiserUpdateDailyBudgetResponse))]
-[JsonSerializable(typeof(global::Mud.Wechat.Ads.DataModels.Advertiser.AdsAdvertiserAddRequest))]
-[JsonSerializable(typeof(global::Mud.Wechat.Ads.DataModels.Advertiser.AdsAdvertiserAddData))]
-[JsonSerializable(typeof(global::Mud.Wechat.Ads.DataModels.Advertiser.AdsAdvertiserAddResponse))]
 internal partial class AdvertiserJsonContext : JsonSerializerContext
 {
 }

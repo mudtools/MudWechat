@@ -1,0 +1,7 @@
+# 本目录接口（开放硬件域）为「无 [Token] 声明」既存例外：官方「智能硬件开发 → 硬件云端接入」面
+# 自成两级外部凭证（model_access_token / device_access_token，由厂商持有的 model_secret / device_secret
+# 与推送的 model_ticket 换取），不属 access_token / suite_access_token / provider_access_token 任一
+# 应用令牌链路（守卫 OH 系列锁定不得声明 [Token]），补 [Token] 会让生成器注入本不该存在的令牌参数。
+# 故以目录级 severity 豁免（Roslyn 标准通道）替代逐文件 #pragma（同 Interfaces/Aibot/.editorconfig 口径）。
+[*.cs]
+dotnet_diagnostic.HTTPCLIENT018.severity = none

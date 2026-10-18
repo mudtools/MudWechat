@@ -128,6 +128,39 @@ public class MiniProgramServiceBuilder
             // 云开发（TCB）：44 端点四接口同组（环境与账号 8 + 数据库与云存储 16 + 云函数 9 + 其它能力 11）。
             // 令牌面全域复用小程序 access_token；/componenttcb/* 的批量代云开发面属开放平台线，本组不得声明。
             [MiniProgramModule.CloudBase] = static s => s.AddCloudBaseWebApiHttpClient(),
+
+            // 自定义交易组件 V2：商店账号（16）/ 资金（9）/ 分享员（8）/ 商品（9）/ 优惠券（11）/ 订单（20）六组，
+            // 与「基础交易工具 V1」的 ProductCatalog（22）/ ProductFunds（7）/ ProductSku（17）严格分代，
+            // 两代接口不共用路由前缀（V2 为 /shop/*，V1 为 /product/*）。
+            [MiniProgramModule.ShopAccount] = static s => s.AddShopAccountWebApiHttpClient(),
+            [MiniProgramModule.ShopFunds] = static s => s.AddShopFundsWebApiHttpClient(),
+            [MiniProgramModule.ShopSharer] = static s => s.AddShopSharerWebApiHttpClient(),
+            [MiniProgramModule.ShopSpu] = static s => s.AddShopSpuWebApiHttpClient(),
+            [MiniProgramModule.ShopCoupon] = static s => s.AddShopCouponWebApiHttpClient(),
+            [MiniProgramModule.ShopOrder] = static s => s.AddShopOrderWebApiHttpClient(),
+            [MiniProgramModule.ProductCatalog] = static s => s.AddProductCatalogWebApiHttpClient(),
+            [MiniProgramModule.ProductFunds] = static s => s.AddProductFundsWebApiHttpClient(),
+            [MiniProgramModule.ProductSku] = static s => s.AddProductSkuWebApiHttpClient(),
+
+            // 售后：三接口同组（V1 售后 4 + 交易纠纷 3 + V2 售后 11）。
+            // V1 /shop/aftersale/* 与 V2 /shop/ecaftersale/* 是两代契约，仅共享注册组，不共享 DTO 与状态枚举。
+            [MiniProgramModule.ShopAfterSale] = static s => s.AddShopAfterSaleWebApiHttpClient(),
+
+            // 基础交易工具 V1 订单与地址（14 端点：地址 4 + 订单 10），与 V2 /shop/order/* 严格分代。
+            [MiniProgramModule.ProductOrder] = static s => s.AddProductOrderWebApiHttpClient(),
+
+            // 基础交易工具 V1 优惠券与限时抢购（10 端点）、装修与素材（10 端点）。
+            [MiniProgramModule.ProductCoupon] = static s => s.AddProductCouponWebApiHttpClient(),
+            [MiniProgramModule.ProductMedia] = static s => s.AddProductMediaWebApiHttpClient(),
+
+            // 小游戏米大师虚拟支付（8 端点：正式 4 + 沙箱 4），只承载 HTTPS 调用面。
+            [MiniProgramModule.Midas] = static s => s.AddMidasWebApiHttpClient(),
+
+            // 城市服务（5 端点：适老化医疗 2 + 基础能力 3），人脸核身三端点已下线、零声明。
+            [MiniProgramModule.CityService] = static s => s.AddCityServiceWebApiHttpClient(),
+
+            // 行业能力（6 端点：直播开通申请 1 + B2b 门店助手 3 + WMPF 硬件框架 2）。
+            [MiniProgramModule.BusinessCapability] = static s => s.AddBusinessCapabilityWebApiHttpClient(),
         };
 
     /// <summary>注册登录与用户（8 端点：7 带令牌 + 1 方法级免令牌）。</summary>
@@ -321,6 +354,70 @@ public class MiniProgramServiceBuilder
     /// </para>
     /// </remarks>
     public MiniProgramServiceBuilder AddCloudBaseApi() => AddModule(MiniProgramModule.CloudBase);
+
+    /// <summary>注册自定义交易组件 V2·商店账号域（16 端点：账号与信息 4 + 审核 4 + 类目 1 + 图片上传 1 + 推客列表 1 + 入驻准入 4 + 场景校验 1）。</summary>
+    /// <returns>注册器（链式）。</returns>
+    public MiniProgramServiceBuilder AddShopAccountApi() => AddModule(MiniProgramModule.ShopAccount);
+
+    /// <summary>注册自定义交易组件 V2·资金域（9 端点：余额与银行账户 3 + 订单流水 3 + 提现 3）。</summary>
+    /// <returns>注册器（链式）。</returns>
+    public MiniProgramServiceBuilder AddShopFundsApi() => AddModule(MiniProgramModule.ShopFunds);
+
+    /// <summary>注册自定义交易组件 V2·分享员域（8 端点）。</summary>
+    /// <returns>注册器（链式）。</returns>
+    public MiniProgramServiceBuilder AddShopSharerApi() => AddModule(MiniProgramModule.ShopSharer);
+
+    /// <summary>注册自定义交易组件 V2·商品域（9 端点：新增 / 删除 / 删除审核 / 下架 / 详情 / 列表 / 上架 / 更新 / 免审更新）。</summary>
+    /// <returns>注册器（链式）。</returns>
+    public MiniProgramServiceBuilder AddShopSpuApi() => AddModule(MiniProgramModule.ShopSpu);
+
+    /// <summary>注册自定义交易组件 V2·优惠券域（11 端点：商家券 8 + 用户券 3）。</summary>
+    /// <returns>注册器（链式）。</returns>
+    public MiniProgramServiceBuilder AddShopCouponApi() => AddModule(MiniProgramModule.ShopCoupon);
+
+    /// <summary>注册自定义交易组件 V2·订单域（20 端点：订单 8 + 发货 3 + 支付 6 + 微信支付进件 3）。</summary>
+    /// <returns>注册器（链式）。</returns>
+    public MiniProgramServiceBuilder AddShopOrderApi() => AddModule(MiniProgramModule.ShopOrder);
+
+    /// <summary>注册基础交易工具 V1·商品域（22 端点）。</summary>
+    /// <returns>注册器（链式）。</returns>
+    public MiniProgramServiceBuilder AddProductCatalogApi() => AddModule(MiniProgramModule.ProductCatalog);
+
+    /// <summary>注册基础交易工具 V1·资金域（7 端点）。</summary>
+    /// <returns>注册器（链式）。</returns>
+    public MiniProgramServiceBuilder AddProductFundsApi() => AddModule(MiniProgramModule.ProductFunds);
+
+    /// <summary>注册基础交易工具 V1·SKU 域（17 端点：SKU 7 + SPU 8 + 库存 2）。</summary>
+    /// <returns>注册器（链式）。</returns>
+    public MiniProgramServiceBuilder AddProductSkuApi() => AddModule(MiniProgramModule.ProductSku);
+
+    /// <summary>注册售后域（18 端点：V1 售后 4 + 交易纠纷 3 + V2 售后 11）。</summary>
+    /// <returns>注册器（链式）。</returns>
+    public MiniProgramServiceBuilder AddShopAfterSaleApi() => AddModule(MiniProgramModule.ShopAfterSale);
+
+    /// <summary>注册基础交易工具 V1·订单与地址域（14 端点：地址 4 + 订单 10）。</summary>
+    /// <returns>注册器（链式）。</returns>
+    public MiniProgramServiceBuilder AddProductOrderApi() => AddModule(MiniProgramModule.ProductOrder);
+
+    /// <summary>注册基础交易工具 V1·优惠券与限时抢购域（10 端点：优惠券 7 + 抢购 3）。</summary>
+    /// <returns>注册器（链式）。</returns>
+    public MiniProgramServiceBuilder AddProductCouponApi() => AddModule(MiniProgramModule.ProductCoupon);
+
+    /// <summary>注册基础交易工具 V1·装修与素材域（10 端点：装修 6 + 图片 1 + 二维码 3）。</summary>
+    /// <returns>注册器（链式）。</returns>
+    public MiniProgramServiceBuilder AddProductMediaApi() => AddModule(MiniProgramModule.ProductMedia);
+
+    /// <summary>注册小游戏米大师虚拟支付域（8 端点：正式环境 4 + 沙箱环境 4）。</summary>
+    /// <returns>注册器（链式）。</returns>
+    public MiniProgramServiceBuilder AddMidasApi() => AddModule(MiniProgramModule.Midas);
+
+    /// <summary>注册城市服务域（5 端点：适老化医疗 2 + 基础能力 3）。</summary>
+    /// <returns>注册器（链式）。</returns>
+    public MiniProgramServiceBuilder AddCityServiceApi() => AddModule(MiniProgramModule.CityService);
+
+    /// <summary>注册行业能力域（5 端点：B2b 门店助手 3 + WMPF 硬件框架 2）。</summary>
+    /// <returns>注册器（链式）。</returns>
+    public MiniProgramServiceBuilder AddBusinessCapabilityApi() => AddModule(MiniProgramModule.BusinessCapability);
 
     /// <summary>注册全部模块。</summary>
     /// <returns>注册器（链式）。</returns>

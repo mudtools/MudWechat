@@ -26,8 +26,18 @@ namespace Mud.Wechat.Pay;
 /// <para>
 /// <b>🔴 本域第一原则（官方原文）</b>：发起转账遇到错误码时<b>不得换单重试</b> ——
 /// 必须先经『商户单号/微信单号查询转账单』确认原单结果，<b>明确为失败后</b>才可换号重试，
-/// 否则有<b>重复转账的资金风险</b>。故本域<b>必须</b>具备两个查询端点才谈生产可用性
-/// —— <b>本域现已 6 端点齐全</b>（发起 + 两查询 + 撤销 + 两回单），该流程可完整执行。
+/// 否则有<b>重复转账的资金风险</b>。故本域<b>必须</b>具备两个查询端点才谈生产可用性。
+/// </para>
+/// <para>
+/// <b>✅ 本域现已 19 端点</b>，分两代产品面：
+/// <b>新版商家转账 10</b>（发起 · 两查询 · 撤销 · 两回单查询 · 两回单申请 · 免确认授权转账 · 授权后转账）、
+/// <b>旧版批量转账 9</b>（发起批次 · 按批次单号/商户批次单号查批次 · 按明细单号/商户明细单号查明细 ·
+/// 申请/查询批次回单 · 申请/查询明细回单）。
+/// </para>
+/// <para>
+/// <b>⚠️ 两代面的状态值表不同</b>：旧版批次 <c>batch_status</c> 只有 4 值
+/// （<see cref="TransferBatchStatuses"/>），新版转账单 <c>state</c> 有 8 值
+/// （<see cref="TransferBillStates"/>）—— 不可互相套用、也不可把旧版批次号当新版转账单号查询。
 /// </para>
 /// <para>
 /// <b>✅ 值表已补齐（原「值域未核验」留档已关闭）</b>：<c>state</c>（8 值，含终态与「可原单重试」语义）
@@ -248,5 +258,189 @@ public interface IWechatPayTransferService
     [Post("/v3/fund-app/mch-transfer/transfer-bills/transfer")]
     Task<TransferAuthorizedTransferResponse> TransferByAuthorizationAsync(
         [Body] TransferAuthorizedTransferRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 旧版·发起批量转账。
+    /// 官方文档：<see href="https://pay.weixin.qq.com/doc/v3/merchant/4012458841"/>
+    /// （2026-10-18 逐字段核验；支持商户：【普通商户】）。
+    /// </summary>
+    /// <param name="request">发起批次请求体，见 <see cref="TransferBatchCreateRequest"/>。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/> 取消操作令牌对象。</param>
+    /// <returns>批次标识与初始状态（<c>batch_status</c>），见 <see cref="TransferBatchCreateResponse"/>。</returns>
+    /// <remarks>
+    /// <para><b>官方契约</b>：<b>POST</b> <c>/v3/transfer/batches</c>；无 path / query 参数。</para>
+    /// <para><b>旧版产品面</b>：与新版 <c>/v3/fund-app/mch-transfer/transfer-bills</c> 不是同一接口；
+    /// 批次状态只有 <c>ACCEPTED/PROCESSING/FINISHED/CLOSED</c> 4 值（<see cref="TransferBatchStatuses"/>）。</para>
+    /// <para><b>应答不是终态</b>：须用批次查询端点轮询到 <c>FINISHED</c>/<c>CLOSED</c>，
+    /// 并逐笔查询明细状态后才能做资金结论。</para>
+    /// </remarks>
+    [Post("/v3/transfer/batches")]
+    Task<TransferBatchCreateResponse> CreateBatchTransferAsync(
+        [Body] TransferBatchCreateRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 旧版·按微信批次单号查询批次。
+    /// 官方文档：<see href="https://pay.weixin.qq.com/doc/v3/merchant/4012458868"/>
+    /// （2026-10-18 逐字段核验；支持商户：【普通商户】）。
+    /// </summary>
+    /// <param name="batchId">微信批次单号（官方 path <c>batch_id</c>，必填 string(64)）。</param>
+    /// <param name="needQueryDetail">是否返回明细（官方 query <c>need_query_detail</c>，<b>必填</b> bool）。</param>
+    /// <param name="offset">分页偏移（官方 query <c>offset</c>，选填）：<paramref name="needQueryDetail"/> 为 <c>true</c> 时生效。</param>
+    /// <param name="limit">分页大小（官方 query <c>limit</c>，选填）。</param>
+    /// <param name="detailStatus">明细状态过滤（官方 query <c>detail_status</c>，选填）。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/> 取消操作令牌对象。</param>
+    /// <returns>批次快照 + 明细索引列表，见 <see cref="TransferBatchQueryResponse"/>。</returns>
+    /// <remarks>
+    /// <para><b>官方契约</b>：<b>GET</b> <c>/v3/transfer/batches/batch-id/{batch_id}?need_query_detail=…</c>。</para>
+    /// <para><b><c>need_query_detail</c> 是必填 query</b>：传 <c>false</c> 时 <c>transfer_detail_list</c> 为空，
+    /// 不能据此判定「批次无明细」。</para>
+    /// </remarks>
+    [Get("/v3/transfer/batches/batch-id/{batchId}")]
+    Task<TransferBatchQueryResponse> QueryBatchByBatchIdAsync(
+        [Path] string batchId,
+        [Query("need_query_detail")] bool needQueryDetail,
+        [Query("offset")] int? offset = null,
+        [Query("limit")] int? limit = null,
+        [Query("detail_status")] string? detailStatus = null,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 旧版·按商户批次单号查询批次。
+    /// 官方文档：<see href="https://pay.weixin.qq.com/doc/v3/merchant/4012458877"/>
+    /// （2026-10-18 逐字段核验；支持商户：【普通商户】）。
+    /// </summary>
+    /// <param name="outBatchNo">商户批次单号（官方 path <c>out_batch_no</c>，必填 string(32)）。</param>
+    /// <param name="needQueryDetail">是否返回明细（官方 query <c>need_query_detail</c>，<b>必填</b> bool）。</param>
+    /// <param name="offset">分页偏移（官方 query <c>offset</c>，选填）。</param>
+    /// <param name="limit">分页大小（官方 query <c>limit</c>，选填）。</param>
+    /// <param name="detailStatus">明细状态过滤（官方 query <c>detail_status</c>，选填）。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/> 取消操作令牌对象。</param>
+    /// <returns>批次快照 + 明细索引列表，见 <see cref="TransferBatchQueryResponse"/>。</returns>
+    /// <remarks>
+    /// <b>官方契约</b>：<b>GET</b> <c>/v3/transfer/batches/out-batch-no/{out_batch_no}?need_query_detail=…</c>；
+    /// 应答表与按微信批次单号查询<b>逐项一致</b> ⇒ 共用同一响应类型。
+    /// </remarks>
+    [Get("/v3/transfer/batches/out-batch-no/{outBatchNo}")]
+    Task<TransferBatchQueryResponse> QueryBatchByOutBatchNoAsync(
+        [Path] string outBatchNo,
+        [Query("need_query_detail")] bool needQueryDetail,
+        [Query("offset")] int? offset = null,
+        [Query("limit")] int? limit = null,
+        [Query("detail_status")] string? detailStatus = null,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 旧版·按微信明细单号查询转账明细。
+    /// 官方文档：<see href="https://pay.weixin.qq.com/doc/v3/merchant/4012458886"/>
+    /// （2026-10-18 逐字段核验；支持商户：【普通商户】）。
+    /// </summary>
+    /// <param name="batchId">微信批次单号（官方 path <c>batch_id</c>，必填 string(64)）。</param>
+    /// <param name="detailId">微信明细单号（官方 path <c>detail_id</c>，必填 string(64)）。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/> 取消操作令牌对象。</param>
+    /// <returns>平铺明细表（含金额、收款人、失败原因），见 <see cref="TransferBatchDetailResponse"/>。</returns>
+    /// <remarks>
+    /// <b>官方契约</b>：<b>GET</b> <c>/v3/transfer/batches/batch-id/{batch_id}/details/detail-id/{detail_id}</c>；
+    /// 两段 path 都必须带，缺一不可。
+    /// </remarks>
+    [Get("/v3/transfer/batches/batch-id/{batchId}/details/detail-id/{detailId}")]
+    Task<TransferBatchDetailResponse> QueryBatchDetailByDetailIdAsync(
+        [Path] string batchId,
+        [Path] string detailId,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 旧版·按商户明细单号查询转账明细。
+    /// 官方文档：<see href="https://pay.weixin.qq.com/doc/v3/merchant/4012458902"/>
+    /// （2026-10-18 逐字段核验；支持商户：【普通商户】）。
+    /// </summary>
+    /// <param name="outBatchNo">商户批次单号（官方 path <c>out_batch_no</c>，必填 string(32)）。</param>
+    /// <param name="outDetailNo">商户明细单号（官方 path <c>out_detail_no</c>，必填 string(32)）。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/> 取消操作令牌对象。</param>
+    /// <returns>平铺明细表，见 <see cref="TransferBatchDetailResponse"/>。</returns>
+    /// <remarks>
+    /// <b>官方契约</b>：<b>GET</b> <c>/v3/transfer/batches/out-batch-no/{out_batch_no}/details/out-detail-no/{out_detail_no}</c>；
+    /// 应答表与按微信明细单号查询<b>逐项一致</b> ⇒ 共用同一响应类型。
+    /// </remarks>
+    [Get("/v3/transfer/batches/out-batch-no/{outBatchNo}/details/out-detail-no/{outDetailNo}")]
+    Task<TransferBatchDetailResponse> QueryBatchDetailByOutDetailNoAsync(
+        [Path] string outBatchNo,
+        [Path] string outDetailNo,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 旧版·申请批次转账电子回单。
+    /// 官方文档：<see href="https://pay.weixin.qq.com/doc/v3/merchant/4012458946"/>
+    /// （2026-10-18 逐字段核验；支持商户：【普通商户】）。
+    /// </summary>
+    /// <param name="request">申请请求体（仅 <c>out_batch_no</c>），见 <see cref="TransferBillReceiptRequest"/>。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/> 取消操作令牌对象。</param>
+    /// <returns>回单申请单，见 <see cref="TransferBillReceiptResponse"/>。</returns>
+    /// <remarks>
+    /// <para><b>官方契约</b>：<b>POST</b> <c>/v3/transfer/bill-receipt</c>；无 path / query 参数。</para>
+    /// <para><b>两段式</b>：申请后通常为 <c>ACCEPTED</c>，须轮询查询端点直到 <c>FINISHED</c>
+    /// 才具备 <c>hash_value</c> / <c>download_url</c>。</para>
+    /// </remarks>
+    [Post("/v3/transfer/bill-receipt")]
+    Task<TransferBillReceiptResponse> ApplyBillReceiptAsync(
+        [Body] TransferBillReceiptRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 旧版·查询批次转账电子回单。
+    /// 官方文档：<see href="https://pay.weixin.qq.com/doc/v3/merchant/4012458950"/>
+    /// （2026-10-18 逐字段核验；支持商户：【普通商户】）。
+    /// </summary>
+    /// <param name="outBatchNo">商户批次单号（官方 path <c>out_batch_no</c>，必填 string(32)）。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/> 取消操作令牌对象。</param>
+    /// <returns>回单申请单，见 <see cref="TransferBillReceiptResponse"/>。</returns>
+    /// <remarks>
+    /// <b>官方契约</b>：<b>GET</b> <c>/v3/transfer/bill-receipt/{out_batch_no}</c>；
+    /// 应答表与申请端点<b>逐项一致</b> ⇒ 共用同一响应类型。
+    /// 下载地址不得自行拼接，且须用 <c>hash_value</c> 校验文件摘要。
+    /// </remarks>
+    [Get("/v3/transfer/bill-receipt/{outBatchNo}")]
+    Task<TransferBillReceiptResponse> QueryBillReceiptAsync(
+        [Path] string outBatchNo,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 旧版·申请转账明细电子回单。
+    /// 官方文档：<see href="https://pay.weixin.qq.com/doc/v3/merchant/4012458967"/>
+    /// （2026-10-18 逐字段核验；支持商户：【普通商户】）。
+    /// </summary>
+    /// <param name="request">申请请求体，见 <see cref="TransferElectronicReceiptRequest"/>。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/> 取消操作令牌对象。</param>
+    /// <returns>明细回单申请单，见 <see cref="TransferElectronicReceiptResponse"/>。</returns>
+    /// <remarks>
+    /// <para><b>官方契约</b>：<b>POST</b> <c>/v3/transfer-detail/electronic-receipts</c>；无 path / query 参数。</para>
+    /// <para><b><c>accept_type</c> 三值</b>见 <see cref="TransferReceiptAcceptTypes"/>；
+    /// 不同取值的 <c>out_batch_no</c> 必填性不同，须按官方页面逐场景核对。</para>
+    /// </remarks>
+    [Post("/v3/transfer-detail/electronic-receipts")]
+    Task<TransferElectronicReceiptResponse> ApplyElectronicReceiptAsync(
+        [Body] TransferElectronicReceiptRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 旧版·查询转账明细电子回单。
+    /// 官方文档：<see href="https://pay.weixin.qq.com/doc/v3/merchant/4012458972"/>
+    /// （2026-10-18 逐字段核验；支持商户：【普通商户】）。
+    /// </summary>
+    /// <param name="acceptType">回单类型（官方 query <c>accept_type</c>，必填 string）：取值见 <see cref="TransferReceiptAcceptTypes"/>。</param>
+    /// <param name="outBatchNo">商户批次单号（官方 query <c>out_batch_no</c>，条件必填 string(32)）。</param>
+    /// <param name="outDetailNo">商户明细单号（官方 query <c>out_detail_no</c>，必填 string(32)）。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/> 取消操作令牌对象。</param>
+    /// <returns>明细回单申请单，见 <see cref="TransferElectronicReceiptResponse"/>。</returns>
+    /// <remarks>
+    /// <b>官方契约</b>：<b>GET</b> <c>/v3/transfer-detail/electronic-receipts?accept_type=…&amp;out_detail_no=…</c>；
+    /// 应答表与申请端点<b>逐项一致</b> ⇒ 共用同一响应类型。
+    /// </remarks>
+    [Get("/v3/transfer-detail/electronic-receipts")]
+    Task<TransferElectronicReceiptResponse> QueryElectronicReceiptAsync(
+        [Query("accept_type")] string acceptType,
+        [Query("out_batch_no")] string? outBatchNo,
+        [Query("out_detail_no")] string outDetailNo,
         CancellationToken cancellationToken = default);
 }

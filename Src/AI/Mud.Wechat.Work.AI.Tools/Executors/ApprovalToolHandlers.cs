@@ -32,9 +32,15 @@ namespace Mud.Wechat.Work.AI.Tools.Executors;
 /// </para>
 /// </remarks>
 /// <param name="approval">审批域 SDK（应用上下文由回合作用域给定）。</param>
-public sealed class ApprovalToolHandlers(IWechatWorkApprovalService approval)
+/// <param name="template">审批模板域 SDK。</param>
+public sealed class ApprovalToolHandlers(
+    IWechatWorkApprovalService approval,
+    IWechatWorkApprovalTemplateService template)
 {
     private readonly IWechatWorkApprovalService _approval = approval ?? throw new ArgumentNullException(nameof(approval));
+
+    private readonly IWechatWorkApprovalTemplateService _template =
+        template ?? throw new ArgumentNullException(nameof(template));
 
     /// <summary>执行 <c>approval.get</c>。</summary>
     /// <param name="args">模型侧入参（<c>sp_no</c> 必填）。</param>
@@ -112,6 +118,71 @@ public sealed class ApprovalToolHandlers(IWechatWorkApprovalService approval)
         }
 
         return items;
+    }
+
+    /// <summary>执行 <c>approval.template.get</c>。</summary>
+    /// <param name="args">模型侧入参（<c>template_id</c> 必填）。</param>
+    /// <param name="cancellationToken">取消令牌。</param>
+    /// <returns>工具结果。</returns>
+    [ToolHandler(typeof(IWechatWorkApprovalTemplateGetTool))]
+    public async Task<ToolResult> GetTemplateAsync(
+        IReadOnlyDictionary<string, object?> args,
+        CancellationToken cancellationToken)
+    {
+        var request = ApprovalTemplateGetArgs.Unpack(args);
+
+        var response = await _template.GetTemplateDetailAsync(
+            new GetApprovalTemplateDetailRequest { TemplateId = request.TemplateId },
+            cancellationToken).ConfigureAwait(false);
+        var outcome = WechatApiResultReader.Read(response);
+        if (!outcome.Ok || outcome.Data?.TemplateContent is not { } content)
+        {
+            return ToolResult.FromError(outcome.ErrorText ?? "审批模板不存在或无权访问（template_content 为空）。");
+        }
+
+        var names = new JsonArray();
+        foreach (var name in outcome.Data.TemplateNames ?? [])
+        {
+            if (!string.IsNullOrWhiteSpace(name.Text))
+            {
+                names.Add((JsonNode?)JsonValue.Create(name.Text));
+            }
+        }
+
+        var controls = new JsonArray();
+        foreach (var control in content.Controls ?? [])
+        {
+            controls.Add((JsonNode?)new JsonObject
+            {
+                ["control"] = control.Property?.Control,
+                ["id"] = control.Property?.Id,
+                ["title"] = FirstText(control.Property?.Title),
+                ["require"] = JsonValue.Create(control.Property?.Require),
+            });
+        }
+
+        // 模板是结构不是数据：只给控件类型 / ID / 标题 / 是否必填，config（选项值等）不外发。
+        return ToolResult.FromText(ToolResultJson.ToText(new JsonObject
+        {
+            ["template_id"] = request.TemplateId,
+            ["template_names"] = names,
+            ["controls"] = controls,
+            ["control_count"] = controls.Count,
+        }));
+    }
+
+    /// <summary>多语言文本列表投影：取首个非空文本（模板名 / 控件标题的模型可读形态）。</summary>
+    private static string? FirstText(List<ApprovalLangTextItem>? items)
+    {
+        foreach (var item in items ?? [])
+        {
+            if (!string.IsNullOrWhiteSpace(item.Text))
+            {
+                return item.Text;
+            }
+        }
+
+        return null;
     }
 
     /// <summary>表单字段名投影：只给控件标题（结构线索），不给控件取值。</summary>

@@ -128,6 +128,7 @@ public class WechatToolRegistryTests
         if (approval is not null)
         {
             services.AddSingleton(approval);
+            services.AddSingleton(new Mock<IWechatWorkApprovalTemplateService>(MockBehavior.Loose).Object);
         }
 
         if (checkin is not null)
@@ -175,6 +176,7 @@ public class WechatToolRegistryTests
             services.AddSingleton(new Mock<IWechatWorkKfAccountService>(MockBehavior.Loose).Object);
             services.AddSingleton(new Mock<IWechatWorkKfServicerService>(MockBehavior.Loose).Object);
             services.AddSingleton(new Mock<IWechatWorkKfSessionService>(MockBehavior.Loose).Object);
+            services.AddSingleton(new Mock<IWechatWorkKfStatisticsService>(MockBehavior.Loose).Object);
         }
 
         return services

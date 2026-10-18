@@ -33,6 +33,12 @@ namespace Mud.Wechat.Work.AI.Tools.Executors;
 /// <param name="users">成员域 SDK（应用上下文由回合作用域给定）。</param>
 public sealed class ContactsUserToolHandlers(IWechatWorkUsersService users)
 {
+    /// <summary><c>user/list_id</c> 的官方单页上限。</summary>
+    private const int MaxIdPageSize = 10000;
+
+    /// <summary><c>user/list_id</c> 的默认单页条数（官方上限 1 万，工具面取更保守的默认值）。</summary>
+    private const int DefaultIdPageSize = 1000;
+
     private readonly IWechatWorkUsersService _users = users ?? throw new ArgumentNullException(nameof(users));
 
     /// <summary>执行 <c>contacts.user.get</c>。</summary>
@@ -117,6 +123,52 @@ public sealed class ContactsUserToolHandlers(IWechatWorkUsersService users)
         }
 
         return ToolResult.FromText(ToolResultJson.ToText(new JsonObject { ["userlist"] = items, ["count"] = items.Count }));
+    }
+
+    /// <summary>执行 <c>contacts.user.id_list</c>。</summary>
+    /// <param name="args">模型侧入参。</param>
+    /// <param name="cancellationToken">取消令牌。</param>
+    /// <returns>工具结果。</returns>
+    [ToolHandler(typeof(IWechatWorkContactsUserIdListTool))]
+    public async Task<ToolResult> ListIdsAsync(
+        IReadOnlyDictionary<string, object?> args,
+        CancellationToken cancellationToken)
+    {
+        var request = ContactsUserIdListArgs.Unpack(args);
+
+        var limit = request.Limit ?? DefaultIdPageSize;
+        if (limit is < 1 or > MaxIdPageSize)
+        {
+            return ToolResult.FromError($"参数非法：limit 必须在 1~{MaxIdPageSize} 之间。");
+        }
+
+        var response = await _users.ListUserIdsAsync(
+            new ListUserIdsRequest { Cursor = request.Cursor, Limit = limit },
+            cancellationToken).ConfigureAwait(false);
+        var outcome = WechatApiResultReader.Read(response);
+        if (!outcome.Ok)
+        {
+            return ToolResult.FromError(outcome.ErrorText ?? "拉取成员 ID 列表失败。");
+        }
+
+        var items = new JsonArray();
+        foreach (var item in outcome.Data?.DeptUser ?? [])
+        {
+            items.Add((JsonNode?)new JsonObject
+            {
+                ["userid"] = item.UserId,
+                ["open_userid"] = item.OpenUserId,
+                ["department"] = JsonValue.Create(item.Department),
+            });
+        }
+
+        // 空列表是合法答案（该页没有成员或已翻完），不转错误。
+        return ToolResult.FromText(ToolResultJson.ToText(new JsonObject
+        {
+            ["dept_user"] = items,
+            ["count"] = items.Count,
+            ["next_cursor"] = outcome.Data?.NextCursor,
+        }));
     }
 
     private static JsonObject ProjectUser(UserInfo user, bool includeLeaders = true)

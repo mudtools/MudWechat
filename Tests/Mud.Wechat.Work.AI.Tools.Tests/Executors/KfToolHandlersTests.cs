@@ -15,6 +15,7 @@ public class KfToolHandlersTests
     private readonly Mock<IWechatWorkKfAccountService> _accounts = new(MockBehavior.Loose);
     private readonly Mock<IWechatWorkKfServicerService> _servicers = new(MockBehavior.Loose);
     private readonly Mock<IWechatWorkKfSessionService> _sessions = new(MockBehavior.Loose);
+    private readonly Mock<IWechatWorkKfStatisticsService> _statistics = new(MockBehavior.Loose);
 
     [Fact]
     public async Task AccountList_ShouldReturnOpenKfIds()
@@ -115,7 +116,99 @@ public class KfToolHandlersTests
             Times.Never);
     }
 
-    private KfToolHandlers Handler() => new(_accounts.Object, _servicers.Object, _sessions.Object);
+    private KfToolHandlers Handler() => new(_accounts.Object, _servicers.Object, _sessions.Object, _statistics.Object);
+
+    [Fact]
+    public async Task CorpStatistic_ShouldProjectDailyAggregates()
+    {
+        _statistics
+            .Setup(s => s.GetCorpStatisticAsync(It.IsAny<GetKfCorpStatisticRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new GetKfCorpStatisticResponse
+            {
+                ErrorCode = 0,
+                StatisticList =
+                [
+                    new KfCorpStatisticItem
+                    {
+                        StatTime = 1699920000,
+                        Statistic = new KfCorpStatisticData
+                        {
+                            SessionCount = 12,
+                            CustomerCount = 9,
+                            CustomerMsgCount = 48,
+                            AiSessionReplyCount = 5,
+                            AiTransferRate = 0.4,
+                            AiKnowledgeHitRate = 0.75,
+                            MsgRejectedCustomerCount = 1,
+                        },
+                    },
+                ],
+            });
+
+        var result = await Handler().GetCorpStatisticAsync(
+            Args(("open_kfid", "wk-1"), ("start_time", "1699920000"), ("end_time", "1700000000")),
+            CancellationToken.None);
+
+        result.Text.Should().Contain("\"stat_time\":1699920000");
+        result.Text.Should().Contain("\"session_cnt\":12");
+        result.Text.Should().Contain("\"customer_cnt\":9");
+        result.Text.Should().Contain("\"ai_transfer_rate\":0.4");
+        result.Text.Should().Contain("\"ai_knowledge_hit_rate\":0.75");
+        result.Text.Should().Contain("\"count\":1");
+    }
+
+    [Fact]
+    public async Task CorpStatistic_SpanOverThirtyOneDays_ShouldReturnErrorWithoutCallingSdk()
+    {
+        var result = await Handler().GetCorpStatisticAsync(
+            Args(("open_kfid", "wk-1"), ("start_time", "1690000000"), ("end_time", "1700000000")),
+            CancellationToken.None);
+
+        result.Text.Should().Contain("31 天");
+        _statistics.Verify(
+            s => s.GetCorpStatisticAsync(It.IsAny<GetKfCorpStatisticRequest>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task ServicerStatistic_ShouldProjectReplyAndSatisfactionMetrics()
+    {
+        _statistics
+            .Setup(s => s.GetServicerStatisticAsync(It.IsAny<GetKfServicerStatisticRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new GetKfServicerStatisticResponse
+            {
+                ErrorCode = 0,
+                StatisticList =
+                [
+                    new KfServicerStatisticItem
+                    {
+                        StatTime = 1699920000,
+                        Statistic = new KfServicerStatisticData
+                        {
+                            SessionCount = 8,
+                            CustomerCount = 7,
+                            ReplyRate = 0.9,
+                            FirstReplyAverageSec = 42.5,
+                            SatisfactionInvestgateCount = 5,
+                            SatisfiedRate = 0.8,
+                            MiddlingRate = 0.1,
+                            DissatisfiedRate = 0.1,
+                        },
+                    },
+                ],
+            });
+
+        var result = await Handler().GetServicerStatisticAsync(
+            Args(("open_kfid", "wk-1"), ("servicer_userid", "zhangsan"), ("start_time", "1699920000"), ("end_time", "1700000000")),
+            CancellationToken.None);
+
+        result.Text.Should().Contain("\"reply_rate\":0.9");
+        result.Text.Should().Contain("\"first_reply_average_sec\":42.5");
+        result.Text.Should().Contain("\"satisfaction_investgate_count\":5");
+        result.Text.Should().Contain("\"satisfied_rate\":0.8");
+        result.Text.Should().Contain("\"count\":1");
+    }
+
 
     private static Dictionary<string, object?> Args(params (string Key, object? Value)[] pairs)
     {

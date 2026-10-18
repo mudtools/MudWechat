@@ -46,11 +46,11 @@
 不再重复声明面已表达的校验。改声明面后必须重固化 golden 快照：
 `scripts/Update-WechatToolGolden.ps1`（`Generated/WechatToolSchemas.golden.txt` 漂移即 `MUDWT014` 构建失败）。
 
-当前策展面（48 个：40 只读 + 7 受控写 + 1 高危写）：
+当前策展面（52 个：44 只读 + 7 受控写 + 1 高危写）：
 
 | 域 | 工具 | SDK 源 |
 |---|---|---|
-| 审批 | `approval.get` | `IWechatWorkApprovalService.GetApprovalDetailAsync` |
+| 审批 | `approval.get` / `approval.template.get` | `IWechatWorkApprovalService.GetApprovalDetailAsync` / `IWechatWorkApprovalTemplateService.GetTemplateDetailAsync` |
 | 打卡 | `checkin.record.list` | `IWechatWorkInternalCheckinRecordService.GetCheckinDataAsync`（自建口径） |
 | 客户联系 | `externalcontact.follow_user.list` / `.contact.list` / `.contact.get` / `.tag.list` | `IWechatWorkExternalContact{FollowUser,Customer,Tag}Service` |
 | 客户群 | `externalcontact.groupchat.list` / `.groupchat.get` | `IWechatWorkExternalContactGroupChatService` |
@@ -64,9 +64,10 @@
 | 汇报 | `journal.record.list` / `.get` | `IWechatWorkInternalJournalService`（自建口径） |
 | 直播 | `living.list` / `.get` / `.watch_stat` | `IWechatWorkLivingService` |
 | 微信客服 | `kf.account.list` / `kf.servicer.list` / `kf.session.get` | `IWechatWorkKf{Account,Servicer,Session}Service` |
+| 微信客服（统计） | `kf.corp_statistic` / `kf.servicer_statistic` | `IWechatWorkKfStatisticsService` |
 | 微信客服（**L2 受控写**） | `kf.message.send` | `IWechatWorkKfSessionService.SendTextMessageAsync` |
 | 部门 | `contacts.department.get` / `.list` / `.child_ids` | `IWechatWorkDepartmentsService` |
-| 成员 | `contacts.user.get` / `.list` / `.simple_list` | `IWechatWorkUsersService` |
+| 成员 | `contacts.user.get` / `.list` / `.simple_list` / `.id_list` | `IWechatWorkUsersService` |
 | 标签 | `contacts.tag.list`（零参）/ `.members` | `IWechatWorkTagsService` |
 | 标签（**L2 受控写**） | `contacts.tag.create` | `IWechatWorkTagsService.CreateTagAsync` |
 | 微文档 | `wedoc.doc.base_info` | `IWechatWorkWedocService.GetDocumentBaseInfoAsync` |
@@ -102,6 +103,11 @@
 客户群域同理：成员只投影 `userid`/类型/入群时间与方式/邀请人/群昵称（姓名需模型显式 `need_name` 才向官方索取），
 **不外发** 群成员的 `unionid`；朋友圈域只投影文本、图片张数、有无视频、图文标题与链接、地点名，
 **不外发** `media_id`（宿主素材资产）与经纬度（行踪），互动数据只给互动者身份与时间（官方此端点不返回评论正文）。
+审批模板面（`approval.template.get`）与审批详格式一致：只给控件类型 / ID / 标题 / 是否必填，`config`（选项值、单位等模板配置）
+不外发——「模板结构」与「单据取值」都不是工具面的数据。客服统计面（`kf.corp_statistic` / `kf.servicer_statistic`）与客户统计
+同一条边界：只回逐日计数与比率，不含客户身份与会话正文；且官方**当天数据次日才可获取**、无数据指标直接缺省，描述里已写明，
+免得模型把「今天的指标为空」当成「没有会话」。成员 `id_list` 是「有哪些人」的最轻入口（userid ↔ 部门，游标分页），
+需要姓名/职务再按 ID 走 `contacts.user.get` / `.simple_list`。
 
 **三跳自举**：客户联系没有「一把拉全企业客户」的公共读端点，工具面按 `follow_user.list → contact.list(userid)
 → contact.get(external_userid)` 逐跳收敛，既不越权聚合，也不让模型猜不存在的能力。

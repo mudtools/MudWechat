@@ -13,6 +13,7 @@ namespace Mud.Wechat.Work.AI.Tools.Tests.Executors;
 public class ApprovalToolHandlersTests
 {
     private readonly Mock<IWechatWorkApprovalService> _approval = new(MockBehavior.Loose);
+    private readonly Mock<IWechatWorkApprovalTemplateService> _template = new(MockBehavior.Loose);
 
     [Fact]
     public async Task Get_ShouldProjectStatusAndFlowWithoutFormValues()
@@ -126,7 +127,61 @@ public class ApprovalToolHandlersTests
         result.Text.Should().Contain("info", "空载荷要给出可读原因，而不是一张空 JSON");
     }
 
-    private ApprovalToolHandlers Handler() => new(_approval.Object);
+    [Fact]
+    public async Task GetTemplate_ShouldProjectControlStructureWithoutConfig()
+    {
+        _template
+            .Setup(t => t.GetTemplateDetailAsync(It.IsAny<GetApprovalTemplateDetailRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new GetApprovalTemplateDetailResponse
+            {
+                ErrorCode = 0,
+                TemplateNames = [new ApprovalLangTextItem { Text = "报销申请", Lang = "zh_CN" }],
+                TemplateContent = new ApprovalTemplateContent
+                {
+                    Controls =
+                    [
+                        new ApprovalTemplateControl
+                        {
+                            Property = new ApprovalTemplateControlProperty
+                            {
+                                Control = "Money",
+                                Id = "money-1",
+                                Title = [new ApprovalLangTextItem { Text = "报销金额" }],
+                                Require = 1,
+                            },
+                            Config = new ApprovalTemplateControlConfig
+                            {
+                                Tips = new ApprovalTipsContent { TipsContent = [] },
+                            },
+                        },
+                    ],
+                },
+            });
+
+        var result = await Handler().GetTemplateAsync(Args(("template_id", "tpl-1")), CancellationToken.None);
+
+        result.Text.Should().Contain("\"template_id\":\"tpl-1\"");
+        result.Text.Should().Contain("\"报销申请\"");
+        result.Text.Should().Contain("\"control\":\"Money\"");
+        result.Text.Should().Contain("\"title\":\"报销金额\"");
+        result.Text.Should().Contain("\"require\":1");
+        result.Text.Should().Contain("\"control_count\":1");
+        result.Text.Should().NotContain("元", "模板 config（选项值/单位等）不外发，只给控件结构");
+    }
+
+    [Fact]
+    public async Task GetTemplate_WhenContentMissing_ShouldReturnReadableError()
+    {
+        _template
+            .Setup(t => t.GetTemplateDetailAsync(It.IsAny<GetApprovalTemplateDetailRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new GetApprovalTemplateDetailResponse { ErrorCode = 0, TemplateContent = null });
+
+        var result = await Handler().GetTemplateAsync(Args(("template_id", "tpl-1")), CancellationToken.None);
+
+        result.Text.Should().Contain("template_content");
+    }
+
+    private ApprovalToolHandlers Handler() => new(_approval.Object, _template.Object);
 
     private static Dictionary<string, object?> Args(params (string Key, object? Value)[] pairs)
     {

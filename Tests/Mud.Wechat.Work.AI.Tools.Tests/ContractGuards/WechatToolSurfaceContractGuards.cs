@@ -24,6 +24,7 @@ public class WechatToolSurfaceContractGuards
         WechatToolNames.ReadonlyAll.Should().Equal(
             [
                 "approval.get",
+                "approval.template.get",
                 "checkin.record.list",
                 "contacts.department.child_ids",
                 "contacts.department.get",
@@ -31,6 +32,7 @@ public class WechatToolSurfaceContractGuards
                 "contacts.tag.list",
                 "contacts.tag.members",
                 "contacts.user.get",
+                "contacts.user.id_list",
                 "contacts.user.list",
                 "contacts.user.simple_list",
                 "externalcontact.contact.get",
@@ -54,7 +56,9 @@ public class WechatToolSurfaceContractGuards
                 "journal.record.get",
                 "journal.record.list",
                 "kf.account.list",
+                "kf.corp_statistic",
                 "kf.servicer.list",
+                "kf.servicer_statistic",
                 "kf.session.get",
                 "living.get",
                 "living.list",
@@ -113,6 +117,8 @@ public class WechatToolSurfaceContractGuards
     [InlineData("contacts.user.get", "IWechatWorkUsersService.GetUserAsync", "/cgi-bin/user/get", "GET", WechatToolRisk.Read, "contacts.user.read")]
     [InlineData("contacts.user.list", "IWechatWorkUsersService.GetUserDetailListAsync", "/cgi-bin/user/list", "GET", WechatToolRisk.Read, "contacts.user.read")]
     [InlineData("contacts.user.simple_list", "IWechatWorkUsersService.GetUserSimpleListAsync", "/cgi-bin/user/simplelist", "GET", WechatToolRisk.Read, "contacts.user.read")]
+    [InlineData("approval.template.get", "IWechatWorkApprovalTemplateService.GetTemplateDetailAsync", "/cgi-bin/oa/gettemplatedetail", "POST", WechatToolRisk.Read, "approval.read")]
+    [InlineData("contacts.user.id_list", "IWechatWorkUsersService.ListUserIdsAsync", "/cgi-bin/user/list_id", "POST", WechatToolRisk.Read, "contacts.user.read")]
     [InlineData("externalcontact.contact.get", "IWechatWorkExternalContactCustomerService.GetCustomerDetailAsync", "/cgi-bin/externalcontact/get", "GET", WechatToolRisk.Read, "externalcontact.contact.read")]
     [InlineData("externalcontact.contact.list", "IWechatWorkExternalContactCustomerService.GetCustomerListAsync", "/cgi-bin/externalcontact/list", "GET", WechatToolRisk.Read, "externalcontact.contact.read")]
     [InlineData("externalcontact.follow_user.list", "IWechatWorkExternalContactFollowUserService.GetFollowUserListAsync", "/cgi-bin/externalcontact/get_follow_user_list", "GET", WechatToolRisk.Read, "externalcontact.follow_user.read")]
@@ -136,7 +142,9 @@ public class WechatToolSurfaceContractGuards
     [InlineData("journal.record.list", "IWechatWorkInternalJournalService.GetJournalRecordListAsync", "/cgi-bin/oa/journal/get_record_list", "POST", WechatToolRisk.Read, "journal.record.read")]
     [InlineData("kf.account.list", "IWechatWorkKfAccountService.GetAccountListAsync", "/cgi-bin/kf/account/list", "POST", WechatToolRisk.Read, "kf.account.read")]
     [InlineData("kf.message.send", "IWechatWorkKfSessionService.SendTextMessageAsync", "/cgi-bin/kf/send_msg", "POST", WechatToolRisk.Write, "kf.message.write")]
+    [InlineData("kf.corp_statistic", "IWechatWorkKfStatisticsService.GetCorpStatisticAsync", "/cgi-bin/kf/get_corp_statistic", "POST", WechatToolRisk.Read, "kf.statistic.read")]
     [InlineData("kf.servicer.list", "IWechatWorkKfServicerService.GetServicerListAsync", "/cgi-bin/kf/servicer/list", "GET", WechatToolRisk.Read, "kf.servicer.read")]
+    [InlineData("kf.servicer_statistic", "IWechatWorkKfStatisticsService.GetServicerStatisticAsync", "/cgi-bin/kf/get_servicer_statistic", "POST", WechatToolRisk.Read, "kf.statistic.read")]
     [InlineData("kf.session.get", "IWechatWorkKfSessionService.GetServiceStateAsync", "/cgi-bin/kf/service_state/get", "POST", WechatToolRisk.Read, "kf.session.read")]
     [InlineData("living.get", "IWechatWorkLivingService.GetLivingInfoAsync", "/cgi-bin/living/get_living_info", "GET", WechatToolRisk.Read, "living.read")]
     [InlineData("living.list", "IWechatWorkLivingService.GetUserAllLivingIdAsync", "/cgi-bin/living/get_user_all_livingid", "POST", WechatToolRisk.Read, "living.read")]

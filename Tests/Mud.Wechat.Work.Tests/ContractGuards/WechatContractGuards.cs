@@ -142,4 +142,41 @@ public partial class WechatContractGuards
         actual.Should().BeEquivalentTo(expected);
     }
 
+    /// <summary>
+    /// 契约守卫 G12：四条线的应用管理器不得残留上游 <c>BC-30</c> 已<b>物理移除</b>的离线接缝
+    /// （<c>GetWebApi</c> / <c>GetDefaultWebApi</c> / <c>RegisterSwitcherFactory</c> 及其私有异常工厂），
+    /// 保证「每个公开接缝必须有真实消费点」不变量。
+    /// </summary>
+    /// <remarks>
+    /// 上游 <c>Mud.HttpUtils</c> 3.0.8 随 <c>BC-30</c> 移除 <c>IAppManager&lt;T&gt;</c> 三成员，本仓四线实现体同批删除。
+    /// 四个 <c>*AppManager</c> 分属四个程序集（且 <c>OpenPlatformAppManager</c> 为 <c>internal</c>、非
+    /// <c>InternalsVisibleTo</c> 目标），反射形态需四个测试工程各写一份 ⇒ 取<b>源文本</b>形态：
+    /// 按仓库根定位读四个文件、断言四个签名<b>零命中</b>（防回潮）。
+    /// 作用域切换的合法入口恒为 DI 解析的 <c>I*AppContextSwitcher.UseAppScope</c> / <c>UseDefaultAppScope</c>。
+    /// </remarks>
+    [Fact]
+    public void AppManagers_ShouldNotDeclareOrphanSeamsRemovedByBc30()
+    {
+        var files = new[]
+        {
+            SourcePath("Mud.Wechat.Work.Abstractions", "Authentication", "MultiApp", "WechatAppManager.cs"),
+            SourcePath("Mud.Wechat.OfficialAccount.Abstractions", "Authentication", "MultiApp", "MpAppManager.cs"),
+            SourcePath("Mud.Wechat.Channels.Abstractions", "Authentication", "MultiApp", "ChannelsAppManager.cs"),
+            SourcePath("Mud.Wechat.OpenPlatform", "Authentication", "OpenPlatformAppManager.cs"),
+        };
+
+        var orphanSeams = new[] { "GetWebApi<", "GetDefaultWebApi<", "RegisterSwitcherFactory<", "NotSupportedSwitcher(" };
+
+        foreach (var file in files)
+        {
+            var content = File.ReadAllText(file);
+            foreach (var signature in orphanSeams)
+            {
+                content.Should().NotContain(
+                    signature,
+                    $"上游 Mud.HttpUtils 3.0.8 随 BC-30 已物理移除该离线接缝（{signature}）⇒ {Path.GetFileName(file)} 不得复活；切换走 DI 解析的 I*AppContextSwitcher.UseAppScope/UseDefaultAppScope");
+            }
+        }
+    }
+
 }

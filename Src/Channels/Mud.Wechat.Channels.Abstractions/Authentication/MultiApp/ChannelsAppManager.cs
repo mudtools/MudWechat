@@ -395,24 +395,6 @@ public sealed class ChannelsAppManager : IChannelsAppManager, IDisposable
         => throw new NotSupportedException(
             "ChannelsAppManager 不支持上下文实例替换；如需下线请使用 RemoveApp(appKey)。");
 
-    /// <inheritdoc />
-    public TContextSwitcher GetWebApi<TContextSwitcher>(string appKey)
-        where TContextSwitcher : IAppContextSwitcher
-        => throw new NotSupportedException(
-            "ChannelsAppManager 的上下文切换器为 DI 单例（IChannelsAppContextSwitcher），请从容器解析后使用 UseAppScope/UseDefaultAppScope。");
-
-    /// <inheritdoc />
-    public TContextSwitcher GetDefaultWebApi<TContextSwitcher>()
-        where TContextSwitcher : IAppContextSwitcher
-        => throw new NotSupportedException(
-            "ChannelsAppManager 的上下文切换器为 DI 单例（IChannelsAppContextSwitcher），请从容器解析后使用 UseDefaultAppScope/UseAppScope。");
-
-    /// <inheritdoc />
-    public void RegisterSwitcherFactory<TContextSwitcher>(Func<IChannelsAppContext, TContextSwitcher> factory)
-        where TContextSwitcher : IAppContextSwitcher
-        => throw new NotSupportedException(
-            "ChannelsAppManager 的上下文切换器为 DI 单例（IChannelsAppContextSwitcher），不支持按上下文实例化的工厂委托。");
-
     // ---------------------------------------------------------------- 私有实现
 
     /// <summary>装配应用上下文（命名 HttpClient + 令牌管理器 + 可选 DI scope）。</summary>

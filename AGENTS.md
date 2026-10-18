@@ -155,7 +155,7 @@ scripts/                              # verify-build / audit-config-keys / Gener
 ### 5.3 多应用基座与 DI 装配
 
 - **DI 桥接不变量**：`IAppContextHolder` / `IAppContextSwitcher` / `IWechatAppContextSwitcher` **必须是同一实例**；`IAppContextHolder` 桥接为**无条件注册（最后注册者胜，`AddSingleton` 而非 `TryAdd`）**——组件（Mud.HttpUtils ≥ 3.0.4）默认注册委托式适配器 `DelegatingAppContextHolder`（internal，转发到容器中最后注册的其它 `IAppContextHolder`），无论注册顺序如何 holder 都收敛到本 SDK 切换器。**不得改回 `TryAdd`**（组件先注册时 TryAdd 静默失效 ⇒ 适配器回退其内部 switcher ⇒ 两个 AsyncLocal，P0-1 类缺陷以更隐蔽形态复现）。`TryAdd` 仅适用于两个 Switcher 接口（组件不注册它们）。边界：适配器不支持 `IAppContextHolder.Current` 的 `init` 写入（运行时切换用 `SwitchTo`/`BeginScope`）。破坏同实例 ⇒ 声明式 `[Token]` 客户端上下文恒 `null`，多套件静默回退默认应用令牌。
-- **`WechatAppManager` 直接实现 `IAppManager<IWechatAppContext>`**，**不继承**组件 `DefaultAppManager<T>`（基类另有影子注册表与非 virtual 写入口，会让注册静默写进读不到的表）。注册表单一来源 = `_configs` + `_lazyContexts`；`RegisterApp`/`UpdateApp`/`RegisterSwitcherFactory` 显式 `NotSupportedException`。
+- **`WechatAppManager` 直接实现 `IAppManager<IWechatAppContext>`**，**不继承**组件 `DefaultAppManager<T>`（基类另有影子注册表与非 virtual 写入口，会让注册静默写进读不到的表）。注册表单一来源 = `_configs` + `_lazyContexts`；`RegisterApp`/`UpdateApp` 显式 `NotSupportedException`（`RegisterSwitcherFactory` 及 `GetWebApi`/`GetDefaultWebApi` 已于上游 `Mud.HttpUtils` 3.0.8 随 `BC-30` 物理移除，**勿复活离线接缝**——切换一律走 DI 解析 `IWechatAppContextSwitcher` 的 `UseAppScope`/`UseDefaultAppScope`）。
 - 配置读取走 `ConfiguredConfigs`/`TryGetConfig`（非物化）；`TryGetApp` 会构造 HttpClient/DI scope/Timer，**回调的 `SuiteId → appKey` 匹配不得用它**。
 - 细则（均已被测试锁定，改动前先读对应测试）：`RemoveApp` 顺序恒为 `TryRemove` 先于配置删除、全部移除后 `DefaultAppKey` 置 `null` 且 `GetDefaultApp` 抛明确错误；重建白名单仅瞬时 IO 型异常组，`InvalidOperationException` 直抛；退役队列 fire-and-forget + 停机限时（默认 5s）排空；**持久层清库（`EnqueueCleanup`）恒即时起飞、不享受上下文宽限期**（宽限期只保护在途请求对旧上下文实例的使用；清库无「飞行中的读者」，且进程在宽限期内退出会导致清库永不执行 ⇒ 新实例读穿透命中旧令牌、密钥轮换最长 2h 不生效）——`RemoveApp` 已自动触发，`PurgeAppTokensAsync` 为轮换后权威同步入口；`CreateAppContext` 经 `WechatOwnedResourceTracker` 登记 scope 外产物，装配中途失败逆序回收后原样重抛。
 
@@ -204,7 +204,7 @@ scripts/                              # verify-build / audit-config-keys / Gener
 
 守卫是契约的**权威描述**，改动契约面必须**同批**更新（见 §2）。各域端点计数、路由表、字段名断言、官方反直觉点（多数统计/查询接口官方即 POST、字段名照抄官方原文拼写等）**以守卫源文件与接口 XML 注释为准**，本文不复述。
 
-- 通用守卫 `WechatContractGuards.cs`（G1~G9）：`Mud.HttpUtils*` 全仓单一版本（防混版 `TypeLoadException`）；配置 DTO 禁 `required`；`WechatTokenTypes` 前缀；失效码集合与判定器同源；**G5 = Query 令牌白名单**（未放宽且子接口仅覆盖官方实际开放的应用类型）；授权端点路由与官方一致；Query 凭据参数名 ⊆ 脱敏词表 ∪ 显式豁免（**豁免自过期**，须附追踪号）；DI 桥接三接口同实例；`cancel_auth` 不得「未命中回退全部应用」。
+- 通用守卫 `WechatContractGuards.cs`（G1~G12）：`Mud.HttpUtils*` 全仓单一版本（防混版 `TypeLoadException`）；配置 DTO 禁 `required`；`WechatTokenTypes` 前缀；失效码集合与判定器同源；**G5 = Query 令牌白名单**（未放宽且子接口仅覆盖官方实际开放的应用类型）；授权端点路由与官方一致；Query 凭据参数名 ⊆ 脱敏词表 ∪ 显式豁免（**豁免自过期**，须附追踪号）；DI 桥接三接口同实例；`cancel_auth` 不得「未命中回退全部应用」；`AwaitSharedAsync` 取消信号须异步调度续体（G10）；`ResolveAppKey` 显式即有意、隐式即失败（G11）；**G12 = 四条线 `*AppManager` 不得残留上游 `BC-30` 已物理移除的孤儿离线接缝**（`GetWebApi`/`GetDefaultWebApi`/`RegisterSwitcherFactory`/`NotSupportedSwitcher` 源文本零命中，防回潮）。
 - 归属域守卫 `WechatTokenOwnerContractGuards.cs`（TO1~TO3）：按程序集反射枚举全部应用类型子接口（数量下限防枚举空跑），锁定族别 ↔ `TokenManagerKey` 归属域一一对应、`TokenType` → 官方 Query 参数名不漂移、声明的键被 `WechatTokenRouting.OwnedKeys` 覆盖且自建/非自建不交叉。切换器契约由 `Abstractions.Tests/WechatAppContextSwitcherTests` 锁定（`UseCorpScope` 必在契约上且返回 `IDisposable`；`SetCorp` 必带 `[Obsolete]` 指向它；实现类**不得**标 `[Obsolete]`——废弃标注只放抽象层）。
 - 多应用守卫（`Abstractions.Tests`，MA1~MA4）是**方法体文本断言**（花括号配平），签名漂移须同步更新。
 - 域守卫通用形态：令牌绑定（`Wechat.AccessToken` + Query 注入）、新增 DTO 的上下文登记、**官方未开放 ⇒ 零端点**、继承链子接口集合不漂移、父接口 `IsAbstract` + 子接口经 `InheritedFrom` 父实现类。

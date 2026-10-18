@@ -142,7 +142,7 @@ public class MpAppManagerTests
         manager.GetAllApps().Should().BeEmpty("配置面读取不得物化上下文（否则一次只读动作会构造 HttpClient/管理器 Timer）");
     }
 
-    /// <summary>A8：注册表单一来源——实例注册 / 替换 / 切换器工厂全部显式不支持。</summary>
+    /// <summary>A8：注册表单一来源——实例注册 / 替换全部显式不支持。</summary>
     [Fact]
     public async Task InstanceRegistrationApis_ShouldBeExplicitlyUnsupported()
     {
@@ -154,12 +154,6 @@ public class MpAppManagerTests
         await manager.Invoking(m => m.RegisterAppAsync("x", context)).Should().ThrowAsync<NotSupportedException>();
         manager.Invoking(m => m.UpdateApp("x", context)).Should().Throw<NotSupportedException>();
         await manager.Invoking(m => m.UpdateAppAsync("x", context)).Should().ThrowAsync<NotSupportedException>();
-#pragma warning disable CS0618 // 类型或成员已过时：本用例正是在钉死「BC-30 弃用成员经接口类型调用仍 fail-fast」（4.0 移除前语义不得改变）
-        manager.Invoking(m => m.GetWebApi<IAppContextSwitcher>("mp-default")).Should().Throw<NotSupportedException>();
-        manager.Invoking(m => m.GetDefaultWebApi<IAppContextSwitcher>()).Should().Throw<NotSupportedException>();
-        manager.Invoking(m => m.RegisterSwitcherFactory<IAppContextSwitcher>(_ => null!))
-            .Should().Throw<NotSupportedException>();
-#pragma warning restore CS0618
     }
 
     /// <summary>A9：默认应用设置（未知键抛异常 / Try 版本返回 false）。</summary>

@@ -381,9 +381,6 @@ public class WechatAppManagerTests : IDisposable
 
         var update = () => manager.UpdateApp("a", context);
         update.Should().Throw<NotSupportedException>();
-
-        var switcherFactory = () => manager.RegisterSwitcherFactory<IAppContextSwitcher>(_ => null!);
-        switcherFactory.Should().Throw<NotSupportedException>();
     }
 
     [Fact]

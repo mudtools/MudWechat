@@ -65,7 +65,7 @@ public sealed class MyKefuReplyHandler : IMpCallbackReplyHandler
 
 ## 依赖
 
-`Mud.Wechat.OfficialAccount.Abstractions` + `Mud.Wechat.Abstractions`（叶层内核）+ `Mud.HttpUtils.Generator` 3.0.7（`PrivateAssets=all`，载荷字段映射）+ 本仓 `Mud.Wechat.Callback.Generator` / `Mud.Wechat.Callback.Analyzers`（均 `OutputItemType=Analyzer`、`PrivateAssets=all`，前者不打包、后者随本包 `analyzers/dotnet/cs` 内嵌下发）。
+`Mud.Wechat.OfficialAccount.Abstractions` + `Mud.Wechat.Abstractions`（叶层内核）+ `Mud.HttpUtils.Generator` 3.0.8（`PrivateAssets=all`，载荷字段映射）+ 本仓 `Mud.Wechat.Callback.Generator` / `Mud.Wechat.Callback.Analyzers`（均 `OutputItemType=Analyzer`、`PrivateAssets=all`，前者不打包、后者随本包 `analyzers/dotnet/cs` 内嵌下发）。
 
 `netstandard2.0` 用 `Microsoft.AspNetCore.Http` / `.Http.Abstractions` 2.3.9，`net6.0+` 用 `FrameworkReference Microsoft.AspNetCore.App`。中间件为经典约定式 `RequestDelegate`（**不进 DI**），由宿主 `UseWechatWebhook` 风格的 `UseMpCallback()` 接入。
 

@@ -58,4 +58,4 @@ MpUserInfoResponse info = await users.GetUserInfoAsync(openId, cancellationToken
 
 ## 依赖
 
-`Mud.Wechat.Abstractions`（叶层，仅取 `IWechatApiResponse` 响应契约；依赖方向单向 DataModels → 公用层）+ `Mud.HttpUtils.Attributes` 3.0.7（零依赖特性包）+ `Mud.HttpUtils.Generator` 3.0.7（仅分析器，`PrivateAssets=all`）。
+`Mud.Wechat.Abstractions`（叶层，仅取 `IWechatApiResponse` 响应契约；依赖方向单向 DataModels → 公用层）+ `Mud.HttpUtils.Attributes` 3.0.8（零依赖特性包）+ `Mud.HttpUtils.Generator` 3.0.8（仅分析器，`PrivateAssets=all`）。

@@ -60,6 +60,8 @@ public class OpenPlatformContractGuards
             ("POST", "/cgi-bin/component/api_get_authorizer_list"),
             ("POST", "/cgi-bin/component/api_get_authorizer_option"),
             ("POST", "/cgi-bin/component/api_set_authorizer_option"),
+            ("POST", "/wxa/component/fastregisterbetaweapp"),
+            ("POST", "/wxa/component/fastregisterpersonalweapp"),
         },
         [nameof(IWechatOpenPlatformComponentTicketFreeService)] = new[]
         {
@@ -85,6 +87,7 @@ public class OpenPlatformContractGuards
         {
             ("GET", "/sns/oauth2/component/access_token"),
             ("GET", "/sns/oauth2/component/refresh_token"),
+            ("GET", "/sns/component/jscode2session"),
         },
         [nameof(IWechatOpenPlatformCategoryService)] = new[]
         {

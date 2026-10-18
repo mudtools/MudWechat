@@ -1,0 +1,12 @@
+{
+  "profiles": {
+    "Mud.Wechat.AllInOne.Demo": {
+      "commandName": "Project",
+      "launchBrowser": false,
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "applicationUrl": "https://localhost:56565;http://localhost:56566"
+    }
+  }
+}

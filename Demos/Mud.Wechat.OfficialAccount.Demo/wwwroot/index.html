@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <title>Mud.Wechat 公众号 Demo</title>
+</head>
+<body>
+<h1>公众号 / 服务号 Demo（DM-04）</h1>
+<ul>
+  <li><a href="/oauth/start">① 网页授权（snsapi_base，静默，只给 openid）</a></li>
+  <li><a href="/oauth/start?scope=snsapi_userinfo">② 网页授权（snsapi_userinfo，需用户同意，给昵称头像）</a></li>
+  <li><a href="/jssdk-demo.html">③ JS-SDK 签名页（SDK 内置签名，与企微线的宿主签名对照）</a></li>
+  <li><a href="/healthz">④ 配置摘要（不含凭据）</a></li>
+</ul>
+<p>回调路由：<code>/mp/default</code>（GET echostr 验证 + POST 消息/事件），在公众号后台「服务器配置」里填公网地址。</p>
+<p>被动回复：关注即回欢迎语；文本含「帮助」回指引；其余回明文 <code>success</code>。</p>
+<p>模板消息端点 <code>POST /api/templates/send</code> 需同时满足
+  <code>MUDWECHAT_DEMO_ALLOW_WRITE=1</code> 与 <code>MUDWECHAT_DEMO_MP_TEMPLATE_ID</code>。</p>
+<p>①②③必须在微信客户端内打开，且域名已配为「网页授权域名」与「JS 接口安全域名」。</p>
+</body>
+</html>

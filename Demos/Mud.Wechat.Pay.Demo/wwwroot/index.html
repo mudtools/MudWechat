@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mud.Wechat 微信支付 APIv3 Demo</title>
+  <style>
+    body { font-family: system-ui, "Microsoft YaHei", sans-serif; margin: 2rem auto; max-width: 62rem; color: #1f2328; }
+    h1 { font-size: 1.4rem; }
+    h2 { font-size: 1.05rem; margin-top: 1.6rem; border-left: 4px solid #2f6feb; padding-left: .5rem; }
+    table { border-collapse: collapse; width: 100%; font-size: .9rem; }
+    th, td { border: 1px solid #d0d7de; padding: .35rem .5rem; text-align: left; }
+    pre { background: #f6f8fa; padding: .6rem; overflow-x: auto; font-size: .82rem; white-space: pre-wrap; word-break: break-all; }
+    input, select, button { font: inherit; padding: .3rem .45rem; }
+    .row { display: flex; gap: .5rem; flex-wrap: wrap; align-items: center; margin: .4rem 0; }
+    .warn { background: #fff8c5; border: 1px solid #f0e0a0; padding: .6rem; }
+    code { background: #f6f8fa; padding: 0 .25rem; }
+  </style>
+</head>
+<body>
+<h1>微信支付 APIv3 Demo（DM-06）</h1>
+<p>本页面只做一件事：把「下单 → 通知 → 查单 → 关单 → 退款」这条链上的每个 SDK 调用点摊开，
+  并把官方应答原样回显，方便看清<b>哪些字段才是权威</b>。</p>
+<div class="warn">
+  <b>三条硬约束</b>
+  <ol>
+    <li>下单 / 关单 / 退款是真实出资动作 ⇒ 需 <code>MUDWECHAT_DEMO_ALLOW_WRITE=1</code>；未开启时这些路由<b>根本没有映射</b>（404，而不是 403）。</li>
+    <li><code>notify_url</code> 必须是<b>公网 HTTPS</b> 且与回调路由 <code>/pay/{商户号}</code> 逐字一致。本机地址下得出单、收不到通知 ⇒ 表现为「手机端支付成功，但台账一动不动」。</li>
+    <li>支付成功的权威判定只看<b>查单</b>或 <b>TRANSACTION.SUCCESS 通知</b>，不看手机端回调。</li>
+  </ol>
+</div>
+
+<h2>状态</h2>
+<div class="row"><button onclick="loadHealth()">读取 /healthz</button><button onclick="loadCatalog()">刷新商品目录</button></div>
+<pre id="health">(尚未加载)</pre>
+
+<h2>① 商品目录（内存，价格单位是「分」）</h2>
+<pre id="catalog">(尚未加载)</pre>
+
+<h2>② Native 下单 <code>POST /api/orders/native</code></h2>
+<div class="row">
+  <select id="nativeProduct"></select>
+  <input id="nativeOutTradeNo" placeholder="out_trade_no（留空自动生成）" size="28">
+  <button onclick="nativeOrder()">下单拿 code_url</button>
+</div>
+<pre id="nativeResult">(尚未调用)</pre>
+
+<h2>③ JSAPI / 小程序下单 <code>POST /api/orders/jsapi</code></h2>
+<div class="row">
+  <select id="jsapiProduct"></select>
+  <input id="jsapiOpenId" placeholder="openid（本 appid 下）" size="36">
+  <button onclick="jsapiOrder()">下单拿调起五参数</button>
+</div>
+<pre id="jsapiResult">(尚未调用)</pre>
+
+<h2>④ 查单 / 关单</h2>
+<div class="row">
+  <input id="queryOutTradeNo" placeholder="out_trade_no" size="28">
+  <button onclick="queryOrder()">查单（只读）</button>
+  <button onclick="closeOrder()">关单（写）</button>
+</div>
+<pre id="queryResult">(尚未调用)</pre>
+
+<h2>⑤ 退款 <code>POST /api/refunds</code>（直接出资）</h2>
+<div class="row">
+  <input id="refundOutTradeNo" placeholder="原 out_trade_no" size="28">
+  <input id="refundAmount" placeholder="退款金额（分，留空=全额）" size="20">
+  <button onclick="applyRefund()">申请退款</button>
+  <input id="refundOutRefundNo" placeholder="out_refund_no" size="28">
+  <button onclick="queryRefund()">查退款（只读）</button>
+</div>
+<pre id="refundResult">(尚未调用)</pre>
+
+<h2>⑥ 台账与通知流水（本地、零网络）</h2>
+<div class="row">
+  <button onclick="loadLedger()">/api/orders</button>
+  <button onclick="loadRefunds()">/api/refunds</button>
+  <button onclick="loadNotifications()">/api/notifications</button>
+</div>
+<pre id="ledger">(尚未加载)</pre>
+<p>通知流水只含商户键、事件类型、通知 ID、业务单号与处置结论 ——
+  解密明文（<code>resource</code>）、<code>openid</code>、密文与签名原文一律不回显、不入日志。</p>
+
+<h2>⑦ 回调路由</h2>
+<p>APIv3 通知统一打到 <code>POST /pay/{商户号}</code>；未在商户表登记的键会被 <b>fail-closed 拒绝</b>，绝不回落默认商户。
+  三道闸顺序固定：<b>平台证书验签 → 时间窗 → 一次性指纹（解密成功后才消费）</b>。
+  验签依赖已下载的平台证书，故本 Demo 不内置 Pay 回调离线自测（需真实商户签名，见规划方案 R-3）。</p>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const show = (id, data) => { $(id).textContent = typeof data === 'string' ? data : JSON.stringify(data, null, 2); };
+
+  async function call(id, method, path, body) {
+    try {
+      const res = await fetch(path, {
+        method,
+        headers: body ? { 'Content-Type': 'application/json' } : undefined,
+        body: body ? JSON.stringify(body) : undefined,
+      });
+      const text = await res.text();
+      let parsed;
+      try { parsed = JSON.parse(text); } catch { parsed = text; }
+      show(id, { httpStatus: res.status, body: parsed });
+    } catch (err) {
+      show(id, String(err));
+    }
+  }
+
+  async function loadHealth() {
+    const res = await fetch('/healthz');
+    const json = await res.json();
+    show('health', json);
+    if (json.writeGate !== 'enabled') {
+      show('nativeResult', '写操作闸未开启：POST /api/orders/native 未映射，请求会 404。设 MUDWECHAT_DEMO_ALLOW_WRITE=1 后重启。');
+    }
+  }
+
+  function fillProducts(items) {
+    for (const id of ['nativeProduct', 'jsapiProduct']) {
+      const sel = $(id);
+      sel.innerHTML = '';
+      for (const p of items) {
+        const opt = document.createElement('option');
+        opt.value = p.id;
+        opt.textContent = `${p.name} — ${p.priceInCents} 分`;
+        sel.appendChild(opt);
+      }
+    }
+  }
+
+  async function loadCatalog() {
+    const res = await fetch('/api/catalog');
+    const items = await res.json();
+    show('catalog', items);
+    fillProducts(items);
+  }
+
+  const pick = (selectId) => ({ productId: $(selectId).value });
+
+  function nativeOrder() {
+    const body = pick('nativeProduct');
+    const no = $('nativeOutTradeNo').value.trim();
+    if (no) body.outTradeNo = no;
+    call('nativeResult', 'POST', '/api/orders/native', body);
+  }
+
+  function jsapiOrder() {
+    const body = pick('jsapiProduct');
+    body.openId = $('jsapiOpenId').value.trim();
+    call('jsapiResult', 'POST', '/api/orders/jsapi', body);
+  }
+
+  function queryOrder() {
+    call('queryResult', 'GET', '/api/orders/' + encodeURIComponent($('queryOutTradeNo').value.trim()));
+  }
+
+  function closeOrder() {
+    call('queryResult', 'POST', '/api/orders/' + encodeURIComponent($('queryOutTradeNo').value.trim()) + '/close');
+  }
+
+  function applyRefund() {
+    const body = { outTradeNo: $('refundOutTradeNo').value.trim() };
+    const amount = $('refundAmount').value.trim();
+    if (amount) body.amount = Number(amount);
+    const refundNo = $('refundOutRefundNo').value.trim();
+    if (refundNo) body.outRefundNo = refundNo;
+    call('refundResult', 'POST', '/api/refunds', body);
+  }
+
+  function queryRefund() {
+    call('refundResult', 'GET', '/api/refunds/' + encodeURIComponent($('refundOutRefundNo').value.trim()));
+  }
+
+  const loadLedger = () => call('ledger', 'GET', '/api/orders');
+  const loadRefunds = () => call('ledger', 'GET', '/api/refunds');
+  const loadNotifications = () => call('ledger', 'GET', '/api/notifications');
+
+  loadHealth();
+  loadCatalog();
+</script>
+</body>
+</html>

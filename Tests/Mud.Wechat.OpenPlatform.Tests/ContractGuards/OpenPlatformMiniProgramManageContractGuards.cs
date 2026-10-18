@@ -16,8 +16,8 @@ using Mud.Wechat.OpenPlatform.DataModels.MiniProgramManage;
 namespace Mud.Wechat.OpenPlatform.Tests.ContractGuards;
 
 /// <summary>
-/// 开放平台线「代小程序管理」（MiniProgramManage）域 30-1 子批（<c>/wxa/*</c> 三支接口共 21 端点：
-/// 代码管理 15 + 名称与搜索 5 + 类目 1）契约守卫（MPG 系列，2026-10-17 逐页取证）。
+/// 开放平台线「代小程序管理」（MiniProgramManage）域 30-1 子批（<c>/wxa/*</c> 三支接口共 22 端点：
+/// 代码管理 15 + 名称与搜索 6 + 类目 1）契约守卫（MPG 系列，2026-10-17 逐页取证）。
 /// </summary>
 /// <remarks>
 /// <para><b>本守卫锁定的裁决</b>：① 逐接口（方法, 动词, 路由）表——本族查询类端点动词不统一
@@ -60,7 +60,7 @@ public class OpenPlatformMiniProgramManageContractGuards
         ("UploadMediaAsync", "POST", "/wxa/uploadmedia"),
     };
 
-    /// <summary>名称与搜索 <see cref="IWechatOpenPlatformMpBasicInfoService"/> 的 5 条（方法名, 动词, 路由）期望表。</summary>
+    /// <summary>名称与搜索 <see cref="IWechatOpenPlatformMpBasicInfoService"/> 的 6 条（方法名, 动词, 路由）期望表。</summary>
     private static readonly (string Method, string Verb, string Route)[] BasicInfoEndpoints =
     {
         ("SetNicknameAsync", "POST", "/wxa/setnickname"),
@@ -68,6 +68,7 @@ public class OpenPlatformMiniProgramManageContractGuards
         ("ChangeWxaSearchStatusAsync", "POST", "/wxa/changewxasearchstatus"),
         ("GetWxaSearchStatusAsync", "GET", "/wxa/getwxasearchstatus"),
         ("FetchDataSettingAsync", "POST", "/wxa/fetchdatasetting"),
+        ("CheckWxVerifyNicknameAsync", "POST", "/cgi-bin/wxverify/checkwxverifynickname"),
     };
 
     /// <summary>类目 <see cref="IWechatOpenPlatformMpCategoryService"/> 的 1 条期望表。</summary>
@@ -164,7 +165,7 @@ public class OpenPlatformMiniProgramManageContractGuards
     /// </summary>
     [Fact]
     public void BasicInfoServiceEndpoints_ShouldMatchOfficialVerbRoutes_WhenEnumerated()
-        => AssertEndpoints(typeof(IWechatOpenPlatformMpBasicInfoService), BasicInfoEndpoints, 5);
+        => AssertEndpoints(typeof(IWechatOpenPlatformMpBasicInfoService), BasicInfoEndpoints, 6);
 
     /// <summary>
     /// MPG3：类目 1 端点（GET <c>/wxa/get_category</c>）锁定，与第三方平台自身类目域（<c>/cgi-bin/wxopen/*</c>）不同路由不同令牌。
@@ -351,15 +352,15 @@ public class OpenPlatformMiniProgramManageContractGuards
     }
 
     /// <summary>
-    /// MPG6：本域 104 个 DTO 全量登记进 <see cref="MiniProgramManageJsonContext"/>，且 <c>SerializerClassName</c> 恒为域段 <c>MiniProgramManage</c>。
+    /// MPG6：本域 106 个 DTO 全量登记进 <see cref="MiniProgramManageJsonContext"/>，且 <c>SerializerClassName</c> 恒为域段 <c>MiniProgramManage</c>。
     /// </summary>
     [Fact]
     public void DataModels_ShouldBeRegisteredInDomainJsonContext_WhenSurfaceEnumerated()
     {
         var domainTypes = DomainDtoTypes();
 
-        domainTypes.Should().HaveCount(104,
-            "本域 DTO 数漂移须先核对官方参数表，再同批重跑生成脚本（30-1 落 29 + 30-2 落 30 + 30-3 落 39 + 30-4 试用核验 4 + 30-5 上传应答 2）");
+        domainTypes.Should().HaveCount(106,
+            "本域 DTO 数漂移须先核对官方参数表，再同批重跑生成脚本（30-1 落 31 + 30-2 落 30 + 30-3 落 39 + 30-4 试用核验 4 + 30-5 上传应答 2）");
 
         var context = (JsonSerializerContext)typeof(MiniProgramManageJsonContext)
             .GetProperty("Default", BindingFlags.Public | BindingFlags.Static)!

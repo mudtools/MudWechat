@@ -33,6 +33,7 @@ public sealed class WxaExpressBillService : IWxaExpressBillService
     public const string BillPath = "/cgi-bin/express/delivery/single_waybill/get_bill";
 
     private readonly IAppContextHolder _appContextHolder;
+    private readonly IMpAppManager? _appManager;
     private readonly IHttpContentSerializer _contentSerializer;
 #if NET8_0_OR_GREATER
     private readonly IAotJsonContentSerializer? _aotSerializer;
@@ -43,14 +44,17 @@ public sealed class WxaExpressBillService : IWxaExpressBillService
     /// <param name="appContextHolder">应用上下文持有器（与声明式客户端同源）。</param>
     /// <param name="logger">日志器。</param>
     /// <param name="contentSerializer">HTTP 内容序列化器（可选；未注入时用组件默认）。</param>
+    /// <param name="appManager">应用注册表（可选；用于「无环境上下文时回退默认应用」，与生成客户端同一口径）。</param>
     public WxaExpressBillService(
         IAppContextHolder appContextHolder,
         ILogger<WxaExpressBillService> logger,
-        IHttpContentSerializer? contentSerializer = null)
+        IHttpContentSerializer? contentSerializer = null,
+        IMpAppManager? appManager = null)
     {
         _appContextHolder = appContextHolder ?? throw new ArgumentNullException(nameof(appContextHolder));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _contentSerializer = contentSerializer ?? HttpContentSerializerFactory.CreateDefault();
+        _appManager = appManager;
 #if NET8_0_OR_GREATER
         _aotSerializer = _contentSerializer as IAotJsonContentSerializer;
 #endif
@@ -122,11 +126,14 @@ public sealed class WxaExpressBillService : IWxaExpressBillService
         return _contentSerializer.ToHttpContent(request);
     }
 
+    // 与生成客户端同一口径：环境上下文缺失时回退默认应用（单应用宿主是最常见形态，
+    // 只认 ambient 会让「已配置默认应用」的宿主在本通道恒报错，与本方法原先的提示语自相矛盾）。
     private IMpAppContext ResolveAppContext()
         => _appContextHolder.Current as IMpAppContext
+           ?? _appManager?.GetDefaultApp()
            ?? throw new InvalidOperationException(
                "无法找到当前小程序（公众号）应用上下文（IMpAppContext）。" +
-               "请先进入应用作用域或配置默认应用。");
+               "请先进入应用作用域，或经 AddMpApp 配置默认应用。");
 
     /// <summary>分类一次响应（对账文件文本 / JSON 错误体）。</summary>
     private static async Task<BillOutcome> ClassifyAsync(

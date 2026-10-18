@@ -13,6 +13,7 @@ using Mud.Wechat.Abstractions.TokenManager;
 using Mud.Wechat.Pay.Abstractions.Credential;
 using Mud.Wechat.Pay.Abstractions.Configuration;
 using Mud.Wechat.Pay.Abstractions.Transport;
+using System.Net.Http.Headers;
 
 namespace Mud.Wechat.Pay.Abstractions.Extensions;
 
@@ -188,7 +189,22 @@ public static class PayAppExtensions
 
             services.AddMudHttpClient(
                 WechatPayHttpClientNames.ClientName,
-                static client => client.BaseAddress = new Uri(WechatPayHttpClientNames.BaseAddress))
+                static client =>
+                {
+                    client.BaseAddress = new Uri(WechatPayHttpClientNames.BaseAddress);
+
+                    // 官方退款域（/v3/refund/domestic/*）在**验签之前**就要求 Accept 与 User-Agent 同时存在，
+                    // 缺任一即 400 INVALID_REQUEST「Http头缺少Accept或User-Agent」（DM-06 实测）。
+                    // .NET 的 HttpClient 两者都不默认发 ⇒ 不在此兜住，整个退款域在真实商户下一笔都调不通。
+                    client.DefaultRequestHeaders.Accept.Add(
+                        new MediaTypeWithQualityHeaderValue(WechatPayHttpClientNames.AcceptHeaderValue));
+
+                    var version = typeof(WechatPayHttpClientNames).Assembly.GetName().Version?.ToString() ?? "0.0.0";
+
+                    // TryAddWithoutValidation：UA 只是给官方网关看的产品标识，不值得为格式校验留一条抛异常的路径。
+                    client.DefaultRequestHeaders.TryAddWithoutValidation(
+                        "User-Agent", $"{WechatPayHttpClientNames.UserAgentProductName}/{version}");
+                })
                 .AddHttpMessageHandler<WechatPayAuthorizationHandler>()
                 .AddHttpMessageHandler<WechatPayResponseVerificationHandler>();
         }

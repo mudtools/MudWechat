@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <title>公众号 JS-SDK 签名</title>
+</head>
+<body>
+<h1>wx.config 自检（公众号）</h1>
+<p>待签名 URL 取本页地址栏真实值（<code>#</code> 之后由 SDK 自动去除）：</p>
+<pre id="current"></pre>
+<button onclick="run()">取签名并调 wx.config</button>
+<pre id="out"></pre>
+
+<script src="https://res.wx.qq.com/open/js/jweixin-1.6.0.js"></script>
+<script>
+  const pageUrl = location.href.split('#')[0];
+  document.getElementById('current').textContent = pageUrl;
+
+  async function run() {
+    const cfg = await (await fetch('/jssdk/config?url=' + encodeURIComponent(pageUrl))).json();
+    document.getElementById('out').textContent = JSON.stringify(cfg, null, 2);
+
+    // cfg 即 SDK 的 MpJsApiSignatureResult：appId / url / nonceStr / timeStamp / signature，无 ticket。
+    wx.config(cfg);
+    wx.ready(function () { document.getElementById('out').textContent += '\nwx.config 通过'; });
+    wx.error(function (err) { document.getElementById('out').textContent += '\nwx.config 失败: ' + JSON.stringify(err); });
+  }
+</script>
+</body>
+</html>

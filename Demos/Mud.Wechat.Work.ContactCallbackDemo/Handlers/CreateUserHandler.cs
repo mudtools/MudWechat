@@ -7,15 +7,21 @@
 
 using Mud.Wechat.Work.Abstractions.Callback;
 using Mud.Wechat.Work.Callback.Events.Payloads;
+using Mud.Wechat.Work.ContactCallbackDemo.Services;
 
 namespace Mud.Wechat.Work.ContactCallbackDemo.Handlers;
 
 /// <summary>新增成员事件处理器（<c>create_user</c>）。</summary>
-public sealed class CreateUserHandler : WechatCallbackPayloadHandler<ContactUserChangedPayload>
+/// <remarks>
+/// 处理器在请求 scope 内解析（Transient），幂等追踪器为 Singleton；
+/// <b>处理器必须快速返回</b>（分发软超时默认 4500ms，超时即 503 触发官方重推）。
+/// </remarks>
+public sealed class CreateUserHandler(
+    ILogger<CreateUserHandler> logger,
+    DemoIdempotencyTracker idempotency) : WechatCallbackPayloadHandler<ContactUserChangedPayload>
 {
-    private readonly ILogger<CreateUserHandler> _logger;
-
-    public CreateUserHandler(ILogger<CreateUserHandler> logger) => _logger = logger;
+    private readonly ILogger<CreateUserHandler> _logger = logger;
+    private readonly DemoIdempotencyTracker _idempotency = idempotency;
 
     public override string SupportedEventType => WechatCallbackEventTypes.CreateUser;
 
@@ -24,7 +30,16 @@ public sealed class CreateUserHandler : WechatCallbackPayloadHandler<ContactUser
         ContactUserChangedPayload payload,
         CancellationToken cancellationToken = default)
     {
-        _logger.LogInformation("新增成员：UserId={UserId}, Name={Name}", payload.UserId, payload.Name);
+        var key = DemoIdempotencyTracker.BuildKey(eventData, payload.UserId);
+        if (!_idempotency.TryBegin(key))
+        {
+            _logger.LogInformation("重复投递已忽略（业务幂等）：{Key}", key);
+            return Task.CompletedTask;
+        }
+
+        _logger.LogInformation(
+            "新增成员：UserId={UserId}, Name={Name}, DepartmentIds={DepartmentIds}",
+            payload.UserId, payload.Name, payload.DepartmentIds);
         // 业务落库 / 同步下游系统……
         return Task.CompletedTask;
     }

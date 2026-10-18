@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<RootNamespace>Mud.Wechat.Demo.SelfTest</RootNamespace>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<!-- Demo 基座：环境变量校验与统一前缀口径。 -->
+		<ProjectReference Include="..\Mud.Wechat.Demo.Shared\Mud.Wechat.Demo.Shared.csproj" />
+		<!-- 叶层密码学内核（WechatCallbackCrypto）：跨线共享，不引用任何产品线主包。 -->
+		<ProjectReference Include="..\..\Src\Core\Mud.Wechat.Abstractions\Mud.Wechat.Abstractions.csproj" />
+	</ItemGroup>
+
+</Project>

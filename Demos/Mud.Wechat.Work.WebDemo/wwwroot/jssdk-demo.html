@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <title>JS-SDK 签名自检</title>
+</head>
+<body>
+<h1>wx.config / wx.agentConfig 自检</h1>
+<p>待签名 URL 就是本页在地址栏里的真实地址（去掉 # 及之后部分），由前端自己取：</p>
+<pre id="current"></pre>
+<button onclick="run()">取签名并调 wx.config</button>
+<pre id="out"></pre>
+
+<!-- 官方要求：先 jweixin，再 jwxwork（企微扩展依赖微信基础库）。 -->
+<script src="https://res.wx.qq.com/open/js/jweixin-1.2.0.js"></script>
+<script src="https://res.open.work.weixin.qq.com/wwopen/js/jwxwork-1.0.0.js"></script>
+<script>
+  const pageUrl = location.href.split('#')[0];
+  document.getElementById('current').textContent = pageUrl;
+
+  async function run() {
+    const cfg = await (await fetch('/jssdk/config?url=' + encodeURIComponent(pageUrl))).json();
+    const agent = await (await fetch('/jssdk/agent-config?url=' + encodeURIComponent(pageUrl))).json();
+    document.getElementById('out').textContent = JSON.stringify({ cfg, agent }, null, 2);
+
+    // 响应里刻意没有 ticket：签名在服务器端算，ticket 下发前端等于把票据泄露（官方强制要求）。
+    wx.config(Object.assign({ beta: true, debug: true }, cfg));
+    wx.ready(function () {
+      wx.agentConfig(Object.assign({}, agent, {
+        jsApiList: ['selectExternalContact'],
+        success: function (res) { console.log('agentConfig ok', res); },
+        fail: function (err) { console.log('agentConfig fail', err); }
+      }));
+    });
+  }
+</script>
+</body>
+</html>

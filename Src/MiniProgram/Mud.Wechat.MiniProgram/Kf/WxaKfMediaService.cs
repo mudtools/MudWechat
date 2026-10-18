@@ -32,17 +32,21 @@ public sealed class WxaKfMediaService : IWxaKfMediaService
     public const string MediaPath = "/cgi-bin/media/get";
 
     private readonly IAppContextHolder _appContextHolder;
+    private readonly IMpAppManager? _appManager;
     private readonly ILogger<WxaKfMediaService> _logger;
 
     /// <summary>创建客服临时素材通道服务。</summary>
     /// <param name="appContextHolder">应用上下文持有器（与声明式客户端同源）。</param>
     /// <param name="logger">日志器。</param>
+    /// <param name="appManager">应用注册表（可选；用于「无环境上下文时回退默认应用」，与生成客户端同一口径）。</param>
     public WxaKfMediaService(
         IAppContextHolder appContextHolder,
-        ILogger<WxaKfMediaService> logger)
+        ILogger<WxaKfMediaService> logger,
+        IMpAppManager? appManager = null)
     {
         _appContextHolder = appContextHolder ?? throw new ArgumentNullException(nameof(appContextHolder));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _appManager = appManager;
     }
 
     /// <inheritdoc />
@@ -102,11 +106,14 @@ public sealed class WxaKfMediaService : IWxaKfMediaService
         }
     }
 
+    // 与生成客户端同一口径：环境上下文缺失时回退默认应用（单应用宿主是最常见形态，
+    // 只认 ambient 会让「已配置默认应用」的宿主在本通道恒报错，与本方法原先的提示语自相矛盾）。
     private IMpAppContext ResolveAppContext()
         => _appContextHolder.Current as IMpAppContext
+           ?? _appManager?.GetDefaultApp()
            ?? throw new InvalidOperationException(
                "无法找到当前小程序（公众号）应用上下文（IMpAppContext）。" +
-               "请先进入应用作用域或配置默认应用。");
+               "请先进入应用作用域，或经 AddMpApp 配置默认应用。");
 
     /// <summary>分类一次响应（素材流 / 视频 JSON 应答 / JSON 错误体）。</summary>
     private static async Task<CodeOutcome> ClassifyAsync(

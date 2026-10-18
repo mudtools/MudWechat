@@ -31,6 +31,7 @@ public sealed class MpNontaxBillDownloadService : IMpNontaxBillDownloadService
     public const string DownloadBillPath = "/nontax/downloadbill";
 
     private readonly IAppContextHolder _appContextHolder;
+    private readonly IMpAppManager? _appManager;
     private readonly IHttpContentSerializer _contentSerializer;
 #if NET8_0_OR_GREATER
     private readonly IAotJsonContentSerializer? _aotSerializer;
@@ -41,14 +42,17 @@ public sealed class MpNontaxBillDownloadService : IMpNontaxBillDownloadService
     /// <param name="appContextHolder">应用上下文持有器（取当前应用令牌）。</param>
     /// <param name="logger">日志器。</param>
     /// <param name="contentSerializer">内容序列化器（可选；缺省用组件默认）。</param>
+    /// <param name="appManager">应用注册表（可选；用于「无环境上下文时回退默认应用」，与生成客户端同一口径）。</param>
     public MpNontaxBillDownloadService(
         IAppContextHolder appContextHolder,
         ILogger<MpNontaxBillDownloadService> logger,
-        IHttpContentSerializer? contentSerializer = null)
+        IHttpContentSerializer? contentSerializer = null,
+        IMpAppManager? appManager = null)
     {
         _appContextHolder = appContextHolder ?? throw new ArgumentNullException(nameof(appContextHolder));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _contentSerializer = contentSerializer ?? HttpContentSerializerFactory.CreateDefault();
+        _appManager = appManager;
 #if NET8_0_OR_GREATER
         _aotSerializer = _contentSerializer as IAotJsonContentSerializer;
 #endif
@@ -122,9 +126,10 @@ public sealed class MpNontaxBillDownloadService : IMpNontaxBillDownloadService
 
     private IMpAppContext ResolveAppContext()
         => _appContextHolder.Current as IMpAppContext
+           ?? _appManager?.GetDefaultApp()
            ?? throw new InvalidOperationException(
                "无法找到当前公众号应用上下文（IMpAppContext）。" +
-               "请先进入应用作用域（SwitchTo / UseAppScope）或配置默认应用。");
+               "请先进入应用作用域（SwitchTo / UseAppScope），或经 AddMpApp 配置默认应用。");
 
     /// <summary>把响应二分为「JSON 错误体」与「账单文本流」。</summary>
     private static async Task<BillOutcome> ClassifyAsync(

@@ -102,6 +102,76 @@ public class WechatPayTransportPipelineTests
     }
 
     /// <summary>
+    /// 支付客户端必须默认带 <c>Accept: application/json</c> 与 <c>User-Agent</c>（红线 PAY-B12）。
+    /// </summary>
+    /// <remarks>
+    /// <b>这不是「礼貌头」</b>：官方退款域 <c>/v3/refund/domestic/*</c> 在<b>验签之前</b>就校验这两个头，
+    /// 缺任一直接 <c>400 INVALID_REQUEST</c>「Http头缺少Accept或User-Agent」——
+    /// 亦即整个退款域在真实商户下一笔都调不通，且失败信息与凭据毫无关系，极易被误读成签名缺陷。
+    /// 该缺陷由 DM-06 的 <c>GET /api/refunds/{outRefundNo}</c> 实测抓出（2026-10-17）。
+    /// <c>HttpClient</c> 两个头都不默认发送，故登记点只能是命名客户端的配置。
+    /// </remarks>
+    [Fact]
+    public async Task PayClient_ShouldSendAcceptAndUserAgent_WhenResolvedFromDiPipeline()
+    {
+        var capture = new CapturingHandler();
+
+        using var provider = BuildProvider(services =>
+        {
+            services.AddPayApp(CreateSingleMerchant());
+
+            services.AddHttpClient(WechatPayHttpClientNames.ClientName)
+                .ConfigurePrimaryHttpMessageHandler(() => capture);
+        });
+
+        var factory = provider.GetRequiredService<IHttpClientFactory>();
+
+        using var pay = factory.CreateClient(WechatPayHttpClientNames.ClientName);
+        using var request = new HttpRequestMessage(
+            HttpMethod.Get, "/v3/refund/domestic/refunds/demo-refund-0001");
+        using (var response = await pay.SendAsync(request))
+        {
+            response.IsSuccessStatusCode.Should().BeTrue();
+        }
+
+        capture.Request.Headers.GetValues("Accept").Should().ContainSingle("application/json",
+            "because 官方退款域要求 Accept 头存在，缺失即 400 INVALID_REQUEST（PAY-B12）");
+
+        var userAgent = capture.Request.Headers.GetValues("User-Agent").Single();
+        userAgent.Should().StartWith(WechatPayHttpClientNames.UserAgentProductName + "/",
+            "because User-Agent 必须存在且可归属到本 SDK（PAY-B12）");
+    }
+
+    /// <summary>
+    /// 反向断言：这两个默认头只属于支付客户端，不得经 <c>IEnhancedHttpClient</c> 之类的共享注册泄漏到其它命名客户端。
+    /// </summary>
+    [Fact]
+    public async Task UnrelatedClient_ShouldNotInheritPayDefaultHeaders_WhenDifferentClientName()
+    {
+        var otherCapture = new CapturingHandler();
+
+        using var provider = BuildProvider(services =>
+        {
+            services.AddPayApp(CreateSingleMerchant());
+
+            services.AddHttpClient("unrelated")
+                .ConfigurePrimaryHttpMessageHandler(() => otherCapture);
+        });
+
+        var factory = provider.GetRequiredService<IHttpClientFactory>();
+
+        using var other = factory.CreateClient("unrelated");
+        using var request = new HttpRequestMessage(HttpMethod.Get, "https://qyapi.weixin.qq.com/cgi-bin/get");
+        using (var response = await other.SendAsync(request))
+        {
+            response.IsSuccessStatusCode.Should().BeTrue();
+        }
+
+        otherCapture.Request.Headers.Contains("User-Agent").Should().BeFalse(
+            "because 支付线的默认头挂在 wechat-pay 命名客户端上，扩散到其它客户端即跨线污染");
+    }
+
+    /// <summary>
     /// <see cref="IWechatPayHttpClient"/> 必须是<b>跨 scope 单例</b>（AGENTS §7），
     /// 且其 <c>BaseAddress</c> 指向支付主域名 —— 与企微线的 <c>qyapi.weixin.qq.com</c> 分属两套客户端。
     /// </summary>

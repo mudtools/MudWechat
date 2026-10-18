@@ -286,9 +286,10 @@ public static class Baseline
         /// 设置权益（模板级 PATCH）/ 提交积分（204）/ 预下单积分（204）/ 设置回调（PATCH）/ 查询回调 / 查询用户所有卡；
         /// MarketingMemberCardActivity 4：创建活动 / 查询列表 / 查询详情 / 终止活动；四支 204 无应答包体 ⇒ 裸 Task，
         /// 两套并存契约：品牌会员卡与本域是<b>并存非替代</b>关系，守卫 MCO-B1~B6 / MCA-B1~B5）
-        /// + P1-6 既有域增量 2（MarketingPartnerships 终止合作关系 / MarketingBusifavor 发送核销券，各一方法）= 593。
+        /// + P1-6 既有域增量 2（MarketingPartnerships 终止合作关系 / MarketingBusifavor 发送核销券，各一方法）= 593
+        /// + P0 基础支付主动作 3（付款码支付 / 订单曝光 / 撤销订单，守卫 TX-B1）= 596。
         /// </remarks>
-        public const int Endpoints = 593;
+        public const int Endpoints = 596;
     }
 
     /// <summary>开放平台线（`Tests/Mud.Wechat.OpenPlatform.Tests`，B1 起）。</summary>
@@ -330,27 +331,27 @@ public static class Baseline
         /// 端点总数（各接口方法之和）。
         /// </summary>
         /// <remarks>
-        /// 锁定于 `OpenPlatformContractGuards`。现行推导：Component 14（clear_quota/v2 +
+        /// 锁定于 `OpenPlatformContractGuards`。现行推导：Component 16（clear_quota/v2 +
         /// fastregisterweapp 双方法 + 管理员换绑 account/componentrebindadmin 1 + 域名 2 + 确认文件 1 +
-        /// 隐私 3 + 授权方信息/列表/选项/设选项 4）
-        /// + ComponentTicketFree 1（start_push_ticket）+ OpenAccount 6 + Account 4 + Sns 2 + Category 12 = 39
+        /// 隐私 3 + 授权方信息/列表/选项/设选项 4 + 快速注册测试版小程序 1 + 快速注册个人小程序 1）
+        /// + ComponentTicketFree 1（start_push_ticket）+ OpenAccount 6 + Account 4 + Sns 3 + Category 12 = 42
         /// + ComponentTcb 50（/componenttcb/* 全域，恒 POST，2026-10-15 逐页核验零路由错配）
         /// + Embedded 6（/wxaapi/wxaembedded/* 半屏小程序，4 POST + 2 GET，2026-10-17 逐页取证）
         /// + Auth 5（/wxa/sec/* 微信认证：身份树 1 GET + 提审/重审/进度查询 3 POST + 补充材料 multipart 1 POST，2026-10-17 逐页取证）
         /// + Ams 19（/wxa/operationams 单路由 action 分派，恒 POST，2026-10-17 逐页取证）
-        /// + AmsShare 3（/wxa/getdefaultamsinfo ×2 + /wxa/setdefaultamsinfo ×1，恒 POST，2026-10-17 逐页取证）= 122
-        /// + MiniProgramManage 21（30-1：代码管理 15 + 名称与搜索 5 + 类目 1，2026-10-17 逐页取证）
+        /// + AmsShare 3（/wxa/getdefaultamsinfo ×2 + /wxa/setdefaultamsinfo ×1，恒 POST，2026-10-17 逐页取证）= 125
+        /// + MiniProgramManage 22（30-1：代码管理 15 + 名称与搜索 6 + 类目 1，2026-10-17 逐页取证）
         /// + MiniProgramManage 17（30-2：域名与 DNS 9 + 体验成员 3 + 违规申诉 2 + 订阅组件 3，2026-10-17 逐页取证）
         /// + MiniProgramManage 16（30-3：ICP 备案 JSON 面 12 + 隐私接口 3 + 订单路径查询 1，2026-10-17 逐页取证）
         /// + MiniProgramManage 2（30-4：试用小程序核验 2，转正 / 改名，authorizer_access_token，2026-10-17 逐页取证）
         /// + MiniProgramTemplate 5（30-4 新注册组：模板库 4 + 下单路径申请 1，component_access_token，2026-10-17 逐页取证）
-        /// + MiniProgramManage 2（30-5：multipart 上传 2，代码管理 uploadmedia 1 + 备案 upload_icp_media 1，authorizer_access_token，2026-10-17 逐页取证）= 185。
+        /// + MiniProgramManage 2（30-5：multipart 上传 2，代码管理 uploadmedia 1 + 备案 upload_icp_media 1，authorizer_access_token，2026-10-17 逐页取证）= 189。
         /// 令牌链 4 端点（api_component_token 等）由 Provider raw HTTP 承载，**不计**（T2 裁定）；
         /// 体验版二维码 /wxa/get_qrcode 由**非声明式图片流通道** IOpenPlatformMpTrialQrCodeService 承载（成功应答是 image/jpeg 二进制），
         /// 同口径**不计**入声明式端点总数，由 QRC 系列守卫单独锁定；
         /// 试用小程序转正族 2.0 旧版两支 /wxa/getmpadminauth + /wxa/mpverifybetaweapp 经逐页核验（旧页正文仅剩「优化后重新上线」、无 301、不在现行 openApi/OpenApiDoc 目录树内）判为**非契约**，
         /// 由 OP-NC 系列守卫锁定 Src/ 零声明，**恒不计**入端点总数（追踪号 P1-OP-LEGACY20-BETAVERIFY-01）。
         /// </remarks>
-        public const int Endpoints = 185;
+        public const int Endpoints = 189;
     }
 }

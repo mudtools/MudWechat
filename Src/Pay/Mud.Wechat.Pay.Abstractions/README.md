@@ -88,5 +88,6 @@ bool ok = WechatPayAesGcmCodec.TryDecryptOfficialPayload(
 - `csproj` 抑制的是 `SYSLIB1100` / `SYSLIB1101`（源生成器相关）；`MUD005` 抑制只随主包，本包无 `[Token]` 声明。
 - **不注册默认 `ISecretProvider`**（组件端口，属宿主密钥治理）；宿主漏装时首次解析凭据取用器给出**点名错误**（说明是谁要求注册的），而非难懂的 DI 缺失异常。
 - **SSRF 白名单零改动**（`PAY-B8` / `AB-G9`）：`AddPayApp` 经公用层窄入口 `AddWechatApiHosts()` 登记——支付线不走 `[Token]` 因而不会触发 `AddWechatTokenRecovery`，纯支付宿主若不登记，每一笔请求都会被组件的连接期 SSRF 严格模式拦下（实测缺陷）。
+- **命名客户端默认带 `Accept: application/json` 与 `User-Agent`**（`PAY-B12`，`WechatPayHttpClientNames.AcceptHeaderValue` / `UserAgentProductName`）：官方退款域 `/v3/refund/domestic/*` 在**验签之前**就校验这两个头，缺任一直接 `400 INVALID_REQUEST`「Http头缺少Accept或User-Agent」——即整个退款域一笔都调不通，且错误信息与凭据无关、极易误读成签名缺陷。`.NET` 的 `HttpClient` 两者都不默认发送，故登记点只能在 `AddMudHttpClient` 的客户端配置里（由 DM-06 实测抓出，回归锁 `WechatPayTransportPipelineTests`）。
 - 多实例部署时，`IWechatPayPlatformCertificateStore` 的进程内默认实现可由宿主以 `TryAdd` 前置注册替换为分布式实现；`IWechatPayMerchantManager` 同理（如需从配置中心动态增删商户）。
 - 本包端口面（`IWechatPay*`）即支付线全部公开契约面；业务接口、下载通道与证书刷新实现落在主包 `Mud.Wechat.Pay`。

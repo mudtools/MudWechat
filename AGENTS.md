@@ -206,7 +206,7 @@ scripts/                              # verify-build / audit-config-keys / Gener
 
 - 通用守卫 `WechatContractGuards.cs`（G1~G12）：`Mud.HttpUtils*` 全仓单一版本（防混版 `TypeLoadException`）；配置 DTO 禁 `required`；`WechatTokenTypes` 前缀；失效码集合与判定器同源；**G5 = Query 令牌白名单**（未放宽且子接口仅覆盖官方实际开放的应用类型）；授权端点路由与官方一致；Query 凭据参数名 ⊆ 脱敏词表 ∪ 显式豁免（**豁免自过期**，须附追踪号）；DI 桥接三接口同实例；`cancel_auth` 不得「未命中回退全部应用」；`AwaitSharedAsync` 取消信号须异步调度续体（G10）；`ResolveAppKey` 显式即有意、隐式即失败（G11）；**G12 = 四条线 `*AppManager` 不得残留上游 `BC-30` 已物理移除的孤儿离线接缝**（`GetWebApi`/`GetDefaultWebApi`/`RegisterSwitcherFactory`/`NotSupportedSwitcher` 源文本零命中，防回潮）。
 - 归属域守卫 `WechatTokenOwnerContractGuards.cs`（TO1~TO3）：按程序集反射枚举全部应用类型子接口（数量下限防枚举空跑），锁定族别 ↔ `TokenManagerKey` 归属域一一对应、`TokenType` → 官方 Query 参数名不漂移、声明的键被 `WechatTokenRouting.OwnedKeys` 覆盖且自建/非自建不交叉。切换器契约由 `Abstractions.Tests/WechatAppContextSwitcherTests` 锁定（`UseCorpScope` 必在契约上且返回 `IDisposable`；`SetCorp` 必带 `[Obsolete]` 指向它；实现类**不得**标 `[Obsolete]`——废弃标注只放抽象层）。
-- 多应用守卫（`Abstractions.Tests`，MA1~MA4）是**方法体文本断言**（花括号配平），签名漂移须同步更新。
+- 多应用守卫（`Abstractions.Tests`，MA1~MA6，含 MA5a/b/c）是**方法体文本断言**（花括号配平），签名漂移须同步更新。
 - 域守卫通用形态：令牌绑定（`Wechat.AccessToken` + Query 注入）、新增 DTO 的上下文登记、**官方未开放 ⇒ 零端点**、继承链子接口集合不漂移、父接口 `IsAbstract` + 子接口经 `InheritedFrom` 父实现类。
 - **接口命名空间分区守卫** `WechatInterfaceNamespaceContractGuards.cs`（N1~N3，跨域通用，非单域守卫）：**N1** 命名空间 ⇔ `IsAbstract` 形态严格二分（父接口 → `Mud.Wechat.Work.Interfaces`、可注入接口 → `Mud.Wechat.Work`）并锁定 147/299 计数；**N2** 生成器契约——父接口实现类落 `Mud.Wechat.Work.Interfaces.Internal`、子接口实现类落 `Mud.Wechat.Work.Internal`，且每个业务接口恰好一个实现类（判据取「`I` + 实现类名」的本体接口，**不可**用传递性的 `GetInterfaces()`，子接口实现类同时实现父接口）；**N3** 父接口 `RegistryGroupName` 恒空（命名空间分区只是 IDE 展示层隔离，运行期隔离仍由不注册 DI 提供）。**新增或迁移任何 `[HttpClientApi]` 接口必须先跑此守卫。**
 

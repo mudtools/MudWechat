@@ -93,7 +93,7 @@
 
 - `scripts/verify-build.ps1` 三步：Release 全量构建 → 逐源工程 AOT strict（10 类反射诊断升为错误，保持净零）→ 逐测试工程测试。
 - `scripts/audit-config-keys.ps1`：每个公开配置属性必须有真实消费点，无白名单、无 `-Strict` 绕开模式，无消费点的正确处置是删属性。
-- 契约守卫族：企业微信 G1~G12 / TO1~TO3 / N1~N3 / CB 系列 / MA1~MA4，公众号 MP 与 MD 系列，小程序 MP-X 系列，支付 PAY-B 系列，
+- 契约守卫族：企业微信 G1~G12 / TO1~TO3 / N1~N3 / CB 系列 / MA1~MA6，公众号 MP 与 MD 系列，小程序 MP-X 系列，支付 PAY-B 系列，
   小店 CH / CH-T / CH-R 系列，广告 ADS-S / ADS-B 系列，跨线 AB-G6（解决方案工程清单、配置审计搜索根、包推导口径三处一致）。
 - 包清单单一来源：可打包集由 `Src/**/*.csproj` 现场推导，CI / `pack.bat` / `publish.bat` 各自推导、不持有名单。
 

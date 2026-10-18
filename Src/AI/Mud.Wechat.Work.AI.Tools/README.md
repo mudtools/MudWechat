@@ -22,6 +22,7 @@
 | `Security.WechatToolApprovalStateMachine` / `WechatToolApprovalState` / `WechatToolApprovalTicket` | 挂起式审批状态机（五态：Pending → Approved/Rejected/Expired → Consumed；一次性兑现 + 入参摘要绑定 + 惰性过期） |
 | `Security.IWechatToolApprovalStore` / `InMemoryWechatToolApprovalStore` | 审批工单存储端口（默认进程内；多实例由宿主前置注册分布式实现，预注册者胜出） |
 | `Security.WechatToolDispatcher` | 调用唯一入口：白名单 → 授权 → 审批（写）→ 执行 → 异常归一（租户切换由回合作用域承担，此处不重复进入） |
+| `Surface.IWechatToolSurface` / `WechatToolSurfaceAdapter` | 工具面端口（层 1 中立 `IWechatToolSurface` 的企微实现）：协议层（MCP 等）经此消费「列工具 + 调工具」，与工具面零编译期引用（AI-G5） |
 | `AIFunctions.WechatToolFunction`（internal）/ `WechatToolFunctions` | 白名单 → MAF `AIFunction` 投影（自建子类，零反射；`JsonSchema` 只取生成物的 `parameters` 子块） |
 | `ToolArgs`（internal） | 生成物 Args 解包器消费的 helper 集（六个参数形态各一对 Require/Optional） |
 | `Extensions.AddWechatWorkTools(binding[, configurePolicy])` | 装配入口：绑定 + 逐执行器工厂 + 注册表 + 策略 + 执行链 + `IReadOnlyList<AIFunction>` 投影（软缺席：业务域未注册 ⇒ 该域工具不入表） |

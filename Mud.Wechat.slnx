@@ -24,6 +24,7 @@
     <Project Path="Src/AI/Mud.Wechat.AI.Agent/Mud.Wechat.AI.Agent.csproj" />
     <Project Path="Src/AI/Mud.Wechat.Work.AI/Mud.Wechat.Work.AI.csproj" />
     <Project Path="Src/AI/Mud.Wechat.Work.AI.Tools/Mud.Wechat.Work.AI.Tools.csproj" />
+    <Project Path="Src/AI/Mud.Wechat.Work.AI.Mcp/Mud.Wechat.Work.AI.Mcp.csproj" />
   </Folder>
   <!-- 腾讯广告 Marketing API v3.0 产品线（2026-10 新增，在建）：3 源工程。 -->
   <Folder Name="/src/Ads/">
@@ -96,5 +97,6 @@
     <Project Path="Tests/Mud.Wechat.AI.Tests/Mud.Wechat.AI.Tests.csproj" />
     <Project Path="Tests/Mud.Wechat.Work.AI.Tests/Mud.Wechat.Work.AI.Tests.csproj" />
     <Project Path="Tests/Mud.Wechat.Work.AI.Tools.Tests/Mud.Wechat.Work.AI.Tools.Tests.csproj" />
+    <Project Path="Tests/Mud.Wechat.Work.AI.Mcp.Tests/Mud.Wechat.Work.AI.Mcp.Tests.csproj" />
   </Folder>
 </Solution>

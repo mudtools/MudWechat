@@ -186,9 +186,9 @@ public class WechatPayMerchantConfigTests
             {
                 "ApiKeySecretName",
                 "ApiV2CertificatePasswordSecretName", "ApiV2CertificateSecretName", "ApiV2KeySecretName",
-                "MchId", "PrivateKeySecretName", "SerialNumber", "SpMchId", "SubMchId",
+                "MchId", "PrivateKeySecretName", "SerialNumber", "SignatureAlgorithm", "SpMchId", "SubMchId", "UseShangmi",
             },
-            "because 可写属性恰为这 9 个（APIv3 三件套 + APIv2 三把密钥名 + 商户号与序列号）；" +
+            "because 可写属性恰为这 11 个（APIv3 三件套 + APIv2 三把密钥名 + 商户号与序列号 + 国密算法标识与开关）；" +
             "多出任何一项都可能是把密钥值引进配置面 —— APIv2 的三个 *SecretName 只存密钥名，值一律走 ISecretProvider");
 
         writable.Should().NotContain(n =>

@@ -52,7 +52,7 @@ bool refresh = ComponentAccessTokenPolicy.ShouldRefresh(token, expiresAt, nowUtc
 ## 依赖
 
 - `Mud.Wechat.Abstractions`（Core 共享内核）
-- `Mud.HttpUtils` 3.0.7、`Mud.HttpUtils.Generator` 3.0.7（Analyzer）
+- `Mud.HttpUtils` 3.0.8、`Mud.HttpUtils.Generator` 3.0.8（Analyzer）
 - `Microsoft.Extensions.Http` 10.0.9（net8.0/net10.0）/ 8.0.1（net6.0）
 - TFM：`net6.0;net8.0;net10.0`——**不含 netstandard2.0**（csproj 注释：收窄到组件 `AddMudHttpClient` / `HttpClientFactoryEnhancedClient` 的最小面；开放平台凭证链是本仓最新的一层，没有历史兼容包袱）。
 

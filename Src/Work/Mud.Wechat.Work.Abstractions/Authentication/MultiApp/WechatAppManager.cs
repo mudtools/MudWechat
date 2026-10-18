@@ -582,27 +582,6 @@ public class WechatAppManager : IWechatAppManager, IDisposable
         => throw new NotSupportedException(
             "WechatAppManager 不支持上下文实例替换，请使用 AddApp(WechatAppConfig)；如需下线请使用 RemoveApp(appKey)。");
 
-    /// <inheritdoc />
-    /// <exception cref="NotSupportedException">始终抛出：SDK 的切换器为 DI 单例，不按上下文实例化。</exception>
-    public TContextSwitcher GetWebApi<TContextSwitcher>(string appKey)
-        where TContextSwitcher : IAppContextSwitcher
-        => throw new NotSupportedException(
-            "WechatAppManager 的上下文切换器为 DI 单例（IWechatAppContextSwitcher），请从容器解析后使用 UseAppScope/UseDefaultAppScope。");
-
-    /// <inheritdoc />
-    /// <exception cref="NotSupportedException">始终抛出：SDK 的切换器为 DI 单例，不按上下文实例化。</exception>
-    public TContextSwitcher GetDefaultWebApi<TContextSwitcher>()
-        where TContextSwitcher : IAppContextSwitcher
-        => throw new NotSupportedException(
-            "WechatAppManager 的上下文切换器为 DI 单例（IWechatAppContextSwitcher），请从容器解析后使用 UseDefaultAppScope/UseAppScope。");
-
-    /// <inheritdoc />
-    /// <exception cref="NotSupportedException">始终抛出：SDK 的切换器为 DI 单例，无需工厂委托。</exception>
-    public void RegisterSwitcherFactory<TContextSwitcher>(Func<IWechatAppContext, TContextSwitcher> factory)
-        where TContextSwitcher : IAppContextSwitcher
-        => throw new NotSupportedException(
-            "WechatAppManager 的上下文切换器为 DI 单例（IWechatAppContextSwitcher），不支持按上下文实例化的工厂委托。");
-
     // ---------------------------------------------------------------- 私有实现
 
     /// <summary>

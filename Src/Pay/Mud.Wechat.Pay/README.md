@@ -183,7 +183,7 @@ catch (WechatPayException ex) when (ex.PayErrorCode == WechatPayErrorCodes.Order
 ## 依赖
 
 - `Mud.Wechat.Pay.Abstractions`、`Mud.Wechat.Pay.DataModels`、企业微信/公众号/支付共用的叶层 `Mud.Wechat.Abstractions`
-- `Mud.HttpUtils` 3.0.7 + `Mud.HttpUtils.Generator` 3.0.7（分析器，`PrivateAssets=all`）
+- `Mud.HttpUtils` 3.0.8 + `Mud.HttpUtils.Generator` 3.0.8（分析器，`PrivateAssets=all`）
 - **不引用** `Mud.Wechat.Work*` / `Mud.Wechat.OfficialAccount*`（守卫 `PAY-B11` 锁定工程引用隔离）
 
 ## 说明

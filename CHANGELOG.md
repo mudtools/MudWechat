@@ -93,13 +93,13 @@
 
 - `scripts/verify-build.ps1` 三步：Release 全量构建 → 逐源工程 AOT strict（10 类反射诊断升为错误，保持净零）→ 逐测试工程测试。
 - `scripts/audit-config-keys.ps1`：每个公开配置属性必须有真实消费点，无白名单、无 `-Strict` 绕开模式，无消费点的正确处置是删属性。
-- 契约守卫族：企业微信 G1~G11 / TO1~TO3 / N1~N3 / CB 系列 / MA1~MA4，公众号 MP 与 MD 系列，小程序 MP-X 系列，支付 PAY-B 系列，
+- 契约守卫族：企业微信 G1~G12 / TO1~TO3 / N1~N3 / CB 系列 / MA1~MA6，公众号 MP 与 MD 系列，小程序 MP-X 系列，支付 PAY-B 系列，
   小店 CH / CH-T / CH-R 系列，广告 ADS-S / ADS-B 系列，跨线 AB-G6（解决方案工程清单、配置审计搜索根、包推导口径三处一致）。
 - 包清单单一来源：可打包集由 `Src/**/*.csproj` 现场推导，CI / `pack.bat` / `publish.bat` 各自推导、不持有名单。
 
 ### Changed
 
-- 上游依赖统一：`Mud.HttpUtils` 与 `Mud.HttpUtils.Generator` 全仓单一版本 **3.0.7**（守卫 G1 断言版本集合大小 = 1，`NU1605` 视为错误）；
+- 上游依赖统一：`Mud.HttpUtils` 与 `Mud.HttpUtils.Generator` 全仓单一版本 **3.0.8**（守卫 G1 断言版本集合大小 = 1，`NU1605` 视为错误）；
   `Microsoft.Extensions.*` 按档对齐（net8/10 → 10.0.12，net6/netstandard2.0 → 8.0.x）。
 - SE.Redis 按 TFM 分档锚定（net8+ 3.4.5、低档 2.13.17），并锁定 `StringSetAsync` 一律用命名参数钉住重载形态。
 - 令牌值编解码迁移到官方 `MigrationTokenStoreCodec`（桥接层双读旧值，旧数据无缝读、写入走新格式）。
@@ -125,6 +125,11 @@
 - `WechatAppConfig` **不提供独立 `TemplateId` 属性**：代开发场景 `template_id` 即 `suite_id`，同时提供两者会造成非法状态；
   接口级 `templateid_list` 由宿主显式传入（与「广告线 `account_id` 不进配置面」同一思路：非法状态不可表达）。
 - 不引入「接收方 ID 统一注册表 / `IWechatCallbackUrlVerifier`」这类旁路面：回调凭据来源恒为 `WechatCallbackOptions.Apps` 字典。
+- 上游 `Mud.HttpUtils` 3.0.8 随 **BC-30** 物理移除 `IAppManager<T>` 的三个离线接缝成员（`GetWebApi` / `GetDefaultWebApi` /
+  `RegisterSwitcherFactory`，替代路径 `AppKeySwitchExtensions.SwitchToApp` / `SwitchToDefaultApp`）：本仓四条线（企微 / 公众号 /
+  小店 / 开放平台）原「实现体恒抛 `NotSupportedException`」的悬空实现一并删除，`OpenPlatformAppManager` 的私有异常工厂
+  `NotSupportedSwitcher()` 连带删除；作用域切换恒走 DI 解析的 `I*AppContextSwitcher.UseAppScope` / `UseDefaultAppScope`
+  （「无孤儿公开接缝」由源文本守卫 G12 锁定）。
 
 ### Fixed
 

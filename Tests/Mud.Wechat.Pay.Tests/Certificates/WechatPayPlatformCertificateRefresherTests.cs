@@ -43,7 +43,7 @@ public class WechatPayPlatformCertificateRefresherTests
         var client = new FakeCertificatesClient(CreateItem(certificate, ApiKey));
 
         var refresher = new WechatPayPlatformCertificateRefresher(
-            client, new FakeCredentialProvider(ApiKey), store, store);
+            client, new FakeCredentialProvider(ApiKey), store, null, store);
 
         var refreshed = await refresher.TryRefreshAsync(CreateMerchant(), certificate.SerialNumber);
 
@@ -63,7 +63,7 @@ public class WechatPayPlatformCertificateRefresherTests
 
         var client = new FakeCertificatesClient(CreateItem(certificate, ApiKey));
         var refresher = new WechatPayPlatformCertificateRefresher(
-            client, new FakeCredentialProvider(ApiKey), store, store);
+            client, new FakeCredentialProvider(ApiKey), store, null, store);
 
         var refreshed = await refresher.TryRefreshAsync(CreateMerchant(), certificate.SerialNumber);
 
@@ -79,7 +79,7 @@ public class WechatPayPlatformCertificateRefresherTests
         var client = new FakeCertificatesClient(CreateItem(certificate, ApiKey));
 
         var refresher = new WechatPayPlatformCertificateRefresher(
-            client, new FakeCredentialProvider(ApiKey), new ReadOnlyCertificateStore());
+            client, new FakeCredentialProvider(ApiKey), new ReadOnlyCertificateStore(), null);
 
         var refreshed = await refresher.TryRefreshAsync(CreateMerchant(), certificate.SerialNumber);
 
@@ -99,7 +99,7 @@ public class WechatPayPlatformCertificateRefresherTests
         var client = new FakeCertificatesClient(CreateItem(other, ApiKey));
 
         var refresher = new WechatPayPlatformCertificateRefresher(
-            client, new FakeCredentialProvider(ApiKey), store, store);
+            client, new FakeCredentialProvider(ApiKey), store, null, store);
         var merchant = CreateMerchant();
 
         (await refresher.TryRefreshAsync(merchant, certificate.SerialNumber)).Should().BeFalse();
@@ -118,7 +118,7 @@ public class WechatPayPlatformCertificateRefresherTests
         var client = new FakeCertificatesClient(CreateItem(certificate, ApiKey));
 
         var refresher = new WechatPayPlatformCertificateRefresher(
-            client, new FakeCredentialProvider(ApiKey), store, store);
+            client, new FakeCredentialProvider(ApiKey), store, null, store);
         var merchant = CreateMerchant();
 
         var results = await Task.WhenAll(Enumerable.Range(0, 8)
@@ -139,7 +139,7 @@ public class WechatPayPlatformCertificateRefresherTests
 
         var store = new WechatPayPlatformCertificateCache();
         var refresher = new WechatPayPlatformCertificateRefresher(
-            client, new FakeCredentialProvider(ApiKey), store, store);
+            client, new FakeCredentialProvider(ApiKey), store, null, store);
 
         var refreshed = await refresher.TryRefreshAsync(CreateMerchant(), "DEADBEEF");
 
@@ -153,7 +153,7 @@ public class WechatPayPlatformCertificateRefresherTests
         var client = new FakeCertificatesClient(Array.Empty<PlatformCertificate>());
         var store = new WechatPayPlatformCertificateCache();
         var refresher = new WechatPayPlatformCertificateRefresher(
-            client, new FakeCredentialProvider(ApiKey), store, store);
+            client, new FakeCredentialProvider(ApiKey), store, null, store);
 
         (await refresher.TryRefreshAsync(CreateMerchant(), " ")).Should().BeFalse();
         client.CallCount.Should().Be(0);
@@ -270,7 +270,7 @@ public class WechatPayPlatformCertificateRefresherTests
             WechatPayMerchantConfig config, CancellationToken cancellationToken = default)
             => Task.FromResult((byte[])_apiKey.Clone());
 
-        public Task<RSA> LoadPrivateKeyAsync(
+        public Task<WechatPayMerchantKey> LoadPrivateKeyAsync(
             WechatPayMerchantConfig config, CancellationToken cancellationToken = default)
             => throw new NotSupportedException("刷新链路不取商户私钥。");
     }
@@ -281,6 +281,13 @@ public class WechatPayPlatformCertificateRefresherTests
         public bool TryGetCertificate(string? serialNumber, out X509Certificate2? certificate)
         {
             certificate = null;
+            return false;
+        }
+
+        public bool TryGetPublicKey(string? serialNumber, out byte[]? publicKey, out string? algorithm)
+        {
+            publicKey = null;
+            algorithm = null;
             return false;
         }
     }

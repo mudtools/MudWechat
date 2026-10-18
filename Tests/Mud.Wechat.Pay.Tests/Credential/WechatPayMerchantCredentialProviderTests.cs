@@ -28,13 +28,14 @@ public class WechatPayMerchantCredentialProviderTests
             [PrivateKeyName] = WechatPayGoldenVectors.MerchantPrivateKeyPem,
         });
 
-        using var rsa = await provider.LoadPrivateKeyAsync(CreateConfig());
+        using var merchantKey = await provider.LoadPrivateKeyAsync(CreateConfig());
 
-        rsa.KeySize.Should().Be(2048, "商户 API 证书为 RSA-2048");
+        merchantKey.RsaKey.Should().NotBeNull("RSA路径必须返回有效密钥");
+        merchantKey.RsaKey!.KeySize.Should().Be(2048, "商户 API 证书为 RSA-2048");
 
         var message = Encoding.UTF8.GetString(
             Convert.FromBase64String(WechatPayGoldenVectors.RequestMessageB64));
-        Convert.ToBase64String(rsa.SignData(
+        Convert.ToBase64String(merchantKey.RsaKey.SignData(
                 Encoding.UTF8.GetBytes(message), HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1))
             .Should().Be(WechatPayGoldenVectors.RequestSignature,
                 "because 经 ISecretProvider 取回并解析的私钥必须与黄金向量同钥，链路任一环节失真都会改变签名");

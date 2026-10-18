@@ -49,7 +49,7 @@ v3.0 文档存在多处逐页不一致（批量上限、名称长度口径、游
 
 ## 依赖
 
-- `Mud.Wechat.Abstractions`（响应契约 `IWechatApiResponse`）、`Mud.HttpUtils.Attributes` 3.0.7、`Mud.HttpUtils.Generator` 3.0.7（Analyzer）
+- `Mud.Wechat.Abstractions`（响应契约 `IWechatApiResponse`）、`Mud.HttpUtils.Attributes` 3.0.8、`Mud.HttpUtils.Generator` 3.0.8（Analyzer）
 - TFM：继承根 props 四档（`netstandard2.0` / `net6.0` / `net8.0` / `net10.0`；JSON 上下文仅 `net8.0+` 生效）
 
 `InternalsVisibleTo` 开放给 `Mud.Wechat.Ads`、`Mud.Wechat.Ads.Abstractions` 与 `Mud.Wechat.Ads.Tests`。

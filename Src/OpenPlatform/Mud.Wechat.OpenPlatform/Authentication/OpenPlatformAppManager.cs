@@ -25,7 +25,7 @@ namespace Mud.Wechat.OpenPlatform.Authentication;
 /// </para>
 /// <para>
 /// <b>写入口 fail-fast</b>（对齐企微 <c>WechatAppManager</c>）：<c>RegisterApp</c> / <c>UpdateApp</c> /
-/// <c>SetDefaultApp</c> / <c>RemoveApp</c> / <c>RegisterSwitcherFactory</c> 一律抛
+/// <c>SetDefaultApp</c> / <c>RemoveApp</c> 一律抛
 /// <see cref="NotSupportedException"/> —— 授权关系的建立走 <c>ComponentAuthorizationService</c> 编排
 /// （换码成功后经 <c>IAuthorizerTokenProvider.AcceptAuthorization</c> 落库），
 /// 不存在「直接注册上下文」的合法路径，静默写会制造读不到的表。
@@ -172,18 +172,6 @@ internal sealed class OpenPlatformAppManager : IOpenPlatformAppManager
     public string? DefaultAppKey => _platformContext.AppKey;
 
     /// <inheritdoc />
-    /// <remarks>单平台形态无切换语义；请使用 <see cref="IComponentAppContextSwitcher"/>。</remarks>
-    public TContextSwitcher GetWebApi<TContextSwitcher>(string appKey)
-        where TContextSwitcher : IAppContextSwitcher
-        => throw NotSupportedSwitcher();
-
-    /// <inheritdoc />
-    /// <remarks>单平台形态无切换语义；请使用 <see cref="IComponentAppContextSwitcher"/>。</remarks>
-    public TContextSwitcher GetDefaultWebApi<TContextSwitcher>()
-        where TContextSwitcher : IAppContextSwitcher
-        => throw NotSupportedSwitcher();
-
-    /// <inheritdoc />
     public bool RemoveApp(string appKey)
         => throw new NotSupportedException(
             "开放平台不支持运行时移除应用：平台配置来自注册期 OpenPlatformAppConfig；"
@@ -220,12 +208,6 @@ internal sealed class OpenPlatformAppManager : IOpenPlatformAppManager
             "开放平台只有一个默认应用（平台自身上下文），不支持改设默认应用。");
 
     /// <inheritdoc />
-    public void RegisterSwitcherFactory<TContextSwitcher>(Func<IOpenPlatformAppContext, TContextSwitcher> factory)
-        where TContextSwitcher : IAppContextSwitcher
-        => throw new NotSupportedException(
-            "开放平台的切换器经 DI 注册为 IComponentAppContextSwitcher，不支持注册自定义工厂。");
-
-    /// <inheritdoc />
     /// <remarks>单平台形态无配置热更语义，本事件恒不触发。</remarks>
     public event EventHandler<AppConfigurationChangedEventArgs>? ConfigurationChanged
     {
@@ -243,10 +225,4 @@ internal sealed class OpenPlatformAppManager : IOpenPlatformAppManager
                 ?? throw new InvalidOperationException("平台上下文的令牌管理器类型异常。"),
             authorizerAppId,
             _authorizerTokenManagerFactory(authorizerAppId));
-
-    private static NotSupportedException NotSupportedSwitcher()
-        => new NotSupportedException(
-            "开放平台的应用切换请使用 DI 中的 IComponentAppContextSwitcher"
-            + "（UseDefaultAppScope = 平台作用域 / UseAuthorizerScope(appid) = 授权方作用域），"
-            + "不走 IAppManager.GetWebApi 通道。");
 }

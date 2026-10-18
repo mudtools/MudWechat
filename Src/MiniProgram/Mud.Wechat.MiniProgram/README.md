@@ -108,7 +108,7 @@ using var code = await wxaCode.GetUnlimitedCodeAsync(request, ct);              
 
 ## 依赖
 
-`Mud.Wechat.Abstractions`（叶层）+ `Mud.Wechat.MiniProgram.Abstractions` + `Mud.Wechat.MiniProgram.DataModels` + `Mud.HttpUtils` 3.0.7（`.Attributes` / `.Generator` 3.0.7，Generator 仅分析器）。跨线只允许**一条边**——`Mud.Wechat.OfficialAccount.Abstractions`（取令牌 / 多应用基座）：**禁止**引用公众号主包 / DataModels / Callback（MP-X1 / MP-X5）。序列化上下文由 `MiniProgramJsonResolverExtensions` 合并进组件管线（47 个 `Generated/*JsonContext`，「登记进上下文」与「合并进数组」的一致性由 XP5 断言锁定）。
+`Mud.Wechat.Abstractions`（叶层）+ `Mud.Wechat.MiniProgram.Abstractions` + `Mud.Wechat.MiniProgram.DataModels` + `Mud.HttpUtils` 3.0.8（`.Attributes` / `.Generator` 3.0.8，Generator 仅分析器）。跨线只允许**一条边**——`Mud.Wechat.OfficialAccount.Abstractions`（取令牌 / 多应用基座）：**禁止**引用公众号主包 / DataModels / Callback（MP-X1 / MP-X5）。序列化上下文由 `MiniProgramJsonResolverExtensions` 合并进组件管线（47 个 `Generated/*JsonContext`，「登记进上下文」与「合并进数组」的一致性由 XP5 断言锁定）。
 
 目标框架继承根 `Directory.Build.props`（`netstandard2.0;net6.0;net8.0;net10.0`、Version `1.2.0`），可打包。
 

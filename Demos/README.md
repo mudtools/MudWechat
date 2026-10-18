@@ -236,8 +236,11 @@ curl -s -X POST http://localhost:56568/api/auth/exchange -H 'Content-Type: appli
 3. `Program.cs` 在任何 DI 装配**之前**调用 `DemoEnv.RequireAll(...)`（**唯一例外 DM-12**：它用 `CredentialSet.Read`
    按束读取，缺束整线跳过 ⇒ 共存命题才能在只有部分线凭据的开发机上被验证）；写端点包在 `if (DemoWriteGate.Enabled)` 内；
 4. `app.MapDemoHealth("<demo 名>", new { 非敏感摘要 })` + `DemoWriteGate.Announce(app.Logger)`；
-   HTTP 型 Demo 另在 `builder.Build()` 之后挂 `app.UseWechatApiErrorGate()` ——
+   **会主动出网调接口**的 Demo 另在 `builder.Build()` 之后挂 `app.UseWechatApiErrorGate()`（DM-01~DM-13 里除 DM-02 外全部命中）——
    令牌链与手工二进制通道以 `WechatApiException` 承载业务错误，无此闸时一次 `invalid appid` 会返回带堆栈的 500；
+   **DM-02 `Mud.Wechat.Work.ContactCallbackDemo` 是唯一的「只收不发」宿主**（全工程零业务端点，管线只有
+   `MapDemoHealth` + `UseWechatWebhook`），它的错误面由回调中间件自己承担（验证失败 403、守卫存储故障 503 → 官方 96238 重试），
+   挂此闸等于给一条永不抛 `WechatApiException` 的路径加死码 ⇒ 按「不写无法被触发的分支」的口径**有意不挂**，不是遗漏；
    该闸还会拆开**组件负缓存的包装异常**（`Mud.HttpUtils` 的 `TokenManagerBase` 在负缓存窗口内把
    `WechatApiException` 放进 `InvalidOperationException.InnerException`）—— 内层是 `WechatApiException` 才映射 502，
    普通 `InvalidOperationException` 仍原样上抛（DM-10 实测：不拆开时，窗口内的第二次调用会绕过闸、

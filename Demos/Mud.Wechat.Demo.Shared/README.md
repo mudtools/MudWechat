@@ -42,7 +42,8 @@ SDK 侧的配置校验由 `WechatAppConfigBase.Validate()` 承担（真实值非
 
 1. csproj 引 `Mud.Wechat.Demo.Shared` + 所需产品线包（回调 Demo 另内嵌 `Mud.Wechat.Callback.Analyzers`，
    例外见 `Demos/README.md` §6.2）；
-2. `DemoEnv.RequireAll(...)` → `Add*App` → `Add*Api` → `builder.Build()` → `app.UseWechatApiErrorGate()`；
+2. `DemoEnv.RequireAll(...)` → `Add*App` → `Add*Api` → `builder.Build()` → `app.UseWechatApiErrorGate()`
+   （末步的判据是「本宿主会不会主动出网调接口」；只收不发的回调宿主按 `Demos/README.md` §6.4 有意不挂）；
 3. `app.MapDemoHealth("<线名>", new { 非敏感摘要 })` + `DemoWriteGate.Announce(app.Logger)`；
 4. 写端点一律 `if (DemoWriteGate.Enabled)`；
 5. 工程进 `Mud.Wechat.slnx` 的 `/Demos/` 组（否则全量 Release 编译覆盖不到，等于不设防）；

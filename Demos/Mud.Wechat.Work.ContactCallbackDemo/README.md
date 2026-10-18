@@ -69,6 +69,9 @@ dotnet run --project Demos/Mud.Wechat.Demo.SelfTest -- --channel work --base-url
   生产须换成数据库唯一键。
 - **分发软超时** 默认 4500ms：处理器内禁止长耗时同步（DB 大批量、下游 RPC 阻塞），否则 503 触发官方重推。
 - **未知 AppKey**（`POST /wechat/unknown`）不劫持管线，落到路由末端 404。
+- **本宿主不挂 `UseWechatApiErrorGate()`**：全工程零业务端点（管线只有 `MapDemoHealth` + `UseWechatWebhook`），
+  没有任何会抛 `WechatApiException` 的出网路径；回调面的错误形态由中间件自己给（验签/时效/指纹失败 403、
+  守卫存储故障 503 触发官方 96238 重推），通用闸在此只会是死码。判据见 `Demos/README.md` §6.4。
 - 若自建应用误配 `Channel = Suite`，`WechatAppCallbackOptions.Validate` 在请求期即拒。
 
 ## 安全注意

@@ -116,6 +116,26 @@ public class WechatPayMerchantConfig
     /// </remarks>
     public string MerchantKey => IsServicePartner ? $"{SpMchId}:{SubMchId}" : MchId;
 
+    // ==================== 国密配置属性（方案 v1 §A.5-(4)）====================
+
+    /// <summary>
+    /// 签名算法选择：<c>SHA256-RSA2048</c>（默认）或 <c>SM2-WITH-SM3</c>（国密）。
+    /// </summary>
+    /// <remarks>
+    /// <para><b>消费点</b>：<c>WechatPayAuthorizationHandler</c>（授权类型前缀）、<c>WechatPayResponseVerificationHandler</c>（缺头时的兜底算法）。</para>
+    /// <para><b>向后兼容</b>：默认值 = 今日行为（RSA）；未开通国密的商户零影响。</para>
+    /// </remarks>
+    public string SignatureAlgorithm { get; set; } = "SHA256-RSA2048";
+
+    /// <summary>
+    /// 是否启用国密模式（<c>true</c> ⇒ 走 SM2 签名/验签 + SM4-GCM 解密）。
+    /// </summary>
+    /// <remarks>
+    /// <para><b>消费点</b>：同上两处 handler；<c>false</c> ⇒ 走 Phase-1 RSA 全链路，行为与今日完全一致。</para>
+    /// <para><b>前置条件</b>：须注册 <c>IWechatSmCryptoProvider</c> 真实实现，否则 fail-fast。</para>
+    /// </remarks>
+    public bool UseShangmi { get; set; } = false;
+
     /// <summary>
     /// <c>Authorization</c> 头中的 <c>mchid</c> 值（字段名照官方原文，不「纠正」）。
     /// </summary>

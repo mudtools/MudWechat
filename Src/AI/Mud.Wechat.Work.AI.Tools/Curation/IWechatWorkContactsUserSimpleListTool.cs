@@ -17,14 +17,14 @@ namespace Mud.Wechat.Work.AI.Tools.Curation;
 /// </remarks>
 [AgentTool(
     name: "contacts.user.simple_list",
-    Description = "列出某部门的成员摘要。参数 department_id 为整数部门 ID（必填）；fetch_child 为布尔值（true 递归子部门，默认 false 仅直属成员）。返回 userlist（userid/name/department）。需要应用对该部门有查看权限。",
+    Description = "列出某部门的成员摘要。参数 department_id 为整数部门 ID（必填）；fetch_child 为布尔值（true 递归子部门，默认 false 仅直属成员）。返回 items（userid/name/department）。需要应用对该部门有查看权限。",
     Source = "IWechatWorkUsersService.GetUserSimpleListAsync",
     RequiredScopes = ["contacts.user.read"],
     IsWrite = false)]
 public interface IWechatWorkContactsUserSimpleListTool
 {
     /// <summary>列出部门成员摘要。</summary>
-    /// <returns>白名单投影后的 JSON 文本（userlist、userid、name、department）。</returns>
+    /// <returns>白名单投影后的 JSON 文本（items、userid、name、department）。</returns>
     Task<string> GetUserSimpleListAsync(
         [ToolParameter("department_id", "部门 ID（整数）。")] int department_id,
         [ToolParameter("fetch_child", "是否递归子部门（true 递归）。")] bool? fetch_child,

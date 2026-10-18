@@ -18,14 +18,14 @@ namespace Mud.Wechat.Work.AI.Tools.Curation;
 /// </remarks>
 [AgentTool(
     name: "contacts.tag.members",
-    Description = "读取企业微信标签内的成员与部门。参数 tag_id 为整数标签 ID（先经 contacts.tag.list 获取）。返回 tagname、userlist（userid/name，name 可能缺省）与 partylist（部门 ID）。仅包含应用可见范围内的成员。",
+    Description = "读取企业微信标签内的成员与部门。参数 tag_id 为整数标签 ID（先经 contacts.tag.list 获取）。返回 tagname、items（userid/name，name 可能缺省）与 partylist（部门 ID）。仅包含应用可见范围内的成员。",
     Source = "IWechatWorkTagsService.GetTagMembersAsync",
     RequiredScopes = ["contacts.tag.read"],
     IsWrite = false)]
 public interface IWechatWorkContactsTagMembersTool
 {
     /// <summary>读取标签成员。</summary>
-    /// <returns>白名单投影后的 JSON 文本（tagname、userlist、partylist、user_count、department_count）。</returns>
+    /// <returns>白名单投影后的 JSON 文本（tagname、items、partylist、user_count、department_count）。</returns>
     Task<string> GetTagMembersAsync(
         [ToolParameter("tag_id", "标签 ID（整数）。")] int tag_id,
         CancellationToken cancellationToken = default);

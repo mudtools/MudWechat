@@ -879,4 +879,31 @@ public class WechatAbstractionsContractGuards
             System.Text.RegularExpressions.RegexOptions.Singleline);
         return result;
     }
+
+    /// <summary>
+    /// AB-SM：叶层国密端口目录存在且零第三方依赖（七线共仓硬边界）。
+    /// </summary>
+    /// <remarks>
+    /// <para>决策 D-SM-1：契约类型唯一落叶层 <c>Mud.Wechat.Abstractions/Crypto/</c>；
+    /// 默认实现 = <c>NullWechatSmCryptoProvider</c>（fail-fast）；真实实现落可选独立包。</para>
+    /// </remarks>
+    [Fact]
+    public void SmCrypto_Port_ShouldExistInAbstractions_And_NoThirdPartyDependencies()
+    {
+        var abstractionsDir = SourceProjectDir("Mud.Wechat.Abstractions");
+        var cryptoDir = Path.Combine(abstractionsDir, "Crypto");
+
+        Directory.Exists(cryptoDir).Should().BeTrue("叶层 Crypto/ 目录必须存在（国密端口落位点）");
+
+        // 验证四个核心文件存在
+        File.Exists(Path.Combine(cryptoDir, "IWechatSmCryptoProvider.cs")).Should().BeTrue("IWechatSmCryptoProvider 端口契约必须存在");
+        File.Exists(Path.Combine(cryptoDir, "NullWechatSmCryptoProvider.cs")).Should().BeTrue("NullWechatSmCryptoProvider 默认实现必须存在");
+        File.Exists(Path.Combine(cryptoDir, "WechatSmAlgorithms.cs")).Should().BeTrue("WechatSmAlgorithms 常量类必须存在");
+        File.Exists(Path.Combine(cryptoDir, "WechatSm4KeyDerivation.cs")).Should().BeTrue("WechatSm4KeyDerivation 密钥派生辅助类必须存在");
+
+        // 验证 csproj 无新增第三方引用（仅允许 Mud.HttpUtils）
+        var csprojContent = File.ReadAllText(Path.Combine(abstractionsDir, "Mud.Wechat.Abstractions.csproj"));
+        csprojContent.Should().NotContain("BouncyCastle", "叶层不得引入 BouncyCastle 等第三方国密依赖");
+        csprojContent.Should().NotContain("System.Security.Cryptography.Algorithms", "叶层不得新增密码学相关 NuGet 包");
+    }
 }

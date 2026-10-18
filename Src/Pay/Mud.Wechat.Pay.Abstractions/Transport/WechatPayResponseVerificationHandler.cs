@@ -55,6 +55,7 @@ internal sealed class WechatPayResponseVerificationHandler : DelegatingHandler
     private const string NonceHeaderName = "Wechatpay-Nonce";
     private const string SignatureHeaderName = "Wechatpay-Signature";
     private const string SerialHeaderName = "Wechatpay-Serial";
+    private const string SignatureTypeHeaderName = "Wechatpay-Signature-Type";
 
     private readonly IWechatPayMerchantContext _merchantContext;
     private readonly IWechatPaySignatureProviderFactory _signatureProviders;
@@ -130,9 +131,10 @@ internal sealed class WechatPayResponseVerificationHandler : DelegatingHandler
         var nonce = GetHeader(response, NonceHeaderName);
         var signature = GetHeader(response, SignatureHeaderName);
         var serial = GetHeader(response, SerialHeaderName);
+        var signatureType = GetHeader(response, SignatureTypeHeaderName);
 
-        // 命中范围内的应答必须四头齐全：缺任一即畸形 ⇒ fail-closed（缺失绝不许回落到「跳过校验」）。
-        if (timestamp is null || nonce is null || signature is null || serial is null)
+        // 命中范围内的应答必须五头齐全：缺任一即畸形 ⇒ fail-closed（缺失绝不许回落到「跳过校验」）。
+        if (timestamp is null || nonce is null || signature is null || serial is null || signatureType is null)
         {
             _logger?.LogWarning(
                 "微信支付应答验签头缺失：失败分类={FailureKind}，商户={MerchantKey}，平台证书序列号={SerialNumber}。",
@@ -142,7 +144,7 @@ internal sealed class WechatPayResponseVerificationHandler : DelegatingHandler
 
             throw new WechatPayException(
                 null,
-                "应答缺少 Wechatpay 验签头（Wechatpay-Timestamp / Wechatpay-Nonce / Wechatpay-Signature / Wechatpay-Serial），拒绝接收。",
+                "应答缺少 Wechatpay 验签头（Wechatpay-Timestamp / Wechatpay-Nonce / Wechatpay-Signature / Wechatpay-Serial / Wechatpay-Signature-Type），拒绝接收。",
                 request.RequestUri?.ToString());
         }
 
@@ -160,6 +162,22 @@ internal sealed class WechatPayResponseVerificationHandler : DelegatingHandler
         var provider = await _signatureProviders
             .GetOrCreateAsync(merchant, cancellationToken)
             .ConfigureAwait(false);
+
+        // 按 Wechatpay-Signature-Type 选择验签算法（国密/ RSA 分流）。
+        var algorithm = signatureType.ToUpperInvariant();
+        if (algorithm != provider.Algorithm.ToUpperInvariant())
+        {
+            _logger?.LogWarning(
+                "微信支付应答签名算法不匹配：响应头={HeaderAlgorithm}，商户配置={ConfigAlgorithm}，商户={MerchantKey}。",
+                algorithm,
+                provider.Algorithm,
+                merchant.MerchantKey);
+
+            throw new WechatPayException(
+                null,
+                $"应答签名算法不匹配（期望 {provider.Algorithm}，实际 {algorithm}）。",
+                request.RequestUri?.ToString());
+        }
 
         var verifyMessage = WechatPaySignatureMessages.BuildVerifyMessage(timestamp, nonce, body);
 

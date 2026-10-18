@@ -25,13 +25,13 @@ namespace Mud.Wechat.Work.AI.Tools.Curation;
 /// </remarks>
 [AgentTool(
     name: "externalcontact.groupchat.list",
-    Description = "列出企业微信客户群（配置过客户群管理的群）。参数 status_filter 可选（All 全部 / PendingInherit 离职待继承 / Inheriting 离职继承中 / Inherited 离职继承完成，默认 All）；owner_userid 可选（群主 userid 数组，先用 contacts.user.simple_list 获取）；owner_partyid 可选（整数部门 ID，自动包含其子部门）；cursor 为分页游标（首页省略，续页传上一页的 next_cursor）；limit 为单页条数（1~1000，可空 ⇒ 500）。返回 group_chat_list（每项 chat_id、status）、count 与 next_cursor；拿到 chat_id 后用 externalcontact.groupchat.get 取详情。注意：省略群主过滤时会拉取应用可见范围内全部群主的数据，可见范围人数超过 1000 人官方报错 81017，此时必须先按群主或部门过滤；群主为离职成员时必须显式指定群主才能拉到。",
+    Description = "列出企业微信客户群（配置过客户群管理的群）。参数 status_filter 可选（All 全部 / PendingInherit 离职待继承 / Inheriting 离职继承中 / Inherited 离职继承完成，默认 All）；owner_userid 可选（群主 userid 数组，先用 contacts.user.simple_list 获取）；owner_partyid 可选（整数部门 ID，自动包含其子部门）；cursor 为分页游标（首页省略，续页传上一页的 page_token）；limit 为单页条数（1~1000，可空 ⇒ 500）。返回 items（每项 chat_id、status）、count 与 page_token；拿到 chat_id 后用 externalcontact.groupchat.get 取详情。注意：省略群主过滤时会拉取应用可见范围内全部群主的数据，可见范围人数超过 1000 人官方报错 81017，此时必须先按群主或部门过滤；群主为离职成员时必须显式指定群主才能拉到。",
     Source = "IWechatWorkExternalContactGroupChatService.GetGroupChatListAsync",
     RequiredScopes = ["externalcontact.groupchat.read"])]
 public interface IWechatWorkExternalContactGroupChatListTool
 {
     /// <summary>列出客户群。</summary>
-    /// <returns>白名单投影后的 JSON 文本（group_chat_list、count、next_cursor）。</returns>
+    /// <returns>白名单投影后的 JSON 文本（items、count、page_token）。</returns>
     Task<string> GetGroupChatListAsync(
         [ToolParameter("status_filter", "跟进状态过滤（All 全部 / PendingInherit 离职待继承 / Inheriting 离职继承中 / Inherited 离职继承完成；可空 ⇒ All）。", EnumType = typeof(WechatGroupChatStatusFilters))] int? status_filter,
         [ToolParameter("owner_userid", "群主 userid 列表（可空；省略即拉应用可见范围内全部群主）。")] string[]? owner_userid,

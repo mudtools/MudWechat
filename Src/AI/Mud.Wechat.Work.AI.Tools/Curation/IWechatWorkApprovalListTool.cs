@@ -27,20 +27,20 @@ namespace Mud.Wechat.Work.AI.Tools.Curation;
 /// 自建应用只能取到「应用可见范围内申请人」的单据。跨度与条数在执行器里收口，越界即参数类错误（可自我纠错）。
 /// </para>
 /// <para>
-/// <b>只回单号</b>：本端点官方只返回 <c>sp_no_list</c> 与游标，不含任何表单内容——这正是它安全的原因；
+/// <b>只回单号</b>：本端点官方只返回 <c>items</c> 与游标，不含任何表单内容——这正是它安全的原因；
 /// 需要详情时由模型带 <c>sp_no</c> 调 <c>approval.get</c>（后者已做控件的投影裁剪）。
 /// </para>
 /// </remarks>
 [AgentTool(
     name: "approval.list",
-    Description = "按时间范围拉取审批单号（这是 approval.get 的前置跳：单号只能从这里或审批通知获得）。参数 start_time / end_time 为 Unix 秒（字符串，end 必须大于 start，跨度不超过 31 天）；sp_status 可选（Pending 待审批 / Approved 已通过 / Rejected 已驳回 / Canceled 已撤销；省略 = 全部）；size 单页条数（1~100，默认 100）；cursor 分页游标（首页省略，续页传上一页的 next_cursor）。返回 sp_no_list、count、next_cursor；next_cursor 为空表示已拉完。只返回单号，不含表单内容；需要详情时用 approval.get。",
+    Description = "按时间范围拉取审批单号（这是 approval.get 的前置跳：单号只能从这里或审批通知获得）。参数 start_time / end_time 为 Unix 秒（字符串，end 必须大于 start，跨度不超过 31 天）；sp_status 可选（Pending 待审批 / Approved 已通过 / Rejected 已驳回 / Canceled 已撤销；省略 = 全部）；size 单页条数（1~100，默认 100）；cursor 分页游标（首页省略，续页传上一页的 page_token）。返回 items、count、page_token；page_token 为空表示已拉完。只返回单号，不含表单内容；需要详情时用 approval.get。",
     Source = "IWechatWorkApprovalService.BatchGetApprovalNumbersAsync",
     RequiredScopes = ["approval.read"],
     IsWrite = false)]
 public interface IWechatWorkApprovalListTool
 {
     /// <summary>按时间范围拉取审批单号。</summary>
-    /// <returns>白名单投影后的 JSON 文本（sp_no_list、count、next_cursor、hint）。</returns>
+    /// <returns>白名单投影后的 JSON 文本（items、count、page_token、hint）。</returns>
     Task<string> BatchGetApprovalNumbersAsync(
         [ToolParameter("start_time", "起始时间（Unix 秒，字符串）。", Required = true)] string start_time,
         [ToolParameter("end_time", "结束时间（Unix 秒，字符串，须大于 start_time）。", Required = true)] string end_time,

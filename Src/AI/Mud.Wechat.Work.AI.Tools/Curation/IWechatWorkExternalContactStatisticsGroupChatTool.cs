@@ -24,13 +24,13 @@ namespace Mud.Wechat.Work.AI.Tools.Curation;
 /// </remarks>
 [AgentTool(
     name: "externalcontact.statistics.groupchat",
-    Description = "按群主获取企业微信客户群的数据统计。参数 day_begin_time 必填（起始日期，Unix 秒或带时区的 ISO 8601，按天聚合、非零点自动取整到当天 0 点，只能取昨天至前 180 天）；day_end_time 可选（不填默认同起始日期，跨度不得超过 30 天）；owner_userid 可选（群主 userid 数组，不填取应用可见范围内全部群主，可见范围超 1000 人官方报错 81017）；order_by 可选（NewChatCount 新增群数（默认）/ ChatTotal 群总数 / NewMemberCount 新增群人数 / MemberTotal 群总人数）；ascending 可选（true 升序，默认 false 降序）；offset 为分页偏移（默认 0）；limit 为单页条数（1~1000，可空 ⇒ 500）。返回 total（命中总数）、next_offset（等于 total 表示取完）与 items（每项 owner 群主 userid + data：new_chat_cnt 新增群数、chat_total 群总数、chat_has_msg 有过消息的群数、new_member_cnt 新增群人数、member_total 群成员总数、member_has_msg 有过消息的群成员数、msg_total 消息总数、migrate_trainee_chat_cnt 迁移实习群数）。",
+    Description = "按群主获取企业微信客户群的数据统计。参数 day_begin_time 必填（起始日期，Unix 秒或带时区的 ISO 8601，按天聚合、非零点自动取整到当天 0 点，只能取昨天至前 180 天）；day_end_time 可选（不填默认同起始日期，跨度不得超过 30 天）；owner_userid 可选（群主 userid 数组，不填取应用可见范围内全部群主，可见范围超 1000 人官方报错 81017）；order_by 可选（NewChatCount 新增群数（默认）/ ChatTotal 群总数 / NewMemberCount 新增群人数 / MemberTotal 群总人数）；ascending 可选（true 升序，默认 false 降序）；offset 为分页偏移（默认 0）；limit 为单页条数（1~1000，可空 ⇒ 500）。返回 total（命中总数）、page_token（等于 total 表示取完）与 items（每项 owner 群主 userid + data：new_chat_cnt 新增群数、chat_total 群总数、chat_has_msg 有过消息的群数、new_member_cnt 新增群人数、member_total 群成员总数、member_has_msg 有过消息的群成员数、msg_total 消息总数、migrate_trainee_chat_cnt 迁移实习群数）。",
     Source = "IWechatWorkExternalContactStatisticsService.GetGroupChatStatisticAsync",
     RequiredScopes = ["externalcontact.statistics.read"])]
 public interface IWechatWorkExternalContactStatisticsGroupChatTool
 {
     /// <summary>按群主查询客户群统计。</summary>
-    /// <returns>白名单投影后的 JSON 文本（total、next_offset、items）。</returns>
+    /// <returns>白名单投影后的 JSON 文本（total、page_token、items）。</returns>
     Task<string> GetGroupChatStatisticAsync(
         [ToolParameter("day_begin_time", "起始日期（Unix 秒或带时区的 ISO 8601）。", Required = true)] string day_begin_time,
         [ToolParameter("day_end_time", "结束日期（可空 ⇒ 同起始日期）。")] string? day_end_time,

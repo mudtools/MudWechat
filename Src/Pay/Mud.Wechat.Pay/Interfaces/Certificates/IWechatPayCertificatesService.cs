@@ -31,17 +31,19 @@ public interface IWechatPayCertificatesService
     /// 官方文档：<see href="https://pay.weixin.qq.com/doc/v3/merchant/4012551764"/>
     /// （官方接口名 <c>DirectAPIv3Certificates</c>）。
     /// </summary>
+    /// <param name="algorithmType">算法类型（SHA256-RSA2048 / SM2-WITH-SM3），空则返回全部。</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/> 取消操作令牌对象。</param>
     /// <returns>平台证书列表（<c>data[]</c>，证书内容为 AES-256-GCM 密文），见 <see cref="PlatformCertificatesResponse"/>。</returns>
     /// <remarks>
-    /// <para><b>官方契约</b>：<b>GET</b> <c>/v3/certificates</c>；<b>无 query / path 参数</b>；
+    /// <para><b>官方契约</b>：<b>GET</b> <c>/v3/certificates?algorithm_type={}</c>；
     /// 必带 <c>Accept: application/json</c>。支持商户类型：<b>普通商户</b>。</para>
     /// <para><b>频率限制</b>：单个商户号 <b>1000 次/s</b>（官方原文）。仍应<b>定时低频拉取</b>并本地缓存，
     /// 逐请求拉取会带来无谓往返。</para>
     /// <para><b>解密</b>：应答中的证书为密文（<c>encrypt_certificate</c>），须用 APIv3 密钥经
-    /// <c>WechatPayAesGcmCodec</c> 解密为 PEM 明文后方可构造 X509 证书验签。</para>
+    /// <c>WechatPayAesGcmCodec</c> 或 <c>Sm4GcmPayloadCodec</c> 解密为 PEM 明文后方可构造 X509 证书验签。</para>
     /// </remarks>
     [Get("/v3/certificates")]
     Task<PlatformCertificatesResponse> GetPlatformCertificatesAsync(
+        string? algorithmType = null,
         CancellationToken cancellationToken = default);
 }

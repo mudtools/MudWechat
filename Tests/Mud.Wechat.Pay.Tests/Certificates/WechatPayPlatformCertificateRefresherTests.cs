@@ -245,6 +245,7 @@ public class WechatPayPlatformCertificateRefresherTests
         public int CallCount => Volatile.Read(ref _callCount);
 
         public Task<PlatformCertificatesResponse> GetPlatformCertificatesAsync(
+            string? algorithmType = null,
             CancellationToken cancellationToken = default)
         {
             Interlocked.Increment(ref _callCount);

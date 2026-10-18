@@ -20,13 +20,13 @@ namespace Mud.Wechat.Work.AI.Tools.Curation;
 /// </remarks>
 [AgentTool(
     name: "externalcontact.resigned.unassigned_list",
-    Description = "获取待分配的离职成员客户列表（零必填参数）。参数 page_size 为单页条数（1~1000，默认 1000）；cursor 为分页游标（首页省略，续页传上一页的 next_cursor）。返回 info（每项 handover_userid 离职成员 userid、external_userid 客户 ID、dimission_time 离职时间戳）、is_last（true 表示已到最后一页）与 next_cursor。这些客户尚未被重新分配，可据此识别「无人跟进」的风险客户；分配动作是写面（需宿主审批流），本工具只读。",
+    Description = "获取待分配的离职成员客户列表（零必填参数）。参数 page_size 为单页条数（1~1000，默认 1000）；cursor 为分页游标（首页省略，续页传上一页的 page_token）。返回 items（每项 handover_userid 离职成员 userid、external_userid 客户 ID、dimission_time 离职时间戳）、has_more（true 表示还有下一页）与 page_token（有下一页时才出现，原样回传给 cursor）。这些客户尚未被重新分配，可据此识别「无人跟进」的风险客户；分配动作是写面（需宿主审批流），本工具只读。",
     Source = "IWechatWorkExternalContactResignedInheritanceService.GetUnassignedListAsync",
     RequiredScopes = ["externalcontact.inheritance.read"])]
 public interface IWechatWorkExternalContactResignedUnassignedListTool
 {
     /// <summary>读取待分配的离职成员客户清单。</summary>
-    /// <returns>白名单投影后的 JSON 文本（info、is_last、next_cursor）。</returns>
+    /// <returns>白名单投影后的 JSON 文本（items、has_more、page_token）。</returns>
     Task<string> GetUnassignedListAsync(
         [ToolParameter("page_size", "单页条数（1~1000，可空 ⇒ 1000）。")] int? page_size,
         [ToolParameter("cursor", "分页游标（可空 ⇒ 首页）。")] string? cursor,

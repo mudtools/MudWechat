@@ -261,4 +261,34 @@ public class WechatCallbackKernelContractGuards
             }
         }
     }
+
+    /// <summary>
+    /// CB-SM：叶层回调加解密内核不含任何国密分支（红线 R-SM-CB）。
+    /// </summary>
+    /// <remarks>
+    /// <para><b>红线理由</b>：<c>WechatCallbackCrypto</c>（企微/公众号共用）的算法由微信官方规定为 AES-256-CBC
+    ///（32 字节块 PKCS7），SM4/GCM 是支付 APIv3 专属。禁止为「统一可插拔」而改造既有回调内核 ——
+    /// 那会破坏全部在网回调，并撞上既有决策 D1（禁用 .NET 内置 16 块 PKCS7）。</para>
+    /// <para>可插拔的正确落点：支付回调的 <c>resource.algorithm</c> 分派（方案 v1 §A.5-(2)）。</para>
+    /// </remarks>
+    [Fact]
+    public void CallbackCrypto_ShouldNotContainSmBranches()
+    {
+        var kernelDir = Path.Combine(GetSolutionRoot(), "Src", "Core", "Mud.Wechat.Abstractions", "Callback");
+        var cryptoFile = Path.Combine(kernelDir, "WechatCallbackCrypto.cs");
+
+        File.Exists(cryptoFile).Should().BeTrue("WechatCallbackCrypto.cs 必须存在（叶层回调加解密内核）");
+
+        var content = File.ReadAllText(cryptoFile);
+
+        // 禁止出现任何国密算法标识或分支
+        foreach (var smKeyword in new[] { "SM2", "SM3", "SM4", "国密", "Sm2", "Sm3", "Sm4" })
+        {
+            content.Should().NotContain(smKeyword,
+                $"WechatCallbackCrypto 不得包含国密分支 \"{smKeyword}\"（红线 R-SM-CB：企微/公众号回调算法固定为 AES-256-CBC）");
+        }
+
+        // 验证仍为纯 AES 实现
+        content.Should().Contain("PaddingMode.None", "必须保持手工 32 字节块 PKCS7 剥离的实现形态（决策 D1）");
+    }
 }

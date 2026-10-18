@@ -34,7 +34,7 @@ public sealed class WechatPayMerchantCredentialProvider : IWechatPayMerchantCred
         => _secrets = secrets ?? throw new ArgumentNullException(nameof(secrets));
 
     /// <inheritdoc />
-    public async Task<RSA> LoadPrivateKeyAsync(
+    public async Task<WechatPayMerchantKey> LoadPrivateKeyAsync(
         WechatPayMerchantConfig config, CancellationToken cancellationToken = default)
     {
         if (config == null) throw new ArgumentNullException(nameof(config));
@@ -43,6 +43,7 @@ public sealed class WechatPayMerchantCredentialProvider : IWechatPayMerchantCred
                 config, config.PrivateKeySecretName, nameof(config.PrivateKeySecretName), cancellationToken)
             .ConfigureAwait(false);
 
+        // 当前实现仅支持 RSA-2048；SM2 密钥需宿主替换为支持国密的 ISecretProvider 实现
         var rsa = RSA.Create();
         try
         {
@@ -58,7 +59,7 @@ public sealed class WechatPayMerchantCredentialProvider : IWechatPayMerchantCred
                 ex);
         }
 
-        return rsa;
+        return WechatPayMerchantKey.FromRsa(rsa, "SHA256-RSA2048");
     }
 
     /// <inheritdoc />

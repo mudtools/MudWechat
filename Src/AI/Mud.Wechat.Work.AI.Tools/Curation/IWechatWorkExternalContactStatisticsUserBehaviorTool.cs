@@ -24,13 +24,13 @@ namespace Mud.Wechat.Work.AI.Tools.Curation;
 /// </remarks>
 [AgentTool(
     name: "externalcontact.statistics.user_behavior",
-    Description = "按天获取企业微信成员「联系客户」的统计数据。参数 userid 可选（成员 userid 数组，最多 100 个，先用 contacts.user.simple_list 获取）；department_id 可选（整数部门 ID，单部门，含其子部门）；userid 与 department_id 至少要给一个；start_time / end_time 为时间范围（Unix 秒或带时区的 ISO 8601，闭区间、按天聚合、非零点自动取整到当天 0 点），跨度不得超过 30 天，官方只保留最近 180 天。返回 behavior_data（每项为一天：stat_time、new_apply_cnt 发起申请数、new_contact_cnt 新增客户数、chat_cnt 聊天数、message_cnt 发送消息数、reply_percentage 已回复聊天占比、avg_reply_time 平均首次回复时长（秒）、negative_feedback_cnt 删除/拉黑成员的客户数）与 count。传入多个成员时返回的是总体数据（不逐人拆分）。",
+    Description = "按天获取企业微信成员「联系客户」的统计数据。参数 userid 可选（成员 userid 数组，最多 100 个，先用 contacts.user.simple_list 获取）；department_id 可选（整数部门 ID，单部门，含其子部门）；userid 与 department_id 至少要给一个；start_time / end_time 为时间范围（Unix 秒或带时区的 ISO 8601，闭区间、按天聚合、非零点自动取整到当天 0 点），跨度不得超过 30 天，官方只保留最近 180 天。返回 items（每项为一天：stat_time、new_apply_cnt 发起申请数、new_contact_cnt 新增客户数、chat_cnt 聊天数、message_cnt 发送消息数、reply_percentage 已回复聊天占比、avg_reply_time 平均首次回复时长（秒）、negative_feedback_cnt 删除/拉黑成员的客户数）与 count。传入多个成员时返回的是总体数据（不逐人拆分）。",
     Source = "IWechatWorkExternalContactStatisticsService.GetUserBehaviorDataAsync",
     RequiredScopes = ["externalcontact.statistics.read"])]
 public interface IWechatWorkExternalContactStatisticsUserBehaviorTool
 {
     /// <summary>查询成员联系客户的行为统计。</summary>
-    /// <returns>白名单投影后的 JSON 文本（behavior_data、count）。</returns>
+    /// <returns>白名单投影后的 JSON 文本（items、count）。</returns>
     Task<string> GetUserBehaviorDataAsync(
         [ToolParameter("userid", "成员 userid 列表（最多 100 个；与 department_id 至少给一个）。")] string[]? userid,
         [ToolParameter("department_id", "部门 ID（单部门，含子部门；与 userid 至少给一个）。")] int? department_id,

@@ -91,8 +91,10 @@ internal sealed class WechatPayAuthorizationHandler : DelegatingHandler
 
         var signature = provider.Sign(message);
 
+        // 按商户配置的签名算法选择授权类型前缀（WECHATPAY2-SHA256-RSA2048 或 WECHATPAY2-SM2-WITH-SM3）。
+        var authorizationType = provider.Algorithm;
         var authorization = WechatPaySignatureMessages.BuildAuthorization(
-            merchant.AuthorizationMchId, signature.SerialNumber, timestamp, nonce, signature.Signature);
+            merchant.AuthorizationMchId, authorizationType, signature.SerialNumber, timestamp, nonce, signature.Signature);
 
         request.Headers.TryAddWithoutValidation("Authorization", authorization);
 

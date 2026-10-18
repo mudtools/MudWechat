@@ -20,12 +20,12 @@ namespace Mud.Wechat.Work.AI.Tools.Curation;
 /// </para>
 /// <para>
 /// <b>跟进关系可能分页</b>：官方 <c>get</c> 支持 <c>cursor</c> 续页，本工具只取首页并在返回里标注
-/// <c>next_cursor</c> 是否存在；需要全量跟进人时由宿主扩展专用工具，不在本工具里静默丢弃。
+/// <c>page_token</c> 是否存在；需要全量跟进人时由宿主扩展专用工具，不在本工具里静默丢弃。
 /// </para>
 /// </remarks>
 [AgentTool(
     name: "externalcontact.contact.get",
-    Description = "按客户 ID 获取企业微信客户详情与跟进关系。参数 external_userid 为客户 ID（先用 externalcontact.contact.list 获取）。返回 external_userid、name（客户微信昵称）、type（1 微信用户 / 2 企业微信用户）、gender、corp_name（客户所属企业）、position（客户职位）、follow_users（跟进成员：userid、备注名、添加时间、添加方式、客户状态、标签名）与 follow_user_count。不含头像、unionid、备注手机号与视频号昵称（个人数据不外发）。若返回 next_cursor_present 为 true，说明跟进成员超过一页，本工具只回填首页。",
+    Description = "按客户 ID 获取企业微信客户详情与跟进关系。参数 external_userid 为客户 ID（先用 externalcontact.contact.list 获取）。返回 external_userid、name（客户微信昵称）、type（1 微信用户 / 2 企业微信用户）、gender、corp_name（客户所属企业）、position（客户职位）、follow_users（跟进成员：userid、备注名、添加时间、添加方式、客户状态、标签名）与 follow_user_count。不含头像、unionid、备注手机号与视频号昵称（个人数据不外发）。若返回 follow_user_truncated 为 true，说明跟进成员被官方截断，本工具只回填首页（该端点无翻页把手）。",
     Source = "IWechatWorkExternalContactCustomerService.GetCustomerDetailAsync",
     RequiredScopes = ["externalcontact.contact.read"])]
 public interface IWechatWorkExternalContactContactGetTool

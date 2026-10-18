@@ -101,6 +101,8 @@ public static class WechatWorkToolServiceCollectionExtensions
         services.AddWechatLivingToolHandlersCore();
         services.AddWechatMeetingToolHandlersCore();
         services.AddWechatMessageToolHandlersCore();
+        services.AddWechatScheduleToolHandlersCore();
+        services.AddWechatVacationToolHandlersCore();
         services.AddWechatWedocToolHandlersCore();
 
         services.TryAddSingleton(static provider => WechatToolDomainRegistrars.Build(provider));

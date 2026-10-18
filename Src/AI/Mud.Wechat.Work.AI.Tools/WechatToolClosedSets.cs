@@ -117,6 +117,35 @@ internal static class WechatApprovalStatuses
     public const int Canceled = 4;
 }
 
+/// <summary>日程提醒档位（官方只支持固定秒数，不支持任意提前量）。</summary>
+internal static class WechatScheduleRemindSecs
+{
+    /// <summary>不提醒（官方值 0，默认）。</summary>
+    public const int None = 0;
+
+    /// <summary>提前 5 分钟（300 秒）。</summary>
+    public const int FiveMinutes = 300;
+
+    /// <summary>提前 15 分钟（900 秒）。</summary>
+    public const int FifteenMinutes = 900;
+
+    /// <summary>提前 1 小时（3600 秒）。</summary>
+    public const int OneHour = 3600;
+
+    /// <summary>提前 1 天（86400 秒）。</summary>
+    public const int OneDay = 86400;
+}
+
+/// <summary>日程取消范围（重复日程的 <c>op_mode</c>；官方值 1/2，省略 = 全部）。</summary>
+internal static class WechatScheduleOpModes
+{
+    /// <summary>仅此日程（官方值 1；须同时给 op_start_time）。</summary>
+    public const int ThisSchedule = 1;
+
+    /// <summary>此次及以后（官方值 2；须同时给 op_start_time）。</summary>
+    public const int ThisAndFuture = 2;
+}
+
 /// <summary>客户群统计 <c>order_by</c> 取值闭集（排行维度）。</summary>
 internal static class WechatStatisticsOrderBy
 {

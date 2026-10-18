@@ -51,6 +51,10 @@ $buildArgs = @(
     '-c', $Configuration,
     '-f', $TargetFramework,
     '--nologo', '-v', 'q',
+    # --no-incremental 不可省略：增量构建在「只改了 obj 里已发射的生成物上游」时可能整体跳过 CoreCompile，
+    # 于是本脚本解析到的是上一次发射的旧 WechatToolSchemas.g.cs，写出的快照会静默漏掉新增工具
+    # （实测：新增 5 个工具后脚本仍报「已重固化 56 条」）。与 verify-build.ps1 的同类教训一致。
+    '--no-incremental',
     '-p:WechatToolGoldenUpdate=true',
     '-p:EmitCompilerGeneratedFiles=true'
 )

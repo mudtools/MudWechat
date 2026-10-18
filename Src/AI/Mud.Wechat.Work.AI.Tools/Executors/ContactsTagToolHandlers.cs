@@ -16,7 +16,7 @@ using Mud.Wechat.Work.Interfaces;
 namespace Mud.Wechat.Work.AI.Tools.Executors;
 
 /// <summary>
-/// 通讯录「标签」域执行器：<c>contacts.tag.*</c>（两个只读 + 一个受控写）落到
+/// 通讯录「标签」域执行器：<c>contacts.tag.*</c>（两个只读 + 两个受控写）落到
 /// <see cref="IWechatWorkTagsService"/> 的标签端点上。
 /// </summary>
 /// <remarks>
@@ -132,6 +132,39 @@ public sealed class ContactsTagToolHandlers(IWechatWorkTagsService tags)
         {
             ["tag_id"] = created.TagId,
             ["name"] = request.TagName,
+        }));
+    }
+
+    /// <summary>执行 <c>contacts.tag.update_name</c>（L2 受控写，创建工具的纠错配对）。</summary>
+    /// <param name="args">模型侧入参（<c>tag_id</c> / <c>tag_name</c> 必填）。</param>
+    /// <param name="cancellationToken">取消令牌。</param>
+    /// <returns>工具结果（ok、tag_id、tag_name）。</returns>
+    /// <remarks>
+    /// <b>为什么改名值得单独一个写工具</b>：没有它时，模型面对「标签名打错」只有两个坏选项——
+    /// 建议删除重建（会丢成员关联），或告诉用户去管理后台改。改名只动名称、不动关联，是最小影响面的修法。
+    /// </remarks>
+    [ToolHandler(typeof(IWechatWorkContactsTagUpdateNameTool))]
+    public async Task<ToolResult> UpdateTagNameAsync(
+        IReadOnlyDictionary<string, object?> args,
+        CancellationToken cancellationToken)
+    {
+        // 空白 tag_name 由必填参数层拦下（RequireString），此处不重复校验。
+        var request = ContactsTagUpdateNameArgs.Unpack(args);
+
+        var response = await _tags.UpdateTagNameAsync(
+            new UpdateTagNameRequest { TagId = request.TagId, TagName = request.TagName },
+            cancellationToken).ConfigureAwait(false);
+        var outcome = WechatApiResultReader.Read(response);
+        if (!outcome.Ok)
+        {
+            return ToolResult.FromError(outcome.ErrorText ?? "标签改名失败。");
+        }
+
+        return ToolResult.FromText(ToolResultJson.ToText(new JsonObject
+        {
+            ["ok"] = true,
+            ["tag_id"] = request.TagId,
+            ["tag_name"] = request.TagName,
         }));
     }
 }

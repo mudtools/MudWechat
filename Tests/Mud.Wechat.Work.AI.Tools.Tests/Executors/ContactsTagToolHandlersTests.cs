@@ -1,6 +1,7 @@
 using FluentAssertions;
 using Moq;
 using Mud.Wechat.Work.AI.Tools.Executors;
+using Mud.Wechat.Work.DataModels;
 using Mud.Wechat.Work.DataModels.Contacts.Tags;
 using Mud.Wechat.Work.Interfaces;
 using Xunit;
@@ -102,6 +103,36 @@ public class ContactsTagToolHandlersTests
 
         result.Text.Should().Contain("40058");
         result.Text.Should().Contain("tag name exist");
+    }
+
+    [Fact]
+    public async Task UpdateTagName_ShouldCallSdkAndEchoNewName()
+    {
+        _tags
+            .Setup(t => t.UpdateTagNameAsync(It.IsAny<UpdateTagNameRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new WechatWorkResponse { ErrorCode = 0 });
+
+        var result = await Handler().UpdateTagNameAsync(
+            Args(("tag_id", 12), ("tag_name", "华东-销售")),
+            CancellationToken.None);
+
+        result.Text.Should().Contain("\"ok\":true");
+        result.Text.Should().Contain("\"tag_name\":\"华东-销售\"");
+        _tags.Verify(
+            t => t.UpdateTagNameAsync(
+                It.Is<UpdateTagNameRequest>(r => r.TagId == 12 && r.TagName == "华东-销售"),
+                It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public void UpdateTagName_WhenNameBlank_ShouldBeRejectedByArgsLayer()
+    {
+        // 空白名在必填参数层就被拒（RequireString），执行器不必再写一遍——这里锁住该层的行为，
+        // 防止哪天把 tag_name 改成可选后「空白名悄悄通过」。
+        var act = () => ContactsTagUpdateNameArgs.Unpack(Args(("tag_id", 12), ("tag_name", "   ")));
+
+        act.Should().Throw<ArgumentException>();
     }
 
     private ContactsTagToolHandlers Handler() => new(_tags.Object);

@@ -111,6 +111,9 @@ public class WechatToolRegistryTests
     {
         var services = new ServiceCollection().AddSingleton(departments);
         services.AddSingleton(new Mock<IWechatWorkInternalDialService>(MockBehavior.Loose).Object);
+        // 日程与假期各自独立执行器（软缺席按依赖服务判定），要断言「全部工具已注册」就必须一并提供。
+        services.AddSingleton(new Mock<IWechatWorkScheduleService>(MockBehavior.Loose).Object);
+        services.AddSingleton(new Mock<IWechatWorkVacationService>(MockBehavior.Loose).Object);
         if (users is not null)
         {
             services.AddSingleton(users);

@@ -26,6 +26,7 @@ public class WechatToolSurfaceContractGuards
                 "approval.get",
                 "approval.list",
                 "approval.template.get",
+                "approval.vacation.quota",
                 "checkin.record.list",
                 "contacts.department.child_ids",
                 "contacts.department.get",
@@ -69,6 +70,7 @@ public class WechatToolSurfaceContractGuards
                 "meeting.attendees",
                 "meeting.get",
                 "meeting.list",
+                "schedule.get",
                 "wedoc.doc.base_info",
             ]);
 
@@ -76,10 +78,13 @@ public class WechatToolSurfaceContractGuards
         WechatToolNames.WriteAll.Should().Equal(
             [
                 "contacts.tag.create",
+                "contacts.tag.update_name",
                 "externalcontact.groupmsg.send",
                 "kf.message.send",
                 "message.recall",
                 "message.send",
+                "schedule.add",
+                "schedule.cancel",
                 "wedoc.doc.create",
                 "wedoc.doc.delete",
                 "wedoc.doc.rename",

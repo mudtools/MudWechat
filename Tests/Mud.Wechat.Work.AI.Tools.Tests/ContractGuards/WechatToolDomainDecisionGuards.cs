@@ -45,10 +45,10 @@ public class WechatToolDomainDecisionGuards
         ["Living"] = (Decision.Curated, "living"),
         ["Meeting"] = (Decision.Curated, "meeting"),
         ["Message"] = (Decision.Curated, "message"),
+        ["Schedule"] = (Decision.Curated, "schedule"),
         ["Wedoc"] = (Decision.Curated, "wedoc"),
 
         // D = 延后：入口不可自举 / 需外部服务开通 / 与工具面职责不匹配。补做时改为 Curated 并补工具。
-        ["Schedule"] = (Decision.Deferred, "schedule"),
         ["Mail"] = (Decision.Deferred, "mail"),
         ["MeetingRoom"] = (Decision.Deferred, "meetingroom"),
         ["Wedrive"] = (Decision.Deferred, "wedrive"),
@@ -84,8 +84,8 @@ public class WechatToolDomainDecisionGuards
     {
         Table.Should().HaveCount(38, "域决策表是 Interfaces/ 38 个业务域的冻结契约；新增域必须同批登记");
 
-        Table.Values.Count(v => v.Status == Decision.Curated).Should().Be(11);
-        Table.Values.Count(v => v.Status == Decision.Deferred).Should().Be(7);
+        Table.Values.Count(v => v.Status == Decision.Curated).Should().Be(12);
+        Table.Values.Count(v => v.Status == Decision.Deferred).Should().Be(6);
         Table.Values.Count(v => v.Status == Decision.Forbidden).Should().Be(20);
     }
 

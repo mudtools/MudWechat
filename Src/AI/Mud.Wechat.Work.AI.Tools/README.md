@@ -51,12 +51,14 @@
 不再重复声明面已表达的校验。改声明面后必须重固化 golden 快照：
 `scripts/Update-WechatToolGolden.ps1`（`Generated/WechatToolSchemas.golden.txt` 漂移即 `MUDWT014` 构建失败）。
 
-当前策展面（**56 个 = 47 只读 + 9 写（8 受控写 + 1 高危写）**；只读/写分类的权威表是
+当前策展面（**61 个 = 49 只读 + 12 写（11 受控写 + 1 高危写）**；只读/写分类的权威表是
 `Tests/.../ContractGuards/WechatToolSurfaceContractGuards.cs`，本表与之同批维护）：
 
 | 域 | 工具 | SDK 源 |
 |---|---|---|
-| 审批 | `approval.get` / `.list` / `.template.get` | `IWechatWorkApprovalService.{GetApprovalDetailAsync,BatchGetApprovalNumbersAsync}` / `IWechatWorkApprovalTemplateService.GetTemplateDetailAsync` |
+| 审批 | `approval.get` / `.list` / `.template.get` / `.vacation.quota` | `IWechatWorkApprovalService.{GetApprovalDetailAsync,BatchGetApprovalNumbersAsync}` / `IWechatWorkApprovalTemplateService.GetTemplateDetailAsync` / `IWechatWorkVacationService.GetUserVacationQuotaAsync` |
+| 日程（**L2 受控写 = 外部可见**） | `schedule.add` / `schedule.cancel` | `IWechatWorkScheduleService.{AddScheduleAsync,DelScheduleAsync}` |
+| 日程（读） | `schedule.get` | `IWechatWorkScheduleService.GetScheduleAsync` |
 | 打卡 | `checkin.record.list` | `IWechatWorkInternalCheckinRecordService.GetCheckinDataAsync`（自建口径） |
 | 通话 | `dial.record.list` | `IWechatWorkDialService`（自建口径） |
 | 客户联系 | `externalcontact.follow_user.list` / `.contact.list` / `.contact.get` / `.tag.list` / `.product_album.list` / `.product_album.get` / `.resigned.unassigned_list` | `IWechatWorkExternalContact{FollowUser,Customer,Tag,ProductAlbum,Resigned}Service` |
@@ -74,7 +76,7 @@
 | 成员 | `contacts.user.get` / `.list` / `.simple_list` / `.id_list` | `IWechatWorkUsersService` |
 | 成员解析（写面的**入口**） | `contacts.user.resolve`（手机号/邮箱唯一索引；姓名须 + `department_id`） | `GetUserIdByMobileAsync` / `GetUserIdByEmailAsync` / `GetUserSimpleListAsync` |
 | 标签 | `contacts.tag.list`（零参）/ `.members` | `IWechatWorkTagsService` |
-| 标签（**L2 受控写**） | `contacts.tag.create` | `IWechatWorkTagsService.CreateTagAsync` |
+| 标签（**L2 受控写**） | `contacts.tag.create` / `contacts.tag.update_name` | `IWechatWorkTagsService.{CreateTagAsync,UpdateTagNameAsync}` |
 | 微文档 | `wedoc.doc.base_info` | `IWechatWorkWedocService.GetDocumentBaseInfoAsync` |
 | 微文档（**L2 受控写**） | `wedoc.doc.create` / `.rename` / `.share` | `CreateDocumentAsync` / `RenameDocumentAsync` / `ShareDocumentAsync` |
 | 微文档（**L3 高危写**） | `wedoc.doc.delete` | `DeleteDocumentAsync` |
@@ -147,14 +149,15 @@
 入群欢迎语素材增改删查（运营素材库，且删除被引擎判为高危写）同样不策展。
 
 **域决策表（38 域，可执行断言）**：`Tests/.../ContractGuards/WechatToolDomainDecisionGuards.cs` 用三态
-（`Curated` 11 / `Deferred` 7 / `Forbidden` 20）登记「每个域做不做、为什么」。**Curated 必须至少有一个工具；
+（`Curated` 12 / `Deferred` 6 / `Forbidden` 20）登记「每个域做不做、为什么」。**Curated 必须至少有一个工具；
 Deferred / Forbidden 必须一个工具都没有**——「暂不策展」因此不再是散文，而是改动即红的契约。
 
-- **Deferred（7，有明确理由，不是漏做）**：`Schedule`——`schedule.add` 可自举（自建应用省略 `cal_id` 写应用默认日历），但
-  `list_by_calendar` 只能读「应用自己创建的日历」，读面价值受限，补做时须在描述里明说；`Mail`——需企业邮箱开通
-  （VIP 服务）；`MeetingRoom`——仅 `_Internal` 且需 city/building 冷参数，缺「城市/建筑列表」入口；`Wedrive`——无
-  「空间列表」端点，模型拿不到 `spaceid`；`PromotionQrCode`——获客物料写面；`Emergency`——一次触达全员（L3 且需专线审批）；
-  `CorpGroup`——上下游组织跨企业边界。
+- **Curated 的日程只做三件事**：`add`（自建应用省略 `cal_id` 即写应用默认日历，是唯一可自举入口）、`get`（按 ID 取详情）、
+  `cancel`。**不做** `list_by_calendar`（只能读「应用自己创建的日历」，`cal_id` 在工具面无来源）、
+  **不做** `update`（覆盖式：改一个字段要重写整个日程，重复日程还有三组错误码）。
+- **Deferred（6，有明确理由，不是漏做）**：`Mail`——需企业邮箱开通（VIP 服务）；`MeetingRoom`——仅 `_Internal` 且需
+  city/building 冷参数，缺「城市/建筑列表」入口；`Wedrive`——无「空间列表」端点，模型拿不到 `spaceid`；
+  `PromotionQrCode`——获客物料写面；`Emergency`——一次触达全员（L3 且需专线审批）；`CorpGroup`——上下游组织跨企业边界。
 - **Forbidden（20，合规红线 / 凭据面 / 宿主职责）**：`Security`、`MsgAudit`、`DeviceData`、`License`、`Gov`、`School`、
   `Pay`、`PayTool`、`Invoice`、`DataZone`、`AccountId`、`Authentication`、`JsSdk`、`Agent`、`Aibot`、`Basic`、`Hr`、
   `Identity`（`code → userid` 是宿主登录原语）、`Media`（二进制面；多模态走事件通道而非工具）、`Webhook`（key 即发送凭证）。

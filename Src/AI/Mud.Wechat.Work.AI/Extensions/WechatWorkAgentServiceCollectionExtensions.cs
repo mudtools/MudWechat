@@ -139,6 +139,11 @@ public static class WechatWorkAgentServiceCollectionExtensions
         // ⑦ 事件装配器（中立兜底；宿主可前置注册自己的 IContextAssembler 覆写某族的装配策略）。
         services.TryAddSingleton<IContextAssembler, DefaultContextAssembler>();
 
+        // ⑧ 回合事实装配器（对齐中立 Mud.AI.Abstractions.Context.IContextAssembler 槽位）：
+        //    时间锚点 + 运行身份。它不占工具预算、不经白名单，也不是「元工具」——事实恒定注入，能力才需模型调用。
+        services.TryAddEnumerable(
+            ServiceDescriptor.Singleton<Mud.AI.Abstractions.Context.IContextAssembler, WechatTurnContextAssembler>());
+
         return services;
     }
 
@@ -162,6 +167,7 @@ public static class WechatWorkAgentServiceCollectionExtensions
             services.GetService<IAgentTelemetry>(),
             services.GetService<ITurnScopeFactory>(),
             services.GetService<IReadOnlyList<AIFunction>>(),
-            services.GetService<ILogger<WechatAgent>>());
+            services.GetService<ILogger<WechatAgent>>(),
+            services.GetServices<Mud.AI.Abstractions.Context.IContextAssembler>());
     }
 }

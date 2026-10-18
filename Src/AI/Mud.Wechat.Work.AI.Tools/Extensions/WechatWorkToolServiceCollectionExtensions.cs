@@ -7,7 +7,9 @@
 
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Logging;
 using Mud.Wechat.AI.Abstractions.Tools;
+using Mud.Wechat.Work.AI.Agents;
 using Mud.Wechat.Work.AI.Tools;
 using Mud.Wechat.Work.AI.Tools.AIFunctions;
 using Mud.Wechat.Work.AI.Tools.Registration;
@@ -71,10 +73,10 @@ public static class WechatWorkToolServiceCollectionExtensions
 
         services.TryAddSingleton(binding);
 
-        // 挂起式审批的工单存储（默认进程内；多实例部署由宿主前置注册分布式实现，预注册者按契约胜出）。
-        // 注意：状态机本身不在此处默认注册——注册了它，写工具就从「同步门」切换为「挂起等批准」，
-        // 这是宿主的有意选择（见 Security/WechatToolApprovalStateMachine 的 remarks）。
-        services.TryAddSingleton<IWechatToolApprovalStore, InMemoryWechatToolApprovalStore>();
+        // 审计端口默认空实现（零成本）：宿主注册自己的 sink 即生效（TryAdd 语义，先注册者胜出）。
+        // 挂起式审批不在此装配：HITL 的续跑由框架（MAF ApprovalRequiredAIFunction + 会话状态袋）承担，
+        // 本包只保留「同步确认门」（IWechatToolApprovalGate，未注册即 fail-closed）。
+        services.TryAddSingleton<IWechatToolAuditSink>(NullWechatToolAuditSink.Instance);
 
         // 工具面端口（AI-G5 的接缝）：协议层（MCP 等）经此消费「列工具 + 调工具」，
         // 与工具面零编译期引用；实现落在本包（只有这里看得见执行链与生成物契约表）。
@@ -108,7 +110,17 @@ public static class WechatWorkToolServiceCollectionExtensions
         configurePolicy?.Invoke(policy);
         policy.Validate();
         services.TryAddSingleton(policy);
-        services.TryAddSingleton<WechatToolDispatcher>();
+
+        // 显式工厂：可选依赖（授权器 / 审批门 / 审计 / 回合上下文）**逐项 GetService**，
+        // 全部缺席时执行链仍可用（fail-closed），不会因「某个可选端口没注册」让整条工具面解析失败。
+        services.TryAddSingleton(static provider => new WechatToolDispatcher(
+            provider.GetRequiredService<WechatToolRegistry>(),
+            provider.GetRequiredService<WechatToolPolicy>(),
+            provider.GetService<IWechatToolAuthorizer>(),
+            provider.GetService<IWechatToolApprovalGate>(),
+            provider.GetService<ILogger<WechatToolDispatcher>>(),
+            provider.GetService<IWechatToolAuditSink>(),
+            provider.GetService<IWechatAiCorpContextAccessor>()));
 
         // 模型可见面 = 白名单投影（看不见即不可试）；Agent 侧按 IReadOnlyList<AIFunction> 注入。
         services.TryAddSingleton(static provider => WechatToolFunctions.Create(provider.GetRequiredService<WechatToolDispatcher>()));

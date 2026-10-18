@@ -34,6 +34,7 @@ public class WechatToolSurfaceContractGuards
                 "contacts.user.get",
                 "contacts.user.id_list",
                 "contacts.user.list",
+                "contacts.user.resolve",
                 "contacts.user.simple_list",
                 "dial.record.list",
                 "externalcontact.contact.get",

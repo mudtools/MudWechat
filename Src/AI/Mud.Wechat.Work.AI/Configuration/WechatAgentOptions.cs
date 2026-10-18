@@ -63,6 +63,25 @@ public sealed class WechatAgentOptions
     /// <summary>单轮工具调用预算上限（0 = 不限制）。</summary>
     public int MaxToolCallsPerTurn { get; set; } = 10;
 
+    /// <summary>
+    /// 回合上下文注入的时区（IANA 或 Windows 时区标识；默认 <see cref="DefaultTimeZone"/>）。
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// 模型没有时钟，也不能从历史消息推断「今天」。若不注入，任何「本周的日程 / 昨天的日报 / 下周一开会」
+    /// 都会被解析到错误的日期，而<b>错误日期不报错</b>（工具调用成功、结果看起来正常）。这是唯一必须
+    /// 每回合注入的动态事实，故做成配置而不是让模型调工具（多一次工具调用只为拿时间，纯浪费预算）。
+    /// </para>
+    /// <para>
+    /// 同时注入 UTC 与本地时间是刻意的：企微接口的时间字段多为 Unix 秒（UTC 语义），
+    /// 而人类口语里的「今天」是本地语义。只给一种，模型就必然在其中一侧算错边界。
+    /// </para>
+    /// </remarks>
+    public string TimeZone { get; set; } = DefaultTimeZone;
+
+    /// <summary>默认时区（中国标准时间）。</summary>
+    public const string DefaultTimeZone = "Asia/Shanghai";
+
     /// <summary>会话历史在状态袋内的键（产品事实；不得为空）。</summary>
     public string HistoryStateKey { get; set; } = DefaultHistoryStateKey;
 
@@ -115,6 +134,23 @@ public sealed class WechatAgentOptions
         {
             throw new InvalidOperationException(
                 $"WechatAi:{nameof(MaxToolCallsPerTurn)} 为 0（不限制）或 1..100，实际值: {MaxToolCallsPerTurn}");
+        }
+
+        if (string.IsNullOrWhiteSpace(TimeZone))
+        {
+            throw new InvalidOperationException(
+                $"WechatAi:{nameof(TimeZone)} 不能为空（模型没有时钟，「今天」只能由此锚定）。");
+        }
+
+        try
+        {
+            _ = TimeZoneInfo.FindSystemTimeZoneById(TimeZone);
+        }
+        catch (Exception ex) when (ex is TimeZoneNotFoundException or InvalidTimeZoneException)
+        {
+            throw new InvalidOperationException(
+                $"WechatAi:{nameof(TimeZone)} 不是有效的时区标识（应为 IANA 形式，如 \"{DefaultTimeZone}\"），实际值: {TimeZone}",
+                ex);
         }
 
         if (string.IsNullOrWhiteSpace(HistoryStateKey))

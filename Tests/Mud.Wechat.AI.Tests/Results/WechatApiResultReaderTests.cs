@@ -92,6 +92,32 @@ public class WechatApiResultReaderTests
         outcome.ErrorText.Should().Be("errcode=50001, errmsg=未提供错误信息");
     }
 
+    [Fact]
+    public void Read_Envelope_WhenCodeCatalogued_ShouldCarryFailureAndAppendHint()
+    {
+        var response = new FakeResponse(errorCode: 45009, errorMessage: "api freq out of limit", payload: null);
+
+        var outcome = WechatApiResultReader.Read(response);
+
+        outcome.Ok.Should().BeFalse();
+        outcome.Failure.Should().NotBeNull("已收录的码必须给出分类读数");
+        outcome.Failure!.Suggestions.Should().NotBeNullOrEmpty();
+        outcome.ErrorText.Should().StartWith("errcode=45009, errmsg=api freq out of limit");
+        outcome.ErrorText.Should().Contain("建议：", "恢复建议必须进错误正文——既有执行器只读 ErrorText，分类能力才能覆盖全部工具");
+    }
+
+    [Fact]
+    public void Read_EnvelopeAndPayload_WhenCodeCatalogued_ShouldCarryFailure()
+    {
+        var envelope = new FakeResponse(errorCode: 60111, errorMessage: "userid not found", payload: null);
+
+        var outcome = WechatApiResultReader.Read(envelope, new Payload("token-1"));
+
+        outcome.Ok.Should().BeFalse();
+        outcome.Failure.Should().NotBeNull();
+        outcome.ErrorText.Should().Contain("建议：", "错误正文应指向替代路径，而不只是陈述失败");
+    }
+
     private sealed class Payload
     {
         public Payload(string value) => Value = value;

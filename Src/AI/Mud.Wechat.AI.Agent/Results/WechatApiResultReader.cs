@@ -21,9 +21,14 @@ namespace Mud.Wechat.AI.Agent.Results;
 /// <see cref="IWechatApiResponse"/>（<c>ErrorCode == 0</c> 即成功）—— 解包规则因此可以一处收敛。
 /// </para>
 /// <para>
-/// <b>码表纪律（不猜语义）</b>：本读取器<b>不</b>内置企微码段位解读。业务码原样进 <see cref="ToolApiOutcome{T}.Code"/>，
-/// 分类读数留空 ⇒ 中立层回落 <c>api/upstream_error</c>。码级读数（含恢复候选 <c>Suggestions</c>）必须在
-/// <b>有实证</b>的前提下由企微线专属读取器（<c>Mud.Wechat.Work.AI.Tools</c>）补充；猜测性码表会把模型引向错误处置。
+/// <b>码表纪律（不猜语义）</b>：码表本身不在这里，而在产品侧单源 <see cref="WechatApiErrorCatalog"/>——
+/// 只收官方全局错误码文档中语义明确、且工具面确有恢复动作的码；未收录的码返回 <see langword="null"/>，
+/// 中立层回落 <c>api/upstream_error</c>。猜测性码表比没有码表更危险（会把「参数错」告诉模型「稍后重试」）。
+/// </para>
+/// <para>
+/// <b>错误正文含一行恢复建议</b>：分类读数同时以「建议：…」追加进 <see cref="ToolApiOutcome{T}.ErrorText"/>。
+/// 这样<b>所有</b>既有执行器（只读 <c>ErrorText</c> 的形态）无需改动即获得可纠错文案——
+/// 分类能力因此是「读取器的性质」，而不是「每个执行器记得拼的一步」。
 /// </para>
 /// <para>
 /// <b>成功载荷为空</b>：<see cref="ToolApiOutcome{T}"/> 的成功语义要求载荷非空，故载荷为空时按失败回填
@@ -49,7 +54,10 @@ public static class WechatApiResultReader
 
         return response.IsSuccess
             ? ToolApiOutcome<TResponse>.Success(response)
-            : ToolApiOutcome<TResponse>.Fail(DescribeError(response), response.ErrorCode);
+            : ToolApiOutcome<TResponse>.Fail(
+                DescribeError(response),
+                response.ErrorCode,
+                WechatApiErrorCatalog.Classify(response.ErrorCode));
     }
 
     /// <summary>
@@ -70,7 +78,10 @@ public static class WechatApiResultReader
 
         if (!envelope.IsSuccess)
         {
-            return ToolApiOutcome<TData>.Fail(DescribeError(envelope), envelope.ErrorCode);
+            return ToolApiOutcome<TData>.Fail(
+                DescribeError(envelope),
+                envelope.ErrorCode,
+                WechatApiErrorCatalog.Classify(envelope.ErrorCode));
         }
 
         return data is null
@@ -78,10 +89,15 @@ public static class WechatApiResultReader
             : ToolApiOutcome<TData>.Success(data);
     }
 
-    /// <summary>构造可读错误文本（<c>errcode=…, errmsg=…</c>；errmsg 缺失时给中性描述）。</summary>
+    /// <summary>
+    /// 构造可读错误文本（<c>errcode=…, errmsg=…</c>；errmsg 缺失时给中性描述），
+    /// 已收录的码再追加一行「建议」（模型据此后可换路而不是原样重试）。
+    /// </summary>
     private static string DescribeError(IWechatApiResponse response)
     {
         var message = string.IsNullOrWhiteSpace(response.ErrorMessage) ? "未提供错误信息" : response.ErrorMessage!.Trim();
-        return $"errcode={response.ErrorCode}, errmsg={message}";
+        var text = $"errcode={response.ErrorCode}, errmsg={message}";
+        var hint = WechatApiErrorCatalog.HintOf(response.ErrorCode);
+        return hint.Length == 0 ? text : text + "\n" + hint;
     }
 }

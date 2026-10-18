@@ -27,11 +27,42 @@ namespace Mud.Wechat.Work.AI.Tools.Security;
 /// <b>写工具不得绕过授权</b>：启用任何写工具却把 <see cref="EnforceAuthorization"/> 关掉属于配置错误（fail-fast），
 /// 因为写工具的唯一护栏就是授权器 + 白名单两段。
 /// </para>
+/// <para>
+/// <b>出站纪律也在本类型上</b>（<see cref="MaxResultLength"/> / <see cref="ContentSafetyMode"/>）：二者与白名单同属
+/// 「工具面的装配期策略」，且必须在冻结前定稿——运行期改预算等于让同一批工具在不同轮次有不同结果形态，
+/// 无法观测也无法回归。默认值取自中立层（<c>ToolResultPipeline</c>）的推荐区间。
+/// </para>
 /// </remarks>
 public sealed class WechatToolPolicy
 {
     private readonly HashSet<string> _enabled = new(WechatToolNames.ReadonlyAll, StringComparer.Ordinal);
     private bool _frozen;
+
+    /// <summary>
+    /// 单次工具结果的预算上限（字符数；默认 8192，<c>0</c> = 不限制）。
+    /// </summary>
+    /// <remarks>
+    /// 由出站出口统一施加（JSON 感知截断 + <c>truncated</c>/<c>hint</c> 标记）。上限取「一次部门成员列表
+    /// 在预算内仍可读」与「单次调用不吞掉整个上下文窗口」之间的实测折中：万人部门全量投影约 1~2 MB，
+    /// 是典型的上下文爆点，必须在出口拦截而不是靠模型自觉缩小范围。
+    /// </remarks>
+    public int MaxResultLength { get; set; } = 8192;
+
+    /// <summary>
+    /// 工具结果的注入内容检测模式（闭集：<c>warn</c>（默认，命中即标注）/ <c>off</c>）。
+    /// </summary>
+    /// <remarks>
+    /// 工具结果里的外部可控文本（客户昵称、群公告、朋友圈正文、汇报正文）是间接提示注入的主要载体。
+    /// 默认 <c>warn</c> 而非阻断：合法文档里完全可能出现「忽略上一段」这类字面文本，阻断会误伤；
+    /// 标注把「这段内容不可信」显式交给模型判断。
+    /// </remarks>
+    public string ContentSafetyMode { get; set; } = ContentSafetyWarn;
+
+    /// <summary>默认的注入检测模式（命中即标注）。</summary>
+    public const string ContentSafetyWarn = "warn";
+
+    /// <summary>关闭注入检测的模式字面量。</summary>
+    public const string ContentSafetyOff = "off";
 
     /// <summary>是否强制授权（默认 <see langword="true"/>；关闭即「白名单命中即可调」，仅限只读面）。</summary>
     public bool EnforceAuthorization { get; set; } = true;
@@ -119,6 +150,20 @@ public sealed class WechatToolPolicy
             throw new InvalidOperationException(
                 $"WechatToolPolicy 启用了高危写工具（{string.Join(", ", highRisk)}）却关闭了审批——"
                 + "高危写恒需 HITL 确认门（不可逆动作不得只靠授权器放行）。");
+        }
+
+        if (MaxResultLength is not 0 and (< 512 or > 65536))
+        {
+            throw new InvalidOperationException(
+                $"WechatToolPolicy.MaxResultLength 为 0（不限制）或 512..65536，实际值: {MaxResultLength}"
+                + "（过小会让列表工具永远拿不到完整答案，过大则失去拦截上下文爆点的意义）。");
+        }
+
+        if (!string.Equals(ContentSafetyMode, ContentSafetyWarn, StringComparison.Ordinal)
+            && !string.Equals(ContentSafetyMode, ContentSafetyOff, StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException(
+                $"WechatToolPolicy.ContentSafetyMode 只能是 \"{ContentSafetyWarn}\" 或 \"{ContentSafetyOff}\"，实际值: {ContentSafetyMode}");
         }
 
         _frozen = true;

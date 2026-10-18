@@ -171,6 +171,148 @@ public sealed class ContactsUserToolHandlers(IWechatWorkUsersService users)
         }));
     }
 
+    /// <summary>执行 <c>contacts.user.resolve</c>（手机号 / 邮箱唯一索引，或部门内姓名匹配）。</summary>
+    /// <param name="args">模型侧入参（<c>mobile</c> / <c>email</c> / <c>name</c> + <c>department_id</c>）。</param>
+    /// <param name="cancellationToken">取消令牌。</param>
+    /// <returns>工具结果（matches、count、hint）。</returns>
+    [ToolHandler(typeof(IWechatWorkContactsUserResolveTool))]
+    public async Task<ToolResult> ResolveUserAsync(
+        IReadOnlyDictionary<string, object?> args,
+        CancellationToken cancellationToken)
+    {
+        var request = ContactsUserResolveArgs.Unpack(args);
+        var mobile = Clean(request.Mobile);
+        var email = Clean(request.Email);
+        var name = Clean(request.Name);
+        var given = (mobile is null ? 0 : 1) + (email is null ? 0 : 1) + (name is null ? 0 : 1);
+
+        if (given == 0)
+        {
+            return ToolResult.FromError(
+                "请提供 mobile、email 或 name 之一（按姓名解析还需 department_id）；三者都是空值，无法定位成员。");
+        }
+
+        if (given > 1)
+        {
+            return ToolResult.FromError(
+                "一次只按一种标识解析（mobile / email / name 三选一）：多种标识可能指向不同成员，混用会让结果不可判定。");
+        }
+
+        if (mobile is not null)
+        {
+            var response = await _users.GetUserIdByMobileAsync(
+                new GetUserIdByMobileRequest { Mobile = mobile },
+                cancellationToken).ConfigureAwait(false);
+            var outcome = WechatApiResultReader.Read(response);
+            if (!outcome.Ok)
+            {
+                return ToolResult.FromError(outcome.ErrorText ?? "手机号解析失败。");
+            }
+
+            return SingleMatch(outcome.Data?.UserId, "该手机号未匹配到应用可见范围内的成员");
+        }
+
+        if (email is not null)
+        {
+            var response = await _users.GetUserIdByEmailAsync(
+                new GetUserIdByEmailRequest { Email = email },
+                cancellationToken).ConfigureAwait(false);
+            var outcome = WechatApiResultReader.Read(response);
+            if (!outcome.Ok)
+            {
+                return ToolResult.FromError(outcome.ErrorText ?? "邮箱解析失败。");
+            }
+
+            return SingleMatch(outcome.Data?.UserId, "该邮箱未匹配到应用可见范围内的成员");
+        }
+
+        if (request.DepartmentId is not { } departmentId)
+        {
+            return ToolResult.FromError(
+                "按姓名解析需要 department_id：企微没有「按姓名搜全企业」的端点。"
+                + "先用 contacts.department.list 找到部门 ID，或让用户提供手机号 / 邮箱（更快且唯一）。");
+        }
+
+        var listResponse = await _users.GetUserSimpleListAsync(departmentId, 1, cancellationToken).ConfigureAwait(false);
+        var listOutcome = WechatApiResultReader.Read(listResponse);
+        if (!listOutcome.Ok)
+        {
+            return ToolResult.FromError(listOutcome.ErrorText ?? "拉取部门成员失败。");
+        }
+
+        var candidates = listOutcome.Data?.UserList ?? [];
+        var exact = candidates
+            .Where(user => string.Equals(user.Name, name, StringComparison.Ordinal))
+            .ToList();
+        var matched = exact.Count > 0
+            ? exact
+            : candidates
+                .Where(user => user.Name?.Contains(name!, StringComparison.Ordinal) == true)
+                .ToList();
+
+        var items = new JsonArray();
+        foreach (var user in matched.Take(MaxResolveMatches))
+        {
+            items.Add((JsonNode?)new JsonObject
+            {
+                ["userid"] = user.UserId,
+                ["open_userid"] = user.OpenUserId,
+                ["name"] = user.Name,
+                ["department"] = ToJsonArray(user.Department),
+            });
+        }
+
+        string? hint = null;
+        if (matched.Count == 0)
+        {
+            hint = "该部门（含子部门）内没有同名成员。可换部门，或改用手机号 / 邮箱（更快且唯一）。";
+        }
+        else if (matched.Count > MaxResolveMatches)
+        {
+            hint = $"匹配到 {matched.Count} 人，仅列出前 {MaxResolveMatches} 个；请缩小部门范围，或改用手机号 / 邮箱。";
+        }
+        else if (exact.Count == 0 && matched.Count > 1)
+        {
+            hint = "没有精确同名，以下是近似匹配；请让用户确认是哪一位，不要直接用于写入。";
+        }
+
+        // 空匹配是合法答案（该部门没有此人），不转错误：模型据此换路。
+        return ToolResult.FromText(ToolResultJson.ToText(new JsonObject
+        {
+            ["matches"] = items,
+            ["count"] = items.Count,
+            ["hint"] = hint,
+        }));
+    }
+
+    /// <summary>按姓名/标识匹配的结果条数上限（超过即提示收窄范围，避免把整部门送进上下文）。</summary>
+    private const int MaxResolveMatches = 20;
+
+    private static ToolResult SingleMatch(string? userId, string notFoundHint)
+    {
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            return ToolResult.FromText(ToolResultJson.ToText(new JsonObject
+            {
+                ["matches"] = new JsonArray(),
+                ["count"] = 0,
+                ["hint"] = notFoundHint + "（该成员可能不存在、已离职，或不在应用可见范围内）。",
+            }));
+        }
+
+        var matches = new JsonArray { (JsonNode?)new JsonObject { ["userid"] = userId } };
+
+        return ToolResult.FromText(ToolResultJson.ToText(new JsonObject
+        {
+            ["matches"] = matches,
+            ["count"] = 1,
+            ["hint"] = (string?)null,
+        }));
+    }
+
+    private static string? Clean(string? value)
+        => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
     private static JsonObject ProjectUser(UserInfo user, bool includeLeaders = true)
     {
         var projected = new JsonObject

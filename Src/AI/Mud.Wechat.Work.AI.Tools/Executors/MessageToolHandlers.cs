@@ -66,7 +66,7 @@ public sealed class MessageToolHandlers(IWechatWorkMessageService message)
 
         if (msgType is not (WechatMessageTypes.Text or WechatMessageTypes.Markdown or WechatMessageTypes.TextCard))
         {
-            return ToolResult.FromError(
+            throw WechatToolArgumentErrors.Invalid(
                 $"参数非法：msg_type 只能是 Text({WechatMessageTypes.Text}) / Markdown({WechatMessageTypes.Markdown}) / TextCard({WechatMessageTypes.TextCard})。");
         }
 
@@ -76,7 +76,7 @@ public sealed class MessageToolHandlers(IWechatWorkMessageService message)
             var invalid = ValidateCard(request.Title, request.Content, request.Url, request.BtnTxt);
             if (invalid is not null)
             {
-                return ToolResult.FromError(invalid);
+                throw WechatToolArgumentErrors.Invalid(invalid);
             }
 
             response = await _message.SendTextCardMessageAsync(
@@ -101,7 +101,7 @@ public sealed class MessageToolHandlers(IWechatWorkMessageService message)
             var byteCount = Encoding.UTF8.GetByteCount(request.Content);
             if (byteCount > MaxContentBytes)
             {
-                return ToolResult.FromError(
+                throw WechatToolArgumentErrors.Invalid(
                     $"参数非法：content 超过官方上限（{byteCount} > {MaxContentBytes} 字节），请精简后重发。");
             }
 

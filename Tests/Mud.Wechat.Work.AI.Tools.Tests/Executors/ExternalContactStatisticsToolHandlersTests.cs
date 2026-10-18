@@ -52,9 +52,9 @@ public class ExternalContactStatisticsToolHandlersTests
     [Fact]
     public async Task UserBehavior_WithoutUseridAndDepartment_ShouldReturnErrorWithoutCallingSdk()
     {
-        var result = await Handler().QueryUserBehaviorAsync(
+        var result = await ToolInvoker.InvokeAsync(() => Handler().QueryUserBehaviorAsync(
             Args(("start_time", "1700000000"), ("end_time", "1700086400")),
-            CancellationToken.None);
+            CancellationToken.None));
 
         result.Text.Should().Contain("至少要给一个");
         VerifyNoCall();
@@ -63,12 +63,12 @@ public class ExternalContactStatisticsToolHandlersTests
     [Fact]
     public async Task UserBehavior_SpanOverThirtyDays_ShouldReturnErrorWithoutCallingSdk()
     {
-        var result = await Handler().QueryUserBehaviorAsync(
+        var result = await ToolInvoker.InvokeAsync(() => Handler().QueryUserBehaviorAsync(
             Args(
                 ("userid", new[] { "zhangsan" }),
                 ("start_time", "1700000000"),
                 ("end_time", "1702764800")),
-            CancellationToken.None);
+            CancellationToken.None));
 
         result.Text.Should().Contain("30 天");
         VerifyNoCall();
@@ -112,7 +112,8 @@ public class ExternalContactStatisticsToolHandlersTests
         result.Text.Should().Contain("\"chat_total\":12");
         result.Text.Should().Contain("\"member_total\":340");
         result.Text.Should().Contain("\"total\":1");
-        result.Text.Should().Contain("\"next_offset\":1");
+        result.Text.Should().Contain("\"has_more\":true");
+        result.Text.Should().Contain("\"page_token\":\"1\"");
     }
 
     [Fact]
@@ -178,9 +179,9 @@ public class ExternalContactStatisticsToolHandlersTests
     [Fact]
     public async Task GroupChatByDay_EndBeforeBegin_ShouldReturnErrorWithoutCallingSdk()
     {
-        var result = await Handler().QueryGroupChatByDayAsync(
+        var result = await ToolInvoker.InvokeAsync(() => Handler().QueryGroupChatByDayAsync(
             Args(("day_begin_time", "1700086400"), ("day_end_time", "1700000000")),
-            CancellationToken.None);
+            CancellationToken.None));
 
         result.Text.Should().Contain("day_end_time");
         VerifyNoCall();

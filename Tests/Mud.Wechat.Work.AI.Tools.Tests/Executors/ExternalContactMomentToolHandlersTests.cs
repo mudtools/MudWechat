@@ -56,7 +56,7 @@ public class ExternalContactMomentToolHandlersTests
         result.Text.Should().Contain("\"has_video\":true");
         result.Text.Should().Contain("\"title\":\"活动详情\"");
         result.Text.Should().Contain("\"location\":\"广州塔\"");
-        result.Text.Should().Contain("\"next_cursor\":\"c2\"");
+        result.Text.Should().Contain("\"page_token\":\"c2\"");
         result.Text.Should().NotContain("media-1", "media_id 是宿主素材资产，模型无法消费二进制");
         result.Text.Should().NotContain("thumb-v");
         result.Text.Should().NotContain("23.1234", "经纬度是行踪，不外发");
@@ -66,9 +66,9 @@ public class ExternalContactMomentToolHandlersTests
     [Fact]
     public async Task MomentList_SpanOverThirtyDays_ShouldReturnErrorWithoutCallingSdk()
     {
-        var result = await Handler().ListAsync(
+        var result = await ToolInvoker.InvokeAsync(() => Handler().ListAsync(
             Args(("start_time", "1700000000"), ("end_time", "1702764800")),
-            CancellationToken.None);
+            CancellationToken.None));
 
         result.Text.Should().Contain("30 天");
         VerifyNoCall();
@@ -77,9 +77,9 @@ public class ExternalContactMomentToolHandlersTests
     [Fact]
     public async Task MomentList_TimeWithoutOffset_ShouldReturnFormatHint()
     {
-        var result = await Handler().ListAsync(
+        var result = await ToolInvoker.InvokeAsync(() => Handler().ListAsync(
             Args(("start_time", "2026-10-10 09:00:00"), ("end_time", "2026-10-11T09:00:00+08:00")),
-            CancellationToken.None);
+            CancellationToken.None));
 
         result.Text.Should().Contain("时间格式非法");
         VerifyNoCall();
@@ -88,9 +88,9 @@ public class ExternalContactMomentToolHandlersTests
     [Fact]
     public async Task MomentList_LimitOverOfficialMax_ShouldReturnError()
     {
-        var result = await Handler().ListAsync(
+        var result = await ToolInvoker.InvokeAsync(() => Handler().ListAsync(
             Args(("start_time", "1700000000"), ("end_time", "1700086400"), ("limit", 50)),
-            CancellationToken.None);
+            CancellationToken.None));
 
         result.Text.Should().Contain("1~20");
         VerifyNoCall();

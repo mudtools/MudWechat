@@ -201,8 +201,9 @@ public class ApprovalToolHandlersTests
             CancellationToken.None);
 
         result.Text.Should().Contain("\"count\":2");
-        result.Text.Should().Contain("\"sp_no_list\":[\"202310100001\",\"202310100002\"]");
-        result.Text.Should().Contain("\"next_cursor\":\"c2\"");
+        result.Text.Should().Contain("\"items\":[\"202310100001\",\"202310100002\"]");
+        result.Text.Should().Contain("\"has_more\":true");
+        result.Text.Should().Contain("\"page_token\":\"c2\"");
         _approval.Verify(
             a => a.BatchGetApprovalNumbersAsync(
                 It.Is<BatchGetApprovalNumbersRequest>(r =>
@@ -220,9 +221,9 @@ public class ApprovalToolHandlersTests
     [Fact]
     public async Task List_WhenSpanExceedsThirtyOneDays_ShouldRejectBeforeCallingSdk()
     {
-        var result = await Handler().ListAsync(
+        var result = await ToolInvoker.InvokeAsync(() => Handler().ListAsync(
             Args(("start_time", "1700000000"), ("end_time", "1703000000")),
-            CancellationToken.None);
+            CancellationToken.None));
 
         result.Text.Should().Contain("31 天");
         _approval.Verify(
@@ -233,9 +234,9 @@ public class ApprovalToolHandlersTests
     [Fact]
     public async Task List_WhenEndNotAfterStart_ShouldReject()
     {
-        var result = await Handler().ListAsync(
+        var result = await ToolInvoker.InvokeAsync(() => Handler().ListAsync(
             Args(("start_time", "1700086400"), ("end_time", "1700000000")),
-            CancellationToken.None);
+            CancellationToken.None));
 
         result.Text.Should().Contain("end_time");
     }
@@ -243,9 +244,9 @@ public class ApprovalToolHandlersTests
     [Fact]
     public async Task List_WhenTimesAreNotUnixSeconds_ShouldExplainFormat()
     {
-        var result = await Handler().ListAsync(
+        var result = await ToolInvoker.InvokeAsync(() => Handler().ListAsync(
             Args(("start_time", "2026-10-18"), ("end_time", "2026-10-19")),
-            CancellationToken.None);
+            CancellationToken.None));
 
         result.Text.Should().Contain("Unix");
     }
@@ -309,9 +310,9 @@ public class ApprovalToolHandlersTests
     {
         SetupTemplate(("Text-1", "Text", 0));
 
-        var result = await Handler().ApplyAsync(
+        var result = await ToolInvoker.InvokeAsync(() => Handler().ApplyAsync(
             Args(("template_id", "tpl-1"), ("creator_userid", "zhangsan"), ("fields_json", """{"Nope-9":"x"}""")),
-            CancellationToken.None);
+            CancellationToken.None));
 
         result.Text.Should().Contain("Nope-9");
         result.Text.Should().Contain("Text-1");
@@ -325,9 +326,9 @@ public class ApprovalToolHandlersTests
     {
         SetupTemplate(("Text-1", "Text", 1), ("Money-2", "Money", 1));
 
-        var result = await Handler().ApplyAsync(
+        var result = await ToolInvoker.InvokeAsync(() => Handler().ApplyAsync(
             Args(("template_id", "tpl-1"), ("creator_userid", "zhangsan"), ("fields_json", """{"Text-1":"张三"}""")),
-            CancellationToken.None);
+            CancellationToken.None));
 
         result.Text.Should().Contain("必填");
         result.Text.Should().Contain("Money-2");
@@ -341,9 +342,9 @@ public class ApprovalToolHandlersTests
     {
         SetupTemplate(("File-1", "File", 0));
 
-        var result = await Handler().ApplyAsync(
+        var result = await ToolInvoker.InvokeAsync(() => Handler().ApplyAsync(
             Args(("template_id", "tpl-1"), ("creator_userid", "zhangsan"), ("fields_json", """{"File-1":["f_1"]}""")),
-            CancellationToken.None);
+            CancellationToken.None));
 
         result.Text.Should().Contain("暂不支持");
         _approval.Verify(
@@ -354,9 +355,9 @@ public class ApprovalToolHandlersTests
     [Fact]
     public async Task Apply_WithMalformedJson_ShouldExplainFormat()
     {
-        var result = await Handler().ApplyAsync(
+        var result = await ToolInvoker.InvokeAsync(() => Handler().ApplyAsync(
             Args(("template_id", "tpl-1"), ("creator_userid", "zhangsan"), ("fields_json", "not json")),
-            CancellationToken.None);
+            CancellationToken.None));
 
         result.Text.Should().Contain("fields_json");
         _template.Verify(

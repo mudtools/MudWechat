@@ -71,7 +71,7 @@ public class DialToolHandlersTests
     [Fact]
     public async Task List_WithHalfTimeRange_ShouldReturnErrorWithoutCallingSdk()
     {
-        var result = await Handler().ListAsync(Args(("start_time", "1700000000")), CancellationToken.None);
+        var result = await ToolInvoker.InvokeAsync(() => Handler().ListAsync(Args(("start_time", "1700000000")), CancellationToken.None));
 
         result.Text.Should().Contain("同时给出");
         _dial.Verify(
@@ -82,9 +82,9 @@ public class DialToolHandlersTests
     [Fact]
     public async Task List_WithSpanOverThirtyDays_ShouldReturnErrorWithoutCallingSdk()
     {
-        var result = await Handler().ListAsync(
+        var result = await ToolInvoker.InvokeAsync(() => Handler().ListAsync(
             Args(("start_time", "1700000000"), ("end_time", "1702764800")),
-            CancellationToken.None);
+            CancellationToken.None));
 
         result.Text.Should().Contain("30 天");
         _dial.Verify(

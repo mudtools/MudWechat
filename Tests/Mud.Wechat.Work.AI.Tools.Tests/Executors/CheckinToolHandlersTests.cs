@@ -70,15 +70,27 @@ public class CheckinToolHandlersTests
     [Fact]
     public async Task List_WhenSpanExceedsThirtyDays_ShouldRejectBeforeCallingSdk()
     {
-        var result = await Handler().ListAsync(
+        var result = await ToolInvoker.InvokeAsync(() => Handler().ListAsync(
             Args(("userid_list", new[] { "zhangsan" }), ("start_time", "1699900000"), ("end_time", "1702600000")),
-            CancellationToken.None);
+            CancellationToken.None));
 
         result.Text.Should().Contain("30 天");
         _checkin.Verify(
             c => c.GetCheckinDataAsync(It.IsAny<GetCheckinDataRequest>(), It.IsAny<CancellationToken>()),
             Times.Never,
             "越界参数应在调用前拦下，而不是让官方 errcode 回话");
+    }
+
+    [Fact]
+    public async Task List_WhenSpanExceedsThirtyDays_ShouldThrowToolArgumentException()
+    {
+        // 机制锚：参数校验的**唯一**形态是抛（执行链据此回填 Validation/invalid_args 并结算 Failed）。
+        // 其余用例经 ToolInvoker 归一为结果只为断言文案；抛出事实由本用例与 E2 守卫共同锁定。
+        var act = () => Handler().ListAsync(
+            Args(("userid_list", new[] { "zhangsan" }), ("start_time", "1699900000"), ("end_time", "1702600000")),
+            CancellationToken.None);
+
+        (await act.Should().ThrowAsync<ToolArgumentException>()).Which.Message.Should().Contain("30 天");
     }
 
     [Fact]

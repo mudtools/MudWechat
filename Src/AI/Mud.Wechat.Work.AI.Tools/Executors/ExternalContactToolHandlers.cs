@@ -142,7 +142,9 @@ public sealed class ExternalContactToolHandlers(
             ["position"] = contact.Position,
             ["follow_users"] = ToFollowUserArray(outcome.Data.FollowUser),
             ["follow_user_count"] = outcome.Data.FollowUser?.Count ?? 0,
-            ["next_cursor_present"] = !string.IsNullOrEmpty(outcome.Data.NextCursor),
+            // 该端点是「单对象 + 内嵌成员列表」而不是分页页：官方可能截断 follow_users，
+            // 用 truncated 如实描述这个事实，不借用分页键（page_token 在此无处回传，会误导模型翻页）。
+            ["follow_user_truncated"] = !string.IsNullOrEmpty(outcome.Data.NextCursor),
         }));
     }
 

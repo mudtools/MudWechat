@@ -36,7 +36,7 @@ public class ExternalContactGroupChatToolHandlersTests
         result.Text.Should().Contain("\"chat_id\":\"wr-1\"");
         result.Text.Should().Contain("\"chat_id\":\"wr-2\"");
         result.Text.Should().Contain("\"count\":2");
-        result.Text.Should().Contain("\"next_cursor\":\"c2\"");
+        result.Text.Should().Contain("\"page_token\":\"c2\"");
     }
 
     [Fact]

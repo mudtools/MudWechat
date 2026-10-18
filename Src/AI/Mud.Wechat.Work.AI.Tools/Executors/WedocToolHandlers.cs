@@ -83,7 +83,7 @@ public sealed class WedocToolHandlers(IWechatWorkWedocService wedoc)
 
         if (!string.IsNullOrWhiteSpace(request.Spaceid) && string.IsNullOrWhiteSpace(request.Fatherid))
         {
-            return ToolResult.FromError("指定 spaceid 时必须同时给出 fatherid（官方约束：空间内必须落在某个父目录）。");
+            throw WechatToolArgumentErrors.Invalid("指定 spaceid 时必须同时给出 fatherid（官方约束：空间内必须落在某个父目录）。");
         }
 
         var response = await _wedoc.CreateDocumentAsync(
@@ -128,7 +128,7 @@ public sealed class WedocToolHandlers(IWechatWorkWedocService wedoc)
         var request = WedocDocRenameArgs.Unpack(args);
         if (!TryResolveTarget(request.Docid, request.Formid, out var docid, out var formid, out var targetError))
         {
-            return ToolResult.FromError(targetError!);
+            throw WechatToolArgumentErrors.Invalid(targetError!);
         }
 
         var response = await _wedoc.RenameDocumentAsync(
@@ -155,7 +155,7 @@ public sealed class WedocToolHandlers(IWechatWorkWedocService wedoc)
         var request = WedocDocDeleteArgs.Unpack(args);
         if (!TryResolveTarget(request.Docid, request.Formid, out var docid, out var formid, out var targetError))
         {
-            return ToolResult.FromError(targetError!);
+            throw WechatToolArgumentErrors.Invalid(targetError!);
         }
 
         var response = await _wedoc.DeleteDocumentAsync(
@@ -182,7 +182,7 @@ public sealed class WedocToolHandlers(IWechatWorkWedocService wedoc)
         var request = WedocDocShareArgs.Unpack(args);
         if (!TryResolveTarget(request.Docid, request.Formid, out var docid, out var formid, out var targetError))
         {
-            return ToolResult.FromError(targetError!);
+            throw WechatToolArgumentErrors.Invalid(targetError!);
         }
 
         var response = await _wedoc.ShareDocumentAsync(

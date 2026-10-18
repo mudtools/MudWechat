@@ -67,29 +67,29 @@ public sealed class ExternalContactMomentToolHandlers(IWechatWorkExternalContact
 
         if (!ToolTimeText.TryParseUnixSeconds(request.StartTime, out var start))
         {
-            return ToolResult.FromError(TimeFormatHint);
+            throw WechatToolArgumentErrors.Invalid(TimeFormatHint);
         }
 
         if (!ToolTimeText.TryParseUnixSeconds(request.EndTime, out var end))
         {
-            return ToolResult.FromError(TimeFormatHint);
+            throw WechatToolArgumentErrors.Invalid(TimeFormatHint);
         }
 
         if (end <= start)
         {
-            return ToolResult.FromError("参数非法：end_time 必须大于 start_time。");
+            throw WechatToolArgumentErrors.Invalid("参数非法：end_time 必须大于 start_time。");
         }
 
         if (end - start > MaxSpanSeconds)
         {
-            return ToolResult.FromError("参数非法：起止时间间隔不得超过 30 天（官方口径），请缩小范围后分批拉取。");
+            throw WechatToolArgumentErrors.Invalid("参数非法：起止时间间隔不得超过 30 天（官方口径），请缩小范围后分批拉取。");
         }
 
         // filter_type 的取值闭集（0~2）由声明面 EnumType 与生成的解包器收口——越界值到不了这里。
         var limit = request.Limit ?? DefaultListPageSize;
         if (limit is < 1 or > MaxListPageSize)
         {
-            return ToolResult.FromError($"参数非法：limit 必须在 1~{MaxListPageSize} 之间。");
+            throw WechatToolArgumentErrors.Invalid($"参数非法：limit 必须在 1~{MaxListPageSize} 之间。");
         }
 
         var response = await _moment.GetMomentListAsync(
@@ -109,7 +109,11 @@ public sealed class ExternalContactMomentToolHandlers(IWechatWorkExternalContact
             return WechatToolOutcomeErrors.From(outcome, WechatToolNames.ExternalcontactMomentList);
         }
 
-        var moments = new JsonArray();
+        // 空列表是合法答案（该时间段内没有发表记录），不转错误。
+        var envelope = ToolResultJsons.PageEnvelope(
+            hasMore: !string.IsNullOrEmpty(outcome.Data?.NextCursor),
+            pageToken: outcome.Data?.NextCursor);
+        var moments = envelope["items"]!.AsArray();
         foreach (var item in outcome.Data?.MomentList ?? [])
         {
             moments.Add((JsonNode?)new JsonObject
@@ -127,13 +131,8 @@ public sealed class ExternalContactMomentToolHandlers(IWechatWorkExternalContact
             });
         }
 
-        // 空列表是合法答案（该时间段内没有发表记录），不转错误。
-        return ToolResult.FromText(ToolResultJson.ToText(new JsonObject
-        {
-            ["moment_list"] = moments,
-            ["count"] = moments.Count,
-            ["next_cursor"] = outcome.Data?.NextCursor,
-        }));
+        envelope["count"] = moments.Count;
+        return ToolResultPipeline.OkJson(envelope, 0);
     }
 
     /// <summary>执行 <c>externalcontact.moment.publish_list</c>。</summary>
@@ -150,7 +149,7 @@ public sealed class ExternalContactMomentToolHandlers(IWechatWorkExternalContact
         var limit = request.Limit ?? DefaultTaskPageSize;
         if (limit is < 1 or > MaxTaskPageSize)
         {
-            return ToolResult.FromError($"参数非法：limit 必须在 1~{MaxTaskPageSize} 之间。");
+            throw WechatToolArgumentErrors.Invalid($"参数非法：limit 必须在 1~{MaxTaskPageSize} 之间。");
         }
 
         var response = await _moment.GetMomentPublishListAsync(
@@ -164,11 +163,14 @@ public sealed class ExternalContactMomentToolHandlers(IWechatWorkExternalContact
         var outcome = WechatApiResultReader.Read(response);
         if (!outcome.Ok)
         {
-            return ToolResult.FromError(
+            throw WechatToolArgumentErrors.Invalid(
                 outcome.ErrorText ?? "拉取朋友圈执行列表失败（该 moment_id 可能不是企业发表的朋友圈）。");
         }
 
-        var tasks = new JsonArray();
+        var envelope = ToolResultJsons.PageEnvelope(
+            hasMore: !string.IsNullOrEmpty(outcome.Data?.NextCursor),
+            pageToken: outcome.Data?.NextCursor);
+        var tasks = envelope["items"]!.AsArray();
         foreach (var item in outcome.Data?.TaskList ?? [])
         {
             tasks.Add((JsonNode?)new JsonObject
@@ -178,12 +180,8 @@ public sealed class ExternalContactMomentToolHandlers(IWechatWorkExternalContact
             });
         }
 
-        return ToolResult.FromText(ToolResultJson.ToText(new JsonObject
-        {
-            ["task_list"] = tasks,
-            ["count"] = tasks.Count,
-            ["next_cursor"] = outcome.Data?.NextCursor,
-        }));
+        envelope["count"] = tasks.Count;
+        return ToolResultPipeline.OkJson(envelope, 0);
     }
 
     /// <summary>执行 <c>externalcontact.moment.comments</c>。</summary>

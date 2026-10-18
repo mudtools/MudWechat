@@ -47,9 +47,9 @@ public class WedocToolHandlersTests
     [Fact]
     public async Task Create_ShouldRejectSpaceWithoutFather()
     {
-        var result = await Handler().CreateDocumentAsync(
+        var result = await ToolInvoker.InvokeAsync(() => Handler().CreateDocumentAsync(
             Args(("doc_name", "周报"), ("doc_type", 3), ("spaceid", "space-1")),
-            CancellationToken.None);
+            CancellationToken.None));
 
         result.Text.Should().Contain("fatherid");
         _wedoc.Verify(
@@ -84,9 +84,9 @@ public class WedocToolHandlersTests
     [InlineData(null, null, "必须提供其中之一")]
     public async Task Rename_ShouldRejectInvalidTargetCombination(string? docid, string? formid, string expected)
     {
-        var result = await Handler().RenameDocumentAsync(
+        var result = await ToolInvoker.InvokeAsync(() => Handler().RenameDocumentAsync(
             Args(("new_name", "新名字"), ("docid", docid), ("formid", formid)),
-            CancellationToken.None);
+            CancellationToken.None));
 
         result.Text.Should().Contain(expected);
         _wedoc.Verify(

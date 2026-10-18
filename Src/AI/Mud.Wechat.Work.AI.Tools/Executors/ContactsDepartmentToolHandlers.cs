@@ -26,8 +26,11 @@ namespace Mud.Wechat.Work.AI.Tools.Executors;
 /// 参数契约（编译期 Schema 与运行期签名会漂移）。
 /// </para>
 /// <para>
-/// <b>失败唯一出口</b>：业务失败一律经 <see cref="WechatApiResultReader"/> 转可读文本后用
-/// <see cref="ToolResult.FromError(string)"/> 回填模型 —— 不抛异常（异常在工具链里等价于「模型什么都看不到」）。
+/// <b>两种失败、两个出口（不得合并）</b>：① <b>上游失败</b>经 <see cref="WechatToolOutcomeErrors"/> 产出结构化载荷
+/// （分类/子类/可重试/<c>api_code</c>/<c>[next]</c>）；② <b>参数非法</b>抛
+/// <see cref="WechatToolArgumentErrors.Invalid"/>，由执行链回填 <c>Validation/invalid_args</c>。
+/// 两者都<b>不得</b>用 <see cref="ToolResult.FromError(string)"/> —— 它不产生 <see cref="ToolResult.Error"/>，
+/// 会让失败被结算成成功。业务空（<c>found:false</c> / <c>items:[]</c>）则是<b>成功</b>语义，见 <see cref="WechatToolResults"/>。
 /// </para>
 /// </remarks>
 /// <param name="departments">部门域 SDK（应用上下文由回合作用域给定，执行器不自建令牌上下文）。</param>

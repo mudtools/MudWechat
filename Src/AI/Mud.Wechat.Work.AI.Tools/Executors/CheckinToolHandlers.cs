@@ -61,27 +61,27 @@ public sealed class CheckinToolHandlers(IWechatWorkInternalCheckinRecordService 
 
         if (request.UseridList.Length > MaxUserCount)
         {
-            return ToolResult.FromError($"参数非法：userid_list 一次最多 {MaxUserCount} 个，请分批查询。");
+            throw WechatToolArgumentErrors.Invalid($"参数非法：userid_list 一次最多 {MaxUserCount} 个，请分批查询。");
         }
 
         if (!ToolTimeText.TryParseUnixSeconds(request.StartTime, out var start))
         {
-            return ToolResult.FromError(TimeFormatHint);
+            throw WechatToolArgumentErrors.Invalid(TimeFormatHint);
         }
 
         if (!ToolTimeText.TryParseUnixSeconds(request.EndTime, out var end))
         {
-            return ToolResult.FromError(TimeFormatHint);
+            throw WechatToolArgumentErrors.Invalid(TimeFormatHint);
         }
 
         if (end <= start)
         {
-            return ToolResult.FromError("参数非法：end_time 必须大于 start_time。");
+            throw WechatToolArgumentErrors.Invalid("参数非法：end_time 必须大于 start_time。");
         }
 
         if (end - start > MaxSpanSeconds)
         {
-            return ToolResult.FromError("参数非法：时间跨度不得超过 30 天，请缩小范围后分批查询。");
+            throw WechatToolArgumentErrors.Invalid("参数非法：时间跨度不得超过 30 天，请缩小范围后分批查询。");
         }
 
         // data_type 的取值闭集（1/2/3）由声明面 EnumType 与生成的解包器收口——越界值到不了这里；此处只补官方默认值。

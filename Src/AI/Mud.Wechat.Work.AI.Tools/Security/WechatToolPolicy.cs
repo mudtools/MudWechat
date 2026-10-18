@@ -5,6 +5,7 @@
 //  不得利用本项目从事危害国家安全、扰乱社会秩序、侵犯他人合法权益等法律法规禁止的活动！任何基于本项目开发而产生的一切法律纠纷和责任，我们不承担任何责任！
 // -----------------------------------------------------------------------
 
+using Mud.AI.Abstractions.Configuration;
 using Mud.Wechat.Work.AI.AgentTools;
 using Mud.Wechat.Work.AI.Tools.Generated;
 
@@ -100,6 +101,21 @@ public sealed class WechatToolPolicy
     /// （关闭即装配期失败），因为它是「不可逆 / 外部可见」动作的唯一护栏。
     /// </remarks>
     public bool RequireApprovalForWrites { get; set; } = true;
+
+    /// <summary>
+    /// 只读工具的限流退避重试（默认启用，最多 3 次重试；写工具恒不重试）。
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>为什么只读才重试</b>：<c>45009</c>（频率超限）与瞬时 5xx 是**幂等**只读调用的常态失败，
+    /// 让模型自己重写一遍参数再试，既慢又容易把用户意图改错（模型常顺手改参数"纠错"）。
+    /// 写工具重试会重复副作用（重复建日程、重复发消息），因此零重试是硬约束，不开放配置。
+    /// </para>
+    /// <para>
+    /// <b>只对 <c>retryable</c> 分类生效</b>：授权/策略拒绝、参数错误、业务空都是确定性结果，重试只会浪费预算。
+    /// </para>
+    /// </remarks>
+    public ToolRetryOptions Retry { get; set; } = new();
 
     /// <summary>已启用的工具名（按名字排序）。</summary>
     public IReadOnlyList<string> EnabledTools

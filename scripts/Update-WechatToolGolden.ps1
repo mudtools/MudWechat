@@ -13,6 +13,12 @@
 
     跑完务必 `git diff` 逐行复核 —— 快照是契约，不是构建副产物。
 
+    手工核对生成物（不进本脚本，仅供排查）时，必须带上 `-p:EmitCompilerGeneratedFiles=true --no-incremental`：
+    常态构建**不落地** *.g.cs，obj/ 里留着的是历史某次特殊构建的残骸。
+    曾据此误判「net10 只发射 3 个工具」的 P0 缺陷（实为 2026-10-17 的旧物）—— 凡「扫 obj 断言生成物」的守卫
+    都会在干净 CI 上假绿、在本地假红。双 TFM 同构的真保障是**编译本身**：某档少发射契约常量时，
+    62 个执行器的常量引用会直接编译失败。
+
 .PARAMETER ProjectPath
     AI 工具面工程目录（默认仓库内 Src/AI/Mud.Wechat.Work.AI.Tools）。
 

@@ -5,6 +5,7 @@
 //  不得利用本项目从事危害国家安全、扰乱社会秩序、侵犯他人合法权益等法律法规禁止的活动！任何基于本项目开发而产生的一切法律纠纷和责任，我们不承担任何责任！
 // -----------------------------------------------------------------------
 
+using System.Globalization;
 using System.Text.Json.Nodes;
 using Mud.AI.Abstractions.Tools.Handlers;
 using Mud.AI.Agent.Tools;
@@ -62,32 +63,32 @@ public sealed class ExternalContactStatisticsToolHandlers(IWechatWorkExternalCon
 
         if (!ToolTimeText.TryParseUnixSeconds(request.StartTime, out var start))
         {
-            return ToolResult.FromError(TimeFormatHint);
+            throw WechatToolArgumentErrors.Invalid(TimeFormatHint);
         }
 
         if (!ToolTimeText.TryParseUnixSeconds(request.EndTime, out var end))
         {
-            return ToolResult.FromError(TimeFormatHint);
+            throw WechatToolArgumentErrors.Invalid(TimeFormatHint);
         }
 
         if (end <= start)
         {
-            return ToolResult.FromError("参数非法：end_time 必须大于 start_time。");
+            throw WechatToolArgumentErrors.Invalid("参数非法：end_time 必须大于 start_time。");
         }
 
         if (end - start > MaxSpanSeconds)
         {
-            return ToolResult.FromError("参数非法：起止时间间隔不得超过 30 天（官方按天聚合的上限），请缩小范围后分批查询。");
+            throw WechatToolArgumentErrors.Invalid("参数非法：起止时间间隔不得超过 30 天（官方按天聚合的上限），请缩小范围后分批查询。");
         }
 
         if (request.Userid is not { Length: > 0 } && request.DepartmentId is null)
         {
-            return ToolResult.FromError("参数非法：userid 与 department_id 至少要给一个（官方要求二者不可同时为空）。");
+            throw WechatToolArgumentErrors.Invalid("参数非法：userid 与 department_id 至少要给一个（官方要求二者不可同时为空）。");
         }
 
         if (request.Userid is { Length: > MaxUserCount })
         {
-            return ToolResult.FromError($"参数非法：userid 一次最多 {MaxUserCount} 个，请分批查询。");
+            throw WechatToolArgumentErrors.Invalid($"参数非法：userid 一次最多 {MaxUserCount} 个，请分批查询。");
         }
 
         var response = await _statistics.GetUserBehaviorDataAsync(
@@ -142,20 +143,20 @@ public sealed class ExternalContactStatisticsToolHandlers(IWechatWorkExternalCon
 
         if (!TryResolveDayRange(request.DayBeginTime, request.DayEndTime, out var begin, out var end, out var error))
         {
-            return ToolResult.FromError(error!);
+            throw WechatToolArgumentErrors.Invalid(error!);
         }
 
         // order_by 的取值闭集（1~4）由声明面 EnumType 与生成的解包器收口——越界值到不了这里。
         var offset = request.Offset ?? 0;
         if (offset < 0)
         {
-            return ToolResult.FromError("参数非法：offset 不能为负数。");
+            throw WechatToolArgumentErrors.Invalid("参数非法：offset 不能为负数。");
         }
 
         var limit = request.Limit ?? DefaultPageSize;
         if (limit is < 1 or > MaxPageSize)
         {
-            return ToolResult.FromError($"参数非法：limit 必须在 1~{MaxPageSize} 之间。");
+            throw WechatToolArgumentErrors.Invalid($"参数非法：limit 必须在 1~{MaxPageSize} 之间。");
         }
 
         var response = await _statistics.GetGroupChatStatisticAsync(
@@ -176,7 +177,11 @@ public sealed class ExternalContactStatisticsToolHandlers(IWechatWorkExternalCon
             return WechatToolOutcomeErrors.From(outcome, WechatToolNames.ExternalcontactStatisticsGroupchat);
         }
 
-        var items = new JsonArray();
+        // 官方用 offset 分页（next_offset 是数值）：翻页时把它原样作为 page_token 回传即可。
+        var envelope = ToolResultJsons.PageEnvelope(
+            hasMore: outcome.Data?.NextOffset is not null,
+            pageToken: outcome.Data?.NextOffset?.ToString(CultureInfo.InvariantCulture));
+        var items = envelope["items"]!.AsArray();
         foreach (var item in outcome.Data?.Items ?? [])
         {
             items.Add((JsonNode?)new JsonObject
@@ -186,13 +191,9 @@ public sealed class ExternalContactStatisticsToolHandlers(IWechatWorkExternalCon
             });
         }
 
-        return ToolResult.FromText(ToolResultJson.ToText(new JsonObject
-        {
-            ["total"] = JsonValue.Create(outcome.Data?.Total),
-            ["next_offset"] = JsonValue.Create(outcome.Data?.NextOffset),
-            ["items"] = items,
-            ["count"] = items.Count,
-        }));
+        envelope["total"] = JsonValue.Create(outcome.Data?.Total);
+        envelope["count"] = items.Count;
+        return ToolResultPipeline.OkJson(envelope, 0);
     }
 
     /// <summary>执行 <c>externalcontact.statistics.groupchat_by_day</c>。</summary>
@@ -208,7 +209,7 @@ public sealed class ExternalContactStatisticsToolHandlers(IWechatWorkExternalCon
 
         if (!TryResolveDayRange(request.DayBeginTime, request.DayEndTime, out var begin, out var end, out var error))
         {
-            return ToolResult.FromError(error!);
+            throw WechatToolArgumentErrors.Invalid(error!);
         }
 
         var response = await _statistics.GetGroupChatStatisticGroupByDayAsync(

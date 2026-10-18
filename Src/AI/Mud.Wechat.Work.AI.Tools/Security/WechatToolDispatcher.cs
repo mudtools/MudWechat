@@ -70,6 +70,8 @@ public sealed class WechatToolDispatcher : IDisposable
     private readonly IWechatAiCorpContextAccessor? _corpContext;
     private readonly IWechatToolAuditSink _auditSink;
     private readonly WechatToolOutboundGuard _outbound;
+
+    private readonly ToolRetryPolicy _retry;
     private readonly ILogger<WechatToolDispatcher>? _logger;
     private readonly SemaphoreSlim? _concurrency;
 
@@ -101,6 +103,8 @@ public sealed class WechatToolDispatcher : IDisposable
         _auditSink = auditSink ?? NullWechatToolAuditSink.Instance;
         _corpContext = corpContext;
         _outbound = new WechatToolOutboundGuard(policy.MaxResultLength, policy.ContentSafetyMode);
+        // 只读限流退避：写工具在 ShouldRetry 内部恒为 false（isWrite ⇒ 零重试），此处不重复判断。
+        _retry = new ToolRetryPolicy(policy.Retry, () => DateTimeOffset.UtcNow.Ticks);
         // 限并发让过载变成「排队」而不是「一起触发限流」：模型一个回合可以并行发多个 tool_call，
         // 而企微多数接口有频率上限（审批查询 600 次/分），不限并发时表现为一批工具同时返回 45009。
         _concurrency = policy.MaxConcurrentCalls > 0 ? new SemaphoreSlim(policy.MaxConcurrentCalls) : null;
@@ -256,6 +260,44 @@ public sealed class WechatToolDispatcher : IDisposable
             .ConfigureAwait(false);
     }
 
+    /// <summary>
+    /// 只读限流退避：同一调用内最多重试 <c>Retry.MaxAttempts</c> 次（<b>写工具恒不重试</b>）。
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>为什么在这里而不在执行器里</b>：重试是<b>治理</b>（与超时、并发、预算同层），执行器只负责一次投影；
+    /// 放进执行器会让 21 个文件各自实现退避，且写工具"绝不重试"这条硬约束无处集中校验。
+    /// </para>
+    /// <para>
+    /// <b>退避受 deadline 约束</b>：<c>DelayAsync</c> 用本次调用的超时令牌，退避期间超时同样触发
+    /// <c>OperationCanceledException</c> ⇒ 由外层统一结算成 <c>Retryable/timeout</c>，不会把成功预算用光。
+    /// </para>
+    /// </remarks>
+    private async Task<ToolResult> ExecuteWithRetryAsync(
+        WechatToolExecution execution,
+        string toolName,
+        WechatToolAuthorizationContext context,
+        IReadOnlyDictionary<string, object?> arguments,
+        CancellationToken callToken)
+    {
+        var isWrite = context.Risk != WechatToolRisk.Read;
+        for (var attempt = 0; ; attempt++)
+        {
+            var result = await execution.ExecuteAsync(arguments, callToken).ConfigureAwait(false);
+            if (result.Error is not { } error
+                || !_retry.ShouldRetry(error, isWrite, isDryRun: false, hasIdempotencyKey: false, attempt: attempt))
+            {
+                return result;
+            }
+
+            _logger?.LogInformation(
+                "工具 {Tool} 第 {Attempt} 次重试（{Category}/{Subtype}，api_code={ApiCode}）。",
+                toolName, attempt + 1, error.Category, error.Subtype, error.ApiCode);
+            await _retry.DelayAsync(_retry.ComputeDelay(attempt, error.RetryAfterSeconds), callToken)
+                .ConfigureAwait(false);
+        }
+    }
+
     /// <summary>强类型执行 + 超时/并发治理 + 出站纪律 + 审计 + 指标 + 异常归一（取消例外向上传播）。</summary>
     private async Task<ToolResult> ExecuteAsync(
         WechatToolExecution execution,
@@ -283,7 +325,7 @@ public sealed class WechatToolDispatcher : IDisposable
             try
             {
                 // 执行器内部会再套一层 RunAsync 归一（ToolExecutor），此处 catch 兜住未归一的执行器。
-                result = await execution.ExecuteAsync(arguments, callToken).ConfigureAwait(false);
+                result = await ExecuteWithRetryAsync(execution, toolName, context, arguments, callToken).ConfigureAwait(false);
             }
             finally
             {

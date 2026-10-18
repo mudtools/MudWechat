@@ -5,6 +5,7 @@
 //  不得利用本项目从事危害国家安全、扰乱社会秩序、侵犯他人合法权益等法律法规禁止的活动！任何基于本项目开发而产生的一切法律纠纷和责任，我们不承担任何责任！
 // -----------------------------------------------------------------------
 
+using System.Globalization;
 using System.Text.Json.Nodes;
 using Mud.AI.Abstractions.Tools.Handlers;
 using Mud.AI.Agent.Tools;
@@ -62,27 +63,27 @@ public sealed class DialToolHandlers(IWechatWorkInternalDialService dial)
         {
             if (string.IsNullOrWhiteSpace(request.StartTime) || string.IsNullOrWhiteSpace(request.EndTime))
             {
-                return ToolResult.FromError("参数非法：start_time 与 end_time 需同时给出（都省略时官方默认查最近 30 天）。");
+                throw WechatToolArgumentErrors.Invalid("参数非法：start_time 与 end_time 需同时给出（都省略时官方默认查最近 30 天）。");
             }
 
             if (!ToolTimeText.TryParseUnixSeconds(request.StartTime, out var parsedStart))
             {
-                return ToolResult.FromError(TimeFormatHint);
+                throw WechatToolArgumentErrors.Invalid(TimeFormatHint);
             }
 
             if (!ToolTimeText.TryParseUnixSeconds(request.EndTime, out var parsedEnd))
             {
-                return ToolResult.FromError(TimeFormatHint);
+                throw WechatToolArgumentErrors.Invalid(TimeFormatHint);
             }
 
             if (parsedEnd < parsedStart)
             {
-                return ToolResult.FromError("参数非法：end_time 不得小于 start_time（官方双闭区间）。");
+                throw WechatToolArgumentErrors.Invalid("参数非法：end_time 不得小于 start_time（官方双闭区间）。");
             }
 
             if (parsedEnd - parsedStart > MaxSpanSeconds)
             {
-                return ToolResult.FromError("参数非法：起止时间间隔不得超过 30 天（官方上限），请缩小范围后分批查询。");
+                throw WechatToolArgumentErrors.Invalid("参数非法：起止时间间隔不得超过 30 天（官方上限），请缩小范围后分批查询。");
             }
 
             start = parsedStart;
@@ -92,13 +93,13 @@ public sealed class DialToolHandlers(IWechatWorkInternalDialService dial)
         var offset = request.Offset ?? 0;
         if (offset < 0)
         {
-            return ToolResult.FromError("参数非法：offset 不能为负数。");
+            throw WechatToolArgumentErrors.Invalid("参数非法：offset 不能为负数。");
         }
 
         var limit = request.Limit ?? DefaultPageSize;
         if (limit is < 1 or > MaxPageSize)
         {
-            return ToolResult.FromError($"参数非法：limit 必须在 1~{MaxPageSize} 之间。");
+            throw WechatToolArgumentErrors.Invalid($"参数非法：limit 必须在 1~{MaxPageSize} 之间。");
         }
 
         var response = await _dial.GetDialRecordAsync(
@@ -116,10 +117,17 @@ public sealed class DialToolHandlers(IWechatWorkInternalDialService dial)
             return WechatToolOutcomeErrors.From(outcome, WechatToolNames.DialRecordList);
         }
 
-        var records = new JsonArray();
-        foreach (var item in outcome.Data?.Record ?? [])
+        // 官方按 offset 分页且不回 has_more：满页即认为还有下一页，page_token 直接给下一次的 offset。
+        // 旧形态用 `records.Count >= limit` 本地推导 has_more，但「恰好满页且已到底」会假报有下一页 —— 用 offset 前进语义表达。
+        var records = outcome.Data?.Record ?? [];
+        var hasMore = records.Count >= limit;
+        var envelope = ToolResultJsons.PageEnvelope(
+            hasMore: hasMore,
+            pageToken: hasMore ? (offset + limit).ToString(CultureInfo.InvariantCulture) : null);
+        var items = envelope["items"]!.AsArray();
+        foreach (var item in records)
         {
-            records.Add((JsonNode?)new JsonObject
+            items.Add((JsonNode?)new JsonObject
             {
                 ["call_time"] = JsonValue.Create(item.CallTime),
                 ["total_duration"] = JsonValue.Create(item.TotalDuration),
@@ -129,12 +137,8 @@ public sealed class DialToolHandlers(IWechatWorkInternalDialService dial)
             });
         }
 
-        return ToolResult.FromText(ToolResultJson.ToText(new JsonObject
-        {
-            ["record"] = records,
-            ["count"] = records.Count,
-            ["has_more"] = records.Count >= limit,
-        }));
+        envelope["count"] = items.Count;
+        return ToolResultPipeline.OkJson(envelope, 0);
     }
 
     /// <summary>主叫投影：userid + 时长。</summary>

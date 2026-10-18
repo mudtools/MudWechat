@@ -34,16 +34,16 @@ public class JournalToolHandlersTests
 
         result.Text.Should().Contain("\"j-1\"");
         result.Text.Should().Contain("\"count\":2");
-        result.Text.Should().Contain("\"ending\":0");
-        result.Text.Should().Contain("\"next_cursor\":2");
+        result.Text.Should().Contain("\"has_more\":true", "ending=0 表示还有数据");
+        result.Text.Should().Contain("\"page_token\":\"2\"");
     }
 
     [Fact]
     public async Task List_WhenSpanExceeds31Days_ShouldRejectBeforeCallingSdk()
     {
-        var result = await Handler().ListAsync(
+        var result = await ToolInvoker.InvokeAsync(() => Handler().ListAsync(
             Args(("start_time", "1690000000"), ("end_time", "1700000000")),
-            CancellationToken.None);
+            CancellationToken.None));
 
         result.Text.Should().Contain("31 天");
         _journal.Verify(

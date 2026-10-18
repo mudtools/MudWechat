@@ -51,9 +51,9 @@ public class MessageToolHandlersTests
     {
         var tooLong = new string('中', 700); // 700 × 3 = 2100 字节 > 2048
 
-        var result = await Handler().SendAsync(
+        var result = await ToolInvoker.InvokeAsync(() => Handler().SendAsync(
             Args(("touser", "zhangsan"), ("content", tooLong), ("agentid", 1000002)),
-            CancellationToken.None);
+            CancellationToken.None));
 
         result.Text.Should().Contain("2048");
         _message.Verify(
@@ -104,9 +104,9 @@ public class MessageToolHandlersTests
     [Fact]
     public async Task Send_WithTextCardMissingTitle_ShouldRejectBeforeCallingSdk()
     {
-        var result = await Handler().SendAsync(
+        var result = await ToolInvoker.InvokeAsync(() => Handler().SendAsync(
             Args(("touser", "zhangsan"), ("content", "点开查看"), ("agentid", 1000002), ("msg_type", 3), ("url", "https://example.com/a")),
-            CancellationToken.None);
+            CancellationToken.None));
 
         result.Text.Should().Contain("title");
         _message.Verify(
@@ -117,7 +117,7 @@ public class MessageToolHandlersTests
     [Fact]
     public async Task Send_WithTextCardUrlWithoutScheme_ShouldReject()
     {
-        var result = await Handler().SendAsync(
+        var result = await ToolInvoker.InvokeAsync(() => Handler().SendAsync(
             Args(
                 ("touser", "zhangsan"),
                 ("content", "点开查看"),
@@ -125,7 +125,7 @@ public class MessageToolHandlersTests
                 ("msg_type", 3),
                 ("title", "评审通知"),
                 ("url", "example.com/a")),
-            CancellationToken.None);
+            CancellationToken.None));
 
         result.Text.Should().Contain("http");
     }

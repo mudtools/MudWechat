@@ -43,7 +43,7 @@ public sealed class LivingToolHandlers(IWechatWorkLivingService living)
         var limit = request.Limit ?? MaxPageSize;
         if (limit is < 1 or > MaxPageSize)
         {
-            return ToolResult.FromError($"参数非法：limit 必须在 1~{MaxPageSize} 之间。");
+            throw WechatToolArgumentErrors.Invalid($"参数非法：limit 必须在 1~{MaxPageSize} 之间。");
         }
 
         var response = await _living.GetUserAllLivingIdAsync(
@@ -60,18 +60,17 @@ public sealed class LivingToolHandlers(IWechatWorkLivingService living)
             return WechatToolOutcomeErrors.From(outcome, WechatToolNames.LivingList);
         }
 
-        var ids = new JsonArray();
+        var envelope = ToolResultJsons.PageEnvelope(
+            hasMore: !string.IsNullOrEmpty(outcome.Data?.NextCursor),
+            pageToken: outcome.Data?.NextCursor);
+        var ids = envelope["items"]!.AsArray();
         foreach (var livingid in outcome.Data?.LivingidList ?? [])
         {
             ids.Add((JsonNode?)JsonValue.Create(livingid));
         }
 
-        return ToolResult.FromText(ToolResultJson.ToText(new JsonObject
-        {
-            ["livingid_list"] = ids,
-            ["count"] = ids.Count,
-            ["next_cursor"] = outcome.Data?.NextCursor,
-        }));
+        envelope["count"] = ids.Count;
+        return ToolResultPipeline.OkJson(envelope, 0);
     }
 
     /// <summary>执行 <c>living.get</c>。</summary>
@@ -136,7 +135,12 @@ public sealed class LivingToolHandlers(IWechatWorkLivingService living)
             return WechatToolOutcomeErrors.From(outcome, WechatToolNames.LivingWatchStat);
         }
 
-        var users = new JsonArray();
+        // 官方用 next_key + ending 表达翻页：ending=1 即最后一页（此时即使带 next_key 也不得继续翻）。
+        var ending = outcome.Data?.Ending == 1;
+        var envelope = ToolResultJsons.PageEnvelope(
+            hasMore: !ending && !string.IsNullOrEmpty(outcome.Data?.NextKey),
+            pageToken: ending ? null : outcome.Data?.NextKey);
+        var users = envelope["items"]!.AsArray();
         foreach (var user in outcome.Data?.StatInfo?.Users ?? [])
         {
             users.Add((JsonNode?)new JsonObject
@@ -148,13 +152,8 @@ public sealed class LivingToolHandlers(IWechatWorkLivingService living)
             });
         }
 
-        return ToolResult.FromText(ToolResultJson.ToText(new JsonObject
-        {
-            ["users"] = users,
-            ["count"] = users.Count,
-            ["external_user_count"] = outcome.Data?.StatInfo?.ExternalUsers?.Count ?? 0,
-            ["ending"] = JsonValue.Create(outcome.Data?.Ending),
-            ["next_key"] = outcome.Data?.NextKey,
-        }));
+        envelope["count"] = users.Count;
+        envelope["external_user_count"] = outcome.Data?.StatInfo?.ExternalUsers?.Count ?? 0;
+        return ToolResultPipeline.OkJson(envelope, 0);
     }
 }

@@ -97,7 +97,8 @@ public class LivingToolHandlersTests
         result.Text.Should().Contain("\"userid\":\"lisi\"");
         result.Text.Should().Contain("\"watch_time\":1800");
         result.Text.Should().Contain("\"external_user_count\":1");
-        result.Text.Should().Contain("\"ending\":1");
+        result.Text.Should().Contain("\"has_more\":false", "ending=1 表示已拉完");
+        result.Text.Should().NotContain("page_token", "末页不得下发游标（否则模型会重复拉最后一页）");
         result.Text.Should().NotContain("wm-secret", "外部联系人 ID 不外发（只给人数）");
     }
 

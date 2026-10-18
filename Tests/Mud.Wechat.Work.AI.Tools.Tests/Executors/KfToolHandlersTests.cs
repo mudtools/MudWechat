@@ -160,9 +160,9 @@ public class KfToolHandlersTests
     [Fact]
     public async Task CorpStatistic_SpanOverThirtyOneDays_ShouldReturnErrorWithoutCallingSdk()
     {
-        var result = await Handler().GetCorpStatisticAsync(
+        var result = await ToolInvoker.InvokeAsync(() => Handler().GetCorpStatisticAsync(
             Args(("open_kfid", "wk-1"), ("start_time", "1690000000"), ("end_time", "1700000000")),
-            CancellationToken.None);
+            CancellationToken.None));
 
         result.Text.Should().Contain("31 天");
         _statistics.Verify(

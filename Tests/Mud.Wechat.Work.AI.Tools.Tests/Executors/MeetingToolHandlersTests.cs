@@ -40,9 +40,9 @@ public class MeetingToolHandlersTests
     [Fact]
     public async Task List_WhenSpanExceeds180Days_ShouldRejectBeforeCallingSdk()
     {
-        var result = await Handler().ListAsync(
+        var result = await ToolInvoker.InvokeAsync(() => Handler().ListAsync(
             Args(("userid", "zhangsan"), ("begin_time", "1690000000"), ("end_time", "1710000000")),
-            CancellationToken.None);
+            CancellationToken.None));
 
         result.Text.Should().Contain("180 天");
         _meeting.Verify(

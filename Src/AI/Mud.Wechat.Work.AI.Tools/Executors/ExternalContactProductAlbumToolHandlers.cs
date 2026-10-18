@@ -50,7 +50,7 @@ public sealed class ExternalContactProductAlbumToolHandlers(IWechatWorkExternalC
         var limit = request.Limit ?? DefaultPageSize;
         if (limit is < 1 or > MaxPageSize)
         {
-            return ToolResult.FromError($"参数非法：limit 必须在 1~{MaxPageSize} 之间。");
+            throw WechatToolArgumentErrors.Invalid($"参数非法：limit 必须在 1~{MaxPageSize} 之间。");
         }
 
         var response = await _productAlbum.GetProductAlbumListAsync(
@@ -62,19 +62,18 @@ public sealed class ExternalContactProductAlbumToolHandlers(IWechatWorkExternalC
             return WechatToolOutcomeErrors.From(outcome, WechatToolNames.ExternalcontactProductAlbumList);
         }
 
-        var products = new JsonArray();
+        // 空列表是合法答案（企业还没有配置商品图册），不转错误。
+        var envelope = ToolResultJsons.PageEnvelope(
+            hasMore: !string.IsNullOrEmpty(outcome.Data?.NextCursor),
+            pageToken: outcome.Data?.NextCursor);
+        var products = envelope["items"]!.AsArray();
         foreach (var item in outcome.Data?.ProductList ?? [])
         {
             products.Add((JsonNode?)ToProductNode(item));
         }
 
-        // 空列表是合法答案（企业还没有配置商品图册），不转错误。
-        return ToolResult.FromText(ToolResultJson.ToText(new JsonObject
-        {
-            ["product_list"] = products,
-            ["count"] = products.Count,
-            ["next_cursor"] = outcome.Data?.NextCursor,
-        }));
+        envelope["count"] = products.Count;
+        return ToolResultPipeline.OkJson(envelope, 0);
     }
 
     /// <summary>执行 <c>externalcontact.product_album.get</c>。</summary>

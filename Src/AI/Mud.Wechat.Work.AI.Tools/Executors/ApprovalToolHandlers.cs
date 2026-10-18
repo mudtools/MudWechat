@@ -109,25 +109,25 @@ public sealed class ApprovalToolHandlers(
 
         if (!long.TryParse(request.StartTime, out var start) || !long.TryParse(request.EndTime, out var end))
         {
-            return ToolResult.FromError(
+            throw WechatToolArgumentErrors.Invalid(
                 "参数非法：start_time / end_time 必须是 Unix 秒的字符串形式（如 \"1792308600\"），不接受 ISO 时间。");
         }
 
         if (end <= start)
         {
-            return ToolResult.FromError("参数非法：end_time 必须大于 start_time（官方要求，且跨度不超过 31 天）。");
+            throw WechatToolArgumentErrors.Invalid("参数非法：end_time 必须大于 start_time（官方要求，且跨度不超过 31 天）。");
         }
 
         if (end - start > MaxSpanDays * 86400L)
         {
-            return ToolResult.FromError(
+            throw WechatToolArgumentErrors.Invalid(
                 $"参数非法：时间跨度超过官方上限 31 天（当前 {((end - start) / 86400d):0.#} 天），请缩小范围后分段拉取。");
         }
 
         var size = request.Size ?? MaxListSize;
         if (size is < 1 or > MaxListSize)
         {
-            return ToolResult.FromError($"参数非法：size 须在 1..{MaxListSize} 之间，实际值: {size}。");
+            throw WechatToolArgumentErrors.Invalid($"参数非法：size 须在 1..{MaxListSize} 之间，实际值: {size}。");
         }
 
         List<ApprovalInfoFilter>? filters = null;
@@ -152,22 +152,23 @@ public sealed class ApprovalToolHandlers(
             return WechatToolOutcomeErrors.From(outcome, WechatToolNames.ApprovalList);
         }
 
-        var items = new JsonArray();
+        // 空页是合法答案（该范围内没有单据 / 已翻完），不转错误：模型据此换条件或停止翻页。
+        var envelope = ToolResultJsons.PageEnvelope(
+            hasMore: !string.IsNullOrEmpty(outcome.Data?.NewNextCursor),
+            pageToken: outcome.Data?.NewNextCursor);
+        var items = envelope["items"]!.AsArray();
         foreach (var spNo in outcome.Data?.SpNoList ?? [])
         {
             items.Add((JsonNode?)JsonValue.Create(spNo));
         }
 
-        // 空页是合法答案（该范围内没有单据 / 已翻完），不转错误：模型据此换条件或停止翻页。
-        return ToolResult.FromText(ToolResultJson.ToText(new JsonObject
+        envelope["count"] = items.Count;
+        if (items.Count == 0)
         {
-            ["sp_no_list"] = items,
-            ["count"] = items.Count,
-            ["next_cursor"] = outcome.Data?.NewNextCursor,
-            ["hint"] = items.Count == 0
-                ? "该时间范围内没有符合条件的审批单；可放宽 sp_status 或扩大时间范围（跨度 ≤ 31 天）。"
-                : null,
-        }));
+            envelope["hint"] = "该时间范围内没有符合条件的审批单；可放宽 sp_status 或扩大时间范围（跨度 ≤ 31 天）。";
+        }
+
+        return ToolResultPipeline.OkJson(envelope, 0);
     }
 
     /// <summary>审批节点投影：只保留状态与「谁在什么时候操作」，不含审批意见正文。</summary>
@@ -288,13 +289,13 @@ public sealed class ApprovalToolHandlers(
         }
         catch (JsonException ex)
         {
-            return ToolResult.FromError(
+            throw WechatToolArgumentErrors.Invalid(
                 $"参数非法：fields_json 不是合法 JSON（{ex.Message}）。应为对象，键是控件 ID、值是取值。");
         }
 
         if (fields is null || fields.Count == 0)
         {
-            return ToolResult.FromError(
+            throw WechatToolArgumentErrors.Invalid(
                 "参数非法：fields_json 必须是非空 JSON 对象（键 = 控件 ID，值 = 取值）；空表单不能提交。");
         }
 
@@ -324,7 +325,7 @@ public sealed class ApprovalToolHandlers(
 
         if (controls.Count == 0)
         {
-            return ToolResult.FromError("该模板没有可填控件（可能是系统模板或权限不足），无法自动提交。");
+            throw WechatToolArgumentErrors.Invalid("该模板没有可填控件（可能是系统模板或权限不足），无法自动提交。");
         }
 
         var contents = new List<ApprovalControlItem>(fields.Count);
@@ -332,14 +333,14 @@ public sealed class ApprovalToolHandlers(
         {
             if (!controls.TryGetValue(id, out var property))
             {
-                return ToolResult.FromError(
+                throw WechatToolArgumentErrors.Invalid(
                     $"参数非法：控件 ID \"{id}\" 不在模板中。可用控件：{string.Join(", ", controls.Keys)}（先调 approval.template.get 核对）。");
             }
 
             var (value, error) = MapControlValue(property.Control, node);
             if (error is not null)
             {
-                return ToolResult.FromError($"参数非法：控件 {id}（{property.Control}）{error}");
+                throw WechatToolArgumentErrors.Invalid($"参数非法：控件 {id}（{property.Control}）{error}");
             }
 
             contents.Add(new ApprovalControlItem { Id = id, Value = value });
@@ -351,7 +352,7 @@ public sealed class ApprovalToolHandlers(
             .ToArray();
         if (missing.Length > 0)
         {
-            return ToolResult.FromError(
+            throw WechatToolArgumentErrors.Invalid(
                 $"参数非法：必填控件缺失 {string.Join("、", missing)}。请补齐后重新提交（不要让用户承担漏填的后果）。");
         }
 

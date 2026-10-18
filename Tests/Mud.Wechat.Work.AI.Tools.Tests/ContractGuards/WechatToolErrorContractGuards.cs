@@ -14,9 +14,9 @@ namespace Mud.Wechat.Work.AI.Tools.Tests.ContractGuards;
 /// 用 <c>Error.ApiCode</c> 填审计。绕过一次 = 一条上游错误被记成「成功」，失败率与错误码口径同时失真。
 /// </para>
 /// <para>
-/// <b>棘轮（ratchet）语义</b>：参数校验类站点尚未全部改为 <c>ToolArgumentException</c>（FIX-01 第二阶段），
-/// 故 E2 冻结当前余量并<b>只许降不许升</b>；任何人新增一处旧工厂都会让守卫变红。E2 归零后本守卫改为
-/// 「必须为 0」，不再保留基线。
+/// <b>E2 为零容忍</b>：FIX-01 收官后，执行器里<b>调用</b>旧工厂的余量为 0（文档注释中提及该 API 不算）。
+/// 三态出口固定为：上游失败 → <c>WechatToolOutcomeErrors.From</c>；参数错 → <c>WechatToolArgumentErrors.Invalid</c>；
+/// 业务空 → <c>WechatToolResults.NotFound/EmptyList</c>。
 /// </para>
 /// <para>
 /// <b>E3 为什么盯单位</b>：策略预算是<b>字符</b>，审计与指标若按 UTF-8 <b>字节</b>计量，则同一策略值在
@@ -25,51 +25,37 @@ namespace Mud.Wechat.Work.AI.Tools.Tests.ContractGuards;
 /// </remarks>
 public class WechatToolErrorContractGuards
 {
-    /// <summary>
-    /// 仍以旧工厂表达「业务空」的文件（<b>不是</b>上游失败）：已全部改为
-    /// <c>found:false</c> / <c>items:[]</c> 成功语义，白名单为空即「零容忍」。
-    /// </summary>
-    private static readonly Dictionary<string, int> BusinessEmptyAllowList = new(StringComparer.Ordinal);
-
-    /// <summary>
-    /// 旧工厂余量基线（只许降）：FIX-01 第一阶段已把 62 处上游失败改为结构化，
-    /// 余下为参数校验字面量（FIX-01 第二阶段改 <c>ToolArgumentException</c>）。
-    /// </summary>
-    private const int LegacyFactoryBaseline = 101;
-
     [Fact]
     public void Executors_UpstreamFailures_ShouldGoThroughStructuredFactory()
     {
         var executors = ExecutorsDirectory();
         var pattern = new Regex(@"ToolResult\.FromError\(\w+\.ErrorText", RegexOptions.CultureInvariant);
 
-        var residual = new Dictionary<string, int>(StringComparer.Ordinal);
-        foreach (var file in Directory.GetFiles(executors, "*.cs", SearchOption.TopDirectoryOnly))
-        {
-            var count = pattern.Matches(File.ReadAllText(file)).Count;
-            if (count > 0)
-            {
-                residual[Path.GetFileName(file)] = count;
-            }
-        }
+        var residual = Directory
+            .GetFiles(executors, "*.cs", SearchOption.TopDirectoryOnly)
+            .Where(file => pattern.IsMatch(File.ReadAllText(file)))
+            .Select(Path.GetFileName)
+            .ToArray();
 
-        residual.Should().BeEquivalentTo(
-            BusinessEmptyAllowList,
-            "上游失败必须经 WechatToolOutcomeErrors.From（→ ToolExecutor.FailIfError）产出结构化载荷；"
-            + "白名单只容纳「业务空」站点，且 FIX-03 后须清空");
+        residual.Should().BeEmpty(
+            "上游失败必须经 WechatToolOutcomeErrors.From（→ ToolExecutor.FailIfError）产出结构化载荷");
     }
 
     [Fact]
-    public void Executors_LegacyErrorFactory_ShouldNotGrow()
+    public void Executors_LegacyErrorFactory_ShouldBeGone()
     {
-        var executors = ExecutorsDirectory();
-        var total = Directory
-            .GetFiles(executors, "*.cs", SearchOption.TopDirectoryOnly)
-            .Sum(file => Regex.Matches(File.ReadAllText(file), @"ToolResult\.FromError\(").Count);
+        var offenders = Directory
+            .GetFiles(ExecutorsDirectory(), "*.cs", SearchOption.TopDirectoryOnly)
+            .Select(file => (Name: Path.GetFileName(file), Source: File.ReadAllText(file)))
+            // 文档注释里提到该 API 是合法的（说明「为什么不用它」），只禁**调用**。
+            .Select(f => (f.Name, Calls: Regex.Matches(f.Source, @"(?:return|=>)\s*ToolResult\.FromError\(").Count))
+            .Where(f => f.Calls > 0)
+            .Select(f => $"{f.Name}×{f.Calls}")
+            .ToArray();
 
-        total.Should().BeLessThanOrEqualTo(
-            LegacyFactoryBaseline,
-            "旧工厂不产生 Error 载荷 ⇒ 结局被结算成成功；余量只许下降（新增一处即红）");
+        offenders.Should().BeEmpty(
+            "旧工厂不产生 Error 载荷 ⇒ 上游失败/参数错误被结算成成功；"
+            + "上游失败走 WechatToolOutcomeErrors，参数错走 WechatToolArgumentErrors.Invalid，业务空走 WechatToolResults");
     }
 
     [Fact]

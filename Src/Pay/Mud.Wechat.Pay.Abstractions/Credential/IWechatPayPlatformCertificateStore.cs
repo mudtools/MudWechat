@@ -22,6 +22,11 @@ namespace Mud.Wechat.Pay.Abstractions.Credential;
 /// 这正是守卫 <b>PAY-B3</b> 第 4 条的落点。上层可在刷新证书后**重试一次**，仍未知则拒绝——不得放宽。
 /// </para>
 /// <para>本接口属端口，实现可替换（进程内缓存 / Redis / 宿主自管），与 <c>IWechatCallbackReplayGuard</c> 同款做法。</para>
+/// <para>
+/// <b>#22 泛化（国密前置条件）</b>：新增 <see cref="TryGetPublicKey"/> 方法，按序列号取平台公钥字节 + 算法。
+/// 原因：SM2 平台公钥无法从 <c>X509Certificate2</c> 取出（<c>GetRSAPublicKey()</c> 对 SM2 证书返回 <c>null</c>），
+/// 故需直接暴露公钥字节供国密验签使用。
+/// </para>
 /// </remarks>
 public interface IWechatPayPlatformCertificateStore
 {
@@ -31,4 +36,18 @@ public interface IWechatPayPlatformCertificateStore
     /// <returns>是否命中。</returns>
     /// <remarks>序列号为 <c>null</c>/<c>空白</c> 时**必须**返回 <c>false</c>，不得回落到「任意证书」。</remarks>
     bool TryGetCertificate(string? serialNumber, out X509Certificate2? certificate);
+
+    /// <summary>
+    /// 按序列号取平台公钥字节 + 算法（国密验签必需）。
+    /// </summary>
+    /// <param name="serialNumber">平台证书序列号。</param>
+    /// <param name="publicKey">命中时为公钥字节（RSA 为 DER 编码的 SubjectPublicKeyInfo，SM2 为原始公钥点）；否则 <c>null</c>。</param>
+    /// <param name="algorithm">算法标识（<c>SHA256-RSA2048</c> / <c>SM2-WITH-SM3</c>）。</param>
+    /// <returns>是否命中。</returns>
+    /// <remarks>
+    /// <para><b>为何需要此方法</b>：<c>TryGetCertificate</c> 返回 <c>X509Certificate2</c>，但 SM2 证书的公钥无法通过
+    /// <c>GetRSAPublicKey()</c> 取出（返回 <c>null</c>）。国密验签需要直接拿到公钥字节，故新增此并列方法。</para>
+    /// <para>实现方应从证书的 <c>PublicKey.EncodedKeyValue</c> 提取原始字节，或从缓存的公钥材料直接返回。</para>
+    /// </remarks>
+    bool TryGetPublicKey(string? serialNumber, out byte[]? publicKey, out string? algorithm);
 }

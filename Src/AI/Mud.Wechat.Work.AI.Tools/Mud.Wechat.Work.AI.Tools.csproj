@@ -12,11 +12,11 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<!-- Mud.AI 1.0.1（nuget.org 钉版）：Abstractions 经 Agent 传递可见（AgentTool / ToolHandler / SdkToolProfile 均在其中）。 -->
-		<PackageReference Include="Mud.AI.Agent" Version="1.0.1" />
+		<!-- Mud.AI 1.0.2（nuget.org 钉版）：Abstractions 经 Agent 传递可见（AgentTool / ToolHandler / SdkToolProfile 均在其中）。 -->
+		<PackageReference Include="Mud.AI.Agent" Version="1.0.2" />
 		<!-- 工具面源生成引擎：仅作 Analyzer 消费，不产生程序集引用。
 		     红线：本工程不得再挂 Mud.HttpUtils.Generator（同一编译单元禁兼引）。 -->
-		<PackageReference Include="Mud.AI.Generator" Version="1.0.1"
+		<PackageReference Include="Mud.AI.Generator" Version="1.0.2"
 		                  OutputItemType="Analyzer"
 		                  ReferenceOutputAssembly="false"
 		                  PrivateAssets="all" />

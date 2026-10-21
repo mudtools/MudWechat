@@ -1,7 +1,7 @@
 # Mud.Wechat.Work.AI.Tools
 
 企业微信线 **AI 工具面**（S2 底座）：把企微业务接口策展为「模型可调用工具」，由编译期引擎
-（`Mud.AI.Generator` 1.0.1）产出 Schema / 名称契约 / Args 解包器 / 域注册器 / DI 装配，运行期零反射。
+（`Mud.AI.Generator` 1.0.2）产出 Schema / 名称契约 / Args 解包器 / 域注册器 / DI 装配，运行期零反射。
 
 设计见 `.docs/AI/MudWechat-AI功能解决方案-v1.md` §3.4（剖面 33 槽）、§3.7（策展分级）、§四 S2。
 
@@ -22,7 +22,8 @@
 | `Security.WechatToolApprovalPreview` | 审批现场的**人类可读预览**（动作/目标/正文前 200 字/风险/可补救性），手机号等已脱敏；**不进审计**（与摘要生命周期不同） |
 | `Security.IWechatToolAuditSink` / `WechatToolAuditRecord` / `NullWechatToolAuditSink` | 审计端口（合规落库点）：拒绝 / 审批拒绝 / 成功 / 失败四条路径各一条记录，只存摘要与事实，**不含入参原文与结果正文** |
 | `Security.WechatToolOutboundGuard`（internal） | 出站唯一出口：净化（`ToolResultSanitizer`）→ 注入标注（中立 4 条 + 中文补充规则）→ JSON 感知预算截断（`ToolResultPipeline`） |
-| `Security.WechatToolDispatcher` | 调用唯一入口：白名单 → 授权 → 审批（写）→ 执行 → **出站纪律** → **审计** → 异常归一（租户切换由回合作用域承担，此处不重复进入） |
+| `Security.WechatToolDispatcher` | 调用唯一入口：白名单 → 授权 → 审批（写）→ 执行 → **出站纪律** → **审计** → 异常归一（租户切换由回合作用域承担，此处不重复进入）；遥测走 `IAgentToolTelemetry` 端口（可空 ⇒ 产品默认实现） |
+| `Diagnostics.WechatToolTelemetry`（internal） | `IAgentToolTelemetry` 的产品实现：工具埋点↔`wechat.ai.tool.*` 的<b>唯一</b>映射点，Agent 级成员转发给容器内的主遥测实现（未装 Agent 时回落空实现） |
 | `AIFunctions.WechatToolFunction`（internal）/ `WechatToolFunctions` | 白名单 → MAF `AIFunction` 投影（自建子类，零反射；`JsonSchema` 只取生成物的 `parameters` 子块） |
 | `ToolArgs`（internal） | 生成物 Args 解包器消费的 helper 集（六个参数形态各一对 Require/Optional） |
 | `Extensions.AddWechatWorkTools(binding[, configurePolicy])` | 装配入口：绑定 + 逐执行器工厂 + 注册表 + 策略 + 执行链 + `IReadOnlyList<AIFunction>` 投影（软缺席：业务域未注册 ⇒ 该域工具不入表） |
@@ -284,7 +285,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/Update-WechatToolG
 |---|---|---|
 | `CallTimeout` | 30 秒（`0` = 不限，合法区间 1..600） | 慢接口（部门全量成员、审批详情）会把整个回合挂住；超时用**链接令牌**真正中止，不是只返回一句文案 |
 | `MaxConcurrentCalls` | 8（`0` = 不限，合法区间 1..64） | 模型可并行发多个 tool_call；不限并发等于让一批工具同时撞 45009，再逐个重试放大 |
-| 指标四项 | 常开 | `wechat.ai.tool.{invocations,duration,result_bytes,truncations}`，Meter 名 `Mud.Wechat`（与 OpenTelemetry 通配一致）。标签只有 `tool`/`risk`/`outcome` 三个低基数维度——**租户与 userid 一律不进标签** |
+| 指标六项 | 常开 | `wechat.ai.tool.{invocations,duration,result_bytes,truncations,retries,approval_requests,approval_wait}`，Meter 名 `Mud.Wechat`（与 OpenTelemetry 通配一致）。标签只有 `tool`/`risk`/`outcome`/`decision` 四个低基数维度——**租户与 userid 一律不进标签** |
+| 遥测收编（1.0.2） | 常开 | 执行路径**只经** `IAgentToolTelemetry`（`Diagnostics.WechatToolTelemetry`）计数：端口内部落到上表指标，调用点不再自记（双记即翻倍）。`risk` 三档由契约表在端口实现内还原（端口本身只有 `isWrite` 布尔）；未进入执行的分支（策略拒绝/审批拒绝/预算超限）不计调用次数，只由审计与 `approval_*` 指标留痕 |
 | 追踪 span | 常开（无监听者时零成本） | span 名固定 `wechat.ai.tool`，工具名进标签 `wechat.ai.tool.name`（62 个工具各占一个 span 名会让追踪后端分组失去意义）；失败/超时置 `Error` 状态 |
 
 超时的区分很关键：只有「本次调用的超时令牌真的触发」才归一为超时错误；执行器自己抛的

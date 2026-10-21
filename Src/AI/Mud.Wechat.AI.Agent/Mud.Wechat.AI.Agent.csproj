@@ -8,8 +8,8 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<!-- Mud.AI 1.0.1（nuget.org 钉版）：Abstractions 经 Agent 传递可见；本包只消费中立的 ToolApiOutcome/ConversationRequest 面。 -->
-		<PackageReference Include="Mud.AI.Agent" Version="1.0.1" />
+		<!-- Mud.AI 1.0.2（nuget.org 钉版）：Abstractions 经 Agent 传递可见；本包只消费中立的 ToolApiOutcome/ConversationRequest 面。 -->
+		<PackageReference Include="Mud.AI.Agent" Version="1.0.2" />
 	</ItemGroup>
 
 	<ItemGroup>

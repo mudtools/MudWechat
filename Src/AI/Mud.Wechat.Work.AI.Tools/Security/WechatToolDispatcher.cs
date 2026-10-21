@@ -7,6 +7,7 @@
 
 using System.Diagnostics;
 using Microsoft.Extensions.Logging;
+using Mud.AI.Abstractions.Observability;
 using Mud.AI.Agent.Tools;
 using Mud.AI.Agent.Tools.Args;
 using Mud.AI.Agent.Tools.Errors;
@@ -70,6 +71,7 @@ public sealed class WechatToolDispatcher : IDisposable
     private readonly IWechatAiCorpContextAccessor? _corpContext;
     private readonly IWechatToolAuditSink _auditSink;
     private readonly WechatToolOutboundGuard _outbound;
+    private readonly IAgentToolTelemetry _telemetry;
 
     private readonly ToolRetryPolicy _retry;
     private readonly ILogger<WechatToolDispatcher>? _logger;
@@ -85,6 +87,10 @@ public sealed class WechatToolDispatcher : IDisposable
     /// <param name="logger">日志（可空）。</param>
     /// <param name="auditSink">审计端口（可空 ⇒ 空实现，零成本）。</param>
     /// <param name="corpContext">回合上下文访问器（可空 ⇒ 授权与审计回落装配期绑定）。</param>
+    /// <param name="telemetry">
+    /// 工具面遥测端口（可空 ⇒ 产品默认实现：指标照常进 <c>wechat.ai.tool.*</c>）。
+    /// <b>执行路径只经此端口计数</b>，不得在调用点再记一次（否则指标翻倍）。
+    /// </param>
     /// <exception cref="ArgumentNullException"><paramref name="registry"/> 或 <paramref name="policy"/> 为 <see langword="null"/>。</exception>
     public WechatToolDispatcher(
         WechatToolRegistry registry,
@@ -93,8 +99,9 @@ public sealed class WechatToolDispatcher : IDisposable
         IWechatToolApprovalGate? approvalGate = null,
         ILogger<WechatToolDispatcher>? logger = null,
         IWechatToolAuditSink? auditSink = null,
-        IWechatAiCorpContextAccessor? corpContext = null)
-        : this(registry, policy, outbound: null, authorizer, approvalGate, logger, auditSink, corpContext)
+        IWechatAiCorpContextAccessor? corpContext = null,
+        IAgentToolTelemetry? telemetry = null)
+        : this(registry, policy, outbound: null, authorizer, approvalGate, logger, auditSink, corpContext, telemetry)
     {
     }
 
@@ -112,7 +119,8 @@ public sealed class WechatToolDispatcher : IDisposable
         IWechatToolApprovalGate? approvalGate,
         ILogger<WechatToolDispatcher>? logger,
         IWechatToolAuditSink? auditSink,
-        IWechatAiCorpContextAccessor? corpContext)
+        IWechatAiCorpContextAccessor? corpContext,
+        IAgentToolTelemetry? telemetry = null)
     {
         _registry = registry ?? throw new ArgumentNullException(nameof(registry));
         Policy = policy ?? throw new ArgumentNullException(nameof(policy));
@@ -121,6 +129,8 @@ public sealed class WechatToolDispatcher : IDisposable
         _logger = logger;
         _auditSink = auditSink ?? NullWechatToolAuditSink.Instance;
         _corpContext = corpContext;
+        // 端口缺省即产品默认实现：直连构造（测试/单进程）时指标行为与既有一致，不因未装配 DI 而丢观测。
+        _telemetry = telemetry ?? WechatToolTelemetry.Instance;
         _outbound = outbound ?? new WechatToolOutboundGuard(policy.MaxResultLength, policy.ContentSafetyMode);
         // 只读限流退避：写工具在 ShouldRetry 内部恒为 false（isWrite ⇒ 零重试），此处不重复判断。
         _retry = new ToolRetryPolicy(policy.Retry, () => DateTimeOffset.UtcNow.Ticks);
@@ -312,6 +322,11 @@ public sealed class WechatToolDispatcher : IDisposable
             _logger?.LogInformation(
                 "工具 {Tool} 第 {Attempt} 次重试（{Category}/{Subtype}，api_code={ApiCode}）。",
                 toolName, attempt + 1, error.Category, error.Subtype, error.ApiCode);
+
+            // 重试埋点归<b>循环所有者</b>（中立 ToolRetryPolicy 是无环判定件，判断与计数不能混在一起）：
+            // 没有它，「限流被退避吸收了多少」只能靠日志条数猜。
+            _telemetry.ToolRetried(toolName, attempt + 1);
+
             await _retry.DelayAsync(_retry.ComputeDelay(attempt, error.RetryAfterSeconds), callToken)
                 .ConfigureAwait(false);
         }
@@ -422,10 +437,8 @@ public sealed class WechatToolDispatcher : IDisposable
         Stopwatch stopwatch)
     {
         var normalized = Normalize(TimeoutError(toolName), toolName, out _);
-        var risk = context is null ? "unknown" : RiskLabel(context.Risk);
-        var outcome = OutcomeLabel(WechatToolAuditOutcome.Failed);
-        WechatToolMetrics.RecordInvocation(toolName, risk, outcome);
-        WechatToolMetrics.RecordDuration(toolName, risk, outcome, stopwatch.Elapsed.TotalMilliseconds);
+        var isWrite = context is not null && context.Risk != WechatToolRisk.Read;
+        ReportInvoked(toolName, isWrite, stopwatch.ElapsedMilliseconds, normalized, "retryable");
         WechatToolMetrics.RecordResult(toolName, WechatToolOutboundGuard.CharsOf(normalized.Text), normalized.Truncated);
         await AuditAsync(toolName, arguments, WechatToolAuditOutcome.Failed, stopwatch.ElapsedMilliseconds, normalized)
             .ConfigureAwait(false);
@@ -470,10 +483,15 @@ public sealed class WechatToolDispatcher : IDisposable
         Stopwatch stopwatch,
         ToolResult? result)
     {
-        var risk = RiskLabel(context.Risk);
-        var outcomeLabel = OutcomeLabel(outcome);
-        WechatToolMetrics.RecordInvocation(context.ToolName, risk, outcomeLabel);
-        WechatToolMetrics.RecordDuration(context.ToolName, risk, outcomeLabel, stopwatch.Elapsed.TotalMilliseconds);
+        ReportInvoked(
+            context.ToolName,
+            context.Risk != WechatToolRisk.Read,
+            stopwatch.ElapsedMilliseconds,
+            result,
+            result?.Error?.Category);
+
+        // 结果体积与截断由执行链直记：中立端口的 ToolInvoked 不携带字符数，而截断率与体积分布同源，
+        // 放到端口就要么丢字符数、要么让截断被计两次。
         WechatToolMetrics.RecordResult(
             context.ToolName,
             WechatToolOutboundGuard.CharsOf(result?.Text),
@@ -481,6 +499,18 @@ public sealed class WechatToolDispatcher : IDisposable
 
         await AuditAsync(context, outcome, stopwatch.ElapsedMilliseconds, result).ConfigureAwait(false);
     }
+
+    /// <summary>
+    /// 执行路径的调用计数与耗时（<b>唯一入口</b>）：经 <see cref="IAgentToolTelemetry"/> 上报，
+    /// 由产品实现落到既有 <c>wechat.ai.tool.*</c> 命名面。
+    /// </summary>
+    /// <remarks>
+    /// <b>为什么收口成一处</b>：调用次数若在多个分支各写一遍，任何一次新增分支都会漏记或重记，
+    /// 而指标偏差不会报错、只会让仪表盘长期撒谎。未进入执行的分支（拒绝/预算/审批拒绝）走
+    /// <see cref="RecordWithoutTiming"/>：它们没有耗时与结果，端口语义也不含「未执行」。
+    /// </remarks>
+    private void ReportInvoked(string toolName, bool isWrite, long durationMs, ToolResult? result, string? errorCategory)
+        => _telemetry.ToolInvoked(toolName, isWrite, durationMs, result?.Truncated ?? false, errorCategory);
 
     /// <summary>只记调用次数（拒绝/不可用等未进入执行的路径：没有耗时与结果体积）。</summary>
     private static void RecordWithoutTiming(string toolName, WechatToolRisk? risk, WechatToolAuditOutcome outcome)
@@ -558,18 +588,40 @@ public sealed class WechatToolDispatcher : IDisposable
         _ => true,
     };
 
+    /// <summary>同步确认门：未注册即拒绝（fail-closed），并把「发起确认 / 确认结果 + 等待时长」上报 HITL 埋点。</summary>
+    /// <remarks>
+    /// <b>为什么埋点在这里</b>：等待时长只有真正等人（或等闸门）的这一处知道；中立续跑闭环只看到「已批准」结论。
+    /// 未注册门也算一次「已发起确认」——它同样是「写工具停在等待确认」的事实，只是永远等不到答复。
+    /// </remarks>
     private async ValueTask<WechatToolApprovalDecision> ApproveAsync(
         WechatToolAuthorizationContext context,
         CancellationToken cancellationToken)
     {
-        if (_approvalGate is null)
+        _telemetry.ApprovalRequested(context.ToolName);
+        var startedAt = Stopwatch.GetTimestamp();
+
+        WechatToolApprovalDecision decision;
+        try
         {
-            return WechatToolApprovalDecision.Reject(
-                "未注册 IWechatToolApprovalGate（写工具按 fail-closed 拒绝）");
+            decision = _approvalGate is null
+                ? WechatToolApprovalDecision.Reject(
+                    "未注册 IWechatToolApprovalGate（写工具按 fail-closed 拒绝）")
+                : await _approvalGate.RequestApprovalAsync(context, cancellationToken).ConfigureAwait(false);
+        }
+        catch
+        {
+            // 异常/取消同样是一次「确认未获批准」的事实：漏记会让拒绝率与等待时长长期偏低。
+            _telemetry.ApprovalResolved(context.ToolName, approved: false, ElapsedMs(startedAt));
+            throw;
         }
 
-        return await _approvalGate.RequestApprovalAsync(context, cancellationToken).ConfigureAwait(false);
+        _telemetry.ApprovalResolved(context.ToolName, decision.IsApproved, ElapsedMs(startedAt));
+        return decision;
     }
+
+    /// <summary>按性能计数器换算毫秒（不分配计时器对象）。</summary>
+    private static long ElapsedMs(long startedAt)
+        => (Stopwatch.GetTimestamp() - startedAt) * 1000L / Stopwatch.Frequency;
 
     /// <summary>拒绝路径：审计（带拒绝事实）后回填中性文案（结构化，便于模型区分「不可用」而非「查不到」）。</summary>
     private async Task<ToolResult> DenyAsync(

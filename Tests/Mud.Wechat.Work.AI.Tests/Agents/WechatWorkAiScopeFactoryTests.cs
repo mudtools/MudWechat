@@ -97,8 +97,87 @@ public class WechatWorkAiScopeFactoryTests
         act2.Should().Throw<ArgumentNullException>();
     }
 
+    [Fact]
+    public void BeginToolScope_WithFactsOnly_ShouldUseCorpScopeWithoutAmbientIdentity()
+    {
+        // Facts 是回合管线的显式输入：即便事件层没建立环境量，作用域也必须按事实切到「应用 + 企业」。
+        var scope = new FakeScope();
+        _switcher.Setup(s => s.UseCorpScope("suite-app", "corp-9", It.IsAny<string?>())).Returns(scope);
+
+        var result = _factory.BeginToolScope(ContextWithFacts(
+            tenantKey: "suite-app",
+            WechatTurnFacts.AppKey,
+            "suite-app",
+            WechatTurnFacts.AuthCorpId,
+            "corp-9"));
+
+        result.Should().BeSameAs(scope);
+        _switcher.Verify(s => s.UseCorpScope("suite-app", "corp-9", It.IsAny<string?>()), Times.Once);
+        _switcher.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public void BeginToolScope_FactsAppKey_ShouldWinOverAmbientIdentity()
+    {
+        var scope = new FakeScope();
+        _switcher.Setup(s => s.UseAppScope("facts-app")).Returns(scope);
+        _corpContext.Current = new WechatToolPrincipal("stale-app");
+
+        _factory.BeginToolScope(ContextWithFacts(
+            tenantKey: "tenant-app",
+            WechatTurnFacts.AppKey,
+            "facts-app"));
+
+        _switcher.Verify(s => s.UseAppScope("facts-app"), Times.Once);
+        _switcher.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public void BeginToolScope_WithFactsMissingCorp_ShouldFallBackToAmbientCorp()
+    {
+        // 逐字段软缺席：Facts 只给应用维度时，企业维度仍可由环境量补齐（不因「Facts 非空」就整份回退）。
+        var scope = new FakeScope();
+        _switcher.Setup(s => s.UseCorpScope("suite-app", "corp-1", It.IsAny<string?>())).Returns(scope);
+        _corpContext.Current = new WechatToolPrincipal("suite-app", authCorpId: "corp-1");
+
+        _factory.BeginToolScope(ContextWithFacts(
+            tenantKey: "suite-app",
+            WechatTurnFacts.AppKey,
+            "suite-app"));
+
+        _switcher.Verify(s => s.UseCorpScope("suite-app", "corp-1", It.IsAny<string?>()), Times.Once);
+        _switcher.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public void BeginToolScope_WithBlankFactValues_ShouldTreatThemAsAbsent()
+    {
+        _switcher.Setup(s => s.UseAppScope("tenant-app")).Returns(new FakeScope());
+
+        _factory.BeginToolScope(ContextWithFacts(
+            tenantKey: "tenant-app",
+            WechatTurnFacts.AppKey,
+            "   ",
+            WechatTurnFacts.AuthCorpId,
+            ""));
+
+        _switcher.Verify(s => s.UseAppScope("tenant-app"), Times.Once);
+        _switcher.VerifyNoOtherCalls();
+    }
+
     private static TurnScopeContext Context(string tenantKey)
         => new(tenantKey, "wechat:corp-app:g:chat-1", "chat-1", "zhangsan", null);
+
+    private static TurnScopeContext ContextWithFacts(string tenantKey, params string[] pairs)
+    {
+        var facts = new Dictionary<string, string?>(StringComparer.Ordinal);
+        for (var i = 0; i + 1 < pairs.Length; i += 2)
+        {
+            facts[pairs[i]] = pairs[i + 1];
+        }
+
+        return new TurnScopeContext(tenantKey, "wechat:corp-app:g:chat-1", "chat-1", "zhangsan", null, facts);
+    }
 
     private sealed class FakeScope : IDisposable
     {

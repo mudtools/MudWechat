@@ -8,10 +8,12 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
+using Mud.AI.Abstractions.Observability;
 using Mud.Wechat.AI.Abstractions.Tools;
 using Mud.Wechat.Work.AI.Agents;
 using Mud.Wechat.Work.AI.Tools;
 using Mud.Wechat.Work.AI.Tools.AIFunctions;
+using Mud.Wechat.Work.AI.Tools.Diagnostics;
 using Mud.Wechat.Work.AI.Tools.Registration;
 using Mud.Wechat.Work.AI.Tools.Security;
 using Mud.Wechat.Work.AI.Tools.Surface;
@@ -78,6 +80,12 @@ public static class WechatWorkToolServiceCollectionExtensions
         // 本包只保留「同步确认门」（IWechatToolApprovalGate，未注册即 fail-closed）。
         services.TryAddSingleton<IWechatToolAuditSink>(NullWechatToolAuditSink.Instance);
 
+        // 工具面遥测（中立端口的产品实现）：执行链<b>只经此端口</b>计数，端口内部再落既有 wechat.ai.tool.* 命名面。
+        // Agent 级成员转发给容器内的主遥测实现（未装 Agent 时回落空实现）——同一个实例交给两条链路，
+        // 避免「回合埋点一套、工具埋点另一套」两份真相。
+        services.TryAddSingleton<IAgentToolTelemetry>(static provider =>
+            new WechatToolTelemetry(provider.GetService<IAgentTelemetry>()));
+
         // 工具面端口（AI-G5 的接缝）：协议层（MCP 等）经此消费「列工具 + 调工具」，
         // 与工具面零编译期引用；实现落在本包（只有这里看得见执行链与生成物契约表）。
         services.TryAddSingleton<IWechatToolSurface, WechatToolSurfaceAdapter>();
@@ -122,7 +130,8 @@ public static class WechatWorkToolServiceCollectionExtensions
             provider.GetService<IWechatToolApprovalGate>(),
             provider.GetService<ILogger<WechatToolDispatcher>>(),
             provider.GetService<IWechatToolAuditSink>(),
-            provider.GetService<IWechatAiCorpContextAccessor>()));
+            provider.GetService<IWechatAiCorpContextAccessor>(),
+            provider.GetService<IAgentToolTelemetry>()));
 
         // 模型可见面 = 白名单投影（看不见即不可试）；Agent 侧按 IReadOnlyList<AIFunction> 注入。
         services.TryAddSingleton(static provider => WechatToolFunctions.Create(provider.GetRequiredService<WechatToolDispatcher>()));

@@ -21,13 +21,18 @@ namespace Mud.Wechat.Work.AI.Agents;
 /// <c>IWechatAiScopeFactory</c> 会形成「第二个上下文槽位」（宿主该初始化哪个？），故本方案不建 WeChat 端口。
 /// </para>
 /// <para>
-/// <b>切换规则</b>（企业维度来自事件层写入的 <see cref="IWechatAiCorpContextAccessor"/>）：
+/// <b>切换规则</b>（企业维度取 <see cref="TurnScopeContext.Facts"/> 优先、<see cref="IWechatAiCorpContextAccessor"/> 兜底）：
 /// <list type="number">
 /// <item>携带企业维度（第三方 / 代开发）⇒ <c>UseCorpScope(appKey, authCorpId)</c>（企业令牌 scope 唯一来源；永久授权码由
 /// <c>CorpTokenManager</c> 按 <c>(appKey, authCorpId)</c> 自行解析，不进入本类型）；</item>
 /// <item>仅应用维度（自建应用）⇒ <c>UseAppScope(appKey)</c>；</item>
 /// <item>应用维度缺失 ⇒ <c>UseDefaultAppScope()</c>（缺省应用，与多应用注册表的默认语义一致）。</item>
 /// </list>
+/// </para>
+/// <para>
+/// <b>Facts 优先是硬规则</b>：<see cref="TurnScopeContext"/> 是回合管线的<b>显式</b>输入，产品事实一旦经
+/// <c>BuildScopeFacts</c> 交出，就以它为准；环境量只在 Facts 缺席时兜底（软缺席，行为与该通道引入前逐字节一致）。
+/// 反过来（环境量优先）会让「管线显式声明了企业维度、工具却按隐式旧值切」的不一致长期潜伏。
 /// </para>
 /// <para>
 /// <b>返回的作用域必须可嵌套还原</b>：两个入口都返回「释放时自动归还进入前上下文」的一次性作用域，
@@ -53,15 +58,20 @@ public sealed class WechatWorkAiScopeFactory : ITurnScopeFactory
     public IDisposable BeginToolScope(TurnScopeContext context)
     {
         var principal = _corpContext.Current;
-        var appKey = string.IsNullOrWhiteSpace(context.TenantKey)
-            ? principal?.AppKey
-            : context.TenantKey;
+        var facts = context.Facts;
 
-        if (principal is not null && principal.HasCorpScope)
+        // 应用维度：Facts 显式值 → 管线中立字段（TenantKey）→ 环境量（旧通道）。
+        var appKey = WechatTurnFacts.Read(facts, WechatTurnFacts.AppKey)
+            ?? (string.IsNullOrWhiteSpace(context.TenantKey) ? principal?.AppKey : context.TenantKey);
+
+        // 企业维度：Facts 显式值 → 环境量（旧通道）。空白一律视为缺席（空白 appKey 会静默落到默认应用）。
+        var authCorpId = WechatTurnFacts.Read(facts, WechatTurnFacts.AuthCorpId) ?? principal?.AuthCorpId;
+
+        if (!string.IsNullOrWhiteSpace(authCorpId))
         {
             return string.IsNullOrWhiteSpace(appKey)
                 ? _switcher.UseDefaultAppScope()
-                : _switcher.UseCorpScope(appKey!, principal.AuthCorpId!);
+                : _switcher.UseCorpScope(appKey!, authCorpId);
         }
 
         return string.IsNullOrWhiteSpace(appKey)

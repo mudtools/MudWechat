@@ -31,7 +31,9 @@ internal static class ToolInvoker
         }
         catch (ToolArgumentException ex)
         {
-            return ToolResult.FromError(ex.Message);
+            // 用未分类错误入口：参数校验失败不带 API 错误分类（无 code/subtype），
+            // 走结构化工厂会逼出一条假的分类信息；这里只要「失败 + 可读文本」两件事。
+            return ToolResult.FromUnclassifiedError(ex.Message);
         }
     }
 }

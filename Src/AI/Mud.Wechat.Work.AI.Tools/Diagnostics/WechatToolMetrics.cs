@@ -106,6 +106,21 @@ internal static class WechatToolMetrics
         unit: "{call}",
         description: "因预算被截断的调用次数（预算调优与列表工具分页的依据）。");
 
+    private static readonly Counter<long> Retries = Meter.CreateCounter<long>(
+        "wechat.ai.tool.retries",
+        unit: "{retry}",
+        description: "工具重试次数（只读限流退避；写工具恒为零）——限流强度与退避有效性的直接读数。");
+
+    private static readonly Counter<long> ApprovalRequests = Meter.CreateCounter<long>(
+        "wechat.ai.tool.approval_requests",
+        unit: "{call}",
+        description: "进入人工确认闸门的调用次数（按工具）——写面使用率与审批负担的依据。");
+
+    private static readonly Histogram<double> ApprovalWait = Meter.CreateHistogram<double>(
+        "wechat.ai.tool.approval_wait",
+        unit: "ms",
+        description: "人工确认等待时长（维度：tool / decision）——审批 SLA 与阻塞时长的唯一读数。");
+
     /// <summary>记录一次调用的结局。</summary>
     /// <param name="tool">工具名。</param>
     /// <param name="risk">风险档标签（read / write / high-risk-write）。</param>
@@ -133,4 +148,27 @@ internal static class WechatToolMetrics
             Truncations.Add(1, new TagList { { "tool", tool } });
         }
     }
+
+    /// <summary>记录一次工具重试（口径：<b>重试次数</b>，不含首次调用）。</summary>
+    /// <param name="tool">工具名。</param>
+    /// <param name="attempt">第几次重试（1 起；只作调试标签之外的上下文，不入指标维度）。</param>
+    public static void RecordRetry(string tool, int attempt)
+    {
+        _ = attempt;
+        Retries.Add(1, new TagList { { "tool", tool } });
+    }
+
+    /// <summary>记录一次人工确认请求已发起。</summary>
+    /// <param name="tool">工具名。</param>
+    public static void RecordApprovalRequest(string tool)
+        => ApprovalRequests.Add(1, new TagList { { "tool", tool } });
+
+    /// <summary>记录一次人工确认结果与等待时长。</summary>
+    /// <param name="tool">工具名。</param>
+    /// <param name="approved">是否批准。</param>
+    /// <param name="waitMs">人类等待毫秒（无法取得时传 0，不得杜撰）。</param>
+    public static void RecordApprovalResolved(string tool, bool approved, long waitMs)
+        => ApprovalWait.Record(
+            waitMs,
+            new TagList { { "tool", tool }, { "decision", approved ? "approved" : "rejected" } });
 }

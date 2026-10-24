@@ -266,5 +266,17 @@ public class WechatToolAuditTests
     private sealed class StubCorpContext : IWechatAiCorpContextAccessor
     {
         public WechatToolPrincipal? Current { get; set; }
+
+        public IDisposable Begin(WechatToolPrincipal? principal)
+        {
+            var previous = Current;
+            Current = principal;
+            return new RestoreScope(this, previous);
+        }
+
+        private sealed class RestoreScope(StubCorpContext owner, WechatToolPrincipal? previous) : IDisposable
+        {
+            public void Dispose() => owner.Current = previous;
+        }
     }
 }

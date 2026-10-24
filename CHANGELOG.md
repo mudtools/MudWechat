@@ -83,6 +83,23 @@
   工具 Schema 由声明式接口在编译期派生、golden 基线 `WechatToolSchemas.golden.txt` 钉死形状。
 - 高危写工具的授权与白名单管控：`WechatToolPolicy` + `WechatToolProfile`（33 槽）+ `IWechatToolApprovalGate` / `WechatToolApprovalDecision`，
   由 `WechatToolDispatcher` 在派发咽喉点执行；注册入口 `AddWechatWorkTools(binding)`。
+- 上游引擎 `Mud.AI.* 1.0.2`（钉版，禁浮动）：`AddAgentRuntimeCore` 之上的四个中立扩展（会话门面 / 回合闸门 / 工具重试 /
+  会话事实）按需接入，能力采纳口径见 `.docs/MudWechatWork-AI-Mud.AI-1.1.0-升级与能力采纳方案-v1.md`。
+- **Agent 运行期遥测**：`WechatAgentTelemetry` 实现中立 `IAgentTelemetry` ⇒ span `wechat.ai.agent.turn` / `run` / `summarize`
+  （租户与会话键只作 Span 属性）、直方图 `wechat.ai.agent.llm.duration`（维度 `agent`）、计数器 `wechat.ai.agent.degraded`
+  （维度 `reason`）；Meter/Source 名恒 `Mud.Wechat`，随既有通配订阅自动被采。
+- **工具面遥测收编**：`WechatToolTelemetry` 实现 `IAgentToolTelemetry`，执行链只经端口计数、端口内部转发到既有
+  `wechat.ai.tool.*` 命名面（命名面零变化）；新增 `wechat.ai.tool.retries` / `approval_requests` / `approval_wait`。
+- **同会话互斥 + 进程内削峰**：`WechatTurnGate`（`KeyedAsyncGate` + `ConcurrencyLimiter`，**先键后配额**）接入回合管线；
+  配置 `WechatAi:MaxConcurrentTurns`（默认 32）与 `WechatAi:TurnQueueTimeoutSeconds`（默认 30，排队超时显式失败）。
+- **HITL 机制侧（挂起 → 批准 → 续跑）**：`IWechatToolApprovalNotifier`（宿主投递端口）+ `WechatToolApprovalChannel`
+  （`IToolApprovalChannel` 实现；未注册投递端口即退化为「只记日志 + 快照可查」，写工具仍 fail-closed）+
+  `WechatToolApprovalResume`（待确认项查询 + 批准回灌续跑，含环境量恢复与 `ApprovalResolved` 埋点）。
+- **回合事实（Facts）打通企业维度**：`WechatAgent` 经 `BuildScopeFacts` 产出 `wechat.app_key` / `wechat.auth_corp_id` /
+  `wechat.open_id`；作用域工厂优先读 `TurnScopeContext.Facts`，缺席时逐字段回退环境量（软缺席）。
+- **AI 域门禁**：`WechatAmbientScopeGuards`（AI 面禁止裸 `AsyncLocal`）、`WechatTelemetryContractGuards`（实现存在 /
+  执行链不双记 / 指标无高基数维度）、`WechatAiContractGuards` 的「上游版本与采纳面同批」；
+  `WechatWorkAiDiContractGuards` 增遥测未退化、HITL 与闸门装配、闸门旋钮投影三条。
 
 #### 分布式存储与可观测性
 
@@ -125,6 +142,10 @@
   仅额外把 `TargetFrameworks` 收为单档 `net8.0` 并显式关闭 trim/AOT 分析器（xunit/Moq 反射会造约 900 条 IL 噪声）。
 - 语言与框架面：全仓 `LangVersion 13.0`、`Nullable enable`；根属性给 `netstandard2.0;net6.0;net8.0;net10.0` 四档
   （支付与开放平台**两条线**为三档、**无 netstandard2.0**，因 `AesGcm` 在 ns2.0 不存在；AI 四工程为 `net8.0;net10.0` 双档）。
+- AI 域依赖升版：`Mud.Wechat.AI.Abstractions` / `Mud.Wechat.AI.Agent` / `Mud.Wechat.Work.AI.Tools`（含 `Mud.AI.Generator` 分析器）/
+  `Mud.Wechat.Work.AI.Mcp` 统一钉 `Mud.AI.* 1.0.2`（传递依赖与 1.0.1 相同，`Directory.Build.props` 传递要求段无需改动）。
+- 产品环境量改走中立 `AmbientScope<T>`：`IWechatAiCorpContextAccessor` 新增 `Begin(principal)` 作用域入口，
+  释放为**还原**而非置空（嵌套回合不再抹掉外层身份）；事件层在排入后台回合前 `using var _ = Begin(...)`，后台回合不再手工复位。
 
 ### Deprecated
 
@@ -160,6 +181,9 @@
 - 回调四线补 `Seal` 封闭守卫与分派收尾归因：处理器异常/超时/中断的分工不再靠运行期巧合。
 - 授权编排的 `appKey` 解析：空白 `appKey` 曾静默落到默认应用，现改为「显式配置的 `DefaultAppKey` → 仅一个应用时该应用 →
   ≥2 应用且未配置则 fail-fast」，消除换码/撤销的误路由。
+- **同会话并发回合丢历史/串台**：AI 回合此前 `acquireGate: null` ⇒ 同一会话的两条消息并发跑两个回合，两边都读到「上一轮的历史」，
+  后写覆盖先写；现由 `WechatTurnGate` 同键串行。
+- **AI 回合过载无上限**：新增在途回合上限与排队超时（超时显式失败），不再无限排队至内存耗尽。
 
 ### Security
 

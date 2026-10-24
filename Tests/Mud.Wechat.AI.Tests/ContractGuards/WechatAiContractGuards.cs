@@ -16,9 +16,15 @@ namespace Mud.Wechat.AI.Tests.ContractGuards;
 /// <c>verify-build.ps1</c> 步骤 2 与 <c>audit-config-keys.ps1</c> 的 <c>-Depth 2</c> 枚举静默漏掉（AOT 假绿）。</para>
 /// <para>AI-G4：<b><c>Mud.AI.*</c> 单一版本 + 钉版</b> —— 全仓版本集合大小 = 1 且不含浮动区间
 /// （上游纪律：产品侧显式钉版、禁浮动；NU1603 在门禁升级为错误）。</para>
+/// <para>AI-G7：<b>上游版本与采纳面同批</b> —— 升级 <c>Mud.AI.*</c> 必须同时更新本文件的期望版本，
+/// 使「版本升了但能力没接」与「能力接了但版本没升」都变成红灯。</para>
+/// <para>（环境量纪律见 <c>WechatAmbientScopeGuards</c>：AI 面禁止裸 <c>AsyncLocal</c>。）</para>
 /// </remarks>
 public class WechatAiContractGuards
 {
+    /// <summary>当前采纳的上游版本（升级 Mud.AI.* 时同批修改此处）。</summary>
+    private const string ExpectedMudAiVersion = "1.0.2";
+
     private static readonly string[] LineSpecificPrefixes =
     {
         "Mud.Wechat.Work",
@@ -139,11 +145,13 @@ public class WechatAiContractGuards
             }))
             .ToList();
 
-        references.Should().NotBeEmpty("AI 域三包必须显式钉版消费 Mud.AI.*（当前期望 Mud.AI.Agent 1.0.1）");
+        references.Should().NotBeEmpty($"AI 域各包必须显式钉版消费 Mud.AI.*（当前期望 {ExpectedMudAiVersion}）");
 
         var versions = references.Select(r => r.Version).Distinct().ToList();
         versions.Should().HaveCount(1,
             "Mud.AI.* 三包必须同版本（Agent 经 NuGet 传递其 Abstractions 依赖，混版会产生程序集重定向歧义）");
+        versions[0].Should().Be(ExpectedMudAiVersion,
+            "版本与采纳面必须同批（升级上游却仍按旧 API 写，或接了新 API 却忘升版本，都只能靠门禁发现）");
 
         foreach (var reference in references)
         {

@@ -8,8 +8,8 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<!-- Mud.AI 1.0.1（nuget.org 钉版）：只取其 ToolResultJson（宽松转义的 JSON 文本出站），不引 Agent 装配。 -->
-		<PackageReference Include="Mud.AI.Agent" Version="1.0.1" />
+		<!-- Mud.AI 1.0.2（nuget.org 钉版）：只取其 ToolResultJson（宽松转义的 JSON 文本出站），不引 Agent 装配。 -->
+		<PackageReference Include="Mud.AI.Agent" Version="1.0.2" />
 
 		<!-- 工具面端口（层 1 中立）：协议层与工具面按 AI-G5 互不引用，只在此端口上相遇；
 		     实现（WechatToolSurfaceAdapter）由 Mud.Wechat.Work.AI.Tools 注册，宿主装配时对接。 -->

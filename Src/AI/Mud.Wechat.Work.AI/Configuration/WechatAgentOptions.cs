@@ -64,6 +64,31 @@ public sealed class WechatAgentOptions
     public int MaxToolCallsPerTurn { get; set; } = 10;
 
     /// <summary>
+    /// 进程内在途回合上限（全局削峰；默认 32）。
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>与工具并发的层次不同</b>：本旋钮限「同时进行的回合数」（一轮 = 一次模型调用 + 其工具链），
+    /// 工具面的 <c>WechatToolPolicy.MaxConcurrentCalls</c> 限「单轮内的工具调用并发」——
+    /// 两者不可合并（合并会让过载从「排队」退化成「一批工具同时撞限流」）。
+    /// </para>
+    /// <para>
+    /// <b>驱动中立闸门</b>：值经 <c>AgentRuntimeOptions.MaxConcurrentTurns</c> 交给
+    /// <c>AddConcurrencyLimiter</c>，因此这里是该阈值的唯一来源（不投影即退回中立默认值，宿主无从调整）。
+    /// </para>
+    /// </remarks>
+    public int MaxConcurrentTurns { get; set; } = 32;
+
+    /// <summary>
+    /// 全局闸门的排队等待上限（秒；默认 30）。
+    /// </summary>
+    /// <remarks>
+    /// 满额时回合按此上限排队，超时即<b>显式失败</b>（fail-fast 而非无限等待）——静默无限排队会把内存中的
+    /// 待办回合堆到 OOM，且用户侧表现为「消息石沉大海」；显式失败至少可在日志与指标里看到过载。
+    /// </remarks>
+    public int TurnQueueTimeoutSeconds { get; set; } = 30;
+
+    /// <summary>
     /// 回合上下文注入的时区（IANA 或 Windows 时区标识；默认 <see cref="DefaultTimeZone"/>）。
     /// </summary>
     /// <remarks>
@@ -134,6 +159,20 @@ public sealed class WechatAgentOptions
         {
             throw new InvalidOperationException(
                 $"WechatAi:{nameof(MaxToolCallsPerTurn)} 为 0（不限制）或 1..100，实际值: {MaxToolCallsPerTurn}");
+        }
+
+        if (MaxConcurrentTurns is < 1 or > 1024)
+        {
+            throw new InvalidOperationException(
+                $"WechatAi:{nameof(MaxConcurrentTurns)} 须在 1..1024 之间，实际值: {MaxConcurrentTurns}");
+        }
+
+        // 下限刻意不是 0：中立 ConcurrencyLimiter 的「不限等待」用 null 表达，传 0 秒会被判为配置错误，
+        // 故本产品面不提供 0（宿主想「几乎不排队」就取 1，语义仍是显式失败而不是无限等待）。
+        if (TurnQueueTimeoutSeconds is < 1 or > 600)
+        {
+            throw new InvalidOperationException(
+                $"WechatAi:{nameof(TurnQueueTimeoutSeconds)} 须在 1..600 之间，实际值: {TurnQueueTimeoutSeconds}");
         }
 
         if (string.IsNullOrWhiteSpace(TimeZone))

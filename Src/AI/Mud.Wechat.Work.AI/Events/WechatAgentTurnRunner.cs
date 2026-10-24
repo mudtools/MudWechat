@@ -25,10 +25,10 @@ namespace Mud.Wechat.Work.AI.Events;
 /// 新族处理器只剩「信封 → <see cref="ConversationAssemblyInput"/>」的抽取代码。
 /// </para>
 /// <para>
-/// <b>身份上下文的写入与复位</b>：<see cref="IWechatAiCorpContextAccessor.Current"/> 在<b>排入前</b>写入、
-/// 调度返回后<b>立即复位</b>——<c>AsyncLocal</c> 随 <c>ExecutionContext</c> 流入后台任务，
-/// 而同请求流上的后续处理器不得读到残留（否则工具身份会串到别的应用）。后台回合结束时再复位一次，
-/// 防止线程池复用把身份带到下一个任务。
+/// <b>身份上下文的进入与还原</b>：在<b>排入前</b>经 <see cref="IWechatAiCorpContextAccessor.Begin"/> 进入作用域、
+/// 调度返回后<b>立即释放</b>——环境量随 <c>ExecutionContext</c> 流入后台任务，而同请求流上的后续处理器不得读到残留
+/// （否则工具身份会串到别的应用）。释放是<b>还原</b>而非置空：嵌套场景（事件轮内再起回合）不会抹掉外层身份；
+/// 后台回合不需要手工复位，它自己的执行上下文随任务结束一同丢弃。
 /// </para>
 /// <para>
 /// <b>异常只可观测</b>：回合失败（模型不可用 / 通道写失败）不得影响已应答的回调，也不得让调度器观察到
@@ -69,17 +69,10 @@ public sealed class WechatAgentTurnRunner(
             throw new ArgumentNullException(nameof(input));
         }
 
-        // 身份写入必须发生在排入之前：AsyncLocal 随 ExecutionContext 流入后台任务。
-        _corpContext.Current = input.Principal;
-        try
-        {
-            return _scheduler.ScheduleAsync(() => RunTurnCoreAsync(input));
-        }
-        finally
-        {
-            // 同请求流上的后续处理器不得读到残留身份。
-            _corpContext.Current = null;
-        }
+        // 身份作用域必须在排入之前进入：环境量随 ExecutionContext 流入后台任务。
+        // using 在排入返回后释放 ⇒ 同请求流上的后续处理器读不到残留身份（还原语义，不误伤外层作用域）。
+        using var _identity = _corpContext.Begin(input.Principal);
+        return _scheduler.ScheduleAsync(() => RunTurnCoreAsync(input));
     }
 
     /// <summary>后台回合体（异常在此收口：只可观测，不影响已应答的回调）。</summary>
@@ -125,11 +118,6 @@ public sealed class WechatAgentTurnRunner(
                 "回合执行失败：appKey={AppKey}, msgid={MsgId}",
                 input.Facts.AppKey,
                 input.Facts.MessageId);
-        }
-        finally
-        {
-            // 线程池复用不得把身份带到下一个任务。
-            _corpContext.Current = null;
         }
     }
 }

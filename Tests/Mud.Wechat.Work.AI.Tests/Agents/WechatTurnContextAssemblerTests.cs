@@ -104,5 +104,17 @@ public class WechatTurnContextAssemblerTests
     private sealed class StubCorp : IWechatAiCorpContextAccessor
     {
         public WechatToolPrincipal? Current { get; set; } = new("corp-app", "corp-1", "zhangsan");
+
+        public IDisposable Begin(WechatToolPrincipal? principal)
+        {
+            var previous = Current;
+            Current = principal;
+            return new RestoreScope(this, previous);
+        }
+
+        private sealed class RestoreScope(StubCorp owner, WechatToolPrincipal? previous) : IDisposable
+        {
+            public void Dispose() => owner.Current = previous;
+        }
     }
 }

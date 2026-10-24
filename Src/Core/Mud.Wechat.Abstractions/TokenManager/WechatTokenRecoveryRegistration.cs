@@ -19,18 +19,18 @@ namespace Mud.Wechat.Abstractions.TokenManager;
 /// <item><b>SSRF 域名白名单</b>：组件 <c>UrlValidator.AddAllowedDomain</c> 为增量并集语义（只加不删、幂等）
 /// ⇒ 统一以 <see cref="WechatApiHosts.AllowedBaseUrlDomains"/> 这一<b>并集单一来源</b>登记，
 /// 多产品线共存/多 SDK 共存互不影响（整体替换入口 <c>ConfigureAllowedDomains</c> 会清空运行期桶，本仓不使用）；</item>
-/// <item><b>errcode 失效判定器</b>：组件选项属性为单槽 ⇒ 统一登记组件
-/// <see cref="Mud.HttpUtils.CompositeTokenInvalidationDetector"/>（消费各产品线自注册的子判定器），
-/// 避免「后注册者覆盖前者」导致某产品线令牌恢复静默失效。</item>
+/// <item><b>errcode 失效判定器</b>：组件选项的单槽属性（<c>TokenInvalidationDetector</c>）为「后注册者覆盖前者」，
+/// 故统一改登记组件<b>追加式集合</b>（<c>AdditionalTokenInvalidationDetectors</c>，与单槽为并集语义），
+/// 各产品线的子判定器互不覆盖，避免某产品线令牌恢复静默失效。</item>
 /// </list>
 /// <para>
 /// 子判定器的注册方式：产品线以
 /// <c>services.TryAddEnumerable(ServiceDescriptor.Singleton&lt;ITokenInvalidationDetector, XxxDetector&gt;())</c>
 /// 登记自身判定器；本方法<b>不</b>直接设置选项属性，而是经
 /// <see cref="WechatTokenRecoveryPostConfigure"/>（<c>IPostConfigureOptions</c>）在所有配置绑定**之后**
-/// 组装组合器，保证不被后续 <c>Configure(section.Bind)</c> 覆盖。
+/// 逐个追加进选项集合，保证不被后续 <c>Configure(section.Bind)</c> 覆盖。
 /// </para>
-/// <para>未登记任何子判定器时，选项保持 <c>null</c> ⇒ 组件退化为「仅 HTTP 401 触发恢复」的默认语义。</para>
+/// <para>未登记任何子判定器时集合为空 ⇒ 组件退化为「仅 HTTP 401 触发恢复」的默认语义。</para>
 /// </remarks>
 public static class WechatTokenRecoveryRegistration
 {
@@ -74,7 +74,7 @@ public static class WechatTokenRecoveryRegistration
         return services;
     }
 
-    /// <summary>登记微信系令牌恢复设施（白名单 + 组合判定器 + 选项校验器）。</summary>
+    /// <summary>登记微信系令牌恢复设施（白名单 + 判定器追加集 + 选项校验器）。</summary>
     /// <param name="services">服务集合。</param>
     /// <returns>服务集合（链式）。</returns>
     /// <exception cref="ArgumentNullException"><paramref name="services"/> 为 null。</exception>
@@ -88,7 +88,7 @@ public static class WechatTokenRecoveryRegistration
         // ① SSRF 白名单：并集单一来源（同值调用幂等）——窄入口，支付线亦经此登记。
         services.AddWechatApiHosts();
 
-        // ② 令牌恢复选项 + 判定器组合器（PostConfigure 保证晚于任何配置绑定）。
+        // ② 令牌恢复选项 + 判定器追加集（PostConfigure 保证晚于任何配置绑定）。
         services.AddOptions<TokenRecoveryOptions>();
         services.TryAddEnumerable(
             ServiceDescriptor.Singleton<IPostConfigureOptions<TokenRecoveryOptions>, WechatTokenRecoveryPostConfigure>());
@@ -110,13 +110,20 @@ public static class WechatTokenRecoveryRegistration
 
 /// <summary>
 /// 令牌恢复选项后置配置：把 DI 中登记的全部
-/// <see cref="ITokenInvalidationDetector"/>（各产品线子判定器）组装为组合器。
+/// <see cref="ITokenInvalidationDetector"/>（各产品线子判定器）追加进选项的追加式集合。
 /// </summary>
 /// <remarks>
+/// <para>
 /// 使用 <c>IPostConfigureOptions</c> 而非 <c>PostConfigure(Action&lt;T&gt;)</c> 是因为前者可由
 /// 容器注入依赖（子判定器集合），且多个产品线调用
 /// <see cref="WechatTokenRecoveryRegistration.AddWechatTokenRecovery"/> 时经
-/// <c>TryAddEnumerable</c> 去重 ⇒ 组合器只组装一次。
+/// <c>TryAddEnumerable</c> 去重 ⇒ 追加只发生一次。
+/// </para>
+/// <para>
+/// 追加而<b>非</b>包装赋值：组件的单槽属性为「后者覆盖前者」语义，多产品线各自赋值会互相踩踏；
+/// 追加式集合与单槽在组件判定链路中按并集求值（任一命中即判失效），且每产品线只增不改他人条目。
+/// 选项实例在每次重建（含配置重载）时重新构造集合 ⇒ 追加不会跨重建累积重复条目。
+/// </para>
 /// </remarks>
 public sealed class WechatTokenRecoveryPostConfigure : IPostConfigureOptions<TokenRecoveryOptions>
 {
@@ -137,9 +144,12 @@ public sealed class WechatTokenRecoveryPostConfigure : IPostConfigureOptions<Tok
             return;
         }
 
-        var detectors = _detectors as IReadOnlyList<ITokenInvalidationDetector> ?? _detectors.ToArray();
-        options.TokenInvalidationDetector = detectors.Count == 0
-            ? null
-            : new Mud.HttpUtils.CompositeTokenInvalidationDetector(detectors.ToArray());
+        foreach (var detector in _detectors)
+        {
+            if (detector != null)
+            {
+                options.AdditionalTokenInvalidationDetectors.Add(detector);
+            }
+        }
     }
 }

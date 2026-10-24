@@ -44,33 +44,29 @@ public class WechatPayProfitSharingContractGuards
     {
         AssertRoute<PostAttribute>(nameof(IWechatPayProfitSharingService.AddReceiverAsync), "/v3/profitsharing/receivers/add");
         AssertRoute<PostAttribute>(nameof(IWechatPayProfitSharingService.CreateOrderAsync), "/v3/profitsharing/orders");
-        AssertRoute<GetAttribute>(nameof(IWechatPayProfitSharingService.QueryOrderAsync), "/v3/profitsharing/orders/{outOrderNo}");
+        AssertRoute<GetAttribute>(nameof(IWechatPayProfitSharingService.QueryOrderAsync), "/v3/profitsharing/orders/{out_order_no}");
 
         // 回退单是**独立资源族** —— 断言锁死「不是 /orders/{out_order_no}/return」这一先验误判。
         AssertRoute<PostAttribute>(nameof(IWechatPayProfitSharingService.CreateReturnOrderAsync), "/v3/profitsharing/return-orders");
-        AssertRoute<GetAttribute>(nameof(IWechatPayProfitSharingService.QueryReturnOrderAsync), "/v3/profitsharing/return-orders/{outReturnNo}");
+        AssertRoute<GetAttribute>(nameof(IWechatPayProfitSharingService.QueryReturnOrderAsync), "/v3/profitsharing/return-orders/{out_return_no}");
         AssertRoute<PostAttribute>(nameof(IWechatPayProfitSharingService.UnfreezeAsync), "/v3/profitsharing/orders/unfreeze");
-        AssertRoute<GetAttribute>(nameof(IWechatPayProfitSharingService.QueryUnsplitAmountAsync), "/v3/profitsharing/transactions/{transactionId}/amounts");
+        AssertRoute<GetAttribute>(nameof(IWechatPayProfitSharingService.QueryUnsplitAmountAsync), "/v3/profitsharing/transactions/{transaction_id}/amounts");
         AssertRoute<GetAttribute>(nameof(IWechatPayProfitSharingService.GetBillAsync), "/v3/profitsharing/bills");
         AssertRoute<PostAttribute>(nameof(IWechatPayProfitSharingService.DeleteReceiverAsync), "/v3/profitsharing/receivers/delete");
 
         // 商户配置查询（最大分账比例）：服务商面，sub_mchid 走 path。
         AssertRoute<GetAttribute>(
             nameof(IWechatPayProfitSharingService.QueryMerchantConfigAsync),
-            "/v3/profitsharing/merchant-configs/{subMchId}");
-        FindMethod(nameof(IWechatPayProfitSharingService.QueryMerchantConfigAsync)).GetParameters()
-            .Where(static p => p.GetCustomAttribute<PathAttribute>() != null)
-            .Select(static p => p.Name)
-            .Should().BeEquivalentTo(new[] { "subMchId" }, "官方 path 参数 sub_mchid 必须走路径替换");
+            "/v3/profitsharing/merchant-configs/{sub_mchid}");
+        AssertPathNames(nameof(IWechatPayProfitSharingService.QueryMerchantConfigAsync), "sub_mchid");
 
         // 查询分账结果：out_order_no 走 path、transaction_id 走 query（官方两参数均必填）。
-        // 占位符名用 C# 参数名（生成器 HTTPCLIENT013 强制占位符 ↔ [Path] 参数名对应），不影响线上报文。
-        var query = FindMethod(nameof(IWechatPayProfitSharingService.QueryOrderAsync));
-        query.GetParameters()
-            .Where(static p => p.GetCustomAttribute<PathAttribute>() != null)
-            .Select(static p => p.Name)
-            .Should().BeEquivalentTo(new[] { "outOrderNo" }, "官方 path 参数 out_order_no 必须走路径替换而非查询串");
-        query.GetParameters()
+        // 占位符与官方逐字对齐，C# 参数名经 [Path(Name)] 映射（占位符只做 URL 替换、不进报文）。
+        AssertPathNames(nameof(IWechatPayProfitSharingService.QueryOrderAsync), "out_order_no");
+        AssertPathNames(nameof(IWechatPayProfitSharingService.QueryReturnOrderAsync), "out_return_no");
+        AssertPathNames(nameof(IWechatPayProfitSharingService.QueryUnsplitAmountAsync), "transaction_id");
+
+        FindMethod(nameof(IWechatPayProfitSharingService.QueryOrderAsync)).GetParameters()
             .SelectMany(static p => p.GetCustomAttributes<QueryAttribute>())
             .Select(static a => a.Name)
             .Should().BeEquivalentTo(new[] { "transaction_id" });
@@ -197,6 +193,16 @@ public class WechatPayProfitSharingContractGuards
     }
 
     // ---- helpers -------------------------------------------------------------
+
+    /// <summary>[Path] 的注入名必须与官方占位符逐字一致（占位符只做 URL 替换，改名对报文零影响）。</summary>
+    private static void AssertPathNames(string methodName, params string[] expectedNames)
+    {
+        FindMethod(methodName).GetParameters()
+            .SelectMany(static p => p.GetCustomAttributes<PathAttribute>())
+            .Select(static a => a.Name)
+            .Should().BeEquivalentTo(expectedNames,
+                $"{methodName} 的 [Path(Name)] 必须对齐官方占位符名（不一致即只能以 C# 参数名充当占位符）");
+    }
 
     private static void AssertRoute<TAttribute>(string methodName, string route)
         where TAttribute : HttpMethodAttribute

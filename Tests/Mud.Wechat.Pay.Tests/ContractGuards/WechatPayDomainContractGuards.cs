@@ -335,15 +335,15 @@ public class WechatPayDomainContractGuards
         {
             "/v3/profitsharing/receivers/add",
             "/v3/profitsharing/orders",
-            "/v3/profitsharing/orders/{outOrderNo}",
+            "/v3/profitsharing/orders/{out_order_no}",
             "/v3/profitsharing/orders/unfreeze",
             "/v3/profitsharing/return-orders",
-            "/v3/profitsharing/return-orders/{outReturnNo}",
-            "/v3/profitsharing/transactions/{transactionId}/amounts",
+            "/v3/profitsharing/return-orders/{out_return_no}",
+            "/v3/profitsharing/transactions/{transaction_id}/amounts",
             "/v3/profitsharing/bills",
             "/v3/profitsharing/receivers/delete",
             // 服务商面商户配置（最大分账比例），sub_mchid 走 path。
-            "/v3/profitsharing/merchant-configs/{subMchId}",
+            "/v3/profitsharing/merchant-configs/{sub_mchid}",
         });
 
         // 支付分 23 端点：服务订单 6（创建/查询/取消/完结/修改/催收扣款）+ 同步 1 + 授权面 4

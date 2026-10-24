@@ -22,12 +22,11 @@ namespace Mud.Wechat.Work.Abstractions.Authentication;
 /// <para>
 /// <b>登记方式</b>：以「子判定器」身份注册为 DI 集合项
 /// （<c>services.TryAddEnumerable(...)</c>），由公用层
-/// <see cref="WechatTokenRecoveryRegistration.AddWechatTokenRecovery"/> 组装为组件
-/// <see cref="Mud.HttpUtils.CompositeTokenInvalidationDetector"/> 并经 <c>IPostConfigureOptions</c> 写入
-/// <c>TokenRecoveryOptions.TokenInvalidationDetector</c>。
+/// <see cref="WechatTokenRecoveryRegistration.AddWechatTokenRecovery"/> 经 <c>IPostConfigureOptions</c>
+/// 追加进 <c>TokenRecoveryOptions.AdditionalTokenInvalidationDetectors</c>（与单槽属性为并集语义）。
 /// </para>
 /// <para>
-/// <b>不可退回「本判定器直接写选项属性」</b>：该选项为<b>单槽</b>，公众号产品线同样需要写入 ⇒
+/// <b>不可退回「本判定器直接写单槽属性」</b>：该属性为<b>单槽</b>，公众号产品线同样需要写入 ⇒
 /// 后注册者会覆盖前者，导致另一方 errcode 令牌恢复静默失效。
 /// </para>
 /// </remarks>

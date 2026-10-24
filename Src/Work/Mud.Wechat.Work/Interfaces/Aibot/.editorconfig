@@ -1,6 +1,9 @@
 # 本目录接口（智能机器人域）为「无令牌端点」既存例外：官方 101138 以 response_code 一次性凭据鉴权，
 # 与任何令牌链路均无关（守卫 AI3 锁定不得声明 [Token]），补 [Token] 会让生成器注入本不该存在的令牌参数。
-# 故以目录级 severity 豁免（Roslyn 标准通道）替代逐文件 #pragma（HTTPCLIENT018 经生成器快照
-# 只读 GlobalOptions，自定义豁免键对生成器侧诊断无效 ⇒ 必须用标准 severity 通道）。
+# 故以目录级 severity 豁免（Roslyn 标准通道）替代逐文件 #pragma。
+# 3.0.9 起 HTTPCLIENT018 由分析器上报：标准 severity 与 .editorconfig 键
+# mud_suppress_token_manager_key_inference 两条通道均可达，本文件保留 severity 以与同目录诊断统一。
+# 不可改用 [Token(Justification)] 消警 —— 该写法令生成器按默认令牌类型注入 access_token 参数，
+# 与「无令牌端点」契约冲突（守卫 AI3）。
 [*.cs]
 dotnet_diagnostic.HTTPCLIENT018.severity = none

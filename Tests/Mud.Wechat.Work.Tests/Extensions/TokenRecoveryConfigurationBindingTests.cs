@@ -19,7 +19,7 @@ namespace Mud.Wechat.Work.Tests.Extensions;
 /// <remarks>
 /// 旧写法直接 <c>Bind(TokenRecoveryOptions)</c>（含接口型判定器属性）会产 SYSLIB1100/1101 并靠项目级
 /// NoWarn 整体静音；新写法绑定仅基元字段的 <see cref="TokenRecoveryConfiguration"/> 再 <c>Apply</c>。
-/// 本组用例锁定三件事：绑定等价（配置值逐字段到达 Options）、Apply 不触碰判定器槽位（PostConfigure
+/// 本组用例锁定三件事：绑定等价（配置值逐字段到达 Options）、Apply 不触碰判定器通道（PostConfigure
 /// 组装不受影响）、热更（配置重载 ⇒ CurrentValue 刷新）不因绑定方式变更而退化（R5）。
 /// </remarks>
 public class TokenRecoveryConfigurationBindingTests
@@ -105,9 +105,9 @@ public class TokenRecoveryConfigurationBindingTests
         options.RefreshDedupWindowSeconds.Should().Be(7, "Apply 必须覆盖全部可绑定字段");
     }
 
-    /// <summary>Apply 不触碰判定器槽位：组合器仍由公用层 PostConfigure 组装（两通道写不同字段，无冲突）。</summary>
+    /// <summary>Apply 不触碰判定器通道：追加集仍由公用层 PostConfigure 装配（两通道写不同字段，无冲突）。</summary>
     [Fact]
-    public void ApplyBinding_ShouldNotClobberCompositeDetector_FromPostConfigure()
+    public void ApplyBinding_ShouldNotClobberAppendedDetectors_FromPostConfigure()
     {
         var (configuration, _) = BuildConfiguration(WorkAppAndRecoverySection(new Dictionary<string, string?>
         {
@@ -121,8 +121,10 @@ public class TokenRecoveryConfigurationBindingTests
         using var provider = services.BuildServiceProvider();
         var options = provider.GetRequiredService<IOptionsMonitor<TokenRecoveryOptions>>().CurrentValue;
 
-        options.TokenInvalidationDetector.Should().BeOfType<Mud.HttpUtils.CompositeTokenInvalidationDetector>(
-            "W-13 的 PostConfigure 组装不得被配置绑定覆盖（Apply 不写判定器槽位）");
+        options.AdditionalTokenInvalidationDetectors.Should().ContainSingle(
+            "公用层 PostConfigure 的追加集装配不得被配置绑定覆盖（Apply 不写判定器通道）");
+        options.TokenInvalidationDetector.Should().BeNull(
+            "单槽属性为多产品线互踩通道，本仓统一改走追加集");
         options.RecoveryMaxRetries.Should().Be(3);
     }
 
@@ -166,6 +168,7 @@ public class TokenRecoveryConfigurationBindingTests
 
         options.RecoveryMaxRetries.Should().Be(defaults.RecoveryMaxRetries);
         options.Enabled.Should().Be(defaults.Enabled);
-        options.TokenInvalidationDetector.Should().NotBeNull("PostConfigure 组装与配置绑定无关（应用已注册时必有判定器）");
+        options.AdditionalTokenInvalidationDetectors.Should().NotBeEmpty(
+            "PostConfigure 追加集装配与配置绑定无关（应用已注册时必有判定器）");
     }
 }

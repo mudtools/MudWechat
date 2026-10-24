@@ -6,6 +6,20 @@
 - **口径来源**：端点 / 接口 / 事件键等计数取自 `Tests/ContractBaseline.cs`（跨域汇总基线）与各线 `Tests/**/ContractGuards/`，
   而非 README 自述。新增能力必须同批更新守卫，故守卫即权威描述。
 
+## [Unreleased]
+
+### Changed
+
+- 上游依赖统一升级：`Mud.HttpUtils` / `Mud.HttpUtils.Generator` 3.0.8 → **3.0.9**（`Src/**` 27 个源工程单版本，
+  G1 守卫断言版本集合大小 = 1；HttpUtils 与 Generator 必须同版本）。3.0.9 对本仓的可观测变化：
+  - **令牌存储读故障降级**：桥接器读穿透按「未命中」处理（回落 API 刷新，EventId 197 + `ReadThroughFailures` 计数），
+    取消异常仍原样上抛；公众号/视频号管理器注释与读降级用例已同批更新（W-46）。
+  - **HTTPCLIENT018 迁至分析器**：8 处目录级屏蔽继续走标准 severity 通道；`mud_suppress_token_manager_key_inference`
+    键通道自 3.0.9 起对 018 生效（经探针实测：`[Token(Justification)]` 成员级迁移会为无令牌端点引入注入面，**否决**）。
+  - **令牌判定链逐判定器异常隔离**：单个判定器抛异常只降级该判定器，不再中断同次判定的后续判定器。
+  - 配置热更新语义不变（per-app `BaseAddress`/`Timeout` 仍在 `ConfigureHttpClient` 每请求重跑；EventId 199 不触发）。
+- 分账 4 个端点路由占位符改为官方名 + `[Path(Name = ...)]`（零契约影响，消除 013 规避注释）。
+
 ## 1.0.0 - 2026-10-18
 
 首个公开发布版本：**七条微信产品线 + AI 能力域 + Demo 体系，共用一个底座**。

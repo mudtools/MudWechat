@@ -117,29 +117,31 @@ public class MpMultiInstanceTokenSharingTests
     }
 
     /// <summary>
-    /// H3：读穿透是 <b>fail-closed</b>——store 读故障从取令牌调用上抛（不静默降级为平台换取）。
+    /// H3：读穿透故障按<b>未命中</b>降级——回落平台换取并写穿存储（组件 3.0.9 起的行为变更）。
     /// </summary>
     /// <remarks>
-    /// 该语义由组件（<c>IAsyncTokenCache.GetAsync</c> 真穿透）决定，SDK 不叠加吞异常装饰器。
-    /// 用例锁定的意义：若将来组件改为 fail-open，本用例会红，从而强制同批评估「存储故障是否应影响
-    /// 令牌获取」这一可用性耦合（见方案文档 §10.4-R6）。
+    /// <para>
+    /// 旧语义为 fail-closed（读异常直接上抛给业务调用方）：存储一次抖动就让整个取令牌链路不可用。
+    /// 组件 3.0.9 起读故障降级为「未命中」——记 Warning（EventId 197）+ <c>ReadThroughFailures</c> 计数，
+    /// 取消异常仍原样传播。本用例锁定降级后的可用性语义：取令牌成功且确实回落了平台换取。
+    /// </para>
+    /// <para>观测口径见 197 日志与计数器；SDK 侧不叠加吞异常装饰器（降级由组件桥接器承载）。</para>
     /// </remarks>
     [Fact]
-    public async Task ReadThroughFailure_ShouldSurfaceStoreError()
+    public async Task ReadThroughFailure_ShouldDegradeToMissAndRefreshFromPlatform()
     {
         var auth = AuthReturning(7200, "UNREACHABLE");
         var manager = new MpStableAccessTokenManager(
             auth.Object, Options.Create(Config()), NullLogger<MpStableAccessTokenManager>.Instance,
             new ReadFailingTokenStore());
 
-        var act = async () => await manager.GetTokenAsync();
-        await act.Should().ThrowAsync<InvalidOperationException>()
-            .WithMessage("*store unavailable*");
+        (await manager.GetTokenAsync()).Should().Be("UNREACHABLE",
+            "读穿透故障降级为未命中后必须回落平台换取，而不是把存储异常抛给业务调用方");
 
         auth.Verify(
             a => a.GetStableTokenAsync(It.IsAny<MpStableTokenRequest>(), It.IsAny<CancellationToken>()),
-            Times.Never,
-            "读穿透失败时不得绕过存储直接向平台换取（当前为 fail-closed 语义）");
+            Times.Once,
+            "降级路径必须真的向平台换取一次（缓存未命中语义）");
     }
 
     /// <summary>H4：无持久化仓储时走纯进程内缓存（读穿透不参与）。</summary>

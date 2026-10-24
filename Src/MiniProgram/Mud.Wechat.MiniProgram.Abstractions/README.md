@@ -17,7 +17,7 @@
 
 ## 依赖
 
-`Mud.Wechat.Abstractions`（叶层）+ `Mud.Wechat.MiniProgram.DataModels` + `Mud.Wechat.OfficialAccount.Abstractions`（跨线唯一允许的边）+ `Mud.HttpUtils` 3.0.8（`.Generator` 3.0.8 仅分析器，`PrivateAssets=all`）。
+`Mud.Wechat.Abstractions`（叶层）+ `Mud.Wechat.MiniProgram.DataModels` + `Mud.Wechat.OfficialAccount.Abstractions`（跨线唯一允许的边）+ `Mud.HttpUtils` 3.0.9（`.Generator` 3.0.9 仅分析器，`PrivateAssets=all`）。
 
 **禁止**引用公众号主包 / DataModels / Callback（MP-X1 / MP-X5 守卫锁定）。`Mud.HttpUtils` 与 `.Generator` 版本须全仓单一（通用守卫 G1，`NU1605` 视为错误）。
 

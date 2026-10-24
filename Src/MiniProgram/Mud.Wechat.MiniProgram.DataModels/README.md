@@ -42,6 +42,6 @@ dotnet build Src/MiniProgram/Mud.Wechat.MiniProgram.DataModels -c Release -f net
 
 ## 依赖
 
-`Mud.Wechat.Abstractions`（叶层，仅取 `IWechatApiResponse`）+ `Mud.HttpUtils.Attributes` 3.0.8（零依赖特性包）+ `Mud.HttpUtils.Generator` 3.0.8（仅分析器，`PrivateAssets=all`）。与 `Mud.HttpUtils` 主包版本须全仓单一（通用守卫 G1）。
+`Mud.Wechat.Abstractions`（叶层，仅取 `IWechatApiResponse`）+ `Mud.HttpUtils.Attributes` 3.0.9（零依赖特性包）+ `Mud.HttpUtils.Generator` 3.0.9（仅分析器，`PrivateAssets=all`）。与 `Mud.HttpUtils` 主包版本须全仓单一（通用守卫 G1）。
 
 目标框架继承根 `Directory.Build.props`（`netstandard2.0;net6.0;net8.0;net10.0`、Version `1.0.3`），可打包；本包无 DI 入口、无令牌 / 客户端类型。

@@ -102,18 +102,17 @@ public interface IWechatPayProfitSharingService
     /// <para><b>官方契约</b>：<b>GET</b> <c>/v3/profitsharing/orders/{out_order_no}?transaction_id=…</c>；
     /// path 必带 <c>out_order_no</c>、query 必带 <c>transaction_id</c>（官方两参数均标注必填）。</para>
     /// <para>
-    /// <b>占位符写法</b>：路由占位符用的是 <b>C# 参数名</b>（<c>{outOrderNo}</c>）而非官方 <c>out_order_no</c> ——
-    /// 生成器<b>强制</b>「占位符 ↔ <c>[Path]</c> 参数名」一一对应（违反即 <c>HTTPCLIENT013</c>），
-    /// 且占位符名<b>不出现在报文里</b>（只做替换），故对线上契约零影响。与交易域既有端点同款。
+    /// <b>占位符写法</b>：路由占位符逐字对齐官方 <c>out_order_no</c>，C# 参数名与占位符经
+    /// <c>[Path(Name = "out_order_no")]</c> 解耦（占位符名<b>不出现在报文里</b>、只做替换，故对线上契约零影响）。
     /// </para>
     /// <para><b>一接口两用途（官方原文）</b>：既查分账结果，也查<b>解冻剩余资金</b>的执行结果
     /// （解冻请求本身走另一端点，本批未实现）。</para>
     /// <para><b>错误码</b>：含 <c>404 RESOURCE_NOT_EXISTS</c>（记录不存在 ⇒ 检查单号）、
     /// <c>429 FREQUENCY_LIMITED</c>（查询频率过高）。</para>
     /// </remarks>
-    [Get("/v3/profitsharing/orders/{outOrderNo}")]
+    [Get("/v3/profitsharing/orders/{out_order_no}")]
     Task<ProfitSharingOrderResponse> QueryOrderAsync(
-        [Path] string outOrderNo,
+        [Path(Name = "out_order_no")] string outOrderNo,
         [Query("transaction_id")] string transactionId,
         CancellationToken cancellationToken = default);
 
@@ -150,9 +149,9 @@ public interface IWechatPayProfitSharingService
     /// <para><b>终态判定</b>：<c>result</c> 取 <c>PROCESSING</c>（非终态）/ <c>SUCCESS</c> / <c>FAILED</c>；
     /// 与分账单的 <c>state</c>（<c>PROCESSING</c>/<c>FINISHED</c>）是<b>两套枚举</b>，勿混用。</para>
     /// </remarks>
-    [Get("/v3/profitsharing/return-orders/{outReturnNo}")]
+    [Get("/v3/profitsharing/return-orders/{out_return_no}")]
     Task<ProfitSharingReturnOrderResponse> QueryReturnOrderAsync(
-        [Path] string outReturnNo,
+        [Path(Name = "out_return_no")] string outReturnNo,
         [Query("out_order_no")] string outOrderNo,
         CancellationToken cancellationToken = default);
 
@@ -187,9 +186,9 @@ public interface IWechatPayProfitSharingService
     /// 仅 path 参数 <c>transaction_id</c>，无 body / query。<b>用途</b>：分账前先探余额，
     /// 避免 <c>NOT_ENOUGH</c>（分账金额不足）类拒绝（官方常见问题即以此接口确认剩余可分金额）。
     /// </remarks>
-    [Get("/v3/profitsharing/transactions/{transactionId}/amounts")]
+    [Get("/v3/profitsharing/transactions/{transaction_id}/amounts")]
     Task<ProfitSharingAmountsResponse> QueryUnsplitAmountAsync(
-        [Path] string transactionId,
+        [Path(Name = "transaction_id")] string transactionId,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -253,8 +252,8 @@ public interface IWechatPayProfitSharingService
     /// <para><b>用途</b>：分账请求中的<b>分出方分账比例不得超过本接口返回的 <c>max_ratio</c></b>；
     /// 上限由子商户侧的配置决定，服务商不得假定为固定值。</para>
     /// </remarks>
-    [Get("/v3/profitsharing/merchant-configs/{subMchId}")]
+    [Get("/v3/profitsharing/merchant-configs/{sub_mchid}")]
     Task<ProfitSharingMerchantConfigResponse> QueryMerchantConfigAsync(
-        [Path] string subMchId,
+        [Path(Name = "sub_mchid")] string subMchId,
         CancellationToken cancellationToken = default);
 }

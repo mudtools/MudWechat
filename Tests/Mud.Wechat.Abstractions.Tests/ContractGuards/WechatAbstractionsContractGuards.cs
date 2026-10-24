@@ -242,7 +242,8 @@ public class WechatAbstractionsContractGuards
 
     /// <summary>
     /// AB-G5：令牌失效判定器登记单一来源——产品线只能「注册子判定器」，
-    /// 不得直接写 `TokenRecoveryOptions.TokenInvalidationDetector`（单槽属性，后写者覆盖前者）。
+    /// 不得直接写 `TokenRecoveryOptions.TokenInvalidationDetector`（单槽属性，后写者覆盖前者）；
+    /// 公用层亦只向追加集逐条追加（并集语义，多产品线互不覆盖）。
     /// </summary>
     [Fact]
     public void TokenInvalidationDetector_ShouldNotBeAssignedByProductLines()
@@ -257,9 +258,18 @@ public class WechatAbstractionsContractGuards
                 .ToList();
 
             hits.Should().BeEmpty(
-                $"选项属性为单槽，只能由公用层组合器写入；产品线须注册子判定器（ITokenInvalidationDetector）。" +
+                $"选项属性为单槽，只能由公用层经追加集装配；产品线须注册子判定器（ITokenInvalidationDetector）。" +
                 $"实际命中：{string.Join(", ", hits)}");
         }
+
+        // 公用层装配形态锁定：向追加集追加（并集），不写单槽属性（覆盖）。
+        var registration = File.ReadAllText(Path.Combine(
+            GetSolutionRoot(), "Src", "Core", "Mud.Wechat.Abstractions", "TokenManager",
+            "WechatTokenRecoveryRegistration.cs"));
+        registration.Should().Contain("AdditionalTokenInvalidationDetectors.Add(",
+            "公用层必须把子判定器追加进追加集——单槽赋值会让后注册的产品线覆盖前者");
+        registration.Should().NotContain("TokenInvalidationDetector =",
+            "公用层不得写单槽属性（追加集是与单槽并集的编程式注入面）");
     }
 
     /// <summary>
@@ -407,7 +417,7 @@ public class WechatAbstractionsContractGuards
     /// <summary>
     /// 受 AB-G4 / AB-G5 扫描覆盖的产品线源码根：<b>由 slnx /src/ 现场推导</b>（F1，新增产品线零手工登记），
     /// 仅排除 <c>/src/Core/</c>——Core 是「公用层单点登记」的合法居所
-    /// （<c>WechatTokenRecoveryRegistration</c> 的 <c>AddAllowedDomain</c> / 判定器组合器写单槽），
+    /// （<c>WechatTokenRecoveryRegistration</c> 的 <c>AddAllowedDomain</c> / 判定器追加集装配），
     /// 纳入扫描会让守卫扫到 SDK 自身的合法调用点。
     /// </summary>
     private static string[] ProductLineSourceRoots()

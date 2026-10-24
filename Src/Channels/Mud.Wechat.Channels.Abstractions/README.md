@@ -10,7 +10,7 @@
 | 签发通道 | `IChannelsAuthentication` | `GET /cgi-bin/token` + `POST /cgi-bin/stable_token` 双通道；默认**稳定通道**（`ChannelsAppConfig.UseStableToken` 切换） |
 | 多小店 | `AddChannelsApp` / `IChannelsAppManager` / `IChannelsAppContextSwitcher` | 复用 Core 多应用基座按 AppKey 分槽；小店无「授权企业」scope 概念，**不做** `UseCorpScope` |
 | 配置 | `ChannelsAppConfig`（节 `ChannelsApps`） | `AppId` + `AppSecret` 必填（`Validate()` 校验）；`UseStableToken` / `BaseUrl` / `AllowCustomBaseUrl` / `TimeoutSeconds` / `TokenRefreshThreshold` / `IsDefault` 均有真实消费点（audit-config-keys 登记） |
-| 令牌恢复 | `ChannelsTokenInvalidationDetector` | 子判定器身份（`TryAddEnumerable`）接入 Core 组合器；失效码集 `{40001, 40014, 42001}`；`WechatTokenRecovery` 配置节随 `AddChannelsApp(IConfiguration)` 绑定（对齐公众号线） |
+| 令牌恢复 | `ChannelsTokenInvalidationDetector` | 子判定器身份（`TryAddEnumerable`）接入 Core 判定器追加集；失效码集 `{40001, 40014, 42001}`；`WechatTokenRecovery` 配置节随 `AddChannelsApp(IConfiguration)` 绑定（对齐公众号线） |
 | 异常 | `WechatChannelsException` | 继承企微 `WechatWorkException` 同一基类语义，`ThrowIfFailed` + 构造期剥离 query / userinfo |
 
 ## 用法

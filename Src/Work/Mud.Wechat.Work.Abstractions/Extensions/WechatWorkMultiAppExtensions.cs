@@ -99,15 +99,15 @@ public static class WechatWorkMultiAppExtensions
                 + "（重复调用会以最后一次的配置列表覆盖注册表，导致先注册的应用静默丢失）。");
         }
 
-        // 公用层唯一登记点：SSRF 白名单（并集单一来源）+ 令牌恢复判定器组合器 + 选项校验器 +
+        // 公用层唯一登记点：SSRF 白名单（并集单一来源）+ 令牌恢复判定器追加集 + 选项校验器 +
         // 令牌提供器 + 后台刷新框架服务。
-        // 顺序敏感：白名单必须在任何客户端创建前登记；组合判定器经 PostConfigure 组装，
+        // 顺序敏感：白名单必须在任何客户端创建前登记；判定器追加经 PostConfigure 执行，
         // 保证不被后续 TokenRecoveryOptions 配置绑定覆盖。
         services.AddWechatTokenRecovery();
 
-        // 企微 errcode 判定器以「子判定器」身份登记（由公用层组合器统一消费）。
+        // 企微 errcode 判定器以「子判定器」身份登记（由公用层追加进组件判定器追加集统一消费）。
         // 放在 AddWechatApp（而非 AddWechatWorkServices）之后仍可解析：判定器无构造期依赖，
-        // 组合器经 IPostConfigureOptions 在**选项首次解析时**才读取 DI 集合，故注册顺序无关。
+        // PostConfigure 经 IPostConfigureOptions 在**选项首次解析时**才读取 DI 集合，故注册顺序无关。
         services.TryAddEnumerable(
             ServiceDescriptor.Singleton<ITokenInvalidationDetector, Authentication.WechatTokenInvalidationDetector>());
 
@@ -182,7 +182,7 @@ public static class WechatWorkMultiAppExtensions
             sp.GetRequiredService<IWechatHttpClientFactory>(),
             sp.GetService<ILogger<PerAppWechatAuthenticationFactory>>()));
 
-        // 令牌恢复选项的宿主配置节绑定（选项本体、校验器与判定器组合器由
+        // 令牌恢复选项的宿主配置节绑定（选项本体、校验器与判定器追加集由
         // WechatTokenRecoveryRegistration.AddWechatTokenRecovery 在本方法开头统一登记）。
         // 绑定走"纯 DTO + Apply"两段式（在 Options 的 Configure 委托内联执行，不引入第二个选项缓存）：
         // TokenRecoveryOptions 含接口型判定器属性，直接 Bind 会被配置绑定源生成器判为不可生成

@@ -10,8 +10,8 @@ using System.Text.RegularExpressions;
 namespace Mud.Wechat.OfficialAccount.Tests.ContractGuards;
 
 /// <summary>
-/// 公众号线非契约路由零声明守卫（追踪号 P1-MP-SKIT-CATALOG-VERIFY-04，2026-10-17 公众号缺口核验）：
-/// 断言 50 条路由在 <c>Src/</c> 全部源码内<b>零声明</b>，防「SKIT 扩展仍携带」或「网关还能打通」重新诱导加回。
+/// 公众号线非契约路由零声明守卫（追踪号 P1-MP-SKIT-CATALOG-VERIFY-04，2026-10-17 公众号缺口核验；用户分组 6 条为 2026-10-24 总案 D6 拍板追加）：
+/// 断言 56 条路由在 <c>Src/</c> 全部源码内<b>零声明</b>，防「SKIT 扩展仍携带」或「网关还能打通」重新诱导加回。
 /// <para>
 /// 判据与企微线 <c>WechatNonContractRouteZeroDeclarationContractGuards</c>（RD1）同源——判据是官方文档面，非网关可达性：
 /// </para>
@@ -30,15 +30,21 @@ namespace Mud.Wechat.OfficialAccount.Tests.ContractGuards;
 /// 正文仅列 <c>/cv/img/aicrop</c>、<c>/cv/img/qrcode</c> 两个端点，<c>superresolution</c> / <c>高清</c> 命中=false——
 /// 该端点已从图像处理页移除（与 <see cref="MpQueryTokenWhitelistGuard"/> 注释「图像处理 2 端点，superresolution 已下架不建模」一致，
 /// 本守卫补上机制化零声明断言）。</item>
+/// <item><b>用户分组（legacy）6 条</b>（<c>/cgi-bin/groups/*</c>，总案 D6 拍板，追踪号 MASTER-REMEDIATION-2026-10-24）：
+/// 与上述「官方文档面已下架」判据<b>不同类</b>——分组族是**主动裁定不建模**：官方额度页虽仍列「创建/获取/修改分组名/
+/// 移动用户分组」，但标签族（<c>/cgi-bin/tags/*</c>，已全覆盖）是其官方替代形态，分组族属 legacy 接口，
+/// 维护成本高于业务价值（《Mud.Wechat 功能完善与 API 缺陷补齐方案 v1》§2 评审建议「降级 P3 或移除」，
+/// 2026-10-24 拍板移除）。若日后官方复活该族或业务强需，须先撤销本守卫条目并复核官方文档。</item>
 /// </list>
 /// </summary>
 /// <remarks>
-/// 本守卫为「清单即契约」型断言：50 条路由的增减都必须先复核官方文档目录树，不得因网关可达或 SKIT 仍携带而放宽。
+/// 本守卫为「清单即契约」型断言：56 条路由的增减都必须先复核官方文档目录树（或如分组族经总案拍板留痕），
+/// 不得因网关可达或 SKIT 仍携带而放宽。
 /// </remarks>
 public class MpNonContractRouteZeroDeclarationContractGuards
 {
     /// <summary>
-    /// 非契约路由清单（50 条 = 导购 48 + 政务实名认证 1 + 图像高清化 1，判据均为官方文档面已下架）。
+    /// 非契约路由清单（56 条 = 导购 48 + 政务实名认证 1 + 图像高清化 1 + 用户分组 legacy 6）。
     /// </summary>
     private static readonly string[] NonContractRoutes =
     {
@@ -95,6 +101,14 @@ public class MpNonContractRouteZeroDeclarationContractGuards
         "/intp/realname/getauthurl",
         // 图像高清化 1 条：cv/img/superresolution 已从图像处理现行页移除（仅 aicrop / qrcode 保留）。
         "/cv/img/superresolution",
+        // 用户分组（legacy）6 条：总案 D6 拍板主动不建模——标签族已全覆盖为其官方替代，分组族维护成本高于业务价值
+        //（《功能完善与 API 缺陷补齐方案 v1》§2 评审建议移除，2026-10-24 拍板；判据与上面三类「官方下架」不同类）。
+        "/cgi-bin/groups/create",
+        "/cgi-bin/groups/get",
+        "/cgi-bin/groups/getid",
+        "/cgi-bin/groups/update",
+        "/cgi-bin/groups/members/update",
+        "/cgi-bin/groups/members/batchupdate",
     };
 
     /// <summary>
@@ -118,13 +132,13 @@ public class MpNonContractRouteZeroDeclarationContractGuards
         "/cv/img/qrcode",
     };
 
-    /// <summary>契约守卫 MP-NC1：50 条非契约路由清单锁定 + <c>Src/</c> 全量扫描零命中 + 已落位路由正对照。</summary>
+    /// <summary>契约守卫 MP-NC1：56 条非契约路由清单锁定 + <c>Src/</c> 全量扫描零命中 + 已落位路由正对照。</summary>
     [Fact]
     public void NonContractRoutes_ShouldHaveZeroDeclaredRoutes_WhenScannedAcrossSrc()
     {
-        NonContractRoutes.Should().HaveCount(50,
-            "导购 48 + 政务实名认证 1 + 图像高清化 1：清单本身即契约，增删须先复核官方文档目录树（追踪号 P1-MP-SKIT-CATALOG-VERIFY-04）");
-        NonContractRoutes.Distinct(StringComparer.Ordinal).Should().HaveCount(50, "清单内路由不得重复");
+        NonContractRoutes.Should().HaveCount(56,
+            "导购 48 + 政务实名认证 1 + 图像高清化 1 + 用户分组 legacy 6：清单本身即契约，增删须先复核官方文档目录树（或经总案拍板留痕，追踪号 P1-MP-SKIT-CATALOG-VERIFY-04 / MASTER-REMEDIATION-2026-10-24）");
+        NonContractRoutes.Distinct(StringComparer.Ordinal).Should().HaveCount(56, "清单内路由不得重复");
 
         var routeRegex = new Regex(@"\[(?:Get|Post|Put|Delete|Patch)\(""([^""]+)""\)\]",
             RegexOptions.Compiled | RegexOptions.CultureInvariant);
@@ -160,8 +174,9 @@ public class MpNonContractRouteZeroDeclarationContractGuards
             "MP-NC1 的扫描必须能捕获本仓已声明的相邻路由（否则正则/扫描根漂移会让零声明断言静默恒真）");
 
         offenders.Should().BeEmpty(
-            "50 条路由不构成公众号应用侧 HTTP 契约（官方文档目录已移除：导购整域 301 下架 + 政务实名认证/图像高清化小节删除），" +
-            "本仓不得在任何产品线接口上声明（SKIT 仍携带只是历史镜像，追踪号 P1-MP-SKIT-CATALOG-VERIFY-04）");
+            "56 条路由不构成公众号应用侧 HTTP 契约（官方文档目录已移除：导购整域 301 下架 + 政务实名认证/图像高清化小节删除；" +
+            "用户分组族经总案 D6 拍板 legacy 不建模，标签族为官方替代），" +
+            "本仓不得在任何产品线接口上声明（SKIT 仍携带只是历史镜像，追踪号 P1-MP-SKIT-CATALOG-VERIFY-04 / MASTER-REMEDIATION-2026-10-24）");
     }
 
     /// <summary>解决方案根目录（向上查找 Mud.Wechat.slnx）。</summary>

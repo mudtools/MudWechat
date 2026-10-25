@@ -93,7 +93,7 @@ public class WechatWorkAiDiContractGuards
         services.AddSingleton(NewChatClient());
         services.AddSingleton(Mock.Of<IWechatAppContextSwitcher>());
         services.AddSingleton(Mock.Of<IWechatWorkInternalAibotService>());
-        services.AddWechatWorkAgent(o => o.SessionTtlSeconds = 60);
+        services.AddWechatWorkAgent(o => o.SessionTtlSeconds = 600);
 
         using var provider = services.BuildServiceProvider(ValidateScopesOption());
 
@@ -108,7 +108,7 @@ public class WechatWorkAiDiContractGuards
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
                 ["WechatAi:Instructions"] = "自定义指令",
-                ["WechatAi:SessionTtlSeconds"] = "120",
+                ["WechatAi:SessionTtlSeconds"] = "1200",
                 ["WechatAi:MaxHistoryMessages"] = "20",
             })
             .Build();
@@ -124,7 +124,7 @@ public class WechatWorkAiDiContractGuards
         var options = provider.GetRequiredService<IOptions<WechatAgentOptions>>().Value;
 
         options.Instructions.Should().Be("自定义指令");
-        options.SessionTtlSeconds.Should().Be(120);
+        options.SessionTtlSeconds.Should().Be(1200);
         options.MaxHistoryMessages.Should().Be(20);
     }
 

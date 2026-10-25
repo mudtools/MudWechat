@@ -158,15 +158,15 @@ public class WechatServiceCollectionExtensionsTests
         using var provider = BuildProvider();
 
         var options = provider.GetRequiredService<IOptionsMonitor<TokenRecoveryOptions>>().CurrentValue;
-        options.TokenInvalidationDetector.Should().NotBeNull("PostConfigure 保证每次快照携带判定器");
+        options.AdditionalTokenInvalidationDetectors.Should().NotBeEmpty(
+            "PostConfigure 保证每次快照携带判定器");
 
-        // 跨产品线共存约束：选项属性是单槽，必须由公用层组合器持有，
+        // 跨产品线共存约束：单槽属性为「后者覆盖前者」，公用层只向追加集逐条追加，
         // 各产品线以「子判定器」身份登记（否则公众号产品线写入时会覆盖本判定器）。
-        options.TokenInvalidationDetector.Should().BeOfType<Mud.HttpUtils.CompositeTokenInvalidationDetector>(
-            "组合器为组件 3.0.4+ 公共实现（自建组合器已删除）");
-        provider.GetServices<Mud.HttpUtils.ITokenInvalidationDetector>()
+        options.TokenInvalidationDetector.Should().BeNull("本仓统一走追加集，不占用单槽属性");
+        options.AdditionalTokenInvalidationDetectors
             .Should().ContainSingle(d => d is WechatTokenInvalidationDetector,
-                "企微判定器以子判定器身份登记，由组合器统一消费");
+                "企微判定器以子判定器身份登记，由追加集统一消费");
     }
 
     [Fact]

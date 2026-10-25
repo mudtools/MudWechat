@@ -142,8 +142,8 @@ public class MudHttpUtilsUpgradeSmokeTests
         var options = new TokenRecoveryOptions
         {
             RecoveryMaxRetries = 1,
-            TokenInvalidationDetector = new WechatErrcodeDetector(),
         };
+        options.AdditionalTokenInvalidationDetectors.Add(new WechatErrcodeDetector());
         var executor = new TokenRecoveryExecutor(managerMock.Object, new FakeOptionsMonitor { CurrentValue = options });
 
         var sentRequests = new List<HttpRequestMessage>();
@@ -173,8 +173,8 @@ public class MudHttpUtilsUpgradeSmokeTests
         var options = new TokenRecoveryOptions
         {
             RecoveryMaxRetries = 1,
-            TokenInvalidationDetector = detector,
         };
+        options.AdditionalTokenInvalidationDetectors.Add(detector);
         var executor = new TokenRecoveryExecutor(managerMock.Object, new FakeOptionsMonitor { CurrentValue = options });
 
         var sendCount = 0;

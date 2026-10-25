@@ -361,7 +361,7 @@ public class WechatWorkServiceBuilder
     /// </summary>
     /// <remarks>
     /// errcode 令牌失效判定器不在此登记：它已随 <c>AddWechatApp</c>（令牌基础设施装配）以子判定器身份注册，
-    /// 由公用层组合器统一消费（与公众号产品线对称；该选项属性为单槽，两产品线各自写入会互相覆盖）。
+    /// 由公用层追加进组件判定器追加集统一消费（与公众号产品线对称；单槽属性会让后写入的产品线覆盖前者）。
     /// </remarks>
     public IServiceCollection Build()
     {

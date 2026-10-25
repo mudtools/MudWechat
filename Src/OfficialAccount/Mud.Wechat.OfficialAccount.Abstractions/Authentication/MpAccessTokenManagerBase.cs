@@ -94,8 +94,9 @@ internal abstract class MpAccessTokenManagerBase : TokenManagerBase
     /// 故冷启动即读到其它实例写入的令牌（省一次平台换取 + 更快就绪）。
     /// </para>
     /// <para>
-    /// <b>读穿透为 fail-closed</b>：store 读故障会从本方法上抛（不静默降级为平台换取）。
-    /// 该语义由组件决定，SDK 不叠加吞异常的装饰器——见方案文档 §10.4-R6。
+    /// <b>读穿透故障按未命中降级</b>（组件 3.0.9 起）：store 读异常不再抛给业务调用方，
+    /// 而是记 Warning（EventId 197）+ <c>ReadThroughFailures</c> 计数后回落平台换取并写穿存储；
+    /// 取消异常仍原样传播。降级由组件桥接器承载，SDK 不叠加吞异常的装饰器。
     /// </para>
     /// </remarks>
     public override Task<string> GetTokenAsync(CancellationToken cancellationToken = default)

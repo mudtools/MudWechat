@@ -59,12 +59,12 @@ public class CrossProductLineCoexistenceTests
     }
 
     /// <summary>
-    /// X2：令牌失效判定器为组件组合器（3.0.4+ 公共实现），且同时覆盖两条产品线的失效码集合。
+    /// X2：令牌失效判定器经<b>追加集</b>登记，两条产品线的子判定器同时在场（并集语义，互不覆盖）。
     /// </summary>
     /// <remarks>
-    /// 组件选项属性为<b>单槽</b>：若两条产品线各自 PostConfigure，后注册者会覆盖前者 ⇒
-    /// 一方令牌恢复静默失效。组件组合器无子判定器公开访问器 ⇒ 「两线判定器均已登记」以
-    /// 行为断言锁定：各线子判定器只放行自身域名，两域名同时被放行 ⇔ 两线判定器同时在组合器内。
+    /// 组件选项的单槽属性为「后注册者覆盖前者」：若两条产品线各自 PostConfigure 赋值，一方令牌恢复会静默失效。
+    /// 追加集（<c>AdditionalTokenInvalidationDetectors</c>）与单槽为并集语义、只增不改他线条目 ⇒
+    /// 「两线判定器均已登记」的等价断言是「追加集内容与容器内登记的子判定器逐一同源」。
     /// </remarks>
     [Fact]
     public void TokenInvalidationDetector_ShouldComposeBothProductLines()
@@ -72,19 +72,13 @@ public class CrossProductLineCoexistenceTests
         var services = BuildBothProductLines();
         using var provider = services.BuildServiceProvider();
 
-        var detector = provider.GetRequiredService<IOptions<TokenRecoveryOptions>>().Value.TokenInvalidationDetector;
-        detector.Should().BeOfType<Mud.HttpUtils.CompositeTokenInvalidationDetector>();
+        var options = provider.GetRequiredService<IOptions<TokenRecoveryOptions>>().Value;
+        var registered = provider.GetServices<ITokenInvalidationDetector>().ToList();
 
-        var composite = (Mud.HttpUtils.CompositeTokenInvalidationDetector)detector!;
-
-        // 非同步断言上下文内执行（组合器 API 为 ValueTask，这里同步阻塞以保证用例简洁）。
-        using var qyapi = new System.Net.Http.HttpRequestMessage(
-            System.Net.Http.HttpMethod.Get, "https://qyapi.weixin.qq.com/cgi-bin/gettoken");
-        using var api = new System.Net.Http.HttpRequestMessage(
-            System.Net.Http.HttpMethod.Get, "https://api.weixin.qq.com/cgi-bin/token");
-
-        composite.ShouldInspect(qyapi).Should().BeTrue("企微域名必须被放行（企微子判定器在组合器内）");
-        composite.ShouldInspect(api).Should().BeTrue("公众号域名必须被放行（公众号子判定器在组合器内）");
+        options.TokenInvalidationDetector.Should().BeNull("单槽属性会让后注册的产品线覆盖前者，本仓统一走追加集");
+        registered.Should().HaveCountGreaterThanOrEqualTo(2, "企微与公众号两条产品线各登记一个子判定器");
+        options.AdditionalTokenInvalidationDetectors.Should().BeEquivalentTo(
+            registered, "后置配置必须把全部子判定器追加进追加集（任一命中即判失效，两线互不覆盖）");
     }
 
     /// <summary>X3：后台刷新框架服务只登记一次（组件注册自 3.0.4 起幂等；多产品线各自调用只会有一份）。</summary>

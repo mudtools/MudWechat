@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
 		<Description>微信小店/视频号（channels 生态）SDK 主包：27 个业务域声明式客户端（商品/订单/售后/物流/资金/营销/联盟/会员/直播留资/橱窗/团购核销等）、模块注册器、AOT JsonContext 合并。</Description>
@@ -11,11 +11,11 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Mud.HttpUtils" Version="3.0.8" />
+		<PackageReference Include="Mud.HttpUtils" Version="3.0.9" />
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Mud.HttpUtils.Generator" Version="3.0.8" PrivateAssets="all" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+		<PackageReference Include="Mud.HttpUtils.Generator" Version="3.0.9" PrivateAssets="all" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
 	</ItemGroup>
 
 	<ItemGroup>

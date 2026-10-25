@@ -328,14 +328,17 @@ public class PayServiceBuilder
             [PayModule.Capital] = static s => s.AddCapitalWebApiHttpClient(),
             [PayModule.Lovefeast] = static s => s.AddLovefeastWebApiHttpClient(),
 
-            // 账单模块额外注册**账单下载通道**：它没有 [HttpClientApi] 声明（路由由 download_url 动态给出、
-            // 返回非 JSON），故无对应的 AddBillDownloadWebApiHttpClient()。它依赖 AddPayApp 注册的
-            // IWechatPayHttpClient，宿主若只用 AddPayApp 而不加任何模块则不会被注册 —— 这正是
-            // 「账单下载属账单域」的自然归属（TryAdd 语义：宿主预注册者胜出）。
+            // 账单模块额外注册**账单下载通道**与**账单解密编排器**：下载没有 [HttpClientApi] 声明
+            // （路由由 download_url 动态给出、返回非 JSON），故无对应的 AddBillDownloadWebApiHttpClient()。
+            // 它依赖 AddPayApp 注册的 IWechatPayHttpClient，宿主若只用 AddPayApp 而不加任何模块则不会被注册 ——
+            // 这正是「账单下载属账单域」的自然归属。解密编排器（总案 D3）消费国密端口实现 SM4/SM2 链路，
+            // 未注册端口时 SM 链路 fail-fast（AES/RSA 链路不受影响）（TryAdd 语义：宿主预注册者胜出）。
             [PayModule.Bill] = static s =>
             {
                 s.AddBillWebApiHttpClient();
                 s.TryAddSingleton<IWechatPayBillDownloadService, WechatPayBillDownloadService>();
+                s.TryAddSingleton<IWechatPayBillDecryptor>(static sp => new WechatPayBillDecryptor(
+                    sp.GetService<IWechatSmCryptoProvider>()));
             },
         };
 

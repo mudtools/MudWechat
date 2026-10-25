@@ -149,6 +149,7 @@ public class WechatOpenTelemetryExtensionsTests
         WechatActivitySource.Products.MiniProgram.Should().Be("miniprogram");
         WechatActivitySource.Products.OpenPlatform.Should().Be("openplatform");
         WechatActivitySource.Products.Pay.Should().Be("pay");
+        WechatActivitySource.Products.Channels.Should().Be("channels");
     }
 
     [Fact]

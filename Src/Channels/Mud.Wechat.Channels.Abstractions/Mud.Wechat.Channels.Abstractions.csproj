@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
 		<Description>微信小店/视频号（channels 生态）SDK 抽象包：配置面 ChannelsAppConfig、令牌类型/管理器（Wechat.Channels.AccessToken，双通道 token/stable_token）、多应用基座、异常与错误码、回调信封与载荷契约。小店 AppID 与公众号/小程序 AppID 不互通，令牌域独立（设计方案 v1 §3.2）。</Description>
@@ -12,11 +12,11 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Mud.HttpUtils" Version="3.0.8" />
+		<PackageReference Include="Mud.HttpUtils" Version="3.0.9" />
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Mud.HttpUtils.Generator" Version="3.0.8" PrivateAssets="all" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+		<PackageReference Include="Mud.HttpUtils.Generator" Version="3.0.9" PrivateAssets="all" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
 	</ItemGroup>
 
 	<ItemGroup Condition="'$(TargetFramework)' == 'net8.0' Or '$(TargetFramework)' == 'net10.0'">

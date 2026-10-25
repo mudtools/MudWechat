@@ -79,5 +79,8 @@ public static class WechatActivitySource
 
         /// <summary>微信支付</summary>
         public const string Pay = "pay";
+
+        /// <summary>视频号小店 / 微信小店（Channels 线）</summary>
+        public const string Channels = "channels";
     }
 }

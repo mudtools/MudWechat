@@ -47,7 +47,7 @@ app.MapPost("/wechat/component", async (HttpRequest request, ComponentVerifyTick
 ## 依赖
 
 - `Mud.Wechat.OpenPlatform.Abstractions`、`Mud.Wechat.OpenPlatform.DataModels`、`Mud.Wechat.Abstractions`（Core 共享内核：`WechatCallbackCrypto` 验签解密）
-- `Mud.HttpUtils` 3.0.8、`Mud.HttpUtils.Generator` 3.0.8（Analyzer）
+- `Mud.HttpUtils` 3.0.9、`Mud.HttpUtils.Generator` 3.0.9（Analyzer）
 - `Microsoft.Extensions.Http` 10.0.9（net8.0/net10.0）/ 8.0.1（net6.0）
 - TFM：`net6.0;net8.0;net10.0`——**不含 netstandard2.0**（与 Abstractions 同款收窄：组件 `AddMudHttpClient` / `HttpClientFactoryEnhancedClient` 的最小面，且开放平台凭证链是本仓最新一层，无历史兼容包袱，见 csproj 注释）。
 

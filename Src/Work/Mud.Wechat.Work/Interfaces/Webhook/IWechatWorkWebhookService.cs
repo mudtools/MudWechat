@@ -28,7 +28,8 @@ namespace Mud.Wechat.Work.Interfaces;
 /// 故本域父 / 子接口<b>均不声明 <c>[Token]</c></b> —— 这是「无令牌端点」的第三个既存例外
 /// （前两个为 <see cref="IWechatWorkAibotService"/>：response_code 一次性凭据；
 /// <see cref="IWechatWorkProviderAuthenticationUrl"/>：令牌经显式 Query 参数直传）。
-/// 组件分析器的 HTTPCLIENT018（建议补 <c>[Token]</c>）对本域为不适用告警，已在声明处局部 <c>#pragma</c> 豁免。
+/// 组件分析器的 HTTPCLIENT018（建议补 <c>[Token]</c>）对本域为不适用告警，已由同目录
+/// <c>.editorconfig</c> 的目录级 severity 通道豁免。
 /// </para>
 /// <para>
 /// <b>无令牌 ≠ 不参与多应用切换</b>：<c>TokenManage</c> 只配置应用切换管理器（生成器据此发射
@@ -52,8 +53,9 @@ namespace Mud.Wechat.Work.Interfaces;
 /// </para>
 /// </remarks>
 // HTTPCLIENT018 豁免理由：本域为「无令牌端点」既存例外（官方 91770 以 URL Query 上的 key 为机器人凭据，
-// 与任何令牌链路均无关，见上方 remarks 与守卫 WEB3），分析器唯一消警路径「补 [Token]」会让生成器注入
-// 本不该存在的令牌参数、违反域契约；豁免通道见本工程 csproj 的 F6(b) 声明式开关与同目录 .editorconfig。
+// 与任何令牌链路均无关，见上方 remarks 与守卫 WEB3）。「补 [Token]」不是等价消警路径 —— 该写法使接口级
+// 令牌类型非空，生成器随即为端点发射取令牌与 access_token 参数注入代码，违反域契约（守卫 WEB3 同时锁定）。
+// 豁免通道：同目录 .editorconfig 的目录级 severity（3.0.9 起 018 为分析器诊断，标准通道稳定可达）。
 [HttpClientApi(TokenManage = nameof(IWechatAppManager), IsAbstract = true)]
 public interface IWechatWorkWebhookService
 {

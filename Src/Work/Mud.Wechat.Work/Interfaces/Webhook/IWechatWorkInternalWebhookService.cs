@@ -20,7 +20,8 @@ namespace Mud.Wechat.Work;
 /// <b>无令牌</b>：本接口<b>不声明 <c>[Token]</c></b> —— 端点以 URL Query 上的 <c>key</c> 为机器人凭据
 /// （官方 91770），不属于 <c>access_token</c> / <c>suite_access_token</c> / <c>provider_access_token</c>
 /// 任一令牌链路；故也不进入通用守卫 G5（Query 令牌注入白名单）。组件分析器据此场景发出的
-/// HTTPCLIENT018（建议补 <c>[Token]</c>）为不适用告警，已在声明处局部 <c>#pragma</c> 豁免；
+/// HTTPCLIENT018（建议补 <c>[Token]</c>）为不适用告警，已由同目录 <c>.editorconfig</c> 的目录级
+/// severity 通道豁免；
 /// <c>TokenManage</c> 与父接口保持一致（全仓父接口恒为 <c>nameof(IWechatAppManager)</c>），
 /// 防止生成器以 <c>new</c> 隐藏基类切换成员（HTTPCLIENT028）。
 /// </para>
@@ -40,7 +41,8 @@ namespace Mud.Wechat.Work;
 /// </remarks>
 // HTTPCLIENT018 豁免理由：同父接口 IWechatWorkWebhookService——本域为「无令牌端点」既存例外
 //（官方 91770 以 URL Query 上的 key 为机器人凭据，守卫 WEB3 锁定不得声明 [Token]），
-// 分析器唯一消警路径与本域契约冲突；豁免通道：本目录 .editorconfig 的 dotnet_diagnostic.HTTPCLIENT018.severity = none（目录级标准通道）。
+// 「补 [Token]」消警会令生成器发射取令牌与 access_token 注入代码，与本域契约冲突；
+// 豁免通道：本目录 .editorconfig 的 dotnet_diagnostic.HTTPCLIENT018.severity = none（目录级标准通道）。
 [HttpClientApi(RegistryGroupName = "Webhook",
     TokenManage = nameof(IWechatAppManager), InheritedFrom = nameof(WechatWorkWebhookService))]
 public interface IWechatWorkInternalWebhookService : IWechatWorkWebhookService

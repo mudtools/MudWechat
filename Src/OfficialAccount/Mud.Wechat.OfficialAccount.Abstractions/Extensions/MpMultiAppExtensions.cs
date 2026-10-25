@@ -112,7 +112,7 @@ public static class MpMultiAppExtensions
         services.Configure<JsonSerializerOptions>(options =>
             options.Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping);
 
-        // ② 公用层唯一登记点：SSRF 白名单（并集单一来源）+ 令牌恢复判定器组合器 + 选项校验器 +
+        // ② 公用层唯一登记点：SSRF 白名单（并集单一来源）+ 令牌恢复判定器追加集 + 选项校验器 +
         // 令牌提供器 + 后台刷新框架服务（后者带「已注册即跳过」守卫，多产品线共存时只有一个刷新循环）。
         services.AddWechatTokenRecovery();
 
@@ -183,7 +183,7 @@ public static class MpMultiAppExtensions
             sp.GetRequiredService<IMpHttpClientFactory>(),
             sp.GetService<ILogger<PerAppMpTicketFactory>>()));
 
-        // 公众号 errcode 失效判定器（子判定器身份；由公用层组合器统一消费）。
+        // 公众号 errcode 失效判定器（子判定器身份；由公用层追加进组件判定器追加集统一消费）。
         services.TryAddEnumerable(
             ServiceDescriptor.Singleton<ITokenInvalidationDetector, MpTokenInvalidationDetector>());
 

@@ -25,9 +25,9 @@ namespace Mud.Wechat.Channels.Abstractions.Authentication;
 /// </para>
 /// <para>
 /// <b>登记方式</b>：以「子判定器」身份注册为 DI 集合项，由公用层
-/// <see cref="WechatTokenRecoveryRegistration.AddWechatTokenRecovery"/> 组装为组合判定器写入
-/// <c>TokenRecoveryOptions.TokenInvalidationDetector</c>（该选项为单槽属性，多产品线各自 PostConfigure
-/// 会互相覆盖 ⇒ 子判定器登记是唯一正确形态）。
+/// <see cref="WechatTokenRecoveryRegistration.AddWechatTokenRecovery"/> 追加进
+/// <c>TokenRecoveryOptions.AdditionalTokenInvalidationDetectors</c>（该选项的单槽属性为「后者覆盖前者」，
+/// 多产品线各自 PostConfigure 赋值会互相覆盖 ⇒ 子判定器登记 + 追加集是唯一正确形态）。
 /// </para>
 /// </remarks>
 internal sealed class ChannelsTokenInvalidationDetector : ITokenInvalidationDetector

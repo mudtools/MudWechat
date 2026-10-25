@@ -235,6 +235,9 @@ public class WechatToolTelemetryTests
         private readonly MeterListener _listener;
         private readonly List<(long Value, Dictionary<string, object?> Tags)> _samples = [];
 
+        /// <summary>本用例所在线程（<see cref="MeterListener"/> 回调在「记录线程」上同步执行，据此与并行测试类隔离）。</summary>
+        private readonly int _ownerThreadId = Environment.CurrentManagedThreadId;
+
         private MetricHarness(string instrumentName)
         {
             _listener = new MeterListener
@@ -252,6 +255,14 @@ public class WechatToolTelemetryTests
             _listener.SetMeasurementEventCallback<long>((instrument, value, tags, _) =>
             {
                 if (!string.Equals(instrument.Name, instrumentName, StringComparison.Ordinal))
+                {
+                    return;
+                }
+
+                // 指标是<b>进程级</b>的：并行运行的其它测试类经真实 dispatcher 记录到同一批 instrument，
+                // 只按标签过滤挡不住「同一个工具名」的噪声（contacts.tag.create 被多个用例使用）。
+                // MeterListener 的回调在记录线程上同步触发，故按线程过滤可精确取到本用例自己的样本。
+                if (Environment.CurrentManagedThreadId != _ownerThreadId)
                 {
                     return;
                 }
@@ -274,9 +285,8 @@ public class WechatToolTelemetryTests
         public static MetricHarness StartLong(string instrumentName) => new(instrumentName);
 
         /// <summary>
-        /// 取唯一一条 <paramref name="tool"/> 名下的样本。按 tool 过滤是<b>并行安全</b>要求：
-        /// <see cref="WechatToolTelemetry"/> 是进程级单例，xUnit 并行下其它测试类经
-        /// 真实 dispatcher 的 ToolInvoked 会落进同一监听窗口（不过滤即偶发多样本假红）。
+        /// 取唯一一条 <paramref name="tool"/> 名下的样本。两道过滤缺一不可：线程（见构造函数里的
+        /// <c>_ownerThreadId</c>，挡掉并行测试类的噪声）+ tool（挡掉同一次调用中其它工具的样本）。
         /// </summary>
         public (long Value, Dictionary<string, object?> Tags) SingleSample(string tool)
             => _samples.Where(s => string.Equals(s.Tags.TryGetValue("tool", out var t) ? t as string : null, tool, StringComparison.Ordinal))

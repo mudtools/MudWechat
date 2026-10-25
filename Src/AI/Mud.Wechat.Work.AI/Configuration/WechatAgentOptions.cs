@@ -5,6 +5,8 @@
 //  不得利用本项目从事危害国家安全、扰乱社会秩序、侵犯他人合法权益等法律法规禁止的活动！任何基于本项目开发而产生的一切法律纠纷和责任，我们不承担任何责任！
 // -----------------------------------------------------------------------
 
+using Mud.AI.Abstractions.Approvals;
+
 namespace Mud.Wechat.Work.AI.Configuration;
 
 /// <summary>
@@ -135,6 +137,19 @@ public sealed class WechatAgentOptions
         {
             throw new InvalidOperationException(
                 $"WechatAi:{nameof(SessionTtlSeconds)} 须在 1..604800 之间，实际值: {SessionTtlSeconds}");
+        }
+
+        // 审批快照 TTL 不变式（对齐飞书线 ApprovalTtlInvariantContractGuards 锁定的同一约束）：
+        // 写工具的待确认快照在中立层固定存活 10 分钟（PendingApprovalSnapshot.DefaultTtl），而框架的原始
+        // tool_call 存放在会话状态袋内——会话先于快照过期 ⇒ 续跑时找不到会话，用户批准了但系统不认。
+        // 故会话 TTL 必须不短于快照 TTL（fail-fast 于配置期，而非运行期表现为一次静默失败的续跑）。
+        var minimumSessionTtl = (int)PendingApprovalSnapshot.DefaultTtl.TotalSeconds;
+        if (SessionTtlSeconds < minimumSessionTtl)
+        {
+            throw new InvalidOperationException(
+                $"WechatAi:{nameof(SessionTtlSeconds)} 不得低于审批快照有效期 {minimumSessionTtl} 秒"
+                + "（Mud.AI PendingApprovalSnapshot.DefaultTtl）：会话先于审批快照过期会让「用户已批准」的续跑找不到会话。"
+                + $"实际值: {SessionTtlSeconds}");
         }
 
         if (MaxHistoryMessages is < 1 or > 10_000)

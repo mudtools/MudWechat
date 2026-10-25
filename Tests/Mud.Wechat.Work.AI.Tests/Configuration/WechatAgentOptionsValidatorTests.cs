@@ -96,6 +96,30 @@ public class WechatAgentOptionsValidatorTests
     }
 
     [Fact]
+    public void Validate_SessionTtlShorterThanApprovalSnapshotTtl_ShouldFail()
+    {
+        // 总案 D9（追踪号 MASTER-REMEDIATION-2026-10-24）：审批快照在中立层固定存活 10 分钟
+        // （Mud.AI PendingApprovalSnapshot.DefaultTtl），会话 TTL 短于它 ⇒ 快照比会话活得久，
+        // 续跑时找不到会话（用户批准了但系统不认）。对齐飞书线 ApprovalTtlInvariantContractGuards 的同一不变式。
+        var options = new WechatAgentOptions { SessionTtlSeconds = 599 };
+
+        var result = _validator.Validate(null, options);
+
+        result.Succeeded.Should().BeFalse("会话存活期必须覆盖审批快照有效期（10 分钟），否则「已批准」的续跑会静默失败");
+        result.FailureMessage.Should().Contain(nameof(WechatAgentOptions.SessionTtlSeconds));
+    }
+
+    [Fact]
+    public void Validate_SessionTtlEqualToApprovalSnapshotTtl_ShouldSucceed()
+    {
+        var options = new WechatAgentOptions { SessionTtlSeconds = 600 };
+
+        var result = _validator.Validate(null, options);
+
+        result.Succeeded.Should().BeTrue("下界取等合法：会话恰好覆盖审批快照有效期");
+    }
+
+    [Fact]
     public void Validate_NullOptions_ShouldFail()
     {
         var result = _validator.Validate(null, null!);

@@ -25,14 +25,31 @@ namespace Mud.Wechat.Work.Callback.LongConnection;
 /// <para>
 /// 本状态机<b>仅长连接模式</b>使用；<c>finish</c> 后不得再刷（官方流已终结）。
 /// </para>
+/// <para>
+/// <b>条目保留语义（F4，架构审查报告 v2 P2-2）</b>：条目（无论是否 finish）自首次发送起
+/// <b>窗口 + 宽限（1 分钟）</b>后可被机会式清扫（<see cref="BeginOrRefresh"/> 入口触发、
+/// 至多每 60 秒一轮）。宽限期内行为与「永不清理」逐字节一致（finish 后再刷仍抛「已终结」、
+/// 超窗仍抛「超时窗口」）；超出保留窗后同 id 再刷按<b>新流</b>处理（返回新 req_id）——
+/// 此时官方 10 分钟窗口早已关闭、官方已自动结束该流，任何有界机制都无法把「新流」与
+/// 「历史流残迹」区分（SDK 不可能无限期记住全部历史 id）。注册表随连接对象存活
+/// （应用生命周期单例），无保留窗即无界增长。
+/// </para>
 /// </remarks>
 internal sealed class WechatBotStreamRegistry
 {
     /// <summary>官方窗口：从首次发送起 10 分钟内须 <c>finish=true</c>。</summary>
     internal const int StreamWindowMinutes = 10;
 
+    /// <summary>清扫保留宽限（分钟）：窗口关闭后再保留这么久，供「已终结/超窗」语义在宽限期内原样可观测。</summary>
+    internal const int RetentionSlackMinutes = 1;
+
+    private static readonly TimeSpan SweepInterval = TimeSpan.FromSeconds(60);
+
+    private static readonly TimeSpan RetentionLimit = TimeSpan.FromMinutes(StreamWindowMinutes + RetentionSlackMinutes);
+
     private readonly ConcurrentDictionary<string, StreamEntry> _streams = new(StringComparer.Ordinal);
     private readonly Func<DateTimeOffset> _utcNow;
+    private long _lastSweepTicks;
 
     /// <summary>创建流式状态机。</summary>
     /// <param name="utcNow">时钟缝（测试注入）。</param>
@@ -42,10 +59,11 @@ internal sealed class WechatBotStreamRegistry
     /// <summary>记账一次流式发送：首次创建（返回要使用的 req_id）、后续刷新（返回首次的 req_id 并校验窗口）。</summary>
     /// <param name="streamId">官方 <c>stream.id</c>（非空）。</param>
     /// <param name="reqId">本次发送帧的 req_id（首次发送时被记账为该流的固定 req_id）。</param>
-    /// <param name="finish">本次是否为终结发送（终结后移除记账，流不得再刷）。</param>
+    /// <param name="finish">本次是否为终结发送（终结后流不得再刷）。</param>
     /// <returns>本次发送应使用的 req_id（首次 = <paramref name="reqId"/>，刷新 = 首次的 req_id）。</returns>
     /// <exception cref="InvalidOperationException">
     /// <paramref name="streamId"/> 为空；或该流已 <c>finish</c>；或已超出 10 分钟窗口。</exception>
+    /// <remarks>超出<b>保留窗</b>（窗口 + 宽限）的同 id 按新流处理，见类型 remarks。</remarks>
     public string BeginOrRefresh(string streamId, string reqId, bool finish)
     {
         if (string.IsNullOrEmpty(streamId))
@@ -54,6 +72,7 @@ internal sealed class WechatBotStreamRegistry
         }
 
         var now = _utcNow();
+        SweepExpiredIfNeeded(now);
         while (true)
         {
             if (_streams.TryGetValue(streamId, out var entry))
@@ -100,8 +119,32 @@ internal sealed class WechatBotStreamRegistry
     public string? TryGetReqId(string streamId)
         => _streams.TryGetValue(streamId, out var entry) && !entry.Finished ? entry.ReqId : null;
 
-    /// <summary>当前在册（未终结）的流数（诊断用）。</summary>
+    /// <summary>当前在册条目数（活跃流 + 保留窗内残迹；诊断用）。</summary>
     public int Count => _streams.Count;
+
+    /// <summary>机会式清扫（F4）：节流为至多每 <see cref="SweepInterval"/> 一轮；多线程下偶尔多扫一轮无害。</summary>
+    private void SweepExpiredIfNeeded(DateTimeOffset now)
+    {
+        var nowTicks = now.UtcTicks;
+        if (!ShouldSweep(nowTicks, Interlocked.Read(ref _lastSweepTicks)))
+        {
+            return;
+        }
+
+        Interlocked.Exchange(ref _lastSweepTicks, nowTicks);
+
+        foreach (var pair in _streams)
+        {
+            if (now - pair.Value.FirstSentAt > RetentionLimit)
+            {
+                _streams.TryRemove(pair.Key, out _);
+            }
+        }
+    }
+
+    /// <summary>清扫节流判据（抽为纯函数供单测：60 秒内至多一轮；<c>lastTicks=0</c> 时首轮必扫）。</summary>
+    internal static bool ShouldSweep(long nowTicks, long lastTicks)
+        => nowTicks - lastTicks >= SweepInterval.Ticks;
 
     private sealed class StreamEntry(string reqId, DateTimeOffset firstSentAt)
     {

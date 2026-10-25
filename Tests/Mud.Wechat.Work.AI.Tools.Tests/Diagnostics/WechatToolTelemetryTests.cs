@@ -40,7 +40,7 @@ public class WechatToolTelemetryTests
             truncated: false,
             errorCategory: null);
 
-        var sample = metrics.SingleSample();
+        var sample = metrics.SingleSample(WechatToolNames.ContactsDepartmentGet);
         sample.Value.Should().Be(1, "同一次调用只能计一次（端口 + 执行链双记即翻倍）");
         sample.Tags.Should().ContainKey("risk").WhoseValue.Should().Be("read");
         sample.Tags.Should().ContainKey("outcome").WhoseValue.Should().Be("succeeded");
@@ -58,7 +58,7 @@ public class WechatToolTelemetryTests
             truncated: false,
             errorCategory: "invalid");
 
-        var sample = metrics.SingleSample();
+        var sample = metrics.SingleSample(WechatToolNames.ContactsTagCreate);
         sample.Tags.Should().ContainKey("outcome").WhoseValue.Should().Be("failed");
         sample.Tags.Should().ContainKey("risk").WhoseValue.Should().BeOneOf(
             "write",
@@ -273,8 +273,14 @@ public class WechatToolTelemetryTests
 
         public static MetricHarness StartLong(string instrumentName) => new(instrumentName);
 
-        public (long Value, Dictionary<string, object?> Tags) SingleSample()
-            => _samples.Should().ContainSingle().Which;
+        /// <summary>
+        /// 取唯一一条 <paramref name="tool"/> 名下的样本。按 tool 过滤是<b>并行安全</b>要求：
+        /// <see cref="WechatToolTelemetry"/> 是进程级单例，xUnit 并行下其它测试类经
+        /// 真实 dispatcher 的 ToolInvoked 会落进同一监听窗口（不过滤即偶发多样本假红）。
+        /// </summary>
+        public (long Value, Dictionary<string, object?> Tags) SingleSample(string tool)
+            => _samples.Where(s => string.Equals(s.Tags.TryGetValue("tool", out var t) ? t as string : null, tool, StringComparison.Ordinal))
+                .Should().ContainSingle().Which;
 
         public void Dispose() => _listener.Dispose();
     }

@@ -116,9 +116,30 @@ internal sealed class WechatBotConnection
                 // OCE 一律 break 进 finally 释放（v1 方案 F2：取消不得穿出 RunAsync）。
                 try
                 {
-                    if (_lease != null && !await _lease.TryAcquireAsync(_botKey, _instanceId, LeaseTtl(), lifetime).ConfigureAwait(false))
+                    // R-P1（架构审查报告 v2 P1-2）：夺取路径与续租/会话路径同样纳入通用 catch——
+                    // 租约存储故障（如 Redis 抖动抛 WechatRedisException）按「未夺得」退避重试，
+                    // 不得穿出 RunAsync（BackgroundService 默认 StopHost 会打停宿主，违背「尽力维持」）。
+                    bool acquired = true;
+                    if (_lease != null)
                     {
-                        // 未夺得租约（另一实例持有）：按退避节奏重试，不得建连（否则与持有者乒乓）。
+                        try
+                        {
+                            acquired = await _lease.TryAcquireAsync(_botKey, _instanceId, LeaseTtl(), lifetime).ConfigureAwait(false);
+                        }
+                        catch (OperationCanceledException) when (lifetime.IsCancellationRequested)
+                        {
+                            break;   // 停机取消：进 finally 统一释放
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogWarning(ex, "智能机器人 {BotKey} 夺取连接租约失败（存储异常），按未夺得处理并退避重试。", _botKey);
+                            acquired = false;
+                        }
+                    }
+
+                    if (!acquired)
+                    {
+                        // 未夺得租约（另一实例持有或存储故障）：按退避节奏重试，不得建连（否则与持有者乒乓）。
                         await DelayBeforeRetry(attempt++, lifetime).ConfigureAwait(false);
                         continue;
                     }

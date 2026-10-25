@@ -7,6 +7,8 @@
 
 using System.IO;
 using System.Text;
+using Mud.Wechat.OfficialAccount.Abstractions.Callback;
+using Mud.Wechat.OfficialAccount.Abstractions.Callback.Payloads;
 
 namespace Mud.Wechat.OfficialAccount.Callback.Tests;
 
@@ -321,5 +323,59 @@ public class MpCallbackContractGuards
         lastSealIndex.Should().BeGreaterThan(-1, "UseMpCallback() 必须存在 Seal() 封闭调用");
         lastSealIndex.Should().BeLessThan(middlewareIndex,
             "CB-MP-SEAL：封闭必须先于 UseMiddleware —— 管道构建期即完成封闭，迟封闭等于漏封闭");
+    }
+
+    /// <summary>
+    /// CB-MP-ANALYZER（F7，架构审查报告 v2 P3-5）：公众号档位分析器的<b>硬编码 metadata name</b>
+    /// 必须与真实类型一致——镜像企微侧 CB24 后半形态。
+    /// </summary>
+    /// <remarks>
+    /// 分析器按红线要求<b>不得引用被分析程序集</b>，只能靠字符串 metadata name 识别回调类型。
+    /// OA.Abstractions 改命名空间或改名时 <c>GetTypeByMetadataName</c> 返回 <c>null</c> ⇒
+    /// Mp 档 MUDCB002~005 整体<b>静默空跑</b>（0 诊断、无报错），仅本守卫（反射真实类型）能发现。
+    /// </remarks>
+    [Fact]
+    public void CallbackHandlerAnalyzer_MpMetadataNames_ShouldMatchRuntimeTypes()
+    {
+        var analyzerSource = File.ReadAllText(SourcePath(
+            "Mud.Wechat.Callback.Analyzers", "WechatCallbackHandlerAnalyzer.cs"));
+
+        var expected = new (string Label, string MetadataName)[]
+        {
+            ("Mp 处理器基类", typeof(MpCallbackPayloadHandler<>).FullName!),
+            ("Mp 类型化处理器接口", typeof(IMpCallbackEventHandler<>).FullName!),
+            ("Mp 契约特性", typeof(MpCallbackContractAttribute).FullName!),
+            ("Mp 通用降级载荷", typeof(GenericCallbackPayload).FullName!),
+        };
+
+        foreach (var (label, metadataName) in expected)
+        {
+            metadataName.Should().NotBeNullOrWhiteSpace($"CB-MP-ANALYZER：{label} 的真实类型应可解析");
+            analyzerSource.Should().Contain($"\"{metadataName}\"",
+                $"CB-MP-ANALYZER：{label} 的 metadata name 与真实类型不一致（期望 \"{metadataName}\"）" +
+                "—— 不一致时 GetTypeByMetadataName 返回 null，Mp 档规则静默空跑");
+        }
+    }
+
+    /// <summary>
+    /// CB-MP-ANALYZER-2（F7）：分析器档位数量必须为 2（企微 + 公众号）——将来新增第三线档位时
+    /// 强制到本守卫同批登记，堵住「新档位永远没人锁」的复制缺口。
+    /// </summary>
+    [Fact]
+    public void CallbackHandlerAnalyzer_ShouldHaveExactlyTwoProfiles()
+    {
+        var analyzerSource = File.ReadAllText(SourcePath(
+            "Mud.Wechat.Callback.Analyzers", "WechatCallbackHandlerAnalyzer.cs"));
+
+        analyzerSource.Should().Contain("name: \"企业微信\"", "企微档位必须存在（Profiles[0]）");
+        analyzerSource.Should().Contain("name: \"公众号\"", "公众号档位必须存在（Profiles[1]，本守卫归属线）");
+
+        // 档位构造调用计数：非注释代码行中 "new Profile(" 恰出现 2 次（新增第三档须同批补反射守卫）。
+        var codeLines = analyzerSource.Split('\n')
+            .Where(static l => !l.TrimStart().StartsWith("//", StringComparison.Ordinal));
+        var profileCount = string.Join('\n', codeLines)
+            .Split("new Profile(", StringSplitOptions.None).Length - 1;
+        profileCount.Should().Be(2,
+            "分析器档位应为「企微 + 公众号」两条；新增第三线档位时必须同批补该档位的 metadata name 反射守卫");
     }
 }

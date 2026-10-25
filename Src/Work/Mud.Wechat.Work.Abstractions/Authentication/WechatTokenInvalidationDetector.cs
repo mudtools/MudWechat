@@ -30,6 +30,18 @@ namespace Mud.Wechat.Work.Abstractions.Authentication;
 /// <b>不可退回「本判定器直接写选项属性」</b>：该选项为<b>单槽</b>，公众号产品线同样需要写入 ⇒
 /// 后注册者会覆盖前者，导致另一方 errcode 令牌恢复静默失效。
 /// </para>
+/// <para>
+/// <b>corp 槽补偿失效（F1，架构审查报告 v2 P1-1）</b>：上游恢复管线对
+/// <see cref="TokenManagerBase"/> 派生管理器走 internal 非虚
+/// <c>InvalidateCachedAccessToken(scopes)</c>，null scopes 落 <c>default</c> 槽——而企业级令牌
+/// 永不写 default 槽 ⇒ corp 槽未被失效，<see cref="CorpTokenManager.InvalidateTokenAsync"/>
+/// 的环境补齐覆写在管线内被绕过（40014 自愈空转）。本判定器在「判定为真」处对
+/// <b>access_token 族</b> errcode（40014/42001/42007，不含恰在 default 槽的 42009/42011）
+/// 经 <see cref="IAppContextHolder.Current"/> 直取环境应用的
+/// <see cref="IWechatAppContext.CorpTokenManager"/> 主动失效 corp 槽（按环境补齐 scope），
+/// 补偿后管线的 default 槽失效落空无害、刷新半程命中已清空的 corp 槽 ⇒ 真实刷新。
+/// 补偿失败仅退化为无自愈现状，<b>不影响判定结果</b>。
+/// </para>
 /// </remarks>
 public sealed class WechatTokenInvalidationDetector : ITokenInvalidationDetector
 {
@@ -41,6 +53,31 @@ public sealed class WechatTokenInvalidationDetector : ITokenInvalidationDetector
         WechatErrorCodes.InvalidSuiteAccessToken,     // 42009
         WechatErrorCodes.InvalidProviderAccessToken,  // 42011
     ];
+
+    /// <summary>
+    /// access_token 族失效码（corp 槽补偿失效的族别门控；<b>不含</b> 42009/42011——
+    /// 套件/服务商令牌恰在 default 槽，既有管线失效路径本来就正确）。
+    /// </summary>
+    private static readonly long[] AccessTokenFamilyErrcodes =
+    [
+        WechatErrorCodes.InvalidAccessToken,          // 40014
+        WechatErrorCodes.ExpiredAccessToken,          // 42001
+        WechatErrorCodes.RelatedAccessTokenInvalid,   // 42007
+    ];
+
+    private readonly IServiceProvider? _services;
+
+    /// <summary>创建判定器（手工构造：无补偿失效能力，判定行为不变）。</summary>
+    public WechatTokenInvalidationDetector()
+        : this(null)
+    {
+    }
+
+    /// <summary>创建判定器（DI 注入：启用 corp 槽补偿失效，见类型 remarks）。</summary>
+    /// <param name="serviceProvider">服务提供器（用于解析 <see cref="IAppContextHolder"/>；
+    /// <c>null</c> = 手工构造，补偿静默跳过）。</param>
+    public WechatTokenInvalidationDetector(IServiceProvider? serviceProvider)
+        => _services = serviceProvider;
 
     /// <summary>
     /// 同步预过滤：仅企业微信域名（或显式登记的自定义 BaseUrl 主机）请求参与判定，无关请求零捕获开销。
@@ -77,28 +114,83 @@ public sealed class WechatTokenInvalidationDetector : ITokenInvalidationDetector
     /// 判断响应是否表示令牌失效：解析 JSON 响应体的 errcode 并比对失效码集合
     /// （body 为空——超限 / chunked / 未声明 Content-Length——时回退状态码判定，即返回 false）。
     /// </summary>
-    public ValueTask<bool> IsTokenInvalidAsync(
+    /// <remarks>
+    /// 判定为真且 errcode 属 access_token 族时，先执行 corp 槽补偿失效（见类型 remarks）
+    /// 再返回——补偿失败只记 Warning，不影响判定结果。
+    /// </remarks>
+    public async ValueTask<bool> IsTokenInvalidAsync(
         HttpResponseMessage response,
         ReadOnlyMemory<byte>? body,
         CancellationToken cancellationToken)
     {
         if (body is not { Length: > 0 } captured)
         {
-            return new ValueTask<bool>(false);
+            return false;
         }
 
+        long errcode;
         try
         {
             using var doc = JsonDocument.Parse(captured);
-            var errcode = doc.RootElement.TryGetProperty("errcode", out var e) && e.TryGetInt64(out var code)
+            errcode = doc.RootElement.TryGetProperty("errcode", out var e) && e.TryGetInt64(out var code)
                 ? code
                 : -1;
-            return new ValueTask<bool>(Array.IndexOf(InvalidErrcodes, errcode) >= 0);
         }
         catch (JsonException)
         {
             // 非企业微信 JSON 响应体（如网关错误页）不参与判定（判定器链路异常由组件侧统一降级）。
-            return new ValueTask<bool>(false);
+            return false;
+        }
+
+        var invalid = Array.IndexOf(InvalidErrcodes, errcode) >= 0;
+        if (invalid)
+        {
+            await CompensateCorpScopeInvalidationAsync(errcode, cancellationToken).ConfigureAwait(false);
+        }
+
+        return invalid;
+    }
+
+    /// <summary>
+    /// corp 槽补偿失效（F1）：对 access_token 族失效码，经环境应用上下文直取
+    /// <see cref="IWechatAppContext.CorpTokenManager"/> 主动失效（按环境补齐 scope）。
+    /// </summary>
+    /// <remarks>
+    /// 全程不抛（OCE 重抛除外）：环境无应用 / 非企微上下文 / 自建应用（无 corp 管理器）/
+    /// 手工构造（<c>_services == null</c>）均静默跳过；失效动作幂等，失败仅退化为无自愈现状。
+    /// </remarks>
+    private async Task CompensateCorpScopeInvalidationAsync(long errcode, CancellationToken cancellationToken)
+    {
+        try
+        {
+            if (Array.IndexOf(AccessTokenFamilyErrcodes, errcode) < 0)
+            {
+                return;
+            }
+
+            var holder = _services?.GetService<IAppContextHolder>();
+            if (holder?.Current is not IWechatAppContext context)
+            {
+                return;
+            }
+
+            if (context.CorpTokenManager is not { } corpManager)
+            {
+                return;
+            }
+
+            // 无需读取环境 authCorpId：CorpTokenManager.InvalidateTokenAsync 覆写自会按
+            // 环境（WechatCorpContext）补齐 scope；环境不存在时退化为 default 槽（no-op，无害）。
+            await corpManager.InvalidateTokenAsync(null, cancellationToken).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _services?.GetService<ILoggerFactory>()?.CreateLogger(nameof(WechatTokenInvalidationDetector))
+                ?.LogWarning(ex, "corp 令牌补偿失效失败（退化为无自愈现状，不影响判定结果）。");
         }
     }
 

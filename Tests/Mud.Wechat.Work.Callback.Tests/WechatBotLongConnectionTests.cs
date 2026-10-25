@@ -125,6 +125,76 @@ public class WechatBotLongConnectionTests
         act.Should().Throw<InvalidOperationException>().Which.Message.Should().Contain("stream.id");
     }
 
+    // ---------------------------------------------------------------- 流式记账保留窗（F4）
+
+    [Fact]
+    public void BeginOrRefresh_ShouldThrow_WhenRefreshAfterFinishWithinRetention()
+    {
+        // 现状锁定：宽限期内（窗口 + 1 分钟内）finish 后再刷仍抛「已终结」——清扫不改变既有语义。
+        var now = DateTimeOffset.UtcNow;
+        var registry = new WechatBotStreamRegistry(() => now);
+
+        registry.BeginOrRefresh("s1", "req-1", finish: true);
+
+        var act = () => registry.BeginOrRefresh("s1", "req-2", finish: false);
+        act.Should().Throw<InvalidOperationException>().Which.Message.Should().Contain("finish");
+    }
+
+    [Fact]
+    public void BeginOrRefresh_ShouldTreatAsNewStream_WhenIdReusedBeyondRetention()
+    {
+        // 新边界锁定：时钟推进越过「窗口 + 宽限」后，同 id 被清扫 ⇒ 再刷按新流处理（返回新 req_id）。
+        var now = DateTimeOffset.UtcNow;
+        var clock = now;
+        var registry = new WechatBotStreamRegistry(() => clock);
+
+        registry.BeginOrRefresh("s1", "req-old", finish: false);
+        clock = now.AddMinutes(11).AddMinutes(WechatBotStreamRegistry.RetentionSlackMinutes).AddSeconds(1);
+
+        var reqId = registry.BeginOrRefresh("s1", "req-new", finish: false);
+
+        reqId.Should().Be("req-new", "保留窗外同 id 视为新流（历史残迹已清扫，官方窗口早已关闭）");
+        registry.BeginOrRefresh("s1", "req-again", finish: false).Should().Be("req-new",
+            "新流刷新复用新 req_id（整流同 req_id 契约对新流继续成立）");
+    }
+
+    [Fact]
+    public void Registry_ShouldNotGrowUnbounded_WhenStreamsAbandonedOrFinished()
+    {
+        // 泄漏锁定：批量废弃/终结流 + 时钟推进 + 一次新调用触发清扫 ⇒ Count 回落（应用生命周期单例慢泄漏修复）。
+        var now = DateTimeOffset.UtcNow;
+        var clock = now;
+        var registry = new WechatBotStreamRegistry(() => clock);
+
+        for (var i = 0; i < 20; i++)
+        {
+            registry.BeginOrRefresh($"abandoned-{i}", $"req-{i}", finish: false);   // 废弃流（永不 finish）
+            registry.BeginOrRefresh($"finished-{i}", $"req-{i}", finish: true);     // 终结流
+        }
+
+        registry.Count.Should().Be(40, "保留窗内条目全部在册（语义与现状一致）");
+
+        clock = now.AddMinutes(11).AddMinutes(WechatBotStreamRegistry.RetentionSlackMinutes).AddSeconds(1);
+        registry.BeginOrRefresh("fresh", "req-fresh", finish: false);               // 触发清扫
+
+        registry.Count.Should().Be(1, "超保留窗条目（无论是否 finish）全部被清扫");
+    }
+
+    [Fact]
+    public void Sweep_ShouldBeThrottled_WhenCalledFrequently()
+    {
+        // 节流锁定（纯函数判据直接单测）：60 秒内至多一轮；节流窗口到期（含首轮 lastTicks=0）必扫。
+        var last = DateTimeOffset.UtcNow.UtcTicks;
+
+        WechatBotStreamRegistry.ShouldSweep(last, last).Should().BeFalse("同刻重复调用不得重复清扫");
+        WechatBotStreamRegistry.ShouldSweep(last + TimeSpan.FromSeconds(59).Ticks, last)
+            .Should().BeFalse("60 秒节流窗口内不重复清扫");
+        WechatBotStreamRegistry.ShouldSweep(last + TimeSpan.FromSeconds(60).Ticks, last)
+            .Should().BeTrue("节流窗口到期触发清扫");
+        WechatBotStreamRegistry.ShouldSweep(DateTimeOffset.UtcNow.UtcTicks, 0)
+            .Should().BeTrue("首轮（lastTicks=0）必扫");
+    }
+
     // ---------------------------------------------------------------- 运行器启动校验
 
     private static WechatBotOptions NewBotOptions(string botKey = "bot1") => new()
@@ -181,6 +251,33 @@ public class WechatBotLongConnectionTests
 
         (await act.Should().ThrowAsync<InvalidOperationException>())
             .Which.Message.Should().Contain("Bots");
+    }
+
+    [Fact]
+    public async Task StartAsync_ShouldThrow_WhenWildcardBotChannelCoexistsWithLongConnection()
+    {
+        // R-P3（架构审查报告 v2 P3-3）：通配键「*」条目经 ResolveApp 通配回退可承接任意 botKey 的
+        // Bot 回调 ⇒ 与长连接并存时跨面互斥失效。Validate() 对通配键跳过通道校验，互斥校验必须显式覆盖。
+        var botOptions = NewBotOptions();
+        var callbackOptions = NewCallbackOptions();
+        callbackOptions.Apps[WechatCallbackOptions.WildcardAppKey] = new WechatAppCallbackOptions
+        {
+            PushToken = "token-value",
+            PushEncodingAESKey = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLM",
+            Channel = WechatCallbackChannel.Bot,
+        };
+        var runner = new WechatBotLongConnectionRunner(
+            botOptions,
+            callbackOptions,
+            CreateDispatcher(),
+            lease: null,
+            NullLogger<WechatBotLongConnectionRunner>.Instance);
+
+        Func<Task> act = () => runner.StartAsync(CancellationToken.None);
+
+        (await act.Should().ThrowAsync<InvalidOperationException>())
+            .Which.Message.Should().Contain("通配")
+            .And.Contain("互斥", "通配 Bot 通道与长连接并存必须在启动期 fail-fast");
     }
 
     // ---------------------------------------------------------------- 心跳（F1）
@@ -259,8 +356,43 @@ public class WechatBotLongConnectionTests
     }
 
     [Fact]
-    public async Task RunAsync_ShouldCountBackoffOncePerRound_WhenSessionKeepsFailing()
+    public async Task RunAsync_ShouldNotThrowAndKeepRetrying_WhenLeaseAcquireThrowsStorageException()
     {
+        // R-P1（架构审查报告 v2 P1-2）：租约存储故障（Redis 实现抛 WechatRedisException——
+        // 继承 InvalidOperationException 族）按「未夺得」退避重试，不得穿出 RunAsync
+        // （BackgroundService 默认 StopHost 会打停宿主，违背「尽力维持」注释契约）。
+        // 旧实现该异常直接穿出 ⇒ 本用例对旧代码必红（await run 即抛）。
+        var lease = new FakeLease
+        {
+            AcquireException = new InvalidOperationException("Redis 抖动（模拟 WechatRedisException 形态）"),
+        };
+        var connection = new WechatBotConnection(
+            "bot1",
+            new WechatBotAppOptions
+            {
+                BotId = "BOT-ID",
+                BotSecret = "secret-value",
+                ReconnectBaseDelayMs = 30,
+                ReconnectMaxDelayMs = 60,
+            },
+            CreateDispatcher(),
+            lease,
+            static () => throw new InvalidOperationException("夺取异常不得建连"),
+            "inst1",
+            NullLogger<WechatBotConnection>.Instance);
+
+        using var cts = new CancellationTokenSource();
+        var run = connection.RunAsync(cts.Token);
+        await Task.Delay(200);            // 多轮「夺取失败 → 退避」
+        lease.AcquireCalls.Should().BeGreaterThanOrEqualTo(2, "存储故障按未夺得处理并持续重试（不得打停宿主）");
+
+        await cts.CancelAsync();
+        await run;                        // 不抛（取消不得穿出）
+        lease.ReleaseCalls.Should().Be(1, "停机释放路径不变");
+    }
+
+    [Fact]
+    public async Task RunAsync_ShouldCountBackoffOncePerRound_WhenSessionKeepsFailing()    {
         // F13 回归：attempt 每轮至多一次自增 —— 旧实现 finally + 底部双自增，日志跳号（第 1 次 ⇒ 第 3 次）。
         var lease = new FakeLease { AcquireResult = true };
         var logger = new CapturingLogger<WechatBotConnection>();
@@ -460,9 +592,17 @@ public class WechatBotLongConnectionTests
 
         public bool RenewResult { get; set; } = true;
 
+        /// <summary>非空时 <see cref="TryAcquireAsync"/> 抛该异常（模拟 Redis 存储故障形态）。</summary>
+        public Exception? AcquireException { get; set; }
+
         public Task<bool> TryAcquireAsync(string botKey, string instanceId, TimeSpan ttl, CancellationToken cancellationToken = default)
         {
             AcquireCalls++;
+            if (AcquireException != null)
+            {
+                throw AcquireException;
+            }
+
             return Task.FromResult(AcquireResult);
         }
 

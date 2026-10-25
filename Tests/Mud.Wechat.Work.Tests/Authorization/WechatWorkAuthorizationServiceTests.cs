@@ -739,6 +739,46 @@ public class WechatWorkAuthorizationServiceTests
         auth.AuthCorpId.Should().Be(AuthCorpId);
     }
 
+    [Fact]
+    public async Task ExchangeAuthCodeAsync_ShouldJoinExistingFlight_WhenLoserCancelsDuringInFlightExchange()
+    {
+        // P2-R（架构审查报告 v2 P2-1）：换码飞行中的调用者因自身 CT 取消（OCE）后，
+        // 「仅创建者移除」不得误摘他人正在飞行的条目——否则第三个同键调用会重复发起换码
+        // （一次性 auth_code 二次消费必失败）。序列：A 发起（发送桩挂起）→ B 同键短超时取消 →
+        // C 到达 → 放行发送桩 ⇒ C 必须加入 A 的飞行并拿到 A 的结果，发送桩只被调用一次。
+        var host = CreateHost();
+        using var provider = host.Provider;
+
+        var gate = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        host.ProviderAuth
+            .Setup(m => m.GetPermanentCodeV2Async(It.IsAny<GetPermanentCodeRequest>(), It.IsAny<CancellationToken>()))
+            .Returns(async () =>
+            {
+                await gate.Task;
+                return PermanentCodeResponse("perm-join");
+            });
+
+        var first = host.Service.ExchangeAuthCodeAsync("auth-code-join", SuiteAppKey);
+
+        // B：同键、短超时——在 A 飞行期间被取消（OCE）。
+        using var loserCts = new CancellationTokenSource(TimeSpan.FromMilliseconds(80));
+        var loser = host.Service.ExchangeAuthCodeAsync("auth-code-join", SuiteAppKey, loserCts.Token);
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => loser);
+
+        // 中间断言（判据修正的直接观测量）：B 取消后注册表仍含该飞行 ⇒ C 加入而非新起。
+        var third = host.Service.ExchangeAuthCodeAsync("auth-code-join", SuiteAppKey);
+
+        gate.SetResult(true);
+        var joined = await third;
+        var original = await first;
+        joined.AuthCorpId.Should().Be(original.AuthCorpId, "C 必须拿到 A 的换码结果");
+        ReferenceEquals(joined, original).Should().BeTrue("C 与 A 共享同一飞行结果（不得重复发起换码）");
+
+        host.ProviderAuth.Verify(m => m.GetPermanentCodeV2Async(
+            It.IsAny<GetPermanentCodeRequest>(), It.IsAny<CancellationToken>()), Times.Once,
+            "B 取消后飞行条目不得被误摘（否则 C 会第二次消费一次性 auth_code）");
+    }
+
     // ── P1-3：ResolveAppKey 决策矩阵（应用数 1 / ≥2 × DefaultAppKey 有/无） ──
 
     [Fact]

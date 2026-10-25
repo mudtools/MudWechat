@@ -5,6 +5,8 @@
 //  不得利用本项目从事危害国家安全、扰乱社会秩序、侵犯他人合法权益等法律法规禁止的活动！任何基于本项目开发而产生的一切法律纠纷和责任，我们不承担任何责任！
 // -----------------------------------------------------------------------
 
+using System.Net;
+using Microsoft.Extensions.DependencyInjection;
 using Mud.HttpUtils;
 using Mud.Wechat.Abstractions.TokenManager;
 using Mud.Wechat.Work.Abstractions.Authentication;
@@ -362,6 +364,109 @@ public class CorpTokenManagerScopeIsolationTests
                 c => c.GetCorpTokenAsync(It.IsAny<string>(), It.IsAny<GetCorpTokenRequest>(), It.IsAny<CancellationToken>()),
                 Times.Exactly(3),
                 "显式按 scope 失效后必须走真实刷新");
+        }
+        finally
+        {
+            WechatCorpContext.Clear();
+        }
+    }
+
+    /// <summary>
+    /// F1 验收核心（架构审查报告 v2 P1-1，对修复前代码必红）：<b>真实恢复执行器管线</b>下，
+    /// corp 槽令牌遭遇 40014 后必须自动换新令牌重试成功。
+    /// <para>
+    /// 修复前断链：恢复执行器对 <c>TokenManagerBase</c> 派生管理器走 internal 非虚
+    /// <c>InvalidateCachedAccessToken(null)</c> ⇒ 失效落 default 槽，corp 槽未被失效 ⇒
+    /// 刷新半程命中本地未过期的陈旧令牌 ⇒ 重试重放同一令牌（本用例断言 <c>retryToken != stale</c> 必红）。
+    /// 修复后：判定器在「判定为真」处补偿失效 corp 槽 ⇒ 刷新半程真实刷新 ⇒ 重试携带新令牌。
+    /// </para>
+    /// </summary>
+    [Fact]
+    public async Task ExecuteAsync_ShouldRefreshCorpToken_WhenErrcodeInvalidInCorpScope()
+    {
+        var refreshCount = 0;
+        var corpAuth = new Mock<IWechatWorkCorpTokenAuthentication>();
+        corpAuth
+            .Setup(c => c.GetCorpTokenAsync("suite-token", It.IsAny<GetCorpTokenRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(() =>
+            {
+                refreshCount++;
+                return new GetCorpTokenResponse { ErrorCode = 0, AccessToken = $"token-gen{refreshCount}", ExpiresIn = 7200 };
+            });
+
+        using var manager = CreateManager(corpAuth, new InMemoryWechatCorpAuthStore(), out _);
+
+        // 判定器的环境上下文缝：holder.Current → 企微应用上下文（corp 管理器 = 被测管理器）。
+        var contextMock = new Mock<IWechatAppContext>();
+        contextMock.SetupGet(c => c.AppKey).Returns(AppKey);
+        contextMock.SetupGet(c => c.AppType).Returns(WechatAppType.ThirdParty);
+        contextMock.SetupGet(c => c.CorpTokenManager).Returns(manager);
+        var holderMock = new Mock<IAppContextHolder>();
+        holderMock.SetupGet(h => h.Current).Returns(contextMock.Object);
+
+        var services = new ServiceCollection();
+        services.AddSingleton(holderMock.Object);
+        using var serviceProvider = services.BuildServiceProvider();
+
+        // 真实恢复执行器（公共构造 + 公共入口，装配方式照 WechatAppManager.CreateAppContext）。
+        // 判定器经 AdditionalTokenInvalidationDetectors 追加（与 WechatWorkMultiAppExtensions 的
+        // TryAddEnumerable 登记形态一致——本仓不使用单槽 TokenInvalidationDetector）。
+        var detector = new WechatTokenInvalidationDetector(serviceProvider);
+        var options = new TokenRecoveryOptions();
+        options.AdditionalTokenInvalidationDetectors.Add(detector);
+        var monitorMock = new Mock<IOptionsMonitor<TokenRecoveryOptions>>();
+        monitorMock.SetupGet(m => m.CurrentValue).Returns(options);
+        var executor = new TokenRecoveryExecutor(manager, monitorMock.Object, NullLogger.Instance, holderMock.Object);
+
+        WechatCorpContext.SetCorp(AppKey, "corp-C", "pc-C");
+        try
+        {
+            var stale = await manager.GetTokenAsync(); // 冷启动刷新 #1 → token-gen1（corp 槽缓存）
+
+            using var request = new HttpRequestMessage(
+                HttpMethod.Get, $"https://qyapi.weixin.qq.com/cgi-bin/get_corp_token?access_token={stale}");
+            request.Options.Set(
+                new HttpRequestOptionsKey<TokenRecoveryContext>(TokenRecoveryContext.PropertyKey),
+                new TokenRecoveryContext
+                {
+                    InjectionMode = TokenInjectionMode.Query,
+                    QueryParameterName = "access_token",
+                    TokenManagerKey = "Wechat.AccessToken@Corp",
+                    Scopes = null, // 生成代码形态（ corp 端点恢复上下文 Scopes = null）
+                });
+
+            var sendCount = 0;
+            string? retryToken = null;
+            var final = await executor.ExecuteAsync(request, (r, _) =>
+            {
+                sendCount++;
+                if (sendCount == 1)
+                {
+                    return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+                    {
+                        Content = new StringContent(
+                            """{"errcode":40014,"errmsg":"invalid access_token"}""",
+                            System.Text.Encoding.UTF8, "application/json"),
+                    });
+                }
+
+                var match = System.Text.RegularExpressions.Regex.Match(
+                    r.RequestUri!.Query, @"access_token=([^&]+)");
+                retryToken = Uri.UnescapeDataString(match.Groups[1].Value);
+                return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent(
+                        """{"errcode":0,"errmsg":"ok"}""",
+                        System.Text.Encoding.UTF8, "application/json"),
+                });
+            }, CancellationToken.None);
+
+            final.StatusCode.Should().Be(HttpStatusCode.OK, "重试应成功");
+            sendCount.Should().Be(2, "判定命中后必须重试一次");
+            retryToken.Should().NotBeNullOrEmpty("重试请求必须携带重注入的令牌");
+            retryToken.Should().NotBe(stale, "重试必须携带新令牌（修复前：corp 槽未失效 ⇒ 重放陈旧令牌，本断言即验收核心）");
+            retryToken.Should().Be("token-gen2", "重试令牌须为恢复管线真实刷新的产物");
+            refreshCount.Should().Be(2, "冷启动一次 + 恢复管线补偿失效后真实刷新一次");
         }
         finally
         {

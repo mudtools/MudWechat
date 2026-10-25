@@ -81,7 +81,21 @@ internal sealed class WechatBotLongConnectionRunner : BackgroundService
             }
         }
 
-        if (_lease == null && _botOptions.Bots.Values.Any(static b => b.EnableLongConnection))
+        // R-P3（架构审查报告 v2 P3-3）：通配键「*」条目经 ResolveApp 通配回退可承接任意 botKey 的
+        // JSON 回调 ⇒ 与长连接并存时跨面互斥失效。Validate() 对通配键跳过类型/通道校验（无类型语义），
+        // 故互斥校验在此显式覆盖通配条目。
+        var hasLongConnection = _botOptions.Bots.Values.Any(static b => b.EnableLongConnection);
+        if (hasLongConnection
+            && _callbackOptions.Apps.TryGetValue(WechatCallbackOptions.WildcardAppKey, out var wildcard)
+            && wildcard is { Channel: WechatCallbackChannel.Bot })
+        {
+            throw new InvalidOperationException(
+                $"回调配置 Apps[\"{WechatCallbackOptions.WildcardAppKey}\"] 配置了智能机器人通道（Channel=Bot），" +
+                "而 WechatBots 中存在启用长连接的机器人：通配 Bot 通道会承接任意 botKey 的 JSON 回调，" +
+                "与长连接互斥失效。官方 101463：API 模式「长连接 / 回调地址」二选一 —— 请移除通配 Bot 通道凭据或关闭长连接。");
+        }
+
+        if (_lease == null && hasLongConnection)
         {
             _logger.LogWarning(
                 "未注册 {Lease}：长连接按「进程内唯一」假设运行；多实例部署必须注册连接租约（Redis 实现 RedisWechatBotConnectionLease），" +

@@ -258,17 +258,15 @@ internal sealed class WechatWorkAuthorizationService : IWechatWorkAuthorizationS
             }
         }
 
-        var created = false;
-        var lazy = _inFlight.GetOrAdd(
-            flightKey,
-            _ =>
-            {
-                created = true;
-                // 共享任务不绑定任何单个调用者的 CT：避免"首个调用者取消"连带取消其它等待者。
-                return new Lazy<Task<WechatCorpAuthorization>>(
-                    () => ExchangeCoreAsync(authCode, targetAppKey, CancellationToken.None),
-                    LazyThreadSafetyMode.ExecutionAndPublication);
-            });
+        // P2-R（架构审查报告 v2 P2-1）：候选预构建（Lazy 构造不执行工厂，零成本）；「创建者」判据 =
+        // 字典实际写入者（引用相等），而非「工厂被调用者」——GetOrAdd 竞争下输家的工厂可能被调用而值
+        // 未被存储，闭包置位会让输家在 finally 误摘他人正在飞行的条目（一次性 auth_code 被二次消费）。
+        // 共享任务不绑定任何单个调用者的 CT：避免"首个调用者取消"连带取消其它等待者。
+        var candidate = new Lazy<Task<WechatCorpAuthorization>>(
+            () => ExchangeCoreAsync(authCode, targetAppKey, CancellationToken.None),
+            LazyThreadSafetyMode.ExecutionAndPublication);
+        var lazy = _inFlight.GetOrAdd(flightKey, _ => candidate);
+        var created = ReferenceEquals(lazy, candidate);
 
         try
         {

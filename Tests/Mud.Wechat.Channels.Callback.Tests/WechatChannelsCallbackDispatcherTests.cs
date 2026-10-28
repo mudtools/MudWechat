@@ -5,12 +5,14 @@
 //  不得利用本项目从事危害国家安全、扰乱社会秩序、侵犯他人合法权益等法律法规禁止的活动！任何基于本项目开发而产生的一切法律纠纷和责任，我们不承担任何责任！
 // -----------------------------------------------------------------------
 
+using System.Diagnostics.Metrics;
 using System.Text;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Mud.Wechat.Channels.Abstractions.Callback;
+using Mud.Wechat.Channels.Abstractions.Metrics;
 using Mud.Wechat.Channels.DataModels.Callback;
 
 namespace Mud.Wechat.Channels.Callback.Tests;
@@ -112,6 +114,78 @@ public class WechatChannelsCallbackDispatcherTests
 
         context.Response.StatusCode.Should().Be(StatusCodes.Status200OK);
         ReadBody(context).Should().Be("success", "无应答 = 官方许可的明文 success（既有语义不变）");
+    }
+
+    // ---------------------------------------------------------------- 中间件层：观测接线（总案 D5 / OB-1）
+
+    [Fact]
+    public async Task Middleware_ShouldRecordSuccessOutcome_WhenPostHandled()
+    {
+        var recorded = new List<(string Instrument, double Value, Dictionary<string, object?> Tags)>();
+        using var listener = NewMetricsListener(recorded);
+
+        var context = NewPostContext();
+        var middleware = BuildMiddleware(new NullReplyHandler(), validKey: true, out _, out _);
+
+        await middleware.InvokeAsync(context);
+
+        recorded.Should().Contain(r => r.Instrument == "callback.request.duration"
+                && (string?)r.Tags["wechat.product"] == "channels",
+            "每个命中路由的入站请求记一笔全程耗时（接线点：中间件，静态 Helper 直调）");
+        recorded.Should().Contain(r => r.Instrument == "callback.request" && r.Value == 1
+                && (string?)r.Tags["outcome"] == "success"
+                && (string?)r.Tags["wechat.app_key"] == AppKey,
+            "成功路径记 outcome=success 计数");
+    }
+
+    [Fact]
+    public async Task Middleware_ShouldRecordFailureOutcome_WhenContentTypeRejected()
+    {
+        var recorded = new List<(string Instrument, double Value, Dictionary<string, object?> Tags)>();
+        using var listener = NewMetricsListener(recorded);
+
+        var context = NewPostContext();
+        context.Request.ContentType = "text/plain"; // 非 JSON ⇒ 415，outcome=failure
+        var middleware = BuildMiddleware(new NullReplyHandler(), validKey: true, out _, out _);
+
+        await middleware.InvokeAsync(context);
+
+        context.Response.StatusCode.Should().Be(StatusCodes.Status415UnsupportedMediaType);
+        recorded.Should().Contain(r => r.Instrument == "callback.request" && r.Value == 1
+                && (string?)r.Tags["outcome"] == "failure"
+                && (string?)r.Tags["error.type"] == "content_type",
+            "415 拒收进 failure 计数，error.type 细分到 content_type");
+    }
+
+    /// <summary>订阅小店线指标 Meter 的监听器（计数/直方图同收，断言用）。</summary>
+    private static MeterListener NewMetricsListener(
+        List<(string Instrument, double Value, Dictionary<string, object?> Tags)> recorded)
+    {
+        var listener = new MeterListener();
+        listener.InstrumentPublished = (instrument, enable) =>
+        {
+            if (instrument.Meter.Name == ChannelsMetrics.MeterName)
+            {
+                enable.EnableMeasurementEvents(instrument);
+            }
+        };
+        listener.SetMeasurementEventCallback<long>((instrument, value, tags, _) =>
+            recorded.Add((instrument.Name, value, ToTags(tags))));
+        listener.SetMeasurementEventCallback<double>((instrument, value, tags, _) =>
+            recorded.Add((instrument.Name, value, ToTags(tags))));
+        listener.Start();
+        return listener;
+    }
+
+    private static Dictionary<string, object?> ToTags(ReadOnlySpan<KeyValuePair<string, object?>> tags)
+    {
+        var dict = new Dictionary<string, object?>(tags.Length);
+        foreach (var tag in tags)
+        {
+            dict[tag.Key] = tag.Value;
+        }
+
+        return dict;
     }
 
     // ---------------------------------------------------------------- 测试基建

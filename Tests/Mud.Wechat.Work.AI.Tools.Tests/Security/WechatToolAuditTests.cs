@@ -90,7 +90,7 @@ public class WechatToolAuditTests
         var policy = new WechatToolPolicy { EnforceAuthorization = false };
         policy.Validate();
 
-        await new WechatToolDispatcher(registry, policy, auditSink: sink)
+        await new WechatToolDispatcher(registry, policy, auditSink: sink, telemetry: SilentTelemetry.Instance)
             .InvokeAsync(WechatToolNames.ContactsDepartmentGet, GetArgs);
 
         sink.Records.Should().ContainSingle();

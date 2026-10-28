@@ -57,7 +57,8 @@ public class WechatToolRetryTests
             }),
             policy,
             authorizer: new AllowAll(),
-            auditSink: sink);
+            auditSink: sink,
+            telemetry: SilentTelemetry.Instance);
 
         var result = await dispatcher.InvokeAsync(WechatToolNames.ContactsTagCreate, Args);
 
@@ -82,7 +83,8 @@ public class WechatToolRetryTests
                 calls++;
                 return Task.FromResult(Retryable(WechatToolNames.ContactsDepartmentGet));
             }),
-            policy);
+            policy,
+            telemetry: SilentTelemetry.Instance);
 
         var result = await dispatcher.InvokeAsync(WechatToolNames.ContactsDepartmentGet, Args);
 
@@ -108,7 +110,7 @@ public class WechatToolRetryTests
     {
         var policy = new WechatToolPolicy { EnforceAuthorization = false };
         policy.Validate();
-        return new WechatToolDispatcher(Registry(WechatToolNames.ContactsDepartmentGet, execute), policy, auditSink: sink);
+        return new WechatToolDispatcher(Registry(WechatToolNames.ContactsDepartmentGet, execute), policy, auditSink: sink, telemetry: SilentTelemetry.Instance);
     }
 
     private static WechatToolRegistry Registry(

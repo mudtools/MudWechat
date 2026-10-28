@@ -496,10 +496,11 @@ public class WechatPayDomainContractGuards
             "/v3/apply4subject/applyment/merchants/{subMchId}/state",
         });
 
-        // P0-3 服务商基础支付 + 分期 9 端点：8 条在 /v3/pay/partner/transactions/ 下、
-        // 分期曝光咨询在 /v3/pay/instal/partner/exposure（唯一前缀例外）；
-        // 与直连域 /v3/pay/transactions/ 前缀互斥，SKIT 清单的 codepay / reverse（V2 面）
-        // 与 transactions/exposure（页面已下架）三支零端点 —— 逐条锁定见 PT-B1 / PT-B2。
+        // P0-3 + EP-3 服务商基础支付 + 分期 13 端点：11 条在 /v3/pay/partner/transactions/ 下、
+        // 分期曝光咨询 /v3/pay/instal/partner/exposure 与从业机构分付曝光 /v3/pay/acquiring-bank/transactions/exposure
+        // 两条前缀例外；与直连域 /v3/pay/transactions/ 前缀互斥。
+        // 2026-10-25 翻案：SKIT 清单的 codepay / reverse / transactions-exposure 三支曾按「V2 面 / 页面下架」
+        // 裁定零端点，官方 .md 直抓复验三页均有完整 APIv3 字段表 ⇒ 转正落地（逐条锁定见 PT-B1 / PT-B2）。
         RoutesOf(asm, "IWechatPayPartnerTransactionsService").Should().BeEquivalentTo(new[]
         {
             "/v3/pay/partner/transactions/jsapi",
@@ -510,7 +511,11 @@ public class WechatPayDomainContractGuards
             "/v3/pay/partner/transactions/id/{transactionId}",
             "/v3/pay/partner/transactions/out-trade-no/{outTradeNo}",
             "/v3/pay/partner/transactions/out-trade-no/{outTradeNo}/close",
+            "/v3/pay/partner/transactions/codepay",
+            "/v3/pay/partner/transactions/out-trade-no/{outTradeNo}/reverse",
+            "/v3/pay/partner/transactions/exposure",
             "/v3/pay/instal/partner/exposure",
+            "/v3/pay/acquiring-bank/transactions/exposure",
         });
 
         // P0-4 服务商支付分 23 端点：三套前缀（/v3/payscore/partner/ 16 + /v3/payscore/plan/partner/ 3 +

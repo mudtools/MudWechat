@@ -15,7 +15,8 @@ using Mud.Wechat.Pay.DataModels.PartnerTransactions;
 namespace Mud.Wechat.Pay.Tests.ContractGuards;
 
 /// <summary>
-/// P0-3 服务商基础支付 / 分期域契约守卫（<b>9 端点</b>：下单五族 + 双路查单 + 关单 + 分期曝光咨询）。
+/// P0-3 + EP-3 服务商基础支付 / 分期域契约守卫（<b>13 端点</b>：下单六族 + 双路查单 + 关单 + 撤销 +
+/// 分期曝光咨询 + 分付曝光建议 + 从业机构分付曝光）。
 /// </summary>
 /// <remarks>
 /// <para>
@@ -27,21 +28,26 @@ namespace Mud.Wechat.Pay.Tests.ContractGuards;
 /// （<b>频率 200 次/秒</b>）。各端点的产品族分身页字段表与主页逐项一致。
 /// </para>
 /// <para>
-/// <b>SKIT 清单 12 行 ⇒ 本域 9 端点的三处裁定</b>（守卫 PT-B2 以「零声明 + 正对照」锁定）：
-/// ① <c>/pay/partner/transactions/codepay</c> 与 ② <c>…/out-trade-no/{out_trade_no}/reverse</c>
-/// 的现行正文是<b>付款码支付（V2）</b>指引页、无 APIv3 字段表 ⇒ 归 APIv2 批次；
-/// ③ <c>/pay/partner/transactions/exposure</c> 页面<b>已下架</b>（302 到 50x，两次独立核验）⇒
-/// 曝光能力只由 <c>/v3/pay/instal/partner/exposure</c> 承载。
-/// 另：查单与关单的多个 docId 是<b>同一端点</b>的产品族分身页，各落 1 个方法（12 行里 6 行是分身页）。
+/// <b>EP-3 增补四端点（2026-10-25 官方 .md 直抓逐页核验）</b>：付款码支付下单 <c>…/4012382179</c>、
+/// 撤销订单 <c>…/4012382181</c>、服务商分付曝光 <c>…/4014326522</c>、从业机构分付曝光 <c>…/4014326541</c>。
+/// </para>
+/// <para>
+/// <b>三处裁定的翻案记录（2026-10-25）</b>：2026-10-14 曾按「SKIT 清单 12 行 ⇒ 9 端点」裁定
+/// codepay / reverse（正文为付款码支付 V2 指引）与 transactions/exposure（页面下架 302→50x）三支不落；
+/// 2026-10-25 经官方 <c>.md</c> 直抓复验，三页现行正文均已提供<b>完整 APIv3 字段表</b>
+/// （页头更新时间 2026.03.26 / 2026.07.14）⇒ <b>翻案落地</b>，PT-B2 的旧零声明断言同步撤销。
+/// 裁定可复核、以最新官方面为准——这正是总案 D2 核验闸「llms.txt 两步制 + .md 终判」纪律的实证。
 /// </para>
 /// <para>
 /// <b>本守卫要守住的五处「顺手就会写错」</b>（多数源自与直连域 <c>Transactions</c> 的形似神异）：
 /// ① 商户标识四分（<c>sp_</c>/<c>sub_</c> 前缀），把直连的 <c>appid</c>/<c>mchid</c> 抄进来即 400；
-/// ② <c>payer</c> <b>只有 JSAPI 与扫码支付两族有</b>，Native/APP/H5 加上即多余字段；
-/// ③ <c>support_fapiao</c> 在四族位于 <c>settle_info</c> 内、<b>唯扫码支付在请求顶层</b>；
-/// ④ 三套 <c>scene_info</c> / 两套 <c>store_info</c> <b>不可共用一个类型</b>
-/// （H5 多 <c>h5_info</c>、扫码支付的 <c>store_info</c> 只有 <c>id</c>/<c>out_id</c> 且必填）；
-/// ⑤ 关单请求体<b>没有任何 AppID</b>，查单的 <c>sp_mchid</c> + <c>sub_mchid</c> 走 <b>Query</b> 而非 body。
+/// ② <c>payer</c> 形态按族分列（JSAPI 与扫码支付为 sp/sub 双 openid；付款码为 <c>auth_code</c>；
+/// 分付曝光为三标识选填其一），Native/APP/H5 加上即多余字段；
+/// ③ <c>support_fapiao</c> 在 JSAPI/Native/APP/H5 四族位于 <c>settle_info</c> 内、<b>扫码支付与付款码两族在请求顶层</b>；
+/// ④ 多套 <c>scene_info</c> 不可共用一个类型（H5 多 <c>h5_info</c>、扫码支付的 <c>store_info</c>
+/// 只有 <c>id</c>/<c>out_id</c> 且必填、付款码是 <c>device_id</c>/<c>device_ip</c>+门店节）；
+/// ⑤ 关单请求体<b>没有任何 AppID</b>（撤销体有选填 AppID，两体不同表），查单的
+/// <c>sp_mchid</c> + <c>sub_mchid</c> 走 <b>Query</b> 而非 body。
 /// </para>
 /// </remarks>
 public class WechatPayPartnerTransactionsContractGuards
@@ -76,6 +82,14 @@ public class WechatPayPartnerTransactionsContractGuards
             TransactionsPrefix + "out-trade-no/{outTradeNo}/close");
         AssertRoute<PostAttribute>(nameof(IWechatPayPartnerTransactionsService.GetInstalExposureAdviceAsync),
             "/v3/pay/instal/partner/exposure");
+        AssertRoute<PostAttribute>(nameof(IWechatPayPartnerTransactionsService.CreateCodepayOrderAsync),
+            TransactionsPrefix + "codepay");
+        AssertRoute<PostAttribute>(nameof(IWechatPayPartnerTransactionsService.ReverseOrderAsync),
+            TransactionsPrefix + "out-trade-no/{outTradeNo}/reverse");
+        AssertRoute<PostAttribute>(nameof(IWechatPayPartnerTransactionsService.GetFqfExposureAdviceAsync),
+            TransactionsPrefix + "exposure");
+        AssertRoute<PostAttribute>(nameof(IWechatPayPartnerTransactionsService.GetAcquiringBankFqfExposureAdviceAsync),
+            "/v3/pay/acquiring-bank/transactions/exposure");
 
         // 两个查单端点：官方把 sp_mchid 与 sub_mchid 都放在 **Query**（直连域只有一个 mchid）。
         foreach (var name in new[]
@@ -109,7 +123,17 @@ public class WechatPayPartnerTransactionsContractGuards
             .Select(static p => p.ParameterType)
             .Should().Contain(typeof(PartnerCloseOrderRequest));
 
-        // 五个下单族与曝光咨询都是「纯 body」端点：无 path、无 query。
+        // 撤销：一个 path 键 + 一个 body（四分商户标识，与关单不同表）。
+        var reverse = FindMethod(nameof(IWechatPayPartnerTransactionsService.ReverseOrderAsync));
+        reverse.GetParameters()
+            .Where(static p => p.GetCustomAttribute<PathAttribute>() != null)
+            .Select(static p => p.Name)
+            .Should().BeEquivalentTo(new[] { "outTradeNo" });
+        reverse.GetParameters()
+            .Select(static p => p.ParameterType)
+            .Should().Contain(typeof(PartnerReverseOrderRequest));
+
+        // 下单族与三类曝光都是「纯 body」端点：无 path、无 query。
         foreach (var name in new[]
                  {
                      nameof(IWechatPayPartnerTransactionsService.CreateJsapiOrderAsync),
@@ -118,6 +142,9 @@ public class WechatPayPartnerTransactionsContractGuards
                      nameof(IWechatPayPartnerTransactionsService.CreateH5OrderAsync),
                      nameof(IWechatPayPartnerTransactionsService.CreateScannedPosOrderAsync),
                      nameof(IWechatPayPartnerTransactionsService.GetInstalExposureAdviceAsync),
+                     nameof(IWechatPayPartnerTransactionsService.CreateCodepayOrderAsync),
+                     nameof(IWechatPayPartnerTransactionsService.GetFqfExposureAdviceAsync),
+                     nameof(IWechatPayPartnerTransactionsService.GetAcquiringBankFqfExposureAdviceAsync),
                  })
         {
             var parameters = FindMethod(name).GetParameters();
@@ -129,34 +156,33 @@ public class WechatPayPartnerTransactionsContractGuards
     }
 
     /// <summary>
-    /// PT-B2：前缀纪律（8 条 transactions + 1 条 instal）+ 三条<b>零声明</b>路由 + 与直连域不撞车。
+    /// PT-B2：前缀纪律（11 条 transactions + instal / acquiring-bank 两条前缀例外）+ 与直连域不撞车。
+    /// <para><b>2026-10-25 翻案</b>：旧形态的「codepay / reverse / transactions-exposure 三支零声明断言」
+    /// 已随官方 .md 直抓复验（三页现行正文均有完整 APIv3 字段表）而撤销，三支转为正式端点（见 PT-B1）。</para>
     /// </summary>
     [Fact]
     public void PartnerTransactionsRoutes_ShouldStayOnPartnerPrefixAndNotDeclareV2OrDelistedEndpoints()
     {
         var routes = RoutesOf(typeof(IWechatPayPartnerTransactionsService));
 
-        routes.Should().HaveCount(9, "本域 9 端点（数量变化须同批更新 PT-B1 与 Tests/ContractBaseline.cs）");
+        routes.Should().HaveCount(13, "本域 13 端点（数量变化须同批更新 PT-B1 与 Tests/ContractBaseline.cs）");
 
         routes.Count(static r => r.StartsWith(TransactionsPrefix, StringComparison.Ordinal))
-            .Should().Be(8, "下单五族 + 双路查单 + 关单共 8 条在 /v3/pay/partner/transactions/ 下");
+            .Should().Be(11, "下单六族（含付款码）+ 双路查单 + 关单 + 撤销 + 分付曝光共 11 条在 /v3/pay/partner/transactions/ 下");
         routes.Should().Contain("/v3/pay/instal/partner/exposure",
-            "分期曝光咨询在 /v3/pay/instal/ 前缀下，是本域唯一例外");
+            "分期曝光咨询在 /v3/pay/instal/ 前缀下，是本域前缀例外之一");
+        routes.Should().Contain("/v3/pay/acquiring-bank/transactions/exposure",
+            "从业机构分付曝光在 /v3/pay/acquiring-bank/ 前缀下，是本域前缀例外之二（从业机构族扩域时随迁）");
 
-        // 三条本轮不落端点的裁定：V2 两支归 APIv2 批次、下架页零端点 ⇒ 源码里只允许出现在注释中。
-        routes.Should().NotContain(static r => r.Contains("codepay", StringComparison.Ordinal),
-            "/pay/partner/transactions/codepay 现行官方正文是付款码支付（V2）指引，无 APIv3 字段表");
-        routes.Should().NotContain(static r => r.EndsWith("/reverse", StringComparison.Ordinal),
-            "…/out-trade-no/{out_trade_no}/reverse 同为 V2 面，本域不得声明");
-        routes.Should().NotContain(static r => r == "/v3/pay/partner/transactions/exposure",
-            "transactions/exposure 页面已下架（302→50x），曝光只落 instal/partner/exposure");
+        // 翻案后的正向断言：三支曾被裁定「零声明」的路由现为正式端点（裁定可复核、以最新官方面为准）。
+        routes.Should().Contain(static r => r == TransactionsPrefix + "codepay",
+            "付款码支付下单：官方 .md 已有完整 APIv3 字段表（2026-10-25 复验翻案）");
+        routes.Should().Contain(static r => r.EndsWith("/reverse", StringComparison.Ordinal),
+            "撤销订单：同上翻案");
+        routes.Should().Contain(static r => r == TransactionsPrefix + "exposure",
+            "服务商分付曝光：同上翻案");
 
-        // 正对照：三条字符串确实在本线源码中**被提及**（注释里），只是不成为路由——否则本断言会因扫描根漂移而恒真。
-        var sourceText = string.Join("\n", CollectPaySourceFiles().Select(static path => File.ReadAllText(path)));
-        sourceText.Should().Contain("codepay", "正对照：V2 付款码支付在文档注释里有记录性提及");
-        sourceText.Should().Contain("reverse", "正对照：V2 撤销接口在文档注释里有记录性提及");
-
-        // 与直连域不撞车：本域全部路由带 partner 段，直连域全部不带 ⇒ 两个集合必须互斥。
+        // 与直连域不撞车：本域全部路由带 partner / instal / acquiring-bank 段，直连域全部不带 ⇒ 两个集合必须互斥。
         var directRoutes = RoutesOf(typeof(IWechatPayTransactionsService));
         directRoutes.Should().OnlyContain(static r => r.StartsWith("/v3/pay/transactions/", StringComparison.Ordinal),
             "直连域前缀是 /v3/pay/transactions/（无 partner 段）");
@@ -216,6 +242,56 @@ public class WechatPayPartnerTransactionsContractGuards
         JsonNameShouldBe<PartnerInstalExposureResponse>(nameof(PartnerInstalExposureResponse.RepaymentInfo), "repayment_info");
         JsonNameShouldBe<PartnerRepaymentInfo>(nameof(PartnerRepaymentInfo.RepaymentType), "repayment_type");
         JsonNameShouldBe<PartnerRepaymentInfo>(nameof(PartnerRepaymentInfo.ExistCashOffCoupon), "exist_cash_off_coupon");
+
+        // 付款码支付（EP-3）：四分标识 + 顶层 support_fapiao + 三节对象形态。
+        JsonNameShouldBe<PartnerCodepayRequest>(nameof(PartnerCodepayRequest.SpAppId), "sp_appid");
+        JsonNameShouldBe<PartnerCodepayRequest>(nameof(PartnerCodepayRequest.SpMchId), "sp_mchid");
+        JsonNameShouldBe<PartnerCodepayRequest>(nameof(PartnerCodepayRequest.SubAppId), "sub_appid");
+        JsonNameShouldBe<PartnerCodepayRequest>(nameof(PartnerCodepayRequest.SubMchId), "sub_mchid");
+        JsonNameShouldBe<PartnerCodepayRequest>(nameof(PartnerCodepayRequest.Description), "description");
+        JsonNameShouldBe<PartnerCodepayRequest>(nameof(PartnerCodepayRequest.OutTradeNo), "out_trade_no");
+        JsonNameShouldBe<PartnerCodepayRequest>(nameof(PartnerCodepayRequest.SupportFapiao), "support_fapiao");
+        JsonNameShouldBe<PartnerCodepayRequest>(nameof(PartnerCodepayRequest.Payer), "payer");
+        JsonNameShouldBe<PartnerCodepayRequest>(nameof(PartnerCodepayRequest.Amount), "amount");
+        JsonNameShouldBe<PartnerCodepayRequest>(nameof(PartnerCodepayRequest.SceneInfo), "scene_info");
+        JsonNameShouldBe<PartnerCodepayRequest>(nameof(PartnerCodepayRequest.SettleInfo), "settle_info");
+        JsonNameShouldBe<PartnerCodepayPayer>(nameof(PartnerCodepayPayer.AuthCode), "auth_code");
+        JsonNamesOf<PartnerCodepayPayer>().Should().BeEquivalentTo(new[] { "auth_code" },
+            "官方付款码 payer 节就此一键（直连扁平形态的顶层 auth_code 不可抄）");
+        JsonNameShouldBe<PartnerCodepayAmount>(nameof(PartnerCodepayAmount.Total), "total");
+        JsonNameShouldBe<PartnerCodepayAmount>(nameof(PartnerCodepayAmount.Currency), "currency");
+        JsonNameShouldBe<PartnerCodepaySceneInfo>(nameof(PartnerCodepaySceneInfo.DeviceId), "device_id");
+        JsonNameShouldBe<PartnerCodepaySceneInfo>(nameof(PartnerCodepaySceneInfo.DeviceIp), "device_ip");
+        JsonNameShouldBe<PartnerCodepayDetail>(nameof(PartnerCodepayDetail.CostPrice), "cost_price");
+        JsonNameShouldBe<PartnerCodepayDetail>(nameof(PartnerCodepayDetail.InvoiceId), "invoice_id");
+        JsonNameShouldBe<PartnerCodepayDetail>(nameof(PartnerCodepayDetail.GoodsDetail), "goods_detail");
+
+        // 撤销（EP-3）：四分标识（两 AppID 选填），与关单体（无 AppID）不同表。
+        JsonNameShouldBe<PartnerReverseOrderRequest>(nameof(PartnerReverseOrderRequest.SpAppId), "sp_appid");
+        JsonNameShouldBe<PartnerReverseOrderRequest>(nameof(PartnerReverseOrderRequest.SpMchId), "sp_mchid");
+        JsonNameShouldBe<PartnerReverseOrderRequest>(nameof(PartnerReverseOrderRequest.SubAppId), "sub_appid");
+        JsonNameShouldBe<PartnerReverseOrderRequest>(nameof(PartnerReverseOrderRequest.SubMchId), "sub_mchid");
+        JsonNamesOf<PartnerReverseOrderRequest>().Should().BeEquivalentTo(
+            new[] { "sp_appid", "sp_mchid", "sub_appid", "sub_mchid" },
+            "官方撤销请求体就此四字段（与关单的两字段体不同表，不可互抄）");
+        JsonNameShouldBe<PartnerReverseOrderResponse>(nameof(PartnerReverseOrderResponse.OutTradeNo), "out_trade_no");
+
+        // 分付曝光（EP-3）：三标识选填其一的 payer（与分期族的 user_id 对象不同表）+ 从业机构三方标识形态。
+        JsonNameShouldBe<PartnerTransactionExposureRequest>(nameof(PartnerTransactionExposureRequest.SpMchId), "sp_mchid");
+        JsonNameShouldBe<PartnerTransactionExposureRequest>(nameof(PartnerTransactionExposureRequest.SpAppId), "sp_appid");
+        JsonNameShouldBe<PartnerTransactionExposureRequest>(nameof(PartnerTransactionExposureRequest.OutTradeNo), "out_trade_no");
+        JsonNameShouldBe<PartnerTransactionExposurePayer>(nameof(PartnerTransactionExposurePayer.SpOpenId), "sp_openid");
+        JsonNameShouldBe<PartnerTransactionExposurePayer>(nameof(PartnerTransactionExposurePayer.PhoneNumberHash), "phone_number_hash");
+        JsonNameShouldBe<PartnerTransactionExposurePayer>(nameof(PartnerTransactionExposurePayer.SubOpenId), "sub_openid");
+        JsonNameShouldBe<AcquiringBankTransactionExposureRequest>(nameof(AcquiringBankTransactionExposureRequest.AcquiringBankId), "acquiring_bank_id");
+        JsonNameShouldBe<AcquiringBankTransactionExposureRequest>(nameof(AcquiringBankTransactionExposureRequest.MerchantId), "merchant_id");
+        JsonNameShouldBe<AcquiringBankTransactionExposureRequest>(nameof(AcquiringBankTransactionExposureRequest.ChannelId), "channel_id");
+        JsonNamesOf<AcquiringBankTransactionExposureRequest>().Should().NotContain(new[] { "sp_mchid", "sub_mchid" },
+            "从业机构字段面没有服务商四件套：三方标识（acquiring_bank_id / merchant_id / channel_id）不可与服务商族互抄");
+        JsonNameShouldBe<AcquiringBankTransactionExposurePayer>(nameof(AcquiringBankTransactionExposurePayer.AcquiringBankOpenId), "acquiring_bank_openid");
+        JsonNameShouldBe<AcquiringBankTransactionExposurePayer>(nameof(AcquiringBankTransactionExposurePayer.MerchantOpenId), "merchant_openid");
+        JsonNameShouldBe<PartnerTransactionExposureResponse>(nameof(PartnerTransactionExposureResponse.FqfExposure), "fqf_exposure");
+        JsonNameShouldBe<PartnerTransactionExposureResponse>(nameof(PartnerTransactionExposureResponse.MarketExposureToken), "market_exposure_token");
     }
 
     /// <summary>
@@ -225,9 +301,12 @@ public class WechatPayPartnerTransactionsContractGuards
     [Fact]
     public void PartnerOrderFamilies_ShouldKeepTheirOfficialShapeDifferencesInTypes()
     {
-        // ① payer 只存在于 JSAPI 与扫码支付两族（Native / APP / H5 官方字段表内无该节）。
+        // ① payer 按族分列：JSAPI / 扫码支付为 sp-sub 双 openid；付款码为 auth_code；分付曝光为三选一；
+        //    Native / APP / H5 官方字段表内无该节。
         JsonNamesOf<PartnerJsapiPrepayRequest>().Should().Contain("payer", "JSAPI 下单官方必填 payer");
         JsonNamesOf<PartnerScannedPosPrepayRequest>().Should().Contain("payer");
+        JsonNamesOf<PartnerCodepayRequest>().Should().Contain("payer", "付款码支付的 auth_code 在 payer 节内（EP-3）");
+        JsonNamesOf<PartnerTransactionExposureRequest>().Should().Contain("payer", "分付曝光 payer 三标识选填其一（EP-3）");
         foreach (var type in new[]
                  {
                      typeof(PartnerNativePrepayRequest), typeof(PartnerAppPrepayRequest), typeof(PartnerH5PrepayRequest),
@@ -237,9 +316,11 @@ public class WechatPayPartnerTransactionsContractGuards
                 $"{type.Name} 官方无 payer：扫码/APP/H5 下单时不存在支付者标识");
         }
 
-        // ② support_fapiao 位置：唯扫码支付在顶层，其余四族在 settle_info 内。
+        // ② support_fapiao 位置：扫码支付与付款码两族在顶层，JSAPI/Native/APP/H5 四族在 settle_info 内。
         JsonNamesOf<PartnerScannedPosPrepayRequest>().Should().Contain("support_fapiao",
             "扫码支付族把该字段放在请求顶层（官方原文），不得搬进 settle_info");
+        JsonNamesOf<PartnerCodepayRequest>().Should().Contain("support_fapiao",
+            "付款码族同扫码支付：support_fapiao 在请求顶层（EP-3 官方字段表）");
         foreach (var type in new[]
                  {
                      typeof(PartnerJsapiPrepayRequest), typeof(PartnerNativePrepayRequest),
@@ -253,7 +334,7 @@ public class WechatPayPartnerTransactionsContractGuards
         JsonNamesOf<PartnerScannedPosSettleInfo>().Should().BeEquivalentTo(new[] { "profit_sharing" },
             "扫码支付族的 settle_info 官方只有 profit_sharing（无 subsidy_amount / support_fapiao）");
 
-        // ③ 三套 scene_info 各自成类型，且属性类型按族精确。
+        // ③ 各族 scene_info 各自成类型，且属性类型按族精确。
         typeof(PartnerJsapiPrepayRequest).GetProperty(nameof(PartnerJsapiPrepayRequest.SceneInfo))!
             .PropertyType.Should().Be(typeof(PartnerSceneInfo));
         typeof(PartnerH5PrepayRequest).GetProperty(nameof(PartnerH5PrepayRequest.SceneInfo))!
@@ -262,9 +343,16 @@ public class WechatPayPartnerTransactionsContractGuards
         typeof(PartnerScannedPosPrepayRequest).GetProperty(nameof(PartnerScannedPosPrepayRequest.SceneInfo))!
             .PropertyType.Should().Be(typeof(PartnerScannedPosSceneInfo),
                 "扫码支付场景信息的 store_info 必填且字段集不同");
+        typeof(PartnerCodepayRequest).GetProperty(nameof(PartnerCodepayRequest.SceneInfo))!
+            .PropertyType.Should().Be(typeof(PartnerCodepaySceneInfo),
+                "付款码场景信息是 device_id/device_ip 形态（无 payer_client_ip），与扫码支付族不同表");
+        typeof(PartnerCodepaySceneInfo).GetProperty(nameof(PartnerCodepaySceneInfo.StoreInfo))!
+            .PropertyType.Should().Be(typeof(PartnerScannedPosStoreInfo),
+                "付款码的门店节（id/out_id 二选一）与扫码支付同表 ⇒ 同表共用，不得另建第二份");
         JsonNamesOf<PartnerH5SceneInfo>().Should().Contain("h5_info");
         JsonNamesOf<PartnerSceneInfo>().Should().NotContain("h5_info", "JSAPI/Native/APP 三族无 h5_info");
         JsonNamesOf<PartnerScannedPosSceneInfo>().Should().NotContain("h5_info");
+        JsonNamesOf<PartnerCodepaySceneInfo>().Should().NotContain("h5_info");
 
         // ④ 两套 store_info：通用四字段 vs 扫码支付只有 id / out_id。
         JsonNamesOf<PartnerStoreInfo>().Should().BeEquivalentTo(new[] { "id", "name", "area_code", "address" });
@@ -327,19 +415,24 @@ public class WechatPayPartnerTransactionsContractGuards
                  {
                      typeof(PartnerPrepayIdResponse), typeof(PartnerNativePrepayResponse),
                      typeof(PartnerH5PrepayResponse), typeof(PartnerTransactionQueryResponse),
-                     typeof(PartnerInstalExposureResponse),
+                     typeof(PartnerInstalExposureResponse), typeof(PartnerReverseOrderResponse),
+                     typeof(PartnerTransactionExposureResponse),
                  })
         {
             typeof(WechatPayResponse).IsAssignableFrom(responseType).Should().BeTrue(
                 $"{responseType.Name} 必须继承 WechatPayResponse，否则 4xx 的 code/message 无落点");
         }
 
-        // 官方关单成功为 204 No Content 且无包体 ⇒ 方法必须无返回值。
+        // 官方关单成功为 204 No Content 且无包体 ⇒ 方法必须无返回值；撤销成功为 200 有包体。
         FindMethod(nameof(IWechatPayPartnerTransactionsService.CloseOrderAsync)).ReturnType
             .Should().Be(typeof(Task), "官方关单成功应答 204 无包体：声明成响应类型会造出永不填充的假字段");
+        FindMethod(nameof(IWechatPayPartnerTransactionsService.ReverseOrderAsync)).ReturnType
+            .Should().Be(typeof(Task<PartnerReverseOrderResponse>),
+                "官方撤销成功应答 200 且有包体（四分标识 + 订单号），与关单的 204 不同");
 
         // 应答共用判据「表相同则共用」：JSAPI / APP / 扫码支付三族同为 prepay_id ⇒ 同一类型；
-        // 双路查单应答表逐项一致 ⇒ 同一类型。
+        // 双路查单应答表逐项一致 ⇒ 同一类型；付款码应答表与查单逐项一致 ⇒ 共用查单应答；
+        // 分付曝光的服务商与从业机构两页应答逐项一致 ⇒ 共用同一应答。
         ReturnTypeOf(nameof(IWechatPayPartnerTransactionsService.CreateJsapiOrderAsync))
             .Should().Be(typeof(PartnerPrepayIdResponse));
         ReturnTypeOf(nameof(IWechatPayPartnerTransactionsService.CreateAppOrderAsync))
@@ -350,6 +443,14 @@ public class WechatPayPartnerTransactionsContractGuards
             .Should().Be(typeof(PartnerTransactionQueryResponse));
         ReturnTypeOf(nameof(IWechatPayPartnerTransactionsService.QueryByOutTradeNoAsync))
             .Should().Be(typeof(PartnerTransactionQueryResponse));
+        ReturnTypeOf(nameof(IWechatPayPartnerTransactionsService.CreateCodepayOrderAsync))
+            .Should().Be(typeof(PartnerTransactionQueryResponse),
+                "官方付款码应答表与查单逐项一致 ⇒ 同表共用（scene_info 在付款码应答恒缺省，反序列化安全）");
+        ReturnTypeOf(nameof(IWechatPayPartnerTransactionsService.GetFqfExposureAdviceAsync))
+            .Should().Be(typeof(PartnerTransactionExposureResponse));
+        ReturnTypeOf(nameof(IWechatPayPartnerTransactionsService.GetAcquiringBankFqfExposureAdviceAsync))
+            .Should().Be(typeof(PartnerTransactionExposureResponse),
+                "从业机构页应答表与服务商页逐项一致 ⇒ 同表共用");
         ReturnTypeOf(nameof(IWechatPayPartnerTransactionsService.CreateNativeOrderAsync))
             .Should().Be(typeof(PartnerNativePrepayResponse));
         ReturnTypeOf(nameof(IWechatPayPartnerTransactionsService.CreateH5OrderAsync))
@@ -374,8 +475,10 @@ public class WechatPayPartnerTransactionsContractGuards
             .Where(static t => !typeof(JsonSerializerContext).IsAssignableFrom(t))
             .ToList();
 
-        domainTypes.Should().HaveCount(30,
-            "服务商支付域 DTO：共享构件 12 + 五族请求 5 + 三种下单应答 3 + 查单应答族 5 + 关单 1 + 分期 4");
+        domainTypes.Should().HaveCount(42,
+            "服务商支付域 DTO：共享构件 12 + 六族请求 6 + 三种下单应答 3 + 查单应答族 5 + 关单 1 + 分期 4"
+            + " + EP-3 付款码/撤销/分付曝光 11（CodepayRequest/Payer/Amount/SceneInfo/Detail 5 + ReverseRequest/Response 2"
+            + " + ExposureRequest/Payer 2 + AcquiringBankRequest/Payer 2，应答共用 +1 已计入分期组之外）");
 
         foreach (var type in domainTypes)
         {

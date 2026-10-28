@@ -8,6 +8,7 @@
 using System.Net;
 using Mud.Wechat.Abstractions.Callback;
 using Mud.Wechat.Channels.Abstractions.Callback;
+using Mud.Wechat.Channels.Abstractions.Metrics;
 
 namespace Mud.Wechat.Channels.Callback;
 
@@ -58,8 +59,11 @@ public sealed class WechatChannelsCallbackMiddleware
     }
 
     /// <summary>中间件入口。</summary>
-    /// <param name="context">HTTP 上下文。</param>
-    /// <returns>处理任务。</returns>
+    /// <remarks>
+    /// <b>观测接线</b>：命中路由的每个入站请求记一笔 <c>callback.request.duration</c>（计时覆盖全程）
+    /// 与一笔 <c>callback.request</c> 计数（outcome：success / failure / timeout；细分 error.type）——
+    /// 总案 D5 的埋点接线（OB-1），静态 Helper 直调、不进 DI。
+    /// </remarks>
     public async Task InvokeAsync(HttpContext context)
     {
         var options = _optionsMonitor.CurrentValue;
@@ -70,16 +74,21 @@ public sealed class WechatChannelsCallbackMiddleware
             return;
         }
 
-        if (!IsSourceAllowed(context, options))
-        {
-            _logger.LogWarning("回调来源 IP {RemoteIp} 不在白名单中，拒绝。AppKey: {AppKey}",
-                ResolveRemoteIp(context, options), appKey);
-            context.Response.StatusCode = StatusCodes.Status403Forbidden;
-            return;
-        }
-
+        using var duration = ChannelsMetricsHelper.RecordCallbackRequest(appKey);
+        var outcome = "success";
+        string? errorType = null;
         try
         {
+            if (!IsSourceAllowed(context, options))
+            {
+                outcome = "failure";
+                errorType = "source_denied";
+                _logger.LogWarning("回调来源 IP {RemoteIp} 不在白名单中，拒绝。AppKey: {AppKey}",
+                    ResolveRemoteIp(context, options), appKey);
+                context.Response.StatusCode = StatusCodes.Status403Forbidden;
+                return;
+            }
+
             if (HttpMethods.IsGet(context.Request.Method))
             {
                 await HandleEchoAsync(context, appKey).ConfigureAwait(false);
@@ -88,35 +97,88 @@ public sealed class WechatChannelsCallbackMiddleware
 
             if (HttpMethods.IsPost(context.Request.Method))
             {
-                await HandleReceiveAsync(context, appKey, options).ConfigureAwait(false);
+                // 前置校验（415/413）上提在本层：它们无法经由 HandleReceiveAsync 表达 outcome
+                // （局部变量作用域），且与 Pay 中间件的校验层位一致。
+                var contentType = context.Request.ContentType;
+                var isJson = !string.IsNullOrEmpty(contentType)
+                             && contentType!.IndexOf("json", StringComparison.OrdinalIgnoreCase) >= 0;
+                if (!isJson)
+                {
+                    outcome = "failure";
+                    errorType = "content_type";
+                    context.Response.StatusCode = StatusCodes.Status415UnsupportedMediaType;
+                    return;
+                }
+
+                var requestBody = await ReadBodyAsync(context.Request, options.MaxRequestBodySize, context.RequestAborted)
+                    .ConfigureAwait(false);
+                if (requestBody == null)
+                {
+                    outcome = "failure";
+                    errorType = "body_too_large";
+                    _logger.LogWarning("回调请求体超过限制 {MaxBytes} 字节，AppKey: {AppKey}",
+                        options.MaxRequestBodySize, appKey);
+                    context.Response.StatusCode = StatusCodes.Status413RequestEntityTooLarge;
+                    return;
+                }
+
+                await HandleReceiveAsync(context, appKey, options, requestBody).ConfigureAwait(false);
                 return;
             }
 
+            outcome = "failure";
+            errorType = "method_not_allowed";
             context.Response.StatusCode = StatusCodes.Status405MethodNotAllowed;
         }
         catch (WechatCallbackException ex)
         {
             // 验签/时效/重放/解密/AppId/明文拒收 统一 403 + **空体**。
+            outcome = "failure";
+            errorType = MapFailureKind(ex.Kind);
             _logger.LogWarning(ex, "回调验证失败（{Kind}），AppKey: {AppKey}", ex.Kind, appKey);
             context.Response.StatusCode = StatusCodes.Status403Forbidden;
         }
         catch (OperationCanceledException) when (context.RequestAborted.IsCancellationRequested)
         {
             // 客户端断开：不再写应答。
+            outcome = "failure";
+            errorType = "aborted";
         }
         catch (OperationCanceledException)
         {
             // 分发软超时 → 明文 success + 200（不触发重推）。
+            outcome = "timeout";
             _logger.LogWarning("回调分发软超时，回 success + 200（不触发重推），AppKey: {AppKey}", appKey);
             await WriteTextAsync(context, StatusCodes.Status200OK, SuccessResponseBody, CancellationToken.None)
                 .ConfigureAwait(false);
         }
         catch (Exception ex)
         {
+            outcome = "failure";
+            errorType = "unexpected";
             _logger.LogError(ex, "回调处理发生未预期异常，AppKey: {AppKey}", appKey);
             context.Response.StatusCode = StatusCodes.Status500InternalServerError;
         }
+        finally
+        {
+            ChannelsMetricsHelper.RecordCallbackOutcome(appKey, outcome, errorType);
+        }
     }
+
+    /// <summary>把回调失败类别映射为观测 <c>error.type</c> 标签（受控取值，拒绝语义不细分——防信息面探测）。</summary>
+    private static string MapFailureKind(WechatCallbackFailureKind kind) => kind switch
+    {
+        WechatCallbackFailureKind.MissingSignature => "signature",
+        WechatCallbackFailureKind.InvalidSignature => "signature",
+        WechatCallbackFailureKind.MissingTimestamp => "timestamp",
+        WechatCallbackFailureKind.TimestampOutOfRange => "timestamp",
+        WechatCallbackFailureKind.MissingNonce => "signature",
+        WechatCallbackFailureKind.ReceiveIdMismatch => "receive_id",
+        WechatCallbackFailureKind.ReplaySuspected => "replay",
+        WechatCallbackFailureKind.MissingEncrypt => "payload",
+        WechatCallbackFailureKind.UnknownReceiver => "unknown_receiver",
+        _ => "unexpected",
+    };
 
     /// <summary>GET URL 验证：回写 <c>echostr</c> 原文（text/plain，无 BOM/引号/换行；不消费一次性指纹）。</summary>
     private async Task HandleEchoAsync(HttpContext context, string appKey)
@@ -132,28 +194,10 @@ public sealed class WechatChannelsCallbackMiddleware
         await WriteTextAsync(context, StatusCodes.Status200OK, plain, context.RequestAborted).ConfigureAwait(false);
     }
 
-    /// <summary>POST 事件推送：Content-Type/体长校验 → 接收 → 分发 → 明文 success 应答。</summary>
-    private async Task HandleReceiveAsync(HttpContext context, string appKey, ChannelsCallbackOptions options)
+    /// <summary>POST 事件推送：接收 → 分发 → 应答（415/413 前置校验已上提至 <see cref="InvokeAsync"/>）。</summary>
+    private async Task HandleReceiveAsync(
+        HttpContext context, string appKey, ChannelsCallbackOptions options, string body)
     {
-        var contentType = context.Request.ContentType;
-        var isJson = !string.IsNullOrEmpty(contentType)
-                     && contentType!.IndexOf("json", StringComparison.OrdinalIgnoreCase) >= 0;
-        if (!isJson)
-        {
-            context.Response.StatusCode = StatusCodes.Status415UnsupportedMediaType;
-            return;
-        }
-
-        var body = await ReadBodyAsync(context.Request, options.MaxRequestBodySize, context.RequestAborted)
-            .ConfigureAwait(false);
-        if (body == null)
-        {
-            _logger.LogWarning("回调请求体超过限制 {MaxBytes} 字节，AppKey: {AppKey}",
-                options.MaxRequestBodySize, appKey);
-            context.Response.StatusCode = StatusCodes.Status413RequestEntityTooLarge;
-            return;
-        }
-
         var query = context.Request.QueryString.Value ?? string.Empty;
         if (query.StartsWith("?", StringComparison.Ordinal))
         {

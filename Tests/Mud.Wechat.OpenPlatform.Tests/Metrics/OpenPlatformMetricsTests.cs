@@ -13,6 +13,7 @@ namespace Mud.Wechat.OpenPlatform.Tests.Metrics;
 /// <summary>
 /// 开放平台指标面测试（总案 D5）：MeterListener 实采断言计数/直方图按产品线标签落点。
 /// </summary>
+[Collection("Serial-OpenPlatform-Metrics")]
 public class OpenPlatformMetricsTests
 {
     [Fact]

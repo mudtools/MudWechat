@@ -5,7 +5,9 @@
 //  不得利用本项目从事危害国家安全、扰乱社会秩序、侵犯他人合法权益等法律法规禁止的活动！任何基于本项目开发而产生的一切法律纠纷和责任，我们不承担任何责任！
 // -----------------------------------------------------------------------
 
+using System.Diagnostics.Metrics;
 using Mud.Wechat.Abstractions.Callback;
+using Mud.Wechat.OpenPlatform.Abstractions.Metrics;
 
 namespace Mud.Wechat.OpenPlatform.Tests;
 
@@ -24,6 +26,7 @@ namespace Mud.Wechat.OpenPlatform.Tests;
 /// 生产代码复用它、用例也复用它 ⇒ 测的是判定顺序与边界，而不是自造算法自证。
 /// </para>
 /// </remarks>
+[Collection("Serial-OpenPlatform-Metrics")]
 public class ComponentVerifyTicketReceiverTests
 {
     private const string Token = "push-token";
@@ -47,6 +50,73 @@ public class ComponentVerifyTicketReceiverTests
 
         store.TryGet(out var snapshot).Should().BeTrue();
         snapshot!.Ticket.Should().Be("ticket-abc");
+    }
+
+    // ---- 观测接线（总案 D5 / OB-1）------------------------------------------
+
+    [Fact]
+    public void Receive_ShouldRecordSuccessOutcome_WhenTicketAccepted()
+    {
+        var recorded = new List<(string Instrument, double Value, Dictionary<string, object?> Tags)>();
+        using var listener = NewMetricsListener(recorded);
+        var sut = CreateSut(new InMemoryComponentVerifyTicketStore(new SystemOpenPlatformClock()));
+
+        var push = BuildPush(TicketXml("ticket-metrics"));
+        sut.Receive(push.Signature, push.Timestamp, push.Nonce, push.Body);
+
+        recorded.Should().Contain(r => r.Instrument == "callback.request.duration"
+                && (string?)r.Tags["wechat.product"] == "openplatform",
+            "每次处置记一笔全程耗时（接线点：接收器 Receive）");
+        recorded.Should().Contain(r => r.Instrument == "callback.request" && r.Value == 1
+                && (string?)r.Tags["outcome"] == "success"
+                && (string?)r.Tags["wechat.app_key"] == AppId);
+    }
+
+    [Fact]
+    public void Receive_ShouldRecordFailureOutcome_WhenSignatureInvalid()
+    {
+        var recorded = new List<(string Instrument, double Value, Dictionary<string, object?> Tags)>();
+        using var listener = NewMetricsListener(recorded);
+        var sut = CreateSut(new InMemoryComponentVerifyTicketStore(new SystemOpenPlatformClock()));
+
+        var push = BuildPush(TicketXml("ticket-bad"), token: "wrong-token");
+        sut.Receive(push.Signature, push.Timestamp, push.Nonce, push.Body);
+
+        recorded.Should().Contain(r => r.Instrument == "callback.request" && r.Value == 1
+                && (string?)r.Tags["outcome"] == "failure"
+                && (string?)r.Tags["error.type"] == "signature",
+            "验签失败进 failure 计数，细分 error.type 只落在指标侧");
+    }
+
+    /// <summary>订阅开放平台指标 Meter 的监听器（计数/直方图同收，断言用）。</summary>
+    private static MeterListener NewMetricsListener(
+        List<(string Instrument, double Value, Dictionary<string, object?> Tags)> recorded)
+    {
+        var listener = new MeterListener();
+        listener.InstrumentPublished = (instrument, enable) =>
+        {
+            if (instrument.Meter.Name == OpenPlatformMetrics.MeterName)
+            {
+                enable.EnableMeasurementEvents(instrument);
+            }
+        };
+        listener.SetMeasurementEventCallback<long>((instrument, value, tags, _) =>
+            recorded.Add((instrument.Name, value, ToTags(tags))));
+        listener.SetMeasurementEventCallback<double>((instrument, value, tags, _) =>
+            recorded.Add((instrument.Name, value, ToTags(tags))));
+        listener.Start();
+        return listener;
+    }
+
+    private static Dictionary<string, object?> ToTags(ReadOnlySpan<KeyValuePair<string, object?>> tags)
+    {
+        var dict = new Dictionary<string, object?>(tags.Length);
+        foreach (var tag in tags)
+        {
+            dict[tag.Key] = tag.Value;
+        }
+
+        return dict;
     }
 
     /// <summary>

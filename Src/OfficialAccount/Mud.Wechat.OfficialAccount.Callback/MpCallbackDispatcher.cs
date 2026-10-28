@@ -8,6 +8,7 @@
 using Mud.Wechat.Abstractions.Callback;
 using Mud.Wechat.OfficialAccount.Abstractions.Callback;
 using Mud.Wechat.OfficialAccount.Abstractions.Callback.Payloads;
+using Mud.Wechat.OfficialAccount.Abstractions.Metrics;
 
 namespace Mud.Wechat.OfficialAccount.Callback;
 
@@ -119,6 +120,9 @@ public sealed class MpCallbackDispatcher
 
         var eventType = envelope.EventTypeKey;
 
+        // ── 可观测性接线（批次 4，OB-1 收口）：事件分发计时 + 逐终点 outcome（镜像企微线分发器形态）──
+        using var metricsScope = MpMetricsHelper.RecordEventHandling(appKey, eventType);
+
         // — 1. 拦截器 Before（appKey 专属先于全局；异常传播 → 中间件 500）—
         using (var interceptorScope = _scopeFactory.CreateScope())
         {
@@ -132,6 +136,7 @@ public sealed class MpCallbackDispatcher
                     _logger.LogInformation(
                         "事件 {EventType}（appKey: {AppKey}）被拦截器 {Interceptor} 中断，按公众号语义回 success（不触发重推）。",
                         eventType, appKey, interceptor.GetType().FullName);
+                    MpMetricsHelper.RecordEventOutcome(appKey, eventType, success: false, "interrupted");
                     return new MpCallbackDispatchResult(WechatCallbackDispatchOutcome.Interrupted, null);
                 }
             }
@@ -197,6 +202,7 @@ public sealed class MpCallbackDispatcher
                         _logger.LogError(ex,
                             "事件 {EventType} 的处理器 {Handler} 执行失败（已隔离，继续其余处理器）。",
                             eventType, handler.GetType().FullName);
+                        MpMetricsHelper.RecordEventOutcome(appKey, eventType, success: false, ex.GetType().Name);
                         handled = true;
                     }
                 }
@@ -228,7 +234,14 @@ public sealed class MpCallbackDispatcher
             var outcome = handled
                 ? WechatCallbackDispatchOutcome.Handled
                 : WechatCallbackDispatchOutcome.Unhandled;
+            MpMetricsHelper.RecordEventOutcome(appKey, eventType, success: true, handled ? null : "unhandled");
             return new MpCallbackDispatchResult(outcome, reply);
+        }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            // 分发软超时（事件处理超时上限，< 平台 5s 契约）：中间件按线语义回 503 触发重推。
+            MpMetricsHelper.RecordEventOutcome(appKey, eventType, success: false, "timeout");
+            throw;
         }
         finally
         {

@@ -172,7 +172,7 @@ public class WechatToolOutboundGuardTests
         };
         policy.Validate();
 
-        return await new WechatToolDispatcher(registry, policy)
+        return await new WechatToolDispatcher(registry, policy, telemetry: SilentTelemetry.Instance)
             .InvokeAsync(WechatToolNames.ContactsDepartmentGet, Args);
     }
 }

@@ -113,7 +113,7 @@ public class WechatToolOutcomeSettlementTests
         policy.Validate();
 
         var started = DateTime.UtcNow;
-        var result = await new WechatToolDispatcher(registry, policy, authorizer: authorizer, auditSink: sink)
+        var result = await new WechatToolDispatcher(registry, policy, authorizer: authorizer, auditSink: sink, telemetry: SilentTelemetry.Instance)
             .InvokeAsync(WechatToolNames.ContactsDepartmentGet, Args);
         var elapsed = DateTime.UtcNow - started;
 
@@ -149,7 +149,7 @@ public class WechatToolOutcomeSettlementTests
             MaxConcurrentCalls = 1,
         };
         policy.Validate();
-        using var dispatcher = new WechatToolDispatcher(registry, policy);
+        using var dispatcher = new WechatToolDispatcher(registry, policy, telemetry: SilentTelemetry.Instance);
 
         var holding = dispatcher.InvokeAsync(WechatToolNames.ContactsDepartmentGet, Args);
         await entered.Task.WaitAsync(TimeSpan.FromSeconds(5));

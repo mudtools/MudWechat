@@ -8,6 +8,7 @@
 using System.Text.Json;
 using Mud.Wechat.Abstractions.Callback;
 using Mud.Wechat.Channels.Abstractions.Callback;
+using Mud.Wechat.Channels.Abstractions.Metrics;
 using Mud.Wechat.Channels.DataModels.Callback;
 
 namespace Mud.Wechat.Channels.Callback;
@@ -120,6 +121,9 @@ public sealed class WechatChannelsCallbackDispatcher
 
         var eventType = envelope.EventTypeKey;
 
+        // ── 可观测性接线（批次 4，OB-1 收口）：事件分发计时 + 逐终点 outcome（镜像企微线分发器形态）──
+        using var metricsScope = ChannelsMetricsHelper.RecordEventHandling(appKey, eventType);
+
         // — 1. 拦截器 Before（appKey 专属先于全局；异常传播 → 中间件 500）—
         using (var interceptorScope = _scopeFactory.CreateScope())
         {
@@ -133,6 +137,7 @@ public sealed class WechatChannelsCallbackDispatcher
                     _logger.LogInformation(
                         "事件 {EventType}（appKey: {AppKey}）被拦截器 {Interceptor} 中断，按官方语义回 success（不触发重推）。",
                         eventType, appKey, interceptor.GetType().FullName);
+                    ChannelsMetricsHelper.RecordEventOutcome(appKey, eventType, success: false, "interrupted");
                     return new WechatChannelsCallbackDispatchResult(WechatCallbackDispatchOutcome.Interrupted, null);
                 }
             }
@@ -195,6 +200,7 @@ public sealed class WechatChannelsCallbackDispatcher
                         _logger.LogError(ex,
                             "事件 {EventType} 的处理器 {Handler} 执行失败（已隔离，继续其余处理器）。",
                             eventType, handler.GetType().FullName);
+                        ChannelsMetricsHelper.RecordEventOutcome(appKey, eventType, success: false, ex.GetType().Name);
                         handled = true;
                     }
                 }
@@ -222,9 +228,16 @@ public sealed class WechatChannelsCallbackDispatcher
             var outcome = handled
                 ? WechatCallbackDispatchOutcome.Handled
                 : WechatCallbackDispatchOutcome.Unhandled;
+            ChannelsMetricsHelper.RecordEventOutcome(appKey, eventType, success: true, handled ? null : "unhandled");
             var reply = await TryBuildReplyAsync(scope.ServiceProvider, appKey, envelope, dispatchToken)
                 .ConfigureAwait(false);
             return new WechatChannelsCallbackDispatchResult(outcome, reply);
+        }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            // 分发软超时（事件处理超时上限，< 官方 5s 契约）：中间件回 success + 200（官方许可出口）。
+            ChannelsMetricsHelper.RecordEventOutcome(appKey, eventType, success: false, "timeout");
+            throw;
         }
         finally
         {

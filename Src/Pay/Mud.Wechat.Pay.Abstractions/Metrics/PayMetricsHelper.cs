@@ -13,34 +13,34 @@ namespace Mud.Wechat.Pay.Abstractions.Metrics;
 
 /// <summary>
 /// 支付线指标埋点入口（与公众号线 <c>MpMetricsHelper</c> 同形态）：耗时直方图与计数分开记录，
-/// 计数由 Outcome 方法统一完成（避免重复计数）。
+/// 计数由 Outcome 方法统一完成（避免重复计数）。维度取回调配置键（路由段；直连与服务商键形态不同由标签值区分）。
 /// </summary>
 public static class PayMetricsHelper
 {
     /// <summary>记录回调入站耗时（计时起点）。</summary>
-    /// <param name="mchId">商户号（应用键；支付线以商户号为维度）。</param>
+    /// <param name="appKey">回调配置键（路由路径段；直连为商户键，服务商含 <c>:</c> 复合键）。</param>
     /// <returns>可释放的耗时记录器（释放即落点）。</returns>
-    public static IDisposable RecordCallbackRequest(string mchId)
+    public static IDisposable RecordCallbackRequest(string appKey)
     {
         var tags = new TagList
         {
             { WechatActivitySource.Tags.Product, WechatActivitySource.Products.Pay },
-            { WechatActivitySource.Tags.AppKey, mchId },
+            { WechatActivitySource.Tags.AppKey, appKey },
         };
 
         return PayMetrics.CallbackRequestDuration.RecordDuration(tags);
     }
 
     /// <summary>记录回调入站结果。</summary>
-    /// <param name="mchId">商户号。</param>
+    /// <param name="appKey">回调配置键（路由路径段）。</param>
     /// <param name="outcome">操作结果（success / failure / timeout）。</param>
-    /// <param name="errorType">错误类型（可选，如 signature / serial / replay）。</param>
-    public static void RecordCallbackOutcome(string mchId, string outcome, string? errorType = null)
+    /// <param name="errorType">错误类型（可选，如 signature / replay / timestamp）。</param>
+    public static void RecordCallbackOutcome(string appKey, string outcome, string? errorType = null)
     {
         var tags = new TagList
         {
             { WechatActivitySource.Tags.Product, WechatActivitySource.Products.Pay },
-            { WechatActivitySource.Tags.AppKey, mchId },
+            { WechatActivitySource.Tags.AppKey, appKey },
             { WechatActivitySource.Tags.Outcome, outcome },
         };
 
@@ -53,15 +53,15 @@ public static class PayMetricsHelper
     }
 
     /// <summary>记录平台证书刷新结果。</summary>
-    /// <param name="mchId">商户号。</param>
+    /// <param name="appKey">回调/商户配置键。</param>
     /// <param name="outcome">刷新结果（success / failure）。</param>
     /// <param name="certSerial">新证书序列号（可选；轮换期会先后出现两个序列号）。</param>
-    public static void RecordCertificateRefresh(string mchId, string outcome, string? certSerial = null)
+    public static void RecordCertificateRefresh(string appKey, string outcome, string? certSerial = null)
     {
         var tags = new TagList
         {
             { WechatActivitySource.Tags.Product, WechatActivitySource.Products.Pay },
-            { WechatActivitySource.Tags.AppKey, mchId },
+            { WechatActivitySource.Tags.AppKey, appKey },
             { WechatActivitySource.Tags.Outcome, outcome },
         };
 

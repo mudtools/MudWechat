@@ -10,8 +10,8 @@ using Mud.Wechat.Pay.DataModels.PartnerTransactions;
 namespace Mud.Wechat.Pay;
 
 /// <summary>
-/// 微信支付「服务商基础支付 / 分期」域 SDK（服务商下单五族 + 双路查单 + 关单 + 分期曝光咨询，
-/// <b>9 端点</b>）。
+/// 微信支付「服务商基础支付 / 分期」域 SDK（服务商下单六族 + 双路查单 + 关单 + 撤销 + 分期曝光咨询 +
+/// 分付曝光建议 + 从业机构分付曝光，<b>13 端点</b>）。
 /// </summary>
 /// <remarks>
 /// <para><b>官方文档</b>（服务商文档中心，2026-10-14 逐页核验）：JSAPI/小程序下单
@@ -25,19 +25,21 @@ namespace Mud.Wechat.Pay;
 /// <see href="https://pay.weixin.qq.com/doc/v3/partner/4012739019"/>、分期曝光咨询
 /// <see href="https://pay.weixin.qq.com/doc/v3/partner/4016196820"/>。
 /// 除曝光咨询外，各端点另有产品族分身页（同一契约、不同接入形态章节），逐端点在方法 remarks 内列出。</para>
+/// <para><b>2026-10-25 增补四端点（EP-3 批次，官方 .md 直抓逐页核验）</b>：付款码支付下单
+/// <see href="https://pay.weixin.qq.com/doc/v3/partner/4012382179"/>、撤销订单
+/// <see href="https://pay.weixin.qq.com/doc/v3/partner/4012382181"/>、服务商分付曝光
+/// <see href="https://pay.weixin.qq.com/doc/v3/partner/4014326522"/>、从业机构分付曝光
+/// <see href="https://pay.weixin.qq.com/doc/v3/partner/4014326541"/>。前三者于 2026-10-14 曾按
+/// 「V2 指引页 / 页面下架」裁定不落（守卫 PT-B2 旧零声明断言），官方现行 `.md` 正文均已提供完整
+/// APIv3 字段表 ⇒ <b>翻案落地</b>（裁定可复核、以最新官方面为准）。</para>
 /// <para><b>与直连域（<see cref="IWechatPayTransactionsService"/>）的形态差异</b>，本域纪律「表相同则共用，
 /// 表不同则分建」下的三条判据（守卫 PT-B1/PT-B3/PT-B4 锁定）：
 /// ① 商户标识<b>四分</b> —— <c>sp_appid</c>/<c>sp_mchid</c>/<c>sub_appid</c>/<c>sub_mchid</c>，
 /// 直连的 <c>appid</c>/<c>mchid</c> 在本域<b>不存在</b>；
-/// ② <c>payer</c> 是 <c>sp_openid</c> + <c>sub_openid</c> <b>二选一</b>（官方原文「必须要填一个」），
-/// 且<b>只有 JSAPI 与扫码支付两族有 <c>payer</c></b>；
-/// ③ <c>support_fapiao</c> 在四族位于 <c>settle_info</c> 内、在扫码支付族位于<b>请求顶层</b>。
+/// ② <c>payer</c> 形态按族分列（JSAPI 与扫码支付为 sp/sub 双 openid；付款码为 <c>auth_code</c>；
+/// 分付曝光为三标识选填其一）；
+/// ③ <c>support_fapiao</c> 在 JSAPI/Native/APP/H5 四族位于 <c>settle_info</c> 内、在<b>扫码支付与付款码两族位于请求顶层</b>。
 /// 两套 DTO <b>不共用</b>（跨产品线共用会把直连域的序列化上下文登记牵进本域）。</para>
-/// <para><b>SKIT 清单里的三行本轮不落端点</b>（设计方案 §2.3 核验结论）：
-/// <c>/pay/partner/transactions/codepay</c> 与 <c>/pay/partner/transactions/out-trade-no/{out_trade_no}/reverse</c>
-/// 的官方现行正文已是「付款码支付（V2）」指引页、无 APIv3 字段表 ⇒ 归 <b>APIv2 批次（P0-8）</b>；
-/// <c>/pay/partner/transactions/exposure</c> 页面已下架（302 到 50x）⇒ 曝光只落分期族的
-/// <see cref="GetInstalExposureAdviceAsync"/>。守卫 PT-B2 以<b>零声明</b>断言钉住这三条路由不出现在本线。</para>
 /// <para><b>无 <c>[Token]</c>、走商户签名</b>（守卫 <c>PAY-B1</c> fail-closed）：APIv3 全程以商户 API 证书做
 /// RSA-SHA256 请求签名，本接口<b>不声明 <c>[Token]</c></b>（违反即 MUD005 与 Query 白名单漂移）。
 /// 签名在传输层 <c>WechatPayAuthorizationHandler</c> 完成，端点方法只管路由与报文。
@@ -49,7 +51,7 @@ namespace Mud.Wechat.Pay;
 /// <c>{"code","message"}</c>。若不加本特性，组件会在非 2xx 直接抛 <c>ApiException</c>、把官方业务码丢掉；
 /// 加上后错误体原样落到 <c>WechatPayResponse.Code</c>/<c>Message</c>，调用方经
 /// <c>WechatPayException.ThrowIfFailed</c> 判错。</para>
-/// <para><b>不做运行时多态</b>：五个下单族各自一个端点方法 + 各自请求 DTO（设计方案 §2.2）——
+/// <para><b>不做运行时多态</b>：各下单族各自一个端点方法 + 各自请求 DTO（设计方案 §2.2）——
 /// AOT 下源生成按声明类型序列化，族间差异（有无 <c>payer</c>、<c>scene_info</c> 形态、
 /// <c>support_fapiao</c> 位置）用类型精确表达，不做「一个方法接枚举参数」的运行期分派。</para>
 /// </remarks>
@@ -295,5 +297,94 @@ public interface IWechatPayPartnerTransactionsService
     [Post("/v3/pay/instal/partner/exposure")]
     Task<PartnerInstalExposureResponse> GetInstalExposureAdviceAsync(
         PartnerInstalExposureRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 服务商付款码支付（被扫）下单，实时扣款。
+    /// 官方文档：<see href="https://pay.weixin.qq.com/doc/v3/partner/4012382179"/>。
+    /// </summary>
+    /// <param name="request">下单请求体，字段见 <see cref="PartnerCodepayRequest"/>。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/> 取消操作令牌对象。</param>
+    /// <returns>交易结果（<c>transaction_id</c> / <c>trade_state</c> 等），见
+    /// <see cref="PartnerTransactionQueryResponse"/>（官方本页应答表与查单逐项一致 ⇒ 同表共用）。</returns>
+    /// <remarks>
+    /// <para><b>官方契约</b>：<b>POST</b> <c>/v3/pay/partner/transactions/codepay</c>；
+    /// 必带 <c>Accept: application/json</c> 与 <c>Content-Type: application/json</c>。</para>
+    /// <para><b>业务特征</b>：收银员扫码设备读取用户付款码后由商户后台发起<b>实时扣款</b>——
+    /// 与 JSAPI/Native/APP/H5 下单不同，无需预支付 ID、无需用户二次确认；
+    /// <c>payer.auth_code</c>（用户付款码）与 <c>scene_info</c>（含门店 <c>id</c>/<c>out_id</c> 二选一）
+    /// 官方均<b>必填</b>（线下条码支付合规要求）。</para>
+    /// <para><b>2026-10-25 翻案说明</b>：本端点于 2026-10-14 曾按「官方正文是 V2 指引页」裁定不落
+    /// （守卫 PT-B2 旧零声明断言）；官方现行 <c>.md</c> 正文已提供完整 APIv3 字段表（页头更新时间
+    /// 2026.07.14）⇒ 翻案落地，详见类型级 remarks。</para>
+    /// </remarks>
+    [Post("/v3/pay/partner/transactions/codepay")]
+    Task<PartnerTransactionQueryResponse> CreateCodepayOrderAsync(
+        PartnerCodepayRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 服务商撤销订单（支付失败 / 系统超时的纠错出口）。
+    /// 官方文档：<see href="https://pay.weixin.qq.com/doc/v3/partner/4012382181"/>。
+    /// </summary>
+    /// <param name="outTradeNo">商户订单号（路径参数，string(32)，必填）。</param>
+    /// <param name="request">撤销请求体（四分商户标识），见 <see cref="PartnerReverseOrderRequest"/>。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/> 取消操作令牌对象。</param>
+    /// <returns>撤销结果（四分商户标识 + 订单号），见 <see cref="PartnerReverseOrderResponse"/>。</returns>
+    /// <remarks>
+    /// <para><b>官方契约</b>：<b>POST</b>
+    /// <c>/v3/pay/partner/transactions/out-trade-no/{out_trade_no}/reverse</c>；成功应答 <c>200</c>（非 204）。</para>
+    /// <para><b>官方语义</b>：「支付交易返回失败或支付系统超时，调用该接口撤销交易。如果此订单用户支付失败，
+    /// 微信支付系统会将此订单关闭；如果用户支付成功，微信支付系统会将此订单资金退还给用户。」
+    /// —— 撤销是付款码支付的配套纠错动作（用户支付中态 <c>USERPAYING</c> 的收尾手段）。</para>
+    /// <para><b>请求体与关单不同表</b>：本体含选填 <c>sp_appid</c>/<c>sub_appid</c>
+    /// （关单体 <see cref="PartnerCloseOrderRequest"/> 无任何 AppID），不可互抄。</para>
+    /// </remarks>
+    [Post("/v3/pay/partner/transactions/out-trade-no/{outTradeNo}/reverse")]
+    Task<PartnerReverseOrderResponse> ReverseOrderAsync(
+        [Path] string outTradeNo,
+        PartnerReverseOrderRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 服务商查询微信分付曝光建议（下单前调用）。
+    /// 官方文档：<see href="https://pay.weixin.qq.com/doc/v3/partner/4014326522"/>。
+    /// </summary>
+    /// <param name="request">曝光咨询请求体，字段见 <see cref="PartnerTransactionExposureRequest"/>。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/> 取消操作令牌对象。</param>
+    /// <returns>曝光建议，见 <see cref="PartnerTransactionExposureResponse"/>。</returns>
+    /// <remarks>
+    /// <para><b>官方契约</b>：<b>POST</b> <c>/v3/pay/partner/transactions/exposure</c>；
+    /// 必带 <c>Accept: application/json</c> 与 <c>Content-Type: application/json</c>。</para>
+    /// <para><b>与分期曝光族（<see cref="GetInstalExposureAdviceAsync"/>）并存非替代</b>：本族查
+    /// 「是否建议曝光微信分付」（<c>fqf_exposure</c> + 调起用 <c>market_exposure_token</c>），
+    /// 分期族查分期入口与档期息费减免券；两者路由、字段表、业务时机均不同。</para>
+    /// <para><b>2026-10-25 翻案说明</b>：2026-10-14 曾以「页面下架（302→50x）」裁定不落；
+    /// 官方现行 <c>.md</c> 正文在册且字段表完整（页头更新时间 2026.03.26）⇒ 翻案落地。</para>
+    /// </remarks>
+    [Post("/v3/pay/partner/transactions/exposure")]
+    Task<PartnerTransactionExposureResponse> GetFqfExposureAdviceAsync(
+        PartnerTransactionExposureRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 从业机构查询微信分付曝光建议。
+    /// 官方文档：<see href="https://pay.weixin.qq.com/doc/v3/partner/4014326541"/>。
+    /// </summary>
+    /// <param name="request">曝光咨询请求体（从业机构字段面），见 <see cref="AcquiringBankTransactionExposureRequest"/>。</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/> 取消操作令牌对象。</param>
+    /// <returns>曝光建议，见 <see cref="PartnerTransactionExposureResponse"/>（两页应答表逐项一致 ⇒ 同表共用）。</returns>
+    /// <remarks>
+    /// <para><b>官方契约</b>：<b>POST</b> <c>/v3/pay/acquiring-bank/transactions/exposure</c>；
+    /// 必带 <c>Accept: application/json</c> 与 <c>Content-Type: application/json</c>。</para>
+    /// <para><b>支持商户类型为从业机构（银行 / 支付机构）</b>：请求体是
+    /// <c>acquiring_bank_id</c>/<c>merchant_id</c>/<c>channel_id</c> 三方标识形态，与服务商族不同表 ⇒
+    /// DTO 独立。本端点是本接口上的<b>第二个前缀例外</b>（不在 <c>/v3/pay/partner/transactions/</c> 下），
+    /// 从业机构族后续扩域时随迁独立域。</para>
+    /// <para><b>签名主体</b>：仍为当前作用域商户的 API 证书（从业机构 / 服务商自有商户号），见类型级 remarks。</para>
+    /// </remarks>
+    [Post("/v3/pay/acquiring-bank/transactions/exposure")]
+    Task<PartnerTransactionExposureResponse> GetAcquiringBankFqfExposureAdviceAsync(
+        AcquiringBankTransactionExposureRequest request,
         CancellationToken cancellationToken = default);
 }

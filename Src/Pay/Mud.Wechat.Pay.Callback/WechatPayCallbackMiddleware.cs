@@ -6,6 +6,7 @@
 // -----------------------------------------------------------------------
 
 using System.Text;
+using Mud.Wechat.Pay.Abstractions.Metrics;
 
 namespace Mud.Wechat.Pay.Callback;
 
@@ -63,8 +64,9 @@ public sealed class WechatPayCallbackMiddleware
     }
 
     /// <summary>中间件入口。</summary>
-    /// <param name="context">HTTP 上下文。</param>
-    /// <returns>处理任务。</returns>
+    /// <remarks><b>观测接线</b>（总案 D5 / OB-1）：命中路由的每个入站通知记一笔
+    /// <c>callback.request.duration</c> 与一笔 <c>callback.request</c> 计数
+    /// （success / failure / timeout；503 重试出口计 timeout），静态 Helper 直调、不进 DI。</remarks>
     public async Task InvokeAsync(HttpContext context)
     {
         var options = _optionsMonitor.CurrentValue;
@@ -75,11 +77,16 @@ public sealed class WechatPayCallbackMiddleware
             return;
         }
 
+        using var duration = PayMetricsHelper.RecordCallbackRequest(merchantKey);
+        var outcome = "success";
+        string? errorType = null;
         try
         {
             // APIv3 通知恒为 POST；无 GET echo 流程（与公众号 URL 验证不同）。
             if (!HttpMethods.IsPost(context.Request.Method))
             {
+                outcome = "failure";
+                errorType = "method_not_allowed";
                 context.Response.StatusCode = StatusCodes.Status405MethodNotAllowed;
                 return;
             }
@@ -88,6 +95,8 @@ public sealed class WechatPayCallbackMiddleware
             if (string.IsNullOrEmpty(contentType)
                 || contentType!.IndexOf("json", StringComparison.OrdinalIgnoreCase) < 0)
             {
+                outcome = "failure";
+                errorType = "content_type";
                 context.Response.StatusCode = StatusCodes.Status415UnsupportedMediaType;
                 return;
             }
@@ -96,6 +105,8 @@ public sealed class WechatPayCallbackMiddleware
                 .ConfigureAwait(false);
             if (body is null)
             {
+                outcome = "failure";
+                errorType = "body_too_large";
                 _logger.LogWarning("通知请求体超过限制 {MaxBytes} 字节，MerchantKey: {MerchantKey}",
                     options.MaxRequestBodySize, merchantKey);
                 context.Response.StatusCode = StatusCodes.Status413RequestEntityTooLarge;
@@ -107,12 +118,13 @@ public sealed class WechatPayCallbackMiddleware
                 .ReceiveAsync(merchantKey, headers, body, context.RequestAborted)
                 .ConfigureAwait(false);
 
-            var outcome = await _dispatcher
+            var dispatchOutcome = await _dispatcher
                 .DispatchAsync(notificationContext, context.RequestAborted)
                 .ConfigureAwait(false);
 
-            if (outcome == WechatPayCallbackDispatchOutcome.TimedOut)
+            if (dispatchOutcome == WechatPayCallbackDispatchOutcome.TimedOut)
             {
+                outcome = "timeout";
                 await WriteJsonAsync(context, StatusCodes.Status503ServiceUnavailable, FailureResponseBody)
                     .ConfigureAwait(false);
                 return;
@@ -123,6 +135,9 @@ public sealed class WechatPayCallbackMiddleware
         catch (WechatCallbackException ex)
         {
             // 统一 403 + 固定文案：不区分「签名不符 / 序列号未知 / 超窗 / 重放 / 解密失败」，避免探测 oracle。
+            // 观测侧按 Kind 细分（只进指标标签，不进应答），拒绝语义不泄漏给调用方。
+            outcome = "failure";
+            errorType = MapFailureKind(ex.Kind);
             _logger.LogWarning(WechatPayCallbackLogEvents.VerificationFailed, ex,
                 "通知验证失败（{Kind}），MerchantKey: {MerchantKey}", ex.Kind, merchantKey);
             await WriteJsonAsync(context, StatusCodes.Status403Forbidden, FailureResponseBody)
@@ -131,21 +146,41 @@ public sealed class WechatPayCallbackMiddleware
         catch (OperationCanceledException) when (context.RequestAborted.IsCancellationRequested)
         {
             // 客户端断开：不再写应答。
+            outcome = "failure";
+            errorType = "aborted";
         }
         catch (OperationCanceledException)
         {
             // 软超时经分发器以结果表达，正常不会走到这里；保留兜底以触发官方重试。
+            outcome = "timeout";
             await WriteJsonAsync(context, StatusCodes.Status503ServiceUnavailable, FailureResponseBody)
                 .ConfigureAwait(false);
         }
         catch (Exception ex)
         {
+            outcome = "failure";
+            errorType = "unexpected";
             _logger.LogError(WechatPayCallbackLogEvents.UnhandledError, ex,
                 "通知处理发生未预期异常，MerchantKey: {MerchantKey}", merchantKey);
             await WriteJsonAsync(context, StatusCodes.Status500InternalServerError, FailureResponseBody)
                 .ConfigureAwait(false);
         }
+        finally
+        {
+            PayMetricsHelper.RecordCallbackOutcome(merchantKey, outcome, errorType);
+        }
     }
+
+    /// <summary>把回调失败类别映射为观测 <c>error.type</c> 标签（只进指标，不进应答——固定文案纪律不变）。</summary>
+    private static string MapFailureKind(WechatCallbackFailureKind kind) => kind switch
+    {
+        WechatCallbackFailureKind.InvalidSignature => "signature",
+        WechatCallbackFailureKind.MissingSignature => "signature",
+        WechatCallbackFailureKind.TimestampOutOfRange => "timestamp",
+        WechatCallbackFailureKind.ReplaySuspected => "replay",
+        WechatCallbackFailureKind.MissingEncrypt => "payload",
+        _ => "unexpected",
+    };
 
     /// <summary>
     /// 匹配路由前缀并提取商户键（服务商键含 <c>:</c>，先做 URL 解码归一）。

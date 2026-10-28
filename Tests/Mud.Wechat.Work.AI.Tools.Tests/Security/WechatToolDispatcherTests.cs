@@ -130,7 +130,7 @@ public class WechatToolDispatcherTests
         var policy = new WechatToolPolicy { EnforceAuthorization = false };
         policy.Validate();
 
-        var result = await new WechatToolDispatcher(registry, policy)
+        var result = await new WechatToolDispatcher(registry, policy, telemetry: SilentTelemetry.Instance)
             .InvokeAsync(WechatToolNames.ContactsDepartmentGet, GetArgs);
 
         result.Text.Should().Contain("执行失败");
@@ -151,7 +151,7 @@ public class WechatToolDispatcherTests
         var policy = new WechatToolPolicy { EnforceAuthorization = false };
         policy.Validate();
 
-        var result = await new WechatToolDispatcher(registry, policy)
+        var result = await new WechatToolDispatcher(registry, policy, telemetry: SilentTelemetry.Instance)
             .InvokeAsync(WechatToolNames.ContactsDepartmentGet, GetArgs);
 
         result.Text.Should().Contain(
@@ -172,7 +172,7 @@ public class WechatToolDispatcherTests
         var policy = new WechatToolPolicy { EnforceAuthorization = false };
         policy.Validate();
 
-        var act = async () => await new WechatToolDispatcher(registry, policy)
+        var act = async () => await new WechatToolDispatcher(registry, policy, telemetry: SilentTelemetry.Instance)
             .InvokeAsync(WechatToolNames.ContactsDepartmentGet, GetArgs);
 
         await act.Should().ThrowAsync<OperationCanceledException>("取消是控制流，不得被归一为工具结果");

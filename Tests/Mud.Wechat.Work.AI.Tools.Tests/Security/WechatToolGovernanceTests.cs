@@ -17,6 +17,14 @@ namespace Mud.Wechat.Work.AI.Tools.Tests.Security;
 /// 三者共同解决同一类问题——<b>工具面在压力下的行为不可观测/不可控</b>：慢接口挂住回合、并行 tool_call 一起撞限流、
 /// 线上只能看到「模型变慢」而看不到具体工具与 P95。用例把这三条钉成可回归的行为。
 /// </remarks>
+/// <remarks>
+/// <b>本类与 <see cref="WechatToolTelemetryTests"/> 同入禁并行集合（Serial-Metrics）</b>：本类的指标/Span
+/// 用例依赖<b>真实</b> <c>WechatToolTelemetry.Instance</c> 的静态仪表发射，而遥测测试的
+/// <c>MetricHarness</c> 也订阅同一仪表 —— MeterListener 的事件广播到所有启用者，
+/// 跨类并行即互相污染样本（满载偶发、隔离不现，2026-10-25 批次 3 定位）。
+/// 其余使用 <see cref="SilentTelemetry"/> 的类不触达真实仪表，保持默认并行。
+/// </remarks>
+[Collection("Serial-Metrics")]
 public class WechatToolGovernanceTests
 {
     private static readonly Dictionary<string, object?> Args = new(StringComparer.Ordinal) { ["department_id"] = 2 };

@@ -10,6 +10,7 @@ using System.Xml;
 using System.Xml.Linq;
 using Mud.Wechat.Abstractions.Callback;
 using Mud.Wechat.OpenPlatform.Abstractions;
+using Mud.Wechat.OpenPlatform.Abstractions.Metrics;
 
 namespace Mud.Wechat.OpenPlatform;
 
@@ -134,11 +135,45 @@ public sealed class ComponentVerifyTicketReceiver
     /// <param name="body">请求体（加密信封 XML）。</param>
     /// <returns>处置结果；票据推送成功时票据已写入存储，授权变更事件随结果返回。</returns>
     /// <remarks>
-    /// <b>判定顺序是安全相关的</b>：先验签、再时效窗、再解密、再比对 appid，最后才看类型并<b>分流</b> ——
+    /// <para><b>判定顺序是安全相关的</b>：先验签、再时效窗、再解密、再比对 appid，最后才看类型并<b>分流</b> ——
     /// 任何一步失败都<b>不写</b>存储、也<b>不</b>返回事件。若把写入/返回提前到验签之前，
-    /// 一个伪造报文就能覆盖真票据或伪造一次「授权成功」（等于让攻击者拿到授权码）。
+    /// 一个伪造报文就能覆盖真票据或伪造一次「授权成功」（等于让攻击者拿到授权码）。</para>
+    /// <para><b>观测接线</b>（总案 D5 / OB-1）：每次处置记一笔 <c>callback.request.duration</c> 与
+    /// <c>callback.request</c> 计数（Accepted/AuthorizerEvent/UnknownInfoType = success，其余按类别细分
+    /// <c>error.type</c>），静态 Helper 直调、不进 DI。</para>
     /// </remarks>
     public ComponentPushResult Receive(
+        string? msgSignature,
+        string? timestamp,
+        string? nonce,
+        string? body)
+    {
+        using var duration = OpenPlatformMetricsHelper.RecordCallbackRequest(_config.ComponentAppId ?? string.Empty);
+        var result = ReceiveCore(msgSignature, timestamp, nonce, body);
+        var success = result.Outcome is ComponentTicketPushOutcome.Accepted
+                      or ComponentTicketPushOutcome.AuthorizerEvent
+                      or ComponentTicketPushOutcome.UnknownInfoType;
+        OpenPlatformMetricsHelper.RecordCallbackOutcome(
+            _config.ComponentAppId ?? string.Empty,
+            success ? "success" : "failure",
+            MapOutcome(result.Outcome));
+        return result;
+    }
+
+    /// <summary>把推送处置类别映射为观测 <c>error.type</c> 标签（成功三类不记 error.type）。</summary>
+    private static string? MapOutcome(ComponentTicketPushOutcome outcome) => outcome switch
+    {
+        ComponentTicketPushOutcome.MalformedEnvelope => "payload",
+        ComponentTicketPushOutcome.MissingTicket => "payload",
+        ComponentTicketPushOutcome.InvalidSignature => "signature",
+        ComponentTicketPushOutcome.DecryptFailed => "decrypt",
+        ComponentTicketPushOutcome.AppIdMismatch => "receive_id",
+        ComponentTicketPushOutcome.TimestampOutOfWindow => "timestamp",
+        _ => null,
+    };
+
+    /// <summary>处置核心（判定顺序见 <see cref="Receive"/> 注释；本方法不承载观测）。</summary>
+    private ComponentPushResult ReceiveCore(
         string? msgSignature,
         string? timestamp,
         string? nonce,

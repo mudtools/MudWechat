@@ -26,6 +26,7 @@ namespace Mud.Wechat.Work.AI.Tools.Tests.Diagnostics;
 /// 故 <c>risk</c> 维度不得退化。
 /// </para>
 /// </remarks>
+[Collection("Serial-Metrics")]
 public class WechatToolTelemetryTests
 {
     [Fact]

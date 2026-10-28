@@ -302,8 +302,12 @@ public static class Baseline
         /// （PayScore 12 → 23：计划 3 + 签约计划 4 + 消息 2 + 风险评估 1 + 按 OPENID 解除授权 1；
         /// Transfer 10 → 19：旧版批次 9；ProfitSharing 10 → 11：商户配置 1；
         /// MerchantFund 2 → 4：收入记录 2）= 621。
+        /// + EP-3 付款码支付服务商面与分付曝光 4（PartnerTransactions 9 → 13：付款码下单
+        /// <c>POST /v3/pay/partner/transactions/codepay</c> + 撤销 <c>…/out-trade-no/&#123;out_trade_no&#125;/reverse</c>
+        /// + 服务商分付曝光 <c>…/exposure</c> + 从业机构分付曝光 <c>/v3/pay/acquiring-bank/transactions/exposure</c>，
+        /// 守卫 PT-B1；2026-10-25 官方 .md 直抓翻案 2026-10-14 的「V2 面 / 页面下架」裁定）= 625。
         /// </remarks>
-        public const int Endpoints = 621;
+        public const int Endpoints = 625;
     }
 
     /// <summary>

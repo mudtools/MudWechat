@@ -120,14 +120,14 @@ public sealed class WechatCallbackMiddleware(
             if (HttpMethods.IsGet(context.Request.Method))
             {
                 await HandleEchoAsync(context, appKey).ConfigureAwait(false);
-                WorkMetricsHelper.RecordCallbackOutcome(appKey, channel, "success");
+                WorkMetricsHelper.RecordCallbackOutcome(appKey, channel, ResolveOutcome(context.Response.StatusCode));
                 return;
             }
 
             if (HttpMethods.IsPost(context.Request.Method))
             {
                 await HandleReceiveAsync(context, appKey, options).ConfigureAwait(false);
-                WorkMetricsHelper.RecordCallbackOutcome(appKey, channel, "success");
+                WorkMetricsHelper.RecordCallbackOutcome(appKey, channel, ResolveOutcome(context.Response.StatusCode));
                 return;
             }
 
@@ -467,6 +467,18 @@ public sealed class WechatCallbackMiddleware(
 
         return false;
     }
+
+    /// <summary>
+    /// 按最终状态码推导回调 outcome 指标桶（R-P3-4，架构审查报告 v2 P3-4）：
+    /// 2xx/3xx = <c>success</c>；4xx/5xx（413 超限、415 通道不匹配、400 报文非法、500 未预期等
+    /// 短路应答）= <c>rejected:{状态码}</c>——outcome 是自由字符串维度，按状态码分桶保观测归真。
+    /// </summary>
+    /// <remarks>
+    /// internal 纯函数（可测性缝）：GET echo 正常返回恒 200 同公式覆盖；异常/超时路径的既有记录
+    /// （failure/timeout 维度）不经本函数，语义不变。
+    /// </remarks>
+    internal static string ResolveOutcome(int statusCode)
+        => statusCode is >= 200 and < 400 ? "success" : $"rejected:{statusCode}";
 
     /// <summary>IPv4 CIDR 前缀匹配（前缀 ≤ 0 视为全段放行，≥ 32 退化为精确匹配）。</summary>
     private static bool IsInIpv4Cidr(IPAddress address, IPAddress network, int prefixLength)

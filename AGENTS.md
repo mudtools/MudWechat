@@ -44,7 +44,7 @@ dotnet test Tests/Mud.Wechat.Work.Tests -c Release -f net8.0 --filter "FullyQual
 | 加/改回调事件 | `[WechatCallbackContract]`（事件键 + 族前置 + 开放面）+ 载荷 `[PayloadContract]` + 回调守卫 |
 | 加/改回调处理器 | `WechatCallbackHandlerAnalyzer`（MUDCB002~005）自动生效（`SupportedEventType` ↔ 载荷契约一致性编译期校验）；若钥匙集/开放面变化则同批更新 `WechatCallbackContractGuards`（CB 系列） |
 | 改契约面（接口/路由/DTO/注册组/配置面） | 对应 `Tests/**/ContractGuards/` 守卫 —— **守卫是权威描述，不是「改完再补」的收尾项** |
-| 加/改业务接口（`[HttpClientApi]`） | 命名空间按形态落位：`IsAbstract = true` 的父接口 → `Mud.Wechat.Work.Interfaces`，可注入接口 → `Mud.Wechat.Work`（见 §4）；**跑 `WechatInterfaceNamespaceContractGuards`（N1~N3）**，新增接口须同批调整其 147/299 计数 |
+| 加/改业务接口（`[HttpClientApi]`） | 命名空间按形态落位：`IsAbstract = true` 的父接口 → `Mud.Wechat.Work.Interfaces`，可注入接口 → `Mud.Wechat.Work`（见 §4）；**跑 `WechatInterfaceNamespaceContractGuards`（N1~N3）**，新增接口须同批调整其 158（父）/312（可注入），合计 470 计数（基线锚点 `Tests/ContractBaseline.cs`） |
 
 ## 3 红线：多 TFM、语言与 AOT
 
@@ -52,7 +52,7 @@ dotnet test Tests/Mud.Wechat.Work.Tests -c Release -f net8.0 --filter "FullyQual
 
 **`netstandard2.0` 无 `IsExternalInit` polyfill**，该 TFM 下：禁 `init`、禁 `record`/`with`；无 `ArgumentNullException.ThrowIfNull`；`string.IsNullOrEmpty`/`IsNullOrWhiteSpace` 无 `[NotNullWhen]`、流分析不收窄（须显式 `x == null`）；禁 `Math.Clamp`。既存大量 CS86xx 警告属正常形态（见 §1）。
 
-**`Tests/Directory.Build.props` 导入根 props**（`Import` 必须在自身覆盖之前）：测试工程与源工程同受一套治理，16 个测试工程自动继承 `LangVersion` / `Nullable` / `ImplicitUsings` / `Version` / TFM 集，故**新增治理属性只需写在根 props 一处**（此前的「遮蔽」形态要求同批写两遍，且靠人记无编译期强制）。该文件只额外做两件事：① 把 `TargetFrameworks` 收为单档 `net8.0`（避免 `TargetFramework`/`TargetFrameworks` 双属性冲突使 restore 进入跨目标模式）；② 显式关闭 `IsAotCompatible` / `EnableTrimAnalyzer` / `EnableAotAnalyzer` / `EnableSingleFileAnalyzer` —— 测试宿主（xunit / FluentAssertions / Moq）大量使用反射，开启后实测产生约 900 条 IL 噪声告警，既掩盖真实信号，也与「测试工程不进 Native AOT 发布、正确性由用例断言承担」的分工不符（源工程的 AOT 净零仍由 `verify-build.ps1` 步骤 2 逐工程保证）。
+**`Tests/Directory.Build.props` 导入根 props**（`Import` 必须在自身覆盖之前）：测试工程与源工程同受一套治理，全部测试工程（现 20 个）自动继承 `LangVersion` / `Nullable` / `ImplicitUsings` / `Version` / TFM 集，故**新增治理属性只需写在根 props 一处**（此前的「遮蔽」形态要求同批写两遍，且靠人记无编译期强制）。该文件只额外做两件事：① 把 `TargetFrameworks` 收为单档 `net8.0`（避免 `TargetFramework`/`TargetFrameworks` 双属性冲突使 restore 进入跨目标模式）；② 显式关闭 `IsAotCompatible` / `EnableTrimAnalyzer` / `EnableAotAnalyzer` / `EnableSingleFileAnalyzer` —— 测试宿主（xunit / FluentAssertions / Moq）大量使用反射，开启后实测产生约 900 条 IL 噪声告警，既掩盖真实信号，也与「测试工程不进 Native AOT 发布、正确性由用例断言承担」的分工不符（源工程的 AOT 净零仍由 `verify-build.ps1` 步骤 2 逐工程保证）。
 
 AOT / Trim（`net8.0`/`net10.0` 默认开启；`AotStrictMode=true` 把 `IL2026;IL2046;IL2050;IL2057;IL2067;IL2070;IL2072;IL2075;IL2080;IL3050` 升为错误）：
 
@@ -84,12 +84,12 @@ Src/Work/                             # 企业微信线（本文件 §5~§7 的�
 Src/{OfficialAccount,MiniProgram,Pay,OpenPlatform,Channels,Ads}/   # 其余五条线 + 在建广告线，同形态分包
                                       # 公众号 4 包 / 小程序 3 包（**无 Callback**）/ 支付 4 包 / 开放平台 3 包 / 小店 4 包 / 广告 3 包（在建）
                                       # 每包的公开面与已踩陷阱见其目录下的 README.md
-Tests/                                # 16 个工程（七线 + Core 叶层 + Redis + OpenTelemetry），镜像源结构，单 TFM net8.0
+Tests/                                # 20 个工程（七线 + Core 叶层 + Redis + OpenTelemetry + AI 域），镜像源结构，单 TFM net8.0
 scripts/                              # verify-build / audit-config-keys / GenerateJsonContext / AddHttpJsonSerializable / ApplyTokenOwnerKeys / Update-WechatToolGolden
 .docs/                                # 方案与设计文档（中文；已 gitignore，fresh clone 无此目录）
 ```
 
-依赖单向：`Work → {Abstractions, DataModels}`、`Callback → {Abstractions, DataModels}`、`Abstractions → DataModels`、`Redis → {Abstractions（叶层）, Work.Abstractions}`。硬边界：**`Callback` 不引用 `Work`**；**`Redis` 不引用 Work 主包 / Work.Callback / 任何线主包**（唯一例外：Redis → `Work.Abstractions`，RD11 裁决——实现企微专属存储端口四接口 + 消费 `RedisMetricsHelper`/`WorkMetrics` 指标面）；**广告线与其余六线双向零引用**（ADS-S1 两向都扫）。
+依赖单向：`Work → {Abstractions, DataModels}`、`Callback → {Abstractions, DataModels}`、`Abstractions → DataModels`、`Redis → {Abstractions（叶层）, Work.Abstractions}`。硬边界：**`Callback` 不引用 `Work`**；**`Redis` 不引用 Work 主包 / Work.Callback / 任何线主包**（唯一例外：Redis → `Work.Abstractions`，RD11 裁决——实现企微专属存储端口四接口 + 消费 `RedisMetricsHelper`/`WorkMetrics` 指标面）；**广告线与其余六线双向零引用**（ADS-S1 两向都扫）。 跨线例外注记：**`MP.Abstractions → OA.Abstractions` 为「依赖载体」边**（小程序复用公众号令牌/多应用底座；Abstractions 包自身零类型消费、真消费在 MP 主包经传递引用——复制方案因单槽注册表会使 errcode 自愈静默失效已被否决，`MiniProgramScaffoldContractGuards` 禁止引 OA 运行时包），**勿当「可顺手删除的冗余引用」误删**。
 
 **新增产品线的门禁接入口只有一个**：`AB-G6` 会同时校验解决方案工程清单（每个可打包工程须已在 `slnx` 内）、`audit-config-keys.ps1` 的**配置 DTO 登记表 `$configFiles`**（逐文件登记，**不得推导**——它是「每个配置 DTO 必须被登记受检」的契约本身；消费点**搜索根**已由 `slnx /src/` 现场推导、零手工登记，F1）、DTO 标注脚本根命名空间、以及 CI / `pack.bat` / `publish.bat` 三处的**推导口径**（可打包集由 `Src/**/*.csproj` 现场推导，三处各自推导、不持有名单，也不硬编码包数 —— 唯一被维护的名单是「非可打包工程白名单」，仅两个构建期工具）。
 
@@ -117,12 +117,12 @@ scripts/                              # verify-build / audit-config-keys / Gener
 | 通讯录 Users | — | `Contacts/Users/` → 命名空间 `...DataModels.Contracts.Users`（全仓唯一插入 `Contracts` 段） | — |
 | 公共父接口 | 与子接口**同目录**（如 `Interfaces/Agent/IWechatWorkAgentService.cs`） | — | 命名空间 `Mud.Wechat.Work.Interfaces`（与子接口分面，见上） |
 
-**已否决：把全部 446 个接口统一迁入 `Mud.Wechat.Work.Interfaces`（对齐 `MudFeishu/FeishuV3` 的单一 `Interfaces` 命名空间）。勿「顺手对齐」。**
+**已否决：把全部 470 个接口统一迁入 `Mud.Wechat.Work.Interfaces`（对齐 `MudFeishu/FeishuV3` 的单一 `Interfaces` 命名空间）。勿「顺手对齐」。**
 
 - 参照架构形态：`Mud.Feishu.Interfaces` 装全部接口（父 + 子同一命名空间）。本仓**有意不采用**——该形态下最终用户一个 `using Mud.Feishu.Interfaces;` 就会把 147 个父接口全部请回自动完成列表，**隔离目的完全落空**（命名空间本身无隐藏语义，隐藏只来自「用户不导入该命名空间」）。
 - 本仓形态：父接口单独占 `Mud.Wechat.Work.Interfaces`，可注入接口留在 `Mud.Wechat.Work`，用户只 `using Mud.Wechat.Work;` 即得全部可用接口且不见父接口；确需向上转型的用户自行补 `using Mud.Wechat.Work.Interfaces;`（少数场景、主动行为）。
-- 代价与接受理由：与参照架构存在形态差异、二分规则比单一规则复杂、147/299 计数须随契约面同批调整。接受理由是隔离意图为本仓的第一诉求，且漂移风险已由 `WechatInterfaceNamespaceContractGuards`（N1~N3）完全锁定。
-- 若日后要改回全量对齐：N1 守卫会精确列出全部 446 个接口的目标命名空间，方向不会迷失；**但须先确认是否放弃隔离意图**。
+- 代价与接受理由：与参照架构存在形态差异、二分规则比单一规则复杂、158/312 计数须随契约面同批调整。接受理由是隔离意图为本仓的第一诉求，且漂移风险已由 `WechatInterfaceNamespaceContractGuards`（N1~N3）完全锁定。
+- 若日后要改回全量对齐：N1 守卫会精确列出全部 470 个接口的目标命名空间，方向不会迷失；**但须先确认是否放弃隔离意图**。
 
 ## 5 领域契约（不可违反）
 
@@ -179,7 +179,7 @@ scripts/                              # verify-build / audit-config-keys / Gener
 | 配置面 | `WechatAppCallbackOptions`：`PushToken`/`PushEncodingAESKey`/`ReceiveId`/`AppType`/`Channel`，必须与主配置同类文件才纳入 audit 扫描。`ReceiveId` 是接收方 ID（自建填 `CorpId`、**套件填 `SuiteId`**）；非空时校验解密明文 `receiveid`，留空或明文未携带时跳过并一次性告警 |
 | AppType × Channel | `Channel`（`App=1` 应用数据通道 / `Suite=2` 套件指令通道，默认 `App`）；`Validate()` 拒绝「自建应用占用套件通道」「套件通道非第三方/代开发」。`ValidateReceiveId` 三元分流，`IsEventFamilyAllowed` 为**族级默认**合法性闸、**先于**拦截器 `BeforeHandleAsync`，不适用族返回 `Rejected`（→200 不重推） |
 | 智能机器人 JSON 通道 | `WechatCallbackChannel.Bot=3`（仅 `AppType=Internal` + **空 `ReceiveId`**，`Validate()` fail-fast）；报文为 JSON（`{"encrypt":...}`）⇒ 复用密码学/时效/指纹/凭据来源，但**不走** XML 事件信封与族闸（`IsEventFamilyAllowed` 对 Bot 恒 `false`）；键集独立（`WechatBotEventTypes`，**不得**并入 `OfficialPayloadContracts`、**不得**改值与 XML 侧消歧）；处理器为**返回式** `Task<AibotMessage?>`（`null` = 加密空包 `{}`），经 `AddWechatBotCallback().AddHandler<T>(botKey)` 注册（未先 `AddWechatCallback` 即 fail-fast）；应答外壳 `{encrypt, msgsignature, timestamp, nonce}`（`msgsignature` **无下划线**）；**软超时回加密空包 + 200**（非 XML 侧 503：官方只推一次 + 指纹已消费）；**仅 net8.0+** 可用（低 TFM 回 415 + 告警，**不得**静默降级）；**请求体只读一次**（中间件先读再分派，二次读流 ⇒ 恒 403）；路由 `/{GlobalRoutePrefix}/{BotKey}`，仅前缀路由 `/{prefix}` 归一为通配键 `"*"` 后分发 |
-| 智能机器人长连接（101463，P3） | `wss://openws.work.weixin.qq.com`；建连后 `aibot_subscribe`（`bot_id`+`secret`，**每连接恰一次**）；帧外壳 `{cmd, headers.req_id, body}` 两阶段反序列化（先外壳后按 `cmd` 解 body，**禁反射多态**）；**仅 net8.0+**（依赖源生成上下文，同 ADR-12）；应答帧统一 `{headers, errcode, errmsg}`；`aibot_respond_*` 三支各有事件限定（welcome 仅 enter_chat / update 仅卡片事件 / req_id **透传**回调帧值）；流式刷新须同 `stream.id` + 10 分钟窗口 + `finish` 终结（`WechatBotStreamRegistry` 记账「id → 首次 req_id」）；**无指纹闸**（帧无签名，`msgid` 去重归宿主，R10）；重连**先退避再夺租约**（`IWechatBotConnectionLease`，多实例必须注册；`disconnected_event` 不得立即抢占）；素材三步帧 `aibot_upload_media_init/_chunk/_finish`（≤512KB/片、≤100 片、`media_id` 3 天有效）；跨面互斥：同 BotKey 不得同时配长连接与回调凭据（启动期 fail-fast） |
+| 智能机器人长连接（101463，P3） | `wss://openws.work.weixin.qq.com`；建连后 `aibot_subscribe`（`bot_id`+`secret`，**每连接恰一次**）；帧外壳 `{cmd, headers.req_id, body}` 两阶段反序列化（先外壳后按 `cmd` 解 body，**禁反射多态**）；**仅 net8.0+**（依赖源生成上下文，同 ADR-12）；应答帧统一 `{headers, errcode, errmsg}`；`aibot_respond_*` 三支各有事件限定（welcome 仅 enter_chat / update 仅卡片事件 / req_id **透传**回调帧值）；流式刷新须同 `stream.id` + 10 分钟窗口 + `finish` 终结（`WechatBotStreamRegistry` 记账「id → 首次 req_id」，条目保留至窗口+宽限后机会式清扫、超保留窗同 id 视为新流）；**无指纹闸**（帧无签名，`msgid` 去重归宿主，R10）；重连**先退避再夺租约**（`IWechatBotConnectionLease`，多实例必须注册；`disconnected_event` 不得立即抢占）；素材三步帧 `aibot_upload_media_init/_chunk/_finish`（≤512KB/片、≤100 片、`media_id` 3 天有效）；跨面互斥：同 BotKey 不得同时配长连接与回调凭据（启动期 fail-fast） |
 
 **事件载荷体系**：**不得**再新增「逐事件 DTO + 手写 `ParseXxx`」，**不得**手写多级嵌套解析或手改 `OfficialPayloadContracts.RegisterAll` 方法体。
 
@@ -208,7 +208,7 @@ scripts/                              # verify-build / audit-config-keys / Gener
 - 归属域守卫 `WechatTokenOwnerContractGuards.cs`（TO1~TO3）：按程序集反射枚举全部应用类型子接口（数量下限防枚举空跑），锁定族别 ↔ `TokenManagerKey` 归属域一一对应、`TokenType` → 官方 Query 参数名不漂移、声明的键被 `WechatTokenRouting.OwnedKeys` 覆盖且自建/非自建不交叉。切换器契约由 `Abstractions.Tests/WechatAppContextSwitcherTests` 锁定（`UseCorpScope` 必在契约上且返回 `IDisposable`；`SetCorp` 必带 `[Obsolete]` 指向它；实现类**不得**标 `[Obsolete]`——废弃标注只放抽象层）。
 - 多应用守卫（`Abstractions.Tests`，MA1~MA6，含 MA5a/b/c）是**方法体文本断言**（花括号配平），签名漂移须同步更新。
 - 域守卫通用形态：令牌绑定（`Wechat.AccessToken` + Query 注入）、新增 DTO 的上下文登记、**官方未开放 ⇒ 零端点**、继承链子接口集合不漂移、父接口 `IsAbstract` + 子接口经 `InheritedFrom` 父实现类。
-- **接口命名空间分区守卫** `WechatInterfaceNamespaceContractGuards.cs`（N1~N3，跨域通用，非单域守卫）：**N1** 命名空间 ⇔ `IsAbstract` 形态严格二分（父接口 → `Mud.Wechat.Work.Interfaces`、可注入接口 → `Mud.Wechat.Work`）并锁定 147/299 计数；**N2** 生成器契约——父接口实现类落 `Mud.Wechat.Work.Interfaces.Internal`、子接口实现类落 `Mud.Wechat.Work.Internal`，且每个业务接口恰好一个实现类（判据取「`I` + 实现类名」的本体接口，**不可**用传递性的 `GetInterfaces()`，子接口实现类同时实现父接口）；**N3** 父接口 `RegistryGroupName` 恒空（命名空间分区只是 IDE 展示层隔离，运行期隔离仍由不注册 DI 提供）。**新增或迁移任何 `[HttpClientApi]` 接口必须先跑此守卫。**
+- **接口命名空间分区守卫** `WechatInterfaceNamespaceContractGuards.cs`（N1~N3，跨域通用，非单域守卫）：**N1** 命名空间 ⇔ `IsAbstract` 形态严格二分（父接口 → `Mud.Wechat.Work.Interfaces`、可注入接口 → `Mud.Wechat.Work`）并锁定 158/312 计数（合计 470，基线锚点 `Tests/ContractBaseline.cs`）；**N2** 生成器契约——父接口实现类落 `Mud.Wechat.Work.Interfaces.Internal`、子接口实现类落 `Mud.Wechat.Work.Internal`，且每个业务接口恰好一个实现类（判据取「`I` + 实现类名」的本体接口，**不可**用传递性的 `GetInterfaces()`，子接口实现类同时实现父接口）；**N3** 父接口 `RegistryGroupName` 恒空（命名空间分区只是 IDE 展示层隔离，运行期隔离仍由不注册 DI 提供）。**新增或迁移任何 `[HttpClientApi]` 接口必须先跑此守卫。**
 
 ## 7 编码风格与测试
 

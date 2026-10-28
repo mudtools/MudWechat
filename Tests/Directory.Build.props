@@ -2,7 +2,7 @@
 
 	<!-- 显式导入仓库根的 Directory.Build.props。
 	     MSBuild 的 Directory.Build.props 发现规则在**第一个**命中处停止（不会自动上溯合并），
-	     故本文件若不导入根 props，14 个测试工程将整体继承不到根治理属性 —— 除 TFM 集与 Version 外，
+	     故本文件若不导入根 props，全部测试工程将整体继承不到根治理属性 —— 除 TFM 集与 Version 外，
 	     还包含 LangVersion / Nullable / ImplicitUsings，以及 net8.0+ 的 AOT / 裁剪分析器与 M.E.* 依赖。
 	     那正是 AGENTS §3 警告的隐性维护面：「新增任何治理属性必须同时写入本文件」，靠人记而无编译期强制。
 	     导入后测试工程与源工程同受一套治理，新增属性只需写在根 props 一处。

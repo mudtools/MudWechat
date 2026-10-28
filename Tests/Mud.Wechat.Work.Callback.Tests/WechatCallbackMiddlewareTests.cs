@@ -271,6 +271,22 @@ public class WechatCallbackMiddlewareTests
         context.Response.StatusCode.Should().Be(413, "体长逐块按字节计数校验");
     }
 
+    [Theory]
+    [InlineData(200, "success")]
+    [InlineData(302, "success")]
+    [InlineData(399, "success")]
+    [InlineData(400, "rejected:400")]
+    [InlineData(413, "rejected:413")]
+    [InlineData(415, "rejected:415")]
+    [InlineData(500, "rejected:500")]
+    [InlineData(503, "rejected:503")]
+    public void ResolveOutcome_ShouldBucketByStatusCode(int statusCode, string expected)
+    {
+        // R-P3-4（架构审查报告 v2 P3-4）：短路应答（413/415/400/500）不得再误记 success——
+        // outcome 按最终状态码分桶（自由字符串维度），观测归真。
+        WechatCallbackMiddleware.ResolveOutcome(statusCode).Should().Be(expected);
+    }
+
     // ---------------------------------------------------------------- IP 白名单
 
     [Fact]

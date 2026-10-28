@@ -7,9 +7,16 @@
 
 using System.Net;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging.Abstractions;
+using Moq;
+using Mud.HttpUtils;
 using Mud.Wechat.Work.Abstractions.Authentication;
+using Mud.Wechat.Work.Abstractions.Authentication.Models;
+using Mud.Wechat.Work.Abstractions.Authentication.MultiApp;
+using Mud.Wechat.Work.Abstractions.Authentication.TokenManager;
 using Mud.Wechat.Work.Abstractions.Configuration;
 using Mud.Wechat.Work.Abstractions.Enums;
+using Mud.Wechat.Work.DataModels.CorpTokenAuthentication;
 
 namespace Mud.Wechat.Work.Tests.TokenManagers;
 
@@ -101,5 +108,169 @@ public class WechatTokenInvalidationDetectorTests
 
         _detector.ShouldInspect(new HttpRequestMessage(HttpMethod.Get, "https://other.example.com/cgi-bin/gettoken"))
             .Should().BeFalse("未登记的第三方主机仍被过滤");
+    }
+
+    // ------------------------------------------------------------------ F1：corp 槽补偿失效
+
+    private const string CorpAppKey = "custom-agent";
+
+    private static CorpTokenManager CreateCorpManager(Mock<IWechatWorkCorpTokenAuthentication> corpAuth)
+    {
+        var suite = new Mock<IWechatSuiteTokenManager>();
+        suite.Setup(s => s.GetTokenAsync(It.IsAny<CancellationToken>())).ReturnsAsync("suite-token");
+        return new CorpTokenManager(
+            corpAuth.Object, suite.Object, new Mock<IWechatWorkInternalAppAuthentication>().Object,
+            new InMemoryWechatCorpAuthStore(),
+            Microsoft.Extensions.Options.Options.Create(new WechatAppConfig
+            {
+                AppKey = CorpAppKey,
+                AppType = WechatAppType.ThirdParty,
+                CorpId = "ww-provider",
+                ProviderSecret = "provider-secret",
+                SuiteId = "ww-suite",
+                SuiteSecret = "suite-secret",
+                AgentSecret = "agent-secret",
+            }),
+            NullLogger<CorpTokenManager>.Instance);
+    }
+
+    /// <summary>按 authCorpId 可重复刷新的 corp 令牌客户端 mock。</summary>
+    private static Mock<IWechatWorkCorpTokenAuthentication> CorpAuthReturning(string accessToken)
+    {
+        var corpAuth = new Mock<IWechatWorkCorpTokenAuthentication>();
+        corpAuth
+            .Setup(c => c.GetCorpTokenAsync("suite-token", It.IsAny<GetCorpTokenRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new GetCorpTokenResponse { ErrorCode = 0, AccessToken = accessToken, ExpiresIn = 7200 });
+        return corpAuth;
+    }
+
+    /// <summary>构造注入版判定器：holder.Current → mock IWechatAppContext → 给定 corp 管理器。</summary>
+    private static WechatTokenInvalidationDetector CreateDetectorWithAmbientCorpContext(IWechatCorpTokenManager? corpManager)
+    {
+        var contextMock = new Mock<IWechatAppContext>();
+        contextMock.SetupGet(c => c.AppKey).Returns(CorpAppKey);
+        contextMock.SetupGet(c => c.AppType).Returns(WechatAppType.ThirdParty);
+        contextMock.SetupGet(c => c.CorpTokenManager).Returns(corpManager);
+
+        var holderMock = new Mock<IAppContextHolder>();
+        holderMock.SetupGet(h => h.Current).Returns(contextMock.Object);
+
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddSingleton(holderMock.Object);
+        return new WechatTokenInvalidationDetector(services.BuildServiceProvider());
+    }
+
+    [Fact]
+    public async Task IsTokenInvalidAsync_ShouldEvictCorpScopedCache_WhenAccessTokenFamilyErrcodeInCorpScope()
+    {
+        var corpAuth = CorpAuthReturning("token-refreshed");
+        using var manager = CreateCorpManager(corpAuth);
+        var detector = CreateDetectorWithAmbientCorpContext(manager);
+
+        WechatCorpContext.SetCorp(CorpAppKey, "corp-A", "pc-A");
+        try
+        {
+            var stale = await manager.GetTokenAsync();
+            stale.Should().NotBeNullOrEmpty("前置：corp 槽已有缓存令牌");
+
+            var body = Encoding.UTF8.GetBytes("""{"errcode":40014,"errmsg":"invalid access_token"}""");
+            var invalid = await detector.IsTokenInvalidAsync(WechatJsonResponse(""), body, CancellationToken.None);
+
+            invalid.Should().BeTrue("40014 判真语义不变");
+
+            // 补偿已清 corp 槽 ⇒ 下次取令牌触发真实刷新（修复前：corp 槽未清，缓存命中旧令牌）。
+            var refreshed = await manager.GetTokenAsync();
+            refreshed.Should().Be("token-refreshed", "补偿失效已清 corp 槽 ⇒ GetTokenAsync 必须走真实刷新");
+            corpAuth.Verify(
+                c => c.GetCorpTokenAsync(It.IsAny<string>(), It.IsAny<GetCorpTokenRequest>(), It.IsAny<CancellationToken>()),
+                Times.Exactly(2),
+                "冷启动刷新一次 + 补偿失效后真实刷新一次（若补偿未生效则为 1 次——corp 槽缓存命中）");
+        }
+        finally
+        {
+            WechatCorpContext.Clear();
+        }
+    }
+
+    [Theory]
+    [InlineData(42009)]
+    [InlineData(42011)]
+    public async Task IsTokenInvalidAsync_ShouldKeepCorpCache_WhenSuiteOrProviderErrcode(int errcode)
+    {
+        var corpAuth = CorpAuthReturning("token-refreshed");
+        using var manager = CreateCorpManager(corpAuth);
+        var detector = CreateDetectorWithAmbientCorpContext(manager);
+
+        WechatCorpContext.SetCorp(CorpAppKey, "corp-A", "pc-A");
+        try
+        {
+            await manager.GetTokenAsync();
+
+            var body = Encoding.UTF8.GetBytes($"{{\"errcode\":{errcode},\"errmsg\":\"x\"}}");
+            var invalid = await detector.IsTokenInvalidAsync(WechatJsonResponse(""), body, CancellationToken.None);
+
+            invalid.Should().BeTrue("判定语义不变（42009/42011 仍在失效码集合）");
+
+            // 族别门控：suite/provider 令牌恰在 default 槽，corp 槽不得被补偿触碰。
+            await manager.GetTokenAsync();
+            corpAuth.Verify(
+                c => c.GetCorpTokenAsync(It.IsAny<string>(), It.IsAny<GetCorpTokenRequest>(), It.IsAny<CancellationToken>()),
+                Times.Once,
+                "corp 槽必须保持缓存命中（族别精确性：42009/42011 不触发补偿）");
+        }
+        finally
+        {
+            WechatCorpContext.Clear();
+        }
+    }
+
+    /// <summary>坏 IServiceProvider（GetService 即抛）⇒ 补偿失败退化为现状，判定结果仍为 true、不抛。</summary>
+    [Fact]
+    public async Task IsTokenInvalidAsync_ShouldStillReturnTrue_WhenCompensationFails()
+    {
+        var brokenServices = new ServiceCollection()
+            .AddSingleton<IAppContextHolder>(new ThrowingAppContextHolder())
+            .BuildServiceProvider();
+        var detector = new WechatTokenInvalidationDetector(brokenServices);
+
+        var body = Encoding.UTF8.GetBytes("""{"errcode":40014,"errmsg":"invalid access_token"}""");
+        var act = async () => await detector.IsTokenInvalidAsync(WechatJsonResponse(""), body, CancellationToken.None);
+
+        (await act.Should().NotThrowAsync()).Subject.Should().BeTrue(
+            "补偿失效失败不得影响判定结果（检测故障不得放大为调用失败）");
+    }
+
+    [Fact]
+    public async Task IsTokenInvalidAsync_ShouldSkipCompensation_WhenNoAmbientApp()
+    {
+        var corpAuth = CorpAuthReturning("token-refreshed");
+        using var manager = CreateCorpManager(corpAuth);
+
+        // holder 存在但 Current 为 null（无环境应用上下文）。
+        var holderMock = new Mock<IAppContextHolder>();
+        holderMock.SetupGet(h => h.Current).Returns((IMudAppContext?)null);
+        var services = new ServiceCollection();
+        services.AddSingleton(holderMock.Object);
+        var detector = new WechatTokenInvalidationDetector(services.BuildServiceProvider());
+
+        var body = Encoding.UTF8.GetBytes("""{"errcode":40014,"errmsg":"invalid access_token"}""");
+        var invalid = await detector.IsTokenInvalidAsync(WechatJsonResponse(""), body, CancellationToken.None);
+
+        invalid.Should().BeTrue();
+        corpAuth.Verify(
+            c => c.GetCorpTokenAsync(It.IsAny<string>(), It.IsAny<GetCorpTokenRequest>(), It.IsAny<CancellationToken>()),
+            Times.Never,
+            "无环境上下文时不得触达任何管理器（静默跳过）");
+    }
+
+    /// <summary>GetService 即抛的 IAppContextHolder（补偿故障隔离用例的注入桩）。</summary>
+    private sealed class ThrowingAppContextHolder : IAppContextHolder
+    {
+        public IMudAppContext? Current { get => throw new InvalidOperationException("holder broken"); init => throw new InvalidOperationException("holder broken"); }
+
+        public void SwitchTo(IMudAppContext? context) => throw new InvalidOperationException("holder broken");
+
+        public IDisposable BeginScope(IMudAppContext context) => throw new InvalidOperationException("holder broken");
     }
 }

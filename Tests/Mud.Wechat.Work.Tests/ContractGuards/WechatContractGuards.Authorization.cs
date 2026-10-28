@@ -136,4 +136,75 @@ public partial class WechatContractGuards
         File.Exists(path).Should().BeTrue($"未找到授权服务源码：{path}");
         return File.ReadAllText(path);
     }
+
+    /// <summary>
+    /// 契约守卫 G13（F1，架构审查报告 v2 P1-1）：errcode 判定器的 <b>corp 槽补偿失效</b>副作用不得被
+    /// 「顺手删除」——上游恢复管线对 <c>TokenManagerBase</c> 派生管理器走 internal 非虚
+    /// <c>InvalidateCachedAccessToken(null)</c>（default 槽），企业级令牌永不写 default 槽 ⇒
+    /// 无此补偿则 40014 后自愈空转至本地 TTL 过期（管线级回归用例见
+    /// <c>CorpTokenManagerScopeIsolationTests.ExecuteAsync_ShouldRefreshCorpToken_WhenErrcodeInvalidInCorpScope</c>）。
+    /// </summary>
+    /// <remarks>
+    /// 同时锁定两点：① 补偿路径经 <see cref="Mud.HttpUtils.IAppContextHolder"/> 公共面直取 corp 管理器
+    /// （零新 API）；② 补偿 catch 面<b>不含</b>把判定结果 <c>true</c> 吞成 <c>false</c> 的路径
+    /// （补偿失败仅退化为无自愈现状，检测故障不得放大为调用失败）。
+    /// </remarks>
+    [Fact]
+    public void TokenInvalidationDetector_ShouldCompensateCorpScopeInvalidation()
+    {
+        var source = File.ReadAllText(SourcePath(
+            "Mud.Wechat.Work.Abstractions", "Authentication", "WechatTokenInvalidationDetector.cs"));
+
+        // ① 补偿失效调用存在且仅在判定命中后执行。
+        source.Should().Contain("CompensateCorpScopeInvalidationAsync",
+            "G13：corp 槽补偿失效是恢复断链的唯一 SDK 侧修复点，不得移除");
+
+        // ② 族别门控：仅 access_token 族（40014/42001/42007）补偿；42009/42011 恰在 default 槽
+        //    （既有管线失效本来就正确），不得扩大补偿面。
+        source.Should().Contain("AccessTokenFamilyErrcodes",
+            "G13：补偿必须有族别门控（42009/42011 不触发，避免多余失效）");
+
+        // ③ 补偿经公共面（IAppContextHolder → IWechatAppContext.CorpTokenManager）直取，
+        //    不得引入 WechatAppManager 访问器（避免绕过 IWechatAppContext 公共契约）。
+        source.Should().Contain("IAppContextHolder",
+            "G13：环境应用上下文必须经组件公共面解析（DI 桥接不变量的消费者侧）");
+        source.Should().Contain(".CorpTokenManager",
+            "G13：corp 管理器必须取自 IWechatAppContext 公共属性");
+
+        // ④ 补偿失败不得影响判定结果：catch 面不存在「return false」。
+        var compensateStart = source.IndexOf("CompensateCorpScopeInvalidationAsync(long errcode", StringComparison.Ordinal);
+        compensateStart.Should().BePositive("G13：补偿方法签名漂移须同步更新守卫");
+        var compensateBody = source.Substring(compensateStart);
+        var catchIndex = compensateBody.IndexOf("catch (Exception", StringComparison.Ordinal);
+        catchIndex.Should().BePositive("G13：补偿必须自带故障隔离 catch（失败退化为无自愈现状）");
+        compensateBody.Substring(catchIndex).Should().NotContain("return false",
+            "G13：补偿 catch 面不得吞掉判定结果（true → false 即恢复链路静默失效）");
+    }
+
+    /// <summary>
+    /// 契约守卫 G14（F3，架构审查报告 v2 P2-1）：换码单飞门的「创建者」判据必须是<b>字典写入者</b>
+    /// （<c>ReferenceEquals</c> 引用相等），<b>不得</b>回退为 <c>GetOrAdd</c> 工厂闭包置位——
+    /// 竞争下输家的工厂可能被调用而值未被存储，闭包置位会让输家在 finally 误摘他人正在飞行的条目
+    /// （一次性 auth_code 被二次消费；行为用例见
+    /// <c>ExchangeAuthCodeAsync_ShouldJoinExistingFlight_WhenLoserCancelsDuringInFlightExchange</c>）。
+    /// </summary>
+    [Fact]
+    public void ExchangeAuthCode_ShouldUseReferenceEqualityAsCreatorCriterion()
+    {
+        var source = ReadAuthorizationServiceSource();
+
+        var start = source.IndexOf("private async Task<WechatCorpAuthorization> ExchangeAuthCodeCoreAsync", StringComparison.Ordinal);
+        start.Should().BePositive("G14：ExchangeAuthCodeCoreAsync 签名漂移须同步更新守卫");
+        var end = source.IndexOf("public async Task<WechatCorpAuthorization> RefreshAuthorizationAsync", StringComparison.Ordinal);
+        end.Should().BeGreaterThan(start, "G14：方法体定位锚点漂移须同步更新守卫");
+
+        var body = source.Substring(start, end - start);
+
+        body.Should().Contain("ReferenceEquals(lazy, candidate)",
+            "G14：「创建者」判据必须为引用相等（字典写入者），工厂闭包置位在 GetOrAdd 竞争下会误摘他人飞行条目");
+        body.Should().Contain("new Lazy<Task<WechatCorpAuthorization>>(",
+            "G14：候选必须预构建（Lazy 惰性语义不变）");
+        Regex.Matches(body, @"created = true").Should().BeEmpty(
+            "G14：工厂闭包内不得再置位 created（竞争输家会误判为创建者）");
+    }
 }

@@ -41,7 +41,7 @@ public class WechatToolTelemetryTests
             truncated: false,
             errorCategory: null);
 
-        var sample = metrics.SingleSample();
+        var sample = metrics.SingleSample(WechatToolNames.ContactsDepartmentGet);
         sample.Value.Should().Be(1, "同一次调用只能计一次（端口 + 执行链双记即翻倍）");
         sample.Tags.Should().ContainKey("risk").WhoseValue.Should().Be("read");
         sample.Tags.Should().ContainKey("outcome").WhoseValue.Should().Be("succeeded");
@@ -59,7 +59,7 @@ public class WechatToolTelemetryTests
             truncated: false,
             errorCategory: "invalid");
 
-        var sample = metrics.SingleSample();
+        var sample = metrics.SingleSample(WechatToolNames.ContactsTagCreate);
         sample.Tags.Should().ContainKey("outcome").WhoseValue.Should().Be("failed");
         sample.Tags.Should().ContainKey("risk").WhoseValue.Should().BeOneOf(
             "write",
@@ -236,6 +236,9 @@ public class WechatToolTelemetryTests
         private readonly MeterListener _listener;
         private readonly List<(long Value, Dictionary<string, object?> Tags)> _samples = [];
 
+        /// <summary>本用例所在线程（<see cref="MeterListener"/> 回调在「记录线程」上同步执行，据此与并行测试类隔离）。</summary>
+        private readonly int _ownerThreadId = Environment.CurrentManagedThreadId;
+
         private MetricHarness(string instrumentName)
         {
             _listener = new MeterListener
@@ -257,6 +260,14 @@ public class WechatToolTelemetryTests
                     return;
                 }
 
+                // 指标是<b>进程级</b>的：并行运行的其它测试类经真实 dispatcher 记录到同一批 instrument，
+                // 只按标签过滤挡不住「同一个工具名」的噪声（contacts.tag.create 被多个用例使用）。
+                // MeterListener 的回调在记录线程上同步触发，故按线程过滤可精确取到本用例自己的样本。
+                if (Environment.CurrentManagedThreadId != _ownerThreadId)
+                {
+                    return;
+                }
+
                 var map = new Dictionary<string, object?>(tags.Length, StringComparer.Ordinal);
                 foreach (var pair in tags)
                 {
@@ -274,8 +285,13 @@ public class WechatToolTelemetryTests
 
         public static MetricHarness StartLong(string instrumentName) => new(instrumentName);
 
-        public (long Value, Dictionary<string, object?> Tags) SingleSample()
-            => _samples.Should().ContainSingle().Which;
+        /// <summary>
+        /// 取唯一一条 <paramref name="tool"/> 名下的样本。两道过滤缺一不可：线程（见构造函数里的
+        /// <c>_ownerThreadId</c>，挡掉并行测试类的噪声）+ tool（挡掉同一次调用中其它工具的样本）。
+        /// </summary>
+        public (long Value, Dictionary<string, object?> Tags) SingleSample(string tool)
+            => _samples.Where(s => string.Equals(s.Tags.TryGetValue("tool", out var t) ? t as string : null, tool, StringComparison.Ordinal))
+                .Should().ContainSingle().Which;
 
         public void Dispose() => _listener.Dispose();
     }

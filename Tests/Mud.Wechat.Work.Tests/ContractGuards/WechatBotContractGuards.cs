@@ -437,6 +437,15 @@ public class WechatBotContractGuards
         connectIndex.Should().BeGreaterThan(acquireIndex,
             "重连顺序必须为「退避 → 夺租约 → 建连」：先建连会与租约持有者互相踢下线（官方每机器人仅一条有效连接）");
 
+        // ⑤ 夺取路径故障隔离（F2，架构审查报告 v2 P1-2）：TryAcquireAsync 调用点与会话入口之间必须存在
+        //    非 OCE 的通用 catch——租约存储故障（WechatRedisException）按「未夺得」退避重试，
+        //    不得穿出 RunAsync（BackgroundService 默认 StopHost 会打停宿主，违背「尽力维持」）。
+        var sessionIndex = connectionSource.IndexOf("RunSessionWithRenewalAsync", StringComparison.Ordinal);
+        sessionIndex.Should().BeGreaterThan(acquireIndex, "BT10：会话入口必须存在（定位锚点漂移须同步更新守卫）");
+        var acquireBlock = connectionSource.Substring(acquireIndex, sessionIndex - acquireIndex);
+        acquireBlock.Should().Contain("catch (Exception ex)",
+            "BT10：夺取路径必须纳入通用 catch（存储故障按未夺得退避重试，防宿主打停）");
+
         // ④ 连接地址与订阅密钥面照官方原文（v1.1 曾误记地址，锁定防回归）。
         connectionSource.Should().Contain("wss://openws.work.weixin.qq.com",
             "官方 101463 连接地址（不含 /v3.0 之类路径后缀）");
@@ -470,10 +479,14 @@ public class WechatBotContractGuards
                 "WechatBotOptions 必须登记进 audit-config-keys（BotId/BotSecret/EnableLongConnection/心跳与退避参数的消费点审计）");
 
         // 跨面互斥的启动期校验存在（官方「API 模式二选一，切换即失效」）。
-        File.ReadAllText(SourcePath(
-                "Mud.Wechat.Work.Callback", "LongConnection", "WechatBotLongConnectionRunner.cs"))
-            .Should().Contain("Channel: WechatCallbackChannel.Bot",
-                "同 BotKey 同时配置长连接与回调凭据必须在启动期 fail-fast（官方 101463：切换即失效）");
+        var runnerSource = File.ReadAllText(SourcePath(
+                "Mud.Wechat.Work.Callback", "LongConnection", "WechatBotLongConnectionRunner.cs"));
+        runnerSource.Should().Contain("Channel: WechatCallbackChannel.Bot",
+            "同 BotKey 同时配置长连接与回调凭据必须在启动期 fail-fast（官方 101463：切换即失效）");
+        // F5（架构审查报告 v2 P3-3）：互斥校验必须覆盖通配键——通配 Bot 条目经 ResolveApp
+        // 通配回退可承接任意 botKey 的 JSON 回调，漏检即互斥失效。
+        runnerSource.Should().Contain("WildcardAppKey",
+            "BT11：跨面互斥校验必须显式覆盖通配条目（Validate() 对通配键跳过通道校验）");
     }
 
     /// <summary>

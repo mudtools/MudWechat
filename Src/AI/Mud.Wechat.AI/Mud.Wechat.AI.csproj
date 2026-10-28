@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<!-- 受控 TFM 例外（AB-G8 锁定）：AI 域钉 net8.0;net10.0 —— Mud.AI 1.0.2 传递要求
+		     M.E.* / System.Text.Json 10.0.12，而 M.E.* 10.x 官方支持面为 net8.0+（net6.0 上 NuGet 发
+		     「doesn't support net6.0」告警）。不为一条新线把既有工程的低 TFM 构建拖到未测试组合。 -->
+		<TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+		<Description>微信生态 AI 共享层（跨七线）：契约面 —— 工具身份轴 WechatToolPrincipal / 风险词表 WechatToolRiskVocabulary / 会话事实 WechatConversationFacts / 事件装配端口 IContextAssembler；运行时面 —— 统一信封读取器 WechatApiResultReader（IWechatApiResponse → 中立 ToolApiOutcome&lt;T&gt;）与会话请求投影工厂 WechatConversationRequestFactory。依赖限于中立引擎契约 Mud.AI.Abstractions / Mud.AI.Agent，不依赖任何产品线专属包（原 Mud.Wechat.AI.Abstractions 与 Mud.Wechat.AI.Agent 两包于 2026-10 包合并并入本包，命名空间不变）。</Description>
+		<PackageTags>Wechat;AI;Abstractions;Agent;Tools;MudWechat</PackageTags>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<!-- 中立引擎契约（钉版，禁浮动；AI-G4 校验全仓单一版本）：
+		     事件装配结果 ConversationAssembly 要承载回合管线的统一输入 ConversationRequest。
+		     Agent 侧（原 Mud.Wechat.AI.Agent 包）需要 Mud.AI.Agent 的回合管线装配类型。 -->
+		<PackageReference Include="Mud.AI.Abstractions" Version="1.0.2" />
+		<PackageReference Include="Mud.AI.Agent" Version="1.0.2" />
+
+		<!-- 契约守卫与单测直读 internal（若有）；对外公开面即 Description 所列类型。 -->
+		<InternalsVisibleTo Include="Mud.Wechat.AI.Tests" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<!-- 叶层：WechatApiResultReader 读的是公用层响应契约 IWechatApiResponse。 -->
+		<ProjectReference Include="..\..\Core\Mud.Wechat.Abstractions\Mud.Wechat.Abstractions.csproj" />
+	</ItemGroup>
+
+</Project>

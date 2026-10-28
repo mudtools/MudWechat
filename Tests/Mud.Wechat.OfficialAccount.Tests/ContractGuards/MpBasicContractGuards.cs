@@ -240,8 +240,11 @@ public class MpBasicContractGuards
             "主包程序集必须至少声明 IMpBasicService（防反射枚举静默空跑导致守卫假绿）");
         interfaces.Should().Contain(typeof(IMpBasicService));
 
-        typeof(IMpBasicService).Assembly.Should().NotBeSameAs(typeof(IMpAuthentication).Assembly,
-            "基础域在主包、令牌签发族在 Abstractions（注册面分离是设计约束，非偶然）");
+        // 基础域与令牌签发族必须分属两个注册面。2026-10 包合并后两者同程序集，
+        // 「程序集不同」只是该约束的旧载体；命名空间才是它的直接表达。
+        typeof(IMpBasicService).Namespace.Should().NotBe(
+            typeof(IMpAuthentication).Namespace,
+            "基础域在 Mud.Wechat.OfficialAccount、令牌签发族在 Mud.Wechat.OfficialAccount.Abstractions（注册面分离是设计约束，非偶然）");
     }
 
     /// <summary>

@@ -7,7 +7,7 @@
 逐端点核验日期 **2026-10-18**。
 
 > **事实来源限定**：本文断言只来自本域接口 XML 注释、DTO
-> [`DataModels/OpenAccount/`](../../../Mud.Wechat.OpenPlatform.DataModels/OpenAccount/)，以及聚合守卫
+> [`DataModels/OpenAccount/`](../../../Mud.Wechat.OpenPlatform/OpenAccount/)，以及聚合守卫
 > [OpenPlatformContractGuards.cs](../../../../../Tests/Mud.Wechat.OpenPlatform.Tests/ContractGuards/OpenPlatformContractGuards.cs)（OP-B2 路由 / OP-B3 令牌 / OP-B5 前缀独占 / OP-B7 上下文登记）。
 > **本域没有独立守卫文件**（无 `OpenPlatformOpenAccountContractGuards.cs`）——路由 / 令牌 / DTO 全部落在主力 OP-B 系列（已核实，见文末「事实来源」）。凡注释未给出的错误码全集，一律入文末缺口。
 
@@ -90,7 +90,7 @@ using (appContextSwitcher.UseAuthorizerScope(authorizerAppId))   // authorizerAp
 | 6 支路由表 | [OpenPlatformContractGuards.cs](../../../../../Tests/Mud.Wechat.OpenPlatform.Tests/ContractGuards/OpenPlatformContractGuards.cs) `OP-B2` 的 `IWechatOpenPlatformOpenAccountService` 条目 |
 | 令牌语义（授权方值 + `access_token` 参数名 + Query） | 同上 `OP-B3` |
 | 前缀独占（`/cgi-bin/open/`） | 同上 `OP-B5` |
-| DTO 登记（`OpenAccountJsonContext`） | 同上 `OP-B7`；[`DataModels/OpenAccount/`](../../../Mud.Wechat.OpenPlatform.DataModels/OpenAccount/) |
+| DTO 登记（`OpenAccountJsonContext`） | 同上 `OP-B7`；[`DataModels/OpenAccount/`](../../../Mud.Wechat.OpenPlatform/OpenAccount/) |
 | 与 Account 域边界 / 换绑特例 | 同上 `OP-B2`（Component 条目）与接口 remarks |
 
 ## 改动本域需要同批完成

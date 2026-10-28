@@ -148,7 +148,7 @@ public class MpMenuContractGuards
     [Fact]
     public void Registration_ShouldRelaxJsonEncoderForWechatCharacterSetConstraint()
     {
-        var path = SourcePath("Mud.Wechat.OfficialAccount.Abstractions",
+        var path = SourcePath("Mud.Wechat.OfficialAccount",
             "Extensions", "MpMultiAppExtensions.cs");
         File.Exists(path).Should().BeTrue();
 

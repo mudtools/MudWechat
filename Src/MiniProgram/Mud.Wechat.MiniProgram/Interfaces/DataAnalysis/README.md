@@ -57,7 +57,7 @@ DI 组方法 [`AddDataAnalysisApi()`](../../Extensions/MiniProgramServiceBuilder
 
 ## 日期跨度与上界：三种口径并存
 
-本域**不使用**统一日期类型，10 支共用 [WxaDateRangeRequest](../../../Mud.Wechat.MiniProgram.DataModels/DataAnalysis/WxaDateRangeRequest.cs)
+本域**不使用**统一日期类型，10 支共用 [WxaDateRangeRequest](../../../Mud.Wechat.MiniProgram/DataAnalysis/WxaDateRangeRequest.cs)
 （`BeginDate`→`begin_date` `string?`、`EndDate`→`end_date` `string?`，格式 `yyyymmdd`），
 但官方对跨度的约束按族不同：
 
@@ -75,7 +75,7 @@ DI 组方法 [`AddDataAnalysisApi()`](../../Extensions/MiniProgramServiceBuilder
 ## 应答信封不成一形：逐端点各自 DTO，**没有统一信封抽象**
 
 这是逐页核验出的**事实**而非设计选择。四种形态（字段名逐字取自
-[DataModels/DataAnalysis/](../../../Mud.Wechat.MiniProgram.DataModels/DataAnalysis/)）：
+[DataModels/DataAnalysis/](../../../Mud.Wechat.MiniProgram/DataAnalysis/)）：
 
 | 形态 | 适用端点 | 应答类型与顶层键 |
 |---|---|---|
@@ -192,8 +192,8 @@ List<WxaPerformanceDataItem> metrics = perf.Data ?? new List<WxaPerformanceDataI
 | 令牌绑定与复用 | MP-X3；MP-X2（`MiniProgramScaffoldContractGuards`） |
 | 与公众号线路由不得重复 | MP-X6（`MiniProgramScaffoldContractGuards`） |
 | 本线不建 component/authorizer 令牌链 | P3-R2（`MiniProgramP3RulingsContractGuards`） |
-| 请求 / 应答字段名与类型（17 个文件） | [../../../Mud.Wechat.MiniProgram.DataModels/DataAnalysis/](../../../Mud.Wechat.MiniProgram.DataModels/DataAnalysis/)（`SerializerClassName = "DataAnalysis"`） |
-| AOT 序列化上下文（`internal`，示例中不得引用） | `../../../Mud.Wechat.MiniProgram.DataModels/Generated/DataAnalysisJsonContext.g.cs` |
+| 请求 / 应答字段名与类型（17 个文件） | [../../../Mud.Wechat.MiniProgram/DataAnalysis/](../../../Mud.Wechat.MiniProgram/DataAnalysis/)（`SerializerClassName = "DataAnalysis"`） |
+| AOT 序列化上下文（`internal`，示例中不得引用） | `../../../Mud.Wechat.MiniProgram/Generated/DataAnalysisJsonContext.g.cs` |
 | 本线端点总表与装配入口 | [../../README.md](../../README.md) |
 
 ## 改动本域需要同批完成

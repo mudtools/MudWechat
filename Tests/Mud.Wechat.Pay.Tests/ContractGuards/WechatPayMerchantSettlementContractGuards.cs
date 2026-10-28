@@ -333,7 +333,7 @@ public class WechatPayMerchantSettlementContractGuards
                 .Should().Be(RegistryGroupName, $"{type.Name} 的 SerializerClassName 必须为 {RegistryGroupName}");
         }
 
-        var resolverSource = File.ReadAllText(SourcePath("Mud.Wechat.Pay",
+        var resolverSource = File.ReadAllText(SourcePath("Mud.Wechat.Pay", 
             "Extensions", "PayJsonResolverExtensions.cs"));
         resolverSource.Should().Contain("MerchantSettlementJsonContext.Default",
             "新增域上下文须同批登记进 PayJsonResolverExtensions（AOT 红线：无登记即无元数据）");

@@ -74,8 +74,8 @@
 
 | 常量类 | 取值 | 用在哪 |
 |---|---|---|
-| [ChannelsBrandStatuses.cs](../../../Mud.Wechat.Channels.DataModels/Brand/ChannelsBrandStatuses.cs) | 1 审核中 / 2 审核未通过 / **3 已生效** / 4 已撤回 / 5 即将过期（不影响商品售卖）/ 6 已过期 | 资质本身的状态（应答 `status`） |
-| [ChannelsBrandListFilterStatuses.cs](../../../Mud.Wechat.Channels.DataModels/Brand/ChannelsBrandListFilterStatuses.cs) | 0 全部 / 1 审核中 / 2 未通过 / **3 审核通过（含即将过期 / 已过期）** / 4 已撤回 | `brand/list/get` 的 `status` 筛选入参 |
+| [ChannelsBrandStatuses.cs](../../../Mud.Wechat.Channels/Brand/ChannelsBrandStatuses.cs) | 1 审核中 / 2 审核未通过 / **3 已生效** / 4 已撤回 / 5 即将过期（不影响商品售卖）/ 6 已过期 | 资质本身的状态（应答 `status`） |
+| [ChannelsBrandListFilterStatuses.cs](../../../Mud.Wechat.Channels/Brand/ChannelsBrandListFilterStatuses.cs) | 0 全部 / 1 审核中 / 2 未通过 / **3 审核通过（含即将过期 / 已过期）** / 4 已撤回 | `brand/list/get` 的 `status` 筛选入参 |
 
 `3` 在筛选侧是「审核通过」的**聚合**、在状态侧是「已生效」⇒ 把筛选值当状态值判定会误判。
 `status` 不传或传 `0` 返回全部（#6）。另有 CB6 锁定的两组：
@@ -108,7 +108,7 @@
   授权结构按 `grant_info_lv1` … `grant_info_lv3` 逐级给（CB5）。
 - 条件必填（哪档资质配哪个 `grant_type`、申请侧 `application_details` 与注册侧 `register_details` 的互斥）
   **一律不本地拦截**，错配由应答 `errcode` 表达。
-- `is_permanent`（[ChannelsBrandRegisterDetails.cs](../../../Mud.Wechat.Channels.DataModels/Brand/ChannelsBrandRegisterDetails.cs)）
+- `is_permanent`（[ChannelsBrandRegisterDetails.cs](../../../Mud.Wechat.Channels/Brand/ChannelsBrandRegisterDetails.cs)）
   为长期有效标记；有效期字段的官方拼写在邻域（Category）存在历史错拼，本域未出现该键。
 
 ## 7. 破坏性操作：删除会连带下架商品

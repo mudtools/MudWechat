@@ -4,7 +4,7 @@
 改备注 / 物流变更 / 发货协商 / 生鲜质检 / 礼物单 / 发货前换款 / 盲盒拆盒 / 敏感信息解密 /
 虚拟号与真实号 / 商家私密号实名认证 / 用户预约发货）。 接口：[IChannelsOrderService](./IChannelsOrderService.cs)；注册组 `Order`；模块枚举 `ChannelsModule.Order`（装配入口见 [ChannelsServiceBuilder.cs](../../Extensions/ChannelsServiceBuilder.cs)）。逐端点核验 2026-10-18。
 
-> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[ChannelsOrderContractGuards.cs](../../../../../Tests/Mud.Wechat.Channels.Tests/ContractGuards/ChannelsOrderContractGuards.cs)、[ChannelsMiniStoreContractGuards.cs](../../../../../Tests/Mud.Wechat.Channels.Tests/ContractGuards/ChannelsMiniStoreContractGuards.cs)）、本域 DTO（[`Mud.Wechat.Channels.DataModels/Order`](../../../Mud.Wechat.Channels.DataModels/Order/)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
+> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[ChannelsOrderContractGuards.cs](../../../../../Tests/Mud.Wechat.Channels.Tests/ContractGuards/ChannelsOrderContractGuards.cs)、[ChannelsMiniStoreContractGuards.cs](../../../../../Tests/Mud.Wechat.Channels.Tests/ContractGuards/ChannelsMiniStoreContractGuards.cs)）、本域 DTO（[`Mud.Wechat.Channels/Order`](../../../Mud.Wechat.Channels/Order/)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
 
 ## 端点速览
 
@@ -414,54 +414,54 @@
 
 ## DTO 与序列化面
 
-本域 DTO 目录 [`Mud.Wechat.Channels.DataModels/Order`](../../../Mud.Wechat.Channels.DataModels/Order/) 内共 **93** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **93** 个，`SerializerClassName` = `Order`。
+本域 DTO 目录 [`Mud.Wechat.Channels/Order`](../../../Mud.Wechat.Channels/Order/) 内共 **93** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **93** 个，`SerializerClassName` = `Order`。
 
-AOT 源生成上下文：[`OrderJsonContext.g.cs`](./../../../Mud.Wechat.Channels.DataModels/Generated/OrderJsonContext.g.cs)（生成物，勿手改）。
+AOT 源生成上下文：[`OrderJsonContext.g.cs`](./../../../Mud.Wechat.Channels/Generated/OrderJsonContext.g.cs)（生成物，勿手改）。
 
 | 端点引用的类型 | 角色 | 定义位置 | JSON 字段（前缀） |
 |---|---|---|---|
-| `ChannelsGetOrderResponse` | 应答 | [Order/ChannelsGetOrderResponse.cs](../../../Mud.Wechat.Channels.DataModels/Order/ChannelsGetOrderResponse.cs) | `order` |
-| `ChannelsGetOrderRequest` | 请求体 | [Order/ChannelsGetOrderRequest.cs](../../../Mud.Wechat.Channels.DataModels/Order/ChannelsGetOrderRequest.cs) | `order_id` |
-| `ChannelsOrderIdListResponse` | 应答 | [Order/ChannelsOrderIdListResponse.cs](../../../Mud.Wechat.Channels.DataModels/Order/ChannelsOrderIdListResponse.cs) | `order_id_list`, `next_key`, `has_more` |
-| `ChannelsGetOrderListRequest` | 请求体 | [Order/ChannelsGetOrderListRequest.cs](../../../Mud.Wechat.Channels.DataModels/Order/ChannelsGetOrderListRequest.cs) | `create_time_range`, `update_time_range`, `status`, `openid`, `page_size`, `next_key` |
-| `ChannelsSearchOrderResponse` | 应答 | [Order/ChannelsSearchOrderResponse.cs](../../../Mud.Wechat.Channels.DataModels/Order/ChannelsSearchOrderResponse.cs) | — |
-| `ChannelsSearchOrderRequest` | 请求体 | [Order/ChannelsSearchOrderRequest.cs](../../../Mud.Wechat.Channels.DataModels/Order/ChannelsSearchOrderRequest.cs) | `search_condition`, `page_size`, `next_key` |
-| `ChannelsResponse` | 应答 | [ChannelsResponse.cs](../../../Mud.Wechat.Channels.DataModels/ChannelsResponse.cs) | `errcode`, `errmsg` |
-| `ChannelsChangeOrderPriceRequest` | 请求体 | [Order/ChannelsChangeOrderPriceRequest.cs](../../../Mud.Wechat.Channels.DataModels/Order/ChannelsChangeOrderPriceRequest.cs) | `order_id`, `change_order_infos`, `change_express`, `express_fee` |
-| `ChannelsChangeOrderAddressRequest` | 请求体 | [Order/ChannelsChangeOrderAddressRequest.cs](../../../Mud.Wechat.Channels.DataModels/Order/ChannelsChangeOrderAddressRequest.cs) | `order_id`, `user_address` |
-| `ChannelsAcceptAddressModifyRequest` | 请求体 | [Order/ChannelsAcceptAddressModifyRequest.cs](../../../Mud.Wechat.Channels.DataModels/Order/ChannelsAcceptAddressModifyRequest.cs) | `order_id` |
-| `ChannelsRejectAddressModifyRequest` | 请求体 | [Order/ChannelsRejectAddressModifyRequest.cs](../../../Mud.Wechat.Channels.DataModels/Order/ChannelsRejectAddressModifyRequest.cs) | `order_id` |
-| `ChannelsUpdateMerchantNotesRequest` | 请求体 | [Order/ChannelsUpdateMerchantNotesRequest.cs](../../../Mud.Wechat.Channels.DataModels/Order/ChannelsUpdateMerchantNotesRequest.cs) | `order_id`, `merchant_notes`, `merchant_notes_tag_color` |
-| `ChannelsAddPresentNoteRequest` | 请求体 | [Order/ChannelsAddPresentNoteRequest.cs](../../../Mud.Wechat.Channels.DataModels/Order/ChannelsAddPresentNoteRequest.cs) | `present_order_id`, `notes` |
-| `ChannelsGetPresentSubOrderResponse` | 应答 | [Order/ChannelsGetPresentSubOrderResponse.cs](../../../Mud.Wechat.Channels.DataModels/Order/ChannelsGetPresentSubOrderResponse.cs) | `order_ids` |
-| `ChannelsGetPresentSubOrderRequest` | 请求体 | [Order/ChannelsGetPresentSubOrderRequest.cs](../../../Mud.Wechat.Channels.DataModels/Order/ChannelsGetPresentSubOrderRequest.cs) | `present_order_id` |
-| `ChannelsGetPreShipmentChangeSkuResponse` | 应答 | [Order/ChannelsGetPreShipmentChangeSkuResponse.cs](../../../Mud.Wechat.Channels.DataModels/Order/ChannelsGetPreShipmentChangeSkuResponse.cs) | `order_ids` |
-| `ChannelsGetPreShipmentChangeSkuRequest` | 请求体 | [Order/ChannelsGetPreShipmentChangeSkuRequest.cs](../../../Mud.Wechat.Channels.DataModels/Order/ChannelsGetPreShipmentChangeSkuRequest.cs) | `page`, `page_size` |
-| `ChannelsApprovePreShipmentChangeSkuRequest` | 请求体 | [Order/ChannelsApprovePreShipmentChangeSkuRequest.cs](../../../Mud.Wechat.Channels.DataModels/Order/ChannelsApprovePreShipmentChangeSkuRequest.cs) | `order_id` |
-| `ChannelsRejectPreShipmentChangeSkuRequest` | 请求体 | [Order/ChannelsRejectPreShipmentChangeSkuRequest.cs](../../../Mud.Wechat.Channels.DataModels/Order/ChannelsRejectPreShipmentChangeSkuRequest.cs) | `order_id` |
-| `ChannelsSetBlindBoxItemResponse` | 应答 | [Order/ChannelsSetBlindBoxItemResponse.cs](../../../Mud.Wechat.Channels.DataModels/Order/ChannelsSetBlindBoxItemResponse.cs) | `fail_item_list` |
-| `ChannelsSetBlindBoxItemRequest` | 请求体 | [Order/ChannelsSetBlindBoxItemRequest.cs](../../../Mud.Wechat.Channels.DataModels/Order/ChannelsSetBlindBoxItemRequest.cs) | `order_id`, `item_list` |
-| `ChannelsUpdateDeliveryInfoRequest` | 请求体 | [Order/Delivery/ChannelsUpdateDeliveryInfoRequest.cs](../../../Mud.Wechat.Channels.DataModels/Order/Delivery/ChannelsUpdateDeliveryInfoRequest.cs) | `order_id`, `delivery_list`, `change_infos` |
-| `ChannelsSubmitDeliveryNegotiationRequest` | 请求体 | [Order/Delivery/ChannelsSubmitDeliveryNegotiationRequest.cs](../../../Mud.Wechat.Channels.DataModels/Order/Delivery/ChannelsSubmitDeliveryNegotiationRequest.cs) | `order_id`, `predict_delivery_time`, `reason`, `remark` |
-| `ChannelsGetDeliveryNegotiationResultResponse` | 应答 | [Order/Delivery/ChannelsGetDeliveryNegotiationResultResponse.cs](../../../Mud.Wechat.Channels.DataModels/Order/Delivery/ChannelsGetDeliveryNegotiationResultResponse.cs) | `negotiation_list` |
-| `ChannelsGetDeliveryNegotiationResultRequest` | 请求体 | [Order/Delivery/ChannelsGetDeliveryNegotiationResultRequest.cs](../../../Mud.Wechat.Channels.DataModels/Order/Delivery/ChannelsGetDeliveryNegotiationResultRequest.cs) | `order_id_list` |
-| `ChannelsSubmitFreshInspectRequest` | 请求体 | [Order/Delivery/ChannelsSubmitFreshInspectRequest.cs](../../../Mud.Wechat.Channels.DataModels/Order/Delivery/ChannelsSubmitFreshInspectRequest.cs) | `order_id`, `audit_items` |
-| `ChannelsGetUserBookingListResponse` | 应答 | [Order/Delivery/ChannelsGetUserBookingListResponse.cs](../../../Mud.Wechat.Channels.DataModels/Order/Delivery/ChannelsGetUserBookingListResponse.cs) | `record_list`, `next_page`, `total` |
-| `ChannelsGetUserBookingListRequest` | 请求体 | [Order/Delivery/ChannelsGetUserBookingListRequest.cs](../../../Mud.Wechat.Channels.DataModels/Order/Delivery/ChannelsGetUserBookingListRequest.cs) | `order_id_list`, `booking_type`, `time_range_order_create`, `time_range_booking_predict`, `page_info` |
-| `ChannelsDecodeSensitiveInfoResponse` | 应答 | [Order/SensitiveInfo/ChannelsDecodeSensitiveInfoResponse.cs](../../../Mud.Wechat.Channels.DataModels/Order/SensitiveInfo/ChannelsDecodeSensitiveInfoResponse.cs) | `address_info`, `virtual_number_info` |
-| `ChannelsDecodeSensitiveInfoRequest` | 请求体 | [Order/SensitiveInfo/ChannelsDecodeSensitiveInfoRequest.cs](../../../Mud.Wechat.Channels.DataModels/Order/SensitiveInfo/ChannelsDecodeSensitiveInfoRequest.cs) | `order_id` |
-| `ChannelsApplyRealNumberRequest` | 请求体 | [Order/SensitiveInfo/ChannelsApplyRealNumberRequest.cs](../../../Mud.Wechat.Channels.DataModels/Order/SensitiveInfo/ChannelsApplyRealNumberRequest.cs) | `order_id`, `apply_type`, `apply_reason`, `pic_media_ids` |
-| `ChannelsGetRealNumberViewAuditResponse` | 应答 | [Order/SensitiveInfo/ChannelsGetRealNumberViewAuditResponse.cs](../../../Mud.Wechat.Channels.DataModels/Order/SensitiveInfo/ChannelsGetRealNumberViewAuditResponse.cs) | `apply_time`, `audit_state`, `apply_reason`, `task_id` |
-| `ChannelsGetRealNumberViewAuditRequest` | 请求体 | [Order/SensitiveInfo/ChannelsGetRealNumberViewAuditRequest.cs](../../../Mud.Wechat.Channels.DataModels/Order/SensitiveInfo/ChannelsGetRealNumberViewAuditRequest.cs) | `order_id` |
-| `ChannelsApplyVirtualNumberAgainResponse` | 应答 | [Order/SensitiveInfo/ChannelsApplyVirtualNumberAgainResponse.cs](../../../Mud.Wechat.Channels.DataModels/Order/SensitiveInfo/ChannelsApplyVirtualNumberAgainResponse.cs) | `virtual_number`, `extension`, `apply_quota` |
-| `ChannelsApplyVirtualNumberAgainRequest` | 请求体 | [Order/SensitiveInfo/ChannelsApplyVirtualNumberAgainRequest.cs](../../../Mud.Wechat.Channels.DataModels/Order/SensitiveInfo/ChannelsApplyVirtualNumberAgainRequest.cs) | `order_id` |
-| `ChannelsDelayVirtualNumberResponse` | 应答 | [Order/SensitiveInfo/ChannelsDelayVirtualNumberResponse.cs](../../../Mud.Wechat.Channels.DataModels/Order/SensitiveInfo/ChannelsDelayVirtualNumberResponse.cs) | `expiration`, `available_extend_num` |
-| `ChannelsDelayVirtualNumberRequest` | 请求体 | [Order/SensitiveInfo/ChannelsDelayVirtualNumberRequest.cs](../../../Mud.Wechat.Channels.DataModels/Order/SensitiveInfo/ChannelsDelayVirtualNumberRequest.cs) | `order_id`, `has_delay_times` |
-| `ChannelsPrivatenumberAddPhoneResponse` | 应答 | [Order/SensitiveInfo/ChannelsPrivatenumberAddPhoneResponse.cs](../../../Mud.Wechat.Channels.DataModels/Order/SensitiveInfo/ChannelsPrivatenumberAddPhoneResponse.cs) | `qrcode_url`, `status` |
-| `ChannelsPrivatenumberAddPhoneRequest` | 请求体 | [Order/SensitiveInfo/ChannelsPrivatenumberAddPhoneRequest.cs](../../../Mud.Wechat.Channels.DataModels/Order/SensitiveInfo/ChannelsPrivatenumberAddPhoneRequest.cs) | `mobile`, `verify_code`, `wxusername` |
-| `ChannelsPrivatenumberGetPhoneResponse` | 应答 | [Order/SensitiveInfo/ChannelsPrivatenumberGetPhoneResponse.cs](../../../Mud.Wechat.Channels.DataModels/Order/SensitiveInfo/ChannelsPrivatenumberGetPhoneResponse.cs) | `status`, `fail_reason` |
-| `ChannelsPrivatenumberGetPhoneRequest` | 请求体 | [Order/SensitiveInfo/ChannelsPrivatenumberGetPhoneRequest.cs](../../../Mud.Wechat.Channels.DataModels/Order/SensitiveInfo/ChannelsPrivatenumberGetPhoneRequest.cs) | `mobile` |
-| `ChannelsPrivatenumberSendVerifyCodeRequest` | 请求体 | [Order/SensitiveInfo/ChannelsPrivatenumberSendVerifyCodeRequest.cs](../../../Mud.Wechat.Channels.DataModels/Order/SensitiveInfo/ChannelsPrivatenumberSendVerifyCodeRequest.cs) | `mobile` |
+| `ChannelsGetOrderResponse` | 应答 | [Order/ChannelsGetOrderResponse.cs](../../../Mud.Wechat.Channels/Order/ChannelsGetOrderResponse.cs) | `order` |
+| `ChannelsGetOrderRequest` | 请求体 | [Order/ChannelsGetOrderRequest.cs](../../../Mud.Wechat.Channels/Order/ChannelsGetOrderRequest.cs) | `order_id` |
+| `ChannelsOrderIdListResponse` | 应答 | [Order/ChannelsOrderIdListResponse.cs](../../../Mud.Wechat.Channels/Order/ChannelsOrderIdListResponse.cs) | `order_id_list`, `next_key`, `has_more` |
+| `ChannelsGetOrderListRequest` | 请求体 | [Order/ChannelsGetOrderListRequest.cs](../../../Mud.Wechat.Channels/Order/ChannelsGetOrderListRequest.cs) | `create_time_range`, `update_time_range`, `status`, `openid`, `page_size`, `next_key` |
+| `ChannelsSearchOrderResponse` | 应答 | [Order/ChannelsSearchOrderResponse.cs](../../../Mud.Wechat.Channels/Order/ChannelsSearchOrderResponse.cs) | — |
+| `ChannelsSearchOrderRequest` | 请求体 | [Order/ChannelsSearchOrderRequest.cs](../../../Mud.Wechat.Channels/Order/ChannelsSearchOrderRequest.cs) | `search_condition`, `page_size`, `next_key` |
+| `ChannelsResponse` | 应答 | [ChannelsResponse.cs](../../../Mud.Wechat.Channels/ChannelsResponse.cs) | `errcode`, `errmsg` |
+| `ChannelsChangeOrderPriceRequest` | 请求体 | [Order/ChannelsChangeOrderPriceRequest.cs](../../../Mud.Wechat.Channels/Order/ChannelsChangeOrderPriceRequest.cs) | `order_id`, `change_order_infos`, `change_express`, `express_fee` |
+| `ChannelsChangeOrderAddressRequest` | 请求体 | [Order/ChannelsChangeOrderAddressRequest.cs](../../../Mud.Wechat.Channels/Order/ChannelsChangeOrderAddressRequest.cs) | `order_id`, `user_address` |
+| `ChannelsAcceptAddressModifyRequest` | 请求体 | [Order/ChannelsAcceptAddressModifyRequest.cs](../../../Mud.Wechat.Channels/Order/ChannelsAcceptAddressModifyRequest.cs) | `order_id` |
+| `ChannelsRejectAddressModifyRequest` | 请求体 | [Order/ChannelsRejectAddressModifyRequest.cs](../../../Mud.Wechat.Channels/Order/ChannelsRejectAddressModifyRequest.cs) | `order_id` |
+| `ChannelsUpdateMerchantNotesRequest` | 请求体 | [Order/ChannelsUpdateMerchantNotesRequest.cs](../../../Mud.Wechat.Channels/Order/ChannelsUpdateMerchantNotesRequest.cs) | `order_id`, `merchant_notes`, `merchant_notes_tag_color` |
+| `ChannelsAddPresentNoteRequest` | 请求体 | [Order/ChannelsAddPresentNoteRequest.cs](../../../Mud.Wechat.Channels/Order/ChannelsAddPresentNoteRequest.cs) | `present_order_id`, `notes` |
+| `ChannelsGetPresentSubOrderResponse` | 应答 | [Order/ChannelsGetPresentSubOrderResponse.cs](../../../Mud.Wechat.Channels/Order/ChannelsGetPresentSubOrderResponse.cs) | `order_ids` |
+| `ChannelsGetPresentSubOrderRequest` | 请求体 | [Order/ChannelsGetPresentSubOrderRequest.cs](../../../Mud.Wechat.Channels/Order/ChannelsGetPresentSubOrderRequest.cs) | `present_order_id` |
+| `ChannelsGetPreShipmentChangeSkuResponse` | 应答 | [Order/ChannelsGetPreShipmentChangeSkuResponse.cs](../../../Mud.Wechat.Channels/Order/ChannelsGetPreShipmentChangeSkuResponse.cs) | `order_ids` |
+| `ChannelsGetPreShipmentChangeSkuRequest` | 请求体 | [Order/ChannelsGetPreShipmentChangeSkuRequest.cs](../../../Mud.Wechat.Channels/Order/ChannelsGetPreShipmentChangeSkuRequest.cs) | `page`, `page_size` |
+| `ChannelsApprovePreShipmentChangeSkuRequest` | 请求体 | [Order/ChannelsApprovePreShipmentChangeSkuRequest.cs](../../../Mud.Wechat.Channels/Order/ChannelsApprovePreShipmentChangeSkuRequest.cs) | `order_id` |
+| `ChannelsRejectPreShipmentChangeSkuRequest` | 请求体 | [Order/ChannelsRejectPreShipmentChangeSkuRequest.cs](../../../Mud.Wechat.Channels/Order/ChannelsRejectPreShipmentChangeSkuRequest.cs) | `order_id` |
+| `ChannelsSetBlindBoxItemResponse` | 应答 | [Order/ChannelsSetBlindBoxItemResponse.cs](../../../Mud.Wechat.Channels/Order/ChannelsSetBlindBoxItemResponse.cs) | `fail_item_list` |
+| `ChannelsSetBlindBoxItemRequest` | 请求体 | [Order/ChannelsSetBlindBoxItemRequest.cs](../../../Mud.Wechat.Channels/Order/ChannelsSetBlindBoxItemRequest.cs) | `order_id`, `item_list` |
+| `ChannelsUpdateDeliveryInfoRequest` | 请求体 | [Order/Delivery/ChannelsUpdateDeliveryInfoRequest.cs](../../../Mud.Wechat.Channels/Order/Delivery/ChannelsUpdateDeliveryInfoRequest.cs) | `order_id`, `delivery_list`, `change_infos` |
+| `ChannelsSubmitDeliveryNegotiationRequest` | 请求体 | [Order/Delivery/ChannelsSubmitDeliveryNegotiationRequest.cs](../../../Mud.Wechat.Channels/Order/Delivery/ChannelsSubmitDeliveryNegotiationRequest.cs) | `order_id`, `predict_delivery_time`, `reason`, `remark` |
+| `ChannelsGetDeliveryNegotiationResultResponse` | 应答 | [Order/Delivery/ChannelsGetDeliveryNegotiationResultResponse.cs](../../../Mud.Wechat.Channels/Order/Delivery/ChannelsGetDeliveryNegotiationResultResponse.cs) | `negotiation_list` |
+| `ChannelsGetDeliveryNegotiationResultRequest` | 请求体 | [Order/Delivery/ChannelsGetDeliveryNegotiationResultRequest.cs](../../../Mud.Wechat.Channels/Order/Delivery/ChannelsGetDeliveryNegotiationResultRequest.cs) | `order_id_list` |
+| `ChannelsSubmitFreshInspectRequest` | 请求体 | [Order/Delivery/ChannelsSubmitFreshInspectRequest.cs](../../../Mud.Wechat.Channels/Order/Delivery/ChannelsSubmitFreshInspectRequest.cs) | `order_id`, `audit_items` |
+| `ChannelsGetUserBookingListResponse` | 应答 | [Order/Delivery/ChannelsGetUserBookingListResponse.cs](../../../Mud.Wechat.Channels/Order/Delivery/ChannelsGetUserBookingListResponse.cs) | `record_list`, `next_page`, `total` |
+| `ChannelsGetUserBookingListRequest` | 请求体 | [Order/Delivery/ChannelsGetUserBookingListRequest.cs](../../../Mud.Wechat.Channels/Order/Delivery/ChannelsGetUserBookingListRequest.cs) | `order_id_list`, `booking_type`, `time_range_order_create`, `time_range_booking_predict`, `page_info` |
+| `ChannelsDecodeSensitiveInfoResponse` | 应答 | [Order/SensitiveInfo/ChannelsDecodeSensitiveInfoResponse.cs](../../../Mud.Wechat.Channels/Order/SensitiveInfo/ChannelsDecodeSensitiveInfoResponse.cs) | `address_info`, `virtual_number_info` |
+| `ChannelsDecodeSensitiveInfoRequest` | 请求体 | [Order/SensitiveInfo/ChannelsDecodeSensitiveInfoRequest.cs](../../../Mud.Wechat.Channels/Order/SensitiveInfo/ChannelsDecodeSensitiveInfoRequest.cs) | `order_id` |
+| `ChannelsApplyRealNumberRequest` | 请求体 | [Order/SensitiveInfo/ChannelsApplyRealNumberRequest.cs](../../../Mud.Wechat.Channels/Order/SensitiveInfo/ChannelsApplyRealNumberRequest.cs) | `order_id`, `apply_type`, `apply_reason`, `pic_media_ids` |
+| `ChannelsGetRealNumberViewAuditResponse` | 应答 | [Order/SensitiveInfo/ChannelsGetRealNumberViewAuditResponse.cs](../../../Mud.Wechat.Channels/Order/SensitiveInfo/ChannelsGetRealNumberViewAuditResponse.cs) | `apply_time`, `audit_state`, `apply_reason`, `task_id` |
+| `ChannelsGetRealNumberViewAuditRequest` | 请求体 | [Order/SensitiveInfo/ChannelsGetRealNumberViewAuditRequest.cs](../../../Mud.Wechat.Channels/Order/SensitiveInfo/ChannelsGetRealNumberViewAuditRequest.cs) | `order_id` |
+| `ChannelsApplyVirtualNumberAgainResponse` | 应答 | [Order/SensitiveInfo/ChannelsApplyVirtualNumberAgainResponse.cs](../../../Mud.Wechat.Channels/Order/SensitiveInfo/ChannelsApplyVirtualNumberAgainResponse.cs) | `virtual_number`, `extension`, `apply_quota` |
+| `ChannelsApplyVirtualNumberAgainRequest` | 请求体 | [Order/SensitiveInfo/ChannelsApplyVirtualNumberAgainRequest.cs](../../../Mud.Wechat.Channels/Order/SensitiveInfo/ChannelsApplyVirtualNumberAgainRequest.cs) | `order_id` |
+| `ChannelsDelayVirtualNumberResponse` | 应答 | [Order/SensitiveInfo/ChannelsDelayVirtualNumberResponse.cs](../../../Mud.Wechat.Channels/Order/SensitiveInfo/ChannelsDelayVirtualNumberResponse.cs) | `expiration`, `available_extend_num` |
+| `ChannelsDelayVirtualNumberRequest` | 请求体 | [Order/SensitiveInfo/ChannelsDelayVirtualNumberRequest.cs](../../../Mud.Wechat.Channels/Order/SensitiveInfo/ChannelsDelayVirtualNumberRequest.cs) | `order_id`, `has_delay_times` |
+| `ChannelsPrivatenumberAddPhoneResponse` | 应答 | [Order/SensitiveInfo/ChannelsPrivatenumberAddPhoneResponse.cs](../../../Mud.Wechat.Channels/Order/SensitiveInfo/ChannelsPrivatenumberAddPhoneResponse.cs) | `qrcode_url`, `status` |
+| `ChannelsPrivatenumberAddPhoneRequest` | 请求体 | [Order/SensitiveInfo/ChannelsPrivatenumberAddPhoneRequest.cs](../../../Mud.Wechat.Channels/Order/SensitiveInfo/ChannelsPrivatenumberAddPhoneRequest.cs) | `mobile`, `verify_code`, `wxusername` |
+| `ChannelsPrivatenumberGetPhoneResponse` | 应答 | [Order/SensitiveInfo/ChannelsPrivatenumberGetPhoneResponse.cs](../../../Mud.Wechat.Channels/Order/SensitiveInfo/ChannelsPrivatenumberGetPhoneResponse.cs) | `status`, `fail_reason` |
+| `ChannelsPrivatenumberGetPhoneRequest` | 请求体 | [Order/SensitiveInfo/ChannelsPrivatenumberGetPhoneRequest.cs](../../../Mud.Wechat.Channels/Order/SensitiveInfo/ChannelsPrivatenumberGetPhoneRequest.cs) | `mobile` |
+| `ChannelsPrivatenumberSendVerifyCodeRequest` | 请求体 | [Order/SensitiveInfo/ChannelsPrivatenumberSendVerifyCodeRequest.cs](../../../Mud.Wechat.Channels/Order/SensitiveInfo/ChannelsPrivatenumberSendVerifyCodeRequest.cs) | `mobile` |
 
 > DTO 一律以源文件为准；本表只列端点签名**直接引用**的一层类型，嵌套类型不再递归展开。所有 DTO 不使用 `required`（仓内约束），必填性由接口注释与官方页表达，SDK 不做本地必填校验。
 
@@ -500,7 +500,7 @@ var response = await service.AcceptAddressModifyAsync(new ChannelsAcceptAddressM
 | 契约守卫（路由 / 计数 / DTO 登记断言） | [`ChannelsOrderContractGuards.cs`](../../../../../Tests/Mud.Wechat.Channels.Tests/ContractGuards/ChannelsOrderContractGuards.cs)、[`ChannelsMiniStoreContractGuards.cs`](../../../../../Tests/Mud.Wechat.Channels.Tests/ContractGuards/ChannelsMiniStoreContractGuards.cs) |
 | 守卫中的代表性测试方法 | `OrderEndpoints_ShouldMatchOfficialRoutes`、`OrderEndpoints_ShouldAllBePost_WithBody`、`OrderInterface_ShouldBindChannelsToken_AndRegisterUnderOrderGroup`、`OrderDataModels_ShouldBeRegisteredInJsonContext`、`OrderDataModels_ShouldLockOfficialFieldsAndSharedDtos`、`OrderEnums_ShouldLockOfficialValues`、`MiniStoreEndpoints_ShouldMatchOfficialRoutes`、`MiniStoreEndpoints_ShouldAllBePost_WithUploadQueryRules`、`MiniStoreInterface_ShouldBindChannelsToken_AndRegisterUnderMiniStoreGroup`、`MiniStoreDataModels_ShouldBeRegisteredInJsonContext`、`MiniStoreDataModels_ShouldLockOfficialFieldsAndSharedDtos`、`MiniStoreEnumConstants_ShouldLockOfficialLiteralValues` |
 | 模块枚举 / 装配入口 | [`ChannelsModule.cs`](../../Extensions/ChannelsModule.cs)、[`ChannelsServiceBuilder.cs`](../../Extensions/ChannelsServiceBuilder.cs) |
-| DTO 与 JSON 上下文 | [`Mud.Wechat.Channels.DataModels/Order`](../../../Mud.Wechat.Channels.DataModels/Order/) |
+| DTO 与 JSON 上下文 | [`Mud.Wechat.Channels/Order`](../../../Mud.Wechat.Channels/Order/) |
 | 跨线基线 | [`Tests/ContractBaseline.cs`](../../../../../Tests/ContractBaseline.cs)（各线分节；本线口径以守卫实际断言为准） |
 | 本线包级公开面与已踩陷阱 | [`Src/Channels/Mud.Wechat.Channels/README.md`](../../README.md) |
 | 跨线通用约束（门禁 / AOT / 落位） | [`AGENTS.md`](../../../../../AGENTS.md) |

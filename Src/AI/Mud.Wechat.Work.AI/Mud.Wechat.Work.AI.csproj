@@ -8,12 +8,10 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\Mud.Wechat.AI.Agent\Mud.Wechat.AI.Agent.csproj" />
+		<ProjectReference Include="..\Mud.Wechat.AI\Mud.Wechat.AI.csproj" />
 		<!-- 主包直引的唯一理由：Aibot 主动回复端点契约 IWechatWorkInternalAibotService（回复通道，非业务工具面）。
 		     业务域强类型直连（工具实现）仍留在 Mud.Wechat.Work.AI.Tools（S2）。 -->
 		<ProjectReference Include="..\..\Work\Mud.Wechat.Work\Mud.Wechat.Work.csproj" />
-		<ProjectReference Include="..\..\Work\Mud.Wechat.Work.Abstractions\Mud.Wechat.Work.Abstractions.csproj" />
-		<ProjectReference Include="..\..\Work\Mud.Wechat.Work.DataModels\Mud.Wechat.Work.DataModels.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>

@@ -11,7 +11,7 @@
 > **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、
 > 本域契约守卫（[WechatPayAbnormalFundProcessingContractGuards.cs](../../../../../Tests/Mud.Wechat.Pay.Tests/ContractGuards/WechatPayAbnormalFundProcessingContractGuards.cs)
 > 与全局 [WechatPayDomainContractGuards.cs](../../../../../Tests/Mud.Wechat.Pay.Tests/ContractGuards/WechatPayDomainContractGuards.cs)）、
-> 本域 DTO（[../../../Mud.Wechat.Pay.DataModels/AbnormalFundProcessing/](../../../Mud.Wechat.Pay.DataModels/AbnormalFundProcessing/)）。
+> 本域 DTO（[../../../Mud.Wechat.Pay/AbnormalFundProcessing/](../../../Mud.Wechat.Pay/AbnormalFundProcessing/)）。
 > 不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
 
 ## 端点速览
@@ -105,7 +105,7 @@ string(64)）的唯一性口径写在 DTO 注释原文：「商户需保证**同
 
 ## 错误码：本域没有专有常量类
 
-`Src/Pay/Mud.Wechat.Pay.DataModels/AbnormalFundProcessing/` 目录下只有 `AbnormalFundProcessingDtos.cs`
+`Src/Pay/Mud.Wechat.Pay/AbnormalFundProcessing/` 目录下只有 `AbnormalFundProcessingDtos.cs`
 一个文件 ⇒ **本域不存在取值常量类，也不存在 `*ErrorCodes` 类**（`AFP-B1`~`AFP-B3` 三支守卫也
 不涉及常量类）。接口注释里逐支摘录的业务码为：
 
@@ -152,7 +152,7 @@ SDK 侧也不做加解密。APIv3 密钥、商户私钥、证书内容、真实 
 
 本域 DTO 全部标 `[HttpJsonSerializable(SerializerClassName = "AbnormalFundProcessing")]`，
 生成上下文落盘见
-[../../../Mud.Wechat.Pay.DataModels/Generated/AbnormalFundProcessingJsonContext.g.cs](../../../Mud.Wechat.Pay.DataModels/Generated/AbnormalFundProcessingJsonContext.g.cs)，
+[../../../Mud.Wechat.Pay/Generated/AbnormalFundProcessingJsonContext.g.cs](../../../Mud.Wechat.Pay/Generated/AbnormalFundProcessingJsonContext.g.cs)，
 由 [../../Extensions/PayJsonResolverExtensions.cs](../../Extensions/PayJsonResolverExtensions.cs)
 登记（`AbnormalFundProcessingJsonContext.Default`）供 Native AOT 使用。
 JSON 名一律 snake_case 原样；时间字段（`create_time` / `last_update_time` / `success_time` /
@@ -243,8 +243,8 @@ string? closedReason = instruction.CloseReason;  // 仅 _CLOSED 时非 null
 | DTO 官方字段名抽查 | 同文件 `AFP-B3` |
 | 零 `[Token]`、`[AllowAnyStatusCode]`、接口名册（`Baseline.Pay.HttpApiInterfaces`） | `../../../../../Tests/Mud.Wechat.Pay.Tests/ContractGuards/WechatPayDomainContractGuards.cs` 的 `PAY-B1` |
 | 跨域总端点数 | `../../../../../Tests/ContractBaseline.cs`（`Baseline.Pay.Endpoints`） |
-| DTO 字段名与类型 | `../../../Mud.Wechat.Pay.DataModels/AbnormalFundProcessing/` |
-| AOT 上下文与模块接线 | `../../../Mud.Wechat.Pay.DataModels/Generated/AbnormalFundProcessingJsonContext.g.cs`、`../../Extensions/PayJsonResolverExtensions.cs`、`../../Extensions/PayModule.cs`、`../../Extensions/PayServiceBuilder.cs` |
+| DTO 字段名与类型 | `../../../Mud.Wechat.Pay/AbnormalFundProcessing/` |
+| AOT 上下文与模块接线 | `../../../Mud.Wechat.Pay/Generated/AbnormalFundProcessingJsonContext.g.cs`、`../../Extensions/PayJsonResolverExtensions.cs`、`../../Extensions/PayModule.cs`、`../../Extensions/PayServiceBuilder.cs` |
 | 回调报文验签与解密 | `../../../Mud.Wechat.Pay.Callback/README.md` |
 | 支付线总体口径 | `../../README.md` |
 

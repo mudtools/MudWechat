@@ -49,11 +49,20 @@ public class WechatInterfaceNamespaceContractGuards
     private const string GeneratedInternalNamespace = ContractNamespace + ".Internal";
 
     /// <summary>
-    /// 取出主包中全部标记 <see cref="HttpClientApiAttribute"/> 的业务接口。
+    /// 取出企微线业务面全部标记 <see cref="HttpClientApiAttribute"/> 的接口。
     /// </summary>
+    /// <remarks>
+    /// <b>扫描面按命名空间收窄，不按程序集</b>：2026-10 包合并后原 <c>Work.Abstractions</c> 程序集
+    /// 与本包同处一个 Assembly，其令牌签发接口（<c>Mud.Wechat.Work.Abstractions.Authentication</c>，
+    /// 同样标 <c>[HttpClientApi]</c>）会混进本守卫的主语，使二分与 158/312/470 计数假红。
+    /// 那三支接口的归属由 TO 族与令牌签发守卫治理，不属 N1/N2 的「业务接口 IsAbstract 二分」主语；
+    /// 排除 <c>Work.Abstractions*</c> 命名空间恰好复原合并前的同一集合。
+    /// </remarks>
     private static List<Type> BusinessInterfaces() =>
         typeof(IWechatWorkAgentService).Assembly.GetTypes()
             .Where(t => t.IsInterface && t.GetCustomAttribute<HttpClientApiAttribute>() is not null)
+            .Where(t => t.Namespace is not null
+                     && !t.Namespace.StartsWith("Mud.Wechat.Work.Abstractions", StringComparison.Ordinal))
             .OrderBy(t => t.FullName, StringComparer.Ordinal)
             .ToList();
 

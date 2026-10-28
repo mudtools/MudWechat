@@ -19,7 +19,7 @@
 
 > **事实来源限定**：本文全部断言只来自本仓三类证据——本目录 8 份接口文件的 XML 注释、
 > [WechatLicenseContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatLicenseContractGuards.cs)（LC1~LC6）、
-> [Src/Work/Mud.Wechat.Work.DataModels/License/](../../../Mud.Wechat.Work.DataModels/License/) 下的 DTO 声明；
+> [Src/Work/Mud.Wechat.Work/License/](../../../Mud.Wechat.Work/License/) 下的 DTO 声明；
 > 端点数、路由、字段名以守卫断言为准，官方文档号仅作定位标识、不作为本文事实来源。
 > 未能在本仓三类证据内核验的项目一律集中在文末「已知留档缺口」，标为**未逐项核验**，正文不作推断。
 
@@ -115,7 +115,7 @@ LC3 对四族各断言一次：`parent` 的 `IsAbstract = true`、`RegistryGroup
 
 ## 4. 余额支付：顶层 `errcode == 0` **不等于**支付成功
 
-LC6 ③ 锁定 [GetLicensePayJobResultResponse.cs](../../../Mud.Wechat.Work.DataModels/License/GetLicensePayJobResultResponse.cs)
+LC6 ③ 锁定 [GetLicensePayJobResultResponse.cs](../../../Mud.Wechat.Work/License/GetLicensePayJobResultResponse.cs)
 必须同时承载 `Status`（`int?`，JSON `status`）与 `PayJobResult`（`LicensePayJobResult?`，JSON `pay_job_result`），
 并断言 `Status` 类型为 `int?`，守卫 reason 原文写明「`status` 官方为支付任务结果（1 成功 / 2 执行中 / 3 失败），
 与顶层 `errcode` 语义不同」。⇒ 判支付结果**只认 `Status` 与 `PayJobResult.Errcode`**，
@@ -155,10 +155,10 @@ LC2 对 **4 个请求类型**（`ListLicenseOrderRequest`、`ListLicenseOrderAcc
 | #20 `batch_get_active_info_by_code` | `active_code_list` ≤ **1000** |
 | #23 `batch_transfer_license` | 单次转移账号数 ≤ **1000**；接收成员许可剩余时长 **≤ 20 天**才可成功继承，否则报错 |
 | #24 `batch_share_active_code` | 每次分配 ≤ **1000** 个，且不能超过下游/下级企业在上下游/企业互联通讯录中的**人数上限的两倍**；`corp_link_type` 0 上下游 / 1 企业互联，默认 0 |
-| #1 `create_new_order` | 基础账号与互通账号**不能同时为 0**；单类型最多 **1,000,000** 个（[LicenseAccountCount.cs](../../../Mud.Wechat.Work.DataModels/License/LicenseAccountCount.cs)），**服务商测试企业最多各 1000 个** |
+| #1 `create_new_order` | 基础账号与互通账号**不能同时为 0**；单类型最多 **1,000,000** 个（[LicenseAccountCount.cs](../../../Mud.Wechat.Work/License/LicenseAccountCount.cs)），**服务商测试企业最多各 1000 个** |
 | #14 `support_policy_query` | 一个企业 **30 天**内最多查询一次 |
 
-购买时长的官方算法（#1 注释 + [LicenseAccountDuration.cs](../../../Mud.Wechat.Work.DataModels/License/LicenseAccountDuration.cs)）：
+购买时长的官方算法（#1 注释 + [LicenseAccountDuration.cs](../../../Mud.Wechat.Work/License/LicenseAccountDuration.cs)）：
 总天数 = `months * 31 + days`（**每月按 31 天**计），最少 1 个月、最多 **60 个月（1860 天）**；
 续期侧 `months` 与 `new_expire_time` **二者填其一**（守卫类级 remarks ④），
 `new_expire_time` 不可为今天及过去、不可为 1860 天后，且须填**当天 24 时 0 分 0 秒**，
@@ -319,8 +319,8 @@ public sealed class LicenseProvisioning(
 |---|---|---|
 | 本域端点总数口径冲突 | LC1 断言 **27**（订单族 15），但 [WechatWorkServiceBuilder.cs](../../Extensions/WechatWorkServiceBuilder.cs) 的 `AddLicenseApi()` XML 与 [../../README.md](../../README.md) 写「四族 **25** 端点 / 订单管理族 **13**」 | **以守卫为权威**（本文按 27）；两处旧叙述待同批订正，本文不改动任何代码或既有文档 |
 | 独立频率限制 | 四份子接口注释逐条写「官方页面未给出本族端点的独立频率限制，走官方全局访问频率限制」⇒ 全局频率的具体数值**未逐项核验** | 需要自建限流时先核验官方全局频控页 |
-| `order_status` / `order_type` 取值全集 | [LicenseOrderDetail.cs](../../../Mud.Wechat.Work.DataModels/License/LicenseOrderDetail.cs) 只有 `OrderStatus`（`int?`）与 `OrderType`（`int?`），注释无取值表 ⇒ **未逐项核验** | 以 `int?` 承载，判定时先核验，勿借邻域枚举 |
-| `query_result` / `unsatisfied_reason` 取值语义 | [QueryLicenseSupportPolicyResponse.cs](../../../Mud.Wechat.Work.DataModels/License/QueryLicenseSupportPolicyResponse.cs) 只有类型（`int?` / `List<int>?`）；且注释记该优惠政策 2023-03-31 到期后不再支持查询 ⇒ 现行可用性与码值含义**未逐项核验** | 该端点保留但不用于判定；如需使用先核验官方页 |
+| `order_status` / `order_type` 取值全集 | [LicenseOrderDetail.cs](../../../Mud.Wechat.Work/License/LicenseOrderDetail.cs) 只有 `OrderStatus`（`int?`）与 `OrderType`（`int?`），注释无取值表 ⇒ **未逐项核验** | 以 `int?` 承载，判定时先核验，勿借邻域枚举 |
+| `query_result` / `unsatisfied_reason` 取值语义 | [QueryLicenseSupportPolicyResponse.cs](../../../Mud.Wechat.Work/License/QueryLicenseSupportPolicyResponse.cs) 只有类型（`int?` / `List<int>?`）；且注释记该优惠政策 2023-03-31 到期后不再支持查询 ⇒ 现行可用性与码值含义**未逐项核验** | 该端点保留但不用于判定；如需使用先核验官方页 |
 | 价格与订单金额单位 | `LicenseOrderDetail.Price` 为 `long?`，注释未标单位（仅 #15 的 `balance` 明确「单位分」）⇒ **未逐项核验** | 不得据 `balance` 推断 `price` 也是分 |
 | `license_status`（#25）取值 | `GetAppLicenseInfoResponse.LicenseStatus` 为 `int?`，注释无取值表 ⇒ **未逐项核验** | 不建枚举、不做「等于某常量才算有效」的判定 |
 | 测试企业阈值的判定入口 | 注释多处出现「服务商测试企业最多各购买 1000 个 / 不支持多企业下单 / 每次只能续 1 个月」，但「如何识别当前企业是测试企业」在本域无对应端点 ⇒ **未在本域核验** | 需要该判定前先核验官方页，勿从邻域借 |
@@ -339,8 +339,8 @@ public sealed class LicenseProvisioning(
 | JSON 上下文全量登记（74 型 = 请求 26 + 响应 22 + 嵌套 26，`SerializerClassName = "License"`） | LC5（L288–L316） |
 | 官方契约陷阱（`list_actived_account`、`trail_info`、`status`/`pay_job_result`、时长超集、`jobid` 九处、照抄键集、`balance` 单位分） | LC6（L318–L383，辅助 `JsonNameShouldBe` L385–L393） |
 | 开放面 / 加密标识 / 回调归属等域级结论 | 同文件类级 remarks（L22–L50） |
-| DTO 属性名 / 类型 / JSON 名 | [../../../Mud.Wechat.Work.DataModels/License/](../../../Mud.Wechat.Work.DataModels/License/)（含 `RequestModel/` 26 份请求体） |
-| 上下文源生成文件 | [../../../Mud.Wechat.Work.DataModels/Generated/LicenseJsonContext.g.cs](../../../Mud.Wechat.Work.DataModels/Generated/LicenseJsonContext.g.cs) |
+| DTO 属性名 / 类型 / JSON 名 | [../../../Mud.Wechat.Work/License/](../../../Mud.Wechat.Work/License/)（含 `RequestModel/` 26 份请求体） |
+| 上下文源生成文件 | [../../../Mud.Wechat.Work/Generated/LicenseJsonContext.g.cs](../../../Mud.Wechat.Work/Generated/LicenseJsonContext.g.cs) |
 | 归属键「非 AccessToken 家族不得带归属键」的总线口径 | [WechatTokenOwnerContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatTokenOwnerContractGuards.cs)（TO1~TO3） |
 | Query 令牌注入白名单中的本域接口名 | [WechatContractGuards.QueryTokenInjection.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatContractGuards.QueryTokenInjection.cs)（G5） |
 | 许可事件回调载荷（97195~97198） | `WechatCallbackContractGuards`（CB 系列），不在本域 |

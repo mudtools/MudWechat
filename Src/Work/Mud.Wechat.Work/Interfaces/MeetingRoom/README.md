@@ -3,7 +3,7 @@
 企业微信「会议室预定管理」模块企业自建应用 SDK
 （查询会议室预定信息 + 预定会议室 + 按日程预定 + 按会议预定 + 取消预定 + 获取预定详情，共 6 端点）。 接口：[IWechatWorkMeetingRoomBookingService](./Booking/IWechatWorkMeetingRoomBookingService.cs)、[IWechatWorkInternalMeetingRoomBookingService](./Booking/IWechatWorkMeetingRoomBookingService_Internal.cs)、[IWechatWorkMeetingRoomService](./Room/IWechatWorkMeetingRoomService.cs)、[IWechatWorkInternalMeetingRoomService](./Room/IWechatWorkMeetingRoomService_Internal.cs)；注册组 `MeetingRoom`；模块枚举 `WechatModule.MeetingRoom`（装配入口见 [WechatWorkServiceBuilder.cs](../../Extensions/WechatWorkServiceBuilder.cs)）。逐端点核验 2026-10-18。
 
-> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[WechatMeetingRoomContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatMeetingRoomContractGuards.cs)、[WechatContractGuards.QueryTokenInjection.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatContractGuards.QueryTokenInjection.cs)、[WechatNonContractRouteZeroDeclarationContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatNonContractRouteZeroDeclarationContractGuards.cs)）、本域 DTO（[`Mud.Wechat.Work.DataModels/MeetingRoom`](../../../Mud.Wechat.Work.DataModels/MeetingRoom/)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
+> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[WechatMeetingRoomContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatMeetingRoomContractGuards.cs)、[WechatContractGuards.QueryTokenInjection.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatContractGuards.QueryTokenInjection.cs)、[WechatNonContractRouteZeroDeclarationContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatNonContractRouteZeroDeclarationContractGuards.cs)）、本域 DTO（[`Mud.Wechat.Work/MeetingRoom`](../../../Mud.Wechat.Work/MeetingRoom/)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
 
 ## 端点速览
 
@@ -295,30 +295,30 @@ MUD005 已知接受风险：企业微信官方契约强制令牌走 Query 参数
 
 ## DTO 与序列化面
 
-本域 DTO 目录 [`Mud.Wechat.Work.DataModels/MeetingRoom`](../../../Mud.Wechat.Work.DataModels/MeetingRoom/) 内共 **22** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **22** 个，`SerializerClassName` = `MeetingRoom`。
+本域 DTO 目录 [`Mud.Wechat.Work/MeetingRoom`](../../../Mud.Wechat.Work/MeetingRoom/) 内共 **22** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **22** 个，`SerializerClassName` = `MeetingRoom`。
 
-AOT 源生成上下文：[`MeetingRoomJsonContext.g.cs`](./../../../Mud.Wechat.Work.DataModels/Generated/MeetingRoomJsonContext.g.cs)（生成物，勿手改）。
+AOT 源生成上下文：[`MeetingRoomJsonContext.g.cs`](./../../../Mud.Wechat.Work/Generated/MeetingRoomJsonContext.g.cs)（生成物，勿手改）。
 
 | 端点引用的类型 | 角色 | 定义位置 | JSON 字段（前缀） |
 |---|---|---|---|
-| `GetMeetingRoomBookingInfoResponse` | 应答 | [MeetingRoom/Booking/GetMeetingRoomBookingInfoResponse.cs](../../../Mud.Wechat.Work.DataModels/MeetingRoom/Booking/GetMeetingRoomBookingInfoResponse.cs) | `booking_list` |
-| `GetMeetingRoomBookingInfoRequest` | 请求体 | [MeetingRoom/Booking/GetMeetingRoomBookingInfoRequest.cs](../../../Mud.Wechat.Work.DataModels/MeetingRoom/Booking/GetMeetingRoomBookingInfoRequest.cs) | `meetingroom_id`, `start_time`, `end_time`, `city`, `building`, `floor` |
-| `MeetingRoomBookResponse` | 应答 | [MeetingRoom/Booking/MeetingRoomBookResponse.cs](../../../Mud.Wechat.Work.DataModels/MeetingRoom/Booking/MeetingRoomBookResponse.cs) | `booking_id`, `schedule_id` |
-| `MeetingRoomBookRequest` | 请求体 | [MeetingRoom/Booking/MeetingRoomBookRequest.cs](../../../Mud.Wechat.Work.DataModels/MeetingRoom/Booking/MeetingRoomBookRequest.cs) | `meetingroom_id`, `subject`, `start_time`, `end_time`, `booker`, `attendees` |
-| `MeetingRoomBookByScheduleResponse` | 应答 | [MeetingRoom/Booking/MeetingRoomBookByScheduleResponse.cs](../../../Mud.Wechat.Work.DataModels/MeetingRoom/Booking/MeetingRoomBookByScheduleResponse.cs) | `booking_id`, `conflict_date` |
-| `MeetingRoomBookByScheduleRequest` | 请求体 | [MeetingRoom/Booking/MeetingRoomBookByScheduleRequest.cs](../../../Mud.Wechat.Work.DataModels/MeetingRoom/Booking/MeetingRoomBookByScheduleRequest.cs) | `meetingroom_id`, `schedule_id`, `booker` |
-| `MeetingRoomBookByMeetingResponse` | 应答 | [MeetingRoom/Booking/MeetingRoomBookByMeetingResponse.cs](../../../Mud.Wechat.Work.DataModels/MeetingRoom/Booking/MeetingRoomBookByMeetingResponse.cs) | `booking_id`, `conflict_date` |
-| `MeetingRoomBookByMeetingRequest` | 请求体 | [MeetingRoom/Booking/MeetingRoomBookByMeetingRequest.cs](../../../Mud.Wechat.Work.DataModels/MeetingRoom/Booking/MeetingRoomBookByMeetingRequest.cs) | `meetingroom_id`, `meetingid`, `booker` |
-| `WechatWorkResponse` | 应答 | [WechatWorkResponse.cs](../../../Mud.Wechat.Work.DataModels/WechatWorkResponse.cs) | `errcode`, `errmsg`, `data` |
-| `MeetingRoomCancelBookRequest` | 请求体 | [MeetingRoom/Booking/MeetingRoomCancelBookRequest.cs](../../../Mud.Wechat.Work.DataModels/MeetingRoom/Booking/MeetingRoomCancelBookRequest.cs) | `booking_id`, `keep_schedule`, `cancel_date` |
-| `MeetingRoomBookInfoGetResponse` | 应答 | [MeetingRoom/Booking/MeetingRoomBookInfoGetResponse.cs](../../../Mud.Wechat.Work.DataModels/MeetingRoom/Booking/MeetingRoomBookInfoGetResponse.cs) | `meetingroom_id`, `schedule` |
-| `MeetingRoomBookInfoGetRequest` | 请求体 | [MeetingRoom/Booking/MeetingRoomBookInfoGetRequest.cs](../../../Mud.Wechat.Work.DataModels/MeetingRoom/Booking/MeetingRoomBookInfoGetRequest.cs) | `meetingroom_id`, `booking_id` |
-| `MeetingRoomAddResponse` | 应答 | [MeetingRoom/Room/MeetingRoomAddResponse.cs](../../../Mud.Wechat.Work.DataModels/MeetingRoom/Room/MeetingRoomAddResponse.cs) | `meetingroom_id` |
-| `MeetingRoomAddRequest` | 请求体 | [MeetingRoom/Room/MeetingRoomAddRequest.cs](../../../Mud.Wechat.Work.DataModels/MeetingRoom/Room/MeetingRoomAddRequest.cs) | `name`, `capacity`, `city`, `building`, `floor`, `coordinate`, `range`, `equipment` |
-| `MeetingRoomListResponse` | 应答 | [MeetingRoom/Room/MeetingRoomListResponse.cs](../../../Mud.Wechat.Work.DataModels/MeetingRoom/Room/MeetingRoomListResponse.cs) | `meetingroom_list` |
-| `MeetingRoomListRequest` | 请求体 | [MeetingRoom/Room/MeetingRoomListRequest.cs](../../../Mud.Wechat.Work.DataModels/MeetingRoom/Room/MeetingRoomListRequest.cs) | `city`, `building`, `floor`, `equipment` |
-| `MeetingRoomEditRequest` | 请求体 | [MeetingRoom/Room/MeetingRoomEditRequest.cs](../../../Mud.Wechat.Work.DataModels/MeetingRoom/Room/MeetingRoomEditRequest.cs) | `meetingroom_id`, `name`, `capacity`, `city`, `building`, `floor`, `coordinate`, `range`, `equipment` |
-| `MeetingRoomDeleteRequest` | 请求体 | [MeetingRoom/Room/MeetingRoomDeleteRequest.cs](../../../Mud.Wechat.Work.DataModels/MeetingRoom/Room/MeetingRoomDeleteRequest.cs) | `meetingroom_id` |
+| `GetMeetingRoomBookingInfoResponse` | 应答 | [MeetingRoom/Booking/GetMeetingRoomBookingInfoResponse.cs](../../../Mud.Wechat.Work/MeetingRoom/Booking/GetMeetingRoomBookingInfoResponse.cs) | `booking_list` |
+| `GetMeetingRoomBookingInfoRequest` | 请求体 | [MeetingRoom/Booking/GetMeetingRoomBookingInfoRequest.cs](../../../Mud.Wechat.Work/MeetingRoom/Booking/GetMeetingRoomBookingInfoRequest.cs) | `meetingroom_id`, `start_time`, `end_time`, `city`, `building`, `floor` |
+| `MeetingRoomBookResponse` | 应答 | [MeetingRoom/Booking/MeetingRoomBookResponse.cs](../../../Mud.Wechat.Work/MeetingRoom/Booking/MeetingRoomBookResponse.cs) | `booking_id`, `schedule_id` |
+| `MeetingRoomBookRequest` | 请求体 | [MeetingRoom/Booking/MeetingRoomBookRequest.cs](../../../Mud.Wechat.Work/MeetingRoom/Booking/MeetingRoomBookRequest.cs) | `meetingroom_id`, `subject`, `start_time`, `end_time`, `booker`, `attendees` |
+| `MeetingRoomBookByScheduleResponse` | 应答 | [MeetingRoom/Booking/MeetingRoomBookByScheduleResponse.cs](../../../Mud.Wechat.Work/MeetingRoom/Booking/MeetingRoomBookByScheduleResponse.cs) | `booking_id`, `conflict_date` |
+| `MeetingRoomBookByScheduleRequest` | 请求体 | [MeetingRoom/Booking/MeetingRoomBookByScheduleRequest.cs](../../../Mud.Wechat.Work/MeetingRoom/Booking/MeetingRoomBookByScheduleRequest.cs) | `meetingroom_id`, `schedule_id`, `booker` |
+| `MeetingRoomBookByMeetingResponse` | 应答 | [MeetingRoom/Booking/MeetingRoomBookByMeetingResponse.cs](../../../Mud.Wechat.Work/MeetingRoom/Booking/MeetingRoomBookByMeetingResponse.cs) | `booking_id`, `conflict_date` |
+| `MeetingRoomBookByMeetingRequest` | 请求体 | [MeetingRoom/Booking/MeetingRoomBookByMeetingRequest.cs](../../../Mud.Wechat.Work/MeetingRoom/Booking/MeetingRoomBookByMeetingRequest.cs) | `meetingroom_id`, `meetingid`, `booker` |
+| `WechatWorkResponse` | 应答 | [WechatWorkResponse.cs](../../../Mud.Wechat.Work/WechatWorkResponse.cs) | `errcode`, `errmsg`, `data` |
+| `MeetingRoomCancelBookRequest` | 请求体 | [MeetingRoom/Booking/MeetingRoomCancelBookRequest.cs](../../../Mud.Wechat.Work/MeetingRoom/Booking/MeetingRoomCancelBookRequest.cs) | `booking_id`, `keep_schedule`, `cancel_date` |
+| `MeetingRoomBookInfoGetResponse` | 应答 | [MeetingRoom/Booking/MeetingRoomBookInfoGetResponse.cs](../../../Mud.Wechat.Work/MeetingRoom/Booking/MeetingRoomBookInfoGetResponse.cs) | `meetingroom_id`, `schedule` |
+| `MeetingRoomBookInfoGetRequest` | 请求体 | [MeetingRoom/Booking/MeetingRoomBookInfoGetRequest.cs](../../../Mud.Wechat.Work/MeetingRoom/Booking/MeetingRoomBookInfoGetRequest.cs) | `meetingroom_id`, `booking_id` |
+| `MeetingRoomAddResponse` | 应答 | [MeetingRoom/Room/MeetingRoomAddResponse.cs](../../../Mud.Wechat.Work/MeetingRoom/Room/MeetingRoomAddResponse.cs) | `meetingroom_id` |
+| `MeetingRoomAddRequest` | 请求体 | [MeetingRoom/Room/MeetingRoomAddRequest.cs](../../../Mud.Wechat.Work/MeetingRoom/Room/MeetingRoomAddRequest.cs) | `name`, `capacity`, `city`, `building`, `floor`, `coordinate`, `range`, `equipment` |
+| `MeetingRoomListResponse` | 应答 | [MeetingRoom/Room/MeetingRoomListResponse.cs](../../../Mud.Wechat.Work/MeetingRoom/Room/MeetingRoomListResponse.cs) | `meetingroom_list` |
+| `MeetingRoomListRequest` | 请求体 | [MeetingRoom/Room/MeetingRoomListRequest.cs](../../../Mud.Wechat.Work/MeetingRoom/Room/MeetingRoomListRequest.cs) | `city`, `building`, `floor`, `equipment` |
+| `MeetingRoomEditRequest` | 请求体 | [MeetingRoom/Room/MeetingRoomEditRequest.cs](../../../Mud.Wechat.Work/MeetingRoom/Room/MeetingRoomEditRequest.cs) | `meetingroom_id`, `name`, `capacity`, `city`, `building`, `floor`, `coordinate`, `range`, `equipment` |
+| `MeetingRoomDeleteRequest` | 请求体 | [MeetingRoom/Room/MeetingRoomDeleteRequest.cs](../../../Mud.Wechat.Work/MeetingRoom/Room/MeetingRoomDeleteRequest.cs) | `meetingroom_id` |
 
 > DTO 一律以源文件为准；本表只列端点签名**直接引用**的一层类型，嵌套类型不再递归展开。所有 DTO 不使用 `required`（仓内约束），必填性由接口注释与官方页表达，SDK 不做本地必填校验。
 
@@ -356,7 +356,7 @@ var response = await service.AddMeetingRoomAsync(new MeetingRoomAddRequest(), ct
 | 契约守卫（路由 / 计数 / DTO 登记断言） | [`WechatMeetingRoomContractGuards.cs`](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatMeetingRoomContractGuards.cs)、[`WechatContractGuards.QueryTokenInjection.cs`](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatContractGuards.QueryTokenInjection.cs)、[`WechatNonContractRouteZeroDeclarationContractGuards.cs`](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatNonContractRouteZeroDeclarationContractGuards.cs) |
 | 守卫中的代表性测试方法 | `MeetingRoomRoomEndpoints_ShouldMatchOfficialRoutes`、`MeetingRoomBookingEndpoints_ShouldMatchOfficialRoutes`、`MeetingRoomSingleAppTypeFamilies_ShouldHaveExactlyOneChildAndAbstractParent`、`MeetingRoomTokenBinding_ShouldBeAccessTokenInjectedViaQuery`、`MeetingRoomDataModels_ShouldBeRegisteredInJsonContext`、`MeetingRoomOfficialFieldNames_ShouldBePreservedVerbatim`、`MeetingRoomNumericalBooleanFields_ShouldBeCarriedAsNumbers`、`MeetingRoomOfficiallyRequiredRequestFields_ShouldNotBeDeclaredNullable`、`QueryTokenInjection_ShouldBeLimitedToWechatOfficialContractInterfaces`、`NonContractRoutes_ShouldHaveZeroDeclaredRoutes_WhenScannedAcrossSrc` |
 | 模块枚举 / 装配入口 | [`WechatModule.cs`](../../Extensions/WechatModule.cs)、[`WechatWorkServiceBuilder.cs`](../../Extensions/WechatWorkServiceBuilder.cs) |
-| DTO 与 JSON 上下文 | [`Mud.Wechat.Work.DataModels/MeetingRoom`](../../../Mud.Wechat.Work.DataModels/MeetingRoom/) |
+| DTO 与 JSON 上下文 | [`Mud.Wechat.Work/MeetingRoom`](../../../Mud.Wechat.Work/MeetingRoom/) |
 | 跨线基线 | [`Tests/ContractBaseline.cs`](../../../../../Tests/ContractBaseline.cs)（各线分节；本线口径以守卫实际断言为准） |
 | 本线包级公开面与已踩陷阱 | [`Src/Work/Mud.Wechat.Work/README.md`](../../README.md) |
 | 跨线通用约束（门禁 / AOT / 落位） | [`AGENTS.md`](../../../../../AGENTS.md) |

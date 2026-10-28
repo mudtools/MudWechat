@@ -97,7 +97,7 @@ public class MpTicketContractGuards
     public void TicketService_ShouldNotBeRegisteredAsResolvableClient()
     {
         var extensions = File.ReadAllText(SourcePath(
-            "Mud.Wechat.OfficialAccount.Abstractions", "Extensions", "MpMultiAppExtensions.cs"));
+            "Mud.Wechat.OfficialAccount", "Extensions", "MpMultiAppExtensions.cs"));
 
         extensions.Should().NotContain("AddTicketWebApiHttpClient",
             "票据必须经管理器缓存取用；暴露默认客户端会让宿主绕过缓存触发官方频次限制");
@@ -111,11 +111,11 @@ public class MpTicketContractGuards
     public void TicketFrequencyConstraint_ShouldBeDocumented()
     {
         var dto = File.ReadAllText(SourcePath(
-            "Mud.Wechat.OfficialAccount.DataModels", "WebDev", "MpGetTicketResponse.cs"));
+            "Mud.Wechat.OfficialAccount", "WebDev", "MpGetTicketResponse.cs"));
         dto.Should().Contain("调用次数非常有限", "官方「注意事项」原文必须留在 DTO 文档中");
 
         var manager = File.ReadAllText(SourcePath(
-            "Mud.Wechat.OfficialAccount.Abstractions", "Authentication", "Tickets", "IMpTicketManager.cs"));
+            "Mud.Wechat.OfficialAccount", "Authentication", "Tickets", "IMpTicketManager.cs"));
         manager.Should().Contain("调用次数非常有限");
         manager.Should().Contain("不得", "必须显式声明「宿主不得绕过管理器逐次直调」");
     }
@@ -125,7 +125,7 @@ public class MpTicketContractGuards
     public void TicketThirdPartyExclusion_ShouldBeDocumented()
     {
         var service = File.ReadAllText(SourcePath(
-            "Mud.Wechat.OfficialAccount.Abstractions", "Authentication", "Interfaces", "IMpTicketService.cs"));
+            "Mud.Wechat.OfficialAccount", "Authentication", "Interfaces", "IMpTicketService.cs"));
 
         service.Should().Contain("不支持第三方平台调用");
     }

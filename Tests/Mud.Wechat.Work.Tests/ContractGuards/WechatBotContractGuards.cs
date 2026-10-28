@@ -475,7 +475,7 @@ public class WechatBotContractGuards
 
         // 配置审计登记（与建文件同批 —— AB-G6 同款双向不变式的文件侧半边；属性消费点由脚本运行期核）。
         File.ReadAllText(Path.Combine(GetSolutionRoot(), "scripts", "audit-config-keys.ps1"))
-            .Should().Contain("Mud.Wechat.Work.Abstractions/Configuration/WechatBotOptions.cs",
+            .Should().Contain("Mud.Wechat.Work/Configuration/WechatBotOptions.cs",
                 "WechatBotOptions 必须登记进 audit-config-keys（BotId/BotSecret/EnableLongConnection/心跳与退避参数的消费点审计）");
 
         // 跨面互斥的启动期校验存在（官方「API 模式二选一，切换即失效」）。

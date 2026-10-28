@@ -293,7 +293,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/Update-WechatToolG
 `OperationCanceledException` 仍按取消上抛（既有契约），调用方取消也必须上抛。
 
 **错误读数**：企微 `errcode` → `ToolApiFailure`（Category/Subtype/Suggestions）的码表是
-`Mud.Wechat.AI.Agent/Results/WechatApiErrorCatalog.cs`（跨线单表：`errcode` 是微信生态共享码空间）。码表只收
+`Mud.Wechat.AI/Results/WechatApiErrorCatalog.cs`（跨线单表：`errcode` 是微信生态共享码空间）。码表只收
 有实证的 10 个码，未收录回落 `api/upstream_error`；已收录的码会在错误正文追加一行「建议：…」——
 因此<b>全部既有执行器无需改动</b>即获得可纠错文案。
 

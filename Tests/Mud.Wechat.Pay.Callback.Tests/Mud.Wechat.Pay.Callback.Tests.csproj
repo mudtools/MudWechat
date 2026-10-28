@@ -14,8 +14,7 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\..\Src\Pay\Mud.Wechat.Pay.Callback\Mud.Wechat.Pay.Callback.csproj" />
-		<ProjectReference Include="..\..\Src\Pay\Mud.Wechat.Pay.Abstractions\Mud.Wechat.Pay.Abstractions.csproj" />
-		<ProjectReference Include="..\..\Src\Pay\Mud.Wechat.Pay.DataModels\Mud.Wechat.Pay.DataModels.csproj" />
+		<ProjectReference Include="..\..\Src\Pay\Mud.Wechat.Pay\Mud.Wechat.Pay.csproj" />
 		<!-- 三闸 fail-closed 用例复用共享叶层的抗重放端口与内存实现（同 OA.Callback.Tests 形态）。 -->
 		<ProjectReference Include="..\..\Src\Core\Mud.Wechat.Abstractions\Mud.Wechat.Abstractions.csproj" />
 	</ItemGroup>

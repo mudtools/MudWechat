@@ -2,7 +2,7 @@
 
 微信小店 / 视频号（channels 生态）「橱窗与本地生活商品」域 SDK（9 端点：视频号橱窗商品 4 / 本地生活团购优惠 5）。 接口：[IChannelsWindowService](./IChannelsWindowService.cs)；注册组 `Window`；模块枚举 `ChannelsModule.Window`（装配入口见 [ChannelsServiceBuilder.cs](../../Extensions/ChannelsServiceBuilder.cs)）。逐端点核验 2026-10-18。
 
-> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[ChannelsWindowContractGuards.cs](../../../../../Tests/Mud.Wechat.Channels.Tests/ContractGuards/ChannelsWindowContractGuards.cs)、[ChannelsTalentContractGuards.cs](../../../../../Tests/Mud.Wechat.Channels.Tests/ContractGuards/ChannelsTalentContractGuards.cs)）、本域 DTO（[`Mud.Wechat.Channels.DataModels/Window`](../../../Mud.Wechat.Channels.DataModels/Window/)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
+> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[ChannelsWindowContractGuards.cs](../../../../../Tests/Mud.Wechat.Channels.Tests/ContractGuards/ChannelsWindowContractGuards.cs)、[ChannelsTalentContractGuards.cs](../../../../../Tests/Mud.Wechat.Channels.Tests/ContractGuards/ChannelsTalentContractGuards.cs)）、本域 DTO（[`Mud.Wechat.Channels/Window`](../../../Mud.Wechat.Channels/Window/)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
 
 ## 端点速览
 
@@ -177,27 +177,27 @@ MUD005 已知接受风险：微信小店官方契约强制令牌走 Query 参数
 
 ## DTO 与序列化面
 
-本域 DTO 目录 [`Mud.Wechat.Channels.DataModels/Window`](../../../Mud.Wechat.Channels.DataModels/Window/) 内共 **27** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **27** 个，`SerializerClassName` = `Window`。
+本域 DTO 目录 [`Mud.Wechat.Channels/Window`](../../../Mud.Wechat.Channels/Window/) 内共 **27** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **27** 个，`SerializerClassName` = `Window`。
 
-AOT 源生成上下文：[`WindowJsonContext.g.cs`](./../../../Mud.Wechat.Channels.DataModels/Generated/WindowJsonContext.g.cs)（生成物，勿手改）。
+AOT 源生成上下文：[`WindowJsonContext.g.cs`](./../../../Mud.Wechat.Channels/Generated/WindowJsonContext.g.cs)（生成物，勿手改）。
 
 | 端点引用的类型 | 角色 | 定义位置 | JSON 字段（前缀） |
 |---|---|---|---|
-| `ChannelsResponse` | 应答 | [ChannelsResponse.cs](../../../Mud.Wechat.Channels.DataModels/ChannelsResponse.cs) | `errcode`, `errmsg` |
-| `ChannelsAddWindowProductRequest` | 请求体 | [Window/Product/ChannelsAddWindowProductRequest.cs](../../../Mud.Wechat.Channels.DataModels/Window/Product/ChannelsAddWindowProductRequest.cs) | `product_id`, `appid`, `is_hide_for_window` |
-| `ChannelsGetWindowProductResponse` | 应答 | [Window/Product/ChannelsGetWindowProductResponse.cs](../../../Mud.Wechat.Channels.DataModels/Window/Product/ChannelsGetWindowProductResponse.cs) | `product`, `cps_products` |
-| `ChannelsGetWindowProductRequest` | 请求体 | [Window/Product/ChannelsGetWindowProductRequest.cs](../../../Mud.Wechat.Channels.DataModels/Window/Product/ChannelsGetWindowProductRequest.cs) | `product_id`, `appid`, `need_cps_product` |
-| `ChannelsGetWindowProductListResponse` | 应答 | [Window/Product/ChannelsGetWindowProductListResponse.cs](../../../Mud.Wechat.Channels.DataModels/Window/Product/ChannelsGetWindowProductListResponse.cs) | `products`, `last_buffer`, `total_num` |
-| `ChannelsGetWindowProductListRequest` | 请求体 | [Window/Product/ChannelsGetWindowProductListRequest.cs](../../../Mud.Wechat.Channels.DataModels/Window/Product/ChannelsGetWindowProductListRequest.cs) | `appid`, `branch_id`, `page_size`, `page_index`, `last_buffer`, `need_total_num`, `query_cps_product` |
-| `ChannelsOffWindowProductRequest` | 请求体 | [Window/Product/ChannelsOffWindowProductRequest.cs](../../../Mud.Wechat.Channels.DataModels/Window/Product/ChannelsOffWindowProductRequest.cs) | `product_id`, `appid` |
-| `ChannelsAddLocallifeProductResponse` | 应答 | [Window/LocallifeProduct/ChannelsAddLocallifeProductResponse.cs](../../../Mud.Wechat.Channels.DataModels/Window/LocallifeProduct/ChannelsAddLocallifeProductResponse.cs) | `data` |
-| `ChannelsAddLocallifeProductRequest` | 请求体 | [Window/LocallifeProduct/ChannelsAddLocallifeProductRequest.cs](../../../Mud.Wechat.Channels.DataModels/Window/LocallifeProduct/ChannelsAddLocallifeProductRequest.cs) | `out_product_id`, `product_type`, `product_name`, `category_id`, `brand_id`, `head_imgs`, `product_qua_infos`, `verify_page`, `verify_at_store`, `code_source_type`, `attr_kv_map`, `skus` |
-| `ChannelsGetLocallifeProductListResponse` | 应答 | [Window/LocallifeProduct/ChannelsGetLocallifeProductListResponse.cs](../../../Mud.Wechat.Channels.DataModels/Window/LocallifeProduct/ChannelsGetLocallifeProductListResponse.cs) | `product_ids`, `next_key`, `total_num` |
-| `ChannelsGetLocallifeProductListRequest` | 请求体 | [Window/LocallifeProduct/ChannelsGetLocallifeProductListRequest.cs](../../../Mud.Wechat.Channels.DataModels/Window/LocallifeProduct/ChannelsGetLocallifeProductListRequest.cs) | `status`, `page_size`, `next_key` |
-| `ChannelsGetLocallifeProductResponse` | 应答 | [Window/LocallifeProduct/ChannelsGetLocallifeProductResponse.cs](../../../Mud.Wechat.Channels.DataModels/Window/LocallifeProduct/ChannelsGetLocallifeProductResponse.cs) | `online_data`, `draft_data` |
-| `ChannelsGetLocallifeProductRequest` | 请求体 | [Window/LocallifeProduct/ChannelsGetLocallifeProductRequest.cs](../../../Mud.Wechat.Channels.DataModels/Window/LocallifeProduct/ChannelsGetLocallifeProductRequest.cs) | `product_id`, `data_type` |
-| `ChannelsAuditFreeUpdateLocallifeProductRequest` | 请求体 | [Window/LocallifeProduct/ChannelsAuditFreeUpdateLocallifeProductRequest.cs](../../../Mud.Wechat.Channels.DataModels/Window/LocallifeProduct/ChannelsAuditFreeUpdateLocallifeProductRequest.cs) | `product_id`, `skus` |
-| `ChannelsUpdateLocallifeProductRequest` | 请求体 | [Window/LocallifeProduct/ChannelsUpdateLocallifeProductRequest.cs](../../../Mud.Wechat.Channels.DataModels/Window/LocallifeProduct/ChannelsUpdateLocallifeProductRequest.cs) | `product_id`, `product_type`, `product_name`, `category_id`, `brand_id`, `head_imgs`, `product_qua_infos`, `verify_page`, `verify_at_store`, `code_source_type`, `attr_kv_map`, `skus` |
+| `ChannelsResponse` | 应答 | [ChannelsResponse.cs](../../../Mud.Wechat.Channels/ChannelsResponse.cs) | `errcode`, `errmsg` |
+| `ChannelsAddWindowProductRequest` | 请求体 | [Window/Product/ChannelsAddWindowProductRequest.cs](../../../Mud.Wechat.Channels/Window/Product/ChannelsAddWindowProductRequest.cs) | `product_id`, `appid`, `is_hide_for_window` |
+| `ChannelsGetWindowProductResponse` | 应答 | [Window/Product/ChannelsGetWindowProductResponse.cs](../../../Mud.Wechat.Channels/Window/Product/ChannelsGetWindowProductResponse.cs) | `product`, `cps_products` |
+| `ChannelsGetWindowProductRequest` | 请求体 | [Window/Product/ChannelsGetWindowProductRequest.cs](../../../Mud.Wechat.Channels/Window/Product/ChannelsGetWindowProductRequest.cs) | `product_id`, `appid`, `need_cps_product` |
+| `ChannelsGetWindowProductListResponse` | 应答 | [Window/Product/ChannelsGetWindowProductListResponse.cs](../../../Mud.Wechat.Channels/Window/Product/ChannelsGetWindowProductListResponse.cs) | `products`, `last_buffer`, `total_num` |
+| `ChannelsGetWindowProductListRequest` | 请求体 | [Window/Product/ChannelsGetWindowProductListRequest.cs](../../../Mud.Wechat.Channels/Window/Product/ChannelsGetWindowProductListRequest.cs) | `appid`, `branch_id`, `page_size`, `page_index`, `last_buffer`, `need_total_num`, `query_cps_product` |
+| `ChannelsOffWindowProductRequest` | 请求体 | [Window/Product/ChannelsOffWindowProductRequest.cs](../../../Mud.Wechat.Channels/Window/Product/ChannelsOffWindowProductRequest.cs) | `product_id`, `appid` |
+| `ChannelsAddLocallifeProductResponse` | 应答 | [Window/LocallifeProduct/ChannelsAddLocallifeProductResponse.cs](../../../Mud.Wechat.Channels/Window/LocallifeProduct/ChannelsAddLocallifeProductResponse.cs) | `data` |
+| `ChannelsAddLocallifeProductRequest` | 请求体 | [Window/LocallifeProduct/ChannelsAddLocallifeProductRequest.cs](../../../Mud.Wechat.Channels/Window/LocallifeProduct/ChannelsAddLocallifeProductRequest.cs) | `out_product_id`, `product_type`, `product_name`, `category_id`, `brand_id`, `head_imgs`, `product_qua_infos`, `verify_page`, `verify_at_store`, `code_source_type`, `attr_kv_map`, `skus` |
+| `ChannelsGetLocallifeProductListResponse` | 应答 | [Window/LocallifeProduct/ChannelsGetLocallifeProductListResponse.cs](../../../Mud.Wechat.Channels/Window/LocallifeProduct/ChannelsGetLocallifeProductListResponse.cs) | `product_ids`, `next_key`, `total_num` |
+| `ChannelsGetLocallifeProductListRequest` | 请求体 | [Window/LocallifeProduct/ChannelsGetLocallifeProductListRequest.cs](../../../Mud.Wechat.Channels/Window/LocallifeProduct/ChannelsGetLocallifeProductListRequest.cs) | `status`, `page_size`, `next_key` |
+| `ChannelsGetLocallifeProductResponse` | 应答 | [Window/LocallifeProduct/ChannelsGetLocallifeProductResponse.cs](../../../Mud.Wechat.Channels/Window/LocallifeProduct/ChannelsGetLocallifeProductResponse.cs) | `online_data`, `draft_data` |
+| `ChannelsGetLocallifeProductRequest` | 请求体 | [Window/LocallifeProduct/ChannelsGetLocallifeProductRequest.cs](../../../Mud.Wechat.Channels/Window/LocallifeProduct/ChannelsGetLocallifeProductRequest.cs) | `product_id`, `data_type` |
+| `ChannelsAuditFreeUpdateLocallifeProductRequest` | 请求体 | [Window/LocallifeProduct/ChannelsAuditFreeUpdateLocallifeProductRequest.cs](../../../Mud.Wechat.Channels/Window/LocallifeProduct/ChannelsAuditFreeUpdateLocallifeProductRequest.cs) | `product_id`, `skus` |
+| `ChannelsUpdateLocallifeProductRequest` | 请求体 | [Window/LocallifeProduct/ChannelsUpdateLocallifeProductRequest.cs](../../../Mud.Wechat.Channels/Window/LocallifeProduct/ChannelsUpdateLocallifeProductRequest.cs) | `product_id`, `product_type`, `product_name`, `category_id`, `brand_id`, `head_imgs`, `product_qua_infos`, `verify_page`, `verify_at_store`, `code_source_type`, `attr_kv_map`, `skus` |
 
 > DTO 一律以源文件为准；本表只列端点签名**直接引用**的一层类型，嵌套类型不再递归展开。所有 DTO 不使用 `required`（仓内约束），必填性由接口注释与官方页表达，SDK 不做本地必填校验。
 
@@ -235,7 +235,7 @@ var response = await service.AddLocallifeProductAsync(new ChannelsAddLocallifePr
 | 契约守卫（路由 / 计数 / DTO 登记断言） | [`ChannelsWindowContractGuards.cs`](../../../../../Tests/Mud.Wechat.Channels.Tests/ContractGuards/ChannelsWindowContractGuards.cs)、[`ChannelsTalentContractGuards.cs`](../../../../../Tests/Mud.Wechat.Channels.Tests/ContractGuards/ChannelsTalentContractGuards.cs) |
 | 守卫中的代表性测试方法 | `WindowEndpoints_ShouldMatchOfficialRoutes`、`WindowEndpoints_ShouldAllBePost_WithBodyRules`、`WindowInterface_ShouldBindChannelsToken_AndRegisterUnderWindowGroup`、`WindowDataModels_ShouldBeRegisteredInJsonContext`、`WindowDataModels_ShouldLockOfficialFieldsAndSharedDtos`、`WindowEnumConstants_ShouldLockOfficialLiteralValues`、`TalentEndpoints_ShouldMatchOfficialRoutes`、`TalentEndpoints_ShouldAllBePost_WithSingleBody_AndTypedResponses`、`TalentInterface_ShouldBindChannelsToken_AndRegisterUnderTalentGroup`、`TalentDataModels_ShouldBeRegisteredInJsonContext`、`TalentDataModels_ShouldLockOfficialFieldsAndSplitDecisions`、`TalentConstants_ShouldLockOfficialEnumValues_AndStaySplitFromLeague` … |
 | 模块枚举 / 装配入口 | [`ChannelsModule.cs`](../../Extensions/ChannelsModule.cs)、[`ChannelsServiceBuilder.cs`](../../Extensions/ChannelsServiceBuilder.cs) |
-| DTO 与 JSON 上下文 | [`Mud.Wechat.Channels.DataModels/Window`](../../../Mud.Wechat.Channels.DataModels/Window/) |
+| DTO 与 JSON 上下文 | [`Mud.Wechat.Channels/Window`](../../../Mud.Wechat.Channels/Window/) |
 | 跨线基线 | [`Tests/ContractBaseline.cs`](../../../../../Tests/ContractBaseline.cs)（各线分节；本线口径以守卫实际断言为准） |
 | 本线包级公开面与已踩陷阱 | [`Src/Channels/Mud.Wechat.Channels/README.md`](../../README.md) |
 | 跨线通用约束（门禁 / AOT / 落位） | [`AGENTS.md`](../../../../../AGENTS.md) |

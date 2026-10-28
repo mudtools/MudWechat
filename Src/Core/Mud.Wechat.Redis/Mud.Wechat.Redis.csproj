@@ -39,7 +39,7 @@
 
 	<ItemGroup>
 		<!-- 单依赖（RD11）：四个存储端口契约（含重放守卫接口）同域于 Abstractions。 -->
-		<ProjectReference Include="..\..\Work\Mud.Wechat.Work.Abstractions\Mud.Wechat.Work.Abstractions.csproj" />
+		<ProjectReference Include="..\..\Work\Mud.Wechat.Work\Mud.Wechat.Work.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>

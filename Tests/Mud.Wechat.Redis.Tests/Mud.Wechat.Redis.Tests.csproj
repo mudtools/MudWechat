@@ -17,7 +17,7 @@
 		     OfficialAccount.Abstractions 用于跨产品线顺序守卫与全名锁定（RD-G7）。 -->
 		<ProjectReference Include="..\..\Src\Core\Mud.Wechat.Redis\Mud.Wechat.Redis.csproj" />
 		<ProjectReference Include="..\..\Src\Work\Mud.Wechat.Work.Callback\Mud.Wechat.Work.Callback.csproj" />
-		<ProjectReference Include="..\..\Src\OfficialAccount\Mud.Wechat.OfficialAccount.Abstractions\Mud.Wechat.OfficialAccount.Abstractions.csproj" />
+		<ProjectReference Include="..\..\Src\OfficialAccount\Mud.Wechat.OfficialAccount\Mud.Wechat.OfficialAccount.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>

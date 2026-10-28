@@ -11,7 +11,7 @@
 > （`CT1`/`CT3`/`CT6`/`CT7`/`CT8`，发布能力与草稿/商品卡片/留言共用这一支内容域守卫）、
 > [MpQueryTokenWhitelistGuard.cs](../../../../../Tests/Mud.Wechat.OfficialAccount.Tests/ContractGuards/MpQueryTokenWhitelistGuard.cs)（`QT1`）、
 > [MpRouteCountGuard.cs](../../../../../Tests/Mud.Wechat.OfficialAccount.Tests/ContractGuards/MpRouteCountGuard.cs)（`RC1`/`RC2`）
-> 与本仓 DTO（[DataModels/FreePublish/](../../../Mud.Wechat.OfficialAccount.DataModels/FreePublish/)）。
+> 与本仓 DTO（[DataModels/FreePublish/](../../../Mud.Wechat.OfficialAccount/FreePublish/)）。
 > 未在以上四处留档的官方约束一律进文末「已知留档缺口」，正文不引用外部官方文档表述。
 
 ## 端点速览
@@ -162,7 +162,7 @@ await freePublish.DeletePublishAsync(new MpFreePublishDeleteRequest
 | `MpModule.FreePublish` + `AddFreePublishApi()` + 白名单包含 | `CT7` = `ContentModules_ShouldBeRegisteredAndWhitelisted` |
 | 已核验错误码常量 | `CT8` = `ContentErrorCodes_ShouldMatchVerifiedOfficialValues` |
 | Query 令牌全集 / 路由去重计数 | `QT1`、`RC1`/`RC2` |
-| 14 个 DTO（`SerializerClassName = "FreePublish"`） | [DataModels/FreePublish/](../../../Mud.Wechat.OfficialAccount.DataModels/FreePublish/) |
+| 14 个 DTO（`SerializerClassName = "FreePublish"`） | [DataModels/FreePublish/](../../../Mud.Wechat.OfficialAccount/FreePublish/) |
 | 生成入口 / 模块枚举 / 上下文合并清单 | [MpServiceBuilder.cs](../../Extensions/MpServiceBuilder.cs)、[MpModule.cs](../../Extensions/MpModule.cs)、[MpJsonResolverExtensions.cs](../../Extensions/MpJsonResolverExtensions.cs) |
 | 本线总览（**统计已过期**，不可当权威） | [../../README.md](../../README.md) |
 

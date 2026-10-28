@@ -499,7 +499,7 @@ public class WechatPayMerchantServiceContractGuards
         var allTypeNames = DomainTypeNames();
         allTypeNames.Should().HaveCountGreaterThan(0, "本域类型数应大于 0");
 
-        var resolverSource = File.ReadAllText(SourcePath("Mud.Wechat.Pay",
+        var resolverSource = File.ReadAllText(SourcePath("Mud.Wechat.Pay", 
             "Extensions", "PayJsonResolverExtensions.cs"));
         resolverSource.Should().Contain("MerchantServiceJsonContext.Default",
             "新增域上下文须同批登记进 PayJsonResolverExtensions（AOT 红线：无登记即无元数据）");

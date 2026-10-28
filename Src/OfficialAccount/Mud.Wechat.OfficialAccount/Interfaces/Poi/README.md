@@ -4,7 +4,7 @@
 （查询门店 / 查询门店列表 / 删除门店——官方「微信门店」分组的查询与删除面；
 门店的新建 / 更新走官方后台或小程序店铺 API，官方未开放 HTTP 新建入口）。 接口：[IMpPoiService](./IMpPoiService.cs)；注册组 `Poi`；模块枚举 `MpModule.Poi`（装配入口见 [MpServiceBuilder.cs](../../Extensions/MpServiceBuilder.cs)）。逐端点核验 2026-10-18。
 
-> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[MpPoiContractGuards.cs](../../../../../Tests/Mud.Wechat.OfficialAccount.Tests/ContractGuards/MpPoiContractGuards.cs)、[MpQueryTokenWhitelistGuard.cs](../../../../../Tests/Mud.Wechat.OfficialAccount.Tests/ContractGuards/MpQueryTokenWhitelistGuard.cs)）、本域 DTO（[`Mud.Wechat.OfficialAccount.DataModels/Poi`](../../../Mud.Wechat.OfficialAccount.DataModels/Poi/)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
+> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[MpPoiContractGuards.cs](../../../../../Tests/Mud.Wechat.OfficialAccount.Tests/ContractGuards/MpPoiContractGuards.cs)、[MpQueryTokenWhitelistGuard.cs](../../../../../Tests/Mud.Wechat.OfficialAccount.Tests/ContractGuards/MpQueryTokenWhitelistGuard.cs)）、本域 DTO（[`Mud.Wechat.OfficialAccount/Poi`](../../../Mud.Wechat.OfficialAccount/Poi/)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
 
 ## 端点速览
 
@@ -81,18 +81,18 @@ MUD005 已知接受风险：微信公众号官方契约强制令牌走 Query 参
 
 ## DTO 与序列化面
 
-本域 DTO 目录 [`Mud.Wechat.OfficialAccount.DataModels/Poi`](../../../Mud.Wechat.OfficialAccount.DataModels/Poi/) 内共 **7** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **7** 个，`SerializerClassName` = `Poi`。
+本域 DTO 目录 [`Mud.Wechat.OfficialAccount/Poi`](../../../Mud.Wechat.OfficialAccount/Poi/) 内共 **7** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **7** 个，`SerializerClassName` = `Poi`。
 
-AOT 源生成上下文：[`PoiJsonContext.g.cs`](./../../../Mud.Wechat.OfficialAccount.DataModels/Generated/PoiJsonContext.g.cs)（生成物，勿手改）。
+AOT 源生成上下文：[`PoiJsonContext.g.cs`](./../../../Mud.Wechat.OfficialAccount/Generated/PoiJsonContext.g.cs)（生成物，勿手改）。
 
 | 端点引用的类型 | 角色 | 定义位置 | JSON 字段（前缀） |
 |---|---|---|---|
-| `MpPoiGetResponse` | 应答 | [Poi/MpPoiGetResponse.cs](../../../Mud.Wechat.OfficialAccount.DataModels/Poi/MpPoiGetResponse.cs) | `business` |
-| `MpPoiGetRequest` | 请求体 | [Poi/MpPoiGetRequest.cs](../../../Mud.Wechat.OfficialAccount.DataModels/Poi/MpPoiGetRequest.cs) | `poi_id` |
-| `MpPoiListResponse` | 应答 | [Poi/MpPoiListResponse.cs](../../../Mud.Wechat.OfficialAccount.DataModels/Poi/MpPoiListResponse.cs) | `business_list`, `total_count` |
-| `MpPoiListRequest` | 请求体 | [Poi/MpPoiListRequest.cs](../../../Mud.Wechat.OfficialAccount.DataModels/Poi/MpPoiListRequest.cs) | `begin`, `limit` |
-| `MpResponse` | 应答 | [MpResponse.cs](../../../Mud.Wechat.OfficialAccount.DataModels/MpResponse.cs) | `errcode`, `errmsg` |
-| `MpPoiDeleteRequest` | 请求体 | [Poi/MpPoiDeleteRequest.cs](../../../Mud.Wechat.OfficialAccount.DataModels/Poi/MpPoiDeleteRequest.cs) | `poi_id` |
+| `MpPoiGetResponse` | 应答 | [Poi/MpPoiGetResponse.cs](../../../Mud.Wechat.OfficialAccount/Poi/MpPoiGetResponse.cs) | `business` |
+| `MpPoiGetRequest` | 请求体 | [Poi/MpPoiGetRequest.cs](../../../Mud.Wechat.OfficialAccount/Poi/MpPoiGetRequest.cs) | `poi_id` |
+| `MpPoiListResponse` | 应答 | [Poi/MpPoiListResponse.cs](../../../Mud.Wechat.OfficialAccount/Poi/MpPoiListResponse.cs) | `business_list`, `total_count` |
+| `MpPoiListRequest` | 请求体 | [Poi/MpPoiListRequest.cs](../../../Mud.Wechat.OfficialAccount/Poi/MpPoiListRequest.cs) | `begin`, `limit` |
+| `MpResponse` | 应答 | [MpResponse.cs](../../../Mud.Wechat.OfficialAccount/MpResponse.cs) | `errcode`, `errmsg` |
+| `MpPoiDeleteRequest` | 请求体 | [Poi/MpPoiDeleteRequest.cs](../../../Mud.Wechat.OfficialAccount/Poi/MpPoiDeleteRequest.cs) | `poi_id` |
 
 > DTO 一律以源文件为准；本表只列端点签名**直接引用**的一层类型，嵌套类型不再递归展开。所有 DTO 不使用 `required`（仓内约束），必填性由接口注释与官方页表达，SDK 不做本地必填校验。
 
@@ -131,7 +131,7 @@ var response = await service.DeletePoiAsync(new MpPoiDeleteRequest(), ct);
 | 契约守卫（路由 / 计数 / DTO 登记断言） | [`MpPoiContractGuards.cs`](../../../../../Tests/Mud.Wechat.OfficialAccount.Tests/ContractGuards/MpPoiContractGuards.cs)、[`MpQueryTokenWhitelistGuard.cs`](../../../../../Tests/Mud.Wechat.OfficialAccount.Tests/ContractGuards/MpQueryTokenWhitelistGuard.cs) |
 | 守卫中的代表性测试方法 | `PoiEndpoints_ShouldMatchOfficialRoutes`、`PoiDataModels_ShouldBeRegisteredInJsonContext`、`QueryTokenInjectionInterfaces_ShouldMatchWhitelist`、`QueryTokenInjectionInterfaces_ShouldMatchWhitelist_ForMiniProgramLine`、`QueryTokenInterfaces_ShouldDeclareOfficialParameterName` |
 | 模块枚举 / 装配入口 | [`MpModule.cs`](../../Extensions/MpModule.cs)、[`MpServiceBuilder.cs`](../../Extensions/MpServiceBuilder.cs) |
-| DTO 与 JSON 上下文 | [`Mud.Wechat.OfficialAccount.DataModels/Poi`](../../../Mud.Wechat.OfficialAccount.DataModels/Poi/) |
+| DTO 与 JSON 上下文 | [`Mud.Wechat.OfficialAccount/Poi`](../../../Mud.Wechat.OfficialAccount/Poi/) |
 | 跨线基线 | [`Tests/ContractBaseline.cs`](../../../../../Tests/ContractBaseline.cs)（各线分节；本线口径以守卫实际断言为准） |
 | 本线包级公开面与已踩陷阱 | [`Src/OfficialAccount/Mud.Wechat.OfficialAccount/README.md`](../../README.md) |
 | 跨线通用约束（门禁 / AOT / 落位） | [`AGENTS.md`](../../../../../AGENTS.md) |

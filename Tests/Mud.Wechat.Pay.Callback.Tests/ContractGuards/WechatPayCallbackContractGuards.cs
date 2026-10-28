@@ -80,16 +80,61 @@ public class WechatPayCallbackContractGuards
     }
 
     /// <summary>
-    /// 依赖边界：回调包<b>不得</b>引用主包 <c>Mud.Wechat.Pay</c>（否则违背 <c>Callback → {Abstractions, DataModels}</c> 单向约束）。
+    /// 依赖边界：回调包<b>不得消费业务客户端面</b>（原形态是「不得引用主包 <c>Mud.Wechat.Pay</c>」）。
     /// </summary>
+    /// <remarks>
+    /// 2026-10 包合并把 Pay 线的配置面、签名/验签端口与 DTO 并入 <c>Mud.Wechat.Pay</c> 一个程序集，
+    /// 「不引主包」这一物理边随之失效；而这条边真正要守的是「回调包不得把业务接口面拖进来」——
+    /// 该约束的载体一直是命名空间：回调可用面是
+    /// <c>Mud.Wechat.Pay.Abstractions.*</c>（凭据/签名端口、商户配置）与
+    /// <c>Mud.Wechat.Pay.DataModels.*</c>（通知 DTO），客户端在裸 <c>Mud.Wechat.Pay</c> /
+    /// <c>.Interfaces</c> / <c>.V2</c>。故改为源码 using 断言。
+    /// </remarks>
     [Fact]
     public void ProjectReferences_ShouldNotReferenceMainPayPackage()
     {
-        var asm = typeof(WechatPayCallbackMiddleware).Assembly;
-        asm.GetReferencedAssemblies()
-            .Select(static a => a.Name)
-            .Should().NotContain("Mud.Wechat.Pay",
-                "Pay.Callback 必须只依赖 Pay.Abstractions + Pay.DataModels —— 不得把业务接口面拖进回调包");
+        var callbackDir = SourceProjectPath("Mud.Wechat.Pay.Callback");
+        var csproj = File.ReadAllText(Path.Combine(callbackDir, "Mud.Wechat.Pay.Callback.csproj"));
+        csproj.Should().Contain("Mud.Wechat.Pay.csproj",
+            "Pay.Callback 必须引用支付线工程（合并后为该线唯一工程：凭据端口 + DTO + 客户端同程序集）");
+
+        var clientUsing = new Regex(
+            @"^\s*(?:global\s+)?using\s+Mud\.Wechat\.Pay(?:\.Interfaces|\.V2)?\s*(?:;|=)", RegexOptions.Multiline);
+
+        var hits = Directory
+            .EnumerateFiles(callbackDir, "*.cs", SearchOption.AllDirectories)
+            .Where(static f => !f.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}")
+                               && !f.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}"))
+            .SelectMany(f => clientUsing.Matches(File.ReadAllText(f))
+                .Cast<System.Text.RegularExpressions.Match>()
+                .Select(m => $"{Path.GetFileName(f)}: {m.Value.Trim()}"))
+            .ToArray();
+
+        hits.Should().BeEmpty(
+            "回调包不得把业务客户端面拖进来（通知处理链内调业务接口会把官方重试窗口放大成回环调用）；" +
+            $"实际命中：{string.Join(", ", hits)}");
+    }
+
+    private static string SourceProjectPath(string projectName)
+    {
+        var root = FindRepositoryRoot();
+        var csproj = Directory
+            .EnumerateFiles(root, $"{projectName}.csproj", SearchOption.AllDirectories)
+            .FirstOrDefault(f => !f.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.Ordinal)
+                                 && !f.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
+            ?? throw new DirectoryNotFoundException($"未找到工程 {projectName}.csproj");
+        return Path.GetDirectoryName(csproj)!;
+    }
+
+    private static string FindRepositoryRoot()
+    {
+        var dir = new DirectoryInfo(AppContext.BaseDirectory);
+        while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "Mud.Wechat.slnx")))
+        {
+            dir = dir.Parent;
+        }
+
+        return dir?.FullName ?? throw new InvalidOperationException("未找到仓库根（Mud.Wechat.slnx）");
     }
 
     /// <summary>装配面：未先装凭据底座时必须在<b>注册期</b>点名 fail-fast。</summary>

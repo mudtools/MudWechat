@@ -16,7 +16,6 @@
 		<ProjectReference Include="..\..\Src\AI\Mud.Wechat.Work.AI.Tools\Mud.Wechat.Work.AI.Tools.csproj" />
 		<ProjectReference Include="..\..\Src\AI\Mud.Wechat.Work.AI\Mud.Wechat.Work.AI.csproj" />
 		<ProjectReference Include="..\..\Src\Work\Mud.Wechat.Work\Mud.Wechat.Work.csproj" />
-		<ProjectReference Include="..\..\Src\Work\Mud.Wechat.Work.DataModels\Mud.Wechat.Work.DataModels.csproj" />
 	</ItemGroup>
 
 </Project>

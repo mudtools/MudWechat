@@ -16,7 +16,7 @@ SC2c 的子接口集合断言即能力漂移守卫）。共 10 份接口文件�
 
 > **事实来源限定**：本文全部断言只来自本仓三类证据——本目录 10 份接口文件的 XML 注释、
 > [WechatScheduleContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatScheduleContractGuards.cs)（SC1~SC5）、
-> [Src/Work/Mud.Wechat.Work.DataModels/Schedule/](../../../Mud.Wechat.Work.DataModels/Schedule/) 下的 DTO 声明；
+> [Src/Work/Mud.Wechat.Work/Schedule/](../../../Mud.Wechat.Work/Schedule/) 下的 DTO 声明；
 > 路由与计数以守卫断言为准，官方文档号仅作定位标识、不作为本文事实来源。
 > 未能在本仓三类证据内核验的项目一律集中在文末「已知留档缺口」，标为**未逐项核验**，正文不作推断。
 
@@ -81,14 +81,14 @@ SC1 / SC1b / SC1c 逐条断言 `typeof(PostAttribute)`，含仅查询语义的 `
 三点必须分清：
 
 - **`schedule_id` 在 `schedule` 对象里有两种必填性**：#5 创建时**不填**（由响应返回）、#6 更新时**必填**——
-  两端点共用同一个扁平 [ScheduleInfo](../../../Mud.Wechat.Work.DataModels/Schedule/Schedule/ScheduleInfo.cs)，差异只以可空性承载（SC5 锁定共用型）。
-  日历侧同型：[ScheduleCalendar](../../../Mud.Wechat.Work.DataModels/Schedule/Calendar/ScheduleCalendar.cs) 的 `cal_id` 仅更新必填。
+  两端点共用同一个扁平 [ScheduleInfo](../../../Mud.Wechat.Work/Schedule/Schedule/ScheduleInfo.cs)，差异只以可空性承载（SC5 锁定共用型）。
+  日历侧同型：[ScheduleCalendar](../../../Mud.Wechat.Work/Schedule/Calendar/ScheduleCalendar.cs) 的 `cal_id` 仅更新必填。
 - 本域**没有 `organizer` 键**（全仓 `Src/Work/` 检索无匹配）：管理权由 `admins` 承载（日历管理员 / 日程管理员，§8），
   待办的「谁建的」由响应侧 `creator` 承载（§11）。
 - 本域**没有 `scheduleid` 与 `excludes` 两个键**：`scheduleid` / `schedulename` 是**打卡域**日报与第三方班次的键
-  （`long?`，见 [CheckinDayRuleInfo.cs](../../../Mud.Wechat.Work.DataModels/Checkin/Report/CheckinDayRuleInfo.cs)），
+  （`long?`，见 [CheckinDayRuleInfo.cs](../../../Mud.Wechat.Work/Checkin/Report/CheckinDayRuleInfo.cs)），
   与本文 `schedule_id`（`string?`，日程）**类型与语义都不同**；「排除日期」在本域叫
-  `reminders.exclude_time_list`（[ScheduleRemindersInfo.cs](../../../Mud.Wechat.Work.DataModels/Schedule/Schedule/ScheduleRemindersInfo.cs)，SC5 锁定）。
+  `reminders.exclude_time_list`（[ScheduleRemindersInfo.cs](../../../Mud.Wechat.Work/Schedule/Schedule/ScheduleRemindersInfo.cs)，SC5 锁定）。
 
 ## 3. 更新是覆盖式，不是增量式：两支 `skip_*` 是唯一「别覆盖」的开关
 
@@ -96,13 +96,13 @@ SC1 / SC1b / SC1c 逐条断言 `typeof(PostAttribute)`，含仅查询语义的 `
 
 | 端点 | 开关 | 默认 | 语义 |
 |---|---|---|---|
-| #2 `calendar/update` | `skip_public_range`（`int?`，[UpdateScheduleCalendarRequest](../../../Mud.Wechat.Work.DataModels/Schedule/Calendar/UpdateScheduleCalendarRequest.cs)） | `0` = **会**更新可订阅范围 | `1` = 本次不更新 `public_range` |
-| #6 `schedule/update` | `skip_attendees`（`int?`，[UpdateScheduleRequest](../../../Mud.Wechat.Work.DataModels/Schedule/Schedule/UpdateScheduleRequest.cs)） | `0` = **会**覆盖参与人 | `1` = 本次不动参与人 |
+| #2 `calendar/update` | `skip_public_range`（`int?`，[UpdateScheduleCalendarRequest](../../../Mud.Wechat.Work/Schedule/Calendar/UpdateScheduleCalendarRequest.cs)） | `0` = **会**更新可订阅范围 | `1` = 本次不更新 `public_range` |
+| #6 `schedule/update` | `skip_attendees`（`int?`，[UpdateScheduleRequest](../../../Mud.Wechat.Work/Schedule/Schedule/UpdateScheduleRequest.cs)） | `0` = **会**覆盖参与人 | `1` = 本次不动参与人 |
 
 - 要**增量**加/减参与人，走 #7 / #8（`add_attendees` / `del_attendees`，两端点 XML 明示「增量式」），不要用 #6。
 - **不可更新的属性**（接口 remarks + DTO 注释留档）：日历侧 `is_public`、`is_corp_calendar`（仅创建可传）、
   `set_as_default`（仅创建可传，且第三方不支持）；日程侧**创建者**与**所属日历 `cal_id`**。
-  [ScheduleCalendar](../../../Mud.Wechat.Work.DataModels/Schedule/Calendar/ScheduleCalendar.cs) 因此把创建侧三属性与更新侧 `cal_id` 塞进同一扁平型，
+  [ScheduleCalendar](../../../Mud.Wechat.Work/Schedule/Calendar/ScheduleCalendar.cs) 因此把创建侧三属性与更新侧 `cal_id` 塞进同一扁平型，
   靠「不传即不生效/官方忽略」约束——**未传字段是否被重置为默认值本仓未留档**（缺口表）。
 - **已预约会议室的日程不能用 #6 改会议室关联字段**：官方清单共 11 个键
   （`start_time` / `end_time` / `is_whole_day` / `is_repeat` / `repeat_type` / `repeat_until` / `is_custom_repeat` /
@@ -111,8 +111,8 @@ SC1 / SC1b / SC1c 逐条断言 `typeof(PostAttribute)`，含仅查询语义的 `
 
 ## 4. 重复日程：`op_mode` 三档 ×「这一条」与「整条系列」的分叉
 
-`op_mode` + `op_start_time` 同时出现在 #6 更新与 #11 取消两支（[UpdateScheduleRequest](../../../Mud.Wechat.Work.DataModels/Schedule/Schedule/UpdateScheduleRequest.cs)、
-[DelScheduleRequest](../../../Mud.Wechat.Work.DataModels/Schedule/Schedule/DelScheduleRequest.cs)），
+`op_mode` + `op_start_time` 同时出现在 #6 更新与 #11 取消两支（[UpdateScheduleRequest](../../../Mud.Wechat.Work/Schedule/Schedule/UpdateScheduleRequest.cs)、
+[DelScheduleRequest](../../../Mud.Wechat.Work/Schedule/Schedule/DelScheduleRequest.cs)），
 但**官方口径两套措辞不同，照抄不得统一**：
 
 | `op_mode` | #6 更新（XML 原文） | #11 取消（XML 原文） |
@@ -128,7 +128,7 @@ SC1 / SC1b / SC1c 逐条断言 `typeof(PostAttribute)`，含仅查询语义的 `
   ⇒ 调用方**必须以响应返回值回写本地存储**，继续用旧 `schedule_id` 会指向被修剪后的系列。
 - 特例（`UpdateScheduleRequest.OpStartTime` remarks）：`op_mode = 2` 且 `op_start_time` **等于原日程 `start_time`** 时演变为修改全部，**不分裂新日程**。
 - 修改/删除重复日程的**特定一天或多天**时，原系列不会真被删，而是把这些日期写进响应的
-  `reminders.exclude_time_list`（元素仅一键 `start_time`，`long?`，[ScheduleExcludeTime.cs](../../../Mud.Wechat.Work.DataModels/Schedule/Schedule/ScheduleExcludeTime.cs)）
+  `reminders.exclude_time_list`（元素仅一键 `start_time`，`long?`，[ScheduleExcludeTime.cs](../../../Mud.Wechat.Work/Schedule/Schedule/ScheduleExcludeTime.cs)）
   ⇒ 「排除清单」只在**响应侧**出现（§6）。
 - 「更新重复日程」是三份说明页（自建 96204 / 第三方 96198 / 代开发 96826），**与 #6 同一路由、不是独立 HTTP API**（SC1b 注释 + 接口 remarks）。
 
@@ -146,7 +146,7 @@ SC1 / SC1b / SC1c 逐条断言 `typeof(PostAttribute)`，含仅查询语义的 `
   两者**仅一个生效**，`remind_time_diffs` 非空时**优先**（#5 remarks + DTO remarks 一致）。
 - **全天日程靠 `is_whole_day` + 零点时间戳表达**，不是靠特殊日期串：`remind_time_diffs` 因此可能出现正数 `32400`
   （DTO remarks 明说「全天日程因 start_time 为 0 点时间戳」）。本域**没有任何** `YYYY-MM-DD` 字符串日期字段。
-- `sequence`（`long?`，仅 #9 响应返回）是**自增编号**，不是时间戳（[ScheduleDetail.cs](../../../Mud.Wechat.Work.DataModels/Schedule/Schedule/ScheduleDetail.cs)）。
+- `sequence`（`long?`，仅 #9 响应返回）是**自增编号**，不是时间戳（[ScheduleDetail.cs](../../../Mud.Wechat.Work/Schedule/Schedule/ScheduleDetail.cs)）。
 - `timezone`（`int?`）是 **UTC 偏移小时数**（东正西负，默认 +8，范围 -12 ~ +12），与上面两形态都不同单位。
 
 ## 6. `reminders` 请求侧与响应侧**不同型**：`exclude_time_list` 只在响应侧
@@ -155,8 +155,8 @@ SC1 / SC1b / SC1c 逐条断言 `typeof(PostAttribute)`，含仅查询语义的 `
 
 | 面 | 类型 | 字段集 |
 |---|---|---|
-| 请求（#5 / #6 `schedule.reminders`） | [ScheduleReminders](../../../Mud.Wechat.Work.DataModels/Schedule/Schedule/ScheduleReminders.cs) | `is_remind` / `is_repeat` / `remind_before_event_secs` / `remind_time_diffs` / `repeat_type` / `repeat_until` / `is_custom_repeat` / `repeat_interval` / `repeat_day_of_week` / `repeat_day_of_month` / `timezone`（**11 键，无 exclude_time_list**） |
-| 响应（#9 / #10 `schedule_list[].reminders`） | [ScheduleRemindersInfo](../../../Mud.Wechat.Work.DataModels/Schedule/Schedule/ScheduleRemindersInfo.cs) | 同上 **12 键**，多 `exclude_time_list` |
+| 请求（#5 / #6 `schedule.reminders`） | [ScheduleReminders](../../../Mud.Wechat.Work/Schedule/Schedule/ScheduleReminders.cs) | `is_remind` / `is_repeat` / `remind_before_event_secs` / `remind_time_diffs` / `repeat_type` / `repeat_until` / `is_custom_repeat` / `repeat_interval` / `repeat_day_of_week` / `repeat_day_of_month` / `timezone`（**11 键，无 exclude_time_list**） |
+| 响应（#9 / #10 `schedule_list[].reminders`） | [ScheduleRemindersInfo](../../../Mud.Wechat.Work/Schedule/Schedule/ScheduleRemindersInfo.cs) | 同上 **12 键**，多 `exclude_time_list` |
 
 重复参数只在 `is_repeat = 1` 时有意义：`repeat_type` 取 `0` 每日 / `1` 每周 / `2` 每月 / `5` 每年 / `7` 工作日；
 `is_custom_repeat = 0` 时系统按 `start_time` + `repeat_type` 自动推算，`= 1` 时才能用 `repeat_interval`（含义随 `repeat_type` 变，如「每周 + 3」= 每 3 周）、
@@ -174,8 +174,8 @@ SC1 / SC1b / SC1c 逐条断言 `typeof(PostAttribute)`，含仅查询语义的 `
 | #9 `schedule/get_by_calendar` | `cal_id` + `offset`（默认 0） + `limit`（默认 500，**1 ~ 1000**） | 单页 ≤1000 | 本域分页是 **offset + limit**（父接口 remarks 明写「区别于多数域的 cursor + limit」）；`schedule_list` 返回空即 offset 过大应终止；有新增日程可在原基础上继续增量；**仅可获取应用自己创建的日历**下的日程 |
 
 两支都返回 `status`（`0` 正常 / `1` 已取消）与 `admins` / `attendees`，但 #9 侧的参与者注释注明「最多支持 **300** 人」，
-而请求与 #10 侧写的是 **1000** 人（[ScheduleDetail.cs](../../../Mud.Wechat.Work.DataModels/Schedule/Schedule/ScheduleDetail.cs) 注释照抄两处，二者关系未逐项核验）。
-日历侧的对应读端点 #3 用 `cal_id_list`（≤**1000**，[GetScheduleCalendarRequest.cs](../../../Mud.Wechat.Work.DataModels/Schedule/Calendar/GetScheduleCalendarRequest.cs)），
+而请求与 #10 侧写的是 **1000** 人（[ScheduleDetail.cs](../../../Mud.Wechat.Work/Schedule/Schedule/ScheduleDetail.cs) 注释照抄两处，二者关系未逐项核验）。
+日历侧的对应读端点 #3 用 `cal_id_list`（≤**1000**，[GetScheduleCalendarRequest.cs](../../../Mud.Wechat.Work/Schedule/Calendar/GetScheduleCalendarRequest.cs)），
 返回 `calendar_list`，其中管理员键为 **`adminis`**：官方参数表作 `admins`、三类应用文档页返回示例均作 `adminis`，
 本仓**以示例为准**（SC5 `JsonNameShouldBe(ScheduleCalendarInfo.Adminis, "adminis")`，照抄勿「顺手修正」）。
 
@@ -191,10 +191,10 @@ SC1 / SC1b / SC1c 逐条断言 `typeof(PostAttribute)`，含仅查询语义的 `
 
 - **`partyids` 与打卡域不通用**：本域 `public_range` 是 `userids` / `partyids` **连写复数**、且部门为 `List<long>?`；
   打卡域 `range` 是 `party_id`（单数连写、`List<string>?`）/ `userid` / `tagid`（`List<int>?`）
-  （[ScheduleCalendarPublicRange.cs](../../../Mud.Wechat.Work.DataModels/Schedule/Calendar/ScheduleCalendarPublicRange.cs) vs
-  [CheckinRange.cs](../../../Mud.Wechat.Work.DataModels/Checkin/Rule/CheckinRange.cs)，拼写与元素类型两处都不同，跨域封装不得共用一个「部门 id 列表」模型）。
+  （[ScheduleCalendarPublicRange.cs](../../../Mud.Wechat.Work/Schedule/Calendar/ScheduleCalendarPublicRange.cs) vs
+  [CheckinRange.cs](../../../Mud.Wechat.Work/Checkin/Rule/CheckinRange.cs)，拼写与元素类型两处都不同，跨域封装不得共用一个「部门 id 列表」模型）。
 - 参与者元素在**请求侧只该有 `userid`**（官方必填），`response_status` / `event_time` **仅响应侧**
-  （[ScheduleAttendee.cs](../../../Mud.Wechat.Work.DataModels/Schedule/Schedule/ScheduleAttendee.cs) remarks）：
+  （[ScheduleAttendee.cs](../../../Mud.Wechat.Work/Schedule/Schedule/ScheduleAttendee.cs) remarks）：
   `response_status` 为 `0` 未处理 / `1` 待定 / `2` 全部接受 / `3` 仅接受一次 / `4` 拒绝，#10 响应另可能出现
   `5` 接受本次及未来 / `6` 待定单次 / `7` 待定本次及未来 / `8` 拒绝单次 / `9` 拒绝本次及未来；
   `event_time` 是「对该时间点做出决策的时间」，配合 `response_status` 读。
@@ -207,7 +207,7 @@ SC1 / SC1b / SC1c 逐条断言 `typeof(PostAttribute)`，含仅查询语义的 `
 全员日历（`is_corp_calendar = 1`）本身也是公共日历的一种，**必须**给 `public_range`，且**不支持**指定颜色、默认日历、只读权限。
 
 **部分失败形态**（SC5 锁定的契约陷阱）：#1 / #2 的成功响应仍可能携带
-`fail_result.shares[]`（元素三键 `errcode` / `errmsg` / `userid`，[ScheduleCalendarFailShare.cs](../../../Mud.Wechat.Work.DataModels/Schedule/Calendar/ScheduleCalendarFailShare.cs)）——
+`fail_result.shares[]`（元素三键 `errcode` / `errmsg` / `userid`，[ScheduleCalendarFailShare.cs](../../../Mud.Wechat.Work/Schedule/Calendar/ScheduleCalendarFailShare.cs)）——
 整体 `errcode == 0` **不等于**通知范围成员全部有效，判错之外必须**另查 `fail_result`**：
 
 ```csharp
@@ -225,7 +225,7 @@ if (resp.FailResult?.Shares is { Count: > 0 } shares) { /* 逐成员 errcode/err
 SC3 还锁了待办族的两条方向性断言：**零端点父接口 `IWechatWorkScheduleTodoService` 不得声明归属域键**
 （`NotBe(InternalAccessToken)` 且 `NotBe(CorpAccessToken)`），**自建待办子接口必须声明 `InternalAccessToken`**。
 第三方 / 代开发调用前须经 `IWechatAppContextSwitcher.UseCorpScope(appKey, authCorpId, permanentCode)`
-切到目标授权企业作用域（签名见 [IWechatAppContextSwitcher.cs](../../../Mud.Wechat.Work.Abstractions/Authentication/Interfaces/IWechatAppContextSwitcher.cs)，
+切到目标授权企业作用域（签名见 [IWechatAppContextSwitcher.cs](../../../Mud.Wechat.Work/Authentication/Interfaces/IWechatAppContextSwitcher.cs)，
 一次性 `using`、释放时还原快照）——`permanent_code` 是凭据，只写参数名，**不得进日志、遥测或异常消息**
 （口径见 [AGENTS.md §5.1](../../../../../AGENTS.md) 与 [WechatTokenOwnerContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatTokenOwnerContractGuards.cs) 的 TO1~TO3）。
 
@@ -246,8 +246,8 @@ SC3 还锁了待办族的两条方向性断言：**零端点父接口 `IWechatWo
 - **两处官方自相矛盾（照抄，勿「修正」）**：
   ① 官方请求示例出现 `attendees.status = 2`，而参数表只列 `0` / `1` 两态 ⇒ **以参数表为准**，模型仍用 `int?` 承载（SC2c / DTO remarks + 守卫头部 remarks）；
   ② 同一 `status` 键在**响应**与**请求**的中文口径不同——获取详情为「0 - 已完成；1 - 进行中」，更新请求为「0 - 完成；1 - 进行中」，
-  两侧注释分别照抄（[GetScheduleTodoResponse.cs](../../../Mud.Wechat.Work.DataModels/Schedule/Todo/GetScheduleTodoResponse.cs)、
-  [UpdateScheduleTodoRequest.cs](../../../Mud.Wechat.Work.DataModels/Schedule/Todo/RequestModel/UpdateScheduleTodoRequest.cs)）。
+  两侧注释分别照抄（[GetScheduleTodoResponse.cs](../../../Mud.Wechat.Work/Schedule/Todo/GetScheduleTodoResponse.cs)、
+  [UpdateScheduleTodoRequest.cs](../../../Mud.Wechat.Work/Schedule/Todo/RequestModel/UpdateScheduleTodoRequest.cs)）。
 - 待办 DTO 落在 `Schedule/Todo/RequestModel/` 子目录，但**命名空间仍是 `Mud.Wechat.Work.DataModels.Schedule`**
   （子目录仅作组织、不入命名空间，[AGENTS.md](../../../../../AGENTS.md) 已立则；SC4 的 35 型计数按命名空间统计）。
 
@@ -274,9 +274,9 @@ SC3 还锁了待办族的两条方向性断言：**零端点父接口 `IWechatWo
 
 | 邻域 | 消费点 | 事实（出自邻域源码注释） |
 |---|---|---|
-| 会议 [`../Meeting/`](../Meeting/IWechatWorkMeetingService.cs) | [`CreateMeetingRequest.cal_id`](../../../Mud.Wechat.Work.DataModels/Meeting/CreateMeetingRequest.cs) / `UpdateMeetingRequest.cal_id` / 详情响应 `cal_id` | 会议也挂日历：「不填则插入参与者的默认日历；第三方应用必须指定 `cal_id`」，且须为 `access_token` 对应应用创建的日历（≤64 字节） |
+| 会议 [`../Meeting/`](../Meeting/IWechatWorkMeetingService.cs) | [`CreateMeetingRequest.cal_id`](../../../Mud.Wechat.Work/Meeting/CreateMeetingRequest.cs) / `UpdateMeetingRequest.cal_id` / 详情响应 `cal_id` | 会议也挂日历：「不填则插入参与者的默认日历；第三方应用必须指定 `cal_id`」，且须为 `access_token` 对应应用创建的日历（≤64 字节） |
 | 会议室 [`../MeetingRoom/`](../MeetingRoom/Booking/IWechatWorkMeetingRoomBookingService_Internal.cs) | `oa/meetingroom/book_by_schedule` | 「`schedule_id` **仅可使用同应用创建的日程**」；会议室侧取消预定后，该 `schedule_id` 若未保留日历则**无法再经日程接口取详情** |
-| 邮件 [`../Mail/`](../../../Mud.Wechat.Work.DataModels/Mail/MailSchedule.cs) | `MailSchedule.schedule_id` | 邮件 compose_send 的日程/会议对象：「不传 `schedule_id` 是创建，传了是修改；`cancel` 必须带上」 |
+| 邮件 [`../Mail/`](../../../Mud.Wechat.Work/Mail/MailSchedule.cs) | `MailSchedule.schedule_id` | 邮件 compose_send 的日程/会议对象：「不传 `schedule_id` 是创建，传了是修改；`cancel` 必须带上」 |
 | 打卡 [`../Checkin/`](../Checkin/README.md) | `schedule_id` / `scheduleid` | 打卡域的这两个键都是**班次**（`long?`），与本域「日程 ID」（`string?`）同名不同义 |
 
 ## 快速开始
@@ -482,7 +482,7 @@ using (switcher.UseCorpScope(appKey: "default", authCorpId, permanentCode))
 | 全部 13 端点的**频率上限** | 本目录 10 份接口文件的 XML **无任何**「次/分钟」数值（打卡域有） | 未逐项核验；勿在 SDK 侧造频控，核验后补进 remarks 并在本文加「频率闸」表 |
 | 覆盖式更新的**未传字段行为** | 注释只写「覆盖式而非增量式」+ 两支 `skip_*` 默认 0，未说明未传字段是被重置还是保留 | 危险项：写侧一律**先读后写**全量提交；核验 97716 / 97720 后补 §3 |
 | `permission` 取值集是否完整 | DTO 注释只列 `1` 可查看 / `3` 仅查看闲忙，**无 2**；官方是否另有取值未逐项核验 | 以 `int?` 承载；不得写「非 1 即 3」的判定 |
-| `get_by_calendar` 的「参与者最多 300 人」 | [ScheduleDetail.cs](../../../Mud.Wechat.Work.DataModels/Schedule/Schedule/ScheduleDetail.cs) 注释照抄该数，而请求侧与 #10 侧写 1000 | 两处口径的关系未逐项核验；不得把 300 当请求侧上限 |
+| `get_by_calendar` 的「参与者最多 300 人」 | [ScheduleDetail.cs](../../../Mud.Wechat.Work/Schedule/Schedule/ScheduleDetail.cs) 注释照抄该数，而请求侧与 #10 侧写 1000 | 两处口径的关系未逐项核验；不得把 300 当请求侧上限 |
 | `response_status` 的 5 ~ 9 是否只在 #10 出现 | 注释如此描述，未在 #9 页面逐项核验 | 解析侧按可空整数处理，出现新值先核验 |
 | `todo_id` 的签发面 | 本域只有 `todo/get` + `todo/update`，**没有**创建/删除待办端点；官方是否存在待办 add/del 未在本域核验 | 需要创建/删除时先核验官方树，再决定是否扩本域（勿从第三方 SDK 转述借端点） |
 | 待办 `attendees.status = 2`（官方示例） | 与参数表 0/1 冲突，本仓**以参数表为准**、用 `int?` 兼容 | 2 的语义未核验；判定逻辑只依赖 0/1 |
@@ -506,11 +506,11 @@ using (switcher.UseCorpScope(appKey: "default", authCorpId, permanentCode))
 | 令牌归属键与恢复链路（TO1~TO3） | [WechatTokenOwnerContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatTokenOwnerContractGuards.cs) |
 | 接口命名空间二分（父 → `Mud.Wechat.Work.Interfaces`、可注入 → `Mud.Wechat.Work`） | [WechatInterfaceNamespaceContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatInterfaceNamespaceContractGuards.cs)（N1~N3） |
 | 回调面 5 个事件键与 `CalId` / `ScheduleId` 载荷字段 | [WechatCallbackContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatCallbackContractGuards.cs) CB2（日程族 5 键入册 L134–L138）与 CB4（断言 L488–L492）；载荷源文件 [CalendarChangedPayload.cs](../../../Mud.Wechat.Work.Callback/Events/Payloads/Schedule/CalendarChangedPayload.cs)、[ScheduleChangedPayload.cs](../../../Mud.Wechat.Work.Callback/Events/Payloads/Schedule/ScheduleChangedPayload.cs) |
-| DTO 属性名 / 类型 / JSON 名 / 取值域注释 | [../../../Mud.Wechat.Work.DataModels/Schedule/](../../../Mud.Wechat.Work.DataModels/Schedule/)（`Calendar/` 13 型、`Schedule/` 17 型、`Todo/` + `Todo/RequestModel/` 5 型） |
-| 上下文源生成文件（`internal`，示例不得引用） | `../../../Mud.Wechat.Work.DataModels/Generated/ScheduleJsonContext.g.cs`（35 个 `[JsonSerializable]`） |
+| DTO 属性名 / 类型 / JSON 名 / 取值域注释 | [../../../Mud.Wechat.Work/Schedule/](../../../Mud.Wechat.Work/Schedule/)（`Calendar/` 13 型、`Schedule/` 17 型、`Todo/` + `Todo/RequestModel/` 5 型） |
+| 上下文源生成文件（`internal`，示例不得引用） | `../../../Mud.Wechat.Work/Generated/ScheduleJsonContext.g.cs`（35 个 `[JsonSerializable]`） |
 | 模块注册三段式 | [WechatModule.cs](../../Extensions/WechatModule.cs)、[WechatWorkServiceBuilder.cs](../../Extensions/WechatWorkServiceBuilder.cs)、[WechatJsonResolverExtensions.cs](../../Extensions/WechatJsonResolverExtensions.cs)（`ScheduleJsonContext.Default` 登记处在 L160） |
-| 判错出口与作用域切换签名 | [WechatWorkException.cs](../../../Mud.Wechat.Work.Abstractions/Exceptions/WechatWorkException.cs)（`ThrowIfFailed<TResponse>`）、[IWechatAppContextSwitcher.cs](../../../Mud.Wechat.Work.Abstractions/Authentication/Interfaces/IWechatAppContextSwitcher.cs)（`UseCorpScope`） |
-| 邻域同名键与消费点 | [../Checkin/README.md](../Checkin/README.md) §4–§5、[../MeetingRoom/Booking/IWechatWorkMeetingRoomBookingService_Internal.cs](../MeetingRoom/Booking/IWechatWorkMeetingRoomBookingService_Internal.cs)、[../../../Mud.Wechat.Work.DataModels/Meeting/CreateMeetingRequest.cs](../../../Mud.Wechat.Work.DataModels/Meeting/CreateMeetingRequest.cs)、[../../../Mud.Wechat.Work.DataModels/Mail/MailSchedule.cs](../../../Mud.Wechat.Work.DataModels/Mail/MailSchedule.cs) |
+| 判错出口与作用域切换签名 | [WechatWorkException.cs](../../../Mud.Wechat.Work/Exceptions/WechatWorkException.cs)（`ThrowIfFailed<TResponse>`）、[IWechatAppContextSwitcher.cs](../../../Mud.Wechat.Work/Authentication/Interfaces/IWechatAppContextSwitcher.cs)（`UseCorpScope`） |
+| 邻域同名键与消费点 | [../Checkin/README.md](../Checkin/README.md) §4–§5、[../MeetingRoom/Booking/IWechatWorkMeetingRoomBookingService_Internal.cs](../MeetingRoom/Booking/IWechatWorkMeetingRoomBookingService_Internal.cs)、[../../../Mud.Wechat.Work/Meeting/CreateMeetingRequest.cs](../../../Mud.Wechat.Work/Meeting/CreateMeetingRequest.cs)、[../../../Mud.Wechat.Work/Mail/MailSchedule.cs](../../../Mud.Wechat.Work/Mail/MailSchedule.cs) |
 
 ## 改动本域需要同批完成
 

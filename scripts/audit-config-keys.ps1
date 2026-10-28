@@ -68,13 +68,13 @@ $configFiles = @(
     # 公用层配置基座：公共形状（AppKey/BaseUrl/AllowCustomBaseUrl/TimeoutSeconds/TokenRefreshThreshold/IsDefault）
     # 已上移至本文件，若不同批纳入扫描即为门禁盲区。
     'Mud.Wechat.Abstractions/Configuration/WechatAppConfigBase.cs',
-    'Mud.Wechat.Work.Abstractions/Configuration/WechatAppConfig.cs',
-    'Mud.Wechat.OfficialAccount.Abstractions/Configuration/MpAppConfig.cs',
+    'Mud.Wechat.Work/Configuration/WechatAppConfig.cs',
+    'Mud.Wechat.OfficialAccount/Configuration/MpAppConfig.cs',
     'Mud.Wechat.Work.Callback/WechatCallbackOptions.cs',
     # 智能机器人长连接配置面（P3，官方 101463）：BotId / 长连接专用 BotSecret / EnableLongConnection /
     # 心跳与重连退避参数。BotSecret 是**凭据**（经 aibot_subscribe 帧上送）——不得进日志/遥测/异常消息；
     # 与回调地址模式「二选一」的跨面互斥由长连接启动期校验（同 BotKey 双配置即 fail-fast）。
-    'Mud.Wechat.Work.Abstractions/Configuration/WechatBotOptions.cs',
+    'Mud.Wechat.Work/Configuration/WechatBotOptions.cs',
     # 会话内容存档 C SDK 封装的配置面（Work 主包 ExtendedSDK/Finance/）。存档 secret、代理口令与
     # RSA 私钥**永不落 DTO**（只登记 ISecretProvider 中的密钥名，误填原文由 Validate 启动期点名拒绝）；
     # Robots / PrivateKeySecretNames 两支字典非基元属性不入本正则，其消费点分别由工厂与解密链路承载。
@@ -85,7 +85,7 @@ $configFiles = @(
     # 微信支付产品线（P0-c 已落地）：商户凭据配置面。私钥与 APIv3 密钥**永不落 DTO**
     # （经组件 ISecretProvider 取用，字段只存密钥名）——若在配置 DTO 出现密钥原文即属凭据面越界，
     # 由 WechatPayMerchantConfig.ValidateSecretName 启动期点名拒绝。
-    'Mud.Wechat.Pay.Abstractions/Configuration/WechatPayMerchantConfig.cs',
+    'Mud.Wechat.Pay/Configuration/WechatPayMerchantConfig.cs',
     # 微信支付回调配置面（P1-b）：路由前缀 / 体长上限 / 时效窗 / 指纹保留窗 / 分发软超时 / 指纹闸开关。
     # 全部属性均有真实消费点（中间件与接收器），无消费点则本脚本 fail-closed。
     # 与【文件创建同批】登记 —— AB-G6 的双向不变式（存在 ⇔ 已登记）会拦下另一方向。
@@ -103,17 +103,17 @@ $configFiles = @(
     'Mud.Wechat.OpenTelemetry/WechatOpenTelemetryOptions.cs',
     # 微信小店/视频号（channels 生态）产品线配置面（P0-b 已落地）：小店应用配置（AppId/AppSecret/UseStableToken）。
     # 与【文件创建同批】登记 —— 若只建文件不登记，AB-G6 的双向不变式（存在 ⇔ 已登记）会失败。
-    'Mud.Wechat.Channels.Abstractions/Configuration/ChannelsAppConfig.cs',
+    'Mud.Wechat.Channels/Configuration/ChannelsAppConfig.cs',
     # 微信小店回调配置面（2026-10 P3 收口同批登记）：回调凭据 Apps 字典（Token/EncodingAESKey/AppId）。
     # 与 ChannelsAppConfig 同批纪律 —— 只建文件不登记即成门禁盲区（AB-G6 双向不变式锁定）。
     'Mud.Wechat.Channels.Callback/ChannelsCallbackOptions.cs',
     # 腾讯广告产品线配置面（2026-10-10 补登记）：应用凭据（ClientId/ClientSecret/RedirectUri），
     # 与 ChannelsAppConfig 同批纪律 —— 只建文件不登记即成门禁盲区（AB-G6 双向不变式锁定）。
-    'Mud.Wechat.Ads.Abstractions/Configuration/AdsAppConfig.cs',
+    'Mud.Wechat.Ads/Configuration/AdsAppConfig.cs',
     # 微信开放平台产品线配置面（2026-10-11 B1 补登记）：平台凭据（ComponentAppId/ComponentAppSecret/
     # Token/EncodingAesKey）。ComponentAppSecret 与回调 Token/EncodingAesKey 均为**凭据**，
     # 不得进日志/遥测/异常消息（EnsureValid 只做必填与长度校验、不重写 ToString 防泄密）。
-    'Mud.Wechat.OpenPlatform.Abstractions/OpenPlatformAppConfig.cs',
+    'Mud.Wechat.OpenPlatform/OpenPlatformAppConfig.cs',
     # 企微 AI Agent 配置面（2026-10-17 S1 落地，同批登记）：系统指令 / 会话 TTL / 历史裁剪与摘要阈值 /
     # 单轮工具预算 / 两个**产品事实状态键**（history、outbox 补发）。全部属性均有真实消费点
     # （WechatAgent 投影构造 AgentRuntimeOptions 与会话门面、DI 的会话 TTL 工厂），无消费点则本脚本 fail-closed。

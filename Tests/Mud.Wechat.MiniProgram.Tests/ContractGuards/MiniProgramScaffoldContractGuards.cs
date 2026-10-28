@@ -108,9 +108,24 @@ public class MiniProgramScaffoldContractGuards
     }
 
     /// <summary>
-    /// MP-X1 / MP-X5：工程引用隔离 —— 小程序线只允许向上引用 <c>Mud.Wechat.Abstractions</c>，
-    /// **禁止**引用公众号主包 / DataModels / Callback。
+    /// MP-X1 / MP-X5：小程序线对公众号线的依赖面 —— 只允许**一条**边（公众号线入口工程），
+    /// 且**禁止**引用公众号回调包。
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// 原形态禁的是「OA 主包 / OA.DataModels / OA.Callback」三条边，立论是「MP 只需要令牌基座，
+    /// 不该把公众号的业务客户端与 DTO 拖进小程序宿主」。2026-10 包合并后公众号线的基座、DTO 与
+    /// 客户端同处 <c>Mud.Wechat.OfficialAccount</c> 一个程序集，「只引基座」在包维度已不可表达；
+    /// 而这条禁令真正承重的部分从来没有落在包维度上 —— 是<b>MP-X2/MP-X3</b> 锁定的
+    /// 「复用同一 <c>MpTokenTypes.AccessToken</c> 与同一单槽注册表、<c>[Token].Name</c> 恒为
+    /// <c>access_token</c>」：复制一份令牌基座才会让 errcode 自愈静默失效，多带一个程序集不会。
+    /// </para>
+    /// <para>
+    /// 因此本守卫改为两段：① 到公众号线的边**恰好一条**且指向该线入口工程（出现第二条跨线边即红）；
+    /// ② 永不引 OA.Callback（小程序无独立推送面，见 MP-X4 补充与 <see cref="CallbackProject_ShouldNotExist_WhenScaffold"/>）。
+    /// 代价如实记录：小程序宿主现在会连带取得公众号业务面（约 50 个接口文件，未注册即惰性）。
+    /// </para>
+    /// </remarks>
     [Fact]
     public void ProjectReferences_ShouldNotDependOnOfficialAccountLine_WhenScaffold()
     {
@@ -118,16 +133,19 @@ public class MiniProgramScaffoldContractGuards
         File.Exists(csproj).Should().BeTrue($"工程文件缺失：{csproj}");
 
         var xml = File.ReadAllText(csproj);
-        foreach (var banned in new[]
-                 {
-                     "Mud.Wechat.OfficialAccount.csproj",
-                     "Mud.Wechat.OfficialAccount.DataModels.csproj",
-                     "Mud.Wechat.OfficialAccount.Callback.csproj",
-                 })
-        {
-            xml.Should().NotContain(banned,
-                "小程序线与公众号线必须平行，只允许共享 Abstractions 叶层（方案 §4 MP-X1）");
-        }
+
+        xml.Should().NotContain("Mud.Wechat.OfficialAccount.Callback.csproj",
+            "小程序线不得依赖公众号回调包（消息接收走公众号线既有 XML 通道，方案 §4 MP-X1）");
+
+        // ① 到公众号线的引用边恰好一条，且必须是该线入口工程。
+        var oaEdges = Regex.Matches(xml, @"ProjectReference Include=""([^""]*OfficialAccount[^""]*\.csproj)""")
+            .Cast<System.Text.RegularExpressions.Match>()
+            .Select(m => Path.GetFileName(m.Groups[1].Value))
+            .ToArray();
+
+        oaEdges.Should().Equal(new[] { "Mud.Wechat.OfficialAccount.csproj" },
+            "小程序线只允许一条指向公众号线的工程引用边，且必须是公众号线入口工程" +
+            "（令牌与多应用基座复用；出现第二条边即为跨线耦合回潮，方案 §4 MP-X1）");
     }
 
     /// <summary>

@@ -8,8 +8,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\Mud.Wechat.Channels.Abstractions\Mud.Wechat.Channels.Abstractions.csproj" />
-		<ProjectReference Include="..\Mud.Wechat.Channels.DataModels\Mud.Wechat.Channels.DataModels.csproj" />
+		<ProjectReference Include="..\Mud.Wechat.Channels\Mud.Wechat.Channels.csproj" />
 	</ItemGroup>
 
 	<!-- 契约登记生成器挂载于 DataModels（载荷 DTO 所在工程；对齐企微线「生成器只挂载荷工程」先例）。

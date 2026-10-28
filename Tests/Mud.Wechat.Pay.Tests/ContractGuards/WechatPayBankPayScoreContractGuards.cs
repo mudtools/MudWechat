@@ -468,7 +468,7 @@ public class WechatPayBankPayScoreContractGuards
         // 常量类不得被标注（否则源生成上下文里出现无意义节点）：本域类型 = 24 DTO + 11 常量类。
         DomainTypeNames().Should().HaveCount(35, "本域类型 = 24 DTO + 11 常量类（上下文类已排除）");
 
-        var resolverSource = File.ReadAllText(SourcePath("Mud.Wechat.Pay",
+        var resolverSource = File.ReadAllText(SourcePath("Mud.Wechat.Pay", 
             "Extensions", "PayJsonResolverExtensions.cs"));
         resolverSource.Should().Contain("BankPayScoreJsonContext.Default",
             "新增域上下文须同批登记进 PayJsonResolverExtensions（AOT 红线：无登记即无元数据）");

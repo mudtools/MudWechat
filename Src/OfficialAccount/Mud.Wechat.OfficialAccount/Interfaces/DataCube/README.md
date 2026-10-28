@@ -9,7 +9,7 @@
 > **事实来源限定**：本文断言只来自本仓接口文件的 XML 注释、本仓契约守卫
 > [MpDataCubeContractGuards.cs](../../../../../Tests/Mud.Wechat.OfficialAccount.Tests/ContractGuards/MpDataCubeContractGuards.cs)
 > （`DC1`~`DC7`）、[MpQueryTokenWhitelistGuard.cs](../../../../../Tests/Mud.Wechat.OfficialAccount.Tests/ContractGuards/MpQueryTokenWhitelistGuard.cs)（`QT1`）
-> 与本仓 DTO（[DataModels/DataCube/](../../../Mud.Wechat.OfficialAccount.DataModels/DataCube/)）。
+> 与本仓 DTO（[DataModels/DataCube/](../../../Mud.Wechat.OfficialAccount/DataCube/)）。
 > **计数以守卫为准**：`DC1` 钉 `DataCubeRoutes` = 21（用户 2 + 图文 10（旧 6 + 新 4）+ 消息 7 + 接口 2）
 > 且去重后仍为 21，`CardDataCubeRoutes` = 4；`DC7` 钉流量主 3 方法。
 > 接口 XML 摘要里的「24 端点」、`MpModule.DataCube` 与包 README 里的「21 端点」、`QT1` 注释里的「25 端点」
@@ -87,7 +87,7 @@ SDK **照常建模**（官方仍在响应）并在各方法 remarks 标注替换
 
 ## 请求体只有一个：`MpDateRangeRequest`，但跨度措辞每页不同（勿互相套用）
 
-21 支 `/datacube/*` 的 wedata 端点**共用** [MpDateRangeRequest](../../../Mud.Wechat.OfficialAccount.DataModels/DataCube/MpDateRangeRequest.cs)
+21 支 `/datacube/*` 的 wedata 端点**共用** [MpDateRangeRequest](../../../Mud.Wechat.OfficialAccount/DataCube/MpDateRangeRequest.cs)
 （`begin_date` / `end_date`，格式 `yyyy-MM-dd`）——`DC2` 反射断言「每支都只有这一个请求体参数」。
 
 **各端点上限照官方各页原文，SDK 不做本地跨度校验，越界由官方 `61501` 表达**：
@@ -149,8 +149,8 @@ SDK **照常建模**（官方仍在响应）并在各方法 remarks 标注替换
 
 Query 面：`page`（默认 1）、`page_size`（默认 90，**每页最大 90**）、`start_date`、`end_date`，
 `ad_slot` 仅 adpos 方法有（选填，不传即返回全部类型广告位**除返佣商品**的数据）。
-应答信封是**双层**：外层 [MpResponse](../../../Mud.Wechat.OfficialAccount.DataModels/MpResponse.cs) 的 `errcode`/`errmsg`
-（走统一判错），内层 `base_resp` = [`MpPublisherBaseResp`](../../../Mud.Wechat.OfficialAccount.DataModels/DataCube/Publisher/MpPublisherBaseResp.cs)
+应答信封是**双层**：外层 [MpResponse](../../../Mud.Wechat.OfficialAccount/MpResponse.cs) 的 `errcode`/`errmsg`
+（走统一判错），内层 `base_resp` = [`MpPublisherBaseResp`](../../../Mud.Wechat.OfficialAccount/DataCube/Publisher/MpPublisherBaseResp.cs)
 ——其官方键为 **`ret`（`int`）与 `err_msg`（`string?`）**，不是 `errcode`/`errmsg` ⇒
 只看外层判错会漏掉业务失败。官方错误码：`45009`（请求过于频繁）/ `45010`（无效的接口名）/
 `1701`（参数错误）/ `2009`（无效的流量主）。
@@ -235,10 +235,10 @@ if (adpos.BaseResp is { } br && br.Ret != 0)
 | `MpModule.DataCube` + `AddDataCubeApi()` + 白名单 | `DC5` = `DataCubeModule_ShouldBeRegisteredAndWhitelisted` |
 | `61500` / `61501` / `61503` | `DC6` = `DataCubeErrorCodes_ShouldMatchVerifiedOfficialValues` |
 | 流量主 3 方法：GET + 固定 action 默认值 | `DC7` = `PublisherEndpoints_ShouldBeGetWithFixedAction` |
-| 日期跨度措辞全集与「不做本地跨度校验」 | [MpDateRangeRequest.cs](../../../Mud.Wechat.OfficialAccount.DataModels/DataCube/MpDateRangeRequest.cs) remarks |
-| 卡券统计请求三型与继承关系 | [DataCube/Card/](../../../Mud.Wechat.OfficialAccount.DataModels/DataCube/Card/)（11 个文件） |
-| 流量主 DTO（base_resp / adpos / cps / settlement） | [DataCube/Publisher/](../../../Mud.Wechat.OfficialAccount.DataModels/DataCube/Publisher/)（10 个文件） |
-| 新图文族 DTO | [DataCube/Article/](../../../Mud.Wechat.OfficialAccount.DataModels/DataCube/Article/)；消息族 [DataCube/UpstreamMsg/](../../../Mud.Wechat.OfficialAccount.DataModels/DataCube/UpstreamMsg/) |
+| 日期跨度措辞全集与「不做本地跨度校验」 | [MpDateRangeRequest.cs](../../../Mud.Wechat.OfficialAccount/DataCube/MpDateRangeRequest.cs) remarks |
+| 卡券统计请求三型与继承关系 | [DataCube/Card/](../../../Mud.Wechat.OfficialAccount/DataCube/Card/)（11 个文件） |
+| 流量主 DTO（base_resp / adpos / cps / settlement） | [DataCube/Publisher/](../../../Mud.Wechat.OfficialAccount/DataCube/Publisher/)（10 个文件） |
+| 新图文族 DTO | [DataCube/Article/](../../../Mud.Wechat.OfficialAccount/DataCube/Article/)；消息族 [DataCube/UpstreamMsg/](../../../Mud.Wechat.OfficialAccount/DataCube/UpstreamMsg/) |
 | 生成入口与模块枚举、上下文合并清单 | [MpServiceBuilder.cs](../../Extensions/MpServiceBuilder.cs)、[MpModule.cs](../../Extensions/MpModule.cs)、[MpJsonResolverExtensions.cs](../../Extensions/MpJsonResolverExtensions.cs) |
 
 ## 改动本域需要同批完成

@@ -11,7 +11,7 @@
 > [WechatPayTransferContractGuards.cs](../../../../../Tests/Mud.Wechat.Pay.Tests/ContractGuards/WechatPayTransferContractGuards.cs)
 > （`TR1`~`TR7`）+ 全局
 > [WechatPayDomainContractGuards.cs](../../../../../Tests/Mud.Wechat.Pay.Tests/ContractGuards/WechatPayDomainContractGuards.cs)
-> 与本域 DTO/常量（`../../../Mud.Wechat.Pay.DataModels/Transfer/`）。
+> 与本域 DTO/常量（`../../../Mud.Wechat.Pay/Transfer/`）。
 > 不复述外部官方文档正文；注释里没有的东西一律进文末「已知留档缺口」。
 
 ## 端点速览
@@ -98,7 +98,7 @@
 
 ## 值表：三张中文取值表 + 一张「只收确证值」的场景表
 
-守卫 `TR7` 用精确相等锁住四张常量表（`../../../Mud.Wechat.Pay.DataModels/Transfer/TransferConstants.cs`）：
+守卫 `TR7` 用精确相等锁住四张常量表（`../../../Mud.Wechat.Pay/Transfer/TransferConstants.cs`）：
 
 | 常量类 | 规模 | 要点 |
 |---|---|---|
@@ -221,7 +221,7 @@ if (receipt.State == TransferElecsignStates.Finished)
 | 撤销支商户路由在场、`/partner/` 变体缺席 | `RevokeTransfer_ShouldUseMerchantRoute_NotPartnerRoute`（`TR5`） |
 | 回单状态 3 值与摘要算法 `{SHA256, SM3}` | `ElecsignConstants_ShouldMatchOfficialValues`（`TR6`） |
 | 收款样式、14 条中文感知、13 条中文报备类型、场景 id 只 1 值 | `RecvStyleAndSceneValueTables_ShouldMatchOfficialValues`（`TR7`） |
-| DTO 与常量声明 | `../../../Mud.Wechat.Pay.DataModels/Transfer/`（`TransferDtos.cs` / `TransferP12Dtos.cs` / `TransferConstants.cs`） |
+| DTO 与常量声明 | `../../../Mud.Wechat.Pay/Transfer/`（`TransferDtos.cs` / `TransferP12Dtos.cs` / `TransferConstants.cs`） |
 
 ## 改动本域需要同批完成
 

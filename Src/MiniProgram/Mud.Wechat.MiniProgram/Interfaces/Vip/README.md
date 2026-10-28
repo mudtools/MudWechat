@@ -3,7 +3,7 @@
 微信小程序「会员服务」域 SDK（6 端点：会员信息增删改查 + 会员列表 + 已关联小店列表，
 官方「小程序会员服务」分组 → 小程序相关）。 接口：[IWxaVipService](./IWxaVipService.cs)；注册组 `Vip`；模块枚举 `MiniProgramModule.Vip`（装配入口见 [MiniProgramServiceBuilder.cs](../../Extensions/MiniProgramServiceBuilder.cs)）。逐端点核验 2026-10-18。
 
-> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[WxaVipContractGuards.cs](../../../../../Tests/Mud.Wechat.MiniProgram.Tests/ContractGuards/WxaVipContractGuards.cs)、[MiniProgramContractGuards.cs](../../../../../Tests/Mud.Wechat.MiniProgram.Tests/ContractGuards/MiniProgramContractGuards.cs)）、本域 DTO（[`Mud.Wechat.MiniProgram.DataModels/Vip`](../../../Mud.Wechat.MiniProgram.DataModels/Vip/)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
+> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[WxaVipContractGuards.cs](../../../../../Tests/Mud.Wechat.MiniProgram.Tests/ContractGuards/WxaVipContractGuards.cs)、[MiniProgramContractGuards.cs](../../../../../Tests/Mud.Wechat.MiniProgram.Tests/ContractGuards/MiniProgramContractGuards.cs)）、本域 DTO（[`Mud.Wechat.MiniProgram/Vip`](../../../Mud.Wechat.MiniProgram/Vip/)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
 
 ## 端点速览
 
@@ -140,20 +140,20 @@ errcode 令牌自愈**静默失效**）。
 
 ## DTO 与序列化面
 
-本域 DTO 目录 [`Mud.Wechat.MiniProgram.DataModels/Vip`](../../../Mud.Wechat.MiniProgram.DataModels/Vip/) 内共 **11** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **11** 个，`SerializerClassName` = `Vip`。
+本域 DTO 目录 [`Mud.Wechat.MiniProgram/Vip`](../../../Mud.Wechat.MiniProgram/Vip/) 内共 **11** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **11** 个，`SerializerClassName` = `Vip`。
 
-AOT 源生成上下文：[`VipJsonContext.g.cs`](./../../../Mud.Wechat.MiniProgram.DataModels/Generated/VipJsonContext.g.cs)（生成物，勿手改）。
+AOT 源生成上下文：[`VipJsonContext.g.cs`](./../../../Mud.Wechat.MiniProgram/Generated/VipJsonContext.g.cs)（生成物，勿手改）。
 
 | 端点引用的类型 | 角色 | 定义位置 | JSON 字段（前缀） |
 |---|---|---|---|
-| `WxaResponse` | 应答 | [Common/WxaResponse.cs](../../../Mud.Wechat.MiniProgram.DataModels/Common/WxaResponse.cs) | `errcode`, `errmsg` |
-| `WxaVipAddUserRequest` | 请求体 | [Vip/WxaVipAddUserRequest.cs](../../../Mud.Wechat.MiniProgram.DataModels/Vip/WxaVipAddUserRequest.cs) | `session_id`, `wxa_openid`, `info` |
-| `WxaVipUpdateUserRequest` | 请求体 | [Vip/WxaVipUpdateUserRequest.cs](../../../Mud.Wechat.MiniProgram.DataModels/Vip/WxaVipUpdateUserRequest.cs) | `wxa_openid`, `info` |
-| `WxaVipUserInfoResponse` | 应答 | [Vip/WxaVipUserInfoResponse.cs](../../../Mud.Wechat.MiniProgram.DataModels/Vip/WxaVipUserInfoResponse.cs) | `info` |
-| `WxaVipOpenidRequest` | 请求体 | [Vip/WxaVipOpenidRequest.cs](../../../Mud.Wechat.MiniProgram.DataModels/Vip/WxaVipOpenidRequest.cs) | `wxa_openid` |
-| `WxaVipGetUserListResponse` | 应答 | [Vip/WxaVipGetUserListResponse.cs](../../../Mud.Wechat.MiniProgram.DataModels/Vip/WxaVipGetUserListResponse.cs) | `list` |
-| `WxaVipGetUserListRequest` | 请求体 | [Vip/WxaVipGetUserListRequest.cs](../../../Mud.Wechat.MiniProgram.DataModels/Vip/WxaVipGetUserListRequest.cs) | `offset`, `limit` |
-| `WxaVipGetShopListResponse` | 应答 | [Vip/WxaVipGetShopListResponse.cs](../../../Mud.Wechat.MiniProgram.DataModels/Vip/WxaVipGetShopListResponse.cs) | `list` |
+| `WxaResponse` | 应答 | [Common/WxaResponse.cs](../../../Mud.Wechat.MiniProgram/Common/WxaResponse.cs) | `errcode`, `errmsg` |
+| `WxaVipAddUserRequest` | 请求体 | [Vip/WxaVipAddUserRequest.cs](../../../Mud.Wechat.MiniProgram/Vip/WxaVipAddUserRequest.cs) | `session_id`, `wxa_openid`, `info` |
+| `WxaVipUpdateUserRequest` | 请求体 | [Vip/WxaVipUpdateUserRequest.cs](../../../Mud.Wechat.MiniProgram/Vip/WxaVipUpdateUserRequest.cs) | `wxa_openid`, `info` |
+| `WxaVipUserInfoResponse` | 应答 | [Vip/WxaVipUserInfoResponse.cs](../../../Mud.Wechat.MiniProgram/Vip/WxaVipUserInfoResponse.cs) | `info` |
+| `WxaVipOpenidRequest` | 请求体 | [Vip/WxaVipOpenidRequest.cs](../../../Mud.Wechat.MiniProgram/Vip/WxaVipOpenidRequest.cs) | `wxa_openid` |
+| `WxaVipGetUserListResponse` | 应答 | [Vip/WxaVipGetUserListResponse.cs](../../../Mud.Wechat.MiniProgram/Vip/WxaVipGetUserListResponse.cs) | `list` |
+| `WxaVipGetUserListRequest` | 请求体 | [Vip/WxaVipGetUserListRequest.cs](../../../Mud.Wechat.MiniProgram/Vip/WxaVipGetUserListRequest.cs) | `offset`, `limit` |
+| `WxaVipGetShopListResponse` | 应答 | [Vip/WxaVipGetShopListResponse.cs](../../../Mud.Wechat.MiniProgram/Vip/WxaVipGetShopListResponse.cs) | `list` |
 
 > DTO 一律以源文件为准；本表只列端点签名**直接引用**的一层类型，嵌套类型不再递归展开。所有 DTO 不使用 `required`（仓内约束），必填性由接口注释与官方页表达，SDK 不做本地必填校验。
 
@@ -191,7 +191,7 @@ var response = await service.GetShopListAsync(ct);
 | 契约守卫（路由 / 计数 / DTO 登记断言） | [`WxaVipContractGuards.cs`](../../../../../Tests/Mud.Wechat.MiniProgram.Tests/ContractGuards/WxaVipContractGuards.cs)、[`MiniProgramContractGuards.cs`](../../../../../Tests/Mud.Wechat.MiniProgram.Tests/ContractGuards/MiniProgramContractGuards.cs) |
 | 守卫中的代表性测试方法 | `VipEndpoints_ShouldMatchOfficialRoutes`、`VipEndpoints_ShouldRespectEmptyBodyRules`、`VipInterface_ShouldBindMpAccessToken_AndRegisterUnderVipGroup`、`VipDataModels_ShouldBeRegisteredInJsonContext`、`VipDataModels_ShouldLockOfficialFieldsAndSharedDtos`、`Routes_ShouldNotOverlapAcrossProductLines`、`TokenInterfaces_ShouldReuseMpAccessToken`、`TokenFreeLogin_ShouldStayOutOfTokenPipeline_ViaMethodLevelOptOut`、`TokenInterfaces_ShouldDeclareOfficialParameterName`、`Endpoints_ShouldMatchOfficialRoutesAndCount`、`Dtos_ShouldExposeOfficialFieldNames`、`SessionKey_ShouldNeverBeLogged` … |
 | 模块枚举 / 装配入口 | [`MiniProgramModule.cs`](../../Extensions/MiniProgramModule.cs)、[`MiniProgramServiceBuilder.cs`](../../Extensions/MiniProgramServiceBuilder.cs) |
-| DTO 与 JSON 上下文 | [`Mud.Wechat.MiniProgram.DataModels/Vip`](../../../Mud.Wechat.MiniProgram.DataModels/Vip/) |
+| DTO 与 JSON 上下文 | [`Mud.Wechat.MiniProgram/Vip`](../../../Mud.Wechat.MiniProgram/Vip/) |
 | 跨线基线 | [`Tests/ContractBaseline.cs`](../../../../../Tests/ContractBaseline.cs)（各线分节；本线口径以守卫实际断言为准） |
 | 本线包级公开面与已踩陷阱 | [`Src/MiniProgram/Mud.Wechat.MiniProgram/README.md`](../../README.md) |
 | 跨线通用约束（门禁 / AOT / 落位） | [`AGENTS.md`](../../../../../AGENTS.md) |

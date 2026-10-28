@@ -32,14 +32,14 @@ dotnet test Tests/Mud.Wechat.Work.Tests -c Release -f net8.0 --filter "FullyQual
 - **门禁只统计编译错误与 AOT IL 诊断，不因 CS 警告失败** —— 不要为消警告大范围重构。
 - `scripts/*.ps1` 为 UTF-8 **含 BOM**（无 BOM 在 PowerShell 5.1 下按 ANSI 解码 ⇒ 语法解析失败）。
 - **Windows PowerShell 5.1 无长路径支持（MAX_PATH 260）**：脚本**不得**用 `Get-ChildItem -Path <仓库根> -Recurse` 去按名称找工程 —— `obj/generated-probe/` 下配置绑定源生成器留下的深路径（实测 223 字符）叠加长工程名（如 `Mud.Wechat.OfficialAccount.Abstractions.csproj`）即超过 260，5.1 抛 `DirectoryNotFoundException`；而 `pwsh`（.NET Core 有长路径支持）会侥幸通过，从而**掩盖该缺陷**（`audit-config-keys.ps1` 实际踩过）。按名称定位工程须**有界深度且不进入 `obj`**（如 `Get-ChildItem -Path <仓库根>/Src -Filter "<Project>.csproj" -Recurse -File -Depth 2`）。
-- CI（`.github/workflows/dotnet-publish.yml`）的日志桶白名单只在该文件内维护，改动看文件即可。**包清单是单一来源**：可打包集由 `Src/**/*.csproj` 现场推导（未声明 `<IsPackable>false` 者），CI、`pack.bat`、`publish.bat` 三处**各自推导**（不再持有名单，也不硬编码包数），`AB-G6` 断言三处走推导且与推导值一致 —— 历史上四处清单各自成文曾两次漂移（CI 停在 18、bat 停在 11）。「某工程被误设 `IsPackable=false`」不会体现在「推导值 vs 产物」比对里（推导值同降），由 `AB-G6` 的**非可打包工程白名单**（仅两个构建期工具）兜住。注意 `AOT006`、`MUD005` 是只打印计数的 INFO 桶（前者漂移守卫、后者企微官方 Query 传令牌契约），**断言为 0 即假红**。
+- CI（`.github/workflows/dotnet-publish.yml`）的日志桶白名单只在该文件内维护，改动看文件即可。**包清单是单一来源**：可打包集由 `Src/**/*.csproj` 现场推导（未声明 `<IsPackable>false` 者），CI、`pack.bat`、`publish.bat` 三处**各自推导**（不再持有名单，也不硬编码包数）。2026-10 包合并后 `AB-G6` 升级为**集合相等**：现场推导的可打包集必须恰等于守卫内的**终态 18 包清单**——少一项=某线工程被删或漏登记，多一项=又拆出一个消费者永远不会单独安装的 NuGet 包（合并要消除的正是它）。「某工程被误设 `IsPackable=false`」不会体现在推导比对里（推导值同降），由 `AB-G6` 的**非可打包工程白名单**（仅两个构建期工具）兜住。改包集合必须**同批**改这份清单并写明动机。注意 `AOT006`、`MUD005` 是只打印计数的 INFO 桶（前者漂移守卫、后者企微官方 Query 传令牌契约），**断言为 0 即假红**。
 
 ## 2 改动配方（必须同批完成，缺一项即半成品）
 
 | 场景 | 同批完成什么 |
 |---|---|
 | 加端点 | 接口 XML 文档（官方文档 URL/ID + 频率上限/串行/覆盖删除/权限可见范围等业务限制，格式照既有端点，**不得弱化**）+ 更新对应域守卫 |
-| 加 DTO | 标 `[HttpJsonSerializable]` → 跑 `AddHttpJsonSerializable.ps1` + `GenerateJsonContext.ps1`（Abstractions 域手写登记进 `AuthenticationJsonContext`）→ 更新守卫中的上下文登记断言 |
+| 加 DTO | 标 `[HttpJsonSerializable]` → 跑 `AddHttpJsonSerializable.ps1` + `GenerateJsonContext.ps1`（Abstractions 命名空间域手写登记进 `AuthenticationJsonContext`；生成物落 `<线>/Generated/`——2026-10 包合并后原 `{线}.DataModels/Generated` 已在主包内）→ 更新守卫中的上下文登记断言 |
 | 加配置属性 | 补**真实消费点**；无消费点则**删属性**（`audit-config-keys.ps1` 无白名单、无 `-Strict`，`Validate`/`ToString` 不算消费点，正确处置是补消费点或删属性，不是加模式绕开） |
 | 加/改回调事件 | `[WechatCallbackContract]`（事件键 + 族前置 + 开放面）+ 载荷 `[PayloadContract]` + 回调守卫 |
 | 加/改回调处理器 | `WechatCallbackHandlerAnalyzer`（MUDCB002~005）自动生效（`SupportedEventType` ↔ 载荷契约一致性编译期校验）；若钥匙集/开放面变化则同批更新 `WechatCallbackContractGuards`（CB 系列） |
@@ -77,25 +77,30 @@ Src/Core/
   Mud.Wechat.Callback.Analyzers/      # 回调处理器契约分析器（中立名；诊断型、不发射；netstandard2.0 单 TFM；
                                       # IsPackable=false，**由四个 Callback 宿主包以字面相对路径内嵌** analyzers/dotnet/cs）
 Src/Work/                             # 企业微信线（本文件 §5~§7 的主体）
-  Mud.Wechat.Work/                    # 主包：Interfaces/{域}/ 接口声明 + 服务 + DI + 模块注册
-  Mud.Wechat.Work.Abstractions/       # 令牌基座、多应用、配置、存储端口、枚举、异常、回调信封与载荷转换器
-  Mud.Wechat.Work.DataModels/         # 官方 DTO（[HttpJsonSerializable]）+ Generated/ 域 JsonContext（生成物）
+  Mud.Wechat.Work/                    # 一线一入口包：令牌基座 + 多应用 + 配置 + 枚举 + 异常 + 官方 DTO（Generated/ 域 JsonContext）
+                                      # + Interfaces/{域}/ 接口声明 + 服务 + DI + 模块注册（2026-10 包合并：
+                                      # 原 Work.Abstractions / Work.DataModels 并入，**命名空间不变**）
   Mud.Wechat.Work.Callback/           # 回调接收（AES 解密、事件解析、分发）+ HTTP 中间件；Events/Payloads/ 载荷；智能机器人 JSON 回调通道 + 长连接（`LongConnection/`，net8+ 门控，见 §5.5）
-Src/{OfficialAccount,MiniProgram,Pay,OpenPlatform,Channels,Ads}/   # 其余五条线 + 在建广告线，同形态分包
-                                      # 公众号 4 包 / 小程序 3 包（**无 Callback**）/ 支付 4 包 / 开放平台 3 包 / 小店 4 包 / 广告 3 包（在建）
+Src/{OfficialAccount,MiniProgram,Pay,OpenPlatform,Channels,Ads,AI}/   # 其余各线，2026-10 包合并后形态：
+                                      # 公众号 2 包（主包 + Callback）/ 小程序 1 / 支付 2（APIv3+APIv2 同包 + Callback）
+                                      # / 开放平台 1 / 小店 2 / 广告 1 / AI 4（层 1 `Mud.Wechat.AI` + 层 2 Work.AI / .Tools / .Mcp）
                                       # 每包的公开面与已踩陷阱见其目录下的 README.md
 Tests/                                # 20 个工程（七线 + Core 叶层 + Redis + OpenTelemetry + AI 域），镜像源结构，单 TFM net8.0
+                                      # 注：`Work.Abstractions.Tests` / `Work.DataModels.Tests` 等测试工程**名称保留**，
+                                      # 其被测对象现在是主包内相应命名空间的类型（合并不改测试工程划分）
 scripts/                              # verify-build / audit-config-keys / GenerateJsonContext / AddHttpJsonSerializable / ApplyTokenOwnerKeys / Update-WechatToolGolden
 .docs/                                # 方案与设计文档（中文；已 gitignore，fresh clone 无此目录）
 ```
 
-依赖单向：`Work → {Abstractions, DataModels}`、`Callback → {Abstractions, DataModels}`、`Abstractions → DataModels`、`Redis → {Abstractions（叶层）, Work.Abstractions}`。硬边界：**`Callback` 不引用 `Work`**；**`Redis` 不引用 Work 主包 / Work.Callback / 任何线主包**（唯一例外：Redis → `Work.Abstractions`，RD11 裁决——实现企微专属存储端口四接口 + 消费 `RedisMetricsHelper`/`WorkMetrics` 指标面）；**广告线与其余六线双向零引用**（ADS-S1 两向都扫）。 跨线例外注记：**`MP.Abstractions → OA.Abstractions` 为「依赖载体」边**（小程序复用公众号令牌/多应用底座；Abstractions 包自身零类型消费、真消费在 MP 主包经传递引用——复制方案因单槽注册表会使 errcode 自愈静默失效已被否决，`MiniProgramScaffoldContractGuards` 禁止引 OA 运行时包），**勿当「可顺手删除的冗余引用」误删**。
+依赖单向（2026-10 包合并后的形态；合并前是「主包/Callback/Redis 各自 → `{线}.Abstractions` → `{线}.DataModels`」）：`{线}.Callback → {线}`、`Redis → {Abstractions（叶层）, Work}`、`MiniProgram → {叶层, OfficialAccount}`、`AI 层 2 → {Mud.Wechat.AI, Work}`。跨线边由 `AB-G2`（**跨线依赖边白名单**，扫描面由 `slnx /src/` 推导）钉死：默认零引用，白名单只有 `MiniProgram → OfficialAccount`（令牌/多应用底座复用，禁止再多一条）与 `Work.AI* → Work`（AI 方案 §3.2）。**广告线与其余六线双向零引用**（ADS-S1 两向都扫）。
+
+**「`Callback` 不引用主包」「`Redis` 不引用 Work 主包」「小程序不得引公众号主包」三条物理边已随包合并失效，勿再按旧形态断言。**它们的真实语义——**回调链路与存储适配器不得消费业务客户端面**——现在由**源级**守卫承担（`CB1` / `CB-L1a` / `CH-X3` / 支付回调边界 / `RD-G6`）：探针是「行锚定的 `using Mud.Wechat.{线}[.Interfaces|.Services|.Extensions|(.V2)]` 正则」，可用面止于 `{线}.Abstractions.*` 与 `{线}.DataModels.*`。新增回调侧调用业务客户端会当场打红，只是不再有 csproj 提供物理保证。`MP-X1` 同步重述为「到公众号线的边恰好一条且指向该线入口工程；禁引 OA.Callback」——承重的从来是 `MP-X2/X3` 锁定的「复用同一令牌类型与单槽注册表」（复制会让 errcode 自愈静默失效），不是包的数量。
 
 **新增产品线的门禁接入口只有一个**：`AB-G6` 会同时校验解决方案工程清单（每个可打包工程须已在 `slnx` 内）、`audit-config-keys.ps1` 的**配置 DTO 登记表 `$configFiles`**（逐文件登记，**不得推导**——它是「每个配置 DTO 必须被登记受检」的契约本身；消费点**搜索根**已由 `slnx /src/` 现场推导、零手工登记，F1）、DTO 标注脚本根命名空间、以及 CI / `pack.bat` / `publish.bat` 三处的**推导口径**（可打包集由 `Src/**/*.csproj` 现场推导，三处各自推导、不持有名单，也不硬编码包数 —— 唯一被维护的名单是「非可打包工程白名单」，仅两个构建期工具）。
 
 **其它产品线（公众号 / 小程序 / 支付 / 开放平台 / 小店）各持 `Src/{线}/` 包家族与 `Tests/Mud.Wechat.{线}.Tests/` 守卫，契约与落位以各自 `.docs/` 设计方案为准**（本文为企微线专属）。小店线关键决策锚点：独立令牌类型 `Wechat.Channels.AccessToken`（与 `Wechat.AccessToken`/`Wechat.Mp.AccessToken` 在共享注册表天然隔离）、平铺命名空间无 `IsAbstract` 父接口、与既有六线路由交叠零回潮（共享基础设施白名单仅 `token`/`stable_token` + 8 个 `/cgi-bin/` 基础端点）、`/wxa/vip/*` 已核定为小程序令牌、归 MiniProgram 线，小店线不得跨线声明、回调为**官方强制 JSON + 仅安全模式**（信封 `{"ToUserName","Encrypt"}`，事件键 42 个经 `[ChannelsCallbackContract]` 声明式登记、契约机制与事件键常量落 DataModels/Callback、类型化通道仅 net8+）—— 全部为 CH / CB-CH 系列守卫锁定，改动见 `Tests/Mud.Wechat.Channels.Tests/ContractGuards/` 与 `Tests/Mud.Wechat.Channels.Callback.Tests/`。
 
-**七线包形态差异注记（均为有意设计，勿「顺手对齐」）**：① OpenPlatform 三工程包形态与标准线一致，但 **Abstractions 不引本线 DataModels**（主包同时引 Abstractions + DataModels，模型面经主包传递可见；DataModels 为 2026-10 后拆包且已承载实际 DTO）；② OpenPlatform / MiniProgram / Ads **无 Callback 包**（开放平台推送接收由主包承载、小程序与广告官方无推送面）。
+**七线包形态注记（2026-10 包合并后；均为有意设计，勿「顺手对齐」）**：① **一线一入口包**是统一形态——`{线}` 承载「基座 + 官方 DTO + 声明式客户端 + DI/模块注册」，`{线}.Callback`（有推送面的四条线：Work / OfficialAccount / Pay / Channels）独立成包以把 ASP.NET Core 依赖挡在宿主侧；小程序 / 开放平台 / 广告无回调包（开放平台推送由主包承载，小程序与广告官方无推送面）。② 合并只动**程序集与 NuGet 归属**，**未改任何命名空间**（`Mud.Wechat.{线}.Abstractions.*` / `.DataModels.{域}` 原样保留），因此 `using`、XML cref、按命名空间过滤的守卫全部不受影响——反过来也意味着：**任何「按程序集区分两侧」的新断言都是错的写法**，一律改按命名空间（T5/T6 教训，见 `.docs/MudWechat-包合并实施方案-v1.md` §6）。③ AI 域例外保持 4 工程：层 2 的 `Work.AI.Tools` 不可并入 `Work.AI`——`Mud.AI.Generator` 按工程身份发射契约表，并集会让它生成不出 `WechatToolContract`。
 
 **新文件落位三处一致（目录 / 命名空间 / 注册入口）**：
 
@@ -147,7 +152,7 @@ scripts/                              # verify-build / audit-config-keys / Gener
 
 - `IWechatCorpAuthStore` 复合键 `(AppKey, AuthCorpId)`；`IWechatSuiteTicketStore` 按 `suiteId` 分槽（多套件互不覆盖）。
 - 默认实现仅进程内 ⇒ 多实例部署引用 `Mud.Wechat.Redis`（`AddWechatRedis` **必须先于** `AddWechatApp`/`AddWechatCallback`，颠倒即注册期 fail-fast），或由宿主前置 `TryAdd` 分布式实现覆盖（宿主预注册者按契约胜出）。
-- 五个存储端口的落位（P3-2/P3-7 修订，与代码实测一致）：企微专属三端口（`IWechatTokenStore` / `IWechatCorpAuthStore` / `IWechatSuiteTicketStore`）接口落 `Work.Abstractions`（TokenManager）；`IWechatCallbackReplayGuard` 接口落叶层 `Core/Mud.Wechat.Abstractions/Callback/`（叶层中立 SPI，企微/公众号/支付三线复用，其 InMemory 默认实现同在叶层）；`IWechatBotConnectionLease` 接口落 `Work.Abstractions/Callback/Bots/`（长连接主备基座）。Redis 包**双依赖**（叶层 `Mud.Wechat.Abstractions` + `Work.Abstractions`，后者为 §4 的 RD11 例外）实现全部端口、共享连接基座。
+- 五个存储端口的落位（P3-2/P3-7 修订；2026-10 包合并后**命名空间不变、工程归属变**）：企微专属三端口（`IWechatTokenStore` / `IWechatCorpAuthStore` / `IWechatSuiteTicketStore`）接口落命名空间 `Mud.Wechat.Work.Abstractions`（TokenManager），现居 `Mud.Wechat.Work` 工程；`IWechatCallbackReplayGuard` 接口落叶层 `Core/Mud.Wechat.Abstractions/Callback/`（叶层中立 SPI，企微/公众号/支付三线复用，其 InMemory 默认实现同在叶层）；`IWechatBotConnectionLease` 接口落 `Mud.Wechat.Work.Abstractions/Callback/Bots/`（长连接主备基座）。Redis 包依赖叶层 + 企微线工程（合并后为 `Mud.Wechat.Work`，RD11 例外现由 `RD-G6` 的源级断言守——Redis 源码不得 `using` 业务客户端命名空间）实现全部端口、共享连接基座。
 - 退役清库批量能力为**可选**接口 `IWechatTokenStoreBatchRemove`（管理器先 `is` 探测，命中批删、未实现回退逐键）。
 - **后台刷新停机语义（组件 ≥ 3.0.5 / M7-HC-04）**：刷新服务 `Dispose` 会取消在途刷新（实例级 CTS：置位 → Cancel → 停表 → Dispose CTS），在途刷新以 `OperationCanceledException` 结束且**不产生**刷新未处理异常 Error 日志（优雅关闭口径）；本仓各线 `*TokenRegistrationService` 的登记路径已有 `catch (OperationCanceledException) { throw; }` 先行于 `catch (Exception)`，取消不会被吞。
 - **SE.Redis 3.3.0 陷阱**：① `RedisTimeoutException` 继承 `TimeoutException` 而非 `RedisException`，捕获须走 `WechatRedisErrors.ShouldWrap`，裸 `catch (RedisException)` 会漏超时；② `StringSetAsync` 有四套重载，**生产调用一律用命名参数钉住形态**（`keepTtl: false` / `when: ...`）。

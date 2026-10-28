@@ -2,7 +2,7 @@
 
 微信支付「微企付企业支付 · 员工开通授权」域 SDK（2 端点）。 接口：[IWechatPayWebizpayUserService](./IWechatPayWebizpayUserService.cs)；注册组 `WebizpayUser`；模块枚举 `PayModule.WebizpayUser`（装配入口见 [PayServiceBuilder.cs](../../Extensions/PayServiceBuilder.cs)）。逐端点核验 2026-10-18。
 
-> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[WechatPayWebizpayUserContractGuards.cs](../../../../../Tests/Mud.Wechat.Pay.Tests/ContractGuards/WechatPayWebizpayUserContractGuards.cs)、[WechatPayDomainContractGuards.cs](../../../../../Tests/Mud.Wechat.Pay.Tests/ContractGuards/WechatPayDomainContractGuards.cs)）、本域 DTO（[`Mud.Wechat.Pay.DataModels/WebizpayUser`](../../../Mud.Wechat.Pay.DataModels/WebizpayUser/)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
+> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[WechatPayWebizpayUserContractGuards.cs](../../../../../Tests/Mud.Wechat.Pay.Tests/ContractGuards/WechatPayWebizpayUserContractGuards.cs)、[WechatPayDomainContractGuards.cs](../../../../../Tests/Mud.Wechat.Pay.Tests/ContractGuards/WechatPayDomainContractGuards.cs)）、本域 DTO（[`Mud.Wechat.Pay/WebizpayUser`](../../../Mud.Wechat.Pay/WebizpayUser/)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
 
 ## 端点速览
 
@@ -90,15 +90,15 @@
 
 ## DTO 与序列化面
 
-本域 DTO 目录 [`Mud.Wechat.Pay.DataModels/WebizpayUser`](../../../Mud.Wechat.Pay.DataModels/WebizpayUser/) 内共 **4** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **4** 个，`SerializerClassName` = `WebizpayUser`。
+本域 DTO 目录 [`Mud.Wechat.Pay/WebizpayUser`](../../../Mud.Wechat.Pay/WebizpayUser/) 内共 **4** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **4** 个，`SerializerClassName` = `WebizpayUser`。
 
-AOT 源生成上下文：[`WebizpayUserJsonContext.g.cs`](./../../../Mud.Wechat.Pay.DataModels/Generated/WebizpayUserJsonContext.g.cs)（生成物，勿手改）。
+AOT 源生成上下文：[`WebizpayUserJsonContext.g.cs`](./../../../Mud.Wechat.Pay/Generated/WebizpayUserJsonContext.g.cs)（生成物，勿手改）。
 
 | 端点引用的类型 | 角色 | 定义位置 | JSON 字段（前缀） |
 |---|---|---|---|
-| `WebizpayUserAuthorizationUrlResponse` | 应答 | [WebizpayUser/WebizpayUserDtos.cs](../../../Mud.Wechat.Pay.DataModels/WebizpayUser/WebizpayUserDtos.cs) | `sp_mchid`, `sub_mchid`, `application_type`, `user_id`, `authorization_url`, `expire_time`, `mp_query`, `mp_business_type`, `employee_id`, `authorization_state`, `authorization_time`, `authorization_revoked_time` … |
-| `WebizpayUserAuthorizationUrlRequest` | 请求体 | [WebizpayUser/WebizpayUserDtos.cs](../../../Mud.Wechat.Pay.DataModels/WebizpayUser/WebizpayUserDtos.cs) | `sp_mchid`, `sub_mchid`, `application_type`, `user_id`, `authorization_url`, `expire_time`, `mp_query`, `mp_business_type`, `employee_id`, `authorization_state`, `authorization_time`, `authorization_revoked_time` … |
-| `WebizpayUserAuthorizationStateResponse` | 应答 | [WebizpayUser/WebizpayUserDtos.cs](../../../Mud.Wechat.Pay.DataModels/WebizpayUser/WebizpayUserDtos.cs) | `sp_mchid`, `sub_mchid`, `application_type`, `user_id`, `authorization_url`, `expire_time`, `mp_query`, `mp_business_type`, `employee_id`, `authorization_state`, `authorization_time`, `authorization_revoked_time` … |
+| `WebizpayUserAuthorizationUrlResponse` | 应答 | [WebizpayUser/WebizpayUserDtos.cs](../../../Mud.Wechat.Pay/WebizpayUser/WebizpayUserDtos.cs) | `sp_mchid`, `sub_mchid`, `application_type`, `user_id`, `authorization_url`, `expire_time`, `mp_query`, `mp_business_type`, `employee_id`, `authorization_state`, `authorization_time`, `authorization_revoked_time` … |
+| `WebizpayUserAuthorizationUrlRequest` | 请求体 | [WebizpayUser/WebizpayUserDtos.cs](../../../Mud.Wechat.Pay/WebizpayUser/WebizpayUserDtos.cs) | `sp_mchid`, `sub_mchid`, `application_type`, `user_id`, `authorization_url`, `expire_time`, `mp_query`, `mp_business_type`, `employee_id`, `authorization_state`, `authorization_time`, `authorization_revoked_time` … |
+| `WebizpayUserAuthorizationStateResponse` | 应答 | [WebizpayUser/WebizpayUserDtos.cs](../../../Mud.Wechat.Pay/WebizpayUser/WebizpayUserDtos.cs) | `sp_mchid`, `sub_mchid`, `application_type`, `user_id`, `authorization_url`, `expire_time`, `mp_query`, `mp_business_type`, `employee_id`, `authorization_state`, `authorization_time`, `authorization_revoked_time` … |
 
 > DTO 一律以源文件为准；本表只列端点签名**直接引用**的一层类型，嵌套类型不再递归展开。所有 DTO 不使用 `required`（仓内约束），必填性由接口注释与官方页表达，SDK 不做本地必填校验。
 
@@ -135,7 +135,7 @@ var response = await service.CreateUserAuthorizationUrlAsync("", new WebizpayUse
 | 契约守卫（路由 / 计数 / DTO 登记断言） | [`WechatPayWebizpayUserContractGuards.cs`](../../../../../Tests/Mud.Wechat.Pay.Tests/ContractGuards/WechatPayWebizpayUserContractGuards.cs)、[`WechatPayDomainContractGuards.cs`](../../../../../Tests/Mud.Wechat.Pay.Tests/ContractGuards/WechatPayDomainContractGuards.cs) |
 | 守卫中的代表性测试方法 | `WebizpayUserTopology_ShouldBeOneInterfaceOnOneGroup`、`WebizpayUserEndpoints_ShouldMatchOfficialRoutesAndParameterRosters`、`WebizpayUserDtos_ShouldExposeOfficialFieldRosters`、`WebizpayUserDataModels_ShouldBeRegisteredInJsonContextAndWiredIntoDi`、`PayInterfaces_ShouldNotDeclareToken_AndShouldMatchModuleCount`、`Endpoints_ShouldMatchOfficialRoutes`、`Dtos_ShouldExposeOfficialFieldNames`、`Responses_ShouldDeriveFromWechatPayResponse`、`Interfaces_ShouldAllowAnyStatusCode_SoErrorBodiesAreReadable` |
 | 模块枚举 / 装配入口 | [`PayModule.cs`](../../Extensions/PayModule.cs)、[`PayServiceBuilder.cs`](../../Extensions/PayServiceBuilder.cs) |
-| DTO 与 JSON 上下文 | [`Mud.Wechat.Pay.DataModels/WebizpayUser`](../../../Mud.Wechat.Pay.DataModels/WebizpayUser/) |
+| DTO 与 JSON 上下文 | [`Mud.Wechat.Pay/WebizpayUser`](../../../Mud.Wechat.Pay/WebizpayUser/) |
 | 跨线基线 | [`Tests/ContractBaseline.cs`](../../../../../Tests/ContractBaseline.cs)（各线分节；本线口径以守卫实际断言为准） |
 | 本线包级公开面与已踩陷阱 | [`Src/Pay/Mud.Wechat.Pay/README.md`](../../README.md) |
 | 跨线通用约束（门禁 / AOT / 落位） | [`AGENTS.md`](../../../../../AGENTS.md) |

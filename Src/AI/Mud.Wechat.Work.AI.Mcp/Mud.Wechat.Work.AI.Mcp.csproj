@@ -13,7 +13,7 @@
 
 		<!-- 工具面端口（层 1 中立）：协议层与工具面按 AI-G5 互不引用，只在此端口上相遇；
 		     实现（WechatToolSurfaceAdapter）由 Mud.Wechat.Work.AI.Tools 注册，宿主装配时对接。 -->
-		<ProjectReference Include="..\Mud.Wechat.AI.Abstractions\Mud.Wechat.AI.Abstractions.csproj" />
+		<ProjectReference Include="..\Mud.Wechat.AI\Mud.Wechat.AI.csproj" />
 	</ItemGroup>
 
 </Project>

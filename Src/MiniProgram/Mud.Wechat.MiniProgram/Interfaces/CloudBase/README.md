@@ -352,8 +352,8 @@ var openData = await misc.GetOpenDataAsync(
 | 敏感字段不入日志、6 个 DTO 不覆写 `ToString` | **TCB6** / **TCB7**（[WxaCloudBaseContractGuards.cs](../../../../../Tests/Mud.Wechat.MiniProgram.Tests/ContractGuards/WxaCloudBaseContractGuards.cs)） |
 | 全线合计计数 398、Query 令牌注入白名单、与公众号线路由零重叠 | MP-X5（[MiniProgramContractGuards.cs](../../../../../Tests/Mud.Wechat.MiniProgram.Tests/ContractGuards/MiniProgramContractGuards.cs)）、QT1、MP-X1 |
 | 本线不建 component/authorizer 令牌链 | P3-R2（`MiniProgramP3RulingsContractGuards`） |
-| 请求 / 应答 / 嵌套 DTO（98 个） | [../../../Mud.Wechat.MiniProgram.DataModels/CloudBase/](../../../Mud.Wechat.MiniProgram.DataModels/CloudBase/)（子目录 `Env`/`Database`/`Storage`/`Scf`/`Misc` **仅作组织**，命名空间统一） |
-| AOT 序列化上下文（`internal`，示例中不得引用） | `../../../Mud.Wechat.MiniProgram.DataModels/Generated/CloudBaseJsonContext.g.cs` |
+| 请求 / 应答 / 嵌套 DTO（98 个） | [../../../Mud.Wechat.MiniProgram/CloudBase/](../../../Mud.Wechat.MiniProgram/CloudBase/)（子目录 `Env`/`Database`/`Storage`/`Scf`/`Misc` **仅作组织**，命名空间统一） |
+| AOT 序列化上下文（`internal`，示例中不得引用） | `../../../Mud.Wechat.MiniProgram/Generated/CloudBaseJsonContext.g.cs` |
 | 本线端点总表与装配入口 | [../../README.md](../../README.md) |
 
 ## 改动本域需要同批完成

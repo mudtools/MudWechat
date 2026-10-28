@@ -18,7 +18,7 @@
 
 > **事实来源限定**：本文全部断言只来自本仓三类证据——本目录 8 份接口文件的 XML 注释、
 > [WechatDataZoneContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatDataZoneContractGuards.cs)（DZ1~DZ5）、
-> [Src/Work/Mud.Wechat.Work.DataModels/DataZone/](../../../Mud.Wechat.Work.DataModels/DataZone/) 下的 DTO 声明；
+> [Src/Work/Mud.Wechat.Work/DataZone/](../../../Mud.Wechat.Work/DataZone/) 下的 DTO 声明；
 > 端点数、路由、零声明清单以守卫断言为准，官方文档号仅作定位标识、不作为本文事实来源。
 > 未能在本仓三类证据内核验的项目一律集中在文末「已知留档缺口」，标为**未逐项核验**，正文不作推断。
 
@@ -87,7 +87,7 @@
 
 ## 2. 公钥 / 私钥：`set_public_key` 是存档的开关，版本号只许前进
 
-[#1] 注释与 [SetDataZonePublicKeyRequest.cs](../../../Mud.Wechat.Work.DataModels/DataZone/RequestModel/SetDataZonePublicKeyRequest.cs)
+[#1] 注释与 [SetDataZonePublicKeyRequest.cs](../../../Mud.Wechat.Work/DataZone/RequestModel/SetDataZonePublicKeyRequest.cs)
 留档四件事：
 1. 公钥为 **PEM 格式 RSA-2048**，经 openssl 生成，**换行符转义为 `\n`** 后填入 `PublicKey`（`string?`，JSON `public_key`）。
 2. **设置公钥之后，消息才开始存档** ⇒ 授权完成但未设公钥时，#2 可能返回成员而实际无数据。
@@ -145,13 +145,13 @@ DZ2 另断言：父接口 `IsAbstract` 且空注册组；基础族三子接口�
 |---|---|
 | [#3] `set_receive_callback` | 同一个应用**只能设置一个程序**接收：先设程序 A、再设程序 B ⇒ 自动**更改为 B 接收**（覆盖，不叠加、不报错） |
 | [#6] `set_log_level` | 指定级别后**仅存储不高于该级别的**日志（指定 2 ⇒ 只存 1 与 2）；默认级别 **2**；`log_level` 官方为 `uint32`，本仓以 `long?` 承载；另有前置条件：`program_id` 需与应用有授权关系，且「官方模型不支持」（注释原文） |
-| [#4] `set_hide_sensitiveinfo_config` | 配置 [DataZoneSensitiveInfoHideConfig.cs](../../../Mud.Wechat.Work.DataModels/DataZone/DataZoneSensitiveInfoHideConfig.cs) 的 `HideMobile` / `HideIdcard` / `HideBankno`（`bool?`，官方默认均 `false`），但**未调用本接口开启展示时，会话组件默认为打星** ⇒ 「不传」与「显式 false」在观感上不同，SDK 不做「空即忽略」推断 |
+| [#4] `set_hide_sensitiveinfo_config` | 配置 [DataZoneSensitiveInfoHideConfig.cs](../../../Mud.Wechat.Work/DataZone/DataZoneSensitiveInfoHideConfig.cs) 的 `HideMobile` / `HideIdcard` / `HideBankno`（`bool?`，官方默认均 `false`），但**未调用本接口开启展示时，会话组件默认为打星** ⇒ 「不传」与「显式 false」在观感上不同，SDK 不做「空即忽略」推断 |
 | [#5] `get_hide_sensitiveinfo_config` | 入参 `UserId`（`string?`，JSON `userid`）官方参数表原文是「成员的**密文 userid**」⇒ 与通讯录明文 userid 不可互换 |
 
 ## 6. 专区程序调用：`request_data` / `response_data` 是**字符串**，异步结果双层码
 
 [#16]/[#17]/[#18] 的输入输出都是**自定义 JSON 字符串**，不是对象：
-[SyncCallDataZoneProgramRequest.cs](../../../Mud.Wechat.Work.DataModels/DataZone/RequestModel/SyncCallDataZoneProgramRequest.cs)
+[SyncCallDataZoneProgramRequest.cs](../../../Mud.Wechat.Work/DataZone/RequestModel/SyncCallDataZoneProgramRequest.cs)
 的 `RequestData`（`string?`，JSON `request_data`）注释给出官方示例形态 `"{\"input\":\"xxx\"}"`，
 并提醒**专区程序 Java 版 demo 的输入无需在 `request_data` 内再包一层 `input` 对象**；
 `ResponseData`（`string?`，JSON `response_data`）须与管理端配置的**输出协议**匹配。
@@ -159,7 +159,7 @@ DZ2 另断言：父接口 `IsAbstract` 且空注册组；基础族三子接口�
 由「专区通知应用」返回。
 
 异步链路是**上报驱动**的：[#17] 返回 `Jobid` → 专区程序执行完毕后经「上报异步任务结果」写入 → [#18] 凭
-`Jobid`（[GetDataZoneAsyncProgramResultRequest.cs](../../../Mud.Wechat.Work.DataModels/DataZone/RequestModel/GetDataZoneAsyncProgramResultRequest.cs)，
+`Jobid`（[GetDataZoneAsyncProgramResultRequest.cs](../../../Mud.Wechat.Work/DataZone/RequestModel/GetDataZoneAsyncProgramResultRequest.cs)，
 JSON `jobid`，全小写连写）查询；应答的 `ResponseErrcode`（`long?`，JSON `response_errcode`）
 是**专区程序上报的 errcode**，与顶层 `errcode` 语义不同 ⇒ 判「程序跑成功」要看 `ResponseErrcode`，
 判「接口调用成功」才用 `WechatWorkException.ThrowIfFailed`。这是本域唯一的**双层判错**面。
@@ -175,7 +175,7 @@ JSON `jobid`，全小写连写）查询；应答的 `ResponseErrcode`（`long?`�
   「付费待生效」时为预期开始时间，且**所有版本共用同一试用期**，试用期已到期后授权且未购买的版本**不返回**该字段。
 - [#15] 应答 `GetDocArchiveAuthInfoResponse.Status`（`long?`）**只有两值**：1 试用中 / 2 试用已结束；
   `BeginTime` / `EndTime` **仅 `status = 1` 时返回**。
-- 授权范围三键同构：[DataZoneAuthScope.cs](../../../Mud.Wechat.Work.DataModels/DataZone/DataZoneAuthScope.cs)
+- 授权范围三键同构：[DataZoneAuthScope.cs](../../../Mud.Wechat.Work/DataZone/DataZoneAuthScope.cs)
   的 `UseridList`（`List<string>?`）/ `DepartmentIdList`（`List<long>?`）/ `TagIdList`（`List<long>?`）。
   「实际生效人员取决于服务商购买的人数」⇒ `auth_user_count` 不等于 #2 返回的成员数。
 - [#2]/[#9] 翻页：`Cursor`（`string?`）+ `Limit`（`long?`，官方 ≤1000、默认 200）；
@@ -190,7 +190,7 @@ JSON `jobid`，全小写连写）查询；应答的 `ResponseErrcode`（`long?`�
 「分析企业**文档**数据」，措辞不一致，见缺口表），且**需企业管理员二次授权**，
 另需「企业或服务商已灰度文件内容存档功能」。
 [#10]~[#12] 注释：自建 / 代开发 / 第三方均需具备「数据与智能专区权限」；
-`debug_token`（[OpenDataZoneDebugModeRequest.cs](../../../Mud.Wechat.Work.DataModels/DataZone/RequestModel/OpenDataZoneDebugModeRequest.cs)
+`debug_token`（[OpenDataZoneDebugModeRequest.cs](../../../Mud.Wechat.Work/DataZone/RequestModel/OpenDataZoneDebugModeRequest.cs)
 的 `DebugToken`）注释明示**仅用于调试链路，请勿与 `WechatTokenTypes` 体系下的业务令牌混淆**——
 它仍是凭据形态的值，不得进日志、遥测或异常消息。
 第三方/代开发调用前必须切企业作用域，否则令牌解析不到该 `authCorpId`（AGENTS.md §5.1「企业级令牌一企一份」）。
@@ -333,8 +333,8 @@ using (switcher.UseCorpScope(appKey: "default", authCorpId, authorization.Perman
 | 全部 8 接口 `AccessToken` + Query + `access_token`、企业级令牌 scope | DZ3（L292–L322） |
 | JSON 上下文登记（清单实列 30 型） | DZ4（L324–L369） |
 | 19 条 SDK 面路由零声明 + 正对照、扫描根定位 | `DataZoneSdkFaceRoutes`（L142–L175）+ DZ5（L371–L430）、`GetSolutionRoot()` |
-| DTO 属性名 / 类型 / JSON 名 / edition 与 status 取值表 / `has_more` 形态冲突 | [../../../Mud.Wechat.Work.DataModels/DataZone/](../../../Mud.Wechat.Work.DataModels/DataZone/)（含 `RequestModel/`） |
-| 上下文源生成文件 | [../../../Mud.Wechat.Work.DataModels/Generated/DataZoneJsonContext.g.cs](../../../Mud.Wechat.Work.DataModels/Generated/DataZoneJsonContext.g.cs) |
+| DTO 属性名 / 类型 / JSON 名 / edition 与 status 取值表 / `has_more` 形态冲突 | [../../../Mud.Wechat.Work/DataZone/](../../../Mud.Wechat.Work/DataZone/)（含 `RequestModel/`） |
+| 上下文源生成文件 | [../../../Mud.Wechat.Work/Generated/DataZoneJsonContext.g.cs](../../../Mud.Wechat.Work/Generated/DataZoneJsonContext.g.cs) |
 | 上传通道的 `[MultipartForm]` 同口径先例 | [../Media/IWechatWorkMediaService.cs](../Media/IWechatWorkMediaService.cs) |
 | Query 令牌注入白名单（G5）与令牌归属键（TO 系列） | [WechatContractGuards.QueryTokenInjection.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatContractGuards.QueryTokenInjection.cs)、[WechatTokenOwnerContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatTokenOwnerContractGuards.cs) |
 | 会话存档 C SDK 面（与本文无关的另一能力面） | [../../README.md](../../README.md) 的「会话内容存档原生封装」段、`ExtendedSDK/Finance/` |

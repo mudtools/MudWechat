@@ -159,9 +159,9 @@ public partial class WechatContractGuards
     {
         var files = new[]
         {
-            SourcePath("Mud.Wechat.Work.Abstractions", "Authentication", "MultiApp", "WechatAppManager.cs"),
-            SourcePath("Mud.Wechat.OfficialAccount.Abstractions", "Authentication", "MultiApp", "MpAppManager.cs"),
-            SourcePath("Mud.Wechat.Channels.Abstractions", "Authentication", "MultiApp", "ChannelsAppManager.cs"),
+            SourcePath("Mud.Wechat.Work", "Authentication", "MultiApp", "WechatAppManager.cs"),
+            SourcePath("Mud.Wechat.OfficialAccount", "Authentication", "MultiApp", "MpAppManager.cs"),
+            SourcePath("Mud.Wechat.Channels", "Authentication", "MultiApp", "ChannelsAppManager.cs"),
             SourcePath("Mud.Wechat.OpenPlatform", "Authentication", "OpenPlatformAppManager.cs"),
         };
 

@@ -3,7 +3,7 @@
 微信小程序「直播 · 小助手与主播副号」域 SDK（8 端点：小助手增删改查 4 + 主播副号增删改查 4；
 官方 livebroadcast 分区 → studio-management）。 接口：[IWxaLiveAssistantService](./IWxaLiveAssistantService.cs)、[IWxaLiveGoodsService](./IWxaLiveGoodsService.cs)、[IWxaLiveRoleService](./IWxaLiveRoleService.cs)、[IWxaLiveRoomGoodsService](./IWxaLiveRoomGoodsService.cs)、[IWxaLiveRoomService](./IWxaLiveRoomService.cs)、[IWxaLiveSubscribeService](./IWxaLiveSubscribeService.cs)；注册组 `Live`；模块枚举 `MiniProgramModule.Live`（装配入口见 [MiniProgramServiceBuilder.cs](../../Extensions/MiniProgramServiceBuilder.cs)）。逐端点核验 2026-10-18。
 
-> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[WxaLiveContractGuards.cs](../../../../../Tests/Mud.Wechat.MiniProgram.Tests/ContractGuards/WxaLiveContractGuards.cs)、[MiniProgramContractGuards.cs](../../../../../Tests/Mud.Wechat.MiniProgram.Tests/ContractGuards/MiniProgramContractGuards.cs)、[MiniProgramP3RulingsContractGuards.cs](../../../../../Tests/Mud.Wechat.MiniProgram.Tests/ContractGuards/MiniProgramP3RulingsContractGuards.cs)、[WxaNovelContractGuards.cs](../../../../../Tests/Mud.Wechat.MiniProgram.Tests/ContractGuards/WxaNovelContractGuards.cs)）、本域 DTO（[`Mud.Wechat.MiniProgram.DataModels/Live`](../../../Mud.Wechat.MiniProgram.DataModels/Live/)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
+> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[WxaLiveContractGuards.cs](../../../../../Tests/Mud.Wechat.MiniProgram.Tests/ContractGuards/WxaLiveContractGuards.cs)、[MiniProgramContractGuards.cs](../../../../../Tests/Mud.Wechat.MiniProgram.Tests/ContractGuards/MiniProgramContractGuards.cs)、[MiniProgramP3RulingsContractGuards.cs](../../../../../Tests/Mud.Wechat.MiniProgram.Tests/ContractGuards/MiniProgramP3RulingsContractGuards.cs)、[WxaNovelContractGuards.cs](../../../../../Tests/Mud.Wechat.MiniProgram.Tests/ContractGuards/WxaNovelContractGuards.cs)）、本域 DTO（[`Mud.Wechat.MiniProgram/Live`](../../../Mud.Wechat.MiniProgram/Live/)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
 
 ## 端点速览
 
@@ -771,54 +771,54 @@ API 不允许操作非 API 创建的商品）⇒ 直播控制台添加的商品�
 
 ## DTO 与序列化面
 
-本域 DTO 目录 [`Mud.Wechat.MiniProgram.DataModels/Live`](../../../Mud.Wechat.MiniProgram.DataModels/Live/) 内共 **53** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **53** 个，`SerializerClassName` = `Live`。
+本域 DTO 目录 [`Mud.Wechat.MiniProgram/Live`](../../../Mud.Wechat.MiniProgram/Live/) 内共 **53** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **53** 个，`SerializerClassName` = `Live`。
 
-AOT 源生成上下文：[`LiveJsonContext.g.cs`](./../../../Mud.Wechat.MiniProgram.DataModels/Generated/LiveJsonContext.g.cs)（生成物，勿手改）。
+AOT 源生成上下文：[`LiveJsonContext.g.cs`](./../../../Mud.Wechat.MiniProgram/Generated/LiveJsonContext.g.cs)（生成物，勿手改）。
 
 | 端点引用的类型 | 角色 | 定义位置 | JSON 字段（前缀） |
 |---|---|---|---|
-| `WxaResponse` | 应答 | [Common/WxaResponse.cs](../../../Mud.Wechat.MiniProgram.DataModels/Common/WxaResponse.cs) | `errcode`, `errmsg` |
-| `WxaLiveAddAssistantRequest` | 请求体 | [Live/Assistant/WxaLiveAddAssistantRequest.cs](../../../Mud.Wechat.MiniProgram.DataModels/Live/Assistant/WxaLiveAddAssistantRequest.cs) | `roomId`, `users` |
-| `WxaLiveAssistantListResponse` | 应答 | [Live/Assistant/WxaLiveAssistantListResponse.cs](../../../Mud.Wechat.MiniProgram.DataModels/Live/Assistant/WxaLiveAssistantListResponse.cs) | `list`, `count`, `maxCount` |
-| `WxaLiveModifyAssistantRequest` | 请求体 | [Live/Assistant/WxaLiveModifyAssistantRequest.cs](../../../Mud.Wechat.MiniProgram.DataModels/Live/Assistant/WxaLiveModifyAssistantRequest.cs) | `roomId`, `username`, `nickname` |
-| `WxaLiveRoomUserRequest` | 请求体 | [Live/Assistant/WxaLiveRoomUserRequest.cs](../../../Mud.Wechat.MiniProgram.DataModels/Live/Assistant/WxaLiveRoomUserRequest.cs) | `roomId`, `username` |
-| `WxaLiveRoomIdRequest` | 请求体 | [Live/Assistant/WxaLiveRoomIdRequest.cs](../../../Mud.Wechat.MiniProgram.DataModels/Live/Assistant/WxaLiveRoomIdRequest.cs) | `roomId` |
-| `WxaLiveSubAnchorResponse` | 应答 | [Live/Assistant/WxaLiveSubAnchorResponse.cs](../../../Mud.Wechat.MiniProgram.DataModels/Live/Assistant/WxaLiveSubAnchorResponse.cs) | `username` |
-| `WxaLiveAddGoodsResponse` | 应答 | [Live/Goods/WxaLiveAddGoodsResponse.cs](../../../Mud.Wechat.MiniProgram.DataModels/Live/Goods/WxaLiveAddGoodsResponse.cs) | `goodsId`, `auditId` |
-| `WxaLiveAddGoodsRequest` | 请求体 | [Live/Goods/WxaLiveAddGoodsRequest.cs](../../../Mud.Wechat.MiniProgram.DataModels/Live/Goods/WxaLiveAddGoodsRequest.cs) | `goodsInfo` |
-| `WxaLiveUpdateGoodsRequest` | 请求体 | [Live/Goods/WxaLiveUpdateGoodsRequest.cs](../../../Mud.Wechat.MiniProgram.DataModels/Live/Goods/WxaLiveUpdateGoodsRequest.cs) | `goodsInfo` |
-| `WxaLiveResubmitAuditResponse` | 应答 | [Live/Goods/WxaLiveResubmitAuditResponse.cs](../../../Mud.Wechat.MiniProgram.DataModels/Live/Goods/WxaLiveResubmitAuditResponse.cs) | `auditId` |
-| `WxaLiveGoodsIdRequest` | 请求体 | [Live/Goods/WxaLiveGoodsIdRequest.cs](../../../Mud.Wechat.MiniProgram.DataModels/Live/Goods/WxaLiveGoodsIdRequest.cs) | `goodsId` |
-| `WxaLiveResetAuditRequest` | 请求体 | [Live/Goods/WxaLiveResetAuditRequest.cs](../../../Mud.Wechat.MiniProgram.DataModels/Live/Goods/WxaLiveResetAuditRequest.cs) | `goodsId`, `auditId` |
-| `WxaLiveGoodsListResponse` | 应答 | [Live/Goods/WxaLiveGoodsListResponse.cs](../../../Mud.Wechat.MiniProgram.DataModels/Live/Goods/WxaLiveGoodsListResponse.cs) | `goods`, `total` |
-| `WxaLiveGoodsWarehouseResponse` | 应答 | [Live/Goods/WxaLiveGoodsWarehouseResponse.cs](../../../Mud.Wechat.MiniProgram.DataModels/Live/Goods/WxaLiveGoodsWarehouseResponse.cs) | `goods`, `total` |
-| `WxaLiveGoodsWarehouseRequest` | 请求体 | [Live/Goods/WxaLiveGoodsWarehouseRequest.cs](../../../Mud.Wechat.MiniProgram.DataModels/Live/Goods/WxaLiveGoodsWarehouseRequest.cs) | `goods_ids` |
-| `WxaLiveAddRoleResponse` | 应答 | [Live/Role/WxaLiveAddRoleResponse.cs](../../../Mud.Wechat.MiniProgram.DataModels/Live/Role/WxaLiveAddRoleResponse.cs) | `codeurl` |
-| `WxaLiveRoleRequest` | 请求体 | [Live/Role/WxaLiveRoleRequest.cs](../../../Mud.Wechat.MiniProgram.DataModels/Live/Role/WxaLiveRoleRequest.cs) | `username`, `role` |
-| `WxaLiveRoleListResponse` | 应答 | [Live/Role/WxaLiveRoleListResponse.cs](../../../Mud.Wechat.MiniProgram.DataModels/Live/Role/WxaLiveRoleListResponse.cs) | `total`, `list` |
-| `WxaLiveRoomGoodsRequest` | 请求体 | [Live/RoomGoods/WxaLiveRoomGoodsRequest.cs](../../../Mud.Wechat.MiniProgram.DataModels/Live/RoomGoods/WxaLiveRoomGoodsRequest.cs) | `roomId`, `goodsId` |
-| `WxaLiveOnSaleRequest` | 请求体 | [Live/RoomGoods/WxaLiveOnSaleRequest.cs](../../../Mud.Wechat.MiniProgram.DataModels/Live/RoomGoods/WxaLiveOnSaleRequest.cs) | `roomId`, `goodsId`, `onSale` |
-| `WxaLiveSortGoodsRequest` | 请求体 | [Live/RoomGoods/WxaLiveSortGoodsRequest.cs](../../../Mud.Wechat.MiniProgram.DataModels/Live/RoomGoods/WxaLiveSortGoodsRequest.cs) | `roomId`, `goods` |
-| `WxaLiveGoodsVideoResponse` | 应答 | [Live/RoomGoods/WxaLiveGoodsVideoResponse.cs](../../../Mud.Wechat.MiniProgram.DataModels/Live/RoomGoods/WxaLiveGoodsVideoResponse.cs) | `url` |
-| `WxaLiveGoodsKeyResponse` | 应答 | [Live/RoomGoods/WxaLiveGoodsKeyResponse.cs](../../../Mud.Wechat.MiniProgram.DataModels/Live/RoomGoods/WxaLiveGoodsKeyResponse.cs) | `vendorGoodsKey` |
-| `WxaLiveGoodsKeyRequest` | 请求体 | [Live/RoomGoods/WxaLiveGoodsKeyRequest.cs](../../../Mud.Wechat.MiniProgram.DataModels/Live/RoomGoods/WxaLiveGoodsKeyRequest.cs) | `goodsKey` |
-| `WxaLiveCreateRoomResponse` | 应答 | [Live/Room/WxaLiveCreateRoomResponse.cs](../../../Mud.Wechat.MiniProgram.DataModels/Live/Room/WxaLiveCreateRoomResponse.cs) | `roomId`, `qrcode_url` |
-| `WxaLiveCreateRoomRequest` | 请求体 | [Live/Room/WxaLiveCreateRoomRequest.cs](../../../Mud.Wechat.MiniProgram.DataModels/Live/Room/WxaLiveCreateRoomRequest.cs) | `name`, `coverImg`, `startTime`, `endTime`, `anchorName`, `anchorWechat`, `subAnchorWechat`, `createrWechat`, `shareImg`, `feedsImg`, `isFeedsPublic`, `type` … |
-| `WxaLiveEditRoomRequest` | 请求体 | [Live/Room/WxaLiveEditRoomRequest.cs](../../../Mud.Wechat.MiniProgram.DataModels/Live/Room/WxaLiveEditRoomRequest.cs) | `id`, `name`, `coverImg`, `startTime`, `endTime`, `anchorName`, `anchorWechat`, `shareImg`, `feedsImg`, `isFeedsPublic`, `closeLike`, `closeGoods` … |
-| `WxaLiveDeleteRoomRequest` | 请求体 | [Live/Room/WxaLiveDeleteRoomRequest.cs](../../../Mud.Wechat.MiniProgram.DataModels/Live/Room/WxaLiveDeleteRoomRequest.cs) | `id` |
-| `WxaLivePushUrlResponse` | 应答 | [Live/Room/WxaLivePushUrlResponse.cs](../../../Mud.Wechat.MiniProgram.DataModels/Live/Room/WxaLivePushUrlResponse.cs) | `pushAddr` |
-| `WxaLiveSharedCodeResponse` | 应答 | [Live/Room/WxaLiveSharedCodeResponse.cs](../../../Mud.Wechat.MiniProgram.DataModels/Live/Room/WxaLiveSharedCodeResponse.cs) | `cdnUrl`, `pagePath`, `posterUrl` |
-| `WxaLiveInfoResponse` | 应答 | [Live/Room/WxaLiveInfoResponse.cs](../../../Mud.Wechat.MiniProgram.DataModels/Live/Room/WxaLiveInfoResponse.cs) | `room_info`, `total`, `live_replay` |
-| `WxaLiveGetLiveInfoRequest` | 请求体 | [Live/Room/WxaLiveGetLiveInfoRequest.cs](../../../Mud.Wechat.MiniProgram.DataModels/Live/Room/WxaLiveGetLiveInfoRequest.cs) | `start`, `limit`, `action`, `room_id` |
-| `WxaLiveFeedPublicRequest` | 请求体 | [Live/Room/WxaLiveFeedPublicRequest.cs](../../../Mud.Wechat.MiniProgram.DataModels/Live/Room/WxaLiveFeedPublicRequest.cs) | `roomId`, `isFeedsPublic` |
-| `WxaLiveReplaySwitchRequest` | 请求体 | [Live/Room/WxaLiveReplaySwitchRequest.cs](../../../Mud.Wechat.MiniProgram.DataModels/Live/Room/WxaLiveReplaySwitchRequest.cs) | `roomId`, `closeReplay` |
-| `WxaLiveKfSwitchRequest` | 请求体 | [Live/Room/WxaLiveKfSwitchRequest.cs](../../../Mud.Wechat.MiniProgram.DataModels/Live/Room/WxaLiveKfSwitchRequest.cs) | `roomId`, `closeKf` |
-| `WxaLiveUpdateCommentRequest` | 请求体 | [Live/Room/WxaLiveUpdateCommentRequest.cs](../../../Mud.Wechat.MiniProgram.DataModels/Live/Room/WxaLiveUpdateCommentRequest.cs) | `id`, `banComment` |
-| `WxaLiveImportGoodsRequest` | 请求体 | [Live/Room/WxaLiveImportGoodsRequest.cs](../../../Mud.Wechat.MiniProgram.DataModels/Live/Room/WxaLiveImportGoodsRequest.cs) | `ids`, `roomId` |
-| `WxaLiveFollowersResponse` | 应答 | [Live/Subscribe/WxaLiveFollowersResponse.cs](../../../Mud.Wechat.MiniProgram.DataModels/Live/Subscribe/WxaLiveFollowersResponse.cs) | `followers`, `page_break` |
-| `WxaLiveFollowersRequest` | 请求体 | [Live/Subscribe/WxaLiveFollowersRequest.cs](../../../Mud.Wechat.MiniProgram.DataModels/Live/Subscribe/WxaLiveFollowersRequest.cs) | `limit`, `page_break` |
-| `WxaLivePushMessageResponse` | 应答 | [Live/Subscribe/WxaLivePushMessageResponse.cs](../../../Mud.Wechat.MiniProgram.DataModels/Live/Subscribe/WxaLivePushMessageResponse.cs) | `message_id` |
-| `WxaLivePushMessageRequest` | 请求体 | [Live/Subscribe/WxaLivePushMessageRequest.cs](../../../Mud.Wechat.MiniProgram.DataModels/Live/Subscribe/WxaLivePushMessageRequest.cs) | `room_id`, `user_openid` |
+| `WxaResponse` | 应答 | [Common/WxaResponse.cs](../../../Mud.Wechat.MiniProgram/Common/WxaResponse.cs) | `errcode`, `errmsg` |
+| `WxaLiveAddAssistantRequest` | 请求体 | [Live/Assistant/WxaLiveAddAssistantRequest.cs](../../../Mud.Wechat.MiniProgram/Live/Assistant/WxaLiveAddAssistantRequest.cs) | `roomId`, `users` |
+| `WxaLiveAssistantListResponse` | 应答 | [Live/Assistant/WxaLiveAssistantListResponse.cs](../../../Mud.Wechat.MiniProgram/Live/Assistant/WxaLiveAssistantListResponse.cs) | `list`, `count`, `maxCount` |
+| `WxaLiveModifyAssistantRequest` | 请求体 | [Live/Assistant/WxaLiveModifyAssistantRequest.cs](../../../Mud.Wechat.MiniProgram/Live/Assistant/WxaLiveModifyAssistantRequest.cs) | `roomId`, `username`, `nickname` |
+| `WxaLiveRoomUserRequest` | 请求体 | [Live/Assistant/WxaLiveRoomUserRequest.cs](../../../Mud.Wechat.MiniProgram/Live/Assistant/WxaLiveRoomUserRequest.cs) | `roomId`, `username` |
+| `WxaLiveRoomIdRequest` | 请求体 | [Live/Assistant/WxaLiveRoomIdRequest.cs](../../../Mud.Wechat.MiniProgram/Live/Assistant/WxaLiveRoomIdRequest.cs) | `roomId` |
+| `WxaLiveSubAnchorResponse` | 应答 | [Live/Assistant/WxaLiveSubAnchorResponse.cs](../../../Mud.Wechat.MiniProgram/Live/Assistant/WxaLiveSubAnchorResponse.cs) | `username` |
+| `WxaLiveAddGoodsResponse` | 应答 | [Live/Goods/WxaLiveAddGoodsResponse.cs](../../../Mud.Wechat.MiniProgram/Live/Goods/WxaLiveAddGoodsResponse.cs) | `goodsId`, `auditId` |
+| `WxaLiveAddGoodsRequest` | 请求体 | [Live/Goods/WxaLiveAddGoodsRequest.cs](../../../Mud.Wechat.MiniProgram/Live/Goods/WxaLiveAddGoodsRequest.cs) | `goodsInfo` |
+| `WxaLiveUpdateGoodsRequest` | 请求体 | [Live/Goods/WxaLiveUpdateGoodsRequest.cs](../../../Mud.Wechat.MiniProgram/Live/Goods/WxaLiveUpdateGoodsRequest.cs) | `goodsInfo` |
+| `WxaLiveResubmitAuditResponse` | 应答 | [Live/Goods/WxaLiveResubmitAuditResponse.cs](../../../Mud.Wechat.MiniProgram/Live/Goods/WxaLiveResubmitAuditResponse.cs) | `auditId` |
+| `WxaLiveGoodsIdRequest` | 请求体 | [Live/Goods/WxaLiveGoodsIdRequest.cs](../../../Mud.Wechat.MiniProgram/Live/Goods/WxaLiveGoodsIdRequest.cs) | `goodsId` |
+| `WxaLiveResetAuditRequest` | 请求体 | [Live/Goods/WxaLiveResetAuditRequest.cs](../../../Mud.Wechat.MiniProgram/Live/Goods/WxaLiveResetAuditRequest.cs) | `goodsId`, `auditId` |
+| `WxaLiveGoodsListResponse` | 应答 | [Live/Goods/WxaLiveGoodsListResponse.cs](../../../Mud.Wechat.MiniProgram/Live/Goods/WxaLiveGoodsListResponse.cs) | `goods`, `total` |
+| `WxaLiveGoodsWarehouseResponse` | 应答 | [Live/Goods/WxaLiveGoodsWarehouseResponse.cs](../../../Mud.Wechat.MiniProgram/Live/Goods/WxaLiveGoodsWarehouseResponse.cs) | `goods`, `total` |
+| `WxaLiveGoodsWarehouseRequest` | 请求体 | [Live/Goods/WxaLiveGoodsWarehouseRequest.cs](../../../Mud.Wechat.MiniProgram/Live/Goods/WxaLiveGoodsWarehouseRequest.cs) | `goods_ids` |
+| `WxaLiveAddRoleResponse` | 应答 | [Live/Role/WxaLiveAddRoleResponse.cs](../../../Mud.Wechat.MiniProgram/Live/Role/WxaLiveAddRoleResponse.cs) | `codeurl` |
+| `WxaLiveRoleRequest` | 请求体 | [Live/Role/WxaLiveRoleRequest.cs](../../../Mud.Wechat.MiniProgram/Live/Role/WxaLiveRoleRequest.cs) | `username`, `role` |
+| `WxaLiveRoleListResponse` | 应答 | [Live/Role/WxaLiveRoleListResponse.cs](../../../Mud.Wechat.MiniProgram/Live/Role/WxaLiveRoleListResponse.cs) | `total`, `list` |
+| `WxaLiveRoomGoodsRequest` | 请求体 | [Live/RoomGoods/WxaLiveRoomGoodsRequest.cs](../../../Mud.Wechat.MiniProgram/Live/RoomGoods/WxaLiveRoomGoodsRequest.cs) | `roomId`, `goodsId` |
+| `WxaLiveOnSaleRequest` | 请求体 | [Live/RoomGoods/WxaLiveOnSaleRequest.cs](../../../Mud.Wechat.MiniProgram/Live/RoomGoods/WxaLiveOnSaleRequest.cs) | `roomId`, `goodsId`, `onSale` |
+| `WxaLiveSortGoodsRequest` | 请求体 | [Live/RoomGoods/WxaLiveSortGoodsRequest.cs](../../../Mud.Wechat.MiniProgram/Live/RoomGoods/WxaLiveSortGoodsRequest.cs) | `roomId`, `goods` |
+| `WxaLiveGoodsVideoResponse` | 应答 | [Live/RoomGoods/WxaLiveGoodsVideoResponse.cs](../../../Mud.Wechat.MiniProgram/Live/RoomGoods/WxaLiveGoodsVideoResponse.cs) | `url` |
+| `WxaLiveGoodsKeyResponse` | 应答 | [Live/RoomGoods/WxaLiveGoodsKeyResponse.cs](../../../Mud.Wechat.MiniProgram/Live/RoomGoods/WxaLiveGoodsKeyResponse.cs) | `vendorGoodsKey` |
+| `WxaLiveGoodsKeyRequest` | 请求体 | [Live/RoomGoods/WxaLiveGoodsKeyRequest.cs](../../../Mud.Wechat.MiniProgram/Live/RoomGoods/WxaLiveGoodsKeyRequest.cs) | `goodsKey` |
+| `WxaLiveCreateRoomResponse` | 应答 | [Live/Room/WxaLiveCreateRoomResponse.cs](../../../Mud.Wechat.MiniProgram/Live/Room/WxaLiveCreateRoomResponse.cs) | `roomId`, `qrcode_url` |
+| `WxaLiveCreateRoomRequest` | 请求体 | [Live/Room/WxaLiveCreateRoomRequest.cs](../../../Mud.Wechat.MiniProgram/Live/Room/WxaLiveCreateRoomRequest.cs) | `name`, `coverImg`, `startTime`, `endTime`, `anchorName`, `anchorWechat`, `subAnchorWechat`, `createrWechat`, `shareImg`, `feedsImg`, `isFeedsPublic`, `type` … |
+| `WxaLiveEditRoomRequest` | 请求体 | [Live/Room/WxaLiveEditRoomRequest.cs](../../../Mud.Wechat.MiniProgram/Live/Room/WxaLiveEditRoomRequest.cs) | `id`, `name`, `coverImg`, `startTime`, `endTime`, `anchorName`, `anchorWechat`, `shareImg`, `feedsImg`, `isFeedsPublic`, `closeLike`, `closeGoods` … |
+| `WxaLiveDeleteRoomRequest` | 请求体 | [Live/Room/WxaLiveDeleteRoomRequest.cs](../../../Mud.Wechat.MiniProgram/Live/Room/WxaLiveDeleteRoomRequest.cs) | `id` |
+| `WxaLivePushUrlResponse` | 应答 | [Live/Room/WxaLivePushUrlResponse.cs](../../../Mud.Wechat.MiniProgram/Live/Room/WxaLivePushUrlResponse.cs) | `pushAddr` |
+| `WxaLiveSharedCodeResponse` | 应答 | [Live/Room/WxaLiveSharedCodeResponse.cs](../../../Mud.Wechat.MiniProgram/Live/Room/WxaLiveSharedCodeResponse.cs) | `cdnUrl`, `pagePath`, `posterUrl` |
+| `WxaLiveInfoResponse` | 应答 | [Live/Room/WxaLiveInfoResponse.cs](../../../Mud.Wechat.MiniProgram/Live/Room/WxaLiveInfoResponse.cs) | `room_info`, `total`, `live_replay` |
+| `WxaLiveGetLiveInfoRequest` | 请求体 | [Live/Room/WxaLiveGetLiveInfoRequest.cs](../../../Mud.Wechat.MiniProgram/Live/Room/WxaLiveGetLiveInfoRequest.cs) | `start`, `limit`, `action`, `room_id` |
+| `WxaLiveFeedPublicRequest` | 请求体 | [Live/Room/WxaLiveFeedPublicRequest.cs](../../../Mud.Wechat.MiniProgram/Live/Room/WxaLiveFeedPublicRequest.cs) | `roomId`, `isFeedsPublic` |
+| `WxaLiveReplaySwitchRequest` | 请求体 | [Live/Room/WxaLiveReplaySwitchRequest.cs](../../../Mud.Wechat.MiniProgram/Live/Room/WxaLiveReplaySwitchRequest.cs) | `roomId`, `closeReplay` |
+| `WxaLiveKfSwitchRequest` | 请求体 | [Live/Room/WxaLiveKfSwitchRequest.cs](../../../Mud.Wechat.MiniProgram/Live/Room/WxaLiveKfSwitchRequest.cs) | `roomId`, `closeKf` |
+| `WxaLiveUpdateCommentRequest` | 请求体 | [Live/Room/WxaLiveUpdateCommentRequest.cs](../../../Mud.Wechat.MiniProgram/Live/Room/WxaLiveUpdateCommentRequest.cs) | `id`, `banComment` |
+| `WxaLiveImportGoodsRequest` | 请求体 | [Live/Room/WxaLiveImportGoodsRequest.cs](../../../Mud.Wechat.MiniProgram/Live/Room/WxaLiveImportGoodsRequest.cs) | `ids`, `roomId` |
+| `WxaLiveFollowersResponse` | 应答 | [Live/Subscribe/WxaLiveFollowersResponse.cs](../../../Mud.Wechat.MiniProgram/Live/Subscribe/WxaLiveFollowersResponse.cs) | `followers`, `page_break` |
+| `WxaLiveFollowersRequest` | 请求体 | [Live/Subscribe/WxaLiveFollowersRequest.cs](../../../Mud.Wechat.MiniProgram/Live/Subscribe/WxaLiveFollowersRequest.cs) | `limit`, `page_break` |
+| `WxaLivePushMessageResponse` | 应答 | [Live/Subscribe/WxaLivePushMessageResponse.cs](../../../Mud.Wechat.MiniProgram/Live/Subscribe/WxaLivePushMessageResponse.cs) | `message_id` |
+| `WxaLivePushMessageRequest` | 请求体 | [Live/Subscribe/WxaLivePushMessageRequest.cs](../../../Mud.Wechat.MiniProgram/Live/Subscribe/WxaLivePushMessageRequest.cs) | `room_id`, `user_openid` |
 
 > DTO 一律以源文件为准；本表只列端点签名**直接引用**的一层类型，嵌套类型不再递归展开。所有 DTO 不使用 `required`（仓内约束），必填性由接口注释与官方页表达，SDK 不做本地必填校验。
 
@@ -855,7 +855,7 @@ var response = await service.GetGoodsKeyAsync(ct);
 | 契约守卫（路由 / 计数 / DTO 登记断言） | [`WxaLiveContractGuards.cs`](../../../../../Tests/Mud.Wechat.MiniProgram.Tests/ContractGuards/WxaLiveContractGuards.cs)、[`MiniProgramContractGuards.cs`](../../../../../Tests/Mud.Wechat.MiniProgram.Tests/ContractGuards/MiniProgramContractGuards.cs)、[`MiniProgramP3RulingsContractGuards.cs`](../../../../../Tests/Mud.Wechat.MiniProgram.Tests/ContractGuards/MiniProgramP3RulingsContractGuards.cs)、[`WxaNovelContractGuards.cs`](../../../../../Tests/Mud.Wechat.MiniProgram.Tests/ContractGuards/WxaNovelContractGuards.cs) |
 | 守卫中的代表性测试方法 | `LiveEndpoints_ShouldMatchOfficialRoutes`、`LiveEndpoints_ShouldRespectGetQueryAndPostBodyShapes`、`LiveInterfaces_ShouldBindMpAccessToken_AndShareRegistryGroup`、`LiveDataModels_ShouldBeRegisteredInJsonContext`、`LiveDataModels_ShouldLockOfficialFieldsAndSharedDtos`、`Routes_ShouldNotOverlapAcrossProductLines`、`TokenInterfaces_ShouldReuseMpAccessToken`、`TokenFreeLogin_ShouldStayOutOfTokenPipeline_ViaMethodLevelOptOut`、`TokenInterfaces_ShouldDeclareOfficialParameterName`、`Endpoints_ShouldMatchOfficialRoutesAndCount`、`Dtos_ShouldExposeOfficialFieldNames`、`SessionKey_ShouldNeverBeLogged` … |
 | 模块枚举 / 装配入口 | [`MiniProgramModule.cs`](../../Extensions/MiniProgramModule.cs)、[`MiniProgramServiceBuilder.cs`](../../Extensions/MiniProgramServiceBuilder.cs) |
-| DTO 与 JSON 上下文 | [`Mud.Wechat.MiniProgram.DataModels/Live`](../../../Mud.Wechat.MiniProgram.DataModels/Live/) |
+| DTO 与 JSON 上下文 | [`Mud.Wechat.MiniProgram/Live`](../../../Mud.Wechat.MiniProgram/Live/) |
 | 跨线基线 | [`Tests/ContractBaseline.cs`](../../../../../Tests/ContractBaseline.cs)（各线分节；本线口径以守卫实际断言为准） |
 | 本线包级公开面与已踩陷阱 | [`Src/MiniProgram/Mud.Wechat.MiniProgram/README.md`](../../README.md) |
 | 跨线通用约束（门禁 / AOT / 落位） | [`AGENTS.md`](../../../../../AGENTS.md) |

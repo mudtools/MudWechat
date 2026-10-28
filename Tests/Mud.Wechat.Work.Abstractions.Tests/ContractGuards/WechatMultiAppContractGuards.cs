@@ -92,7 +92,7 @@ public class WechatMultiAppContractGuards
     public void RemoveApp_ShouldRemoveLazyBeforeConfig()
     {
         var source = ReadSource(Path.Combine(
-            "Mud.Wechat.Work.Abstractions", "Authentication", "MultiApp", "WechatAppManager.cs"));
+            "Mud.Wechat.Work", "Authentication", "MultiApp", "WechatAppManager.cs"));
         var removeAppBody = ExtractMethod(source, "public bool RemoveApp(string appKey)", nameof(WechatAppManager));
 
         var tryRemoveIndex = removeAppBody.IndexOf("_lazyContexts.TryRemove", StringComparison.Ordinal);
@@ -113,7 +113,7 @@ public class WechatMultiAppContractGuards
     public void IsTransientInitFailure_ShouldNotWhitelistDeterministicDiFailures()
     {
         var source = ReadSource(Path.Combine(
-            "Mud.Wechat.Work.Abstractions", "Authentication", "MultiApp", "WechatAppManager.cs"));
+            "Mud.Wechat.Work", "Authentication", "MultiApp", "WechatAppManager.cs"));
         var methodBody = ExtractMethod(source, "private static bool IsTransientInitFailure(Exception ex)", nameof(WechatAppManager));
 
         methodBody.Should().NotContain("InvalidOperationException",
@@ -137,7 +137,7 @@ public class WechatMultiAppContractGuards
     public void TryRebuildLazy_ShouldAccountThrottleOnlyAfterSuccessfulSwap()
     {
         var source = ReadSource(Path.Combine(
-            "Mud.Wechat.Work.Abstractions", "Authentication", "MultiApp", "WechatAppManager.cs"));
+            "Mud.Wechat.Work", "Authentication", "MultiApp", "WechatAppManager.cs"));
 
         var rebuildBody = ExtractMethod(source,
             "private bool TryRebuildLazy(string appKey, Lazy<IWechatAppContext> failed, Exception cause)",
@@ -162,7 +162,7 @@ public class WechatMultiAppContractGuards
     public void RetirementEnqueue_ShouldGateOnDisposed()
     {
         var source = ReadSource(Path.Combine(
-            "Mud.Wechat.Work.Abstractions", "Authentication", "MultiApp", "WechatAppContextRetirement.cs"));
+            "Mud.Wechat.Work", "Authentication", "MultiApp", "WechatAppContextRetirement.cs"));
         var enqueueBody = ExtractMethod(source, "public void Enqueue(string appKey, IWechatAppContext context)", nameof(WechatAppContextRetirement));
 
         var gateIndex = enqueueBody.IndexOf("_disposed != 0", StringComparison.Ordinal);
@@ -182,7 +182,7 @@ public class WechatMultiAppContractGuards
     public void SetCorp_ShouldValidateAuthCorpId()
     {
         var source = ReadSource(Path.Combine(
-            "Mud.Wechat.Work.Abstractions", "Authentication", "MultiApp", "WechatCorpContext.cs"));
+            "Mud.Wechat.Work", "Authentication", "MultiApp", "WechatCorpContext.cs"));
         var setCorpBody = ExtractMethod(source, "public static void SetCorp(string? appKey, string authCorpId, string? permanentCode)", nameof(WechatCorpContext));
 
         setCorpBody.Should().Contain("ArgumentNullException(nameof(authCorpId))",
@@ -262,5 +262,5 @@ public class WechatMultiAppContractGuards
 
     private static string ReadCorpTokenManagerSource()
         => ReadSource(Path.Combine(
-            "Mud.Wechat.Work.Abstractions", "Authentication", "TokenManager", "CorpTokenManager.cs"));
+            "Mud.Wechat.Work", "Authentication", "TokenManager", "CorpTokenManager.cs"));
 }

@@ -102,7 +102,9 @@ public class WechatPayScaffoldContractGuards
             .OrderBy(p => p, StringComparer.Ordinal)
             .ToArray();
 
-        payProjects.Should().HaveCountGreaterThanOrEqualTo(4, "支付线至少四包（主包/Abstractions/DataModels/Callback）");
+        payProjects.Should().HaveCount(2,
+            "支付线恰两包（主包 + 回调宿主）；2026-10 包合并把 APIv3/APIv2 的基座与 DTO 收进主包，" +
+            "任何新增的 Mud.Wechat.Pay* 工程都必须先在终态包清单（AB-G6）里登记理由");
 
         foreach (var csproj in payProjects)
         {
@@ -131,7 +133,7 @@ public class WechatPayScaffoldContractGuards
     [Fact]
     public void ProjectReferences_ShouldIsolateProductLines_WhenScaffold()
     {
-        var csproj = SourcePath("Mud.Wechat.Pay", "Mud.Wechat.Pay.csproj");
+        var csproj = SourcePath("Mud.Wechat.Pay",  "Mud.Wechat.Pay.csproj");
         File.Exists(csproj).Should().BeTrue($"工程文件缺失：{csproj}");
 
         var xml = File.ReadAllText(csproj);

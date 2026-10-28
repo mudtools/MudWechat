@@ -3,7 +3,7 @@
 微信小程序「短剧媒资 · 授权」域 SDK（11 端点：剧目授权 3 + 账号授权 3 + 版权授权 4 + 被授权查询 1；
 官方 minidrama 分区 → authorizeapp / authorizedrama / authorizecopyright）。 接口：[IWxaVodAuthorizationService](./IWxaVodAuthorizationService.cs)、[IWxaVodCdnService](./IWxaVodCdnService.cs)、[IWxaVodDramaService](./IWxaVodDramaService.cs)、[IWxaVodMediaService](./IWxaVodMediaService.cs)、[IWxaVodUploadService](./IWxaVodUploadService.cs)；注册组 `Vod`；模块枚举 `MiniProgramModule.Vod`（装配入口见 [MiniProgramServiceBuilder.cs](../../Extensions/MiniProgramServiceBuilder.cs)）。逐端点核验 2026-10-18。
 
-> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[WxaVodContractGuards.cs](../../../../../Tests/Mud.Wechat.MiniProgram.Tests/ContractGuards/WxaVodContractGuards.cs)）、本域 DTO（[`Mud.Wechat.MiniProgram.DataModels/Vod`](../../../Mud.Wechat.MiniProgram.DataModels/Vod/)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
+> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[WxaVodContractGuards.cs](../../../../../Tests/Mud.Wechat.MiniProgram.Tests/ContractGuards/WxaVodContractGuards.cs)）、本域 DTO（[`Mud.Wechat.MiniProgram/Vod`](../../../Mud.Wechat.MiniProgram/Vod/)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
 
 ## 端点速览
 
@@ -660,62 +660,62 @@
 
 ## DTO 与序列化面
 
-本域 DTO 目录 [`Mud.Wechat.MiniProgram.DataModels/Vod`](../../../Mud.Wechat.MiniProgram.DataModels/Vod/) 内共 **69** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **69** 个，`SerializerClassName` = `Vod`。
+本域 DTO 目录 [`Mud.Wechat.MiniProgram/Vod`](../../../Mud.Wechat.MiniProgram/Vod/) 内共 **69** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **69** 个，`SerializerClassName` = `Vod`。
 
-AOT 源生成上下文：[`VodJsonContext.g.cs`](./../../../Mud.Wechat.MiniProgram.DataModels/Generated/VodJsonContext.g.cs)（生成物，勿手改）。
+AOT 源生成上下文：[`VodJsonContext.g.cs`](./../../../Mud.Wechat.MiniProgram/Generated/VodJsonContext.g.cs)（生成物，勿手改）。
 
 | 端点引用的类型 | 角色 | 定义位置 | JSON 字段（前缀） |
 |---|---|---|---|
-| `WxaVodGetAuthorizedObjectsResponse` | 应答 | [Vod/Authorization/WxaVodGetAuthorizedObjectsResponse.cs](../../../Mud.Wechat.MiniProgram.DataModels/Vod/Authorization/WxaVodGetAuthorizedObjectsResponse.cs) | `total_count`, `objects` |
-| `WxaVodGetAuthorizedObjectsRequest` | 请求体 | [Vod/Authorization/WxaVodGetAuthorizedObjectsRequest.cs](../../../Mud.Wechat.MiniProgram.DataModels/Vod/Authorization/WxaVodGetAuthorizedObjectsRequest.cs) | `authorizer_appid`, `offset`, `limit` |
-| `WxaVodAuthorizeResultResponse` | 应答 | [Vod/Authorization/WxaVodAuthorizeResultResponse.cs](../../../Mud.Wechat.MiniProgram.DataModels/Vod/Authorization/WxaVodAuthorizeResultResponse.cs) | `result` |
-| `WxaVodAuthorizeDramaRequest` | 请求体 | [Vod/Authorization/WxaVodAuthorizeDramaRequest.cs](../../../Mud.Wechat.MiniProgram.DataModels/Vod/Authorization/WxaVodAuthorizeDramaRequest.cs) | `drama_id`, `authorized_appid`, `authz_expire_time` |
-| `WxaVodDeauthorizeDramaRequest` | 请求体 | [Vod/Authorization/WxaVodDeauthorizeDramaRequest.cs](../../../Mud.Wechat.MiniProgram.DataModels/Vod/Authorization/WxaVodDeauthorizeDramaRequest.cs) | `drama_id`, `authorized_appid` |
-| `WxaVodGetAuthorizeObjectsResponse` | 应答 | [Vod/Authorization/WxaVodGetAuthorizeObjectsResponse.cs](../../../Mud.Wechat.MiniProgram.DataModels/Vod/Authorization/WxaVodGetAuthorizeObjectsResponse.cs) | `total_count`, `objects` |
-| `WxaVodGetAuthorizeObjectsRequest` | 请求体 | [Vod/Authorization/WxaVodGetAuthorizeObjectsRequest.cs](../../../Mud.Wechat.MiniProgram.DataModels/Vod/Authorization/WxaVodGetAuthorizeObjectsRequest.cs) | `drama_id`, `authorized_appid`, `offset`, `limit` |
-| `WxaResponse` | 应答 | [Common/WxaResponse.cs](../../../Mud.Wechat.MiniProgram.DataModels/Common/WxaResponse.cs) | `errcode`, `errmsg` |
-| `WxaVodAuthorizeAppRequest` | 请求体 | [Vod/Authorization/WxaVodAuthorizeAppRequest.cs](../../../Mud.Wechat.MiniProgram.DataModels/Vod/Authorization/WxaVodAuthorizeAppRequest.cs) | `authorized_appid`, `authz_expire_time` |
-| `WxaVodDeauthorizeAppRequest` | 请求体 | [Vod/Authorization/WxaVodDeauthorizeAppRequest.cs](../../../Mud.Wechat.MiniProgram.DataModels/Vod/Authorization/WxaVodDeauthorizeAppRequest.cs) | `authorized_appid` |
-| `WxaVodGetAuthorizeAppsResponse` | 应答 | [Vod/Authorization/WxaVodGetAuthorizeAppsResponse.cs](../../../Mud.Wechat.MiniProgram.DataModels/Vod/Authorization/WxaVodGetAuthorizeAppsResponse.cs) | `objects` |
-| `WxaVodAuthorizeCopyrightRequest` | 请求体 | [Vod/Authorization/WxaVodAuthorizeCopyrightRequest.cs](../../../Mud.Wechat.MiniProgram.DataModels/Vod/Authorization/WxaVodAuthorizeCopyrightRequest.cs) | `authorization_type`, `authorized_appid`, `authorized_subject_cert_no`, `drama_ids`, `expire_time` |
-| `WxaVodDeauthorizeCopyrightRequest` | 请求体 | [Vod/Authorization/WxaVodDeauthorizeCopyrightRequest.cs](../../../Mud.Wechat.MiniProgram.DataModels/Vod/Authorization/WxaVodDeauthorizeCopyrightRequest.cs) | `authorization_type`, `authorized_appid`, `authorized_subject_cert_no`, `drama_ids` |
-| `WxaVodGetCopyrightAuthorizationListResponse` | 应答 | [Vod/Authorization/WxaVodGetCopyrightAuthorizationListResponse.cs](../../../Mud.Wechat.MiniProgram.DataModels/Vod/Authorization/WxaVodGetCopyrightAuthorizationListResponse.cs) | `list`, `total_count` |
-| `WxaVodGetCopyrightAuthorizationListRequest` | 请求体 | [Vod/Authorization/WxaVodGetCopyrightAuthorizationListRequest.cs](../../../Mud.Wechat.MiniProgram.DataModels/Vod/Authorization/WxaVodGetCopyrightAuthorizationListRequest.cs) | `authorization_type`, `authorized_appid`, `authorized_subject_cert_no`, `drama_id`, `offset`, `limit` |
-| `WxaVodGetCopyrightAuthorizedListResponse` | 应答 | [Vod/Authorization/WxaVodGetCopyrightAuthorizedListResponse.cs](../../../Mud.Wechat.MiniProgram.DataModels/Vod/Authorization/WxaVodGetCopyrightAuthorizedListResponse.cs) | `list`, `total_count` |
-| `WxaVodGetCopyrightAuthorizedListRequest` | 请求体 | [Vod/Authorization/WxaVodGetCopyrightAuthorizedListRequest.cs](../../../Mud.Wechat.MiniProgram.DataModels/Vod/Authorization/WxaVodGetCopyrightAuthorizedListRequest.cs) | `authorizer_appid`, `offset`, `limit` |
-| `WxaVodGetCdnUsageDataResponse` | 应答 | [Vod/Cdn/WxaVodGetCdnUsageDataResponse.cs](../../../Mud.Wechat.MiniProgram.DataModels/Vod/Cdn/WxaVodGetCdnUsageDataResponse.cs) | `data_interval`, `item_list` |
-| `WxaVodGetCdnUsageDataRequest` | 请求体 | [Vod/Cdn/WxaVodGetCdnUsageDataRequest.cs](../../../Mud.Wechat.MiniProgram.DataModels/Vod/Cdn/WxaVodGetCdnUsageDataRequest.cs) | `start_time`, `end_time`, `data_interval`, `query_type` |
-| `WxaVodGetCdnLogsResponse` | 应答 | [Vod/Cdn/WxaVodGetCdnLogsResponse.cs](../../../Mud.Wechat.MiniProgram.DataModels/Vod/Cdn/WxaVodGetCdnLogsResponse.cs) | `total_count`, `domestic_cdn_logs` |
-| `WxaVodGetCdnLogsRequest` | 请求体 | [Vod/Cdn/WxaVodGetCdnLogsRequest.cs](../../../Mud.Wechat.MiniProgram.DataModels/Vod/Cdn/WxaVodGetCdnLogsRequest.cs) | `start_time`, `end_time`, `limit`, `offset`, `query_type` |
-| `WxaVodListPackagesResponse` | 应答 | [Vod/Cdn/WxaVodListPackagesResponse.cs](../../../Mud.Wechat.MiniProgram.DataModels/Vod/Cdn/WxaVodListPackagesResponse.cs) | `total_count`, `package_list` |
-| `WxaVodListPackagesRequest` | 请求体 | [Vod/Cdn/WxaVodListPackagesRequest.cs](../../../Mud.Wechat.MiniProgram.DataModels/Vod/Cdn/WxaVodListPackagesRequest.cs) | `status`, `offset`, `limit`, `query_type` |
-| `WxaVodAuditDramaResponse` | 应答 | [Vod/Drama/WxaVodAuditDramaResponse.cs](../../../Mud.Wechat.MiniProgram.DataModels/Vod/Drama/WxaVodAuditDramaResponse.cs) | `drama_id` |
-| `WxaVodAuditDramaRequest` | 请求体 | [Vod/Drama/WxaVodAuditDramaRequest.cs](../../../Mud.Wechat.MiniProgram.DataModels/Vod/Drama/WxaVodAuditDramaRequest.cs) | `drama_id`, `name`, `media_count`, `media_id_list`, `description`, `recommendations`, `cover_material_id`, `promotion_poster_material_id`, `producer`, `authorized_material_id`, `qualification_type`, `registration_number` … |
-| `WxaVodListDramasResponse` | 应答 | [Vod/Drama/WxaVodListDramasResponse.cs](../../../Mud.Wechat.MiniProgram.DataModels/Vod/Drama/WxaVodListDramasResponse.cs) | `drama_info_list` |
-| `WxaVodListDramasRequest` | 请求体 | [Vod/Drama/WxaVodListDramasRequest.cs](../../../Mud.Wechat.MiniProgram.DataModels/Vod/Drama/WxaVodListDramasRequest.cs) | `limit`, `offset` |
-| `WxaVodGetDramaResponse` | 应答 | [Vod/Drama/WxaVodGetDramaResponse.cs](../../../Mud.Wechat.MiniProgram.DataModels/Vod/Drama/WxaVodGetDramaResponse.cs) | `drama_info` |
-| `WxaVodGetDramaRequest` | 请求体 | [Vod/Drama/WxaVodGetDramaRequest.cs](../../../Mud.Wechat.MiniProgram.DataModels/Vod/Drama/WxaVodGetDramaRequest.cs) | `drama_id` |
-| `WxaVodSubmitReplaceDramaMediasRequest` | 请求体 | [Vod/Drama/WxaVodSubmitReplaceDramaMediasRequest.cs](../../../Mud.Wechat.MiniProgram.DataModels/Vod/Drama/WxaVodSubmitReplaceDramaMediasRequest.cs) | `drama_id`, `replace_media_list` |
-| `WxaVodReplaceDramaMediaRequest` | 请求体 | [Vod/Drama/WxaVodReplaceDramaMediaRequest.cs](../../../Mud.Wechat.MiniProgram.DataModels/Vod/Drama/WxaVodReplaceDramaMediaRequest.cs) | `drama_id`, `old_media_id`, `new_media_id` |
-| `WxaVodModifyDramaBasicInfoRequest` | 请求体 | [Vod/Drama/WxaVodModifyDramaBasicInfoRequest.cs](../../../Mud.Wechat.MiniProgram.DataModels/Vod/Drama/WxaVodModifyDramaBasicInfoRequest.cs) | `drama_id`, `description`, `cover_material_id`, `recommendations`, `promotion_poster_material_id`, `alternate_name`, `actor_list`, `qualification_type`, `registration_number`, `qualification_certificate_material_id`, `cost_of_production`, `cost_commitment_letter_material_id` … |
-| `WxaVodGetDramaLatestAuditInfoResponse` | 应答 | [Vod/Drama/WxaVodGetDramaLatestAuditInfoResponse.cs](../../../Mud.Wechat.MiniProgram.DataModels/Vod/Drama/WxaVodGetDramaLatestAuditInfoResponse.cs) | `audit_detail` |
-| `WxaVodGetDramaLatestAuditInfoRequest` | 请求体 | [Vod/Drama/WxaVodGetDramaLatestAuditInfoRequest.cs](../../../Mud.Wechat.MiniProgram.DataModels/Vod/Drama/WxaVodGetDramaLatestAuditInfoRequest.cs) | `drama_id`, `audit_type` |
-| `WxaVodSetPlayerDramaRecmdSwitchRequest` | 请求体 | [Vod/Drama/WxaVodSetPlayerDramaRecmdSwitch.cs](../../../Mud.Wechat.MiniProgram.DataModels/Vod/Drama/WxaVodSetPlayerDramaRecmdSwitch.cs) | `entry_type`, `switch_status` |
-| `WxaVodListMediaResponse` | 应答 | [Vod/Media/WxaVodListMediaResponse.cs](../../../Mud.Wechat.MiniProgram.DataModels/Vod/Media/WxaVodListMediaResponse.cs) | `media_info_list` |
-| `WxaVodListMediaRequest` | 请求体 | [Vod/Media/WxaVodListMediaRequest.cs](../../../Mud.Wechat.MiniProgram.DataModels/Vod/Media/WxaVodListMediaRequest.cs) | `drama_id`, `media_name`, `media_name_fuzzy`, `start_time`, `end_time`, `limit`, `offset` |
-| `WxaVodGetMediaResponse` | 应答 | [Vod/Media/WxaVodGetMediaResponse.cs](../../../Mud.Wechat.MiniProgram.DataModels/Vod/Media/WxaVodGetMediaResponse.cs) | `media_info` |
-| `WxaVodMediaIdRequest` | 请求体 | [Vod/Media/WxaVodMediaIdRequest.cs](../../../Mud.Wechat.MiniProgram.DataModels/Vod/Media/WxaVodMediaIdRequest.cs) | `media_id` |
-| `WxaVodGetMediaLinkResponse` | 应答 | [Vod/Media/WxaVodGetMediaLinkResponse.cs](../../../Mud.Wechat.MiniProgram.DataModels/Vod/Media/WxaVodGetMediaLinkResponse.cs) | `media_info` |
-| `WxaVodGetMediaLinkRequest` | 请求体 | [Vod/Media/WxaVodGetMediaLinkRequest.cs](../../../Mud.Wechat.MiniProgram.DataModels/Vod/Media/WxaVodGetMediaLinkRequest.cs) | `media_id`, `t`, `us`, `exper`, `rlimit`, `whref`, `bkref` |
-| `WxaVodMediaIdResponse` | 应答 | [Vod/Upload/WxaVodMediaIdResponse.cs](../../../Mud.Wechat.MiniProgram.DataModels/Vod/Upload/WxaVodMediaIdResponse.cs) | `media_id` |
-| `WxaVodPullUploadResponse` | 应答 | [Vod/Upload/WxaVodPullUploadResponse.cs](../../../Mud.Wechat.MiniProgram.DataModels/Vod/Upload/WxaVodPullUploadResponse.cs) | `task_id` |
-| `WxaVodPullUploadRequest` | 请求体 | [Vod/Upload/WxaVodPullUploadRequest.cs](../../../Mud.Wechat.MiniProgram.DataModels/Vod/Upload/WxaVodPullUploadRequest.cs) | `media_name`, `media_url`, `cover_url`, `source_context` |
-| `WxaVodGetTaskResponse` | 应答 | [Vod/Upload/WxaVodGetTaskResponse.cs](../../../Mud.Wechat.MiniProgram.DataModels/Vod/Upload/WxaVodGetTaskResponse.cs) | `task_info` |
-| `WxaVodGetTaskRequest` | 请求体 | [Vod/Upload/WxaVodGetTaskRequest.cs](../../../Mud.Wechat.MiniProgram.DataModels/Vod/Upload/WxaVodGetTaskRequest.cs) | `task_id` |
-| `WxaVodApplyUploadResponse` | 应答 | [Vod/Upload/WxaVodApplyUploadResponse.cs](../../../Mud.Wechat.MiniProgram.DataModels/Vod/Upload/WxaVodApplyUploadResponse.cs) | `upload_id` |
-| `WxaVodApplyUploadRequest` | 请求体 | [Vod/Upload/WxaVodApplyUploadRequest.cs](../../../Mud.Wechat.MiniProgram.DataModels/Vod/Upload/WxaVodApplyUploadRequest.cs) | `media_name`, `media_type`, `cover_type`, `source_context` |
-| `WxaVodUploadPartResponse` | 应答 | [Vod/Upload/WxaVodUploadPartResponse.cs](../../../Mud.Wechat.MiniProgram.DataModels/Vod/Upload/WxaVodUploadPartResponse.cs) | `etag` |
-| `WxaVodCommitUploadRequest` | 请求体 | [Vod/Upload/WxaVodCommitUploadRequest.cs](../../../Mud.Wechat.MiniProgram.DataModels/Vod/Upload/WxaVodCommitUploadRequest.cs) | `upload_id`, `media_part_infos`, `cover_part_infos` |
+| `WxaVodGetAuthorizedObjectsResponse` | 应答 | [Vod/Authorization/WxaVodGetAuthorizedObjectsResponse.cs](../../../Mud.Wechat.MiniProgram/Vod/Authorization/WxaVodGetAuthorizedObjectsResponse.cs) | `total_count`, `objects` |
+| `WxaVodGetAuthorizedObjectsRequest` | 请求体 | [Vod/Authorization/WxaVodGetAuthorizedObjectsRequest.cs](../../../Mud.Wechat.MiniProgram/Vod/Authorization/WxaVodGetAuthorizedObjectsRequest.cs) | `authorizer_appid`, `offset`, `limit` |
+| `WxaVodAuthorizeResultResponse` | 应答 | [Vod/Authorization/WxaVodAuthorizeResultResponse.cs](../../../Mud.Wechat.MiniProgram/Vod/Authorization/WxaVodAuthorizeResultResponse.cs) | `result` |
+| `WxaVodAuthorizeDramaRequest` | 请求体 | [Vod/Authorization/WxaVodAuthorizeDramaRequest.cs](../../../Mud.Wechat.MiniProgram/Vod/Authorization/WxaVodAuthorizeDramaRequest.cs) | `drama_id`, `authorized_appid`, `authz_expire_time` |
+| `WxaVodDeauthorizeDramaRequest` | 请求体 | [Vod/Authorization/WxaVodDeauthorizeDramaRequest.cs](../../../Mud.Wechat.MiniProgram/Vod/Authorization/WxaVodDeauthorizeDramaRequest.cs) | `drama_id`, `authorized_appid` |
+| `WxaVodGetAuthorizeObjectsResponse` | 应答 | [Vod/Authorization/WxaVodGetAuthorizeObjectsResponse.cs](../../../Mud.Wechat.MiniProgram/Vod/Authorization/WxaVodGetAuthorizeObjectsResponse.cs) | `total_count`, `objects` |
+| `WxaVodGetAuthorizeObjectsRequest` | 请求体 | [Vod/Authorization/WxaVodGetAuthorizeObjectsRequest.cs](../../../Mud.Wechat.MiniProgram/Vod/Authorization/WxaVodGetAuthorizeObjectsRequest.cs) | `drama_id`, `authorized_appid`, `offset`, `limit` |
+| `WxaResponse` | 应答 | [Common/WxaResponse.cs](../../../Mud.Wechat.MiniProgram/Common/WxaResponse.cs) | `errcode`, `errmsg` |
+| `WxaVodAuthorizeAppRequest` | 请求体 | [Vod/Authorization/WxaVodAuthorizeAppRequest.cs](../../../Mud.Wechat.MiniProgram/Vod/Authorization/WxaVodAuthorizeAppRequest.cs) | `authorized_appid`, `authz_expire_time` |
+| `WxaVodDeauthorizeAppRequest` | 请求体 | [Vod/Authorization/WxaVodDeauthorizeAppRequest.cs](../../../Mud.Wechat.MiniProgram/Vod/Authorization/WxaVodDeauthorizeAppRequest.cs) | `authorized_appid` |
+| `WxaVodGetAuthorizeAppsResponse` | 应答 | [Vod/Authorization/WxaVodGetAuthorizeAppsResponse.cs](../../../Mud.Wechat.MiniProgram/Vod/Authorization/WxaVodGetAuthorizeAppsResponse.cs) | `objects` |
+| `WxaVodAuthorizeCopyrightRequest` | 请求体 | [Vod/Authorization/WxaVodAuthorizeCopyrightRequest.cs](../../../Mud.Wechat.MiniProgram/Vod/Authorization/WxaVodAuthorizeCopyrightRequest.cs) | `authorization_type`, `authorized_appid`, `authorized_subject_cert_no`, `drama_ids`, `expire_time` |
+| `WxaVodDeauthorizeCopyrightRequest` | 请求体 | [Vod/Authorization/WxaVodDeauthorizeCopyrightRequest.cs](../../../Mud.Wechat.MiniProgram/Vod/Authorization/WxaVodDeauthorizeCopyrightRequest.cs) | `authorization_type`, `authorized_appid`, `authorized_subject_cert_no`, `drama_ids` |
+| `WxaVodGetCopyrightAuthorizationListResponse` | 应答 | [Vod/Authorization/WxaVodGetCopyrightAuthorizationListResponse.cs](../../../Mud.Wechat.MiniProgram/Vod/Authorization/WxaVodGetCopyrightAuthorizationListResponse.cs) | `list`, `total_count` |
+| `WxaVodGetCopyrightAuthorizationListRequest` | 请求体 | [Vod/Authorization/WxaVodGetCopyrightAuthorizationListRequest.cs](../../../Mud.Wechat.MiniProgram/Vod/Authorization/WxaVodGetCopyrightAuthorizationListRequest.cs) | `authorization_type`, `authorized_appid`, `authorized_subject_cert_no`, `drama_id`, `offset`, `limit` |
+| `WxaVodGetCopyrightAuthorizedListResponse` | 应答 | [Vod/Authorization/WxaVodGetCopyrightAuthorizedListResponse.cs](../../../Mud.Wechat.MiniProgram/Vod/Authorization/WxaVodGetCopyrightAuthorizedListResponse.cs) | `list`, `total_count` |
+| `WxaVodGetCopyrightAuthorizedListRequest` | 请求体 | [Vod/Authorization/WxaVodGetCopyrightAuthorizedListRequest.cs](../../../Mud.Wechat.MiniProgram/Vod/Authorization/WxaVodGetCopyrightAuthorizedListRequest.cs) | `authorizer_appid`, `offset`, `limit` |
+| `WxaVodGetCdnUsageDataResponse` | 应答 | [Vod/Cdn/WxaVodGetCdnUsageDataResponse.cs](../../../Mud.Wechat.MiniProgram/Vod/Cdn/WxaVodGetCdnUsageDataResponse.cs) | `data_interval`, `item_list` |
+| `WxaVodGetCdnUsageDataRequest` | 请求体 | [Vod/Cdn/WxaVodGetCdnUsageDataRequest.cs](../../../Mud.Wechat.MiniProgram/Vod/Cdn/WxaVodGetCdnUsageDataRequest.cs) | `start_time`, `end_time`, `data_interval`, `query_type` |
+| `WxaVodGetCdnLogsResponse` | 应答 | [Vod/Cdn/WxaVodGetCdnLogsResponse.cs](../../../Mud.Wechat.MiniProgram/Vod/Cdn/WxaVodGetCdnLogsResponse.cs) | `total_count`, `domestic_cdn_logs` |
+| `WxaVodGetCdnLogsRequest` | 请求体 | [Vod/Cdn/WxaVodGetCdnLogsRequest.cs](../../../Mud.Wechat.MiniProgram/Vod/Cdn/WxaVodGetCdnLogsRequest.cs) | `start_time`, `end_time`, `limit`, `offset`, `query_type` |
+| `WxaVodListPackagesResponse` | 应答 | [Vod/Cdn/WxaVodListPackagesResponse.cs](../../../Mud.Wechat.MiniProgram/Vod/Cdn/WxaVodListPackagesResponse.cs) | `total_count`, `package_list` |
+| `WxaVodListPackagesRequest` | 请求体 | [Vod/Cdn/WxaVodListPackagesRequest.cs](../../../Mud.Wechat.MiniProgram/Vod/Cdn/WxaVodListPackagesRequest.cs) | `status`, `offset`, `limit`, `query_type` |
+| `WxaVodAuditDramaResponse` | 应答 | [Vod/Drama/WxaVodAuditDramaResponse.cs](../../../Mud.Wechat.MiniProgram/Vod/Drama/WxaVodAuditDramaResponse.cs) | `drama_id` |
+| `WxaVodAuditDramaRequest` | 请求体 | [Vod/Drama/WxaVodAuditDramaRequest.cs](../../../Mud.Wechat.MiniProgram/Vod/Drama/WxaVodAuditDramaRequest.cs) | `drama_id`, `name`, `media_count`, `media_id_list`, `description`, `recommendations`, `cover_material_id`, `promotion_poster_material_id`, `producer`, `authorized_material_id`, `qualification_type`, `registration_number` … |
+| `WxaVodListDramasResponse` | 应答 | [Vod/Drama/WxaVodListDramasResponse.cs](../../../Mud.Wechat.MiniProgram/Vod/Drama/WxaVodListDramasResponse.cs) | `drama_info_list` |
+| `WxaVodListDramasRequest` | 请求体 | [Vod/Drama/WxaVodListDramasRequest.cs](../../../Mud.Wechat.MiniProgram/Vod/Drama/WxaVodListDramasRequest.cs) | `limit`, `offset` |
+| `WxaVodGetDramaResponse` | 应答 | [Vod/Drama/WxaVodGetDramaResponse.cs](../../../Mud.Wechat.MiniProgram/Vod/Drama/WxaVodGetDramaResponse.cs) | `drama_info` |
+| `WxaVodGetDramaRequest` | 请求体 | [Vod/Drama/WxaVodGetDramaRequest.cs](../../../Mud.Wechat.MiniProgram/Vod/Drama/WxaVodGetDramaRequest.cs) | `drama_id` |
+| `WxaVodSubmitReplaceDramaMediasRequest` | 请求体 | [Vod/Drama/WxaVodSubmitReplaceDramaMediasRequest.cs](../../../Mud.Wechat.MiniProgram/Vod/Drama/WxaVodSubmitReplaceDramaMediasRequest.cs) | `drama_id`, `replace_media_list` |
+| `WxaVodReplaceDramaMediaRequest` | 请求体 | [Vod/Drama/WxaVodReplaceDramaMediaRequest.cs](../../../Mud.Wechat.MiniProgram/Vod/Drama/WxaVodReplaceDramaMediaRequest.cs) | `drama_id`, `old_media_id`, `new_media_id` |
+| `WxaVodModifyDramaBasicInfoRequest` | 请求体 | [Vod/Drama/WxaVodModifyDramaBasicInfoRequest.cs](../../../Mud.Wechat.MiniProgram/Vod/Drama/WxaVodModifyDramaBasicInfoRequest.cs) | `drama_id`, `description`, `cover_material_id`, `recommendations`, `promotion_poster_material_id`, `alternate_name`, `actor_list`, `qualification_type`, `registration_number`, `qualification_certificate_material_id`, `cost_of_production`, `cost_commitment_letter_material_id` … |
+| `WxaVodGetDramaLatestAuditInfoResponse` | 应答 | [Vod/Drama/WxaVodGetDramaLatestAuditInfoResponse.cs](../../../Mud.Wechat.MiniProgram/Vod/Drama/WxaVodGetDramaLatestAuditInfoResponse.cs) | `audit_detail` |
+| `WxaVodGetDramaLatestAuditInfoRequest` | 请求体 | [Vod/Drama/WxaVodGetDramaLatestAuditInfoRequest.cs](../../../Mud.Wechat.MiniProgram/Vod/Drama/WxaVodGetDramaLatestAuditInfoRequest.cs) | `drama_id`, `audit_type` |
+| `WxaVodSetPlayerDramaRecmdSwitchRequest` | 请求体 | [Vod/Drama/WxaVodSetPlayerDramaRecmdSwitch.cs](../../../Mud.Wechat.MiniProgram/Vod/Drama/WxaVodSetPlayerDramaRecmdSwitch.cs) | `entry_type`, `switch_status` |
+| `WxaVodListMediaResponse` | 应答 | [Vod/Media/WxaVodListMediaResponse.cs](../../../Mud.Wechat.MiniProgram/Vod/Media/WxaVodListMediaResponse.cs) | `media_info_list` |
+| `WxaVodListMediaRequest` | 请求体 | [Vod/Media/WxaVodListMediaRequest.cs](../../../Mud.Wechat.MiniProgram/Vod/Media/WxaVodListMediaRequest.cs) | `drama_id`, `media_name`, `media_name_fuzzy`, `start_time`, `end_time`, `limit`, `offset` |
+| `WxaVodGetMediaResponse` | 应答 | [Vod/Media/WxaVodGetMediaResponse.cs](../../../Mud.Wechat.MiniProgram/Vod/Media/WxaVodGetMediaResponse.cs) | `media_info` |
+| `WxaVodMediaIdRequest` | 请求体 | [Vod/Media/WxaVodMediaIdRequest.cs](../../../Mud.Wechat.MiniProgram/Vod/Media/WxaVodMediaIdRequest.cs) | `media_id` |
+| `WxaVodGetMediaLinkResponse` | 应答 | [Vod/Media/WxaVodGetMediaLinkResponse.cs](../../../Mud.Wechat.MiniProgram/Vod/Media/WxaVodGetMediaLinkResponse.cs) | `media_info` |
+| `WxaVodGetMediaLinkRequest` | 请求体 | [Vod/Media/WxaVodGetMediaLinkRequest.cs](../../../Mud.Wechat.MiniProgram/Vod/Media/WxaVodGetMediaLinkRequest.cs) | `media_id`, `t`, `us`, `exper`, `rlimit`, `whref`, `bkref` |
+| `WxaVodMediaIdResponse` | 应答 | [Vod/Upload/WxaVodMediaIdResponse.cs](../../../Mud.Wechat.MiniProgram/Vod/Upload/WxaVodMediaIdResponse.cs) | `media_id` |
+| `WxaVodPullUploadResponse` | 应答 | [Vod/Upload/WxaVodPullUploadResponse.cs](../../../Mud.Wechat.MiniProgram/Vod/Upload/WxaVodPullUploadResponse.cs) | `task_id` |
+| `WxaVodPullUploadRequest` | 请求体 | [Vod/Upload/WxaVodPullUploadRequest.cs](../../../Mud.Wechat.MiniProgram/Vod/Upload/WxaVodPullUploadRequest.cs) | `media_name`, `media_url`, `cover_url`, `source_context` |
+| `WxaVodGetTaskResponse` | 应答 | [Vod/Upload/WxaVodGetTaskResponse.cs](../../../Mud.Wechat.MiniProgram/Vod/Upload/WxaVodGetTaskResponse.cs) | `task_info` |
+| `WxaVodGetTaskRequest` | 请求体 | [Vod/Upload/WxaVodGetTaskRequest.cs](../../../Mud.Wechat.MiniProgram/Vod/Upload/WxaVodGetTaskRequest.cs) | `task_id` |
+| `WxaVodApplyUploadResponse` | 应答 | [Vod/Upload/WxaVodApplyUploadResponse.cs](../../../Mud.Wechat.MiniProgram/Vod/Upload/WxaVodApplyUploadResponse.cs) | `upload_id` |
+| `WxaVodApplyUploadRequest` | 请求体 | [Vod/Upload/WxaVodApplyUploadRequest.cs](../../../Mud.Wechat.MiniProgram/Vod/Upload/WxaVodApplyUploadRequest.cs) | `media_name`, `media_type`, `cover_type`, `source_context` |
+| `WxaVodUploadPartResponse` | 应答 | [Vod/Upload/WxaVodUploadPartResponse.cs](../../../Mud.Wechat.MiniProgram/Vod/Upload/WxaVodUploadPartResponse.cs) | `etag` |
+| `WxaVodCommitUploadRequest` | 请求体 | [Vod/Upload/WxaVodCommitUploadRequest.cs](../../../Mud.Wechat.MiniProgram/Vod/Upload/WxaVodCommitUploadRequest.cs) | `upload_id`, `media_part_infos`, `cover_part_infos` |
 
 > DTO 一律以源文件为准；本表只列端点签名**直接引用**的一层类型，嵌套类型不再递归展开。所有 DTO 不使用 `required`（仓内约束），必填性由接口注释与官方页表达，SDK 不做本地必填校验。
 
@@ -753,7 +753,7 @@ var response = await service.GetAuthorizeAppsAsync(ct);
 | 契约守卫（路由 / 计数 / DTO 登记断言） | [`WxaVodContractGuards.cs`](../../../../../Tests/Mud.Wechat.MiniProgram.Tests/ContractGuards/WxaVodContractGuards.cs) |
 | 守卫中的代表性测试方法 | `VodEndpoints_ShouldMatchOfficialRoutes`、`VodEndpoints_ShouldRespectBodyMultipartAndZeroParamShapes`、`VodInterfaces_ShouldBindMpAccessToken_AndShareRegistryGroup`、`VodDataModels_ShouldLockOfficialFieldsAndSharedDtos`、`VodDataModels_ShouldBeRegisteredInJsonContext` |
 | 模块枚举 / 装配入口 | [`MiniProgramModule.cs`](../../Extensions/MiniProgramModule.cs)、[`MiniProgramServiceBuilder.cs`](../../Extensions/MiniProgramServiceBuilder.cs) |
-| DTO 与 JSON 上下文 | [`Mud.Wechat.MiniProgram.DataModels/Vod`](../../../Mud.Wechat.MiniProgram.DataModels/Vod/) |
+| DTO 与 JSON 上下文 | [`Mud.Wechat.MiniProgram/Vod`](../../../Mud.Wechat.MiniProgram/Vod/) |
 | 跨线基线 | [`Tests/ContractBaseline.cs`](../../../../../Tests/ContractBaseline.cs)（各线分节；本线口径以守卫实际断言为准） |
 | 本线包级公开面与已踩陷阱 | [`Src/MiniProgram/Mud.Wechat.MiniProgram/README.md`](../../README.md) |
 | 跨线通用约束（门禁 / AOT / 落位） | [`AGENTS.md`](../../../../../AGENTS.md) |

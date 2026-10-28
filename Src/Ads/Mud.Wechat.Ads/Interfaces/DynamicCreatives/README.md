@@ -38,7 +38,7 @@
 - **读侧**：官方键原名入袋（字典键不经命名策略转换，与报表行先例同源）⇒ **零丢字段**。
 - **写侧**（本域 `add` / `update`、`components/add`）由调用方以 **JSON 字面量**构造一个
   `Dictionary<string, JsonElement>`；构造样例与理由见
-  [`AdsCreativeComponentItem` 的 remarks](../../../Mud.Wechat.Ads.DataModels/DynamicCreatives/AdsDynamicCreative.cs)
+  [`AdsCreativeComponentItem` 的 remarks](../../DynamicCreatives/AdsDynamicCreative.cs)
   （本仓 DTO 文档是该形态的唯一权威描述，本文不另立口径）。
 
 > **AOT 注意**：各域 `JsonContext` 为 `internal`（经 `InternalsVisibleTo` 供主包与测试直读），

@@ -118,12 +118,12 @@ CH-R2 `ExpectedRoutesByDomain["Aftersale"]` 逐条列出同 27 条。
 
 | 常量类 | 形态 | 关键取值 |
 |---|---|---|
-| [ChannelsAftersaleStatuses.cs](../../../Mud.Wechat.Channels.DataModels/Aftersale/Order/ChannelsAftersaleStatuses.cs) | `string` × 23 | `USER_CANCELD`（**官方历史拼写 Canceld，照抄勿「纠正」**）、`MERCHANT_PROCESSING`、`MERCHANT_REJECT_REFUND` / `..._RETURN` / `..._EXCHANGE` / `..._RESHIP`、`USER_WAIT_RETURN` / `USER_WAIT_RECEIPT` / `USER_WAIT_CONFIRM` / `USER_WAIT_CONFIRM_UPDATE` / `USER_WAIT_HANDLE_MERCHANT_AFTER_SALE`、`RETURN_CLOSED`、`MERCHANT_WAIT_RECEIPT`、`MERCHANT_OVERDUE_REFUND`、`MERCHANT_REFUND_SUCCESS`、`MERCHANT_RETURN_SUCCESS`、`MERCHANT_EXCHANGE_SUCCESS`、`MERCHANT_FAIL`、`MERCHANT_REFUND_RETRY_FAIL`、`PLATFORM_REFUNDING`、`PLATFORM_REFUND_FAIL`、`WAIT_PACKAGE_INTERCEPT` |
-| [ChannelsAftersaleTypes.cs](../../../Mud.Wechat.Channels.DataModels/Aftersale/Order/ChannelsAftersaleTypes.cs) / [ChannelsAftersaleSubTypes.cs](../../../Mud.Wechat.Channels.DataModels/Aftersale/Order/ChannelsAftersaleSubTypes.cs) | `string` | 类型 `REFUND` 仅退款 / `RETURN` 退货退款 / `EXCHANGE` 换货 / `RESHIP` 补寄；子类型 `DEFAULT` / `REFUND_PRICE_DIFF` |
-| [ChannelsAftersaleReasons.cs](../../../Mud.Wechat.Channels.DataModels/Aftersale/Order/ChannelsAftersaleReasons.cs) | `string` × 14 | `INCORRECT_SELECTION`（选错/多选）… `NO_REASON_7_DAYS`（七天无理由）、`INITIATE_BY_PLATFORM`（平台发起）、`OTHERS` |
-| [ChannelsComplaintStatuses.cs](../../../Mud.Wechat.Channels.DataModels/Aftersale/Complaint/ChannelsComplaintStatuses.cs) | `int` × 19 | 100 待商家处理 / 101 待客服处理 / 102 客服终止介入 / 103~109 各类待举证 / 111~116 调解与退款 / **305 用户举证超时 / 307 商家举证超时** / 400 待商家处理工单（**数值不连续**） |
-| [ChannelsGuaranteeStatuses.cs](../../../Mud.Wechat.Channels.DataModels/Aftersale/Guarantee/ChannelsGuaranteeStatuses.cs) | `string` × 14 | `STATUS_WAIT_MERCHANT_HANDLE` … `STATUS_WAIT_OP_COMFIRM`（**官方历史拼写 COMFIRM，照抄勿「纠正」**）、`STATUS_PAY_SUCC` / `STATUS_PAY_FAIL` / `STATUS_USER_CANCEL` |
-| [ChannelsGuaranteeTypes.cs](../../../Mud.Wechat.Channels.DataModels/Aftersale/Guarantee/ChannelsGuaranteeTypes.cs) | `int` | `FakeOnePayFour = 1`、`BadPay = 2` |
+| [ChannelsAftersaleStatuses.cs](../../../Mud.Wechat.Channels/Aftersale/Order/ChannelsAftersaleStatuses.cs) | `string` × 23 | `USER_CANCELD`（**官方历史拼写 Canceld，照抄勿「纠正」**）、`MERCHANT_PROCESSING`、`MERCHANT_REJECT_REFUND` / `..._RETURN` / `..._EXCHANGE` / `..._RESHIP`、`USER_WAIT_RETURN` / `USER_WAIT_RECEIPT` / `USER_WAIT_CONFIRM` / `USER_WAIT_CONFIRM_UPDATE` / `USER_WAIT_HANDLE_MERCHANT_AFTER_SALE`、`RETURN_CLOSED`、`MERCHANT_WAIT_RECEIPT`、`MERCHANT_OVERDUE_REFUND`、`MERCHANT_REFUND_SUCCESS`、`MERCHANT_RETURN_SUCCESS`、`MERCHANT_EXCHANGE_SUCCESS`、`MERCHANT_FAIL`、`MERCHANT_REFUND_RETRY_FAIL`、`PLATFORM_REFUNDING`、`PLATFORM_REFUND_FAIL`、`WAIT_PACKAGE_INTERCEPT` |
+| [ChannelsAftersaleTypes.cs](../../../Mud.Wechat.Channels/Aftersale/Order/ChannelsAftersaleTypes.cs) / [ChannelsAftersaleSubTypes.cs](../../../Mud.Wechat.Channels/Aftersale/Order/ChannelsAftersaleSubTypes.cs) | `string` | 类型 `REFUND` 仅退款 / `RETURN` 退货退款 / `EXCHANGE` 换货 / `RESHIP` 补寄；子类型 `DEFAULT` / `REFUND_PRICE_DIFF` |
+| [ChannelsAftersaleReasons.cs](../../../Mud.Wechat.Channels/Aftersale/Order/ChannelsAftersaleReasons.cs) | `string` × 14 | `INCORRECT_SELECTION`（选错/多选）… `NO_REASON_7_DAYS`（七天无理由）、`INITIATE_BY_PLATFORM`（平台发起）、`OTHERS` |
+| [ChannelsComplaintStatuses.cs](../../../Mud.Wechat.Channels/Aftersale/Complaint/ChannelsComplaintStatuses.cs) | `int` × 19 | 100 待商家处理 / 101 待客服处理 / 102 客服终止介入 / 103~109 各类待举证 / 111~116 调解与退款 / **305 用户举证超时 / 307 商家举证超时** / 400 待商家处理工单（**数值不连续**） |
+| [ChannelsGuaranteeStatuses.cs](../../../Mud.Wechat.Channels/Aftersale/Guarantee/ChannelsGuaranteeStatuses.cs) | `string` × 14 | `STATUS_WAIT_MERCHANT_HANDLE` … `STATUS_WAIT_OP_COMFIRM`（**官方历史拼写 COMFIRM，照抄勿「纠正」**）、`STATUS_PAY_SUCC` / `STATUS_PAY_FAIL` / `STATUS_USER_CANCEL` |
+| [ChannelsGuaranteeTypes.cs](../../../Mud.Wechat.Channels/Aftersale/Guarantee/ChannelsGuaranteeTypes.cs) | `int` | `FakeOnePayFour = 1`、`BadPay = 2` |
 
 CA6 用 `GetRawConstantValue()` 逐个字面量断言，**改名与改值都会红**；
 `USER_CANCELD` / `STATUS_WAIT_OP_COMFIRM` 两处拼写是官方原文，不得「顺手修正」。
@@ -136,7 +136,7 @@ DTO 总数由 CA4 钉为**恰 70**（售后单结构族 24 + 操作请求族 16 
 
 | 裁决 | 内容 |
 |---|---|
-| 共用（正向） | #5 / #7 / #8 三支的「快递公司 + 运单号」发货形态一致 ⇒ **必须**共用 [ChannelsAftersaleReshipRequest.cs](../../../Mud.Wechat.Channels.DataModels/Aftersale/Operation/ChannelsAftersaleReshipRequest.cs)（CA5 逐支反射断言），重复建模即红 |
+| 共用（正向） | #5 / #7 / #8 三支的「快递公司 + 运单号」发货形态一致 ⇒ **必须**共用 [ChannelsAftersaleReshipRequest.cs](../../../Mud.Wechat.Channels/Aftersale/Operation/ChannelsAftersaleReshipRequest.cs)（CA5 逐支反射断言），重复建模即红 |
 | 分建（负向） | #19 `addcomplaintmaterial`（留言）与 #20 `addcomplaintproof`（举证）当前字段集一致（`complaint_id` / `content` / `media_id_list`），但是**两个独立官方端点、参数表可独立演化** ⇒ 按端点分建，不合并 |
 | 响应继承 | 纯 `errcode` / `errmsg` 端点直接复用基线 `ChannelsResponse`；CA5 断言 `ChannelsGetAftersaleReasonResponse` 与 `ChannelsGetGuaranteeOrderResponse` 均 `IsAssignableTo(ChannelsResponse)` |
 | id 类型 | `after_sale_order_id` 是 `string`（#1 / #3 / #4 / #13…），而 `guarantee_order_id` 是 `long`（#22 / #25）、`complaint_id` 是 `string`（#18~#21）⇒ 三族 id 不得互转或共用一个「售后单号」封装 |

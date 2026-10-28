@@ -558,7 +558,7 @@ public class WechatPayMerchantAlterApplyContractGuards
         // 常量类不得被标注（本域类型 = 17 DTO + 9 常量类）
         DomainTypeNames().Should().HaveCount(26, "本域类型 = 17 DTO + 9 常量类");
 
-        var resolverSource = File.ReadAllText(SourcePath("Mud.Wechat.Pay",
+        var resolverSource = File.ReadAllText(SourcePath("Mud.Wechat.Pay", 
             "Extensions", "PayJsonResolverExtensions.cs"));
         resolverSource.Should().Contain("MerchantAlterApplyJsonContext.Default",
             "新增域上下文须同批登记进 PayJsonResolverExtensions（AOT 红线：无登记即无元数据）");
@@ -723,7 +723,7 @@ public class WechatPayMerchantAlterApplyContractGuards
 
     /// <summary>本域接口源文件全文（「方法 ↔ docId」配对的读取面，只读一次）。</summary>
     private static string MerchantAlterApplyInterfaceSource()
-        => File.ReadAllText(SourcePath("Mud.Wechat.Pay", "Interfaces", RegistryGroupName,
+        => File.ReadAllText(SourcePath("Mud.Wechat.Pay",  "Interfaces", RegistryGroupName,
             "IWechatPayMerchantAlterApplyService.cs"));
 
     /// <summary>

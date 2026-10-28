@@ -3,7 +3,7 @@
 企业微信「智慧硬件 / 智能设备数据」模块第三方应用 SDK
 （获取授权设备信息 + 打卡 / 温度检测 / 门禁通行三条数据面 + 门禁规则增删改查，共 8 端点）。 接口：[IWechatWorkDeviceDataService](./IWechatWorkDeviceDataService.cs)、[IWechatWorkThirdPartyDeviceDataService](./IWechatWorkDeviceDataService_ThirdParty.cs)；注册组 `DeviceData`；模块枚举 `WechatModule.DeviceData`（装配入口见 [WechatWorkServiceBuilder.cs](../../Extensions/WechatWorkServiceBuilder.cs)）。逐端点核验 2026-10-18。
 
-> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[WechatDeviceDataContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatDeviceDataContractGuards.cs)、[WechatContractGuards.QueryTokenInjection.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatContractGuards.QueryTokenInjection.cs)）、本域 DTO（[`Mud.Wechat.Work.DataModels/DeviceData`](../../../Mud.Wechat.Work.DataModels/DeviceData/)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
+> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[WechatDeviceDataContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatDeviceDataContractGuards.cs)、[WechatContractGuards.QueryTokenInjection.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatContractGuards.QueryTokenInjection.cs)）、本域 DTO（[`Mud.Wechat.Work/DeviceData`](../../../Mud.Wechat.Work/DeviceData/)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
 
 ## 端点速览
 
@@ -232,28 +232,28 @@ MUD005 已知接受风险：企业微信官方契约强制令牌走 Query 参数
 
 ## DTO 与序列化面
 
-本域 DTO 目录 [`Mud.Wechat.Work.DataModels/DeviceData`](../../../Mud.Wechat.Work.DataModels/DeviceData/) 内共 **27** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **27** 个，`SerializerClassName` = `DeviceData`。
+本域 DTO 目录 [`Mud.Wechat.Work/DeviceData`](../../../Mud.Wechat.Work/DeviceData/) 内共 **27** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **27** 个，`SerializerClassName` = `DeviceData`。
 
-AOT 源生成上下文：[`DeviceDataJsonContext.g.cs`](./../../../Mud.Wechat.Work.DataModels/Generated/DeviceDataJsonContext.g.cs)（生成物，勿手改）。
+AOT 源生成上下文：[`DeviceDataJsonContext.g.cs`](./../../../Mud.Wechat.Work/Generated/DeviceDataJsonContext.g.cs)（生成物，勿手改）。
 
 | 端点引用的类型 | 角色 | 定义位置 | JSON 字段（前缀） |
 |---|---|---|---|
-| `DeviceDataAuthInfoResponse` | 应答 | [DeviceData/DeviceDataAuthInfoResponse.cs](../../../Mud.Wechat.Work.DataModels/DeviceData/DeviceDataAuthInfoResponse.cs) | `device_list` |
-| `DeviceDataAuthInfoRequest` | 请求体 | [DeviceData/DeviceDataAuthInfoRequest.cs](../../../Mud.Wechat.Work.DataModels/DeviceData/DeviceDataAuthInfoRequest.cs) | `agentid` |
-| `DeviceDataCheckinDataResponse` | 应答 | [DeviceData/DeviceDataCheckinDataResponse.cs](../../../Mud.Wechat.Work.DataModels/DeviceData/DeviceDataCheckinDataResponse.cs) | `checkindata`, `next_cursor` |
-| `DeviceDataCheckinDataRequest` | 请求体 | [DeviceData/DeviceDataCheckinDataRequest.cs](../../../Mud.Wechat.Work.DataModels/DeviceData/DeviceDataCheckinDataRequest.cs) | `agentid`, `user_type`, `begin_time`, `end_time`, `data_filter_type`, `device_sn_list`, `open_userid_list`, `limit`, `cursor` |
-| `DeviceDataTemperatureDataResponse` | 应答 | [DeviceData/DeviceDataTemperatureDataResponse.cs](../../../Mud.Wechat.Work.DataModels/DeviceData/DeviceDataTemperatureDataResponse.cs) | `temperature_data`, `next_cursor` |
-| `DeviceDataTemperatureDataRequest` | 请求体 | [DeviceData/DeviceDataTemperatureDataRequest.cs](../../../Mud.Wechat.Work.DataModels/DeviceData/DeviceDataTemperatureDataRequest.cs) | `agentid`, `user_type`, `begin_time`, `end_time`, `data_filter_type`, `device_sn_list`, `open_userid_list`, `limit`, `cursor` |
-| `DeviceDataAccessControlDataResponse` | 应答 | [DeviceData/DeviceDataAccessControlDataResponse.cs](../../../Mud.Wechat.Work.DataModels/DeviceData/DeviceDataAccessControlDataResponse.cs) | `accesscontrol_data`, `next_cursor` |
-| `DeviceDataAccessControlDataRequest` | 请求体 | [DeviceData/DeviceDataAccessControlDataRequest.cs](../../../Mud.Wechat.Work.DataModels/DeviceData/DeviceDataAccessControlDataRequest.cs) | `agentid`, `user_type`, `begin_time`, `end_time`, `data_filter_type`, `device_sn_list`, `open_userid_list`, `limit`, `cursor` |
-| `DeviceDataAccessControlRuleGetResponse` | 应答 | [DeviceData/AccessControlRule/DeviceDataAccessControlRuleGetResponse.cs](../../../Mud.Wechat.Work.DataModels/DeviceData/AccessControlRule/DeviceDataAccessControlRuleGetResponse.cs) | `pass_rule`, `remote_pass_rule` |
-| `DeviceDataAccessControlRuleGetRequest` | 请求体 | [DeviceData/AccessControlRule/DeviceDataAccessControlRuleGetRequest.cs](../../../Mud.Wechat.Work.DataModels/DeviceData/AccessControlRule/DeviceDataAccessControlRuleGetRequest.cs) | `device_sn` |
-| `DeviceDataAccessControlRuleAddResponse` | 应答 | [DeviceData/AccessControlRule/DeviceDataAccessControlRuleAddResponse.cs](../../../Mud.Wechat.Work.DataModels/DeviceData/AccessControlRule/DeviceDataAccessControlRuleAddResponse.cs) | `rule_id`, `invalid_list` |
-| `DeviceDataAccessControlRuleAddRequest` | 请求体 | [DeviceData/AccessControlRule/DeviceDataAccessControlRuleAddRequest.cs](../../../Mud.Wechat.Work.DataModels/DeviceData/AccessControlRule/DeviceDataAccessControlRuleAddRequest.cs) | `rule_name`, `device_sn_list`, `pass_rule`, `remote_pass_rule` |
-| `DeviceDataAccessControlRuleModResponse` | 应答 | [DeviceData/AccessControlRule/DeviceDataAccessControlRuleModResponse.cs](../../../Mud.Wechat.Work.DataModels/DeviceData/AccessControlRule/DeviceDataAccessControlRuleModResponse.cs) | `invalid_list` |
-| `DeviceDataAccessControlRuleModRequest` | 请求体 | [DeviceData/AccessControlRule/DeviceDataAccessControlRuleModRequest.cs](../../../Mud.Wechat.Work.DataModels/DeviceData/AccessControlRule/DeviceDataAccessControlRuleModRequest.cs) | `rule_id`, `rule_name`, `device_sn_list`, `pass_rule`, `remote_pass_rule` |
-| `WechatWorkResponse` | 应答 | [WechatWorkResponse.cs](../../../Mud.Wechat.Work.DataModels/WechatWorkResponse.cs) | `errcode`, `errmsg`, `data` |
-| `DeviceDataAccessControlRuleDelRequest` | 请求体 | [DeviceData/AccessControlRule/DeviceDataAccessControlRuleDelRequest.cs](../../../Mud.Wechat.Work.DataModels/DeviceData/AccessControlRule/DeviceDataAccessControlRuleDelRequest.cs) | `rule_id` |
+| `DeviceDataAuthInfoResponse` | 应答 | [DeviceData/DeviceDataAuthInfoResponse.cs](../../../Mud.Wechat.Work/DeviceData/DeviceDataAuthInfoResponse.cs) | `device_list` |
+| `DeviceDataAuthInfoRequest` | 请求体 | [DeviceData/DeviceDataAuthInfoRequest.cs](../../../Mud.Wechat.Work/DeviceData/DeviceDataAuthInfoRequest.cs) | `agentid` |
+| `DeviceDataCheckinDataResponse` | 应答 | [DeviceData/DeviceDataCheckinDataResponse.cs](../../../Mud.Wechat.Work/DeviceData/DeviceDataCheckinDataResponse.cs) | `checkindata`, `next_cursor` |
+| `DeviceDataCheckinDataRequest` | 请求体 | [DeviceData/DeviceDataCheckinDataRequest.cs](../../../Mud.Wechat.Work/DeviceData/DeviceDataCheckinDataRequest.cs) | `agentid`, `user_type`, `begin_time`, `end_time`, `data_filter_type`, `device_sn_list`, `open_userid_list`, `limit`, `cursor` |
+| `DeviceDataTemperatureDataResponse` | 应答 | [DeviceData/DeviceDataTemperatureDataResponse.cs](../../../Mud.Wechat.Work/DeviceData/DeviceDataTemperatureDataResponse.cs) | `temperature_data`, `next_cursor` |
+| `DeviceDataTemperatureDataRequest` | 请求体 | [DeviceData/DeviceDataTemperatureDataRequest.cs](../../../Mud.Wechat.Work/DeviceData/DeviceDataTemperatureDataRequest.cs) | `agentid`, `user_type`, `begin_time`, `end_time`, `data_filter_type`, `device_sn_list`, `open_userid_list`, `limit`, `cursor` |
+| `DeviceDataAccessControlDataResponse` | 应答 | [DeviceData/DeviceDataAccessControlDataResponse.cs](../../../Mud.Wechat.Work/DeviceData/DeviceDataAccessControlDataResponse.cs) | `accesscontrol_data`, `next_cursor` |
+| `DeviceDataAccessControlDataRequest` | 请求体 | [DeviceData/DeviceDataAccessControlDataRequest.cs](../../../Mud.Wechat.Work/DeviceData/DeviceDataAccessControlDataRequest.cs) | `agentid`, `user_type`, `begin_time`, `end_time`, `data_filter_type`, `device_sn_list`, `open_userid_list`, `limit`, `cursor` |
+| `DeviceDataAccessControlRuleGetResponse` | 应答 | [DeviceData/AccessControlRule/DeviceDataAccessControlRuleGetResponse.cs](../../../Mud.Wechat.Work/DeviceData/AccessControlRule/DeviceDataAccessControlRuleGetResponse.cs) | `pass_rule`, `remote_pass_rule` |
+| `DeviceDataAccessControlRuleGetRequest` | 请求体 | [DeviceData/AccessControlRule/DeviceDataAccessControlRuleGetRequest.cs](../../../Mud.Wechat.Work/DeviceData/AccessControlRule/DeviceDataAccessControlRuleGetRequest.cs) | `device_sn` |
+| `DeviceDataAccessControlRuleAddResponse` | 应答 | [DeviceData/AccessControlRule/DeviceDataAccessControlRuleAddResponse.cs](../../../Mud.Wechat.Work/DeviceData/AccessControlRule/DeviceDataAccessControlRuleAddResponse.cs) | `rule_id`, `invalid_list` |
+| `DeviceDataAccessControlRuleAddRequest` | 请求体 | [DeviceData/AccessControlRule/DeviceDataAccessControlRuleAddRequest.cs](../../../Mud.Wechat.Work/DeviceData/AccessControlRule/DeviceDataAccessControlRuleAddRequest.cs) | `rule_name`, `device_sn_list`, `pass_rule`, `remote_pass_rule` |
+| `DeviceDataAccessControlRuleModResponse` | 应答 | [DeviceData/AccessControlRule/DeviceDataAccessControlRuleModResponse.cs](../../../Mud.Wechat.Work/DeviceData/AccessControlRule/DeviceDataAccessControlRuleModResponse.cs) | `invalid_list` |
+| `DeviceDataAccessControlRuleModRequest` | 请求体 | [DeviceData/AccessControlRule/DeviceDataAccessControlRuleModRequest.cs](../../../Mud.Wechat.Work/DeviceData/AccessControlRule/DeviceDataAccessControlRuleModRequest.cs) | `rule_id`, `rule_name`, `device_sn_list`, `pass_rule`, `remote_pass_rule` |
+| `WechatWorkResponse` | 应答 | [WechatWorkResponse.cs](../../../Mud.Wechat.Work/WechatWorkResponse.cs) | `errcode`, `errmsg`, `data` |
+| `DeviceDataAccessControlRuleDelRequest` | 请求体 | [DeviceData/AccessControlRule/DeviceDataAccessControlRuleDelRequest.cs](../../../Mud.Wechat.Work/DeviceData/AccessControlRule/DeviceDataAccessControlRuleDelRequest.cs) | `rule_id` |
 
 > DTO 一律以源文件为准；本表只列端点签名**直接引用**的一层类型，嵌套类型不再递归展开。所有 DTO 不使用 `required`（仓内约束），必填性由接口注释与官方页表达，SDK 不做本地必填校验。
 
@@ -291,7 +291,7 @@ var response = await service.AddDeviceAccessControlRuleAsync(new DeviceDataAcces
 | 契约守卫（路由 / 计数 / DTO 登记断言） | [`WechatDeviceDataContractGuards.cs`](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatDeviceDataContractGuards.cs)、[`WechatContractGuards.QueryTokenInjection.cs`](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatContractGuards.QueryTokenInjection.cs) |
 | 守卫中的代表性测试方法 | `DeviceDataRoutesAndRequestShape_ShouldMatchOfficialContract`、`DeviceDataSingleAppTypeFamily_ShouldHaveExactlyOneChildAndAbstractParent`、`DeviceDataTokenBinding_ShouldBeAccessTokenInjectedViaQuery`、`DeviceDataModels_ShouldBeRegisteredInJsonContext`、`DeviceDataFieldNames_ShouldMatchOfficialWireContract`、`DeviceDataNumericAndTextWireTypes_ShouldNotDrift`、`DeviceDataOfficiallyRequiredRequestFields_ShouldNotBeDeclaredNullable`、`QueryTokenInjection_ShouldBeLimitedToWechatOfficialContractInterfaces` |
 | 模块枚举 / 装配入口 | [`WechatModule.cs`](../../Extensions/WechatModule.cs)、[`WechatWorkServiceBuilder.cs`](../../Extensions/WechatWorkServiceBuilder.cs) |
-| DTO 与 JSON 上下文 | [`Mud.Wechat.Work.DataModels/DeviceData`](../../../Mud.Wechat.Work.DataModels/DeviceData/) |
+| DTO 与 JSON 上下文 | [`Mud.Wechat.Work/DeviceData`](../../../Mud.Wechat.Work/DeviceData/) |
 | 跨线基线 | [`Tests/ContractBaseline.cs`](../../../../../Tests/ContractBaseline.cs)（各线分节；本线口径以守卫实际断言为准） |
 | 本线包级公开面与已踩陷阱 | [`Src/Work/Mud.Wechat.Work/README.md`](../../README.md) |
 | 跨线通用约束（门禁 / AOT / 落位） | [`AGENTS.md`](../../../../../AGENTS.md) |

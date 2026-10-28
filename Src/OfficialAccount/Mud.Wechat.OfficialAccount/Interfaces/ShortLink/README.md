@@ -2,7 +2,7 @@
 
 微信公众号 / 服务号「长信息与短链」域 SDK（2 端点）。 接口：[IMpShortLinkService](./IMpShortLinkService.cs)；注册组 `ShortLink`；模块枚举 `MpModule.ShortLink`（装配入口见 [MpServiceBuilder.cs](../../Extensions/MpServiceBuilder.cs)）。逐端点核验 2026-10-18。
 
-> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[MpShortLinkContractGuards.cs](../../../../../Tests/Mud.Wechat.OfficialAccount.Tests/ContractGuards/MpShortLinkContractGuards.cs)、[MpQueryTokenWhitelistGuard.cs](../../../../../Tests/Mud.Wechat.OfficialAccount.Tests/ContractGuards/MpQueryTokenWhitelistGuard.cs)）、本域 DTO（[`Mud.Wechat.OfficialAccount.DataModels/ShortLink`](../../../Mud.Wechat.OfficialAccount.DataModels/ShortLink/)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
+> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[MpShortLinkContractGuards.cs](../../../../../Tests/Mud.Wechat.OfficialAccount.Tests/ContractGuards/MpShortLinkContractGuards.cs)、[MpQueryTokenWhitelistGuard.cs](../../../../../Tests/Mud.Wechat.OfficialAccount.Tests/ContractGuards/MpQueryTokenWhitelistGuard.cs)）、本域 DTO（[`Mud.Wechat.OfficialAccount/ShortLink`](../../../Mud.Wechat.OfficialAccount/ShortLink/)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
 
 ## 端点速览
 
@@ -95,18 +95,18 @@
 
 ## DTO 与序列化面
 
-本域 DTO 目录 [`Mud.Wechat.OfficialAccount.DataModels/ShortLink`](../../../Mud.Wechat.OfficialAccount.DataModels/ShortLink/) 内共 **6** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **6** 个，`SerializerClassName` = `ShortLink`。
+本域 DTO 目录 [`Mud.Wechat.OfficialAccount/ShortLink`](../../../Mud.Wechat.OfficialAccount/ShortLink/) 内共 **6** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **6** 个，`SerializerClassName` = `ShortLink`。
 
-AOT 源生成上下文：[`ShortLinkJsonContext.g.cs`](./../../../Mud.Wechat.OfficialAccount.DataModels/Generated/ShortLinkJsonContext.g.cs)（生成物，勿手改）。
+AOT 源生成上下文：[`ShortLinkJsonContext.g.cs`](./../../../Mud.Wechat.OfficialAccount/Generated/ShortLinkJsonContext.g.cs)（生成物，勿手改）。
 
 | 端点引用的类型 | 角色 | 定义位置 | JSON 字段（前缀） |
 |---|---|---|---|
-| `MpShortenGenResponse` | 应答 | [ShortLink/MpShortenGenResponse.cs](../../../Mud.Wechat.OfficialAccount.DataModels/ShortLink/MpShortenGenResponse.cs) | `short_key` |
-| `MpShortenGenRequest` | 请求体 | [ShortLink/MpShortenGenRequest.cs](../../../Mud.Wechat.OfficialAccount.DataModels/ShortLink/MpShortenGenRequest.cs) | `long_data`, `expire_seconds` |
-| `MpShortenFetchResponse` | 应答 | [ShortLink/MpShortenFetchResponse.cs](../../../Mud.Wechat.OfficialAccount.DataModels/ShortLink/MpShortenFetchResponse.cs) | `long_data`, `create_time`, `expire_seconds` |
-| `MpShortenFetchRequest` | 请求体 | [ShortLink/MpShortenFetchRequest.cs](../../../Mud.Wechat.OfficialAccount.DataModels/ShortLink/MpShortenFetchRequest.cs) | `short_key` |
-| `MpShortUrlResponse` | 应答 | [ShortLink/MpShortUrlResponse.cs](../../../Mud.Wechat.OfficialAccount.DataModels/ShortLink/MpShortUrlResponse.cs) | `short_url` |
-| `MpShortUrlRequest` | 请求体 | [ShortLink/MpShortUrlRequest.cs](../../../Mud.Wechat.OfficialAccount.DataModels/ShortLink/MpShortUrlRequest.cs) | `action`, `long_url` |
+| `MpShortenGenResponse` | 应答 | [ShortLink/MpShortenGenResponse.cs](../../../Mud.Wechat.OfficialAccount/ShortLink/MpShortenGenResponse.cs) | `short_key` |
+| `MpShortenGenRequest` | 请求体 | [ShortLink/MpShortenGenRequest.cs](../../../Mud.Wechat.OfficialAccount/ShortLink/MpShortenGenRequest.cs) | `long_data`, `expire_seconds` |
+| `MpShortenFetchResponse` | 应答 | [ShortLink/MpShortenFetchResponse.cs](../../../Mud.Wechat.OfficialAccount/ShortLink/MpShortenFetchResponse.cs) | `long_data`, `create_time`, `expire_seconds` |
+| `MpShortenFetchRequest` | 请求体 | [ShortLink/MpShortenFetchRequest.cs](../../../Mud.Wechat.OfficialAccount/ShortLink/MpShortenFetchRequest.cs) | `short_key` |
+| `MpShortUrlResponse` | 应答 | [ShortLink/MpShortUrlResponse.cs](../../../Mud.Wechat.OfficialAccount/ShortLink/MpShortUrlResponse.cs) | `short_url` |
+| `MpShortUrlRequest` | 请求体 | [ShortLink/MpShortUrlRequest.cs](../../../Mud.Wechat.OfficialAccount/ShortLink/MpShortUrlRequest.cs) | `action`, `long_url` |
 
 > DTO 一律以源文件为准；本表只列端点签名**直接引用**的一层类型，嵌套类型不再递归展开。所有 DTO 不使用 `required`（仓内约束），必填性由接口注释与官方页表达，SDK 不做本地必填校验。
 
@@ -144,7 +144,7 @@ var response = await service.FetchShortKeyAsync(new MpShortenFetchRequest(), ct)
 | 契约守卫（路由 / 计数 / DTO 登记断言） | [`MpShortLinkContractGuards.cs`](../../../../../Tests/Mud.Wechat.OfficialAccount.Tests/ContractGuards/MpShortLinkContractGuards.cs)、[`MpQueryTokenWhitelistGuard.cs`](../../../../../Tests/Mud.Wechat.OfficialAccount.Tests/ContractGuards/MpQueryTokenWhitelistGuard.cs) |
 | 守卫中的代表性测试方法 | `ShortLinkEndpoints_ShouldMatchOfficialRoutes`、`ShortLinkShapes_ShouldLockOfficialFieldNames`、`ShortLinkModuleAndDataModels_ShouldBeRegistered`、`ShortLinkErrorCodes_ShouldMatchVerifiedOfficialValues`、`QueryTokenInjectionInterfaces_ShouldMatchWhitelist`、`QueryTokenInjectionInterfaces_ShouldMatchWhitelist_ForMiniProgramLine`、`QueryTokenInterfaces_ShouldDeclareOfficialParameterName` |
 | 模块枚举 / 装配入口 | [`MpModule.cs`](../../Extensions/MpModule.cs)、[`MpServiceBuilder.cs`](../../Extensions/MpServiceBuilder.cs) |
-| DTO 与 JSON 上下文 | [`Mud.Wechat.OfficialAccount.DataModels/ShortLink`](../../../Mud.Wechat.OfficialAccount.DataModels/ShortLink/) |
+| DTO 与 JSON 上下文 | [`Mud.Wechat.OfficialAccount/ShortLink`](../../../Mud.Wechat.OfficialAccount/ShortLink/) |
 | 跨线基线 | [`Tests/ContractBaseline.cs`](../../../../../Tests/ContractBaseline.cs)（各线分节；本线口径以守卫实际断言为准） |
 | 本线包级公开面与已踩陷阱 | [`Src/OfficialAccount/Mud.Wechat.OfficialAccount/README.md`](../../README.md) |
 | 跨线通用约束（门禁 / AOT / 落位） | [`AGENTS.md`](../../../../../AGENTS.md) |

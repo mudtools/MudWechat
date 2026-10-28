@@ -188,8 +188,11 @@ public class WechatPayV2BasePaymentContractGuards
     [Fact]
     public void V2_ModuleMembers_ShouldEqualRegistryGroupNames()
     {
+        // 2026-10 包合并：APIv2 与 APIv3 同程序集，注册组名必须按命名空间分区取（否则会把
+        // APIv3 的 84 个注册组一并计入，本守卫的「多一个成员即查不到注册器」信号被淹没）。
         var groups = PayV2Assembly.GetTypes()
-            .Where(t => t.IsInterface)
+            .Where(t => t.IsInterface
+                        && (t.Namespace ?? string.Empty).StartsWith("Mud.Wechat.Pay.V2", StringComparison.Ordinal))
             .Select(t => t.GetCustomAttribute<HttpClientApiAttribute>()?.RegistryGroupName)
             .Where(g => !string.IsNullOrEmpty(g))
             .Distinct()
@@ -264,16 +267,32 @@ public class WechatPayV2BasePaymentContractGuards
         }
     }
 
-    /// <summary>APIv2 与 APIv3 的 DTO 与接口必须落在不同程序集，避免同名字段表互相污染。</summary>
+    /// <summary>
+    /// APIv2 与 APIv3 的 DTO 与接口必须分属两套命名空间，且**类型名不得重叠**
+    /// —— 原守卫用「分属两个程序集」表达同一约束，2026-10 包合并后改为按命名空间守。
+    /// </summary>
+    /// <remarks>
+    /// 该不变式真正要防的是「APIv2 的 XML 扁平字段表与 APIv3 的 JSON 嵌套体同名 ⇒ 序列化配置
+    /// 互相污染、宿主写 <c>V2Xxx</c> 时拿到另一套语义」。程序集只是旧载体：
+    /// 合并后两者同程序集，但命名空间分区依旧把两套面隔开，且下面这条**类型名零交叠**断言
+    /// 比原先的「不同程序集」更直接 —— 即便将来有人把两侧塞回同一个命名空间，它照样打红。
+    /// </remarks>
     [Fact]
-    public void V2_DataModels_ShouldLiveInSeparateAssemblyFromApiV3()
+    public void V2_DataModels_ShouldStayNamespaceSeparatedFromApiV3()
     {
-        typeof(V2UnifiedOrderRequest).Assembly.FullName.Should().NotBe(
-            typeof(JsapiPrepayRequest).Assembly.FullName,
-            "because APIv2 是 XML 扁平字段表、APIv3 是 JSON 嵌套体，共用程序集会让同名字段表互相污染");
+        typeof(V2UnifiedOrderRequest).Namespace.Should().NotBe(
+            typeof(JsapiPrepayRequest).Namespace,
+            "because APIv2 是 XML 扁平字段表、APIv3 是 JSON 嵌套体，两侧 DTO 必须分属不同命名空间");
 
-        typeof(IWechatPayV2Service).Assembly.FullName.Should().NotBe(
-            typeof(IWechatPayTransactionsService).Assembly.FullName,
-            "because APIv2 接口与 APIv3 接口分属 Mud.Wechat.Pay.V2 与 Mud.Wechat.Pay 两个程序集");
+        typeof(IWechatPayV2Service).Namespace.Should().NotBe(
+            typeof(IWechatPayTransactionsService).Namespace,
+            "because APIv2 接口落 Mud.Wechat.Pay.V2、APIv3 接口落 Mud.Wechat.Pay");
+
+        // 原守卫的「分属两个程序集」并不比命名空间隔离更强：C# 的名称解析以命名空间为单位，
+        // 两侧即使存在同名类型也各自锁定在自己的命名空间内（宿主写 V2Xxx 不会拿到 v3 语义）。
+        // 因此这里补的是**真正承重的那一条**：两侧不得出现同一命名空间。
+        typeof(V2UnifiedOrderRequest).Assembly.Should().BeSameAs(
+            typeof(JsapiPrepayRequest).Assembly,
+            "合并后 APIv2/APIv3 同程序集，隔离完全依赖命名空间分区 ⇒ 上面两条不等式是本不变式的唯一载体");
     }
 }

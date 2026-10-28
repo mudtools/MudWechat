@@ -83,58 +83,130 @@ public class WechatAbstractionsContractGuards
     }
 
     /// <summary>
-    /// AB-G2：各产品线 DataModels 单向引用公用层（响应基底实现判错契约的依赖方向）。
+    /// AB-G2：<b>跨线依赖边白名单</b> —— 一条产品线的工程默认不得引用另一条产品线的工程；
+    /// 例外只允许出现在显式声明的边集合里。
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// 原形态是「各线 <c>DataModels</c> 只引公用层 + 各线 <c>DataModels</c> 之间互不引用」。
+    /// 2026-10 包合并后 DTO 面并入各线主工程，「DataModels 工程」不再是稳定主语，
+    /// 故本守卫改写为<b>与分包方式无关</b>的形态：扫描面由 <c>slnx /src/</c> 推导，
+    /// 线归属按程序集名前缀判定（<c>Mud.Wechat.Work.AI*</c> 属 AI 域而非企微线），
+    /// 命中「引用了另一线的工程且该边不在白名单内」即红。
+    /// </para>
+    /// <para>
+    /// 「必须引用公用层叶层」那一半由 AB-G3 承担（逐线入口工程断言），本守卫不重复。
+    /// 线内的主包 / Abstractions / DataModels / Callback 互引属同线，不在扫描面内。
+    /// </para>
+    /// </remarks>
     [Fact]
-    public void DataModels_ShouldReferenceAbstractionsOnly()
+    public void CrossLineProjectReferences_ShouldStayOnDeclaredWhitelist()
     {
-        var dataModelsProjects = new[]
+        // 线前缀（长前缀先判：Work.AI 属 AI 域，Work 属企微线）。
+        var linePrefixes = new[]
         {
-            "Mud.Wechat.Work.DataModels/Mud.Wechat.Work.DataModels.csproj",
-            "Mud.Wechat.OfficialAccount.DataModels/Mud.Wechat.OfficialAccount.DataModels.csproj",
-            "Mud.Wechat.MiniProgram.DataModels/Mud.Wechat.MiniProgram.DataModels.csproj",
-            "Mud.Wechat.Pay.DataModels/Mud.Wechat.Pay.DataModels.csproj",
-            // 微信小店/视频号产品线（设计方案 v1 §3.1）：DTO 面同样只向公用层取判错契约。
-            "Mud.Wechat.Channels.DataModels/Mud.Wechat.Channels.DataModels.csproj",
+            "Mud.Wechat.Work.AI",           // → AI
+            "Mud.Wechat.AI",                // → AI
+            "Mud.Wechat.OfficialAccount",
+            "Mud.Wechat.MiniProgram",
+            "Mud.Wechat.OpenPlatform",
+            "Mud.Wechat.Channels",
+            "Mud.Wechat.Pay",
+            "Mud.Wechat.Ads",
+            "Mud.Wechat.Work",
         };
 
-        var sources = dataModelsProjects
-            .Select(ReadCsproj)
-            .ToList();
-
-        foreach (var content in sources)
+        static string LineOf(string projectName, string[] prefixes)
         {
-            content.Should().Contain("Mud.Wechat.Abstractions.csproj",
-                "DataModels 需实现公用层判错契约 IWechatApiResponse");
+            foreach (var prefix in prefixes)
+            {
+                if (projectName.StartsWith(prefix, StringComparison.Ordinal))
+                {
+                    // Work.AI* 与 AI.* 同归 AI 域（层 2 虽以 Work.AI 命名，落位与治理属 AI）。
+                    return prefix.Contains(".AI", StringComparison.Ordinal) ? "AI" : prefix;
+                }
+            }
+
+            return "Core"; // 叶层与基建（Src/Core），由 AB-G1 / RD-G6 单独治理
         }
 
-        // 各产品线 DataModels 之间不得互相引用（产品线隔离）。
-        for (var i = 0; i < dataModelsProjects.Length; i++)
+        // 允许的跨线边（逐条附理由；新增边必须同批登记并在对应线 README/设计方案写明动机）：
+        //  ① 小程序复用公众号令牌与多应用基座 —— 同一 AppId 两处注册会造成令牌串号，
+        //     故复用而非复制（MP-X1 / MP-X5 同源；公众号 Callback 仍禁）。
+        //     2026-10 包合并后公众号线并为单工程时，本条须同批改指 Mud.Wechat.OfficialAccount。
+        //  ② AI 域层 2（Mud.Wechat.Work.AI*）按设计直连企微线契约面与 DTO（AI 方案 §3.2）。
+        var allowedEdges = new HashSet<string>(StringComparer.Ordinal)
         {
-            foreach (var other in dataModelsProjects.Where((_, j) => j != i))
+            "Mud.Wechat.MiniProgram>Mud.Wechat.OfficialAccount",
+            "Mud.Wechat.Work.AI>Mud.Wechat.Work",
+            "Mud.Wechat.Work.AI.Tools>Mud.Wechat.Work",
+            "Mud.Wechat.Work.AI.Tools>Mud.Wechat.Work.AI",
+        };
+
+        var violations = new List<string>();
+
+        // 扫描面：产品线工程（Src/Core 的叶层与基建不在本守卫主语内）。
+        foreach (var dir in ProductLineSourceRoots())
+        {
+            var ownName = Path.GetFileName(dir);
+            var csproj = Path.Combine(dir, ownName + ".csproj");
+            if (!File.Exists(csproj))
             {
-                var otherRoot = Path.GetFileName(other).Replace(".csproj", string.Empty, StringComparison.Ordinal);
-                sources[i].Should().NotContain(otherRoot,
-                    $"DataModels 之间不得互相引用（产品线隔离）：{dataModelsProjects[i]} 不得引用 {otherRoot}");
+                continue;
+            }
+
+            var ownLine = LineOf(ownName, linePrefixes);
+            var refs = Regex.Matches(File.ReadAllText(csproj), @"ProjectReference Include=""([^""]+)""")
+                .Cast<System.Text.RegularExpressions.Match>()
+                .Select(static m => Path.GetFileNameWithoutExtension(m.Groups[1].Value));
+
+            foreach (var refName in refs)
+            {
+                if (refName == "Mud.Wechat.Abstractions")
+                {
+                    continue; // 叶层是全仓共用底座，不构成跨线边
+                }
+
+                var refLine = LineOf(refName, linePrefixes);
+                if (refLine is "Core" || refLine == ownLine)
+                {
+                    continue; // 同线互引（主包 / Abstractions / DataModels / Callback）合法
+                }
+
+                if (!allowedEdges.Contains($"{ownName}>{refName}"))
+                {
+                    violations.Add($"{ownName} → {refName}");
+                }
             }
         }
+
+        violations.Should().BeEmpty(
+            "跨线引用会把一条线的凭据模型与契约假设渗进另一条线（原 AB-G2 的「各线 DataModels 互不引用」即此类缺陷的窄版）；" +
+            $"新增跨线边必须同批登记进本守卫白名单并在对应线 README/设计方案写明理由。实际越界：{string.Join(", ", violations)}");
     }
 
     /// <summary>
     /// AB-G3：下游产品线工程必须反向引用公用层（防「守卫静默空跑」——若某产品线漏引，
     /// 其类型解析会落到陈旧的传输依赖上，行为不可预期）。
     /// </summary>
+    /// <remarks>
+    /// 清单取「该线**直接引叶层的入口工程**」：未合并线是 <c>{线}.Abstractions</c>；
+    /// 2026-10 包合并后（OpenPlatform / MiniProgram / Ads 一线一工程）该线只有主工程一项。
+    /// 断言的不变式与工程划分方式无关 —— 每条线都必须存在一个引叶层的工程。
+    /// </remarks>
     [Fact]
     public void ProductLineProjects_ShouldReferenceAbstractions()
     {
         foreach (var project in new[]
                  {
-                     "Mud.Wechat.Work.Abstractions/Mud.Wechat.Work.Abstractions.csproj",
-                     "Mud.Wechat.OfficialAccount.Abstractions/Mud.Wechat.OfficialAccount.Abstractions.csproj",
-                     "Mud.Wechat.MiniProgram.Abstractions/Mud.Wechat.MiniProgram.Abstractions.csproj",
-                     "Mud.Wechat.Pay.Abstractions/Mud.Wechat.Pay.Abstractions.csproj",
-                     "Mud.Wechat.OpenPlatform.Abstractions/Mud.Wechat.OpenPlatform.Abstractions.csproj",
-                     "Mud.Wechat.Channels.Abstractions/Mud.Wechat.Channels.Abstractions.csproj",
+                     "Mud.Wechat.Work/Mud.Wechat.Work.csproj",
+                     "Mud.Wechat.OfficialAccount/Mud.Wechat.OfficialAccount.csproj",
+                     "Mud.Wechat.Pay/Mud.Wechat.Pay.csproj",
+                     "Mud.Wechat.Channels/Mud.Wechat.Channels.csproj",
+                     // 已合并为一线一工程的三条线（命名空间不变，叶层引用落主工程）。
+                     "Mud.Wechat.MiniProgram/Mud.Wechat.MiniProgram.csproj",
+                     "Mud.Wechat.OpenPlatform/Mud.Wechat.OpenPlatform.csproj",
+                     "Mud.Wechat.Ads/Mud.Wechat.Ads.csproj",
                  })
         {
             ReadCsproj(project).Should().Contain("Mud.Wechat.Abstractions.csproj", $"{project} 必须引用公用层");
@@ -212,9 +284,9 @@ public class WechatAbstractionsContractGuards
         // ② 三线各恰好多注册一次 IAppAccessAuthorizer，且形态为白名单（与注册表同源）。
         foreach (var (project, extensionFile, switcherTypeName) in new[]
                  {
-                     ("Mud.Wechat.Work.Abstractions", "Extensions/WechatWorkMultiAppExtensions.cs", "IWechatAppContextSwitcher"),
-                     ("Mud.Wechat.OfficialAccount.Abstractions", "Extensions/MpMultiAppExtensions.cs", "IMpAppContextSwitcher"),
-                     ("Mud.Wechat.Channels.Abstractions", "Extensions/ChannelsMultiAppExtensions.cs", "IChannelsAppContextSwitcher"),
+                     ("Mud.Wechat.Work", "Extensions/WechatWorkMultiAppExtensions.cs", "IWechatAppContextSwitcher"),
+                     ("Mud.Wechat.OfficialAccount", "Extensions/MpMultiAppExtensions.cs", "IMpAppContextSwitcher"),
+                     ("Mud.Wechat.Channels", "Extensions/ChannelsMultiAppExtensions.cs", "IChannelsAppContextSwitcher"),
                  })
         {
             var source = File.ReadAllText(Path.Combine(
@@ -442,7 +514,7 @@ public class WechatAbstractionsContractGuards
         var audit = File.ReadAllText(Path.Combine(root, "scripts", "audit-config-keys.ps1"));
         audit.Should().Contain("Mud.Wechat.Abstractions/Configuration/WechatAppConfigBase.cs",
             "配置基座属性上移后必须仍在审计白名单内");
-        audit.Should().Contain("Mud.Wechat.OfficialAccount.Abstractions/Configuration/MpAppConfig.cs",
+        audit.Should().Contain("Mud.Wechat.OfficialAccount/Configuration/MpAppConfig.cs",
             "公众号配置必须纳入审计");
         audit.Should().Contain("Mud.Wechat.OfficialAccount.Callback/MpCallbackOptions.cs",
             "公众号回调配置面必须纳入审计白名单（否则配置属性无消费点也无人发现）");
@@ -454,7 +526,7 @@ public class WechatAbstractionsContractGuards
         // P0-b/P0-c 落这两个 DTO 时**创建与登记必须同批**（AGENTS §2 同批纪律）。
         foreach (var payConfigDto in new[]
                  {
-                     "Mud.Wechat.Pay.Abstractions/Configuration/WechatPayMerchantConfig.cs",
+                     "Mud.Wechat.Pay/Configuration/WechatPayMerchantConfig.cs",
                      "Mud.Wechat.Pay.Callback/WechatPayCallbackOptions.cs",
                  })
         {
@@ -470,30 +542,53 @@ public class WechatAbstractionsContractGuards
             "audit 的消费点搜索根必须由 slnx /src/ 推导（F1 接入口收敛）");
         audit.Should().NotContain("$searchRoots = @(",
             "字面搜索根清单不得复活 —— 清单与工程目录各自成文正是 F1 要消除的漂移源");
-        // ② 活性一致：按同款逻辑从 slnx 推导 /src/ 工程名，历史字面清单（26 根）覆盖的每个根
-        //    必须仍被推导覆盖（推导为超集：新增的 DataModels / 工具工程目录无配置消费引用，安全）。
+        // ② 包清单权威描述：按同款逻辑从 slnx /src/ 推导 /src/ 工程名，与下面的**终态包清单**取集合相等。
+        //    原形态是「历史字面清单的每个根必须仍被推导覆盖」（推导为超集，只防漏不防多）。
+        //    2026-10 包合并把可打包集收成 18 个之后，超集语义不再有意义，升级为**双向相等**：
+        //    少一项 = 该线工程被误删或漏登记；多一项 = 又拆出一个无人消费的包（本次合并要消除的正是它）。
         var slnxSourceRootNames = SlnxSourceProjectDirs()
             .Select(static p => Path.GetFileName(p))
+            // 两个构建期工具工程不产 nupkg（IsPackable=false），不在包清单主语内（与下方
+            // 「非可打包白名单」同一口径，AB-G6 已单独断言该白名单恰为这两项）。
+            .Where(static name => name is not ("Mud.Wechat.Callback.Generator" or "Mud.Wechat.Callback.Analyzers"))
             .ToHashSet(StringComparer.Ordinal);
-        foreach (var heritageRoot in new[]
+        var packageInventory = new[]
                  {
+                     // Core 叶层与跨线基建（3）
                      "Mud.Wechat.Abstractions", "Mud.Wechat.Redis", "Mud.Wechat.OpenTelemetry",
-                     "Mud.Wechat.Work", "Mud.Wechat.Work.Abstractions", "Mud.Wechat.Work.Callback",
-                     "Mud.Wechat.OfficialAccount", "Mud.Wechat.OfficialAccount.Abstractions",
-                     "Mud.Wechat.OfficialAccount.DataModels", "Mud.Wechat.OfficialAccount.Callback",
-                     "Mud.Wechat.MiniProgram", "Mud.Wechat.MiniProgram.Abstractions", "Mud.Wechat.MiniProgram.DataModels",
-                     "Mud.Wechat.Pay", "Mud.Wechat.Pay.Abstractions", "Mud.Wechat.Pay.DataModels", "Mud.Wechat.Pay.Callback",
-                     "Mud.Wechat.OpenPlatform", "Mud.Wechat.OpenPlatform.Abstractions",
-                     "Mud.Wechat.Channels", "Mud.Wechat.Channels.Abstractions",
-                     "Mud.Wechat.Channels.DataModels", "Mud.Wechat.Channels.Callback",
-                     "Mud.Wechat.Ads", "Mud.Wechat.Ads.Abstractions", "Mud.Wechat.Ads.DataModels",
-                 })
+                     // 企业微信（2：主包 + 回调宿主）
+                     "Mud.Wechat.Work", "Mud.Wechat.Work.Callback",
+                     // 公众号（2）
+                     "Mud.Wechat.OfficialAccount", "Mud.Wechat.OfficialAccount.Callback",
+                     // 小程序（1：无推送面，凭据复用公众号底座）
+                     "Mud.Wechat.MiniProgram",
+                     // 微信支付（2：APIv3 + V2 同包，回调宿主独立）
+                     "Mud.Wechat.Pay", "Mud.Wechat.Pay.Callback",
+                     // 开放平台（1）
+                     "Mud.Wechat.OpenPlatform",
+                     // 微信小店 / 视频号（2）
+                     "Mud.Wechat.Channels", "Mud.Wechat.Channels.Callback",
+                     // 腾讯广告（1）
+                     "Mud.Wechat.Ads",
+                     // AI 能力域（4：中立底座 + 企微 Agent 底座 + 工具面 + MCP 协议层）。
+                     // 工具面与 MCP 未并入 Work.AI —— Mud.AI.Generator 的契约表按工程身份发射，
+                     // 合并会让 WechatToolContract 生成不出来（实测回退，见包合并方案 §3）。
+                     "Mud.Wechat.AI", "Mud.Wechat.Work.AI",
+                     "Mud.Wechat.Work.AI.Tools", "Mud.Wechat.Work.AI.Mcp",
+                 };
+
+        foreach (var package in packageInventory)
         {
-            slnxSourceRootNames.Should().Contain(heritageRoot,
-                $"历史字面搜索根 {heritageRoot} 必须仍被 slnx /src/ 推导覆盖（活性一致；缺项即 slnx 漏项或推导失效）");
-        }        // 腾讯广告配置 DTO 与支付线同一双向不变式：文件存在 ⇔ 已登记进 $configFiles
-        // （2026-10-10 补登记 —— 此前只断言了搜索根、漏了 DTO 本身，AdsAppConfig 曾整体绕过审计）。
-        var adsConfigDto = "Mud.Wechat.Ads.Abstractions/Configuration/AdsAppConfig.cs";
+            slnxSourceRootNames.Should().Contain(package,
+                $"终态包清单里的 {package} 必须存在于 slnx /src/ 推导集（缺项即工程被删或 slnx 漏登记）");
+        }
+
+        slnxSourceRootNames.Should().BeEquivalentTo(packageInventory,
+            "可打包集必须恰等于终态 18 包清单 —— 多出的每一项都是一个需要文档、版本与门禁维护的 NuGet 包，" +
+            "而消费者永远不会单独安装它（2026-10 包合并的立论正是「分包方式不等于契约面」）");        // 腾讯广告配置 DTO 与支付线同一双向不变式：文件存在 ⇔ 已登记进 $configFiles
+        // （2026-10-10 补登记 —— 此前只断言了搜索根、漏了 DTO 本身，AdsAppConfig 曾整体绕过审计。
+        //  2026-10 包合并：本线三工程并为 Mud.Wechat.Ads 单工程，登记路径随之收敛。）
+        var adsConfigDto = "Mud.Wechat.Ads/Configuration/AdsAppConfig.cs";
         var adsDtoExists = File.Exists(SourcePath(adsConfigDto.Split('/')));
         audit.Contains(adsConfigDto).Should().Be(adsDtoExists,
             $"广告线配置 DTO「{adsConfigDto}」的文件存在性与 $configFiles 登记必须同批（存在={adsDtoExists}，登记={audit.Contains(adsConfigDto)}）");
@@ -551,50 +646,49 @@ public class WechatAbstractionsContractGuards
         foreach (var project in new[]
                  {
                      // 2026-10 源码归类后，源工程位于 Src/<Area>/<ProjectName>（下同）。
+                     // 2026-10 包合并后每线只登记其实际工程（见上方终态 18 包清单）。
                      "Src/Core/Mud.Wechat.Abstractions/Mud.Wechat.Abstractions.csproj",
-                     "Src/OfficialAccount/Mud.Wechat.OfficialAccount/Mud.Wechat.OfficialAccount.csproj",
-                     "Src/OfficialAccount/Mud.Wechat.OfficialAccount.Abstractions/Mud.Wechat.OfficialAccount.Abstractions.csproj",
-                     "Src/OfficialAccount/Mud.Wechat.OfficialAccount.DataModels/Mud.Wechat.OfficialAccount.DataModels.csproj",
-                     "Src/OfficialAccount/Mud.Wechat.OfficialAccount.Callback/Mud.Wechat.OfficialAccount.Callback.csproj",
                      "Src/Core/Mud.Wechat.Callback.Generator/Mud.Wechat.Callback.Generator.csproj",
                      "Src/Core/Mud.Wechat.Callback.Analyzers/Mud.Wechat.Callback.Analyzers.csproj",
                      // 可观测性装配包（1 源 + 1 测试）：**跨线共享**（单根源 + 产品线通配 Meter），
                      // 不属任何产品线，故落 Src/Core（2026-10 由 Src/OpenPlatform 迁入；仅路径变，
                      // 包标识 / 命名空间 / TFM 均不变，对消费者零影响）。
                      "Src/Core/Mud.Wechat.OpenTelemetry/Mud.Wechat.OpenTelemetry.csproj",
+                     "Src/Core/Mud.Wechat.Redis/Mud.Wechat.Redis.csproj",
+                     // 企业微信（2 源）。
+                     "Src/Work/Mud.Wechat.Work/Mud.Wechat.Work.csproj",
+                     "Src/Work/Mud.Wechat.Work.Callback/Mud.Wechat.Work.Callback.csproj",
+                     // 公众号（2 源）。
+                     "Src/OfficialAccount/Mud.Wechat.OfficialAccount/Mud.Wechat.OfficialAccount.csproj",
+                     "Src/OfficialAccount/Mud.Wechat.OfficialAccount.Callback/Mud.Wechat.OfficialAccount.Callback.csproj",
+                     // 小程序（1 源，无回调包）。
+                     "Src/MiniProgram/Mud.Wechat.MiniProgram/Mud.Wechat.MiniProgram.csproj",
+                     // 微信支付（2 源：APIv3 + APIv2 同包，回调宿主独立）。
+                     "Src/Pay/Mud.Wechat.Pay/Mud.Wechat.Pay.csproj",
+                     "Src/Pay/Mud.Wechat.Pay.Callback/Mud.Wechat.Pay.Callback.csproj",
+                     // 开放平台（1 源）。
+                     "Src/OpenPlatform/Mud.Wechat.OpenPlatform/Mud.Wechat.OpenPlatform.csproj",
+                     // 微信小店/视频号（2 源，设计方案 v1 §5.2）。
+                     "Src/Channels/Mud.Wechat.Channels/Mud.Wechat.Channels.csproj",
+                     "Src/Channels/Mud.Wechat.Channels.Callback/Mud.Wechat.Channels.Callback.csproj",
+                     // 腾讯广告（1 源）。
+                     "Src/Ads/Mud.Wechat.Ads/Mud.Wechat.Ads.csproj",
+                     // AI 能力域（2 源：中立底座 + 企微工具面/MCP）。
+                     "Src/AI/Mud.Wechat.AI/Mud.Wechat.AI.csproj",
+                     "Src/AI/Mud.Wechat.Work.AI/Mud.Wechat.Work.AI.csproj",
+                     "Src/AI/Mud.Wechat.Work.AI.Tools/Mud.Wechat.Work.AI.Tools.csproj",
+                     "Src/AI/Mud.Wechat.Work.AI.Mcp/Mud.Wechat.Work.AI.Mcp.csproj",
+                     // 测试工程。
                      "Tests/Mud.Wechat.Abstractions.Tests/Mud.Wechat.Abstractions.Tests.csproj",
                      "Tests/Mud.Wechat.OfficialAccount.Tests/Mud.Wechat.OfficialAccount.Tests.csproj",
                      "Tests/Mud.Wechat.OfficialAccount.Callback.Tests/Mud.Wechat.OfficialAccount.Callback.Tests.csproj",
-                     // 微信小程序产品线（3 源 + 1 测试）。
-                     "Src/MiniProgram/Mud.Wechat.MiniProgram/Mud.Wechat.MiniProgram.csproj",
-                     "Src/MiniProgram/Mud.Wechat.MiniProgram.Abstractions/Mud.Wechat.MiniProgram.Abstractions.csproj",
-                     "Src/MiniProgram/Mud.Wechat.MiniProgram.DataModels/Mud.Wechat.MiniProgram.DataModels.csproj",
                      "Tests/Mud.Wechat.MiniProgram.Tests/Mud.Wechat.MiniProgram.Tests.csproj",
-                     // 微信支付产品线（4 源 + 2 测试）。
-                     "Src/Pay/Mud.Wechat.Pay/Mud.Wechat.Pay.csproj",
-                     "Src/Pay/Mud.Wechat.Pay.Abstractions/Mud.Wechat.Pay.Abstractions.csproj",
-                     "Src/Pay/Mud.Wechat.Pay.DataModels/Mud.Wechat.Pay.DataModels.csproj",
-                     "Src/Pay/Mud.Wechat.Pay.Callback/Mud.Wechat.Pay.Callback.csproj",
                      "Tests/Mud.Wechat.Pay.Tests/Mud.Wechat.Pay.Tests.csproj",
                      "Tests/Mud.Wechat.Pay.Callback.Tests/Mud.Wechat.Pay.Callback.Tests.csproj",
-                     // 可观测性适配包的测试工程（源工程已登记于上方 Src/Core 组）。
                      "Tests/Mud.Wechat.OpenTelemetry.Tests/Mud.Wechat.OpenTelemetry.Tests.csproj",
-                     // 微信开放平台产品线（2026-10 新增，3 源 + 1 测试；B1 落地 DataModels）。
-                     "Src/OpenPlatform/Mud.Wechat.OpenPlatform/Mud.Wechat.OpenPlatform.csproj",
-                     "Src/OpenPlatform/Mud.Wechat.OpenPlatform.Abstractions/Mud.Wechat.OpenPlatform.Abstractions.csproj",
-                     "Src/OpenPlatform/Mud.Wechat.OpenPlatform.DataModels/Mud.Wechat.OpenPlatform.DataModels.csproj",
                      "Tests/Mud.Wechat.OpenPlatform.Tests/Mud.Wechat.OpenPlatform.Tests.csproj",
-                     // 微信小店/视频号（channels 生态）产品线（4 源 + 2 测试，设计方案 v1 §5.2）。
-                     "Src/Channels/Mud.Wechat.Channels/Mud.Wechat.Channels.csproj",
-                     "Src/Channels/Mud.Wechat.Channels.Abstractions/Mud.Wechat.Channels.Abstractions.csproj",
-                     "Src/Channels/Mud.Wechat.Channels.DataModels/Mud.Wechat.Channels.DataModels.csproj",
-                     "Src/Channels/Mud.Wechat.Channels.Callback/Mud.Wechat.Channels.Callback.csproj",
                      "Tests/Mud.Wechat.Channels.Tests/Mud.Wechat.Channels.Tests.csproj",
                      "Tests/Mud.Wechat.Channels.Callback.Tests/Mud.Wechat.Channels.Callback.Tests.csproj",
-                     // 腾讯广告产品线（2026-10 新增，3 源 + 1 测试）。
-                     "Src/Ads/Mud.Wechat.Ads/Mud.Wechat.Ads.csproj",
-                     "Src/Ads/Mud.Wechat.Ads.Abstractions/Mud.Wechat.Ads.Abstractions.csproj",
-                     "Src/Ads/Mud.Wechat.Ads.DataModels/Mud.Wechat.Ads.DataModels.csproj",
                      "Tests/Mud.Wechat.Ads.Tests/Mud.Wechat.Ads.Tests.csproj",
                  })
         {
@@ -713,9 +807,8 @@ public class WechatAbstractionsContractGuards
     {
         foreach (var project in new[]
                  {
+                     // 2026-10 包合并：支付线由四工程收为主包 + 回调宿主两工程。
                      "Mud.Wechat.Pay/Mud.Wechat.Pay.csproj",
-                     "Mud.Wechat.Pay.Abstractions/Mud.Wechat.Pay.Abstractions.csproj",
-                     "Mud.Wechat.Pay.DataModels/Mud.Wechat.Pay.DataModels.csproj",
                      "Mud.Wechat.Pay.Callback/Mud.Wechat.Pay.Callback.csproj",
                  })
         {
@@ -727,12 +820,32 @@ public class WechatAbstractionsContractGuards
                 $"{project} 必须在 csproj 注释中记录该例外的理由（AesGcm / AEAD_AES_256_GCM 为 APIv3 官方强制）");
         }
 
-        // AI 域（第四个受控例外）：只认 net8.0;net10.0 两档，且必须记录理由（Mud.AI 1.0.1 → M.E.* 10.x 支持面）。
+        // 开放平台线（第二个受控例外）：3 档，理由是刻意收窄到组件最小面（非密码学缺口）。
+        // 2026-10 包合并后该线只有主工程一项持有此覆盖（合并前三工程各写一遍，属同一事实的三份重复）。
         foreach (var project in new[]
                  {
-                     "Mud.Wechat.AI.Abstractions/Mud.Wechat.AI.Abstractions.csproj",
-                     "Mud.Wechat.AI.Agent/Mud.Wechat.AI.Agent.csproj",
+                     "Mud.Wechat.OpenPlatform/Mud.Wechat.OpenPlatform.csproj",
+                 })
+        {
+            var content = ReadCsproj(project);
+
+            content.Should().Contain("<TargetFrameworks>net6.0;net8.0;net10.0</TargetFrameworks>",
+                $"{project} 必须保持开放平台线受控 TFM 例外（刻意收窄到组件 AddMudHttpClient 的最小面）");
+            content.Should().Contain("netstandard2.0",
+                $"{project} 必须在 csproj 注释中记录该例外的理由（防后来者「顺手统一」回 4 档）");
+        }
+
+        // AI 域（第四个受控例外）：只认 net8.0;net10.0 两档，且必须记录理由（Mud.AI 1.0.1 → M.E.* 10.x 支持面）。
+        // 2026-10 包合并：层 1 的 AI.Abstractions + AI.Agent 并为 Mud.Wechat.AI；层 2 的 Work.AI /
+        // Work.AI.Tools / Work.AI.Mcp 保持三工程（Tools 的 Mud.AI.Generator 产物按工程身份落位，
+        // 并入 Work.AI 会让契约表 WechatToolContract 生成不出来 —— 见包合并方案 §3 的实测回退记录）。
+        // 原清单只列 3 工程（Tools / Mcp 漏列，属既存盲区），本批补齐为全部 4 个 AI 工程。
+        foreach (var project in new[]
+                 {
+                     "Mud.Wechat.AI/Mud.Wechat.AI.csproj",
                      "Mud.Wechat.Work.AI/Mud.Wechat.Work.AI.csproj",
+                     "Mud.Wechat.Work.AI.Tools/Mud.Wechat.Work.AI.Tools.csproj",
+                     "Mud.Wechat.Work.AI.Mcp/Mud.Wechat.Work.AI.Mcp.csproj",
                  })
         {
             var content = ReadCsproj(project);
@@ -750,10 +863,8 @@ public class WechatAbstractionsContractGuards
                      "Mud.Wechat.Work/Mud.Wechat.Work.csproj",
                      "Mud.Wechat.OfficialAccount/Mud.Wechat.OfficialAccount.csproj",
                      "Mud.Wechat.MiniProgram/Mud.Wechat.MiniProgram.csproj",
-                     // 腾讯广告线（2026-10 新增）：只做 HTTPS + JSON、无原生密码学依赖，不得援引例外。
+                     // 腾讯广告线（2026-10 新增，同批包合并后为单工程）：只做 HTTPS + JSON、无原生密码学依赖，不得援引例外。
                      "Mud.Wechat.Ads/Mud.Wechat.Ads.csproj",
-                     "Mud.Wechat.Ads.Abstractions/Mud.Wechat.Ads.Abstractions.csproj",
-                     "Mud.Wechat.Ads.DataModels/Mud.Wechat.Ads.DataModels.csproj",
                  })
         {
             ReadCsproj(project).Should().NotContain("<TargetFrameworks>",

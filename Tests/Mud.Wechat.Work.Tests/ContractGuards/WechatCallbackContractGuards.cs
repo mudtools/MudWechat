@@ -190,8 +190,28 @@ public class WechatCallbackContractGuards
     // ---------------------------------------------------------------- CB1
 
     /// <summary>
-    /// 契约守卫 CB1：Callback 包不得引用主包 <c>Work</c>（K-callback 依赖单向边）。
+    /// 契约守卫 CB1：<b>回调侧不得消费业务客户端面</b>（K-callback 依赖单向边的现代表达）。
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// 合并前的形态是「<c>Work.Callback.csproj</c> 只引 <c>Work.Abstractions</c> + <c>Work.DataModels</c>，
+    /// 禁引 <c>Work</c> 主包」——用程序集划分提供物理保证。2026-10 包合并后基座、DTO 与客户端
+    /// 同处 <c>Mud.Wechat.Work</c> 一个程序集，该物理边不再存在，于是改为两段：
+    /// </para>
+    /// <para>
+    /// ① <b>包面</b>：Callback 仍必须是「引用企微线单工程、且不引任何业务线 Callback」的独立宿主包
+    /// （它承载中间件与密码学内核，主包不得反向依赖它）。
+    /// ② <b>源码面</b>：Callback 源码不得出现业务客户端命名空间与注册入口 ——
+    /// 客户端在 <c>Mud.Wechat.Work</c> / <c>.Interfaces</c> / <c>.Internal</c> / <c>.Services</c>，
+    /// 回调可用面是 <c>Mud.Wechat.Work.Abstractions.*</c>（基座、信封、载荷契约）与
+    /// <c>Mud.Wechat.Work.DataModels.*</c>（DTO）。
+    /// </para>
+    /// <para>
+    /// 这条边守的是真实缺陷类：推送处理链一旦调用业务客户端，就会在回调线程里取令牌、发请求，
+    /// 把官方 5 秒重推窗口变成自我放大（重试风暴），并让「只收推送」的宿主被迫装配整套客户端。
+    /// 命名空间分区本就编码了这层分工，程序集边界原是它的冗余副本。
+    /// </para>
+    /// </remarks>
     [Fact]
     public void CallbackPackage_ShouldNotReferenceWorkProject()
     {
@@ -201,11 +221,28 @@ public class WechatCallbackContractGuards
 
         var source = File.ReadAllText(csprojPath);
 
-        source.Should().NotContain(
-            $"\"..\\Mud.Wechat.Work\\Mud.Wechat.Work.csproj\"",
-            "K-callback：Callback 只能依赖 Abstractions 与 DataModels");
-        source.Should().Contain("Mud.Wechat.Work.Abstractions.csproj");
-        source.Should().Contain("Mud.Wechat.Work.DataModels.csproj");
+        source.Should().Contain("Mud.Wechat.Work.csproj",
+            "K-callback：2026-10 包合并后回调宿主包引用企微线单工程（基座 + DTO + 客户端同程序集）");
+
+        // ② 源码面：禁业务客户端命名空间的 using 指令（行锚定，故文档提及与诊断文案不误报）。
+        //    残留口径：以全限定名直接引用客户端的类型不被本探针覆盖 —— 该形态在本仓无先例
+        //    （客户端类型必须经 DI 解析，而解析需要 using 才能写出接口名），故取 using 作咽喉点。
+        var forbiddenUsingPattern = new System.Text.RegularExpressions.Regex(
+            @"^\s*(?:global\s+)?using\s+Mud\.Wechat\.Work(?:\.Interfaces|\.Services|\.Extensions|\.Internal)?\s*(?:;|=)",
+            RegexOptions.Multiline);
+
+        var hits = Directory
+            .EnumerateFiles(SourcePath("Mud.Wechat.Work.Callback"), "*.cs", SearchOption.AllDirectories)
+            .Where(static f => !f.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}")
+                               && !f.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}"))
+            .SelectMany(f => forbiddenUsingPattern.Matches(File.ReadAllText(f))
+                .Cast<System.Text.RegularExpressions.Match>()
+                .Select(m => $"{Path.GetFileName(f)}: {m.Value.Trim()}"))
+            .ToArray();
+
+        hits.Should().BeEmpty(
+            "回调链路不得消费业务客户端（推送线程内取令牌/发请求会把官方 5 秒重推窗口放大成重试风暴）；" +
+            $"可用面止于 Work.Abstractions.* 与 Work.DataModels.*。实际命中：{string.Join(", ", hits)}");
     }
 
     // ---------------------------------------------------------------- CB2
@@ -359,7 +396,7 @@ public class WechatCallbackContractGuards
 
         // 授权族 6 InfoType 判别落位信封（经 WechatCallbackEventTypes 常量名引用）。
         var envelopePath = SourcePath(
-            "Mud.Wechat.Work.Abstractions", "Callback", "WechatCallbackEvent.cs");
+            "Mud.Wechat.Work", "Callback", "WechatCallbackEvent.cs");
         File.Exists(envelopePath).Should().BeTrue();
         var envelopeSource = File.ReadAllText(envelopePath);
         foreach (var keyName in new[]
@@ -946,7 +983,7 @@ public class WechatCallbackContractGuards
     public void CallbackOptions_ShouldKeepSingleSourceOfCredentialTruth()
     {
         var appConfigPath = SourcePath(
-            "Mud.Wechat.Work.Abstractions", "Configuration", "WechatAppConfig.cs");
+            "Mud.Wechat.Work", "Configuration", "WechatAppConfig.cs");
         var appConfigSource = File.ReadAllText(appConfigPath);
         // 仅断言属性声明形态（文档注释中允许提及回调凭据的迁移史）。
         appConfigSource.Should().NotContain("public string PushToken", "回调凭据不得回流主配置（回调运维面独立）");
@@ -1033,7 +1070,7 @@ public class WechatCallbackContractGuards
     [Fact]
     public void CallbackEnvelope_ShouldNotExposeXmlTypes()
     {
-        var callbackDir = SourcePath("Mud.Wechat.Work.Abstractions", "Callback");
+        var callbackDir = SourcePath("Mud.Wechat.Work", "Callback");
         Directory.Exists(callbackDir).Should().BeTrue($"未找到 Abstractions 回调契约目录：{callbackDir}");
 
         var files = Directory.GetFiles(callbackDir, "*.cs", SearchOption.AllDirectories)
@@ -1188,7 +1225,7 @@ public class WechatCallbackContractGuards
     public void CallbackAppOptions_ShouldExposeAppTypeAndChannelSurface()
     {
         var channelPath = SourcePath(
-            "Mud.Wechat.Work.Abstractions", "Enums", "WechatCallbackChannel.cs");
+            "Mud.Wechat.Work", "Enums", "WechatCallbackChannel.cs");
         File.Exists(channelPath).Should().BeTrue($"未找到回调通道枚举（勿移动文件，CB10 按路径断言）：{channelPath}");
         var channelSource = File.ReadAllText(channelPath);
         channelSource.Should().Contain("App = 1", "CB10：应用数据通道取值（应用级 change_contact/batch_job_result/change_chain）");

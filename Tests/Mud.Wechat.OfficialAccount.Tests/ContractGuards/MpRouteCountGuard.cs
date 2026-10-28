@@ -58,13 +58,9 @@ public class MpRouteCountGuard
     {
         var main = MainInterfaceRoutes().ToHashSet(StringComparer.Ordinal);
 
-        // Abstractions 侧令牌 / 票据接口（3 条：token / stable_token / ticket/getticket）。
-        var authRoutes = typeof(IMpAuthentication).Assembly.GetTypes()
-            .Where(t => t.IsInterface && t.IsPublic)
-            .SelectMany(t => t.GetMethods())
-            .Select(m => m.GetCustomAttribute<HttpMethodAttribute>()?.RequestUri)
-            .Where(u => u != null)
-            .Select(u => u!)
+        // Abstractions 侧令牌 / 票据接口（3 条：token / stable_token / ticket/getticket）
+        // —— 按命名空间取（合并后两侧同程序集，见 PublicInterfaceMethods 的 remarks）。
+        var authRoutes = PublicInterfaceMethods(onAbstractionsSide: true)
             .ToHashSet(StringComparer.Ordinal);
 
         // 下载通道 4 条（路径常量承载，非 HTTP 特性；响应为文件流/文本不走生成管线）：
@@ -146,15 +142,29 @@ public class MpRouteCountGuard
     }
 
     private static List<string> MainInterfaceRoutes()
-        => typeof(MpServiceCollectionExtensions).Assembly.GetTypes()
-            .Where(t => t.IsInterface && t.IsPublic)
-            .SelectMany(t => t.GetMethods())
-            .Select(m => m.GetCustomAttribute<HttpMethodAttribute>()?.RequestUri)
-            .Where(u => u != null)
-            .Select(u => u!)
+        => PublicInterfaceMethods(onAbstractionsSide: false)
             .Distinct(StringComparer.Ordinal)
             .OrderBy(u => u, StringComparer.Ordinal)
             .ToList();
+
+    /// <summary>
+    /// 按<b>命名空间</b>取公众号线接口路由：<c>onAbstractionsSide=true</c> 只取令牌/票据签发族
+    /// （<c>Mud.Wechat.OfficialAccount.Abstractions*</c>），<c>false</c> 取业务接口面。
+    /// </summary>
+    /// <remarks>
+    /// 2026-10 包合并后两侧同处 <c>Mud.Wechat.OfficialAccount</c> 一个程序集，
+    /// 「主程序集 vs Abstractions 程序集」这一口径不再能区分两侧（两侧都是同一 Assembly），
+    /// 台账 145/148 的划分本来按<b>注册面</b>而非物理包 —— 命名空间才是它的忠实表达。
+    /// </remarks>
+    private static IEnumerable<string> PublicInterfaceMethods(bool onAbstractionsSide)
+        => typeof(MpServiceCollectionExtensions).Assembly.GetTypes()
+            .Where(t => t.IsInterface && t.IsPublic
+                     && (t.Namespace?.StartsWith("Mud.Wechat.OfficialAccount.Abstractions",
+                             StringComparison.Ordinal) ?? false) == onAbstractionsSide)
+            .SelectMany(t => t.GetMethods())
+            .Select(m => m.GetCustomAttribute<HttpMethodAttribute>()?.RequestUri)
+            .Where(u => u != null)
+            .Select(u => u!);
 
     private static string? FindOfficialIndex()
     {

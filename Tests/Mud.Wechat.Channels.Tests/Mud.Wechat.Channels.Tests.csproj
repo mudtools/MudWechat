@@ -14,8 +14,6 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\..\Src\Channels\Mud.Wechat.Channels\Mud.Wechat.Channels.csproj" />
-		<ProjectReference Include="..\..\Src\Channels\Mud.Wechat.Channels.Abstractions\Mud.Wechat.Channels.Abstractions.csproj" />
-		<ProjectReference Include="..\..\Src\Channels\Mud.Wechat.Channels.DataModels\Mud.Wechat.Channels.DataModels.csproj" />
 		<ProjectReference Include="..\..\Src\Channels\Mud.Wechat.Channels.Callback\Mud.Wechat.Channels.Callback.csproj" />
 		<!-- 跨线重叠路由零回潮守卫（CH-R1）的**参照集**是既有五线的路由表（公众号/企微/小程序/支付/广告）：
 		     必须让本测试工程能反射到五线**主包**（接口上的 [Get]/[Post] 路由属性都在那里），否则参照集

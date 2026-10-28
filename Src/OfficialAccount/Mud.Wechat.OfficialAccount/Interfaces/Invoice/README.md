@@ -11,7 +11,7 @@
 > （`IT1`~`IT6`）、
 > [MpQueryTokenWhitelistGuard.cs](../../../../../Tests/Mud.Wechat.OfficialAccount.Tests/ContractGuards/MpQueryTokenWhitelistGuard.cs)（`QT1`）、
 > [MpRouteCountGuard.cs](../../../../../Tests/Mud.Wechat.OfficialAccount.Tests/ContractGuards/MpRouteCountGuard.cs)（`RC1`/`RC2`）
-> 与本仓 DTO（[DataModels/Invoice/](../../../Mud.Wechat.OfficialAccount.DataModels/Invoice/)）。
+> 与本仓 DTO（[DataModels/Invoice/](../../../Mud.Wechat.OfficialAccount/Invoice/)）。
 > 未在以上四处留档的官方约束一律进文末「已知留档缺口」，正文不引用外部官方文档表述。
 
 ## 端点速览
@@ -112,10 +112,10 @@
 ## 单张与批量共用 DTO（改一处会同时影响两端）
 
 `IT2` 锁定：`reimburse/getinvoiceinfo` 与 `getinvoicebatch` 的条目同为
-[MpInvoiceReimburseInfo](../../../Mud.Wechat.OfficialAccount.DataModels/Invoice/Reimburse/MpInvoiceReimburseInfo.cs)；
+[MpInvoiceReimburseInfo](../../../Mud.Wechat.OfficialAccount/Invoice/Reimburse/MpInvoiceReimburseInfo.cs)；
 `setbizattr` 的请求与响应共用 `MpInvoiceAuthField` / `MpInvoicePayMchInfo` / `MpInvoiceContact` 三个类型；
 插卡的 `card_ext.user_data` 与报销查询的 `user_info` 同为
-[MpInvoiceUserData](../../../Mud.Wechat.OfficialAccount.DataModels/Invoice/Platform/MpInvoiceUserData.cs)
+[MpInvoiceUserData](../../../Mud.Wechat.OfficialAccount/Invoice/Platform/MpInvoiceUserData.cs)
 （后者是前者超集）；`rejectinsert` / `platform/updatestatus` / `updateinvoicestatus` / `updatestatusbatch`
 四端点复用 `MpResponse`。**官方 `getinvoiceinfo` 响应没有 `order_id` 字段**（`IT4` 反向断言）。
 
@@ -226,7 +226,7 @@ await invoice.UpdateReimburseInvoiceStatusAsync(new MpInvoiceReimburseUpdateRequ
 | 缺口 | 现状 | 处置 |
 |---|---|---|
 | **「17 端点」vs 实测 20** | 接口 XML `<summary>` 与守卫 remarks / `Routes` 文档注释都写 17（5+5+4+3），但 `IT1` 实际逐条列出 **20** 条路由、`IT4`/`IT5`/`QT1` 消息亦按 20；差的 3 支是 B2a 电子发票开具族 | 本文按 **20** 写；措辞漂移待同批修接口 summary 与守卫 remarks，**不得反向删端点** |
-| 48 个 DTO 的分组构成 | `IT5` remarks 写「商户开票 14 + 开票平台 14 + 报销与极速开发票 13 + B2a 电子发票开具 7」，与 [Auth/](../../../Mud.Wechat.OfficialAccount.DataModels/Invoice/Auth/)、[Platform/](../../../Mud.Wechat.OfficialAccount.DataModels/Invoice/Platform/)、[Reimburse/](../../../Mud.Wechat.OfficialAccount.DataModels/Invoice/Reimburse/)、[Billing/](../../../Mud.Wechat.OfficialAccount.DataModels/Invoice/Billing/) 四个子目录数一致；但 48 个类型**全部**用扁平命名空间 `DataModels.Invoice`（目录只作组织） | 按子目录导航、按命名空间登记 |
+| 48 个 DTO 的分组构成 | `IT5` remarks 写「商户开票 14 + 开票平台 14 + 报销与极速开发票 13 + B2a 电子发票开具 7」，与 [Auth/](../../../Mud.Wechat.OfficialAccount/Invoice/Auth/)、[Platform/](../../../Mud.Wechat.OfficialAccount/Invoice/Platform/)、[Reimburse/](../../../Mud.Wechat.OfficialAccount/Invoice/Reimburse/)、[Billing/](../../../Mud.Wechat.OfficialAccount/Invoice/Billing/) 四个子目录数一致；但 48 个类型**全部**用扁平命名空间 `DataModels.Invoice`（目录只作组织） | 按子目录导航、按命名空间登记 |
 | 频率限制 | 20 页官方**均无频率章节、无频次数值** | 未逐项核验，SDK 不编造数值、不做本地限流 |
 | `item_list`（getinvoicebatch）最大条数 | 官方未标注 ⇒ 无本地拦截 | 保持缺口 |
 | `invoice_info.type`（createcard）与 `getpdf` 的 `action` 完整取值面 | 仓内只钉 `get_url` 一例，发票类型串**未逐项核验** | 不得从卡券域借枚举 |
@@ -246,7 +246,7 @@ await invoice.UpdateReimburseInvoiceStatusAsync(new MpInvoiceReimburseUpdateRequ
 | DTO 全量登记进 `InvoiceJsonContext`（命名空间 `HaveCount(48)`）+ `SerializerClassName = "Invoice"` + `MpModule.Invoice` + `AddInvoiceApi()` + 白名单 + 令牌特性 | `IT5` = `InvoiceModuleAndDataModels_ShouldBeRegistered` |
 | 5 个常量类取值 + 约 25 枚 `MpErrorCodes.Invoice*` 常量 | `IT6` = `InvoiceConstants_ShouldMatchVerifiedOfficialValues` |
 | Query 令牌全集 / 路由去重计数 | `QT1`、`RC1`/`RC2` |
-| 48 个 DTO | [DataModels/Invoice/](../../../Mud.Wechat.OfficialAccount.DataModels/Invoice/)（子目录 Auth 14 / Platform 14 / Reimburse 13 / Billing 7） |
+| 48 个 DTO | [DataModels/Invoice/](../../../Mud.Wechat.OfficialAccount/Invoice/)（子目录 Auth 14 / Platform 14 / Reimburse 13 / Billing 7） |
 | 生成入口 / 模块枚举 / 上下文合并清单 | [MpServiceBuilder.cs](../../Extensions/MpServiceBuilder.cs)、[MpModule.cs](../../Extensions/MpModule.cs)、[MpJsonResolverExtensions.cs](../../Extensions/MpJsonResolverExtensions.cs) |
 | 本线总览（**统计已过期**，不可当权威） | [../../README.md](../../README.md) |
 

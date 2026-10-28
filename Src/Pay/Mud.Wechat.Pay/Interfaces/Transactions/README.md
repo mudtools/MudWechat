@@ -11,7 +11,7 @@
 > **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、
 > 本仓契约守卫（本域 [WechatPayTransactionsContractGuards.cs](../../../../../Tests/Mud.Wechat.Pay.Tests/ContractGuards/WechatPayTransactionsContractGuards.cs)
 > 与全局 [WechatPayDomainContractGuards.cs](../../../../../Tests/Mud.Wechat.Pay.Tests/ContractGuards/WechatPayDomainContractGuards.cs)）、
-> 本域 DTO（`../../../Mud.Wechat.Pay.DataModels/Transactions/`）。
+> 本域 DTO（`../../../Mud.Wechat.Pay/Transactions/`）。
 > 不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
 
 ## 端点速览
@@ -120,7 +120,7 @@ Native 的 `code_url` 与 H5 的 `h5_url` 各建独立类型，**不得**互换�
 
 本域 DTO 全部标 `[HttpJsonSerializable(SerializerClassName = "Transactions")]`，
 生成 `Transactions` 分组上下文（落盘见
-`../../../Mud.Wechat.Pay.DataModels/Generated/TransactionsJsonContext.g.cs`），
+`../../../Mud.Wechat.Pay/Generated/TransactionsJsonContext.g.cs`），
 由 [../../Extensions/PayJsonResolverExtensions.cs](../../Extensions/PayJsonResolverExtensions.cs) 登记供 Native AOT 使用。
 守卫 `TX3`（`TransactionsDataModels_ShouldBeRegisteredInJsonContext`）断言本域 DTO 共 **38** 个
 （下单四族 + 两支查单 + 关单 + 付款码支付 7 + 订单曝光 2 + 撤销 2）且逐个登记、
@@ -193,7 +193,7 @@ await transactions.CloseOrderAsync("ORD202610180001",
 | payer / subsidy_info / h5_info 的族专属性与子表共用 | `TransactionsPrepayDtos_ShouldFollowTableIdentityRule`（`TX2`） |
 | DTO 数 38 与 AOT 登记 | `TransactionsDataModels_ShouldBeRegisteredInJsonContext`（`TX3`） |
 | 跨域总端点数 | `../../../../../Tests/ContractBaseline.cs`（`Baseline.Pay.Endpoints`） |
-| DTO 字段名与类型 | `../../../Mud.Wechat.Pay.DataModels/Transactions/` |
+| DTO 字段名与类型 | `../../../Mud.Wechat.Pay/Transactions/` |
 
 ## 改动本域需要同批完成
 

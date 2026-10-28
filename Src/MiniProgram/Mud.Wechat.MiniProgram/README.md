@@ -117,3 +117,89 @@ using var code = await wxaCode.GetUnlimitedCodeAsync(request, ct);              
 `Tests/Mud.Wechat.MiniProgram.Tests/ContractGuards/`：`MiniProgramContractGuards`（MP-X1/X2/X3/X5/X6/X7/X8/X9 契约类断言）、`MiniProgramScaffoldContractGuards`（形态类断言：令牌复用 / 无父接口 / 重叠路由 / 依赖隔离 / 无回调包）、`MiniProgramP3RulingsContractGuards`（P3 长尾四条裁决；`minishop` 与 `broadcast` 两条**已按能力面收窄为清单式在册**——前者店铺 / 商品管理面零声明、官方 2026-10-13 仍在小程序目录在册的投诉处理 5 条以白名单 + 清单断言锁定；后者于 2026-10-13 **解除**「直播不实现」裁决（依据：官方 38 页服务端 API 逐页在册，停止接入的是前端「直播插件」组件页），broadcast 前缀 34 条以六个接口文件豁免 + 清单等式锁定，白名单外文件命中前缀即红）、`WxaVipContractGuards`（MPV 系列：Vip 域 6 端点路由 / 令牌绑定 / 空请求体端点规则 / DTO 登记计数与 JSON 上下文）、`WxaTransactionGuaranteeContractGuards`（TG1~TG5：16 端点路由表与三个前缀 / GET-Query 与 POST-Body 形态（GET 端点零 `[Body]`）/ 三接口共组 `TransactionGuarantee` 注册组与令牌绑定 / 41 DTO 上下文登记与命名空间清单 / 官方字段名与类型口径 + 两处共用 DTO 裁决）、`WxaLiveContractGuards`（LB1~LB5：38 端点路由表与两个前缀 + 同族大小写混排拼写锁 + 四支 `/wxa/business/` 端点清单 + 错误拼写 `broadcast/getgoodswarehouse` 的反向钉住 / GET-Query 与 POST-Body 形态（7 GET 端点零 `[Body]`，含 `getkey` 无业务参数）/ 六接口共组 `Live` 注册组与令牌绑定 + 六接口方法数之和与路由表一致自证 / 53 DTO 上下文登记与命名空间清单（六个枚举常量类放行）/ 官方字段名与类型口径 + 五处共用 DTO 裁决 + `editroom` 不得凭空补副号字段）、`WxaVodContractGuards`（DV1~DV5：32 端点路由表与 `/wxa/sec/vod/` 族前缀（31）+ 播放器族 `/wxadrama/setplayerdramarecmdswitch` 例外（1） + 全小写连写与单复数（`submitreplacedramamedias` vs `replacedramamedia`）+ 两视角 `getauthorizedobjects` / `getauthorizeobjects` 并存 + 错误拼写 `getauthorizedapps` 的反向钉住 / 参数形态（全域零 `[Query]`、29 支单 `[Body]`、2 支 multipart、`getauthorizeapps` 零业务参数，且 GET+Body 只允许 `authorizedrama` 一支）/ 五接口共组 `Vod` 注册组与令牌绑定 + 逐接口方法数与总数自证 / 69 DTO 上下文登记与命名空间清单（21 个枚举常量类放行）+ 21 应答与端点返回类型一一对应 + 21 枚举取值集 / 官方字段名与类型口径 + 七处共用 DTO 裁决 + `authorized`→`authorized_appid` 改名裁决）、`WxaXPayContractGuards`（XP1~XP6：37 端点路由表与单一 `/xpay/` 族前缀 + 全 POST 全小写下划线 + `bind_transfer_accout` 官方错拼的反向钉住 + 下载单两支与账单下载的三形态区分 / 令牌绑定与 `XPay` 共组注册组 + 逐接口方法数之和与路由表一致自证 + `pay_sig` 28 支与 `signature` 必传 3 支可选 2 支的参数面与 `IsOptional` 口径 / `env` 四档与错误码三档的「两两不交叉 + 并集 = 37」及 `env` 与 DTO `Env` 属性的机械耦合 / `/xpay/` 路由仅在小程序线声明（跨线零声明，两支正对照防真空）/ 83 DTO 上下文登记与命名空间清单（5 枚举常量类放行）+ 27 应答与端点返回类型一一对应 + 主包合并数组与程序集上下文一一对应 + 官方字段名与类型口径与共用 DTO 裁决 + 两处官方错拼取值 / `pay_sig` 走登记不走词表的四道闸：自过期、词表交叉、孤儿键、真实装配路径下的运行期掩码功能断言）、`WxaOrderShippingContractGuards`（OS1~OS6：12 端点路由表与两个族前缀 `/wxa/sec/order/`（10）+ `/wxa/sec/famousbrand/`（2）+ 全 POST 全小写下划线 + `setwxatradetypecgi` / `opspecialorder` 官方连写的反向钉住（`set_wxa_trade_type` 不得出现）+ 两支发货录入端点不得合并 / 参数形态（11 支恰一个 `[Body]`、`get_status` 零 `[Body]` 零业务参数、**全域零方法级 `[Query]`**——本域无 `pay_sig` 类第二重凭据，故不进 QT1 词表豁免）/ 四接口共组 `OrderShipping` 注册组与令牌绑定 + 逐接口方法数 4/4/2/2 与路由表一致自证 / 官方字段名与类型口径（`order_key` 与 `merchant_id` 两套定位键分立、`upload_time` 两侧一 string 一 `long?`、`item_desc` vs `goods_desc`、`Application` 大写包装键、两支 `is_trade_*` 共用请求体而异名应答、合单顶层无发货三字段）+ 14 次逐行 JSON 名集锁定 + 敏感值抽样 / 30 DTO 上下文登记与命名空间清单（10 常量类放行）+ 十张官方取值表逐表锁定 + 5 应答与端点返回类型一一对应 + 7 支空回体直接用 `WxaResponse` + 主包合并数组与程序集上下文一一对应 / 开放面矩阵（云调用 7 支持 ⊍ 5 不支持、第三方 10 ⊍ 2 不支持、权限集 18+142）+ 错误码四档「两两不交 + 并集 = 12」+ 官方 12 页无频率数字的空缺留档 + `setMsgJumPpath` 错拼留档）、`WxaCloudBaseContractGuards`（TCB1~TCB7 + CBZ1/CBZ2：44 端点路由表与 `/tcb/` 恰 42 支 + `/wxa/getopendata` / `/wxa/getvoipsign` 两支错配纠正 / 参数形态（4 支空体端点、`[Query]` 名集合 ⊆ {openid}）/ 令牌绑定与四接口共组 `CloudBase` 注册组 / 98 DTO 上下文登记与命名空间清单 / 两套线字段格式并存（微信侧 `snake_case` 与腾讯云透传侧 `PascalCase`）+ 五支官方错拼钉住（`getFuntionLink` / `getFuntionList` / `getFuntionConfig` / `getUploadFuntionConfig` / `getYploadSignature`）/ 敏感值不入日志（判定要求真实调用形态并剥行内注释，防空跑与假红双向）与敏感 DTO 不重写 `ToString` / 九条零声明（裸发短信 2 + 压测 3 + 即将下架配置 2 + 清单错配 2）+ `/componenttcb/` 归开放平台线的小程序侧零声明）、`WxaGameContractGuards`（GM1~GM7：20 端点路由表与三族前缀（`/wxa/` 直属 7 + `/wxa/business/` 6 + `/wxa/game/` 7）+ **2 GET + 18 POST** 的动词分布 + 同族形态不成对（`set_user_storage` 下划线 vs `setuserinteractivedata` 连写）+ 两支「英文名≠请求地址」的正向钉住与按英文名拼路径的反向钉住（`setmatchidopenstate` / `queryorder` 不得出现）/ 令牌绑定与 `Game` 注册组 + 接口级单 `[Token]`（官方 20 页逐页写明不支持第三方代调用 ⇒ 不得声明第二支）+ 方法数与路由表一致自证 / **凭据参数面逐端点锁定**：2 支 `access_info`、3 支 `openid`+`signature`+`sig_method`、5 支 `signature`+`sig_method`+`pay_sig`，其余 10 支零 `[Query]`；三支清单两两不交且并集 == 「接口面上真的带 Query 的端点」全集，签名参数一律必填（`IsOptional` 为 false）/ 官方文档六处缺陷与三处共用类型裁决的**留档面**（用接口源码文本兜住注释丢失）+ 字段名与类型抽样（单数 `key`、`match_id` 取 string、`need_room_service_info` 纠正官方重复行、`payfororder` 全小写、`b` / `dp_id` 原文保留、`set_user_storage` 的 `value` 取 `JsonElement?` 而互动数据那支取 `long?`）/ 46 DTO 上下文登记与命名空间清单（本域无常量类 ⇒ 域内类型须全为 DTO）+ 主包合并数组与程序集上下文一一对应 / `AddGameApi()` 委托**必须先 `XPaySensitiveQueryKeys.RegisterAll()` 再装载**（委托体文本 + 运行期掩码双向锁定：纯运行期断言在 XP6 先跑的情况下会假绿）+ `sig_method` 保留原文（算法名非凭据）/ 20 条路由跨线零声明 + 敏感值不入日志（真实调用形态、剥行内注释，防空跑与假红双向））、`MiniProgramNonContractRouteContractGuards`（NC1~NC3：清单 D 桶 86 条的归属终判——25 条非契约在**全仓 `Src/`** 零声明、35 条开放平台令牌面路由与 6 条线外路由（Donut / 公众号门店；原含「小游戏 20 条」，2026-10-15 P1-8 收口批**解除该裁决**并按取证落位本线 `Game` 域）在**小程序线**零声明；三档共用同一趟剥注释声明扫描并以已落位路由作正对照，判据与逐条证据见 `.docs/MudWechat-小程序D桶归属终判留档-2026-10-13.md`）。
 
 2026-10-18 交易组件波次（224 条工作单）新增守卫：`WxaShopV2ContractGuards`（V2 `/shop/*` 五域 74 端点路由 / 17 支接口 / 注册组与令牌 / DTO 上下文计数 / 官方拼写负锁）、`WxaProductV1ContractGuards`（V1 `/product/*` 六域 74 端点 / 嵌套业务对象与端点信封的应答基类判定 / 路由字面量跨线扫描）、`WxaShopFundsContractGuards`、`WxaProductFundsContractGuards`、`WxaShopSharerContractGuards`（资金与分享员小域路由表 / 敏感字段不入日志 / DTO 登记）、`WxaMidasCityServiceBusinessContractGuards`（米大师 8 + 城市服务 5 + 行业能力 5：路由 / 令牌 / 注册组 / 字段名与类型 / 零声明四条非契约路由 + OpenPlatform 归属正对照）、`WxaLeaguePromoterContractGuards` 与 `WxaLeagueShopContractGuards`（`/union/promoter/*` 22 条与 `/union/shop/*` 10 条逐页 301 判非契约：零接口 / 零 DTO / 零注册组，继任面 `/channels/ec/league/*` 与 `/channels/ec/promoter/*` 归小店线）。合计增量 189 端点（398 → 587），零声明 14 条（联盟 32 + 城市服务人脸核身 3 + `applyliveinfo` 1，后两者另由跨线/零声明守卫覆盖）。
+
+---
+
+## 原 `Mud.Wechat.MiniProgram.Abstractions` 包面（2026-10 包合并并入本工程，命名空间不变）
+
+
+微信小程序 SDK **抽象包**：官方错误码常量与线级异常类型。体量刻意极小——小程序与公众号同属微信公众平台，**令牌、多应用基座与配置面全部复用 `Mud.Wechat.OfficialAccount.Abstractions`**，本包不重复实现任何一处。
+
+## 内容
+
+- `WxaErrorCodes`——官方错误码常量 **13 个**（含 `Success = 0`）。字段名与数值照官方原文，判定器与本集合同源，避免「散落的魔法数字」。
+- `WxaException : WechatApiException`——小程序线统一异常（`ErrorCode` = 官方 `errcode`；构造期经基座剥离 Query 与 userinfo，不泄露令牌）。含静态入口 `ThrowIfFailed<TResponse>(TResponse?, string? requestUri)`，约束 `where TResponse : class, IWechatApiResponse` ⇒ 与公众号 / 企业微信线共用同一叶层判错契约。
+
+**本包不提供配置类型**：小程序应用凭据即公众号凭据（`MpAppConfig`：`AppId` / `AppSecret` / `UseStableToken`，默认节 `MpApps`、`UseStableToken` 默认 `true`）。新增「小程序专属配置面」会造成同一 `AppId` 两处注册、两套令牌缓存，属被否决形态。
+
+## 为什么令牌不落在本包（关键裁决）
+
+公众号侧 `MpTokenManagerRegistry` 是 `internal sealed`、按 `MpTokenTypes.AccessToken` **单槽键控**。若小程序线新增一个令牌类型（如 `Wechat.Wxa.AccessToken`），注册表读不到该槽 ⇒ errcode 令牌恢复返回 `null`、**静默空转且不抛异常**——这是最危险的一类漂移（编译通过、运行期只表现为「令牌过期后不自愈」）。因此 MP-X2 把「复用令牌类型」锁成守卫，MP-X3 进一步锁死 `[Token].Name` 恒为官方 `access_token`。
+
+同理，本线接口为**平铺命名空间、无 `IsAbstract` 父接口**（MP-X4）：三模式（自建 / 第三方 / 代开发）差异在小程序侧不存在，父/子分面只会凭空造出一层无用抽象。
+
+## 依赖
+
+`Mud.Wechat.Abstractions`（叶层）+ `Mud.Wechat.MiniProgram.DataModels` + `Mud.Wechat.OfficialAccount.Abstractions`（跨线唯一允许的边）+ `Mud.HttpUtils` 3.0.9（`.Generator` 3.0.9 仅分析器，`PrivateAssets=all`）。
+
+**禁止**引用公众号主包 / DataModels / Callback（MP-X1 / MP-X5 守卫锁定）。`Mud.HttpUtils` 与 `.Generator` 版本须全仓单一（通用守卫 G1，`NU1605` 视为错误）。
+
+目标框架继承根 `Directory.Build.props`（`netstandard2.0;net6.0;net8.0;net10.0`、Version `1.0.3`），可打包。
+
+## 已踩陷阱
+
+- `netstandard2.0` 下无 `IsExternalInit` polyfill ⇒ 本线公共类型不用 `init` / `record` / `with`。
+- 免令牌端点（`sns/jscode2session`）**不得**声明 `[Token]`：生成器仍要求显式 `TokenManage = nameof(IMpAppManager)`（`HTTPCLIENT018`），但 `[Token]` 一旦声明就会把应用级令牌注入该请求，语义即错。
+
+
+---
+
+## 原 `Mud.Wechat.MiniProgram.DataModels` 包面（2026-10 包合并并入本工程，命名空间不变）
+
+
+微信小程序 SDK **数据模型包**（纯 DTO）：官方接口出入参与 AOT 源生成序列化上下文，独立交付以便宿主不引入运行时依赖。
+
+## 内容
+
+- **798 个**标注 `[HttpJsonSerializable(SerializerClassName = "<域段>")]` 的类型，按域目录与接口域一一对应，命名空间恒为 `Mud.Wechat.MiniProgram.DataModels.{域}`（`RequestModel/`、`ResponseModel/` 之类仅作组织，不入命名空间）。域清单：`Auth` 12 / `Common` 1 / `DataAnalysis` 17 / `QrCodeLink` 20 / `Security` 8 / `SubscribeMessage` 7 / `DynamicMessage` 6 / `Kf` 10 / `HardwareDevice` 14 / `Operation` 14 / `Plugin` 6 / `Charge` 4 / `NearbyPoi` 8 / `Search` 5 / `Soter` 2 / `ServiceMarket` 4 / `RedPacketCover` 3 / `Student` 2 / `FaceVerify` 5 / `LaborUse` 2 / `Express` 165 / `Vip` 11 / `TransactionGuarantee` 41 / `Live` 53 / `Vod` 69 / `XPay` 83 / `OrderShipping` 30 / `Novel` 50 / `RealName` 2 / `Game` 46 / `CloudBase` 98。
+- 统一响应基底 `WxaResponse`（根命名空间直属 ⇒ 归 `Common` 组）实现叶层判错契约 `IWechatApiResponse`（`ErrorCode` / `ErrorMessage` / `IsSuccess`），使 `WxaException.ThrowIfFailed` 与其余两条线共用单点判定。
+- **与公众号 `MpResponse` 同形但不共用**（本仓既定形态，两条理由）：① 硬边界——小程序线**不得引用公众号 DataModels**（只允许引用其 Abstractions 的令牌 / 多应用基座，MP-X1 / MP-X5 锁定）；② `JsonSerializerContext` 按程序集生成，跨程序集复用 DTO 会让序列化元数据落错上下文。
+- **成功响应可能整体缺省 `errcode`**（官方多页如此）⇒ `ErrorCode` 缺省即 `0`、`IsSuccess` 为真，不得把「字段缺失」判成失败。
+- `Generated/`：**31** 个上下文文件（每域一个，含 `AuthJsonContext` / `CommonJsonContext` / `DataAnalysisJsonContext` / `QrCodeLinkJsonContext` / `SecurityJsonContext` / `ExpressJsonContext` / `VipJsonContext` / `TransactionGuaranteeJsonContext` / `LiveJsonContext` / `VodJsonContext` / `XPayJsonContext` / `OrderShippingJsonContext` / `NovelJsonContext` / `RealNameJsonContext` / `GameJsonContext` / `CloudBaseJsonContext` 等），由 `scripts/GenerateJsonContext.ps1` 生成，`<auto-generated>` 头、**勿手改**、须随 DTO 变更同批提交。
+
+## 用法（JsonContext 生成流程）
+
+新增 / 变更 DTO 后按序执行（脚本默认参数指向 Work 线，本线必须显式覆盖）：
+
+```powershell
+# 1) 补标注：SerializerClassName 取命名空间域段（根命名空间直属文件归 Common）
+./scripts/AddHttpJsonSerializable.ps1 `
+    -RootPath Src/MiniProgram/Mud.Wechat.MiniProgram.DataModels `
+    -RootNamespace Mud.Wechat.MiniProgram.DataModels
+
+# 2) 重生成上下文：按分组发射 Generated/{组}JsonContext.g.cs
+./scripts/GenerateJsonContext.ps1 `
+    -TargetProject Src/MiniProgram/Mud.Wechat.MiniProgram/Mud.Wechat.MiniProgram.csproj `
+    -OutputDir Src/MiniProgram/Mud.Wechat.MiniProgram/Generated
+
+# 3) AOT 严格门禁复测
+dotnet build Src/MiniProgram/Mud.Wechat.MiniProgram.DataModels -c Release -f net8.0 -p:AotStrictMode=true
+```
+
+宿主侧无需手工串联上下文：主包 `MiniProgramJsonResolverExtensions` 把 31 个上下文合并进组件序列化管线（仅 `net8.0+`；低 TFM 走反射 STJ，AOT 门禁只对 net8.0+ 生效）。上下文为 `internal`，经 `InternalsVisibleTo` 对主包、Abstractions 与测试工程直读。**「DTO 已进上下文」不等于「上下文已进合并数组」**——数组在主包、上下文在本包，跨包漏接时 JIT 靠反射兜住、门禁全绿，只有 Native AOT 首次调用才炸；该一致性由守卫 XP5 以「程序集内 `*JsonContext` 类型集 ⇔ 合并数组里的 `XxxJsonContext.Default` 集」双向等价锁定。
+
+## 已踩陷阱
+
+- **字段名照官方原文，不得驼峰化**（MP-X5 逐字段锁定，守卫点名的即 `session_key` / `js_code` / `trace_id` / `page_url`）；其余如 `begin_date` / `end_date` / `entrypage_pv` / `env_version` / `check_path` 一律以 `[JsonPropertyName]` 显式对齐，官方 snake_case 的拼写不由我方「纠正」。
+- 小程序码三端点（`getwxacode` / `getwxacodeunlimit` / `createwxaqrcode`）成功响应是**图片二进制**，不进本包的 JSON 管线 ⇒ 只有其**请求 DTO**（`WxaCodeRequests`，4 个标注类型）在此登记，响应侧由主包 `WxaCodeResult` 承载。
+- `netstandard2.0` 下无 `IsExternalInit` polyfill ⇒ DTO 用可空 `set`，不用 `init` / `record`。
+- **虚拟支付域的三处「照官方、别纠正」**（MP-B4，2026-10-13 逐页取证）：① 协商操作类型的线格式值自带错拼 `USER_COMFIRM_COMPLAINT`（少 r）/ `MERCHANT_REFUSE_RERUND`（少 f），常量**名**按正确语义命名、**值**照原文；② 金额与时刻在官方两套表里类型不同源——`query_user_balance` 的余额是 `number`、`query_biz_balance` 的 `amount` 与提现单的 `withdraw_amount` 是 `string`、`withdraw_success_timestamp` 是 `string`（成功时刻可为空串），一律不得数值化「统一」；③ 缩写键照原文 `sett_time` / `req_from` / `begin_ds` / `left_fee` / `cos_url`，投诉人 openid 是全小写 `payer_openid` 而非 `payer_open_id`。另：6 支正文无 `env` 字段的端点，其请求 DTO **不得**出现 `Env` 属性（XP3 把这一点做成机械耦合断言）。
+
+- **发货信息与品牌申请域的四处「照官方、别统一」**（MP-B5，2026-10-13 逐页取证）：① 订单定位键**两侧分立**——录入侧是嵌套的 `order_key`（`mchid` / `out_trade_no` / `order_number_type` / `transaction_id`），查询侧是扁平的 `merchant_id` / `sub_merchant_id` / `merchant_trade_no`，报备侧又只有 `order_id`，三套各承载各的 DTO；② 同名字段跨页异型——`upload_time` 在录入请求是 `string`、在查询记录是 `long?`，商品描述录入侧 `item_desc`、查询侧 `goods_desc`；③ 品牌申请的包装键是官方原文的**首字母大写** `Application`（域内其余字段一律小写下划线），而 `get_status` 官方请求参数表零字段 ⇒ 无请求 DTO；④ 两支 `is_trade_*` 共用同一请求体（`WxaOrderTradeManagedQueryRequest`），但应答键分别是 `is_managed` 侧的 `is_trade_managed` 与 `completed` ⇒ 共用请求、不共用应答。另：`Shipping/`、`Query/`、`Setting/`、`FamousBrand/` 四子目录**仅作组织**，命名空间恒为 `...DataModels.OrderShipping`（OS5 逐类型锁定）。
+
+## 依赖
+
+`Mud.Wechat.Abstractions`（叶层，仅取 `IWechatApiResponse`）+ `Mud.HttpUtils.Attributes` 3.0.9（零依赖特性包）+ `Mud.HttpUtils.Generator` 3.0.9（仅分析器，`PrivateAssets=all`）。与 `Mud.HttpUtils` 主包版本须全仓单一（通用守卫 G1）。
+
+目标框架继承根 `Directory.Build.props`（`netstandard2.0;net6.0;net8.0;net10.0`、Version `1.0.3`），可打包；本包无 DI 入口、无令牌 / 客户端类型。
+

@@ -2,7 +2,7 @@
 
 微信公众号 / 服务号「用户管理 → 用户信息」域 SDK（7 端点，含黑名单三端点）。 接口：[IMpUserService](./IMpUserService.cs)；注册组 `User`；模块枚举 `MpModule.User`（装配入口见 [MpServiceBuilder.cs](../../Extensions/MpServiceBuilder.cs)）。逐端点核验 2026-10-18。
 
-> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[MpUserContractGuards.cs](../../../../../Tests/Mud.Wechat.OfficialAccount.Tests/ContractGuards/MpUserContractGuards.cs)、[MpQueryTokenWhitelistGuard.cs](../../../../../Tests/Mud.Wechat.OfficialAccount.Tests/ContractGuards/MpQueryTokenWhitelistGuard.cs)）、本域 DTO（[`Mud.Wechat.OfficialAccount.DataModels/User`](../../../Mud.Wechat.OfficialAccount.DataModels/User/)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
+> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[MpUserContractGuards.cs](../../../../../Tests/Mud.Wechat.OfficialAccount.Tests/ContractGuards/MpUserContractGuards.cs)、[MpQueryTokenWhitelistGuard.cs](../../../../../Tests/Mud.Wechat.OfficialAccount.Tests/ContractGuards/MpQueryTokenWhitelistGuard.cs)）、本域 DTO（[`Mud.Wechat.OfficialAccount/User`](../../../Mud.Wechat.OfficialAccount/User/)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
 
 ## 端点速览
 
@@ -192,23 +192,23 @@
 
 ## DTO 与序列化面
 
-本域 DTO 目录 [`Mud.Wechat.OfficialAccount.DataModels/User`](../../../Mud.Wechat.OfficialAccount.DataModels/User/) 内共 **14** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **14** 个，`SerializerClassName` = `User`。
+本域 DTO 目录 [`Mud.Wechat.OfficialAccount/User`](../../../Mud.Wechat.OfficialAccount/User/) 内共 **14** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **14** 个，`SerializerClassName` = `User`。
 
-AOT 源生成上下文：[`UserJsonContext.g.cs`](./../../../Mud.Wechat.OfficialAccount.DataModels/Generated/UserJsonContext.g.cs)（生成物，勿手改）。
+AOT 源生成上下文：[`UserJsonContext.g.cs`](./../../../Mud.Wechat.OfficialAccount/Generated/UserJsonContext.g.cs)（生成物，勿手改）。
 
 | 端点引用的类型 | 角色 | 定义位置 | JSON 字段（前缀） |
 |---|---|---|---|
-| `MpUserInfoResponse` | 应答 | [User/MpUserInfoResponse.cs](../../../Mud.Wechat.OfficialAccount.DataModels/User/MpUserInfoResponse.cs) | `errcode`, `errmsg` |
-| `MpBatchGetUserInfoResponse` | 应答 | [User/MpBatchGetUserInfoResponse.cs](../../../Mud.Wechat.OfficialAccount.DataModels/User/MpBatchGetUserInfoResponse.cs) | `user_info_list` |
-| `MpBatchGetUserInfoRequest` | 请求体 | [User/MpBatchGetUserInfoRequest.cs](../../../Mud.Wechat.OfficialAccount.DataModels/User/MpBatchGetUserInfoRequest.cs) | `user_list` |
-| `MpGetFansResponse` | 应答 | [User/MpGetFansResponse.cs](../../../Mud.Wechat.OfficialAccount.DataModels/User/MpGetFansResponse.cs) | `total`, `count`, `data`, `next_openid` |
-| `MpResponse` | 应答 | [MpResponse.cs](../../../Mud.Wechat.OfficialAccount.DataModels/MpResponse.cs) | `errcode`, `errmsg` |
-| `MpUpdateRemarkRequest` | 请求体 | [User/MpUpdateRemarkRequest.cs](../../../Mud.Wechat.OfficialAccount.DataModels/User/MpUpdateRemarkRequest.cs) | `openid`, `remark` |
-| `MpGetBlacklistResponse` | 应答 | [User/MpGetBlacklistResponse.cs](../../../Mud.Wechat.OfficialAccount.DataModels/User/MpGetBlacklistResponse.cs) | `total`, `count`, `data`, `next_openid` |
-| `MpGetBlacklistRequest` | 请求体 | [User/MpGetBlacklistRequest.cs](../../../Mud.Wechat.OfficialAccount.DataModels/User/MpGetBlacklistRequest.cs) | `begin_openid` |
-| `MpBlacklistRequest` | 请求体 | [User/MpBlacklistRequest.cs](../../../Mud.Wechat.OfficialAccount.DataModels/User/MpBlacklistRequest.cs) | `openid_list` |
-| `MpChangeOpenIdResponse` | 应答 | [User/MpChangeOpenIdResponse.cs](../../../Mud.Wechat.OfficialAccount.DataModels/User/MpChangeOpenIdResponse.cs) | `result_list` |
-| `MpChangeOpenIdRequest` | 请求体 | [User/MpChangeOpenIdRequest.cs](../../../Mud.Wechat.OfficialAccount.DataModels/User/MpChangeOpenIdRequest.cs) | `from_appid`, `openid_list` |
+| `MpUserInfoResponse` | 应答 | [User/MpUserInfoResponse.cs](../../../Mud.Wechat.OfficialAccount/User/MpUserInfoResponse.cs) | `errcode`, `errmsg` |
+| `MpBatchGetUserInfoResponse` | 应答 | [User/MpBatchGetUserInfoResponse.cs](../../../Mud.Wechat.OfficialAccount/User/MpBatchGetUserInfoResponse.cs) | `user_info_list` |
+| `MpBatchGetUserInfoRequest` | 请求体 | [User/MpBatchGetUserInfoRequest.cs](../../../Mud.Wechat.OfficialAccount/User/MpBatchGetUserInfoRequest.cs) | `user_list` |
+| `MpGetFansResponse` | 应答 | [User/MpGetFansResponse.cs](../../../Mud.Wechat.OfficialAccount/User/MpGetFansResponse.cs) | `total`, `count`, `data`, `next_openid` |
+| `MpResponse` | 应答 | [MpResponse.cs](../../../Mud.Wechat.OfficialAccount/MpResponse.cs) | `errcode`, `errmsg` |
+| `MpUpdateRemarkRequest` | 请求体 | [User/MpUpdateRemarkRequest.cs](../../../Mud.Wechat.OfficialAccount/User/MpUpdateRemarkRequest.cs) | `openid`, `remark` |
+| `MpGetBlacklistResponse` | 应答 | [User/MpGetBlacklistResponse.cs](../../../Mud.Wechat.OfficialAccount/User/MpGetBlacklistResponse.cs) | `total`, `count`, `data`, `next_openid` |
+| `MpGetBlacklistRequest` | 请求体 | [User/MpGetBlacklistRequest.cs](../../../Mud.Wechat.OfficialAccount/User/MpGetBlacklistRequest.cs) | `begin_openid` |
+| `MpBlacklistRequest` | 请求体 | [User/MpBlacklistRequest.cs](../../../Mud.Wechat.OfficialAccount/User/MpBlacklistRequest.cs) | `openid_list` |
+| `MpChangeOpenIdResponse` | 应答 | [User/MpChangeOpenIdResponse.cs](../../../Mud.Wechat.OfficialAccount/User/MpChangeOpenIdResponse.cs) | `result_list` |
+| `MpChangeOpenIdRequest` | 请求体 | [User/MpChangeOpenIdRequest.cs](../../../Mud.Wechat.OfficialAccount/User/MpChangeOpenIdRequest.cs) | `from_appid`, `openid_list` |
 
 > DTO 一律以源文件为准；本表只列端点签名**直接引用**的一层类型，嵌套类型不再递归展开。所有 DTO 不使用 `required`（仓内约束），必填性由接口注释与官方页表达，SDK 不做本地必填校验。
 
@@ -247,7 +247,7 @@ var response = await service.BatchBlacklistAsync(new MpBlacklistRequest(), ct);
 | 契约守卫（路由 / 计数 / DTO 登记断言） | [`MpUserContractGuards.cs`](../../../../../Tests/Mud.Wechat.OfficialAccount.Tests/ContractGuards/MpUserContractGuards.cs)、[`MpQueryTokenWhitelistGuard.cs`](../../../../../Tests/Mud.Wechat.OfficialAccount.Tests/ContractGuards/MpQueryTokenWhitelistGuard.cs) |
 | 守卫中的代表性测试方法 | `UserEndpoints_ShouldMatchOfficialRoutes`、`UserInterfaceHierarchy_ShouldRegisterDirectly`、`UserTokenBinding_ShouldBeAccessTokenInjectedViaQuery`、`UserDataModels_ShouldBeRegisteredInJsonContext`、`UserDataModels_ShouldLockOfficialFieldsAndStopSuppliedFields`、`GetEndpoints_ShouldHaveNoRequestBody`、`UserLimitsAndSharedDtos_ShouldBeLocked`、`UserModule_ShouldBeRegisteredAndWhitelisted`、`UserErrorCodes_ShouldMatchVerifiedOfficialValues`、`QueryTokenInjectionInterfaces_ShouldMatchWhitelist`、`QueryTokenInjectionInterfaces_ShouldMatchWhitelist_ForMiniProgramLine`、`QueryTokenInterfaces_ShouldDeclareOfficialParameterName` |
 | 模块枚举 / 装配入口 | [`MpModule.cs`](../../Extensions/MpModule.cs)、[`MpServiceBuilder.cs`](../../Extensions/MpServiceBuilder.cs) |
-| DTO 与 JSON 上下文 | [`Mud.Wechat.OfficialAccount.DataModels/User`](../../../Mud.Wechat.OfficialAccount.DataModels/User/) |
+| DTO 与 JSON 上下文 | [`Mud.Wechat.OfficialAccount/User`](../../../Mud.Wechat.OfficialAccount/User/) |
 | 跨线基线 | [`Tests/ContractBaseline.cs`](../../../../../Tests/ContractBaseline.cs)（各线分节；本线口径以守卫实际断言为准） |
 | 本线包级公开面与已踩陷阱 | [`Src/OfficialAccount/Mud.Wechat.OfficialAccount/README.md`](../../README.md) |
 | 跨线通用约束（门禁 / AOT / 落位） | [`AGENTS.md`](../../../../../AGENTS.md) |

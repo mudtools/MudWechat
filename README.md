@@ -202,31 +202,38 @@ builder.Services.AddWechatRedis(builder.Configuration)       // ① 必须先于
 
 ## 安装
 
-按产品线安装主包（其余随依赖传递）：
+**规则一句话：按平台装 1 个主包；要收推送再加 1 个 `.Callback`；多实例加 `Mud.Wechat.Redis`；要看链路加 `Mud.Wechat.OpenTelemetry`。** 基座、DTO、客户端接口与 DI 注册全在主包内，无需逐个安装。
 
 ```bash
 # 企业微信
 dotnet add package Mud.Wechat.Work
-dotnet add package Mud.Wechat.Work.Callback
+dotnet add package Mud.Wechat.Work.Callback          # 收推送 / 智能机器人
 # 微信公众号
 dotnet add package Mud.Wechat.OfficialAccount
 dotnet add package Mud.Wechat.OfficialAccount.Callback
-# 微信小程序（凭据复用公众号底座）
+# 微信小程序（凭据复用公众号底座，无回调包）
 dotnet add package Mud.Wechat.MiniProgram
-# 微信支付 APIv3
+# 微信支付（APIv3 与 APIv2 同包）
 dotnet add package Mud.Wechat.Pay
-dotnet add package Mud.Wechat.Pay.Callback
+dotnet add package Mud.Wechat.Pay.Callback           # 收支付通知
 # 微信小店 / 视频号
 dotnet add package Mud.Wechat.Channels
 dotnet add package Mud.Wechat.Channels.Callback
-# 微信开放平台
+# 微信开放平台（第三方平台 component）
 dotnet add package Mud.Wechat.OpenPlatform
 # 腾讯广告（在建）
 dotnet add package Mud.Wechat.Ads
+# AI 能力（Agent / MCP 工具服务器）
+dotnet add package Mud.Wechat.AI                     # 跨七线中立层
+dotnet add package Mud.Wechat.Work.AI                # 企微 Agent 底座
+dotnet add package Mud.Wechat.Work.AI.Tools          # 策展工具面
+dotnet add package Mud.Wechat.Work.AI.Mcp            # MCP 协议层
 # 跨线通用
-dotnet add package Mud.Wechat.Redis           # Redis 分布式存储
-dotnet add package Mud.Wechat.OpenTelemetry   # 可观测性装配
+dotnet add package Mud.Wechat.Redis                  # Redis 分布式存储
+dotnet add package Mud.Wechat.OpenTelemetry          # 可观测性装配
 ```
+
+全仓共 **18 个 NuGet 包**（2026-10 包合并：原 35 个）。合并只改程序集与包归属，**命名空间一字未动** —— 老写法的 `using` 与契约面照旧可用。
 
 ## 快速开始
 
@@ -329,7 +336,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/verify-build.ps1  
 powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/audit-config-keys.ps1 # 配置消费点审计
 ```
 
-- **16 个测试工程**（单 TFM `net8.0`）覆盖七条产品线 + Core 叶层 + Redis。
+- **20 个测试工程**（单 TFM `net8.0`）覆盖七条产品线 + Core 叶层 + Redis + OpenTelemetry + AI 域。
 - **契约守卫**：企业微信 61 个守卫文件、公众号 24 个、小程序 MP-X1~X9、支付 PAY-B1~B11、小店 CH 系列、广告 ADS 系列。
 - **AOT / 裁剪**：`net8.0` / `net10.0` 下逐源工程 `AotStrictMode` 净零；六条线共 **132 个源生成 JSON 上下文**。
 - **包清单单一来源**：可打包集由 `Src/**/*.csproj` 现场推导，CI / `pack.bat` / `publish.bat` 三处各自推导、不持有名单。
@@ -339,25 +346,28 @@ powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/audit-config-keys.
 
 ## 包家族
 
-`Src/` 下 **29 个源工程**（27 个产出 nupkg + 2 个构建期工具 `IsPackable=false`）：
+`Src/` 下 **20 个源工程** = **18 个可打包 nupkg** + 2 个构建期工具（`IsPackable=false`，随四个回调包以 `analyzers/dotnet/cs` 内嵌下发）。
+
+2026-10 完成**包合并**（原 35 包）：一条线一个入口包——基座 + 官方 DTO + 声明式客户端 + DI 注册同处一个程序集；只有 `Callback`（把 ASP.NET Core 依赖挡在宿主侧）与 `Redis` / `OpenTelemetry`（可选基建）保持独立。**合并未改任何命名空间**，老写法的 `using` 与契约面照旧可用。
 
 ```
 Src/
-├── Core/                # 跨线共享：Abstractions 叶层 / Redis / OpenTelemetry 可观测性装配 / Callback 生成器与分析器
-├── Work/                # 企业微信（4 包）
-├── OfficialAccount/     # 公众号（4 包）
-├── MiniProgram/         # 小程序（3 包，无 Callback）
-├── Pay/                 # 微信支付 APIv3（4 包）
-├── OpenPlatform/        # 开放平台（3 包）
-├── Channels/            # 微信小店 / 视频号（4 包）
-└── Ads/                 # 腾讯广告（3 包，在建）
+├── Core/                # 跨线共享基建（3 包 + 2 工具）：Abstractions 叶层 / Redis / OpenTelemetry / Callback 生成器与分析器
+├── Work/                # 企业微信（2 包：主包 + Callback）
+├── OfficialAccount/     # 公众号（2 包）
+├── MiniProgram/         # 小程序（1 包，无 Callback）
+├── Pay/                 # 微信支付（2 包：APIv3 + APIv2 同包，Callback 独立）
+├── OpenPlatform/        # 开放平台（1 包）
+├── Channels/            # 微信小店 / 视频号（2 包）
+├── Ads/                 # 腾讯广告（1 包，在建）
+└── AI/                  # AI 能力域（4 包：Mud.Wechat.AI 中立层 + Work.AI / .Tools / .Mcp）
 ```
 
-依赖单向：各线主包 → `{本线 Abstractions, 本线 DataModels}` → `Mud.Wechat.Abstractions`。
+依赖单向：`{线}.Callback → {线}`、`Redis → {叶层, Work}`、`MiniProgram → {叶层, OfficialAccount}`（令牌底座复用）、`AI 层 2 → {Mud.Wechat.AI, Work}`；跨线边白名单由守卫 `AB-G2` 钉死，其余跨线引用零回潮。
 目标框架：企业微信 / 公众号 / 小程序 / 小店 / 广告 / Core 线为 `netstandard2.0` / `net6.0` / `net8.0` / `net10.0`；
-**微信支付与开放平台线为 `net6.0` / `net8.0` / `net10.0`**（`AesGcm` 在 ns2.0 不存在）。全仓 `LangVersion 13.0`。
+**微信支付与开放平台线为 `net6.0` / `net8.0` / `net10.0`**（前者因 `AesGcm` 在 ns2.0 不存在，后者刻意收窄到组件最小面）；**AI 域为 `net8.0` / `net10.0`**（`Mud.AI.*` 传递要求的 `M.E.*` 10.x 支持面）。全仓 `LangVersion 13.0`。
 
-各包的职责、公开面、配置节与已踩陷阱见对应目录下的 `README.md`；跨域不可违反的约束见 `AGENTS.md`。
+各包的职责、公开面、配置节与已踩陷阱见对应目录下的 `README.md`；跨域不可违反的约束见 `AGENTS.md`；包结构为何是这个形态、合并中踩到哪些坑见 `.docs/MudWechat-包合并实施方案-v1.md`。
 
 ---
 
@@ -365,8 +375,8 @@ Src/
 
 ```
 Mud.Wechat/
-├── Src/                    # 29 个源工程
-├── Tests/                  # 16 个测试工程（含 ContractGuards/）
+├── Src/                    # 20 个源工程（18 包 + 2 构建期工具）
+├── Tests/                  # 20 个测试工程（含 ContractGuards/）
 ├── Demos/                  # 示例工程
 ├── scripts/                # verify-build / audit-config-keys / GenerateJsonContext / ...
 ├── Directory.Build.props   # 全局 MSBuild 属性（TFM / LangVersion / Version 唯一来源）

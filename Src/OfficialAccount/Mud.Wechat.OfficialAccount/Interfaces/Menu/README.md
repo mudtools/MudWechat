@@ -7,7 +7,7 @@
 > **事实来源限定**：本文断言只来自本仓接口文件的 XML 注释、本仓契约守卫
 > [MpMenuContractGuards.cs](../../../../../Tests/Mud.Wechat.OfficialAccount.Tests/ContractGuards/MpMenuContractGuards.cs)
 > （`MG1`~`MG8`）、[MpQueryTokenWhitelistGuard.cs](../../../../../Tests/Mud.Wechat.OfficialAccount.Tests/ContractGuards/MpQueryTokenWhitelistGuard.cs)（`QT1`）
-> 与本仓 DTO（[DataModels/Menu/](../../../Mud.Wechat.OfficialAccount.DataModels/Menu/)）。
+> 与本仓 DTO（[DataModels/Menu/](../../../Mud.Wechat.OfficialAccount/Menu/)）。
 > **计数以守卫为准**：`MG1` 钉「恰 7 条路由、`delete` 为 GET、`getCurrentSelfmenuInfo` 不在 `/cgi-bin/menu/` 前缀下」。
 > `QT1` 注释与本域路由计数一致（7）。
 
@@ -41,7 +41,7 @@
 
 5. **`button` 树形与 `type` 取值**：一级与二级**共用** `MpMenuButton`（官方两处字段表逐字段一致）。
    `type` 与 `sub_button` **互斥**——同一节点要么是动作按钮（有 `type`），要么是含二级菜单的容器（有 `sub_button`）。
-   `type` 常量 12 项见 [MpMenuButtonTypes.cs](../../../Mud.Wechat.OfficialAccount.Abstractions/MpMenuButtonTypes.cs)：
+   `type` 常量 12 项见 [MpMenuButtonTypes.cs](../../../Mud.Wechat.OfficialAccount/MpMenuButtonTypes.cs)：
    `click`/`view`/`scancode_push`/`scancode_waitmsg`/`pic_sysphoto`/`pic_photo_or_album`/`pic_weixin`/
    `location_select`/`media_id`/`article_id`/`article_view_limited`/`miniprogram`（`MG6` 锁定 12 项 + 平台值 `1`/`2`/`3`）。
    - 3~8 类事件仅支持 iPhone 5.4.1+ / Android 5.4+；
@@ -56,7 +56,7 @@
 
 7. **字符集陷阱（`MG5` 防回退）**：官方 `40033`「请求包含 `\uxxxx` 格式字符会导致创建失败」⇒ 本 SDK 在注册期把
    序列化编码器放宽为不转义非 ASCII（`UnsafeRelaxedJsonEscaping`，见
-   [MpMultiAppExtensions.cs](../../../Mud.Wechat.OfficialAccount.Abstractions/Extensions/MpMultiAppExtensions.cs)），
+   [MpMultiAppExtensions.cs](../../../Mud.Wechat.OfficialAccount/Extensions/MpMultiAppExtensions.cs)），
    并有用例锁定「中文菜单名不得出现 `\u` 转义」。改动注册期编码器会破坏该修复。
 
 8. **匹配语义与域名上限**：用户身上标签超过 1 个时**以最后打上的标签**为匹配依据；
@@ -130,7 +130,7 @@ MpException.ThrowIfFailed(
 | `appid` 字段描述 | 官方变更日志 **2025-11-25** 更新 `appid` 说明；本域按现状建模 | 下次核验该页时复核 `appid` 约束 |
 | 第三方调用权限集 | 创建菜单页记权限集 id **15**；其余端点代调用面**未逐项核验** | 核验前不写权限集号 |
 | selfmenu 面 sub_button 形态 | 为对象 `{list:[…]}`，与 API 树数组不同构 | 保持两族并存（`MG4`），勿合并 |
-| Menu DTO 数 | `MG3` 钉 `expectedCount = 16` 登记进 `MenuJsonContext`（含 [SelfMenuInfo/](../../../Mud.Wechat.OfficialAccount.DataModels/Menu/SelfMenuInfo/) 6 文件） | 漂移先核对官方再同批改基线 |
+| Menu DTO 数 | `MG3` 钉 `expectedCount = 16` 登记进 `MenuJsonContext`（含 [SelfMenuInfo/](../../../Mud.Wechat.OfficialAccount/Menu/SelfMenuInfo/) 6 文件） | 漂移先核对官方再同批改基线 |
 
 ## 事实来源
 
@@ -145,9 +145,9 @@ MpException.ThrowIfFailed(
 | 12 种按钮类型 + 平台值 | `MG6` = `MenuButtonTypes_ShouldMatchOfficialEnumeration` |
 | `MpModule.Menu` + `AddMenuApi()` + 白名单 | `MG7` = `MenuModule_ShouldBeRegisteredAndWhitelisted` |
 | 40016/40017/40018/40019/40020/40023/40024/40027/40033/40054/40055/53600/65320 | `MG8` = `MenuErrorCodes_ShouldMatchVerifiedOfficialValues` |
-| 字段名与类型（button 树 / matchrule / selfmenu） | [DataModels/Menu/](../../../Mud.Wechat.OfficialAccount.DataModels/Menu/) |
-| 按钮类型 / 平台常量 | [MpMenuButtonTypes.cs](../../../Mud.Wechat.OfficialAccount.Abstractions/MpMenuButtonTypes.cs) |
-| 生成上下文清单 | [Generated/MenuJsonContext.g.cs](../../../Mud.Wechat.OfficialAccount.DataModels/Generated/MenuJsonContext.g.cs)、[MpJsonResolverExtensions.cs](../../Extensions/MpJsonResolverExtensions.cs) |
+| 字段名与类型（button 树 / matchrule / selfmenu） | [DataModels/Menu/](../../../Mud.Wechat.OfficialAccount/Menu/) |
+| 按钮类型 / 平台常量 | [MpMenuButtonTypes.cs](../../../Mud.Wechat.OfficialAccount/MpMenuButtonTypes.cs) |
+| 生成上下文清单 | [Generated/MenuJsonContext.g.cs](../../../Mud.Wechat.OfficialAccount/Generated/MenuJsonContext.g.cs)、[MpJsonResolverExtensions.cs](../../Extensions/MpJsonResolverExtensions.cs) |
 
 ## 改动本域需要同批完成
 
@@ -158,7 +158,7 @@ MpException.ThrowIfFailed(
    [../../../../../scripts/AddHttpJsonSerializable.ps1](../../../../../scripts/AddHttpJsonSerializable.ps1) +
    [../../../../../scripts/GenerateJsonContext.ps1](../../../../../scripts/GenerateJsonContext.ps1)
    → 同批更新 `MG3` 的 `expectedCount`（16）。
-3. 确认 [Generated/MenuJsonContext.g.cs](../../../Mud.Wechat.OfficialAccount.DataModels/Generated/MenuJsonContext.g.cs) 与
+3. 确认 [Generated/MenuJsonContext.g.cs](../../../Mud.Wechat.OfficialAccount/Generated/MenuJsonContext.g.cs) 与
    [MpJsonResolverExtensions.cs](../../Extensions/MpJsonResolverExtensions.cs) 的合并清单**逐项对齐**——
    漏登记在 JIT 下无症状、只在 Native AOT 首次真实调用失败。
 4. 调整注册面 / 模块 → 同批改 [MpModule.cs](../../Extensions/MpModule.cs)、[MpServiceBuilder.cs](../../Extensions/MpServiceBuilder.cs)

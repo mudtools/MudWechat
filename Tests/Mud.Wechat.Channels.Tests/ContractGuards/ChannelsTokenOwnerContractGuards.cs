@@ -100,35 +100,56 @@ public class ChannelsTokenOwnerContractGuards
 
     /// <summary>
     /// CH-T3：不得复用 <c>MpTokenTypes</c> —— 程序集引用级锁定 + 源码文本复核：
-    /// 小店线任一程序集不得引用公众号 Abstractions 程序集，也不得出现公众号令牌键字符串。
+    /// 小店线任一程序集不得引用其它产品线的任何程序集，也不得出现公众号令牌键字符串。
     /// </summary>
+    /// <remarks>
+    /// 2026-10 包合并后「公众号令牌基座程序集」的名字不再是 <c>Mud.Wechat.OfficialAccount.Abstractions</c>
+    /// （并入 <c>Mud.Wechat.OfficialAccount</c>）。若仍按单个程序集名比对，守卫会在真出现跨线引用时
+    /// 静默放行 —— 故改为<b>按线前缀集合</b>判定，与对方怎么分包无关。
+    /// </remarks>
     [Fact]
     public void ChannelsAssemblies_ShouldNotReferenceMpTokenTypes()
     {
+        var foreignLinePrefixes = new[]
+        {
+            "Mud.Wechat.OfficialAccount", "Mud.Wechat.MiniProgram", "Mud.Wechat.Pay",
+            "Mud.Wechat.OpenPlatform", "Mud.Wechat.Work", "Mud.Wechat.Ads",
+        };
+
         foreach (var assemblyName in new[]
                  {
                      "Mud.Wechat.Channels",
-                     "Mud.Wechat.Channels.Abstractions",
-                     "Mud.Wechat.Channels.DataModels",
                      "Mud.Wechat.Channels.Callback",
                  })
         {
             var asm = LoadProductLine(assemblyName);
-            asm.GetReferencedAssemblies()
-                .Select(static a => a.Name)
-                .Should().NotContain("Mud.Wechat.OfficialAccount.Abstractions",
-                    $"{assemblyName} 不得引用公众号令牌基座（MpTokenTypes 所在程序集）");
+            var offenders = asm.GetReferencedAssemblies()
+                .Select(static a => a.Name ?? string.Empty)
+                .Where(n => n.StartsWith("Mud.Wechat.", StringComparison.Ordinal)
+                            && !n.StartsWith("Mud.Wechat.Channels", StringComparison.Ordinal)
+                            && !n.StartsWith("Mud.Wechat.Abstractions", StringComparison.Ordinal))
+                .Where(n => foreignLinePrefixes.Any(p => n.StartsWith(p, StringComparison.Ordinal)))
+                .ToArray();
+
+            offenders.Should().BeEmpty(
+                $"{assemblyName} 不得引用任何其它产品线的程序集（小店令牌域独立，跨线引用即凭据模型混用）；" +
+                $"实际命中：{string.Join(", ", offenders)}");
         }
 
-        // 源码文本复核：防「注释 / 未编译代码」绕过程序集断言（议案：令牌键是常量，文本即契约）。
+        // 源码文本复核：程序集引用断言看不到「以字符串字面量硬写公众号令牌键」这类复用，故补文本扫描。
+        // 扫描面排除注释行：注释只是叙述（小店线多处 XML 文档正需要引用 MpTokenTypes 来说明「为何不复用」），
+        // 能造成复用后果的只有代码。2026-10 包合并后原 Abstractions 源码并入主工程目录，
+        // 其文档注释进入扫描面，若不排除注释即假红。
         var channelsRoot = SourceProjectDir("Mud.Wechat.Channels");
         Directory.EnumerateFiles(channelsRoot, "*.cs", SearchOption.AllDirectories)
             .Where(static f => !f.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.Ordinal)
                                && !f.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
             .SelectMany(static f => File.ReadLines(f))
+            .Where(static line => !line.TrimStart().StartsWith("///", StringComparison.Ordinal)
+                                  && !line.TrimStart().StartsWith("//", StringComparison.Ordinal))
             .Where(static line => line.Contains("MpTokenTypes", StringComparison.Ordinal)
                                   || line.Contains("\"Wechat.Mp.AccessToken\"", StringComparison.Ordinal))
-            .Should().BeEmpty("小店线源码不得出现 MpTokenTypes / 公众号令牌键（CH-T3，防复用回潮）");
+            .Should().BeEmpty("小店线代码不得出现 MpTokenTypes / 公众号令牌键（CH-T3，防复用回潮）");
     }
 
     /// <summary>
@@ -154,7 +175,6 @@ public class ChannelsTokenOwnerContractGuards
         foreach (var assemblyName in new[]
                  {
                      "Mud.Wechat.Channels",
-                     "Mud.Wechat.Channels.Abstractions",
                      "Mud.Wechat.Channels.Callback",
                  })
         {

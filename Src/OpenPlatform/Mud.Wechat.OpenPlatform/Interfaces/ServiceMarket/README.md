@@ -9,7 +9,7 @@
 
 > **事实来源限定**：本文全部断言只来自本域接口 XML 注释、守卫
 > [OpenPlatformUserOrderWeDataServiceMarketContractGuards.cs](../../../../../Tests/Mud.Wechat.OpenPlatform.Tests/ContractGuards/OpenPlatformUserOrderWeDataServiceMarketContractGuards.cs)（SM 系列）与 DTO
-> [`DataModels/ServiceMarket/`](../../../Mud.Wechat.OpenPlatform.DataModels/ServiceMarket/)。
+> [`DataModels/ServiceMarket/`](../../../Mud.Wechat.OpenPlatform/ServiceMarket/)。
 
 ## 端点速览
 
@@ -87,7 +87,7 @@ OpenPlatformServiceMarketPaidOrderListResponse orders = await serviceMarket.GetP
 | 路由表、计数（恰 3）与令牌语义 | 守卫 `SM1` |
 | `login_auth` 非契约裁决 | 守卫 `SM2` + 类 remarks + `Tests/ContractBaseline.cs` 追踪号 |
 | 三处一致（枚举 + 委托 + resolver） | 守卫 `REG1`；DI 见 [../../Extensions/OpenPlatformServiceBuilder.cs](../../Extensions/OpenPlatformServiceBuilder.cs) |
-| DTO 登记、字段名、数值面 | 守卫 DTO1~DTO3；[`DataModels/ServiceMarket/`](../../../Mud.Wechat.OpenPlatform.DataModels/ServiceMarket/) |
+| DTO 登记、字段名、数值面 | 守卫 DTO1~DTO3；[`DataModels/ServiceMarket/`](../../../Mud.Wechat.OpenPlatform/ServiceMarket/) |
 
 ## 改动本域需要同批完成
 

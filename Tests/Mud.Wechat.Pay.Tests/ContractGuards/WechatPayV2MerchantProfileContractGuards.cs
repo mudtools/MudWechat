@@ -132,7 +132,8 @@ public class WechatPayV2MerchantProfileContractGuards
                 $"{family.Name} 承载需商户证书的端点：证书按商户绑定 ⇒ 不得走源生成");
             family.Namespace.Should().Be("Mud.Wechat.Pay.V2",
                 "because 可注入接口落线根命名空间（与 IWechatPayV2SecureService 同面）");
-            family.Assembly.GetName().Name.Should().Be("Mud.Wechat.Pay.V2");
+            // 合并前还断言「且落 Mud.Wechat.Pay.V2 程序集」；2026-10 包合并后 APIv2/APIv3 同程序集，
+            // 该边界的真实承载物是命名空间（上面那条），程序集名断言属 D3 反模式，删除。
         }
     }
 
@@ -167,7 +168,7 @@ public class WechatPayV2MerchantProfileContractGuards
     {
         foreach (var (interfaceType, routes) in FamilyRoutes)
         {
-            var text = File.ReadAllText(SourcePath("Mud.Wechat.Pay.V2", ImplementationFiles[interfaceType]));
+            var text = File.ReadAllText(SourcePath("Mud.Wechat.Pay", ImplementationFiles[interfaceType]));
             var methods = DeclaredMethods(interfaceType);
             methods.Should().HaveSameCount(routes,
                 $"{interfaceType.Name} 的方法数与守卫路由清单须同批（否则 Zip 会静默截断，把漏配的端点藏起来）");
@@ -197,7 +198,7 @@ public class WechatPayV2MerchantProfileContractGuards
     {
         foreach (var family in ApiMchFamilies)
         {
-            var text = File.ReadAllText(SourcePath("Mud.Wechat.Pay.V2", ImplementationFiles[family]));
+            var text = File.ReadAllText(SourcePath("Mud.Wechat.Pay", ImplementationFiles[family]));
             Occurrences(text, "WechatPayV2HttpClientNames.BaseAddress, request")
                 .Should().Be(FamilyRoutes[family].Length,
                     $"{family.Name} 的每一支须逐支显式钉在 api.mch 上（不靠默认值）");
@@ -208,7 +209,7 @@ public class WechatPayV2MerchantProfileContractGuards
 
         foreach (var family in ApiHkFamilies)
         {
-            var text = File.ReadAllText(SourcePath("Mud.Wechat.Pay.V2", ImplementationFiles[family]));
+            var text = File.ReadAllText(SourcePath("Mud.Wechat.Pay", ImplementationFiles[family]));
             Occurrences(text, "WechatPayV2HttpClientNames.GlobalBaseAddress, request")
                 .Should().Be(FamilyRoutes[family].Length,
                     $"{family.Name} 的每一支须逐支显式钉在 apihk.mch 上（官方「接口说明」栏只印这个域名）");
@@ -239,7 +240,7 @@ public class WechatPayV2MerchantProfileContractGuards
     public void V2_MerchantProfile_SecureChannelWhitelist_ShouldBeClosedSetOfFourConstants()
     {
         var text = File.ReadAllText(
-            SourcePath("Mud.Wechat.Pay.V2", "Secure/WechatPayV2SecureChannelProvider.cs"));
+            SourcePath("Mud.Wechat.Pay",  "Secure/WechatPayV2SecureChannelProvider.cs"));
 
         foreach (var constant in new[] { "BaseAddress", "SecureBaseAddress", "GlobalBaseAddress", "FraudBaseAddress" })
         {
@@ -265,7 +266,7 @@ public class WechatPayV2MerchantProfileContractGuards
     public void V2_MerchantProfile_MediaUpload_ShouldUseTheOnlyMultipartExit()
     {
         var media = File.ReadAllText(
-            SourcePath("Mud.Wechat.Pay.V2", ImplementationFiles[typeof(IWechatPayV2MerchantMediaService)]));
+            SourcePath("Mud.Wechat.Pay", ImplementationFiles[typeof(IWechatPayV2MerchantMediaService)]));
 
         Occurrences(media, "PostMultipartAsync<").Should().Be(1);
         Occurrences(media, "PostAsync<").Should().Be(0,
@@ -274,7 +275,7 @@ public class WechatPayV2MerchantProfileContractGuards
             "because form-data 的 name 属性是官方字段名，写错即官方读不到文件分节");
 
         // 文件分节天然不参与签名：收发器只对 DTO 字段 + sign 建表。
-        var invoker = File.ReadAllText(SourcePath("Mud.Wechat.Pay.V2", "Secure/WechatPayV2SecureInvoker.cs"));
+        var invoker = File.ReadAllText(SourcePath("Mud.Wechat.Pay",  "Secure/WechatPayV2SecureInvoker.cs"));
         invoker.Should().Contain("new MultipartFormDataContent");
         invoker.Should().Contain("content.Add(filePart, fileFieldName, fileName)",
             "because 文件必须作为独立分节附加，才能既不参与签名又保持官方读取形态");
@@ -285,7 +286,7 @@ public class WechatPayV2MerchantProfileContractGuards
         foreach (var family in ApiMchFamilies.Append<
                      Type>(typeof(IWechatPayV2InstitutionSubService)))
         {
-            var text = File.ReadAllText(SourcePath("Mud.Wechat.Pay.V2", ImplementationFiles[family]));
+            var text = File.ReadAllText(SourcePath("Mud.Wechat.Pay", ImplementationFiles[family]));
             Occurrences(text, "PostMultipartAsync<").Should().Be(0,
                 $"{family.Name} 官方请求格式是 XML，不得改用表单出口");
         }
@@ -375,7 +376,7 @@ public class WechatPayV2MerchantProfileContractGuards
     public void V2_MerchantProfile_SensitiveFields_ShouldBeDocumentedAsCiphertext()
     {
         var micro = File.ReadAllLines(SourcePath(
-            "Mud.Wechat.Pay.V2.DataModels", "PayV2/V2MerchantMicroDtos.cs"));
+            "Mud.Wechat.Pay", "PayV2/V2MerchantMicroDtos.cs"));
 
         foreach (var field in new[] { "account_number", "mobile_phone", "email" })
         {
@@ -393,7 +394,7 @@ public class WechatPayV2MerchantProfileContractGuards
         merchantName.Should().Contain("明文");
 
         // 加密口径本身（OAEP-SHA1 + Base64 + 平台证书公钥）由本守卫的加密器用例逐字节验证。
-        var encrypter = File.ReadAllText(SourcePath("Mud.Wechat.Pay.V2", "Security/WechatPayV2SensitiveFieldEncrypter.cs"));
+        var encrypter = File.ReadAllText(SourcePath("Mud.Wechat.Pay",  "Security/WechatPayV2SensitiveFieldEncrypter.cs"));
         encrypter.Should().Contain("RSAEncryptionPadding.OaepSHA1",
             "because 官方 Java 示例是 OAEPWithSHA-1AndMGF1Padding；用 SHA-256 会得到对方解不开的密文");
         encrypter.Should().Contain("Convert.ToBase64String");
@@ -499,7 +500,7 @@ public class WechatPayV2MerchantProfileContractGuards
     [Fact]
     public void V2_MerchantProfile_HandWrittenModules_ShouldBindSingletonServicesInBuilder()
     {
-        var builderSource = File.ReadAllText(SourcePath("Mud.Wechat.Pay.V2", "Extensions/PayV2ServiceBuilder.cs"));
+        var builderSource = File.ReadAllText(SourcePath("Mud.Wechat.Pay",  "Extensions/PayV2ServiceBuilder.cs"));
 
         foreach (var module in new[]
                  {
@@ -639,7 +640,7 @@ public class WechatPayV2MerchantProfileContractGuards
     {
         DtoSourceFiles.TryGetValue(dto, out var relative);
         relative.Should().NotBeNull($"{dto.Name} 未登记源文件 ⇒ 新 DTO 文件须同批补 DtoSourceFiles");
-        return File.ReadAllText(SourcePath("Mud.Wechat.Pay.V2.DataModels", relative!));
+        return File.ReadAllText(SourcePath("Mud.Wechat.Pay", relative!));
     }
 
     /// <summary>

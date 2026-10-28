@@ -6,7 +6,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\Mud.Wechat.OfficialAccount.Abstractions\Mud.Wechat.OfficialAccount.Abstractions.csproj" />
+		<ProjectReference Include="..\Mud.Wechat.OfficialAccount\Mud.Wechat.OfficialAccount.csproj" />
 	</ItemGroup>
 
 	<!-- 说明（v3 方案 §3.4/E9）：契约登记生成器挂在 OA.Abstractions（partial 方法体与宿主必须同程序集），

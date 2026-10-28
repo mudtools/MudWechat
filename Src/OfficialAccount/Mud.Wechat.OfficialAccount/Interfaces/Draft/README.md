@@ -11,7 +11,7 @@
 > （`CT1`~`CT8`，草稿管理 6 + 发布能力 5 + 商品卡片 1 + 留言管理 8 共用这一支内容域守卫）、
 > [MpQueryTokenWhitelistGuard.cs](../../../../../Tests/Mud.Wechat.OfficialAccount.Tests/ContractGuards/MpQueryTokenWhitelistGuard.cs)（`QT1`）、
 > [MpRouteCountGuard.cs](../../../../../Tests/Mud.Wechat.OfficialAccount.Tests/ContractGuards/MpRouteCountGuard.cs)（`RC1`/`RC2`）
-> 与本仓 DTO（[DataModels/Draft/](../../../Mud.Wechat.OfficialAccount.DataModels/Draft/)）。
+> 与本仓 DTO（[DataModels/Draft/](../../../Mud.Wechat.OfficialAccount/Draft/)）。
 > 未在以上四处留档的官方约束一律进文末「已知留档缺口」，正文不引用外部官方文档表述。
 
 ## 端点速览
@@ -179,7 +179,7 @@ await draft.DeleteDraftAsync(new MpDraftDeleteRequest { MediaId = draftMediaId }
 | `MpModule.Draft` + `AddDraftApi()` + Query 令牌白名单包含 | `CT7` = `ContentModules_ShouldBeRegisteredAndWhitelisted` |
 | 已核验错误码常量 | `CT8` = `ContentErrorCodes_ShouldMatchVerifiedOfficialValues` |
 | Query 令牌全集（唯一持票人） | `QT1`；路由去重计数 `RC1`/`RC2` |
-| 19 个 DTO（`SerializerClassName = "Draft"`） | [DataModels/Draft/](../../../Mud.Wechat.OfficialAccount.DataModels/Draft/) |
+| 19 个 DTO（`SerializerClassName = "Draft"`） | [DataModels/Draft/](../../../Mud.Wechat.OfficialAccount/Draft/) |
 | 生成入口 / 模块枚举 / 上下文合并清单 | [MpServiceBuilder.cs](../../Extensions/MpServiceBuilder.cs)、[MpModule.cs](../../Extensions/MpModule.cs)、[MpJsonResolverExtensions.cs](../../Extensions/MpJsonResolverExtensions.cs) |
 | 本线总览（**统计已过期**，不可当权威） | [../../README.md](../../README.md) |
 

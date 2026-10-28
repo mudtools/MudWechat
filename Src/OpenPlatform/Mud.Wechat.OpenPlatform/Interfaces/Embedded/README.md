@@ -8,7 +8,7 @@
 
 > **事实来源限定**：本文全部断言只来自本域接口 XML 注释、守卫
 > [OpenPlatformEmbeddedContractGuards.cs](../../../../../Tests/Mud.Wechat.OpenPlatform.Tests/ContractGuards/OpenPlatformEmbeddedContractGuards.cs)（EMB 系列）与 DTO
-> [`DataModels/Embedded/`](../../../Mud.Wechat.OpenPlatform.DataModels/Embedded/)。凡官方注释未给出的额度 / 频率 / 权限集数字，一律入文末「已知留档缺口」，不从记忆或邻域补。
+> [`DataModels/Embedded/`](../../../Mud.Wechat.OpenPlatform/Embedded/)。凡官方注释未给出的额度 / 频率 / 权限集数字，一律入文末「已知留档缺口」，不从记忆或邻域补。
 
 ## 端点速览
 
@@ -104,7 +104,7 @@ using (appContextSwitcher.UseAuthorizerScope(authorizerAppId))   // authorizerAp
 | 路由表与计数（恰 6，4 POST + 2 GET） | [OpenPlatformEmbeddedContractGuards.cs](../../../../../Tests/Mud.Wechat.OpenPlatform.Tests/ContractGuards/OpenPlatformEmbeddedContractGuards.cs) `EMB1` |
 | 令牌语义（授权方值 / `access_token` 参数名 / Query / 注册组） | 同上 `EMB2` |
 | 三处一致（枚举 + 委托 + resolver） | 同上 `EMB3`；DI 见 [../../Extensions/OpenPlatformServiceBuilder.cs](../../Extensions/OpenPlatformServiceBuilder.cs) |
-| DTO 登记与字段名 | 同上 `EMB4`~`EMB6`；[`DataModels/Embedded/`](../../../Mud.Wechat.OpenPlatform.DataModels/Embedded/) |
+| DTO 登记与字段名 | 同上 `EMB4`~`EMB6`；[`DataModels/Embedded/`](../../../Mud.Wechat.OpenPlatform/Embedded/) |
 | 落位裁决（本线 vs 小程序线） | 同上类 remarks + [../../README.md](../../README.md) |
 
 ## 改动本域需要同批完成

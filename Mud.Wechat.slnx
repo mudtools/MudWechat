@@ -20,24 +20,20 @@
        布局纪律：五包一律平铺 Src/AI/<Project>/（三段形态）——不得建于 Src/AI/{线}/ 子目录
        （AB-G6 布局不变式 + verify-build/audit-config-keys 的 -Depth 2 枚举，见方案 §3.2.3）。 -->
   <Folder Name="/src/AI/">
-    <Project Path="Src/AI/Mud.Wechat.AI.Abstractions/Mud.Wechat.AI.Abstractions.csproj" />
-    <Project Path="Src/AI/Mud.Wechat.AI.Agent/Mud.Wechat.AI.Agent.csproj" />
+    <Project Path="Src/AI/Mud.Wechat.AI/Mud.Wechat.AI.csproj" />
     <Project Path="Src/AI/Mud.Wechat.Work.AI/Mud.Wechat.Work.AI.csproj" />
     <Project Path="Src/AI/Mud.Wechat.Work.AI.Tools/Mud.Wechat.Work.AI.Tools.csproj" />
     <Project Path="Src/AI/Mud.Wechat.Work.AI.Mcp/Mud.Wechat.Work.AI.Mcp.csproj" />
   </Folder>
-  <!-- 腾讯广告 Marketing API v3.0 产品线（2026-10 新增，在建）：3 源工程。 -->
+  <!-- 腾讯广告 Marketing API v3.0 产品线（2026-10 新增，在建）：1 源工程
+       （2026-10 包合并：原 3 工程并一，命名空间与公开面不变）。 -->
   <Folder Name="/src/Ads/">
-    <Project Path="Src/Ads/Mud.Wechat.Ads.Abstractions/Mud.Wechat.Ads.Abstractions.csproj" />
-    <Project Path="Src/Ads/Mud.Wechat.Ads.DataModels/Mud.Wechat.Ads.DataModels.csproj" />
     <Project Path="Src/Ads/Mud.Wechat.Ads/Mud.Wechat.Ads.csproj" />
   </Folder>
   <!-- 微信小店/视频号（channels 生态）产品线（设计方案 v1）：4 源工程。 -->
   <Folder Name="/src/Channels/">
-    <Project Path="Src/Channels/Mud.Wechat.Channels.Abstractions/Mud.Wechat.Channels.Abstractions.csproj" />
-    <Project Path="Src/Channels/Mud.Wechat.Channels.Callback/Mud.Wechat.Channels.Callback.csproj" />
-    <Project Path="Src/Channels/Mud.Wechat.Channels.DataModels/Mud.Wechat.Channels.DataModels.csproj" />
     <Project Path="Src/Channels/Mud.Wechat.Channels/Mud.Wechat.Channels.csproj" />
+    <Project Path="Src/Channels/Mud.Wechat.Channels.Callback/Mud.Wechat.Channels.Callback.csproj" />
   </Folder>
   <Folder Name="/src/Core/">
     <Project Path="Src/Core/Mud.Wechat.Abstractions/Mud.Wechat.Abstractions.csproj" />
@@ -48,35 +44,23 @@
     <Project Path="Src/Core/Mud.Wechat.Redis/Mud.Wechat.Redis.csproj" />
   </Folder>
   <Folder Name="/src/MiniProgram/">
-    <Project Path="Src/MiniProgram/Mud.Wechat.MiniProgram.Abstractions/Mud.Wechat.MiniProgram.Abstractions.csproj" />
-    <Project Path="Src/MiniProgram/Mud.Wechat.MiniProgram.DataModels/Mud.Wechat.MiniProgram.DataModels.csproj" />
     <Project Path="Src/MiniProgram/Mud.Wechat.MiniProgram/Mud.Wechat.MiniProgram.csproj" />
   </Folder>
   <Folder Name="/src/OfficialAccount/">
-    <Project Path="Src/OfficialAccount/Mud.Wechat.OfficialAccount.Abstractions/Mud.Wechat.OfficialAccount.Abstractions.csproj" />
-    <Project Path="Src/OfficialAccount/Mud.Wechat.OfficialAccount.Callback/Mud.Wechat.OfficialAccount.Callback.csproj" />
-    <Project Path="Src/OfficialAccount/Mud.Wechat.OfficialAccount.DataModels/Mud.Wechat.OfficialAccount.DataModels.csproj" />
     <Project Path="Src/OfficialAccount/Mud.Wechat.OfficialAccount/Mud.Wechat.OfficialAccount.csproj" />
+    <Project Path="Src/OfficialAccount/Mud.Wechat.OfficialAccount.Callback/Mud.Wechat.OfficialAccount.Callback.csproj" />
   </Folder>
   <Folder Name="/src/OpenPlatform/">
-    <Project Path="Src/OpenPlatform/Mud.Wechat.OpenPlatform.Abstractions/Mud.Wechat.OpenPlatform.Abstractions.csproj" />
-    <Project Path="Src/OpenPlatform/Mud.Wechat.OpenPlatform.DataModels/Mud.Wechat.OpenPlatform.DataModels.csproj" />
     <Project Path="Src/OpenPlatform/Mud.Wechat.OpenPlatform/Mud.Wechat.OpenPlatform.csproj" />
   </Folder>
   <Folder Name="/src/Pay/">
-    <Project Path="Src/Pay/Mud.Wechat.Pay.Abstractions/Mud.Wechat.Pay.Abstractions.csproj" />
-    <Project Path="Src/Pay/Mud.Wechat.Pay.Callback/Mud.Wechat.Pay.Callback.csproj" />
-    <Project Path="Src/Pay/Mud.Wechat.Pay.DataModels/Mud.Wechat.Pay.DataModels.csproj" />
     <Project Path="Src/Pay/Mud.Wechat.Pay/Mud.Wechat.Pay.csproj" />
+    <Project Path="Src/Pay/Mud.Wechat.Pay.Callback/Mud.Wechat.Pay.Callback.csproj" />
     <!-- APIv2 线（XML + MD5/HMAC-SHA256 + mutual TLS）：2 源工程。 -->
-    <Project Path="Src/Pay/Mud.Wechat.Pay.V2.DataModels/Mud.Wechat.Pay.V2.DataModels.csproj" />
-    <Project Path="Src/Pay/Mud.Wechat.Pay.V2/Mud.Wechat.Pay.V2.csproj" />
   </Folder>
   <Folder Name="/src/Work/">
-    <Project Path="Src/Work/Mud.Wechat.Work.Abstractions/Mud.Wechat.Work.Abstractions.csproj" />
-    <Project Path="Src/Work/Mud.Wechat.Work.Callback/Mud.Wechat.Work.Callback.csproj" />
-    <Project Path="Src/Work/Mud.Wechat.Work.DataModels/Mud.Wechat.Work.DataModels.csproj" />
     <Project Path="Src/Work/Mud.Wechat.Work/Mud.Wechat.Work.csproj" />
+    <Project Path="Src/Work/Mud.Wechat.Work.Callback/Mud.Wechat.Work.Callback.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="Tests/Mud.Wechat.Abstractions.Tests/Mud.Wechat.Abstractions.Tests.csproj" />

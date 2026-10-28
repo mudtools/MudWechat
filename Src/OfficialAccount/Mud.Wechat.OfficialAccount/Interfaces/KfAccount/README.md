@@ -11,7 +11,7 @@
 > （`KF1`~`KF9`，客服管理与会话控制共用这一支守卫）、
 > [MpQueryTokenWhitelistGuard.cs](../../../../../Tests/Mud.Wechat.OfficialAccount.Tests/ContractGuards/MpQueryTokenWhitelistGuard.cs)（`QT1`/`QT2`）、
 > [MpRouteCountGuard.cs](../../../../../Tests/Mud.Wechat.OfficialAccount.Tests/ContractGuards/MpRouteCountGuard.cs)（`RC1`/`RC2`/`RC3`）
-> 与本仓 DTO（[DataModels/KfAccount/](../../../Mud.Wechat.OfficialAccount.DataModels/KfAccount/)）。
+> 与本仓 DTO（[DataModels/KfAccount/](../../../Mud.Wechat.OfficialAccount/KfAccount/)）。
 > 未在以上四处留档的官方约束一律进文末「已知留档缺口」，正文不引用外部官方文档表述。
 
 ## 端点速览
@@ -96,7 +96,7 @@
 | `MpKfOnlineAccount`（`getonlinekflist`） | `kf_account` / `status` / `kf_id` / `accepted_case` / `kf_openid` | `KfId` 是 **`long`**；`Status` 是 `int` |
 
 - `status` 取值见 `MpKfOnlineStatus`（`0` 不在线 / `1` web 在线）——该常量类**必须**放在 Abstractions
-  （[MpKfConstants.cs](../../../Mud.Wechat.OfficialAccount.Abstractions/MpKfConstants.cs)），
+  （[MpKfConstants.cs](../../../Mud.Wechat.OfficialAccount/MpKfConstants.cs)），
   **不得**落进 `DataModels.KfAccount` 命名空间（`KF9` 断言：纯常量类不进 DTO 命名空间，否则会被扫进 `*JsonContext`）；
 - `accepted_case` 是该客服**正在接待的会话数** ⇒ 可直接用于「按负载分配客服」。
 
@@ -196,8 +196,8 @@ public async Task SetAvatarAsync(IFormContent form, string kfFullAccount, Cancel
 | 四个长度/数量常量与 `MpKfOnlineStatus` 两值 | `KF8` = `KfLimitConstants_ShouldMatchOfficialValues` |
 | 纯常量类不得落 `DataModels.<域>` 命名空间 | `KF9` = `ConstantClasses_ShouldNotLiveInDataModelNamespaces` |
 | Query 令牌白名单与令牌绑定 | `QT1`（全集持票人）、`QT2`（本域接口 `access_token` 断言） |
-| 8 个 DTO（`SerializerClassName = "KfAccount"`） | [DataModels/KfAccount/](../../../Mud.Wechat.OfficialAccount.DataModels/KfAccount/) |
-| 在线状态常量 | [MpKfConstants.cs](../../../Mud.Wechat.OfficialAccount.Abstractions/MpKfConstants.cs) |
+| 8 个 DTO（`SerializerClassName = "KfAccount"`） | [DataModels/KfAccount/](../../../Mud.Wechat.OfficialAccount/KfAccount/) |
+| 在线状态常量 | [MpKfConstants.cs](../../../Mud.Wechat.OfficialAccount/MpKfConstants.cs) |
 | 生成入口 / 模块枚举 / 上下文合并清单 | [MpServiceBuilder.cs](../../Extensions/MpServiceBuilder.cs)、[MpModule.cs](../../Extensions/MpModule.cs)、[MpJsonResolverExtensions.cs](../../Extensions/MpJsonResolverExtensions.cs) |
 | 本线总览（**统计已过期**，不可当权威） | [../../README.md](../../README.md) |
 

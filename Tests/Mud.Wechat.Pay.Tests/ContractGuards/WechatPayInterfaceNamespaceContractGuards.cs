@@ -44,6 +44,10 @@ public class WechatPayInterfaceNamespaceContractGuards
         typeof(Mud.Wechat.Pay.Extensions.PayModule).Assembly
             .GetTypes()
             .Where(static t => t.IsInterface && t.IsPublic)
+            // 2026-10 包合并：APIv2 侧（命名空间 Mud.Wechat.Pay.V2*）与 APIv3 同程序集，
+            // 但它的落位规则由 WechatPayV2* 守卫族治理（手写族不走源生成），不属本守卫主语。
+            .Where(static t => !(t.Namespace ?? string.Empty)
+                .StartsWith("Mud.Wechat.Pay.V2", StringComparison.Ordinal))
             .Where(static t => t.GetCustomAttributes(false)
                 .Any(static a => a.GetType().Name == "HttpClientApiAttribute"))
             .OrderBy(static t => t.FullName, StringComparer.Ordinal)

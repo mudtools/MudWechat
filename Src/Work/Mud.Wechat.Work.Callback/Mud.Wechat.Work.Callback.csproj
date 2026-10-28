@@ -6,8 +6,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\Mud.Wechat.Work.Abstractions\Mud.Wechat.Work.Abstractions.csproj" />
-		<ProjectReference Include="..\Mud.Wechat.Work.DataModels\Mud.Wechat.Work.DataModels.csproj" />
+		<ProjectReference Include="..\Mud.Wechat.Work\Mud.Wechat.Work.csproj" />
 	</ItemGroup>
 
 	<!-- v1 方案 D1（对齐 Mud.Feishu.Webhook）：netstandard2.0 保留旧包；net6.0+ 使用 FrameworkReference -->

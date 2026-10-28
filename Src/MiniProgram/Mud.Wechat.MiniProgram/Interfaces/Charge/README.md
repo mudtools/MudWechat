@@ -42,7 +42,7 @@ DI 组方法 [`AddChargeApi()`](../../Extensions/MiniProgramServiceBuilder.cs)�
 - **付费能力**是平台上的增值能力（接口 XML 举例：短信、OCR 等），**按资源包购买**。
 - 第 1 支查资源包**用量**，第 2 支查**最近三个月平均用量**（接口 XML 说明用途为容量规划）。
 
-应答结构差异（逐字取自 [DataModels/Charge/](../../../Mud.Wechat.MiniProgram.DataModels/Charge/)）：
+应答结构差异（逐字取自 [DataModels/Charge/](../../../Mud.Wechat.MiniProgram/Charge/)）：
 
 | 应答类型 | 列表属性 | 元素类型与字段（JSON 键 / C# 声明） |
 |---|---|---|
@@ -104,8 +104,8 @@ List<WxaChargeResourceAverage> list = average.Resources ?? new List<WxaChargeRes
 | 逐参数原文、官方 URL、「POST 可为空体」「最近三个月」口径 | [IWxaChargeService.cs](./IWxaChargeService.cs) 的 XML 注释 |
 | 路由集合（2 条逐字）与全线合计计数 398 | `MiniProgramContractGuards` 的 MP-X5（`Endpoints_ShouldMatchOfficialRoutesAndCount`）；基线在 `Tests/ContractBaseline.cs` |
 | 令牌绑定（类型 / Query / `access_token`） | MP-X3；复用面见 `MiniProgramScaffoldContractGuards` 的 MP-X2 |
-| 应答字段名与类型 | [../../../Mud.Wechat.MiniProgram.DataModels/Charge/](../../../Mud.Wechat.MiniProgram.DataModels/Charge/)（4 个文件，`SerializerClassName = "Charge"`） |
-| AOT 序列化上下文（`internal`，示例中不得引用） | `../../../Mud.Wechat.MiniProgram.DataModels/Generated/ChargeJsonContext.g.cs` |
+| 应答字段名与类型 | [../../../Mud.Wechat.MiniProgram/Charge/](../../../Mud.Wechat.MiniProgram/Charge/)（4 个文件，`SerializerClassName = "Charge"`） |
+| AOT 序列化上下文（`internal`，示例中不得引用） | `../../../Mud.Wechat.MiniProgram/Generated/ChargeJsonContext.g.cs` |
 | 本线端点总表与装配入口 | [../../README.md](../../README.md) |
 
 ## 改动本域需要同批完成

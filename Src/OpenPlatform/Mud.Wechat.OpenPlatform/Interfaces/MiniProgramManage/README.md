@@ -17,7 +17,7 @@
 > [OpenPlatformMiniProgramManageContractGuards.cs](../../../../../Tests/Mud.Wechat.OpenPlatform.Tests/ContractGuards/OpenPlatformMiniProgramManageContractGuards.cs)（MPG 系列）、
 > [OpenPlatformTrialQrCodeContractGuards.cs](../../../../../Tests/Mud.Wechat.OpenPlatform.Tests/ContractGuards/OpenPlatformTrialQrCodeContractGuards.cs)（QRC 系列）、
 > [OpenPlatformNonContractRouteZeroDeclarationContractGuards.cs](../../../../../Tests/Mud.Wechat.OpenPlatform.Tests/ContractGuards/OpenPlatformNonContractRouteZeroDeclarationContractGuards.cs)（OP-NC 系列）与 DTO
-> [`DataModels/MiniProgramManage/`](../../../Mud.Wechat.OpenPlatform.DataModels/MiniProgramManage/)。凡注释未给出的额度 / 状态机取值 / 错误码全集，一律入文末缺口，不从记忆或邻域补。
+> [`DataModels/MiniProgramManage/`](../../../Mud.Wechat.OpenPlatform/MiniProgramManage/)。凡注释未给出的额度 / 状态机取值 / 错误码全集，一律入文末缺口，不从记忆或邻域补。
 
 ## 端点速览（按接口分组，逐接口计数 + 全域总数）
 
@@ -253,7 +253,7 @@ using (appContextSwitcher.UseAuthorizerScope(authorizerAppId))   // authorizerAp
 | 体验版二维码非声明式通道 | [OpenPlatformTrialQrCodeContractGuards.cs](../../../../../Tests/Mud.Wechat.OpenPlatform.Tests/ContractGuards/OpenPlatformTrialQrCodeContractGuards.cs)（QRC1~QRC6）+ [`../../MiniProgramManage/`](../../MiniProgramManage/) 手写实现 |
 | 2.0 旧版路由零声明 | [OpenPlatformNonContractRouteZeroDeclarationContractGuards.cs](../../../../../Tests/Mud.Wechat.OpenPlatform.Tests/ContractGuards/OpenPlatformNonContractRouteZeroDeclarationContractGuards.cs)（OP-NC1/OP-NC2） |
 | 聚合面（接口 29 / 端点总数 / 路由前缀独占） | [OpenPlatformContractGuards.cs](../../../../../Tests/Mud.Wechat.OpenPlatform.Tests/ContractGuards/OpenPlatformContractGuards.cs)（OP-B1/B5）+ `Tests/ContractBaseline.cs` |
-| DTO JSON 名照官方原文 | [`DataModels/MiniProgramManage/`](../../../Mud.Wechat.OpenPlatform.DataModels/MiniProgramManage/) |
+| DTO JSON 名照官方原文 | [`DataModels/MiniProgramManage/`](../../../Mud.Wechat.OpenPlatform/MiniProgramManage/) |
 
 ## 改动本域需要同批完成
 

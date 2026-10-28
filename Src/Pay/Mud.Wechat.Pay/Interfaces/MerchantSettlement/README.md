@@ -2,7 +2,7 @@
 
 微信支付「商户结算规则申请」域 SDK（**2 端点**：创建结算规则申请单 + 查询申请单状态）。 接口：[IWechatPayMerchantSettlementService](./IWechatPayMerchantSettlementService.cs)；注册组 `MerchantSettlement`；模块枚举 `PayModule.MerchantSettlement`（装配入口见 [PayServiceBuilder.cs](../../Extensions/PayServiceBuilder.cs)）。逐端点核验 2026-10-18。
 
-> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[WechatPayMerchantSettlementContractGuards.cs](../../../../../Tests/Mud.Wechat.Pay.Tests/ContractGuards/WechatPayMerchantSettlementContractGuards.cs)、[WechatPayDomainContractGuards.cs](../../../../../Tests/Mud.Wechat.Pay.Tests/ContractGuards/WechatPayDomainContractGuards.cs)）、本域 DTO（[`Mud.Wechat.Pay.DataModels/MerchantSettlement`](../../../Mud.Wechat.Pay.DataModels/MerchantSettlement/)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
+> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[WechatPayMerchantSettlementContractGuards.cs](../../../../../Tests/Mud.Wechat.Pay.Tests/ContractGuards/WechatPayMerchantSettlementContractGuards.cs)、[WechatPayDomainContractGuards.cs](../../../../../Tests/Mud.Wechat.Pay.Tests/ContractGuards/WechatPayDomainContractGuards.cs)）、本域 DTO（[`Mud.Wechat.Pay/MerchantSettlement`](../../../Mud.Wechat.Pay/MerchantSettlement/)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
 
 ## 端点速览
 
@@ -101,14 +101,14 @@ HTTP 面（创建 + 按申请单号查），无「直接查生效规则」的读
 
 ## DTO 与序列化面
 
-本域 DTO 目录 [`Mud.Wechat.Pay.DataModels/MerchantSettlement`](../../../Mud.Wechat.Pay.DataModels/MerchantSettlement/) 内共 **2** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **2** 个，`SerializerClassName` = `MerchantSettlement`。
+本域 DTO 目录 [`Mud.Wechat.Pay/MerchantSettlement`](../../../Mud.Wechat.Pay/MerchantSettlement/) 内共 **2** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **2** 个，`SerializerClassName` = `MerchantSettlement`。
 
-AOT 源生成上下文：[`MerchantSettlementJsonContext.g.cs`](./../../../Mud.Wechat.Pay.DataModels/Generated/MerchantSettlementJsonContext.g.cs)（生成物，勿手改）。
+AOT 源生成上下文：[`MerchantSettlementJsonContext.g.cs`](./../../../Mud.Wechat.Pay/Generated/MerchantSettlementJsonContext.g.cs)（生成物，勿手改）。
 
 | 端点引用的类型 | 角色 | 定义位置 | JSON 字段（前缀） |
 |---|---|---|---|
-| `MerchantSettlementRuleApplicationResponse` | 应答 | [MerchantSettlement/MerchantSettlementDtos.cs](../../../Mud.Wechat.Pay.DataModels/MerchantSettlement/MerchantSettlementDtos.cs) | `acquiring_bank_id`, `channel_id`, `sub_mchid`, `settle_rule_id`, `application_id`, `application_process_info`, `application_state`, `update_time` |
-| `MerchantSettlementRuleApplicationCreateRequest` | 请求体 | [MerchantSettlement/MerchantSettlementDtos.cs](../../../Mud.Wechat.Pay.DataModels/MerchantSettlement/MerchantSettlementDtos.cs) | `acquiring_bank_id`, `channel_id`, `sub_mchid`, `settle_rule_id`, `application_id`, `application_process_info`, `application_state`, `update_time` |
+| `MerchantSettlementRuleApplicationResponse` | 应答 | [MerchantSettlement/MerchantSettlementDtos.cs](../../../Mud.Wechat.Pay/MerchantSettlement/MerchantSettlementDtos.cs) | `acquiring_bank_id`, `channel_id`, `sub_mchid`, `settle_rule_id`, `application_id`, `application_process_info`, `application_state`, `update_time` |
+| `MerchantSettlementRuleApplicationCreateRequest` | 请求体 | [MerchantSettlement/MerchantSettlementDtos.cs](../../../Mud.Wechat.Pay/MerchantSettlement/MerchantSettlementDtos.cs) | `acquiring_bank_id`, `channel_id`, `sub_mchid`, `settle_rule_id`, `application_id`, `application_process_info`, `application_state`, `update_time` |
 
 > DTO 一律以源文件为准；本表只列端点签名**直接引用**的一层类型，嵌套类型不再递归展开。所有 DTO 不使用 `required`（仓内约束），必填性由接口注释与官方页表达，SDK 不做本地必填校验。
 
@@ -145,7 +145,7 @@ var response = await service.CreateSettleRuleApplicationAsync(new MerchantSettle
 | 契约守卫（路由 / 计数 / DTO 登记断言） | [`WechatPayMerchantSettlementContractGuards.cs`](../../../../../Tests/Mud.Wechat.Pay.Tests/ContractGuards/WechatPayMerchantSettlementContractGuards.cs)、[`WechatPayDomainContractGuards.cs`](../../../../../Tests/Mud.Wechat.Pay.Tests/ContractGuards/WechatPayDomainContractGuards.cs) |
 | 守卫中的代表性测试方法 | `MerchantSettlementEndpoints_ShouldMatchOfficialRoutesAndShareResponseType`、`MerchantSettlementRoutes_ShouldStayOnOwnPrefixAndNotDeclareUnofficialFaces`、`MerchantSettlementDtos_ShouldExposeOfficialFieldNamesAndIntegerRuleId`、`MerchantSettlementApplicationStates_ShouldMatchOfficialThreeValuesWithTwoTerminal`、`MerchantSettlementUnspecifiedOfficialFaces_ShouldRemainUnvalidatedAndUnencrypted`、`MerchantSettlementResponses_ShouldDeriveFromBaseAndFollowSharedTableRuling`、`MerchantSettlementDataModels_ShouldBeRegisteredInJsonContextAndDomainFullyWired`、`PayInterfaces_ShouldNotDeclareToken_AndShouldMatchModuleCount`、`Endpoints_ShouldMatchOfficialRoutes`、`Dtos_ShouldExposeOfficialFieldNames`、`Responses_ShouldDeriveFromWechatPayResponse`、`Interfaces_ShouldAllowAnyStatusCode_SoErrorBodiesAreReadable` |
 | 模块枚举 / 装配入口 | [`PayModule.cs`](../../Extensions/PayModule.cs)、[`PayServiceBuilder.cs`](../../Extensions/PayServiceBuilder.cs) |
-| DTO 与 JSON 上下文 | [`Mud.Wechat.Pay.DataModels/MerchantSettlement`](../../../Mud.Wechat.Pay.DataModels/MerchantSettlement/) |
+| DTO 与 JSON 上下文 | [`Mud.Wechat.Pay/MerchantSettlement`](../../../Mud.Wechat.Pay/MerchantSettlement/) |
 | 跨线基线 | [`Tests/ContractBaseline.cs`](../../../../../Tests/ContractBaseline.cs)（各线分节；本线口径以守卫实际断言为准） |
 | 本线包级公开面与已踩陷阱 | [`Src/Pay/Mud.Wechat.Pay/README.md`](../../README.md) |
 | 跨线通用约束（门禁 / AOT / 落位） | [`AGENTS.md`](../../../../../AGENTS.md) |

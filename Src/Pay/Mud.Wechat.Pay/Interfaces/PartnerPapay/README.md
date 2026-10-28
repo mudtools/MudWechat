@@ -66,7 +66,7 @@
 
 | 端点引用的类型 | 角色 | 定义位置 | JSON 字段（前缀） |
 |---|---|---|---|
-| `PartnerPapayContractNotifyRequest` | 请求体 | [Papay/PapayContractNotifyDtos.cs](../../../Mud.Wechat.Pay.DataModels/Papay/PapayContractNotifyDtos.cs) | `count`, `unit`, `amount`, `currency`, `mchid`, `appid`, `deduct_duration`, `estimated_amount`, `sp_mchid`, `sp_appid`, `sub_mchid`, `sub_appid` |
+| `PartnerPapayContractNotifyRequest` | 请求体 | [Papay/PapayContractNotifyDtos.cs](../../../Mud.Wechat.Pay/Papay/PapayContractNotifyDtos.cs) | `count`, `unit`, `amount`, `currency`, `mchid`, `appid`, `deduct_duration`, `estimated_amount`, `sp_mchid`, `sp_appid`, `sub_mchid`, `sub_appid` |
 
 > DTO 一律以源文件为准；本表只列端点签名**直接引用**的一层类型，嵌套类型不再递归展开。所有 DTO 不使用 `required`（仓内约束），必填性由接口注释与官方页表达，SDK 不做本地必填校验。
 
@@ -92,7 +92,7 @@ await service.SendPartnerPapayDeductNotifyAsync("", new PartnerPapayContractNoti
 
 | 缺口 | 现状 | 处置 |
 |---|---|---|
-| DTO 落位 | 本域无独立 `Mud.Wechat.Pay.DataModels/PartnerPapay` 目录，类型散落在共享目录或其它域 | 以类型索引与源文件为准；新增 DTO 时先定落位 |
+| DTO 落位 | 本域无独立 `Mud.Wechat.Pay/PartnerPapay` 目录，类型散落在共享目录或其它域 | 以类型索引与源文件为准；新增 DTO 时先定落位 |
 | 裸 `Task` 端点的应答形态 | 官方成功应答可能为 204 / 空体，本仓以裸 `Task` 表达 ⇒ 无响应 DTO 可断言 | 需要读取应答时先核验官方页；不得臆造响应字段 |
 | 官方文档正文 | 本文只摘录本仓 XML 注释，**不复述官方页正文** | 逐参数最终口径以接口注释中的官方链接为准 |
 

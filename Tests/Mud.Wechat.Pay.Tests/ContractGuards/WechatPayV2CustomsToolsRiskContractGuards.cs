@@ -144,7 +144,7 @@ public class WechatPayV2CustomsToolsRiskContractGuards
             .Should().BeEmpty(
                 "because 违规记录查询官方「是否需要证书」为是（错误码表含 CERT_ERROR）⇒ 证书按商户绑定，只能手写");
 
-        var text = File.ReadAllText(SourcePath("Mud.Wechat.Pay.V2", "Secure/WechatPayV2RiskService.cs"));
+        var text = File.ReadAllText(SourcePath("Mud.Wechat.Pay",  "Secure/WechatPayV2RiskService.cs"));
         text.Should().Contain("\"/risk/getviolation\"", "because 官方路径唯一，写错即 404");
         text.Should().Contain("WechatPayV2HttpClientNames.BaseAddress, request",
             "because 官方本页给的是 api.mch，不是 /secapi/* 那一族的 api2.mch");
@@ -161,7 +161,7 @@ public class WechatPayV2CustomsToolsRiskContractGuards
     [Fact]
     public void V2_CustomsToolsRisk_Modules_ShouldBindRegistrars()
     {
-        var builderSource = File.ReadAllText(SourcePath("Mud.Wechat.Pay.V2", "Extensions/PayV2ServiceBuilder.cs"));
+        var builderSource = File.ReadAllText(SourcePath("Mud.Wechat.Pay",  "Extensions/PayV2ServiceBuilder.cs"));
 
         builderSource.Should().Contain("AddCustomsV2WebApiHttpClient()");
         builderSource.Should().Contain("AddToolsV2WebApiHttpClient()");

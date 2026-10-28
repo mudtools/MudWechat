@@ -509,7 +509,7 @@ public class WechatPayPartnerPayScoreContractGuards
         DomainTypeNames().Should().HaveCount(64,
             "本域类型 = 49 DTO + 15 常量类（上下文类已排除）");
 
-        var resolverSource = File.ReadAllText(SourcePath("Mud.Wechat.Pay",
+        var resolverSource = File.ReadAllText(SourcePath("Mud.Wechat.Pay", 
             "Extensions", "PayJsonResolverExtensions.cs"));
         resolverSource.Should().Contain("PartnerPayScoreJsonContext.Default",
             "新增域上下文须同批登记进 PayJsonResolverExtensions（AOT 红线：无登记即无元数据）");

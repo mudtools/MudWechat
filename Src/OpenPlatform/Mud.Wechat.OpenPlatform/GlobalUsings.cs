@@ -5,6 +5,8 @@
 //  不得利用本项目从事危害国家安全、扰乱社会秩序、侵犯他人合法权益等法律法规禁止的活动！任何基于本项目开发而产生的一切法律纠纷和责任，我们不承担任何责任！
 // -----------------------------------------------------------------------
 
+// 2026-10 包合并：原 Abstractions / DataModels 两工程并入本工程（命名空间不变），
+// 故两者的全局导入并集落此。
 global using System;
 global using System.Collections.Generic;
 global using System.Linq;
@@ -15,6 +17,7 @@ global using Microsoft.Extensions.Logging;
 global using Mud.HttpUtils;
 global using Mud.HttpUtils.Attributes;
 global using Mud.Wechat.Abstractions;
+global using Mud.Wechat.Abstractions.Contracts;
 global using Mud.Wechat.Abstractions.TokenManager;
 global using Mud.Wechat.OpenPlatform.Abstractions;
 global using Mud.Wechat.OpenPlatform.Abstractions.Authentication;
@@ -24,3 +27,4 @@ global using Mud.Wechat.OpenPlatform.DataModels.Account;
 global using Mud.Wechat.OpenPlatform.DataModels.Component;
 global using Mud.Wechat.OpenPlatform.DataModels.OpenAccount;
 global using Mud.Wechat.OpenPlatform.DataModels.Sns;
+global using System.Text.Json.Serialization;

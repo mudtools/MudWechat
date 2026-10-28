@@ -134,7 +134,7 @@ public class WechatPayV2PayItilXdcContractGuards
     [Fact]
     public void V2_PayItilXdc_Modules_ShouldBindGeneratedRegistrars()
     {
-        var builderSource = File.ReadAllText(SourcePath("Mud.Wechat.Pay.V2", "Extensions/PayV2ServiceBuilder.cs"));
+        var builderSource = File.ReadAllText(SourcePath("Mud.Wechat.Pay",  "Extensions/PayV2ServiceBuilder.cs"));
 
         foreach (var module in new[] { nameof(PayV2Module.PayItilV2), nameof(PayV2Module.XdcV2) })
         {

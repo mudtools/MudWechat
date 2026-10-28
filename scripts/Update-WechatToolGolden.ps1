@@ -40,7 +40,7 @@ $ErrorActionPreference = 'Stop'
 # 注意：param 默认值里取不到 $PSScriptRoot（Windows PowerShell 5.1 绑定参数时尚未填充），
 # 故默认值留空、在脚本体里补齐（写进 param 默认值会让脚本以 -File 方式调用时直接抛绑定错误）。
 if ([string]::IsNullOrWhiteSpace($ProjectPath)) {
-    $ProjectPath = Join-Path $PSScriptRoot '..\Src\AI\Mud.Wechat.Work.AI.Tools'
+    $ProjectPath = Join-Path $PSScriptRoot '..\Src\AI\Mud.Wechat.Work.AI'
 }
 
 $ProjectPath = (Resolve-Path $ProjectPath).Path

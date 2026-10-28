@@ -163,7 +163,7 @@ public class WechatPayV2CertFamilyContractGuards
         foreach (var (interfaceType, routes) in FamilyRoutes)
         {
             var source = Implementations[interfaceType];
-            var text = File.ReadAllText(SourcePath("Mud.Wechat.Pay.V2", source.SourceFile));
+            var text = File.ReadAllText(SourcePath("Mud.Wechat.Pay", source.SourceFile));
 
             var methods = DeclaredMethods(interfaceType);
             methods.Should().HaveSameCount(routes,
@@ -195,7 +195,7 @@ public class WechatPayV2CertFamilyContractGuards
     {
         foreach (var (interfaceType, source) in Implementations)
         {
-            var text = File.ReadAllText(SourcePath("Mud.Wechat.Pay.V2", source.SourceFile));
+            var text = File.ReadAllText(SourcePath("Mud.Wechat.Pay", source.SourceFile));
 
             var callSites = FamilyRoutes[interfaceType].Length;
 
@@ -220,9 +220,9 @@ public class WechatPayV2CertFamilyContractGuards
     [Fact]
     public void V2_CertFamily_WorkWxDualSign_ShouldCoverExactlyTwoWrites()
     {
-        var redPack = File.ReadAllText(SourcePath("Mud.Wechat.Pay.V2", "Secure/WechatPayV2RedPackService.cs"));
-        var transfer = File.ReadAllText(SourcePath("Mud.Wechat.Pay.V2", "Secure/WechatPayV2TransferService.cs"));
-        var bank = File.ReadAllText(SourcePath("Mud.Wechat.Pay.V2", "Secure/WechatPayV2PartnerTransferService.cs"));
+        var redPack = File.ReadAllText(SourcePath("Mud.Wechat.Pay",  "Secure/WechatPayV2RedPackService.cs"));
+        var transfer = File.ReadAllText(SourcePath("Mud.Wechat.Pay",  "Secure/WechatPayV2TransferService.cs"));
+        var bank = File.ReadAllText(SourcePath("Mud.Wechat.Pay",  "Secure/WechatPayV2PartnerTransferService.cs"));
 
         Occurrences(redPack, "PostWorkWxAsync").Should().Be(1, "because 红包族只有 sendworkwxredpack 需 workwx_sign");
         Occurrences(transfer, "PostWorkWxAsync").Should().Be(1, "because 付款族只有 paywwsptrans2pocket 需 workwx_sign");
@@ -242,7 +242,7 @@ public class WechatPayV2CertFamilyContractGuards
     [Fact]
     public void V2_CertFamily_HandWrittenModules_ShouldBindSingletonServicesInBuilder()
     {
-        var builderSource = File.ReadAllText(SourcePath("Mud.Wechat.Pay.V2", "Extensions/PayV2ServiceBuilder.cs"));
+        var builderSource = File.ReadAllText(SourcePath("Mud.Wechat.Pay",  "Extensions/PayV2ServiceBuilder.cs"));
 
         foreach (var module in HandWrittenModules)
         {
@@ -330,10 +330,11 @@ public class WechatPayV2CertFamilyContractGuards
     {
         foreach (var family in FamilyRoutes.Keys)
         {
-            family.Assembly.GetName().Name.Should().Be("Mud.Wechat.Pay.V2",
-                "because APIv2 手写族与 APIv3 的 Transfer / RedPacket 域分属两个程序集");
+            // 2026-10 包合并：APIv2 与 APIv3 同处 Mud.Wechat.Pay 程序集，「分属两个程序集」不再是
+            // 该不变式的载体 —— 命名空间分区（V2 落 Mud.Wechat.Pay.V2）才是「手写证书族不与
+            // APIv3 声明式域混面」这一约束的真实表达。
             family.Namespace.Should().Be("Mud.Wechat.Pay.V2",
-                "because 可注入接口落线根命名空间（与 IWechatPayV2SecureService 同面）");
+                "because APIv2 手写族与 APIv3 的 Transfer / RedPacket 域分属两个命名空间");
         }
     }
 

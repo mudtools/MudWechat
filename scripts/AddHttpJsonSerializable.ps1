@@ -34,7 +34,7 @@ $RepoRoot = Split-Path $PSScriptRoot -Parent
 
 # ---- 解析根目录为绝对路径（相对路径基于仓库根目录，不依赖当前工作目录）----
 if ([string]::IsNullOrWhiteSpace($RootPath)) {
-    $RootPath = Join-Path $RepoRoot 'Src/Work/Mud.Wechat.Work.DataModels'
+    $RootPath = Join-Path $RepoRoot 'Src/Work/Mud.Wechat.Work'
 } elseif (-not [System.IO.Path]::IsPathRooted($RootPath)) {
     $RootPath = Join-Path $RepoRoot $RootPath
 }

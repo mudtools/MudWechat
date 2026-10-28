@@ -10,6 +10,27 @@
 
 ### Changed
 
+- **包合并：可打包 NuGet 制品 35 → 18（`Src/` 源工程 37 → 20）**。一条产品线一个入口包——`{线}` 承载
+  「令牌/凭据基座 + 官方 DTO + 声明式客户端 + DI 与模块注册」；仅 `Callback`（把 ASP.NET Core 依赖挡在
+  宿主侧）与 `Redis` / `OpenTelemetry`（可选基建）保持独立。合并**未改任何命名空间**
+  （`Mud.Wechat.{线}.Abstractions.*` / `.DataModels.{域}` 原样保留）⇒ 消费者的 `using`、XML cref、
+  契约守卫的命名空间过滤全部不受影响；旧包 ID 直接删除（nuget.org 上从未出现过任何 `Mud.Wechat.*` 包，
+  无需壳包 / unlist / 弃用窗口），`Version` 保持 `1.0.0`。
+  - 合并明细：`Work` 4→2、`OfficialAccount` 4→2、`Channels` 4→2、`Pay` 6→2（APIv2 与 APIv3 同包）、
+    `MiniProgram` 3→1、`OpenPlatform` 3→1、`Ads` 3→1、AI 层 1 `AI.Abstractions` + `AI.Agent` → `Mud.Wechat.AI`。
+    AI 层 2（`Work.AI` / `Work.AI.Tools` / `Work.AI.Mcp`）**保持独立**：`Mud.AI.Generator` 按工程身份发射
+    契约表，并入 `Work.AI` 会让 `WechatToolContract` 生成不出来（实测回退）。
+  - 边界形态随之改变：「`Callback` 不引用主包」「`Redis` 不引用 Work 主包」「小程序不得引公众号主包」
+    三条**物理包边**失效，其真实语义（回调链路与存储适配器不得消费业务客户端面）改由**源级**守卫承担
+    （`CB1` / `CB-L1a` / `CH-X3` / 支付回调边界 / `RD-G6`，探针为行锚定的 `using` 正则）；
+    `MP-X1` 重述为「到公众号线的边恰好一条且指向该线入口工程，禁引 `OA.Callback`」。
+  - 守卫同步：`AB-G2` 由「各线 DataModels 互不引用」改写为与分包方式无关的**跨线依赖边白名单**；
+    `AB-G6` 的包清单由「历史根 ⊆ 推导集」升级为**集合相等**（终态 18 包，多一项即红）；
+    `AB-G8` 受控 TFM 例外清单按合并后工程名重列并补齐开放平台线与 AI 域漏列工程；
+    若干「按程序集取类型集」的断言改为**按命名空间**取（合并后程序集维度已无法区分两侧）。
+  - 收益：编译单元 121 → 61（`verify-build.ps1` 步骤 1/2 同步受益）；跨包 `InternalsVisibleTo` 整段消失；
+    用户安装决策收成「按平台装 1 个主包，要收推送再加 `.Callback`，多实例加 `Redis`，要看链路加 `OpenTelemetry`」。
+    动机、逐包处置表与 11 条实测陷阱见 `.docs/MudWechat-包合并实施方案-v1.md`。
 - 上游依赖统一升级：`Mud.HttpUtils` / `Mud.HttpUtils.Generator` 3.0.8 → **3.0.9**（`Src/**` 27 个源工程单版本，
   G1 守卫断言版本集合大小 = 1；HttpUtils 与 Generator 必须同版本）。3.0.9 对本仓的可观测变化：
   - **令牌存储读故障降级**：桥接器读穿透按「未命中」处理（回落 API 刷新，EventId 197 + `ReadThroughFailures` 计数），

@@ -3,7 +3,7 @@
 微信公众号 / 服务号「订阅通知」域 SDK（服务端 API 侧 7 端点，**服务号专属**；
 回调侧「订阅通知事件族」见 `MpSubscriptionEventTypes`）。 接口：[IMpSubscriptionNoticeService](./IMpSubscriptionNoticeService.cs)；注册组 `SubscriptionNotice`；模块枚举 `MpModule.SubscriptionNotice`（装配入口见 [MpServiceBuilder.cs](../../Extensions/MpServiceBuilder.cs)）。逐端点核验 2026-10-18。
 
-> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[MpSubscriptionNoticeContractGuards.cs](../../../../../Tests/Mud.Wechat.OfficialAccount.Tests/ContractGuards/MpSubscriptionNoticeContractGuards.cs)、[MpQueryTokenWhitelistGuard.cs](../../../../../Tests/Mud.Wechat.OfficialAccount.Tests/ContractGuards/MpQueryTokenWhitelistGuard.cs)）、本域 DTO（[`Mud.Wechat.OfficialAccount.DataModels/SubscriptionNotice`](../../../Mud.Wechat.OfficialAccount.DataModels/SubscriptionNotice/)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
+> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[MpSubscriptionNoticeContractGuards.cs](../../../../../Tests/Mud.Wechat.OfficialAccount.Tests/ContractGuards/MpSubscriptionNoticeContractGuards.cs)、[MpQueryTokenWhitelistGuard.cs](../../../../../Tests/Mud.Wechat.OfficialAccount.Tests/ContractGuards/MpQueryTokenWhitelistGuard.cs)）、本域 DTO（[`Mud.Wechat.OfficialAccount/SubscriptionNotice`](../../../Mud.Wechat.OfficialAccount/SubscriptionNotice/)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
 
 ## 端点速览
 
@@ -159,22 +159,22 @@ newtmpl 六页为「小程序 ✔ / 公众号 仅认证 / 服务号 仅认证 / 
 
 ## DTO 与序列化面
 
-本域 DTO 目录 [`Mud.Wechat.OfficialAccount.DataModels/SubscriptionNotice`](../../../Mud.Wechat.OfficialAccount.DataModels/SubscriptionNotice/) 内共 **15** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **15** 个，`SerializerClassName` = `SubscriptionNotice`。
+本域 DTO 目录 [`Mud.Wechat.OfficialAccount/SubscriptionNotice`](../../../Mud.Wechat.OfficialAccount/SubscriptionNotice/) 内共 **15** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **15** 个，`SerializerClassName` = `SubscriptionNotice`。
 
-AOT 源生成上下文：[`SubscriptionNoticeJsonContext.g.cs`](./../../../Mud.Wechat.OfficialAccount.DataModels/Generated/SubscriptionNoticeJsonContext.g.cs)（生成物，勿手改）。
+AOT 源生成上下文：[`SubscriptionNoticeJsonContext.g.cs`](./../../../Mud.Wechat.OfficialAccount/Generated/SubscriptionNoticeJsonContext.g.cs)（生成物，勿手改）。
 
 | 端点引用的类型 | 角色 | 定义位置 | JSON 字段（前缀） |
 |---|---|---|---|
-| `MpSendSubscribeNoticeResponse` | 应答 | [SubscriptionNotice/MpSendSubscribeNoticeResponse.cs](../../../Mud.Wechat.OfficialAccount.DataModels/SubscriptionNotice/MpSendSubscribeNoticeResponse.cs) | — |
-| `MpSendSubscribeNoticeRequest` | 请求体 | [SubscriptionNotice/MpSendSubscribeNoticeRequest.cs](../../../Mud.Wechat.OfficialAccount.DataModels/SubscriptionNotice/MpSendSubscribeNoticeRequest.cs) | `touser`, `template_id`, `page`, `data`, `miniprogram_state`, `lang`, `miniprogram`, `client_msg_id` |
-| `MpAddSubscribeTemplateResponse` | 应答 | [SubscriptionNotice/Template/MpAddSubscribeTemplateResponse.cs](../../../Mud.Wechat.OfficialAccount.DataModels/SubscriptionNotice/Template/MpAddSubscribeTemplateResponse.cs) | `priTmplId` |
-| `MpAddSubscribeTemplateRequest` | 请求体 | [SubscriptionNotice/Template/MpAddSubscribeTemplateRequest.cs](../../../Mud.Wechat.OfficialAccount.DataModels/SubscriptionNotice/Template/MpAddSubscribeTemplateRequest.cs) | `tid`, `kidList`, `sceneDesc` |
-| `MpSubscribeTemplateListResponse` | 应答 | [SubscriptionNotice/Template/MpSubscribeTemplateListResponse.cs](../../../Mud.Wechat.OfficialAccount.DataModels/SubscriptionNotice/Template/MpSubscribeTemplateListResponse.cs) | `data` |
-| `MpResponse` | 应答 | [MpResponse.cs](../../../Mud.Wechat.OfficialAccount.DataModels/MpResponse.cs) | `errcode`, `errmsg` |
-| `MpDeleteSubscribeTemplateRequest` | 请求体 | [SubscriptionNotice/Template/MpDeleteSubscribeTemplateRequest.cs](../../../Mud.Wechat.OfficialAccount.DataModels/SubscriptionNotice/Template/MpDeleteSubscribeTemplateRequest.cs) | `priTmplId` |
-| `MpSubscribeCategoryListResponse` | 应答 | [SubscriptionNotice/Template/MpSubscribeCategoryListResponse.cs](../../../Mud.Wechat.OfficialAccount.DataModels/SubscriptionNotice/Template/MpSubscribeCategoryListResponse.cs) | `data` |
-| `MpSubscribePubTemplateTitlesResponse` | 应答 | [SubscriptionNotice/Template/MpSubscribePubTemplateTitlesResponse.cs](../../../Mud.Wechat.OfficialAccount.DataModels/SubscriptionNotice/Template/MpSubscribePubTemplateTitlesResponse.cs) | `count`, `data` |
-| `MpSubscribePubTemplateKeywordsResponse` | 应答 | [SubscriptionNotice/Template/MpSubscribePubTemplateKeywordsResponse.cs](../../../Mud.Wechat.OfficialAccount.DataModels/SubscriptionNotice/Template/MpSubscribePubTemplateKeywordsResponse.cs) | `count`, `data` |
+| `MpSendSubscribeNoticeResponse` | 应答 | [SubscriptionNotice/MpSendSubscribeNoticeResponse.cs](../../../Mud.Wechat.OfficialAccount/SubscriptionNotice/MpSendSubscribeNoticeResponse.cs) | — |
+| `MpSendSubscribeNoticeRequest` | 请求体 | [SubscriptionNotice/MpSendSubscribeNoticeRequest.cs](../../../Mud.Wechat.OfficialAccount/SubscriptionNotice/MpSendSubscribeNoticeRequest.cs) | `touser`, `template_id`, `page`, `data`, `miniprogram_state`, `lang`, `miniprogram`, `client_msg_id` |
+| `MpAddSubscribeTemplateResponse` | 应答 | [SubscriptionNotice/Template/MpAddSubscribeTemplateResponse.cs](../../../Mud.Wechat.OfficialAccount/SubscriptionNotice/Template/MpAddSubscribeTemplateResponse.cs) | `priTmplId` |
+| `MpAddSubscribeTemplateRequest` | 请求体 | [SubscriptionNotice/Template/MpAddSubscribeTemplateRequest.cs](../../../Mud.Wechat.OfficialAccount/SubscriptionNotice/Template/MpAddSubscribeTemplateRequest.cs) | `tid`, `kidList`, `sceneDesc` |
+| `MpSubscribeTemplateListResponse` | 应答 | [SubscriptionNotice/Template/MpSubscribeTemplateListResponse.cs](../../../Mud.Wechat.OfficialAccount/SubscriptionNotice/Template/MpSubscribeTemplateListResponse.cs) | `data` |
+| `MpResponse` | 应答 | [MpResponse.cs](../../../Mud.Wechat.OfficialAccount/MpResponse.cs) | `errcode`, `errmsg` |
+| `MpDeleteSubscribeTemplateRequest` | 请求体 | [SubscriptionNotice/Template/MpDeleteSubscribeTemplateRequest.cs](../../../Mud.Wechat.OfficialAccount/SubscriptionNotice/Template/MpDeleteSubscribeTemplateRequest.cs) | `priTmplId` |
+| `MpSubscribeCategoryListResponse` | 应答 | [SubscriptionNotice/Template/MpSubscribeCategoryListResponse.cs](../../../Mud.Wechat.OfficialAccount/SubscriptionNotice/Template/MpSubscribeCategoryListResponse.cs) | `data` |
+| `MpSubscribePubTemplateTitlesResponse` | 应答 | [SubscriptionNotice/Template/MpSubscribePubTemplateTitlesResponse.cs](../../../Mud.Wechat.OfficialAccount/SubscriptionNotice/Template/MpSubscribePubTemplateTitlesResponse.cs) | `count`, `data` |
+| `MpSubscribePubTemplateKeywordsResponse` | 应答 | [SubscriptionNotice/Template/MpSubscribePubTemplateKeywordsResponse.cs](../../../Mud.Wechat.OfficialAccount/SubscriptionNotice/Template/MpSubscribePubTemplateKeywordsResponse.cs) | `count`, `data` |
 
 > DTO 一律以源文件为准；本表只列端点签名**直接引用**的一层类型，嵌套类型不再递归展开。所有 DTO 不使用 `required`（仓内约束），必填性由接口注释与官方页表达，SDK 不做本地必填校验。
 
@@ -211,7 +211,7 @@ var response = await service.GetCategoryAsync(ct);
 | 契约守卫（路由 / 计数 / DTO 登记断言） | [`MpSubscriptionNoticeContractGuards.cs`](../../../../../Tests/Mud.Wechat.OfficialAccount.Tests/ContractGuards/MpSubscriptionNoticeContractGuards.cs)、[`MpQueryTokenWhitelistGuard.cs`](../../../../../Tests/Mud.Wechat.OfficialAccount.Tests/ContractGuards/MpQueryTokenWhitelistGuard.cs) |
 | 守卫中的代表性测试方法 | `SubscriptionNoticeEndpoints_ShouldMatchOfficialRoutes`、`SubscriptionNoticeInterfaceHierarchy_ShouldRegisterDirectly`、`SubscriptionNoticeTokenBinding_ShouldBeAccessTokenInjectedViaQuery`、`SubscriptionNoticeDataModels_ShouldBeRegisteredInJsonContext`、`SubscriptionNoticeDataModels_ShouldLockOfficialFields`、`SubscriptionNoticeQueryEndpoints_ShouldCarryOfficialQueryNames`、`SubscriptionNoticeModule_ShouldBeRegisteredAndWhitelisted`、`QueryTokenInjectionInterfaces_ShouldMatchWhitelist`、`QueryTokenInjectionInterfaces_ShouldMatchWhitelist_ForMiniProgramLine`、`QueryTokenInterfaces_ShouldDeclareOfficialParameterName` |
 | 模块枚举 / 装配入口 | [`MpModule.cs`](../../Extensions/MpModule.cs)、[`MpServiceBuilder.cs`](../../Extensions/MpServiceBuilder.cs) |
-| DTO 与 JSON 上下文 | [`Mud.Wechat.OfficialAccount.DataModels/SubscriptionNotice`](../../../Mud.Wechat.OfficialAccount.DataModels/SubscriptionNotice/) |
+| DTO 与 JSON 上下文 | [`Mud.Wechat.OfficialAccount/SubscriptionNotice`](../../../Mud.Wechat.OfficialAccount/SubscriptionNotice/) |
 | 跨线基线 | [`Tests/ContractBaseline.cs`](../../../../../Tests/ContractBaseline.cs)（各线分节；本线口径以守卫实际断言为准） |
 | 本线包级公开面与已踩陷阱 | [`Src/OfficialAccount/Mud.Wechat.OfficialAccount/README.md`](../../README.md) |
 | 跨线通用约束（门禁 / AOT / 落位） | [`AGENTS.md`](../../../../../AGENTS.md) |

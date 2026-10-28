@@ -17,7 +17,7 @@
 
 > **事实来源限定**：本文全部断言只来自本仓三类证据——本目录接口文件的 XML 注释、
 > [WechatCorpGroupContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatCorpGroupContractGuards.cs)（CG1~CG11）、
-> [Src/Work/Mud.Wechat.Work.DataModels/CorpGroup/](../../../Mud.Wechat.Work.DataModels/CorpGroup/) 下的 DTO 声明；
+> [Src/Work/Mud.Wechat.Work/CorpGroup/](../../../Mud.Wechat.Work/CorpGroup/) 下的 DTO 声明；
 > 端点数与路由以守卫断言为准，官方文档号仅作定位标识、不作为本文事实来源。
 > 未能在本仓三类证据内核验的项目一律集中在文末「已知留档缺口」，标为**未逐项核验**，正文不作推断。
 
@@ -73,7 +73,7 @@ CG2 把三件事钉成断言：公共父接口 `IWechatWorkCorpGroupService` 声
 
 ## 2. `gettoken` 返回的凭证不进令牌基座，#3 需宿主自己接
 
-`GetCorpGroupTokenAsync` 应答 [GetCorpGroupTokenResponse.cs](../../../Mud.Wechat.Work.DataModels/CorpGroup/GetCorpGroupTokenResponse.cs)
+`GetCorpGroupTokenAsync` 应答 [GetCorpGroupTokenResponse.cs](../../../Mud.Wechat.Work/CorpGroup/GetCorpGroupTokenResponse.cs)
 的 `AccessToken`（`string?`，官方上限 512 字节）与 `ExpiresIn`（`int`）是**下级/下游企业**应用的凭证：
 本仓令牌链路只托管调用方自身应用的 `access_token`，**不自动缓存**该凭证（接口 XML 注释明示）。
 `TransferMiniProgramSessionAsync` 官方要求携带**下级企业**的 `access_token` 调用 ⇒ 由宿主写入令牌存储后切换上下文、
@@ -97,7 +97,7 @@ CG2 把三件事钉成断言：公共父接口 `IWechatWorkCorpGroupService` 声
 
 - #4/#5/#6 按**上游企业**维度限流：**10 万次/小时、48 万次/天、750 万次/月**。
 - #4 传入有效 `mass_call_ticket` 可**不受该限制**（仍受基础频率限制），官方定位为数据初始化场景；
-  请求体 [UnionidToExternalUserIdRequest.cs](../../../Mud.Wechat.Work.DataModels/CorpGroup/RequestModel/UnionidToExternalUserIdRequest.cs)
+  请求体 [UnionidToExternalUserIdRequest.cs](../../../Mud.Wechat.Work/CorpGroup/RequestModel/UnionidToExternalUserIdRequest.cs)
   的 `MassCallTicket`（`string?`）即该票据——属凭据，不得进日志。
 - `pending_id` 是临时外部联系人 ID：**有效期 90 天**、共享应用内唯一 ⇒ 预转换后须在 90 天内完成真实外部联系人换取，
   过期需重新生成。
@@ -117,13 +117,13 @@ CG2 把三件事钉成断言：公共父接口 `IWechatWorkCorpGroupService` 声
 单次 ≤ **2000** 人、每天 ≤ **20000** 人；**只允许串行调用且同时只能存在一个导入任务**（含管理后台提交的任务）；
 **仅已验证的企业可调用**；自建应用须配置到「上下游 - 可调用接口的应用」中；
 **自 2023-12-01 起不再支持通过系统应用 secret 调用**。
-异步语义：#11 只返回 `JobId`（[ImportChainContactsResponse.cs](../../../Mud.Wechat.Work.DataModels/CorpGroup/ChainContacts/ImportChainContactsResponse.cs)），
+异步语义：#11 只返回 `JobId`（[ImportChainContactsResponse.cs](../../../Mud.Wechat.Work/CorpGroup/ChainContacts/ImportChainContactsResponse.cs)），
 必须轮询 #12 拿 `Status`（1 开始 / 2 进行中 / 3 完成）与 `Result`；
 #12 **只能查询已提交过的历史任务**、并发限制 **5**（接口注释）。
 移除端点 #13 同样「仅已验证企业可调用」，注释标注并发限制 **1**。
 
-条目形状见 [ChainImportCorpItem.cs](../../../Mud.Wechat.Work.DataModels/CorpGroup/ChainContacts/RequestModel/ChainImportCorpItem.cs) 与
-[ChainImportContactItem.cs](../../../Mud.Wechat.Work.DataModels/CorpGroup/ChainContacts/RequestModel/ChainImportContactItem.cs)：
+条目形状见 [ChainImportCorpItem.cs](../../../Mud.Wechat.Work/CorpGroup/ChainContacts/RequestModel/ChainImportCorpItem.cs) 与
+[ChainImportContactItem.cs](../../../Mud.Wechat.Work/CorpGroup/ChainContacts/RequestModel/ChainImportContactItem.cs)：
 `IdentityType`（`int`，JSON `identity_type`）取值 **1 成员 / 2 负责人**，单企业负责人最多 **5** 人、可不填；
 `UserCustomId`（`string?`）官方约束是**字符串承载的 64 位无符号整型**——取值 1 到 2^64-2、必须全数字、
 不得有前置 0、且不能为 11 位或 13 位数字 ⇒ 不要用 `long` 建模（该键本仓就是 `string?`）。
@@ -138,8 +138,8 @@ CG2 把三件事钉成断言：公共父接口 `IWechatWorkCorpGroupService` 声
 
 | 类型 | 属性 → JSON 名 | 口径 |
 |---|---|---|
-| [ChainRuleOwnerRange.cs](../../../Mud.Wechat.Work.DataModels/CorpGroup/Rules/ChainRuleOwnerRange.cs) | `DepartmentIds` → `departmentids`、`UserIds` → `userids` | 两键均为 `List<string>?`，**官方示例把 id 以字符串传输** ⇒ 不得改成 `List<long>` |
-| [ChainRuleMemberRange.cs](../../../Mud.Wechat.Work.DataModels/CorpGroup/Rules/ChainRuleMemberRange.cs) | `GroupIds` → `groupids`、`CorpIds` → `corpids` | 同为 `List<string>?`，至少填一个 |
+| [ChainRuleOwnerRange.cs](../../../Mud.Wechat.Work/CorpGroup/Rules/ChainRuleOwnerRange.cs) | `DepartmentIds` → `departmentids`、`UserIds` → `userids` | 两键均为 `List<string>?`，**官方示例把 id 以字符串传输** ⇒ 不得改成 `List<long>` |
+| [ChainRuleMemberRange.cs](../../../Mud.Wechat.Work/CorpGroup/Rules/ChainRuleMemberRange.cs) | `GroupIds` → `groupids`、`CorpIds` → `corpids` | 同为 `List<string>?`，至少填一个 |
 
 应答侧注意：`AddChainRuleResponse.RuleId` 是 `int?`，`DeleteChainRuleRequest.RuleId` /
 `GetChainRuleInfoRequest.RuleId` / `ModifyChainRuleRequest.RuleId` 是非可空 `int`（官方必填）。
@@ -149,7 +149,7 @@ CG2 把三件事钉成断言：公共父接口 `IWechatWorkCorpGroupService` 声
 #1/#2/#3 的注释同时给出「上下游」新树与「企业互联」旧树编号（95813↔93403、95816↔93359、95817↔93355
 及代开发侧 96872↔96816、96873↔96814、96874↔96813）——同路由同契约，不是六个端点。
 CG 守卫注释另记：企业互联树的 `93404`「获取下级企业付费版本信息」**不是独立 HTTP 端点**，
-本仓把它建模为 [Agent.cs](../../../Mud.Wechat.Work.DataModels/ProviderAuthentication/Agent.cs) 的
+本仓把它建模为 [Agent.cs](../../../Mud.Wechat.Work/ProviderAuthentication/Agent.cs) 的
 `IsSharedFromOtherCorp`（`bool`）字段，勿据此加端点。
 
 ## 快速开始
@@ -255,7 +255,7 @@ using (switcher.UseCorpScope(appKey: "default", authCorpId, authorization.Perman
 | `GetChainCorpInfoListAsync` 的 `limit` 上限 | 请求体只有 `Limit`（`int?`）与 `Cursor`（`string?`），本仓注释无最大值数字 ⇒ **未逐项核验** | 需要批次裁剪时先核验官方页，不得从邻域借数值 |
 | `business_type` 取值全集 | 注释留档 `0 企业互联/局校互联、1 上下游企业`；其它值是否存在**未逐项核验** | 出现新取值先核验，再决定是否建枚举 |
 | `ChainGroupInfo` / `GetChainGroupResponse` 的分组层级上限 | 本仓无注释数值 ⇒ **未逐项核验** | 需要建群深度校验时先核验官方页 |
-| `qualification_status` = 3「已认证」的口径来源 | [GetChainCorpInfoResponse.cs](../../../Mud.Wechat.Work.DataModels/CorpGroup/ChainContacts/GetChainCorpInfoResponse.cs) 注释给出 1 未验证 / 2 已验证 / 3 已认证；「已认证」是否等价于「可调用导入/移除」的门槛**未逐项核验** | 不得把 `IsJoined` 与 `QualificationStatus` 合并推断为「可调用」判据 |
+| `qualification_status` = 3「已认证」的口径来源 | [GetChainCorpInfoResponse.cs](../../../Mud.Wechat.Work/CorpGroup/ChainContacts/GetChainCorpInfoResponse.cs) 注释给出 1 未验证 / 2 已验证 / 3 已认证；「已认证」是否等价于「可调用导入/移除」的门槛**未逐项核验** | 不得把 `IsJoined` 与 `QualificationStatus` 合并推断为「可调用」判据 |
 | #12 的状态机终态与超时 | 注释只有 1/2/3 三值与「只能查历史任务、并发 5」；任务留存时长与轮询建议间隔**未逐项核验** | 轮询节奏由宿主自定，勿在 SDK 侧加隐式重试 |
 | `mass_call_ticket` 的获取端点 | 本域只消费该参数，票据本身由邻域接口签发 ⇒ 获取面归属**未在本域核验** | 需要签发链时查 `ExternalContact` 邻域，勿在本域加端点 |
 | 代开发侧 `97441` / `97442` | CG5 注释记录：官方权限说明提及代开发，但代开发文档树无对应页 ⇒ 本仓按需求清单落自建子接口，代开发是否实际可调**未逐项核验** | 若官方补页，须同批改 CG1/CG5/CG6 与本文 |
@@ -271,8 +271,8 @@ using (switcher.UseCorpScope(appKey: "default", authCorpId, authorization.Perman
 | `AccessToken` + Query + `access_token` 绑定 | CG3（L214–L241）、CG7（L357–L380）、CG11（L476–L513） |
 | JSON 上下文登记（CorpGroup 15 型 / ChainContacts 23 型 / Rules 11 型）与同名 DTO 分裂 | CG4（L243–L274）、CG8（L382–L412）、CG11（L498–L513） |
 | 类型化面计数用的继承链收集辅助 | `CollectInterfaceEndpoints`（L198–L212） |
-| DTO 属性名 / 类型 / JSON 名 / 取值域注释 | [../../../Mud.Wechat.Work.DataModels/CorpGroup/](../../../Mud.Wechat.Work.DataModels/CorpGroup/)（`RequestModel/`、`ChainContacts/`、`Rules/`） |
-| 三个上下文源生成文件 | `../../../Mud.Wechat.Work.DataModels/Generated/` 下 `CorpGroupJsonContext.g.cs` / `ChainContactsJsonContext.g.cs` / `RulesJsonContext.g.cs` |
+| DTO 属性名 / 类型 / JSON 名 / 取值域注释 | [../../../Mud.Wechat.Work/CorpGroup/](../../../Mud.Wechat.Work/CorpGroup/)（`RequestModel/`、`ChainContacts/`、`Rules/`） |
+| 三个上下文源生成文件 | `../../../Mud.Wechat.Work/Generated/` 下 `CorpGroupJsonContext.g.cs` / `ChainContactsJsonContext.g.cs` / `RulesJsonContext.g.cs` |
 | Query 令牌注入白名单（G5）与令牌归属键（TO 系列） | [WechatContractGuards.QueryTokenInjection.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatContractGuards.QueryTokenInjection.cs)、[WechatTokenOwnerContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatTokenOwnerContractGuards.cs) |
 | 模块注册三段式 | [WechatModule.cs](../../Extensions/WechatModule.cs)、[WechatWorkServiceBuilder.cs](../../Extensions/WechatWorkServiceBuilder.cs)、[WechatJsonResolverExtensions.cs](../../Extensions/WechatJsonResolverExtensions.cs)（L135–L137） |
 

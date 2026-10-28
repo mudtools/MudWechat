@@ -197,15 +197,50 @@ public class WechatRedisContractGuards
     }
 
     /// <summary>
-    /// RD-G6：Redis 包单依赖（RD11）——csproj 不得引用 Callback / Work 主包，仅 Abstractions。
+    /// RD-G6：Redis 包的依赖面（RD11）—— 不得引用任何 Callback 包，且**源码不得消费业务客户端面**。
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// 合并前该不变式由「csproj 只引 <c>Work.Abstractions</c>、不引 <c>Work</c> 主包」提供物理保证。
+    /// 2026-10 包合并后企微线的基座与客户端同处 <c>Mud.Wechat.Work</c> 一个程序集，
+    /// 程序集维度不再能表达这条边界 —— 而<b>命名空间维度一直能</b>：基座在
+    /// <c>Mud.Wechat.Work.Abstractions.*</c>，客户端在 <c>Mud.Wechat.Work</c> /
+    /// <c>Mud.Wechat.Work.Interfaces</c> / <c>.Internal</c> / <c>.Services</c>。
+    /// 故本守卫改为「csproj 禁引 Callback + 源码禁引客户端命名空间」两段，
+    /// 语义与合并前等价（存储适配器只准实现端口与取指标面，不准顺手调业务接口）。
+    /// </para>
+    /// <para>
+    /// 附带说明：Redis 宿主按定义已 <c>AddWechatApp</c>（Redis 只服务于多应用令牌/授权存储），
+    /// 因此「引用主包工程」对消费者零新增负担 —— 这正是合并得以成立的前提，而非新缺口。
+    /// </para>
+    /// </remarks>
     [Fact]
     public void RedisPackage_ShouldReferenceOnlyAbstractions()
     {
         var csproj = ReadSource(Path.Combine("Mud.Wechat.Redis", "Mud.Wechat.Redis.csproj"));
 
-        csproj.Should().Contain("Mud.Wechat.Work.Abstractions.csproj");
-        csproj.Should().NotContain("Mud.Wechat.Work.Callback.csproj", "RD11：重放守卫接口上移后单依赖 Abstractions");
-        csproj.Should().NotContain("Mud.Wechat.Work.csproj", "Redis 包不得依赖主包");
+        // ① 包面：企微线只准一个引用（合并后为 Mud.Wechat.Work.csproj），且永不引 Callback。
+        csproj.Should().Contain("Mud.Wechat.Work.csproj",
+            "RD11：Redis 实现企微线存储端口，必须引企微线工程（2026-10 包合并后为该线唯一工程）");
+        csproj.Should().NotContain("Mud.Wechat.Work.Callback.csproj",
+            "RD11：重放守卫接口已上移叶层，Redis 不得依赖任何 Callback 包");
+
+        // ② 源码面：不得导入业务客户端命名空间（行锚定 using 探针，文档提及与 fail-fast 文案不误报）。
+        var forbiddenUsingPattern = new System.Text.RegularExpressions.Regex(
+            @"^\s*(?:global\s+)?using\s+Mud\.Wechat\.Work(?:\.Interfaces|\.Services|\.Extensions|\.Internal)?\s*(?:;|=)",
+            RegexOptions.Multiline);
+
+        var hits = Directory
+            .EnumerateFiles(SourcePath("Mud.Wechat.Redis"), "*.cs", SearchOption.AllDirectories)
+            .Where(static f => !f.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}")
+                               && !f.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}"))
+            .SelectMany(f => forbiddenUsingPattern.Matches(File.ReadAllText(f))
+                .Cast<System.Text.RegularExpressions.Match>()
+                .Select(m => $"{Path.GetFileName(f)}: {m.Value.Trim()}"))
+            .ToArray();
+
+        hits.Should().BeEmpty(
+            "Redis 是存储适配器，业务客户端面一旦进入其源码即把「存储层」绑到「调用链」上，" +
+            $"端口实现与业务编排将无法各自演进。实际命中：{string.Join(", ", hits)}");
     }
 }

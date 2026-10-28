@@ -152,7 +152,7 @@ WechatAdsException.ThrowIfFailed(updated, "/v3.0/qualifications/update");
 |---|---|
 | 逐参数原文（含 filtering 的 1/1–100 约束） | `IWechatAdsQualificationService.cs` 的 XML 注释 |
 | 路由 / 计数（恰 3）、「三页无 `user_token`」 | `QualificationsEndpoints_ShouldMatchOfficialRouteTable`（`ADS-B2`）+ `QualificationsRoutes` |
-| 三支互斥 spec 与「当且仅当」原文 | `AdsQualificationSpec` remarks（`Src/Ads/Mud.Wechat.Ads.DataModels/Qualifications/`） |
+| 三支互斥 spec 与「当且仅当」原文 | `AdsQualificationSpec` remarks（`Src/Ads/Mud.Wechat.Ads/Qualifications/`） |
 | 「非 null 时全量更新」「必填即整体替换」 | `AdsQualificationUpdateRequest` remarks |
 | 官方文档 | `https://developers.e.qq.com/v3.0/docs/api/{qualifications/get,qualifications/add,qualifications/update}` |
 

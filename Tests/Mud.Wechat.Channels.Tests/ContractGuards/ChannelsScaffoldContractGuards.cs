@@ -26,11 +26,13 @@ namespace Mud.Wechat.Channels.Tests.ContractGuards;
 public class ChannelsScaffoldContractGuards
 {
     /// <summary>
-    /// CH-X1：四包骨架必须齐备且落位于 <c>Src/Channels/</c>（4 包形态：主包 / Abstractions / DataModels / Callback）。
+    /// CH-X1：小店线包骨架必须齐备且落位于 <c>Src/Channels/</c>（2 包形态：主包 / Callback）。
     /// </summary>
     /// <remarks>
     /// 与小程序线「无回调包」相反：小店回调为官方标准微信回调（msg_signature + EncodingAESKey + receiveid），
     /// 必须自建 <c>Mud.Wechat.Channels.Callback</c> 包承载（设计方案 v1 §3.1 / §3.5）。
+    /// 原形态是 4 包（主包 / Abstractions / DataModels / Callback）；2026-10 包合并把契约面、DTO 与
+    /// 客户端收进主包，本守卫随之改写 —— 承重的那一条始终是「回调宿主独立成包」。
     /// </remarks>
     [Fact]
     public void FourPackages_ShouldExistUnderSrcChannels()
@@ -38,13 +40,18 @@ public class ChannelsScaffoldContractGuards
         foreach (var project in new[]
                  {
                      "Mud.Wechat.Channels",
-                     "Mud.Wechat.Channels.Abstractions",
-                     "Mud.Wechat.Channels.DataModels",
                      "Mud.Wechat.Channels.Callback",
                  })
         {
             File.Exists(SourcePath(project, $"{project}.csproj"))
-                .Should().BeTrue($"小店线四包缺一（{project}）：设计方案 §3.1 包家族必须齐备");
+                .Should().BeTrue($"小店线包骨架缺一（{project}）：设计方案 §3.1 包家族必须齐备");
+        }
+
+        // 已退役的子包不得复活（复活即重新引入一份需要独立维护版本与文档的 NuGet 制品）。
+        foreach (var retired in new[] { "Mud.Wechat.Channels.Abstractions", "Mud.Wechat.Channels.DataModels" })
+        {
+            Directory.EnumerateFiles(Root, $"{retired}.csproj", SearchOption.AllDirectories)
+                .Should().BeEmpty($"{retired} 已并入 Mud.Wechat.Channels，工程不得复活");
         }
     }
 
@@ -84,8 +91,6 @@ public class ChannelsScaffoldContractGuards
         foreach (var project in new[]
                  {
                      "Mud.Wechat.Channels",
-                     "Mud.Wechat.Channels.Abstractions",
-                     "Mud.Wechat.Channels.DataModels",
                      "Mud.Wechat.Channels.Callback",
                  })
         {
@@ -113,32 +118,38 @@ public class ChannelsScaffoldContractGuards
     }
 
     /// <summary>
-    /// CH-X3 补充：依赖方向必须严格单向 —— 主包 → {Abstractions, DataModels}、Callback → {Abstractions,
-    /// DataModels}、Abstractions → {DataModels, Core}、DataModels → Core；<b>Callback 不得引用主包</b>。
+    /// CH-X3 补充：依赖方向必须严格单向 —— 主包 → Core 叶层；Callback → 主包（2026-10 包合并后
+    /// 契约面 / DTO / 客户端同处主包）。<b>Callback 仍不得搭业务客户端</b>，但该边改由源码面守（见下）。
     /// </summary>
     [Fact]
     public void ProjectDependencyDirection_ShouldFollowDesignMatrix()
     {
         var main = File.ReadAllText(SourcePath("Mud.Wechat.Channels", "Mud.Wechat.Channels.csproj"));
-        main.Should().Contain("Mud.Wechat.Channels.Abstractions.csproj", "主包必须引用 Abstractions");
-        main.Should().Contain("Mud.Wechat.Channels.DataModels.csproj", "主包必须引用 DataModels");
-
-        var abstractions = File.ReadAllText(SourcePath("Mud.Wechat.Channels.Abstractions", "Mud.Wechat.Channels.Abstractions.csproj"));
-        abstractions.Should().Contain("Mud.Wechat.Channels.DataModels.csproj", "Abstractions 必须引用 DataModels");
-        abstractions.Should().Contain("Mud.Wechat.Abstractions.csproj", "Abstractions 必须引用 Core Abstractions");
-        abstractions.Should().NotContain(".Channels\\Mud.Wechat.Channels.csproj", "Abstractions 不得向下引用主包");
-        abstractions.Should().NotContain(".Channels.Callback", "Abstractions 不得引用回调包");
-
-        var dataModels = File.ReadAllText(SourcePath("Mud.Wechat.Channels.DataModels", "Mud.Wechat.Channels.DataModels.csproj"));
-        dataModels.Should().Contain("Mud.Wechat.Abstractions.csproj", "DataModels 只允许引用 Core Abstractions");
-        dataModels.Should().NotContain("Mud.Wechat.Channels.Abstractions.csproj",
-            "DataModels 不得向上引用 Abstractions（DTO 纯净面）");
+        main.Should().Contain("Mud.Wechat.Abstractions.csproj", "主包必须直引 Core 叶层（判错契约与 SSRF 白名单）");
+        main.Should().NotContain("Mud.Wechat.Channels.Callback.csproj", "主包不得向下引用回调包（依赖单向）");
 
         var callback = File.ReadAllText(SourcePath("Mud.Wechat.Channels.Callback", "Mud.Wechat.Channels.Callback.csproj"));
-        callback.Should().Contain("Mud.Wechat.Channels.Abstractions.csproj", "Callback 必须引用 Abstractions");
-        callback.Should().Contain("Mud.Wechat.Channels.DataModels.csproj", "Callback 必须引用 DataModels");
-        callback.Should().NotContain(".Channels\\Mud.Wechat.Channels.csproj",
-            "Callback 硬边界：不得引用主包（设计方案 §3.1）");
+        callback.Should().Contain("Mud.Wechat.Channels.csproj",
+            "Callback 必须引用小店线工程（合并后为该线唯一工程：基座 + DTO + 客户端同程序集）");
+
+        // 合并前「Callback 不引主包」是物理边；合并后同程序集 ⇒ 守源码面：
+        // 回调包不得 using 小店业务客户端命名空间（可用面止于 Channels.Abstractions.* 与 Channels.DataModels.*）。
+        var clientUsing = new System.Text.RegularExpressions.Regex(
+            @"^\s*(?:global\s+)?using\s+Mud\.Wechat\.Channels\s*(?:;|=)",
+            System.Text.RegularExpressions.RegexOptions.Multiline);
+
+        var hits = Directory
+            .EnumerateFiles(SourcePath("Mud.Wechat.Channels.Callback"), "*.cs", SearchOption.AllDirectories)
+            .Where(static f => !f.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}")
+                               && !f.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}"))
+            .SelectMany(f => clientUsing.Matches(File.ReadAllText(f))
+                .Cast<System.Text.RegularExpressions.Match>()
+                .Select(m => $"{Path.GetFileName(f)}: {m.Value.Trim()}"))
+            .ToArray();
+
+        hits.Should().BeEmpty(
+            "小店回调链路不得消费业务客户端（推送线程内取令牌/发请求会放大官方重推窗口）；" +
+            $"实际命中：{string.Join(", ", hits)}");
     }
 
     /// <summary>
@@ -178,7 +189,8 @@ public class ChannelsScaffoldContractGuards
     [Fact]
     public void EveryGeneratedJsonContext_ShouldBeRegisteredInResolver()
     {
-        var dataModels = LoadProductLine("Mud.Wechat.Channels.DataModels");
+        // 2026-10 包合并：原 DataModels 程序集的生成上下文现落主包程序集（命名空间不变）。
+        var dataModels = LoadProductLine("Mud.Wechat.Channels");
 
         var contexts = dataModels.GetTypes()
             .Where(static t => t.Name.EndsWith("JsonContext", StringComparison.Ordinal)

@@ -157,8 +157,8 @@ WxaException.ThrowIfFailed(chatTool, "/cgi-bin/message/wxopen/chattoolmsg/send")
 | 路由集合（3 条逐字）与全线合计计数 398 | `MiniProgramContractGuards` 的 MP-X5；基线在 `Tests/ContractBaseline.cs` |
 | 令牌绑定 / 复用；本线与公众号线路由不得交集 | MP-X3、MP-X2 与 MP-X6（`MiniProgramScaffoldContractGuards`） |
 | 本线不建 component/authorizer 令牌链 | P3-R2（`MiniProgramP3RulingsContractGuards`） |
-| 请求 / 应答字段名与类型（6 个文件） | [../../../Mud.Wechat.MiniProgram.DataModels/DynamicMessage/](../../../Mud.Wechat.MiniProgram.DataModels/DynamicMessage/)（`SerializerClassName = "DynamicMessage"`） |
-| AOT 序列化上下文（`internal`，示例中不得引用） | `../../../Mud.Wechat.MiniProgram.DataModels/Generated/DynamicMessageJsonContext.g.cs` |
+| 请求 / 应答字段名与类型（6 个文件） | [../../../Mud.Wechat.MiniProgram/DynamicMessage/](../../../Mud.Wechat.MiniProgram/DynamicMessage/)（`SerializerClassName = "DynamicMessage"`） |
+| AOT 序列化上下文（`internal`，示例中不得引用） | `../../../Mud.Wechat.MiniProgram/Generated/DynamicMessageJsonContext.g.cs` |
 | 本线端点总表与装配入口 | [../../README.md](../../README.md) |
 
 ## 改动本域需要同批完成

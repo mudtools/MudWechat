@@ -101,7 +101,7 @@ public class WechatPayV2DepositContractGuards
             .GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
         methods.Should().HaveSameCount(SecureRoutes);
 
-        var text = File.ReadAllText(SourcePath("Mud.Wechat.Pay.V2", "Secure/WechatPayV2DepositSecureService.cs"));
+        var text = File.ReadAllText(SourcePath("Mud.Wechat.Pay",  "Secure/WechatPayV2DepositSecureService.cs"));
 
         foreach (var (method, expectedRoute) in methods.Zip(SecureRoutes))
         {
@@ -149,7 +149,7 @@ public class WechatPayV2DepositContractGuards
     [Fact]
     public void V2_Deposit_ModuleRegistrar_ShouldBindBothShapes()
     {
-        var builderSource = File.ReadAllText(SourcePath("Mud.Wechat.Pay.V2", "Extensions/PayV2ServiceBuilder.cs"));
+        var builderSource = File.ReadAllText(SourcePath("Mud.Wechat.Pay",  "Extensions/PayV2ServiceBuilder.cs"));
 
         builderSource.Should().Contain("[PayV2Module.DepositV2]");
         builderSource.Should().Contain("AddDepositV2WebApiHttpClient()",

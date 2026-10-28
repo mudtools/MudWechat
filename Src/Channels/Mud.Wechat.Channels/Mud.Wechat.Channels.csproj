@@ -1,28 +1,54 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<Description>微信小店/视频号（channels 生态）SDK 主包：27 个业务域声明式客户端（商品/订单/售后/物流/资金/营销/联盟/会员/直播留资/橱窗/团购核销等）、模块注册器、AOT JsonContext 合并。</Description>
-		<PackageTags>Wechat;Channels;微信小店;视频号;SDK;MudWechat</PackageTags>
+		<Description>微信小店/视频号（channels 生态）SDK：配置面 ChannelsAppConfig、令牌类型/管理器（Wechat.Channels.AccessToken，双通道 token/stable_token）、多应用基座、异常与错误码、回调信封与载荷契约、27 个业务域官方 DTO（AOT 源生成 JsonContext）、业务声明式客户端（商品/订单/售后/物流/资金/营销/联盟/会员/直播留资/橱窗/团购核销等）、模块注册器。一线一入口包（2026-10 包合并：原 Mud.Wechat.Channels.Abstractions / Mud.Wechat.Channels.DataModels 并入本包，命名空间不变；收推送另引 Mud.Wechat.Channels.Callback）。小店 AppID 与公众号/小程序 AppID 不互通，令牌域独立（设计方案 v1 §3.2）。</Description>
+		<PackageTags>Wechat;Channels;微信小店;视频号;SDK;Authentication;TokenManager;MultiApp;DTO;Configuration;MudWechat</PackageTags>
 		<!-- MUD005（Query 令牌注入存在 URL 泄露面）：微信小店官方契约强制令牌走 Query 参数
 		     （access_token 为 URL 查询参数，官方不支持 Header 注入），无法改用 Header。
-		     本包全部接口均为该官方契约，属已知接受风险（详见各接口 remarks 与契约守卫测试），
-		     以 F6(b) 声明式 MSBuild 开关豁免（组件 3.0.5+，可审计）；库内遥测已由 SensitiveUrlRedactor 脱敏。 -->
+		     本包全部接口（含令牌签发）均为该官方契约，属已知接受风险（详见各接口 remarks 与契约守卫测试），
+		     以 F6(b) 声明式 MSBuild 开关豁免（组件 3.0.5+，可审计）；库内遥测已由 SensitiveUrlRedactor 脱敏。
+		     旧的 SYSLIB1100/1101 抑制已删除：令牌恢复配置绑定改走"纯 DTO + Apply"两段式，不再产生该诊断。 -->
 		<MudHttpSuppressQueryTokenInjection>true</MudHttpSuppressQueryTokenInjection>
 	</PropertyGroup>
 
 	<ItemGroup>
 		<PackageReference Include="Mud.HttpUtils" Version="3.0.9" />
+		<PackageReference Include="Mud.HttpUtils.Attributes" Version="3.0.9" />
 	</ItemGroup>
 
 	<ItemGroup>
 		<PackageReference Include="Mud.HttpUtils.Generator" Version="3.0.9" PrivateAssets="all" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
 	</ItemGroup>
 
+	<!-- 回调契约登记生成器（产品线中立工具）：按 [ChannelsCallbackContract] 声明发射 RegisterAll 方法体。
+	     **必须挂在承载小店回调载荷 DTO 与契约宿主的工程**（原 Channels.DataModels 面，2026-10 包合并后由本工程承载）：
+	     partial 方法体与 partial 宿主必须同属一个程序集。工具为中立名，不构成对其它产品线的横向引用。 -->
 	<ItemGroup>
-		<ProjectReference Include="..\..\Core\Mud.Wechat.Abstractions\Mud.Wechat.Abstractions.csproj" />
-		<ProjectReference Include="..\Mud.Wechat.Channels.Abstractions\Mud.Wechat.Channels.Abstractions.csproj" />
-		<ProjectReference Include="..\Mud.Wechat.Channels.DataModels\Mud.Wechat.Channels.DataModels.csproj" />
+		<ProjectReference Include="..\..\Core\Mud.Wechat.Callback.Generator\Mud.Wechat.Callback.Generator.csproj"
+		                  OutputItemType="Analyzer" ReferenceOutputAssembly="false" PrivateAssets="all" />
 	</ItemGroup>
 
+	<!-- 令牌基座与后台刷新需要 HttpClientFactory / Hosting 面（原 Abstractions 包携带，合并后由本包携带）。 -->
+	<ItemGroup Condition="'$(TargetFramework)' == 'net8.0' Or '$(TargetFramework)' == 'net10.0'">
+		<PackageReference Include="Microsoft.Extensions.Http" Version="10.0.9" />
+		<PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.9" />
+	</ItemGroup>
+	<ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' or '$(TargetFramework)' == 'net6.0'">
+		<PackageReference Include="Microsoft.Extensions.Http" Version="8.0.1" />
+		<PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="8.0.1" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<!-- 响应基底实现公用层判错契约 IWechatApiResponse；配置基座 / SSRF 白名单 / 令牌持久化端口取叶层。 -->
+		<ProjectReference Include="..\..\Core\Mud.Wechat.Abstractions\Mud.Wechat.Abstractions.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<!-- 回调宿主与测试需直读 internal（回调信封的 internal set 由接收器填写；生成上下文为 internal）。 -->
+		<InternalsVisibleTo Include="Mud.Wechat.Channels.Tests" />
+		<InternalsVisibleTo Include="Mud.Wechat.Channels.Callback" />
+		<InternalsVisibleTo Include="Mud.Wechat.Channels.Callback.Tests" />
+		<InternalsVisibleTo Include="DynamicProxyGenAssembly2" />
+	</ItemGroup>
 
 </Project>

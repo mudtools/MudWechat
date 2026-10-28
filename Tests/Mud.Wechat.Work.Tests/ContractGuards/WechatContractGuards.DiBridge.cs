@@ -34,7 +34,7 @@ public partial class WechatContractGuards
     public void AppContextHolder_ShouldBeSameInstanceAsSwitcher_InRegistrationSource()
     {
         var extensionsPath = SourcePath(
-            "Mud.Wechat.Work.Abstractions", "Extensions", "WechatWorkMultiAppExtensions.cs");
+            "Mud.Wechat.Work", "Extensions", "WechatWorkMultiAppExtensions.cs");
         File.Exists(extensionsPath).Should().BeTrue();
 
         var source = File.ReadAllText(extensionsPath);

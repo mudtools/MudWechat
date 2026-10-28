@@ -3,7 +3,7 @@
 企业微信「操作日志」域企业自建应用 SDK：官方仅向自建应用开放本域端点
 （获取成员操作记录 / 获取管理端操作日志），全部声明于本接口。 接口：[IWechatWorkSecurityOperLogService](./IWechatWorkSecurityOperLogService.cs)、[IWechatWorkInternalSecurityOperLogService](./IWechatWorkSecurityOperLogService_Internal.cs)、[IWechatWorkSecurityService](./IWechatWorkSecurityService.cs)、[IWechatWorkInternalSecurityService](./IWechatWorkSecurityService_Internal.cs)、[IWechatWorkSecurityVipService](./IWechatWorkSecurityVipService.cs)、[IWechatWorkInternalSecurityVipService](./IWechatWorkSecurityVipService_Internal.cs)；注册组 `Security`；模块枚举 `WechatModule.Security`（装配入口见 [WechatWorkServiceBuilder.cs](../../Extensions/WechatWorkServiceBuilder.cs)）。逐端点核验 2026-10-18。
 
-> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[WechatSecurityContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatSecurityContractGuards.cs)、[WechatContractGuards.QueryTokenInjection.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatContractGuards.QueryTokenInjection.cs)）、本域 DTO（[`Mud.Wechat.Work.DataModels/Security`](../../../Mud.Wechat.Work.DataModels/Security/)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
+> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[WechatSecurityContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatSecurityContractGuards.cs)、[WechatContractGuards.QueryTokenInjection.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatContractGuards.QueryTokenInjection.cs)）、本域 DTO（[`Mud.Wechat.Work/Security`](../../../Mud.Wechat.Work/Security/)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
 
 ## 端点速览
 
@@ -369,43 +369,43 @@ MUD005 已知接受风险：企业微信官方契约强制令牌走 Query 参数
 
 ## DTO 与序列化面
 
-本域 DTO 目录 [`Mud.Wechat.Work.DataModels/Security`](../../../Mud.Wechat.Work.DataModels/Security/) 内共 **46** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **46** 个，`SerializerClassName` = `Security`。
+本域 DTO 目录 [`Mud.Wechat.Work/Security`](../../../Mud.Wechat.Work/Security/) 内共 **46** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **46** 个，`SerializerClassName` = `Security`。
 
-AOT 源生成上下文：[`SecurityJsonContext.g.cs`](./../../../Mud.Wechat.Work.DataModels/Generated/SecurityJsonContext.g.cs)（生成物，勿手改）。
+AOT 源生成上下文：[`SecurityJsonContext.g.cs`](./../../../Mud.Wechat.Work/Generated/SecurityJsonContext.g.cs)（生成物，勿手改）。
 
 | 端点引用的类型 | 角色 | 定义位置 | JSON 字段（前缀） |
 |---|---|---|---|
-| `ListMemberOperLogsResponse` | 应答 | [Security/ListMemberOperLogsResponse.cs](../../../Mud.Wechat.Work.DataModels/Security/ListMemberOperLogsResponse.cs) | `has_more`, `next_cursor`, `record_list` |
-| `ListMemberOperLogsRequest` | 请求体 | [Security/RequestModel/ListMemberOperLogsRequest.cs](../../../Mud.Wechat.Work.DataModels/Security/RequestModel/ListMemberOperLogsRequest.cs) | `start_time`, `end_time`, `oper_type`, `userid`, `cursor`, `limit` |
-| `ListAdminOperLogsResponse` | 应答 | [Security/ListAdminOperLogsResponse.cs](../../../Mud.Wechat.Work.DataModels/Security/ListAdminOperLogsResponse.cs) | `has_more`, `next_cursor`, `record_list` |
-| `ListAdminOperLogsRequest` | 请求体 | [Security/RequestModel/ListAdminOperLogsRequest.cs](../../../Mud.Wechat.Work.DataModels/Security/RequestModel/ListAdminOperLogsRequest.cs) | `start_time`, `end_time`, `oper_type`, `userid`, `cursor`, `limit` |
-| `GetFileOperRecordResponse` | 应答 | [Security/GetFileOperRecordResponse.cs](../../../Mud.Wechat.Work.DataModels/Security/GetFileOperRecordResponse.cs) | `has_more`, `next_cursor`, `record_list` |
-| `GetFileOperRecordRequest` | 请求体 | [Security/RequestModel/GetFileOperRecordRequest.cs](../../../Mud.Wechat.Work.DataModels/Security/RequestModel/GetFileOperRecordRequest.cs) | `start_time`, `end_time`, `userid_list`, `operation`, `cursor`, `limit` |
-| `ImportTrustDevicesResponse` | 应答 | [Security/ImportTrustDevicesResponse.cs](../../../Mud.Wechat.Work.DataModels/Security/ImportTrustDevicesResponse.cs) | `result` |
-| `ImportTrustDevicesRequest` | 请求体 | [Security/RequestModel/ImportTrustDevicesRequest.cs](../../../Mud.Wechat.Work.DataModels/Security/RequestModel/ImportTrustDevicesRequest.cs) | `device_list` |
-| `GetTrustDevicesResponse` | 应答 | [Security/GetTrustDevicesResponse.cs](../../../Mud.Wechat.Work.DataModels/Security/GetTrustDevicesResponse.cs) | `device_list`, `next_cursor` |
-| `GetTrustDevicesRequest` | 请求体 | [Security/RequestModel/GetTrustDevicesRequest.cs](../../../Mud.Wechat.Work.DataModels/Security/RequestModel/GetTrustDevicesRequest.cs) | `cursor`, `type`, `limit` |
-| `GetTrustDevicesByUserResponse` | 应答 | [Security/GetTrustDevicesByUserResponse.cs](../../../Mud.Wechat.Work.DataModels/Security/GetTrustDevicesByUserResponse.cs) | `device_list` |
-| `GetTrustDevicesByUserRequest` | 请求体 | [Security/RequestModel/GetTrustDevicesByUserRequest.cs](../../../Mud.Wechat.Work.DataModels/Security/RequestModel/GetTrustDevicesByUserRequest.cs) | `last_login_userid`, `type` |
-| `WechatWorkResponse` | 应答 | [WechatWorkResponse.cs](../../../Mud.Wechat.Work.DataModels/WechatWorkResponse.cs) | `errcode`, `errmsg`, `data` |
-| `DeleteTrustDevicesRequest` | 请求体 | [Security/RequestModel/DeleteTrustDevicesRequest.cs](../../../Mud.Wechat.Work.DataModels/Security/RequestModel/DeleteTrustDevicesRequest.cs) | `type`, `device_code_list` |
-| `ApproveTrustDevicesResponse` | 应答 | [Security/ApproveTrustDevicesResponse.cs](../../../Mud.Wechat.Work.DataModels/Security/ApproveTrustDevicesResponse.cs) | `success_list`, `fail_list` |
-| `ApproveTrustDevicesRequest` | 请求体 | [Security/RequestModel/ApproveTrustDevicesRequest.cs](../../../Mud.Wechat.Work.DataModels/Security/RequestModel/ApproveTrustDevicesRequest.cs) | `device_code_list` |
-| `RejectTrustDevicesResponse` | 应答 | [Security/RejectTrustDevicesResponse.cs](../../../Mud.Wechat.Work.DataModels/Security/RejectTrustDevicesResponse.cs) | `success_list`, `fail_list` |
-| `RejectTrustDevicesRequest` | 请求体 | [Security/RequestModel/RejectTrustDevicesRequest.cs](../../../Mud.Wechat.Work.DataModels/Security/RequestModel/RejectTrustDevicesRequest.cs) | `device_code_list` |
-| `GetScreenOperRecordResponse` | 应答 | [Security/GetScreenOperRecordResponse.cs](../../../Mud.Wechat.Work.DataModels/Security/GetScreenOperRecordResponse.cs) | `has_more`, `next_cursor`, `record_list` |
-| `GetScreenOperRecordRequest` | 请求体 | [Security/RequestModel/GetScreenOperRecordRequest.cs](../../../Mud.Wechat.Work.DataModels/Security/RequestModel/GetScreenOperRecordRequest.cs) | `start_time`, `end_time`, `userid_list`, `department_id_list`, `screen_shot_type`, `cursor`, `limit` |
-| `GetServerDomainIpResponse` | 应答 | [Security/GetServerDomainIpResponse.cs](../../../Mud.Wechat.Work.DataModels/Security/GetServerDomainIpResponse.cs) | `domain_list`, `ip_list` |
-| `SubmitBatchAddVipJobResponse` | 应答 | [Security/SubmitBatchAddVipJobResponse.cs](../../../Mud.Wechat.Work.DataModels/Security/SubmitBatchAddVipJobResponse.cs) | `jobid`, `invalid_userid_list` |
-| `SubmitBatchAddVipJobRequest` | 请求体 | [Security/RequestModel/SubmitBatchAddVipJobRequest.cs](../../../Mud.Wechat.Work.DataModels/Security/RequestModel/SubmitBatchAddVipJobRequest.cs) | `userid_list` |
-| `GetBatchAddVipJobResultResponse` | 应答 | [Security/GetBatchAddVipJobResultResponse.cs](../../../Mud.Wechat.Work.DataModels/Security/GetBatchAddVipJobResultResponse.cs) | `job_result` |
-| `GetBatchAddVipJobRequest` | 请求体 | [Security/RequestModel/GetBatchAddVipJobRequest.cs](../../../Mud.Wechat.Work.DataModels/Security/RequestModel/GetBatchAddVipJobRequest.cs) | `jobid` |
-| `SubmitBatchDelVipJobResponse` | 应答 | [Security/SubmitBatchDelVipJobResponse.cs](../../../Mud.Wechat.Work.DataModels/Security/SubmitBatchDelVipJobResponse.cs) | `jobid`, `invalid_userid_list` |
-| `SubmitBatchDelVipJobRequest` | 请求体 | [Security/RequestModel/SubmitBatchDelVipJobRequest.cs](../../../Mud.Wechat.Work.DataModels/Security/RequestModel/SubmitBatchDelVipJobRequest.cs) | `userid_list` |
-| `GetBatchDelVipJobResultResponse` | 应答 | [Security/GetBatchDelVipJobResultResponse.cs](../../../Mud.Wechat.Work.DataModels/Security/GetBatchDelVipJobResultResponse.cs) | `job_result` |
-| `GetBatchDelVipJobRequest` | 请求体 | [Security/RequestModel/GetBatchDelVipJobRequest.cs](../../../Mud.Wechat.Work.DataModels/Security/RequestModel/GetBatchDelVipJobRequest.cs) | `jobid` |
-| `ListVipAccountsResponse` | 应答 | [Security/ListVipAccountsResponse.cs](../../../Mud.Wechat.Work.DataModels/Security/ListVipAccountsResponse.cs) | `has_more`, `next_cursor`, `userid_list` |
-| `ListVipAccountsRequest` | 请求体 | [Security/RequestModel/ListVipAccountsRequest.cs](../../../Mud.Wechat.Work.DataModels/Security/RequestModel/ListVipAccountsRequest.cs) | `cursor`, `limit` |
+| `ListMemberOperLogsResponse` | 应答 | [Security/ListMemberOperLogsResponse.cs](../../../Mud.Wechat.Work/Security/ListMemberOperLogsResponse.cs) | `has_more`, `next_cursor`, `record_list` |
+| `ListMemberOperLogsRequest` | 请求体 | [Security/RequestModel/ListMemberOperLogsRequest.cs](../../../Mud.Wechat.Work/Security/RequestModel/ListMemberOperLogsRequest.cs) | `start_time`, `end_time`, `oper_type`, `userid`, `cursor`, `limit` |
+| `ListAdminOperLogsResponse` | 应答 | [Security/ListAdminOperLogsResponse.cs](../../../Mud.Wechat.Work/Security/ListAdminOperLogsResponse.cs) | `has_more`, `next_cursor`, `record_list` |
+| `ListAdminOperLogsRequest` | 请求体 | [Security/RequestModel/ListAdminOperLogsRequest.cs](../../../Mud.Wechat.Work/Security/RequestModel/ListAdminOperLogsRequest.cs) | `start_time`, `end_time`, `oper_type`, `userid`, `cursor`, `limit` |
+| `GetFileOperRecordResponse` | 应答 | [Security/GetFileOperRecordResponse.cs](../../../Mud.Wechat.Work/Security/GetFileOperRecordResponse.cs) | `has_more`, `next_cursor`, `record_list` |
+| `GetFileOperRecordRequest` | 请求体 | [Security/RequestModel/GetFileOperRecordRequest.cs](../../../Mud.Wechat.Work/Security/RequestModel/GetFileOperRecordRequest.cs) | `start_time`, `end_time`, `userid_list`, `operation`, `cursor`, `limit` |
+| `ImportTrustDevicesResponse` | 应答 | [Security/ImportTrustDevicesResponse.cs](../../../Mud.Wechat.Work/Security/ImportTrustDevicesResponse.cs) | `result` |
+| `ImportTrustDevicesRequest` | 请求体 | [Security/RequestModel/ImportTrustDevicesRequest.cs](../../../Mud.Wechat.Work/Security/RequestModel/ImportTrustDevicesRequest.cs) | `device_list` |
+| `GetTrustDevicesResponse` | 应答 | [Security/GetTrustDevicesResponse.cs](../../../Mud.Wechat.Work/Security/GetTrustDevicesResponse.cs) | `device_list`, `next_cursor` |
+| `GetTrustDevicesRequest` | 请求体 | [Security/RequestModel/GetTrustDevicesRequest.cs](../../../Mud.Wechat.Work/Security/RequestModel/GetTrustDevicesRequest.cs) | `cursor`, `type`, `limit` |
+| `GetTrustDevicesByUserResponse` | 应答 | [Security/GetTrustDevicesByUserResponse.cs](../../../Mud.Wechat.Work/Security/GetTrustDevicesByUserResponse.cs) | `device_list` |
+| `GetTrustDevicesByUserRequest` | 请求体 | [Security/RequestModel/GetTrustDevicesByUserRequest.cs](../../../Mud.Wechat.Work/Security/RequestModel/GetTrustDevicesByUserRequest.cs) | `last_login_userid`, `type` |
+| `WechatWorkResponse` | 应答 | [WechatWorkResponse.cs](../../../Mud.Wechat.Work/WechatWorkResponse.cs) | `errcode`, `errmsg`, `data` |
+| `DeleteTrustDevicesRequest` | 请求体 | [Security/RequestModel/DeleteTrustDevicesRequest.cs](../../../Mud.Wechat.Work/Security/RequestModel/DeleteTrustDevicesRequest.cs) | `type`, `device_code_list` |
+| `ApproveTrustDevicesResponse` | 应答 | [Security/ApproveTrustDevicesResponse.cs](../../../Mud.Wechat.Work/Security/ApproveTrustDevicesResponse.cs) | `success_list`, `fail_list` |
+| `ApproveTrustDevicesRequest` | 请求体 | [Security/RequestModel/ApproveTrustDevicesRequest.cs](../../../Mud.Wechat.Work/Security/RequestModel/ApproveTrustDevicesRequest.cs) | `device_code_list` |
+| `RejectTrustDevicesResponse` | 应答 | [Security/RejectTrustDevicesResponse.cs](../../../Mud.Wechat.Work/Security/RejectTrustDevicesResponse.cs) | `success_list`, `fail_list` |
+| `RejectTrustDevicesRequest` | 请求体 | [Security/RequestModel/RejectTrustDevicesRequest.cs](../../../Mud.Wechat.Work/Security/RequestModel/RejectTrustDevicesRequest.cs) | `device_code_list` |
+| `GetScreenOperRecordResponse` | 应答 | [Security/GetScreenOperRecordResponse.cs](../../../Mud.Wechat.Work/Security/GetScreenOperRecordResponse.cs) | `has_more`, `next_cursor`, `record_list` |
+| `GetScreenOperRecordRequest` | 请求体 | [Security/RequestModel/GetScreenOperRecordRequest.cs](../../../Mud.Wechat.Work/Security/RequestModel/GetScreenOperRecordRequest.cs) | `start_time`, `end_time`, `userid_list`, `department_id_list`, `screen_shot_type`, `cursor`, `limit` |
+| `GetServerDomainIpResponse` | 应答 | [Security/GetServerDomainIpResponse.cs](../../../Mud.Wechat.Work/Security/GetServerDomainIpResponse.cs) | `domain_list`, `ip_list` |
+| `SubmitBatchAddVipJobResponse` | 应答 | [Security/SubmitBatchAddVipJobResponse.cs](../../../Mud.Wechat.Work/Security/SubmitBatchAddVipJobResponse.cs) | `jobid`, `invalid_userid_list` |
+| `SubmitBatchAddVipJobRequest` | 请求体 | [Security/RequestModel/SubmitBatchAddVipJobRequest.cs](../../../Mud.Wechat.Work/Security/RequestModel/SubmitBatchAddVipJobRequest.cs) | `userid_list` |
+| `GetBatchAddVipJobResultResponse` | 应答 | [Security/GetBatchAddVipJobResultResponse.cs](../../../Mud.Wechat.Work/Security/GetBatchAddVipJobResultResponse.cs) | `job_result` |
+| `GetBatchAddVipJobRequest` | 请求体 | [Security/RequestModel/GetBatchAddVipJobRequest.cs](../../../Mud.Wechat.Work/Security/RequestModel/GetBatchAddVipJobRequest.cs) | `jobid` |
+| `SubmitBatchDelVipJobResponse` | 应答 | [Security/SubmitBatchDelVipJobResponse.cs](../../../Mud.Wechat.Work/Security/SubmitBatchDelVipJobResponse.cs) | `jobid`, `invalid_userid_list` |
+| `SubmitBatchDelVipJobRequest` | 请求体 | [Security/RequestModel/SubmitBatchDelVipJobRequest.cs](../../../Mud.Wechat.Work/Security/RequestModel/SubmitBatchDelVipJobRequest.cs) | `userid_list` |
+| `GetBatchDelVipJobResultResponse` | 应答 | [Security/GetBatchDelVipJobResultResponse.cs](../../../Mud.Wechat.Work/Security/GetBatchDelVipJobResultResponse.cs) | `job_result` |
+| `GetBatchDelVipJobRequest` | 请求体 | [Security/RequestModel/GetBatchDelVipJobRequest.cs](../../../Mud.Wechat.Work/Security/RequestModel/GetBatchDelVipJobRequest.cs) | `jobid` |
+| `ListVipAccountsResponse` | 应答 | [Security/ListVipAccountsResponse.cs](../../../Mud.Wechat.Work/Security/ListVipAccountsResponse.cs) | `has_more`, `next_cursor`, `userid_list` |
+| `ListVipAccountsRequest` | 请求体 | [Security/RequestModel/ListVipAccountsRequest.cs](../../../Mud.Wechat.Work/Security/RequestModel/ListVipAccountsRequest.cs) | `cursor`, `limit` |
 
 > DTO 一律以源文件为准；本表只列端点签名**直接引用**的一层类型，嵌套类型不再递归展开。所有 DTO 不使用 `required`（仓内约束），必填性由接口注释与官方页表达，SDK 不做本地必填校验。
 
@@ -443,7 +443,7 @@ var response = await service.GetServerDomainIpAsync(ct);
 | 契约守卫（路由 / 计数 / DTO 登记断言） | [`WechatSecurityContractGuards.cs`](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatSecurityContractGuards.cs)、[`WechatContractGuards.QueryTokenInjection.cs`](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatContractGuards.QueryTokenInjection.cs) |
 | 守卫中的代表性测试方法 | `SecurityEndpoints_ShouldMatchOfficialRoutes`、`SecurityInterfaceHierarchy_ShouldConvergeOnInternalChildren`、`SecurityTokenBinding_ShouldBeAccessTokenInjectedViaQuery`、`SecurityDataModels_ShouldBeRegisteredInJsonContext`、`QueryTokenInjection_ShouldBeLimitedToWechatOfficialContractInterfaces` |
 | 模块枚举 / 装配入口 | [`WechatModule.cs`](../../Extensions/WechatModule.cs)、[`WechatWorkServiceBuilder.cs`](../../Extensions/WechatWorkServiceBuilder.cs) |
-| DTO 与 JSON 上下文 | [`Mud.Wechat.Work.DataModels/Security`](../../../Mud.Wechat.Work.DataModels/Security/) |
+| DTO 与 JSON 上下文 | [`Mud.Wechat.Work/Security`](../../../Mud.Wechat.Work/Security/) |
 | 跨线基线 | [`Tests/ContractBaseline.cs`](../../../../../Tests/ContractBaseline.cs)（各线分节；本线口径以守卫实际断言为准） |
 | 本线包级公开面与已踩陷阱 | [`Src/Work/Mud.Wechat.Work/README.md`](../../README.md) |
 | 跨线通用约束（门禁 / AOT / 落位） | [`AGENTS.md`](../../../../../AGENTS.md) |

@@ -10,7 +10,7 @@
 > 本域契约守卫（[WechatPayBrandStoreContractGuards.cs](../../../../../Tests/Mud.Wechat.Pay.Tests/ContractGuards/WechatPayBrandStoreContractGuards.cs)）
 > 与全局守卫（[WechatPayDomainContractGuards.cs](../../../../../Tests/Mud.Wechat.Pay.Tests/ContractGuards/WechatPayDomainContractGuards.cs)、
 > [WechatPayScaffoldContractGuards.cs](../../../../../Tests/Mud.Wechat.Pay.Tests/ContractGuards/WechatPayScaffoldContractGuards.cs)）、
-> 本域 DTO（[../../../Mud.Wechat.Pay.DataModels/BrandStore/BrandStoreDtos.cs](../../../Mud.Wechat.Pay.DataModels/BrandStore/BrandStoreDtos.cs)）。
+> 本域 DTO（[../../../Mud.Wechat.Pay/BrandStore/BrandStoreDtos.cs](../../../Mud.Wechat.Pay/BrandStore/BrandStoreDtos.cs)）。
 > 不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
 
 ## 端点速览
@@ -175,9 +175,9 @@ await store.DeleteBrandStoreAsync(storeId!,
 | 9 条路由名册、path 键、query 名册与必填 query | `BrandStoreEndpoints_ShouldMatchOfficialRoutesAndParameterRosters`（`BST-B2`） |
 | 各请求/应答的官方字段名册、`DeleteBrandStoreAsync` 返回 `Task` | `BrandStoreDtos_ShouldExposeOfficialFieldRosters`（`BST-B3`） |
 | DTO 数 27、`BrandStoreJsonContext` 登记、`PayModule.BrandStore` 装配 | `BrandStoreDataModels_ShouldBeRegisteredInJsonContextAndWiredIntoDi`（`BST-B4`） |
-| 生成的 JSON 上下文落盘 | [../../../Mud.Wechat.Pay.DataModels/Generated/BrandStoreJsonContext.g.cs](../../../Mud.Wechat.Pay.DataModels/Generated/BrandStoreJsonContext.g.cs) |
+| 生成的 JSON 上下文落盘 | [../../../Mud.Wechat.Pay/Generated/BrandStoreJsonContext.g.cs](../../../Mud.Wechat.Pay/Generated/BrandStoreJsonContext.g.cs) |
 | 跨域总端点数 | [../../../../../Tests/ContractBaseline.cs](../../../../../Tests/ContractBaseline.cs)（`Baseline.Pay.Endpoints`） |
-| DTO 字段名与类型 | [../../../Mud.Wechat.Pay.DataModels/BrandStore/](../../../Mud.Wechat.Pay.DataModels/BrandStore/) |
+| DTO 字段名与类型 | [../../../Mud.Wechat.Pay/BrandStore/](../../../Mud.Wechat.Pay/BrandStore/) |
 
 ## 改动本域需要同批完成
 

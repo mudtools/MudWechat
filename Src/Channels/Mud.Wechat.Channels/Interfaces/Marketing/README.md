@@ -3,7 +3,7 @@
 微信小店 / 视频号（channels 生态）「营销管理-优惠券」域 SDK（7 端点：创建 / 详情 / ID 列表 /
 用户券详情 / 用户券 ID 列表 / 更新内容 / 更新状态，路由前缀 `/channels/ec/coupon/*`）。 接口：[IChannelsMarketingService](./IChannelsMarketingService.cs)；注册组 `Marketing`；模块枚举 `ChannelsModule.Marketing`（装配入口见 [ChannelsServiceBuilder.cs](../../Extensions/ChannelsServiceBuilder.cs)）。逐端点核验 2026-10-18。
 
-> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[ChannelsMarketingContractGuards.cs](../../../../../Tests/Mud.Wechat.Channels.Tests/ContractGuards/ChannelsMarketingContractGuards.cs)）、本域 DTO（[`Mud.Wechat.Channels.DataModels/Marketing`](../../../Mud.Wechat.Channels.DataModels/Marketing/)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
+> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[ChannelsMarketingContractGuards.cs](../../../../../Tests/Mud.Wechat.Channels.Tests/ContractGuards/ChannelsMarketingContractGuards.cs)）、本域 DTO（[`Mud.Wechat.Channels/Marketing`](../../../Mud.Wechat.Channels/Marketing/)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
 
 ## 端点速览
 
@@ -147,25 +147,25 @@
 
 ## DTO 与序列化面
 
-本域 DTO 目录 [`Mud.Wechat.Channels.DataModels/Marketing`](../../../Mud.Wechat.Channels.DataModels/Marketing/) 内共 **27** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **27** 个，`SerializerClassName` = `Marketing`。
+本域 DTO 目录 [`Mud.Wechat.Channels/Marketing`](../../../Mud.Wechat.Channels/Marketing/) 内共 **27** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **27** 个，`SerializerClassName` = `Marketing`。
 
-AOT 源生成上下文：[`MarketingJsonContext.g.cs`](./../../../Mud.Wechat.Channels.DataModels/Generated/MarketingJsonContext.g.cs)（生成物，勿手改）。
+AOT 源生成上下文：[`MarketingJsonContext.g.cs`](./../../../Mud.Wechat.Channels/Generated/MarketingJsonContext.g.cs)（生成物，勿手改）。
 
 | 端点引用的类型 | 角色 | 定义位置 | JSON 字段（前缀） |
 |---|---|---|---|
-| `ChannelsCouponDataResponse` | 应答 | [Marketing/Coupon/ChannelsCouponDataResponse.cs](../../../Mud.Wechat.Channels.DataModels/Marketing/Coupon/ChannelsCouponDataResponse.cs) | `data` |
-| `ChannelsCouponCreateRequest` | 请求体 | [Marketing/Coupon/ChannelsCouponCreateRequest.cs](../../../Mud.Wechat.Channels.DataModels/Marketing/Coupon/ChannelsCouponCreateRequest.cs) | `type`, `name`, `promote_info`, `discount_info`, `receive_info`, `valid_info`, `ext_info`, `auto_valid_info` |
-| `ChannelsGetCouponResponse` | 应答 | [Marketing/Coupon/ChannelsGetCouponResponse.cs](../../../Mud.Wechat.Channels.DataModels/Marketing/Coupon/ChannelsGetCouponResponse.cs) | `coupon` |
-| `ChannelsGetCouponRequest` | 请求体 | [Marketing/Coupon/ChannelsGetCouponRequest.cs](../../../Mud.Wechat.Channels.DataModels/Marketing/Coupon/ChannelsGetCouponRequest.cs) | `coupon_id` |
-| `ChannelsGetCouponListResponse` | 应答 | [Marketing/Coupon/ChannelsGetCouponListResponse.cs](../../../Mud.Wechat.Channels.DataModels/Marketing/Coupon/ChannelsGetCouponListResponse.cs) | `coupons`, `total_num`, `page_ctx` |
-| `ChannelsGetCouponListRequest` | 请求体 | [Marketing/Coupon/ChannelsGetCouponListRequest.cs](../../../Mud.Wechat.Channels.DataModels/Marketing/Coupon/ChannelsGetCouponListRequest.cs) | `status`, `page`, `page_size`, `page_ctx` |
-| `ChannelsGetUserCouponResponse` | 应答 | [Marketing/UserCoupon/ChannelsGetUserCouponResponse.cs](../../../Mud.Wechat.Channels.DataModels/Marketing/UserCoupon/ChannelsGetUserCouponResponse.cs) | `openid`, `unionid`, `user_coupon` |
-| `ChannelsGetUserCouponRequest` | 请求体 | [Marketing/UserCoupon/ChannelsGetUserCouponRequest.cs](../../../Mud.Wechat.Channels.DataModels/Marketing/UserCoupon/ChannelsGetUserCouponRequest.cs) | `user_coupon_id`, `openid` |
-| `ChannelsGetUserCouponListResponse` | 应答 | [Marketing/UserCoupon/ChannelsGetUserCouponListResponse.cs](../../../Mud.Wechat.Channels.DataModels/Marketing/UserCoupon/ChannelsGetUserCouponListResponse.cs) | `user_coupon_list`, `page_ctx` |
-| `ChannelsGetUserCouponListRequest` | 请求体 | [Marketing/UserCoupon/ChannelsGetUserCouponListRequest.cs](../../../Mud.Wechat.Channels.DataModels/Marketing/UserCoupon/ChannelsGetUserCouponListRequest.cs) | `openid`, `status`, `page`, `page_size`, `page_ctx` |
-| `ChannelsCouponUpdateRequest` | 请求体 | [Marketing/Coupon/ChannelsCouponUpdateRequest.cs](../../../Mud.Wechat.Channels.DataModels/Marketing/Coupon/ChannelsCouponUpdateRequest.cs) | `coupon_id`, `type`, `name`, `promote_info`, `discount_info`, `receive_info`, `valid_info`, `ext_info` |
-| `ChannelsResponse` | 应答 | [ChannelsResponse.cs](../../../Mud.Wechat.Channels.DataModels/ChannelsResponse.cs) | `errcode`, `errmsg` |
-| `ChannelsCouponUpdateStatusRequest` | 请求体 | [Marketing/Coupon/ChannelsCouponUpdateStatusRequest.cs](../../../Mud.Wechat.Channels.DataModels/Marketing/Coupon/ChannelsCouponUpdateStatusRequest.cs) | `coupon_id`, `status` |
+| `ChannelsCouponDataResponse` | 应答 | [Marketing/Coupon/ChannelsCouponDataResponse.cs](../../../Mud.Wechat.Channels/Marketing/Coupon/ChannelsCouponDataResponse.cs) | `data` |
+| `ChannelsCouponCreateRequest` | 请求体 | [Marketing/Coupon/ChannelsCouponCreateRequest.cs](../../../Mud.Wechat.Channels/Marketing/Coupon/ChannelsCouponCreateRequest.cs) | `type`, `name`, `promote_info`, `discount_info`, `receive_info`, `valid_info`, `ext_info`, `auto_valid_info` |
+| `ChannelsGetCouponResponse` | 应答 | [Marketing/Coupon/ChannelsGetCouponResponse.cs](../../../Mud.Wechat.Channels/Marketing/Coupon/ChannelsGetCouponResponse.cs) | `coupon` |
+| `ChannelsGetCouponRequest` | 请求体 | [Marketing/Coupon/ChannelsGetCouponRequest.cs](../../../Mud.Wechat.Channels/Marketing/Coupon/ChannelsGetCouponRequest.cs) | `coupon_id` |
+| `ChannelsGetCouponListResponse` | 应答 | [Marketing/Coupon/ChannelsGetCouponListResponse.cs](../../../Mud.Wechat.Channels/Marketing/Coupon/ChannelsGetCouponListResponse.cs) | `coupons`, `total_num`, `page_ctx` |
+| `ChannelsGetCouponListRequest` | 请求体 | [Marketing/Coupon/ChannelsGetCouponListRequest.cs](../../../Mud.Wechat.Channels/Marketing/Coupon/ChannelsGetCouponListRequest.cs) | `status`, `page`, `page_size`, `page_ctx` |
+| `ChannelsGetUserCouponResponse` | 应答 | [Marketing/UserCoupon/ChannelsGetUserCouponResponse.cs](../../../Mud.Wechat.Channels/Marketing/UserCoupon/ChannelsGetUserCouponResponse.cs) | `openid`, `unionid`, `user_coupon` |
+| `ChannelsGetUserCouponRequest` | 请求体 | [Marketing/UserCoupon/ChannelsGetUserCouponRequest.cs](../../../Mud.Wechat.Channels/Marketing/UserCoupon/ChannelsGetUserCouponRequest.cs) | `user_coupon_id`, `openid` |
+| `ChannelsGetUserCouponListResponse` | 应答 | [Marketing/UserCoupon/ChannelsGetUserCouponListResponse.cs](../../../Mud.Wechat.Channels/Marketing/UserCoupon/ChannelsGetUserCouponListResponse.cs) | `user_coupon_list`, `page_ctx` |
+| `ChannelsGetUserCouponListRequest` | 请求体 | [Marketing/UserCoupon/ChannelsGetUserCouponListRequest.cs](../../../Mud.Wechat.Channels/Marketing/UserCoupon/ChannelsGetUserCouponListRequest.cs) | `openid`, `status`, `page`, `page_size`, `page_ctx` |
+| `ChannelsCouponUpdateRequest` | 请求体 | [Marketing/Coupon/ChannelsCouponUpdateRequest.cs](../../../Mud.Wechat.Channels/Marketing/Coupon/ChannelsCouponUpdateRequest.cs) | `coupon_id`, `type`, `name`, `promote_info`, `discount_info`, `receive_info`, `valid_info`, `ext_info` |
+| `ChannelsResponse` | 应答 | [ChannelsResponse.cs](../../../Mud.Wechat.Channels/ChannelsResponse.cs) | `errcode`, `errmsg` |
+| `ChannelsCouponUpdateStatusRequest` | 请求体 | [Marketing/Coupon/ChannelsCouponUpdateStatusRequest.cs](../../../Mud.Wechat.Channels/Marketing/Coupon/ChannelsCouponUpdateStatusRequest.cs) | `coupon_id`, `status` |
 
 > DTO 一律以源文件为准；本表只列端点签名**直接引用**的一层类型，嵌套类型不再递归展开。所有 DTO 不使用 `required`（仓内约束），必填性由接口注释与官方页表达，SDK 不做本地必填校验。
 
@@ -203,7 +203,7 @@ var response = await service.CreateCouponAsync(new ChannelsCouponCreateRequest()
 | 契约守卫（路由 / 计数 / DTO 登记断言） | [`ChannelsMarketingContractGuards.cs`](../../../../../Tests/Mud.Wechat.Channels.Tests/ContractGuards/ChannelsMarketingContractGuards.cs) |
 | 守卫中的代表性测试方法 | `MarketingEndpoints_ShouldMatchOfficialRoutes`、`MarketingEndpoints_ShouldAllBePost_WithBodyRules`、`MarketingInterface_ShouldBindChannelsToken_AndRegisterUnderMarketingGroup`、`MarketingDataModels_ShouldBeRegisteredInJsonContext`、`MarketingDataModels_ShouldLockOfficialFieldsAndSharedDtos`、`MarketingEnumConstants_ShouldLockOfficialLiteralValues` |
 | 模块枚举 / 装配入口 | [`ChannelsModule.cs`](../../Extensions/ChannelsModule.cs)、[`ChannelsServiceBuilder.cs`](../../Extensions/ChannelsServiceBuilder.cs) |
-| DTO 与 JSON 上下文 | [`Mud.Wechat.Channels.DataModels/Marketing`](../../../Mud.Wechat.Channels.DataModels/Marketing/) |
+| DTO 与 JSON 上下文 | [`Mud.Wechat.Channels/Marketing`](../../../Mud.Wechat.Channels/Marketing/) |
 | 跨线基线 | [`Tests/ContractBaseline.cs`](../../../../../Tests/ContractBaseline.cs)（各线分节；本线口径以守卫实际断言为准） |
 | 本线包级公开面与已踩陷阱 | [`Src/Channels/Mud.Wechat.Channels/README.md`](../../README.md) |
 | 跨线通用约束（门禁 / AOT / 落位） | [`AGENTS.md`](../../../../../AGENTS.md) |

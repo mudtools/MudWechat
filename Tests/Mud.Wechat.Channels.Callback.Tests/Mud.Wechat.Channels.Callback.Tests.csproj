@@ -15,8 +15,7 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\..\Src\Channels\Mud.Wechat.Channels.Callback\Mud.Wechat.Channels.Callback.csproj" />
-		<ProjectReference Include="..\..\Src\Channels\Mud.Wechat.Channels.Abstractions\Mud.Wechat.Channels.Abstractions.csproj" />
-		<ProjectReference Include="..\..\Src\Channels\Mud.Wechat.Channels.DataModels\Mud.Wechat.Channels.DataModels.csproj" />
+		<ProjectReference Include="..\..\Src\Channels\Mud.Wechat.Channels\Mud.Wechat.Channels.csproj" />
 		<!-- 分析器单测以【普通引用】驱动（同 OA 回调测试工程），P3 填充用例。 -->
 		<ProjectReference Include="..\..\Src\Core\Mud.Wechat.Callback.Analyzers\Mud.Wechat.Callback.Analyzers.csproj" />
 	</ItemGroup>

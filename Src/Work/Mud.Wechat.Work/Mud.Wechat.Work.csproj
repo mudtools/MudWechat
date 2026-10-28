@@ -1,36 +1,59 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<Description>企业微信 SDK 主包：业务声明式客户端、模块注册器、AOT JsonContext 合并、errcode 令牌失效判定器。对应 Mud.Feishu。</Description>
-		<PackageTags>Wechat;WeChatWork;企业微信;SDK;MudWechat</PackageTags>
+		<Description>企业微信 SDK：认证与多应用基座（令牌签发客户端、令牌管理器模板基座与四管理器、多应用管理、配置面、常量/枚举/异常）、官方 DTO（AOT 源生成 JsonContext）、业务声明式客户端、模块注册器、errcode 令牌失效判定器。一线一入口包（2026-10 包合并：原 Mud.Wechat.Work.Abstractions / Mud.Wechat.Work.DataModels 并入本包，命名空间不变；收推送另引 Mud.Wechat.Work.Callback）。对应 Mud.Feishu。</Description>
+		<PackageTags>Wechat;WeChatWork;企业微信;SDK;Authentication;TokenManager;MultiApp;DTO;MudWechat</PackageTags>
 		<!-- MUD005（Query/Path 令牌注入存在 URL 泄露面）：企业微信官方契约强制令牌走 Query 参数
 		（access_token / suite_access_token 均为 URL 查询参数，官方不支持 Header 注入），无法改用 Header。
 		本 SDK 全部接口均为该官方契约，属已知接受风险（详见各接口 remarks 与 AGENTS.md、契约守卫测试），
 		以 F6(b) 声明式 MSBuild 开关豁免（组件 3.0.5+，可审计）；库内遥测已由 SensitiveUrlRedactor 脱敏。 -->
 		<MudHttpSuppressQueryTokenInjection>true</MudHttpSuppressQueryTokenInjection>
+		<!-- 令牌恢复配置绑定走"纯 DTO（TokenRecoveryConfiguration，仅基元字段）+ Apply"两段式：
+		绑定目标可被配置绑定源生成器完整生成 ⇒ 不再产生 SYSLIB1100/1101（旧的项目级 NoWarn 抑制已删除，
+		消除"整包静音可能掩盖未来真实缺口"的盲区）。 -->
 	</PropertyGroup>
 
 	<ItemGroup>
-		<!-- 3.0.2：载荷字段映射运行时契约（Mud.HttpUtils.Payloads）随 Abstractions 传递而来，
-		     本包须显式对齐同一版本，否则 NuGet 判定「包降级」（NU1605，本仓库门禁将其视为错误）。 -->
+		<!-- 3.0.2：载荷字段映射运行时契约（Mud.HttpUtils.Payloads）随本包原 Abstractions 面而来，
+		     版本须全仓对齐，否则 NuGet 判定「包降级」（NU1605，本仓库门禁将其视为错误）。 -->
 		<PackageReference Include="Mud.HttpUtils" Version="3.0.9" />
+		<!-- [HttpJsonSerializable] 标注特性来源（零依赖特性包，传递 Mud.HttpUtils.Abstractions）。
+		     Generated/ 目录由 scripts/GenerateJsonContext.ps1（mud-jsonctx）按标注生成。 -->
+		<PackageReference Include="Mud.HttpUtils.Attributes" Version="3.0.9" />
 	</ItemGroup>
-
 
 	<ItemGroup>
 		<PackageReference Include="Mud.HttpUtils.Generator" Version="3.0.9" PrivateAssets="all" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
 	</ItemGroup>
 
+	<!-- 令牌基座与后台刷新需要 HttpClientFactory / Hosting 面（原 Abstractions 包携带，合并后由本包携带）。 -->
+	<ItemGroup Condition="'$(TargetFramework)' == 'net8.0' Or '$(TargetFramework)' == 'net10.0'">
+		<PackageReference Include="Microsoft.Extensions.Http" Version="10.0.9" />
+		<PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.9" />
+	</ItemGroup>
+	<ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' or '$(TargetFramework)' == 'net6.0'">
+		<PackageReference Include="Microsoft.Extensions.Http" Version="8.0.1" />
+		<PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="8.0.1" />
+	</ItemGroup>
+
 	<ItemGroup>
-		<ProjectReference Include="..\Mud.Wechat.Work.Abstractions\Mud.Wechat.Work.Abstractions.csproj" />
-		<ProjectReference Include="..\Mud.Wechat.Work.DataModels\Mud.Wechat.Work.DataModels.csproj" />
+		<!-- 响应基底实现公用层判错契约 IWechatApiResponse；令牌基座取公用层配置基座与 SSRF 白名单（叶层）。 -->
+		<ProjectReference Include="..\..\Core\Mud.Wechat.Abstractions\Mud.Wechat.Abstractions.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>
 		<!-- 会话存档原生封装的实现细节（P/Invoke 声明、SafeHandle、分片聚合器）一律 internal：
 		     原生契约不是公开面（宿主只经 IWechatWorkFinanceClientFactory 取用）。
-		     契约守卫 FIN-B1/B3 与相应测试需直读，故开给测试工程。 -->
+		     契约守卫 FIN-B1/B3 与相应测试需直读，故开给测试工程。
+		     回调包需直读令牌基座 internal 成员（合并前经 Abstractions 的 IVT，合并后落本包）。 -->
+		<InternalsVisibleTo Include="Mud.Wechat.Work.Callback" />
 		<InternalsVisibleTo Include="Mud.Wechat.Work.Tests" />
+		<InternalsVisibleTo Include="Mud.Wechat.Work.Callback.Tests" />
+		<InternalsVisibleTo Include="Mud.Wechat.Work.Abstractions.Tests" />
+		<InternalsVisibleTo Include="Mud.Wechat.Work.DataModels.Tests" />
+		<!-- AI 底座测试需要构造回调信封（AppKey 为 internal set —— 生产上由接收器写入）。 -->
+		<InternalsVisibleTo Include="Mud.Wechat.Work.AI.Tests" />
+		<InternalsVisibleTo Include="DynamicProxyGenAssembly2" />
 	</ItemGroup>
 
 </Project>

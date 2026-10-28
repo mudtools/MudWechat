@@ -2,7 +2,7 @@
 
 微信公众号 / 服务号「openApi 管理」域 SDK（5 端点：令牌形态 4 + 免令牌形态 1，单接口承载）。 接口：[IMpOpenApiService](./IMpOpenApiService.cs)、[IMpOpenApiTokenFreeService](./IMpOpenApiService.cs)；注册组 `OpenApi`；模块枚举 `MpModule.OpenApi`（装配入口见 [MpServiceBuilder.cs](../../Extensions/MpServiceBuilder.cs)）。逐端点核验 2026-10-18。
 
-> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[MpOpenApiContractGuards.cs](../../../../../Tests/Mud.Wechat.OfficialAccount.Tests/ContractGuards/MpOpenApiContractGuards.cs)、[MpQueryTokenWhitelistGuard.cs](../../../../../Tests/Mud.Wechat.OfficialAccount.Tests/ContractGuards/MpQueryTokenWhitelistGuard.cs)、[MpRouteCountGuard.cs](../../../../../Tests/Mud.Wechat.OfficialAccount.Tests/ContractGuards/MpRouteCountGuard.cs)）、本域 DTO（[`Mud.Wechat.OfficialAccount.DataModels/OpenApi`](../../../Mud.Wechat.OfficialAccount.DataModels/OpenApi/)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
+> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[MpOpenApiContractGuards.cs](../../../../../Tests/Mud.Wechat.OfficialAccount.Tests/ContractGuards/MpOpenApiContractGuards.cs)、[MpQueryTokenWhitelistGuard.cs](../../../../../Tests/Mud.Wechat.OfficialAccount.Tests/ContractGuards/MpQueryTokenWhitelistGuard.cs)、[MpRouteCountGuard.cs](../../../../../Tests/Mud.Wechat.OfficialAccount.Tests/ContractGuards/MpRouteCountGuard.cs)）、本域 DTO（[`Mud.Wechat.OfficialAccount/OpenApi`](../../../Mud.Wechat.OfficialAccount/OpenApi/)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
 
 ## 端点速览
 
@@ -158,19 +158,19 @@ Query String 系文档矛盾——appsecret 进 URL 会扩大泄露面，SDK 不
 
 ## DTO 与序列化面
 
-本域 DTO 目录 [`Mud.Wechat.OfficialAccount.DataModels/OpenApi`](../../../Mud.Wechat.OfficialAccount.DataModels/OpenApi/) 内共 **9** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **9** 个，`SerializerClassName` = `OpenApi`。
+本域 DTO 目录 [`Mud.Wechat.OfficialAccount/OpenApi`](../../../Mud.Wechat.OfficialAccount/OpenApi/) 内共 **9** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **9** 个，`SerializerClassName` = `OpenApi`。
 
-AOT 源生成上下文：[`OpenApiJsonContext.g.cs`](./../../../Mud.Wechat.OfficialAccount.DataModels/Generated/OpenApiJsonContext.g.cs)（生成物，勿手改）。
+AOT 源生成上下文：[`OpenApiJsonContext.g.cs`](./../../../Mud.Wechat.OfficialAccount/Generated/OpenApiJsonContext.g.cs)（生成物，勿手改）。
 
 | 端点引用的类型 | 角色 | 定义位置 | JSON 字段（前缀） |
 |---|---|---|---|
-| `MpResponse` | 应答 | [MpResponse.cs](../../../Mud.Wechat.OfficialAccount.DataModels/MpResponse.cs) | `errcode`, `errmsg` |
-| `MpClearQuotaRequest` | 请求体 | [OpenApi/MpClearQuotaRequest.cs](../../../Mud.Wechat.OfficialAccount.DataModels/OpenApi/MpClearQuotaRequest.cs) | `appid` |
-| `MpClearQuotaV2Request` | 请求体 | [OpenApi/MpClearQuotaV2Request.cs](../../../Mud.Wechat.OfficialAccount.DataModels/OpenApi/MpClearQuotaV2Request.cs) | `appid`, `appsecret` |
-| `MpGetApiQuotaResponse` | 应答 | [OpenApi/MpGetApiQuotaResponse.cs](../../../Mud.Wechat.OfficialAccount.DataModels/OpenApi/MpGetApiQuotaResponse.cs) | `quota`, `rate_limit`, `component_rate_limit` |
-| `MpCgiPathRequest` | 请求体 | [OpenApi/MpCgiPathRequest.cs](../../../Mud.Wechat.OfficialAccount.DataModels/OpenApi/MpCgiPathRequest.cs) | `cgi_path` |
-| `MpGetRidInfoResponse` | 应答 | [OpenApi/MpGetRidInfoResponse.cs](../../../Mud.Wechat.OfficialAccount.DataModels/OpenApi/MpGetRidInfoResponse.cs) | `request` |
-| `MpGetRidInfoRequest` | 请求体 | [OpenApi/MpGetRidInfoRequest.cs](../../../Mud.Wechat.OfficialAccount.DataModels/OpenApi/MpGetRidInfoRequest.cs) | `rid` |
+| `MpResponse` | 应答 | [MpResponse.cs](../../../Mud.Wechat.OfficialAccount/MpResponse.cs) | `errcode`, `errmsg` |
+| `MpClearQuotaRequest` | 请求体 | [OpenApi/MpClearQuotaRequest.cs](../../../Mud.Wechat.OfficialAccount/OpenApi/MpClearQuotaRequest.cs) | `appid` |
+| `MpClearQuotaV2Request` | 请求体 | [OpenApi/MpClearQuotaV2Request.cs](../../../Mud.Wechat.OfficialAccount/OpenApi/MpClearQuotaV2Request.cs) | `appid`, `appsecret` |
+| `MpGetApiQuotaResponse` | 应答 | [OpenApi/MpGetApiQuotaResponse.cs](../../../Mud.Wechat.OfficialAccount/OpenApi/MpGetApiQuotaResponse.cs) | `quota`, `rate_limit`, `component_rate_limit` |
+| `MpCgiPathRequest` | 请求体 | [OpenApi/MpCgiPathRequest.cs](../../../Mud.Wechat.OfficialAccount/OpenApi/MpCgiPathRequest.cs) | `cgi_path` |
+| `MpGetRidInfoResponse` | 应答 | [OpenApi/MpGetRidInfoResponse.cs](../../../Mud.Wechat.OfficialAccount/OpenApi/MpGetRidInfoResponse.cs) | `request` |
+| `MpGetRidInfoRequest` | 请求体 | [OpenApi/MpGetRidInfoRequest.cs](../../../Mud.Wechat.OfficialAccount/OpenApi/MpGetRidInfoRequest.cs) | `rid` |
 
 > DTO 一律以源文件为准；本表只列端点签名**直接引用**的一层类型，嵌套类型不再递归展开。所有 DTO 不使用 `required`（仓内约束），必填性由接口注释与官方页表达，SDK 不做本地必填校验。
 
@@ -210,7 +210,7 @@ var response = await service.ClearApiQuotaAsync(new MpCgiPathRequest(), ct);
 | 契约守卫（路由 / 计数 / DTO 登记断言） | [`MpOpenApiContractGuards.cs`](../../../../../Tests/Mud.Wechat.OfficialAccount.Tests/ContractGuards/MpOpenApiContractGuards.cs)、[`MpQueryTokenWhitelistGuard.cs`](../../../../../Tests/Mud.Wechat.OfficialAccount.Tests/ContractGuards/MpQueryTokenWhitelistGuard.cs)、[`MpRouteCountGuard.cs`](../../../../../Tests/Mud.Wechat.OfficialAccount.Tests/ContractGuards/MpRouteCountGuard.cs) |
 | 守卫中的代表性测试方法 | `OpenApiEndpoints_ShouldMatchOfficialRoutes`、`TokenFreeEndpoint_ShouldStayOutOfTokenPipeline_ViaMethodLevelOptOut`、`OpenApiInterfaces_ShouldShareRegistryGroup`、`OpenApiDataModels_ShouldBeRegisteredInJsonContext`、`OpenApiDataModels_ShouldLockOfficialFieldsAndSharedDtos`、`OpenApiErrorCodes_ShouldMatchVerifiedOfficialValues`、`QueryTokenInjectionInterfaces_ShouldMatchWhitelist`、`QueryTokenInjectionInterfaces_ShouldMatchWhitelist_ForMiniProgramLine`、`QueryTokenInterfaces_ShouldDeclareOfficialParameterName`、`MainAssemblyRoutes_ShouldMatchLedger`、`TotalRoutes_ShouldMatchLedger`、`Routes_ShouldNotBeSharedAcrossInterfaces` … |
 | 模块枚举 / 装配入口 | [`MpModule.cs`](../../Extensions/MpModule.cs)、[`MpServiceBuilder.cs`](../../Extensions/MpServiceBuilder.cs) |
-| DTO 与 JSON 上下文 | [`Mud.Wechat.OfficialAccount.DataModels/OpenApi`](../../../Mud.Wechat.OfficialAccount.DataModels/OpenApi/) |
+| DTO 与 JSON 上下文 | [`Mud.Wechat.OfficialAccount/OpenApi`](../../../Mud.Wechat.OfficialAccount/OpenApi/) |
 | 跨线基线 | [`Tests/ContractBaseline.cs`](../../../../../Tests/ContractBaseline.cs)（各线分节；本线口径以守卫实际断言为准） |
 | 本线包级公开面与已踩陷阱 | [`Src/OfficialAccount/Mud.Wechat.OfficialAccount/README.md`](../../README.md) |
 | 跨线通用约束（门禁 / AOT / 落位） | [`AGENTS.md`](../../../../../AGENTS.md) |

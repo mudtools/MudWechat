@@ -9,7 +9,7 @@
 > [MpContentContractGuards.cs](../../../../../Tests/Mud.Wechat.OfficialAccount.Tests/ContractGuards/MpContentContractGuards.cs)
 > （`CT1` / `CT5` / `CT6` / `CT7` / `CT8`）、
 > [MpQueryTokenWhitelistGuard.cs](../../../../../Tests/Mud.Wechat.OfficialAccount.Tests/ContractGuards/MpQueryTokenWhitelistGuard.cs)（`QT1`）
-> 与本仓 DTO（[DataModels/Comment/](../../../Mud.Wechat.OfficialAccount.DataModels/Comment/)）。
+> 与本仓 DTO（[DataModels/Comment/](../../../Mud.Wechat.OfficialAccount/Comment/)）。
 > 未留档项一律进文末「已知留档缺口」，不引用外部文档、不编造守卫号。
 
 ## 端点速览
@@ -45,10 +45,10 @@
 
 | 请求 DTO | 官方字段 | 服务于 |
 |---|---|---|
-| [MpCommentOpenRequest](../../../Mud.Wechat.OfficialAccount.DataModels/Comment/MpCommentOpenRequest.cs) | `msg_data_id` / `index` | open、close |
-| [MpCommentRefRequest](../../../Mud.Wechat.OfficialAccount.DataModels/Comment/MpCommentRefRequest.cs) | `msg_data_id` / `index` / `user_comment_id` | markelect、unmarkelect、delete、reply/delete |
-| [MpCommentReplyAddRequest](../../../Mud.Wechat.OfficialAccount.DataModels/Comment/MpCommentReplyAddRequest.cs) | 上三字段 + `content` | reply/add |
-| [MpCommentListRequest](../../../Mud.Wechat.OfficialAccount.DataModels/Comment/MpCommentListRequest.cs) | `msg_data_id` / `index` / `begin` / `count` / `type` | list |
+| [MpCommentOpenRequest](../../../Mud.Wechat.OfficialAccount/Comment/MpCommentOpenRequest.cs) | `msg_data_id` / `index` | open、close |
+| [MpCommentRefRequest](../../../Mud.Wechat.OfficialAccount/Comment/MpCommentRefRequest.cs) | `msg_data_id` / `index` / `user_comment_id` | markelect、unmarkelect、delete、reply/delete |
+| [MpCommentReplyAddRequest](../../../Mud.Wechat.OfficialAccount/Comment/MpCommentReplyAddRequest.cs) | 上三字段 + `content` | reply/add |
+| [MpCommentListRequest](../../../Mud.Wechat.OfficialAccount/Comment/MpCommentListRequest.cs) | `msg_data_id` / `index` / `begin` / `count` / `type` | list |
 
 **「扁平三字段」是一条裁决、不是偷懒**：`CT5` 显式断言 `MpCommentRefRequest` **不得包含**
 嵌套 `user_comment` 对象——方案文档预判的嵌套形态在官方页不存在。
@@ -171,7 +171,7 @@ await comment.UnmarkCommentElectAsync(new MpCommentRefRequest
 | `MpModule.Comment` + `AddCommentApi()` + Query 令牌白名单包含本接口 | `CT7` = `ContentModules_ShouldBeRegisteredAndWhitelisted` |
 | `88000`/`88001`/`88002`/`88003`/`88004`/`88005`/`88007`/`88008`/`88010`/`87009` 常量 | `CT8` = `ContentErrorCodes_ShouldMatchVerifiedOfficialValues` |
 | 全量 Query 令牌白名单（本域注释口径「8 端点，仅认证 + 留言权限」） | `QT1`（`MpQueryTokenWhitelistGuard.cs`） |
-| DTO 字段与 JSON 名 | [DataModels/Comment/](../../../Mud.Wechat.OfficialAccount.DataModels/Comment/)（7 个文件） |
+| DTO 字段与 JSON 名 | [DataModels/Comment/](../../../Mud.Wechat.OfficialAccount/Comment/)（7 个文件） |
 | 生成入口与模块枚举、上下文合并清单 | [MpServiceBuilder.cs](../../Extensions/MpServiceBuilder.cs)、[MpModule.cs](../../Extensions/MpModule.cs)、[MpJsonResolverExtensions.cs](../../Extensions/MpJsonResolverExtensions.cs) |
 
 ## 改动本域需要同批完成

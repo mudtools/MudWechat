@@ -3,7 +3,7 @@
 微信小店 / 视频号（channels 生态）「质检管理」域 SDK（5 端点：质检仓配置 / 送检配置模板 /
 打印质检码 / 绑定送检信息 / 自寄快递送检）。 接口：[IChannelsQicService](./IChannelsQicService.cs)；注册组 `Qic`；模块枚举 `ChannelsModule.Qic`（装配入口见 [ChannelsServiceBuilder.cs](../../Extensions/ChannelsServiceBuilder.cs)）。逐端点核验 2026-10-18。
 
-> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[ChannelsQicContractGuards.cs](../../../../../Tests/Mud.Wechat.Channels.Tests/ContractGuards/ChannelsQicContractGuards.cs)）、本域 DTO（[`Mud.Wechat.Channels.DataModels/Qic`](../../../Mud.Wechat.Channels.DataModels/Qic/)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
+> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[ChannelsQicContractGuards.cs](../../../../../Tests/Mud.Wechat.Channels.Tests/ContractGuards/ChannelsQicContractGuards.cs)）、本域 DTO（[`Mud.Wechat.Channels/Qic`](../../../Mud.Wechat.Channels/Qic/)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
 
 ## 端点速览
 
@@ -124,19 +124,19 @@
 
 ## DTO 与序列化面
 
-本域 DTO 目录 [`Mud.Wechat.Channels.DataModels/Qic`](../../../Mud.Wechat.Channels.DataModels/Qic/) 内共 **17** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **17** 个，`SerializerClassName` = `Qic`。
+本域 DTO 目录 [`Mud.Wechat.Channels/Qic`](../../../Mud.Wechat.Channels/Qic/) 内共 **17** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **17** 个，`SerializerClassName` = `Qic`。
 
-AOT 源生成上下文：[`QicJsonContext.g.cs`](./../../../Mud.Wechat.Channels.DataModels/Generated/QicJsonContext.g.cs)（生成物，勿手改）。
+AOT 源生成上下文：[`QicJsonContext.g.cs`](./../../../Mud.Wechat.Channels/Generated/QicJsonContext.g.cs)（生成物，勿手改）。
 
 | 端点引用的类型 | 角色 | 定义位置 | JSON 字段（前缀） |
 |---|---|---|---|
-| `ChannelsGetInspectConfigResponse` | 应答 | [Qic/ChannelsGetInspectConfigResponse.cs](../../../Mud.Wechat.Channels.DataModels/Qic/ChannelsGetInspectConfigResponse.cs) | `inspect_config` |
-| `ChannelsGetInspectSubmitConfigResponse` | 应答 | [Qic/ChannelsGetInspectSubmitConfigResponse.cs](../../../Mud.Wechat.Channels.DataModels/Qic/ChannelsGetInspectSubmitConfigResponse.cs) | `submit_config` |
-| `ChannelsPrintInspectCodeResponse` | 应答 | [Qic/ChannelsPrintInspectCodeResponse.cs](../../../Mud.Wechat.Channels.DataModels/Qic/ChannelsPrintInspectCodeResponse.cs) | `data` |
-| `ChannelsPrintInspectCodeRequest` | 请求体 | [Qic/ChannelsPrintInspectCodeRequest.cs](../../../Mud.Wechat.Channels.DataModels/Qic/ChannelsPrintInspectCodeRequest.cs) | `order_id` |
-| `ChannelsResponse` | 应答 | [ChannelsResponse.cs](../../../Mud.Wechat.Channels.DataModels/ChannelsResponse.cs) | `errcode`, `errmsg` |
-| `ChannelsSubmitInspectRequest` | 请求体 | [Qic/ChannelsSubmitInspectRequest.cs](../../../Mud.Wechat.Channels.DataModels/Qic/ChannelsSubmitInspectRequest.cs) | `order_id`, `inspect_info` |
-| `ChannelsRegisterInspectLogisticsRequest` | 请求体 | [Qic/ChannelsRegisterInspectLogisticsRequest.cs](../../../Mud.Wechat.Channels.DataModels/Qic/ChannelsRegisterInspectLogisticsRequest.cs) | `order_id_list`, `logistics_info` |
+| `ChannelsGetInspectConfigResponse` | 应答 | [Qic/ChannelsGetInspectConfigResponse.cs](../../../Mud.Wechat.Channels/Qic/ChannelsGetInspectConfigResponse.cs) | `inspect_config` |
+| `ChannelsGetInspectSubmitConfigResponse` | 应答 | [Qic/ChannelsGetInspectSubmitConfigResponse.cs](../../../Mud.Wechat.Channels/Qic/ChannelsGetInspectSubmitConfigResponse.cs) | `submit_config` |
+| `ChannelsPrintInspectCodeResponse` | 应答 | [Qic/ChannelsPrintInspectCodeResponse.cs](../../../Mud.Wechat.Channels/Qic/ChannelsPrintInspectCodeResponse.cs) | `data` |
+| `ChannelsPrintInspectCodeRequest` | 请求体 | [Qic/ChannelsPrintInspectCodeRequest.cs](../../../Mud.Wechat.Channels/Qic/ChannelsPrintInspectCodeRequest.cs) | `order_id` |
+| `ChannelsResponse` | 应答 | [ChannelsResponse.cs](../../../Mud.Wechat.Channels/ChannelsResponse.cs) | `errcode`, `errmsg` |
+| `ChannelsSubmitInspectRequest` | 请求体 | [Qic/ChannelsSubmitInspectRequest.cs](../../../Mud.Wechat.Channels/Qic/ChannelsSubmitInspectRequest.cs) | `order_id`, `inspect_info` |
+| `ChannelsRegisterInspectLogisticsRequest` | 请求体 | [Qic/ChannelsRegisterInspectLogisticsRequest.cs](../../../Mud.Wechat.Channels/Qic/ChannelsRegisterInspectLogisticsRequest.cs) | `order_id_list`, `logistics_info` |
 
 > DTO 一律以源文件为准；本表只列端点签名**直接引用**的一层类型，嵌套类型不再递归展开。所有 DTO 不使用 `required`（仓内约束），必填性由接口注释与官方页表达，SDK 不做本地必填校验。
 
@@ -174,7 +174,7 @@ var response = await service.GetInspectConfigAsync(ct);
 | 契约守卫（路由 / 计数 / DTO 登记断言） | [`ChannelsQicContractGuards.cs`](../../../../../Tests/Mud.Wechat.Channels.Tests/ContractGuards/ChannelsQicContractGuards.cs) |
 | 守卫中的代表性测试方法 | `QicEndpoints_ShouldMatchOfficialRoutes`、`QicEndpoints_ShouldMatchOfficialVerbs_WithBodyRules`、`QicInterface_ShouldBindChannelsToken_AndRegisterUnderQicGroup`、`QicDataModels_ShouldBeRegisteredInJsonContext`、`QicDataModels_ShouldLockOfficialFieldsAndSharedDtos`、`QicEnumConstants_ShouldLockOfficialLiteralValues` |
 | 模块枚举 / 装配入口 | [`ChannelsModule.cs`](../../Extensions/ChannelsModule.cs)、[`ChannelsServiceBuilder.cs`](../../Extensions/ChannelsServiceBuilder.cs) |
-| DTO 与 JSON 上下文 | [`Mud.Wechat.Channels.DataModels/Qic`](../../../Mud.Wechat.Channels.DataModels/Qic/) |
+| DTO 与 JSON 上下文 | [`Mud.Wechat.Channels/Qic`](../../../Mud.Wechat.Channels/Qic/) |
 | 跨线基线 | [`Tests/ContractBaseline.cs`](../../../../../Tests/ContractBaseline.cs)（各线分节；本线口径以守卫实际断言为准） |
 | 本线包级公开面与已踩陷阱 | [`Src/Channels/Mud.Wechat.Channels/README.md`](../../README.md) |
 | 跨线通用约束（门禁 / AOT / 落位） | [`AGENTS.md`](../../../../../AGENTS.md) |

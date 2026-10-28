@@ -2,7 +2,7 @@
 
 微信支付「微企付企业支付 · 额度卡与员工授权」域 SDK（6 端点）。 接口：[IWechatPayWebizpayEmployeeService](./IWechatPayWebizpayEmployeeService.cs)；注册组 `WebizpayEmployee`；模块枚举 `PayModule.WebizpayEmployee`（装配入口见 [PayServiceBuilder.cs](../../Extensions/PayServiceBuilder.cs)）。逐端点核验 2026-10-18。
 
-> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[WechatPayWebizpayEmployeeContractGuards.cs](../../../../../Tests/Mud.Wechat.Pay.Tests/ContractGuards/WechatPayWebizpayEmployeeContractGuards.cs)、[WechatPayDomainContractGuards.cs](../../../../../Tests/Mud.Wechat.Pay.Tests/ContractGuards/WechatPayDomainContractGuards.cs)）、本域 DTO（[`Mud.Wechat.Pay.DataModels/WebizpayEmployee`](../../../Mud.Wechat.Pay.DataModels/WebizpayEmployee/)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
+> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[WechatPayWebizpayEmployeeContractGuards.cs](../../../../../Tests/Mud.Wechat.Pay.Tests/ContractGuards/WechatPayWebizpayEmployeeContractGuards.cs)、[WechatPayDomainContractGuards.cs](../../../../../Tests/Mud.Wechat.Pay.Tests/ContractGuards/WechatPayDomainContractGuards.cs)）、本域 DTO（[`Mud.Wechat.Pay/WebizpayEmployee`](../../../Mud.Wechat.Pay/WebizpayEmployee/)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
 
 ## 端点速览
 
@@ -172,20 +172,20 @@
 
 ## DTO 与序列化面
 
-本域 DTO 目录 [`Mud.Wechat.Pay.DataModels/WebizpayEmployee`](../../../Mud.Wechat.Pay.DataModels/WebizpayEmployee/) 内共 **8** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **8** 个，`SerializerClassName` = `WebizpayEmployee`。
+本域 DTO 目录 [`Mud.Wechat.Pay/WebizpayEmployee`](../../../Mud.Wechat.Pay/WebizpayEmployee/) 内共 **8** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **8** 个，`SerializerClassName` = `WebizpayEmployee`。
 
-AOT 源生成上下文：[`WebizpayEmployeeJsonContext.g.cs`](./../../../Mud.Wechat.Pay.DataModels/Generated/WebizpayEmployeeJsonContext.g.cs)（生成物，勿手改）。
+AOT 源生成上下文：[`WebizpayEmployeeJsonContext.g.cs`](./../../../Mud.Wechat.Pay/Generated/WebizpayEmployeeJsonContext.g.cs)（生成物，勿手改）。
 
 | 端点引用的类型 | 角色 | 定义位置 | JSON 字段（前缀） |
 |---|---|---|---|
-| `WebizpayQuotaCardApplyResponse` | 应答 | [WebizpayEmployee/WebizpayEmployeeDtos.cs](../../../Mud.Wechat.Pay.DataModels/WebizpayEmployee/WebizpayEmployeeDtos.cs) | `sp_mchid`, `sub_mchid`, `card_template_id`, `amount`, `card_name`, `out_card_no`, `effective_end_time`, `card_remark`, `avail_mch_range_id`, `employee_id`, `card_no`, `effective_begin_time` … |
-| `WebizpayQuotaCardApplyRequest` | 请求体 | [WebizpayEmployee/WebizpayEmployeeDtos.cs](../../../Mud.Wechat.Pay.DataModels/WebizpayEmployee/WebizpayEmployeeDtos.cs) | `sp_mchid`, `sub_mchid`, `card_template_id`, `amount`, `card_name`, `out_card_no`, `effective_end_time`, `card_remark`, `avail_mch_range_id`, `employee_id`, `card_no`, `effective_begin_time` … |
-| `WebizpayQuotaCardQueryResponse` | 应答 | [WebizpayEmployee/WebizpayEmployeeDtos.cs](../../../Mud.Wechat.Pay.DataModels/WebizpayEmployee/WebizpayEmployeeDtos.cs) | `sp_mchid`, `sub_mchid`, `card_template_id`, `amount`, `card_name`, `out_card_no`, `effective_end_time`, `card_remark`, `avail_mch_range_id`, `employee_id`, `card_no`, `effective_begin_time` … |
-| `WebizpayQuotaCardCancelResponse` | 应答 | [WebizpayEmployee/WebizpayEmployeeDtos.cs](../../../Mud.Wechat.Pay.DataModels/WebizpayEmployee/WebizpayEmployeeDtos.cs) | `sp_mchid`, `sub_mchid`, `card_template_id`, `amount`, `card_name`, `out_card_no`, `effective_end_time`, `card_remark`, `avail_mch_range_id`, `employee_id`, `card_no`, `effective_begin_time` … |
-| `WebizpayQuotaCardCancelRequest` | 请求体 | [WebizpayEmployee/WebizpayEmployeeDtos.cs](../../../Mud.Wechat.Pay.DataModels/WebizpayEmployee/WebizpayEmployeeDtos.cs) | `sp_mchid`, `sub_mchid`, `card_template_id`, `amount`, `card_name`, `out_card_no`, `effective_end_time`, `card_remark`, `avail_mch_range_id`, `employee_id`, `card_no`, `effective_begin_time` … |
-| `WebizpayQuotaCardPaymentUrlResponse` | 应答 | [WebizpayEmployee/WebizpayEmployeeDtos.cs](../../../Mud.Wechat.Pay.DataModels/WebizpayEmployee/WebizpayEmployeeDtos.cs) | `sp_mchid`, `sub_mchid`, `card_template_id`, `amount`, `card_name`, `out_card_no`, `effective_end_time`, `card_remark`, `avail_mch_range_id`, `employee_id`, `card_no`, `effective_begin_time` … |
-| `WebizpayEmployeeRevokeResponse` | 应答 | [WebizpayEmployee/WebizpayEmployeeDtos.cs](../../../Mud.Wechat.Pay.DataModels/WebizpayEmployee/WebizpayEmployeeDtos.cs) | `sp_mchid`, `sub_mchid`, `card_template_id`, `amount`, `card_name`, `out_card_no`, `effective_end_time`, `card_remark`, `avail_mch_range_id`, `employee_id`, `card_no`, `effective_begin_time` … |
-| `WebizpayEmployeeRevokeRequest` | 请求体 | [WebizpayEmployee/WebizpayEmployeeDtos.cs](../../../Mud.Wechat.Pay.DataModels/WebizpayEmployee/WebizpayEmployeeDtos.cs) | `sp_mchid`, `sub_mchid`, `card_template_id`, `amount`, `card_name`, `out_card_no`, `effective_end_time`, `card_remark`, `avail_mch_range_id`, `employee_id`, `card_no`, `effective_begin_time` … |
+| `WebizpayQuotaCardApplyResponse` | 应答 | [WebizpayEmployee/WebizpayEmployeeDtos.cs](../../../Mud.Wechat.Pay/WebizpayEmployee/WebizpayEmployeeDtos.cs) | `sp_mchid`, `sub_mchid`, `card_template_id`, `amount`, `card_name`, `out_card_no`, `effective_end_time`, `card_remark`, `avail_mch_range_id`, `employee_id`, `card_no`, `effective_begin_time` … |
+| `WebizpayQuotaCardApplyRequest` | 请求体 | [WebizpayEmployee/WebizpayEmployeeDtos.cs](../../../Mud.Wechat.Pay/WebizpayEmployee/WebizpayEmployeeDtos.cs) | `sp_mchid`, `sub_mchid`, `card_template_id`, `amount`, `card_name`, `out_card_no`, `effective_end_time`, `card_remark`, `avail_mch_range_id`, `employee_id`, `card_no`, `effective_begin_time` … |
+| `WebizpayQuotaCardQueryResponse` | 应答 | [WebizpayEmployee/WebizpayEmployeeDtos.cs](../../../Mud.Wechat.Pay/WebizpayEmployee/WebizpayEmployeeDtos.cs) | `sp_mchid`, `sub_mchid`, `card_template_id`, `amount`, `card_name`, `out_card_no`, `effective_end_time`, `card_remark`, `avail_mch_range_id`, `employee_id`, `card_no`, `effective_begin_time` … |
+| `WebizpayQuotaCardCancelResponse` | 应答 | [WebizpayEmployee/WebizpayEmployeeDtos.cs](../../../Mud.Wechat.Pay/WebizpayEmployee/WebizpayEmployeeDtos.cs) | `sp_mchid`, `sub_mchid`, `card_template_id`, `amount`, `card_name`, `out_card_no`, `effective_end_time`, `card_remark`, `avail_mch_range_id`, `employee_id`, `card_no`, `effective_begin_time` … |
+| `WebizpayQuotaCardCancelRequest` | 请求体 | [WebizpayEmployee/WebizpayEmployeeDtos.cs](../../../Mud.Wechat.Pay/WebizpayEmployee/WebizpayEmployeeDtos.cs) | `sp_mchid`, `sub_mchid`, `card_template_id`, `amount`, `card_name`, `out_card_no`, `effective_end_time`, `card_remark`, `avail_mch_range_id`, `employee_id`, `card_no`, `effective_begin_time` … |
+| `WebizpayQuotaCardPaymentUrlResponse` | 应答 | [WebizpayEmployee/WebizpayEmployeeDtos.cs](../../../Mud.Wechat.Pay/WebizpayEmployee/WebizpayEmployeeDtos.cs) | `sp_mchid`, `sub_mchid`, `card_template_id`, `amount`, `card_name`, `out_card_no`, `effective_end_time`, `card_remark`, `avail_mch_range_id`, `employee_id`, `card_no`, `effective_begin_time` … |
+| `WebizpayEmployeeRevokeResponse` | 应答 | [WebizpayEmployee/WebizpayEmployeeDtos.cs](../../../Mud.Wechat.Pay/WebizpayEmployee/WebizpayEmployeeDtos.cs) | `sp_mchid`, `sub_mchid`, `card_template_id`, `amount`, `card_name`, `out_card_no`, `effective_end_time`, `card_remark`, `avail_mch_range_id`, `employee_id`, `card_no`, `effective_begin_time` … |
+| `WebizpayEmployeeRevokeRequest` | 请求体 | [WebizpayEmployee/WebizpayEmployeeDtos.cs](../../../Mud.Wechat.Pay/WebizpayEmployee/WebizpayEmployeeDtos.cs) | `sp_mchid`, `sub_mchid`, `card_template_id`, `amount`, `card_name`, `out_card_no`, `effective_end_time`, `card_remark`, `avail_mch_range_id`, `employee_id`, `card_no`, `effective_begin_time` … |
 
 > DTO 一律以源文件为准；本表只列端点签名**直接引用**的一层类型，嵌套类型不再递归展开。所有 DTO 不使用 `required`（仓内约束），必填性由接口注释与官方页表达，SDK 不做本地必填校验。
 
@@ -222,7 +222,7 @@ var response = await service.ApplyQuotaCardAsync("", new WebizpayQuotaCardApplyR
 | 契约守卫（路由 / 计数 / DTO 登记断言） | [`WechatPayWebizpayEmployeeContractGuards.cs`](../../../../../Tests/Mud.Wechat.Pay.Tests/ContractGuards/WechatPayWebizpayEmployeeContractGuards.cs)、[`WechatPayDomainContractGuards.cs`](../../../../../Tests/Mud.Wechat.Pay.Tests/ContractGuards/WechatPayDomainContractGuards.cs) |
 | 守卫中的代表性测试方法 | `WebizpayEmployeeTopology_ShouldBeOneInterfaceOnOneGroup`、`WebizpayEmployeeEndpoints_ShouldMatchOfficialRoutesAndParameterRosters`、`WebizpayEmployeeDtos_ShouldExposeOfficialFieldRosters`、`WebizpayEmployeeDataModels_ShouldBeRegisteredInJsonContextAndWiredIntoDi`、`PayInterfaces_ShouldNotDeclareToken_AndShouldMatchModuleCount`、`Endpoints_ShouldMatchOfficialRoutes`、`Dtos_ShouldExposeOfficialFieldNames`、`Responses_ShouldDeriveFromWechatPayResponse`、`Interfaces_ShouldAllowAnyStatusCode_SoErrorBodiesAreReadable` |
 | 模块枚举 / 装配入口 | [`PayModule.cs`](../../Extensions/PayModule.cs)、[`PayServiceBuilder.cs`](../../Extensions/PayServiceBuilder.cs) |
-| DTO 与 JSON 上下文 | [`Mud.Wechat.Pay.DataModels/WebizpayEmployee`](../../../Mud.Wechat.Pay.DataModels/WebizpayEmployee/) |
+| DTO 与 JSON 上下文 | [`Mud.Wechat.Pay/WebizpayEmployee`](../../../Mud.Wechat.Pay/WebizpayEmployee/) |
 | 跨线基线 | [`Tests/ContractBaseline.cs`](../../../../../Tests/ContractBaseline.cs)（各线分节；本线口径以守卫实际断言为准） |
 | 本线包级公开面与已踩陷阱 | [`Src/Pay/Mud.Wechat.Pay/README.md`](../../README.md) |
 | 跨线通用约束（门禁 / AOT / 落位） | [`AGENTS.md`](../../../../../AGENTS.md) |

@@ -435,12 +435,12 @@ public class WechatPayCryptoContractGuards
 
         // 算法实现必须显式落在 System.Security.Cryptography（BCL 直调，无第三方密码学包）。
         var signatureProvider = File.ReadAllText(SourcePath(
-            "Mud.Wechat.Pay.Abstractions", "Credential", "WechatPaySignatureProvider.cs"));
+            "Mud.Wechat.Pay", "Credential", "WechatPaySignatureProvider.cs"));
         signatureProvider.Should().Contain("System.Security.Cryptography",
             "RSA 签名必须 BCL 直调（PAY-B6），不得引入 BouncyCastle 等第三方包");
 
         var aesCodec = File.ReadAllText(SourcePath(
-            "Mud.Wechat.Pay.Abstractions", "Credential", "WechatPayAesGcmCodec.cs"));
+            "Mud.Wechat.Pay", "Credential", "WechatPayAesGcmCodec.cs"));
         aesCodec.Should().Contain("System.Security.Cryptography",
             "AesGcm 必须 BCL 直调（PAY-B6）");
 
@@ -575,22 +575,33 @@ public class WechatPayCryptoContractGuards
 
     private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, string> SourceProjectDirs = new();
 
-    /// <summary>支付线四个工程的源码目录（按 csproj 定位，不硬编码层级）。</summary>
+    /// <summary>支付线源码工程目录（2026-10 包合并后为两工程：主包含 APIv3+APIv2，回调宿主独立）。</summary>
     private static string[] PayProjectDirs()
         => new[]
         {
             "Mud.Wechat.Pay",
-            "Mud.Wechat.Pay.Abstractions",
-            "Mud.Wechat.Pay.DataModels",
             "Mud.Wechat.Pay.Callback",
         }.Select(SourceProjectDir).ToArray();
 
-    /// <summary>支付线源码（不含 bin/obj 与测试工程）——PAY-B6/B7 源码扫描的枚举集。</summary>
+    /// <summary>
+    /// 支付线源码（不含 bin/obj 与测试工程）——PAY-B6/B7 源码扫描的枚举集。
+    /// </summary>
+    /// <remarks>
+    /// <b>排除 APIv2 侧文件</b>（声明 <c>namespace Mud.Wechat.Pay.V2*</c> 的文件）：本守卫的探针是
+    /// 源码文本级 <c>.Deserialize&lt;</c>，而 APIv2 的序列化器合法地使用
+    /// <c>JsonSerializer.Deserialize&lt;T&gt;(text, JsonTypeInfo&lt;T&gt;)</c> 免反射重载与组件的
+    /// <c>IContentSerializer.Deserialize&lt;T&gt;</c> 转发 —— 文本层无法区分重载，纳入即假红。
+    /// 2026-10 包合并把 APIv2 源码并入本工程目录后，这个区分从「按工程」变成「按命名空间」。
+    /// APIv2 的 AOT 净零并不因此失守：它与 APIv3 现在同工程，<c>verify-build.ps1</c> 步骤 2 的
+    /// <c>AotStrictMode</c>（IL2026/IL3050 升为错误）逐工程覆盖两侧，是更强的那道闸。
+    /// 待办（登记于此，勿默默遗忘）：把探针升级为「区分 JsonTypeInfo 重载」的形态判定后再纳入 APIv2。
+    /// </remarks>
     private static string[] CollectPaySourceFiles()
         => PayProjectDirs()
             .SelectMany(dir => Directory.GetFiles(dir, "*.cs", SearchOption.AllDirectories))
             .Where(p => !p.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
             .Where(p => !p.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
+            .Where(static p => !File.ReadAllText(p).Contains("namespace Mud.Wechat.Pay.V2", StringComparison.Ordinal))
             .ToArray();
 
     /// <summary>剔除 <c>//</c>、<c>/* */</c> 与 XML 文档注释，避免「文档提及」被当成实现（AB-G9 已踩过此坑）。</summary>

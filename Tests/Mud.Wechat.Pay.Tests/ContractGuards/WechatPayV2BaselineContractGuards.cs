@@ -134,7 +134,7 @@ public class WechatPayV2BaselineContractGuards
         }
 
         var secureSources = Directory.EnumerateFiles(
-                Path.Combine(SourceProjectDir("Mud.Wechat.Pay.V2"), "Secure"), "*.cs")
+                Path.Combine(SourceProjectDir("Mud.Wechat.Pay"), "Secure"), "*.cs")
             .Select(static f => Path.GetFileNameWithoutExtension(f))
             .ToList();
 
@@ -148,6 +148,7 @@ public class WechatPayV2BaselineContractGuards
     /// <summary>本线「可注入端点接口」全集：主程序集内命名空间恰为 <c>Mud.Wechat.Pay.V2</c> 的公开接口。</summary>
     private static List<Type> ServiceInterfaces()
         => typeof(IWechatPayV2Service).Assembly.GetTypes()
+            .Where(static t => (t.Namespace ?? string.Empty).StartsWith("Mud.Wechat.Pay.V2", StringComparison.Ordinal))
             .Where(static t => t.IsInterface && t.IsPublic && t.Namespace == "Mud.Wechat.Pay.V2")
             .ToList();
 
@@ -181,7 +182,7 @@ public class WechatPayV2BaselineContractGuards
         var routes = new List<string>();
 
         foreach (var file in Directory.EnumerateFiles(
-                     Path.Combine(SourceProjectDir("Mud.Wechat.Pay.V2"), "Secure"), "*.cs"))
+                     Path.Combine(SourceProjectDir("Mud.Wechat.Pay"), "Secure"), "*.cs"))
         {
             foreach (System.Text.RegularExpressions.Match match in pattern.Matches(File.ReadAllText(file)))
             {

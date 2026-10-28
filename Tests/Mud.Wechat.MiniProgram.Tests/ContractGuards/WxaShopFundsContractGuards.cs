@@ -383,7 +383,7 @@ public class WxaShopFundsContractGuards
 
         // ② 本域（接口 + DTO）源码零日志调用：SDK 侧任何 Logger/Console 输出都会把账号与金额带进日志管道。
         var domainSources = interfaceFiles
-            .Concat(Directory.GetFiles(SourcePath("Mud.Wechat.MiniProgram.DataModels", "ShopFunds"), "*.cs", SearchOption.AllDirectories))
+            .Concat(Directory.GetFiles(SourcePath("Mud.Wechat.MiniProgram", "ShopFunds"), "*.cs", SearchOption.AllDirectories))
             .Where(static f => !IsBuildArtifact(f))
             .ToList();
 

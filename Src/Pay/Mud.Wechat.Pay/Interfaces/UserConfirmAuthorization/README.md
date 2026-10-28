@@ -2,7 +2,7 @@
 
 微信支付「免确认收款授权」域 SDK（3 端点）。 接口：[IWechatPayUserConfirmAuthorizationService](./IWechatPayUserConfirmAuthorizationService.cs)；注册组 `UserConfirmAuthorization`；模块枚举 `PayModule.UserConfirmAuthorization`（装配入口见 [PayServiceBuilder.cs](../../Extensions/PayServiceBuilder.cs)）。逐端点核验 2026-10-18。
 
-> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[WechatPayUserConfirmAuthorizationContractGuards.cs](../../../../../Tests/Mud.Wechat.Pay.Tests/ContractGuards/WechatPayUserConfirmAuthorizationContractGuards.cs)、[WechatPayDomainContractGuards.cs](../../../../../Tests/Mud.Wechat.Pay.Tests/ContractGuards/WechatPayDomainContractGuards.cs)）、本域 DTO（[`Mud.Wechat.Pay.DataModels/UserConfirmAuthorization`](../../../Mud.Wechat.Pay.DataModels/UserConfirmAuthorization/)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
+> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[WechatPayUserConfirmAuthorizationContractGuards.cs](../../../../../Tests/Mud.Wechat.Pay.Tests/ContractGuards/WechatPayUserConfirmAuthorizationContractGuards.cs)、[WechatPayDomainContractGuards.cs](../../../../../Tests/Mud.Wechat.Pay.Tests/ContractGuards/WechatPayDomainContractGuards.cs)）、本域 DTO（[`Mud.Wechat.Pay/UserConfirmAuthorization`](../../../Mud.Wechat.Pay/UserConfirmAuthorization/)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
 
 ## 端点速览
 
@@ -103,16 +103,16 @@
 
 ## DTO 与序列化面
 
-本域 DTO 目录 [`Mud.Wechat.Pay.DataModels/UserConfirmAuthorization`](../../../Mud.Wechat.Pay.DataModels/UserConfirmAuthorization/) 内共 **7** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **7** 个，`SerializerClassName` = `UserConfirmAuthorization`。
+本域 DTO 目录 [`Mud.Wechat.Pay/UserConfirmAuthorization`](../../../Mud.Wechat.Pay/UserConfirmAuthorization/) 内共 **7** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **7** 个，`SerializerClassName` = `UserConfirmAuthorization`。
 
-AOT 源生成上下文：[`UserConfirmAuthorizationJsonContext.g.cs`](./../../../Mud.Wechat.Pay.DataModels/Generated/UserConfirmAuthorizationJsonContext.g.cs)（生成物，勿手改）。
+AOT 源生成上下文：[`UserConfirmAuthorizationJsonContext.g.cs`](./../../../Mud.Wechat.Pay/Generated/UserConfirmAuthorizationJsonContext.g.cs)（生成物，勿手改）。
 
 | 端点引用的类型 | 角色 | 定义位置 | JSON 字段（前缀） |
 |---|---|---|---|
-| `UserConfirmAuthorizationCreateResponse` | 应答 | [UserConfirmAuthorization/UserConfirmAuthorizationDtos.cs](../../../Mud.Wechat.Pay.DataModels/UserConfirmAuthorization/UserConfirmAuthorizationDtos.cs) | `client_ip`, `device_id`, `device_type`, `out_authorization_no`, `appid`, `openid`, `transfer_scene_id`, `user_display_name`, `user_recv_perception`, `authorization_notify_url`, `scene_info`, `state` … |
-| `UserConfirmAuthorizationCreateRequest` | 请求体 | [UserConfirmAuthorization/UserConfirmAuthorizationDtos.cs](../../../Mud.Wechat.Pay.DataModels/UserConfirmAuthorization/UserConfirmAuthorizationDtos.cs) | `client_ip`, `device_id`, `device_type`, `out_authorization_no`, `appid`, `openid`, `transfer_scene_id`, `user_display_name`, `user_recv_perception`, `authorization_notify_url`, `scene_info`, `state` … |
-| `UserConfirmAuthorizationQueryResponse` | 应答 | [UserConfirmAuthorization/UserConfirmAuthorizationDtos.cs](../../../Mud.Wechat.Pay.DataModels/UserConfirmAuthorization/UserConfirmAuthorizationDtos.cs) | `client_ip`, `device_id`, `device_type`, `out_authorization_no`, `appid`, `openid`, `transfer_scene_id`, `user_display_name`, `user_recv_perception`, `authorization_notify_url`, `scene_info`, `state` … |
-| `UserConfirmAuthorizationCloseResponse` | 应答 | [UserConfirmAuthorization/UserConfirmAuthorizationDtos.cs](../../../Mud.Wechat.Pay.DataModels/UserConfirmAuthorization/UserConfirmAuthorizationDtos.cs) | `client_ip`, `device_id`, `device_type`, `out_authorization_no`, `appid`, `openid`, `transfer_scene_id`, `user_display_name`, `user_recv_perception`, `authorization_notify_url`, `scene_info`, `state` … |
+| `UserConfirmAuthorizationCreateResponse` | 应答 | [UserConfirmAuthorization/UserConfirmAuthorizationDtos.cs](../../../Mud.Wechat.Pay/UserConfirmAuthorization/UserConfirmAuthorizationDtos.cs) | `client_ip`, `device_id`, `device_type`, `out_authorization_no`, `appid`, `openid`, `transfer_scene_id`, `user_display_name`, `user_recv_perception`, `authorization_notify_url`, `scene_info`, `state` … |
+| `UserConfirmAuthorizationCreateRequest` | 请求体 | [UserConfirmAuthorization/UserConfirmAuthorizationDtos.cs](../../../Mud.Wechat.Pay/UserConfirmAuthorization/UserConfirmAuthorizationDtos.cs) | `client_ip`, `device_id`, `device_type`, `out_authorization_no`, `appid`, `openid`, `transfer_scene_id`, `user_display_name`, `user_recv_perception`, `authorization_notify_url`, `scene_info`, `state` … |
+| `UserConfirmAuthorizationQueryResponse` | 应答 | [UserConfirmAuthorization/UserConfirmAuthorizationDtos.cs](../../../Mud.Wechat.Pay/UserConfirmAuthorization/UserConfirmAuthorizationDtos.cs) | `client_ip`, `device_id`, `device_type`, `out_authorization_no`, `appid`, `openid`, `transfer_scene_id`, `user_display_name`, `user_recv_perception`, `authorization_notify_url`, `scene_info`, `state` … |
+| `UserConfirmAuthorizationCloseResponse` | 应答 | [UserConfirmAuthorization/UserConfirmAuthorizationDtos.cs](../../../Mud.Wechat.Pay/UserConfirmAuthorization/UserConfirmAuthorizationDtos.cs) | `client_ip`, `device_id`, `device_type`, `out_authorization_no`, `appid`, `openid`, `transfer_scene_id`, `user_display_name`, `user_recv_perception`, `authorization_notify_url`, `scene_info`, `state` … |
 
 > DTO 一律以源文件为准；本表只列端点签名**直接引用**的一层类型，嵌套类型不再递归展开。所有 DTO 不使用 `required`（仓内约束），必填性由接口注释与官方页表达，SDK 不做本地必填校验。
 
@@ -149,7 +149,7 @@ var response = await service.CloseUserConfirmAuthorizationAsync("", ct);
 | 契约守卫（路由 / 计数 / DTO 登记断言） | [`WechatPayUserConfirmAuthorizationContractGuards.cs`](../../../../../Tests/Mud.Wechat.Pay.Tests/ContractGuards/WechatPayUserConfirmAuthorizationContractGuards.cs)、[`WechatPayDomainContractGuards.cs`](../../../../../Tests/Mud.Wechat.Pay.Tests/ContractGuards/WechatPayDomainContractGuards.cs) |
 | 守卫中的代表性测试方法 | `UserConfirmAuthorizationTopology_ShouldBeOneInterfaceOnOneGroup`、`UserConfirmAuthorizationEndpoints_ShouldMatchOfficialRoutesAndParameterRosters`、`UserConfirmAuthorizationDtos_ShouldExposeOfficialFieldRosters`、`UserConfirmAuthorizationDataModels_ShouldBeRegisteredInJsonContextAndWiredIntoDi`、`PayInterfaces_ShouldNotDeclareToken_AndShouldMatchModuleCount`、`Endpoints_ShouldMatchOfficialRoutes`、`Dtos_ShouldExposeOfficialFieldNames`、`Responses_ShouldDeriveFromWechatPayResponse`、`Interfaces_ShouldAllowAnyStatusCode_SoErrorBodiesAreReadable` |
 | 模块枚举 / 装配入口 | [`PayModule.cs`](../../Extensions/PayModule.cs)、[`PayServiceBuilder.cs`](../../Extensions/PayServiceBuilder.cs) |
-| DTO 与 JSON 上下文 | [`Mud.Wechat.Pay.DataModels/UserConfirmAuthorization`](../../../Mud.Wechat.Pay.DataModels/UserConfirmAuthorization/) |
+| DTO 与 JSON 上下文 | [`Mud.Wechat.Pay/UserConfirmAuthorization`](../../../Mud.Wechat.Pay/UserConfirmAuthorization/) |
 | 跨线基线 | [`Tests/ContractBaseline.cs`](../../../../../Tests/ContractBaseline.cs)（各线分节；本线口径以守卫实际断言为准） |
 | 本线包级公开面与已踩陷阱 | [`Src/Pay/Mud.Wechat.Pay/README.md`](../../README.md) |
 | 跨线通用约束（门禁 / AOT / 落位） | [`AGENTS.md`](../../../../../AGENTS.md) |

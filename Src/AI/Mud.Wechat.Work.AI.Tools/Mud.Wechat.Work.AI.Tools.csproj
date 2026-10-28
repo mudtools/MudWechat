@@ -37,13 +37,10 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\Mud.Wechat.AI.Abstractions\Mud.Wechat.AI.Abstractions.csproj" />
-		<ProjectReference Include="..\Mud.Wechat.AI.Agent\Mud.Wechat.AI.Agent.csproj" />
+		<ProjectReference Include="..\Mud.Wechat.AI\Mud.Wechat.AI.csproj" />
 		<!-- 风险枚举 Mud.Wechat.Work.AI.AgentTools.WechatToolRisk 落层 2 Agent 包（剖面 RiskEnumFullName 槽指向它）。 -->
 		<ProjectReference Include="..\Mud.Wechat.Work.AI\Mud.Wechat.Work.AI.csproj" />
 		<ProjectReference Include="..\..\Work\Mud.Wechat.Work\Mud.Wechat.Work.csproj" />
-		<ProjectReference Include="..\..\Work\Mud.Wechat.Work.Abstractions\Mud.Wechat.Work.Abstractions.csproj" />
-		<ProjectReference Include="..\..\Work\Mud.Wechat.Work.DataModels\Mud.Wechat.Work.DataModels.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>

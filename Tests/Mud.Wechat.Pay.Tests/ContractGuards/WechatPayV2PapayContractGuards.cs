@@ -178,6 +178,7 @@ public class WechatPayV2PapayContractGuards
     public void V2_Papay_Dtos_ShouldBeRegisteredInPayV2JsonContext()
     {
         var papayTypeNames = typeof(V2DeleteContractRequest).Assembly.GetTypes()
+            .Where(static t => (t.Namespace ?? string.Empty).StartsWith("Mud.Wechat.Pay.V2", StringComparison.Ordinal))
             .Where(t => t.Namespace == "Mud.Wechat.Pay.V2.DataModels.PayV2")
             .Where(t => t.GetCustomAttributes(typeof(HttpJsonSerializableAttribute), inherit: true).Any())
             .Select(t => t.Name)
@@ -205,6 +206,7 @@ public class WechatPayV2PapayContractGuards
         }
 
         var papayTypes = typeof(V2DeleteContractRequest).Assembly.GetTypes()
+            .Where(static t => (t.Namespace ?? string.Empty).StartsWith("Mud.Wechat.Pay.V2", StringComparison.Ordinal))
             .Where(t => t.Namespace == "Mud.Wechat.Pay.V2.DataModels.PayV2")
             .Where(t => expected.Contains(t.Name, StringComparer.Ordinal))
             .ToList();

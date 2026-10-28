@@ -39,6 +39,9 @@ public class WechatPayDomainContractGuards
         var interfaces = LoadPayAssembly()
             .GetTypes()
             .Where(static t => t.IsInterface && t.IsPublic)
+            // APIv2 侧（合并后同程序集）由 WechatPayV2* 守卫族治理，不属 PAY-B1 / 模块计数主语。
+            .Where(static t => !(t.Namespace ?? string.Empty)
+                .StartsWith("Mud.Wechat.Pay.V2", StringComparison.Ordinal))
             .Where(static t => t.GetCustomAttributes(false)
                 .Any(static a => a.GetType().Name == "HttpClientApiAttribute"))
             .OrderBy(static t => t.Name, StringComparer.Ordinal)
@@ -671,8 +674,12 @@ public class WechatPayDomainContractGuards
         });
 
         // 合计计数（PAY-B5 断言的单一来源）。
+        // 2026-10 包合并：APIv2 侧（命名空间 Mud.Wechat.Pay.V2*）与本包同程序集，
+        // 其端点计数由 WechatPayV2BaselineContractGuards 治理，不并入 PAY-B5 台账。
         asm.GetTypes()
             .Where(static t => t.IsInterface && t.IsPublic)
+            .Where(static t => !(t.Namespace ?? string.Empty)
+                .StartsWith("Mud.Wechat.Pay.V2", StringComparison.Ordinal))
             .SelectMany(static t => t.GetMethods())
             .SelectMany(static m => m.GetCustomAttributes(false))
             .Select(static a => a.GetType().GetProperty("RequestUri")?.GetValue(a) as string)
@@ -790,6 +797,8 @@ public class WechatPayDomainContractGuards
         var interfaces = LoadPayAssembly()
             .GetTypes()
             .Where(static t => t.IsInterface && t.IsPublic)
+            .Where(static t => !(t.Namespace ?? string.Empty)
+                .StartsWith("Mud.Wechat.Pay.V2", StringComparison.Ordinal))
             .Where(static t => t.GetCustomAttributes(false)
                 .Any(static a => a.GetType().Name == "HttpClientApiAttribute"))
             .ToArray();

@@ -2,7 +2,7 @@
 
 微信支付「资金出境（平台商户面）」域 SDK（6 端点）。 接口：[IWechatPayFundsToOverseaService](./IWechatPayFundsToOverseaService.cs)；注册组 `FundsToOversea`；模块枚举 `PayModule.FundsToOversea`（装配入口见 [PayServiceBuilder.cs](../../Extensions/PayServiceBuilder.cs)）。逐端点核验 2026-10-18。
 
-> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[WechatPayFundsToOverseaContractGuards.cs](../../../../../Tests/Mud.Wechat.Pay.Tests/ContractGuards/WechatPayFundsToOverseaContractGuards.cs)、[WechatPayDomainContractGuards.cs](../../../../../Tests/Mud.Wechat.Pay.Tests/ContractGuards/WechatPayDomainContractGuards.cs)）、本域 DTO（[`Mud.Wechat.Pay.DataModels/FundsToOversea`](../../../Mud.Wechat.Pay.DataModels/FundsToOversea/)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
+> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[WechatPayFundsToOverseaContractGuards.cs](../../../../../Tests/Mud.Wechat.Pay.Tests/ContractGuards/WechatPayFundsToOverseaContractGuards.cs)、[WechatPayDomainContractGuards.cs](../../../../../Tests/Mud.Wechat.Pay.Tests/ContractGuards/WechatPayDomainContractGuards.cs)）、本域 DTO（[`Mud.Wechat.Pay/FundsToOversea`](../../../Mud.Wechat.Pay/FundsToOversea/)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
 
 ## 端点速览
 
@@ -159,18 +159,18 @@
 
 ## DTO 与序列化面
 
-本域 DTO 目录 [`Mud.Wechat.Pay.DataModels/FundsToOversea`](../../../Mud.Wechat.Pay.DataModels/FundsToOversea/) 内共 **11** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **11** 个，`SerializerClassName` = `FundsToOversea`。
+本域 DTO 目录 [`Mud.Wechat.Pay/FundsToOversea`](../../../Mud.Wechat.Pay/FundsToOversea/) 内共 **11** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **11** 个，`SerializerClassName` = `FundsToOversea`。
 
-AOT 源生成上下文：[`FundsToOverseaJsonContext.g.cs`](./../../../Mud.Wechat.Pay.DataModels/Generated/FundsToOverseaJsonContext.g.cs)（生成物，勿手改）。
+AOT 源生成上下文：[`FundsToOverseaJsonContext.g.cs`](./../../../Mud.Wechat.Pay/Generated/FundsToOverseaJsonContext.g.cs)（生成物，勿手改）。
 
 | 端点引用的类型 | 角色 | 定义位置 | JSON 字段（前缀） |
 |---|---|---|---|
-| `FundsToOverseaBillDownloadUrlResponse` | 应答 | [FundsToOversea/FundsToOverseaBillDtos.cs](../../../Mud.Wechat.Pay.DataModels/FundsToOversea/FundsToOverseaBillDtos.cs) | `hash_type`, `hash_value`, `download_url` |
-| `FundsToOverseaOrderResponse` | 应答 | [FundsToOversea/FundsToOverseaOrderDtos.cs](../../../Mud.Wechat.Pay.DataModels/FundsToOversea/FundsToOverseaOrderDtos.cs) | `goods_name`, `goods_category`, `goods_unit_price`, `goods_quantity`, `oversea_business_name`, `oversea_shop_name`, `seller_id`, `courier_number`, `express_company_name`, `payee_id`, `type`, `total_amount` … |
-| `FundsToOverseaOrderCreateRequest` | 请求体 | [FundsToOversea/FundsToOverseaOrderDtos.cs](../../../Mud.Wechat.Pay.DataModels/FundsToOversea/FundsToOverseaOrderDtos.cs) | `goods_name`, `goods_category`, `goods_unit_price`, `goods_quantity`, `oversea_business_name`, `oversea_shop_name`, `seller_id`, `courier_number`, `express_company_name`, `payee_id`, `type`, `total_amount` … |
-| `FundsToOverseaReturnOrderResponse` | 应答 | [FundsToOversea/FundsToOverseaReturnOrderDtos.cs](../../../Mud.Wechat.Pay.DataModels/FundsToOversea/FundsToOverseaReturnOrderDtos.cs) | `out_return_no`, `sub_mchid`, `out_order_id`, `transaction_id`, `supplement_info`, `amount`, `return_id`, `state`, `create_time`, `success_time`, `fail_reason` |
-| `FundsToOverseaReturnOrderCreateRequest` | 请求体 | [FundsToOversea/FundsToOverseaReturnOrderDtos.cs](../../../Mud.Wechat.Pay.DataModels/FundsToOversea/FundsToOverseaReturnOrderDtos.cs) | `out_return_no`, `sub_mchid`, `out_order_id`, `transaction_id`, `supplement_info`, `amount`, `return_id`, `state`, `create_time`, `success_time`, `fail_reason` |
-| `FundsToOverseaTransactionAvailableAbroadAmountResponse` | 应答 | [FundsToOversea/FundsToOverseaTransactionDtos.cs](../../../Mud.Wechat.Pay.DataModels/FundsToOversea/FundsToOverseaTransactionDtos.cs) | `transaction_id`, `available_abroad_amount` |
+| `FundsToOverseaBillDownloadUrlResponse` | 应答 | [FundsToOversea/FundsToOverseaBillDtos.cs](../../../Mud.Wechat.Pay/FundsToOversea/FundsToOverseaBillDtos.cs) | `hash_type`, `hash_value`, `download_url` |
+| `FundsToOverseaOrderResponse` | 应答 | [FundsToOversea/FundsToOverseaOrderDtos.cs](../../../Mud.Wechat.Pay/FundsToOversea/FundsToOverseaOrderDtos.cs) | `goods_name`, `goods_category`, `goods_unit_price`, `goods_quantity`, `oversea_business_name`, `oversea_shop_name`, `seller_id`, `courier_number`, `express_company_name`, `payee_id`, `type`, `total_amount` … |
+| `FundsToOverseaOrderCreateRequest` | 请求体 | [FundsToOversea/FundsToOverseaOrderDtos.cs](../../../Mud.Wechat.Pay/FundsToOversea/FundsToOverseaOrderDtos.cs) | `goods_name`, `goods_category`, `goods_unit_price`, `goods_quantity`, `oversea_business_name`, `oversea_shop_name`, `seller_id`, `courier_number`, `express_company_name`, `payee_id`, `type`, `total_amount` … |
+| `FundsToOverseaReturnOrderResponse` | 应答 | [FundsToOversea/FundsToOverseaReturnOrderDtos.cs](../../../Mud.Wechat.Pay/FundsToOversea/FundsToOverseaReturnOrderDtos.cs) | `out_return_no`, `sub_mchid`, `out_order_id`, `transaction_id`, `supplement_info`, `amount`, `return_id`, `state`, `create_time`, `success_time`, `fail_reason` |
+| `FundsToOverseaReturnOrderCreateRequest` | 请求体 | [FundsToOversea/FundsToOverseaReturnOrderDtos.cs](../../../Mud.Wechat.Pay/FundsToOversea/FundsToOverseaReturnOrderDtos.cs) | `out_return_no`, `sub_mchid`, `out_order_id`, `transaction_id`, `supplement_info`, `amount`, `return_id`, `state`, `create_time`, `success_time`, `fail_reason` |
+| `FundsToOverseaTransactionAvailableAbroadAmountResponse` | 应答 | [FundsToOversea/FundsToOverseaTransactionDtos.cs](../../../Mud.Wechat.Pay/FundsToOversea/FundsToOverseaTransactionDtos.cs) | `transaction_id`, `available_abroad_amount` |
 
 > DTO 一律以源文件为准；本表只列端点签名**直接引用**的一层类型，嵌套类型不再递归展开。所有 DTO 不使用 `required`（仓内约束），必填性由接口注释与官方页表达，SDK 不做本地必填校验。
 
@@ -207,7 +207,7 @@ var response = await service.CreateFundsToOverseaOrderAsync(new FundsToOverseaOr
 | 契约守卫（路由 / 计数 / DTO 登记断言） | [`WechatPayFundsToOverseaContractGuards.cs`](../../../../../Tests/Mud.Wechat.Pay.Tests/ContractGuards/WechatPayFundsToOverseaContractGuards.cs)、[`WechatPayDomainContractGuards.cs`](../../../../../Tests/Mud.Wechat.Pay.Tests/ContractGuards/WechatPayDomainContractGuards.cs) |
 | 守卫中的代表性测试方法 | `FundsToOverseaTopology_ShouldMatchInterfaceAndGroupRoster`、`FundsToOverseaEndpoints_ShouldMatchOfficialRoutesAndParameterRosters`、`FundsToOverseaDtos_ShouldExposeOfficialFieldRosters`、`FundsToOverseaDataModels_ShouldSplitRequestAndResponseBaseTypes`、`FundsToOverseaAllDtos_ShouldBeAnnotatedAndContextRegistered`、`FundsToOverseaRegistrars_ShouldBeWiredThroughPayModuleAndResolver`、`PayInterfaces_ShouldNotDeclareToken_AndShouldMatchModuleCount`、`Endpoints_ShouldMatchOfficialRoutes`、`Dtos_ShouldExposeOfficialFieldNames`、`Responses_ShouldDeriveFromWechatPayResponse`、`Interfaces_ShouldAllowAnyStatusCode_SoErrorBodiesAreReadable` |
 | 模块枚举 / 装配入口 | [`PayModule.cs`](../../Extensions/PayModule.cs)、[`PayServiceBuilder.cs`](../../Extensions/PayServiceBuilder.cs) |
-| DTO 与 JSON 上下文 | [`Mud.Wechat.Pay.DataModels/FundsToOversea`](../../../Mud.Wechat.Pay.DataModels/FundsToOversea/) |
+| DTO 与 JSON 上下文 | [`Mud.Wechat.Pay/FundsToOversea`](../../../Mud.Wechat.Pay/FundsToOversea/) |
 | 跨线基线 | [`Tests/ContractBaseline.cs`](../../../../../Tests/ContractBaseline.cs)（各线分节；本线口径以守卫实际断言为准） |
 | 本线包级公开面与已踩陷阱 | [`Src/Pay/Mud.Wechat.Pay/README.md`](../../README.md) |
 | 跨线通用约束（门禁 / AOT / 落位） | [`AGENTS.md`](../../../../../AGENTS.md) |

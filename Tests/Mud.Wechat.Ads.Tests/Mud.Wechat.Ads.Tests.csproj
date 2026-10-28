@@ -14,8 +14,6 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\..\Src\Ads\Mud.Wechat.Ads\Mud.Wechat.Ads.csproj" />
-		<ProjectReference Include="..\..\Src\Ads\Mud.Wechat.Ads.Abstractions\Mud.Wechat.Ads.Abstractions.csproj" />
-		<ProjectReference Include="..\..\Src\Ads\Mud.Wechat.Ads.DataModels\Mud.Wechat.Ads.DataModels.csproj" />
 		<!-- 跨线 SSRF 白名单与 Query 凭据词表守卫的参照集在公用层叶包，必须直引。 -->
 		<ProjectReference Include="..\..\Src\Core\Mud.Wechat.Abstractions\Mud.Wechat.Abstractions.csproj" />
 	</ItemGroup>

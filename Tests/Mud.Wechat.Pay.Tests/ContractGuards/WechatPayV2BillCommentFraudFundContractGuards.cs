@@ -72,7 +72,7 @@ public class WechatPayV2BillCommentFraudFundContractGuards
     {
         foreach (var (interfaceType, _, sourceFile, route, domainNeedle) in Families)
         {
-            var text = File.ReadAllText(SourcePath("Mud.Wechat.Pay.V2", sourceFile));
+            var text = File.ReadAllText(SourcePath("Mud.Wechat.Pay", sourceFile));
 
             text.Should().Contain($"\"{route}\"",
                 $"{interfaceType.Name} 的官方路径是 {route} —— 写错即 404，且本族无特性载体可校验");
@@ -91,16 +91,16 @@ public class WechatPayV2BillCommentFraudFundContractGuards
     {
         foreach (var (interfaceType, _, sourceFile, _, _) in Families)
         {
-            var text = File.ReadAllText(SourcePath("Mud.Wechat.Pay.V2", sourceFile));
+            var text = File.ReadAllText(SourcePath("Mud.Wechat.Pay", sourceFile));
             text.Should().NotContain("SecureBaseAddress",
                 $"{interfaceType.Name} 的官方域名不是 api2.mch；「顺手对齐」成证书域名会打到无此路由的域名上");
         }
 
-        var fraud = File.ReadAllText(SourcePath("Mud.Wechat.Pay.V2", "Secure/WechatPayV2FraudService.cs"));
+        var fraud = File.ReadAllText(SourcePath("Mud.Wechat.Pay",  "Secure/WechatPayV2FraudService.cs"));
         fraud.Should().Contain("FraudBaseAddress",
             "because 防欺诈取公钥页的接口链接栏逐字印 https://fraud.mch.weixin.qq.com/risk/getpublickey");
 
-        var risk = File.ReadAllText(SourcePath("Mud.Wechat.Pay.V2", "Secure/WechatPayV2RiskService.cs"));
+        var risk = File.ReadAllText(SourcePath("Mud.Wechat.Pay",  "Secure/WechatPayV2RiskService.cs"));
         risk.Should().Contain("/risk/getviolation")
             .And.NotContain("FraudBaseAddress",
                 "because 同为 /risk/ 前缀的违规记录查询挂 api.mch —— 前缀不能推域名，两处必须各自钉住");
@@ -115,7 +115,7 @@ public class WechatPayV2BillCommentFraudFundContractGuards
     [Fact]
     public void V2_BillCommentFraudFund_Exits_ShouldMatchResponseFormat()
     {
-        var comment = File.ReadAllText(SourcePath("Mud.Wechat.Pay.V2", "Secure/WechatPayV2BillCommentService.cs"));
+        var comment = File.ReadAllText(SourcePath("Mud.Wechat.Pay",  "Secure/WechatPayV2BillCommentService.cs"));
         comment.Should().Contain("SendAsync(",
             "because 官方成功应答是逐行以反引号开头的文本表（首行为下一批 offset），不是 XML ⇒ 反序列化会吞掉整张表");
         comment.Should().NotContain("_invoker.PostAsync",
@@ -127,9 +127,9 @@ public class WechatPayV2BillCommentFraudFundContractGuards
                 "because 公开签名返回原文 string，失败 XML 信封亦原样交回由调用方判别（与 /pay/downloadbill 同口径）");
 
         // 反欺诈与资金两支是 XML 应答 ⇒ DTO 出口。
-        File.ReadAllText(SourcePath("Mud.Wechat.Pay.V2", "Secure/WechatPayV2FraudService.cs"))
+        File.ReadAllText(SourcePath("Mud.Wechat.Pay",  "Secure/WechatPayV2FraudService.cs"))
             .Should().Contain("PostAsync<");
-        File.ReadAllText(SourcePath("Mud.Wechat.Pay.V2", "Secure/WechatPayV2FundService.cs"))
+        File.ReadAllText(SourcePath("Mud.Wechat.Pay",  "Secure/WechatPayV2FundService.cs"))
             .Should().Contain("PostAsync<");
     }
 
@@ -189,7 +189,7 @@ public class WechatPayV2BillCommentFraudFundContractGuards
     [Fact]
     public void V2_BillCommentFraudFund_Modules_ShouldBindSingletonServicesInBuilder()
     {
-        var builderSource = File.ReadAllText(SourcePath("Mud.Wechat.Pay.V2", "Extensions/PayV2ServiceBuilder.cs"));
+        var builderSource = File.ReadAllText(SourcePath("Mud.Wechat.Pay",  "Extensions/PayV2ServiceBuilder.cs"));
 
         foreach (var module in new[]
                  {

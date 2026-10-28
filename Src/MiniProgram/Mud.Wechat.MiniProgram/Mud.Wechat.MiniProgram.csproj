@@ -1,8 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<Description>微信小程序 SDK 主包：业务声明式客户端（登录/二维码链接/内容安全/数据分析）、模块注册器、AOT JsonContext 合并。对应 Mud.Wechat.OfficialAccount。</Description>
-		<PackageTags>Wechat;MiniProgram;小程序;SDK;MudWechat</PackageTags>
+		<Description>微信小程序 SDK：官方错误码与线级异常、业务声明式客户端（登录/二维码链接/内容安全/数据分析/订阅消息/XPay/云服务/直播/硬件设备 等 21 个业务域）、模块注册器、AOT JsonContext 合并。一线一工程（2026-10 包合并：原 Mud.Wechat.MiniProgram.Abstractions / Mud.Wechat.MiniProgram.DataModels 并入本包，命名空间不变）。小程序与公众号同属微信公众平台，令牌与多应用基座直接复用 Mud.Wechat.OfficialAccount.Abstractions（本包不重复实现令牌管理器）。对应 Mud.Wechat.Work。</Description>
+		<PackageTags>Wechat;MiniProgram;小程序;SDK;DTO;Enums;Exceptions;MudWechat</PackageTags>
 		<!-- MUD005（Query 令牌注入存在 URL 泄露面）：微信公众平台官方契约强制令牌走 Query 参数
 		     （access_token 为 URL 查询参数，官方不支持 Header 注入），无法改用 Header。
 		     本包全部接口均为该官方契约，属已知接受风险（详见各接口 remarks 与契约守卫测试），
@@ -12,17 +12,34 @@
 
 	<ItemGroup>
 		<PackageReference Include="Mud.HttpUtils" Version="3.0.9" />
+		<PackageReference Include="Mud.HttpUtils.Attributes" Version="3.0.9" />
 	</ItemGroup>
 
 	<ItemGroup>
 		<PackageReference Include="Mud.HttpUtils.Generator" Version="3.0.9" PrivateAssets="all" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
 	</ItemGroup>
 
-	<ItemGroup>
-		<ProjectReference Include="..\..\Core\Mud.Wechat.Abstractions\Mud.Wechat.Abstractions.csproj" />
-		<ProjectReference Include="..\Mud.Wechat.MiniProgram.Abstractions\Mud.Wechat.MiniProgram.Abstractions.csproj" />
-		<ProjectReference Include="..\Mud.Wechat.MiniProgram.DataModels\Mud.Wechat.MiniProgram.DataModels.csproj" />
+	<!-- 令牌基座（复用公众号底座）需要 DI / HttpClientFactory / Hosting 面（原 Abstractions 包携带，合并后由本包携带）。 -->
+	<ItemGroup Condition="'$(TargetFramework)' == 'net8.0' Or '$(TargetFramework)' == 'net10.0'">
+		<PackageReference Include="Microsoft.Extensions.Http" Version="10.0.9" />
+		<PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.9" />
+	</ItemGroup>
+	<ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' or '$(TargetFramework)' == 'net6.0'">
+		<PackageReference Include="Microsoft.Extensions.Http" Version="8.0.1" />
+		<PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="8.0.1" />
 	</ItemGroup>
 
+	<ItemGroup>
+		<ProjectReference Include="..\..\Core\Mud.Wechat.Abstractions\Mud.Wechat.Abstractions.csproj" />
+		<!-- 令牌与多应用基座复用（只引公众号 Abstractions，不引公众号回调，见设计方案 §3.2）。
+		     不复制 MpAppManager / MpTokenManagerRegistry：后者为 internal sealed 单槽，
+		     新增独立令牌类型会 Resolve → null，导致 errcode 令牌自愈静默失效。 -->
+		<ProjectReference Include="..\..\OfficialAccount\Mud.Wechat.OfficialAccount\Mud.Wechat.OfficialAccount.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<InternalsVisibleTo Include="Mud.Wechat.MiniProgram.Tests" />
+		<InternalsVisibleTo Include="DynamicProxyGenAssembly2" />
+	</ItemGroup>
 
 </Project>

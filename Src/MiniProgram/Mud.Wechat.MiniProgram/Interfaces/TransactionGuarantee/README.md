@@ -4,7 +4,7 @@
 评论增删 2 + 回复增删 2 + 确认和解 + 重置 API 客服 quota，官方「交易保障」分组 → 评价管理，
 路由族 `/wxaapi/comment/*`）。 接口：[IWxaTradeCommentService](./IWxaTradeCommentService.cs)、[IWxaTradeComplaintService](./IWxaTradeComplaintService.cs)、[IWxaTradeGuaranteeService](./IWxaTradeGuaranteeService.cs)；注册组 `TransactionGuarantee`；模块枚举 `MiniProgramModule.TransactionGuarantee`（装配入口见 [MiniProgramServiceBuilder.cs](../../Extensions/MiniProgramServiceBuilder.cs)）。逐端点核验 2026-10-18。
 
-> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[WxaTransactionGuaranteeContractGuards.cs](../../../../../Tests/Mud.Wechat.MiniProgram.Tests/ContractGuards/WxaTransactionGuaranteeContractGuards.cs)、[MiniProgramContractGuards.cs](../../../../../Tests/Mud.Wechat.MiniProgram.Tests/ContractGuards/MiniProgramContractGuards.cs)、[MiniProgramP3RulingsContractGuards.cs](../../../../../Tests/Mud.Wechat.MiniProgram.Tests/ContractGuards/MiniProgramP3RulingsContractGuards.cs)）、本域 DTO（[`Mud.Wechat.MiniProgram.DataModels/TransactionGuarantee`](../../../Mud.Wechat.MiniProgram.DataModels/TransactionGuarantee/)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
+> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[WxaTransactionGuaranteeContractGuards.cs](../../../../../Tests/Mud.Wechat.MiniProgram.Tests/ContractGuards/WxaTransactionGuaranteeContractGuards.cs)、[MiniProgramContractGuards.cs](../../../../../Tests/Mud.Wechat.MiniProgram.Tests/ContractGuards/MiniProgramContractGuards.cs)、[MiniProgramP3RulingsContractGuards.cs](../../../../../Tests/Mud.Wechat.MiniProgram.Tests/ContractGuards/MiniProgramP3RulingsContractGuards.cs)）、本域 DTO（[`Mud.Wechat.MiniProgram/TransactionGuarantee`](../../../Mud.Wechat.MiniProgram/TransactionGuarantee/)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
 
 ## 端点速览
 
@@ -360,29 +360,29 @@
 
 ## DTO 与序列化面
 
-本域 DTO 目录 [`Mud.Wechat.MiniProgram.DataModels/TransactionGuarantee`](../../../Mud.Wechat.MiniProgram.DataModels/TransactionGuarantee/) 内共 **41** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **41** 个，`SerializerClassName` = `TransactionGuarantee`。
+本域 DTO 目录 [`Mud.Wechat.MiniProgram/TransactionGuarantee`](../../../Mud.Wechat.MiniProgram/TransactionGuarantee/) 内共 **41** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **41** 个，`SerializerClassName` = `TransactionGuarantee`。
 
-AOT 源生成上下文：[`TransactionGuaranteeJsonContext.g.cs`](./../../../Mud.Wechat.MiniProgram.DataModels/Generated/TransactionGuaranteeJsonContext.g.cs)（生成物，勿手改）。
+AOT 源生成上下文：[`TransactionGuaranteeJsonContext.g.cs`](./../../../Mud.Wechat.MiniProgram/Generated/TransactionGuaranteeJsonContext.g.cs)（生成物，勿手改）。
 
 | 端点引用的类型 | 角色 | 定义位置 | JSON 字段（前缀） |
 |---|---|---|---|
-| `WxaCommentListResponse` | 应答 | [TransactionGuarantee/Comment/WxaCommentListResponse.cs](../../../Mud.Wechat.MiniProgram.DataModels/TransactionGuarantee/Comment/WxaCommentListResponse.cs) | `offset`, `total`, `commentList` |
-| `WxaCommentInfoResponse` | 应答 | [TransactionGuarantee/Comment/WxaCommentInfoResponse.cs](../../../Mud.Wechat.MiniProgram.DataModels/TransactionGuarantee/Comment/WxaCommentInfoResponse.cs) | `info`, `processInfo`, `oldComment` |
-| `WxaCommentReplyListResponse` | 应答 | [TransactionGuarantee/Comment/WxaCommentReplyListResponse.cs](../../../Mud.Wechat.MiniProgram.DataModels/TransactionGuarantee/Comment/WxaCommentReplyListResponse.cs) | `list` |
-| `WxaCommentOpResponse` | 应答 | [TransactionGuarantee/Comment/WxaCommentOpResponse.cs](../../../Mud.Wechat.MiniProgram.DataModels/TransactionGuarantee/Comment/WxaCommentOpResponse.cs) | `success` |
-| `WxaCommentAddRequest` | 请求体 | [TransactionGuarantee/Comment/WxaCommentAddRequest.cs](../../../Mud.Wechat.MiniProgram.DataModels/TransactionGuarantee/Comment/WxaCommentAddRequest.cs) | `commentId`, `content` |
-| `WxaCommentDeleteRequest` | 请求体 | [TransactionGuarantee/Comment/WxaCommentDeleteRequest.cs](../../../Mud.Wechat.MiniProgram.DataModels/TransactionGuarantee/Comment/WxaCommentDeleteRequest.cs) | `commentId`, `replyId` |
-| `WxaCommentReplyAddRequest` | 请求体 | [TransactionGuarantee/Comment/WxaCommentReplyAddRequest.cs](../../../Mud.Wechat.MiniProgram.DataModels/TransactionGuarantee/Comment/WxaCommentReplyAddRequest.cs) | `commentId`, `replyId`, `content` |
-| `WxaCommentReplyDeleteRequest` | 请求体 | [TransactionGuarantee/Comment/WxaCommentReplyDeleteRequest.cs](../../../Mud.Wechat.MiniProgram.DataModels/TransactionGuarantee/Comment/WxaCommentReplyDeleteRequest.cs) | `commentId`, `replyId`, `commentReplyId` |
-| `WxaCommentCompromiseRequest` | 请求体 | [TransactionGuarantee/Comment/WxaCommentCompromiseRequest.cs](../../../Mud.Wechat.MiniProgram.DataModels/TransactionGuarantee/Comment/WxaCommentCompromiseRequest.cs) | `commentId`, `picList`, `content` |
-| `WxaCommentKfQuotaResetRequest` | 请求体 | [TransactionGuarantee/Comment/WxaCommentKfQuotaResetRequest.cs](../../../Mud.Wechat.MiniProgram.DataModels/TransactionGuarantee/Comment/WxaCommentKfQuotaResetRequest.cs) | `commentId` |
-| `WxaComplaintDetailResponse` | 应答 | [TransactionGuarantee/Complaint/WxaComplaintDetailResponse.cs](../../../Mud.Wechat.MiniProgram.DataModels/TransactionGuarantee/Complaint/WxaComplaintDetailResponse.cs) | `complaintOrder`, `item`, `returnBill` |
-| `WxaResponse` | 应答 | [Common/WxaResponse.cs](../../../Mud.Wechat.MiniProgram.DataModels/Common/WxaResponse.cs) | `errcode`, `errmsg` |
-| `WxaComplaintRespondRequest` | 请求体 | [TransactionGuarantee/Complaint/WxaComplaintRespondRequest.cs](../../../Mud.Wechat.MiniProgram.DataModels/TransactionGuarantee/Complaint/WxaComplaintRespondRequest.cs) | `content`, `complaintOrderId`, `mediaIdList`, `bussiHandle` |
-| `WxaComplaintProofRequest` | 请求体 | [TransactionGuarantee/Complaint/WxaComplaintProofRequest.cs](../../../Mud.Wechat.MiniProgram.DataModels/TransactionGuarantee/Complaint/WxaComplaintProofRequest.cs) | `content`, `complaintOrderId`, `mediaIdList` |
-| `WxaComplaintRefundProofRequest` | 请求体 | [TransactionGuarantee/Complaint/WxaComplaintRefundProofRequest.cs](../../../Mud.Wechat.MiniProgram.DataModels/TransactionGuarantee/Complaint/WxaComplaintRefundProofRequest.cs) | `content`, `complaintOrderId`, `mediaIdList`, `acceptReturn`, `returnId` |
-| `WxaTradeGuaranteeStatusResponse` | 应答 | [TransactionGuarantee/Basic/WxaTradeGuaranteeStatusResponse.cs](../../../Mud.Wechat.MiniProgram.DataModels/TransactionGuarantee/Basic/WxaTradeGuaranteeStatusResponse.cs) | `isActived`, `msg`, `reasons` |
-| `WxaTradePenaltyListResponse` | 应答 | [TransactionGuarantee/Basic/WxaTradePenaltyListResponse.cs](../../../Mud.Wechat.MiniProgram.DataModels/TransactionGuarantee/Basic/WxaTradePenaltyListResponse.cs) | `appealList`, `currentScore`, `totalNum` |
+| `WxaCommentListResponse` | 应答 | [TransactionGuarantee/Comment/WxaCommentListResponse.cs](../../../Mud.Wechat.MiniProgram/TransactionGuarantee/Comment/WxaCommentListResponse.cs) | `offset`, `total`, `commentList` |
+| `WxaCommentInfoResponse` | 应答 | [TransactionGuarantee/Comment/WxaCommentInfoResponse.cs](../../../Mud.Wechat.MiniProgram/TransactionGuarantee/Comment/WxaCommentInfoResponse.cs) | `info`, `processInfo`, `oldComment` |
+| `WxaCommentReplyListResponse` | 应答 | [TransactionGuarantee/Comment/WxaCommentReplyListResponse.cs](../../../Mud.Wechat.MiniProgram/TransactionGuarantee/Comment/WxaCommentReplyListResponse.cs) | `list` |
+| `WxaCommentOpResponse` | 应答 | [TransactionGuarantee/Comment/WxaCommentOpResponse.cs](../../../Mud.Wechat.MiniProgram/TransactionGuarantee/Comment/WxaCommentOpResponse.cs) | `success` |
+| `WxaCommentAddRequest` | 请求体 | [TransactionGuarantee/Comment/WxaCommentAddRequest.cs](../../../Mud.Wechat.MiniProgram/TransactionGuarantee/Comment/WxaCommentAddRequest.cs) | `commentId`, `content` |
+| `WxaCommentDeleteRequest` | 请求体 | [TransactionGuarantee/Comment/WxaCommentDeleteRequest.cs](../../../Mud.Wechat.MiniProgram/TransactionGuarantee/Comment/WxaCommentDeleteRequest.cs) | `commentId`, `replyId` |
+| `WxaCommentReplyAddRequest` | 请求体 | [TransactionGuarantee/Comment/WxaCommentReplyAddRequest.cs](../../../Mud.Wechat.MiniProgram/TransactionGuarantee/Comment/WxaCommentReplyAddRequest.cs) | `commentId`, `replyId`, `content` |
+| `WxaCommentReplyDeleteRequest` | 请求体 | [TransactionGuarantee/Comment/WxaCommentReplyDeleteRequest.cs](../../../Mud.Wechat.MiniProgram/TransactionGuarantee/Comment/WxaCommentReplyDeleteRequest.cs) | `commentId`, `replyId`, `commentReplyId` |
+| `WxaCommentCompromiseRequest` | 请求体 | [TransactionGuarantee/Comment/WxaCommentCompromiseRequest.cs](../../../Mud.Wechat.MiniProgram/TransactionGuarantee/Comment/WxaCommentCompromiseRequest.cs) | `commentId`, `picList`, `content` |
+| `WxaCommentKfQuotaResetRequest` | 请求体 | [TransactionGuarantee/Comment/WxaCommentKfQuotaResetRequest.cs](../../../Mud.Wechat.MiniProgram/TransactionGuarantee/Comment/WxaCommentKfQuotaResetRequest.cs) | `commentId` |
+| `WxaComplaintDetailResponse` | 应答 | [TransactionGuarantee/Complaint/WxaComplaintDetailResponse.cs](../../../Mud.Wechat.MiniProgram/TransactionGuarantee/Complaint/WxaComplaintDetailResponse.cs) | `complaintOrder`, `item`, `returnBill` |
+| `WxaResponse` | 应答 | [Common/WxaResponse.cs](../../../Mud.Wechat.MiniProgram/Common/WxaResponse.cs) | `errcode`, `errmsg` |
+| `WxaComplaintRespondRequest` | 请求体 | [TransactionGuarantee/Complaint/WxaComplaintRespondRequest.cs](../../../Mud.Wechat.MiniProgram/TransactionGuarantee/Complaint/WxaComplaintRespondRequest.cs) | `content`, `complaintOrderId`, `mediaIdList`, `bussiHandle` |
+| `WxaComplaintProofRequest` | 请求体 | [TransactionGuarantee/Complaint/WxaComplaintProofRequest.cs](../../../Mud.Wechat.MiniProgram/TransactionGuarantee/Complaint/WxaComplaintProofRequest.cs) | `content`, `complaintOrderId`, `mediaIdList` |
+| `WxaComplaintRefundProofRequest` | 请求体 | [TransactionGuarantee/Complaint/WxaComplaintRefundProofRequest.cs](../../../Mud.Wechat.MiniProgram/TransactionGuarantee/Complaint/WxaComplaintRefundProofRequest.cs) | `content`, `complaintOrderId`, `mediaIdList`, `acceptReturn`, `returnId` |
+| `WxaTradeGuaranteeStatusResponse` | 应答 | [TransactionGuarantee/Basic/WxaTradeGuaranteeStatusResponse.cs](../../../Mud.Wechat.MiniProgram/TransactionGuarantee/Basic/WxaTradeGuaranteeStatusResponse.cs) | `isActived`, `msg`, `reasons` |
+| `WxaTradePenaltyListResponse` | 应答 | [TransactionGuarantee/Basic/WxaTradePenaltyListResponse.cs](../../../Mud.Wechat.MiniProgram/TransactionGuarantee/Basic/WxaTradePenaltyListResponse.cs) | `appealList`, `currentScore`, `totalNum` |
 
 > DTO 一律以源文件为准；本表只列端点签名**直接引用**的一层类型，嵌套类型不再递归展开。所有 DTO 不使用 `required`（仓内约束），必填性由接口注释与官方页表达，SDK 不做本地必填校验。
 
@@ -420,7 +420,7 @@ var response = await service.GetGuaranteeStatusAsync(ct);
 | 契约守卫（路由 / 计数 / DTO 登记断言） | [`WxaTransactionGuaranteeContractGuards.cs`](../../../../../Tests/Mud.Wechat.MiniProgram.Tests/ContractGuards/WxaTransactionGuaranteeContractGuards.cs)、[`MiniProgramContractGuards.cs`](../../../../../Tests/Mud.Wechat.MiniProgram.Tests/ContractGuards/MiniProgramContractGuards.cs)、[`MiniProgramP3RulingsContractGuards.cs`](../../../../../Tests/Mud.Wechat.MiniProgram.Tests/ContractGuards/MiniProgramP3RulingsContractGuards.cs) |
 | 守卫中的代表性测试方法 | `TransactionGuaranteeEndpoints_ShouldMatchOfficialRoutes`、`TransactionGuaranteeEndpoints_ShouldRespectGetQueryAndPostBodyShapes`、`TransactionGuaranteeInterfaces_ShouldBindMpAccessToken_AndShareRegistryGroup`、`TransactionGuaranteeDataModels_ShouldBeRegisteredInJsonContext`、`TransactionGuaranteeDataModels_ShouldLockOfficialFieldsAndSharedDtos`、`Routes_ShouldNotOverlapAcrossProductLines`、`TokenInterfaces_ShouldReuseMpAccessToken`、`TokenFreeLogin_ShouldStayOutOfTokenPipeline_ViaMethodLevelOptOut`、`TokenInterfaces_ShouldDeclareOfficialParameterName`、`Endpoints_ShouldMatchOfficialRoutesAndCount`、`Dtos_ShouldExposeOfficialFieldNames`、`SessionKey_ShouldNeverBeLogged` … |
 | 模块枚举 / 装配入口 | [`MiniProgramModule.cs`](../../Extensions/MiniProgramModule.cs)、[`MiniProgramServiceBuilder.cs`](../../Extensions/MiniProgramServiceBuilder.cs) |
-| DTO 与 JSON 上下文 | [`Mud.Wechat.MiniProgram.DataModels/TransactionGuarantee`](../../../Mud.Wechat.MiniProgram.DataModels/TransactionGuarantee/) |
+| DTO 与 JSON 上下文 | [`Mud.Wechat.MiniProgram/TransactionGuarantee`](../../../Mud.Wechat.MiniProgram/TransactionGuarantee/) |
 | 跨线基线 | [`Tests/ContractBaseline.cs`](../../../../../Tests/ContractBaseline.cs)（各线分节；本线口径以守卫实际断言为准） |
 | 本线包级公开面与已踩陷阱 | [`Src/MiniProgram/Mud.Wechat.MiniProgram/README.md`](../../README.md) |
 | 跨线通用约束（门禁 / AOT / 落位） | [`AGENTS.md`](../../../../../AGENTS.md) |

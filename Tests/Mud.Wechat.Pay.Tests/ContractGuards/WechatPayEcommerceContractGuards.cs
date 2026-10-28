@@ -140,7 +140,7 @@ public class WechatPayEcommerceContractGuards
         AllPayLineRoutes().Should().Contain("/v3/ecommerce/account/cancel-applications",
             "正对照：/account/cancel-applications 族确在扫描面内，上面的零命中不是扫描失效");
 
-        var channelSource = File.ReadAllText(SourcePath("Mud.Wechat.Pay", "Ecommerce",
+        var channelSource = File.ReadAllText(SourcePath("Mud.Wechat.Pay",  "Ecommerce",
             "WechatPayEcommerceCancelMediaService.cs"));
         channelSource.Should().Contain("/v3/ecommerce/account/cancel-applications/media",
             "手工通道必须自己声明该路由（无源生成方法可依赖）");
@@ -175,7 +175,7 @@ public class WechatPayEcommerceContractGuards
                 .Should().Be(RegistryGroupName, $"{type.Name} 的 SerializerClassName 必须为 Ecommerce");
         }
 
-        var resolverSource = File.ReadAllText(SourcePath("Mud.Wechat.Pay",
+        var resolverSource = File.ReadAllText(SourcePath("Mud.Wechat.Pay", 
             "Extensions", "PayJsonResolverExtensions.cs"));
         resolverSource.Should().Contain("EcommerceJsonContext.Default",
             "新增域上下文须同批登记进 PayJsonResolverExtensions（AOT 红线）");

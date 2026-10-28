@@ -184,3 +184,92 @@ var bytes = await client.GetMediaDataAsync(message.Image!.SdkFileId!, ct);
 - 各域面向的应用类型差异（官方仅自建开放 / 三类应用公共面 / 差异端点在子接口 / 零端点父接口）以接口 XML 注释与 `Tests/**/ContractGuards/` 契约守卫为权威。
 - **会话存档域的已踩陷阱**：① 门面方法为 `...Async` **不代表存在真异步 I/O**——原生调用是阻塞的，异步只在「取密钥」与「退避重试等待」两处真实等待，单机器人不可高并发；② `CancellationToken` **不能中断已进入的原生调用**，只在分片边界与退避等待处生效；③ 经工厂取得的实例是**按机器人共享的长生命周期对象**，调用侧不得自行 `Dispose`（工厂释放时统一销毁），同一实例上的调用被串行化（`seq` 游标协议本身要求逐次推进）；④ 配置的热更对本域**无效**（`Init` 已把 `corpid`/`secret` 交给原生实例，改配置须重建工厂）；⑤ `netstandard2.0` 档无 `NativeLibrary` 与 `RSA.ImportFromPem` ⇒ 配 `NativeLibraryPath` 点名抛、`DecryptChatRecordAsync` 点名抛（拉取与媒体仍可用）；⑥ 本域**不登记 SSRF 白名单**（原生库自管出网，防线在宿主网络策略），也不进 `WechatModule` / `Add{域}Api()` 面。
 - 契约守卫位于 `Tests/Mud.Wechat.Work.Tests/ContractGuards/`（61 个文件）：通用面 `WechatContractGuards`（G1 HttpUtils 单版本 … G10 路由单一所有者，其中 G5 = Query 令牌注入白名单、G7 = 脱敏词表与自过期豁免）、令牌归属域 `WechatTokenOwnerContractGuards`（TO1~TO3）、命名空间分区 `WechatInterfaceNamespaceContractGuards`（N1~N3）、回调面 `WechatCallbackContractGuards`（CB 系列）、群机器人 `WechatWebhookContractGuards`（WEB1~WEB4）、会话存档原生封装 `WechatFinanceContractGuards`（FIN-B1 封面对象性与成对释放 / B2 凭据面边界 / B3 分片聚合 / B4 序列化纪律 / B5 明文与凭据不入诊断 / B6 与 HTTP 域面零交叉）+ 逐域端点/路由守卫。新增或迁移 `[HttpClientApi]` 接口必须先跑 N1~N3。
+
+---
+
+## 原 `Mud.Wechat.Work.Abstractions` 包面（2026-10 包合并并入本工程，命名空间不变）
+
+
+企业微信 SDK **认证与多应用基座包**：令牌签发客户端、令牌管理器模板基座与四管理器、多应用管理、配置面、回调事件信封与载荷转换基座、常量/枚举/异常。
+
+## 内容
+
+- **令牌基座**（`Authentication/`）：`gettoken` / `get_provider_token` / `get_suite_token` / `get_corp_token` 令牌签发客户端，令牌管理器模板基座与各类型管理器（企业令牌按 `AppType` 分流，企业级令牌一企一份由 scope 机制承担）。应用类型子接口声明**凭据归属域**（`WechatTokenManagerKeys`：`Internal` / `Corp` 两管理器键），归属域错配在 `WechatAppContext.GetTokenManager` 单点 fail-fast（`WechatTokenOwnerMismatchException`，不静默取错令牌）。
+- **多应用管理**（`Authentication/MultiApp/`）：`IAppManager<IWechatAppContext>` 直连实现，注册表单一来源；配置读取非物化。企业作用域切换经 `IWechatAppContextSwitcher.UseCorpScope(appKey, authCorpId, permanentCode)`（一次性 `using`，进入时写入「应用 + 企业」两级上下文快照、释放时幂等逆序还原）。
+- **配置面**（`Configuration/`）：`WechatAppConfig : WechatAppConfigBase`（叶层基座给 `AppKey`/`BaseUrl`/`AllowCustomBaseUrl`/`TimeoutSeconds`/`TokenRefreshThreshold`/`IsDefault`，本包补 `AppType`/`CorpId`/`AgentId`/`AgentSecret`/`ProviderSecret`/`SuiteId`/`SuiteSecret`）按应用类型校验互斥必填项（启动阶段即失败）；`BaseUrl` 白名单（SSRF 防线，域名与 `AllowedBaseUrlDomains` 已下沉叶层 `WechatApiHosts`，跨产品线并集单一来源；自定义主机登记 `WechatCustomBaseUrlRegistry`）；AppKey 形状校验（防令牌键别名）。
+- **回调事件信封与载荷转换基座**（`Callback/`）：`WechatCallbackEvent` 信封（`EventTypeKey` + 只读快照 `AppKey`/`AppType`/`Channel`）、官方事件键常量 `WechatCallbackEventTypes`（**136 个 `public const string`**，其中有强类型载荷并登记契约的键为 120，其余按官方文档口径见守卫 CB 系列）；载荷声明化契约与转换器（`[WechatCallbackContract]` / `[PayloadContract]`、`WechatPayloadConverter`、`WechatPayloadMaterializer`、事件键级开放面 `WechatOpenSurface` / `WechatEventFamilyOpenSurface`）；智能机器人信封（`Callback/Bots/`：`WechatBotCallbackEvent` / `WechatBotEventTypes` / `IWechatBotCallbackEventHandler` / 回复支撑）。加解密与验签本身在叶层 `Mud.Wechat.Abstractions.Callback.WechatCallbackCrypto`。
+- **收银台签名**：`WechatPayToolSignature`（官方 `sig` = `HMAC-SHA256` + Base64，`sig` 字段本身与空值不参与签名）。
+- **常量/枚举/异常**：`WechatTokenTypes`（`"Wechat."` 前缀隔离）、`WechatTokenManagerKeys`（仅 `InternalAccessToken` / `CorpAccessToken` 两键——只有 `Wechat.AccessToken` 需要归属域消歧，provider/suite 令牌不增设）、错误码、`WechatWorkException : WechatApiException`（叶层）并经 `WechatApiResponseGuard.ThrowIfFailed` 单点判定。
+
+## 令牌键布局
+
+三段式 `{tokenType}:{appKey}:{scopeKey}`（如 `Wechat.AccessToken:default:default`），由令牌管理器基座构造。
+企业级令牌 `scopeKey = authCorpId`（一企一份），自建应用与套件令牌 `scopeKey` 通常为应用自身。
+
+## 用法（企业作用域切换）
+
+第三方 / 代开发消费授权企业的标准入口——`using` 一次性作用域，进入时解析应用并写入「应用 + 企业」两级上下文快照，释放时幂等逆序还原：
+
+```csharp
+public sealed class AuthCorpCaller(IWechatAppContextSwitcher switcher)
+{
+    public async Task<string> CallAuthCorpAsync(string appKey, string authCorpId, string permanentCode)
+    {
+        using (switcher.UseCorpScope(appKey, authCorpId, permanentCode))
+        {
+            // 作用域内：声明式客户端的令牌解析到该授权企业（企业级 access_token，scope = authCorpId）；
+            // 也可显式取用令牌（scopeKey = authCorpId，一企一份缓存）：
+            string accessToken = await switcher.GetTokenAsync();
+            return accessToken;
+        }   // 释放：先还原企业上下文、再还原应用上下文（幂等，可嵌套）
+    }
+}
+```
+
+> 裸写入原语 `SetCorp`（必填 `authCorpId`，空白即抛）已标 `[Obsolete]` 引导至本入口；
+> `ClearCorp` 为无条件清空，勿与作用域还原混用。
+
+## 依赖
+
+- `Mud.Wechat.Abstractions`（跨产品线共享叶层：配置基座、令牌存储端口、响应契约与异常基底、回调密码学与重放端口、可观测性契约面）
+- `Mud.Wechat.Work.DataModels`
+- `Mud.HttpUtils` 3.0.9、`Mud.HttpUtils.Generator` 3.0.9（分析器）、`Microsoft.Extensions.Http` / `Hosting.Abstractions`
+
+## 说明
+
+- 配置 DTO 禁用 `required`（配置绑定源生成器限制），必填校验统一在 `WechatAppConfig.Validate()`。
+- 配置 DTO 标注 `[HttpJsonSerializable]` 的（企业授权聚合等）手写登记进 `AuthenticationJsonContext`；绑定必须走 `Configure<T>(o => section.Bind(o))` 形状，不走 `IConfiguration` 反射重载。
+- 多实例部署时，令牌/票据仓储的默认进程内实现须由宿主替换为分布式实现（`TryAdd` 前置注册覆盖，或引用 `Mud.Wechat.Redis`）。
+
+
+---
+
+## 原 `Mud.Wechat.Work.DataModels` 包面（2026-10 包合并并入本工程，命名空间不变）
+
+
+企业微信 SDK **数据模型包**——官方接口出入参模型，独立交付以避免宿主引入不必要的运行时依赖。
+
+## 内容
+
+- 企业微信官方 API 的请求/响应 DTO，全部标注 `[HttpJsonSerializable]`（`Mud.HttpUtils.Attributes`）。响应 DTO 实现叶层契约 `IWechatApiResponse`（`ErrorCode` / `ErrorMessage` / `IsSuccess`），使 `WechatWorkException.ThrowIfFailed` 能跨产品线单点判定。
+- `Generated/` 目录（当前 **62** 个上下文文件）：由 `scripts/GenerateJsonContext.ps1`（`mud-jsonctx` 脚手架）按标注生成的
+  AOT 源生成 JSON 序列化上下文（`<auto-generated>`，勿手改），禁止运行时反射序列化。
+
+## 说明
+
+- `SerializerClassName` = DTO 命名空间的域段，与 `DataModels/` 目录树一一对应（通讯录 `Users` / `Department` / `Tags` / `ContactRules` / `Batch` / `Export`，客户联系 `FollowUser` / `Customer` / `Tag` / `JobInheritance` / `ResignedInheritance` / `GroupChat` 等，及其余业务域 `CorpGroup` / `ChainContacts` / `Rules` / `Message` / `Approval` / `Checkin` / `Schedule` / `Meeting` / `Wedoc` / `Wedrive` / `Living` / `Kf` / `Mail` / `Pay` / `PayTool` / `Security` / `School` / `Gov` / `Emergency` / `Basic` / `Agent` / `JsSdk` / `AccountId` / `Aibot` / `DataZone` / `Media` / `Invoice` / `Identity` / `PromotionQrCode` / `License` / `Webhook` / `Hr` / `Dial` 等，令牌签发 `CorpTokenAuthentication` / `InternalAppAuthentication` / `ProviderAuthentication`），根命名空间直属文件（如 `WechatWorkResponse.cs`）归 `Common` 组——
+  每个生成的上下文与其域 DTO 同命名空间（对齐 Mud.Feishu.DataModels「每模块一上下文」）。**域分组全量清单以 `Generated/` 目录为准**，本文不逐一维护。
+- 生成上下文以 `#if NET8_0_OR_GREATER` 门控（低 TFM 为反射 STJ，AOT 门禁仅对 net8.0+ 构建）。
+- 新增/变更 DTO 后的流程：运行 `scripts/AddHttpJsonSerializable.ps1` 标注 →
+  运行 `scripts/GenerateJsonContext.ps1` 重新生成 → 提交 `Generated/` 变更。
+  未登记的标注类型会被组件分析器 `AOT006` 拦下（`AotStrictMode=true` 下为 error）。
+- 引用 `Mud.HttpUtils.Attributes`（零依赖特性包）与 `Mud.HttpUtils.Generator`（分析器，`PrivateAssets=all`）；
+  生成上下文为 `internal`，经 `InternalsVisibleTo` 供主包合并与测试直读。
+- DTO 均走 `JsonTypeInfo` 源生成序列化，勿以反射方式调用 `JsonSerializer.Serialize<T>/Deserialize<T>`。
+- 泛型包络 `WechatChatbotResponse<TData>` 为开放泛型，不参与源生成登记（STJ 源生成器对开放泛型
+  不生成元数据，SYSLIB1030）；如宿主需要在 AOT 下序列化某闭合构造，请自建上下文登记。
+
+## 依赖
+
+`Mud.Wechat.Abstractions`（叶层，仅取 `IWechatApiResponse` 响应契约）+ `Mud.HttpUtils.Attributes` 3.0.9（含传递的 `Mud.HttpUtils.Abstractions`）+ `Mud.HttpUtils.Generator` 3.0.9（仅分析器）。
+

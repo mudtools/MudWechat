@@ -126,8 +126,8 @@ CD6 点名「同值不同义防串线」：
 
 | 常量类 | 1 | 2 |
 |---|---|---|
-| [ChannelsDropshipCancelScenes.cs](../../../Mud.Wechat.Channels.DataModels/Delivery/Dropship/ChannelsDropshipCancelScenes.cs)（**代发侧**） | 售后 | 商家取消代发 |
-| [ChannelsSupplyCancelScenes.cs](../../../Mud.Wechat.Channels.DataModels/Delivery/SupplyOrder/ChannelsSupplyCancelScenes.cs)（**供货侧**） | 用户售后 | **平台砍单** |
+| [ChannelsDropshipCancelScenes.cs](../../../Mud.Wechat.Channels/Delivery/Dropship/ChannelsDropshipCancelScenes.cs)（**代发侧**） | 售后 | 商家取消代发 |
+| [ChannelsSupplyCancelScenes.cs](../../../Mud.Wechat.Channels/Delivery/SupplyOrder/ChannelsSupplyCancelScenes.cs)（**供货侧**） | 用户售后 | **平台砍单** |
 
 数值完全相同、语义不同 ⇒ 两常量类不得合并、不得在跨端点封装里共用一个「取消场景」枚举。
 
@@ -135,13 +135,13 @@ CD6 点名「同值不同义防串线」：
 
 | 常量类 | 取值 |
 |---|---|
-| [ChannelsDropshipOrderStatuses.cs](../../../Mud.Wechat.Channels.DataModels/Delivery/Dropship/ChannelsDropshipOrderStatuses.cs) / [ChannelsSupplyOrderStatuses.cs](../../../Mud.Wechat.Channels.DataModels/Delivery/SupplyOrder/ChannelsSupplyOrderStatuses.cs) | 100 待发货 / 199 部分发货 / 200 已发货 / 300 已取消（供货单多一档 **400 已完成**） |
-| [ChannelsDeliveryStatuses.cs](../../../Mud.Wechat.Channels.DataModels/Delivery/Dropship/ChannelsDeliveryStatuses.cs)（**包裹级**） | 10 / 19 / 20 / 30 —— 与单据级 100/199/200/300 是两套数值，勿混用 |
-| [ChannelsSupplierStatuses.cs](../../../Mud.Wechat.Channels.DataModels/Delivery/Supplier/ChannelsSupplierStatuses.cs) | 0 初始 / 1 已绑定 / 2 已解绑 |
-| [ChannelsSupplierBindAuditStatuses.cs](../../../Mud.Wechat.Channels.DataModels/Delivery/Supplier/ChannelsSupplierBindAuditStatuses.cs) | 0 待处理 / 1 已同意 / 2 已拒绝 / 3 超时拒绝 / 4 商家取消 / 5 初始 |
-| [ChannelsDistributeTypes.cs](../../../Mud.Wechat.Channels.DataModels/Delivery/Supplier/ChannelsDistributeTypes.cs) | 1 手动 / 2 全店自动 / 3 按商品自动 |
-| [ChannelsSupplyAftersaleStatuses.cs](../../../Mud.Wechat.Channels.DataModels/Delivery/SupplyOrder/ChannelsSupplyAftersaleStatuses.cs) | 0 无售后或售后关闭 / 1 售后中 / 2 售后完成 |
-| [ChannelsStockTypes.cs](../../../Mud.Wechat.Channels.DataModels/Delivery/Dropship/ChannelsStockTypes.cs) / [ChannelsPresaleDeliveryTypes.cs](../../../Mud.Wechat.Channels.DataModels/Delivery/Dropship/ChannelsPresaleDeliveryTypes.cs) / [ChannelsCustomTypes.cs](../../../Mud.Wechat.Channels.DataModels/Delivery/Dropship/ChannelsCustomTypes.cs) | 库存 0 现货 / 1 全预售；预售发货 0 付款后天数 / 1 预售结束后天数；定制 1 文字 / 2 图片 |
+| [ChannelsDropshipOrderStatuses.cs](../../../Mud.Wechat.Channels/Delivery/Dropship/ChannelsDropshipOrderStatuses.cs) / [ChannelsSupplyOrderStatuses.cs](../../../Mud.Wechat.Channels/Delivery/SupplyOrder/ChannelsSupplyOrderStatuses.cs) | 100 待发货 / 199 部分发货 / 200 已发货 / 300 已取消（供货单多一档 **400 已完成**） |
+| [ChannelsDeliveryStatuses.cs](../../../Mud.Wechat.Channels/Delivery/Dropship/ChannelsDeliveryStatuses.cs)（**包裹级**） | 10 / 19 / 20 / 30 —— 与单据级 100/199/200/300 是两套数值，勿混用 |
+| [ChannelsSupplierStatuses.cs](../../../Mud.Wechat.Channels/Delivery/Supplier/ChannelsSupplierStatuses.cs) | 0 初始 / 1 已绑定 / 2 已解绑 |
+| [ChannelsSupplierBindAuditStatuses.cs](../../../Mud.Wechat.Channels/Delivery/Supplier/ChannelsSupplierBindAuditStatuses.cs) | 0 待处理 / 1 已同意 / 2 已拒绝 / 3 超时拒绝 / 4 商家取消 / 5 初始 |
+| [ChannelsDistributeTypes.cs](../../../Mud.Wechat.Channels/Delivery/Supplier/ChannelsDistributeTypes.cs) | 1 手动 / 2 全店自动 / 3 按商品自动 |
+| [ChannelsSupplyAftersaleStatuses.cs](../../../Mud.Wechat.Channels/Delivery/SupplyOrder/ChannelsSupplyAftersaleStatuses.cs) | 0 无售后或售后关闭 / 1 售后中 / 2 售后完成 |
+| [ChannelsStockTypes.cs](../../../Mud.Wechat.Channels/Delivery/Dropship/ChannelsStockTypes.cs) / [ChannelsPresaleDeliveryTypes.cs](../../../Mud.Wechat.Channels/Delivery/Dropship/ChannelsPresaleDeliveryTypes.cs) / [ChannelsCustomTypes.cs](../../../Mud.Wechat.Channels/Delivery/Dropship/ChannelsCustomTypes.cs) | 库存 0 现货 / 1 全预售；预售发货 0 付款后天数 / 1 预售结束后天数；定制 1 文字 / 2 图片 |
 
 `get_supplier_base_info` 的 `subject_type` 是 **2 企业 / 2500 个人**（CD5），
 `business_mode.is_supply`（可用供货模式）**仅企业主体**可用。

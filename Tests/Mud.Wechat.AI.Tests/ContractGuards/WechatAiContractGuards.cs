@@ -51,10 +51,14 @@ public class WechatAiContractGuards
     }
 
     /// <summary>AI-G2：层 1（跨七线共享）不得引用任何线专属包。</summary>
+    /// <remarks>
+    /// 2026-10 包合并：层 1 原为 <c>Mud.Wechat.AI.Abstractions</c> + <c>Mud.Wechat.AI.Agent</c> 两工程，
+    /// 现并为单工程 <c>Mud.Wechat.AI</c>（命名空间不变），本守卫的扫描面随之收成一个工程。
+    /// </remarks>
     [Fact]
     public void SharedAiLayer_ShouldNotReferenceAnyProductLine()
     {
-        foreach (var name in new[] { "Mud.Wechat.AI.Abstractions", "Mud.Wechat.AI.Agent" })
+        foreach (var name in new[] { "Mud.Wechat.AI" })
         {
             var csproj = EnumerateSourceProjects().Single(p => Path.GetFileName(p) == $"{name}.csproj");
             var content = File.ReadAllText(csproj);

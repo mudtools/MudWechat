@@ -3,7 +3,7 @@
 企业微信「消息推送」模块群聊会话域企业自建应用 SDK：官方仅向自建应用开放本域端点
 （创建群聊会话 / 修改群聊会话 / 获取群聊会话 / 应用推送消息到群聊会话），全部声明于本接口。 接口：[IWechatWorkAppChatService](./IWechatWorkAppChatService.cs)、[IWechatWorkInternalAppChatService](./IWechatWorkAppChatService_Internal.cs)、[IWechatWorkMessageService](./IWechatWorkMessageService.cs)、[IWechatWorkInternalMessageService](./IWechatWorkMessageService_Internal.cs)、[IWechatWorkProviderMessageService](./IWechatWorkMessageService_Provider.cs)、[IWechatWorkThirdPartyMessageService](./IWechatWorkMessageService_ThirdParty.cs)、[IWechatWorkSchoolMessageService](./IWechatWorkSchoolMessageService.cs)、[IWechatWorkInternalSchoolMessageService](./IWechatWorkSchoolMessageService_Internal.cs)、[IWechatWorkProviderSchoolMessageService](./IWechatWorkSchoolMessageService_Provider.cs)、[IWechatWorkThirdPartySchoolMessageService](./IWechatWorkSchoolMessageService_ThirdParty.cs)、[IWechatWorkSmartSheetGroupChatService](./IWechatWorkSmartSheetGroupChatService.cs)、[IWechatWorkInternalSmartSheetGroupChatService](./IWechatWorkSmartSheetGroupChatService_Internal.cs)；注册组 `Message`；模块枚举 `WechatModule.Message`（装配入口见 [WechatWorkServiceBuilder.cs](../../Extensions/WechatWorkServiceBuilder.cs)）。逐端点核验 2026-10-18。
 
-> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[WechatMessageContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatMessageContractGuards.cs)、[WechatContractGuards.QueryTokenInjection.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatContractGuards.QueryTokenInjection.cs)）、本域 DTO（[`Mud.Wechat.Work.DataModels/Message`](../../../Mud.Wechat.Work.DataModels/Message/)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
+> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[WechatMessageContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatMessageContractGuards.cs)、[WechatContractGuards.QueryTokenInjection.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatContractGuards.QueryTokenInjection.cs)）、本域 DTO（[`Mud.Wechat.Work/Message`](../../../Mud.Wechat.Work/Message/)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
 
 ## 端点速览
 
@@ -775,59 +775,59 @@ MUD005 已知接受风险：企业微信官方契约强制令牌走 Query 参数
 
 ## DTO 与序列化面
 
-本域 DTO 目录 [`Mud.Wechat.Work.DataModels/Message`](../../../Mud.Wechat.Work.DataModels/Message/) 内共 **87** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **87** 个，`SerializerClassName` = `Message`。
+本域 DTO 目录 [`Mud.Wechat.Work/Message`](../../../Mud.Wechat.Work/Message/) 内共 **87** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **87** 个，`SerializerClassName` = `Message`。
 
-AOT 源生成上下文：[`MessageJsonContext.g.cs`](./../../../Mud.Wechat.Work.DataModels/Generated/MessageJsonContext.g.cs)（生成物，勿手改）。
+AOT 源生成上下文：[`MessageJsonContext.g.cs`](./../../../Mud.Wechat.Work/Generated/MessageJsonContext.g.cs)（生成物，勿手改）。
 
 | 端点引用的类型 | 角色 | 定义位置 | JSON 字段（前缀） |
 |---|---|---|---|
-| `CreateAppChatResponse` | 应答 | [Message/CreateAppChatResponse.cs](../../../Mud.Wechat.Work.DataModels/Message/CreateAppChatResponse.cs) | `chatid` |
-| `CreateAppChatRequest` | 请求体 | [Message/RequestModel/CreateAppChatRequest.cs](../../../Mud.Wechat.Work.DataModels/Message/RequestModel/CreateAppChatRequest.cs) | `name`, `owner`, `userlist`, `chatid` |
-| `UpdateAppChatResponse` | 应答 | [Message/UpdateAppChatResponse.cs](../../../Mud.Wechat.Work.DataModels/Message/UpdateAppChatResponse.cs) | — |
-| `UpdateAppChatRequest` | 请求体 | [Message/RequestModel/UpdateAppChatRequest.cs](../../../Mud.Wechat.Work.DataModels/Message/RequestModel/UpdateAppChatRequest.cs) | `chatid`, `name`, `owner`, `add_user_list`, `del_user_list` |
-| `GetAppChatResponse` | 应答 | [Message/GetAppChatResponse.cs](../../../Mud.Wechat.Work.DataModels/Message/GetAppChatResponse.cs) | `chat_info` |
-| `AppChatSendResponse` | 应答 | [Message/AppChatSendResponse.cs](../../../Mud.Wechat.Work.DataModels/Message/AppChatSendResponse.cs) | — |
-| `AppChatSendTextRequest` | 请求体 | [Message/RequestModel/AppChatSendTextRequest.cs](../../../Mud.Wechat.Work.DataModels/Message/RequestModel/AppChatSendTextRequest.cs) | `text`, `safe` |
-| `AppChatSendImageRequest` | 请求体 | [Message/RequestModel/AppChatSendImageRequest.cs](../../../Mud.Wechat.Work.DataModels/Message/RequestModel/AppChatSendImageRequest.cs) | `image`, `safe` |
-| `AppChatSendVoiceRequest` | 请求体 | [Message/RequestModel/AppChatSendVoiceRequest.cs](../../../Mud.Wechat.Work.DataModels/Message/RequestModel/AppChatSendVoiceRequest.cs) | `voice` |
-| `AppChatSendVideoRequest` | 请求体 | [Message/RequestModel/AppChatSendVideoRequest.cs](../../../Mud.Wechat.Work.DataModels/Message/RequestModel/AppChatSendVideoRequest.cs) | `video`, `safe` |
-| `AppChatSendFileRequest` | 请求体 | [Message/RequestModel/AppChatSendFileRequest.cs](../../../Mud.Wechat.Work.DataModels/Message/RequestModel/AppChatSendFileRequest.cs) | `file`, `safe` |
-| `AppChatSendTextCardRequest` | 请求体 | [Message/RequestModel/AppChatSendTextCardRequest.cs](../../../Mud.Wechat.Work.DataModels/Message/RequestModel/AppChatSendTextCardRequest.cs) | `textcard` |
-| `AppChatSendNewsRequest` | 请求体 | [Message/RequestModel/AppChatSendNewsRequest.cs](../../../Mud.Wechat.Work.DataModels/Message/RequestModel/AppChatSendNewsRequest.cs) | `news` |
-| `AppChatSendMpNewsRequest` | 请求体 | [Message/RequestModel/AppChatSendMpNewsRequest.cs](../../../Mud.Wechat.Work.DataModels/Message/RequestModel/AppChatSendMpNewsRequest.cs) | `mpnews`, `safe` |
-| `AppChatSendMarkdownRequest` | 请求体 | [Message/RequestModel/AppChatSendMarkdownRequest.cs](../../../Mud.Wechat.Work.DataModels/Message/RequestModel/AppChatSendMarkdownRequest.cs) | `markdown` |
-| `MessageSendResponse` | 应答 | [Message/MessageSendResponse.cs](../../../Mud.Wechat.Work.DataModels/Message/MessageSendResponse.cs) | `invaliduser`, `invalidparty`, `invalidtag`, `unlicenseduser`, `msgid`, `response_code` |
-| `MessageSendTextRequest` | 请求体 | [Message/RequestModel/MessageSendTextRequest.cs](../../../Mud.Wechat.Work.DataModels/Message/RequestModel/MessageSendTextRequest.cs) | `text`, `safe` |
-| `MessageSendImageRequest` | 请求体 | [Message/RequestModel/MessageSendImageRequest.cs](../../../Mud.Wechat.Work.DataModels/Message/RequestModel/MessageSendImageRequest.cs) | `image`, `safe` |
-| `MessageSendVoiceRequest` | 请求体 | [Message/RequestModel/MessageSendVoiceRequest.cs](../../../Mud.Wechat.Work.DataModels/Message/RequestModel/MessageSendVoiceRequest.cs) | `voice` |
-| `MessageSendVideoRequest` | 请求体 | [Message/RequestModel/MessageSendVideoRequest.cs](../../../Mud.Wechat.Work.DataModels/Message/RequestModel/MessageSendVideoRequest.cs) | `video`, `safe` |
-| `MessageSendFileRequest` | 请求体 | [Message/RequestModel/MessageSendFileRequest.cs](../../../Mud.Wechat.Work.DataModels/Message/RequestModel/MessageSendFileRequest.cs) | `file`, `safe` |
-| `MessageSendTextCardRequest` | 请求体 | [Message/RequestModel/MessageSendTextCardRequest.cs](../../../Mud.Wechat.Work.DataModels/Message/RequestModel/MessageSendTextCardRequest.cs) | `textcard` |
-| `MessageSendNewsRequest` | 请求体 | [Message/RequestModel/MessageSendNewsRequest.cs](../../../Mud.Wechat.Work.DataModels/Message/RequestModel/MessageSendNewsRequest.cs) | `news` |
-| `MessageSendMpNewsRequest` | 请求体 | [Message/RequestModel/MessageSendMpNewsRequest.cs](../../../Mud.Wechat.Work.DataModels/Message/RequestModel/MessageSendMpNewsRequest.cs) | `mpnews`, `safe` |
-| `MessageSendMarkdownRequest` | 请求体 | [Message/RequestModel/MessageSendMarkdownRequest.cs](../../../Mud.Wechat.Work.DataModels/Message/RequestModel/MessageSendMarkdownRequest.cs) | `markdown` |
-| `MessageSendMiniProgramNoticeRequest` | 请求体 | [Message/RequestModel/MessageSendMiniProgramNoticeRequest.cs](../../../Mud.Wechat.Work.DataModels/Message/RequestModel/MessageSendMiniProgramNoticeRequest.cs) | `miniprogram_notice` |
-| `MessageSendTemplateCardRequest` | 请求体 | [Message/RequestModel/MessageSendTemplateCardRequest.cs](../../../Mud.Wechat.Work.DataModels/Message/RequestModel/MessageSendTemplateCardRequest.cs) | `template_card` |
-| `UpdateTemplateCardResponse` | 应答 | [Message/UpdateTemplateCardResponse.cs](../../../Mud.Wechat.Work.DataModels/Message/UpdateTemplateCardResponse.cs) | `invaliduser` |
-| `UpdateTemplateCardRequest` | 请求体 | [Message/RequestModel/UpdateTemplateCardRequest.cs](../../../Mud.Wechat.Work.DataModels/Message/RequestModel/UpdateTemplateCardRequest.cs) | `userids`, `partyids`, `tagids`, `atall`, `agentid`, `response_code`, `enable_id_trans`, `button`, `template_card` |
-| `RecallMessageResponse` | 应答 | [Message/RecallMessageResponse.cs](../../../Mud.Wechat.Work.DataModels/Message/RecallMessageResponse.cs) | — |
-| `RecallMessageRequest` | 请求体 | [Message/RequestModel/RecallMessageRequest.cs](../../../Mud.Wechat.Work.DataModels/Message/RequestModel/RecallMessageRequest.cs) | `msgid` |
-| `MessageSendTemplateMsgRequest` | 请求体 | [Message/RequestModel/MessageSendTemplateMsgRequest.cs](../../../Mud.Wechat.Work.DataModels/Message/RequestModel/MessageSendTemplateMsgRequest.cs) | `selected_ticket_list`, `only_unauth`, `template_msg` |
-| `SchoolMessageSendResponse` | 应答 | [Message/SchoolMessageSendResponse.cs](../../../Mud.Wechat.Work.DataModels/Message/SchoolMessageSendResponse.cs) | `invalid_parent_userid`, `invalid_student_userid`, `invalid_party` |
-| `SchoolSendTextRequest` | 请求体 | [Message/RequestModel/SchoolSendTextRequest.cs](../../../Mud.Wechat.Work.DataModels/Message/RequestModel/SchoolSendTextRequest.cs) | `text` |
-| `SchoolSendImageRequest` | 请求体 | [Message/RequestModel/SchoolSendImageRequest.cs](../../../Mud.Wechat.Work.DataModels/Message/RequestModel/SchoolSendImageRequest.cs) | `image` |
-| `SchoolSendVoiceRequest` | 请求体 | [Message/RequestModel/SchoolSendVoiceRequest.cs](../../../Mud.Wechat.Work.DataModels/Message/RequestModel/SchoolSendVoiceRequest.cs) | `voice` |
-| `SchoolSendVideoRequest` | 请求体 | [Message/RequestModel/SchoolSendVideoRequest.cs](../../../Mud.Wechat.Work.DataModels/Message/RequestModel/SchoolSendVideoRequest.cs) | `video` |
-| `SchoolSendFileRequest` | 请求体 | [Message/RequestModel/SchoolSendFileRequest.cs](../../../Mud.Wechat.Work.DataModels/Message/RequestModel/SchoolSendFileRequest.cs) | `file` |
-| `SchoolSendNewsRequest` | 请求体 | [Message/RequestModel/SchoolSendNewsRequest.cs](../../../Mud.Wechat.Work.DataModels/Message/RequestModel/SchoolSendNewsRequest.cs) | `news` |
-| `SchoolSendMpNewsRequest` | 请求体 | [Message/RequestModel/SchoolSendMpNewsRequest.cs](../../../Mud.Wechat.Work.DataModels/Message/RequestModel/SchoolSendMpNewsRequest.cs) | `mpnews` |
-| `SchoolSendMiniProgramRequest` | 请求体 | [Message/RequestModel/SchoolSendMiniProgramRequest.cs](../../../Mud.Wechat.Work.DataModels/Message/RequestModel/SchoolSendMiniProgramRequest.cs) | `miniprogram` |
-| `GetSmartSheetGroupChatListResponse` | 应答 | [Message/GetSmartSheetGroupChatListResponse.cs](../../../Mud.Wechat.Work.DataModels/Message/GetSmartSheetGroupChatListResponse.cs) | `has_more`, `next_cursor`, `chat_id_list` |
-| `GetSmartSheetGroupChatListRequest` | 请求体 | [Message/RequestModel/GetSmartSheetGroupChatListRequest.cs](../../../Mud.Wechat.Work.DataModels/Message/RequestModel/GetSmartSheetGroupChatListRequest.cs) | `docid`, `cursor`, `limit` |
-| `GetSmartSheetGroupChatResponse` | 应答 | [Message/GetSmartSheetGroupChatResponse.cs](../../../Mud.Wechat.Work.DataModels/Message/GetSmartSheetGroupChatResponse.cs) | `name`, `owner`, `user_list` |
-| `GetSmartSheetGroupChatRequest` | 请求体 | [Message/RequestModel/GetSmartSheetGroupChatRequest.cs](../../../Mud.Wechat.Work.DataModels/Message/RequestModel/GetSmartSheetGroupChatRequest.cs) | `docid`, `chat_id` |
-| `UpdateSmartSheetGroupChatResponse` | 应答 | [Message/UpdateSmartSheetGroupChatResponse.cs](../../../Mud.Wechat.Work.DataModels/Message/UpdateSmartSheetGroupChatResponse.cs) | — |
-| `UpdateSmartSheetGroupChatRequest` | 请求体 | [Message/RequestModel/UpdateSmartSheetGroupChatRequest.cs](../../../Mud.Wechat.Work.DataModels/Message/RequestModel/UpdateSmartSheetGroupChatRequest.cs) | `docid`, `chat_id`, `owner`, `add_user_list`, `del_user_list` |
+| `CreateAppChatResponse` | 应答 | [Message/CreateAppChatResponse.cs](../../../Mud.Wechat.Work/Message/CreateAppChatResponse.cs) | `chatid` |
+| `CreateAppChatRequest` | 请求体 | [Message/RequestModel/CreateAppChatRequest.cs](../../../Mud.Wechat.Work/Message/RequestModel/CreateAppChatRequest.cs) | `name`, `owner`, `userlist`, `chatid` |
+| `UpdateAppChatResponse` | 应答 | [Message/UpdateAppChatResponse.cs](../../../Mud.Wechat.Work/Message/UpdateAppChatResponse.cs) | — |
+| `UpdateAppChatRequest` | 请求体 | [Message/RequestModel/UpdateAppChatRequest.cs](../../../Mud.Wechat.Work/Message/RequestModel/UpdateAppChatRequest.cs) | `chatid`, `name`, `owner`, `add_user_list`, `del_user_list` |
+| `GetAppChatResponse` | 应答 | [Message/GetAppChatResponse.cs](../../../Mud.Wechat.Work/Message/GetAppChatResponse.cs) | `chat_info` |
+| `AppChatSendResponse` | 应答 | [Message/AppChatSendResponse.cs](../../../Mud.Wechat.Work/Message/AppChatSendResponse.cs) | — |
+| `AppChatSendTextRequest` | 请求体 | [Message/RequestModel/AppChatSendTextRequest.cs](../../../Mud.Wechat.Work/Message/RequestModel/AppChatSendTextRequest.cs) | `text`, `safe` |
+| `AppChatSendImageRequest` | 请求体 | [Message/RequestModel/AppChatSendImageRequest.cs](../../../Mud.Wechat.Work/Message/RequestModel/AppChatSendImageRequest.cs) | `image`, `safe` |
+| `AppChatSendVoiceRequest` | 请求体 | [Message/RequestModel/AppChatSendVoiceRequest.cs](../../../Mud.Wechat.Work/Message/RequestModel/AppChatSendVoiceRequest.cs) | `voice` |
+| `AppChatSendVideoRequest` | 请求体 | [Message/RequestModel/AppChatSendVideoRequest.cs](../../../Mud.Wechat.Work/Message/RequestModel/AppChatSendVideoRequest.cs) | `video`, `safe` |
+| `AppChatSendFileRequest` | 请求体 | [Message/RequestModel/AppChatSendFileRequest.cs](../../../Mud.Wechat.Work/Message/RequestModel/AppChatSendFileRequest.cs) | `file`, `safe` |
+| `AppChatSendTextCardRequest` | 请求体 | [Message/RequestModel/AppChatSendTextCardRequest.cs](../../../Mud.Wechat.Work/Message/RequestModel/AppChatSendTextCardRequest.cs) | `textcard` |
+| `AppChatSendNewsRequest` | 请求体 | [Message/RequestModel/AppChatSendNewsRequest.cs](../../../Mud.Wechat.Work/Message/RequestModel/AppChatSendNewsRequest.cs) | `news` |
+| `AppChatSendMpNewsRequest` | 请求体 | [Message/RequestModel/AppChatSendMpNewsRequest.cs](../../../Mud.Wechat.Work/Message/RequestModel/AppChatSendMpNewsRequest.cs) | `mpnews`, `safe` |
+| `AppChatSendMarkdownRequest` | 请求体 | [Message/RequestModel/AppChatSendMarkdownRequest.cs](../../../Mud.Wechat.Work/Message/RequestModel/AppChatSendMarkdownRequest.cs) | `markdown` |
+| `MessageSendResponse` | 应答 | [Message/MessageSendResponse.cs](../../../Mud.Wechat.Work/Message/MessageSendResponse.cs) | `invaliduser`, `invalidparty`, `invalidtag`, `unlicenseduser`, `msgid`, `response_code` |
+| `MessageSendTextRequest` | 请求体 | [Message/RequestModel/MessageSendTextRequest.cs](../../../Mud.Wechat.Work/Message/RequestModel/MessageSendTextRequest.cs) | `text`, `safe` |
+| `MessageSendImageRequest` | 请求体 | [Message/RequestModel/MessageSendImageRequest.cs](../../../Mud.Wechat.Work/Message/RequestModel/MessageSendImageRequest.cs) | `image`, `safe` |
+| `MessageSendVoiceRequest` | 请求体 | [Message/RequestModel/MessageSendVoiceRequest.cs](../../../Mud.Wechat.Work/Message/RequestModel/MessageSendVoiceRequest.cs) | `voice` |
+| `MessageSendVideoRequest` | 请求体 | [Message/RequestModel/MessageSendVideoRequest.cs](../../../Mud.Wechat.Work/Message/RequestModel/MessageSendVideoRequest.cs) | `video`, `safe` |
+| `MessageSendFileRequest` | 请求体 | [Message/RequestModel/MessageSendFileRequest.cs](../../../Mud.Wechat.Work/Message/RequestModel/MessageSendFileRequest.cs) | `file`, `safe` |
+| `MessageSendTextCardRequest` | 请求体 | [Message/RequestModel/MessageSendTextCardRequest.cs](../../../Mud.Wechat.Work/Message/RequestModel/MessageSendTextCardRequest.cs) | `textcard` |
+| `MessageSendNewsRequest` | 请求体 | [Message/RequestModel/MessageSendNewsRequest.cs](../../../Mud.Wechat.Work/Message/RequestModel/MessageSendNewsRequest.cs) | `news` |
+| `MessageSendMpNewsRequest` | 请求体 | [Message/RequestModel/MessageSendMpNewsRequest.cs](../../../Mud.Wechat.Work/Message/RequestModel/MessageSendMpNewsRequest.cs) | `mpnews`, `safe` |
+| `MessageSendMarkdownRequest` | 请求体 | [Message/RequestModel/MessageSendMarkdownRequest.cs](../../../Mud.Wechat.Work/Message/RequestModel/MessageSendMarkdownRequest.cs) | `markdown` |
+| `MessageSendMiniProgramNoticeRequest` | 请求体 | [Message/RequestModel/MessageSendMiniProgramNoticeRequest.cs](../../../Mud.Wechat.Work/Message/RequestModel/MessageSendMiniProgramNoticeRequest.cs) | `miniprogram_notice` |
+| `MessageSendTemplateCardRequest` | 请求体 | [Message/RequestModel/MessageSendTemplateCardRequest.cs](../../../Mud.Wechat.Work/Message/RequestModel/MessageSendTemplateCardRequest.cs) | `template_card` |
+| `UpdateTemplateCardResponse` | 应答 | [Message/UpdateTemplateCardResponse.cs](../../../Mud.Wechat.Work/Message/UpdateTemplateCardResponse.cs) | `invaliduser` |
+| `UpdateTemplateCardRequest` | 请求体 | [Message/RequestModel/UpdateTemplateCardRequest.cs](../../../Mud.Wechat.Work/Message/RequestModel/UpdateTemplateCardRequest.cs) | `userids`, `partyids`, `tagids`, `atall`, `agentid`, `response_code`, `enable_id_trans`, `button`, `template_card` |
+| `RecallMessageResponse` | 应答 | [Message/RecallMessageResponse.cs](../../../Mud.Wechat.Work/Message/RecallMessageResponse.cs) | — |
+| `RecallMessageRequest` | 请求体 | [Message/RequestModel/RecallMessageRequest.cs](../../../Mud.Wechat.Work/Message/RequestModel/RecallMessageRequest.cs) | `msgid` |
+| `MessageSendTemplateMsgRequest` | 请求体 | [Message/RequestModel/MessageSendTemplateMsgRequest.cs](../../../Mud.Wechat.Work/Message/RequestModel/MessageSendTemplateMsgRequest.cs) | `selected_ticket_list`, `only_unauth`, `template_msg` |
+| `SchoolMessageSendResponse` | 应答 | [Message/SchoolMessageSendResponse.cs](../../../Mud.Wechat.Work/Message/SchoolMessageSendResponse.cs) | `invalid_parent_userid`, `invalid_student_userid`, `invalid_party` |
+| `SchoolSendTextRequest` | 请求体 | [Message/RequestModel/SchoolSendTextRequest.cs](../../../Mud.Wechat.Work/Message/RequestModel/SchoolSendTextRequest.cs) | `text` |
+| `SchoolSendImageRequest` | 请求体 | [Message/RequestModel/SchoolSendImageRequest.cs](../../../Mud.Wechat.Work/Message/RequestModel/SchoolSendImageRequest.cs) | `image` |
+| `SchoolSendVoiceRequest` | 请求体 | [Message/RequestModel/SchoolSendVoiceRequest.cs](../../../Mud.Wechat.Work/Message/RequestModel/SchoolSendVoiceRequest.cs) | `voice` |
+| `SchoolSendVideoRequest` | 请求体 | [Message/RequestModel/SchoolSendVideoRequest.cs](../../../Mud.Wechat.Work/Message/RequestModel/SchoolSendVideoRequest.cs) | `video` |
+| `SchoolSendFileRequest` | 请求体 | [Message/RequestModel/SchoolSendFileRequest.cs](../../../Mud.Wechat.Work/Message/RequestModel/SchoolSendFileRequest.cs) | `file` |
+| `SchoolSendNewsRequest` | 请求体 | [Message/RequestModel/SchoolSendNewsRequest.cs](../../../Mud.Wechat.Work/Message/RequestModel/SchoolSendNewsRequest.cs) | `news` |
+| `SchoolSendMpNewsRequest` | 请求体 | [Message/RequestModel/SchoolSendMpNewsRequest.cs](../../../Mud.Wechat.Work/Message/RequestModel/SchoolSendMpNewsRequest.cs) | `mpnews` |
+| `SchoolSendMiniProgramRequest` | 请求体 | [Message/RequestModel/SchoolSendMiniProgramRequest.cs](../../../Mud.Wechat.Work/Message/RequestModel/SchoolSendMiniProgramRequest.cs) | `miniprogram` |
+| `GetSmartSheetGroupChatListResponse` | 应答 | [Message/GetSmartSheetGroupChatListResponse.cs](../../../Mud.Wechat.Work/Message/GetSmartSheetGroupChatListResponse.cs) | `has_more`, `next_cursor`, `chat_id_list` |
+| `GetSmartSheetGroupChatListRequest` | 请求体 | [Message/RequestModel/GetSmartSheetGroupChatListRequest.cs](../../../Mud.Wechat.Work/Message/RequestModel/GetSmartSheetGroupChatListRequest.cs) | `docid`, `cursor`, `limit` |
+| `GetSmartSheetGroupChatResponse` | 应答 | [Message/GetSmartSheetGroupChatResponse.cs](../../../Mud.Wechat.Work/Message/GetSmartSheetGroupChatResponse.cs) | `name`, `owner`, `user_list` |
+| `GetSmartSheetGroupChatRequest` | 请求体 | [Message/RequestModel/GetSmartSheetGroupChatRequest.cs](../../../Mud.Wechat.Work/Message/RequestModel/GetSmartSheetGroupChatRequest.cs) | `docid`, `chat_id` |
+| `UpdateSmartSheetGroupChatResponse` | 应答 | [Message/UpdateSmartSheetGroupChatResponse.cs](../../../Mud.Wechat.Work/Message/UpdateSmartSheetGroupChatResponse.cs) | — |
+| `UpdateSmartSheetGroupChatRequest` | 请求体 | [Message/RequestModel/UpdateSmartSheetGroupChatRequest.cs](../../../Mud.Wechat.Work/Message/RequestModel/UpdateSmartSheetGroupChatRequest.cs) | `docid`, `chat_id`, `owner`, `add_user_list`, `del_user_list` |
 
 > DTO 一律以源文件为准；本表只列端点签名**直接引用**的一层类型，嵌套类型不再递归展开。所有 DTO 不使用 `required`（仓内约束），必填性由接口注释与官方页表达，SDK 不做本地必填校验。
 
@@ -864,7 +864,7 @@ var response = await service.CreateAppChatAsync(new CreateAppChatRequest(), ct);
 | 契约守卫（路由 / 计数 / DTO 登记断言） | [`WechatMessageContractGuards.cs`](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatMessageContractGuards.cs)、[`WechatContractGuards.QueryTokenInjection.cs`](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatContractGuards.QueryTokenInjection.cs) |
 | 守卫中的代表性测试方法 | `MessageEndpoints_ShouldMatchOfficialRoutes`、`MessageInterfaceHierarchy_ShouldConvergeOnMessageRegistry`、`MessageTokenBinding_ShouldBeAccessTokenInjectedViaQuery`、`MessageDataModels_ShouldBeRegisteredInJsonContext`、`QueryTokenInjection_ShouldBeLimitedToWechatOfficialContractInterfaces` |
 | 模块枚举 / 装配入口 | [`WechatModule.cs`](../../Extensions/WechatModule.cs)、[`WechatWorkServiceBuilder.cs`](../../Extensions/WechatWorkServiceBuilder.cs) |
-| DTO 与 JSON 上下文 | [`Mud.Wechat.Work.DataModels/Message`](../../../Mud.Wechat.Work.DataModels/Message/) |
+| DTO 与 JSON 上下文 | [`Mud.Wechat.Work/Message`](../../../Mud.Wechat.Work/Message/) |
 | 跨线基线 | [`Tests/ContractBaseline.cs`](../../../../../Tests/ContractBaseline.cs)（各线分节；本线口径以守卫实际断言为准） |
 | 本线包级公开面与已踩陷阱 | [`Src/Work/Mud.Wechat.Work/README.md`](../../README.md) |
 | 跨线通用约束（门禁 / AOT / 落位） | [`AGENTS.md`](../../../../../AGENTS.md) |

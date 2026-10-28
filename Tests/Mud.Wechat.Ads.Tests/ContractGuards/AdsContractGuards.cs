@@ -33,7 +33,7 @@ namespace Mud.Wechat.Ads.Tests.ContractGuards;
 public class AdsContractGuards
 {
     /// <summary>
-    /// ADS-S1：<b>依赖边界</b> —— 广告线只依赖公用层叶包与自身三包，<b>不得</b>引用任何其它产品线；
+    /// ADS-S1：<b>依赖边界</b> —— 广告线只依赖公用层叶包与自身工程，<b>不得</b>引用任何其它产品线；
     /// 反向同理，其它产品线也<b>不得</b>引用广告线。
     /// </summary>
     /// <remarks>
@@ -44,6 +44,11 @@ public class AdsContractGuards
     /// <b>两个方向都要扫</b>：正向（Ads → 其它线）由逐条引用名判定；反向（其它线 → Ads）若不做断言，
     /// 某人把 <c>IAdsTokenManager</c> 注进 Work 包就能绕过正向断言，而包依赖图仍是「单向」的。
     /// </para>
+    /// <para>
+    /// 2026-10 包合并：本线由 <c>Ads</c> / <c>Ads.Abstractions</c> / <c>Ads.DataModels</c> 三工程并为
+    /// <c>Ads</c> 单工程（命名空间不变），故本守卫的扫描面随之收敛为一个 csproj —— 边界的语义没变，
+    /// 变的是「本线工程清单」这一份事实的来源。
+    /// </para>
     /// </remarks>
     [Fact]
     public void AdsLine_ShouldDependOnlyOnCoreAndOwnPackages()
@@ -51,23 +56,21 @@ public class AdsContractGuards
         foreach (var project in new[]
                  {
                      "Mud.Wechat.Ads",
-                     "Mud.Wechat.Ads.Abstractions",
-                     "Mud.Wechat.Ads.DataModels",
                  })
         {
             var content = File.ReadAllText(
                 Path.Combine(SourceProjectDir(project), project + ".csproj"));
 
-            // 逐条判定：本包引用「其它产品线工程」即违规（自身三包互引合法）。
+            // 逐条判定：本包引用「其它产品线工程」即违规。
             foreach (var refName in new[]
                      {
-                         "Mud.Wechat.Work", "Mud.Wechat.Work.Abstractions", "Mud.Wechat.Work.Callback",
+                         "Mud.Wechat.Work", "Mud.Wechat.Work", "Mud.Wechat.Work.Callback",
                          "Mud.Wechat.OfficialAccount", "Mud.Wechat.OfficialAccount.Abstractions",
                          "Mud.Wechat.MiniProgram", "Mud.Wechat.MiniProgram.Abstractions",
                          "Mud.Wechat.Pay", "Mud.Wechat.Pay.Abstractions",
                          "Mud.Wechat.OpenPlatform", "Mud.Wechat.OpenPlatform.Abstractions",
                          // 微信小店 / 视频号（channels 生态，2026-10 并入本仓）：与广告线无共享凭据域，同样禁引用。
-                         "Mud.Wechat.Channels", "Mud.Wechat.Channels.Abstractions", "Mud.Wechat.Channels.Callback",
+                         "Mud.Wechat.Channels", "Mud.Wechat.Channels", "Mud.Wechat.Channels.Callback",
                          "Mud.Wechat.Redis",
                      })
             {
@@ -76,8 +79,8 @@ public class AdsContractGuards
             }
         }
 
-        // 反向：Src/ 下所有非广告线工程都不得引用广告线三包。
-        var adsNames = new[] { "Mud.Wechat.Ads.csproj", "Mud.Wechat.Ads.Abstractions.csproj", "Mud.Wechat.Ads.DataModels.csproj" };
+        // 反向：Src/ 下所有非广告线工程都不得引用广告线工程。
+        var adsNames = new[] { "Mud.Wechat.Ads.csproj" };
         var foreignHits = Directory
             .EnumerateFiles(Path.Combine(Root, "Src"), "*.csproj", SearchOption.AllDirectories)
             .Where(static f => !f.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.Ordinal)
@@ -89,11 +92,10 @@ public class AdsContractGuards
 
         foreignHits.Should().BeEmpty(
             "广告线凭据模型（OAuth 双令牌 + 成组注入）与微信线不兼容，其它产品线引用它即把该不兼容" +
-            $"带进自己的调用链（ADS-S1 反向）；实际命中：{string.Join(", ", foreignHits)}");
-    }
+            $"带进自己的调用链（ADS-S1 反向）；实际命中：{string.Join(", ", foreignHits)}");    }
 
     /// <summary>
-    /// ADS-S2：<b>TFM 口径</b> —— 广告线四档 TFM 全部继承根 props，<b>不得</b>自定 <c>TargetFrameworks</c>。
+    /// ADS-S2：<b>TFM 口径</b> —— 广告线全部 TFM 继承根 props，<b>不得</b>自定 <c>TargetFrameworks</c>。
     /// </summary>
     /// <remarks>
     /// 支付线的 <c>net6.0;net8.0;net10.0</c> 是因 <c>AesGcm</c> 在 netstandard2.0 不存在的<b>受控例外</b>、
@@ -107,8 +109,6 @@ public class AdsContractGuards
         foreach (var project in new[]
                  {
                      "Mud.Wechat.Ads",
-                     "Mud.Wechat.Ads.Abstractions",
-                     "Mud.Wechat.Ads.DataModels",
                  })
         {
             var content = File.ReadAllText(
@@ -1359,7 +1359,7 @@ public class AdsContractGuards
     {
         var contextFiles = Directory
             .EnumerateFiles(
-                Path.Combine(SourceProjectDir("Mud.Wechat.Ads.DataModels"), "Generated"),
+                Path.Combine(SourceProjectDir("Mud.Wechat.Ads"), "Generated"),
                 "*JsonContext.g.cs", SearchOption.AllDirectories)
             // 文件名形如 AdvertiserJsonContext.g.cs：两次去扩展才得到上下文类型名 AdvertiserJsonContext。
             .Select(static f => Path.GetFileNameWithoutExtension(Path.GetFileNameWithoutExtension(f)))
@@ -2173,9 +2173,22 @@ public class AdsContractGuards
             .Where(static t => t.IsInterface && t.GetCustomAttribute<HttpClientApiAttribute>() is not null)
             .ToArray();
 
-    /// <summary>广告线 DataModels 程序集的全部类型（含 internal 生成上下文）。</summary>
+    /// <summary>
+    /// 广告线 <b>DTO 面</b>的全部类型（含 internal 生成上下文）——<b>按命名空间取，不按程序集</b>。
+    /// </summary>
+    /// <remarks>
+    /// 2026-10 包合并：<c>Ads.Abstractions</c> / <c>Ads.DataModels</c> 并入 <c>Ads</c> 单程序集后，
+    /// 「DTO 程序集」这一物理事实不再存在；若仍写 <c>Assembly.GetTypes()</c>，配置面
+    /// （<c>AdsAppConfig</c>）、授权状态（<c>AdsAuthorizationState</c>）、异常、
+    /// 模块枚举（<c>AdsModule</c>）会被一并扫进 DTO 契约面 ⇒ 本文件的「DTO 面禁枚举」
+    /// 与「每个公共属性必须显式官方 snake_case 名」两条守卫立刻假红。
+    /// 命名空间 <c>Mud.Wechat.Ads.DataModels*</c> 才是被契约守卫真正锁定的那一层（合并未改命名空间）。
+    /// </remarks>
     private static Type[] AdsDataModelTypes()
-        => typeof(AdsResponse).Assembly.GetTypes();
+        => typeof(AdsResponse).Assembly.GetTypes()
+            .Where(static t => t.Namespace is not null
+                               && t.Namespace.StartsWith("Mud.Wechat.Ads.DataModels", StringComparison.Ordinal))
+            .ToArray();
 
     /// <summary>某类型<b>自身声明</b>的公共属性上的官方字段名（排序后返回，供逐条等值断言）。</summary>
     private static string[] OfficialJsonNames(Type type)
@@ -2303,13 +2316,11 @@ public class AdsContractGuards
         return indexes;
     }
 
-    /// <summary>广告线三个源工程的 <c>.cs</c> 清单（排除 bin/obj）。</summary>
+    /// <summary>广告线源工程（合并后单工程）的 <c>.cs</c> 清单（排除 bin/obj）。</summary>
     private static string[] AdsSourceFiles()
         => new[]
         {
             SourceProjectDir("Mud.Wechat.Ads"),
-            SourceProjectDir("Mud.Wechat.Ads.Abstractions"),
-            SourceProjectDir("Mud.Wechat.Ads.DataModels"),
         }
             .SelectMany(dir => Directory.EnumerateFiles(dir, "*.cs", SearchOption.AllDirectories))
             .Where(static f => !f.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.Ordinal)
@@ -2320,7 +2331,7 @@ public class AdsContractGuards
     /// <see cref="AdsQueryJson"/> 的源文件路径（编码器与 DTO 声明的字段名单源核验，ADS-B2）。
     /// 按工程 + 文件名定位而非硬编码层级，目录再迁移时守卫不随之漂移。
     /// </summary>
-    private static string AdsEncoderFile => SourceSourceFile("Mud.Wechat.Ads.DataModels", "AdsQueryJson.cs");
+    private static string AdsEncoderFile => SourceSourceFile("Mud.Wechat.Ads", "AdsQueryJson.cs");
 
     /// <summary>
     /// 报表域接口源文件（<c>level</c> 三支集合与逐页必填星号只存在于各端点的参数文档里 ⇒ 文本抽取的入口，
@@ -2332,16 +2343,16 @@ public class AdsContractGuards
     private static string AdsFundsInterfaceFile => SourceSourceFile("Mud.Wechat.Ads", "IWechatAdsFundsService.cs");
 
     /// <summary>转账请求体 DTO 源文件（转账页 9 支 <c>fund_type</c> 集合的载体）。</summary>
-    private static string AdsFundTransferDtoFile => SourceSourceFile("Mud.Wechat.Ads.DataModels", "AdsFundTransfer.cs");
+    private static string AdsFundTransferDtoFile => SourceSourceFile("Mud.Wechat.Ads", "AdsFundTransfer.cs");
 
     /// <summary><c>async_reports/add</c> 请求体 DTO 的源文件（本页 account_id 的代理商口径写在请求体字段上）。</summary>
-    private static string AdsAsyncReportAddFile => SourceSourceFile("Mud.Wechat.Ads.DataModels", "AdsAsyncReportAdd.cs");
+    private static string AdsAsyncReportAddFile => SourceSourceFile("Mud.Wechat.Ads", "AdsAsyncReportAdd.cs");
 
     /// <summary>授权编排实现的路径（ADS-B3 的失败顺序与刷新端点唯一性在此文本核验）。</summary>
-    private static string AdsAuthorizationServiceFile => SourceSourceFile("Mud.Wechat.Ads.Abstractions", "AdsAuthorizationService.cs");
+    private static string AdsAuthorizationServiceFile => SourceSourceFile("Mud.Wechat.Ads", "AdsAuthorizationService.cs");
 
     /// <summary>AOT 上下文合并器的路径（ADS-B6 逐生成文件断言其方法体覆盖面）。</summary>
-    private static string AdsJsonResolverFile => SourceSourceFile("Mud.Wechat.Ads.Abstractions", "AdsJsonResolverExtensions.cs");
+    private static string AdsJsonResolverFile => SourceSourceFile("Mud.Wechat.Ads", "AdsJsonResolverExtensions.cs");
 
     /// <summary>在某源工程目录树内按文件名定位单个源文件（排除 bin/obj，命中唯一）。</summary>
     private static string SourceSourceFile(string projectName, string fileName)

@@ -9,7 +9,7 @@
 
 > **事实来源限定**：本文全部断言只来自本域接口 XML 注释、守卫
 > [OpenPlatformUserOrderWeDataServiceMarketContractGuards.cs](../../../../../Tests/Mud.Wechat.OpenPlatform.Tests/ContractGuards/OpenPlatformUserOrderWeDataServiceMarketContractGuards.cs)（UD 系列）与 DTO
-> [`DataModels/UserOrder/`](../../../Mud.Wechat.OpenPlatform.DataModels/UserOrder/)。官方页未给出的额度 / 频率 / 权限集数字，
+> [`DataModels/UserOrder/`](../../../Mud.Wechat.OpenPlatform/UserOrder/)。官方页未给出的额度 / 频率 / 权限集数字，
 > 一律入文末「已知留档缺口」，不从记忆或邻域补。
 
 ## 端点速览
@@ -102,7 +102,7 @@ using (appContextSwitcher.UseAuthorizerScope(authorizerAppId))
 | 路由表与计数（恰 7，恒 POST） | 守卫 `UD1` |
 | 令牌语义（授权方值 / `access_token` 参数名 / Query / 注册组） | 守卫 `UD2` |
 | 三处一致（枚举 + 委托 + resolver） | 守卫 `REG1`；DI 见 [../../Extensions/OpenPlatformServiceBuilder.cs](../../Extensions/OpenPlatformServiceBuilder.cs) |
-| DTO 登记、字段名、数值面 | 守卫 DTO1~DTO3；[`DataModels/UserOrder/`](../../../Mud.Wechat.OpenPlatform.DataModels/UserOrder/) |
+| DTO 登记、字段名、数值面 | 守卫 DTO1~DTO3；[`DataModels/UserOrder/`](../../../Mud.Wechat.OpenPlatform/UserOrder/) |
 
 ## 改动本域需要同批完成
 

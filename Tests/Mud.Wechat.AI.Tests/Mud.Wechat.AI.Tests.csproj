@@ -14,8 +14,7 @@
 
 	<ItemGroup>
 		<!-- 层 1 共享层（跨七线）双包：契约 + 运行时。 -->
-		<ProjectReference Include="..\..\Src\AI\Mud.Wechat.AI.Abstractions\Mud.Wechat.AI.Abstractions.csproj" />
-		<ProjectReference Include="..\..\Src\AI\Mud.Wechat.AI.Agent\Mud.Wechat.AI.Agent.csproj" />
+		<ProjectReference Include="..\..\Src\AI\Mud.Wechat.AI\Mud.Wechat.AI.csproj" />
 	</ItemGroup>
 
 </Project>

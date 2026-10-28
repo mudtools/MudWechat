@@ -60,7 +60,7 @@ public class MpCallbackContractGuards
         foreach (var project in new[]
                  {
                      "Mud.Wechat.OfficialAccount.Callback/Mud.Wechat.OfficialAccount.Callback.csproj",
-                     "Mud.Wechat.OfficialAccount.Abstractions/Mud.Wechat.OfficialAccount.Abstractions.csproj",
+                     "Mud.Wechat.OfficialAccount/Mud.Wechat.OfficialAccount.csproj",
                  })
         {
             // 只审计**引用行**（Description 等文案中的类比说明不构成依赖边）。
@@ -76,12 +76,32 @@ public class MpCallbackContractGuards
         }
 
         // 叶层依赖：OA.Abstractions 直引叶层；运行时包经 OA.Abstractions 传递可见（不新增第三边）。
-        ReadSource("Mud.Wechat.OfficialAccount.Abstractions/Mud.Wechat.OfficialAccount.Abstractions.csproj")
+        ReadSource("Mud.Wechat.OfficialAccount/Mud.Wechat.OfficialAccount.csproj")
             .Should().Contain("Mud.Wechat.Abstractions.csproj",
                 "公众号契约面必须经叶层（协议与安全内核）落地共用能力");
+        // 合并前该边由「Callback 只引 OA.Abstractions、不引 OA 主包」提供物理保证；2026-10 包合并后
+        // 契约面与客户端同处 Mud.Wechat.OfficialAccount 一个程序集，程序集维度不再能表达它 ——
+        // 命名空间维度一直能：客户端在 Mud.Wechat.OfficialAccount（裸命名空间），
+        // 回调可用面止于 .Abstractions.* 与 .DataModels.*。故改为「引用行 + 源码 using 面」两段。
         ReadSource("Mud.Wechat.OfficialAccount.Callback/Mud.Wechat.OfficialAccount.Callback.csproj")
-            .Should().Contain("Mud.Wechat.OfficialAccount.Abstractions.csproj",
-                "回调运行时包只引公众号契约面（ASP.NET 依赖只存在于本包）");
+            .Should().Contain("Mud.Wechat.OfficialAccount.csproj",
+                "回调运行时包必须引公众号线工程（合并后为该线唯一工程；ASP.NET 依赖仍只存在于本包）");
+
+        var clientUsing = new System.Text.RegularExpressions.Regex(
+            @"^\s*(?:global\s+)?using\s+Mud\.Wechat\.OfficialAccount\s*(?:;|=)", System.Text.RegularExpressions.RegexOptions.Multiline);
+
+        var hits = Directory
+            .EnumerateFiles(SourcePath("Mud.Wechat.OfficialAccount.Callback"), "*.cs", SearchOption.AllDirectories)
+            .Where(static f => !f.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}")
+                               && !f.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}"))
+            .SelectMany(f => clientUsing.Matches(File.ReadAllText(f))
+                .Cast<System.Text.RegularExpressions.Match>()
+                .Select(m => $"{Path.GetFileName(f)}: {m.Value.Trim()}"))
+            .ToArray();
+
+        hits.Should().BeEmpty(
+            "公众号回调链路不得消费业务客户端（推送线程内取令牌/发请求会放大官方重推窗口）；" +
+            $"实际命中：{string.Join(", ", hits)}");
     }
 
     /// <summary>CB-L1b：企微侧反向 —— 不得引用公众号侧任何工程。</summary>
@@ -91,7 +111,7 @@ public class MpCallbackContractGuards
         foreach (var project in new[]
                  {
                      "Mud.Wechat.Work.Callback/Mud.Wechat.Work.Callback.csproj",
-                     "Mud.Wechat.Work.Abstractions/Mud.Wechat.Work.Abstractions.csproj",
+                     "Mud.Wechat.Work/Mud.Wechat.Work.csproj",
                  })
         {
             ReadSource(project).Should().NotContain("Mud.Wechat.OfficialAccount");
@@ -123,7 +143,7 @@ public class MpCallbackContractGuards
         ReadSource("Mud.Wechat.Work.Callback/Mud.Wechat.Work.Callback.csproj")
             .Should().Contain("Mud.Wechat.Callback.Generator.csproj")
             .And.Contain("Mud.Wechat.Callback.Analyzers.csproj");
-        ReadSource("Mud.Wechat.OfficialAccount.Abstractions/Mud.Wechat.OfficialAccount.Abstractions.csproj")
+        ReadSource("Mud.Wechat.OfficialAccount/Mud.Wechat.OfficialAccount.csproj")
             .Should().Contain("Mud.Wechat.Callback.Generator.csproj");
     }
 

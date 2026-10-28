@@ -2,7 +2,7 @@
 
 微信小店 / 视频号（channels 生态）「商家客服」域 SDK（2 端点：多媒体资源上传 / 客服消息发送）。 接口：[IChannelsKfService](./IChannelsKfService.cs)；注册组 `Kf`；模块枚举 `ChannelsModule.Kf`（装配入口见 [ChannelsServiceBuilder.cs](../../Extensions/ChannelsServiceBuilder.cs)）。逐端点核验 2026-10-18。
 
-> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[ChannelsKfContractGuards.cs](../../../../../Tests/Mud.Wechat.Channels.Tests/ContractGuards/ChannelsKfContractGuards.cs)、[ChannelsPlatformKfContractGuards.cs](../../../../../Tests/Mud.Wechat.Channels.Tests/ContractGuards/ChannelsPlatformKfContractGuards.cs)）、本域 DTO（[`Mud.Wechat.Channels.DataModels/Kf`](../../../Mud.Wechat.Channels.DataModels/Kf/)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
+> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[ChannelsKfContractGuards.cs](../../../../../Tests/Mud.Wechat.Channels.Tests/ContractGuards/ChannelsKfContractGuards.cs)、[ChannelsPlatformKfContractGuards.cs](../../../../../Tests/Mud.Wechat.Channels.Tests/ContractGuards/ChannelsPlatformKfContractGuards.cs)）、本域 DTO（[`Mud.Wechat.Channels/Kf`](../../../Mud.Wechat.Channels/Kf/)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
 
 ## 端点速览
 
@@ -77,15 +77,15 @@
 
 ## DTO 与序列化面
 
-本域 DTO 目录 [`Mud.Wechat.Channels.DataModels/Kf`](../../../Mud.Wechat.Channels.DataModels/Kf/) 内共 **7** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **7** 个，`SerializerClassName` = `Kf`。
+本域 DTO 目录 [`Mud.Wechat.Channels/Kf`](../../../Mud.Wechat.Channels/Kf/) 内共 **7** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **7** 个，`SerializerClassName` = `Kf`。
 
-AOT 源生成上下文：[`KfJsonContext.g.cs`](./../../../Mud.Wechat.Channels.DataModels/Generated/KfJsonContext.g.cs)（生成物，勿手改）。
+AOT 源生成上下文：[`KfJsonContext.g.cs`](./../../../Mud.Wechat.Channels/Generated/KfJsonContext.g.cs)（生成物，勿手改）。
 
 | 端点引用的类型 | 角色 | 定义位置 | JSON 字段（前缀） |
 |---|---|---|---|
-| `ChannelsKfCosUploadResponse` | 应答 | [Kf/ChannelsKfCosUploadResponse.cs](../../../Mud.Wechat.Channels.DataModels/Kf/ChannelsKfCosUploadResponse.cs) | `cos_url` |
-| `ChannelsKfSendMsgResponse` | 应答 | [Kf/ChannelsKfSendMsgResponse.cs](../../../Mud.Wechat.Channels.DataModels/Kf/ChannelsKfSendMsgResponse.cs) | `msg_id` |
-| `ChannelsKfSendMsgRequest` | 请求体 | [Kf/ChannelsKfSendMsgRequest.cs](../../../Mud.Wechat.Channels.DataModels/Kf/ChannelsKfSendMsgRequest.cs) | `request_id`, `open_id`, `msg_type`, `text`, `image`, `video`, `product_share`, `order_share`, `file` |
+| `ChannelsKfCosUploadResponse` | 应答 | [Kf/ChannelsKfCosUploadResponse.cs](../../../Mud.Wechat.Channels/Kf/ChannelsKfCosUploadResponse.cs) | `cos_url` |
+| `ChannelsKfSendMsgResponse` | 应答 | [Kf/ChannelsKfSendMsgResponse.cs](../../../Mud.Wechat.Channels/Kf/ChannelsKfSendMsgResponse.cs) | `msg_id` |
+| `ChannelsKfSendMsgRequest` | 请求体 | [Kf/ChannelsKfSendMsgRequest.cs](../../../Mud.Wechat.Channels/Kf/ChannelsKfSendMsgRequest.cs) | `request_id`, `open_id`, `msg_type`, `text`, `image`, `video`, `product_share`, `order_share`, `file` |
 
 > DTO 一律以源文件为准；本表只列端点签名**直接引用**的一层类型，嵌套类型不再递归展开。所有 DTO 不使用 `required`（仓内约束），必填性由接口注释与官方页表达，SDK 不做本地必填校验。
 
@@ -123,7 +123,7 @@ var response = await service.CosUploadAsync(default!, ct);
 | 契约守卫（路由 / 计数 / DTO 登记断言） | [`ChannelsKfContractGuards.cs`](../../../../../Tests/Mud.Wechat.Channels.Tests/ContractGuards/ChannelsKfContractGuards.cs)、[`ChannelsPlatformKfContractGuards.cs`](../../../../../Tests/Mud.Wechat.Channels.Tests/ContractGuards/ChannelsPlatformKfContractGuards.cs) |
 | 守卫中的代表性测试方法 | `KfEndpoints_ShouldMatchOfficialRoutes`、`KfEndpoints_ShouldAllBePost_WithMultipartUploadRules`、`KfInterface_ShouldBindChannelsToken_AndRegisterUnderKfGroup`、`KfDataModels_ShouldBeRegisteredInJsonContext`、`KfDataModels_ShouldLockOfficialFieldsAndSharedDtos`、`KfEnumConstants_ShouldLockOfficialLiteralValues`、`PlatformKfEndpoints_ShouldMatchOfficialRoutes`、`PlatformKfEndpoints_ShouldAllBePost_WithEmptyBodyRules`、`PlatformKfInterface_ShouldBindChannelsToken_AndRegisterUnderPlatformKfGroup`、`PlatformKfDataModels_ShouldBeRegisteredInJsonContext`、`PlatformKfDataModels_ShouldLockOfficialFieldsAndSharedDtos`、`PlatformKfEnumConstants_ShouldLockOfficialLiteralValues` |
 | 模块枚举 / 装配入口 | [`ChannelsModule.cs`](../../Extensions/ChannelsModule.cs)、[`ChannelsServiceBuilder.cs`](../../Extensions/ChannelsServiceBuilder.cs) |
-| DTO 与 JSON 上下文 | [`Mud.Wechat.Channels.DataModels/Kf`](../../../Mud.Wechat.Channels.DataModels/Kf/) |
+| DTO 与 JSON 上下文 | [`Mud.Wechat.Channels/Kf`](../../../Mud.Wechat.Channels/Kf/) |
 | 跨线基线 | [`Tests/ContractBaseline.cs`](../../../../../Tests/ContractBaseline.cs)（各线分节；本线口径以守卫实际断言为准） |
 | 本线包级公开面与已踩陷阱 | [`Src/Channels/Mud.Wechat.Channels/README.md`](../../README.md) |
 | 跨线通用约束（门禁 / AOT / 落位） | [`AGENTS.md`](../../../../../AGENTS.md) |

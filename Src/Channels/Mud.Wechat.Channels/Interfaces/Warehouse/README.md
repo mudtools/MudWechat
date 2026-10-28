@@ -3,7 +3,7 @@
 微信小店 / 视频号（channels 生态）「区域仓库」域 SDK（11 端点：仓库创建 / 列表 / 详情 /
 修改 / 覆盖区域批量增删 / 地址优先级查设 / 库存更新查询 + 地址行政编码）。 接口：[IChannelsWarehouseService](./IChannelsWarehouseService.cs)；注册组 `Warehouse`；模块枚举 `ChannelsModule.Warehouse`（装配入口见 [ChannelsServiceBuilder.cs](../../Extensions/ChannelsServiceBuilder.cs)）。逐端点核验 2026-10-18。
 
-> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[ChannelsWarehouseContractGuards.cs](../../../../../Tests/Mud.Wechat.Channels.Tests/ContractGuards/ChannelsWarehouseContractGuards.cs)）、本域 DTO（[`Mud.Wechat.Channels.DataModels/Warehouse`](../../../Mud.Wechat.Channels.DataModels/Warehouse/)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
+> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[ChannelsWarehouseContractGuards.cs](../../../../../Tests/Mud.Wechat.Channels.Tests/ContractGuards/ChannelsWarehouseContractGuards.cs)）、本域 DTO（[`Mud.Wechat.Channels/Warehouse`](../../../Mud.Wechat.Channels/Warehouse/)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
 
 ## 端点速览
 
@@ -212,28 +212,28 @@
 
 ## DTO 与序列化面
 
-本域 DTO 目录 [`Mud.Wechat.Channels.DataModels/Warehouse`](../../../Mud.Wechat.Channels.DataModels/Warehouse/) 内共 **21** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **21** 个，`SerializerClassName` = `Warehouse`。
+本域 DTO 目录 [`Mud.Wechat.Channels/Warehouse`](../../../Mud.Wechat.Channels/Warehouse/) 内共 **21** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **21** 个，`SerializerClassName` = `Warehouse`。
 
-AOT 源生成上下文：[`WarehouseJsonContext.g.cs`](./../../../Mud.Wechat.Channels.DataModels/Generated/WarehouseJsonContext.g.cs)（生成物，勿手改）。
+AOT 源生成上下文：[`WarehouseJsonContext.g.cs`](./../../../Mud.Wechat.Channels/Generated/WarehouseJsonContext.g.cs)（生成物，勿手改）。
 
 | 端点引用的类型 | 角色 | 定义位置 | JSON 字段（前缀） |
 |---|---|---|---|
-| `ChannelsResponse` | 应答 | [ChannelsResponse.cs](../../../Mud.Wechat.Channels.DataModels/ChannelsResponse.cs) | `errcode`, `errmsg` |
-| `ChannelsCreateWarehouseRequest` | 请求体 | [Warehouse/ChannelsCreateWarehouseRequest.cs](../../../Mud.Wechat.Channels.DataModels/Warehouse/ChannelsCreateWarehouseRequest.cs) | `out_warehouse_id`, `name`, `intro`, `cover_locations` |
-| `ChannelsGetWarehouseListResponse` | 应答 | [Warehouse/ChannelsGetWarehouseListResponse.cs](../../../Mud.Wechat.Channels.DataModels/Warehouse/ChannelsGetWarehouseListResponse.cs) | `data` |
-| `ChannelsGetWarehouseListRequest` | 请求体 | [Warehouse/ChannelsGetWarehouseListRequest.cs](../../../Mud.Wechat.Channels.DataModels/Warehouse/ChannelsGetWarehouseListRequest.cs) | `page_size`, `next_key` |
-| `ChannelsGetWarehouseResponse` | 应答 | [Warehouse/ChannelsGetWarehouseResponse.cs](../../../Mud.Wechat.Channels.DataModels/Warehouse/ChannelsGetWarehouseResponse.cs) | `data` |
-| `ChannelsGetWarehouseRequest` | 请求体 | [Warehouse/ChannelsGetWarehouseRequest.cs](../../../Mud.Wechat.Channels.DataModels/Warehouse/ChannelsGetWarehouseRequest.cs) | `out_warehouse_id` |
-| `ChannelsUpdateWarehouseDetailRequest` | 请求体 | [Warehouse/ChannelsUpdateWarehouseDetailRequest.cs](../../../Mud.Wechat.Channels.DataModels/Warehouse/ChannelsUpdateWarehouseDetailRequest.cs) | `out_warehouse_id`, `name`, `intro` |
-| `ChannelsWarehouseCoverLocationsRequest` | 请求体 | [Warehouse/ChannelsWarehouseCoverLocationsRequest.cs](../../../Mud.Wechat.Channels.DataModels/Warehouse/ChannelsWarehouseCoverLocationsRequest.cs) | `out_warehouse_id`, `cover_locations` |
-| `ChannelsGetAddressPrioritySortResponse` | 应答 | [Warehouse/ChannelsGetAddressPrioritySortResponse.cs](../../../Mud.Wechat.Channels.DataModels/Warehouse/ChannelsGetAddressPrioritySortResponse.cs) | `data` |
-| `ChannelsGetAddressPrioritySortRequest` | 请求体 | [Warehouse/ChannelsGetAddressPrioritySortRequest.cs](../../../Mud.Wechat.Channels.DataModels/Warehouse/ChannelsGetAddressPrioritySortRequest.cs) | `address_id1`, `address_id2`, `address_id3`, `address_id4` |
-| `ChannelsSetAddressPrioritySortRequest` | 请求体 | [Warehouse/ChannelsSetAddressPrioritySortRequest.cs](../../../Mud.Wechat.Channels.DataModels/Warehouse/ChannelsSetAddressPrioritySortRequest.cs) | `address_id1`, `address_id2`, `address_id3`, `address_id4`, `priority_sort` |
-| `ChannelsUpdateWarehouseStockRequest` | 请求体 | [Warehouse/ChannelsUpdateWarehouseStockRequest.cs](../../../Mud.Wechat.Channels.DataModels/Warehouse/ChannelsUpdateWarehouseStockRequest.cs) | `product_id`, `sku_id`, `out_warehouse_id`, `diff_type`, `num` |
-| `ChannelsGetWarehouseStockResponse` | 应答 | [Warehouse/ChannelsGetWarehouseStockResponse.cs](../../../Mud.Wechat.Channels.DataModels/Warehouse/ChannelsGetWarehouseStockResponse.cs) | `data` |
-| `ChannelsGetWarehouseStockRequest` | 请求体 | [Warehouse/ChannelsGetWarehouseStockRequest.cs](../../../Mud.Wechat.Channels.DataModels/Warehouse/ChannelsGetWarehouseStockRequest.cs) | `product_id`, `sku_id`, `out_warehouse_id` |
-| `ChannelsGetAddressCodeResponse` | 应答 | [Warehouse/ChannelsGetAddressCodeResponse.cs](../../../Mud.Wechat.Channels.DataModels/Warehouse/ChannelsGetAddressCodeResponse.cs) | `addrs_msg`, `next_level_addrs` |
-| `ChannelsGetAddressCodeRequest` | 请求体 | [Warehouse/ChannelsGetAddressCodeRequest.cs](../../../Mud.Wechat.Channels.DataModels/Warehouse/ChannelsGetAddressCodeRequest.cs) | `addr_code` |
+| `ChannelsResponse` | 应答 | [ChannelsResponse.cs](../../../Mud.Wechat.Channels/ChannelsResponse.cs) | `errcode`, `errmsg` |
+| `ChannelsCreateWarehouseRequest` | 请求体 | [Warehouse/ChannelsCreateWarehouseRequest.cs](../../../Mud.Wechat.Channels/Warehouse/ChannelsCreateWarehouseRequest.cs) | `out_warehouse_id`, `name`, `intro`, `cover_locations` |
+| `ChannelsGetWarehouseListResponse` | 应答 | [Warehouse/ChannelsGetWarehouseListResponse.cs](../../../Mud.Wechat.Channels/Warehouse/ChannelsGetWarehouseListResponse.cs) | `data` |
+| `ChannelsGetWarehouseListRequest` | 请求体 | [Warehouse/ChannelsGetWarehouseListRequest.cs](../../../Mud.Wechat.Channels/Warehouse/ChannelsGetWarehouseListRequest.cs) | `page_size`, `next_key` |
+| `ChannelsGetWarehouseResponse` | 应答 | [Warehouse/ChannelsGetWarehouseResponse.cs](../../../Mud.Wechat.Channels/Warehouse/ChannelsGetWarehouseResponse.cs) | `data` |
+| `ChannelsGetWarehouseRequest` | 请求体 | [Warehouse/ChannelsGetWarehouseRequest.cs](../../../Mud.Wechat.Channels/Warehouse/ChannelsGetWarehouseRequest.cs) | `out_warehouse_id` |
+| `ChannelsUpdateWarehouseDetailRequest` | 请求体 | [Warehouse/ChannelsUpdateWarehouseDetailRequest.cs](../../../Mud.Wechat.Channels/Warehouse/ChannelsUpdateWarehouseDetailRequest.cs) | `out_warehouse_id`, `name`, `intro` |
+| `ChannelsWarehouseCoverLocationsRequest` | 请求体 | [Warehouse/ChannelsWarehouseCoverLocationsRequest.cs](../../../Mud.Wechat.Channels/Warehouse/ChannelsWarehouseCoverLocationsRequest.cs) | `out_warehouse_id`, `cover_locations` |
+| `ChannelsGetAddressPrioritySortResponse` | 应答 | [Warehouse/ChannelsGetAddressPrioritySortResponse.cs](../../../Mud.Wechat.Channels/Warehouse/ChannelsGetAddressPrioritySortResponse.cs) | `data` |
+| `ChannelsGetAddressPrioritySortRequest` | 请求体 | [Warehouse/ChannelsGetAddressPrioritySortRequest.cs](../../../Mud.Wechat.Channels/Warehouse/ChannelsGetAddressPrioritySortRequest.cs) | `address_id1`, `address_id2`, `address_id3`, `address_id4` |
+| `ChannelsSetAddressPrioritySortRequest` | 请求体 | [Warehouse/ChannelsSetAddressPrioritySortRequest.cs](../../../Mud.Wechat.Channels/Warehouse/ChannelsSetAddressPrioritySortRequest.cs) | `address_id1`, `address_id2`, `address_id3`, `address_id4`, `priority_sort` |
+| `ChannelsUpdateWarehouseStockRequest` | 请求体 | [Warehouse/ChannelsUpdateWarehouseStockRequest.cs](../../../Mud.Wechat.Channels/Warehouse/ChannelsUpdateWarehouseStockRequest.cs) | `product_id`, `sku_id`, `out_warehouse_id`, `diff_type`, `num` |
+| `ChannelsGetWarehouseStockResponse` | 应答 | [Warehouse/ChannelsGetWarehouseStockResponse.cs](../../../Mud.Wechat.Channels/Warehouse/ChannelsGetWarehouseStockResponse.cs) | `data` |
+| `ChannelsGetWarehouseStockRequest` | 请求体 | [Warehouse/ChannelsGetWarehouseStockRequest.cs](../../../Mud.Wechat.Channels/Warehouse/ChannelsGetWarehouseStockRequest.cs) | `product_id`, `sku_id`, `out_warehouse_id` |
+| `ChannelsGetAddressCodeResponse` | 应答 | [Warehouse/ChannelsGetAddressCodeResponse.cs](../../../Mud.Wechat.Channels/Warehouse/ChannelsGetAddressCodeResponse.cs) | `addrs_msg`, `next_level_addrs` |
+| `ChannelsGetAddressCodeRequest` | 请求体 | [Warehouse/ChannelsGetAddressCodeRequest.cs](../../../Mud.Wechat.Channels/Warehouse/ChannelsGetAddressCodeRequest.cs) | `addr_code` |
 
 > DTO 一律以源文件为准；本表只列端点签名**直接引用**的一层类型，嵌套类型不再递归展开。所有 DTO 不使用 `required`（仓内约束），必填性由接口注释与官方页表达，SDK 不做本地必填校验。
 
@@ -272,7 +272,7 @@ var response = await service.AddCoverLocationsAsync(new ChannelsWarehouseCoverLo
 | 契约守卫（路由 / 计数 / DTO 登记断言） | [`ChannelsWarehouseContractGuards.cs`](../../../../../Tests/Mud.Wechat.Channels.Tests/ContractGuards/ChannelsWarehouseContractGuards.cs) |
 | 守卫中的代表性测试方法 | `WarehouseEndpoints_ShouldMatchOfficialRoutes`、`WarehouseEndpoints_ShouldAllBePost_WithBodyRules`、`WarehouseInterface_ShouldBindChannelsToken_AndRegisterUnderWarehouseGroup`、`WarehouseDataModels_ShouldBeRegisteredInJsonContext`、`WarehouseDataModels_ShouldLockOfficialFieldsAndSharedDtos`、`WarehouseEnumConstants_ShouldLockOfficialLiteralValues` |
 | 模块枚举 / 装配入口 | [`ChannelsModule.cs`](../../Extensions/ChannelsModule.cs)、[`ChannelsServiceBuilder.cs`](../../Extensions/ChannelsServiceBuilder.cs) |
-| DTO 与 JSON 上下文 | [`Mud.Wechat.Channels.DataModels/Warehouse`](../../../Mud.Wechat.Channels.DataModels/Warehouse/) |
+| DTO 与 JSON 上下文 | [`Mud.Wechat.Channels/Warehouse`](../../../Mud.Wechat.Channels/Warehouse/) |
 | 跨线基线 | [`Tests/ContractBaseline.cs`](../../../../../Tests/ContractBaseline.cs)（各线分节；本线口径以守卫实际断言为准） |
 | 本线包级公开面与已踩陷阱 | [`Src/Channels/Mud.Wechat.Channels/README.md`](../../README.md) |
 | 跨线通用约束（门禁 / AOT / 落位） | [`AGENTS.md`](../../../../../AGENTS.md) |

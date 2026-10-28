@@ -489,7 +489,7 @@ public class WechatPayPartnerTransactionsContractGuards
         }
 
         // 上下文必须接进本线的合并解析器（否则声明式客户端在 AOT 下取不到 JsonTypeInfo）。
-        var resolverSource = File.ReadAllText(SourcePath("Mud.Wechat.Pay",
+        var resolverSource = File.ReadAllText(SourcePath("Mud.Wechat.Pay", 
             "Extensions", "PayJsonResolverExtensions.cs"));
         resolverSource.Should().Contain("PartnerTransactionsJsonContext.Default",
             "新增域上下文须同批登记进 PayJsonResolverExtensions（AOT 红线：无登记即无元数据）");

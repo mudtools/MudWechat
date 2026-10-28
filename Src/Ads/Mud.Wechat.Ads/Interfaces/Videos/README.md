@@ -134,7 +134,7 @@ WechatAdsException.ThrowIfFailed(updated, "/v3.0/videos/update");
 | 声明式路由 / 计数（恰 3） | `ImageAndVideoEndpoints_ShouldMatchOfficialRouteTable`（`ADS-B2`）+ `VideosRoutes` |
 | 上传通道路径常量、两域共用实现 | `MaterialUploadChannels_ShouldMatchOfficialPaths` |
 | 「本域无 `user_token`」的反证 | `RestrictedWriteSurfaces_ShouldCarryUserToken_WhenOfficialPageListsIt` |
-| 35 / 2 字段的实际建模面 | `AdsVideoInfo` / `AdsVideoUploadResult`（`Src/Ads/Mud.Wechat.Ads.DataModels/Videos/`） |
+| 35 / 2 字段的实际建模面 | `AdsVideoInfo` / `AdsVideoUploadResult`（`Src/Ads/Mud.Wechat.Ads/Videos/`） |
 | 官方文档 | `https://developers.e.qq.com/v3.0/docs/api/{videos/get,videos/add,videos/update,videos/delete}` |
 
 ## 改动本域需要同批完成

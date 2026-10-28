@@ -77,8 +77,8 @@ public class WechatMcpContractGuards
 
         source.Should().NotContain("""ProjectReference Include="..\Mud.Wechat.Work.AI.Tools""",
             "协议层与工具面互不引用（AI-G5）：对接点只有层 1 的 IWechatToolSurface，宿主装配时接上");
-        source.Should().Contain("""ProjectReference Include="..\Mud.Wechat.AI.Abstractions""",
-            "协议层只依赖层 1 中立端口（工具描述符 + 列/调接缝）");
+        source.Should().Contain("ProjectReference Include=\"..\\Mud.Wechat.AI\\",
+            "协议层只依赖层 1 中立端口（工具描述符 + 列/调接缝；2026-10 包合并后层 1 为单工程 Mud.Wechat.AI）");
     }
 
     [Fact]

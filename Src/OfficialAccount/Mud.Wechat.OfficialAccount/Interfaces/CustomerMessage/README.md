@@ -8,7 +8,7 @@
 > **事实来源限定**：本文断言只来自本仓接口文件的 XML 注释、本仓契约守卫
 > [MpCustomerMessageContractGuards.cs](../../../../../Tests/Mud.Wechat.OfficialAccount.Tests/ContractGuards/MpCustomerMessageContractGuards.cs)
 > （`CM1`~`CM9`）、[MpQueryTokenWhitelistGuard.cs](../../../../../Tests/Mud.Wechat.OfficialAccount.Tests/ContractGuards/MpQueryTokenWhitelistGuard.cs)（`QT1`）
-> 与本仓 DTO（[DataModels/CustomerMessage/](../../../Mud.Wechat.OfficialAccount.DataModels/CustomerMessage/)）。
+> 与本仓 DTO（[DataModels/CustomerMessage/](../../../Mud.Wechat.OfficialAccount/CustomerMessage/)）。
 > 未在以上四处留档的官方约束一律进文末「已知留档缺口」。
 
 ## 端点速览
@@ -46,7 +46,7 @@
 
 ## `send`：一个接口、平铺 16 个官方键、11 个消息分支
 
-请求体 [MpSendCustomMessageRequest](../../../Mud.Wechat.OfficialAccount.DataModels/CustomerMessage/Send/MpSendCustomMessageRequest.cs)
+请求体 [MpSendCustomMessageRequest](../../../Mud.Wechat.OfficialAccount/CustomerMessage/Send/MpSendCustomMessageRequest.cs)
 是**扁平结构**——`touser` + `msgtype` + 各分支对象**平级**（官方形态即如此，不是本仓的设计选择）：
 
 | `msgtype`（常量在 `MpCustomMessageTypes`） | 分支属性 | 官方必填字段（`send` 页分支字段表） |
@@ -77,7 +77,7 @@
 
 ## `typing`：30 秒前置 + 不可重复
 
-[MpTypingRequest](../../../Mud.Wechat.OfficialAccount.DataModels/CustomerMessage/MpTypingRequest.cs)
+[MpTypingRequest](../../../Mud.Wechat.OfficialAccount/CustomerMessage/MpTypingRequest.cs)
 官方三键：`touser`（`ToUser`）、`command`（`Command`）、`businessid`（`BusinessId`）。
 `command` 取值由 `CM5` 钉死在 `MpTypingCommands`：`Typing = "Typing"` / `CancelTyping = "CancelTyping"`
 （**首字母大写的官方原文取值**，不是 `typing`）。
@@ -104,9 +104,9 @@
 - **官方文档缺陷（照录，勿据其省字段）**：该页字段区标注「请求体：无」，但请求示例明确带这 4 个字段
   ⇒ SDK 按**示例**建模，否则无法分页拉取。
 - 需已开通/升级**新版客服功能**，否则 `65400`；`65416` 查询参数不合法、`65417` 时间段超出限制。
-- 应答 [MpGetMsgListResponse](../../../Mud.Wechat.OfficialAccount.DataModels/CustomerMessage/MpGetMsgListResponse.cs)
+- 应答 [MpGetMsgListResponse](../../../Mud.Wechat.OfficialAccount/CustomerMessage/MpGetMsgListResponse.cs)
   = `recordlist`（`RecordList`）+ `number`（`Number`）+ `msgid`（`MsgId`），
-  单条 [MpMsgRecord](../../../Mud.Wechat.OfficialAccount.DataModels/CustomerMessage/MpMsgRecord.cs)
+  单条 [MpMsgRecord](../../../Mud.Wechat.OfficialAccount/CustomerMessage/MpMsgRecord.cs)
   = `openid` / `opercode` / `text` / `time` / `worker`。
   操作码常量（`CM5`）：`MpMsgRecordOperCodes.WorkerSent = 2002`（客服发送）、
   `WorkerReceived = 2003`（客服接收）；**官方其余 opercode 取值未逐项核验**（见缺口）。
@@ -195,7 +195,7 @@ foreach (MpMsgRecord r in records.RecordList ?? new List<MpMsgRecord>())
 | 「不引入 `MpAccountType`」的决策锁定 | `CM8` = `AccountTypeGate_ShouldNotExistWithoutRealConsumptionPoint` |
 | 已核验错误码常量 | `CM9` = `CustomerMessageErrorCodes_ShouldMatchVerifiedOfficialValues` |
 | Query 令牌白名单（唯一持票人） | `QT1`（`MpQueryTokenWhitelistGuard.cs`） |
-| 分支 DTO | [DataModels/CustomerMessage/Send/](../../../Mud.Wechat.OfficialAccount.DataModels/CustomerMessage/Send/)（14 个文件）与 [DataModels/CustomerMessage/](../../../Mud.Wechat.OfficialAccount.DataModels/CustomerMessage/)（4 个文件） |
+| 分支 DTO | [DataModels/CustomerMessage/Send/](../../../Mud.Wechat.OfficialAccount/CustomerMessage/Send/)（14 个文件）与 [DataModels/CustomerMessage/](../../../Mud.Wechat.OfficialAccount/CustomerMessage/)（4 个文件） |
 | 生成入口与模块枚举、上下文合并清单 | [MpServiceBuilder.cs](../../Extensions/MpServiceBuilder.cs)、[MpModule.cs](../../Extensions/MpModule.cs)、[MpJsonResolverExtensions.cs](../../Extensions/MpJsonResolverExtensions.cs) |
 
 ## 改动本域需要同批完成

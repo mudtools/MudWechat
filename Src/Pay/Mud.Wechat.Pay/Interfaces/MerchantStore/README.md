@@ -2,7 +2,7 @@
 
 微信支付「商户门店管理」域 SDK（**5 端点**：创建 + 更新 + 查询 + 绑定收款号 + 解绑收款号）。 接口：[IWechatPayMerchantStoreService](./IWechatPayMerchantStoreService.cs)；注册组 `MerchantStore`；模块枚举 `PayModule.MerchantStore`（装配入口见 [PayServiceBuilder.cs](../../Extensions/PayServiceBuilder.cs)）。逐端点核验 2026-10-18。
 
-> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[WechatPayMerchantStoreContractGuards.cs](../../../../../Tests/Mud.Wechat.Pay.Tests/ContractGuards/WechatPayMerchantStoreContractGuards.cs)、[WechatPayDomainContractGuards.cs](../../../../../Tests/Mud.Wechat.Pay.Tests/ContractGuards/WechatPayDomainContractGuards.cs)、[WechatPayMerchantRiskManageContractGuards.cs](../../../../../Tests/Mud.Wechat.Pay.Tests/ContractGuards/WechatPayMerchantRiskManageContractGuards.cs)）、本域 DTO（[`Mud.Wechat.Pay.DataModels/MerchantStore`](../../../Mud.Wechat.Pay.DataModels/MerchantStore/)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
+> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[WechatPayMerchantStoreContractGuards.cs](../../../../../Tests/Mud.Wechat.Pay.Tests/ContractGuards/WechatPayMerchantStoreContractGuards.cs)、[WechatPayDomainContractGuards.cs](../../../../../Tests/Mud.Wechat.Pay.Tests/ContractGuards/WechatPayDomainContractGuards.cs)、[WechatPayMerchantRiskManageContractGuards.cs](../../../../../Tests/Mud.Wechat.Pay.Tests/ContractGuards/WechatPayMerchantRiskManageContractGuards.cs)）、本域 DTO（[`Mud.Wechat.Pay/MerchantStore`](../../../Mud.Wechat.Pay/MerchantStore/)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
 
 ## 端点速览
 
@@ -173,19 +173,19 @@ https://pay.weixin.qq.com/doc/v3/merchant/4013948580。
 
 ## DTO 与序列化面
 
-本域 DTO 目录 [`Mud.Wechat.Pay.DataModels/MerchantStore`](../../../Mud.Wechat.Pay.DataModels/MerchantStore/) 内共 **13** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **13** 个，`SerializerClassName` = `MerchantStore`。
+本域 DTO 目录 [`Mud.Wechat.Pay/MerchantStore`](../../../Mud.Wechat.Pay/MerchantStore/) 内共 **13** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **13** 个，`SerializerClassName` = `MerchantStore`。
 
-AOT 源生成上下文：[`MerchantStoreJsonContext.g.cs`](./../../../Mud.Wechat.Pay.DataModels/Generated/MerchantStoreJsonContext.g.cs)（生成物，勿手改）。
+AOT 源生成上下文：[`MerchantStoreJsonContext.g.cs`](./../../../Mud.Wechat.Pay/Generated/MerchantStoreJsonContext.g.cs)（生成物，勿手改）。
 
 | 端点引用的类型 | 角色 | 定义位置 | JSON 字段（前缀） |
 |---|---|---|---|
-| `MerchantStoreCreateResponse` | 应答 | [MerchantStore/MerchantStoreDtos.cs](../../../Mud.Wechat.Pay.DataModels/MerchantStore/MerchantStoreDtos.cs) | `store_reference_id`, `brand_name`, `store_name`, `branch_name`, `brand_id`, `address_code`, `address_detail`, `address_complements`, `longitude`, `latitude`, `service_phone`, `business_hours` … |
-| `MerchantStoreCreateRequest` | 请求体 | [MerchantStore/MerchantStoreDtos.cs](../../../Mud.Wechat.Pay.DataModels/MerchantStore/MerchantStoreDtos.cs) | `store_reference_id`, `brand_name`, `store_name`, `branch_name`, `brand_id`, `address_code`, `address_detail`, `address_complements`, `longitude`, `latitude`, `service_phone`, `business_hours` … |
-| `MerchantStoreUpdateRequest` | 请求体 | [MerchantStore/MerchantStoreDtos.cs](../../../Mud.Wechat.Pay.DataModels/MerchantStore/MerchantStoreDtos.cs) | `store_reference_id`, `brand_name`, `store_name`, `branch_name`, `brand_id`, `address_code`, `address_detail`, `address_complements`, `longitude`, `latitude`, `service_phone`, `business_hours` … |
-| `MerchantStoreQueryResponse` | 应答 | [MerchantStore/MerchantStoreDtos.cs](../../../Mud.Wechat.Pay.DataModels/MerchantStore/MerchantStoreDtos.cs) | `store_reference_id`, `brand_name`, `store_name`, `branch_name`, `brand_id`, `address_code`, `address_detail`, `address_complements`, `longitude`, `latitude`, `service_phone`, `business_hours` … |
-| `MerchantStoreRecipientOperateResponse` | 应答 | [MerchantStore/MerchantStoreRecipientDtos.cs](../../../Mud.Wechat.Pay.DataModels/MerchantStore/MerchantStoreRecipientDtos.cs) | `sub_mchid`, `store_recipient`, `failed_store_recipient`, `mchid`, `failed_reason` |
-| `MerchantStoreRecipientBindRequest` | 请求体 | [MerchantStore/MerchantStoreRecipientDtos.cs](../../../Mud.Wechat.Pay.DataModels/MerchantStore/MerchantStoreRecipientDtos.cs) | `sub_mchid`, `store_recipient`, `failed_store_recipient`, `mchid`, `failed_reason` |
-| `MerchantStoreRecipientUnbindRequest` | 请求体 | [MerchantStore/MerchantStoreRecipientDtos.cs](../../../Mud.Wechat.Pay.DataModels/MerchantStore/MerchantStoreRecipientDtos.cs) | `sub_mchid`, `store_recipient`, `failed_store_recipient`, `mchid`, `failed_reason` |
+| `MerchantStoreCreateResponse` | 应答 | [MerchantStore/MerchantStoreDtos.cs](../../../Mud.Wechat.Pay/MerchantStore/MerchantStoreDtos.cs) | `store_reference_id`, `brand_name`, `store_name`, `branch_name`, `brand_id`, `address_code`, `address_detail`, `address_complements`, `longitude`, `latitude`, `service_phone`, `business_hours` … |
+| `MerchantStoreCreateRequest` | 请求体 | [MerchantStore/MerchantStoreDtos.cs](../../../Mud.Wechat.Pay/MerchantStore/MerchantStoreDtos.cs) | `store_reference_id`, `brand_name`, `store_name`, `branch_name`, `brand_id`, `address_code`, `address_detail`, `address_complements`, `longitude`, `latitude`, `service_phone`, `business_hours` … |
+| `MerchantStoreUpdateRequest` | 请求体 | [MerchantStore/MerchantStoreDtos.cs](../../../Mud.Wechat.Pay/MerchantStore/MerchantStoreDtos.cs) | `store_reference_id`, `brand_name`, `store_name`, `branch_name`, `brand_id`, `address_code`, `address_detail`, `address_complements`, `longitude`, `latitude`, `service_phone`, `business_hours` … |
+| `MerchantStoreQueryResponse` | 应答 | [MerchantStore/MerchantStoreDtos.cs](../../../Mud.Wechat.Pay/MerchantStore/MerchantStoreDtos.cs) | `store_reference_id`, `brand_name`, `store_name`, `branch_name`, `brand_id`, `address_code`, `address_detail`, `address_complements`, `longitude`, `latitude`, `service_phone`, `business_hours` … |
+| `MerchantStoreRecipientOperateResponse` | 应答 | [MerchantStore/MerchantStoreRecipientDtos.cs](../../../Mud.Wechat.Pay/MerchantStore/MerchantStoreRecipientDtos.cs) | `sub_mchid`, `store_recipient`, `failed_store_recipient`, `mchid`, `failed_reason` |
+| `MerchantStoreRecipientBindRequest` | 请求体 | [MerchantStore/MerchantStoreRecipientDtos.cs](../../../Mud.Wechat.Pay/MerchantStore/MerchantStoreRecipientDtos.cs) | `sub_mchid`, `store_recipient`, `failed_store_recipient`, `mchid`, `failed_reason` |
+| `MerchantStoreRecipientUnbindRequest` | 请求体 | [MerchantStore/MerchantStoreRecipientDtos.cs](../../../Mud.Wechat.Pay/MerchantStore/MerchantStoreRecipientDtos.cs) | `sub_mchid`, `store_recipient`, `failed_store_recipient`, `mchid`, `failed_reason` |
 
 > DTO 一律以源文件为准；本表只列端点签名**直接引用**的一层类型，嵌套类型不再递归展开。所有 DTO 不使用 `required`（仓内约束），必填性由接口注释与官方页表达，SDK 不做本地必填校验。
 
@@ -223,7 +223,7 @@ var response = await service.CreateStoreAsync(new MerchantStoreCreateRequest(), 
 | 契约守卫（路由 / 计数 / DTO 登记断言） | [`WechatPayMerchantStoreContractGuards.cs`](../../../../../Tests/Mud.Wechat.Pay.Tests/ContractGuards/WechatPayMerchantStoreContractGuards.cs)、[`WechatPayDomainContractGuards.cs`](../../../../../Tests/Mud.Wechat.Pay.Tests/ContractGuards/WechatPayDomainContractGuards.cs)、[`WechatPayMerchantRiskManageContractGuards.cs`](../../../../../Tests/Mud.Wechat.Pay.Tests/ContractGuards/WechatPayMerchantRiskManageContractGuards.cs) |
 | 守卫中的代表性测试方法 | `MerchantStoreEndpoints_ShouldMatchOfficialRoutesAndDeclareNoContentForUpdate`、`MerchantStoreRoutes_ShouldStayOnOwnPrefixAndNotDeclareListOrDeleteFaces`、`MerchantStoreDtos_ShouldExposeOfficialFieldNamesAndSubtreeDifference`、`MerchantStoreStateValues_ShouldMatchOfficialBulletListAndPendingSubset`、`MerchantStoreUnspecifiedOfficialFaces_ShouldRemainUnvalidatedAndUnencrypted`、`MerchantStoreResponses_ShouldDeriveFromBaseAndFollowSharedSubtreeRulings`、`MerchantStoreDataModels_ShouldBeRegisteredInJsonContextAndDomainFullyWired`、`PayInterfaces_ShouldNotDeclareToken_AndShouldMatchModuleCount`、`Endpoints_ShouldMatchOfficialRoutes`、`Dtos_ShouldExposeOfficialFieldNames`、`Responses_ShouldDeriveFromWechatPayResponse`、`Interfaces_ShouldAllowAnyStatusCode_SoErrorBodiesAreReadable` … |
 | 模块枚举 / 装配入口 | [`PayModule.cs`](../../Extensions/PayModule.cs)、[`PayServiceBuilder.cs`](../../Extensions/PayServiceBuilder.cs) |
-| DTO 与 JSON 上下文 | [`Mud.Wechat.Pay.DataModels/MerchantStore`](../../../Mud.Wechat.Pay.DataModels/MerchantStore/) |
+| DTO 与 JSON 上下文 | [`Mud.Wechat.Pay/MerchantStore`](../../../Mud.Wechat.Pay/MerchantStore/) |
 | 跨线基线 | [`Tests/ContractBaseline.cs`](../../../../../Tests/ContractBaseline.cs)（各线分节；本线口径以守卫实际断言为准） |
 | 本线包级公开面与已踩陷阱 | [`Src/Pay/Mud.Wechat.Pay/README.md`](../../README.md) |
 | 跨线通用约束（门禁 / AOT / 落位） | [`AGENTS.md`](../../../../../AGENTS.md) |

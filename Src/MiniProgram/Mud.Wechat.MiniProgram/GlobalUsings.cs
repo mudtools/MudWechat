@@ -15,6 +15,8 @@ global using Microsoft.Extensions.DependencyInjection.Extensions;
 global using Microsoft.Extensions.Logging;
 global using Mud.HttpUtils;
 global using Mud.HttpUtils.Attributes;
+global using Mud.Wechat.Abstractions.Contracts;
+global using System.Text.Json.Serialization;
 global using Mud.Wechat.MiniProgram.DataModels;
 global using Mud.Wechat.MiniProgram.DataModels.Auth;
 global using Mud.Wechat.MiniProgram.DataModels.Charge;

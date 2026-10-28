@@ -26,8 +26,8 @@ DI 注册组名 `Contact`（六子族共用），模块枚举
 —— **单数**，是本仓既有命名，勿「顺手改成 `AddContactsApi`」）。逐端点核验 2026-10-18。
 
 > **事实来源限定**：本文全部断言只来自本仓三类证据——本目录 21 个接口文件的 XML 注释、六支契约守卫
-> （U/D/B/CR/E/T 系列，见文末「事实来源」）、[DataModels/Contacts](../../../Mud.Wechat.Work.DataModels/Contacts/)
-> 与 [DataModels/Contracts/Users](../../../Mud.Wechat.Work.DataModels/Contacts/Users/) 下的 DTO 声明；
+> （U/D/B/CR/E/T 系列，见文末「事实来源」）、[DataModels/Contacts](../../../Mud.Wechat.Work/Contacts/)
+> 与 [DataModels/Contracts/Users](../../../Mud.Wechat.Work/Contacts/Users/) 下的 DTO 声明；
 > 端点数与路由以守卫断言为准，接口注释里的官方文档号仅作定位标识、不作为本文事实来源。
 > 未能在本仓三类证据内核验的项目一律集中在文末「已知留档缺口」，标为**未逐项核验**，正文不作推断。
 
@@ -149,9 +149,9 @@ DI 注册组名 `Contact`（六子族共用），模块枚举
 
 ## 3. 定位键与 `order` 的语义反转（本域最易踩的坑）
 
-四个定位键的分工与长度约束（[UserInfo.cs](../../../Mud.Wechat.Work.DataModels/Contacts/Users/UserInfo.cs)、
-[CreateUserRequest.cs](../../../Mud.Wechat.Work.DataModels/Contacts/Users/RequestModel/CreateUserRequest.cs)、
-[UserDepartmentInfo.cs](../../../Mud.Wechat.Work.DataModels/Contacts/Users/UserDepartmentInfo.cs)）：
+四个定位键的分工与长度约束（[UserInfo.cs](../../../Mud.Wechat.Work/Contacts/Users/UserInfo.cs)、
+[CreateUserRequest.cs](../../../Mud.Wechat.Work/Contacts/Users/RequestModel/CreateUserRequest.cs)、
+[UserDepartmentInfo.cs](../../../Mud.Wechat.Work/Contacts/Users/UserDepartmentInfo.cs)）：
 
 | 键 | JSON 名 | 口径 |
 |---|---|---|
@@ -163,9 +163,9 @@ DI 注册组名 `Contact`（六子族共用），模块枚举
 **`order` 在成员侧与部门侧语义相反**——这是唯一「照名字推断必错」的字段：
 
 - 成员 `order`（`List<long>`，与 `department` 一一对应）：**数值越大越靠前**，官方范围 `[0, 2^32)` 故以 64 位整数承载，成员授权模式下不返回。
-- 部门 `order`（[DepartmentInfo.cs](../../../Mud.Wechat.Work.DataModels/Contacts/Department/DepartmentInfo.cs)、
-  [DepartmentIdInfo.cs](../../../Mud.Wechat.Work.DataModels/Contacts/Department/DepartmentIdInfo.cs)、
-  [CreateDepartmentRequest.cs](../../../Mud.Wechat.Work.DataModels/Contacts/Department/RequestModel/CreateDepartmentRequest.cs)）：
+- 部门 `order`（[DepartmentInfo.cs](../../../Mud.Wechat.Work/Contacts/Department/DepartmentInfo.cs)、
+  [DepartmentIdInfo.cs](../../../Mud.Wechat.Work/Contacts/Department/DepartmentIdInfo.cs)、
+  [CreateDepartmentRequest.cs](../../../Mud.Wechat.Work/Contacts/Department/RequestModel/CreateDepartmentRequest.cs)）：
   **数值越小越靠前**，与成员相反；同样 `[0, 2^32)`、`long?`。
 
 ⇒ 跨成员 / 部门复用同一个「排序值」比较器或「取最大 / 最小即首位」的封装会静默错序，二者必须分别实现。
@@ -193,7 +193,7 @@ DI 注册组名 `Contact`（六子族共用），模块枚举
 | 端点 | 批量能力 | 失败语义 |
 |---|---|---|
 | `department/create`（#22） | **单次一个部门** | 无部分成功；层级 ≤15、部门总数 ≤3 万，建议与创建成员串行 |
-| `user/create`（#9） | 单成员 | 填了不存在的部门 ⇒ **官方自动新建**，结果回显在 [CreateUserResponse.CreatedDepartmentList](../../../Mud.Wechat.Work.DataModels/Contacts/Users/CreateUserResponse.cs)（`created_department_list`）；部门 ≤100 个、每部门成员 ≤3 万 |
+| `user/create`（#9） | 单成员 | 填了不存在的部门 ⇒ **官方自动新建**，结果回显在 [CreateUserResponse.CreatedDepartmentList](../../../Mud.Wechat.Work/Contacts/Users/CreateUserResponse.cs)（`created_department_list`）；部门 ≤100 个、每部门成员 ≤3 万 |
 | `user/batchdelete`（#12） | ≤200 userid | **存在无效 userid 即整批失败**，无部分删除 |
 | `tag/addtagusers` / `deltagusers`（#42/#43） | userlist≤1000、partylist≤100 | **三态**：全部合法 / 部分非法（仍 `errcode=0` 附非法列表）/ 全部非法（报错），见 §9 |
 | `contactrule/*`（#29/#31/#32） | ≤100 | 见 §8 |
@@ -203,11 +203,11 @@ DI 注册组名 `Contact`（六子族共用），模块枚举
 
 ## 6. 异步导入族（`batch/`）：csv 前置 + 两段式 + 危险操作阈值
 
-- **两段式**：#25/#26/#27 只返回受理结果 `JobId`（[BatchJobResponse](../../../Mud.Wechat.Work.DataModels/Contacts/Batch/BatchJobResponse.cs)），
-  必须轮询 #28 `GetBatchJobResultAsync(jobid)` 拿 [GetBatchJobResultResponse](../../../Mud.Wechat.Work.DataModels/Contacts/Batch/GetBatchJobResultResponse.cs)：
+- **两段式**：#25/#26/#27 只返回受理结果 `JobId`（[BatchJobResponse](../../../Mud.Wechat.Work/Contacts/Batch/BatchJobResponse.cs)），
+  必须轮询 #28 `GetBatchJobResultAsync(jobid)` 拿 [GetBatchJobResultResponse](../../../Mud.Wechat.Work/Contacts/Batch/GetBatchJobResultResponse.cs)：
   `status` **1 开始 / 2 进行中 / 3 完成**、`type` 取值 `sync_user` / `replace_user` / `replace_party` / `invite_user`、
   `percentage`、`remaintime`（分钟）、完成后 `result`（逐条明细，形状按 `type` 区分）。#28 **只能查已提交过的历史任务**。
-- **csv 前置**：`media_id` 须先经素材接口上传取得（[BatchImportUsersRequest](../../../Mud.Wechat.Work.DataModels/Contacts/Batch/RequestModel/BatchImportUsersRequest.cs)）；
+- **csv 前置**：`media_id` 须先经素材接口上传取得（[BatchImportUsersRequest](../../../Mud.Wechat.Work/Contacts/Batch/RequestModel/BatchImportUsersRequest.cs)）；
   `to_invite` 官方默认 `true`（不填不出网、由官方按默认处理）。
 - **全量覆盖成员（#26）是危险操作**：文件中不存在、通讯录中存在的成员将被删除；官方中止阈值为「需删除成员 >50 人且 >现有人数 20%，
   或 <50 人且 >现有人数 80%」时中止并返回错误码。全量覆盖部门（#27）对「仍有成员 / 子部门的部门」暂缓删除。
@@ -216,10 +216,10 @@ DI 注册组名 `Contact`（六子族共用），模块枚举
 ## 7. 异步导出族（`export/`）：任务 + 加密结果文件的两段式
 
 - 与导入族同为「提交任务取 `jobid` ⇒ 轮询取结果文件」两段式，但**终态语义是文件而非逐条明细**：
-  #37 返回 [GetExportResultResponse](../../../Mud.Wechat.Work.DataModels/Contacts/Export/GetExportResultResponse.cs) 的 `status`
+  #37 返回 [GetExportResultResponse](../../../Mud.Wechat.Work/Contacts/Export/GetExportResultResponse.cs) 的 `status`
   **0 未处理 / 1 处理中 / 2 完成 / 3 异常失败**（注意：与导入 #28 的 1/2/3 三态**不是同一状态机**，0 起点、且多了失败态）
-  与 `data_list[]`（[ExportDataFile](../../../Mud.Wechat.Work.DataModels/Contacts/Export/ExportDataFile.cs)：`url` / `size` / `md5`）。
-- **数据文件是密文**：提交任务时传入 `encoding_aeskey`（[ExportRequest](../../../Mud.Wechat.Work.DataModels/Contacts/Export/RequestModel/ExportRequest.cs) 必填，
+  与 `data_list[]`（[ExportDataFile](../../../Mud.Wechat.Work/Contacts/Export/ExportDataFile.cs)：`url` / `size` / `md5`）。
+- **数据文件是密文**：提交任务时传入 `encoding_aeskey`（[ExportRequest](../../../Mud.Wechat.Work/Contacts/Export/RequestModel/ExportRequest.cs) 必填，
   Base64 定长 43 字符，**敏感凭据、不得进日志**），导出文件按 AES-256-CBC 加密（`AESKey = Base64_Decode(encoding_aeskey + "=")`、
   IV 取前 16 字节、PKCS#7 填充），**解密由调用方自行完成**，本 SDK 不提供解密。`block_size` 支持 `[10^4, 10^6]`、默认 `10^6`。
 - **下载链接有效期 2 小时、支持 Range 头分段下载**；调用 `#37` 的身份须与提交任务的一致，否则取不到文件。
@@ -231,16 +231,16 @@ DI 注册组名 `Contact`（六子族共用），模块枚举
 ## 8. 通讯录查看权限族（`contactrule/`）：条件适用字段 + 全 POST
 
 「通讯录隐藏规则」4 支（101536/101537/101539/101540）**仅自建、且仅通讯录同步应用可调用**，
-`rules[]` 一次最多 100 条（[CreateContactRulesRequest](../../../Mud.Wechat.Work.DataModels/Contacts/ContactRules/RequestModel/CreateContactRulesRequest.cs)）。
+`rules[]` 一次最多 100 条（[CreateContactRulesRequest](../../../Mud.Wechat.Work/Contacts/ContactRules/RequestModel/CreateContactRulesRequest.cs)）。
 频控（接口注释）：**创建 / 修改 / 删除共用 1 分钟 5 次、1 小时 10 次、1 天 60 次**；#30 读取列表注释无频率数值。
 
-规则体 [ContactRule](../../../Mud.Wechat.Work.DataModels/Contacts/ContactRules/ContactRule.cs) 的字段适用性随 `rule_type` 变（本仓不本地拦截，错配由 `errcode` 表达）：
+规则体 [ContactRule](../../../Mud.Wechat.Work/Contacts/ContactRules/ContactRule.cs) 的字段适用性随 `rule_type` 变（本仓不本地拦截，错配由 `errcode` 表达）：
 
 | 字段 | 口径 |
 |---|---|
 | `rule_type` | **1 隐藏部门/成员、2 限制查看外部门、3 限制查看所有人**；**修改时不能更新规则类型** |
 | `rule_id` | `int?`；创建时不填（官方生成，返回的 `rule_ids` 与请求顺序对应）、修改 / 删除时必填 |
-| `range` / `whitelist` | 目标范围与白名单（[ContactRuleRange](../../../Mud.Wechat.Work.DataModels/Contacts/ContactRules/ContactRuleRange.cs)） |
+| `range` / `whitelist` | 目标范围与白名单（[ContactRuleRange](../../../Mud.Wechat.Work/Contacts/ContactRules/ContactRuleRange.cs)） |
 | `exclude` / `is_allowed_search` / `is_allowed_conversation` | **仅「限制查看外部门 / 所有人」（type 2/3）时使用**，type 1 无此三项语义 |
 
 ⇒ 本域唯一的「读取走 POST」端点在这里：**#30 `contactrule/list` 是 POST 且无请求体参数**（`GetContactRulesAsync(CancellationToken)`，CR1 断言 `[Post]`），
@@ -249,8 +249,8 @@ DI 注册组名 `Contact`（六子族共用），模块枚举
 ## 9. 标签族：归属 `Tags` 目录 + 响应形态陷阱
 
 - 标签管理全部 7 支端点官方对三类应用一致开放 ⇒ 全落 [IWechatWorkTagsService.cs](./IWechatWorkTagsService.cs)（父接口）、三支子接口空标记（T2）；
-  DTO 落 [Contacts/Tags/](../../../Mud.Wechat.Work.DataModels/Contacts/Tags/) 子目录、命名空间 `...DataModels.Contacts.Tags`。
-- **增删标签成员是三态返回**（[ChangeTagMembersResponse](../../../Mud.Wechat.Work.DataModels/Contacts/Tags/ChangeTagMembersResponse.cs)）：
+  DTO 落 [Contacts/Tags/](../../../Mud.Wechat.Work/Contacts/Tags/) 子目录、命名空间 `...DataModels.Contacts.Tags`。
+- **增删标签成员是三态返回**（[ChangeTagMembersResponse](../../../Mud.Wechat.Work/Contacts/Tags/ChangeTagMembersResponse.cs)）：
   全部合法、部分非法（仍 `errcode=0`，附非法清单）、全部非法（返回错误码）。两支共用同一响应体。
 - **响应形态陷阱**（与消息推送域同类的坑）：非法成员 `invalidlist` 是**竖线 `\|` 分隔的字符串**（如 `usr1|usr2`）、
   非法部门 `invalidparty` 是**数组** ⇒ 二者不共用、不可都按数组解析。
@@ -269,7 +269,7 @@ DI 注册组名 `Contact`（六子族共用），模块枚举
   1. **接口目录 `Interfaces/Contacts/` 无子目录**——六子族接口文件全部平铺在 `Contacts/` 根下（连 Export 服务也在根），
      而 **DTO 有子目录** `Contacts/{Users,Batch,ContactRules,Department,Export,Tags}/`。
   2. **`Contacts/Users/` 的命名空间独插 `Contracts` 段**：成员域 DTO 物理在 `DataModels/Contacts/Users/`、
-     命名空间却是 `Mud.Wechat.Work.DataModels.Contracts.Users`（如 [UserInfo.cs](../../../Mud.Wechat.Work.DataModels/Contacts/Users/UserInfo.cs) 首行 `namespace ...DataModels.Contracts.Users;`），
+     命名空间却是 `Mud.Wechat.Work.DataModels.Contracts.Users`（如 [UserInfo.cs](../../../Mud.Wechat.Work/Contacts/Users/UserInfo.cs) 首行 `namespace ...DataModels.Contracts.Users;`），
      是全仓**唯一**插入 `Contracts` 段的域；其余五子族命名空间为 `...DataModels.Contacts.{子族}`。
   3. **模块 / 注册入口为单数 `Contact`**：枚举 `WechatModule.Contact`、`AddContactApi()`、注册组名 `Contact`，
      而接口目录与 DTO 目录是复数 `Contacts`。
@@ -384,11 +384,11 @@ using (switcher.UseCorpScope(appKey: "default", authCorpId, permanentCode))
 | 缺口 | 现状 | 处置 |
 |---|---|---|
 | `hand_join` / 部门 `parentname` | 二者在本域接口文件、DTO、六支守卫的三类证据中**均未出现**，本仓不建模 ⇒ 是否为官方 create/update 报文可选字段**未逐项核验** | 需要时逐页核验官方文档，再按 §2「加 DTO + 同批补守卫」落地，不得凭字段名推断约束 |
-| 导出族的 `sync` / `template_ids` | [ExportRequest](../../../Mud.Wechat.Work.DataModels/Contacts/Export/RequestModel/ExportRequest.cs) 只有 `encoding_aeskey` / `block_size`、标签导出加 `tagid`；`sync` / `template_ids` **未在本仓出现** ⇒ 属邻域字段或不存在，**未逐项核验** | 不得从邻域（如上下游导入、审批模板）借字段塞进导出请求体 |
+| 导出族的 `sync` / `template_ids` | [ExportRequest](../../../Mud.Wechat.Work/Contacts/Export/RequestModel/ExportRequest.cs) 只有 `encoding_aeskey` / `block_size`、标签导出加 `tagid`；`sync` / `template_ids` **未在本仓出现** ⇒ 属邻域字段或不存在，**未逐项核验** | 不得从邻域（如上下游导入、审批模板）借字段塞进导出请求体 |
 | 除 `contactrule/*`（5/10/60）与 `replaceuser` 危险阈值外，各端点的数值 QPS | 接口注释只在通讯录查看权限四支留档了频率；成员 / 部门 / 标签 / 导入 / 导出的逐端点频率上限**未逐项核验** | 需要限流时先核验官方页，再补接口 remarks |
-| `GetBatchJobResultAsync` 的 `result` 逐条明细形状 | [GetBatchJobResultResponse](../../../Mud.Wechat.Work.DataModels/Contacts/Batch/GetBatchJobResultResponse.cs) 注释说明形状按 `type` 区分、元素落 `BatchTaskResultItem`，但各 `type` 的完整字段集**未逐项核验** | 解析明细前先核验 [BatchTaskResultItem.cs](../../../Mud.Wechat.Work.DataModels/Contacts/Batch/BatchTaskResultItem.cs) 与官方页 |
+| `GetBatchJobResultAsync` 的 `result` 逐条明细形状 | [GetBatchJobResultResponse](../../../Mud.Wechat.Work/Contacts/Batch/GetBatchJobResultResponse.cs) 注释说明形状按 `type` 区分、元素落 `BatchTaskResultItem`，但各 `type` 的完整字段集**未逐项核验** | 解析明细前先核验 [BatchTaskResultItem.cs](../../../Mud.Wechat.Work/Contacts/Batch/BatchTaskResultItem.cs) 与官方页 |
 | 「异步导入」是否含 `invite_user` 的提交端点 | #28 的 `type` 枚举含 `invite_user`，但本域邀请端点 #13 `batch/invite` 是同步接口；`invite_user` 任务由哪个提交端点产生**未在本域核验** | 需要异步邀请时查邻域 / 官方页，勿在成员域加提交端点 |
-| `contactrule/list` 的频率与响应 `rules` 全字段 | #30 注释仅「POST、无请求体」；其频率数值、以及 `GetContactRulesResponse` 回显字段是否等同 `ContactRule` 全集**未逐项核验** | 需要缓存或校验回显时先核验 [GetContactRulesResponse.cs](../../../Mud.Wechat.Work.DataModels/Contacts/ContactRules/GetContactRulesResponse.cs) |
+| `contactrule/list` 的频率与响应 `rules` 全字段 | #30 注释仅「POST、无请求体」；其频率数值、以及 `GetContactRulesResponse` 回显字段是否等同 `ContactRule` 全集**未逐项核验** | 需要缓存或校验回显时先核验 [GetContactRulesResponse.cs](../../../Mud.Wechat.Work/Contacts/ContactRules/GetContactRulesResponse.cs) |
 | 代开发能否调用 `list_id` 及返回 open_userid 的确切口径 | 代开发子接口是空标记、继承父接口读取面（#4 在其内）；但接口注释对 `list_id` 只描述了自建 / 第三方两种 secret 与返回 | 以官方代开发文档为准，勿据自建口径断言代开发行为 |
 | `UserInfo.enable` / `wxplugin_status` / `english_name` | DTO 注释标注「官方现行响应参数表未单列，为兼容既有部署与 Senparc 契约保留」⇒ 是否仍在实际响应中返回**未逐项核验** | 判空使用，勿当作必然存在 |
 
@@ -405,8 +405,8 @@ using (switcher.UseCorpScope(appKey: "default", authCorpId, permanentCode))
 | 标签族路由 / 计数（7）、三类一致、响应形态 | [WechatTagsContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatTagsContractGuards.cs) T1~T4 |
 | 令牌 Query 注入白名单（G5）与凭据脱敏 | [WechatContractGuards.QueryTokenInjection.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatContractGuards.QueryTokenInjection.cs)、[AGENTS.md §5.1/§8](../../../../../AGENTS.md) |
 | 令牌归属域（TO1~TO3）与接口命名空间二分（N1~N3） | [WechatTokenOwnerContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatTokenOwnerContractGuards.cs)、[WechatInterfaceNamespaceContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatInterfaceNamespaceContractGuards.cs) |
-| DTO 属性名 / 类型 / JSON 名 / 取值域注释 | [DataModels/Contacts/Users/](../../../Mud.Wechat.Work.DataModels/Contacts/Users/)（命名空间 `...Contracts.Users`）、[Contacts/Batch/](../../../Mud.Wechat.Work.DataModels/Contacts/Batch/)、[Contacts/ContactRules/](../../../Mud.Wechat.Work.DataModels/Contacts/ContactRules/)、[Contacts/Department/](../../../Mud.Wechat.Work.DataModels/Contacts/Department/)、[Contacts/Export/](../../../Mud.Wechat.Work.DataModels/Contacts/Export/)、[Contacts/Tags/](../../../Mud.Wechat.Work.DataModels/Contacts/Tags/) |
-| 各子族 JSON 上下文（源生成物，勿手改） | [UsersJsonContext.g.cs](../../../Mud.Wechat.Work.DataModels/Generated/UsersJsonContext.g.cs)、DepartmentJsonContext / BatchJsonContext / ContactRulesJsonContext / ExportJsonContext / TagsJsonContext |
+| DTO 属性名 / 类型 / JSON 名 / 取值域注释 | [DataModels/Contacts/Users/](../../../Mud.Wechat.Work/Contacts/Users/)（命名空间 `...Contracts.Users`）、[Contacts/Batch/](../../../Mud.Wechat.Work/Contacts/Batch/)、[Contacts/ContactRules/](../../../Mud.Wechat.Work/Contacts/ContactRules/)、[Contacts/Department/](../../../Mud.Wechat.Work/Contacts/Department/)、[Contacts/Export/](../../../Mud.Wechat.Work/Contacts/Export/)、[Contacts/Tags/](../../../Mud.Wechat.Work/Contacts/Tags/) |
+| 各子族 JSON 上下文（源生成物，勿手改） | [UsersJsonContext.g.cs](../../../Mud.Wechat.Work/Generated/UsersJsonContext.g.cs)、DepartmentJsonContext / BatchJsonContext / ContactRulesJsonContext / ExportJsonContext / TagsJsonContext |
 | 模块三段式（枚举 + `AddContactApi()` + 源生成 `AddContactWebApiHttpClient()`） | [WechatModule.cs](../../Extensions/WechatModule.cs)、[WechatWorkServiceBuilder.cs](../../Extensions/WechatWorkServiceBuilder.cs) |
 | 通讯录变更事件回调（通配键 `"*"`、`batch_job_result`） | 跨 `Callback` 域：[Callback README](../../../Mud.Wechat.Work.Callback/README.md)、[AGENTS.md §5.5](../../../../../AGENTS.md) |
 

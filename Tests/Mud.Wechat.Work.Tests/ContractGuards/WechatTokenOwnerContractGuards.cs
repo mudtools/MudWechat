@@ -59,9 +59,19 @@ public class WechatTokenOwnerContractGuards
     /// <summary>
     /// 全仓应用类型子接口（按程序集反射枚举，兼容后缀 / 前缀两种命名风格）。
     /// </summary>
+    /// <remarks>
+    /// <b>排除 <c>Mud.Wechat.Work.Abstractions*</c> 命名空间</b>：2026-10 包合并后原
+    /// <c>Work.Abstractions</c> 程序集与本包同处一个 Assembly，其令牌<b>签发</b>接口
+    /// （<c>IWechatWorkCorpTokenAuthentication</c> / <c>IWechatWorkInternalAppAuthentication</c> /
+    /// <c>IWechatWorkProviderAuthentication*</c>）按名匹配会落进「应用类型子接口」，而它们的语义恰是
+    /// 「为应用换令牌」——本身不可能声明凭据归属域（<c>[Token]</c> 一声明就把要取的令牌当成已注入的令牌）。
+    /// 合并前它们属另一程序集、天然不在主语内；此处以命名空间复原同一集合，主语不随分包方式漂移。
+    /// </remarks>
     private static readonly Lazy<Type[]> Facades = new(() =>
         typeof(IWechatWorkWedocSmartDocService).Assembly.GetTypes()
             .Where(t => t.IsInterface && t.IsPublic && FacadeFamilyOf(t.Name) != null)
+            .Where(t => t.Namespace is null
+                     || !t.Namespace.StartsWith("Mud.Wechat.Work.Abstractions", StringComparison.Ordinal))
             .OrderBy(t => t.Name, StringComparer.Ordinal)
             .ToArray());
 

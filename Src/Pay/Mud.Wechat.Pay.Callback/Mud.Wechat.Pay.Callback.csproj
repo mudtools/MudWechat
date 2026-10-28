@@ -9,7 +9,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\Mud.Wechat.Pay.Abstractions\Mud.Wechat.Pay.Abstractions.csproj" />
+		<ProjectReference Include="..\Mud.Wechat.Pay\Mud.Wechat.Pay.csproj" />
 		<!-- 直接引用共享叶层：抗重放端口 IWechatCallbackReplayGuard、回调选项基座均落 Abstractions，
 		     支付回调三闸（验签/时间窗/指纹）复用之，不得自建第二套（方案 §5.7 PAY-CB1）。 -->
 		<ProjectReference Include="..\..\Core\Mud.Wechat.Abstractions\Mud.Wechat.Abstractions.csproj" />

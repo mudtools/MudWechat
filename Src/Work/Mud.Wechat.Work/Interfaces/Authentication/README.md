@@ -232,19 +232,19 @@ MUD005 已知接受风险：企业微信官方契约强制令牌走 Query 参数
 
 | 端点引用的类型 | 角色 | 定义位置 | JSON 字段（前缀） |
 |---|---|---|---|
-| `GetPreAuthCodeResponse` | 应答 | [ProviderAuthentication/ResponseModel/GetPreAuthCodeResponse.cs](../../../Mud.Wechat.Work.DataModels/ProviderAuthentication/ResponseModel/GetPreAuthCodeResponse.cs) | `pre_auth_code`, `expires_in` |
-| `WechatWorkResponse` | 应答 | [WechatWorkResponse.cs](../../../Mud.Wechat.Work.DataModels/WechatWorkResponse.cs) | `errcode`, `errmsg`, `data` |
-| `SetSessionInfoRequest` | 请求体 | [ProviderAuthentication/RequestModel/SetSessionInfoRequest.cs](../../../Mud.Wechat.Work.DataModels/ProviderAuthentication/RequestModel/SetSessionInfoRequest.cs) | `pre_auth_code`, `session_info`, `appid`, `auth_type` |
-| `GetPermanentCodeResponse` | 应答 | [ProviderAuthentication/ResponseModel/GetPermanentCodeResponse.cs](../../../Mud.Wechat.Work.DataModels/ProviderAuthentication/ResponseModel/GetPermanentCodeResponse.cs) | `access_token`, `expires_in`, `permanent_code`, `dealer_corp_info`, `auth_corp_info`, `auth_info`, `auth_user_info`, `register_code_info`, `state`, `userid`, `open_userid`, `name` … |
-| `GetPermanentCodeRequest` | 请求体 | [ProviderAuthentication/RequestModel/GetPermanentCodeRequest.cs](../../../Mud.Wechat.Work.DataModels/ProviderAuthentication/RequestModel/GetPermanentCodeRequest.cs) | `auth_code` |
-| `GetAuthInfoResponse` | 应答 | [ProviderAuthentication/GetAuthInfoResponse.cs](../../../Mud.Wechat.Work.DataModels/ProviderAuthentication/GetAuthInfoResponse.cs) | `dealer_corp_info`, `auth_corp_info`, `auth_info` |
-| `GetAuthInfoRequest` | 请求体 | [ProviderAuthentication/GetAuthInfoRequest.cs](../../../Mud.Wechat.Work.DataModels/ProviderAuthentication/GetAuthInfoRequest.cs) | `auth_corpid`, `permanent_code` |
-| `GetAppQrcodeResponse` | 应答 | [ProviderAuthentication/ResponseModel/GetAppQrcodeResponse.cs](../../../Mud.Wechat.Work.DataModels/ProviderAuthentication/ResponseModel/GetAppQrcodeResponse.cs) | `qrcode` |
-| `GetAppQrcodeRequest` | 请求体 | [ProviderAuthentication/RequestModel/GetAppQrcodeRequest.cs](../../../Mud.Wechat.Work.DataModels/ProviderAuthentication/RequestModel/GetAppQrcodeRequest.cs) | `suite_id`, `appid`, `state`, `style`, `result_type` |
-| `GetCustomizedAuthUrlResponse` | 应答 | [ProviderAuthentication/ResponseModel/GetCustomizedAuthUrlResponse.cs](../../../Mud.Wechat.Work.DataModels/ProviderAuthentication/ResponseModel/GetCustomizedAuthUrlResponse.cs) | `qrcode_url`, `expires_in` |
-| `GetCustomizedAuthUrlRequest` | 请求体 | [ProviderAuthentication/RequestModel/GetCustomizedAuthUrlRequest.cs](../../../Mud.Wechat.Work.DataModels/ProviderAuthentication/RequestModel/GetCustomizedAuthUrlRequest.cs) | `state`, `templateid_list` |
-| `GetLoginInfoResponse` | 应答 | [ProviderAuthentication/ResponseModel/GetLoginInfoResponse.cs](../../../Mud.Wechat.Work.DataModels/ProviderAuthentication/ResponseModel/GetLoginInfoResponse.cs) | `corpid`, `userid`, `name`, `avatar`, `gender` |
-| `GetLoginInfoRequest` | 请求体 | [ProviderAuthentication/RequestModel/GetLoginInfoRequest.cs](../../../Mud.Wechat.Work.DataModels/ProviderAuthentication/RequestModel/GetLoginInfoRequest.cs) | `auth_code` |
+| `GetPreAuthCodeResponse` | 应答 | [ProviderAuthentication/ResponseModel/GetPreAuthCodeResponse.cs](../../../Mud.Wechat.Work/ProviderAuthentication/ResponseModel/GetPreAuthCodeResponse.cs) | `pre_auth_code`, `expires_in` |
+| `WechatWorkResponse` | 应答 | [WechatWorkResponse.cs](../../../Mud.Wechat.Work/WechatWorkResponse.cs) | `errcode`, `errmsg`, `data` |
+| `SetSessionInfoRequest` | 请求体 | [ProviderAuthentication/RequestModel/SetSessionInfoRequest.cs](../../../Mud.Wechat.Work/ProviderAuthentication/RequestModel/SetSessionInfoRequest.cs) | `pre_auth_code`, `session_info`, `appid`, `auth_type` |
+| `GetPermanentCodeResponse` | 应答 | [ProviderAuthentication/ResponseModel/GetPermanentCodeResponse.cs](../../../Mud.Wechat.Work/ProviderAuthentication/ResponseModel/GetPermanentCodeResponse.cs) | `access_token`, `expires_in`, `permanent_code`, `dealer_corp_info`, `auth_corp_info`, `auth_info`, `auth_user_info`, `register_code_info`, `state`, `userid`, `open_userid`, `name` … |
+| `GetPermanentCodeRequest` | 请求体 | [ProviderAuthentication/RequestModel/GetPermanentCodeRequest.cs](../../../Mud.Wechat.Work/ProviderAuthentication/RequestModel/GetPermanentCodeRequest.cs) | `auth_code` |
+| `GetAuthInfoResponse` | 应答 | [ProviderAuthentication/GetAuthInfoResponse.cs](../../../Mud.Wechat.Work/ProviderAuthentication/GetAuthInfoResponse.cs) | `dealer_corp_info`, `auth_corp_info`, `auth_info` |
+| `GetAuthInfoRequest` | 请求体 | [ProviderAuthentication/GetAuthInfoRequest.cs](../../../Mud.Wechat.Work/ProviderAuthentication/GetAuthInfoRequest.cs) | `auth_corpid`, `permanent_code` |
+| `GetAppQrcodeResponse` | 应答 | [ProviderAuthentication/ResponseModel/GetAppQrcodeResponse.cs](../../../Mud.Wechat.Work/ProviderAuthentication/ResponseModel/GetAppQrcodeResponse.cs) | `qrcode` |
+| `GetAppQrcodeRequest` | 请求体 | [ProviderAuthentication/RequestModel/GetAppQrcodeRequest.cs](../../../Mud.Wechat.Work/ProviderAuthentication/RequestModel/GetAppQrcodeRequest.cs) | `suite_id`, `appid`, `state`, `style`, `result_type` |
+| `GetCustomizedAuthUrlResponse` | 应答 | [ProviderAuthentication/ResponseModel/GetCustomizedAuthUrlResponse.cs](../../../Mud.Wechat.Work/ProviderAuthentication/ResponseModel/GetCustomizedAuthUrlResponse.cs) | `qrcode_url`, `expires_in` |
+| `GetCustomizedAuthUrlRequest` | 请求体 | [ProviderAuthentication/RequestModel/GetCustomizedAuthUrlRequest.cs](../../../Mud.Wechat.Work/ProviderAuthentication/RequestModel/GetCustomizedAuthUrlRequest.cs) | `state`, `templateid_list` |
+| `GetLoginInfoResponse` | 应答 | [ProviderAuthentication/ResponseModel/GetLoginInfoResponse.cs](../../../Mud.Wechat.Work/ProviderAuthentication/ResponseModel/GetLoginInfoResponse.cs) | `corpid`, `userid`, `name`, `avatar`, `gender` |
+| `GetLoginInfoRequest` | 请求体 | [ProviderAuthentication/RequestModel/GetLoginInfoRequest.cs](../../../Mud.Wechat.Work/ProviderAuthentication/RequestModel/GetLoginInfoRequest.cs) | `auth_code` |
 
 > DTO 一律以源文件为准；本表只列端点签名**直接引用**的一层类型，嵌套类型不再递归展开。所有 DTO 不使用 `required`（仓内约束），必填性由接口注释与官方页表达，SDK 不做本地必填校验。
 
@@ -271,7 +271,7 @@ var response = await service.GetPreAuthCodeAsync(ct);
 | 缺口 | 现状 | 处置 |
 |---|---|---|
 | 端点级频率限制 | 本仓接口 XML 注释**未记录**端点级 QPS / 次数数字 ⇒ **未逐项核验** | 需要限流参数时先逐页核验官方页，再补接口注释与本文 |
-| DTO 落位 | 本域无独立 `Mud.Wechat.Work.DataModels/Authentication` 目录，类型散落在共享目录或其它域 | 以类型索引与源文件为准；新增 DTO 时先定落位 |
+| DTO 落位 | 本域无独立 `Mud.Wechat.Work/Authentication` 目录，类型散落在共享目录或其它域 | 以类型索引与源文件为准；新增 DTO 时先定落位 |
 | 官方文档正文 | 本文只摘录本仓 XML 注释，**不复述官方页正文** | 逐参数最终口径以接口注释中的官方链接为准 |
 
 ## 事实来源

@@ -8,7 +8,7 @@
 
 > **事实来源限定**：本文断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本域契约守卫
 > [WechatPaySmartGuideContractGuards.cs](../../../../../Tests/Mud.Wechat.Pay.Tests/ContractGuards/WechatPaySmartGuideContractGuards.cs)
-> （`SMG-B1`~`SMG-B6`）与本域 DTO（`../../../Mud.Wechat.Pay.DataModels/SmartGuide/`）。
+> （`SMG-B1`~`SMG-B6`）与本域 DTO（`../../../Mud.Wechat.Pay/SmartGuide/`）。
 > 不复述外部官方文档正文；注释里没有的东西一律进文末「已知留档缺口」。
 
 ## 端点速览
@@ -146,7 +146,7 @@ await smartGuide.AssignSmartGuideAsync(guideId!,
 | 请求/响应基底类型分离 | `SmartGuideDataModels_ShouldSplitRequestAndResponseBaseTypes`（`SMG-B4`） |
 | DTO 数 6 与 AOT 登记 | `SmartGuideAllDtos_ShouldBeAnnotatedAndContextRegistered`（`SMG-B5`） |
 | DI / `PayModule` / JSON 解析器接线 | `SmartGuideRegistrars_ShouldBeWiredThroughPayModuleAndResolver`（`SMG-B6`） |
-| DTO 字段名与类型 | `../../../Mud.Wechat.Pay.DataModels/SmartGuide/` |
+| DTO 字段名与类型 | `../../../Mud.Wechat.Pay/SmartGuide/` |
 
 ## 改动本域需要同批完成
 

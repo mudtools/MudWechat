@@ -195,3 +195,360 @@ catch (WechatPayException ex) when (ex.PayErrorCode == WechatPayErrorCodes.Order
 - **HTTP 动词面自 P0-7 起不再是「只有 GET/POST」**：`MerchantRiskManage` 带 PUT 与 DELETE、`MerchantStore` 带 PATCH；`MerchantAlterApply` 的「撤销」是 **POST 动词段** `/{applyId}/revoke` 而非 DELETE。声明式客户端对五支动词的支持由 MRB-B1 / MST-B1 的「具体动词特性计数 == 基类 `HttpMethodAttribute` 计数」断言锁定，**「成功应答是 204 还是 JSON」逐支断言**（同一条 `/violation-notifications` 上 PUT/POST/GET 回 200+JSON 而 DELETE 回 204；门店 PATCH 回 204 而同路由 GET 回 200；**变更域十二支零 204**）⇒ 不得按「写操作一律 204」或「同路由同应答」收口。跨域反直觉的归并判据也在此批成对固化：风险管理是**同路由分建两形态**（11 方法 / 9 条 `(方法, 路由)`），门店管理是**两页同一份表 ⇒ 共用一套方法与 DTO**（10 页 / 5 端点 / 4 条路由字符串），变更管理是**三族各四页、页页独立 ⇒ 12 页 12 支零归并**（守卫 MAA-B1）。
 - **发票文件下载有意不实现**：官方文件域名 `pay.wechatpay.cn` 不在进程级白名单内，白名单零改动优先级高于该便利（`PAY-B8`）。账单 `download_url` 5 分钟有效且一次性，取到即下载。
 - 新增 `[HttpJsonSerializable]` DTO 后运行 `scripts/AddHttpJsonSerializable.ps1` + `scripts/GenerateJsonContext.ps1`（`mud-jsonctx`）重新生成，并把新上下文登记进 `PayJsonResolverExtensions`；未登记类型在 Native AOT 下会因无元数据失败（JIT 下靠反射侥幸可用）。
+
+---
+
+## 原 `Mud.Wechat.Pay.Abstractions` 包面（2026-10 包合并并入本工程，命名空间不变）
+
+
+微信支付 **APIv3** SDK **凭据与密码学基座包**：商户配置面、请求签名/应答与回调验签端口、`AEAD_AES_256_GCM` 加解密、时间戳窗口闸、平台证书存储端口、多商户上下文、命名 HTTP 客户端与签名 Handler、`AddPayApp` 注册入口。
+
+> **本包是企业微信线之外的另一条产品线**：凭据是**商户 API 证书 RSA 私钥对请求签名**，**没有 `access_token`**、**不声明任何 `[Token]`**（守卫 `PAY-B1` fail-closed），也没有令牌管理器/刷新阈值这类概念；请求恒发往 `https://api.mch.weixin.qq.com`。企业微信的 `AddPayApi()`（企业支付）/ `AddPayToolApi()`（收银台）走企微 `access_token`，与本包无关。
+
+## 内容
+
+- **商户配置面**（`Configuration/WechatPayMerchantConfig.cs`）：`MchId` / `SerialNumber`（商户 API 证书序列号）/ `PrivateKeySecretName` / `ApiKeySecretName` / `SpMchId` / `SubMchId`。派生面：`IsServicePartner`（`SpMchId` + `SubMchId` 齐备即服务商模式）、`MerchantKey`（服务商为 `{SpMchId}:{SubMchId}`，否则 `MchId`，即多商户路由键）、`AuthorizationMchId`（签名头里的 `mchid`）。`Validate()` 在启动期校验互斥必填，并**拒绝任何密钥材料形状**（`-----BEGIN` / PEM / `MII…` Base64）——配置里只允许出现密钥**名称**。`ToString()` 输出掩码。本类**刻意不继承** `WechatAppConfigBase`（后者的 `BaseUrl` / `AppKey` / `TokenRefreshThreshold` 在支付线无对应概念）。
+- **签名串构造与常量**（`Credential/WechatPaySignatureMessages.cs`）：`AuthorizationSchema = "WECHATPAY2-SHA256-RSA2048"`、`SignatureAlgorithm = "SHA256-RSA2048"`、`DefaultTimestampSkewSeconds = 300`、`NonceLength = 32`、`MiniProgramPaySignType = "RSA"`；`BuildCanonicalUrl` / `BuildRequestMessage`（`方法\nURL\ntimestamp\nnonce\nbody\n`）/ `BuildVerifyMessage`（`timestamp\nnonce\nbody\n`）/ `BuildMiniProgramPaySignMessage` / `BuildPackageValue`（`prepay_id=…`）/ `BuildAuthorization` / `CreateNonce`。**逐字节对齐官方**是 `PAY-B2` 黄金向量的锁定项——任一字节漂移都会让线上验签 100% 失败且只在真实交易时暴露。
+- **签名/验签端口与实现**（`Credential/`）：`IWechatPaySignatureProvider`（`Sign(message)` → `WechatPaySignatureResult`（只带**签名值 + 序列号**两个可公开字段）、`Verify(serialNumber, message, signature)`）与按商户缓存的 `IWechatPaySignatureProviderFactory`；算法为 RSA-SHA256 + `RSASignaturePadding.Pkcs1`，BCL 直调。
+- **时间戳窗口闸**（`Credential/WechatPayTimestampGate.cs`）：返回 `Verdict`（`Valid` / `Missing` / `NotNumeric` / `OutOfWindow`）而非异常——结论枚举天然不含报文内容（`PAY-B7`）；缺失/非数字/超窗一律拒（`PAY-B3`）。
+- **GCM 加解密**（`Credential/WechatPayAesGcmCodec.cs`）：`AEAD_AES_256_GCM`，`KeySizeBytes = 32` / `NonceSizeBytes = 12` / `TagSizeBytes = 16`（tag 附在 Base64 密文尾部）。`TryDecrypt` / `TryDecryptOfficialPayload` **fail-closed 返回 false 而不抛出**——异常消息会夹带密文字节；`WechatPayGcmPayload` 为 `readonly struct`（Nonce/Ciphertext/Tag）。
+- **凭据取用端口**（`Credential/IWechatPayMerchantCredentialProvider.cs`）：`LoadPrivateKeyAsync(config)` 返回**调用方自有**的 `RSA` 实例（用完须 `Dispose`），`LoadApiKeyAsync(config)` 返回 32 字节 APIv3 密钥；两者一律经组件端口 `ISecretProvider` 按**名称**取用。
+- **多商户管理与上下文**（`Credential/WechatPayMerchant*`）：`IWechatPayMerchantManager`（注册表单一来源，未登记键 fail-fast 并给出已注册键清单）、`IWechatPayMerchantContext`（`AsyncLocal` 环境商户上下文：`ResolveCurrent()` / `UseMerchant(merchantKey)` 一次性 `using` 作用域；单商户即默认商户，多商户未开作用域**直接抛**，绝不静默挑第一个）。
+- **平台证书端口**（`Credential/`）：读端口 `IWechatPayPlatformCertificateStore`（`TryGetCertificate(serial, out cert)`）、写端口 `IWechatPayPlatformCertificateWriter`、刷新端口 `IWechatPayPlatformCertificateRefresher`（实现随证书域在主包）；默认进程内实现 `WechatPayPlatformCertificateCache` 同时实现读写两端口并**指向同一实例**（否则刷新写 A、验签读 B 会静默不一致）。
+- **传输层**（`Transport/`）：`WechatPayHttpClientNames`（`ClientName = "wechat-pay"`、`BaseAddress = "https://api.mch.weixin.qq.com"`、`TypeName` 供 `[HttpClientApi(HttpClient = …)]` 引用）、标记接口 `IWechatPayHttpClient : IEnhancedHttpClient`、`WechatPayAuthorizationHandler`（DelegatingHandler：取当前商户 → 构造签名串 → 只添加一个 **`Authorization`** 头，其值内含 `mchid` / `nonce_str` / `timestamp` / `serial_no` / `signature`；请求已带 `Authorization` 时**幂等跳过**，签名失败一律上抛不静默放行）。
+- **注册入口**（`Extensions/PayAppExtensions.cs`）：`AddPayApp` 三重载（`IConfiguration + sectionName`（默认节名 `WechatPayMerchants`）/ `Action<WechatPayMerchantConfig>` / `List<WechatPayMerchantConfig>`），装配上述全部单例并建命名客户端；配置绑定走源生成器。
+- **错误码与异常**（`Enums/WechatPayErrorCodes.cs`、`Exceptions/WechatPayException.cs`）：官方 `code` 字符串常量表（`SYSTEM_ERROR` / `SIGN_ERROR` / `PARAM_ERROR` / `NO_AUTH` / `FREQUENCY_LIMITED` / `ORDER_NOT_EXIST` / `OUT_TRADE_NO_USED` …），`WechatPayException : WechatApiException` 带 `PayErrorCode`，`NumericFailureSentinel = -1` 表示无官方码。
+
+## 用法
+
+### 注册凭据底座
+
+```csharp
+// 密钥端口由宿主实现（SDK 不抢占注册：密钥治理权在宿主）
+builder.Services.AddSingleton<ISecretProvider>(new MyVaultSecretProvider());
+builder.Services.AddPayApp(builder.Configuration, "WechatPayMerchants");
+```
+
+```json
+{
+  "WechatPayMerchants": [
+    {
+      "MchId": "1900000001",
+      "SerialNumber": "5157F09EFDC096DE15EBE01A57495577",
+      "PrivateKeySecretName": "wechat-pay/apiv3/private-key/1900000001",
+      "ApiKeySecretName": "wechat-pay/apiv3-key/1900000001"
+    },
+    {
+      "SpMchId": "1900000100",
+      "SubMchId": "1900000200",
+      "SerialNumber": "…",
+      "PrivateKeySecretName": "wechat-pay/apiv3/private-key/1900000100",
+      "ApiKeySecretName": "wechat-pay/apiv3-key/1900000100"
+    }
+  ]
+}
+```
+
+值一律是**密钥名称**（经 `ISecretProvider` 解析），不是密钥内容。商户管理器在**注册期**立刻构造一次，把「配置非法 / 重复商户键 / 空集合」钉在启动阶段。
+
+### 只用底座、不起业务接口
+
+回调包验签与解密**只依赖本包**——纯回调宿主调 `AddPayApp` 即可，命名客户端是惰性的，不发支付请求就不会真的建连：
+
+```csharp
+builder.Services.AddPayApp(configuration, "WechatPayMerchants")
+                .AddWechatPayCallback(configuration);
+```
+
+### 直接复用密码学原语（自建传输或离线校验时）
+
+```csharp
+long timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+string nonce = WechatPaySignatureMessages.CreateNonce();          // 32 位随机串
+
+// 请求签名串（逐字节即官方规范串：方法\nURL\ntimestamp\nnonce\nbody\n）
+string message = WechatPaySignatureMessages.BuildRequestMessage(
+    "POST", "/v3/pay/transactions/jsapi", timestamp, nonce, body);
+
+// 官方回调 resource 解密：失败返回 false，绝不抛出、绝不回显密文/密钥
+bool ok = WechatPayAesGcmCodec.TryDecryptOfficialPayload(
+    apiKey32Bytes, resource.Nonce, resource.Ciphertext, resource.AssociatedData, out string? plaintext);
+```
+
+## 依赖
+
+- `Mud.Wechat.Abstractions`（跨产品线共享叶层：SSRF 主机登记窄入口、回调异常与抗重放端口、响应判错契约）
+- `Mud.Wechat.Pay.DataModels`
+- `Mud.HttpUtils` 3.0.9 + `Mud.HttpUtils.Generator` 3.0.9（分析器，`PrivateAssets=all`）
+- `Microsoft.Extensions.Http` / `Microsoft.Extensions.Hosting.Abstractions`：net8.0/net10.0 为 10.0.9，net6.0 为 8.0.1
+- `InternalsVisibleTo`：`Mud.Wechat.Pay`、`Mud.Wechat.Pay.Callback`、`Mud.Wechat.Pay.Tests`、`Mud.Wechat.Pay.Callback.Tests`、`DynamicProxyGenAssembly2`
+
+## 说明
+
+- **目标框架是记录在案的受控例外**：`net6.0;net8.0;net10.0`，**无 `netstandard2.0`**（本仓红线要求四档）。原因：APIv3 强制 `AEAD_AES_256_GCM`，而 `System.Security.Cryptography.AesGcm` 在 ns2.0 不存在；手写 GCM 与引入 BouncyCastle 等第三方密码学包两项备选均被否。自 net6.0 起 `AesGcm` / `RSA.ImportFromPem` / `RSA.SignData` / `RSA.Decrypt` 原生可用 ⇒ 三档全走 BCL、AOT 安全。守卫 `PAY-B9` / `AB-G8` 锁定该例外不被静默放宽。
+- `csproj` 抑制的是 `SYSLIB1100` / `SYSLIB1101`（源生成器相关）；`MUD005` 抑制只随主包，本包无 `[Token]` 声明。
+- **不注册默认 `ISecretProvider`**（组件端口，属宿主密钥治理）；宿主漏装时首次解析凭据取用器给出**点名错误**（说明是谁要求注册的），而非难懂的 DI 缺失异常。
+- **SSRF 白名单零改动**（`PAY-B8` / `AB-G9`）：`AddPayApp` 经公用层窄入口 `AddWechatApiHosts()` 登记——支付线不走 `[Token]` 因而不会触发 `AddWechatTokenRecovery`，纯支付宿主若不登记，每一笔请求都会被组件的连接期 SSRF 严格模式拦下（实测缺陷）。
+- **命名客户端默认带 `Accept: application/json` 与 `User-Agent`**（`PAY-B12`，`WechatPayHttpClientNames.AcceptHeaderValue` / `UserAgentProductName`）：官方退款域 `/v3/refund/domestic/*` 在**验签之前**就校验这两个头，缺任一直接 `400 INVALID_REQUEST`「Http头缺少Accept或User-Agent」——即整个退款域一笔都调不通，且错误信息与凭据无关、极易误读成签名缺陷。`.NET` 的 `HttpClient` 两者都不默认发送，故登记点只能在 `AddMudHttpClient` 的客户端配置里（由 DM-06 实测抓出，回归锁 `WechatPayTransportPipelineTests`）。
+- 多实例部署时，`IWechatPayPlatformCertificateStore` 的进程内默认实现可由宿主以 `TryAdd` 前置注册替换为分布式实现；`IWechatPayMerchantManager` 同理（如需从配置中心动态增删商户）。
+- 本包端口面（`IWechatPay*`）即支付线全部公开契约面；业务接口、下载通道与证书刷新实现落在主包 `Mud.Wechat.Pay`。
+
+
+---
+
+## 原 `Mud.Wechat.Pay.DataModels` 包面（2026-10 包合并并入本工程，命名空间不变）
+
+
+微信支付 **APIv3** SDK **数据模型包**——官方接口出入参与回调载荷模型（2339 个 `[HttpJsonSerializable]` 类型），独立交付以避免宿主引入不必要的运行时依赖。
+
+> 与**企业微信**线的 `Mud.Wechat.Work.DataModels`（其中 `Pay` / `PayTool` 子域是企微「企业支付」「收银台」，走 `access_token`）分属两条产品线；本包模型对应 `https://api.mch.weixin.qq.com` 的 APIv3 报文，无令牌概念。
+
+## 内容
+
+- **域 DTO**（**86 个域目录** = 接口侧 84 个业务域 − `PartnerPapay`（服务商面单支，DTO 与 `Papay/` 同域共目录）+ `Common` + `Callback` + `MerchantMedia`（手工通道域，无 `[HttpClientApi]` 接口），共 **2339** 个 `[HttpJsonSerializable]` 类型，均标注 `SerializerClassName`；**下列每目录数字为序列化型数**，官方枚举常量集不进该计数、在括注里另计）：
+  - `Common/` 1 —— 响应基底 `WechatPayResponse`
+  - `Transactions/` 27 —— 直连下单四族（JSAPI/小程序、Native、APP、H5）请求与应答（JSAPI 与 APP 共用 `PrepayIdResponse`；含 `JsapiAmountInfo` / `JsapiPayerInfo` / 商品明细 / 场景 / 门店 / 结算信息、`H5SceneInfo`+`H5Info`、`AppSubsidyInfo` 补贴族）、查单应答、关单请求、小程序调起支付五参数
+  - `Refund/` 8、`Bill/` 1、`Certificates/` 3、`Transfer/` 15（7 原有 + P1-2-A 电子回单授权族增量 8）
+  - `ProfitSharing/` 12、`PayScore/` 29、`Combine/` 22（命名空间 `…DataModels.Combine`）、`Fapiao/` 53（18 商户面 + P1-5-B 服务商 / 数电面 35）（命名空间 `…DataModels.Fapiao`）、`MarketingFavor/` 41 —— 代金券：批次创建/激活/暂停/重启/查询与列表 + 用户券发放/查询/列表 + 回调通知地址设置与查询 + 资金流与商户列表四支统计查询；`CouponTypes` / `CouponStockTypes` / `CouponTradeTypes` / `CouponRegionTypes` / `CouponBusinessTypes` / `CouponStockStatuses` **6** 组官方枚举常量集，不标注序列化。**同域两套路由参数命名并存**：首批查询支用 path 上的 `{openId}`（camel），P1-3 补差支照官方写 `{openid}`（snake）⇒ 模型侧不能合并成一个共用请求类型
+  - `Apply4SubMerchant/` 28 —— 特约商户进件（申请单 + 主体/证件/经营/结算四族请求构件 + 结算账户三面应答 + 官方枚举常量集）
+  - `Apply4Subject/` 14 —— 主体进件（申请单 + 主体/证件/联系人/法定代表人/受益人构件 + 三面应答 + 官方枚举常量集）
+  - `PartnerTransactions/` 30 —— 服务商基础支付 + 分期（下单五族请求 + 三支应答、查单应答及其促销/商品明细构件、关单请求、分期曝光咨询四件，以及**按族分列**的三套 `scene_info` 与两套 `store_info`、两套 `settle_info`；`PartnerTransactionConstants` 为 6 组官方枚举常量集，不标注序列化）
+  - `PartnerPayScore/` 49 —— 服务商支付分（授权五族请求/应答 + 服务订单创建/修改/同步/取消与查询应答 + 共享构件 `PostPayment`/`PostDiscount`/`TimeRange`/`Location`/`Device`/`RiskFund` + 支付分计划与用户签约计划四族 + 三支 204 端点专用请求；`PartnerPayScoreConstants` 等 15 组官方枚举常量集，不标注序列化。**字段名与直连支付分域不通用**：服务商面用 `appid`/`mchid` 而非 `sp_*`，且 `total_original_price`（计划应答）与 `total_origin_price`（签约计划）是官方原文的两个不同拼写）
+  - `BankPayScore/` 24 —— 银行 / 从业机构支付分（预授权与授权记录 + 服务订单创建/查询/取消/完结/修改/同步的请求与两支应答 + 扣款信息登记/查询两支应答 + 共享构件 `PostPayment`/`PostDiscount`/`TimeRange`/`Location`/`RiskFund`/`Collection` 族 + 促销明细两件；`BankPayScoreConstants` 等 11 组官方枚举常量集，不标注序列化。**与相邻两支付分域均不通用**：本域在 `appid`/`mchid` + `sub_*` 之外多一层 `channel_id`（请求侧处处必填、预授权应答降为选填），失效码是 `NO_AUTH` 而非服务商面的 `NOAUTH`，查询应答**无** `need_collection`（服务商面有且固定 `true`）⇒ 两域应答不可共用类型）
+  - `Callback/` 22 —— 通知信封 `WechatPayNotification` / `WechatPayNotificationResource` + 各域解密后 `resource` 载荷
+  - `PartnerTransfer/` 6 —— 服务商批量转账到零钱（发起请求 / 受理应答 + 批次查询应答与批次内明细构件 + 明细输入与明细查询应答；`PartnerTransfer*` 等 **9** 组官方枚举常量集，不标注序列化。**与直连转账域字段名不通用**：本域是 `total_num`/`success_num`/`fail_num` 与 `batch_status`(5)/`detail_status`(6)，直连与银行面是 `*_count` 与 `*_state`；明细请求姓名 `user_name`、应答姓名 `username`，两处不同名且皆 RSA 密文；明细应答**无** `sub_mchid`）
+  - `BankTransfer/` 10 —— 从业机构（银行）批量转账与电子回单（转账请求/应答五件 + 明细输入与明细应答 + 汇总与明细回单各「请求 + 应答」四件；`BankTransfer*` 等 **8** 组官方枚举常量集，不标注序列化。**六层商户标识**：`platform_mchid` / `specialized_payment_mchid` / `sponsor_mchid` / `user_authorized_mchid` / `user_authorized_appid` + 应答 `bank_sp_mchid`，本域**无** `sp_*`/`sub_appid`；状态 `batch_state`(4) / `detail_state`(4) 无 `WAIT_PAY`/`INIT` 档；回单应答的 `hash_type`/`hash_value`/`download_url` 仅 `FINISHED` 出现 ⇒ `download_url` 不落模型）
+  - `Repayment/` 17 —— 平台收付通·还款支付（下单请求 + 子单/金额/结算/实名/四场景对象七件 + 下单应答；查单应答 + 支付者/子单/金额三件；关单请求 + 关单子单；`RepaymentIdentityTypes` / `RepaymentH5SceneTypes` / `RepaymentTradeStates` **3** 组常量，不标注序列化。**请求与应答同名不同表**：`combine_payer_info` 请求侧是 `identity` 三节密文、应答侧只有 `openid`；子单金额请求 2 字段、应答 4 字段；`trade_state` 本域只 3 值（服务商基础支付 7 值）；字段名含数字打头段 `h5_info` / `h5_url`）
+  - `MerchantRiskManage/` 19 —— 商户风险管理（风险订单同步的「服务商 / 普通商户」两形态各一对请求与应答 + 风险共建三族：订单关联信息上报 / 风险信息查询 / 处理结果回传 + 违规通知回调地址四件套 `notify_url` 请求与应答；`MerchantRiskManageTradeRiskTypes`(5) / `MerchantRiskManagePunishTypes`(10) **2** 组常量，不标注序列化。**四套商户标识并存**：`mchid`（普通商户面）/ `sp_mchid`+`sub_mchid`（服务商面）/ `sp_mchid`+`acquiring_bank_id`+`channel_id`+`sub_mchid`（从业机构与渠道面）/ `sub_orders[].mch_id`（合单子单，官方此处**带下划线**）；同名 `risk_type` 有两套类型（风险订单同步面 `integer` 1~4、风险共建面 `string` 5 值）⇒ 两族常量与 DTO 各一套；官方两处误拼 `risk_discove_time` / `same_deviced` 照页保留（守卫 MRB-B3 同时断言「不得写成正确拼写」）
+  - `MerchantStore/` 13 —— 商户门店管理（创建请求 + 受理应答、更新请求（**只含 `store_basics` / `store_address` / `store_business` 三棵子树，无 `store_recipient`**）、查询应答（四棵 + `store_state`）、收款绑定与解绑两请求 + 一共用应答 + 失败明细构件；`MerchantStoreStateValues`(6) **1** 组常量，不标注序列化。**十页共用一套模型**：商户面与服务商面字段表只差一个 `sub_mchid`、应答表零差异 ⇒ 无 `Partner` 分身类型（守卫 MST-B6）；`store_id` 官方 `integer` 而 SDK 以 `long?` 承载模型字段、path 参数按线内惯例是 `string`；经纬度 `longitude`/`latitude` 官方即 **string**；`brand_id` `long?`；绑定与解绑**请求分建两型、应答共用一型**（逐项回 `failed_reason`）
+  - `MerchantFund/` 1 —— 商户账户余额（实时余额与日终余额**共用一个应答类型**，两键 `available_amount` / `pending_amount` 皆 `long?`（官方 integer 单位分，可越出 int32）；`MerchantFundAccountTypes`(3) **1** 组常量。**同前缀的提现族四支属【平台商户】面 ⇒ 零端点**，本包因此没有提现相关类型（守卫 MF-B2 与裁决守卫 C1 互为正对照））
+  - `MerchantSettlement/` 2 —— 商户结算规则申请（创建请求四字段 + 两支共用应答八键；`MerchantSettlementApplicationStates`(3) **1** 组常量。**从业机构面标识**：`acquiring_bank_id` / `channel_id` / `sub_mchid` 三层，本包**无** `sp_*` / `sub_appid`；`settle_rule_id` 官方整型 ⇒ 两侧同 `long?`；`application_process_info` 是 `string(256)` 描述串、官方未给结构 ⇒ 不做子树建模）
+  - `MerchantAlterApply/` 17 —— 商户资料变更（主体 / 超级管理员 / 商家简称三族各「提交请求 + 查询应答」，加撤销与驳回明细共用件；`MerchantAlterApply*` **9** 组官方枚举常量集，不标注序列化。**共用/分建逐类型裁定**：三族提交应答同表 ⇒ 共用一型；超管与简称的撤销同表 ⇒ 共用、主体撤销回 `{result}` 分建；三族查询应答**各建一型**（主体族与超管族字段名逐字相同、只差 `state` 值清单；简称族另有 `sub_mchid` 且**无** `audit_reject_detail`）；驳回明细项类型两族共用。**证件字段两套体系不互换**：本域 `card_*` / `id_doc_*` 且 `license` 美式拼写，进件域才是 `identification_*` / `licence`；官方误拼 `EDITTING`（三 T）/ `MODIFING`（单 F）照页保留（守卫 MAA-B3/B4））
+  - `MerchantService/` 34 —— 商户消费者投诉（通知地址 CRUD + 投诉列表 / 详情 / 协商历史 + 回复 / 完成处理 / 退款审批 / 即时服务的请求与应答及其嵌套构件；`MerchantService*` **14** 组官方枚举常量集，不标注序列化。图片上传（multipart）与拉取（二进制流）两支走手工通道 ⇒ 本目录无上传表单 DTO）
+  - `MerchantManage/` 5 —— 商户管理记录（查询单条应答 + 提交资料请求（`submit_data` 官方是 **`string(4000000)` 的 JSON 串、不是对象**）+ 按 `sub_mchid` 分页查询应答与构件；`MerchantManageConstants` **1** 组。上传管理记录文件走手工通道）
+  - `MerchantMedia/` 1 —— 商户媒体上传应答（`media_id` 单键）；上传与下载两支都是手工通道 ⇒ 本目录只有这一个响应类型
+  - `MerchantOperationManage/` 2 —— 商户运营管控情况查询（应答 + 限制项构件；`MerchantOperationManageConstants` **1** 组。同前缀尽调族属【平台商户】面 ⇒ 零建模，守卫 MOM-B2）
+  - `Ecommerce/` 104 —— 平台收付通（**八个子域共用一个注册组**：账户 / 进件 / 账单 / 资金 / 分账与补差 / 退款 / 商家转账 / 代扣合单）；`Ecommerce*` **58** 组官方枚举常量集。**共用 / 分建逐族裁定**：退款族三支「二级商户面 / 个人收款方面」同方法同路由 ⇒ 请求与应答各分建两型；余额两支、提现查询两支、进件两路查询、注销提现查询两支、普通注销「申请 + 查询」、分账「请求 + 查询」与回退单「请求 + 查询」、回补两支、接收方「添加 + 删除」、转账授权两支、代扣下单与查单各**共用一型**（判据是官方字段表，不是页面数）。**两支注销是两套契约**：`apply-cancel-withdraw`（状态九值）与 `cancel-applications`（三值）单据定位键、状态枚举、应答表全不同 ⇒ 不得互相套用。密文键（`account_name` / `account_number` / `identification_name` / `identification_no` / `cert_number` / `user_name` / `receiver_name` / `bank_account` / `real_name` / `id_card_*`）一律 `string` 承载、SDK 不代为加解密；应答的 `real_name_auth_result.access_token` 是**不可刷新凭据** ⇒ 禁进日志（守卫 EC-A3 / EC-C1 / EC-M3 / EC-R6 / EC-X4）
+  - `MarketingBusifavor/` 89 —— 商家券（批次 CRUD 与预算 / 券核销退货 / 关联与解绑补贴 / 自定义 code 上传 / 用户券 / 回调地址 / 商品券发券）。**双面同表 ⇒ 一型一份**：15 支里 13 支的【普通商户】与【普通服务商】两页字段表逐字同形 ⇒ 模型不因身份分身（分身即造出官方不存在的契约）。**用户券两支按官方定位键分建**：列表支只在 path 带 `openid`，查单支是 `openid` + `coupon_code` + `appid` 三元组 ⇒ 两个请求与应答类型不共用
+  - `MarketingPartnerProductCoupon/` **774** —— 商品券（服务商，本包最大目录）：商品券「单品 / 券包」两形态 + 券批次 + 券包 + 门店关联 + 预算 + 用户券 + 图片生成任务 + 发券与回调。**官方字段表以点号路径深度嵌套**（`stock.stock_usage_rule.…`）⇒ 每个子树独立成类型、`[JsonPropertyName]` 恒落**叶子名**，类型名按「端点 + 请求/应答 + 路径段」机械拼装；同路由两契约（单品 / 券包）⇒ 两套请求类型不可合并
+  - `MarketingPartnerDeliveryPlan/` 11 —— 品牌投放计划（创建 / 更新 / 查询 / 列表 / 终止）：**终止支官方零字段** ⇒ 本目录无对应请求与应答类型。**回调地址支的应答与请求同形但独立建型**（应答须承载基底 `Code` / `Message`）
+  - `MarketingGoodsSubsidyActivity/` 24 —— 商品补贴活动 + 零售门店活动 + 业代与门店绑定：**两支 DELETE 带 JSON 请求体** ⇒ 删除有独立请求类型（`out_request_no` + `delete_time` + 明细数组），不存在「DELETE 一定无包体」的共用空型
+  - `MarketingPayGiftActivity/` 44 —— 支付有礼活动（门槛活动四支 + 商品池 / 商户池维护）：池成员增删与查询各建独立类型，池明细构件在多支间共用；`offset` / `limit` 在列表支官方必填 ⇒ 以非空值语义交给宿主
+  - `MarketingShoppingReceipt/` 18 —— 小票营销（自定义入口创建 / 查询 / 修改 + 跳转信息上传 + 发送购物小票）：**本域无 DELETE** ⇒ 无删除型；**发送购物小票官方零 Body** ⇒ 无请求类型
+  - `MarketingPartnerships/` 10 —— 商户合作关系（建立 + 列表查询）：查询支的 `partner` / `authorized_data` 官方是**对象**，但声明式签名以 `string` 承载 URL 编码后的 JSON 串 ⇒ 模型侧只提供嵌套构件类型
+  - `IndustryCoupon/` 3 —— 行业券（出行优惠券）切卡 token 申领：`coupon_list` 官方点号路径 ⇒ 子树独立成类型、落叶子名
+  - `MarketingBank/` 3 —— 银行营销任务（包任务创建 / 查询）：**两支官方 Body 表为空** ⇒ 无请求类型，仅应答与其嵌套构件
+  - `MarketingBankFavor/` 4 —— 银行代金券（多活动发券 + 按 `coupon_id` 查询）：`openid` / `coupon_id` 走 path ⇒ 请求类型只承载业务参数，不含定位键
+  - `MarketingMemberCardOpen/` **151** —— 旧版会员卡模板与用户卡管理（本批最大目录之一）：模板族 5（创建 / 列表 / 查询 / PATCH 修改 / DELETE 删除）+ 模板升级 1 + code 预存 1 + 用户卡族 8（查询 / PATCH 修改 / 作废 / 确认入会 / OpenID 导入 / 手机号导入 / 二维码创建 / code 解密）+ 关联小程序 1 + 设置管理页入口 1 + 激活码 1。**四支 204 无应答包体**（删除模板 / 升级模板 / 作废卡 code / 激活卡 code）⇒ 零 DTO；**响应侧 Code 字段遮蔽基类**（业务字段 `code` = 会员卡 code，与 `WechatPayResponse.Code` 冲突）⇒ 5 个响应类型加 `[new]` 显式声明隐藏意图。嵌套子树包括 `brand` / `date_information` / `balance_information` / `user_information_form` / `additional_statement` / `favor_*` / `bonus_information` / `custom_field_list[]` / `rights_info` 等，按「端点 + 请求/应答 + 路径段」机械拼装独立成类型。**两套并存契约**：本域 `/v3/marketing/membercard-open/*` 与品牌会员卡 `/v3/brand/partner/card-member/*` 是并存非替代关系
+  - `MarketingMemberCardActivity/` **58** —— 会员有礼活动（创建活动 + 列表查询 + 详情查询 + 终止活动）：全部路由落 `/v3/marketing/membercard-activity/activities`，终止支走 POST 动词段 `…/{activity_id}/terminate`。嵌套子树包括 `base_info` / `member_card_activity_info` / `benefit_info` / `available_time` / `use_condition` / `stock_info` 等，按端点分建独立类型
+  - `BrandApplyment/` 10 —— 品牌入驻（提交请求 + 其 `subject_info` / `brand_basic_info` / `admin_info` / `trademark`（含两支 `*_trademark_registration_certificate`）四族构件 + 受理应答 + 撤销请求 + 状态应答。**四支路由两两共用应答**：两支受理（提交 / 撤销）同表 ⇒ 共用 `BrandApplymentAcceptResponse`，两支查询（按 `applyment_id` / 按 `out_request_no`）同表 ⇒ 共用 `BrandApplymentStateResponse`；**共用只发生在应答侧**，请求侧因必填口径不同一律分建。本域**两套编号并存**：`applyment_id`（官方受理号）与 `out_request_no`（商户业务号），撤销请求只认前者）
+  - `BrandCardConfig/` 11 —— 品牌名片配置（查询 / 申请 / 撤销 / 预览 / 发布五支各一应答 + 申请请求的 `brand_mini_program_info` / `brand_customer_service` / `service_list[]` 三棵构件 + 撤销与发布各自请求）：**申请 → 预览 → 发布是两段式**，查询支回的是「当前生效配置」、预览支回的是「待发布草稿」⇒ 两应答分建（守卫 BCC-B3）
+  - `BrandCardLink/` 9 —— 交易连接名片（列表 / 申请 / 状态 / 撤销 / 解绑五支）：列表应答的 `active_link_list[]` 独立成构件；**申请（6 行）与状态（8 行）两支应答不同形 ⇒ 各建一型**，撤销与解绑亦各建一型。分页口径是 `page_index` / `page_size`，与本批会员卡两支的 `offset` / `limit` **不同形**，不得互相套用
+  - `BrandCardMember/` 73 —— 会员卡与会员（模板四支 + 用户卡五支 + 预授权 + 积分 / 流水，本批最大品牌目录）：模板子树（`code_jump_information` / `valid_date_information` / `base_info` / `note_info` / `background_information` / `wallet_info` / `membership_promotion` 等）按「端点 + 请求/应答 + 路径段」机械拼装独立成类型。**模板四支（创建 / 查询 / 修改 / 作废）共用一份 49 行应答**、列表支 53 行单建；**用户卡五支（查询 / 修改 / 确认 / 作废 / 导入）共用一份 28 行应答**、列表支 32 行单建。**请求侧不分共用**：同族各支必填口径不同 ⇒ 一请求一类型
+  - `BrandProfitSharing/` 15 —— 品牌分账（发起 / 查询 / 列表 / 完结 / 最大比例 / 待分金额 + 接收方添加与删除 + 回退单）：回退「请求 + 应答」与接收方「添加 + 删除」各按同表共用；发起 15 行与查询 16 行**分建**（查询多 `finish_amount` / `finish_description`）。`receivers[]` 在请求 / 应答 / 列表三处各建构件（必填口径与字段集逐表不同）。**与直连 `ProfitSharing/` 是同族不同路由**：本域在 `/v3/brand/partner/profitsharing/`，模型不复用
+  - `BrandStore/` 27 —— 品牌门店（创建 / 查询 / 更新 / 列表 / 删除 / 绑定收款号 / 解绑收款号 / 打烊 / 恢复九支）：`store_basics` / `store_address` / `store_business` / `store_recipient[]` 四棵树在「写侧请求」与「读侧应答」各建一套（请求无 `store_recipient`、应答有）；创建 / 查询 / 更新**共用 21 行应答**，`close` / `resume` **共用 3 行状态应答**，绑定 5 行与解绑 1 行**分建**；**删除支官方未印发应表** ⇒ 接口返回裸 `Task`，本目录因此没有对应应答类型
+  - `PasswordExemptContract/` 12 —— 免密支付（契约查询 / 解约 + 四支预签约）：**四支预签约各建一型**——`qs` 面与 `sp` 面、小程序场景与支付后场景两两正交，字段名 `appid` / `openid`（`string(128)`）与 `sp_appid` / `sp_openid`（`string(64)`）**不可互换**（守卫 PEC-B3）；契约应答的 `contract_terminate_info` 独立成构件。**与 `PayScore/`、`PartnerPayScore/` 无交集**：本域是免密协议面，令牌与签名主体为品牌商户
+  - `AbnormalFundProcessing/` 15 —— 在途异常资金处理（付款单应答 + 指令发起请求/应答 + 指令查询应答）：**三支应答各建一型**（付款单含 `transfer_amount` 与三条指令列表，指令发起与指令查询的 `instruction` 结构同名不同表 ⇒ 独立成类型）；`commander` / `receiver` 构件在请求侧与应答侧各建一套
+  - `BrandRedpacket/` 6 —— 品牌商户红包批次（发起 + 按 `batch_no` / `out_batch_no` 两路查询 + 按 `detail_no` / `out_detail_no` 两路查明细）：**两支批次查询共用 `BrandRedpacketBatchQueryResponse`、两支明细查询共用 `BrandRedpacketDetailQueryResponse`，发起支单建** ⇒ **共用只在应答侧**；`brand_id` 官方是 `integer`（品牌线各域为 `string(20)` / `string(32)`），照页建整型
+  - `TransferToQqWallet/` 5 —— 转账到QQ钱包（发起 / 查询 / 撤销）：`transfer_scene_report_infos` 列表独立成构件；撤销支应答与查询支**不同形 ⇒ 分建**
+  - `UserConfirmAuthorization/` 7 —— 免确认收款授权（申请 / 查询 / 关闭）：申请与查询、关闭各建应答；`is_display_authorization` 是 query 而非报文字段 ⇒ 不进模型
+  - `PlatsolutionEcommerceInsuranceContract/` 3 —— 平台服务商解决方案·保险理赔功能开通（开通 + 查询）：请求的 `agreement_list[]` 签约协议构件独立成类型；两支应答同形 ⇒ 共用一型
+  - `PlatsolutionEcommerceCompensate/` 17 —— 赔付账单（`/v3/platsolution/ecommerce/mch-transfer/compensate-bills`）：发起 / 查询 / 撤销及其 `receiver` / `amount` 构件。**本域 `receiver.type` 官方只印 `TRANSACTION_USER`**（`PlatsolutionEcommerceCompensateReceiverTypes` 单值），与理赔 / 押金族的多值集**不得互套**
+  - `PlatsolutionEcommerceInsuranceClaim/` 18 —— 保险理赔账单：发起 / 查询 / 撤销及其构件；`receiver.type` 值集是 `MERCHANT` + `TRANSACTION_USER` **两支**（守卫 PEC-CL-B4 与常量类的逐页出处注释同源）
+  - `PlatsolutionEcommerceDeposit/` 45 —— 押金族（`mch-transfer/deposit-*` 七支：售后赔付「发起 + 按 `out_bill_no` / 按 `bill_id` 两路查询」、运费赔付「发起 + 查询」、保费赔付「发起 + 查询」，本批最大平台服务商目录）：**三族各建一套请求与应答**，且三族的查询路由形态互异（售后与运费走 `…/out-bill-no/{out_bill_no}`，保费直接是 `…/{out_bill_no}`）⇒ 定位键照页不得归一；`receiver.type` 三族三套值集（售后 `MERCHANT`+`TRANSACTION_USER`+`WXPAY_USER`、保费 `MERCHANT` 单值、运费族官方页**不印** `receiver.type` ⇒ 零常量），照页不得合并成一个常量集
+  - `PlatsolutionEcommerceMchTransfer/` 12 —— 平台服务商二级商户转账（`/v3/platsolution/ecommerce/mch-transfer/transfer-bills`）：发起 / 查询 / 撤销及构件。**出款状态 `PlatsolutionEcommerceTransferStates`（6 值）与 `PlatsolutionEcommerceTransactionTypes`（`WXPAY` / `WXVALUE`）在本目录四族（转账 / 赔付 / 理赔 / 押金）间共用**（值集逐页同形，全仓只建一份常量类，各族以全限定 `cref` 指回，不得各族复制一份）；`business_type` 4 值即四族路由的枚举镜像，本族 `receiver.type` 只有 `MERCHANT`
+  - `PlatsolutionEcommerceRechargeEmployee/` 4 —— 充值员工管理：`employee_type`（`ADMIN` / `STAFF` / `LEGAL_PERSON`）与 `state`（`EFFECTIVE` / `DELETED`）两组常量
+  - `PlatsolutionEcommerceRecharge/` 8 —— 二级商户充值（申请 / 查询 / 关闭）：**查询与关闭应答逐字段同形（36 行）⇒ 共用 `RechargeQueryResponse`**，申请支单建；`account_type` / `recharge_channel` / `recharge_scene` / `recharge_state` / `online_bank_type` 五组常量。两支「银行转账充值」路由官方页 404 ⇒ **零声明、零建模**（非契约路由守卫第八条）
+  - `PlatsolutionEcommerceSettle/` 7 —— 个人收款批量结算（申请 / 查询 / 异常批次处理）：**三支应答同形（14 行）⇒ 共用 `SettleApplyResponse`**；`settle_info[].settle_detail_info[]` 两棵子树独立成类型；`settle_type`（必填 2 值）/ `receiver_type`（选填，`USER` 而非其它族的 `TRANSACTION_USER`）/ `abnormal_type` / `abnormal_settle_type` / `trade_scenario` 五组常量
+  - `PlatsolutionInsuranceReservation/` 6 —— 平台商户预约商家转账·保险理赔（受理 + 按 `out_reservation_no` / 按 `reservation_id` 两路查询 + 关闭）：**四支建三型**——受理应答 6 行含**必填** `package_info`（拉起客户端用户确认页）单建，后三支官方应答表逐字段同形（18 行）⇒ 共用 `InsuranceReservationQueryResponse`；**关闭支官方印有应答表** ⇒ 既不返回裸 `Task` 也不凭空造请求类型。`scene_report_data.insurance_policy` 子树独立成类型；`user_real_name` 官方要求**加密后传入** ⇒ `string` 承载、SDK 不代为加解密
+  - `PlatsolutionInsuranceBatch/` 7 —— 平台商户商家转账批次与明细·保险理赔（受理 + 批次两路查询 + 明细两路查询）：**五支建四型**——批次两支查询同形（24 行）⇒ 共用 `InsuranceBatchQueryResponse`（其 `transfer_batch` 与 `data[]` 各独立成构件），明细两支同形（17 行）⇒ 共用 `InsuranceBatchDetailQueryResponse`，受理支单建。**分页 query 只印在批次两支**（`need_query_detail` 必填 / `offset` / `limit` / `detail_state`），明细两支零分页 ⇒ 参数表不得互套；本域字段名是 `batch_id` 而非 `transfer_bill_no`，与 `Transfer/`、`TransferToQqWallet/` 不复用
+  - `PlatsolutionInsuranceReceipt/` 6 —— 保险理赔商家转账电子回单（汇总「申请 + 查询」+ 明细「申请 + 查询」）：**四支四型、两两不同形**——申请支 3/4 行、查询支 7/9 行 ⇒ 只有查询支才返回 `hash_type` / `hash_value` / `download_url`，汇总与明细又差 `out_detail_no` / `detail_id` ⇒ 不得因「字段名大量重合」合并；申请支 `sub_mchid` 是**请求体唯一字段**（定位键在 path）、查询支是**必填 query 且零请求体** ⇒ 两型请求 DTO 不共用
+  - `WebizpayBill/` 4 —— 微企付企业支付账单与出资凭证（申请出资凭证 + 申请业务账单）：**两支四型、两两不同形**（凭证 6 行请求 / 11 行应答、账单 4 行请求 / 7 行应答）⇒ 不得因「都返回 `download_url`」合并。日期口径不同：凭证支是 `start_date` + `end_date` 区间、账单支只有 `date`（官方明写「仅支持按一天的纬度查询」）且 `type` 当前只有 `QYZFALL`；`entity_name` **只在凭证支**；账单支才有 `hash_type`（官方固定 SHA1）/ `hash_value`。两支 `download_url` **5 分钟内有效** ⇒ 取到即下、不得缓存复用
+  - `WebizpayEmployee/` 8 —— 微企付额度卡与员工授权（下发 + 按 `card_no` / 按 `out_card_no` 两路查询 + 作废 + 支付链接 + 解除授权）：**六支建五型**——两支查询官方应答表逐字段同形且必填口径一致（20 行）⇒ 共用 `WebizpayQuotaCardQueryResponse`，其余各建一型。**定位键分工**：path 恒为 `employee_id`（官方【微信授权关系 ID】`WeBizPay_<uuid>`，**不是**商户企业员工 ID `user_id`）；作废与支付链接两支**只认微信卡号 `card_no`**、不接受 `out_card_no`。同名 `sp_mchid`/`sub_mchid` 按动词落位不同：GET 三支落必填 query、零请求体，POST 三支落 Body
+  - `WebizpayStore/` 5 —— 微企付门店主体匹配（发起 + 按 `batch_id` 查询）：`match_details[]` 与 `match_results[]` 两棵子树各独立成类型。**本域两支是微企付 12 页中唯一只印 `sp_mchid`、零 `sub_mchid` 的一对** ⇒ 不得按本族其余十支的双层形态补字段；`match_details` 官方标选填、但元素三字段全必填；`product_type` 可选取值照官方写 `CODE_PAY`（不做拼写归一）
+  - `WebizpayUser/` 4 —— 微企付员工开通授权（授权链接 + 授权状态）：授权状态应答的 `employee_list[]` 独立成构件。**两支是「`user_id` ↔ `employee_id`」互查的两端**：`user_id` 在 path、应答回 `employee_id` ⇒ 额度卡域各支的 path 参数由本域取得。**授权链接支 8 行应答里 `authorization_url` / `expire_time` / `mp_query` / `mp_business_type` 全为选填**（官方「仅当可以开通时返回」）⇒ 200 零链接不是错误；`employee_list` 亦可为 0 长度。小程序参数有效期 **35 分钟**，其消费面是 JSAPI `wx.openBusinessView`（非 HTTP 端点）⇒ 本包只透传字段、零端点
+  - `Papay/` 82 —— 委托代扣 PAPay 3.0（直连面 20 端点 + 服务商面 1 端点，按六条产品线分文件）：**四端预签约各建一型**（APP 13 / H5 15 / JSAPI 13 / 小程序 13 行，请求表字段集互异），保险自动续费三端同理（37 / 35 / 35 行）⇒ 只有**应答同形**者共用（JSAPI 与 H5 皆单行 `redirect_url`；APP 与小程序各回 3 行、形态亦不同 ⇒ 单建）。**共用只发生在应答侧**：签约查询与解除、预约扣费查询与受理、保险协议查询与解除、保险周期查询与受理四对官方应答表逐字段同形且必填口径一致 ⇒ 各共用一型。服务商面 notify 包体是 `sp_mchid` / `sp_appid` / `sub_mchid` / `sub_appid` 四层、直连面是 `mchid` / `appid` ⇒ **不同名即不同型**，两支请求各建（不做超集）。三支官方应答节原文「无应答包体」/「无参数返回」（正常示例 204）⇒ **不建响应类型**
+  - `Vehicle/` 34 —— 车主出行（ETC 六支 + 停车四支，按「ETC 签约 / 用户绑定 / 预开通 / 高速下单 / 交易查询 / 停车入场 / 停车服务 / 停车交易」分文件）：**两族开放面不同 ⇒ 模型按并集建模**——ETC 族官方只印服务商页（`sp_mchid` + `sub_mchid`），停车族是商户页 + 服务商页双页同路由，字段取并集、必填只取交集；两路 ETC 查单（微信单号 / 商户单号）与两支签约查询各自应答同形 ⇒ 共用；ETC 预开通与停车扣费两支「受理 ≠ 成功」⇒ 应答只含受理字段，另建查询型不合并
+  - `TaxiInvoice/` 24 —— 出租车电子发票（司机 / 出租车 / 开票公司三对更新与查询 + 签到签退 + 插卡 + 按 token 查订单 + 文件上传应答）：签到签退与插卡两支 204 无应答包体 ⇒ **不建响应类型**；更新支与其查询支**字段集不同 ⇒ 各建一型**（更新请求不含 `region_id` 之外的定位回显）；`TaxiInvoiceUploadFileResponse` 只是 `fapiao_media_id` 单键应答，其**请求侧无 DTO**——上传走手工通道，`meta{company_mchid, digest, digest_algorithm, region_id}` 由通道用 `Utf8JsonWriter` 现场写出（`region_id` 官方 `integer` ⇒ 写数字而非字符串）
+  - `PayrollCard/` 11 —— 代发薪（工资卡）：令牌申领、授权关系查询、认证单预下单 / 单查 / 列表、发起代发薪批次六支。**六支官方全部只印服务商页** ⇒ 无直连面镜像。**本域无 `sp_mchid`**：请求侧只有 `sub_mchid`（服务商身份由签名主体承载），应答侧服务商商户号却叫 `mchid`；AppID 两套命名并存（令牌 / 关系 / 认证单三支 `appid` + `sub_appid`，发起批次支 `sp_appid` + `sub_appid`）⇒ 按「服务商面必是 `sp_*`」归一即错。**认证单两支各建一应答**：单查应答与列表 `data[]` 元素官方逐字同形（13 键同序），但共用只发生在应答根类型 ⇒ 列表元素独立成类型。**涉密是逐页结论**：6 支里 3 支的官方请求头表把 `Wechatpay-Serial` 列为必填，密文姓名与证件号以 `string` 承载、SDK 不代为加解密
+  - `EducationPapay/` 16 —— 教育委托代扣（EducationPAPay）八支：解除协议、按 `contract_id` 查协议、按 `openid` 查协议列表、预签约、下单受理、两支查单、发送预扣费通知。**七支双页并集 + 一支只印商户页**：七支同时印【普通商户】与【普通服务商】⇒ 字段取并集、必填取交集、一面一方法；`DELETE /v3/edu-papay/contracts/{contract_id}` 官方**只有商户页** ⇒ 该支无服务商镜像。**三支 204 无应答包体**（解除协议 / 下单受理 / 发送预扣费通知）⇒ 接口返回裸 `Task`、本目录无响应类型。**两支查单应答逐字段同形（33 行）⇒ 共用 `EducationPapayTransactionQueryResponse`**；但协议单查应答与列表 `data[]` 元素字段同形仍**各建一型**（共用只在应答根类型）。预签约应答单行且必填 `presign_token` ⇒ 是调起签约页面的入参、不等于签约成功
+  - `EducationSchoolPay/` 18 —— 校园缴费（教育学费缴纳）八支：预签约、解除协议、协议单查 / 列表、缴费下单、两支查单、欠费状态查询。**八支官方全部只印服务商页** ⇒ 无商户面镜像，不得按教育代扣域的双页形态补建。**下单应答与两支查单应答逐字段同形 ⇒ 三支共用 `EducationSchoolPayTransactionQueryResponse`**（本域唯一「写侧与读侧共用应答」的一对）；解除协议 204 ⇒ 裸 `Task`。**请求侧无 `openid`**（扣款对象由 `contract_id` + `user_id` 定位），应答 `payer` 只有 `openid` / `sub_openid` ⇒ 两侧定位口径不同。**四枚密文字段只在预签约支**（`identity.real_name` / `identity.id_card_number` / `bank_card.bank_card_no` / `bank_card.phone`）⇒ `Wechatpay-Serial` 必填逐页核对为该一支，其余支未列。欠费支 `state`（`NORMAL` / `FORBIDDEN`，用户欠款风控状态）与订单支 `trade_state` **同名不同义** ⇒ 两套值域不得互套
+  - `BusinessCircle/` 4 —— 商圈会员（支付即积分）四支：停车状态同步、积分同步、积分服务授权查询、待积分状态查询。**四支官方全部同时印商户页与服务商页** ⇒ 请求并集建模，其中授权查询支的 `sub_mchid` **只在服务商页印发**（商户页无该键）；两支 204 无应答包体 ⇒ 本目录不含其响应类型。`brandid` 官方类型是 `integer`（不是字符串）、`sub_mchid` 在停车支是 `string(32)` 而在积分与授权两支是 `string(64)` ⇒ 照页保留长度差异，不做「服务商面一律 32」归一（守卫 BSC-B3 / BSC-B5）
+  - `Catering/` 1 —— 点餐订单信息同步单支。**官方只印服务商页**，请求表 31 行是两层摊平 ⇒ 菜品子树另立 `CateringOrderDish`；`properties` 官方只标 `object` 未给元素结构 ⇒ 以 `System.Text.Json.JsonElement` 原样承载（本包唯一使用该形态的字段）；`count` 官方类型是 `Float` ⇒ `double`；正常应答 204 ⇒ 无响应类型（守卫 CTR-B3 / CTR-B5）
+  - `FundsToOversea/` 11 —— 资金出境六支：出境下单、两支查单（`out_order_id` / 「`sub_mchid` + `transaction_id`」）、退货单创建与查询、可出境金额查询、账单下载链接。**六支官方全部只印服务商页且身份是【平台商户】**。**下单支与两支查单应答逐字段同形 ⇒ 共用 `FundsToOverseaOrderResponse`**，退货两支同理共用 `FundsToOverseaReturnOrderResponse`；`goods_info` 是数组 ⇒ 独立元素类型，`seller_info` / `express_info` / `payee_info` / `presale_info` 四棵子树各立类型（守卫 FTO-B3 / FTO-B5）
+  - `GoldPlan/` 6 —— 点金计划五支：自定义页开关、计划开关、关闭广告展示、开启广告展示、设置广告行业标签。**五支官方全部只印服务商页**且身份是**【普通服务商】+【渠道商】两行**。两支状态切换应答同形（只回 `sub_mchid`）⇒ 共用 `GoldPlanStatusResponse`；三支 204 无应答包体 ⇒ 不建响应类型；`advertising_industry_filters` 是 `array[string]` 且 35 项值域 ⇒ 以 `List<string>` 承载不建枚举（守卫 GLD-B3 / GLD-B5）
+  - `Multiuse/` 3 —— 多次扣费场景发券四支：发券请求与应答 + 发券 / 用券 / 退款三支流水下载链接应答。**四支官方全部只印商户页**；三支流水应答逐字段同形（只回 `url`）⇒ **一支类型服务三支端点**。`user_name` / `id_card_number` 官方类型 `string(2048)` 是**密文** ⇒ 以 `string` 承载、SDK 不代为加解密（守卫 MUS-B3 / MUS-B5）
+  - `PayInstallment/` 3 —— 分付分期曝光咨询单支（**查询走 POST**）。请求四键 + 应答两键，`repayment_info` 是 `array[object]` ⇒ 独立元素类型；路由段是 `instal`（不是 `installment`）（守卫 PIN-B2 / PIN-B5）
+  - `RateActivity/` 10 —— 费率活动三支：提交申请、`PATCH` 修改申请、按 `application_id` 查询。**三支官方全部只印服务商页**、身份是**【从业机构（银行）】+【从业机构（支付机构）】两行**。POST 与 PATCH 应答同形（只回 `application_id`）⇒ 共用 `RateActivityApplicationResponse`，GET 的五键单建一型；`sub_mchid` 请求 `string(32)` 而查询应答 `integer` ⇒ 照页不「统一」；`activity_detail` / `additional_information` 及 `activity_apply_information` 列表元素各立类型（守卫 RTA-B3 / RTA-B5）
+  - `Recharge/` 7 —— 银行转账充值两支：申请充值 + 按 `out_recharge_no` 查询。**两支官方全部只印商户页**。申请请求 6 键 vs 查询应答 17 键 ⇒ 各建一型，不做「查询即申请的应答」归一；`recharge_amount` / `transfer_in_account` / `bank_transfer_info` 三棵子树各立类型；`recharge_id` 官方长度 `string(27)`（不是 32/64）（守卫 RCH-B3 / RCH-B5）
+  - `SmartGuide/` 6 —— 智慧导购四支：导购列表查询、注册、信息更新（`PATCH`）、订单分配。**四支官方全部同时印商户页与服务商页** ⇒ 服务商页多出的**选填** `sub_mchid` 并入同一请求类型，不拆分身。查询应答是分页外壳 + `data[]` 元素 ⇒ 两型；注册与查询**共用同一条 URL**（差异只在方法与报文形态）；两支 204 ⇒ 不建响应类型；`mobile` / `qr_code` / `avatar` 涉密 ⇒ `string` 承载（守卫 SMG-B3 / SMG-B5）
+  - `TransactionBlock/` 5 —— 交易拦截四支：按 `block_record_id` 查拦截记录、按 `sub_mchid` 分页查记录列表、提交拦截申诉、按 `block_submission_id` 查申诉单。
+  - `Capital/` 12 —— 银行组件省市 / 银行 / 支行字典六支（P1-5-G 取证勘误补回，原列「判非契约」）：省份与城市两支官方**零请求参数**（全量 + `total_count`）、对公 / 对私 / 支行三支 `limit` **必填**、卡号开户行一支是涉密支（`account_number` 密文）。对公与对私应答逐字段同形 ⇒ 共用 `CapitalBankPageResponse`；支行支根层另印四个银行定位键、卡号支无 `count` / `offset` / `links` 骨架 ⇒ 各建一型。翻页子树 `*Links` 独立建型。
+  - `Lovefeast/` 1 —— 爱心餐品牌信息查询单支（P1-5-G 同上勘误补回）：应答只回 `donate_count` / `consume_count` 两键。「爱心餐查券」官方指向既存 `MarketingFavor` 域 ⇒ 本目录不重复建型。**四支官方全部只印服务商页且仅白名单开放**。申诉两支应答逐字段同形（五行）⇒ 共用 `TransactionBlockSubmissionResponse`；记录两支各建（单查六键 vs 列表 `data[]` + 分页三键）。`submit_data` 与 `requested_item_info` 官方类型是 `string(4000000)` ⇒ **约 4MB 的序列化字符串、不是对象**，建成子树即与官方字段类型冲突（守卫 TRB-B3 / TRB-B5）
+- **响应基底**（`Common/WechatPayResponse.cs`）：APIv3 的业务失败是 HTTP 4xx/5xx + `{"code","message"}`，**没有整数 errcode**——`Code` / `Message` 为官方字符串码与描述，成功响应两字段恒缺省，故 `IsSuccess => string.IsNullOrEmpty(Code)`；实现叶层契约 `IWechatApiResponse`（`ErrorCode` 成功 `0` / 失败 `-1` 哨兵、`ErrorMessage`），使跨产品线单点判错与 `WechatPayException.ThrowIfFailed` 成立。
+- **回调事件键常量**（`Callback/WechatPayNotification.cs`）：`WechatPayNotificationEventTypes` **13** 个（`TRANSACTION.SUCCESS`；`REFUND.SUCCESS` / `ABNORMAL` / `CLOSED`；`PAYSCORE.USER_PAID` / `USER_CONFIRM` / `USER_OPEN_SERVICE` / `USER_CLOSE_SERVICE`；`FAPIAO.USER_APPLIED` / `ISSUED` / `CARD_INSERTED` / `REVERSED` / `CARD_DISCARDED`）、`WechatPayNotificationOriginalTypes`（`transaction` / `refund` / `profitsharing` / `payscore`）与发票状态值域（`FapiaoStatuses` / `FapiaoCardStatuses`）。
+- **`Generated/`**（**84 个上下文文件**，与 84 个 `SerializerClassName` 组一一对应）：由 `scripts/GenerateJsonContext.ps1`（`mud-jsonctx`）按标注生成的 AOT 源序列化上下文（`<auto-generated>`，勿手改），禁止运行时反射序列化。**跑该脚本须显式带 `-TargetProject Src/Pay/Mud.Wechat.Pay/Mud.Wechat.Pay.csproj -OutputDir Src/Pay/Mud.Wechat.Pay/Generated`**（脚本默认落企微线 DataModels，用默认值重跑只会刷新 Work 侧、支付线上下文原地不动，漏登记只以 `AOT006` 暴露）。
+
+## 用法
+
+DTO 是纯数据面：宿主只负责填字段，序列化由声明式客户端经源生成 `JsonTypeInfo` 完成。
+
+```csharp
+// 请求模型：字段名与官方报文的对应关系由 [JsonPropertyName] 固定（勿改属性名去「凑」snake_case）
+var refundRequest = new RefundApplyRequest
+{
+    TransactionId = transactionId,
+    OutRefundNo = outRefundNo,                     // 商户退款单号：幂等键（重复提交报 OUT_TRADE_NO_USED）
+    Reason = "用户取消",
+    NotifyUrl = "https://merchant.example.com/pay/1900000001",
+    Amount = new RefundApplyAmount { Total = 100, Refund = 100, Currency = "CNY" },   // 单位为分
+};
+
+// 响应模型：统一继承 WechatPayResponse，判错走 Code / Message（字符串码，非整数 errcode）
+RefundResponse response = await refund.CreateRefundAsync(refundRequest, ct);
+WechatPayException.ThrowIfFailed(response);
+if (!response.IsSuccess)
+{
+    // response.Code == "REFUND_FEE_INVALID" / "INVALID_REQUEST" 等，见 WechatPayErrorCodes 常量表
+}
+```
+
+回调载荷模型由回调包的类型化访问器解析（宿主不手动反序列化）：
+
+```csharp
+WechatPayTransactionResource? transaction = context.GetTransaction();   // 解密后的 resource
+string? outTradeNo = transaction?.OutTradeNo;                            // 幂等落库键
+```
+
+## 说明
+
+- **字段名一律照官方原文**：`snake_case` 请求/响应字段逐属性显式 `[JsonPropertyName]`，与 `PAY-B5` 守卫的「路由 + 字段名照抄官方」断言同源；生成上下文另带 `PropertyNameNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower` 与 `PropertyNameCaseInsensitive = true` 兜底（大小写不敏感读取是官方应答字段与文档拼写存在出入时的实际救命项）。
+- `SerializerClassName` = 域组名（**84 个组**：`Common` / `Transactions` / `Refund` / `Bill` / `Certificates` / `ProfitSharing` / `PayScore` / `PartnerPayScore` / `BankPayScore` / `Transfer` / `PartnerTransfer` / `BankTransfer` / `Repayment` / `Callback` / `Apply4SubMerchant` / `Apply4Subject` / `PartnerTransactions` / `MerchantRiskManage` / `MerchantStore` / `MerchantAlterApply` / `MerchantFund` / `MerchantSettlement` / `MerchantService` / `MerchantManage` / `MerchantMedia` / `MerchantOperationManage` / `Ecommerce` / `MarketingFavor` / `MarketingBusifavor` / `MarketingPartnerProductCoupon` / `MarketingPartnerDeliveryPlan` / `MarketingGoodsSubsidyActivity` / `MarketingPayGiftActivity` / `MarketingShoppingReceipt` / `MarketingPartnerships` / `MarketingBank` / `MarketingBankFavor` / `IndustryCoupon` / `BrandApplyment` / `BrandCardConfig` / `BrandCardLink` / `BrandCardMember` / `BrandProfitSharing` / `BrandStore` / `PasswordExemptContract` / `AbnormalFundProcessing` / `BrandRedpacket` / `TransferToQqWallet` / `UserConfirmAuthorization` / `PlatsolutionEcommerceInsuranceContract` / `PlatsolutionEcommerceCompensate` / `PlatsolutionEcommerceDeposit` / `PlatsolutionEcommerceInsuranceClaim` / `PlatsolutionEcommerceMchTransfer` / `PlatsolutionEcommerceRechargeEmployee` / `PlatsolutionEcommerceRecharge` / `PlatsolutionEcommerceSettle` / `PlatsolutionInsuranceReservation` / `PlatsolutionInsuranceBatch` / `PlatsolutionInsuranceReceipt` / `WebizpayBill` / `WebizpayEmployee` / `WebizpayStore` / `WebizpayUser` / `Papay`（委托代扣 3.0 直连与服务商两支同组）/ `Vehicle` / `TaxiInvoice` / `EducationPapay` / `EducationSchoolPay` / `PayrollCard` / `BusinessCircle` / `Catering` / `FundsToOversea` / `GoldPlan` / `Multiuse` / `PayInstallment` / `RateActivity` / `Recharge` / `SmartGuide` / `TransactionBlock` / `Capital` / `Lovefeast` 与命名空间末段同；合单组为 `CombineTransactions`、发票组为 `NewTaxControlFapiao`，其命名空间末段分别是 `Combine` / `Fapiao`），生成的上下文类名即 `{组名}JsonContext`、与其域 DTO 同命名空间；**域分组全量清单以 `Generated/` 目录为准**，本文不逐一维护。
+- 生成上下文以 `#if NET8_0_OR_GREATER` 门控（低 TFM 为反射 STJ，AOT 门禁仅对 net8.0+ 构建）。
+- 新增/变更 DTO 后的流程：`scripts/AddHttpJsonSerializable.ps1` 标注 → `scripts/GenerateJsonContext.ps1` 重新生成 → 提交 `Generated/` 变更；未登记的标注类型被组件分析器 `AOT006` 拦下。**新增域或回调载荷时还须同步两处消费点**：主包 `PayJsonResolverExtensions` 的上下文合并清单，以及回调包手写的 `WechatPayCallbackJsonContext`。
+- 回调载荷类型**同时**出现在 `Callback/`（本包）与回调包的类型化访问器（`WechatPayCallbackContext.GetTransaction()` 等）中：模型在本包、`JsonTypeInfo` 登记在回调包——载荷属数据面，中间件不重复声明。
+- 生成上下文为 `internal`，经 `InternalsVisibleTo` 供 `Mud.Wechat.Pay`、`Mud.Wechat.Pay.Abstractions`、`Mud.Wechat.Pay.Callback`、`Mud.Wechat.Pay.Tests` 直读（合并与契约守卫断言）。
+- DTO 均走 `JsonTypeInfo` 源生成序列化，勿以反射方式调用 `JsonSerializer.Serialize<T>/Deserialize<T>`（`PAY-B6` 源码扫描锁定无反射序列化、无反射发现）。
+- 模型面刻意窄于官方全域：未建模域（如 `/v3/merchant/fund` 商户资金）由 `WechatPayCapitalRulingContractGuards` 记录裁决理由，而非留一堆空 DTO。
+
+## 依赖
+
+`Mud.Wechat.Abstractions`（叶层，仅取 `IWechatApiResponse` 响应契约）+ `Mud.HttpUtils.Attributes` 3.0.9（零依赖特性包）+ `Mud.HttpUtils.Generator` 3.0.9（仅分析器，`PrivateAssets=all`）。
+
+目标框架 `net6.0;net8.0;net10.0`（支付线四包同集的受控例外，理由见 `Mud.Wechat.Pay/README.md` 与守卫 `PAY-B9`）。
+
+
+---
+
+## 原 `Mud.Wechat.Pay.V2` 包面（2026-10 包合并并入本工程，命名空间不变）
+
+微信支付 **APIv2** SDK **主包**：XML 报文 + 报文体内 `sign`（MD5 / HMAC-SHA256）+ 商户 API 证书双向 TLS 的传输基座，以及 **14 个模块 / 58 支端点**（57 条不同路径，`/papay/deletecontract` 为商户与服务商两族共用）。
+
+> **与 APIv3 主包（`Mud.Wechat.Pay`）是两条独立传输线**：APIv3 走 JSON + `Authorization: WECHATPAY2-SHA256-RSA2048 …` 头签名；APIv2 走 XML + **报文体里的 `sign`**，业务失败也用 HTTP 200 + `return_code=FAIL` 表达。两线**不共用** DTO、序列化器、命名客户端与契约守卫，也**不共用密钥**（`ApiV2KeySecretName` 与 `ApiKeySecretName` 是两个字段、两把值）。
+
+## 内容
+
+- **`Interfaces/Pay/IWechatPayV2Service.cs`** — 声明式基础支付 8 端点（`[HttpClientApi(RegistryGroupName = "BasePayV2", HttpClient = IWechatPayV2HttpClient)]` + `[AllowAnyStatusCode]`）：
+  `/pay/unifiedorder` 统一下单、`/pay/micropay` 付款码支付、`/pay/orderquery` 查单、`/pay/closeorder` 关单、`/pay/refundquery` 退款查询、`/pay/refundqueryv2` 退款查询 v2、`/pay/settlementquery` 结算查询、`/pay/queryexchagerate` 汇率查询（官方原文即少一个 `t`，照抄）。
+- **`Interfaces/Secure/IWechatPayV2SecureService.cs`** — 需双向证书的 5 端点（**无** `[HttpClientApi]`，手写通道服务）：
+  `/secapi/pay/refund`、`/secapi/pay/refundv2`、`/secapi/pay/reverse`、`/pay/downloadbill`、`/pay/downloadfundflow`。后两支成功应答是 **CSV 原文** ⇒ 返回 `Task<string>`、不做应答验签。
+- **`Transport/`** — `WechatPayV2ContentSerializer`（DTO ⇄ XML，源生成 `PayV2JsonContext` 驱动）、`WechatPayV2XmlCodec`（扁平字段表 ⇄ `<xml>`）、`WechatPayV2SigningHandler`（出站补 `sign` + 入站验签）、`WechatPayV2HttpClient` / `WechatPayV2HttpClientNames`。
+- **`Security/`** — `WechatPayV2SignatureBuilder`（stringA 规范化 + MD5 / HMAC-SHA256 + 验签）、`WechatPayV2Signer`（算法判定与应答双试）。
+- **`Credential/`** — `IWechatPayV2CredentialProvider` / 默认实现：经 `ISecretProvider` 取 APIv2 签名密钥（校验 32 字节）与 `apiclient_cert.p12`（口令默认商户号，可另配密钥名）。
+- **`Secure/`** — `WechatPayV2SecureChannelProvider` / `WechatPayV2SecureChannel`：逐商户一条独立 `HttpClient`（含独立连接池）承载双向 TLS。
+- **`Extensions/`** — `PayV2Module` 枚举 + `PayV2ServiceBuilder` + `AddWechatPayV2Api()` 入口。
+
+## 域清单（模块 ≡ 注册组 ∪ 手写族名单）
+
+| 模块 | 端点 | 形态 | 域名 |
+|---|---|---|---|
+| `BasePayV2` | 13 = 8 声明式 + 5 证书 | 混合 | `api.mch` / `api2.mch` |
+| `PapayV2` | 6 | 声明式 | `api.mch` |
+| `PartnerPapayV2` | 5 | 声明式 | `api.mch` |
+| `RedPackV2` | 5 | **手写证书族** | `api.mch` |
+| `TransferV2` | 4 | **手写证书族**（含企微双签两支） | `api.mch` |
+| `PartnerTransferV2` | 2 | **手写证书族** | `api.mch` |
+| `DepositV2` | 8 = 5 声明式 + 3 证书 | 混合 | `api.mch` / `api2.mch` |
+| `CustomsV2` | 3 | 声明式（**无** `nonce_str`） | `api.mch` |
+| `ToolsV2` | 2 | 声明式 | `api.mch` |
+| `RiskV2` | 1 | **手写证书族**（请求**无** `appid`） | `api.mch` |
+| `SubMerchantConfigV2` | 3 | **手写证书族** | `api.mch` |
+| `MerchantMicroV2` | 2 | **手写证书族**（敏感字段须加密） | `api.mch` |
+| `InstitutionSubV2` | 3 | **手写证书族**（境外，仅 MD5） | `apihk.mch` |
+| `MerchantMediaV2` | 1 | **手写证书族**（本线唯一 `multipart/form-data`） | `apihk.mch` |
+
+## 接入
+
+```csharp
+services.AddPayApp(configuration, "WechatPayMerchants")   // 凭据底座（两线共用同一份商户配置）
+        .AddWechatPayApi(builder => builder.AddAllApis())  // APIv3（可选）
+        .AddWechatPayV2Api(builder => builder.AddAllApis()); // APIv2
+```
+
+`AddWechatPayV2Api` 在 `AddPayApp` **之后**调用，否则注册期即抛（`IWechatPayMerchantManager` 未注册）。
+
+## 已踩陷阱（改动前必读）
+
+1. **签名放 Handler，不放序列化器**：`sign` 的作用域是报文体全部非空顶层字段，必须在体成形后计算；而密钥出自异步 `ISecretProvider`，`ToHttpContent<T>` 是同步方法。两难只能在 `DelegatingHandler` 里同时解开。
+2. **证书端点不能进命名客户端**：`IHttpClientFactory` 的主 Handler 按**客户端名**缓存、连接池亦按名复用 ⇒ 一个名字绑不了多商户证书，否则「商户 A 的请求跑在商户 B 的 TLS 会话上」。本线全部需证书端点（基础支付 5 支 + 红包 5 + 付款 4 + 服务商付款 2 + 押金 3 + 风控 1 + 子商户配置 3 + 小微 2 + 机构进件 3 + 媒体上传 1）一律走 `WechatPayV2SecureChannelProvider` 的逐商户通道，**别顺手给任何手写族接口补 `[HttpClientApi]`**。
+3. **13 端点分两面由守卫加法锁定**：`WechatPayV2BasePaymentContractGuards` 的 `…_ShouldHaveEightEndpoints` + `…_ShouldHaveFiveEndpoints` + `…_ShouldSumToThirteen` 三处同批维护，任何一侧增减都会打红。
+4. **应答验签双试**：官方应答体**不带** `sign_type`，算法实际由请求侧选定 ⇒ `WechatPayV2Signer.Verify` 对 MD5 与 HMAC-SHA256 **两种都试、任一命中即通过**（伪造仍需密钥，不削弱验签），否则会自伤成「HMAC 下单 ⇒ 应答验签必败」。应答若自带 `sign_type` 则严格按声明判。
+5. **已带 `sign` 的请求不重签**（幂等放行）：字段表口径一旦与首发有差就会产出「体与 `sign` 互相矛盾」的报文，官方只回 `SIGNERROR`，比漏签更难查。回归锁：`WechatPayV2TransportPipelineTests.V2Client_ShouldNotResign_WhenBodyAlreadyCarriesSign`。
+6. **`T == string` 直发原文**：CSV 下载类端点没有 XML 应答可反序列化，序列化器对该类型短路返回原始文本。
+7. **未登记 DTO 即点名报错**（不回落到反射序列化）：新增 APIv2 DTO 必须标 `[HttpJsonSerializable(SerializerClassName = "PayV2")]` 并重跑 `scripts/AddHttpJsonSerializable.ps1` + `scripts/GenerateJsonContext.ps1`。
+8. **密钥轮换需重启**：APIv2 签名密钥按商户缓存（`WechatPayV2SigningHandler` / `WechatPayV2SecureService` 各一份缓存），与 APIv3 缓存签名提供者同一口径。
+9. **异常消息红线**（PAY-B7 同线）：任何异常与日志**不得**出现密钥值、`sign` 值、签名原文串或证书材料，只允许商户键、配置字段名与截断后的诊断文本。
+10. **SSRF 白名单是「三个编译期常量」的闭集**：`api.mch.weixin.qq.com`、`api2.mch.weixin.qq.com`、`apihk.mch.weixin.qq.com` 都已被 `WechatApiHosts` 的 `weixin.qq.com` 后缀覆盖；本线**不给**商户级 `BaseUrl` 覆盖留门。证书通道绕过 `IHttpClientFactory`，其唯一的域名闸是 `WechatPayV2SecureChannelProvider.GetChannelAsync` 里的三段 `!=` 判断 ⇒ **新增第四个域名必须同时改常量表与这段白名单**（少改一处即误拒，多放一个商户可控值即绕过防线）。
+11. **「要证书」与「挂在证书域名上」是两件独立的事**：`/secapi/mch/*`（子商户配置）与 `/applyment/micro/*`（小微）要商户证书却仍挂 `api.mch`；只有 `api2.mch` 上的 `/secapi/pay/*` 与国内 `api.mch` 上的 CSV 下载构成 `SecureBaseAddress` 的适用范围；境外两族（机构进件、媒体上传）官方「接口说明」栏只印 `apihk.mch`。照前缀猜域名 ⇒ 404。
+12. **`sign_type` 的「有无」与「默认值」就是算法开关**：`WechatPayV2Signer` 只在字段表带 `sign_type=HMAC-SHA256` 时走 HMAC。故 DTO 的属性初始化器（`= "HMAC-SHA256"`、`= "1.0"`）属**契约面**：清空一个必填默认值 ⇒ 报文静默降级成 MD5 被打回 `SIGNERROR`；给官方没有 `sign_type` 的那几支（支付目录两支、机构进件三支、报关三支）补一个 ⇒ 同一症状。逐型锁定见 `WechatPayV2MerchantProfileContractGuards` 与 `…CustomsToolsRiskContractGuards`。
+13. **本线唯一 `multipart/form-data` 端点**是 `/secapi/mch/uploadmedia`：字段仍按 XML 的同一张表签名、**文件分节不参与签名**（完整性由**小写** MD5 的 `media_hash` 承载），而应答仍是需验签的 XML ⇒ 走 `WechatPayV2SecureInvoker.PostMultipartAsync`，不要改用 `PostAsync` 把文件拼进 XML 体。
+14. **敏感字段加密只有一条路**：`WechatPayV2SensitiveFieldEncrypter` 固定 `RSAES-OAEP + SHA-1 + MGF1(SHA-1)`（官方 Java 示例 `RSAWithSHA1AndMGF1Padding`），密钥是**微信支付平台证书**公钥，输出 Base64。这与 APIv3 的 `RSAES_OAEP_256` **不同源**，混用会得到「官方报参数错误」而不是「加密失败」。密文与 `cert_sn` 必须同源：按序列号从 `IWechatPayPlatformCertificateStore` 取证书，取不到即 fail-closed（`WechatPayV2SensitiveFieldEncrypter.Encrypt(plaintext, store, serialNumber)`）。
+15. **双签端点的 Secret 端口是惰性可选依赖**：`sendworkwxredpack` / `paywwsptrans2pocket` 需要企微自建应用 Secret，经 `IServiceProvider.GetService<IWechatPayV2WorkWxSecretProvider>()` 在**调用时**解析。不要把它提成 `WechatPayV2SecureInvoker` 的构造参数——那会把全部宿主绑上企微凭据桥接。
+16. **用户身份与金融字段零落地**：`mobile`/`email`/`creid`/`qq`/`outerid`/`risk_info`/`re_openid`/`openid`/`desc`、`enc_bank_no`/`enc_true_name`/`bank_no_md5`/`true_name_md5`、报关的 `cert_id`/`name`、小微的 `account_number`/`mobile_phone`/`email`（无论明文密文）、`violation_records` 原文、`sandbox_signkey` 与 `getpublickey` 返回的公钥材料——一律**不进日志、不入库、不入异常消息**（PAY-B7 同线口径）。
+
+## 契约与守卫
+
+- `WechatPayV2BasePaymentContractGuards` — 基础支付 13 支（8 + 5）、注册组、注入客户端、与 APIv3 的程序集隔离、`PayV2Module ≡ 注册组 ∪ 手写族名单` 总不变式。
+- `WechatPayV2PapayContractGuards` — 委托代扣双族 11 支。
+- `WechatPayV2CertFamilyContractGuards` — 整族手写的红包 / 企业付款 / 服务商付款（11 支）+ `HandWrittenModules` 名单（8 项）+ DI 单例与模块隔离。
+- `WechatPayV2DepositContractGuards` — 押金「一域两形态」（5 声明式 + 3 证书）。
+- `WechatPayV2CustomsToolsRiskContractGuards` — 报关 3 + 工具 2 + 风控 1 的例外事实（无 `nonce_str`、请求无 `appid`、官方不写请求方式）。
+- `WechatPayV2MerchantProfileContractGuards` — 子商户配置 3 + 小微 2 + 机构进件 3 + 媒体上传 1：域名二分、`sign_type` 逐型、`app_id` vs `appid`、multipart 出口、SSRF 三常量闭集、加密器算法与 fail-closed。
+- `Tests/Mud.Wechat.Pay.Tests/Transport/WechatPayV2TransportPipelineTests.cs` — 真实 DI 管道：`sign` 独立复算（MD5 / HMAC）、幂等放行、应答验签双向前置、跨 scope 单例、底座顺序 fail-fast、证书缺失 fail-fast。
+
+
+---
+
+## 原 `Mud.Wechat.Pay.V2.DataModels` 包面（2026-10 包合并并入本工程，命名空间不变）
+
+
+微信支付 **APIv2 线**的官方 DTO 包：`PayV2/` 下按功能族分文件的请求/响应 DTO
+（统一下单、付款码、查单关单、退款、红包、转账、企业付款、海关、分账、风控、代扣、行业、
+车辆、账单评论等 **27 个功能族文件**），仅被 `Mud.Wechat.Pay.V2` 主包消费。
+
+## 序列化形态（改前先读）
+
+- 业务报文是 **XML**（`WechatPayV2XmlCodec` 扁平字段表 ⇄ `<xml>`；报文体内 `sign` 由
+  `WechatPayV2SigningHandler` 出站补签 / 入站验签），**不是** JSON——DTO 层面没有
+  `JsonPropertyName` 之类的 JSON 映射诉求。
+- 但 DTO 仍统一标注 `[HttpJsonSerializable(SerializerClassName = "PayV2")]` 并生成
+  `Generated/PayV2JsonContext.g.cs`：这是 **AOT 净零的统一管线**（`Mud.HttpUtils` 的
+  `[HttpClientApi]` 内容序列化基建要求所有 DTO 面走源生成上下文，`IL2026`/`IL3050` 不因
+  线的报文编码不同而豁免）。生成物**提交进版本控制、勿手改**；加 DTO 后重跑
+  `AddHttpJsonSerializable.ps1` + `GenerateJsonContext.ps1`。
+- 命名空间恒为 `Mud.Wechat.Pay.V2.DataModels`（`PayV2/` 子目录仅作组织）。
+
+## 与 APIv3（`Mud.Wechat.Pay.DataModels`）的隔离理由（勿「顺手合并」）
+
+- 两线**不共用** DTO、序列化器、命名客户端与契约守卫，也**不共用密钥**（`ApiV2KeySecretName`
+  与 `ApiKeySecretName` 是两个字段、两把值）——合并即让两条传输线的 DTO 面互相进入彼此的
+  JsonContext 登记与审计面（`audit-config-keys.ps1` / AB-G6 按 DTO 登记表双向不变式）。
+- V2 大量响应是「`return_code` + 业务结果混合体」，字段命名与 V3 的 JSON 信封完全不同族；
+  共享包会制造大量同名异义类型（如 `RefundQuery` 在两线字段集不同）。
+- 依赖方向：本包只引 Core 叶层（`Mud.Wechat.Abstractions`），V2 主包引本包 + V2 Abstractions，
+  与全仓 `主包 → {Abstractions, DataModels}` 家族形态一致。
+
+## 守卫索引
+
+支付线契约守卫见 `Tests/Mud.Wechat.Pay.Tests/`（DTO 上下文登记断言随域守卫同批维护）。
+

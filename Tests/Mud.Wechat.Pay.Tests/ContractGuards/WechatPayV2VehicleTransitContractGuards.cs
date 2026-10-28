@@ -273,7 +273,7 @@ public class WechatPayV2VehicleTransitContractGuards
     [Fact]
     public void V2_VehicleTransit_Modules_ShBindGeneratedRegistrars()
     {
-        var builderSource = File.ReadAllText(SourcePath("Mud.Wechat.Pay.V2", "Extensions/PayV2ServiceBuilder.cs"));
+        var builderSource = File.ReadAllText(SourcePath("Mud.Wechat.Pay",  "Extensions/PayV2ServiceBuilder.cs"));
 
         foreach (var module in new[]
                  {

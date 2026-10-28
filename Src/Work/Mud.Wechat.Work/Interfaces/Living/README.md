@@ -4,7 +4,7 @@
 + 获取微信观看直播凭证 + 获取成员直播 ID 列表 + 获取直播详情 + 获取直播观看明细
 + 获取跳转小程序商城的直播观众信息）。 接口：[IWechatWorkLivingService](./IWechatWorkLivingService.cs)、[IWechatWorkInternalLivingService](./IWechatWorkLivingService_Internal.cs)、[IWechatWorkProviderLivingService](./IWechatWorkLivingService_Provider.cs)、[IWechatWorkThirdPartyLivingService](./IWechatWorkLivingService_ThirdParty.cs)；注册组 `Living`；模块枚举 `WechatModule.Living`（装配入口见 [WechatWorkServiceBuilder.cs](../../Extensions/WechatWorkServiceBuilder.cs)）。逐端点核验 2026-10-18。
 
-> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[WechatLivingContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatLivingContractGuards.cs)、[WechatContractGuards.QueryTokenInjection.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatContractGuards.QueryTokenInjection.cs)、[WechatSchoolContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatSchoolContractGuards.cs)）、本域 DTO（[`Mud.Wechat.Work.DataModels/Living`](../../../Mud.Wechat.Work.DataModels/Living/)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
+> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[WechatLivingContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatLivingContractGuards.cs)、[WechatContractGuards.QueryTokenInjection.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatContractGuards.QueryTokenInjection.cs)、[WechatSchoolContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatSchoolContractGuards.cs)）、本域 DTO（[`Mud.Wechat.Work/Living`](../../../Mud.Wechat.Work/Living/)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
 
 ## 端点速览
 
@@ -281,27 +281,27 @@ MUD005 已知接受风险：企业微信官方契约强制令牌走 Query 参数
 
 ## DTO 与序列化面
 
-本域 DTO 目录 [`Mud.Wechat.Work.DataModels/Living`](../../../Mud.Wechat.Work.DataModels/Living/) 内共 **19** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **19** 个，`SerializerClassName` = `Living`。
+本域 DTO 目录 [`Mud.Wechat.Work/Living`](../../../Mud.Wechat.Work/Living/) 内共 **19** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **19** 个，`SerializerClassName` = `Living`。
 
-AOT 源生成上下文：[`LivingJsonContext.g.cs`](./../../../Mud.Wechat.Work.DataModels/Generated/LivingJsonContext.g.cs)（生成物，勿手改）。
+AOT 源生成上下文：[`LivingJsonContext.g.cs`](./../../../Mud.Wechat.Work/Generated/LivingJsonContext.g.cs)（生成物，勿手改）。
 
 | 端点引用的类型 | 角色 | 定义位置 | JSON 字段（前缀） |
 |---|---|---|---|
-| `CreateLivingResponse` | 应答 | [Living/CreateLivingResponse.cs](../../../Mud.Wechat.Work.DataModels/Living/CreateLivingResponse.cs) | `livingid` |
-| `CreateLivingRequest` | 请求体 | [Living/CreateLivingRequest.cs](../../../Mud.Wechat.Work.DataModels/Living/CreateLivingRequest.cs) | `anchor_userid`, `theme`, `living_start`, `living_duration`, `type`, `description`, `agentid`, `remind_time`, `activity_cover_mediaid`, `activity_share_mediaid`, `activity_detail` |
-| `WechatWorkResponse` | 应答 | [WechatWorkResponse.cs](../../../Mud.Wechat.Work.DataModels/WechatWorkResponse.cs) | `errcode`, `errmsg`, `data` |
-| `ModifyLivingRequest` | 请求体 | [Living/ModifyLivingRequest.cs](../../../Mud.Wechat.Work.DataModels/Living/ModifyLivingRequest.cs) | `livingid`, `theme`, `living_start`, `living_duration`, `type`, `description`, `remind_time` |
-| `CancelLivingRequest` | 请求体 | [Living/CancelLivingRequest.cs](../../../Mud.Wechat.Work.DataModels/Living/CancelLivingRequest.cs) | `livingid` |
-| `DeleteLivingReplayDataRequest` | 请求体 | [Living/DeleteLivingReplayDataRequest.cs](../../../Mud.Wechat.Work.DataModels/Living/DeleteLivingReplayDataRequest.cs) | `livingid` |
-| `GetLivingCodeResponse` | 应答 | [Living/GetLivingCodeResponse.cs](../../../Mud.Wechat.Work.DataModels/Living/GetLivingCodeResponse.cs) | `living_code` |
-| `GetLivingCodeRequest` | 请求体 | [Living/GetLivingCodeRequest.cs](../../../Mud.Wechat.Work.DataModels/Living/GetLivingCodeRequest.cs) | `livingid`, `openid` |
-| `GetUserAllLivingIdResponse` | 应答 | [Living/GetUserAllLivingIdResponse.cs](../../../Mud.Wechat.Work.DataModels/Living/GetUserAllLivingIdResponse.cs) | `next_cursor`, `livingid_list` |
-| `GetUserAllLivingIdRequest` | 请求体 | [Living/GetUserAllLivingIdRequest.cs](../../../Mud.Wechat.Work.DataModels/Living/GetUserAllLivingIdRequest.cs) | `userid`, `cursor`, `limit` |
-| `GetLivingInfoResponse` | 应答 | [Living/GetLivingInfoResponse.cs](../../../Mud.Wechat.Work.DataModels/Living/GetLivingInfoResponse.cs) | `living_info` |
-| `GetLivingWatchStatResponse` | 应答 | [Living/GetLivingWatchStatResponse.cs](../../../Mud.Wechat.Work.DataModels/Living/GetLivingWatchStatResponse.cs) | `ending`, `next_key`, `stat_info` |
-| `GetLivingWatchStatRequest` | 请求体 | [Living/GetLivingWatchStatRequest.cs](../../../Mud.Wechat.Work.DataModels/Living/GetLivingWatchStatRequest.cs) | `livingid`, `next_key` |
-| `GetLivingShareInfoResponse` | 应答 | [Living/GetLivingShareInfoResponse.cs](../../../Mud.Wechat.Work.DataModels/Living/GetLivingShareInfoResponse.cs) | `livingid`, `viewer_userid`, `viewer_external_userid`, `invitor_userid`, `invitor_external_userid` |
-| `GetLivingShareInfoRequest` | 请求体 | [Living/GetLivingShareInfoRequest.cs](../../../Mud.Wechat.Work.DataModels/Living/GetLivingShareInfoRequest.cs) | `ww_share_code` |
+| `CreateLivingResponse` | 应答 | [Living/CreateLivingResponse.cs](../../../Mud.Wechat.Work/Living/CreateLivingResponse.cs) | `livingid` |
+| `CreateLivingRequest` | 请求体 | [Living/CreateLivingRequest.cs](../../../Mud.Wechat.Work/Living/CreateLivingRequest.cs) | `anchor_userid`, `theme`, `living_start`, `living_duration`, `type`, `description`, `agentid`, `remind_time`, `activity_cover_mediaid`, `activity_share_mediaid`, `activity_detail` |
+| `WechatWorkResponse` | 应答 | [WechatWorkResponse.cs](../../../Mud.Wechat.Work/WechatWorkResponse.cs) | `errcode`, `errmsg`, `data` |
+| `ModifyLivingRequest` | 请求体 | [Living/ModifyLivingRequest.cs](../../../Mud.Wechat.Work/Living/ModifyLivingRequest.cs) | `livingid`, `theme`, `living_start`, `living_duration`, `type`, `description`, `remind_time` |
+| `CancelLivingRequest` | 请求体 | [Living/CancelLivingRequest.cs](../../../Mud.Wechat.Work/Living/CancelLivingRequest.cs) | `livingid` |
+| `DeleteLivingReplayDataRequest` | 请求体 | [Living/DeleteLivingReplayDataRequest.cs](../../../Mud.Wechat.Work/Living/DeleteLivingReplayDataRequest.cs) | `livingid` |
+| `GetLivingCodeResponse` | 应答 | [Living/GetLivingCodeResponse.cs](../../../Mud.Wechat.Work/Living/GetLivingCodeResponse.cs) | `living_code` |
+| `GetLivingCodeRequest` | 请求体 | [Living/GetLivingCodeRequest.cs](../../../Mud.Wechat.Work/Living/GetLivingCodeRequest.cs) | `livingid`, `openid` |
+| `GetUserAllLivingIdResponse` | 应答 | [Living/GetUserAllLivingIdResponse.cs](../../../Mud.Wechat.Work/Living/GetUserAllLivingIdResponse.cs) | `next_cursor`, `livingid_list` |
+| `GetUserAllLivingIdRequest` | 请求体 | [Living/GetUserAllLivingIdRequest.cs](../../../Mud.Wechat.Work/Living/GetUserAllLivingIdRequest.cs) | `userid`, `cursor`, `limit` |
+| `GetLivingInfoResponse` | 应答 | [Living/GetLivingInfoResponse.cs](../../../Mud.Wechat.Work/Living/GetLivingInfoResponse.cs) | `living_info` |
+| `GetLivingWatchStatResponse` | 应答 | [Living/GetLivingWatchStatResponse.cs](../../../Mud.Wechat.Work/Living/GetLivingWatchStatResponse.cs) | `ending`, `next_key`, `stat_info` |
+| `GetLivingWatchStatRequest` | 请求体 | [Living/GetLivingWatchStatRequest.cs](../../../Mud.Wechat.Work/Living/GetLivingWatchStatRequest.cs) | `livingid`, `next_key` |
+| `GetLivingShareInfoResponse` | 应答 | [Living/GetLivingShareInfoResponse.cs](../../../Mud.Wechat.Work/Living/GetLivingShareInfoResponse.cs) | `livingid`, `viewer_userid`, `viewer_external_userid`, `invitor_userid`, `invitor_external_userid` |
+| `GetLivingShareInfoRequest` | 请求体 | [Living/GetLivingShareInfoRequest.cs](../../../Mud.Wechat.Work/Living/GetLivingShareInfoRequest.cs) | `ww_share_code` |
 
 > DTO 一律以源文件为准；本表只列端点签名**直接引用**的一层类型，嵌套类型不再递归展开。所有 DTO 不使用 `required`（仓内约束），必填性由接口注释与官方页表达，SDK 不做本地必填校验。
 
@@ -340,7 +340,7 @@ var response = await service.CancelLivingAsync(new CancelLivingRequest(), ct);
 | 契约守卫（路由 / 计数 / DTO 登记断言） | [`WechatLivingContractGuards.cs`](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatLivingContractGuards.cs)、[`WechatContractGuards.QueryTokenInjection.cs`](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatContractGuards.QueryTokenInjection.cs)、[`WechatSchoolContractGuards.cs`](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatSchoolContractGuards.cs) |
 | 守卫中的代表性测试方法 | `LivingEndpoints_ShouldMatchOfficialRoutes`、`LivingInterfaceHierarchy_ShouldMatchOfficialOpenSurfaces`、`LivingTokenBinding_ShouldBeAccessTokenInjectedViaQuery`、`LivingDataModels_ShouldBeRegisteredInJsonContext`、`LivingDataModels_ShouldLockOfficialContractTraps`、`QueryTokenInjection_ShouldBeLimitedToWechatOfficialContractInterfaces`、`SchoolEndpoints_ShouldMatchOfficialRoutes`、`SchoolSettingEndpoints_ShouldMatchOfficialRoutes`、`SchoolUserEndpoints_ShouldMatchOfficialRoutes`、`SchoolDepartmentEndpoints_ShouldMatchOfficialRoutes`、`SchoolAuthEndpoints_ShouldMatchOfficialRoutes`、`SchoolHealthReportEndpoints_ShouldMatchOfficialRoutes` … |
 | 模块枚举 / 装配入口 | [`WechatModule.cs`](../../Extensions/WechatModule.cs)、[`WechatWorkServiceBuilder.cs`](../../Extensions/WechatWorkServiceBuilder.cs) |
-| DTO 与 JSON 上下文 | [`Mud.Wechat.Work.DataModels/Living`](../../../Mud.Wechat.Work.DataModels/Living/) |
+| DTO 与 JSON 上下文 | [`Mud.Wechat.Work/Living`](../../../Mud.Wechat.Work/Living/) |
 | 跨线基线 | [`Tests/ContractBaseline.cs`](../../../../../Tests/ContractBaseline.cs)（各线分节；本线口径以守卫实际断言为准） |
 | 本线包级公开面与已踩陷阱 | [`Src/Work/Mud.Wechat.Work/README.md`](../../README.md) |
 | 跨线通用约束（门禁 / AOT / 落位） | [`AGENTS.md`](../../../../../AGENTS.md) |

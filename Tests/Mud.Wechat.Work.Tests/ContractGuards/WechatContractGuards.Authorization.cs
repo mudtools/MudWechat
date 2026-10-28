@@ -153,7 +153,7 @@ public partial class WechatContractGuards
     public void TokenInvalidationDetector_ShouldCompensateCorpScopeInvalidation()
     {
         var source = File.ReadAllText(SourcePath(
-            "Mud.Wechat.Work.Abstractions", "Authentication", "WechatTokenInvalidationDetector.cs"));
+            "Mud.Wechat.Work", "Authentication", "WechatTokenInvalidationDetector.cs"));
 
         // ① 补偿失效调用存在且仅在判定命中后执行。
         source.Should().Contain("CompensateCorpScopeInvalidationAsync",

@@ -1,16 +1,35 @@
+// 2026-10 包合并：原 OfficialAccount.Abstractions / OfficialAccount.DataModels 两工程并入本工程
+// （命名空间不变），三工程的全局导入取并集落此。
 global using System;
+global using System.Collections.Concurrent;
 global using System.Collections.Generic;
 global using System.Linq;
+global using System.Net.Http;
+global using System.Text.Encodings.Web;
+global using System.Text.Json;
+global using System.Text.Json.Serialization;
+global using System.Threading;
+global using System.Threading.Tasks;
 global using Microsoft.Extensions.Configuration;
 global using Microsoft.Extensions.DependencyInjection;
 global using Microsoft.Extensions.DependencyInjection.Extensions;
+global using Microsoft.Extensions.Hosting;
 global using Microsoft.Extensions.Logging;
+global using Microsoft.Extensions.Options;
 global using Mud.HttpUtils;
 global using Mud.HttpUtils.Attributes;
 global using Mud.Wechat.Abstractions;
+global using Mud.Wechat.Abstractions.Configuration;
+global using Mud.Wechat.Abstractions.Contracts;
+global using Mud.Wechat.Abstractions.Exceptions;
+global using Mud.Wechat.Abstractions.TokenManager;
 global using Mud.Wechat.OfficialAccount.Abstractions;
 global using Mud.Wechat.OfficialAccount.Abstractions.Authentication;
+global using Mud.Wechat.OfficialAccount.Abstractions.Configuration;
+global using Mud.Wechat.OfficialAccount.Abstractions.Enums;
+global using Mud.Wechat.OfficialAccount.Abstractions.Exceptions;
 global using Mud.Wechat.OfficialAccount.DataModels;
+global using Mud.Wechat.OfficialAccount.DataModels.WebDev;
 global using Mud.Wechat.OfficialAccount.DataModels.Basic;
 global using Mud.Wechat.OfficialAccount.DataModels.Card;
 global using Mud.Wechat.OfficialAccount.DataModels.Comment;

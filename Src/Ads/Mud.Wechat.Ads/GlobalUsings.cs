@@ -6,13 +6,18 @@
 // -----------------------------------------------------------------------
 
 // 注：根 Directory.Build.props 已开 ImplicitUsings，此处仅补**非隐式**的组件面与本产品线命名空间。
-// 本线命名客户端与令牌注入都在 Mud.Wechat.Ads.Abstractions，导入语句随该包首批类型落地时补（骨架期无类型 ⇒ 命名空间尚不存在）。
+// 本行为广告线唯一源工程（2026-10 包合并：原 Abstractions / DataModels 两包并入本包，
+// 故其全局导入并集落此）；命名空间仍按原三包分面，未随合并改变。
 global using Microsoft.Extensions.DependencyInjection;
 global using Microsoft.Extensions.DependencyInjection.Extensions;
 global using Microsoft.Extensions.Logging;
 global using Mud.HttpUtils;
 global using Mud.HttpUtils.Attributes;
 global using Mud.Wechat.Abstractions;
+global using Mud.Wechat.Abstractions.Configuration;
+global using Mud.Wechat.Abstractions.Contracts;
 global using Mud.Wechat.Abstractions.Exceptions;
+global using Mud.Wechat.Abstractions.TokenManager;
 global using Mud.Wechat.Ads.Abstractions.Transport;
 global using Mud.Wechat.Ads.DataModels.Common;
+global using System.Text.Json.Serialization;

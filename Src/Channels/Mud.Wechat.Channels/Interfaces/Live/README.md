@@ -3,7 +3,7 @@
 视频号助手（channels 生态）「直播」域 SDK（12 端点：直播记录 / 预约记录 / 留资组件管理 /
 留资服务的直播数据 / 直播大屏）。 接口：[IChannelsLiveService](./IChannelsLiveService.cs)；注册组 `Live`；模块枚举 `ChannelsModule.Live`（装配入口见 [ChannelsServiceBuilder.cs](../../Extensions/ChannelsServiceBuilder.cs)）。逐端点核验 2026-10-18。
 
-> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[ChannelsLiveContractGuards.cs](../../../../../Tests/Mud.Wechat.Channels.Tests/ContractGuards/ChannelsLiveContractGuards.cs)、[ChannelsDeliveryContractGuards.cs](../../../../../Tests/Mud.Wechat.Channels.Tests/ContractGuards/ChannelsDeliveryContractGuards.cs)）、本域 DTO（[`Mud.Wechat.Channels.DataModels/Live`](../../../Mud.Wechat.Channels.DataModels/Live/)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
+> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[ChannelsLiveContractGuards.cs](../../../../../Tests/Mud.Wechat.Channels.Tests/ContractGuards/ChannelsLiveContractGuards.cs)、[ChannelsDeliveryContractGuards.cs](../../../../../Tests/Mud.Wechat.Channels.Tests/ContractGuards/ChannelsDeliveryContractGuards.cs)）、本域 DTO（[`Mud.Wechat.Channels/Live`](../../../Mud.Wechat.Channels/Live/)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
 
 ## 端点速览
 
@@ -222,32 +222,32 @@
 
 ## DTO 与序列化面
 
-本域 DTO 目录 [`Mud.Wechat.Channels.DataModels/Live`](../../../Mud.Wechat.Channels.DataModels/Live/) 内共 **53** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **53** 个，`SerializerClassName` = `Live`。
+本域 DTO 目录 [`Mud.Wechat.Channels/Live`](../../../Mud.Wechat.Channels/Live/) 内共 **53** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **53** 个，`SerializerClassName` = `Live`。
 
-AOT 源生成上下文：[`LiveJsonContext.g.cs`](./../../../Mud.Wechat.Channels.DataModels/Generated/LiveJsonContext.g.cs)（生成物，勿手改）。
+AOT 源生成上下文：[`LiveJsonContext.g.cs`](./../../../Mud.Wechat.Channels/Generated/LiveJsonContext.g.cs)（生成物，勿手改）。
 
 | 端点引用的类型 | 角色 | 定义位置 | JSON 字段（前缀） |
 |---|---|---|---|
-| `ChannelsLiveGetFinderLiveRecordListResponse` | 应答 | [Live/ChannelsLiveGetFinderLiveRecordListResponse.cs](../../../Mud.Wechat.Channels.DataModels/Live/ChannelsLiveGetFinderLiveRecordListResponse.cs) | `live_list` |
-| `ChannelsLiveGetFinderLiveNoticeRecordListResponse` | 应答 | [Live/ChannelsLiveGetFinderLiveNoticeRecordListResponse.cs](../../../Mud.Wechat.Channels.DataModels/Live/ChannelsLiveGetFinderLiveNoticeRecordListResponse.cs) | `live_notice_list` |
-| `ChannelsLeadsInfoResponse` | 应答 | [Live/Leads/ChannelsLeadsInfoResponse.cs](../../../Mud.Wechat.Channels.DataModels/Live/Leads/ChannelsLeadsInfoResponse.cs) | `user_data`, `last_buffer`, `continue_flag` |
-| `ChannelsLeadsInfoByRequestIdRequest` | 请求体 | [Live/Leads/ChannelsLeadsInfoByRequestIdRequest.cs](../../../Mud.Wechat.Channels.DataModels/Live/Leads/ChannelsLeadsInfoByRequestIdRequest.cs) | `request_id`, `last_buffer`, `version` |
-| `ChannelsLeadsInfoByComponentIdRequest` | 请求体 | [Live/Leads/ChannelsLeadsInfoByComponentIdRequest.cs](../../../Mud.Wechat.Channels.DataModels/Live/Leads/ChannelsLeadsInfoByComponentIdRequest.cs) | `leads_component_id`, `start_time`, `end_time`, `last_buffer`, `version` |
-| `ChannelsLeadsRequestIdResponse` | 应答 | [Live/Leads/ChannelsLeadsRequestIdResponse.cs](../../../Mud.Wechat.Channels.DataModels/Live/Leads/ChannelsLeadsRequestIdResponse.cs) | `item`, `last_buffer`, `continue_flag` |
-| `ChannelsLeadsRequestIdRequest` | 请求体 | [Live/Leads/ChannelsLeadsRequestIdRequest.cs](../../../Mud.Wechat.Channels.DataModels/Live/Leads/ChannelsLeadsRequestIdRequest.cs) | `leads_component_id`, `last_buffer` |
-| `ChannelsLeadsPromoteRecordResponse` | 应答 | [Live/Leads/ChannelsLeadsPromoteRecordResponse.cs](../../../Mud.Wechat.Channels.DataModels/Live/Leads/ChannelsLeadsPromoteRecordResponse.cs) | `record_data`, `last_buffer`, `continue_flag` |
-| `ChannelsLeadsPromoteRecordRequest` | 请求体 | [Live/Leads/ChannelsLeadsPromoteRecordRequest.cs](../../../Mud.Wechat.Channels.DataModels/Live/Leads/ChannelsLeadsPromoteRecordRequest.cs) | `leads_component_id`, `start_time`, `end_time`, `last_buffer` |
-| `ChannelsLeadsComponentIdResponse` | 应答 | [Live/Leads/ChannelsLeadsComponentIdResponse.cs](../../../Mud.Wechat.Channels.DataModels/Live/Leads/ChannelsLeadsComponentIdResponse.cs) | `item`, `last_buffer`, `continue_flag` |
-| `ChannelsLeadsComponentIdRequest` | 请求体 | [Live/Leads/ChannelsLeadsComponentIdRequest.cs](../../../Mud.Wechat.Channels.DataModels/Live/Leads/ChannelsLeadsComponentIdRequest.cs) | `last_buffer` |
-| `ChannelsGetFinderAttrResponse` | 应答 | [Live/ChannelsGetFinderAttrResponse.cs](../../../Mud.Wechat.Channels.DataModels/Live/ChannelsGetFinderAttrResponse.cs) | `finder_attr` |
-| `ChannelsGetFinderLiveDataListResponse` | 应答 | [Live/ChannelsGetFinderLiveDataListResponse.cs](../../../Mud.Wechat.Channels.DataModels/Live/ChannelsGetFinderLiveDataListResponse.cs) | `item`, `last_buffer`, `continue_flag` |
-| `ChannelsGetFinderLiveDataListRequest` | 请求体 | [Live/ChannelsGetFinderLiveDataListRequest.cs](../../../Mud.Wechat.Channels.DataModels/Live/ChannelsGetFinderLiveDataListRequest.cs) | `start_time`, `end_time`, `last_buffer` |
-| `ChannelsGetFinderLiveLeadsDataResponse` | 应答 | [Live/ChannelsGetFinderLiveLeadsDataResponse.cs](../../../Mud.Wechat.Channels.DataModels/Live/ChannelsGetFinderLiveLeadsDataResponse.cs) | `item` |
-| `ChannelsGetFinderLiveLeadsDataRequest` | 请求体 | [Live/ChannelsGetFinderLiveLeadsDataRequest.cs](../../../Mud.Wechat.Channels.DataModels/Live/ChannelsGetFinderLiveLeadsDataRequest.cs) | `start_time`, `end_time`, `source_type` |
-| `ChannelsGetLiveDashboardListResponse` | 应答 | [Live/ChannelsGetLiveDashboardListResponse.cs](../../../Mud.Wechat.Channels.DataModels/Live/ChannelsGetLiveDashboardListResponse.cs) | `trace_id`, `live_items`, `has_more` |
-| `ChannelsGetLiveDashboardListRequest` | 请求体 | [Live/ChannelsGetLiveDashboardListRequest.cs](../../../Mud.Wechat.Channels.DataModels/Live/ChannelsGetLiveDashboardListRequest.cs) | `ds` |
-| `ChannelsGetLiveDashboardDataResponse` | 应答 | [Live/ChannelsGetLiveDashboardDataResponse.cs](../../../Mud.Wechat.Channels.DataModels/Live/ChannelsGetLiveDashboardDataResponse.cs) | `trace_id`, `live_dashboard_data`, `live_comparison_index`, `live_ec_data_summary`, `live_ec_conversion_metric`, `live_ec_profile`, `live_distribution_channel`, `single_live_ec_spu_data_page_v2` |
-| `ChannelsGetLiveDashboardDataRequest` | 请求体 | [Live/ChannelsGetLiveDashboardDataRequest.cs](../../../Mud.Wechat.Channels.DataModels/Live/ChannelsGetLiveDashboardDataRequest.cs) | `export_id` |
+| `ChannelsLiveGetFinderLiveRecordListResponse` | 应答 | [Live/ChannelsLiveGetFinderLiveRecordListResponse.cs](../../../Mud.Wechat.Channels/Live/ChannelsLiveGetFinderLiveRecordListResponse.cs) | `live_list` |
+| `ChannelsLiveGetFinderLiveNoticeRecordListResponse` | 应答 | [Live/ChannelsLiveGetFinderLiveNoticeRecordListResponse.cs](../../../Mud.Wechat.Channels/Live/ChannelsLiveGetFinderLiveNoticeRecordListResponse.cs) | `live_notice_list` |
+| `ChannelsLeadsInfoResponse` | 应答 | [Live/Leads/ChannelsLeadsInfoResponse.cs](../../../Mud.Wechat.Channels/Live/Leads/ChannelsLeadsInfoResponse.cs) | `user_data`, `last_buffer`, `continue_flag` |
+| `ChannelsLeadsInfoByRequestIdRequest` | 请求体 | [Live/Leads/ChannelsLeadsInfoByRequestIdRequest.cs](../../../Mud.Wechat.Channels/Live/Leads/ChannelsLeadsInfoByRequestIdRequest.cs) | `request_id`, `last_buffer`, `version` |
+| `ChannelsLeadsInfoByComponentIdRequest` | 请求体 | [Live/Leads/ChannelsLeadsInfoByComponentIdRequest.cs](../../../Mud.Wechat.Channels/Live/Leads/ChannelsLeadsInfoByComponentIdRequest.cs) | `leads_component_id`, `start_time`, `end_time`, `last_buffer`, `version` |
+| `ChannelsLeadsRequestIdResponse` | 应答 | [Live/Leads/ChannelsLeadsRequestIdResponse.cs](../../../Mud.Wechat.Channels/Live/Leads/ChannelsLeadsRequestIdResponse.cs) | `item`, `last_buffer`, `continue_flag` |
+| `ChannelsLeadsRequestIdRequest` | 请求体 | [Live/Leads/ChannelsLeadsRequestIdRequest.cs](../../../Mud.Wechat.Channels/Live/Leads/ChannelsLeadsRequestIdRequest.cs) | `leads_component_id`, `last_buffer` |
+| `ChannelsLeadsPromoteRecordResponse` | 应答 | [Live/Leads/ChannelsLeadsPromoteRecordResponse.cs](../../../Mud.Wechat.Channels/Live/Leads/ChannelsLeadsPromoteRecordResponse.cs) | `record_data`, `last_buffer`, `continue_flag` |
+| `ChannelsLeadsPromoteRecordRequest` | 请求体 | [Live/Leads/ChannelsLeadsPromoteRecordRequest.cs](../../../Mud.Wechat.Channels/Live/Leads/ChannelsLeadsPromoteRecordRequest.cs) | `leads_component_id`, `start_time`, `end_time`, `last_buffer` |
+| `ChannelsLeadsComponentIdResponse` | 应答 | [Live/Leads/ChannelsLeadsComponentIdResponse.cs](../../../Mud.Wechat.Channels/Live/Leads/ChannelsLeadsComponentIdResponse.cs) | `item`, `last_buffer`, `continue_flag` |
+| `ChannelsLeadsComponentIdRequest` | 请求体 | [Live/Leads/ChannelsLeadsComponentIdRequest.cs](../../../Mud.Wechat.Channels/Live/Leads/ChannelsLeadsComponentIdRequest.cs) | `last_buffer` |
+| `ChannelsGetFinderAttrResponse` | 应答 | [Live/ChannelsGetFinderAttrResponse.cs](../../../Mud.Wechat.Channels/Live/ChannelsGetFinderAttrResponse.cs) | `finder_attr` |
+| `ChannelsGetFinderLiveDataListResponse` | 应答 | [Live/ChannelsGetFinderLiveDataListResponse.cs](../../../Mud.Wechat.Channels/Live/ChannelsGetFinderLiveDataListResponse.cs) | `item`, `last_buffer`, `continue_flag` |
+| `ChannelsGetFinderLiveDataListRequest` | 请求体 | [Live/ChannelsGetFinderLiveDataListRequest.cs](../../../Mud.Wechat.Channels/Live/ChannelsGetFinderLiveDataListRequest.cs) | `start_time`, `end_time`, `last_buffer` |
+| `ChannelsGetFinderLiveLeadsDataResponse` | 应答 | [Live/ChannelsGetFinderLiveLeadsDataResponse.cs](../../../Mud.Wechat.Channels/Live/ChannelsGetFinderLiveLeadsDataResponse.cs) | `item` |
+| `ChannelsGetFinderLiveLeadsDataRequest` | 请求体 | [Live/ChannelsGetFinderLiveLeadsDataRequest.cs](../../../Mud.Wechat.Channels/Live/ChannelsGetFinderLiveLeadsDataRequest.cs) | `start_time`, `end_time`, `source_type` |
+| `ChannelsGetLiveDashboardListResponse` | 应答 | [Live/ChannelsGetLiveDashboardListResponse.cs](../../../Mud.Wechat.Channels/Live/ChannelsGetLiveDashboardListResponse.cs) | `trace_id`, `live_items`, `has_more` |
+| `ChannelsGetLiveDashboardListRequest` | 请求体 | [Live/ChannelsGetLiveDashboardListRequest.cs](../../../Mud.Wechat.Channels/Live/ChannelsGetLiveDashboardListRequest.cs) | `ds` |
+| `ChannelsGetLiveDashboardDataResponse` | 应答 | [Live/ChannelsGetLiveDashboardDataResponse.cs](../../../Mud.Wechat.Channels/Live/ChannelsGetLiveDashboardDataResponse.cs) | `trace_id`, `live_dashboard_data`, `live_comparison_index`, `live_ec_data_summary`, `live_ec_conversion_metric`, `live_ec_profile`, `live_distribution_channel`, `single_live_ec_spu_data_page_v2` |
+| `ChannelsGetLiveDashboardDataRequest` | 请求体 | [Live/ChannelsGetLiveDashboardDataRequest.cs](../../../Mud.Wechat.Channels/Live/ChannelsGetLiveDashboardDataRequest.cs) | `export_id` |
 
 > DTO 一律以源文件为准；本表只列端点签名**直接引用**的一层类型，嵌套类型不再递归展开。所有 DTO 不使用 `required`（仓内约束），必填性由接口注释与官方页表达，SDK 不做本地必填校验。
 
@@ -285,7 +285,7 @@ var response = await service.GetFinderAttrByAppidAsync(ct);
 | 契约守卫（路由 / 计数 / DTO 登记断言） | [`ChannelsLiveContractGuards.cs`](../../../../../Tests/Mud.Wechat.Channels.Tests/ContractGuards/ChannelsLiveContractGuards.cs)、[`ChannelsDeliveryContractGuards.cs`](../../../../../Tests/Mud.Wechat.Channels.Tests/ContractGuards/ChannelsDeliveryContractGuards.cs) |
 | 守卫中的代表性测试方法 | `LiveEndpoints_ShouldMatchOfficialRoutes`、`LiveEndpoints_ShouldAllBePost_WithEmptyBodyRules`、`LiveInterface_ShouldBindChannelsToken_AndRegisterUnderLiveGroup`、`LiveDataModels_ShouldBeRegisteredInJsonContext`、`LiveDataModels_ShouldLockOfficialFieldsAndSharedDtos`、`LiveEnumConstants_ShouldLockOfficialLiteralValues`、`DeliveryEndpoints_ShouldMatchOfficialRoutes`、`DeliveryEndpoints_ShouldAllBePost_WithBodyRules`、`DeliveryInterface_ShouldBindChannelsToken_AndRegisterUnderDeliveryGroup`、`DeliveryDataModels_ShouldBeRegisteredInJsonContext`、`DeliveryDataModels_ShouldLockOfficialFieldsAndSharedDtos`、`DeliveryEnumConstants_ShouldLockOfficialLiteralValues` |
 | 模块枚举 / 装配入口 | [`ChannelsModule.cs`](../../Extensions/ChannelsModule.cs)、[`ChannelsServiceBuilder.cs`](../../Extensions/ChannelsServiceBuilder.cs) |
-| DTO 与 JSON 上下文 | [`Mud.Wechat.Channels.DataModels/Live`](../../../Mud.Wechat.Channels.DataModels/Live/) |
+| DTO 与 JSON 上下文 | [`Mud.Wechat.Channels/Live`](../../../Mud.Wechat.Channels/Live/) |
 | 跨线基线 | [`Tests/ContractBaseline.cs`](../../../../../Tests/ContractBaseline.cs)（各线分节；本线口径以守卫实际断言为准） |
 | 本线包级公开面与已踩陷阱 | [`Src/Channels/Mud.Wechat.Channels/README.md`](../../README.md) |
 | 跨线通用约束（门禁 / AOT / 落位） | [`AGENTS.md`](../../../../../AGENTS.md) |

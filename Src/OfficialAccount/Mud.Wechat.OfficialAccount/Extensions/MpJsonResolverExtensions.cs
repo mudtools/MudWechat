@@ -53,7 +53,7 @@ public static class MpJsonResolverExtensions
     /// </summary>
     /// <param name="services">服务集合。</param>
     /// <remarks>
-    /// 全部 <c>*JsonContext</c> 均位于 <c>Mud.Wechat.OfficialAccount/Generated/</c>，
+    /// 全部 <c>*JsonContext</c> 均位于 <c>Mud.Wechat.OfficialAccount/DataModels/Generated/</c>，
     /// 由 <c>scripts/GenerateJsonContext.ps1</c>（mud-jsonctx）按 <c>[HttpJsonSerializable]</c> 标注生成
     /// （SerializerClassName = DTO 命名空间的域段，上下文与域 DTO 同命名空间）。
     /// 各上下文键空间不重叠，合并顺序无关（<c>JsonTypeInfoResolver.Combine</c> 按序命中）；

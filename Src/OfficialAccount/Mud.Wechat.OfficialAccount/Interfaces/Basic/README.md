@@ -7,7 +7,7 @@
 > **事实来源限定**：本文所有断言只来自本仓接口文件的 XML 注释、本仓契约守卫
 > [MpBasicContractGuards.cs](../../../../../Tests/Mud.Wechat.OfficialAccount.Tests/ContractGuards/MpBasicContractGuards.cs)（`MP-BS1`~`MP-BS10`）、
 > [MpQueryTokenWhitelistGuard.cs](../../../../../Tests/Mud.Wechat.OfficialAccount.Tests/ContractGuards/MpQueryTokenWhitelistGuard.cs)（`QT1`）
-> 与本仓 DTO（[DataModels/Basic/](../../../Mud.Wechat.OfficialAccount/Basic/)）。
+> 与本仓 DTO（[DataModels/Basic/](../../DataModels/Basic)）。
 > 未留档项统一收进文末「已知留档缺口」并标「未逐项核验」，不引用外部文档。
 
 ## 端点速览
@@ -113,7 +113,7 @@ foreach (MpCallbackCheckPing ping in check.Ping ?? new List<MpCallbackCheckPing>
 // PackageLoss 只有 "0%" / "100%"（单包 ping）；Time 形如 "23.079ms" ⇒ 两者都是 string，不要当数字解析
 ```
 
-**判错只有一层**（`errcode` / `errmsg` 信封）；`MP-BS7` 锁定 [MpResponse](../../../Mud.Wechat.OfficialAccount/MpResponse.cs)
+**判错只有一层**（`errcode` / `errmsg` 信封）；`MP-BS7` 锁定 [MpResponse](../../DataModels/MpResponse.cs)
 实现公用层判错契约，且「缺省 `errcode`」语义即成功。
 
 ## 已知留档缺口
@@ -135,7 +135,7 @@ foreach (MpCallbackCheckPing ping in check.Ping ?? new List<MpCallbackCheckPing>
 | Query 令牌白名单（唯一持票人） | `QT1`（`MpQueryTokenWhitelistGuard.cs`） |
 | DTO 登记进 `BasicJsonContext`（`expectedCount = 8`：2 令牌 DTO + 2 IP 响应 + 1 检测请求 + 1 检测响应 + 2 嵌套项） | `MP-BS6` |
 | 「两 IP 响应同构且 `ip_list` 可空」「IP 端点无 Query 参数与请求体」 | `MP-BS8` / `MP-BS10` |
-| DTO 字段与注释 | [DataModels/Basic/](../../../Mud.Wechat.OfficialAccount/Basic/)（8 个文件） |
+| DTO 字段与注释 | [DataModels/Basic/](../../DataModels/Basic)（8 个文件） |
 | 常量（action / 运营商取值） | `MpCallbackCheckConstants.cs`（Abstractions 工程） |
 | 生成入口与模块枚举、上下文合并清单 | [MpServiceBuilder.cs](../../Extensions/MpServiceBuilder.cs)、[MpModule.cs](../../Extensions/MpModule.cs)、[MpJsonResolverExtensions.cs](../../Extensions/MpJsonResolverExtensions.cs) |
 

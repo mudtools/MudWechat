@@ -8,7 +8,7 @@
 > **事实来源限定**：本文所有断言只来自本仓接口文件的 XML 注释、本仓契约守卫
 > [MpMassContractGuards.cs](../../../../../Tests/Mud.Wechat.OfficialAccount.Tests/ContractGuards/MpMassContractGuards.cs)（`MS6` / `MS7`）与
 > [MpQueryTokenWhitelistGuard.cs](../../../../../Tests/Mud.Wechat.OfficialAccount.Tests/ContractGuards/MpQueryTokenWhitelistGuard.cs)（`QT1`）、
-> 以及本仓 DTO（[DataModels/AutoReply/](../../../Mud.Wechat.OfficialAccount/AutoReply/)）。
+> 以及本仓 DTO（[DataModels/AutoReply/](../../DataModels/AutoReply)）。
 > 未在以上四处留档的官方约束一律不写入正文，统一收进文末「已知留档缺口」并标「未逐项核验」。
 
 ## 端点速览
@@ -68,7 +68,7 @@
 
 接口 remarks 记录：官方本页错误码表**仅列 `0`**，且 errmsg 官方原文两义并置
 （「ok 或 in a normal state」）——照录、不做「择一修正」。
-⇒ 本域没有可留档的业务错误码集合；调用失败的真实形态见 [MpResponse](../../../Mud.Wechat.OfficialAccount/MpResponse.cs)
+⇒ 本域没有可留档的业务错误码集合；调用失败的真实形态见 [MpResponse](../../DataModels/MpResponse.cs)
 （`errcode != 0`）与通用错误码族，具体取值**未在本仓逐项核验**。
 
 ## 快速开始
@@ -119,7 +119,7 @@ foreach (var rule in rules)
 | 路由 / 「GET 无请求体」/ 15 条官方 JSON 键名 / 上下文遍历登记 | `AutoReplyEndpoint_ShouldMatchOfficialContract`（`MS6`，`MpMassContractGuards.cs`） |
 | `MpModule.AutoReply` + `AddAutoReplyApi()` + Query 令牌白名单 | `MassQrcodeAutoReplyModules_ShouldBeRegisteredAndWhitelisted`（`MS7`） |
 | 「Query 注入令牌合法」的唯一持票人 | `QT1`（`MpQueryTokenWhitelistGuard.cs`，33 项公众号白名单，本域在列） |
-| DTO 字段与注释（含素材时效原文） | [DataModels/AutoReply/](../../../Mud.Wechat.OfficialAccount/AutoReply/)（8 个文件） |
+| DTO 字段与注释（含素材时效原文） | [DataModels/AutoReply/](../../DataModels/AutoReply)（8 个文件） |
 | 生成入口与模块枚举 | [MpServiceBuilder.cs](../../Extensions/MpServiceBuilder.cs)、[MpModule.cs](../../Extensions/MpModule.cs) |
 | 上下文合并登记（`internal` 不可在宿主代码引用） | [MpJsonResolverExtensions.cs](../../Extensions/MpJsonResolverExtensions.cs) 首项 `AutoReplyJsonContext.Default` |
 

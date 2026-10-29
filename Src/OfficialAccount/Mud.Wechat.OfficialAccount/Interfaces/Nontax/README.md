@@ -10,7 +10,7 @@
 > **事实来源限定**：本文断言只来自本仓接口文件的 XML 注释、本仓契约守卫
 > [MpNontaxContractGuards.cs](../../../../../Tests/Mud.Wechat.OfficialAccount.Tests/ContractGuards/MpNontaxContractGuards.cs)
 > （`NT1`~`NT2`）、[MpQueryTokenWhitelistGuard.cs](../../../../../Tests/Mud.Wechat.OfficialAccount.Tests/ContractGuards/MpQueryTokenWhitelistGuard.cs)（`QT1`）
-> 与本仓 DTO（[DataModels/Nontax/](../../../Mud.Wechat.OfficialAccount/Nontax/)）。
+> 与本仓 DTO（[DataModels/Nontax/](../../../Mud.Wechat.OfficialAccount/DataModels/Nontax/)）。
 > **计数以守卫为准**：`NT1` 钉「16 条 POST `/nontax/*` 全部带请求体，`downloadbill` 不进管线、以路径常量单列」；
 > `QT1` 注释记 `IMpNontaxService` 为 16 端点（downloadbill 走无 `[Token]` 的手工通道，不入白名单）。
 
@@ -128,9 +128,9 @@ using (MpNontaxBillDownloadResult bill = await nontaxBill.DownloadBillAsync(
 | 16 条 POST 路由全带请求体 + `downloadbill` 不进管线 + 路径常量 | `NT1` = `NontaxEndpoints_ShouldMatchOfficialRoutes` |
 | DTO 登记 + `expectedCount = 42` | `NT2` = `NontaxDataModels_ShouldBeRegisteredInJsonContext` |
 | 下载通道结果形态（`IDisposable`、CSV 流） | [../../Nontax/MpNontaxBillDownloadTypes.cs](../../Nontax/MpNontaxBillDownloadTypes.cs) |
-| 字段名与类型 | [DataModels/Nontax/Payment/](../../../Mud.Wechat.OfficialAccount/Nontax/Payment/)、[Vehicle/](../../../Mud.Wechat.OfficialAccount/Nontax/Vehicle/)、[BillCard/](../../../Mud.Wechat.OfficialAccount/Nontax/BillCard/) |
+| 字段名与类型 | [DataModels/Nontax/Payment/](../../DataModels/Nontax/Payment)、[Vehicle/](../../DataModels/Nontax/Vehicle)、[BillCard/](../../DataModels/Nontax/BillCard) |
 | 手工下载通道回退默认应用（与素材下载同规则） | `MD11` = `ManualDownloadChannels_ShouldFallBackToDefaultApp`（[MpMediaContractGuards.cs](../../../../../Tests/Mud.Wechat.OfficialAccount.Tests/ContractGuards/MpMediaContractGuards.cs)） |
-| 生成上下文清单 | [Generated/NontaxJsonContext.g.cs](../../../Mud.Wechat.OfficialAccount/Generated/NontaxJsonContext.g.cs)、[MpJsonResolverExtensions.cs](../../Extensions/MpJsonResolverExtensions.cs) |
+| 生成上下文清单 | [Generated/NontaxJsonContext.g.cs](../../DataModels/Generated/NontaxJsonContext.g.cs)、[MpJsonResolverExtensions.cs](../../Extensions/MpJsonResolverExtensions.cs) |
 
 ## 改动本域需要同批完成
 
@@ -141,7 +141,7 @@ using (MpNontaxBillDownloadResult bill = await nontaxBill.DownloadBillAsync(
    [../../../../../scripts/AddHttpJsonSerializable.ps1](../../../../../scripts/AddHttpJsonSerializable.ps1) +
    [../../../../../scripts/GenerateJsonContext.ps1](../../../../../scripts/GenerateJsonContext.ps1)
    → 同批更新 `NT2` 的 `expectedCount`（42）。
-3. 确认 [Generated/NontaxJsonContext.g.cs](../../../Mud.Wechat.OfficialAccount/Generated/NontaxJsonContext.g.cs) 与
+3. 确认 [Generated/NontaxJsonContext.g.cs](../../DataModels/Generated/NontaxJsonContext.g.cs) 与
    [MpJsonResolverExtensions.cs](../../Extensions/MpJsonResolverExtensions.cs) 的合并清单**逐项对齐**——
    漏登记在 JIT 下无症状、只在 Native AOT 首次真实调用失败。
 4. 调整注册面 / 模块 → 同批改 [MpModule.cs](../../Extensions/MpModule.cs)、[MpServiceBuilder.cs](../../Extensions/MpServiceBuilder.cs)

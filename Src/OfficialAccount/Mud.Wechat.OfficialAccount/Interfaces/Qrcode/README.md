@@ -2,7 +2,7 @@
 
 微信公众号 / 服务号「服务号二维码 → 带参二维码」域 SDK（1 端点，**服务号专属**）。 接口：[IMpQrcodeService](./IMpQrcodeService.cs)；注册组 `Qrcode`；模块枚举 `MpModule.Qrcode`（装配入口见 [MpServiceBuilder.cs](../../Extensions/MpServiceBuilder.cs)）。逐端点核验 2026-10-18。
 
-> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[MpQrcodeJumpContractGuards.cs](../../../../../Tests/Mud.Wechat.OfficialAccount.Tests/ContractGuards/MpQrcodeJumpContractGuards.cs)、[MpMassContractGuards.cs](../../../../../Tests/Mud.Wechat.OfficialAccount.Tests/ContractGuards/MpMassContractGuards.cs)、[MpQueryTokenWhitelistGuard.cs](../../../../../Tests/Mud.Wechat.OfficialAccount.Tests/ContractGuards/MpQueryTokenWhitelistGuard.cs)）、本域 DTO（[`Mud.Wechat.OfficialAccount/Qrcode`](../../../Mud.Wechat.OfficialAccount/Qrcode/)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
+> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[MpQrcodeJumpContractGuards.cs](../../../../../Tests/Mud.Wechat.OfficialAccount.Tests/ContractGuards/MpQrcodeJumpContractGuards.cs)、[MpMassContractGuards.cs](../../../../../Tests/Mud.Wechat.OfficialAccount.Tests/ContractGuards/MpMassContractGuards.cs)、[MpQueryTokenWhitelistGuard.cs](../../../../../Tests/Mud.Wechat.OfficialAccount.Tests/ContractGuards/MpQueryTokenWhitelistGuard.cs)）、本域 DTO（[`Mud.Wechat.OfficialAccount/DataModels/Qrcode`](../../DataModels/Qrcode)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
 
 ## 端点速览
 
@@ -53,14 +53,14 @@ EventKey/Ticket）推送给开发者。如果用户已经关注公众号……�
 
 ## DTO 与序列化面
 
-本域 DTO 目录 [`Mud.Wechat.OfficialAccount/Qrcode`](../../../Mud.Wechat.OfficialAccount/Qrcode/) 内共 **4** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **4** 个，`SerializerClassName` = `Qrcode`。
+本域 DTO 目录 [`Mud.Wechat.OfficialAccount/DataModels/Qrcode`](../../DataModels/Qrcode) 内共 **4** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **4** 个，`SerializerClassName` = `Qrcode`。
 
-AOT 源生成上下文：[`QrcodeJsonContext.g.cs`](./../../../Mud.Wechat.OfficialAccount/Generated/QrcodeJsonContext.g.cs)（生成物，勿手改）。
+AOT 源生成上下文：[`QrcodeJsonContext.g.cs`](./../../DataModels/Generated/QrcodeJsonContext.g.cs)（生成物，勿手改）。
 
 | 端点引用的类型 | 角色 | 定义位置 | JSON 字段（前缀） |
 |---|---|---|---|
-| `MpQrcodeCreateResponse` | 应答 | [Qrcode/MpQrcodeCreateResponse.cs](../../../Mud.Wechat.OfficialAccount/Qrcode/MpQrcodeCreateResponse.cs) | `ticket`, `expire_seconds`, `url` |
-| `MpQrcodeCreateRequest` | 请求体 | [Qrcode/MpQrcodeCreateRequest.cs](../../../Mud.Wechat.OfficialAccount/Qrcode/MpQrcodeCreateRequest.cs) | `expire_seconds`, `action_name`, `action_info` |
+| `MpQrcodeCreateResponse` | 应答 | [Qrcode/MpQrcodeCreateResponse.cs](../../DataModels/Qrcode/MpQrcodeCreateResponse.cs) | `ticket`, `expire_seconds`, `url` |
+| `MpQrcodeCreateRequest` | 请求体 | [Qrcode/MpQrcodeCreateRequest.cs](../../DataModels/Qrcode/MpQrcodeCreateRequest.cs) | `expire_seconds`, `action_name`, `action_info` |
 
 > DTO 一律以源文件为准；本表只列端点签名**直接引用**的一层类型，嵌套类型不再递归展开。所有 DTO 不使用 `required`（仓内约束），必填性由接口注释与官方页表达，SDK 不做本地必填校验。
 
@@ -98,7 +98,7 @@ var response = await service.CreateQrcodeAsync(new MpQrcodeCreateRequest(), ct);
 | 契约守卫（路由 / 计数 / DTO 登记断言） | [`MpQrcodeJumpContractGuards.cs`](../../../../../Tests/Mud.Wechat.OfficialAccount.Tests/ContractGuards/MpQrcodeJumpContractGuards.cs)、[`MpMassContractGuards.cs`](../../../../../Tests/Mud.Wechat.OfficialAccount.Tests/ContractGuards/MpMassContractGuards.cs)、[`MpQueryTokenWhitelistGuard.cs`](../../../../../Tests/Mud.Wechat.OfficialAccount.Tests/ContractGuards/MpQueryTokenWhitelistGuard.cs) |
 | 守卫中的代表性测试方法 | `QrcodeJumpEndpoints_ShouldMatchOfficialRoutes`、`QrcodeJumpShapes_ShouldLockOfficialFieldNames`、`QrcodeJumpVoidResponses_ShouldReuseSharedMpResponse`、`QrcodeJumpModuleAndDataModels_ShouldBeRegistered`、`QrcodeJumpConstants_ShouldMatchVerifiedOfficialValues`、`MassEndpoints_ShouldMatchOfficialRoutes`、`MassRequestShapes_ShouldLockBranchDtos`、`OneTimeSubscribe_ShouldLiveInTemplateDomainWithColorField`、`MassDataModels_ShouldBeRegisteredInJsonContext`、`QrcodeEndpoint_ShouldMatchOfficialContract`、`AutoReplyEndpoint_ShouldMatchOfficialContract`、`MassQrcodeAutoReplyModules_ShouldBeRegisteredAndWhitelisted` … |
 | 模块枚举 / 装配入口 | [`MpModule.cs`](../../Extensions/MpModule.cs)、[`MpServiceBuilder.cs`](../../Extensions/MpServiceBuilder.cs) |
-| DTO 与 JSON 上下文 | [`Mud.Wechat.OfficialAccount/Qrcode`](../../../Mud.Wechat.OfficialAccount/Qrcode/) |
+| DTO 与 JSON 上下文 | [`Mud.Wechat.OfficialAccount/DataModels/Qrcode`](../../DataModels/Qrcode) |
 | 跨线基线 | [`Tests/ContractBaseline.cs`](../../../../../Tests/ContractBaseline.cs)（各线分节；本线口径以守卫实际断言为准） |
 | 本线包级公开面与已踩陷阱 | [`Src/OfficialAccount/Mud.Wechat.OfficialAccount/README.md`](../../README.md) |
 | 跨线通用约束（门禁 / AOT / 落位） | [`AGENTS.md`](../../../../../AGENTS.md) |

@@ -8,7 +8,7 @@
 > **事实来源限定**：本文断言只来自本仓接口文件的 XML 注释、本仓契约守卫
 > [MpOneCodeContractGuards.cs](../../../../../Tests/Mud.Wechat.OfficialAccount.Tests/ContractGuards/MpOneCodeContractGuards.cs)
 > （`OT1`~`OT6`）、[MpQueryTokenWhitelistGuard.cs](../../../../../Tests/Mud.Wechat.OfficialAccount.Tests/ContractGuards/MpQueryTokenWhitelistGuard.cs)（`QT1`）
-> 与本仓 DTO（[DataModels/OneCode/](../../../Mud.Wechat.OfficialAccount/OneCode/)）。
+> 与本仓 DTO（[DataModels/OneCode/](../../DataModels/OneCode)）。
 > **计数以守卫为准**：`OT1` 钉「6 条 POST 路由、同前缀、每端点均带请求体」。`QT1` 注释记 6 端点。
 
 ## 端点速览
@@ -139,8 +139,8 @@ MpException.ThrowIfFailed(exchanged, "/intp/marketcode/tickettocode");
 | 文档冲突处置（Code 为 string / Buffer 为 string / 请求侧 long?）负向锁定 | `OT4` = `OneCodeDocumentConflicts_ShouldKeepAdjudicatedShapes` |
 | DTO 登记 11 + 模块 + 白名单 + 令牌 | `OT5` = `OneCodeModuleAndDataModels_ShouldBeRegistered` |
 | `MpCodeWxaTypes` 0/1/2、`Finished=FINISH`、零新增错误码 | `OT6` = `OneCodeConstants_ShouldMatchVerifiedOfficialValues` |
-| 字段名与类型（申请 / 查询 / 下载 / 激活 / 换码） | [DataModels/OneCode/](../../../Mud.Wechat.OfficialAccount/OneCode/)（11 个文件） |
-| 生成上下文清单 | [Generated/OneCodeJsonContext.g.cs](../../../Mud.Wechat.OfficialAccount/Generated/OneCodeJsonContext.g.cs)、[MpJsonResolverExtensions.cs](../../Extensions/MpJsonResolverExtensions.cs) |
+| 字段名与类型（申请 / 查询 / 下载 / 激活 / 换码） | [DataModels/OneCode/](../../DataModels/OneCode)（11 个文件） |
+| 生成上下文清单 | [Generated/OneCodeJsonContext.g.cs](../../DataModels/Generated/OneCodeJsonContext.g.cs)、[MpJsonResolverExtensions.cs](../../Extensions/MpJsonResolverExtensions.cs) |
 
 ## 改动本域需要同批完成
 
@@ -151,7 +151,7 @@ MpException.ThrowIfFailed(exchanged, "/intp/marketcode/tickettocode");
    [../../../../../scripts/AddHttpJsonSerializable.ps1](../../../../../scripts/AddHttpJsonSerializable.ps1) +
    [../../../../../scripts/GenerateJsonContext.ps1](../../../../../scripts/GenerateJsonContext.ps1)
    → 同批更新 `OT5` 的 11 个 DTO 计数。
-3. 确认 [Generated/OneCodeJsonContext.g.cs](../../../Mud.Wechat.OfficialAccount/Generated/OneCodeJsonContext.g.cs) 与
+3. 确认 [Generated/OneCodeJsonContext.g.cs](../../DataModels/Generated/OneCodeJsonContext.g.cs) 与
    [MpJsonResolverExtensions.cs](../../Extensions/MpJsonResolverExtensions.cs) 的合并清单**逐项对齐**——
    漏登记在 JIT 下无症状、只在 Native AOT 首次真实调用失败。
 4. 调整注册面 / 模块 → 同批改 [MpModule.cs](../../Extensions/MpModule.cs)、[MpServiceBuilder.cs](../../Extensions/MpServiceBuilder.cs)

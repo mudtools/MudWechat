@@ -2,7 +2,7 @@
 
 微信公众号 / 服务号「模板消息」域 SDK（7 端点，**服务号专属**）。 接口：[IMpTemplateService](./IMpTemplateService.cs)；注册组 `Template`；模块枚举 `MpModule.Template`（装配入口见 [MpServiceBuilder.cs](../../Extensions/MpServiceBuilder.cs)）。逐端点核验 2026-10-18。
 
-> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[MpTemplateContractGuards.cs](../../../../../Tests/Mud.Wechat.OfficialAccount.Tests/ContractGuards/MpTemplateContractGuards.cs)、[MpMassContractGuards.cs](../../../../../Tests/Mud.Wechat.OfficialAccount.Tests/ContractGuards/MpMassContractGuards.cs)、[MpQueryTokenWhitelistGuard.cs](../../../../../Tests/Mud.Wechat.OfficialAccount.Tests/ContractGuards/MpQueryTokenWhitelistGuard.cs)）、本域 DTO（[`Mud.Wechat.OfficialAccount/Template`](../../../Mud.Wechat.OfficialAccount/Template/)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
+> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[MpTemplateContractGuards.cs](../../../../../Tests/Mud.Wechat.OfficialAccount.Tests/ContractGuards/MpTemplateContractGuards.cs)、[MpMassContractGuards.cs](../../../../../Tests/Mud.Wechat.OfficialAccount.Tests/ContractGuards/MpMassContractGuards.cs)、[MpQueryTokenWhitelistGuard.cs](../../../../../Tests/Mud.Wechat.OfficialAccount.Tests/ContractGuards/MpQueryTokenWhitelistGuard.cs)）、本域 DTO（[`Mud.Wechat.OfficialAccount/DataModels/Template`](../../DataModels/Template)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
 
 ## 端点速览
 
@@ -178,24 +178,24 @@ https://developers.weixin.qq.com/doc/service/api/（**非** subscription 订阅�
 
 ## DTO 与序列化面
 
-本域 DTO 目录 [`Mud.Wechat.OfficialAccount/Template`](../../../Mud.Wechat.OfficialAccount/Template/) 内共 **15** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **15** 个，`SerializerClassName` = `Template`。
+本域 DTO 目录 [`Mud.Wechat.OfficialAccount/DataModels/Template`](../../DataModels/Template) 内共 **15** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **15** 个，`SerializerClassName` = `Template`。
 
-AOT 源生成上下文：[`TemplateJsonContext.g.cs`](./../../../Mud.Wechat.OfficialAccount/Generated/TemplateJsonContext.g.cs)（生成物，勿手改）。
+AOT 源生成上下文：[`TemplateJsonContext.g.cs`](./../../DataModels/Generated/TemplateJsonContext.g.cs)（生成物，勿手改）。
 
 | 端点引用的类型 | 角色 | 定义位置 | JSON 字段（前缀） |
 |---|---|---|---|
-| `MpSendTemplateMessageResponse` | 应答 | [Template/MpSendTemplateMessageResponse.cs](../../../Mud.Wechat.OfficialAccount/Template/MpSendTemplateMessageResponse.cs) | `msgid` |
-| `MpSendTemplateMessageRequest` | 请求体 | [Template/MpSendTemplateMessageRequest.cs](../../../Mud.Wechat.OfficialAccount/Template/MpSendTemplateMessageRequest.cs) | `touser`, `template_id`, `url`, `miniprogram`, `data`, `client_msg_id` |
-| `MpResponse` | 应答 | [MpResponse.cs](../../../Mud.Wechat.OfficialAccount/MpResponse.cs) | `errcode`, `errmsg` |
-| `MpSetIndustryRequest` | 请求体 | [Template/MpSetIndustryRequest.cs](../../../Mud.Wechat.OfficialAccount/Template/MpSetIndustryRequest.cs) | `industry_id1`, `industry_id2` |
-| `MpGetIndustryResponse` | 应答 | [Template/MpGetIndustryResponse.cs](../../../Mud.Wechat.OfficialAccount/Template/MpGetIndustryResponse.cs) | `primary_industry`, `secondary_industry` |
-| `MpAddTemplateResponse` | 应答 | [Template/MpAddTemplateResponse.cs](../../../Mud.Wechat.OfficialAccount/Template/MpAddTemplateResponse.cs) | `template_id` |
-| `MpAddTemplateRequest` | 请求体 | [Template/MpAddTemplateRequest.cs](../../../Mud.Wechat.OfficialAccount/Template/MpAddTemplateRequest.cs) | `template_id_short`, `keyword_name_list` |
-| `MpGetAllPrivateTemplateResponse` | 应答 | [Template/MpGetAllPrivateTemplateResponse.cs](../../../Mud.Wechat.OfficialAccount/Template/MpGetAllPrivateTemplateResponse.cs) | `template_list` |
-| `MpDeleteTemplateRequest` | 请求体 | [Template/MpDeleteTemplateRequest.cs](../../../Mud.Wechat.OfficialAccount/Template/MpDeleteTemplateRequest.cs) | `template_id` |
-| `MpQueryBlockTmplMsgResponse` | 应答 | [Template/MpQueryBlockTmplMsgResponse.cs](../../../Mud.Wechat.OfficialAccount/Template/MpQueryBlockTmplMsgResponse.cs) | `msginfo` |
-| `MpQueryBlockTmplMsgRequest` | 请求体 | [Template/MpQueryBlockTmplMsgRequest.cs](../../../Mud.Wechat.OfficialAccount/Template/MpQueryBlockTmplMsgRequest.cs) | `tmpl_msg_id`, `largest_id`, `limit` |
-| `MpOneTimeSubscribeRequest` | 请求体 | [Mass/MpOneTimeSubscribeRequest.cs](../../../Mud.Wechat.OfficialAccount/Mass/MpOneTimeSubscribeRequest.cs) | `touser`, `template_id`, `url`, `miniprogram`, `scene`, `title`, `data` |
+| `MpSendTemplateMessageResponse` | 应答 | [Template/MpSendTemplateMessageResponse.cs](../../DataModels/Template/MpSendTemplateMessageResponse.cs) | `msgid` |
+| `MpSendTemplateMessageRequest` | 请求体 | [Template/MpSendTemplateMessageRequest.cs](../../DataModels/Template/MpSendTemplateMessageRequest.cs) | `touser`, `template_id`, `url`, `miniprogram`, `data`, `client_msg_id` |
+| `MpResponse` | 应答 | [MpResponse.cs](../../DataModels/MpResponse.cs) | `errcode`, `errmsg` |
+| `MpSetIndustryRequest` | 请求体 | [Template/MpSetIndustryRequest.cs](../../DataModels/Template/MpSetIndustryRequest.cs) | `industry_id1`, `industry_id2` |
+| `MpGetIndustryResponse` | 应答 | [Template/MpGetIndustryResponse.cs](../../DataModels/Template/MpGetIndustryResponse.cs) | `primary_industry`, `secondary_industry` |
+| `MpAddTemplateResponse` | 应答 | [Template/MpAddTemplateResponse.cs](../../DataModels/Template/MpAddTemplateResponse.cs) | `template_id` |
+| `MpAddTemplateRequest` | 请求体 | [Template/MpAddTemplateRequest.cs](../../DataModels/Template/MpAddTemplateRequest.cs) | `template_id_short`, `keyword_name_list` |
+| `MpGetAllPrivateTemplateResponse` | 应答 | [Template/MpGetAllPrivateTemplateResponse.cs](../../DataModels/Template/MpGetAllPrivateTemplateResponse.cs) | `template_list` |
+| `MpDeleteTemplateRequest` | 请求体 | [Template/MpDeleteTemplateRequest.cs](../../DataModels/Template/MpDeleteTemplateRequest.cs) | `template_id` |
+| `MpQueryBlockTmplMsgResponse` | 应答 | [Template/MpQueryBlockTmplMsgResponse.cs](../../DataModels/Template/MpQueryBlockTmplMsgResponse.cs) | `msginfo` |
+| `MpQueryBlockTmplMsgRequest` | 请求体 | [Template/MpQueryBlockTmplMsgRequest.cs](../../DataModels/Template/MpQueryBlockTmplMsgRequest.cs) | `tmpl_msg_id`, `largest_id`, `limit` |
+| `MpOneTimeSubscribeRequest` | 请求体 | [Mass/MpOneTimeSubscribeRequest.cs](../../DataModels/Mass/MpOneTimeSubscribeRequest.cs) | `touser`, `template_id`, `url`, `miniprogram`, `scene`, `title`, `data` |
 
 > DTO 一律以源文件为准；本表只列端点签名**直接引用**的一层类型，嵌套类型不再递归展开。所有 DTO 不使用 `required`（仓内约束），必填性由接口注释与官方页表达，SDK 不做本地必填校验。
 
@@ -233,7 +233,7 @@ var response = await service.GetAllPrivateTemplateAsync(ct);
 | 契约守卫（路由 / 计数 / DTO 登记断言） | [`MpTemplateContractGuards.cs`](../../../../../Tests/Mud.Wechat.OfficialAccount.Tests/ContractGuards/MpTemplateContractGuards.cs)、[`MpMassContractGuards.cs`](../../../../../Tests/Mud.Wechat.OfficialAccount.Tests/ContractGuards/MpMassContractGuards.cs)、[`MpQueryTokenWhitelistGuard.cs`](../../../../../Tests/Mud.Wechat.OfficialAccount.Tests/ContractGuards/MpQueryTokenWhitelistGuard.cs) |
 | 守卫中的代表性测试方法 | `TemplateEndpoints_ShouldMatchOfficialRoutes`、`TemplateInterfaceHierarchy_ShouldRegisterDirectly`、`TemplateTokenBinding_ShouldBeAccessTokenInjectedViaQuery`、`TemplateDataModels_ShouldBeRegisteredInJsonContext`、`TemplateDataModels_ShouldLockOfficialFields`、`TemplateRequestShapes_ShouldBeLocked`、`TemplateModule_ShouldBeRegisteredAndWhitelisted`、`TemplateErrorCodes_ShouldMatchVerifiedOfficialValues`、`MassEndpoints_ShouldMatchOfficialRoutes`、`MassRequestShapes_ShouldLockBranchDtos`、`OneTimeSubscribe_ShouldLiveInTemplateDomainWithColorField`、`MassDataModels_ShouldBeRegisteredInJsonContext` … |
 | 模块枚举 / 装配入口 | [`MpModule.cs`](../../Extensions/MpModule.cs)、[`MpServiceBuilder.cs`](../../Extensions/MpServiceBuilder.cs) |
-| DTO 与 JSON 上下文 | [`Mud.Wechat.OfficialAccount/Template`](../../../Mud.Wechat.OfficialAccount/Template/) |
+| DTO 与 JSON 上下文 | [`Mud.Wechat.OfficialAccount/DataModels/Template`](../../DataModels/Template) |
 | 跨线基线 | [`Tests/ContractBaseline.cs`](../../../../../Tests/ContractBaseline.cs)（各线分节；本线口径以守卫实际断言为准） |
 | 本线包级公开面与已踩陷阱 | [`Src/OfficialAccount/Mud.Wechat.OfficialAccount/README.md`](../../README.md) |
 | 跨线通用约束（门禁 / AOT / 落位） | [`AGENTS.md`](../../../../../AGENTS.md) |

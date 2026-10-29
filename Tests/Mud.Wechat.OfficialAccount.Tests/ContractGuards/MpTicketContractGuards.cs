@@ -111,7 +111,7 @@ public class MpTicketContractGuards
     public void TicketFrequencyConstraint_ShouldBeDocumented()
     {
         var dto = File.ReadAllText(SourcePath(
-            "Mud.Wechat.OfficialAccount", "WebDev", "MpGetTicketResponse.cs"));
+            "Mud.Wechat.OfficialAccount", "DataModels", "WebDev", "MpGetTicketResponse.cs"));
         dto.Should().Contain("调用次数非常有限", "官方「注意事项」原文必须留在 DTO 文档中");
 
         var manager = File.ReadAllText(SourcePath(

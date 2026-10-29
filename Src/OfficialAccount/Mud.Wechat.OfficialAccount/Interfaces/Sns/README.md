@@ -2,7 +2,7 @@
 
 微信公众号 / 服务号「网页开发 → 网页授权」域 SDK（4 端点，**服务号专属**；全部**免令牌端点**）。 接口：[IMpSnsService](./IMpSnsService.cs)；注册组 `Sns`；模块枚举 `MpModule.Sns`（装配入口见 [MpServiceBuilder.cs](../../Extensions/MpServiceBuilder.cs)）。逐端点核验 2026-10-18。
 
-> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[MpSnsContractGuards.cs](../../../../../Tests/Mud.Wechat.OfficialAccount.Tests/ContractGuards/MpSnsContractGuards.cs)）、本域 DTO（[`Mud.Wechat.OfficialAccount/Sns`](../../../Mud.Wechat.OfficialAccount/Sns/)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
+> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[MpSnsContractGuards.cs](../../../../../Tests/Mud.Wechat.OfficialAccount.Tests/ContractGuards/MpSnsContractGuards.cs)）、本域 DTO（[`Mud.Wechat.OfficialAccount/DataModels/Sns`](../../DataModels/Sns)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
 
 ## 端点速览
 
@@ -125,16 +125,16 @@ access_token / refresh_token / userinfo 三页频率限制原文均为「**5 万
 
 ## DTO 与序列化面
 
-本域 DTO 目录 [`Mud.Wechat.OfficialAccount/Sns`](../../../Mud.Wechat.OfficialAccount/Sns/) 内共 **4** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **4** 个，`SerializerClassName` = `Sns`。
+本域 DTO 目录 [`Mud.Wechat.OfficialAccount/DataModels/Sns`](../../DataModels/Sns) 内共 **4** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **4** 个，`SerializerClassName` = `Sns`。
 
-AOT 源生成上下文：[`SnsJsonContext.g.cs`](./../../../Mud.Wechat.OfficialAccount/Generated/SnsJsonContext.g.cs)（生成物，勿手改）。
+AOT 源生成上下文：[`SnsJsonContext.g.cs`](./../../DataModels/Generated/SnsJsonContext.g.cs)（生成物，勿手改）。
 
 | 端点引用的类型 | 角色 | 定义位置 | JSON 字段（前缀） |
 |---|---|---|---|
-| `MpSnsAccessTokenResponse` | 应答 | [Sns/MpSnsAccessTokenResponse.cs](../../../Mud.Wechat.OfficialAccount/Sns/MpSnsAccessTokenResponse.cs) | `access_token`, `expires_in`, `refresh_token`, `openid`, `unionid`, `is_snapshotuser` |
-| `MpSnsRefreshTokenResponse` | 应答 | [Sns/MpSnsRefreshTokenResponse.cs](../../../Mud.Wechat.OfficialAccount/Sns/MpSnsRefreshTokenResponse.cs) | `access_token`, `expires_in`, `refresh_token`, `openid`, `scope` |
-| `MpSnsAuthResponse` | 应答 | [Sns/MpSnsAuthResponse.cs](../../../Mud.Wechat.OfficialAccount/Sns/MpSnsAuthResponse.cs) | — |
-| `MpSnsUserInfoResponse` | 应答 | [Sns/MpSnsUserInfoResponse.cs](../../../Mud.Wechat.OfficialAccount/Sns/MpSnsUserInfoResponse.cs) | `openid`, `nickname`, `sex`, `province`, `city`, `country`, `headimgurl`, `privilege`, `unionid` |
+| `MpSnsAccessTokenResponse` | 应答 | [Sns/MpSnsAccessTokenResponse.cs](../../DataModels/Sns/MpSnsAccessTokenResponse.cs) | `access_token`, `expires_in`, `refresh_token`, `openid`, `unionid`, `is_snapshotuser` |
+| `MpSnsRefreshTokenResponse` | 应答 | [Sns/MpSnsRefreshTokenResponse.cs](../../DataModels/Sns/MpSnsRefreshTokenResponse.cs) | `access_token`, `expires_in`, `refresh_token`, `openid`, `scope` |
+| `MpSnsAuthResponse` | 应答 | [Sns/MpSnsAuthResponse.cs](../../DataModels/Sns/MpSnsAuthResponse.cs) | — |
+| `MpSnsUserInfoResponse` | 应答 | [Sns/MpSnsUserInfoResponse.cs](../../DataModels/Sns/MpSnsUserInfoResponse.cs) | `openid`, `nickname`, `sex`, `province`, `city`, `country`, `headimgurl`, `privilege`, `unionid` |
 
 > DTO 一律以源文件为准；本表只列端点签名**直接引用**的一层类型，嵌套类型不再递归展开。所有 DTO 不使用 `required`（仓内约束），必填性由接口注释与官方页表达，SDK 不做本地必填校验。
 
@@ -171,7 +171,7 @@ var response = await service.AuthAsync("", "", ct);
 | 契约守卫（路由 / 计数 / DTO 登记断言） | [`MpSnsContractGuards.cs`](../../../../../Tests/Mud.Wechat.OfficialAccount.Tests/ContractGuards/MpSnsContractGuards.cs) |
 | 守卫中的代表性测试方法 | `SnsEndpoints_ShouldMatchOfficialRoutes`、`SnsInterface_ShouldStayOutOfAppTokenPipeline`、`SnsAccessTokenEndpoint_ShouldTakeSecretViaQuery`、`SnsDataModels_ShouldBeRegisteredInJsonContext`、`SnsDataModels_ShouldLockOfficialFields`、`SnsModule_ShouldBeRegistered` |
 | 模块枚举 / 装配入口 | [`MpModule.cs`](../../Extensions/MpModule.cs)、[`MpServiceBuilder.cs`](../../Extensions/MpServiceBuilder.cs) |
-| DTO 与 JSON 上下文 | [`Mud.Wechat.OfficialAccount/Sns`](../../../Mud.Wechat.OfficialAccount/Sns/) |
+| DTO 与 JSON 上下文 | [`Mud.Wechat.OfficialAccount/DataModels/Sns`](../../DataModels/Sns) |
 | 跨线基线 | [`Tests/ContractBaseline.cs`](../../../../../Tests/ContractBaseline.cs)（各线分节；本线口径以守卫实际断言为准） |
 | 本线包级公开面与已踩陷阱 | [`Src/OfficialAccount/Mud.Wechat.OfficialAccount/README.md`](../../README.md) |
 | 跨线通用约束（门禁 / AOT / 落位） | [`AGENTS.md`](../../../../../AGENTS.md) |

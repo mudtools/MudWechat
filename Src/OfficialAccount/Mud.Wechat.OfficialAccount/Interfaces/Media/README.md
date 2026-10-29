@@ -11,7 +11,7 @@
 > **事实来源限定**：本文断言只来自本仓接口文件的 XML 注释、本仓契约守卫
 > [MpMediaContractGuards.cs](../../../../../Tests/Mud.Wechat.OfficialAccount.Tests/ContractGuards/MpMediaContractGuards.cs)
 > （`MD1`~`MD11`）、[MpQueryTokenWhitelistGuard.cs](../../../../../Tests/Mud.Wechat.OfficialAccount.Tests/ContractGuards/MpQueryTokenWhitelistGuard.cs)（`QT1`）
-> 与本仓 DTO（[DataModels/Media/](../../../Mud.Wechat.OfficialAccount/Media/)）。
+> 与本仓 DTO（[DataModels/Media/](../../../Mud.Wechat.OfficialAccount/DataModels/Media/)）。
 > **计数以守卫为准**：`MD1` 钉 JSON 通道「恰 8 条路由、其中只有 1 条 GET」，`MD2` 钉下载通道 3 方法且
 > 不进生成管线。包 README「`Media/` 6（上传侧）」与 `MpModule.Media` remarks「上传 1 端点 + 下载 2 端点」
 > 均为**过期口径**（详见文末缺口），不作本文依据。
@@ -143,9 +143,9 @@ using (MpPermanentMaterialResult material = await mediaDownload.GetPermanentMate
 | `40004` / `40007` / `40009` | `MD9` = `MediaErrorCodes_ShouldMatchVerifiedOfficialValues` |
 | 下载通道 JSON 解释走源生成快车道 | `MD10` = `DownloadChannel_ShouldUseSourceGeneratedJsonTypeInfo` |
 | 两条手工下载通道回退默认应用 | `MD11` = `ManualDownloadChannels_ShouldFallBackToDefaultApp` |
-| 请求/响应字段名与类型 | [DataModels/Media/](../../../Mud.Wechat.OfficialAccount/Media/)（15 个 DTO） |
+| 请求/响应字段名与类型 | [DataModels/Media/](../../../Mud.Wechat.OfficialAccount/DataModels/Media/)（15 个 DTO） |
 | 下载结果信封 | [../../Media/MpMediaDownloadResult.cs](../../Media/MpMediaDownloadResult.cs)、[../../Media/MpPermanentMaterialResult.cs](../../Media/MpPermanentMaterialResult.cs) |
-| 生成上下文清单 | [Generated/MediaJsonContext.g.cs](../../../Mud.Wechat.OfficialAccount/Generated/MediaJsonContext.g.cs)、[MpJsonResolverExtensions.cs](../../Extensions/MpJsonResolverExtensions.cs) |
+| 生成上下文清单 | [Generated/MediaJsonContext.g.cs](../../DataModels/Generated/MediaJsonContext.g.cs)、[MpJsonResolverExtensions.cs](../../Extensions/MpJsonResolverExtensions.cs) |
 
 ## 改动本域需要同批完成
 
@@ -156,7 +156,7 @@ using (MpPermanentMaterialResult material = await mediaDownload.GetPermanentMate
    [../../../../../scripts/AddHttpJsonSerializable.ps1](../../../../../scripts/AddHttpJsonSerializable.ps1) +
    [../../../../../scripts/GenerateJsonContext.ps1](../../../../../scripts/GenerateJsonContext.ps1)
    → 同批更新 `MD5` 的 `expectedCount`（15）。
-3. 确认 [Generated/MediaJsonContext.g.cs](../../../Mud.Wechat.OfficialAccount/Generated/MediaJsonContext.g.cs) 与
+3. 确认 [Generated/MediaJsonContext.g.cs](../../DataModels/Generated/MediaJsonContext.g.cs) 与
    [MpJsonResolverExtensions.cs](../../Extensions/MpJsonResolverExtensions.cs) 的合并清单**逐项对齐**——
    漏登记在 JIT 下无症状、只在 Native AOT 首次真实调用失败。
 4. 新增/调整模块注册面 → 同批改 [MpModule.cs](../../Extensions/MpModule.cs)、[MpServiceBuilder.cs](../../Extensions/MpServiceBuilder.cs)

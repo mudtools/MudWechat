@@ -2,7 +2,7 @@
 
 微信公众号 / 服务号「智能接口」域 SDK（12 端点：AI 开放接口 3 + OCR 识别 7 + 图像处理 2）。 接口：[IMpSmartApiService](./IMpSmartApiService.cs)；注册组 `SmartApi`；模块枚举 `MpModule.SmartApi`（装配入口见 [MpServiceBuilder.cs](../../Extensions/MpServiceBuilder.cs)）。逐端点核验 2026-10-18。
 
-> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[MpSmartApiContractGuards.cs](../../../../../Tests/Mud.Wechat.OfficialAccount.Tests/ContractGuards/MpSmartApiContractGuards.cs)、[MpQueryTokenWhitelistGuard.cs](../../../../../Tests/Mud.Wechat.OfficialAccount.Tests/ContractGuards/MpQueryTokenWhitelistGuard.cs)）、本域 DTO（[`Mud.Wechat.OfficialAccount/SmartApi`](../../../Mud.Wechat.OfficialAccount/SmartApi/)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
+> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[MpSmartApiContractGuards.cs](../../../../../Tests/Mud.Wechat.OfficialAccount.Tests/ContractGuards/MpSmartApiContractGuards.cs)、[MpQueryTokenWhitelistGuard.cs](../../../../../Tests/Mud.Wechat.OfficialAccount.Tests/ContractGuards/MpQueryTokenWhitelistGuard.cs)）、本域 DTO（[`Mud.Wechat.OfficialAccount/DataModels/SmartApi`](../../DataModels/SmartApi)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
 
 ## 端点速览
 
@@ -416,26 +416,26 @@ AI 开放接口三端点官方明示**不支持**云调用与第三方平台调�
 
 ## DTO 与序列化面
 
-本域 DTO 目录 [`Mud.Wechat.OfficialAccount/SmartApi`](../../../Mud.Wechat.OfficialAccount/SmartApi/) 内共 **22** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **22** 个，`SerializerClassName` = `SmartApi`。
+本域 DTO 目录 [`Mud.Wechat.OfficialAccount/DataModels/SmartApi`](../../DataModels/SmartApi) 内共 **22** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **22** 个，`SerializerClassName` = `SmartApi`。
 
-AOT 源生成上下文：[`SmartApiJsonContext.g.cs`](./../../../Mud.Wechat.OfficialAccount/Generated/SmartApiJsonContext.g.cs)（生成物，勿手改）。
+AOT 源生成上下文：[`SmartApiJsonContext.g.cs`](./../../DataModels/Generated/SmartApiJsonContext.g.cs)（生成物，勿手改）。
 
 | 端点引用的类型 | 角色 | 定义位置 | JSON 字段（前缀） |
 |---|---|---|---|
-| `MpResponse` | 应答 | [MpResponse.cs](../../../Mud.Wechat.OfficialAccount/MpResponse.cs) | `errcode`, `errmsg` |
-| `MpVoiceRecoResultResponse` | 应答 | [SmartApi/Voice/MpVoiceRecoResultResponse.cs](../../../Mud.Wechat.OfficialAccount/SmartApi/Voice/MpVoiceRecoResultResponse.cs) | `result` |
-| `MpVoiceTranslateResponse` | 应答 | [SmartApi/Voice/MpVoiceTranslateResponse.cs](../../../Mud.Wechat.OfficialAccount/SmartApi/Voice/MpVoiceTranslateResponse.cs) | `from_content`, `to_content` |
-| `MpVoiceTranslateRequest` | 请求体 | [SmartApi/Voice/MpVoiceTranslateRequest.cs](../../../Mud.Wechat.OfficialAccount/SmartApi/Voice/MpVoiceTranslateRequest.cs) | `content` |
-| `MpOcrIdCardResponse` | 应答 | [SmartApi/Ocr/MpOcrIdCardResponse.cs](../../../Mud.Wechat.OfficialAccount/SmartApi/Ocr/MpOcrIdCardResponse.cs) | `type`, `name`, `id`, `valid_date`, `addr`, `gender`, `nationality` |
-| `MpOcrBankCardResponse` | 应答 | [SmartApi/Ocr/MpOcrBankCardResponse.cs](../../../Mud.Wechat.OfficialAccount/SmartApi/Ocr/MpOcrBankCardResponse.cs) | `number`, `id` |
-| `MpOcrDrivingResponse` | 应答 | [SmartApi/Ocr/MpOcrDrivingResponse.cs](../../../Mud.Wechat.OfficialAccount/SmartApi/Ocr/MpOcrDrivingResponse.cs) | `plate_num`, `vehicle_type`, `owner`, `addr`, `use_character`, `model`, `vin`, `engine_num`, `register_date`, `issue_date`, `plate_num_b`, `record` … |
-| `MpOcrDrivingLicenseResponse` | 应答 | [SmartApi/Ocr/MpOcrDrivingLicenseResponse.cs](../../../Mud.Wechat.OfficialAccount/SmartApi/Ocr/MpOcrDrivingLicenseResponse.cs) | `id_num`, `name`, `sex`, `nationality`, `address`, `birth_date`, `issue_date`, `car_class`, `valid_from`, `valid_to`, `official_seal` |
-| `MpOcrBizLicenseResponse` | 应答 | [SmartApi/Ocr/MpOcrBizLicenseResponse.cs](../../../Mud.Wechat.OfficialAccount/SmartApi/Ocr/MpOcrBizLicenseResponse.cs) | `reg_num`, `serial`, `legal_representative`, `enterprise_name`, `type_of_organization`, `address`, `type_of_enterprise`, `business_scope`, `registered_capital`, `paid_in_capital`, `valid_period`, `registered_date` … |
-| `MpOcrCommResponse` | 应答 | [SmartApi/Ocr/MpOcrCommResponse.cs](../../../Mud.Wechat.OfficialAccount/SmartApi/Ocr/MpOcrCommResponse.cs) | `items`, `img_size` |
-| `MpOcrMenuResponse` | 应答 | [SmartApi/Ocr/MpOcrMenuResponse.cs](../../../Mud.Wechat.OfficialAccount/SmartApi/Ocr/MpOcrMenuResponse.cs) | `content` |
-| `MpImageAiCropResponse` | 应答 | [SmartApi/Image/MpImageAiCropResponse.cs](../../../Mud.Wechat.OfficialAccount/SmartApi/Image/MpImageAiCropResponse.cs) | `results`, `img_size` |
-| `MpImageQrcodeResponse` | 应答 | [SmartApi/Image/MpImageQrcodeResponse.cs](../../../Mud.Wechat.OfficialAccount/SmartApi/Image/MpImageQrcodeResponse.cs) | `code_results`, `img_size` |
-| `MpOcrPlateNumberResponse` | 应答 | [SmartApi/MpOcrPlateNumberResponse.cs](../../../Mud.Wechat.OfficialAccount/SmartApi/MpOcrPlateNumberResponse.cs) | `number` |
+| `MpResponse` | 应答 | [MpResponse.cs](../../DataModels/MpResponse.cs) | `errcode`, `errmsg` |
+| `MpVoiceRecoResultResponse` | 应答 | [SmartApi/Voice/MpVoiceRecoResultResponse.cs](../../DataModels/SmartApi/Voice/MpVoiceRecoResultResponse.cs) | `result` |
+| `MpVoiceTranslateResponse` | 应答 | [SmartApi/Voice/MpVoiceTranslateResponse.cs](../../DataModels/SmartApi/Voice/MpVoiceTranslateResponse.cs) | `from_content`, `to_content` |
+| `MpVoiceTranslateRequest` | 请求体 | [SmartApi/Voice/MpVoiceTranslateRequest.cs](../../DataModels/SmartApi/Voice/MpVoiceTranslateRequest.cs) | `content` |
+| `MpOcrIdCardResponse` | 应答 | [SmartApi/Ocr/MpOcrIdCardResponse.cs](../../DataModels/SmartApi/Ocr/MpOcrIdCardResponse.cs) | `type`, `name`, `id`, `valid_date`, `addr`, `gender`, `nationality` |
+| `MpOcrBankCardResponse` | 应答 | [SmartApi/Ocr/MpOcrBankCardResponse.cs](../../DataModels/SmartApi/Ocr/MpOcrBankCardResponse.cs) | `number`, `id` |
+| `MpOcrDrivingResponse` | 应答 | [SmartApi/Ocr/MpOcrDrivingResponse.cs](../../DataModels/SmartApi/Ocr/MpOcrDrivingResponse.cs) | `plate_num`, `vehicle_type`, `owner`, `addr`, `use_character`, `model`, `vin`, `engine_num`, `register_date`, `issue_date`, `plate_num_b`, `record` … |
+| `MpOcrDrivingLicenseResponse` | 应答 | [SmartApi/Ocr/MpOcrDrivingLicenseResponse.cs](../../DataModels/SmartApi/Ocr/MpOcrDrivingLicenseResponse.cs) | `id_num`, `name`, `sex`, `nationality`, `address`, `birth_date`, `issue_date`, `car_class`, `valid_from`, `valid_to`, `official_seal` |
+| `MpOcrBizLicenseResponse` | 应答 | [SmartApi/Ocr/MpOcrBizLicenseResponse.cs](../../DataModels/SmartApi/Ocr/MpOcrBizLicenseResponse.cs) | `reg_num`, `serial`, `legal_representative`, `enterprise_name`, `type_of_organization`, `address`, `type_of_enterprise`, `business_scope`, `registered_capital`, `paid_in_capital`, `valid_period`, `registered_date` … |
+| `MpOcrCommResponse` | 应答 | [SmartApi/Ocr/MpOcrCommResponse.cs](../../DataModels/SmartApi/Ocr/MpOcrCommResponse.cs) | `items`, `img_size` |
+| `MpOcrMenuResponse` | 应答 | [SmartApi/Ocr/MpOcrMenuResponse.cs](../../DataModels/SmartApi/Ocr/MpOcrMenuResponse.cs) | `content` |
+| `MpImageAiCropResponse` | 应答 | [SmartApi/Image/MpImageAiCropResponse.cs](../../DataModels/SmartApi/Image/MpImageAiCropResponse.cs) | `results`, `img_size` |
+| `MpImageQrcodeResponse` | 应答 | [SmartApi/Image/MpImageQrcodeResponse.cs](../../DataModels/SmartApi/Image/MpImageQrcodeResponse.cs) | `code_results`, `img_size` |
+| `MpOcrPlateNumberResponse` | 应答 | [SmartApi/MpOcrPlateNumberResponse.cs](../../DataModels/SmartApi/MpOcrPlateNumberResponse.cs) | `number` |
 
 > DTO 一律以源文件为准；本表只列端点签名**直接引用**的一层类型，嵌套类型不再递归展开。所有 DTO 不使用 `required`（仓内约束），必填性由接口注释与官方页表达，SDK 不做本地必填校验。
 
@@ -473,7 +473,7 @@ var response = await service.BankCardOcrByUploadAsync(default!, ct);
 | 契约守卫（路由 / 计数 / DTO 登记断言） | [`MpSmartApiContractGuards.cs`](../../../../../Tests/Mud.Wechat.OfficialAccount.Tests/ContractGuards/MpSmartApiContractGuards.cs)、[`MpQueryTokenWhitelistGuard.cs`](../../../../../Tests/Mud.Wechat.OfficialAccount.Tests/ContractGuards/MpQueryTokenWhitelistGuard.cs) |
 | 守卫中的代表性测试方法 | `SmartApiEndpoints_ShouldMatchOfficialRoutes`、`VoiceEndpoints_ShouldKeepOfficialParameterPlacement`、`SmartApiShapes_ShouldLockOfficialFieldNames`、`SmartApiDataModels_ShouldBeRegisteredInJsonContext`、`SmartApiModule_ShouldBeRegisteredAndWhitelisted`、`SmartApiErrorCodes_ShouldMatchVerifiedOfficialValues`、`SuperResolutionEndpoint_ShouldStayUnmodeled`、`QueryTokenInjectionInterfaces_ShouldMatchWhitelist`、`QueryTokenInjectionInterfaces_ShouldMatchWhitelist_ForMiniProgramLine`、`QueryTokenInterfaces_ShouldDeclareOfficialParameterName` |
 | 模块枚举 / 装配入口 | [`MpModule.cs`](../../Extensions/MpModule.cs)、[`MpServiceBuilder.cs`](../../Extensions/MpServiceBuilder.cs) |
-| DTO 与 JSON 上下文 | [`Mud.Wechat.OfficialAccount/SmartApi`](../../../Mud.Wechat.OfficialAccount/SmartApi/) |
+| DTO 与 JSON 上下文 | [`Mud.Wechat.OfficialAccount/DataModels/SmartApi`](../../DataModels/SmartApi) |
 | 跨线基线 | [`Tests/ContractBaseline.cs`](../../../../../Tests/ContractBaseline.cs)（各线分节；本线口径以守卫实际断言为准） |
 | 本线包级公开面与已踩陷阱 | [`Src/OfficialAccount/Mud.Wechat.OfficialAccount/README.md`](../../README.md) |
 | 跨线通用约束（门禁 / AOT / 落位） | [`AGENTS.md`](../../../../../AGENTS.md) |

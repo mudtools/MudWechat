@@ -11,7 +11,7 @@
 > （`MS1`~`MS4`、`MS7`、`MS8`；同一文件还持有带参二维码 `MS5` 与自动回复 `MS6` 的断言）、
 > [MpQueryTokenWhitelistGuard.cs](../../../../../Tests/Mud.Wechat.OfficialAccount.Tests/ContractGuards/MpQueryTokenWhitelistGuard.cs)（`QT1`/`QT2`）、
 > [MpRouteCountGuard.cs](../../../../../Tests/Mud.Wechat.OfficialAccount.Tests/ContractGuards/MpRouteCountGuard.cs)（`RC1`/`RC2`/`RC3`）
-> 与本仓 DTO（[DataModels/Mass/](../../../Mud.Wechat.OfficialAccount/Mass/)）。
+> 与本仓 DTO（[DataModels/Mass/](../../DataModels/Mass)）。
 > 未在以上四处留档的官方约束一律进文末「已知留档缺口」，正文不引用外部官方文档表述。
 
 ## 端点速览
@@ -220,7 +220,7 @@ await mass.DeleteMassMsgAsync(new MpMassDeleteRequest { MsgId = msgId, ArticleId
 | `MpModule.Mass` + `AddMassApi()` + 白名单「本域在内」（全量由 `QT1` 单点持有） | `MS7` = `MassQrcodeAutoReplyModules_ShouldBeRegisteredAndWhitelisted` |
 | 已核验错误码常量（40152/40215/45162/45028/45062/45065/45066/45067/45113/48021/48022/41040/40130/89504/89505/40062/40052/40053） | `MS8` = `MassErrorCodes_ShouldMatchVerifiedOfficialValues` |
 | Query 令牌白名单与令牌绑定 | `QT1`（全集持票人）、`QT2`（本域接口 `access_token` 断言） |
-| 19 个 DTO（`SerializerClassName = "Mass"`） | [DataModels/Mass/](../../../Mud.Wechat.OfficialAccount/Mass/) |
+| 19 个 DTO（`SerializerClassName = "Mass"`） | [DataModels/Mass/](../../DataModels/Mass) |
 | 生成入口 / 模块枚举 / 上下文合并清单 | [MpServiceBuilder.cs](../../Extensions/MpServiceBuilder.cs)、[MpModule.cs](../../Extensions/MpModule.cs)、[MpJsonResolverExtensions.cs](../../Extensions/MpJsonResolverExtensions.cs) |
 | 本线总览（**统计已过期**，不可当权威） | [../../README.md](../../README.md) |
 

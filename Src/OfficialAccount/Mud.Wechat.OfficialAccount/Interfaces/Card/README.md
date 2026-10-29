@@ -12,7 +12,7 @@
 > [MpCardContractGuards.cs](../../../../../Tests/Mud.Wechat.OfficialAccount.Tests/ContractGuards/MpCardContractGuards.cs)
 > （`CD1`~`CD8`）、[MpQueryTokenWhitelistGuard.cs](../../../../../Tests/Mud.Wechat.OfficialAccount.Tests/ContractGuards/MpQueryTokenWhitelistGuard.cs)（`QT1`）、
 > [MpTicketContractGuards.cs](../../../../../Tests/Mud.Wechat.OfficialAccount.Tests/ContractGuards/MpTicketContractGuards.cs)（`TK1`~`TK7`）
-> 与本仓 DTO（[DataModels/Card/](../../../Mud.Wechat.OfficialAccount/Card/)）。
+> 与本仓 DTO（[DataModels/Card/](../../DataModels/Card)）。
 > **本域的对齐基准是本地 SKIT 源码（2026-10-10）**：官方文档站正文为 SPA、当时不可达 ⇒
 > 路由与字段名已锁死，但**频率上限、字段长度、账号门槛、错误码表、状态枚举一律「待官方逐页核验」**，
 > 这类内容全部进文末缺口，正文不写成事实。
@@ -224,7 +224,7 @@ var ticket = await appContext.WxCardTicketManager!.GetTicketAsync(ct);
 | 注册三段式、`expectedDomainTypes = 174`、5 接口白名单、路由集 = 53、按族计数、`/card/invoice/` 前缀警告 | `CardRegistrationAndUnmodeledFamilies_ShouldBeDocumented`（`CD8`） |
 | Query 令牌白名单（逐接口 19/8/7/15/4） | `QT1`（`MpQueryTokenWhitelistGuard.cs`） |
 | `api_ticket` 形态、`wx_card`、7200、禁暴露客户端、第三方排除 | `TK1`~`TK7`（`MpTicketContractGuards.cs`） |
-| DTO 字段（建卡/查询/修改/券码/会员/礼品卡/子商户分支） | [DataModels/Card/](../../../Mud.Wechat.OfficialAccount/Card/) 及子目录 `Create` `Query` `Update` `Code` `Member` `Gift` `PayGiftCard` `SubMerchant` `Marketing` `Common` |
+| DTO 字段（建卡/查询/修改/券码/会员/礼品卡/子商户分支） | [DataModels/Card/](../../DataModels/Card) 及子目录 `Create` `Query` `Update` `Code` `Member` `Gift` `PayGiftCard` `SubMerchant` `Marketing` `Common` |
 | 逐端点原文与「对齐基准 / 待核」标注 | 本目录三份接口文件的 XML 注释 |
 | 生成入口与模块枚举、上下文合并清单 | [MpServiceBuilder.cs](../../Extensions/MpServiceBuilder.cs)、[MpModule.cs](../../Extensions/MpModule.cs)、[MpJsonResolverExtensions.cs](../../Extensions/MpJsonResolverExtensions.cs) |
 

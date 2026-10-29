@@ -1027,4 +1027,80 @@ public class WechatAbstractionsContractGuards
         csprojContent.Should().NotContain("BouncyCastle", "叶层不得引入 BouncyCastle 等第三方国密依赖");
         csprojContent.Should().NotContain("System.Security.Cryptography.Algorithms", "叶层不得新增密码学相关 NuGet 包");
     }
+
+    /// <summary>
+    /// AB-G10：<b>「DTO 目录 ⇔ DTO 命名空间」双向不变式</b> —— 七线主包的官方传输 DTO 一律落该工程的
+    /// <c>DataModels/</c> 子目录，且 <c>DataModels/</c> 内不得混入非 DTO 类型（接口/服务/配置/存储端口按各自目录落位）。
+    /// </summary>
+    /// <remarks>
+    /// 2026-10 源码归类把原先散在各线工程根的 DTO 域目录（连同脚手架生成物 <c>Generated/</c>）收拢进 <c>DataModels/</c>。
+    /// <b>没有守卫的话这条约定没有任何失败信号</b>：目录不参与命名空间推导，也不进 csproj 显式清单（SDK 通配 glob），
+    /// 下一个新增 DTO 直接落工程根照样编译通过、AOT 与测试全绿 —— 正是本守卫要防的「静默回潮」形态。
+    /// 支付线 APIv2 与 v3 同包但命名空间平行（<c>Mud.Wechat.Pay.V2.DataModels.*</c>，见
+    /// <c>V2_DataModels_ShouldStayNamespaceSeparatedFromApiV3</c>），其 DTO 落 <c>DataModels/V2/{域}/</c>，
+    /// 仍满足本不变式（两个方向同时为真），不构成例外分支。
+    /// 计数下限用于防「枚举空跑」：若工程定位失效导致零文件扫描，守卫必须自己报红。
+    /// </remarks>
+    [Fact]
+    public void DataModelsDirectoryShouldMirrorNamespace()
+    {
+        var entryProjects = new[]
+        {
+            "Mud.Wechat.Work", "Mud.Wechat.OfficialAccount", "Mud.Wechat.MiniProgram", "Mud.Wechat.Pay",
+            "Mud.Wechat.OpenPlatform", "Mud.Wechat.Channels", "Mud.Wechat.Ads",
+        };
+
+        foreach (var project in entryProjects)
+        {
+            var dir = SourceProjectDir(project);
+            var dtoFiles = 0;
+            var outsideStrays = new List<string>();
+            var insideStrays = new List<string>();
+
+            foreach (var file in Directory
+                         .EnumerateFiles(dir, "*.cs", SearchOption.AllDirectories)
+                         .Where(static f => !f.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.Ordinal)
+                                            && !f.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.Ordinal)))
+            {
+                var ns = FirstNamespace(file);
+                if (ns.Length == 0)
+                    continue; // GlobalUsings.cs 等无命名空间文件不参与目录归属判定
+
+                var relative = Path.GetRelativePath(dir, file).Replace(Path.DirectorySeparatorChar, '/');
+                var inDataModels = relative.StartsWith("DataModels/", StringComparison.Ordinal);
+                var isDataModelsNamespace = ns.Split('.').Contains("DataModels", StringComparer.Ordinal);
+
+                if (isDataModelsNamespace)
+                    dtoFiles++;
+
+                if (!inDataModels && isDataModelsNamespace)
+                    outsideStrays.Add(relative);
+                if (inDataModels && !isDataModelsNamespace)
+                    insideStrays.Add($"{relative}（{ns}）");
+            }
+
+            dtoFiles.Should().BeGreaterThan(20,
+                $"{project} 至少应有 20 个 DataModels 命名空间的源文件被扫到（过少 = 工程定位或枚举失效，守卫将静默空跑）");
+            outsideStrays.Should().BeEmpty(
+                $"{project} 的 DTO 必须落 DataModels/ 子目录，以下文件命名空间属 DTO 却仍在其它目录（2026-10 源码归类约定）：" +
+                string.Join(", ", outsideStrays));
+            insideStrays.Should().BeEmpty(
+                $"{project} 的 DataModels/ 只放官方传输 DTO，以下非 DTO 类型混入（接口/服务/配置应落各自目录）：" +
+                string.Join(", ", insideStrays));
+        }
+    }
+
+    /// <summary>取文件首个 <c>namespace</c> 声明的名称；无声明（如 GlobalUsings.cs）返回空串。</summary>
+    private static string FirstNamespace(string file)
+    {
+        foreach (var line in File.ReadLines(file))
+        {
+            if (!line.StartsWith("namespace ", StringComparison.Ordinal))
+                continue;
+            var name = line.Substring("namespace ".Length).Trim().TrimEnd(';', '{').Trim();
+            return name.Length > 0 ? name : string.Empty;
+        }
+
+        return string.Empty;
+    }
 }

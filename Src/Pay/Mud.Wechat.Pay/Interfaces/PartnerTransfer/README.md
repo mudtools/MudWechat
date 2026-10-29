@@ -2,7 +2,7 @@
 
 微信支付「服务商批量转账到零钱」域 SDK（**5 端点**：发起批量转账 1 + 批次查询 2 + 明细查询 2）。 接口：[IWechatPayPartnerTransferService](./IWechatPayPartnerTransferService.cs)；注册组 `PartnerTransfer`；模块枚举 `PayModule.PartnerTransfer`（装配入口见 [PayServiceBuilder.cs](../../Extensions/PayServiceBuilder.cs)）。逐端点核验 2026-10-18。
 
-> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[WechatPayPartnerTransferContractGuards.cs](../../../../../Tests/Mud.Wechat.Pay.Tests/ContractGuards/WechatPayPartnerTransferContractGuards.cs)、[WechatPayBankTransferContractGuards.cs](../../../../../Tests/Mud.Wechat.Pay.Tests/ContractGuards/WechatPayBankTransferContractGuards.cs)、[WechatPayDomainContractGuards.cs](../../../../../Tests/Mud.Wechat.Pay.Tests/ContractGuards/WechatPayDomainContractGuards.cs)、[WechatPayPayrollCardContractGuards.cs](../../../../../Tests/Mud.Wechat.Pay.Tests/ContractGuards/WechatPayPayrollCardContractGuards.cs)）、本域 DTO（[`Mud.Wechat.Pay/PartnerTransfer`](../../../Mud.Wechat.Pay/PartnerTransfer/)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
+> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[WechatPayPartnerTransferContractGuards.cs](../../../../../Tests/Mud.Wechat.Pay.Tests/ContractGuards/WechatPayPartnerTransferContractGuards.cs)、[WechatPayBankTransferContractGuards.cs](../../../../../Tests/Mud.Wechat.Pay.Tests/ContractGuards/WechatPayBankTransferContractGuards.cs)、[WechatPayDomainContractGuards.cs](../../../../../Tests/Mud.Wechat.Pay.Tests/ContractGuards/WechatPayDomainContractGuards.cs)、[WechatPayPayrollCardContractGuards.cs](../../../../../Tests/Mud.Wechat.Pay.Tests/ContractGuards/WechatPayPayrollCardContractGuards.cs)）、本域 DTO（[`Mud.Wechat.Pay/DataModels/PartnerTransfer`](../../DataModels/PartnerTransfer)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
 
 ## 端点速览
 
@@ -181,16 +181,16 @@
 
 ## DTO 与序列化面
 
-本域 DTO 目录 [`Mud.Wechat.Pay/PartnerTransfer`](../../../Mud.Wechat.Pay/PartnerTransfer/) 内共 **6** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **6** 个，`SerializerClassName` = `PartnerTransfer`。
+本域 DTO 目录 [`Mud.Wechat.Pay/DataModels/PartnerTransfer`](../../DataModels/PartnerTransfer) 内共 **6** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **6** 个，`SerializerClassName` = `PartnerTransfer`。
 
-AOT 源生成上下文：[`PartnerTransferJsonContext.g.cs`](./../../../Mud.Wechat.Pay/Generated/PartnerTransferJsonContext.g.cs)（生成物，勿手改）。
+AOT 源生成上下文：[`PartnerTransferJsonContext.g.cs`](./../../DataModels/Generated/PartnerTransferJsonContext.g.cs)（生成物，勿手改）。
 
 | 端点引用的类型 | 角色 | 定义位置 | JSON 字段（前缀） |
 |---|---|---|---|
-| `PartnerTransferBatchCreateResponse` | 应答 | [PartnerTransfer/PartnerTransferBatchDtos.cs](../../../Mud.Wechat.Pay/PartnerTransfer/PartnerTransferBatchDtos.cs) | `sub_mchid`, `sub_appid`, `authorization_type`, `out_batch_no`, `batch_name`, `batch_remark`, `total_amount`, `total_num`, `transfer_detail_list`, `sp_appid`, `transfer_purpose`, `transfer_scene` … |
-| `PartnerTransferBatchCreateRequest` | 请求体 | [PartnerTransfer/PartnerTransferBatchDtos.cs](../../../Mud.Wechat.Pay/PartnerTransfer/PartnerTransferBatchDtos.cs) | `sub_mchid`, `sub_appid`, `authorization_type`, `out_batch_no`, `batch_name`, `batch_remark`, `total_amount`, `total_num`, `transfer_detail_list`, `sp_appid`, `transfer_purpose`, `transfer_scene` … |
-| `PartnerTransferBatchQueryResponse` | 应答 | [PartnerTransfer/PartnerTransferBatchDtos.cs](../../../Mud.Wechat.Pay/PartnerTransfer/PartnerTransferBatchDtos.cs) | `sub_mchid`, `sub_appid`, `authorization_type`, `out_batch_no`, `batch_name`, `batch_remark`, `total_amount`, `total_num`, `transfer_detail_list`, `sp_appid`, `transfer_purpose`, `transfer_scene` … |
-| `PartnerTransferDetailQueryResponse` | 应答 | [PartnerTransfer/PartnerTransferDetailDtos.cs](../../../Mud.Wechat.Pay/PartnerTransfer/PartnerTransferDetailDtos.cs) | `sp_mchid`, `out_batch_no`, `batch_id`, `appid`, `out_detail_no`, `detail_id`, `detail_status`, `transfer_amount`, `transfer_remark`, `fail_reason`, `openid`, `username` … |
+| `PartnerTransferBatchCreateResponse` | 应答 | [PartnerTransfer/PartnerTransferBatchDtos.cs](../../DataModels/PartnerTransfer/PartnerTransferBatchDtos.cs) | `sub_mchid`, `sub_appid`, `authorization_type`, `out_batch_no`, `batch_name`, `batch_remark`, `total_amount`, `total_num`, `transfer_detail_list`, `sp_appid`, `transfer_purpose`, `transfer_scene` … |
+| `PartnerTransferBatchCreateRequest` | 请求体 | [PartnerTransfer/PartnerTransferBatchDtos.cs](../../DataModels/PartnerTransfer/PartnerTransferBatchDtos.cs) | `sub_mchid`, `sub_appid`, `authorization_type`, `out_batch_no`, `batch_name`, `batch_remark`, `total_amount`, `total_num`, `transfer_detail_list`, `sp_appid`, `transfer_purpose`, `transfer_scene` … |
+| `PartnerTransferBatchQueryResponse` | 应答 | [PartnerTransfer/PartnerTransferBatchDtos.cs](../../DataModels/PartnerTransfer/PartnerTransferBatchDtos.cs) | `sub_mchid`, `sub_appid`, `authorization_type`, `out_batch_no`, `batch_name`, `batch_remark`, `total_amount`, `total_num`, `transfer_detail_list`, `sp_appid`, `transfer_purpose`, `transfer_scene` … |
+| `PartnerTransferDetailQueryResponse` | 应答 | [PartnerTransfer/PartnerTransferDetailDtos.cs](../../DataModels/PartnerTransfer/PartnerTransferDetailDtos.cs) | `sp_mchid`, `out_batch_no`, `batch_id`, `appid`, `out_detail_no`, `detail_id`, `detail_status`, `transfer_amount`, `transfer_remark`, `fail_reason`, `openid`, `username` … |
 
 > DTO 一律以源文件为准；本表只列端点签名**直接引用**的一层类型，嵌套类型不再递归展开。所有 DTO 不使用 `required`（仓内约束），必填性由接口注释与官方页表达，SDK 不做本地必填校验。
 
@@ -227,7 +227,7 @@ var response = await service.CreateBatchAsync(new PartnerTransferBatchCreateRequ
 | 契约守卫（路由 / 计数 / DTO 登记断言） | [`WechatPayPartnerTransferContractGuards.cs`](../../../../../Tests/Mud.Wechat.Pay.Tests/ContractGuards/WechatPayPartnerTransferContractGuards.cs)、[`WechatPayBankTransferContractGuards.cs`](../../../../../Tests/Mud.Wechat.Pay.Tests/ContractGuards/WechatPayBankTransferContractGuards.cs)、[`WechatPayDomainContractGuards.cs`](../../../../../Tests/Mud.Wechat.Pay.Tests/ContractGuards/WechatPayDomainContractGuards.cs)、[`WechatPayPayrollCardContractGuards.cs`](../../../../../Tests/Mud.Wechat.Pay.Tests/ContractGuards/WechatPayPayrollCardContractGuards.cs) |
 | 守卫中的代表性测试方法 | `PartnerTransferEndpoints_ShouldMatchOfficialRoutesAndParameterPositions`、`PartnerTransferRoutes_ShouldStayOnSinglePartnerTransferPrefixAndNotDeclareNeighbourGroups`、`PartnerTransferDtos_ShouldExposeOfficialFieldNamesAndDivergeFromBankDomain`、`PartnerTransferEnumConstants_ShouldMatchOfficialValuesAndDivergeFromBankDomain`、`PartnerTransfer_ShouldNotDeclareFailReasonOrErrorCodeConstants`、`PartnerTransferResponses_ShouldDeriveFromWechatPayResponseAndShareTypesOnlyWhenTablesMatch`、`PartnerTransferDataModels_ShouldBeRegisteredInJsonContextAndDomainFullyWired`、`BankTransferEndpoints_ShouldMatchOfficialRoutesAndParameterPositions`、`BankTransferRoutes_ShouldSplitAcrossTwoPrefixesAndNotDeclareDownloadOrForeignGroups`、`BankTransferDtos_ShouldExposeOfficialFieldNamesAndDivergeFromPartnerDomain`、`BankTransferEnumConstants_ShouldMatchOfficialValuesAndDivergeFromPartnerDomain`、`BankTransfer_ShouldNotDeclareFailReasonOrErrorCodeConstants` … |
 | 模块枚举 / 装配入口 | [`PayModule.cs`](../../Extensions/PayModule.cs)、[`PayServiceBuilder.cs`](../../Extensions/PayServiceBuilder.cs) |
-| DTO 与 JSON 上下文 | [`Mud.Wechat.Pay/PartnerTransfer`](../../../Mud.Wechat.Pay/PartnerTransfer/) |
+| DTO 与 JSON 上下文 | [`Mud.Wechat.Pay/DataModels/PartnerTransfer`](../../DataModels/PartnerTransfer) |
 | 跨线基线 | [`Tests/ContractBaseline.cs`](../../../../../Tests/ContractBaseline.cs)（各线分节；本线口径以守卫实际断言为准） |
 | 本线包级公开面与已踩陷阱 | [`Src/Pay/Mud.Wechat.Pay/README.md`](../../README.md) |
 | 跨线通用约束（门禁 / AOT / 落位） | [`AGENTS.md`](../../../../../AGENTS.md) |

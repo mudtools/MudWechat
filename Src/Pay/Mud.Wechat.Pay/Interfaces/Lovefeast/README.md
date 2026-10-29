@@ -9,7 +9,7 @@
 
 > **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本域契约守卫
 > [WechatPayLovefeastContractGuards.cs](../../../../../Tests/Mud.Wechat.Pay.Tests/ContractGuards/WechatPayLovefeastContractGuards.cs)、
-> 本域 DTO（`../../../Mud.Wechat.Pay/Lovefeast/`）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
+> 本域 DTO（`../../../Mud.Wechat.Pay/DataModels/Lovefeast/`）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
 
 ## 端点速览
 
@@ -78,7 +78,7 @@ long? consumeCount = brand.ConsumeCount;       // 选填：仅供餐品牌有值
 |---|---|
 | 逐端点原文（品牌 ID 前置、两键语义、错误码） | `IWechatPayLovefeastService.cs` 与方法 XML 注释 |
 | 本域 1 方法 / 1 路由 / 动词 GET | `WechatPayLovefeastContractGuards.cs`（LVF-B1、LVF-B2） |
-| 应答 DTO 字段（`donate_count` / `consume_count`） | `../../../Mud.Wechat.Pay/Lovefeast/LovefeastBrandDtos.cs` |
+| 应答 DTO 字段（`donate_count` / `consume_count`） | `../../../Mud.Wechat.Pay/DataModels/Lovefeast/LovefeastBrandDtos.cs` |
 | 查券归属 | `../MarketingFavor/IWechatPayMarketingFavorService.cs`（MF 守卫） |
 | 跨线端点 / 接口计数 | `../../../../../Tests/ContractBaseline.cs`（`Baseline.Pay.Endpoints` / `HttpApiInterfaces`） |
 
@@ -89,7 +89,7 @@ long? consumeCount = brand.ConsumeCount;       // 选填：仅供餐品牌有值
 2. 加 / 改 DTO → 标 `[HttpJsonSerializable]`（`SerializerClassName` 取 `Lovefeast`）→ 跑
    `../../../../../scripts/AddHttpJsonSerializable.ps1` + `../../../../../scripts/GenerateJsonContext.ps1`
    → 更新 LVF-B5 的 DTO 计数；上下文登记见 [../../Extensions/PayJsonResolverExtensions.cs](../../Extensions/PayJsonResolverExtensions.cs)，
-   落盘见 `../../../Mud.Wechat.Pay/Generated/LovefeastJsonContext.g.cs`（`internal`，示例不得引用）。
+   落盘见 `../../../Mud.Wechat.Pay/DataModels/Generated/LovefeastJsonContext.g.cs`（`internal`，示例不得引用）。
 3. 改模块枚举 → 需同批有 `PayModule.Lovefeast` 成员 + `AddLovefeastWebApiHttpClient()` 源生成注册 + 解析器上下文登记（LVF-B6 三段式锁定）。
 4. **不要**给本域端点加 `[Token]`（`PAY-B1` fail-closed）；**不要**把查券建进本域（归 MarketingFavor）；
    **不要**在 DTO 里放 `DateTime`（rfc3339 一律 `string`）。

@@ -12,7 +12,7 @@
 > **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、
 > 本域契约守卫（[WechatPayApply4SubMerchantContractGuards.cs](../../../../../Tests/Mud.Wechat.Pay.Tests/ContractGuards/WechatPayApply4SubMerchantContractGuards.cs)
 > 与全局 [WechatPayDomainContractGuards.cs](../../../../../Tests/Mud.Wechat.Pay.Tests/ContractGuards/WechatPayDomainContractGuards.cs)）、
-> 本域 DTO（[../../../Mud.Wechat.Pay/Apply4SubMerchant/](../../../Mud.Wechat.Pay/Apply4SubMerchant/)）。
+> 本域 DTO（[../../../Mud.Wechat.Pay/DataModels/Apply4SubMerchant/](../../DataModels/Apply4SubMerchant)）。
 > 不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
 
 ## 端点速览
@@ -151,7 +151,7 @@ SDK **不做**任何本地拦截或条件必填校验（类型一律可空）⇒
 
 本域 DTO 全部标 `[HttpJsonSerializable(SerializerClassName = "Apply4SubMerchant")]`，
 生成上下文落盘见
-[../../../Mud.Wechat.Pay/Generated/Apply4SubMerchantJsonContext.g.cs](../../../Mud.Wechat.Pay/Generated/Apply4SubMerchantJsonContext.g.cs)，
+[../../../Mud.Wechat.Pay/DataModels/Generated/Apply4SubMerchantJsonContext.g.cs](../../DataModels/Generated/Apply4SubMerchantJsonContext.g.cs)，
 由 [../../Extensions/PayJsonResolverExtensions.cs](../../Extensions/PayJsonResolverExtensions.cs) 登记。
 守卫 `A4S-B7` 是本域计数与接线的权威：DTO **28** 个（申请单族 4 + 主体族 8 + 联系人 1 +
 经营信息族 11 + 结算账户族 4）、逐个登记进 `Apply4SubMerchantJsonContext`、
@@ -259,7 +259,7 @@ string? finishedTime = application.VerifyFinishTime; // 只有本类型有此字
 | 应答继承与「支 5 无 verify_finish_time」 | 同文件 `A4S-B6` |
 | DTO 数 28 + JsonContext 与 `SerializerClassName` 登记 | 同文件 `A4S-B7` |
 | 跨域总端点数与接口数 | `../../../../../Tests/ContractBaseline.cs`（`Baseline.Pay.Endpoints` / `Baseline.Pay.HttpApiInterfaces`） |
-| DTO 字段名与类型 | `../../../Mud.Wechat.Pay/Apply4SubMerchant/` |
+| DTO 字段名与类型 | `../../../Mud.Wechat.Pay/DataModels/Apply4SubMerchant/` |
 | 模块枚举与注册接线 | `../../Extensions/PayModule.cs`、`../../Extensions/PayServiceBuilder.cs`、`../../Extensions/PayJsonResolverExtensions.cs` |
 | 支付线总体口径 | `../../README.md` |
 

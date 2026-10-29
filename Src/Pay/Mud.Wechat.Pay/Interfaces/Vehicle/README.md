@@ -8,7 +8,7 @@
 
 > **事实来源限定**：本文断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本域契约守卫
 > [WechatPayVehicleContractGuards.cs](../../../../../Tests/Mud.Wechat.Pay.Tests/ContractGuards/WechatPayVehicleContractGuards.cs)
-> （`VEH-B1`~`VEH-B6`）与本域 DTO（`../../../Mud.Wechat.Pay/Vehicle/`）。
+> （`VEH-B1`~`VEH-B6`）与本域 DTO（`../../../Mud.Wechat.Pay/DataModels/Vehicle/`）。
 > 不复述外部官方文档正文；注释里没有的东西一律进文末「已知留档缺口」。
 
 ## 端点速览
@@ -213,7 +213,7 @@ var paid = await vehicle.QueryVehicleParkingTransactionByOutTradeNoAsync("PARKPA
 | 请求/响应基底类型分离 | `VehicleDataModels_ShouldSplitRequestAndResponseBaseTypes`（`VEH-B4`） |
 | DTO 数 34 与 AOT 登记 | `VehicleAllDtos_ShouldBeAnnotatedAndContextRegistered`（`VEH-B5`） |
 | DI / `PayModule` / JSON 解析器接线 | `VehicleRegistrars_ShouldBeWiredThroughPayModuleAndResolver`（`VEH-B6`） |
-| DTO 字段名与类型 | `../../../Mud.Wechat.Pay/Vehicle/` |
+| DTO 字段名与类型 | `../../../Mud.Wechat.Pay/DataModels/Vehicle/` |
 
 ## 改动本域需要同批完成
 

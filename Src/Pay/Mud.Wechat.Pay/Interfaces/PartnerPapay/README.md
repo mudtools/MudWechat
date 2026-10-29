@@ -66,7 +66,7 @@
 
 | 端点引用的类型 | 角色 | 定义位置 | JSON 字段（前缀） |
 |---|---|---|---|
-| `PartnerPapayContractNotifyRequest` | 请求体 | [Papay/PapayContractNotifyDtos.cs](../../../Mud.Wechat.Pay/Papay/PapayContractNotifyDtos.cs) | `count`, `unit`, `amount`, `currency`, `mchid`, `appid`, `deduct_duration`, `estimated_amount`, `sp_mchid`, `sp_appid`, `sub_mchid`, `sub_appid` |
+| `PartnerPapayContractNotifyRequest` | 请求体 | [Papay/PapayContractNotifyDtos.cs](../../DataModels/Papay/PapayContractNotifyDtos.cs) | `count`, `unit`, `amount`, `currency`, `mchid`, `appid`, `deduct_duration`, `estimated_amount`, `sp_mchid`, `sp_appid`, `sub_mchid`, `sub_appid` |
 
 > DTO 一律以源文件为准；本表只列端点签名**直接引用**的一层类型，嵌套类型不再递归展开。所有 DTO 不使用 `required`（仓内约束），必填性由接口注释与官方页表达，SDK 不做本地必填校验。
 

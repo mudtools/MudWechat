@@ -2,7 +2,7 @@
 
 微信支付「品牌商家名片配置」域 SDK（5 端点）。 接口：[IWechatPayBrandCardConfigService](./IWechatPayBrandCardConfigService.cs)；注册组 `BrandCardConfig`；模块枚举 `PayModule.BrandCardConfig`（装配入口见 [PayServiceBuilder.cs](../../Extensions/PayServiceBuilder.cs)）。逐端点核验 2026-10-18。
 
-> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[WechatPayBrandCardConfigContractGuards.cs](../../../../../Tests/Mud.Wechat.Pay.Tests/ContractGuards/WechatPayBrandCardConfigContractGuards.cs)、[WechatPayDomainContractGuards.cs](../../../../../Tests/Mud.Wechat.Pay.Tests/ContractGuards/WechatPayDomainContractGuards.cs)）、本域 DTO（[`Mud.Wechat.Pay/BrandCardConfig`](../../../Mud.Wechat.Pay/BrandCardConfig/)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
+> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[WechatPayBrandCardConfigContractGuards.cs](../../../../../Tests/Mud.Wechat.Pay.Tests/ContractGuards/WechatPayBrandCardConfigContractGuards.cs)、[WechatPayDomainContractGuards.cs](../../../../../Tests/Mud.Wechat.Pay.Tests/ContractGuards/WechatPayDomainContractGuards.cs)）、本域 DTO（[`Mud.Wechat.Pay/DataModels/BrandCardConfig`](../../DataModels/BrandCardConfig)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
 
 ## 端点速览
 
@@ -139,20 +139,20 @@
 
 ## DTO 与序列化面
 
-本域 DTO 目录 [`Mud.Wechat.Pay/BrandCardConfig`](../../../Mud.Wechat.Pay/BrandCardConfig/) 内共 **11** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **11** 个，`SerializerClassName` = `BrandCardConfig`。
+本域 DTO 目录 [`Mud.Wechat.Pay/DataModels/BrandCardConfig`](../../DataModels/BrandCardConfig) 内共 **11** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **11** 个，`SerializerClassName` = `BrandCardConfig`。
 
-AOT 源生成上下文：[`BrandCardConfigJsonContext.g.cs`](./../../../Mud.Wechat.Pay/Generated/BrandCardConfigJsonContext.g.cs)（生成物，勿手改）。
+AOT 源生成上下文：[`BrandCardConfigJsonContext.g.cs`](./../../DataModels/Generated/BrandCardConfigJsonContext.g.cs)（生成物，勿手改）。
 
 | 端点引用的类型 | 角色 | 定义位置 | JSON 字段（前缀） |
 |---|---|---|---|
-| `BrandCardConfigQueryResponse` | 应答 | [BrandCardConfig/BrandCardConfigDtos.cs](../../../Mud.Wechat.Pay/BrandCardConfig/BrandCardConfigDtos.cs) | `business_code`, `applyment_id`, `brand_id`, `applyment_state`, `scheduled_publish_time`, `reject_reason`, `actual_publish_time`, `appid`, `default_jump_path`, `button_text`, `customer_service_type`, `customer_service_phone` … |
-| `BrandCardConfigApplyResponse` | 应答 | [BrandCardConfig/BrandCardConfigDtos.cs](../../../Mud.Wechat.Pay/BrandCardConfig/BrandCardConfigDtos.cs) | `business_code`, `applyment_id`, `brand_id`, `applyment_state`, `scheduled_publish_time`, `reject_reason`, `actual_publish_time`, `appid`, `default_jump_path`, `button_text`, `customer_service_type`, `customer_service_phone` … |
-| `BrandCardConfigApplyRequest` | 请求体 | [BrandCardConfig/BrandCardConfigDtos.cs](../../../Mud.Wechat.Pay/BrandCardConfig/BrandCardConfigDtos.cs) | `business_code`, `applyment_id`, `brand_id`, `applyment_state`, `scheduled_publish_time`, `reject_reason`, `actual_publish_time`, `appid`, `default_jump_path`, `button_text`, `customer_service_type`, `customer_service_phone` … |
-| `BrandCardConfigCancelResponse` | 应答 | [BrandCardConfig/BrandCardConfigDtos.cs](../../../Mud.Wechat.Pay/BrandCardConfig/BrandCardConfigDtos.cs) | `business_code`, `applyment_id`, `brand_id`, `applyment_state`, `scheduled_publish_time`, `reject_reason`, `actual_publish_time`, `appid`, `default_jump_path`, `button_text`, `customer_service_type`, `customer_service_phone` … |
-| `BrandCardConfigCancelRequest` | 请求体 | [BrandCardConfig/BrandCardConfigDtos.cs](../../../Mud.Wechat.Pay/BrandCardConfig/BrandCardConfigDtos.cs) | `business_code`, `applyment_id`, `brand_id`, `applyment_state`, `scheduled_publish_time`, `reject_reason`, `actual_publish_time`, `appid`, `default_jump_path`, `button_text`, `customer_service_type`, `customer_service_phone` … |
-| `BrandCardConfigPreviewResponse` | 应答 | [BrandCardConfig/BrandCardConfigDtos.cs](../../../Mud.Wechat.Pay/BrandCardConfig/BrandCardConfigDtos.cs) | `business_code`, `applyment_id`, `brand_id`, `applyment_state`, `scheduled_publish_time`, `reject_reason`, `actual_publish_time`, `appid`, `default_jump_path`, `button_text`, `customer_service_type`, `customer_service_phone` … |
-| `BrandCardConfigPublishResponse` | 应答 | [BrandCardConfig/BrandCardConfigDtos.cs](../../../Mud.Wechat.Pay/BrandCardConfig/BrandCardConfigDtos.cs) | `business_code`, `applyment_id`, `brand_id`, `applyment_state`, `scheduled_publish_time`, `reject_reason`, `actual_publish_time`, `appid`, `default_jump_path`, `button_text`, `customer_service_type`, `customer_service_phone` … |
-| `BrandCardConfigPublishRequest` | 请求体 | [BrandCardConfig/BrandCardConfigDtos.cs](../../../Mud.Wechat.Pay/BrandCardConfig/BrandCardConfigDtos.cs) | `business_code`, `applyment_id`, `brand_id`, `applyment_state`, `scheduled_publish_time`, `reject_reason`, `actual_publish_time`, `appid`, `default_jump_path`, `button_text`, `customer_service_type`, `customer_service_phone` … |
+| `BrandCardConfigQueryResponse` | 应答 | [BrandCardConfig/BrandCardConfigDtos.cs](../../DataModels/BrandCardConfig/BrandCardConfigDtos.cs) | `business_code`, `applyment_id`, `brand_id`, `applyment_state`, `scheduled_publish_time`, `reject_reason`, `actual_publish_time`, `appid`, `default_jump_path`, `button_text`, `customer_service_type`, `customer_service_phone` … |
+| `BrandCardConfigApplyResponse` | 应答 | [BrandCardConfig/BrandCardConfigDtos.cs](../../DataModels/BrandCardConfig/BrandCardConfigDtos.cs) | `business_code`, `applyment_id`, `brand_id`, `applyment_state`, `scheduled_publish_time`, `reject_reason`, `actual_publish_time`, `appid`, `default_jump_path`, `button_text`, `customer_service_type`, `customer_service_phone` … |
+| `BrandCardConfigApplyRequest` | 请求体 | [BrandCardConfig/BrandCardConfigDtos.cs](../../DataModels/BrandCardConfig/BrandCardConfigDtos.cs) | `business_code`, `applyment_id`, `brand_id`, `applyment_state`, `scheduled_publish_time`, `reject_reason`, `actual_publish_time`, `appid`, `default_jump_path`, `button_text`, `customer_service_type`, `customer_service_phone` … |
+| `BrandCardConfigCancelResponse` | 应答 | [BrandCardConfig/BrandCardConfigDtos.cs](../../DataModels/BrandCardConfig/BrandCardConfigDtos.cs) | `business_code`, `applyment_id`, `brand_id`, `applyment_state`, `scheduled_publish_time`, `reject_reason`, `actual_publish_time`, `appid`, `default_jump_path`, `button_text`, `customer_service_type`, `customer_service_phone` … |
+| `BrandCardConfigCancelRequest` | 请求体 | [BrandCardConfig/BrandCardConfigDtos.cs](../../DataModels/BrandCardConfig/BrandCardConfigDtos.cs) | `business_code`, `applyment_id`, `brand_id`, `applyment_state`, `scheduled_publish_time`, `reject_reason`, `actual_publish_time`, `appid`, `default_jump_path`, `button_text`, `customer_service_type`, `customer_service_phone` … |
+| `BrandCardConfigPreviewResponse` | 应答 | [BrandCardConfig/BrandCardConfigDtos.cs](../../DataModels/BrandCardConfig/BrandCardConfigDtos.cs) | `business_code`, `applyment_id`, `brand_id`, `applyment_state`, `scheduled_publish_time`, `reject_reason`, `actual_publish_time`, `appid`, `default_jump_path`, `button_text`, `customer_service_type`, `customer_service_phone` … |
+| `BrandCardConfigPublishResponse` | 应答 | [BrandCardConfig/BrandCardConfigDtos.cs](../../DataModels/BrandCardConfig/BrandCardConfigDtos.cs) | `business_code`, `applyment_id`, `brand_id`, `applyment_state`, `scheduled_publish_time`, `reject_reason`, `actual_publish_time`, `appid`, `default_jump_path`, `button_text`, `customer_service_type`, `customer_service_phone` … |
+| `BrandCardConfigPublishRequest` | 请求体 | [BrandCardConfig/BrandCardConfigDtos.cs](../../DataModels/BrandCardConfig/BrandCardConfigDtos.cs) | `business_code`, `applyment_id`, `brand_id`, `applyment_state`, `scheduled_publish_time`, `reject_reason`, `actual_publish_time`, `appid`, `default_jump_path`, `button_text`, `customer_service_type`, `customer_service_phone` … |
 
 > DTO 一律以源文件为准；本表只列端点签名**直接引用**的一层类型，嵌套类型不再递归展开。所有 DTO 不使用 `required`（仓内约束），必填性由接口注释与官方页表达，SDK 不做本地必填校验。
 
@@ -189,7 +189,7 @@ var response = await service.CancelBrandCardConfigApplyAsync(new BrandCardConfig
 | 契约守卫（路由 / 计数 / DTO 登记断言） | [`WechatPayBrandCardConfigContractGuards.cs`](../../../../../Tests/Mud.Wechat.Pay.Tests/ContractGuards/WechatPayBrandCardConfigContractGuards.cs)、[`WechatPayDomainContractGuards.cs`](../../../../../Tests/Mud.Wechat.Pay.Tests/ContractGuards/WechatPayDomainContractGuards.cs) |
 | 守卫中的代表性测试方法 | `BrandCardConfigTopology_ShouldBeOneInterfaceOnOneGroup`、`BrandCardConfigEndpoints_ShouldMatchOfficialRoutesAndParameterRosters`、`BrandCardConfigDtos_ShouldExposeOfficialFieldRosters`、`BrandCardConfigDataModels_ShouldBeRegisteredInJsonContextAndWiredIntoDi`、`PayInterfaces_ShouldNotDeclareToken_AndShouldMatchModuleCount`、`Endpoints_ShouldMatchOfficialRoutes`、`Dtos_ShouldExposeOfficialFieldNames`、`Responses_ShouldDeriveFromWechatPayResponse`、`Interfaces_ShouldAllowAnyStatusCode_SoErrorBodiesAreReadable` |
 | 模块枚举 / 装配入口 | [`PayModule.cs`](../../Extensions/PayModule.cs)、[`PayServiceBuilder.cs`](../../Extensions/PayServiceBuilder.cs) |
-| DTO 与 JSON 上下文 | [`Mud.Wechat.Pay/BrandCardConfig`](../../../Mud.Wechat.Pay/BrandCardConfig/) |
+| DTO 与 JSON 上下文 | [`Mud.Wechat.Pay/DataModels/BrandCardConfig`](../../DataModels/BrandCardConfig) |
 | 跨线基线 | [`Tests/ContractBaseline.cs`](../../../../../Tests/ContractBaseline.cs)（各线分节；本线口径以守卫实际断言为准） |
 | 本线包级公开面与已踩陷阱 | [`Src/Pay/Mud.Wechat.Pay/README.md`](../../README.md) |
 | 跨线通用约束（门禁 / AOT / 落位） | [`AGENTS.md`](../../../../../AGENTS.md) |

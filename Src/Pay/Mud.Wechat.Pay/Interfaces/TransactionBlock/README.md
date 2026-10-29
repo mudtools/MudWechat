@@ -9,7 +9,7 @@
 
 > **事实来源限定**：本文断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本域契约守卫
 > [WechatPayTransactionBlockContractGuards.cs](../../../../../Tests/Mud.Wechat.Pay.Tests/ContractGuards/WechatPayTransactionBlockContractGuards.cs)
-> （`TRB-B1`~`TRB-B6`）与本域 DTO（`../../../Mud.Wechat.Pay/TransactionBlock/`）。
+> （`TRB-B1`~`TRB-B6`）与本域 DTO（`../../../Mud.Wechat.Pay/DataModels/TransactionBlock/`）。
 > 不复述外部官方文档正文；注释里没有的东西一律进文末「已知留档缺口」。
 
 ## 端点速览
@@ -144,7 +144,7 @@ var review = await block.QueryTransactionBlockSubmissionAsync(submitted.BlockSub
 | 请求/响应基底类型分离 | `TransactionBlockDataModels_ShouldSplitRequestAndResponseBaseTypes`（`TRB-B4`） |
 | DTO 数 5 与 AOT 登记 | `TransactionBlockAllDtos_ShouldBeAnnotatedAndContextRegistered`（`TRB-B5`） |
 | DI / `PayModule` / JSON 解析器接线 | `TransactionBlockRegistrars_ShouldBeWiredThroughPayModuleAndResolver`（`TRB-B6`） |
-| DTO 字段名与类型 | `../../../Mud.Wechat.Pay/TransactionBlock/` |
+| DTO 字段名与类型 | `../../../Mud.Wechat.Pay/DataModels/TransactionBlock/` |
 
 ## 改动本域需要同批完成
 

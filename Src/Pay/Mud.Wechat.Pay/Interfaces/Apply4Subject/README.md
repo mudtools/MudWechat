@@ -12,7 +12,7 @@ query 定位查审核结果 + 按业务编号 / 按申请单号撤销；商户�
 > **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、
 > 本域契约守卫（[WechatPayApply4SubjectContractGuards.cs](../../../../../Tests/Mud.Wechat.Pay.Tests/ContractGuards/WechatPayApply4SubjectContractGuards.cs)
 > 与全局 [WechatPayDomainContractGuards.cs](../../../../../Tests/Mud.Wechat.Pay.Tests/ContractGuards/WechatPayDomainContractGuards.cs)）、
-> 本域 DTO（[../../../Mud.Wechat.Pay/Apply4Subject/](../../../Mud.Wechat.Pay/Apply4Subject/)）。
+> 本域 DTO（[../../../Mud.Wechat.Pay/DataModels/Apply4Subject/](../../DataModels/Apply4Subject)）。
 > 不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
 
 ## 端点速览
@@ -190,7 +190,7 @@ SDK **不做**任何本地拦截或条件必填校验（类型一律可空）⇒
 
 本域 DTO 全部标 `[HttpJsonSerializable(SerializerClassName = "Apply4Subject")]`，
 生成上下文落盘见
-[../../../Mud.Wechat.Pay/Generated/Apply4SubjectJsonContext.g.cs](../../../Mud.Wechat.Pay/Generated/Apply4SubjectJsonContext.g.cs)，
+[../../../Mud.Wechat.Pay/DataModels/Generated/Apply4SubjectJsonContext.g.cs](../../DataModels/Generated/Apply4SubjectJsonContext.g.cs)，
 由 [../../Extensions/PayJsonResolverExtensions.cs](../../Extensions/PayJsonResolverExtensions.cs) 登记。
 守卫 `A4SJ-B7` 是本域计数与接线的权威：DTO **14** 个（申请单族 5 + 主体族 6 + 联系人 1 +
 法定代表人 / 受益人 2）、逐个登记进 `Apply4SubjectJsonContext`、`SerializerClassName` 必须为
@@ -313,7 +313,7 @@ bool confirmed = authorize.AuthorizeState == Apply4SubjectAuthorizeStates.Author
 | 应答继承、撤销裸 `Task`、状态应答六禁列字段、提交应答仅 1 字段 | 同文件 `A4SJ-B6` |
 | DTO 数 14 + JsonContext 与 `SerializerClassName` 登记 + 不建单数 `ubo_info` | 同文件 `A4SJ-B7` |
 | 跨域总端点数与接口数 | `../../../../../Tests/ContractBaseline.cs`（`Baseline.Pay.Endpoints` / `Baseline.Pay.HttpApiInterfaces`） |
-| DTO 字段名与类型 | `../../../Mud.Wechat.Pay/Apply4Subject/` |
+| DTO 字段名与类型 | `../../../Mud.Wechat.Pay/DataModels/Apply4Subject/` |
 | 模块枚举与注册接线 | `../../Extensions/PayModule.cs`、`../../Extensions/PayServiceBuilder.cs`、`../../Extensions/PayJsonResolverExtensions.cs` |
 | 支付线总体口径 | `../../README.md` |
 

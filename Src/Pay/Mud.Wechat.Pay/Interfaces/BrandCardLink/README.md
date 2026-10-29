@@ -11,7 +11,7 @@
 > 本域契约守卫（[WechatPayBrandCardLinkContractGuards.cs](../../../../../Tests/Mud.Wechat.Pay.Tests/ContractGuards/WechatPayBrandCardLinkContractGuards.cs)）
 > 与全局守卫（[WechatPayDomainContractGuards.cs](../../../../../Tests/Mud.Wechat.Pay.Tests/ContractGuards/WechatPayDomainContractGuards.cs)、
 > [WechatPayScaffoldContractGuards.cs](../../../../../Tests/Mud.Wechat.Pay.Tests/ContractGuards/WechatPayScaffoldContractGuards.cs)）、
-> 本域 DTO（[../../../Mud.Wechat.Pay/BrandCardLink/BrandCardLinkDtos.cs](../../../Mud.Wechat.Pay/BrandCardLink/BrandCardLinkDtos.cs)）。
+> 本域 DTO（[../../../Mud.Wechat.Pay/DataModels/BrandCardLink/BrandCardLinkDtos.cs](../../DataModels/BrandCardLink/BrandCardLinkDtos.cs)）。
 > 不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
 
 ## 端点速览
@@ -154,7 +154,7 @@ int? pageIndex, int? pageSize, CancellationToken)`；写侧端点恒为「请求
 | DTO 数 9、`BrandCardLinkJsonContext` 登记、`PayModule.BrandCardLink` 装配 | `BrandCardLinkDataModels_ShouldBeRegisteredInJsonContextAndWiredIntoDi`（`BCL-B4`） |
 | 整线零 `[Token]`、命名客户端 | [WechatPayDomainContractGuards.cs](../../../../../Tests/Mud.Wechat.Pay.Tests/ContractGuards/WechatPayDomainContractGuards.cs)（`PAY-B1`） |
 | 跨域总端点数 | [../../../../../Tests/ContractBaseline.cs](../../../../../Tests/ContractBaseline.cs)（`Baseline.Pay.Endpoints`） |
-| DTO 字段名与类型 | [../../../Mud.Wechat.Pay/BrandCardLink/](../../../Mud.Wechat.Pay/BrandCardLink/) |
+| DTO 字段名与类型 | [../../../Mud.Wechat.Pay/DataModels/BrandCardLink/](../../DataModels/BrandCardLink) |
 
 ## 改动本域需要同批完成
 

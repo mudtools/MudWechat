@@ -9,7 +9,7 @@
 
 > **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本域契约守卫
 > [WechatPayIndustryCouponContractGuards.cs](../../../../../Tests/Mud.Wechat.Pay.Tests/ContractGuards/WechatPayIndustryCouponContractGuards.cs)、
-> 本域 DTO（`../../../Mud.Wechat.Pay/IndustryCoupon/`）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
+> 本域 DTO（`../../../Mud.Wechat.Pay/DataModels/IndustryCoupon/`）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
 
 ## 端点速览
 
@@ -89,7 +89,7 @@ var expiresTime = resp.ExpiresTime; // 选填：RFC3339 字符串
 |---|---|
 | 逐端点原文（校验规则、错误码、支持商户双页） | `IWechatPayIndustryCouponService.cs` 与方法 XML 注释 |
 | 本域 1 方法 / 路由 / 请求体与返回类型 | `WechatPayIndustryCouponContractGuards.cs`（MIC-B1、MIC-B2） |
-| 请求 / 应答字段名册（`open_id`/`coupon_list`、`token`/`expires_time`） | `WechatPayIndustryCouponContractGuards.cs`（MIC-B3）；DTO `../../../Mud.Wechat.Pay/IndustryCoupon/IndustryCouponDtos.cs` |
+| 请求 / 应答字段名册（`open_id`/`coupon_list`、`token`/`expires_time`） | `WechatPayIndustryCouponContractGuards.cs`（MIC-B3）；DTO `../../../Mud.Wechat.Pay/DataModels/IndustryCoupon/IndustryCouponDtos.cs` |
 | DTO 数 3 与 AOT 登记 | `WechatPayIndustryCouponContractGuards.cs`（MIC-B4） |
 | 「其余能力不在 HTTP 面」 | `../../../../../Tests/Mud.Wechat.Pay.Tests/ContractGuards/WechatPayNonContractRouteZeroDeclarationContractGuards.cs`（MIC-N1） |
 
@@ -99,7 +99,7 @@ var expiresTime = resp.ExpiresTime; // 选填：RFC3339 字符串
 2. 加 / 改 DTO → 标 `[HttpJsonSerializable]`（`SerializerClassName` 取 `IndustryCoupon`）→ 跑
    `../../../../../scripts/AddHttpJsonSerializable.ps1` + `../../../../../scripts/GenerateJsonContext.ps1`
    → 更新 MIC-B4 的 3 计数；上下文登记见 [../../Extensions/PayJsonResolverExtensions.cs](../../Extensions/PayJsonResolverExtensions.cs)，
-   落盘见 `../../../Mud.Wechat.Pay/Generated/IndustryCouponJsonContext.g.cs`（`internal`，示例不得引用）。
+   落盘见 `../../../Mud.Wechat.Pay/DataModels/Generated/IndustryCouponJsonContext.g.cs`（`internal`，示例不得引用）。
 3. 改模块枚举 → 需同批有 `PayModule.IndustryCoupon` 成员 + `AddIndustryCouponWebApiHttpClient()` + 解析器上下文登记（MIC 段接线）。
 4. **不要**给本域端点加 `[Token]`（`PAY-B1` fail-closed）；**不要**把小程序 / 公众号侧能力补成 HTTP 路由（破坏 MIC-N1 零声明名册）；
    **不要**把 `open_id` 写进日志或异常消息。

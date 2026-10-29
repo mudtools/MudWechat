@@ -376,7 +376,7 @@ public class WechatPayV2MerchantProfileContractGuards
     public void V2_MerchantProfile_SensitiveFields_ShouldBeDocumentedAsCiphertext()
     {
         var micro = File.ReadAllLines(SourcePath(
-            "Mud.Wechat.Pay", "PayV2/V2MerchantMicroDtos.cs"));
+            "Mud.Wechat.Pay", "DataModels/V2/PayV2/V2MerchantMicroDtos.cs"));
 
         foreach (var field in new[] { "account_number", "mobile_phone", "email" })
         {
@@ -630,10 +630,10 @@ public class WechatPayV2MerchantProfileContractGuards
 
     private static readonly Dictionary<Type, string> DtoSourceFiles = new()
     {
-        [typeof(V2RecommendConfigAddRequest)] = "PayV2/V2SubMerchantConfigDtos.cs",
-        [typeof(V2MicroArchivesModifyRequest)] = "PayV2/V2MerchantMicroDtos.cs",
-        [typeof(V2MicroContactInfoModifyRequest)] = "PayV2/V2MerchantMicroDtos.cs",
-        [typeof(V2UploadMediaRequest)] = "PayV2/V2MerchantMediaDtos.cs",
+        [typeof(V2RecommendConfigAddRequest)] = "DataModels/V2/PayV2/V2SubMerchantConfigDtos.cs",
+        [typeof(V2MicroArchivesModifyRequest)] = "DataModels/V2/PayV2/V2MerchantMicroDtos.cs",
+        [typeof(V2MicroContactInfoModifyRequest)] = "DataModels/V2/PayV2/V2MerchantMicroDtos.cs",
+        [typeof(V2UploadMediaRequest)] = "DataModels/V2/PayV2/V2MerchantMediaDtos.cs",
     };
 
     private static string DtoSourceText(Type dto)

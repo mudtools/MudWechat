@@ -9,7 +9,7 @@
 
 > **事实来源限定**：本文断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本域契约守卫
 > [WechatPayTransferToQqWalletContractGuards.cs](../../../../../Tests/Mud.Wechat.Pay.Tests/ContractGuards/WechatPayTransferToQqWalletContractGuards.cs)
-> （`TQW-B1`~`TQW-B4`）与本域 DTO（`../../../Mud.Wechat.Pay/TransferToQqWallet/`）。
+> （`TQW-B1`~`TQW-B4`）与本域 DTO（`../../../Mud.Wechat.Pay/DataModels/TransferToQqWallet/`）。
 > 不复述外部官方文档正文；注释里没有的东西一律进文末「已知留档缺口」。
 
 ## 端点速览
@@ -165,7 +165,7 @@ WechatPayException.ThrowIfFailed(cancelled, "/v3/fund-app/mch-transfer/transfer-
 | 三支路由与 path/query 形态（本域零 query） | `TransferToQqWalletEndpoints_ShouldMatchOfficialRoutesAndParameterRosters`（`TQW-B2`） |
 | 请求与三支应答的字段名册 | `TransferToQqWalletDtos_ShouldExposeOfficialFieldRosters`（`TQW-B3`） |
 | DTO 数 5、AOT 登记与 DI 接线 | `TransferToQqWalletDataModels_ShouldBeRegisteredInJsonContextAndWiredIntoDi`（`TQW-B4`） |
-| DTO 字段名与类型 | `../../../Mud.Wechat.Pay/TransferToQqWallet/` |
+| DTO 字段名与类型 | `../../../Mud.Wechat.Pay/DataModels/TransferToQqWallet/` |
 
 ## 改动本域需要同批完成
 

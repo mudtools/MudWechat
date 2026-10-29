@@ -39,7 +39,7 @@ dotnet test Tests/Mud.Wechat.Work.Tests -c Release -f net8.0 --filter "FullyQual
 | 场景 | 同批完成什么 |
 |---|---|
 | 加端点 | 接口 XML 文档（官方文档 URL/ID + 频率上限/串行/覆盖删除/权限可见范围等业务限制，格式照既有端点，**不得弱化**）+ 更新对应域守卫 |
-| 加 DTO | 标 `[HttpJsonSerializable]` → 跑 `AddHttpJsonSerializable.ps1` + `GenerateJsonContext.ps1`（Abstractions 命名空间域手写登记进 `AuthenticationJsonContext`；生成物落该线主包的 `Generated/`——2026-10 包合并后原 `{线}.DataModels/Generated` 已在主包内，企微线进一步收拢为 `Mud.Wechat.Work/DataModels/Generated/`）→ 更新守卫中的上下文登记断言 |
+| 加 DTO | 标 `[HttpJsonSerializable]` → 跑 `AddHttpJsonSerializable.ps1` + `GenerateJsonContext.ps1`（Abstractions 命名空间域手写登记进 `AuthenticationJsonContext`；DTO 与生成物一律落该线主包的 `DataModels/{域}/` 与 `DataModels/Generated/`——2026-10 包合并后原 `{线}.DataModels/Generated` 已在主包内，同月源码归类再收拢进 `DataModels/` 子目录，目录⇔命名空间由 AB-G10 双向校验，新 DTO 落回工程根即打红）→ 更新守卫中的上下文登记断言 |
 | 加配置属性 | 补**真实消费点**；无消费点则**删属性**（`audit-config-keys.ps1` 无白名单、无 `-Strict`，`Validate`/`ToString` 不算消费点，正确处置是补消费点或删属性，不是加模式绕开） |
 | 加/改回调事件 | `[WechatCallbackContract]`（事件键 + 族前置 + 开放面）+ 载荷 `[PayloadContract]` + 回调守卫 |
 | 加/改回调处理器 | `WechatCallbackHandlerAnalyzer`（MUDCB002~005）自动生效（`SupportedEventType` ↔ 载荷契约一致性编译期校验）；若钥匙集/开放面变化则同批更新 `WechatCallbackContractGuards`（CB 系列） |
@@ -81,11 +81,15 @@ Src/Work/                             # 企业微信线（本文件 §5~§7 的�
                                       # DataModels/Generated/ 域 JsonContext）
                                       # + Interfaces/{域}/ 接口声明 + 服务 + DI + 模块注册（2026-10 包合并：
                                       # 原 Work.Abstractions / Work.DataModels 并入，**命名空间不变**；同月的源码归类把
-                                      # 工程根散落的 46 个 DTO 域目录收拢进 DataModels/ 子目录，**同样只动目录不动命名空间**）
+                                      # 工程根散落的 45 个 DTO 域目录（连同 Generated/ 与 WechatWorkResponse.cs）收拢进
+                                      # DataModels/ 子目录，**同样只动目录不动命名空间**）
   Mud.Wechat.Work.Callback/           # 回调接收（AES 解密、事件解析、分发）+ HTTP 中间件；Events/Payloads/ 载荷；智能机器人 JSON 回调通道 + 长连接（`LongConnection/`，net8+ 门控，见 §5.5）
 Src/{OfficialAccount,MiniProgram,Pay,OpenPlatform,Channels,Ads,AI}/   # 其余各线，2026-10 包合并后形态：
                                       # 公众号 2 包（主包 + Callback）/ 小程序 1 / 支付 2（APIv3+APIv2 同包 + Callback）
                                       # / 开放平台 1 / 小店 2 / 广告 1 / AI 4（层 1 `Mud.Wechat.AI` + 层 2 Work.AI / .Tools / .Mcp）
+                                      # **七线同形态**：各线主包的官方 DTO 一律落 `DataModels/{域}/`（连同 `DataModels/Generated/`），
+                                      # 该不变式由 AB-G10 双向校验（目录⇔命名空间，两个方向都扫；无守卫则「新 DTO 落回工程根」零信号）；
+                                      # 支付线 APIv2 与 v3 命名空间平行，其 DTO 落 `DataModels/V2/{域}/`，同受该不变式约束（非例外分支）
                                       # 每包的公开面与已踩陷阱见其目录下的 README.md
 Tests/                                # 20 个工程（七线 + Core 叶层 + Redis + OpenTelemetry + AI 域），镜像源结构，单 TFM net8.0
                                       # 注：`Work.Abstractions.Tests` / `Work.DataModels.Tests` 等测试工程**名称保留**，

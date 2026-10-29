@@ -2,7 +2,7 @@
 
 微信支付「代发薪（PayrollCard 服务商面）」域 SDK（6 端点）。 接口：[IWechatPayPayrollCardService](./IWechatPayPayrollCardService.cs)；注册组 `PayrollCard`；模块枚举 `PayModule.PayrollCard`（装配入口见 [PayServiceBuilder.cs](../../Extensions/PayServiceBuilder.cs)）。逐端点核验 2026-10-18。
 
-> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[WechatPayPayrollCardContractGuards.cs](../../../../../Tests/Mud.Wechat.Pay.Tests/ContractGuards/WechatPayPayrollCardContractGuards.cs)、[WechatPayDomainContractGuards.cs](../../../../../Tests/Mud.Wechat.Pay.Tests/ContractGuards/WechatPayDomainContractGuards.cs)）、本域 DTO（[`Mud.Wechat.Pay/PayrollCard`](../../../Mud.Wechat.Pay/PayrollCard/)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
+> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[WechatPayPayrollCardContractGuards.cs](../../../../../Tests/Mud.Wechat.Pay.Tests/ContractGuards/WechatPayPayrollCardContractGuards.cs)、[WechatPayDomainContractGuards.cs](../../../../../Tests/Mud.Wechat.Pay.Tests/ContractGuards/WechatPayDomainContractGuards.cs)）、本域 DTO（[`Mud.Wechat.Pay/DataModels/PayrollCard`](../../DataModels/PayrollCard)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
 
 ## 端点速览
 
@@ -171,21 +171,21 @@
 
 ## DTO 与序列化面
 
-本域 DTO 目录 [`Mud.Wechat.Pay/PayrollCard`](../../../Mud.Wechat.Pay/PayrollCard/) 内共 **11** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **11** 个，`SerializerClassName` = `PayrollCard`。
+本域 DTO 目录 [`Mud.Wechat.Pay/DataModels/PayrollCard`](../../DataModels/PayrollCard) 内共 **11** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **11** 个，`SerializerClassName` = `PayrollCard`。
 
-AOT 源生成上下文：[`PayrollCardJsonContext.g.cs`](./../../../Mud.Wechat.Pay/Generated/PayrollCardJsonContext.g.cs)（生成物，勿手改）。
+AOT 源生成上下文：[`PayrollCardJsonContext.g.cs`](./../../DataModels/Generated/PayrollCardJsonContext.g.cs)（生成物，勿手改）。
 
 | 端点引用的类型 | 角色 | 定义位置 | JSON 字段（前缀） |
 |---|---|---|---|
-| `PayrollCardTokenResponse` | 应答 | [PayrollCard/PayrollCardTokenDtos.cs](../../../Mud.Wechat.Pay/PayrollCard/PayrollCardTokenDtos.cs) | `openid`, `appid`, `sub_mchid`, `sub_appid`, `user_name`, `id_card_number`, `employment_type`, `mchid`, `token`, `expires_in` |
-| `PayrollCardTokenRequest` | 请求体 | [PayrollCard/PayrollCardTokenDtos.cs](../../../Mud.Wechat.Pay/PayrollCard/PayrollCardTokenDtos.cs) | `openid`, `appid`, `sub_mchid`, `sub_appid`, `user_name`, `id_card_number`, `employment_type`, `mchid`, `token`, `expires_in` |
-| `PayrollCardRelationResponse` | 应答 | [PayrollCard/PayrollCardRelationDtos.cs](../../../Mud.Wechat.Pay/PayrollCard/PayrollCardRelationDtos.cs) | `openid`, `mchid`, `sub_mchid`, `authorize_state`, `authorize_time`, `deauthorize_time`, `register_state`, `register_time`, `close_time` |
-| `PayrollCardAuthenticationPreOrderResponse` | 应答 | [PayrollCard/PayrollCardAuthenticationDtos.cs](../../../Mud.Wechat.Pay/PayrollCard/PayrollCardAuthenticationDtos.cs) | `openid`, `appid`, `sub_mchid`, `sub_appid`, `authenticate_number`, `project_name`, `employer_name`, `user_name`, `id_card_number`, `employment_type`, `authenticate_type`, `mchid` … |
-| `PayrollCardAuthenticationPreOrderRequest` | 请求体 | [PayrollCard/PayrollCardAuthenticationDtos.cs](../../../Mud.Wechat.Pay/PayrollCard/PayrollCardAuthenticationDtos.cs) | `openid`, `appid`, `sub_mchid`, `sub_appid`, `authenticate_number`, `project_name`, `employer_name`, `user_name`, `id_card_number`, `employment_type`, `authenticate_type`, `mchid` … |
-| `PayrollCardAuthenticationInfoResponse` | 应答 | [PayrollCard/PayrollCardAuthenticationDtos.cs](../../../Mud.Wechat.Pay/PayrollCard/PayrollCardAuthenticationDtos.cs) | `openid`, `appid`, `sub_mchid`, `sub_appid`, `authenticate_number`, `project_name`, `employer_name`, `user_name`, `id_card_number`, `employment_type`, `authenticate_type`, `mchid` … |
-| `PayrollCardAuthenticationListResponse` | 应答 | [PayrollCard/PayrollCardAuthenticationDtos.cs](../../../Mud.Wechat.Pay/PayrollCard/PayrollCardAuthenticationDtos.cs) | `openid`, `appid`, `sub_mchid`, `sub_appid`, `authenticate_number`, `project_name`, `employer_name`, `user_name`, `id_card_number`, `employment_type`, `authenticate_type`, `mchid` … |
-| `PayrollCardTransferBatchCreateResponse` | 应答 | [PayrollCard/PayrollCardTransferBatchDtos.cs](../../../Mud.Wechat.Pay/PayrollCard/PayrollCardTransferBatchDtos.cs) | `out_detail_no`, `transfer_amount`, `transfer_remark`, `openid`, `user_name`, `sub_mchid`, `sub_appid`, `authorization_type`, `out_batch_no`, `batch_name`, `batch_remark`, `total_amount` … |
-| `PayrollCardTransferBatchCreateRequest` | 请求体 | [PayrollCard/PayrollCardTransferBatchDtos.cs](../../../Mud.Wechat.Pay/PayrollCard/PayrollCardTransferBatchDtos.cs) | `out_detail_no`, `transfer_amount`, `transfer_remark`, `openid`, `user_name`, `sub_mchid`, `sub_appid`, `authorization_type`, `out_batch_no`, `batch_name`, `batch_remark`, `total_amount` … |
+| `PayrollCardTokenResponse` | 应答 | [PayrollCard/PayrollCardTokenDtos.cs](../../DataModels/PayrollCard/PayrollCardTokenDtos.cs) | `openid`, `appid`, `sub_mchid`, `sub_appid`, `user_name`, `id_card_number`, `employment_type`, `mchid`, `token`, `expires_in` |
+| `PayrollCardTokenRequest` | 请求体 | [PayrollCard/PayrollCardTokenDtos.cs](../../DataModels/PayrollCard/PayrollCardTokenDtos.cs) | `openid`, `appid`, `sub_mchid`, `sub_appid`, `user_name`, `id_card_number`, `employment_type`, `mchid`, `token`, `expires_in` |
+| `PayrollCardRelationResponse` | 应答 | [PayrollCard/PayrollCardRelationDtos.cs](../../DataModels/PayrollCard/PayrollCardRelationDtos.cs) | `openid`, `mchid`, `sub_mchid`, `authorize_state`, `authorize_time`, `deauthorize_time`, `register_state`, `register_time`, `close_time` |
+| `PayrollCardAuthenticationPreOrderResponse` | 应答 | [PayrollCard/PayrollCardAuthenticationDtos.cs](../../DataModels/PayrollCard/PayrollCardAuthenticationDtos.cs) | `openid`, `appid`, `sub_mchid`, `sub_appid`, `authenticate_number`, `project_name`, `employer_name`, `user_name`, `id_card_number`, `employment_type`, `authenticate_type`, `mchid` … |
+| `PayrollCardAuthenticationPreOrderRequest` | 请求体 | [PayrollCard/PayrollCardAuthenticationDtos.cs](../../DataModels/PayrollCard/PayrollCardAuthenticationDtos.cs) | `openid`, `appid`, `sub_mchid`, `sub_appid`, `authenticate_number`, `project_name`, `employer_name`, `user_name`, `id_card_number`, `employment_type`, `authenticate_type`, `mchid` … |
+| `PayrollCardAuthenticationInfoResponse` | 应答 | [PayrollCard/PayrollCardAuthenticationDtos.cs](../../DataModels/PayrollCard/PayrollCardAuthenticationDtos.cs) | `openid`, `appid`, `sub_mchid`, `sub_appid`, `authenticate_number`, `project_name`, `employer_name`, `user_name`, `id_card_number`, `employment_type`, `authenticate_type`, `mchid` … |
+| `PayrollCardAuthenticationListResponse` | 应答 | [PayrollCard/PayrollCardAuthenticationDtos.cs](../../DataModels/PayrollCard/PayrollCardAuthenticationDtos.cs) | `openid`, `appid`, `sub_mchid`, `sub_appid`, `authenticate_number`, `project_name`, `employer_name`, `user_name`, `id_card_number`, `employment_type`, `authenticate_type`, `mchid` … |
+| `PayrollCardTransferBatchCreateResponse` | 应答 | [PayrollCard/PayrollCardTransferBatchDtos.cs](../../DataModels/PayrollCard/PayrollCardTransferBatchDtos.cs) | `out_detail_no`, `transfer_amount`, `transfer_remark`, `openid`, `user_name`, `sub_mchid`, `sub_appid`, `authorization_type`, `out_batch_no`, `batch_name`, `batch_remark`, `total_amount` … |
+| `PayrollCardTransferBatchCreateRequest` | 请求体 | [PayrollCard/PayrollCardTransferBatchDtos.cs](../../DataModels/PayrollCard/PayrollCardTransferBatchDtos.cs) | `out_detail_no`, `transfer_amount`, `transfer_remark`, `openid`, `user_name`, `sub_mchid`, `sub_appid`, `authorization_type`, `out_batch_no`, `batch_name`, `batch_remark`, `total_amount` … |
 
 > DTO 一律以源文件为准；本表只列端点签名**直接引用**的一层类型，嵌套类型不再递归展开。所有 DTO 不使用 `required`（仓内约束），必填性由接口注释与官方页表达，SDK 不做本地必填校验。
 
@@ -222,7 +222,7 @@ var response = await service.CreatePayrollCardAuthenticationPreOrderAsync(new Pa
 | 契约守卫（路由 / 计数 / DTO 登记断言） | [`WechatPayPayrollCardContractGuards.cs`](../../../../../Tests/Mud.Wechat.Pay.Tests/ContractGuards/WechatPayPayrollCardContractGuards.cs)、[`WechatPayDomainContractGuards.cs`](../../../../../Tests/Mud.Wechat.Pay.Tests/ContractGuards/WechatPayDomainContractGuards.cs) |
 | 守卫中的代表性测试方法 | `PayrollCardTopology_ShouldMatchInterfaceAndGroupRoster`、`PayrollCardEndpoints_ShouldMatchOfficialRoutesAndParameterRosters`、`PayrollCardDtos_ShouldExposeOfficialFieldRosters`、`PayrollCardDataModels_ShouldSplitRequestAndResponseBaseTypes`、`PayrollCardAllDtos_ShouldBeAnnotatedAndContextRegistered`、`PayrollCardRegistrars_ShouldBeWiredThroughPayModuleAndResolver`、`PayInterfaces_ShouldNotDeclareToken_AndShouldMatchModuleCount`、`Endpoints_ShouldMatchOfficialRoutes`、`Dtos_ShouldExposeOfficialFieldNames`、`Responses_ShouldDeriveFromWechatPayResponse`、`Interfaces_ShouldAllowAnyStatusCode_SoErrorBodiesAreReadable` |
 | 模块枚举 / 装配入口 | [`PayModule.cs`](../../Extensions/PayModule.cs)、[`PayServiceBuilder.cs`](../../Extensions/PayServiceBuilder.cs) |
-| DTO 与 JSON 上下文 | [`Mud.Wechat.Pay/PayrollCard`](../../../Mud.Wechat.Pay/PayrollCard/) |
+| DTO 与 JSON 上下文 | [`Mud.Wechat.Pay/DataModels/PayrollCard`](../../DataModels/PayrollCard) |
 | 跨线基线 | [`Tests/ContractBaseline.cs`](../../../../../Tests/ContractBaseline.cs)（各线分节；本线口径以守卫实际断言为准） |
 | 本线包级公开面与已踩陷阱 | [`Src/Pay/Mud.Wechat.Pay/README.md`](../../README.md) |
 | 跨线通用约束（门禁 / AOT / 落位） | [`AGENTS.md`](../../../../../AGENTS.md) |

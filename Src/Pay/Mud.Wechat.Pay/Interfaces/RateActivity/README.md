@@ -2,7 +2,7 @@
 
 微信支付「优惠费率活动报名（从业机构面）」域 SDK（3 端点）。 接口：[IWechatPayRateActivityService](./IWechatPayRateActivityService.cs)；注册组 `RateActivity`；模块枚举 `PayModule.RateActivity`（装配入口见 [PayServiceBuilder.cs](../../Extensions/PayServiceBuilder.cs)）。逐端点核验 2026-10-18。
 
-> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[WechatPayRateActivityContractGuards.cs](../../../../../Tests/Mud.Wechat.Pay.Tests/ContractGuards/WechatPayRateActivityContractGuards.cs)、[WechatPayDomainContractGuards.cs](../../../../../Tests/Mud.Wechat.Pay.Tests/ContractGuards/WechatPayDomainContractGuards.cs)）、本域 DTO（[`Mud.Wechat.Pay/RateActivity`](../../../Mud.Wechat.Pay/RateActivity/)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
+> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[WechatPayRateActivityContractGuards.cs](../../../../../Tests/Mud.Wechat.Pay.Tests/ContractGuards/WechatPayRateActivityContractGuards.cs)、[WechatPayDomainContractGuards.cs](../../../../../Tests/Mud.Wechat.Pay.Tests/ContractGuards/WechatPayDomainContractGuards.cs)）、本域 DTO（[`Mud.Wechat.Pay/DataModels/RateActivity`](../../DataModels/RateActivity)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
 
 ## 端点速览
 
@@ -101,16 +101,16 @@
 
 ## DTO 与序列化面
 
-本域 DTO 目录 [`Mud.Wechat.Pay/RateActivity`](../../../Mud.Wechat.Pay/RateActivity/) 内共 **10** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **10** 个，`SerializerClassName` = `RateActivity`。
+本域 DTO 目录 [`Mud.Wechat.Pay/DataModels/RateActivity`](../../DataModels/RateActivity) 内共 **10** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **10** 个，`SerializerClassName` = `RateActivity`。
 
-AOT 源生成上下文：[`RateActivityJsonContext.g.cs`](./../../../Mud.Wechat.Pay/Generated/RateActivityJsonContext.g.cs)（生成物，勿手改）。
+AOT 源生成上下文：[`RateActivityJsonContext.g.cs`](./../../DataModels/Generated/RateActivityJsonContext.g.cs)（生成物，勿手改）。
 
 | 端点引用的类型 | 角色 | 定义位置 | JSON 字段（前缀） |
 |---|---|---|---|
-| `RateActivityApplicationResponse` | 应答 | [RateActivity/RateActivityApplicationDtos.cs](../../../Mud.Wechat.Pay/RateActivity/RateActivityApplicationDtos.cs) | `apply_material_id`, `apply_material_information`, `activity_id`, `activity_rate`, `activity_apply_information`, `additional_message`, `additional_material`, `acquiring_bank_id`, `channel_id`, `sub_mchid`, `activity_detail`, `additional_information` … |
-| `RateActivityApplicationCreateRequest` | 请求体 | [RateActivity/RateActivityApplicationDtos.cs](../../../Mud.Wechat.Pay/RateActivity/RateActivityApplicationDtos.cs) | `apply_material_id`, `apply_material_information`, `activity_id`, `activity_rate`, `activity_apply_information`, `additional_message`, `additional_material`, `acquiring_bank_id`, `channel_id`, `sub_mchid`, `activity_detail`, `additional_information` … |
-| `RateActivityApplicationUpdateRequest` | 请求体 | [RateActivity/RateActivityApplicationDtos.cs](../../../Mud.Wechat.Pay/RateActivity/RateActivityApplicationDtos.cs) | `apply_material_id`, `apply_material_information`, `activity_id`, `activity_rate`, `activity_apply_information`, `additional_message`, `additional_material`, `acquiring_bank_id`, `channel_id`, `sub_mchid`, `activity_detail`, `additional_information` … |
-| `RateActivityApplicationStateResponse` | 应答 | [RateActivity/RateActivityApplicationStateDtos.cs](../../../Mud.Wechat.Pay/RateActivity/RateActivityApplicationStateDtos.cs) | `application_state`, `sub_mchid`, `reject_parameter`, `reject_reason`, `pass_time` |
+| `RateActivityApplicationResponse` | 应答 | [RateActivity/RateActivityApplicationDtos.cs](../../DataModels/RateActivity/RateActivityApplicationDtos.cs) | `apply_material_id`, `apply_material_information`, `activity_id`, `activity_rate`, `activity_apply_information`, `additional_message`, `additional_material`, `acquiring_bank_id`, `channel_id`, `sub_mchid`, `activity_detail`, `additional_information` … |
+| `RateActivityApplicationCreateRequest` | 请求体 | [RateActivity/RateActivityApplicationDtos.cs](../../DataModels/RateActivity/RateActivityApplicationDtos.cs) | `apply_material_id`, `apply_material_information`, `activity_id`, `activity_rate`, `activity_apply_information`, `additional_message`, `additional_material`, `acquiring_bank_id`, `channel_id`, `sub_mchid`, `activity_detail`, `additional_information` … |
+| `RateActivityApplicationUpdateRequest` | 请求体 | [RateActivity/RateActivityApplicationDtos.cs](../../DataModels/RateActivity/RateActivityApplicationDtos.cs) | `apply_material_id`, `apply_material_information`, `activity_id`, `activity_rate`, `activity_apply_information`, `additional_message`, `additional_material`, `acquiring_bank_id`, `channel_id`, `sub_mchid`, `activity_detail`, `additional_information` … |
+| `RateActivityApplicationStateResponse` | 应答 | [RateActivity/RateActivityApplicationStateDtos.cs](../../DataModels/RateActivity/RateActivityApplicationStateDtos.cs) | `application_state`, `sub_mchid`, `reject_parameter`, `reject_reason`, `pass_time` |
 
 > DTO 一律以源文件为准；本表只列端点签名**直接引用**的一层类型，嵌套类型不再递归展开。所有 DTO 不使用 `required`（仓内约束），必填性由接口注释与官方页表达，SDK 不做本地必填校验。
 
@@ -147,7 +147,7 @@ var response = await service.CreateRateActivityApplicationAsync(new RateActivity
 | 契约守卫（路由 / 计数 / DTO 登记断言） | [`WechatPayRateActivityContractGuards.cs`](../../../../../Tests/Mud.Wechat.Pay.Tests/ContractGuards/WechatPayRateActivityContractGuards.cs)、[`WechatPayDomainContractGuards.cs`](../../../../../Tests/Mud.Wechat.Pay.Tests/ContractGuards/WechatPayDomainContractGuards.cs) |
 | 守卫中的代表性测试方法 | `RateActivityTopology_ShouldMatchInterfaceAndGroupRoster`、`RateActivityEndpoints_ShouldMatchOfficialRoutesAndParameterRosters`、`RateActivityDtos_ShouldExposeOfficialFieldRosters`、`RateActivityDataModels_ShouldSplitRequestAndResponseBaseTypes`、`RateActivityAllDtos_ShouldBeAnnotatedAndContextRegistered`、`RateActivityRegistrars_ShouldBeWiredThroughPayModuleAndResolver`、`PayInterfaces_ShouldNotDeclareToken_AndShouldMatchModuleCount`、`Endpoints_ShouldMatchOfficialRoutes`、`Dtos_ShouldExposeOfficialFieldNames`、`Responses_ShouldDeriveFromWechatPayResponse`、`Interfaces_ShouldAllowAnyStatusCode_SoErrorBodiesAreReadable` |
 | 模块枚举 / 装配入口 | [`PayModule.cs`](../../Extensions/PayModule.cs)、[`PayServiceBuilder.cs`](../../Extensions/PayServiceBuilder.cs) |
-| DTO 与 JSON 上下文 | [`Mud.Wechat.Pay/RateActivity`](../../../Mud.Wechat.Pay/RateActivity/) |
+| DTO 与 JSON 上下文 | [`Mud.Wechat.Pay/DataModels/RateActivity`](../../DataModels/RateActivity) |
 | 跨线基线 | [`Tests/ContractBaseline.cs`](../../../../../Tests/ContractBaseline.cs)（各线分节；本线口径以守卫实际断言为准） |
 | 本线包级公开面与已踩陷阱 | [`Src/Pay/Mud.Wechat.Pay/README.md`](../../README.md) |
 | 跨线通用约束（门禁 / AOT / 落位） | [`AGENTS.md`](../../../../../AGENTS.md) |

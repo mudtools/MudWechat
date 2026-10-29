@@ -79,7 +79,7 @@ v3.0 要求每个业务请求**成组**携带 `access_token` + `timestamp` + `no
 
 ## 落位与约定（沿用全仓口径）
 
-- 官方 DTO 按域落 `DataModels/{域}/`（2026-10 源码归类把原散在工程根的 DTO 域目录连同 `Generated/` 收拢于此；**只动目录、命名空间仍为 `Mud.Wechat.Ads.{域}[.{子域}]` 不变**；该「目录 ⇔ 命名空间」双向不变式由 AB-G10 守卫锁定）。
+- 官方 DTO 按域落 `DataModels/{域}/`（2026-10 源码归类把原散在工程根的 DTO 域目录连同 `Generated/` 收拢于此；**只动目录、命名空间仍为 `Mud.Wechat.Ads.DataModels.{域}[.{子域}]` 不变**；该「目录 ⇔ 命名空间」双向不变式由 AB-G10 守卫锁定）。
 
 - 命名空间仍按合并前的三面分面，**未随包合并改变**：接口 `Mud.Wechat.Ads`、DTO `Mud.Wechat.Ads.DataModels.{域}[.{子域}]`、基座 `Mud.Wechat.Ads.Abstractions.{Auth|Configuration|Exceptions|Extensions|Transport}`。目录按域平铺（`Interfaces/{域}/`、`{域}/`），请求 / 响应模型分目录仅作组织，**不入命名空间**。
 - 每个 DTO 标 `[HttpJsonSerializable]` ⇒ 跑 `scripts/AddHttpJsonSerializable.ps1` + `scripts/GenerateJsonContext.ps1 -TargetProject Src/Ads/Mud.Wechat.Ads/Mud.Wechat.Ads.csproj -OutputDir Src/Ads/Mud.Wechat.Ads/DataModels/Generated` 产出 `Generated/{组}JsonContext.g.cs`（**生成物**，提交进版本控制、勿手改）。合并后上下文与本线类型同程序集，**不再需要** `InternalsVisibleTo` 供主包直读（只保留测试与 Moq）。

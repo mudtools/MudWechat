@@ -1,7 +1,7 @@
-<#
+﻿<#
 .SYNOPSIS
     Runs Mud.HttpUtils.JsonContextScaffolder to generate JsonSerializerContext source files
-    for the Mud.Wechat.Work.DataModels project.
+    for the Mud.Wechat.Work project (DTO 面原属 Mud.Wechat.Work.DataModels，2026-10 包合并后同工程)。
 .DESCRIPTION
     The scaffolder is distributed as a NuGet dotnet tool (command: mud-jsonctx). This script
     does NOT depend on any local source/build path, so it works on any machine / any clone

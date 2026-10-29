@@ -225,7 +225,7 @@ dotnet run --project Demos/Mud.Wechat.Demo.SelfTest -c Release -- --channel bot
 - 机器人回调接收方 ID（自建机器人恒空串）与 `msgid` 必填：**101033**
 - `feedback_event` 只支持回空包：**101027**
 - 逐事件 / 逐帧的官方页与业务限制（频率上限、流式刷新窗口、素材分片上限、退避与夺租约顺序）：
-  `Src/Work/Mud.Wechat.Work.Abstractions/Callback/Bots/*.cs`、
+  `Src/Work/Mud.Wechat.Work/Callback/Bots/*.cs`、
   `Src/Work/Mud.Wechat.Work.Callback/LongConnection/*.cs`、
   `Src/Work/Mud.Wechat.Work/Interfaces/Aibot/*.cs` 的 XML 注释（每个端点/事件都有出处，两处漂移以源码为准）
 - 本仓契约面：`Src/AI/*/README.md`、`Src/Work/Mud.Wechat.Work.Callback/README.md`（长连接 P3 章节）、

@@ -264,7 +264,7 @@ public sealed class AuthCorpCaller(IWechatAppContextSwitcher switcher)
   运行 `scripts/GenerateJsonContext.ps1` 重新生成 → 提交 `Generated/` 变更。
   未登记的标注类型会被组件分析器 `AOT006` 拦下（`AotStrictMode=true` 下为 error）。
 - 引用 `Mud.HttpUtils.Attributes`（零依赖特性包）与 `Mud.HttpUtils.Generator`（分析器，`PrivateAssets=all`）；
-  生成上下文为 `internal`，经 `InternalsVisibleTo` 供主包合并与测试直读。
+  生成上下文为 `internal`；2026-10 包合并后与本线类型同程序集（合并前须经 `InternalsVisibleTo` 供主包直读），IVT 现只开放给测试工程。
 - DTO 均走 `JsonTypeInfo` 源生成序列化，勿以反射方式调用 `JsonSerializer.Serialize<T>/Deserialize<T>`。
 - 泛型包络 `WechatChatbotResponse<TData>` 为开放泛型，不参与源生成登记（STJ 源生成器对开放泛型
   不生成元数据，SYSLIB1030）；如宿主需要在 AOT 下序列化某闭合构造，请自建上下文登记。

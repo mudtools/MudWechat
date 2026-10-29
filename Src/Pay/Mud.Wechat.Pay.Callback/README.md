@@ -111,7 +111,7 @@ public sealed class TransactionPaidHandler(IOrderRepository orders) : IWechatPay
 
 ## 说明
 
-- 目标框架 `net6.0;net8.0;net10.0`（支付线四包同集的受控例外，`AesGcm` 决定无 `netstandard2.0`）。
+- 目标框架 `net6.0;net8.0;net10.0`（支付线两包同集的受控例外，`AesGcm` 决定无 `netstandard2.0`）。
 - 本包**不挂** `Mud.Wechat.Callback.Generator`：契约登记生成器须与 partial 声明同程序集（挂在 Abstractions），在此引用会发射无宿主 partial 实现（CS0759）；支付通知为 JSON 信封且无载荷契约档位。
 - 以 `OutputItemType="Analyzer"` 引用 `Mud.Wechat.Callback.Analyzers` 并把该 DLL 随包内嵌到 `analyzers/dotnet/cs`（`MUDCB002~005` 校验处理器事件键 ↔ 载荷契约）；支付档位未进 Profiles 表前，本包不含类型化处理器基类，分析器对其零诊断。
 - 密码学一律复用 `Mud.Wechat.Pay.Abstractions` 的 `WechatPayAesGcmCodec` / `WechatPaySignatureMessages` / `WechatPayTimestampGate`（`PAY-CB1`：禁止自建第二套）。

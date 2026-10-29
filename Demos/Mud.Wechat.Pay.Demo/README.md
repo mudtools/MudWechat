@@ -158,7 +158,7 @@ curl http://localhost:56558/api/refunds/demoXXXXXXXXXXXX
 已修：`AddPayApp` 的 `AddMudHttpClient` 客户端配置补默认 `Accept: application/json` 与
 `User-Agent: Mud.Wechat.Pay/{程序集版本}`，常量落 `WechatPayHttpClientNames`。
 回归锁：`WechatPayTransportPipelineTests` 两条用例（正向断言 PAY-B12 + 反向断言不污染其它命名客户端），
-文档落 `Src/Pay/Mud.Wechat.Pay.Abstractions/README.md`。修后同一请求应答变为 `401 SIGN_ERROR`（假序列名的预期结果）。
+文档落 `Src/Pay/Mud.Wechat.Pay/README.md`。修后同一请求应答变为 `401 SIGN_ERROR`（假序列名的预期结果）。
 
 ## 8 官方文档
 

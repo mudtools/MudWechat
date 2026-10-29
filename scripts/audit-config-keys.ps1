@@ -27,7 +27,7 @@ function Get-SourceProjectDir([string]$projectName) {
     # 只在 Src 下按**有界深度**定位工程（Src/<Area>/<ProjectName>/<ProjectName>.csproj）。
     # **不要**改成 Get-ChildItem -Path $repoRoot -Recurse：那会进入 obj/generated-probe 下
     # Microsoft.Extensions.Configuration.Binder 源生成器留下的深路径（实测 223 字符），
-    # 叠加长工程名（如 Mud.Wechat.OfficialAccount.Abstractions.csproj）后超过 MAX_PATH(260)，
+    # 叠加长工程名（合并前的 Mud.Wechat.OfficialAccount.Abstractions.csproj，现为 Mud.Wechat.OfficialAccount.csproj）后超过 MAX_PATH(260)，
     # 在 Windows PowerShell 5.1（.NET Framework，无长路径支持）下抛 DirectoryNotFoundException
     # —— 而 README / AGENTS §1 记载的调用方式恰是 powershell(5.1)，即该形态必失败
     # （pwsh 因 .NET Core 的长路径支持侥幸通过，掩盖了问题）。

@@ -41,7 +41,7 @@
   [`AdsCreativeComponentItem` 的 remarks](../../DynamicCreatives/AdsDynamicCreative.cs)
   （本仓 DTO 文档是该形态的唯一权威描述，本文不另立口径）。
 
-> **AOT 注意**：各域 `JsonContext` 为 `internal`（经 `InternalsVisibleTo` 供主包与测试直读），
+> **AOT 注意**：各域 `JsonContext` 为 `internal`（与本线类型同程序集；`InternalsVisibleTo` 只开放给测试工程），
 > 宿主侧构造 `value` 时**不要**依赖反射重载 `JsonSerializer.Deserialize<T>(string)`——
 > 全线 AOT 净零的前提是零反射 JSON（守卫 `ADS-B6`，`AdsSources_ShouldNotUseReflectionJson`）。
 > 需要公开构造入口时，按 AGENTS.md §2 走「补公开面 + 同批补守卫」，不要在示例里临时发明 API。

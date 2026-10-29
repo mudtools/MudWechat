@@ -103,7 +103,7 @@ builder.Services.AddChannelsApp(configs);
 | `Aftersale/` | 售后管理（售后单 / 纠纷单 / 保障单） | ✅ P1 |
 | `Logistics/` | 物流发货（地址 / 运费模板 / 电子面单 / 发货） | ✅ P1 |
 | `ChannelsResponse.cs` | 基线响应（`errcode`/`errmsg`，实现 `IWechatApiResponse`） | ✅ |
-| `Generated/` | 7 个域 JsonContext（Common + 6 业务域，`internal`，经 `InternalsVisibleTo` 供主包与测试直读） | 随域增长 |
+| `Generated/` | 7 个域 JsonContext（Common + 6 业务域，`internal`，与本线类型同程序集；`InternalsVisibleTo` 只开放给测试工程） | 随域增长 |
 
 P2 各域 DTO 随接口落地同批进入本包（命名空间 `Mud.Wechat.Channels.DataModels.{域}`）。
 

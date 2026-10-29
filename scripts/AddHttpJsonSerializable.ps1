@@ -1,6 +1,6 @@
 ﻿<#
 .SYNOPSIS
-    为 Mud.Wechat.Work.DataModels 项目中所有 DTO 类型添加 [HttpJsonSerializable] 特性。
+    为企微线 DTO（原 Mud.Wechat.Work.DataModels 工程；2026-10 包合并后位于 Src/Work/Mud.Wechat.Work）的所有 DTO 类型添加 [HttpJsonSerializable] 特性。
 .DESCRIPTION
     - 遍历指定根目录下所有 .cs 文件（排除 obj / Generated 目录与已标注文件）。
     - SerializerClassName 取该文件**命名空间的最后一段**（即域段：Users / Department /
@@ -19,9 +19,9 @@
 #>
 
 param(
-    # 数据模型根目录；留空则取「仓库根目录\Src\Work\Mud.Wechat.Work.DataModels」。
+    # 数据模型根目录；留空则取「Src\Work\Mud.Wechat.Work」（2026-10 包合并后 DTO 已在主包内）。
     # 也可传入相对路径（相对仓库根目录）或绝对路径。
-    # 公众号产品线用法：-RootPath Src/OfficialAccount/Mud.Wechat.OfficialAccount.DataModels -RootNamespace Mud.Wechat.OfficialAccount.DataModels
+    # 公众号产品线用法：-RootPath Src/OfficialAccount/Mud.Wechat.OfficialAccount -RootNamespace= Mud.Wechat.OfficialAccount.DataModels
     [string]$RootPath,
     # 根命名空间：命中该命名空间的直属文件（无域段）归入 "Common" 组。
     # 多产品线必须显式传入，否则非默认产品线的根级 DTO 会被打成 "DataModels" 等错误分组

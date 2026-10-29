@@ -435,7 +435,7 @@ string? outTradeNo = transaction?.OutTradeNo;                            // 幂�
 
 `Mud.Wechat.Abstractions`（叶层，仅取 `IWechatApiResponse` 响应契约）+ `Mud.HttpUtils.Attributes` 3.0.9（零依赖特性包）+ `Mud.HttpUtils.Generator` 3.0.9（仅分析器，`PrivateAssets=all`）。
 
-目标框架 `net6.0;net8.0;net10.0`（支付线四包同集的受控例外，理由见 `Mud.Wechat.Pay/README.md` 与守卫 `PAY-B9`）。
+目标框架 `net6.0;net8.0;net10.0`（支付线两包同集的受控例外，完整理由见本工程 csproj 的 `TargetFrameworks` 注释与守卫 `PAY-B9` / `AB-G8`）。
 
 
 ---

@@ -127,7 +127,7 @@ dotnet run --project Demos/Mud.Wechat.Demo.SelfTest -c Release -- --channel comp
    「HTTP 200 + errcode 非零」语义，判错由调用方做 `IsSuccess`（本 Demo 在端点里显式判并转 502）。
    忘记判 `IsSuccess` 的宿主会把 `40013` 当成「拿到了列表」。
 5. **本线需要专属错误闸**：`WechatOpenPlatformException` 直接继承 `Exception`（有意设计，见
-   `Src/OpenPlatform/Mud.Wechat.OpenPlatform.Abstractions/README.md`），公用层的 `UseWechatApiErrorGate()`
+   `Src/OpenPlatform/Mud.Wechat.OpenPlatform/README.md`），公用层的 `UseWechatApiErrorGate()`
    只接 `WechatApiException` ⇒ 无专属闸时凭证链失败会以 500 + 完整堆栈返回。
    **注册顺序**：通用闸在前、本线闸在后（`app.Use` 越晚注册越靠内、越先捕获异常）。
    七线里只有支付与本线需要专属闸 —— 其余各线异常（`MpException` / `WxaException` /

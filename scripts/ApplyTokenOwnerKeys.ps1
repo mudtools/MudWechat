@@ -45,7 +45,7 @@ if (-not (Test-Path -LiteralPath $interfacesRoot)) {
     throw "接口目录不存在：$interfacesRoot"
 }
 
-# 与 Mud.Wechat.Work.Abstractions\WechatTokenManagerKeys.cs 的常量名逐字一致。
+# 与 Mud.Wechat.Work.Abstractions 命名空间的 WechatTokenManagerKeys.cs（2026-10 包合并后该文件居 Src/Work/Mud.Wechat.Work）常量名逐字一致。
 $internalKeyExpression = 'WechatTokenManagerKeys.InternalAccessToken'
 $corpKeyExpression = 'WechatTokenManagerKeys.CorpAccessToken'
 

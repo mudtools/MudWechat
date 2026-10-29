@@ -153,7 +153,7 @@ curl -s "http://localhost:56568/api/report/daily?beginDate=2026-10-01&endDate=20
 - Marketing API v3.0 全清单（367 条路由）在 `developers.e.qq.com`；**未逐页核验的路由与字段不得进入契约面与守卫断言**，
   逐页 URL/ID 以 `Src/Ads/Mud.Wechat.Ads/Interfaces/{域}/` 的接口 XML 注释为权威，本 README 不复述以免两处漂移。
 - 本线公开面、三点建模范式差异与「尚未落地」清单：`Src/Ads/Mud.Wechat.Ads/README.md`
-- 复合参数线格式的逐字 curl 证据：`Src/Ads/Mud.Wechat.Ads/Common/AdsQueryJson.cs` 的方法注释
+- 复合参数线格式的逐字 curl 证据：`Src/Ads/Mud.Wechat.Ads/DataModels/Common/AdsQueryJson.cs` 的方法注释
 - 逐域守卫：`Tests/Mud.Wechat.Ads.Tests/ContractGuards/`（ADS-S1/S2 依赖边界 + ADS-B1~B6 传输/信封/白名单/上下文登记）
 
 ## 9 安全须知

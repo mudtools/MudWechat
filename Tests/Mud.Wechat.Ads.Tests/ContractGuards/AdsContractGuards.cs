@@ -1359,7 +1359,7 @@ public class AdsContractGuards
     {
         var contextFiles = Directory
             .EnumerateFiles(
-                Path.Combine(SourceProjectDir("Mud.Wechat.Ads"), "Generated"),
+                Path.Combine(SourceProjectDir("Mud.Wechat.Ads"), "DataModels", "Generated"),
                 "*JsonContext.g.cs", SearchOption.AllDirectories)
             // 文件名形如 AdvertiserJsonContext.g.cs：两次去扩展才得到上下文类型名 AdvertiserJsonContext。
             .Select(static f => Path.GetFileNameWithoutExtension(Path.GetFileNameWithoutExtension(f)))

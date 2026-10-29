@@ -137,7 +137,7 @@ bool taskSucceeded = item?.Result?.Code == 0;   // result 为 null = 任务未�
 | 逐参数原文 | `IWechatAdsAsyncTaskService.cs` 的 XML 注释 |
 | 路由 / 计数（恰 2） | `AsyncTasksEndpoints_ShouldMatchOfficialRouteTable`（`ADS-B2`）+ `AsyncTasksRoutes` |
 | 双层判定的报文级锁定 | `AdsMaterialAndTaskJsonTests.AsyncTaskGetResponse_ShouldBindTwoLayerResult` |
-| 三支互斥 spec 与选支表 | `AdsAsyncTaskSpec` remarks（`Src/Ads/Mud.Wechat.Ads/AsyncTasks/`） |
+| 三支互斥 spec 与选支表 | `AdsAsyncTaskSpec` remarks（`Src/Ads/Mud.Wechat.Ads/DataModels/AsyncTasks/`） |
 | 官方文档 | `https://developers.e.qq.com/v3.0/docs/api/{async_tasks/add,async_tasks/get}` |
 
 ## 改动本域需要同批完成

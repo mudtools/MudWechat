@@ -79,8 +79,10 @@ v3.0 要求每个业务请求**成组**携带 `access_token` + `timestamp` + `no
 
 ## 落位与约定（沿用全仓口径）
 
+- 官方 DTO 按域落 `DataModels/{域}/`（2026-10 源码归类把原散在工程根的 DTO 域目录连同 `Generated/` 收拢于此；**只动目录、命名空间仍为 `Mud.Wechat.Ads.{域}[.{子域}]` 不变**；该「目录 ⇔ 命名空间」双向不变式由 AB-G10 守卫锁定）。
+
 - 命名空间仍按合并前的三面分面，**未随包合并改变**：接口 `Mud.Wechat.Ads`、DTO `Mud.Wechat.Ads.DataModels.{域}[.{子域}]`、基座 `Mud.Wechat.Ads.Abstractions.{Auth|Configuration|Exceptions|Extensions|Transport}`。目录按域平铺（`Interfaces/{域}/`、`{域}/`），请求 / 响应模型分目录仅作组织，**不入命名空间**。
-- 每个 DTO 标 `[HttpJsonSerializable]` ⇒ 跑 `scripts/AddHttpJsonSerializable.ps1` + `scripts/GenerateJsonContext.ps1 -TargetProject Src/Ads/Mud.Wechat.Ads/Mud.Wechat.Ads.csproj -OutputDir Src/Ads/Mud.Wechat.Ads/Generated` 产出 `Generated/{组}JsonContext.g.cs`（**生成物**，提交进版本控制、勿手改）。合并后上下文与本线类型同程序集，**不再需要** `InternalsVisibleTo` 供主包直读（只保留测试与 Moq）。
+- 每个 DTO 标 `[HttpJsonSerializable]` ⇒ 跑 `scripts/AddHttpJsonSerializable.ps1` + `scripts/GenerateJsonContext.ps1 -TargetProject Src/Ads/Mud.Wechat.Ads/Mud.Wechat.Ads.csproj -OutputDir Src/Ads/Mud.Wechat.Ads/DataModels/Generated` 产出 `Generated/{组}JsonContext.g.cs`（**生成物**，提交进版本控制、勿手改）。合并后上下文与本线类型同程序集，**不再需要** `InternalsVisibleTo` 供主包直读（只保留测试与 Moq）。
 - 每个公共属性都必须显式 `[JsonPropertyName]`（或 `[JsonIgnore]`），不靠命名策略兜底。当前十五个上下文都取 `SnakeCaseLower`，漏标看似无伤；但策略是脚手架产出、逐上下文独立，一旦某上下文漂移或 DTO 换目录，「是否合官方契约」就变成「文件放在哪」的偶然事实，且**两种错位都不报错**（上送被官方静默忽略、应答属性恒 `null`）。守卫 ADS-B2 因此做「覆盖面 + 形状 + 关键名」三面判定。
 - **字典键不受命名策略影响**：报表行是 `Dictionary<string, JsonElement>`，而 `DictionaryKeyPolicy` 未设 ⇒ 官方返回的 `view_count` 等键**原名入袋**（`AdsReportJsonTests` 用驼峰键样例反证）。
 - **开放泛型 `AdsResponse<TData>` 刻意不登记**（标了会产 `SYSLIB1030` 死登记）⇒ 每支端点必须声明**闭合**应答类型。

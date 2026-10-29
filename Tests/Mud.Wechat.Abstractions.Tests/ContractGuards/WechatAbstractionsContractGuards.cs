@@ -802,6 +802,11 @@ public class WechatAbstractionsContractGuards
     /// 且不为一条新线把 30 个既有工程的低 TFM 构建拖进未测试组合；三条既有线之外的任何工程覆盖 TFM 即例外外溢，
     /// 本守卫的后半段逐工程锁死。
     /// </summary>
+    /// <remarks>
+    /// 例外<b>理由</b>只记在本守卫与各线 README，<b>不</b>要求写进 csproj 注释：注释不是可执行真值，
+    /// 与 TFM 集双份维护必然漂移（删注释不会改变任何构建行为，却会让守卫假红）。断言面因此只保留
+    /// 「TFM 集逐工程精确匹配 + 例外不外溢」这一条真正承重的部分。
+    /// </remarks>
     [Fact]
     public void PayLine_ShouldKeepControlledTfmException()
     {
@@ -816,8 +821,6 @@ public class WechatAbstractionsContractGuards
 
             content.Should().Contain("<TargetFrameworks>net6.0;net8.0;net10.0</TargetFrameworks>",
                 $"{project} 必须保持支付线受控 TFM 例外（AesGcm 在 netstandard2.0 不存在）");
-            content.Should().Contain("netstandard2.0",
-                $"{project} 必须在 csproj 注释中记录该例外的理由（AesGcm / AEAD_AES_256_GCM 为 APIv3 官方强制）");
         }
 
         // 开放平台线（第二个受控例外）：3 档，理由是刻意收窄到组件最小面（非密码学缺口）。
@@ -831,11 +834,9 @@ public class WechatAbstractionsContractGuards
 
             content.Should().Contain("<TargetFrameworks>net6.0;net8.0;net10.0</TargetFrameworks>",
                 $"{project} 必须保持开放平台线受控 TFM 例外（刻意收窄到组件 AddMudHttpClient 的最小面）");
-            content.Should().Contain("netstandard2.0",
-                $"{project} 必须在 csproj 注释中记录该例外的理由（防后来者「顺手统一」回 4 档）");
         }
 
-        // AI 域（第四个受控例外）：只认 net8.0;net10.0 两档，且必须记录理由（Mud.AI 1.0.1 → M.E.* 10.x 支持面）。
+        // AI 域（第四个受控例外）：只认 net8.0;net10.0 两档（理由：Mud.AI 1.0.1 → M.E.* 10.x 支持面）。
         // 2026-10 包合并：层 1 的 AI.Abstractions + AI.Agent 并为 Mud.Wechat.AI；层 2 的 Work.AI /
         // Work.AI.Tools / Work.AI.Mcp 保持三工程（Tools 的 Mud.AI.Generator 产物按工程身份落位，
         // 并入 Work.AI 会让契约表 WechatToolContract 生成不出来 —— 见包合并方案 §3 的实测回退记录）。
@@ -852,8 +853,6 @@ public class WechatAbstractionsContractGuards
 
             content.Should().Contain("<TargetFrameworks>net8.0;net10.0</TargetFrameworks>",
                 $"{project} 必须保持 AI 域受控 TFM 例外（Mud.AI 1.0.1 → M.E.* 10.x 官方支持面为 net8.0+）");
-            content.Should().Contain("AB-G8",
-                $"{project} 必须在 csproj 注释中记录该例外由 AB-G8 锁定");
         }
 
         // 其余产品线仍须是 4 档，各例外的不得外溢。

@@ -138,9 +138,11 @@ public class MiniProgramScaffoldContractGuards
             "小程序线不得依赖公众号回调包（消息接收走公众号线既有 XML 通道，方案 §4 MP-X1）");
 
         // ① 到公众号线的引用边恰好一条，且必须是该线入口工程。
+        // csproj 内的 Include 用 Windows 反斜杠，而 CI 为 ubuntu + windows 双 OS 矩阵：
+        // Linux 上 '\' 不是目录分隔符，Path.GetFileName 会原样返回整条路径 ⇒ 必须先归一分隔符。
         var oaEdges = Regex.Matches(xml, @"ProjectReference Include=""([^""]*OfficialAccount[^""]*\.csproj)""")
             .Cast<System.Text.RegularExpressions.Match>()
-            .Select(m => Path.GetFileName(m.Groups[1].Value))
+            .Select(m => Path.GetFileName(m.Groups[1].Value.Replace('\\', Path.DirectorySeparatorChar)))
             .ToArray();
 
         oaEdges.Should().Equal(new[] { "Mud.Wechat.OfficialAccount.csproj" },

@@ -178,7 +178,12 @@ public sealed class WechatMcpServer
 
         while (!cancellationToken.IsCancellationRequested)
         {
+            // TextReader/TextWriter 的取消令牌重载自 net8.0 起才提供；低两档退化为同步语义 + 每轮检查令牌。
+#if NET8_0_OR_GREATER
             var line = await input.ReadLineAsync(cancellationToken).ConfigureAwait(false);
+#else
+            var line = await input.ReadLineAsync().ConfigureAwait(false);
+#endif
             if (line is null)
             {
                 return; // EOF：客户端关闭 stdin，协议循环结束。
@@ -195,8 +200,13 @@ public sealed class WechatMcpServer
                 continue; // 通知不应答。
             }
 
+#if NET8_0_OR_GREATER
             await output.WriteLineAsync(response.AsMemory(), cancellationToken).ConfigureAwait(false);
             await output.FlushAsync(cancellationToken).ConfigureAwait(false);
+#else
+            await output.WriteLineAsync(response).ConfigureAwait(false);
+            await output.FlushAsync().ConfigureAwait(false);
+#endif
         }
     }
 

@@ -51,10 +51,11 @@ public sealed class DefaultContextAssembler : IContextAssembler
         catch (ArgumentException)
         {
             // 会话键必填维度缺失：不进回合（调用方按空包处理），不把投影缺陷升级成回调异常。
-            return ValueTask.FromResult<ConversationAssembly?>(null);
+            // 注：ValueTask.FromResult 自 net5.0 起才提供，netstandard2.0 走构造器（语义等价）。
+            return new ValueTask<ConversationAssembly?>((ConversationAssembly?)null);
         }
 
-        return ValueTask.FromResult<ConversationAssembly?>(
+        return new ValueTask<ConversationAssembly?>(
             new ConversationAssembly(request, input.ReplyChannelKey, input.Principal));
     }
 }

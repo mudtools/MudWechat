@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFrameworks>net8.0;net10.0</TargetFrameworks>
 		<Description>企业微信线 AI 工具面：WechatToolProfile（Mud.AI.Generator 剖面）、工具风险枚举与绑定类型、只读工具的策展声明（Curation）与执行器（强类型直连 Mud.Wechat.Work 接口）。</Description>
 		<PackageTags>Wechat;Work;AI;Tools;ToolSurface;MudWechat</PackageTags>
 		<WechatToolCatalog>true</WechatToolCatalog>

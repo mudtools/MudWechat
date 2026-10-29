@@ -359,8 +359,11 @@ public sealed class ApprovalToolHandlers(
         List<ApprovalSummaryLine>? summary = null;
         if (!string.IsNullOrWhiteSpace(request.Summary))
         {
+            // StringSplitOptions.TrimEntries 自 net5.0 起才提供，四档统一用 Select+Where 表达同一语义。
             summary = [.. request.Summary
-                .Split('|', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Split(new[] { '|' }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(text => text.Trim())
+                .Where(text => text.Length > 0)
                 .Select(text => new ApprovalSummaryLine
                 {
                     SummaryInfo = [new ApprovalLangTextItem { Text = text }],

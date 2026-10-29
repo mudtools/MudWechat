@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFrameworks>net6.0;net8.0;net10.0</TargetFrameworks>
 		<Description>微信支付 APIv3 SDK 回调接收包：平台证书验签、时间戳窗口闸、抗重放指纹、AEAD_AES_256_GCM resource 解密、通知分发与应答（{"code":"SUCCESS"} 阻止官方重试）的 HTTP 中间件与多商户路由。</Description>
 		<PackageTags>Wechat;Pay;微信支付;Tenpay;APIv3;Callback;Webhook;Middleware;MudWechat</PackageTags>
 	</PropertyGroup>
@@ -16,7 +15,13 @@
 		                  OutputItemType="Analyzer" ReferenceOutputAssembly="false" PrivateAssets="all" />
 	</ItemGroup>
 
-	<ItemGroup>
+	<!-- netstandard2.0 没有共享框架：走 ASP.NET Core 2.x 的 netstandard2.0 包（与 Work.Callback 同款形态），
+	     net6.0+ 用 FrameworkReference 取运行时共享框架。 -->
+	<ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+		<PackageReference Include="Microsoft.AspNetCore.Http" Version="2.3.9" />
+		<PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.3.9" />
+	</ItemGroup>
+	<ItemGroup Condition="'$(TargetFramework)' != 'netstandard2.0'">
 		<FrameworkReference Include="Microsoft.AspNetCore.App" />
 	</ItemGroup>
 

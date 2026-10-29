@@ -74,8 +74,8 @@ public class PayCallbackScaffoldContractGuards
 
         var xml = File.ReadAllText(csproj);
 
-        xml.Should().Contain("<TargetFrameworks>net6.0;net8.0;net10.0</TargetFrameworks>",
-            "支付回调包必须显式声明支付线 TFM 例外（AesGcm 在 netstandard2.0 不存在）");
+        xml.Should().NotContain("<TargetFrameworks>",
+            "支付回调包必须继承根 props 的四档 TFM（含 netstandard2.0），不得自行覆盖");
         xml.Should().Contain("Mud.Wechat.Abstractions.csproj",
             "支付回调必须复用 Abstractions 的抗重放端口/选项基座，不得自建第二套（方案 §5.7 PAY-CB1）");
 
@@ -91,24 +91,32 @@ public class PayCallbackScaffoldContractGuards
     }
 
     /// <summary>
-    /// PAY-B9 补充：支付回调包不得目标 <c>netstandard2.0</c>（GCM + <c>FrameworkReference</c> 均需 net6+）。
+    /// PAY-B9 / PAY-CB 补充：四档形态下，<b>netstandard2.0 不得用 <c>FrameworkReference</c></b>
+    /// （共享框架自 netcoreapp3.0 起才有），必须走 ASP.NET Core 2.x 的 netstandard2.0 包；
+    /// <c>FrameworkReference</c> 只允许出现在 net6.0+ 档。
     /// </summary>
     [Fact]
-    public void CallbackProject_ShouldNotTargetNetStandard20_WhenScaffold()
+    public void FrameworkReference_ShouldBeTfmConditioned_WhenScaffold()
     {
         var csproj = SourcePath("Mud.Wechat.Pay.Callback", "Mud.Wechat.Pay.Callback.csproj");
         var raw = File.ReadAllText(csproj);
 
-        raw.Should().Contain("<TargetFrameworks>net6.0;net8.0;net10.0</TargetFrameworks>");
+        raw.Should().NotContain("<TargetFrameworks>",
+            "支付回调包继承根 props 的四档 TFM（含 netstandard2.0），不得自行覆盖");
 
-        // 先剔除 XML 注释：csproj 的**理由注释**本身会提到 netstandard2.0（AB-G9 已踩过同款坑）。
-        var code = System.Text.RegularExpressions.Regex.Replace(raw, @"<!--.*?-->", string.Empty,
-            System.Text.RegularExpressions.RegexOptions.Singleline);
+        raw.Should().Contain("Microsoft.AspNetCore.Http",
+            "ns2.0 档必须引 ASP.NET Core 2.x 的 netstandard2.0 包（共享框架在该档不存在）");
 
-        // 断言口径 = 「TFM 属性不含 ns2.0」，而非全文不含：分析器 DLL 的打包路径
-        // `bin\$(Configuration)\netstandard2.0\...` 是**合法资产路径**（分析器工程本就 TFM ns2.0），会误报。
-        System.Text.RegularExpressions.Regex.IsMatch(code, @"<TargetFrameworks?[^>]*>[^<]*netstandard2\.0")
-            .Should().BeFalse("支付回调禁止 ns2.0（AesGcm 不存在 + ASP.NET Core FrameworkReference 不可用）");
+        // 断言口径 = 「ns2.0 档的 ItemGroup 里没有 FrameworkReference」：无条件的 FrameworkReference
+        // 会让 ns2.0 构建在还原期直接失败，而它一旦被塞进 ns2.0 档同样如此。
+        var ns20Block = System.Text.RegularExpressions.Regex.Match(
+            raw,
+            @"<ItemGroup Condition=""[^""]*==\s*'netstandard2\.0'[^""]*"">(?<body>[\s\S]*?)</ItemGroup>");
+
+        ns20Block.Success.Should().BeTrue(
+            "ns2.0 档必须有条件引用的 ItemGroup（ASP.NET Core 2.x 的 netstandard2.0 包）");
+        ns20Block.Groups["body"].Value.Should().NotContain("FrameworkReference",
+            "FrameworkReference 不得进入 netstandard2.0 档（该档用 ASP.NET Core 2.x 包）");
     }
 
     // ---- helpers -------------------------------------------------------------

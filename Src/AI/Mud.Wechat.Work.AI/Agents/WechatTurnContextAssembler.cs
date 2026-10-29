@@ -116,7 +116,8 @@ public sealed class WechatTurnContextAssembler : IContextAssembler
 
         lines.Add(request.Scope.IsGroup ? "会话：群聊（发言者可能不是可操作对象，写入前须确认）" : "会话：单聊");
 
-        return Task.FromResult<string?>(string.Join('\n', lines));
+        // 注：string.Join(char, IEnumerable<string>) 自 net5.0 起才提供，四档统一用 string 分隔符重载。
+        return Task.FromResult<string?>(string.Join("\n", lines));
     }
 
     private static string Tail(string value)

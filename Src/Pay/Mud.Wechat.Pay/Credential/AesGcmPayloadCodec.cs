@@ -34,14 +34,16 @@ public sealed class AesGcmPayloadCodec : IWechatPayPayloadCodec
     string IWechatPayPayloadCodec.Algorithm => Algorithm;
 
     /// <summary>
-    /// 构造 <see cref="AesGcm"/>：<c>net9.0+</c> 起 <c>AesGcm(byte[])</c> 被标记过时（SYSLIB0053），
-    /// 故高版本走带标签长度的构造；<c>net6.0</c>/<c>net8.0</c> 无该重载，回退旧构造。
+    /// 构造 AES-GCM 实例：<c>net9.0+</c> 起 <c>AesGcm(byte[])</c> 被标记过时（SYSLIB0053），
+    /// 故高版本走带标签长度的构造；<c>net6.0</c>/<c>net8.0</c> 无该重载，回退旧构造；
+    /// <c>netstandard2.0</c> 的 BCL 不含该类型，走 <see cref="PayGcmUnavailable"/>（构造即失败）。
     /// </summary>
-    private static AesGcm CreateAesGcm(byte[] key)
-#if NET9_0_OR_GREATER
-        => new(key, TagSizeBytes);
+#if NETSTANDARD2_0
+    private static PayGcmUnavailable CreateAesGcm(byte[] key) => new(key);
+#elif NET9_0_OR_GREATER
+    private static AesGcm CreateAesGcm(byte[] key) => new(key, TagSizeBytes);
 #else
-        => new(key);
+    private static AesGcm CreateAesGcm(byte[] key) => new(key);
 #endif
 
     /// <inheritdoc />

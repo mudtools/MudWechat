@@ -154,9 +154,13 @@ internal sealed class WechatPayV2SecureChannel : IDisposable
 
         var handler = new HttpClientHandler
         {
-            // 官方要求 TLS1.2 起；系统默认即可满足，此处不主动降级。
+            // 官方要求 TLS1.2 起；netstandard2.0 的 SslProtocols 枚举尚无 Tls13 成员（该档运行时也不支持 TLS1.3）。
+#if NETSTANDARD2_0
+            SslProtocols = System.Security.Authentication.SslProtocols.Tls12,
+#else
             SslProtocols = System.Security.Authentication.SslProtocols.Tls12
                            | System.Security.Authentication.SslProtocols.Tls13,
+#endif
         };
 
         // ClientCertificates 在 .NET Core 上是**只读集合**（非 .NET Framework 的可赋值属性）⇒ 只能 Add。

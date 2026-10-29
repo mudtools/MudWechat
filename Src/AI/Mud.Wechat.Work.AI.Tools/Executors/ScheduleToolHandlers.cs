@@ -246,7 +246,9 @@ public sealed class ScheduleToolHandlers(IWechatWorkScheduleService schedule)
     private static List<string> SplitUsers(string? value)
         => string.IsNullOrWhiteSpace(value)
             ? []
-            : [.. value.Split('|', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)];
+            : [.. value.Split(new[] { '|' }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(item => item.Trim())
+                .Where(item => item.Length > 0)];
 
     private static JsonArray ToStringArray(List<string>? values)
     {

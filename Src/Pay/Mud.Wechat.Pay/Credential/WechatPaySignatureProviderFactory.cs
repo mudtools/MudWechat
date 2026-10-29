@@ -64,7 +64,13 @@ public sealed class WechatPaySignatureProviderFactory : IWechatPaySignatureProvi
         try
         {
             // 各调用者经 WaitAsync 独立取消：取消只断开本次等待，不牵连共享加载。
+            // ns2.0 无 Task.WaitAsync：退化为「等待前先响应当前令牌」（共享任务仍用 None 承载，语义差异仅在取消时机）。
+#if NETSTANDARD2_0
+            cancellationToken.ThrowIfCancellationRequested();
+            return await loadTask.ConfigureAwait(false);
+#else
             return await loadTask.WaitAsync(cancellationToken).ConfigureAwait(false);
+#endif
         }
         catch
         {
@@ -72,8 +78,14 @@ public sealed class WechatPaySignatureProviderFactory : IWechatPaySignatureProvi
             // 该商户会永久不可用。调用者自己取消（任务仍健康）不得剔除，否则会误删有效缓存。
             if (loadTask.IsFaulted || loadTask.IsCanceled)
             {
+#if NETSTANDARD2_0
+                // ns2.0 的 ConcurrentDictionary 无 TryRemove(KeyValuePair)：走 ICollection.Remove（同样是原子条件删）。
+                ((ICollection<KeyValuePair<string, Task<IWechatPaySignatureProvider>>>)_byMerchantKey).Remove(
+                    new KeyValuePair<string, Task<IWechatPaySignatureProvider>>(merchantKey, loadTask));
+#else
                 _byMerchantKey.TryRemove(
                     new KeyValuePair<string, Task<IWechatPaySignatureProvider>>(merchantKey, loadTask));
+#endif
             }
 
             throw;

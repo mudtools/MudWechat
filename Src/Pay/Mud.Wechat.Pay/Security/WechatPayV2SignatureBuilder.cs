@@ -34,7 +34,8 @@ internal static class WechatPayV2SignatureBuilder
     internal const string WorkWxSignFieldName = "workwx_sign";
 
     /// <summary>取 MD5 大写十六进制（供 <c>workwx_sign</c> 复用同一摘要口径）。</summary>
-    internal static string Md5UpperHex(string message) => ToUpperHex(MD5.HashData(Encoding.UTF8.GetBytes(message)));
+    internal static string Md5UpperHex(string message)
+        => ToUpperHex(Mud.Wechat.Pay.Internal.PayCryptoCompat.Md5(Encoding.UTF8.GetBytes(message)));
 
     /// <summary>
     /// 构造参与签名的规范化串（不含 <c>key=</c> 尾巴）：ASCII 升序、排除 <c>sign</c> 与空值。
@@ -57,7 +58,7 @@ internal static class WechatPayV2SignatureBuilder
     internal static string BuildCanonicalString(
         IEnumerable<KeyValuePair<string, string?>> fields, IReadOnlyCollection<string>? whitelist)
     {
-        ArgumentNullException.ThrowIfNull(fields);
+        if (fields is null) { throw new ArgumentNullException(nameof(fields)); }
 
         var builder = new StringBuilder();
         foreach (var field in fields
@@ -91,8 +92,8 @@ internal static class WechatPayV2SignatureBuilder
         var message = BuildCanonicalString(fields) + "key=" + apiKey;
 
         var hash = hmacSha256
-            ? HMACSHA256.HashData(Encoding.UTF8.GetBytes(apiKey), Encoding.UTF8.GetBytes(message))
-            : MD5.HashData(Encoding.UTF8.GetBytes(message));
+            ? Mud.Wechat.Pay.Internal.PayCryptoCompat.HmacSha256(Encoding.UTF8.GetBytes(apiKey), Encoding.UTF8.GetBytes(message))
+            : Mud.Wechat.Pay.Internal.PayCryptoCompat.Md5(Encoding.UTF8.GetBytes(message));
 
         return ToUpperHex(hash);
     }

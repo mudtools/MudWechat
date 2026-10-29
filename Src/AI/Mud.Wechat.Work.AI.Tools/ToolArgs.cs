@@ -181,8 +181,8 @@ internal static class ToolArgs
         where TEnum : struct, Enum
         => OptionalEnum<TEnum>(args, name)
            ?? throw new ToolArgumentException(
-               $"缺少必填参数 {name}（合法取值：{string.Join("/", Enum.GetNames<TEnum>())}）。",
-               Enum.GetNames<TEnum>());
+               $"缺少必填参数 {name}（合法取值：{string.Join("/", Enum.GetNames(typeof(TEnum)))}）。",
+               Enum.GetNames(typeof(TEnum)));
 
     /// <summary>读取可选枚举（按成员名解析，忽略大小写；空白视为缺失）。</summary>
     /// <typeparam name="TEnum">枚举类型。</typeparam>
@@ -199,14 +199,28 @@ internal static class ToolArgs
             return null;
         }
 
-        if (Enum.TryParse<TEnum>(raw, ignoreCase: true, out var parsed) && Enum.IsDefined(parsed))
+        // Enum.TryParse<TEnum>(string, bool, out) / Enum.IsDefined<TEnum> 自 net5.0 起才提供：
+        // 四档统一走非泛型重载（语义一致：忽略大小写按成员名解析，且必须在闭集内）。
+        TEnum parsed;
+        try
+        {
+            parsed = (TEnum)Enum.Parse(typeof(TEnum), raw, ignoreCase: true);
+        }
+        catch (ArgumentException)
+        {
+            throw new ToolArgumentException(
+                $"参数 {name} 的取值 '{raw}' 非法（合法取值：{string.Join("/", Enum.GetNames(typeof(TEnum)))}）。",
+                Enum.GetNames(typeof(TEnum)));
+        }
+
+        if (Enum.IsDefined(typeof(TEnum), parsed))
         {
             return parsed;
         }
 
         throw new ToolArgumentException(
-            $"参数 {name} 的取值 '{raw}' 非法（合法取值：{string.Join("/", Enum.GetNames<TEnum>())}）。",
-            Enum.GetNames<TEnum>());
+            $"参数 {name} 的取值 '{raw}' 非法（合法取值：{string.Join("/", Enum.GetNames(typeof(TEnum)))}）。",
+            Enum.GetNames(typeof(TEnum)));
     }
 
     /// <summary>读取必填「常量名 → 整型平台值」闭集参数。</summary>

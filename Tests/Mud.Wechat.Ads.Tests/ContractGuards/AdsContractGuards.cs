@@ -98,8 +98,8 @@ public class AdsContractGuards
     /// ADS-S2：<b>TFM 口径</b> —— 广告线全部 TFM 继承根 props，<b>不得</b>自定 <c>TargetFrameworks</c>。
     /// </summary>
     /// <remarks>
-    /// 支付线的 <c>net6.0;net8.0;net10.0</c> 是因 <c>AesGcm</c> 在 netstandard2.0 不存在的<b>受控例外</b>、
-    /// 开放平台线是刻意收窄到组件最小面的<b>受控例外</b>（两者均由守卫 AB-G8 锁定并逐工程排除在外）。
+    /// 支付线的 <c>net6.0;net8.0;net10.0</c> 是因 <c>AesGcm</c> 在 netstandard2.0 不存在的<b>受控例外</b>
+    /// （由守卫 AB-G8 锁定并逐工程排除在外）。
     /// 广告线只做 HTTPS + JSON，无原生密码学依赖 ⇒ 不得援引该例外，
     /// 否则「例外外溢」会让 netstandard2.0 宿主静默失去广告线引用能力。
     /// </remarks>

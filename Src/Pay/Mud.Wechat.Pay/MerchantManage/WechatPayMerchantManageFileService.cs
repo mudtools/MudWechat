@@ -66,7 +66,8 @@ internal sealed class WechatPayMerchantManageFileService : IWechatPayMerchantMan
 
         // 读取文件内容并计算 SHA-256
         using var memoryStream = new MemoryStream();
-        await content.CopyToAsync(memoryStream, cancellationToken).ConfigureAwait(false);
+        // ns2.0 的 Stream.CopyToAsync 无 (Stream, CancellationToken) 重载：显式给缓冲长度（与默认值一致）。
+        await content.CopyToAsync(memoryStream, 81920, cancellationToken).ConfigureAwait(false);
         var fileBytes = memoryStream.ToArray();
 
         var sha256Hash = ComputeSha256(fileBytes);

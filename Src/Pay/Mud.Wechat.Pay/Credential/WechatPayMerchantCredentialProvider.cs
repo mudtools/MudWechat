@@ -47,7 +47,7 @@ public sealed class WechatPayMerchantCredentialProvider : IWechatPayMerchantCred
         var rsa = RSA.Create();
         try
         {
-            rsa.ImportFromPem(pem);
+            Mud.Wechat.Pay.Internal.PayCryptoCompat.ImportRsaPrivateKey(rsa, pem);
         }
         catch (Exception ex)
         {

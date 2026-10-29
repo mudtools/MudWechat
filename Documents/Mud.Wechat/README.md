@@ -29,7 +29,7 @@ Src/<线>/<主包>/Interfaces/<域>/<族>/   ⇄   reference/<线>/<域>/<族>.m
 
 | 产品线 | 主包 | 业务域 | 端点/契约接口 | 已成文 | 已核验 |
 |---|---|---|---|---|---|
-| 企业微信（WeCom） | `Mud.Wechat.Work` | 35 | 446 | **7 族（`AccountId` 全域）** | 6 |
+| 企业微信（WeCom） | `Mud.Wechat.Work` | 35 | 446 | **27 族（9 域：`AccountId` / `AdvancedApi` / `AdvancedFeature` / `Agent` / `Aibot` / `Approval` / `Authentication` / `Basic` / `Checkin`）** | 26 |
 | 微信公众号 | `Mud.Wechat.OfficialAccount` | 27 | 194 | 0 | 0 |
 | 微信小程序 | `Mud.Wechat.MiniProgram` | 21 | 141 | 0 | 0 |
 | 微信支付 APIv3/v2 | `Mud.Wechat.Pay` | 10 | 57 | 0 | 0 |
@@ -38,7 +38,7 @@ Src/<线>/<主包>/Interfaces/<域>/<族>/   ⇄   reference/<线>/<域>/<族>.m
 | 腾讯广告（在建） | `Mud.Wechat.Ads` | 8 | 33 | 0 | 0 |
 | 跨线基建（叶层 / Redis / OpenTelemetry / AI） | `Mud.Wechat.Abstractions` 等 | — | — | 0 | 0 |
 
-已成文 7 篇（`AccountId` 域 7 个接口族全覆盖，20 支端点）/ 待写按族计约 **200+ 篇**（族数量级，非端点数量级；确切缺口由 `reference/` 与 `Interfaces/` 目录比对得出，不靠人工记清单）。
+已成文 27 篇（`AccountId` 域 7 族 20 支端点；`AdvancedApi` / `AdvancedFeature` / `Agent` / `Aibot` / `Approval` 五域 11 族 38 支端点方法 / 36 个端点小节——`ApprovalTemplate.md` 的创建与更新模板在自建与代开发子接口各声明一次、同路由，合为同一小节；`Authentication` 域 3 族 9 支端点；`Basic` 域 1 族 2 支端点；`Checkin` 域 5 族 15 条路由 / 26 个方法声明）/ 待写按族计约 **200+ 篇**（族数量级，非端点数量级；确切缺口由 `reference/` 与 `Interfaces/` 目录比对得出，不靠人工记清单）。
 
 ### 已成文清单
 
@@ -51,6 +51,26 @@ Src/<线>/<主包>/Interfaces/<域>/<族>/   ⇄   reference/<线>/<域>/<族>.m
 | [Migration.md](./reference/Work/AccountId/Migration.md) | 2 | `provider_access_token` | `待补充`（`agentid` 必填性内部证据矛盾） |
 | [TmpExternalUserId.md](./reference/Work/AccountId/TmpExternalUserId.md) | 1 | `access_token`（三类应用） | `已核验` |
 | [ChatIdUpgrade.md](./reference/Work/AccountId/ChatIdUpgrade.md) | 1 | `suite_access_token` | `已核验` |
+| [AdvancedApi.md](./reference/Work/AdvancedApi/AdvancedApi.md) | 6 | `provider_access_token` | `已核验` |
+| [AdvancedFeature.md](./reference/Work/AdvancedFeature/AdvancedFeature.md) | 3 | `access_token`（自建） | `已核验` |
+| [Agent.md](./reference/Work/Agent/Agent.md) | 5 | `access_token`（三类应用） | `已核验` |
+| [AgentWorkbench.md](./reference/Work/Agent/AgentWorkbench.md) | 5 | `access_token`（三类应用） | `已核验` |
+| [AgentMenu.md](./reference/Work/Agent/AgentMenu.md) | 3 | `access_token`（自建） | `已核验` |
+| [AgentMigration.md](./reference/Work/Agent/AgentMigration.md) | 1 | `access_token`（待迁移自建应用）＋ 请求体内 `suite_access_token`（代开发套件） | `已核验` |
+| [Aibot.md](./reference/Work/Aibot/Aibot.md) | 1 | 无令牌（`response_code` 一次性 URL 凭据） | `已核验` |
+| [Approval.md](./reference/Work/Approval/Approval.md) | 4 | `access_token`（三类应用；旧版数据仅自建） | `已核验` |
+| [ApprovalTemplate.md](./reference/Work/Approval/ApprovalTemplate.md) | 4（6 个方法声明） | `access_token`（自建 / 代开发；复制到企业仅第三方） | `已核验` |
+| [Vacation.md](./reference/Work/Approval/Vacation.md) | 3 | `access_token`（三类应用） | `已核验` |
+| [ApprovalEngine.md](./reference/Work/Approval/ApprovalEngine.md) | 1 | `access_token`（三类应用） | `已核验` |
+| [ProviderAuthentication.md](./reference/Work/Authentication/ProviderAuthentication.md) | 7 | `suite_access_token` / `provider_access_token` | `已核验` |
+| [ProviderAuthenticationUrl.md](./reference/Work/Authentication/ProviderAuthenticationUrl.md) | 1 | `provider_access_token`（显式 Query，无 `[Token]`） | `已核验` |
+| [ProviderLoginService.md](./reference/Work/Authentication/ProviderLoginService.md) | 1 | `provider_access_token` | `已核验` |
+| [Basic.md](./reference/Work/Basic/Basic.md) | 2 | `access_token`（自建 / 代开发） | `已核验` |
+| [Rule.md](./reference/Work/Checkin/Rule.md) | 6（11 个方法声明） | `access_token`（三类应用；管理类仅自建 / 代开发） | `已核验` |
+| [Record.md](./reference/Work/Checkin/Record.md) | 4（6 个方法声明） | `access_token`（三类应用；3 支写端点仅自建） | `已核验` |
+| [Report.md](./reference/Work/Checkin/Report.md) | 2（6 个方法声明） | `access_token`（三类应用；第三方为旧结构） | `已核验` |
+| [Schedule.md](./reference/Work/Checkin/Schedule.md) | 2 | `access_token`（三类应用） | `已核验` |
+| [Device.md](./reference/Work/Checkin/Device.md) | 1 | `access_token`（三类应用；第三方需设备型号关联） | `已核验` |
 
 `已核验` = 正文每个断言可指到内部证据或带日期官方取文 + 示例逐字编译通过（见规范 §7）；各篇 §7「已知留档缺口」登记的是官方未提供或本文不主张的项，不因缺口表存在而降级。
 

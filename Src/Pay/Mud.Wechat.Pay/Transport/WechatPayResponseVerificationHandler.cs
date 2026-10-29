@@ -120,7 +120,7 @@ internal sealed class WechatPayResponseVerificationHandler : DelegatingHandler
         // 作用域过滤②：非 JSON 原样放行（见类注释「非 JSON 原样放行」——
         // 官方对文件/账单/媒体下载应答不签名，对其 fail-closed 会打断账单下发与媒体通道）。
         var mediaType = response.Content?.Headers.ContentType?.MediaType;
-        if (mediaType is null || !mediaType.Contains("json", StringComparison.OrdinalIgnoreCase))
+        if (mediaType is null || mediaType.IndexOf("json", StringComparison.OrdinalIgnoreCase) < 0)
         {
             return response;
         }

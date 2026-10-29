@@ -79,7 +79,7 @@ internal static class WechatPayV2XmlCodec
     /// <returns><c>&lt;xml&gt;...&lt;/xml&gt;</c> 形态报文。</returns>
     internal static string WriteXml(IEnumerable<KeyValuePair<string, string?>> fields)
     {
-        ArgumentNullException.ThrowIfNull(fields);
+        if (fields is null) { throw new ArgumentNullException(nameof(fields)); }
 
         var builder = new StringBuilder(256).Append('<').Append(RootName).Append('>');
         foreach (var field in fields)
@@ -150,7 +150,7 @@ internal static class WechatPayV2XmlCodec
     internal static string ToJson(
         IEnumerable<KeyValuePair<string, string?>> fields, JsonTypeInfo? typeInfo)
     {
-        ArgumentNullException.ThrowIfNull(fields);
+        if (fields is null) { throw new ArgumentNullException(nameof(fields)); }
 
         var numericNames = BuildNumericNames(typeInfo);
         var stream = new MemoryStream();

@@ -261,7 +261,7 @@ public sealed class ContactsUserToolHandlers(IWechatWorkUsersService users)
         var matched = exact.Count > 0
             ? exact
             : candidates
-                .Where(user => user.Name?.Contains(name!, StringComparison.Ordinal) == true)
+                .Where(user => user.Name?.IndexOf(name!, StringComparison.Ordinal) >= 0)
                 .ToList();
 
         var items = new JsonArray();

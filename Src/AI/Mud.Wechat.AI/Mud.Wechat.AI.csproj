@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFrameworks>net8.0;net10.0</TargetFrameworks>
 		<Description>微信生态 AI 共享层（跨七线）：契约面 —— 工具身份轴 WechatToolPrincipal / 风险词表 WechatToolRiskVocabulary / 会话事实 WechatConversationFacts / 事件装配端口 IContextAssembler；运行时面 —— 统一信封读取器 WechatApiResultReader（IWechatApiResponse → 中立 ToolApiOutcome&lt;T&gt;）与会话请求投影工厂 WechatConversationRequestFactory。依赖限于中立引擎契约 Mud.AI.Abstractions / Mud.AI.Agent，不依赖任何产品线专属包（原 Mud.Wechat.AI.Abstractions 与 Mud.Wechat.AI.Agent 两包于 2026-10 包合并并入本包，命名空间不变）。</Description>
 		<PackageTags>Wechat;AI;Abstractions;Agent;Tools;MudWechat</PackageTags>
 	</PropertyGroup>

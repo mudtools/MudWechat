@@ -164,7 +164,10 @@ public sealed class WechatToolApprovalPreview
                 continue;
             }
 
-            var parts = text.Split(['|', ','], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            var parts = text.Split(['|', ','], StringSplitOptions.RemoveEmptyEntries)
+                .Select(item => item.Trim())
+                .Where(item => item.Length > 0)
+                .ToArray();
             foreach (var part in parts.Take(MaxTargets))
             {
                 targets.Add($"{key}:{Mask(part)}");

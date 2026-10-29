@@ -793,82 +793,68 @@ public class WechatAbstractionsContractGuards
     }
 
     /// <summary>
-    /// AB-G8：<b>受控 TFM 例外</b>守卫 —— 微信支付线因 <c>AesGcm</c> 在 netstandard2.0 不存在而
-    /// 显式降为 <c>net6.0;net8.0;net10.0</c>；该例外必须被锁定，不得被静默「统一」回 4 档
-    /// （静默统一会在 ns2.0 上编译失败或迫使引入第三方密码学包）。
-    /// 开放平台线同样降为 3 档，但理由是<b>刻意收窄</b>到组件 <c>AddMudHttpClient</c> 的最小面而非密码学缺口；
-    /// <b>AI 域</b>（2026-10 新增，第四个受控例外）降为 2 档 <c>net8.0;net10.0</c>：消费 <c>Mud.AI.*</c> 1.0.1 传递要求的
-    /// <c>M.E.*</c> 10.0.12，而 M.E.* 10.x 官方支持面为 net8.0+（net6.0 上 NuGet 发「doesn't support net6.0」告警），
-    /// 且不为一条新线把 30 个既有工程的低 TFM 构建拖进未测试组合；三条既有线之外的任何工程覆盖 TFM 即例外外溢，
-    /// 本守卫的后半段逐工程锁死。
+    /// AB-G8：<b>TFM 基线</b>守卫 —— 全仓可打包工程一律四档
+    /// <c>netstandard2.0;net6.0;net8.0;net10.0</c>（根 props 单一来源），任何工程自行覆盖即红。
     /// </summary>
     /// <remarks>
+    /// <para>
+    /// 各线曾有的缺口与它们的收敛方式（新增工程照此办理，不得复活 csproj 级 TFM 覆盖）：
+    /// </para>
+    /// <list type="bullet">
+    /// <item>
+    /// <b>支付线</b>：<c>AesGcm</c> 自 <c>netstandard2.1</c> / <c>netcoreapp3.0</c> 起才进 BCL，
+    /// 官方无 downlevel 回填包（<c>Microsoft.Bcl.Cryptography</c> 只补 X509 / KDF 面）⇒ ns2.0 由
+    /// <c>PayGcmUnavailable</c> 承接：类型可解析、构造即抛 <c>PlatformNotSupportedException</c>，
+    /// 不静默降级、不自研 GCM、不引第三方密码学库；该档的 APIv2 / 签名验签 / DTO / 配置照常可用。
+    /// </item>
+    /// <item>
+    /// <b>AI 域</b>：此前障碍是根 props 为低 TFM 钉的 <c>M.E.* 8.0.x</c> 与 <c>Mud.AI.*</c> 传递要求的
+    /// <c>M.E.* &gt;= 10.0.12</c> 相撞（NU1605 降级）⇒ 四档统一到同一套 <c>M.E.* / System.Text.Json</c> 版本；
+    /// 残余差异只是少量「net5.0+ 才有的便利成员」（<c>ValueTask.FromResult</c>、<c>StringSplitOptions.TrimEntries</c>、
+    /// <c>Enum.GetNames&lt;T&gt;</c> 等），已按 TFM 分流或就地替换为等价的低版本写法。
+    /// </item>
+    /// <item>
+    /// <b>开放平台线</b>：原本就无密码学缺口，直接回到四档。
+    /// </item>
+    /// </list>
+    /// <para>
     /// 例外<b>理由</b>只记在本守卫与各线 README，<b>不</b>要求写进 csproj 注释：注释不是可执行真值，
-    /// 与 TFM 集双份维护必然漂移（删注释不会改变任何构建行为，却会让守卫假红）。断言面因此只保留
-    /// 「TFM 集逐工程精确匹配 + 例外不外溢」这一条真正承重的部分。
+    /// 与 TFM 集双份维护必然漂移（删注释不会改变任何构建行为，却会让守卫假红）。
+    /// </para>
     /// </remarks>
     [Fact]
-    public void PayLine_ShouldKeepControlledTfmException()
+    public void AllProjects_ShouldInheritFourTfmBaseline()
     {
-        foreach (var project in new[]
-                 {
-                     // 2026-10 包合并：支付线由四工程收为主包 + 回调宿主两工程。
-                     "Mud.Wechat.Pay/Mud.Wechat.Pay.csproj",
-                     "Mud.Wechat.Pay.Callback/Mud.Wechat.Pay.Callback.csproj",
-                 })
-        {
-            var content = ReadCsproj(project);
-
-            content.Should().Contain("<TargetFrameworks>net6.0;net8.0;net10.0</TargetFrameworks>",
-                $"{project} 必须保持支付线受控 TFM 例外（AesGcm 在 netstandard2.0 不存在）");
-        }
-
-        // 开放平台线（第二个受控例外）：3 档，理由是刻意收窄到组件最小面（非密码学缺口）。
-        // 2026-10 包合并后该线只有主工程一项持有此覆盖（合并前三工程各写一遍，属同一事实的三份重复）。
-        foreach (var project in new[]
-                 {
-                     "Mud.Wechat.OpenPlatform/Mud.Wechat.OpenPlatform.csproj",
-                 })
-        {
-            var content = ReadCsproj(project);
-
-            content.Should().Contain("<TargetFrameworks>net6.0;net8.0;net10.0</TargetFrameworks>",
-                $"{project} 必须保持开放平台线受控 TFM 例外（刻意收窄到组件 AddMudHttpClient 的最小面）");
-        }
-
-        // AI 域（第四个受控例外）：只认 net8.0;net10.0 两档（理由：Mud.AI 1.0.1 → M.E.* 10.x 支持面）。
-        // 2026-10 包合并：层 1 的 AI.Abstractions + AI.Agent 并为 Mud.Wechat.AI；层 2 的 Work.AI /
-        // Work.AI.Tools / Work.AI.Mcp 保持三工程（Tools 的 Mud.AI.Generator 产物按工程身份落位，
-        // 并入 Work.AI 会让契约表 WechatToolContract 生成不出来 —— 见包合并方案 §3 的实测回退记录）。
-        // 原清单只列 3 工程（Tools / Mcp 漏列，属既存盲区），本批补齐为全部 4 个 AI 工程。
-        foreach (var project in new[]
-                 {
-                     "Mud.Wechat.AI/Mud.Wechat.AI.csproj",
-                     "Mud.Wechat.Work.AI/Mud.Wechat.Work.AI.csproj",
-                     "Mud.Wechat.Work.AI.Tools/Mud.Wechat.Work.AI.Tools.csproj",
-                     "Mud.Wechat.Work.AI.Mcp/Mud.Wechat.Work.AI.Mcp.csproj",
-                 })
-        {
-            var content = ReadCsproj(project);
-
-            content.Should().Contain("<TargetFrameworks>net8.0;net10.0</TargetFrameworks>",
-                $"{project} 必须保持 AI 域受控 TFM 例外（Mud.AI 1.0.1 → M.E.* 10.x 官方支持面为 net8.0+）");
-        }
-
-        // 其余产品线仍须是 4 档，各例外的不得外溢。
+        // 支付线亦已收敛回四档：ns2.0 的 AesGcm 缺口由 PayGcmUnavailable 承接（构造即抛 PlatformNotSupportedException），
+        // 其余能力（APIv2、签名验签、DTO、配置）在该档照常可用 ⇒ 全仓不再有 TFM 例外。
         foreach (var project in new[]
                  {
                      "Mud.Wechat.Abstractions/Mud.Wechat.Abstractions.csproj",
                      "Mud.Wechat.Work/Mud.Wechat.Work.csproj",
                      "Mud.Wechat.OfficialAccount/Mud.Wechat.OfficialAccount.csproj",
                      "Mud.Wechat.MiniProgram/Mud.Wechat.MiniProgram.csproj",
-                     // 腾讯广告线（2026-10 新增，同批包合并后为单工程）：只做 HTTPS + JSON、无原生密码学依赖，不得援引例外。
+                     // 腾讯广告线（2026-10 新增，同批包合并后为单工程）：只做 HTTPS + JSON、无原生密码学依赖。
                      "Mud.Wechat.Ads/Mud.Wechat.Ads.csproj",
+                     "Mud.Wechat.Channels/Mud.Wechat.Channels.csproj",
+                     "Mud.Wechat.Channels.Callback/Mud.Wechat.Channels.Callback.csproj",
+                     "Mud.Wechat.Work.Callback/Mud.Wechat.Work.Callback.csproj",
+                     "Mud.Wechat.OfficialAccount.Callback/Mud.Wechat.OfficialAccount.Callback.csproj",
+                     "Mud.Wechat.Redis/Mud.Wechat.Redis.csproj",
+                     "Mud.Wechat.OpenTelemetry/Mud.Wechat.OpenTelemetry.csproj",
+                     "Mud.Wechat.OpenPlatform/Mud.Wechat.OpenPlatform.csproj",
+                     // AI 域四工程：Mud.AI.* 的 M.E.* 10.x 要求已由四档统一版本满足，不再是 TFM 例外。
+                     "Mud.Wechat.AI/Mud.Wechat.AI.csproj",
+                     "Mud.Wechat.Work.AI/Mud.Wechat.Work.AI.csproj",
+                     "Mud.Wechat.Work.AI.Tools/Mud.Wechat.Work.AI.Tools.csproj",
+                     "Mud.Wechat.Work.AI.Mcp/Mud.Wechat.Work.AI.Mcp.csproj",
+                     // 支付线两工程：TFM 例外已撤销（2026-10 收敛）。
+                     "Mud.Wechat.Pay/Mud.Wechat.Pay.csproj",
+                     "Mud.Wechat.Pay.Callback/Mud.Wechat.Pay.Callback.csproj",
                  })
         {
             ReadCsproj(project).Should().NotContain("<TargetFrameworks>",
                 $"{project} 应继承 Directory.Build.props 的 4 档 TFM，不得自行覆盖" +
-                "（受控例外只有支付线、开放平台线与 AI 域，后者是 Mud.AI 1.0.1 的 M.E.* 10.x 支持面约束）");
+                "（受控 TFM 例外已全部撤销：ns2.0 缺口一律用占位类型 + fail-fast 或按 TFM 分流解决）");
         }
     }
 

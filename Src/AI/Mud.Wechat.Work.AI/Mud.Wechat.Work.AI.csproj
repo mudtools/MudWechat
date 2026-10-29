@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFrameworks>net8.0;net10.0</TargetFrameworks>
 		<Description>企业微信线 AI Agent 底座：WechatAgent（ObservedDelegatingAgent 承载 ChatClientAgent、实现 IAgentSessionFacade）、WechatAgentOptions + Validator、WechatWorkAiScopeFactory（ITurnScopeFactory → UseCorpScope 桥接）、Aibot 主动回复通道、Bot 回调处理器与 AddWechatWorkAgent 装配。</Description>
 		<PackageTags>Wechat;Work;AI;Agent;Bot;MudWechat</PackageTags>
 	</PropertyGroup>
@@ -9,6 +8,11 @@
 	<ItemGroup>
 		<ProjectReference Include="..\Mud.Wechat.AI\Mud.Wechat.AI.csproj" />
 		<ProjectReference Include="..\..\Work\Mud.Wechat.Work\Mud.Wechat.Work.csproj" />
+	</ItemGroup>
+
+	<!-- TimeProvider 自 net8.0 起进 BCL：低两档由官方回填包提供同名类型（装配器公开面因此四档一致）。 -->
+	<ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' Or '$(TargetFramework)' == 'net6.0'">
+		<PackageReference Include="Microsoft.Bcl.TimeProvider" Version="10.0.14" />
 	</ItemGroup>
 
 	<ItemGroup>

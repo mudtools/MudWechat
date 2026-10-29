@@ -50,7 +50,9 @@ dotnet test Tests/Mud.Wechat.Work.Tests -c Release -f net8.0 --filter "FullyQual
 
 `Directory.Build.props`：`TargetFrameworks = netstandard2.0;net6.0;net8.0;net10.0`、`LangVersion = 13.0`、`Nullable = enable`、`ImplicitUsings = enable`、`Version` 为版本唯一来源。
 
-**`netstandard2.0` 无 `IsExternalInit` polyfill**，该 TFM 下：禁 `init`、禁 `record`/`with`；无 `ArgumentNullException.ThrowIfNull`；`string.IsNullOrEmpty`/`IsNullOrWhiteSpace` 无 `[NotNullWhen]`、流分析不收窄（须显式 `x == null`）；禁 `Math.Clamp`。既存大量 CS86xx 警告属正常形态（见 §1）。
+**四档基线对全部可打包工程成立、无例外**（守卫 `AB-G8` 逐 csproj 锁「不得覆盖 `TargetFrameworks`」）。支付线/开放平台线/AI 域曾是受控例外，2026-10 收敛回四档；开放平台线/AI 域四工程已回四档。低 TFM 缺口的处置口径（新增代码照此办理）：① 优先换成四档同写的等价 API（`ValueTask.FromResult` → `new ValueTask<T>(x)`、`StringSplitOptions.TrimEntries` → `Select(Trim).Where(非空)`、`string.Contains(x, cmp)` → `IndexOf >= 0`、`Enum.GetNames<T>()` → `Enum.GetNames(typeof(T))`）；② 实在只在 net5.0+ 存在的便利成员（`MD5.HashData` / `RandomNumberGenerator.Fill` / `Convert.ToHexString` / `HttpContent.ReadAsStringAsync(ct)` / `X509Certificate2.CreateFromPem` / `RSA.ImportFromPem`）走各线 `PayCryptoCompat` 之类的 compat 入口或按 TFM `#if` 分流；③ BCL 彻底缺类型时给「同名占位 + 构造即 `PlatformNotSupportedException`」（如 `PayGcmUnavailable`），**不静默降级、不自研密码学、不引第三方密码学库**。
+
+**`netstandard2.0` 的既存限制**：无 `IsExternalInit`（`init`/`record` 需项目内 polyfill，现仅 `Work.AI.Tools/Polyfills/`）；无 `ArgumentNullException.ThrowIfNull`（写显式 `if (x is null) throw`）；`string.IsNullOrEmpty`/`IsNullOrWhiteSpace` 无 `[NotNullWhen]`、流分析不收窄（须显式 `x == null`）；禁 `Math.Clamp`。既存大量 CS86xx 警告属正常形态（见 §1）。
 
 **`Tests/Directory.Build.props` 导入根 props**（`Import` 必须在自身覆盖之前）：测试工程与源工程同受一套治理，全部测试工程（现 20 个）自动继承 `LangVersion` / `Nullable` / `ImplicitUsings` / `Version` / TFM 集，故**新增治理属性只需写在根 props 一处**（此前的「遮蔽」形态要求同批写两遍，且靠人记无编译期强制）。该文件只额外做两件事：① 把 `TargetFrameworks` 收为单档 `net8.0`（避免 `TargetFramework`/`TargetFrameworks` 双属性冲突使 restore 进入跨目标模式）；② 显式关闭 `IsAotCompatible` / `EnableTrimAnalyzer` / `EnableAotAnalyzer` / `EnableSingleFileAnalyzer` —— 测试宿主（xunit / FluentAssertions / Moq）大量使用反射，开启后实测产生约 900 条 IL 噪声告警，既掩盖真实信号，也与「测试工程不进 Native AOT 发布、正确性由用例断言承担」的分工不符（源工程的 AOT 净零仍由 `verify-build.ps1` 步骤 2 逐工程保证）。
 

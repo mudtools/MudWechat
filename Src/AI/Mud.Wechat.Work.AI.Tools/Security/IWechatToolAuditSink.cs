@@ -42,5 +42,5 @@ public sealed class NullWechatToolAuditSink : IWechatToolAuditSink
 
     /// <inheritdoc />
     public ValueTask WriteAsync(WechatToolAuditRecord record, CancellationToken cancellationToken = default)
-        => ValueTask.CompletedTask;
+        => default; // ValueTask.CompletedTask 自 net5.0 起才提供，四档统一用 default（语义等价）
 }

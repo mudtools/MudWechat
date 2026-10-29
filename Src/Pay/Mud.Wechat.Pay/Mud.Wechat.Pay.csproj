@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-	<PropertyGroup>	
-		<TargetFrameworks>net6.0;net8.0;net10.0</TargetFrameworks>
+	<PropertyGroup>
 		<Description>微信支付 SDK：商户配置面、签名/验签与加解密端口、平台证书存储端口、通知信封、官方错误码与异常（以上原 Abstractions 面）、APIv3 与 APIv2 全部出入参 DTO（AOT 源生成 JsonContext）、业务声明式客户端（基础交易/退款/账单/平台证书/分账/商家转账/发票/_pay_score_ 等 v3 域，与 v2 XML+MD5/HMAC-SHA256 遗留域）、模块注册器、RSA 签名器、AES-256-GCM 加解密、账单下载通道。一线一入口包（2026-10 包合并：原 Mud.Wechat.Pay.Abstractions / Mud.Wechat.Pay.DataModels / Mud.Wechat.Pay.V2 / Mud.Wechat.Pay.V2.DataModels 并入本包，命名空间不变；收通知另引 Mud.Wechat.Pay.Callback）。</Description>
 		<PackageTags>Wechat;Pay;微信支付;Tenpay;APIv3;APIv2;SDK;Security;Configuration;DTO;MudWechat</PackageTags>
 		<MudHttpSuppressQueryTokenInjection>true</MudHttpSuppressQueryTokenInjection>
@@ -21,9 +20,14 @@
 		<PackageReference Include="Microsoft.Extensions.Http" Version="10.0.9" />
 		<PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.9" />
 	</ItemGroup>
-	<ItemGroup Condition="'$(TargetFramework)' == 'net6.0'">
+	<ItemGroup Condition="'$(TargetFramework)' == 'net6.0' Or '$(TargetFramework)' == 'netstandard2.0'">
 		<PackageReference Include="Microsoft.Extensions.Http" Version="8.0.1" />
 		<PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="8.0.1" />
+	</ItemGroup>
+
+	<!-- ns2.0 无 PEM/ASN.1 API：私钥 PEM 解析改走官方 System.Formats.Asn1（仅做容器解析，不做密码学运算）。 -->
+	<ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+		<PackageReference Include="System.Formats.Asn1" Version="10.0.14" />
 	</ItemGroup>
 
 	<ItemGroup>

@@ -255,7 +255,7 @@ public static class WechatPaySignatureMessages
     {
         Span<char> buffer = stackalloc char[NonceLength];
         Span<byte> random = stackalloc byte[NonceLength];
-        RandomNumberGenerator.Fill(random);
+        Mud.Wechat.Pay.Internal.PayCryptoCompat.FillRandom(random);
 
         for (var i = 0; i < random.Length; i++)
         {
@@ -263,6 +263,7 @@ public static class WechatPaySignatureMessages
             buffer[i] = NonceAlphabet[random[i] % NonceAlphabet.Length];
         }
 
-        return new string(buffer);
+        // string(ReadOnlySpan<char>) 自 netcoreapp2.1 起才提供，四档统一走数组构造。
+        return new string(buffer.ToArray());
     }
 }

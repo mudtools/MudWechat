@@ -146,7 +146,8 @@ public sealed class WechatPayComplaintMediaService : IWechatPayComplaintMediaSer
             throw new ArgumentException("媒体 ID 不能为空。", nameof(mediaId));
         }
 
-        var path = GetPathTemplate.Replace("{media_id}", mediaId, StringComparison.Ordinal);
+        // Replace(string, string, StringComparison) 自 netcoreapp2.1 起才提供：模板占位符为 ASCII，默认重载即序数语义。
+        var path = GetPathTemplate.Replace("{media_id}", mediaId);
         var uri = new Uri(PrimaryAccessPoint + path);
 
         using var request = new HttpRequestMessage(HttpMethod.Get, uri);
@@ -197,8 +198,19 @@ public sealed class WechatPayComplaintMediaService : IWechatPayComplaintMediaSer
             content.Position = 0;
         }
 
+#if NETSTANDARD2_0
+        // ns2.0 无 HashAlgorithm.ComputeHashAsync：先落到内存流再摘要（流本身已限长）。
+        byte[] hash;
+        using (var sha256 = SHA256.Create())
+        using (var buffer = new MemoryStream())
+        {
+            await content.CopyToAsync(buffer).ConfigureAwait(false);
+            hash = sha256.ComputeHash(buffer.ToArray());
+        }
+#else
         using var sha256 = SHA256.Create();
         var hash = await sha256.ComputeHashAsync(content, cancellationToken).ConfigureAwait(false);
+#endif
 
         // 重置流位置，供后续 multipart 读取。
         if (content.CanSeek)
@@ -206,7 +218,7 @@ public sealed class WechatPayComplaintMediaService : IWechatPayComplaintMediaSer
             content.Position = 0;
         }
 
-        return BitConverter.ToString(hash).Replace("-", string.Empty, StringComparison.Ordinal).ToLowerInvariant();
+        return BitConverter.ToString(hash).Replace("-", string.Empty).ToLowerInvariant();
     }
 
     /// <summary>组装表单元信息 JSON。</summary>

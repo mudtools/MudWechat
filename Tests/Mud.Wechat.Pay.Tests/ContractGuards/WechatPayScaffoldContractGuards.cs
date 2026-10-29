@@ -80,15 +80,15 @@ public class WechatPayScaffoldContractGuards
     }
 
     /// <summary>
-    /// PAY-B9（本地副本）：支付线**不得**目标 <c>netstandard2.0</c>。
+    /// PAY-B9（本地副本）：支付线两工程**必须**继承根 props 的四档 TFM，不得自行覆盖。
     /// </summary>
     /// <remarks>
     /// 权威断言在 <c>WechatAbstractionsContractGuards.AB-G8</c>（逐 csproj）；此处为支付线本地守卫，
-    /// 覆盖「AB-G8 漏网的新建支付工程」——<c>Directory.Build.props</c> 默认给 4 个 TFM，
-    /// 忘写 <c>&lt;TargetFrameworks&gt;</c> 就会静默带上 ns2.0（该坑已踩过一次）。
+    /// 覆盖「AB-G8 漏网的新建支付工程」。ns2.0 的 <c>AesGcm</c> 缺口已由 <c>PayGcmUnavailable</c>
+    /// 占位实现承接（构造即抛 <c>PlatformNotSupportedException</c>），因此该档不再是例外。
     /// </remarks>
     [Fact]
-    public void PayProjects_ShouldNotTargetNetStandard20_WhenScaffold()
+    public void PayProjects_ShouldInheritFourTfmBaseline_WhenScaffold()
     {
         // 注：csproj 落在各自的**子目录**内，必须递归找（TopDirectoryOnly 会漏掉全部四个 ⇒ 守卫假红）。
         // 搜索根取 Src/ 而非仓库根：本守卫守护的是**可打包 SDK 工程**的 TFM 例外，而
@@ -109,9 +109,8 @@ public class WechatPayScaffoldContractGuards
         foreach (var csproj in payProjects)
         {
             var xml = File.ReadAllText(csproj);
-            xml.Should().Contain("<TargetFrameworks>net6.0;net8.0;net10.0</TargetFrameworks>",
-                $"{Path.GetFileName(csproj)} 必须显式声明支付线 TFM 例外（AesGcm 在 netstandard2.0 不存在）");
-            xml.Should().NotContain("<TargetFramework>netstandard2.0</TargetFramework>");
+            xml.Should().NotContain("<TargetFrameworks>",
+                $"{Path.GetFileName(csproj)} 应继承根 props 的四档 TFM（含 netstandard2.0），不得自行覆盖");
         }
     }
 

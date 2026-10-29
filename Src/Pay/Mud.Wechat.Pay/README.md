@@ -188,7 +188,7 @@ catch (WechatPayException ex) when (ex.PayErrorCode == WechatPayErrorCodes.Order
 
 ## 说明
 
-- **目标框架为受控例外**：`net6.0;net8.0;net10.0`，无 `netstandard2.0`——回调 `resource` 解密强制 `AEAD_AES_256_GCM`，而 `AesGcm` 在 ns2.0 不存在；手写 GCM 与引入第三方密码学包均被否（守卫 `PAY-B9` / `AB-G8` 锁定，签名与加解密全走 BCL、AOT 安全）。
+- **目标框架为四档**：`netstandard2.0;net6.0;net8.0;net10.0`（继承根 props，无 csproj 覆盖）。`AesGcm` 在 ns2.0 不存在，该档由 `PayGcmUnavailable` 占位实现承接——**构造即抛** `PlatformNotSupportedException` 并指明改用 net6.0+ 宿主；不静默降级、不自研 GCM、不引第三方密码学库。ns2.0 下 APIv2（MD5/HMAC-SHA256）、签名验签、DTO、配置与模块注册照常可用（守卫 `PAY-B9` / `AB-G8`）。
 - **无 `[Token]`**：签名在传输层 `WechatPayAuthorizationHandler` 完成，端点方法只管路由与报文。主包 csproj 仍带 `<NoWarn>MUD005</NoWarn>` 只是「防未来误加时误读」，真正的禁令由 `PAY-B1` 断言。
 - **不用默认 `IEnhancedHttpClient` 实例**：走命名客户端 `wechat-pay`（`WechatPayHttpClientNames`），否则会与企微线 `qyapi.weixin.qq.com` 撞 BaseUrl 并给企微请求套上商户签名头。SSRF 白名单由 `AddPayApp` 经公用层窄入口登记，**数组零改动**（`PAY-B8`）。
 - **端点/路由/字段名的权威是契约守卫**，不是本文与 `PayModule` 的 XML 注释（后者仍留有早期「首批 N 端点」口径）：`Tests/Mud.Wechat.Pay.Tests/ContractGuards/` 85 个文件——`PAY-B1`（零 `[Token]`）、`PAY-B2`（签名/验签串黄金向量）、`PAY-B3`（验签与时间窗 fail-closed）、`PAY-B4`（GCM 参数与黄金向量）、`PAY-B5`（562 端点计数 + 官方路由 + snake_case 字段照抄原文）、`PAY-B6`（无反射、无第三方密码学）、`PAY-B7`（凭据不入日志）、`PAY-B9`（TFM）、`PAY-B11`（引用隔离）、`PAY-NS1~NS3`（声明式接口命名空间恒 `Mud.Wechat.Pay` + 实现类一对一落 `Mud.Wechat.Pay.Internal` + 禁 `Mud.Wechat.Pay.Interfaces.*` 回潮，逐条带正对照）+ 逐域守卫（**基础交易 TX1~TX3** / 分账 / 支付分 / 合单 / 转账 / 发票 / **代金券 MF1~MF6（P1-3 增量八支 + 官方字段名册）** / **特约商户进件 A4S-B1~B7** / **主体进件 A4SJ-B1~B7** / **服务商基础支付 PT-B1~B7** / **服务商支付分 PS-B1~B7** / **从业机构支付分 BS-B1~B7** / **服务商批量转账 PTF-B1~B7** / **从业机构转账与回单 BT-B1~B7** / **还款支付 RP-B1~B6** / **商户风险管理 MRB-B1~B7** / **商户门店管理 MST-B1~B7** / **商户资料变更 MAA-B1~B7** / **商户账户余额 MF-B1~B7** / **商户结算规则申请 MSET-B1~B7** / **平台收付通 EC-X1~X5** / **商家券 MBF-B1~B4** / **商品券 MPPC-B1~B4** / **品牌投放计划 MDP-B1~B4** / **商品补贴活动 MGSA-B1~B4** / **支付有礼 MPGA-B1~B4** / **小票营销 MSRA-B1~B4** / **合作关系 MKP-B1~B4** / **行业券 MIC-B1~B4** / **银行营销任务 MBT-B1~B4** / **银行代金券 MBFA-B1~B4** / **营销图片通道 MMK-B1~B4** / **品牌入驻 BRAP-B1~B4** / **名片配置 BCC-B1~B4** / **交易连接名片 BCL-B1~B4** / **会员卡与会员 BCM-B1~B4** / **品牌分账 BPS-B1~B4** / **品牌门店 BST-B1~B4** / **免密支付契约 PEC-B1~B4** / **在途异常资金 AFP-B1~B3** / **品牌红包 BRP-B1~B4** / **转账到 QQ 钱包 TQW-B1~B4** / **用户确认授权 UCA-B1~B4** / **平台服务商解决方案八域 PEC-IC·PEC-CP·PEC-CL·PEC-DP·PEC-MT·PEC-RE·PEC-RC·PEC-ST 各 B1~B4** / **平台商户保险理赔商家转账三域 PSI-RS·PSI-BT·PSI-RC 各 B1~B4** / **微企付企业支付四域 WEB-BL·WEB-EP·WEB-ST·WEB-US 各 B1~B4** / **委托代扣 PAPay 3.0 两域 PPY-B1~B6·PPY-PS** / **电子发票服务商 / 数电面 13 支 FPX-B1~B6（追加进既存 IWechatPayFapiaoService，无新接口无新注册组；商户面 5 支仍由 FP1~FP4 锁定）** / **车主出行 VEH-B1~B6** / **出租车电子发票 TXI-B1~B6（含第十支 multipart 通道的「零声明 + 类型存在 + DI 接线」三证）** / **教育委托代扣 EDP-B1~B6** / **校园缴费 ESP-B1~B6** / **代发薪 PRC-B1~B6** / **行业方案余十域 BSC·CTR·FTO·GLD·MUS·PIN·RTA·RCH·SMG·TRB 各 B1~B6** / **银行组件与爱心餐 CAP-B1~B6·LVF-B1~B6（P1-5-G 取证勘误补回：原判非契约的七行按现行文档中心 path 重检证实在册 ⇒ 转真缺口）**）与 `WechatPayCapitalRulingContractGuards`（资金域未建模面裁决：**提现族四支与所得记录两支属【平台商户】面 ⇒ `/v3/merchant/fund/` 前缀下在册只有余额两支**，与 `MF-B2` 互为正对照）、`WechatPayNonContractRouteZeroDeclarationContractGuards`（非契约路由 **36 条零声明 / 38 清单行**：P0-7 的 Compliance 2 + MerchantOperate 3 + 尽调族 3 + RealName 1 + 周周减 3、P1-3 营销余 9、P1-2-B 银行转账充值 2、P1-5 行业方案 3、P1-5-F 余 10，逐条带同前缀正对照。判据口径经**两次勘误复核**收敛为「现行官方文档中心按 path + 中文业务名两路检索证无」，**不得**以旧 wiki / 旧 docs 路径 301·302·404 作判据 ⇒ 累计翻案 **31 条**：7 条（P1-5-G 已落地的 Capital / Lovefeast）+ 24 条（P1-4 旧版会员卡两族 22 条 + 「发放消费卡」「终止合作关系」，转 P1-6 / P1-5-H 待落地）。
@@ -285,7 +285,7 @@ bool ok = WechatPayAesGcmCodec.TryDecryptOfficialPayload(
 
 ## 说明
 
-- **目标框架是记录在案的受控例外**：`net6.0;net8.0;net10.0`，**无 `netstandard2.0`**（本仓红线要求四档）。原因：APIv3 强制 `AEAD_AES_256_GCM`，而 `System.Security.Cryptography.AesGcm` 在 ns2.0 不存在；手写 GCM 与引入 BouncyCastle 等第三方密码学包两项备选均被否。自 net6.0 起 `AesGcm` / `RSA.ImportFromPem` / `RSA.SignData` / `RSA.Decrypt` 原生可用 ⇒ 三档全走 BCL、AOT 安全。守卫 `PAY-B9` / `AB-G8` 锁定该例外不被静默放宽。
+- **目标框架为四档**：`netstandard2.0;net6.0;net8.0;net10.0`（继承根 props，本仓红线）。APIv3 强制 `AEAD_AES_256_GCM`，而 `System.Security.Cryptography.AesGcm` 在 ns2.0 不存在（官方亦无 downlevel 回填包）；手写 GCM 与引入 BouncyCastle 等第三方密码学包两项备选仍被否 ⇒ ns2.0 档以 `PayGcmUnavailable` 占位（构造即抛 `PlatformNotSupportedException`）。`RSA.ImportFromPem` / `X509Certificate2.CreateFromPem` 等 net5.0+ API 在 ns2.0 由 `PayCryptoCompat` 以官方 `System.Formats.Asn1` 等价实现承担。net6.0+ 三档全走 BCL、AOT 安全。守卫 `PAY-B9` / `AB-G8` 锁定四档不被静默收窄。
 - `csproj` 抑制的是 `SYSLIB1100` / `SYSLIB1101`（源生成器相关）；`MUD005` 抑制只随主包，本包无 `[Token]` 声明。
 - **不注册默认 `ISecretProvider`**（组件端口，属宿主密钥治理）；宿主漏装时首次解析凭据取用器给出**点名错误**（说明是谁要求注册的），而非难懂的 DI 缺失异常。
 - **SSRF 白名单零改动**（`PAY-B8` / `AB-G9`）：`AddPayApp` 经公用层窄入口 `AddWechatApiHosts()` 登记——支付线不走 `[Token]` 因而不会触发 `AddWechatTokenRecovery`，纯支付宿主若不登记，每一笔请求都会被组件的连接期 SSRF 严格模式拦下（实测缺陷）。
@@ -437,7 +437,7 @@ string? outTradeNo = transaction?.OutTradeNo;                            // 幂�
 
 `Mud.Wechat.Abstractions`（叶层，仅取 `IWechatApiResponse` 响应契约）+ `Mud.HttpUtils.Attributes` 3.0.9（零依赖特性包）+ `Mud.HttpUtils.Generator` 3.0.9（仅分析器，`PrivateAssets=all`）。
 
-目标框架 `net6.0;net8.0;net10.0`（支付线两包同集的受控例外，完整理由见本工程 csproj 的 `TargetFrameworks` 注释与守卫 `PAY-B9` / `AB-G8`）。
+目标框架 `netstandard2.0;net6.0;net8.0;net10.0`（四档，继承根 props；ns2.0 的 GCM 缺口见「目标框架」小节，守卫 `PAY-B9` / `AB-G8`）。
 
 
 ---

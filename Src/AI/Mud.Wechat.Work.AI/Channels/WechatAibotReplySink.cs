@@ -146,7 +146,12 @@ public sealed class WechatAibotReplySink : IConversationReplySink
         while (low < high)
         {
             var mid = low + ((high - low + 1) >> 1);
+            // 注：Encoding.GetByteCount(string, int, int) 在 netstandard2.0 不存在，退化为切片重载。
+#if NETSTANDARD2_0
+            if (Encoding.UTF8.GetByteCount(text.Substring(0, mid)) <= budget)
+#else
             if (Encoding.UTF8.GetByteCount(text, 0, mid) <= budget)
+#endif
             {
                 low = mid;
             }

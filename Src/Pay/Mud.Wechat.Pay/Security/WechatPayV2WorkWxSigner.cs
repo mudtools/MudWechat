@@ -81,8 +81,8 @@ internal static class WechatPayV2WorkWxSigner
         IReadOnlyCollection<string> whitelist,
         string secret)
     {
-        ArgumentNullException.ThrowIfNull(fields);
-        ArgumentNullException.ThrowIfNull(whitelist);
+        if (fields is null) { throw new ArgumentNullException(nameof(fields)); }
+        if (whitelist is null) { throw new ArgumentNullException(nameof(whitelist)); }
 
         if (string.IsNullOrEmpty(secret))
         {

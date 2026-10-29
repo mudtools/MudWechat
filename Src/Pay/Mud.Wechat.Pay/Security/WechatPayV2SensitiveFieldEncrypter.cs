@@ -55,7 +55,7 @@ public static class WechatPayV2SensitiveFieldEncrypter
             throw new ArgumentException("待加密的敏感字段不能为空。", nameof(plaintext));
         }
 
-        ArgumentNullException.ThrowIfNull(platformCertificate);
+        if (platformCertificate is null) { throw new ArgumentNullException(nameof(platformCertificate)); }
 
         if (platformCertificate.GetRSAPublicKey() is not RSA publicKey)
         {
@@ -87,7 +87,7 @@ public static class WechatPayV2SensitiveFieldEncrypter
     public static string Encrypt(
         string plaintext, IWechatPayPlatformCertificateStore certificateStore, string? serialNumber)
     {
-        ArgumentNullException.ThrowIfNull(certificateStore);
+        if (certificateStore is null) { throw new ArgumentNullException(nameof(certificateStore)); }
 
         if (!certificateStore.TryGetCertificate(serialNumber, out var certificate) || certificate is null)
         {

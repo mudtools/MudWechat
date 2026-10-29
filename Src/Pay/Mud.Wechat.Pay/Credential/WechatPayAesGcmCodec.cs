@@ -109,12 +109,13 @@ public static class WechatPayAesGcmCodec
     /// </summary>
     /// <remarks>两分支语义<b>完全等价</b>：旧构造的标签长度恒为 16 字节，非本常量之外的值。</remarks>
     /// <param name="key">32 字节 APIv3 密钥。</param>
-    /// <returns><see cref="AesGcm"/> 实例（调用方负责释放）。</returns>
-    private static AesGcm CreateAesGcm(byte[] key)
-#if NET9_0_OR_GREATER
-        => new(key, TagSizeBytes);
+    /// <returns>AES-GCM 实例（调用方负责释放）。</returns>
+#if NETSTANDARD2_0
+    private static PayGcmUnavailable CreateAesGcm(byte[] key) => new(key);
+#elif NET9_0_OR_GREATER
+    private static AesGcm CreateAesGcm(byte[] key) => new(key, TagSizeBytes);
 #else
-        => new(key);
+    private static AesGcm CreateAesGcm(byte[] key) => new(key);
 #endif
 
     /// <summary>
@@ -144,7 +145,7 @@ public static class WechatPayAesGcmCodec
         }
 
         var nonce = new byte[NonceSizeBytes];
-        RandomNumberGenerator.Fill(nonce);
+        Mud.Wechat.Pay.Internal.PayCryptoCompat.FillRandom(nonce);
 
         var ciphertext = new byte[plaintext.Length];
         var tag = new byte[TagSizeBytes];

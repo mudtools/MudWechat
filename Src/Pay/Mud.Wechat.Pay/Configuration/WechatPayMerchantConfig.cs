@@ -285,7 +285,7 @@ public class WechatPayMerchantConfig
 
         // 「像密钥」的判定必须**先于**空白/长度判定：粘贴进来的 PEM 本身带换行，
         // 若先查空白，报错会变成无关的「含空白」，把真正的原因（填错成密钥值）盖掉。
-        if (value.Contains("-----BEGIN", StringComparison.OrdinalIgnoreCase) ||
+        if (value.IndexOf("-----BEGIN", StringComparison.OrdinalIgnoreCase) >= 0 ||
             LooksLikeBase64KeyMaterial(value))
         {
             throw new InvalidOperationException(

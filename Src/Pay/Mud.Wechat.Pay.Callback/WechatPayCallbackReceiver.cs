@@ -382,7 +382,19 @@ public sealed class WechatPayCallbackReceiver
     /// </remarks>
     private static string BuildFingerprint(string merchantKey, string cipherText)
     {
-        var hash = SHA1.HashData(Encoding.UTF8.GetBytes(cipherText));
-        return string.Concat(merchantKey, ":", Convert.ToHexString(hash).ToLowerInvariant());
+        // SHA1.HashData / Convert.ToHexString 均自 net5.0 起才提供：四档统一走实例 + 逐字节格式化。
+        byte[] hash;
+        using (var sha1 = SHA1.Create())
+        {
+            hash = sha1.ComputeHash(Encoding.UTF8.GetBytes(cipherText));
+        }
+
+        var builder = new StringBuilder(hash.Length * 2);
+        foreach (var b in hash)
+        {
+            builder.Append(b.ToString("x2", System.Globalization.CultureInfo.InvariantCulture));
+        }
+
+        return string.Concat(merchantKey, ":", builder.ToString());
     }
 }

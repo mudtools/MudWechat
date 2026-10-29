@@ -82,6 +82,11 @@ public sealed class WechatPayV2CredentialProvider : IWechatPayV2CredentialProvid
 #if NET10_0_OR_GREATER
             // net10 起构造器标 SYSLIB0057（密钥会落到用户 profile 目录），官方指定改用 loader。
             certificate = X509CertificateLoader.LoadPkcs12(pkcs12, password, X509KeyStorageFlags.EphemeralKeySet);
+#elif NETSTANDARD2_0
+            // ns2.0 的 X509KeyStorageFlags 无 EphemeralKeySet（临时密钥集自 netcoreapp2.0 起提供）：
+            // 该档退化为 Exportable —— .NET Framework 上私钥会落入用户密钥容器，属已知降级；
+            // net6.0+ 仍保持临时密钥集，密钥材料在任何档都不会被本库写入磁盘。
+            certificate = new X509Certificate2(pkcs12, password, X509KeyStorageFlags.Exportable);
 #else
             certificate = new X509Certificate2(pkcs12, password, X509KeyStorageFlags.EphemeralKeySet);
 #endif

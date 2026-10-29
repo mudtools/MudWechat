@@ -287,14 +287,15 @@ public sealed class WechatPayBillDecryptor : IWechatPayBillDecryptor
     }
 
     /// <summary>
-    /// AesGcm 构造的 TFM 分支：net10 可显式声明标签长度；net6/net8 走旧构造
-    /// （与 <see cref="AesGcmPayloadCodec"/> 的同源处理一致）。
+    /// AesGcm 构造的 TFM 分支：net10 可显式声明标签长度；net6/net8 走旧构造；
+    /// netstandard2.0 的 BCL 不含该类型，走 <see cref="PayGcmUnavailable"/>（构造即失败）。
     /// </summary>
-    private static AesGcm CreateAesGcm(byte[] key)
-#if NET9_0_OR_GREATER
-        => new(key, TagSizeBytes);
+#if NETSTANDARD2_0
+    private static PayGcmUnavailable CreateAesGcm(byte[] key) => new(key);
+#elif NET9_0_OR_GREATER
+    private static AesGcm CreateAesGcm(byte[] key) => new(key, TagSizeBytes);
 #else
-        => new(key);
+    private static AesGcm CreateAesGcm(byte[] key) => new(key);
 #endif
 
     /// <summary>字节转小写十六进制（netstandard2.0 无 <c>Convert.ToHexString</c>，与回调密码学内核同源处理）。</summary>

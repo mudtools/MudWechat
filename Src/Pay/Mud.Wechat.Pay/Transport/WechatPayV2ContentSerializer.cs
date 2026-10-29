@@ -122,7 +122,7 @@ internal sealed class WechatPayV2ContentSerializer : IHttpContentSerializer
     /// <inheritdoc />
     public string Serialize(object? item, Type type, object? options = null)
     {
-        ArgumentNullException.ThrowIfNull(type);
+        if (type is null) { throw new ArgumentNullException(nameof(type)); }
 
         if (item is null)
         {

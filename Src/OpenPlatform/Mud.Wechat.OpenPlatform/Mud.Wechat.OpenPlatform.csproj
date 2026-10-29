@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFrameworks>net6.0;net8.0;net10.0</TargetFrameworks>
 		<Description>微信开放平台「第三方平台」（component）SDK：component_verify_ticket 存储端口、component_access_token 的按需刷新/缓存/并发单飞、命名 HttpClient 契约、官方错误码与异常、全部出入参 DTO（AOT 源生成 JsonContext）、业务声明式客户端（授权、账号、小程序管理、模板、类目、运维中心、数据能力、 tcb、嵌入式、微信客服 AMS）与组件化装配（AddOpenPlatform）。一线一工程（2026-10 包合并：原 Mud.Wechat.OpenPlatform.Abstractions / Mud.Wechat.OpenPlatform.DataModels 并入本包，命名空间不变）。**独立产品线**：与自建形态的公众号/小程序线令牌域严格分离（避免令牌串号）。</Description>
 		<PackageTags>Wechat;OpenPlatform;开放平台;第三方平台;component;SDK;TokenManager;DTO;Authentication;Configuration;MudWechat</PackageTags>
 		<MudHttpSuppressQueryTokenInjection>true</MudHttpSuppressQueryTokenInjection>
@@ -19,7 +18,7 @@
 	<ItemGroup Condition="'$(TargetFramework)' == 'net8.0' Or '$(TargetFramework)' == 'net10.0'">
 		<PackageReference Include="Microsoft.Extensions.Http" Version="10.0.9" />
 	</ItemGroup>
-	<ItemGroup Condition="'$(TargetFramework)' == 'net6.0'">
+	<ItemGroup Condition="'$(TargetFramework)' == 'net6.0' Or '$(TargetFramework)' == 'netstandard2.0'">
 		<PackageReference Include="Microsoft.Extensions.Http" Version="8.0.1" />
 	</ItemGroup>
 

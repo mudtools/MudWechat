@@ -136,7 +136,7 @@ internal sealed class WechatPayV2SigningHandler : DelegatingHandler
         }
 
         var fields = new List<KeyValuePair<string, string?>>();
-        foreach (var pair in trimmed.Split('&', StringSplitOptions.RemoveEmptyEntries))
+        foreach (var pair in trimmed.Split(new[] { '&' }, StringSplitOptions.RemoveEmptyEntries))
         {
             var separator = pair.IndexOf('=');
             var name = separator < 0

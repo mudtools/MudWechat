@@ -282,7 +282,7 @@ public sealed class WechatPayPlatformCertificateRefresher : IWechatPayPlatformCe
                 X509Certificate2 certificate;
                 try
                 {
-                    certificate = X509Certificate2.CreateFromPem(pem!);
+                    certificate = Mud.Wechat.Pay.Internal.PayCryptoCompat.LoadCertificateFromPem(pem!);
                 }
                 catch (CryptographicException)
                 {

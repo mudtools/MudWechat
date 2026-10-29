@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFrameworks>net8.0;net10.0</TargetFrameworks>
 		<Description>企业微信线 AI 工具面的 MCP（Model Context Protocol）协议层：把已策展的受控工具面以 JSON-RPC 2.0 暴露为 MCP server（initialize / ping / tools/list / tools/call），stdio 行帧传输 + 可嵌入的请求处理器，零反射、AOT 安全。</Description>
 		<PackageTags>Wechat;Work;AI;MCP;ModelContextProtocol;JsonRpc;MudWechat</PackageTags>
 	</PropertyGroup>

@@ -2,7 +2,7 @@
 
 微信开放平台「流量主代运营（AMS）」域 SDK · 平台代授权方管理面（**19 端点**，恒为 **POST** `/wxa/operationams`，以 `action` query 分派）。 接口：[IWechatOpenPlatformAmsService](./IWechatOpenPlatformAmsService.cs)、[IWechatOpenPlatformAmsShareService](./IWechatOpenPlatformAmsShareService.cs)；注册组 `Ams`；模块枚举 `OpenPlatformModule.Ams`（装配入口见 [OpenPlatformServiceBuilder.cs](../../Extensions/OpenPlatformServiceBuilder.cs)）。逐端点核验 2026-10-18。
 
-> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[OpenPlatformAmsContractGuards.cs](../../../../../Tests/Mud.Wechat.OpenPlatform.Tests/ContractGuards/OpenPlatformAmsContractGuards.cs)、[OpenPlatformContractGuards.cs](../../../../../Tests/Mud.Wechat.OpenPlatform.Tests/ContractGuards/OpenPlatformContractGuards.cs)）、本域 DTO（[`Mud.Wechat.OpenPlatform/Ams`](../../../Mud.Wechat.OpenPlatform/Ams/)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
+> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[OpenPlatformAmsContractGuards.cs](../../../../../Tests/Mud.Wechat.OpenPlatform.Tests/ContractGuards/OpenPlatformAmsContractGuards.cs)、[OpenPlatformContractGuards.cs](../../../../../Tests/Mud.Wechat.OpenPlatform.Tests/ContractGuards/OpenPlatformContractGuards.cs)）、本域 DTO（[`Mud.Wechat.OpenPlatform/DataModels/Ams`](../../DataModels/Ams)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
 
 ## 端点速览
 
@@ -374,41 +374,41 @@ Query 参数名恒为 `access_token`（2026-10-17 逐页核验）。
 
 ## DTO 与序列化面
 
-本域 DTO 目录 [`Mud.Wechat.OpenPlatform/Ams`](../../../Mud.Wechat.OpenPlatform/Ams/) 内共 **41** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **41** 个，`SerializerClassName` = `Ams`。
+本域 DTO 目录 [`Mud.Wechat.OpenPlatform/DataModels/Ams`](../../DataModels/Ams) 内共 **41** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **41** 个，`SerializerClassName` = `Ams`。
 
-AOT 源生成上下文：[`AmsJsonContext.g.cs`](./../../../Mud.Wechat.OpenPlatform/Generated/AmsJsonContext.g.cs)（生成物，勿手改）。
+AOT 源生成上下文：[`AmsJsonContext.g.cs`](./../../DataModels/Generated/AmsJsonContext.g.cs)（生成物，勿手改）。
 
 | 端点引用的类型 | 角色 | 定义位置 | JSON 字段（前缀） |
 |---|---|---|---|
-| `OpenPlatformAmsCreateAdUnitResponse` | 应答 | [Ams/OpenPlatformAmsCreateAdUnitResponse.cs](../../../Mud.Wechat.OpenPlatform/Ams/OpenPlatformAmsCreateAdUnitResponse.cs) | `ad_unit_id` |
-| `OpenPlatformAmsAdUnitCreateRequest` | 请求体 | [Ams/OpenPlatformAmsAdUnitCreateRequest.cs](../../../Mud.Wechat.OpenPlatform/Ams/OpenPlatformAmsAdUnitCreateRequest.cs) | `name`, `type`, `tmpl_type`, `tmpl_id`, `unlock_reward_duration` |
-| `OpenPlatformAmsResponse` | 应答 | [Ams/OpenPlatformAmsResponse.cs](../../../Mud.Wechat.OpenPlatform/Ams/OpenPlatformAmsResponse.cs) | `ret`, `err_msg` |
-| `OpenPlatformAmsAdUnitUpdateRequest` | 请求体 | [Ams/OpenPlatformAmsAdUnitUpdateRequest.cs](../../../Mud.Wechat.OpenPlatform/Ams/OpenPlatformAmsAdUnitUpdateRequest.cs) | `name`, `ad_unit_id`, `status`, `tmpl_type`, `tmpl_id`, `unlock_reward_duration` |
-| `OpenPlatformAmsAdUnitCodeResponse` | 应答 | [Ams/OpenPlatformAmsAdUnitCodeResponse.cs](../../../Mud.Wechat.OpenPlatform/Ams/OpenPlatformAmsAdUnitCodeResponse.cs) | `code` |
-| `OpenPlatformAmsAdUnitIdRequest` | 请求体 | [Ams/OpenPlatformAmsAdUnitIdRequest.cs](../../../Mud.Wechat.OpenPlatform/Ams/OpenPlatformAmsAdUnitIdRequest.cs) | `ad_unit_id` |
-| `OpenPlatformAmsAdUnitListResponse` | 应答 | [Ams/OpenPlatformAmsAdUnitListResponse.cs](../../../Mud.Wechat.OpenPlatform/Ams/OpenPlatformAmsAdUnitListResponse.cs) | `total_num`, `ad_unit` |
-| `OpenPlatformAmsAdUnitListRequest` | 请求体 | [Ams/OpenPlatformAmsAdUnitListRequest.cs](../../../Mud.Wechat.OpenPlatform/Ams/OpenPlatformAmsAdUnitListRequest.cs) | `page`, `page_size`, `ad_slot`, `ad_unit_id` |
-| `OpenPlatformAmsTmplTypeResponse` | 应答 | [Ams/OpenPlatformAmsTmplTypeResponse.cs](../../../Mud.Wechat.OpenPlatform/Ams/OpenPlatformAmsTmplTypeResponse.cs) | `tmpl_type` |
-| `OpenPlatformAmsCoverSceneResponse` | 应答 | [Ams/OpenPlatformAmsCoverSceneResponse.cs](../../../Mud.Wechat.OpenPlatform/Ams/OpenPlatformAmsCoverSceneResponse.cs) | `scene_list` |
-| `OpenPlatformAmsCoverStatusResponse` | 应答 | [Ams/OpenPlatformAmsCoverStatusResponse.cs](../../../Mud.Wechat.OpenPlatform/Ams/OpenPlatformAmsCoverStatusResponse.cs) | `next_open_time`, `status` |
-| `OpenPlatformAmsCoverSceneSetRequest` | 请求体 | [Ams/OpenPlatformAmsCoverSceneSetRequest.cs](../../../Mud.Wechat.OpenPlatform/Ams/OpenPlatformAmsCoverSceneSetRequest.cs) | `cover_scene_list` |
-| `OpenPlatformAmsCoverStatusSetRequest` | 请求体 | [Ams/OpenPlatformAmsCoverStatusSetRequest.cs](../../../Mud.Wechat.OpenPlatform/Ams/OpenPlatformAmsCoverStatusSetRequest.cs) | `status` |
-| `OpenPlatformAmsAgencyAdUnitListResponse` | 应答 | [Ams/OpenPlatformAmsAgencyAdUnitListResponse.cs](../../../Mud.Wechat.OpenPlatform/Ams/OpenPlatformAmsAgencyAdUnitListResponse.cs) | `total_num`, `ad_unit_list` |
-| `OpenPlatformAmsAgencyAdUnitListRequest` | 请求体 | [Ams/OpenPlatformAmsAgencyAdUnitListRequest.cs](../../../Mud.Wechat.OpenPlatform/Ams/OpenPlatformAmsAgencyAdUnitListRequest.cs) | `page`, `page_size`, `ad_slot`, `tmpl_id`, `is_return_tmpl_bind_list` |
-| `OpenPlatformAmsBlackListResponse` | 应答 | [Ams/OpenPlatformAmsBlackListResponse.cs](../../../Mud.Wechat.OpenPlatform/Ams/OpenPlatformAmsBlackListResponse.cs) | `blacklist_biz`, `blacklist_weapp`, `blacklist_ios`, `blacklist_android` |
-| `OpenPlatformAmsBlackListSetRequest` | 请求体 | [Ams/OpenPlatformAmsBlackListSetRequest.cs](../../../Mud.Wechat.OpenPlatform/Ams/OpenPlatformAmsBlackListSetRequest.cs) | `op`, `list` |
-| `OpenPlatformAmsCategoryBlackListResponse` | 应答 | [Ams/OpenPlatformAmsCategoryBlackListResponse.cs](../../../Mud.Wechat.OpenPlatform/Ams/OpenPlatformAmsCategoryBlackListResponse.cs) | `ams_category` |
-| `OpenPlatformAmsCategoryBlackListSetRequest` | 请求体 | [Ams/OpenPlatformAmsCategoryBlackListSetRequest.cs](../../../Mud.Wechat.OpenPlatform/Ams/OpenPlatformAmsCategoryBlackListSetRequest.cs) | `ams_category` |
-| `OpenPlatformAmsAdposGeneralResponse` | 应答 | [Ams/OpenPlatformAmsAdposGeneralResponse.cs](../../../Mud.Wechat.OpenPlatform/Ams/OpenPlatformAmsAdposGeneralResponse.cs) | `list`, `summary`, `total_num` |
-| `OpenPlatformAmsAdposGeneralRequest` | 请求体 | [Ams/OpenPlatformAmsAdposGeneralRequest.cs](../../../Mud.Wechat.OpenPlatform/Ams/OpenPlatformAmsAdposGeneralRequest.cs) | `page`, `page_size`, `start_date`, `end_date`, `ad_slot` |
-| `OpenPlatformAmsAdunitGeneralResponse` | 应答 | [Ams/OpenPlatformAmsAdunitGeneralResponse.cs](../../../Mud.Wechat.OpenPlatform/Ams/OpenPlatformAmsAdunitGeneralResponse.cs) | `list`, `total_num` |
-| `OpenPlatformAmsAdunitGeneralRequest` | 请求体 | [Ams/OpenPlatformAmsAdunitGeneralRequest.cs](../../../Mud.Wechat.OpenPlatform/Ams/OpenPlatformAmsAdunitGeneralRequest.cs) | `page`, `page_size`, `start_date`, `end_date`, `ad_slot`, `ad_unit_id` |
-| `OpenPlatformAmsCheckCanOpenPublisherResponse` | 应答 | [Ams/OpenPlatformAmsCheckCanOpenPublisherResponse.cs](../../../Mud.Wechat.OpenPlatform/Ams/OpenPlatformAmsCheckCanOpenPublisherResponse.cs) | `status` |
-| `OpenPlatformAmsSettlementResponse` | 应答 | [Ams/OpenPlatformAmsSettlementResponse.cs](../../../Mud.Wechat.OpenPlatform/Ams/OpenPlatformAmsSettlementResponse.cs) | `revenue_all`, `penalty_all`, `settled_revenue_all`, `settlement_list`, `total_num` |
-| `OpenPlatformAmsRevenuePageRequest` | 请求体 | [Ams/OpenPlatformAmsRevenuePageRequest.cs](../../../Mud.Wechat.OpenPlatform/Ams/OpenPlatformAmsRevenuePageRequest.cs) | `page`, `page_size`, `start_date`, `end_date` |
-| `OpenPlatformAmsShareRatioResponse` | 应答 | [Ams/OpenPlatformAmsShareRatioResponse.cs](../../../Mud.Wechat.OpenPlatform/Ams/OpenPlatformAmsShareRatioResponse.cs) | `share_ratio` |
-| `OpenPlatformAmsShareRatioGetRequest` | 请求体 | [Ams/OpenPlatformAmsShareRatioGetRequest.cs](../../../Mud.Wechat.OpenPlatform/Ams/OpenPlatformAmsShareRatioGetRequest.cs) | `appid` |
-| `OpenPlatformAmsShareRatioSetRequest` | 请求体 | [Ams/OpenPlatformAmsShareRatioSetRequest.cs](../../../Mud.Wechat.OpenPlatform/Ams/OpenPlatformAmsShareRatioSetRequest.cs) | `appid`, `share_ratio` |
+| `OpenPlatformAmsCreateAdUnitResponse` | 应答 | [Ams/OpenPlatformAmsCreateAdUnitResponse.cs](../../DataModels/Ams/OpenPlatformAmsCreateAdUnitResponse.cs) | `ad_unit_id` |
+| `OpenPlatformAmsAdUnitCreateRequest` | 请求体 | [Ams/OpenPlatformAmsAdUnitCreateRequest.cs](../../DataModels/Ams/OpenPlatformAmsAdUnitCreateRequest.cs) | `name`, `type`, `tmpl_type`, `tmpl_id`, `unlock_reward_duration` |
+| `OpenPlatformAmsResponse` | 应答 | [Ams/OpenPlatformAmsResponse.cs](../../DataModels/Ams/OpenPlatformAmsResponse.cs) | `ret`, `err_msg` |
+| `OpenPlatformAmsAdUnitUpdateRequest` | 请求体 | [Ams/OpenPlatformAmsAdUnitUpdateRequest.cs](../../DataModels/Ams/OpenPlatformAmsAdUnitUpdateRequest.cs) | `name`, `ad_unit_id`, `status`, `tmpl_type`, `tmpl_id`, `unlock_reward_duration` |
+| `OpenPlatformAmsAdUnitCodeResponse` | 应答 | [Ams/OpenPlatformAmsAdUnitCodeResponse.cs](../../DataModels/Ams/OpenPlatformAmsAdUnitCodeResponse.cs) | `code` |
+| `OpenPlatformAmsAdUnitIdRequest` | 请求体 | [Ams/OpenPlatformAmsAdUnitIdRequest.cs](../../DataModels/Ams/OpenPlatformAmsAdUnitIdRequest.cs) | `ad_unit_id` |
+| `OpenPlatformAmsAdUnitListResponse` | 应答 | [Ams/OpenPlatformAmsAdUnitListResponse.cs](../../DataModels/Ams/OpenPlatformAmsAdUnitListResponse.cs) | `total_num`, `ad_unit` |
+| `OpenPlatformAmsAdUnitListRequest` | 请求体 | [Ams/OpenPlatformAmsAdUnitListRequest.cs](../../DataModels/Ams/OpenPlatformAmsAdUnitListRequest.cs) | `page`, `page_size`, `ad_slot`, `ad_unit_id` |
+| `OpenPlatformAmsTmplTypeResponse` | 应答 | [Ams/OpenPlatformAmsTmplTypeResponse.cs](../../DataModels/Ams/OpenPlatformAmsTmplTypeResponse.cs) | `tmpl_type` |
+| `OpenPlatformAmsCoverSceneResponse` | 应答 | [Ams/OpenPlatformAmsCoverSceneResponse.cs](../../DataModels/Ams/OpenPlatformAmsCoverSceneResponse.cs) | `scene_list` |
+| `OpenPlatformAmsCoverStatusResponse` | 应答 | [Ams/OpenPlatformAmsCoverStatusResponse.cs](../../DataModels/Ams/OpenPlatformAmsCoverStatusResponse.cs) | `next_open_time`, `status` |
+| `OpenPlatformAmsCoverSceneSetRequest` | 请求体 | [Ams/OpenPlatformAmsCoverSceneSetRequest.cs](../../DataModels/Ams/OpenPlatformAmsCoverSceneSetRequest.cs) | `cover_scene_list` |
+| `OpenPlatformAmsCoverStatusSetRequest` | 请求体 | [Ams/OpenPlatformAmsCoverStatusSetRequest.cs](../../DataModels/Ams/OpenPlatformAmsCoverStatusSetRequest.cs) | `status` |
+| `OpenPlatformAmsAgencyAdUnitListResponse` | 应答 | [Ams/OpenPlatformAmsAgencyAdUnitListResponse.cs](../../DataModels/Ams/OpenPlatformAmsAgencyAdUnitListResponse.cs) | `total_num`, `ad_unit_list` |
+| `OpenPlatformAmsAgencyAdUnitListRequest` | 请求体 | [Ams/OpenPlatformAmsAgencyAdUnitListRequest.cs](../../DataModels/Ams/OpenPlatformAmsAgencyAdUnitListRequest.cs) | `page`, `page_size`, `ad_slot`, `tmpl_id`, `is_return_tmpl_bind_list` |
+| `OpenPlatformAmsBlackListResponse` | 应答 | [Ams/OpenPlatformAmsBlackListResponse.cs](../../DataModels/Ams/OpenPlatformAmsBlackListResponse.cs) | `blacklist_biz`, `blacklist_weapp`, `blacklist_ios`, `blacklist_android` |
+| `OpenPlatformAmsBlackListSetRequest` | 请求体 | [Ams/OpenPlatformAmsBlackListSetRequest.cs](../../DataModels/Ams/OpenPlatformAmsBlackListSetRequest.cs) | `op`, `list` |
+| `OpenPlatformAmsCategoryBlackListResponse` | 应答 | [Ams/OpenPlatformAmsCategoryBlackListResponse.cs](../../DataModels/Ams/OpenPlatformAmsCategoryBlackListResponse.cs) | `ams_category` |
+| `OpenPlatformAmsCategoryBlackListSetRequest` | 请求体 | [Ams/OpenPlatformAmsCategoryBlackListSetRequest.cs](../../DataModels/Ams/OpenPlatformAmsCategoryBlackListSetRequest.cs) | `ams_category` |
+| `OpenPlatformAmsAdposGeneralResponse` | 应答 | [Ams/OpenPlatformAmsAdposGeneralResponse.cs](../../DataModels/Ams/OpenPlatformAmsAdposGeneralResponse.cs) | `list`, `summary`, `total_num` |
+| `OpenPlatformAmsAdposGeneralRequest` | 请求体 | [Ams/OpenPlatformAmsAdposGeneralRequest.cs](../../DataModels/Ams/OpenPlatformAmsAdposGeneralRequest.cs) | `page`, `page_size`, `start_date`, `end_date`, `ad_slot` |
+| `OpenPlatformAmsAdunitGeneralResponse` | 应答 | [Ams/OpenPlatformAmsAdunitGeneralResponse.cs](../../DataModels/Ams/OpenPlatformAmsAdunitGeneralResponse.cs) | `list`, `total_num` |
+| `OpenPlatformAmsAdunitGeneralRequest` | 请求体 | [Ams/OpenPlatformAmsAdunitGeneralRequest.cs](../../DataModels/Ams/OpenPlatformAmsAdunitGeneralRequest.cs) | `page`, `page_size`, `start_date`, `end_date`, `ad_slot`, `ad_unit_id` |
+| `OpenPlatformAmsCheckCanOpenPublisherResponse` | 应答 | [Ams/OpenPlatformAmsCheckCanOpenPublisherResponse.cs](../../DataModels/Ams/OpenPlatformAmsCheckCanOpenPublisherResponse.cs) | `status` |
+| `OpenPlatformAmsSettlementResponse` | 应答 | [Ams/OpenPlatformAmsSettlementResponse.cs](../../DataModels/Ams/OpenPlatformAmsSettlementResponse.cs) | `revenue_all`, `penalty_all`, `settled_revenue_all`, `settlement_list`, `total_num` |
+| `OpenPlatformAmsRevenuePageRequest` | 请求体 | [Ams/OpenPlatformAmsRevenuePageRequest.cs](../../DataModels/Ams/OpenPlatformAmsRevenuePageRequest.cs) | `page`, `page_size`, `start_date`, `end_date` |
+| `OpenPlatformAmsShareRatioResponse` | 应答 | [Ams/OpenPlatformAmsShareRatioResponse.cs](../../DataModels/Ams/OpenPlatformAmsShareRatioResponse.cs) | `share_ratio` |
+| `OpenPlatformAmsShareRatioGetRequest` | 请求体 | [Ams/OpenPlatformAmsShareRatioGetRequest.cs](../../DataModels/Ams/OpenPlatformAmsShareRatioGetRequest.cs) | `appid` |
+| `OpenPlatformAmsShareRatioSetRequest` | 请求体 | [Ams/OpenPlatformAmsShareRatioSetRequest.cs](../../DataModels/Ams/OpenPlatformAmsShareRatioSetRequest.cs) | `appid`, `share_ratio` |
 
 > DTO 一律以源文件为准；本表只列端点签名**直接引用**的一层类型，嵌套类型不再递归展开。所有 DTO 不使用 `required`（仓内约束），必填性由接口注释与官方页表达，SDK 不做本地必填校验。
 
@@ -452,7 +452,7 @@ var response = await service.CheckCanOpenPublisherAsync("", ct);
 | 契约守卫（路由 / 计数 / DTO 登记断言） | [`OpenPlatformAmsContractGuards.cs`](../../../../../Tests/Mud.Wechat.OpenPlatform.Tests/ContractGuards/OpenPlatformAmsContractGuards.cs)、[`OpenPlatformContractGuards.cs`](../../../../../Tests/Mud.Wechat.OpenPlatform.Tests/ContractGuards/OpenPlatformContractGuards.cs) |
 | 守卫中的代表性测试方法 | `AmsServiceEndpoints_ShouldBeSingleRouteActionDispatch_WhenEnumerated`、`AmsShareServiceEndpoints_ShouldMatchOfficialRoutes_WhenEnumerated`、`TokenSemantics_ShouldSplitAuthorizerAndComponent_WhenInterfacesDeclared`、`RegistrationSurface_ShouldBeWired_WhenModuleAdded`、`DataModels_ShouldBeRegisteredInAmsJsonContext_WhenDomainSurfaceEnumerated`、`SharedAndBodylessEndpoints_ShouldStayAsOfficial`、`ResponseBase_ShouldUseRetEnvelope_WhenDeclared`、`UpdateAdUnitAction_ShouldBeCorrectValueDespiteDocBug`、`Interfaces_ShouldMatchBaseline_WhenContractSurfaceEnumerated`、`Endpoints_ShouldMatchOfficialRoutes_WhenEnumeratedPerInterface`、`TokenSemantics_ShouldMatchOfficialContract_WhenInterfacesDeclared`、`TokenTypes_ShouldStayInIndependentKeySpace_WhenSharedWithOtherLines` … |
 | 模块枚举 / 装配入口 | [`OpenPlatformModule.cs`](../../Extensions/OpenPlatformModule.cs)、[`OpenPlatformServiceBuilder.cs`](../../Extensions/OpenPlatformServiceBuilder.cs) |
-| DTO 与 JSON 上下文 | [`Mud.Wechat.OpenPlatform/Ams`](../../../Mud.Wechat.OpenPlatform/Ams/) |
+| DTO 与 JSON 上下文 | [`Mud.Wechat.OpenPlatform/DataModels/Ams`](../../DataModels/Ams) |
 | 跨线基线 | [`Tests/ContractBaseline.cs`](../../../../../Tests/ContractBaseline.cs)（各线分节；本线口径以守卫实际断言为准） |
 | 本线包级公开面与已踩陷阱 | [`Src/OpenPlatform/Mud.Wechat.OpenPlatform/README.md`](../../README.md) |
 | 跨线通用约束（门禁 / AOT / 落位） | [`AGENTS.md`](../../../../../AGENTS.md) |

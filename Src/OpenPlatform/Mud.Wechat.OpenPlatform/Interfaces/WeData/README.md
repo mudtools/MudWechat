@@ -12,7 +12,7 @@
 
 > **事实来源限定**：本文全部断言只来自两支接口的 XML 注释、守卫
 > [OpenPlatformUserOrderWeDataServiceMarketContractGuards.cs](../../../../../Tests/Mud.Wechat.OpenPlatform.Tests/ContractGuards/OpenPlatformUserOrderWeDataServiceMarketContractGuards.cs)（WD 系列）与 DTO
-> [`DataModels/WeData/`](../../../Mud.Wechat.OpenPlatform/WeData/)。官方页未给出的额度 / 频率数字入文末「已知留档缺口」。
+> [`DataModels/WeData/`](../../DataModels/WeData)。官方页未给出的额度 / 频率数字入文末「已知留档缺口」。
 
 ## 端点速览
 
@@ -99,7 +99,7 @@ using (appContextSwitcher.UseAuthorizerScope(authorizerAppId))
 | 路由表与共用注册组 | 守卫 `WD1` |
 | 令牌二分语义 | 守卫 `WD2` |
 | 三处一致（枚举 + 委托 + resolver） | 守卫 `REG1`；DI 见 [../../Extensions/OpenPlatformServiceBuilder.cs](../../Extensions/OpenPlatformServiceBuilder.cs) |
-| DTO 登记、字段名、`base_resp` 判错 | 守卫 DTO1~DTO3；[`DataModels/WeData/`](../../../Mud.Wechat.OpenPlatform/WeData/) |
+| DTO 登记、字段名、`base_resp` 判错 | 守卫 DTO1~DTO3；[`DataModels/WeData/`](../../DataModels/WeData) |
 
 ## 改动本域需要同批完成
 

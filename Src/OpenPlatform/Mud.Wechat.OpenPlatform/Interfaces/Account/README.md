@@ -4,7 +4,7 @@
 （基本信息 / 头像 / 功能简介 / 公众号快速注册小程序——即官方「授权账号管理」分组下
 消费**授权方令牌**的四个端点）。 接口：[IWechatOpenPlatformAccountService](./IWechatOpenPlatformAccountService.cs)；注册组 `Account`；模块枚举 `OpenPlatformModule.Account`（装配入口见 [OpenPlatformServiceBuilder.cs](../../Extensions/OpenPlatformServiceBuilder.cs)）。逐端点核验 2026-10-18。
 
-> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[OpenPlatformContractGuards.cs](../../../../../Tests/Mud.Wechat.OpenPlatform.Tests/ContractGuards/OpenPlatformContractGuards.cs)）、本域 DTO（[`Mud.Wechat.OpenPlatform/Account`](../../../Mud.Wechat.OpenPlatform/Account/)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
+> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[OpenPlatformContractGuards.cs](../../../../../Tests/Mud.Wechat.OpenPlatform.Tests/ContractGuards/OpenPlatformContractGuards.cs)）、本域 DTO（[`Mud.Wechat.OpenPlatform/DataModels/Account`](../../DataModels/Account)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
 
 ## 端点速览
 
@@ -93,18 +93,18 @@ URL 遥测已由组件 `SensitiveUrlRedactor` 与 `WechatOpenPlatformException` 
 
 ## DTO 与序列化面
 
-本域 DTO 目录 [`Mud.Wechat.OpenPlatform/Account`](../../../Mud.Wechat.OpenPlatform/Account/) 内共 **9** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **9** 个，`SerializerClassName` = `Account`。
+本域 DTO 目录 [`Mud.Wechat.OpenPlatform/DataModels/Account`](../../DataModels/Account) 内共 **9** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **9** 个，`SerializerClassName` = `Account`。
 
-AOT 源生成上下文：[`AccountJsonContext.g.cs`](./../../../Mud.Wechat.OpenPlatform/Generated/AccountJsonContext.g.cs)（生成物，勿手改）。
+AOT 源生成上下文：[`AccountJsonContext.g.cs`](./../../DataModels/Generated/AccountJsonContext.g.cs)（生成物，勿手改）。
 
 | 端点引用的类型 | 角色 | 定义位置 | JSON 字段（前缀） |
 |---|---|---|---|
-| `OpenPlatformAccountBasicInfoResponse` | 应答 | [Account/OpenPlatformAccountDtos.cs](../../../Mud.Wechat.OpenPlatform/Account/OpenPlatformAccountDtos.cs) | `appid`, `account_type`, `principal_type`, `principal_name`, `credential`, `realname_status`, `registered_country`, `nickname_info`, `head_image_info`, `signature_info`, `wx_verify_info`, `nickname` … |
-| `OpenPlatformResponse` | 应答 | [OpenPlatformResponse.cs](../../../Mud.Wechat.OpenPlatform/OpenPlatformResponse.cs) | `errcode`, `errmsg` |
-| `OpenPlatformModifyAccountHeadImageRequest` | 请求体 | [Account/OpenPlatformAccountDtos.cs](../../../Mud.Wechat.OpenPlatform/Account/OpenPlatformAccountDtos.cs) | `appid`, `account_type`, `principal_type`, `principal_name`, `credential`, `realname_status`, `registered_country`, `nickname_info`, `head_image_info`, `signature_info`, `wx_verify_info`, `nickname` … |
-| `OpenPlatformModifyAccountSignatureRequest` | 请求体 | [Account/OpenPlatformAccountDtos.cs](../../../Mud.Wechat.OpenPlatform/Account/OpenPlatformAccountDtos.cs) | `appid`, `account_type`, `principal_type`, `principal_name`, `credential`, `realname_status`, `registered_country`, `nickname_info`, `head_image_info`, `signature_info`, `wx_verify_info`, `nickname` … |
-| `OpenPlatformAccountFastRegisterResponse` | 应答 | [Account/OpenPlatformAccountDtos.cs](../../../Mud.Wechat.OpenPlatform/Account/OpenPlatformAccountDtos.cs) | `appid`, `account_type`, `principal_type`, `principal_name`, `credential`, `realname_status`, `registered_country`, `nickname_info`, `head_image_info`, `signature_info`, `wx_verify_info`, `nickname` … |
-| `OpenPlatformAccountFastRegisterRequest` | 请求体 | [Account/OpenPlatformAccountDtos.cs](../../../Mud.Wechat.OpenPlatform/Account/OpenPlatformAccountDtos.cs) | `appid`, `account_type`, `principal_type`, `principal_name`, `credential`, `realname_status`, `registered_country`, `nickname_info`, `head_image_info`, `signature_info`, `wx_verify_info`, `nickname` … |
+| `OpenPlatformAccountBasicInfoResponse` | 应答 | [Account/OpenPlatformAccountDtos.cs](../../DataModels/Account/OpenPlatformAccountDtos.cs) | `appid`, `account_type`, `principal_type`, `principal_name`, `credential`, `realname_status`, `registered_country`, `nickname_info`, `head_image_info`, `signature_info`, `wx_verify_info`, `nickname` … |
+| `OpenPlatformResponse` | 应答 | [OpenPlatformResponse.cs](../../DataModels/OpenPlatformResponse.cs) | `errcode`, `errmsg` |
+| `OpenPlatformModifyAccountHeadImageRequest` | 请求体 | [Account/OpenPlatformAccountDtos.cs](../../DataModels/Account/OpenPlatformAccountDtos.cs) | `appid`, `account_type`, `principal_type`, `principal_name`, `credential`, `realname_status`, `registered_country`, `nickname_info`, `head_image_info`, `signature_info`, `wx_verify_info`, `nickname` … |
+| `OpenPlatformModifyAccountSignatureRequest` | 请求体 | [Account/OpenPlatformAccountDtos.cs](../../DataModels/Account/OpenPlatformAccountDtos.cs) | `appid`, `account_type`, `principal_type`, `principal_name`, `credential`, `realname_status`, `registered_country`, `nickname_info`, `head_image_info`, `signature_info`, `wx_verify_info`, `nickname` … |
+| `OpenPlatformAccountFastRegisterResponse` | 应答 | [Account/OpenPlatformAccountDtos.cs](../../DataModels/Account/OpenPlatformAccountDtos.cs) | `appid`, `account_type`, `principal_type`, `principal_name`, `credential`, `realname_status`, `registered_country`, `nickname_info`, `head_image_info`, `signature_info`, `wx_verify_info`, `nickname` … |
+| `OpenPlatformAccountFastRegisterRequest` | 请求体 | [Account/OpenPlatformAccountDtos.cs](../../DataModels/Account/OpenPlatformAccountDtos.cs) | `appid`, `account_type`, `principal_type`, `principal_name`, `credential`, `realname_status`, `registered_country`, `nickname_info`, `head_image_info`, `signature_info`, `wx_verify_info`, `nickname` … |
 
 > DTO 一律以源文件为准；本表只列端点签名**直接引用**的一层类型，嵌套类型不再递归展开。所有 DTO 不使用 `required`（仓内约束），必填性由接口注释与官方页表达，SDK 不做本地必填校验。
 
@@ -148,7 +148,7 @@ var response = await service.GetAccountBasicInfoAsync(ct);
 | 契约守卫（路由 / 计数 / DTO 登记断言） | [`OpenPlatformContractGuards.cs`](../../../../../Tests/Mud.Wechat.OpenPlatform.Tests/ContractGuards/OpenPlatformContractGuards.cs) |
 | 守卫中的代表性测试方法 | `Interfaces_ShouldMatchBaseline_WhenContractSurfaceEnumerated`、`Endpoints_ShouldMatchOfficialRoutes_WhenEnumeratedPerInterface`、`TokenSemantics_ShouldMatchOfficialContract_WhenInterfacesDeclared`、`TokenTypes_ShouldStayInIndependentKeySpace_WhenSharedWithOtherLines`、`RoutePrefixes_ShouldBeOwnedExclusively_WhenScannedAcrossAllLines`、`FastRegisterWeappMethods_ShouldDispatchByAction_WhenSameRouteDeclaredTwice`、`DataModels_ShouldBeRegisteredInDomainJsonContexts_WhenContractSurfaceEnumerated`、`ResponseBase_ShouldImplementSharedErrorContract_WhenDeclared` |
 | 模块枚举 / 装配入口 | [`OpenPlatformModule.cs`](../../Extensions/OpenPlatformModule.cs)、[`OpenPlatformServiceBuilder.cs`](../../Extensions/OpenPlatformServiceBuilder.cs) |
-| DTO 与 JSON 上下文 | [`Mud.Wechat.OpenPlatform/Account`](../../../Mud.Wechat.OpenPlatform/Account/) |
+| DTO 与 JSON 上下文 | [`Mud.Wechat.OpenPlatform/DataModels/Account`](../../DataModels/Account) |
 | 跨线基线 | [`Tests/ContractBaseline.cs`](../../../../../Tests/ContractBaseline.cs)（各线分节；本线口径以守卫实际断言为准） |
 | 本线包级公开面与已踩陷阱 | [`Src/OpenPlatform/Mud.Wechat.OpenPlatform/README.md`](../../README.md) |
 | 跨线通用约束（门禁 / AOT / 落位） | [`AGENTS.md`](../../../../../AGENTS.md) |

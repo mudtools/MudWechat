@@ -7,7 +7,7 @@
 逐端点核验日期 **2026-10-18**。
 
 > **事实来源限定**：本文断言只来自本域接口 XML 注释、DTO
-> [`DataModels/Sns/`](../../../Mud.Wechat.OpenPlatform/Sns/)，以及聚合守卫
+> [`DataModels/Sns/`](../../DataModels/Sns)，以及聚合守卫
 > [OpenPlatformContractGuards.cs](../../../../../Tests/Mud.Wechat.OpenPlatform.Tests/ContractGuards/OpenPlatformContractGuards.cs)（OP-B2 路由 / OP-B3 令牌 / OP-B5 路由独占）。
 > **本域没有独立守卫文件**（无 `OpenPlatformSnsContractGuards.cs`）——其路由与令牌由主力 OP-B 系列逐接口锁定（见文末「事实来源」）。凡注释未给出的错误码全集 / 有效期细节，一律入文末缺口。
 
@@ -104,7 +104,7 @@ string openid = session.OpenId!;              // openid 属敏感面，不得进
 | 令牌语义（component 值 + `component_access_token` 参数名 + Query） | 同上 `OP-B3` |
 | 路由独占（`/sns/oauth2/component/`） | 同上 `OP-B5` |
 | 令牌独立键系（不与其它线撞键） | 同上 `OP-B4` |
-| DTO 登记（`SnsJsonContext`） | 同上 `OP-B7`；[`DataModels/Sns/`](../../../Mud.Wechat.OpenPlatform/Sns/) |
+| DTO 登记（`SnsJsonContext`） | 同上 `OP-B7`；[`DataModels/Sns/`](../../DataModels/Sns) |
 
 ## 改动本域需要同批完成
 

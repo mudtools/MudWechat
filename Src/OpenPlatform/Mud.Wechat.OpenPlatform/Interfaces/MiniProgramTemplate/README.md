@@ -9,7 +9,7 @@
 
 > **事实来源限定**：本文断言只来自本域两份接口 XML 注释、守卫
 > [OpenPlatformTemplateContractGuards.cs](../../../../../Tests/Mud.Wechat.OpenPlatform.Tests/ContractGuards/OpenPlatformTemplateContractGuards.cs)（TPL1~TPL8，**已核实为本域独立守卫**）与 DTO
-> [`DataModels/MiniProgramTemplate/`](../../../Mud.Wechat.OpenPlatform/MiniProgramTemplate/)。凡注释未给出的额度 / 审核态取值 / 错误码全集，一律入文末缺口。
+> [`DataModels/MiniProgramTemplate/`](../../DataModels/MiniProgramTemplate)。凡注释未给出的额度 / 审核态取值 / 错误码全集，一律入文末缺口。
 
 ## 端点速览
 
@@ -110,7 +110,7 @@ OpenPlatformResponse applied = await orderPathSet.ApplySetOrderPathInfoAsync(
 | Template 4 支路由表 | [OpenPlatformTemplateContractGuards.cs](../../../../../Tests/Mud.Wechat.OpenPlatform.Tests/ContractGuards/OpenPlatformTemplateContractGuards.cs) `TPL1` |
 | OrderPathSet 1 支路由表 | 同上 `TPL2` |
 | 令牌面统一（component + `access_token` + 注册组） | 同上 `TPL3`；三处一致 `TPL4` |
-| DTO 登记（9 个进 `MiniProgramTemplateJsonContext`） | 同上 `TPL5`；[`DataModels/MiniProgramTemplate/`](../../../Mud.Wechat.OpenPlatform/MiniProgramTemplate/) |
+| DTO 登记（9 个进 `MiniProgramTemplateJsonContext`） | 同上 `TPL5`；[`DataModels/MiniProgramTemplate/`](../../DataModels/MiniProgramTemplate) |
 | gettemplatelist 的 template_type 可选 Query | 同上 `TPL6` |
 | component 版与授权方版请求体不同型 | 同上 `TPL8`；对照 `MPG3h`（[MiniProgramManage 守卫](../../../../../Tests/Mud.Wechat.OpenPlatform.Tests/ContractGuards/OpenPlatformMiniProgramManageContractGuards.cs)） |
 

@@ -3,7 +3,7 @@
 微信小程序「品牌申请」域 SDK（2 端点：品牌申请 / 小程序品牌申请状态查询；
 官方 order_shipping 分区 `/wxa/sec/famousbrand/*` 路由族）。 接口：[IWxaFamousBrandService](./IWxaFamousBrandService.cs)、[IWxaOrderQueryService](./IWxaOrderQueryService.cs)、[IWxaOrderSettingService](./IWxaOrderSettingService.cs)、[IWxaOrderShippingService](./IWxaOrderShippingService.cs)；注册组 `OrderShipping`；模块枚举 `MiniProgramModule.OrderShipping`（装配入口见 [MiniProgramServiceBuilder.cs](../../Extensions/MiniProgramServiceBuilder.cs)）。逐端点核验 2026-10-18。
 
-> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[WxaOrderShippingContractGuards.cs](../../../../../Tests/Mud.Wechat.MiniProgram.Tests/ContractGuards/WxaOrderShippingContractGuards.cs)、[MiniProgramContractGuards.cs](../../../../../Tests/Mud.Wechat.MiniProgram.Tests/ContractGuards/MiniProgramContractGuards.cs)）、本域 DTO（[`Mud.Wechat.MiniProgram/OrderShipping`](../../../Mud.Wechat.MiniProgram/OrderShipping/)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
+> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[WxaOrderShippingContractGuards.cs](../../../../../Tests/Mud.Wechat.MiniProgram.Tests/ContractGuards/WxaOrderShippingContractGuards.cs)、[MiniProgramContractGuards.cs](../../../../../Tests/Mud.Wechat.MiniProgram.Tests/ContractGuards/MiniProgramContractGuards.cs)）、本域 DTO（[`Mud.Wechat.MiniProgram/DataModels/OrderShipping`](../../DataModels/OrderShipping)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
 
 ## 端点速览
 
@@ -308,28 +308,28 @@
 
 ## DTO 与序列化面
 
-本域 DTO 目录 [`Mud.Wechat.MiniProgram/OrderShipping`](../../../Mud.Wechat.MiniProgram/OrderShipping/) 内共 **30** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **30** 个，`SerializerClassName` = `OrderShipping`。
+本域 DTO 目录 [`Mud.Wechat.MiniProgram/DataModels/OrderShipping`](../../DataModels/OrderShipping) 内共 **30** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **30** 个，`SerializerClassName` = `OrderShipping`。
 
-AOT 源生成上下文：[`OrderShippingJsonContext.g.cs`](./../../../Mud.Wechat.MiniProgram/Generated/OrderShippingJsonContext.g.cs)（生成物，勿手改）。
+AOT 源生成上下文：[`OrderShippingJsonContext.g.cs`](./../../DataModels/Generated/OrderShippingJsonContext.g.cs)（生成物，勿手改）。
 
 | 端点引用的类型 | 角色 | 定义位置 | JSON 字段（前缀） |
 |---|---|---|---|
-| `WxaResponse` | 应答 | [Common/WxaResponse.cs](../../../Mud.Wechat.MiniProgram/Common/WxaResponse.cs) | `errcode`, `errmsg` |
-| `WxaFamousBrandApplyRequest` | 请求体 | [OrderShipping/FamousBrand/WxaFamousBrandApplyRequest.cs](../../../Mud.Wechat.MiniProgram/OrderShipping/FamousBrand/WxaFamousBrandApplyRequest.cs) | `Application` |
-| `WxaFamousBrandApplyStatusResponse` | 应答 | [OrderShipping/FamousBrand/WxaFamousBrandApplyStatusResponse.cs](../../../Mud.Wechat.MiniProgram/OrderShipping/FamousBrand/WxaFamousBrandApplyStatusResponse.cs) | `progress`, `application` |
-| `WxaOrderGetResponse` | 应答 | [OrderShipping/Query/WxaOrderGetResponse.cs](../../../Mud.Wechat.MiniProgram/OrderShipping/Query/WxaOrderGetResponse.cs) | `order` |
-| `WxaOrderQueryRequest` | 请求体 | [OrderShipping/Query/WxaOrderQueryRequest.cs](../../../Mud.Wechat.MiniProgram/OrderShipping/Query/WxaOrderQueryRequest.cs) | `transaction_id`, `merchant_id`, `sub_merchant_id`, `merchant_trade_no` |
-| `WxaOrderListResponse` | 应答 | [OrderShipping/Query/WxaOrderListResponse.cs](../../../Mud.Wechat.MiniProgram/OrderShipping/Query/WxaOrderListResponse.cs) | `last_index`, `has_more`, `order_list` |
-| `WxaOrderListRequest` | 请求体 | [OrderShipping/Query/WxaOrderListRequest.cs](../../../Mud.Wechat.MiniProgram/OrderShipping/Query/WxaOrderListRequest.cs) | `pay_time_range`, `order_state`, `openid`, `last_index`, `page_size` |
-| `WxaOrderTradeManagedResponse` | 应答 | [OrderShipping/Query/WxaOrderTradeManagedResponse.cs](../../../Mud.Wechat.MiniProgram/OrderShipping/Query/WxaOrderTradeManagedResponse.cs) | `is_trade_managed` |
-| `WxaOrderTradeManagedQueryRequest` | 请求体 | [OrderShipping/Query/WxaOrderTradeManagedQueryRequest.cs](../../../Mud.Wechat.MiniProgram/OrderShipping/Query/WxaOrderTradeManagedQueryRequest.cs) | `appid` |
-| `WxaOrderTradeConfirmationResponse` | 应答 | [OrderShipping/Query/WxaOrderTradeConfirmationResponse.cs](../../../Mud.Wechat.MiniProgram/OrderShipping/Query/WxaOrderTradeConfirmationResponse.cs) | `completed` |
-| `WxaOrderMsgJumpPathRequest` | 请求体 | [OrderShipping/Setting/WxaOrderMsgJumpPathRequest.cs](../../../Mud.Wechat.MiniProgram/OrderShipping/Setting/WxaOrderMsgJumpPathRequest.cs) | `path` |
-| `WxaOrderTradeTypeChangeRequest` | 请求体 | [OrderShipping/Setting/WxaOrderTradeTypeChangeRequest.cs](../../../Mud.Wechat.MiniProgram/OrderShipping/Setting/WxaOrderTradeTypeChangeRequest.cs) | `trade_type`, `material_list`, `reason` |
-| `WxaOrderShippingUploadRequest` | 请求体 | [OrderShipping/Shipping/WxaOrderShippingUploadRequest.cs](../../../Mud.Wechat.MiniProgram/OrderShipping/Shipping/WxaOrderShippingUploadRequest.cs) | `order_key`, `logistics_type`, `delivery_mode`, `is_all_delivered`, `shipping_list`, `upload_time`, `payer` |
-| `WxaOrderCombinedShippingUploadRequest` | 请求体 | [OrderShipping/Shipping/WxaOrderCombinedShippingUploadRequest.cs](../../../Mud.Wechat.MiniProgram/OrderShipping/Shipping/WxaOrderCombinedShippingUploadRequest.cs) | `order_key`, `sub_orders`, `upload_time`, `payer` |
-| `WxaOrderConfirmReceiveRequest` | 请求体 | [OrderShipping/Shipping/WxaOrderConfirmReceiveRequest.cs](../../../Mud.Wechat.MiniProgram/OrderShipping/Shipping/WxaOrderConfirmReceiveRequest.cs) | `transaction_id`, `merchant_id`, `sub_merchant_id`, `merchant_trade_no`, `received_time` |
-| `WxaOrderSpecialReportRequest` | 请求体 | [OrderShipping/Shipping/WxaOrderSpecialReportRequest.cs](../../../Mud.Wechat.MiniProgram/OrderShipping/Shipping/WxaOrderSpecialReportRequest.cs) | `order_id`, `type`, `delay_to` |
+| `WxaResponse` | 应答 | [Common/WxaResponse.cs](../../DataModels/Common/WxaResponse.cs) | `errcode`, `errmsg` |
+| `WxaFamousBrandApplyRequest` | 请求体 | [OrderShipping/FamousBrand/WxaFamousBrandApplyRequest.cs](../../DataModels/OrderShipping/FamousBrand/WxaFamousBrandApplyRequest.cs) | `Application` |
+| `WxaFamousBrandApplyStatusResponse` | 应答 | [OrderShipping/FamousBrand/WxaFamousBrandApplyStatusResponse.cs](../../DataModels/OrderShipping/FamousBrand/WxaFamousBrandApplyStatusResponse.cs) | `progress`, `application` |
+| `WxaOrderGetResponse` | 应答 | [OrderShipping/Query/WxaOrderGetResponse.cs](../../DataModels/OrderShipping/Query/WxaOrderGetResponse.cs) | `order` |
+| `WxaOrderQueryRequest` | 请求体 | [OrderShipping/Query/WxaOrderQueryRequest.cs](../../DataModels/OrderShipping/Query/WxaOrderQueryRequest.cs) | `transaction_id`, `merchant_id`, `sub_merchant_id`, `merchant_trade_no` |
+| `WxaOrderListResponse` | 应答 | [OrderShipping/Query/WxaOrderListResponse.cs](../../DataModels/OrderShipping/Query/WxaOrderListResponse.cs) | `last_index`, `has_more`, `order_list` |
+| `WxaOrderListRequest` | 请求体 | [OrderShipping/Query/WxaOrderListRequest.cs](../../DataModels/OrderShipping/Query/WxaOrderListRequest.cs) | `pay_time_range`, `order_state`, `openid`, `last_index`, `page_size` |
+| `WxaOrderTradeManagedResponse` | 应答 | [OrderShipping/Query/WxaOrderTradeManagedResponse.cs](../../DataModels/OrderShipping/Query/WxaOrderTradeManagedResponse.cs) | `is_trade_managed` |
+| `WxaOrderTradeManagedQueryRequest` | 请求体 | [OrderShipping/Query/WxaOrderTradeManagedQueryRequest.cs](../../DataModels/OrderShipping/Query/WxaOrderTradeManagedQueryRequest.cs) | `appid` |
+| `WxaOrderTradeConfirmationResponse` | 应答 | [OrderShipping/Query/WxaOrderTradeConfirmationResponse.cs](../../DataModels/OrderShipping/Query/WxaOrderTradeConfirmationResponse.cs) | `completed` |
+| `WxaOrderMsgJumpPathRequest` | 请求体 | [OrderShipping/Setting/WxaOrderMsgJumpPathRequest.cs](../../DataModels/OrderShipping/Setting/WxaOrderMsgJumpPathRequest.cs) | `path` |
+| `WxaOrderTradeTypeChangeRequest` | 请求体 | [OrderShipping/Setting/WxaOrderTradeTypeChangeRequest.cs](../../DataModels/OrderShipping/Setting/WxaOrderTradeTypeChangeRequest.cs) | `trade_type`, `material_list`, `reason` |
+| `WxaOrderShippingUploadRequest` | 请求体 | [OrderShipping/Shipping/WxaOrderShippingUploadRequest.cs](../../DataModels/OrderShipping/Shipping/WxaOrderShippingUploadRequest.cs) | `order_key`, `logistics_type`, `delivery_mode`, `is_all_delivered`, `shipping_list`, `upload_time`, `payer` |
+| `WxaOrderCombinedShippingUploadRequest` | 请求体 | [OrderShipping/Shipping/WxaOrderCombinedShippingUploadRequest.cs](../../DataModels/OrderShipping/Shipping/WxaOrderCombinedShippingUploadRequest.cs) | `order_key`, `sub_orders`, `upload_time`, `payer` |
+| `WxaOrderConfirmReceiveRequest` | 请求体 | [OrderShipping/Shipping/WxaOrderConfirmReceiveRequest.cs](../../DataModels/OrderShipping/Shipping/WxaOrderConfirmReceiveRequest.cs) | `transaction_id`, `merchant_id`, `sub_merchant_id`, `merchant_trade_no`, `received_time` |
+| `WxaOrderSpecialReportRequest` | 请求体 | [OrderShipping/Shipping/WxaOrderSpecialReportRequest.cs](../../DataModels/OrderShipping/Shipping/WxaOrderSpecialReportRequest.cs) | `order_id`, `type`, `delay_to` |
 
 > DTO 一律以源文件为准；本表只列端点签名**直接引用**的一层类型，嵌套类型不再递归展开。所有 DTO 不使用 `required`（仓内约束），必填性由接口注释与官方页表达，SDK 不做本地必填校验。
 
@@ -366,7 +366,7 @@ var response = await service.GetApplyStatusAsync(ct);
 | 契约守卫（路由 / 计数 / DTO 登记断言） | [`WxaOrderShippingContractGuards.cs`](../../../../../Tests/Mud.Wechat.MiniProgram.Tests/ContractGuards/WxaOrderShippingContractGuards.cs)、[`MiniProgramContractGuards.cs`](../../../../../Tests/Mud.Wechat.MiniProgram.Tests/ContractGuards/MiniProgramContractGuards.cs) |
 | 守卫中的代表性测试方法 | `OrderShippingEndpoints_ShouldMatchOfficialRoutes`、`OrderShippingInterfaces_ShouldBindMpAccessToken_ShareRegistryGroup_AndLockMethodCounts`、`OrderShippingMethods_ShouldUseJsonBodyOnly_AndDeclareNoQueryCredential`、`OrderShippingFields_ShouldKeepOfficialAsymmetries`、`OrderShippingDataModels_ShouldLockOfficialEnumsAndJsonRegistration`、`OrderShippingOpenSurfaceAndErrorCodes_ShouldStayRegistered`、`Routes_ShouldNotOverlapAcrossProductLines`、`TokenInterfaces_ShouldReuseMpAccessToken`、`TokenFreeLogin_ShouldStayOutOfTokenPipeline_ViaMethodLevelOptOut`、`TokenInterfaces_ShouldDeclareOfficialParameterName`、`Endpoints_ShouldMatchOfficialRoutesAndCount`、`Dtos_ShouldExposeOfficialFieldNames` … |
 | 模块枚举 / 装配入口 | [`MiniProgramModule.cs`](../../Extensions/MiniProgramModule.cs)、[`MiniProgramServiceBuilder.cs`](../../Extensions/MiniProgramServiceBuilder.cs) |
-| DTO 与 JSON 上下文 | [`Mud.Wechat.MiniProgram/OrderShipping`](../../../Mud.Wechat.MiniProgram/OrderShipping/) |
+| DTO 与 JSON 上下文 | [`Mud.Wechat.MiniProgram/DataModels/OrderShipping`](../../DataModels/OrderShipping) |
 | 跨线基线 | [`Tests/ContractBaseline.cs`](../../../../../Tests/ContractBaseline.cs)（各线分节；本线口径以守卫实际断言为准） |
 | 本线包级公开面与已踩陷阱 | [`Src/MiniProgram/Mud.Wechat.MiniProgram/README.md`](../../README.md) |
 | 跨线通用约束（门禁 / AOT / 落位） | [`AGENTS.md`](../../../../../AGENTS.md) |

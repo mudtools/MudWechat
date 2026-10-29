@@ -3,7 +3,7 @@
 微信小程序「运维中心」域 SDK（9 端点；另 1 端点 `getfeedbackmedia` 为图片二进制流，走
 `IWxaFeedbackMediaService` 独立通道，随本模块一并注册）。 接口：[IWxaFeedbackMediaService](./IWxaFeedbackMediaService.cs)、[IWxaOperationService](./IWxaOperationService.cs)；注册组 `Operation`；模块枚举 `MiniProgramModule.Operation`（装配入口见 [MiniProgramServiceBuilder.cs](../../Extensions/MiniProgramServiceBuilder.cs)）。逐端点核验 2026-10-18。
 
-> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[MiniProgramContractGuards.cs](../../../../../Tests/Mud.Wechat.MiniProgram.Tests/ContractGuards/MiniProgramContractGuards.cs)）、本域 DTO（[`Mud.Wechat.MiniProgram/Operation`](../../../Mud.Wechat.MiniProgram/Operation/)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
+> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[MiniProgramContractGuards.cs](../../../../../Tests/Mud.Wechat.MiniProgram.Tests/ContractGuards/MiniProgramContractGuards.cs)）、本域 DTO（[`Mud.Wechat.MiniProgram/DataModels/Operation`](../../../Mud.Wechat.MiniProgram/DataModels/Operation/)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
 
 ## 端点速览
 
@@ -185,24 +185,24 @@ https://developers.weixin.qq.com/miniprogram/dev/server/API/operation/ 系列（
 
 ## DTO 与序列化面
 
-本域 DTO 目录 [`Mud.Wechat.MiniProgram/Operation`](../../../Mud.Wechat.MiniProgram/Operation/) 内共 **14** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **14** 个，`SerializerClassName` = `Operation`。
+本域 DTO 目录 [`Mud.Wechat.MiniProgram/DataModels/Operation`](../../../Mud.Wechat.MiniProgram/DataModels/Operation/) 内共 **14** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **14** 个，`SerializerClassName` = `Operation`。
 
-AOT 源生成上下文：[`OperationJsonContext.g.cs`](./../../../Mud.Wechat.MiniProgram/Generated/OperationJsonContext.g.cs)（生成物，勿手改）。
+AOT 源生成上下文：[`OperationJsonContext.g.cs`](./../../DataModels/Generated/OperationJsonContext.g.cs)（生成物，勿手改）。
 
 | 端点引用的类型 | 角色 | 定义位置 | JSON 字段（前缀） |
 |---|---|---|---|
-| `WxaDevInfoResponse` | 应答 | [Operation/WxaDevInfoResponse.cs](../../../Mud.Wechat.MiniProgram/Operation/WxaDevInfoResponse.cs) | `request_domain` |
-| `WxaLogDataListResponse` | 应答 | [Operation/WxaLogDataListResponse.cs](../../../Mud.Wechat.MiniProgram/Operation/WxaLogDataListResponse.cs) | `data` |
-| `WxaLogDateModuleRequest` | 请求体 | [Operation/WxaLogDateModuleRequest.cs](../../../Mud.Wechat.MiniProgram/Operation/WxaLogDateModuleRequest.cs) | `date`, `module` |
-| `WxaUserLogSearchResponse` | 应答 | [Operation/WxaUserLogSearchResponse.cs](../../../Mud.Wechat.MiniProgram/Operation/WxaUserLogSearchResponse.cs) | `numbers`, `datas` |
-| `WxaUserLogSearchRequest` | 请求体 | [Operation/WxaUserLogSearchRequest.cs](../../../Mud.Wechat.MiniProgram/Operation/WxaUserLogSearchRequest.cs) | `date`, `begintime`, `endtime`, `start`, `limit`, `traceId`, `uin` |
-| `WxaFeedbackListResponse` | 应答 | [Operation/WxaFeedbackListResponse.cs](../../../Mud.Wechat.MiniProgram/Operation/WxaFeedbackListResponse.cs) | `total`, `list` |
-| `WxaFeedbackListRequest` | 请求体 | [Operation/WxaFeedbackListRequest.cs](../../../Mud.Wechat.MiniProgram/Operation/WxaFeedbackListRequest.cs) | `page`, `limit`, `type` |
-| `WxaJsErrDataResponse` | 应答 | [Operation/WxaJsErrDataResponse.cs](../../../Mud.Wechat.MiniProgram/Operation/WxaJsErrDataResponse.cs) | `data` |
-| `WxaJsErrDetailRequest` | 请求体 | [Operation/WxaJsErrDetailRequest.cs](../../../Mud.Wechat.MiniProgram/Operation/WxaJsErrDetailRequest.cs) | `date`, `errmsg_key` |
-| `WxaJsErrListRequest` | 请求体 | [Operation/WxaJsErrListRequest.cs](../../../Mud.Wechat.MiniProgram/Operation/WxaJsErrListRequest.cs) | `date`, `errmsg_key` |
-| `WxaGrayReleasePlanResponse` | 应答 | [Operation/WxaGrayReleasePlanResponse.cs](../../../Mud.Wechat.MiniProgram/Operation/WxaGrayReleasePlanResponse.cs) | `gray_release_plan` |
-| `WxaFeedbackMediaRequest` | 请求体 | [Operation/WxaFeedbackMediaRequest.cs](../../../Mud.Wechat.MiniProgram/Operation/WxaFeedbackMediaRequest.cs) | `media_id` |
+| `WxaDevInfoResponse` | 应答 | [Operation/WxaDevInfoResponse.cs](../../DataModels/Operation/WxaDevInfoResponse.cs) | `request_domain` |
+| `WxaLogDataListResponse` | 应答 | [Operation/WxaLogDataListResponse.cs](../../DataModels/Operation/WxaLogDataListResponse.cs) | `data` |
+| `WxaLogDateModuleRequest` | 请求体 | [Operation/WxaLogDateModuleRequest.cs](../../DataModels/Operation/WxaLogDateModuleRequest.cs) | `date`, `module` |
+| `WxaUserLogSearchResponse` | 应答 | [Operation/WxaUserLogSearchResponse.cs](../../DataModels/Operation/WxaUserLogSearchResponse.cs) | `numbers`, `datas` |
+| `WxaUserLogSearchRequest` | 请求体 | [Operation/WxaUserLogSearchRequest.cs](../../DataModels/Operation/WxaUserLogSearchRequest.cs) | `date`, `begintime`, `endtime`, `start`, `limit`, `traceId`, `uin` |
+| `WxaFeedbackListResponse` | 应答 | [Operation/WxaFeedbackListResponse.cs](../../DataModels/Operation/WxaFeedbackListResponse.cs) | `total`, `list` |
+| `WxaFeedbackListRequest` | 请求体 | [Operation/WxaFeedbackListRequest.cs](../../DataModels/Operation/WxaFeedbackListRequest.cs) | `page`, `limit`, `type` |
+| `WxaJsErrDataResponse` | 应答 | [Operation/WxaJsErrDataResponse.cs](../../DataModels/Operation/WxaJsErrDataResponse.cs) | `data` |
+| `WxaJsErrDetailRequest` | 请求体 | [Operation/WxaJsErrDetailRequest.cs](../../DataModels/Operation/WxaJsErrDetailRequest.cs) | `date`, `errmsg_key` |
+| `WxaJsErrListRequest` | 请求体 | [Operation/WxaJsErrListRequest.cs](../../DataModels/Operation/WxaJsErrListRequest.cs) | `date`, `errmsg_key` |
+| `WxaGrayReleasePlanResponse` | 应答 | [Operation/WxaGrayReleasePlanResponse.cs](../../DataModels/Operation/WxaGrayReleasePlanResponse.cs) | `gray_release_plan` |
+| `WxaFeedbackMediaRequest` | 请求体 | [Operation/WxaFeedbackMediaRequest.cs](../../DataModels/Operation/WxaFeedbackMediaRequest.cs) | `media_id` |
 
 > DTO 一律以源文件为准；本表只列端点签名**直接引用**的一层类型，嵌套类型不再递归展开。所有 DTO 不使用 `required`（仓内约束），必填性由接口注释与官方页表达，SDK 不做本地必填校验。
 
@@ -241,7 +241,7 @@ var response = await service.GetGrayReleasePlanAsync(ct);
 | 契约守卫（路由 / 计数 / DTO 登记断言） | [`MiniProgramContractGuards.cs`](../../../../../Tests/Mud.Wechat.MiniProgram.Tests/ContractGuards/MiniProgramContractGuards.cs) |
 | 守卫中的代表性测试方法 | `Routes_ShouldNotOverlapAcrossProductLines`、`TokenInterfaces_ShouldReuseMpAccessToken`、`TokenFreeLogin_ShouldStayOutOfTokenPipeline_ViaMethodLevelOptOut`、`TokenInterfaces_ShouldDeclareOfficialParameterName`、`Endpoints_ShouldMatchOfficialRoutesAndCount`、`Dtos_ShouldExposeOfficialFieldNames`、`SessionKey_ShouldNeverBeLogged`、`SsrfWhitelist_ShouldRemainUnchanged`、`ManualChannels_ShouldFallBackToDefaultApp`、`SmartApiRoutes_ShouldStayOnOfficialAccountLine`、`AddMiniProgramServices_ShouldFailFast_WhenAddMpAppMissing`、`AddMiniProgramServices_AddAllApis_ShouldRegisterAllDomains` |
 | 模块枚举 / 装配入口 | [`MiniProgramModule.cs`](../../Extensions/MiniProgramModule.cs)、[`MiniProgramServiceBuilder.cs`](../../Extensions/MiniProgramServiceBuilder.cs) |
-| DTO 与 JSON 上下文 | [`Mud.Wechat.MiniProgram/Operation`](../../../Mud.Wechat.MiniProgram/Operation/) |
+| DTO 与 JSON 上下文 | [`Mud.Wechat.MiniProgram/DataModels/Operation`](../../../Mud.Wechat.MiniProgram/DataModels/Operation/) |
 | 跨线基线 | [`Tests/ContractBaseline.cs`](../../../../../Tests/ContractBaseline.cs)（各线分节；本线口径以守卫实际断言为准） |
 | 本线包级公开面与已踩陷阱 | [`Src/MiniProgram/Mud.Wechat.MiniProgram/README.md`](../../README.md) |
 | 跨线通用约束（门禁 / AOT / 落位） | [`AGENTS.md`](../../../../../AGENTS.md) |

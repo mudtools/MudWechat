@@ -2,7 +2,7 @@
 
 微信小程序「小游戏」域 SDK（**20 端点**：帧同步房间 4 + 用户数据存储 3 + 对局匹配规则 5 + 米大师索要单 1 + 内容安全 2 + 米大师 V2 游戏币 5）。 接口：[IWxaGameService](./IWxaGameService.cs)；注册组 `Game`；模块枚举 `MiniProgramModule.Game`（装配入口见 [MiniProgramServiceBuilder.cs](../../Extensions/MiniProgramServiceBuilder.cs)）。逐端点核验 2026-10-18。
 
-> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[WxaGameContractGuards.cs](../../../../../Tests/Mud.Wechat.MiniProgram.Tests/ContractGuards/WxaGameContractGuards.cs)、[MiniProgramContractGuards.cs](../../../../../Tests/Mud.Wechat.MiniProgram.Tests/ContractGuards/MiniProgramContractGuards.cs)、[MiniProgramNonContractRouteContractGuards.cs](../../../../../Tests/Mud.Wechat.MiniProgram.Tests/ContractGuards/MiniProgramNonContractRouteContractGuards.cs)）、本域 DTO（[`Mud.Wechat.MiniProgram/Game`](../../../Mud.Wechat.MiniProgram/Game/)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
+> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[WxaGameContractGuards.cs](../../../../../Tests/Mud.Wechat.MiniProgram.Tests/ContractGuards/WxaGameContractGuards.cs)、[MiniProgramContractGuards.cs](../../../../../Tests/Mud.Wechat.MiniProgram.Tests/ContractGuards/MiniProgramContractGuards.cs)、[MiniProgramNonContractRouteContractGuards.cs](../../../../../Tests/Mud.Wechat.MiniProgram.Tests/ContractGuards/MiniProgramNonContractRouteContractGuards.cs)）、本域 DTO（[`Mud.Wechat.MiniProgram/DataModels/Game`](../../DataModels/Game)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
 
 ## 端点速览
 
@@ -433,42 +433,42 @@ HTTP 形态只走 Query 的 `access_token`；
 
 ## DTO 与序列化面
 
-本域 DTO 目录 [`Mud.Wechat.MiniProgram/Game`](../../../Mud.Wechat.MiniProgram/Game/) 内共 **46** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **46** 个，`SerializerClassName` = `Game`。
+本域 DTO 目录 [`Mud.Wechat.MiniProgram/DataModels/Game`](../../DataModels/Game) 内共 **46** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **46** 个，`SerializerClassName` = `Game`。
 
-AOT 源生成上下文：[`GameJsonContext.g.cs`](./../../../Mud.Wechat.MiniProgram/Generated/GameJsonContext.g.cs)（生成物，勿手改）。
+AOT 源生成上下文：[`GameJsonContext.g.cs`](./../../DataModels/Generated/GameJsonContext.g.cs)（生成物，勿手改）。
 
 | 端点引用的类型 | 角色 | 定义位置 | JSON 字段（前缀） |
 |---|---|---|---|
-| `GameCreateRoomResponse` | 应答 | [Game/LockStep/GameCreateRoomResponse.cs](../../../Mud.Wechat.MiniProgram/Game/LockStep/GameCreateRoomResponse.cs) | `data` |
-| `GameCreateRoomRequest` | 请求体 | [Game/LockStep/GameCreateRoomRequest.cs](../../../Mud.Wechat.MiniProgram/Game/LockStep/GameCreateRoomRequest.cs) | `game_tick`, `open_id_list`, `udp_reliability_strategy`, `start_percent`, `need_user_info`, `game_last_time`, `room_ext_info`, `need_game_seed` |
-| `GameGetFrameResponse` | 应答 | [Game/LockStep/GameGetFrameResponse.cs](../../../Mud.Wechat.MiniProgram/Game/LockStep/GameGetFrameResponse.cs) | `data` |
-| `GameGetFrameRequest` | 请求体 | [Game/LockStep/GameGetFrameRequest.cs](../../../Mud.Wechat.MiniProgram/Game/LockStep/GameGetFrameRequest.cs) | `access_info`, `begin_frame_id`, `end_frame_id` |
-| `GameGetIdentityInfoResponse` | 应答 | [Game/LockStep/GameGetIdentityInfoResponse.cs](../../../Mud.Wechat.MiniProgram/Game/LockStep/GameGetIdentityInfoResponse.cs) | `data` |
-| `GameGetRoomInfoResponse` | 应答 | [Game/LockStep/GameGetRoomInfoResponse.cs](../../../Mud.Wechat.MiniProgram/Game/LockStep/GameGetRoomInfoResponse.cs) | `data` |
-| `WxaResponse` | 应答 | [Common/WxaResponse.cs](../../../Mud.Wechat.MiniProgram/Common/WxaResponse.cs) | `errcode`, `errmsg` |
-| `GameRemoveUserStorageRequest` | 请求体 | [Game/Storage/GameRemoveUserStorageRequest.cs](../../../Mud.Wechat.MiniProgram/Game/Storage/GameRemoveUserStorageRequest.cs) | `key` |
-| `GameSetUserInteractiveDataRequest` | 请求体 | [Game/Storage/GameSetUserInteractiveDataRequest.cs](../../../Mud.Wechat.MiniProgram/Game/Storage/GameSetUserInteractiveDataRequest.cs) | `kv_list` |
-| `GameSetUserStorageRequest` | 请求体 | [Game/Storage/GameSetUserStorageRequest.cs](../../../Mud.Wechat.MiniProgram/Game/Storage/GameSetUserStorageRequest.cs) | `kv_list` |
-| `GameMatchRuleIdResponse` | 应答 | [Game/GameMatch/GameMatchRuleIdResponse.cs](../../../Mud.Wechat.MiniProgram/Game/GameMatch/GameMatchRuleIdResponse.cs) | `match_id` |
-| `GameCreateMatchRuleRequest` | 请求体 | [Game/GameMatch/GameCreateMatchRuleRequest.cs](../../../Mud.Wechat.MiniProgram/Game/GameMatch/GameCreateMatchRuleRequest.cs) | `team_count`, `team_member_count`, `need_room_service_info`, `game_room_info` |
-| `GameDeleteMatchRuleRequest` | 请求体 | [Game/GameMatch/GameDeleteMatchRuleRequest.cs](../../../Mud.Wechat.MiniProgram/Game/GameMatch/GameDeleteMatchRuleRequest.cs) | `match_id` |
-| `GameGetAllMatchRuleResponse` | 应答 | [Game/GameMatch/GameGetAllMatchRuleResponse.cs](../../../Mud.Wechat.MiniProgram/Game/GameMatch/GameGetAllMatchRuleResponse.cs) | `match_rule_list` |
-| `GameMatchOpenStateRequest` | 请求体 | [Game/GameMatch/GameMatchOpenStateRequest.cs](../../../Mud.Wechat.MiniProgram/Game/GameMatch/GameMatchOpenStateRequest.cs) | `match_id`, `open_state` |
-| `GameGetPayForOrderResponse` | 应答 | [Game/Midas/GameGetPayForOrderResponse.cs](../../../Mud.Wechat.MiniProgram/Game/Midas/GameGetPayForOrderResponse.cs) | `payfororder` |
-| `GameGetPayForOrderRequest` | 请求体 | [Game/Midas/GameGetPayForOrderRequest.cs](../../../Mud.Wechat.MiniProgram/Game/Midas/GameGetPayForOrderRequest.cs) | `appid`, `order_no`, `out_trade_no` |
-| `GameMsgSecCheckResponse` | 应答 | [Game/SecCheck/GameMsgSecCheckResponse.cs](../../../Mud.Wechat.MiniProgram/Game/SecCheck/GameMsgSecCheckResponse.cs) | `trace_id`, `result`, `detail` |
-| `GameMsgSecCheckRequest` | 请求体 | [Game/SecCheck/GameMsgSecCheckRequest.cs](../../../Mud.Wechat.MiniProgram/Game/SecCheck/GameMsgSecCheckRequest.cs) | `openid`, `version`, `scene`, `content`, `nickname` |
-| `GameMediaCheckResponse` | 应答 | [Game/SecCheck/GameMediaCheckResponse.cs](../../../Mud.Wechat.MiniProgram/Game/SecCheck/GameMediaCheckResponse.cs) | `trace_id`, `result`, `detail` |
-| `GameMediaCheckRequest` | 请求体 | [Game/SecCheck/GameMediaCheckRequest.cs](../../../Mud.Wechat.MiniProgram/Game/SecCheck/GameMediaCheckRequest.cs) | `openid`, `version`, `scene`, `media_url`, `media_type` |
-| `GameGetBalanceResponse` | 应答 | [Game/Midas/GameGetBalanceResponse.cs](../../../Mud.Wechat.MiniProgram/Game/Midas/GameGetBalanceResponse.cs) | `balance`, `present_balance`, `sum_save`, `sum_present`, `sum_balance`, `sum_cost`, `first_save` |
-| `GameGetBalanceRequest` | 请求体 | [Game/Midas/GameGetBalanceRequest.cs](../../../Mud.Wechat.MiniProgram/Game/Midas/GameGetBalanceRequest.cs) | `openid`, `offer_id`, `ts`, `zone_id`, `env`, `user_ip`, `coin_type` |
-| `GamePayResponse` | 应答 | [Game/Midas/GamePayResponse.cs](../../../Mud.Wechat.MiniProgram/Game/Midas/GamePayResponse.cs) | `bill_no`, `balance`, `used_present_amount` |
-| `GamePayRequest` | 请求体 | [Game/Midas/GamePayRequest.cs](../../../Mud.Wechat.MiniProgram/Game/Midas/GamePayRequest.cs) | `openid`, `offer_id`, `ts`, `zone_id`, `env`, `user_ip`, `amount`, `bill_no`, `payitem`, `remark` |
-| `GameCancelPayRequest` | 请求体 | [Game/Midas/GameCancelPayRequest.cs](../../../Mud.Wechat.MiniProgram/Game/Midas/GameCancelPayRequest.cs) | `openid`, `offer_id`, `ts`, `zone_id`, `env`, `user_ip`, `amount`, `bill_no`, `pay_bill_no` |
-| `GamePresentResponse` | 应答 | [Game/Midas/GamePresentResponse.cs](../../../Mud.Wechat.MiniProgram/Game/Midas/GamePresentResponse.cs) | `bill_no`, `balance` |
-| `GamePresentRequest` | 请求体 | [Game/Midas/GamePresentRequest.cs](../../../Mud.Wechat.MiniProgram/Game/Midas/GamePresentRequest.cs) | `openid`, `offer_id`, `ts`, `zone_id`, `env`, `user_ip`, `amount`, `bill_no` |
-| `GameQueryOrderResponse` | 应答 | [Game/Midas/GameQueryOrderResponse.cs](../../../Mud.Wechat.MiniProgram/Game/Midas/GameQueryOrderResponse.cs) | `product_id`, `pay_state`, `deliver_state`, `pay_finish_time`, `out_trade_no`, `mch_order_no`, `transaction_id` |
-| `GameQueryOrderRequest` | 请求体 | [Game/Midas/GameQueryOrderRequest.cs](../../../Mud.Wechat.MiniProgram/Game/Midas/GameQueryOrderRequest.cs) | `openid`, `offer_id`, `ts`, `zone_id`, `env`, `out_trade_no`, `biz_id` |
+| `GameCreateRoomResponse` | 应答 | [Game/LockStep/GameCreateRoomResponse.cs](../../DataModels/Game/LockStep/GameCreateRoomResponse.cs) | `data` |
+| `GameCreateRoomRequest` | 请求体 | [Game/LockStep/GameCreateRoomRequest.cs](../../DataModels/Game/LockStep/GameCreateRoomRequest.cs) | `game_tick`, `open_id_list`, `udp_reliability_strategy`, `start_percent`, `need_user_info`, `game_last_time`, `room_ext_info`, `need_game_seed` |
+| `GameGetFrameResponse` | 应答 | [Game/LockStep/GameGetFrameResponse.cs](../../DataModels/Game/LockStep/GameGetFrameResponse.cs) | `data` |
+| `GameGetFrameRequest` | 请求体 | [Game/LockStep/GameGetFrameRequest.cs](../../DataModels/Game/LockStep/GameGetFrameRequest.cs) | `access_info`, `begin_frame_id`, `end_frame_id` |
+| `GameGetIdentityInfoResponse` | 应答 | [Game/LockStep/GameGetIdentityInfoResponse.cs](../../DataModels/Game/LockStep/GameGetIdentityInfoResponse.cs) | `data` |
+| `GameGetRoomInfoResponse` | 应答 | [Game/LockStep/GameGetRoomInfoResponse.cs](../../DataModels/Game/LockStep/GameGetRoomInfoResponse.cs) | `data` |
+| `WxaResponse` | 应答 | [Common/WxaResponse.cs](../../DataModels/Common/WxaResponse.cs) | `errcode`, `errmsg` |
+| `GameRemoveUserStorageRequest` | 请求体 | [Game/Storage/GameRemoveUserStorageRequest.cs](../../DataModels/Game/Storage/GameRemoveUserStorageRequest.cs) | `key` |
+| `GameSetUserInteractiveDataRequest` | 请求体 | [Game/Storage/GameSetUserInteractiveDataRequest.cs](../../DataModels/Game/Storage/GameSetUserInteractiveDataRequest.cs) | `kv_list` |
+| `GameSetUserStorageRequest` | 请求体 | [Game/Storage/GameSetUserStorageRequest.cs](../../DataModels/Game/Storage/GameSetUserStorageRequest.cs) | `kv_list` |
+| `GameMatchRuleIdResponse` | 应答 | [Game/GameMatch/GameMatchRuleIdResponse.cs](../../DataModels/Game/GameMatch/GameMatchRuleIdResponse.cs) | `match_id` |
+| `GameCreateMatchRuleRequest` | 请求体 | [Game/GameMatch/GameCreateMatchRuleRequest.cs](../../DataModels/Game/GameMatch/GameCreateMatchRuleRequest.cs) | `team_count`, `team_member_count`, `need_room_service_info`, `game_room_info` |
+| `GameDeleteMatchRuleRequest` | 请求体 | [Game/GameMatch/GameDeleteMatchRuleRequest.cs](../../DataModels/Game/GameMatch/GameDeleteMatchRuleRequest.cs) | `match_id` |
+| `GameGetAllMatchRuleResponse` | 应答 | [Game/GameMatch/GameGetAllMatchRuleResponse.cs](../../DataModels/Game/GameMatch/GameGetAllMatchRuleResponse.cs) | `match_rule_list` |
+| `GameMatchOpenStateRequest` | 请求体 | [Game/GameMatch/GameMatchOpenStateRequest.cs](../../DataModels/Game/GameMatch/GameMatchOpenStateRequest.cs) | `match_id`, `open_state` |
+| `GameGetPayForOrderResponse` | 应答 | [Game/Midas/GameGetPayForOrderResponse.cs](../../DataModels/Game/Midas/GameGetPayForOrderResponse.cs) | `payfororder` |
+| `GameGetPayForOrderRequest` | 请求体 | [Game/Midas/GameGetPayForOrderRequest.cs](../../DataModels/Game/Midas/GameGetPayForOrderRequest.cs) | `appid`, `order_no`, `out_trade_no` |
+| `GameMsgSecCheckResponse` | 应答 | [Game/SecCheck/GameMsgSecCheckResponse.cs](../../DataModels/Game/SecCheck/GameMsgSecCheckResponse.cs) | `trace_id`, `result`, `detail` |
+| `GameMsgSecCheckRequest` | 请求体 | [Game/SecCheck/GameMsgSecCheckRequest.cs](../../DataModels/Game/SecCheck/GameMsgSecCheckRequest.cs) | `openid`, `version`, `scene`, `content`, `nickname` |
+| `GameMediaCheckResponse` | 应答 | [Game/SecCheck/GameMediaCheckResponse.cs](../../DataModels/Game/SecCheck/GameMediaCheckResponse.cs) | `trace_id`, `result`, `detail` |
+| `GameMediaCheckRequest` | 请求体 | [Game/SecCheck/GameMediaCheckRequest.cs](../../DataModels/Game/SecCheck/GameMediaCheckRequest.cs) | `openid`, `version`, `scene`, `media_url`, `media_type` |
+| `GameGetBalanceResponse` | 应答 | [Game/Midas/GameGetBalanceResponse.cs](../../DataModels/Game/Midas/GameGetBalanceResponse.cs) | `balance`, `present_balance`, `sum_save`, `sum_present`, `sum_balance`, `sum_cost`, `first_save` |
+| `GameGetBalanceRequest` | 请求体 | [Game/Midas/GameGetBalanceRequest.cs](../../DataModels/Game/Midas/GameGetBalanceRequest.cs) | `openid`, `offer_id`, `ts`, `zone_id`, `env`, `user_ip`, `coin_type` |
+| `GamePayResponse` | 应答 | [Game/Midas/GamePayResponse.cs](../../DataModels/Game/Midas/GamePayResponse.cs) | `bill_no`, `balance`, `used_present_amount` |
+| `GamePayRequest` | 请求体 | [Game/Midas/GamePayRequest.cs](../../DataModels/Game/Midas/GamePayRequest.cs) | `openid`, `offer_id`, `ts`, `zone_id`, `env`, `user_ip`, `amount`, `bill_no`, `payitem`, `remark` |
+| `GameCancelPayRequest` | 请求体 | [Game/Midas/GameCancelPayRequest.cs](../../DataModels/Game/Midas/GameCancelPayRequest.cs) | `openid`, `offer_id`, `ts`, `zone_id`, `env`, `user_ip`, `amount`, `bill_no`, `pay_bill_no` |
+| `GamePresentResponse` | 应答 | [Game/Midas/GamePresentResponse.cs](../../DataModels/Game/Midas/GamePresentResponse.cs) | `bill_no`, `balance` |
+| `GamePresentRequest` | 请求体 | [Game/Midas/GamePresentRequest.cs](../../DataModels/Game/Midas/GamePresentRequest.cs) | `openid`, `offer_id`, `ts`, `zone_id`, `env`, `user_ip`, `amount`, `bill_no` |
+| `GameQueryOrderResponse` | 应答 | [Game/Midas/GameQueryOrderResponse.cs](../../DataModels/Game/Midas/GameQueryOrderResponse.cs) | `product_id`, `pay_state`, `deliver_state`, `pay_finish_time`, `out_trade_no`, `mch_order_no`, `transaction_id` |
+| `GameQueryOrderRequest` | 请求体 | [Game/Midas/GameQueryOrderRequest.cs](../../DataModels/Game/Midas/GameQueryOrderRequest.cs) | `openid`, `offer_id`, `ts`, `zone_id`, `env`, `out_trade_no`, `biz_id` |
 
 > DTO 一律以源文件为准；本表只列端点签名**直接引用**的一层类型，嵌套类型不再递归展开。所有 DTO 不使用 `required`（仓内约束），必填性由接口注释与官方页表达，SDK 不做本地必填校验。
 
@@ -505,7 +505,7 @@ var response = await service.GetAllMatchRuleAsync(ct);
 | 契约守卫（路由 / 计数 / DTO 登记断言） | [`WxaGameContractGuards.cs`](../../../../../Tests/Mud.Wechat.MiniProgram.Tests/ContractGuards/WxaGameContractGuards.cs)、[`MiniProgramContractGuards.cs`](../../../../../Tests/Mud.Wechat.MiniProgram.Tests/ContractGuards/MiniProgramContractGuards.cs)、[`MiniProgramNonContractRouteContractGuards.cs`](../../../../../Tests/Mud.Wechat.MiniProgram.Tests/ContractGuards/MiniProgramNonContractRouteContractGuards.cs) |
 | 守卫中的代表性测试方法 | `GameEndpoints_ShouldMatchOfficialRoutesAndVerbs`、`GameInterface_ShouldBindMpAccessToken_AndBeRegisteredInThreeStage`、`GameEndpoints_ShouldLockCredentialAndBodyFace`、`GameOfficialDocDefectsAndSharedTypeRulings_ShouldStayRegistered`、`GameDataModels_ShouldBeRegisteredInJsonContext`、`GameModuleRegistration_ShouldReusePaySigRegistrationPath`、`GameRoutes_ShouldBeDeclaredOnlyInMiniProgramLine_AndSensitiveValuesNeverLogged`、`Routes_ShouldNotOverlapAcrossProductLines`、`TokenInterfaces_ShouldReuseMpAccessToken`、`TokenFreeLogin_ShouldStayOutOfTokenPipeline_ViaMethodLevelOptOut`、`TokenInterfaces_ShouldDeclareOfficialParameterName`、`Endpoints_ShouldMatchOfficialRoutesAndCount` … |
 | 模块枚举 / 装配入口 | [`MiniProgramModule.cs`](../../Extensions/MiniProgramModule.cs)、[`MiniProgramServiceBuilder.cs`](../../Extensions/MiniProgramServiceBuilder.cs) |
-| DTO 与 JSON 上下文 | [`Mud.Wechat.MiniProgram/Game`](../../../Mud.Wechat.MiniProgram/Game/) |
+| DTO 与 JSON 上下文 | [`Mud.Wechat.MiniProgram/DataModels/Game`](../../DataModels/Game) |
 | 跨线基线 | [`Tests/ContractBaseline.cs`](../../../../../Tests/ContractBaseline.cs)（各线分节；本线口径以守卫实际断言为准） |
 | 本线包级公开面与已踩陷阱 | [`Src/MiniProgram/Mud.Wechat.MiniProgram/README.md`](../../README.md) |
 | 跨线通用约束（门禁 / AOT / 落位） | [`AGENTS.md`](../../../../../AGENTS.md) |

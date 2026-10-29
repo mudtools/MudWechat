@@ -156,8 +156,8 @@ var alive = await auth.CheckSessionAsync(signature: "<SIGNATURE>",
 | 路由集合（8 条逐字）与合计计数 398 | `MiniProgramContractGuards` 的 MP-X5（`Endpoints_ShouldMatchOfficialRoutesAndCount`）；计数基线在 `Tests/ContractBaseline.cs` |
 | `[Token].Name == access_token`、令牌类型复用 | MP-X3 / `MiniProgramScaffoldContractGuards` 的 MP-X2 |
 | `session_key` 不得进日志、应答不得覆写 `ToString` | MP-X7 |
-| 应答 / 请求 DTO 字段名与类型 | [../../../Mud.Wechat.MiniProgram/Auth/](../../../Mud.Wechat.MiniProgram/Auth/)（12 个文件，`SerializerClassName = "Auth"`） |
-| AOT 序列化上下文（`internal`，示例中不得引用） | `../../../Mud.Wechat.MiniProgram/Generated/AuthJsonContext.g.cs` |
+| 应答 / 请求 DTO 字段名与类型 | [../../../Mud.Wechat.MiniProgram/DataModels/Auth/](../../DataModels/Auth)（12 个文件，`SerializerClassName = "Auth"`） |
+| AOT 序列化上下文（`internal`，示例中不得引用） | `../../../Mud.Wechat.MiniProgram/DataModels/Generated/AuthJsonContext.g.cs` |
 | 本线端点总表与装配入口 | [../../README.md](../../README.md) |
 
 ## 改动本域需要同批完成

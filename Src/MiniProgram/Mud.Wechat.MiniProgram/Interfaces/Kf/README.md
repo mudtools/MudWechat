@@ -2,7 +2,7 @@
 
 微信小程序「客服」域 SDK（11 端点：客服角色 2 + 客服子商户 4 + 微信客服 3 + 客服输入状态 1 + 临时素材 1）。 接口：[IWxaKfMediaService](./IWxaKfMediaService.cs)、[IWxaKfService](./IWxaKfService.cs)；注册组 `Kf`；模块枚举 `MiniProgramModule.Kf`（装配入口见 [MiniProgramServiceBuilder.cs](../../Extensions/MiniProgramServiceBuilder.cs)）。逐端点核验 2026-10-18。
 
-> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[MiniProgramContractGuards.cs](../../../../../Tests/Mud.Wechat.MiniProgram.Tests/ContractGuards/MiniProgramContractGuards.cs)）、本域 DTO（[`Mud.Wechat.MiniProgram/Kf`](../../../Mud.Wechat.MiniProgram/Kf/)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
+> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[MiniProgramContractGuards.cs](../../../../../Tests/Mud.Wechat.MiniProgram.Tests/ContractGuards/MiniProgramContractGuards.cs)）、本域 DTO（[`Mud.Wechat.MiniProgram/DataModels/Kf`](../../../Mud.Wechat.MiniProgram/DataModels/Kf/)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
 
 ## 端点速览
 
@@ -230,22 +230,22 @@
 
 ## DTO 与序列化面
 
-本域 DTO 目录 [`Mud.Wechat.MiniProgram/Kf`](../../../Mud.Wechat.MiniProgram/Kf/) 内共 **10** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **10** 个，`SerializerClassName` = `Kf`。
+本域 DTO 目录 [`Mud.Wechat.MiniProgram/DataModels/Kf`](../../../Mud.Wechat.MiniProgram/DataModels/Kf/) 内共 **10** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **10** 个，`SerializerClassName` = `Kf`。
 
-AOT 源生成上下文：[`KfJsonContext.g.cs`](./../../../Mud.Wechat.MiniProgram/Generated/KfJsonContext.g.cs)（生成物，勿手改）。
+AOT 源生成上下文：[`KfJsonContext.g.cs`](./../../DataModels/Generated/KfJsonContext.g.cs)（生成物，勿手改）。
 
 | 端点引用的类型 | 角色 | 定义位置 | JSON 字段（前缀） |
 |---|---|---|---|
-| `WxaResponse` | 应答 | [Common/WxaResponse.cs](../../../Mud.Wechat.MiniProgram/Common/WxaResponse.cs) | `errcode`, `errmsg` |
-| `WxaKfAccountRequest` | 请求体 | [Kf/WxaKfAccountRequest.cs](../../../Mud.Wechat.MiniProgram/Kf/WxaKfAccountRequest.cs) | `kfaccount` |
-| `WxaBusinessRegisterRequest` | 请求体 | [Kf/WxaBusinessRegisterRequest.cs](../../../Mud.Wechat.MiniProgram/Kf/WxaBusinessRegisterRequest.cs) | `mch_id`, `brand_name`, `brand_icon` |
-| `WxaBusinessUpdateRequest` | 请求体 | [Kf/WxaBusinessUpdateRequest.cs](../../../Mud.Wechat.MiniProgram/Kf/WxaBusinessUpdateRequest.cs) | `mch_id`, `brand_name`, `brand_icon` |
-| `WxaBusinessGetResponse` | 应答 | [Kf/WxaBusinessGetResponse.cs](../../../Mud.Wechat.MiniProgram/Kf/WxaBusinessGetResponse.cs) | `business_info` |
-| `WxaBusinessGetRequest` | 请求体 | [Kf/WxaBusinessGetRequest.cs](../../../Mud.Wechat.MiniProgram/Kf/WxaBusinessGetRequest.cs) | `mch_id` |
-| `WxaBusinessListResponse` | 应答 | [Kf/WxaBusinessListResponse.cs](../../../Mud.Wechat.MiniProgram/Kf/WxaBusinessListResponse.cs) | `business_list` |
-| `WxaKfWorkGetResponse` | 应答 | [Kf/WxaKfWorkGetResponse.cs](../../../Mud.Wechat.MiniProgram/Kf/WxaKfWorkGetResponse.cs) | `kf_openid` |
-| `WxaKfWorkRequest` | 请求体 | [Kf/WxaKfWorkRequest.cs](../../../Mud.Wechat.MiniProgram/Kf/WxaKfWorkRequest.cs) | `kf_openid` |
-| `WxaKfTypingRequest` | 请求体 | [Kf/WxaKfTypingRequest.cs](../../../Mud.Wechat.MiniProgram/Kf/WxaKfTypingRequest.cs) | `touser`, `command` |
+| `WxaResponse` | 应答 | [Common/WxaResponse.cs](../../DataModels/Common/WxaResponse.cs) | `errcode`, `errmsg` |
+| `WxaKfAccountRequest` | 请求体 | [Kf/WxaKfAccountRequest.cs](../../DataModels/Kf/WxaKfAccountRequest.cs) | `kfaccount` |
+| `WxaBusinessRegisterRequest` | 请求体 | [Kf/WxaBusinessRegisterRequest.cs](../../DataModels/Kf/WxaBusinessRegisterRequest.cs) | `mch_id`, `brand_name`, `brand_icon` |
+| `WxaBusinessUpdateRequest` | 请求体 | [Kf/WxaBusinessUpdateRequest.cs](../../DataModels/Kf/WxaBusinessUpdateRequest.cs) | `mch_id`, `brand_name`, `brand_icon` |
+| `WxaBusinessGetResponse` | 应答 | [Kf/WxaBusinessGetResponse.cs](../../DataModels/Kf/WxaBusinessGetResponse.cs) | `business_info` |
+| `WxaBusinessGetRequest` | 请求体 | [Kf/WxaBusinessGetRequest.cs](../../DataModels/Kf/WxaBusinessGetRequest.cs) | `mch_id` |
+| `WxaBusinessListResponse` | 应答 | [Kf/WxaBusinessListResponse.cs](../../DataModels/Kf/WxaBusinessListResponse.cs) | `business_list` |
+| `WxaKfWorkGetResponse` | 应答 | [Kf/WxaKfWorkGetResponse.cs](../../DataModels/Kf/WxaKfWorkGetResponse.cs) | `kf_openid` |
+| `WxaKfWorkRequest` | 请求体 | [Kf/WxaKfWorkRequest.cs](../../DataModels/Kf/WxaKfWorkRequest.cs) | `kf_openid` |
+| `WxaKfTypingRequest` | 请求体 | [Kf/WxaKfTypingRequest.cs](../../DataModels/Kf/WxaKfTypingRequest.cs) | `touser`, `command` |
 
 > DTO 一律以源文件为准；本表只列端点签名**直接引用**的一层类型，嵌套类型不再递归展开。所有 DTO 不使用 `required`（仓内约束），必填性由接口注释与官方页表达，SDK 不做本地必填校验。
 
@@ -283,7 +283,7 @@ var response = await service.ListBusinessAsync(ct);
 | 契约守卫（路由 / 计数 / DTO 登记断言） | [`MiniProgramContractGuards.cs`](../../../../../Tests/Mud.Wechat.MiniProgram.Tests/ContractGuards/MiniProgramContractGuards.cs) |
 | 守卫中的代表性测试方法 | `Routes_ShouldNotOverlapAcrossProductLines`、`TokenInterfaces_ShouldReuseMpAccessToken`、`TokenFreeLogin_ShouldStayOutOfTokenPipeline_ViaMethodLevelOptOut`、`TokenInterfaces_ShouldDeclareOfficialParameterName`、`Endpoints_ShouldMatchOfficialRoutesAndCount`、`Dtos_ShouldExposeOfficialFieldNames`、`SessionKey_ShouldNeverBeLogged`、`SsrfWhitelist_ShouldRemainUnchanged`、`ManualChannels_ShouldFallBackToDefaultApp`、`SmartApiRoutes_ShouldStayOnOfficialAccountLine`、`AddMiniProgramServices_ShouldFailFast_WhenAddMpAppMissing`、`AddMiniProgramServices_AddAllApis_ShouldRegisterAllDomains` |
 | 模块枚举 / 装配入口 | [`MiniProgramModule.cs`](../../Extensions/MiniProgramModule.cs)、[`MiniProgramServiceBuilder.cs`](../../Extensions/MiniProgramServiceBuilder.cs) |
-| DTO 与 JSON 上下文 | [`Mud.Wechat.MiniProgram/Kf`](../../../Mud.Wechat.MiniProgram/Kf/) |
+| DTO 与 JSON 上下文 | [`Mud.Wechat.MiniProgram/DataModels/Kf`](../../../Mud.Wechat.MiniProgram/DataModels/Kf/) |
 | 跨线基线 | [`Tests/ContractBaseline.cs`](../../../../../Tests/ContractBaseline.cs)（各线分节；本线口径以守卫实际断言为准） |
 | 本线包级公开面与已踩陷阱 | [`Src/MiniProgram/Mud.Wechat.MiniProgram/README.md`](../../README.md) |
 | 跨线通用约束（门禁 / AOT / 落位） | [`AGENTS.md`](../../../../../AGENTS.md) |

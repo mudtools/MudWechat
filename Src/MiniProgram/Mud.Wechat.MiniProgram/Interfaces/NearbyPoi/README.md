@@ -2,7 +2,7 @@
 
 微信小程序「附近小程序」域 SDK（4 端点：添加地点 / 删除地点 / 查看地点列表 / 设置展示状态）。 接口：[IWxaNearbyPoiService](./IWxaNearbyPoiService.cs)；注册组 `NearbyPoi`；模块枚举 `MiniProgramModule.NearbyPoi`（装配入口见 [MiniProgramServiceBuilder.cs](../../Extensions/MiniProgramServiceBuilder.cs)）。逐端点核验 2026-10-18。
 
-> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[MiniProgramContractGuards.cs](../../../../../Tests/Mud.Wechat.MiniProgram.Tests/ContractGuards/MiniProgramContractGuards.cs)）、本域 DTO（[`Mud.Wechat.MiniProgram/NearbyPoi`](../../../Mud.Wechat.MiniProgram/NearbyPoi/)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
+> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[MiniProgramContractGuards.cs](../../../../../Tests/Mud.Wechat.MiniProgram.Tests/ContractGuards/MiniProgramContractGuards.cs)）、本域 DTO（[`Mud.Wechat.MiniProgram/DataModels/NearbyPoi`](../../DataModels/NearbyPoi)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
 
 ## 端点速览
 
@@ -94,18 +94,18 @@ https://developers.weixin.qq.com/miniprogram/dev/server/API/nearby-poi/api_getne
 
 ## DTO 与序列化面
 
-本域 DTO 目录 [`Mud.Wechat.MiniProgram/NearbyPoi`](../../../Mud.Wechat.MiniProgram/NearbyPoi/) 内共 **8** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **8** 个，`SerializerClassName` = `NearbyPoi`。
+本域 DTO 目录 [`Mud.Wechat.MiniProgram/DataModels/NearbyPoi`](../../DataModels/NearbyPoi) 内共 **8** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **8** 个，`SerializerClassName` = `NearbyPoi`。
 
-AOT 源生成上下文：[`NearbyPoiJsonContext.g.cs`](./../../../Mud.Wechat.MiniProgram/Generated/NearbyPoiJsonContext.g.cs)（生成物，勿手改）。
+AOT 源生成上下文：[`NearbyPoiJsonContext.g.cs`](./../../DataModels/Generated/NearbyPoiJsonContext.g.cs)（生成物，勿手改）。
 
 | 端点引用的类型 | 角色 | 定义位置 | JSON 字段（前缀） |
 |---|---|---|---|
-| `WxaResponse` | 应答 | [Common/WxaResponse.cs](../../../Mud.Wechat.MiniProgram/Common/WxaResponse.cs) | `errcode`, `errmsg` |
-| `WxaAddNearbyPoiRequest` | 请求体 | [NearbyPoi/WxaAddNearbyPoiRequest.cs](../../../Mud.Wechat.MiniProgram/NearbyPoi/WxaAddNearbyPoiRequest.cs) | `is_show`, `categories`, `address`, `district`, `city`, `province`, `lat`, `lng`, `media_id`, `poi_id`, `kf_info`, `store_info` |
-| `WxaDeleteNearbyPoiRequest` | 请求体 | [NearbyPoi/WxaDeleteNearbyPoiRequest.cs](../../../Mud.Wechat.MiniProgram/NearbyPoi/WxaDeleteNearbyPoiRequest.cs) | `poi_id` |
-| `WxaNearbyPoiListResponse` | 应答 | [NearbyPoi/WxaNearbyPoiListResponse.cs](../../../Mud.Wechat.MiniProgram/NearbyPoi/WxaNearbyPoiListResponse.cs) | `list` |
-| `WxaNearbyPoiListRequest` | 请求体 | [NearbyPoi/WxaNearbyPoiListRequest.cs](../../../Mud.Wechat.MiniProgram/NearbyPoi/WxaNearbyPoiListRequest.cs) | `page`, `page_rows` |
-| `WxaSetNearbyPoiShowStatusRequest` | 请求体 | [NearbyPoi/WxaSetNearbyPoiShowStatusRequest.cs](../../../Mud.Wechat.MiniProgram/NearbyPoi/WxaSetNearbyPoiShowStatusRequest.cs) | `poi_id`, `status` |
+| `WxaResponse` | 应答 | [Common/WxaResponse.cs](../../DataModels/Common/WxaResponse.cs) | `errcode`, `errmsg` |
+| `WxaAddNearbyPoiRequest` | 请求体 | [NearbyPoi/WxaAddNearbyPoiRequest.cs](../../DataModels/NearbyPoi/WxaAddNearbyPoiRequest.cs) | `is_show`, `categories`, `address`, `district`, `city`, `province`, `lat`, `lng`, `media_id`, `poi_id`, `kf_info`, `store_info` |
+| `WxaDeleteNearbyPoiRequest` | 请求体 | [NearbyPoi/WxaDeleteNearbyPoiRequest.cs](../../DataModels/NearbyPoi/WxaDeleteNearbyPoiRequest.cs) | `poi_id` |
+| `WxaNearbyPoiListResponse` | 应答 | [NearbyPoi/WxaNearbyPoiListResponse.cs](../../DataModels/NearbyPoi/WxaNearbyPoiListResponse.cs) | `list` |
+| `WxaNearbyPoiListRequest` | 请求体 | [NearbyPoi/WxaNearbyPoiListRequest.cs](../../DataModels/NearbyPoi/WxaNearbyPoiListRequest.cs) | `page`, `page_rows` |
+| `WxaSetNearbyPoiShowStatusRequest` | 请求体 | [NearbyPoi/WxaSetNearbyPoiShowStatusRequest.cs](../../DataModels/NearbyPoi/WxaSetNearbyPoiShowStatusRequest.cs) | `poi_id`, `status` |
 
 > DTO 一律以源文件为准；本表只列端点签名**直接引用**的一层类型，嵌套类型不再递归展开。所有 DTO 不使用 `required`（仓内约束），必填性由接口注释与官方页表达，SDK 不做本地必填校验。
 
@@ -145,7 +145,7 @@ var response = await service.AddAsync(new WxaAddNearbyPoiRequest(), ct);
 | 契约守卫（路由 / 计数 / DTO 登记断言） | [`MiniProgramContractGuards.cs`](../../../../../Tests/Mud.Wechat.MiniProgram.Tests/ContractGuards/MiniProgramContractGuards.cs) |
 | 守卫中的代表性测试方法 | `Routes_ShouldNotOverlapAcrossProductLines`、`TokenInterfaces_ShouldReuseMpAccessToken`、`TokenFreeLogin_ShouldStayOutOfTokenPipeline_ViaMethodLevelOptOut`、`TokenInterfaces_ShouldDeclareOfficialParameterName`、`Endpoints_ShouldMatchOfficialRoutesAndCount`、`Dtos_ShouldExposeOfficialFieldNames`、`SessionKey_ShouldNeverBeLogged`、`SsrfWhitelist_ShouldRemainUnchanged`、`ManualChannels_ShouldFallBackToDefaultApp`、`SmartApiRoutes_ShouldStayOnOfficialAccountLine`、`AddMiniProgramServices_ShouldFailFast_WhenAddMpAppMissing`、`AddMiniProgramServices_AddAllApis_ShouldRegisterAllDomains` |
 | 模块枚举 / 装配入口 | [`MiniProgramModule.cs`](../../Extensions/MiniProgramModule.cs)、[`MiniProgramServiceBuilder.cs`](../../Extensions/MiniProgramServiceBuilder.cs) |
-| DTO 与 JSON 上下文 | [`Mud.Wechat.MiniProgram/NearbyPoi`](../../../Mud.Wechat.MiniProgram/NearbyPoi/) |
+| DTO 与 JSON 上下文 | [`Mud.Wechat.MiniProgram/DataModels/NearbyPoi`](../../DataModels/NearbyPoi) |
 | 跨线基线 | [`Tests/ContractBaseline.cs`](../../../../../Tests/ContractBaseline.cs)（各线分节；本线口径以守卫实际断言为准） |
 | 本线包级公开面与已踩陷阱 | [`Src/MiniProgram/Mud.Wechat.MiniProgram/README.md`](../../README.md) |
 | 跨线通用约束（门禁 / AOT / 落位） | [`AGENTS.md`](../../../../../AGENTS.md) |

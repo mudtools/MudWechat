@@ -2,7 +2,7 @@
 
 微信小程序「硬件设备」域 SDK（9 端点：设备消息 1 + 设备票据 1 + 设备组 4 + license 3）。 接口：[IWxaHardwareDeviceService](./IWxaHardwareDeviceService.cs)；注册组 `HardwareDevice`；模块枚举 `MiniProgramModule.HardwareDevice`（装配入口见 [MiniProgramServiceBuilder.cs](../../Extensions/MiniProgramServiceBuilder.cs)）。逐端点核验 2026-10-18。
 
-> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[MiniProgramContractGuards.cs](../../../../../Tests/Mud.Wechat.MiniProgram.Tests/ContractGuards/MiniProgramContractGuards.cs)）、本域 DTO（[`Mud.Wechat.MiniProgram/HardwareDevice`](../../../Mud.Wechat.MiniProgram/HardwareDevice/)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
+> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[MiniProgramContractGuards.cs](../../../../../Tests/Mud.Wechat.MiniProgram.Tests/ContractGuards/MiniProgramContractGuards.cs)）、本域 DTO（[`Mud.Wechat.MiniProgram/DataModels/HardwareDevice`](../../DataModels/HardwareDevice)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
 
 ## 端点速览
 
@@ -149,23 +149,23 @@ https://developers.weixin.qq.com/miniprogram/dev/server/API/hardware-device/ 系
 
 ## DTO 与序列化面
 
-本域 DTO 目录 [`Mud.Wechat.MiniProgram/HardwareDevice`](../../../Mud.Wechat.MiniProgram/HardwareDevice/) 内共 **14** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **14** 个，`SerializerClassName` = `HardwareDevice`。
+本域 DTO 目录 [`Mud.Wechat.MiniProgram/DataModels/HardwareDevice`](../../DataModels/HardwareDevice) 内共 **14** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **14** 个，`SerializerClassName` = `HardwareDevice`。
 
-AOT 源生成上下文：[`HardwareDeviceJsonContext.g.cs`](./../../../Mud.Wechat.MiniProgram/Generated/HardwareDeviceJsonContext.g.cs)（生成物，勿手改）。
+AOT 源生成上下文：[`HardwareDeviceJsonContext.g.cs`](./../../DataModels/Generated/HardwareDeviceJsonContext.g.cs)（生成物，勿手改）。
 
 | 端点引用的类型 | 角色 | 定义位置 | JSON 字段（前缀） |
 |---|---|---|---|
-| `WxaResponse` | 应答 | [Common/WxaResponse.cs](../../../Mud.Wechat.MiniProgram/Common/WxaResponse.cs) | `errcode`, `errmsg` |
-| `WxaDeviceMessageSendRequest` | 请求体 | [HardwareDevice/WxaDeviceMessageSendRequest.cs](../../../Mud.Wechat.MiniProgram/HardwareDevice/WxaDeviceMessageSendRequest.cs) | `tousers`, `template_id`, `page`, `miniprogram_state`, `lang`, `data` |
-| `WxaSnTicketResponse` | 应答 | [HardwareDevice/WxaSnTicketResponse.cs](../../../Mud.Wechat.MiniProgram/HardwareDevice/WxaSnTicketResponse.cs) | `sn_ticket`, `expires_in` |
-| `WxaIoTGroupCreateResponse` | 应答 | [HardwareDevice/WxaIoTGroupCreateResponse.cs](../../../Mud.Wechat.MiniProgram/HardwareDevice/WxaIoTGroupCreateResponse.cs) | `group_id`, `group_name` |
-| `WxaIoTGroupInfoResponse` | 应答 | [HardwareDevice/WxaIoTGroupInfoResponse.cs](../../../Mud.Wechat.MiniProgram/HardwareDevice/WxaIoTGroupInfoResponse.cs) | `group_id`, `group_name`, `device_list` |
-| `WxaIoTGroupInfoRequest` | 请求体 | [HardwareDevice/WxaIoTGroupInfoRequest.cs](../../../Mud.Wechat.MiniProgram/HardwareDevice/WxaIoTGroupInfoRequest.cs) | `group_id` |
-| `WxaIoTGroupDevicesRequest` | 请求体 | [HardwareDevice/WxaIoTGroupDevicesRequest.cs](../../../Mud.Wechat.MiniProgram/HardwareDevice/WxaIoTGroupDevicesRequest.cs) | `group_id`, `device_list` |
-| `WxaLicensePkgListResponse` | 应答 | [HardwareDevice/WxaLicensePkgListResponse.cs](../../../Mud.Wechat.MiniProgram/HardwareDevice/WxaLicensePkgListResponse.cs) | `pkg_list` |
-| `WxaLicenseActivateRequest` | 请求体 | [HardwareDevice/WxaLicenseActivateRequest.cs](../../../Mud.Wechat.MiniProgram/HardwareDevice/WxaLicenseActivateRequest.cs) | `pkg_id`, `sn_list` |
-| `WxaLicenseDeviceInfoResponse` | 应答 | [HardwareDevice/WxaLicenseDeviceInfoResponse.cs](../../../Mud.Wechat.MiniProgram/HardwareDevice/WxaLicenseDeviceInfoResponse.cs) | `device_list` |
-| `WxaLicenseDeviceInfoRequest` | 请求体 | [HardwareDevice/WxaLicenseDeviceInfoRequest.cs](../../../Mud.Wechat.MiniProgram/HardwareDevice/WxaLicenseDeviceInfoRequest.cs) | `sn_list` |
+| `WxaResponse` | 应答 | [Common/WxaResponse.cs](../../DataModels/Common/WxaResponse.cs) | `errcode`, `errmsg` |
+| `WxaDeviceMessageSendRequest` | 请求体 | [HardwareDevice/WxaDeviceMessageSendRequest.cs](../../DataModels/HardwareDevice/WxaDeviceMessageSendRequest.cs) | `tousers`, `template_id`, `page`, `miniprogram_state`, `lang`, `data` |
+| `WxaSnTicketResponse` | 应答 | [HardwareDevice/WxaSnTicketResponse.cs](../../DataModels/HardwareDevice/WxaSnTicketResponse.cs) | `sn_ticket`, `expires_in` |
+| `WxaIoTGroupCreateResponse` | 应答 | [HardwareDevice/WxaIoTGroupCreateResponse.cs](../../DataModels/HardwareDevice/WxaIoTGroupCreateResponse.cs) | `group_id`, `group_name` |
+| `WxaIoTGroupInfoResponse` | 应答 | [HardwareDevice/WxaIoTGroupInfoResponse.cs](../../DataModels/HardwareDevice/WxaIoTGroupInfoResponse.cs) | `group_id`, `group_name`, `device_list` |
+| `WxaIoTGroupInfoRequest` | 请求体 | [HardwareDevice/WxaIoTGroupInfoRequest.cs](../../DataModels/HardwareDevice/WxaIoTGroupInfoRequest.cs) | `group_id` |
+| `WxaIoTGroupDevicesRequest` | 请求体 | [HardwareDevice/WxaIoTGroupDevicesRequest.cs](../../DataModels/HardwareDevice/WxaIoTGroupDevicesRequest.cs) | `group_id`, `device_list` |
+| `WxaLicensePkgListResponse` | 应答 | [HardwareDevice/WxaLicensePkgListResponse.cs](../../DataModels/HardwareDevice/WxaLicensePkgListResponse.cs) | `pkg_list` |
+| `WxaLicenseActivateRequest` | 请求体 | [HardwareDevice/WxaLicenseActivateRequest.cs](../../DataModels/HardwareDevice/WxaLicenseActivateRequest.cs) | `pkg_id`, `sn_list` |
+| `WxaLicenseDeviceInfoResponse` | 应答 | [HardwareDevice/WxaLicenseDeviceInfoResponse.cs](../../DataModels/HardwareDevice/WxaLicenseDeviceInfoResponse.cs) | `device_list` |
+| `WxaLicenseDeviceInfoRequest` | 请求体 | [HardwareDevice/WxaLicenseDeviceInfoRequest.cs](../../DataModels/HardwareDevice/WxaLicenseDeviceInfoRequest.cs) | `sn_list` |
 
 > DTO 一律以源文件为准；本表只列端点签名**直接引用**的一层类型，嵌套类型不再递归展开。所有 DTO 不使用 `required`（仓内约束），必填性由接口注释与官方页表达，SDK 不做本地必填校验。
 
@@ -204,7 +204,7 @@ var response = await service.CreateIoTGroupIdAsync(ct);
 | 契约守卫（路由 / 计数 / DTO 登记断言） | [`MiniProgramContractGuards.cs`](../../../../../Tests/Mud.Wechat.MiniProgram.Tests/ContractGuards/MiniProgramContractGuards.cs) |
 | 守卫中的代表性测试方法 | `Routes_ShouldNotOverlapAcrossProductLines`、`TokenInterfaces_ShouldReuseMpAccessToken`、`TokenFreeLogin_ShouldStayOutOfTokenPipeline_ViaMethodLevelOptOut`、`TokenInterfaces_ShouldDeclareOfficialParameterName`、`Endpoints_ShouldMatchOfficialRoutesAndCount`、`Dtos_ShouldExposeOfficialFieldNames`、`SessionKey_ShouldNeverBeLogged`、`SsrfWhitelist_ShouldRemainUnchanged`、`ManualChannels_ShouldFallBackToDefaultApp`、`SmartApiRoutes_ShouldStayOnOfficialAccountLine`、`AddMiniProgramServices_ShouldFailFast_WhenAddMpAppMissing`、`AddMiniProgramServices_AddAllApis_ShouldRegisterAllDomains` |
 | 模块枚举 / 装配入口 | [`MiniProgramModule.cs`](../../Extensions/MiniProgramModule.cs)、[`MiniProgramServiceBuilder.cs`](../../Extensions/MiniProgramServiceBuilder.cs) |
-| DTO 与 JSON 上下文 | [`Mud.Wechat.MiniProgram/HardwareDevice`](../../../Mud.Wechat.MiniProgram/HardwareDevice/) |
+| DTO 与 JSON 上下文 | [`Mud.Wechat.MiniProgram/DataModels/HardwareDevice`](../../DataModels/HardwareDevice) |
 | 跨线基线 | [`Tests/ContractBaseline.cs`](../../../../../Tests/ContractBaseline.cs)（各线分节；本线口径以守卫实际断言为准） |
 | 本线包级公开面与已踩陷阱 | [`Src/MiniProgram/Mud.Wechat.MiniProgram/README.md`](../../README.md) |
 | 跨线通用约束（门禁 / AOT / 落位） | [`AGENTS.md`](../../../../../AGENTS.md) |

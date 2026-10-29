@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+	<PropertyGroup>
+		<RootNamespace>Mud.Wechat.OfficialAccount.ArticleDemo</RootNamespace>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<!-- 前端产物随构建落位：门禁冒烟直接执行 bin 下的 dll，此时内容根是 bin 目录。 -->
+		<Content Update="wwwroot\**" CopyToOutputDirectory="PreserveNewest" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<!-- Demo 基座：环境变量校验、写操作闸、健康检查端点、业务异常 → 502 映射闸。 -->
+		<ProjectReference Include="..\Mud.Wechat.Demo.Shared\Mud.Wechat.Demo.Shared.csproj" />
+		<ProjectReference Include="..\..\Src\OfficialAccount\Mud.Wechat.OfficialAccount\Mud.Wechat.OfficialAccount.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<!-- 本地台账层（方案 §7）：EF Core 9 + SQLite。Demos 已关 AOT/Trim，反射式模型构建可用；
+		     SDK 源工程不得引 EF Core（AGENTS §3 AOT 红线），本层只在 Demo 内。
+		     Design 仅 dotnet ef 生成迁移用，PrivateAssets=all 不外泄。 -->
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.22" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.22" PrivateAssets="all" />
+	</ItemGroup>
+
+</Project>

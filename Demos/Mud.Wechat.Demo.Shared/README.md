@@ -10,9 +10,9 @@
 
 | 类型 | 成员 | 承担什么 |
 |---|---|---|
-| `DemoEnv` | `Require` / `RequireAll` / `Optional` / `Flag` / `FullName` | 统一 `MUDWECHAT_DEMO_` 前缀读取；`RequireAll` **一次性列出全部缺失项**再抛；含 `<` `>` `your-` 的值按占位符等同于缺失 |
+| `DemoEnv` | `Require` / `RequireAll` / `Optional` / `Flag` / `FullName`；`RequireAll(IConfiguration, (env, key)[])` / `Optional(env, IConfiguration, key)` | 统一 `MUDWECHAT_DEMO_` 前缀读取；`RequireAll` **一次性列出全部缺失项**再抛；含 `<` `>` `your-` 的值按占位符等同于缺失。后两个重载把「变量名 + 配置键」当**成对来源**（变量优先，两处共用同一套占位符判定），错误消息同时给出两种写法 |
 | `DemoWriteGate` | `Enabled` / `Announce(logger)` | 只认 `MUDWECHAT_DEMO_ALLOW_WRITE=1` 这一个开关；启用时启动日志打 **Warning** |
-| `DemoHealthEndpoint` | `MapDemoHealth(demo, config)` | 固定形状 `{status, demo, utcNow, writeGate, config}`；`config` 由各 Demo 自己给，**只放非敏感摘要** |
+| `DemoHealthEndpoint` | `MapDemoHealth(demo, config)` / `MapDemoHealth(demo, ctx => Task<object>)` | 固定形状 `{status, demo, utcNow, writeGate, config}`；`config` 由各 Demo 自己给，**只放非敏感摘要**。第二个重载供带本地存储的 Demo **按请求现算**（台账行数在启动期快照里没有意义）；两者都走 `WriteAsJsonAsync` —— `async (HttpContext) => Results.Json(…)` 会被重载解析绑成 `RequestDelegate`，返回值丢弃后是**不报错的空 200**（DM-14 实测踩过） |
 | `DemoApiErrorGate` | `UseWechatApiErrorGate(app)` | 把 `WechatApiException` 族映射成 502 + `{errorCode, errorMessage, requestUri}`；另拆**组件负缓存包装**（内层是 `WechatApiException` 才映射，普通 `InvalidOperationException` 原样上抛） |
 
 ## 2 使用纪律（新增 Demo 时照 §4 清单，别改本库）
@@ -20,6 +20,8 @@
 1. **`DemoEnv.RequireAll` 必须在任何 DI 装配之前**：`Add*App` 在注册期就构造应用管理器并 `Validate()`，
    凭据缺失若走到那时才炸，报错形态是「配置非法」而不是「少配了哪个变量」，读者无法自助。
    唯一例外是 `Mud.Wechat.AllInOne.Demo`（它按凭据束整线降级，见该工程 README）。
+   需要读 JSON 配置的 Demo（DM-14）把校验放在 `CreateBuilder` **之后**、任何 `builder.Services.*` 之前 ——
+   「DI 之前」这条纪律仍然成立，`CreateBuilder` 本身不注册服务。
 2. **写端点包在 `if (DemoWriteGate.Enabled)` 里，不是「映射了再判 403」**：默认**根本不映射**路由 ⇒ 404。
    「暴露了再判」会让读者以为写操作只是被权限挡住，而实际防线是路由不存在。
 3. **错误闸的注册顺序**：通用闸 `UseWechatApiErrorGate()` 先注册、线专属闸后注册
@@ -31,6 +33,14 @@
    绝不回原文 —— 指纹足以证明「换到了新值」，又不把凭据摊在屏幕上。
 5. **闸的实现刻意只有一句 `DemoEnv.Flag("ALLOW_WRITE")`**（只认 `"1"`）：保持可被 grep 到，
    任何 Demo 里出现绕过它的写端点都属体系缺陷。不要给它加「默认开启」「按环境推导」之类的智能。
+   —— 写闸**没有配置文件等价键**：DM-14 支持 JSON 配置时特意不开这条口，
+   否则「默认关闭」会变成「换台机器（带一份 appsettings）就默认打开」。
+6. **JSON 配置走 `builder.Configuration` 的固有链，不要手工往链尾插源**：
+   `CreateBuilder` 已按 `appsettings.json < appsettings.{Environment}.json < User Secrets < 环境变量 < 命令行`
+   挂好；再 `builder.Configuration.AddJsonFile(...)` 会把该文件排到环境变量与命令行**之后** ⇒ 文件悄悄盖掉变量，
+   且不报错（DM-14 实测踩过，靠 `--WechatDemo:DbPath` 与文件同时给值才发现）。
+   本机真值因此走 `appsettings.Development.json`（`.gitignore` 的 `**/appsettings.*.json` 已覆盖），入库的
+   `appsettings.json` 只放模板与非机密项。
 
 ## 3 为什么不把这几件事并进 SDK
 

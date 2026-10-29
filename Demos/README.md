@@ -13,6 +13,7 @@
 | L1 | `Mud.Wechat.Work.ContactCallbackDemo` | 企微通讯录变更回调 + 类型化处理器（DM-02） | 是 | 已实施 |
 | L1 | `Mud.Wechat.Work.WebDemo` | 网页授权 + JS-SDK + 发消息（DM-03） | 是 | 已实施 |
 | L1 | `Mud.Wechat.OfficialAccount.Demo` | 公众号授权/JS-SDK/模板消息/被动回复（DM-04） | 是 | 已实施 |
+| L1 | `Mud.Wechat.OfficialAccount.ArticleDemo` | 公众号文章管理：素材 → 草稿 → 发布 → 状态 → 历史（DM-14，**本仓首个带前端构建与本地 SQLite 台账的 Demo**） | 是 | 已实施 |
 | L1 | `Mud.Wechat.MiniProgram.Demo` | 登录/小程序码/订阅消息（DM-05） | 是 | 已实施 |
 | L1 | `Mud.Wechat.Pay.Demo` | Native/JSAPI 下单、通知、查询、退款（DM-06） | 是 | 已实施 |
 | L2 | `Mud.Wechat.OpenPlatform.Demo` | 开放平台票据与授权编排（DM-09） | 是 | 已实施 |
@@ -21,7 +22,7 @@
 | L2 | `Mud.Wechat.Ads.Demo` | 腾讯广告 OAuth2 授权链 + 客户/日报只读（DM-13，本线**无回调面**，唯一非微信凭据模型的一条线） | 是 | 已实施 |
 | L3 | `Mud.Wechat.AllInOne.Demo` | 五线同宿主共存：企微（XML + 机器人 JSON）/ 公众号 / 支付 / 小店 / 开放平台（DM-12，**零业务端点**） | 是 | 已实施 |
 
-**共 13 个工程**（L0 两 + L1 六 + L2 四 + L3 一），逐工程都有 `README.md`；
+**共 14 个工程**（L0 两 + L1 七 + L2 四 + L3 一），逐工程都有 `README.md`；
 其中基座自身的契约（四部件职责、使用纪律、为何不并进 SDK）在 `Mud.Wechat.Demo.Shared/README.md`。
 
 **门禁定位**：`Demos/*` 全部 `IsPackable=false`，不进 AOT strict（`verify-build.ps1` 步骤 2 只扫 `Src/`）、
@@ -41,9 +42,10 @@
 | `MUDWECHAT_DEMO_WORK_AGENT_SECRET` | DM-01 / DM-02 / DM-03 / DM-11 | 启动 fail-fast |
 | `MUDWECHAT_DEMO_WORK_CALLBACK_TOKEN` | DM-02 / SelfTest | 启动 fail-fast |
 | `MUDWECHAT_DEMO_WORK_CALLBACK_AES_KEY` | DM-02 / SelfTest | 启动 fail-fast（长度须 43） |
-| `MUDWECHAT_DEMO_MP_APP_ID` / `_MP_APP_SECRET` | DM-04 | 启动 fail-fast |
+| `MUDWECHAT_DEMO_MP_APP_ID` / `_MP_APP_SECRET` | DM-04 / DM-14 | 启动 fail-fast |
 | `MUDWECHAT_DEMO_MP_CALLBACK_TOKEN` / `_MP_CALLBACK_AES_KEY` | DM-04 / SelfTest（`--channel mp`） | 启动 fail-fast（AESKey 长度须 43） |
 | `MUDWECHAT_DEMO_MP_TEMPLATE_ID` | DM-04 | **可选**，未设置时模板消息端点返回配置提示 |
+| `MUDWECHAT_DEMO_MP_DB_PATH` | DM-14 | **可选**，SQLite 库文件绝对路径；缺省落 `bin/…/app_data/article-demo.db`（随 `**/bin/` 被 gitignore，**不得提交** —— 库内明文存文章正文） |
 | `MUDWECHAT_DEMO_WXA_APP_ID` / `_WXA_APP_SECRET` | DM-05 | 启动 fail-fast |
 | `MUDWECHAT_DEMO_WXA_TEMPLATE_ID` | DM-05 | **可选**，未设置时订阅消息端点返回配置提示 |
 | `MUDWECHAT_DEMO_PAY_MCH_ID` / `_PAY_SERIAL_NUMBER` / `_PAY_APP_ID` / `_PAY_API_V3_KEY` | DM-06 | 启动 fail-fast |
@@ -67,6 +69,12 @@
 
 **广告线刻意没有 `MUDWECHAT_DEMO_ADS_ACCOUNT_ID`**：`account_id` 来自 `oauth/token` 应答的 `authorizer_info`、随令牌落库，
 做成配置项就允许「配置说 A 账号、令牌其实属于 B 账号」这种非法状态（与 `WechatAppConfig` 不提供独立 `TemplateId` 同一思路）。
+
+**DM-14 额外接受配置文件**：`MP_APP_ID` / `MP_APP_SECRET` / `MP_DB_PATH` 各有一个等价配置键
+（`WechatDemo:AppId` / `WechatDemo:AppSecret` / `WechatDemo:DbPath`），**变量仍优先**；
+真值只能落在被 `.gitignore` 忽略的 `appsettings.Development.json` 或 User Secrets 里，
+入库的 `appsettings.json` 只放占位符与非机密项。**`ALLOW_WRITE` 刻意没有等价配置键**（见 §3）：
+默认关闭的写闸不该依赖「某台机器上碰巧有一份文件」。
 
 `DemoEnv.RequireAll(...)` 会**一次性列出全部缺失项**再抛，而不是碰到第一个就退出 ——
 配置一次就能对齐，不必反复启动试错。错误消息末尾固定指向本文件。
@@ -200,6 +208,18 @@ curl -s http://localhost:56568/api/advertisers?pageSize=10      # 期望 401 + e
 curl -s -X POST http://localhost:56568/api/auth/exchange -H 'Content-Type: application/json' -d '{}'   # 期望 400 缺 code
 # 假 code 真出网时经专属闸回 502 + 官方 code（实测 11011 Authorization code is malformed），证明令牌链与信封解析整条走通；
 # 写闸关闭时 POST /api/auth/refresh 为 404 —— 刷新会**作废旧的两支令牌**，按不可逆动作管，不当读操作放行。
+
+# ⑬ 公众号文章管理（DM-14）：本仓首个「带前端构建 + 本地 SQLite 台账」的 Demo，无回调面。
+#   假凭据即可验装配、迁移与台账读面（零凭据时启动就 fail-fast，属预期）：
+MUDWECHAT_DEMO_MP_APP_ID=wx0000000000000000 MUDWECHAT_DEMO_MP_APP_SECRET=fake-secret-for-probe \
+  ASPNETCORE_URLS=http://localhost:56570 dotnet run --project Demos/Mud.Wechat.OfficialAccount.ArticleDemo --no-build -c Release
+curl -s http://localhost:56570/healthz                       # store.provider=sqlite + 台账行数；路径只回显文件名与大小
+curl -s "http://localhost:56570/api/articles/drafts?count=10" # 502 + 40013 invalid appid ⇒ 真的走到了 api.weixin.qq.com
+curl -s "http://localhost:56570/api/articles/jobs"            # 200 + 空集：本地台账面不出网
+#   写闸关闭时六个写端点是 **404 或 405**（模板被 GET 占用的那些回 405）—— 两者都表示写操作没发生；
+#   前端不靠状态码兜底，而是按 /healthz 的 writeGate 提前把写按钮 disabled。
+#   前端只在改 UI 时需要：cd Demos/Mud.Wechat.OfficialAccount.ArticleDemo/web && npm install && npm run build
+#   （产物 wwwroot/ 已入库 ⇒ dotnet build 与门禁都不需要 Node）
 ```
 
 `--channel` 已决定默认端口与回调路由，⑤ 不带 `--base-url` 也能跑；
@@ -235,6 +255,8 @@ curl -s -X POST http://localhost:56568/api/auth/exchange -H 'Content-Type: appli
    `OfficialPayloadContracts`），同样只制造假信号（见 `Mud.Wechat.AI.AgentDemo/README.md` §6.16）。
 3. `Program.cs` 在任何 DI 装配**之前**调用 `DemoEnv.RequireAll(...)`（**唯一例外 DM-12**：它用 `CredentialSet.Read`
    按束读取，缺束整线跳过 ⇒ 共存命题才能在只有部分线凭据的开发机上被验证）；写端点包在 `if (DemoWriteGate.Enabled)` 内；
+   需要读 JSON 配置的 Demo（DM-14）把校验放在 `CreateBuilder` 之后、任何 `builder.Services.*` 之前 ——
+   `CreateBuilder` 不注册服务，「DI 之前」的纪律仍然成立。
 4. `app.MapDemoHealth("<demo 名>", new { 非敏感摘要 })` + `DemoWriteGate.Announce(app.Logger)`；
    **会主动出网调接口**的 Demo 另在 `builder.Build()` 之后挂 `app.UseWechatApiErrorGate()`（DM-01~DM-13 里除 DM-02 外全部命中）——
    令牌链与手工二进制通道以 `WechatApiException` 承载业务错误，无此闸时一次 `invalid appid` 会返回带堆栈的 500；
@@ -250,3 +272,21 @@ curl -s -X POST http://localhost:56568/api/auth/exchange -H 'Content-Type: appli
 7. 涉回调则把该线接入 `Mud.Wechat.Demo.SelfTest` 的 `--channel`，并验证
    「合法报文 200 / 重放 403 / 篡改签名 403」三态；
 8. 跑 `dotnet build Mud.Wechat.slnx -c Release` 与 `scripts/audit-config-keys.ps1`。
+9. **带前端的 Demo**（DM-14 起）把 Vite 工程放 `<Demo>/web/`，`build.outDir` 指向 `<Demo>/wwwroot/`
+   并**提交产物**、固定产物文件名（去 contenthash，否则每次构建产生无意义 diff）；
+   csproj 沿用 `<Content Update="wwwroot\**" CopyToOutputDirectory="PreserveNewest" />` 让 fresh clone 后
+   `dotnet run` 直接可见页面。**不要把 `npm ci` 挂进 MSBuild** —— 那会让全量构建隐式依赖 Node 与网络，
+   破坏门禁的可离线假设；前端改动不参与 `verify-build.ps1` 任何步骤，由该 Demo README 的人工清单覆盖。
+10. **需要本地持久化的 Demo**（DM-14 起）用 EF Core + SQLite（`Microsoft.EntityFrameworkCore.Sqlite` 9.x，
+    兼容 `net8.0`；SDK 源工程**不得**引 EF Core —— AOT 红线，持久层只在 Demos 内），
+    并把**迁移文件入库**：启动用 `Migrate()` 而非 `EnsureCreated()`，配 `IDesignTimeDbContextFactory`
+    让 `dotnet ef` 不必跑完 `Program.cs` 的启动期凭据校验；只用 `AddDbContextFactory`
+    （同容器再 `AddDbContext` 装配期即抛）。库文件落 `bin/` 下随构建产物被 gitignore、**不得提交**，
+    路径只允许一个环境变量覆盖（`*_DB_PATH`），README 必须写明「库内可能含敏感正文」且 `/healthz` 不回显绝对路径。
+11. **需要文件化配置的 Demo**（DM-14 起）走 `builder.Configuration` 的**固有链**
+    （`appsettings.json < appsettings.{Environment}.json < User Secrets < 环境变量 < 命令行`），
+    **不要**手工 `AddJsonFile` 往链尾插源 —— 那会把文件排到环境变量与命令行之后，静默盖掉变量（DM-14 实测踩过）。
+    读取用 `DemoEnv.RequireAll(configuration, (变量名, 配置键)...)` / `Optional(变量名, configuration, 配置键)`，
+    以保持「变量优先 + 一次性列全缺失项 + 占位符等同未配置」三条纪律；入库的 `appsettings.json` 只放占位符，
+    真值走被忽略的 `appsettings.Development.json` 或 User Secrets；**写闸不开放文件等价键**。
+    配置文件按构建期 glob 拷贝进 `bin`（内容根钉在 `AppContext.BaseDirectory`），改完要重新构建。

@@ -7,6 +7,7 @@
     <Project Path="Demos/Mud.Wechat.Demo.SelfTest/Mud.Wechat.Demo.SelfTest.csproj" />
     <Project Path="Demos/Mud.Wechat.Demo.Shared/Mud.Wechat.Demo.Shared.csproj" />
     <Project Path="Demos/Mud.Wechat.MiniProgram.Demo/Mud.Wechat.MiniProgram.Demo.csproj" />
+    <Project Path="Demos/Mud.Wechat.OfficialAccount.ArticleDemo/Mud.Wechat.OfficialAccount.ArticleDemo.csproj" />
     <Project Path="Demos/Mud.Wechat.OfficialAccount.Demo/Mud.Wechat.OfficialAccount.Demo.csproj" />
     <Project Path="Demos/Mud.Wechat.OpenPlatform.Demo/Mud.Wechat.OpenPlatform.Demo.csproj" />
     <Project Path="Demos/Mud.Wechat.Pay.Demo/Mud.Wechat.Pay.Demo.csproj" />

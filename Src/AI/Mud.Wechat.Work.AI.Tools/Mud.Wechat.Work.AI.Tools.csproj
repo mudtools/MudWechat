@@ -1,21 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<!-- 受控 TFM 例外（AB-G8 锁定）：理由见 Mud.Wechat.AI.Abstractions.csproj 同名属性组。 -->
 		<TargetFrameworks>net8.0;net10.0</TargetFrameworks>
 		<Description>企业微信线 AI 工具面：WechatToolProfile（Mud.AI.Generator 剖面）、工具风险枚举与绑定类型、只读工具的策展声明（Curation）与执行器（强类型直连 Mud.Wechat.Work 接口）。</Description>
 		<PackageTags>Wechat;Work;AI;Tools;ToolSurface;MudWechat</PackageTags>
-		<!-- 能力目录常开（FIX-24 改形）：把「策展面 × SDK 面」的规模事实作为**编译期内嵌类型**交给守卫消费，
-		     不产报告文件、不改门禁脚本。代价是 WechatToolMethodCatalog（约 337 KB 生成代码）进入编译
-		     （编译时间 +，运行期零成本、AOT 不受影响）；换来的是「62 工具 / 38 域 / 842 方法」三处口径无法各自漂移。 -->
 		<WechatToolCatalog>true</WechatToolCatalog>
 	</PropertyGroup>
 
 	<ItemGroup>
-		<!-- Mud.AI 1.0.2（nuget.org 钉版）：Abstractions 经 Agent 传递可见（AgentTool / ToolHandler / SdkToolProfile 均在其中）。 -->
 		<PackageReference Include="Mud.AI.Agent" Version="1.0.2" />
-		<!-- 工具面源生成引擎：仅作 Analyzer 消费，不产生程序集引用。
-		     红线：本工程不得再挂 Mud.HttpUtils.Generator（同一编译单元禁兼引）。 -->
 		<PackageReference Include="Mud.AI.Generator" Version="1.0.2"
 		                  OutputItemType="Analyzer"
 		                  ReferenceOutputAssembly="false"
@@ -23,22 +16,17 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<!-- golden 更新开关（剖面的 GoldenUpdatePropertyName / CapabilityCatalogPropertyName 槽须在此登记，引擎才能读到）。 -->
 		<CompilerVisibleProperty Include="WechatToolGoldenUpdate" />
 		<CompilerVisibleProperty Include="WechatToolCatalog" />
 	</ItemGroup>
 
 	<ItemGroup>
-		<!-- 已固化的 golden 快照（缺失即首轮不比对；固化后随源码入库）。 -->
-		<!-- `-p:WechatToolGoldenUpdate=true` 供 scripts/Update-WechatToolGolden.ps1 一次性重固化时跳过比对；
-		     正常构建必须参与比对，否则 golden 漂移守卫失效。 -->
 		<AdditionalFiles Include="Generated/WechatToolSchemas.golden.txt"
 		                 Condition="'$(WechatToolGoldenUpdate)' != 'true' AND Exists('Generated/WechatToolSchemas.golden.txt')" />
 	</ItemGroup>
 
 	<ItemGroup>
 		<ProjectReference Include="..\Mud.Wechat.AI\Mud.Wechat.AI.csproj" />
-		<!-- 风险枚举 Mud.Wechat.Work.AI.AgentTools.WechatToolRisk 落层 2 Agent 包（剖面 RiskEnumFullName 槽指向它）。 -->
 		<ProjectReference Include="..\Mud.Wechat.Work.AI\Mud.Wechat.Work.AI.csproj" />
 		<ProjectReference Include="..\..\Work\Mud.Wechat.Work\Mud.Wechat.Work.csproj" />
 	</ItemGroup>

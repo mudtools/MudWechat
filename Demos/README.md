@@ -12,6 +12,7 @@
 | L1 | `Mud.Wechat.Work.ContactDemo` | 企微通讯录读写 + 模块注册（DM-01） | 是 | 已实施 |
 | L1 | `Mud.Wechat.Work.ContactCallbackDemo` | 企微通讯录变更回调 + 类型化处理器（DM-02） | 是 | 已实施 |
 | L1 | `Mud.Wechat.Work.WebDemo` | 网页授权 + JS-SDK + 发消息（DM-03） | 是 | 已实施 |
+| L1 | `Mud.Wechat.Work.OrgApprovalDemo` | 企微组织机构同步/维护 + 审批模板登记/版本对比/覆盖式维护（DM-15，**双自建应用 + 前端 + SQLite 台账**） | 是 | 已实施 |
 | L1 | `Mud.Wechat.OfficialAccount.Demo` | 公众号授权/JS-SDK/模板消息/被动回复（DM-04） | 是 | 已实施 |
 | L1 | `Mud.Wechat.OfficialAccount.ArticleDemo` | 公众号文章管理：素材 → 草稿 → 发布 → 状态 → 历史（DM-14，**本仓首个带前端构建与本地 SQLite 台账的 Demo**） | 是 | 已实施 |
 | L1 | `Mud.Wechat.MiniProgram.Demo` | 登录/小程序码/订阅消息（DM-05） | 是 | 已实施 |
@@ -22,7 +23,7 @@
 | L2 | `Mud.Wechat.Ads.Demo` | 腾讯广告 OAuth2 授权链 + 客户/日报只读（DM-13，本线**无回调面**，唯一非微信凭据模型的一条线） | 是 | 已实施 |
 | L3 | `Mud.Wechat.AllInOne.Demo` | 五线同宿主共存：企微（XML + 机器人 JSON）/ 公众号 / 支付 / 小店 / 开放平台（DM-12，**零业务端点**） | 是 | 已实施 |
 
-**共 14 个工程**（L0 两 + L1 七 + L2 四 + L3 一），逐工程都有 `README.md`；
+**共 15 个工程**（L0 两 + L1 八 + L2 四 + L3 一），逐工程都有 `README.md`；
 其中基座自身的契约（五部件职责、使用纪律、为何不并进 SDK）在 `Mud.Wechat.Demo.Shared/README.md`。
 
 **门禁定位**：`Demos/*` 全部 `IsPackable=false`，不进 AOT strict（`verify-build.ps1` 步骤 2 只扫 `Src/`）、
@@ -40,8 +41,11 @@
 | `MUDWECHAT_DEMO_WORK_CORP_ID` | DM-01 / DM-02 / DM-03 / DM-11 / SelfTest | 启动 fail-fast |
 | `MUDWECHAT_DEMO_WORK_AGENT_ID` | DM-03 | 启动 fail-fast |
 | `MUDWECHAT_DEMO_WORK_AGENT_SECRET` | DM-01 / DM-02 / DM-03 / DM-11 | 启动 fail-fast |
-| `MUDWECHAT_DEMO_WORK_CALLBACK_TOKEN` | DM-02 / SelfTest | 启动 fail-fast |
-| `MUDWECHAT_DEMO_WORK_CALLBACK_AES_KEY` | DM-02 / SelfTest | 启动 fail-fast（长度须 43） |
+| `MUDWECHAT_DEMO_WORK_CONTACT_SECRET` / `_WORK_APPROVAL_SECRET` | DM-15 | 启动 fail-fast；**必须两个不同身份**：通讯录写入只能用通讯录同步助手 secret，模板读写只能用审批应用 secret |
+| `MUDWECHAT_DEMO_WORK_ORG_DB_PATH` | DM-15 | **可选**，SQLite 库文件绝对路径；缺省落 `bin/…/app_data/org-demo.db`（随 `**/bin/` 被 gitignore，**不得提交** —— 库内明文存成员手机与邮箱） |
+| `MUDWECHAT_DEMO_WORK_DISCOVERY` | DM-15 | **可选**，`=1` 才启用「审批单回捞式模板发现」（默认关：要读审批单，代价与敏感面都更高） |
+| `MUDWECHAT_DEMO_WORK_CALLBACK_TOKEN` | DM-02 / SelfTest / DM-15（可选） | DM-02 启动 fail-fast；DM-15 缺失时**不装回调管线**（只读 + 手动同步仍可用） |
+| `MUDWECHAT_DEMO_WORK_CALLBACK_AES_KEY` | DM-02 / SelfTest / DM-15（可选） | DM-02 启动 fail-fast（长度须 43）；DM-15 同上 |
 | `MUDWECHAT_DEMO_MP_APP_ID` / `_MP_APP_SECRET` | DM-04 / DM-14 | 启动 fail-fast |
 | `MUDWECHAT_DEMO_MP_CALLBACK_TOKEN` / `_MP_CALLBACK_AES_KEY` | DM-04 / SelfTest（`--channel mp`） | 启动 fail-fast（AESKey 长度须 43） |
 | `MUDWECHAT_DEMO_MP_TEMPLATE_ID` | DM-04 | **可选**，未设置时模板消息端点返回配置提示 |
@@ -219,6 +223,22 @@ curl -s "http://localhost:56570/api/articles/jobs"            # 200 + 空集：�
 #   前端不靠状态码兜底，而是按 /healthz 的 writeGate 提前把写按钮 disabled。
 #   前端只在改 UI 时需要：cd Demos/Mud.Wechat.OfficialAccount.ArticleDemo/web && npm install && npm run build
 #   （产物 wwwroot/ 已入库 ⇒ dotnet build 与门禁都不需要 Node）
+
+# ⑭ 组织机构 + 审批模板（DM-15）：本仓唯一需要**两个**自建应用的 Demo ——
+#   contacts（通讯录同步助手 secret）负责写通讯录，oa（审批应用 secret）负责读写模板。
+#   两者不能共用：access_token 不区分权限，但换令牌用的 corpsecret 就是身份。
+MUDWECHAT_DEMO_WORK_CORP_ID=ww0000000000000000 \
+MUDWECHAT_DEMO_WORK_CONTACT_SECRET=fake-contact-secret-for-probe \
+MUDWECHAT_DEMO_WORK_APPROVAL_SECRET=fake-approval-secret-for-probe \
+  ASPNETCORE_URLS=http://localhost:56571 dotnet run --project Demos/Mud.Wechat.Work.OrgApprovalDemo --no-build -c Release
+curl -s http://localhost:56571/healthz        # store.provider=sqlite + 9 张表行数全 0；secret 只回显尾 4 位
+curl -s http://localhost:56571/api/org/departments   # 200 + 空集：本地台账面不出网
+# 写闸关闭时全部写端点为 404（根本不是不映射的 403）：POST /api/org/sync 实测 404。
+# 写闸开启后（ALLOW_WRITE=1），假凭据下 POST /api/oa/templates/12345/sync 回
+#   502 + {"errorCode":40013,"errorMessage":"...invalid corpid..."} ⇒ 请求真的走到了 qyapi.weixin.qq.com。
+# 官方没有「列出全部审批模板」的接口：模板 id 只能人工登记 / 审批回调发现 / 审批单回捞（默认关）。
+# update_template 是覆盖式替换且**不改进程节点** —— 编辑页固定横幅说明这一点，提交前强制 dry-run。
+# 前端只在改 UI 时需要：cd Demos/Mud.Wechat.Work.OrgApprovalDemo/web && npm install && npm run build
 ```
 
 `--channel` 已决定默认端口与回调路由，⑤ 不带 `--base-url` 也能跑；
@@ -282,6 +302,11 @@ curl -s "http://localhost:56570/api/articles/jobs"            # 200 + 空集：�
     让 `dotnet ef` 不必跑完 `Program.cs` 的启动期凭据校验；只用 `AddDbContextFactory`
     （同容器再 `AddDbContext` 装配期即抛）。库文件落 `bin/` 下随构建产物被 gitignore、**不得提交**，
     路径只允许一个环境变量覆盖（`*_DB_PATH`），README 必须写明「库内可能含敏感正文」且 `/healthz` 不回显绝对路径。
+    **唯一例外是 DM-15**：它用 FreeSql + SQLite（`FreeSql.Provider.Sqlite`），因为它的表结构与同步语义
+    是「同一份远端事实的多表整体替换」，FreeSql 的 `InsertOrUpdate` / `Ado.Transaction` 比手写 EF 实体
+    更贴近该形态；Demos 已关 AOT/Trim，FreeSql 的反射与表达式面可用（SDK 源工程仍**不得**引 FreeSql）。
+    代价：没有迁移文件，启动用 `CodeFirst.SyncStructure` 建表 —— **字段改名会丢列**，故其 README
+    必须写明「生产环境应换迁移脚本」。
 11. **需要文件化配置的 Demo**（DM-14 起）用基座 `DemoConfigSources.BuildSettingsChain(environmentName, args)` 独立构造设置链
     （模板 < 环境文件 < 本机文件 < 命令行 < 环境变量）。**不要**去改 `builder.Configuration.Sources`：WebApplicationBuilder 在 `Build()` 时
     把宿主那条链**接在自己 sources 尾部**，事后插入的源会被链尾的 `appsettings.json` 反向压过 ⇒

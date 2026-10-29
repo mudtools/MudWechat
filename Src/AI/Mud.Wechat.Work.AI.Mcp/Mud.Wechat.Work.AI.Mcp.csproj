@@ -1,18 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<!-- 受控 TFM 例外（AB-G8 锁定）：与 Mud.Wechat.Work.AI.Tools 同档（net8+；无 netstandard2.0 资产需求）。 -->
 		<TargetFrameworks>net8.0;net10.0</TargetFrameworks>
 		<Description>企业微信线 AI 工具面的 MCP（Model Context Protocol）协议层：把已策展的受控工具面以 JSON-RPC 2.0 暴露为 MCP server（initialize / ping / tools/list / tools/call），stdio 行帧传输 + 可嵌入的请求处理器，零反射、AOT 安全。</Description>
 		<PackageTags>Wechat;Work;AI;MCP;ModelContextProtocol;JsonRpc;MudWechat</PackageTags>
 	</PropertyGroup>
 
 	<ItemGroup>
-		<!-- Mud.AI 1.0.2（nuget.org 钉版）：只取其 ToolResultJson（宽松转义的 JSON 文本出站），不引 Agent 装配。 -->
 		<PackageReference Include="Mud.AI.Agent" Version="1.0.2" />
-
-		<!-- 工具面端口（层 1 中立）：协议层与工具面按 AI-G5 互不引用，只在此端口上相遇；
-		     实现（WechatToolSurfaceAdapter）由 Mud.Wechat.Work.AI.Tools 注册，宿主装配时对接。 -->
 		<ProjectReference Include="..\Mud.Wechat.AI\Mud.Wechat.AI.csproj" />
 	</ItemGroup>
 

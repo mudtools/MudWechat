@@ -13,6 +13,7 @@
     <Project Path="Demos/Mud.Wechat.Pay.Demo/Mud.Wechat.Pay.Demo.csproj" />
     <Project Path="Demos/Mud.Wechat.Work.ContactCallbackDemo/Mud.Wechat.Work.ContactCallbackDemo.csproj" />
     <Project Path="Demos/Mud.Wechat.Work.ContactDemo/Mud.Wechat.Work.ContactDemo.csproj" />
+    <Project Path="Demos/Mud.Wechat.Work.OrgApprovalDemo/Mud.Wechat.Work.OrgApprovalDemo.csproj" />
     <Project Path="Demos/Mud.Wechat.Work.WebDemo/Mud.Wechat.Work.WebDemo.csproj" />
   </Folder>
   <Folder Name="/src/" />

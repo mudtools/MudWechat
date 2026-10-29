@@ -1,7 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<!-- 载荷 DTO 与 CallbackJsonContext 已落地（P3 载荷批次）⇒ 启用类型化回调通道（net8+ 反序列化经源生成上下文）。 -->
 		<DefineConstants>$(DefineConstants);CHANNELS_CALLBACK_TYPED_PAYLOAD</DefineConstants>
 		<Description>微信小店/视频号（channels 生态）SDK 回调接收包：URL 验证（GET echostr 回显）、msg_signature 验签、AES 解密（官方强制 JSON + 安全模式）、AppId 校验、抗重放指纹、事件分发（信封级 + 类型化处理器与拦截器，net8+ 类型化通道）的 HTTP 中间件与多应用路由；42 个官方回调事件键经 [ChannelsCallbackContract] 声明式登记。</Description>
 		<PackageTags>Wechat;Channels;微信小店;视频号;Callback;Webhook;Middleware;MudWechat</PackageTags>
@@ -11,18 +10,11 @@
 		<ProjectReference Include="..\Mud.Wechat.Channels\Mud.Wechat.Channels.csproj" />
 	</ItemGroup>
 
-	<!-- 契约登记生成器挂载于 DataModels（载荷 DTO 所在工程；对齐企微线「生成器只挂载荷工程」先例）。
-	     本工程消费其产物（ChannelsPayloadContracts.RegisterAll 已在 DataModels 编译期发射）。 -->
-
-	<!-- 回调处理器契约分析器（本仓侧，中立工具档位表驱动）：校验 SupportedEventType ↔ 载荷契约（MUDCB002~005）。
-	     仅诊断、不发射 ⇒ 允许随包下发（analyzers/dotnet/cs）；<b>本工程本身照常产出 nupkg</b>（内嵌该分析器）。 -->
 	<ItemGroup>
 		<ProjectReference Include="..\..\Core\Mud.Wechat.Callback.Analyzers\Mud.Wechat.Callback.Analyzers.csproj"
 		                  OutputItemType="Analyzer" ReferenceOutputAssembly="false" PrivateAssets="all" />
 	</ItemGroup>
 
-	<!-- v3 方案 D2：ASP.NET 依赖只存在于运行时 Callback 包（叶层与 Abstractions 保持零 ASP.NET）。
-	     netstandard2.0 走 2.3.9 包；net6.0+ 走 FrameworkReference（对齐 Work.Callback / OA.Callback）。 -->
 	<ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
 		<PackageReference Include="Microsoft.AspNetCore.Http" Version="2.3.9" />
 		<PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.3.9" />
@@ -35,8 +27,6 @@
 		<InternalsVisibleTo Include="Mud.Wechat.Channels.Callback.Tests" />
 	</ItemGroup>
 
-	<!-- 随包下发分析器资产（不新增 nupkg）：直接引用 Analyzers 工程输出 DLL（netstandard2.0 单 TFM，路径固定）。
-	     只挑本仓分析器 DLL；Mud.HttpUtils.Generator（独立包）与本仓 Callback.Generator（发射器，IsPackable=false）不内嵌。 -->
 	<ItemGroup>
 		<None Include="$(MSBuildThisFileDirectory)..\..\..\Src\Core\Mud.Wechat.Callback.Analyzers\bin\$(Configuration)\netstandard2.0\Mud.Wechat.Callback.Analyzers.dll"
 		      Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />

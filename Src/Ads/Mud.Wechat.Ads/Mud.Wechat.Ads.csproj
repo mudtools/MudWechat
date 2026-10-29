@@ -3,9 +3,6 @@
 	<PropertyGroup>
 		<Description>腾讯广告（Tencent Ads） Marketing API v3.0 SDK：应用配置面与 OAuth 凭据端口、官方错误码与异常、全部出入参 DTO（AOT 源生成 JsonContext）、业务声明式客户端（OAuth 授权、客户账号、营销单元、创意、创意组件、素材、人群包、资质、定向包、报表、资金、异步任务）与模块注册器。一线一工程（2026-10 包合并：原 Mud.Wechat.Ads.Abstractions / Mud.Wechat.Ads.DataModels 并入本包，命名空间不变）。</Description>
 		<PackageTags>Wechat;Ads;腾讯广告;TencentAds;MarketingAPI;SDK;DTO;Authentication;Configuration;MudWechat</PackageTags>
-		<!-- MUD005（Query 令牌注入存在 URL 泄露面）：Marketing API v3.0 官方契约把 access_token 作为
-		     Query 参数（见各接口 remarks 的「全局请求参数」表），无法改用 Header ⇒ 属已知接受风险，
-		     以 F6(b) 声明式 MSBuild 开关豁免（组件 3.0.5+）并在 ADS-B3 / G6 词表守卫中钉住「新增 Query 凭据参数必须补词表或登记豁免」。 -->
 		<MudHttpSuppressQueryTokenInjection>true</MudHttpSuppressQueryTokenInjection>
 	</PropertyGroup>
 
@@ -18,7 +15,6 @@
 		<PackageReference Include="Mud.HttpUtils.Generator" Version="3.0.9" PrivateAssets="all" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
 	</ItemGroup>
 
-	<!-- 令牌基座与后台刷新需要 DI / Hosting 面（原 Abstractions 包携带，合并后由本包携带）。 -->
 	<ItemGroup Condition="'$(TargetFramework)' == 'net8.0' Or '$(TargetFramework)' == 'net10.0'">
 		<PackageReference Include="Microsoft.Extensions.Http" Version="10.0.9" />
 		<PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.9" />
@@ -34,7 +30,6 @@
 
 	<ItemGroup>
 		<InternalsVisibleTo Include="Mud.Wechat.Ads.Tests" />
-		<!-- Moq 需直读 internal 接缝（令牌咽喉点与传输层处理器）。 -->
 		<InternalsVisibleTo Include="DynamicProxyGenAssembly2" />
 	</ItemGroup>
 

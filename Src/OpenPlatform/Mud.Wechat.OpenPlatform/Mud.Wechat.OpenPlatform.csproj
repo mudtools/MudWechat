@@ -1,15 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<!-- 受控 TFM 例外（AB-G8 锁定）：本线整体窄化到 net6.0+，不带 netstandard2.0 ——
-		     组件 AddMudHttpClient / HttpClientFactoryEnhancedClient 的最小面即 net6.0+，
-		     且开放平台凭证链是本仓最新的一层，没有历史兼容包袱（合并前主包 / Abstractions /
-		     DataModels 三工程共享同一 TFM 集，2026-10 包合并后由本工程单点持有）。 -->
 		<TargetFrameworks>net6.0;net8.0;net10.0</TargetFrameworks>
 		<Description>微信开放平台「第三方平台」（component）SDK：component_verify_ticket 存储端口、component_access_token 的按需刷新/缓存/并发单飞、命名 HttpClient 契约、官方错误码与异常、全部出入参 DTO（AOT 源生成 JsonContext）、业务声明式客户端（授权、账号、小程序管理、模板、类目、运维中心、数据能力、 tcb、嵌入式、微信客服 AMS）与组件化装配（AddOpenPlatform）。一线一工程（2026-10 包合并：原 Mud.Wechat.OpenPlatform.Abstractions / Mud.Wechat.OpenPlatform.DataModels 并入本包，命名空间不变）。**独立产品线**：与自建形态的公众号/小程序线令牌域严格分离（避免令牌串号）。</Description>
 		<PackageTags>Wechat;OpenPlatform;开放平台;第三方平台;component;SDK;TokenManager;DTO;Authentication;Configuration;MudWechat</PackageTags>
-		<!-- F6(b) 一等豁免（组件 3.0.5+）：本线令牌（component_access_token / 授权方令牌）经 Query 注入是
-		     微信官方契约（MUD005 默认仍报，此处显式声明豁免；其它各线同款开关，见各 csproj）。 -->
 		<MudHttpSuppressQueryTokenInjection>true</MudHttpSuppressQueryTokenInjection>
 	</PropertyGroup>
 

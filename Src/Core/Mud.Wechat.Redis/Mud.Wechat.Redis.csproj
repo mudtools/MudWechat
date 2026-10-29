@@ -3,14 +3,10 @@
 	<PropertyGroup>
 		<Description>企业微信 SDK Redis 分布式存储扩展包：令牌持久层（含批量删除）、企业授权仓储、套件票据仓储与回调抗重放守卫的 Redis 实现，适用于多实例部署，支持 Native AOT 发布（net8.0+）。对应 Mud.Feishu.Redis。</Description>
 		<PackageTags>Wechat;WeChatWork;企业微信;Redis;Distributed;TokenStore;MultiInstance;MudWechat</PackageTags>
-		<!-- net6.0 参考组经 SE.Redis 2.13.17 传递依赖 System.IO.Hashing 9.0.12（只声明 net8+ 目标，
-		net6 回落 netstandard2.0 资产——net6 完整实现 ns2.0 API 面，功能完备），产生「未测试 TFM」
-		提示性警告。逐条核实为 NuGet targets 咨询性提示而非诊断，项目内显式抑制避免污染门禁输出。 -->
 		<SuppressTfmSupportBuildWarnings>true</SuppressTfmSupportBuildWarnings>
 	</PropertyGroup>
 
 	<ItemGroup Condition="'$(TargetFramework)' == 'net10.0' or '$(TargetFramework)' == 'net8.0'">
-		<!-- 10.0.9：对齐 Mud.HttpUtils.Client 传递下限（10.0.5 会触发 NU1605 降级错误）。 -->
 		<PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="10.0.9" />
 	</ItemGroup>
 	<ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' or '$(TargetFramework)' == 'net6.0'">
@@ -18,9 +14,6 @@
 	</ItemGroup>
 
 	<ItemGroup Condition="'$(TargetFramework)' == 'net10.0' or '$(TargetFramework)' == 'net8.0'">
-		<!-- SE.Redis 分档锚定（2026-10-15，对齐 Mud.HttpUtils.Redis 3.0.7 重打包的逐档下限）：
-		net8/net10 组要求 >= 3.4.5（3.3.0 触发 NU1605 降级错误）；2.13.17 含原生 net6.0 资产，
-		低 TFM 不再回落 netstandard2.0（残留的 System.IO.Hashing 传递警告由上方抑制保持原处置）。 -->
 		<PackageReference Include="StackExchange.Redis" Version="3.4.5" />
 	</ItemGroup>
 	<ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' or '$(TargetFramework)' == 'net6.0'">
@@ -28,17 +21,10 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<!-- A-5 分层共存裁决（2026-10-14，上游对账清单）：通用 ITokenStore 面迁官方 Mud.HttpUtils.Redis
-		     （F-3 独立包）。3.0.7 重打包（2026-10-15）起官方逐档锚定 SE.Redis 2.13.17/3.4.5，
-		     本院上方分档引用与其逐档一致（NuGet 无统一/降级冲突）。
-		     官方包键前缀 mud:httputils 与本院 wechat 前缀互不干扰 ⇒ 无需数据迁移；
-		     企微专属端口（CorpAuth/SuiteTicket/ReplayGuard/BotLease）与 IWechatTokenStoreBatchRemove
-		     批删扩展仍留下游包（官方 ITokenStore 维持最小 SPI、不实现微信接口）。 -->
 		<PackageReference Include="Mud.HttpUtils.Redis" Version="3.0.9" />
 	</ItemGroup>
 
 	<ItemGroup>
-		<!-- 单依赖（RD11）：四个存储端口契约（含重放守卫接口）同域于 Abstractions。 -->
 		<ProjectReference Include="..\..\Work\Mud.Wechat.Work\Mud.Wechat.Work.csproj" />
 	</ItemGroup>
 

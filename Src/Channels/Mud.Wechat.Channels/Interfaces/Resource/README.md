@@ -3,7 +3,7 @@
 微信小店 / 视频号（channels 生态）「资源管理」域 SDK（8 端点：图片上传（URL / 二进制双传输形态） +
 图片上传 V2（同双传输形态） + media_id 取数 + 资质图片上传 + 视频分块上传四步流程）。 接口：[IChannelsResourceService](./IChannelsResourceService.cs)；注册组 `Resource`；模块枚举 `ChannelsModule.Resource`（装配入口见 [ChannelsServiceBuilder.cs](../../Extensions/ChannelsServiceBuilder.cs)）。逐端点核验 2026-10-18。
 
-> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[ChannelsResourceContractGuards.cs](../../../../../Tests/Mud.Wechat.Channels.Tests/ContractGuards/ChannelsResourceContractGuards.cs)）、本域 DTO（[`Mud.Wechat.Channels/Resource`](../../../Mud.Wechat.Channels/Resource/)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
+> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[ChannelsResourceContractGuards.cs](../../../../../Tests/Mud.Wechat.Channels.Tests/ContractGuards/ChannelsResourceContractGuards.cs)）、本域 DTO（[`Mud.Wechat.Channels/DataModels/Resource`](../../DataModels/Resource)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
 
 ## 端点速览
 
@@ -246,23 +246,23 @@ MUD005 已知接受风险：微信小店官方契约强制令牌走 Query 参数
 
 ## DTO 与序列化面
 
-本域 DTO 目录 [`Mud.Wechat.Channels/Resource`](../../../Mud.Wechat.Channels/Resource/) 内共 **17** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **17** 个，`SerializerClassName` = `Resource`。
+本域 DTO 目录 [`Mud.Wechat.Channels/DataModels/Resource`](../../DataModels/Resource) 内共 **17** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **17** 个，`SerializerClassName` = `Resource`。
 
-AOT 源生成上下文：[`ResourceJsonContext.g.cs`](./../../../Mud.Wechat.Channels/Generated/ResourceJsonContext.g.cs)（生成物，勿手改）。
+AOT 源生成上下文：[`ResourceJsonContext.g.cs`](./../../DataModels/Generated/ResourceJsonContext.g.cs)（生成物，勿手改）。
 
 | 端点引用的类型 | 角色 | 定义位置 | JSON 字段（前缀） |
 |---|---|---|---|
-| `ChannelsResourceImgUploadResponse` | 应答 | [Resource/ChannelsResourceImgUploadResponse.cs](../../../Mud.Wechat.Channels/Resource/ChannelsResourceImgUploadResponse.cs) | `pic_file` |
-| `ChannelsResourceImgUploadRequest` | 请求体 | [Resource/ChannelsResourceImgUploadRequest.cs](../../../Mud.Wechat.Channels/Resource/ChannelsResourceImgUploadRequest.cs) | `img_url` |
-| `ChannelsResourceImgUploadV2Response` | 应答 | [Resource/ChannelsResourceImgUploadV2Response.cs](../../../Mud.Wechat.Channels/Resource/ChannelsResourceImgUploadV2Response.cs) | `img_info` |
-| `ChannelsResourceImgUploadV2Request` | 请求体 | [Resource/ChannelsResourceImgUploadV2Request.cs](../../../Mud.Wechat.Channels/Resource/ChannelsResourceImgUploadV2Request.cs) | `img_url` |
-| `ChannelsResourceQualificationUploadResponse` | 应答 | [Resource/ChannelsResourceQualificationUploadResponse.cs](../../../Mud.Wechat.Channels/Resource/ChannelsResourceQualificationUploadResponse.cs) | `data` |
-| `ChannelsResourceVideoInitUploadResponse` | 应答 | [Resource/ChannelsResourceVideoInitUploadResponse.cs](../../../Mud.Wechat.Channels/Resource/ChannelsResourceVideoInitUploadResponse.cs) | `data` |
-| `ChannelsResourceVideoInitUploadRequest` | 请求体 | [Resource/ChannelsResourceVideoInitUploadRequest.cs](../../../Mud.Wechat.Channels/Resource/ChannelsResourceVideoInitUploadRequest.cs) | `scene_type`, `file_type`, `file_size` |
-| `ChannelsResourceVideoUploadPartResponse` | 应答 | [Resource/ChannelsResourceVideoUploadPartResponse.cs](../../../Mud.Wechat.Channels/Resource/ChannelsResourceVideoUploadPartResponse.cs) | `data` |
-| `ChannelsResponse` | 应答 | [ChannelsResponse.cs](../../../Mud.Wechat.Channels/ChannelsResponse.cs) | `errcode`, `errmsg` |
-| `ChannelsResourceVideoFinishUploadRequest` | 请求体 | [Resource/ChannelsResourceVideoFinishUploadRequest.cs](../../../Mud.Wechat.Channels/Resource/ChannelsResourceVideoFinishUploadRequest.cs) | `video_upload_key`, `finish_parts` |
-| `ChannelsResourceVideoPlayInfoResponse` | 应答 | [Resource/ChannelsResourceVideoPlayInfoResponse.cs](../../../Mud.Wechat.Channels/Resource/ChannelsResourceVideoPlayInfoResponse.cs) | `data` |
+| `ChannelsResourceImgUploadResponse` | 应答 | [Resource/ChannelsResourceImgUploadResponse.cs](../../DataModels/Resource/ChannelsResourceImgUploadResponse.cs) | `pic_file` |
+| `ChannelsResourceImgUploadRequest` | 请求体 | [Resource/ChannelsResourceImgUploadRequest.cs](../../DataModels/Resource/ChannelsResourceImgUploadRequest.cs) | `img_url` |
+| `ChannelsResourceImgUploadV2Response` | 应答 | [Resource/ChannelsResourceImgUploadV2Response.cs](../../DataModels/Resource/ChannelsResourceImgUploadV2Response.cs) | `img_info` |
+| `ChannelsResourceImgUploadV2Request` | 请求体 | [Resource/ChannelsResourceImgUploadV2Request.cs](../../DataModels/Resource/ChannelsResourceImgUploadV2Request.cs) | `img_url` |
+| `ChannelsResourceQualificationUploadResponse` | 应答 | [Resource/ChannelsResourceQualificationUploadResponse.cs](../../DataModels/Resource/ChannelsResourceQualificationUploadResponse.cs) | `data` |
+| `ChannelsResourceVideoInitUploadResponse` | 应答 | [Resource/ChannelsResourceVideoInitUploadResponse.cs](../../DataModels/Resource/ChannelsResourceVideoInitUploadResponse.cs) | `data` |
+| `ChannelsResourceVideoInitUploadRequest` | 请求体 | [Resource/ChannelsResourceVideoInitUploadRequest.cs](../../DataModels/Resource/ChannelsResourceVideoInitUploadRequest.cs) | `scene_type`, `file_type`, `file_size` |
+| `ChannelsResourceVideoUploadPartResponse` | 应答 | [Resource/ChannelsResourceVideoUploadPartResponse.cs](../../DataModels/Resource/ChannelsResourceVideoUploadPartResponse.cs) | `data` |
+| `ChannelsResponse` | 应答 | [ChannelsResponse.cs](../../DataModels/ChannelsResponse.cs) | `errcode`, `errmsg` |
+| `ChannelsResourceVideoFinishUploadRequest` | 请求体 | [Resource/ChannelsResourceVideoFinishUploadRequest.cs](../../DataModels/Resource/ChannelsResourceVideoFinishUploadRequest.cs) | `video_upload_key`, `finish_parts` |
+| `ChannelsResourceVideoPlayInfoResponse` | 应答 | [Resource/ChannelsResourceVideoPlayInfoResponse.cs](../../DataModels/Resource/ChannelsResourceVideoPlayInfoResponse.cs) | `data` |
 
 > DTO 一律以源文件为准；本表只列端点签名**直接引用**的一层类型，嵌套类型不再递归展开。所有 DTO 不使用 `required`（仓内约束），必填性由接口注释与官方页表达，SDK 不做本地必填校验。
 
@@ -301,7 +301,7 @@ var response = await service.FinishVideoUploadAsync(new ChannelsResourceVideoFin
 | 契约守卫（路由 / 计数 / DTO 登记断言） | [`ChannelsResourceContractGuards.cs`](../../../../../Tests/Mud.Wechat.Channels.Tests/ContractGuards/ChannelsResourceContractGuards.cs) |
 | 守卫中的代表性测试方法 | `ResourceEndpoints_ShouldMatchOfficialRoutes`、`ResourceEndpoints_ShouldHonorOfficialBodyRules`、`ResourceInterface_ShouldBindChannelsToken_AndRegisterUnderResourceGroup`、`ResourceDataModels_ShouldBeRegisteredInJsonContext`、`ResourceDataModels_ShouldLockOfficialFieldsAndSharedDtos`、`ResourceEnumConstants_ShouldLockOfficialLiteralValues`、`StaleChannelsBasicsPrefix_ShouldHaveZeroDeclaration` |
 | 模块枚举 / 装配入口 | [`ChannelsModule.cs`](../../Extensions/ChannelsModule.cs)、[`ChannelsServiceBuilder.cs`](../../Extensions/ChannelsServiceBuilder.cs) |
-| DTO 与 JSON 上下文 | [`Mud.Wechat.Channels/Resource`](../../../Mud.Wechat.Channels/Resource/) |
+| DTO 与 JSON 上下文 | [`Mud.Wechat.Channels/DataModels/Resource`](../../DataModels/Resource) |
 | 跨线基线 | [`Tests/ContractBaseline.cs`](../../../../../Tests/ContractBaseline.cs)（各线分节；本线口径以守卫实际断言为准） |
 | 本线包级公开面与已踩陷阱 | [`Src/Channels/Mud.Wechat.Channels/README.md`](../../README.md) |
 | 跨线通用约束（门禁 / AOT / 落位） | [`AGENTS.md`](../../../../../AGENTS.md) |

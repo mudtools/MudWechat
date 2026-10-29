@@ -3,7 +3,7 @@
 微信小店 / 视频号（channels 生态）「商品管理」域 SDK（43 端点：商品增改查 / 上下架 / 审核 /
 库存 / 赠品 / 买赠活动 / 限时抢购 / 类目辅助 / 第三方货源）。 接口：[IChannelsProductService](./IChannelsProductService.cs)；注册组 `Product`；模块枚举 `ChannelsModule.Product`（装配入口见 [ChannelsServiceBuilder.cs](../../Extensions/ChannelsServiceBuilder.cs)）。逐端点核验 2026-10-18。
 
-> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[ChannelsProductContractGuards.cs](../../../../../Tests/Mud.Wechat.Channels.Tests/ContractGuards/ChannelsProductContractGuards.cs)）、本域 DTO（[`Mud.Wechat.Channels/Product`](../../../Mud.Wechat.Channels/Product/)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
+> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[ChannelsProductContractGuards.cs](../../../../../Tests/Mud.Wechat.Channels.Tests/ContractGuards/ChannelsProductContractGuards.cs)）、本域 DTO（[`Mud.Wechat.Channels/DataModels/Product`](../../DataModels/Product)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
 
 ## 端点速览
 
@@ -620,74 +620,74 @@
 
 ## DTO 与序列化面
 
-本域 DTO 目录 [`Mud.Wechat.Channels/Product`](../../../Mud.Wechat.Channels/Product/) 内共 **122** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **122** 个，`SerializerClassName` = `Product`。
+本域 DTO 目录 [`Mud.Wechat.Channels/DataModels/Product`](../../DataModels/Product) 内共 **122** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **122** 个，`SerializerClassName` = `Product`。
 
-AOT 源生成上下文：[`ProductJsonContext.g.cs`](./../../../Mud.Wechat.Channels/Generated/ProductJsonContext.g.cs)（生成物，勿手改）。
+AOT 源生成上下文：[`ProductJsonContext.g.cs`](./../../DataModels/Generated/ProductJsonContext.g.cs)（生成物，勿手改）。
 
 | 端点引用的类型 | 角色 | 定义位置 | JSON 字段（前缀） |
 |---|---|---|---|
-| `ChannelsAddProductResponse` | 应答 | [Product/ChannelsAddProductResponse.cs](../../../Mud.Wechat.Channels/Product/ChannelsAddProductResponse.cs) | `data` |
-| `ChannelsAddProductRequest` | 请求体 | [Product/ChannelsAddProductRequest.cs](../../../Mud.Wechat.Channels/Product/ChannelsAddProductRequest.cs) | `out_product_id`, `title`, `sub_title`, `short_title`, `head_imgs`, `deliver_method`, `deliver_acct_type`, `desc_info`, `cats`, `cats_v2`, `attrs`, `spu_code` … |
-| `ChannelsUpdateProductResponse` | 应答 | [Product/ChannelsUpdateProductResponse.cs](../../../Mud.Wechat.Channels/Product/ChannelsUpdateProductResponse.cs) | `data` |
-| `ChannelsUpdateProductRequest` | 请求体 | [Product/ChannelsUpdateProductRequest.cs](../../../Mud.Wechat.Channels/Product/ChannelsUpdateProductRequest.cs) | `product_id` |
-| `ChannelsGetProductResponse` | 应答 | [Product/ChannelsGetProductResponse.cs](../../../Mud.Wechat.Channels/Product/ChannelsGetProductResponse.cs) | `product`, `edit_product`, `sale_limit_info`, `info_score`, `cmp_price_info`, `audit_info` |
-| `ChannelsGetProductRequest` | 请求体 | [Product/ChannelsGetProductRequest.cs](../../../Mud.Wechat.Channels/Product/ChannelsGetProductRequest.cs) | `product_id`, `data_type` |
-| `ChannelsProductIdListResponse` | 应答 | [Product/ChannelsProductIdListResponse.cs](../../../Mud.Wechat.Channels/Product/ChannelsProductIdListResponse.cs) | `product_ids`, `next_key`, `total_num` |
-| `ChannelsProductListRequest` | 请求体 | [Product/ChannelsProductListRequest.cs](../../../Mud.Wechat.Channels/Product/ChannelsProductListRequest.cs) | `status`, `page_size`, `next_key` |
-| `ChannelsResponse` | 应答 | [ChannelsResponse.cs](../../../Mud.Wechat.Channels/ChannelsResponse.cs) | `errcode`, `errmsg` |
-| `ChannelsProductIdRequest` | 请求体 | [Product/ChannelsProductIdRequest.cs](../../../Mud.Wechat.Channels/Product/ChannelsProductIdRequest.cs) | `product_id` |
-| `ChannelsUpdateProductAuditFreeRequest` | 请求体 | [Product/ChannelsUpdateProductAuditFreeRequest.cs](../../../Mud.Wechat.Channels/Product/ChannelsUpdateProductAuditFreeRequest.cs) | `product_id`, `spu_code`, `skus`, `limited_info`, `express_info`, `extra_service`, `deliver_method`, `hide_in_window`, `timing_onsale_info`, `spu_deliver_info`, `after_sale_info` |
-| `ChannelsGetProductAuditStrategyResponse` | 应答 | [Product/ChannelsGetProductAuditStrategyResponse.cs](../../../Mud.Wechat.Channels/Product/ChannelsGetProductAuditStrategyResponse.cs) | `audit_strategy` |
-| `ChannelsSetProductAuditStrategyRequest` | 请求体 | [Product/ChannelsSetProductAuditStrategyRequest.cs](../../../Mud.Wechat.Channels/Product/ChannelsSetProductAuditStrategyRequest.cs) | `audit_strategy` |
-| `ChannelsGetProductAuditQuotaResponse` | 应答 | [Product/ChannelsGetProductAuditQuotaResponse.cs](../../../Mud.Wechat.Channels/Product/ChannelsGetProductAuditQuotaResponse.cs) | `audit_quota` |
-| `ChannelsGetProductRestrictedInfoResponse` | 应答 | [Product/ChannelsGetProductRestrictedInfoResponse.cs](../../../Mud.Wechat.Channels/Product/ChannelsGetProductRestrictedInfoResponse.cs) | `data` |
-| `ChannelsGetProductRestrictedInfoRequest` | 请求体 | [Product/ChannelsGetProductRestrictedInfoRequest.cs](../../../Mud.Wechat.Channels/Product/ChannelsGetProductRestrictedInfoRequest.cs) | `product_ids` |
-| `ChannelsProductClassifyResponse` | 应答 | [Product/ChannelsProductClassifyResponse.cs](../../../Mud.Wechat.Channels/Product/ChannelsProductClassifyResponse.cs) | `categories`, `wrong_cat` |
-| `ChannelsProductClassifyRequest` | 请求体 | [Product/ChannelsProductClassifyRequest.cs](../../../Mud.Wechat.Channels/Product/ChannelsProductClassifyRequest.cs) | `req_type`, `title`, `head_imgs`, `cat_id` |
-| `ChannelsProductCategoryPrecheckResponse` | 应答 | [Product/ChannelsProductCategoryPrecheckResponse.cs](../../../Mud.Wechat.Channels/Product/ChannelsProductCategoryPrecheckResponse.cs) | `all_pass`, `fail_reasons` |
-| `ChannelsProductCategoryPrecheckRequest` | 请求体 | [Product/ChannelsProductCategoryPrecheckRequest.cs](../../../Mud.Wechat.Channels/Product/ChannelsProductCategoryPrecheckRequest.cs) | `cat_id` |
-| `ChannelsAddProductThirdPartySourceResponse` | 应答 | [Product/ChannelsAddProductThirdPartySourceResponse.cs](../../../Mud.Wechat.Channels/Product/ChannelsAddProductThirdPartySourceResponse.cs) | `third_party_source_id` |
-| `ChannelsAddProductThirdPartySourceRequest` | 请求体 | [Product/ChannelsAddProductThirdPartySourceRequest.cs](../../../Mud.Wechat.Channels/Product/ChannelsAddProductThirdPartySourceRequest.cs) | `scene_value`, `publish_method`, `supplier`, `supplier_shop_performance`, `product_source_info` |
-| `ChannelsProductBrandRecommendResponse` | 应答 | [Product/ChannelsProductBrandRecommendResponse.cs](../../../Mud.Wechat.Channels/Product/ChannelsProductBrandRecommendResponse.cs) | `brand_id`, `brand_name_chinese`, `brand_name_english` |
-| `ChannelsProductBrandRecommendRequest` | 请求体 | [Product/ChannelsProductBrandRecommendRequest.cs](../../../Mud.Wechat.Channels/Product/ChannelsProductBrandRecommendRequest.cs) | `cat_id`, `head_imgs`, `detail_imgs`, `title` |
-| `ChannelsExternalProductMappingResponse` | 应答 | [Product/ChannelsExternalProductMappingResponse.cs](../../../Mud.Wechat.Channels/Product/ChannelsExternalProductMappingResponse.cs) | `external_attribute_name`, `external_attribute_value`, `internal_attribute_name`, `internal_attribute_value` |
-| `ChannelsExternalProductMappingRequest` | 请求体 | [Product/ChannelsExternalProductMappingRequest.cs](../../../Mud.Wechat.Channels/Product/ChannelsExternalProductMappingRequest.cs) | `cat_id`, `external_attribute_name`, `external_attribute_value`, `external_category_name` |
-| `ChannelsExternalProductMappingNewResponse` | 应答 | [Product/ChannelsExternalProductMappingNewResponse.cs](../../../Mud.Wechat.Channels/Product/ChannelsExternalProductMappingNewResponse.cs) | `attributes` |
-| `ChannelsExternalProductMappingNewRequest` | 请求体 | [Product/ChannelsExternalProductMappingNewRequest.cs](../../../Mud.Wechat.Channels/Product/ChannelsExternalProductMappingNewRequest.cs) | `cat_id`, `external_category_name`, `head_imgs`, `detail_imgs`, `title`, `external_attributes` |
-| `ChannelsBeginTimingSaleRequest` | 请求体 | [Product/ChannelsBeginTimingSaleRequest.cs](../../../Mud.Wechat.Channels/Product/ChannelsBeginTimingSaleRequest.cs) | `product_id`, `task_id` |
-| `ChannelsGetProductTagLinkResponse` | 应答 | [Product/ChannelsGetProductTagLinkResponse.cs](../../../Mud.Wechat.Channels/Product/ChannelsGetProductTagLinkResponse.cs) | `product_taglink` |
-| `ChannelsProductTagLinkRequest` | 请求体 | [Product/ChannelsProductTagLinkRequest.cs](../../../Mud.Wechat.Channels/Product/ChannelsProductTagLinkRequest.cs) | `product_id`, `wecom_corp_id`, `wecom_user_id` |
-| `ChannelsGetProductQrcodeResponse` | 应答 | [Product/ChannelsGetProductQrcodeResponse.cs](../../../Mud.Wechat.Channels/Product/ChannelsGetProductQrcodeResponse.cs) | `product_qrcode` |
-| `ChannelsGetProductQrcodeRequest` | 请求体 | [Product/ChannelsGetProductQrcodeRequest.cs](../../../Mud.Wechat.Channels/Product/ChannelsGetProductQrcodeRequest.cs) | `product_id`, `qrcode_type`, `wecom_corp_id`, `wecom_user_id` |
-| `ChannelsGetProductH5UrlResponse` | 应答 | [Product/ChannelsGetProductH5UrlResponse.cs](../../../Mud.Wechat.Channels/Product/ChannelsGetProductH5UrlResponse.cs) | `product_h5url` |
-| `ChannelsGetProductH5UrlRequest` | 请求体 | [Product/ChannelsGetProductH5UrlRequest.cs](../../../Mud.Wechat.Channels/Product/ChannelsGetProductH5UrlRequest.cs) | `product_id`, `wecom_corp_id`, `wecom_user_id` |
-| `ChannelsGetProductSchemeResponse` | 应答 | [Product/ChannelsGetProductSchemeResponse.cs](../../../Mud.Wechat.Channels/Product/ChannelsGetProductSchemeResponse.cs) | `openlink` |
-| `ChannelsGetProductSchemeRequest` | 请求体 | [Product/ChannelsGetProductSchemeRequest.cs](../../../Mud.Wechat.Channels/Product/ChannelsGetProductSchemeRequest.cs) | `product_id`, `from_appid`, `expire`, `ext_info` |
-| `ChannelsGetStockResponse` | 应答 | [Product/Stock/ChannelsGetStockResponse.cs](../../../Mud.Wechat.Channels/Product/Stock/ChannelsGetStockResponse.cs) | `data` |
-| `ChannelsGetStockRequest` | 请求体 | [Product/Stock/ChannelsGetStockRequest.cs](../../../Mud.Wechat.Channels/Product/Stock/ChannelsGetStockRequest.cs) | `product_id`, `sku_id` |
-| `ChannelsUpdateStockRequest` | 请求体 | [Product/Stock/ChannelsUpdateStockRequest.cs](../../../Mud.Wechat.Channels/Product/Stock/ChannelsUpdateStockRequest.cs) | `product_id`, `sku_id`, `diff_type`, `num` |
-| `ChannelsBatchGetStockResponse` | 应答 | [Product/Stock/ChannelsBatchGetStockResponse.cs](../../../Mud.Wechat.Channels/Product/Stock/ChannelsBatchGetStockResponse.cs) | `data` |
-| `ChannelsBatchGetStockRequest` | 请求体 | [Product/Stock/ChannelsBatchGetStockRequest.cs](../../../Mud.Wechat.Channels/Product/Stock/ChannelsBatchGetStockRequest.cs) | `product_id`, `stock_type`, `finder_id`, `stock_type_id` |
-| `ChannelsGetStockFlowResponse` | 应答 | [Product/Stock/ChannelsGetStockFlowResponse.cs](../../../Mud.Wechat.Channels/Product/Stock/ChannelsGetStockFlowResponse.cs) | `data` |
-| `ChannelsGetStockFlowRequest` | 请求体 | [Product/Stock/ChannelsGetStockFlowRequest.cs](../../../Mud.Wechat.Channels/Product/Stock/ChannelsGetStockFlowRequest.cs) | `product_id`, `sku_id`, `stock_type`, `finder_id`, `begin_time`, `end_time`, `op_type_list`, `page_size`, `next_key`, `stock_type_id` |
-| `ChannelsAddGiftProductResponse` | 应答 | [Product/Gift/ChannelsAddGiftProductResponse.cs](../../../Mud.Wechat.Channels/Product/Gift/ChannelsAddGiftProductResponse.cs) | `product_id`, `create_time` |
-| `ChannelsAddGiftProductRequest` | 请求体 | [Product/Gift/ChannelsAddGiftProductRequest.cs](../../../Mud.Wechat.Channels/Product/Gift/ChannelsAddGiftProductRequest.cs) | `out_product_id`, `title`, `head_imgs`, `desc_info`, `cats_v2`, `attrs`, `spu_code`, `brand_id`, `skus`, `listing` |
-| `ChannelsGetGiftProductResponse` | 应答 | [Product/Gift/ChannelsGetGiftProductResponse.cs](../../../Mud.Wechat.Channels/Product/Gift/ChannelsGetGiftProductResponse.cs) | `product`, `edit_product` |
-| `ChannelsGetGiftProductRequest` | 请求体 | [Product/Gift/ChannelsGetGiftProductRequest.cs](../../../Mud.Wechat.Channels/Product/Gift/ChannelsGetGiftProductRequest.cs) | `product_id`, `data_type` |
-| `ChannelsSetGiftOnsaleRequest` | 请求体 | [Product/Gift/ChannelsSetGiftOnsaleRequest.cs](../../../Mud.Wechat.Channels/Product/Gift/ChannelsSetGiftOnsaleRequest.cs) | `product_id`, `skus` |
-| `ChannelsUpdateGiftProductResponse` | 应答 | [Product/Gift/ChannelsUpdateGiftProductResponse.cs](../../../Mud.Wechat.Channels/Product/Gift/ChannelsUpdateGiftProductResponse.cs) | `product_id`, `update_time` |
-| `ChannelsUpdateGiftProductRequest` | 请求体 | [Product/Gift/ChannelsUpdateGiftProductRequest.cs](../../../Mud.Wechat.Channels/Product/Gift/ChannelsUpdateGiftProductRequest.cs) | `product_id`, `out_product_id`, `title`, `head_imgs`, `desc_info`, `attrs`, `skus`, `listing`, `cats_v2`, `spu_code`, `brand_id` |
-| `ChannelsAddGiftActivityResponse` | 应答 | [Product/Activity/ChannelsAddGiftActivityResponse.cs](../../../Mud.Wechat.Channels/Product/Activity/ChannelsAddGiftActivityResponse.cs) | `activity_id` |
-| `ChannelsAddGiftActivityRequest` | 请求体 | [Product/Activity/ChannelsAddGiftActivityRequest.cs](../../../Mud.Wechat.Channels/Product/Activity/ChannelsAddGiftActivityRequest.cs) | `activity_id`, `title`, `start_time`, `end_time`, `detail` |
-| `ChannelsGiftActivityDelRequest` | 请求体 | [Product/Activity/ChannelsGiftActivityDelRequest.cs](../../../Mud.Wechat.Channels/Product/Activity/ChannelsGiftActivityDelRequest.cs) | `activity_id` |
-| `ChannelsGiftActivityStopRequest` | 请求体 | [Product/Activity/ChannelsGiftActivityStopRequest.cs](../../../Mud.Wechat.Channels/Product/Activity/ChannelsGiftActivityStopRequest.cs) | `activity_id` |
-| `ChannelsAddLimitedDiscountTaskResponse` | 应答 | [Product/Activity/ChannelsAddLimitedDiscountTaskResponse.cs](../../../Mud.Wechat.Channels/Product/Activity/ChannelsAddLimitedDiscountTaskResponse.cs) | `task_id` |
-| `ChannelsAddLimitedDiscountTaskRequest` | 请求体 | [Product/Activity/ChannelsAddLimitedDiscountTaskRequest.cs](../../../Mud.Wechat.Channels/Product/Activity/ChannelsAddLimitedDiscountTaskRequest.cs) | `product_id`, `start_time`, `end_time`, `limited_discount_skus`, `title`, `is_limit_purchase`, `limit_purchase_num` |
-| `ChannelsUpdateLimitedDiscountTaskResponse` | 应答 | [Product/Activity/ChannelsUpdateLimitedDiscountTaskResponse.cs](../../../Mud.Wechat.Channels/Product/Activity/ChannelsUpdateLimitedDiscountTaskResponse.cs) | `task_id`, `title` |
-| `ChannelsUpdateLimitedDiscountTaskRequest` | 请求体 | [Product/Activity/ChannelsUpdateLimitedDiscountTaskRequest.cs](../../../Mud.Wechat.Channels/Product/Activity/ChannelsUpdateLimitedDiscountTaskRequest.cs) | `task_id`, `status`, `start_time`, `end_time`, `title`, `limited_discount_skus` |
-| `ChannelsLimitedDiscountTaskIdRequest` | 请求体 | [Product/Activity/ChannelsLimitedDiscountTaskIdRequest.cs](../../../Mud.Wechat.Channels/Product/Activity/ChannelsLimitedDiscountTaskIdRequest.cs) | `task_id` |
-| `ChannelsGetLimitedDiscountTaskListResponse` | 应答 | [Product/Activity/ChannelsGetLimitedDiscountTaskListResponse.cs](../../../Mud.Wechat.Channels/Product/Activity/ChannelsGetLimitedDiscountTaskListResponse.cs) | `limited_discount_tasks`, `next_key`, `total_num` |
-| `ChannelsGetLimitedDiscountTaskListRequest` | 请求体 | [Product/Activity/ChannelsGetLimitedDiscountTaskListRequest.cs](../../../Mud.Wechat.Channels/Product/Activity/ChannelsGetLimitedDiscountTaskListRequest.cs) | `status`, `page_size`, `next_key` |
+| `ChannelsAddProductResponse` | 应答 | [Product/ChannelsAddProductResponse.cs](../../DataModels/Product/ChannelsAddProductResponse.cs) | `data` |
+| `ChannelsAddProductRequest` | 请求体 | [Product/ChannelsAddProductRequest.cs](../../DataModels/Product/ChannelsAddProductRequest.cs) | `out_product_id`, `title`, `sub_title`, `short_title`, `head_imgs`, `deliver_method`, `deliver_acct_type`, `desc_info`, `cats`, `cats_v2`, `attrs`, `spu_code` … |
+| `ChannelsUpdateProductResponse` | 应答 | [Product/ChannelsUpdateProductResponse.cs](../../DataModels/Product/ChannelsUpdateProductResponse.cs) | `data` |
+| `ChannelsUpdateProductRequest` | 请求体 | [Product/ChannelsUpdateProductRequest.cs](../../DataModels/Product/ChannelsUpdateProductRequest.cs) | `product_id` |
+| `ChannelsGetProductResponse` | 应答 | [Product/ChannelsGetProductResponse.cs](../../DataModels/Product/ChannelsGetProductResponse.cs) | `product`, `edit_product`, `sale_limit_info`, `info_score`, `cmp_price_info`, `audit_info` |
+| `ChannelsGetProductRequest` | 请求体 | [Product/ChannelsGetProductRequest.cs](../../DataModels/Product/ChannelsGetProductRequest.cs) | `product_id`, `data_type` |
+| `ChannelsProductIdListResponse` | 应答 | [Product/ChannelsProductIdListResponse.cs](../../DataModels/Product/ChannelsProductIdListResponse.cs) | `product_ids`, `next_key`, `total_num` |
+| `ChannelsProductListRequest` | 请求体 | [Product/ChannelsProductListRequest.cs](../../DataModels/Product/ChannelsProductListRequest.cs) | `status`, `page_size`, `next_key` |
+| `ChannelsResponse` | 应答 | [ChannelsResponse.cs](../../DataModels/ChannelsResponse.cs) | `errcode`, `errmsg` |
+| `ChannelsProductIdRequest` | 请求体 | [Product/ChannelsProductIdRequest.cs](../../DataModels/Product/ChannelsProductIdRequest.cs) | `product_id` |
+| `ChannelsUpdateProductAuditFreeRequest` | 请求体 | [Product/ChannelsUpdateProductAuditFreeRequest.cs](../../DataModels/Product/ChannelsUpdateProductAuditFreeRequest.cs) | `product_id`, `spu_code`, `skus`, `limited_info`, `express_info`, `extra_service`, `deliver_method`, `hide_in_window`, `timing_onsale_info`, `spu_deliver_info`, `after_sale_info` |
+| `ChannelsGetProductAuditStrategyResponse` | 应答 | [Product/ChannelsGetProductAuditStrategyResponse.cs](../../DataModels/Product/ChannelsGetProductAuditStrategyResponse.cs) | `audit_strategy` |
+| `ChannelsSetProductAuditStrategyRequest` | 请求体 | [Product/ChannelsSetProductAuditStrategyRequest.cs](../../DataModels/Product/ChannelsSetProductAuditStrategyRequest.cs) | `audit_strategy` |
+| `ChannelsGetProductAuditQuotaResponse` | 应答 | [Product/ChannelsGetProductAuditQuotaResponse.cs](../../DataModels/Product/ChannelsGetProductAuditQuotaResponse.cs) | `audit_quota` |
+| `ChannelsGetProductRestrictedInfoResponse` | 应答 | [Product/ChannelsGetProductRestrictedInfoResponse.cs](../../DataModels/Product/ChannelsGetProductRestrictedInfoResponse.cs) | `data` |
+| `ChannelsGetProductRestrictedInfoRequest` | 请求体 | [Product/ChannelsGetProductRestrictedInfoRequest.cs](../../DataModels/Product/ChannelsGetProductRestrictedInfoRequest.cs) | `product_ids` |
+| `ChannelsProductClassifyResponse` | 应答 | [Product/ChannelsProductClassifyResponse.cs](../../DataModels/Product/ChannelsProductClassifyResponse.cs) | `categories`, `wrong_cat` |
+| `ChannelsProductClassifyRequest` | 请求体 | [Product/ChannelsProductClassifyRequest.cs](../../DataModels/Product/ChannelsProductClassifyRequest.cs) | `req_type`, `title`, `head_imgs`, `cat_id` |
+| `ChannelsProductCategoryPrecheckResponse` | 应答 | [Product/ChannelsProductCategoryPrecheckResponse.cs](../../DataModels/Product/ChannelsProductCategoryPrecheckResponse.cs) | `all_pass`, `fail_reasons` |
+| `ChannelsProductCategoryPrecheckRequest` | 请求体 | [Product/ChannelsProductCategoryPrecheckRequest.cs](../../DataModels/Product/ChannelsProductCategoryPrecheckRequest.cs) | `cat_id` |
+| `ChannelsAddProductThirdPartySourceResponse` | 应答 | [Product/ChannelsAddProductThirdPartySourceResponse.cs](../../DataModels/Product/ChannelsAddProductThirdPartySourceResponse.cs) | `third_party_source_id` |
+| `ChannelsAddProductThirdPartySourceRequest` | 请求体 | [Product/ChannelsAddProductThirdPartySourceRequest.cs](../../DataModels/Product/ChannelsAddProductThirdPartySourceRequest.cs) | `scene_value`, `publish_method`, `supplier`, `supplier_shop_performance`, `product_source_info` |
+| `ChannelsProductBrandRecommendResponse` | 应答 | [Product/ChannelsProductBrandRecommendResponse.cs](../../DataModels/Product/ChannelsProductBrandRecommendResponse.cs) | `brand_id`, `brand_name_chinese`, `brand_name_english` |
+| `ChannelsProductBrandRecommendRequest` | 请求体 | [Product/ChannelsProductBrandRecommendRequest.cs](../../DataModels/Product/ChannelsProductBrandRecommendRequest.cs) | `cat_id`, `head_imgs`, `detail_imgs`, `title` |
+| `ChannelsExternalProductMappingResponse` | 应答 | [Product/ChannelsExternalProductMappingResponse.cs](../../DataModels/Product/ChannelsExternalProductMappingResponse.cs) | `external_attribute_name`, `external_attribute_value`, `internal_attribute_name`, `internal_attribute_value` |
+| `ChannelsExternalProductMappingRequest` | 请求体 | [Product/ChannelsExternalProductMappingRequest.cs](../../DataModels/Product/ChannelsExternalProductMappingRequest.cs) | `cat_id`, `external_attribute_name`, `external_attribute_value`, `external_category_name` |
+| `ChannelsExternalProductMappingNewResponse` | 应答 | [Product/ChannelsExternalProductMappingNewResponse.cs](../../DataModels/Product/ChannelsExternalProductMappingNewResponse.cs) | `attributes` |
+| `ChannelsExternalProductMappingNewRequest` | 请求体 | [Product/ChannelsExternalProductMappingNewRequest.cs](../../DataModels/Product/ChannelsExternalProductMappingNewRequest.cs) | `cat_id`, `external_category_name`, `head_imgs`, `detail_imgs`, `title`, `external_attributes` |
+| `ChannelsBeginTimingSaleRequest` | 请求体 | [Product/ChannelsBeginTimingSaleRequest.cs](../../DataModels/Product/ChannelsBeginTimingSaleRequest.cs) | `product_id`, `task_id` |
+| `ChannelsGetProductTagLinkResponse` | 应答 | [Product/ChannelsGetProductTagLinkResponse.cs](../../DataModels/Product/ChannelsGetProductTagLinkResponse.cs) | `product_taglink` |
+| `ChannelsProductTagLinkRequest` | 请求体 | [Product/ChannelsProductTagLinkRequest.cs](../../DataModels/Product/ChannelsProductTagLinkRequest.cs) | `product_id`, `wecom_corp_id`, `wecom_user_id` |
+| `ChannelsGetProductQrcodeResponse` | 应答 | [Product/ChannelsGetProductQrcodeResponse.cs](../../DataModels/Product/ChannelsGetProductQrcodeResponse.cs) | `product_qrcode` |
+| `ChannelsGetProductQrcodeRequest` | 请求体 | [Product/ChannelsGetProductQrcodeRequest.cs](../../DataModels/Product/ChannelsGetProductQrcodeRequest.cs) | `product_id`, `qrcode_type`, `wecom_corp_id`, `wecom_user_id` |
+| `ChannelsGetProductH5UrlResponse` | 应答 | [Product/ChannelsGetProductH5UrlResponse.cs](../../DataModels/Product/ChannelsGetProductH5UrlResponse.cs) | `product_h5url` |
+| `ChannelsGetProductH5UrlRequest` | 请求体 | [Product/ChannelsGetProductH5UrlRequest.cs](../../DataModels/Product/ChannelsGetProductH5UrlRequest.cs) | `product_id`, `wecom_corp_id`, `wecom_user_id` |
+| `ChannelsGetProductSchemeResponse` | 应答 | [Product/ChannelsGetProductSchemeResponse.cs](../../DataModels/Product/ChannelsGetProductSchemeResponse.cs) | `openlink` |
+| `ChannelsGetProductSchemeRequest` | 请求体 | [Product/ChannelsGetProductSchemeRequest.cs](../../DataModels/Product/ChannelsGetProductSchemeRequest.cs) | `product_id`, `from_appid`, `expire`, `ext_info` |
+| `ChannelsGetStockResponse` | 应答 | [Product/Stock/ChannelsGetStockResponse.cs](../../DataModels/Product/Stock/ChannelsGetStockResponse.cs) | `data` |
+| `ChannelsGetStockRequest` | 请求体 | [Product/Stock/ChannelsGetStockRequest.cs](../../DataModels/Product/Stock/ChannelsGetStockRequest.cs) | `product_id`, `sku_id` |
+| `ChannelsUpdateStockRequest` | 请求体 | [Product/Stock/ChannelsUpdateStockRequest.cs](../../DataModels/Product/Stock/ChannelsUpdateStockRequest.cs) | `product_id`, `sku_id`, `diff_type`, `num` |
+| `ChannelsBatchGetStockResponse` | 应答 | [Product/Stock/ChannelsBatchGetStockResponse.cs](../../DataModels/Product/Stock/ChannelsBatchGetStockResponse.cs) | `data` |
+| `ChannelsBatchGetStockRequest` | 请求体 | [Product/Stock/ChannelsBatchGetStockRequest.cs](../../DataModels/Product/Stock/ChannelsBatchGetStockRequest.cs) | `product_id`, `stock_type`, `finder_id`, `stock_type_id` |
+| `ChannelsGetStockFlowResponse` | 应答 | [Product/Stock/ChannelsGetStockFlowResponse.cs](../../DataModels/Product/Stock/ChannelsGetStockFlowResponse.cs) | `data` |
+| `ChannelsGetStockFlowRequest` | 请求体 | [Product/Stock/ChannelsGetStockFlowRequest.cs](../../DataModels/Product/Stock/ChannelsGetStockFlowRequest.cs) | `product_id`, `sku_id`, `stock_type`, `finder_id`, `begin_time`, `end_time`, `op_type_list`, `page_size`, `next_key`, `stock_type_id` |
+| `ChannelsAddGiftProductResponse` | 应答 | [Product/Gift/ChannelsAddGiftProductResponse.cs](../../DataModels/Product/Gift/ChannelsAddGiftProductResponse.cs) | `product_id`, `create_time` |
+| `ChannelsAddGiftProductRequest` | 请求体 | [Product/Gift/ChannelsAddGiftProductRequest.cs](../../DataModels/Product/Gift/ChannelsAddGiftProductRequest.cs) | `out_product_id`, `title`, `head_imgs`, `desc_info`, `cats_v2`, `attrs`, `spu_code`, `brand_id`, `skus`, `listing` |
+| `ChannelsGetGiftProductResponse` | 应答 | [Product/Gift/ChannelsGetGiftProductResponse.cs](../../DataModels/Product/Gift/ChannelsGetGiftProductResponse.cs) | `product`, `edit_product` |
+| `ChannelsGetGiftProductRequest` | 请求体 | [Product/Gift/ChannelsGetGiftProductRequest.cs](../../DataModels/Product/Gift/ChannelsGetGiftProductRequest.cs) | `product_id`, `data_type` |
+| `ChannelsSetGiftOnsaleRequest` | 请求体 | [Product/Gift/ChannelsSetGiftOnsaleRequest.cs](../../DataModels/Product/Gift/ChannelsSetGiftOnsaleRequest.cs) | `product_id`, `skus` |
+| `ChannelsUpdateGiftProductResponse` | 应答 | [Product/Gift/ChannelsUpdateGiftProductResponse.cs](../../DataModels/Product/Gift/ChannelsUpdateGiftProductResponse.cs) | `product_id`, `update_time` |
+| `ChannelsUpdateGiftProductRequest` | 请求体 | [Product/Gift/ChannelsUpdateGiftProductRequest.cs](../../DataModels/Product/Gift/ChannelsUpdateGiftProductRequest.cs) | `product_id`, `out_product_id`, `title`, `head_imgs`, `desc_info`, `attrs`, `skus`, `listing`, `cats_v2`, `spu_code`, `brand_id` |
+| `ChannelsAddGiftActivityResponse` | 应答 | [Product/Activity/ChannelsAddGiftActivityResponse.cs](../../DataModels/Product/Activity/ChannelsAddGiftActivityResponse.cs) | `activity_id` |
+| `ChannelsAddGiftActivityRequest` | 请求体 | [Product/Activity/ChannelsAddGiftActivityRequest.cs](../../DataModels/Product/Activity/ChannelsAddGiftActivityRequest.cs) | `activity_id`, `title`, `start_time`, `end_time`, `detail` |
+| `ChannelsGiftActivityDelRequest` | 请求体 | [Product/Activity/ChannelsGiftActivityDelRequest.cs](../../DataModels/Product/Activity/ChannelsGiftActivityDelRequest.cs) | `activity_id` |
+| `ChannelsGiftActivityStopRequest` | 请求体 | [Product/Activity/ChannelsGiftActivityStopRequest.cs](../../DataModels/Product/Activity/ChannelsGiftActivityStopRequest.cs) | `activity_id` |
+| `ChannelsAddLimitedDiscountTaskResponse` | 应答 | [Product/Activity/ChannelsAddLimitedDiscountTaskResponse.cs](../../DataModels/Product/Activity/ChannelsAddLimitedDiscountTaskResponse.cs) | `task_id` |
+| `ChannelsAddLimitedDiscountTaskRequest` | 请求体 | [Product/Activity/ChannelsAddLimitedDiscountTaskRequest.cs](../../DataModels/Product/Activity/ChannelsAddLimitedDiscountTaskRequest.cs) | `product_id`, `start_time`, `end_time`, `limited_discount_skus`, `title`, `is_limit_purchase`, `limit_purchase_num` |
+| `ChannelsUpdateLimitedDiscountTaskResponse` | 应答 | [Product/Activity/ChannelsUpdateLimitedDiscountTaskResponse.cs](../../DataModels/Product/Activity/ChannelsUpdateLimitedDiscountTaskResponse.cs) | `task_id`, `title` |
+| `ChannelsUpdateLimitedDiscountTaskRequest` | 请求体 | [Product/Activity/ChannelsUpdateLimitedDiscountTaskRequest.cs](../../DataModels/Product/Activity/ChannelsUpdateLimitedDiscountTaskRequest.cs) | `task_id`, `status`, `start_time`, `end_time`, `title`, `limited_discount_skus` |
+| `ChannelsLimitedDiscountTaskIdRequest` | 请求体 | [Product/Activity/ChannelsLimitedDiscountTaskIdRequest.cs](../../DataModels/Product/Activity/ChannelsLimitedDiscountTaskIdRequest.cs) | `task_id` |
+| `ChannelsGetLimitedDiscountTaskListResponse` | 应答 | [Product/Activity/ChannelsGetLimitedDiscountTaskListResponse.cs](../../DataModels/Product/Activity/ChannelsGetLimitedDiscountTaskListResponse.cs) | `limited_discount_tasks`, `next_key`, `total_num` |
+| `ChannelsGetLimitedDiscountTaskListRequest` | 请求体 | [Product/Activity/ChannelsGetLimitedDiscountTaskListRequest.cs](../../DataModels/Product/Activity/ChannelsGetLimitedDiscountTaskListRequest.cs) | `status`, `page_size`, `next_key` |
 
 > DTO 一律以源文件为准；本表只列端点签名**直接引用**的一层类型，嵌套类型不再递归展开。所有 DTO 不使用 `required`（仓内约束），必填性由接口注释与官方页表达，SDK 不做本地必填校验。
 
@@ -725,7 +725,7 @@ var response = await service.GetProductAuditQuotaAsync(ct);
 | 契约守卫（路由 / 计数 / DTO 登记断言） | [`ChannelsProductContractGuards.cs`](../../../../../Tests/Mud.Wechat.Channels.Tests/ContractGuards/ChannelsProductContractGuards.cs) |
 | 守卫中的代表性测试方法 | `ProductEndpoints_ShouldMatchOfficialRoutes`、`ProductEndpoints_ShouldAllBePost_WithEmptyBodyRules`、`ProductInterface_ShouldBindChannelsToken_AndRegisterUnderProductGroup`、`ProductDataModels_ShouldBeRegisteredInJsonContext`、`ProductDataModels_ShouldLockOfficialFieldsAndSharedDtos`、`ProductEnums_ShouldLockOfficialValues` |
 | 模块枚举 / 装配入口 | [`ChannelsModule.cs`](../../Extensions/ChannelsModule.cs)、[`ChannelsServiceBuilder.cs`](../../Extensions/ChannelsServiceBuilder.cs) |
-| DTO 与 JSON 上下文 | [`Mud.Wechat.Channels/Product`](../../../Mud.Wechat.Channels/Product/) |
+| DTO 与 JSON 上下文 | [`Mud.Wechat.Channels/DataModels/Product`](../../DataModels/Product) |
 | 跨线基线 | [`Tests/ContractBaseline.cs`](../../../../../Tests/ContractBaseline.cs)（各线分节；本线口径以守卫实际断言为准） |
 | 本线包级公开面与已踩陷阱 | [`Src/Channels/Mud.Wechat.Channels/README.md`](../../README.md) |
 | 跨线通用约束（门禁 / AOT / 落位） | [`AGENTS.md`](../../../../../AGENTS.md) |

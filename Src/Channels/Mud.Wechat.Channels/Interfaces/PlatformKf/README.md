@@ -3,7 +3,7 @@
 微信小店 / 视频号（channels 生态）「平台客诉工单」域 SDK（4 端点：工单分类配置 /
 商家工单列表 / 工单详情 / 商户处理工单）。 接口：[IChannelsPlatformKfService](./IChannelsPlatformKfService.cs)；注册组 `PlatformKf`；模块枚举 `ChannelsModule.PlatformKf`（装配入口见 [ChannelsServiceBuilder.cs](../../Extensions/ChannelsServiceBuilder.cs)）。逐端点核验 2026-10-18。
 
-> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[ChannelsPlatformKfContractGuards.cs](../../../../../Tests/Mud.Wechat.Channels.Tests/ContractGuards/ChannelsPlatformKfContractGuards.cs)）、本域 DTO（[`Mud.Wechat.Channels/PlatformKf`](../../../Mud.Wechat.Channels/PlatformKf/)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
+> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[ChannelsPlatformKfContractGuards.cs](../../../../../Tests/Mud.Wechat.Channels.Tests/ContractGuards/ChannelsPlatformKfContractGuards.cs)）、本域 DTO（[`Mud.Wechat.Channels/DataModels/PlatformKf`](../../DataModels/PlatformKf)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
 
 ## 端点速览
 
@@ -107,19 +107,19 @@
 
 ## DTO 与序列化面
 
-本域 DTO 目录 [`Mud.Wechat.Channels/PlatformKf`](../../../Mud.Wechat.Channels/PlatformKf/) 内共 **15** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **15** 个，`SerializerClassName` = `PlatformKf`。
+本域 DTO 目录 [`Mud.Wechat.Channels/DataModels/PlatformKf`](../../DataModels/PlatformKf) 内共 **15** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **15** 个，`SerializerClassName` = `PlatformKf`。
 
-AOT 源生成上下文：[`PlatformKfJsonContext.g.cs`](./../../../Mud.Wechat.Channels/Generated/PlatformKfJsonContext.g.cs)（生成物，勿手改）。
+AOT 源生成上下文：[`PlatformKfJsonContext.g.cs`](./../../DataModels/Generated/PlatformKfJsonContext.g.cs)（生成物，勿手改）。
 
 | 端点引用的类型 | 角色 | 定义位置 | JSON 字段（前缀） |
 |---|---|---|---|
-| `ChannelsPlatformKfGetTicketClassConfigResponse` | 应答 | [PlatformKf/ChannelsPlatformKfGetTicketClassConfigResponse.cs](../../../Mud.Wechat.Channels/PlatformKf/ChannelsPlatformKfGetTicketClassConfigResponse.cs) | `mch_reply_options` |
-| `ChannelsPlatformKfGetTicketListResponse` | 应答 | [PlatformKf/ChannelsPlatformKfGetTicketListResponse.cs](../../../Mud.Wechat.Channels/PlatformKf/ChannelsPlatformKfGetTicketListResponse.cs) | `ticket_item_list`, `total` |
-| `ChannelsPlatformKfGetTicketListRequest` | 请求体 | [PlatformKf/ChannelsPlatformKfGetTicketListRequest.cs](../../../Mud.Wechat.Channels/PlatformKf/ChannelsPlatformKfGetTicketListRequest.cs) | `ticket_state`, `ticket_class_type`, `search_ticket_id`, `search_start_time`, `search_end_time`, `sort_order_type`, `limit`, `start` |
-| `ChannelsPlatformKfGetTicketDetailResponse` | 应答 | [PlatformKf/ChannelsPlatformKfGetTicketDetailResponse.cs](../../../Mud.Wechat.Channels/PlatformKf/ChannelsPlatformKfGetTicketDetailResponse.cs) | `merchant_ticket` |
-| `ChannelsPlatformKfGetTicketDetailRequest` | 请求体 | [PlatformKf/ChannelsPlatformKfGetTicketDetailRequest.cs](../../../Mud.Wechat.Channels/PlatformKf/ChannelsPlatformKfGetTicketDetailRequest.cs) | `ticket_id` |
-| `ChannelsResponse` | 应答 | [ChannelsResponse.cs](../../../Mud.Wechat.Channels/ChannelsResponse.cs) | `errcode`, `errmsg` |
-| `ChannelsPlatformKfOperateTicketRequest` | 请求体 | [PlatformKf/ChannelsPlatformKfOperateTicketRequest.cs](../../../Mud.Wechat.Channels/PlatformKf/ChannelsPlatformKfOperateTicketRequest.cs) | `ticket_id`, `reply_option`, `description`, `confer_time` |
+| `ChannelsPlatformKfGetTicketClassConfigResponse` | 应答 | [PlatformKf/ChannelsPlatformKfGetTicketClassConfigResponse.cs](../../DataModels/PlatformKf/ChannelsPlatformKfGetTicketClassConfigResponse.cs) | `mch_reply_options` |
+| `ChannelsPlatformKfGetTicketListResponse` | 应答 | [PlatformKf/ChannelsPlatformKfGetTicketListResponse.cs](../../DataModels/PlatformKf/ChannelsPlatformKfGetTicketListResponse.cs) | `ticket_item_list`, `total` |
+| `ChannelsPlatformKfGetTicketListRequest` | 请求体 | [PlatformKf/ChannelsPlatformKfGetTicketListRequest.cs](../../DataModels/PlatformKf/ChannelsPlatformKfGetTicketListRequest.cs) | `ticket_state`, `ticket_class_type`, `search_ticket_id`, `search_start_time`, `search_end_time`, `sort_order_type`, `limit`, `start` |
+| `ChannelsPlatformKfGetTicketDetailResponse` | 应答 | [PlatformKf/ChannelsPlatformKfGetTicketDetailResponse.cs](../../DataModels/PlatformKf/ChannelsPlatformKfGetTicketDetailResponse.cs) | `merchant_ticket` |
+| `ChannelsPlatformKfGetTicketDetailRequest` | 请求体 | [PlatformKf/ChannelsPlatformKfGetTicketDetailRequest.cs](../../DataModels/PlatformKf/ChannelsPlatformKfGetTicketDetailRequest.cs) | `ticket_id` |
+| `ChannelsResponse` | 应答 | [ChannelsResponse.cs](../../DataModels/ChannelsResponse.cs) | `errcode`, `errmsg` |
+| `ChannelsPlatformKfOperateTicketRequest` | 请求体 | [PlatformKf/ChannelsPlatformKfOperateTicketRequest.cs](../../DataModels/PlatformKf/ChannelsPlatformKfOperateTicketRequest.cs) | `ticket_id`, `reply_option`, `description`, `confer_time` |
 
 > DTO 一律以源文件为准；本表只列端点签名**直接引用**的一层类型，嵌套类型不再递归展开。所有 DTO 不使用 `required`（仓内约束），必填性由接口注释与官方页表达，SDK 不做本地必填校验。
 
@@ -157,7 +157,7 @@ var response = await service.GetTicketClassConfigAsync(ct);
 | 契约守卫（路由 / 计数 / DTO 登记断言） | [`ChannelsPlatformKfContractGuards.cs`](../../../../../Tests/Mud.Wechat.Channels.Tests/ContractGuards/ChannelsPlatformKfContractGuards.cs) |
 | 守卫中的代表性测试方法 | `PlatformKfEndpoints_ShouldMatchOfficialRoutes`、`PlatformKfEndpoints_ShouldAllBePost_WithEmptyBodyRules`、`PlatformKfInterface_ShouldBindChannelsToken_AndRegisterUnderPlatformKfGroup`、`PlatformKfDataModels_ShouldBeRegisteredInJsonContext`、`PlatformKfDataModels_ShouldLockOfficialFieldsAndSharedDtos`、`PlatformKfEnumConstants_ShouldLockOfficialLiteralValues` |
 | 模块枚举 / 装配入口 | [`ChannelsModule.cs`](../../Extensions/ChannelsModule.cs)、[`ChannelsServiceBuilder.cs`](../../Extensions/ChannelsServiceBuilder.cs) |
-| DTO 与 JSON 上下文 | [`Mud.Wechat.Channels/PlatformKf`](../../../Mud.Wechat.Channels/PlatformKf/) |
+| DTO 与 JSON 上下文 | [`Mud.Wechat.Channels/DataModels/PlatformKf`](../../DataModels/PlatformKf) |
 | 跨线基线 | [`Tests/ContractBaseline.cs`](../../../../../Tests/ContractBaseline.cs)（各线分节；本线口径以守卫实际断言为准） |
 | 本线包级公开面与已踩陷阱 | [`Src/Channels/Mud.Wechat.Channels/README.md`](../../README.md) |
 | 跨线通用约束（门禁 / AOT / 落位） | [`AGENTS.md`](../../../../../AGENTS.md) |

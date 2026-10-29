@@ -59,7 +59,7 @@ Query 的 `access_token`。官方契约强制 Query 注入、无法改 Header，
 ## 4. 应答字段与「官方无枚举值 ⇒ 不得私造常量类」
 
 五个字段名由 CFA5 逐个锁定，全部照抄官方原文
-（载体 [ChannelsFavoritesCountResponse.cs](../../../Mud.Wechat.Channels/Favorite/ChannelsFavoritesCountResponse.cs)，属性均为 `int?`）：
+（载体 [ChannelsFavoritesCountResponse.cs](../../DataModels/Favorite/ChannelsFavoritesCountResponse.cs)，属性均为 `int?`）：
 
 | JSON 字段 | 属性 | 官方语义 |
 |---|---|---|
@@ -141,7 +141,7 @@ Console.WriteLine($"收藏总人数 {total}（首页 {homepage} / 订单 {orderD
 | 令牌绑定与注册组 `Favorite` + `ChannelsModule.Favorite` + `AddFavoriteApi` | 同上 CFA3 |
 | DTO 计数（恰 1）、`SerializerClassName = Favorite`、**常量类必须为空** | 同上 CFA4（`FavoriteDataModels_ShouldBeRegisteredInJsonContext`） |
 | 5 个 `favor_uv_acc_*` 字段名 | 同上 CFA5（`FavoriteDataModels_ShouldLockOfficialFields`） |
-| 响应 DTO 与属性形态 | [../../../Mud.Wechat.Channels/Favorite/ChannelsFavoritesCountResponse.cs](../../../Mud.Wechat.Channels/Favorite/ChannelsFavoritesCountResponse.cs) |
+| 响应 DTO 与属性形态 | [../../../Mud.Wechat.Channels/DataModels/Favorite/ChannelsFavoritesCountResponse.cs](../../DataModels/Favorite/ChannelsFavoritesCountResponse.cs) |
 | 全线逐域路由表与重叠白名单 | [ChannelsRouteContractGuards.cs](../../../../../Tests/Mud.Wechat.Channels.Tests/ContractGuards/ChannelsRouteContractGuards.cs)（CH-R1 / CH-R2） |
 | 令牌字面量 / Query 注入 / 禁复用公众号令牌 / 禁 `/wxa/` | [ChannelsTokenOwnerContractGuards.cs](../../../../../Tests/Mud.Wechat.Channels.Tests/ContractGuards/ChannelsTokenOwnerContractGuards.cs)（CH-T1~T3 / CH-V1） |
 | 四包骨架 / 平铺无 `IsAbstract` / JsonContext 合并登记 | [ChannelsScaffoldContractGuards.cs](../../../../../Tests/Mud.Wechat.Channels.Tests/ContractGuards/ChannelsScaffoldContractGuards.cs)（CH-X1~X5） |

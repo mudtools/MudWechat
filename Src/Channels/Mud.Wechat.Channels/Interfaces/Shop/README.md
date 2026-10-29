@@ -2,7 +2,7 @@
 
 微信小店 / 视频号（channels 生态）「店铺管理」域 SDK（4 端点：店铺基本信息 / H5 链接 / 二维码 / 微信口令）。 接口：[IChannelsShopService](./IChannelsShopService.cs)；注册组 `Shop`；模块枚举 `ChannelsModule.Shop`（装配入口见 [ChannelsServiceBuilder.cs](../../Extensions/ChannelsServiceBuilder.cs)）。逐端点核验 2026-10-18。
 
-> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[ChannelsShopContractGuards.cs](../../../../../Tests/Mud.Wechat.Channels.Tests/ContractGuards/ChannelsShopContractGuards.cs)）、本域 DTO（[`Mud.Wechat.Channels/Shop`](../../../Mud.Wechat.Channels/Shop/)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
+> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[ChannelsShopContractGuards.cs](../../../../../Tests/Mud.Wechat.Channels.Tests/ContractGuards/ChannelsShopContractGuards.cs)）、本域 DTO（[`Mud.Wechat.Channels/DataModels/Shop`](../../DataModels/Shop)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
 
 ## 端点速览
 
@@ -97,18 +97,18 @@ MUD005 已知接受风险：微信小店官方契约强制令牌走 Query 参数
 
 ## DTO 与序列化面
 
-本域 DTO 目录 [`Mud.Wechat.Channels/Shop`](../../../Mud.Wechat.Channels/Shop/) 内共 **7** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **7** 个，`SerializerClassName` = `Shop`。
+本域 DTO 目录 [`Mud.Wechat.Channels/DataModels/Shop`](../../DataModels/Shop) 内共 **7** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **7** 个，`SerializerClassName` = `Shop`。
 
-AOT 源生成上下文：[`ShopJsonContext.g.cs`](./../../../Mud.Wechat.Channels/Generated/ShopJsonContext.g.cs)（生成物，勿手改）。
+AOT 源生成上下文：[`ShopJsonContext.g.cs`](./../../DataModels/Generated/ShopJsonContext.g.cs)（生成物，勿手改）。
 
 | 端点引用的类型 | 角色 | 定义位置 | JSON 字段（前缀） |
 |---|---|---|---|
-| `ChannelsShopBasicInfoResponse` | 应答 | [Shop/ChannelsShopBasicInfoResponse.cs](../../../Mud.Wechat.Channels/Shop/ChannelsShopBasicInfoResponse.cs) | `info` |
-| `ChannelsShopH5UrlResponse` | 应答 | [Shop/ChannelsShopH5UrlResponse.cs](../../../Mud.Wechat.Channels/Shop/ChannelsShopH5UrlResponse.cs) | `shop_h5url` |
-| `ChannelsShopWecomLinkRequest` | 请求体 | [Shop/ChannelsShopWecomLinkRequest.cs](../../../Mud.Wechat.Channels/Shop/ChannelsShopWecomLinkRequest.cs) | `wecom_corp_id`, `wecom_user_id` |
-| `ChannelsShopQrcodeResponse` | 应答 | [Shop/ChannelsShopQrcodeResponse.cs](../../../Mud.Wechat.Channels/Shop/ChannelsShopQrcodeResponse.cs) | `shop_qrcode` |
-| `ChannelsShopQrcodeRequest` | 请求体 | [Shop/ChannelsShopQrcodeRequest.cs](../../../Mud.Wechat.Channels/Shop/ChannelsShopQrcodeRequest.cs) | `wecom_corp_id`, `wecom_user_id`, `qrcode_type` |
-| `ChannelsShopTagLinkResponse` | 应答 | [Shop/ChannelsShopTagLinkResponse.cs](../../../Mud.Wechat.Channels/Shop/ChannelsShopTagLinkResponse.cs) | `shop_taglink` |
+| `ChannelsShopBasicInfoResponse` | 应答 | [Shop/ChannelsShopBasicInfoResponse.cs](../../DataModels/Shop/ChannelsShopBasicInfoResponse.cs) | `info` |
+| `ChannelsShopH5UrlResponse` | 应答 | [Shop/ChannelsShopH5UrlResponse.cs](../../DataModels/Shop/ChannelsShopH5UrlResponse.cs) | `shop_h5url` |
+| `ChannelsShopWecomLinkRequest` | 请求体 | [Shop/ChannelsShopWecomLinkRequest.cs](../../DataModels/Shop/ChannelsShopWecomLinkRequest.cs) | `wecom_corp_id`, `wecom_user_id` |
+| `ChannelsShopQrcodeResponse` | 应答 | [Shop/ChannelsShopQrcodeResponse.cs](../../DataModels/Shop/ChannelsShopQrcodeResponse.cs) | `shop_qrcode` |
+| `ChannelsShopQrcodeRequest` | 请求体 | [Shop/ChannelsShopQrcodeRequest.cs](../../DataModels/Shop/ChannelsShopQrcodeRequest.cs) | `wecom_corp_id`, `wecom_user_id`, `qrcode_type` |
+| `ChannelsShopTagLinkResponse` | 应答 | [Shop/ChannelsShopTagLinkResponse.cs](../../DataModels/Shop/ChannelsShopTagLinkResponse.cs) | `shop_taglink` |
 
 > DTO 一律以源文件为准；本表只列端点签名**直接引用**的一层类型，嵌套类型不再递归展开。所有 DTO 不使用 `required`（仓内约束），必填性由接口注释与官方页表达，SDK 不做本地必填校验。
 
@@ -146,7 +146,7 @@ var response = await service.GetShopInfoAsync(ct);
 | 契约守卫（路由 / 计数 / DTO 登记断言） | [`ChannelsShopContractGuards.cs`](../../../../../Tests/Mud.Wechat.Channels.Tests/ContractGuards/ChannelsShopContractGuards.cs) |
 | 守卫中的代表性测试方法 | `ShopEndpoints_ShouldMatchOfficialRoutes`、`ShopEndpoints_ShouldHonorOfficialVerbAndBodyRules`、`ShopInterface_ShouldBindChannelsToken_AndRegisterUnderShopGroup`、`ShopDataModels_ShouldBeRegisteredInJsonContext`、`ShopDataModels_ShouldLockOfficialFieldsAndSharedDtos`、`ShopEnumConstants_ShouldLockOfficialLiteralValues` |
 | 模块枚举 / 装配入口 | [`ChannelsModule.cs`](../../Extensions/ChannelsModule.cs)、[`ChannelsServiceBuilder.cs`](../../Extensions/ChannelsServiceBuilder.cs) |
-| DTO 与 JSON 上下文 | [`Mud.Wechat.Channels/Shop`](../../../Mud.Wechat.Channels/Shop/) |
+| DTO 与 JSON 上下文 | [`Mud.Wechat.Channels/DataModels/Shop`](../../DataModels/Shop) |
 | 跨线基线 | [`Tests/ContractBaseline.cs`](../../../../../Tests/ContractBaseline.cs)（各线分节；本线口径以守卫实际断言为准） |
 | 本线包级公开面与已踩陷阱 | [`Src/Channels/Mud.Wechat.Channels/README.md`](../../README.md) |
 | 跨线通用约束（门禁 / AOT / 落位） | [`AGENTS.md`](../../../../../AGENTS.md) |

@@ -43,7 +43,7 @@
 
 ## 1. `ds` 日期口径：YYYYMMDD，且 4 支只吃历史数据
 
-- `ds` 是**字符串**、格式 `YYYYMMDD`（[ChannelsCompassDsRequest.cs](../../../Mud.Wechat.Channels/Compass/Shop/ChannelsCompassDsRequest.cs)
+- `ds` 是**字符串**、格式 `YYYYMMDD`（[ChannelsCompassDsRequest.cs](../../DataModels/Compass/Shop/ChannelsCompassDsRequest.cs)
   被 5 支端点共用，CCP5 锁定 `ds` 键名）；格式错 → 官方错误码 `10021069`（请求参数日期格式有误）。
 - **#8 / #9 / #10 / #14 官方原文「仅历史数据，暂无当日数据」** ⇒ 传当天 `ds` 拿到的是空数据而不是报错，
   这是本域最容易踩的坑：判「有没有数据」不能只看 `errcode`。
@@ -52,7 +52,7 @@
 ## 2. 达人身份的三选一（`finder_id` / `talent_id` / `mp_id`）
 
 #4 / #5 用
-[ChannelsCompassShopFinderProductRequest.cs](../../../Mud.Wechat.Channels/Compass/Shop/ChannelsCompassShopFinderProductRequest.cs)：
+[ChannelsCompassShopFinderProductRequest.cs](../../DataModels/Compass/Shop/ChannelsCompassShopFinderProductRequest.cs)：
 三个字段都是 `string?`，官方约束「**三者必填其一**」。
 本仓**不做本地三选一校验**（组合合法性由官方判定），`finder_id` 错 → `10023001`。
 #6 是另一套口径：`ds` 与 `finder_id` **两者必填**（不是三选一）。
@@ -90,8 +90,8 @@
 
 | 常量类 | 取值 |
 |---|---|
-| [ChannelsCompassShopSaleProfileUserTypes.cs](../../../Mud.Wechat.Channels/Compass/Shop/ChannelsCompassShopSaleProfileUserTypes.cs) | 1 商品曝光用户 / 2 商品点击用户 / 3 购买用户 / 4 首次购买用户 / 5 重复购买用户（**1..5**） |
-| [ChannelsCompassFinderSaleProfileUserTypes.cs](../../../Mud.Wechat.Channels/Compass/Finder/ChannelsCompassFinderSaleProfileUserTypes.cs) | 1..5 同上 **+ 6 直播观看用户**（**1..6**） |
+| [ChannelsCompassShopSaleProfileUserTypes.cs](../../DataModels/Compass/Shop/ChannelsCompassShopSaleProfileUserTypes.cs) | 1 商品曝光用户 / 2 商品点击用户 / 3 购买用户 / 4 首次购买用户 / 5 重复购买用户（**1..5**） |
+| [ChannelsCompassFinderSaleProfileUserTypes.cs](../../DataModels/Compass/Finder/ChannelsCompassFinderSaleProfileUserTypes.cs) | 1..5 同上 **+ 6 直播观看用户**（**1..6**） |
 
 ⇒ 把商家版的 `type` 常量传给达人版接口在数值上「看起来合法」，但达人侧多出第 6 档；
 两套常量**不得合并**（CCP4 同时钉「常量类恰 2 个、均不得标 `[HttpJsonSerializable]`」）。

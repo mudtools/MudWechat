@@ -70,13 +70,13 @@
 （已锁定常量 `ChannelsErrorCodes.ClearQuotaLimitReached` = `48006`，守卫 CB6）。
 
 `appsecret` 的形态已裁决：官方文档正文写请求体、示例却把它放进 Query，本仓按
-**请求体形态**落 [ChannelsClearQuotaV2Request.cs](../../../Mud.Wechat.Channels/Basic/ChannelsClearQuotaV2Request.cs)，
+**请求体形态**落 [ChannelsClearQuotaV2Request.cs](../../DataModels/Basic/ChannelsClearQuotaV2Request.cs)，
 CB2 反向断言该方法**零 `QueryAttribute`** —— 补回 Query 参数即与裁决冲突。
 
 ## 4. `cgi_path` 形状与共用 DTO 裁决
 
 #6 与 #7 的请求体字段表完全一致（单个 `cgi_path`）⇒ CB5 裁决**共用**
-[ChannelsCgiPathRequest.cs](../../../Mud.Wechat.Channels/Basic/ChannelsCgiPathRequest.cs)，
+[ChannelsCgiPathRequest.cs](../../DataModels/Basic/ChannelsCgiPathRequest.cs)，
 不各建一份（各建即双源）。取值形状：必须 `/` 开头、**不带域名前缀**；
 官方错误码 `76021`（`CgiPathNotFound`）/ `76022`（`CgiPathPermissionDenied`，`/xxx/sns/xxx` 一类不支持）。
 本仓不校验字符串形状，形状错由应答表达。
@@ -93,9 +93,9 @@ rid 由 A 产生就必须用 A 的令牌查，用 B 查报 `76003`；③ `/xxx/s
 ## 6. 条件必填与批量上限
 
 - `CheckCallbackAsync`：`action` 取
-  [ChannelsCallbackCheckActions.cs](../../../Mud.Wechat.Channels/Basic/ChannelsCallbackCheckActions.cs)
+  [ChannelsCallbackCheckActions.cs](../../DataModels/Basic/ChannelsCallbackCheckActions.cs)
   （`all` / `dns` / `ping`），`check_operator` 取
-  [ChannelsCallbackCheckOperators.cs](../../../Mud.Wechat.Channels/Basic/ChannelsCallbackCheckOperators.cs)
+  [ChannelsCallbackCheckOperators.cs](../../DataModels/Basic/ChannelsCallbackCheckOperators.cs)
   （`CHINANET` / `UNICOM` / `CAP` / `BACKBONE`）；非法值对应 `40002`-族已锁定为
   `InvalidCheckAction` = `40202` / `InvalidCheckOperator` = `40203`（CB6），未配置回调地址是 `40201`。
   `dns` 结果在 `dns` 字段、`ping` 结果在 `ping` 字段，两个子结构各自建 DTO，不合并。

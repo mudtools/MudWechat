@@ -2,7 +2,7 @@
 
 微信小店 / 视频号（channels 生态）「主页管理」域 SDK（14 端点：主页商品排序 / 主页背景图 / 精选展示位 / 店铺主页商品分类）。 接口：[IChannelsHomePageService](./IChannelsHomePageService.cs)；注册组 `HomePage`；模块枚举 `ChannelsModule.HomePage`（装配入口见 [ChannelsServiceBuilder.cs](../../Extensions/ChannelsServiceBuilder.cs)）。逐端点核验 2026-10-18。
 
-> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[ChannelsHomePageContractGuards.cs](../../../../../Tests/Mud.Wechat.Channels.Tests/ContractGuards/ChannelsHomePageContractGuards.cs)）、本域 DTO（[`Mud.Wechat.Channels/HomePage`](../../../Mud.Wechat.Channels/HomePage/)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
+> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[ChannelsHomePageContractGuards.cs](../../../../../Tests/Mud.Wechat.Channels.Tests/ContractGuards/ChannelsHomePageContractGuards.cs)）、本域 DTO（[`Mud.Wechat.Channels/DataModels/HomePage`](../../DataModels/HomePage)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
 
 ## 端点速览
 
@@ -235,27 +235,27 @@ MUD005 已知接受风险：微信小店官方契约强制令牌走 Query 参数
 
 ## DTO 与序列化面
 
-本域 DTO 目录 [`Mud.Wechat.Channels/HomePage`](../../../Mud.Wechat.Channels/HomePage/) 内共 **27** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **27** 个，`SerializerClassName` = `HomePage`。
+本域 DTO 目录 [`Mud.Wechat.Channels/DataModels/HomePage`](../../DataModels/HomePage) 内共 **27** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **27** 个，`SerializerClassName` = `HomePage`。
 
-AOT 源生成上下文：[`HomePageJsonContext.g.cs`](./../../../Mud.Wechat.Channels/Generated/HomePageJsonContext.g.cs)（生成物，勿手改）。
+AOT 源生成上下文：[`HomePageJsonContext.g.cs`](./../../DataModels/Generated/HomePageJsonContext.g.cs)（生成物，勿手改）。
 
 | 端点引用的类型 | 角色 | 定义位置 | JSON 字段（前缀） |
 |---|---|---|---|
-| `ChannelsGetStoreWindowProductListResponse` | 应答 | [HomePage/WindowProduct/ChannelsGetStoreWindowProductListResponse.cs](../../../Mud.Wechat.Channels/HomePage/WindowProduct/ChannelsGetStoreWindowProductListResponse.cs) | `products`, `next_key`, `total_num` |
-| `ChannelsGetStoreWindowProductListRequest` | 请求体 | [HomePage/WindowProduct/ChannelsGetStoreWindowProductListRequest.cs](../../../Mud.Wechat.Channels/HomePage/WindowProduct/ChannelsGetStoreWindowProductListRequest.cs) | `page_size`, `next_key` |
-| `ChannelsResponse` | 应答 | [ChannelsResponse.cs](../../../Mud.Wechat.Channels/ChannelsResponse.cs) | `errcode`, `errmsg` |
-| `ChannelsReorderStoreWindowProductRequest` | 请求体 | [HomePage/WindowProduct/ChannelsReorderStoreWindowProductRequest.cs](../../../Mud.Wechat.Channels/HomePage/WindowProduct/ChannelsReorderStoreWindowProductRequest.cs) | `product_id`, `index_num` |
-| `ChannelsHideStoreWindowProductRequest` | 请求体 | [HomePage/WindowProduct/ChannelsHideStoreWindowProductRequest.cs](../../../Mud.Wechat.Channels/HomePage/WindowProduct/ChannelsHideStoreWindowProductRequest.cs) | `product_id`, `is_set_hide` |
-| `ChannelsSetTopStoreWindowProductRequest` | 请求体 | [HomePage/WindowProduct/ChannelsSetTopStoreWindowProductRequest.cs](../../../Mud.Wechat.Channels/HomePage/WindowProduct/ChannelsSetTopStoreWindowProductRequest.cs) | `product_id`, `is_set_top` |
-| `ChannelsHomepageApplyResponse` | 应答 | [HomePage/Apply/ChannelsHomepageApplyResponse.cs](../../../Mud.Wechat.Channels/HomePage/Apply/ChannelsHomepageApplyResponse.cs) | `apply_id` |
-| `ChannelsSubmitHomepageBackgroundApplyRequest` | 请求体 | [HomePage/Background/ChannelsSubmitHomepageBackgroundApplyRequest.cs](../../../Mud.Wechat.Channels/HomePage/Background/ChannelsSubmitHomepageBackgroundApplyRequest.cs) | `img_url` |
-| `ChannelsGetHomepageBackgroundResponse` | 应答 | [HomePage/Background/ChannelsGetHomepageBackgroundResponse.cs](../../../Mud.Wechat.Channels/HomePage/Background/ChannelsGetHomepageBackgroundResponse.cs) | `img_url`, `apply` |
-| `ChannelsHomepageApplyIdRequest` | 请求体 | [HomePage/Apply/ChannelsHomepageApplyIdRequest.cs](../../../Mud.Wechat.Channels/HomePage/Apply/ChannelsHomepageApplyIdRequest.cs) | `apply_id` |
-| `ChannelsSubmitBannerApplyRequest` | 请求体 | [HomePage/Banner/ChannelsSubmitBannerApplyRequest.cs](../../../Mud.Wechat.Channels/HomePage/Banner/ChannelsSubmitBannerApplyRequest.cs) | `banner` |
-| `ChannelsGetBannerResponse` | 应答 | [HomePage/Banner/ChannelsGetBannerResponse.cs](../../../Mud.Wechat.Channels/HomePage/Banner/ChannelsGetBannerResponse.cs) | `banner`, `apply` |
-| `ChannelsGetClassificationTreeResponse` | 应答 | [HomePage/Classification/ChannelsGetClassificationTreeResponse.cs](../../../Mud.Wechat.Channels/HomePage/Classification/ChannelsGetClassificationTreeResponse.cs) | `tree`, `version` |
-| `ChannelsGetClassificationProductListResponse` | 应答 | [HomePage/Classification/ChannelsGetClassificationProductListResponse.cs](../../../Mud.Wechat.Channels/HomePage/Classification/ChannelsGetClassificationProductListResponse.cs) | `product_ids`, `page_context` |
-| `ChannelsGetClassificationProductListRequest` | 请求体 | [HomePage/Classification/ChannelsGetClassificationProductListRequest.cs](../../../Mud.Wechat.Channels/HomePage/Classification/ChannelsGetClassificationProductListRequest.cs) | `req` |
+| `ChannelsGetStoreWindowProductListResponse` | 应答 | [HomePage/WindowProduct/ChannelsGetStoreWindowProductListResponse.cs](../../DataModels/HomePage/WindowProduct/ChannelsGetStoreWindowProductListResponse.cs) | `products`, `next_key`, `total_num` |
+| `ChannelsGetStoreWindowProductListRequest` | 请求体 | [HomePage/WindowProduct/ChannelsGetStoreWindowProductListRequest.cs](../../DataModels/HomePage/WindowProduct/ChannelsGetStoreWindowProductListRequest.cs) | `page_size`, `next_key` |
+| `ChannelsResponse` | 应答 | [ChannelsResponse.cs](../../DataModels/ChannelsResponse.cs) | `errcode`, `errmsg` |
+| `ChannelsReorderStoreWindowProductRequest` | 请求体 | [HomePage/WindowProduct/ChannelsReorderStoreWindowProductRequest.cs](../../DataModels/HomePage/WindowProduct/ChannelsReorderStoreWindowProductRequest.cs) | `product_id`, `index_num` |
+| `ChannelsHideStoreWindowProductRequest` | 请求体 | [HomePage/WindowProduct/ChannelsHideStoreWindowProductRequest.cs](../../DataModels/HomePage/WindowProduct/ChannelsHideStoreWindowProductRequest.cs) | `product_id`, `is_set_hide` |
+| `ChannelsSetTopStoreWindowProductRequest` | 请求体 | [HomePage/WindowProduct/ChannelsSetTopStoreWindowProductRequest.cs](../../DataModels/HomePage/WindowProduct/ChannelsSetTopStoreWindowProductRequest.cs) | `product_id`, `is_set_top` |
+| `ChannelsHomepageApplyResponse` | 应答 | [HomePage/Apply/ChannelsHomepageApplyResponse.cs](../../DataModels/HomePage/Apply/ChannelsHomepageApplyResponse.cs) | `apply_id` |
+| `ChannelsSubmitHomepageBackgroundApplyRequest` | 请求体 | [HomePage/Background/ChannelsSubmitHomepageBackgroundApplyRequest.cs](../../DataModels/HomePage/Background/ChannelsSubmitHomepageBackgroundApplyRequest.cs) | `img_url` |
+| `ChannelsGetHomepageBackgroundResponse` | 应答 | [HomePage/Background/ChannelsGetHomepageBackgroundResponse.cs](../../DataModels/HomePage/Background/ChannelsGetHomepageBackgroundResponse.cs) | `img_url`, `apply` |
+| `ChannelsHomepageApplyIdRequest` | 请求体 | [HomePage/Apply/ChannelsHomepageApplyIdRequest.cs](../../DataModels/HomePage/Apply/ChannelsHomepageApplyIdRequest.cs) | `apply_id` |
+| `ChannelsSubmitBannerApplyRequest` | 请求体 | [HomePage/Banner/ChannelsSubmitBannerApplyRequest.cs](../../DataModels/HomePage/Banner/ChannelsSubmitBannerApplyRequest.cs) | `banner` |
+| `ChannelsGetBannerResponse` | 应答 | [HomePage/Banner/ChannelsGetBannerResponse.cs](../../DataModels/HomePage/Banner/ChannelsGetBannerResponse.cs) | `banner`, `apply` |
+| `ChannelsGetClassificationTreeResponse` | 应答 | [HomePage/Classification/ChannelsGetClassificationTreeResponse.cs](../../DataModels/HomePage/Classification/ChannelsGetClassificationTreeResponse.cs) | `tree`, `version` |
+| `ChannelsGetClassificationProductListResponse` | 应答 | [HomePage/Classification/ChannelsGetClassificationProductListResponse.cs](../../DataModels/HomePage/Classification/ChannelsGetClassificationProductListResponse.cs) | `product_ids`, `page_context` |
+| `ChannelsGetClassificationProductListRequest` | 请求体 | [HomePage/Classification/ChannelsGetClassificationProductListRequest.cs](../../DataModels/HomePage/Classification/ChannelsGetClassificationProductListRequest.cs) | `req` |
 
 > DTO 一律以源文件为准；本表只列端点签名**直接引用**的一层类型，嵌套类型不再递归展开。所有 DTO 不使用 `required`（仓内约束），必填性由接口注释与官方页表达，SDK 不做本地必填校验。
 
@@ -293,7 +293,7 @@ var response = await service.GetBackgroundAsync(ct);
 | 契约守卫（路由 / 计数 / DTO 登记断言） | [`ChannelsHomePageContractGuards.cs`](../../../../../Tests/Mud.Wechat.Channels.Tests/ContractGuards/ChannelsHomePageContractGuards.cs) |
 | 守卫中的代表性测试方法 | `HomePageEndpoints_ShouldMatchOfficialRoutes`、`HomePageEndpoints_ShouldAllBePost_WithEmptyBodyRules`、`HomePageInterface_ShouldBindChannelsToken_AndRegisterUnderHomePageGroup`、`HomePageDataModels_ShouldBeRegisteredInJsonContext`、`HomePageDataModels_ShouldLockOfficialFieldsAndSharedDtos`、`HomePageEnumConstants_ShouldLockOfficialLiteralValues`、`RemovedClassificationWriteRoutes_ShouldHaveZeroDeclaration` |
 | 模块枚举 / 装配入口 | [`ChannelsModule.cs`](../../Extensions/ChannelsModule.cs)、[`ChannelsServiceBuilder.cs`](../../Extensions/ChannelsServiceBuilder.cs) |
-| DTO 与 JSON 上下文 | [`Mud.Wechat.Channels/HomePage`](../../../Mud.Wechat.Channels/HomePage/) |
+| DTO 与 JSON 上下文 | [`Mud.Wechat.Channels/DataModels/HomePage`](../../DataModels/HomePage) |
 | 跨线基线 | [`Tests/ContractBaseline.cs`](../../../../../Tests/ContractBaseline.cs)（各线分节；本线口径以守卫实际断言为准） |
 | 本线包级公开面与已踩陷阱 | [`Src/Channels/Mud.Wechat.Channels/README.md`](../../README.md) |
 | 跨线通用约束（门禁 / AOT / 落位） | [`AGENTS.md`](../../../../../AGENTS.md) |

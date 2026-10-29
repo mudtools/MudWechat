@@ -2,7 +2,7 @@
 
 微信小店 / 视频号（channels 生态）「带货助手（达人）」域 SDK（4 端点：佣金单 2 / 达人橱窗商品 2）。 接口：[IChannelsTalentService](./IChannelsTalentService.cs)；注册组 `Talent`；模块枚举 `ChannelsModule.Talent`（装配入口见 [ChannelsServiceBuilder.cs](../../Extensions/ChannelsServiceBuilder.cs)）。逐端点核验 2026-10-18。
 
-> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[ChannelsTalentContractGuards.cs](../../../../../Tests/Mud.Wechat.Channels.Tests/ContractGuards/ChannelsTalentContractGuards.cs)）、本域 DTO（[`Mud.Wechat.Channels/Talent`](../../../Mud.Wechat.Channels/Talent/)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
+> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[ChannelsTalentContractGuards.cs](../../../../../Tests/Mud.Wechat.Channels.Tests/ContractGuards/ChannelsTalentContractGuards.cs)）、本域 DTO（[`Mud.Wechat.Channels/DataModels/Talent`](../../DataModels/Talent)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
 
 ## 端点速览
 
@@ -115,20 +115,20 @@ MUD005 已知接受风险：微信小店官方契约强制令牌走 Query 参数
 
 ## DTO 与序列化面
 
-本域 DTO 目录 [`Mud.Wechat.Channels/Talent`](../../../Mud.Wechat.Channels/Talent/) 内共 **17** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **17** 个，`SerializerClassName` = `Talent`。
+本域 DTO 目录 [`Mud.Wechat.Channels/DataModels/Talent`](../../DataModels/Talent) 内共 **17** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **17** 个，`SerializerClassName` = `Talent`。
 
-AOT 源生成上下文：[`TalentJsonContext.g.cs`](./../../../Mud.Wechat.Channels/Generated/TalentJsonContext.g.cs)（生成物，勿手改）。
+AOT 源生成上下文：[`TalentJsonContext.g.cs`](./../../DataModels/Generated/TalentJsonContext.g.cs)（生成物，勿手改）。
 
 | 端点引用的类型 | 角色 | 定义位置 | JSON 字段（前缀） |
 |---|---|---|---|
-| `ChannelsTalentGetOrderDetailResponse` | 应答 | [Talent/Order/ChannelsTalentGetOrderDetailResponse.cs](../../../Mud.Wechat.Channels/Talent/Order/ChannelsTalentGetOrderDetailResponse.cs) | `base_info`, `commission_info`, `channel_info`, `promotion_head_supplier_info`, `product_info` |
-| `ChannelsTalentGetOrderDetailRequest` | 请求体 | [Talent/Order/ChannelsTalentGetOrderDetailRequest.cs](../../../Mud.Wechat.Channels/Talent/Order/ChannelsTalentGetOrderDetailRequest.cs) | `order_id`, `sku_id`, `special_id` |
-| `ChannelsTalentGetOrderListResponse` | 应答 | [Talent/Order/ChannelsTalentGetOrderListResponse.cs](../../../Mud.Wechat.Channels/Talent/Order/ChannelsTalentGetOrderListResponse.cs) | `order_list`, `has_more`, `next_key` |
-| `ChannelsTalentGetOrderListRequest` | 请求体 | [Talent/Order/ChannelsTalentGetOrderListRequest.cs](../../../Mud.Wechat.Channels/Talent/Order/ChannelsTalentGetOrderListRequest.cs) | `create_time_gt`, `create_time_lt`, `update_time_gt`, `update_time_lt`, `order_id`, `spu_id`, `page_size`, `next_key` |
-| `ChannelsTalentGetWindowProductDetailResponse` | 应答 | [Talent/Window/ChannelsTalentGetWindowProductDetailResponse.cs](../../../Mud.Wechat.Channels/Talent/Window/ChannelsTalentGetWindowProductDetailResponse.cs) | `product` |
-| `ChannelsTalentGetWindowProductDetailRequest` | 请求体 | [Talent/Window/ChannelsTalentGetWindowProductDetailRequest.cs](../../../Mud.Wechat.Channels/Talent/Window/ChannelsTalentGetWindowProductDetailRequest.cs) | `product_id` |
-| `ChannelsTalentGetWindowProductListResponse` | 应答 | [Talent/Window/ChannelsTalentGetWindowProductListResponse.cs](../../../Mud.Wechat.Channels/Talent/Window/ChannelsTalentGetWindowProductListResponse.cs) | `products`, `last_buffer` |
-| `ChannelsTalentGetWindowProductListRequest` | 请求体 | [Talent/Window/ChannelsTalentGetWindowProductListRequest.cs](../../../Mud.Wechat.Channels/Talent/Window/ChannelsTalentGetWindowProductListRequest.cs) | `page_size`, `page_index`, `last_buffer` |
+| `ChannelsTalentGetOrderDetailResponse` | 应答 | [Talent/Order/ChannelsTalentGetOrderDetailResponse.cs](../../DataModels/Talent/Order/ChannelsTalentGetOrderDetailResponse.cs) | `base_info`, `commission_info`, `channel_info`, `promotion_head_supplier_info`, `product_info` |
+| `ChannelsTalentGetOrderDetailRequest` | 请求体 | [Talent/Order/ChannelsTalentGetOrderDetailRequest.cs](../../DataModels/Talent/Order/ChannelsTalentGetOrderDetailRequest.cs) | `order_id`, `sku_id`, `special_id` |
+| `ChannelsTalentGetOrderListResponse` | 应答 | [Talent/Order/ChannelsTalentGetOrderListResponse.cs](../../DataModels/Talent/Order/ChannelsTalentGetOrderListResponse.cs) | `order_list`, `has_more`, `next_key` |
+| `ChannelsTalentGetOrderListRequest` | 请求体 | [Talent/Order/ChannelsTalentGetOrderListRequest.cs](../../DataModels/Talent/Order/ChannelsTalentGetOrderListRequest.cs) | `create_time_gt`, `create_time_lt`, `update_time_gt`, `update_time_lt`, `order_id`, `spu_id`, `page_size`, `next_key` |
+| `ChannelsTalentGetWindowProductDetailResponse` | 应答 | [Talent/Window/ChannelsTalentGetWindowProductDetailResponse.cs](../../DataModels/Talent/Window/ChannelsTalentGetWindowProductDetailResponse.cs) | `product` |
+| `ChannelsTalentGetWindowProductDetailRequest` | 请求体 | [Talent/Window/ChannelsTalentGetWindowProductDetailRequest.cs](../../DataModels/Talent/Window/ChannelsTalentGetWindowProductDetailRequest.cs) | `product_id` |
+| `ChannelsTalentGetWindowProductListResponse` | 应答 | [Talent/Window/ChannelsTalentGetWindowProductListResponse.cs](../../DataModels/Talent/Window/ChannelsTalentGetWindowProductListResponse.cs) | `products`, `last_buffer` |
+| `ChannelsTalentGetWindowProductListRequest` | 请求体 | [Talent/Window/ChannelsTalentGetWindowProductListRequest.cs](../../DataModels/Talent/Window/ChannelsTalentGetWindowProductListRequest.cs) | `page_size`, `page_index`, `last_buffer` |
 
 > DTO 一律以源文件为准；本表只列端点签名**直接引用**的一层类型，嵌套类型不再递归展开。所有 DTO 不使用 `required`（仓内约束），必填性由接口注释与官方页表达，SDK 不做本地必填校验。
 
@@ -166,7 +166,7 @@ var response = await service.GetOrderDetailAsync(new ChannelsTalentGetOrderDetai
 | 契约守卫（路由 / 计数 / DTO 登记断言） | [`ChannelsTalentContractGuards.cs`](../../../../../Tests/Mud.Wechat.Channels.Tests/ContractGuards/ChannelsTalentContractGuards.cs) |
 | 守卫中的代表性测试方法 | `TalentEndpoints_ShouldMatchOfficialRoutes`、`TalentEndpoints_ShouldAllBePost_WithSingleBody_AndTypedResponses`、`TalentInterface_ShouldBindChannelsToken_AndRegisterUnderTalentGroup`、`TalentDataModels_ShouldBeRegisteredInJsonContext`、`TalentDataModels_ShouldLockOfficialFieldsAndSplitDecisions`、`TalentConstants_ShouldLockOfficialEnumValues_AndStaySplitFromLeague`、`TalentDataModels_ShouldRecordOfficialContradictions` |
 | 模块枚举 / 装配入口 | [`ChannelsModule.cs`](../../Extensions/ChannelsModule.cs)、[`ChannelsServiceBuilder.cs`](../../Extensions/ChannelsServiceBuilder.cs) |
-| DTO 与 JSON 上下文 | [`Mud.Wechat.Channels/Talent`](../../../Mud.Wechat.Channels/Talent/) |
+| DTO 与 JSON 上下文 | [`Mud.Wechat.Channels/DataModels/Talent`](../../DataModels/Talent) |
 | 跨线基线 | [`Tests/ContractBaseline.cs`](../../../../../Tests/ContractBaseline.cs)（各线分节；本线口径以守卫实际断言为准） |
 | 本线包级公开面与已踩陷阱 | [`Src/Channels/Mud.Wechat.Channels/README.md`](../../README.md) |
 | 跨线通用约束（门禁 / AOT / 落位） | [`AGENTS.md`](../../../../../AGENTS.md) |

@@ -3,7 +3,7 @@
 微信小店 / 视频号（channels 生态）「本地生活-团购券」域 SDK（6 端点：上传 code / 用户券详情 /
 用户券列表 / 核销 / 撤销核销 / 券账单，路由前缀 `/channels/ec/voucher/*`）。 接口：[IChannelsLocallifeService](./IChannelsLocallifeService.cs)；注册组 `Locallife`；模块枚举 `ChannelsModule.Locallife`（装配入口见 [ChannelsServiceBuilder.cs](../../Extensions/ChannelsServiceBuilder.cs)）。逐端点核验 2026-10-18。
 
-> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[ChannelsLocallifeContractGuards.cs](../../../../../Tests/Mud.Wechat.Channels.Tests/ContractGuards/ChannelsLocallifeContractGuards.cs)）、本域 DTO（[`Mud.Wechat.Channels/Locallife`](../../../Mud.Wechat.Channels/Locallife/)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
+> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[ChannelsLocallifeContractGuards.cs](../../../../../Tests/Mud.Wechat.Channels.Tests/ContractGuards/ChannelsLocallifeContractGuards.cs)）、本域 DTO（[`Mud.Wechat.Channels/DataModels/Locallife`](../../DataModels/Locallife)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
 
 ## 端点速览
 
@@ -136,24 +136,24 @@
 
 ## DTO 与序列化面
 
-本域 DTO 目录 [`Mud.Wechat.Channels/Locallife`](../../../Mud.Wechat.Channels/Locallife/) 内共 **17** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **17** 个，`SerializerClassName` = `Locallife`。
+本域 DTO 目录 [`Mud.Wechat.Channels/DataModels/Locallife`](../../DataModels/Locallife) 内共 **17** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **17** 个，`SerializerClassName` = `Locallife`。
 
-AOT 源生成上下文：[`LocallifeJsonContext.g.cs`](./../../../Mud.Wechat.Channels/Generated/LocallifeJsonContext.g.cs)（生成物，勿手改）。
+AOT 源生成上下文：[`LocallifeJsonContext.g.cs`](./../../DataModels/Generated/LocallifeJsonContext.g.cs)（生成物，勿手改）。
 
 | 端点引用的类型 | 角色 | 定义位置 | JSON 字段（前缀） |
 |---|---|---|---|
-| `ChannelsVoucherCodesUploadResponse` | 应答 | [Locallife/ChannelsVoucherCodesUploadResponse.cs](../../../Mud.Wechat.Channels/Locallife/ChannelsVoucherCodesUploadResponse.cs) | `product_id`, `total_count`, `success_count`, `success_codes`, `fail_count`, `fail_codes` |
-| `ChannelsVoucherCodesUploadRequest` | 请求体 | [Locallife/ChannelsVoucherCodesUploadRequest.cs](../../../Mud.Wechat.Channels/Locallife/ChannelsVoucherCodesUploadRequest.cs) | `product_id`, `sku_id`, `codes` |
-| `ChannelsGetVoucherResponse` | 应答 | [Locallife/ChannelsGetVoucherResponse.cs](../../../Mud.Wechat.Channels/Locallife/ChannelsGetVoucherResponse.cs) | `voucher` |
-| `ChannelsGetVoucherRequest` | 请求体 | [Locallife/ChannelsGetVoucherRequest.cs](../../../Mud.Wechat.Channels/Locallife/ChannelsGetVoucherRequest.cs) | `encrypted_code`, `code`, `sku_id` |
-| `ChannelsGetVoucherListResponse` | 应答 | [Locallife/ChannelsGetVoucherListResponse.cs](../../../Mud.Wechat.Channels/Locallife/ChannelsGetVoucherListResponse.cs) | `openid`, `voucher_list`, `page_ctx` |
-| `ChannelsGetVoucherListRequest` | 请求体 | [Locallife/ChannelsGetVoucherListRequest.cs](../../../Mud.Wechat.Channels/Locallife/ChannelsGetVoucherListRequest.cs) | `openid`, `status`, `page_size`, `page_ctx` |
-| `ChannelsConsumeVoucherResponse` | 应答 | [Locallife/ChannelsConsumeVoucherResponse.cs](../../../Mud.Wechat.Channels/Locallife/ChannelsConsumeVoucherResponse.cs) | `voucher_list`, `fail_voucher_list` |
-| `ChannelsConsumeVoucherRequest` | 请求体 | [Locallife/ChannelsConsumeVoucherRequest.cs](../../../Mud.Wechat.Channels/Locallife/ChannelsConsumeVoucherRequest.cs) | `consume_request_no`, `encrypted_codes`, `codes`, `sku_id`, `consume_store_name`, `consume_channel`, `out_store_id`, `reserve_no` |
-| `ChannelsRevokeVoucherResponse` | 应答 | [Locallife/ChannelsRevokeVoucherResponse.cs](../../../Mud.Wechat.Channels/Locallife/ChannelsRevokeVoucherResponse.cs) | `voucher_list`, `fail_voucher_list` |
-| `ChannelsRevokeVoucherRequest` | 请求体 | [Locallife/ChannelsRevokeVoucherRequest.cs](../../../Mud.Wechat.Channels/Locallife/ChannelsRevokeVoucherRequest.cs) | `revoke_request_no`, `reovke_vouchers`, `consume_request_no` |
-| `ChannelsGetVoucherBillListResponse` | 应答 | [Locallife/ChannelsGetVoucherBillListResponse.cs](../../../Mud.Wechat.Channels/Locallife/ChannelsGetVoucherBillListResponse.cs) | `bill_list`, `page_ctx` |
-| `ChannelsGetVoucherBillListRequest` | 请求体 | [Locallife/ChannelsGetVoucherBillListRequest.cs](../../../Mud.Wechat.Channels/Locallife/ChannelsGetVoucherBillListRequest.cs) | `product_id`, `bill_date`, `page_size`, `page_ctx` |
+| `ChannelsVoucherCodesUploadResponse` | 应答 | [Locallife/ChannelsVoucherCodesUploadResponse.cs](../../DataModels/Locallife/ChannelsVoucherCodesUploadResponse.cs) | `product_id`, `total_count`, `success_count`, `success_codes`, `fail_count`, `fail_codes` |
+| `ChannelsVoucherCodesUploadRequest` | 请求体 | [Locallife/ChannelsVoucherCodesUploadRequest.cs](../../DataModels/Locallife/ChannelsVoucherCodesUploadRequest.cs) | `product_id`, `sku_id`, `codes` |
+| `ChannelsGetVoucherResponse` | 应答 | [Locallife/ChannelsGetVoucherResponse.cs](../../DataModels/Locallife/ChannelsGetVoucherResponse.cs) | `voucher` |
+| `ChannelsGetVoucherRequest` | 请求体 | [Locallife/ChannelsGetVoucherRequest.cs](../../DataModels/Locallife/ChannelsGetVoucherRequest.cs) | `encrypted_code`, `code`, `sku_id` |
+| `ChannelsGetVoucherListResponse` | 应答 | [Locallife/ChannelsGetVoucherListResponse.cs](../../DataModels/Locallife/ChannelsGetVoucherListResponse.cs) | `openid`, `voucher_list`, `page_ctx` |
+| `ChannelsGetVoucherListRequest` | 请求体 | [Locallife/ChannelsGetVoucherListRequest.cs](../../DataModels/Locallife/ChannelsGetVoucherListRequest.cs) | `openid`, `status`, `page_size`, `page_ctx` |
+| `ChannelsConsumeVoucherResponse` | 应答 | [Locallife/ChannelsConsumeVoucherResponse.cs](../../DataModels/Locallife/ChannelsConsumeVoucherResponse.cs) | `voucher_list`, `fail_voucher_list` |
+| `ChannelsConsumeVoucherRequest` | 请求体 | [Locallife/ChannelsConsumeVoucherRequest.cs](../../DataModels/Locallife/ChannelsConsumeVoucherRequest.cs) | `consume_request_no`, `encrypted_codes`, `codes`, `sku_id`, `consume_store_name`, `consume_channel`, `out_store_id`, `reserve_no` |
+| `ChannelsRevokeVoucherResponse` | 应答 | [Locallife/ChannelsRevokeVoucherResponse.cs](../../DataModels/Locallife/ChannelsRevokeVoucherResponse.cs) | `voucher_list`, `fail_voucher_list` |
+| `ChannelsRevokeVoucherRequest` | 请求体 | [Locallife/ChannelsRevokeVoucherRequest.cs](../../DataModels/Locallife/ChannelsRevokeVoucherRequest.cs) | `revoke_request_no`, `reovke_vouchers`, `consume_request_no` |
+| `ChannelsGetVoucherBillListResponse` | 应答 | [Locallife/ChannelsGetVoucherBillListResponse.cs](../../DataModels/Locallife/ChannelsGetVoucherBillListResponse.cs) | `bill_list`, `page_ctx` |
+| `ChannelsGetVoucherBillListRequest` | 请求体 | [Locallife/ChannelsGetVoucherBillListRequest.cs](../../DataModels/Locallife/ChannelsGetVoucherBillListRequest.cs) | `product_id`, `bill_date`, `page_size`, `page_ctx` |
 
 > DTO 一律以源文件为准；本表只列端点签名**直接引用**的一层类型，嵌套类型不再递归展开。所有 DTO 不使用 `required`（仓内约束），必填性由接口注释与官方页表达，SDK 不做本地必填校验。
 
@@ -190,7 +190,7 @@ var response = await service.ConsumeVoucherAsync(new ChannelsConsumeVoucherReque
 | 契约守卫（路由 / 计数 / DTO 登记断言） | [`ChannelsLocallifeContractGuards.cs`](../../../../../Tests/Mud.Wechat.Channels.Tests/ContractGuards/ChannelsLocallifeContractGuards.cs) |
 | 守卫中的代表性测试方法 | `LocallifeEndpoints_ShouldMatchOfficialRoutes`、`LocallifeEndpoints_ShouldAllBePost_WithBodyRules`、`LocallifeInterface_ShouldBindChannelsToken_AndRegisterUnderLocallifeGroup`、`LocallifeDataModels_ShouldBeRegisteredInJsonContext`、`LocallifeDataModels_ShouldLockOfficialFieldsAndSharedDtos`、`LocallifeEnumConstants_ShouldLockOfficialLiteralValues` |
 | 模块枚举 / 装配入口 | [`ChannelsModule.cs`](../../Extensions/ChannelsModule.cs)、[`ChannelsServiceBuilder.cs`](../../Extensions/ChannelsServiceBuilder.cs) |
-| DTO 与 JSON 上下文 | [`Mud.Wechat.Channels/Locallife`](../../../Mud.Wechat.Channels/Locallife/) |
+| DTO 与 JSON 上下文 | [`Mud.Wechat.Channels/DataModels/Locallife`](../../DataModels/Locallife) |
 | 跨线基线 | [`Tests/ContractBaseline.cs`](../../../../../Tests/ContractBaseline.cs)（各线分节；本线口径以守卫实际断言为准） |
 | 本线包级公开面与已踩陷阱 | [`Src/Channels/Mud.Wechat.Channels/README.md`](../../README.md) |
 | 跨线通用约束（门禁 / AOT / 落位） | [`AGENTS.md`](../../../../../AGENTS.md) |

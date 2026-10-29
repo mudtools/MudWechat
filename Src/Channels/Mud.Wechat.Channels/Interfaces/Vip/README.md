@@ -3,7 +3,7 @@
 微信小店 / 视频号（channels 生态）「会员营销」域 SDK（5 端点：会员用户积分 / 信息 /
 列表 / 积分流水 + 关联小程序信息）。 接口：[IChannelsVipService](./IChannelsVipService.cs)；注册组 `Vip`；模块枚举 `ChannelsModule.Vip`（装配入口见 [ChannelsServiceBuilder.cs](../../Extensions/ChannelsServiceBuilder.cs)）。逐端点核验 2026-10-18。
 
-> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[ChannelsVipContractGuards.cs](../../../../../Tests/Mud.Wechat.Channels.Tests/ContractGuards/ChannelsVipContractGuards.cs)）、本域 DTO（[`Mud.Wechat.Channels/Vip`](../../../Mud.Wechat.Channels/Vip/)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
+> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[ChannelsVipContractGuards.cs](../../../../../Tests/Mud.Wechat.Channels.Tests/ContractGuards/ChannelsVipContractGuards.cs)）、本域 DTO（[`Mud.Wechat.Channels/DataModels/Vip`](../../DataModels/Vip)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
 
 ## 端点速览
 
@@ -120,20 +120,20 @@
 
 ## DTO 与序列化面
 
-本域 DTO 目录 [`Mud.Wechat.Channels/Vip`](../../../Mud.Wechat.Channels/Vip/) 内共 **15** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **15** 个，`SerializerClassName` = `Vip`。
+本域 DTO 目录 [`Mud.Wechat.Channels/DataModels/Vip`](../../DataModels/Vip) 内共 **15** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **15** 个，`SerializerClassName` = `Vip`。
 
-AOT 源生成上下文：[`VipJsonContext.g.cs`](./../../../Mud.Wechat.Channels/Generated/VipJsonContext.g.cs)（生成物，勿手改）。
+AOT 源生成上下文：[`VipJsonContext.g.cs`](./../../DataModels/Generated/VipJsonContext.g.cs)（生成物，勿手改）。
 
 | 端点引用的类型 | 角色 | 定义位置 | JSON 字段（前缀） |
 |---|---|---|---|
-| `ChannelsVipGetUserScoreResponse` | 应答 | [Vip/ChannelsVipGetUserScoreResponse.cs](../../../Mud.Wechat.Channels/Vip/ChannelsVipGetUserScoreResponse.cs) | `info` |
-| `ChannelsVipOpenidRequest` | 请求体 | [Vip/ChannelsVipOpenidRequest.cs](../../../Mud.Wechat.Channels/Vip/ChannelsVipOpenidRequest.cs) | `openid` |
-| `ChannelsVipGetUserInfoResponse` | 应答 | [Vip/ChannelsVipGetUserInfoResponse.cs](../../../Mud.Wechat.Channels/Vip/ChannelsVipGetUserInfoResponse.cs) | `info` |
-| `ChannelsVipGetUserListResponse` | 应答 | [Vip/ChannelsVipGetUserListResponse.cs](../../../Mud.Wechat.Channels/Vip/ChannelsVipGetUserListResponse.cs) | `list`, `total_num` |
-| `ChannelsVipGetUserListRequest` | 请求体 | [Vip/ChannelsVipGetUserListRequest.cs](../../../Mud.Wechat.Channels/Vip/ChannelsVipGetUserListRequest.cs) | `page_num`, `page_size` |
-| `ChannelsVipGetUserScoreFlowRecordResponse` | 应答 | [Vip/ChannelsVipGetUserScoreFlowRecordResponse.cs](../../../Mud.Wechat.Channels/Vip/ChannelsVipGetUserScoreFlowRecordResponse.cs) | `list`, `total_num` |
-| `ChannelsVipGetUserScoreFlowRecordRequest` | 请求体 | [Vip/ChannelsVipGetUserScoreFlowRecordRequest.cs](../../../Mud.Wechat.Channels/Vip/ChannelsVipGetUserScoreFlowRecordRequest.cs) | `openid`, `page_num`, `page_size` |
-| `ChannelsVipGetWxaInfoResponse` | 应答 | [Vip/ChannelsVipGetWxaInfoResponse.cs](../../../Mud.Wechat.Channels/Vip/ChannelsVipGetWxaInfoResponse.cs) | `wxa_appid`, `info`, `state` |
+| `ChannelsVipGetUserScoreResponse` | 应答 | [Vip/ChannelsVipGetUserScoreResponse.cs](../../DataModels/Vip/ChannelsVipGetUserScoreResponse.cs) | `info` |
+| `ChannelsVipOpenidRequest` | 请求体 | [Vip/ChannelsVipOpenidRequest.cs](../../DataModels/Vip/ChannelsVipOpenidRequest.cs) | `openid` |
+| `ChannelsVipGetUserInfoResponse` | 应答 | [Vip/ChannelsVipGetUserInfoResponse.cs](../../DataModels/Vip/ChannelsVipGetUserInfoResponse.cs) | `info` |
+| `ChannelsVipGetUserListResponse` | 应答 | [Vip/ChannelsVipGetUserListResponse.cs](../../DataModels/Vip/ChannelsVipGetUserListResponse.cs) | `list`, `total_num` |
+| `ChannelsVipGetUserListRequest` | 请求体 | [Vip/ChannelsVipGetUserListRequest.cs](../../DataModels/Vip/ChannelsVipGetUserListRequest.cs) | `page_num`, `page_size` |
+| `ChannelsVipGetUserScoreFlowRecordResponse` | 应答 | [Vip/ChannelsVipGetUserScoreFlowRecordResponse.cs](../../DataModels/Vip/ChannelsVipGetUserScoreFlowRecordResponse.cs) | `list`, `total_num` |
+| `ChannelsVipGetUserScoreFlowRecordRequest` | 请求体 | [Vip/ChannelsVipGetUserScoreFlowRecordRequest.cs](../../DataModels/Vip/ChannelsVipGetUserScoreFlowRecordRequest.cs) | `openid`, `page_num`, `page_size` |
+| `ChannelsVipGetWxaInfoResponse` | 应答 | [Vip/ChannelsVipGetWxaInfoResponse.cs](../../DataModels/Vip/ChannelsVipGetWxaInfoResponse.cs) | `wxa_appid`, `info`, `state` |
 
 > DTO 一律以源文件为准；本表只列端点签名**直接引用**的一层类型，嵌套类型不再递归展开。所有 DTO 不使用 `required`（仓内约束），必填性由接口注释与官方页表达，SDK 不做本地必填校验。
 
@@ -171,7 +171,7 @@ var response = await service.GetWxaInfoAsync(ct);
 | 契约守卫（路由 / 计数 / DTO 登记断言） | [`ChannelsVipContractGuards.cs`](../../../../../Tests/Mud.Wechat.Channels.Tests/ContractGuards/ChannelsVipContractGuards.cs) |
 | 守卫中的代表性测试方法 | `VipEndpoints_ShouldMatchOfficialRoutes`、`VipEndpoints_ShouldAllBePost_WithEmptyBodyRules`、`VipInterface_ShouldBindChannelsToken_AndRegisterUnderVipGroup`、`VipDataModels_ShouldBeRegisteredInJsonContext`、`VipDataModels_ShouldLockOfficialFieldsAndSharedDtos`、`VipEnumConstants_ShouldLockOfficialLiteralValues` |
 | 模块枚举 / 装配入口 | [`ChannelsModule.cs`](../../Extensions/ChannelsModule.cs)、[`ChannelsServiceBuilder.cs`](../../Extensions/ChannelsServiceBuilder.cs) |
-| DTO 与 JSON 上下文 | [`Mud.Wechat.Channels/Vip`](../../../Mud.Wechat.Channels/Vip/) |
+| DTO 与 JSON 上下文 | [`Mud.Wechat.Channels/DataModels/Vip`](../../DataModels/Vip) |
 | 跨线基线 | [`Tests/ContractBaseline.cs`](../../../../../Tests/ContractBaseline.cs)（各线分节；本线口径以守卫实际断言为准） |
 | 本线包级公开面与已踩陷阱 | [`Src/Channels/Mud.Wechat.Channels/README.md`](../../README.md) |
 | 跨线通用约束（门禁 / AOT / 落位） | [`AGENTS.md`](../../../../../AGENTS.md) |

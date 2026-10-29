@@ -94,7 +94,7 @@ builder.Services.AddChannelsApp(configs);
 
 ## 公开面
 
-| 目录 | 域 | 状态 |
+| 目录（本包 `DataModels/` 之下，2026-10 源码归类：只动目录不动命名空间，AB-G10 校验） | 域 | 状态 |
 | --- | --- | --- |
 | `Basic/` | 基础接口 | ✅ P1 |
 | `Funds/` | 资金结算 | ✅ P1 |
@@ -103,7 +103,7 @@ builder.Services.AddChannelsApp(configs);
 | `Aftersale/` | 售后管理（售后单 / 纠纷单 / 保障单） | ✅ P1 |
 | `Logistics/` | 物流发货（地址 / 运费模板 / 电子面单 / 发货） | ✅ P1 |
 | `ChannelsResponse.cs` | 基线响应（`errcode`/`errmsg`，实现 `IWechatApiResponse`） | ✅ |
-| `Generated/` | 7 个域 JsonContext（Common + 6 业务域，`internal`，与本线类型同程序集；`InternalsVisibleTo` 只开放给测试工程） | 随域增长 |
+| `DataModels/Generated/` | 7 个域 JsonContext（Common + 6 业务域，`internal`，与本线类型同程序集；`InternalsVisibleTo` 只开放给测试工程） | 随域增长 |
 
 P2 各域 DTO 随接口落地同批进入本包（命名空间 `Mud.Wechat.Channels.DataModels.{域}`）。
 

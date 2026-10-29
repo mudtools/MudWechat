@@ -3,7 +3,7 @@
 微信小店 / 视频号（channels 生态）「资金结算」域 SDK（16 端点：账户余额 / 结算账户 / 提现 /
 资金流水 / 订单流水 / 银行·城市·支行查询 / 资金二维码）。 接口：[IChannelsFundsService](./IChannelsFundsService.cs)；注册组 `Funds`；模块枚举 `ChannelsModule.Funds`（装配入口见 [ChannelsServiceBuilder.cs](../../Extensions/ChannelsServiceBuilder.cs)）。逐端点核验 2026-10-18。
 
-> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[ChannelsFundsContractGuards.cs](../../../../../Tests/Mud.Wechat.Channels.Tests/ContractGuards/ChannelsFundsContractGuards.cs)）、本域 DTO（[`Mud.Wechat.Channels/Funds`](../../../Mud.Wechat.Channels/Funds/)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
+> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[ChannelsFundsContractGuards.cs](../../../../../Tests/Mud.Wechat.Channels.Tests/ContractGuards/ChannelsFundsContractGuards.cs)）、本域 DTO（[`Mud.Wechat.Channels/DataModels/Funds`](../../DataModels/Funds)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
 
 ## 端点速览
 
@@ -274,40 +274,40 @@
 
 ## DTO 与序列化面
 
-本域 DTO 目录 [`Mud.Wechat.Channels/Funds`](../../../Mud.Wechat.Channels/Funds/) 内共 **42** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **42** 个，`SerializerClassName` = `Funds`。
+本域 DTO 目录 [`Mud.Wechat.Channels/DataModels/Funds`](../../DataModels/Funds) 内共 **42** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **42** 个，`SerializerClassName` = `Funds`。
 
-AOT 源生成上下文：[`FundsJsonContext.g.cs`](./../../../Mud.Wechat.Channels/Generated/FundsJsonContext.g.cs)（生成物，勿手改）。
+AOT 源生成上下文：[`FundsJsonContext.g.cs`](./../../DataModels/Generated/FundsJsonContext.g.cs)（生成物，勿手改）。
 
 | 端点引用的类型 | 角色 | 定义位置 | JSON 字段（前缀） |
 |---|---|---|---|
-| `ChannelsGetBalanceResponse` | 应答 | [Funds/Flow/ChannelsGetBalanceResponse.cs](../../../Mud.Wechat.Channels/Funds/Flow/ChannelsGetBalanceResponse.cs) | `available_amount`, `pending_amount`, `sub_mchid` |
-| `ChannelsGetBankAcctResponse` | 应答 | [Funds/SettleAccount/ChannelsGetBankAcctResponse.cs](../../../Mud.Wechat.Channels/Funds/SettleAccount/ChannelsGetBankAcctResponse.cs) | `account_info` |
-| `ChannelsResponse` | 应答 | [ChannelsResponse.cs](../../../Mud.Wechat.Channels/ChannelsResponse.cs) | `errcode`, `errmsg` |
-| `ChannelsSetBankAcctRequest` | 请求体 | [Funds/SettleAccount/ChannelsSetBankAcctRequest.cs](../../../Mud.Wechat.Channels/Funds/SettleAccount/ChannelsSetBankAcctRequest.cs) | `account_info` |
-| `ChannelsSubmitWithdrawResponse` | 应答 | [Funds/Withdraw/ChannelsSubmitWithdrawResponse.cs](../../../Mud.Wechat.Channels/Funds/Withdraw/ChannelsSubmitWithdrawResponse.cs) | `withdraw_id`, `qrcode_ticket` |
-| `ChannelsSubmitWithdrawRequest` | 请求体 | [Funds/Withdraw/ChannelsSubmitWithdrawRequest.cs](../../../Mud.Wechat.Channels/Funds/Withdraw/ChannelsSubmitWithdrawRequest.cs) | `amount`, `remark`, `bank_memo` |
-| `ChannelsGetWithdrawListResponse` | 应答 | [Funds/Withdraw/ChannelsGetWithdrawListResponse.cs](../../../Mud.Wechat.Channels/Funds/Withdraw/ChannelsGetWithdrawListResponse.cs) | `withdraw_ids`, `total_num` |
-| `ChannelsGetWithdrawListRequest` | 请求体 | [Funds/Withdraw/ChannelsGetWithdrawListRequest.cs](../../../Mud.Wechat.Channels/Funds/Withdraw/ChannelsGetWithdrawListRequest.cs) | `page_num`, `page_size`, `start_time`, `end_time` |
-| `ChannelsGetWithdrawDetailResponse` | 应答 | [Funds/Withdraw/ChannelsGetWithdrawDetailResponse.cs](../../../Mud.Wechat.Channels/Funds/Withdraw/ChannelsGetWithdrawDetailResponse.cs) | `amount`, `create_time`, `update_time`, `reason`, `remark`, `bank_memo`, `bank_name`, `bank_num`, `status` |
-| `ChannelsGetWithdrawDetailRequest` | 请求体 | [Funds/Withdraw/ChannelsGetWithdrawDetailRequest.cs](../../../Mud.Wechat.Channels/Funds/Withdraw/ChannelsGetWithdrawDetailRequest.cs) | `withdraw_id` |
-| `ChannelsGetFundsFlowListResponse` | 应答 | [Funds/Flow/ChannelsGetFundsFlowListResponse.cs](../../../Mud.Wechat.Channels/Funds/Flow/ChannelsGetFundsFlowListResponse.cs) | `flow_ids`, `has_more`, `next_key` |
-| `ChannelsGetFundsFlowListRequest` | 请求体 | [Funds/Flow/ChannelsGetFundsFlowListRequest.cs](../../../Mud.Wechat.Channels/Funds/Flow/ChannelsGetFundsFlowListRequest.cs) | `page`, `page_size`, `next_key`, `start_time`, `end_time`, `transaction_id` |
-| `ChannelsGetFundsFlowDetailResponse` | 应答 | [Funds/Flow/ChannelsGetFundsFlowDetailResponse.cs](../../../Mud.Wechat.Channels/Funds/Flow/ChannelsGetFundsFlowDetailResponse.cs) | `funds_flow` |
-| `ChannelsGetFundsFlowDetailRequest` | 请求体 | [Funds/Flow/ChannelsGetFundsFlowDetailRequest.cs](../../../Mud.Wechat.Channels/Funds/Flow/ChannelsGetFundsFlowDetailRequest.cs) | `flow_id` |
-| `ChannelsListOrderFlowResponse` | 应答 | [Funds/OrderFlow/ChannelsListOrderFlowResponse.cs](../../../Mud.Wechat.Channels/Funds/OrderFlow/ChannelsListOrderFlowResponse.cs) | `total_count`, `data_list`, `page_ctx` |
-| `ChannelsListOrderFlowRequest` | 请求体 | [Funds/OrderFlow/ChannelsListOrderFlowRequest.cs](../../../Mud.Wechat.Channels/Funds/OrderFlow/ChannelsListOrderFlowRequest.cs) | `order_settle_state`, `order_state`, `order_pay_method`, `order_id`, `pagination_info`, `create_time_range` |
-| `ChannelsGetCityResponse` | 应答 | [Funds/BankDict/ChannelsGetCityResponse.cs](../../../Mud.Wechat.Channels/Funds/BankDict/ChannelsGetCityResponse.cs) | `data`, `total_count` |
-| `ChannelsGetCityRequest` | 请求体 | [Funds/BankDict/ChannelsGetCityRequest.cs](../../../Mud.Wechat.Channels/Funds/BankDict/ChannelsGetCityRequest.cs) | `province_code` |
-| `ChannelsGetProvinceResponse` | 应答 | [Funds/BankDict/ChannelsGetProvinceResponse.cs](../../../Mud.Wechat.Channels/Funds/BankDict/ChannelsGetProvinceResponse.cs) | `data`, `total_count` |
-| `ChannelsGetBankListResponse` | 应答 | [Funds/BankDict/ChannelsGetBankListResponse.cs](../../../Mud.Wechat.Channels/Funds/BankDict/ChannelsGetBankListResponse.cs) | `data` |
-| `ChannelsGetBankListRequest` | 请求体 | [Funds/BankDict/ChannelsGetBankListRequest.cs](../../../Mud.Wechat.Channels/Funds/BankDict/ChannelsGetBankListRequest.cs) | `offset`, `limit`, `key_words`, `bank_type` |
-| `ChannelsGetSubBranchResponse` | 应答 | [Funds/BankDict/ChannelsGetSubBranchResponse.cs](../../../Mud.Wechat.Channels/Funds/BankDict/ChannelsGetSubBranchResponse.cs) | `data`, `total_count`, `count`, `account_bank_code`, `bank_alias`, `bank_alias_code`, `account_bank` |
-| `ChannelsGetSubBranchRequest` | 请求体 | [Funds/BankDict/ChannelsGetSubBranchRequest.cs](../../../Mud.Wechat.Channels/Funds/BankDict/ChannelsGetSubBranchRequest.cs) | `bank_code`, `city_code`, `offset`, `limit` |
-| `ChannelsGetBankByNumResponse` | 应答 | [Funds/BankDict/ChannelsGetBankByNumResponse.cs](../../../Mud.Wechat.Channels/Funds/BankDict/ChannelsGetBankByNumResponse.cs) | `data`, `total_count` |
-| `ChannelsGetBankByNumRequest` | 请求体 | [Funds/BankDict/ChannelsGetBankByNumRequest.cs](../../../Mud.Wechat.Channels/Funds/BankDict/ChannelsGetBankByNumRequest.cs) | `account_number` |
-| `ChannelsGetFundsQrcodeResponse` | 应答 | [Funds/Qrcode/ChannelsGetFundsQrcodeResponse.cs](../../../Mud.Wechat.Channels/Funds/Qrcode/ChannelsGetFundsQrcodeResponse.cs) | `qrcode_buf` |
-| `ChannelsQrcodeTicketRequest` | 请求体 | [Funds/Qrcode/ChannelsQrcodeTicketRequest.cs](../../../Mud.Wechat.Channels/Funds/Qrcode/ChannelsQrcodeTicketRequest.cs) | `qrcode_ticket` |
-| `ChannelsCheckFundsQrcodeResponse` | 应答 | [Funds/Qrcode/ChannelsCheckFundsQrcodeResponse.cs](../../../Mud.Wechat.Channels/Funds/Qrcode/ChannelsCheckFundsQrcodeResponse.cs) | `status`, `self_check_err_code`, `self_check_err_msg`, `scan_user_type` |
+| `ChannelsGetBalanceResponse` | 应答 | [Funds/Flow/ChannelsGetBalanceResponse.cs](../../DataModels/Funds/Flow/ChannelsGetBalanceResponse.cs) | `available_amount`, `pending_amount`, `sub_mchid` |
+| `ChannelsGetBankAcctResponse` | 应答 | [Funds/SettleAccount/ChannelsGetBankAcctResponse.cs](../../DataModels/Funds/SettleAccount/ChannelsGetBankAcctResponse.cs) | `account_info` |
+| `ChannelsResponse` | 应答 | [ChannelsResponse.cs](../../DataModels/ChannelsResponse.cs) | `errcode`, `errmsg` |
+| `ChannelsSetBankAcctRequest` | 请求体 | [Funds/SettleAccount/ChannelsSetBankAcctRequest.cs](../../DataModels/Funds/SettleAccount/ChannelsSetBankAcctRequest.cs) | `account_info` |
+| `ChannelsSubmitWithdrawResponse` | 应答 | [Funds/Withdraw/ChannelsSubmitWithdrawResponse.cs](../../DataModels/Funds/Withdraw/ChannelsSubmitWithdrawResponse.cs) | `withdraw_id`, `qrcode_ticket` |
+| `ChannelsSubmitWithdrawRequest` | 请求体 | [Funds/Withdraw/ChannelsSubmitWithdrawRequest.cs](../../DataModels/Funds/Withdraw/ChannelsSubmitWithdrawRequest.cs) | `amount`, `remark`, `bank_memo` |
+| `ChannelsGetWithdrawListResponse` | 应答 | [Funds/Withdraw/ChannelsGetWithdrawListResponse.cs](../../DataModels/Funds/Withdraw/ChannelsGetWithdrawListResponse.cs) | `withdraw_ids`, `total_num` |
+| `ChannelsGetWithdrawListRequest` | 请求体 | [Funds/Withdraw/ChannelsGetWithdrawListRequest.cs](../../DataModels/Funds/Withdraw/ChannelsGetWithdrawListRequest.cs) | `page_num`, `page_size`, `start_time`, `end_time` |
+| `ChannelsGetWithdrawDetailResponse` | 应答 | [Funds/Withdraw/ChannelsGetWithdrawDetailResponse.cs](../../DataModels/Funds/Withdraw/ChannelsGetWithdrawDetailResponse.cs) | `amount`, `create_time`, `update_time`, `reason`, `remark`, `bank_memo`, `bank_name`, `bank_num`, `status` |
+| `ChannelsGetWithdrawDetailRequest` | 请求体 | [Funds/Withdraw/ChannelsGetWithdrawDetailRequest.cs](../../DataModels/Funds/Withdraw/ChannelsGetWithdrawDetailRequest.cs) | `withdraw_id` |
+| `ChannelsGetFundsFlowListResponse` | 应答 | [Funds/Flow/ChannelsGetFundsFlowListResponse.cs](../../DataModels/Funds/Flow/ChannelsGetFundsFlowListResponse.cs) | `flow_ids`, `has_more`, `next_key` |
+| `ChannelsGetFundsFlowListRequest` | 请求体 | [Funds/Flow/ChannelsGetFundsFlowListRequest.cs](../../DataModels/Funds/Flow/ChannelsGetFundsFlowListRequest.cs) | `page`, `page_size`, `next_key`, `start_time`, `end_time`, `transaction_id` |
+| `ChannelsGetFundsFlowDetailResponse` | 应答 | [Funds/Flow/ChannelsGetFundsFlowDetailResponse.cs](../../DataModels/Funds/Flow/ChannelsGetFundsFlowDetailResponse.cs) | `funds_flow` |
+| `ChannelsGetFundsFlowDetailRequest` | 请求体 | [Funds/Flow/ChannelsGetFundsFlowDetailRequest.cs](../../DataModels/Funds/Flow/ChannelsGetFundsFlowDetailRequest.cs) | `flow_id` |
+| `ChannelsListOrderFlowResponse` | 应答 | [Funds/OrderFlow/ChannelsListOrderFlowResponse.cs](../../DataModels/Funds/OrderFlow/ChannelsListOrderFlowResponse.cs) | `total_count`, `data_list`, `page_ctx` |
+| `ChannelsListOrderFlowRequest` | 请求体 | [Funds/OrderFlow/ChannelsListOrderFlowRequest.cs](../../DataModels/Funds/OrderFlow/ChannelsListOrderFlowRequest.cs) | `order_settle_state`, `order_state`, `order_pay_method`, `order_id`, `pagination_info`, `create_time_range` |
+| `ChannelsGetCityResponse` | 应答 | [Funds/BankDict/ChannelsGetCityResponse.cs](../../DataModels/Funds/BankDict/ChannelsGetCityResponse.cs) | `data`, `total_count` |
+| `ChannelsGetCityRequest` | 请求体 | [Funds/BankDict/ChannelsGetCityRequest.cs](../../DataModels/Funds/BankDict/ChannelsGetCityRequest.cs) | `province_code` |
+| `ChannelsGetProvinceResponse` | 应答 | [Funds/BankDict/ChannelsGetProvinceResponse.cs](../../DataModels/Funds/BankDict/ChannelsGetProvinceResponse.cs) | `data`, `total_count` |
+| `ChannelsGetBankListResponse` | 应答 | [Funds/BankDict/ChannelsGetBankListResponse.cs](../../DataModels/Funds/BankDict/ChannelsGetBankListResponse.cs) | `data` |
+| `ChannelsGetBankListRequest` | 请求体 | [Funds/BankDict/ChannelsGetBankListRequest.cs](../../DataModels/Funds/BankDict/ChannelsGetBankListRequest.cs) | `offset`, `limit`, `key_words`, `bank_type` |
+| `ChannelsGetSubBranchResponse` | 应答 | [Funds/BankDict/ChannelsGetSubBranchResponse.cs](../../DataModels/Funds/BankDict/ChannelsGetSubBranchResponse.cs) | `data`, `total_count`, `count`, `account_bank_code`, `bank_alias`, `bank_alias_code`, `account_bank` |
+| `ChannelsGetSubBranchRequest` | 请求体 | [Funds/BankDict/ChannelsGetSubBranchRequest.cs](../../DataModels/Funds/BankDict/ChannelsGetSubBranchRequest.cs) | `bank_code`, `city_code`, `offset`, `limit` |
+| `ChannelsGetBankByNumResponse` | 应答 | [Funds/BankDict/ChannelsGetBankByNumResponse.cs](../../DataModels/Funds/BankDict/ChannelsGetBankByNumResponse.cs) | `data`, `total_count` |
+| `ChannelsGetBankByNumRequest` | 请求体 | [Funds/BankDict/ChannelsGetBankByNumRequest.cs](../../DataModels/Funds/BankDict/ChannelsGetBankByNumRequest.cs) | `account_number` |
+| `ChannelsGetFundsQrcodeResponse` | 应答 | [Funds/Qrcode/ChannelsGetFundsQrcodeResponse.cs](../../DataModels/Funds/Qrcode/ChannelsGetFundsQrcodeResponse.cs) | `qrcode_buf` |
+| `ChannelsQrcodeTicketRequest` | 请求体 | [Funds/Qrcode/ChannelsQrcodeTicketRequest.cs](../../DataModels/Funds/Qrcode/ChannelsQrcodeTicketRequest.cs) | `qrcode_ticket` |
+| `ChannelsCheckFundsQrcodeResponse` | 应答 | [Funds/Qrcode/ChannelsCheckFundsQrcodeResponse.cs](../../DataModels/Funds/Qrcode/ChannelsCheckFundsQrcodeResponse.cs) | `status`, `self_check_err_code`, `self_check_err_msg`, `scan_user_type` |
 
 > DTO 一律以源文件为准；本表只列端点签名**直接引用**的一层类型，嵌套类型不再递归展开。所有 DTO 不使用 `required`（仓内约束），必填性由接口注释与官方页表达，SDK 不做本地必填校验。
 
@@ -344,7 +344,7 @@ var response = await service.GetBalanceAsync(ct);
 | 契约守卫（路由 / 计数 / DTO 登记断言） | [`ChannelsFundsContractGuards.cs`](../../../../../Tests/Mud.Wechat.Channels.Tests/ContractGuards/ChannelsFundsContractGuards.cs) |
 | 守卫中的代表性测试方法 | `FundsEndpoints_ShouldMatchOfficialRoutes`、`FundsEndpoints_ShouldAllBePost_WithEmptyBodyRules`、`FundsInterface_ShouldBindChannelsToken_AndRegisterUnderFundsGroup`、`FundsDataModels_ShouldBeRegisteredInJsonContext`、`FundsDataModels_ShouldLockOfficialFieldsAndSharedDtos`、`FundsErrorCodes_ShouldMatchVerifiedOfficialValues`、`FundsEnumConstants_ShouldLockOfficialLiteralValues`、`LeagueFundsPrefix_ShouldHaveZeroDeclaration_WhenPageRemovedFromOfficialCatalog` |
 | 模块枚举 / 装配入口 | [`ChannelsModule.cs`](../../Extensions/ChannelsModule.cs)、[`ChannelsServiceBuilder.cs`](../../Extensions/ChannelsServiceBuilder.cs) |
-| DTO 与 JSON 上下文 | [`Mud.Wechat.Channels/Funds`](../../../Mud.Wechat.Channels/Funds/) |
+| DTO 与 JSON 上下文 | [`Mud.Wechat.Channels/DataModels/Funds`](../../DataModels/Funds) |
 | 跨线基线 | [`Tests/ContractBaseline.cs`](../../../../../Tests/ContractBaseline.cs)（各线分节；本线口径以守卫实际断言为准） |
 | 本线包级公开面与已踩陷阱 | [`Src/Channels/Mud.Wechat.Channels/README.md`](../../README.md) |
 | 跨线通用约束（门禁 / AOT / 落位） | [`AGENTS.md`](../../../../../AGENTS.md) |

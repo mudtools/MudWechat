@@ -60,7 +60,7 @@ Task<ChannelsGetCategoryRuleResponse> GetCategoryRuleAsync(
 ```
 
 CC2 反向钉死 `rule_id` 必须是 `QueryAttribute` 且名为 `rule_id` —— 塞进请求体即与官方契约不符。
-规则 id 常量见 [ChannelsCategoryRuleIds.cs](../../../Mud.Wechat.Channels/Category/Rule/ChannelsCategoryRuleIds.cs)
+规则 id 常量见 [ChannelsCategoryRuleIds.cs](../../DataModels/Category/Rule/ChannelsCategoryRuleIds.cs)
 （`Deposit = 1` / `DeliveryMethod = 2`，CC6）。
 应答两支**互斥填充**：`Deposit`（`long?`，单位分）与 `List`（`List<ChannelsCategoryDeliverRule>?`），
 按传入的 `ruleId` 读对应字段，另一个为 `null`。
@@ -88,7 +88,7 @@ CC2 反向钉死 `rule_id` 必须是 `QueryAttribute` 且名为 `rule_id` ——
 
 ## 5. 金额与比例单位
 
-- `deposit`（保证金）**单位：分** —— 出现在 [ChannelsCategoryAttr.cs](../../../Mud.Wechat.Channels/Category/Detail/ChannelsCategoryAttr.cs)
+- `deposit`（保证金）**单位：分** —— 出现在 [ChannelsCategoryAttr.cs](../../DataModels/Category/Detail/ChannelsCategoryAttr.cs)
   （CC5 注释「类目关联的保证金（分）」）与 `ChannelsGetCategoryRuleResponse`（`rule_id=1` 语义）。
 - `floor_price`（价格下限）同为分口径承载在 `ChannelsCategoryAttr.FloorPrice`（`long?`）。
 - `basis_point`（类目实收交易佣金比例）是**万分比**，`original_basis_point` 为原始佣金比例（CC5）
@@ -114,15 +114,15 @@ CC6 锁定的本域枚举全集：
 
 | 常量类 | 取值 |
 |---|---|
-| [ChannelsCategoryAuditStatuses.cs](../../../Mud.Wechat.Channels/Category/Apply/ChannelsCategoryAuditStatuses.cs) | 1 审核中 / 2 已驳回 / 3 已通过 / 4 已撤销 |
-| [ChannelsCategoryRelationStatuses.cs](../../../Mud.Wechat.Channels/Category/Relation/ChannelsCategoryRelationStatuses.cs) | 1 生效（`Effective`）/ 2 失效（`Uneffective`） |
-| [ChannelsCategoryDeliverTypes.cs](../../../Mud.Wechat.Channels/Category/Rule/ChannelsCategoryDeliverTypes.cs) | 0 快递 / 1 教育服务 / 3 卡券 / 4 游戏角色 / 5 游戏账号 / 6 同城配送 —— **没有 2**，勿按连续整数推断 |
-| [ChannelsCategoryAcctTypes.cs](../../../Mud.Wechat.Channels/Category/Apply/ChannelsCategoryAcctTypes.cs) | 1 微信 / 2 QQ / 3 手机 / 4 邮箱 |
-| [ChannelsCategoryReleaseModes.cs](../../../Mud.Wechat.Channels/Category/Detail/ChannelsCategoryReleaseModes.cs) | 0 常规 / 1 极简 |
-| [ChannelsCategoryAttrTypes.cs](../../../Mud.Wechat.Channels/Category/Detail/ChannelsCategoryAttrTypes.cs) | `string` / `select_one` / `select_many` / `integer` / `decimal4` / `integer_unit` / `decimal4_unit`（字符串型枚举） |
-| [ChannelsCategoryRequiredRuleTypes.cs](../../../Mud.Wechat.Channels/Category/Detail/ChannelsCategoryRequiredRuleTypes.cs) | 1 必填 / 2 选填 / 3 条件必填 |
-| [ChannelsCategoryCheckFields.cs](../../../Mud.Wechat.Channels/Category/Rule/ChannelsCategoryCheckFields.cs) + [ChannelsCategoryOperTypes.cs](../../../Mud.Wechat.Channels/Category/Rule/ChannelsCategoryOperTypes.cs) | 检查字段 1 参数名 / 2 参数值 / 3 标题；操作类型 1 包含 / 2 不包含 / 3 正则 |
-| [ChannelsCategoryIncentiveTypes.cs](../../../Mud.Wechat.Channels/Category/Rule/ChannelsCategoryIncentiveTypes.cs) | 0 无 / 1 新商家佣金减免 |
+| [ChannelsCategoryAuditStatuses.cs](../../DataModels/Category/Apply/ChannelsCategoryAuditStatuses.cs) | 1 审核中 / 2 已驳回 / 3 已通过 / 4 已撤销 |
+| [ChannelsCategoryRelationStatuses.cs](../../DataModels/Category/Relation/ChannelsCategoryRelationStatuses.cs) | 1 生效（`Effective`）/ 2 失效（`Uneffective`） |
+| [ChannelsCategoryDeliverTypes.cs](../../DataModels/Category/Rule/ChannelsCategoryDeliverTypes.cs) | 0 快递 / 1 教育服务 / 3 卡券 / 4 游戏角色 / 5 游戏账号 / 6 同城配送 —— **没有 2**，勿按连续整数推断 |
+| [ChannelsCategoryAcctTypes.cs](../../DataModels/Category/Apply/ChannelsCategoryAcctTypes.cs) | 1 微信 / 2 QQ / 3 手机 / 4 邮箱 |
+| [ChannelsCategoryReleaseModes.cs](../../DataModels/Category/Detail/ChannelsCategoryReleaseModes.cs) | 0 常规 / 1 极简 |
+| [ChannelsCategoryAttrTypes.cs](../../DataModels/Category/Detail/ChannelsCategoryAttrTypes.cs) | `string` / `select_one` / `select_many` / `integer` / `decimal4` / `integer_unit` / `decimal4_unit`（字符串型枚举） |
+| [ChannelsCategoryRequiredRuleTypes.cs](../../DataModels/Category/Detail/ChannelsCategoryRequiredRuleTypes.cs) | 1 必填 / 2 选填 / 3 条件必填 |
+| [ChannelsCategoryCheckFields.cs](../../DataModels/Category/Rule/ChannelsCategoryCheckFields.cs) + [ChannelsCategoryOperTypes.cs](../../DataModels/Category/Rule/ChannelsCategoryOperTypes.cs) | 检查字段 1 参数名 / 2 参数值 / 3 标题；操作类型 1 包含 / 2 不包含 / 3 正则 |
+| [ChannelsCategoryIncentiveTypes.cs](../../DataModels/Category/Rule/ChannelsCategoryIncentiveTypes.cs) | 0 无 / 1 新商家佣金减免 |
 
 「筛选侧」与「状态侧」的 `1/2/3` 在本域语义各异（审核单状态 vs 类目权限状态 vs 必填规则）⇒
 按上表各自的常量类判定，不得跨表复用数值。
@@ -130,10 +130,10 @@ CC6 锁定的本域枚举全集：
 ## 8. 官方历史拼写与类型不一致（照抄，不「顺手修」）
 
 - **请求侧 `jingyingpintai`（少一个 g）/ 响应侧 `jingyingpingtai`（多一个 g）**：同一「经营平台」语义在
-  [ChannelsCategoryInfoApply.cs](../../../Mud.Wechat.Channels/Category/Apply/ChannelsCategoryInfoApply.cs)
-  与 [ChannelsCategoryAuditInfo.cs](../../../Mud.Wechat.Channels/Category/Apply/ChannelsCategoryAuditInfo.cs)
+  [ChannelsCategoryInfoApply.cs](../../DataModels/Category/Apply/ChannelsCategoryInfoApply.cs)
+  与 [ChannelsCategoryAuditInfo.cs](../../DataModels/Category/Apply/ChannelsCategoryAuditInfo.cs)
   两处拼写不同，CC5 双向锁定 ⇒ **不得统一**（改任一侧即与官方报文不兼容）。
-- `uneffective_reason` / `uneffective_time`（[ChannelsCategoryRelation.cs](../../../Mud.Wechat.Channels/Category/Relation/ChannelsCategoryRelation.cs)）
+- `uneffective_reason` / `uneffective_time`（[ChannelsCategoryRelation.cs](../../DataModels/Category/Relation/ChannelsCategoryRelation.cs)）
   是官方失效字段拼写（不是 `ineffective`）；类目权限列表元素的 id 字段名是 `id` 而不是 `cat_id`。
 - `audit_id` 三套类型：#6 请求 `long`、#9 请求 `string`、#4 应答 `audit_id`（`ChannelsAddCategoryResponse`）。
   跨端点串联须显式转换，不得改 DTO 类型「对齐」。

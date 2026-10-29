@@ -3,7 +3,7 @@
 微信小店 / 视频号（channels 生态）「连接小程序」域 SDK（10 端点：文件下载链接 / 资料上传 /
 礼物活动查询 / 授权送礼礼物单全链路）。 接口：[IChannelsMiniStoreService](./IChannelsMiniStoreService.cs)；注册组 `MiniStore`；模块枚举 `ChannelsModule.MiniStore`（装配入口见 [ChannelsServiceBuilder.cs](../../Extensions/ChannelsServiceBuilder.cs)）。逐端点核验 2026-10-18。
 
-> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[ChannelsMiniStoreContractGuards.cs](../../../../../Tests/Mud.Wechat.Channels.Tests/ContractGuards/ChannelsMiniStoreContractGuards.cs)）、本域 DTO（[`Mud.Wechat.Channels/MiniStore`](../../../Mud.Wechat.Channels/MiniStore/)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
+> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[ChannelsMiniStoreContractGuards.cs](../../../../../Tests/Mud.Wechat.Channels.Tests/ContractGuards/ChannelsMiniStoreContractGuards.cs)）、本域 DTO（[`Mud.Wechat.Channels/DataModels/MiniStore`](../../DataModels/MiniStore)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
 
 ## 端点速览
 
@@ -209,31 +209,31 @@ authorizer_access_token 代调用）。
 
 ## DTO 与序列化面
 
-本域 DTO 目录 [`Mud.Wechat.Channels/MiniStore`](../../../Mud.Wechat.Channels/MiniStore/) 内共 **34** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **34** 个，`SerializerClassName` = `MiniStore`。
+本域 DTO 目录 [`Mud.Wechat.Channels/DataModels/MiniStore`](../../DataModels/MiniStore) 内共 **34** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **34** 个，`SerializerClassName` = `MiniStore`。
 
-AOT 源生成上下文：[`MiniStoreJsonContext.g.cs`](./../../../Mud.Wechat.Channels/Generated/MiniStoreJsonContext.g.cs)（生成物，勿手改）。
+AOT 源生成上下文：[`MiniStoreJsonContext.g.cs`](./../../DataModels/Generated/MiniStoreJsonContext.g.cs)（生成物，勿手改）。
 
 | 端点引用的类型 | 角色 | 定义位置 | JSON 字段（前缀） |
 |---|---|---|---|
-| `ChannelsMiniStoreGetDownloadUrlResponse` | 应答 | [MiniStore/ChannelsMiniStoreGetDownloadUrlResponse.cs](../../../Mud.Wechat.Channels/MiniStore/ChannelsMiniStoreGetDownloadUrlResponse.cs) | `url`, `expire_time` |
-| `ChannelsMiniStoreGetDownloadUrlRequest` | 请求体 | [MiniStore/ChannelsMiniStoreGetDownloadUrlRequest.cs](../../../Mud.Wechat.Channels/MiniStore/ChannelsMiniStoreGetDownloadUrlRequest.cs) | `openid`, `order_id` |
-| `ChannelsMiniStoreUploadMaterialResponse` | 应答 | [MiniStore/ChannelsMiniStoreUploadMaterialResponse.cs](../../../Mud.Wechat.Channels/MiniStore/ChannelsMiniStoreUploadMaterialResponse.cs) | `media_id` |
-| `ChannelsMiniStoreUploadMaterialRequest` | 请求体 | [MiniStore/ChannelsMiniStoreUploadMaterialRequest.cs](../../../Mud.Wechat.Channels/MiniStore/ChannelsMiniStoreUploadMaterialRequest.cs) | `openid`, `file_url` |
-| `ChannelsMiniStoreGetActivityListResponse` | 应答 | [MiniStore/ChannelsMiniStoreGetActivityListResponse.cs](../../../Mud.Wechat.Channels/MiniStore/ChannelsMiniStoreGetActivityListResponse.cs) | `list`, `total_num` |
-| `ChannelsMiniStoreGetActivityListRequest` | 请求体 | [MiniStore/ChannelsMiniStoreGetActivityListRequest.cs](../../../Mud.Wechat.Channels/MiniStore/ChannelsMiniStoreGetActivityListRequest.cs) | `offset`, `limit`, `shop_appid`, `status`, `type` |
-| `ChannelsMiniStoreGetActivityResponse` | 应答 | [MiniStore/ChannelsMiniStoreGetActivityResponse.cs](../../../Mud.Wechat.Channels/MiniStore/ChannelsMiniStoreGetActivityResponse.cs) | `activity` |
-| `ChannelsMiniStoreGetActivityRequest` | 请求体 | [MiniStore/ChannelsMiniStoreGetActivityRequest.cs](../../../Mud.Wechat.Channels/MiniStore/ChannelsMiniStoreGetActivityRequest.cs) | `shop_appid`, `activity_id` |
-| `ChannelsResponse` | 应答 | [ChannelsResponse.cs](../../../Mud.Wechat.Channels/ChannelsResponse.cs) | `errcode`, `errmsg` |
-| `ChannelsMiniStoreSetPresentReceiverRequest` | 请求体 | [MiniStore/ChannelsMiniStoreSetPresentReceiverRequest.cs](../../../Mud.Wechat.Channels/MiniStore/ChannelsMiniStoreSetPresentReceiverRequest.cs) | `present_order_id`, `sub_order_list` |
-| `ChannelsMiniStoreCreatePresentOrderResponse` | 应答 | [MiniStore/ChannelsMiniStoreCreatePresentOrderResponse.cs](../../../Mud.Wechat.Channels/MiniStore/ChannelsMiniStoreCreatePresentOrderResponse.cs) | `present_order_id`, `business_type`, `query` |
-| `ChannelsMiniStoreCreatePresentOrderRequest` | 请求体 | [MiniStore/ChannelsMiniStoreCreatePresentOrderRequest.cs](../../../Mud.Wechat.Channels/MiniStore/ChannelsMiniStoreCreatePresentOrderRequest.cs) | `activity_id`, `openid`, `shop_appid`, `wishmessage`, `product_id`, `sku_id`, `idempotent_id` |
-| `ChannelsMiniStoreGetPresentListResponse` | 应答 | [MiniStore/ChannelsMiniStoreGetPresentListResponse.cs](../../../Mud.Wechat.Channels/MiniStore/ChannelsMiniStoreGetPresentListResponse.cs) | `present_order_list`, `next_key` |
-| `ChannelsMiniStoreGetPresentListRequest` | 请求体 | [MiniStore/ChannelsMiniStoreGetPresentListRequest.cs](../../../Mud.Wechat.Channels/MiniStore/ChannelsMiniStoreGetPresentListRequest.cs) | `create_time_range`, `update_time_range`, `shop_appid`, `page_size`, `next_key` |
-| `ChannelsMiniStoreGetReceiverOrderListResponse` | 应答 | [MiniStore/ChannelsMiniStoreGetReceiverOrderListResponse.cs](../../../Mud.Wechat.Channels/MiniStore/ChannelsMiniStoreGetReceiverOrderListResponse.cs) | `order_list`, `next_key` |
-| `ChannelsMiniStoreGetReceiverOrderListRequest` | 请求体 | [MiniStore/ChannelsMiniStoreGetReceiverOrderListRequest.cs](../../../Mud.Wechat.Channels/MiniStore/ChannelsMiniStoreGetReceiverOrderListRequest.cs) | `create_time_range`, `update_time_range`, `shop_appid`, `openid`, `page_size`, `next_key` |
-| `ChannelsMiniStoreGetPresentResponse` | 应答 | [MiniStore/ChannelsMiniStoreGetPresentResponse.cs](../../../Mud.Wechat.Channels/MiniStore/ChannelsMiniStoreGetPresentResponse.cs) | `present` |
-| `ChannelsMiniStoreGetPresentRequest` | 请求体 | [MiniStore/ChannelsMiniStoreGetPresentRequest.cs](../../../Mud.Wechat.Channels/MiniStore/ChannelsMiniStoreGetPresentRequest.cs) | `present_order_id` |
-| `ChannelsMiniStoreSetPresentWishMessageRequest` | 请求体 | [MiniStore/ChannelsMiniStoreSetPresentWishMessageRequest.cs](../../../Mud.Wechat.Channels/MiniStore/ChannelsMiniStoreSetPresentWishMessageRequest.cs) | `present_order_id`, `wish_message` |
+| `ChannelsMiniStoreGetDownloadUrlResponse` | 应答 | [MiniStore/ChannelsMiniStoreGetDownloadUrlResponse.cs](../../DataModels/MiniStore/ChannelsMiniStoreGetDownloadUrlResponse.cs) | `url`, `expire_time` |
+| `ChannelsMiniStoreGetDownloadUrlRequest` | 请求体 | [MiniStore/ChannelsMiniStoreGetDownloadUrlRequest.cs](../../DataModels/MiniStore/ChannelsMiniStoreGetDownloadUrlRequest.cs) | `openid`, `order_id` |
+| `ChannelsMiniStoreUploadMaterialResponse` | 应答 | [MiniStore/ChannelsMiniStoreUploadMaterialResponse.cs](../../DataModels/MiniStore/ChannelsMiniStoreUploadMaterialResponse.cs) | `media_id` |
+| `ChannelsMiniStoreUploadMaterialRequest` | 请求体 | [MiniStore/ChannelsMiniStoreUploadMaterialRequest.cs](../../DataModels/MiniStore/ChannelsMiniStoreUploadMaterialRequest.cs) | `openid`, `file_url` |
+| `ChannelsMiniStoreGetActivityListResponse` | 应答 | [MiniStore/ChannelsMiniStoreGetActivityListResponse.cs](../../DataModels/MiniStore/ChannelsMiniStoreGetActivityListResponse.cs) | `list`, `total_num` |
+| `ChannelsMiniStoreGetActivityListRequest` | 请求体 | [MiniStore/ChannelsMiniStoreGetActivityListRequest.cs](../../DataModels/MiniStore/ChannelsMiniStoreGetActivityListRequest.cs) | `offset`, `limit`, `shop_appid`, `status`, `type` |
+| `ChannelsMiniStoreGetActivityResponse` | 应答 | [MiniStore/ChannelsMiniStoreGetActivityResponse.cs](../../DataModels/MiniStore/ChannelsMiniStoreGetActivityResponse.cs) | `activity` |
+| `ChannelsMiniStoreGetActivityRequest` | 请求体 | [MiniStore/ChannelsMiniStoreGetActivityRequest.cs](../../DataModels/MiniStore/ChannelsMiniStoreGetActivityRequest.cs) | `shop_appid`, `activity_id` |
+| `ChannelsResponse` | 应答 | [ChannelsResponse.cs](../../DataModels/ChannelsResponse.cs) | `errcode`, `errmsg` |
+| `ChannelsMiniStoreSetPresentReceiverRequest` | 请求体 | [MiniStore/ChannelsMiniStoreSetPresentReceiverRequest.cs](../../DataModels/MiniStore/ChannelsMiniStoreSetPresentReceiverRequest.cs) | `present_order_id`, `sub_order_list` |
+| `ChannelsMiniStoreCreatePresentOrderResponse` | 应答 | [MiniStore/ChannelsMiniStoreCreatePresentOrderResponse.cs](../../DataModels/MiniStore/ChannelsMiniStoreCreatePresentOrderResponse.cs) | `present_order_id`, `business_type`, `query` |
+| `ChannelsMiniStoreCreatePresentOrderRequest` | 请求体 | [MiniStore/ChannelsMiniStoreCreatePresentOrderRequest.cs](../../DataModels/MiniStore/ChannelsMiniStoreCreatePresentOrderRequest.cs) | `activity_id`, `openid`, `shop_appid`, `wishmessage`, `product_id`, `sku_id`, `idempotent_id` |
+| `ChannelsMiniStoreGetPresentListResponse` | 应答 | [MiniStore/ChannelsMiniStoreGetPresentListResponse.cs](../../DataModels/MiniStore/ChannelsMiniStoreGetPresentListResponse.cs) | `present_order_list`, `next_key` |
+| `ChannelsMiniStoreGetPresentListRequest` | 请求体 | [MiniStore/ChannelsMiniStoreGetPresentListRequest.cs](../../DataModels/MiniStore/ChannelsMiniStoreGetPresentListRequest.cs) | `create_time_range`, `update_time_range`, `shop_appid`, `page_size`, `next_key` |
+| `ChannelsMiniStoreGetReceiverOrderListResponse` | 应答 | [MiniStore/ChannelsMiniStoreGetReceiverOrderListResponse.cs](../../DataModels/MiniStore/ChannelsMiniStoreGetReceiverOrderListResponse.cs) | `order_list`, `next_key` |
+| `ChannelsMiniStoreGetReceiverOrderListRequest` | 请求体 | [MiniStore/ChannelsMiniStoreGetReceiverOrderListRequest.cs](../../DataModels/MiniStore/ChannelsMiniStoreGetReceiverOrderListRequest.cs) | `create_time_range`, `update_time_range`, `shop_appid`, `openid`, `page_size`, `next_key` |
+| `ChannelsMiniStoreGetPresentResponse` | 应答 | [MiniStore/ChannelsMiniStoreGetPresentResponse.cs](../../DataModels/MiniStore/ChannelsMiniStoreGetPresentResponse.cs) | `present` |
+| `ChannelsMiniStoreGetPresentRequest` | 请求体 | [MiniStore/ChannelsMiniStoreGetPresentRequest.cs](../../DataModels/MiniStore/ChannelsMiniStoreGetPresentRequest.cs) | `present_order_id` |
+| `ChannelsMiniStoreSetPresentWishMessageRequest` | 请求体 | [MiniStore/ChannelsMiniStoreSetPresentWishMessageRequest.cs](../../DataModels/MiniStore/ChannelsMiniStoreSetPresentWishMessageRequest.cs) | `present_order_id`, `wish_message` |
 
 > DTO 一律以源文件为准；本表只列端点签名**直接引用**的一层类型，嵌套类型不再递归展开。所有 DTO 不使用 `required`（仓内约束），必填性由接口注释与官方页表达，SDK 不做本地必填校验。
 
@@ -270,7 +270,7 @@ var response = await service.CreatePresentOrderAsync(new ChannelsMiniStoreCreate
 | 契约守卫（路由 / 计数 / DTO 登记断言） | [`ChannelsMiniStoreContractGuards.cs`](../../../../../Tests/Mud.Wechat.Channels.Tests/ContractGuards/ChannelsMiniStoreContractGuards.cs) |
 | 守卫中的代表性测试方法 | `MiniStoreEndpoints_ShouldMatchOfficialRoutes`、`MiniStoreEndpoints_ShouldAllBePost_WithUploadQueryRules`、`MiniStoreInterface_ShouldBindChannelsToken_AndRegisterUnderMiniStoreGroup`、`MiniStoreDataModels_ShouldBeRegisteredInJsonContext`、`MiniStoreDataModels_ShouldLockOfficialFieldsAndSharedDtos`、`MiniStoreEnumConstants_ShouldLockOfficialLiteralValues` |
 | 模块枚举 / 装配入口 | [`ChannelsModule.cs`](../../Extensions/ChannelsModule.cs)、[`ChannelsServiceBuilder.cs`](../../Extensions/ChannelsServiceBuilder.cs) |
-| DTO 与 JSON 上下文 | [`Mud.Wechat.Channels/MiniStore`](../../../Mud.Wechat.Channels/MiniStore/) |
+| DTO 与 JSON 上下文 | [`Mud.Wechat.Channels/DataModels/MiniStore`](../../DataModels/MiniStore) |
 | 跨线基线 | [`Tests/ContractBaseline.cs`](../../../../../Tests/ContractBaseline.cs)（各线分节；本线口径以守卫实际断言为准） |
 | 本线包级公开面与已踩陷阱 | [`Src/Channels/Mud.Wechat.Channels/README.md`](../../README.md) |
 | 跨线通用约束（门禁 / AOT / 落位） | [`AGENTS.md`](../../../../../AGENTS.md) |

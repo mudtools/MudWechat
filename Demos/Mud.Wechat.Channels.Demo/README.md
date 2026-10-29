@@ -201,7 +201,7 @@ dotnet run --project Demos/Mud.Wechat.Demo.SelfTest -c Release -- --channel chan
 - 小店修改名称回调 `set_shop_nickname` <https://developers.weixin.qq.com/doc/store/shop/notify/storebasics_callback/set_shop_nickname.html>
 - 回调 IP 查询 / 回调校验（排障用，本线 Basic 域）：<https://developers.weixin.qq.com/doc/store/shop/API/apimgnt/common/api_getcallbackip>、
   <https://developers.weixin.qq.com/doc/store/shop/API/apimgnt/common/api_callbackcheck>
-- 42 个事件键的逐页核验记录与两处官方易错点：`Src/Channels/Mud.Wechat.Channels/Callback/ChannelsCallbackEventTypes.cs`
+- 42 个事件键的逐页核验记录与两处官方易错点：`Src/Channels/Mud.Wechat.Channels/DataModels/Callback/ChannelsCallbackEventTypes.cs`
   的类注释（逐键标注中文名与官方页路径，本 README 不复述以免两处漂移）
 - 稳定令牌通道 `POST /cgi-bin/stable_token` 的逐参数契约：`Src/Channels/Mud.Wechat.Channels/Authentication/Interfaces/IChannelsAuthentication.cs`
 - 本线公开面与逐域守卫：`Src/Channels/*/README.md` + `Tests/Mud.Wechat.Channels.Tests/ContractGuards/`

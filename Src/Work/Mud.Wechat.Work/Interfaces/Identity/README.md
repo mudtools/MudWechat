@@ -3,7 +3,7 @@
 企业微信「身份验证」模块小程序登录域公共 SDK
 （code2Session 登录凭证校验：小程序 `wx.qy.login` 取得的 js_code 经本端点换取用户身份与会话密钥）。 接口：[IWechatWorkIdentityMiniProgramService](./IWechatWorkIdentityMiniProgramService.cs)、[IWechatWorkInternalIdentityMiniProgramService](./IWechatWorkIdentityMiniProgramService_Internal.cs)、[IWechatWorkProviderIdentityMiniProgramService](./IWechatWorkIdentityMiniProgramService_Provider.cs)、[IWechatWorkIdentityMiniProgramSuiteService](./IWechatWorkIdentityMiniProgramSuiteService.cs)、[IWechatWorkThirdPartyIdentityMiniProgramSuiteService](./IWechatWorkIdentityMiniProgramSuiteService_ThirdParty.cs)、[IWechatWorkIdentityService](./IWechatWorkIdentityService.cs)、[IWechatWorkInternalIdentityService](./IWechatWorkIdentityService_Internal.cs)、[IWechatWorkProviderIdentityService](./IWechatWorkIdentityService_Provider.cs)、[IWechatWorkIdentitySuiteService](./IWechatWorkIdentitySuiteService.cs)、[IWechatWorkThirdPartyIdentitySuiteService](./IWechatWorkIdentitySuiteService_ThirdParty.cs)、[IWechatWorkIdentityTfaService](./IWechatWorkIdentityTfaService.cs)、[IWechatWorkInternalIdentityTfaService](./IWechatWorkIdentityTfaService_Internal.cs)；注册组 `Identity`；模块枚举 `WechatModule.Identity`（装配入口见 [WechatWorkServiceBuilder.cs](../../Extensions/WechatWorkServiceBuilder.cs)）。逐端点核验 2026-10-18。
 
-> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[WechatIdentityContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatIdentityContractGuards.cs)、[WechatContractGuards.QueryTokenInjection.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatContractGuards.QueryTokenInjection.cs)、[WechatSchoolContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatSchoolContractGuards.cs)）、本域 DTO（[`Mud.Wechat.Work/Identity`](../../../Mud.Wechat.Work/Identity/)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
+> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[WechatIdentityContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatIdentityContractGuards.cs)、[WechatContractGuards.QueryTokenInjection.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatContractGuards.QueryTokenInjection.cs)、[WechatSchoolContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatSchoolContractGuards.cs)）、本域 DTO（[`Mud.Wechat.Work/DataModels/Identity`](../../../Mud.Wechat.Work/DataModels/Identity/)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
 
 ## 端点速览
 
@@ -370,24 +370,24 @@ MUD005 已知接受风险：企业微信官方契约强制令牌走 Query 参数
 
 ## DTO 与序列化面
 
-本域 DTO 目录 [`Mud.Wechat.Work/Identity`](../../../Mud.Wechat.Work/Identity/) 内共 **11** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **11** 个，`SerializerClassName` = `Identity`。
+本域 DTO 目录 [`Mud.Wechat.Work/DataModels/Identity`](../../../Mud.Wechat.Work/DataModels/Identity/) 内共 **11** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **11** 个，`SerializerClassName` = `Identity`。
 
-AOT 源生成上下文：[`IdentityJsonContext.g.cs`](./../../../Mud.Wechat.Work/Generated/IdentityJsonContext.g.cs)（生成物，勿手改）。
+AOT 源生成上下文：[`IdentityJsonContext.g.cs`](./../../DataModels/Generated/IdentityJsonContext.g.cs)（生成物，勿手改）。
 
 | 端点引用的类型 | 角色 | 定义位置 | JSON 字段（前缀） |
 |---|---|---|---|
-| `Code2SessionResponse` | 应答 | [Identity/Code2SessionResponse.cs](../../../Mud.Wechat.Work/Identity/Code2SessionResponse.cs) | `corpid`, `userid`, `session_key` |
-| `Code2Session3rdResponse` | 应答 | [Identity/Code2Session3rdResponse.cs](../../../Mud.Wechat.Work/Identity/Code2Session3rdResponse.cs) | `corpid`, `userid`, `session_key`, `open_userid` |
-| `GetUserInfoResponse` | 应答 | [Identity/GetUserInfoResponse.cs](../../../Mud.Wechat.Work/Identity/GetUserInfoResponse.cs) | `userid`, `user_ticket`, `user_doc_ticket`, `openid`, `external_userid`, `parent_userid` |
-| `GetUserDetailResponse` | 应答 | [Identity/GetUserDetailResponse.cs](../../../Mud.Wechat.Work/Identity/GetUserDetailResponse.cs) | `userid`, `gender`, `avatar`, `qr_code`, `mobile`, `email`, `biz_mail`, `address` |
-| `GetUserDetailRequest` | 请求体 | [Identity/RequestModel/GetUserDetailRequest.cs](../../../Mud.Wechat.Work/Identity/RequestModel/GetUserDetailRequest.cs) | `user_ticket` |
-| `GetUserInfo3rdResponse` | 应答 | [Identity/GetUserInfo3rdResponse.cs](../../../Mud.Wechat.Work/Identity/GetUserInfo3rdResponse.cs) | `corpid`, `userid`, `user_ticket`, `expires_in`, `open_userid`, `user_doc_ticket`, `openid` |
-| `GetUserDetail3rdResponse` | 应答 | [Identity/GetUserDetail3rdResponse.cs](../../../Mud.Wechat.Work/Identity/GetUserDetail3rdResponse.cs) | `corpid`, `userid`, `name`, `gender`, `avatar`, `qr_code` |
-| `GetUserDetail3rdRequest` | 请求体 | [Identity/RequestModel/GetUserDetail3rdRequest.cs](../../../Mud.Wechat.Work/Identity/RequestModel/GetUserDetail3rdRequest.cs) | `user_ticket` |
-| `GetTfaInfoResponse` | 应答 | [Identity/GetTfaInfoResponse.cs](../../../Mud.Wechat.Work/Identity/GetTfaInfoResponse.cs) | `userid`, `tfa_code` |
-| `GetTfaInfoRequest` | 请求体 | [Identity/RequestModel/GetTfaInfoRequest.cs](../../../Mud.Wechat.Work/Identity/RequestModel/GetTfaInfoRequest.cs) | `code` |
-| `WechatWorkResponse` | 应答 | [WechatWorkResponse.cs](../../../Mud.Wechat.Work/WechatWorkResponse.cs) | `errcode`, `errmsg`, `data` |
-| `TfaSuccRequest` | 请求体 | [Identity/RequestModel/TfaSuccRequest.cs](../../../Mud.Wechat.Work/Identity/RequestModel/TfaSuccRequest.cs) | `userid`, `tfa_code` |
+| `Code2SessionResponse` | 应答 | [Identity/Code2SessionResponse.cs](../../DataModels/Identity/Code2SessionResponse.cs) | `corpid`, `userid`, `session_key` |
+| `Code2Session3rdResponse` | 应答 | [Identity/Code2Session3rdResponse.cs](../../DataModels/Identity/Code2Session3rdResponse.cs) | `corpid`, `userid`, `session_key`, `open_userid` |
+| `GetUserInfoResponse` | 应答 | [Identity/GetUserInfoResponse.cs](../../DataModels/Identity/GetUserInfoResponse.cs) | `userid`, `user_ticket`, `user_doc_ticket`, `openid`, `external_userid`, `parent_userid` |
+| `GetUserDetailResponse` | 应答 | [Identity/GetUserDetailResponse.cs](../../DataModels/Identity/GetUserDetailResponse.cs) | `userid`, `gender`, `avatar`, `qr_code`, `mobile`, `email`, `biz_mail`, `address` |
+| `GetUserDetailRequest` | 请求体 | [Identity/RequestModel/GetUserDetailRequest.cs](../../DataModels/Identity/RequestModel/GetUserDetailRequest.cs) | `user_ticket` |
+| `GetUserInfo3rdResponse` | 应答 | [Identity/GetUserInfo3rdResponse.cs](../../DataModels/Identity/GetUserInfo3rdResponse.cs) | `corpid`, `userid`, `user_ticket`, `expires_in`, `open_userid`, `user_doc_ticket`, `openid` |
+| `GetUserDetail3rdResponse` | 应答 | [Identity/GetUserDetail3rdResponse.cs](../../DataModels/Identity/GetUserDetail3rdResponse.cs) | `corpid`, `userid`, `name`, `gender`, `avatar`, `qr_code` |
+| `GetUserDetail3rdRequest` | 请求体 | [Identity/RequestModel/GetUserDetail3rdRequest.cs](../../DataModels/Identity/RequestModel/GetUserDetail3rdRequest.cs) | `user_ticket` |
+| `GetTfaInfoResponse` | 应答 | [Identity/GetTfaInfoResponse.cs](../../DataModels/Identity/GetTfaInfoResponse.cs) | `userid`, `tfa_code` |
+| `GetTfaInfoRequest` | 请求体 | [Identity/RequestModel/GetTfaInfoRequest.cs](../../DataModels/Identity/RequestModel/GetTfaInfoRequest.cs) | `code` |
+| `WechatWorkResponse` | 应答 | [WechatWorkResponse.cs](../../DataModels/WechatWorkResponse.cs) | `errcode`, `errmsg`, `data` |
+| `TfaSuccRequest` | 请求体 | [Identity/RequestModel/TfaSuccRequest.cs](../../DataModels/Identity/RequestModel/TfaSuccRequest.cs) | `userid`, `tfa_code` |
 
 > DTO 一律以源文件为准；本表只列端点签名**直接引用**的一层类型，嵌套类型不再递归展开。所有 DTO 不使用 `required`（仓内约束），必填性由接口注释与官方页表达，SDK 不做本地必填校验。
 
@@ -425,7 +425,7 @@ var response = await service.Code2SessionAsync("", ct);
 | 契约守卫（路由 / 计数 / DTO 登记断言） | [`WechatIdentityContractGuards.cs`](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatIdentityContractGuards.cs)、[`WechatContractGuards.QueryTokenInjection.cs`](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatContractGuards.QueryTokenInjection.cs)、[`WechatSchoolContractGuards.cs`](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatSchoolContractGuards.cs) |
 | 守卫中的代表性测试方法 | `IdentityEndpoints_ShouldMatchOfficialRoutes`、`ThirdPartyIdentityEndpoints_ShouldMatchOfficialRoutes`、`TfaEndpoints_ShouldMatchOfficialRoutes`、`MiniProgramEndpoints_ShouldMatchOfficialRoutes`、`IdentityInterfaceHierarchy_ShouldConvergeOnIdentityRegistry`、`IdentityTokenBinding_ShouldMatchOfficialTokenTypes`、`IdentityDataModels_ShouldBeRegisteredInJsonContext`、`AuthSuccEndpoint_ShouldRemainSingleDeclarationInContactsDomain`、`JsCode2SessionEndpoints_ShouldRemainSingleFamilyDeclarations`、`QueryTokenInjection_ShouldBeLimitedToWechatOfficialContractInterfaces`、`SchoolEndpoints_ShouldMatchOfficialRoutes`、`SchoolSettingEndpoints_ShouldMatchOfficialRoutes` … |
 | 模块枚举 / 装配入口 | [`WechatModule.cs`](../../Extensions/WechatModule.cs)、[`WechatWorkServiceBuilder.cs`](../../Extensions/WechatWorkServiceBuilder.cs) |
-| DTO 与 JSON 上下文 | [`Mud.Wechat.Work/Identity`](../../../Mud.Wechat.Work/Identity/) |
+| DTO 与 JSON 上下文 | [`Mud.Wechat.Work/DataModels/Identity`](../../../Mud.Wechat.Work/DataModels/Identity/) |
 | 跨线基线 | [`Tests/ContractBaseline.cs`](../../../../../Tests/ContractBaseline.cs)（各线分节；本线口径以守卫实际断言为准） |
 | 本线包级公开面与已踩陷阱 | [`Src/Work/Mud.Wechat.Work/README.md`](../../README.md) |
 | 跨线通用约束（门禁 / AOT / 落位） | [`AGENTS.md`](../../../../../AGENTS.md) |

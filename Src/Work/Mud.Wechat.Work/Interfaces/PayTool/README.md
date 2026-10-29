@@ -2,7 +2,7 @@
 
 企业微信「收银台」模块发票管理域第三方应用 / 服务商代开发 SDK（获取发票列表 / 标记开票状态）。 接口：[IWechatWorkPayToolInvoiceService](./IWechatWorkPayToolInvoiceService.cs)、[IWechatWorkThirdPartyPayToolInvoiceService](./IWechatWorkPayToolInvoiceService_ThirdParty.cs)、[IWechatWorkPayToolOrderService](./IWechatWorkPayToolOrderService.cs)、[IWechatWorkThirdPartyPayToolOrderService](./IWechatWorkPayToolOrderService_ThirdParty.cs)、[IWechatWorkPayToolVersionSuiteService](./IWechatWorkPayToolVersionSuiteService.cs)、[IWechatWorkThirdPartyPayToolVersionSuiteService](./IWechatWorkPayToolVersionSuiteService_ThirdParty.cs)；注册组 `PayTool`；模块枚举 `WechatModule.PayTool`（装配入口见 [WechatWorkServiceBuilder.cs](../../Extensions/WechatWorkServiceBuilder.cs)）。逐端点核验 2026-10-18。
 
-> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[WechatPayToolContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatPayToolContractGuards.cs)、[WechatContractGuards.QueryTokenInjection.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatContractGuards.QueryTokenInjection.cs)）、本域 DTO（[`Mud.Wechat.Work/PayTool`](../../../Mud.Wechat.Work/PayTool/)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
+> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[WechatPayToolContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatPayToolContractGuards.cs)、[WechatContractGuards.QueryTokenInjection.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatContractGuards.QueryTokenInjection.cs)）、本域 DTO（[`Mud.Wechat.Work/DataModels/PayTool`](../../../Mud.Wechat.Work/DataModels/PayTool/)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
 
 ## 端点速览
 
@@ -340,29 +340,29 @@ prolong_days 延长天数 / appid 套件应用 id）。
 
 ## DTO 与序列化面
 
-本域 DTO 目录 [`Mud.Wechat.Work/PayTool`](../../../Mud.Wechat.Work/PayTool/) 内共 **27** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **27** 个，`SerializerClassName` = `PayTool`。
+本域 DTO 目录 [`Mud.Wechat.Work/DataModels/PayTool`](../../../Mud.Wechat.Work/DataModels/PayTool/) 内共 **27** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **27** 个，`SerializerClassName` = `PayTool`。
 
-AOT 源生成上下文：[`PayToolJsonContext.g.cs`](./../../../Mud.Wechat.Work/Generated/PayToolJsonContext.g.cs)（生成物，勿手改）。
+AOT 源生成上下文：[`PayToolJsonContext.g.cs`](./../../DataModels/Generated/PayToolJsonContext.g.cs)（生成物，勿手改）。
 
 | 端点引用的类型 | 角色 | 定义位置 | JSON 字段（前缀） |
 |---|---|---|---|
-| `GetPayToolInvoiceListResponse` | 应答 | [PayTool/GetPayToolInvoiceListResponse.cs](../../../Mud.Wechat.Work/PayTool/GetPayToolInvoiceListResponse.cs) | `has_more`, `next_cursor`, `invoice_list` |
-| `GetPayToolInvoiceListRequest` | 请求体 | [PayTool/RequestModel/GetPayToolInvoiceListRequest.cs](../../../Mud.Wechat.Work/PayTool/RequestModel/GetPayToolInvoiceListRequest.cs) | `start_time`, `end_time`, `cursor`, `limit` |
-| `WechatWorkResponse` | 应答 | [WechatWorkResponse.cs](../../../Mud.Wechat.Work/WechatWorkResponse.cs) | `errcode`, `errmsg`, `data` |
-| `MarkPayToolInvoiceStatusRequest` | 请求体 | [PayTool/RequestModel/MarkPayToolInvoiceStatusRequest.cs](../../../Mud.Wechat.Work/PayTool/RequestModel/MarkPayToolInvoiceStatusRequest.cs) | `order_id`, `oper_userid`, `invoice_status`, `invoice_note` |
-| `CreatePayToolOrderResponse` | 应答 | [PayTool/CreatePayToolOrderResponse.cs](../../../Mud.Wechat.Work/PayTool/CreatePayToolOrderResponse.cs) | `order_id`, `order_url`, `origin_price`, `paid_price` |
-| `CreatePayToolOrderRequest` | 请求体 | [PayTool/RequestModel/CreatePayToolOrderRequest.cs](../../../Mud.Wechat.Work/PayTool/RequestModel/CreatePayToolOrderRequest.cs) | `business_type`, `custom_corpid`, `pay_type`, `bank_receipt_media_id`, `creator`, `product_list`, `nonce_str`, `ts`, `sig` |
-| `ClosePayToolOrderRequest` | 请求体 | [PayTool/RequestModel/ClosePayToolOrderRequest.cs](../../../Mud.Wechat.Work/PayTool/RequestModel/ClosePayToolOrderRequest.cs) | `order_id`, `nonce_str`, `ts`, `sig` |
-| `GetPayToolOrderListResponse` | 应答 | [PayTool/GetPayToolOrderListResponse.cs](../../../Mud.Wechat.Work/PayTool/GetPayToolOrderListResponse.cs) | `next_cursor`, `has_more`, `pay_order_list` |
-| `GetPayToolOrderListRequest` | 请求体 | [PayTool/RequestModel/GetPayToolOrderListRequest.cs](../../../Mud.Wechat.Work/PayTool/RequestModel/GetPayToolOrderListRequest.cs) | `business_type`, `start_time`, `end_time`, `cursor`, `limit`, `nonce_str`, `ts`, `sig` |
-| `GetPayToolOrderDetailResponse` | 应答 | [PayTool/GetPayToolOrderDetailResponse.cs](../../../Mud.Wechat.Work/PayTool/GetPayToolOrderDetailResponse.cs) | `pay_order` |
-| `GetPayToolOrderDetailRequest` | 请求体 | [PayTool/RequestModel/GetPayToolOrderDetailRequest.cs](../../../Mud.Wechat.Work/PayTool/RequestModel/GetPayToolOrderDetailRequest.cs) | `order_id`, `nonce_str`, `ts`, `sig` |
-| `GetPayToolVersionOrderListResponse` | 应答 | [PayTool/GetPayToolVersionOrderListResponse.cs](../../../Mud.Wechat.Work/PayTool/GetPayToolVersionOrderListResponse.cs) | `order_list` |
-| `GetPayToolVersionOrderListRequest` | 请求体 | [PayTool/RequestModel/GetPayToolVersionOrderListRequest.cs](../../../Mud.Wechat.Work/PayTool/RequestModel/GetPayToolVersionOrderListRequest.cs) | `start_time`, `end_time`, `test_mode` |
-| `GetPayToolVersionOrderDetailResponse` | 应答 | [PayTool/GetPayToolVersionOrderDetailResponse.cs](../../../Mud.Wechat.Work/PayTool/GetPayToolVersionOrderDetailResponse.cs) | — |
-| `GetPayToolVersionOrderDetailRequest` | 请求体 | [PayTool/RequestModel/GetPayToolVersionOrderDetailRequest.cs](../../../Mud.Wechat.Work/PayTool/RequestModel/GetPayToolVersionOrderDetailRequest.cs) | `orderid` |
-| `ProlongPayToolVersionTrialResponse` | 应答 | [PayTool/ProlongPayToolVersionTrialResponse.cs](../../../Mud.Wechat.Work/PayTool/ProlongPayToolVersionTrialResponse.cs) | `try_end_time` |
-| `ProlongPayToolVersionTrialRequest` | 请求体 | [PayTool/RequestModel/ProlongPayToolVersionTrialRequest.cs](../../../Mud.Wechat.Work/PayTool/RequestModel/ProlongPayToolVersionTrialRequest.cs) | `buyer_corpid`, `prolong_days`, `appid` |
+| `GetPayToolInvoiceListResponse` | 应答 | [PayTool/GetPayToolInvoiceListResponse.cs](../../DataModels/PayTool/GetPayToolInvoiceListResponse.cs) | `has_more`, `next_cursor`, `invoice_list` |
+| `GetPayToolInvoiceListRequest` | 请求体 | [PayTool/RequestModel/GetPayToolInvoiceListRequest.cs](../../DataModels/PayTool/RequestModel/GetPayToolInvoiceListRequest.cs) | `start_time`, `end_time`, `cursor`, `limit` |
+| `WechatWorkResponse` | 应答 | [WechatWorkResponse.cs](../../DataModels/WechatWorkResponse.cs) | `errcode`, `errmsg`, `data` |
+| `MarkPayToolInvoiceStatusRequest` | 请求体 | [PayTool/RequestModel/MarkPayToolInvoiceStatusRequest.cs](../../DataModels/PayTool/RequestModel/MarkPayToolInvoiceStatusRequest.cs) | `order_id`, `oper_userid`, `invoice_status`, `invoice_note` |
+| `CreatePayToolOrderResponse` | 应答 | [PayTool/CreatePayToolOrderResponse.cs](../../DataModels/PayTool/CreatePayToolOrderResponse.cs) | `order_id`, `order_url`, `origin_price`, `paid_price` |
+| `CreatePayToolOrderRequest` | 请求体 | [PayTool/RequestModel/CreatePayToolOrderRequest.cs](../../DataModels/PayTool/RequestModel/CreatePayToolOrderRequest.cs) | `business_type`, `custom_corpid`, `pay_type`, `bank_receipt_media_id`, `creator`, `product_list`, `nonce_str`, `ts`, `sig` |
+| `ClosePayToolOrderRequest` | 请求体 | [PayTool/RequestModel/ClosePayToolOrderRequest.cs](../../DataModels/PayTool/RequestModel/ClosePayToolOrderRequest.cs) | `order_id`, `nonce_str`, `ts`, `sig` |
+| `GetPayToolOrderListResponse` | 应答 | [PayTool/GetPayToolOrderListResponse.cs](../../DataModels/PayTool/GetPayToolOrderListResponse.cs) | `next_cursor`, `has_more`, `pay_order_list` |
+| `GetPayToolOrderListRequest` | 请求体 | [PayTool/RequestModel/GetPayToolOrderListRequest.cs](../../DataModels/PayTool/RequestModel/GetPayToolOrderListRequest.cs) | `business_type`, `start_time`, `end_time`, `cursor`, `limit`, `nonce_str`, `ts`, `sig` |
+| `GetPayToolOrderDetailResponse` | 应答 | [PayTool/GetPayToolOrderDetailResponse.cs](../../DataModels/PayTool/GetPayToolOrderDetailResponse.cs) | `pay_order` |
+| `GetPayToolOrderDetailRequest` | 请求体 | [PayTool/RequestModel/GetPayToolOrderDetailRequest.cs](../../DataModels/PayTool/RequestModel/GetPayToolOrderDetailRequest.cs) | `order_id`, `nonce_str`, `ts`, `sig` |
+| `GetPayToolVersionOrderListResponse` | 应答 | [PayTool/GetPayToolVersionOrderListResponse.cs](../../DataModels/PayTool/GetPayToolVersionOrderListResponse.cs) | `order_list` |
+| `GetPayToolVersionOrderListRequest` | 请求体 | [PayTool/RequestModel/GetPayToolVersionOrderListRequest.cs](../../DataModels/PayTool/RequestModel/GetPayToolVersionOrderListRequest.cs) | `start_time`, `end_time`, `test_mode` |
+| `GetPayToolVersionOrderDetailResponse` | 应答 | [PayTool/GetPayToolVersionOrderDetailResponse.cs](../../DataModels/PayTool/GetPayToolVersionOrderDetailResponse.cs) | — |
+| `GetPayToolVersionOrderDetailRequest` | 请求体 | [PayTool/RequestModel/GetPayToolVersionOrderDetailRequest.cs](../../DataModels/PayTool/RequestModel/GetPayToolVersionOrderDetailRequest.cs) | `orderid` |
+| `ProlongPayToolVersionTrialResponse` | 应答 | [PayTool/ProlongPayToolVersionTrialResponse.cs](../../DataModels/PayTool/ProlongPayToolVersionTrialResponse.cs) | `try_end_time` |
+| `ProlongPayToolVersionTrialRequest` | 请求体 | [PayTool/RequestModel/ProlongPayToolVersionTrialRequest.cs](../../DataModels/PayTool/RequestModel/ProlongPayToolVersionTrialRequest.cs) | `buyer_corpid`, `prolong_days`, `appid` |
 
 > DTO 一律以源文件为准；本表只列端点签名**直接引用**的一层类型，嵌套类型不再递归展开。所有 DTO 不使用 `required`（仓内约束），必填性由接口注释与官方页表达，SDK 不做本地必填校验。
 
@@ -401,7 +401,7 @@ var response = await service.CloseOrderAsync(new ClosePayToolOrderRequest(), ct)
 | 契约守卫（路由 / 计数 / DTO 登记断言） | [`WechatPayToolContractGuards.cs`](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatPayToolContractGuards.cs)、[`WechatContractGuards.QueryTokenInjection.cs`](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatContractGuards.QueryTokenInjection.cs) |
 | 守卫中的代表性测试方法 | `PayToolEndpoints_ShouldMatchOfficialRoutes`、`PayToolTokenBinding_ShouldSplitProviderAndSuiteRoutes`、`PayToolSignatureFields_ShouldExistOnlyOnOrderFamily`、`PayToolDataModels_ShouldBeRegisteredInJsonContext`、`PayToolDataModels_ShouldLockOfficialContractTraps`、`PayToolVersionFamily_ShouldNotDuplicateAuthorizationEndpoints`、`PayToolSignature_ShouldFollowOfficialAlgorithm`、`QueryTokenInjection_ShouldBeLimitedToWechatOfficialContractInterfaces` |
 | 模块枚举 / 装配入口 | [`WechatModule.cs`](../../Extensions/WechatModule.cs)、[`WechatWorkServiceBuilder.cs`](../../Extensions/WechatWorkServiceBuilder.cs) |
-| DTO 与 JSON 上下文 | [`Mud.Wechat.Work/PayTool`](../../../Mud.Wechat.Work/PayTool/) |
+| DTO 与 JSON 上下文 | [`Mud.Wechat.Work/DataModels/PayTool`](../../../Mud.Wechat.Work/DataModels/PayTool/) |
 | 跨线基线 | [`Tests/ContractBaseline.cs`](../../../../../Tests/ContractBaseline.cs)（各线分节；本线口径以守卫实际断言为准） |
 | 本线包级公开面与已踩陷阱 | [`Src/Work/Mud.Wechat.Work/README.md`](../../README.md) |
 | 跨线通用约束（门禁 / AOT / 落位） | [`AGENTS.md`](../../../../../AGENTS.md) |

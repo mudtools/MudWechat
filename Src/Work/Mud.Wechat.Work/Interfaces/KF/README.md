@@ -25,7 +25,7 @@
 
 > **事实来源限定**：本文全部断言只来自本仓三类证据——本目录 28 份接口文件的 XML 注释、
 > [WechatKfContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatKfContractGuards.cs)（KF1a~KF1k / KF2 / KF2b / KF3 / KF4）、
-> [Src/Work/Mud.Wechat.Work/Kf/](../../../Mud.Wechat.Work/Kf/) 下的 DTO 声明；
+> [Src/Work/Mud.Wechat.Work/DataModels/Kf/](../../../Mud.Wechat.Work/DataModels/Kf/) 下的 DTO 声明；
 > 端点数与路由以守卫断言为准，官方文档号仅作定位标识、不作为本文事实来源。
 > 未能在本仓三类证据内核验的项目一律集中在文末「已知留档缺口」，标为**未逐项核验**，正文不作推断。
 
@@ -158,50 +158,50 @@ KF1a 注释专门标注两条形状异常：
 业务口径（接口 XML 注释）：一家企业最多 5000 个客服账号；`AddAccountAsync` 的 `name`（≤16 字符）与 `media_id`（≤128 字节，上传临时素材获取）均官方必填，创建后调用方应用自动获得该账号管理权限；
 只能通过 API 管理企业「在管理后台指定允许 API 管理」的账号；自 2023-12-01 起不再支持系统应用 secret 调用（存量企业不受影响）。
 **组件版共用路由的单一所有者**：官方另以组件文档 99368/99400 分文档承载「获取客服账号列表 / 链接」，但二者与客服账号管理域**同路由、同 DTO**，故只在账号域声明一次；
-KF1g2 反向锁定组件子接口**不得**重复声明这两条路由。组件应用调用 `GetAccountListAsync` 时，响应 [KfAccount.cs](../../../Mud.Wechat.Work/Kf/KfAccount.cs) 的 `manage_privilege`（`bool?`）**不返回**（仅能拿到企业已授权的账号）。
+KF1g2 反向锁定组件子接口**不得**重复声明这两条路由。组件应用调用 `GetAccountListAsync` 时，响应 [KfAccount.cs](../../DataModels/Kf/KfAccount.cs) 的 `manage_privilege`（`bool?`）**不返回**（仅能拿到企业已授权的账号）。
 
 ## 5. `sync_msg`：游标续拉 + cursor/next_cursor 时效 + 不得以空列表判停
 
 `SyncMessageAsync`（94670 / 94699 / 96426）是本域最易踩坑的读取端点，契约由 KF1c / KF1j / KF1k 三重锁定：
 
-- **续拉协议**：请求体 [SyncKfMessageRequest.cs](../../../Mud.Wechat.Work/Kf/RequestModel/SyncKfMessageRequest.cs) 首次不传 `cursor`（不填则从最近 3 天内最早的消息开始），其后逐页以上一次响应的 `next_cursor` 续拉；翻页**唯一终点判据是 `has_more` 为 0**——官方明令「不能通过判断 `msg_list` 是否空来停止拉取」（可能出现 `has_more=1` 而 `msg_list` 为空）。
-- **`has_more` 是数字非布尔**：[SyncKfMessageResponse.cs](../../../Mud.Wechat.Work/Kf/SyncKfMessageResponse.cs) 的 `HasMore` 原样以 `int?` 承载（官方 uint32 0/1），改成 `bool?` 即在反序列化期失败（KF1j）。`next_cursor` 官方强烈建议入库，意外丢失会导致从头拉取而延迟消息。
+- **续拉协议**：请求体 [SyncKfMessageRequest.cs](../../DataModels/Kf/RequestModel/SyncKfMessageRequest.cs) 首次不传 `cursor`（不填则从最近 3 天内最早的消息开始），其后逐页以上一次响应的 `next_cursor` 续拉；翻页**唯一终点判据是 `has_more` 为 0**——官方明令「不能通过判断 `msg_list` 是否空来停止拉取」（可能出现 `has_more=1` 而 `msg_list` 为空）。
+- **`has_more` 是数字非布尔**：[SyncKfMessageResponse.cs](../../DataModels/Kf/SyncKfMessageResponse.cs) 的 `HasMore` 原样以 `int?` 承载（官方 uint32 0/1），改成 `bool?` 即在反序列化期失败（KF1j）。`next_cursor` 官方强烈建议入库，意外丢失会导致从头拉取而延迟消息。
 - **必填/选填形态双向锁定**（KF1k，追踪号 P2-QY-B8-KF-REQUIREDFACE-10）：`open_kfid` 官方**必填**（非可空 `string OpenKfId`），`token`/`cursor`/`limit`/`voice_format` 官方**均选填**（可空）。历史缺陷曾把二者写成相反口径，故本守卫双向钉死。`limit` 默认值与最大值都为 1000，实际返回条数可能更少。
 - **`token` 时效与限频**：该同步令牌官方「10 分钟内有效；可不填，不填接口有严格的频率限制」⇒ 正确用法是收到回调事件后尽快带上 `token` 拉取，而非留空裸轮询。
 - **读取面限制**：仅能取**最近 3 天内**的消息内容，且**不支持**读取通过 `send_msg` 发出的消息；媒体大小上限 图片/语音/视频/文件 = 2MB/2MB/10MB/20MB，超出官方改返回文本提示消息。
-- **字段名照官方原文**（KF1j）：信封 `msg_list` / `has_more` / `next_cursor`；[KfSyncMessage.cs](../../../Mud.Wechat.Work/Kf/KfSyncMessage.cs) 载体字段 `msgmenu` / `business_card` / `channels_shop_product` / `channels_shop_order` / `merged_msg` / `open_kfid` / `send_time` 均逐字保留（勿写成 `menu` / `card` / 驼峰）。消息体按 `msgtype` 判别、按 `origin`（3-客户发送 / 4-系统事件 / 5-接待人员发送）判别来源，一份扁平报文承载全部消息类型位、不做运行时多态。
+- **字段名照官方原文**（KF1j）：信封 `msg_list` / `has_more` / `next_cursor`；[KfSyncMessage.cs](../../DataModels/Kf/KfSyncMessage.cs) 载体字段 `msgmenu` / `business_card` / `channels_shop_product` / `channels_shop_order` / `merged_msg` / `open_kfid` / `send_time` 均逐字保留（勿写成 `menu` / `card` / 驼峰）。消息体按 `msgtype` 判别、按 `origin`（3-客户发送 / 4-系统事件 / 5-接待人员发送）判别来源，一份扁平报文承载全部消息类型位、不做运行时多态。
 
 ## 6. 会话状态机 `service_state` 与 `msg_code` / `open_kfid` 的定位关系
 
-- **状态取值**（[TransitKfServiceStateRequest.cs](../../../Mud.Wechat.Work/Kf/RequestModel/TransitKfServiceStateRequest.cs) 与 [GetKfServiceStateResponse.cs](../../../Mud.Wechat.Work/Kf/GetKfServiceStateResponse.cs)）：0-未处理、1-由智能助手接待、2-待接入池排队中、3-由人工接待、4-已结束/未开始；**状态 4 不允许通过 API 变更**；目标接待人员未在企业微信激活返回 95014。`service_state=3` 时 `servicer_userid` 必填且须处于「正在接待」。
+- **状态取值**（[TransitKfServiceStateRequest.cs](../../DataModels/Kf/RequestModel/TransitKfServiceStateRequest.cs) 与 [GetKfServiceStateResponse.cs](../../DataModels/Kf/GetKfServiceStateResponse.cs)）：0-未处理、1-由智能助手接待、2-待接入池排队中、3-由人工接待、4-已结束/未开始；**状态 4 不允许通过 API 变更**；目标接待人员未在企业微信激活返回 95014。`service_state=3` 时 `servicer_userid` 必填且须处于「正在接待」。
 - **定位关系**：`open_kfid` 定位「哪个客服账号」，`external_userid` 定位「哪个客户」，两者共同锁定一条会话；`GetServiceStateAsync` / `TransitServiceStateAsync` 均以 `(open_kfid, external_userid)` 查询/变更该会话的状态。第三方 / 代开发侧 `servicer_userid` / `external_userid` 一律为密文（`open_userid` / 客服侧 external_userid）。
-- **`msg_code`**：`TransitServiceStateAsync` 应答 [TransitKfServiceStateResponse.cs](../../../Mud.Wechat.Work/Kf/TransitKfServiceStateResponse.cs) 的 `msg_code`，是会话**初次**变更为状态 2/3（回复语 code）或 4（结束语 code）时下发的**事件响应令牌**，只能用于紧随其后的一次 `send_msg_on_event` 调用（见 §7）。同步消息的事件体 [KfSyncEventMsgBody.cs](../../../Mud.Wechat.Work/Kf/KfSyncEventMsgBody.cs) 也带 `msg_code` / `welcome_code` / `change_type` / `old_servicer_userid` / `new_servicer_userid` / `fail_msgid` / `recall_msgid`，是 `kf_msg_or_event` 回调触发的拉取内容。
+- **`msg_code`**：`TransitServiceStateAsync` 应答 [TransitKfServiceStateResponse.cs](../../DataModels/Kf/TransitKfServiceStateResponse.cs) 的 `msg_code`，是会话**初次**变更为状态 2/3（回复语 code）或 4（结束语 code）时下发的**事件响应令牌**，只能用于紧随其后的一次 `send_msg_on_event` 调用（见 §7）。同步消息的事件体 [KfSyncEventMsgBody.cs](../../DataModels/Kf/KfSyncEventMsgBody.cs) 也带 `msg_code` / `welcome_code` / `change_type` / `old_servicer_userid` / `new_servicer_userid` / `fail_msgid` / `recall_msgid`，是 `kf_msg_or_event` 回调触发的拉取内容。
 
 ## 7. 发送消息：`msgid` 幂等 / 可发送状态 / 成功≠送达 / 素材先上传后引用
 
-- **`msgid` 幂等**（[SendKfMsgRequest.cs](../../../Mud.Wechat.Work/Kf/RequestModel/SendKfMsgRequest.cs)）：≤32 字节、正则 `[0-9a-zA-Z_-]*`，须在客服账号内唯一，否则官方报错；请求指定则响应 [SendKfMsgResponse.cs](../../../Mud.Wechat.Work/Kf/SendKfMsgResponse.cs) 原样返回，未指定则系统生成。重发同 `msgid` 是宿主幂等去重的手段，SDK 侧不做本地裁剪。
+- **`msgid` 幂等**（[SendKfMsgRequest.cs](../../DataModels/Kf/RequestModel/SendKfMsgRequest.cs)）：≤32 字节、正则 `[0-9a-zA-Z_-]*`，须在客服账号内唯一，否则官方报错；请求指定则响应 [SendKfMsgResponse.cs](../../DataModels/Kf/SendKfMsgResponse.cs) 原样返回，未指定则系统生成。重发同 `msgid` 是宿主幂等去重的手段，SDK 侧不做本地裁剪。
 - **可发送条件**：仅当客户处于「新接入待处理」或「由智能助手接待」状态时可调用 `send_msg`；客户主动发消息后 **48 小时内企业最多下发 5 条**（客户再次发消息可重新计时）。
 - **成功≠送达**：接口返回 `errcode=0` 不代表消息最终发送成功，须关注「消息发送失败事件」回调（`origin=4` 事件体 `fail_msgid` / `fail_type`）。
-- **素材先上传后引用**：image / voice / video / file 的 `media_id`（[KfMediaMsgBody.cs](../../../Mud.Wechat.Work/Kf/KfMsgBodies.cs) 四类共用载体）与 link / miniprogram 的 `thumb_media_id` 均由**上传临时素材接口（media 域）先上传后引用**，本域不含上传端点。
-- **`send_msg_on_event` 的 `code`**（[SendKfEventMsgRequest.cs](../../../Mud.Wechat.Work/Kf/RequestModel/SendKfEventMsgRequest.cs)）：`code` 由事件回调下发、**仅可使用一次**，欢迎语 / 结束会话场景**有效期仅 20 秒**（超时结束语义），须及时调用；除「用户进入会话」外，响应消息仅支持会话处于获取该 code 时的状态。菜单消息项 ≤10（`send_msg` 的 msgmenu ≤50，其中 click/view/miniprogram ≤10）。
+- **素材先上传后引用**：image / voice / video / file 的 `media_id`（[KfMediaMsgBody.cs](../../DataModels/Kf/KfMsgBodies.cs) 四类共用载体）与 link / miniprogram 的 `thumb_media_id` 均由**上传临时素材接口（media 域）先上传后引用**，本域不含上传端点。
+- **`send_msg_on_event` 的 `code`**（[SendKfEventMsgRequest.cs](../../DataModels/Kf/RequestModel/SendKfEventMsgRequest.cs)）：`code` 由事件回调下发、**仅可使用一次**，欢迎语 / 结束会话场景**有效期仅 20 秒**（超时结束语义），须及时调用；除「用户进入会话」外，响应消息仅支持会话处于获取该 code 时的状态。菜单消息项 ≤10（`send_msg` 的 msgmenu ≤50，其中 click/view/miniprogram ≤10）。
 
 ## 8. 场景值 `scene` / `scene_param` 与客服链接不可改
 
-`GetAccountContactWayAsync`（[GetKfAccountContactWayRequest.cs](../../../Mud.Wechat.Work/Kf/RequestModel/GetKfAccountContactWayRequest.cs)）：`scene` ≤32 字节、正则 `[0-9a-zA-Z_-]*`；
+`GetAccountContactWayAsync`（[GetKfAccountContactWayRequest.cs](../../DataModels/Kf/RequestModel/GetKfAccountContactWayRequest.cs)）：`scene` ≤32 字节、正则 `[0-9a-zA-Z_-]*`；
 `scene` 非空时返回链接可拼接 `scene_param=SCENE_PARAM`，用户进入会话事件原样回传该值（事件体 `scene` / `scene_param`），`SCENE_PARAM` 需 urlencode、编码前 ≤128 字节。
-应答 [GetKfAccountContactWayResponse.cs](../../../Mud.Wechat.Work/Kf/GetKfAccountContactWayResponse.cs) 的 `url` **不能修改或复制参数到其他链接**，否则进入会话事件参数校验不通过、无法回调。
-`ca_link` 获客链接名片（[KfMsgBodies.cs](../../../Mud.Wechat.Work/Kf/KfMsgBodies.cs) 的 `KfCaLinkMsgBody.LinkUrl`）经此添加**不计入**获客助手「打开链接的客户数」统计。
+应答 [GetKfAccountContactWayResponse.cs](../../DataModels/Kf/GetKfAccountContactWayResponse.cs) 的 `url` **不能修改或复制参数到其他链接**，否则进入会话事件参数校验不通过、无法回调。
+`ca_link` 获客链接名片（[KfMsgBodies.cs](../../DataModels/Kf/KfMsgBodies.cs) 的 `KfCaLinkMsgBody.LinkUrl`）经此添加**不计入**获客助手「打开链接的客户数」统计。
 
 ## 9. 接待人员批量语义与可见范围
 
-`AddServicerAsync` / `DeleteServicerAsync`（[AddKfServicerResponse.cs](../../../Mud.Wechat.Work/Kf/AddKfServicerResponse.cs)）：`userid_list` 与 `department_id_list` **至少填一个**；
+`AddServicerAsync` / `DeleteServicerAsync`（[AddKfServicerResponse.cs](../../DataModels/Kf/AddKfServicerResponse.cs)）：`userid_list` 与 `department_id_list` **至少填一个**；
 每个客服账号 ≤2000 个接待人员、≤20 个接待部门；删除单次成员/部门各 ≤100、超出分批；批量为**逐条返回结果**（`result_list` 与请求逐条对应），单条失败不整体报错。
 第三方 / 代开发填密文 `open_userid`；接待人员须在应用可见范围内。
-`GetServicerListAsync` 应答 [KfServicer.cs](../../../Mud.Wechat.Work/Kf/KfServicer.cs)：`status`（0-接待中 / 1-停止接待）、`stop_type`（0-停止接待 / 1-暂时挂起）、按部门接待时 `department_id`（`int?`）。
+`GetServicerListAsync` 应答 [KfServicer.cs](../../DataModels/Kf/KfServicer.cs)：`status`（0-接待中 / 1-停止接待）、`stop_type`（0-停止接待 / 1-暂时挂起）、按部门接待时 `department_id`（`int?`）。
 
 ## 10. 客户基础信息 `batchget`：与 external contact 的边界 + 48 小时窗口
 
-`BatchGetCustomerInfoAsync`（[BatchGetKfCustomerInfoRequest.cs](../../../Mud.Wechat.Work/Kf/RequestModel/BatchGetKfCustomerInfoRequest.cs)）返回的是**微信客服会话内的客户**基础信息，与客户联系域（external contact）的 `external_userid` 是**同一 ID 空间但不同可见语义**——本端点只暴露客服会话维度需要的昵称/头像/unionid 与进入会话上下文。
+`BatchGetCustomerInfoAsync`（[BatchGetKfCustomerInfoRequest.cs](../../DataModels/Kf/RequestModel/BatchGetKfCustomerInfoRequest.cs)）返回的是**微信客服会话内的客户**基础信息，与客户联系域（external contact）的 `external_userid` 是**同一 ID 空间但不同可见语义**——本端点只暴露客服会话维度需要的昵称/头像/unionid 与进入会话上下文。
 约束：`external_userid_list` 必填、可填 1~100 个（超出分批）、`need_enter_session_context`（0/1，默认 0）；
 查询对象须为**最近 48 小时内触发过「用户进入会话事件」或向客服发过消息**的客户，否则落入响应 `invalid_external_userid`；
 第三方 / 代开发不可获取头像、性别统一返回 0、unionid 不可获取；「营销获客」应用仅能获取自身带来的客户。
@@ -351,10 +351,10 @@ using (switcher.UseCorpScope(appKey: "suite-app", authCorpId: "ww1234567890abcde
 | 缺口 | 现状 | 处置 |
 |---|---|---|
 | 本域各端点数值型 QPS/频率上限 | 除 `sync_msg`「不填 token 有严格限频」（无数值）、客户信息域「按附录 90312 默认口径」外，其余 36 支端点的接口注释**未留档独立频率数字** ⇒ **未逐项核验** | 不得凭第三方 SDK 注释/记忆补数；核验官方逐页后补 remarks 再更新本文 §14 |
-| `KfSyncMessage` 全量 msgtype 与载体字段 | 载体字段名由 KF1j 锁定 15 项，但 `meeting`/`calendar`/`note` 三类官方标注「暂不返回详细消息内容」的后续是否补全 **未逐项核验** | 出现新载体须同批改 [KfSyncMessage.cs](../../../Mud.Wechat.Work/Kf/KfSyncMessage.cs) 与 KF1j |
-| `KfSyncEventMsgBody` 的 `event_type` 取值全集 | [KfSyncEventMsgBody.cs](../../../Mud.Wechat.Work/Kf/KfSyncEventMsgBody.cs) 注释「取值以官方参数表为准」，本仓未建枚举 ⇒ **未逐项核验** | 需按事件分派时先核验官方 94670 事件章节 |
+| `KfSyncMessage` 全量 msgtype 与载体字段 | 载体字段名由 KF1j 锁定 15 项，但 `meeting`/`calendar`/`note` 三类官方标注「暂不返回详细消息内容」的后续是否补全 **未逐项核验** | 出现新载体须同批改 [KfSyncMessage.cs](../../DataModels/Kf/KfSyncMessage.cs) 与 KF1j |
+| `KfSyncEventMsgBody` 的 `event_type` 取值全集 | [KfSyncEventMsgBody.cs](../../DataModels/Kf/KfSyncEventMsgBody.cs) 注释「取值以官方参数表为准」，本仓未建枚举 ⇒ **未逐项核验** | 需按事件分派时先核验官方 94670 事件章节 |
 | 各统计指标字段（`KfCorpStatisticData` / `KfServicerStatisticData` / `KfComponentStatisticData`） | KF4 仅断言类型已登记进 `KfJsonContext`，逐指标字段名/口径**未逐项核验** | 解析前读对应 Response DTO 注释，勿臆测指标含义 |
-| 机器人问答附件的媒体类型全集 | [KfKnowledgeAttachments.cs](../../../Mud.Wechat.Work/Kf/KfKnowledgeAttachments.cs) 建模 image/video/link/miniprogram 四类，官方是否还有其它附件形态 **未逐项核验** | 补附件前先核验官方 95972 附件章节 |
+| 机器人问答附件的媒体类型全集 | [KfKnowledgeAttachments.cs](../../DataModels/Kf/KfKnowledgeAttachments.cs) 建模 image/video/link/miniprogram 四类，官方是否还有其它附件形态 **未逐项核验** | 补附件前先核验官方 95972 附件章节 |
 | 组件版 `get_statistic`（99367）与统计族 `get_corp_statistic` 的指标差异 | 二者路由/入参不同（组件无 `open_kfid`），返回指标集是否完全同构 **未逐项核验** | 需精确对齐口径时查两页原文 |
 | 代开发文档号成对性 | 各端点注释均给出「自建/第三方」与「代开发 9xxxx」两套号；个别端点代开发页与自建页正文是否逐字一致 **未逐项核验** | 代开发报参数错误时先比对两棵树原文 |
 
@@ -382,7 +382,7 @@ using (switcher.UseCorpScope(appKey: "suite-app", authCorpId: "ww1234567890abcde
 | 令牌归属键二分（Internal vs Corp） | [WechatTokenOwnerContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatTokenOwnerContractGuards.cs)（TO1~TO3） |
 | Query 令牌注入白名单 | [WechatContractGuards.QueryTokenInjection.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatContractGuards.QueryTokenInjection.cs)（G5） |
 | 接口命名空间分区 | [WechatInterfaceNamespaceContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatInterfaceNamespaceContractGuards.cs)（N1~N3） |
-| DTO 属性名 / 类型 / JSON 名 / 取值域注释 | [../../../Mud.Wechat.Work/Kf/](../../../Mud.Wechat.Work/Kf/)（根为响应与消息体模型、`RequestModel/` 为请求体） |
+| DTO 属性名 / 类型 / JSON 名 / 取值域注释 | [../../../Mud.Wechat.Work/DataModels/Kf/](../../../Mud.Wechat.Work/DataModels/Kf/)（根为响应与消息体模型、`RequestModel/` 为请求体） |
 | 模块注册三段式 | [WechatModule.cs](../../Extensions/WechatModule.cs)、[WechatWorkServiceBuilder.cs](../../Extensions/WechatWorkServiceBuilder.cs)（L63-65 `AddKfWebApiHttpClient` 注册、L188 `AddKfApi()`） |
 | 域起始索引（无 KF 端点总数断言，勿据此推断计数） | [../../README.md](../../README.md)（L29 KF 段落，仅描述族与权限口径） |
 
@@ -394,7 +394,7 @@ using (switcher.UseCorpScope(appKey: "suite-app", authCorpId: "ww1234567890abcde
    `StatisticsRoutes`（KF1e，2）/ `KnowledgeRoutes`（KF1f，8）/ `ComponentRoutes`（KF1g，1）/ `UpgradeRoutes`（KF1h，3）八张表与各自 `HaveCount` + `Distinct` 双断言。
 2. 加 / 改 DTO → 标 `[HttpJsonSerializable]`，`SerializerClassName` 一律取 `Kf`（本域为**单一**上下文）→ 跑
    `../../../../../scripts/AddHttpJsonSerializable.ps1` 与 `../../../../../scripts/GenerateJsonContext.ps1` → 更新 KF4 的类型清单（现 107 型）与
-   `../../../Mud.Wechat.Work/Generated/KfJsonContext.g.cs`（生成物、勿手改）。
+   `../../../Mud.Wechat.Work/DataModels/Generated/KfJsonContext.g.cs`（生成物、勿手改）。
 3. 新增接口族 / 重命名子接口 → 模块三段式同批：[WechatModule.cs](../../Extensions/WechatModule.cs) 枚举成员、
    [WechatWorkServiceBuilder.cs](../../Extensions/WechatWorkServiceBuilder.cs) 的 `AddKfApi()` XML、可注入子接口 `RegistryGroupName = "Kf"`（父接口保持空组），
    并同批改 KF2/KF2b 的族集合与 KF3 的接口枚举；子接口须过 [TO1~TO3](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatTokenOwnerContractGuards.cs) 归属键断言。

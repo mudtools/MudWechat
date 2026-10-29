@@ -2,7 +2,7 @@
 
 企业微信「汇报」（日志）模块企业自建应用 SDK（汇报记录号列表、汇报记录详情、汇报统计数据）。 接口：[IWechatWorkJournalService](./IWechatWorkJournalService.cs)、[IWechatWorkInternalJournalService](./IWechatWorkJournalService_Internal.cs)；注册组 `Journal`；模块枚举 `WechatModule.Journal`（装配入口见 [WechatWorkServiceBuilder.cs](../../Extensions/WechatWorkServiceBuilder.cs)）。逐端点核验 2026-10-18。
 
-> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[WechatJournalContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatJournalContractGuards.cs)、[WechatContractGuards.QueryTokenInjection.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatContractGuards.QueryTokenInjection.cs)）、本域 DTO（[`Mud.Wechat.Work/Journal`](../../../Mud.Wechat.Work/Journal/)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
+> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[WechatJournalContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatJournalContractGuards.cs)、[WechatContractGuards.QueryTokenInjection.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatContractGuards.QueryTokenInjection.cs)）、本域 DTO（[`Mud.Wechat.Work/DataModels/Journal`](../../../Mud.Wechat.Work/DataModels/Journal/)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
 
 ## 端点速览
 
@@ -132,18 +132,18 @@ MUD005 已知接受风险：企业微信官方契约强制令牌走 Query 参数
 
 ## DTO 与序列化面
 
-本域 DTO 目录 [`Mud.Wechat.Work/Journal`](../../../Mud.Wechat.Work/Journal/) 内共 **23** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **23** 个，`SerializerClassName` = `Journal`。
+本域 DTO 目录 [`Mud.Wechat.Work/DataModels/Journal`](../../../Mud.Wechat.Work/DataModels/Journal/) 内共 **23** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **23** 个，`SerializerClassName` = `Journal`。
 
-AOT 源生成上下文：[`JournalJsonContext.g.cs`](./../../../Mud.Wechat.Work/Generated/JournalJsonContext.g.cs)（生成物，勿手改）。
+AOT 源生成上下文：[`JournalJsonContext.g.cs`](./../../DataModels/Generated/JournalJsonContext.g.cs)（生成物，勿手改）。
 
 | 端点引用的类型 | 角色 | 定义位置 | JSON 字段（前缀） |
 |---|---|---|---|
-| `JournalRecordListResponse` | 应答 | [Journal/JournalRecordListResponse.cs](../../../Mud.Wechat.Work/Journal/JournalRecordListResponse.cs) | `journaluuid_list`, `endflag`, `next_cursor` |
-| `JournalRecordListRequest` | 请求体 | [Journal/JournalRecordListRequest.cs](../../../Mud.Wechat.Work/Journal/JournalRecordListRequest.cs) | `starttime`, `endtime`, `cursor`, `limit`, `filters` |
-| `JournalRecordDetailResponse` | 应答 | [Journal/JournalRecordDetailResponse.cs](../../../Mud.Wechat.Work/Journal/JournalRecordDetailResponse.cs) | `info` |
-| `JournalRecordDetailRequest` | 请求体 | [Journal/JournalRecordDetailRequest.cs](../../../Mud.Wechat.Work/Journal/JournalRecordDetailRequest.cs) | `journaluuid` |
-| `JournalStatListResponse` | 应答 | [Journal/JournalStatListResponse.cs](../../../Mud.Wechat.Work/Journal/JournalStatListResponse.cs) | `stat_list` |
-| `JournalStatListRequest` | 请求体 | [Journal/JournalStatListRequest.cs](../../../Mud.Wechat.Work/Journal/JournalStatListRequest.cs) | `starttime`, `endtime`, `template_id` |
+| `JournalRecordListResponse` | 应答 | [Journal/JournalRecordListResponse.cs](../../DataModels/Journal/JournalRecordListResponse.cs) | `journaluuid_list`, `endflag`, `next_cursor` |
+| `JournalRecordListRequest` | 请求体 | [Journal/JournalRecordListRequest.cs](../../DataModels/Journal/JournalRecordListRequest.cs) | `starttime`, `endtime`, `cursor`, `limit`, `filters` |
+| `JournalRecordDetailResponse` | 应答 | [Journal/JournalRecordDetailResponse.cs](../../DataModels/Journal/JournalRecordDetailResponse.cs) | `info` |
+| `JournalRecordDetailRequest` | 请求体 | [Journal/JournalRecordDetailRequest.cs](../../DataModels/Journal/JournalRecordDetailRequest.cs) | `journaluuid` |
+| `JournalStatListResponse` | 应答 | [Journal/JournalStatListResponse.cs](../../DataModels/Journal/JournalStatListResponse.cs) | `stat_list` |
+| `JournalStatListRequest` | 请求体 | [Journal/JournalStatListRequest.cs](../../DataModels/Journal/JournalStatListRequest.cs) | `starttime`, `endtime`, `template_id` |
 
 > DTO 一律以源文件为准；本表只列端点签名**直接引用**的一层类型，嵌套类型不再递归展开。所有 DTO 不使用 `required`（仓内约束），必填性由接口注释与官方页表达，SDK 不做本地必填校验。
 
@@ -180,7 +180,7 @@ var response = await service.GetJournalRecordDetailAsync(new JournalRecordDetail
 | 契约守卫（路由 / 计数 / DTO 登记断言） | [`WechatJournalContractGuards.cs`](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatJournalContractGuards.cs)、[`WechatContractGuards.QueryTokenInjection.cs`](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatContractGuards.QueryTokenInjection.cs) |
 | 守卫中的代表性测试方法 | `JournalRoutesAndRequestShape_ShouldMatchOfficialContract`、`JournalSingleAppTypeFamily_ShouldHaveExactlyOneChildAndAbstractParent`、`JournalTokenBinding_ShouldBeAccessTokenInjectedViaQuery`、`JournalDataModels_ShouldBeRegisteredInJsonContext`、`JournalOfficialFieldNames_ShouldBePreservedVerbatim`、`JournalNumericallyCarriedFields_ShouldNotBeDeclaredAsStringOrBoolean`、`JournalOfficiallyRequiredRequestFields_ShouldNotBeDeclaredNullable`、`QueryTokenInjection_ShouldBeLimitedToWechatOfficialContractInterfaces` |
 | 模块枚举 / 装配入口 | [`WechatModule.cs`](../../Extensions/WechatModule.cs)、[`WechatWorkServiceBuilder.cs`](../../Extensions/WechatWorkServiceBuilder.cs) |
-| DTO 与 JSON 上下文 | [`Mud.Wechat.Work/Journal`](../../../Mud.Wechat.Work/Journal/) |
+| DTO 与 JSON 上下文 | [`Mud.Wechat.Work/DataModels/Journal`](../../../Mud.Wechat.Work/DataModels/Journal/) |
 | 跨线基线 | [`Tests/ContractBaseline.cs`](../../../../../Tests/ContractBaseline.cs)（各线分节；本线口径以守卫实际断言为准） |
 | 本线包级公开面与已踩陷阱 | [`Src/Work/Mud.Wechat.Work/README.md`](../../README.md) |
 | 跨线通用约束（门禁 / AOT / 落位） | [`AGENTS.md`](../../../../../AGENTS.md) |

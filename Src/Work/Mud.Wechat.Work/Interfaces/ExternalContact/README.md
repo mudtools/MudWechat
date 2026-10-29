@@ -6,7 +6,7 @@
 - DI 注册组名：`"ExternalContact"`（全部 16 子族共用同一注册组，由源生成器产出 `AddExternalContactWebApiHttpClient()`）。模块枚举 `WechatModule.ExternalContact`，入口 [`AddExternalContactApi()`](../../Extensions/WechatWorkServiceBuilder.cs)。
 - 验证日期：2026-10-18（口径以本仓接口 XML、守卫断言、DTO 为准）。
 
-> **事实来源限定**：本节及全篇的端点计数、路由、HTTP 动词、令牌绑定、必填条件与字段拼写，**只来自本仓三类事实来源**——接口方法上的 `[Get]/[Post]/[Token]/[Query]/[Body]/[MultipartForm]` 与 XML 注释、`Tests/**/ContractGuards/` 契约守卫断言、`Mud.Wechat.Work/ExternalContact/` 请求/响应 DTO 的 `[JsonPropertyName]` 与注释。官方文档仅作为注释里的 `see href` 出处，**不作为本 SDK 行为的事实**。凡本仓未声明或未逐项核验者，一律进入第 6 节留档缺口，不外推。
+> **事实来源限定**：本节及全篇的端点计数、路由、HTTP 动词、令牌绑定、必填条件与字段拼写，**只来自本仓三类事实来源**——接口方法上的 `[Get]/[Post]/[Token]/[Query]/[Body]/[MultipartForm]` 与 XML 注释、`Tests/**/ContractGuards/` 契约守卫断言、`Mud.Wechat.Work/DataModels/ExternalContact/` 请求/响应 DTO 的 `[JsonPropertyName]` 与注释。官方文档仅作为注释里的 `see href` 出处，**不作为本 SDK 行为的事实**。凡本仓未声明或未逐项核验者，一律进入第 6 节留档缺口，不外推。
 
 ## 3. 端点速览
 
@@ -269,26 +269,26 @@ public sealed class CustomerSyncHandler
 
 | 子族 | 接口目录 | 契约守卫 | DTO 目录 |
 |---|---|---|---|
-| Customer | [`Customer/`](./Customer/) | [CU](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatExternalContactCustomerContractGuards.cs) | [`DataModels/.../Customer/`](../../../Mud.Wechat.Work/ExternalContact/Customer/) |
-| GroupMsg | [`GroupMsg/`](./GroupMsg/) | [GM](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatExternalContactGroupMsgContractGuards.cs) | [`.../GroupMsg/`](../../../Mud.Wechat.Work/ExternalContact/GroupMsg/) |
-| Moment | [`Moment/`](./Moment/) | [MO](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatExternalContactMomentContractGuards.cs) | [`.../Moment/`](../../../Mud.Wechat.Work/ExternalContact/Moment/) |
-| ContactWay | [`ContactWay/`](./ContactWay/) | [CW](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatExternalContactContactWayContractGuards.cs) | [`.../ContactWay/`](../../../Mud.Wechat.Work/ExternalContact/ContactWay/) |
-| Tag | [`Tag/`](./Tag/) | [CT](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatExternalContactTagContractGuards.cs) | [`.../Tag/`](../../../Mud.Wechat.Work/ExternalContact/Tag/) |
-| CustomerAcquisition | [`CustomerAcquisition/`](./CustomerAcquisition/) | [CA](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatExternalContactCustomerAcquisitionContractGuards.cs) | [`.../CustomerAcquisition/`](../../../Mud.Wechat.Work/ExternalContact/CustomerAcquisition/) |
-| ProductAlbum | [`ProductAlbum/`](./ProductAlbum/) | [PA](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatExternalContactProductAlbumContractGuards.cs) | [`.../ProductAlbum/`](../../../Mud.Wechat.Work/ExternalContact/ProductAlbum/) |
-| InterceptRule | [`InterceptRule/`](./InterceptRule/) | [IR](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatExternalContactInterceptRuleContractGuards.cs) | [`.../InterceptRule/`](../../../Mud.Wechat.Work/ExternalContact/InterceptRule/) |
-| ResignedInheritance | [`ResignedInheritance/`](./ResignedInheritance/) | [RI](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatExternalContactResignedInheritanceContractGuards.cs) | [`.../ResignedInheritance/`](../../../Mud.Wechat.Work/ExternalContact/ResignedInheritance/) |
-| GroupChat | [`GroupChat/`](./GroupChat/) | [GC](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatExternalContactGroupChatContractGuards.cs) | [`.../GroupChat/`](../../../Mud.Wechat.Work/ExternalContact/GroupChat/) |
-| JobInheritance | [`JobInheritance/`](./JobInheritance/) | [JI](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatExternalContactJobInheritanceContractGuards.cs) | [`.../JobInheritance/`](../../../Mud.Wechat.Work/ExternalContact/JobInheritance/) |
-| Statistics | [`Statistics/`](./Statistics/) | [ST](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatExternalContactStatisticsContractGuards.cs) | [`.../Statistics/`](../../../Mud.Wechat.Work/ExternalContact/Statistics/) |
-| FollowUser | [`FollowUser/`](./FollowUser/) | [FU](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatExternalContactFollowUserContractGuards.cs) | [`.../FollowUser/`](../../../Mud.Wechat.Work/ExternalContact/FollowUser/) |
-| AcquisitionComponent | [`AcquisitionComponent/`](./AcquisitionComponent/) | [AC](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatExternalContactAcquisitionComponentContractGuards.cs) | [`.../AcquisitionComponent/`](../../../Mud.Wechat.Work/ExternalContact/AcquisitionComponent/) |
-| ServedContact | [`ServedContact/`](./ServedContact/) | [SC](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatExternalContactServedContactContractGuards.cs) | [`.../ServedContact/`](../../../Mud.Wechat.Work/ExternalContact/ServedContact/) |
-| Attachment | [`Attachment/`](./Attachment/) | [UA](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatExternalContactAttachmentContractGuards.cs) | [`.../Attachment/`](../../../Mud.Wechat.Work/ExternalContact/Attachment/) |
+| Customer | [`Customer/`](./Customer/) | [CU](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatExternalContactCustomerContractGuards.cs) | [`DataModels/.../Customer/`](../../../Mud.Wechat.Work/DataModels/ExternalContact/Customer/) |
+| GroupMsg | [`GroupMsg/`](./GroupMsg/) | [GM](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatExternalContactGroupMsgContractGuards.cs) | [`.../GroupMsg/`](../../../Mud.Wechat.Work/DataModels/ExternalContact/GroupMsg/) |
+| Moment | [`Moment/`](./Moment/) | [MO](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatExternalContactMomentContractGuards.cs) | [`.../Moment/`](../../../Mud.Wechat.Work/DataModels/ExternalContact/Moment/) |
+| ContactWay | [`ContactWay/`](./ContactWay/) | [CW](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatExternalContactContactWayContractGuards.cs) | [`.../ContactWay/`](../../../Mud.Wechat.Work/DataModels/ExternalContact/ContactWay/) |
+| Tag | [`Tag/`](./Tag/) | [CT](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatExternalContactTagContractGuards.cs) | [`.../Tag/`](../../../Mud.Wechat.Work/DataModels/ExternalContact/Tag/) |
+| CustomerAcquisition | [`CustomerAcquisition/`](./CustomerAcquisition/) | [CA](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatExternalContactCustomerAcquisitionContractGuards.cs) | [`.../CustomerAcquisition/`](../../../Mud.Wechat.Work/DataModels/ExternalContact/CustomerAcquisition/) |
+| ProductAlbum | [`ProductAlbum/`](./ProductAlbum/) | [PA](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatExternalContactProductAlbumContractGuards.cs) | [`.../ProductAlbum/`](../../../Mud.Wechat.Work/DataModels/ExternalContact/ProductAlbum/) |
+| InterceptRule | [`InterceptRule/`](./InterceptRule/) | [IR](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatExternalContactInterceptRuleContractGuards.cs) | [`.../InterceptRule/`](../../../Mud.Wechat.Work/DataModels/ExternalContact/InterceptRule/) |
+| ResignedInheritance | [`ResignedInheritance/`](./ResignedInheritance/) | [RI](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatExternalContactResignedInheritanceContractGuards.cs) | [`.../ResignedInheritance/`](../../../Mud.Wechat.Work/DataModels/ExternalContact/ResignedInheritance/) |
+| GroupChat | [`GroupChat/`](./GroupChat/) | [GC](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatExternalContactGroupChatContractGuards.cs) | [`.../GroupChat/`](../../../Mud.Wechat.Work/DataModels/ExternalContact/GroupChat/) |
+| JobInheritance | [`JobInheritance/`](./JobInheritance/) | [JI](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatExternalContactJobInheritanceContractGuards.cs) | [`.../JobInheritance/`](../../../Mud.Wechat.Work/DataModels/ExternalContact/JobInheritance/) |
+| Statistics | [`Statistics/`](./Statistics/) | [ST](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatExternalContactStatisticsContractGuards.cs) | [`.../Statistics/`](../../../Mud.Wechat.Work/DataModels/ExternalContact/Statistics/) |
+| FollowUser | [`FollowUser/`](./FollowUser/) | [FU](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatExternalContactFollowUserContractGuards.cs) | [`.../FollowUser/`](../../../Mud.Wechat.Work/DataModels/ExternalContact/FollowUser/) |
+| AcquisitionComponent | [`AcquisitionComponent/`](./AcquisitionComponent/) | [AC](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatExternalContactAcquisitionComponentContractGuards.cs) | [`.../AcquisitionComponent/`](../../../Mud.Wechat.Work/DataModels/ExternalContact/AcquisitionComponent/) |
+| ServedContact | [`ServedContact/`](./ServedContact/) | [SC](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatExternalContactServedContactContractGuards.cs) | [`.../ServedContact/`](../../../Mud.Wechat.Work/DataModels/ExternalContact/ServedContact/) |
+| Attachment | [`Attachment/`](./Attachment/) | [UA](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatExternalContactAttachmentContractGuards.cs) | [`.../Attachment/`](../../../Mud.Wechat.Work/DataModels/ExternalContact/Attachment/) |
 
 - DI 入口与模块枚举：[`Extensions/WechatWorkServiceBuilder.cs`](../../Extensions/WechatWorkServiceBuilder.cs)、[`Extensions/WechatModule.cs`](../../Extensions/WechatModule.cs)。
 - 产品线 README：[`../../README.md`](../../README.md)。
-- 客户详情字段口径 DTO：[`ExternalContactInfo.cs`](../../../Mud.Wechat.Work/ExternalContact/Customer/ExternalContactInfo.cs)、[`CustomerFollowUser.cs`](../../../Mud.Wechat.Work/ExternalContact/Customer/CustomerFollowUser.cs)。
+- 客户详情字段口径 DTO：[`ExternalContactInfo.cs`](../../DataModels/ExternalContact/Customer/ExternalContactInfo.cs)、[`CustomerFollowUser.cs`](../../DataModels/ExternalContact/Customer/CustomerFollowUser.cs)。
 
 ## 8. 改动本域需要同批完成
 

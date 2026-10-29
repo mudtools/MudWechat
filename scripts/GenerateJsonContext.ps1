@@ -10,7 +10,7 @@
       2. Detects the tool (global `mud-jsonctx` or local `dotnet mud-jsonctx`), installing it
          globally when missing (unless -NoInstall).
       3. Runs the tool to scan [HttpJsonSerializable] and emit *_JsonContext.g.cs grouped by
-         SerializerClassName into Src/Work/Mud.Wechat.Work/Generated.
+         SerializerClassName into Src/Work/Mud.Wechat.Work/DataModels/Generated.
     Generated files should be committed (re-run only when [HttpJsonSerializable] annotations
     are added/changed; run scripts/AddHttpJsonSerializable.ps1 first for new DTOs).
 
@@ -33,7 +33,7 @@ param(
     # Target project (relative to repo root or absolute) —— 源码归类后源工程位于 Src/<Area>/<ProjectName>。
     [string]$TargetProject = "Src/Work/Mud.Wechat.Work/Mud.Wechat.Work.csproj",
     # Output directory (relative to repo root or absolute)
-    [string]$OutputDir = "Src/Work/Mud.Wechat.Work/Generated",
+    [string]$OutputDir = "Src/Work/Mud.Wechat.Work/DataModels/Generated",
     # Auto-complete polymorphic derived types within the same assembly.
     # Default OFF for this repo: every DTO is individually annotated, so derived roots would be
     # pure duplication; worse, the flag drags the OPEN generic WechatChatbotResponse<> (derived

@@ -86,7 +86,7 @@ public static class WechatJsonResolverExtensions
     /// <param name="services">服务集合。</param>
     /// <remarks>
     /// <list type="bullet">
-    /// <item><c>DataModels</c> 包 <c>Generated/</c> 目录里的各域 <c>*JsonContext</c>（由
+    /// <item><c>DataModels/Generated/</c> 目录里的各域 <c>*JsonContext</c>（由
     /// <c>scripts/GenerateJsonContext.ps1</c>（mud-jsonctx）按 <c>[HttpJsonSerializable]</c>
     /// 标注生成，SerializerClassName = DTO 命名空间的域段，每个上下文与其域 DTO
     /// 同命名空间——与 Mud.Feishu.DataModels「每模块一上下文」同构）；</item>
@@ -100,7 +100,7 @@ public static class WechatJsonResolverExtensions
     /// 不并入本管线 —— 并入即是一支<b>永不命中</b>的死注册（本域没有任何走组件序列化管线的入口）。
     /// </para>
     /// <para>
-    /// <b>登记完备性由 <c>Generated/</c> 逐项对齐</b>（对齐公众号线 <c>MpJsonResolverExtensions</c> 的纪律）：
+    /// <b>登记完备性由 <c>DataModels/Generated/</c> 逐项对齐</b>（对齐公众号线 <c>MpJsonResolverExtensions</c> 的纪律）：
     /// 新增域上下文时必须同批追加进合并列表 —— 本列表曾漏登记 <c>DialJsonContext</c> / <c>HrJsonContext</c>
     /// （公费电话 / 人事助手两域的响应 DTO 在 Native AOT 下无法经组件管线反序列化，JIT 下无症状），
     /// 已于 2026-10-10 补齐。

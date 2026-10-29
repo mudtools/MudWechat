@@ -6,7 +6,7 @@
 
 > **事实来源限定**：本文全部断言只来自本仓三类证据——本目录（含子目录）28 份接口文件的 XML 注释、
 > [WechatSchoolContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatSchoolContractGuards.cs)（SCH1a~SCH1h / SCH2 / SCH3 / SCH4）、
-> [Src/Work/Mud.Wechat.Work/School/](../../../Mud.Wechat.Work/School/) 下的 DTO 声明；
+> [Src/Work/Mud.Wechat.Work/DataModels/School/](../../../Mud.Wechat.Work/DataModels/School/) 下的 DTO 声明；
 > 端点数与路由以守卫断言为准，官方文档号仅作定位标识、不作为本文事实来源。
 > 未能在本仓三类证据内核验的项目一律集中在文末「已知留档缺口」，标为**未逐项核验**，正文不作推断。
 
@@ -103,7 +103,7 @@
 
 ## 1. 一棵部门树承载「学校 / 校区 / 学段 / 年级 / 班级」——定位键只有 `id` / `parentid` / `type`
 
-家校通讯录不是「学校表 + 学部表 + 年级表 + 班级表」四张独立表，而是**一棵部门树**（[SchoolDepartmentInfo.cs](../../../Mud.Wechat.Work/School/SchoolDepartmentInfo.cs)）：
+家校通讯录不是「学校表 + 学部表 + 年级表 + 班级表」四张独立表，而是**一棵部门树**（[SchoolDepartmentInfo.cs](../../DataModels/School/SchoolDepartmentInfo.cs)）：
 校区 / 学段 / 年级 / 班级全部是同一 `department` 集合里的节点，靠 **`type`（`int`）区分层级**：
 
 | `type` | 语义 | 关键约束（接口注释留档） |
@@ -119,7 +119,7 @@
 - 部门增删改：`id`（`int`，创建时指定须 >1、不填自动生成）、`parentid`（`int`）。
 - 学生 / 家长按班级拉取：`department_id`（`int`）——即班级节点的 `id`，走 Query（#24 / #25）。
 - 学生归属班级：请求体 `department`（`List<int>?`，JSON `department`），单学生 ≤20 个班级。
-- 「可使用的家长范围」的部门列表字段名是 **`partyid`、类型 `List<long>?`**（[GetSchoolAllowScopeResponse.cs](../../../Mud.Wechat.Work/School/GetSchoolAllowScopeResponse.cs)），与部门 `id` 的 `int` **不同宽**，勿合并建模、勿「顺手改成 `int`」。
+- 「可使用的家长范围」的部门列表字段名是 **`partyid`、类型 `List<long>?`**（[GetSchoolAllowScopeResponse.cs](../../DataModels/School/GetSchoolAllowScopeResponse.cs)），与部门 `id` 的 `int` **不同宽**，勿合并建模、勿「顺手改成 `int`」。
 
 ## 2. 两套身份体系：家校通讯录 userid vs 外部联系人 `external_userid`
 
@@ -134,11 +134,11 @@
 - 发送「学校通知」（`externalcontact/message/send`）由**消息推送域**家校学校通知族承载。
 - 获取外部联系人详情（`externalcontact/get`，家校版文档 91670）由**客户联系域**客户管理族承载；其响应中的家校字段 `is_subscribe` / `subscriber_info` 已补入 `ExternalContactInfo`。
 - 本域只做转换：`convert_to_openid`（#6，`external_userid`→`openid`，**不支持 `wo` 开头的企业微信外部联系人**）、`batch_to_external_userid`（#10，家长手机号→`external_userid`，关注后才返回）。
-- 关键去重口径（[SchoolParentInfo.cs](../../../Mud.Wechat.Work/School/SchoolParentInfo.cs)）：**对同一个服务商，同一家长微信在不同学校返回的 `external_userid` 相同**——跨校合并家长时以 `external_userid` 归并，不要按学校内 `parent_userid` 归并。
+- 关键去重口径（[SchoolParentInfo.cs](../../DataModels/School/SchoolParentInfo.cs)）：**对同一个服务商，同一家长微信在不同学校返回的 `external_userid` 相同**——跨校合并家长时以 `external_userid` 归并，不要按学校内 `parent_userid` 归并。
 
 ## 3. 同名 / 同证件多学生：唯一键只有 `student_userid` / `parent_userid`
 
-本域**没有身份证 / 证件号字段**——学生报文字段仅 `student_userid` / `name` / `mobile` / `to_invite` / `department`（[SchoolCreateStudentRequest.cs](../../../Mud.Wechat.Work/School/RequestModel/SchoolCreateStudentRequest.cs)）。
+本域**没有身份证 / 证件号字段**——学生报文字段仅 `student_userid` / `name` / `mobile` / `to_invite` / `department`（[SchoolCreateStudentRequest.cs](../../DataModels/School/RequestModel/SchoolCreateStudentRequest.cs)）。
 因此：
 
 - **唯一键 = `student_userid` / `parent_userid`**：「学校内必须唯一」；`name` 与 `mobile` **不保证唯一，不得用作定位或去重键**。同名学生靠 `student_userid` 区分。
@@ -161,8 +161,8 @@
 
 ## 5. 「整体替换」与「增量 / 逐条」两类设置端点，勿混用
 
-- **整体替换（全量覆盖）**：更新家长的 `children` 是**全量更新**——官方原文「该字段是全量更新，如果孩子列表为空则忽略该字段」，即**传非空列表 = 全量覆盖、传空数组 = 忽略该字段（不是删除全部孩子关系）**（[SchoolUpdateParentRequest.cs](../../../Mud.Wechat.Work/School/RequestModel/SchoolUpdateParentRequest.cs)）。`set_teacher_view_mode` / `set_subscribe_mode` / `set_chat_create_mode` / `set_arch_sync_mode` 均为「一次设定全局模式」。
-- **增量 / 逐条操作**：更新部门的 `department_admins` 走**逐条 `op` 语义**——`op=0` 新增或更新、`op=1` 删除（[SchoolUpdateDepartmentAdminItem.cs](../../../Mud.Wechat.Work/School/RequestModel/SchoolUpdateDepartmentAdminItem.cs)）；该条目比创建部门的管理员条目**多一个 `op` 字段、两端点不共用 DTO**（[SchoolDepartmentAdminItem.cs](../../../Mud.Wechat.Work/School/RequestModel/SchoolDepartmentAdminItem.cs) 无 `op`）。
+- **整体替换（全量覆盖）**：更新家长的 `children` 是**全量更新**——官方原文「该字段是全量更新，如果孩子列表为空则忽略该字段」，即**传非空列表 = 全量覆盖、传空数组 = 忽略该字段（不是删除全部孩子关系）**（[SchoolUpdateParentRequest.cs](../../DataModels/School/RequestModel/SchoolUpdateParentRequest.cs)）。`set_teacher_view_mode` / `set_subscribe_mode` / `set_chat_create_mode` / `set_arch_sync_mode` 均为「一次设定全局模式」。
+- **增量 / 逐条操作**：更新部门的 `department_admins` 走**逐条 `op` 语义**——`op=0` 新增或更新、`op=1` 删除（[SchoolUpdateDepartmentAdminItem.cs](../../DataModels/School/RequestModel/SchoolUpdateDepartmentAdminItem.cs)）；该条目比创建部门的管理员条目**多一个 `op` 字段、两端点不共用 DTO**（[SchoolDepartmentAdminItem.cs](../../DataModels/School/RequestModel/SchoolDepartmentAdminItem.cs) 无 `op`）。
 - **不可逆**：`set_arch_sync_mode` 一旦设置「禁止自动同步」将**无法再次开启**（#26）。
 
 ## 6. 查询 / 统计类官方即 POST，删除 / 读取类官方即 GET——勿「顺手统一」
@@ -323,7 +323,7 @@ WechatWorkException.ThrowIfFailed(who, "/cgi-bin/service/school/getuserinfo3rd")
 | `standard_grade` 取值全集 | DTO 与接口注释仅写「详见官方标准年级对照表」，本仓不建枚举、不列取值 ⇒ **未逐项核验** | 建年级校验前先核验官方对照表，再决定是否建常量表 |
 | 部门管理员 `type` 与部门 `type` 的完整配对 | 注释给出「校区负责人→校区、班主任/任课老师→班级、年级负责人→年级」示例，但 5 种管理员 type × 5 种部门 type 的合法矩阵**未逐项核验** | 越界由 `errcode` 表达；SDK 不本地拦截 |
 | 直播 V2 `has_more` 与 V1 `ending` 的翻页终态 | 注释记 V1 `ending`（1 拉完）、V2 `has_more`（1 还需继续，语义相反），但各自 `next_key`/`next_cursor` 的留存时长与轮询建议间隔**未逐项核验** | 轮询节奏由宿主自定，勿在 SDK 侧加隐式重试 |
-| `class_pay` 金额单位 | 本文未写金额字段单位（`amount` 口径）⇒ **未逐项核验**，ClassPay 请求/响应 DTO 未在本篇逐一展开 | 涉及对账前读 [ClassPay/](../../../Mud.Wechat.Work/School/ClassPay/) DTO 注释并核验官方页 |
+| `class_pay` 金额单位 | 本文未写金额字段单位（`amount` 口径）⇒ **未逐项核验**，ClassPay 请求/响应 DTO 未在本篇逐一展开 | 涉及对账前读 [ClassPay/](../../../Mud.Wechat.Work/DataModels/School/ClassPay/) DTO 注释并核验官方页 |
 
 ## 事实来源
 
@@ -335,9 +335,9 @@ WechatWorkException.ThrowIfFailed(who, "/cgi-bin/service/school/getuserinfo3rd")
 | `access_token` / `suite_access_token` + Query 绑定 | SCH3 `SchoolTokenBinding_ShouldMatchOfficialTokenRouteKeys` |
 | DTO 上下文登记（School 54 / HealthReport 15 / Living 22 / ClassPay 5 型） | SCH4 `SchoolDataModels_ShouldBeRegisteredInJsonContext` |
 | `agentid` / `userid` / `department_id` / `id` / `code` / `livingid` 的 Query 契约 | SCH1b / SCH1c / SCH1e / SCH1d / SCH1g 内的 `AssertHasQueryParameter` |
-| JSON 上下文与命名空间归属（Living 上下文落 `DataModels.Living`） | 守卫头注别名声明 + `../../../Mud.Wechat.Work/Generated/` |
+| JSON 上下文与命名空间归属（Living 上下文落 `DataModels.Living`） | 守卫头注别名声明 + `../../../Mud.Wechat.Work/DataModels/Generated/` |
 | 令牌归属键 TO 系列 / 命名空间分区 N1~N3 | [WechatTokenOwnerContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatTokenOwnerContractGuards.cs)、[WechatInterfaceNamespaceContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatInterfaceNamespaceContractGuards.cs) |
-| DTO 属性名 / 类型 / JSON 名 / 取值域注释 | [../../../Mud.Wechat.Work/School/](../../../Mud.Wechat.Work/School/)（`RequestModel/`、`HealthReport/`、`Living/`、`ClassPay/`） |
+| DTO 属性名 / 类型 / JSON 名 / 取值域注释 | [../../../Mud.Wechat.Work/DataModels/School/](../../../Mud.Wechat.Work/DataModels/School/)（`RequestModel/`、`HealthReport/`、`Living/`、`ClassPay/`） |
 | 模块注册三段式 | [WechatModule.cs](../../Extensions/WechatModule.cs)、[WechatWorkServiceBuilder.cs](../../Extensions/WechatWorkServiceBuilder.cs)、[WechatJsonResolverExtensions.cs](../../Extensions/WechatJsonResolverExtensions.cs) |
 | Query 令牌注入白名单（G5） | [WechatContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatContractGuards.cs) |
 

@@ -4,7 +4,7 @@
 （`msgtype` 逐类型各一方法 + 媒体上传，同路由多方法范式对齐 `/cgi-bin/message/send`，
 不做运行时多态、不引入泛型 msgtype）。 接口：[IWechatWorkInternalWebhookService](./IWechatWorkInternalWebhookService.cs)、[IWechatWorkWebhookService](./IWechatWorkWebhookService.cs)；注册组 `Webhook`；模块枚举 `WechatModule.Webhook`（装配入口见 [WechatWorkServiceBuilder.cs](../../Extensions/WechatWorkServiceBuilder.cs)）。逐端点核验 2026-10-18。
 
-> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[WechatWebhookContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatWebhookContractGuards.cs)、[WechatTokenOwnerContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatTokenOwnerContractGuards.cs)）、本域 DTO（[`Mud.Wechat.Work/Webhook`](../../../Mud.Wechat.Work/Webhook/)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
+> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[WechatWebhookContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatWebhookContractGuards.cs)、[WechatTokenOwnerContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatTokenOwnerContractGuards.cs)）、本域 DTO（[`Mud.Wechat.Work/DataModels/Webhook`](../../../Mud.Wechat.Work/DataModels/Webhook/)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
 
 ## 端点速览
 
@@ -277,22 +277,22 @@ text.mentioned_list 仅群聊可用、最多 20 人 / text.mentioned_mobile_list
 
 ## DTO 与序列化面
 
-本域 DTO 目录 [`Mud.Wechat.Work/Webhook`](../../../Mud.Wechat.Work/Webhook/) 内共 **19** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **19** 个，`SerializerClassName` = `Webhook`。
+本域 DTO 目录 [`Mud.Wechat.Work/DataModels/Webhook`](../../../Mud.Wechat.Work/DataModels/Webhook/) 内共 **19** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **19** 个，`SerializerClassName` = `Webhook`。
 
-AOT 源生成上下文：[`WebhookJsonContext.g.cs`](./../../../Mud.Wechat.Work/Generated/WebhookJsonContext.g.cs)（生成物，勿手改）。
+AOT 源生成上下文：[`WebhookJsonContext.g.cs`](./../../DataModels/Generated/WebhookJsonContext.g.cs)（生成物，勿手改）。
 
 | 端点引用的类型 | 角色 | 定义位置 | JSON 字段（前缀） |
 |---|---|---|---|
-| `WechatWebhookSendResponse` | 应答 | [Webhook/WechatWebhookSendResponse.cs](../../../Mud.Wechat.Work/Webhook/WechatWebhookSendResponse.cs) | — |
-| `WechatWebhookTextRequest` | 请求体 | [Webhook/RequestModel/WechatWebhookTextRequest.cs](../../../Mud.Wechat.Work/Webhook/RequestModel/WechatWebhookTextRequest.cs) | `text` |
-| `WechatWebhookMarkdownRequest` | 请求体 | [Webhook/RequestModel/WechatWebhookMarkdownRequest.cs](../../../Mud.Wechat.Work/Webhook/RequestModel/WechatWebhookMarkdownRequest.cs) | `markdown` |
-| `WechatWebhookMarkdownV2Request` | 请求体 | [Webhook/RequestModel/WechatWebhookMarkdownV2Request.cs](../../../Mud.Wechat.Work/Webhook/RequestModel/WechatWebhookMarkdownV2Request.cs) | `markdown_v2` |
-| `WechatWebhookImageRequest` | 请求体 | [Webhook/RequestModel/WechatWebhookImageRequest.cs](../../../Mud.Wechat.Work/Webhook/RequestModel/WechatWebhookImageRequest.cs) | `image` |
-| `WechatWebhookNewsRequest` | 请求体 | [Webhook/RequestModel/WechatWebhookNewsRequest.cs](../../../Mud.Wechat.Work/Webhook/RequestModel/WechatWebhookNewsRequest.cs) | `news` |
-| `WechatWebhookFileRequest` | 请求体 | [Webhook/RequestModel/WechatWebhookFileRequest.cs](../../../Mud.Wechat.Work/Webhook/RequestModel/WechatWebhookFileRequest.cs) | `file` |
-| `WechatWebhookVoiceRequest` | 请求体 | [Webhook/RequestModel/WechatWebhookVoiceRequest.cs](../../../Mud.Wechat.Work/Webhook/RequestModel/WechatWebhookVoiceRequest.cs) | `voice` |
-| `WechatWebhookTemplateCardRequest` | 请求体 | [Webhook/RequestModel/WechatWebhookTemplateCardRequest.cs](../../../Mud.Wechat.Work/Webhook/RequestModel/WechatWebhookTemplateCardRequest.cs) | `template_card` |
-| `WechatWebhookUploadMediaResponse` | 应答 | [Webhook/WechatWebhookUploadMediaResponse.cs](../../../Mud.Wechat.Work/Webhook/WechatWebhookUploadMediaResponse.cs) | `type`, `media_id`, `created_at` |
+| `WechatWebhookSendResponse` | 应答 | [Webhook/WechatWebhookSendResponse.cs](../../DataModels/Webhook/WechatWebhookSendResponse.cs) | — |
+| `WechatWebhookTextRequest` | 请求体 | [Webhook/RequestModel/WechatWebhookTextRequest.cs](../../DataModels/Webhook/RequestModel/WechatWebhookTextRequest.cs) | `text` |
+| `WechatWebhookMarkdownRequest` | 请求体 | [Webhook/RequestModel/WechatWebhookMarkdownRequest.cs](../../DataModels/Webhook/RequestModel/WechatWebhookMarkdownRequest.cs) | `markdown` |
+| `WechatWebhookMarkdownV2Request` | 请求体 | [Webhook/RequestModel/WechatWebhookMarkdownV2Request.cs](../../DataModels/Webhook/RequestModel/WechatWebhookMarkdownV2Request.cs) | `markdown_v2` |
+| `WechatWebhookImageRequest` | 请求体 | [Webhook/RequestModel/WechatWebhookImageRequest.cs](../../DataModels/Webhook/RequestModel/WechatWebhookImageRequest.cs) | `image` |
+| `WechatWebhookNewsRequest` | 请求体 | [Webhook/RequestModel/WechatWebhookNewsRequest.cs](../../DataModels/Webhook/RequestModel/WechatWebhookNewsRequest.cs) | `news` |
+| `WechatWebhookFileRequest` | 请求体 | [Webhook/RequestModel/WechatWebhookFileRequest.cs](../../DataModels/Webhook/RequestModel/WechatWebhookFileRequest.cs) | `file` |
+| `WechatWebhookVoiceRequest` | 请求体 | [Webhook/RequestModel/WechatWebhookVoiceRequest.cs](../../DataModels/Webhook/RequestModel/WechatWebhookVoiceRequest.cs) | `voice` |
+| `WechatWebhookTemplateCardRequest` | 请求体 | [Webhook/RequestModel/WechatWebhookTemplateCardRequest.cs](../../DataModels/Webhook/RequestModel/WechatWebhookTemplateCardRequest.cs) | `template_card` |
+| `WechatWebhookUploadMediaResponse` | 应答 | [Webhook/WechatWebhookUploadMediaResponse.cs](../../DataModels/Webhook/WechatWebhookUploadMediaResponse.cs) | `type`, `media_id`, `created_at` |
 
 > DTO 一律以源文件为准；本表只列端点签名**直接引用**的一层类型，嵌套类型不再递归展开。所有 DTO 不使用 `required`（仓内约束），必填性由接口注释与官方页表达，SDK 不做本地必填校验。
 
@@ -329,7 +329,7 @@ var response = await service.SendFileAsync("", new WechatWebhookFileRequest(), c
 | 契约守卫（路由 / 计数 / DTO 登记断言） | [`WechatWebhookContractGuards.cs`](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatWebhookContractGuards.cs)、[`WechatTokenOwnerContractGuards.cs`](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatTokenOwnerContractGuards.cs) |
 | 守卫中的代表性测试方法 | `WebhookEndpoints_ShouldMatchOfficialRoutesAndKeyQuery`、`WebhookInterfaceHierarchy_ShouldConvergeOnSelfBuildOnlyChild`、`WebhookInterfaces_ShouldNotDeclareTokenAttribute_AndKeyRedactionShouldStayEnforced`、`WebhookDataModels_ShouldBeRegisteredInJsonContext`、`FacadeInterfaces_ShouldDeclareOwningTokenManagerKey`、`DeclaredOwningKeys_ShouldBeCoveredByRecoveryRegistryAndDisjoint`、`OwningKeyRouting_ShouldEnforceAppTypeMatrix` |
 | 模块枚举 / 装配入口 | [`WechatModule.cs`](../../Extensions/WechatModule.cs)、[`WechatWorkServiceBuilder.cs`](../../Extensions/WechatWorkServiceBuilder.cs) |
-| DTO 与 JSON 上下文 | [`Mud.Wechat.Work/Webhook`](../../../Mud.Wechat.Work/Webhook/) |
+| DTO 与 JSON 上下文 | [`Mud.Wechat.Work/DataModels/Webhook`](../../../Mud.Wechat.Work/DataModels/Webhook/) |
 | 跨线基线 | [`Tests/ContractBaseline.cs`](../../../../../Tests/ContractBaseline.cs)（各线分节；本线口径以守卫实际断言为准） |
 | 本线包级公开面与已踩陷阱 | [`Src/Work/Mud.Wechat.Work/README.md`](../../README.md) |
 | 跨线通用约束（门禁 / AOT / 落位） | [`AGENTS.md`](../../../../../AGENTS.md) |

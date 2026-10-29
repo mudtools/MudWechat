@@ -16,7 +16,7 @@
 
 > **事实来源限定**：本文全部断言只来自本仓三类证据——本目录 8 份接口文件的 XML 注释、
 > [WechatMsgAuditContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatMsgAuditContractGuards.cs)（MA1a~MA4）、
-> [Src/Work/Mud.Wechat.Work/MsgAudit/](../../../Mud.Wechat.Work/MsgAudit/) 下的 DTO 声明；
+> [Src/Work/Mud.Wechat.Work/DataModels/MsgAudit/](../../../Mud.Wechat.Work/DataModels/MsgAudit/) 下的 DTO 声明；
 > 端点数与路由以守卫断言为准，官方文档号仅作定位标识、不作为本文事实来源。
 > 未能在本仓三类证据内核验的项目一律集中在文末「已知留档缺口」，标为**未逐项核验**，正文不作推断。
 
@@ -47,9 +47,9 @@ secret 获取，宿主将该 secret 配置为对应应用的 `AgentSecret`**。
 
 会话同意情况域的「外部成员标识」官方原文拼写是 `exteranalopenid`（不是 `externalopenid`）。
 MA1c 在**请求条目**与**应答**两处分别锁定 JSON 名：
-[CheckMsgAuditSingleAgreeRequest.cs](../../../Mud.Wechat.Work/MsgAudit/RequestModel/CheckMsgAuditSingleAgreeRequest.cs)
+[CheckMsgAuditSingleAgreeRequest.cs](../../DataModels/MsgAudit/RequestModel/CheckMsgAuditSingleAgreeRequest.cs)
 里的 `MsgAuditAgreeQueryItem.ExteranalOpenid` 与
-[CheckMsgAuditAgreeResponse.cs](../../../Mud.Wechat.Work/MsgAudit/CheckMsgAuditAgreeResponse.cs)
+[CheckMsgAuditAgreeResponse.cs](../../DataModels/MsgAudit/CheckMsgAuditAgreeResponse.cs)
 里的 `MsgAuditAgreeInfo.ExteranalOpenid`，两者 `[JsonPropertyName]` 均必须等于 `"exteranalopenid"`。
 C# 属性名也跟着官方拼写（`ExteranalOpenid`）⇒ **不得**「顺手改成正确拼写」，改了序列化即与官方不符。
 
@@ -78,7 +78,7 @@ C# 属性名也跟着官方拼写（`ExteranalOpenid`）⇒ **不得**「顺手�
 
 ## 5. #1 只回「实际生效」成员，且部门/标签被打散
 
-[GetMsgAuditPermitUserListRequest.cs](../../../Mud.Wechat.Work/MsgAudit/RequestModel/GetMsgAuditPermitUserListRequest.cs)
+[GetMsgAuditPermitUserListRequest.cs](../../DataModels/MsgAudit/RequestModel/GetMsgAuditPermitUserListRequest.cs)
 的唯一参数 `Type`（`int?`，JSON `type`）注释口径：**1 办公版 / 2 服务版 / 3 企业版，不填返回全量成员列表**。
 接口注释另记两条：返回的是「设置在开启范围内的成员 userid」，**部门/标签会被打散为全部成员 userid**；
 且**仅返回实际生效成员**——开启范围超出购买人数时，**不包含**超容后不生效的 userid。
@@ -87,7 +87,7 @@ C# 属性名也跟着官方拼写（`ExteranalOpenid`）⇒ **不得**「顺手�
 
 ## 6. 机器人信息应答嵌在 `data` 对象里
 
-#2 是本域唯一非「顶层平铺」的应答：[GetMsgAuditRobotInfoResponse.cs](../../../Mud.Wechat.Work/MsgAudit/GetMsgAuditRobotInfoResponse.cs)
+#2 是本域唯一非「顶层平铺」的应答：[GetMsgAuditRobotInfoResponse.cs](../../DataModels/MsgAudit/GetMsgAuditRobotInfoResponse.cs)
 把三个字段包在 `Data`（`MsgAuditRobotInfo?`，JSON `data`）里 ⇒ 取值是 `resp.Data?.RobotId` /
 `.Name` / `.CreatorUserId`，不要按其余四支的顶层读法写。
 #2 也是本域唯一 GET 端点，且 `robot_id` 必须以 `[Query("robot_id")] string robotId` 传
@@ -205,8 +205,8 @@ public sealed class ArchiveComplianceProbe(
 | 四族「零端点父接口 + 唯一自建子接口」、不得出现第三方/代开发子接口 | MA2（L201–L250） |
 | 全部 8 接口 `AccessToken` + Query + `access_token`、存档 secret 约束 | MA3（L253–L281） |
 | JSON 上下文登记（全量 12 个契约面类型） | MA4（L284–L312） |
-| DTO 属性名 / 类型 / JSON 名 | [../../../Mud.Wechat.Work/MsgAudit/](../../../Mud.Wechat.Work/MsgAudit/)（含 `RequestModel/`） |
-| 上下文源生成文件 | [../../../Mud.Wechat.Work/Generated/MsgAuditJsonContext.g.cs](../../../Mud.Wechat.Work/Generated/MsgAuditJsonContext.g.cs) |
+| DTO 属性名 / 类型 / JSON 名 | [../../../Mud.Wechat.Work/DataModels/MsgAudit/](../../../Mud.Wechat.Work/DataModels/MsgAudit/)（含 `RequestModel/`） |
+| 上下文源生成文件 | [../../../Mud.Wechat.Work/DataModels/Generated/MsgAuditJsonContext.g.cs](../../DataModels/Generated/MsgAuditJsonContext.g.cs) |
 | Query 令牌注入白名单（G5）与令牌归属键（TO 系列） | [WechatContractGuards.QueryTokenInjection.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatContractGuards.QueryTokenInjection.cs)、[WechatTokenOwnerContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatTokenOwnerContractGuards.cs) |
 | 原生 C SDK 面（与本文无关的另一能力面） | [../../README.md](../../README.md) 的「会话内容存档原生封装」段、`ExtendedSDK/Finance/` |
 | 模块注册三段式 | [WechatModule.cs](../../Extensions/WechatModule.cs)、[WechatWorkServiceBuilder.cs](../../Extensions/WechatWorkServiceBuilder.cs)、[WechatJsonResolverExtensions.cs](../../Extensions/WechatJsonResolverExtensions.cs)（L147） |

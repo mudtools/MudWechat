@@ -3,7 +3,7 @@
 企业微信「素材管理」域公共 SDK（上传临时素材 / 获取临时素材 / 上传图片 / 获取高清语音素材 / 异步上传临时素材，
 三类应用均可调用的端点收敛面）。 接口：[IWechatWorkInternalMediaService](./IWechatWorkInternalMediaService.cs)、[IWechatWorkMediaService](./IWechatWorkMediaService.cs)、[IWechatWorkProviderMediaService](./IWechatWorkProviderMediaService.cs)、[IWechatWorkServiceMediaService](./IWechatWorkServiceMediaService.cs)、[IWechatWorkThirdPartyMediaService](./IWechatWorkThirdPartyMediaService.cs)、[IWechatWorkThirdPartyServiceMediaService](./IWechatWorkThirdPartyServiceMediaService.cs)；注册组 `Media`；模块枚举 `WechatModule.Media`（装配入口见 [WechatWorkServiceBuilder.cs](../../Extensions/WechatWorkServiceBuilder.cs)）。逐端点核验 2026-10-18。
 
-> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[WechatMediaContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatMediaContractGuards.cs)、[WechatContractGuards.QueryTokenInjection.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatContractGuards.QueryTokenInjection.cs)）、本域 DTO（[`Mud.Wechat.Work/Media`](../../../Mud.Wechat.Work/Media/)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
+> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[WechatMediaContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatMediaContractGuards.cs)、[WechatContractGuards.QueryTokenInjection.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatContractGuards.QueryTokenInjection.cs)）、本域 DTO（[`Mud.Wechat.Work/DataModels/Media`](../../../Mud.Wechat.Work/DataModels/Media/)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
 
 ## 端点速览
 
@@ -270,18 +270,18 @@ MUD005 已知接受风险：企业微信官方契约强制令牌走 Query 参数
 
 ## DTO 与序列化面
 
-本域 DTO 目录 [`Mud.Wechat.Work/Media`](../../../Mud.Wechat.Work/Media/) 内共 **7** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **7** 个，`SerializerClassName` = `Media`。
+本域 DTO 目录 [`Mud.Wechat.Work/DataModels/Media`](../../../Mud.Wechat.Work/DataModels/Media/) 内共 **7** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **7** 个，`SerializerClassName` = `Media`。
 
-AOT 源生成上下文：[`MediaJsonContext.g.cs`](./../../../Mud.Wechat.Work/Generated/MediaJsonContext.g.cs)（生成物，勿手改）。
+AOT 源生成上下文：[`MediaJsonContext.g.cs`](./../../DataModels/Generated/MediaJsonContext.g.cs)（生成物，勿手改）。
 
 | 端点引用的类型 | 角色 | 定义位置 | JSON 字段（前缀） |
 |---|---|---|---|
-| `UploadMediaResponse` | 应答 | [Media/UploadMediaResponse.cs](../../../Mud.Wechat.Work/Media/UploadMediaResponse.cs) | `type`, `media_id`, `created_at` |
-| `UploadImageResponse` | 应答 | [Media/UploadImageResponse.cs](../../../Mud.Wechat.Work/Media/UploadImageResponse.cs) | `url` |
-| `UploadMediaByUrlResponse` | 应答 | [Media/UploadMediaByUrlResponse.cs](../../../Mud.Wechat.Work/Media/UploadMediaByUrlResponse.cs) | `jobid` |
-| `UploadMediaByUrlRequest` | 请求体 | [Media/RequestModel/UploadMediaByUrlRequest.cs](../../../Mud.Wechat.Work/Media/RequestModel/UploadMediaByUrlRequest.cs) | `scene`, `type`, `filename`, `url`, `md5` |
-| `GetUploadMediaByUrlResultResponse` | 应答 | [Media/GetUploadMediaByUrlResultResponse.cs](../../../Mud.Wechat.Work/Media/GetUploadMediaByUrlResultResponse.cs) | `status`, `detail` |
-| `GetUploadMediaByUrlResultRequest` | 请求体 | [Media/RequestModel/GetUploadMediaByUrlResultRequest.cs](../../../Mud.Wechat.Work/Media/RequestModel/GetUploadMediaByUrlResultRequest.cs) | `jobid` |
+| `UploadMediaResponse` | 应答 | [Media/UploadMediaResponse.cs](../../DataModels/Media/UploadMediaResponse.cs) | `type`, `media_id`, `created_at` |
+| `UploadImageResponse` | 应答 | [Media/UploadImageResponse.cs](../../DataModels/Media/UploadImageResponse.cs) | `url` |
+| `UploadMediaByUrlResponse` | 应答 | [Media/UploadMediaByUrlResponse.cs](../../DataModels/Media/UploadMediaByUrlResponse.cs) | `jobid` |
+| `UploadMediaByUrlRequest` | 请求体 | [Media/RequestModel/UploadMediaByUrlRequest.cs](../../DataModels/Media/RequestModel/UploadMediaByUrlRequest.cs) | `scene`, `type`, `filename`, `url`, `md5` |
+| `GetUploadMediaByUrlResultResponse` | 应答 | [Media/GetUploadMediaByUrlResultResponse.cs](../../DataModels/Media/GetUploadMediaByUrlResultResponse.cs) | `status`, `detail` |
+| `GetUploadMediaByUrlResultRequest` | 请求体 | [Media/RequestModel/GetUploadMediaByUrlResultRequest.cs](../../DataModels/Media/RequestModel/GetUploadMediaByUrlResultRequest.cs) | `jobid` |
 
 > DTO 一律以源文件为准；本表只列端点签名**直接引用**的一层类型，嵌套类型不再递归展开。所有 DTO 不使用 `required`（仓内约束），必填性由接口注释与官方页表达，SDK 不做本地必填校验。
 
@@ -318,7 +318,7 @@ var response = await service.GetUploadMediaByUrlResultAsync(new GetUploadMediaBy
 | 契约守卫（路由 / 计数 / DTO 登记断言） | [`WechatMediaContractGuards.cs`](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatMediaContractGuards.cs)、[`WechatContractGuards.QueryTokenInjection.cs`](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatContractGuards.QueryTokenInjection.cs) |
 | 守卫中的代表性测试方法 | `MediaEndpoints_ShouldMatchOfficialRoutes`、`ServiceMediaEndpoints_ShouldMatchOfficialRoutes`、`MediaInterfaceHierarchy_ShouldConvergeOnAbstractParentWithMediaRegistry`、`ServiceMediaFamily_ShouldHaveExactlyThirdPartyChildAndAbstractParent`、`MediaTokenBinding_ShouldBeAccessAndProviderTokenInjectedViaQuery`、`MediaDataModels_ShouldBeRegisteredInJsonContext`、`QueryTokenInjection_ShouldBeLimitedToWechatOfficialContractInterfaces` |
 | 模块枚举 / 装配入口 | [`WechatModule.cs`](../../Extensions/WechatModule.cs)、[`WechatWorkServiceBuilder.cs`](../../Extensions/WechatWorkServiceBuilder.cs) |
-| DTO 与 JSON 上下文 | [`Mud.Wechat.Work/Media`](../../../Mud.Wechat.Work/Media/) |
+| DTO 与 JSON 上下文 | [`Mud.Wechat.Work/DataModels/Media`](../../../Mud.Wechat.Work/DataModels/Media/) |
 | 跨线基线 | [`Tests/ContractBaseline.cs`](../../../../../Tests/ContractBaseline.cs)（各线分节；本线口径以守卫实际断言为准） |
 | 本线包级公开面与已踩陷阱 | [`Src/Work/Mud.Wechat.Work/README.md`](../../README.md) |
 | 跨线通用约束（门禁 / AOT / 落位） | [`AGENTS.md`](../../../../../AGENTS.md) |

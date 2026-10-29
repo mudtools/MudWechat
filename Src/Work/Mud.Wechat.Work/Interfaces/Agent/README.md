@@ -3,7 +3,7 @@
 企业微信「应用管理」模块「自定义菜单」域企业自建应用 SDK
 （创建菜单 + 获取菜单 + 删除菜单，全部 3 端点官方仅自建应用开放）。 接口：[IWechatWorkAgentMenuService](./IWechatWorkAgentMenuService.cs)、[IWechatWorkInternalAgentMenuService](./IWechatWorkAgentMenuService_Internal.cs)、[IWechatWorkAgentMigrationService](./IWechatWorkAgentMigrationService.cs)、[IWechatWorkInternalAgentMigrationService](./IWechatWorkAgentMigrationService_Internal.cs)、[IWechatWorkAgentService](./IWechatWorkAgentService.cs)、[IWechatWorkInternalAgentService](./IWechatWorkAgentService_Internal.cs)、[IWechatWorkProviderAgentService](./IWechatWorkAgentService_Provider.cs)、[IWechatWorkThirdPartyAgentService](./IWechatWorkAgentService_ThirdParty.cs)、[IWechatWorkAgentThirdPartyProviderService](./IWechatWorkAgentThirdPartyProviderService.cs)、[IWechatWorkAgentWorkbenchService](./IWechatWorkAgentWorkbenchService.cs)、[IWechatWorkInternalAgentWorkbenchService](./IWechatWorkAgentWorkbenchService_Internal.cs)、[IWechatWorkProviderAgentWorkbenchService](./IWechatWorkAgentWorkbenchService_Provider.cs)、[IWechatWorkThirdPartyAgentWorkbenchService](./IWechatWorkAgentWorkbenchService_ThirdParty.cs)；注册组 `Agent`；模块枚举 `WechatModule.Agent`（装配入口见 [WechatWorkServiceBuilder.cs](../../Extensions/WechatWorkServiceBuilder.cs)）。逐端点核验 2026-10-18。
 
-> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[WechatAgentContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatAgentContractGuards.cs)、[WechatContractGuards.QueryTokenInjection.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatContractGuards.QueryTokenInjection.cs)、[WechatInterfaceNamespaceContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatInterfaceNamespaceContractGuards.cs)、[WechatNonContractRouteZeroDeclarationContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatNonContractRouteZeroDeclarationContractGuards.cs)）、本域 DTO（[`Mud.Wechat.Work/Agent`](../../../Mud.Wechat.Work/Agent/)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
+> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[WechatAgentContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatAgentContractGuards.cs)、[WechatContractGuards.QueryTokenInjection.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatContractGuards.QueryTokenInjection.cs)、[WechatInterfaceNamespaceContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatInterfaceNamespaceContractGuards.cs)、[WechatNonContractRouteZeroDeclarationContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatNonContractRouteZeroDeclarationContractGuards.cs)）、本域 DTO（[`Mud.Wechat.Work/DataModels/Agent`](../../../Mud.Wechat.Work/DataModels/Agent/)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
 
 ## 端点速览
 
@@ -506,28 +506,28 @@ MUD005 已知接受风险：企业微信官方契约强制令牌走 Query 参数
 
 ## DTO 与序列化面
 
-本域 DTO 目录 [`Mud.Wechat.Work/Agent`](../../../Mud.Wechat.Work/Agent/) 内共 **30** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **30** 个，`SerializerClassName` = `Agent`。
+本域 DTO 目录 [`Mud.Wechat.Work/DataModels/Agent`](../../../Mud.Wechat.Work/DataModels/Agent/) 内共 **30** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **30** 个，`SerializerClassName` = `Agent`。
 
-AOT 源生成上下文：[`AgentJsonContext.g.cs`](./../../../Mud.Wechat.Work/Generated/AgentJsonContext.g.cs)（生成物，勿手改）。
+AOT 源生成上下文：[`AgentJsonContext.g.cs`](./../../DataModels/Generated/AgentJsonContext.g.cs)（生成物，勿手改）。
 
 | 端点引用的类型 | 角色 | 定义位置 | JSON 字段（前缀） |
 |---|---|---|---|
-| `WechatWorkResponse` | 应答 | [WechatWorkResponse.cs](../../../Mud.Wechat.Work/WechatWorkResponse.cs) | `errcode`, `errmsg`, `data` |
-| `CreateAgentMenuRequest` | 请求体 | [Agent/CreateAgentMenuRequest.cs](../../../Mud.Wechat.Work/Agent/CreateAgentMenuRequest.cs) | `button` |
-| `GetAgentMenuResponse` | 应答 | [Agent/GetAgentMenuResponse.cs](../../../Mud.Wechat.Work/Agent/GetAgentMenuResponse.cs) | `button` |
-| `ClaimAgentCustomizedAppRequest` | 请求体 | [Agent/ClaimAgentCustomizedAppRequest.cs](../../../Mud.Wechat.Work/Agent/ClaimAgentCustomizedAppRequest.cs) | `suite_access_token` |
-| `GetAgentResponse` | 应答 | [Agent/GetAgentResponse.cs](../../../Mud.Wechat.Work/Agent/GetAgentResponse.cs) | `agentid`, `name`, `square_logo_url`, `description`, `allow_userinfos`, `allow_partys`, `allow_tags`, `close`, `redirect_domain`, `report_location_flag`, `isreportenter`, `home_url` … |
-| `GetAgentListResponse` | 应答 | [Agent/GetAgentListResponse.cs](../../../Mud.Wechat.Work/Agent/GetAgentListResponse.cs) | `agentlist` |
-| `SetAgentRequest` | 请求体 | [Agent/SetAgentRequest.cs](../../../Mud.Wechat.Work/Agent/SetAgentRequest.cs) | `agentid`, `report_location_flag`, `logo_mediaid`, `name`, `description`, `redirect_domain`, `isreportenter`, `home_url` |
-| `GetAgentPermissionsResponse` | 应答 | [Agent/GetAgentPermissionsResponse.cs](../../../Mud.Wechat.Work/Agent/GetAgentPermissionsResponse.cs) | `app_permissions`, `app_permissions_ext` |
-| `GetAgentAdminListResponse` | 应答 | [Agent/GetAgentAdminListResponse.cs](../../../Mud.Wechat.Work/Agent/GetAgentAdminListResponse.cs) | `admin` |
-| `SetAgentWorkbenchTemplateRequest` | 请求体 | [Agent/SetAgentWorkbenchTemplateRequest.cs](../../../Mud.Wechat.Work/Agent/SetAgentWorkbenchTemplateRequest.cs) | `agentid`, `type`, `keydata`, `image`, `list`, `webview`, `replace_user_data` |
-| `GetAgentWorkbenchTemplateResponse` | 应答 | [Agent/GetAgentWorkbenchTemplateResponse.cs](../../../Mud.Wechat.Work/Agent/GetAgentWorkbenchTemplateResponse.cs) | `type`, `keydata`, `image`, `list`, `webview`, `replace_user_data` |
-| `GetAgentWorkbenchTemplateRequest` | 请求体 | [Agent/GetAgentWorkbenchTemplateRequest.cs](../../../Mud.Wechat.Work/Agent/GetAgentWorkbenchTemplateRequest.cs) | `agentid` |
-| `SetAgentWorkbenchDataRequest` | 请求体 | [Agent/SetAgentWorkbenchDataRequest.cs](../../../Mud.Wechat.Work/Agent/SetAgentWorkbenchDataRequest.cs) | `agentid`, `userid`, `type`, `keydata`, `image`, `list`, `webview` |
-| `BatchSetAgentWorkbenchDataRequest` | 请求体 | [Agent/BatchSetAgentWorkbenchDataRequest.cs](../../../Mud.Wechat.Work/Agent/BatchSetAgentWorkbenchDataRequest.cs) | `agentid`, `userid_list`, `data` |
-| `GetAgentWorkbenchDataResponse` | 应答 | [Agent/GetAgentWorkbenchDataResponse.cs](../../../Mud.Wechat.Work/Agent/GetAgentWorkbenchDataResponse.cs) | `data` |
-| `GetAgentWorkbenchDataRequest` | 请求体 | [Agent/GetAgentWorkbenchDataRequest.cs](../../../Mud.Wechat.Work/Agent/GetAgentWorkbenchDataRequest.cs) | `agentid`, `userid` |
+| `WechatWorkResponse` | 应答 | [WechatWorkResponse.cs](../../DataModels/WechatWorkResponse.cs) | `errcode`, `errmsg`, `data` |
+| `CreateAgentMenuRequest` | 请求体 | [Agent/CreateAgentMenuRequest.cs](../../DataModels/Agent/CreateAgentMenuRequest.cs) | `button` |
+| `GetAgentMenuResponse` | 应答 | [Agent/GetAgentMenuResponse.cs](../../DataModels/Agent/GetAgentMenuResponse.cs) | `button` |
+| `ClaimAgentCustomizedAppRequest` | 请求体 | [Agent/ClaimAgentCustomizedAppRequest.cs](../../DataModels/Agent/ClaimAgentCustomizedAppRequest.cs) | `suite_access_token` |
+| `GetAgentResponse` | 应答 | [Agent/GetAgentResponse.cs](../../DataModels/Agent/GetAgentResponse.cs) | `agentid`, `name`, `square_logo_url`, `description`, `allow_userinfos`, `allow_partys`, `allow_tags`, `close`, `redirect_domain`, `report_location_flag`, `isreportenter`, `home_url` … |
+| `GetAgentListResponse` | 应答 | [Agent/GetAgentListResponse.cs](../../DataModels/Agent/GetAgentListResponse.cs) | `agentlist` |
+| `SetAgentRequest` | 请求体 | [Agent/SetAgentRequest.cs](../../DataModels/Agent/SetAgentRequest.cs) | `agentid`, `report_location_flag`, `logo_mediaid`, `name`, `description`, `redirect_domain`, `isreportenter`, `home_url` |
+| `GetAgentPermissionsResponse` | 应答 | [Agent/GetAgentPermissionsResponse.cs](../../DataModels/Agent/GetAgentPermissionsResponse.cs) | `app_permissions`, `app_permissions_ext` |
+| `GetAgentAdminListResponse` | 应答 | [Agent/GetAgentAdminListResponse.cs](../../DataModels/Agent/GetAgentAdminListResponse.cs) | `admin` |
+| `SetAgentWorkbenchTemplateRequest` | 请求体 | [Agent/SetAgentWorkbenchTemplateRequest.cs](../../DataModels/Agent/SetAgentWorkbenchTemplateRequest.cs) | `agentid`, `type`, `keydata`, `image`, `list`, `webview`, `replace_user_data` |
+| `GetAgentWorkbenchTemplateResponse` | 应答 | [Agent/GetAgentWorkbenchTemplateResponse.cs](../../DataModels/Agent/GetAgentWorkbenchTemplateResponse.cs) | `type`, `keydata`, `image`, `list`, `webview`, `replace_user_data` |
+| `GetAgentWorkbenchTemplateRequest` | 请求体 | [Agent/GetAgentWorkbenchTemplateRequest.cs](../../DataModels/Agent/GetAgentWorkbenchTemplateRequest.cs) | `agentid` |
+| `SetAgentWorkbenchDataRequest` | 请求体 | [Agent/SetAgentWorkbenchDataRequest.cs](../../DataModels/Agent/SetAgentWorkbenchDataRequest.cs) | `agentid`, `userid`, `type`, `keydata`, `image`, `list`, `webview` |
+| `BatchSetAgentWorkbenchDataRequest` | 请求体 | [Agent/BatchSetAgentWorkbenchDataRequest.cs](../../DataModels/Agent/BatchSetAgentWorkbenchDataRequest.cs) | `agentid`, `userid_list`, `data` |
+| `GetAgentWorkbenchDataResponse` | 应答 | [Agent/GetAgentWorkbenchDataResponse.cs](../../DataModels/Agent/GetAgentWorkbenchDataResponse.cs) | `data` |
+| `GetAgentWorkbenchDataRequest` | 请求体 | [Agent/GetAgentWorkbenchDataRequest.cs](../../DataModels/Agent/GetAgentWorkbenchDataRequest.cs) | `agentid`, `userid` |
 
 > DTO 一律以源文件为准；本表只列端点签名**直接引用**的一层类型，嵌套类型不再递归展开。所有 DTO 不使用 `required`（仓内约束），必填性由接口注释与官方页表达，SDK 不做本地必填校验。
 
@@ -564,7 +564,7 @@ var response = await service.GetAgentListAsync(ct);
 | 契约守卫（路由 / 计数 / DTO 登记断言） | [`WechatAgentContractGuards.cs`](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatAgentContractGuards.cs)、[`WechatContractGuards.QueryTokenInjection.cs`](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatContractGuards.QueryTokenInjection.cs)、[`WechatInterfaceNamespaceContractGuards.cs`](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatInterfaceNamespaceContractGuards.cs)、[`WechatNonContractRouteZeroDeclarationContractGuards.cs`](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatNonContractRouteZeroDeclarationContractGuards.cs) |
 | 守卫中的代表性测试方法 | `AgentEndpoints_ShouldMatchOfficialRoutes`、`AgentInterfaceHierarchy_ShouldMatchOfficialOpenSurfaces`、`AgentTokenBinding_ShouldBeAccessTokenInjectedViaQuery`、`AgentDataModels_ShouldBeRegisteredInJsonContext`、`AgentDataModels_ShouldLockOfficialContractTraps`、`QueryTokenInjection_ShouldBeLimitedToWechatOfficialContractInterfaces`、`InterfaceNamespace_ShouldPartitionAbstractParentFromInjectable`、`ParentImplementation_ShouldBeGeneratedInContractInternalNamespace`、`ParentInterfaces_ShouldRemainUnresolvableFromDi`、`NonContractRoutes_ShouldHaveZeroDeclaredRoutes_WhenScannedAcrossSrc` |
 | 模块枚举 / 装配入口 | [`WechatModule.cs`](../../Extensions/WechatModule.cs)、[`WechatWorkServiceBuilder.cs`](../../Extensions/WechatWorkServiceBuilder.cs) |
-| DTO 与 JSON 上下文 | [`Mud.Wechat.Work/Agent`](../../../Mud.Wechat.Work/Agent/) |
+| DTO 与 JSON 上下文 | [`Mud.Wechat.Work/DataModels/Agent`](../../../Mud.Wechat.Work/DataModels/Agent/) |
 | 跨线基线 | [`Tests/ContractBaseline.cs`](../../../../../Tests/ContractBaseline.cs)（各线分节；本线口径以守卫实际断言为准） |
 | 本线包级公开面与已踩陷阱 | [`Src/Work/Mud.Wechat.Work/README.md`](../../README.md) |
 | 跨线通用约束（门禁 / AOT / 落位） | [`AGENTS.md`](../../../../../AGENTS.md) |

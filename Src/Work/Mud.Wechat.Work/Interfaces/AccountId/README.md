@@ -21,7 +21,7 @@
 > **事实来源限定**：本文全部断言只来自本仓三类证据——本目录 20 份接口文件的 XML 注释、
 > [WechatAccountIdContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatAccountIdContractGuards.cs)（ACCT1~ACCT4）
 > 与 [WechatContractGuards.QueryTokenInjection.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatContractGuards.QueryTokenInjection.cs)（G5）、
-> [Src/Work/Mud.Wechat.Work/AccountId/](../../../Mud.Wechat.Work/AccountId/) 下的 DTO 声明；
+> [Src/Work/Mud.Wechat.Work/DataModels/AccountId/](../../../Mud.Wechat.Work/DataModels/AccountId/) 下的 DTO 声明；
 > 端点数与路由以守卫断言为准，接口注释里的官方文档号（96516 / 97106 等）仅作定位标识、不作为本文事实来源。
 > 未能在本仓三类证据内核验的项目一律集中在文末「已知留档缺口」，标为**未逐项核验**，正文不作推断。
 
@@ -128,7 +128,7 @@ G5 是「等价集合」断言——新增 Query 注入接口不落白名单即�
 
 ⇒ #19 的路由沿用 `userid_to_openuserid` 命名，但**入参键却是 `open_userid_list`**、承载的是「企业主体加密 userid」，与 #1 的 `userid_list`
 不是同一个东西；#13 与 #19 方向看似同为「加密 → open_userid」与「open_userid → 明文」，实际分属不同令牌与不同应用类型面。
-三者共用同一个映射元素类型 [OpenUserIdMapItem.cs](../../../Mud.Wechat.Work/AccountId/OpenUserIdMapItem.cs)（`userid` + `open_userid`），
+三者共用同一个映射元素类型 [OpenUserIdMapItem.cs](../../DataModels/AccountId/OpenUserIdMapItem.cs)（`userid` + `open_userid`），
 该 DTO 注释明确「三个 userid/openuserid 转换端点共用」——它的 `userid` 字段在 #19 场景下装的是**密文**，不要按字段名推断明文。
 
 external_userid 同样是双向、且不共族：#2/#3/#5 把企业主体 id 转成服务商主体 id 或 pending_id（第三方/代开发），
@@ -138,11 +138,11 @@ external_userid 同样是双向、且不共族：#2/#3/#5 把企业主体 id 转
 
 | 键 | 出现的 DTO | 属性类型 | JSON 名 | 作用 |
 |---|---|---|---|---|
-| `source_agentid` | [OpenUserIdToUserIdRequest.cs](../../../Mud.Wechat.Work/AccountId/RequestModel/OpenUserIdToUserIdRequest.cs)、[FromServiceExternalUserIdRequest.cs](../../../Mud.Wechat.Work/AccountId/RequestModel/FromServiceExternalUserIdRequest.cs) | `string?` | `source_agentid` | 自建应用侧指明「密文来自哪个第三方/代开发应用」 |
-| `source_agentid` | [OpenUserIdToUserIdForBotRequest.cs](../../../Mud.Wechat.Work/AccountId/RequestModel/OpenUserIdToUserIdForBotRequest.cs) | **无此属性** | — | 智能机器人场景官方不要求，故单开一支方法与一个 DTO |
-| `source_botid` | [ServiceUserIdToOpenUserIdRequest.cs](../../../Mud.Wechat.Work/AccountId/RequestModel/ServiceUserIdToOpenUserIdRequest.cs) | `string?` | `source_botid` | 智能机器人 id，官方必填 |
-| `agentid` | [FinishOpenIdMigrationRequest.cs](../../../Mud.Wechat.Work/AccountId/RequestModel/FinishOpenIdMigrationRequest.cs) | **`int?`** | `agentid` | 代开发场景指明应用；仅传 `corpid` 不传 `agentid` 时视为更新该企业下**同服务商所有第三方应用** |
-| `corpid` | 同上、[CorpidToOpenCorpidRequest.cs](../../../Mud.Wechat.Work/AccountId/RequestModel/CorpidToOpenCorpidRequest.cs)、[FinishExternalUserIdMigrationRequest.cs](../../../Mud.Wechat.Work/AccountId/RequestModel/FinishExternalUserIdMigrationRequest.cs) | `string?` | `corpid` | provider 族以明文 corpid 定位企业（不是 open_corpid） |
+| `source_agentid` | [OpenUserIdToUserIdRequest.cs](../../DataModels/AccountId/RequestModel/OpenUserIdToUserIdRequest.cs)、[FromServiceExternalUserIdRequest.cs](../../DataModels/AccountId/RequestModel/FromServiceExternalUserIdRequest.cs) | `string?` | `source_agentid` | 自建应用侧指明「密文来自哪个第三方/代开发应用」 |
+| `source_agentid` | [OpenUserIdToUserIdForBotRequest.cs](../../DataModels/AccountId/RequestModel/OpenUserIdToUserIdForBotRequest.cs) | **无此属性** | — | 智能机器人场景官方不要求，故单开一支方法与一个 DTO |
+| `source_botid` | [ServiceUserIdToOpenUserIdRequest.cs](../../DataModels/AccountId/RequestModel/ServiceUserIdToOpenUserIdRequest.cs) | `string?` | `source_botid` | 智能机器人 id，官方必填 |
+| `agentid` | [FinishOpenIdMigrationRequest.cs](../../DataModels/AccountId/RequestModel/FinishOpenIdMigrationRequest.cs) | **`int?`** | `agentid` | 代开发场景指明应用；仅传 `corpid` 不传 `agentid` 时视为更新该企业下**同服务商所有第三方应用** |
+| `corpid` | 同上、[CorpidToOpenCorpidRequest.cs](../../DataModels/AccountId/RequestModel/CorpidToOpenCorpidRequest.cs)、[FinishExternalUserIdMigrationRequest.cs](../../DataModels/AccountId/RequestModel/FinishExternalUserIdMigrationRequest.cs) | `string?` | `corpid` | provider 族以明文 corpid 定位企业（不是 open_corpid） |
 
 ⇒ 同一个「应用 id」在本域两种建模：作为**来源标注**时官方拼写是 `source_agentid` 且本仓建模为 `string?`，作为**操作对象**时拼写是 `agentid` 且建模为 `int?`。
 不得「顺手统一」为同一类型，那会改坏 ACCT4 之外的序列化面。
@@ -159,7 +159,7 @@ external_userid 同样是双向、且不共族：#2/#3/#5 把企业主体 id 转
 
 ## 5. 转换配额：三档业务频率 + `mass_call_ticket` 豁免 + 「1 天不可调用」惩罚
 
-父接口注释与 [#4 请求体](../../../Mud.Wechat.Work/AccountId/RequestModel/ConvertUnionidToExternalUserIdRequest.cs) 留档的口径：
+父接口注释与 [#4 请求体](../../DataModels/AccountId/RequestModel/ConvertUnionidToExternalUserIdRequest.cs) 留档的口径：
 
 - #4/#5 按主体维度限流 **10 万次/小时、48 万次/天、750 万次/月**；`subject_type = 0`（主体名称是企业的）时**所有服务商共用该企业额度**，
   `subject_type = 1`（主体名称是服务商的）时按服务商计。⇒ 配额归属由**请求体字段**决定，不由令牌决定。
@@ -174,10 +174,10 @@ external_userid 同样是双向、且不共族：#2/#3/#5 把企业主体 id 转
 | 字段 | 所在 DTO | 本仓留档取值 |
 |---|---|---|
 | `subject_type` | ConvertUnionidToExternalUserIdRequest | 0 = 主体名称是企业的（默认）、1 = 主体名称是服务商的 |
-| `business_type` | [ConvertTmpExternalUserIdRequest.cs](../../../Mud.Wechat.Work/AccountId/RequestModel/ConvertTmpExternalUserIdRequest.cs) | 1 = 会议、2 = 收集表、3 = 智能表（文档） |
+| `business_type` | [ConvertTmpExternalUserIdRequest.cs](../../DataModels/AccountId/RequestModel/ConvertTmpExternalUserIdRequest.cs) | 1 = 会议、2 = 收集表、3 = 智能表（文档） |
 | `user_type` | 同上 | 1 = 客户、2 = 企业互联、3 = 上下游、4 = 互联企业（圈子） |
-| `openid_type`（请求侧，**数组**） | [FinishOpenIdMigrationRequest.cs](../../../Mud.Wechat.Work/AccountId/RequestModel/FinishOpenIdMigrationRequest.cs) | 1 = userid 与 corpid、3 = external_userid 及 external_tagid；类型 `List<int>?` |
-| `openid_type`（响应侧，**单值**） | [OpenIdMigrationInfoItem.cs](../../../Mud.Wechat.Work/AccountId/OpenIdMigrationInfoItem.cs) | 1 = corpid/userid、3 = external_userid；类型 `int?` |
+| `openid_type`（请求侧，**数组**） | [FinishOpenIdMigrationRequest.cs](../../DataModels/AccountId/RequestModel/FinishOpenIdMigrationRequest.cs) | 1 = userid 与 corpid、3 = external_userid 及 external_tagid；类型 `List<int>?` |
+| `openid_type`（响应侧，**单值**） | [OpenIdMigrationInfoItem.cs](../../DataModels/AccountId/OpenIdMigrationInfoItem.cs) | 1 = corpid/userid、3 = external_userid；类型 `int?` |
 | `status` | 同上 | 0 = 未升级、1 = 已升级 |
 
 ⇒ `openid_type` 同名不同形状（请求是数组、响应是单值），且两处注释的取值文案顺序不同（`1 - userid 与 corpid` vs `1 - corpid/userid`），均为照抄官方原文，勿「对齐」成一份枚举。
@@ -212,11 +212,11 @@ ACCT1 逐条断言 `typeof(PostAttribute)` / `typeof(GetAttribute)`。
 
 | 现象 | 实测 |
 |---|---|
-| 「新/密文」前缀三套写法 | #2/#3 输出 `new_external_userid`；#6 输出 `open_external_tagid`；#7 输出 `new_open_kfid`；#11 输出 `new_chat_id`；#16 输出 `open_corpid` ⇒ 同一语义在官方即两套前缀，本仓逐字照抄（[NewExternalUserIdItem.cs](../../../Mud.Wechat.Work/AccountId/NewExternalUserIdItem.cs)、[ExternalTagIdConvertItem.cs](../../../Mud.Wechat.Work/AccountId/ExternalTagIdConvertItem.cs)、[OpenKfIdConvertItem.cs](../../../Mud.Wechat.Work/AccountId/OpenKfIdConvertItem.cs)、[ChatIdConvertItem.cs](../../../Mud.Wechat.Work/AccountId/ChatIdConvertItem.cs)） |
-| 列表键名后缀不统一 | `userid_list` / `external_userid_list` / `open_userid_list` / `external_tagid_list` / `open_kfid_list` / `chat_id_list` / `tmp_external_userid_list` 都带 `_list`，**只有 #5 的 `external_userid` 不带**（[ConvertExternalUserIdToPendingIdRequest.cs](../../../Mud.Wechat.Work/AccountId/RequestModel/ConvertExternalUserIdToPendingIdRequest.cs) 注释与守卫 remarks 双重标注） |
+| 「新/密文」前缀三套写法 | #2/#3 输出 `new_external_userid`；#6 输出 `open_external_tagid`；#7 输出 `new_open_kfid`；#11 输出 `new_chat_id`；#16 输出 `open_corpid` ⇒ 同一语义在官方即两套前缀，本仓逐字照抄（[NewExternalUserIdItem.cs](../../DataModels/AccountId/NewExternalUserIdItem.cs)、[ExternalTagIdConvertItem.cs](../../DataModels/AccountId/ExternalTagIdConvertItem.cs)、[OpenKfIdConvertItem.cs](../../DataModels/AccountId/OpenKfIdConvertItem.cs)、[ChatIdConvertItem.cs](../../DataModels/AccountId/ChatIdConvertItem.cs)） |
+| 列表键名后缀不统一 | `userid_list` / `external_userid_list` / `open_userid_list` / `external_tagid_list` / `open_kfid_list` / `chat_id_list` / `tmp_external_userid_list` 都带 `_list`，**只有 #5 的 `external_userid` 不带**（[ConvertExternalUserIdToPendingIdRequest.cs](../../DataModels/AccountId/RequestModel/ConvertExternalUserIdToPendingIdRequest.cs) 注释与守卫 remarks 双重标注） |
 | 响应袋名不统一 | 批量转换响应：#2/#3/#6/#7/#11/#19 用 `items`，#5 用 `result`（单数），#12 用 `results`（复数），#1 用 `open_userid_list` |
 | 失效袋名不统一 | `invalid_userid_list`（#1）/ `invalid_open_userid_list`（#13/#14/#19）/ `invalid_external_tagid_list`（#6）/ `invalid_open_kfid_list`（#7）/ `invalid_chat_id_list`（#11）/ `invalid_tmp_external_userid_list`（#12） |
-| `userid_list` 同名异形状 | #1 请求的 `userid_list` 是 `List<string>`，#13/#14 响应的 `userid_list` 是 `List<OpenUserIdMapItem>`（[OpenUserIdToUserIdResponse.cs](../../../Mud.Wechat.Work/AccountId/OpenUserIdToUserIdResponse.cs)）⇒ 建模时必须按端点看 DTO，不能按 JSON 名复用 |
+| `userid_list` 同名异形状 | #1 请求的 `userid_list` 是 `List<string>`，#13/#14 响应的 `userid_list` 是 `List<OpenUserIdMapItem>`（[OpenUserIdToUserIdResponse.cs](../../DataModels/AccountId/OpenUserIdToUserIdResponse.cs)）⇒ 建模时必须按端点看 DTO，不能按 JSON 名复用 |
 | 密文大小写敏感 | corpid / userid / external_userid 密文**大小写敏感**，多处注释留档「使用时不能再转为纯小写或纯大写」⇒ 宿主侧不得做 `ToLower()` 归一化 |
 
 ## 快速开始
@@ -320,7 +320,7 @@ public sealed class ChatIdUpgrader(
 }
 ```
 
-判错为单层普通信封（[WechatWorkResponse.cs](../../../Mud.Wechat.Work/WechatWorkResponse.cs) 的 `errcode == 0` 即成功）；
+判错为单层普通信封（[WechatWorkResponse.cs](../../DataModels/WechatWorkResponse.cs) 的 `errcode == 0` 即成功）；
 令牌失效由基座按 `errcode` 判定并自动恢复，调用方不手写重试。#17/#18 这类「不可回退」的写操作请由宿主自行加幂等前置检查。
 
 ## 已知留档缺口
@@ -330,7 +330,7 @@ public sealed class ChatIdUpgrader(
 | 文档号内部不一致 | [Migration 父接口](./Migration/IWechatWorkAccountIdMigrationService.cs) remarks 写「第三方子接口另持差异端点（**96516**）」，而[第三方子接口](./Migration/IWechatWorkAccountIdMigrationService_ThirdParty.cs) 的 XML 与守卫 ACCT1/ACCT2 注释均写 **99375** | 本文按「子接口 XML + 守卫」取 99375；父接口 remarks 的 96516 属仓内注释不一致，**未逐项核验**孰为官方页号，须核验后同批改注释与守卫 remarks |
 | #1「1 天不可调用」的具体阈值 | 注释仅留档「阈值由授权企业的员工规模决定」，无数值 ⇒ **未逐项核验** | 需要本地熔断时先核验官方页，不得从邻域借数值 |
 | 除 #4/#5 外各端点的频率数值 | 注释只留档 #4/#5 的三档配额与 #9 的「每企业一次 / 7 天」；#1~#3、#6~#8、#10~#20 的 QPS/日配额**未逐项核验** | 逐页核验后补接口 remarks，再更新本文速览备注 |
-| `upgrade_time` 的单位与量纲 | [ApplyToUpgradeChatIdRequest.cs](../../../Mud.Wechat.Work/AccountId/RequestModel/ApplyToUpgradeChatIdRequest.cs) 建模为 `int?`，注释写「完成升级的时间戳」「不得早于当前时间或 7 天之后」，**秒/毫秒未留档**；`int` 承载 Unix 秒的 2038 边界本仓无断言 ⇒ **未逐项核验** | 使用前核验官方示例单位；如需扩量纲须同批改 DTO 与 ACCT4 类型清单 |
+| `upgrade_time` 的单位与量纲 | [ApplyToUpgradeChatIdRequest.cs](../../DataModels/AccountId/RequestModel/ApplyToUpgradeChatIdRequest.cs) 建模为 `int?`，注释写「完成升级的时间戳」「不得早于当前时间或 7 天之后」，**秒/毫秒未留档**；`int` 承载 Unix 秒的 2038 边界本仓无断言 ⇒ **未逐项核验** | 使用前核验官方示例单位；如需扩量纲须同批改 DTO 与 ACCT4 类型清单 |
 | `openid_type` 是否存在取值 2 | 请求侧注释只列 1 与 3，响应侧亦只列 1 与 3；2 是否被官方保留**未逐项核验** | 出现新取值先核验，再决定是否建枚举 |
 | `subject_type` / `business_type` / `user_type` 的其它取值 | 本文 §6 只列注释留档值 ⇒ 全集**未逐项核验** | 不得据本文推断「只有这些值」 |
 | `mass_call_ticket` 的第二支持端点归属 | 注释说支持「unionid 转上下游 external_userid」，该端点由上下游域（CorpGroup）承载 ⇒ 跨域支持面**未在本域核验** | 需要签发/消费链时查 CorpGroup 域，勿在本域加端点 |
@@ -342,11 +342,11 @@ public sealed class ChatIdUpgrader(
 
 | 要查什么 | 去哪查 |
 |---|---|
-| 逐参数原文（≤1000 / ≤200 / ≤100、三档频率、90 天、7 天、权限要求、可见范围） | 本目录 20 份接口文件的 XML 注释 + [AccountId/](../../../Mud.Wechat.Work/AccountId/) 与 [AccountId/RequestModel/](../../../Mud.Wechat.Work/AccountId/RequestModel/) 的 DTO 类级 remarks |
+| 逐参数原文（≤1000 / ≤200 / ≤100、三档频率、90 天、7 天、权限要求、可见范围） | 本目录 20 份接口文件的 XML 注释 + [AccountId/](../../../Mud.Wechat.Work/DataModels/AccountId/) 与 [AccountId/RequestModel/](../../../Mud.Wechat.Work/DataModels/AccountId/RequestModel/) 的 DTO 类级 remarks |
 | 路由表 / 计数（恰 20 方法、19 唯一路由）/ HTTP 动词 | [WechatAccountIdContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatAccountIdContractGuards.cs) ACCT1（`Routes` 表 L55–L106、断言 L111–L135） |
 | 七接口族层级、父接口端点数、子接口空标记与差异计数、继承链不漂移 | ACCT2（L141–L232），辅助断言 `AssertAbstractParentWithEndpoints`（L344–L354）/ `AssertRegistryChild`（L356–L368）/ `AssertDerivedInterfaces`（L370–L378） |
 | 三种令牌路由键 → Query 参数名（access / provider_access / suite_access） | ACCT3（L239–L290）；域内 20 接口名的白名单登记见 [WechatContractGuards.QueryTokenInjection.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatContractGuards.QueryTokenInjection.cs) G5（L212–L234） |
-| JSON 上下文登记（AccountIdJsonContext 40 型） | ACCT4（L295–L342）与 [Generated/AccountIdJsonContext.g.cs](../../../Mud.Wechat.Work/Generated/AccountIdJsonContext.g.cs)（`internal`，不得在示例引用） |
+| JSON 上下文登记（AccountIdJsonContext 40 型） | ACCT4（L295–L342）与 [Generated/AccountIdJsonContext.g.cs](../../DataModels/Generated/AccountIdJsonContext.g.cs)（`internal`，不得在示例引用） |
 | 归属域键（`TokenManagerKey`）与「非 AccessToken 族不得叠加」 | [WechatTokenOwnerContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatTokenOwnerContractGuards.cs) TO1~TO3 |
 | 父接口/可注入接口命名空间二分与本域 7+13 归属 | [WechatInterfaceNamespaceContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatInterfaceNamespaceContractGuards.cs) N1~N3（聚合计数维护在 [Tests/ContractBaseline.cs](../../../../../Tests/ContractBaseline.cs)：`Baseline.Work` 实测 154 父 + 307 可注入；该守卫文件注释写 155/308、`AGENTS.md` §4 写 147/299，**均为陈旧文案，以常量为准**） |
 | #4/#5 的跨域单一所有者 | [WechatExternalContactCustomerContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatExternalContactCustomerContractGuards.cs) CU2（L40–L42 注释、L150–L156 断言） |

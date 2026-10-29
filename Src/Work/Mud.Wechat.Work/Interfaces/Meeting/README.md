@@ -26,7 +26,7 @@
 
 > **事实来源限定**：本文全部断言只来自本仓三类证据——本目录 24 份接口文件的 XML 注释、
 > [WechatMeetingContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatMeetingContractGuards.cs)（MT1~MT5）、
-> [Src/Work/Mud.Wechat.Work/Meeting/](../../../Mud.Wechat.Work/Meeting/) 下的 261 个 DTO 声明；
+> [Src/Work/Mud.Wechat.Work/DataModels/Meeting/](../../../Mud.Wechat.Work/DataModels/Meeting/) 下的 261 个 DTO 声明；
 > 端点数与路由以守卫断言为准，官方文档号仅作定位标识、不作为本文事实来源。
 > 未能在本仓三类证据内核验的项目一律集中在文末「已知留档缺口」，标为**未逐项核验**，正文不作推断。
 > 注意：守卫文件内三处**注释与断言不一致**（L95「59 条官方路由」、L96「全部 POST」、MT3 横幅「8 个接口」），
@@ -204,7 +204,7 @@
 
 ## 1. `meetingid` 生命周期与「预约状态」状态机
 
-创建端点 #1 的应答 [CreateMeetingResponse.cs](../../../Mud.Wechat.Work/Meeting/CreateMeetingResponse.cs)
+创建端点 #1 的应答 [CreateMeetingResponse.cs](../../DataModels/Meeting/CreateMeetingResponse.cs)
 只给出 `meetingid`（JSON 名 **`meetingid`，无下划线**，`string?`）与 `excess_users`；
 `meeting_code`（会议号）与 `meeting_link`（入会链接）**仅预约会议高级管理文档页声明**，
 基础文档页不承诺 ⇒ 不要按基础面假定一定能拿到链接。
@@ -219,7 +219,7 @@
 
 ⇒ 会议一旦进入「会议中 / 已结束」，`update` 与 `cancel` 都不再可用，会控改走
 `realcontrol/*`（#27~#35，且要求仅进行中会议可调）。读取侧的状态由
-[GetMeetingInfoResponse.cs](../../../Mud.Wechat.Work/Meeting/GetMeetingInfoResponse.cs)
+[GetMeetingInfoResponse.cs](../../DataModels/Meeting/GetMeetingInfoResponse.cs)
 的 `Status`（`int?`，JSON `status`）承载：**1 待开始 / 2 会议中 / 3 已结束 / 4 已取消 / 5 已过期**；
 `MeetingType`（`int?`）取值 **0 一次性 / 1 周期性 / 2 微信专属 / 3 Rooms 投屏 / 5 个人会议号 / 6 网络研讨会**
 （仅高级管理文档页声明该字段）。本仓**不做**本地状态校验，越界由应答 `errcode` 表达。
@@ -233,22 +233,22 @@
 
 | 类型 | 属性 → JSON 名 | 口径 |
 |---|---|---|
-| [MeetingInvitees.cs](../../../Mud.Wechat.Work/Meeting/MeetingInvitees.cs) | `Userid` → `userid`（`List<string>?`） | 创建/修改预约会议请求的 `invitees` 嵌套对象；**任何 userid 不合法或不在应用可见范围内将直接报错**（不是静默过滤） |
-| [MeetingInvitee.cs](../../../Mud.Wechat.Work/Meeting/MeetingInvitee.cs) | `Userid` → `userid`（`string?`） | #8/#9 受邀成员列表端点的 `invitees` 为**对象数组**，与上表形态不同 ⇒ 两者不可互换 |
+| [MeetingInvitees.cs](../../DataModels/Meeting/MeetingInvitees.cs) | `Userid` → `userid`（`List<string>?`） | 创建/修改预约会议请求的 `invitees` 嵌套对象；**任何 userid 不合法或不在应用可见范围内将直接报错**（不是静默过滤） |
+| [MeetingInvitee.cs](../../DataModels/Meeting/MeetingInvitee.cs) | `Userid` → `userid`（`string?`） | #8/#9 受邀成员列表端点的 `invitees` 为**对象数组**，与上表形态不同 ⇒ 两者不可互换 |
 
 - 人数上限（#1 注释）：普通企业最多 **100** 人；付费企业由所购在线会议室/高级账号容量决定、最多 **300** 人；
   **超过 300 人须改走 #9 `set_invitees`**（单次 ≤ **2000** 名受邀成员，且**管理员必须在受邀成员列表中**）。
   ⇒ 「先创建 ≤300 人，再用 set_invitees 扩容」是官方规定的形态，不是本仓约束。
-- [MeetingGuest.cs](../../../Mud.Wechat.Work/Meeting/MeetingGuest.cs) 的嘉宾是**手机号身份**（`area` / `phone_number` / `guest_name`，
+- [MeetingGuest.cs](../../DataModels/Meeting/MeetingGuest.cs) 的嘉宾是**手机号身份**（`area` / `phone_number` / `guest_name`，
   `area` 注释明示中国传 `86`、不是 `+86` 也不是 `0086`，姓名 1~16 位字符），
   与外部联系人 ID 无关；`guests` 仅预约会议高级管理文档页声明 ⇒ 基础面写入不保证生效。
-- 主持人：`settings.hosts`（[MeetingHosts.cs](../../../Mud.Wechat.Work/Meeting/MeetingHosts.cs)，`userid` 数组）
+- 主持人：`settings.hosts`（[MeetingHosts.cs](../../DataModels/Meeting/MeetingHosts.cs)，`userid` 数组）
   **仅购买了会议高级/专业功能的企业可指定**，且传入创建者 userid 会被官方**自动过滤**；
   #28 `set_cohost` 的 `co_hosts` 复用同一 `MeetingHosts` 型（MT5 断言）。
 - `location` 与 `description` 均为可选：写入侧 `description` ≤ **500 字节**、`location` ≤ **128 字符**；
   读取侧 `GetMeetingInfoResponse` 注释给出的上限是 `title` ≤ **60 字节**、`description` ≤ **600 字节**
   ⇒ 读写两端的字节上限不一致，写入校验只可按请求侧口径，勿按详情侧放宽。
-- `admin_userid`（发起会议的管理员 userid）与 `meeting_start` 在 [CreateMeetingRequest.cs](../../../Mud.Wechat.Work/Meeting/CreateMeetingRequest.cs)
+- `admin_userid`（发起会议的管理员 userid）与 `meeting_start` 在 [CreateMeetingRequest.cs](../../DataModels/Meeting/CreateMeetingRequest.cs)
   中注释为**官方必填**，但类型仍是 `string?` / `long?`（本域未采用「必填用非可空类型」的表达方式，与会议室域 MR8 的做法不同）
   ⇒ 缺字段不会编译报错，只能靠调用方自检；条件必填（如 Webinar 的 `admission_type=2` 时 `password` 必传）同理，SDK 不本地拦截。
 
@@ -260,7 +260,7 @@
 - 创建（#1）官方区间：开始时间需**大于当前时间**；持续时长最小 **300 秒**、最大 **86399 秒**（即不足 24 小时）；
   标题最多 **40 字节或 20 个 utf8 字符**。
 - 修改（#2）的硬约束：`meeting_start` 与 `meeting_duration` **必须成对修改**（改其一必须同时传其二），
-  接口注释与 [UpdateMeetingRequest.cs](../../../Mud.Wechat.Work/Meeting/UpdateMeetingRequest.cs) 类注释双处留档。
+  接口注释与 [UpdateMeetingRequest.cs](../../DataModels/Meeting/UpdateMeetingRequest.cs) 类注释双处留档。
 - 修改请求另有 `remind_time`（`int?`，JSON `remind_time`），与创建请求的 `reminders.remind_before`
   **不是同一个概念**：`remind_before` 是数组、取值仅支持 `0/300/900/3600/86400`（MT5 断言 `List<int>`），
   传入其他值表现为「会议开始时提醒」。
@@ -271,7 +271,7 @@
 
 ## 4. 周期性会议：改单次与改整个系列
 
-周期性完全落在 `reminders` 子对象（[MeetingReminders.cs](../../../Mud.Wechat.Work/Meeting/MeetingReminders.cs)，
+周期性完全落在 `reminders` 子对象（[MeetingReminders.cs](../../DataModels/Meeting/MeetingReminders.cs)，
 创建/修改/详情三处共用同一型，MT5 断言）：
 
 | 字段 | 类型 | 口径 |
@@ -290,7 +290,7 @@
 超出或未设 `repeat_until` 时官方按该上限截断。
 
 「改单次 vs 改整个系列」的分界在 **`sub_meetingid`**：
-[CancelMeetingRequest.cs](../../../Mud.Wechat.Work/Meeting/CancelMeetingRequest.cs) 的
+[CancelMeetingRequest.cs](../../DataModels/Meeting/CancelMeetingRequest.cs) 的
 `SubMeetingid` 是 `string?`（MT5 专项断言），注释明示「**不传则取消该系列的周期性会议**」⇒
 取消单次必须显式带子会议 ID。周期性还影响读取面：#12 实时参会列表要求周期会议**必传** `sub_meetingid`，
 #19 健康度同样必传，#13 会中参会列表则「对周期性会议查询暂时不生效，请使用分页参数查询」。
@@ -306,9 +306,9 @@
 - 布局背景 #87 `layout/add_background`：注释明示「背景图片上传方式为**异步上传**，可以通过订阅
   「素材上传结果」获取上传结果通知」；Webinar 封面同理（`cover_url` / `description` 需开启 `activity_page`，封面为异步上传）。
 - 录制文件 #97/#98：返回的是**下载地址**而非素材 ID，
-  [RecordFileAddress.cs](../../../Mud.Wechat.Work/Meeting/RecordFileAddress.cs) 与
-  [GetRecordFileResponse.cs](../../../Mud.Wechat.Work/Meeting/GetRecordFileResponse.cs) 注释均为
-  「默认 6 小时过期」；另有一处 [RecordFileDownload.cs](../../../Mud.Wechat.Work/Meeting/RecordFileDownload.cs)
+  [RecordFileAddress.cs](../../DataModels/Meeting/RecordFileAddress.cs) 与
+  [GetRecordFileResponse.cs](../../DataModels/Meeting/GetRecordFileResponse.cs) 注释均为
+  「默认 6 小时过期」；另有一处 [RecordFileDownload.cs](../../DataModels/Meeting/RecordFileDownload.cs)
   注释是「链接有效期为一个小时」⇒ 两条链路的有效期口径不同，按各自 DTO 注释取用，勿混用。
 
 「先上传再引用」的通用素材端点属于 Media 域（[../Media/IWechatWorkMediaService.cs](../Media/IWechatWorkMediaService.cs)，
@@ -319,9 +319,9 @@
 
 会议里的「非企业成员」有两套临时 ID，**都是不可透明化的字符串**：
 
-- 读取侧：[GetMeetingInfoResponse.cs](../../../Mud.Wechat.Work/Meeting/GetMeetingInfoResponse.cs) 的
-  `attendees`（[MeetingAttendees.cs](../../../Mud.Wechat.Work/Meeting/MeetingAttendees.cs)）分 `member`（企业成员）与
-  `tmp_external_user`（[MeetingTmpExternalUser.cs](../../../Mud.Wechat.Work/Meeting/MeetingTmpExternalUser.cs)，
+- 读取侧：[GetMeetingInfoResponse.cs](../../DataModels/Meeting/GetMeetingInfoResponse.cs) 的
+  `attendees`（[MeetingAttendees.cs](../../DataModels/Meeting/MeetingAttendees.cs)）分 `member`（企业成员）与
+  `tmp_external_user`（[MeetingTmpExternalUser.cs](../../DataModels/Meeting/MeetingTmpExternalUser.cs)，
   含 `status` 1 已参与 / 2 未参与、`first_join_time`、`last_quit_time`、`total_join_count`；微信入会用户不返回）。
   该型的类注释留档官方契约陷阱：**`tmp_external_userid` 同一用户在不同会议中取值不同**。
 - 报名侧：#22/#53 用 `tmp_openid` 反查报名 ID（`tmp_openid_list` 单次 ≤500），PSTN #60 则用手机号换 `tmp_openid`。
@@ -335,8 +335,8 @@
 ## 7. 与日程域（Schedule）的耦合：`cal_id` 不是 `schedule_id`
 
 会议与日程是两套 ID 体系，本域的耦合点只有一个参数：`cal_id`
-（`string?`，≤64 字节，[CreateMeetingRequest.cs](../../../Mud.Wechat.Work/Meeting/CreateMeetingRequest.cs) /
-[UpdateMeetingRequest.cs](../../../Mud.Wechat.Work/Meeting/UpdateMeetingRequest.cs)）。接口注释口径：
+（`string?`，≤64 字节，[CreateMeetingRequest.cs](../../DataModels/Meeting/CreateMeetingRequest.cs) /
+[UpdateMeetingRequest.cs](../../DataModels/Meeting/UpdateMeetingRequest.cs)）。接口注释口径：
 
 - `cal_id` **不填则插入参与者的默认日历**；**第三方应用必须指定**，且会议所属日历须为 `access_token` 对应应用创建的日历
   （#1 注释与父接口 remarks、[_ThirdParty.cs](./IWechatWorkMeetingService_ThirdParty.cs) /
@@ -358,10 +358,10 @@ MT1 对每个路由表项断言 `HttpAttribute`，全域 **105 条路由里只�
 - 三个「无请求体」端点用的仍是 POST，且 MT1 断言其方法参数 `ContainSingle` 且必须是 `CancellationToken`：
   #69 `rooms/get_inventory`、#77 `layout/list_template`（GET，故无体理所当然）、以及详情族里同类形态。
   ⇒ 新增无体端点时不要给它加空请求 DTO，也不要顺手改成 GET。
-- 无业务负载的写端点（如 #3 `cancel`）响应直接用 [WechatWorkResponse.cs](../../../Mud.Wechat.Work/WechatWorkResponse.cs)，
+- 无业务负载的写端点（如 #3 `cancel`）响应直接用 [WechatWorkResponse.cs](../../DataModels/WechatWorkResponse.cs)，
   MT1 有 `ReturnType.Should().Be(typeof(Task<WechatWorkResponse>))` 断言，不得新建空响应型。
 - 翻页一律是 `cursor` + `limit`，响应侧字段名是 **`next_cursor`**（MT5 锁定），
-  [GetUserMeetingIdListRequest.cs](../../../Mud.Wechat.Work/Meeting/GetUserMeetingIdListRequest.cs)
+  [GetUserMeetingIdListRequest.cs](../../DataModels/Meeting/GetUserMeetingIdListRequest.cs)
   注释留档「初次调用可填 `"0"`」；`next_cursor` 未返回或为空字符串表示数据取完。
   #12/#66 另有「后续 `limit` 必须与首次一致」的约束——翻页时改 `limit` 会失败。
 
@@ -408,19 +408,19 @@ MT5 `MeetingDataModels_ShouldLockOfficialContractTraps` 把下列形态钉成断
 - 数字承载布尔的字段保持数值类型：`is_repeat`、`repeat_type`、`is_custom_repeat`、`repeat_until_type`、
   `remind_scope`（1 不提醒 / 2 仅提醒主持人 / 3 提醒所有成员 / 4 指定部分成员响铃）、
   `enable_enter_mute`（`int?`）等；而 `settings.password` 官方参数表标注 bool、示例按字符串传输
-  （"1234"）⇒ [MeetingSettings.cs](../../../Mud.Wechat.Work/Meeting/MeetingSettings.cs) 用 `string?` 承载。
+  （"1234"）⇒ [MeetingSettings.cs](../../DataModels/Meeting/MeetingSettings.cs) 用 `string?` 承载。
 - `MeetingSettings` 是**三处共用的并集超集**（创建 / 修改 / 详情），仅详情回传的
   `enable_doc_upload_permission` / `current_hosts` / `co_hosts` 与仅创建页声明的 `enable_interpreter`
   都以可空属性承载、未赋值不输出；`host_key`（`string?`）是 **6 位数字字符串**，不要用整型承载。
 - Webinar 族的同义字段名与普通会议不同：**`title` 而非 `subject`**、`status` 是字符串
   （`MEETING_STATE_*`）、`start_time` 是字符串；入会静音在两处分别叫
-  `EnableEnterMute`（[WebinarMediaSetting.cs](../../../Mud.Wechat.Work/Meeting/WebinarMediaSetting.cs)）与
-  `MuteEnableJoin`（[WebinarMediaSettingInfo.cs](../../../Mud.Wechat.Work/Meeting/WebinarMediaSettingInfo.cs)）；
+  `EnableEnterMute`（[WebinarMediaSetting.cs](../../DataModels/Meeting/WebinarMediaSetting.cs)）与
+  `MuteEnableJoin`（[WebinarMediaSettingInfo.cs](../../DataModels/Meeting/WebinarMediaSettingInfo.cs)）；
   主持人列表型是 `List<WebinarHostInfo>`、嘉宾型是 `List<WebinarGuest>`（MT5 断言）。
 - Rooms 族的字段形态自成一套：`meeting_room_id_list`、`rooms_id`（与 `meeting_room_id` 并存且二选一）、
   [RoomsMeetingSettings] 与 `MeetingSettings` **不同构**、`RoomsControllerInfo.Status` 是字符串 `"0"`/`"1"`、
   `RoomsMraAddress.DialString` → `dial_string`（MT5 断言）。
-- MRA 族的设备引用是 [MraDeviceRef.cs](../../../Mud.Wechat.Work/Meeting/MraDeviceRef.cs)
+- MRA 族的设备引用是 [MraDeviceRef.cs](../../DataModels/Meeting/MraDeviceRef.cs)
   的 `TmpOpenid`（JSON `tmp_openid`）。
 - 报名删除与审批的 `enroll_id_list` **同名不同形**：删除请求是对象数组（`MeetingEnrollIdRef`），
   审批请求是字符串数组（守卫类头部注释留档，普通会议与 Webinar 报名同构同规）。
@@ -601,8 +601,8 @@ using (switcher.UseCorpScope(appKey: "default", authCorpId, authorization.Perman
 | 官方契约陷阱（共用 `MeetingSettings`/`MeetingReminders`/`MeetingInvitees`、`meetingid` 拼写、`remind_before` 数组、`repeat_until_type` 单值、会控单复数、Webinar 型名、Rooms/MRA 形态） | MT5 `MeetingDataModels_ShouldLockOfficialContractTraps`（横幅 L1297，`[Fact]` L1301）+ 守卫类头部注释（L19–L89） |
 | 令牌归属键（Internal / Corp）与 Query 注入白名单 | [WechatTokenOwnerContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatTokenOwnerContractGuards.cs)、[WechatContractGuards.QueryTokenInjection.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatContractGuards.QueryTokenInjection.cs)；口径见 [AGENTS.md](../../../../../AGENTS.md) |
 | 命名空间二分（父接口在 `.Interfaces`、可注入子接口在 `.Work`） | [WechatInterfaceNamespaceContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatInterfaceNamespaceContractGuards.cs) |
-| DTO 属性名 / 类型 / JSON 名 / 取值域注释 | [../../../Mud.Wechat.Work/Meeting/](../../../Mud.Wechat.Work/Meeting/)（平铺 261 型，无子目录） |
-| 会议 JSON 上下文源生成文件 | [../../../Mud.Wechat.Work/Generated/MeetingJsonContext.g.cs](../../../Mud.Wechat.Work/Generated/MeetingJsonContext.g.cs)（`internal`，示例不得引用） |
+| DTO 属性名 / 类型 / JSON 名 / 取值域注释 | [../../../Mud.Wechat.Work/DataModels/Meeting/](../../../Mud.Wechat.Work/DataModels/Meeting/)（平铺 261 型，无子目录） |
+| 会议 JSON 上下文源生成文件 | [../../../Mud.Wechat.Work/DataModels/Generated/MeetingJsonContext.g.cs](../../DataModels/Generated/MeetingJsonContext.g.cs)（`internal`，示例不得引用） |
 | 模块注册三段式与合并解析器登记 | [WechatModule.cs](../../Extensions/WechatModule.cs)、[WechatWorkServiceBuilder.cs](../../Extensions/WechatWorkServiceBuilder.cs)、[WechatJsonResolverExtensions.cs](../../Extensions/WechatJsonResolverExtensions.cs)（`MeetingJsonContext.Default` 在合并清单内） |
 | 邻域边界（素材上传、tmp_external_userid 转换、日历/日程、会议室两棵树） | [../Media/IWechatWorkMediaService.cs](../Media/IWechatWorkMediaService.cs)、[../AccountId/TmpExternalUserId/IWechatWorkAccountIdTmpExternalUserIdService.cs](../AccountId/TmpExternalUserId/IWechatWorkAccountIdTmpExternalUserIdService.cs)、[../Schedule/Calendar/IWechatWorkScheduleCalendarService.cs](../Schedule/Calendar/IWechatWorkScheduleCalendarService.cs)、[../MeetingRoom/README.md](../MeetingRoom/README.md) |
 

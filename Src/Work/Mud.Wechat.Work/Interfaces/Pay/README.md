@@ -3,7 +3,7 @@
 企业微信「企业支付」模块「对外收款记录」域公共 SDK
 （获取对外收款记录 + 获取收款项目的商户单号）。 接口：[IWechatWorkInternalPayBillService](./Bill/IWechatWorkInternalPayBillService.cs)、[IWechatWorkPayBillService](./Bill/IWechatWorkPayBillService.cs)、[IWechatWorkProviderPayBillService](./Bill/IWechatWorkProviderPayBillService.cs)、[IWechatWorkThirdPartyPayBillService](./Bill/IWechatWorkThirdPartyPayBillService.cs)、[IWechatWorkInternalPayFundFlowService](./FundFlow/IWechatWorkInternalPayFundFlowService.cs)、[IWechatWorkPayFundFlowService](./FundFlow/IWechatWorkPayFundFlowService.cs)、[IWechatWorkInternalPayMchApplyService](./MchApply/IWechatWorkInternalPayMchApplyService.cs)、[IWechatWorkPayMchApplyService](./MchApply/IWechatWorkPayMchApplyService.cs)、[IWechatWorkInternalPayMerchantService](./Merchant/IWechatWorkInternalPayMerchantService.cs)、[IWechatWorkPayMerchantService](./Merchant/IWechatWorkPayMerchantService.cs)、[IWechatWorkInternalPayOrderService](./Order/IWechatWorkInternalPayOrderService.cs)、[IWechatWorkPayOrderService](./Order/IWechatWorkPayOrderService.cs)、[IWechatWorkInternalPayRefundService](./Refund/IWechatWorkInternalPayRefundService.cs)、[IWechatWorkPayRefundService](./Refund/IWechatWorkPayRefundService.cs)、[IWechatWorkInternalPayTradeBillService](./TradeBill/IWechatWorkInternalPayTradeBillService.cs)、[IWechatWorkPayTradeBillService](./TradeBill/IWechatWorkPayTradeBillService.cs)；注册组 `Pay`；模块枚举 `WechatModule.Pay`（装配入口见 [WechatWorkServiceBuilder.cs](../../Extensions/WechatWorkServiceBuilder.cs)）。逐端点核验 2026-10-18。
 
-> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[WechatPayContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatPayContractGuards.cs)、[WechatContractGuards.QueryTokenInjection.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatContractGuards.QueryTokenInjection.cs)、[WechatPayToolContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatPayToolContractGuards.cs)）、本域 DTO（[`Mud.Wechat.Work/Pay`](../../../Mud.Wechat.Work/Pay/)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
+> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[WechatPayContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatPayContractGuards.cs)、[WechatContractGuards.QueryTokenInjection.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatContractGuards.QueryTokenInjection.cs)、[WechatPayToolContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatPayToolContractGuards.cs)）、本域 DTO（[`Mud.Wechat.Work/DataModels/Pay`](../../../Mud.Wechat.Work/DataModels/Pay/)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
 
 ## 端点速览
 
@@ -538,40 +538,40 @@ bill_date（yyyy-MM-dd）/ mchid，bill_type 与 tar_type 可选）。
 
 ## DTO 与序列化面
 
-本域 DTO 目录 [`Mud.Wechat.Work/Pay`](../../../Mud.Wechat.Work/Pay/) 内共 **60** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **60** 个，`SerializerClassName` = `Pay`。
+本域 DTO 目录 [`Mud.Wechat.Work/DataModels/Pay`](../../../Mud.Wechat.Work/DataModels/Pay/) 内共 **60** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **60** 个，`SerializerClassName` = `Pay`。
 
-AOT 源生成上下文：[`PayJsonContext.g.cs`](./../../../Mud.Wechat.Work/Generated/PayJsonContext.g.cs)（生成物，勿手改）。
+AOT 源生成上下文：[`PayJsonContext.g.cs`](./../../DataModels/Generated/PayJsonContext.g.cs)（生成物，勿手改）。
 
 | 端点引用的类型 | 角色 | 定义位置 | JSON 字段（前缀） |
 |---|---|---|---|
-| `GetPayBillListResponse` | 应答 | [Pay/GetPayBillListResponse.cs](../../../Mud.Wechat.Work/Pay/GetPayBillListResponse.cs) | `next_cursor`, `bill_list`, `transaction_id`, `bill_type`, `trade_state`, `pay_time`, `out_trade_no`, `out_refund_no`, `external_userid`, `total_fee`, `payee_userid`, `payment_type` … |
-| `GetPayBillListRequest` | 请求体 | [Pay/RequestModel/GetPayBillListRequest.cs](../../../Mud.Wechat.Work/Pay/RequestModel/GetPayBillListRequest.cs) | `begin_time`, `end_time`, `payee_userid`, `cursor`, `limit` |
-| `GetPayPaymentInfoResponse` | 应答 | [Pay/GetPayPaymentInfoResponse.cs](../../../Mud.Wechat.Work/Pay/GetPayPaymentInfoResponse.cs) | `bill_list`, `out_trade_no` |
-| `GetPayPaymentInfoRequest` | 请求体 | [Pay/RequestModel/GetPayPaymentInfoRequest.cs](../../../Mud.Wechat.Work/Pay/RequestModel/GetPayPaymentInfoRequest.cs) | `payment_id` |
-| `GetPayFundFlowResponse` | 应答 | [Pay/GetPayFundFlowResponse.cs](../../../Mud.Wechat.Work/Pay/GetPayFundFlowResponse.cs) | `next_cursor`, `fund_flow_list`, `timestamp`, `request_no`, `transaction_type`, `fund_flow_type`, `transaction_amount`, `account_balance`, `out_trade_no`, `mch_id`, `operator_userid`, `group_list` … |
-| `GetPayFundFlowRequest` | 请求体 | [Pay/RequestModel/GetPayFundFlowRequest.cs](../../../Mud.Wechat.Work/Pay/RequestModel/GetPayFundFlowRequest.cs) | `begin_time`, `end_time`, `mch_id`, `cursor`, `limit` |
-| `ApplyPayMchResponse` | 应答 | [Pay/ApplyPayMchResponse.cs](../../../Mud.Wechat.Work/Pay/ApplyPayMchResponse.cs) | `error_description` |
-| `ApplyPayMchRequest` | 请求体 | [Pay/RequestModel/ApplyPayMchRequest.cs](../../../Mud.Wechat.Work/Pay/RequestModel/ApplyPayMchRequest.cs) | `out_request_no`, `organization_type`, `business_license_info`, `finance_institution_info`, `merchant_short_name`, `id_card_info`, `owner`, `ubo_info`, `contact_info`, `account_info`, `sales_scene_info`, `business_id` … |
-| `GetPayApplymentStatusResponse` | 应答 | [Pay/GetPayApplymentStatusResponse.cs](../../../Mud.Wechat.Work/Pay/GetPayApplymentStatusResponse.cs) | `status`, `apply_state`, `real_sign_state`, `reject_reason`, `applyment_state`, `applyment_state_desc`, `sign_state`, `sign_url`, `sub_mchid`, `audit_detail`, `account_validation`, `legal_validation_url` … |
-| `GetPayApplymentStatusRequest` | 请求体 | [Pay/RequestModel/GetPayApplymentStatusRequest.cs](../../../Mud.Wechat.Work/Pay/RequestModel/GetPayApplymentStatusRequest.cs) | `out_request_no` |
-| `UploadPayImageResponse` | 应答 | [Pay/UploadPayImageResponse.cs](../../../Mud.Wechat.Work/Pay/UploadPayImageResponse.cs) | `open_wx_pay_media_id` |
-| `GetPayMerchantResponse` | 应答 | [Pay/GetPayMerchantResponse.cs](../../../Mud.Wechat.Work/Pay/GetPayMerchantResponse.cs) | `mch_id`, `merchant_name`, `bind_status`, `allow_use_scope`, `user`, `partyid`, `tagid` |
-| `GetPayMerchantRequest` | 请求体 | [Pay/RequestModel/GetPayMerchantRequest.cs](../../../Mud.Wechat.Work/Pay/RequestModel/GetPayMerchantRequest.cs) | `mch_id` |
-| `WechatWorkResponse` | 应答 | [WechatWorkResponse.cs](../../../Mud.Wechat.Work/WechatWorkResponse.cs) | `errcode`, `errmsg`, `data` |
-| `SetPayMerchantUseScopeRequest` | 请求体 | [Pay/RequestModel/SetPayMerchantUseScopeRequest.cs](../../../Mud.Wechat.Work/Pay/RequestModel/SetPayMerchantUseScopeRequest.cs) | `mch_id`, `allow_use_scope` |
-| `CreatePayOrderResponse` | 应答 | [Pay/CreatePayOrderResponse.cs](../../../Mud.Wechat.Work/Pay/CreatePayOrderResponse.cs) | `prepay_id` |
-| `CreatePayOrderRequest` | 请求体 | [Pay/RequestModel/CreatePayOrderRequest.cs](../../../Mud.Wechat.Work/Pay/RequestModel/CreatePayOrderRequest.cs) | `appid`, `mchid`, `out_trade_no`, `description`, `scenekey`, `amount`, `payer`, `time_expire`, `attach`, `goods_tag`, `detail`, `scene_info` … |
-| `GetPayOrderResponse` | 应答 | [Pay/GetPayOrderResponse.cs](../../../Mud.Wechat.Work/Pay/GetPayOrderResponse.cs) | `mchid`, `out_trade_no`, `trade_type`, `trade_state`, `trade_state_desc`, `payer`, `transaction_id`, `bank_type`, `attach`, `success_time`, `amount`, `scene_info` … |
-| `GetPayOrderRequest` | 请求体 | [Pay/RequestModel/GetPayOrderRequest.cs](../../../Mud.Wechat.Work/Pay/RequestModel/GetPayOrderRequest.cs) | `mchid`, `out_trade_no` |
-| `ClosePayOrderRequest` | 请求体 | [Pay/RequestModel/ClosePayOrderRequest.cs](../../../Mud.Wechat.Work/Pay/RequestModel/ClosePayOrderRequest.cs) | `mchid`, `out_trade_no` |
-| `GetPaySignResponse` | 应答 | [Pay/GetPaySignResponse.cs](../../../Mud.Wechat.Work/Pay/GetPaySignResponse.cs) | `pay_sign` |
-| `GetPaySignRequest` | 请求体 | [Pay/RequestModel/GetPaySignRequest.cs](../../../Mud.Wechat.Work/Pay/RequestModel/GetPaySignRequest.cs) | `appid`, `prepay_id`, `sign_type`, `nonce`, `timestamp` |
-| `ApplyPayRefundResponse` | 应答 | [Pay/ApplyPayRefundResponse.cs](../../../Mud.Wechat.Work/Pay/ApplyPayRefundResponse.cs) | `out_refund_no`, `amount`, `promotion_detail`, `refund`, `payer_refund`, `discount_refund`, `currency`, `promotion_id`, `scope`, `type`, `refund_amount` |
-| `ApplyPayRefundRequest` | 请求体 | [Pay/RequestModel/ApplyPayRefundRequest.cs](../../../Mud.Wechat.Work/Pay/RequestModel/ApplyPayRefundRequest.cs) | `mchid`, `appid`, `out_trade_no`, `out_refund_no`, `reason`, `amount`, `funds_account`, `refund`, `total`, `currency` |
-| `GetPayRefundDetailResponse` | 应答 | [Pay/GetPayRefundDetailResponse.cs](../../../Mud.Wechat.Work/Pay/GetPayRefundDetailResponse.cs) | `refund_id`, `out_refund_no`, `transaction_id`, `out_trade_no`, `channel`, `user_received_account`, `success_time`, `create_time`, `status`, `amount`, `promotion_detail` |
-| `GetPayRefundDetailRequest` | 请求体 | [Pay/RequestModel/GetPayRefundDetailRequest.cs](../../../Mud.Wechat.Work/Pay/RequestModel/GetPayRefundDetailRequest.cs) | `mchid`, `out_refund_no` |
-| `GetPayTradeBillResponse` | 应答 | [Pay/GetPayTradeBillResponse.cs](../../../Mud.Wechat.Work/Pay/GetPayTradeBillResponse.cs) | `hash_type`, `hash_value`, `download_url`, `auth` |
-| `GetPayTradeBillRequest` | 请求体 | [Pay/RequestModel/GetPayTradeBillRequest.cs](../../../Mud.Wechat.Work/Pay/RequestModel/GetPayTradeBillRequest.cs) | `bill_date`, `mchid`, `bill_type`, `tar_type` |
+| `GetPayBillListResponse` | 应答 | [Pay/GetPayBillListResponse.cs](../../DataModels/Pay/GetPayBillListResponse.cs) | `next_cursor`, `bill_list`, `transaction_id`, `bill_type`, `trade_state`, `pay_time`, `out_trade_no`, `out_refund_no`, `external_userid`, `total_fee`, `payee_userid`, `payment_type` … |
+| `GetPayBillListRequest` | 请求体 | [Pay/RequestModel/GetPayBillListRequest.cs](../../DataModels/Pay/RequestModel/GetPayBillListRequest.cs) | `begin_time`, `end_time`, `payee_userid`, `cursor`, `limit` |
+| `GetPayPaymentInfoResponse` | 应答 | [Pay/GetPayPaymentInfoResponse.cs](../../DataModels/Pay/GetPayPaymentInfoResponse.cs) | `bill_list`, `out_trade_no` |
+| `GetPayPaymentInfoRequest` | 请求体 | [Pay/RequestModel/GetPayPaymentInfoRequest.cs](../../DataModels/Pay/RequestModel/GetPayPaymentInfoRequest.cs) | `payment_id` |
+| `GetPayFundFlowResponse` | 应答 | [Pay/GetPayFundFlowResponse.cs](../../DataModels/Pay/GetPayFundFlowResponse.cs) | `next_cursor`, `fund_flow_list`, `timestamp`, `request_no`, `transaction_type`, `fund_flow_type`, `transaction_amount`, `account_balance`, `out_trade_no`, `mch_id`, `operator_userid`, `group_list` … |
+| `GetPayFundFlowRequest` | 请求体 | [Pay/RequestModel/GetPayFundFlowRequest.cs](../../DataModels/Pay/RequestModel/GetPayFundFlowRequest.cs) | `begin_time`, `end_time`, `mch_id`, `cursor`, `limit` |
+| `ApplyPayMchResponse` | 应答 | [Pay/ApplyPayMchResponse.cs](../../DataModels/Pay/ApplyPayMchResponse.cs) | `error_description` |
+| `ApplyPayMchRequest` | 请求体 | [Pay/RequestModel/ApplyPayMchRequest.cs](../../DataModels/Pay/RequestModel/ApplyPayMchRequest.cs) | `out_request_no`, `organization_type`, `business_license_info`, `finance_institution_info`, `merchant_short_name`, `id_card_info`, `owner`, `ubo_info`, `contact_info`, `account_info`, `sales_scene_info`, `business_id` … |
+| `GetPayApplymentStatusResponse` | 应答 | [Pay/GetPayApplymentStatusResponse.cs](../../DataModels/Pay/GetPayApplymentStatusResponse.cs) | `status`, `apply_state`, `real_sign_state`, `reject_reason`, `applyment_state`, `applyment_state_desc`, `sign_state`, `sign_url`, `sub_mchid`, `audit_detail`, `account_validation`, `legal_validation_url` … |
+| `GetPayApplymentStatusRequest` | 请求体 | [Pay/RequestModel/GetPayApplymentStatusRequest.cs](../../DataModels/Pay/RequestModel/GetPayApplymentStatusRequest.cs) | `out_request_no` |
+| `UploadPayImageResponse` | 应答 | [Pay/UploadPayImageResponse.cs](../../DataModels/Pay/UploadPayImageResponse.cs) | `open_wx_pay_media_id` |
+| `GetPayMerchantResponse` | 应答 | [Pay/GetPayMerchantResponse.cs](../../DataModels/Pay/GetPayMerchantResponse.cs) | `mch_id`, `merchant_name`, `bind_status`, `allow_use_scope`, `user`, `partyid`, `tagid` |
+| `GetPayMerchantRequest` | 请求体 | [Pay/RequestModel/GetPayMerchantRequest.cs](../../DataModels/Pay/RequestModel/GetPayMerchantRequest.cs) | `mch_id` |
+| `WechatWorkResponse` | 应答 | [WechatWorkResponse.cs](../../DataModels/WechatWorkResponse.cs) | `errcode`, `errmsg`, `data` |
+| `SetPayMerchantUseScopeRequest` | 请求体 | [Pay/RequestModel/SetPayMerchantUseScopeRequest.cs](../../DataModels/Pay/RequestModel/SetPayMerchantUseScopeRequest.cs) | `mch_id`, `allow_use_scope` |
+| `CreatePayOrderResponse` | 应答 | [Pay/CreatePayOrderResponse.cs](../../DataModels/Pay/CreatePayOrderResponse.cs) | `prepay_id` |
+| `CreatePayOrderRequest` | 请求体 | [Pay/RequestModel/CreatePayOrderRequest.cs](../../DataModels/Pay/RequestModel/CreatePayOrderRequest.cs) | `appid`, `mchid`, `out_trade_no`, `description`, `scenekey`, `amount`, `payer`, `time_expire`, `attach`, `goods_tag`, `detail`, `scene_info` … |
+| `GetPayOrderResponse` | 应答 | [Pay/GetPayOrderResponse.cs](../../DataModels/Pay/GetPayOrderResponse.cs) | `mchid`, `out_trade_no`, `trade_type`, `trade_state`, `trade_state_desc`, `payer`, `transaction_id`, `bank_type`, `attach`, `success_time`, `amount`, `scene_info` … |
+| `GetPayOrderRequest` | 请求体 | [Pay/RequestModel/GetPayOrderRequest.cs](../../DataModels/Pay/RequestModel/GetPayOrderRequest.cs) | `mchid`, `out_trade_no` |
+| `ClosePayOrderRequest` | 请求体 | [Pay/RequestModel/ClosePayOrderRequest.cs](../../DataModels/Pay/RequestModel/ClosePayOrderRequest.cs) | `mchid`, `out_trade_no` |
+| `GetPaySignResponse` | 应答 | [Pay/GetPaySignResponse.cs](../../DataModels/Pay/GetPaySignResponse.cs) | `pay_sign` |
+| `GetPaySignRequest` | 请求体 | [Pay/RequestModel/GetPaySignRequest.cs](../../DataModels/Pay/RequestModel/GetPaySignRequest.cs) | `appid`, `prepay_id`, `sign_type`, `nonce`, `timestamp` |
+| `ApplyPayRefundResponse` | 应答 | [Pay/ApplyPayRefundResponse.cs](../../DataModels/Pay/ApplyPayRefundResponse.cs) | `out_refund_no`, `amount`, `promotion_detail`, `refund`, `payer_refund`, `discount_refund`, `currency`, `promotion_id`, `scope`, `type`, `refund_amount` |
+| `ApplyPayRefundRequest` | 请求体 | [Pay/RequestModel/ApplyPayRefundRequest.cs](../../DataModels/Pay/RequestModel/ApplyPayRefundRequest.cs) | `mchid`, `appid`, `out_trade_no`, `out_refund_no`, `reason`, `amount`, `funds_account`, `refund`, `total`, `currency` |
+| `GetPayRefundDetailResponse` | 应答 | [Pay/GetPayRefundDetailResponse.cs](../../DataModels/Pay/GetPayRefundDetailResponse.cs) | `refund_id`, `out_refund_no`, `transaction_id`, `out_trade_no`, `channel`, `user_received_account`, `success_time`, `create_time`, `status`, `amount`, `promotion_detail` |
+| `GetPayRefundDetailRequest` | 请求体 | [Pay/RequestModel/GetPayRefundDetailRequest.cs](../../DataModels/Pay/RequestModel/GetPayRefundDetailRequest.cs) | `mchid`, `out_refund_no` |
+| `GetPayTradeBillResponse` | 应答 | [Pay/GetPayTradeBillResponse.cs](../../DataModels/Pay/GetPayTradeBillResponse.cs) | `hash_type`, `hash_value`, `download_url`, `auth` |
+| `GetPayTradeBillRequest` | 请求体 | [Pay/RequestModel/GetPayTradeBillRequest.cs](../../DataModels/Pay/RequestModel/GetPayTradeBillRequest.cs) | `bill_date`, `mchid`, `bill_type`, `tar_type` |
 
 > DTO 一律以源文件为准；本表只列端点签名**直接引用**的一层类型，嵌套类型不再递归展开。所有 DTO 不使用 `required`（仓内约束），必填性由接口注释与官方页表达，SDK 不做本地必填校验。
 
@@ -609,7 +609,7 @@ var response = await service.ApplyMchAsync(new ApplyPayMchRequest(), ct);
 | 契约守卫（路由 / 计数 / DTO 登记断言） | [`WechatPayContractGuards.cs`](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatPayContractGuards.cs)、[`WechatContractGuards.QueryTokenInjection.cs`](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatContractGuards.QueryTokenInjection.cs)、[`WechatPayToolContractGuards.cs`](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatPayToolContractGuards.cs) |
 | 守卫中的代表性测试方法 | `PayBillEndpoints_ShouldMatchOfficialRoutes`、`PayMerchantEndpoints_ShouldMatchOfficialRoutes`、`PayFundFlowEndpoints_ShouldMatchOfficialRoutes`、`PayMchApplyEndpoints_ShouldMatchOfficialRoutes`、`PayOrderEndpoints_ShouldMatchOfficialRoutes`、`PayRefundEndpoints_ShouldMatchOfficialRoutes`、`PayTradeBillEndpoints_ShouldMatchOfficialRoutes`、`PayBillInterfaceHierarchy_ShouldConvergeOnAbstractParentWithPayRegistry`、`PaySingleAppTypeFamilies_ShouldHaveExactlyOneChildAndAbstractParent`、`PayTokenBinding_ShouldBeAccessTokenInjectedViaQuery`、`PayDataModels_ShouldBeRegisteredInJsonContext`、`QueryTokenInjection_ShouldBeLimitedToWechatOfficialContractInterfaces` … |
 | 模块枚举 / 装配入口 | [`WechatModule.cs`](../../Extensions/WechatModule.cs)、[`WechatWorkServiceBuilder.cs`](../../Extensions/WechatWorkServiceBuilder.cs) |
-| DTO 与 JSON 上下文 | [`Mud.Wechat.Work/Pay`](../../../Mud.Wechat.Work/Pay/) |
+| DTO 与 JSON 上下文 | [`Mud.Wechat.Work/DataModels/Pay`](../../../Mud.Wechat.Work/DataModels/Pay/) |
 | 跨线基线 | [`Tests/ContractBaseline.cs`](../../../../../Tests/ContractBaseline.cs)（各线分节；本线口径以守卫实际断言为准） |
 | 本线包级公开面与已踩陷阱 | [`Src/Work/Mud.Wechat.Work/README.md`](../../README.md) |
 | 跨线通用约束（门禁 / AOT / 落位） | [`AGENTS.md`](../../../../../AGENTS.md) |

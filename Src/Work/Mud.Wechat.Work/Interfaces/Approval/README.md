@@ -28,7 +28,7 @@
 
 > **事实来源限定**：本文全部断言只来自本仓三类证据——本目录接口文件的 XML 注释、
 > [WechatApprovalContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatApprovalContractGuards.cs)（AP1a~AP5）、
-> [Src/Work/Mud.Wechat.Work/Approval/](../../../Mud.Wechat.Work/Approval/) 下的 DTO 声明；
+> [Src/Work/Mud.Wechat.Work/DataModels/Approval/](../../../Mud.Wechat.Work/DataModels/Approval/) 下的 DTO 声明；
 > 端点数与路由以守卫断言为准，官方文档号仅作定位标识、不作为本文事实来源。
 > 未能在本仓三类证据内核验的项目一律集中在文末「已知留档缺口」，标为**未逐项核验**，正文不作推断。
 
@@ -67,11 +67,11 @@
 
 要点：
 
-- `template_id` 与 `open_template_id` **不是同一个值**。#8 的应答 [CopyApprovalTemplateResponse.cs](../../../Mud.Wechat.Work/Approval/CopyApprovalTemplateResponse.cs)
+- `template_id` 与 `open_template_id` **不是同一个值**。#8 的应答 [CopyApprovalTemplateResponse.cs](../../DataModels/Approval/CopyApprovalTemplateResponse.cs)
   返回的 `template_id` 是「同一个服务商模板复制到不同企业将获得**不同的**模板 id」⇒ 服务商侧一份 `open_template_id`
   对企业侧是多份 `template_id`，**不得**互相替代或本地拼接。
 - 审批流程引擎（#12）与企业微信「审批应用」（#1~#3）的单据体系**相互独立**：引擎侧应答为
-  [OpenApprovalData.cs](../../../Mud.Wechat.Work/Approval/OpenApprovalData.cs) 的 `ThirdNo` / `OpenTemplateId`，
+  [OpenApprovalData.cs](../../DataModels/Approval/OpenApprovalData.cs) 的 `ThirdNo` / `OpenTemplateId`，
   其 `OpenSpstatus` 取值域（1 审批中 / 2 已通过 / 3 已驳回 / 4 已撤销）**窄于**单据侧 `sp_status`（见 §4），
   两套状态码**不得共用一个判定器**。
 - 接口注释里出现的 `template_id`（代开发语境，见 [AGENTS.md §5.1](../../../../../AGENTS.md)）是**应用配置面**的
@@ -91,7 +91,7 @@
 ⇒ 已知陷阱三条：
 
 1. **31 天与 30 天是两个不同的数字**，分属 #2 与 #4，不得互相借用为一个常量。
-2. #2 的应答 `sp_no_list` **个数可能少于 `size`**（[BatchGetApprovalNumbersRequest.cs](../../../Mud.Wechat.Work/Approval/RequestModel/BatchGetApprovalNumbersRequest.cs)
+2. #2 的应答 `sp_no_list` **个数可能少于 `size`**（[BatchGetApprovalNumbersRequest.cs](../../DataModels/Approval/RequestModel/BatchGetApprovalNumbersRequest.cs)
    注释明示）⇒ **不得**用「返回条数 < size」判结束，只能用游标判结束（§3）。
 3. 想「按 `sp_no` 列表拉详情」只能宿主自己循环调 #3，且与 #2 共用 600 次/分的额度口径；
    本仓**不做**本地限流与批次裁剪，越界由应答 `errcode` 表达。
@@ -102,10 +102,10 @@
 
 ## 3. 增量语义：新旧两套游标并存，`cursor` / `next_cursor` 待废弃
 
-#2 的请求侧 [BatchGetApprovalNumbersRequest.cs](../../../Mud.Wechat.Work/Approval/RequestModel/BatchGetApprovalNumbersRequest.cs)
+#2 的请求侧 [BatchGetApprovalNumbersRequest.cs](../../DataModels/Approval/RequestModel/BatchGetApprovalNumbersRequest.cs)
 只有 `starttime` / `endtime` / `new_cursor` / `size` / `filters` 五键——**旧的 `cursor` 与 `next_cursor` 本仓不建模**
 （官方标注待废弃）。终态判定看**字段是否缺失**：应答
-[BatchGetApprovalNumbersResponse.cs](../../../Mud.Wechat.Work/Approval/BatchGetApprovalNumbersResponse.cs)
+[BatchGetApprovalNumbersResponse.cs](../../DataModels/Approval/BatchGetApprovalNumbersResponse.cs)
 的 `NewNextCursor`（JSON `new_next_cursor`）为 `string?`，**返回结果没有该字段即表示已拉完**（接口 XML 注释原文），
 不要按「空串」判结束，也不要按 `sp_no_list` 是否为空判结束。
 
@@ -113,7 +113,7 @@
 配合应答的 `count` / `total` 使用；且 #4 **无法获取管理员已删除的审批单数据**。⇒ 两族的「增量」不同构，
 不要在封装层共用一个游标变量。
 
-`filters`（[ApprovalInfoFilter.cs](../../../Mud.Wechat.Work/Approval/ApprovalInfoFilter.cs)）的 `key` 取值
+`filters`（[ApprovalInfoFilter.cs](../../DataModels/Approval/ApprovalInfoFilter.cs)）的 `key` 取值
 `template_id` / `creator` / `department` / `sp_status` / `record_type`，其组合语义是官方契约而非布尔开关：
 **仅 `department` 支持同时配置多个条件**，不同类型之间为「与」、同类型之间为「或」；
 `record_type` 仅对 **2021-05-31 之后**新提交的审批单生效，历史单无法按表单类型过滤。本仓不做本地校验。
@@ -124,11 +124,11 @@
 
 | 层 | 类型 | JSON 字段 | 取值域（DTO 注释原文） |
 |---|---|---|---|
-| 单据 | [ApprovalDetailInfo.cs](../../../Mud.Wechat.Work/Approval/ApprovalDetailInfo.cs) | `sp_status` | 1 审批中 / 2 已通过 / 3 已驳回 / 4 已撤销 / 6 通过后撤销 / 7 已删除 / 10 已支付 |
-| 审批节点 | [ApprovalSpRecord.cs](../../../Mud.Wechat.Work/Approval/ApprovalSpRecord.cs) | `sp_status` | 1 审批中 / 2 已同意 / 3 已驳回 / 4 已转审 / 11 已退回 / 12 已加签 / 13 已同意并加签 |
-| 节点分支审批人 | [ApprovalSpRecordDetail.cs](../../../Mud.Wechat.Work/Approval/ApprovalSpRecordDetail.cs) | `sp_status` | 同上一层（1/2/3/4/11/12/13） |
-| 流程节点 | [ApprovalProcessNodeInfo.cs](../../../Mud.Wechat.Work/Approval/ApprovalProcessNodeInfo.cs) | `sp_status` | 1 审批中 / 2 同意 / 3 驳回 / 4 转审 / 11 退回给指定审批人 / 12 加签 / 13 同意并加签 / **14 办理 / 15 转交** |
-| 流程子节点 | [ApprovalSubNodeInfo.cs](../../../Mud.Wechat.Work/Approval/ApprovalSubNodeInfo.cs) | **`sp_yj`** | 同上一层（1/2/3/4/11/12/13/14/15） |
+| 单据 | [ApprovalDetailInfo.cs](../../DataModels/Approval/ApprovalDetailInfo.cs) | `sp_status` | 1 审批中 / 2 已通过 / 3 已驳回 / 4 已撤销 / 6 通过后撤销 / 7 已删除 / 10 已支付 |
+| 审批节点 | [ApprovalSpRecord.cs](../../DataModels/Approval/ApprovalSpRecord.cs) | `sp_status` | 1 审批中 / 2 已同意 / 3 已驳回 / 4 已转审 / 11 已退回 / 12 已加签 / 13 已同意并加签 |
+| 节点分支审批人 | [ApprovalSpRecordDetail.cs](../../DataModels/Approval/ApprovalSpRecordDetail.cs) | `sp_status` | 同上一层（1/2/3/4/11/12/13） |
+| 流程节点 | [ApprovalProcessNodeInfo.cs](../../DataModels/Approval/ApprovalProcessNodeInfo.cs) | `sp_status` | 1 审批中 / 2 同意 / 3 驳回 / 4 转审 / 11 退回给指定审批人 / 12 加签 / 13 同意并加签 / **14 办理 / 15 转交** |
+| 流程子节点 | [ApprovalSubNodeInfo.cs](../../DataModels/Approval/ApprovalSubNodeInfo.cs) | **`sp_yj`** | 同上一层（1/2/3/4/11/12/13/14/15） |
 | 引擎单据 | `OpenApprovalData.OpenSpstatus` | `OpenSpstatus` | 仅 1/2/3/4（**无 6/7/10/11/12/13/14/15**） |
 
 要点：
@@ -138,23 +138,23 @@
   加签 = 节点级 12、同意并加签 = 13）。写侧动作由审批应用在端内完成，或由流程引擎的 JS-SDK 发起，
   实时感知走回调（§5）。**不得**以为「调 #3 拿到 4 就能反过来调某接口撤销」。
 - 单据级取值**有洞**（无 5、8、9），且 #4 的旧数据把 4 写作「已取消」而非「已撤销」
-  （[GetApprovalDataItem.cs](../../../Mud.Wechat.Work/Approval/GetApprovalDataItem.cs)：1/2/3/4/6/10，**无 7**）
+  （[GetApprovalDataItem.cs](../../DataModels/Approval/GetApprovalDataItem.cs)：1/2/3/4/6/10，**无 7**）
   ⇒ 判定器须按「所在层」分别取值，不得写成一张全局枚举。
-- 树形状（响应侧）：`info.sp_record[]` → `details[]` → `approver`（[ApprovalUserRef.cs](../../../Mud.Wechat.Work/Approval/ApprovalUserRef.cs)，只有 `userid`）
+- 树形状（响应侧）：`info.sp_record[]` → `details[]` → `approver`（[ApprovalUserRef.cs](../../DataModels/Approval/ApprovalUserRef.cs)，只有 `userid`）
   + `speech` + `sp_status` + `sptime`（0 = 未操作）+ `media_id[]`；抄送为**同级兄弟数组** `notifyer[]`（AP5 锁定拼写）。
   另一棵树是 `info.process_list.node_list[]` → `sub_node_list[]`，两棵树**并行存在、不互替**，
   后者额外带 `node_type`（1 审批人 / 2 抄送人 / 3 办理人）与 `apv_rel`。
-- **本域没有 `applicants` 与 `ext` 字段**：全文检索 [DataModels/Approval/](../../../Mud.Wechat.Work/Approval/)
+- **本域没有 `applicants` 与 `ext` 字段**：全文检索 [DataModels/Approval/](../../../Mud.Wechat.Work/DataModels/Approval/)
   与守卫均无该二名；审批人集合的真实载体是上表的 `sp_record.details.approver` 与 `process_list.node_list.sub_node_list`，
   提单侧则用 `process.node_list[].userid`（复数列表）。已登记为缺口，见文末。
 - 提单侧与详情侧的流程结构**同名不同形**：请求用
-  [ApprovalProcessNodeItem.cs](../../../Mud.Wechat.Work/Approval/ApprovalProcessNodeItem.cs)（`type` + `apv_rel` + `userid: List<string>`），
+  [ApprovalProcessNodeItem.cs](../../DataModels/Approval/ApprovalProcessNodeItem.cs)（`type` + `apv_rel` + `userid: List<string>`），
   响应用 `ApprovalProcessNodeInfo`（`node_type` + `sp_status` + `apv_rel` + `sub_node_list`）。
-  `apv_rel` 的取值顺序在两侧**不一致**：节点侧 [ApprovalProcessNodeItem.cs](../../../Mud.Wechat.Work/Approval/ApprovalProcessNodeItem.cs)
-  与 [ApprovalSpRecord.cs](../../../Mud.Wechat.Work/Approval/ApprovalSpRecord.cs) 的 `approverattr` 写「1 或签 / 2 会签」，
+  `apv_rel` 的取值顺序在两侧**不一致**：节点侧 [ApprovalProcessNodeItem.cs](../../DataModels/Approval/ApprovalProcessNodeItem.cs)
+  与 [ApprovalSpRecord.cs](../../DataModels/Approval/ApprovalSpRecord.cs) 的 `approverattr` 写「1 或签 / 2 会签」，
   而流程节点写「1 会签 / 2 或签 / 3 依次审批」⇒ 这是官方两侧的语义差异（DTO 注释照抄），**不得**统一成一张表。
-- `applyer`（[ApprovalApplyer.cs](../../../Mud.Wechat.Work/Approval/ApprovalApplyer.cs)，含 `userid` + `partyid`）
-  与 `batch_applyer`（`List<ApprovalUserRef>`）在应答中**互斥**（[ApprovalDetailInfo.cs](../../../Mud.Wechat.Work/Approval/ApprovalDetailInfo.cs) 注释原文），
+- `applyer`（[ApprovalApplyer.cs](../../DataModels/Approval/ApprovalApplyer.cs)，含 `userid` + `partyid`）
+  与 `batch_applyer`（`List<ApprovalUserRef>`）在应答中**互斥**（[ApprovalDetailInfo.cs](../../DataModels/Approval/ApprovalDetailInfo.cs) 注释原文），
   读取时须两者都判，不能只读 `applyer`。
 
 ## 5. 审批事件不在本域：`sys_approval_change` / `open_approval_change` 属回调包
@@ -185,31 +185,31 @@
 ## 6. 表单控件体系：一张类型全集 + `value` 超集袋
 
 **没有 `Form/` 子目录**——本域控件 DTO 全部平铺在
-[DataModels/Approval/](../../../Mud.Wechat.Work/Approval/)（`RequestModel/` 仅组织、不入命名空间）。
+[DataModels/Approval/](../../../Mud.Wechat.Work/DataModels/Approval/)（`RequestModel/` 仅组织、不入命名空间）。
 「模板侧控件表」与「单据侧控件值」是两组类型：
 
 | 面 | 类型 | 入口字段 |
 |---|---|---|
-| 模板（#5 响应） | [ApprovalTemplateContent.cs](../../../Mud.Wechat.Work/Approval/ApprovalTemplateContent.cs) → `controls[]` | `template_content.controls` |
-| 模板控件项 | [ApprovalTemplateControl.cs](../../../Mud.Wechat.Work/Approval/ApprovalTemplateControl.cs) | `property` + `config` |
-| 控件属性 | [ApprovalTemplateControlProperty.cs](../../../Mud.Wechat.Work/Approval/ApprovalTemplateControlProperty.cs) | `control` / `id` / `title` / `placeholder` / `require` / `un_print` |
-| 单据（#1 请求、#3 响应） | [ApprovalApplyData.cs](../../../Mud.Wechat.Work/Approval/ApprovalApplyData.cs) → `contents[]` | `apply_data.contents` |
-| 单据控件项 | [ApprovalControlItem.cs](../../../Mud.Wechat.Work/Approval/ApprovalControlItem.cs) | `control` / `id` / `title` / `value` / `hidden` |
+| 模板（#5 响应） | [ApprovalTemplateContent.cs](../../DataModels/Approval/ApprovalTemplateContent.cs) → `controls[]` | `template_content.controls` |
+| 模板控件项 | [ApprovalTemplateControl.cs](../../DataModels/Approval/ApprovalTemplateControl.cs) | `property` + `config` |
+| 控件属性 | [ApprovalTemplateControlProperty.cs](../../DataModels/Approval/ApprovalTemplateControlProperty.cs) | `control` / `id` / `title` / `placeholder` / `require` / `un_print` |
+| 单据（#1 请求、#3 响应） | [ApprovalApplyData.cs](../../DataModels/Approval/ApprovalApplyData.cs) → `contents[]` | `apply_data.contents` |
+| 单据控件项 | [ApprovalControlItem.cs](../../DataModels/Approval/ApprovalControlItem.cs) | `control` / `id` / `title` / `value` / `hidden` |
 
 不能从代码名推断的契约：
 
 - **`control` 类型全集两侧不等宽**：单据侧 18 值（`Text` `Textarea` `Number` `Money` `Date` `Selector` `Contact` `Tips`
   `File` `Table` `Attendance` `Vacation` **`PunchCorrection`** `Location` `RelatedApproval` `Formula` `DateRange` `BankAccount`），
-  模板侧 17 值（**无 `PunchCorrection`**）。两个清单各自抄自 [ApprovalControlItem.cs](../../../Mud.Wechat.Work/Approval/ApprovalControlItem.cs)
-  与 [ApprovalTemplateControlProperty.cs](../../../Mud.Wechat.Work/Approval/ApprovalTemplateControlProperty.cs) 注释，
+  模板侧 17 值（**无 `PunchCorrection`**）。两个清单各自抄自 [ApprovalControlItem.cs](../../DataModels/Approval/ApprovalControlItem.cs)
+  与 [ApprovalTemplateControlProperty.cs](../../DataModels/Approval/ApprovalTemplateControlProperty.cs) 注释，
   差异属官方，勿「顺手对齐」。
-- `value` 是**超集袋**（[ApprovalControlValue.cs](../../../Mud.Wechat.Work/Approval/ApprovalControlValue.cs)）：
+- `value` 是**超集袋**（[ApprovalControlValue.cs](../../DataModels/Approval/ApprovalControlValue.cs)）：
   17 个可空字段按 `control` 取用其一，序列化时 null 字段不写出。它**不是** `Dictionary` 也不是回调侧的
   `Values` 袋 ⇒ 本域无 last-wins 语义，「同名兄弟合并 / Value 袋取末位」只在 §5 的回调载荷里成立。
 - `PunchCorrection`（补卡）与 `BankAccount`（收款账户）两字段**只在「获取审批申请详情」的官方附录出现**，
   「提交审批申请」的附录未包含 ⇒ 提单时给这两类控件赋值**未逐项核验**（见缺口）。
 - **`Tips` 控件提单时无需赋值**（后台自动填充，仅 #3 响应返回），`hidden = 1` 表示控件被隐藏且**仅 #3 响应侧**出现。
-- **明细控件（`Table`）的递归约束**：[ApprovalTableChild.cs](../../../Mud.Wechat.Work/Approval/ApprovalTableChild.cs)
+- **明细控件（`Table`）的递归约束**：[ApprovalTableChild.cs](../../DataModels/Approval/ApprovalTableChild.cs)
   的 `list` 提交时**不能为空数组**、至少一条子明细，且子明细必须包含模板中设置的**全部子控件**；
   子明细为空时须把全部子控件的值设为空。#6/#7 的注释另加两条：**明细控件不能为空数组**、
   **明细中不能设置假勤控件与明细控件**。
@@ -237,13 +237,13 @@
 | `value.date_range.perday_duration` | `long?` | 「1 天对应的秒数」的单位换算值，**仅 #3 响应侧**返回 |
 | 假期余额 `assignduration`/`usedduration`/`leftduration`/`real_assignduration` | `long?` | **全部单位为秒**：按天刻度需 `/86400`、按小时刻度需 `/3600` 才是真实天数/小时数 |
 | `setoneuserquota` 的 `leftduration` | `long?` | 秒；≤ **1000 天或 24000 小时**；按小时必须为 **360** 的整倍数（0.1 小时）、按天必须为 **8640** 的整倍数（0.1 天） |
-| 旧版 `expense[].sums` | `long?` | **单位元**（[ApprovalExpenseItem.cs](../../../Mud.Wechat.Work/Approval/ApprovalExpenseItem.cs)）——与发票域的「分」口径相反，见 [Invoice/README.md](../Invoice/README.md) |
+| 旧版 `expense[].sums` | `long?` | **单位元**（[ApprovalExpenseItem.cs](../../DataModels/Approval/ApprovalExpenseItem.cs)）——与发票域的「分」口径相反，见 [Invoice/README.md](../Invoice/README.md) |
 | `file_size`（File 控件） | `string?` | AP5 锁定为 `typeof(string)`：官方文档「类型为 number」与「没有可以填空字符串」自相矛盾，以字符串兼容两态 |
 
 其余格式性事实：`timezone_info` **仅在非 UTC+8 时**返回（#3 响应侧）；`Selector` 的 `type` 取 `single` / `multi`
-（假勤控件固定单选）；`ApprovalLangTextItem`（[文件](../../../Mud.Wechat.Work/Approval/ApprovalLangTextItem.cs)）
+（假勤控件固定单选）；`ApprovalLangTextItem`（[文件](../../DataModels/Approval/ApprovalLangTextItem.cs)）
 的 `lang` 中文是 **`zh_CN`（下划线）而非 `zh-CN`**；`summary_list` 最多 **3 行**、每行文字建议 ≤ **20** 字符；
-`File` 控件全局**仅支持 6 个附件**（[ApprovalFileItem.cs](../../../Mud.Wechat.Work/Approval/ApprovalFileItem.cs)）；
+`File` 控件全局**仅支持 6 个附件**（[ApprovalFileItem.cs](../../DataModels/Approval/ApprovalFileItem.cs)）；
 `apply_data.contents[].title` 与 `hidden` **不在提单请求体**中出现（仅 #3/#5 响应侧）。
 `media_id` / `media_ids` 指向临时素材（微盘文件无法获取），使用面归素材域，本域不承载。
 
@@ -410,14 +410,14 @@ using (switcher.UseCorpScope(appKey: "default", authCorpId, authorization.Perman
 |---|---|---|
 | 本文任务前提里的 `sp_instance_id` | 全仓检索 `Interfaces/Approval/`、`DataModels/Approval/`、守卫均**无该键** ⇒ 本域不存在第三套定位键体系 | 若官方确有该键，须逐页核验后建 DTO 并同批改 AP4/AP5 |
 | `applicants` / `ext` 两字段 | 全仓检索无该二名；审批人集合实际载体是 `sp_record.details.approver` 与 `process_list.node_list.sub_node_list`（§4） | 不得按名推断新字段；需要时先核验官方原文再建 |
-| 本文任务前提里的 `Form/` 子目录 | `DataModels/Approval/` **为平铺**（仅 `RequestModel/` 一个组织目录），`controls` 落 [ApprovalTemplateContent.cs](../../../Mud.Wechat.Work/Approval/ApprovalTemplateContent.cs) | 新增子族目录须同批改 AP4 的命名空间扫描口径 |
+| 本文任务前提里的 `Form/` 子目录 | `DataModels/Approval/` **为平铺**（仅 `RequestModel/` 一个组织目录），`controls` 落 [ApprovalTemplateContent.cs](../../DataModels/Approval/ApprovalTemplateContent.cs) | 新增子族目录须同批改 AP4 的命名空间扫描口径 |
 | `get_standard_template` / `get_template` / `get_sp_status` / `get_info` / `gets` 等批量端点 | 本域模板/详情族只有 AP1a/AP1c/AP1e 列出的路由，**无上述端点** | 官方若有，走「加端点 + 同批改 AP1 计数与开放面断言」 |
 | `Money` 控件 `new_money` 的金额单位 | DTO 注释只留「按字符串传输（如 "700"）」，**单位未逐项核验**（元 / 分不明） | 需要按金额做业务判定时先核验官方页，勿借用发票域的「分」口径 |
 | `PunchCorrection` / `BankAccount` 能否在 #1 提单时赋值 | 注释明说这两类控件「仅在获取审批申请详情的官方附录中出现」，提单附录未包含 ⇒ 可写性**未逐项核验** | 提单前逐页核验，勿在 SDK 侧加「禁止赋值」的本地闸 |
 | #12 引擎查询端点的频率上限 | [IWechatWorkApprovalEngineService.cs](./IWechatWorkApprovalEngineService.cs) 注释**无频率数值** | 需要限流时先核验官方页，不得从邻域借 600 次/分 |
 | 撤销 / 转交 / 加签的写侧接口 | 本域 12 支端点无对应写端点（§4）；官方是否有 HTTP 撤销面**未逐项核验** | 不得凭状态码值反推存在写端点 |
-| `record_type` 取值 1~9 之外是否还有新增值 | [ApprovalInfoFilter.cs](../../../Mud.Wechat.Work/Approval/ApprovalInfoFilter.cs) 注释只列 9 值 | 出现新值先核验，再决定是否建枚举 |
-| 假期配置项 `time_attr` / `duration_type` / `quota_attr` / `expire_rule` 的取值全集 | [VacationCorpConfItem.cs](../../../Mud.Wechat.Work/Approval/VacationCorpConfItem.cs) 一族注释未逐项给取值语义 | 需要判定器时先逐页核验 |
+| `record_type` 取值 1~9 之外是否还有新增值 | [ApprovalInfoFilter.cs](../../DataModels/Approval/ApprovalInfoFilter.cs) 注释只列 9 值 | 出现新值先核验，再决定是否建枚举 |
+| 假期配置项 `time_attr` / `duration_type` / `quota_attr` / `expire_rule` 的取值全集 | [VacationCorpConfItem.cs](../../DataModels/Approval/VacationCorpConfItem.cs) 一族注释未逐项给取值语义 | 需要判定器时先逐页核验 |
 | `applyevent` 的 `process` 与 `use_template_approver` 的互斥细则 | 注释只写「为 0 时 process 必填」「为 1 时需保证流程无『申请人自选』节点」 | 组合合法性由应答 `errcode` 表达，SDK 不本地拦截 |
 
 ## 事实来源
@@ -433,11 +433,11 @@ using (switcher.UseCorpScope(appKey: "default", authCorpId, authorization.Perman
 | 16 个接口的 `AccessToken` + Query + `access_token` 绑定 | AP3 |
 | JSON 上下文登记（域内全量 109 型 + 端点级清单）与 `SerializerClassName = "Approval"` | AP4（反射枚举 `Mud.Wechat.Work.DataModels.Approval` 顶层类型 + `HaveCount(109)`） |
 | 官方契约陷阱（字符串时间戳、selector `value` 数组 vs 单对象、`notifyer` / `commentUserInfo` / `thirdNo` / `OpenSpstatus` / `ApplyUsername` / `ItemUserId` / `spname` / `mediaids`、`file_size` 字符串） | AP5（`ApprovalDataModels_ShouldLockOfficialContractTraps`、`JsonNameShouldBe`） |
-| 状态码取值域、超集 `value` 语义、控件类型全集、单位口径 | [DataModels/Approval/](../../../Mud.Wechat.Work/Approval/) 各 DTO 的 XML 注释 |
+| 状态码取值域、超集 `value` 语义、控件类型全集、单位口径 | [DataModels/Approval/](../../../Mud.Wechat.Work/DataModels/Approval/) 各 DTO 的 XML 注释 |
 | 令牌归属键（Internal / Corp） | [WechatTokenOwnerContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatTokenOwnerContractGuards.cs)（TO1~TO3）、[WechatContractGuards.QueryTokenInjection.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatContractGuards.QueryTokenInjection.cs)（G5） |
 | 接口命名空间二分（父 `Interfaces` / 子 `Work`）与实现类落位 | [WechatInterfaceNamespaceContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatInterfaceNamespaceContractGuards.cs)（N1~N3） |
 | 审批回调事件（不在本域） | [SysApprovalChangedPayload.cs](../../../Mud.Wechat.Work.Callback/Events/Payloads/Approval/SysApprovalChangedPayload.cs)、[WechatCallbackEventTypes.cs](../../../Mud.Wechat.Work/Callback/WechatCallbackEventTypes.cs) |
-| 上下文源生成文件 | [ApprovalJsonContext.g.cs](../../../Mud.Wechat.Work/Generated/ApprovalJsonContext.g.cs)（`internal`，示例不得引用） |
+| 上下文源生成文件 | [ApprovalJsonContext.g.cs](../../DataModels/Generated/ApprovalJsonContext.g.cs)（`internal`，示例不得引用） |
 | 模块注册三段式 | [WechatModule.cs](../../Extensions/WechatModule.cs)、[WechatWorkServiceBuilder.cs](../../Extensions/WechatWorkServiceBuilder.cs)、[WechatJsonResolverExtensions.cs](../../Extensions/WechatJsonResolverExtensions.cs) |
 
 ## 改动本域需要同批完成

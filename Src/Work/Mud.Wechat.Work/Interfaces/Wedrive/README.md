@@ -15,7 +15,7 @@
 
 > **事实来源限定**：本文全部断言只来自本仓三类证据——本目录 22 份接口文件的 XML 注释、
 > [WechatWedriveContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatWedriveContractGuards.cs)（WR1~WR5）、
-> [Src/Work/Mud.Wechat.Work/Wedrive/](../../../Mud.Wechat.Work/Wedrive/) 下的 60 个 DTO 声明；
+> [Src/Work/Mud.Wechat.Work/DataModels/Wedrive/](../../../Mud.Wechat.Work/DataModels/Wedrive/) 下的 60 个 DTO 声明；
 > 端点数与路由以守卫断言为准，官方文档号仅作定位标识、不作为本文事实来源。
 > 未能在本仓三类证据内核验的项目一律集中在文末「已知留档缺口」，标为**未逐项核验**，正文不作推断。
 
@@ -93,21 +93,21 @@
 
 | 键 | JSON 名 | 语义与陷阱 |
 |---|---|---|
-| 空间 ID | `spaceid`（**无下划线**） | 出现在 11 个类型上（WR5 逐一 `JsonNameShouldBe`），包括响应侧 [WedriveSpaceInfo.cs](../../../Mud.Wechat.Work/Wedrive/WedriveSpaceInfo.cs) |
+| 空间 ID | `spaceid`（**无下划线**） | 出现在 11 个类型上（WR5 逐一 `JsonNameShouldBe`），包括响应侧 [WedriveSpaceInfo.cs](../../DataModels/Wedrive/WedriveSpaceInfo.cs) |
 | 文件 ID | `fileid`（**无下划线**） | 单数拼写；移动/删除端点里 `fileid` 是**数组形态**（`List<string>`，WR5 断言「单数名复数承载，照抄勿改」） |
-| 父目录 | `fatherid`（**无下划线**） | 接口注释留档：`fatherid` 为当前目录的 `fileid`，**根目录时填空间 `spaceid`**（#10/#16/#18 与 [WedriveFileInfo.cs](../../../Mud.Wechat.Work/Wedrive/WedriveFileInfo.cs) 注释同口径） |
+| 父目录 | `fatherid`（**无下划线**） | 接口注释留档：`fatherid` 为当前目录的 `fileid`，**根目录时填空间 `spaceid`**（#10/#16/#18 与 [WedriveFileInfo.cs](../../DataModels/Wedrive/WedriveFileInfo.cs) 注释同口径） |
 
 ⇒ 「根目录」没有独立 id，就是 `spaceid` 本身；不要把 `fatherid` 当可缺省字段（#10 官方必填）。
 另有一组定位键不属于 id 体系而是**凭据**：`selected_ticket`（微盘和文件选择器 jsapi 返回值），见 §5。
 
-`space_name` 与空间类型：本仓三类证据只留档 [CreateWedriveSpaceRequest.cs](../../../Mud.Wechat.Work/Wedrive/CreateWedriveSpaceRequest.cs)
-的 `space_sub_type`（`ulong?`）= **0 普通空间**（注释「目前只支持 0」），响应侧 [WedriveSpaceInfo.cs](../../../Mud.Wechat.Work/Wedrive/WedriveSpaceInfo.cs)
-与 [WedriveNewSpaceInfo.cs](../../../Mud.Wechat.Work/Wedrive/WedriveNewSpaceInfo.cs) 同带 `space_sub_type`（注释「0 - 普通空间」）。
+`space_name` 与空间类型：本仓三类证据只留档 [CreateWedriveSpaceRequest.cs](../../DataModels/Wedrive/CreateWedriveSpaceRequest.cs)
+的 `space_sub_type`（`ulong?`）= **0 普通空间**（注释「目前只支持 0」），响应侧 [WedriveSpaceInfo.cs](../../DataModels/Wedrive/WedriveSpaceInfo.cs)
+与 [WedriveNewSpaceInfo.cs](../../DataModels/Wedrive/WedriveNewSpaceInfo.cs) 同带 `space_sub_type`（注释「0 - 普通空间」）。
 **共享空间 / 群组空间 / 个人空间等其它空间形态在本域三类证据内没有任何留档**（无取值、无枚举、无端点）⇒ 见文末缺口，不得据名称推断。
 
 ## 2. 一份成员结构承载五处权限面，`auth` 取值集合按端点而变
 
-[WedriveSpaceAclMember.cs](../../../Mud.Wechat.Work/Wedrive/WedriveSpaceAclMember.cs) 是本域权限模型的唯一载体
+[WedriveSpaceAclMember.cs](../../DataModels/Wedrive/WedriveSpaceAclMember.cs) 是本域权限模型的唯一载体
 （WR5 断言五处请求/响应属性类型恒为 `List<WedriveSpaceAclMember>`）：
 `space_create.auth_info`、`space_acl_add.auth_info`、`space_acl_del.auth_info`、`file_acl_add.auth_info`、`file_acl_del.auth_info`，
 以及读取侧 `auth_list.auth_info`、`file_member_list`、`co_auth_list`、`inherit_father_auth.auth_list` / `member_list`。
@@ -132,10 +132,10 @@
 
 ## 3. 空间安全设置：写入口 6 字段、回显 12 字段，且「分享到企业外」两侧语义相反
 
-写侧 [SetWedriveSpaceSettingRequest.cs](../../../Mud.Wechat.Work/Wedrive/SetWedriveSpaceSettingRequest.cs) 只有
+写侧 [SetWedriveSpaceSettingRequest.cs](../../DataModels/Wedrive/SetWedriveSpaceSettingRequest.cs) 只有
 `spaceid` + 6 个可写键（`enable_watermark` / `enable_confidential_mode` / `share_url_no_approve` /
 `share_url_no_approve_default_auth` / `default_file_scope` / `ban_share_external`）；
-读侧 [WedriveSpaceSecureSetting.cs](../../../Mud.Wechat.Work/Wedrive/WedriveSpaceSecureSetting.cs) 是 12 键的只读回显超集
+读侧 [WedriveSpaceSecureSetting.cs](../../DataModels/Wedrive/WedriveSpaceSecureSetting.cs) 是 12 键的只读回显超集
 （多出 `add_member_only_admin`、`enable_share_url`、`enable_share_external_admin`、`enable_space_add_external_member`、
 `enable_space_add_external_member_admin`、`create_file_only_admin`）。
 
@@ -148,7 +148,7 @@ WR5 把最易踩的一处钉成断言——**同一件事在读写两侧字段�
 校验回显时须取反比对，不得写成同值比对，更不得「顺手统一」字段名。
 其余同向键（`enable_watermark` / `enable_confidential_mode` / `share_url_no_approve` /
 `share_url_no_approve_default_auth` / `default_file_scope`）才是可直接对照的。
-注意文件侧的 [WedriveFileSecureSetting.cs](../../../Mud.Wechat.Work/Wedrive/WedriveFileSecureSetting.cs)
+注意文件侧的 [WedriveFileSecureSetting.cs](../../DataModels/Wedrive/WedriveFileSecureSetting.cs)
 又用 `ban_share_external`（与空间写入口同名、与空间回显不同名），三处形态各异，勿互相套用。
 
 #7 的调用前置（注释留档）：**应用通过 API 只支持设置由本应用创建的空间**；`enable_watermark` 仅专业版企业可设置。
@@ -157,12 +157,12 @@ WR5 把最易踩的一处钉成断言——**同一件事在读写两侧字段�
 
 #4 `space_info`（旧版，挂官方「管理空间」分组）与 #9 `new_space_info`（新版，挂官方「管理空间权限」分组）
 不是同一端点的别名——WR1 把两者同时计入 31 条路由，WR5 断言响应类型分别落
-[WedriveSpaceInfo.cs](../../../Mud.Wechat.Work/Wedrive/WedriveSpaceInfo.cs) 与
-[WedriveNewSpaceInfo.cs](../../../Mud.Wechat.Work/Wedrive/WedriveNewSpaceInfo.cs)，
+[WedriveSpaceInfo.cs](../../DataModels/Wedrive/WedriveSpaceInfo.cs) 与
+[WedriveNewSpaceInfo.cs](../../DataModels/Wedrive/WedriveNewSpaceInfo.cs)，
 并反向断言 `WedriveSpaceInfo` 上**不存在** `SecureSetting` 属性。
 
 差集只有两处（接口注释留档）：新版额外返回 `secure_setting`（§3 的 12 键回显）与 `auth_list.quit_userid`
-（已退出空间的成员 userid 列表；[WedriveSpaceAuthList.cs](../../../Mud.Wechat.Work/Wedrive/WedriveSpaceAuthList.cs)
+（已退出空间的成员 userid 列表；[WedriveSpaceAuthList.cs](../../DataModels/Wedrive/WedriveSpaceAuthList.cs)
 注释口径是「成员在一个有权限的部门中自己退出空间或被移除权限」）。
 ⇒ 只需要基础信息与成员权限时用 #4；需要校验安全设置或识别退群成员时**必须**用 #9，用 #4 会静默拿不到这两键。
 
@@ -185,7 +185,7 @@ WR5 把最易踩的一处钉成断言——**同一件事在读写两侧字段�
 `selected_ticket` 属 jsapi 选择器凭据 ⇒ 同样不得进日志。SDK **不做**本地互斥校验，错配由应答 `errcode` 表达。
 
 **下载两段式**：#15 不返回文件字节，只返回
-[DownloadWedriveFileResponse.cs](../../../Mud.Wechat.Work/Wedrive/DownloadWedriveFileResponse.cs)
+[DownloadWedriveFileResponse.cs](../../DataModels/Wedrive/DownloadWedriveFileResponse.cs)
 的 `download_url`（**有效期 2 小时**）+ `cookie_name` / `cookie_value`。
 取回内容须由宿主自行发起对 `download_url` 的请求并携带该 Cookie——`download_url` 与其 Cookie 组合等价于凭据，
 同样不得进日志/遥测/异常消息，且 2 小时窗口内用完即弃、不得长期持久化。
@@ -194,15 +194,15 @@ WR5 把最易踩的一处钉成断言——**同一件事在读写两侧字段�
 ## 6. 批量与「双层失败」：本域没有 `jobid` / `task_id` 异步任务面
 
 先划清否定面：本域 31 支端点里**没有异步任务端点**——本目录接口与
-[Mud.Wechat.Work/Wedrive/](../../../Mud.Wechat.Work/Wedrive/) 全量检索无 `jobid` / `task_id` / 结果查询端点，
+[Mud.Wechat.Work/DataModels/Wedrive/](../../../Mud.Wechat.Work/DataModels/Wedrive/) 全量检索无 `jobid` / `task_id` / 结果查询端点，
 故 CorpGroup 域那套「提交任务 → 轮询结果」语义在微盘**不适用**；分块上传的三步是**同步连续调用**，不是异步任务。
 
 真正的双层语义在 #29/#30：
 
 1. **传输/信封层**：`errcode` 非 0 时由基座判定与 `WechatWorkException.ThrowIfFailed` 抛出（令牌失效自动恢复也在此层）。
 2. **条目层**：`errcode == 0` **不等于全部成功**。
-   [BatchAddWedriveVipResponse.cs](../../../Mud.Wechat.Work/Wedrive/BatchAddWedriveVipResponse.cs) 与
-   [BatchDelWedriveVipResponse.cs](../../../Mud.Wechat.Work/Wedrive/BatchDelWedriveVipResponse.cs)
+   [BatchAddWedriveVipResponse.cs](../../DataModels/Wedrive/BatchAddWedriveVipResponse.cs) 与
+   [BatchDelWedriveVipResponse.cs](../../DataModels/Wedrive/BatchDelWedriveVipResponse.cs)
    各持 `succ_userid_list` / `fail_userid_list` 两个 `List<string>?`，必须逐条判 `fail` 列表。
    注释留档一处反直觉口径：**已经拥有高级功能账号的成员计入成功列表**（#29）。
    两响应形态同构但**分属两端点各自承载 DTO**（WR5 注释），不得合并成一个类型。
@@ -225,9 +225,9 @@ WR5 把最易踩的一处钉成断言——**同一件事在读写两侧字段�
 ⇒ 两套翻页游标不可互换（`next_start` 是数值、`next_cursor` 是字符串），也**不要**按 `limit` 是否填满来判断结束。
 
 #10 与 #18 的响应 `file_list` 官方形态是**对象内含 `item` 数组**
-（[WedriveFileList.cs](../../../Mud.Wechat.Work/Wedrive/WedriveFileList.cs) 只有一个 `Item` 属性，
+（[WedriveFileList.cs](../../DataModels/Wedrive/WedriveFileList.cs) 只有一个 `Item` 属性，
 WR5 断言「不得建成裸数组」）；#17 重命名响应的字段名是 `file`、#20 是 `file_info`，
-三处都指向同一个 [WedriveFileInfo.cs](../../../Mud.Wechat.Work/Wedrive/WedriveFileInfo.cs)（WR5 逐个断言共用），
+三处都指向同一个 [WedriveFileInfo.cs](../../DataModels/Wedrive/WedriveFileInfo.cs)（WR5 逐个断言共用），
 `file_size` 单位 B、`ctime` / `mtime` 是时间戳。
 
 ## 8. 分享与外链：空间「邀请链接」与文件「分享链接」是两条不同契约
@@ -237,11 +237,11 @@ WR5 断言「不得建成裸数组」）；#17 重命名响应的字段名是 `f
 | 空间邀请链接 | #8 `space_share` | `space_share_url` | 成员可经链接申请加入，**是否需审批由 #7 的 `share_url_no_approve` 决定**；默认权限由 `share_url_no_approve_default_auth` 决定 |
 | 文件分享链接 | #24 `file_share` | `share_url` | WR5 专门断言两个字段名不同（「区别于空间邀请链接 `space_share_url`」） |
 | 文件可见范围 | #23 `file_setting` | `auth_scope` 1 指定人 / 2 企业内 / 3 企业外 / 4 企业内需管理员审批 / 5 企业外需管理员审批 | 4 与 5 **仅有管理员时可设置** |
-| 范围回显 | #25 `get_file_permission` | `share_range`（[WedriveFileShareRange.cs](../../../Mud.Wechat.Work/Wedrive/WedriveFileShareRange.cs) 六键：`enable_corp_internal` / `corp_internal_auth` / `enable_corp_external` / `corp_external_auth` / `corp_*_approve_only_by_admin`） | `corp_*_auth` 取值含 **255 无权限或需审批** |
+| 范围回显 | #25 `get_file_permission` | `share_range`（[WedriveFileShareRange.cs](../../DataModels/Wedrive/WedriveFileShareRange.cs) 六键：`enable_corp_internal` / `corp_internal_auth` / `enable_corp_external` / `corp_external_auth` / `corp_*_approve_only_by_admin`） | `corp_*_auth` 取值含 **255 无权限或需审批** |
 
 **有效期**：本域三类证据只留档下载 `download_url` 的 2 小时；空间邀请链接与文件分享链接的**有效期 / 撤销面均无留档、也无撤销端点** ⇒ 入缺口。
 `#25` 的 `watermark` 与 `#26` 的 `watermark` 共用
-[WedriveFileWatermark.cs](../../../Mud.Wechat.Work/Wedrive/WedriveFileWatermark.cs)，
+[WedriveFileWatermark.cs](../../DataModels/Wedrive/WedriveFileWatermark.cs)，
 但写入口**只开放 4 个字段**（`text` / `margin_type` / `show_visitor_name` / `show_text`），
 `force_by_admin` 与 `force_by_space_admin` 是读取回显专用（DTO remarks 留档，靠可空 + `WhenWritingNull` 不序列化）；
 `show_visitor_name` 仅专业版支持。
@@ -488,11 +488,11 @@ using (switcher.UseCorpScope(appKey: "default", authCorpId, authorization.Perman
 | `download_url` 取回内容时是否还需携带 `access_token` | 响应只回 `download_url` + `cookie_name` / `cookie_value`，注释未提其它凭据 ⇒ **未逐项核验** | 由宿主实测；勿假设可匿名拉取 |
 | 空间邀请链接 / 文件分享链接的**有效期**与撤销面 | #8/#24 只返回链接字符串；本域 31 条路由内无「撤销分享」端点，注释无有效期数值 ⇒ **未逐项核验** | 需要过期治理时先核验官方页，再走「加端点 + 同批改 WR1 计数」 |
 | `space_sub_type` 取值全集（共享 / 群组 / 个人空间） | 注释只留档 `0 - 普通空间`（且「目前只支持 0」）⇒ 其它空间形态**未逐项核验** | 出现新取值先核验，再决定是否建枚举；不得把管理后台的空间分类直接映射成该键的取值 |
-| 空间安全设置可写面是否窄于本仓建模 | 写侧 [SetWedriveSpaceSettingRequest.cs](../../../Mud.Wechat.Work/Wedrive/SetWedriveSpaceSettingRequest.cs) 6 键 vs 读侧 [WedriveSpaceSecureSetting.cs](../../../Mud.Wechat.Work/Wedrive/WedriveSpaceSecureSetting.cs) 12 键；多出的 6 键（`add_member_only_admin` / `enable_share_url` / `enable_space_add_external_member(_admin)` / `create_file_only_admin` / `enable_share_external_admin`）官方是否给出 API 写入口**未逐项核验** | 若官方补写入口，须同批补 DTO 与 WR5 的 `JsonNameShouldBe` 清单，并同步改本文 §3 |
+| 空间安全设置可写面是否窄于本仓建模 | 写侧 [SetWedriveSpaceSettingRequest.cs](../../DataModels/Wedrive/SetWedriveSpaceSettingRequest.cs) 6 键 vs 读侧 [WedriveSpaceSecureSetting.cs](../../DataModels/Wedrive/WedriveSpaceSecureSetting.cs) 12 键；多出的 6 键（`add_member_only_admin` / `enable_share_url` / `enable_space_add_external_member(_admin)` / `create_file_only_admin` / `enable_share_external_admin`）官方是否给出 API 写入口**未逐项核验** | 若官方补写入口，须同批补 DTO 与 WR5 的 `JsonNameShouldBe` 清单，并同步改本文 §3 |
 | `auth` / `auth_scope` 各集合是否还有其它合法值 | 本仓一律以 `ulong?` 承载、不建枚举（§2 表只覆盖注释留档值）；文件侧 `auth` 是否恒为 1、`corp_*_auth` 的 255 之外是否还有值**未逐项核验** | 需要枚举化时先核验，再决定是否建常量类 |
 | #18 / #19 批量 `fileid` 数组的单次上限 | 注释只写「数组形态、支持批量」，无数值 ⇒ **未逐项核验** | 需要拆批时先核验官方页，不得从 #29/#30 的 100 借数值 |
 | `auth = 7`「最多 3 个」的计数口径 | #1 注释「最多可指定 3 个」、#5 注释「连同已设置的管理员最多可指定 3 个」；应用自身是否占名额、部门是否计入**未逐项核验** | 不得据此在 SDK 侧做人数预校验 |
-| `file_type` 的权威取值集 | [WedriveFileInfo.cs](../../../Mud.Wechat.Work/Wedrive/WedriveFileInfo.cs) remarks 记录「各文档页枚举略有出入（列表页列 1~5，其余页列 1~6 含 6:文档(幻灯片)）」，本模型按 1~6 承载；#16 创建侧注释只列 1/3/4 ⇒ 全集**未逐项核验** | 出现新类型先核验，再统一 remarks |
+| `file_type` 的权威取值集 | [WedriveFileInfo.cs](../../DataModels/Wedrive/WedriveFileInfo.cs) remarks 记录「各文档页枚举略有出入（列表页列 1~5，其余页列 1~6 含 6:文档(幻灯片)）」，本模型按 1~6 承载；#16 创建侧注释只列 1/3/4 ⇒ 全集**未逐项核验** | 出现新类型先核验，再统一 remarks |
 | `file_member_list` / `co_auth_list` / `inherit_father_auth` 的 obj-vs-数组形态 | WR5 与本仓注释记录官方「参数表列 obj、返回示例实为数组」，本 SDK 按数组承载 ⇒ 官方现行口径是否已改**未逐项核验** | 若官方改为对象形态，须同批改 WR5 类型断言与本文 §8 |
 | 微盘容量与配额告警事件 | #28 的 `total_capacity_for_*` 单位 B、注释无换算与阈值；配额不足以回调事件 `wedrive_insufficient_capacity` 呈现，落 Callback 域（CB 系列守卫） | 需要容量治理时查 [Callback 载荷](../../../Mud.Wechat.Work.Callback/Events/Payloads/WeDrive/)，勿在本域加端点 |
 | 「微盘是否授权 / 授权状态」类端点 | 本域 31 条路由已封闭（WR1），无此类端点，其归属面**未在本域核验** | 若需授权状态面，先定位官方所属分组再按「加面 + 同批补守卫」落地，勿塞进本域 |
@@ -509,8 +509,8 @@ using (switcher.UseCorpScope(appKey: "default", authCorpId, authorization.Perman
 | JSON 上下文登记（60 型，`SerializerClassName` 恒 `Wedrive`）与各族类型拆分口径 | WR4（L529–L606，计数注释 L540–L546） |
 | 字段名 / 类型 / 共用结构 / `ban_share_external` ↔ `enable_share_external` / `fileid` 数组形态 / `index` 为 `int?` | WR5（L614–L814），辅助 `AssertRoutes`（L817–L828）、`JsonNameShouldBe`（L831–L839） |
 | 域级「官方反直觉点」总述（全 POST、新旧两版、`spaceid` 拼写、start+limit 与 cursor+limit 并存、vip 仅自建） | 守卫类头 remarks（L34–L63） |
-| DTO 属性名 / 类型 / JSON 名 / 取值域注释 | [../../../Mud.Wechat.Work/Wedrive/](../../../Mud.Wechat.Work/Wedrive/)（60 型，平铺无子目录） |
-| 上下文源生成文件（`internal`，示例不得引用） | [../../../Mud.Wechat.Work/Generated/WedriveJsonContext.g.cs](../../../Mud.Wechat.Work/Generated/WedriveJsonContext.g.cs) |
+| DTO 属性名 / 类型 / JSON 名 / 取值域注释 | [../../../Mud.Wechat.Work/DataModels/Wedrive/](../../../Mud.Wechat.Work/DataModels/Wedrive/)（60 型，平铺无子目录） |
+| 上下文源生成文件（`internal`，示例不得引用） | [../../../Mud.Wechat.Work/DataModels/Generated/WedriveJsonContext.g.cs](../../DataModels/Generated/WedriveJsonContext.g.cs) |
 | Query 令牌注入白名单（G5，本域 22 个接口名） | [WechatContractGuards.QueryTokenInjection.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatContractGuards.QueryTokenInjection.cs)（L712–L755） |
 | 令牌归属域键（TO1~TO3，本域守卫不重复断言） | [WechatTokenOwnerContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatTokenOwnerContractGuards.cs) |
 | 命名空间分区与聚合计数基线 | [WechatInterfaceNamespaceContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatInterfaceNamespaceContractGuards.cs)（N1~N3）、[Tests/ContractBaseline.cs](../../../../../Tests/ContractBaseline.cs) |

@@ -23,7 +23,7 @@ DTO 契约面全量 **292 型**登记在 `WedocJsonContext`（WD7，分族 10+34
 
 > **事实来源限定**：本文全部断言只来自本仓三类证据——本目录 34 份接口文件的 XML 注释、
 > [WechatWedocContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatWedocContractGuards.cs)（WD1~WD17）、
-> [../../../Mud.Wechat.Work/Wedoc/](../../../Mud.Wechat.Work/Wedoc/) 下的 DTO 声明；
+> [../../../Mud.Wechat.Work/DataModels/Wedoc/](../../../Mud.Wechat.Work/DataModels/Wedoc/) 下的 DTO 声明；
 > 端点数与路由以守卫断言为准，官方文档号（97460 / 99896 / 101616 一类）仅作定位标识、不作为本文事实来源。
 > 未能在本仓三类证据内核验的项目一律集中在文末「已知留档缺口」，标为**未逐项核验**，正文不作推断；
 > 官方接口正文与本仓注释冲突时（如参数表与示例的字节/数字口径），本文只记录本仓已选定的承载方式并指出冲突。
@@ -156,7 +156,7 @@ DTO 契约面全量 **292 型**登记在 `WedocJsonContext`（WD7，分族 10+34
 
 | 对象 | 请求侧 JSON 键（本仓 C# 属性） | 来源 |
 |---|---|---|
-| 文档 / 表格 / 智能表格 / 智能文档 | `docid`（`Docid`，`string?`） | #1 `create_doc` 应答的 `docid`（[CreateWedocDocumentResponse.cs](../../../Mud.Wechat.Work/Wedoc/CreateWedocDocumentResponse.cs) 同时返回 `url`） |
+| 文档 / 表格 / 智能表格 / 智能文档 | `docid`（`Docid`，`string?`） | #1 `create_doc` 应答的 `docid`（[CreateWedocDocumentResponse.cs](../../DataModels/Wedoc/CreateWedocDocumentResponse.cs) 同时返回 `url`） |
 | 收集表 | `formid`（`Formid`） | #57 `create_form` 应答 |
 | 统计 / 答案定位 | `repeated_id`（`RepeatedId`，`string?`） | #59 `get_form_info` 应答，**不是** `formid` |
 | 微盘归属位置 | `spaceid` / `fatherid`（`Spaceid` / `Fatherid`） | 仅 #1 与 #57 用于指定创建位置；填 `spaceid` 时 `fatherid` 必须同时填 |
@@ -172,16 +172,16 @@ DTO 契约面全量 **292 型**登记在 `WedocJsonContext`（WD7，分族 10+34
 - `doc_type` 与族归属一一对应：3 文档 → #6/#7，4 表格 → #8~#10，10 智能表格 → #11~#30，11 智能文档 → #31~#47；
   收集表**不走** `create_doc`，走 #57。
 - #2/#3/#5 三支同时接受 `docid` 与 `formid`（**二选一**），其余端点只认 `docid`；
-  属性形状见 [RenameWedocDocumentRequest.cs](../../../Mud.Wechat.Work/Wedoc/RequestModel/RenameWedocDocumentRequest.cs)、
-  [DeleteWedocDocumentRequest.cs](../../../Mud.Wechat.Work/Wedoc/RequestModel/DeleteWedocDocumentRequest.cs)、
-  [ShareWedocDocumentRequest.cs](../../../Mud.Wechat.Work/Wedoc/RequestModel/ShareWedocDocumentRequest.cs)
-  与只含 `Docid` 的 [GetWedocDocumentBaseInfoRequest.cs](../../../Mud.Wechat.Work/Wedoc/RequestModel/GetWedocDocumentBaseInfoRequest.cs)。
+  属性形状见 [RenameWedocDocumentRequest.cs](../../DataModels/Wedoc/RequestModel/RenameWedocDocumentRequest.cs)、
+  [DeleteWedocDocumentRequest.cs](../../DataModels/Wedoc/RequestModel/DeleteWedocDocumentRequest.cs)、
+  [ShareWedocDocumentRequest.cs](../../DataModels/Wedoc/RequestModel/ShareWedocDocumentRequest.cs)
+  与只含 `Docid` 的 [GetWedocDocumentBaseInfoRequest.cs](../../DataModels/Wedoc/RequestModel/GetWedocDocumentBaseInfoRequest.cs)。
 - `doc_name` 上限 255 字节，超限由官方**截断**而非报错；本仓不做本地裁剪。
 
 ## 2. 权限前置：`doc_get_auth` 是本域唯一预检，且「只能操作应用自己创建的文档」
 
 本域**没有**独立的 `auth` / `check` 探测路由；WD12 的路由表里唯一读权限面是 #48 `/cgi-bin/wedoc/doc_get_auth`，
-请求体只有 `docid` 一个字段（[GetWedocDocAuthRequest.cs](../../../Mud.Wechat.Work/Wedoc/RequestModel/GetWedocDocAuthRequest.cs)，
+请求体只有 `docid` 一个字段（[GetWedocDocAuthRequest.cs](../../DataModels/Wedoc/RequestModel/GetWedocDocAuthRequest.cs)，
 注释原文「必填，仅可访问该应用创建的文档」）⇒ 预检就是「拿 #48 读一遍」，没有更轻的 check 端点。
 
 八族父接口 remarks 中的权限口径同文重复（逐字来自 XML 注释）：
@@ -215,10 +215,10 @@ DTO 契约面全量 **292 型**登记在 `WedocJsonContext`（WD7，分族 10+34
 | #8 表格 | **≤5** | 「顺序执行，**遇错即止**」（前面的操作已生效） | `add_sheet` 列 ≤200、单元格 ≤10000；`update_range` 行 ≤1000、列 ≤200、单元格 ≤10000；`delete_dimension` 是半开区间 `[start_index, end_index)`，`end <= start` 报错并造成**缩表** |
 
 操作体形状：一个操作对象内**八个互斥字段只能填一个**
-（[WedocDocumentUpdateOperation.cs](../../../Mud.Wechat.Work/Wedoc/WedocDocumentUpdateOperation.cs)：
+（[WedocDocumentUpdateOperation.cs](../../DataModels/Wedoc/WedocDocumentUpdateOperation.cs)：
 `replace_text` / `insert_text` / `delete_content` / `insert_image` / `insert_page_break` / `insert_table` /
 `insert_paragraph` / `update_text_property`，注释原文「填多个仅一个生效」）；
-表格侧同理四个（[WedocSpreadsheetUpdateOperation.cs](../../../Mud.Wechat.Work/Wedoc/WedocSpreadsheetUpdateOperation.cs)：
+表格侧同理四个（[WedocSpreadsheetUpdateOperation.cs](../../DataModels/Wedoc/WedocSpreadsheetUpdateOperation.cs)：
 `add_sheet_request` / `delete_sheet_request` / `update_range_request` / `delete_dimension_request`）。
 本仓不做「只填一个」的本地拦截，越界由应答 `errcode` 表达。
 
@@ -243,7 +243,7 @@ DTO 契约面全量 **292 型**登记在 `WedocJsonContext`（WD7，分族 10+34
 
 ## 6. 字段类型取值域与 `property_*` 的一型一属性
 
-[SmartSheetField.cs](../../../Mud.Wechat.Work/Wedoc/SmartSheetField.cs) 的 `FieldType`（`string?`，JSON `field_type`）
+[SmartSheetField.cs](../../DataModels/Wedoc/SmartSheetField.cs) 的 `FieldType`（`string?`，JSON `field_type`）
 官方取值 **25 个** `FIELD_TYPE_*`：TEXT、NUMBER、CHECKBOX、DATE_TIME、IMAGE、ATTACHMENT、USER、URL、SELECT、
 CREATED_USER、MODIFIED_USER、CREATED_TIME、MODIFIED_TIME、PROGRESS、PHONE_NUMBER、EMAIL、SINGLE_SELECT、
 REFERENCE、LOCATION、FORMULA、CURRENCY、WWGROUP、AUTONUMBER、PERCENTAGE、BARCODE。
@@ -252,37 +252,37 @@ REFERENCE、LOCATION、FORMULA、CURRENCY、WWGROUP、AUTONUMBER、PERCENTAGE、
 官方标注为 object 但说明「为空」⇒ **刻意不建模**（文件 remarks 原文），不要「补齐对称性」。
 
 记录取值是异构字典，不是强类型：
-[SmartSheetAddRecord.cs](../../../Mud.Wechat.Work/Wedoc/SmartSheetAddRecord.cs) 的
+[SmartSheetAddRecord.cs](../../DataModels/Wedoc/SmartSheetAddRecord.cs) 的
 `Values` 是 `Dictionary<string, JsonElement>?`，键由
-[AddSmartSheetRecordsRequest.cs](../../../Mud.Wechat.Work/Wedoc/RequestModel/AddSmartSheetRecordsRequest.cs)
+[AddSmartSheetRecordsRequest.cs](../../DataModels/Wedoc/RequestModel/AddSmartSheetRecordsRequest.cs)
 的 `KeyType`（`string?`）决定：`CELL_VALUE_KEY_TYPE_FIELD_TITLE` 用字段标题作键、`CELL_VALUE_KEY_TYPE_FIELD_ID` 用 `field_id` 作键
 ⇒ 构造值用 `JsonSerializer.SerializeToElement(...)`，不要用 `object` 装箱。
-筛选条件见 [SmartSheetCondition.cs](../../../Mud.Wechat.Work/Wedoc/SmartSheetCondition.cs)：
+筛选条件见 [SmartSheetCondition.cs](../../DataModels/Wedoc/SmartSheetCondition.cs)：
 `Conjunction` 取 `CONJUNCTION_AND` / `CONJUNCTION_OR`，`Operator` 有 **11** 个 `OPERATOR_*` 取值
 （UNKNOWN / IS / IS_NOT / CONTAINS / DOES_NOT_CONTAIN / IS_GREATER / IS_GREATER_OR_EQUAL / IS_LESS / IS_LESS_OR_EQUAL /
 IS_EMPTY / IS_NOT_EMPTY），值侧按类型分 `string_value` / `number_value` / `bool_value` / `user_value` / `date_time_value` 五个槽。
-排序元素 [SmartSheetRecordSort.cs](../../../Mud.Wechat.Work/Wedoc/SmartSheetRecordSort.cs) 用 `field_title` + `desc`
+排序元素 [SmartSheetRecordSort.cs](../../DataModels/Wedoc/SmartSheetRecordSort.cs) 用 `field_title` + `desc`
 （WD9 锁定 `desc` 拼写，勿改成 `descending`）。
 
 字段侧的**官方拼写冲突**由 WD9 逐条锁定，照抄不修：
-`property_ganttobect`（[AddSmartSheetViewRequest.cs](../../../Mud.Wechat.Work/Wedoc/RequestModel/AddSmartSheetViewRequest.cs)
+`property_ganttobect`（[AddSmartSheetViewRequest.cs](../../DataModels/Wedoc/RequestModel/AddSmartSheetViewRequest.cs)
 的 `PropertyGanttObject`）、URL 与自动编号属性上 **`typ` 与 `type` 并存**、
 关联字段属性上 **`field_id` 与 `filed_id` 并存**（官方笔误键与正确键同时承载）。
 
 ## 7. `view_id` 与 `records` 的读语义
 
-#26 `get_records` 的请求（[GetSmartSheetRecordsRequest.cs](../../../Mud.Wechat.Work/Wedoc/RequestModel/GetSmartSheetRecordsRequest.cs)）
+#26 `get_records` 的请求（[GetSmartSheetRecordsRequest.cs](../../DataModels/Wedoc/RequestModel/GetSmartSheetRecordsRequest.cs)）
 可同时给 `view_id`、`record_ids`、`field_titles`、`field_ids`、`key_type`、`sort`、`offset`、`limit`、`ver`、`filter_spec`：
 
 - `view_id` 决定「按哪个视图取行」，`record_ids` 是显式行定位，两者与 `filter_spec` 之间官方无优先级说明 ⇒
   本仓不排序、不裁剪（优先级列入缺口）。
-- 应答（[GetSmartSheetRecordsResponse.cs](../../../Mud.Wechat.Work/Wedoc/GetSmartSheetRecordsResponse.cs)）是
+- 应答（[GetSmartSheetRecordsResponse.cs](../../DataModels/Wedoc/GetSmartSheetRecordsResponse.cs)）是
   `total` / `has_more`（`bool?`）/ `next`（`int?`）/ `records`（`List<SmartSheetRecord>?`）/ `ver`（`int?`）
   ⇒ 这里 `has_more` 是**布尔**，与 #41 智能文档的**字符串** `has_more` 形状不同（WD11），翻页游标也不同：
   本端点用 `next`/`offset`，#41 用 `start`/`next_start`。
-- `records` 元素 [SmartSheetRecord.cs](../../../Mud.Wechat.Work/Wedoc/SmartSheetRecord.cs) 含
+- `records` 元素 [SmartSheetRecord.cs](../../DataModels/Wedoc/SmartSheetRecord.cs) 含
   `record_id`、`create_time`/`update_time`（**`string`** 承载，官方示例是数字串）、`values`、`creator_name`、`updater_name`；
-  写侧回显用的是另一个类型 [SmartSheetCommonRecord.cs](../../../Mud.Wechat.Work/Wedoc/SmartSheetCommonRecord.cs)
+  写侧回显用的是另一个类型 [SmartSheetCommonRecord.cs](../../DataModels/Wedoc/SmartSheetCommonRecord.cs)
   （只有 `record_id` + `values`）⇒ 不要把两者合并建模。
 
 ## 8. 智能文档：发布是 3~8 秒异步、导出是 `task_id` 轮询、本域没有幂等键
@@ -300,7 +300,7 @@ IS_EMPTY / IS_NOT_EMPTY），值侧按类型分 `string_value` / `number_value` 
   应答 `has_more` 在本端点是 **`string`**（WD11 锁定，形状与 #26 不同）。
 - 内容块的类型字段官方 JSON 名是 **`type`** 而非 `block_type`，取值 15+ 个 `BLOCK_TYPE_*`
   （含 `BLOCK_TYPE_HEADER_1`～`BLOCK_TYPE_HEADER_6`，见
-  [SmartDocBlockInfo.cs](../../../Mud.Wechat.Work/Wedoc/SmartDocBlockInfo.cs)）；
+  [SmartDocBlockInfo.cs](../../DataModels/Wedoc/SmartDocBlockInfo.cs)）；
   同一模型**同时**承载 `title` 与 `content` 两个文本键（参数表用 `title`、部分示例用 `content`），
   **不得合并**，否则任一侧文本内容会丢（WD11）。插入位置键是 `after_id`，为空表示插到最前。
 - 数据表路由沿用 `smartsheet` 词根（#44~#47），与智能表格内容族（#11~#30）**不是同一族**；
@@ -314,7 +314,7 @@ IS_EMPTY / IS_NOT_EMPTY），值侧按类型分 `string_value` / `number_value` 
 |---|---|---|
 | **有值才覆盖**（增量 patch） | #49 `mod_doc_join_rule`、#51 `mod_doc_safty_setting` | 接口 remarks：「**有值的字段才会覆盖原配置**」⇒ 想清空必须显式给值/给空列表，缺省即保持 |
 | **空列表即清空** | #49 的 `co_auth_list`、#50 的两个成员列表、PQ 邻域的 `allow_*` | `co_auth_list` 传空列表 ⇒ 清空特定部门权限；`update_co_auth_list = true` 才更新部门列表；`co_auth_list[].type` 目前**仅支持部门（值 2）** |
-| **全量替换** | #58 `modify_form`（`oper = 1` 全量替换问题、`oper = 2` 全量替换设置） | WD13 注释与 [ModifyWedocFormRequest.cs](../../../Mud.Wechat.Work/Wedoc/RequestModel/ModifyWedocFormRequest.cs) remarks |
+| **全量替换** | #58 `modify_form`（`oper = 1` 全量替换问题、`oper = 2` 全量替换设置） | WD13 注释与 [ModifyWedocFormRequest.cs](../../DataModels/Wedoc/RequestModel/ModifyWedocFormRequest.cs) remarks |
 | **操作序列** | #6（≤30）、#8（≤5） | 见第 4 节 |
 | **重置为默认** | #53 `update_sheet_priv` 的 `clear = true` | 子表权限清空 ⇒ 回到默认，而非删除规则 |
 
@@ -334,8 +334,8 @@ IS_EMPTY / IS_NOT_EMPTY），值侧按类型分 `string_value` / `number_value` 
 ## 11. 收集表：`formid` 与 `repeated_id` 分治、`oper` 全量替换、条件必填成组
 
 - 定位：#57 返回 `formid`，#58/#59 用 `formid`；**#60/#61 用 `repeated_id`**
-  （[GetWedocFormStatisticRequest.cs](../../../Mud.Wechat.Work/Wedoc/RequestModel/GetWedocFormStatisticRequest.cs)、
-  [GetWedocFormAnswerRequest.cs](../../../Mud.Wechat.Work/Wedoc/RequestModel/GetWedocFormAnswerRequest.cs)
+  （[GetWedocFormStatisticRequest.cs](../../DataModels/Wedoc/RequestModel/GetWedocFormStatisticRequest.cs)、
+  [GetWedocFormAnswerRequest.cs](../../DataModels/Wedoc/RequestModel/GetWedocFormAnswerRequest.cs)
   的第一字段就是 `repeated_id`）⇒ 别把 `formid` 当统计入参。
 - 结构闸：问题数组 ≤**200**；`question_id` **从 1 开始**（家校范围为 **2** 开始）；`char_len` 必须 >0、最大 **4000**；
   图片 / 文件数量取值 [1,9] 默认 9，单文件 ≤**3000MB**；多选 `number` ≤ 选项数，`type` 为 1/2/3 时 `number` 必填且 >0；
@@ -356,9 +356,9 @@ IS_EMPTY / IS_NOT_EMPTY），值侧按类型分 `string_value` / `number_value` 
   SDK 按字符串透传、不编解码、不做本地大小硬拦。
 - 规模闸：整文件上传 ≤**10M**；分块上传文件 ≤**20G**、块大小**固定 2M**、`index` 从 **1** 起、并发建议 ≤**10**；
   `file_name` ≤**255**（英文 1 / 汉字 2）。必填非可空由 WD17（任务号 `P2-QY-B8-WEDOC-REQUIRED-09`）锁定，
-  包括 [UploadWedocImageRequest.cs](../../../Mud.Wechat.Work/Wedoc/RequestModel/UploadWedocImageRequest.cs)、
-  [UploadWedocFileRequest.cs](../../../Mud.Wechat.Work/Wedoc/RequestModel/UploadWedocFileRequest.cs)、
-  [InitWedocFileUploadRequest.cs](../../../Mud.Wechat.Work/Wedoc/RequestModel/InitWedocFileUploadRequest.cs)
+  包括 [UploadWedocImageRequest.cs](../../DataModels/Wedoc/RequestModel/UploadWedocImageRequest.cs)、
+  [UploadWedocFileRequest.cs](../../DataModels/Wedoc/RequestModel/UploadWedocFileRequest.cs)、
+  [InitWedocFileUploadRequest.cs](../../DataModels/Wedoc/RequestModel/InitWedocFileUploadRequest.cs)
   的 `Docid`/`FileName`/`Size`/`BlockSha` 等。
 - **秒传短路**：#64 应答 `hit_exist = true` 时直接返回 `file_url`，流程即完成，**不得**再调 #65/#66；
   否则拿 `upload_key` 继续。
@@ -408,16 +408,16 @@ IS_EMPTY / IS_NOT_EMPTY），值侧按类型分 `string_value` / `number_value` 
 
 | 陷阱 | 承载位置 | 锁定守卫 |
 |---|---|---|
-| `verison`（顶层版本字段，参数表作 version、示例作 verison ⇒ **以示例为准**） | [BatchUpdateWedocDocumentRequest.cs](../../../Mud.Wechat.Work/Wedoc/RequestModel/BatchUpdateWedocDocumentRequest.cs) 的 `Verison` | WD6 |
+| `verison`（顶层版本字段，参数表作 version、示例作 verison ⇒ **以示例为准**） | [BatchUpdateWedocDocumentRequest.cs](../../DataModels/Wedoc/RequestModel/BatchUpdateWedocDocumentRequest.cs) 的 `Verison` | WD6 |
 | `blod`（文本样式）与 `bold`（run 属性）**两种拼写并存** | `WedocDocumentTextProperty.Blod` / `WedocDocumentRunProperty.Bold` | WD6 |
 | `safty`（`mod_doc_safty_setting`） | #51 路由 | WD12 注释 |
-| `property_ganttobect` | [AddSmartSheetViewRequest.cs](../../../Mud.Wechat.Work/Wedoc/RequestModel/AddSmartSheetViewRequest.cs) 的 `PropertyGanttObject` | WD9 |
+| `property_ganttobect` | [AddSmartSheetViewRequest.cs](../../DataModels/Wedoc/RequestModel/AddSmartSheetViewRequest.cs) 的 `PropertyGanttObject` | WD9 |
 | `typ` 与 `type` 并存 | URL / 自动编号字段属性 | WD9 |
 | `field_id` 与 `filed_id` 并存 | 关联字段属性 | WD9 |
-| `desc`（排序方向） | [SmartSheetSortInfo.cs](../../../Mud.Wechat.Work/Wedoc/SmartSheetSortInfo.cs) | WD9 |
-| `title` 与 `content` 并存 | [SmartDocBlockInfo.cs](../../../Mud.Wechat.Work/Wedoc/SmartDocBlockInfo.cs) | WD11 |
-| `has_more` 为 `string` | [GetSmartDocBlockListResponse.cs](../../../Mud.Wechat.Work/Wedoc/GetSmartDocBlockListResponse.cs) | WD11 |
-| `ss_docid` | [GetSmartDocDataSourceResponse.cs](../../../Mud.Wechat.Work/Wedoc/GetSmartDocDataSourceResponse.cs)、`SmartDocDataTableInfo` | WD11 |
+| `desc`（排序方向） | [SmartSheetSortInfo.cs](../../DataModels/Wedoc/SmartSheetSortInfo.cs) | WD9 |
+| `title` 与 `content` 并存 | [SmartDocBlockInfo.cs](../../DataModels/Wedoc/SmartDocBlockInfo.cs) | WD11 |
+| `has_more` 为 `string` | [GetSmartDocBlockListResponse.cs](../../DataModels/Wedoc/GetSmartDocBlockListResponse.cs) | WD11 |
+| `ss_docid` | [GetSmartDocDataSourceResponse.cs](../../DataModels/Wedoc/GetSmartDocDataSourceResponse.cs)、`SmartDocDataTableInfo` | WD11 |
 | `get_block_list`（单数）与 add/update/delete_blocks（复数）混用 | #38~#41 路由 | WD10 |
 | `base64_content` vs `file_base64_content`、`url` vs `file_url`、`succ_userid_list`、`userid_list` | 素材与 Vip 族 DTO | WD16 |
 | 必填非可空（`Docid` / `FileName` / `Size` / `BlockSha` / `UploadKey` / `Index` / `FileBase64Content` / `UseridList`） | 素材与 Vip 族请求体 | WD17 |
@@ -598,9 +598,9 @@ using (switcher.UseCorpScope(appKey: "default", authCorpId, authorization.Perman
 | 层级与注册组（九族 34 接口、9 个实现类名字面量） | WD4（L743–L941，`AssertFamilyHierarchy` + `WedocRegistryGroupName`） |
 | 令牌绑定（34 接口全 Query `access_token`） | WD5（L946–L999） |
 | 拼写陷阱三批 | WD6（L1006）、WD9（L1044）、WD11（L1098）；素材/Vip 字段名 WD16（L629）、必填非可空 WD17（L683，任务号 `P2-QY-B8-WEDOC-REQUIRED-09`） |
-| JSON 上下文登记（全量 292 型，分族 10+34+37+81+47+25+43+9+6） | WD7（L1130）与生成物 [WedocJsonContext.g.cs](../../../Mud.Wechat.Work/Generated/WedocJsonContext.g.cs)（`internal`，示例不得引用） |
+| JSON 上下文登记（全量 292 型，分族 10+34+37+81+47+25+43+9+6） | WD7（L1130）与生成物 [WedocJsonContext.g.cs](../../DataModels/Generated/WedocJsonContext.g.cs)（`internal`，示例不得引用） |
 | Query 令牌白名单（G5）与令牌归属键 | [WechatContractGuards.QueryTokenInjection.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatContractGuards.QueryTokenInjection.cs)（L536 起 Wedoc 段落）、[WechatTokenOwnerContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatTokenOwnerContractGuards.cs) |
-| DTO 属性名 / 类型 / JSON 名 / 取值域注释 | [../../../Mud.Wechat.Work/Wedoc/](../../../Mud.Wechat.Work/Wedoc/)（223 个根文件 + [RequestModel/](../../../Mud.Wechat.Work/Wedoc/RequestModel/) 69 个） |
+| DTO 属性名 / 类型 / JSON 名 / 取值域注释 | [../../../Mud.Wechat.Work/DataModels/Wedoc/](../../../Mud.Wechat.Work/DataModels/Wedoc/)（223 个根文件 + [RequestModel/](../../../Mud.Wechat.Work/DataModels/Wedoc/RequestModel/) 69 个） |
 | 邻域对比：二维码图片二进制 vs JSON、`state` 的另一套长度规则 | `../Authentication/IWechatWorkProviderAuthenticationService.cs`（`get_app_qrcode`：`result_type` 1 返回 image/png 二进制、2 返回 `qrcode` url；`state` 仅 a-zA-Z0-9 且 ≤32 字节） |
 | 云文档高级功能账号的另一套契约 | `../Wedrive/`（`wedrive/vip/`） |
 | 模块注册三段式 | [WechatModule.cs](../../Extensions/WechatModule.cs)（`Wedoc` 成员）、[WechatWorkServiceBuilder.cs](../../Extensions/WechatWorkServiceBuilder.cs)（`AddWedocApi()` 与 `AddWedocWebApiHttpClient()`）、[WechatJsonResolverExtensions.cs](../../Extensions/WechatJsonResolverExtensions.cs)（`WedocJsonContext.Default`） |

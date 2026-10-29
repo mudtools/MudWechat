@@ -39,7 +39,7 @@ dotnet test Tests/Mud.Wechat.Work.Tests -c Release -f net8.0 --filter "FullyQual
 | 场景 | 同批完成什么 |
 |---|---|
 | 加端点 | 接口 XML 文档（官方文档 URL/ID + 频率上限/串行/覆盖删除/权限可见范围等业务限制，格式照既有端点，**不得弱化**）+ 更新对应域守卫 |
-| 加 DTO | 标 `[HttpJsonSerializable]` → 跑 `AddHttpJsonSerializable.ps1` + `GenerateJsonContext.ps1`（Abstractions 命名空间域手写登记进 `AuthenticationJsonContext`；生成物落 `<线>/Generated/`——2026-10 包合并后原 `{线}.DataModels/Generated` 已在主包内）→ 更新守卫中的上下文登记断言 |
+| 加 DTO | 标 `[HttpJsonSerializable]` → 跑 `AddHttpJsonSerializable.ps1` + `GenerateJsonContext.ps1`（Abstractions 命名空间域手写登记进 `AuthenticationJsonContext`；生成物落该线主包的 `Generated/`——2026-10 包合并后原 `{线}.DataModels/Generated` 已在主包内，企微线进一步收拢为 `Mud.Wechat.Work/DataModels/Generated/`）→ 更新守卫中的上下文登记断言 |
 | 加配置属性 | 补**真实消费点**；无消费点则**删属性**（`audit-config-keys.ps1` 无白名单、无 `-Strict`，`Validate`/`ToString` 不算消费点，正确处置是补消费点或删属性，不是加模式绕开） |
 | 加/改回调事件 | `[WechatCallbackContract]`（事件键 + 族前置 + 开放面）+ 载荷 `[PayloadContract]` + 回调守卫 |
 | 加/改回调处理器 | `WechatCallbackHandlerAnalyzer`（MUDCB002~005）自动生效（`SupportedEventType` ↔ 载荷契约一致性编译期校验）；若钥匙集/开放面变化则同批更新 `WechatCallbackContractGuards`（CB 系列） |
@@ -77,9 +77,11 @@ Src/Core/
   Mud.Wechat.Callback.Analyzers/      # 回调处理器契约分析器（中立名；诊断型、不发射；netstandard2.0 单 TFM；
                                       # IsPackable=false，**由四个 Callback 宿主包以字面相对路径内嵌** analyzers/dotnet/cs）
 Src/Work/                             # 企业微信线（本文件 §5~§7 的主体）
-  Mud.Wechat.Work/                    # 一线一入口包：令牌基座 + 多应用 + 配置 + 枚举 + 异常 + 官方 DTO（Generated/ 域 JsonContext）
+  Mud.Wechat.Work/                    # 一线一入口包：令牌基座 + 多应用 + 配置 + 枚举 + 异常 + 官方 DTO（DataModels/{域}/ +
+                                      # DataModels/Generated/ 域 JsonContext）
                                       # + Interfaces/{域}/ 接口声明 + 服务 + DI + 模块注册（2026-10 包合并：
-                                      # 原 Work.Abstractions / Work.DataModels 并入，**命名空间不变**）
+                                      # 原 Work.Abstractions / Work.DataModels 并入，**命名空间不变**；同月的源码归类把
+                                      # 工程根散落的 46 个 DTO 域目录收拢进 DataModels/ 子目录，**同样只动目录不动命名空间**）
   Mud.Wechat.Work.Callback/           # 回调接收（AES 解密、事件解析、分发）+ HTTP 中间件；Events/Payloads/ 载荷；智能机器人 JSON 回调通道 + 长连接（`LongConnection/`，net8+ 门控，见 §5.5）
 Src/{OfficialAccount,MiniProgram,Pay,OpenPlatform,Channels,Ads,AI}/   # 其余各线，2026-10 包合并后形态：
                                       # 公众号 2 包（主包 + Callback）/ 小程序 1 / 支付 2（APIv3+APIv2 同包 + Callback）
@@ -112,7 +114,7 @@ scripts/                              # verify-build / audit-config-keys / Gener
 - `RequestModel/`、`ResponseModel/` 与各功能族子目录**仅作组织，不入命名空间**（如 `Checkin/Schedule/` 仍是 `...DataModels.Checkin`）。
 - 模块注册三段式：`WechatModule.{域}` 枚举值 + `Add{域}Api()`（在 `Extensions/WechatWorkServiceBuilder.cs`）+ 源生成器产出的 `Add{域}WebApiHttpClient()`（**无签入源文件**）；注册组名与域同名。
 
-目录 / 命名空间 / 模块名**不一致的既存点**（新增沿用，勿「顺手修正」）：
+目录 / 命名空间 / 模块名**不一致的既存点**（新增沿用，勿「顺手修正」；下表「DTO 目录」列相对于主包工程的 `DataModels/`）：
 
 | 域 | 接口目录 | DTO 目录 | 模块 / 注册入口 |
 |---|---|---|---|

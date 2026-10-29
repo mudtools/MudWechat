@@ -18,7 +18,7 @@
 
 > **事实来源限定**：本文全部断言只来自本仓三类证据——本目录接口文件的 XML 注释、
 > [WechatCheckinContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatCheckinContractGuards.cs)（CK1~CK5）、
-> [Src/Work/Mud.Wechat.Work/Checkin/](../../../Mud.Wechat.Work/Checkin/) 下的 DTO 声明；
+> [Src/Work/Mud.Wechat.Work/DataModels/Checkin/](../../../Mud.Wechat.Work/DataModels/Checkin/) 下的 DTO 声明；
 > 路由与计数以守卫断言为准，官方文档号仅作定位标识、不作为本文事实来源。
 > 未能在本仓三类证据内核验的项目一律集中在文末「已知留档缺口」，标为**未逐项核验**，正文不作推断。
 
@@ -101,7 +101,7 @@ CK2 对这两族断言 `parentDeclaredEndpointCount: 0`——同一路由在第�
 
 两支的批量闸一致：`useridlist` **不超过 100** 个，超过须分批；本仓不做本地裁剪，越界由应答 `errcode` 表达。
 `opencheckindatatype` 在自建/代开发文档页为官方必填、**第三方文档页标注为非必填**（同一 DTO
-[GetCheckinDataRequest.cs](../../../Mud.Wechat.Work/Checkin/Record/GetCheckinDataRequest.cs) 承载三档口径，故建模为 `int?`）。
+[GetCheckinDataRequest.cs](../../DataModels/Checkin/Record/GetCheckinDataRequest.cs) 承载三档口径，故建模为 `int?`）。
 
 ## 3. 打卡域有四种「时间」形态，`checkin_time` 是秒级时间戳而非 `YYYY-MM-DD`
 
@@ -116,9 +116,9 @@ CK2 对这两族断言 `parentDeclaredEndpointCount: 0`——同一路由在第�
 
 两个必须分清的陷阱：
 
-- **同名键 `schedule_checkin_time` 有两种形态**：[PunchCorrectionRequest.cs](../../../Mud.Wechat.Work/Checkin/Record/PunchCorrectionRequest.cs)
+- **同名键 `schedule_checkin_time` 有两种形态**：[PunchCorrectionRequest.cs](../../DataModels/Checkin/Record/PunchCorrectionRequest.cs)
   是偏移秒（`int?`，无规则对应的卡点即休息日/无规则/自由上下班**不传**），
-  [ThirdPartyCheckinRecord.cs](../../../Mud.Wechat.Work/Checkin/Record/ThirdPartyCheckinRecord.cs) 是时间戳（`long?`）。CK5 分别锁定。
+  [ThirdPartyCheckinRecord.cs](../../DataModels/Checkin/Record/ThirdPartyCheckinRecord.cs) 是时间戳（`long?`）。CK5 分别锁定。
 - **偏移秒与毫秒混在一个规则对象里**：`limit_aheadtime` / `limit_offtime` 官方未标注单位，
   本仓注释按示例量级同 `checkindate.limit_aheadtime` 推为毫秒 ⇒ **未逐项核验**（见文末缺口），不得据此做单位换算。
 
@@ -130,14 +130,14 @@ CK2 对这两族断言 `parentDeclaredEndpointCount: 0`——同一路由在第�
 | `schedule_id` | 记录 #7、排班 #13 响应 `schedule_info[]`、#14 请求 `items[]` | **班次** id；排班侧 `0` 代表休息（响应侧注释补「名称为「休息」」） |
 | `timeline_id` | 记录 #7 响应 | **时段** id（某班次中某一组上下班时段，如 9:00–12:00） |
 | `time_id` | 规则**请求**侧 `checkindate.checkintime[]` 与 `schedulelist[].time_section[]` | 时段标识：规则内唯一、大于 0 小于 99999 |
-| `id` | 排班**响应**侧 `time_section[]`（[CheckinScheduleTimeSection.cs](../../../Mud.Wechat.Work/Checkin/Schedule/CheckinScheduleTimeSection.cs)） | 同一时段标识在排班响应里叫 `id`，**不叫** `time_id`（CK5 锁定，勿「顺手统一」） |
+| `id` | 排班**响应**侧 `time_section[]`（[CheckinScheduleTimeSection.cs](../../DataModels/Checkin/Schedule/CheckinScheduleTimeSection.cs)） | 同一时段标识在排班响应里叫 `id`，**不叫** `time_id`（CK5 锁定，勿「顺手统一」） |
 
 **本域不存在 `rid` 键**（`rid` 是审批域的字段），也**不存在** `newdatetime` 键——规则侧的日期入参就叫 `datetime`、
 记录/报表侧叫 `starttime`/`endtime`。跨域借名会直接写出官方不认的键。
 
 ## 5. 打卡范围 `range` 的三键拼写：与日程域**不通用**
 
-[CheckinRange.cs](../../../Mud.Wechat.Work/Checkin/Rule/CheckinRange.cs)（请求/响应共用形态，官方要求**至少有一种人员来源**）：
+[CheckinRange.cs](../../DataModels/Checkin/Rule/CheckinRange.cs)（请求/响应共用形态，官方要求**至少有一种人员来源**）：
 
 | 属性 → JSON 名 | 类型 | 口径 |
 |---|---|---|
@@ -154,7 +154,7 @@ CK2 对这两族断言 `parentDeclaredEndpointCount: 0`——同一路由在第�
 守卫 CK1 逐条断言 `typeof(PostAttribute)`，含仅查询语义的 `getcheckinoption` / `getcorpcheckinoption` /
 `getcheckinschedulist` / `get_hardware_checkin_data` ⇒ **不得**「顺手统一」为 GET。
 
-`GetCorpCheckinOptionAsync`（#2）的 [GetCorpCheckinOptionRequest](../../../Mud.Wechat.Work/Checkin/Rule/GetCorpCheckinOptionRequest.cs)
+`GetCorpCheckinOptionAsync`（#2）的 [GetCorpCheckinOptionRequest](../../DataModels/Checkin/Rule/GetCorpCheckinOptionRequest.cs)
 是**零公共属性** DTO（CK5 以 `Should().BeEmpty()` 锁定），官方请求体即 `{}`，凭据只在 Query 的 `access_token` 上。
 调用方必须传一个空实例而不是 `null`。
 
@@ -178,13 +178,13 @@ CK2 对这两族断言 `parentDeclaredEndpointCount: 0`——同一路由在第�
 - 三支写端点都带 `effective_now`（`bool?`，是否立即生效）。
 - 创建侧容量闸（接口注释）：`wifimac_infos` 与 `loc_infos` **不能同时为空**、wifi/地点个数 ≤500、`checkindate` 个数 1~7、
   单日打卡时段 1~4、排班个数 ≤50、特殊工作日/非工作日个数 ≤366；主要错误码 `301093`（参数校验失败）、`301094`（使用旧字段/旧特性）。
-- 时段字段约束（[CheckinRuleCheckintime.cs](../../../Mud.Wechat.Work/Checkin/Rule/CheckinRuleCheckintime.cs)）：所有时间须为**整分钟**（60 的倍数）、
+- 时段字段约束（[CheckinRuleCheckintime.cs](../../DataModels/Checkin/Rule/CheckinRuleCheckintime.cs)）：所有时间须为**整分钟**（60 的倍数）、
   上下班区间与可打卡时间不可有交集、多组休息时段 ≤5 组且不可有交集；
   弹性两组**互斥**（`flex_on_duty_time`/`flex_off_duty_time` 与 `max_allow_arrive_early`/`max_allow_arrive_late`，设一组时另一组置 0）；
   `flex_time` 官方注明旧字段、**openapi 创建与修改时不可使用**。
 
-**加班信息两侧不同构**（CK5 锁定）：请求侧 [CheckinRuleGroup.cs](../../../Mud.Wechat.Work/Checkin/Rule/CheckinRuleGroup.cs) 是 `ot_info_v2`
-（`CheckinOtInfoV2`，含 `workdayconf` 等），#2 响应侧 [CheckinCorpGroup.cs](../../../Mud.Wechat.Work/Checkin/Rule/CheckinCorpGroup.cs) 是旧 `ot_info`
+**加班信息两侧不同构**（CK5 锁定）：请求侧 [CheckinRuleGroup.cs](../../DataModels/Checkin/Rule/CheckinRuleGroup.cs) 是 `ot_info_v2`
+（`CheckinOtInfoV2`，含 `workdayconf` 等），#2 响应侧 [CheckinCorpGroup.cs](../../DataModels/Checkin/Rule/CheckinCorpGroup.cs) 是旧 `ot_info`
 （`CheckinOtInfo`，含 `otapplyinfo`）——官方错误表明确 `ot_info` 为旧字段不建议使用，但响应仍是它。两份结构**不可共用**。
 
 ## 8. 频率 / 批量 / 容量闸一览（全部由官方侧执行，本仓不拦截）
@@ -210,12 +210,12 @@ CK2 对这两族断言 `parentDeclaredEndpointCount: 0`——同一路由在第�
 | `lastest_time` | 日报 `summary_info` 的「最晚打卡时间」官方拼写照抄（非 `latest`） | CK5 |
 | `acctivity_name` / `excepion_days_cnt` | 第三方月报拼写照抄（勿修正） | CK5 |
 | `scheduleList` | 排班响应 `schedule.scheduleList` 为 **camelCase**，同页其余字段全 snake_case | CK5 |
-| `"group.checkin_method_type"` | 员工打卡规则返回示例出现**字面量点号键**（官方原文如此），实际按嵌套字段建模 | CK5 + [CheckinGroup.cs](../../../Mud.Wechat.Work/Checkin/Rule/CheckinGroup.cs) 注释 |
+| `"group.checkin_method_type"` | 员工打卡规则返回示例出现**字面量点号键**（官方原文如此），实际按嵌套字段建模 | CK5 + [CheckinGroup.cs](../../DataModels/Checkin/Rule/CheckinGroup.cs) 注释 |
 | `base_info` vs `baseinfo` | 现代结构与第三方旧结构的日报/月报顶层键**只差一个下划线** | CK5 |
 | 参数表类型笔误 | `work_se`、`uint3`、`unit32`、`checkindate.checkintime` 标注 `uint32` 实为对象数组、`allow_flex` 一处标 `uint32` 一处标 `bool` | 接口注释「照抄勿修正」+ CK5 |
 
 日报与月报的加班结构**不可共用**：日报是 `ot_info`（`CheckinDayOtInfo`），月报是 `overwork_info`
-（[CheckinMonthOverworkInfo.cs](../../../Mud.Wechat.Work/Checkin/Report/CheckinMonthOverworkInfo.cs)）——
+（[CheckinMonthOverworkInfo.cs](../../DataModels/Checkin/Report/CheckinMonthOverworkInfo.cs)）——
 后者三个「时长」字段单数（`workday_over_sec` / `restdays_over_sec` / `holidays_over_sec`）、
 六个「记为调休/加班费」字段复数（`workdays_over_as_money` / `restdays_over_as_vacation` 等），照抄勿改。
 `summary_info.regular_days` 仅参数表列出、官方示例未包含（接口注释留档）。
@@ -241,7 +241,7 @@ CK2 对这两族断言 `parentDeclaredEndpointCount: 0`——同一路由在第�
 本仓另有一个独立业务域 `DeviceData`（智能设备数据，路由 `/cgi-bin/devicedata/get_checkin_data`，
 守卫 [WechatDeviceDataContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatDeviceDataContractGuards.cs)），
 两支都返回名为 `checkindata` 的键但形态不同：本域记录仅 4 字段
-（`userid` / `checkin_time` / `device_sn` / `device_name`，[HardwareCheckinRecord.cs](../../../Mud.Wechat.Work/Checkin/Device/HardwareCheckinRecord.cs)）。
+（`userid` / `checkin_time` / `device_sn` / `device_name`，[HardwareCheckinRecord.cs](../../DataModels/Checkin/Device/HardwareCheckinRecord.cs)）。
 **不得**把两支混为一谈或互相「归位」。
 
 `filter_type` 决定 `starttime`/`endtime` 的语义：`1`（默认）按**打卡时间**过滤、`2` 按**设备上传打卡记录的时间**过滤。
@@ -417,8 +417,8 @@ using (switcher.UseCorpScope(appKey: "default", authCorpId, authorization.Perman
 | 字段形态与拼写照抄断言（`baseinfo`/`scheduleList`/`lastest_time`/`acctivity_name`/`id`/`party_id`/空请求体等） | CK5（L422–L513） |
 | Query 令牌注入白名单（G5）与令牌归属键（TO1~TO3） | [WechatContractGuards.QueryTokenInjection.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatContractGuards.QueryTokenInjection.cs)、[WechatTokenOwnerContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatTokenOwnerContractGuards.cs) |
 | 接口命名空间二分（父 → `Mud.Wechat.Work.Interfaces`、可注入 → `Mud.Wechat.Work`） | [WechatInterfaceNamespaceContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatInterfaceNamespaceContractGuards.cs)（N1~N3） |
-| DTO 属性名 / 类型 / JSON 名 / 取值域注释 | [../../../Mud.Wechat.Work/Checkin/](../../../Mud.Wechat.Work/Checkin/)（`Rule/`、`Record/`、`Report/`、`Schedule/`、`Device/`） |
-| 上下文源生成文件（`internal`，示例不得引用） | `../../../Mud.Wechat.Work/Generated/CheckinJsonContext.g.cs` |
+| DTO 属性名 / 类型 / JSON 名 / 取值域注释 | [../../../Mud.Wechat.Work/DataModels/Checkin/](../../../Mud.Wechat.Work/DataModels/Checkin/)（`Rule/`、`Record/`、`Report/`、`Schedule/`、`Device/`） |
+| 上下文源生成文件（`internal`，示例不得引用） | `../../../Mud.Wechat.Work/DataModels/Generated/CheckinJsonContext.g.cs` |
 | 模块注册三段式 | [WechatModule.cs](../../Extensions/WechatModule.cs)、[WechatWorkServiceBuilder.cs](../../Extensions/WechatWorkServiceBuilder.cs)、[WechatJsonResolverExtensions.cs](../../Extensions/WechatJsonResolverExtensions.cs)（`CheckinJsonContext.Default` 登记处） |
 | 邻域「设备打卡」另一支 | [WechatDeviceDataContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatDeviceDataContractGuards.cs)（`/cgi-bin/devicedata/get_checkin_data`） |
 

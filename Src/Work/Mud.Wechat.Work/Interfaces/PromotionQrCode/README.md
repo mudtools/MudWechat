@@ -15,7 +15,7 @@
 
 > **事实来源限定**：本文全部断言只来自本仓三类证据——本目录 3 份接口文件的 XML 注释、
 > [WechatPromotionQrCodeContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatPromotionQrCodeContractGuards.cs)（PQ1~PQ6）、
-> [../../../Mud.Wechat.Work/PromotionQrCode/](../../../Mud.Wechat.Work/PromotionQrCode/) 下的 8 个 DTO 声明；
+> [../../../Mud.Wechat.Work/DataModels/PromotionQrCode/](../../../Mud.Wechat.Work/DataModels/PromotionQrCode/) 下的 8 个 DTO 声明；
 > 端点数与路由以守卫断言为准，官方文档号（90581~90584）仅作定位标识、不作为本文事实来源。
 > 未能在本仓三类证据内核验的项目一律集中在文末「已知留档缺口」，标为**未逐项核验**，正文不作推断。
 > 尤其 `state` 的长度规则、注册链接拼接方式、凭据可用 API 面这类**邻域口径**，本文只写本域注释留档的部分，
@@ -85,7 +85,7 @@
 
 | 出现位置 | 官方口径（本仓留档原文） | 证据 |
 |---|---|---|
-| 本域 #1 `GetRegisterCodeRequest.State` | 「**只支持英文字母和数字，最长为 128 字节**」；指定后 #2 应答与「注册完成回调事件」会回传同值 | [GetRegisterCodeRequest.cs](../../../Mud.Wechat.Work/PromotionQrCode/RequestModel/GetRegisterCodeRequest.cs) + 接口 remarks（90581） |
+| 本域 #1 `GetRegisterCodeRequest.State` | 「**只支持英文字母和数字，最长为 128 字节**」；指定后 #2 应答与「注册完成回调事件」会回传同值 | [GetRegisterCodeRequest.cs](../../DataModels/PromotionQrCode/RequestModel/GetRegisterCodeRequest.cs) + 接口 remarks（90581） |
 | `Authentication` 邻域 `get_app_qrcode` / 定制授权链接 | 「`state` 仅可填写 a-zA-Z0-9、**长度不可超过 32 个字节**」 | `../Authentication/IWechatWorkProviderAuthenticationService.cs` remarks |
 
 ⇒ 两者都是「字母数字」但**长度上限不同**（128 vs 32），跨域复用同一个渠道标识常量必然在其中一侧越界。
@@ -113,7 +113,7 @@
 
 ## 6. 「未填即清空」：#3 的三个范围参数不是「保持不变」
 
-`SetAuthorizedAppScopeRequest`（[RequestModel/SetAuthorizedAppScopeRequest.cs](../../../Mud.Wechat.Work/PromotionQrCode/RequestModel/SetAuthorizedAppScopeRequest.cs)）：
+`SetAuthorizedAppScopeRequest`（[RequestModel/SetAuthorizedAppScopeRequest.cs](../../DataModels/PromotionQrCode/RequestModel/SetAuthorizedAppScopeRequest.cs)）：
 
 | 属性 | JSON 名 | 类型 | 缺省语义 |
 |---|---|---|---|
@@ -127,7 +127,7 @@ PQ6 把「三者必须可空、缺省即官方清空语义」钉成断言（原�
 ⇒ 想「只改部门、不动成员」在本端点上**做不到**，必须先读回现状再整组提交。
 类型上还有两处不对称，照抄官方、勿统一：请求侧成员是 `List<string>`（userid）、部门与标签是 `List<int>`；
 应答侧非法项字段名是 `invaliduser` / `invalidparty` / `invalidtag`（**无下划线**，且与请求侧的 `allow_user` 等**不同名**），
-类型分别为 `List<string>?` / `List<int>?` / `List<int>?`（[SetAuthorizedAppScopeResponse.cs](../../../Mud.Wechat.Work/PromotionQrCode/SetAuthorizedAppScopeResponse.cs)）。
+类型分别为 `List<string>?` / `List<int>?` / `List<int>?`（[SetAuthorizedAppScopeResponse.cs](../../DataModels/PromotionQrCode/SetAuthorizedAppScopeResponse.cs)）。
 
 ## 7. GET 却改状态：#4 三连不可逆，禁止盲目重试
 
@@ -155,11 +155,11 @@ if (info.ContactSync is null)
 }
 ```
 
-[ContactSyncCredential.cs](../../../Mud.Wechat.Work/PromotionQrCode/ContactSyncCredential.cs) 只有两字段：
+[ContactSyncCredential.cs](../../DataModels/PromotionQrCode/ContactSyncCredential.cs) 只有两字段：
 `AccessToken`（JSON `access_token`，非可空 `string`，官方口径 30 分钟有效期）与
 `ExpiresIn`（JSON `expires_in`，`int`，官方示例 1800）。
 同应答另有 `Corpid`（`corpid`）、`AuthUserInfo`（`auth_user_info` →
-[RegisterAuthUserInfo.cs](../../../Mud.Wechat.Work/PromotionQrCode/RegisterAuthUserInfo.cs) 只承载 `userid`）、
+[RegisterAuthUserInfo.cs](../../DataModels/PromotionQrCode/RegisterAuthUserInfo.cs) 只承载 `userid`）、
 `State`、`TemplateId` 四个可空字段。
 调用 #3/#4 的**前提**是「已开启通讯录迁移」且「已收到授权成功通知」；企业注册初始化安装应用后
 应用默认可见范围为**根部门**，只有需要修改时才调 #3。
@@ -275,7 +275,7 @@ public sealed class PromotionRegisterFlow(
 | 注册链接的拼接模板 | 本域只产出 `register_code` 字符串；「把码拼成可点击注册链接」的 URL 形状与参数名本仓未留档 ⇒ **未逐项核验** | 前端跳转页与官方链接模板一并核验后再写示例 |
 | `expires_in` 的实际语义上限 | 只有官方**示例值** 600（#1）与 1800（`contact_sync`），是否随推广包/企业配置变化**未逐项核验** | 不得把示例值当成长期常量硬编码 |
 | `template_id` 的签发面 | 注释只说明来源是服务商管理端的注册推广包，本域无对应端点 ⇒ 获取面归属**未在本域核验** | 需要程序化建包时先核验官方，勿在本域加端点 |
-| `auth_user_info` 的字段全集 | 本仓 [RegisterAuthUserInfo.cs](../../../Mud.Wechat.Work/PromotionQrCode/RegisterAuthUserInfo.cs) 只承载 `userid`；官方是否另有授权管理员姓名/手机号等字段**未逐项核验** | 补字段须先核验原文再同批改 PQ5 的 8 型计数 |
+| `auth_user_info` 的字段全集 | 本仓 [RegisterAuthUserInfo.cs](../../DataModels/PromotionQrCode/RegisterAuthUserInfo.cs) 只承载 `userid`；官方是否另有授权管理员姓名/手机号等字段**未逐项核验** | 补字段须先核验原文再同批改 PQ5 的 8 型计数 |
 | 迁移 `access_token` 可调用的通讯录 API 面 | 本域只消费该凭证于 #3/#4；「它是否有全部通讯录读写权限之外的边界」只有 remarks 一句「有全部通讯录读写权限」⇒ 可用面清单**未逐项核验** | 需要扩到其它通讯录端点时，先核验邻域文档，勿在本域加端点 |
 | 错误码全集 | 本域仅留档 **84024**；`register_code` 过期/已消费、`template_id` 无效、可见范围越界等场景的码值**未逐项核验** | 出现新码先核验，再统一登记码表与判错文案 |
 | 「注册完成回调事件」的载荷形状 | 该事件返回的 `AccessToken` 与 `state` 是 #3/#4 的另一凭证来源，但**事件载荷在 Callback 包，不属本域**；本域不建模事件 | 需要回调侧字段时查 Callback 包，勿在本域加 DTO |
@@ -291,9 +291,9 @@ public sealed class PromotionRegisterFlow(
 | 企业注册族层级（零端点父接口、唯一第三方子接口、不得出现自建/代开发子接口、`InheritedFrom` 与注册组） | PQ2（L102–L131） |
 | 通讯录迁移族层级（无 `[Token]`、无父接口、恰 2 端点、两支都有 `[Query("access_token")]`） | PQ3（L138–L175） |
 | 令牌绑定（`ProviderAccessToken` + Query + `provider_access_token`，且不等于两个归属域键） | PQ4（L182–L207） |
-| JSON 上下文登记（恰 8 型：请求 3 + 响应 3 + 嵌套 2；#4 无 DTO） | PQ5（L214–L238）与生成物 [PromotionQrCodeJsonContext.g.cs](../../../Mud.Wechat.Work/Generated/PromotionQrCodeJsonContext.g.cs)（`internal`，示例不得引用） |
+| JSON 上下文登记（恰 8 型：请求 3 + 响应 3 + 嵌套 2；#4 无 DTO） | PQ5（L214–L238）与生成物 [PromotionQrCodeJsonContext.g.cs](../../DataModels/Generated/PromotionQrCodeJsonContext.g.cs)（`internal`，示例不得引用） |
 | 官方字段名与「未填即清空 / state 字符集」陷阱 | PQ6（L246–L283，`JsonNameShouldBe` 辅助 L286–L293） |
-| DTO 属性名 / 类型 / JSON 名 / 可空性 | [../../../Mud.Wechat.Work/PromotionQrCode/](../../../Mud.Wechat.Work/PromotionQrCode/)（5 个根文件 + [RequestModel/](../../../Mud.Wechat.Work/PromotionQrCode/RequestModel/) 3 个） |
+| DTO 属性名 / 类型 / JSON 名 / 可空性 | [../../../Mud.Wechat.Work/DataModels/PromotionQrCode/](../../../Mud.Wechat.Work/DataModels/PromotionQrCode/)（5 个根文件 + [RequestModel/](../../../Mud.Wechat.Work/DataModels/PromotionQrCode/RequestModel/) 3 个） |
 | 邻域对照：`state` 的 32 字节口径与二维码图片二进制返回形态 | `../Authentication/IWechatWorkProviderAuthenticationService.cs`（`get_app_qrcode`）、`../Authentication/IWechatWorkProviderAuthenticationUrl.cs`（无 `[Token]` + 显式 Query 的同形态先例） |
 | 令牌归属键与 TO1 口径 | [AGENTS.md](../../../../../AGENTS.md)、[WechatTokenOwnerContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatTokenOwnerContractGuards.cs) |
 | G5 Query 令牌白名单（本域**不**在内，理由见第 9 节） | [WechatContractGuards.QueryTokenInjection.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatContractGuards.QueryTokenInjection.cs) |

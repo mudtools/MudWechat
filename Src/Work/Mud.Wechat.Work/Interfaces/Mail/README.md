@@ -23,7 +23,7 @@
 
 > **事实来源限定**：本文全部断言只来自本仓三类证据——本目录 20 份接口文件的 XML 注释、
 > [WechatMailContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatMailContractGuards.cs)（M1、M1b、M1c、M2、M2b、M3、M4、M5~M9）、
-> [Src/Work/Mud.Wechat.Work/Mail/](../../../Mud.Wechat.Work/Mail/) 下的 DTO 声明；
+> [Src/Work/Mud.Wechat.Work/DataModels/Mail/](../../../Mud.Wechat.Work/DataModels/Mail/) 下的 DTO 声明；
 > 端点数与路由以守卫断言为准，官方文档号（97445 / 95510 / 100183 等）仅作定位标识、不作为本文事实来源。
 > 未能在本仓三类证据内核验的项目一律集中在文末「已知留档缺口」，标为**未逐项核验**，正文不作推断、不借邻域数值。
 
@@ -38,9 +38,9 @@ MUD005 已知接受风险——企业微信官方契约强制 Query 传令牌，
 
 | # | 方法 | HTTP 动词 | 路由 | 令牌/开放面 | 备注 |
 |---|---|---|---|---|---|
-| 1 | `SendNormalMailAsync` | POST | `/cgi-bin/exmail/app/compose_send` | `access_token`(Query)；自建 97445 + 第三方 97515 + 代开发 97504 | 请求体 [MailSendRequest](../../../Mud.Wechat.Work/Mail/RequestModel/MailSendRequest.cs)；`to.emails` 与 `to.userids` 至少传一个 |
-| 2 | `SendScheduleMailAsync` | POST | `/cgi-bin/exmail/app/compose_send` | 同上；自建 97854 + 第三方 97867 + 代开发 97865 | [#1 公共字段](../../../Mud.Wechat.Work/Mail/RequestModel/MailSendScheduleRequest.cs) + `schedule`（官方必填）；应用还需「日程」权限 |
-| 3 | `SendMeetingMailAsync` | POST | `/cgi-bin/exmail/app/compose_send` | 同上；自建 97855 + 第三方 97868 + 代开发 97866 | [请求体](../../../Mud.Wechat.Work/Mail/RequestModel/MailSendMeetingRequest.cs) `schedule` + `meeting` 同时必填；还需「日程」+「会议」权限 |
+| 1 | `SendNormalMailAsync` | POST | `/cgi-bin/exmail/app/compose_send` | `access_token`(Query)；自建 97445 + 第三方 97515 + 代开发 97504 | 请求体 [MailSendRequest](../../DataModels/Mail/RequestModel/MailSendRequest.cs)；`to.emails` 与 `to.userids` 至少传一个 |
+| 2 | `SendScheduleMailAsync` | POST | `/cgi-bin/exmail/app/compose_send` | 同上；自建 97854 + 第三方 97867 + 代开发 97865 | [#1 公共字段](../../DataModels/Mail/RequestModel/MailSendScheduleRequest.cs) + `schedule`（官方必填）；应用还需「日程」权限 |
+| 3 | `SendMeetingMailAsync` | POST | `/cgi-bin/exmail/app/compose_send` | 同上；自建 97855 + 第三方 97868 + 代开发 97866 | [请求体](../../DataModels/Mail/RequestModel/MailSendMeetingRequest.cs) `schedule` + `meeting` 同时必填；还需「日程」+「会议」权限 |
 
 三支共用同一路由（M1 断言 `Distinct` = 1，L201–L202），差异全在请求包体 ⇒ 三种请求 DTO 各自独立、**不做运行时多态**。
 
@@ -125,13 +125,13 @@ M2（L336–L392）与 M2b（L399–L431）把两种形态分别钉死，改动�
 | 键 | 类型 | 出现处 | 口径 |
 |---|---|---|---|
 | （无） | — | 应用邮箱侧（#1~#7） | 应用邮箱由**调用令牌自身**唯一定位，无独立邮箱 id；`GetEmailAliasAsync` 连包体都不要 |
-| `groupid` | `string`（**邮箱格式**） | 群组族 #8~#12、[MailGroupBrief](../../../Mud.Wechat.Work/Mail/MailGroupBrief.cs) | 群组 ID 本身就是一个邮箱地址（接口注释「邮件群组 ID，邮箱格式」）⇒ 不是整数、也不能拿公共邮箱 id 顶替 |
-| `id` / `publicemail_id` | `long` | 公共邮箱族 #13~#19、#23 | 公共邮箱是**整数 ID**；创建返回 [CreatePublicMailResponse.Id](../../../Mud.Wechat.Work/Mail/CreatePublicMailResponse.cs)、更新与删除都吃它；`act_email` 侧键名换成 `publicemail_id` |
+| `groupid` | `string`（**邮箱格式**） | 群组族 #8~#12、[MailGroupBrief](../../DataModels/Mail/MailGroupBrief.cs) | 群组 ID 本身就是一个邮箱地址（接口注释「邮件群组 ID，邮箱格式」）⇒ 不是整数、也不能拿公共邮箱 id 顶替 |
+| `id` / `publicemail_id` | `long` | 公共邮箱族 #13~#19、#23 | 公共邮箱是**整数 ID**；创建返回 [CreatePublicMailResponse.Id](../../DataModels/Mail/CreatePublicMailResponse.cs)、更新与删除都吃它；`act_email` 侧键名换成 `publicemail_id` |
 | `userid` | `string` | #22~#26、`to.userids` 等 | 成员维度一律 userid，且需在应用可见范围内 |
-| `mail_id` / `schedule_id` | `string` | #5 / [MailSchedule](../../../Mud.Wechat.Work/Mail/MailSchedule.cs) | `mail_id` 由 #4 列表取得；`schedule_id` 缺省即「新建日程/会议」，传了即「修改」，`method=cancel` 时**必须带上** |
+| `mail_id` / `schedule_id` | `string` | #5 / [MailSchedule](../../DataModels/Mail/MailSchedule.cs) | `mail_id` 由 #4 列表取得；`schedule_id` 缺省即「新建日程/会议」，传了即「修改」，`method=cancel` 时**必须带上** |
 
 另有一处**跨域字段口径**：群组成员列表 `email_list` / `allow_emaillist` 读的是成员的 `biz_mail` 字段
-（[CreateMailGroupRequest](../../../Mud.Wechat.Work/Mail/RequestModel/CreateMailGroupRequest.cs) L28、L60 注释），
+（[CreateMailGroupRequest](../../DataModels/Mail/RequestModel/CreateMailGroupRequest.cs) L28、L60 注释），
 即「成员的邮箱地址」而非 userid；该字段由通讯录域签发，本域不锁其取值链。
 
 ## 3. 覆盖式与三态列表：更新语义的三种写法
@@ -140,8 +140,8 @@ M2（L336–L392）与 M2b（L399–L431）把两种形态分别钉死，改动�
 
 | 结构 | 载荷 | 更新语义（注释原文） |
 |---|---|---|
-| [MailStringList](../../../Mud.Wechat.Work/Mail/MailStringList.cs) | `list: List<string>?` | **不传则保持不变，传空结构或空数组则清空** |
-| [MailUintList](../../../Mud.Wechat.Work/Mail/MailUintList.cs) | `list: List<long>?` | 同上 |
+| [MailStringList](../../DataModels/Mail/MailStringList.cs) | `list: List<string>?` | **不传则保持不变，传空结构或空数组则清空** |
+| [MailUintList](../../DataModels/Mail/MailUintList.cs) | `list: List<long>?` | 同上 |
 
 由此得到三条必须写清的差异：
 
@@ -151,12 +151,12 @@ M2（L336–L392）与 M2b（L399–L431）把两种形态分别钉死，改动�
 2. **「不允许全部清空」是硬约束**：群组成员四列表（`email_list` / `group_list` / `department_list` / `tag_list`）
    与公共邮箱使用成员三列表（`userid_list` / `department_list` / `tag_list`）在创建时**至少填一个**、
    更新时**不允许清空到全空**（#8/#9/#13/#14 注释）。⇒ 想「只换部门不动成员」时必须把不想改的字段留 null。
-3. **公共邮箱别名是「覆盖式更新」的显式声明**：[UpdatePublicMailRequest.AliasList](../../../Mud.Wechat.Work/Mail/RequestModel/UpdatePublicMailRequest.cs) L46–L53
+3. **公共邮箱别名是「覆盖式更新」的显式声明**：[UpdatePublicMailRequest.AliasList](../../DataModels/Mail/RequestModel/UpdatePublicMailRequest.cs) L46–L53
    注释写明「最多 5 个别名；更新时为覆盖式更新，传空结构或传空数组会清空当前邮箱别名」，
    且单个别名须为**有效企业邮箱格式、6~64 字节、企业内唯一**。
 4. 应用邮箱侧的 #6 是另一种整体替换：`new_email` 换绑后**原地址降级为别名邮箱并保留收信能力**（不是删除），
    查询面 #7 的应答因此是「主邮箱 `email` + `alias_list` 列表」两件套
-   （[GetEmailAliasResponse](../../../Mud.Wechat.Work/Mail/GetEmailAliasResponse.cs)）。
+   （[GetEmailAliasResponse](../../DataModels/Mail/GetEmailAliasResponse.cs)）。
 
 ## 4. 凭据口径：只有三类凭据，且都不进日志
 
@@ -166,13 +166,13 @@ M2（L336–L392）与 M2b（L399–L431）把两种形态分别钉死，改动�
   一致性由 [WechatTokenOwnerContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatTokenOwnerContractGuards.cs)（TO1~TO3）锁定，
   Query 令牌接口白名单由 [WechatContractGuards.QueryTokenInjection.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatContractGuards.QueryTokenInjection.cs)（G5，本域接口名清单见 L499–L530）锁定。
 - **客户端专用密码 `auth_code`**：请求侧只传开关与备注（`create_auth_code` = 0/1、`auth_code_info.remark`），
-  **密码本身只出现在创建/更新应答里、且仅返回一次**（[CreatePublicMailResponse](../../../Mud.Wechat.Work/Mail/CreatePublicMailResponse.cs)、
-  [UpdatePublicMailResponse](../../../Mud.Wechat.Work/Mail/UpdatePublicMailResponse.cs)）；
-  事后 #18 只能拿到 `auth_code_id` / `create_time` / `last_use_time` / `remark`（[PublicMailAuthCode](../../../Mud.Wechat.Work/Mail/PublicMailAuthCode.cs)，注释明示「本列表不返回密码本身」）。
+  **密码本身只出现在创建/更新应答里、且仅返回一次**（[CreatePublicMailResponse](../../DataModels/Mail/CreatePublicMailResponse.cs)、
+  [UpdatePublicMailResponse](../../DataModels/Mail/UpdatePublicMailResponse.cs)）；
+  事后 #18 只能拿到 `auth_code_id` / `create_time` / `last_use_time` / `remark`（[PublicMailAuthCode](../../DataModels/Mail/PublicMailAuthCode.cs)，注释明示「本列表不返回密码本身」）。
   ⇒ 宿主必须**在创建当次就安全落库**，否则不可恢复，只能 #19 删除后重建；单个公共邮箱经 API 创建的专用密码
   **不超过 10 个（不含已删除）**；`remark` 未设置时官方默认「办公PC」，≤128 字节且须 UTF-8。
   该值是凭据：不得进日志、遥测或异常消息，示例与配置一律占位符。
-- **会议入会密码 `meeting.option.password`**：[MailMeetingOption](../../../Mud.Wechat.Work/Mail/MailMeetingOption.cs) L16–L18
+- **会议入会密码 `meeting.option.password`**：[MailMeetingOption](../../DataModels/Mail/MailMeetingOption.cs) L16–L18
   口径为「仅可输入 4-6 位纯数字」，同样是凭据，不得回显。
 - **本域不存在 `mail_secret` / 邮箱账号密码类参数**（实测：20 份接口与 53 个 DTO 中无此类字段）。
   企业微信邮件 API 的鉴权只有 `access_token`，公共邮箱「密码」只有上述一次性 `auth_code`。
@@ -184,16 +184,16 @@ M2（L336–L392）与 M2b（L399–L431）把两种形态分别钉死，改动�
 
 | 端点 | 上限 | 出处 |
 |---|---|---|
-| #1/#2/#3 | 附件 + 正文总大小 ≤ **50M**；附件个数 ≤ **200**；`to.emails` 与 `to.userids` 至少传一个 | 父接口 XML remarks + [MailAttachment](../../../Mud.Wechat.Work/Mail/MailAttachment.cs) |
-| #2 | `schedule.schedule_admins` ≤ **3** 人，只支持 userid、须同企业且在参与人中 | 父接口 XML + [MailSchedule](../../../Mud.Wechat.Work/Mail/MailSchedule.cs) L45–L52 |
-| #3 | `meeting.hosts` ≤ **10**（只填 userid）；`meeting.meeting_admins` **仅 1 人** | [MailMeeting](../../../Mud.Wechat.Work/Mail/MailMeeting.cs) |
-| #4 | `limit` 默认 **100**、最大 **1000** | [GetMailListRequest](../../../Mud.Wechat.Work/Mail/RequestModel/GetMailListRequest.cs) |
-| #8/#9 | `groupname` ≤ **200 字节**、不得重名；成员四列表至少一项；`allow_type`∈{0,1,2} 时**不得**传三个 allow_* 列表，`=3` 时**必须**至少传一项 | 子接口 XML + [CreateMailGroupRequest](../../../Mud.Wechat.Work/Mail/RequestModel/CreateMailGroupRequest.cs) |
+| #1/#2/#3 | 附件 + 正文总大小 ≤ **50M**；附件个数 ≤ **200**；`to.emails` 与 `to.userids` 至少传一个 | 父接口 XML remarks + [MailAttachment](../../DataModels/Mail/MailAttachment.cs) |
+| #2 | `schedule.schedule_admins` ≤ **3** 人，只支持 userid、须同企业且在参与人中 | 父接口 XML + [MailSchedule](../../DataModels/Mail/MailSchedule.cs) L45–L52 |
+| #3 | `meeting.hosts` ≤ **10**（只填 userid）；`meeting.meeting_admins` **仅 1 人** | [MailMeeting](../../DataModels/Mail/MailMeeting.cs) |
+| #4 | `limit` 默认 **100**、最大 **1000** | [GetMailListRequest](../../DataModels/Mail/RequestModel/GetMailListRequest.cs) |
+| #8/#9 | `groupname` ≤ **200 字节**、不得重名；成员四列表至少一项；`allow_type`∈{0,1,2} 时**不得**传三个 allow_* 列表，`=3` 时**必须**至少传一项 | 子接口 XML + [CreateMailGroupRequest](../../DataModels/Mail/RequestModel/CreateMailGroupRequest.cs) |
 | #13/#14 | 公共邮箱名 ≤ **64 字符或 32 汉字**、不得重名；使用成员三列表不能同时为空；别名 ≤ **5 个**、单个 6~64 字节 | 子接口 XML + UpdatePublicMailRequest |
 | #13/#14 | API 创建的客户端专用密码 ≤ **10 个**（不含已删除）；`remark` ≤ **128 字节** | 子接口 XML remarks + PublicMailAuthCodeInfo |
-| #16 | `id_list` 批量整型数组（单批上限注释无数值 ⇒ 见缺口） | [GetPublicMailRequest](../../../Mud.Wechat.Work/Mail/RequestModel/GetPublicMailRequest.cs) |
+| #16 | `id_list` 批量整型数组（单批上限注释无数值 ⇒ 见缺口） | [GetPublicMailRequest](../../DataModels/Mail/RequestModel/GetPublicMailRequest.cs) |
 | #20/#21 | 单次 `userid_list` ≤ **100** | 子接口 XML |
-| #22 | `limit` 默认 **100**、最大 **200**；且官方注明「不保证每次返回刚好 limit」 | [ListMailVipRequest](../../../Mud.Wechat.Work/Mail/RequestModel/ListMailVipRequest.cs) + [ListMailVipResponse](../../../Mud.Wechat.Work/Mail/ListMailVipResponse.cs) |
+| #22 | `limit` 默认 **100**、最大 **200**；且官方注明「不保证每次返回刚好 limit」 | [ListMailVipRequest](../../DataModels/Mail/RequestModel/ListMailVipRequest.cs) + [ListMailVipResponse](../../DataModels/Mail/ListMailVipResponse.cs) |
 | #23 | `userid` 与 `publicemail_id` 至少传一项，**同时传只操作 `userid`**；不可禁用超管与企业创建人 | 子接口 XML |
 | 全族 | 「可调用应用」列表与权限（邮件 / 日程 / 会议）由宿主在管理后台配置；本域无 SDK 侧限流或批次裁剪代码（DTO 仅 `[HttpJsonSerializable]` / `[JsonPropertyName]`，越界由应答 `errcode` 表达） | 各族子接口 XML 权限口径 + 本域 DTO 特性实测 |
 
@@ -214,29 +214,29 @@ M6 断言 `publicmail/search` 的 `fuzzy` + `email` 同理。⇒ **不得**为�
 
 **照抄的连写与大小写**（改一个字母即与官方报文错配）：`allow_emaillist` / `allow_departmentlist` / `allow_taglist`
 （**无下划线**，与同报文里的 `email_list` / `department_list` / `tag_list` **拼法不同**，
-见 [GetMailGroupResponse](../../../Mud.Wechat.Work/Mail/GetMailGroupResponse.cs) L47–L57）、
+见 [GetMailGroupResponse](../../DataModels/Mail/GetMailGroupResponse.cs) L47–L57）、
 `publicemail_id`、`biz_mail`、`mail_data`、`get_newcount`、`water_mark_type`（同族里唯一带下划线的会议字段）、
 `enable_waiting_room`、`remind_before_event_mins`、`repeat_week_of_month`。
 另有 `repeat_week_of_month`：**官方参数表未列出、仅请求示例携带（空数组形态）**，
-本仓按示例原文承载并在 [MailReminders](../../../Mud.Wechat.Work/Mail/MailReminders.cs) L64–L72 注释留档，勿当臆造字段删除。
+本仓按示例原文承载并在 [MailReminders](../../DataModels/Mail/MailReminders.cs) L64–L72 注释留档，勿当臆造字段删除。
 
 DTO 层留档的三处「官方文档与示例不一致」，本仓取舍都有注释理由，改动前必读：
 
 | 位置 | 矛盾 | 本仓取舍 |
 |---|---|---|
-| [GetMailListResponse.NextCursor](../../../Mud.Wechat.Work/Mail/GetMailListResponse.cs) L17–L24 | 官方对 `next_cursor` 的**说明文字**写成「应用邮箱账号中邮件未读数」，与游标语义明显不符（疑笔误） | 按官方请求示例与翻页用法以**游标**承载（`string?`） |
+| [GetMailListResponse.NextCursor](../../DataModels/Mail/GetMailListResponse.cs) L17–L24 | 官方对 `next_cursor` 的**说明文字**写成「应用邮箱账号中邮件未读数」，与游标语义明显不符（疑笔误） | 按官方请求示例与翻页用法以**游标**承载（`string?`） |
 | `GetMailListResponse.HasMore` vs `ListMailVipResponse.HasMore` | 同为 `has_more`，收件箱列表按 **0/1 数值**、高级功能账号列表按**布尔** `true` | 前者 `long?`、后者 `bool?` ⇒ **两个类型不共用**，勿「统一」 |
-| [SearchMailGroupResponse.Count](../../../Mud.Wechat.Work/Mail/SearchMailGroupResponse.cs) L16–L24 | 官方参数表标 `count` 为 string，响应示例作数字（如 `2`） | 以示例为准按 `long?` 承载 |
+| [SearchMailGroupResponse.Count](../../DataModels/Mail/SearchMailGroupResponse.cs) L16–L24 | 官方参数表标 `count` 为 string，响应示例作数字（如 `2`） | 以示例为准按 `long?` 承载 |
 
-`option.list` 两处形态也不同：请求侧 [GetMailUserOptionRequest.Type](../../../Mud.Wechat.Work/Mail/RequestModel/GetMailUserOptionRequest.cs) 是
+`option.list` 两处形态也不同：请求侧 [GetMailUserOptionRequest.Type](../../DataModels/Mail/RequestModel/GetMailUserOptionRequest.cs) 是
 **平铺的 `type` 整数数组**（1 强制启用安全登录 / 2 IMAP/SMTP / 3 POP/SMTP / 4 是否启用安全登录），
-响应侧则是 [MailUserOptionList](../../../Mud.Wechat.Work/Mail/MailUserOptionList.cs) → `list: List<MailUserOption>`，
-且项内 `value` 是**字符串** `"1"`/`"0"`（[MailUserOption](../../../Mud.Wechat.Work/Mail/MailUserOption.cs) L23–L25）。
+响应侧则是 [MailUserOptionList](../../DataModels/Mail/MailUserOptionList.cs) → `list: List<MailUserOption>`，
+且项内 `value` 是**字符串** `"1"`/`"0"`（[MailUserOption](../../DataModels/Mail/MailUserOption.cs) L23–L25）。
 
 ## 8. `enable_id_trans`：第三方专属，模板语法照原文
 
 仅 **#1~#3** 有该字段（`int?`，0 否 / 1 是，默认 0）。官方注明「仅第三方应用需要用到，企业自建应用可忽略」，
-且**只有 `subject`、`content`、`attachment_list[].file_name` 三处支持转译**。模板语法（[MailSendRequest](../../../Mud.Wechat.Work/Mail/RequestModel/MailSendRequest.cs) L53–L66 注释照官方原文留档）：
+且**只有 `subject`、`content`、`attachment_list[].file_name` 三处支持转译**。模板语法（[MailSendRequest](../../DataModels/Mail/RequestModel/MailSendRequest.cs) L53–L66 注释照官方原文留档）：
 
 ```
 $departmentName=DEPARTMENT_ID$   $userName=USERID$
@@ -401,8 +401,8 @@ using (switcher.UseCorpScope(appKey: "default", authCorpId, permanentCode))
 | 时间戳单位 | `begin_time` / `end_time`（#4）、`start_time` / `end_time` / `repeat_until`（#2/#3）、`create_time` / `last_use_time`（#18）注释只写「Unix 时间戳」，**秒/毫秒未标明** ⇒ 未逐项核验 | 需要精确到单位的场景先核验官方页 |
 | #16 `id_list` 单批上限 | DTO 只有 `List<long>? IdList`，注释无最大值；守卫只锁路由 ⇒ 未逐项核验 | 批次裁剪前先核验，勿拿 #20/#21 的 100 套用 |
 | `mail_data`（eml）体量与编码 | #5 注释只说「完整原始邮件格式内容」，无大小上限、无编码口径 ⇒ 未逐项核验 | 大邮件场景自行核验并限流，勿在 SDK 侧加隐式截断 |
-| `method` 取值全集 | [MailSchedule](../../../Mud.Wechat.Work/Mail/MailSchedule.cs) L21–L27 留档 `request` / `cancel`（默认 request）；其它官方值是否存在**未逐项核验** | 出现新值先核验再决定是否建枚举 |
-| 会议 `option` 取值边界 | [MailMeetingOption](../../../Mud.Wechat.Work/Mail/MailMeetingOption.cs) 留档 9 个字段的枚举值与默认值；`enter_restraint` 是否存在值 1、`auto_record` 与官方会议域是否等价**未逐项核验** | 与会议域交叉时查 `Interfaces/Meeting/`，勿互相套用 |
+| `method` 取值全集 | [MailSchedule](../../DataModels/Mail/MailSchedule.cs) L21–L27 留档 `request` / `cancel`（默认 request）；其它官方值是否存在**未逐项核验** | 出现新值先核验再决定是否建枚举 |
+| 会议 `option` 取值边界 | [MailMeetingOption](../../DataModels/Mail/MailMeetingOption.cs) 留档 9 个字段的枚举值与默认值；`enter_restraint` 是否存在值 1、`auto_record` 与官方会议域是否等价**未逐项核验** | 与会议域交叉时查 `Interfaces/Meeting/`，勿互相套用 |
 | `allow_type` 之外的权限维度 | 注释留档 0 企业成员 / 1 任何人 / 2 组内成员 / 3 自定义成员；群组是否另有发信白名单类字段 ⇒ 未逐项核验 | 需要更细权限时先核验官方页 |
 | 「可调用应用」配置的可调用链 | 各族注释统一要求「配置到可调用应用列表中的应用 secret 所获取的 access_token」，但配置动作与生效时机不在本仓留档 ⇒ 未逐项核验 | 属管理后台配置面，勿在 SDK 侧探测 |
 | `email_list` 取值来源（成员 `biz_mail`） | 本域只消费该邮箱地址；字段由通讯录域写入，其可见范围与空值行为**未在本域核验** | 需要校验链时查 `Interfaces/Contacts/` |
@@ -423,8 +423,8 @@ using (switcher.UseCorpScope(appKey: "default", authCorpId, permanentCode))
 | 成员邮箱操作族（恰 2）/ 客户端登录设置族（恰 2） | M8（L313–L318，表 L164–L172）、M9（L324–L329，表 L178–L186） |
 | 层级形态（三类公共族父接口 3/2 + 子接口 0；六族父接口 0 + 自建子接口 2/5/7/3/2/2）、`IsAbstract`、`InheritedFrom` 父实现类 | M2（L336–L392）、M2b（L399–L431）、辅助断言 `AssertFamilyHierarchy`（L545–L576）、`AssertRoutes`（L528–L539） |
 | 令牌绑定（20 个接口 × `Wechat.AccessToken` + Query + `access_token`） | M3（L437–L474） |
-| AOT JSON 上下文登记（恰 53 个契约面类型，逐族分组） | M4（L479–L525）+ [MailJsonContext.g.cs](../../../Mud.Wechat.Work/Generated/MailJsonContext.g.cs)（生成物，`internal`）+ [WechatJsonResolverExtensions.cs](../../Extensions/WechatJsonResolverExtensions.cs) L157 |
-| DTO 属性名 / 类型 / JSON 名 / 取值域与三处官方矛盾注释 | [../../../Mud.Wechat.Work/Mail/](../../../Mud.Wechat.Work/Mail/)（响应与共享结构在根、请求在 `RequestModel/`；命名空间恒为 `Mud.Wechat.Work.DataModels.Mail`） |
+| AOT JSON 上下文登记（恰 53 个契约面类型，逐族分组） | M4（L479–L525）+ [MailJsonContext.g.cs](../../DataModels/Generated/MailJsonContext.g.cs)（生成物，`internal`）+ [WechatJsonResolverExtensions.cs](../../Extensions/WechatJsonResolverExtensions.cs) L157 |
+| DTO 属性名 / 类型 / JSON 名 / 取值域与三处官方矛盾注释 | [../../../Mud.Wechat.Work/DataModels/Mail/](../../../Mud.Wechat.Work/DataModels/Mail/)（响应与共享结构在根、请求在 `RequestModel/`；命名空间恒为 `Mud.Wechat.Work.DataModels.Mail`） |
 | Query 令牌注入白名单（G5，本域 20 个接口名清单） | [WechatContractGuards.QueryTokenInjection.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatContractGuards.QueryTokenInjection.cs) L499–L530 |
 | 令牌归属键（TO1~TO3）与命名空间二分（N1~N3） | [WechatTokenOwnerContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatTokenOwnerContractGuards.cs)、[WechatInterfaceNamespaceContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatInterfaceNamespaceContractGuards.cs) |
 | 邮箱族回调（事件键消歧、载荷字段、开放面） | [WechatCallbackEventTypes.cs](../../../Mud.Wechat.Work/Callback/WechatCallbackEventTypes.cs) L614–L647、[WechatCallbackEvent.cs](../../../Mud.Wechat.Work/Callback/WechatCallbackEvent.cs) L138–L139 / L279–L293、[WechatCallbackContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatCallbackContractGuards.cs) CB2 L121–L122、[WechatCallbackPayloadReaderTests.cs](../../../../../Tests/Mud.Wechat.Work.Callback.Tests/WechatCallbackPayloadReaderTests.cs) L1379–L1431 |

@@ -3,7 +3,7 @@
 企业微信「智能机器人」模块企业自建应用 SDK：官方仅向企业自建应用开放（凭证在企业侧后台配置），
 本域全部端点声明于本接口。 接口：[IWechatWorkAibotService](./IWechatWorkAibotService.cs)、[IWechatWorkInternalAibotService](./IWechatWorkInternalAibotService.cs)；注册组 `Aibot`；模块枚举 `WechatModule.Aibot`（装配入口见 [WechatWorkServiceBuilder.cs](../../Extensions/WechatWorkServiceBuilder.cs)）。逐端点核验 2026-10-18。
 
-> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[WechatAibotContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatAibotContractGuards.cs)、[WechatBotContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatBotContractGuards.cs)、[WechatTokenOwnerContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatTokenOwnerContractGuards.cs)、[WechatWebhookContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatWebhookContractGuards.cs)）、本域 DTO（[`Mud.Wechat.Work/Aibot`](../../../Mud.Wechat.Work/Aibot/)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
+> **事实来源限定**：本文所有断言只来自本仓三份材料 —— 本目录接口文件的 XML 注释、本仓契约守卫（[WechatAibotContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatAibotContractGuards.cs)、[WechatBotContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatBotContractGuards.cs)、[WechatTokenOwnerContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatTokenOwnerContractGuards.cs)、[WechatWebhookContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatWebhookContractGuards.cs)）、本域 DTO（[`Mud.Wechat.Work/DataModels/Aibot`](../../../Mud.Wechat.Work/DataModels/Aibot/)）。不复述外部官方文档正文；接口注释里没有的东西一律进文末「已知留档缺口」。
 
 ## 端点速览
 
@@ -95,14 +95,14 @@ HTTPCLIENT018（建议补 `[Token]`）为不适用告警，已在下方声明处
 
 ## DTO 与序列化面
 
-本域 DTO 目录 [`Mud.Wechat.Work/Aibot`](../../../Mud.Wechat.Work/Aibot/) 内共 **35** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **35** 个，`SerializerClassName` = `Aibot`。
+本域 DTO 目录 [`Mud.Wechat.Work/DataModels/Aibot`](../../../Mud.Wechat.Work/DataModels/Aibot/) 内共 **35** 个 `public class/record/enum/struct` 声明；其中 `[HttpJsonSerializable]` 标注 **35** 个，`SerializerClassName` = `Aibot`。
 
-AOT 源生成上下文：[`AibotJsonContext.g.cs`](./../../../Mud.Wechat.Work/Generated/AibotJsonContext.g.cs)（生成物，勿手改）。
+AOT 源生成上下文：[`AibotJsonContext.g.cs`](./../../DataModels/Generated/AibotJsonContext.g.cs)（生成物，勿手改）。
 
 | 端点引用的类型 | 角色 | 定义位置 | JSON 字段（前缀） |
 |---|---|---|---|
-| `AibotReplyResponse` | 应答 | [Aibot/AibotReplyResponse.cs](../../../Mud.Wechat.Work/Aibot/AibotReplyResponse.cs) | — |
-| `AibotMessage` | 请求体 | [Aibot/AibotMessage.cs](../../../Mud.Wechat.Work/Aibot/AibotMessage.cs) | `msgtype`, `text`, `markdown`, `stream`, `template_card`, `response_type`, `userids`, `file`, `image`, `voice`, `video`, `media_id` … |
+| `AibotReplyResponse` | 应答 | [Aibot/AibotReplyResponse.cs](../../DataModels/Aibot/AibotReplyResponse.cs) | — |
+| `AibotMessage` | 请求体 | [Aibot/AibotMessage.cs](../../DataModels/Aibot/AibotMessage.cs) | `msgtype`, `text`, `markdown`, `stream`, `template_card`, `response_type`, `userids`, `file`, `image`, `voice`, `video`, `media_id` … |
 
 > DTO 一律以源文件为准；本表只列端点签名**直接引用**的一层类型，嵌套类型不再递归展开。所有 DTO 不使用 `required`（仓内约束），必填性由接口注释与官方页表达，SDK 不做本地必填校验。
 
@@ -140,7 +140,7 @@ var response = await service.ReplyAsync("", new AibotMessage(), ct);
 | 契约守卫（路由 / 计数 / DTO 登记断言） | [`WechatAibotContractGuards.cs`](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatAibotContractGuards.cs)、[`WechatBotContractGuards.cs`](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatBotContractGuards.cs)、[`WechatTokenOwnerContractGuards.cs`](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatTokenOwnerContractGuards.cs)、[`WechatWebhookContractGuards.cs`](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatWebhookContractGuards.cs) |
 | 守卫中的代表性测试方法 | `AibotEndpoints_ShouldMatchOfficialRoutes`、`AibotInterfaceHierarchy_ShouldConvergeOnSelfBuildOnlyChild`、`AibotInterfaces_ShouldNotDeclareTokenAttribute`、`AibotDataModels_ShouldBeRegisteredInJsonContext`、`AibotDataModels_ShouldLockOfficialContractTraps`、`BotEventTypes_ShouldLockOfficialKeySet`、`BotHandlerContract_ShouldBeReturnBased`、`BotChannel_ShouldRejectIllegalAppTypeAndReceiveId`、`BotChannel_ShouldBeDeniedByEventFamilyGate`、`BotReplySupport_ShouldValidateTransportSurface`、`Middleware_ShouldKeepXmlPathIntactWhileAddingJsonPath`、`BotReplyEnvelope_ShouldLockFieldNamesAndEmptyPacket` … |
 | 模块枚举 / 装配入口 | [`WechatModule.cs`](../../Extensions/WechatModule.cs)、[`WechatWorkServiceBuilder.cs`](../../Extensions/WechatWorkServiceBuilder.cs) |
-| DTO 与 JSON 上下文 | [`Mud.Wechat.Work/Aibot`](../../../Mud.Wechat.Work/Aibot/) |
+| DTO 与 JSON 上下文 | [`Mud.Wechat.Work/DataModels/Aibot`](../../../Mud.Wechat.Work/DataModels/Aibot/) |
 | 跨线基线 | [`Tests/ContractBaseline.cs`](../../../../../Tests/ContractBaseline.cs)（各线分节；本线口径以守卫实际断言为准） |
 | 本线包级公开面与已踩陷阱 | [`Src/Work/Mud.Wechat.Work/README.md`](../../README.md) |
 | 跨线通用约束（门禁 / AOT / 落位） | [`AGENTS.md`](../../../../../AGENTS.md) |

@@ -14,7 +14,7 @@
 
 > **事实来源限定**：本文全部断言只来自本仓三类证据——本目录接口文件的 XML 注释、
 > [WechatInvoiceContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatInvoiceContractGuards.cs)（IV1~IV4）、
-> [Src/Work/Mud.Wechat.Work/Invoice/](../../../Mud.Wechat.Work/Invoice/) 下的 DTO 声明；
+> [Src/Work/Mud.Wechat.Work/DataModels/Invoice/](../../../Mud.Wechat.Work/DataModels/Invoice/) 下的 DTO 声明；
 > 端点数与路由以守卫断言为准，官方文档号仅作定位标识、不作为本文事实来源。
 > 未能在本仓三类证据内核验的项目一律集中在文末「已知留档缺口」，标为**未逐项核验**，正文不作推断。
 
@@ -38,7 +38,7 @@ MUD005 已接受风险，无法改 Header）；「开放面」由 IV2 断言为*
 ## 1. 定位键只有 `card_id` + `encrypt_code`，批量族另按 `openid` 分组
 
 本域**没有** `invoice_id`、也**没有** `pdf_file` 这类入参——全文检索
-[DataModels/Invoice/](../../../Mud.Wechat.Work/Invoice/) 与守卫均无该二名（已登记为缺口）。
+[DataModels/Invoice/](../../../Mud.Wechat.Work/DataModels/Invoice/) 与守卫均无该二名（已登记为缺口）。
 真实定位键是**复合双键**：
 
 | 键 | 出现位置 | 语义 |
@@ -50,16 +50,16 @@ MUD005 已接受风险，无法改 Header）；「开放面」由 IV2 断言为*
 ⇒ 三条不能从代码名推断的口径：
 
 1. **单张与批量的请求体形状不同，不可互换**。守卫 IV1 的注释专门钉住这一点：
-   #2 按 `card_id` + `encrypt_code` 定位（[UpdateInvoiceStatusRequest.cs](../../../Mud.Wechat.Work/Invoice/RequestModel/UpdateInvoiceStatusRequest.cs)），
-   #3 按 `openid` + `invoice_list` 定位（[UpdateInvoiceStatusBatchRequest.cs](../../../Mud.Wechat.Work/Invoice/RequestModel/UpdateInvoiceStatusBatchRequest.cs)）。
+   #2 按 `card_id` + `encrypt_code` 定位（[UpdateInvoiceStatusRequest.cs](../../DataModels/Invoice/RequestModel/UpdateInvoiceStatusRequest.cs)），
+   #3 按 `openid` + `invoice_list` 定位（[UpdateInvoiceStatusBatchRequest.cs](../../DataModels/Invoice/RequestModel/UpdateInvoiceStatusBatchRequest.cs)）。
    把 #2 的请求体「升级」成批量列表即破坏官方契约。
 2. **#3 的发票列表必须全部属于同一个 `openid`**（接口注释原文）⇒ 跨用户混批是非法请求，
    本仓不本地校验、由应答 `errcode` 表达；`openid` **可通过 userid 与 openid 互换接口获取**，
    该互换面**不属于本域**（归用户身份族，见缺口）。
 3. **#1/#4 的两键由「用户选择发票后」从卡券回调 / 卡包参数取得**
-   （[GetInvoiceInfoRequest.cs](../../../Mud.Wechat.Work/Invoice/RequestModel/GetInvoiceInfoRequest.cs) 类注释）
+   （[GetInvoiceInfoRequest.cs](../../DataModels/Invoice/RequestModel/GetInvoiceInfoRequest.cs) 类注释）
    ⇒ 本域**没有**「列出某用户名下所有发票」的端点，发票选择动作发生在卡包侧、不在 HTTP 侧。
-4. 标识结构在两族批量端点**共用一个类型**：[InvoiceIdentifier.cs](../../../Mud.Wechat.Work/Invoice/InvoiceIdentifier.cs)
+4. 标识结构在两族批量端点**共用一个类型**：[InvoiceIdentifier.cs](../../DataModels/Invoice/InvoiceIdentifier.cs)
    （`item_list` 项与 `invoice_list` 项同形，IV4 把它列为必登记型）。两键均为 `string?`（官方必填、
    本仓不用 `required`——按 [AGENTS.md §3](../../../../../AGENTS.md) 的源生成绑定约束）。
 
@@ -67,7 +67,7 @@ MUD005 已接受风险，无法改 Header）；「开放面」由 IV2 断言为*
 
 本域**不走 `media` 上传**，也没有任何文件下载端点：
 
-- PDF 地址来自 [InvoiceUserInfo.cs](../../../Mud.Wechat.Work/Invoice/InvoiceUserInfo.cs) 的
+- PDF 地址来自 [InvoiceUserInfo.cs](../../DataModels/Invoice/InvoiceUserInfo.cs) 的
   `pdf_url`（官方**必返回**），另有 `trip_pdf_url`（其它消费凭证附件，如行程单、水单，**非必返回**）。
   接口注释把用途写得很直白：「可通过返回的 `pdf_url` 获取发票 PDF 文件」⇒ **取回动作归宿主**
   （拿到 URL 自行 GET），SDK 不代为下载。
@@ -77,7 +77,7 @@ MUD005 已接受风险，无法改 Header）；「开放面」由 IV2 断言为*
 
 ## 3. 报销状态只有三值，且核销不可逆
 
-`reimburse_status` 的取值集单一来源是 [InvoiceReimburseStatus.cs](../../../Mud.Wechat.Work/Invoice/InvoiceReimburseStatus.cs)
+`reimburse_status` 的取值集单一来源是 [InvoiceReimburseStatus.cs](../../DataModels/Invoice/InvoiceReimburseStatus.cs)
 （`public const string` 常量类，非枚举）：
 
 | 常量 | 值 | 语义（注释原文） |
@@ -90,7 +90,7 @@ MUD005 已接受风险，无法改 Header）；「开放面」由 IV2 断言为*
 
 - **`Closure` 为不可逆操作**：核销后发票从用户卡包移除，无法再查询或解锁 ⇒ 调用前须在业务侧确认，
   SDK 不设任何二次确认闸或 dry-run。
-- **状态要回写**：[InvoiceReimburseStatus.cs](../../../Mud.Wechat.Work/Invoice/InvoiceReimburseStatus.cs) 注释原文要求
+- **状态要回写**：[InvoiceReimburseStatus.cs](../../DataModels/Invoice/InvoiceReimburseStatus.cs) 注释原文要求
   「报销方须保证在报销、锁定、解锁后**及时将状态同步至微信端**」——即 #2/#3 是报销闭环的必需动作，
   不是可选通知。
 - `reimburse_status` 同时是**应答必返回字段**（`InvoiceUserInfo.ReimburseStatus`，`string?`）⇒
@@ -103,7 +103,7 @@ MUD005 已接受风险，无法改 Header）；「开放面」由 IV2 断言为*
 
 ⇒ 三条落地上网前要知道的推论：
 
-1. 应答只有 `errcode` / `errmsg`（方法返回裸 [WechatWorkResponse](../../../Mud.Wechat.Work/Invoice/RequestModel/UpdateInvoiceStatusBatchRequest.cs)
+1. 应答只有 `errcode` / `errmsg`（方法返回裸 [WechatWorkResponse](../../DataModels/Invoice/RequestModel/UpdateInvoiceStatusBatchRequest.cs)
    同款信封），**没有逐张结果数组** ⇒ 失败时**无法**从应答得知是哪一张引起回滚，只能宿主自查批次。
 2. 因此批次切分策略（多大一批、是否按 `openid` 预分组）归宿主；本仓**不做**本地批次裁剪，
    也**不承诺**批内重试。
@@ -112,7 +112,7 @@ MUD005 已接受风险，无法改 Header）；「开放面」由 IV2 断言为*
 
 ## 5. 金额一律**分**，时间是**十位 Unix 秒**；字段名与语义有一处错位
 
-[InvoiceUserInfo.cs](../../../Mud.Wechat.Work/Invoice/InvoiceUserInfo.cs) 的类注释给出单位口径
+[InvoiceUserInfo.cs](../../DataModels/Invoice/InvoiceUserInfo.cs) 的类注释给出单位口径
 （这是本域最容易写出金额错 100 倍的地方）：
 
 | 字段 | 类型 | 单位 / 格式 |
@@ -120,7 +120,7 @@ MUD005 已接受风险，无法改 Header）；「开放面」由 IV2 断言为*
 | `fee` | `long?` | 加税合计金额，**以分为单位**（官方必返回） |
 | `tax` | `long?` | 税额，**以分为单位**（官方必返回） |
 | `fee_without_tax` | `long?` | 不含税金额，**以分为单位**（官方必返回） |
-| `price`（商品项） | `long?` | 单价，**以分为单位**（[InvoiceItemInfo.cs](../../../Mud.Wechat.Work/Invoice/InvoiceItemInfo.cs)） |
+| `price`（商品项） | `long?` | 单价，**以分为单位**（[InvoiceItemInfo.cs](../../DataModels/Invoice/InvoiceItemInfo.cs)） |
 | `num`（商品项） | `long?` | 项目数量，**非必返回** |
 | `billing_time` | `long?` | 开票时间，**十位 Unix 时间戳（秒）** |
 | `begin_time` / `end_time` | `long?` | 发票有效期起止，Unix 时间戳（秒），官方必返回 |
@@ -147,15 +147,15 @@ MUD005 已接受风险，无法改 Header）；「开放面」由 IV2 断言为*
 
 ## 6. 响应侧「示例有、参数表无」：`order_id`
 
-[InvoiceUserInfo.cs](../../../Mud.Wechat.Work/Invoice/InvoiceUserInfo.cs) 的 `order_id` 注释记录了这条裁决：
+[InvoiceUserInfo.cs](../../DataModels/Invoice/InvoiceUserInfo.cs) 的 `order_id` 注释记录了这条裁决：
 「官方**批量查询**电子发票的响应 JSON 示例在 `user_info` 内携带本字段，但**官方参数表未列出**——
 以官方 JSON 示例为准（对齐 `department_id_list` / `cusor` 处置先例）」。
 ⇒ 两点后果：① 该字段只在 #4 的响应里可期望，#1 是否携带**未逐项核验**（见缺口）；
 ② 官方参数表与示例不一致时，本仓的既有处置是**照示例建模、并在注释里留档出处**，不是「参数表没有就不建」。
 
-结构层级上还有一处「同字段面、两种包裹形态」：#1 的应答 [GetInvoiceInfoResponse.cs](../../../Mud.Wechat.Work/Invoice/GetInvoiceInfoResponse.cs)
+结构层级上还有一处「同字段面、两种包裹形态」：#1 的应答 [GetInvoiceInfoResponse.cs](../../DataModels/Invoice/GetInvoiceInfoResponse.cs)
 **继承 `WechatWorkResponse`**（信封字段 + 发票字段同层平铺），#4 的应答数组项
-[InvoiceInfoItem.cs](../../../Mud.Wechat.Work/Invoice/InvoiceInfoItem.cs) 是**同字段面的独立类型**
+[InvoiceInfoItem.cs](../../DataModels/Invoice/InvoiceInfoItem.cs) 是**同字段面的独立类型**
 （不含 `errcode`/`errmsg`）⇒ 两者**刻意不共用**一个基类，别为「消重复」把它们合并（IV4 把两个类型分别列为必登记型）。
 #4 的 `item_list` **与请求 `item_list` 顺序对应**（接口注释）⇒ 可以按请求索引对齐消费，但不必假设去重或排序。
 
@@ -289,13 +289,13 @@ using (switcher.UseCorpScope(appKey: "default", authCorpId, authorization.Perman
 |---|---|---|
 | 本文任务前提里的 `invoice_id` / `pdf_file` | 全仓检索 `Interfaces/Invoice/`、`DataModels/Invoice/`、守卫均**无该二名**；真实键是 `card_id` + `encrypt_code`，PDF 只有应答侧 `pdf_url` / `trip_pdf_url` | 不得按名推断新字段；若官方确有该键须逐页核验后建模 |
 | 四支端点的频率上限 | 本域 4 份接口文件的 XML 注释**均无频率数值** ⇒ **未逐项核验** | 需要限流时先核验官方页，**不得**从审批域的「600 次/分」借数值 |
-| #4 `item_list` 的单批上限 | [GetInvoiceInfoBatchRequest.cs](../../../Mud.Wechat.Work/Invoice/RequestModel/GetInvoiceInfoBatchRequest.cs) 与 #3 的 `invoice_list` 注释都**无条数上限** ⇒ **未逐项核验** | 批次切分前逐页核验，勿从审批域的「≤100」借数值 |
+| #4 `item_list` 的单批上限 | [GetInvoiceInfoBatchRequest.cs](../../DataModels/Invoice/RequestModel/GetInvoiceInfoBatchRequest.cs) 与 #3 的 `invoice_list` 注释都**无条数上限** ⇒ **未逐项核验** | 批次切分前逐页核验，勿从审批域的「≤100」借数值 |
 | `order_id` 在 #1 响应是否携带 | 注释只说「官方**批量查询**示例携带」，本域未断言单张侧同现 ⇒ **未逐项核验** | 消费侧按 `string?` 判空，勿假定必返回 |
 | `openid` 与 `userid` 互换接口归属 | 本域只消费 `openid`（注释指路「可通过 userid 与 openid 互换接口获取」），签发面**未在本域核验** | 需要换取链时查用户身份邻域，勿在本域加端点 |
 | `card_id` + `encrypt_code` 的取得方式（卡券回调 / 卡包 JSAPI） | 注释只写「由用户选择发票后从卡券回调 / 卡包参数中获得」，具体回调事件与 JSAPI 面**未在本域核验** | 接入前核验卡包侧官方页；本域无「列出用户发票」端点 |
 | `encrypt_code` 的有效期 / 可否复用 | 本仓注释**无时效说明** ⇒ **未逐项核验** | 不要把 `encrypt_code` 当长期凭据落库；如需缓存先核验官方 |
 | `type`（发票类型）的取值全集 | 注释仅举例「广东增值税普通发票」，本仓以 `string?` 承载、**未建枚举** | 需要按类型分派时先核验官方，再决定是否建常量类 |
-| IV4 未锁「域内全量计数」与 `SerializerClassName` | IV4 是「10 个必登记类型」清单断言；不像审批域 AP4 那样有 `HaveCount(109)` + `SerializerClassName == "Approval"` 的反射全量闸 ⇒ 本域 [DataModels/Invoice/](../../../Mud.Wechat.Work/Invoice/) 的 10 个可序列化型（`InvoiceReimburseStatus` 为常量类、不参与序列化）只受**弱守卫** | 新增 DTO 时须自行补 IV4 清单；若要收紧为全量闸，与审批域形态对齐后同批改守卫 |
+| IV4 未锁「域内全量计数」与 `SerializerClassName` | IV4 是「10 个必登记类型」清单断言；不像审批域 AP4 那样有 `HaveCount(109)` + `SerializerClassName == "Approval"` 的反射全量闸 ⇒ 本域 [DataModels/Invoice/](../../../Mud.Wechat.Work/DataModels/Invoice/) 的 10 个可序列化型（`InvoiceReimburseStatus` 为常量类、不参与序列化）只受**弱守卫** | 新增 DTO 时须自行补 IV4 清单；若要收紧为全量闸，与审批域形态对齐后同批改守卫 |
 
 ## 事实来源
 
@@ -306,11 +306,11 @@ using (switcher.UseCorpScope(appKey: "default", authCorpId, authorization.Perman
 | 层级（父 `IsAbstract` + 注册组恒空、三子接口 `BeEmpty`、`InheritedFrom = "WechatWorkInvoiceService"`） | IV2（`InvoiceInterfaceHierarchy_ShouldConvergeOnAbstractParentWithInvoiceRegistry`） |
 | `AccessToken` + Query + `access_token` 绑定（4 个接口） | IV3（`InvoiceTokenBinding_ShouldBeAccessTokenInjectedViaQuery`） |
 | JSON 上下文登记（10 个必登记型） | IV4（`InvoiceDataModels_ShouldBeRegisteredInJsonContext`） |
-| 单位（分 / 十位 Unix 秒）、必返回 vs 非必返回、全电发票号码在 `billing_no` | [InvoiceUserInfo.cs](../../../Mud.Wechat.Work/Invoice/InvoiceUserInfo.cs)、[InvoiceItemInfo.cs](../../../Mud.Wechat.Work/Invoice/InvoiceItemInfo.cs)、[InvoiceInfoItem.cs](../../../Mud.Wechat.Work/Invoice/InvoiceInfoItem.cs)、[GetInvoiceInfoResponse.cs](../../../Mud.Wechat.Work/Invoice/GetInvoiceInfoResponse.cs) |
-| 报销状态三值与不可逆警示 | [InvoiceReimburseStatus.cs](../../../Mud.Wechat.Work/Invoice/InvoiceReimburseStatus.cs) |
+| 单位（分 / 十位 Unix 秒）、必返回 vs 非必返回、全电发票号码在 `billing_no` | [InvoiceUserInfo.cs](../../DataModels/Invoice/InvoiceUserInfo.cs)、[InvoiceItemInfo.cs](../../DataModels/Invoice/InvoiceItemInfo.cs)、[InvoiceInfoItem.cs](../../DataModels/Invoice/InvoiceInfoItem.cs)、[GetInvoiceInfoResponse.cs](../../DataModels/Invoice/GetInvoiceInfoResponse.cs) |
+| 报销状态三值与不可逆警示 | [InvoiceReimburseStatus.cs](../../DataModels/Invoice/InvoiceReimburseStatus.cs) |
 | 令牌归属键（Internal / Corp）与 Query 白名单 | [WechatTokenOwnerContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatTokenOwnerContractGuards.cs)（TO1~TO3）、[WechatContractGuards.QueryTokenInjection.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatContractGuards.QueryTokenInjection.cs)（G5） |
 | 接口命名空间二分（父 `Interfaces` / 子 `Work`）与实现类落位 | [WechatInterfaceNamespaceContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatInterfaceNamespaceContractGuards.cs)（N1~N3） |
-| 上下文源生成文件 | [InvoiceJsonContext.g.cs](../../../Mud.Wechat.Work/Generated/InvoiceJsonContext.g.cs)（`internal`，示例不得引用） |
+| 上下文源生成文件 | [InvoiceJsonContext.g.cs](../../DataModels/Generated/InvoiceJsonContext.g.cs)（`internal`，示例不得引用） |
 | 模块注册三段式 | [WechatModule.cs](../../Extensions/WechatModule.cs)、[WechatWorkServiceBuilder.cs](../../Extensions/WechatWorkServiceBuilder.cs)、[WechatJsonResolverExtensions.cs](../../Extensions/WechatJsonResolverExtensions.cs) |
 | 跨域单位对照（审批旧版 `sums` 单位元） | [../Approval/README.md](../Approval/README.md) §7 |
 

@@ -42,4 +42,8 @@
 	<ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
 		<PackageReference Include="System.Text.Json" Version="10.0.12" />
 	</ItemGroup>
+
+	<!-- 上面的 PackageIcon / PackageReadmeFile 只是**包内条目名**，磁盘上有同名文件并不会自动进包：
+	     实际登记在根 Directory.Build.targets（图标 + 各工程目录自己的 README.md）——登记项必须在
+	     默认通配项之后求值才能 Update 到 README.md，故不能写在本文件（求值早于 DefaultItems.props）。 -->
 </Project>

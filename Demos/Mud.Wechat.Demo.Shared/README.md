@@ -14,6 +14,7 @@
 | `DemoWriteGate` | `Enabled` / `Announce(logger)` | 只认 `MUDWECHAT_DEMO_ALLOW_WRITE=1` 这一个开关；启用时启动日志打 **Warning** |
 | `DemoHealthEndpoint` | `MapDemoHealth(demo, config)` / `MapDemoHealth(demo, ctx => Task<object>)` | 固定形状 `{status, demo, utcNow, writeGate, config}`；`config` 由各 Demo 自己给，**只放非敏感摘要**。第二个重载供带本地存储的 Demo **按请求现算**（台账行数在启动期快照里没有意义）；两者都走 `WriteAsJsonAsync` —— `async (HttpContext) => Results.Json(…)` 会被重载解析绑成 `RequestDelegate`，返回值丢弃后是**不报错的空 200**（DM-14 实测踩过） |
 | `DemoApiErrorGate` | `UseWechatApiErrorGate(app)` | 把 `WechatApiException` 族映射成 502 + `{errorCode, errorMessage, requestUri}`；另拆**组件负缓存包装**（内层是 `WechatApiException` 才映射，普通 `InvalidOperationException` 原样上抛） |
+| `DemoConfigSources` | `BuildSettingsChain(environmentName, args)` | 为需要文件化配置的 Demo **独立**构造设置链：`appsettings.json`（模板）< `appsettings.{Environment}.json` < `appsettings.local.json`（本机真值，被 `.gitignore` 忽略）< 命令行；环境变量再由 `DemoEnv` 压在最上层。刻意不碰宿主配置链 |
 
 ## 2 使用纪律（新增 Demo 时照 §4 清单，别改本库）
 
@@ -35,11 +36,12 @@
    任何 Demo 里出现绕过它的写端点都属体系缺陷。不要给它加「默认开启」「按环境推导」之类的智能。
    —— 写闸**没有配置文件等价键**：DM-14 支持 JSON 配置时特意不开这条口，
    否则「默认关闭」会变成「换台机器（带一份 appsettings）就默认打开」。
-6. **JSON 配置走 `builder.Configuration` 的固有链，不要手工往链尾插源**：
-   `CreateBuilder` 已按 `appsettings.json < appsettings.{Environment}.json < User Secrets < 环境变量 < 命令行`
-   挂好；再 `builder.Configuration.AddJsonFile(...)` 会把该文件排到环境变量与命令行**之后** ⇒ 文件悄悄盖掉变量，
-   且不报错（DM-14 实测踩过，靠 `--WechatDemo:DbPath` 与文件同时给值才发现）。
-   本机真值因此走 `appsettings.Development.json`（`.gitignore` 的 `**/appsettings.*.json` 已覆盖），入库的
+6. **本机真值走独立设置链，不要动宿主的 `builder.Configuration.Sources`**：`WebApplicationBuilder` 在 `Build()` 时
+   把宿主链**接在自己 sources 尾部**，事后插入的源会被 `appsettings.json` 反向压过 ⇒「本机文件存在却读不到、
+   读到的是模板占位符」且静默（DM-14 实测：`appIdResolved` 的长度等于占位符串长）。正确做法是
+   `DemoConfigSources.BuildSettingsChain(...)` 独立建链（模板 < 环境文件 < `appsettings.local.json` < 命令行），
+   再由 `DemoEnv` 把环境变量压在最上层；入库的 `appsettings.json` 只放占位符（含 `<` `>` `your-` 等同未配置）。
+
    `appsettings.json` 只放模板与非机密项。
 
 ## 3 为什么不把这几件事并进 SDK

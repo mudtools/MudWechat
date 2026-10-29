@@ -114,25 +114,28 @@ npm run type-check # vue-tsc，build 脚本本身不做 tsc
 | `MUDWECHAT_DEMO_ALLOW_WRITE` | **（无文件等价键）** | 否 | `=1` 才映射 6 个写端点 |
 | `MUDWECHAT_DEMO_MP_DB_PATH` | `WechatDemo:DbPath` | 否 | SQLite 库文件绝对路径；缺省落 `bin/…/app_data/article-demo.db` |
 
-成对登记在 `Configuration/DemoConfig.cs`；配置链走 .NET 的**固有顺序**，一条源都不手工追加
-（往链尾 `AddJsonFile` 会让文件盖掉环境变量与命令行，实测踩过）：
+成对登记在 `Configuration/DemoConfig.cs`。设置链由基座的 `DemoConfigSources.BuildSettingsChain` **独立构造**，顺序固定：
 
 ```text
-appsettings.json < appsettings.Development.json < User Secrets < 环境变量 < 命令行
+appsettings.json（入库模板） < appsettings.{Environment}.json < appsettings.local.json（本机真值） < 命令行 < MUDWECHAT_DEMO_* 环境变量
 ```
+
+> **为什么不去改宿主的 `builder.Configuration`**：`WebApplicationBuilder` 在 `Build()` 时把宿主那条链
+> **接在自己 sources 尾部**，事后插入的源会被链尾的 `appsettings.json` 反向压过 ⇒ 表现为
+> 「本机文件明明存在却读不到，读到的反而是模板占位符」，且静默不报错（实测踩过）。
+> 独立建链同时把顺序与 .NET 的内部实现解耦。
 
 | 文件 | 是否入库 | 放什么 |
 |---|---|---|
 | `appsettings.json` | **入库** | 模板与非机密项；凭据留空或写 `<占位符>` —— 含 `<` `>` `your-` 的值等同未配置，启动即 fail-fast，绝不会把模板值发给微信 |
-| `appsettings.Development.json` | 被 `.gitignore` 的 `**/appsettings.*.json` 忽略 | 本机真值。需 `ASPNETCORE_ENVIRONMENT=Development`（`dotnet run` 的 launchSettings 已带；直接执行 bin 下的 dll 要自己加） |
-| User Secrets | 不在仓库里 | `dotnet user-secrets set "WechatDemo:AppSecret" "…"`；本 Demo 未预置 `UserSecretsId`（不在 csproj 里留一个没人认领的 GUID） |
+| `appsettings.local.json` | 被 `.gitignore` 的 `**/appsettings.local.json` 忽略 | **本机真值放这里**。任何环境都会被读，不需要设 `ASPNETCORE_ENVIRONMENT`；文件缺失时静默跳过，退回模板 + 环境变量 |
 
 ```bash
-# 用配置文件代替 export：写好后重新构建（内容根钉在 bin，配置文件按构建期 glob 拷贝）
-cp appsettings.json appsettings.Development.json   # 填真值；该文件已被 .gitignore 忽略
+# 用配置文件代替 export：真值写进 appsettings.local.json（已被 .gitignore 忽略）
+# 新建该文件后必须重新构建 —— 内容根钉在 bin，配置文件按构建期拷贝
+cp appsettings.json appsettings.local.json   # 然后填入真实 AppId / AppSecret
 dotnet build Demos/Mud.Wechat.OfficialAccount.ArticleDemo -c Release
-ASPNETCORE_ENVIRONMENT=Development ASPNETCORE_URLS=http://127.0.0.1:56570 \
-  dotnet run --project Demos/Mud.Wechat.OfficialAccount.ArticleDemo -c Release --no-build
+dotnet run --project Demos/Mud.Wechat.OfficialAccount.ArticleDemo -c Release --no-build
 ```
 
 **写闸刻意没有文件等价键**：给不可逆写操作开第二条放行路径，等于把「默认关闭」变成「换台机器就默认打开」，
@@ -210,7 +213,7 @@ __multipartContent.Add(__formDataContent, "formData");
 | 8 | 写闸开 + `DELETE /drafts/x?confirm=wrong` | 400（不触网） |
 | 9 | `npm run build` 两次 | `git status` 干净：产物 `wwwroot/{index.html,assets/app.js,assets/index.css}`，文件名不含 hash |
 | 10 | 关掉写闸重启并打开页面 | 写按钮全部 `disabled` + 顶部 `el-alert` 给出可执行下一步，**没有 404 弹窗** |
-| C1 | 只给 `appsettings.Development.json`（`ASPNETCORE_ENVIRONMENT=Development`，零变量） | 起进程；`/healthz` 的 `appIdTail` 取自文件；文件里写的 `"AllowWrite": 1` **无效**（仍 `writeGate=disabled`、写端点仍 404/405） |
+| C1 | 只给 `appsettings.local.json`（零变量、零参数） | 起进程，`/healthz` 的 `appIdTail` 取自该文件（实测：尾 4 位一致）；文件里写 `"AllowWrite": 1` **无效** —— 仍 `writeGate=disabled`、写端点仍不可达 |
 | C2 | 同时给变量与文件（`MUDWECHAT_DEMO_MP_APP_ID` vs 文件 `AppId`） | 变量胜出 ⇒ `appIdTail` 是变量的尾 4 位 |
 | C3 | 命令行 `--WechatDemo:DbPath=C:/…/x.db` 覆盖文件里的 `DbPath` | 库建在命令行指定的目录（证明配置链没被手工插源打乱） |
 
@@ -279,6 +282,7 @@ dotnet run --project Demos/Mud.Wechat.OfficialAccount.ArticleDemo -c Release --n
 4. 素材面**只读**：不落盘上传文件，因此不存在文件类型校验面。
 5. 前端不把凭据、`publishId` 之外的内部状态写进 URL 或 localStorage。
 6. 不得使用生产公众号：`ALLOW_WRITE` 只对自己拥有的测试号开启。
-7. **凭据落点**：环境变量、User Secrets，或 `appsettings.Development.json`（被 `.gitignore` 忽略）。
+7. **凭据落点**：环境变量（`MUDWECHAT_DEMO_*`），或本机文件 `appsettings.local.json`（被 `.gitignore` 忽略）。
    入库的 `appsettings.json` 只允许占位符 —— 它是版本控制里的文件，写一次真值就永久留在提交历史里。
-   占位符判定（含 `<` `>` `your-`）对两处同样生效，所以模板值不会被误当真值发往微信。
+   占位符判定（含 `<` `>` `your-`）对各层同样生效，所以模板值不会被误当真值发往微信。
+

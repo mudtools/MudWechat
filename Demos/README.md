@@ -23,7 +23,7 @@
 | L3 | `Mud.Wechat.AllInOne.Demo` | 五线同宿主共存：企微（XML + 机器人 JSON）/ 公众号 / 支付 / 小店 / 开放平台（DM-12，**零业务端点**） | 是 | 已实施 |
 
 **共 14 个工程**（L0 两 + L1 七 + L2 四 + L3 一），逐工程都有 `README.md`；
-其中基座自身的契约（四部件职责、使用纪律、为何不并进 SDK）在 `Mud.Wechat.Demo.Shared/README.md`。
+其中基座自身的契约（五部件职责、使用纪律、为何不并进 SDK）在 `Mud.Wechat.Demo.Shared/README.md`。
 
 **门禁定位**：`Demos/*` 全部 `IsPackable=false`，不进 AOT strict（`verify-build.ps1` 步骤 2 只扫 `Src/`）、
 不进测试（步骤 3 只扫 `Tests/`）、不进 `pack.bat`/`publish.bat` 产物；
@@ -70,11 +70,10 @@
 **广告线刻意没有 `MUDWECHAT_DEMO_ADS_ACCOUNT_ID`**：`account_id` 来自 `oauth/token` 应答的 `authorizer_info`、随令牌落库，
 做成配置项就允许「配置说 A 账号、令牌其实属于 B 账号」这种非法状态（与 `WechatAppConfig` 不提供独立 `TemplateId` 同一思路）。
 
-**DM-14 额外接受配置文件**：`MP_APP_ID` / `MP_APP_SECRET` / `MP_DB_PATH` 各有一个等价配置键
-（`WechatDemo:AppId` / `WechatDemo:AppSecret` / `WechatDemo:DbPath`），**变量仍优先**；
-真值只能落在被 `.gitignore` 忽略的 `appsettings.Development.json` 或 User Secrets 里，
-入库的 `appsettings.json` 只放占位符与非机密项。**`ALLOW_WRITE` 刻意没有等价配置键**（见 §3）：
-默认关闭的写闸不该依赖「某台机器上碰巧有一份文件」。
+**DM-14 额外接受配置文件**：三个设置项各有一个等价配置键（`WechatDemo:AppId` / `:AppSecret` / `:DbPath`），
+设置链由基座 `DemoConfigSources.BuildSettingsChain` 独立构造（模板 < 环境文件 < 本机文件 < 命令行 < 环境变量），
+**真值只该落在被 `.gitignore` 的 `**/appsettings.local.json` 覆盖的本机文件里**；入库的 `appsettings.json` 只放占位符。
+**`ALLOW_WRITE` 刻意没有等价配置键**（见 §3）：默认关闭的写闸不该依赖「某台机器上碰巧有一份文件」。
 
 `DemoEnv.RequireAll(...)` 会**一次性列出全部缺失项**再抛，而不是碰到第一个就退出 ——
 配置一次就能对齐，不必反复启动试错。错误消息末尾固定指向本文件。
@@ -230,7 +229,7 @@ curl -s "http://localhost:56570/api/articles/jobs"            # 200 + 空集：�
 ## 5 安全须知
 
 1. **不得使用生产账号**。凭据指向测试企业/测试商户；`ALLOW_WRITE` 只对自己拥有的测试环境开启。
-2. **密钥不入库**：真实值只走环境变量或本机 User Secrets。仓库里只允许出现变量名与占位符。
+2. **密钥不入库**：真实值只走环境变量、User Secrets，或被 `.gitignore` 忽略的本机文件（如 `appsettings.local.json`）。仓库里只允许出现变量名与占位符。
 3. **不得进日志**：`AgentSecret` / `SuiteSecret` / `ProviderSecret` / `permanent_code` / `auth_code` /
    `suite_ticket` / 回调 `PushToken` / `EncodingAESKey` / 私钥 / APIv3 密钥，以及解密明文 `DecryptedXml`
    与支付回调 `resource` 明文（含 `openid`，红线 PAY-B7），
@@ -283,10 +282,10 @@ curl -s "http://localhost:56570/api/articles/jobs"            # 200 + 空集：�
     让 `dotnet ef` 不必跑完 `Program.cs` 的启动期凭据校验；只用 `AddDbContextFactory`
     （同容器再 `AddDbContext` 装配期即抛）。库文件落 `bin/` 下随构建产物被 gitignore、**不得提交**，
     路径只允许一个环境变量覆盖（`*_DB_PATH`），README 必须写明「库内可能含敏感正文」且 `/healthz` 不回显绝对路径。
-11. **需要文件化配置的 Demo**（DM-14 起）走 `builder.Configuration` 的**固有链**
-    （`appsettings.json < appsettings.{Environment}.json < User Secrets < 环境变量 < 命令行`），
-    **不要**手工 `AddJsonFile` 往链尾插源 —— 那会把文件排到环境变量与命令行之后，静默盖掉变量（DM-14 实测踩过）。
-    读取用 `DemoEnv.RequireAll(configuration, (变量名, 配置键)...)` / `Optional(变量名, configuration, 配置键)`，
-    以保持「变量优先 + 一次性列全缺失项 + 占位符等同未配置」三条纪律；入库的 `appsettings.json` 只放占位符，
-    真值走被忽略的 `appsettings.Development.json` 或 User Secrets；**写闸不开放文件等价键**。
-    配置文件按构建期 glob 拷贝进 `bin`（内容根钉在 `AppContext.BaseDirectory`），改完要重新构建。
+11. **需要文件化配置的 Demo**（DM-14 起）用基座 `DemoConfigSources.BuildSettingsChain(environmentName, args)` 独立构造设置链
+    （模板 < 环境文件 < 本机文件 < 命令行 < 环境变量）。**不要**去改 `builder.Configuration.Sources`：WebApplicationBuilder 在 `Build()` 时
+    把宿主那条链**接在自己 sources 尾部**，事后插入的源会被链尾的 `appsettings.json` 反向压过 ⇒
+    「本机文件明明存在却读不到、读到的是模板占位符」且静默（DM-14 实测踩过），插入位置还依赖内部实现、跨版本会漂。
+    读取仍走 `DemoEnv.RequireAll(settings, (变量名, 配置键)...)`，保住「变量优先 + 一次性列全缺失项 +
+    占位符等同未配置」；真值写 `appsettings.local.json`（`.gitignore` 已覆盖），入库模板只放占位符；
+    **写闸不开放文件等价键**。配置文件按构建期拷进 `bin`（内容根钉在 `AppContext.BaseDirectory`）⇒ 新建后须重新构建。

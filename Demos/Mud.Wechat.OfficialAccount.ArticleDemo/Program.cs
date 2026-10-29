@@ -26,27 +26,28 @@ using Mud.Wechat.OfficialAccount.Extensions;
 //   5) 三套 id 不可混用：草稿 media_id / 发布任务 publish_id / 已发布文章 article_id；
 //   6) 上传面本批不演示：[MultipartForm] IFormContent 在 Mud.HttpUtils 3.0.9 生成器下不发射文件体
 //      （取证见 .docs 方案 §16），封面与正文插图改为「从既有永久素材选」；
-//   7) 凭据两个来源：MUDWECHAT_DEMO_ 前缀环境变量（优先）与 JSON 配置文件（appsettings.json 放模板与非机密项、
-//      appsettings.Development.json 放本机真值，后者被 .gitignore 的 **/appsettings.*.json 忽略）；
+//   7) 凭据两个来源：MUDWECHAT_DEMO_ 前缀环境变量（优先）与 JSON 配置文件（入库的 appsettings.json 放模板与
+//      非机密项、appsettings.local.json 放本机真值，后者被 .gitignore 忽略）；
 //      写闸仍只认环境变量 —— 不给不可逆写操作开第二条放行路径（§9）。
 
 // 内容根钉在程序集目录：门禁脚本会直接执行 bin 下的 dll，默认内容根（当前工作目录）会找不到
-// wwwroot 与 appsettings*.json ⇒ 静态页与配置文件都要从 bin 读。JSON 配置源挂在 builder.Configuration 上，
+// wwwroot 与 appsettings*.json ⇒ 静态页与配置文件都要从 bin 读。JSON 配置要读，
 // 所以「建 builder」必须在「校验配置」之前 —— 此时还没有注册任何服务，不违反「DI 之前先校验」的纪律。
-//
-// 配置源一条都不手工追加：CreateBuilder 已按 appsettings.json < appsettings.{Environment}.json <
-// User Secrets < 环境变量 < 命令行 挂好，而**往链尾加文件会盖掉环境变量与命令行**（实测踩过）。
-// 本机真值因此走 appsettings.Development.json（需 ASPNETCORE_ENVIRONMENT=Development；`dotnet run`
-// 的 launchSettings 已带，直接执行 dll 时自己加），而不是插自定义源。
 var builder = WebApplication.CreateBuilder(new WebApplicationOptions
 {
     Args = args,
     ContentRootPath = AppContext.BaseDirectory,
 });
 
+// 设置链独立构造（为什么不动 builder.Configuration.Sources 见 DemoConfigSources 的注释）：
+// appsettings.json（入库模板）< appsettings.{Environment}.json < appsettings.local.json（本机真值，已被 .gitignore 忽略）
+// < 命令行 < MUDWECHAT_DEMO_* 环境变量。
+// 写闸不在任何文件里：MUDWECHAT_DEMO_ALLOW_WRITE 仍是唯一放行入口。
+var settings = DemoConfigSources.BuildSettingsChain(builder.Environment.EnvironmentName, args);
+
 // 一次性列出全部缺失项，且把「变量名」与「配置键」两种写法一起给出 —— 使用者不必猜该改哪一边。
 var env = DemoEnv.RequireAll(
-    builder.Configuration,
+    settings,
     (DemoConfig.AppIdEnv, DemoConfig.AppIdKey),
     (DemoConfig.AppSecretEnv, DemoConfig.AppSecretKey));
 var appId = env[DemoConfig.AppIdEnv];
@@ -69,7 +70,7 @@ builder.Services.AddMpServices(b => b
 
 // ③ 本地台账层（方案 §7）：只用 AddDbContextFactory —— 同容器再调 AddDbContext 会在装配期直接抛
 //    「Both AddDbContextFactory and AddDbContext were called」，而轮询链路恰恰依赖「短持有 context」。
-var databasePath = DbPathResolver.Resolve(builder.Configuration);
+var databasePath = DbPathResolver.Resolve(settings);
 builder.Services.AddDbContextFactory<ArticleDbContext>(options =>
     options.UseSqlite(DbPathResolver.ConnectionString(databasePath)));
 builder.Services.AddSingleton<ArticleStore>();

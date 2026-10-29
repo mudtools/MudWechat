@@ -169,6 +169,3 @@ Mud.Wechat 的对外可见变更全部记录在本文件。
 - **仅真实账号能闭合的验证面**：真实推送（需公网回调 URL）、公众号 OAuth / JS-SDK 官方签名校验、
   支付 1 分钱闭环（需平台证书）、AI 真实会话（需机器人 + 长连接租约）、广告授权链
   （需开发者应用 + 已登记回调域，官方 `redirect_uri` 不支持端口号）。
-
-[Unreleased]: https://gitee.com/mudtools/MudWechat/compare/v1.0.0...HEAD
-[1.0.0]: https://gitee.com/mudtools/MudWechat/releases/tag/v1.0.0

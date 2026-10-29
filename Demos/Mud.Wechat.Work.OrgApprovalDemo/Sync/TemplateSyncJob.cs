@@ -38,8 +38,16 @@ public sealed class TemplateSyncJob(
     SyncRunRepository runs,
     ILogger<TemplateSyncJob> logger)
 {
-    /// <summary>「这次跑错了」类错误码（权限 / 身份 / 频率），命中即整轮失败。</summary>
-    private static readonly HashSet<int> FatalErrorCodes = new() { 40001, 40014, 42001, 45009, 60003, 60011 };
+    /// <summary>「这次跑错了」类错误码（权限 / 身份 / 频率 / 环境），命中即整轮失败。</summary>
+    /// <remarks>
+    /// <c>60020</c>（IP 不在「企业可信IP」里）与 <c>40013</c>（corpid 无效）必须在这里：
+    /// 它们表示「本机环境压根没被授权」，若不拦，会被下面的 <c>MarkRemoteMissing</c>
+    /// 写成「模板在远端不存在」—— 实测踩过，代价是台账里出现一批假的 status=2。
+    /// </remarks>
+    private static readonly HashSet<int> FatalErrorCodes = new()
+    {
+        40001, 40013, 40014, 42001, 45009, 60003, 60011, 60020,
+    };
 
     private readonly WechatCallScope _scope = scope;
     private readonly IWechatWorkInternalApprovalTemplateService _templates = templates;

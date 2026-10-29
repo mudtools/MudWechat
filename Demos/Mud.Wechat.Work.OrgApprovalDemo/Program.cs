@@ -144,6 +144,16 @@ if (callbackEnabled)
 
 var app = builder.Build();
 
+// 「到底从哪儿读到的凭据」必须可见：配置链跑在 AppContext.BaseDirectory 上，
+// 本机真值文件由 csproj 的 Content 规则落位到该目录 —— 没落位时静默回落到 appsettings.json
+// 的占位符，表现为「明明写了 appsettings.local.json 却报缺变量」，故这里显式自报一次。
+app.Logger.LogInformation(
+    "本机真值文件 {File}：{State}（配置链基点 = 运行目录；环境变量 MUDWECHAT_DEMO_* 始终压过所有文件）",
+    DemoConfigSources.LocalFileName,
+    File.Exists(Path.Combine(AppContext.BaseDirectory, DemoConfigSources.LocalFileName))
+        ? "已落位，将覆盖 appsettings.json 的占位符"
+        : "未找到，仅使用 appsettings.json 与环境变量");
+
 // ⑥ 建库 → WAL → 建表 → 建索引。放在映射端点之前：/healthz 要回显表行数，无库即无意义。
 FreeSqlProvider.Initialize(fsql);
 

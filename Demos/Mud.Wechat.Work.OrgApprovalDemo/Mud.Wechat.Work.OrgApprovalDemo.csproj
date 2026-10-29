@@ -10,6 +10,17 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<!-- 本机真值文件（**不提交**，.gitignore 的 **/appsettings.local.json 已覆盖）。
+		     Web SDK 的默认复制规则只认 appsettings.json / appsettings.{Environment}.json，
+		     不带 appsettings.local.json ⇒ 必须在这里显式落位，否则「设了设置链却读不到」
+		     （配置链的基点钉在 AppContext.BaseDirectory）。
+		     Condition 保证 fresh clone 没有该文件时构建照常通过。 -->
+		<Content Update="appsettings.local.json"
+		         CopyToOutputDirectory="PreserveNewest"
+		         Condition="Exists('$(MSBuildProjectDirectory)\appsettings.local.json')" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<!-- Demo 基座：环境变量校验、写操作闸、健康检查端点、业务异常 → 502 映射闸。 -->
 		<ProjectReference Include="..\Mud.Wechat.Demo.Shared\Mud.Wechat.Demo.Shared.csproj" />
 		<!-- 企微主包：多应用底座 + 通讯录（Contact）与审批（Approval）两个模块。 -->

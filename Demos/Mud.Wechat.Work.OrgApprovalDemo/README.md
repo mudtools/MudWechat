@@ -244,8 +244,11 @@ cd Demos/Mud.Wechat.Work.OrgApprovalDemo/web && npm install && npm run build
 按登记表 `status=registered` 逐条 `gettemplatedetail` → 规范化 JSON（**键排序**）→ SHA256 →
 与 `oa_template.content_hash` 相同则**只刷新同步时间、不动 version**；不同则 `version++`，
 写 `oa_template_version` 全量快照 + 摊平 `oa_template_control`（`Table` 子控件 `parent_control_id`
-指向父）。权限/身份/频率类错误（`40001/40014/42001/45009/60003/60011`）整轮判失败，
+指向父）。权限/身份/频率/**环境**类错误（`40001/40013/40014/42001/45009/60003/60011/60020`）整轮判失败，
 其余 errcode 视为「模板已不存在」→ `status=2` 并**保留历史版本**。
+
+> `60020`（`not allow to access from your ip`）必须在这张表里：它表示「本机 IP 不在企业可信 IP 列表」，
+> 是环境没配好，不是模板没了。漏掉它会让台账里凭空出现一批假的 `status=2` —— 真实凭据测试时实测踩过。
 
 模板 id 自动发现（默认关）：
 

@@ -12,7 +12,7 @@
 	<ItemGroup>
 		<!-- Demo 基座：环境变量校验、写操作闸、健康检查端点、业务异常 → 502 映射闸。 -->
 		<ProjectReference Include="..\Mud.Wechat.Demo.Shared\Mud.Wechat.Demo.Shared.csproj" />
-		<ProjectReference Include="..\..\Src\OfficialAccount\Mud.Wechat.OfficialAccount\Mud.Wechat.OfficialAccount.csproj" />
+		<PackageReference Include="Mud.Wechat.OfficialAccount" Version="$(MudWechatPackageVersion)" />
 	</ItemGroup>
 
 	<ItemGroup>

@@ -12,12 +12,10 @@
 	<ItemGroup>
 		<!-- Demo 基座：环境变量校验、写操作闸、健康检查端点。 -->
 		<ProjectReference Include="..\Mud.Wechat.Demo.Shared\Mud.Wechat.Demo.Shared.csproj" />
-		<ProjectReference Include="..\..\Src\OfficialAccount\Mud.Wechat.OfficialAccount\Mud.Wechat.OfficialAccount.csproj" />
-		<!-- 回调包传递引用 Abstractions（AddMpApp 在 Abstractions，主包已直引，两者并存无歧义）。 -->
-		<ProjectReference Include="..\..\Src\OfficialAccount\Mud.Wechat.OfficialAccount.Callback\Mud.Wechat.OfficialAccount.Callback.csproj" />
-		<!-- 回调处理器契约分析器（狗粮）：handler 的 SupportedEventType ↔ 载荷键集受编译期校验。 -->
-		<ProjectReference Include="..\..\Src\Core\Mud.Wechat.Callback.Analyzers\Mud.Wechat.Callback.Analyzers.csproj"
-		                  OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+		<PackageReference Include="Mud.Wechat.OfficialAccount" Version="$(MudWechatPackageVersion)" />
+		<!-- 回调包传递引用 Abstractions（AddMpApp 在 Abstractions，主包已直引，两者并存无歧义）；
+		     回调处理器契约分析器（MUDCB002~005）随该包 analyzers/dotnet/cs 下发，无需单独引用。 -->
+		<PackageReference Include="Mud.Wechat.OfficialAccount.Callback" Version="$(MudWechatPackageVersion)" />
 	</ItemGroup>
 
 </Project>

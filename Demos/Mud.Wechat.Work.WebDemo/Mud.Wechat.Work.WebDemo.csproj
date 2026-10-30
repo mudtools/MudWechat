@@ -13,7 +13,7 @@
 	<ItemGroup>
 		<!-- Demo 基座：环境变量校验、写操作闸、健康检查端点。 -->
 		<ProjectReference Include="..\Mud.Wechat.Demo.Shared\Mud.Wechat.Demo.Shared.csproj" />
-		<ProjectReference Include="..\..\Src\Work\Mud.Wechat.Work\Mud.Wechat.Work.csproj" />
+		<PackageReference Include="Mud.Wechat.Work" Version="$(MudWechatPackageVersion)" />
 	</ItemGroup>
 
 </Project>

@@ -8,17 +8,17 @@
 		<!-- Demo 基座：环境变量校验、写操作闸、健康检查端点、业务异常映射闸。 -->
 		<ProjectReference Include="..\Mud.Wechat.Demo.Shared\Mud.Wechat.Demo.Shared.csproj" />
 		<!-- 企微主包：AddWechatWorkServices(...) 模块注册面 + Aibot 主动回复端点（IWechatWorkInternalAibotService）。 -->
-		<ProjectReference Include="..\..\Src\Work\Mud.Wechat.Work\Mud.Wechat.Work.csproj" />
+		<PackageReference Include="Mud.Wechat.Work" Version="$(MudWechatPackageVersion)" />
 		<!-- Callback 包：智能机器人 JSON 通道（接收器 / 分发器 / 注册表）与长连接装配入口。
 		     与主包之间是硬边界（Callback 不引用 Work），故两者都要显式引用。 -->
-		<ProjectReference Include="..\..\Src\Work\Mud.Wechat.Work.Callback\Mud.Wechat.Work.Callback.csproj" />
+		<PackageReference Include="Mud.Wechat.Work.Callback" Version="$(MudWechatPackageVersion)" />
 		<!-- AI 域：WechatAgent + AddWechatWorkAgent 装配 + 内置 WechatBotAgentHandler。 -->
-		<ProjectReference Include="..\..\Src\AI\Mud.Wechat.Work.AI\Mud.Wechat.Work.AI.csproj" />
+		<PackageReference Include="Mud.Wechat.Work.AI" Version="$(MudWechatPackageVersion)" />
 		<!-- AI 工具面：AddWechatWorkTools + 三个只读部门工具 + 授权器端口。 -->
-		<ProjectReference Include="..\..\Src\AI\Mud.Wechat.Work.AI.Tools\Mud.Wechat.Work.AI.Tools.csproj" />
-		<!-- 刻意不内嵌 Mud.Wechat.Callback.Analyzers：本 Demo 只挂智能机器人 JSON 通道，
-		     而分析器（MUDCB002~005）校验的是 XML 侧「SupportedEventType ↔ [WechatCallbackContract] 载荷」一致性，
-		     Bot 事件键（WechatBotEventTypes）不进 OfficialPayloadContracts ⇒ 内嵌即静默空跑、只制造假信号。 -->
+		<PackageReference Include="Mud.Wechat.Work.AI.Tools" Version="$(MudWechatPackageVersion)" />
+		<!-- Mud.Wechat.Callback.Analyzers 随 Work.Callback 包 analyzers/dotnet/cs 下发；本 Demo 只挂智能机器人 JSON 通道，
+		     而 MUDCB002~005 校验的是 XML 侧「SupportedEventType ↔ [WechatCallbackContract] 载荷」一致性，
+		     Bot 事件键（WechatBotEventTypes）不进 OfficialPayloadContracts ⇒ 分析器对本工程静默空跑，不代表接线受过编译期校验。 -->
 	</ItemGroup>
 
 </Project>

@@ -9,7 +9,7 @@
 		<ProjectReference Include="..\Mud.Wechat.Demo.Shared\Mud.Wechat.Demo.Shared.csproj" />
 		<!-- 小程序主包传递引用 OfficialAccount.Abstractions（令牌与多应用基座复用，AddMpApp 即在彼处）
 		     ⇒ 本工程不直引公众号包：小程序线没有回调面，也不消费公众号 DTO（设计方案 §3.5 硬边界）。 -->
-		<ProjectReference Include="..\..\Src\MiniProgram\Mud.Wechat.MiniProgram\Mud.Wechat.MiniProgram.csproj" />
+		<PackageReference Include="Mud.Wechat.MiniProgram" Version="$(MudWechatPackageVersion)" />
 	</ItemGroup>
 
 </Project>

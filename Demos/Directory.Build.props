@@ -15,5 +15,7 @@
 		<WarningsAsErrors></WarningsAsErrors>
 		<GenerateDocumentationFile>false</GenerateDocumentationFile>
 		<IsPackable>false</IsPackable>
+		<!-- Demo 消费的是已发布到 nuget.org 的 SDK 组件（而非 Src 工程引用）；版本集中在此一处。 -->
+		<MudWechatPackageVersion>1.0.0</MudWechatPackageVersion>
 	</PropertyGroup>
 </Project>

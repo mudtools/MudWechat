@@ -29,7 +29,11 @@
 **门禁定位**：`Demos/*` 全部 `IsPackable=false`，不进 AOT strict（`verify-build.ps1` 步骤 2 只扫 `Src/`）、
 不进测试（步骤 3 只扫 `Tests/`）、不进 `pack.bat`/`publish.bat` 产物；
 但已在 `Mud.Wechat.slnx` 的 `/Demos/` 组内，故**步骤 1 的全量 Release 编译覆盖它们** ——
-「Demo 编译即验证 SDK 公开面可用」是体系的第一价值，破坏它等于让示例烂掉。
+「Demo 编译即验证已发布包公开面可用」是体系的第一价值，破坏它等于让示例烂掉。
+
+**引用形态**：Demo 对 SDK 一律使用 nuget.org 上的 `Mud.Wechat.*` **NuGet 包引用**
+（版本集中在 `Demos/Directory.Build.props` 的 `MudWechatPackageVersion`），不直接引用 `Src/` 工程 ——
+因此步骤 1 验证的是**已发布包**的公开面；本地 `Src/` 尚未发布的改动不会被 Demo 编译暴露。
 
 ## 2 凭据矩阵
 
@@ -266,10 +270,11 @@ curl -s http://localhost:56571/api/org/departments   # 200 + 空集：本地台�
 1. 工程名 `Mud.Wechat.{线}.{场景}Demo`，落 `Demos/<工程名>/`，**csproj 里不重复写工程属性**——
    `Demos/Directory.Build.props` 统一给单 TFM `net8.0`、Exe、关 AOT/trim、`IsPackable=false`
    （仅 L0 类库需覆盖 `OutputType=Library`）；
-2. 引用 `Mud.Wechat.Demo.Shared` + 所需产品线包；回调 Demo 额外内嵌
-   `Mud.Wechat.Callback.Analyzers`（让 MUDCB002~005 在示例里就生效，等于给分析器喂狗粮）。
-   **例外有二：小店线与 AI 机器人通道刻意不内嵌** —— 分析器档位表 `WechatCallbackHandlerAnalyzer.Profiles` 只有企业微信与公众号两档
-   （守卫 CB-L1f 锁定），小店档位缺失时内嵌只会**静默空跑**（0 诊断、无报错），给读者「接线已受编译期校验」的假象
+2. 引用 `Mud.Wechat.Demo.Shared`（工程引用）+ 所需产品线包（NuGet 包引用，
+   `Version="$(MudWechatPackageVersion)"`）。回调 Demo **无需单独引用分析器**：四个含回调面的 Callback 包
+   均随包 `analyzers/dotnet/cs` 下发 `Mud.Wechat.Callback.Analyzers`（让 MUDCB002~005 在示例里就生效，等于给分析器喂狗粮）。
+   **例外有二：小店线与 AI 机器人通道虽同样自动带入该分析器** —— 分析器档位表 `WechatCallbackHandlerAnalyzer.Profiles` 只有企业微信与公众号两档
+   （守卫 CB-L1f 锁定），小店档位缺失时只会**静默空跑**（0 诊断、无报错），不代表「接线已受编译期校验」
    （见 `Mud.Wechat.Channels.Demo/README.md` §7）；智能机器人走独立 JSON 键集（`WechatBotEventTypes` 不进
    `OfficialPayloadContracts`），同样只制造假信号（见 `Mud.Wechat.AI.AgentDemo/README.md` §6.16）。
 3. `Program.cs` 在任何 DI 装配**之前**调用 `DemoEnv.RequireAll(...)`（**唯一例外 DM-12**：它用 `CredentialSet.Read`

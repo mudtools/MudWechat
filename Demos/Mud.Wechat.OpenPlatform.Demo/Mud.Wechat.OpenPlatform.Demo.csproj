@@ -10,7 +10,7 @@
 		<!-- 开放平台主包：凭证链（AddOpenPlatform）+ 推送接收器 + 声明式业务客户端。
 		     Abstractions / DataModels 经主包传递可见（本线形态：Abstractions 不引 DataModels），
 		     故本工程不直引它们 —— 照抄其它线的「三包都引」形态反而是错的。 -->
-		<ProjectReference Include="..\..\Src\OpenPlatform\Mud.Wechat.OpenPlatform\Mud.Wechat.OpenPlatform.csproj" />
+		<PackageReference Include="Mud.Wechat.OpenPlatform" Version="$(MudWechatPackageVersion)" />
 	</ItemGroup>
 
 </Project>

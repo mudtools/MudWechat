@@ -7,11 +7,10 @@
 	<ItemGroup>
 		<!-- Demo 基座：环境变量校验、写操作闸、健康检查端点。 -->
 		<ProjectReference Include="..\Mud.Wechat.Demo.Shared\Mud.Wechat.Demo.Shared.csproj" />
-		<!-- Callback 包传递引用 Abstractions（含 AddWechatApp）+ DataModels，无需额外引用主包 Work。 -->
-		<ProjectReference Include="..\..\Src\Work\Mud.Wechat.Work.Callback\Mud.Wechat.Work.Callback.csproj" />
-		<!-- 回调处理器契约分析器（狗粮）：Demo 的 7 个 handler 接入编译期校验，0 诊断为预期。 -->
-		<ProjectReference Include="..\..\Src\Core\Mud.Wechat.Callback.Analyzers\Mud.Wechat.Callback.Analyzers.csproj"
-		                  OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+		<!-- Callback 包传递引用 Abstractions（含 AddWechatApp）+ DataModels，无需额外引用主包 Work。
+		     回调处理器契约分析器（MUDCB002~005）随该包 analyzers/dotnet/cs 下发，无需单独引用；
+		     Demo 的 7 个 handler 接入编译期校验，0 诊断为预期。 -->
+		<PackageReference Include="Mud.Wechat.Work.Callback" Version="$(MudWechatPackageVersion)" />
 	</ItemGroup>
 
 </Project>

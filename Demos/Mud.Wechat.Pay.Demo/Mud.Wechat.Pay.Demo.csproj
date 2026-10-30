@@ -13,9 +13,9 @@
 		<!-- Demo 基座：环境变量校验、写操作闸、健康检查端点、业务异常映射闸。 -->
 		<ProjectReference Include="..\Mud.Wechat.Demo.Shared\Mud.Wechat.Demo.Shared.csproj" />
 		<!-- 凭据底座 + 业务接口（AddPayApp 在 Abstractions，经主包传递可见，本工程不直引）。 -->
-		<ProjectReference Include="..\..\Src\Pay\Mud.Wechat.Pay\Mud.Wechat.Pay.csproj" />
+		<PackageReference Include="Mud.Wechat.Pay" Version="$(MudWechatPackageVersion)" />
 		<!-- APIv3 回调接收包：与主包并列（守卫禁止回调包反向引用主包，宿主两侧都要装才既有下单又有通知）。 -->
-		<ProjectReference Include="..\..\Src\Pay\Mud.Wechat.Pay.Callback\Mud.Wechat.Pay.Callback.csproj" />
+		<PackageReference Include="Mud.Wechat.Pay.Callback" Version="$(MudWechatPackageVersion)" />
 	</ItemGroup>
 
 </Project>

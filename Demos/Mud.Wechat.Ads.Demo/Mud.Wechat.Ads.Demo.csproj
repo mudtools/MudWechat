@@ -10,8 +10,8 @@
 		<!-- 广告线主包：13 域的声明式业务接口 + AdsModule/AddWechatAdsApi。
 		     Abstractions（AddAdsApp / OAuth 编排 / 传输层）与 DataModels（官方 DTO + AdsQueryJson）
 		     经主包传递可见，故本工程不直引它们 —— 对齐开放平台线的三包传递形态。
-		     本线**没有 Callback 包**（官方无推送面）⇒ 不内嵌 Mud.Wechat.Callback.Analyzers（无档可吃，内嵌只会静默空跑）。 -->
-		<ProjectReference Include="..\..\Src\Ads\Mud.Wechat.Ads\Mud.Wechat.Ads.csproj" />
+		     本线**没有 Callback 包**（官方无推送面）⇒ 不涉及 Mud.Wechat.Callback.Analyzers（无档可吃）。 -->
+		<PackageReference Include="Mud.Wechat.Ads" Version="$(MudWechatPackageVersion)" />
 	</ItemGroup>
 
 </Project>

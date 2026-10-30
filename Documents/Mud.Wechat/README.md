@@ -29,7 +29,7 @@ Src/<线>/<主包>/Interfaces/<域>/<族>/   ⇄   reference/<线>/<域>/<族>.m
 
 | 产品线 | 主包 | 业务域 | 端点/契约接口 | 已成文 | 已核验 |
 |---|---|---|---|---|---|
-| 企业微信（WeCom） | `Mud.Wechat.Work` | 35 | 446 | **57 族（16 域：`AccountId` / `AdvancedApi` / `AdvancedFeature` / `Agent` / `Aibot` / `Approval` / `Authentication` / `Basic` / `Checkin` / `Contacts` / `CorpGroup` / `DataZone` / `DeviceData` / `Dial` / `Emergency` / `ExternalContact`）** | 56 |
+| 企业微信（WeCom） | `Mud.Wechat.Work` | 35 | 446 | **66 族（20 域：`AccountId` / `AdvancedApi` / `AdvancedFeature` / `Agent` / `Aibot` / `Approval` / `Authentication` / `Basic` / `Checkin` / `Contacts` / `CorpGroup` / `DataZone` / `DeviceData` / `Dial` / `Emergency` / `ExternalContact` / `Gov` / `Hr` / `Identity` / `Invoice`）** | 65 |
 | 微信公众号 | `Mud.Wechat.OfficialAccount` | 27 | 194 | 0 | 0 |
 | 微信小程序 | `Mud.Wechat.MiniProgram` | 21 | 141 | 0 | 0 |
 | 微信支付 APIv3/v2 | `Mud.Wechat.Pay` | 10 | 57 | 0 | 0 |
@@ -38,7 +38,7 @@ Src/<线>/<主包>/Interfaces/<域>/<族>/   ⇄   reference/<线>/<域>/<族>.m
 | 腾讯广告（在建） | `Mud.Wechat.Ads` | 8 | 33 | 0 | 0 |
 | 跨线基建（叶层 / Redis / OpenTelemetry / AI） | `Mud.Wechat.Abstractions` 等 | — | — | 0 | 0 |
 
-已成文 57 篇（`AccountId` 域 7 族 20 支端点；`AdvancedApi` / `AdvancedFeature` / `Agent` / `Aibot` / `Approval` 五域 11 族 38 支端点方法 / 36 个端点小节——`ApprovalTemplate.md` 的创建与更新模板在自建与代开发子接口各声明一次、同路由，合为同一小节；`Authentication` 域 3 族 9 支端点；`Basic` 域 1 族 2 支端点；`Checkin` 域 5 族 15 条路由 / 26 个方法声明；`Contacts` 域 6 族 52 个方法声明 / 44 条去重路由——差异只来自成员与部门把写入/邀请端点在自建与第三方两支各声明一次；`CorpGroup` 域 3 族 20 支端点；`DataZone` 域 2 族 18 个方法声明 / 17 条去重路由；`DeviceData` 域 1 族 8 支端点；`Dial` 域 1 族 1 支端点；`Emergency` 域 1 族 2 支端点；`ExternalContact` 域 16 族 95 支端点（16 支域守卫逐族 `HaveCount` 之和恰为 95））/ 待写按族计约 **175+ 篇**（族数量级，非端点数量级；确切缺口由 `reference/` 与 `Interfaces/` 目录比对得出，不靠人工记清单）。
+已成文 66 篇（`AccountId` 域 7 族 20 支端点；`AdvancedApi` / `AdvancedFeature` / `Agent` / `Aibot` / `Approval` 五域 11 族 38 支端点方法 / 36 个端点小节——`ApprovalTemplate.md` 的创建与更新模板在自建与代开发子接口各声明一次、同路由，合为同一小节；`Authentication` 域 3 族 9 支端点；`Basic` 域 1 族 2 支端点；`Checkin` 域 5 族 15 条路由 / 26 个方法声明；`Contacts` 域 6 族 52 个方法声明 / 44 条去重路由——差异只来自成员与部门把写入/邀请端点在自建与第三方两支各声明一次；`CorpGroup` 域 3 族 20 支端点；`DataZone` 域 2 族 18 个方法声明 / 17 条去重路由；`DeviceData` 域 1 族 8 支端点；`Dial` 域 1 族 1 支端点；`Emergency` 域 1 族 2 支端点；`ExternalContact` 域 16 族 95 支端点（16 支域守卫逐族 `HaveCount` 之和恰为 95）；`Gov` 域 4 篇覆盖 5 个根接口 21 支端点；`Hr` 域 1 族 3 支端点；`Identity` 域 3 篇覆盖 5 个根接口 8 支端点；`Invoice` 域 1 族 4 支端点）/ 待写按族计约 **165+ 篇**（族数量级，非端点数量级；确切缺口由 `reference/` 与 `Interfaces/` 目录比对得出，不靠人工记清单）。
 
 ### 已成文清单
 
@@ -101,6 +101,15 @@ Src/<线>/<主包>/Interfaces/<域>/<族>/   ⇄   reference/<线>/<域>/<族>.m
 | [AcquisitionComponent.md](./reference/Work/ExternalContact/AcquisitionComponent.md) | 3 | `access_token`（第三方 2 支）＋ `suite_access_token`（账单 1 支，套件级、无企业 scope） | `已核验` |
 | [ServedContact.md](./reference/Work/ExternalContact/ServedContact.md) | 1 | `access_token`（**仅自建**，父接口零端点） | `已核验` |
 | [Attachment.md](./reference/Work/ExternalContact/Attachment.md) | 1 | `access_token`（三类应用；multipart 上传腿在生成器 3.0.9 下不传文件字节） | `已核验` |
+| [EventCategory.md](./reference/Work/Gov/EventCategory.md) | 4 | `access_token`（自建 + 代开发；**第三方暂不支持**） | `已核验` |
+| [Grid.md](./reference/Work/Gov/Grid.md) | 5 | `access_token`（E1–E4 自建 + 代开发；E5 `grid/list` **仅自建** ⇒ 独立成族） | `已核验` |
+| [Patrol.md](./reference/Work/Gov/Patrol.md) | 6 | `access_token`（**仅自建**；代开发文档页存在但权限表「暂不支持」） | `已核验` |
+| [Resident.md](./reference/Work/Gov/Resident.md) | 6 | `access_token`（**仅自建**，同上） | `已核验` |
+| [Hr.md](./reference/Work/Hr/Hr.md) | 3 | `access_token`（**仅自建**；零端点父接口 + 自建子接口承载） | `已核验` |
+| [Identity.md](./reference/Work/Identity/Identity.md) | 4 | `access_token`（自建 / 代开发）＋ `suite_access_token`（第三方独立路由 `service/auth/*3rd`） | `已核验` |
+| [IdentityMiniProgram.md](./reference/Work/Identity/IdentityMiniProgram.md) | 2 | `access_token`（自建 / 代开发）＋ `suite_access_token`（第三方独立路由，响应多 `open_userid`） | `已核验` |
+| [IdentityTfa.md](./reference/Work/Identity/IdentityTfa.md) | 2 | `access_token`（**仅自建 / 通讯录同步**；`authsucc` 归通讯录域，守卫 IDN5） | `已核验` |
+| [Invoice.md](./reference/Work/Invoice/Invoice.md) | 4 | `access_token`（三类应用等宽；E4 另需企业激活人数超 200） | `已核验` |
 
 `已核验` = 正文每个断言可指到内部证据或带日期官方取文 + 示例逐字编译通过（见规范 §7）；各篇 §7「已知留档缺口」登记的是官方未提供或本文不主张的项，不因缺口表存在而降级。
 

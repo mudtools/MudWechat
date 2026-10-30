@@ -29,7 +29,7 @@ Src/<线>/<主包>/Interfaces/<域>/<族>/   ⇄   reference/<线>/<域>/<族>.m
 
 | 产品线 | 主包 | 业务域 | 端点/契约接口 | 已成文 | 已核验 |
 |---|---|---|---|---|---|
-| 企业微信（WeCom） | `Mud.Wechat.Work` | 35 | 446 | **27 族（9 域：`AccountId` / `AdvancedApi` / `AdvancedFeature` / `Agent` / `Aibot` / `Approval` / `Authentication` / `Basic` / `Checkin`）** | 26 |
+| 企业微信（WeCom） | `Mud.Wechat.Work` | 35 | 446 | **39 族（13 域：`AccountId` / `AdvancedApi` / `AdvancedFeature` / `Agent` / `Aibot` / `Approval` / `Authentication` / `Basic` / `Checkin` / `Contacts` / `CorpGroup` / `DataZone` / `DeviceData`）** | 38 |
 | 微信公众号 | `Mud.Wechat.OfficialAccount` | 27 | 194 | 0 | 0 |
 | 微信小程序 | `Mud.Wechat.MiniProgram` | 21 | 141 | 0 | 0 |
 | 微信支付 APIv3/v2 | `Mud.Wechat.Pay` | 10 | 57 | 0 | 0 |
@@ -38,7 +38,7 @@ Src/<线>/<主包>/Interfaces/<域>/<族>/   ⇄   reference/<线>/<域>/<族>.m
 | 腾讯广告（在建） | `Mud.Wechat.Ads` | 8 | 33 | 0 | 0 |
 | 跨线基建（叶层 / Redis / OpenTelemetry / AI） | `Mud.Wechat.Abstractions` 等 | — | — | 0 | 0 |
 
-已成文 27 篇（`AccountId` 域 7 族 20 支端点；`AdvancedApi` / `AdvancedFeature` / `Agent` / `Aibot` / `Approval` 五域 11 族 38 支端点方法 / 36 个端点小节——`ApprovalTemplate.md` 的创建与更新模板在自建与代开发子接口各声明一次、同路由，合为同一小节；`Authentication` 域 3 族 9 支端点；`Basic` 域 1 族 2 支端点；`Checkin` 域 5 族 15 条路由 / 26 个方法声明）/ 待写按族计约 **200+ 篇**（族数量级，非端点数量级；确切缺口由 `reference/` 与 `Interfaces/` 目录比对得出，不靠人工记清单）。
+已成文 39 篇（`AccountId` 域 7 族 20 支端点；`AdvancedApi` / `AdvancedFeature` / `Agent` / `Aibot` / `Approval` 五域 11 族 38 支端点方法 / 36 个端点小节——`ApprovalTemplate.md` 的创建与更新模板在自建与代开发子接口各声明一次、同路由，合为同一小节；`Authentication` 域 3 族 9 支端点；`Basic` 域 1 族 2 支端点；`Checkin` 域 5 族 15 条路由 / 26 个方法声明；`Contacts` 域 6 族 52 个方法声明 / 44 条去重路由——差异只来自成员与部门把写入/邀请端点在自建与第三方两支各声明一次；`CorpGroup` 域 3 族 20 支端点；`DataZone` 域 2 族 18 个方法声明 / 17 条去重路由；`DeviceData` 域 1 族 8 支端点）/ 待写按族计约 **190+ 篇**（族数量级，非端点数量级；确切缺口由 `reference/` 与 `Interfaces/` 目录比对得出，不靠人工记清单）。
 
 ### 已成文清单
 
@@ -71,6 +71,18 @@ Src/<线>/<主包>/Interfaces/<域>/<族>/   ⇄   reference/<线>/<域>/<族>.m
 | [Report.md](./reference/Work/Checkin/Report.md) | 2（6 个方法声明） | `access_token`（三类应用；第三方为旧结构） | `已核验` |
 | [Schedule.md](./reference/Work/Checkin/Schedule.md) | 2 | `access_token`（三类应用） | `已核验` |
 | [Device.md](./reference/Work/Checkin/Device.md) | 1 | `access_token`（三类应用；第三方需设备型号关联） | `已核验` |
+| [Users.md](./reference/Work/Contacts/Users.md) | 18（23 个方法声明） | `access_token`（三类应用；写入面仅自建 / 第三方，成员授权三支仅第三方） | `已核验` |
+| [Departments.md](./reference/Work/Contacts/Departments.md) | 6（9 个方法声明） | `access_token`（三类应用；写入面仅自建 / 第三方） | `已核验` |
+| [Tags.md](./reference/Work/Contacts/Tags.md) | 7 | `access_token`（三类应用一致开放） | `已核验` |
+| [Batch.md](./reference/Work/Contacts/Batch.md) | 4 | `access_token`（自建 + 第三方；**官方无代开发子接口**） | `已核验` |
+| [Export.md](./reference/Work/Contacts/Export.md) | 5 | `access_token`（三类应用一致开放） | `已核验` |
+| [ContactRules.md](./reference/Work/Contacts/ContactRules.md) | 4 | `access_token`（**仅自建**，且仅通讯录同步应用） | `已核验` |
+| [CorpGroup.md](./reference/Work/CorpGroup/CorpGroup.md) | 6 | `access_token`（E1 三类；E2–E6 仅自建 / 代开发；E3 消费下级企业凭证） | `已核验` |
+| [CorpGroupContacts.md](./reference/Work/CorpGroup/CorpGroupContacts.md) | 9 | `access_token`（读取面自建 + 代开发；导入 / 移除 / 反查仅自建） | `已核验` |
+| [CorpGroupRules.md](./reference/Work/CorpGroup/CorpGroupRules.md) | 5 | `access_token`（**仅自建**，且仅创建空间的主企业） | `已核验` |
+| [DataZone.md](./reference/Work/DataZone/DataZone.md) | 14（15 个方法声明） | `access_token`（公共面三类；`get_corp_auth_info` 仅第三方 + 代开发；文档存档仅第三方） | `已核验` |
+| [DataZoneProgram.md](./reference/Work/DataZone/DataZoneProgram.md) | 3 | `access_token`（三类应用一致开放） | `已核验` |
+| [DeviceData.md](./reference/Work/DeviceData/DeviceData.md) | 8 | `access_token`（**仅第三方**，企业级令牌；E1–E7 响应体不建模 `errcode`） | `已核验` |
 
 `已核验` = 正文每个断言可指到内部证据或带日期官方取文 + 示例逐字编译通过（见规范 §7）；各篇 §7「已知留档缺口」登记的是官方未提供或本文不主张的项，不因缺口表存在而降级。
 

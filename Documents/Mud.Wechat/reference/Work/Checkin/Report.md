@@ -10,7 +10,7 @@
 | 官方文档 | 日报 93374（自建）/ 96498（代开发）/ 94206（第三方旧结构）· 月报 93387 / 96499 / 94207 |
 | 状态 | `已核验` |
 | 本文核验日期 | 2026-10-29（内部证据为守卫 + 接口/DTO XML 注释逐项比对；官方页本次未重新渲染取文） |
-| 示例代码验证 | 2026-10-29 在本仓临时 Web SDK 工程（`net8.0`）与本批 9 篇的可运行示例合并逐字编译，0 错误（本篇 1 段；本批 9 段，接口签名摘录块不参与编译）；仅编译级验证，未做真账号运行验证 |
+| 示例代码验证 | 2026-10-29 首验 + 2026-10-30 复验：在本仓临时 Web SDK 工程（`net8.0`）与全仓 82 段可运行示例合并逐字编译，0 错误（本篇 2 段；本篇的 `// 承接` 片段示例已补齐自足前置（自带 using 与服务实例解析），现同样参与编译；接口签名摘录块与 json 块不参与编译）；仅编译级验证，未做真账号运行验证 |
 | 证据基础 | 内部：CK1~CK5 + 接口与 DTO XML 注释 + [域 README](../../../../../Src/Work/Mud.Wechat.Work/Interfaces/Checkin/README.md) 逐端点核验 2026-10-18 · 官方：本批未重新取文，正文口径继承域 README 留档 |
 
 ## 1. 这个接口族做什么
@@ -316,7 +316,14 @@ Task<GetThirdPartyCheckinMonthDataResponse> GetCheckinMonthDataAsync(
 **调用示例**
 
 ```csharp
-// 承接 E1 的装配与 reports 实例。
+using Mud.Wechat.Work;
+using Mud.Wechat.Work.Abstractions.Exceptions;      // WechatWorkException
+using Mud.Wechat.Work.DataModels.Checkin;      // 请求/响应 DTO
+// 片段自足前置：与 E1 使用同一个自建子接口实例。
+var reports = provider.GetRequiredService<IWechatWorkInternalCheckinReportService>();
+var start = new DateTimeOffset(new DateTime(2026, 10, 1, 0, 0, 0, DateTimeKind.Local));
+var end = new DateTimeOffset(new DateTime(2026, 10, 31, 0, 0, 0, DateTimeKind.Local));
+
 
 var monthResp = await reports.GetCheckinMonthDataAsync(
     new GetCheckinMonthDataRequest

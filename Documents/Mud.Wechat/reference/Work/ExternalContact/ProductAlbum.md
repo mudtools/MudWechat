@@ -8,9 +8,9 @@
 | DTO 源文件 | [DataModels/ExternalContact/ProductAlbum/](../../../../../Src/Work/Mud.Wechat.Work/DataModels/ExternalContact/ProductAlbum/)（11 型，`SerializerClassName = ProductAlbum`，登记断言见 PA4 → `ProductAlbumJsonContext`） |
 | 契约守卫 | [WechatExternalContactProductAlbumContractGuards](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatExternalContactProductAlbumContractGuards.cs)（PA1 路由表 5 支且互不重复 / PA2 层级与三空标记 / PA3 令牌绑定 / PA4 JSON 上下文）＋ G5 ＋ TO1~TO3 |
 | 官方文档 | 自建 [95096](https://developer.work.weixin.qq.com/document/path/95096) · 第三方 [95131](https://developer.work.weixin.qq.com/document/path/95131) · 代开发 [96345](https://developer.work.weixin.qq.com/document/path/96345) |
-| 状态 | `草稿` |
+| 状态 | `已核验` |
 | 本文核验日期 | 2026-10-30（内部证据为守卫 + 接口/DTO XML 注释逐项比对；官方页本批未重新渲染取文） |
-| 示例代码验证 | 待编译验证 |
+| 示例代码验证 | 2026-10-30 在本仓临时 Web SDK 工程（net8.0）与本批 18 篇的可运行示例合并逐字编译，0 错误（本篇 1 段）；本批 20 段、全仓累计 102 段；仅编译级验证，未做真账号运行验证 |
 | 证据基础 | 内部：PA1~PA4 + 接口与 DTO XML 注释 + [域 README](../../../../../Src/Work/Mud.Wechat.Work/Interfaces/ExternalContact/README.md)（§3.7、§4 陷阱 11）· 官方：本批未重新取文，正文口径继承接口注释留档 |
 
 ## 1. 这个接口族做什么
@@ -41,14 +41,7 @@
 | 令牌注入 | `TokenInjectionMode.Query` | 每次请求 |
 | 令牌归属键 | 自建 `Wechat.AccessToken@Internal`；第三方/代开发 `Wechat.AccessToken@Corp` | 运行期归属校验（错配抛 `WechatTokenOwnerMismatchException`） |
 
-第三方 / 代开发消费的是**授权企业级**令牌（scope = `authCorpId`），调用前须先切作用域：
-
-```csharp
-using Mud.Wechat.Work.Abstractions.Authentication;
-
-// switcher 是 IWechatAppContextSwitcher，provider 中解析得到
-using var _ = switcher.UseCorpScope(appKey, authCorpId, permanentCode);
-```
+第三方 / 代开发消费的是**授权企业级**令牌（scope = `authCorpId`），调用前须先切作用域：`IWechatAppContextSwitcher.UseCorpScope(appKey, authCorpId, permanentCode)`（命名空间 `Mud.Wechat.Work.Abstractions.Authentication`，返回 `IDisposable`，`using` 包裹）。
 
 ### 2.2 权限与业务前置
 
@@ -80,7 +73,7 @@ using var _ = switcher.UseCorpScope(appKey, authCorpId, permanentCode);
 
 ## 4. 端点
 
-签名与字段名以 [接口源文件](../../../../../Src/Work/Mud.Wechat.Work/Interfaces/ExternalContact/ProductAlbum/IWechatWorkExternalContactProductAlbumService.cs) 与 [DTO 目录](../../../../../Src/Work/Mud.Wechat.Work/DataModels/ExternalContact/ProductAlbum/) 为准。「必填」列写的是**官方参数表口径**——SDK 不做本地必填校验（例外见 §5 的 E1 上传端点说明，本族无例外）。
+签名与字段名以 [接口源文件](../../../../../Src/Work/Mud.Wechat.Work/Interfaces/ExternalContact/ProductAlbum/IWechatWorkExternalContactProductAlbumService.cs) 与 [DTO 目录](../../../../../Src/Work/Mud.Wechat.Work/DataModels/ExternalContact/ProductAlbum/) 为准。「必填」列写的是**官方参数表口径**——本族 SDK 不做本地必填校验（本域做本地校验的是 [Attachment.md](./Attachment.md) 的上传端点）。
 
 ### E1. `AddProductAlbumAsync` — 创建商品图册
 

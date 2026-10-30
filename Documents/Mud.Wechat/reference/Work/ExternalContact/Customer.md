@@ -8,9 +8,9 @@
 | DTO 源文件 | [DataModels/ExternalContact/Customer/](../../../../../Src/Work/Mud.Wechat.Work/DataModels/ExternalContact/Customer/)（含 `RequestModel/`；`SerializerClassName = Customer`） |
 | 契约守卫 | [WechatExternalContactCustomerContractGuards](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatExternalContactCustomerContractGuards.cs)（CU1 路由表 11 条 / CU2 层级与第三方 `HaveCount(1)` / CU3 令牌绑定 / CU4 JSON 上下文）＋ G5 ＋ TO1~TO3 |
 | 官方文档 | 列表 92113/92264/96314 · 详情 92114/92265/96315 · 批量 92994/93010/96316 · 备注 92115/92694/96317 · 规则组 94883/99540/99543 · external_userid 转换 95195（仅第三方） |
-| 状态 | `草稿` |
+| 状态 | `已核验` |
 | 本文核验日期 | 2026-10-30（内部证据为守卫 + 接口/DTO XML 注释逐项比对；官方页本批未重新渲染取文） |
-| 示例代码验证 | 待编译验证 |
+| 示例代码验证 | 2026-10-30 在本仓临时 Web SDK 工程（net8.0）与本批 18 篇的可运行示例合并逐字编译，0 错误（本篇 1 段）；本批 20 段、全仓累计 102 段；仅编译级验证，未做真账号运行验证 |
 | 证据基础 | 内部：CU1~CU4 + 接口与 DTO XML 注释 + [域 README](../../../../../Src/Work/Mud.Wechat.Work/Interfaces/ExternalContact/README.md)（§3.1 速览、§4 陷阱 1/2/3/10/13）· 官方：本批未重新取文，正文口径继承域 README 留档 |
 
 ## 1. 这个接口族做什么
@@ -185,19 +185,41 @@ Task<WechatWorkResponse> UpdateCustomerRemarkAsync(
 
 **各可填字段不可同时为空**；应答仅 `errcode`/`errmsg`。
 
-### E5–E7. 规则组读取三支
+### E5. `GetCustomerStrategyListAsync` — 获取规则组列表
 
 ```csharp
 Task<GetCustomerStrategyListResponse> GetCustomerStrategyListAsync([Body] GetCustomerStrategyListRequest request, CancellationToken cancellationToken = default);
+```
+
+| 项 | 值 |
+|---|---|
+| 路由 | `POST /cgi-bin/externalcontact/customer_strategy/list` |
+| 请求 | `cursor?` / `limit?`（默认与上限 **1000**） |
+| 响应 | `strategy[]`（元素仅 `strategy_id`）+ `next_cursor`（**无更多时不返回**） |
+
+### E6. `GetCustomerStrategyDetailAsync` — 获取规则组详情
+
+```csharp
 Task<GetCustomerStrategyDetailResponse> GetCustomerStrategyDetailAsync([Body] GetCustomerStrategyDetailRequest request, CancellationToken cancellationToken = default);
+```
+
+| 项 | 值 |
+|---|---|
+| 路由 | `POST /cgi-bin/externalcontact/customer_strategy/get` |
+| 请求 | `strategy_id`（`long`，必填） |
+| 响应 | `strategy`（含 `parent_id` / `strategy_name` / `create_time` / `admin_list` / `privilege`） |
+
+### E7. `GetCustomerStrategyRangeAsync` — 获取规则组管理范围
+
+```csharp
 Task<GetCustomerStrategyRangeResponse> GetCustomerStrategyRangeAsync([Body] GetCustomerStrategyRangeRequest request, CancellationToken cancellationToken = default);
 ```
 
-| 端点 | 路由 | 请求 | 响应 |
-|---|---|---|---|
-| E5 列表 | `POST /cgi-bin/externalcontact/customer_strategy/list` | `cursor?` / `limit?`（默认与上限 1000） | `strategy[]`（元素仅 `strategy_id`）+ `next_cursor`（无更多时不返回） |
-| E6 详情 | `POST /cgi-bin/externalcontact/customer_strategy/get` | `strategy_id`（`long`，必填） | `strategy`（含 `parent_id` / `strategy_name` / `create_time` / `admin_list` / `privilege`） |
-| E7 管理范围 | `POST /cgi-bin/externalcontact/customer_strategy/get_range` | `strategy_id` + `cursor?` / `limit?`（默认与上限 1000） | `range[]` + `next_cursor` |
+| 项 | 值 |
+|---|---|
+| 路由 | `POST /cgi-bin/externalcontact/customer_strategy/get_range` |
+| 请求 | `strategy_id` + `cursor?` / `limit?`（默认与上限 **1000**） |
+| 响应 | `range[]` + `next_cursor` |
 
 范围节点 `CustomerStrategyRangeNode`：`type`（**1 成员 / 2 部门**）、`userid`（仅 type=1）、`partyid`（仅 type=2，`long?`）。
 
@@ -213,6 +235,8 @@ Task<GetCustomerStrategyRangeResponse> GetCustomerStrategyRangeAsync([Body] GetC
 Task<CreateCustomerStrategyResponse> CreateCustomerStrategyAsync(
     [Body] CreateCustomerStrategyRequest request, CancellationToken cancellationToken = default);
 ```
+
+- 路由 `POST /cgi-bin/externalcontact/customer_strategy/create`。
 
 请求：`strategy_name`、`parent_id?`（无父组可不填）、`admin_list?`（**≤20**）、`privilege?`（**有父组时被忽略**）、`range?`（**≤100 个节点**）。
 响应：`strategy_id`（`long?`）。

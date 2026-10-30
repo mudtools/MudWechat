@@ -8,9 +8,9 @@
 | DTO 源文件 | [DataModels/Dial/](../../../../../Src/Work/Mud.Wechat.Work/DataModels/Dial/)（5 型，`SerializerClassName = Dial`，落 `DialJsonContext`） |
 | 契约守卫 | [WechatDialContractGuards](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatDialContractGuards.cs)（DL1 路由与字段名 / DL2 单应用类型层级 / DL3 令牌绑定 / DL4 JSON 上下文）＋ [WechatContractGuards.QueryTokenInjection.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatContractGuards.QueryTokenInjection.cs)（G5） |
 | 官方文档 | 93662（仅企业自建应用） |
-| 状态 | `草稿` |
+| 状态 | `已核验` |
 | 本文核验日期 | 2026-10-30（内部证据为守卫 + 接口/DTO XML 注释逐项比对；官方页本批未重新渲染取文） |
-| 示例代码验证 | 待编译验证 |
+| 示例代码验证 | 2026-10-30 在本仓临时 Web SDK 工程（net8.0）与本批 18 篇的可运行示例合并逐字编译，0 错误（本篇 1 段）；本批 20 段、全仓累计 102 段；仅编译级验证，未做真账号运行验证 |
 | 证据基础 | 内部：DL1~DL4 + 接口与 DTO XML 注释 + [域 README](../../../../../Src/Work/Mud.Wechat.Work/Interfaces/Dial/README.md) 逐端点核验 2026-10-18 · 官方：本批未重新取文，正文口径继承域 README 留档 |
 
 ## 1. 这个接口族做什么

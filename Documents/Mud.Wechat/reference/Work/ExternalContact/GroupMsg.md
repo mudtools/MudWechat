@@ -8,9 +8,9 @@
 | DTO 源文件 | [DataModels/ExternalContact/GroupMsg/](../../../../../Src/Work/Mud.Wechat.Work/DataModels/ExternalContact/GroupMsg/)（含 `RequestModel/`；`SerializerClassName = GroupMsg`） |
 | 契约守卫 | [WechatExternalContactGroupMsgContractGuards](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatExternalContactGroupMsgContractGuards.cs)（GM1 路由表 11 条 / GM2 层级与三空标记 / GM3 令牌绑定 / GM4 JSON 上下文）＋ G5 ＋ TO1~TO3 |
 | 官方文档 | 创建群发 92135/92698/96366 · 提醒 97610/97613/97618 · 停止 97611/97614/97619 · 记录与结果 93338/93439/96355 · 新客户欢迎语 92137/92599/96356 · 入群欢迎语素材 92366/93438/96357 |
-| 状态 | `草稿` |
+| 状态 | `已核验` |
 | 本文核验日期 | 2026-10-30（内部证据为守卫 + 接口/DTO XML 注释逐项比对；官方页本批未重新渲染取文） |
-| 示例代码验证 | 待编译验证 |
+| 示例代码验证 | 2026-10-30 在本仓临时 Web SDK 工程（net8.0）与本批 18 篇的可运行示例合并逐字编译，0 错误（本篇 1 段）；本批 20 段、全仓累计 102 段；仅编译级验证，未做真账号运行验证 |
 | 证据基础 | 内部：GM1~GM4 + 接口与 DTO XML 注释 + [域 README](../../../../../Src/Work/Mud.Wechat.Work/Interfaces/ExternalContact/README.md)（§3.2、§4 陷阱 3/10/13）· 官方：本批未重新取文，正文口径继承域 README 留档 |
 
 ## 1. 这个接口族做什么
@@ -264,6 +264,8 @@ Task<WechatWorkResponse> SendWelcomeMsgAsync(
     [Body] SendWelcomeMsgRequest request, CancellationToken cancellationToken = default);
 ```
 
+- 路由 `POST /cgi-bin/externalcontact/send_welcome_msg`；应答仅 `errcode`/`errmsg`。
+
 | 字段 | 属性 | 类型 | 必填 | 说明 |
 |---|---|---|---|---|
 | `welcome_code` | `WelcomeCode` | `string?` | **是** | 「添加外部联系人事件」推送的凭证，**有效期 20 秒、仅可用一次** |
@@ -283,6 +285,8 @@ Task<AddGroupWelcomeTemplateResponse> AddGroupWelcomeTemplateAsync(
     [Body] AddGroupWelcomeTemplateRequest request, CancellationToken cancellationToken = default);
 ```
 
+- 路由 `POST /cgi-bin/externalcontact/group_welcome_template/add`。
+
 | 字段 | 属性 | 说明 |
 |---|---|---|
 | `text` | `Text` | ≤**3000 字节**（比群发的 4000 少）；支持 `%NICKNAME%` 占位符（**大小写敏感**），发送时替换为客户昵称 |
@@ -293,19 +297,30 @@ Task<AddGroupWelcomeTemplateResponse> AddGroupWelcomeTemplateAsync(
 - **文本以外的类型只能配置一个**；同时填写多个时按 **`image` > `link` > `miniprogram` > `file` > `video`** 优先级取参（不是报错）。
 - 响应：`template_id`（`string?`）。
 
-### E9–E11. 入群欢迎语素材的编辑 / 读取 / 删除
+### E9. `UpdateGroupWelcomeTemplateAsync` — 编辑入群欢迎语素材
 
 ```csharp
 Task<WechatWorkResponse> UpdateGroupWelcomeTemplateAsync([Body] UpdateGroupWelcomeTemplateRequest request, CancellationToken cancellationToken = default);
+```
+
+- 路由 `POST /cgi-bin/externalcontact/group_welcome_template/edit`；`template_id` 必填 + 素材字段（**覆盖**）；**仅可编辑本应用创建的素材**。
+
+### E10. `GetGroupWelcomeTemplateAsync` — 获取入群欢迎语素材
+
+```csharp
 Task<GetGroupWelcomeTemplateResponse> GetGroupWelcomeTemplateAsync([Body] GetGroupWelcomeTemplateRequest request, CancellationToken cancellationToken = default);
+```
+
+- 路由 `POST /cgi-bin/externalcontact/group_welcome_template/get`；`template_id` 必填。
+- 响应把 `text` / `image` / `link` / `miniprogram` / `file` / `video` 放在**根级**（与请求体结构一致）；读取图片返回 `pic_url`。
+
+### E11. `DeleteGroupWelcomeTemplateAsync` — 删除入群欢迎语素材
+
+```csharp
 Task<WechatWorkResponse> DeleteGroupWelcomeTemplateAsync([Body] DeleteGroupWelcomeTemplateRequest request, CancellationToken cancellationToken = default);
 ```
 
-| 端点 | 路由 | 要点 |
-|---|---|---|
-| E9 编辑 | `POST /cgi-bin/externalcontact/group_welcome_template/edit` | `template_id` 必填 + 素材字段（覆盖）；**仅可编辑本应用创建的素材** |
-| E10 读取 | `POST /cgi-bin/externalcontact/group_welcome_template/get` | `template_id` 必填；响应把 `text` / `image` / `link` / `miniprogram` / `file` / `video` 放在**根级**（与请求体结构一致）；读取图片返回 `pic_url` |
-| E11 删除 | `POST /cgi-bin/externalcontact/group_welcome_template/del` | `template_id` 必填（+ 旧套件 `agentid`）；**只能删调用方自己创建的素材** |
+- 路由 `POST /cgi-bin/externalcontact/group_welcome_template/del`；`template_id` 必填（+ 旧套件 `agentid`）；**只能删调用方自己创建的素材**。
 
 ## 5. 陷阱与易混对照
 

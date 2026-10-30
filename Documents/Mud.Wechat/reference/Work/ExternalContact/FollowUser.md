@@ -8,9 +8,9 @@
 | DTO 源文件 | [DataModels/ExternalContact/FollowUser/](../../../../../Src/Work/Mud.Wechat.Work/DataModels/ExternalContact/FollowUser/)（`SerializerClassName = FollowUser`） |
 | 契约守卫 | [WechatExternalContactFollowUserContractGuards](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatExternalContactFollowUserContractGuards.cs)（FU1 路由表 3 条 / FU2 层级：自建空标记 + 第三方 1 + 代开发 1 / FU3 令牌绑定 / FU4 JSON 上下文）＋ G5 ＋ TO1~TO3 |
 | 官方文档 | 成员列表 92571/92576/96310 · 可建联成员 101146（仅第三方）· 权限检查 96312（仅代开发） |
-| 状态 | `草稿` |
+| 状态 | `已核验` |
 | 本文核验日期 | 2026-10-30（内部证据为守卫 + 接口/DTO XML 注释逐项比对；官方页本批未重新渲染取文） |
-| 示例代码验证 | 待编译验证 |
+| 示例代码验证 | 2026-10-30 在本仓临时 Web SDK 工程（net8.0）与本批 18 篇的可运行示例合并逐字编译，0 错误（本篇 1 段）；本批 20 段、全仓累计 102 段；仅编译级验证，未做真账号运行验证 |
 | 证据基础 | 内部：FU1~FU4 + 接口与 DTO XML 注释 + [域 README](../../../../../Src/Work/Mud.Wechat.Work/Interfaces/ExternalContact/README.md)（§3.13、§4 陷阱 13）· 官方：本批未重新取文，正文口径继承域 README 留档 |
 
 ## 1. 这个接口族做什么

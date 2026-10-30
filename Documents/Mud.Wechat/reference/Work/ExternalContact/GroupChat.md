@@ -8,9 +8,9 @@
 | DTO 源文件 | [DataModels/ExternalContact/GroupChat/](../../../../../Src/Work/Mud.Wechat.Work/DataModels/ExternalContact/GroupChat/)（`SerializerClassName = GroupChat`） |
 | 契约守卫 | [WechatExternalContactGroupChatContractGuards](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatExternalContactGroupChatContractGuards.cs)（GC1 路由表 / GC2 层级与三空标记 / GC3 令牌绑定 / GC4 JSON 上下文）＋ G5 ＋ TO1~TO3 |
 | 官方文档 | 列表 93414（自建 / 代开发）/ 92120（第三方）· 详情 92707 / 92122 · opengid 转换 94828 / 94822 |
-| 状态 | `草稿` |
+| 状态 | `已核验` |
 | 本文核验日期 | 2026-10-30（内部证据为守卫 + 接口/DTO XML 注释逐项比对；官方页本批未重新渲染取文） |
-| 示例代码验证 | 待编译验证 |
+| 示例代码验证 | 2026-10-30 在本仓临时 Web SDK 工程（net8.0）与本批 18 篇的可运行示例合并逐字编译，0 错误（本篇 1 段）；本批 20 段、全仓累计 102 段；仅编译级验证，未做真账号运行验证 |
 | 证据基础 | 内部：GC1~GC4 + 接口与 DTO XML 注释 + [域 README](../../../../../Src/Work/Mud.Wechat.Work/Interfaces/ExternalContact/README.md)（§3.10、§4 陷阱 3/8）· 官方：本批未重新取文，正文口径继承域 README 留档 |
 
 ## 1. 这个接口族做什么

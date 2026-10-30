@@ -8,9 +8,9 @@
 | DTO 源文件 | [DataModels/ExternalContact/JobInheritance/](../../../../../Src/Work/Mud.Wechat.Work/DataModels/ExternalContact/JobInheritance/)（9 型，`SerializerClassName = JobInheritance`，登记断言见 JI4 → `JobInheritanceJsonContext`） |
 | 契约守卫 | [WechatExternalContactJobInheritanceContractGuards](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatExternalContactJobInheritanceContractGuards.cs)（JI1 路由表 3 支且互不重复 / JI2 层级与三空标记 / JI3 令牌绑定 / JI4 JSON 上下文）＋ G5 ＋ TO1~TO3 |
 | 官方文档 | 客户接替 自建 [92125](https://developer.work.weixin.qq.com/document/path/92125) / 第三方 [94096](https://developer.work.weixin.qq.com/document/path/94096) / 代开发 [96325](https://developer.work.weixin.qq.com/document/path/96325) · 接替状态 94088 / 94097 / 96327 · 客户群接替 95703 / 95742 / 96328 |
-| 状态 | `草稿` |
+| 状态 | `已核验` |
 | 本文核验日期 | 2026-10-30（内部证据为守卫 + 接口/DTO XML 注释逐项比对；官方页本批未重新渲染取文） |
-| 示例代码验证 | 待编译验证 |
+| 示例代码验证 | 2026-10-30 在本仓临时 Web SDK 工程（net8.0）与本批 18 篇的可运行示例合并逐字编译，0 错误（本篇 1 段）；本批 20 段、全仓累计 102 段；仅编译级验证，未做真账号运行验证 |
 | 证据基础 | 内部：JI1~JI4 + 接口与 DTO XML 注释 + [域 README](../../../../../Src/Work/Mud.Wechat.Work/Interfaces/ExternalContact/README.md)（§3.11）· 官方：本批未重新取文，正文口径继承接口注释留档 |
 
 ## 1. 这个接口族做什么

@@ -8,9 +8,9 @@
 | DTO 源文件 | [DataModels/ExternalContact/AcquisitionComponent/](../../../../../Src/Work/Mud.Wechat.Work/DataModels/ExternalContact/AcquisitionComponent/)（`SerializerClassName = AcquisitionComponent`） |
 | 契约守卫 | [WechatExternalContactAcquisitionComponentContractGuards](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatExternalContactAcquisitionComponentContractGuards.cs)（**AC0 反重复守卫** / AC1 路由表 / AC2 层级与父接口零端点 / AC3 令牌分裂 / AC4 JSON 上下文）＋ G5 ＋ TO1~TO3 |
 | 官方文档 | 组件授权信息 99610 · 生成代支付 key 99603 · 代支付流水 99602（**均仅第三方应用树**） |
-| 状态 | `草稿` |
+| 状态 | `已核验` |
 | 本文核验日期 | 2026-10-30（内部证据为守卫 + 接口/DTO XML 注释逐项比对；官方页本批未重新渲染取文） |
-| 示例代码验证 | 待编译验证 |
+| 示例代码验证 | 2026-10-30 在本仓临时 Web SDK 工程（net8.0）与本批 18 篇的可运行示例合并逐字编译，0 错误（本篇 1 段）；本批 20 段、全仓累计 102 段；仅编译级验证，未做真账号运行验证 |
 | 证据基础 | 内部：AC0~AC4 + 接口与 DTO XML 注释 + [域 README](../../../../../Src/Work/Mud.Wechat.Work/Interfaces/ExternalContact/README.md)（§3.14、§4 陷阱 12）· 官方：本批未重新取文，正文口径继承域 README 留档 |
 
 ## 1. 这个接口族做什么

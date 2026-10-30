@@ -8,9 +8,9 @@
 | DTO 源文件 | [DataModels/ExternalContact/ContactWay/](../../../../../Src/Work/Mud.Wechat.Work/DataModels/ExternalContact/ContactWay/)（含 `RequestModel/`；`SerializerClassName = ContactWay`） |
 | 契约守卫 | [WechatExternalContactContactWayContractGuards](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatExternalContactContactWayContractGuards.cs)（CW1 路由表 / CW2 层级与三空标记 / CW3 令牌绑定 / CW4 JSON 上下文）＋ G5 ＋ TO1~TO3 |
 | 官方文档 | 「联系我」92228 / 95724 / 96348 · 临时会话同页 · 入群方式 92229 / 99546 / 99547 |
-| 状态 | `草稿` |
+| 状态 | `已核验` |
 | 本文核验日期 | 2026-10-30（内部证据为守卫 + 接口/DTO XML 注释逐项比对；官方页本批未重新渲染取文） |
-| 示例代码验证 | 待编译验证 |
+| 示例代码验证 | 2026-10-30 在本仓临时 Web SDK 工程（net8.0）与本批 18 篇的可运行示例合并逐字编译，0 错误（本篇 2 段）；本批 20 段、全仓累计 102 段；仅编译级验证，未做真账号运行验证 |
 | 证据基础 | 内部：CW1~CW4 + 接口与 DTO XML 注释 + [域 README](../../../../../Src/Work/Mud.Wechat.Work/Interfaces/ExternalContact/README.md)（§3.4、§4 陷阱 4/5/10/11）· 官方：本批未重新取文，正文口径继承域 README 留档 |
 
 ## 1. 这个接口族做什么
@@ -198,6 +198,8 @@ Task<ListContactWayResponse> GetContactWayListAsync(
     [Body] ListContactWayRequest request, CancellationToken cancellationToken = default);
 ```
 
+- 路由 `POST /cgi-bin/externalcontact/list_contact_way`。
+
 | 字段 | 属性 | 类型 | 必填 | 说明 |
 |---|---|---|---|---|
 | `start_time` | `StartTime` | `long?` | 否 | 创建时间起，**默认 90 天前** |
@@ -321,6 +323,7 @@ Task<WechatWorkResponse> UpdateGroupChatJoinWayAsync(
     [Body] UpdateGroupChatJoinWayRequest request, CancellationToken cancellationToken = default);
 ```
 
+- 路由 `POST /cgi-bin/externalcontact/groupchat/update_join_way`。
 - 请求：`config_id`（必填）、`scene`（**必填**）、`chat_id_list`（**必填，≤5**）+ 其余可选字段。
 - **覆盖式更新**（传入字段整体覆盖原配置）；`mark_source` 只能由创建此二维码的应用更新。
 

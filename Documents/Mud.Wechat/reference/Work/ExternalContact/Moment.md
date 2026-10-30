@@ -8,9 +8,9 @@
 | DTO 源文件 | [DataModels/ExternalContact/Moment/](../../../../../Src/Work/Mud.Wechat.Work/DataModels/ExternalContact/Moment/)（含 `RequestModel/`；`SerializerClassName = Moment`） |
 | 契约守卫 | [WechatExternalContactMomentContractGuards](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatExternalContactMomentContractGuards.cs)（MO1 路由表 / MO2 层级与三空标记 / MO3 令牌绑定 / MO4 JSON 上下文）＋ G5 ＋ TO1~TO3 |
 | 官方文档 | 发表任务 95094/95095/96351 · 停止发表 97612/97616/97615 · 发表记录与互动 93333/93443/96352 · 朋友圈规则组 94890/99541/99545 |
-| 状态 | `草稿` |
+| 状态 | `已核验` |
 | 本文核验日期 | 2026-10-30（内部证据为守卫 + 接口/DTO XML 注释逐项比对；官方页本批未重新渲染取文） |
-| 示例代码验证 | 待编译验证 |
+| 示例代码验证 | 2026-10-30 在本仓临时 Web SDK 工程（net8.0）与本批 18 篇的可运行示例合并逐字编译，0 错误（本篇 1 段）；本批 20 段、全仓累计 102 段；仅编译级验证，未做真账号运行验证 |
 | 证据基础 | 内部：MO1~MO4 + 接口与 DTO XML 注释 + [域 README](../../../../../Src/Work/Mud.Wechat.Work/Interfaces/ExternalContact/README.md)（§3.3、§4 陷阱 3/7/10）· 官方：本批未重新取文，正文口径继承域 README 留档 |
 
 ## 1. 这个接口族做什么
@@ -229,6 +229,8 @@ Task<GetMomentListResponse> GetMomentListAsync(
     [Body] GetMomentListRequest request, CancellationToken cancellationToken = default);
 ```
 
+- 路由 `POST /cgi-bin/externalcontact/get_moment_list`。
+
 | 字段 | 属性 | 类型 | 必填 | 说明 |
 |---|---|---|---|---|
 | `start_time` / `end_time` | `StartTime` / `EndTime` | `long?` | **是** | 间隔 **≤30 天**，仅取区间内数据 |
@@ -283,19 +285,41 @@ Task<GetMomentCommentsResponse> GetMomentCommentsAsync(
 - 响应 `comment_list[]` / `like_list[]`（元素同为 `MomentCommentItem`）：`external_userid`（**仅客户互动时返回**）、`userid`（**仅企业成员互动时返回**）、`create_time`。
 - **两者不会同时出现**于同一元素——按互动主体类型二选一读取。
 
-### E9–E11. 朋友圈规则组读取三支
+### E9. `GetMomentStrategyListAsync` — 获取朋友圈规则组列表
 
 ```csharp
 Task<GetMomentStrategyListResponse> GetMomentStrategyListAsync([Body] GetMomentStrategyListRequest request, CancellationToken cancellationToken = default);
+```
+
+| 项 | 值 |
+|---|---|
+| 路由 | `POST /cgi-bin/externalcontact/moment_strategy/list` |
+| 请求 | `cursor?` / `limit?`（默认与上限 **1000**） |
+| 响应 | `strategy[]`（元素仅 `strategy_id`）+ `next_cursor` |
+
+### E10. `GetMomentStrategyDetailAsync` — 获取规则组详情
+
+```csharp
 Task<GetMomentStrategyDetailResponse> GetMomentStrategyDetailAsync([Body] GetMomentStrategyDetailRequest request, CancellationToken cancellationToken = default);
+```
+
+| 项 | 值 |
+|---|---|
+| 路由 | `POST /cgi-bin/externalcontact/moment_strategy/get` |
+| 请求 | `strategy_id`（必填） |
+| 响应 | `strategy`（`MomentStrategy`） |
+
+### E11. `GetMomentStrategyRangeAsync` — 获取规则组管理范围
+
+```csharp
 Task<GetMomentStrategyRangeResponse> GetMomentStrategyRangeAsync([Body] GetMomentStrategyRangeRequest request, CancellationToken cancellationToken = default);
 ```
 
-| 端点 | 路由 | 请求 | 响应 |
-|---|---|---|---|
-| E9 列表 | `POST /cgi-bin/externalcontact/moment_strategy/list` | `cursor?` / `limit?`（默认与上限 1000） | `strategy[]`（元素仅 `strategy_id`）+ `next_cursor` |
-| E10 详情 | `POST /cgi-bin/externalcontact/moment_strategy/get` | `strategy_id`（必填） | `strategy`（`MomentStrategy`） |
-| E11 管理范围 | `POST /cgi-bin/externalcontact/moment_strategy/get_range` | `strategy_id` + `cursor?` / `limit?`（默认与上限 1000） | `range[]` + `next_cursor` |
+| 项 | 值 |
+|---|---|
+| 路由 | `POST /cgi-bin/externalcontact/moment_strategy/get_range` |
+| 请求 | `strategy_id` + `cursor?` / `limit?`（默认与上限 **1000**） |
+| 响应 | `range[]` + `next_cursor` |
 
 `MomentStrategy`：`strategy_id` / `parent_id`（无父组为 `0`）/ `strategy_name` / `create_time` / `admin_list[]` / `privilege`。
 `privilege`（三项，**默认均 `true`**）：`view_moment_list`（查看成员全部朋友圈发表）、`send_moment`（允许发表）、`manage_moment_cover_and_sign`（管理封面与签名）。

@@ -8,9 +8,9 @@
 | DTO 源文件 | [DataModels/ExternalContact/Tag/](../../../../../Src/Work/Mud.Wechat.Work/DataModels/ExternalContact/Tag/)（含 `RequestModel/`；`SerializerClassName = Tag`） |
 | 契约守卫 | [WechatExternalContactTagContractGuards](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatExternalContactTagContractGuards.cs)（CT1 路由表 / CT2 层级与三空标记 / CT3 令牌绑定 / CT4 JSON 上下文）＋ G5 ＋ TO1~TO3 |
 | 官方文档 | 企业标签 92696（自建与第三方同页）/ 96320（代开发）· 打标签 92697 / 96322 · 规则组标签 99542 / 99544 |
-| 状态 | `草稿` |
+| 状态 | `已核验` |
 | 本文核验日期 | 2026-10-30（内部证据为守卫 + 接口/DTO XML 注释逐项比对；官方页本批未重新渲染取文） |
-| 示例代码验证 | 待编译验证 |
+| 示例代码验证 | 2026-10-30 在本仓临时 Web SDK 工程（net8.0）与本批 18 篇的可运行示例合并逐字编译，0 错误（本篇 1 段）；本批 20 段、全仓累计 102 段；仅编译级验证，未做真账号运行验证 |
 | 证据基础 | 内部：CT1~CT4 + 接口与 DTO XML 注释 + [域 README](../../../../../Src/Work/Mud.Wechat.Work/Interfaces/ExternalContact/README.md)（§3.5 速览、§4 陷阱 9/10/11）· 官方：本批未重新取文，正文口径继承域 README 留档 |
 
 ## 1. 这个接口族做什么
@@ -140,6 +140,7 @@ Task<AddCorpTagResponse> AddCorpTagAsync([Body] AddCorpTagRequest request, Cance
 Task<WechatWorkResponse> EditCorpTagAsync([Body] EditCorpTagRequest request, CancellationToken cancellationToken = default);
 ```
 
+- 路由 `POST /cgi-bin/externalcontact/edit_corp_tag`。
 - 请求：`id`（**必填**，标签或标签组 id）、`name`（≤30 字符）、`order`、`agentid?`（旧套件）。
 - **仅可改名称与次序值**；改后不可与已有标签组重名、不可与同组内其它标签重名。
 - **只能编辑本应用创建的标签**。
@@ -150,6 +151,7 @@ Task<WechatWorkResponse> EditCorpTagAsync([Body] EditCorpTagRequest request, Can
 Task<WechatWorkResponse> DelCorpTagAsync([Body] DelCorpTagRequest request, CancellationToken cancellationToken = default);
 ```
 
+- 路由 `POST /cgi-bin/externalcontact/del_corp_tag`。
 - 请求：`tag_id`（`List<string>?`）与 `group_id`（`List<string>?`）**不可同时为空**；删组会**连同组下所有标签一并删除**。
 - **组内标签全被删除后，标签组自动删除**（不需要再删组）。
 - 只能删本应用创建的标签。
@@ -187,6 +189,7 @@ Task<AddStrategyTagResponse> AddStrategyTagAsync(
     [Body] AddStrategyTagRequest request, CancellationToken cancellationToken = default);
 ```
 
+- 路由 `POST /cgi-bin/externalcontact/add_strategy_tag`。
 - 请求：`strategy_id`（**官方必填**）+ `group_id?` / `group_name?` / `order?` / `tag[]`（官方必填），语义同 E2（填组 id = 组内加标签、不填 = 按名新建并复用同名组、不支持空组）。
 - **仅可在一级规则组下添加标签**；**企业标签 + 规则组标签合计上限 10000**。
 - 只能管理本应用创建的规则组标签。
@@ -198,6 +201,7 @@ Task<WechatWorkResponse> EditStrategyTagAsync(
     [Body] EditStrategyTagRequest request, CancellationToken cancellationToken = default);
 ```
 
+- 路由 `POST /cgi-bin/externalcontact/edit_strategy_tag`。
 - 请求：`id`（必填）+ `name?` / `order?`；**不可重新指定标签/标签组所属规则组**（E7 的 `strategy_id` 在这里没有对应字段）。
 - 重名规则同 E3。
 
@@ -209,7 +213,7 @@ Task<WechatWorkResponse> DelStrategyTagAsync(
 ```
 
 - 请求 `tag_id?` / `group_id?`（**不可同时为空**，删组连带组内标签；组内标签删空则组自动删除）；只能删本应用创建的规则组标签。
-- 路由用缩写 `del_strategy_tag`（与 ProductAlbum 的 `delete_product_album` 拼写不同，逐字照官方）。
+- 路由 `POST /cgi-bin/externalcontact/del_strategy_tag`（**缩写 `del_`**，与 ProductAlbum 的 `delete_product_album` 拼写不同，逐字照官方）。
 
 **调用示例**（本族主示例：建组建标签 → 给客户打标 → 按 tag_id 查回含 deleted 的结果）
 

@@ -29,7 +29,7 @@ Src/<线>/<主包>/Interfaces/<域>/<族>/   ⇄   reference/<线>/<域>/<族>.m
 
 | 产品线 | 主包 | 业务域 | 端点/契约接口 | 已成文 | 已核验 |
 |---|---|---|---|---|---|
-| 企业微信（WeCom） | `Mud.Wechat.Work` | 35 | 446 | **66 族（20 域：`AccountId` / `AdvancedApi` / `AdvancedFeature` / `Agent` / `Aibot` / `Approval` / `Authentication` / `Basic` / `Checkin` / `Contacts` / `CorpGroup` / `DataZone` / `DeviceData` / `Dial` / `Emergency` / `ExternalContact` / `Gov` / `Hr` / `Identity` / `Invoice`）** | 65 |
+| 企业微信（WeCom） | `Mud.Wechat.Work` | 35 | 446 | **80 族（24 域：`AccountId` / `AdvancedApi` / `AdvancedFeature` / `Agent` / `Aibot` / `Approval` / `Authentication` / `Basic` / `Checkin` / `Contacts` / `CorpGroup` / `DataZone` / `DeviceData` / `Dial` / `Emergency` / `ExternalContact` / `Gov` / `Hr` / `Identity` / `Invoice` / `Journal` / `JsSdk` / `KF` / `License`）** | 79 |
 | 微信公众号 | `Mud.Wechat.OfficialAccount` | 27 | 194 | 0 | 0 |
 | 微信小程序 | `Mud.Wechat.MiniProgram` | 21 | 141 | 0 | 0 |
 | 微信支付 APIv3/v2 | `Mud.Wechat.Pay` | 10 | 57 | 0 | 0 |
@@ -38,7 +38,7 @@ Src/<线>/<主包>/Interfaces/<域>/<族>/   ⇄   reference/<线>/<域>/<族>.m
 | 腾讯广告（在建） | `Mud.Wechat.Ads` | 8 | 33 | 0 | 0 |
 | 跨线基建（叶层 / Redis / OpenTelemetry / AI） | `Mud.Wechat.Abstractions` 等 | — | — | 0 | 0 |
 
-已成文 66 篇（`AccountId` 域 7 族 20 支端点；`AdvancedApi` / `AdvancedFeature` / `Agent` / `Aibot` / `Approval` 五域 11 族 38 支端点方法 / 36 个端点小节——`ApprovalTemplate.md` 的创建与更新模板在自建与代开发子接口各声明一次、同路由，合为同一小节；`Authentication` 域 3 族 9 支端点；`Basic` 域 1 族 2 支端点；`Checkin` 域 5 族 15 条路由 / 26 个方法声明；`Contacts` 域 6 族 52 个方法声明 / 44 条去重路由——差异只来自成员与部门把写入/邀请端点在自建与第三方两支各声明一次；`CorpGroup` 域 3 族 20 支端点；`DataZone` 域 2 族 18 个方法声明 / 17 条去重路由；`DeviceData` 域 1 族 8 支端点；`Dial` 域 1 族 1 支端点；`Emergency` 域 1 族 2 支端点；`ExternalContact` 域 16 族 95 支端点（16 支域守卫逐族 `HaveCount` 之和恰为 95）；`Gov` 域 4 篇覆盖 5 个根接口 21 支端点；`Hr` 域 1 族 3 支端点；`Identity` 域 3 篇覆盖 5 个根接口 8 支端点；`Invoice` 域 1 族 4 支端点）/ 待写按族计约 **165+ 篇**（族数量级，非端点数量级；确切缺口由 `reference/` 与 `Interfaces/` 目录比对得出，不靠人工记清单）。
+已成文 80 篇（`AccountId` 域 7 族 20 支端点；`AdvancedApi` / `AdvancedFeature` / `Agent` / `Aibot` / `Approval` 五域 11 族 38 支端点方法 / 36 个端点小节——`ApprovalTemplate.md` 的创建与更新模板在自建与代开发子接口各声明一次、同路由，合为同一小节；`Authentication` 域 3 族 9 支端点；`Basic` 域 1 族 2 支端点；`Checkin` 域 5 族 15 条路由 / 26 个方法声明；`Contacts` 域 6 族 52 个方法声明 / 44 条去重路由——差异只来自成员与部门把写入/邀请端点在自建与第三方两支各声明一次；`CorpGroup` 域 3 族 20 支端点；`DataZone` 域 2 族 18 个方法声明 / 17 条去重路由；`DeviceData` 域 1 族 8 支端点；`Dial` 域 1 族 1 支端点；`Emergency` 域 1 族 2 支端点；`ExternalContact` 域 16 族 95 支端点（16 支域守卫逐族 `HaveCount` 之和恰为 95）；`Gov` 域 4 篇覆盖 5 个根接口 21 支端点；`Hr` 域 1 族 3 支端点；`Identity` 域 3 篇覆盖 5 个根接口 8 支端点；`Invoice` 域 1 族 4 支端点；`Journal` 域 1 族 3 支端点；`JsSdk` 域 1 族 2 支端点；`KF` 域 8 族 38 支端点方法 / 29 条去重路由；`License` 域 4 族 27 支端点）/ 待写按族计约 **150+ 篇**（族数量级，非端点数量级；确切缺口由 `reference/` 与 `Interfaces/` 目录比对得出，不靠人工记清单）。
 
 ### 已成文清单
 
@@ -110,6 +110,20 @@ Src/<线>/<主包>/Interfaces/<域>/<族>/   ⇄   reference/<线>/<域>/<族>.m
 | [IdentityMiniProgram.md](./reference/Work/Identity/IdentityMiniProgram.md) | 2 | `access_token`（自建 / 代开发）＋ `suite_access_token`（第三方独立路由，响应多 `open_userid`） | `已核验` |
 | [IdentityTfa.md](./reference/Work/Identity/IdentityTfa.md) | 2 | `access_token`（**仅自建 / 通讯录同步**；`authsucc` 归通讯录域，守卫 IDN5） | `已核验` |
 | [Invoice.md](./reference/Work/Invoice/Invoice.md) | 4 | `access_token`（三类应用等宽；E4 另需企业激活人数超 200） | `已核验` |
+| [Journal.md](./reference/Work/Journal/Journal.md) | 3 | `access_token`（**仅自建**；汇报文档树只在自建根下） | `已核验` |
+| [JsSdk.md](./reference/Work/JsSdk/JsSdk.md) | 2 | `access_token`（三类应用；票据须宿主缓存，SDK 不代缓存） | `已核验` |
+| [KfAccount.md](./reference/Work/KF/KfAccount.md) | 5 | `access_token`（三类应用；组件版 99368/99400 同路由 ⇒ 单一所有者） | `已核验` |
+| [KfServicer.md](./reference/Work/KF/KfServicer.md) | 3 | `access_token`（三类应用；添加部门 ≤20、删除各 ≤100） | `已核验` |
+| [KfSession.md](./reference/Work/KF/KfSession.md) | 15（5 条路由） | `access_token`（三类应用；`sync_msg` 请求体 `token` 是回调同步令牌，非 `[Token]`） | `已核验` |
+| [KfCustomer.md](./reference/Work/KF/KfCustomer.md) | 1 | `access_token`（三类应用；官方路由连写 `batchget`） | `已核验` |
+| [KfStatistics.md](./reference/Work/KF/KfStatistics.md) | 2 | `access_token`（三类应用；31 天 / 180 天 / 次日可见） | `已核验` |
+| [KfKnowledge.md](./reference/Work/KF/KfKnowledge.md) | 8 | `access_token`（**仅自建**；路由 `mod_group` / `mod_intent`） | `已核验` |
+| [KfComponent.md](./reference/Work/KF/KfComponent.md) | 1 | `access_token`（企业级；**仅第三方/组件套件**，无归属键） | `已核验` |
+| [KfUpgrade.md](./reference/Work/KF/KfUpgrade.md) | 3 | `access_token`（三类应用；E1 为 GET 且无参数） | `已核验` |
+| [LicenseOrder.md](./reference/Work/License/LicenseOrder.md) | 15 | **`provider_access_token`**（第三方 + 代开发同页；四族均不声明归属键） | `已核验` |
+| [LicenseAccount.md](./reference/Work/License/LicenseAccount.md) | 9 | `provider_access_token`（同上；8 支应答含密文 corpid/userid） | `已核验` |
+| [LicenseApp.md](./reference/Work/License/LicenseApp.md) | 1 | `provider_access_token`（同上；字段名官方即 `trail_info`） | `已核验` |
+| [LicenseAutoActive.md](./reference/Work/License/LicenseAutoActive.md) | 2 | `provider_access_token`（同上；前置为服务商已付费） | `已核验` |
 
 `已核验` = 正文每个断言可指到内部证据或带日期官方取文 + 示例逐字编译通过（见规范 §7）；各篇 §7「已知留档缺口」登记的是官方未提供或本文不主张的项，不因缺口表存在而降级。
 

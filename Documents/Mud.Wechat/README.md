@@ -29,7 +29,7 @@ Src/<线>/<主包>/Interfaces/<域>/<族>/   ⇄   reference/<线>/<域>/<族>.m
 
 | 产品线 | 主包 | 业务域 | 端点/契约接口 | 已成文 | 已核验 |
 |---|---|---|---|---|---|
-| 企业微信（WeCom） | `Mud.Wechat.Work` | 35 | 446 | **80 族（24 域：`AccountId` / `AdvancedApi` / `AdvancedFeature` / `Agent` / `Aibot` / `Approval` / `Authentication` / `Basic` / `Checkin` / `Contacts` / `CorpGroup` / `DataZone` / `DeviceData` / `Dial` / `Emergency` / `ExternalContact` / `Gov` / `Hr` / `Identity` / `Invoice` / `Journal` / `JsSdk` / `KF` / `License`）** | 79 |
+| 企业微信（WeCom） | `Mud.Wechat.Work` | 35 | 446 | **104 族（29 域：`AccountId` / `AdvancedApi` / `AdvancedFeature` / `Agent` / `Aibot` / `Approval` / `Authentication` / `Basic` / `Checkin` / `Contacts` / `CorpGroup` / `DataZone` / `DeviceData` / `Dial` / `Emergency` / `ExternalContact` / `Gov` / `Hr` / `Identity` / `Invoice` / `Journal` / `JsSdk` / `KF` / `License` / `Living` / `Mail` / `Media` / `Meeting` / `MeetingRoom`）** | 103 |
 | 微信公众号 | `Mud.Wechat.OfficialAccount` | 27 | 194 | 0 | 0 |
 | 微信小程序 | `Mud.Wechat.MiniProgram` | 21 | 141 | 0 | 0 |
 | 微信支付 APIv3/v2 | `Mud.Wechat.Pay` | 10 | 57 | 0 | 0 |
@@ -38,7 +38,7 @@ Src/<线>/<主包>/Interfaces/<域>/<族>/   ⇄   reference/<线>/<域>/<族>.m
 | 腾讯广告（在建） | `Mud.Wechat.Ads` | 8 | 33 | 0 | 0 |
 | 跨线基建（叶层 / Redis / OpenTelemetry / AI） | `Mud.Wechat.Abstractions` 等 | — | — | 0 | 0 |
 
-已成文 80 篇（`AccountId` 域 7 族 20 支端点；`AdvancedApi` / `AdvancedFeature` / `Agent` / `Aibot` / `Approval` 五域 11 族 38 支端点方法 / 36 个端点小节——`ApprovalTemplate.md` 的创建与更新模板在自建与代开发子接口各声明一次、同路由，合为同一小节；`Authentication` 域 3 族 9 支端点；`Basic` 域 1 族 2 支端点；`Checkin` 域 5 族 15 条路由 / 26 个方法声明；`Contacts` 域 6 族 52 个方法声明 / 44 条去重路由——差异只来自成员与部门把写入/邀请端点在自建与第三方两支各声明一次；`CorpGroup` 域 3 族 20 支端点；`DataZone` 域 2 族 18 个方法声明 / 17 条去重路由；`DeviceData` 域 1 族 8 支端点；`Dial` 域 1 族 1 支端点；`Emergency` 域 1 族 2 支端点；`ExternalContact` 域 16 族 95 支端点（16 支域守卫逐族 `HaveCount` 之和恰为 95）；`Gov` 域 4 篇覆盖 5 个根接口 21 支端点；`Hr` 域 1 族 3 支端点；`Identity` 域 3 篇覆盖 5 个根接口 8 支端点；`Invoice` 域 1 族 4 支端点；`Journal` 域 1 族 3 支端点；`JsSdk` 域 1 族 2 支端点；`KF` 域 8 族 38 支端点方法 / 29 条去重路由；`License` 域 4 族 27 支端点）/ 待写按族计约 **150+ 篇**（族数量级，非端点数量级；确切缺口由 `reference/` 与 `Interfaces/` 目录比对得出，不靠人工记清单）。
+已成文 104 篇（`AccountId` 域 7 族 20 支端点；`AdvancedApi` / `AdvancedFeature` / `Agent` / `Aibot` / `Approval` 五域 11 族 38 支端点方法 / 36 个端点小节——`ApprovalTemplate.md` 的创建与更新模板在自建与代开发子接口各声明一次、同路由，合为同一小节；`Authentication` 域 3 族 9 支端点；`Basic` 域 1 族 2 支端点；`Checkin` 域 5 族 15 条路由 / 26 个方法声明；`Contacts` 域 6 族 52 个方法声明 / 44 条去重路由——差异只来自成员与部门把写入/邀请端点在自建与第三方两支各声明一次；`CorpGroup` 域 3 族 20 支端点；`DataZone` 域 2 族 18 个方法声明 / 17 条去重路由；`DeviceData` 域 1 族 8 支端点；`Dial` 域 1 族 1 支端点；`Emergency` 域 1 族 2 支端点；`ExternalContact` 域 16 族 95 支端点（16 支域守卫逐族 `HaveCount` 之和恰为 95）；`Gov` 域 4 篇覆盖 5 个根接口 21 支端点；`Hr` 域 1 族 3 支端点；`Identity` 域 3 篇覆盖 5 个根接口 8 支端点；`Invoice` 域 1 族 4 支端点；`Journal` 域 1 族 3 支端点；`JsSdk` 域 1 族 2 支端点；`KF` 域 8 族 38 支端点方法 / 29 条去重路由；`License` 域 4 族 27 支端点；`Living` 域 1 族 9 支端点；`Media` 域 2 族 7 支端点方法 / 7 条去重路由（公共面 6 支三类等宽 + 服务商通道 1 支仅第三方）；`MeetingRoom` 域 2 族 10 支端点（**全部仅自建**，OA 会议室与 `meeting/rooms/` 两棵树勿混）；`Mail` 域 8 族 26 支端点方法 / 24 条去重路由（`compose_send` 三支同路由；三支三类等宽 + 五支仅自建）；`Meeting` 域 11 族 **106 支端点方法 / 105 条去重路由**（唯一重复即 `get_info` 在自建与第三方各声明一次；十一族中仅基础族向三类应用开放、全域唯一 GET 为 `layout/list_template`））/ Work 线尚余 **13 域 / 53 族 / 275 支端点声明**（`Message` 4 族 37 支 · `MsgAudit` 4 族 · `OpenHardware` 1 族 17 支 · `Pay` 7 族 15 支 · `PayTool` 3 族 9 支 · `PromotionQrCode` 2 族 4 支 · `Schedule` 3 族 13 支 · `School` 8 族 45 支 · `Security` 3 族 16 支 · `Service` 2 族 5 支 · `Webhook` 1 族 9 支 · `Wedoc` 9 族 69 支 · `Wedrive` 6 族 31 支；由 `Src/Work/Mud.Wechat.Work/Interfaces/` 与 `reference/Work/` 目录逐域比对得出，端点数按接口文件 `[Post]` / `[Get]` 实计）；其余六线（公众号 / 小程序 / 支付 / 开放平台 / 小店 / 广告）尚未成文。
 
 ### 已成文清单
 
@@ -124,6 +124,30 @@ Src/<线>/<主包>/Interfaces/<域>/<族>/   ⇄   reference/<线>/<域>/<族>.m
 | [LicenseAccount.md](./reference/Work/License/LicenseAccount.md) | 9 | `provider_access_token`（同上；8 支应答含密文 corpid/userid） | `已核验` |
 | [LicenseApp.md](./reference/Work/License/LicenseApp.md) | 1 | `provider_access_token`（同上；字段名官方即 `trail_info`） | `已核验` |
 | [LicenseAutoActive.md](./reference/Work/License/LicenseAutoActive.md) | 2 | `provider_access_token`（同上；前置为服务商已付费） | `已核验` |
+| [Living.md](./reference/Work/Living/Living.md) | 9 | `access_token`（三类应用；仅能操作本应用创建的直播） | `已核验` |
+| [Media.md](./reference/Work/Media/Media.md) | 6 | `access_token`（三类应用等宽；**两支返回 `byte[]?`，不可判 errcode**） | `已核验` |
+| [ServiceMedia.md](./reference/Work/Media/ServiceMedia.md) | 1 | **`provider_access_token`**（仅第三方；零端点父 + 唯一子接口、无归属键） | `已核验` |
+| [Booking.md](./reference/Work/MeetingRoom/Booking.md) | 6 | `access_token`（**仅自建**；必填性用类型系统表达） | `已核验` |
+| [Room.md](./reference/Work/MeetingRoom/Room.md) | 4 | `access_token`（**仅自建**；`range` 覆盖写、无分页） | `已核验` |
+| [Send.md](./reference/Work/Mail/Send.md) | 3 | `access_token`（三类应用；三支共用 `compose_send`） | `已核验` |
+| [Receive.md](./reference/Work/Mail/Receive.md) | 2 | `access_token`（三类应用；邮箱由令牌自身定位、无邮箱 id） | `已核验` |
+| [Account.md](./reference/Work/Mail/Account.md) | 2 | `access_token`（**仅自建**；`get_email_alias` 官方无请求包体） | `已核验` |
+| [Group.md](./reference/Work/Mail/Group.md) | 5 | `access_token`（**仅自建**；`groupid` 即邮箱地址、两支官方即 GET） | `已核验` |
+| [PublicMail.md](./reference/Work/Mail/PublicMail.md) | 7 | `access_token`（**仅自建**；`auth_code` 仅返回一次、只写参数名） | `已核验` |
+| [User.md](./reference/Work/Mail/User.md) | 2 | `access_token`（**仅自建**；`userid` 与 `publicemail_id` 同传只操作前者） | `已核验` |
+| [UserOption.md](./reference/Work/Mail/UserOption.md) | 2 | `access_token`（**仅自建**；`option.list` 的 `value` 是字符串 `"1"`/`"0"`） | `已核验` |
+| [Vip.md](./reference/Work/Mail/Vip.md) | 3 | `access_token`（**仅自建**；同步批量 ≤100、`has_more` 为布尔） | `已核验` |
+| [Meeting.md](./reference/Work/Meeting/Meeting.md) | 5（6 个方法声明） | `access_token`（三类应用；`get_info` 代开发无页 ⇒ 空标记） | `已核验` |
+| [MeetingStatistics.md](./reference/Work/Meeting/MeetingStatistics.md) | 1 | `access_token`（**仅自建**；路由挂 `statistics/` 段） | `已核验` |
+| [MeetingAdvanced.md](./reference/Work/Meeting/MeetingAdvanced.md) | 19 | `access_token`（**仅自建**；本域最大族，261 型中计 55 型） | `已核验` |
+| [MeetingControl.md](./reference/Work/Meeting/MeetingControl.md) | 17 | `access_token`（**仅自建**；`realcontrol/` 9 + `poll/` 8） | `已核验` |
+| [MeetingWebinar.md](./reference/Work/Meeting/MeetingWebinar.md) | 14 | `access_token`（**仅自建**；`title`/时间/状态为字符串形态） | `已核验` |
+| [MeetingRooms.md](./reference/Work/Meeting/MeetingRooms.md) | 12 | `access_token`（**仅自建**；`get_inventory` 为无请求体的 POST） | `已核验` |
+| [MeetingRecording.md](./reference/Work/Meeting/MeetingRecording.md) | 10 | `access_token`（**仅自建**；地址 6 小时、纪要与转写 1 小时） | `已核验` |
+| [MeetingLayout.md](./reference/Work/Meeting/MeetingLayout.md) | 15 | `access_token`（**仅自建**；**含本域唯一 GET** `layout/list_template`） | `已核验` |
+| [MeetingMra.md](./reference/Work/Meeting/MeetingMra.md) | 4 | `access_token`（**仅自建**；设备引用只有 `tmp_openid`） | `已核验` |
+| [MeetingPstn.md](./reference/Work/Meeting/MeetingPstn.md) | 3 | `access_token`（**仅自建**；50 路 / 100 页 / 20 号码三套数值） | `已核验` |
+| [MeetingPremiumAccount.md](./reference/Work/Meeting/MeetingPremiumAccount.md) | 5 | `access_token`（**仅自建**；`submit_*_job` + `*_job_result` 两段式） | `已核验` |
 
 `已核验` = 正文每个断言可指到内部证据或带日期官方取文 + 示例逐字编译通过（见规范 §7）；各篇 §7「已知留档缺口」登记的是官方未提供或本文不主张的项，不因缺口表存在而降级。
 

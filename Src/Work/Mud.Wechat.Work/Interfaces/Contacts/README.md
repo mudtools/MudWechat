@@ -422,7 +422,7 @@ using (switcher.UseCorpScope(appKey: "default", authCorpId, permanentCode))
    同批更新各守卫 `DataModels_ShouldBeRegisteredInJsonContext`（U4/D4/B4/CR4/E4/T4）的类型清单。
 3. **新增 / 迁移 `[HttpClientApi]` 接口** → 命名空间按 `IsAbstract` 二分（父 → `Mud.Wechat.Work.Interfaces`、可注入 → `Mud.Wechat.Work`），
    子接口挂 `RegistryGroupName = "Contact"`、`InheritedFrom = nameof(父实现类)`；跑
-   [WechatInterfaceNamespaceContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatInterfaceNamespaceContractGuards.cs)（N1~N3）并同批调整其 147/299 计数。
+   [WechatInterfaceNamespaceContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatInterfaceNamespaceContractGuards.cs)（N1~N3）并同批调整其 158/312 计数。
 4. **令牌面改动** → 子接口 `TokenManagerKey`（自建 `InternalAccessToken` / 第三方与代开发 `CorpAccessToken`）由 TO1~TO3 反射锁定；
    新增 Query 凭据参数名须同批登记 G5 白名单与脱敏词表（`corpsecret` / `permanent_code` / `media_id` 关联凭据只写参数名，不进日志 / 遥测 / 异常消息）。
 5. **本 README 与线索引** → 端点数、`AddContactApi()` 的「六域」叙述、

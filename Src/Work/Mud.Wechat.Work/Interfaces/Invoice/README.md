@@ -334,7 +334,7 @@ using (switcher.UseCorpScope(appKey: "default", authCorpId, authorization.Perman
    `WechatModule.Invoice` remarks、[WechatWorkServiceBuilder.cs](../../Extensions/WechatWorkServiceBuilder.cs) 的
    `AddInvoiceApi()` XML（其「四端点为三类应用公共面收敛父接口 + 空标记子接口」表述须与本域计数一致）、
    可注入子接口的 `RegistryGroupName = "Invoice"`（父接口保持空组）。若新增可注入接口，还须同批调整
-   N1~N3 的 147/299 计数。
+   N1~N3 的 158/312 计数。
 4. 凭据与敏感面红线：`access_token`、`corpsecret`、`permanent_code`、`auth_code`、`suite_ticket`
    **只写参数名**，不得出现在日志、遥测、异常消息或示例真值里；`encrypt_code` 属**发票定位凭据**，
    同样不得进日志；`openid`、`card_id`、`check_code`、金额、购买/销售方纳税人识别号与开户行账号一律用假值示例。

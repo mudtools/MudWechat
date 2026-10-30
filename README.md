@@ -85,7 +85,7 @@ using (switcher.UseCorpScope(appKey: "suite-a", authCorpId, permanentCode))
 
 | 产品线            | 包前缀                        | 业务域 | 端点         | 凭据模型                                                                      |
 | ----------------- | ----------------------------- | ------ | ------------ | ----------------------------------------------------------------------------- |
-| 企业微信（WeCom） | `Mud.Wechat.Work*`            | 35     | 446 契约接口 | `access_token` / `provider_access_token` / `suite_access_token`（Query 注入） |
+| 企业微信（WeCom） | `Mud.Wechat.Work*`            | 42     | 470 契约接口 | `access_token` / `provider_access_token` / `suite_access_token`（Query 注入） |
 | 微信公众号        | `Mud.Wechat.OfficialAccount*` | 27     | 194          | `Wechat.Mp.AccessToken`（普通 + 稳定双通道）+ `jsapi` / `wx_card` 票据        |
 | 微信小程序        | `Mud.Wechat.MiniProgram*`     | 21     | 141          | 复用公众号令牌域（同一 `/cgi-bin/token`，不新增令牌类型）                     |
 | 微信支付 APIv3    | `Mud.Wechat.Pay*`             | 10     | 57           | 商户 RSA 私钥签名（`WECHATPAY2-SHA256-RSA2048`），**无 `access_token`**       |
@@ -337,7 +337,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/audit-config-keys.
 ```
 
 - **20 个测试工程**（单 TFM `net8.0`）覆盖七条产品线 + Core 叶层 + Redis + OpenTelemetry + AI 域。
-- **契约守卫**：企业微信 61 个守卫文件、公众号 24 个、小程序 MP-X1~X9、支付 PAY-B1~B11、小店 CH 系列、广告 ADS 系列。
+- **契约守卫**：企业微信 74 个守卫文件、公众号 28 个、小程序 MP-X1~X9、支付 PAY-B1~B11、小店 CH 系列、广告 ADS 系列。
 - **AOT / 裁剪**：`net8.0` / `net10.0` 下逐源工程 `AotStrictMode` 净零；六条线共 **132 个源生成 JSON 上下文**。
 - **包清单单一来源**：可打包集由 `Src/**/*.csproj` 现场推导，CI / `pack.bat` / `publish.bat` 三处各自推导、不持有名单。
 - **新增产品线门禁接入口唯一**：AB-G6 同时校验解决方案工程清单、配置审计搜索根、DTO 标注脚本根命名空间、三处推导口径。

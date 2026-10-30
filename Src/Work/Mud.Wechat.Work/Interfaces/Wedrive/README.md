@@ -258,9 +258,8 @@ WR2 的 `BeEquivalentTo` 会因「补子接口」而失败——该断言对子�
 命名空间分区（[WechatInterfaceNamespaceContractGuards.cs](../../../../../Tests/Mud.Wechat.Work.Tests/ContractGuards/WechatInterfaceNamespaceContractGuards.cs) N1~N3）：
 6 个父接口落 `Mud.Wechat.Work.Interfaces`，16 个可注入子接口落 `Mud.Wechat.Work`；
 用户 `using Mud.Wechat.Work;` 即可见全部可注入接口且看不到父接口。
-计数基线以 [Tests/ContractBaseline.cs](../../../../../Tests/ContractBaseline.cs) 为准（当前 `AbstractParentInterfaces = 154` /
-`InjectableInterfaces = 307`）；[AGENTS.md](../../../../../AGENTS.md) §4 与本域无关的 147/299 与 N1 内联注释的 155/308 **均已陈旧**，
-以基线常量为准，勿据此调整本域。
+计数基线以 [Tests/ContractBaseline.cs](../../../../../Tests/ContractBaseline.cs) 为准（当前 `AbstractParentInterfaces = 158` /
+`InjectableInterfaces = 312`，与守卫 N1 及 [AGENTS.md](../../../../../AGENTS.md) §4 一致），勿据此调整本域。
 
 令牌面（WR3 只锁路由键）：`TokenType` 恒 `Wechat.AccessToken`、Query 注入、参数名 `access_token`。
 **归属域键不在 WR3 内重复断言**（守卫注释明示由 `WechatTokenOwnerContractGuards` 全局锁定），本仓实测声明为：

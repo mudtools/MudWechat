@@ -458,7 +458,7 @@ using (switcher.UseCorpScope(appKey: "default", authCorpId, authorization.Perman
 3. 新增接口族 / 重命名子接口 → 模块三段式同批：[WechatModule.cs](../../Extensions/WechatModule.cs) 的
    `WechatModule.Approval` remarks、[WechatWorkServiceBuilder.cs](../../Extensions/WechatWorkServiceBuilder.cs) 的
    `AddApprovalApi()` XML（其族叙述须与本域四族一致）、可注入子接口的 `RegistryGroupName = "Approval"`
-   （四个父接口保持空组）。若新增可注入接口，还须同批调整 N1~N3 的 147/299 计数。
+   （四个父接口保持空组）。若新增可注入接口，还须同批调整 N1~N3 的 158/312 计数。
 4. 触及回调事件（`sys_approval_change` / `open_approval_change`）时**不在本域改**：载荷 `[PayloadContract]`、
    `[WechatCallbackContract]` 与回调守卫（CB 系列）在 `Callback` / `Abstractions` 侧同批完成；
    本域只保证「无事件、无处理器」的边界表述（§5）。

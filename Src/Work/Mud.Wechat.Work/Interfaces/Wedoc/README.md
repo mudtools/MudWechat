@@ -582,7 +582,6 @@ using (switcher.UseCorpScope(appKey: "default", authCorpId, authorization.Perman
 | #26 中 `view_id` / `record_ids` / `filter_spec` 的优先级 | 官方与本仓注释均未说明三者并存时的取舍 | 调用侧一次只给一种定位方式 |
 | 子表权限 `priv` = 2/3 的完整取值域与 `record_priv` 取值域 | remarks 只留档「priv 为 2/3 时 record_priv 必填」「记录条件仅限人员/单选/多选」；`priv` 全集**未逐项核验** | 需要枚举时先核验 99935/100193 页 |
 | `get_sheet_range_data` 的 A1 表示法边界（跨 sheet、命名区域） | 注释只给出行 ≤1000 / 列 ≤200 / 单元格 ≤10000 与 `B5:A1` 非法；其它语法**未逐项核验** | 不要据邻域推断新语法支持 |
-| 包级 README 与本域计数冲突 | [../../README.md](../../README.md) 称「共 35 个业务域（Interfaces/ 35 个子目录）」与「ContractGuards 61 个文件」，实测为 **38** 个域目录 / **70** 个守卫文件；且其对 `Interfaces/Wedoc/` 只描述「管理文档 / 文档内容 / 表格内容 / 智能表格内容」四族，遗漏智能文档(17)/文档权限(9)/收集表(5)/素材(5)/高级功能账号(3) 五族共 39 支端点 | 该文件是**导航性**描述、不作事实来源；本域事实以 WD1~WD17 与本目录 remarks 为准 |
 
 ## 事实来源
 
@@ -630,5 +629,5 @@ using (switcher.UseCorpScope(appKey: "default", authCorpId, authorization.Perman
    Callback 包（XML 事件投影 `RepeatSiblings`）的处理，本域是纯 JSON 请求/响应侧，列表一律是 `List<T>` /
    `Dictionary<string, JsonElement>`，**不要**在本域 DTO 上模仿事件合并；事件载荷在 Callback 包，不属本域。
 7. 本文与 [../../README.md](../../README.md) 的域内端点数、族划分、官方文档号表述须同步更新
-   （该文件现有「35 个业务域 / 61 个守卫文件 / Wedoc 四族」三处陈旧描述，见缺口表）；
+   （该文件的 Wedoc 条目已按九族描述，改动族划分时两处同批）；
    最后跑 `../../../../../scripts/verify-build.ps1` 与 `../../../../../scripts/audit-config-keys.ps1`，全绿才算完成。

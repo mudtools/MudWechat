@@ -29,7 +29,7 @@ Src/<线>/<主包>/Interfaces/<域>/<族>/   ⇄   reference/<线>/<域>/<族>.m
 
 | 产品线 | 主包 | 业务域 | 端点/契约接口 | 已成文 | 已核验 |
 |---|---|---|---|---|---|
-| 企业微信（WeCom） | `Mud.Wechat.Work` | 35 | 446 | **104 族（29 域：`AccountId` / `AdvancedApi` / `AdvancedFeature` / `Agent` / `Aibot` / `Approval` / `Authentication` / `Basic` / `Checkin` / `Contacts` / `CorpGroup` / `DataZone` / `DeviceData` / `Dial` / `Emergency` / `ExternalContact` / `Gov` / `Hr` / `Identity` / `Invoice` / `Journal` / `JsSdk` / `KF` / `License` / `Living` / `Mail` / `Media` / `Meeting` / `MeetingRoom`）** | 103 |
+| 企业微信（WeCom） | `Mud.Wechat.Work` | 42 | 470 | **125 族（35 域：`AccountId` / `AdvancedApi` / `AdvancedFeature` / `Agent` / `Aibot` / `Approval` / `Authentication` / `Basic` / `Checkin` / `Contacts` / `CorpGroup` / `DataZone` / `DeviceData` / `Dial` / `Emergency` / `ExternalContact` / `Gov` / `Hr` / `Identity` / `Invoice` / `Journal` / `JsSdk` / `KF` / `License` / `Living` / `Mail` / `Media` / `Meeting` / `MeetingRoom` / `Message` / `MsgAudit` / `OpenHardware` / `Pay` / `PayTool` / `PromotionQrCode`）** | 124 |
 | 微信公众号 | `Mud.Wechat.OfficialAccount` | 27 | 194 | 0 | 0 |
 | 微信小程序 | `Mud.Wechat.MiniProgram` | 21 | 141 | 0 | 0 |
 | 微信支付 APIv3/v2 | `Mud.Wechat.Pay` | 10 | 57 | 0 | 0 |
@@ -38,7 +38,7 @@ Src/<线>/<主包>/Interfaces/<域>/<族>/   ⇄   reference/<线>/<域>/<族>.m
 | 腾讯广告（在建） | `Mud.Wechat.Ads` | 8 | 33 | 0 | 0 |
 | 跨线基建（叶层 / Redis / OpenTelemetry / AI） | `Mud.Wechat.Abstractions` 等 | — | — | 0 | 0 |
 
-已成文 104 篇（`AccountId` 域 7 族 20 支端点；`AdvancedApi` / `AdvancedFeature` / `Agent` / `Aibot` / `Approval` 五域 11 族 38 支端点方法 / 36 个端点小节——`ApprovalTemplate.md` 的创建与更新模板在自建与代开发子接口各声明一次、同路由，合为同一小节；`Authentication` 域 3 族 9 支端点；`Basic` 域 1 族 2 支端点；`Checkin` 域 5 族 15 条路由 / 26 个方法声明；`Contacts` 域 6 族 52 个方法声明 / 44 条去重路由——差异只来自成员与部门把写入/邀请端点在自建与第三方两支各声明一次；`CorpGroup` 域 3 族 20 支端点；`DataZone` 域 2 族 18 个方法声明 / 17 条去重路由；`DeviceData` 域 1 族 8 支端点；`Dial` 域 1 族 1 支端点；`Emergency` 域 1 族 2 支端点；`ExternalContact` 域 16 族 95 支端点（16 支域守卫逐族 `HaveCount` 之和恰为 95）；`Gov` 域 4 篇覆盖 5 个根接口 21 支端点；`Hr` 域 1 族 3 支端点；`Identity` 域 3 篇覆盖 5 个根接口 8 支端点；`Invoice` 域 1 族 4 支端点；`Journal` 域 1 族 3 支端点；`JsSdk` 域 1 族 2 支端点；`KF` 域 8 族 38 支端点方法 / 29 条去重路由；`License` 域 4 族 27 支端点；`Living` 域 1 族 9 支端点；`Media` 域 2 族 7 支端点方法 / 7 条去重路由（公共面 6 支三类等宽 + 服务商通道 1 支仅第三方）；`MeetingRoom` 域 2 族 10 支端点（**全部仅自建**，OA 会议室与 `meeting/rooms/` 两棵树勿混）；`Mail` 域 8 族 26 支端点方法 / 24 条去重路由（`compose_send` 三支同路由；三支三类等宽 + 五支仅自建）；`Meeting` 域 11 族 **106 支端点方法 / 105 条去重路由**（唯一重复即 `get_info` 在自建与第三方各声明一次；十一族中仅基础族向三类应用开放、全域唯一 GET 为 `layout/list_template`））/ Work 线尚余 **13 域 / 53 族 / 275 支端点声明**（`Message` 4 族 37 支 · `MsgAudit` 4 族 · `OpenHardware` 1 族 17 支 · `Pay` 7 族 15 支 · `PayTool` 3 族 9 支 · `PromotionQrCode` 2 族 4 支 · `Schedule` 3 族 13 支 · `School` 8 族 45 支 · `Security` 3 族 16 支 · `Service` 2 族 5 支 · `Webhook` 1 族 9 支 · `Wedoc` 9 族 69 支 · `Wedrive` 6 族 31 支；由 `Src/Work/Mud.Wechat.Work/Interfaces/` 与 `reference/Work/` 目录逐域比对得出，端点数按接口文件 `[Post]` / `[Get]` 实计）；其余六线（公众号 / 小程序 / 支付 / 开放平台 / 小店 / 广告）尚未成文。
+已成文 125 篇（`AccountId` 域 7 族 20 支端点；`AdvancedApi` / `AdvancedFeature` / `Agent` / `Aibot` / `Approval` 五域 11 族 38 支端点方法 / 36 个端点小节——`ApprovalTemplate.md` 的创建与更新模板在自建与代开发子接口各声明一次、同路由，合为同一小节；`Authentication` 域 3 族 9 支端点；`Basic` 域 1 族 2 支端点；`Checkin` 域 5 族 15 条路由 / 26 个方法声明；`Contacts` 域 6 族 52 个方法声明 / 44 条去重路由——差异只来自成员与部门把写入/邀请端点在自建与第三方两支各声明一次；`CorpGroup` 域 3 族 20 支端点；`DataZone` 域 2 族 18 个方法声明 / 17 条去重路由；`DeviceData` 域 1 族 8 支端点；`Dial` 域 1 族 1 支端点；`Emergency` 域 1 族 2 支端点；`ExternalContact` 域 16 族 95 支端点（16 支域守卫逐族 `HaveCount` 之和恰为 95）；`Gov` 域 4 篇覆盖 5 个根接口 21 支端点；`Hr` 域 1 族 3 支端点；`Identity` 域 3 篇覆盖 5 个根接口 8 支端点；`Invoice` 域 1 族 4 支端点；`Journal` 域 1 族 3 支端点；`JsSdk` 域 1 族 2 支端点；`KF` 域 8 族 38 支端点方法 / 29 条去重路由；`License` 域 4 族 27 支端点；`Living` 域 1 族 9 支端点；`Media` 域 2 族 7 支端点方法 / 7 条去重路由（公共面 6 支三类等宽 + 服务商通道 1 支仅第三方）；`MeetingRoom` 域 2 族 10 支端点（**全部仅自建**，OA 会议室与 `meeting/rooms/` 两棵树勿混）；`Mail` 域 8 族 26 支端点方法 / 24 条去重路由（`compose_send` 三支同路由；三支三类等宽 + 五支仅自建）；`Meeting` 域 11 族 **106 支端点方法 / 105 条去重路由**（唯一重复即 `get_info` 在自建与第三方各声明一次；十一族中仅基础族向三类应用开放、全域唯一 GET 为 `layout/list_template`）；`Message` 域 4 族 37 支端点 / 11 条去重路由（应用消息 14 + 群聊会话 12 + 学校通知 8 + 智能表格群聊 3；`message/send` 按 `msgtype` 拆成多方法故方法数远多于路由数）；`MsgAudit` 域 4 族 5 支端点（会话内容存档：同意情况 2 + 内部群 1 + 开启成员 1 + 机器人 1）；`OpenHardware` 域 1 族 17 支端点（型号/设备/成员凭证 + 七类硬件上报；`device_secret` 与成员身份不落日志）；`Pay` 域 7 族 15 支端点（对外收款记录 2 + 资金流水 1 + 进件 3 + 商户号 2 + 小程序下单 4 + 退款 2 + 交易账单 1；仅 `Bill` 为三类应用公共面，其余六族仅自建）；`PayTool` 域 3 族 9 支端点（收款工具 4 支**须签名** + 发票管理 2 支 + 应用版本付费 3 支；前两族 `provider_access_token`、末族 `suite_access_token`，三族均零端点父 + 唯一第三方子接口）；`PromotionQrCode` 域 2 族 4 支端点（企业注册 2 支走 `provider_access_token`；通讯录迁移 2 支为迁移凭证显式传参、**不声明 `[Token]`**））/ Work 线尚余 **7 域 / 32 族 / 188 支端点声明**（`Schedule` 3 族 13 支 · `School` 8 族 45 支 · `Security` 3 族 16 支 · `Service` 2 族 5 支 · `Webhook` 1 族 9 支 · `Wedoc` 9 族 69 支 · `Wedrive` 6 族 31 支；由 `Src/Work/Mud.Wechat.Work/Interfaces/` 与 `reference/Work/` 目录逐域比对得出，端点数按接口文件 `[Post]` / `[Get]` 实计）；其余六线（公众号 / 小程序 / 支付 / 开放平台 / 小店 / 广告）尚未成文。
 
 ### 已成文清单
 
@@ -148,6 +148,27 @@ Src/<线>/<主包>/Interfaces/<域>/<族>/   ⇄   reference/<线>/<域>/<族>.m
 | [MeetingMra.md](./reference/Work/Meeting/MeetingMra.md) | 4 | `access_token`（**仅自建**；设备引用只有 `tmp_openid`） | `已核验` |
 | [MeetingPstn.md](./reference/Work/Meeting/MeetingPstn.md) | 3 | `access_token`（**仅自建**；50 路 / 100 页 / 20 号码三套数值） | `已核验` |
 | [MeetingPremiumAccount.md](./reference/Work/Meeting/MeetingPremiumAccount.md) | 5 | `access_token`（**仅自建**；`submit_*_job` + `*_job_result` 两段式） | `已核验` |
+| [Message.md](./reference/Work/Message/Message.md) | 14 | `access_token`（E1–E13 三类等宽；E14 模板消息仅第三方） | `已核验` |
+| [AppChat.md](./reference/Work/Message/AppChat.md) | 12 | `access_token`（**仅自建**；群聊会话管理 3 支 + 群内推送 9 种 `msgtype`） | `已核验` |
+| [SchoolMessage.md](./reference/Work/Message/SchoolMessage.md) | 8 | `access_token`（三类应用等宽；`invalid_student` / `invalid_parent` 为个人数据） | `已核验` |
+| [SmartSheetGroupChat.md](./reference/Work/Message/SmartSheetGroupChat.md) | 3 | `access_token`（**仅自建**；智能表格自动化建群） | `已核验` |
+| [Agree.md](./reference/Work/MsgAudit/Agree.md) | 2 | `access_token`（**仅自建**；单聊 + 群聊同意情况） | `已核验` |
+| [GroupChat.md](./reference/Work/MsgAudit/GroupChat.md) | 1 | `access_token`（**仅自建**；会话内容存档内部群信息） | `已核验` |
+| [PermitUser.md](./reference/Work/MsgAudit/PermitUser.md) | 1 | `access_token`（**仅自建**；开启存档的成员列表） | `已核验` |
+| [Robot.md](./reference/Work/MsgAudit/Robot.md) | 1 | `access_token`（**仅自建**；机器人信息） | `已核验` |
+| [OpenHardware.md](./reference/Work/OpenHardware/OpenHardware.md) | 17 | **无 `[Token]`**（型号 / 设备 / 成员凭证均为显式 Query 参数；`device_secret` 类值只写参数名） | `已核验` |
+| [Bill.md](./reference/Work/Pay/Bill.md) | 2 | `access_token`（**三类应用公共面**；第三方 / 代开发拿不到 `contact_info`） | `已核验` |
+| [FundFlow.md](./reference/Work/Pay/FundFlow.md) | 1 | `access_token`（**仅自建**；间隔 ≤31 天、当日流水次日 11 点后生成） | `已核验` |
+| [MchApply.md](./reference/Work/Pay/MchApply.md) | 3 | `access_token`（**仅自建**；图片上传腿在生成器 3.0.9 下不传文件字节） | `已核验` |
+| [Merchant.md](./reference/Work/Pay/Merchant.md) | 2 | `access_token`（**仅自建**；`getmerchant` 单词连写、`allow_use_scope` 仅已绑定时返回） | `已核验` |
+| [Order.md](./reference/Work/Pay/Order.md) | 4 | `access_token`（**仅自建**；小程序下单 / 查单 / 关单 / 取签名，`prepay_id` 2 小时） | `已核验` |
+| [Refund.md](./reference/Work/Pay/Refund.md) | 2 | `access_token`（**仅自建**；金额单位分） | `已核验` |
+| [TradeBill.md](./reference/Work/Pay/TradeBill.md) | 1 | `access_token`（**仅自建**；`download_url` 30 秒有效、`auth` 不落日志） | `已核验` |
+| [PayTool/Order.md](./reference/Work/PayTool/Order.md) | 4 | **`provider_access_token`**（第三方 + 代开发同页；**请求体须带 `nonce_str` / `ts` / `sig`**） | `已核验` |
+| [PayTool/Invoice.md](./reference/Work/PayTool/Invoice.md) | 2 | `provider_access_token`（同上；官方参数表**不含**签名三要素） | `已核验` |
+| [PayTool/VersionSuite.md](./reference/Work/PayTool/VersionSuite.md) | 3 | **`suite_access_token`**（仅第三方 / 套件；字段名全小写 `orderid` / `suiteid`） | `已核验` |
+| [ServicePromotionQrCode.md](./reference/Work/PromotionQrCode/ServicePromotionQrCode.md) | 2 | **`provider_access_token`**（仅第三方；零端点父 + 唯一子接口、无归属键） | `已核验` |
+| [ContactSync.md](./reference/Work/PromotionQrCode/ContactSync.md) | 2 | **无 `[Token]`**（通讯录迁移凭证显式传参；E2 为 GET 却不可逆） | `已核验` |
 
 `已核验` = 正文每个断言可指到内部证据或带日期官方取文 + 示例逐字编译通过（见规范 §7）；各篇 §7「已知留档缺口」登记的是官方未提供或本文不主张的项，不因缺口表存在而降级。
 

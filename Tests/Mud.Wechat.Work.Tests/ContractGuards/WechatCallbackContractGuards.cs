@@ -1508,11 +1508,12 @@ public class WechatCallbackContractGuards
             .Should().Contain("Mud.Wechat.Callback.Analyzers/Mud.Wechat.Callback.Analyzers.csproj",
                 "CB24：分析器工程必须在 slnx 的 /src/ 下登记");
 
-        // ⑤ 狗粮面：Demo 必须以 Analyzer 形态引用分析器（普通引用不会在 Demo 源码上生效）。
+        // ⑤ 狗粮面：Demo 以 NuGet 包引用 Callback 宿主包，分析器随包 analyzers/dotnet/cs 自动生效；
+        // 2026-10 Demo 改包引用后不再有工程级 OutputItemType="Analyzer" 注入（该形态只属项目引用分析器工程）。
         var demoRoot = Path.Combine(GetSolutionRoot(), "Demos", "Mud.Wechat.Work.ContactCallbackDemo");
-        File.ReadAllText(Path.Combine(demoRoot, "Mud.Wechat.Work.ContactCallbackDemo.csproj"))
-            .Should().Contain("OutputItemType=\"Analyzer\"",
-                "CB24：Demo 狗粮面必须以 Analyzer 形态引用分析器，否则 4 条规则在 Demo 上不生效");
+        var demoSource = File.ReadAllText(Path.Combine(demoRoot, "Mud.Wechat.Work.ContactCallbackDemo.csproj"));
+        demoSource.Should().Contain("Include=\"Mud.Wechat.Work.Callback\"",
+            "CB24：Demo 狗粮面必须引用 Callback 宿主包（分析器随包下发，否则 4 条规则在 Demo 上不生效）");
 
         // ⑥ Demo 处理器一律引用 WechatCallbackEventTypes 常量（方案 §7.3 第 4 条；字面量即 MUDCB004）。
         var handlerFiles = Directory.GetFiles(Path.Combine(demoRoot, "Handlers"), "*.cs");
@@ -1610,12 +1611,12 @@ public class WechatCallbackContractGuards
         var contractsSource = File.ReadAllText(SourcePath(
             "Mud.Wechat.Work.Callback", "Events", "Payloads", "Contracts", "OfficialPayloadContracts.cs"));
         contractsSource.Should().Contain("（" + expected + " 键）",
-            "OfficialPayloadContracts 的键计数注释必须与权威基线一致（F14：120 键是漂移值）");
+            "OfficialPayloadContracts 的键计数注释必须与权威基线一致（F14：曾漂移为 120）");
 
         var registrationSource = File.ReadAllText(SourcePath(
             "Mud.Wechat.Work.Callback", "WechatCallbackServiceCollectionExtensions.cs"));
         registrationSource.Should().Contain("官方 " + expected + " 键契约",
-            "登记入口的键计数注释必须与权威基线一致（F14：41 键是漂移值）");
+            "登记入口的键计数注释必须与权威基线一致（F14：曾漂移为 41）");
     }
 
     /// <summary>
